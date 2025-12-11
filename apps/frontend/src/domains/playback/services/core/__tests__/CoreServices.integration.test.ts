@@ -101,9 +101,10 @@ describe('CoreServices - PlaybackEngine Integration', () => {
     it('should log PlaybackEngine creation event', () => {
       coreServices = new CoreServices();
 
-      expect(
-        featureFlags.logPlaybackEngineMigrationEvent,
-      ).toHaveBeenCalledWith('PlaybackEngine created', expect.any(Object));
+      expect(featureFlags.logPlaybackEngineMigrationEvent).toHaveBeenCalledWith(
+        'PlaybackEngine created',
+        expect.any(Object),
+      );
     });
 
     it('should create PlaybackEngine in ready state', () => {
@@ -137,9 +138,9 @@ describe('CoreServices - PlaybackEngine Integration', () => {
 
       await coreServices.dispose();
 
-      expect(
-        featureFlags.logPlaybackEngineMigrationEvent,
-      ).toHaveBeenCalledWith('PlaybackEngine disposed');
+      expect(featureFlags.logPlaybackEngineMigrationEvent).toHaveBeenCalledWith(
+        'PlaybackEngine disposed',
+      );
     });
   });
 

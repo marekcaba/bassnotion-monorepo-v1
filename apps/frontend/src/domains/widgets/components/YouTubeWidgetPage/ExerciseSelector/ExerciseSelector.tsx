@@ -55,8 +55,8 @@ export function ExerciseSelector({
           '🎯 ExerciseSelector visible - loading samples for ALL exercises (silent background)',
           {
             exerciseCount: exercises.length,
-            exerciseTitles: exercises.map(e => e.title),
-          }
+            exerciseTitles: exercises.map((e) => e.title),
+          },
         );
 
         try {
@@ -68,11 +68,15 @@ export function ExerciseSelector({
 
             if (!exercise?.id) continue;
 
-            logger.info(`📥 Preloading exercise ${i + 1}/${exercises.length}: ${exercise.title}`, {
-              exerciseId: exercise.id,
-              harmonyInstrument: exercise.harmonyInstrument,
-              hasHarmonyNotes: !!exercise?.harmonyNotes && exercise.harmonyNotes.length > 0,
-            });
+            logger.info(
+              `📥 Preloading exercise ${i + 1}/${exercises.length}: ${exercise.title}`,
+              {
+                exerciseId: exercise.id,
+                harmonyInstrument: exercise.harmonyInstrument,
+                hasHarmonyNotes:
+                  !!exercise?.harmonyNotes && exercise.harmonyNotes.length > 0,
+              },
+            );
 
             // Load samples for this exercise
             const result = await preloader.loadFullSamples(exercise);
@@ -85,18 +89,21 @@ export function ExerciseSelector({
                   instrument: exercise.harmonyInstrument,
                   samplesLoaded: result.loaded,
                   exerciseTitle: exercise.title,
-                }
+                },
               });
               window.dispatchEvent(event);
-              console.log('📢 [EXERCISE-SELECTOR] Emitted harmony-samples-loaded event', {
-                exerciseId: exercise.id,
-                instrument: exercise.harmonyInstrument,
-                samplesLoaded: result.loaded,
-              });
+              console.log(
+                '📢 [EXERCISE-SELECTOR] Emitted harmony-samples-loaded event',
+                {
+                  exerciseId: exercise.id,
+                  instrument: exercise.harmonyInstrument,
+                  samplesLoaded: result.loaded,
+                },
+              );
             }
 
             // Small delay between exercises to avoid overwhelming the system
-            await new Promise(resolve => setTimeout(resolve, 300));
+            await new Promise((resolve) => setTimeout(resolve, 300));
           }
 
           logger.info('✅ All exercise samples preloaded successfully', {
@@ -195,7 +202,8 @@ export function ExerciseSelector({
       },
     };
     // Handle both string and Difficulty object with value property
-    const difficultyValue = typeof difficulty === 'object' ? difficulty?.value : difficulty;
+    const difficultyValue =
+      typeof difficulty === 'object' ? difficulty?.value : difficulty;
     const normalizedDifficulty = difficultyValue?.toLowerCase();
     return (
       configs[normalizedDifficulty as keyof typeof configs] || {

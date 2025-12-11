@@ -196,7 +196,7 @@ class TimingProcessor extends AudioWorkletProcessor {
         // Warn if drift is too high (increased threshold to reduce false positives)
         // NOTE: With FAANG direct scheduling, these warnings don't affect audio timing
         // which is scheduled directly to AudioContext bypassing JavaScript timing
-        if (drift > 0.010) {
+        if (drift > 0.01) {
           // 10ms threshold (increased from 5ms)
           this.missedUpdates++;
           const warningMessage: TimingMessage = {

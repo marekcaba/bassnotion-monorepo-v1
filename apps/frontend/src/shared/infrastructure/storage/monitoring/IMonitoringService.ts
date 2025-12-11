@@ -1,6 +1,6 @@
 /**
  * Monitoring Service Interface
- * 
+ *
  * Generic monitoring functionality for storage infrastructure
  */
 
@@ -35,7 +35,11 @@ export interface IMonitoringService {
   /**
    * Record custom metric
    */
-  recordMetric(name: string, value: number, tags?: Record<string, string>): void;
+  recordMetric(
+    name: string,
+    value: number,
+    tags?: Record<string, string>,
+  ): void;
 
   /**
    * Record event

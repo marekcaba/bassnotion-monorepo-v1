@@ -66,12 +66,14 @@ Higher buffer = Higher latency but more stable
 ## 5. Thread Architecture
 
 ### Ableton's Approach:
+
 - **Audio Thread**: Real-time priority, handles all audio processing
 - **UI Thread**: Normal priority, handles interface
 - **MIDI Thread**: High priority, processes MIDI events
 - **Disk Thread**: Background priority, streams audio from disk
 
 ### Logic's Approach:
+
 - Increases buffer for non-armed tracks to save CPU
 - Uses predictive buffering for tracks likely to be used
 - Separates mixing engine from recording engine
@@ -101,35 +103,38 @@ class ProfessionalTransport {
 
   start() {
     if (this.isPlaying) return;
-    
+
     this.isPlaying = true;
     this.nextScheduleTime = this.audioContext.currentTime;
-    
+
     // Start the scheduler
-    this.schedulerTimer = setInterval(() => this.schedule(), this.scheduleInterval * 1000);
+    this.schedulerTimer = setInterval(
+      () => this.schedule(),
+      this.scheduleInterval * 1000,
+    );
   }
 
   schedule() {
     // Schedule all events in the lookahead window
     const scheduleUntil = this.audioContext.currentTime + this.lookahead;
-    
+
     while (this.nextScheduleTime < scheduleUntil) {
       // Schedule all tracks for this time
-      this.tracks.forEach(track => {
+      this.tracks.forEach((track) => {
         track.scheduleEvents(this.nextScheduleTime);
       });
-      
+
       // Move to next subdivision
       this.nextScheduleTime += this.getNextSubdivision();
     }
   }
-  
+
   stop() {
     this.isPlaying = false;
     clearInterval(this.schedulerTimer);
-    
+
     // Stop all scheduled sounds
-    this.tracks.forEach(track => track.stop());
+    this.tracks.forEach((track) => track.stop());
   }
 }
 ```
@@ -155,19 +160,19 @@ class ProfessionalWidget {
     this.scheduledEvents = [];
     this.lookahead = 0.1;
   }
-  
+
   scheduleNextBar(time) {
     // Schedule all events for the next bar
     const events = this.getEventsForBar();
-    
-    events.forEach(event => {
+
+    events.forEach((event) => {
       // Schedule with sample accuracy
       Tone.Transport.scheduleOnce((scheduleTime) => {
         this.triggerEvent(event, scheduleTime);
       }, time + event.position);
     });
   }
-  
+
   start() {
     // Don't start loop immediately
     // Instead, register with scheduler

@@ -76,14 +76,16 @@ The following classes were removed and replaced:
 ### For Existing Code
 
 1. **Update Imports**
+
    ```bash
    # Find all old imports
    grep -r "from '@/domains/playback/services/" --include="*.ts" --include="*.tsx"
-   
+
    # Update systematically by module
    ```
 
 2. **Update Mock Objects**
+
    ```typescript
    // Add missing methods to mocks
    GlobalSampleCache: {
@@ -116,6 +118,7 @@ The following classes were removed and replaced:
 Tests need updated mocks for:
 
 1. **Tone.Transport**
+
    ```typescript
    Transport: {
      schedule: vi.fn(() => 'mock-schedule-id'),
@@ -142,17 +145,20 @@ Tests need updated mocks for:
 ## Common Issues and Solutions
 
 ### Issue: Cannot find module
+
 **Solution**: Check if the import path needs updating from services/ to modules/
 
 ### Issue: Property 'method' does not exist
+
 **Solution**: Check if the API changed or if mocks need updating
 
 ### Issue: Tests failing with undefined errors
+
 **Solution**: Update mock return values (especially for Tone.js methods)
 
 ## Future Considerations
 
-1. **Remaining Tech Debt**: 
+1. **Remaining Tech Debt**:
    - UnifiedTransport.ts (3000+ lines) needs refactoring
    - Some modules still have large files that could be split
 

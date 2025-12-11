@@ -172,9 +172,8 @@ describe('Backward Compatibility Tests', () => {
     });
 
     it('should use window.__coreServices when no audioEngine provided', async () => {
-      const { loadGlobalTone } = await import(
-        '../../services/plugins/toneLoader.js'
-      );
+      const { loadGlobalTone } =
+        await import('../../services/plugins/toneLoader.js');
 
       // Should use window.__coreServices
       const tone = await loadGlobalTone();
@@ -197,9 +196,8 @@ describe('Backward Compatibility Tests', () => {
         })),
       };
 
-      const { loadGlobalTone } = await import(
-        '../../services/plugins/toneLoader.js'
-      );
+      const { loadGlobalTone } =
+        await import('../../services/plugins/toneLoader.js');
 
       // Should not throw when audioEngine is provided
       await expect(loadGlobalTone(mockAudioEngine)).resolves.toBeDefined();
@@ -208,9 +206,8 @@ describe('Backward Compatibility Tests', () => {
 
   describe('Processor backward compatibility', () => {
     it('should create BassInstrumentProcessor without audioEngine', async () => {
-      const { BassInstrumentProcessor } = await import(
-        '../instruments/implementations/bass/BassInstrumentProcessor.js'
-      );
+      const { BassInstrumentProcessor } =
+        await import('../instruments/implementations/bass/BassInstrumentProcessor.js');
 
       const config = {
         noteRange: {
@@ -227,9 +224,8 @@ describe('Backward Compatibility Tests', () => {
     });
 
     it('should create DrumInstrumentProcessor without audioEngine', async () => {
-      const { DrumInstrumentProcessor } = await import(
-        '../instruments/implementations/drums/DrumInstrumentProcessor.js'
-      );
+      const { DrumInstrumentProcessor } =
+        await import('../instruments/implementations/drums/DrumInstrumentProcessor.js');
 
       const config = {
         generalMidiCompliance: true,

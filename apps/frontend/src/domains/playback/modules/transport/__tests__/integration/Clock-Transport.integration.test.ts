@@ -253,7 +253,7 @@ describe('Clock ↔ Transport Integration Tests', () => {
       // Simulate Clock.onTick updates
       sampleClock._simulateUpdate(0.002667);
       sampleClock._simulateUpdate(0.005333);
-      sampleClock._simulateUpdate(0.008000);
+      sampleClock._simulateUpdate(0.008);
 
       // Advance timers to trigger the position update interval
       // scheduleInterval is 20ms by default
@@ -326,7 +326,7 @@ describe('Clock ↔ Transport Integration Tests', () => {
       transport.resume();
 
       // Update while resumed
-      sampleClock._simulateUpdate(0.008000);
+      sampleClock._simulateUpdate(0.008);
       await vi.advanceTimersByTimeAsync(25);
 
       expect(positionUpdates.length).toBeGreaterThanOrEqual(2);
@@ -488,7 +488,9 @@ describe('Clock ↔ Transport Integration Tests', () => {
 
       // Should be close to Clock time, not AudioContext.currentTime (30ms)
       expect(transportTime).toBeCloseTo(0.002667, 5);
-      expect(Math.abs(transportTime - mockAudioContext.currentTime)).toBeGreaterThan(0.02);
+      expect(
+        Math.abs(transportTime - mockAudioContext.currentTime),
+      ).toBeGreaterThan(0.02);
     });
   });
 
@@ -615,7 +617,9 @@ describe('Clock ↔ Transport Integration Tests', () => {
       expect(clockTime).toBeGreaterThan(0);
 
       // Should not be stuck at 0 while context is at 30ms (race condition)
-      expect(Math.abs(clockTime - mockAudioContext.currentTime)).toBeLessThan(0.03);
+      expect(Math.abs(clockTime - mockAudioContext.currentTime)).toBeLessThan(
+        0.03,
+      );
     });
   });
 

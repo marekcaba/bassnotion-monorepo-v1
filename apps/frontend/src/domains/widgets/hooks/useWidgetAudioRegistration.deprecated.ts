@@ -1,12 +1,12 @@
 /**
  * DEPRECATED: useWidgetAudioRegistration Hook
- * 
+ *
  * This hook is part of the old audio registration pattern that is no longer needed.
  * In the modern architecture:
  * - Use useTrack() for individual instrument control
  * - Use useTransport() for playback control
  * - No registration is needed - instruments are managed automatically
- * 
+ *
  * This file provides empty implementations for backward compatibility.
  */
 
@@ -16,7 +16,13 @@ import type { AudioSourceConfig } from '@/domains/playback/types/audio';
 // Re-export the original interfaces for compatibility
 export interface WidgetAudioSourceConfig extends AudioSourceConfig {
   widgetId: string;
-  widgetType: 'bass' | 'metronome' | 'drums' | 'harmony' | 'youtube' | 'fretboard';
+  widgetType:
+    | 'bass'
+    | 'metronome'
+    | 'drums'
+    | 'harmony'
+    | 'youtube'
+    | 'fretboard';
   displayName: string;
   syncRequirements: {
     requiresPreciseSync: boolean;
@@ -65,7 +71,9 @@ export interface AudioRegistrationControls {
   setSolo: (solo: boolean) => void;
   setActive: (active: boolean) => void;
   updateConfig: (updates: Partial<WidgetAudioSourceConfig>) => void;
-  updateSyncRequirements: (requirements: Partial<WidgetAudioSourceConfig['syncRequirements']>) => void;
+  updateSyncRequirements: (
+    requirements: Partial<WidgetAudioSourceConfig['syncRequirements']>,
+  ) => void;
 }
 
 export interface UseWidgetAudioRegistrationReturn {
@@ -82,7 +90,7 @@ export function useWidgetAudioRegistration(
   options: UseWidgetAudioRegistrationOptions,
 ): UseWidgetAudioRegistrationReturn {
   console.warn(
-    `⚠️ useWidgetAudioRegistration is deprecated. Widget "${options.widgetId}" should use useTrack() or useTransport() instead.`
+    `⚠️ useWidgetAudioRegistration is deprecated. Widget "${options.widgetId}" should use useTrack() or useTransport() instead.`,
   );
 
   // Provide empty implementations that do nothing

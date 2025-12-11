@@ -233,7 +233,7 @@ export class MidiFileParser {
         // Silently skip unknown MIDI events (likely padding or unused data)
         // Common examples: 0x20 (32) appears in some MIDI files as padding
         // Only log if it's actually a valid status byte range (0x80-0xEF)
-        if (statusByte >= 0x80 && statusByte <= 0xEF) {
+        if (statusByte >= 0x80 && statusByte <= 0xef) {
           logger.warn('Unknown MIDI event type', { eventType, statusByte });
         }
         return null;

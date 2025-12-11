@@ -10,6 +10,10 @@ import type * as Tone from 'tone';
 import { SampleCache } from '../cache/SampleCache.js';
 import { EventBus, createStructuredLogger } from '../../shared/index.js';
 import type { AudioSampleMetadata } from '@bassnotion/contracts';
+import {
+  executeWithSampleBreaker,
+  SAMPLE_FETCH_TIMEOUT_MS,
+} from '../../../services/core/SampleLoadingCircuitBreaker.js';
 
 const logger = createStructuredLogger('SampleLoader');
 
@@ -327,8 +331,15 @@ export class SampleLoader {
           logger.debug(`Retry attempt ${attempt} for ${url}`);
         }
 
-        // Fetch with timeout
-        const response = await this.fetchWithTimeout(fullUrl, options.timeout);
+        // Fetch with timeout, protected by circuit breaker
+        const response = await executeWithSampleBreaker(
+          () =>
+            this.fetchWithTimeout(
+              fullUrl,
+              options.timeout || SAMPLE_FETCH_TIMEOUT_MS,
+            ),
+          `sample-${url}`,
+        );
 
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);

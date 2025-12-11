@@ -50,13 +50,20 @@ class PatternRepository {
 
   async getPopularPatterns(type?: 'drums' | 'harmony'): Promise<Pattern[]> {
     const params = type ? `?type=${type}` : '';
-    const response = await apiClient.get<Pattern[]>(`${this.baseUrl}/popular${params}`);
+    const response = await apiClient.get<Pattern[]>(
+      `${this.baseUrl}/popular${params}`,
+    );
     return response.data;
   }
 
-  async getPatternsByGenre(genre: string, type?: 'drums' | 'harmony'): Promise<Pattern[]> {
+  async getPatternsByGenre(
+    genre: string,
+    type?: 'drums' | 'harmony',
+  ): Promise<Pattern[]> {
     const params = type ? `?type=${type}` : '';
-    const response = await apiClient.get<Pattern[]>(`${this.baseUrl}/genre/${genre}${params}`);
+    const response = await apiClient.get<Pattern[]>(
+      `${this.baseUrl}/genre/${genre}${params}`,
+    );
     return response.data;
   }
 
@@ -66,11 +73,15 @@ class PatternRepository {
   }
 
   async getPatternBySlug(slug: string): Promise<Pattern> {
-    const response = await apiClient.get<Pattern>(`${this.baseUrl}/slug/${slug}`);
+    const response = await apiClient.get<Pattern>(
+      `${this.baseUrl}/slug/${slug}`,
+    );
     return response.data;
   }
 
-  async getTutorialPatterns(tutorialId: string): Promise<TutorialPatternResponse> {
+  async getTutorialPatterns(
+    tutorialId: string,
+  ): Promise<TutorialPatternResponse> {
     // Return empty mock data since pattern backend module is not available
     return {
       config: {
@@ -92,16 +103,19 @@ class PatternRepository {
     selection: {
       drumPatternId?: string;
       harmonyPatternId?: string;
-    }
+    },
   ): Promise<void> {
     // Mock implementation - do nothing since backend module is not available
     console.log('Pattern selection saved locally:', { tutorialId, selection });
     return Promise.resolve();
   }
 
-  async getCompatiblePatterns(patternId: string, type: 'drums' | 'harmony'): Promise<Pattern[]> {
+  async getCompatiblePatterns(
+    patternId: string,
+    type: 'drums' | 'harmony',
+  ): Promise<Pattern[]> {
     const response = await apiClient.get<Pattern[]>(
-      `${this.baseUrl}/compatible/${patternId}?type=${type}`
+      `${this.baseUrl}/compatible/${patternId}?type=${type}`,
     );
     return response.data;
   }

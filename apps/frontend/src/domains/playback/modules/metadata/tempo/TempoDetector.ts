@@ -1,6 +1,6 @@
 /**
  * TempoDetector - BPM and rhythm detection
- * 
+ *
  * Extracts tempo information from audio using onset detection
  * and autocorrelation techniques.
  */
@@ -8,7 +8,12 @@
 import { createStructuredLogger } from '@bassnotion/contracts';
 import type { TempoDetectionResult } from '@bassnotion/contracts';
 import type { AudioProcessingContext } from '../types.js';
-import type { TempoDetectionConfig, BeatInterval, OnsetPeak, TempoCandidate } from './types.js';
+import type {
+  TempoDetectionConfig,
+  BeatInterval,
+  OnsetPeak,
+  TempoCandidate,
+} from './types.js';
 
 const logger = createStructuredLogger('TempoDetector');
 
@@ -31,7 +36,7 @@ export class TempoDetector {
    */
   async detectTempo(
     audioBuffer: AudioBuffer,
-    context: AudioProcessingContext
+    context: AudioProcessingContext,
   ): Promise<TempoDetectionResult> {
     // Simple mode for testing - return mock data
     if ((context as any).simpleMode) {
@@ -73,7 +78,7 @@ export class TempoDetector {
       confidence: bestTempo.confidence,
       candidates: candidates
         .slice(0, 3)
-        .map(c => ({ bpm: c.bpm, confidence: c.confidence })),
+        .map((c) => ({ bpm: c.bpm, confidence: c.confidence })),
       method: 'autocorrelation' as const,
     };
   }
@@ -81,19 +86,23 @@ export class TempoDetector {
   /**
    * Detect onsets in audio signal
    */
-  private detectOnsets(channelData: Float32Array, sampleRate: number): OnsetPeak[] {
+  private detectOnsets(
+    channelData: Float32Array,
+    sampleRate: number,
+  ): OnsetPeak[] {
     const onsets: OnsetPeak[] = [];
     const frameSize = this.config.windowSize;
     const hopSize = this.config.hopSize;
 
     // Spectral flux onset detection
     let previousFrame = new Float32Array(frameSize);
-    
+
     for (let i = 0; i < channelData.length - frameSize; i += hopSize) {
       const currentFrame = channelData.slice(i, i + frameSize);
       const flux = this.calculateSpectralFlux(previousFrame, currentFrame);
 
-      if (flux > 0.1) { // Threshold
+      if (flux > 0.1) {
+        // Threshold
         onsets.push({
           time: i / sampleRate,
           strength: flux,
@@ -109,7 +118,10 @@ export class TempoDetector {
   /**
    * Calculate spectral flux between frames
    */
-  private calculateSpectralFlux(frame1: Float32Array, frame2: Float32Array): number {
+  private calculateSpectralFlux(
+    frame1: Float32Array,
+    frame2: Float32Array,
+  ): number {
     let flux = 0;
     for (let i = 0; i < frame1.length; i++) {
       const diff = Math.abs(frame2[i]) - Math.abs(frame1[i]);
@@ -128,7 +140,10 @@ export class TempoDetector {
     const minInterval = 0.1; // 100ms minimum between onsets
 
     for (let i = 0; i < onsets.length; i++) {
-      if (i === 0 || onsets[i].time - filtered[filtered.length - 1].time > minInterval) {
+      if (
+        i === 0 ||
+        onsets[i].time - filtered[filtered.length - 1].time > minInterval
+      ) {
         filtered.push(onsets[i]);
       }
     }
@@ -155,14 +170,17 @@ export class TempoDetector {
   /**
    * Find tempo candidates using autocorrelation
    */
-  private findTempoCandidates(intervals: BeatInterval[], sampleRate: number): TempoCandidate[] {
+  private findTempoCandidates(
+    intervals: BeatInterval[],
+    sampleRate: number,
+  ): TempoCandidate[] {
     const candidates: TempoCandidate[] = [];
     const minInterval = 60 / this.config.maxBPM;
     const maxInterval = 60 / this.config.minBPM;
 
     // Build histogram of intervals
     const histogram = new Map<number, number>();
-    
+
     for (const interval of intervals) {
       if (interval.time >= minInterval && interval.time <= maxInterval) {
         const bpm = Math.round(60 / interval.time);
@@ -194,10 +212,10 @@ export class TempoDetector {
 
     // Look for tempo relationships (double/half time)
     const primary = candidates[0];
-    
+
     for (const candidate of candidates.slice(1)) {
       const ratio = candidate.bpm / primary.bpm;
-      
+
       // Check for double or half time
       if (Math.abs(ratio - 2) < 0.1 || Math.abs(ratio - 0.5) < 0.1) {
         primary.confidence = Math.min(primary.confidence * 1.2, 1.0);
@@ -211,7 +229,10 @@ export class TempoDetector {
   /**
    * Detect time signature from beat intervals
    */
-  private detectTimeSignature(intervals: BeatInterval[], tempo: TempoCandidate): string {
+  private detectTimeSignature(
+    intervals: BeatInterval[],
+    tempo: TempoCandidate,
+  ): string {
     // Simple time signature detection based on beat grouping
     const beatInterval = 60 / tempo.bpm;
     const measureCandidates = new Map<number, number>();
@@ -219,28 +240,28 @@ export class TempoDetector {
     // Look for repeating patterns
     for (let measureLength = 3; measureLength <= 7; measureLength++) {
       let score = 0;
-      
+
       for (let i = 0; i < intervals.length - measureLength; i++) {
         let measureTime = 0;
         for (let j = 0; j < measureLength; j++) {
           measureTime += intervals[i + j].time;
         }
-        
+
         const expectedTime = beatInterval * measureLength;
         const error = Math.abs(measureTime - expectedTime) / expectedTime;
-        
+
         if (error < 0.1) {
           score += 1 - error;
         }
       }
-      
+
       measureCandidates.set(measureLength, score);
     }
 
     // Find most likely measure length
     let bestMeasure = 4;
     let bestScore = 0;
-    
+
     for (const [measure, score] of measureCandidates.entries()) {
       if (score > bestScore) {
         bestScore = score;
@@ -257,7 +278,7 @@ export class TempoDetector {
   private calculateBeatPositions(
     onsets: OnsetPeak[],
     tempo: TempoCandidate,
-    sampleRate: number
+    sampleRate: number,
   ): number[] {
     const beats: number[] = [];
     const beatInterval = 60 / tempo.bpm;

@@ -1,6 +1,6 @@
 /**
  * AnalysisCache - Caching for metadata analysis results
- * 
+ *
  * Provides efficient caching of analysis results to avoid
  * redundant processing of the same audio files.
  */
@@ -16,7 +16,8 @@ export class AnalysisCache {
   private maxSize: number;
   private ttl: number; // Time to live in milliseconds
 
-  constructor(maxSize = 100, ttl = 3600000) { // 1 hour default TTL
+  constructor(maxSize = 100, ttl = 3600000) {
+    // 1 hour default TTL
     this.cache = new Map();
     this.maxSize = maxSize;
     this.ttl = ttl;
@@ -43,7 +44,7 @@ export class AnalysisCache {
    */
   get(key: string): AudioAnalysisResult | null {
     const entry = this.cache.get(key);
-    
+
     if (!entry) {
       return null;
     }
@@ -82,7 +83,7 @@ export class AnalysisCache {
    */
   has(key: string): boolean {
     const entry = this.cache.get(key);
-    
+
     if (!entry) {
       return false;
     }

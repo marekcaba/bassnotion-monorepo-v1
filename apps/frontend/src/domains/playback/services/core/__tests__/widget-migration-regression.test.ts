@@ -183,9 +183,7 @@ describe('Phase 2.2 Day 4: Widget Migration Regression Tests', () => {
             startTime: 0,
             duration: 4,
             pattern: {
-              events: [
-                { position: '0:0:0', type: 'hihat', velocity: 0.6 },
-              ],
+              events: [{ position: '0:0:0', type: 'hihat', velocity: 0.6 }],
             },
           },
         ],
@@ -213,8 +211,18 @@ describe('Phase 2.2 Day 4: Widget Migration Regression Tests', () => {
             duration: 4,
             pattern: {
               events: [
-                { position: '0:0:0', type: 'C3', velocity: 0.8, duration: '1m' },
-                { position: '1:0:0', type: 'E3', velocity: 0.8, duration: '1m' },
+                {
+                  position: '0:0:0',
+                  type: 'C3',
+                  velocity: 0.8,
+                  duration: '1m',
+                },
+                {
+                  position: '1:0:0',
+                  type: 'E3',
+                  velocity: 0.8,
+                  duration: '1m',
+                },
               ],
             },
           },
@@ -274,9 +282,7 @@ describe('Phase 2.2 Day 4: Widget Migration Regression Tests', () => {
               startTime: 0,
               duration: 8,
               pattern: {
-                events: [
-                  { position: '0:0:0', type: 'A3', velocity: 0.9 },
-                ],
+                events: [{ position: '0:0:0', type: 'A3', velocity: 0.9 }],
               },
             },
           ],
@@ -524,19 +530,40 @@ describe('Phase 2.2 Day 4: Widget Migration Regression Tests', () => {
       playbackEngine.registerTrack({
         id: 'metronome-track',
         name: 'Metronome',
-        regions: [{ id: 'met-1', trackId: 'metronome-track', startTime: 0, duration: 4 }],
+        regions: [
+          {
+            id: 'met-1',
+            trackId: 'metronome-track',
+            startTime: 0,
+            duration: 4,
+          },
+        ],
         instrumentType: 'metronome',
       });
       playbackEngine.registerTrack({
         id: 'drummer-widget-track',
         name: 'Drummer',
-        regions: [{ id: 'drum-1', trackId: 'drummer-widget-track', startTime: 0, duration: 4 }],
+        regions: [
+          {
+            id: 'drum-1',
+            trackId: 'drummer-widget-track',
+            startTime: 0,
+            duration: 4,
+          },
+        ],
         instrumentType: 'drums',
       });
       playbackEngine.registerTrack({
         id: 'harmony-widget-track',
         name: 'Harmony',
-        regions: [{ id: 'harm-1', trackId: 'harmony-widget-track', startTime: 0, duration: 4 }],
+        regions: [
+          {
+            id: 'harm-1',
+            trackId: 'harmony-widget-track',
+            startTime: 0,
+            duration: 4,
+          },
+        ],
         instrumentType: 'harmony',
       });
 
@@ -545,15 +572,28 @@ describe('Phase 2.2 Day 4: Widget Migration Regression Tests', () => {
       playbackEngine.registerTrack({
         id: 'drummer-widget-track',
         name: 'Drummer Updated',
-        regions: [{ id: 'drum-2', trackId: 'drummer-widget-track', startTime: 0, duration: 8 }],
+        regions: [
+          {
+            id: 'drum-2',
+            trackId: 'drummer-widget-track',
+            startTime: 0,
+            duration: 8,
+          },
+        ],
         instrumentType: 'drums',
       });
 
       // Verify only drummer was updated
       expect(playbackEngine.getTracks().size).toBe(3);
-      expect(playbackEngine.getTracks().get('drummer-widget-track')?.regions[0].id).toBe('drum-2');
-      expect(playbackEngine.getTracks().get('metronome-track')?.regions[0].id).toBe('met-1');
-      expect(playbackEngine.getTracks().get('harmony-widget-track')?.regions[0].id).toBe('harm-1');
+      expect(
+        playbackEngine.getTracks().get('drummer-widget-track')?.regions[0].id,
+      ).toBe('drum-2');
+      expect(
+        playbackEngine.getTracks().get('metronome-track')?.regions[0].id,
+      ).toBe('met-1');
+      expect(
+        playbackEngine.getTracks().get('harmony-widget-track')?.regions[0].id,
+      ).toBe('harm-1');
     });
   });
 
@@ -602,8 +642,12 @@ describe('Phase 2.2 Day 4: Widget Migration Regression Tests', () => {
 
       // Verify tracks were switched
       expect(playbackEngine.getTracks().size).toBe(2);
-      expect(playbackEngine.getTracks().get('metronome-track')?.exerciseId).toBe('exercise-2');
-      expect(playbackEngine.getTracks().get('drummer-widget-track')?.exerciseId).toBe('exercise-2');
+      expect(
+        playbackEngine.getTracks().get('metronome-track')?.exerciseId,
+      ).toBe('exercise-2');
+      expect(
+        playbackEngine.getTracks().get('drummer-widget-track')?.exerciseId,
+      ).toBe('exercise-2');
     });
 
     it('should handle multiple rapid exercise switches', () => {
@@ -633,8 +677,12 @@ describe('Phase 2.2 Day 4: Widget Migration Regression Tests', () => {
 
       // Verify final state
       expect(playbackEngine.getTracks().size).toBe(2);
-      expect(playbackEngine.getTracks().get('metronome-track')?.exerciseId).toBe('ex-5');
-      expect(playbackEngine.getTracks().get('harmony-widget-track')?.exerciseId).toBe('ex-5');
+      expect(
+        playbackEngine.getTracks().get('metronome-track')?.exerciseId,
+      ).toBe('ex-5');
+      expect(
+        playbackEngine.getTracks().get('harmony-widget-track')?.exerciseId,
+      ).toBe('ex-5');
     });
   });
 
@@ -719,7 +767,14 @@ describe('Phase 2.2 Day 4: Widget Migration Regression Tests', () => {
       playbackEngine.registerTrack({
         id: 'widget-track',
         name: 'Widget Track v1',
-        regions: [{ id: 'region-1', trackId: 'widget-track', startTime: 0, duration: 4 }],
+        regions: [
+          {
+            id: 'region-1',
+            trackId: 'widget-track',
+            startTime: 0,
+            duration: 4,
+          },
+        ],
         instrumentType: 'harmony',
       });
 
@@ -728,7 +783,14 @@ describe('Phase 2.2 Day 4: Widget Migration Regression Tests', () => {
       playbackEngine.registerTrack({
         id: 'widget-track',
         name: 'Widget Track v2',
-        regions: [{ id: 'region-2', trackId: 'widget-track', startTime: 0, duration: 8 }],
+        regions: [
+          {
+            id: 'region-2',
+            trackId: 'widget-track',
+            startTime: 0,
+            duration: 8,
+          },
+        ],
         instrumentType: 'harmony',
       });
 

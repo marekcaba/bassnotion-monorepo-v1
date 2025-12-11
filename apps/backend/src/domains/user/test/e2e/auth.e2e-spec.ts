@@ -12,7 +12,8 @@ import { AppModule } from '../../../../app.module.js';
 config({ path: path.join(__dirname, '../../../.env.test') });
 config({
   path: path.join(__dirname, '../../../../../.env.local'),
-  override: false });
+  override: false,
+});
 
 // Set required environment variables if not present
 process.env.SUPABASE_URL = process.env.SUPABASE_URL || 'http://localhost:54321';
@@ -28,7 +29,8 @@ describe('🎸 BassNotion Authentication E2E Tests', () => {
     console.log('🚀 Setting up authentication test suite...');
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule] })
+      imports: [AppModule],
+    })
       .overrideProvider(ConfigService)
       .useValue({
         get: (key: string): string | undefined => {
@@ -41,7 +43,8 @@ describe('🎸 BassNotion Authentication E2E Tests', () => {
             GOOGLE_CLIENT_ID:
               process.env.GOOGLE_CLIENT_ID || 'test-google-client-id',
             GOOGLE_CLIENT_SECRET:
-              process.env.GOOGLE_CLIENT_SECRET || 'test-google-secret' };
+              process.env.GOOGLE_CLIENT_SECRET || 'test-google-secret',
+          };
           return envVars[key] || process.env[key];
         },
         getOrThrow: (key: string): string => {
@@ -50,7 +53,8 @@ describe('🎸 BassNotion Authentication E2E Tests', () => {
             throw new Error(`Missing required environment variable: ${key}`);
           }
           return value;
-        } })
+        },
+      })
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -70,7 +74,8 @@ describe('🎸 BassNotion Authentication E2E Tests', () => {
   describe('📧 Email/Password Authentication', () => {
     const testUser = {
       email: 'bassplayer@example.com',
-      password: 'SecureBassLine123!' };
+      password: 'SecureBassLine123!',
+    };
 
     it('should handle signup request gracefully', async () => {
       const response = await request(app.getHttpServer())
@@ -78,7 +83,8 @@ describe('🎸 BassNotion Authentication E2E Tests', () => {
         .send({
           email: testUser.email,
           password: testUser.password,
-          confirmPassword: testUser.password });
+          confirmPassword: testUser.password,
+        });
 
       console.log('📝 Signup response:', response.status, response.body);
       expect([200, 201, 400, 409]).toContain(response.status);
@@ -89,7 +95,8 @@ describe('🎸 BassNotion Authentication E2E Tests', () => {
         .post('/auth/signin')
         .send({
           email: testUser.email,
-          password: testUser.password });
+          password: testUser.password,
+        });
 
       console.log('📝 Signin response:', response.status, response.body);
       expect([200, 401]).toContain(response.status);
@@ -101,7 +108,8 @@ describe('🎸 BassNotion Authentication E2E Tests', () => {
         .send({
           email: 'invalid-email',
           password: testUser.password,
-          confirmPassword: testUser.password });
+          confirmPassword: testUser.password,
+        });
 
       console.log('📝 Invalid email response:', response.status, response.body);
       expect([400, 422]).toContain(response.status);
@@ -113,7 +121,8 @@ describe('🎸 BassNotion Authentication E2E Tests', () => {
         .send({
           email: testUser.email,
           password: '123',
-          confirmPassword: '123' });
+          confirmPassword: '123',
+        });
 
       console.log('📝 Weak password response:', response.status, response.body);
       expect([400, 422]).toContain(response.status);
@@ -157,7 +166,8 @@ describe('🎸 BassNotion Authentication E2E Tests', () => {
         .set('Authorization', 'Bearer test-token')
         .send({
           currentPassword: 'oldPassword123!',
-          newPassword: 'newPassword123!' });
+          newPassword: 'newPassword123!',
+        });
 
       console.log(
         '📝 Password change response:',
@@ -215,7 +225,8 @@ describe('🎸 BassNotion Authentication E2E Tests', () => {
         .post('/auth/signin')
         .send({
           email: "' OR '1'='1",
-          password: 'anypassword' });
+          password: 'anypassword',
+        });
 
       console.log('📝 SQL injection response:', response.status, response.body);
       expect([400, 401, 422]).toContain(response.status);
@@ -227,7 +238,8 @@ describe('🎸 BassNotion Authentication E2E Tests', () => {
         .map(() =>
           request(app.getHttpServer()).post('/auth/signin').send({
             email: 'ratetest@example.com',
-            password: 'wrongpassword' }),
+            password: 'wrongpassword',
+          }),
         );
 
       const responses = await Promise.all(promises);
@@ -290,7 +302,8 @@ describe('🎸 BassNotion Authentication E2E Tests', () => {
     it('should handle full signup-login flow gracefully', async () => {
       const uniqueUser = {
         email: `flowtest${Date.now()}@example.com`,
-        password: 'FlowTestPassword123!' };
+        password: 'FlowTestPassword123!',
+      };
 
       console.log('🔄 Testing complete auth flow...');
 
@@ -300,7 +313,8 @@ describe('🎸 BassNotion Authentication E2E Tests', () => {
         .send({
           email: uniqueUser.email,
           password: uniqueUser.password,
-          confirmPassword: uniqueUser.password });
+          confirmPassword: uniqueUser.password,
+        });
 
       console.log(
         '📝 Flow signup:',
@@ -313,7 +327,8 @@ describe('🎸 BassNotion Authentication E2E Tests', () => {
         .post('/auth/signin')
         .send({
           email: uniqueUser.email,
-          password: uniqueUser.password });
+          password: uniqueUser.password,
+        });
 
       console.log(
         '📝 Flow login:',

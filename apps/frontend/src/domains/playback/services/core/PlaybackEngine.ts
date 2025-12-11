@@ -28,7 +28,10 @@ import type { WamKeyboardPlugin } from '../../modules/instruments/adapters/wam/W
 import { RegionScheduler } from './region-processing/scheduling-orchestrator/RegionScheduler.js';
 import { TimingMetricsCollector } from './region-processing/timing/TimingMetricsCollector.js';
 import { EventRouter } from './region-processing/event-routing/EventRouter.js';
-import { MusicalTimeConverter, ScheduleCache } from './region-processing/index.js';
+import {
+  MusicalTimeConverter,
+  ScheduleCache,
+} from './region-processing/index.js';
 import {
   VoiceCueScheduler,
   MetronomeScheduler,
@@ -182,10 +185,16 @@ export class PlaybackEngine {
     this.scheduler = new Scheduler(this.instanceId, this.tracks);
 
     // Initialize instrument schedulers (will be fully configured in initialize())
-    this.metronomeScheduler = new MetronomeScheduler(this.instanceId, this.tracks);
+    this.metronomeScheduler = new MetronomeScheduler(
+      this.instanceId,
+      this.tracks,
+    );
     this.drumScheduler = new DrumScheduler(this.instanceId, this.tracks);
     this.bassScheduler = new BassScheduler(this.instanceId, this.tracks);
-    this.voiceCueScheduler = new VoiceCueScheduler(this.instanceId, this.tracks);
+    this.voiceCueScheduler = new VoiceCueScheduler(
+      this.instanceId,
+      this.tracks,
+    );
     // HarmonySchedulerV2 will be initialized in initialize() after cc64TimelineBuilder
 
     // Apply configuration
@@ -245,10 +254,13 @@ export class PlaybackEngine {
         }
 
         this.tempoChangeDebounce = window.setTimeout(() => {
-          this.logger.info('🎵 PlaybackEngine: Applying debounced tempo change', {
-            newTempo,
-            instanceId: this.instanceId,
-          });
+          this.logger.info(
+            '🎵 PlaybackEngine: Applying debounced tempo change',
+            {
+              newTempo,
+              instanceId: this.instanceId,
+            },
+          );
           this.reschedulePendingEvents();
           this.tempoChangeDebounce = null;
         }, this.TEMPO_DEBOUNCE_MS);
@@ -264,7 +276,9 @@ export class PlaybackEngine {
       return;
     }
 
-    this.logger.info('🔄 PlaybackEngine: Rescheduling pending events after tempo change');
+    this.logger.info(
+      '🔄 PlaybackEngine: Rescheduling pending events after tempo change',
+    );
 
     // Clear existing scheduled events
     this.clearScheduledState();
@@ -309,7 +323,9 @@ export class PlaybackEngine {
         this.instanceId,
         this.currentCC64Timeline,
         this.musicalTimeConverter.parsePosition.bind(this.musicalTimeConverter),
-        this.sustainPedalManager.findCC64DownDuringNote.bind(this.sustainPedalManager),
+        this.sustainPedalManager.findCC64DownDuringNote.bind(
+          this.sustainPedalManager,
+        ),
         this.sustainPedalManager.findNextCC64Up.bind(this.sustainPedalManager),
       );
 
@@ -433,13 +449,16 @@ export class PlaybackEngine {
    * Register multiple tracks at once
    * Phase 3.3: Added for compatibility with GlobalControls and HarmonyWidget
    */
-  registerTracks(tracks: Track[], metadata?: { harmonyInstrument?: string }): void {
+  registerTracks(
+    tracks: Track[],
+    metadata?: { harmonyInstrument?: string },
+  ): void {
     // Store harmony instrument if provided
     if (metadata?.harmonyInstrument) {
       (this as any).currentHarmonyInstrument = metadata.harmonyInstrument;
     }
 
-    tracks.forEach(track => this.registerTrack(track));
+    tracks.forEach((track) => this.registerTrack(track));
 
     // If already running, reschedule all regions to include new tracks
     if (this.state === 'playing') {
@@ -451,14 +470,17 @@ export class PlaybackEngine {
    * Update tracks while playing
    * Phase 3.3: Added for compatibility with GlobalControls and HarmonyWidget
    */
-  updateTracks(tracks: Track[], metadata?: { harmonyInstrument?: string }): void {
+  updateTracks(
+    tracks: Track[],
+    metadata?: { harmonyInstrument?: string },
+  ): void {
     // Store harmony instrument if provided
     if (metadata?.harmonyInstrument) {
       (this as any).currentHarmonyInstrument = metadata.harmonyInstrument;
     }
 
     // Unregister old tracks and register new ones
-    tracks.forEach(track => {
+    tracks.forEach((track) => {
       if (this.tracks.has(track.id)) {
         this.unregisterTrack(track.id);
       }
@@ -499,7 +521,10 @@ export class PlaybackEngine {
    * Enable countdown with time signature
    * Phase 3.3: Added for compatibility with GlobalControls
    */
-  enableCountdown(timeSignature: { numerator: number; denominator: number }): void {
+  enableCountdown(timeSignature: {
+    numerator: number;
+    denominator: number;
+  }): void {
     this.countdownBeats = timeSignature.numerator;
     this.countdownEnabled = true;
     this.logger.info('Countdown enabled', { beats: timeSignature.numerator });
@@ -508,10 +533,15 @@ export class PlaybackEngine {
   /**
    * Add metronome countdown region (accent on beat 1, clicks on beats 2-4)
    */
-  addCountdownRegion(timeSignature: { numerator: number; denominator: number }): void {
+  addCountdownRegion(timeSignature: {
+    numerator: number;
+    denominator: number;
+  }): void {
     if (!this.countdownEnabled) {
       // eslint-disable-next-line no-console
-      console.log('[COUNTDOWN DIAGNOSTIC] Countdown disabled, skipping metronome countdown region');
+      console.log(
+        '[COUNTDOWN DIAGNOSTIC] Countdown disabled, skipping metronome countdown region',
+      );
       return;
     }
 
@@ -582,14 +612,28 @@ export class PlaybackEngine {
   /**
    * Add voice cue countdown region ("one", "two", "three", "four")
    */
-  addVoiceCountdownRegion(timeSignature: { numerator: number; denominator: number }): void {
+  addVoiceCountdownRegion(timeSignature: {
+    numerator: number;
+    denominator: number;
+  }): void {
     if (!this.countdownEnabled) {
       // eslint-disable-next-line no-console
-      console.log('[COUNTDOWN DIAGNOSTIC] Countdown disabled, skipping voice countdown region');
+      console.log(
+        '[COUNTDOWN DIAGNOSTIC] Countdown disabled, skipping voice countdown region',
+      );
       return;
     }
 
-    const cueNames = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'];
+    const cueNames = [
+      'one',
+      'two',
+      'three',
+      'four',
+      'five',
+      'six',
+      'seven',
+      'eight',
+    ];
     const voiceCueEvents: PatternEvent[] = [];
 
     for (let beat = 0; beat < timeSignature.numerator; beat++) {
@@ -719,10 +763,13 @@ export class PlaybackEngine {
 
     // Disable Tone.Transport.loop to prevent double playback
     if (Tone.Transport.loop) {
-      this.logger.warn('⚠️ Tone.Transport.loop was enabled - disabling to prevent double playback', {
-        loopStart: Tone.Transport.loopStart,
-        loopEnd: Tone.Transport.loopEnd,
-      });
+      this.logger.warn(
+        '⚠️ Tone.Transport.loop was enabled - disabling to prevent double playback',
+        {
+          loopStart: Tone.Transport.loopStart,
+          loopEnd: Tone.Transport.loopEnd,
+        },
+      );
       Tone.Transport.loop = false;
     }
 
@@ -746,13 +793,20 @@ export class PlaybackEngine {
     // Instead of polling with setInterval, subscribe to 'transport:position-updated' events
     // emitted by TransportController from the master Transport clock (requestAnimationFrame)
     const positionUpdateHandler = () => {
-      if (this.isRunning && Tone.Transport.state === 'started' && !this.isInitialScheduling) {
+      if (
+        this.isRunning &&
+        Tone.Transport.state === 'started' &&
+        !this.isInitialScheduling
+      ) {
         this.processCurrentPosition();
       }
     };
 
     // Subscribe to EventBus position updates (returns unsubscribe function)
-    const unsubscribe = this.eventBus.on('transport:position-updated', positionUpdateHandler);
+    const unsubscribe = this.eventBus.on(
+      'transport:position-updated',
+      positionUpdateHandler,
+    );
 
     // Store cleanup function to unsubscribe
     this.positionCallbackCleanup = () => {
@@ -760,9 +814,12 @@ export class PlaybackEngine {
       this.logger.debug('Unsubscribed from Transport position updates');
     };
 
-    this.logger.info('✅ Subscribed to Transport position updates via EventBus (event-driven)', {
-      instanceId: this.instanceId,
-    });
+    this.logger.info(
+      '✅ Subscribed to Transport position updates via EventBus (event-driven)',
+      {
+        instanceId: this.instanceId,
+      },
+    );
 
     // Update state
     this.isRunning = true;
@@ -965,7 +1022,11 @@ export class PlaybackEngine {
       return;
     }
 
-    if (!this.musicalTimeConverter || !this.sustainPedalManager || !this.scheduleCache) {
+    if (
+      !this.musicalTimeConverter ||
+      !this.sustainPedalManager ||
+      !this.scheduleCache
+    ) {
       this.logger.error('Cannot schedule regions: Missing utility modules', {
         hasMusicalTimeConverter: !!this.musicalTimeConverter,
         hasSustainPedalManager: !!this.sustainPedalManager,
@@ -986,7 +1047,9 @@ export class PlaybackEngine {
         // Dependency 7: getInstrumentType
         (track: any) => TrackInstrumentUtils.getInstrumentType(track),
         // Dependency 8: parsePositionToObject
-        this.musicalTimeConverter.parsePositionToObject.bind(this.musicalTimeConverter),
+        this.musicalTimeConverter.parsePositionToObject.bind(
+          this.musicalTimeConverter,
+        ),
         // Dependency 9: parsePosition
         this.musicalTimeConverter.parsePosition.bind(this.musicalTimeConverter),
         // Dependency 10: buildCC64Timeline
@@ -1029,7 +1092,12 @@ export class PlaybackEngine {
    * Backup scheduling for events not scheduled upfront (defense-in-depth)
    */
   private processCurrentPosition(): void {
-    if (!this.isRunning || !this.audioContext || !this.regionScheduler || !this.eventRouter) {
+    if (
+      !this.isRunning ||
+      !this.audioContext ||
+      !this.regionScheduler ||
+      !this.eventRouter
+    ) {
       return;
     }
 
@@ -1230,7 +1298,9 @@ export class PlaybackEngine {
     instrumentName?: string,
   ): void {
     if (!this.audioContext || !destination) {
-      this.logger.warn('Cannot set harmony buffers: audio context or destination not ready');
+      this.logger.warn(
+        'Cannot set harmony buffers: audio context or destination not ready',
+      );
       return;
     }
 
@@ -1243,12 +1313,14 @@ export class PlaybackEngine {
 
     if (isNestedMap) {
       // Nested Map<string, Map<string, AudioBuffer>>
-      (buffers as Map<string, Map<string, AudioBuffer>>).forEach((velocityLayers, noteName) => {
-        velocityLayers.forEach((buffer, layer) => {
-          const key = `${noteName}_${layer}`;
-          flatBuffers[key] = buffer;
-        });
-      });
+      (buffers as Map<string, Map<string, AudioBuffer>>).forEach(
+        (velocityLayers, noteName) => {
+          velocityLayers.forEach((buffer, layer) => {
+            const key = `${noteName}_${layer}`;
+            flatBuffers[key] = buffer;
+          });
+        },
+      );
     } else {
       // Flat Map<string, AudioBuffer> (HarmonyWidget format)
       (buffers as Map<string, AudioBuffer>).forEach((buffer, key) => {
@@ -1277,9 +1349,11 @@ export class PlaybackEngine {
 
       if (isNestedMap) {
         // Already nested, use as-is
-        (buffers as Map<string, Map<string, AudioBuffer>>).forEach((velocityLayers, noteName) => {
-          nestedBuffers.set(noteName, velocityLayers);
-        });
+        (buffers as Map<string, Map<string, AudioBuffer>>).forEach(
+          (velocityLayers, noteName) => {
+            nestedBuffers.set(noteName, velocityLayers);
+          },
+        );
       } else {
         // Flat structure from HarmonyWidget - convert to nested
         (buffers as Map<string, AudioBuffer>).forEach((buffer, key) => {
@@ -1306,7 +1380,11 @@ export class PlaybackEngine {
         });
       }
 
-      const instrument = (instrumentName || 'wurlitzer') as 'grandpiano' | 'wurlitzer' | 'rhodes' | 'nicekeysrhodes';
+      const instrument = (instrumentName || 'wurlitzer') as
+        | 'grandpiano'
+        | 'wurlitzer'
+        | 'rhodes'
+        | 'nicekeysrhodes';
       this.harmonyScheduler.setBuffers(
         nestedBuffers,
         destination,
@@ -1336,7 +1414,9 @@ export class PlaybackEngine {
     destination: AudioNode,
   ): void {
     if (!this.audioContext || !destination) {
-      this.logger.warn('Cannot set metronome buffers: audio context or destination not ready');
+      this.logger.warn(
+        'Cannot set metronome buffers: audio context or destination not ready',
+      );
       return;
     }
 
@@ -1358,9 +1438,14 @@ export class PlaybackEngine {
    * Set voice cue buffers for countdown
    * This configures the VoiceCueScheduler to play "one, two, three, four"
    */
-  setVoiceCueBuffers(buffers: Record<string, AudioBuffer>, destination: AudioNode): void {
+  setVoiceCueBuffers(
+    buffers: Record<string, AudioBuffer>,
+    destination: AudioNode,
+  ): void {
     if (!this.audioContext || !destination) {
-      this.logger.warn('Cannot set voice cue buffers: audio context or destination not ready');
+      this.logger.warn(
+        'Cannot set voice cue buffers: audio context or destination not ready',
+      );
       return;
     }
 

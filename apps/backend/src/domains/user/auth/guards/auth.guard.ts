@@ -1,4 +1,10 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  UnauthorizedException,
+  Inject,
+} from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
 
 import { AuthService } from '../auth.service.js';
@@ -27,8 +33,8 @@ export class AuthGuard implements CanActivate {
     logger.debug('AuthGuard checking request', {
       url: request.url,
       headers: {
-        authorization: request.headers.authorization?.substring(0, 50)
-      }
+        authorization: request.headers.authorization?.substring(0, 50),
+      },
     });
 
     const token = this.extractTokenFromHeader(request);
@@ -40,7 +46,7 @@ export class AuthGuard implements CanActivate {
 
     logger.debug('Token extracted', {
       tokenLength: token.length,
-      tokenPrefix: token.substring(0, 20)
+      tokenPrefix: token.substring(0, 20),
     });
 
     try {

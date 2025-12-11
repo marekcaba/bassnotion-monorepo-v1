@@ -161,9 +161,8 @@ export class SupabaseProviderAdvanced extends SupabaseProvider {
    */
   private async setupVersionManager(): Promise<void> {
     try {
-      const { VersionManager } = await import(
-        '../versioning/VersionManager.js'
-      );
+      const { VersionManager } =
+        await import('../versioning/VersionManager.js');
 
       this.versionManager = new VersionManager({
         strategy: this.advancedConfig.versionStrategy || 'timestamp',
@@ -181,9 +180,8 @@ export class SupabaseProviderAdvanced extends SupabaseProvider {
    */
   private async setupCircuitBreaker(): Promise<void> {
     try {
-      const { CircuitBreaker } = await import(
-        '../resilience/CircuitBreaker.js'
-      );
+      const { CircuitBreaker } =
+        await import('../resilience/CircuitBreaker.js');
 
       this.circuitBreaker = new CircuitBreaker({
         failureThreshold: this.advancedConfig.circuitBreakerThreshold || 5,
@@ -205,9 +203,8 @@ export class SupabaseProviderAdvanced extends SupabaseProvider {
   private async setupBatchProcessor(): Promise<void> {
     try {
       const { BatchProcessor } = await import('../batch/BatchProcessor.js');
-      const { StorageBatchExecutor } = await import(
-        '../batch/executors/StorageBatchExecutor.js'
-      );
+      const { StorageBatchExecutor } =
+        await import('../batch/executors/StorageBatchExecutor.js');
 
       this.batchExecutor = new StorageBatchExecutor(this);
       this.batchProcessor = new BatchProcessor(this.batchExecutor, {

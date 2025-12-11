@@ -30,7 +30,7 @@ function deepClone<T>(obj: T): T {
 
   // Handle Arrays
   if (Array.isArray(obj)) {
-    return obj.map(item => deepClone(item)) as T;
+    return obj.map((item) => deepClone(item)) as T;
   }
 
   // Handle plain objects
@@ -55,7 +55,9 @@ function deepClone<T>(obj: T): T {
     }
     return cloned;
   } catch (error) {
-    logger.warn('Failed to deep clone object, falling back to shallow copy', { error });
+    logger.warn('Failed to deep clone object, falling back to shallow copy', {
+      error,
+    });
     return { ...obj } as T;
   }
 }
@@ -114,12 +116,12 @@ export class TrackStateContainer implements ITrackStateContainer {
   updateState(updates: Partial<Track>, description: string): void {
     // Capture previous state for event emission using deep clone
     const previousState = deepClone(this.track);
-    
+
     // Convert track updates to state updates
     const stateUpdates = this.convertTrackToState(updates);
     this.trackState.updateState(stateUpdates, description);
     this.syncHistory();
-    
+
     // Emit state update event if EventBus is available
     if (this.eventBus) {
       const changedProperties = Object.keys(updates);
@@ -147,7 +149,7 @@ export class TrackStateContainer implements ITrackStateContainer {
     const result = this.trackState.undo();
     if (result) {
       this.syncHistory();
-      
+
       // Emit undo event if EventBus is available
       if (this.eventBus && this.history[this.historyIndex]) {
         this.eventBus.emit('track:undone', {
@@ -166,7 +168,7 @@ export class TrackStateContainer implements ITrackStateContainer {
     const result = this.trackState.redo();
     if (result) {
       this.syncHistory();
-      
+
       // Emit redo event if EventBus is available
       if (this.eventBus && this.history[this.historyIndex]) {
         this.eventBus.emit('track:redone', {
@@ -294,13 +296,16 @@ export class TrackStateContainer implements ITrackStateContainer {
     if (state.color !== undefined) this.track.color = state.color;
     if (state.index !== undefined) this.track.index = state.index;
     if (state.lifecycle !== undefined) this.track.state = state.lifecycle;
-    if (state.musical !== undefined) this.track.musical = deepClone(state.musical);
+    if (state.musical !== undefined)
+      this.track.musical = deepClone(state.musical);
     if (state.mixing !== undefined) this.track.mixing = deepClone(state.mixing);
-    if (state.routing !== undefined) this.track.routing = deepClone(state.routing);
+    if (state.routing !== undefined)
+      this.track.routing = deepClone(state.routing);
     if (state.sync !== undefined) this.track.sync = deepClone(state.sync);
     if (state.automation !== undefined)
       this.track.automation = deepClone(state.automation);
-    if (state.metadata !== undefined) this.track.metadata = deepClone(state.metadata);
+    if (state.metadata !== undefined)
+      this.track.metadata = deepClone(state.metadata);
   }
 
   /**

@@ -23,7 +23,12 @@ import { RequestContextService } from '../../shared/services/request-context.ser
 
 @Module({
   imports: [AuthModule], // SupabaseModule and CacheModule are now global
-  controllers: [ExercisesController, AdminExercisesController, UserBasslinesController, MidiController],
+  controllers: [
+    ExercisesController,
+    AdminExercisesController,
+    UserBasslinesController,
+    MidiController,
+  ],
   providers: [
     ExercisesService,
     AdminExercisesService,
@@ -36,10 +41,17 @@ import { RequestContextService } from '../../shared/services/request-context.ser
     // Base repository
     {
       provide: ExerciseRepository,
-      useFactory: (supabaseService: SupabaseService, requestContext: RequestContextService) => {
-        return new ExerciseRepository(supabaseService.getClient(), requestContext);
+      useFactory: (
+        supabaseService: SupabaseService,
+        requestContext: RequestContextService,
+      ) => {
+        return new ExerciseRepository(
+          supabaseService.getClient(),
+          requestContext,
+        );
       },
-      inject: [SupabaseService, RequestContextService] },
+      inject: [SupabaseService, RequestContextService],
+    },
     // Cached repository (wraps base repository)
     {
       provide: CachedExerciseRepository,
@@ -49,7 +61,8 @@ import { RequestContextService } from '../../shared/services/request-context.ser
       ) => {
         return new CachedExerciseRepository(repository, cacheService);
       },
-      inject: [ExerciseRepository, CacheService] },
+      inject: [ExerciseRepository, CacheService],
+    },
     // Result repository (wraps cached repository)
     {
       provide: 'IResultExerciseRepository',
@@ -65,9 +78,11 @@ import { RequestContextService } from '../../shared/services/request-context.ser
           requestContext,
         );
       },
-      inject: [CachedExerciseRepository, ConfigService, RequestContextService] },
+      inject: [CachedExerciseRepository, ConfigService, RequestContextService],
+    },
   ],
-  exports: [ExercisesService, UserBasslinesService] })
+  exports: [ExercisesService, UserBasslinesService],
+})
 export class ExercisesModule {
   private readonly staticLogger = createStructuredLogger(ExercisesModule.name);
 

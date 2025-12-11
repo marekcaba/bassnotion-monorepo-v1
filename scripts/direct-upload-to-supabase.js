@@ -105,16 +105,16 @@ async function uploadKeyboardSamples(keyboardId, keyboardDir) {
     await fs.access(metadataPath);
     const metadataContent = await fs.readFile(metadataPath, 'utf8');
     const metadata = JSON.parse(metadataContent);
-    
+
     // Add CDN URLs to metadata
     metadata.cdnBase = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET_NAME}/keyboards/${keyboardId}`;
     metadata.uploadedAt = new Date().toISOString();
-    
+
     const metadataBuffer = Buffer.from(JSON.stringify(metadata, null, 2));
     await uploadFile(
       metadataPath,
       `keyboards/${keyboardId}/metadata.json`,
-      'application/json'
+      'application/json',
     );
   } catch {
     console.log('ℹ️  No metadata file found');
@@ -138,7 +138,7 @@ async function main() {
     const { data, error } = await supabase.storage
       .from(BUCKET_NAME)
       .list('keyboards/', { limit: 1 });
-      
+
     if (error) {
       console.warn('⚠️  List operation failed:', error.message);
       console.log('📝 Proceeding with upload anyway...');
@@ -177,13 +177,13 @@ async function main() {
   for (const keyboardId of validKeyboards) {
     const keyboardDir = path.join(SAMPLES_DIR, keyboardId);
     const result = await uploadKeyboardSamples(keyboardId, keyboardDir);
-    
+
     if (result.success) {
       totalUploaded += result.uploaded;
       results.push({
         keyboard: keyboardId,
         uploaded: result.uploaded,
-        url: `${SUPABASE_URL}/storage/v1/object/public/${BUCKET_NAME}/keyboards/${keyboardId}/`
+        url: `${SUPABASE_URL}/storage/v1/object/public/${BUCKET_NAME}/keyboards/${keyboardId}/`,
       });
     }
   }
@@ -191,45 +191,47 @@ async function main() {
   // Create master index
   if (totalUploaded > 0) {
     console.log('\n📋 Creating master index...');
-    
+
     const masterIndex = {
       version: '1.0.0',
       generatedAt: new Date().toISOString(),
       description: 'Professional keyboard instruments for BassNotion',
-      keyboards: results.map(r => ({
+      keyboards: results.map((r) => ({
         id: r.keyboard,
         url: r.url,
-        sampleCount: r.uploaded
+        sampleCount: r.uploaded,
       })),
-      totalSamples: totalUploaded
+      totalSamples: totalUploaded,
     };
-    
+
     const indexBuffer = Buffer.from(JSON.stringify(masterIndex, null, 2));
     await uploadFile(
       Buffer.from(JSON.stringify(masterIndex, null, 2)),
       'metadata/keyboard-instruments.json',
-      'application/json'
+      'application/json',
     );
   }
 
   console.log(`\n📊 Upload Summary:`);
   console.log(`✅ Total samples uploaded: ${totalUploaded}`);
-  
+
   if (results.length > 0) {
     console.log('\n🌐 CDN URLs:');
-    results.forEach(r => {
+    results.forEach((r) => {
       console.log(`• ${r.keyboard}: ${r.url}`);
     });
-    
+
     console.log(`\n🎯 Next Steps:`);
     console.log(`1. Visit: http://localhost:3001/test-harmony`);
     console.log(`2. Click Play to test professional samples`);
-    console.log(`3. Check console for: "Loading professional samples from Supabase"`);
-    
+    console.log(
+      `3. Check console for: "Loading professional samples from Supabase"`,
+    );
+
     console.log('\n📋 Sample URLs for testing:');
     console.log(`${results[0].url}C4.mp3`);
   }
-  
+
   console.log('\n🎹 Upload complete!');
 }
 

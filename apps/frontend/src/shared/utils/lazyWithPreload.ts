@@ -7,8 +7,9 @@
 
 import { lazy, ComponentType, LazyExoticComponent } from 'react';
 
-export interface PreloadableComponent<T extends ComponentType<any>>
-  extends LazyExoticComponent<T> {
+export interface PreloadableComponent<
+  T extends ComponentType<any>,
+> extends LazyExoticComponent<T> {
   preload: () => Promise<void>;
 }
 

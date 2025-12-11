@@ -1,6 +1,6 @@
 /**
  * CDN Service Implementation
- * 
+ *
  * Provides generic CDN functionality for all domains
  */
 
@@ -75,7 +75,9 @@ export class CDNService implements ICDNService {
     try {
       // Initialize edge locations
       if (this.config.edgeConfiguration?.locations) {
-        await this.edgeManager.initialize(this.config.edgeConfiguration.locations);
+        await this.edgeManager.initialize(
+          this.config.edgeConfiguration.locations,
+        );
       }
 
       this.isInitialized = true;
@@ -92,7 +94,7 @@ export class CDNService implements ICDNService {
    * Get optimal CDN endpoint for a resource
    */
   async getOptimalEndpoint(
-    resourcePath: string, 
+    resourcePath: string,
     userLocation?: GeolocationCoordinates,
   ): Promise<string> {
     if (!this.isInitialized) {
@@ -100,7 +102,7 @@ export class CDNService implements ICDNService {
     }
 
     const optimalEdge = this.edgeManager.getOptimalLocation(userLocation);
-    
+
     if (!optimalEdge) {
       // Fallback to primary CDN URL
       return this.buildCDNUrl(this.config.primaryCdnUrl, resourcePath);
@@ -117,11 +119,13 @@ export class CDNService implements ICDNService {
    */
   private buildCDNUrl(baseUrl: string, resourcePath: string): string {
     // Remove leading slash from resource path
-    const cleanPath = resourcePath.startsWith('/') ? resourcePath.slice(1) : resourcePath;
-    
+    const cleanPath = resourcePath.startsWith('/')
+      ? resourcePath.slice(1)
+      : resourcePath;
+
     // Ensure base URL doesn't end with slash
     const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-    
+
     return `${cleanBase}/${cleanPath}`;
   }
 
@@ -187,12 +191,15 @@ export class CDNService implements ICDNService {
   /**
    * Warm up a single resource on an edge
    */
-  private async warmupResource(edge: EdgeLocation, resource: string): Promise<void> {
+  private async warmupResource(
+    edge: EdgeLocation,
+    resource: string,
+  ): Promise<void> {
     const url = this.buildCDNUrl(edge.url, resource);
-    
+
     try {
       const response = await fetch(url, { method: 'HEAD' });
-      
+
       if (response.ok) {
         this.metrics.requestsSuccessful++;
       } else {
@@ -200,7 +207,11 @@ export class CDNService implements ICDNService {
       }
     } catch (error) {
       this.metrics.requestsFailed++;
-      logger.warn('Failed to warm up resource', { edge: edge.id, resource, error });
+      logger.warn('Failed to warm up resource', {
+        edge: edge.id,
+        resource,
+        error,
+      });
     }
   }
 
@@ -235,14 +246,21 @@ export class CDNService implements ICDNService {
   /**
    * Update health status
    */
-  updateHealthStatus(componentId: string, status: 'healthy' | 'degraded' | 'unhealthy'): void {
+  updateHealthStatus(
+    componentId: string,
+    status: 'healthy' | 'degraded' | 'unhealthy',
+  ): void {
     if (componentId in this.healthStatus.components) {
-      this.healthStatus.components[componentId as keyof typeof this.healthStatus.components].status = status;
+      this.healthStatus.components[
+        componentId as keyof typeof this.healthStatus.components
+      ].status = status;
     }
 
     // Update overall health based on component health
-    const statuses = Object.values(this.healthStatus.components).map((c) => c.status);
-    
+    const statuses = Object.values(this.healthStatus.components).map(
+      (c) => c.status,
+    );
+
     if (statuses.some((s) => s === 'unhealthy')) {
       this.healthStatus.overallHealth = 'unhealthy';
     } else if (statuses.some((s) => s === 'degraded')) {

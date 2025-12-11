@@ -3,41 +3,47 @@
 
 async function testWidgetAudio() {
   console.log('🎵 Testing Widget Audio Production...');
-  
+
   // Wait for page to load
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  
+  await new Promise((resolve) => setTimeout(resolve, 2000));
+
   // Check if CoreServices is available
   const coreServices = window.__coreServices;
   if (!coreServices) {
     console.error('❌ CoreServices not available');
     return;
   }
-  
+
   // Get transport controller
   const transportController = coreServices.getTransportController();
   const audioEngine = coreServices.getAudioEngine();
-  
+
   console.log('📊 AudioContext state:', audioEngine.getContext()?.state);
   console.log('🎹 Tone.js state:', audioEngine.getTone().Transport.state);
-  
+
   // Start transport
   console.log('▶️ Starting transport...');
   await transportController.start();
-  
+
   // Wait a bit
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
   // Check transport state
   console.log('🔍 Transport state:', transportController.getState());
-  console.log('🔍 Tone.Transport.state:', audioEngine.getTone().Transport.state);
-  console.log('🔍 Transport position:', audioEngine.getTone().Transport.position);
+  console.log(
+    '🔍 Tone.Transport.state:',
+    audioEngine.getTone().Transport.state,
+  );
+  console.log(
+    '🔍 Transport position:',
+    audioEngine.getTone().Transport.position,
+  );
   console.log('🔍 Transport seconds:', audioEngine.getTone().Transport.seconds);
-  
+
   // Check if any loops are scheduled
   const tone = audioEngine.getTone();
   console.log('🔍 Transport events:', tone.Transport._timeline._events);
-  
+
   // Stop after 5 seconds
   setTimeout(async () => {
     console.log('⏹️ Stopping transport...');

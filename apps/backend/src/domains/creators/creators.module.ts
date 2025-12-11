@@ -18,10 +18,17 @@ import { RequestContextService } from '../../shared/services/request-context.ser
     // Base repository
     {
       provide: CreatorRepository,
-      useFactory: (supabaseService: SupabaseService, requestContext: RequestContextService) => {
-        return new CreatorRepository(supabaseService.getClient(), requestContext);
+      useFactory: (
+        supabaseService: SupabaseService,
+        requestContext: RequestContextService,
+      ) => {
+        return new CreatorRepository(
+          supabaseService.getClient(),
+          requestContext,
+        );
       },
-      inject: [SupabaseService, RequestContextService] },
+      inject: [SupabaseService, RequestContextService],
+    },
     // Cached repository (wraps base repository)
     {
       provide: CachedCreatorRepository,
@@ -31,7 +38,8 @@ import { RequestContextService } from '../../shared/services/request-context.ser
       ) => {
         return new CachedCreatorRepository(repository, cacheService);
       },
-      inject: [CreatorRepository, CacheService] },
+      inject: [CreatorRepository, CacheService],
+    },
     // Result repository (wraps cached repository)
     {
       provide: 'IResultCreatorRepository',
@@ -47,7 +55,9 @@ import { RequestContextService } from '../../shared/services/request-context.ser
           requestContext,
         );
       },
-      inject: [CachedCreatorRepository, ConfigService, RequestContextService] },
+      inject: [CachedCreatorRepository, ConfigService, RequestContextService],
+    },
   ],
-  exports: [CreatorsService] })
+  exports: [CreatorsService],
+})
 export class CreatorsModule {}

@@ -97,7 +97,7 @@ export const BassArticulationSchema = z.object({
     'slide-up',
     'slide-down',
     'bend',
-    'trill'
+    'trill',
   ]),
 
   /** Source note for transitions (e.g., "E2" in E2→F#2 hammer-on) */
@@ -148,35 +148,36 @@ export class BassMapperService {
     anchors: MeasureAnchor[],
     articulationMatrix: ArticulationMatrixEntry[],
     bassType: '4' | '5' | '6' = '4',
-    correlationId?: string
+    correlationId?: string,
   ): Promise<{
     notes: GeneratedBassNote[];
     playability: PlayabilityMetrics;
   }> {
     // 1. Convert to fretboard positions (using existing algorithm)
-    const fretboardResult = await this.fretboardMapperService.convertMidiToFretboard(
-      measures,
-      anchors,
-      bassType,
-      correlationId
-    );
+    const fretboardResult =
+      await this.fretboardMapperService.convertMidiToFretboard(
+        measures,
+        anchors,
+        bassType,
+        correlationId,
+      );
 
     // 2. Enrich with articulation metadata from admin's matrix
     const bassNotes = fretboardResult.notes.map((note, index) => {
       const articulationEntry = articulationMatrix.find(
-        entry => entry.noteIndex === index || entry.noteId === note.id
+        (entry) => entry.noteIndex === index || entry.noteId === note.id,
       );
 
       return {
         ...note,
         technique: articulationEntry?.technique || 'normal',
-        articulation: articulationEntry?.articulation || { type: 'normal' }
+        articulation: articulationEntry?.articulation || { type: 'normal' },
       };
     });
 
     return {
       notes: bassNotes,
-      playability: fretboardResult.playability
+      playability: fretboardResult.playability,
     };
   }
 
@@ -184,9 +185,7 @@ export class BassMapperService {
    * Auto-suggest articulations based on MIDI patterns
    * (Optional helper - admin can accept/reject suggestions)
    */
-  suggestArticulations(
-    measures: ParsedMeasure[]
-  ): ArticulationSuggestion[] {
+  suggestArticulations(measures: ParsedMeasure[]): ArticulationSuggestion[] {
     const suggestions: ArticulationSuggestion[] = [];
 
     for (const measure of measures) {
@@ -201,7 +200,7 @@ export class BassMapperService {
             measureNumber: measure.measureNumber,
             suggestion: { type: 'ghost-note' },
             confidence: 0.9,
-            reason: `Low velocity (${current.velocity}) indicates ghost note`
+            reason: `Low velocity (${current.velocity}) indicates ghost note`,
           });
         }
 
@@ -211,17 +210,18 @@ export class BassMapperService {
           const interval = Math.abs(current.pitch - previous.pitch);
 
           if (overlap > 0 && interval <= 4) {
-            const type = current.pitch > previous.pitch ? 'hammer-on' : 'pull-off';
+            const type =
+              current.pitch > previous.pitch ? 'hammer-on' : 'pull-off';
             suggestions.push({
               noteIndex: i,
               measureNumber: measure.measureNumber,
               suggestion: {
                 type,
                 fromNote: previous.name,
-                transitionOffset: 0.125 // 16th note
+                transitionOffset: 0.125, // 16th note
               },
               confidence: 0.7,
-              reason: `Overlapping notes with ${interval} semitone interval`
+              reason: `Overlapping notes with ${interval} semitone interval`,
             });
           }
         }
@@ -447,12 +447,14 @@ export function BassExerciseUploadPage() {
 The primary interface following the WurlitzerVelocitySampler pattern.
 
 **Responsibilities:**
+
 - Load and manage bass sample library from JSON config
 - Coordinate between technique manager, articulation engine, and noise engine
 - Provide high-level playback API
 - Handle sustain pedal (CC64) and expression controls
 
 **Key Methods:**
+
 ```typescript
 async initialize(requiredNotes?: string[], techniques?: string[]): Promise<void>
 async triggerAttackRelease(note: string, duration: any, time?: any, velocity?: number): Promise<void>
@@ -470,6 +472,7 @@ setTechnique(technique: 'normal' | 'slap' | 'muted'): void
 Reads articulation metadata from saved bass notes and renders appropriate transitions.
 
 **Responsibilities:**
+
 - Read `articulation` metadata from `GeneratedBassNote`
 - Trigger appropriate sample combinations for each articulation type
 - Handle crossfading between notes for transitions (hammer-ons, slides, etc.)
@@ -486,7 +489,7 @@ class ArticulationPlaybackEngine {
    */
   async playNoteWithArticulation(
     bassNote: GeneratedBassNote,
-    time: number
+    time: number,
   ): Promise<void> {
     const articulation = bassNote.articulation;
 
@@ -513,7 +516,7 @@ class ArticulationPlaybackEngine {
             articulation.fromNote,
             bassNote.note,
             time,
-            bassNote.technique
+            bassNote.technique,
           );
         }
         break;
@@ -522,7 +525,7 @@ class ArticulationPlaybackEngine {
         // Play with boosted velocity
         await this.playStandardNote(
           { ...bassNote, velocity: Math.min(bassNote.velocity * 1.3, 127) },
-          time
+          time,
         );
         break;
     }
@@ -530,12 +533,12 @@ class ArticulationPlaybackEngine {
 
   private async playStandardNote(
     note: GeneratedBassNote,
-    time: number
+    time: number,
   ): Promise<void> {
     const { sampler } = this.techniqueManager.getNextSample(
       note.note,
       note.technique,
-      note.velocity
+      note.velocity,
     );
 
     sampler.triggerAttackRelease(note.note, '4n', time, note.velocity / 127);
@@ -546,7 +549,7 @@ class ArticulationPlaybackEngine {
     fromNote: string,
     toNote: string,
     time: number,
-    technique: string
+    technique: string,
   ): Promise<void> {
     // See ArticulationEngine implementation below for crossfade logic
     // This delegates to the crossfading algorithm
@@ -559,12 +562,14 @@ class ArticulationPlaybackEngine {
 Manages multi-technique sample loading with round-robin variation and velocity layer selection.
 
 **Features:**
+
 - **3 Techniques**: normal (fingerstyle), slap, muted
 - **5 Velocity Layers per technique**: v1 (pp), v2 (p), v3 (mp), v4 (mf), v5 (f)
 - **3 Round-Robin variations per note**: RR1, RR2, RR3
 - **String-specific samples**: Organized by E, A, D, G strings
 
 **Sample Organization:**
+
 ```
 bass-samples/
 ├── normal/                    # Standard fingerstyle notes
@@ -607,12 +612,14 @@ bass-samples/
 ```
 
 **Sample Count Estimation:**
+
 - **Core notes**: 24 notes × 3 techniques × 5 layers × 3 RR = **1,080 samples**
 - **Articulations**: ~1,600 pre-recorded transitions
 - **Noises**: ~15 one-shot samples (ghost, slap, pop, fret noise)
 - **Total**: ~**2,695 samples**
 
 **Implementation:**
+
 ```typescript
 class BassTechniqueManager {
   private samplers: Map<string, Tone.Sampler> = new Map();
@@ -621,16 +628,16 @@ class BassTechniqueManager {
 
   // Velocity ranges for 5 layers
   private readonly VELOCITY_RANGES = [
-    { min: 0,   max: 25,  layer: 'v1' },  // pp
-    { min: 26,  max: 51,  layer: 'v2' },  // p
-    { min: 52,  max: 76,  layer: 'v3' },  // mp
-    { min: 77,  max: 102, layer: 'v4' },  // mf
-    { min: 103, max: 127, layer: 'v5' }   // f
+    { min: 0, max: 25, layer: 'v1' }, // pp
+    { min: 26, max: 51, layer: 'v2' }, // p
+    { min: 52, max: 76, layer: 'v3' }, // mp
+    { min: 77, max: 102, layer: 'v4' }, // mf
+    { min: 103, max: 127, layer: 'v5' }, // f
   ];
 
   async loadTechnique(
     technique: 'normal' | 'slap' | 'muted',
-    layers: string[] = ['v1', 'v3', 'v5']
+    layers: string[] = ['v1', 'v3', 'v5'],
   ): Promise<void> {
     for (const layer of layers) {
       const samplerKey = `${technique}-${layer}`;
@@ -639,7 +646,7 @@ class BassTechniqueManager {
       const sampler = new Tone.Sampler({
         urls: sampleUrls,
         release: 0.2,
-        attack: 0.01
+        attack: 0.01,
       });
 
       this.samplers.set(samplerKey, sampler);
@@ -649,7 +656,7 @@ class BassTechniqueManager {
   getNextSample(
     note: string,
     technique: string,
-    velocity: number
+    velocity: number,
   ): { sampler: Tone.Sampler; roundRobin: number } {
     // 1. Determine velocity layer
     const layer = this.getVelocityLayer(velocity);
@@ -672,14 +679,14 @@ class BassTechniqueManager {
 
   private getVelocityLayer(velocity: number): string {
     const range = this.VELOCITY_RANGES.find(
-      r => velocity >= r.min && velocity <= r.max
+      (r) => velocity >= r.min && velocity <= r.max,
     );
     return range?.layer || 'v3';
   }
 
   private async buildSampleMapping(
     technique: string,
-    layer: string
+    layer: string,
   ): Promise<Record<string, string>> {
     const mapping: Record<string, string> = {};
     const strings = ['E', 'A', 'D', 'G'];
@@ -689,7 +696,7 @@ class BassTechniqueManager {
       { string: 'E', notes: ['E1', 'F1', 'Fs1', 'G1', 'Gs1', 'A1'] },
       { string: 'A', notes: ['A1', 'As1', 'B1', 'C2', 'Cs2', 'D2'] },
       { string: 'D', notes: ['D2', 'Ds2', 'E2', 'F2', 'Fs2', 'G2'] },
-      { string: 'G', notes: ['G2', 'Gs2', 'A2', 'As2', 'B2', 'C3'] }
+      { string: 'G', notes: ['G2', 'Gs2', 'A2', 'As2', 'B2', 'C3'] },
     ];
 
     for (const config of stringConfigs) {
@@ -716,6 +723,7 @@ class BassTechniqueManager {
 **CRITICAL TIMING RULE**: Since pre-recorded articulation samples CONTAIN the source note (e.g., E2→F#2 sample has both E2 and the transition to F#2), the sample MUST be scheduled at the **source note's time**, NOT the target note's time.
 
 **Sample Structure Example (Hammer-On E2→F#2):**
+
 ```
 Time:     0-125ms       125-175ms       175-300ms
 Content:  [E2 Attack]   [Transition]    [F#2 Sustain]
@@ -724,19 +732,21 @@ Recording: Play E2 normally → After 16th note, hammer finger onto F# fret → 
 ```
 
 **Responsibilities:**
+
 - Load pre-recorded articulation samples (hammer-on, pull-off, slide transitions)
 - Schedule articulation samples at **source note's time** (not target note's time)
 - Optionally blend articulation samples with sustained notes for long durations
 - Implement fallback hierarchy for missing samples (exact → interval match → pitch shift)
 
 **Implementation:**
+
 ```typescript
 class ArticulationEngine {
   private articulationBuffers: Map<string, AudioBuffer> = new Map();
   private articulationTimings = {
-    'hammer-on': { offset: 0.125 },  // Start 16th note before target
+    'hammer-on': { offset: 0.125 }, // Start 16th note before target
     'pull-off': { offset: 0.125 },
-    'slide-up': { offset: 0.25 },    // Start 8th note before target
+    'slide-up': { offset: 0.25 }, // Start 8th note before target
     'slide-down': { offset: 0.25 },
   };
 
@@ -768,17 +778,19 @@ class ArticulationEngine {
     type: 'hammer-on' | 'pull-off' | 'slide-up' | 'slide-down',
     fromNote: string,
     toNote: string,
-    sourceNoteTime: number,  // When the SOURCE note starts (e.g., E2 time in E2→F#2)
+    sourceNoteTime: number, // When the SOURCE note starts (e.g., E2 time in E2→F#2)
     velocity: number,
-    totalDuration: number,   // Total duration from source to end of target
-    secondsPerBeat: number
+    totalDuration: number, // Total duration from source to end of target
+    secondsPerBeat: number,
   ): Promise<void> {
     // 1. Get pre-recorded articulation sample
     const sampleKey = this.getArticulationKey(fromNote, toNote);
     const buffer = this.articulationBuffers.get(`${type}-${sampleKey}`);
 
     if (!buffer) {
-      console.warn(`Articulation sample not found: ${type} ${fromNote}→${toNote}`);
+      console.warn(
+        `Articulation sample not found: ${type} ${fromNote}→${toNote}`,
+      );
       // Fallback: play notes separately
       await this.playNoteSeparately(fromNote, toNote, sourceNoteTime, velocity);
       return;
@@ -788,7 +800,7 @@ class ArticulationEngine {
     // Sample contains: [fromNote attack] → [transition] → [toNote sustain]
     const player = new Tone.Player(buffer).toDestination();
     player.volume.value = Tone.gainToDb(velocity / 127);
-    player.start(sourceNoteTime);  // ← Starts at SOURCE note time
+    player.start(sourceNoteTime); // ← Starts at SOURCE note time
 
     // 3. Calculate if we need to add sustain after articulation
     const articulationDuration = buffer.duration;
@@ -801,9 +813,9 @@ class ArticulationEngine {
       // Play sustained target note with slight overlap for smooth blend
       await this.blendToSustainedNote(
         toNote,
-        sustainStartTime - 0.02,  // Start 20ms before for crossfade
+        sustainStartTime - 0.02, // Start 20ms before for crossfade
         sustainDuration + 0.02,
-        velocity
+        velocity,
       );
     }
 
@@ -818,16 +830,24 @@ class ArticulationEngine {
     fromNote: string,
     toNote: string,
     startTime: number,
-    velocity: number
+    velocity: number,
   ): Promise<void> {
     // Play first note briefly
-    const fromPlayer = this.techniqueManager.getNextSample(fromNote, 'normal', velocity);
+    const fromPlayer = this.techniqueManager.getNextSample(
+      fromNote,
+      'normal',
+      velocity,
+    );
     fromPlayer.start(startTime);
     fromPlayer.stop(startTime + 0.125); // Brief duration
     fromPlayer.volume.value = Tone.gainToDb(velocity / 127);
 
     // Play second note
-    const toPlayer = this.techniqueManager.getNextSample(toNote, 'normal', velocity);
+    const toPlayer = this.techniqueManager.getNextSample(
+      toNote,
+      'normal',
+      velocity,
+    );
     toPlayer.start(startTime + 0.125);
     toPlayer.volume.value = Tone.gainToDb(velocity / 127);
   }
@@ -839,22 +859,17 @@ class ArticulationEngine {
     note: string,
     startTime: number,
     duration: number,
-    velocity: number
+    velocity: number,
   ): Promise<void> {
     // Get regular note sampler
     const { sampler } = this.techniqueManager.getNextSample(
       note,
       'normal',
-      velocity
+      velocity,
     );
 
     // Trigger with slight fade-in for smooth blend
-    sampler.triggerAttackRelease(
-      note,
-      duration,
-      startTime,
-      velocity / 127
-    );
+    sampler.triggerAttackRelease(note, duration, startTime, velocity / 127);
   }
 
   /**
@@ -873,7 +888,7 @@ class ArticulationEngine {
   private getArticulationPath(
     type: string,
     fromNote: string,
-    toNote: string
+    toNote: string,
   ): string {
     const key = this.getArticulationKey(fromNote, toNote);
     return `articulations/${type}/${key}.mp3`;
@@ -886,16 +901,16 @@ class ArticulationEngine {
   }
 
   private getArticulationTiming(articulation: ArticulationType): {
-    offset: number;      // When to start transition
-    crossfade: number;   // Crossfade duration
+    offset: number; // When to start transition
+    crossfade: number; // Crossfade duration
   } {
     const timings = {
-      'hammer-on':  { offset: 0.125, crossfade: 0.05 },  // 16th note
-      'pull-off':   { offset: 0.125, crossfade: 0.05 },
-      'slide-up':   { offset: 0.25,  crossfade: 0.1  },  // 8th note
-      'slide-down': { offset: 0.25,  crossfade: 0.1  },
-      'bend':       { offset: 0.0,   crossfade: 0.15 },
-      'legato':     { offset: 0.0,   crossfade: 0.03 }
+      'hammer-on': { offset: 0.125, crossfade: 0.05 }, // 16th note
+      'pull-off': { offset: 0.125, crossfade: 0.05 },
+      'slide-up': { offset: 0.25, crossfade: 0.1 }, // 8th note
+      'slide-down': { offset: 0.25, crossfade: 0.1 },
+      bend: { offset: 0.0, crossfade: 0.15 },
+      legato: { offset: 0.0, crossfade: 0.03 },
     };
 
     return timings[articulation] || { offset: 0, crossfade: 0.05 };
@@ -905,7 +920,7 @@ class ArticulationEngine {
     sampler: Tone.Sampler,
     note: string,
     time: number,
-    attackTime: number = 0
+    attackTime: number = 0,
   ): void {
     // Create a custom envelope with no attack for legato
     const source = sampler.context.createBufferSource();
@@ -926,6 +941,7 @@ class ArticulationEngine {
 Manages one-shot noise samples (ghost notes, slap/pop noises, fret noises).
 
 **Implementation:**
+
 ```typescript
 class BassNoiseEngine {
   private noiseBuffers: Map<string, AudioBuffer[]> = new Map();
@@ -938,7 +954,7 @@ class BassNoiseEngine {
       'pop-noise',
       'fret-noise',
       'release-noise',
-      'string-buzz'
+      'string-buzz',
     ];
 
     for (const type of noiseTypes) {
@@ -947,11 +963,7 @@ class BassNoiseEngine {
     }
   }
 
-  triggerNoise(
-    type: string,
-    velocity: number,
-    time?: number
-  ): void {
+  triggerNoise(type: string, velocity: number, time?: number): void {
     const buffers = this.noiseBuffers.get(type);
     if (!buffers || buffers.length === 0) return;
 
@@ -972,7 +984,7 @@ class BassNoiseEngine {
     articulation: ArticulationType,
     technique: 'normal' | 'slap' | 'muted',
     velocity: number,
-    time?: number
+    time?: number,
   ): void {
     // Slap technique always has slap/pop noise
     if (technique === 'slap') {
@@ -1056,10 +1068,10 @@ class BassNoiseEngine {
     }
   },
   "velocityRanges": [
-    { "min": 0,   "max": 25,  "layer": "v1", "dynamic": "pp" },
-    { "min": 26,  "max": 51,  "layer": "v2", "dynamic": "p" },
-    { "min": 52,  "max": 76,  "layer": "v3", "dynamic": "mp" },
-    { "min": 77,  "max": 102, "layer": "v4", "dynamic": "mf" },
+    { "min": 0, "max": 25, "layer": "v1", "dynamic": "pp" },
+    { "min": 26, "max": 51, "layer": "v2", "dynamic": "p" },
+    { "min": 52, "max": 76, "layer": "v3", "dynamic": "mp" },
+    { "min": 77, "max": 102, "layer": "v4", "dynamic": "mf" },
     { "min": 103, "max": 127, "layer": "v5", "dynamic": "f" }
   ],
   "articulations": {
@@ -1129,6 +1141,7 @@ class BassNoiseEngine {
 ## Usage Examples
 
 ### Example 1: Simple Note Playback
+
 ```typescript
 const bass = new BassVelocitySampler();
 await bass.initialize();
@@ -1138,6 +1151,7 @@ bass.triggerAttackRelease('E2', '4n', Tone.now(), 80);
 ```
 
 ### Example 2: Slap Technique
+
 ```typescript
 // Switch to slap technique
 bass.setTechnique('slap');
@@ -1146,6 +1160,7 @@ bass.triggerAttackRelease('E2', '8n', Tone.now(), 100);
 ```
 
 ### Example 3: Hammer-On Articulation
+
 ```typescript
 const event: BassPlaybackEvent = {
   note: 'E2',
@@ -1154,7 +1169,7 @@ const event: BassPlaybackEvent = {
   articulation: 'hammer-on',
   fromNote: 'E2',
   toNote: 'F#2',
-  time: Tone.now()
+  time: Tone.now(),
 };
 
 bass.triggerWithArticulation(event);
@@ -1162,12 +1177,13 @@ bass.triggerWithArticulation(event);
 ```
 
 ### Example 4: MIDI Sequence with Auto-Detection
+
 ```typescript
 const notes = [
   { note: 'E2', time: 0, duration: 0.5, velocity: 80 },
   { note: 'F#2', time: 0.125, duration: 0.375, velocity: 70 }, // Overlaps - hammer-on detected
   { note: 'G2', time: 0.5, duration: 0.5, velocity: 85 },
-  { note: 'D2', time: 1.0, duration: 0.3, velocity: 30 }  // Low velocity - ghost note
+  { note: 'D2', time: 1.0, duration: 0.3, velocity: 30 }, // Low velocity - ghost note
 ];
 
 for (const note of notes) {
@@ -1364,6 +1380,7 @@ Note #4: G2 slap at tick 480
 ```
 
 **Key Insight**: When processing Note #2 (F#2 with hammer-on from E2), we must:
+
 1. Find the previous note (E2) to get its time
 2. Schedule the articulation sample at E2's time (0.0s), NOT F#2's time (0.0625s)
 3. Mark E2 as "already scheduled" to avoid double-scheduling
@@ -1423,12 +1440,14 @@ Note #4: G2 slap at tick 480
 ### 📊 Sample Library Size
 
 **Practical Starting Library:**
+
 - Core notes: 1,080 samples (24 notes × 3 techniques × 5 layers × 3 RR)
 - Articulations: ~400 samples (common intervals 1-4 semitones)
 - Noises: ~17 samples (ghost, slap, pop, fret noise, etc.)
 - **Total: ~1,497 samples** (~150-200 MB)
 
 **Future Full Library:**
+
 - Articulations: ~1,600 samples (all intervals up to octave)
 - **Total: ~2,697 samples** (~275 MB)
 
@@ -1462,6 +1481,7 @@ Note #4: G2 slap at tick 480
 ### ⚠️ Critical Pitfalls to Avoid
 
 #### 1. **Phase Cancellation in Crossfades**
+
 ```typescript
 // ❌ WRONG: Linear crossfade causes phase cancellation
 const fadeOut = 1 - progress;
@@ -1471,9 +1491,11 @@ const fadeIn = progress;
 const fadeOut = Math.cos(progress * Math.PI * 0.5);
 const fadeIn = Math.sin(progress * Math.PI * 0.5);
 ```
+
 **Why**: Linear crossfades cause -3dB dip in the middle. Equal-power maintains constant perceived volume.
 
 #### 2. **Memory Explosion from Not Disposing Players**
+
 ```typescript
 // ❌ WRONG: Player never disposed
 const player = new Tone.Player(buffer).toDestination();
@@ -1482,24 +1504,28 @@ player.start(time);
 // ✅ CORRECT: Dispose after playback ends
 player.onstop = () => player.dispose();
 ```
+
 **Why**: Each Player holds AudioBuffer in memory. Without disposal, memory usage grows unbounded.
 
 #### 3. **Crossfade Timing Errors**
+
 ```typescript
 // ❌ WRONG: Crossfade at articulation END
 const crossfadeStart = sourceTime + articulationDuration;
 
 // ✅ CORRECT: Crossfade BEFORE articulation ends (20ms overlap)
 const crossfadeStart = sourceTime + articulationDuration - 0.02;
-const sustainStart = crossfadeStart;  // Sustain starts during overlap
+const sustainStart = crossfadeStart; // Sustain starts during overlap
 ```
+
 **Why**: Crossfade must start before articulation sample ends to blend smoothly.
 
 #### 4. **Missing Fallback Logic**
+
 ```typescript
 // ❌ WRONG: Fails silently when sample missing
 const buffer = this.articulationBuffers.get(`${type}-${sampleKey}`);
-player.buffer = buffer;  // Crashes if buffer is undefined
+player.buffer = buffer; // Crashes if buffer is undefined
 
 // ✅ CORRECT: Fallback hierarchy
 if (!buffer) {
@@ -1513,29 +1539,33 @@ if (!buffer) {
   return;
 }
 ```
+
 **Why**: Complete articulation library (~1,600 samples) is not practical initially. Fallbacks ensure graceful degradation.
 
 #### 5. **Incorrect Sample Naming Conventions**
+
 ```typescript
 // ❌ WRONG: Inconsistent naming breaks lookups
-'E2-F#2_hammeron.mp3'  // Sharp symbol
-'E2-Gb2_hammeron.mp3'  // Flat symbol - same pitch!
+'E2-F#2_hammeron.mp3'; // Sharp symbol
+'E2-Gb2_hammeron.mp3'; // Flat symbol - same pitch!
 
 // ✅ CORRECT: Normalize to sharps with 's' suffix
-'E2-Fs2_hammeron.mp3'
-'E2-Fs2_pulloff.mp3'
-'E2-Fs2_slide.mp3'
+'E2-Fs2_hammeron.mp3';
+'E2-Fs2_pulloff.mp3';
+'E2-Fs2_slide.mp3';
 ```
+
 **Why**: Sample lookup uses string concatenation. Inconsistent naming causes failures.
 
 #### 6. **Not Preventing Double-Scheduling**
+
 ```typescript
 // ❌ WRONG: Both source and target notes scheduled
 for (const note of bassNotes) {
   if (note.articulation.type === 'hammer-on') {
-    scheduleArticulation(note);  // Schedules E2→F#2 sample
+    scheduleArticulation(note); // Schedules E2→F#2 sample
   }
-  scheduleNormalNote(note);  // Also schedules E2 separately!
+  scheduleNormalNote(note); // Also schedules E2 separately!
 }
 
 // ✅ CORRECT: Track scheduled notes
@@ -1550,60 +1580,69 @@ for (let i = 0; i < bassNotes.length; i++) {
   }
 }
 ```
+
 **Why**: Articulation sample already contains source note attack. Scheduling source note separately causes double-playback.
 
 #### 7. **Missing `previousNote` Context**
+
 ```typescript
 // ❌ WRONG: No way to find source note during scheduling
 const note = bassNotes[i];
 if (note.articulation.type === 'hammer-on') {
   // How do we know E2→F#2 should start at E2's time?
-  scheduleArticulation(note.ticks, note.note);  // WRONG!
+  scheduleArticulation(note.ticks, note.note); // WRONG!
 }
 
 // ✅ CORRECT: Search backwards for fromNote
-const prevNoteIndex = bassNotes.findLastIndex((n, idx) =>
-  idx < i && n.note === note.articulation.fromNote
+const prevNoteIndex = bassNotes.findLastIndex(
+  (n, idx) => idx < i && n.note === note.articulation.fromNote,
 );
 const prevNote = bassNotes[prevNoteIndex];
-const sourceTime = startTime + (prevNote.ticks * secondsPerTick);
+const sourceTime = startTime + prevNote.ticks * secondsPerTick;
 scheduleArticulation(sourceTime, prevNote.note, note.note);
 ```
+
 **Why**: Articulation samples need source note's timing, not target note's timing.
 
 #### 8. **Tempo-Unaware Crossfade Durations**
+
 ```typescript
 // ❌ WRONG: Fixed 20ms crossfade at all tempos
-const crossfadeDuration = 0.02;  // Always 20ms
+const crossfadeDuration = 0.02; // Always 20ms
 
 // ✅ CORRECT: Musical duration (e.g., 1/64th note)
-const crossfadeDuration = secondsPerBeat / 16;  // 1/64th note
+const crossfadeDuration = secondsPerBeat / 16; // 1/64th note
 // At 120 BPM: 31.25ms
 // At 200 BPM: 18.75ms
 ```
+
 **Why**: Fixed durations feel wrong at extreme tempos. Musical durations scale naturally.
 
 ### ✅ Implementation Checklist
 
 #### **Before You Code**
+
 - [ ] Understand that articulation samples are FULL transitions (source attack → transition → destination sustain)
 - [ ] Remember: schedule at SOURCE note's time, not target note's time
 - [ ] Know that Tone.Sampler doesn't support round-robin (use Player arrays instead)
 - [ ] Plan for graceful fallbacks when articulation samples are missing
 
 #### **Data Structure Setup**
+
 - [ ] Add `toNote` field to BassArticulation interface
 - [ ] Create ArticulationMatrixEntry type for admin workflow
 - [ ] Ensure GeneratedBassNote includes articulation metadata
 - [ ] Update Zod schemas for validation
 
 #### **Core Components**
+
 - [ ] **BassTechniqueManager**: Load samples into Player pools (not Sampler)
 - [ ] **ArticulationEngine**: Schedule articulation samples with correct timing
 - [ ] **SampleCacheService**: Prioritized loading for current exercise
 - [ ] **FallbackHandler**: Interval matching + pitch shift logic
 
 #### **Admin UI Integration**
+
 - [ ] Create BassArticulationMatrix component (table view)
 - [ ] Add articulation type dropdowns per note
 - [ ] Implement "from note" selection for transitions
@@ -1611,6 +1650,7 @@ const crossfadeDuration = secondsPerBeat / 16;  // 1/64th note
 - [ ] Insert into MIDI workflow: Parse → **Articulation Matrix** → Set Anchors → Convert
 
 #### **Scheduling Logic**
+
 - [ ] Implement `scheduledIndices` Set to prevent double-scheduling
 - [ ] Add `findPreviousNoteIndex()` helper to locate source notes
 - [ ] Calculate total duration: (target.ticks - source.ticks + target.durationTicks) × secondsPerTick
@@ -1618,17 +1658,20 @@ const crossfadeDuration = secondsPerBeat / 16;  // 1/64th note
 - [ ] Mark both source and target indices as scheduled
 
 #### **Crossfading & Blending**
+
 - [ ] Use equal-power crossfade curves (cosine/sine, not linear)
 - [ ] Calculate crossfade start: articulationEnd - overlapDuration
 - [ ] Make crossfade durations tempo-aware (musical units, not fixed ms)
 - [ ] Blend to sustained note if remaining duration > 50ms
 
 #### **Memory Management**
+
 - [ ] Dispose Players after playback: `player.onstop = () => player.dispose()`
 - [ ] Implement sample unloading for unused exercises
 - [ ] Monitor memory usage in production
 
 #### **Testing Strategy**
+
 - [ ] Unit test: Source note timing calculation
 - [ ] Unit test: Equal-power crossfade curves
 - [ ] Integration test: Full bassline with mixed articulations
@@ -1661,6 +1704,7 @@ CORRECT:
 **Status**: ✅ Architecture Complete - Ready for Implementation
 
 **Key Corrections Applied**:
+
 - ✅ Source note timing model (not target note timing)
 - ✅ Pre-recorded full samples (not synthesized crossfades)
 - ✅ Admin articulation matrix workflow (not auto-detection primary)

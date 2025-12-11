@@ -88,7 +88,10 @@ export class AdminExercisesService {
       .order('created_at', { ascending: true });
 
     if (error) {
-      this.logger.error(`Failed to fetch exercises for tutorial: ${tutorialId}`, error);
+      this.logger.error(
+        `Failed to fetch exercises for tutorial: ${tutorialId}`,
+        error,
+      );
       throw new Error('Failed to fetch exercises');
     }
 
@@ -105,9 +108,10 @@ export class AdminExercisesService {
       .order('order_index', { ascending: false })
       .limit(1);
 
-    const nextOrderIndex = existingExercises && existingExercises.length > 0
-      ? (existingExercises[0].order_index || 0) + 1
-      : 0;
+    const nextOrderIndex =
+      existingExercises && existingExercises.length > 0
+        ? (existingExercises[0].order_index || 0) + 1
+        : 0;
 
     // Handle temp MIDI file migration (Story 4.4 Task 3.4) - all 4 MIDI types
     const exerciseId = createExerciseDto.id || crypto.randomUUID();
@@ -124,9 +128,12 @@ export class AdminExercisesService {
     });
 
     if (createExerciseDto.temp_bassline_midi_path) {
-      this.logger.log('Migrating bassline MIDI from temp to permanent storage', {
-        tempPath: createExerciseDto.temp_bassline_midi_path,
-      });
+      this.logger.log(
+        'Migrating bassline MIDI from temp to permanent storage',
+        {
+          tempPath: createExerciseDto.temp_bassline_midi_path,
+        },
+      );
       const permanentPath = `exercises/${exerciseId}/${Date.now()}_bassline.mid`;
       finalBasslineMidiUrl = await this.supabaseService.moveToPermanent(
         createExerciseDto.temp_bassline_midi_path,
@@ -169,7 +176,8 @@ export class AdminExercisesService {
       hasHarmonyNotes: !!createExerciseDto.harmony_notes,
       harmonyNotesCount: createExerciseDto.harmony_notes?.length || 0,
       hasHarmonyControlChanges: !!createExerciseDto.harmony_control_changes,
-      harmonyControlChangesCount: createExerciseDto.harmony_control_changes?.length || 0,
+      harmonyControlChangesCount:
+        createExerciseDto.harmony_control_changes?.length || 0,
       harmonyInstrument: createExerciseDto.harmony_instrument,
     });
 
@@ -185,7 +193,10 @@ export class AdminExercisesService {
         duration: createExerciseDto.duration,
         total_bars: createExerciseDto.total_bars,
         duration_beats: createExerciseDto.duration_beats,
-        time_signature: createExerciseDto.time_signature || { numerator: 4, denominator: 4 },
+        time_signature: createExerciseDto.time_signature || {
+          numerator: 4,
+          denominator: 4,
+        },
         difficulty: createExerciseDto.difficulty,
         key: createExerciseDto.key || 'C',
         tags: createExerciseDto.tags,
@@ -200,7 +211,8 @@ export class AdminExercisesService {
         metronome_midi_url: finalMetronomeMidiUrl,
         // Harmony instrument data (converted from MIDI)
         harmony_notes: createExerciseDto.harmony_notes || [],
-        harmony_control_changes: createExerciseDto.harmony_control_changes || [],
+        harmony_control_changes:
+          createExerciseDto.harmony_control_changes || [],
         harmony_instrument: createExerciseDto.harmony_instrument || null,
       })
       .select()
@@ -261,35 +273,56 @@ export class AdminExercisesService {
     }
     if (updateExerciseDto.temp_metronome_midi_path) {
       const permanentPath = `exercises/${id}/${Date.now()}_metronome.mid`;
-      updateData.metronome_midi_url = await this.supabaseService.moveToPermanent(
-        updateExerciseDto.temp_metronome_midi_path,
-        'exercise-midi-files',
-        permanentPath,
-      );
+      updateData.metronome_midi_url =
+        await this.supabaseService.moveToPermanent(
+          updateExerciseDto.temp_metronome_midi_path,
+          'exercise-midi-files',
+          permanentPath,
+        );
     }
 
     // Only include defined fields in the update
-    if (updateExerciseDto.title !== undefined) updateData.title = updateExerciseDto.title;
-    if (updateExerciseDto.description !== undefined) updateData.description = updateExerciseDto.description;
+    if (updateExerciseDto.title !== undefined)
+      updateData.title = updateExerciseDto.title;
+    if (updateExerciseDto.description !== undefined)
+      updateData.description = updateExerciseDto.description;
     // MIDI URL fields
-    if (updateExerciseDto.drummer_midi_url !== undefined) updateData.drummer_midi_url = updateExerciseDto.drummer_midi_url;
-    if (updateExerciseDto.bassline_midi_url !== undefined) updateData.bassline_midi_url = updateExerciseDto.bassline_midi_url;
-    if (updateExerciseDto.harmony_midi_url !== undefined) updateData.harmony_midi_url = updateExerciseDto.harmony_midi_url;
-    if (updateExerciseDto.metronome_midi_url !== undefined) updateData.metronome_midi_url = updateExerciseDto.metronome_midi_url;
-    if (updateExerciseDto.bpm !== undefined) updateData.bpm = updateExerciseDto.bpm;
-    if (updateExerciseDto.duration !== undefined) updateData.duration = updateExerciseDto.duration;
-    if (updateExerciseDto.total_bars !== undefined) updateData.total_bars = updateExerciseDto.total_bars;
-    if (updateExerciseDto.duration_beats !== undefined) updateData.duration_beats = updateExerciseDto.duration_beats;
-    if (updateExerciseDto.time_signature !== undefined) updateData.time_signature = updateExerciseDto.time_signature;
-    if (updateExerciseDto.difficulty !== undefined) updateData.difficulty = updateExerciseDto.difficulty;
-    if (updateExerciseDto.key !== undefined) updateData.key = updateExerciseDto.key;
-    if (updateExerciseDto.tags !== undefined) updateData.tags = updateExerciseDto.tags;
-    if (updateExerciseDto.notes !== undefined) updateData.notes = updateExerciseDto.notes; // Story 4.4 Task 3.4: Support notes array
-    if (updateExerciseDto.is_active !== undefined) updateData.is_active = updateExerciseDto.is_active;
+    if (updateExerciseDto.drummer_midi_url !== undefined)
+      updateData.drummer_midi_url = updateExerciseDto.drummer_midi_url;
+    if (updateExerciseDto.bassline_midi_url !== undefined)
+      updateData.bassline_midi_url = updateExerciseDto.bassline_midi_url;
+    if (updateExerciseDto.harmony_midi_url !== undefined)
+      updateData.harmony_midi_url = updateExerciseDto.harmony_midi_url;
+    if (updateExerciseDto.metronome_midi_url !== undefined)
+      updateData.metronome_midi_url = updateExerciseDto.metronome_midi_url;
+    if (updateExerciseDto.bpm !== undefined)
+      updateData.bpm = updateExerciseDto.bpm;
+    if (updateExerciseDto.duration !== undefined)
+      updateData.duration = updateExerciseDto.duration;
+    if (updateExerciseDto.total_bars !== undefined)
+      updateData.total_bars = updateExerciseDto.total_bars;
+    if (updateExerciseDto.duration_beats !== undefined)
+      updateData.duration_beats = updateExerciseDto.duration_beats;
+    if (updateExerciseDto.time_signature !== undefined)
+      updateData.time_signature = updateExerciseDto.time_signature;
+    if (updateExerciseDto.difficulty !== undefined)
+      updateData.difficulty = updateExerciseDto.difficulty;
+    if (updateExerciseDto.key !== undefined)
+      updateData.key = updateExerciseDto.key;
+    if (updateExerciseDto.tags !== undefined)
+      updateData.tags = updateExerciseDto.tags;
+    if (updateExerciseDto.notes !== undefined)
+      updateData.notes = updateExerciseDto.notes; // Story 4.4 Task 3.4: Support notes array
+    if (updateExerciseDto.is_active !== undefined)
+      updateData.is_active = updateExerciseDto.is_active;
     // Harmony instrument data
-    if (updateExerciseDto.harmony_notes !== undefined) updateData.harmony_notes = updateExerciseDto.harmony_notes;
-    if (updateExerciseDto.harmony_control_changes !== undefined) updateData.harmony_control_changes = updateExerciseDto.harmony_control_changes;
-    if (updateExerciseDto.harmony_instrument !== undefined) updateData.harmony_instrument = updateExerciseDto.harmony_instrument;
+    if (updateExerciseDto.harmony_notes !== undefined)
+      updateData.harmony_notes = updateExerciseDto.harmony_notes;
+    if (updateExerciseDto.harmony_control_changes !== undefined)
+      updateData.harmony_control_changes =
+        updateExerciseDto.harmony_control_changes;
+    if (updateExerciseDto.harmony_instrument !== undefined)
+      updateData.harmony_instrument = updateExerciseDto.harmony_instrument;
 
     const { data, error } = await this.supabaseService
       .getClient()
@@ -341,7 +374,9 @@ export class AdminExercisesService {
     ].filter(Boolean); // Remove null/undefined values
 
     if (midiUrls.length > 0) {
-      this.logger.log(`Cleaning up ${midiUrls.length} MIDI file(s) for exercise ${id}`);
+      this.logger.log(
+        `Cleaning up ${midiUrls.length} MIDI file(s) for exercise ${id}`,
+      );
 
       for (const url of midiUrls) {
         try {
@@ -349,7 +384,10 @@ export class AdminExercisesService {
           const pathMatch = url.match(/exercise-midi-files\/(.+)$/);
           if (pathMatch) {
             const filePath = pathMatch[1];
-            await this.supabaseService.deleteFile('exercise-midi-files', filePath);
+            await this.supabaseService.deleteFile(
+              'exercise-midi-files',
+              filePath,
+            );
             this.logger.log(`Deleted MIDI file: ${filePath}`);
           }
         } catch (fileError) {
@@ -392,7 +430,10 @@ export class AdminExercisesService {
       if (error.code === 'PGRST116') {
         return null;
       }
-      this.logger.error(`Failed to update MIDI status for exercise: ${id}`, error);
+      this.logger.error(
+        `Failed to update MIDI status for exercise: ${id}`,
+        error,
+      );
       throw new Error('Failed to update MIDI status');
     }
 
@@ -422,7 +463,7 @@ export class AdminExercisesService {
 
     // Apply search query
     query = query.or(
-      `title.ilike.%${filters.query}%,description.ilike.%${filters.query}%,tags.cs.{${filters.query}}`
+      `title.ilike.%${filters.query}%,description.ilike.%${filters.query}%,tags.cs.{${filters.query}}`,
     );
 
     // Apply filters
@@ -446,7 +487,9 @@ export class AdminExercisesService {
       query = query.lte('bpm', filters.bpmMax);
     }
 
-    const { data, error } = await query.order('order_index', { ascending: true });
+    const { data, error } = await query.order('order_index', {
+      ascending: true,
+    });
 
     if (error) {
       this.logger.error('Failed to search exercises', error);
@@ -489,7 +532,10 @@ export class AdminExercisesService {
       .order('order_index', { ascending: true });
 
     if (error) {
-      this.logger.error(`Failed to fetch exercises by difficulty: ${difficulty}`, error);
+      this.logger.error(
+        `Failed to fetch exercises by difficulty: ${difficulty}`,
+        error,
+      );
       throw new Error('Failed to fetch exercises');
     }
 

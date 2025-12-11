@@ -32,7 +32,8 @@ async function ensureToneLoaded(
   audioEngine?: any,
 ): Promise<void> {
   // Use InstrumentDependencyManager for independent loading
-  const { InstrumentDependencyManager } = await import('@/domains/playback/services/InstrumentDependencyManager.js');
+  const { InstrumentDependencyManager } =
+    await import('@/domains/playback/services/InstrumentDependencyManager.js');
 
   if (!Tone || preferredContext) {
     try {
@@ -47,7 +48,9 @@ async function ensureToneLoaded(
       ensureToneUsesPersistentContext();
     } catch (error) {
       logger.error('🎵 Rhodes: Failed to load Tone.js', { error });
-      throw new Error(`Failed to load Tone.js for Rhodes: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to load Tone.js for Rhodes: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 }
@@ -170,7 +173,9 @@ export class RhodesVelocitySampler {
       // Connection happens via connect() method when WamKeyboard initializes
       // this.destination.toDestination(); // ← REMOVED - was causing dual instrument playback
 
-      logger.debug('🎹 Initializing without direct toDestination (proper routing)');
+      logger.debug(
+        '🎹 Initializing without direct toDestination (proper routing)',
+      );
 
       // Check for InitialSamplePreloader usage
       const cachedBufferLoader = CachedToneBufferLoader.getInstance();
@@ -412,12 +417,15 @@ export class RhodesVelocitySampler {
     velocity = 80,
   ): Promise<void> {
     // DIAGNOSTIC: Log every Rhodes note trigger to identify dual playback source
-    console.log('[PLAYBACK-PATH] RhodesVelocitySampler.triggerAttack() called:', {
-      note,
-      velocity,
-      time: time?.toFixed(3) || 'immediate',
-      isInitialized: this.isInitialized
-    });
+    console.log(
+      '[PLAYBACK-PATH] RhodesVelocitySampler.triggerAttack() called:',
+      {
+        note,
+        velocity,
+        time: time?.toFixed(3) || 'immediate',
+        isInitialized: this.isInitialized,
+      },
+    );
 
     if (!this.isInitialized || !this.config) return;
 

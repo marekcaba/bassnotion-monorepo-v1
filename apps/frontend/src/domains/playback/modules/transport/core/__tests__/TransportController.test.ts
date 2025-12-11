@@ -16,13 +16,13 @@ vi.mock('tone', () => ({
     loopEnd: 0,
     bpm: { value: 120 },
     timeSignature: [4, 4],
-    start: vi.fn(function() {
+    start: vi.fn(function () {
       this.state = 'started';
     }),
-    stop: vi.fn(function() {
+    stop: vi.fn(function () {
       this.state = 'stopped';
     }),
-    pause: vi.fn(function() {
+    pause: vi.fn(function () {
       this.state = 'paused';
     }),
   },
@@ -149,7 +149,10 @@ vi.mock('../../../position/MusicalPositionManager.js', () => {
 
       constructor(config: any) {
         this.tempo = config.tempo || 120;
-        this.timeSignature = config.timeSignature || { numerator: 4, denominator: 4 };
+        this.timeSignature = config.timeSignature || {
+          numerator: 4,
+          denominator: 4,
+        };
       }
 
       updatePosition(seconds: number) {
@@ -167,7 +170,9 @@ vi.mock('../../../position/MusicalPositionManager.js', () => {
 
       getDisplayPosition() {
         // Apply countdown adjustment
-        const adjustedBars = this.position.bars - Math.floor(this.countdownBeats / this.timeSignature.numerator);
+        const adjustedBars =
+          this.position.bars -
+          Math.floor(this.countdownBeats / this.timeSignature.numerator);
         return {
           bars: adjustedBars,
           beats: this.position.beats,
@@ -232,7 +237,8 @@ vi.mock('../../../position/MusicalPositionManager.js', () => {
       }
 
       positionToSeconds(position: any) {
-        const totalBeats = (position.bars - 1) * this.timeSignature.numerator + position.beats;
+        const totalBeats =
+          (position.bars - 1) * this.timeSignature.numerator + position.beats;
         return (totalBeats / this.tempo) * 60;
       }
 
@@ -732,12 +738,10 @@ describe('TransportController', () => {
       );
       await controller.initialize();
 
-      // Now uses PositionUpdateScheduler - check the scheduler config instead
-      const scheduler = (controller as any).positionUpdateScheduler;
-      expect(scheduler).toBeDefined();
-      // The scheduler has a config with eventDrivenThrottleMs = 1000 / 120 ≈ 8.33ms
-      const throttleInterval = scheduler.config?.eventDrivenThrottleMs;
-      expect(throttleInterval).toBeCloseTo(1000 / 120, 1);
+      // Check the positionUpdateInterval directly - it's calculated as 1000 / updateHz
+      // Default updateHz is 120, so interval = 1000 / 120 ≈ 8.33ms
+      const positionUpdateInterval = (controller as any).positionUpdateInterval;
+      expect(positionUpdateInterval).toBeCloseTo(1000 / 120, 1);
     });
 
     it('should handle Clock.onTick position updates', async () => {

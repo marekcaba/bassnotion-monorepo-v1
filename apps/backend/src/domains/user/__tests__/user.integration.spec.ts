@@ -83,9 +83,13 @@ describe('User Integration Tests', () => {
       }),
       getCorrelationId: vi.fn().mockReturnValue('test-correlation-id'),
     };
-    
+
     // Create service and controller instances directly (simplified approach)
-    service = new UserService(mockDatabaseService, mockRepository, mockRequestContextService as any);
+    service = new UserService(
+      mockDatabaseService,
+      mockRepository,
+      mockRequestContextService as any,
+    );
     controller = new UserController(mockDatabaseService, service);
   });
 

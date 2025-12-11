@@ -39,27 +39,34 @@ function getCoreServicesFromWindow() {
 /**
  * Helper: Navigate to a tutorial with widgets
  */
-async function navigateToTutorial(page: Page, tutorialSlug = 'how-to-find-notes-on-the-bass-fretboard') {
+async function navigateToTutorial(
+  page: Page,
+  tutorialSlug = 'how-to-find-notes-on-the-bass-fretboard',
+) {
   // WEBKIT DEBUG: Capture all console messages for debugging
-  page.on('console', msg => {
+  page.on('console', (msg) => {
     const text = msg.text();
     // Capture all debugging logs: QueryCache events, React Query state, provider mounting
-    if (text.includes('[SAFARI DEBUG]') ||
-        text.includes('QueryCache') ||
-        text.includes('QUERY STATE') ||
-        text.includes('Executing fetchTutorialExercises') ||
-        text.includes('fetchStatus') ||
-        text.includes('✅ ReactQueryProvider') ||
-        text.includes('🔴') ||
-        text.includes('🟢') ||
-        text.includes('📊')) {
+    if (
+      text.includes('[SAFARI DEBUG]') ||
+      text.includes('QueryCache') ||
+      text.includes('QUERY STATE') ||
+      text.includes('Executing fetchTutorialExercises') ||
+      text.includes('fetchStatus') ||
+      text.includes('✅ ReactQueryProvider') ||
+      text.includes('🔴') ||
+      text.includes('🟢') ||
+      text.includes('📊')
+    ) {
       console.log('[BROWSER CONSOLE]', text);
     }
   });
 
   // Use 'domcontentloaded' instead of default 'load' to handle pages with ongoing network activity
   // Chromium/WebKit are stricter about 'load' state than Firefox
-  await page.goto(`${BASE_URL}/library/${tutorialSlug}`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${BASE_URL}/library/${tutorialSlug}`, {
+    waitUntil: 'domcontentloaded',
+  });
 
   // CRITICAL FIX FOR WEBKIT: Wait for BOTH network idle AND data to be rendered
   // Webkit's JavaScriptCore engine can complete network requests before React Query processes them
@@ -72,38 +79,51 @@ async function navigateToTutorial(page: Page, tutorialSlug = 'how-to-find-notes-
   // CRITICAL: The h4 heading only renders AFTER React Query completes and React re-renders
   // Check the debug element written by useTutorialExercises hook for data readiness
   // This eliminates race conditions between data fetch and DOM rendering
-  await page.waitForFunction(() => {
-    const debugEl = document.getElementById('rq-debug-tutorial-exercises');
-    if (!debugEl) return false;
+  await page.waitForFunction(
+    () => {
+      const debugEl = document.getElementById('rq-debug-tutorial-exercises');
+      if (!debugEl) return false;
 
-    const status = debugEl.getAttribute('data-status');
-    const hasData = debugEl.getAttribute('data-has-data') === 'true';
-    const exerciseCount = parseInt(debugEl.getAttribute('data-exercise-count') || '0');
+      const status = debugEl.getAttribute('data-status');
+      const hasData = debugEl.getAttribute('data-has-data') === 'true';
+      const exerciseCount = parseInt(
+        debugEl.getAttribute('data-exercise-count') || '0',
+      );
 
-    // Success: React Query completed successfully and has exercise data
-    return status === 'success' && hasData && exerciseCount > 0;
-  }, { timeout: 60000, polling: 500 });
+      // Success: React Query completed successfully and has exercise data
+      return status === 'success' && hasData && exerciseCount > 0;
+    },
+    { timeout: 60000, polling: 500 },
+  );
 
   // Step 3: Now wait for h4 to render (should be fast since data is ready)
   // Shorter timeout since React Query already succeeded - this is just waiting for React render
   await page.waitForSelector('h4', {
     timeout: 10000,
-    state: 'visible'
+    state: 'visible',
   });
 
   // Step 4: Extra safety - wait for the loading spinner to disappear
   // This ensures we're not in the transition state between data fetch and render
-  await page.waitForSelector('text="Loading tutorial"', {
-    state: 'hidden',
-    timeout: 5000
-  }).catch(() => {
-    // Spinner might already be gone, that's fine
-  });
+  await page
+    .waitForSelector('text="Loading tutorial"', {
+      state: 'hidden',
+      timeout: 5000,
+    })
+    .catch(() => {
+      // Spinner might already be gone, that's fine
+    });
 
   // CHECK FOR ERROR STATE FIRST (Playwright best practice: fail fast with clear error)
-  const errorHeading = page.getByRole('heading', { name: 'Tutorial Not Found', level: 1 });
+  const errorHeading = page.getByRole('heading', {
+    name: 'Tutorial Not Found',
+    level: 1,
+  });
   if (await errorHeading.isVisible({ timeout: 2000 }).catch(() => false)) {
-    const errorMessage = await page.locator('p').filter({ hasText: 'could not be loaded' }).textContent();
+    const errorMessage = await page
+      .locator('p')
+      .filter({ hasText: 'could not be loaded' })
+      .textContent();
     throw new Error(`Tutorial failed to load: ${errorMessage}`);
   }
 
@@ -122,16 +142,19 @@ async function navigateToTutorial(page: Page, tutorialSlug = 'how-to-find-notes-
 
   // Wait for CoreServices initialization by ScrollTriggerLoader (should be quick now)
   // Checks __bassnotion_coreServices (new) with fallback to legacy keys
-  await page.waitForFunction(() => {
-    const getCoreServices = () => {
-      return (
-        (window as any).__bassnotion_coreServices ||
-        (window as any).__globalCoreServices ||
-        (window as any).__coreServices
-      );
-    };
-    return getCoreServices() !== undefined;
-  }, { timeout: 45000 });
+  await page.waitForFunction(
+    () => {
+      const getCoreServices = () => {
+        return (
+          (window as any).__bassnotion_coreServices ||
+          (window as any).__globalCoreServices ||
+          (window as any).__coreServices
+        );
+      };
+      return getCoreServices() !== undefined;
+    },
+    { timeout: 45000 },
+  );
 
   // Give audio engine a moment to fully initialize
   await page.waitForTimeout(1000);
@@ -213,19 +236,33 @@ async function startPlayback(page: Page) {
 
       const coreServices = getCoreServices();
       if (!coreServices) {
-        console.log('[E2E DEBUG] CoreServices not found, elapsed:', Date.now() - startTime, 'ms');
+        console.log(
+          '[E2E DEBUG] CoreServices not found, elapsed:',
+          Date.now() - startTime,
+          'ms',
+        );
         return false;
       }
 
       const transport = coreServices?.getUnifiedTransport?.();
       if (!transport) {
-        console.log('[E2E DEBUG] Transport not found, elapsed:', Date.now() - startTime, 'ms');
+        console.log(
+          '[E2E DEBUG] Transport not found, elapsed:',
+          Date.now() - startTime,
+          'ms',
+        );
         return false;
       }
 
       const state = transport?.getState?.();
       if (state !== 'playing') {
-        console.log('[E2E DEBUG] Transport state:', state, 'elapsed:', Date.now() - startTime, 'ms');
+        console.log(
+          '[E2E DEBUG] Transport state:',
+          state,
+          'elapsed:',
+          Date.now() - startTime,
+          'ms',
+        );
       }
 
       return state === 'playing';
@@ -233,8 +270,8 @@ async function startPlayback(page: Page) {
     { startTime },
     {
       timeout: 20000, // Increased from 10s to 20s for Firefox
-      polling: 200     // Poll every 200ms for responsive checking
-    }
+      polling: 200, // Poll every 200ms for responsive checking
+    },
   );
 }
 
@@ -252,18 +289,21 @@ async function stopPlayback(page: Page) {
   await stopButton.click();
 
   // Wait for transport state to be 'stopped'
-  await page.waitForFunction(() => {
-    const getCoreServices = () => {
-      return (
-        (window as any).__bassnotion_coreServices ||
-        (window as any).__globalCoreServices ||
-        (window as any).__coreServices
-      );
-    };
-    const coreServices = getCoreServices();
-    const transport = coreServices?.getUnifiedTransport?.();
-    return transport?.getState?.() === 'stopped';
-  }, { timeout: 10000 });
+  await page.waitForFunction(
+    () => {
+      const getCoreServices = () => {
+        return (
+          (window as any).__bassnotion_coreServices ||
+          (window as any).__globalCoreServices ||
+          (window as any).__coreServices
+        );
+      };
+      const coreServices = getCoreServices();
+      const transport = coreServices?.getUnifiedTransport?.();
+      return transport?.getState?.() === 'stopped';
+    },
+    { timeout: 10000 },
+  );
 }
 
 /**
@@ -280,7 +320,9 @@ async function getTransportPosition(page: Page) {
     };
     const coreServices = getCoreServices();
     const transport = coreServices?.getUnifiedTransport?.();
-    return transport?.getMusicalPosition?.() || { bars: 0, beats: 0, sixteenths: 0 };
+    return (
+      transport?.getMusicalPosition?.() || { bars: 0, beats: 0, sixteenths: 0 }
+    );
   });
 }
 
@@ -318,7 +360,9 @@ test.describe('Transport Refactor - Critical Path E2E Tests', () => {
    *
    * Critical Path: User starts exercise, sees countdown, plays exercise, stops automatically
    */
-  test('should play countdown, exercise, and auto-stop at end', async ({ page }) => {
+  test('should play countdown, exercise, and auto-stop at end', async ({
+    page,
+  }) => {
     await navigateToTutorial(page);
 
     // Select exercise before playback
@@ -354,7 +398,7 @@ test.describe('Transport Refactor - Critical Path E2E Tests', () => {
           const position = transport?.getMusicalPosition?.();
           return position && position.bars >= 1;
         },
-        { timeout: 5000, polling: 100 } // Poll every 100ms for up to 5 seconds
+        { timeout: 5000, polling: 100 }, // Poll every 100ms for up to 5 seconds
       );
     } catch (error) {
       // If we timeout, log current position for debugging
@@ -385,7 +429,9 @@ test.describe('Transport Refactor - Critical Path E2E Tests', () => {
    *
    * Critical Path: HarmonyWidget and DrummerWidget play in perfect sync
    */
-  test('should keep HarmonyWidget and DrummerWidget in sync', async ({ page }) => {
+  test('should keep HarmonyWidget and DrummerWidget in sync', async ({
+    page,
+  }) => {
     await navigateToTutorial(page);
 
     // Select the first exercise ("Harmony 24") before playback
@@ -433,7 +479,7 @@ test.describe('Transport Refactor - Critical Path E2E Tests', () => {
 
       // Check every 100ms for 5 seconds
       const interval = setInterval(checkSync, 100);
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      await new Promise((resolve) => setTimeout(resolve, 5000));
       clearInterval(interval);
 
       return results;
@@ -447,10 +493,17 @@ test.describe('Transport Refactor - Critical Path E2E Tests', () => {
     // Verify position is progressing
     const firstPos = syncResults[0];
     const lastPos = syncResults[syncResults.length - 1];
-    expect(lastPos.bars * 16 + lastPos.beats * 4 + lastPos.sixteenths)
-      .toBeGreaterThan(firstPos.bars * 16 + firstPos.beats * 4 + firstPos.sixteenths);
+    expect(
+      lastPos.bars * 16 + lastPos.beats * 4 + lastPos.sixteenths,
+    ).toBeGreaterThan(
+      firstPos.bars * 16 + firstPos.beats * 4 + firstPos.sixteenths,
+    );
 
-    console.log('✅ Widgets stayed in sync:', syncResults.length, 'position updates');
+    console.log(
+      '✅ Widgets stayed in sync:',
+      syncResults.length,
+      'position updates',
+    );
   });
 
   /**
@@ -465,7 +518,9 @@ test.describe('Transport Refactor - Critical Path E2E Tests', () => {
     await selectFirstExercise(page);
 
     // Enable loop mode (if button available)
-    const loopButton = page.locator('[data-testid="loop-button"], button:has-text("Loop")');
+    const loopButton = page.locator(
+      '[data-testid="loop-button"], button:has-text("Loop")',
+    );
     if (await loopButton.isVisible({ timeout: 2000 }).catch(() => false)) {
       await loopButton.click();
     }
@@ -511,7 +566,9 @@ test.describe('Transport Refactor - Critical Path E2E Tests', () => {
     await page.waitForTimeout(2000);
 
     // Test 2: Pause (if separate pause button exists)
-    const pauseButton = page.locator('[data-testid="pause-button"], button:has-text("Pause")').first();
+    const pauseButton = page
+      .locator('[data-testid="pause-button"], button:has-text("Pause")')
+      .first();
     if (await pauseButton.isVisible({ timeout: 2000 }).catch(() => false)) {
       await pauseButton.click();
       await page.waitForTimeout(500);
@@ -524,7 +581,9 @@ test.describe('Transport Refactor - Critical Path E2E Tests', () => {
       expect(await getTransportState(page)).toBe('playing');
       console.log('✅ Resume works');
     } else {
-      console.log('⚠️ No separate pause button found - using unified play/stop button');
+      console.log(
+        '⚠️ No separate pause button found - using unified play/stop button',
+      );
     }
 
     // Test 4: Stop (using unified button)
@@ -536,8 +595,8 @@ test.describe('Transport Refactor - Critical Path E2E Tests', () => {
     // Countdown is bar -1, exercise starts at bar 1, beat 0
     // Note: bars are 1-indexed for display, beats are 0-indexed internally
     const position = await getTransportPosition(page);
-    expect(position.bars).toBe(1);    // Exercise start (1-based display)
-    expect(position.beats).toBe(0);   // First beat (0-indexed)
+    expect(position.bars).toBe(1); // Exercise start (1-based display)
+    expect(position.beats).toBe(0); // First beat (0-indexed)
   });
 
   /**
@@ -545,7 +604,9 @@ test.describe('Transport Refactor - Critical Path E2E Tests', () => {
    *
    * Critical Path: Widgets play audio at correct beat positions
    */
-  test('should trigger widget audio at correct beat positions', async ({ page }) => {
+  test('should trigger widget audio at correct beat positions', async ({
+    page,
+  }) => {
     await navigateToTutorial(page);
 
     // Select exercise before playback
@@ -562,7 +623,11 @@ test.describe('Transport Refactor - Critical Path E2E Tests', () => {
       const originalConsoleLog = console.log;
       console.log = (...args) => {
         const message = args.join(' ');
-        if (message.includes('note') || message.includes('audio') || message.includes('schedule')) {
+        if (
+          message.includes('note') ||
+          message.includes('audio') ||
+          message.includes('schedule')
+        ) {
           events.push({
             timestamp: Date.now(),
             message: message.substring(0, 100), // Truncate long messages
@@ -581,7 +646,9 @@ test.describe('Transport Refactor - Critical Path E2E Tests', () => {
     await page.waitForTimeout(5000);
 
     // Get audio events
-    const finalEvents = await page.evaluate(() => (window as any).__audioEvents || []);
+    const finalEvents = await page.evaluate(
+      () => (window as any).__audioEvents || [],
+    );
 
     console.log(`✅ Captured ${finalEvents.length} audio scheduling events`);
 
@@ -620,7 +687,9 @@ test.describe('Transport Refactor - Critical Path E2E Tests', () => {
     }
 
     // Verify transport stayed in playing state
-    const allPlaying = positions.every(p => p.state === 'playing' || p.state === 'stopped');
+    const allPlaying = positions.every(
+      (p) => p.state === 'playing' || p.state === 'stopped',
+    );
     expect(allPlaying).toBe(true);
 
     // Verify position progressed monotonically (no backwards jumps)
@@ -637,7 +706,9 @@ test.describe('Transport Refactor - Critical Path E2E Tests', () => {
       }
     }
 
-    console.log(`✅ Stable playback for ${LONG_SESSION_DURATION / 1000} seconds`);
+    console.log(
+      `✅ Stable playback for ${LONG_SESSION_DURATION / 1000} seconds`,
+    );
     console.log(`Position samples:`, positions.length);
   });
 
@@ -683,7 +754,9 @@ test.describe('Transport Refactor - Critical Path E2E Tests', () => {
    *
    * Critical Path: Adding/removing widgets mid-playback doesn't crash
    */
-  test('should handle widget visibility toggle during playback', async ({ page }) => {
+  test('should handle widget visibility toggle during playback', async ({
+    page,
+  }) => {
     await navigateToTutorial(page);
 
     // Select exercise before playback
@@ -694,8 +767,12 @@ test.describe('Transport Refactor - Critical Path E2E Tests', () => {
     await page.waitForTimeout(1000);
 
     // Toggle harmony widget visibility (if toggle exists)
-    const harmonyToggle = page.locator('[data-testid="harmony-toggle"], button:has-text("Harmony")');
-    const hasToggle = await harmonyToggle.isVisible({ timeout: 2000 }).catch(() => false);
+    const harmonyToggle = page.locator(
+      '[data-testid="harmony-toggle"], button:has-text("Harmony")',
+    );
+    const hasToggle = await harmonyToggle
+      .isVisible({ timeout: 2000 })
+      .catch(() => false);
 
     if (hasToggle) {
       // Hide widget
@@ -719,7 +796,9 @@ test.describe('Transport Refactor - Critical Path E2E Tests', () => {
       expect(position.bars).toBeGreaterThan(0);
     } else {
       console.log('⚠️ No widget toggle found - skipping widget toggle test');
-      console.log('✅ Playback started successfully without toggle (test passes)');
+      console.log(
+        '✅ Playback started successfully without toggle (test passes)',
+      );
     }
   });
 
@@ -728,7 +807,9 @@ test.describe('Transport Refactor - Critical Path E2E Tests', () => {
    *
    * Critical Path: Multiple playback cycles don't leak memory
    */
-  test('should not leak memory over multiple playback cycles', async ({ page }) => {
+  test('should not leak memory over multiple playback cycles', async ({
+    page,
+  }) => {
     await navigateToTutorial(page);
 
     // Select exercise before playback

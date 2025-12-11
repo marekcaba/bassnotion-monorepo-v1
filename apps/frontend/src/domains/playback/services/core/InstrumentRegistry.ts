@@ -11,7 +11,12 @@
 import { EventBus } from './EventBus.js';
 import { getLogger } from '@/utils/logger.js';
 
-export type InstrumentType = 'drums' | 'bass' | 'harmony' | 'metronome' | 'voice-cue';
+export type InstrumentType =
+  | 'drums'
+  | 'bass'
+  | 'harmony'
+  | 'metronome'
+  | 'voice-cue';
 
 export interface InstrumentRegistryEvent {
   type: InstrumentType;
@@ -44,14 +49,17 @@ export class InstrumentRegistry {
     this.activeInstruments.set(type, instrument);
 
     this.logger.info(`Registered active ${type} instrument`);
-    this.eventBus.emit('instrument:registered', { type, instrument } as InstrumentRegistryEvent);
+    this.eventBus.emit('instrument:registered', {
+      type,
+      instrument,
+    } as InstrumentRegistryEvent);
 
     // Notify if we replaced an existing instrument
     if (previous && previous !== instrument) {
       this.eventBus.emit('instrument:replaced', {
         type,
         previous,
-        current: instrument
+        current: instrument,
       } as InstrumentRegistryEvent);
       this.logger.info(`Replaced ${type} instrument`);
     }
@@ -78,7 +86,10 @@ export class InstrumentRegistry {
     const instrument = this.activeInstruments.get(type);
     if (instrument) {
       this.activeInstruments.delete(type);
-      this.eventBus.emit('instrument:removed', { type, instrument } as InstrumentRegistryEvent);
+      this.eventBus.emit('instrument:removed', {
+        type,
+        instrument,
+      } as InstrumentRegistryEvent);
       this.logger.info(`Removed ${type} instrument`);
     }
   }
@@ -95,7 +106,7 @@ export class InstrumentRegistry {
    */
   clearAll(): void {
     const types = this.getRegisteredTypes();
-    types.forEach(type => this.removeActive(type));
+    types.forEach((type) => this.removeActive(type));
     this.logger.info('Cleared all instruments');
   }
 

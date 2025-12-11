@@ -4,7 +4,7 @@ export const dashboardMetadata: Metadata = {
   title: 'Dashboard',
   description: 'Manage your bass learning journey and track your progress.',
   openGraph: {
-    title: 'BassNotion Dashboard',
+    title: 'Bassicology Dashboard',
     description: 'Manage your bass learning journey and track your progress.',
     type: 'website',
     images: ['/images/dashboard-og.jpg'],

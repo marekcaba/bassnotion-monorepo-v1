@@ -7,6 +7,7 @@ The SupabaseAssetClient has been refactored from a 3,301-line god object into a 
 ## Architecture Changes
 
 ### Before (God Object)
+
 ```
 SupabaseAssetClient (3,301 lines)
 ├── Connection Management
@@ -20,6 +21,7 @@ SupabaseAssetClient (3,301 lines)
 ```
 
 ### After (Modular Architecture)
+
 ```
 SupabaseAssetClient (Facade ~400 lines)
 ├── Shared Infrastructure (/shared/infrastructure/storage/)
@@ -75,6 +77,7 @@ const metrics = monitoring.getPlaybackMetrics();
 ### Step 3: Service-by-Service Migration
 
 #### Storage Operations
+
 ```typescript
 // OLD
 const client = SupabaseAssetClient.getInstance(config);
@@ -91,18 +94,24 @@ await storage.delete('path/to/file');
 ```
 
 #### Authentication
+
 ```typescript
 // OLD (embedded in SupabaseAssetClient)
 // Authentication was automatic
 
 // NEW
 import { PlaybackAuthenticationManager } from '@/domains/playback/services/storage/auth';
-const authManager = new PlaybackAuthenticationManager(config, supabaseClient, metrics);
+const authManager = new PlaybackAuthenticationManager(
+  config,
+  supabaseClient,
+  metrics,
+);
 await authManager.authenticate();
 const headers = await authManager.getPlaybackAuthHeaders();
 ```
 
 #### CDN Optimization
+
 ```typescript
 // OLD
 const client = SupabaseAssetClient.getInstance(config);
@@ -115,6 +124,7 @@ const optimalUrl = await cdn.getOptimalAudioEndpoint('sample.mp3', 'high');
 ```
 
 #### Monitoring
+
 ```typescript
 // OLD
 const client = SupabaseAssetClient.getInstance(config);
@@ -151,13 +161,17 @@ const metrics = monitoring.getPlaybackMetrics();
 ## Common Issues
 
 ### Issue: "Cannot find module" errors
+
 **Solution**: Update your imports to use the facade or modular services
 
 ### Issue: Missing authentication
+
 **Solution**: Initialize PlaybackAuthenticationManager if using services directly
 
 ### Issue: CDN not optimizing
+
 **Solution**: Initialize PlaybackCDNService and call initialize()
 
 ### Issue: No monitoring data
+
 **Solution**: Start PlaybackMonitoringService with `.start()`

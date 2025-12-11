@@ -170,7 +170,9 @@ const response = await apiClient.get('/api/users/123');
 const correlationId = response.headers['x-correlation-id'];
 
 // Search for all logs related to this request
-const logs = await apiClient.get(`/api/v1/logs/search?correlationId=${correlationId}`);
+const logs = await apiClient.get(
+  `/api/v1/logs/search?correlationId=${correlationId}`,
+);
 ```
 
 ### Monitoring Errors
@@ -182,7 +184,9 @@ const recentErrors = stats.data.recentErrors;
 
 // Trace each error
 for (const error of recentErrors) {
-  const trace = await apiClient.get(`/api/v1/logs/trace?correlationId=${error.correlationId}`);
+  const trace = await apiClient.get(
+    `/api/v1/logs/trace?correlationId=${error.correlationId}`,
+  );
   console.log(`Error flow:`, trace.data.timeline);
 }
 ```

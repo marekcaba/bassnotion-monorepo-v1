@@ -120,9 +120,8 @@ describe('Global Playback Synchronization Integration', () => {
   beforeEach(async () => {
     // Import services dynamically
     const PlaybackOrchestratorModule = await import('../PlaybackOrchestrator');
-    const SyncPerformanceMonitorModule = await import(
-      '../SyncPerformanceMonitor'
-    );
+    const SyncPerformanceMonitorModule =
+      await import('../SyncPerformanceMonitor');
     const YouTubePlaybackSyncModule = await import('../YouTubePlaybackSync');
     const widgetSyncServiceModule = await import('../WidgetSyncService');
 

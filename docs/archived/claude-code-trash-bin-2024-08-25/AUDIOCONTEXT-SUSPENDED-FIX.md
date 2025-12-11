@@ -3,6 +3,7 @@
 ## Problem
 
 When clicking the "Start Transport" button, we get:
+
 ```
 TransportError: AudioContext is suspended. Cannot start transport without user gesture.
 ```
@@ -32,11 +33,11 @@ try {
     await audioEngine.initialize();
     addEvent('✅ AudioEngine initialized');
   }
-  
+
   addEvent('Starting Tone.js audio system...');
   await tone.start();
   addEvent('✅ Tone.start() completed, context state: ' + tone.context.state);
-  
+
   // Double-check context state
   if (tone.context.state === 'suspended') {
     addEvent('⚠️ AudioContext still suspended after Tone.start()');
@@ -44,7 +45,7 @@ try {
     await tone.context.resume();
     addEvent('Context state after resume: ' + tone.context.state);
   }
-  
+
   // Now start the transport
   await transportController.start();
   setIsPlaying(true);

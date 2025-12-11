@@ -23,7 +23,9 @@ export function MidiDropZone({
 }: MidiDropZoneProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [uploadStatus, setUploadStatus] = useState<
+    'idle' | 'success' | 'error'
+  >('idle');
   const [fileName, setFileName] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -46,7 +48,9 @@ export function MidiDropZone({
 
   const validateMidiFile = (file: File): boolean => {
     const validExtensions = ['.mid', '.midi'];
-    const extension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+    const extension = file.name
+      .toLowerCase()
+      .substring(file.name.lastIndexOf('.'));
     return validExtensions.includes(extension);
   };
 
@@ -86,23 +90,29 @@ export function MidiDropZone({
     }
   };
 
-  const handleDrop = useCallback(async (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
+  const handleDrop = useCallback(
+    async (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
 
-    const files = Array.from(e.dataTransfer.files);
-    if (files.length > 0) {
-      await processFile(files[0]);
-    }
-  }, [onUpload, track]);
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length > 0) {
+        await processFile(files[0]);
+      }
+    },
+    [onUpload, track],
+  );
 
-  const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      await processFile(files[0]);
-    }
-  }, [onUpload, track]);
+  const handleFileSelect = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (files && files.length > 0) {
+        await processFile(files[0]);
+      }
+    },
+    [onUpload, track],
+  );
 
   const handleClick = () => {
     fileInputRef.current?.click();
@@ -198,9 +208,7 @@ export function MidiDropZone({
         </div>
 
         {fileName && !isUploading && (
-          <p className="text-sm mt-2 text-gray-400 truncate">
-            {fileName}
-          </p>
+          <p className="text-sm mt-2 text-gray-400 truncate">{fileName}</p>
         )}
       </CardContent>
     </Card>

@@ -58,7 +58,9 @@ export function LoginForm({
   return (
     <div className={className}>
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-center text-white">Welcome Back</h2>
+        <h2 className="text-2xl font-bold text-center text-white">
+          Welcome Back
+        </h2>
         <p className="text-gray-400 text-center mt-2">
           Sign in to continue your bass learning journey
         </p>
@@ -132,12 +134,19 @@ export function LoginForm({
           />
 
           <div className="flex items-center justify-between">
-            <Button variant="link" className="p-0 h-auto text-sm text-[#ffc700] hover:text-[#e6b300]">
+            <Button
+              variant="link"
+              className="p-0 h-auto text-sm text-[#ffc700] hover:text-[#e6b300]"
+            >
               Forgot password?
             </Button>
           </div>
 
-          <Button type="submit" className="w-full bg-[#ffc700] text-black hover:bg-[#e6b300]" disabled={isLoading}>
+          <Button
+            type="submit"
+            className="w-full bg-[#ffc700] text-black hover:bg-[#e6b300]"
+            disabled={isLoading}
+          >
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

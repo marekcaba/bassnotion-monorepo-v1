@@ -16,13 +16,16 @@ export default function HomePage() {
 
         {/* Header with Logo */}
         <header className="w-full pt-8 sm:pt-12 pb-5 flex justify-center">
-          <button onClick={() => navigateWithTransition('/')} className="cursor-pointer">
+          <button
+            onClick={() => navigateWithTransition('/')}
+            className="cursor-pointer"
+          >
             <Image
               src="/BASSICOLOGY BIG.png"
               alt="Bassicology"
               width={600}
               height={150}
-              className="w-[220px] sm:w-[320px] md:w-[400px] lg:w-[500px] xl:w-[600px] h-auto"
+              className="w-[180px] sm:w-[260px] md:w-[320px] lg:w-[400px] xl:w-[480px] h-auto"
               priority
             />
           </button>

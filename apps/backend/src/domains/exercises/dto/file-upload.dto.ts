@@ -5,11 +5,13 @@ import {
   IsBoolean,
   IsNumber,
   Min,
-  Max } from 'class-validator';
+  Max,
+} from 'class-validator';
 
 export enum FileUploadType {
   MUSICXML = 'musicxml',
-  MIDI = 'midi' }
+  MIDI = 'midi',
+}
 
 export class FileUploadDto {
   @IsEnum(FileUploadType)

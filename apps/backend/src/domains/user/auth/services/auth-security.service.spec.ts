@@ -163,9 +163,12 @@ describe('AuthSecurityService', () => {
         }),
         getCorrelationId: vi.fn().mockReturnValue('test-correlation-id'),
       };
-      
+
       // Create service with null database to test defensive behavior
-      const serviceWithoutDb = new AuthSecurityService(null as any, mockRequestContextService as any);
+      const serviceWithoutDb = new AuthSecurityService(
+        null as any,
+        mockRequestContextService as any,
+      );
 
       const result = await serviceWithoutDb.checkRateLimit(
         'test@example.com',
@@ -196,8 +199,11 @@ describe('AuthSecurityService', () => {
         }),
         getCorrelationId: vi.fn().mockReturnValue('test-correlation-id'),
       };
-      
-      const service = new AuthSecurityService(mockDatabaseService, mockRequestContextService as any);
+
+      const service = new AuthSecurityService(
+        mockDatabaseService,
+        mockRequestContextService as any,
+      );
 
       const result = await service.checkRateLimit(
         'test@example.com',
@@ -241,7 +247,7 @@ describe('AuthSecurityService', () => {
           from: vi.fn().mockImplementation(() => createMockQuery()),
         },
       };
-      
+
       const mockRequestContextService = {
         getLogger: vi.fn().mockReturnValue({
           info: vi.fn(),
@@ -252,7 +258,10 @@ describe('AuthSecurityService', () => {
         getCorrelationId: vi.fn().mockReturnValue('test-correlation-id'),
       };
 
-      service = new AuthSecurityService(mockDatabaseService, mockRequestContextService as any);
+      service = new AuthSecurityService(
+        mockDatabaseService,
+        mockRequestContextService as any,
+      );
     });
 
     it('should handle database errors gracefully in rate limiting', async () => {
@@ -366,8 +375,11 @@ describe('AuthSecurityService', () => {
         }),
         getCorrelationId: vi.fn().mockReturnValue('test-correlation-id'),
       };
-      
-      service = new AuthSecurityService(mockDatabaseService, mockRequestContextService as any);
+
+      service = new AuthSecurityService(
+        mockDatabaseService,
+        mockRequestContextService as any,
+      );
     });
 
     it('should not lock account with few failed attempts', async () => {
@@ -443,8 +455,11 @@ describe('AuthSecurityService', () => {
         }),
         getCorrelationId: vi.fn().mockReturnValue('test-correlation-id'),
       };
-      
-      service = new AuthSecurityService(mockDatabaseService, mockRequestContextService as any);
+
+      service = new AuthSecurityService(
+        mockDatabaseService,
+        mockRequestContextService as any,
+      );
     });
 
     it('should record successful login attempts', async () => {

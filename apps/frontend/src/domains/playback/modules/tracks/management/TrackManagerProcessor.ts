@@ -261,9 +261,7 @@ export class ChannelAnalysisAlgorithm implements TrackIdentificationAlgorithm {
  * Track Name Analysis Algorithm
  * Classifies tracks based on track names and text markers
  */
-export class TrackNameAnalysisAlgorithm
-  implements TrackIdentificationAlgorithm
-{
+export class TrackNameAnalysisAlgorithm implements TrackIdentificationAlgorithm {
   public readonly name = 'track-name-analysis';
   public readonly confidence = 0.8;
 
@@ -366,9 +364,7 @@ export class TrackNameAnalysisAlgorithm
  * Note Range Analysis Algorithm
  * Classifies tracks based on MIDI note ranges
  */
-export class NoteRangeAnalysisAlgorithm
-  implements TrackIdentificationAlgorithm
-{
+export class NoteRangeAnalysisAlgorithm implements TrackIdentificationAlgorithm {
   public readonly name = 'note-range-analysis';
   public readonly confidence = 0.6;
 
@@ -555,9 +551,7 @@ export class PatternAnalysisAlgorithm implements TrackIdentificationAlgorithm {
  * Instrument Detection Algorithm
  * Uses GM program changes and other instrument-specific markers
  */
-export class InstrumentDetectionAlgorithm
-  implements TrackIdentificationAlgorithm
-{
+export class InstrumentDetectionAlgorithm implements TrackIdentificationAlgorithm {
   public readonly name = 'instrument-detection';
   public readonly confidence = 0.9;
 

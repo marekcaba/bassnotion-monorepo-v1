@@ -289,7 +289,7 @@ describe('useAudio Hook', () => {
   it.skip('should detect already initialized AudioEngine - SKIP: Hook timing issues in test environment', async () => {
     // Pre-initialize the audio engine
     await mockAudioEngine.initialize();
-    
+
     // Mark the audio engine as initialized
     (mockAudioEngine as any).isInitialized = true;
 

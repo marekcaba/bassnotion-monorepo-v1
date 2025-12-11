@@ -53,7 +53,20 @@ export function MiniFretboard({
 
   // Calculate note name for a given string and fret
   const getNoteName = (stringIndex: number, fret: number): string => {
-    const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const notes = [
+      'C',
+      'C#',
+      'D',
+      'D#',
+      'E',
+      'F',
+      'F#',
+      'G',
+      'G#',
+      'A',
+      'A#',
+      'B',
+    ];
     const openStringNote = stringNames[stringIndex];
     const openStringIndex = notes.indexOf(openStringNote);
     const noteIndex = (openStringIndex + fret) % 12;
@@ -97,7 +110,8 @@ export function MiniFretboard({
                 <div className="flex items-center flex-1">
                   {Array.from({ length: frets + 1 }, (_, fretIndex) => {
                     const isSelected =
-                      selectedString === stringNum && selectedFret === fretIndex;
+                      selectedString === stringNum &&
+                      selectedFret === fretIndex;
                     const isMarker = fretMarkers.includes(fretIndex);
                     const isOpenString = fretIndex === 0;
 

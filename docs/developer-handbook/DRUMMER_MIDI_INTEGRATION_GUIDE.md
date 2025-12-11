@@ -3,12 +3,14 @@
 ## What We've Built ✅
 
 ### 1. Backend (Complete)
+
 - ✅ **Database**: `drum_pattern` JSONB column in exercises table
 - ✅ **DrumMapperService**: Converts MIDI → Structured drum hits
 - ✅ **API Endpoint**: `POST /api/v1/midi/convert-drums`
 - ✅ **Types**: DrumHit, DrumType, stats, validation
 
 ### 2. Frontend (Complete)
+
 - ✅ **Shared Types**: `@bassnotion/contracts` exports DrumHit, DrumType, etc.
 - ✅ **DrumPatternEditor**: Modal for reviewing/editing converted drum pattern
 - ✅ **Colors & Display Names**: Visual drum representation
@@ -24,8 +26,10 @@
 ```typescript
 // Drum pattern state (similar to bass notes)
 const [drumPattern, setDrumPattern] = useState<DrumHit[]>([]);
-const [drumPatternStats, setDrumPatternStats] = useState<DrumPatternStats | null>(null);
-const [drumPatternValidation, setDrumPatternValidation] = useState<DrumPatternValidation | null>(null);
+const [drumPatternStats, setDrumPatternStats] =
+  useState<DrumPatternStats | null>(null);
+const [drumPatternValidation, setDrumPatternValidation] =
+  useState<DrumPatternValidation | null>(null);
 const [showDrumEditor, setShowDrumEditor] = useState(false);
 const [isConvertingDrums, setIsConvertingDrums] = useState(false);
 ```
@@ -44,11 +48,13 @@ const convertDrummerMidi = async (drummerMidiUrl: string) => {
     setIsConvertingDrums(true);
     logger.info('Converting drummer MIDI to drum pattern', {
       drummerMidiUrl,
-      correlationId
+      correlationId,
     });
 
     // Get auth session for backend API call
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (!session?.access_token) {
       throw new Error('You must be logged in');
     }
@@ -60,7 +66,7 @@ const convertDrummerMidi = async (drummerMidiUrl: string) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${session.access_token}`,
           'X-Correlation-ID': correlationId,
         },
         credentials: 'include',
@@ -68,11 +74,13 @@ const convertDrummerMidi = async (drummerMidiUrl: string) => {
           exerciseId: exercise?.id || 'new',
           drummerMidiUrl,
         }),
-      }
+      },
     );
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Conversion failed' }));
+      const errorData = await response
+        .json()
+        .catch(() => ({ message: 'Conversion failed' }));
       throw new Error(errorData.message || 'Failed to convert drum MIDI');
     }
 
@@ -81,7 +89,7 @@ const convertDrummerMidi = async (drummerMidiUrl: string) => {
     logger.info('Drummer MIDI converted successfully', {
       totalHits: result.stats.totalHits,
       unknownCount: result.stats.unknownCount,
-      correlationId
+      correlationId,
     });
 
     // Store converted drum pattern
@@ -91,13 +99,14 @@ const convertDrummerMidi = async (drummerMidiUrl: string) => {
 
     // Show editor for review
     setShowDrumEditor(true);
-
   } catch (error) {
     console.error('Drum conversion error:', error);
-    logger.error('Failed to convert drummer MIDI', error as Error, { correlationId });
-    setErrors(prev => ({
+    logger.error('Failed to convert drummer MIDI', error as Error, {
+      correlationId,
+    });
+    setErrors((prev) => ({
       ...prev,
-      drummer: `Failed to convert drum MIDI: ${(error as Error).message}`
+      drummer: `Failed to convert drum MIDI: ${(error as Error).message}`,
     }));
   } finally {
     setIsConvertingDrums(false);
@@ -110,11 +119,13 @@ const convertDrummerMidi = async (drummerMidiUrl: string) => {
 **Modify the `uploadMidiFile` function** (around line 258):
 
 **Before:**
+
 ```typescript
 return temporaryUrl;
 ```
 
 **After:**
+
 ```typescript
 // Auto-trigger drum conversion for drummer MIDI
 if (type === 'drummer' && temporaryUrl) {
@@ -136,7 +147,7 @@ const exerciseData = {
   ...midiUrls,
   ...uploadedUrls,
   // Add converted drum pattern
-  drum_pattern: drumPattern,  // ← NEW
+  drum_pattern: drumPattern, // ← NEW
   // Add temp MIDI paths for backend migration
   temp_bassline_midi_path: tempMidiPaths.bassline,
   temp_drummer_midi_path: tempMidiPaths.drummer,
@@ -149,20 +160,24 @@ const exerciseData = {
 **Add before the closing `</Dialog>`** (around line 900):
 
 ```tsx
-{/* Drum Pattern Editor Modal */}
-{showDrumEditor && drumPatternStats && drumPatternValidation && (
-  <DrumPatternEditor
-    isOpen={showDrumEditor}
-    onClose={() => setShowDrumEditor(false)}
-    drumPattern={drumPattern}
-    stats={drumPatternStats}
-    validation={drumPatternValidation}
-    onSave={(updatedPattern) => {
-      setDrumPattern(updatedPattern);
-      setShowDrumEditor(false);
-    }}
-  />
-)}
+{
+  /* Drum Pattern Editor Modal */
+}
+{
+  showDrumEditor && drumPatternStats && drumPatternValidation && (
+    <DrumPatternEditor
+      isOpen={showDrumEditor}
+      onClose={() => setShowDrumEditor(false)}
+      drumPattern={drumPattern}
+      stats={drumPatternStats}
+      validation={drumPatternValidation}
+      onSave={(updatedPattern) => {
+        setDrumPattern(updatedPattern);
+        setShowDrumEditor(false);
+      }}
+    />
+  );
+}
 ```
 
 ### Step 6: Add Import Statements
@@ -183,26 +198,26 @@ import type {
 **In the drummer MIDI upload section** (around line 641), add a status indicator:
 
 ```tsx
-{isConvertingDrums && (
-  <div className="text-sm text-blue-600 flex items-center gap-2">
-    <Wand2 className="h-4 w-4 animate-spin" />
-    Converting drum MIDI...
-  </div>
-)}
+{
+  isConvertingDrums && (
+    <div className="text-sm text-blue-600 flex items-center gap-2">
+      <Wand2 className="h-4 w-4 animate-spin" />
+      Converting drum MIDI...
+    </div>
+  );
+}
 
-{drumPattern.length > 0 && !isConvertingDrums && (
-  <div className="text-sm text-green-600 flex items-center gap-2">
-    <CheckCircle2 className="h-4 w-4" />
-    {drumPattern.length} drum hits converted
-    <Button
-      variant="link"
-      size="sm"
-      onClick={() => setShowDrumEditor(true)}
-    >
-      Review Pattern
-    </Button>
-  </div>
-)}
+{
+  drumPattern.length > 0 && !isConvertingDrums && (
+    <div className="text-sm text-green-600 flex items-center gap-2">
+      <CheckCircle2 className="h-4 w-4" />
+      {drumPattern.length} drum hits converted
+      <Button variant="link" size="sm" onClick={() => setShowDrumEditor(true)}>
+        Review Pattern
+      </Button>
+    </div>
+  );
+}
 ```
 
 ## Testing Workflow

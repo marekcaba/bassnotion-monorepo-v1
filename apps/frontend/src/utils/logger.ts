@@ -53,13 +53,24 @@ class Logger {
 
     if (envLogLevel) {
       // Map environment string to LogLevel enum
-      switch(envLogLevel) {
-        case 'ERROR': defaultLevel = LogLevel.ERROR; break;
-        case 'WARN': defaultLevel = LogLevel.WARN; break;
-        case 'INFO': defaultLevel = LogLevel.INFO; break;
-        case 'DEBUG': defaultLevel = LogLevel.DEBUG; break;
-        case 'VERBOSE': defaultLevel = LogLevel.VERBOSE; break;
-        default: defaultLevel = LogLevel.ERROR;
+      switch (envLogLevel) {
+        case 'ERROR':
+          defaultLevel = LogLevel.ERROR;
+          break;
+        case 'WARN':
+          defaultLevel = LogLevel.WARN;
+          break;
+        case 'INFO':
+          defaultLevel = LogLevel.INFO;
+          break;
+        case 'DEBUG':
+          defaultLevel = LogLevel.DEBUG;
+          break;
+        case 'VERBOSE':
+          defaultLevel = LogLevel.VERBOSE;
+          break;
+        default:
+          defaultLevel = LogLevel.ERROR;
       }
     }
 

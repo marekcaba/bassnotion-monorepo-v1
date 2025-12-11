@@ -1,11 +1,13 @@
 # Storage Modules Migration Guide
 
 ## Overview
+
 This guide documents the migration from legacy storage implementations to the new modular storage architecture, specifically focusing on the transition from `SupabaseAssetClient` to `SupabaseProviderAdvanced`.
 
 ## Key Changes
 
 ### 1. Legacy Architecture (Before)
+
 ```typescript
 // Direct usage of SupabaseAssetClient
 import { SupabaseAssetClient } from './SupabaseAssetClient';
@@ -16,6 +18,7 @@ await storageClient.downloadAsset(bucket, path, options);
 ```
 
 ### 2. New Architecture (After)
+
 ```typescript
 // Using SupabaseProviderAdvanced from modules
 import { createSupabaseProviderAdvanced } from '../../modules/storage/providers';
@@ -38,25 +41,26 @@ await storageProvider.download(path);
 ## Migration Example: AudioSampleManager
 
 ### Before (Using SupabaseAssetClient)
+
 ```typescript
 export class AudioSampleManager {
   private storageClient: SupabaseAssetClient;
-  
+
   constructor(config: AudioSampleManagerConfig) {
     this.storageClient = SupabaseAssetClient.getInstance(
-      config.storageClientConfig
+      config.storageClientConfig,
     );
   }
-  
+
   async initialize() {
     await this.storageClient.initialize();
   }
-  
+
   async loadSample(sampleId: string) {
     const downloadResult = await this.storageClient.downloadAsset(
       metadata.bucket,
       metadata.path,
-      downloadOptions
+      downloadOptions,
     );
     // Process result...
   }
@@ -64,10 +68,11 @@ export class AudioSampleManager {
 ```
 
 ### After (Using SupabaseProviderAdvanced)
+
 ```typescript
 export class AudioSampleManager {
   private storageProvider: SupabaseProviderAdvanced;
-  
+
   constructor(config: AudioSampleManagerConfig) {
     const providerConfig: SupabaseProviderAdvancedConfig = {
       supabaseUrl: config.storageClientConfig.supabaseUrl,
@@ -86,15 +91,15 @@ export class AudioSampleManager {
 
     this.storageProvider = createSupabaseProviderAdvanced(providerConfig);
   }
-  
+
   async initialize() {
     // Storage provider initializes automatically on first use
     // No need to explicitly initialize
   }
-  
+
   async loadSample(sampleId: string) {
     const downloadResult = await this.storageProvider.download(metadata.path);
-    
+
     if (!downloadResult.success || !downloadResult.data) {
       throw new Error(`Failed to download: ${downloadResult.error?.message}`);
     }
@@ -106,12 +111,13 @@ export class AudioSampleManager {
 ## New Features Available
 
 ### 1. Batch Operations
+
 ```typescript
 // Load multiple samples efficiently
 const results = await storageProvider.batchDownload([
   'samples/bass1.wav',
   'samples/bass2.wav',
-  'samples/bass3.wav'
+  'samples/bass3.wav',
 ]);
 
 // Upload multiple files
@@ -122,6 +128,7 @@ const uploadResults = await storageProvider.batchUpload([
 ```
 
 ### 2. Version Management
+
 ```typescript
 // Get version history
 const history = await storageProvider.getVersionHistory('samples/bass.wav');
@@ -131,6 +138,7 @@ await storageProvider.restoreVersion('samples/bass.wav', 'v1.2.3');
 ```
 
 ### 3. Health Monitoring
+
 ```typescript
 // Check system health
 const health = await storageProvider.healthCheck();
@@ -142,6 +150,7 @@ console.log(metrics.cacheHits, metrics.averageLatency);
 ```
 
 ### 4. Circuit Breaker Protection
+
 ```typescript
 // Automatic fault tolerance
 // If storage fails repeatedly, circuit breaker opens
@@ -151,6 +160,7 @@ console.log(status); // 'closed' | 'open' | 'half-open'
 ```
 
 ### 5. CDN Optimization
+
 ```typescript
 // Automatic CDN routing for optimal performance
 // CDN cache management
@@ -160,33 +170,37 @@ await storageProvider.purgeCDNCache(['samples/old.wav']);
 ## Migration Steps
 
 ### Step 1: Update Imports
+
 Replace all imports of `SupabaseAssetClient` with the new provider:
+
 ```typescript
 // Old
 import { SupabaseAssetClient } from './storage/SupabaseAssetClient';
 
 // New
-import { 
+import {
   createSupabaseProviderAdvanced,
-  type SupabaseProviderAdvancedConfig 
+  type SupabaseProviderAdvancedConfig,
 } from '../../modules/storage/providers';
 ```
 
 ### Step 2: Update Configuration
+
 Map your existing configuration to the new format:
+
 ```typescript
 const providerConfig: SupabaseProviderAdvancedConfig = {
   // Basic configuration (same as before)
   supabaseUrl: oldConfig.supabaseUrl,
   supabaseKey: oldConfig.supabaseAnonKey,
   bucketName: oldConfig.bucketName,
-  
+
   // New advanced features
   enableVersioning: true,
   enableCircuitBreaker: true,
   enableBatchOperations: true,
   enableCDNOptimization: true,
-  
+
   // Advanced configuration
   versionStrategy: 'timestamp',
   maxVersions: 10,
@@ -198,19 +212,22 @@ const providerConfig: SupabaseProviderAdvancedConfig = {
 ```
 
 ### Step 3: Update Method Calls
+
 Map old method calls to new ones:
 
-| Old Method | New Method | Notes |
-|------------|------------|-------|
-| `downloadAsset(bucket, path, options)` | `download(path, options)` | Bucket is in config |
+| Old Method                                 | New Method                           | Notes                     |
+| ------------------------------------------ | ------------------------------------ | ------------------------- |
+| `downloadAsset(bucket, path, options)`     | `download(path, options)`            | Bucket is in config       |
 | `uploadAsset(bucket, path, data, options)` | `upload(data, { path, ...options })` | Different parameter order |
-| `deleteAsset(bucket, path)` | `delete(path)` | Simpler interface |
-| `runCleanup('orphaned')` | Not needed | Handled internally |
-| `initialize()` | Not needed | Auto-initializes |
-| `dispose()` | Not needed | Auto-cleanup |
+| `deleteAsset(bucket, path)`                | `delete(path)`                       | Simpler interface         |
+| `runCleanup('orphaned')`                   | Not needed                           | Handled internally        |
+| `initialize()`                             | Not needed                           | Auto-initializes          |
+| `dispose()`                                | Not needed                           | Auto-cleanup              |
 
 ### Step 4: Add Error Handling
+
 The new provider returns structured results:
+
 ```typescript
 const result = await storageProvider.download(path);
 if (!result.success) {
@@ -221,7 +238,9 @@ if (!result.success) {
 ```
 
 ### Step 5: Leverage New Features
+
 Take advantage of the enhanced capabilities:
+
 ```typescript
 // Enable monitoring
 const metrics = storageProvider.getAdvancedMetrics();
@@ -240,6 +259,7 @@ if (health.status === 'unhealthy') {
 ## Testing the Migration
 
 ### Unit Tests
+
 ```typescript
 // Mock the new provider
 vi.mock('../../../modules/storage/providers', () => ({
@@ -254,6 +274,7 @@ vi.mock('../../../modules/storage/providers', () => ({
 ```
 
 ### Integration Tests
+
 ```typescript
 // Test with real provider
 const provider = createSupabaseProviderAdvanced(testConfig);
@@ -274,20 +295,25 @@ expect(result.success).toBe(true);
 ## Common Issues and Solutions
 
 ### Issue: Missing initialization
+
 **Solution**: The new provider auto-initializes. Remove `await provider.initialize()` calls.
 
 ### Issue: Different method signatures
+
 **Solution**: Refer to the method mapping table above. Parameters have been simplified.
 
 ### Issue: Missing cleanup/dispose
+
 **Solution**: The new provider manages its own lifecycle. Remove explicit cleanup calls.
 
 ### Issue: Bucket parameter required
+
 **Solution**: Bucket is now part of the configuration, not passed to each method.
 
 ## Rollback Plan
 
 If you need to rollback:
+
 1. The old `SupabaseAssetClient` is still available (though deprecated)
 2. Revert your imports and method calls
 3. Re-add initialization and disposal calls
@@ -296,6 +322,7 @@ If you need to rollback:
 ## Future Considerations
 
 The modular architecture allows for:
+
 - Easy addition of new storage providers (S3, Azure, etc.)
 - Plugin-based feature extensions
 - Better tree-shaking and code splitting

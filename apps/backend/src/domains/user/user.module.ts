@@ -20,17 +20,22 @@ import { RequestContextService } from '../../shared/services/request-context.ser
     // Base repository
     {
       provide: UserRepository,
-      useFactory: (supabaseService: SupabaseService, requestContext: RequestContextService) => {
+      useFactory: (
+        supabaseService: SupabaseService,
+        requestContext: RequestContextService,
+      ) => {
         return new UserRepository(supabaseService.getClient(), requestContext);
       },
-      inject: [SupabaseService, RequestContextService] },
+      inject: [SupabaseService, RequestContextService],
+    },
     // Cached repository (wraps base repository)
     {
       provide: CachedUserRepository,
       useFactory: (repository: UserRepository, cacheService: CacheService) => {
         return new CachedUserRepository(repository, cacheService);
       },
-      inject: [UserRepository, CacheService] },
+      inject: [UserRepository, CacheService],
+    },
     // Result repository (wraps cached repository)
     {
       provide: 'IResultUserRepository',
@@ -46,7 +51,9 @@ import { RequestContextService } from '../../shared/services/request-context.ser
           requestContext,
         );
       },
-      inject: [CachedUserRepository, ConfigService, RequestContextService] },
+      inject: [CachedUserRepository, ConfigService, RequestContextService],
+    },
   ],
-  exports: [AuthModule, UserService, 'IResultUserRepository'] })
+  exports: [AuthModule, UserService, 'IResultUserRepository'],
+})
 export class UserModule {}

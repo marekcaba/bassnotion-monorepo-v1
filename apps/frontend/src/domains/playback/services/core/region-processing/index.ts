@@ -36,7 +36,10 @@ export { ScheduleCache } from './cache/index.js';
 
 // Sustain pedal (merged CC64TimelineBuilder + SustainPedalAnalyzer)
 export { SustainPedalManager } from './sustain/index.js';
-export type { CC64TimelineBuilder, SustainPedalAnalyzer } from './sustain/index.js';
+export type {
+  CC64TimelineBuilder,
+  SustainPedalAnalyzer,
+} from './sustain/index.js';
 
 // Simple instrument schedulers (metronome, drums, bass, voice-cue)
 export {

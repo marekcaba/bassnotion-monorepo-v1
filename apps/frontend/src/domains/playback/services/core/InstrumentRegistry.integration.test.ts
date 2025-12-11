@@ -64,7 +64,9 @@ describe('InstrumentRegistry Integration', () => {
       const registeredEvents: any[] = [];
       const replacedEvents: any[] = [];
 
-      eventBus.on('instrument:registered', (data) => registeredEvents.push(data));
+      eventBus.on('instrument:registered', (data) =>
+        registeredEvents.push(data),
+      );
       eventBus.on('instrument:replaced', (data) => replacedEvents.push(data));
 
       const instrument1 = { id: 'first' };
@@ -153,7 +155,7 @@ describe('InstrumentRegistry Integration', () => {
         promises.push(
           Promise.resolve().then(() => {
             registry.setActive('drums', { id: `drums-${i}` });
-          })
+          }),
         );
       }
 
@@ -255,7 +257,7 @@ describe('InstrumentRegistry Integration', () => {
       registry.setActive('drums', { id: 'drums' });
 
       // All listeners should be called
-      listeners.forEach(listener => {
+      listeners.forEach((listener) => {
         expect(listener).toHaveBeenCalled();
       });
     });

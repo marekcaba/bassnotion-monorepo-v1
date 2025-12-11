@@ -130,6 +130,7 @@ WHERE id = 'user-uuid-here';
 Ensure these are set in your `.env` files:
 
 ### Backend (.env)
+
 ```
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=your-anon-key
@@ -138,6 +139,7 @@ DATABASE_URL=postgresql://...
 ```
 
 ### Frontend (.env.local)
+
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
@@ -166,18 +168,23 @@ DELETE FROM storage.buckets WHERE id = 'exercise-files';
 ## Troubleshooting
 
 ### Issue: RLS policies blocking access
+
 **Solution**: Ensure the user has the `admin` role in the profiles table
 
 ### Issue: Storage upload failing
+
 **Solution**:
+
 1. Check that the bucket exists
 2. Verify CORS settings if uploading from browser
 3. Check file size limits (5MB max)
 
 ### Issue: Slug generation not working
+
 **Solution**: Ensure the trigger functions were created successfully
 
 ### Issue: Foreign key constraint errors
+
 **Solution**: Ensure tutorials are created before exercises, as exercises reference tutorial_id
 
 ## Testing the Migration
@@ -185,6 +192,7 @@ DELETE FROM storage.buckets WHERE id = 'exercise-files';
 After successful migration, test the system:
 
 1. **Create a Tutorial** (as admin):
+
 ```bash
 curl -X POST http://localhost:3000/api/v1/tutorials \
   -H "Authorization: Bearer YOUR_TOKEN" \
@@ -198,6 +206,7 @@ curl -X POST http://localhost:3000/api/v1/tutorials \
 ```
 
 2. **Create an Exercise**:
+
 ```bash
 curl -X POST http://localhost:3000/api/v1/exercises \
   -H "Authorization: Bearer YOUR_TOKEN" \
@@ -213,6 +222,7 @@ curl -X POST http://localhost:3000/api/v1/exercises \
 ```
 
 3. **Upload a MIDI file**:
+
 - Use the admin interface at `/admin/tutorials/[slug]/edit`
 - Upload MIDI files through the drag-and-drop interface
 

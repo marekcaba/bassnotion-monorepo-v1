@@ -40,7 +40,12 @@ export class AdminTutorialsController {
     @Query('search') search?: string,
     @CorrelationId() correlationId?: string,
   ) {
-    this.logger.log(`Finding all tutorials`, { correlationId, page, limit, search });
+    this.logger.log(`Finding all tutorials`, {
+      correlationId,
+      page,
+      limit,
+      search,
+    });
 
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 20;
@@ -96,7 +101,7 @@ export class AdminTutorialsController {
   ) {
     this.logger.log(`Finding tutorial by slug: ${slug}`, {
       correlationId,
-      includeExercises: includeExercises === 'true'
+      includeExercises: includeExercises === 'true',
     });
 
     const tutorial = await this.tutorialsService.findBySlug(slug);
@@ -106,7 +111,9 @@ export class AdminTutorialsController {
 
     // OPTIMIZATION: Batch fetch exercises with tutorial to reduce API calls
     if (includeExercises === 'true') {
-      const exercises = await this.tutorialsService.findExercisesByTutorialId(tutorial.id);
+      const exercises = await this.tutorialsService.findExercisesByTutorialId(
+        tutorial.id,
+      );
       return { tutorial, exercises };
     }
 
@@ -321,20 +328,21 @@ export class AdminTutorialsController {
       if (body.youtubeUrl) {
         // Extract video ID from YouTube URL
         const videoIdMatch = body.youtubeUrl.match(
-          /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/
+          /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
         );
 
         if (videoIdMatch) {
           const videoId = videoIdMatch[1];
           // Fetch video details to get channel ID
-          const apiKey = process.env.YOUTUBE_API_KEY || process.env.GOOGLE_API_KEY;
+          const apiKey =
+            process.env.YOUTUBE_API_KEY || process.env.GOOGLE_API_KEY;
 
           if (!apiKey) {
             throw new BadRequestException('YouTube API key not configured');
           }
 
           const videoResponse = await fetch(
-            `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${apiKey}`
+            `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${apiKey}`,
           );
 
           if (!videoResponse.ok) {
@@ -349,7 +357,7 @@ export class AdminTutorialsController {
       } else if (body.channelUrl) {
         // Extract channel ID from channel URL
         const channelMatch = body.channelUrl.match(
-          /(?:youtube\.com\/channel\/|youtube\.com\/@|youtube\.com\/c\/|youtube\.com\/user\/)([^\/\?]+)/
+          /(?:youtube\.com\/channel\/|youtube\.com\/@|youtube\.com\/c\/|youtube\.com\/user\/)([^\/\?]+)/,
         );
 
         if (channelMatch) {
@@ -360,7 +368,8 @@ export class AdminTutorialsController {
             channelId = channelIdentifier;
           } else {
             // It's a username or handle, need to search for it
-            const apiKey = process.env.YOUTUBE_API_KEY || process.env.GOOGLE_API_KEY;
+            const apiKey =
+              process.env.YOUTUBE_API_KEY || process.env.GOOGLE_API_KEY;
 
             if (!apiKey) {
               throw new BadRequestException('YouTube API key not configured');
@@ -368,7 +377,7 @@ export class AdminTutorialsController {
 
             // Search for channel by handle or username
             const searchResponse = await fetch(
-              `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${channelIdentifier}&key=${apiKey}`
+              `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${channelIdentifier}&key=${apiKey}`,
             );
 
             if (!searchResponse.ok) {
@@ -388,7 +397,9 @@ export class AdminTutorialsController {
       }
 
       // Fetch channel details
-      const channelStats = await this.creatorsService.fetchYouTubeChannelStats([channelId]);
+      const channelStats = await this.creatorsService.fetchYouTubeChannelStats([
+        channelId,
+      ]);
 
       if (!channelStats.items || channelStats.items.length === 0) {
         throw new NotFoundException('Channel not found');
@@ -399,17 +410,23 @@ export class AdminTutorialsController {
       return {
         creatorName: channel.snippet.title,
         creatorChannelUrl: `https://www.youtube.com/channel/${channel.id}`,
-        creatorAvatarUrl: channel.snippet.thumbnails.high?.url ||
-                         channel.snippet.thumbnails.medium?.url ||
-                         channel.snippet.thumbnails.default?.url,
+        creatorAvatarUrl:
+          channel.snippet.thumbnails.high?.url ||
+          channel.snippet.thumbnails.medium?.url ||
+          channel.snippet.thumbnails.default?.url,
         subscriberCount: parseInt(channel.statistics.subscriberCount, 10),
       };
     } catch (error) {
-      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
         throw error;
       }
       this.logger.error('Error fetching YouTube channel info:', error);
-      throw new BadRequestException('Failed to fetch YouTube channel information');
+      throw new BadRequestException(
+        'Failed to fetch YouTube channel information',
+      );
     }
   }
 }

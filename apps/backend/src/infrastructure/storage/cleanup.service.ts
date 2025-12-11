@@ -60,7 +60,8 @@ export class CleanupService {
       }
 
       // Calculate expiration threshold
-      const expirationThreshold = Date.now() - this.EXPIRATION_HOURS * 60 * 60 * 1000;
+      const expirationThreshold =
+        Date.now() - this.EXPIRATION_HOURS * 60 * 60 * 1000;
 
       // Filter expired files
       const expiredFiles = files.filter((file) => {
@@ -68,7 +69,9 @@ export class CleanupService {
         return createdAt < expirationThreshold;
       });
 
-      this.logger.log(`Found ${expiredFiles.length} expired files (older than ${this.EXPIRATION_HOURS} hours)`);
+      this.logger.log(
+        `Found ${expiredFiles.length} expired files (older than ${this.EXPIRATION_HOURS} hours)`,
+      );
 
       if (expiredFiles.length === 0) {
         return {
@@ -86,11 +89,15 @@ export class CleanupService {
       for (let i = 0; i < expiredFiles.length; i += this.BATCH_SIZE) {
         const batch = expiredFiles.slice(i, i + this.BATCH_SIZE);
 
-        this.logger.debug(`Deleting batch ${i / this.BATCH_SIZE + 1} (${batch.length} files)`);
+        this.logger.debug(
+          `Deleting batch ${i / this.BATCH_SIZE + 1} (${batch.length} files)`,
+        );
 
         for (const file of batch) {
           try {
-            const deleted = await this.supabaseService.deleteTempFile(file.name);
+            const deleted = await this.supabaseService.deleteTempFile(
+              file.name,
+            );
             if (deleted) {
               deletedCount++;
             } else {

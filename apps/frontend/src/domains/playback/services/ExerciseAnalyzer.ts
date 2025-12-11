@@ -38,7 +38,9 @@ export class ExerciseAnalyzer {
    * Analyze an exercise to determine exact audio buffer requirements
    * This is the main entry point for exercise analysis
    */
-  async analyzeExercise(exercise: Exercise): Promise<ExerciseAudioRequirements> {
+  async analyzeExercise(
+    exercise: Exercise,
+  ): Promise<ExerciseAudioRequirements> {
     logger.info(`Analyzing exercise: ${exercise.title}`);
 
     // Parse MIDI files to extract actual notes
@@ -50,7 +52,9 @@ export class ExerciseAnalyzer {
     // Parse harmony MIDI if available
     if (exercise.hasHarmonyMidi() && exercise.harmonyMidiUrl) {
       try {
-        const harmonyMidi = await this.fetchAndParseMidi(exercise.harmonyMidiUrl);
+        const harmonyMidi = await this.fetchAndParseMidi(
+          exercise.harmonyMidiUrl,
+        );
         this.extractNotesFromMidi(harmonyMidi, harmonyNotes, harmonyVelocities);
       } catch (error) {
         logger.error('Failed to parse harmony MIDI', error);
@@ -75,7 +79,10 @@ export class ExerciseAnalyzer {
       });
     }
 
-    const harmonyRequirements = this.analyzeHarmony(harmonyNotes, harmonyVelocities);
+    const harmonyRequirements = this.analyzeHarmony(
+      harmonyNotes,
+      harmonyVelocities,
+    );
     const bassRequirements = this.analyzeBass(bassNotes, bassVelocities);
 
     const totalMemoryMB = this.estimateMemory(
@@ -135,12 +142,24 @@ export class ExerciseAnalyzer {
    * Example: 60 → 'C4', 61 → 'Cs4' (Salamander notation)
    */
   private midiNumberToNoteName(midiNumber: number): string {
-    const noteNames = ['C', 'Cs', 'D', 'Ds', 'E', 'F', 'Fs', 'G', 'Gs', 'A', 'As', 'B'];
+    const noteNames = [
+      'C',
+      'Cs',
+      'D',
+      'Ds',
+      'E',
+      'F',
+      'Fs',
+      'G',
+      'Gs',
+      'A',
+      'As',
+      'B',
+    ];
     const octave = Math.floor(midiNumber / 12) - 1;
     const noteIndex = midiNumber % 12;
     return noteNames[noteIndex] + octave;
   }
-
 
   /**
    * Determine which velocity layers are needed based on velocity range
@@ -176,7 +195,10 @@ export class ExerciseAnalyzer {
   /**
    * Estimate total memory usage in MB
    */
-  private estimateMemory(harmonyBufferCount: number, bassBufferCount: number): number {
+  private estimateMemory(
+    harmonyBufferCount: number,
+    bassBufferCount: number,
+  ): number {
     const harmonyMB = (harmonyBufferCount * 100) / 1024; // ~100KB per piano sample
     const bassMB = (bassBufferCount * 50) / 1024; // ~50KB per bass sample
     return harmonyMB + bassMB;

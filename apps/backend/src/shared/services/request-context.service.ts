@@ -38,6 +38,7 @@ export class RequestContextService {
       correlationId: this.request.correlationId,
       logger: this.request.logger,
       userId: (this.request as any).user?.id,
-      sessionId: (this.request as any).session?.id };
+      sessionId: (this.request as any).session?.id,
+    };
   }
 }

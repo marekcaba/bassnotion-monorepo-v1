@@ -273,27 +273,27 @@ export class MusicalTimeConstants {
 
   /** Tick values for common note durations at 480 PPQ */
   public static readonly DURATION_TICKS = {
-    'whole': 1920,           // 480 * 4
-    'half': 960,             // 480 * 2
-    'quarter': 480,          // 480 * 1
-    'eighth': 240,           // 480 / 2
-    'sixteenth': 120,        // 480 / 4
-    'thirty-second': 60,     // 480 / 8
-    'sixty-fourth': 30,      // 480 / 16
-    'whole-dotted': 2880,    // 480 * 4 * 1.5
-    'half-dotted': 1440,     // 480 * 2 * 1.5
-    'quarter-dotted': 720,   // 480 * 1 * 1.5
-    'eighth-dotted': 360,    // 480 / 2 * 1.5
+    whole: 1920, // 480 * 4
+    half: 960, // 480 * 2
+    quarter: 480, // 480 * 1
+    eighth: 240, // 480 / 2
+    sixteenth: 120, // 480 / 4
+    'thirty-second': 60, // 480 / 8
+    'sixty-fourth': 30, // 480 / 16
+    'whole-dotted': 2880, // 480 * 4 * 1.5
+    'half-dotted': 1440, // 480 * 2 * 1.5
+    'quarter-dotted': 720, // 480 * 1 * 1.5
+    'eighth-dotted': 360, // 480 / 2 * 1.5
     'sixteenth-dotted': 180, // 480 / 4 * 1.5
-    'quarter-triplet': 320,  // (480 * 2) / 3
-    'eighth-triplet': 160,   // (480 * 1) / 3
-    'sixteenth-triplet': 80  // (480 / 2) / 3
+    'quarter-triplet': 320, // (480 * 2) / 3
+    'eighth-triplet': 160, // (480 * 1) / 3
+    'sixteenth-triplet': 80, // (480 / 2) / 3
   } as const;
 
   /** Triplet tick values (for backward compatibility) */
   public static readonly TRIPLET_TICKS = {
-    QUARTER: 320,  // (480 * 2) / 3
-    EIGHTH: 160,   // 480 / 3
+    QUARTER: 320, // (480 * 2) / 3
+    EIGHTH: 160, // 480 / 3
     SIXTEENTH: 80, // (480 / 2) / 3
   } as const;
 }
@@ -328,7 +328,7 @@ export function msToTicks(ms: number, bpm: number): number {
  */
 export function positionToAbsoluteTick(
   position: MusicalPosition,
-  timeSignature: TimeSignature
+  timeSignature: TimeSignature,
 ): number {
   const ticksPerBeat = MusicalTimeConstants.TICKS_PER_QUARTER;
   const ticksPerMeasure = ticksPerBeat * timeSignature.numerator;
@@ -351,7 +351,7 @@ export function positionToAbsoluteTick(
  */
 export function absoluteTickToPosition(
   tick: number,
-  timeSignature: TimeSignature
+  timeSignature: TimeSignature,
 ): MusicalPosition {
   const ticksPerBeat = MusicalTimeConstants.TICKS_PER_QUARTER;
   const ticksPerMeasure = ticksPerBeat * timeSignature.numerator;
@@ -371,7 +371,7 @@ export function absoluteTickToPosition(
     measure,
     beat,
     subdivision,
-    tick: ticksWithinBeat  // FIX: Preserve precise tick position within beat (0-479)
+    tick: ticksWithinBeat, // FIX: Preserve precise tick position within beat (0-479)
   };
 }
 
@@ -414,5 +414,8 @@ export function inferNoteDurationFromTicks(ticks: number): NoteDuration {
  * @returns Duration in ticks
  */
 export function noteDurationToTicks(duration: NoteDuration): number {
-  return MusicalTimeConstants.DURATION_TICKS[duration] ?? MusicalTimeConstants.TICKS_PER_QUARTER;
+  return (
+    MusicalTimeConstants.DURATION_TICKS[duration] ??
+    MusicalTimeConstants.TICKS_PER_QUARTER
+  );
 }

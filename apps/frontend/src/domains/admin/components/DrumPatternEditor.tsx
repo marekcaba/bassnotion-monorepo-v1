@@ -1,9 +1,21 @@
 'use client';
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/shared/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/shared/components/ui/dialog';
 import { Button } from '@/shared/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select';
 import { AlertCircle, CheckCircle, Info, Trash2, Plus } from 'lucide-react';
 import type {
   DrumHit,
@@ -11,10 +23,7 @@ import type {
   DrumPatternStats,
   DrumPatternValidation,
 } from '@bassnotion/contracts';
-import {
-  DRUM_DISPLAY_NAMES,
-  DRUM_COLORS,
-} from '@bassnotion/contracts';
+import { DRUM_DISPLAY_NAMES, DRUM_COLORS } from '@bassnotion/contracts';
 
 interface DrumPatternEditorProps {
   isOpen: boolean;
@@ -66,17 +75,20 @@ export function DrumPatternEditor({
   // Update a drum hit's type
   const updateDrumType = useCallback((hitId: string, newDrum: MidiDrumType) => {
     setDrumPattern((prev) =>
-      prev.map((hit) => (hit.id === hitId ? { ...hit, drum: newDrum } : hit))
+      prev.map((hit) => (hit.id === hitId ? { ...hit, drum: newDrum } : hit)),
     );
   }, []);
 
   // Delete a drum hit
-  const deleteHit = useCallback((hitId: string) => {
-    setDrumPattern((prev) => prev.filter((hit) => hit.id !== hitId));
-    if (selectedHitId === hitId) {
-      setSelectedHitId(null);
-    }
-  }, [selectedHitId]);
+  const deleteHit = useCallback(
+    (hitId: string) => {
+      setDrumPattern((prev) => prev.filter((hit) => hit.id !== hitId));
+      if (selectedHitId === hitId) {
+        setSelectedHitId(null);
+      }
+    },
+    [selectedHitId],
+  );
 
   // Handle save
   const handleSave = useCallback(() => {
@@ -110,7 +122,8 @@ export function DrumPatternEditor({
         <DialogHeader>
           <DialogTitle>Review Drum Pattern</DialogTitle>
           <div className="text-sm text-muted-foreground">
-            Auto-converted from MIDI. Review and adjust drum assignments if needed.
+            Auto-converted from MIDI. Review and adjust drum assignments if
+            needed.
           </div>
         </DialogHeader>
 
@@ -130,7 +143,9 @@ export function DrumPatternEditor({
           </div>
           <div>
             <div className="text-sm text-muted-foreground">Unknown</div>
-            <div className={`text-2xl font-bold ${stats.unknownCount > 0 ? 'text-red-500' : 'text-green-500'}`}>
+            <div
+              className={`text-2xl font-bold ${stats.unknownCount > 0 ? 'text-red-500' : 'text-green-500'}`}
+            >
               {stats.unknownCount}
             </div>
           </div>
@@ -140,7 +155,10 @@ export function DrumPatternEditor({
         {validation.warnings.length > 0 && (
           <div className="space-y-2">
             {validation.warnings.map((warning, index) => (
-              <div key={index} className="flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded">
+              <div
+                key={index}
+                className="flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded"
+              >
                 <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
                 <div className="text-sm text-yellow-800">{warning}</div>
               </div>
@@ -181,7 +199,9 @@ export function DrumPatternEditor({
                         {/* Drum Type Selector */}
                         <Select
                           value={hit.drum}
-                          onValueChange={(value) => updateDrumType(hit.id, value as MidiDrumType)}
+                          onValueChange={(value) =>
+                            updateDrumType(hit.id, value as MidiDrumType)
+                          }
                         >
                           <SelectTrigger className="w-[200px]">
                             <SelectValue />
@@ -192,7 +212,9 @@ export function DrumPatternEditor({
                                 <div className="flex items-center gap-2">
                                   <div
                                     className="w-3 h-3 rounded-full"
-                                    style={{ backgroundColor: DRUM_COLORS[drumType] }}
+                                    style={{
+                                      backgroundColor: DRUM_COLORS[drumType],
+                                    }}
                                   />
                                   {DRUM_DISPLAY_NAMES[drumType]}
                                 </div>

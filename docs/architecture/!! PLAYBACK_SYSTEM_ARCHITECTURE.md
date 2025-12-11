@@ -103,24 +103,29 @@ The playback domain follows a **6-layer architecture** with clear separation of 
 ### Layer Responsibilities
 
 #### Layer 1: Presentation Layer
+
 **Purpose**: User interface and React integration
 
 **Components**:
+
 - React components (UI rendering, 3D visualization)
 - Custom hooks (component integration layer)
 - Context providers (global state)
 - React contexts (dependency injection for UI)
 
 **Key Files**:
+
 - `components/FretboardVisualizer/` - 3D bass fretboard
 - `components/CoreServicesGate.tsx` - Race condition prevention
 - `hooks/useTrack.ts` - Track-based architecture
 - `providers/AudioProvider.tsx` - Global audio context
 
 #### Layer 2: Application/Service Layer
+
 **Purpose**: Business logic orchestration and coordination
 
 **Components**:
+
 - CoreServices - Central integration point
 - RegionProcessor - Audio scheduling orchestrator
 - PluginManager - Plugin lifecycle management
@@ -128,6 +133,7 @@ The playback domain follows a **6-layer architecture** with clear separation of 
 - TransportAdapter - Transport control abstraction
 
 **Key Files**:
+
 - `services/core/CoreServices.ts` (941 lines)
 - `services/core/RegionProcessor.ts` (1,329 lines)
 - `services/core/PluginManager.ts` (668 lines)
@@ -135,9 +141,11 @@ The playback domain follows a **6-layer architecture** with clear separation of 
 - `services/core/TransportAdapter.ts` (466 lines)
 
 #### Layer 3: Domain/Module Layer
+
 **Purpose**: Self-contained domain logic with clear boundaries
 
 **23 Modules**:
+
 - instruments/ - Instrument implementations
 - transport/ - Timing & synchronization
 - storage/ - Sample & asset management
@@ -151,35 +159,43 @@ The playback domain follows a **6-layer architecture** with clear separation of 
 **Pattern**: Each module has `types/`, `core/`, `index.ts`
 
 #### Layer 4: Infrastructure Layer
+
 **Purpose**: External integrations and data access
 
 **Components**:
+
 - Repositories (DDD pattern) - Data access interfaces
 - Storage services - Supabase, CDN integration
 - Monitoring services - Health checks, metrics
 
 **Key Files**:
+
 - `repositories/track/TrackRepository.ts`
 - `services/storage/SupabaseAssetClientFacade.ts`
 - `services/monitoring/HealthMonitor.ts`
 
 #### Layer 5: Cross-Cutting Concerns
+
 **Purpose**: Shared functionality across all layers
 
 **Components**:
+
 - Error handling (circuit breakers, recovery)
 - Logging (correlation IDs, structured logs)
 - Configuration (feature flags, timing config)
 
 **Key Files**:
+
 - `errors/CircuitBreaker.ts`
 - `config/featureFlags.ts`
 - `utils/ensureAudioContext.ts`
 
 #### Layer 6: Platform Layer
+
 **Purpose**: Browser APIs and third-party libraries
 
 **Technologies**:
+
 - Web Audio API - Low-latency audio scheduling
 - Tone.js - Music theory abstractions
 - IndexedDB - Sample caching
@@ -192,9 +208,11 @@ The playback domain follows a **6-layer architecture** with clear separation of 
 ### Critical Modules (Most Complex)
 
 #### 1. `modules/instruments/` (60+ files)
+
 **Purpose**: Instrument implementations with velocity layers
 
 **Structure**:
+
 ```
 instruments/
 ├── base/                    # Base classes
@@ -216,11 +234,13 @@ instruments/
 ```
 
 **Key Classes**:
+
 - `WurlitzerVelocitySampler` - 4-16 velocity layer sampler
 - `WamKeyboard` - WAM keyboard adapter with CC64 sustain
 - `DrumKit` - Multi-sample drum kit
 
 **Responsibilities**:
+
 - Sample loading and management
 - Velocity layer selection
 - MIDI note mapping
@@ -228,9 +248,11 @@ instruments/
 - Octave shifting (Grand Piano: 0, Wurlitzer/Rhodes: -12)
 
 #### 2. `modules/transport/` (40+ files)
+
 **Purpose**: Timing, synchronization, and transport control
 
 **Structure**:
+
 ```
 transport/
 ├── core/
@@ -250,11 +272,13 @@ transport/
 ```
 
 **Key Classes**:
+
 - `TransportController` - State machine (stopped/playing/paused)
 - `SampleAccurateClock` - Sample-accurate timing
 - `MusicalPositionManager` - Musical position (bars:beats:sixteenths)
 
 **Responsibilities**:
+
 - Sample-accurate timing
 - Transport state management
 - Musical position tracking
@@ -263,9 +287,11 @@ transport/
 - Multi-widget synchronization
 
 #### 3. `modules/storage/` (35+ files)
+
 **Purpose**: Sample loading, caching, and CDN integration
 
 **Structure**:
+
 ```
 storage/
 ├── cache/
@@ -280,11 +306,13 @@ storage/
 ```
 
 **Key Classes**:
+
 - `GlobalSampleCache` - Central in-memory sample cache
 - `BatchLoadExecutor` - Parallel sample loading
 - `CDNAdapter` - CloudFront integration
 
 **Responsibilities**:
+
 - Sample caching (in-memory + IndexedDB)
 - Batch loading with priority
 - CDN integration and optimization
@@ -292,9 +320,11 @@ storage/
 - Circuit breaker for failed loads
 
 #### 4. `modules/audio-engine/` (20+ files)
+
 **Purpose**: Web Audio API abstraction
 
 **Structure**:
+
 ```
 audio-engine/
 ├── core/
@@ -309,20 +339,24 @@ audio-engine/
 ```
 
 **Key Classes**:
+
 - `AudioEngine` - AudioContext wrapper
 - `AudioContextManager` - Lifecycle & state management
 - `MixerNode` - Multi-channel mixer with routing
 
 **Responsibilities**:
+
 - AudioContext lifecycle (suspended → running)
 - Audio node graph management
 - Effects routing
 - Master output management
 
 #### 5. `modules/midi/` (20+ files)
+
 **Purpose**: MIDI file parsing and processing
 
 **Structure**:
+
 ```
 midi/
 ├── parser/                         # MIDI file parsing
@@ -333,20 +367,24 @@ midi/
 ```
 
 **Key Classes**:
+
 - `MidiParser` - MIDI file parsing
 - `MidiValidator` - Validate MIDI structure
 - `MidiTransformer` - Transform MIDI events
 
 **Responsibilities**:
+
 - Parse MIDI files (.mid)
 - Extract notes, tempo, time signature
 - Convert MIDI to internal format
 - Validate MIDI structure
 
 #### 6. `modules/preloading/` (15+ files)
+
 **Purpose**: Smart sample preloading strategies
 
 **Structure**:
+
 ```
 preloading/
 ├── strategies/
@@ -359,11 +397,13 @@ preloading/
 ```
 
 **Key Classes**:
+
 - `HarmonyPreloadStrategy` - MIDI-based note loading
 - `DrumPreloadStrategy` - Load all drum samples
 - `PreloadCoordinator` - Orchestrates strategies
 
 **Responsibilities**:
+
 - MIDI-based smart loading (load only required notes)
 - Instrument-specific preload strategies
 - Priority-based loading
@@ -372,21 +412,37 @@ preloading/
 ### Supporting Modules
 
 #### 7. `modules/tracks/` - Multi-track management
+
 #### 8. `modules/metadata/` - Audio metadata (tempo, key, spectral)
+
 #### 9. `modules/cdn/` - CDN optimization
+
 #### 10. `modules/prediction/` - Predictive sample loading
+
 #### 11. `modules/exercises/` - Exercise data management
+
 #### 12. `modules/optimization/` - Performance monitoring
+
 #### 13. `modules/errors/` - Module-level error handling
+
 #### 14. `modules/logging/` - Module logging
+
 #### 15. `modules/plugins/` - Plugin system base
+
 #### 16. `modules/tempo/` - Tempo management (new)
+
 #### 17. `modules/shared/` - Shared utilities
+
 #### 18. `modules/expression/` - Musical expression
+
 #### 19. `modules/intelligence/` - Smart features
+
 #### 20. `modules/lifecycle/` - Component lifecycle
+
 #### 21. `modules/loading/` - Asset loading
+
 #### 22. `modules/pipelines/` - Processing pipelines
+
 #### 23. `modules/__tests__/` - Module integration tests
 
 ---
@@ -394,39 +450,42 @@ preloading/
 ## Service Classes & Public APIs
 
 ### 1. CoreServices (941 lines)
+
 **Role**: Central orchestrator integrating all core services
 
 **Singleton Pattern**: `GlobalAudioSystem` survives React re-mounts
 
 **Public API**:
+
 ```typescript
 class CoreServices {
   // Lifecycle
-  async preInitialize(): Promise<void>
-  async initialize(): Promise<void>
-  async start(): Promise<void>
-  async stop(): Promise<void>
-  async dispose(): Promise<void>
+  async preInitialize(): Promise<void>;
+  async initialize(): Promise<void>;
+  async start(): Promise<void>;
+  async stop(): Promise<void>;
+  async dispose(): Promise<void>;
 
   // Service Access
-  getEventBus(): EventBus
-  getAudioEngine(): AudioEngine
-  getUnifiedTransport(): TransportAdapter
-  getRegionProcessor(): RegionProcessor
-  getPlaybackEngine(): PlaybackEngine  // Feature flag
-  getTransportSyncManager(): TransportSyncManager
-  getPluginManager(): PluginManager
-  getAudioEventRouter(): AudioEventRouter
-  getServiceRegistry(): ServiceRegistry
-  getInstrumentRegistry(): InstrumentRegistry
+  getEventBus(): EventBus;
+  getAudioEngine(): AudioEngine;
+  getUnifiedTransport(): TransportAdapter;
+  getRegionProcessor(): RegionProcessor;
+  getPlaybackEngine(): PlaybackEngine; // Feature flag
+  getTransportSyncManager(): TransportSyncManager;
+  getPluginManager(): PluginManager;
+  getAudioEventRouter(): AudioEventRouter;
+  getServiceRegistry(): ServiceRegistry;
+  getInstrumentRegistry(): InstrumentRegistry;
 
   // Status
-  isReady(): boolean
-  getStatus(): CoreServicesStatus
+  isReady(): boolean;
+  getStatus(): CoreServicesStatus;
 }
 ```
 
 **Responsibilities**:
+
 - Service dependency injection
 - Lifecycle coordination
 - Sample buffer injection to RegionProcessor
@@ -434,53 +493,77 @@ class CoreServices {
 - Feature flag management (dual-engine support)
 
 **Usage**:
+
 ```typescript
 import { CoreServices } from '@/domains/playback/services/core/CoreServices';
 
 const coreServices = CoreServices.getInstance();
-await coreServices.preInitialize();  // No AudioContext
-await coreServices.initialize();     // Requires user gesture
-await coreServices.start();          // Start playback
+await coreServices.preInitialize(); // No AudioContext
+await coreServices.initialize(); // Requires user gesture
+await coreServices.start(); // Start playback
 ```
 
 ---
 
 ### 2. RegionProcessor (1,329 lines)
+
 **Role**: Audio scheduling orchestrator for MIDI regions
 
 **Extracted Modules**: Delegates to 15+ specialized modules
 
 **Public API**:
+
 ```typescript
 class RegionProcessor {
   // Configuration
-  enableCountdown(timeSignature: TimeSignature): void
-  disableCountdown(): void
-  setAudioContext(context: AudioContext): void
-  setPluginManager(pluginManager: PluginManager): void
+  enableCountdown(timeSignature: TimeSignature): void;
+  disableCountdown(): void;
+  setAudioContext(context: AudioContext): void;
+  setPluginManager(pluginManager: PluginManager): void;
 
   // Buffer Injection
-  setMetronomeBuffers(accent: AudioBuffer, click: AudioBuffer, destination: AudioNode): void
-  setDrumBuffers(kick: AudioBuffer, snare: AudioBuffer, hihat: AudioBuffer, destination: AudioNode): void
-  setHarmonyBuffers(samples: Map<string, AudioBuffer[]>, destination: AudioNode, velocityRanges?: Map<string, VelocityRange[]>, instrument?: string): void
-  setBassBuffers(samples: Map<string, AudioBuffer>, destination: AudioNode): void
-  setVoiceCueBuffers(samples: Map<string, AudioBuffer>, destination: AudioNode): void
+  setMetronomeBuffers(
+    accent: AudioBuffer,
+    click: AudioBuffer,
+    destination: AudioNode,
+  ): void;
+  setDrumBuffers(
+    kick: AudioBuffer,
+    snare: AudioBuffer,
+    hihat: AudioBuffer,
+    destination: AudioNode,
+  ): void;
+  setHarmonyBuffers(
+    samples: Map<string, AudioBuffer[]>,
+    destination: AudioNode,
+    velocityRanges?: Map<string, VelocityRange[]>,
+    instrument?: string,
+  ): void;
+  setBassBuffers(
+    samples: Map<string, AudioBuffer>,
+    destination: AudioNode,
+  ): void;
+  setVoiceCueBuffers(
+    samples: Map<string, AudioBuffer>,
+    destination: AudioNode,
+  ): void;
 
   // Track Management
-  registerTracks(tracks: Track[]): void
-  updateTracks(tracks: Track[], exerciseMetadata?: ExerciseMetadata): void
+  registerTracks(tracks: Track[]): void;
+  updateTracks(tracks: Track[], exerciseMetadata?: ExerciseMetadata): void;
 
   // Lifecycle
-  start(): void
-  stop(graceful?: boolean): void  // graceful=true lets one-shots finish
-  dispose(): void
+  start(): void;
+  stop(graceful?: boolean): void; // graceful=true lets one-shots finish
+  dispose(): void;
 
   // Metrics
-  getTimingMetrics(): TimingMetrics
+  getTimingMetrics(): TimingMetrics;
 }
 ```
 
 **Region Processing Sub-Modules**:
+
 1. **BufferManager** - Audio buffer registry
 2. **ScheduleCache** - Per-exercise schedule caching
 3. **TimingMetricsCollector** - Timing accuracy metrics
@@ -498,6 +581,7 @@ class RegionProcessor {
 15. **MusicalTimeConverter** - Time domain conversions
 
 **Responsibilities**:
+
 - Process MIDI regions and schedule audio events
 - Sample-accurate timing using `AudioContext.currentTime`
 - Direct `AudioBufferSourceNode` scheduling (bypass event bus)
@@ -507,6 +591,7 @@ class RegionProcessor {
 - Multi-instrument coordination
 
 **Architecture**:
+
 ```
 RegionProcessor
     ├─→ LifecycleCoordinator
@@ -533,36 +618,58 @@ RegionProcessor
 ---
 
 ### 3. Scheduler (596 lines)
+
 **Role**: Unified event scheduler for all instruments
 
 **Phase 1 Task 1.1**: Replaces 23+ scheduling modules
 
 **Public API**:
+
 ```typescript
 class Scheduler {
   // Configuration
-  setAudioContext(context: AudioContext): void
-  setBuffers(buffers: Map<string, AudioBuffer | AudioBuffer[]>, destination: AudioNode): void
-  setHarmonyInstrument(instrument: string, perNoteRanges?: Map<string, VelocityRange[]>): void
+  setAudioContext(context: AudioContext): void;
+  setBuffers(
+    buffers: Map<string, AudioBuffer | AudioBuffer[]>,
+    destination: AudioNode,
+  ): void;
+  setHarmonyInstrument(
+    instrument: string,
+    perNoteRanges?: Map<string, VelocityRange[]>,
+  ): void;
 
   // Scheduling
-  schedule(instrumentType: InstrumentType, event: SchedulableEvent, audioTime: number, options?: ScheduleOptions): ScheduledSource
-  scheduleRegion(instrumentType: InstrumentType, events: SchedulableEvent[], startTime: number): ScheduledSource[]
+  schedule(
+    instrumentType: InstrumentType,
+    event: SchedulableEvent,
+    audioTime: number,
+    options?: ScheduleOptions,
+  ): ScheduledSource;
+  scheduleRegion(
+    instrumentType: InstrumentType,
+    events: SchedulableEvent[],
+    startTime: number,
+  ): ScheduledSource[];
 
   // Cleanup
-  cancelAllScheduled(): void
-  dispose(): void
+  cancelAllScheduled(): void;
+  dispose(): void;
 
   // Monitoring
-  getStats(): SchedulerStats
+  getStats(): SchedulerStats;
 }
 
 // Types
 type InstrumentType = 'metronome' | 'drums' | 'harmony' | 'bass' | 'voice';
-type ScheduleOptions = { velocity?: number; duration?: number; fadeOut?: boolean };
+type ScheduleOptions = {
+  velocity?: number;
+  duration?: number;
+  fadeOut?: boolean;
+};
 ```
 
 **Supported Instruments**:
+
 - **Metronome**: One-shot clicks (accent, normal)
 - **Drums**: One-shot samples (kick, snare, hihat)
 - **Bass**: One-shot bass notes
@@ -570,6 +677,7 @@ type ScheduleOptions = { velocity?: number; duration?: number; fadeOut?: boolean
 - **Harmony**: Sustained notes with velocity layers (4-16 layers)
 
 **Responsibilities**:
+
 - Data-driven instrument configuration
 - Velocity layer selection (harmony)
 - Octave shifting (Grand Piano: 0, Wurlitzer/Rhodes: -12 semitones)
@@ -579,64 +687,71 @@ type ScheduleOptions = { velocity?: number; duration?: number; fadeOut?: boolean
 ---
 
 ### 4. EventBus (602 lines)
+
 **Role**: Event-driven communication with circuit breakers
 
 **Singleton Pattern**: Global event bus instance
 
 **Public API**:
+
 ```typescript
 class EventBus {
   // Subscription
-  on<T>(event: string, handler: (data: T) => void): () => void  // Returns unsubscribe
-  subscribe<T>(event: string, handler: (data: T) => void): () => void
+  on<T>(event: string, handler: (data: T) => void): () => void; // Returns unsubscribe
+  subscribe<T>(event: string, handler: (data: T) => void): () => void;
 
   // Publishing
-  async emit(event: string, data?: any, source?: string): Promise<void>
-  async emitAndWait(event: string, data?: any, source?: string): Promise<void>
+  async emit(event: string, data?: any, source?: string): Promise<void>;
+  async emitAndWait(event: string, data?: any, source?: string): Promise<void>;
 
   // Replay (for debugging)
-  async replay(filter?: (event: HistoryEntry) => boolean, targetHandler?: Function): Promise<void>
-  getHistory(event?: string): HistoryEntry[]
-  clearHistory(event?: string): void
+  async replay(
+    filter?: (event: HistoryEntry) => boolean,
+    targetHandler?: Function,
+  ): Promise<void>;
+  getHistory(event?: string): HistoryEntry[];
+  clearHistory(event?: string): void;
 
   // Introspection
-  getRegisteredEvents(): string[]
-  getHandlerCount(event: string): number
-  removeAllHandlers(event?: string): void
+  getRegisteredEvents(): string[];
+  getHandlerCount(event: string): number;
+  removeAllHandlers(event?: string): void;
 
   // Schema Validation
-  registerSchema(event: string, schema: ZodSchema): void
+  registerSchema(event: string, schema: ZodSchema): void;
 
   // Monitoring
-  getEventAnalytics(): EventAnalytics
-  getCircuitBreakerMetrics(): Map<string, CircuitBreakerStatus>
+  getEventAnalytics(): EventAnalytics;
+  getCircuitBreakerMetrics(): Map<string, CircuitBreakerStatus>;
 
   // Debugging
-  getInstanceId(): string
+  getInstanceId(): string;
 
   // Singleton
-  static getGlobalInstance(config?: EventBusConfig): EventBus
+  static getGlobalInstance(config?: EventBusConfig): EventBus;
 }
 ```
 
 **Event Types**:
+
 ```typescript
 // Transport Events
-'transport:start' | 'transport:stop' | 'transport:pause'
-'transport:seek' | 'transport:tempo-change' | 'transport:time-signature-change'
+'transport:start' | 'transport:stop' | 'transport:pause';
+'transport:seek' | 'transport:tempo-change' | 'transport:time-signature-change';
 
 // Playback Events
-'playback:region-start' | 'playback:region-end'
-'playback:note-on' | 'playback:note-off'
+'playback:region-start' | 'playback:region-end';
+'playback:note-on' | 'playback:note-off';
 
 // Plugin Events
-'plugin:loaded' | 'plugin:activated' | 'plugin:deactivated'
+'plugin:loaded' | 'plugin:activated' | 'plugin:deactivated';
 
 // Error Events
-'error:audio-context' | 'error:sample-load' | 'error:scheduling'
+'error:audio-context' | 'error:sample-load' | 'error:scheduling';
 ```
 
 **Responsibilities**:
+
 - Type-safe event subscriptions
 - Event history for replay
 - Circuit breaker protection (failureThreshold: 3, recovery: 30s)
@@ -645,6 +760,7 @@ class EventBus {
 - Cross-service communication
 
 **Circuit Breaker States**:
+
 - **CLOSED**: Normal operation
 - **OPEN**: Too many failures, reject new events
 - **HALF_OPEN**: Testing recovery
@@ -652,48 +768,58 @@ class EventBus {
 ---
 
 ### 5. PluginManager (668 lines)
+
 **Role**: WAM plugin lifecycle management
 
 **Implements**: `Service` interface
 
 **Public API**:
+
 ```typescript
 class PluginManager implements Service {
   // Service Lifecycle
-  async initialize(): Promise<void>
-  async start(): Promise<void>
-  async stop(): Promise<void>
-  async dispose(): Promise<void>
+  async initialize(): Promise<void>;
+  async start(): Promise<void>;
+  async stop(): Promise<void>;
+  async dispose(): Promise<void>;
 
   // Plugin Registration
-  async register(plugin: AudioPlugin, dependencies?: string[]): Promise<void>
+  async register(plugin: AudioPlugin, dependencies?: string[]): Promise<void>;
 
   // Plugin Lifecycle
-  async loadPlugin(pluginId: string): Promise<void>
-  async activatePlugin(pluginId: string): Promise<void>
-  async deactivatePlugin(pluginId: string): Promise<void>
+  async loadPlugin(pluginId: string): Promise<void>;
+  async activatePlugin(pluginId: string): Promise<void>;
+  async deactivatePlugin(pluginId: string): Promise<void>;
 
   // Plugin Access
-  getPlugin<T extends AudioPlugin>(pluginId: string): T | undefined
-  getAllPlugins(): AudioPlugin[]
-  getPluginsByCapability(capability: string): AudioPlugin[]
-  getPluginState(pluginId: string): PluginState
+  getPlugin<T extends AudioPlugin>(pluginId: string): T | undefined;
+  getAllPlugins(): AudioPlugin[];
+  getPluginsByCapability(capability: string): AudioPlugin[];
+  getPluginState(pluginId: string): PluginState;
 
   // Bulk Operations
-  async loadAllPlugins(): Promise<void>  // Loads in dependency order
+  async loadAllPlugins(): Promise<void>; // Loads in dependency order
 }
 
 // Plugin States
-type PluginState = 'unloaded' | 'loading' | 'loaded' | 'active' | 'inactive' | 'error';
+type PluginState =
+  | 'unloaded'
+  | 'loading'
+  | 'loaded'
+  | 'active'
+  | 'inactive'
+  | 'error';
 ```
 
 **Auto-Loaded Plugins**:
+
 - `WamKeyboardPlugin` - Harmony keyboard with CC64
 - `BassProcessor` - Bass sampler
 - `DrumProcessor` - Drum kit
 - `MetronomeProcessor` - Metronome clicks
 
 **Responsibilities**:
+
 - Plugin lifecycle (load → initialize → activate → deactivate → dispose)
 - Dependency resolution (topological sort)
 - Transport event forwarding to plugins
@@ -703,52 +829,58 @@ type PluginState = 'unloaded' | 'loading' | 'loaded' | 'active' | 'inactive' | '
 ---
 
 ### 6. TransportAdapter (466 lines)
+
 **Role**: Transport control abstraction (replaces 3000+ line UnifiedTransport)
 
 **Singleton Pattern**: Single transport instance
 
 **Public API**:
+
 ```typescript
 class TransportAdapter {
   // Singleton
-  static getInstance(eventBus?: EventBus, audioEngine?: AudioEngine, config?: TransportConfig): TransportAdapter
+  static getInstance(
+    eventBus?: EventBus,
+    audioEngine?: AudioEngine,
+    config?: TransportConfig,
+  ): TransportAdapter;
 
   // Lifecycle
-  async initialize(): Promise<void>
-  async dispose(): Promise<void>
+  async initialize(): Promise<void>;
+  async dispose(): Promise<void>;
 
   // Playback Control
-  async start(): Promise<void>
-  async stop(): Promise<void>
-  async pause(): Promise<void>
-  async resume(): Promise<void>
-  async seek(position: number): Promise<void>
+  async start(): Promise<void>;
+  async stop(): Promise<void>;
+  async pause(): Promise<void>;
+  async resume(): Promise<void>;
+  async seek(position: number): Promise<void>;
 
   // Configuration
-  setTempo(bpm: number): void
-  setTimeSignature(numerator: number, denominator: number): void
-  async setLoop(startOrEnabled: boolean | number, end?: number): Promise<void>
-  setLoopMusical(enabled: boolean, start?: string, end?: string): void
-  setExerciseDuration(totalBars: number, beatsPerBar: number): void
-  setCountdownBeats(beats: number): void
-  setTransportStartTime(time: number): void
+  setTempo(bpm: number): void;
+  setTimeSignature(numerator: number, denominator: number): void;
+  async setLoop(startOrEnabled: boolean | number, end?: number): Promise<void>;
+  setLoopMusical(enabled: boolean, start?: string, end?: string): void;
+  setExerciseDuration(totalBars: number, beatsPerBar: number): void;
+  setCountdownBeats(beats: number): void;
+  setTransportStartTime(time: number): void;
 
   // State Access
-  getState(): TransportState
-  getPosition(): number              // seconds
-  getMusicalPosition(): MusicalPosition
-  getCurrentTime(): number           // seconds (alias)
-  getTempo(): number
-  getTimeSignature(): TimeSignature
-  getCurrentPosition(): string       // UI display (bars:beats:sixteenths)
-  getDisplayPosition(): string       // Countdown-adjusted position
+  getState(): TransportState;
+  getPosition(): number; // seconds
+  getMusicalPosition(): MusicalPosition;
+  getCurrentTime(): number; // seconds (alias)
+  getTempo(): number;
+  getTimeSignature(): TimeSignature;
+  getCurrentPosition(): string; // UI display (bars:beats:sixteenths)
+  getDisplayPosition(): string; // Countdown-adjusted position
 
   // Event Scheduling
-  scheduleEvent(event: SchedulableEvent): void
-  cancelEvent(eventId: string): void
+  scheduleEvent(event: SchedulableEvent): void;
+  cancelEvent(eventId: string): void;
 
   // Metrics
-  getMetrics(): TransportMetrics
+  getMetrics(): TransportMetrics;
 }
 
 // Types
@@ -757,6 +889,7 @@ type MusicalPosition = { bars: number; beats: number; sixteenths: number };
 ```
 
 **Responsibilities**:
+
 - Wraps `TransportController` from `modules/transport/`
 - Backward compatibility API (migration from UnifiedTransport)
 - Countdown offset management for display
@@ -767,40 +900,48 @@ type MusicalPosition = { bars: number; beats: number; sixteenths: number };
 ---
 
 ### 7. InitialSamplePreloader (2,154 lines)
+
 **Role**: Three-phase sample loading system
 
 **Singleton Pattern**: Single preloader instance
 
 **Public API**:
+
 ```typescript
 class InitialSamplePreloader {
   // Singleton
-  static getInstance(): InitialSamplePreloader
+  static getInstance(): InitialSamplePreloader;
 
   // Loading Phases
-  async loadEssentialSamples(): Promise<void>         // Phase 2: Register configs
-  async loadFullSamples(exercise?: Exercise): Promise<void>  // Phase 3: FAANG smart loading
-  async loadTutorialSamples(exercises: Exercise[], tutorialId?: string): Promise<void>
+  async loadEssentialSamples(): Promise<void>; // Phase 2: Register configs
+  async loadFullSamples(exercise?: Exercise): Promise<void>; // Phase 3: FAANG smart loading
+  async loadTutorialSamples(
+    exercises: Exercise[],
+    tutorialId?: string,
+  ): Promise<void>;
 
   // Status
-  isComplete(): boolean
-  getStats(): PreloadStats
+  isComplete(): boolean;
+  getStats(): PreloadStats;
 }
 ```
 
 **Three-Phase Loading**:
 
 **Phase 1: Pre-initialization** (ScrollTriggerLoader)
+
 - Initialize CoreServices without AudioContext
 - Load Tone.js
 - Set up event bus
 
 **Phase 2: Essential Samples** (loadEssentialSamples)
+
 - Register instrument configs
 - Load minimal metronome samples
 - OfflineAudioContext preloading (no user gesture)
 
 **Phase 3: Smart Loading** (loadFullSamples)
+
 - **MIDI-based smart loading** - Load only required notes
 - AudioContext instrument creation (requires running context)
 - Parallel loading with priority
@@ -808,6 +949,7 @@ class InitialSamplePreloader {
 - Voice cue countdown support
 
 **Responsibilities**:
+
 - MIDI-based note extraction (load only used notes)
 - OfflineAudioContext preloading (background)
 - AudioContext instrument creation (foreground)
@@ -816,6 +958,7 @@ class InitialSamplePreloader {
 - Buffer injection to RegionProcessor
 
 **Preload Strategies**:
+
 - `HarmonyPreloadStrategy` - MIDI-based note loading
 - `DrumPreloadStrategy` - Load all drum samples
 - `BassPreloadStrategy` - MIDI-based note loading
@@ -824,60 +967,64 @@ class InitialSamplePreloader {
 ---
 
 ### 8. WindowRegistry (398 lines)
+
 **Role**: Centralized window global management (Bug #8 fix)
 
 **Static Utility**: All methods are static
 
 **Public API**:
+
 ```typescript
 class WindowRegistry {
   // Core Services
-  static setCoreServices(services: CoreServices): void
-  static getCoreServices(): CoreServices | null
+  static setCoreServices(services: CoreServices): void;
+  static getCoreServices(): CoreServices | null;
 
   // Service Registry
-  static setServiceRegistry(registry: ServiceRegistry): void
-  static getServiceRegistry(): ServiceRegistry | null
+  static setServiceRegistry(registry: ServiceRegistry): void;
+  static getServiceRegistry(): ServiceRegistry | null;
 
   // Event Bus
-  static setEventBus(eventBus: EventBus): void
-  static getEventBus(): EventBus | null
+  static setEventBus(eventBus: EventBus): void;
+  static getEventBus(): EventBus | null;
 
   // Audio Context
-  static setAudioContext(context: AudioContext): void
-  static getAudioContext(): AudioContext | null
+  static setAudioContext(context: AudioContext): void;
+  static getAudioContext(): AudioContext | null;
 
   // Dual-Engine Tracking
-  static setRegionProcessor(processor: RegionProcessor): void
-  static getRegionProcessor(): RegionProcessor | null
-  static setPlaybackEngine(engine: PlaybackEngine): void
-  static getPlaybackEngine(): PlaybackEngine | null
+  static setRegionProcessor(processor: RegionProcessor): void;
+  static getRegionProcessor(): RegionProcessor | null;
+  static setPlaybackEngine(engine: PlaybackEngine): void;
+  static getPlaybackEngine(): PlaybackEngine | null;
 
   // Sample Loading Flags
-  static setSamplesReady(ready: boolean): void
-  static getSamplesReady(): boolean
+  static setSamplesReady(ready: boolean): void;
+  static getSamplesReady(): boolean;
 
   // Cleanup
-  static cleanup(): void
+  static cleanup(): void;
 
   // Debugging
-  static debugGetAll(): Record<string, any>
-  static debugCheckLegacyKeys(): string[]
+  static debugGetAll(): Record<string, any>;
+  static debugCheckLegacyKeys(): string[];
 }
 ```
 
 **Global Keys** (all prefixed with `__bassnotion_`):
+
 ```typescript
-window.__bassnotion_coreServices
-window.__bassnotion_serviceRegistry
-window.__bassnotion_eventBus
-window.__bassnotion_audioContext
-window.__bassnotion_regionProcessor    // Legacy engine
-window.__bassnotion_playbackEngine     // New engine
-window.__bassnotion_samplesReady
+window.__bassnotion_coreServices;
+window.__bassnotion_serviceRegistry;
+window.__bassnotion_eventBus;
+window.__bassnotion_audioContext;
+window.__bassnotion_regionProcessor; // Legacy engine
+window.__bassnotion_playbackEngine; // New engine
+window.__bassnotion_samplesReady;
 ```
 
 **Responsibilities**:
+
 - Prevent window object pollution
 - Type-safe global accessors
 - Dual-engine tracking (RegionProcessor + PlaybackEngine)
@@ -891,9 +1038,11 @@ window.__bassnotion_samplesReady
 ### 3D Visualization Components (5)
 
 #### 1. FretboardVisualizer
+
 **File**: `components/FretboardVisualizer/FretboardVisualizer.tsx`
 
 **Props**:
+
 ```typescript
 interface FretboardVisualizerProps {
   notes: ExerciseNote[];
@@ -909,6 +1058,7 @@ interface FretboardVisualizerProps {
 ```
 
 **Responsibilities**:
+
 - 3D fretboard visualization using React Three Fiber
 - Edit mode with note selection
 - Context menu for note editing
@@ -916,7 +1066,9 @@ interface FretboardVisualizerProps {
 - Integrates Canvas, OrbitControls, PerspectiveCamera
 
 #### 2. Fretboard3D
+
 **Props**:
+
 ```typescript
 interface Fretboard3DProps {
   visible?: boolean;
@@ -929,13 +1081,16 @@ interface Fretboard3DProps {
 ```
 
 **Responsibilities**:
+
 - Renders 3D fretboard geometry
 - Fretboard dots/markers (circles/squares)
 - Perspective scaling (bottom bigger, top smaller)
 - Click detection for note selection
 
 #### 3. NoteRenderer
+
 **Props**:
+
 ```typescript
 interface NoteRendererProps {
   notes: ExerciseNote[];
@@ -946,6 +1101,7 @@ interface NoteRendererProps {
 ```
 
 **Responsibilities**:
+
 - Renders notes as 3D spheres
 - Color-coded states: current (red), upcoming (fade), played (gray)
 - Opacity calculation for fade-in
@@ -953,7 +1109,9 @@ interface NoteRendererProps {
 - Note labels above spheres
 
 #### 4. TechniqueRenderer
+
 **Props**:
+
 ```typescript
 interface TechniqueRendererProps {
   notes: ExerciseNote[];
@@ -963,6 +1121,7 @@ interface TechniqueRendererProps {
 ```
 
 **Responsibilities**:
+
 - Renders bass playing techniques as 3D visualizations
 - Hammer-on (red curved line)
 - Pull-off (cyan curved line)
@@ -972,7 +1131,9 @@ interface TechniqueRendererProps {
 - Time-based visibility (4s ahead, 1s behind)
 
 #### 5. NoteSelector
+
 **Props**:
+
 ```typescript
 interface NoteSelectorProps {
   selectedNoteId: string | null;
@@ -983,6 +1144,7 @@ interface NoteSelectorProps {
 ```
 
 **Responsibilities**:
+
 - Visual highlight for selected notes
 - Gold ring geometry around selected note
 - Pulse animation with double ring
@@ -990,13 +1152,20 @@ interface NoteSelectorProps {
 ### Interaction Components (2)
 
 #### 6. InteractionManager
+
 **Props**:
+
 ```typescript
 interface InteractionManagerProps {
   notes: ExerciseNote[];
   onNoteSelect: (noteId: string | null) => void;
   onNoteCreate: (fret: number, string: number, time: number) => void;
-  onNoteDrag: (noteId: string, newFret: number, newString: number, newTime: number) => void;
+  onNoteDrag: (
+    noteId: string,
+    newFret: number,
+    newString: number,
+    newTime: number,
+  ) => void;
   selectedNoteId: string | null;
   isEditMode: boolean;
   currentTime: number;
@@ -1005,6 +1174,7 @@ interface InteractionManagerProps {
 ```
 
 **Responsibilities**:
+
 - Raycasting for 3D click detection
 - World coordinates → fret/string conversion
 - Note creation by clicking empty spaces
@@ -1012,7 +1182,9 @@ interface InteractionManagerProps {
 - Keyboard shortcuts for deletion
 
 #### 7. ContextMenu
+
 **Props**:
+
 ```typescript
 interface ContextMenuProps {
   isVisible: boolean;
@@ -1028,6 +1200,7 @@ interface ContextMenuProps {
 ```
 
 **Responsibilities**:
+
 - Right-click context menu for note editing
 - Keyboard shortcuts (Ctrl+C, Ctrl+V, Ctrl+D, Del)
 - Click-outside to close
@@ -1035,7 +1208,9 @@ interface ContextMenuProps {
 ### System Components (3)
 
 #### 8. CoreServicesGate
+
 **Props**:
+
 ```typescript
 interface CoreServicesGateProps {
   children: React.ReactNode;
@@ -1045,13 +1220,16 @@ interface CoreServicesGateProps {
 ```
 
 **Responsibilities**:
+
 - Race condition prevention gate
 - Suspends rendering until CoreServices ready
 - Three states: loading, error, ready
 - Exports companion hook: `useCoreServicesReady()`
 
 #### 9. ScrollTriggerLoader
+
 **Props**:
+
 ```typescript
 interface ScrollTriggerLoaderProps {
   exercises?: Exercise[];
@@ -1060,6 +1238,7 @@ interface ScrollTriggerLoaderProps {
 ```
 
 **Responsibilities**:
+
 - Critical initialization orchestrator
 - Triggers on first user interaction
 - 3-step sequence:
@@ -1070,9 +1249,11 @@ interface ScrollTriggerLoaderProps {
 - Invisible component (renders nothing)
 
 #### 10. TransportSyncMonitor
+
 **Props**: None
 
 **Responsibilities**:
+
 - FAANG-style monitoring dashboard
 - Real-time metrics: clients, latency, heartbeats, reconnections
 - Health status: healthy/warning/critical
@@ -1085,9 +1266,11 @@ interface ScrollTriggerLoaderProps {
 ### Core Audio Hooks (4)
 
 #### 1. useAudio
+
 **Signature**:
+
 ```typescript
-function useAudio(serviceRegistry?: ServiceRegistry): UseAudioResult
+function useAudio(serviceRegistry?: ServiceRegistry): UseAudioResult;
 
 type UseAudioResult = {
   isReady: boolean;
@@ -1097,15 +1280,17 @@ type UseAudioResult = {
   getTone: () => any;
   audioContext: AudioContext | null;
   initialize: () => Promise<void>;
-}
+};
 ```
 
 **Purpose**: AudioEngine integration with error handling and type-safe sampler creation
 
 #### 2. useAudioContext
+
 **Signature**:
+
 ```typescript
-function useAudioContext(): UseAudioContextReturn
+function useAudioContext(): UseAudioContextReturn;
 
 type UseAudioContextReturn = {
   context: AudioContext | null;
@@ -1113,15 +1298,19 @@ type UseAudioContextReturn = {
   isRunning: boolean;
   isSuspended: boolean;
   isClosed: boolean;
-}
+};
 ```
 
 **Purpose**: Bug #4 fix - Event-driven AudioContext state (replaces 500ms polling with 0ms latency)
 
 #### 3. useCoreServices
+
 **Signature**:
+
 ```typescript
-function useCoreServices(options?: UseCoreServicesOptions): UseCoreServicesReturn
+function useCoreServices(
+  options?: UseCoreServicesOptions,
+): UseCoreServicesReturn;
 
 type UseCoreServicesOptions = {
   autoInitialize?: boolean;
@@ -1129,23 +1318,25 @@ type UseCoreServicesOptions = {
   mobileOptimized?: boolean;
   onError?: (error: Error) => void;
   onPerformanceAlert?: (alert: PerformanceAlert) => void;
-}
+};
 
 type UseCoreServicesReturn = {
   state: CoreServicesState;
   controls: PlaybackControls;
-  services: { coreServices, audioEngine, transport, eventBus, pluginManager };
+  services: { coreServices; audioEngine; transport; eventBus; pluginManager };
   initialize: () => Promise<void>;
   dispose: () => Promise<void>;
-}
+};
 ```
 
 **Purpose**: Modern CoreServices integration (replaces legacy useCorePlaybackEngine)
 
 #### 4. usePlatformAudio
+
 **Signature**:
+
 ```typescript
-function usePlatformAudio(): PlatformAudioState
+function usePlatformAudio(): PlatformAudioState;
 
 type PlatformAudioState = {
   coreServices: CoreServices | null;
@@ -1155,8 +1346,8 @@ type PlatformAudioState = {
   isLoading: boolean;
   error: Error | null;
   audioContextState: 'suspended' | 'running' | 'closed' | 'unknown';
-  sampleProgress: { harmony, drums, bass, metronome, overall };
-}
+  sampleProgress: { harmony; drums; bass; metronome; overall };
+};
 ```
 
 **Purpose**: Universal audio hook (works with or without AudioProvider). Hybrid pattern: React context first, then global singleton fallback.
@@ -1164,9 +1355,11 @@ type PlatformAudioState = {
 ### Track Management Hooks (3)
 
 #### 5. useTrack
+
 **Signature**:
+
 ```typescript
-function useTrack(options: UseTrackOptions): UseTrackReturn
+function useTrack(options: UseTrackOptions): UseTrackReturn;
 
 type UseTrackOptions = {
   trackId: string;
@@ -1174,7 +1367,7 @@ type UseTrackOptions = {
   type: InstrumentType;
   autoInit?: boolean;
   debugMode?: boolean;
-}
+};
 
 type UseTrackReturn = {
   // Track instance
@@ -1222,43 +1415,68 @@ type UseTrackReturn = {
   selectedRegions: string[];
   selectRegion: (regionId: string) => void;
   deselectRegion: (regionId: string) => void;
-}
+};
 ```
 
 **Purpose**: Track-based widget architecture. Each widget becomes a track controller with WAM plugins and region management. Professional DAW pattern.
 
 #### 6. useTrackMigration
+
 **Signature**:
+
 ```typescript
-function useTrackMigration(options: UseTrackMigrationOptions): UseTrackMigrationReturn
+function useTrackMigration(
+  options: UseTrackMigrationOptions,
+): UseTrackMigrationReturn;
 
 type UseTrackMigrationOptions = {
   widgetId: string;
   trackType?: InstrumentType;
   debug?: boolean;
-}
+};
 
 type UseTrackMigrationReturn = {
   // usePlaybackState-compatible interface
-  playbackState, isInitialized, isLoading, error,
-  performanceMetrics,
-  play, pause, stop, setTempo, setPitch, setVolume, seek,
-  isPlaying, isPaused, isStopped,
-  syncEvents,
-  tempo, masterVolume, pitch, swingFactor,
+  playbackState;
+  isInitialized;
+  isLoading;
+  error;
+  performanceMetrics;
+  play;
+  pause;
+  stop;
+  setTempo;
+  setPitch;
+  setVolume;
+  seek;
+  isPlaying;
+  isPaused;
+  isStopped;
+  syncEvents;
+  tempo;
+  masterVolume;
+  pitch;
+  swingFactor;
 
   // New useTrack features exposed
-  track, trackId, regions,
-  addRegion, removeRegion
-}
+  track;
+  trackId;
+  regions;
+  addRegion;
+  removeRegion;
+};
 ```
 
 **Purpose**: Migration adapter (usePlaybackState → useTrack). Allows gradual widget migration.
 
 #### 7. useTrackCompatibility
+
 **Signature**:
+
 ```typescript
-function useTrackCompatibility(options: UseTrackCompatibilityOptions): TrackCompatibilityState
+function useTrackCompatibility(
+  options: UseTrackCompatibilityOptions,
+): TrackCompatibilityState;
 
 type UseTrackCompatibilityOptions = {
   widgetId: string;
@@ -1269,7 +1487,7 @@ type UseTrackCompatibilityOptions = {
   onPatternTrigger?: (event: PatternEvent, time: number) => void;
   onStateChange?: (state: any) => void;
   debugMode?: boolean;
-}
+};
 
 type TrackCompatibilityState = {
   isRegistered: boolean;
@@ -1279,8 +1497,8 @@ type TrackCompatibilityState = {
   updatePattern: (pattern: Pattern) => void;
   setEnabled: (enabled: boolean) => void;
   migrateToTrack: () => Promise<Track>;
-  metrics: { eventCount, lastEventTime };
-}
+  metrics: { eventCount; lastEventTime };
+};
 ```
 
 **Purpose**: Backward compatibility layer for existing widget hooks to work with track-based system.
@@ -1288,16 +1506,18 @@ type TrackCompatibilityState = {
 ### Mixing Hooks (3)
 
 #### 8. useTrackMixing
+
 **Signature**:
+
 ```typescript
-function useTrackMixing(options: UseTrackMixingOptions): TrackMixingControls
+function useTrackMixing(options: UseTrackMixingOptions): TrackMixingControls;
 
 type UseTrackMixingOptions = {
   track: Track;
   onSoloChange?: (isSoloed: boolean) => void;
   onMuteChange?: (isMuted: boolean) => void;
   debugMode?: boolean;
-}
+};
 
 type TrackMixingControls = {
   volume: number;
@@ -1313,20 +1533,23 @@ type TrackMixingControls = {
   updateSendLevel: (sendId: string, level: number) => void;
   channel: MixerChannel | null;
   isChannelActive: boolean;
-}
+};
 ```
 
 **Purpose**: Track-based mixing controls with TrackMixingEngine integration.
 
 #### 9. useMixBuses
+
 #### 10. useMixingSnapshots
 
 ### Timing Hooks (2)
 
 #### 11. useTrackTiming
+
 **Signature**:
+
 ```typescript
-function useTrackTiming(options: UseTrackTimingOptions): TrackTimingHookState
+function useTrackTiming(options: UseTrackTimingOptions): TrackTimingHookState;
 
 type UseTrackTimingOptions = {
   track: Track;
@@ -1334,7 +1557,7 @@ type UseTrackTimingOptions = {
   onIsolated?: (info: IsolatedTrackInfo) => void;
   onRecovered?: (trackId: string) => void;
   debugMode?: boolean;
-}
+};
 
 type TrackTimingHookState = {
   isActive: boolean;
@@ -1349,7 +1572,7 @@ type TrackTimingHookState = {
   resetErrors: () => void;
   recoverFromIsolation: () => void;
   metrics?: TrackSyncMetrics;
-}
+};
 ```
 
 **Purpose**: Track timing synchronization with sample-accurate scheduling and timing isolation.
@@ -1359,23 +1582,40 @@ type TrackTimingHookState = {
 ### Plugin Hooks (2)
 
 #### 13. usePlugins
+
 #### 14. useWAMPlugin
 
 ### State Hooks (2)
 
 #### 15. usePlaybackState
+
 **Signature**:
+
 ```typescript
-function usePlaybackState(widgetId?: string): UsePlaybackStateReturn
+function usePlaybackState(widgetId?: string): UsePlaybackStateReturn;
 
 type UsePlaybackStateReturn = {
-  playbackState, isInitialized, isLoading, error,
-  performanceMetrics,
-  play, pause, stop, setTempo, setPitch, setVolume, seek,
-  isPlaying, isPaused, isStopped,
-  syncEvents,
-  tempo, masterVolume, pitch, swingFactor
-}
+  playbackState;
+  isInitialized;
+  isLoading;
+  error;
+  performanceMetrics;
+  play;
+  pause;
+  stop;
+  setTempo;
+  setPitch;
+  setVolume;
+  seek;
+  isPlaying;
+  isPaused;
+  isStopped;
+  syncEvents;
+  tempo;
+  masterVolume;
+  pitch;
+  swingFactor;
+};
 ```
 
 **Purpose**: Easy access to playback state (Zustand store). Optimized for minimal re-renders.
@@ -1385,9 +1625,11 @@ type UsePlaybackStateReturn = {
 ### Deprecated Hooks (0)
 
 #### ~~useTransport~~ (REMOVED - December 2025)
+
 **Status**: Migrated to TransportContext ✅
 
 **Migration Complete**: Old hook deleted, all imports now use `useTransport()` from TransportContext.
+
 - Old individual subscriptions (56+) replaced with single shared subscription
 - 87% reduction in EventBus subscriptions achieved
 - All components migrated to TransportProvider pattern
@@ -1403,11 +1645,13 @@ type UsePlaybackStateReturn = {
 **Solution**: Extract into focused modules with single responsibilities
 
 **Examples**:
+
 - **RegionProcessor**: 3,902 lines → 1,329 lines + 15 modules
 - **UnifiedTransport**: 3,000+ lines → TransportAdapter (466 lines) + modules/transport
 - **HarmonyScheduler**: 1,477 lines → HarmonySchedulerV2 (still large, needs further breakdown)
 
 **Benefits**:
+
 - Easier testing (isolated modules)
 - Better maintainability
 - Clear responsibilities
@@ -1418,6 +1662,7 @@ type UsePlaybackStateReturn = {
 **Pattern**: All core services implement `Service` interface
 
 **Interface**:
+
 ```typescript
 interface Service {
   initialize(): Promise<void>;
@@ -1428,6 +1673,7 @@ interface Service {
 ```
 
 **Services**:
+
 - CoreServices
 - PluginManager
 - EventBus
@@ -1435,6 +1681,7 @@ interface Service {
 - TransportAdapter
 
 **Benefits**:
+
 - Consistent lifecycle
 - Predictable behavior
 - Easy testing (mock services)
@@ -1444,6 +1691,7 @@ interface Service {
 **Usage**: Services that need single global instance
 
 **Examples**:
+
 - EventBus - Single event bus for entire app
 - TransportAdapter - Single transport controller
 - PluginManager - Single plugin registry
@@ -1451,6 +1699,7 @@ interface Service {
 - WindowRegistry - Static utility class
 
 **Implementation**:
+
 ```typescript
 class EventBus {
   private static instance: EventBus;
@@ -1462,11 +1711,14 @@ class EventBus {
     return EventBus.instance;
   }
 
-  private constructor() { /* ... */ }
+  private constructor() {
+    /* ... */
+  }
 }
 ```
 
 **Benefits**:
+
 - Single source of truth
 - Survives React re-mounts
 - Global accessibility
@@ -1476,6 +1728,7 @@ class EventBus {
 **Pattern**: ServiceRegistry manages service dependencies
 
 **Implementation**:
+
 ```typescript
 class ServiceRegistry {
   private services = new Map<string, any>();
@@ -1505,6 +1758,7 @@ class PluginManager {
 ```
 
 **Benefits**:
+
 - Testability (inject mocks)
 - Loose coupling
 - Clear dependencies
@@ -1514,6 +1768,7 @@ class PluginManager {
 **Pattern**: Pub/sub via EventBus with circuit breakers
 
 **Implementation**:
+
 ```typescript
 // Publisher
 eventBus.emit('transport:start', { time: audioContext.currentTime });
@@ -1528,6 +1783,7 @@ unsubscribe();
 ```
 
 **Circuit Breaker**:
+
 ```typescript
 // If handler fails 3 times, circuit opens
 // Rejects new events for 30 seconds
@@ -1535,6 +1791,7 @@ unsubscribe();
 ```
 
 **Benefits**:
+
 - Decoupled services
 - Error isolation
 - Event replay for debugging
@@ -1544,6 +1801,7 @@ unsubscribe();
 **Pattern**: Separate data access from business logic
 
 **Structure**:
+
 ```
 repositories/
 ├── interfaces/
@@ -1564,6 +1822,7 @@ repositories/
 ```
 
 **Example**:
+
 ```typescript
 // Interface
 interface ITrackRepository {
@@ -1593,6 +1852,7 @@ class TrackId {
 ```
 
 **Benefits**:
+
 - Clear boundaries
 - Testable (mock repositories)
 - Domain model protection
@@ -1604,6 +1864,7 @@ class TrackId {
 **Examples**:
 
 **TransportAdapter** - Wraps TransportController
+
 ```typescript
 class TransportAdapter {
   private controller: TransportController;
@@ -1616,6 +1877,7 @@ class TransportAdapter {
 ```
 
 **InstrumentAdapter** - Wraps legacy processors
+
 ```typescript
 class InstrumentAdapter implements Instrument {
   constructor(private legacyProcessor: any) {}
@@ -1627,6 +1889,7 @@ class InstrumentAdapter implements Instrument {
 ```
 
 **Benefits**:
+
 - Gradual migration
 - Backward compatibility
 - Interface stability
@@ -1638,6 +1901,7 @@ class InstrumentAdapter implements Instrument {
 **Examples**:
 
 **PreloadStrategy**
+
 ```typescript
 interface PreloadStrategy {
   preload(exercise: Exercise): Promise<void>;
@@ -1652,12 +1916,13 @@ class HarmonyPreloadStrategy implements PreloadStrategy {
 
 class DrumPreloadStrategy implements PreloadStrategy {
   async preload(exercise: Exercise) {
-    await loadAllDrumSamples();  // Different strategy
+    await loadAllDrumSamples(); // Different strategy
   }
 }
 ```
 
 **BatchLoadStrategy**
+
 ```typescript
 interface BatchLoadStrategy {
   load(urls: string[]): Promise<AudioBuffer[]>;
@@ -1671,6 +1936,7 @@ class ParallelLoadStrategy implements BatchLoadStrategy {
 ```
 
 **Benefits**:
+
 - Flexible algorithms
 - Easy to add new strategies
 - Testable independently
@@ -1682,6 +1948,7 @@ class ParallelLoadStrategy implements BatchLoadStrategy {
 ### 1. Sample-Accurate Audio Scheduling
 
 **Architecture**:
+
 ```
 EventScheduler
     ↓
@@ -1693,22 +1960,25 @@ Hardware Audio Output
 ```
 
 **Key Principles**:
+
 - Use `AudioContext.currentTime` as reference (never `Date.now()`)
 - Schedule events in audio time domain (seconds from context start)
 - Direct `AudioBufferSourceNode` scheduling (bypass event bus for audio)
 - Lookahead scheduling (schedule 100ms ahead, update every 25ms)
 
 **Code Example**:
+
 ```typescript
 // RegionProcessor scheduling
-const audioTime = this.audioContext.currentTime + 0.1;  // 100ms lookahead
+const audioTime = this.audioContext.currentTime + 0.1; // 100ms lookahead
 const source = this.audioContext.createBufferSource();
 source.buffer = buffer;
 source.connect(destination);
-source.start(audioTime);  // Sample-accurate!
+source.start(audioTime); // Sample-accurate!
 ```
 
 **Latency Calculation**:
+
 ```typescript
 // Output latency compensation
 const outputLatency = audioContext.outputLatency || 0;
@@ -1719,12 +1989,14 @@ source.start(compensatedTime);
 ### 2. Multi-Track Synchronization
 
 **Components**:
+
 - `SampleAccurateClock` - Master clock (AudioContext.currentTime)
 - `WidgetSyncManager` - Multi-widget sync via heartbeat
 - `MultiTrackTimingSynchronizer` - Cross-track timing
 - `TimingIsolationManager` - Isolate broken tracks
 
 **Sync Flow**:
+
 ```
 SampleAccurateClock (master)
     ↓
@@ -1740,17 +2012,20 @@ TimingIsolationManager (isolate if drift > 50ms)
 ```
 
 **Drift Detection**:
+
 ```typescript
 const expectedTime = transportTime;
 const actualTime = trackTime;
 const drift = Math.abs(actualTime - expectedTime);
 
-if (drift > 50) {  // 50ms threshold
+if (drift > 50) {
+  // 50ms threshold
   timingIsolationManager.isolateTrack(trackId, 'excessive-drift');
 }
 ```
 
 **Recovery**:
+
 ```typescript
 // Reset track timing
 track.reset();
@@ -1765,6 +2040,7 @@ if (stableFor5Seconds) {
 ### 3. Velocity-Layered Sampling
 
 **Architecture**:
+
 ```
 HarmonySchedulerV2
     ↓
@@ -1778,48 +2054,54 @@ Schedule with AudioBufferSourceNode
 ```
 
 **Velocity Ranges**:
+
 ```typescript
 // Example: Grand Piano (16 velocity layers)
 const velocityRanges: VelocityRange[] = [
-  { min: 0,   max: 7,   layer: 0 },   // ppp
-  { min: 8,   max: 15,  layer: 1 },
-  { min: 16,  max: 23,  layer: 2 },
+  { min: 0, max: 7, layer: 0 }, // ppp
+  { min: 8, max: 15, layer: 1 },
+  { min: 16, max: 23, layer: 2 },
   // ... 13 more layers
-  { min: 120, max: 127, layer: 15 },  // fff
+  { min: 120, max: 127, layer: 15 }, // fff
 ];
 
 // Wurlitzer (4 velocity layers)
 const wurlitzerRanges: VelocityRange[] = [
-  { min: 0,   max: 31,  layer: 0 },   // v1
-  { min: 32,  max: 63,  layer: 1 },   // v2
-  { min: 64,  max: 95,  layer: 2 },   // v3
-  { min: 96,  max: 127, layer: 3 },   // v4
+  { min: 0, max: 31, layer: 0 }, // v1
+  { min: 32, max: 63, layer: 1 }, // v2
+  { min: 64, max: 95, layer: 2 }, // v3
+  { min: 96, max: 127, layer: 3 }, // v4
 ];
 ```
 
 **Layer Selection**:
+
 ```typescript
-function selectVelocityLayer(velocity: number, ranges: VelocityRange[]): number {
+function selectVelocityLayer(
+  velocity: number,
+  ranges: VelocityRange[],
+): number {
   for (const range of ranges) {
     if (velocity >= range.min && velocity <= range.max) {
       return range.layer;
     }
   }
-  return 0;  // Default to softest layer
+  return 0; // Default to softest layer
 }
 ```
 
 **Buffer Loading**:
+
 ```typescript
 // Harmony buffers organized by note and layer
 const harmonyBuffers = new Map<string, AudioBuffer[]>();
 
 // Example: C4 with 4 velocity layers
 harmonyBuffers.set('C4', [
-  buffer_C4_v1,  // velocity 0-31
-  buffer_C4_v2,  // velocity 32-63
-  buffer_C4_v3,  // velocity 64-95
-  buffer_C4_v4,  // velocity 96-127
+  buffer_C4_v1, // velocity 0-31
+  buffer_C4_v2, // velocity 32-63
+  buffer_C4_v3, // velocity 64-95
+  buffer_C4_v4, // velocity 96-127
 ]);
 
 // At scheduling time
@@ -1830,6 +2112,7 @@ const buffer = harmonyBuffers.get(noteName)[layer];
 ### 4. Sustain Pedal System (CC64)
 
 **Architecture**:
+
 ```
 MIDI CC64 Events
     ↓
@@ -1843,23 +2126,30 @@ HarmonySchedulerV2 schedules extended notes
 ```
 
 **Timeline Building**:
+
 ```typescript
 // Extract CC64 events from MIDI
-const cc64Events = midiEvents.filter(e => e.type === 'cc' && e.controller === 64);
+const cc64Events = midiEvents.filter(
+  (e) => e.type === 'cc' && e.controller === 64,
+);
 
 // Build timeline of pedal state
 const pedalTimeline: PedalEvent[] = [];
-cc64Events.forEach(event => {
+cc64Events.forEach((event) => {
   pedalTimeline.push({
     time: event.time,
-    isDown: event.value >= 64  // MIDI convention: >=64 is "down"
+    isDown: event.value >= 64, // MIDI convention: >=64 is "down"
   });
 });
 ```
 
 **Note Duration Extension**:
+
 ```typescript
-function extendNoteDuration(note: MIDINoteEvent, pedalTimeline: PedalEvent[]): number {
+function extendNoteDuration(
+  note: MIDINoteEvent,
+  pedalTimeline: PedalEvent[],
+): number {
   const noteOff = note.time + note.duration;
 
   // Find pedal state at note-off time
@@ -1871,11 +2161,12 @@ function extendNoteDuration(note: MIDINoteEvent, pedalTimeline: PedalEvent[]): n
     return pedalRelease - note.time;
   }
 
-  return note.duration;  // No extension
+  return note.duration; // No extension
 }
 ```
 
 **Scheduling**:
+
 ```typescript
 // Schedule note with extended duration
 const extendedDuration = extendNoteDuration(note, pedalTimeline);
@@ -1888,12 +2179,14 @@ source.stop(note.time + extendedDuration);
 ### 5. Three-Phase Sample Loading
 
 **Phase 1: Pre-initialization** (ScrollTriggerLoader)
+
 ```typescript
 // On first user interaction (scroll, touch, click)
-await CoreServices.getInstance().preInitialize();  // No AudioContext yet
+await CoreServices.getInstance().preInitialize(); // No AudioContext yet
 ```
 
 **Phase 2: Essential Samples** (InitialSamplePreloader)
+
 ```typescript
 // Load minimal samples needed for immediate playback
 await preloader.loadEssentialSamples();
@@ -1905,6 +2198,7 @@ await preloader.loadEssentialSamples();
 ```
 
 **Phase 3: Smart Loading** (InitialSamplePreloader)
+
 ```typescript
 // MIDI-based smart loading - load only required notes
 await preloader.loadFullSamples(exercise);
@@ -1917,14 +2211,15 @@ await preloader.loadFullSamples(exercise);
 ```
 
 **MIDI-Based Note Extraction**:
+
 ```typescript
 // Extract unique notes from MIDI
 function extractRequiredNotes(exercise: Exercise): Set<string> {
   const notes = new Set<string>();
 
-  exercise.tracks.forEach(track => {
-    track.regions.forEach(region => {
-      region.events.forEach(event => {
+  exercise.tracks.forEach((track) => {
+    track.regions.forEach((region) => {
+      region.events.forEach((event) => {
         if (event.type === 'note') {
           notes.add(midiNumberToNoteName(event.note));
         }
@@ -1943,6 +2238,7 @@ function extractRequiredNotes(exercise: Exercise): Set<string> {
 ### 6. MIDI Processing Pipeline
 
 **Pipeline Stages**:
+
 ```
 MIDI File (.mid)
     ↓
@@ -1958,6 +2254,7 @@ RegionProcessor (schedule audio events)
 ```
 
 **Code Flow**:
+
 ```typescript
 // 1. Parse MIDI file
 const midiData = await MidiParser.parse(midiFileBuffer);
@@ -1978,22 +2275,36 @@ regionProcessor.start();
 ```
 
 **MIDI Event Types**:
+
 ```typescript
 type MidiEvent =
-  | { type: 'note'; note: number; velocity: number; duration: number; time: number }
+  | {
+      type: 'note';
+      note: number;
+      velocity: number;
+      duration: number;
+      time: number;
+    }
   | { type: 'cc'; controller: number; value: number; time: number }
   | { type: 'tempo'; bpm: number; time: number }
-  | { type: 'timeSignature'; numerator: number; denominator: number; time: number };
+  | {
+      type: 'timeSignature';
+      numerator: number;
+      denominator: number;
+      time: number;
+    };
 ```
 
 ### 7. 3D Fretboard Visualization
 
 **Technology Stack**:
+
 - React Three Fiber (React renderer for Three.js)
 - Three.js (3D graphics library)
 - @react-three/drei (Three.js helpers)
 
 **Architecture**:
+
 ```
 FretboardVisualizer (main component)
     ├─→ Canvas (React Three Fiber)
@@ -2010,27 +2321,32 @@ FretboardVisualizer (main component)
 ```
 
 **Raycasting for Note Selection**:
+
 ```typescript
 // InteractionManager.tsx
-const handlePointerDown = useCallback((event: ThreeEvent<PointerEvent>) => {
-  const raycaster = new THREE.Raycaster();
-  raycaster.setFromCamera(pointer, camera);
+const handlePointerDown = useCallback(
+  (event: ThreeEvent<PointerEvent>) => {
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(pointer, camera);
 
-  const intersects = raycaster.intersectObject(fretboardMesh);
+    const intersects = raycaster.intersectObject(fretboardMesh);
 
-  if (intersects.length > 0) {
-    const point = intersects[0].point;
-    const { fret, string } = worldToFretboard(point);
-    onNoteCreate(fret, string, currentTime);
-  }
-}, [camera, currentTime]);
+    if (intersects.length > 0) {
+      const point = intersects[0].point;
+      const { fret, string } = worldToFretboard(point);
+      onNoteCreate(fret, string, currentTime);
+    }
+  },
+  [camera, currentTime],
+);
 ```
 
 **Note Rendering with Color Coding**:
+
 ```typescript
 // NoteRenderer.tsx
 const visibleNotes = useMemo(() => {
-  return notes.map(note => {
+  return notes.map((note) => {
     const state = getNoteState(note, currentTime);
     const material = createNoteMaterial(state);
     const position = calculateNoteDisplayPosition(note, bpm, currentTime);
@@ -2046,6 +2362,7 @@ const visibleNotes = useMemo(() => {
 ```
 
 **Technique Visualization**:
+
 ```typescript
 // TechniqueRenderer.tsx
 // Hammer-on: Red curved line connecting two notes
@@ -2101,6 +2418,7 @@ Hardware Audio Output
 ### Service Communication Patterns
 
 **1. Direct Calls** (synchronous, low-latency)
+
 ```typescript
 // Good for: Immediate operations, no side effects
 const tempo = transport.getTempo();
@@ -2108,6 +2426,7 @@ const state = transport.getState();
 ```
 
 **2. Event Bus** (asynchronous, decoupled)
+
 ```typescript
 // Good for: Service-to-service communication, side effects
 eventBus.emit('transport:tempo-change', { bpm: 120 });
@@ -2123,6 +2442,7 @@ eventBus.on('transport:tempo-change', (data) => {
 ```
 
 **3. React Context** (UI state propagation)
+
 ```typescript
 // Good for: Global UI state, avoid prop drilling
 <TransportContext.Provider value={{ transport, isPlaying, tempo }}>
@@ -2134,6 +2454,7 @@ const { isPlaying, tempo } = useContext(TransportContext);
 ```
 
 **4. Zustand Store** (React state management)
+
 ```typescript
 // Good for: UI state, optimized re-renders
 const usePlaybackStore = create((set) => ({
@@ -2143,7 +2464,7 @@ const usePlaybackStore = create((set) => ({
 }));
 
 // In component
-const tempo = usePlaybackStore((state) => state.tempo);  // Only re-renders when tempo changes
+const tempo = usePlaybackStore((state) => state.tempo); // Only re-renders when tempo changes
 ```
 
 ### Buffer Injection Flow
@@ -2169,6 +2490,7 @@ Schedule playback
 ```
 
 **Code Example**:
+
 ```typescript
 // 1. Load samples
 const samples = await preloader.loadFullSamples(exercise);
@@ -2181,7 +2503,7 @@ regionProcessor.setHarmonyBuffers(
   harmonyBuffers,
   audioEngine.getDestination(),
   velocityRanges,
-  'wurlitzer'
+  'wurlitzer',
 );
 
 // 4. RegionProcessor stores in BufferManager
@@ -2204,9 +2526,11 @@ source.start(audioTime);
 ### Current Tech Debt
 
 #### 1. HarmonySchedulerV2 Still Large (1,477 lines)
+
 **Issue**: Extracted from RegionProcessor but still too large
 
 **Plan**:
+
 - Extract `VelocityLayerSelector` (done)
 - Extract `SustainPedalHandler` (done)
 - Extract `FadeoutManager` (done)
@@ -2214,27 +2538,32 @@ source.start(audioTime);
 - **TODO**: Further breakdown into note scheduling, buffer management, state tracking
 
 #### 2. ~~useTransport Subscription Overhead~~ (COMPLETED ✅)
+
 **Issue**: Created individual subscriptions per component (56+ subscriptions with 7 components)
 
 **Solution**: TransportContext migration (87% reduction achieved)
 
 **Status**: Migration complete (December 2025)
+
 - Old `hooks/useTransport.ts` deleted
 - All imports updated to use `contexts/TransportContext`
 - TransportProvider added to all required page components
 - Tests updated/skipped for deprecated functionality
 
 #### 2.1 ~~EventScheduler Orphaned Code~~ (COMPLETED ✅)
+
 **Issue**: EventScheduler.ts (382 lines) was never integrated, replaced by Scheduler.ts
 
 **Solution**: Deleted orphaned code and cleaned up commented references
 
 **Status**: Cleanup complete (December 2025)
+
 - `modules/transport/scheduling/EventScheduler.ts` deleted
 - Commented references removed from TransportController
 - System uses Scheduler.ts exclusively (better features: repeat events, binary search, queue limits)
 
 #### 2.2 ~~Legacy Scheduler Fragmentation~~ (COMPLETED ✅)
+
 **Issue**: 14+ scheduler implementations across two architectures (Tone.js modules/ vs Web Audio API services/)
 
 **Analysis**: Legacy schedulers contained advanced features (flams, humanization, walking bass generator) but these are DAW-level composition features out of scope for a playback engine. Pre-click feature was inferior to existing Countdown system (audio + visual + position + voice cues vs basic audio clicks).
@@ -2242,6 +2571,7 @@ source.start(audioTime);
 **Solution**: Deleted all legacy scheduler implementations
 
 **Status**: Cleanup complete (December 2025)
+
 - Deleted 6 scheduler files (~2,280 lines):
   - `services/core/SimpleRegionScheduler.ts` (207 lines)
   - `modules/instruments/components/drums/DrumPatternScheduler.ts` (443 lines)
@@ -2259,17 +2589,21 @@ source.start(audioTime);
   - `services/core/region-processing/scheduling/SimpleInstrumentScheduler.ts` - base class
 
 #### 3. 105 Service Files in Playback Domain
+
 **Issue**: Too many service files, hard to navigate
 
 **Plan**:
+
 - Consolidate related services
 - Move services to modules
 - Reduce top-level service files to <20
 
 #### 4. Playback Domain Size (500+ files)
+
 **Issue**: Difficult to navigate and understand
 
 **Mitigation**:
+
 - Clear module boundaries (done)
 - Comprehensive documentation (this file)
 - Developer handbook with quick reference
@@ -2277,6 +2611,7 @@ source.start(audioTime);
 ### Roadmap
 
 #### Phase 1: Core Refactoring (In Progress)
+
 - ✅ RegionProcessor modular breakdown
 - ✅ UnifiedTransport → TransportAdapter migration
 - ✅ HarmonyScheduler extraction
@@ -2287,18 +2622,21 @@ source.start(audioTime);
 - 🚧 useTrack adoption across widgets
 
 #### Phase 2: Performance Optimization (Next)
+
 - Optimize sample loading (reduce memory)
 - Implement worker-based scheduling
 - Audio worklets for low-latency processing
 - Lazy loading for non-critical modules
 
 #### Phase 3: Production Readiness (Q1 2025)
+
 - Comprehensive error handling
 - Monitoring & alerting
 - A/B testing framework
 - User acceptance testing
 
 #### Phase 4: Advanced Features (Q2 2025)
+
 - Audio effects (reverb, delay, compression)
 - MIDI recording
 - Multi-user collaboration
@@ -2309,6 +2647,7 @@ source.start(audioTime);
 ## Statistics & Metrics
 
 ### File Counts
+
 - **Total TypeScript files**: ~500+
 - **React components**: 10
 - **Custom hooks**: 16
@@ -2319,6 +2658,7 @@ source.start(audioTime);
 - **Value objects**: 5
 
 ### Lines of Code
+
 - **CoreServices**: 941 lines
 - **RegionProcessor**: 1,329 lines (reduced from 3,902)
 - **InitialSamplePreloader**: 2,154 lines
@@ -2330,6 +2670,7 @@ source.start(audioTime);
 - **WindowRegistry**: 398 lines
 
 ### Architecture Layers
+
 - **Layer 1 (Presentation)**: 10 components + 16 hooks + 2 providers + 1 context
 - **Layer 2 (Application/Service)**: 10+ service classes
 - **Layer 3 (Domain/Modules)**: 23 modules
@@ -2338,11 +2679,13 @@ source.start(audioTime);
 - **Layer 6 (Platform)**: Web Audio API, Tone.js, IndexedDB, WAM
 
 ### Module Complexity
+
 - **Most complex modules**: instruments (60+ files), transport (40+ files), storage (35+ files)
 - **Critical modules**: audio-engine, midi (20+ files each)
 - **Supporting modules**: 16 modules with varying sizes
 
 ### Pattern Usage
+
 - **Singleton**: 5 classes
 - **Service Interface**: 5+ services
 - **Repository Pattern**: 5 repositories
@@ -2351,6 +2694,7 @@ source.start(audioTime);
 - **Event-Driven**: 1 EventBus, 50+ event types
 
 ### Test Coverage
+
 - **Unit tests**: Co-located with source files
 - **Integration tests**: `__tests__/` subdirectories
 - **E2E tests**: Playwright in separate package

@@ -59,7 +59,10 @@ export class Timeline {
   setTempo(bpm: number): void {
     // This method is kept for backward compatibility but does nothing
     // The actual tempo is managed by MusicalTruthAuthority
-    logger.warn('⚠️ setTempo() called - use musicalTruth.setFromExercise() instead', { bpm });
+    logger.warn(
+      '⚠️ setTempo() called - use musicalTruth.setFromExercise() instead',
+      { bpm },
+    );
   }
 
   /**
@@ -76,7 +79,10 @@ export class Timeline {
   setTimeSignature(timeSignature: TimeSignature): void {
     // This method is kept for backward compatibility but does nothing
     // The actual time signature is managed by MusicalTruthAuthority
-    logger.warn('⚠️ setTimeSignature() called - use musicalTruth.setFromExercise() instead', { timeSignature });
+    logger.warn(
+      '⚠️ setTimeSignature() called - use musicalTruth.setFromExercise() instead',
+      { timeSignature },
+    );
   }
 
   /**
@@ -93,10 +99,13 @@ export class Timeline {
   setExerciseDuration(totalBars: number, beatsPerBar: number): void {
     // This method is kept for backward compatibility but does nothing
     // Duration is managed by MusicalTruthAuthority
-    logger.warn('⚠️ setExerciseDuration() called - use musicalTruth.setFromExercise() instead', {
-      totalBars,
-      beatsPerBar
-    });
+    logger.warn(
+      '⚠️ setExerciseDuration() called - use musicalTruth.setFromExercise() instead',
+      {
+        totalBars,
+        beatsPerBar,
+      },
+    );
   }
 
   /**
@@ -123,7 +132,10 @@ export class Timeline {
     return {
       bars: typeof pos.bars === 'number' && !isNaN(pos.bars) ? pos.bars : 0,
       beats: typeof pos.beats === 'number' && !isNaN(pos.beats) ? pos.beats : 0,
-      sixteenths: typeof pos.sixteenths === 'number' && !isNaN(pos.sixteenths) ? pos.sixteenths : 0,
+      sixteenths:
+        typeof pos.sixteenths === 'number' && !isNaN(pos.sixteenths)
+          ? pos.sixteenths
+          : 0,
       ticks: typeof pos.ticks === 'number' && !isNaN(pos.ticks) ? pos.ticks : 0,
     };
   }
@@ -297,7 +309,10 @@ export class Timeline {
     return {
       bars: typeof pos.bars === 'number' && !isNaN(pos.bars) ? pos.bars : 0,
       beats: typeof pos.beats === 'number' && !isNaN(pos.beats) ? pos.beats : 0,
-      sixteenths: typeof pos.sixteenths === 'number' && !isNaN(pos.sixteenths) ? pos.sixteenths : 0,
+      sixteenths:
+        typeof pos.sixteenths === 'number' && !isNaN(pos.sixteenths)
+          ? pos.sixteenths
+          : 0,
       ticks: typeof pos.ticks === 'number' && !isNaN(pos.ticks) ? pos.ticks : 0,
       seconds: this.positionToSeconds(),
     };

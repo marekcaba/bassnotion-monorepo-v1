@@ -38,7 +38,7 @@ export class AudioDebugger {
     console.log(
       `%c[${source}] ${event}`,
       `color: ${color}; font-weight: bold`,
-      data || ''
+      data || '',
     );
 
     // Keep only last 1000 events
@@ -49,14 +49,14 @@ export class AudioDebugger {
 
   private getColor(source: string): string {
     const colors: Record<string, string> = {
-      'RegionProcessor': '#4CAF50',
-      'EventBus': '#2196F3',
-      'AudioEventRouter': '#FF9800',
-      'InstrumentRegistry': '#9C27B0',
-      'MetronomeWidget': '#00BCD4',
-      'DrummerWidget': '#CDDC39',
-      'CoreServices': '#FF5722',
-      'Transport': '#795548',
+      RegionProcessor: '#4CAF50',
+      EventBus: '#2196F3',
+      AudioEventRouter: '#FF9800',
+      InstrumentRegistry: '#9C27B0',
+      MetronomeWidget: '#00BCD4',
+      DrummerWidget: '#CDDC39',
+      CoreServices: '#FF5722',
+      Transport: '#795548',
     };
     return colors[source] || '#666';
   }
@@ -66,7 +66,7 @@ export class AudioDebugger {
   }
 
   getEventsBySource(source: string): any[] {
-    return this.events.filter(e => e.source === source);
+    return this.events.filter((e) => e.source === source);
   }
 
   getRecentEvents(count = 50): any[] {
@@ -75,7 +75,10 @@ export class AudioDebugger {
 
   clear(): void {
     this.events = [];
-    console.log('%c[AudioDebugger] Events cleared', 'color: red; font-weight: bold');
+    console.log(
+      '%c[AudioDebugger] Events cleared',
+      'color: red; font-weight: bold',
+    );
   }
 
   enable(): void {
@@ -89,13 +92,20 @@ export class AudioDebugger {
   }
 
   summary(): void {
-    const sources = new Set(this.events.map(e => e.source));
-    console.log('%c=== Audio Event Flow Summary ===', 'color: blue; font-weight: bold');
+    const sources = new Set(this.events.map((e) => e.source));
+    console.log(
+      '%c=== Audio Event Flow Summary ===',
+      'color: blue; font-weight: bold',
+    );
 
-    sources.forEach(source => {
-      const sourceEvents = this.events.filter(e => e.source === source);
-      const eventTypes = new Set(sourceEvents.map(e => e.event));
-      console.log(`%c${source}: ${sourceEvents.length} events`, `color: ${this.getColor(source)}`, Array.from(eventTypes));
+    sources.forEach((source) => {
+      const sourceEvents = this.events.filter((e) => e.source === source);
+      const eventTypes = new Set(sourceEvents.map((e) => e.event));
+      console.log(
+        `%c${source}: ${sourceEvents.length} events`,
+        `color: ${this.getColor(source)}`,
+        Array.from(eventTypes),
+      );
     });
 
     // Check for common issues
@@ -108,37 +118,48 @@ export class AudioDebugger {
     // Check if RegionProcessor is scheduling
     const regionEvents = this.getEventsBySource('RegionProcessor');
     if (regionEvents.length === 0) {
-      console.warn('⚠️ No RegionProcessor events - patterns may not be registered');
+      console.warn(
+        '⚠️ No RegionProcessor events - patterns may not be registered',
+      );
     }
 
     // Check if EventBus is emitting
-    const eventBusEvents = this.events.filter(e =>
-      e.source === 'EventBus' &&
-      (e.event.includes('trigger') || e.event.includes('instrument'))
+    const eventBusEvents = this.events.filter(
+      (e) =>
+        e.source === 'EventBus' &&
+        (e.event.includes('trigger') || e.event.includes('instrument')),
     );
     if (eventBusEvents.length === 0) {
-      console.warn('⚠️ No EventBus trigger events - RegionProcessor may not be emitting');
+      console.warn(
+        '⚠️ No EventBus trigger events - RegionProcessor may not be emitting',
+      );
     }
 
     // Check if AudioEventRouter is receiving
     const routerEvents = this.getEventsBySource('AudioEventRouter');
     if (routerEvents.length === 0) {
-      console.warn('⚠️ No AudioEventRouter events - may not be initialized or started');
+      console.warn(
+        '⚠️ No AudioEventRouter events - may not be initialized or started',
+      );
     }
 
     // Check if instruments are registered
     const registryEvents = this.getEventsBySource('InstrumentRegistry');
     if (registryEvents.length === 0) {
-      console.warn('⚠️ No InstrumentRegistry events - instruments may not be registered');
+      console.warn(
+        '⚠️ No InstrumentRegistry events - instruments may not be registered',
+      );
     }
 
     // Check the chain
-    const hasPatterns = regionEvents.some(e => e.event.includes('pattern'));
-    const hasTriggers = eventBusEvents.some(e => e.event.includes('trigger'));
-    const hasRouting = routerEvents.some(e => e.event.includes('trigger'));
+    const hasPatterns = regionEvents.some((e) => e.event.includes('pattern'));
+    const hasTriggers = eventBusEvents.some((e) => e.event.includes('trigger'));
+    const hasRouting = routerEvents.some((e) => e.event.includes('trigger'));
 
     if (hasPatterns && !hasTriggers) {
-      console.error('❌ Break in chain: Patterns registered but no triggers emitted');
+      console.error(
+        '❌ Break in chain: Patterns registered but no triggers emitted',
+      );
     }
     if (hasTriggers && !hasRouting) {
       console.error('❌ Break in chain: Triggers emitted but not routed');

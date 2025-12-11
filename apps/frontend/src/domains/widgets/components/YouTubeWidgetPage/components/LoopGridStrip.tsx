@@ -107,7 +107,13 @@ export function LoopGridStrip({
       endTime: (i + 1) * measureDurationInSeconds,
       width: measureWidth,
     }));
-  }, [exercise?.id, exercise?.total_bars, exercise?.bpm, exercise?.timeSignature, duration]);
+  }, [
+    exercise?.id,
+    exercise?.total_bars,
+    exercise?.bpm,
+    exercise?.timeSignature,
+    duration,
+  ]);
 
   // Calculate measure and beat from mouse position (discrete incremental)
   const getMeasureAndBeatFromPosition = useCallback(

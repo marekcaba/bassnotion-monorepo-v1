@@ -51,7 +51,7 @@ export function useCountdown(options: UseCountdownOptions = {}) {
     async (
       bpm: number,
       audioContext: AudioContext,
-      metronome: any
+      metronome: any,
     ): Promise<void> => {
       logger.info('🎵 Starting countdown', {
         bpm,
@@ -102,7 +102,9 @@ export function useCountdown(options: UseCountdownOptions = {}) {
         }
 
         scheduledTimes.push(clickTime);
-        logger.debug(`⏰ Scheduled countdown beat ${i + 1} at ${clickTime.toFixed(3)}s`);
+        logger.debug(
+          `⏰ Scheduled countdown beat ${i + 1} at ${clickTime.toFixed(3)}s`,
+        );
       }
 
       audioScheduleRef.current = scheduledTimes;
@@ -147,19 +149,28 @@ export function useCountdown(options: UseCountdownOptions = {}) {
 
       // Trigger first beat to sync with audio start time
       const firstBeatDelay = (startTime - audioContext.currentTime) * 1000;
-      logger.debug(`⏰ First beat will trigger in ${firstBeatDelay.toFixed(1)}ms`);
+      logger.debug(
+        `⏰ First beat will trigger in ${firstBeatDelay.toFixed(1)}ms`,
+      );
 
       firstBeatTimerRef.current = setTimeout(() => {
         updateVisualBeat(); // First beat
         // Start interval for subsequent beats
-        countdownTimerRef.current = setInterval(updateVisualBeat, visualInterval);
+        countdownTimerRef.current = setInterval(
+          updateVisualBeat,
+          visualInterval,
+        );
       }, firstBeatDelay);
 
       // Schedule countdown completion exactly when it should end (after all beats have played)
-      const totalCountdownDuration = countdownState.totalBeats * beatDuration * 1000;
-      completionTimerRef.current = setTimeout(completeCountdown, firstBeatDelay + totalCountdownDuration);
+      const totalCountdownDuration =
+        countdownState.totalBeats * beatDuration * 1000;
+      completionTimerRef.current = setTimeout(
+        completeCountdown,
+        firstBeatDelay + totalCountdownDuration,
+      );
     },
-    [countdownState.totalBeats, timeSignature, onCountdownComplete, onBeatTick]
+    [countdownState.totalBeats, timeSignature, onCountdownComplete, onBeatTick],
   );
 
   /**

@@ -1,9 +1,9 @@
 /**
  * Supabase Client Manager
- * 
+ *
  * Manages Supabase client connections with pooling, failover,
  * and geographic optimization capabilities.
- * 
+ *
  * Extracted from SupabaseAssetClient to provide reusable
  * connection management for all domains.
  */
@@ -74,7 +74,10 @@ class ConnectionPool {
   private config: ConnectionPoolConfig;
   private connectionConfig: ConnectionConfig;
 
-  constructor(config: ConnectionPoolConfig, connectionConfig: ConnectionConfig) {
+  constructor(
+    config: ConnectionPoolConfig,
+    connectionConfig: ConnectionConfig,
+  ) {
     this.config = config;
     this.connectionConfig = connectionConfig;
     this.initialize();
@@ -130,7 +133,7 @@ class ConnectionPool {
       if (this.available.length > 0) {
         return this.available.pop()!;
       }
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
     throw new Error('Connection pool timeout - no available connections');
@@ -138,7 +141,7 @@ class ConnectionPool {
 
   private cleanup(): void {
     // Remove expired connections
-    this.connections = this.connections.filter(conn => {
+    this.connections = this.connections.filter((conn) => {
       if (conn.isExpired(this.config.idleTimeout * 10)) {
         const availableIndex = this.available.indexOf(conn);
         if (availableIndex > -1) {
@@ -151,13 +154,13 @@ class ConnectionPool {
 
     // Remove idle connections over minimum
     while (this.available.length > this.config.minConnections) {
-      const idleConnections = this.available.filter(conn =>
-        conn.isIdle(this.config.idleTimeout)
+      const idleConnections = this.available.filter((conn) =>
+        conn.isIdle(this.config.idleTimeout),
       );
       if (idleConnections.length > 0) {
         const toRemove = idleConnections[0];
-        this.available = this.available.filter(c => c !== toRemove);
-        this.connections = this.connections.filter(c => c !== toRemove);
+        this.available = this.available.filter((c) => c !== toRemove);
+        this.connections = this.connections.filter((c) => c !== toRemove);
       } else {
         break;
       }
@@ -195,15 +198,18 @@ export class SupabaseClientManager {
   constructor(config: ClientManagerConfig) {
     this.config = config;
     this.metrics = this.createDefaultMetrics();
-    this.primaryClient = createClient(config.primary.url, config.primary.apiKey);
+    this.primaryClient = createClient(
+      config.primary.url,
+      config.primary.apiKey,
+    );
     this.initialize();
   }
 
   private initialize(): void {
     // Create fallback clients
     if (this.config.fallbacks) {
-      this.fallbackClients = this.config.fallbacks.map(fallback =>
-        createClient(fallback.url, fallback.apiKey)
+      this.fallbackClients = this.config.fallbacks.map((fallback) =>
+        createClient(fallback.url, fallback.apiKey),
       );
     }
 
@@ -240,7 +246,10 @@ export class SupabaseClientManager {
     }
 
     // Check if we need failover
-    if (this.config.failover?.enabled && !this.isHealthy(this.config.primary.url)) {
+    if (
+      this.config.failover?.enabled &&
+      !this.isHealthy(this.config.primary.url)
+    ) {
       const fallback = this.selectHealthyFallback();
       if (fallback) {
         return fallback;
@@ -264,7 +273,10 @@ export class SupabaseClientManager {
   private isHealthy(url: string): boolean {
     const health = this.healthStatus.get(url);
     if (!health) return true; // Assume healthy if no data
-    return health.isHealthy && health.consecutiveFailures < (this.config.failover?.failureThreshold || 3);
+    return (
+      health.isHealthy &&
+      health.consecutiveFailures < (this.config.failover?.failureThreshold || 3)
+    );
   }
 
   /**
@@ -285,10 +297,10 @@ export class SupabaseClientManager {
    */
   private startHealthMonitoring(): void {
     const interval = this.config.failover?.healthCheckInterval || 30000;
-    
+
     this.healthCheckInterval = setInterval(async () => {
       await this.checkHealth(this.config.primary.url, this.primaryClient);
-      
+
       for (let i = 0; i < this.fallbackClients.length; i++) {
         const fallbackUrl = this.config.fallbacks?.[i].url;
         if (fallbackUrl) {
@@ -304,28 +316,31 @@ export class SupabaseClientManager {
   /**
    * Check health of a specific client
    */
-  private async checkHealth(url: string, client: SupabaseClient): Promise<void> {
+  private async checkHealth(
+    url: string,
+    client: SupabaseClient,
+  ): Promise<void> {
     const startTime = Date.now();
     let health = this.healthStatus.get(url) || this.createDefaultHealth();
 
     try {
       // Simple health check - try to access storage
       await client.storage.listBuckets();
-      
+
       const latency = Date.now() - startTime;
       health.isHealthy = true;
       health.latency = latency;
       health.lastCheckTime = Date.now();
       health.consecutiveFailures = 0;
-      health.successRate = (health.successRate * 0.95) + (1 * 0.05); // Exponential moving average
-      
+      health.successRate = health.successRate * 0.95 + 1 * 0.05; // Exponential moving average
+
       this.metrics.successfulRequests++;
     } catch (error) {
       health.isHealthy = false;
       health.lastCheckTime = Date.now();
       health.consecutiveFailures++;
-      health.errorRate = (health.errorRate * 0.95) + (1 * 0.05);
-      
+      health.errorRate = health.errorRate * 0.95 + 1 * 0.05;
+
       this.metrics.failedRequests++;
       logger.warn(`Health check failed for ${url}`, { error });
     }

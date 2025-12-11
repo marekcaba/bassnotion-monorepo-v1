@@ -21,7 +21,9 @@ export class TutorialRepository implements ITutorialRepository {
 
   private async ensureAuth() {
     logger.debug('Ensuring authentication...');
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (session?.access_token) {
       logger.debug('Setting auth token', { hasToken: true });
       apiClient.setAuthToken(session.access_token);
@@ -39,7 +41,7 @@ export class TutorialRepository implements ITutorialRepository {
         id: id.value,
         hasResponse: !!response,
         responseType: typeof response,
-        responseKeys: response ? Object.keys(response) : []
+        responseKeys: response ? Object.keys(response) : [],
       });
 
       // The response IS the data (not response.data)
@@ -55,9 +57,11 @@ export class TutorialRepository implements ITutorialRepository {
     } catch (error: any) {
       logger.error('Failed to fetch tutorial by id', {
         error: error.message,
-        id: id.value
+        id: id.value,
       });
-      return Result.failure(new Error(error.message || 'Failed to fetch tutorial'));
+      return Result.failure(
+        new Error(error.message || 'Failed to fetch tutorial'),
+      );
     }
   }
 
@@ -72,7 +76,7 @@ export class TutorialRepository implements ITutorialRepository {
         slug: slug.value,
         hasResponse: !!response,
         responseType: typeof response,
-        responseKeys: response ? Object.keys(response) : []
+        responseKeys: response ? Object.keys(response) : [],
       });
 
       // The response IS the data (not response.data)
@@ -88,14 +92,18 @@ export class TutorialRepository implements ITutorialRepository {
     } catch (error: any) {
       logger.error('Failed to fetch tutorial by slug', {
         error: error.message,
-        slug: slug.value
+        slug: slug.value,
       });
-      return Result.failure(new Error(error.message || 'Failed to fetch tutorial by slug'));
+      return Result.failure(
+        new Error(error.message || 'Failed to fetch tutorial by slug'),
+      );
     }
   }
 
   // OPTIMIZATION: Batch fetch tutorial with exercises to reduce API calls
-  async findBySlugWithExercises(slug: TutorialSlug): Promise<Result<{ tutorial: Tutorial; exercises: Exercise[] }>> {
+  async findBySlugWithExercises(
+    slug: TutorialSlug,
+  ): Promise<Result<{ tutorial: Tutorial; exercises: Exercise[] }>> {
     try {
       await this.ensureAuth();
       const response = await apiClient.get(
@@ -107,7 +115,7 @@ export class TutorialRepository implements ITutorialRepository {
         hasResponse: !!response,
         hasTutorial: !!(response as any).tutorial,
         hasExercises: !!(response as any).exercises,
-        exerciseCount: (response as any).exercises?.length || 0
+        exerciseCount: (response as any).exercises?.length || 0,
       });
 
       const data = response as any;
@@ -118,15 +126,21 @@ export class TutorialRepository implements ITutorialRepository {
       }
 
       const tutorial = Tutorial.fromDTO(data.tutorial);
-      const exercises = (data.exercises || []).map((dto: any) => Exercise.fromDTO(dto));
+      const exercises = (data.exercises || []).map((dto: any) =>
+        Exercise.fromDTO(dto),
+      );
 
       return Result.success({ tutorial, exercises });
     } catch (error: any) {
       logger.error('Failed to fetch tutorial with exercises by slug', {
         error: error.message,
-        slug: slug.value
+        slug: slug.value,
       });
-      return Result.failure(new Error(error.message || 'Failed to fetch tutorial with exercises by slug'));
+      return Result.failure(
+        new Error(
+          error.message || 'Failed to fetch tutorial with exercises by slug',
+        ),
+      );
     }
   }
 
@@ -142,11 +156,13 @@ export class TutorialRepository implements ITutorialRepository {
       }
 
       const url = `${this.baseUrl}?${params.toString()}`;
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       logger.info('Fetching tutorials', {
         url,
         options,
-        hasAuth: !!session?.access_token
+        hasAuth: !!session?.access_token,
       });
 
       const response = await apiClient.get(url);
@@ -155,7 +171,7 @@ export class TutorialRepository implements ITutorialRepository {
         status: response?.status,
         hasData: !!response,
         dataType: typeof response,
-        responseKeys: response ? Object.keys(response) : []
+        responseKeys: response ? Object.keys(response) : [],
       });
 
       // Check if response exists
@@ -171,7 +187,7 @@ export class TutorialRepository implements ITutorialRepository {
         hasItems: 'items' in data,
         hasTutorials: 'tutorials' in data,
         keys: Object.keys(data),
-        itemsLength: data.items?.length || data.tutorials?.length || 0
+        itemsLength: data.items?.length || data.tutorials?.length || 0,
       });
 
       // Handle both possible response formats
@@ -185,7 +201,7 @@ export class TutorialRepository implements ITutorialRepository {
         count: tutorialDtos.length,
         total,
         page,
-        limit
+        limit,
       });
 
       const tutorials = tutorialDtos.map((dto: any) => Tutorial.fromDTO(dto));
@@ -204,9 +220,11 @@ export class TutorialRepository implements ITutorialRepository {
       logger.error('Failed to fetch tutorials', {
         error: error.message,
         stack: error.stack,
-        response: error.response
+        response: error.response,
       });
-      return Result.failure(new Error(error.message || 'Failed to fetch tutorials'));
+      return Result.failure(
+        new Error(error.message || 'Failed to fetch tutorials'),
+      );
     }
   }
 
@@ -219,7 +237,9 @@ export class TutorialRepository implements ITutorialRepository {
       const tutorials = response.data.map((dto: any) => Tutorial.fromDTO(dto));
       return Result.success(tutorials);
     } catch (error: any) {
-      return Result.failure(new Error(error.message || 'Failed to fetch tutorials by level'));
+      return Result.failure(
+        new Error(error.message || 'Failed to fetch tutorials by level'),
+      );
     }
   }
 
@@ -232,7 +252,9 @@ export class TutorialRepository implements ITutorialRepository {
       const tutorials = response.data.map((dto: any) => Tutorial.fromDTO(dto));
       return Result.success(tutorials);
     } catch (error: any) {
-      return Result.failure(new Error(error.message || 'Failed to fetch tutorials by tag'));
+      return Result.failure(
+        new Error(error.message || 'Failed to fetch tutorials by tag'),
+      );
     }
   }
 
@@ -246,7 +268,7 @@ export class TutorialRepository implements ITutorialRepository {
       return Result.success(tutorials);
     } catch (error: any) {
       return Result.failure(
-        new Error(error.message || 'Failed to fetch tutorials by author')
+        new Error(error.message || 'Failed to fetch tutorials by author'),
       );
     }
   }
@@ -293,7 +315,9 @@ export class TutorialRepository implements ITutorialRepository {
       const tutorials = response.data.map((dto: any) => Tutorial.fromDTO(dto));
       return Result.success(tutorials);
     } catch (error: any) {
-      return Result.failure(new Error(error.message || 'Failed to search tutorials'));
+      return Result.failure(
+        new Error(error.message || 'Failed to search tutorials'),
+      );
     }
   }
 
@@ -306,7 +330,9 @@ export class TutorialRepository implements ITutorialRepository {
       const tutorials = response.data.map((dto: any) => Tutorial.fromDTO(dto));
       return Result.success(tutorials);
     } catch (error: any) {
-      return Result.failure(new Error(error.message || 'Failed to fetch tutorials by ids'));
+      return Result.failure(
+        new Error(error.message || 'Failed to fetch tutorials by ids'),
+      );
     }
   }
 
@@ -339,9 +365,9 @@ export class TutorialRepository implements ITutorialRepository {
         hasPrevious: page > 1,
       });
     } catch (error: any) {
-      return Result.failure(new Error(
-        error.message || 'Failed to fetch published tutorials'
-      ));
+      return Result.failure(
+        new Error(error.message || 'Failed to fetch published tutorials'),
+      );
     }
   }
 
@@ -357,7 +383,9 @@ export class TutorialRepository implements ITutorialRepository {
       const tutorials = response.data.map((dto: any) => Tutorial.fromDTO(dto));
       return Result.success(tutorials);
     } catch (error: any) {
-      return Result.failure(new Error(error.message || 'Failed to fetch related tutorials'));
+      return Result.failure(
+        new Error(error.message || 'Failed to fetch related tutorials'),
+      );
     }
   }
 
@@ -369,7 +397,7 @@ export class TutorialRepository implements ITutorialRepository {
       logger.info('Saving new tutorial', {
         title: tutorialData.title,
         status: tutorialData.status,
-        hasAuth: apiClient.hasAuthToken()
+        hasAuth: apiClient.hasAuthToken(),
       });
 
       const response = await apiClient.post(this.baseUrl, tutorialData);
@@ -377,7 +405,7 @@ export class TutorialRepository implements ITutorialRepository {
       logger.debug('Save response', {
         hasResponse: !!response,
         responseType: typeof response,
-        responseKeys: response ? Object.keys(response) : []
+        responseKeys: response ? Object.keys(response) : [],
       });
 
       if (!response) {
@@ -389,7 +417,7 @@ export class TutorialRepository implements ITutorialRepository {
       const savedTutorial = Tutorial.fromDTO(response);
       logger.info('Tutorial saved successfully', {
         id: savedTutorial.id.value,
-        slug: savedTutorial.slug.value
+        slug: savedTutorial.slug.value,
       });
 
       return Result.success(savedTutorial);
@@ -397,9 +425,11 @@ export class TutorialRepository implements ITutorialRepository {
       logger.error('Failed to save tutorial', {
         error: error.message,
         stack: error.stack,
-        status: error.status
+        status: error.status,
       });
-      return Result.failure(new Error(error.message || 'Failed to save tutorial'));
+      return Result.failure(
+        new Error(error.message || 'Failed to save tutorial'),
+      );
     }
   }
 
@@ -415,12 +445,15 @@ export class TutorialRepository implements ITutorialRepository {
   async saveWithExercises(
     tutorial: Tutorial,
     exercises: Array<{ exercise: any; isExisting: boolean }>,
-    tempMidiPathsMap?: WeakMap<Exercise, {
-      temp_bassline_midi_path?: string;
-      temp_drummer_midi_path?: string;
-      temp_harmony_midi_path?: string;
-      temp_metronome_midi_path?: string;
-    }>
+    tempMidiPathsMap?: WeakMap<
+      Exercise,
+      {
+        temp_bassline_midi_path?: string;
+        temp_drummer_midi_path?: string;
+        temp_harmony_midi_path?: string;
+        temp_metronome_midi_path?: string;
+      }
+    >,
   ): Promise<Result<{ tutorial: Tutorial; exercises: any[] }>> {
     try {
       await this.ensureAuth();
@@ -428,7 +461,7 @@ export class TutorialRepository implements ITutorialRepository {
       logger.info('Batch saving tutorial with exercises', {
         tutorialId: tutorial.id.value,
         exerciseCount: exercises.length,
-        hasAuth: apiClient.hasAuthToken()
+        hasAuth: apiClient.hasAuthToken(),
       });
 
       // Prepare payload - strip IDs from new exercises
@@ -483,7 +516,9 @@ export class TutorialRepository implements ITutorialRepository {
 
       if (!response) {
         logger.error('No response from batch save API');
-        return Result.failure(new Error('Failed to save tutorial with exercises'));
+        return Result.failure(
+          new Error('Failed to save tutorial with exercises'),
+        );
       }
 
       const data = response as any;
@@ -509,7 +544,9 @@ export class TutorialRepository implements ITutorialRepository {
         tutorialId: tutorial.id.value,
         stack: error.stack,
       });
-      return Result.failure(new Error(error.message || 'Failed to save tutorial with exercises'));
+      return Result.failure(
+        new Error(error.message || 'Failed to save tutorial with exercises'),
+      );
     }
   }
 
@@ -519,7 +556,7 @@ export class TutorialRepository implements ITutorialRepository {
 
       logger.info('Updating tutorial', {
         id: tutorial.id.value,
-        hasAuth: apiClient.hasAuthToken()
+        hasAuth: apiClient.hasAuthToken(),
       });
 
       const response = await apiClient.put(
@@ -535,16 +572,18 @@ export class TutorialRepository implements ITutorialRepository {
       // The response IS the data (not response.data)
       const updatedTutorial = Tutorial.fromDTO(response);
       logger.info('Tutorial updated successfully', {
-        id: updatedTutorial.id.value
+        id: updatedTutorial.id.value,
       });
 
       return Result.success(updatedTutorial);
     } catch (error: any) {
       logger.error('Failed to update tutorial', {
         error: error.message,
-        status: error.status
+        status: error.status,
       });
-      return Result.failure(new Error(error.message || 'Failed to update tutorial'));
+      return Result.failure(
+        new Error(error.message || 'Failed to update tutorial'),
+      );
     }
   }
 
@@ -554,7 +593,10 @@ export class TutorialRepository implements ITutorialRepository {
       await apiClient.delete(`${this.baseUrl}/${id.value}`);
       return Result.success(undefined);
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to delete tutorial';
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to delete tutorial';
       return Result.failure(new Error(errorMessage));
     }
   }
@@ -570,7 +612,9 @@ export class TutorialRepository implements ITutorialRepository {
       );
       return Result.success(savedTutorials);
     } catch (error: any) {
-      return Result.failure(new Error(error.message || 'Failed to save tutorials'));
+      return Result.failure(
+        new Error(error.message || 'Failed to save tutorials'),
+      );
     }
   }
 
@@ -582,7 +626,9 @@ export class TutorialRepository implements ITutorialRepository {
       });
       return Result.success(undefined);
     } catch (error: any) {
-      return Result.failure(new Error(error.message || 'Failed to delete tutorials'));
+      return Result.failure(
+        new Error(error.message || 'Failed to delete tutorials'),
+      );
     }
   }
 
@@ -595,7 +641,9 @@ export class TutorialRepository implements ITutorialRepository {
       if (error.response?.status === 404) {
         return Result.success(false);
       }
-      return Result.failure(new Error(error.message || 'Failed to check if tutorial exists'));
+      return Result.failure(
+        new Error(error.message || 'Failed to check if tutorial exists'),
+      );
     }
   }
 
@@ -610,9 +658,11 @@ export class TutorialRepository implements ITutorialRepository {
       if (error.response?.status === 404) {
         return Result.success(false);
       }
-      return Result.failure(new Error(
-        error.message || 'Failed to check if tutorial exists by slug'
-      ));
+      return Result.failure(
+        new Error(
+          error.message || 'Failed to check if tutorial exists by slug',
+        ),
+      );
     }
   }
 
@@ -622,7 +672,9 @@ export class TutorialRepository implements ITutorialRepository {
       const response = await apiClient.get(`${this.baseUrl}/count`);
       return Result.success(response.data.count);
     } catch (error: any) {
-      return Result.failure(new Error(error.message || 'Failed to count tutorials'));
+      return Result.failure(
+        new Error(error.message || 'Failed to count tutorials'),
+      );
     }
   }
 
@@ -634,7 +686,9 @@ export class TutorialRepository implements ITutorialRepository {
       );
       return Result.success(response.data.count);
     } catch (error: any) {
-      return Result.failure(new Error(error.message || 'Failed to count tutorials by level'));
+      return Result.failure(
+        new Error(error.message || 'Failed to count tutorials by level'),
+      );
     }
   }
 
@@ -644,7 +698,9 @@ export class TutorialRepository implements ITutorialRepository {
       await apiClient.post(`${this.baseUrl}/${id.value}/view`);
       return Result.success(undefined);
     } catch (error: any) {
-      return Result.failure(new Error(error.message || 'Failed to increment view count'));
+      return Result.failure(
+        new Error(error.message || 'Failed to increment view count'),
+      );
     }
   }
 }

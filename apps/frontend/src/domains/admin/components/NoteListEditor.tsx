@@ -9,7 +9,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/shared/components/ui/table';
-import type { GeneratedExerciseNote, ConfidenceLevel } from '../hooks/useMidiConversion';
+import type {
+  GeneratedExerciseNote,
+  ConfidenceLevel,
+} from '../hooks/useMidiConversion';
+import {
+  type AccidentalPreference,
+  convertToPreference,
+  getEnharmonicEquivalent,
+  hasEnharmonic,
+} from '../utils/fretboardCalculations';
 
 interface NoteListEditorProps {
   /** Generated notes from MIDI conversion */
@@ -20,6 +29,10 @@ interface NoteListEditorProps {
   onNotesChange?: (notes: GeneratedExerciseNote[]) => void;
   /** Bass type for string name display */
   bassType?: '4' | '5' | '6';
+  /** Display preference for accidentals (sharps or flats) */
+  accidentalPreference?: AccidentalPreference;
+  /** Callback when accidental preference changes */
+  onAccidentalPreferenceChange?: (preference: AccidentalPreference) => void;
 }
 
 type FilterMode = 'all' | 'low-confidence' | 'warnings';
@@ -27,12 +40,15 @@ type FilterMode = 'all' | 'low-confidence' | 'warnings';
 /**
  * Get string name from string number based on bass type
  */
-function getStringName(stringNumber: number, bassType: '4' | '5' | '6'): string {
+function getStringName(
+  stringNumber: number,
+  bassType: '4' | '5' | '6',
+): string {
   // String numbering: 1 = highest pitch (thinnest string, top of fretboard visually)
   // Matches BASS_TUNINGS in fretboardCalculations.ts
   const stringNames = {
-    '4': ['G', 'D', 'A', 'E'],           // String 1-4: G D A E (high to low)
-    '5': ['G', 'D', 'A', 'E', 'B'],      // String 1-5: G D A E B (high to low)
+    '4': ['G', 'D', 'A', 'E'], // String 1-4: G D A E (high to low)
+    '5': ['G', 'D', 'A', 'E', 'B'], // String 1-5: G D A E B (high to low)
     '6': ['C', 'G', 'D', 'A', 'E', 'B'], // String 1-6: C G D A E B (high to low)
   };
 
@@ -43,10 +59,23 @@ function getStringName(stringNumber: number, bassType: '4' | '5' | '6'): string 
 /**
  * Component for reviewing and editing generated fretboard positions
  */
-export function NoteListEditor({ notes, onNoteUpdate, onNotesChange, bassType = '4' }: NoteListEditorProps) {
+export function NoteListEditor({
+  notes,
+  onNoteUpdate,
+  onNotesChange,
+  bassType = '4',
+  accidentalPreference = 'sharps',
+  onAccidentalPreferenceChange,
+}: NoteListEditorProps) {
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
   const [searchMeasure, setSearchMeasure] = useState('');
-  const [editedNotes, setEditedNotes] = useState<Map<string, GeneratedExerciseNote>>(new Map());
+  const [editedNotes, setEditedNotes] = useState<
+    Map<string, GeneratedExerciseNote>
+  >(new Map());
+  // Track individual note display overrides (for toggling individual notes between sharp/flat)
+  const [noteDisplayOverrides, setNoteDisplayOverrides] = useState<
+    Map<string, string>
+  >(new Map());
 
   // Filter notes based on mode and search
   const filteredNotes = useMemo(() => {
@@ -56,7 +85,9 @@ export function NoteListEditor({ notes, onNoteUpdate, onNotesChange, bassType = 
     if (filterMode === 'low-confidence') {
       filtered = filtered.filter((note) => note.confidence === 'low');
     } else if (filterMode === 'warnings') {
-      filtered = filtered.filter((note) => note.warnings && note.warnings.length > 0);
+      filtered = filtered.filter(
+        (note) => note.warnings && note.warnings.length > 0,
+      );
     }
 
     // Apply measure search
@@ -70,7 +101,11 @@ export function NoteListEditor({ notes, onNoteUpdate, onNotesChange, bassType = 
     return filtered;
   }, [notes, filterMode, searchMeasure]);
 
-  const handleAlternativeSelect = (note: GeneratedExerciseNote, string: number, fret: number) => {
+  const handleAlternativeSelect = (
+    note: GeneratedExerciseNote,
+    string: number,
+    fret: number,
+  ) => {
     const updatedNote: GeneratedExerciseNote = {
       ...note,
       string,
@@ -90,16 +125,56 @@ export function NoteListEditor({ notes, onNoteUpdate, onNotesChange, bassType = 
     onNotesChange?.(updatedNotes);
   };
 
-  const getDisplayNote = (note: GeneratedExerciseNote): GeneratedExerciseNote => {
+  const getDisplayNote = (
+    note: GeneratedExerciseNote,
+  ): GeneratedExerciseNote => {
     return editedNotes.get(note.id) || note;
+  };
+
+  /**
+   * Get display name for a note, considering:
+   * 1. Individual note overrides
+   * 2. Global accidental preference
+   */
+  const getDisplayNoteName = (note: GeneratedExerciseNote): string => {
+    // Check for individual override first
+    const override = noteDisplayOverrides.get(note.id);
+    if (override) {
+      return override;
+    }
+    // Otherwise use global preference
+    return convertToPreference(note.note, accidentalPreference);
+  };
+
+  /**
+   * Toggle a note's enharmonic spelling (sharp ↔ flat)
+   */
+  const toggleNoteEnharmonic = (note: GeneratedExerciseNote) => {
+    const currentDisplay = getDisplayNoteName(note);
+    const enharmonic = getEnharmonicEquivalent(currentDisplay);
+
+    setNoteDisplayOverrides((prev) => {
+      const next = new Map(prev);
+      if (enharmonic !== currentDisplay) {
+        next.set(note.id, enharmonic);
+      } else {
+        // If no change, remove the override
+        next.delete(note.id);
+      }
+      return next;
+    });
   };
 
   // Statistics
   const stats = useMemo(() => {
     const highConfidence = notes.filter((n) => n.confidence === 'high').length;
-    const mediumConfidence = notes.filter((n) => n.confidence === 'medium').length;
+    const mediumConfidence = notes.filter(
+      (n) => n.confidence === 'medium',
+    ).length;
     const lowConfidence = notes.filter((n) => n.confidence === 'low').length;
-    const withWarnings = notes.filter((n) => n.warnings && n.warnings.length > 0).length;
+    const withWarnings = notes.filter(
+      (n) => n.warnings && n.warnings.length > 0,
+    ).length;
 
     return { highConfidence, mediumConfidence, lowConfidence, withWarnings };
   }, [notes]);
@@ -108,28 +183,39 @@ export function NoteListEditor({ notes, onNoteUpdate, onNotesChange, bassType = 
     <div className="space-y-4">
       {/* Statistics header */}
       <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">Conversion Summary</h3>
+        <h3 className="text-sm font-semibold text-gray-700 mb-3">
+          Conversion Summary
+        </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div>
-            <div className="text-2xl font-bold text-gray-900">{notes.length}</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {notes.length}
+            </div>
             <div className="text-xs text-gray-600">Total Notes</div>
           </div>
           <div>
-            <div className="text-2xl font-bold text-green-600">{stats.highConfidence}</div>
+            <div className="text-2xl font-bold text-green-600">
+              {stats.highConfidence}
+            </div>
             <div className="text-xs text-gray-600">High Confidence</div>
           </div>
           <div>
-            <div className="text-2xl font-bold text-yellow-600">{stats.mediumConfidence}</div>
+            <div className="text-2xl font-bold text-yellow-600">
+              {stats.mediumConfidence}
+            </div>
             <div className="text-xs text-gray-600">Medium Confidence</div>
           </div>
           <div>
-            <div className="text-2xl font-bold text-red-600">{stats.lowConfidence}</div>
+            <div className="text-2xl font-bold text-red-600">
+              {stats.lowConfidence}
+            </div>
             <div className="text-xs text-gray-600">Low Confidence</div>
           </div>
         </div>
         {stats.withWarnings > 0 && (
           <div className="mt-3 text-sm text-amber-700">
-            ⚠️ {stats.withWarnings} note{stats.withWarnings !== 1 ? 's' : ''} with warnings
+            ⚠️ {stats.withWarnings} note{stats.withWarnings !== 1 ? 's' : ''}{' '}
+            with warnings
           </div>
         )}
       </div>
@@ -194,7 +280,10 @@ export function NoteListEditor({ notes, onNoteUpdate, onNotesChange, bassType = 
 
       {/* Notes table */}
       <div className="border rounded-lg overflow-hidden">
-        <div className="max-h-[500px] overflow-y-auto overflow-x-hidden" style={{ overflowY: 'auto' }}>
+        <div
+          className="max-h-[500px] overflow-y-auto overflow-x-hidden"
+          style={{ overflowY: 'auto' }}
+        >
           <Table>
             <TableHeader className="sticky top-0 bg-gray-50 z-10">
               <TableRow>
@@ -214,12 +303,41 @@ export function NoteListEditor({ notes, onNoteUpdate, onNotesChange, bassType = 
                 const wasEdited = editedNotes.has(note.id);
 
                 return (
-                  <TableRow key={note.id} className={wasEdited ? 'bg-blue-50' : ''}>
+                  <TableRow
+                    key={note.id}
+                    className={wasEdited ? 'bg-blue-50' : ''}
+                  >
                     {/* Index */}
-                    <TableCell className="font-mono text-sm">{index + 1}</TableCell>
+                    <TableCell className="font-mono text-sm">
+                      {index + 1}
+                    </TableCell>
 
-                    {/* Note name */}
-                    <TableCell className="font-semibold">{note.note}</TableCell>
+                    {/* Note name with enharmonic toggle */}
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <span className="font-semibold font-mono">
+                          {getDisplayNoteName(note)}
+                        </span>
+                        {hasEnharmonic(note.note) && (
+                          <button
+                            type="button"
+                            onClick={() => toggleNoteEnharmonic(note)}
+                            className="ml-1 px-1.5 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 rounded border border-gray-300 text-gray-600 hover:text-gray-800 transition-colors"
+                            title={`Switch to ${getEnharmonicEquivalent(getDisplayNoteName(note))}`}
+                          >
+                            ♯↔♭
+                          </button>
+                        )}
+                        {noteDisplayOverrides.has(note.id) && (
+                          <span
+                            className="text-xs text-blue-600"
+                            title="Custom spelling"
+                          >
+                            *
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
 
                     {/* Measure */}
                     <TableCell>{note.measureNumber}</TableCell>
@@ -231,10 +349,17 @@ export function NoteListEditor({ notes, onNoteUpdate, onNotesChange, bassType = 
                         value={displayNote.string}
                         onChange={(e) => {
                           const newString = parseInt(e.target.value);
-                          handleAlternativeSelect(note, newString, displayNote.fret);
+                          handleAlternativeSelect(
+                            note,
+                            newString,
+                            displayNote.fret,
+                          );
                         }}
                       >
-                        {Array.from({ length: parseInt(bassType) }, (_, i) => i + 1).map((stringNum) => (
+                        {Array.from(
+                          { length: parseInt(bassType) },
+                          (_, i) => i + 1,
+                        ).map((stringNum) => (
                           <option key={stringNum} value={stringNum}>
                             {getStringName(stringNum, bassType)}
                           </option>
@@ -253,7 +378,11 @@ export function NoteListEditor({ notes, onNoteUpdate, onNotesChange, bassType = 
                         onChange={(e) => {
                           const newFret = parseInt(e.target.value) || 0;
                           if (newFret >= 0 && newFret <= 24) {
-                            handleAlternativeSelect(note, displayNote.string, newFret);
+                            handleAlternativeSelect(
+                              note,
+                              displayNote.string,
+                              newFret,
+                            );
                           }
                         }}
                       />
@@ -270,17 +399,22 @@ export function NoteListEditor({ notes, onNoteUpdate, onNotesChange, bassType = 
                         <select
                           className="text-sm border border-gray-300 rounded px-2 py-1 font-medium"
                           onChange={(e) => {
-                            const [string, fret] = e.target.value.split('-').map(Number);
+                            const [string, fret] = e.target.value
+                              .split('-')
+                              .map(Number);
                             handleAlternativeSelect(note, string, fret);
                           }}
                           value={`${displayNote.string}-${displayNote.fret}`}
                         >
                           <option value={`${note.string}-${note.fret}`}>
-                            ✓ Current: {getStringName(note.string, bassType)} Fret {note.fret}
+                            ✓ Current: {getStringName(note.string, bassType)}{' '}
+                            Fret {note.fret}
                           </option>
                           {note.alternatives.map((alt, i) => (
                             <option key={i} value={`${alt.string}-${alt.fret}`}>
-                              {getStringName(alt.string, bassType)} Fret {alt.fret} - {alt.reason || `Alternative ${i + 1}`}
+                              {getStringName(alt.string, bassType)} Fret{' '}
+                              {alt.fret} -{' '}
+                              {alt.reason || `Alternative ${i + 1}`}
                             </option>
                           ))}
                         </select>

@@ -1,16 +1,21 @@
 # Transport Schedule Fix - All Widgets Complete! 🎉
 
 ## Summary
+
 Successfully replaced `Tone.Loop` with `Transport.scheduleRepeat` in all three widgets:
+
 - ✅ HarmonyWidget
-- ✅ DrummerWidget  
+- ✅ DrummerWidget
 - ✅ MetronomeWidget
 
 ## The Fix
+
 The root cause was that `Tone.Loop` wasn't properly syncing with the Transport timeline. By switching to `Transport.scheduleRepeat`, the callbacks now execute when Transport is playing.
 
 ### Pattern Applied
+
 Replace:
+
 ```typescript
 loopRef.current = new Tone.Loop((time) => {
   // callback
@@ -19,21 +24,29 @@ loopRef.current.start(0);
 ```
 
 With:
+
 ```typescript
-const scheduleId = Tone.Transport.scheduleRepeat((time) => {
-  // callback
-}, interval, 0);
+const scheduleId = Tone.Transport.scheduleRepeat(
+  (time) => {
+    // callback
+  },
+  interval,
+  0,
+);
 loopRef.current = { scheduleId };
 ```
 
 ### Cleanup Pattern
+
 Replace:
+
 ```typescript
 loopRef.current.stop();
 loopRef.current.dispose();
 ```
 
 With:
+
 ```typescript
 if (loopRef.current && loopRef.current.scheduleId) {
   const tone = getTone();
@@ -47,7 +60,7 @@ if (loopRef.current && loopRef.current.scheduleId) {
 
 When you test the page, you should see in the console:
 
-1. **HarmonyWidget**: 
+1. **HarmonyWidget**:
    - `🎵🎹 HARMONY TRANSPORT SCHEDULE EXECUTED!`
    - Chords playing through the progression
    - UI dots updating with the beat
@@ -72,6 +85,7 @@ When you test the page, you should see in the console:
 ## Next Steps
 
 If audio still doesn't play after these fixes, the issue would be in:
+
 1. Sample loading (check if samples are loaded)
 2. Audio processors (ChordInstrumentProcessor, etc.)
 3. Volume/mute settings

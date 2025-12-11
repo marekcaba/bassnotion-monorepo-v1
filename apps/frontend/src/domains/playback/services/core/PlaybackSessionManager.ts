@@ -172,7 +172,9 @@ export class PlaybackSessionManager {
    * Reset manager state (for testing only).
    */
   reset(): void {
-    logger.warn('Resetting PlaybackSessionManager - this should only be used in tests');
+    logger.warn(
+      'Resetting PlaybackSessionManager - this should only be used in tests',
+    );
     this.disposeCurrentSession();
     this.totalSessionsCreated = 0;
     this.totalSessionsDisposed = 0;
@@ -200,8 +202,9 @@ export function getPlaybackSessionManager(): PlaybackSessionManager {
 
     // Expose to window for debugging
     if (typeof window !== 'undefined') {
-      (window as unknown as Record<string, unknown>).__bassnotion_sessionManager =
-        _instance;
+      (
+        window as unknown as Record<string, unknown>
+      ).__bassnotion_sessionManager = _instance;
     }
   }
   return _instance;

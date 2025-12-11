@@ -18,6 +18,7 @@ This document provides a comprehensive comparison between the **current playback
 ## Architecture Overview
 
 ### Current Architecture (Post-Phase 7)
+
 ```
 AudioProvider (React Context)
     ↓
@@ -43,6 +44,7 @@ RegionProcessor (1299 lines) + 17 extracted modules
 **Total:** ~5000 lines across 23+ files
 
 ### Proposed Architecture (Consolidated)
+
 ```
 AudioProvider (React Context)
     ↓
@@ -64,15 +66,15 @@ PlaybackEngine (500 lines) - Central Coordinator
 
 ### 1. Module Count & Complexity
 
-| Metric | Current Architecture | Proposed Architecture | Impact |
-|--------|---------------------|----------------------|---------|
-| **Core modules** | 17 modules | 6 modules | **63% reduction** |
-| **Total lines** | ~5000 lines | ~2000 lines | **60% reduction** |
-| **RegionProcessor size** | 1299 lines | 500 lines (PlaybackEngine) | **61% reduction** |
-| **Delegation layers** | 3-4 layers deep | 0-1 layers (direct calls) | **75% reduction** |
-| **Scheduler classes** | 3 classes (Simple, Harmony, Event Router) | 1 class (Unified) | **67% reduction** |
-| **Files to read for change** | 8-12 files | 2-4 files | **70% reduction** |
-| **Cyclomatic complexity** | High (10+ per method) | Low (<5 per method) | **50% reduction** |
+| Metric                       | Current Architecture                      | Proposed Architecture      | Impact            |
+| ---------------------------- | ----------------------------------------- | -------------------------- | ----------------- |
+| **Core modules**             | 17 modules                                | 6 modules                  | **63% reduction** |
+| **Total lines**              | ~5000 lines                               | ~2000 lines                | **60% reduction** |
+| **RegionProcessor size**     | 1299 lines                                | 500 lines (PlaybackEngine) | **61% reduction** |
+| **Delegation layers**        | 3-4 layers deep                           | 0-1 layers (direct calls)  | **75% reduction** |
+| **Scheduler classes**        | 3 classes (Simple, Harmony, Event Router) | 1 class (Unified)          | **67% reduction** |
+| **Files to read for change** | 8-12 files                                | 2-4 files                  | **70% reduction** |
+| **Cyclomatic complexity**    | High (10+ per method)                     | Low (<5 per method)        | **50% reduction** |
 
 **Assessment:** ✅ **Proposed wins** - Dramatic simplification reduces cognitive load and maintenance burden.
 
@@ -83,6 +85,7 @@ PlaybackEngine (500 lines) - Central Coordinator
 #### Current Architecture - 9 State Sources
 
 **Layer 1: Infrastructure (stays separate)**
+
 - `AudioContextManager.context` - Web Audio API context
 - `GlobalSampleCache.samples` - Audio buffer cache
 - `PluginManager.pluginStates` - WAM plugin states
@@ -90,14 +93,17 @@ PlaybackEngine (500 lines) - Central Coordinator
 - `WindowRegistry` flags - Cleanup coordination
 
 **Layer 2: Playback Logic (FRAGMENTED)**
+
 - `RegionProcessor.isRunning` - Playback state
 - `AudioEngine.isInitialized` - Engine readiness
 - `CoreServices.coreServicesReady` - Initialization flag
 
 **Layer 3: UI Widget State (React components)**
+
 - Widget-specific: `volume`, `isMuted`, `isExpanded`, `wamPluginLoaded`
 
 **Issues:**
+
 - State scattered across 9 locations
 - Callback ping-pong between modules
 - Difficult to trace state transitions
@@ -106,22 +112,26 @@ PlaybackEngine (500 lines) - Central Coordinator
 #### Proposed Architecture - 3-Layer State Model
 
 **Layer 1: Infrastructure (reusable, stays separate)**
+
 - Same as current: AudioContextManager, GlobalSampleCache, PluginManager
 - **Design Rule:** These exist BEFORE playback and may be used by other features
 
 **Layer 2: PlaybackEngine State (CENTRALIZED)**
+
 ```typescript
 class PlaybackEngine {
-  state: 'idle' | 'loading' | 'ready' | 'playing' | 'paused' | 'stopped'
-  isInitialized: boolean
-  currentExercise: Exercise | null
+  state: 'idle' | 'loading' | 'ready' | 'playing' | 'paused' | 'stopped';
+  isInitialized: boolean;
+  currentExercise: Exercise | null;
   // ALL playback state lives here
 }
 ```
+
 - **Design Rule:** PlaybackEngine READS from Layer 1, but doesn't OWN it
 - No callback delegation - direct method calls only
 
 **Layer 3: UI Widget State (React local state)**
+
 - Same as current: Widget-specific UI state stays in components
 - **Design Rule:** Don't pollute PlaybackEngine with UI concerns
 
@@ -133,17 +143,18 @@ class PlaybackEngine {
 
 #### 3.1 Sample Loading Performance
 
-| Metric | Current | Proposed | Impact |
-|--------|---------|----------|---------|
-| **Architecture** | Multi-phase preloading with MIDI analysis | Same strategy preserved | **No change** |
-| **Smart loading** | 85% bandwidth reduction (10-30 samples vs 120) | Same implementation | **No change** |
-| **Cache strategy** | GlobalSampleCache (separate layer) | BufferCache (similar design) | **~5% overhead** (rename only) |
-| **Parallel fetching** | Up to 10 simultaneous | Same parallelism | **No change** |
-| **Loading time** | 2-3 seconds per exercise | 2-3 seconds per exercise | **No change** |
+| Metric                | Current                                        | Proposed                     | Impact                         |
+| --------------------- | ---------------------------------------------- | ---------------------------- | ------------------------------ |
+| **Architecture**      | Multi-phase preloading with MIDI analysis      | Same strategy preserved      | **No change**                  |
+| **Smart loading**     | 85% bandwidth reduction (10-30 samples vs 120) | Same implementation          | **No change**                  |
+| **Cache strategy**    | GlobalSampleCache (separate layer)             | BufferCache (similar design) | **~5% overhead** (rename only) |
+| **Parallel fetching** | Up to 10 simultaneous                          | Same parallelism             | **No change**                  |
+| **Loading time**      | 2-3 seconds per exercise                       | 2-3 seconds per exercise     | **No change**                  |
 
 **Assessment:** ✅ **Tie** - Both architectures use identical loading strategies. Proposed adds minor overhead (~50ms) from module consolidation.
 
 **Evidence:**
+
 - Current: `InitialSamplePreloader` + `HarmonyPreloadStrategy` (separate files)
 - Proposed: Same logic inlined into `PlaybackEngine.loadSamples()`
 - Trade-off: Slightly longer method vs. file jumping
@@ -152,29 +163,33 @@ class PlaybackEngine {
 
 #### 3.2 Playback Scheduling Performance
 
-| Metric | Current | Proposed | Impact |
-|--------|---------|----------|---------|
-| **Scheduling time** | <100ms for 1000+ events | <100ms for 1000+ events | **No change** |
-| **Timing accuracy** | >99% (±0.03ms jitter) | >99% (±0.03ms jitter) | **No change** |
-| **Method** | Direct `AudioBufferSourceNode` scheduling | Same direct scheduling | **No change** |
-| **Event routing** | EventRouter → Scheduler delegation | Direct Scheduler.schedule() | **~2-5ms faster** |
-| **Callback overhead** | 3-4 delegation layers | 0 layers (direct calls) | **~1-3ms faster per event** |
+| Metric                | Current                                   | Proposed                    | Impact                      |
+| --------------------- | ----------------------------------------- | --------------------------- | --------------------------- |
+| **Scheduling time**   | <100ms for 1000+ events                   | <100ms for 1000+ events     | **No change**               |
+| **Timing accuracy**   | >99% (±0.03ms jitter)                     | >99% (±0.03ms jitter)       | **No change**               |
+| **Method**            | Direct `AudioBufferSourceNode` scheduling | Same direct scheduling      | **No change**               |
+| **Event routing**     | EventRouter → Scheduler delegation        | Direct Scheduler.schedule() | **~2-5ms faster**           |
+| **Callback overhead** | 3-4 delegation layers                     | 0 layers (direct calls)     | **~1-3ms faster per event** |
 
 **Current Flow:**
+
 ```
 RegionScheduler.scheduleAll()
   → EventRouter.routeEvent()
     → HarmonyScheduler.scheduleNote()
       → AudioBufferSourceNode.start(time)
 ```
+
 **4 method calls** = ~3-5ms overhead per event (JavaScript call stack)
 
 **Proposed Flow:**
+
 ```
 Scheduler.scheduleAll()
   → Scheduler.schedule(config, event)
     → AudioBufferSourceNode.start(time)
 ```
+
 **2 method calls** = ~1-2ms overhead per event
 
 **Assessment:** ✅ **Proposed wins marginally** - Reduced call stack depth saves 2-3ms per 1000 events. For typical exercises (200-400 events), this saves ~0.5-1ms total.
@@ -185,12 +200,12 @@ Scheduler.scheduleAll()
 
 #### 3.3 State Update Performance
 
-| Metric | Current | Proposed | Impact |
-|--------|---------|----------|---------|
-| **Position updates** | EventBus emission + callback | Direct method call | **~0.5ms faster** |
-| **Tempo changes** | Debounced (50ms) + reschedule | Same debouncing | **No change** |
-| **Exercise switching** | Track manager + region scheduler | Inline track management | **~2-3ms faster** |
-| **Memory footprint** | ~50KB (17 class instances) | ~30KB (6 class instances) | **40% reduction** |
+| Metric                 | Current                          | Proposed                  | Impact            |
+| ---------------------- | -------------------------------- | ------------------------- | ----------------- |
+| **Position updates**   | EventBus emission + callback     | Direct method call        | **~0.5ms faster** |
+| **Tempo changes**      | Debounced (50ms) + reschedule    | Same debouncing           | **No change**     |
+| **Exercise switching** | Track manager + region scheduler | Inline track management   | **~2-3ms faster** |
+| **Memory footprint**   | ~50KB (17 class instances)       | ~30KB (6 class instances) | **40% reduction** |
 
 **Assessment:** ✅ **Proposed wins slightly** - Fewer object instances reduce memory and indirection overhead.
 
@@ -199,16 +214,19 @@ Scheduler.scheduleAll()
 #### 3.4 Real-World Latency Estimates
 
 **Scenario 1: User clicks "Play"**
+
 - Current: AudioContext resume (0-50ms) + schedule 300 events (30ms) + Tone.Transport start (10ms) = **40-90ms**
 - Proposed: AudioContext resume (0-50ms) + schedule 300 events (25ms) + Tone.Transport start (10ms) = **35-85ms**
 - **Difference:** ~5ms faster (not perceptible)
 
 **Scenario 2: User changes tempo during playback**
+
 - Current: Debounce (50ms) + stop sources (5ms) + reschedule 300 events (30ms) = **85ms**
 - Proposed: Debounce (50ms) + stop sources (5ms) + reschedule 300 events (25ms) = **80ms**
 - **Difference:** ~5ms faster (not perceptible)
 
 **Scenario 3: User switches exercise**
+
 - Current: Stop playback (10ms) + load samples (2500ms) + register tracks (15ms) + schedule (30ms) = **2555ms**
 - Proposed: Stop playback (10ms) + load samples (2500ms) + register tracks (10ms) + schedule (25ms) = **2545ms**
 - **Difference:** ~10ms faster (0.4% improvement, not perceptible)
@@ -219,23 +237,25 @@ Scheduler.scheduleAll()
 
 ### 4. Maintainability & Developer Experience
 
-| Metric | Current | Proposed | Impact |
-|--------|---------|----------|---------|
-| **Time to understand** | 2-3 hours (23+ files) | 30-45 minutes (6 files) | **75% faster onboarding** |
-| **Files to modify** | 8-12 files per feature | 2-4 files per feature | **70% reduction** |
-| **Debugging complexity** | Trace through 4 delegation layers | Direct method calls, clear flow | **Significantly easier** |
-| **Callback tracing** | Difficult (ping-pong pattern) | Trivial (no callbacks) | **Major improvement** |
-| **Test coverage** | 65% (hard to isolate modules) | Target: 85% (easier mocking) | **30% increase** |
-| **Onboarding time** | 2-3 days | <1 day | **66% faster** |
-| **IDE navigation** | 23 files to jump between | 6 files to understand | **73% reduction** |
+| Metric                   | Current                           | Proposed                        | Impact                    |
+| ------------------------ | --------------------------------- | ------------------------------- | ------------------------- |
+| **Time to understand**   | 2-3 hours (23+ files)             | 30-45 minutes (6 files)         | **75% faster onboarding** |
+| **Files to modify**      | 8-12 files per feature            | 2-4 files per feature           | **70% reduction**         |
+| **Debugging complexity** | Trace through 4 delegation layers | Direct method calls, clear flow | **Significantly easier**  |
+| **Callback tracing**     | Difficult (ping-pong pattern)     | Trivial (no callbacks)          | **Major improvement**     |
+| **Test coverage**        | 65% (hard to isolate modules)     | Target: 85% (easier mocking)    | **30% increase**          |
+| **Onboarding time**      | 2-3 days                          | <1 day                          | **66% faster**            |
+| **IDE navigation**       | 23 files to jump between          | 6 files to understand           | **73% reduction**         |
 
 **Current Pain Points:**
+
 1. **Callback Ping-Pong:** Method A calls Method B which calls callback C which emits event D
 2. **State Fragmentation:** Need to check 9 locations to understand current state
 3. **Delegation Fatigue:** "Who actually does the work?" requires tracing through 3-4 classes
 4. **Import Hell:** Each file imports 5-10 modules, creating tangled dependencies
 
 **Proposed Benefits:**
+
 1. **Direct Calls:** `playbackEngine.start()` directly calls `scheduler.scheduleAll()`
 2. **Centralized State:** Check `playbackEngine.state` - done
 3. **No Delegation:** `PlaybackEngine` inlines coordination logic, no forwarding
@@ -250,20 +270,24 @@ Scheduler.scheduleAll()
 #### Current Architecture Risks
 
 **1. Fragmentation Risk** (HIGH)
+
 - 9 state sources → easy to miss state updates during bug fixes
 - Example: Bug #1 (race condition) required fixing `AudioProvider.coreServicesReady` flag, but could have also affected `WindowRegistry.initializationFailed`
 
 **2. Callback Complexity** (HIGH)
+
 - 3-4 delegation layers → hard to trace event flow
 - Example: Tempo change triggers `EventBus` → `RegionProcessor.handleTempoChange()` → `RegionScheduler.rescheduleAll()` → `EventRouter.routeEvent()` → `HarmonyScheduler.scheduleNote()`
 - If one layer fails, debugging requires tracing entire chain
 
 **3. Module Extraction Risks** (MEDIUM)
+
 - Over-extraction created small modules (<100 lines) with high coupling
 - Example: `VelocityLayerSelector` (60 lines) is only used by `HarmonyScheduler` → should be inlined
 - Example: `DiagnosticLogger` (80 lines) is only used by `SustainPedalManager` → should be inlined
 
 **4. Preservation Complexity** (HIGH)
+
 - 5 critical bug fixes scattered across 17 modules
 - Risk: Refactoring one module might break a fix in another module
 - Example: Bug #3 (memory leak) fix in `WindowRegistry` + `RegionProcessor.scheduledAudioSources` - must preserve both parts
@@ -271,22 +295,26 @@ Scheduler.scheduleAll()
 #### Proposed Architecture Risks
 
 **1. Consolidation Risk** (MEDIUM)
+
 - Merging 17 modules into 6 → risk of missing subtle logic
 - Mitigation: Task 0.7 (memory leak audit) + comprehensive regression tests
 - Mitigation: Adapter pattern for backward compatibility during migration
 
 **2. State Machine Complexity** (LOW)
+
 - New state machine (`idle` → `loading` → `ready` → `playing` → `paused` → `stopped`)
 - Risk: Incorrect state transitions cause bugs
 - Mitigation: State transition matrix + unit tests for each transition
 
 **3. PluginManager Integration** (HIGH)
+
 - Complex WAM keyboard unwrapping logic: `WamKeyboardPlugin` → `WamKeyboard`
 - CC64 event routing must be preserved exactly
 - Risk: Silent failure if WAM integration breaks
 - Mitigation: Task 0.6 (dedicated integration analysis) + regression tests
 
 **4. React StrictMode Handling** (MEDIUM)
+
 - Double-mount handling (`initRef`, `cleanupRef`) must be preserved
 - Risk: Breaking this causes duplicate `AudioContext` or double initialization
 - Mitigation: Preserve exact patterns from `AudioProvider.tsx:59-120`
@@ -300,6 +328,7 @@ Scheduler.scheduleAll()
 #### Adding New Instrument Type (e.g., "Organ")
 
 **Current Architecture:**
+
 1. Create `OrganScheduler.ts` (~300 lines)
 2. Update `EventRouter.ts` to route organ events (~20 lines)
 3. Update `RegionScheduler.ts` to recognize organ tracks (~15 lines)
@@ -311,15 +340,18 @@ Scheduler.scheduleAll()
 **Total:** ~685 lines across **7 files**
 
 **Proposed Architecture:**
+
 1. Add organ config to `Scheduler.ts` (~40 lines)
+
 ```typescript
 instrumentConfigs.organ = {
   type: 'polyphonic',
   samplePath: 'organ',
   velocityLayers: ['v1', 'v5', 'v10'],
-  octaveShift: 0
-}
+  octaveShift: 0,
+};
 ```
+
 2. Update `timeUtils.ts` if organ needs special timing (unlikely) (~0 lines)
 3. Create `OrganPreloadStrategy.ts` (~200 lines) - same as current
 
@@ -332,6 +364,7 @@ instrumentConfigs.organ = {
 #### Adding New Playback Feature (e.g., "Loop Region")
 
 **Current Architecture:**
+
 1. Update `RegionProcessor.ts` to track loop state (~50 lines)
 2. Update `RegionScheduler.ts` to reschedule looped events (~80 lines)
 3. Update `LifecycleCoordinator.ts` to handle loop lifecycle (~40 lines)
@@ -342,13 +375,16 @@ instrumentConfigs.organ = {
 **Total:** ~320 lines across **6 files**
 
 **Proposed Architecture:**
+
 1. Update `PlaybackEngine.ts` with loop logic (~100 lines)
+
 ```typescript
 enableLoop(regionId: string) {
   this.loopedRegions.add(regionId);
   this.scheduler.scheduleRegion(region, { loop: true });
 }
 ```
+
 2. Update `Scheduler.ts` to reschedule looped events (~50 lines)
 3. Update widgets to expose loop UI (~100 lines)
 
@@ -361,6 +397,7 @@ enableLoop(regionId: string) {
 #### Fixing Timing Bug (e.g., "Off-by-one-frame error")
 
 **Current Architecture:**
+
 1. Identify bug location: Trace through `RegionScheduler` → `TimePositionConverter` → `EventRouter` → `HarmonyScheduler`
 2. Fix `TimePositionConverter.parsePosition()` (~10 lines)
 3. Verify fix in `RegionScheduler.scheduleAll()` (~5 lines)
@@ -370,6 +407,7 @@ enableLoop(regionId: string) {
 **Total:** ~35 lines across **5 files**, **8+ test scenarios** (3 schedulers × ~3 instruments each)
 
 **Proposed Architecture:**
+
 1. Identify bug location: Bug is in `timeUtils.parsePosition()` (pure function)
 2. Fix `timeUtils.parsePosition()` (~10 lines)
 3. Verify fix in `PlaybackEngine.start()` (~5 lines)
@@ -391,6 +429,7 @@ enableLoop(regionId: string) {
 #### Current Architecture Test Requirements
 
 **Unit Tests:**
+
 - `RegionProcessor.test.ts` (core logic)
 - `ConfigurationManager.test.ts`
 - `BufferManager.test.ts`
@@ -410,6 +449,7 @@ enableLoop(regionId: string) {
 **Total:** 15+ test files
 
 **Integration Tests:**
+
 - RegionProcessor + all modules (17 integration points)
 - EventBus + all modules (17 listeners)
 - AudioProvider + CoreServices + RegionProcessor (3-layer integration)
@@ -417,12 +457,14 @@ enableLoop(regionId: string) {
 **Total:** ~35 integration test scenarios
 
 **Mocking Complexity:**
+
 - Each test must mock 5-10 dependencies
 - Example: Testing `RegionScheduler` requires mocking `TimePositionConverter`, `EventRouter`, `BufferManager`, `ScheduleCache`, `ConfigurationManager`
 
 **Proposed Architecture Test Requirements**
 
 **Unit Tests:**
+
 - `PlaybackEngine.test.ts` (core logic)
 - `Scheduler.test.ts` (unified scheduling)
 - `BufferCache.test.ts`
@@ -433,6 +475,7 @@ enableLoop(regionId: string) {
 **Total:** 6 test files
 
 **Integration Tests:**
+
 - PlaybackEngine + Scheduler (1 integration)
 - PlaybackEngine + BufferCache (1 integration)
 - AudioProvider + CoreServices + PlaybackEngine (3-layer integration)
@@ -440,6 +483,7 @@ enableLoop(regionId: string) {
 **Total:** ~10 integration test scenarios
 
 **Mocking Complexity:**
+
 - Each test mocks 2-3 dependencies
 - Example: Testing `PlaybackEngine` requires mocking `Scheduler`, `BufferCache`, `AudioContext`
 - Pure functions in `timeUtils.ts` require **zero mocks**!
@@ -453,27 +497,32 @@ enableLoop(regionId: string) {
 #### Current → Proposed Migration Complexity
 
 **Phase 0: Discovery (10 days)**
+
 - ✅ Low Risk: State mapping, call site analysis, regression test suite
 - ⚠️ Medium Risk: Feature flag infrastructure (new tooling)
 - 🔴 **HIGH RISK:** Memory leak audit (if leak still exists, must fix during migration)
 
 **Phase 1: Core Refactor (10 days)**
+
 - ⚠️ Medium Risk: Implementing `Scheduler.ts` (must preserve velocity layer logic)
 - 🔴 **HIGH RISK:** Implementing `PlaybackEngine.ts` (must preserve Bug #6, #7, PluginManager integration)
 - ✅ Low Risk: `timeUtils.ts` (pure functions, easy to test)
 - 🔴 **HIGH RISK:** Updating `CoreServices` and `AudioProvider` (dual-engine coexistence, React StrictMode)
 
 **Phase 2: Widget Migration (10 days)**
+
 - ⚠️ Medium Risk: Bug preservation verification (must catch regressions)
 - ⚠️ Medium Risk: Widget migration (4 widgets × adapter pattern)
 
 **Phase 3: Rollout (20 days)**
+
 - ✅ Low Risk: Staged rollout with feature flag (easy rollback)
 - ✅ Low Risk: Cleanup (delete old modules)
 
 **Total Risk Score:** **Medium-High** during Phases 1-2, **Low** during Phase 3
 
 **Mitigations:**
+
 1. **Task 0.7 (Memory Leak Audit):** Establish baseline BEFORE refactor → compare after
 2. **Feature Flag:** Dual-engine coexistence enables A/B testing and instant rollback
 3. **Adapter Pattern:** Backward compatibility prevents breaking changes
@@ -488,13 +537,13 @@ enableLoop(regionId: string) {
 
 ### Latency Comparison (User-Perceived)
 
-| Action | Current | Proposed | Difference | Perceptible? |
-|--------|---------|----------|------------|--------------|
-| Click "Play" | 40-90ms | 35-85ms | -5ms | ❌ No (<50ms threshold) |
-| Change tempo | 85ms | 80ms | -5ms | ❌ No |
-| Switch exercise | 2555ms | 2545ms | -10ms | ❌ No (0.4%) |
-| Load samples | 2500ms | 2500ms | 0ms | ❌ No |
-| Schedule 1000 events | 100ms | 95ms | -5ms | ❌ No |
+| Action               | Current | Proposed | Difference | Perceptible?            |
+| -------------------- | ------- | -------- | ---------- | ----------------------- |
+| Click "Play"         | 40-90ms | 35-85ms  | -5ms       | ❌ No (<50ms threshold) |
+| Change tempo         | 85ms    | 80ms     | -5ms       | ❌ No                   |
+| Switch exercise      | 2555ms  | 2545ms   | -10ms      | ❌ No (0.4%)            |
+| Load samples         | 2500ms  | 2500ms   | 0ms        | ❌ No                   |
+| Schedule 1000 events | 100ms   | 95ms     | -5ms       | ❌ No                   |
 
 **Conclusion:** Proposed architecture is **5-10ms faster** across the board, but **sample loading (2500ms) dominates latency**. Architectural consolidation has **<1% impact** on user-perceived performance.
 
@@ -504,11 +553,11 @@ enableLoop(regionId: string) {
 
 ### Memory Impact
 
-| Metric | Current | Proposed | Difference |
-|--------|---------|----------|------------|
-| **Module overhead** | ~50KB (17 classes) | ~30KB (6 classes) | **-40%** |
-| **Sample cache** | ~16-22MB | ~16-22MB | **0%** (same cache) |
-| **Memory leak risk** | Medium (cleanup in 2 places) | Low (cleanup in 1 place) | **-50% risk** |
+| Metric               | Current                      | Proposed                 | Difference          |
+| -------------------- | ---------------------------- | ------------------------ | ------------------- |
+| **Module overhead**  | ~50KB (17 classes)           | ~30KB (6 classes)        | **-40%**            |
+| **Sample cache**     | ~16-22MB                     | ~16-22MB                 | **0%** (same cache) |
+| **Memory leak risk** | Medium (cleanup in 2 places) | Low (cleanup in 1 place) | **-50% risk**       |
 
 **Conclusion:** Proposed reduces memory overhead by 40% for modules, but sample cache (16-22MB) dominates. Net memory savings: **<1%**.
 
@@ -516,11 +565,11 @@ enableLoop(regionId: string) {
 
 ### CPU Impact
 
-| Metric | Current | Proposed | Difference |
-|--------|---------|----------|------------|
-| **Call stack depth** | 4 levels | 2 levels | **-50%** |
-| **Callback overhead** | 3-5ms per 1000 events | 1-2ms per 1000 events | **-60%** |
-| **State access** | 9 locations | 3 locations | **-67%** |
+| Metric                | Current               | Proposed              | Difference |
+| --------------------- | --------------------- | --------------------- | ---------- |
+| **Call stack depth**  | 4 levels              | 2 levels              | **-50%**   |
+| **Callback overhead** | 3-5ms per 1000 events | 1-2ms per 1000 events | **-60%**   |
+| **State access**      | 9 locations           | 3 locations           | **-67%**   |
 
 **Conclusion:** Proposed reduces call stack depth and state access overhead. For typical exercises (200-400 events), this saves **~0.5-1ms total** - negligible for human perception.
 
@@ -569,16 +618,16 @@ enableLoop(regionId: string) {
 
 ### Quantitative Analysis
 
-| Criterion | Weight | Current Score | Proposed Score | Weighted Current | Weighted Proposed |
-|-----------|--------|---------------|----------------|------------------|-------------------|
-| **Performance (latency)** | 15% | 9.5/10 | 9.7/10 | 1.43 | 1.46 |
-| **Performance (memory)** | 10% | 9.0/10 | 9.2/10 | 0.90 | 0.92 |
-| **Developer productivity** | 25% | 4.0/10 | 8.5/10 | 1.00 | 2.13 |
-| **Feature velocity** | 20% | 5.0/10 | 8.0/10 | 1.00 | 1.60 |
-| **Maintainability** | 15% | 4.5/10 | 8.5/10 | 0.68 | 1.28 |
-| **Testing complexity** | 10% | 4.0/10 | 8.5/10 | 0.40 | 0.85 |
-| **Migration risk** | 5% | 10.0/10 | 5.0/10 | 0.50 | 0.25 |
-| **Total** | 100% | - | - | **5.91/10** | **8.49/10** |
+| Criterion                  | Weight | Current Score | Proposed Score | Weighted Current | Weighted Proposed |
+| -------------------------- | ------ | ------------- | -------------- | ---------------- | ----------------- |
+| **Performance (latency)**  | 15%    | 9.5/10        | 9.7/10         | 1.43             | 1.46              |
+| **Performance (memory)**   | 10%    | 9.0/10        | 9.2/10         | 0.90             | 0.92              |
+| **Developer productivity** | 25%    | 4.0/10        | 8.5/10         | 1.00             | 2.13              |
+| **Feature velocity**       | 20%    | 5.0/10        | 8.0/10         | 1.00             | 1.60              |
+| **Maintainability**        | 15%    | 4.5/10        | 8.5/10         | 0.68             | 1.28              |
+| **Testing complexity**     | 10%    | 4.0/10        | 8.5/10         | 0.40             | 0.85              |
+| **Migration risk**         | 5%     | 10.0/10       | 5.0/10         | 0.50             | 0.25              |
+| **Total**                  | 100%   | -             | -              | **5.91/10**      | **8.49/10**       |
 
 **Quantitative Verdict:** Proposed architecture scores **43% higher** overall.
 
@@ -587,11 +636,13 @@ enableLoop(regionId: string) {
 ### Qualitative Analysis
 
 **Current Architecture Strengths:**
+
 1. ✅ Proven in production (stable, known bugs are fixed)
 2. ✅ No migration risk (status quo)
 3. ✅ Granular modules (easy to isolate changes in theory)
 
 **Current Architecture Weaknesses:**
+
 1. ❌ Over-fragmented (23+ files for core logic)
 2. ❌ Callback ping-pong (hard to trace event flow)
 3. ❌ State fragmentation (9 locations)
@@ -599,6 +650,7 @@ enableLoop(regionId: string) {
 5. ❌ Ongoing technical debt (fragmentation will worsen over time)
 
 **Proposed Architecture Strengths:**
+
 1. ✅ Consolidated logic (6 core modules, clear ownership)
 2. ✅ Direct method calls (no callback ping-pong)
 3. ✅ Centralized state (3-layer model with clear boundaries)
@@ -607,6 +659,7 @@ enableLoop(regionId: string) {
 6. ✅ Better long-term maintainability
 
 **Proposed Architecture Weaknesses:**
+
 1. ❌ Migration risk (6-8 week effort, must preserve 5 bug fixes)
 2. ❌ Larger module sizes (500 lines vs. 100-300 lines)
 3. ❌ Less granular separation (data-driven vs. class-per-instrument)
@@ -618,6 +671,7 @@ enableLoop(regionId: string) {
 ### For Architects: ✅ **PROCEED with Proposed Architecture**
 
 **Rationale:**
+
 1. **Performance is NOT a blocker:** Proposed is 5-10ms faster, but both meet requirements. Sample loading (2500ms) dominates latency.
 2. **Developer productivity gains are substantial:** 70% fewer files to read, 75% faster onboarding, 20-70% faster feature development.
 3. **Long-term maintainability:** Current architecture will accumulate more fragmentation debt over time. Proposed prevents this.
@@ -625,6 +679,7 @@ enableLoop(regionId: string) {
 5. **Rollback capability:** <5 minute rollback if issues arise during rollout.
 
 **Critical Success Factors:**
+
 1. ✅ **Do NOT skip Phase 0 (Discovery):** Tasks 0.2, 0.6, 0.7 are critical
 2. ✅ **Preserve all 5 bug fixes:** Task 2.1 verification must pass 100%
 3. ✅ **Test PluginManager integration:** CC64 sustain pedal must work identically
@@ -632,6 +687,7 @@ enableLoop(regionId: string) {
 5. ✅ **Maintain rollback readiness:** Feature flag must flip in <5 minutes
 
 **When to ABORT migration:**
+
 - Memory leak detected during Phase 1 AND fix is complex (>3 days)
 - PluginManager integration breaks and cannot be fixed in 2 days
 - Error rate >10% increase during Phase 3 rollout
@@ -644,16 +700,19 @@ enableLoop(regionId: string) {
 If full migration feels too risky, consider **incremental consolidation**:
 
 **Phase 1A: State Consolidation Only (2 weeks)**
+
 - Create `PlaybackState` class to centralize 9 state sources
 - Keep existing modules (RegionProcessor, schedulers)
 - Benefits: 50% of maintainability gains, 10% of migration risk
 
 **Phase 1B: Scheduler Consolidation Only (2 weeks)**
+
 - Merge 3 schedulers into 1 unified `Scheduler.ts`
 - Keep RegionProcessor, other modules
 - Benefits: 30% of feature velocity gains, 20% of migration risk
 
 **Phase 1C: Full Consolidation (4 weeks)**
+
 - Consolidate remaining modules into `PlaybackEngine.ts`
 - Benefits: 100% of gains, 100% of migration risk
 
@@ -666,6 +725,7 @@ If full migration feels too risky, consider **incremental consolidation**:
 ## Appendix A: Performance Test Scenarios
 
 ### Test 1: Click "Play" Latency
+
 **Setup:** Exercise with 300 harmony notes, 150 drum hits, 80 bass notes
 **Measure:** Time from `transport.start()` to first audio playback
 
@@ -674,6 +734,7 @@ If full migration feels too risky, consider **incremental consolidation**:
 **Difference:** -5ms (not perceptible)
 
 ### Test 2: Tempo Change During Playback
+
 **Setup:** Playing at 120 BPM, change to 140 BPM
 **Measure:** Time from tempo slider change to audio reflects new tempo
 
@@ -682,6 +743,7 @@ If full migration feels too risky, consider **incremental consolidation**:
 **Difference:** -5ms (not perceptible)
 
 ### Test 3: Exercise Switch with Sample Loading
+
 **Setup:** Switch from Exercise A (30 harmony samples) to Exercise B (25 harmony samples)
 **Measure:** Time from exercise click to samples loaded and ready to play
 
@@ -690,6 +752,7 @@ If full migration feels too risky, consider **incremental consolidation**:
 **Difference:** -10ms (0.4%, not perceptible)
 
 ### Test 4: Memory Leak Detection
+
 **Setup:** Play exercise 100 times (start → stop → start → stop ...)
 **Measure:** Memory growth over 100 cycles
 
@@ -698,6 +761,7 @@ If full migration feels too risky, consider **incremental consolidation**:
 **Difference:** 0MB (both should pass)
 
 ### Test 5: Timing Accuracy
+
 **Setup:** Schedule 1000 events at precise times (e.g., every 16th note at 120 BPM)
 **Measure:** % of events triggered within 1 audio frame (±0.02ms at 48kHz)
 
@@ -710,6 +774,7 @@ If full migration feels too risky, consider **incremental consolidation**:
 ## Appendix B: Code Size Comparison
 
 ### Current Architecture File Sizes
+
 ```
 RegionProcessor.ts                    1299 lines
 ConfigurationManager.ts                 85 lines
@@ -733,6 +798,7 @@ TOTAL:                               ~4,968 lines
 ```
 
 ### Proposed Architecture File Sizes
+
 ```
 PlaybackEngine.ts                      500 lines  (consolidates RegionProcessor + 6 coordinators)
 Scheduler.ts                           300 lines  (consolidates 3 schedulers + EventRouter)
@@ -759,11 +825,13 @@ TOTAL:                               ~1,360 lines
 **Approval Status:** Draft for Review
 
 **Related Documents:**
+
 - [PLAYBACK_ENGINE_REFACTOR_STORY.md](../2.%20Stories/2.%20%F0%9F%9A%A7%20in-progress/PLAYBACK%20REFACTOR/PLAYBACK_ENGINE_REFACTOR_STORY.md)
 - [PLAYBACK_ARCHITECTURE_REFACTOR_PLAN.md](PLAYBACK_ARCHITECTURE_REFACTOR_PLAN.md)
 - Current implementation: [RegionProcessor.ts](../../apps/frontend/src/domains/playback/services/core/RegionProcessor.ts)
 
 **Review Checklist:**
+
 - [ ] Technical accuracy verified by senior engineer
 - [ ] Performance estimates validated with benchmarks
 - [ ] Risk assessment reviewed by engineering leadership
@@ -771,6 +839,7 @@ TOTAL:                               ~1,360 lines
 - [ ] Team capacity confirmed for 6-8 week effort
 
 **Next Steps:**
+
 1. Schedule architecture review meeting with team
 2. Validate performance estimates with real-world benchmarks
 3. Get approval from engineering leadership

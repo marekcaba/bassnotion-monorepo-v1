@@ -45,8 +45,10 @@ export interface CachedSyncedWidgetRenderProps extends SyncedWidgetRenderProps {
   areAllInstrumentsLoaded: boolean;
 }
 
-export interface CachedSyncedWidgetProps
-  extends Omit<SyncedWidgetProps, 'children'> {
+export interface CachedSyncedWidgetProps extends Omit<
+  SyncedWidgetProps,
+  'children'
+> {
   // Instrument cache keys this widget uses
   instrumentCacheKeys?: string[];
 

@@ -41,14 +41,18 @@ class MockAudioBuffer {
   duration: number;
   private channelData: Float32Array[];
 
-  constructor(options: { numberOfChannels: number; length: number; sampleRate: number }) {
+  constructor(options: {
+    numberOfChannels: number;
+    length: number;
+    sampleRate: number;
+  }) {
     this.numberOfChannels = options.numberOfChannels;
     this.length = options.length;
     this.sampleRate = options.sampleRate;
     this.duration = options.length / options.sampleRate;
     this.channelData = Array.from(
       { length: options.numberOfChannels },
-      () => new Float32Array(options.length)
+      () => new Float32Array(options.length),
     );
   }
 
@@ -56,12 +60,20 @@ class MockAudioBuffer {
     return this.channelData[channel];
   }
 
-  copyFromChannel(destination: Float32Array, channelNumber: number, startInChannel = 0): void {
+  copyFromChannel(
+    destination: Float32Array,
+    channelNumber: number,
+    startInChannel = 0,
+  ): void {
     const data = this.getChannelData(channelNumber);
     destination.set(data.slice(startInChannel));
   }
 
-  copyToChannel(source: Float32Array, channelNumber: number, startInChannel = 0): void {
+  copyToChannel(
+    source: Float32Array,
+    channelNumber: number,
+    startInChannel = 0,
+  ): void {
     const data = this.getChannelData(channelNumber);
     data.set(source, startInChannel);
   }
@@ -103,7 +115,7 @@ describe('GlobalSampleCache - Double-Caching Fix', () => {
     for (let channel = 0; channel < 2; channel++) {
       const channelData = testAudioBuffer.getChannelData(channel);
       for (let i = 0; i < channelData.length; i++) {
-        channelData[i] = Math.sin(2 * Math.PI * 440 * i / 44100);
+        channelData[i] = Math.sin((2 * Math.PI * 440 * i) / 44100);
       }
     }
   });
@@ -120,7 +132,9 @@ describe('GlobalSampleCache - Double-Caching Fix', () => {
       expect(rawBufferAfterFirst).toBe(testArrayBuffer);
 
       // Second: Cache AudioBuffer with same key (must await even though AudioBuffer path is sync)
-      await cache.cacheBuffer(key, testAudioBuffer, { isContextCompatible: true });
+      await cache.cacheBuffer(key, testAudioBuffer, {
+        isContextCompatible: true,
+      });
 
       // ✅ Both should still be retrievable (this is the fix)
       const rawBufferAfterSecond = await cache.getCachedRawBuffer(key);
@@ -134,7 +148,9 @@ describe('GlobalSampleCache - Double-Caching Fix', () => {
       const key = 'test-sample-2';
 
       await cache.cacheBuffer(key, testArrayBuffer);
-      await cache.cacheBuffer(key, testAudioBuffer, { isContextCompatible: true });
+      await cache.cacheBuffer(key, testAudioBuffer, {
+        isContextCompatible: true,
+      });
 
       const rawBuffer = await cache.getCachedRawBuffer(key);
       const audioBuffer = cache.getCachedBuffer(key);
@@ -149,7 +165,9 @@ describe('GlobalSampleCache - Double-Caching Fix', () => {
       const key = 'test-sample-3';
 
       // First: Cache AudioBuffer
-      await cache.cacheBuffer(key, testAudioBuffer, { isContextCompatible: true });
+      await cache.cacheBuffer(key, testAudioBuffer, {
+        isContextCompatible: true,
+      });
 
       // Verify AudioBuffer is cached
       const audioBufferAfterFirst = cache.getCachedBuffer(key);
@@ -175,16 +193,22 @@ describe('GlobalSampleCache - Double-Caching Fix', () => {
       await cache.cacheBuffer(drumKey, testArrayBuffer);
 
       // 2. Decode and cache AudioBuffer (what WamDrummer does)
-      await cache.cacheBuffer(drumKey, testAudioBuffer, { isContextCompatible: true });
+      await cache.cacheBuffer(drumKey, testAudioBuffer, {
+        isContextCompatible: true,
+      });
 
       // 3. Also cache with pad number (WamDrummer does this)
       await cache.cacheBuffer(`drum-pad-1`, testArrayBuffer);
-      await cache.cacheBuffer(`drum-pad-1`, testAudioBuffer, { isContextCompatible: true });
+      await cache.cacheBuffer(`drum-pad-1`, testAudioBuffer, {
+        isContextCompatible: true,
+      });
 
       // ✅ Verify all buffers are still accessible
       expect(await cache.getCachedRawBuffer(drumKey)).toBe(testArrayBuffer);
       expect(cache.getCachedBuffer(drumKey)).toBe(testAudioBuffer);
-      expect(await cache.getCachedRawBuffer('drum-pad-1')).toBe(testArrayBuffer);
+      expect(await cache.getCachedRawBuffer('drum-pad-1')).toBe(
+        testArrayBuffer,
+      );
       expect(cache.getCachedBuffer('drum-pad-1')).toBe(testAudioBuffer);
     });
 
@@ -194,11 +218,15 @@ describe('GlobalSampleCache - Double-Caching Fix', () => {
 
       // Cache high click (raw then decoded)
       await cache.cacheBuffer(highKey, testArrayBuffer);
-      await cache.cacheBuffer(highKey, testAudioBuffer, { isContextCompatible: true });
+      await cache.cacheBuffer(highKey, testAudioBuffer, {
+        isContextCompatible: true,
+      });
 
       // Cache low click (raw then decoded)
       await cache.cacheBuffer(lowKey, testArrayBuffer);
-      await cache.cacheBuffer(lowKey, testAudioBuffer, { isContextCompatible: true });
+      await cache.cacheBuffer(lowKey, testAudioBuffer, {
+        isContextCompatible: true,
+      });
 
       // ✅ Verify all buffers are still accessible
       expect(await cache.getCachedRawBuffer(highKey)).toBe(testArrayBuffer);
@@ -214,9 +242,13 @@ describe('GlobalSampleCache - Double-Caching Fix', () => {
 
       // Cache sequence: Array → Audio → Array → Audio
       await cache.cacheBuffer(key, testArrayBuffer);
-      await cache.cacheBuffer(key, testAudioBuffer, { isContextCompatible: true });
+      await cache.cacheBuffer(key, testAudioBuffer, {
+        isContextCompatible: true,
+      });
       await cache.cacheBuffer(key, testArrayBuffer);
-      await cache.cacheBuffer(key, testAudioBuffer, { isContextCompatible: true });
+      await cache.cacheBuffer(key, testAudioBuffer, {
+        isContextCompatible: true,
+      });
 
       // Both should still be accessible
       expect(await cache.getCachedRawBuffer(key)).toBe(testArrayBuffer);
@@ -227,7 +259,9 @@ describe('GlobalSampleCache - Double-Caching Fix', () => {
       const key = 'test-sample-5';
 
       // Cache AudioBuffer with compatibility flag
-      await cache.cacheBuffer(key, testAudioBuffer, { isContextCompatible: true });
+      await cache.cacheBuffer(key, testAudioBuffer, {
+        isContextCompatible: true,
+      });
 
       // Verify AudioBuffer is cached
       const audioBuffer1 = cache.getCachedBuffer(key);
@@ -258,7 +292,9 @@ describe('GlobalSampleCache - Double-Caching Fix', () => {
     it('should still work when caching only AudioBuffer', async () => {
       const key = 'test-sample-8';
 
-      await cache.cacheBuffer(key, testAudioBuffer, { isContextCompatible: true });
+      await cache.cacheBuffer(key, testAudioBuffer, {
+        isContextCompatible: true,
+      });
 
       expect(cache.getCachedBuffer(key)).toBe(testAudioBuffer);
       // Note: getCachedRawBuffer will be undefined since we didn't cache raw data

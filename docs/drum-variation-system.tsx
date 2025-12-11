@@ -26,19 +26,19 @@ interface DrumPadProps {
 
 export function DrumPad({ drumType, samples, onTrigger }: DrumPadProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  
+
   // Only show swap button if there are multiple samples
   const hasVariations = samples.length > 1;
-  
+
   const handleSwap = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent triggering the drum
     setCurrentIndex((prev) => (prev + 1) % samples.length);
   };
-  
+
   const handleTrigger = () => {
     onTrigger(samples[currentIndex]);
   };
-  
+
   return (
     <div className="relative group">
       {/* Main Drum Pad */}
@@ -56,7 +56,7 @@ export function DrumPad({ drumType, samples, onTrigger }: DrumPadProps) {
           </span>
         )}
       </button>
-      
+
       {/* Swap Button - Only visible on hover when variations exist */}
       {hasVariations && (
         <button
@@ -88,27 +88,27 @@ export function DrummerWidget({ kit }: { kit: DrumKit }) {
     // Your audio playback logic here
     console.log(`Playing: ${sample.file}`);
   };
-  
+
   // Define drum pad layout
   const padLayout = [
     ['crash', 'ride', 'hihat-open'],
     ['tom-high', 'tom-mid', 'tom-low'],
-    ['hihat-closed', 'snare', 'kick']
+    ['hihat-closed', 'snare', 'kick'],
   ];
-  
+
   return (
     <div className="p-6 bg-gray-800 rounded-xl">
       <h2 className="text-white text-xl font-bold mb-4">{kit.name}</h2>
-      
+
       <div className="space-y-4">
         {padLayout.map((row, rowIndex) => (
           <div key={rowIndex} className="flex gap-4 justify-center">
             {row.map((drumType) => {
               const samples = kit.mapping[drumType] || [];
-              
+
               // Skip if no samples for this drum type
               if (samples.length === 0) return null;
-              
+
               return (
                 <DrumPad
                   key={drumType}
@@ -121,7 +121,7 @@ export function DrummerWidget({ kit }: { kit: DrumKit }) {
           </div>
         ))}
       </div>
-      
+
       {/* Variation Info */}
       <div className="mt-6 text-gray-400 text-sm">
         <p>💡 Hover over pads with multiple samples to swap variations</p>
@@ -133,22 +133,22 @@ export function DrummerWidget({ kit }: { kit: DrumKit }) {
 // ==================== EXAMPLE MANIFEST WITH VARIATIONS ====================
 
 const exampleManifest = {
-  "id": "vintage-funk",
-  "name": "Vintage Funk Kit",
-  "mapping": {
-    "kick": [
-      { "file": "kick_tight.mp3", "velocity": 2, "variation": "tight" },
-      { "file": "kick_boom.mp3", "velocity": 2, "variation": "boomy" },
-      { "file": "kick_sub.mp3", "velocity": 2, "variation": "subby" }
+  id: 'vintage-funk',
+  name: 'Vintage Funk Kit',
+  mapping: {
+    kick: [
+      { file: 'kick_tight.mp3', velocity: 2, variation: 'tight' },
+      { file: 'kick_boom.mp3', velocity: 2, variation: 'boomy' },
+      { file: 'kick_sub.mp3', velocity: 2, variation: 'subby' },
     ],
-    "snare": [
-      { "file": "snare_crack.mp3", "velocity": 2, "variation": "crack" },
-      { "file": "snare_fat.mp3", "velocity": 2, "variation": "fat" }
+    snare: [
+      { file: 'snare_crack.mp3', velocity: 2, variation: 'crack' },
+      { file: 'snare_fat.mp3', velocity: 2, variation: 'fat' },
     ],
-    "hihat-closed": [
-      { "file": "hh_closed.mp3", "velocity": 2 }  // Only one sample
-    ]
-  }
+    'hihat-closed': [
+      { file: 'hh_closed.mp3', velocity: 2 }, // Only one sample
+    ],
+  },
 };
 
 // ==================== ADVANCED FEATURES ====================
@@ -163,14 +163,20 @@ export function useKeyboardSwap(drumType: string, swapFunction: () => void) {
         // Map pad index to drum type and trigger swap
       }
     };
-    
+
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, []);
 }
 
 // 2. Visual variation indicator
-export function VariationIndicator({ current, total }: { current: number; total: number }) {
+export function VariationIndicator({
+  current,
+  total,
+}: {
+  current: number;
+  total: number;
+}) {
   return (
     <div className="flex gap-1">
       {Array.from({ length: total }).map((_, i) => (
@@ -194,36 +200,36 @@ interface VariationPreset {
 
 const presets: VariationPreset[] = [
   {
-    name: "Tight & Punchy",
-    description: "Short, controlled sounds",
-    selections: { kick: 0, snare: 0 }
+    name: 'Tight & Punchy',
+    description: 'Short, controlled sounds',
+    selections: { kick: 0, snare: 0 },
   },
   {
-    name: "Big & Boomy", 
-    description: "Long, resonant sounds",
-    selections: { kick: 1, snare: 1 }
-  }
+    name: 'Big & Boomy',
+    description: 'Long, resonant sounds',
+    selections: { kick: 1, snare: 1 },
+  },
 ];
 
 // ==================== IMPLEMENTATION BENEFITS ====================
 
 /**
  * Benefits of this approach:
- * 
+ *
  * 1. **Progressive Enhancement**
  *    - Single sample kits work perfectly
  *    - Multi-sample kits get swap button automatically
- * 
+ *
  * 2. **Intuitive UX**
  *    - Swap button only appears on hover
  *    - Visual feedback shows current selection
  *    - Keyboard shortcuts for power users
- * 
+ *
  * 3. **Performance**
  *    - All variations preloaded
  *    - Instant switching
  *    - No UI flicker
- * 
+ *
  * 4. **Extensibility**
  *    - Easy to add velocity layers
  *    - Support for round-robin

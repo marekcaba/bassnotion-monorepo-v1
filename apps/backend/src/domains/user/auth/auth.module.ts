@@ -22,7 +22,8 @@ import { DatabaseModule } from '../../../infrastructure/database/database.module
     AuthGuard,
     PasswordSecurityService,
     AuthSecurityService,
-  ] })
+  ],
+})
 export class AuthModule {
   private readonly staticLogger = createStructuredLogger(AuthModule.name);
 

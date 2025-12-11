@@ -31,16 +31,17 @@
 
 ### 1.2 Integration Points Identified
 
-| Integration Point | Location | Complexity | Migration Impact |
-|-------------------|----------|------------|------------------|
-| **PluginManager injection** | [RegionProcessor.ts:594](../../../apps/frontend/src/domains/playback/services/core/RegionProcessor.ts#L594) | LOW | Direct port to PlaybackEngine |
-| **WamKeyboard unwrapping** | [RegionProcessor.ts:605-636](../../../apps/frontend/src/domains/playback/services/core/RegionProcessor.ts#L605) | MEDIUM | Preserve unwrapping logic |
-| **CC64 timeline** | [HarmonyScheduler.ts:59](../../../apps/frontend/src/domains/playback/services/core/region-processing/scheduling/HarmonyScheduler.ts#L59) | HIGH | Pre-calculated approach (no real-time events) |
-| **Widget plugin loading** | [HarmonyWidget.tsx:498-671](../../../apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx#L498) | HIGH | Async plugin initialization with retries |
+| Integration Point           | Location                                                                                                                                 | Complexity | Migration Impact                              |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------------------------------------------- |
+| **PluginManager injection** | [RegionProcessor.ts:594](../../../apps/frontend/src/domains/playback/services/core/RegionProcessor.ts#L594)                              | LOW        | Direct port to PlaybackEngine                 |
+| **WamKeyboard unwrapping**  | [RegionProcessor.ts:605-636](../../../apps/frontend/src/domains/playback/services/core/RegionProcessor.ts#L605)                          | MEDIUM     | Preserve unwrapping logic                     |
+| **CC64 timeline**           | [HarmonyScheduler.ts:59](../../../apps/frontend/src/domains/playback/services/core/region-processing/scheduling/HarmonyScheduler.ts#L59) | HIGH       | Pre-calculated approach (no real-time events) |
+| **Widget plugin loading**   | [HarmonyWidget.tsx:498-671](../../../apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx#L498)   | HIGH       | Async plugin initialization with retries      |
 
 ### 1.3 Current Implementation Summary
 
 **Architecture:**
+
 ```
 HarmonyWidget
   ↓
@@ -58,6 +59,7 @@ scheduleControlChange(cc, value, time)
 **CC64 Approach:** Pre-calculated sustain durations (NOT real-time CC events to WAM)
 
 **Current Status:**
+
 - ✅ WAM keyboard works for Grand Piano, Rhodes, Wurlitzer
 - ⚠️ CC64 events are LOGGED but not sent to WAM in real-time
 - ✅ Sustain duration is calculated upfront and applied to note scheduling
@@ -134,10 +136,12 @@ private getWamKeyboard(): WamKeyboard | null {
 ```
 
 **Key Design Pattern:** Two-step unwrapping
+
 1. `PluginManager.getPlugin<WamKeyboardPlugin>('wam-keyboard')` → Returns wrapper
 2. `WamKeyboardPlugin.getWamKeyboard()` → Returns actual WAM instance
 
 **Why This Pattern?**
+
 - `PluginManager` uses generic `AudioPlugin` interface
 - `WamKeyboardPlugin` is an adapter that wraps `WamKeyboard` (WAM 2.0 module)
 - This allows plugin manager to treat all plugins uniformly while preserving WAM-specific API
@@ -211,10 +215,7 @@ scheduleControlChange(cc: number, value: number, time: number): void {
 
 ```typescript
 // Handle control change events (sustain pedal, expression, etc.)
-if (
-  event.type === 'harmony-control-change' &&
-  eventData?.cc !== undefined
-) {
+if (event.type === 'harmony-control-change' && eventData?.cc !== undefined) {
   if (eventData.cc === 64) {
     // CC64 = Sustain Pedal
     // Using pre-calculated timeline approach - real-time events are logged but not processed
@@ -247,17 +248,20 @@ private buildCC64Timeline(
 ```
 
 **How It Works:**
+
 1. Before playback starts, scan all harmony events for CC64 messages
 2. Build a timeline: `Map<audioTime, pedalDown: boolean>`
 3. When scheduling notes, check if sustain pedal is down during note duration
 4. Extend note duration if pedal is down (instead of sending real-time CC events)
 
 **Advantages:**
+
 - Simpler scheduling logic (no need to track pedal state during playback)
 - Works with both sample-based (AudioBufferSourceNode) and WAM instruments
 - Consistent behavior regardless of instrument type
 
 **Disadvantages:**
+
 - Not true WAM CC routing (WAM keyboard never receives CC64 events)
 - Sustain behavior is "baked in" to note scheduling, not dynamic
 
@@ -272,7 +276,11 @@ function extendNoteWithSustain(note, cc64Timeline) {
   const midiNoteEndTime = noteStartTime + note.midiDuration;
 
   // Check if pedal is down when note starts OR goes down during note's MIDI duration
-  const pedalDownDuringNote = findCC64DownDuringNote(noteStartTime, midiNoteEndTime, cc64Timeline);
+  const pedalDownDuringNote = findCC64DownDuringNote(
+    noteStartTime,
+    midiNoteEndTime,
+    cc64Timeline,
+  );
 
   if (pedalDownDuringNote) {
     // Find the next CC64 UP event after the note starts
@@ -313,6 +321,7 @@ function scheduleCC64Event(event: PatternEvent, audioTime: number) {
 ```
 
 **Decision:** Do NOT implement real-time CC routing in refactor
+
 - **Rationale:** Pre-calculated approach works well, less complexity
 - **Future Enhancement:** Can add real-time CC routing later if needed for other CC types
 
@@ -412,13 +421,15 @@ export class CoreServices {
 
 ```typescript
 // Widget uses PluginManager directly, not through PlaybackEngine
-const wamKeyboardPlugin = pluginManager.getPlugin<WamKeyboardPlugin>('wam-keyboard');
+const wamKeyboardPlugin =
+  pluginManager.getPlugin<WamKeyboardPlugin>('wam-keyboard');
 const wamKeyboard = wamKeyboardPlugin.getWamKeyboard();
 
 // This flow stays UNCHANGED - widgets manage their own plugin lifecycle
 ```
 
 **Why No Changes?**
+
 - HarmonyWidget loads and activates WamKeyboard for playback
 - PlaybackEngine uses PluginManager only for CC routing (if needed)
 - These are separate concerns - no conflict
@@ -457,7 +468,7 @@ export class Scheduler {
   scheduleHarmonyNote(
     note: MidiNote,
     audioTime: number,
-    cc64Timeline: Map<number, boolean>
+    cc64Timeline: Map<number, boolean>,
   ): void {
     // Calculate extended duration based on CC64 timeline
     const extendedDuration = this.calculateSustainDuration(note, cc64Timeline);
@@ -524,7 +535,7 @@ describe('PlaybackEngine - PluginManager Integration', () => {
 
     it('should return null if WamKeyboard not initialized in plugin', () => {
       const mockPlugin = {
-        getWamKeyboard: () => null
+        getWamKeyboard: () => null,
       };
       mockPluginManager.getPlugin = vi.fn().mockReturnValue(mockPlugin);
       playbackEngine.setPluginManager(mockPluginManager);
@@ -535,7 +546,7 @@ describe('PlaybackEngine - PluginManager Integration', () => {
 
     it('should return WamKeyboard instance if fully initialized', () => {
       const mockPlugin = {
-        getWamKeyboard: () => mockWamKeyboard
+        getWamKeyboard: () => mockWamKeyboard,
       };
       mockPluginManager.getPlugin = vi.fn().mockReturnValue(mockPlugin);
       playbackEngine.setPluginManager(mockPluginManager);
@@ -574,7 +585,7 @@ describe('Scheduler - CC64 Sustain Pedal', () => {
   describe('CC64 timeline-based sustain (current approach)', () => {
     it('should extend note duration when sustain pedal is down', () => {
       const cc64Timeline = new Map([
-        [1.0, true],  // Pedal down at 1.0s
+        [1.0, true], // Pedal down at 1.0s
         [3.0, false], // Pedal up at 3.0s
       ]);
 
@@ -584,7 +595,10 @@ describe('Scheduler - CC64 Sustain Pedal', () => {
         midiDuration: 0.5, // Original duration 0.5s
       };
 
-      const extendedDuration = scheduler['calculateSustainDuration'](note, cc64Timeline);
+      const extendedDuration = scheduler['calculateSustainDuration'](
+        note,
+        cc64Timeline,
+      );
 
       // Should extend until pedal up (3.0s) - note start (1.5s) = 1.5s
       expect(extendedDuration).toBe(1.5);
@@ -592,7 +606,7 @@ describe('Scheduler - CC64 Sustain Pedal', () => {
 
     it('should NOT extend duration when sustain pedal is up', () => {
       const cc64Timeline = new Map([
-        [0.5, true],  // Pedal down at 0.5s
+        [0.5, true], // Pedal down at 0.5s
         [0.8, false], // Pedal up at 0.8s
       ]);
 
@@ -602,7 +616,10 @@ describe('Scheduler - CC64 Sustain Pedal', () => {
         midiDuration: 0.5,
       };
 
-      const extendedDuration = scheduler['calculateSustainDuration'](note, cc64Timeline);
+      const extendedDuration = scheduler['calculateSustainDuration'](
+        note,
+        cc64Timeline,
+      );
 
       // Should use original MIDI duration (no sustain)
       expect(extendedDuration).toBe(0.5);
@@ -610,7 +627,7 @@ describe('Scheduler - CC64 Sustain Pedal', () => {
 
     it('should handle pedal down during note (after note starts)', () => {
       const cc64Timeline = new Map([
-        [1.2, true],  // Pedal goes down during note
+        [1.2, true], // Pedal goes down during note
         [2.0, false], // Pedal up at 2.0s
       ]);
 
@@ -620,7 +637,10 @@ describe('Scheduler - CC64 Sustain Pedal', () => {
         midiDuration: 0.5, // Would end at 1.5s without sustain
       };
 
-      const extendedDuration = scheduler['calculateSustainDuration'](note, cc64Timeline);
+      const extendedDuration = scheduler['calculateSustainDuration'](
+        note,
+        cc64Timeline,
+      );
 
       // Should extend until pedal up (2.0s) - note start (1.0s) = 1.0s
       expect(extendedDuration).toBe(1.0);
@@ -628,7 +648,7 @@ describe('Scheduler - CC64 Sustain Pedal', () => {
 
     it('should extend until exercise end if pedal stays down', () => {
       const cc64Timeline = new Map([
-        [1.0, true],  // Pedal down, never goes up
+        [1.0, true], // Pedal down, never goes up
       ]);
 
       const note = {
@@ -639,7 +659,10 @@ describe('Scheduler - CC64 Sustain Pedal', () => {
 
       scheduler.setExerciseEndTime(10.0); // Exercise ends at 10.0s
 
-      const extendedDuration = scheduler['calculateSustainDuration'](note, cc64Timeline);
+      const extendedDuration = scheduler['calculateSustainDuration'](
+        note,
+        cc64Timeline,
+      );
 
       // Should extend until exercise end (10.0s) - note start (1.5s) = 8.5s
       expect(extendedDuration).toBe(8.5);
@@ -658,7 +681,7 @@ describe('Scheduler - CC64 Sustain Pedal', () => {
       scheduler.scheduleEvent(event, 1.0);
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[CC64 EVENT] Pedal DOWN')
+        expect.stringContaining('[CC64 EVENT] Pedal DOWN'),
       );
     });
   });
@@ -764,15 +787,30 @@ describe('CC64 Sustain Pedal - End-to-End', () => {
   it('should extend note duration with sustain pedal', async () => {
     // Load exercise with CC64 events
     const exercise = {
-      regions: [{
-        events: [
-          { type: 'harmony-midi-note', data: { midiNote: 60, velocity: 80 }, time: '0:0:0', duration: '1n' },
-          { type: 'harmony-control-change', data: { cc: 64, value: 127 }, time: '0:0:0' }, // Pedal DOWN
-          { type: 'harmony-control-change', data: { cc: 64, value: 0 }, time: '0:2:0' },  // Pedal UP at 2 beats
-        ],
-        startPosition: '0:0:0',
-        duration: '4n',
-      }]
+      regions: [
+        {
+          events: [
+            {
+              type: 'harmony-midi-note',
+              data: { midiNote: 60, velocity: 80 },
+              time: '0:0:0',
+              duration: '1n',
+            },
+            {
+              type: 'harmony-control-change',
+              data: { cc: 64, value: 127 },
+              time: '0:0:0',
+            }, // Pedal DOWN
+            {
+              type: 'harmony-control-change',
+              data: { cc: 64, value: 0 },
+              time: '0:2:0',
+            }, // Pedal UP at 2 beats
+          ],
+          startPosition: '0:0:0',
+          duration: '4n',
+        },
+      ],
     };
 
     const playbackEngine = new PlaybackEngine(eventBus);
@@ -781,7 +819,7 @@ describe('CC64 Sustain Pedal - End-to-End', () => {
     // Capture scheduled audio events
     const scheduledNotes: any[] = [];
     const mockScheduler = {
-      scheduleNote: (note: any) => scheduledNotes.push(note)
+      scheduleNote: (note: any) => scheduledNotes.push(note),
     };
     playbackEngine['scheduler'] = mockScheduler;
 
@@ -800,14 +838,21 @@ describe('CC64 Sustain Pedal - End-to-End', () => {
 
   it('should NOT extend note if pedal is up', async () => {
     const exercise = {
-      regions: [{
-        events: [
-          { type: 'harmony-midi-note', data: { midiNote: 60, velocity: 80 }, time: '0:0:0', duration: '1n' },
-          // No CC64 events - pedal stays up
-        ],
-        startPosition: '0:0:0',
-        duration: '4n',
-      }]
+      regions: [
+        {
+          events: [
+            {
+              type: 'harmony-midi-note',
+              data: { midiNote: 60, velocity: 80 },
+              time: '0:0:0',
+              duration: '1n',
+            },
+            // No CC64 events - pedal stays up
+          ],
+          startPosition: '0:0:0',
+          duration: '4n',
+        },
+      ],
     };
 
     const playbackEngine = new PlaybackEngine(eventBus);
@@ -815,7 +860,7 @@ describe('CC64 Sustain Pedal - End-to-End', () => {
 
     const scheduledNotes: any[] = [];
     const mockScheduler = {
-      scheduleNote: (note: any) => scheduledNotes.push(note)
+      scheduleNote: (note: any) => scheduledNotes.push(note),
     };
     playbackEngine['scheduler'] = mockScheduler;
 
@@ -883,23 +928,25 @@ Verify these behaviors remain unchanged:
 
 ### 7.1 Risk Matrix
 
-| Risk | Probability | Impact | Mitigation |
-|------|------------|--------|-----------|
-| **PluginManager not injected** | Low | High | Add initialization test in Task 1.4 |
-| **WamKeyboard unwrapping breaks** | Medium | High | Copy logic verbatim, add regression test |
-| **CC64 timeline logic lost** | Low | High | Keep SustainPedalManager as-is |
-| **Widget plugin loading fails** | Medium | Medium | No changes to widget, verify end-to-end |
-| **Plugin initialization race** | Medium | Medium | Preserve widget retry logic (10 retries) |
+| Risk                              | Probability | Impact | Mitigation                               |
+| --------------------------------- | ----------- | ------ | ---------------------------------------- |
+| **PluginManager not injected**    | Low         | High   | Add initialization test in Task 1.4      |
+| **WamKeyboard unwrapping breaks** | Medium      | High   | Copy logic verbatim, add regression test |
+| **CC64 timeline logic lost**      | Low         | High   | Keep SustainPedalManager as-is           |
+| **Widget plugin loading fails**   | Medium      | Medium | No changes to widget, verify end-to-end  |
+| **Plugin initialization race**    | Medium      | Medium | Preserve widget retry logic (10 retries) |
 
 ### 7.2 Critical Success Factors
 
 ✅ **MUST PRESERVE:**
+
 1. Two-step unwrapping: `PluginManager → WamKeyboardPlugin → WamKeyboard`
 2. Null safety checks at each step
 3. Pre-calculated CC64 timeline approach
 4. HarmonyWidget async plugin loading with retries
 
 🚨 **DO NOT:**
+
 1. Change WamKeyboardPlugin interface
 2. Modify WamKeyboard.scheduleControlChange() API
 3. Implement real-time CC routing (keep pre-calculated approach)
@@ -919,15 +966,15 @@ If WAM integration breaks:
 
 ### 8.1 Key Files
 
-| File | Lines | Description |
-|------|-------|-------------|
-| [RegionProcessor.ts](../../../apps/frontend/src/domains/playback/services/core/RegionProcessor.ts#L594) | 594-636 | PluginManager injection and unwrapping |
-| [WamKeyboardPlugin.ts](../../../apps/frontend/src/domains/playback/modules/instruments/adapters/wam/WamKeyboardPlugin.ts#L94) | 94-96 | getWamKeyboard() unwrapping method |
-| [WamKeyboard.ts](../../../apps/frontend/src/domains/playback/modules/instruments/adapters/wam/WamKeyboard.ts#L1368) | 1368-1369 | scheduleControlChange() API |
-| [HarmonyScheduler.ts](../../../apps/frontend/src/domains/playback/services/core/region-processing/scheduling/HarmonyScheduler.ts#L210) | 210-231 | CC64 event handling (logging only) |
-| [HarmonyWidget.tsx](../../../apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx#L498) | 498-671 | Plugin loading with retry logic |
-| [PluginManager.ts](../../../apps/frontend/src/domains/playback/services/core/PluginManager.ts#L297) | 297-304 | getPlugin<T>() generic method |
-| [SustainPedalManager.ts](../../../apps/frontend/src/domains/playback/services/core/region-processing/sustain/SustainPedalManager.ts) | Full file | CC64 timeline builder and analyzer |
+| File                                                                                                                                   | Lines     | Description                            |
+| -------------------------------------------------------------------------------------------------------------------------------------- | --------- | -------------------------------------- |
+| [RegionProcessor.ts](../../../apps/frontend/src/domains/playback/services/core/RegionProcessor.ts#L594)                                | 594-636   | PluginManager injection and unwrapping |
+| [WamKeyboardPlugin.ts](../../../apps/frontend/src/domains/playback/modules/instruments/adapters/wam/WamKeyboardPlugin.ts#L94)          | 94-96     | getWamKeyboard() unwrapping method     |
+| [WamKeyboard.ts](../../../apps/frontend/src/domains/playback/modules/instruments/adapters/wam/WamKeyboard.ts#L1368)                    | 1368-1369 | scheduleControlChange() API            |
+| [HarmonyScheduler.ts](../../../apps/frontend/src/domains/playback/services/core/region-processing/scheduling/HarmonyScheduler.ts#L210) | 210-231   | CC64 event handling (logging only)     |
+| [HarmonyWidget.tsx](../../../apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx#L498)         | 498-671   | Plugin loading with retry logic        |
+| [PluginManager.ts](../../../apps/frontend/src/domains/playback/services/core/PluginManager.ts#L297)                                    | 297-304   | getPlugin<T>() generic method          |
+| [SustainPedalManager.ts](../../../apps/frontend/src/domains/playback/services/core/region-processing/sustain/SustainPedalManager.ts)   | Full file | CC64 timeline builder and analyzer     |
 
 ### 8.2 Type Definitions
 

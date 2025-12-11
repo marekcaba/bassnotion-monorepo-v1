@@ -29,6 +29,7 @@
 **Key Metrics to Display:**
 
 #### Engine Type Distribution
+
 ```typescript
 // Track which engine is being used
 interface EngineUsageMetric {
@@ -48,6 +49,7 @@ interface EngineUsageMetric {
 **Visual:** Pie chart showing % of users on each engine
 
 #### Error Rate by Engine Type
+
 ```typescript
 interface ErrorMetric {
   timestamp: Date;
@@ -66,16 +68,25 @@ interface ErrorMetric {
 ```
 
 **Visual:** Line chart comparing error rates over time
+
 - **Red Line:** New engine error rate
 - **Green Line:** Legacy engine error rate
 - **Alert Threshold:** Red line >10% higher than green line
 
 #### Playback State Distribution
+
 ```typescript
 interface StateMetric {
   timestamp: Date;
   engineType: 'legacy' | 'new';
-  state: 'idle' | 'loading' | 'ready' | 'playing' | 'paused' | 'stopped' | 'error';
+  state:
+    | 'idle'
+    | 'loading'
+    | 'ready'
+    | 'playing'
+    | 'paused'
+    | 'stopped'
+    | 'error';
   duration: number; // milliseconds in this state
 }
 
@@ -87,6 +98,7 @@ interface StateMetric {
 ```
 
 **Visual:** Bar chart showing time spent in each state
+
 - **Alert:** If >5% of time spent in 'error' state
 
 ---
@@ -94,6 +106,7 @@ interface StateMetric {
 ### 1.2 Memory Usage Tracking
 
 #### Memory Growth Over Time
+
 ```typescript
 interface MemoryMetric {
   timestamp: Date;
@@ -117,11 +130,13 @@ interface MemoryMetric {
 ```
 
 **Visual:** Multi-line chart
+
 - **Heap Used:** Primary Y-axis (MB)
 - **Audio Sources:** Secondary Y-axis (count)
 - **Alert Threshold:** Heap growth >100MB over 10 minutes
 
 #### Memory Leak Detection
+
 ```typescript
 // Automated leak detection algorithm
 interface LeakDetectionResult {
@@ -141,6 +156,7 @@ interface LeakDetectionResult {
 ```
 
 **Visual:** Alert banner at top of dashboard
+
 - **Green:** No leak detected
 - **Yellow:** Suspicious growth pattern (monitoring)
 - **Red:** Leak confirmed (immediate action required)
@@ -150,6 +166,7 @@ interface LeakDetectionResult {
 ### 1.3 Timing Accuracy Monitoring
 
 #### Scheduling Jitter Measurement
+
 ```typescript
 interface TimingMetric {
   timestamp: Date;
@@ -172,10 +189,12 @@ interface TimingMetric {
 ```
 
 **Visual:** Box plot comparing jitter distribution
+
 - **Target:** Avg jitter <1ms, P95 <5ms
 - **Alert:** Avg jitter >3ms OR P95 >10ms
 
 #### Tempo Change Responsiveness
+
 ```typescript
 interface TempoChangeMetric {
   timestamp: Date;
@@ -199,6 +218,7 @@ interface TempoChangeMetric {
 ```
 
 **Visual:** Scatter plot (tempo change size vs response time)
+
 - **Target:** 90% of changes <100ms response time
 - **Alert:** Any response time >500ms (indicates debounce failure)
 
@@ -207,6 +227,7 @@ interface TempoChangeMetric {
 ### 1.4 Performance Metrics
 
 #### Initialization Time
+
 ```typescript
 interface InitMetric {
   timestamp: Date;
@@ -229,10 +250,12 @@ interface InitMetric {
 ```
 
 **Visual:** Stacked bar chart (phases of initialization)
+
 - **Target:** Total init <3 seconds (P95)
 - **Alert:** P95 >5 seconds (degraded performance)
 
 #### Scheduling Performance
+
 ```typescript
 interface SchedulingMetric {
   timestamp: Date;
@@ -254,6 +277,7 @@ interface SchedulingMetric {
 ```
 
 **Visual:** Line chart (events/second over time)
+
 - **Target:** <100ms for 1000 events (baseline from REGRESSION_TEST_SUITE.md)
 - **Alert:** >200ms for 1000 events (2x degradation)
 
@@ -262,6 +286,7 @@ interface SchedulingMetric {
 ### 1.5 User Experience Metrics
 
 #### Widget Load Success Rate
+
 ```typescript
 interface WidgetLoadMetric {
   timestamp: Date;
@@ -283,10 +308,12 @@ interface WidgetLoadMetric {
 ```
 
 **Visual:** Heat map (widget type × engine type)
+
 - **Target:** 100% success rate
 - **Alert:** <95% success rate for any widget/engine combo
 
 #### Exercise Switching Latency
+
 ```typescript
 interface ExerciseSwitchMetric {
   timestamp: Date;
@@ -310,6 +337,7 @@ interface ExerciseSwitchMetric {
 ```
 
 **Visual:** Histogram comparing switch time distribution
+
 - **Target:** P95 <500ms (baseline from REGRESSION_TEST_SUITE.md)
 - **Alert:** P95 >1000ms (2x degradation)
 
@@ -347,6 +375,7 @@ interface ExerciseSwitchMetric {
    - Action: **IMMEDIATE ROLLBACK** + Emergency team page
 
 **Alert Channels:**
+
 - PagerDuty (or equivalent)
 - Slack #engineering-alerts (with @channel)
 - SMS to on-call engineer
@@ -379,6 +408,7 @@ interface ExerciseSwitchMetric {
    - Action: Check sample preloading, network latency
 
 **Alert Channels:**
+
 - Slack #engineering-alerts (no @channel)
 - Email to engineering team
 - Dashboard notification banner
@@ -402,6 +432,7 @@ interface ExerciseSwitchMetric {
    - Action: Available for developer investigation
 
 **Alert Channels:**
+
 - Slack #engineering-updates
 - Daily summary email
 
@@ -417,7 +448,7 @@ interface ExerciseSwitchMetric {
 
 export function logPlaybackEngineMigrationEvent(
   eventType: 'engine_selected' | 'error' | 'performance' | 'state_change',
-  data: Record<string, unknown>
+  data: Record<string, unknown>,
 ) {
   if (DEBUG_PLAYBACK_ENGINE_MIGRATION) {
     const event = {
@@ -491,6 +522,7 @@ HAVING AVG(jitter) > 3.0 OR PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY jitter)
 ### 3.1 Emergency Rollback (<5 Minutes)
 
 **When to Execute:**
+
 - 🔴 CRITICAL alert triggered
 - Engineering team consensus to rollback
 - User-reported critical issues confirmed
@@ -545,6 +577,7 @@ curl https://bassnotion.app/api/health
 ```
 
 **Manual Verification:**
+
 1. Open production app in incognito window
 2. Open DevTools → Console
 3. Check for log: `[PLAYBACK_ENGINE] Using legacy engine (RegionProcessor)`
@@ -554,6 +587,7 @@ curl https://bassnotion.app/api/health
 #### Step 3: Monitor Metrics (2 minutes)
 
 Watch dashboard for:
+
 - Error rate drops back to baseline
 - Memory stabilizes
 - No new crashes reported
@@ -561,6 +595,7 @@ Watch dashboard for:
 #### Step 4: Communication (Parallel to Steps 1-3)
 
 **Slack Notification (Use Template Below):**
+
 ```
 🔴 EMERGENCY ROLLBACK IN PROGRESS
 
@@ -580,6 +615,7 @@ Status: In progress
 **Use Case:** Testing rollback procedures, simulating incidents
 
 **Pre-Rollback Checklist:**
+
 - [ ] Notify team 24 hours in advance
 - [ ] Schedule during low-traffic period
 - [ ] Capture baseline metrics before rollback
@@ -587,12 +623,14 @@ Status: In progress
 - [ ] Assign rollback operator and observer
 
 **Procedure:**
+
 1. Follow Steps 1-3 from Emergency Rollback
 2. Document rollback time at each step
 3. Verify <5 minute total time
 4. Create rollback report
 
 **Post-Rollback Debrief:**
+
 - What went well?
 - What could be faster?
 - Any unexpected issues?
@@ -603,6 +641,7 @@ Status: In progress
 ### 3.3 Partial Rollback (Reduce Rollout Percentage)
 
 **When to Use:**
+
 - 🟡 WARNING alerts (not critical yet)
 - Want to reduce blast radius while investigating
 - Gradually ramping down during incident
@@ -613,15 +652,16 @@ Status: In progress
 // Instead of disabling completely, reduce rollout percentage
 
 // Current: 50% of users on new engine
-NEXT_PUBLIC_PLAYBACK_ENGINE_ROLLOUT_PERCENTAGE=50
+NEXT_PUBLIC_PLAYBACK_ENGINE_ROLLOUT_PERCENTAGE = 50;
 
 // Reduce to: 10% of users
-NEXT_PUBLIC_PLAYBACK_ENGINE_ROLLOUT_PERCENTAGE=10
+NEXT_PUBLIC_PLAYBACK_ENGINE_ROLLOUT_PERCENTAGE = 10;
 
 // Redeploy
 ```
 
 **Verification:**
+
 ```sql
 -- Check distribution after 5 minutes
 SELECT engineType, COUNT(*) as usage_count
@@ -643,6 +683,7 @@ GROUP BY engineType;
 **Diagnosis Steps:**
 
 1. **Check Error Types**
+
    ```sql
    SELECT errorType, errorMessage, COUNT(*) as count
    FROM playback_errors
@@ -654,15 +695,16 @@ GROUP BY engineType;
 
 2. **Common Error Patterns:**
 
-   | Error Message | Root Cause | Fix |
-   |--------------|------------|-----|
-   | `getRegionProcessor is not a function` | Race condition (Bug #1) | Rollback, verify coreServicesReady logic |
-   | `Cannot read property 'schedule' of undefined` | Scheduler not initialized | Check initialization sequence |
-   | `AudioContext suspended` | User interaction required | Expected, not a bug |
-   | `Failed to decode audio data` | Corrupt sample file | Check sample URLs, cache clear |
-   | `WamKeyboard is null` | PluginManager not loaded | Verify plugin initialization order |
+   | Error Message                                  | Root Cause                | Fix                                      |
+   | ---------------------------------------------- | ------------------------- | ---------------------------------------- |
+   | `getRegionProcessor is not a function`         | Race condition (Bug #1)   | Rollback, verify coreServicesReady logic |
+   | `Cannot read property 'schedule' of undefined` | Scheduler not initialized | Check initialization sequence            |
+   | `AudioContext suspended`                       | User interaction required | Expected, not a bug                      |
+   | `Failed to decode audio data`                  | Corrupt sample file       | Check sample URLs, cache clear           |
+   | `WamKeyboard is null`                          | PluginManager not loaded  | Verify plugin initialization order       |
 
 3. **Investigate Correlation ID**
+
    ```typescript
    // Find full trace for specific error
    const correlationId = "abc-123-def-456";
@@ -671,12 +713,12 @@ GROUP BY engineType;
 
 4. **Decision Matrix:**
 
-   | Error Count | Severity | Action |
-   |------------|----------|--------|
-   | <10/hour | Low | Monitor, log to backlog |
-   | 10-50/hour | Medium | Investigate, reduce rollout % |
-   | 50-100/hour | High | Prepare rollback, notify team |
-   | >100/hour | Critical | **IMMEDIATE ROLLBACK** |
+   | Error Count | Severity | Action                        |
+   | ----------- | -------- | ----------------------------- |
+   | <10/hour    | Low      | Monitor, log to backlog       |
+   | 10-50/hour  | Medium   | Investigate, reduce rollout % |
+   | 50-100/hour | High     | Prepare rollback, notify team |
+   | >100/hour   | Critical | **IMMEDIATE ROLLBACK**        |
 
 ---
 
@@ -685,6 +727,7 @@ GROUP BY engineType;
 **Diagnosis Steps:**
 
 1. **Capture Heap Snapshot**
+
    ```typescript
    // In Chrome DevTools
    // 1. Memory tab → Take snapshot
@@ -694,15 +737,17 @@ GROUP BY engineType;
    ```
 
 2. **Check Audio Source Cleanup**
+
    ```typescript
    // Add diagnostic logging
    logger.info('Active audio sources', {
      count: scheduledAudioSources.size,
-     sources: Array.from(scheduledAudioSources.keys())
+     sources: Array.from(scheduledAudioSources.keys()),
    });
    ```
 
 3. **Verify Event Listener Cleanup**
+
    ```typescript
    // Check EventBus listener count
    console.log('EventBus listeners:', eventBus.getListenerCount());
@@ -716,11 +761,11 @@ GROUP BY engineType;
 
 5. **Decision Matrix:**
 
-   | Heap Growth | Timeframe | Action |
-   |------------|-----------|--------|
-   | <50MB | 10 minutes | Monitor, check cleanup logic |
-   | 50-100MB | 10 minutes | **WARNING ALERT**, reduce rollout |
-   | >100MB | 10 minutes | **CRITICAL ALERT**, immediate rollback |
+   | Heap Growth | Timeframe  | Action                                 |
+   | ----------- | ---------- | -------------------------------------- |
+   | <50MB       | 10 minutes | Monitor, check cleanup logic           |
+   | 50-100MB    | 10 minutes | **WARNING ALERT**, reduce rollout      |
+   | >100MB      | 10 minutes | **CRITICAL ALERT**, immediate rollback |
 
 ---
 
@@ -729,6 +774,7 @@ GROUP BY engineType;
 **Diagnosis Steps:**
 
 1. **Measure Scheduling Jitter**
+
    ```typescript
    const expectedTime = context.currentTime + 1.0;
    const actualTime = /* recorded from source.onended */;
@@ -741,13 +787,14 @@ GROUP BY engineType;
    - Check browser Task Manager for playback tab
 
 3. **Verify Tempo Debouncing**
+
    ```typescript
    // Should see ONLY ONE reschedule after tempo change
    logger.debug('Tempo change debounce', {
      oldTempo,
      newTempo,
      debounceTimerId,
-     lastChangeTime
+     lastChangeTime,
    });
    ```
 
@@ -759,12 +806,12 @@ GROUP BY engineType;
 
 5. **Decision Matrix:**
 
-   | Avg Jitter | P95 Jitter | Action |
-   |-----------|-----------|--------|
-   | <1ms | <5ms | Normal (baseline) |
-   | 1-3ms | 5-10ms | Monitor, check CPU usage |
-   | 3-5ms | 10-20ms | **WARNING**, investigate |
-   | >5ms | >20ms | **CRITICAL**, consider rollback |
+   | Avg Jitter | P95 Jitter | Action                          |
+   | ---------- | ---------- | ------------------------------- |
+   | <1ms       | <5ms       | Normal (baseline)               |
+   | 1-3ms      | 5-10ms     | Monitor, check CPU usage        |
+   | 3-5ms      | 10-20ms    | **WARNING**, investigate        |
+   | >5ms       | >20ms      | **CRITICAL**, consider rollback |
 
 ---
 
@@ -773,6 +820,7 @@ GROUP BY engineType;
 **Diagnosis Steps:**
 
 1. **Check Widget-Specific Errors**
+
    ```sql
    SELECT widgetType, errorMessage, COUNT(*) as count
    FROM widget_load_errors
@@ -782,6 +830,7 @@ GROUP BY engineType;
    ```
 
 2. **Test Widget Isolation**
+
    ```typescript
    // Disable all widgets except one
    // Test HarmonyWidget only
@@ -790,6 +839,7 @@ GROUP BY engineType;
    ```
 
 3. **Verify Sample Loading**
+
    ```typescript
    // Check GlobalSampleCache
    const cache = GlobalSampleCache.getInstance();
@@ -798,12 +848,12 @@ GROUP BY engineType;
 
 4. **Common Widget Issues:**
 
-   | Widget | Common Error | Root Cause | Fix |
-   |--------|-------------|------------|-----|
-   | HarmonyWidget | `WamKeyboard is null` | PluginManager not loaded | Check Task 0.6 implementation |
-   | DrumWidget | `Drum sample not found` | Missing sample in cache | Verify preload strategy |
-   | MetronomeWidget | `Countdown config missing` | ConfigurationManager not inlined | Check PlaybackEngine config |
-   | VoiceCueWidget | `Voice sample 404` | Incorrect Supabase URL | Check sample URL format |
+   | Widget          | Common Error               | Root Cause                       | Fix                           |
+   | --------------- | -------------------------- | -------------------------------- | ----------------------------- |
+   | HarmonyWidget   | `WamKeyboard is null`      | PluginManager not loaded         | Check Task 0.6 implementation |
+   | DrumWidget      | `Drum sample not found`    | Missing sample in cache          | Verify preload strategy       |
+   | MetronomeWidget | `Countdown config missing` | ConfigurationManager not inlined | Check PlaybackEngine config   |
+   | VoiceCueWidget  | `Voice sample 404`         | Incorrect Supabase URL           | Check sample URL format       |
 
 ---
 
@@ -989,12 +1039,14 @@ Next Steps: Proceed to Phase [X+1] on [Date]
 **Agenda:**
 
 #### Part 1: Architecture Overview (15 minutes)
+
 - [ ] Review state consolidation (3 layers)
 - [ ] Explain feature flag logic
 - [ ] Demo dual-engine coexistence
 - [ ] Show PlaybackEngine API vs RegionProcessor API
 
 #### Part 2: Monitoring Dashboard (15 minutes)
+
 - [ ] Live demo of monitoring dashboard
 - [ ] Explain each metric and threshold
 - [ ] Show how to read error rate comparison
@@ -1002,6 +1054,7 @@ Next Steps: Proceed to Phase [X+1] on [Date]
 - [ ] Show alert configuration
 
 #### Part 3: Rollback Procedure (20 minutes)
+
 - [ ] Walk through emergency rollback steps
 - [ ] Demo feature flag flip (Vercel dashboard)
 - [ ] Show deployment verification
@@ -1009,6 +1062,7 @@ Next Steps: Proceed to Phase [X+1] on [Date]
 - [ ] **HANDS-ON:** Each engineer performs a test rollback
 
 #### Part 4: Incident Response (10 minutes)
+
 - [ ] Review symptom-based diagnosis flowchart
 - [ ] Explain correlation ID tracing
 - [ ] Demo heap snapshot capture
@@ -1017,6 +1071,7 @@ Next Steps: Proceed to Phase [X+1] on [Date]
 **Hands-On Exercise:**
 
 Each engineer must complete:
+
 1. Access monitoring dashboard
 2. Flip feature flag in Vercel (staging environment)
 3. Verify deployment
@@ -1026,6 +1081,7 @@ Each engineer must complete:
 **Sign-Off:**
 
 Each team member confirms:
+
 - [ ] I can access the monitoring dashboard
 - [ ] I can flip the feature flag
 - [ ] I know when to trigger a rollback
@@ -1037,15 +1093,18 @@ Each team member confirms:
 ### 6.2 On-Call Rotation Setup
 
 **Rollout Phase 1-2 (Weeks 5-6):**
+
 - Primary on-call: Lead Engineer (who implemented refactor)
 - Secondary: Senior Engineer (familiar with legacy system)
 - Escalation: CTO / Engineering Manager
 
 **Rollout Phase 3-4 (Weeks 7-8):**
+
 - Rotate primary on-call across team
 - Always have someone familiar with both engines
 
 **On-Call Responsibilities:**
+
 - Monitor dashboard during rollout
 - Respond to alerts within 5 minutes
 - Execute rollback if necessary
@@ -1053,6 +1112,7 @@ Each team member confirms:
 - Conduct post-incident reviews
 
 **On-Call Handoff Checklist:**
+
 ```markdown
 ## On-Call Handoff - [Date]
 
@@ -1060,19 +1120,23 @@ Outgoing: [Engineer Name]
 Incoming: [Engineer Name]
 
 ### Current Status
+
 - Rollout Phase: [X]
 - Rollout Percentage: [Y%]
 - Last 24h Metrics: [All green / Issues noted below]
 
 ### Active Issues
+
 - [Issue 1] - Status: [Monitoring / Investigating]
 - [Issue 2] - Status: [Resolved / Ongoing]
 
 ### Upcoming Events
+
 - [Phase transition on Date]
 - [Scheduled maintenance]
 
 ### Notes
+
 - [Any context needed]
 
 Handoff confirmed at: [Time]
@@ -1085,11 +1149,13 @@ Handoff confirmed at: [Time]
 ### 7.1 Incident Review Meeting
 
 **When to Schedule:**
+
 - Within 24-48 hours of incident resolution
 - REQUIRED for all Critical/High severity incidents
 - Optional for Medium/Low severity
 
 **Attendees:**
+
 - Incident Commander
 - Engineers involved in resolution
 - QA Lead
@@ -1105,6 +1171,7 @@ Handoff confirmed at: [Time]
 5. **Action Items (10 min):** What will we do differently?
 
 **Blameless Culture:**
+
 - Focus on SYSTEMS, not individuals
 - Ask "How did the system allow this?" not "Who caused this?"
 - Celebrate good incident response
@@ -1113,12 +1180,12 @@ Handoff confirmed at: [Time]
 
 ### 7.2 Incident Severity Classification
 
-| Severity | User Impact | Response Time | Rollback Required | Example |
-|----------|------------|---------------|-------------------|---------|
-| **Critical** | >10% users, complete feature failure | <5 minutes | Yes, immediate | All playback broken, 100% error rate |
-| **High** | 5-10% users, significant degradation | <15 minutes | Likely | Memory leak causing crashes |
-| **Medium** | 1-5% users, minor degradation | <1 hour | Case-by-case | Elevated jitter for some widgets |
-| **Low** | <1% users, edge cases | <24 hours | No | Rare error on specific exercise type |
+| Severity     | User Impact                          | Response Time | Rollback Required | Example                              |
+| ------------ | ------------------------------------ | ------------- | ----------------- | ------------------------------------ |
+| **Critical** | >10% users, complete feature failure | <5 minutes    | Yes, immediate    | All playback broken, 100% error rate |
+| **High**     | 5-10% users, significant degradation | <15 minutes   | Likely            | Memory leak causing crashes          |
+| **Medium**   | 1-5% users, minor degradation        | <1 hour       | Case-by-case      | Elevated jitter for some widgets     |
+| **Low**      | <1% users, edge cases                | <24 hours     | No                | Rare error on specific exercise type |
 
 ---
 
@@ -1151,16 +1218,20 @@ Handoff confirmed at: [Time]
 **Priority:** High / Medium / Low
 
 ### Description
+
 [What needs to be done]
 
 ### Why This Helps
+
 [How this prevents future incidents]
 
 ### Acceptance Criteria
+
 - [ ] [Criterion 1]
 - [ ] [Criterion 2]
 
 ### Testing
+
 [How to verify this works]
 ```
 
@@ -1177,31 +1248,36 @@ Handoff confirmed at: [Time]
 **Drill Procedure:**
 
 #### Step 1: Simulate Incident (5 min)
+
 ```typescript
 // Inject fake error to trigger alert
 logPlaybackEngineMigrationEvent('error', {
   errorType: 'simulation',
   errorMessage: 'Rollback drill - ignore',
-  count: 1000 // Trigger CRITICAL threshold
+  count: 1000, // Trigger CRITICAL threshold
 });
 ```
 
 #### Step 2: Execute Rollback (5 min)
+
 - On-call engineer flips feature flag
 - Verify deployment
 - Check metrics normalize
 
 #### Step 3: Verify Communication (5 min)
+
 - Post rollback notification in Slack
 - Verify team receives alert
 - Practice incident commander role
 
 #### Step 4: Measure & Debrief (15 min)
+
 - Record actual rollback time
 - Identify any friction points
 - Update runbook if needed
 
 **Success Criteria:**
+
 - [ ] Rollback completed in <5 minutes
 - [ ] All team members notified
 - [ ] Metrics returned to baseline
@@ -1214,12 +1290,14 @@ logPlaybackEngineMigrationEvent('error', {
 **Use this checklist EVERY TIME you perform a rollback (drill or real):**
 
 #### Pre-Rollback
+
 - [ ] Monitoring dashboard accessible
 - [ ] Baseline metrics captured
 - [ ] Team notified (if real incident)
 - [ ] Rollback operator + observer assigned
 
 #### During Rollback
+
 - [ ] Start timer ⏱️
 - [ ] Flip feature flag (Vercel env var)
 - [ ] Trigger redeployment
@@ -1227,6 +1305,7 @@ logPlaybackEngineMigrationEvent('error', {
 - [ ] Verify new BUILD_ID
 
 #### Post-Rollback
+
 - [ ] Test playback manually (3 widgets minimum)
 - [ ] Check console for "legacy engine" log
 - [ ] Verify error rate drops
@@ -1234,12 +1313,14 @@ logPlaybackEngineMigrationEvent('error', {
 - [ ] Stop timer ⏱️ (Record total time)
 
 #### Communication
+
 - [ ] Post rollback complete notification
 - [ ] Update incident ticket status
 - [ ] Schedule RCA meeting (if real incident)
 
 #### Documentation
-- [ ] Record rollback time: _____ minutes
+
+- [ ] Record rollback time: **\_** minutes
 - [ ] Note any issues encountered
 - [ ] Update runbook if procedure changed
 
@@ -1249,16 +1330,17 @@ logPlaybackEngineMigrationEvent('error', {
 
 **After each rollback (drill or real), score your confidence:**
 
-| Aspect | Score (1-5) | Notes |
-|--------|-------------|-------|
-| **Speed:** Did we complete in <5 min? | ___/5 | Actual time: ___ min |
-| **Communication:** Was team properly notified? | ___/5 | |
-| **Verification:** Did we confirm rollback success? | ___/5 | |
-| **Monitoring:** Were metrics visible throughout? | ___/5 | |
-| **Team Readiness:** Did everyone know their role? | ___/5 | |
-| **TOTAL CONFIDENCE** | ___/25 | |
+| Aspect                                             | Score (1-5) | Notes                   |
+| -------------------------------------------------- | ----------- | ----------------------- |
+| **Speed:** Did we complete in <5 min?              | \_\_\_/5    | Actual time: \_\_\_ min |
+| **Communication:** Was team properly notified?     | \_\_\_/5    |                         |
+| **Verification:** Did we confirm rollback success? | \_\_\_/5    |                         |
+| **Monitoring:** Were metrics visible throughout?   | \_\_\_/5    |                         |
+| **Team Readiness:** Did everyone know their role?  | \_\_\_/5    |                         |
+| **TOTAL CONFIDENCE**                               | \_\_\_/25   |                         |
 
 **Scoring Guide:**
+
 - **20-25:** Ready for production rollout
 - **15-19:** Needs improvement, but acceptable
 - **10-14:** Not ready, repeat drill
@@ -1410,6 +1492,7 @@ ORDER BY engineType;
 ## Summary Checklist
 
 **Before Rollout (Task 0.5 Completion):**
+
 - [x] Monitoring dashboard designed with 8 key metrics
 - [x] Alert thresholds configured (Critical, Warning, Info)
 - [x] Rollback procedure documented (<5 minute target)
@@ -1420,6 +1503,7 @@ ORDER BY engineType;
 - [x] Query library for monitoring (5 essential queries)
 
 **Ready for Phase 1 Rollout When:**
+
 - [ ] Team training session completed (all engineers sign-off)
 - [ ] Rollback drill executed successfully (<5 minutes)
 - [ ] Monitoring dashboard accessible to all team members

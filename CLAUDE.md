@@ -9,6 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This project is currently in **active development** with **NO production users or customers yet**. The sole user and tester is the project owner/developer.
 
 **What this means for development:**
+
 - ✅ Safe to experiment with new architectures and refactors
 - ✅ Breaking changes are acceptable during feature development
 - ✅ Focus on code quality and architecture over backward compatibility
@@ -18,6 +19,7 @@ This project is currently in **active development** with **NO production users o
 - ⚠️ Prepare for production (implement monitoring, error handling, rollback plans)
 
 **When production launch approaches:**
+
 - Switch to formal staged rollout procedures
 - Implement full monitoring and alerting
 - Follow strict backward compatibility rules
@@ -32,12 +34,14 @@ This project is currently in **active development** with **NO production users o
 **CRITICAL - HIGH PRIORITY**: Before adding console.log or logger statements, ALWAYS check logger configuration first!
 
 **Current Logger Setup:**
+
 - **Environment**: `NEXT_PUBLIC_LOG_LEVEL=INFO` in `.env.local`
 - **Two Logger Systems**:
   1. **Frontend Logger** (`apps/frontend/src/utils/logger.ts`) - Category-based with disabled list
   2. **Structured Logger** (`libs/contracts/src/utils/structured-logger.ts`) - Used by RegionProcessor
 
 **RegionProcessor Logger Status:**
+
 - Uses: `getLogger('RegionProcessor')` from `@/utils/logger.js`
 - **NOT in disabled categories list** - logs WILL show
 - Log levels enabled: `ERROR`, `WARN`, `INFO` (DEBUG and VERBOSE disabled by default)
@@ -46,15 +50,17 @@ This project is currently in **active development** with **NO production users o
   - `logger.debug()` - ❌ WON'T SHOW (level DEBUG > INFO threshold)
 
 **How to Enable Debug Logs:**
+
 ```typescript
 // Option 1: In browser console
 window.logger.setLevel(window.LogLevel.DEBUG);
 
 // Option 2: Update .env.local
-NEXT_PUBLIC_LOG_LEVEL=DEBUG
+NEXT_PUBLIC_LOG_LEVEL = DEBUG;
 ```
 
 **When Adding Diagnostic Logs:**
+
 1. ✅ **DO**: Use `console.log()` for critical diagnostics (always shows)
 2. ✅ **DO**: Use `logger.info()` for important events (shows with INFO level)
 3. ❌ **DON'T**: Use `logger.debug()` unless you know DEBUG is enabled
@@ -62,6 +68,7 @@ NEXT_PUBLIC_LOG_LEVEL=DEBUG
 5. ✅ **DO**: Add context name to logs: `[CC64 DIAGNOSTIC]`, `[SUSTAIN DIAGNOSTIC]`
 
 **Disabled Categories (won't log INFO/DEBUG/VERBOSE):**
+
 - FretboardCard, useFretboard, useFretboardExercise
 - youtube-widget, CoreServices, EventBus, CircuitBreaker
 - CacheMonitor, WidgetSyncService, TransportClock, SyncedWidget

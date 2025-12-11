@@ -205,7 +205,9 @@ export class TransportController implements Service {
     // as it creates a mismatch with the internal position manager.
     if (this.config.enableLegacyCompatibility) {
       Tone.Transport.position = 0;
-      logger.info('Reset Tone.Transport.position to 0 for clean playback start');
+      logger.info(
+        'Reset Tone.Transport.position to 0 for clean playback start',
+      );
     }
 
     // FAANG FIX: Reset position to timeline start (0:0:0) before starting
@@ -218,7 +220,9 @@ export class TransportController implements Service {
     // position update callback, but TransportController state is still 'stopped',
     // causing the callback to filter out all position updates
     this.state = 'playing';
-    console.log('🎯 [CONTROLLER FIX] State set to playing BEFORE transport.start()');
+    console.log(
+      '🎯 [CONTROLLER FIX] State set to playing BEFORE transport.start()',
+    );
 
     // COUNTDOWN FIX: Set countdown offset before starting transport
     // Transport.start() will apply this offset right before starting position updates
@@ -236,7 +240,8 @@ export class TransportController implements Service {
         countdownBeats,
         countdownDurationSeconds: countdownDurationSeconds.toFixed(3),
         bpm,
-        explanation: 'Transport will apply this offset when starting position updates',
+        explanation:
+          'Transport will apply this offset when starting position updates',
       });
       logger.info('🎯 [COUNTDOWN FIX] Set countdown offset', {
         countdownBeats,
@@ -249,7 +254,10 @@ export class TransportController implements Service {
     this.transport.start();
 
     // Start Tone.Transport for legacy compatibility
-    if (this.config.enableLegacyCompatibility && Tone.Transport.state !== 'started') {
+    if (
+      this.config.enableLegacyCompatibility &&
+      Tone.Transport.state !== 'started'
+    ) {
       logger.info('Starting Tone.Transport for legacy compatibility');
       Tone.Transport.start();
     }
@@ -287,7 +295,9 @@ export class TransportController implements Service {
         }
       }, durationMs);
     } else {
-      logger.debug('No exercise duration set - playback will continue until manually stopped');
+      logger.debug(
+        'No exercise duration set - playback will continue until manually stopped',
+      );
     }
   }
 
@@ -310,7 +320,10 @@ export class TransportController implements Service {
       return;
     }
 
-    logger.info('🎵 Stopping playback...', { previousState: this.state, graceful });
+    logger.info('🎵 Stopping playback...', {
+      previousState: this.state,
+      graceful,
+    });
 
     // Stop transport
     this.transport.stop();
@@ -321,7 +334,10 @@ export class TransportController implements Service {
     // in transport.stop() which is sufficient to stop position updates.
 
     // Stop Tone.Transport for legacy compatibility
-    if (this.config.enableLegacyCompatibility && Tone.Transport.state !== 'stopped') {
+    if (
+      this.config.enableLegacyCompatibility &&
+      Tone.Transport.state !== 'stopped'
+    ) {
       logger.info('Stopping Tone.Transport for legacy compatibility');
       Tone.Transport.stop();
       // FAANG FIX: Reset to start of EXERCISE (after countdown), not start of countdown
@@ -332,7 +348,10 @@ export class TransportController implements Service {
         const _beatsPerBar = this.config.timeSignature?.numerator || 4;
         const position = `0:${countdownBeats}:0`; // e.g., "0:4:0" for 4/4 time with 4-beat countdown
         Tone.Transport.position = position;
-        logger.info('Reset Tone.Transport to exercise start', { position, countdownBeats });
+        logger.info('Reset Tone.Transport to exercise start', {
+          position,
+          countdownBeats,
+        });
       } else {
         // No countdown - reset to absolute zero
         Tone.Transport.position = 0;
@@ -376,7 +395,10 @@ export class TransportController implements Service {
     this.transport.pause();
 
     // Pause Tone.Transport for legacy compatibility
-    if (this.config.enableLegacyCompatibility && Tone.Transport.state === 'started') {
+    if (
+      this.config.enableLegacyCompatibility &&
+      Tone.Transport.state === 'started'
+    ) {
       logger.info('Pausing Tone.Transport for legacy compatibility');
       Tone.Transport.pause();
     }
@@ -460,35 +482,45 @@ export class TransportController implements Service {
     logger.info('🎵 TransportController.setTempo START', {
       requestedBpm: bpm,
       previousBpm,
-      transportState: this.state
+      transportState: this.state,
     });
 
     // FIX: Update the single source of truth
     // This updates both musicalTruth.bpm AND Tone.Transport.bpm.value
     musicalTruth.setBPM(bpm);
 
-    logger.info('🎵 TransportController.setTempo: musicalTruth.setBPM() called', {
-      newBpm: bpm,
-      toneBpmAfter: Tone.Transport.bpm.value,
-      musicalTruthBpm: musicalTruth.getBPM()
-    });
+    logger.info(
+      '🎵 TransportController.setTempo: musicalTruth.setBPM() called',
+      {
+        newBpm: bpm,
+        toneBpmAfter: Tone.Transport.bpm.value,
+        musicalTruthBpm: musicalTruth.getBPM(),
+      },
+    );
 
     // FAANG FIX: Recalculate loop end if loop is enabled
     // When tempo changes, the loop end time in seconds changes even though musical position stays same
     if (this.config.enableLegacyCompatibility && Tone.Transport.loop) {
       const loopRegion = this.positionManager.getLoop();
       if (loopRegion.enabled) {
-        const startSeconds = this.positionManager.positionToSeconds(loopRegion.start);
-        const endSeconds = this.positionManager.positionToSeconds(loopRegion.end);
+        const startSeconds = this.positionManager.positionToSeconds(
+          loopRegion.start,
+        );
+        const endSeconds = this.positionManager.positionToSeconds(
+          loopRegion.end,
+        );
         Tone.Transport.loopStart = startSeconds;
         Tone.Transport.loopEnd = endSeconds;
-        logger.info('🔁 TransportController: Recalculated loop points for new tempo', {
-          bpm,
-          loopStart: startSeconds,
-          loopEnd: endSeconds,
-          loopStartBars: loopRegion.start.bars,
-          loopEndBars: loopRegion.end.bars
-        });
+        logger.info(
+          '🔁 TransportController: Recalculated loop points for new tempo',
+          {
+            bpm,
+            loopStart: startSeconds,
+            loopEnd: endSeconds,
+            loopStartBars: loopRegion.start.bars,
+            loopEndBars: loopRegion.end.bars,
+          },
+        );
       }
     }
 
@@ -497,7 +529,7 @@ export class TransportController implements Service {
     logger.info('🎵 TransportController.setTempo COMPLETE', {
       bpm,
       previousBpm,
-      toneBpmVerify: Tone.Transport.bpm.value
+      toneBpmVerify: Tone.Transport.bpm.value,
     });
   }
 
@@ -687,6 +719,12 @@ export class TransportController implements Service {
         return;
       }
 
+      // DEBUG: Log source of position update
+      console.log('[TRANSPORT DEBUG] Transport.onPositionUpdate', {
+        source: 'internal-timing',
+        seconds: seconds.toFixed(3),
+      });
+
       // Update position using internal transport timing (AudioContext.currentTime)
       // This is sample-accurate and reliable, unlike Tone.Transport.position
       this.positionManager.updatePosition(seconds);
@@ -697,7 +735,8 @@ export class TransportController implements Service {
       const rawPosition = this.positionManager.getPosition();
 
       // POSITION DEBUG: Log the transformation (reduced frequency)
-      if (Math.random() < 0.1) { // 10% of updates
+      if (Math.random() < 0.1) {
+        // 10% of updates
         console.log('🎵 [POSITION UPDATE] Internal timing', {
           seconds: seconds.toFixed(3),
           rawPosition: `${rawPosition.bars}:${rawPosition.beats}:${rawPosition.sixteenths}`,
@@ -758,6 +797,12 @@ export class TransportController implements Service {
       }
 
       this.lastPositionEmitTime = now;
+
+      // DEBUG: Log source of position update
+      console.log('[TRANSPORT DEBUG] Clock.onTick', {
+        source: 'audioworklet',
+        time: time.toFixed(3),
+      });
 
       // Update position using AudioWorklet timing
       this.positionManager.updatePosition(time);

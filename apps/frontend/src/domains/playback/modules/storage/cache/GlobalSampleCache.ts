@@ -13,9 +13,14 @@ import type { Sampler } from 'tone';
 import type { AudioSampleMetadata } from '@bassnotion/contracts';
 import { EventBus, createStructuredLogger } from '../../shared/index.js';
 import { SampleCache, type CacheConfig } from './SampleCache.js';
-import { LocalProvider, type LocalProviderConfig } from '../providers/LocalProvider.js';
+import {
+  LocalProvider,
+  type LocalProviderConfig,
+} from '../providers/LocalProvider.js';
 
 const logger = createStructuredLogger('GlobalSampleCache');
+
+export type CachePriority = 'low' | 'normal' | 'high' | 'critical';
 
 export interface CachedSample {
   url: string;
@@ -25,6 +30,16 @@ export interface CachedSample {
   loadedAt: number;
   type: 'buffer' | 'sampler' | 'url' | 'raw';
   isContextCompatible?: boolean; // If true, buffer is from current AudioContext and should survive cleanup
+
+  // Access tracking for smarter eviction
+  lastAccessed: number; // Timestamp of last get()
+  accessCount: number; // Total times accessed
+
+  // Priority for eviction decisions
+  priority: CachePriority;
+
+  // Size tracking for memory management
+  sizeBytes: number; // Estimated size in bytes
 }
 
 export interface CachedInstrument {
@@ -45,6 +60,34 @@ export interface GlobalCacheStats {
   intelligentCacheStats?: any;
 }
 
+// ==========================================
+// Performance Tracking Types
+// ==========================================
+
+export interface LayerPerformanceMetrics {
+  hitRate: number;
+  missRate: number;
+  averageLatencyMs: number;
+  errorRate: number;
+  operationCounts: {
+    get: number;
+    set: number;
+    delete: number;
+    hits: number;
+    misses: number;
+    errors: number;
+  };
+  totalBytes: number;
+  isHealthy: boolean;
+}
+
+export interface CachePerformanceReport {
+  memory: LayerPerformanceMetrics;
+  indexedDB: LayerPerformanceMetrics;
+  combined: LayerPerformanceMetrics;
+  timestamp: number;
+}
+
 /**
  * Enhanced global sample cache that combines all caching functionality
  */
@@ -63,6 +106,16 @@ export class GlobalSampleCacheImpl {
 
   // Persistent storage for IndexedDB caching
   private localStorage: LocalProvider | null = null;
+
+  // Offline mode flag - when true, only use cached samples (no network)
+  private offlineMode: boolean = false;
+
+  // Performance tracking state
+  private layerMetrics = {
+    memory: this.createEmptyMetrics(),
+    indexedDB: this.createEmptyMetrics(),
+  };
+  private readonly LATENCY_WINDOW_SIZE = 100; // Rolling window for latency calculations
 
   private constructor() {
     this.eventBus = new EventBus();
@@ -99,7 +152,10 @@ export class GlobalSampleCacheImpl {
       };
 
       this.localStorage = new LocalProvider(localConfig, this.eventBus);
-      console.log('[INDEXEDDB-DEBUG] LocalProvider instance created:', !!this.localStorage);
+      console.log(
+        '[INDEXEDDB-DEBUG] LocalProvider instance created:',
+        !!this.localStorage,
+      );
       logger.info('✅ LocalProvider initialized for persistent sample caching');
 
       // Log when IndexedDB is ready
@@ -108,8 +164,14 @@ export class GlobalSampleCacheImpl {
         logger.info('💾 IndexedDB ready for persistent caching');
       });
     } catch (error) {
-      console.error('[INDEXEDDB-DEBUG] Failed to initialize LocalProvider:', error);
-      logger.warn('Failed to initialize LocalProvider, will use memory-only cache', error as Error);
+      console.error(
+        '[INDEXEDDB-DEBUG] Failed to initialize LocalProvider:',
+        error,
+      );
+      logger.warn(
+        'Failed to initialize LocalProvider, will use memory-only cache',
+        error as Error,
+      );
       this.localStorage = null;
     }
   }
@@ -136,11 +198,16 @@ export class GlobalSampleCacheImpl {
    * Cache a sample URL
    */
   cacheUrl(path: string, url: string): void {
+    const now = Date.now();
     this.urlCache.set(path, url);
     this.samples.set(path, {
       url,
-      loadedAt: Date.now(),
+      loadedAt: now,
       type: 'url',
+      lastAccessed: now,
+      accessCount: 0,
+      priority: 'normal',
+      sizeBytes: 0, // URLs don't have size
     });
 
     logger.info(`📎 Cached URL: ${path}`);
@@ -176,7 +243,11 @@ export class GlobalSampleCacheImpl {
     buffer: AudioBuffer | ArrayBuffer,
     options?: { isContextCompatible?: boolean },
   ): Promise<void> {
+    const memoryStartTime = performance.now();
     const existing = this.samples.get(path);
+
+    const now = Date.now();
+    const sizeBytes = this.estimateBufferSize(buffer);
 
     // Check if this is a raw ArrayBuffer or decoded AudioBuffer
     if (buffer instanceof ArrayBuffer) {
@@ -186,9 +257,13 @@ export class GlobalSampleCacheImpl {
         url: existing?.url || path,
         rawBuffer: buffer,
         buffer: existing?.buffer, // ✅ Keep decoded AudioBuffer if it exists
-        loadedAt: Date.now(),
+        loadedAt: now,
         type: 'raw',
         isContextCompatible: existing?.isContextCompatible, // ✅ Preserve compatibility flag
+        lastAccessed: now,
+        accessCount: existing?.accessCount || 0,
+        priority: existing?.priority || 'normal',
+        sizeBytes,
       });
 
       // Also cache in new system
@@ -201,31 +276,65 @@ export class GlobalSampleCacheImpl {
 
       this.sampleCache.set(path, buffer, metadata as AudioSampleMetadata);
 
+      // Record memory set operation
+      const memoryLatency = performance.now() - memoryStartTime;
+      this.recordOperation('memory', 'set', true, memoryLatency, sizeBytes);
+
       logger.info(
         `📦 Cached raw ArrayBuffer: ${path} (${Math.round(buffer.byteLength / 1024)}KB)`,
       );
 
       // Store to IndexedDB for persistence across sessions
       if (this.localStorage) {
+        const idbStartTime = performance.now();
         try {
-          console.log(`[INDEXEDDB-DEBUG] Attempting to store ${path} to IndexedDB...`);
+          console.log(
+            `[INDEXEDDB-DEBUG] Attempting to store ${path} to IndexedDB...`,
+          );
           const result = await this.localStorage.store(path, buffer, {
             contentType: 'audio/ogg', // Samples are OGG format
             metadata: {
               cachedAt: Date.now(),
               size: buffer.byteLength,
-              type: 'raw-audio'
+              type: 'raw-audio',
             },
           });
+          const idbLatency = performance.now() - idbStartTime;
+          this.recordOperation(
+            'indexedDB',
+            'set',
+            result.success,
+            idbLatency,
+            sizeBytes,
+            !result.success,
+          );
           console.log(`[INDEXEDDB-DEBUG] Store result for ${path}:`, result);
-          logger.info(`💾 Persisted to IndexedDB: ${path} (${Math.round(buffer.byteLength / 1024)}KB)`);
+          logger.info(
+            `💾 Persisted to IndexedDB: ${path} (${Math.round(buffer.byteLength / 1024)}KB)`,
+          );
         } catch (error) {
+          const idbLatency = performance.now() - idbStartTime;
+          this.recordOperation(
+            'indexedDB',
+            'set',
+            false,
+            idbLatency,
+            undefined,
+            true,
+          );
           console.error(`[INDEXEDDB-DEBUG] Failed to store ${path}:`, error);
-          logger.warn(`Failed to persist ${path} to IndexedDB, will re-download on next session`, error as Error);
+          logger.warn(
+            `Failed to persist ${path} to IndexedDB, will re-download on next session`,
+            error as Error,
+          );
         }
       } else {
-        console.warn(`[INDEXEDDB-DEBUG] localStorage is null, cannot persist ${path}`);
-        logger.warn(`LocalProvider not initialized, skipping IndexedDB cache for ${path}`);
+        console.warn(
+          `[INDEXEDDB-DEBUG] localStorage is null, cannot persist ${path}`,
+        );
+        logger.warn(
+          `LocalProvider not initialized, skipping IndexedDB cache for ${path}`,
+        );
       }
     } else if (buffer instanceof AudioBuffer) {
       // Decoded AudioBuffer - validate it's from the correct context
@@ -242,9 +351,13 @@ export class GlobalSampleCacheImpl {
         url: existing?.url || path,
         rawBuffer: existing?.rawBuffer, // ✅ Keep raw ArrayBuffer if it exists
         buffer,
-        loadedAt: Date.now(),
+        loadedAt: now,
         type: 'buffer',
         isContextCompatible: options?.isContextCompatible,
+        lastAccessed: now,
+        accessCount: existing?.accessCount || 0,
+        priority: existing?.priority || 'normal',
+        sizeBytes,
       });
 
       // Also cache in new system for unified access
@@ -266,6 +379,10 @@ export class GlobalSampleCacheImpl {
       const arrayBuffer = this.audioBufferToArrayBuffer(buffer);
       this.sampleCache.set(path, arrayBuffer, metadata as AudioSampleMetadata);
 
+      // Record memory set operation
+      const memoryLatency = performance.now() - memoryStartTime;
+      this.recordOperation('memory', 'set', true, memoryLatency, sizeBytes);
+
       logger.info(
         `🔊 Cached AudioBuffer: ${path} (${buffer.duration.toFixed(2)}s, ${buffer.sampleRate}Hz)`,
       );
@@ -280,11 +397,20 @@ export class GlobalSampleCacheImpl {
    * Get cached buffer (decoded AudioBuffer only)
    */
   getCachedBuffer(path: string): AudioBuffer | undefined {
+    const startTime = performance.now();
     const sample = this.samples.get(path);
     const buffer = sample?.buffer;
+    const latencyMs = performance.now() - startTime;
 
     if (buffer) {
       logger.info(`♻️ Cache HIT for AudioBuffer: ${path}`);
+
+      // Update access tracking
+      sample.lastAccessed = Date.now();
+      sample.accessCount++;
+
+      // Record performance metrics
+      this.recordOperation('memory', 'get', true, latencyMs, sample.sizeBytes);
 
       // BUG #2 WARNING: Check if buffer is context-compatible
       if (!sample?.isContextCompatible) {
@@ -295,6 +421,7 @@ export class GlobalSampleCacheImpl {
       }
     } else {
       logger.info(`❌ Cache MISS for AudioBuffer: ${path}`);
+      this.recordOperation('memory', 'get', false, latencyMs);
     }
 
     return buffer;
@@ -306,38 +433,90 @@ export class GlobalSampleCacheImpl {
    * PERSISTENT CACHE: Checks IndexedDB if not in memory
    */
   async getCachedRawBuffer(path: string): Promise<ArrayBuffer | undefined> {
+    const memoryStartTime = performance.now();
+
     // Check memory cache first (fast)
     const sample = this.samples.get(path);
     const rawBuffer = sample?.rawBuffer;
 
     if (rawBuffer) {
+      const memoryLatency = performance.now() - memoryStartTime;
       logger.info(
         `♻️ Memory cache HIT for raw ArrayBuffer: ${path} (${Math.round(rawBuffer.byteLength / 1024)}KB)`,
+      );
+
+      // Update access tracking
+      sample.lastAccessed = Date.now();
+      sample.accessCount++;
+
+      // Record memory hit
+      this.recordOperation(
+        'memory',
+        'get',
+        true,
+        memoryLatency,
+        sample.sizeBytes,
       );
       return rawBuffer;
     }
 
+    // Memory miss
+    const memoryLatency = performance.now() - memoryStartTime;
+    this.recordOperation('memory', 'get', false, memoryLatency);
+
     // Check IndexedDB persistent cache
     if (this.localStorage) {
+      const idbStartTime = performance.now();
       try {
         const result = await this.localStorage.retrieve(path);
+        const idbLatency = performance.now() - idbStartTime;
+
         if (result.success && result.data) {
           logger.info(
             `💾 IndexedDB cache HIT for raw ArrayBuffer: ${path} (${Math.round(result.data.byteLength / 1024)}KB)`,
           );
 
+          // Record IndexedDB hit
+          this.recordOperation(
+            'indexedDB',
+            'get',
+            true,
+            idbLatency,
+            result.data.byteLength,
+          );
+
           // Restore to memory cache for faster subsequent access
+          const now = Date.now();
           this.samples.set(path, {
             url: path,
             rawBuffer: result.data,
-            loadedAt: Date.now(),
+            loadedAt: now,
             type: 'raw',
+            lastAccessed: now,
+            accessCount: 1,
+            priority: 'normal',
+            sizeBytes: result.data.byteLength,
           });
 
           return result.data;
+        } else {
+          // IndexedDB miss
+          this.recordOperation('indexedDB', 'get', false, idbLatency);
         }
       } catch (error) {
-        logger.warn(`Failed to retrieve ${path} from IndexedDB`, error as Error);
+        const idbLatency = performance.now() - idbStartTime;
+        logger.warn(
+          `Failed to retrieve ${path} from IndexedDB`,
+          error as Error,
+        );
+        this.recordOperation(
+          'indexedDB',
+          'get',
+          false,
+          idbLatency,
+          undefined,
+          true,
+        );
       }
     }
 
@@ -350,11 +529,16 @@ export class GlobalSampleCacheImpl {
    */
   cacheSampler(path: string, sampler: Sampler): void {
     const existing = this.samples.get(path);
+    const now = Date.now();
     this.samples.set(path, {
       url: existing?.url || path,
       sampler,
-      loadedAt: Date.now(),
+      loadedAt: now,
       type: 'sampler',
+      lastAccessed: now,
+      accessCount: existing?.accessCount || 0,
+      priority: 'high', // Samplers are typically important
+      sizeBytes: 0, // Sampler size is hard to estimate
     });
 
     logger.info(`🎹 Cached sampler: ${path}`);
@@ -650,6 +834,292 @@ export class GlobalSampleCacheImpl {
     this.clearAllBuffers();
   }
 
+  // ==========================================
+  // Performance Tracking Methods
+  // ==========================================
+
+  /**
+   * Create empty performance metrics object
+   */
+  private createEmptyMetrics(): LayerPerformanceMetrics {
+    return {
+      hitRate: 0,
+      missRate: 0,
+      averageLatencyMs: 0,
+      errorRate: 0,
+      operationCounts: {
+        get: 0,
+        set: 0,
+        delete: 0,
+        hits: 0,
+        misses: 0,
+        errors: 0,
+      },
+      totalBytes: 0,
+      isHealthy: true,
+    };
+  }
+
+  /**
+   * Record a cache operation for performance tracking
+   */
+  private recordOperation(
+    layer: 'memory' | 'indexedDB',
+    op: 'get' | 'set' | 'delete',
+    hit: boolean,
+    latencyMs: number,
+    sizeBytes?: number,
+    error?: boolean,
+  ): void {
+    const metrics = this.layerMetrics[layer];
+
+    // Update operation counts
+    metrics.operationCounts[op]++;
+    if (op === 'get') {
+      if (hit) {
+        metrics.operationCounts.hits++;
+      } else {
+        metrics.operationCounts.misses++;
+      }
+    }
+    if (error) {
+      metrics.operationCounts.errors++;
+    }
+    if (sizeBytes && op === 'set') {
+      metrics.totalBytes += sizeBytes;
+    }
+
+    // Calculate rates
+    const totalGets = metrics.operationCounts.get;
+    if (totalGets > 0) {
+      metrics.hitRate = metrics.operationCounts.hits / totalGets;
+      metrics.missRate = metrics.operationCounts.misses / totalGets;
+    }
+
+    const totalOps =
+      metrics.operationCounts.get +
+      metrics.operationCounts.set +
+      metrics.operationCounts.delete;
+    if (totalOps > 0) {
+      metrics.errorRate = metrics.operationCounts.errors / totalOps;
+    }
+
+    // Update average latency (rolling average)
+    if (latencyMs > 0) {
+      const currentTotal = metrics.averageLatencyMs * (totalOps - 1);
+      metrics.averageLatencyMs = (currentTotal + latencyMs) / totalOps;
+    }
+
+    // Health check: unhealthy if error rate > 10% or latency > 500ms
+    metrics.isHealthy =
+      metrics.errorRate < 0.1 && metrics.averageLatencyMs < 500;
+  }
+
+  /**
+   * Get comprehensive performance report for all cache layers
+   */
+  getPerformanceReport(): CachePerformanceReport {
+    // Calculate combined metrics
+    const memMetrics = this.layerMetrics.memory;
+    const idbMetrics = this.layerMetrics.indexedDB;
+
+    const totalGets =
+      memMetrics.operationCounts.get + idbMetrics.operationCounts.get;
+    const totalHits =
+      memMetrics.operationCounts.hits + idbMetrics.operationCounts.hits;
+    const totalMisses =
+      memMetrics.operationCounts.misses + idbMetrics.operationCounts.misses;
+    const totalErrors =
+      memMetrics.operationCounts.errors + idbMetrics.operationCounts.errors;
+    const totalOps =
+      memMetrics.operationCounts.get +
+      memMetrics.operationCounts.set +
+      memMetrics.operationCounts.delete +
+      idbMetrics.operationCounts.get +
+      idbMetrics.operationCounts.set +
+      idbMetrics.operationCounts.delete;
+
+    const combined: LayerPerformanceMetrics = {
+      hitRate: totalGets > 0 ? totalHits / totalGets : 0,
+      missRate: totalGets > 0 ? totalMisses / totalGets : 0,
+      averageLatencyMs:
+        totalOps > 0
+          ? (memMetrics.averageLatencyMs *
+              (memMetrics.operationCounts.get +
+                memMetrics.operationCounts.set +
+                memMetrics.operationCounts.delete) +
+              idbMetrics.averageLatencyMs *
+                (idbMetrics.operationCounts.get +
+                  idbMetrics.operationCounts.set +
+                  idbMetrics.operationCounts.delete)) /
+            totalOps
+          : 0,
+      errorRate: totalOps > 0 ? totalErrors / totalOps : 0,
+      operationCounts: {
+        get: totalGets,
+        set: memMetrics.operationCounts.set + idbMetrics.operationCounts.set,
+        delete:
+          memMetrics.operationCounts.delete + idbMetrics.operationCounts.delete,
+        hits: totalHits,
+        misses: totalMisses,
+        errors: totalErrors,
+      },
+      totalBytes: memMetrics.totalBytes + idbMetrics.totalBytes,
+      isHealthy: memMetrics.isHealthy && idbMetrics.isHealthy,
+    };
+
+    return {
+      memory: { ...memMetrics },
+      indexedDB: { ...idbMetrics },
+      combined,
+      timestamp: Date.now(),
+    };
+  }
+
+  /**
+   * Estimate size of an AudioBuffer or ArrayBuffer in bytes
+   */
+  private estimateBufferSize(buffer: AudioBuffer | ArrayBuffer): number {
+    if (buffer instanceof ArrayBuffer) {
+      return buffer.byteLength;
+    }
+    // AudioBuffer: channels × length × 4 bytes (32-bit float)
+    return buffer.numberOfChannels * buffer.length * 4;
+  }
+
+  // ==========================================
+  // Recovery Event Handler Support
+  // ==========================================
+
+  /**
+   * Calculate eviction score for a sample (lower = more evictable)
+   * Considers: access frequency, recency, priority, and size
+   */
+  private calculateEvictionScore(sample: CachedSample): number {
+    const now = Date.now();
+    const recencyMs = now - sample.lastAccessed;
+    const frequency = sample.accessCount;
+
+    // Priority weights
+    const priorityWeights: Record<CachePriority, number> = {
+      critical: 1.0,
+      high: 0.7,
+      normal: 0.4,
+      low: 0.1,
+    };
+
+    // Score formula: higher = more valuable = less evictable
+    // - Frequency: more accesses = more valuable
+    // - Recency: recently accessed = more valuable (inverse of recency)
+    // - Priority: higher priority = more valuable
+    const score =
+      frequency * 0.4 + // 40% weight on access count
+      (1 / (recencyMs / 60000 + 1)) * 0.4 + // 40% weight on recency (normalized to minutes)
+      priorityWeights[sample.priority] * 0.2; // 20% weight on priority
+
+    return score;
+  }
+
+  /**
+   * Get sorted list of evictable entries (buffers only)
+   * Sorted by eviction score (lowest first = most evictable)
+   */
+  private getEvictableEntries(): Array<[string, CachedSample]> {
+    return Array.from(this.samples.entries())
+      .filter(([_, sample]) => sample.buffer || sample.rawBuffer) // Only entries with buffers
+      .sort(
+        (a, b) =>
+          this.calculateEvictionScore(a[1]) - this.calculateEvictionScore(b[1]),
+      );
+  }
+
+  /**
+   * Evict cache entries until size is below target
+   * Called by RecoveryEventHandlers on 'cache:evict-old-entries' event
+   */
+  evictToSize(targetBytes: number): void {
+    const stats = this.getStats();
+    if (stats.totalSize <= targetBytes) {
+      logger.info('Cache size already below target, no eviction needed', {
+        currentSize: stats.totalSize,
+        targetBytes,
+      });
+      return;
+    }
+
+    const bytesToEvict = stats.totalSize - targetBytes;
+    logger.info('Evicting cache entries to meet target size', {
+      targetBytes,
+      bytesToEvict,
+    });
+
+    // Get entries sorted by eviction score (most evictable first)
+    const entries = this.getEvictableEntries();
+    let evictedBytes = 0;
+    let evictedCount = 0;
+
+    for (const [path, sample] of entries) {
+      if (evictedBytes >= bytesToEvict) break;
+
+      evictedBytes += sample.sizeBytes;
+      this.clearBuffer(path);
+      evictedCount++;
+    }
+
+    logger.info('Eviction complete', {
+      evictedCount,
+      evictedBytes,
+      targetBytes,
+    });
+  }
+
+  /**
+   * Evict a percentage of oldest/least-used entries
+   * Called by RecoveryEventHandlers on 'cache:evict-old-entries' event
+   * Uses smart scoring based on access patterns and priority
+   */
+  evictOldest(percentage: number = 0.25): void {
+    const entries = this.getEvictableEntries();
+    const toEvictCount = Math.ceil(entries.length * percentage);
+
+    if (toEvictCount === 0) {
+      logger.info('No entries to evict');
+      return;
+    }
+
+    logger.info('Evicting least-used cache entries', {
+      percentage: `${percentage * 100}%`,
+      totalEntries: entries.length,
+      toEvictCount,
+    });
+
+    // Evict the lowest-scored entries
+    for (let i = 0; i < toEvictCount && i < entries.length; i++) {
+      const [path] = entries[i];
+      this.clearBuffer(path);
+    }
+
+    logger.info('Smart eviction complete', { evictedCount: toEvictCount });
+  }
+
+  /**
+   * Set offline mode (use cache only, no network)
+   * Called by RecoveryEventHandlers on 'storage:use-fallback-service' event
+   */
+  setOfflineMode(enabled: boolean): void {
+    this.offlineMode = enabled;
+    logger.info('Offline mode', { enabled });
+
+    this.eventBus.emit('cache:offline-mode-changed', { enabled });
+  }
+
+  /**
+   * Check if offline mode is active
+   */
+  isOfflineMode(): boolean {
+    return this.offlineMode;
+  }
+
   /**
    * Preload essential samples
    */
@@ -684,8 +1154,11 @@ export const GlobalSampleCache = {
     GlobalSampleCacheImpl.getInstance().getCachedInstrumentNames(),
   cacheUrl: (path: string, url: string) =>
     GlobalSampleCacheImpl.getInstance().cacheUrl(path, url),
-  cacheBuffer: async (path: string, buffer: AudioBuffer | ArrayBuffer, options?: { isContextCompatible?: boolean }) =>
-    GlobalSampleCacheImpl.getInstance().cacheBuffer(path, buffer, options),
+  cacheBuffer: async (
+    path: string,
+    buffer: AudioBuffer | ArrayBuffer,
+    options?: { isContextCompatible?: boolean },
+  ) => GlobalSampleCacheImpl.getInstance().cacheBuffer(path, buffer, options),
   cacheSampler: (path: string, sampler: Sampler) =>
     GlobalSampleCacheImpl.getInstance().cacheSampler(path, sampler),
   cacheInstrument: (name: string, sampler: any) =>
@@ -696,6 +1169,17 @@ export const GlobalSampleCache = {
   clear: () => GlobalSampleCacheImpl.getInstance().clear(),
   getStats: () => GlobalSampleCacheImpl.getInstance().getStats(),
   getCacheStats: () => GlobalSampleCacheImpl.getInstance().getCacheStats(),
+  // Recovery event handler support
+  evictToSize: (targetBytes: number) =>
+    GlobalSampleCacheImpl.getInstance().evictToSize(targetBytes),
+  evictOldest: (percentage?: number) =>
+    GlobalSampleCacheImpl.getInstance().evictOldest(percentage),
+  setOfflineMode: (enabled: boolean) =>
+    GlobalSampleCacheImpl.getInstance().setOfflineMode(enabled),
+  isOfflineMode: () => GlobalSampleCacheImpl.getInstance().isOfflineMode(),
+  // Performance tracking
+  getPerformanceReport: () =>
+    GlobalSampleCacheImpl.getInstance().getPerformanceReport(),
   // Note: these methods don't exist on the implementation - remove them
   // getAudioBuffer: (url: string) => GlobalSampleCacheImpl.getInstance().getAudioBuffer(url),
   // cacheAudioBuffer: (url: string, buffer: AudioBuffer) => GlobalSampleCacheImpl.getInstance().cacheAudioBuffer(url, buffer),

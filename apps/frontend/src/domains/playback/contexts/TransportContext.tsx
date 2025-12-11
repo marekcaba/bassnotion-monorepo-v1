@@ -121,7 +121,9 @@ export function TransportProvider({
           const actualRegistry =
             registry || serviceRegistry || (window as any).__serviceRegistry;
           if (!actualRegistry) {
-            logger.debug('[TransportContext] ServiceRegistry not found yet, waiting...');
+            logger.debug(
+              '[TransportContext] ServiceRegistry not found yet, waiting...',
+            );
             return false;
           }
 
@@ -130,14 +132,18 @@ export function TransportProvider({
             transportRef.current =
               actualRegistry.get<UnifiedTransport>('unifiedTransport');
           } catch (e) {
-            logger.debug('[TransportContext] UnifiedTransport not available in registry yet');
+            logger.debug(
+              '[TransportContext] UnifiedTransport not available in registry yet',
+            );
             return false;
           }
 
           try {
             eventBusRef.current = actualRegistry.get<EventBus>('eventBus');
           } catch (e) {
-            logger.debug('[TransportContext] EventBus not available in registry yet');
+            logger.debug(
+              '[TransportContext] EventBus not available in registry yet',
+            );
             return false;
           }
         }
@@ -151,13 +157,18 @@ export function TransportProvider({
           // Get initial position
           try {
             const initialPosition = transportRef.current.getDisplayPosition();
-            logger.info('[TransportContext] Got initial position from transport', {
-              position: `${initialPosition.bars}:${initialPosition.beats}:${initialPosition.sixteenths}`,
-            });
+            logger.info(
+              '[TransportContext] Got initial position from transport',
+              {
+                position: `${initialPosition.bars}:${initialPosition.beats}:${initialPosition.sixteenths}`,
+              },
+            );
             setPosition(initialPosition);
           } catch (error) {
             // AudioEngine not fully initialized yet, use default position
-            logger.info('[TransportContext] Using default position (AudioEngine not ready)');
+            logger.info(
+              '[TransportContext] Using default position (AudioEngine not ready)',
+            );
             setPosition({
               bars: 1,
               beats: 1,
@@ -176,7 +187,10 @@ export function TransportProvider({
 
         return true;
       } catch (err) {
-        logger.error('[TransportContext] Failed to get transport services:', err);
+        logger.error(
+          '[TransportContext] Failed to get transport services:',
+          err,
+        );
         return false;
       }
     };
@@ -229,33 +243,75 @@ export function TransportProvider({
   }, []);
 
   const handleTempoChange = useCallback((data: { tempo: number }) => {
-    console.log('🎵 [TEMPO DEBUG] TransportContext received tempo change event', {
-      newTempo: data.tempo,
-      timestamp: Date.now(),
+    console.log(
+      '🎵 [TEMPO DEBUG] TransportContext received tempo change event',
+      {
+        newTempo: data.tempo,
+        timestamp: Date.now(),
+      },
+    );
+    logger.debug('[TransportContext] Received tempo change', {
+      tempo: data.tempo,
     });
-    logger.debug('[TransportContext] Received tempo change', { tempo: data.tempo });
     setTempo(data.tempo);
   }, []);
 
   const handleTimeSignatureChange = useCallback(
     (timeSignature: TimeSignature) => {
-      logger.debug('[TransportContext] Received time signature change', timeSignature);
+      logger.debug(
+        '[TransportContext] Received time signature change',
+        timeSignature,
+      );
       setTimeSignature(timeSignature);
     },
     [],
   );
 
+  // Track last position for jitter detection
+  const lastPositionRef = useRef<TransportPosition | null>(null);
+
   const handlePositionUpdate = useCallback(
     (data: { position: TransportPosition }) => {
       // Position updates are already throttled at 60Hz by Transport
       // No additional throttling needed here
-      setPosition(data.position);
+      const pos = data.position;
+      const lastPos = lastPositionRef.current;
+
+      // DEBUG: Log position jumps (backwards in time)
+      if (lastPos) {
+        const lastTotal =
+          lastPos.bars * 1000 +
+          lastPos.beats * 100 +
+          lastPos.sixteenths * 10 +
+          (lastPos.ticks || 0) / 48;
+        const currentTotal =
+          pos.bars * 1000 +
+          pos.beats * 100 +
+          pos.sixteenths * 10 +
+          (pos.ticks || 0) / 48;
+        if (currentTotal < lastTotal - 5) {
+          // Allow small jitter
+          console.log(
+            '[POSITION JUMP] ⚠️ Backwards position detected in TransportContext!',
+            {
+              from: `${lastPos.bars}:${lastPos.beats}:${lastPos.sixteenths}:${lastPos.ticks}`,
+              to: `${pos.bars}:${pos.beats}:${pos.sixteenths}:${pos.ticks}`,
+              delta: (currentTotal - lastTotal).toFixed(1),
+            },
+          );
+        }
+      }
+      lastPositionRef.current = pos;
+
+      setPosition(pos);
     },
     [],
   );
 
   const handleLoopToggle = useCallback((data: { enabled: boolean }) => {
-    logger.debug('[TransportContext] Received loop toggle', { enabled: data.enabled });
+    logger.debug('[TransportContext] Received loop toggle', {
+      enabled: data.enabled,
+    });
     setIsLoopEnabled(data.enabled);
   }, []);
 
@@ -296,13 +352,21 @@ export function TransportProvider({
 
     // Add backup window event listener for force-stop
     const handleForceStop = (event: CustomEvent) => {
-      logger.info('[TransportContext] Received transport-force-stop window event', event.detail);
+      logger.info(
+        '[TransportContext] Received transport-force-stop window event',
+        event.detail,
+      );
       setState('stopped');
     };
 
-    window.addEventListener('transport-force-stop', handleForceStop as EventListener);
+    window.addEventListener(
+      'transport-force-stop',
+      handleForceStop as EventListener,
+    );
 
-    logger.info('[TransportContext] EventBus subscriptions established (8 total)');
+    logger.info(
+      '[TransportContext] EventBus subscriptions established (8 total)',
+    );
 
     // Cleanup subscriptions and window listener
     return () => {
@@ -315,7 +379,10 @@ export function TransportProvider({
       unsubscribeTimeSignature();
       unsubscribePosition();
       unsubscribeLoop();
-      window.removeEventListener('transport-force-stop', handleForceStop as EventListener);
+      window.removeEventListener(
+        'transport-force-stop',
+        handleForceStop as EventListener,
+      );
     };
   }, [
     servicesReady,
@@ -359,7 +426,9 @@ export function TransportProvider({
 
   const setTempoValue = useCallback(async (bpm: number) => {
     if (!transportRef.current) {
-      logger.debug(`[TransportContext] Transport not ready yet, cannot set tempo to ${bpm}`);
+      logger.debug(
+        `[TransportContext] Transport not ready yet, cannot set tempo to ${bpm}`,
+      );
       return;
     }
     await transportRef.current.setTempo(bpm);
@@ -367,7 +436,9 @@ export function TransportProvider({
 
   const setTimeSignatureValue = useCallback((ts: TimeSignature) => {
     if (!transportRef.current) {
-      logger.debug(`[TransportContext] Transport not ready yet, cannot set time signature`);
+      logger.debug(
+        `[TransportContext] Transport not ready yet, cannot set time signature`,
+      );
       return;
     }
     transportRef.current.setTimeSignature(ts);
@@ -407,8 +478,14 @@ export function TransportProvider({
   const safeTimeSignature = useMemo(() => {
     const ts = timeSignature || { numerator: 4, denominator: 4 };
 
-    const numValue = typeof ts.numerator === 'number' ? ts.numerator : (ts.numerator as any)?.numerator || 4;
-    const denValue = typeof ts.denominator === 'number' ? ts.denominator : (ts.denominator as any)?.denominator || 4;
+    const numValue =
+      typeof ts.numerator === 'number'
+        ? ts.numerator
+        : (ts.numerator as any)?.numerator || 4;
+    const denValue =
+      typeof ts.denominator === 'number'
+        ? ts.denominator
+        : (ts.denominator as any)?.denominator || 4;
 
     const safe: TimeSignature & { toString(): string } = {
       numerator: numValue,
@@ -475,7 +552,7 @@ export function useTransportContext(): TransportContextValue {
   if (context === undefined) {
     throw new Error(
       'useTransportContext must be used within a TransportProvider. ' +
-      'Wrap your component tree with <TransportProvider>...</TransportProvider>'
+        'Wrap your component tree with <TransportProvider>...</TransportProvider>',
     );
   }
 

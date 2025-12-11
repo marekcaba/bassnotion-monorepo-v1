@@ -4,7 +4,8 @@ import {
   getCorrelationId,
   CORRELATION_HEADER,
   createStructuredLogger,
-  createCorrelationContext } from '@bassnotion/contracts';
+  createCorrelationContext,
+} from '@bassnotion/contracts';
 
 @Injectable()
 export class CorrelationMiddleware implements NestMiddleware {
@@ -25,7 +26,8 @@ export class CorrelationMiddleware implements NestMiddleware {
     const context = createCorrelationContext(correlationId, {
       service: 'backend',
       userId: (req as any).user?.id,
-      sessionId: (req as any).session?.id });
+      sessionId: (req as any).session?.id,
+    });
 
     const logger = createStructuredLogger('backend', context);
     (req as any).logger = logger;
@@ -35,7 +37,8 @@ export class CorrelationMiddleware implements NestMiddleware {
       method: req.method,
       url: req.url,
       ip: req.ip,
-      userAgent: req.headers['user-agent'] });
+      userAgent: req.headers['user-agent'],
+    });
 
     next();
   }

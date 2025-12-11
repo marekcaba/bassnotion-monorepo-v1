@@ -1,6 +1,6 @@
 /**
  * Monitoring Service Implementation
- * 
+ *
  * Provides comprehensive monitoring for storage infrastructure
  */
 
@@ -11,9 +11,9 @@ import type {
   AlertNotification,
   MonitoringSession,
 } from '@bassnotion/contracts';
-import type { 
-  IMonitoringService, 
-  MonitoringEvent, 
+import type {
+  IMonitoringService,
+  MonitoringEvent,
   MonitoringConfig,
   HealthCheck,
   MetricCollector,
@@ -62,7 +62,7 @@ export class MonitoringService implements IMonitoringService {
       this.metricsCollector.start(this.config.metricsInterval);
 
       this.isStarted = true;
-      logger.info('Monitoring service started', { 
+      logger.info('Monitoring service started', {
         sessionId: this.session.id,
         config: this.config,
       });
@@ -96,7 +96,8 @@ export class MonitoringService implements IMonitoringService {
       if (this.session) {
         this.session.endTime = new Date();
         this.session.summary = {
-          duration: this.session.endTime.getTime() - this.session.startTime.getTime(),
+          duration:
+            this.session.endTime.getTime() - this.session.startTime.getTime(),
           eventsCount: this.events.length,
           alertsCount: this.session.alerts.length,
           healthChecksRun: this.session.metrics.length,
@@ -104,7 +105,7 @@ export class MonitoringService implements IMonitoringService {
       }
 
       this.isStarted = false;
-      logger.info('Monitoring service stopped', { 
+      logger.info('Monitoring service stopped', {
         sessionId: this.session?.id,
         summary: this.session?.summary,
       });
@@ -152,9 +153,13 @@ export class MonitoringService implements IMonitoringService {
   /**
    * Record custom metric
    */
-  recordMetric(name: string, value: number, tags?: Record<string, string>): void {
+  recordMetric(
+    name: string,
+    value: number,
+    tags?: Record<string, string>,
+  ): void {
     this.metricsCollector.recordMetric(name, value, tags);
-    
+
     if (this.session) {
       this.session.metrics.push({
         name,
@@ -170,7 +175,7 @@ export class MonitoringService implements IMonitoringService {
    */
   recordEvent(event: MonitoringEvent): void {
     this.events.push(event);
-    
+
     // Keep only last 1000 events
     if (this.events.length > 1000) {
       this.events = this.events.slice(-500);
@@ -241,7 +246,7 @@ export class MonitoringService implements IMonitoringService {
    */
   subscribeToAlerts(handler: (alert: AlertNotification) => void): () => void {
     this.alertHandlers.add(handler);
-    
+
     return () => {
       this.alertHandlers.delete(handler);
     };

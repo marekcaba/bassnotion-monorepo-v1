@@ -10,6 +10,7 @@
 The UnifiedTransport system is a professional-grade, FAANG-style audio transport implementation that achieves Logic Pro X and Ableton Live-level timing precision in a web environment. By consolidating three previously conflicting transport systems into a single authoritative source, we've achieved 99.6% timing stability with sub-millisecond drift rates.
 
 ### Key Metrics Achieved:
+
 - **Timing Resolution**: 2.67ms (from 15ms) - 5x improvement
 - **Timing Stability**: 99.6% (industry target: >99.5%)
 - **Drift Rate**: <0.8ms/min (Logic Pro X: <0.5ms/min)
@@ -70,12 +71,13 @@ The UnifiedTransport system is a professional-grade, FAANG-style audio transport
 The heart of the system - a singleton service that provides:
 
 #### Sample-Accurate Timing
+
 ```typescript
 // AudioWorklet provides 128-sample callbacks (2.67ms @ 48kHz)
 private async initializeAudioWorklet(): Promise<void> {
   const workletUrl = '/worklets/timing-processor.js';
   await this.audioContext.audioWorklet.addModule(workletUrl);
-  
+
   this.audioWorkletNode = new AudioWorkletNode(
     this.audioContext,
     'timing-processor',
@@ -90,11 +92,12 @@ private async initializeAudioWorklet(): Promise<void> {
 ```
 
 #### Predictive Drift Compensation
+
 ```typescript
 // Kalman filter for predictive drift correction
 class DriftPredictor {
   private kalmanFilter: KalmanFilter;
-  
+
   predict(measuredDrift: number): number {
     // Update Kalman filter with new measurement
     const prediction = this.kalmanFilter.filter(measuredDrift);
@@ -105,6 +108,7 @@ class DriftPredictor {
 ```
 
 #### Triple Buffering System
+
 ```typescript
 // Three-buffer rotation for smooth playback
 private buffers = {
@@ -126,6 +130,7 @@ Manages the Web Audio API context with enterprise-grade reliability:
 - **Performance monitoring** and optimization
 
 Key features:
+
 ```typescript
 // Resilient initialization with exponential backoff
 private async initializeWithRetry(retryCount = 0): Promise<void> {
@@ -156,13 +161,14 @@ FAANG-style event system with:
 - **Schema validation**
 
 Transport events flow:
+
 ```typescript
 // State changes
 'transport:state-changed': { state: TransportState }
 'transport:position-changed': { position: MusicalPosition }
 'transport:tempo-changed': { tempo: number }
 
-// Timing events  
+// Timing events
 'transport:beat': { beat: number, time: number }
 'transport:bar': { bar: number, time: number }
 'transport:loop': { start: number, end: number }
@@ -176,6 +182,7 @@ Transport events flow:
 **Location**: `/services/core/TransportSyncManager.ts`
 
 Pure broadcast layer that:
+
 - **Does NOT manage timing** (delegated to UnifiedTransport)
 - **Broadcasts state changes** to all registered widgets
 - **Manages widget heartbeats** for connection health
@@ -200,6 +207,7 @@ private throttledBroadcast = throttle((events) => {
 **Location**: `/services/core/ServiceRegistry.ts`
 
 Enterprise-grade service management:
+
 - **Lifecycle management** (initialize → start → stop → dispose)
 - **Health checking** with configurable intervals
 - **Dependency resolution** and injection
@@ -283,11 +291,11 @@ All registered widgets receive update
 
 ### Timing Precision
 
-| Component | Latency | Update Rate | Accuracy |
-|-----------|---------|-------------|----------|
-| AudioWorklet | 2.67ms | 375Hz | ±0.1ms |
-| Web Worker (fallback) | 4ms | 250Hz | ±0.5ms |
-| Main Thread (fallback) | 16ms | 60Hz | ±2ms |
+| Component              | Latency | Update Rate | Accuracy |
+| ---------------------- | ------- | ----------- | -------- |
+| AudioWorklet           | 2.67ms  | 375Hz       | ±0.1ms   |
+| Web Worker (fallback)  | 4ms     | 250Hz       | ±0.5ms   |
+| Main Thread (fallback) | 16ms    | 60Hz        | ±2ms     |
 
 ### Resource Usage
 
@@ -316,9 +324,9 @@ if (metrics.cpuLoad > 80) {
 ```typescript
 // Schedule event at exact musical position
 scheduleEvent({
-  time: "4:2:0", // Bar 4, Beat 2
-  callback: () => triggerNote("C4"),
-  priority: 'high'
+  time: '4:2:0', // Bar 4, Beat 2
+  callback: () => triggerNote('C4'),
+  priority: 'high',
 });
 ```
 
@@ -327,11 +335,11 @@ scheduleEvent({
 ```typescript
 // Smooth tempo transitions
 scheduleTempoCurve({
-  startTime: "0:0:0",
-  endTime: "8:0:0",
+  startTime: '0:0:0',
+  endTime: '8:0:0',
   startTempo: 120,
   endTempo: 140,
-  curve: 'exponential'
+  curve: 'exponential',
 });
 ```
 
@@ -339,7 +347,7 @@ scheduleTempoCurve({
 
 ```typescript
 // Professional loop functionality
-setLoop(true, "0:0:0", "4:0:0");
+setLoop(true, '0:0:0', '4:0:0');
 enableOverdub(true);
 // Seamless loop transitions with crossfade
 ```
@@ -365,7 +373,7 @@ const circuitBreaker = new CircuitBreaker({
   failureThreshold: 5,
   recoveryTimeout: 30000,
   onOpen: () => this.fallbackToWebWorker(),
-  onHalfOpen: () => this.retryAudioWorklet()
+  onHalfOpen: () => this.retryAudioWorklet(),
 });
 ```
 
@@ -381,43 +389,47 @@ const circuitBreaker = new CircuitBreaker({
 // Automatic recovery from timing glitches
 if (drift > CRITICAL_DRIFT_THRESHOLD) {
   await this.resyncTransport();
-  this.eventBus.emit('transport:resync', { 
+  this.eventBus.emit('transport:resync', {
     reason: 'critical-drift',
-    drift: drift 
+    drift: drift,
   });
 }
 ```
 
 ## Comparison with Professional DAWs
 
-| Feature | Logic Pro X | Ableton Live | UnifiedTransport |
-|---------|-------------|--------------|------------------|
-| Timing Resolution | 1-2ms | 1-3ms | 2.67ms |
-| Drift Rate | <0.5ms/min | <0.7ms/min | <0.8ms/min |
-| CPU Usage | 15-20% | 18-25% | 22% |
-| Stability | 99.7% | 99.5% | 99.6% |
-| Sample-Accurate | ✅ | ✅ | ✅ |
-| Plugin Support | ✅ | ✅ | ✅ |
-| External Sync | ✅ | ✅ | 🚧 (planned) |
+| Feature           | Logic Pro X | Ableton Live | UnifiedTransport |
+| ----------------- | ----------- | ------------ | ---------------- |
+| Timing Resolution | 1-2ms       | 1-3ms        | 2.67ms           |
+| Drift Rate        | <0.5ms/min  | <0.7ms/min   | <0.8ms/min       |
+| CPU Usage         | 15-20%      | 18-25%       | 22%              |
+| Stability         | 99.7%       | 99.5%        | 99.6%            |
+| Sample-Accurate   | ✅          | ✅           | ✅               |
+| Plugin Support    | ✅          | ✅           | ✅               |
+| External Sync     | ✅          | ✅           | 🚧 (planned)     |
 
 ## Future Enhancements
 
 ### 1. MIDI 2.0 Support
+
 - Higher resolution timing
 - Per-note expression
 - Bidirectional communication
 
 ### 2. WebCodecs Integration
+
 - Hardware-accelerated audio processing
 - Lower latency audio streaming
 - Better mobile performance
 
 ### 3. SharedArrayBuffer for Threading
+
 - True multi-threaded audio processing
 - Zero-copy audio buffers
 - Parallel effect processing
 
 ### 4. Machine Learning Optimization
+
 - Predictive latency compensation
 - Adaptive buffer sizing
 - User behavior prediction
@@ -427,6 +439,7 @@ if (drift > CRITICAL_DRIFT_THRESHOLD) {
 The UnifiedTransport system represents a significant achievement in web audio engineering, successfully bringing professional DAW-level timing precision to the browser. Through careful architecture design following FAANG best practices, advanced algorithms like Kalman filtering, and cutting-edge Web Audio APIs, we've created a transport system that rivals desktop audio applications.
 
 The system is:
+
 - **Robust**: 99.6% timing stability with automatic error recovery
 - **Scalable**: Handles multiple widgets with <5ms synchronization overhead
 - **Maintainable**: Clean separation of concerns with clear service boundaries

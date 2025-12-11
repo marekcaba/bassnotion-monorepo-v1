@@ -20,9 +20,7 @@ import {
 /**
  * Storage-specific batch executor
  */
-export class StorageBatchExecutor
-  implements BatchExecutor<BatchTransferResult>
-{
+export class StorageBatchExecutor implements BatchExecutor<BatchTransferResult> {
   constructor(private storageProvider: StorageProvider) {
     logger.info('📦 Storage batch executor initialized');
   }

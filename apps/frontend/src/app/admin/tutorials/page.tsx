@@ -3,7 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/shared/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
 import { Input } from '@/shared/components/ui/input';
 import {
@@ -136,9 +141,11 @@ export default function AdminTutorialsPage() {
       } else {
         logger.error('Failed to delete tutorial', {
           id,
-          error: result.error?.message
+          error: result.error?.message,
         });
-        alert(`Failed to delete tutorial: ${result.error?.message || 'Unknown error'}`);
+        alert(
+          `Failed to delete tutorial: ${result.error?.message || 'Unknown error'}`,
+        );
       }
     } catch (error) {
       logger.error('Error deleting tutorial', error);
@@ -146,9 +153,10 @@ export default function AdminTutorialsPage() {
     }
   };
 
-  const filteredTutorials = tutorials.filter((tutorial) =>
-    tutorial.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    tutorial.description.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredTutorials = tutorials.filter(
+    (tutorial) =>
+      tutorial.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      tutorial.description.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   // Show auth checking state
@@ -252,9 +260,11 @@ export default function AdminTutorialsPage() {
                     <TableCell>
                       <Badge
                         variant={
-                          tutorial.level.value === 'beginner' ? 'default' :
-                          tutorial.level.value === 'intermediate' ? 'secondary' :
-                          'destructive'
+                          tutorial.level.value === 'beginner'
+                            ? 'default'
+                            : tutorial.level.value === 'intermediate'
+                              ? 'secondary'
+                              : 'destructive'
                         }
                       >
                         {tutorial.level.value}
@@ -267,7 +277,10 @@ export default function AdminTutorialsPage() {
                       ) : tutorial.isArchived() ? (
                         <Badge variant="secondary">Archived</Badge>
                       ) : (
-                        <Badge variant="outline" className="border-yellow-500 text-yellow-500">
+                        <Badge
+                          variant="outline"
+                          className="border-yellow-500 text-yellow-500"
+                        >
                           Draft
                         </Badge>
                       )}

@@ -1,7 +1,9 @@
 # AudioContext Fixes Summary
 
 ## Problem
+
 The console was showing numerous "AudioContext mismatch" warnings when using Tone.js with the Web Audio API. These warnings were appearing because:
+
 1. Tone.js wraps the native AudioContext in a Context object
 2. When connecting Tone.js nodes to native AudioContext nodes, the contexts appear different
 3. Multiple AudioContext instances were being created, invalidating cached AudioBuffers
@@ -49,6 +51,7 @@ private startKeepAlive(): void {
 **File**: `apps/frontend/src/domains/playback/services/plugins/SalamanderVelocitySampler.ts`
 
 The `safeConnect()` function now:
+
 - Checks for Tone.js Context wrapper vs native AudioContext
 - Looks for the persistent global context
 - Only warns about true mismatches, not expected Tone.js wrapper differences
@@ -57,10 +60,12 @@ The `safeConnect()` function now:
 ### 3. Improved Context Checking in Other Components
 
 **File**: `apps/frontend/src/domains/playback/services/plugins/wam/WamKeyboard.ts`
+
 - Added persistent context checking when reusing pre-loaded instruments
 - Removed verbose logging for expected context differences
 
 **File**: `apps/frontend/src/domains/playback/services/storage/CachedToneBufferLoader.ts`
+
 - Added check for persistent context before clearing cached buffers
 - Avoids reloading buffers unnecessarily when using the persistent context
 
@@ -81,6 +86,7 @@ The `safeConnect()` function now:
 ## Key Insight
 
 The AudioContext "mismatch" warnings were mostly false positives caused by Tone.js wrapping the native AudioContext. By:
+
 1. Using a single persistent AudioContext stored globally
 2. Updating connection logic to understand Tone.js wrappers
 3. Adding keep-alive to prevent browser suspension

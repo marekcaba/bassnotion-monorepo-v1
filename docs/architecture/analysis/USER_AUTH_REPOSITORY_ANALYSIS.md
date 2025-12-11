@@ -60,6 +60,7 @@ if (securityCheck.isCompromised) {
 ```
 
 **Security Features:**
+
 - Rate limiting per IP and email
 - Progressive account lockout
 - Password breach checking via HaveIBeenPwned
@@ -84,6 +85,7 @@ export class User extends AggregateRoot {
 ### 3. **Value Objects** (Score: 8/10)
 
 Well-implemented value objects with validation:
+
 - Email validation with regex
 - Role validation with allowed values
 - Immutable with factory methods
@@ -107,7 +109,8 @@ async findProfileById(userId: string): Promise<UserProfile> {
 }
 ```
 
-**Impact:** 
+**Impact:**
+
 - Repository exists but is unused
 - No benefit from DDD patterns
 - Direct database coupling in services
@@ -116,6 +119,7 @@ async findProfileById(userId: string): Promise<UserProfile> {
 ### 2. **Entity-Database Mismatch**
 
 The `User` entity doesn't match the database structure:
+
 - Entity has basic fields
 - Database has `profiles` table with different structure
 - No mapping between domain model and persistence
@@ -123,6 +127,7 @@ The `User` entity doesn't match the database structure:
 ### 3. **Missing Repository Features**
 
 Current repository is basic compared to Exercise domain:
+
 - No caching layer
 - No Result pattern
 - No batch operations
@@ -146,6 +151,7 @@ export class UserModule {}
 ### 1. **No Command/Query Separation**
 
 Despite using CQRS events, no actual command handlers:
+
 ```typescript
 // Events are created but not handled
 this.apply(new UserCreatedEvent(...));
@@ -155,6 +161,7 @@ this.apply(new UserCreatedEvent(...));
 ### 2. **Missing Aggregate Boundaries**
 
 User aggregate should include:
+
 - UserProfile as entity
 - UserPreferences as value object
 - LoginHistory as entity collection
@@ -162,6 +169,7 @@ User aggregate should include:
 ### 3. **No Saga/Process Manager**
 
 Complex flows like registration need orchestration:
+
 1. Create auth user
 2. Create profile
 3. Send welcome email
@@ -176,13 +184,15 @@ Repository only supports basic findById and findByEmail.
 Despite architectural issues, security implementation is FAANG-level:
 
 ### Rate Limiting Strategy
+
 ```typescript
 // Dual rate limiting approach
-MAX_ATTEMPTS_PER_IP = 20;    // Per IP in 15 minutes
-MAX_ATTEMPTS_PER_EMAIL = 5;  // Per email in 15 minutes
+MAX_ATTEMPTS_PER_IP = 20; // Per IP in 15 minutes
+MAX_ATTEMPTS_PER_EMAIL = 5; // Per email in 15 minutes
 ```
 
 ### Account Security
+
 - Progressive lockout prevents brute force
 - Login attempt tracking for audit
 - Password strength validation
@@ -193,6 +203,7 @@ MAX_ATTEMPTS_PER_EMAIL = 5;  // Per email in 15 minutes
 ### Immediate Actions:
 
 1. **Wire up the repository pattern**:
+
 ```typescript
 @Module({
   providers: [
@@ -206,9 +217,10 @@ MAX_ATTEMPTS_PER_EMAIL = 5;  // Per email in 15 minutes
 ```
 
 2. **Refactor UserService to use repository**:
+
 ```typescript
 constructor(
-  @Inject('IUserRepository') 
+  @Inject('IUserRepository')
   private readonly userRepository: IUserRepository
 ) {}
 ```
@@ -241,21 +253,22 @@ constructor(
 
 ## Comparison: User vs Exercise Domain
 
-| Aspect | User Domain | Exercise Domain | Winner |
-|--------|------------|-----------------|---------|
-| Repository Pattern | Basic, unused | 3-layer with caching | Exercise |
-| Value Objects | Good | Excellent | Exercise |
-| Domain Events | Present but unused | None | User |
-| Security | Exceptional | Basic | User |
-| Service Layer | Direct DB access | Uses repository | Exercise |
-| Error Handling | Try-catch | Result pattern | Exercise |
-| Testing | Basic | Comprehensive | Exercise |
+| Aspect             | User Domain        | Exercise Domain      | Winner   |
+| ------------------ | ------------------ | -------------------- | -------- |
+| Repository Pattern | Basic, unused      | 3-layer with caching | Exercise |
+| Value Objects      | Good               | Excellent            | Exercise |
+| Domain Events      | Present but unused | None                 | User     |
+| Security           | Exceptional        | Basic                | User     |
+| Service Layer      | Direct DB access   | Uses repository      | Exercise |
+| Error Handling     | Try-catch          | Result pattern       | Exercise |
+| Testing            | Basic              | Comprehensive        | Exercise |
 
 ## Conclusion
 
 The User/Auth domain showcases a paradox: exceptional security implementation alongside architectural inconsistencies. The security features (rate limiting, progressive lockout, breach checking) exceed FAANG standards, while the DDD implementation falls short.
 
 **Key Takeaways:**
+
 1. Security implementation is production-ready and sophisticated
 2. Repository pattern exists but isn't utilized
 3. Domain events are defined but not leveraged

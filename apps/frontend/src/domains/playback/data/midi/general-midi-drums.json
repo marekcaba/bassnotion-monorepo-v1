@@ -2,7 +2,7 @@
   "name": "General MIDI Drum Map",
   "version": "1.0.0",
   "description": "Standard General MIDI drum note mappings",
-  
+
   "drumMap": {
     "35": "Acoustic Bass Drum 2",
     "36": "Bass Drum 1",
@@ -52,7 +52,7 @@
     "80": "Mute Triangle",
     "81": "Open Triangle"
   },
-  
+
   "commonMapping": {
     "kick": 36,
     "snare": 38,
@@ -69,7 +69,7 @@
     "tambourine": 54,
     "shaker": 70
   },
-  
+
   "noteToName": {
     "C1": "kick",
     "D1": "snare",

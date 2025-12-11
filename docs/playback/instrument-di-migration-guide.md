@@ -5,13 +5,14 @@ This guide helps instrument creators update their instruments to use the new dep
 ## Quick Start
 
 ### Before (Direct Tone.js usage)
+
 ```typescript
 import * as Tone from 'tone';
 
 export class MyInstrument {
   private sampler: Tone.Sampler;
   private volume: Tone.Volume;
-  
+
   constructor(config: MyInstrumentConfig) {
     this.sampler = new Tone.Sampler({
       urls: config.samples,
@@ -24,6 +25,7 @@ export class MyInstrument {
 ```
 
 ### After (With DI support)
+
 ```typescript
 import * as Tone from 'tone';
 
@@ -31,10 +33,10 @@ export class MyInstrument {
   private sampler: any;
   private volume: any;
   private audioEngine?: any;
-  
+
   constructor(config: MyInstrumentConfig, audioEngine?: any) {
     this.audioEngine = audioEngine;
-    
+
     // Use factory methods
     this.sampler = this.createSampler({
       urls: config.samples,
@@ -43,16 +45,18 @@ export class MyInstrument {
     this.sampler.connect(this.volume);
     this.volume.connect(this.getDestination());
   }
-  
+
   // Factory methods
   private createSampler(options: any): any {
-    return this.audioEngine?.createSampler?.(options) || new Tone.Sampler(options);
+    return (
+      this.audioEngine?.createSampler?.(options) || new Tone.Sampler(options)
+    );
   }
-  
+
   private createVolume(volume: number): any {
     return this.audioEngine?.createVolume?.(volume) || new Tone.Volume(volume);
   }
-  
+
   private getDestination(): any {
     return this.audioEngine?.getDestination?.() || Tone.Destination;
   }
@@ -145,10 +149,10 @@ async initialize(audioEngine?: any): Promise<void> {
   if (audioEngine) {
     this.audioEngine = audioEngine;
   }
-  
+
   // Load Tone with audioEngine
   const tone = await this.loadTone();
-  
+
   // Continue with initialization
   await this.loadSamples();
 }
@@ -166,14 +170,14 @@ If your instrument uses a separate processor class:
 ```typescript
 export class MyInstrument extends Instrument {
   private processor: MyInstrumentProcessor;
-  
+
   constructor(config: Config, audioEngine?: any) {
     super(config);
     this.audioEngine = audioEngine;
     // Pass audioEngine to processor
     this.processor = new MyInstrumentProcessor(config, this.audioEngine);
   }
-  
+
   async initialize(audioEngine?: any): Promise<void> {
     if (audioEngine) {
       this.audioEngine = audioEngine;
@@ -192,17 +196,17 @@ export class MyInstrument extends Instrument {
 export class SimpleSamplerInstrument extends Instrument {
   private sampler?: any;
   private audioEngine?: any;
-  
+
   constructor(config: InstrumentConfig, audioEngine?: any) {
     super(config);
     this.audioEngine = audioEngine;
   }
-  
+
   async initialize(audioEngine?: any): Promise<void> {
     if (audioEngine) {
       this.audioEngine = audioEngine;
     }
-    
+
     this.sampler = this.createSampler({
       urls: this.config.samples,
       release: 1,
@@ -211,25 +215,27 @@ export class SimpleSamplerInstrument extends Instrument {
         this._state.isInitialized = true;
       },
     });
-    
+
     this.sampler.connect(this.getDestination());
   }
-  
+
   trigger(event: InstrumentEvent): void {
     if (!this.sampler) return;
-    
+
     this.sampler.triggerAttackRelease(
       event.data.note || 'C4',
       event.duration || '8n',
       event.audioTime,
-      event.velocity
+      event.velocity,
     );
   }
-  
+
   private createSampler(options: any): any {
-    return this.audioEngine?.createSampler?.(options) || new Tone.Sampler(options);
+    return (
+      this.audioEngine?.createSampler?.(options) || new Tone.Sampler(options)
+    );
   }
-  
+
   private getDestination(): any {
     return this.audioEngine?.getDestination?.() || Tone.Destination;
   }
@@ -242,39 +248,41 @@ export class SimpleSamplerInstrument extends Instrument {
 export class VelocitySamplerInstrument extends Instrument {
   private layers: Map<string, any> = new Map();
   private audioEngine?: any;
-  
+
   constructor(config: VelocitySamplerConfig, audioEngine?: any) {
     super(config);
     this.audioEngine = audioEngine;
   }
-  
+
   async initialize(audioEngine?: any): Promise<void> {
     if (audioEngine) {
       this.audioEngine = audioEngine;
     }
-    
+
     // Create velocity layers
-    for (const [velocity, samples] of Object.entries(this.config.velocityLayers)) {
+    for (const [velocity, samples] of Object.entries(
+      this.config.velocityLayers,
+    )) {
       const sampler = this.createSampler({ urls: samples });
       const gain = this.createGain();
-      
+
       sampler.connect(gain);
       gain.connect(this.getDestination());
-      
+
       this.layers.set(velocity, { sampler, gain });
     }
   }
-  
+
   trigger(event: InstrumentEvent): void {
     const layer = this.selectLayer(event.velocity);
     if (!layer) return;
-    
+
     layer.sampler.triggerAttackRelease(
       event.data.note,
       event.duration,
-      event.audioTime
+      event.audioTime,
     );
-    
+
     // Set velocity-based gain
     layer.gain.gain.value = event.velocity;
   }
@@ -287,17 +295,17 @@ export class VelocitySamplerInstrument extends Instrument {
 export class SynthInstrument extends Instrument {
   private synth?: any;
   private audioEngine?: any;
-  
+
   constructor(config: SynthConfig, audioEngine?: any) {
     super(config);
     this.audioEngine = audioEngine;
   }
-  
+
   async initialize(audioEngine?: any): Promise<void> {
     if (audioEngine) {
       this.audioEngine = audioEngine;
     }
-    
+
     this.synth = this.createSynth({
       oscillator: { type: this.config.waveform || 'sine' },
       envelope: {
@@ -307,11 +315,11 @@ export class SynthInstrument extends Instrument {
         release: this.config.release || 0.8,
       },
     });
-    
+
     this.synth.connect(this.getDestination());
     this._state.isInitialized = true;
   }
-  
+
   private createSynth(options: any): any {
     return this.audioEngine?.createSynth?.(options) || new Tone.Synth(options);
   }
@@ -330,22 +338,22 @@ import { createMockAudioEngine } from '@/domains/playback/modules/__tests__/mock
 describe('MyInstrument with DI', () => {
   let instrument: MyInstrument;
   let mockAudioEngine: any;
-  
+
   beforeEach(() => {
     mockAudioEngine = createMockAudioEngine();
     instrument = new MyInstrument(config, mockAudioEngine);
   });
-  
+
   it('should use audioEngine for creating nodes', async () => {
     await instrument.initialize();
-    
+
     expect(mockAudioEngine.createSampler).toHaveBeenCalled();
     expect(mockAudioEngine.createVolume).toHaveBeenCalled();
   });
-  
+
   it('should still work without audioEngine', async () => {
     const instrumentWithoutDI = new MyInstrument(config);
-    
+
     // Should not throw
     await expect(instrumentWithoutDI.initialize()).resolves.not.toThrow();
   });
@@ -359,17 +367,17 @@ describe('MyInstrument', () => {
   describe('with dependency injection', () => {
     let instrument: MyInstrument;
     let mockAudioEngine: any;
-    
+
     beforeEach(() => {
       mockAudioEngine = createMockAudioEngine();
       instrument = new MyInstrument(config, mockAudioEngine);
     });
-    
+
     it('should initialize with mocked audio engine', async () => {
       await instrument.initialize();
       expect(instrument.state.isInitialized).toBe(true);
     });
-    
+
     it('should trigger notes using mocked sampler', () => {
       instrument.trigger({
         audioTime: 0,
@@ -377,17 +385,17 @@ describe('MyInstrument', () => {
         velocity: 0.8,
         data: { note: 'C4' },
       });
-      
+
       const mockSampler = mockAudioEngine.createSampler.mock.results[0].value;
       expect(mockSampler.triggerAttackRelease).toHaveBeenCalledWith(
         'C4',
         expect.any(String),
         0,
-        0.8
+        0.8,
       );
     });
   });
-  
+
   describe('backward compatibility', () => {
     it('should work without audioEngine', async () => {
       const instrument = new MyInstrument(config);
@@ -397,7 +405,7 @@ describe('MyInstrument', () => {
         Volume: vi.fn(() => mockToneNode()),
         Destination: { connect: vi.fn() },
       }));
-      
+
       await expect(instrument.initialize()).resolves.not.toThrow();
     });
   });

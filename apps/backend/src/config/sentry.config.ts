@@ -12,7 +12,9 @@ export function initializeSentry() {
   const dsn = process.env.SENTRY_DSN;
 
   if (!dsn) {
-    logger.info('Sentry DSN not configured, skipping initialization', { isDevelopment });
+    logger.info('Sentry DSN not configured, skipping initialization', {
+      isDevelopment,
+    });
     return;
   }
 
@@ -47,7 +49,8 @@ export function initializeSentry() {
       // Add user context if available
       if (event.request?.headers && event.request.headers['x-user-id']) {
         event.user = {
-          id: event.request.headers['x-user-id'] as string };
+          id: event.request.headers['x-user-id'] as string,
+        };
       }
 
       return event;
@@ -68,9 +71,12 @@ export function initializeSentry() {
     // Transport options
     transportOptions: {
       // Transport options can be added here if needed
-    } });
+    },
+  });
 
-  logger.info('Sentry initialized successfully', { environment: process.env.NODE_ENV });
+  logger.info('Sentry initialized successfully', {
+    environment: process.env.NODE_ENV,
+  });
 }
 
 /**
@@ -100,7 +106,8 @@ export function trackEvent(name: string, data?: Record<string, any>) {
   Sentry.captureEvent({
     message: name,
     level: 'info',
-    extra: data });
+    extra: data,
+  });
 }
 
 /**
@@ -114,7 +121,8 @@ export function setUserContext(
   Sentry.setUser({
     id: userId,
     email,
-    username });
+    username,
+  });
 }
 
 /**

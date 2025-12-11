@@ -82,7 +82,7 @@ Each pattern in the database contains:
 interface Pattern {
   id: string;
   name: string;
-  midiFileUrl: string;  // Direct URL to MIDI file
+  midiFileUrl: string; // Direct URL to MIDI file
   genre?: string;
   // ... other metadata
 }
@@ -108,6 +108,7 @@ const loadPattern = async (pattern: Pattern) => {
 The system comes with these default patterns:
 
 ### Drum Patterns
+
 - **Basic Rock Beat**: Standard 4/4 rock pattern
 - **Jazz Swing**: Swing feel with ride cymbal
 - **Funk Groove**: Syncopated funk pattern
@@ -116,6 +117,7 @@ The system comes with these default patterns:
 - **Reggae One Drop**: Classic reggae pattern
 
 ### Harmony Patterns
+
 - **Simple Chords**: Basic triads (C-Am-F-G)
 - **Jazz Voicings**: 7th chord voicings
 - **Power Chords**: Rock power chords
@@ -126,12 +128,14 @@ The system comes with these default patterns:
 ## API Endpoints
 
 ### Public Endpoints
+
 - `GET /api/v1/patterns` - List all patterns
 - `GET /api/v1/patterns/:id` - Get pattern by ID
 - `GET /api/v1/patterns/tutorial/:tutorialId` - Get patterns for a tutorial
 - `POST /api/v1/patterns/tutorial/:tutorialId/select` - Save user selection
 
 ### Admin Endpoints
+
 - `POST /api/v1/admin/patterns/upload` - Upload new pattern
 - `GET /api/v1/admin/patterns/files` - List all files in bucket
 - `DELETE /api/v1/admin/patterns/:id` - Delete a pattern
@@ -148,16 +152,19 @@ The system comes with these default patterns:
 ## Troubleshooting
 
 ### Pattern not playing?
+
 1. Check if MIDI file exists in the bucket
 2. Verify the file URL is accessible
 3. Check browser console for loading errors
 
 ### Pattern not showing in list?
+
 1. Ensure pattern is marked as `is_active = true` in database
 2. Check if tutorial allows pattern switching
 3. Verify user has permission to see pattern
 
 ### Upload failing?
+
 1. File must be .mid format
 2. File size under 1MB
 3. Admin authentication required

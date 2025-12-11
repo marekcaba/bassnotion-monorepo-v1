@@ -235,9 +235,27 @@ describe('Bug #3: Memory Leak Fix Verification', () => {
 
       // Schedule harmony chord (multiple notes)
       const harmonyEvents: PatternEvent[] = [
-        { position: '0:0:0', type: 'note', noteName: 'C2', velocity: 0.8, duration: '4n' },
-        { position: '0:0:0', type: 'note', noteName: 'E2', velocity: 0.8, duration: '4n' },
-        { position: '0:0:0', type: 'note', noteName: 'G2', velocity: 0.8, duration: '4n' },
+        {
+          position: '0:0:0',
+          type: 'note',
+          noteName: 'C2',
+          velocity: 0.8,
+          duration: '4n',
+        },
+        {
+          position: '0:0:0',
+          type: 'note',
+          noteName: 'E2',
+          velocity: 0.8,
+          duration: '4n',
+        },
+        {
+          position: '0:0:0',
+          type: 'note',
+          noteName: 'G2',
+          velocity: 0.8,
+          duration: '4n',
+        },
       ];
 
       for (const event of harmonyEvents) {

@@ -15,7 +15,11 @@ export class Difficulty {
 
   static fromString(value: string): Difficulty {
     const normalizedValue = value.toLowerCase();
-    if (!Object.values(DifficultyLevel).includes(normalizedValue as DifficultyLevel)) {
+    if (
+      !Object.values(DifficultyLevel).includes(
+        normalizedValue as DifficultyLevel,
+      )
+    ) {
       throw new Error(`Invalid difficulty level: ${value}`);
     }
     return new Difficulty(normalizedValue as DifficultyLevel);

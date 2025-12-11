@@ -100,6 +100,11 @@ export class MusicalPositionManager extends EventEmitter {
   // When countdownBeats > 0, the first N beats are pre-roll (measure -1 or 0)
   private countdownBeats = 0; // Number of beats in countdown (e.g., 4 for one measure of 4/4)
 
+  // MONOTONICITY GUARD: Prevent backwards position jumps from race conditions
+  // When multiple update sources (Transport.onPositionUpdate + Clock.onTick) emit
+  // position updates, they can arrive out-of-order causing UI jitter
+  private lastUpdateSeconds = 0;
+
   constructor(config: PositionConfig = {}) {
     super();
 
@@ -208,6 +213,34 @@ export class MusicalPositionManager extends EventEmitter {
    * Update current position
    */
   updatePosition(seconds: number): MusicalPosition {
+    // MONOTONICITY GUARD: Ignore backwards time jumps from race conditions
+    // Multiple position update sources (Transport.onPositionUpdate + Clock.onTick)
+    // can emit out-of-order updates causing UI jitter in sheet music scroll
+    if (seconds < this.lastUpdateSeconds) {
+      // Small threshold (50ms) to allow for minor timing jitter
+      const delta = this.lastUpdateSeconds - seconds;
+      // DEBUG: Log all backwards jumps to understand the pattern
+      console.log('[POSITION DEBUG] ⚠️ Backwards time detected', {
+        incoming: seconds.toFixed(3),
+        previous: this.lastUpdateSeconds.toFixed(3),
+        delta: delta.toFixed(3),
+        willIgnore: delta < 0.05,
+        currentPosition: `${this.currentPosition.bars}:${this.currentPosition.beats}:${this.currentPosition.sixteenths}`,
+      });
+      if (delta < 0.05) {
+        // Minor jitter - ignore and return cached position
+        console.log(
+          '[POSITION DEBUG] Ignoring minor jitter (<50ms), returning cached position',
+        );
+        return this.currentPosition;
+      }
+      // Significant backwards jump - likely a seek or restart, allow it
+      console.log(
+        '[POSITION DEBUG] Allowing significant backwards jump (>50ms) - probable seek/restart',
+      );
+    }
+    this.lastUpdateSeconds = seconds;
+
     let position = this.secondsToPosition(seconds);
 
     // Apply loop if enabled
@@ -333,7 +366,7 @@ export class MusicalPositionManager extends EventEmitter {
       // absBeats=3.0: ceil=3, beat should be 3 (not 2) ✅
       // absBeats=1.1: ceil=2, beat should be 2 (not 1) ✅
       // absBeats=0.5: ceil=1, beat should be 1 (not 0) ✅
-      adjustedBeatsInt = Math.ceil(absBeats);  // 1-based beats!
+      adjustedBeatsInt = Math.ceil(absBeats); // 1-based beats!
 
       // Sixteenths within the beat
       const fractionalPart = absBeats - Math.floor(absBeats);
@@ -343,9 +376,9 @@ export class MusicalPositionManager extends EventEmitter {
       // adjustedBeats=0.0: bars=1, beats=1 (was 0:0, now 1:1) ✅
       // adjustedBeats=1.0: bars=1, beats=2 (was 0:1, now 1:2) ✅
       // adjustedBeats=4.0: bars=2, beats=1 (was 1:0, now 2:1) ✅
-      adjustedBars = Math.floor(adjustedBeats / beatsPerBar) + 1;  // +1 for 1-based bars
+      adjustedBars = Math.floor(adjustedBeats / beatsPerBar) + 1; // +1 for 1-based bars
       const beatsInBar = adjustedBeats % beatsPerBar;
-      adjustedBeatsInt = Math.floor(beatsInBar) + 1;  // +1 for 1-based beats
+      adjustedBeatsInt = Math.floor(beatsInBar) + 1; // +1 for 1-based beats
       const fractionalBeat = beatsInBar % 1;
       adjustedSixteenths = Math.floor(fractionalBeat * 4);
     }
@@ -611,7 +644,7 @@ export class MusicalPositionManager extends EventEmitter {
         countdownBeats: this.countdownBeats,
         calculatedBars: bars,
         calculatedBeats: beats,
-        position: this.currentPosition
+        position: this.currentPosition,
       });
     } else {
       // No countdown - reset to absolute zero
@@ -623,6 +656,9 @@ export class MusicalPositionManager extends EventEmitter {
       };
     }
 
+    // Reset monotonicity guard on stop
+    this.lastUpdateSeconds = 0;
+
     this.emit('reset');
   }
 
@@ -631,6 +667,9 @@ export class MusicalPositionManager extends EventEmitter {
    * This is used when STARTING playback to ensure we start from the beginning.
    */
   resetToStart(): void {
+    // Reset monotonicity guard on start
+    this.lastUpdateSeconds = 0;
+
     // Always reset to absolute zero (countdown start or timeline start if no countdown)
     this.currentPosition = {
       bars: 0,
@@ -640,7 +679,7 @@ export class MusicalPositionManager extends EventEmitter {
     };
     logger.info('Reset to timeline start (play)', {
       countdownBeats: this.countdownBeats,
-      position: this.currentPosition
+      position: this.currentPosition,
     });
 
     this.emit('reset');

@@ -6,7 +6,10 @@ import type {
   ConfidenceLevel,
   PlayabilityMetrics,
 } from '../dto/convert-midi-response.dto.js';
-import type { MidiNoteEvent, ParsedMeasure } from '../dto/parse-midi-response.dto.js';
+import type {
+  MidiNoteEvent,
+  ParsedMeasure,
+} from '../dto/parse-midi-response.dto.js';
 import type { MeasureAnchor } from '../dto/convert-midi-request.dto.js';
 
 /**
@@ -97,7 +100,9 @@ export class FretboardMapperService {
       }
 
       // Find anchor for this measure
-      const anchor = anchors.find((a) => a.measureNumber === measure.measureNumber);
+      const anchor = anchors.find(
+        (a) => a.measureNumber === measure.measureNumber,
+      );
 
       if (!anchor) {
         this.logger.warn('No anchor found for measure, skipping', {
@@ -138,7 +143,20 @@ export class FretboardMapperService {
    * Convert MIDI pitch to note name (e.g., 28 -> "E1", 69 -> "A4")
    */
   private midiPitchToNoteName(pitch: number): string {
-    const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const noteNames = [
+      'C',
+      'C#',
+      'D',
+      'D#',
+      'E',
+      'F',
+      'F#',
+      'G',
+      'G#',
+      'A',
+      'A#',
+      'B',
+    ];
     const octave = Math.floor(pitch / 12) - 1;
     const noteIndex = pitch % 12;
     return `${noteNames[noteIndex]}${octave}`;
@@ -171,7 +189,9 @@ export class FretboardMapperService {
     const measuresWithNotes = measures.filter((m) => m.notes.length > 0);
 
     for (const measure of measuresWithNotes) {
-      const anchor = anchors.find((a) => a.measureNumber === measure.measureNumber);
+      const anchor = anchors.find(
+        (a) => a.measureNumber === measure.measureNumber,
+      );
 
       if (!anchor) {
         this.logger.warn('Missing anchor for measure with notes', {
@@ -223,22 +243,19 @@ export class FretboardMapperService {
 
       // Calculate the playable range for this bass type
       const lowestPitch = Math.min(...tuning.openStringPitches);
-      const highestPitch = Math.max(...tuning.openStringPitches) + this.MAX_FRET;
+      const highestPitch =
+        Math.max(...tuning.openStringPitches) + this.MAX_FRET;
       const lowestNote = this.midiPitchToNoteName(lowestPitch);
       const highestNote = this.midiPitchToNoteName(highestPitch);
 
       throw new Error(
         `MIDI contains ${unplayableNotes.length} notes outside bass guitar range in measure ${measure.measureNumber}. ` +
-        `For ${tuning.stringCount}-string bass, notes must be between ${lowestNote} (MIDI ${lowestPitch}) and ${highestNote} (MIDI ${highestPitch}).`,
+          `For ${tuning.stringCount}-string bass, notes must be between ${lowestNote} (MIDI ${lowestPitch}) and ${highestNote} (MIDI ${highestPitch}).`,
       );
     }
 
     // Build DP table to find optimal path
-    const dpResult = this.findOptimalPath(
-      allPositionsPerNote,
-      anchor,
-      notes,
-    );
+    const dpResult = this.findOptimalPath(allPositionsPerNote, anchor, notes);
 
     // Generate exercise notes from optimal path
     const exerciseNotes: GeneratedExerciseNote[] = [];
@@ -246,9 +263,15 @@ export class FretboardMapperService {
     for (let i = 0; i < notes.length; i++) {
       const midiNote = notes[i];
       const position = dpResult.path[i];
-      const alternatives = this.getAlternatives(allPositionsPerNote[i], position);
+      const alternatives = this.getAlternatives(
+        allPositionsPerNote[i],
+        position,
+      );
       const confidence = this.calculateConfidence(alternatives);
-      const warnings = this.generateWarnings(position, i > 0 ? dpResult.path[i - 1] : null);
+      const warnings = this.generateWarnings(
+        position,
+        i > 0 ? dpResult.path[i - 1] : null,
+      );
 
       exerciseNotes.push({
         id: `note-${startNoteId + i}`,
@@ -309,7 +332,11 @@ export class FretboardMapperService {
   /**
    * Score a single position based on ergonomic factors
    */
-  private scorePosition(string: number, fret: number, totalStrings: number): number {
+  private scorePosition(
+    string: number,
+    fret: number,
+    totalStrings: number,
+  ): number {
     let score = 50; // Base score
 
     // Prefer middle strings (easier to access)
@@ -413,7 +440,10 @@ export class FretboardMapperService {
           continue;
         }
 
-        const transitionCost = this.calculateTransitionCost(prevPos, currentPos);
+        const transitionCost = this.calculateTransitionCost(
+          prevPos,
+          currentPos,
+        );
         const positionCost = 100 - currentPos.score; // Lower score = higher cost
         const totalCost = dp[i - 1] + transitionCost + positionCost * 0.3;
 
@@ -426,10 +456,13 @@ export class FretboardMapperService {
 
       // Additional safety: if no position was chosen for this note, use best scored position
       if (!chosenPosition[i]) {
-        this.logger.warn('No optimal position found, using best scored position', {
-          noteIndex: i,
-          positionsAvailable: positions.length,
-        });
+        this.logger.warn(
+          'No optimal position found, using best scored position',
+          {
+            noteIndex: i,
+            positionsAvailable: positions.length,
+          },
+        );
 
         // At this point, positions array should never be empty (checked earlier in convertMeasureNotes)
         // But add safety check just in case
@@ -494,7 +527,8 @@ export class FretboardMapperService {
     const alternatives = allPositions
       .filter(
         (pos) =>
-          pos.string !== chosenPosition.string || pos.fret !== chosenPosition.fret,
+          pos.string !== chosenPosition.string ||
+          pos.fret !== chosenPosition.fret,
       )
       .sort((a, b) => b.score - a.score)
       .slice(0, 3)
@@ -533,7 +567,9 @@ export class FretboardMapperService {
   /**
    * Calculate confidence level based on alternatives
    */
-  private calculateConfidence(alternatives: AlternativePosition[]): ConfidenceLevel {
+  private calculateConfidence(
+    alternatives: AlternativePosition[],
+  ): ConfidenceLevel {
     if (alternatives.length === 0) {
       return 'high'; // Only one option
     }
@@ -649,7 +685,9 @@ export class FretboardMapperService {
     const handStability = Math.max(0, 100 - avgFretMovement * 10);
 
     // High confidence percentage
-    const highConfidenceCount = notes.filter((n) => n.confidence === 'high').length;
+    const highConfidenceCount = notes.filter(
+      (n) => n.confidence === 'high',
+    ).length;
     const highConfidencePercentage = (highConfidenceCount / notes.length) * 100;
 
     // Overall score
@@ -657,7 +695,8 @@ export class FretboardMapperService {
     overallScore -= largeStretches * 5;
     overallScore -= difficultShifts * 10;
     overallScore -= stringCrossings * 0.5;
-    overallScore = (overallScore + handStability + highConfidencePercentage) / 3;
+    overallScore =
+      (overallScore + handStability + highConfidencePercentage) / 3;
     overallScore = Math.max(0, Math.min(100, overallScore));
 
     return {

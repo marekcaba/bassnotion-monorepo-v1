@@ -2,7 +2,7 @@
 
 /**
  * Build script to compile AudioWorklet TypeScript files to JavaScript
- * 
+ *
  * This script:
  * 1. Compiles TimingProcessor.ts to JavaScript
  * 2. Removes TypeScript-specific code (imports/exports)
@@ -15,7 +15,7 @@ const { execSync } = require('child_process');
 
 const SOURCE_FILE = path.join(
   __dirname,
-  '../src/domains/playback/modules/transport/worklets/TimingProcessor.ts'
+  '../src/domains/playback/modules/transport/worklets/TimingProcessor.ts',
 );
 
 const OUTPUT_DIR = path.join(__dirname, '../public/worklets');
@@ -31,9 +31,12 @@ console.log('Building AudioWorklet processor...');
 try {
   // Compile TypeScript to JavaScript using tsc
   console.log('Compiling TypeScript...');
-  execSync(`npx tsc ${SOURCE_FILE} --target ES2020 --module ES2020 --outDir ${OUTPUT_DIR} --removeComments false`, {
-    stdio: 'inherit'
-  });
+  execSync(
+    `npx tsc ${SOURCE_FILE} --target ES2020 --module ES2020 --outDir ${OUTPUT_DIR} --removeComments false`,
+    {
+      stdio: 'inherit',
+    },
+  );
 
   // Read the compiled file
   const compiledFile = path.join(OUTPUT_DIR, 'TimingProcessor.js');
@@ -43,10 +46,13 @@ try {
   content = content.replace(/^import\s+.*$/gm, '');
   content = content.replace(/^export\s+.*$/gm, '');
   content = content.replace(/export\s+{[^}]*};?\s*$/gm, '');
-  
+
   // Remove TypeScript type annotations that might have slipped through
-  content = content.replace(/:\s*(string|number|boolean|any|void|TimingMessage|ControlMessage)(\[\])?/g, '');
-  
+  content = content.replace(
+    /:\s*(string|number|boolean|any|void|TimingMessage|ControlMessage)(\[\])?/g,
+    '',
+  );
+
   // Add header comment
   const header = `/**
  * AudioWorklet Processor for Sample-Accurate Timing
@@ -61,12 +67,12 @@ try {
 
   // Write the final file
   fs.writeFileSync(OUTPUT_FILE, header + content);
-  
+
   // Remove the intermediate compiled file
   fs.unlinkSync(compiledFile);
 
   console.log(`✅ Successfully built ${OUTPUT_FILE}`);
-  
+
   // Verify the output is valid JavaScript
   try {
     require('vm').createScript(fs.readFileSync(OUTPUT_FILE, 'utf8'));
@@ -75,7 +81,6 @@ try {
     console.error('❌ Output contains syntax errors:', error.message);
     process.exit(1);
   }
-
 } catch (error) {
   console.error('❌ Build failed:', error.message);
   process.exit(1);
@@ -84,19 +89,19 @@ try {
 // Also create a development version that logs more
 if (process.env.NODE_ENV === 'development') {
   console.log('Creating development version with extra logging...');
-  
+
   let devContent = fs.readFileSync(OUTPUT_FILE, 'utf8');
-  
+
   // Add development logging
   devContent = devContent.replace(
     'console.log(`TimingProcessor[${this.processorId}] initialized`',
-    'console.log(`[DEV] TimingProcessor[${this.processorId}] initialized`'
+    'console.log(`[DEV] TimingProcessor[${this.processorId}] initialized`',
   );
-  
+
   fs.writeFileSync(
     path.join(OUTPUT_DIR, 'timing-processor.dev.js'),
-    devContent
+    devContent,
   );
-  
+
   console.log('✅ Development version created');
 }

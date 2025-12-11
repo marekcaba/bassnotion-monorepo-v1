@@ -1,5 +1,8 @@
 import { z } from 'zod';
-import { MusicalPositionSchema, NoteDurationSchema } from '@bassnotion/contracts';
+import {
+  MusicalPositionSchema,
+  NoteDurationSchema,
+} from '@bassnotion/contracts';
 
 /**
  * Represents a single MIDI note event with musical timing
@@ -39,7 +42,9 @@ export const MidiControlChangeEventSchema = z.object({
   ticks: z.number().int().min(0),
 });
 
-export type MidiControlChangeEvent = z.infer<typeof MidiControlChangeEventSchema>;
+export type MidiControlChangeEvent = z.infer<
+  typeof MidiControlChangeEventSchema
+>;
 
 /**
  * Represents all notes within a single measure

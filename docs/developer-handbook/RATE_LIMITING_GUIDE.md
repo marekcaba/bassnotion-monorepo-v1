@@ -7,16 +7,19 @@ Rate limiting protects your API from abuse by limiting how many requests a clien
 ## Rate Limiting Layers
 
 ### 1. Global Rate Limiting
+
 - **Default**: 100 requests per 15 minutes per IP
 - **Applies to**: All routes
 - **Configured in**: `security.config.ts`
 
 ### 2. Endpoint-Specific Rate Limiting
+
 - **Auth endpoints**: 5 requests per 15 minutes
 - **Upload endpoints**: 10 requests per hour
 - **Public API**: 200 requests per 15 minutes
 
 ### 3. Auth-Specific Security
+
 - **IP-based**: 20 attempts per IP per 15 minutes
 - **Email-based**: 5 attempts per email per 15 minutes
 - **Account lockout**: Progressive delays after failures
@@ -40,13 +43,12 @@ import { RateLimitGuard } from '@/shared/guards/rate-limit.guard';
 @Controller('api/sensitive')
 @UseGuards(RateLimitGuard)
 export class SensitiveController {
-  
   @Post('action')
   @AuthRateLimit() // 5 requests per 15 minutes
   async performAction() {
     // Your code
   }
-  
+
   @Post('upload')
   @UploadRateLimit() // 10 requests per hour
   async uploadFile() {
@@ -92,6 +94,7 @@ async userSpecificAction() {
 ### Standard Response
 
 When rate limit is exceeded:
+
 ```json
 {
   "statusCode": 429,
@@ -109,6 +112,7 @@ When rate limit is exceeded:
 ### Response Headers
 
 Rate limit information is included in headers:
+
 ```
 X-RateLimit-Limit: 100
 X-RateLimit-Remaining: 95
@@ -121,8 +125,9 @@ Retry-After: 890
 ### Progressive Account Lockout
 
 Failed login attempts trigger increasing delays:
+
 - 3 attempts → 2 minute lockout
-- 5 attempts → 15 minute lockout  
+- 5 attempts → 15 minute lockout
 - 8 attempts → 1 hour lockout
 - 10 attempts → 24 hour lockout
 
@@ -132,34 +137,34 @@ Failed login attempts trigger increasing delays:
 // In auth.service.ts
 async authenticateUser(credentials, ip, userAgent) {
   // 1. Check rate limits
-  const { rateLimitInfo, lockoutInfo } = 
+  const { rateLimitInfo, lockoutInfo } =
     await this.authSecurity.getSecurityInfo(email, ip);
-  
+
   if (lockoutInfo.isLocked) {
     throw new ForbiddenException(
       `Account locked for ${lockoutInfo.remainingTime} seconds`
     );
   }
-  
+
   if (rateLimitInfo.isRateLimited) {
     throw new TooManyRequestsException(
       `Too many attempts. Retry in ${rateLimitInfo.remainingTime} seconds`
     );
   }
-  
+
   // 2. Attempt login
   const success = await this.verifyCredentials(credentials);
-  
+
   // 3. Record attempt
   await this.authSecurity.recordLoginAttempt(
     email, ip, success, userAgent
   );
-  
+
   // 4. Return result
   if (!success) {
     throw new UnauthorizedException('Invalid credentials');
   }
-  
+
   return { token, user };
 }
 ```
@@ -174,10 +179,10 @@ export const rateLimitConfig: RateLimitOptions = {
   global: true,
   max: 100,
   timeWindow: '15 minutes',
-  
+
   // Skip in development
   skip: isDevelopment ? () => true : undefined,
-  
+
   // Custom error message
   errorResponseBuilder: (request, context) => ({
     statusCode: 429,
@@ -187,9 +192,9 @@ export const rateLimitConfig: RateLimitOptions = {
       limit: context.max,
       current: context.current,
       remaining: context.remaining,
-      resetTime: new Date(context.ttl).toISOString()
-    }
-  })
+      resetTime: new Date(context.ttl).toISOString(),
+    },
+  }),
 };
 ```
 
@@ -232,24 +237,24 @@ done
 describe('Rate Limiting', () => {
   it('should enforce auth rate limit', async () => {
     const requests = [];
-    
+
     // Make 5 requests (the limit)
     for (let i = 0; i < 5; i++) {
       requests.push(
         request(app.getHttpServer())
           .post('/auth/signin')
-          .send({ email: 'test@example.com', password: 'wrong' })
+          .send({ email: 'test@example.com', password: 'wrong' }),
       );
     }
-    
+
     await Promise.all(requests);
-    
+
     // 6th request should fail
     const response = await request(app.getHttpServer())
       .post('/auth/signin')
       .send({ email: 'test@example.com', password: 'wrong' })
       .expect(429);
-      
+
     expect(response.body.error).toBe('Too Many Requests');
     expect(response.body.rateLimit.remaining).toBe(0);
   });
@@ -275,7 +280,7 @@ logger.warn('Rate limit exceeded', {
   current: 6,
   remainingTime: 890,
   endpoint: '/auth/signin',
-  ip: '192.168.1.1'
+  ip: '192.168.1.1',
 });
 ```
 
@@ -283,24 +288,24 @@ logger.warn('Rate limit exceeded', {
 
 ```sql
 -- Find IPs hitting rate limits
-SELECT 
+SELECT
   json_extract(context, '$.ip') as ip,
   COUNT(*) as limit_hits,
   json_extract(context, '$.endpoint') as endpoint
 FROM logs
-WHERE 
+WHERE
   message = 'Rate limit exceeded'
   AND timestamp > datetime('now', '-1 day')
 GROUP BY ip, endpoint
 ORDER BY limit_hits DESC;
 
 -- Account lockout patterns
-SELECT 
+SELECT
   json_extract(context, '$.email') as email,
   json_extract(context, '$.failedAttempts') as attempts,
   COUNT(*) as lockout_count
 FROM logs
-WHERE 
+WHERE
   message LIKE '%Account locked%'
   AND timestamp > datetime('now', '-7 days')
 GROUP BY email
@@ -321,7 +326,7 @@ async sendExpensiveEmail() {}
 
 @RateLimit({
   max: 1000,     // Very permissive
-  timeWindow: '1 minute'  
+  timeWindow: '1 minute'
 })
 async getPublicData() {}
 ```
@@ -333,7 +338,7 @@ async getPublicData() {}
 throw new TooManyRequestsException({
   message: 'Daily report limit reached (3 per day)',
   nextResetTime: tomorrow.toISOString(),
-  upgradeUrl: '/pricing'
+  upgradeUrl: '/pricing',
 });
 ```
 
@@ -365,7 +370,7 @@ const delay = Math.min(Math.pow(2, attempts) * 1000, 300000); // Max 5 min
 if (Date.now() < lastAttempt + delay) {
   throw new TooManyRequestsException({
     message: 'Please wait before trying again',
-    retryAfter: Math.ceil(delay / 1000)
+    retryAfter: Math.ceil(delay / 1000),
   });
 }
 ```
@@ -431,6 +436,7 @@ if (process.env.NODE_ENV === 'test') {
 ### Debug Mode
 
 Enable rate limit debugging:
+
 ```typescript
 // In rate-limit.guard.ts
 const DEBUG_RATE_LIMIT = process.env.DEBUG_RATE_LIMIT === 'true';
@@ -440,7 +446,7 @@ if (DEBUG_RATE_LIMIT) {
     key,
     current: entry.count,
     limit: options.max,
-    resetTime: new Date(entry.resetTime)
+    resetTime: new Date(entry.resetTime),
   });
 }
 ```

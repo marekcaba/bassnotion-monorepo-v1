@@ -1,6 +1,6 @@
 /**
  * CDN Service Interface
- * 
+ *
  * Generic CDN functionality that can be used by all domains
  */
 
@@ -21,7 +21,10 @@ export interface ICDNService {
   /**
    * Get optimal CDN endpoint for a resource
    */
-  getOptimalEndpoint(resourcePath: string, userLocation?: GeolocationCoordinates): Promise<string>;
+  getOptimalEndpoint(
+    resourcePath: string,
+    userLocation?: GeolocationCoordinates,
+  ): Promise<string>;
 
   /**
    * Get list of available edge locations

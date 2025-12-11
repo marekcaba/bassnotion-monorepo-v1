@@ -9,6 +9,7 @@ This document details the security measures implemented in the BassNotion platfo
 We use `@fastify/helmet` to set various HTTP headers that help protect against common attacks:
 
 ### Headers Configured:
+
 - **Content-Security-Policy**: Restricts sources for scripts, styles, images, etc.
 - **X-Frame-Options**: SAMEORIGIN - Prevents clickjacking
 - **X-Content-Type-Options**: nosniff - Prevents MIME type sniffing
@@ -17,23 +18,28 @@ We use `@fastify/helmet` to set various HTTP headers that help protect against c
 - **Referrer-Policy**: Controls referrer information sent with requests
 
 ### Configuration Location:
+
 - `/apps/backend/src/config/security.config.ts`
 - Applied in `/apps/backend/src/main.ts`
 
 ## Rate Limiting
 
 ### Global Rate Limiting
+
 - **Package**: `@fastify/rate-limit`
 - **Default Limits**: 100 requests per 15 minutes per IP
 - **Disabled in Development**: For easier testing
 
 ### Endpoint-Specific Rate Limiting
+
 Different endpoints have different limits:
+
 - **Auth endpoints**: 5 requests per 15 minutes
-- **Upload endpoints**: 10 requests per hour  
+- **Upload endpoints**: 10 requests per hour
 - **Public API**: 200 requests per 15 minutes
 
 ### Custom Rate Limit Decorators
+
 ```typescript
 @AuthRateLimit() // 5 req/15 min
 @UploadRateLimit() // 10 req/hour
@@ -41,7 +47,9 @@ Different endpoints have different limits:
 ```
 
 ### Auth-Specific Security
+
 The auth module has additional security:
+
 - **Account Lockout**: Progressive lockout after failed attempts
   - 3 attempts: 2-minute lockout
   - 5 attempts: 15-minute lockout
@@ -53,9 +61,11 @@ The auth module has additional security:
 ## Input Sanitization
 
 ### Sanitization Middleware
+
 Location: `/apps/backend/src/shared/middleware/sanitize.middleware.ts`
 
 Protects against:
+
 - **SQL Injection**: Removes SQL keywords and patterns
 - **NoSQL Injection**: Escapes MongoDB operators starting with $
 - **XSS**: Removes script tags and event handlers
@@ -63,23 +73,27 @@ Protects against:
 - **Long Input Attacks**: Limits parameter length to 200 chars
 
 ### What Gets Sanitized:
+
 - Query parameters
-- Route parameters  
+- Route parameters
 - Request body (additional safety layer beyond Zod validation)
 - URL length (max 2048 characters)
 
 ## Correlation IDs
 
 ### Purpose:
+
 Track requests across services for debugging and monitoring
 
 ### Implementation:
+
 - Middleware: `/apps/backend/src/shared/middleware/correlation.middleware.ts`
 - Applied globally to all requests
 - Adds `x-correlation-id` header to responses
 - Creates structured logger with correlation context
 
 ### Usage in Code:
+
 ```typescript
 // Correlation ID is automatically available in request
 const correlationId = (req as any).correlationId;
@@ -91,6 +105,7 @@ logger.info('Processing request', { data });
 ## CORS Configuration
 
 ### Centralized CORS Config:
+
 - Development: Allows all origins
 - Production: Validates against whitelist from `ALLOWED_ORIGINS` env var
 - Credentials: Always enabled for auth cookies
@@ -100,6 +115,7 @@ logger.info('Processing request', { data });
 ## Password Security
 
 ### Features:
+
 - **Breach Checking**: Uses HaveIBeenPwned API with k-anonymity
 - **Strength Requirements**: Enforced via Zod schemas
 - **Force Change Policy**: After 1 year or if found in breaches
@@ -108,6 +124,7 @@ logger.info('Processing request', { data });
 ## Environment Variables
 
 ### Required Security Variables:
+
 ```env
 NODE_ENV=production
 ALLOWED_ORIGINS=https://app.bassnotion.com,https://bassnotion.com
@@ -117,21 +134,24 @@ FRONTEND_URL=https://app.bassnotion.com
 ## Testing Security
 
 ### Manual Testing:
-1. **Rate Limiting**: 
+
+1. **Rate Limiting**:
+
    ```bash
    # Test global rate limit
    for i in {1..101}; do curl http://localhost:3000/api/health; done
-   
+
    # Test auth rate limit
    for i in {1..6}; do curl -X POST http://localhost:3000/auth/signin -H "Content-Type: application/json" -d '{"email":"test@example.com","password":"wrong"}'; done
    ```
 
 2. **Input Sanitization**:
+
    ```bash
    # Test SQL injection
    curl "http://localhost:3000/api/users?name='; DROP TABLE users;--"
-   
-   # Test NoSQL injection  
+
+   # Test NoSQL injection
    curl "http://localhost:3000/api/users?filter[$ne]=null"
    ```
 
@@ -141,17 +161,20 @@ FRONTEND_URL=https://app.bassnotion.com
    ```
 
 ### Automated Tests:
+
 - Run security tests: `pnpm vitest run apps/backend/src/shared/middleware/__tests__/`
 
 ## Monitoring & Alerts
 
 ### What to Monitor:
+
 1. **Rate Limit Violations**: Log and alert on repeated violations
 2. **Failed Login Attempts**: Track patterns for potential attacks
 3. **Sanitization Blocks**: Log blocked malicious input
 4. **Correlation IDs**: Use for request tracing in logs
 
 ### Log Examples:
+
 ```json
 {
   "timestamp": "2024-08-25T10:30:00Z",
@@ -171,12 +194,14 @@ FRONTEND_URL=https://app.bassnotion.com
 ## Future Enhancements
 
 ### Phase 2:
+
 - Redis-backed rate limiting for distributed systems
 - API key authentication for public endpoints
 - Request signing for sensitive operations
 - Web Application Firewall (WAF) rules
 
 ### Phase 3:
+
 - OAuth2 provider implementation
 - Hardware token support (FIDO2/WebAuthn)
 - Anomaly detection with ML
@@ -185,6 +210,7 @@ FRONTEND_URL=https://app.bassnotion.com
 ## Quick Reference
 
 ### Adding Security to New Endpoints:
+
 ```typescript
 import { AuthRateLimit } from '@/shared/decorators/rate-limit.decorator';
 import { RateLimitGuard } from '@/shared/guards/rate-limit.guard';
@@ -202,11 +228,12 @@ export class SensitiveController {
 ```
 
 ### Getting Correlation ID in Service:
+
 ```typescript
 @Injectable()
 export class MyService {
   private logger = createStructuredLogger('my-service');
-  
+
   async processRequest(correlationId: string, data: any) {
     const contextLogger = this.logger.child({ correlationId });
     contextLogger.info('Processing started', { data });

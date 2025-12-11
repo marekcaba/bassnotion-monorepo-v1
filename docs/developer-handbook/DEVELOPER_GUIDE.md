@@ -71,24 +71,24 @@ import { useCorrelation } from '@/shared/hooks/useCorrelation';
 export function PlayButton() {
   // Get a correlation ID and logger for this component
   const { correlationId, logger } = useCorrelation('PlayButton');
-  
+
   const handleClick = async () => {
     // Log what's happening with the correlation ID
     logger.info('User clicked play button', { songId: '123' });
-    
+
     try {
       // Pass the correlation ID to API calls
-      const response = await apiClient.post('/api/play', 
-        { songId: '123' }, 
+      const response = await apiClient.post('/api/play',
+        { songId: '123' },
         { correlationId }
       );
-      
+
       logger.info('Play request successful', { response });
     } catch (error) {
       logger.error('Play request failed', error);
     }
   };
-  
+
   return <button onClick={handleClick}>Play</button>;
 }
 ```
@@ -106,20 +106,23 @@ export function PlayButton() {
 Instead of writing logs like diary entries ("Something went wrong!"), we write them in a structured format that computers can search through easily.
 
 **Bad logging (hard to search):**
+
 ```typescript
 console.log('User 123 clicked play for song 456 at 3:45 PM');
 ```
 
 **Good logging (easy to search):**
+
 ```typescript
 logger.info('User clicked play', {
   userId: '123',
   songId: '456',
-  timestamp: '2025-08-30T15:45:00Z'
+  timestamp: '2025-08-30T15:45:00Z',
 });
 ```
 
 **Why it matters:**
+
 - You can search for all play clicks: `action: "User clicked play"`
 - You can find all actions by user 123: `userId: "123"`
 - You can see what happened at a specific time
@@ -130,17 +133,20 @@ logger.info('User clicked play', {
 Like a doctor checking your pulse and temperature, health checks tell us if our system is working properly.
 
 **What we check:**
+
 - ✅ Database: Can we read/write data?
 - ✅ API: Is the backend responding?
 - ✅ Supabase: Can we fetch audio files?
 
 **How to check health:**
+
 1. Look at the bottom-left corner of the app
 2. Green dot = Everything is working
 3. Yellow dot = Something is slow but working
 4. Red dot = Something is broken
 
 **Manual health check:**
+
 ```bash
 # Check backend health
 curl http://localhost:3000/health
@@ -163,18 +169,21 @@ curl http://localhost:3000/health
 A special panel that shows you everything happening with audio in real-time. It's like having X-ray vision for sound!
 
 **How to enable it:**
+
 ```bash
 # In your .env.local file
 NEXT_PUBLIC_DEBUG_AUDIO=true
 ```
 
 **How to use it:**
+
 1. Look at bottom-right corner
 2. Click "Audio Debug" to expand
 3. Watch events appear as you interact with audio
 4. Filter events by typing in the search box
 
 **What you'll see:**
+
 ```
 [12:34:56] UnifiedTransport → start
   { bpm: 120, timeSignature: "4/4" }
@@ -193,21 +202,25 @@ NEXT_PUBLIC_DEBUG_AUDIO=true
 ### Scenario 1: "The drums don't play!"
 
 **Step 1: Check the health indicator**
+
 - Is it green? System is healthy, problem is in the code
 - Is it red? Check which service is down
 
 **Step 2: Open Audio Debug Panel**
+
 - Click play on the drums
 - Do you see "DrummerWidget → play" event?
 - If not, the click handler might be broken
 - If yes, check for error events
 
 **Step 3: Check browser console**
+
 - Look for red errors
 - Find the correlation ID in the error
 - Search logs with that ID
 
 **Step 4: Use structured logs**
+
 ```typescript
 // Add debug logging to the drum component
 const { logger } = useCorrelation('DrumDebug');
@@ -215,7 +228,7 @@ const { logger } = useCorrelation('DrumDebug');
 logger.info('Drum state', {
   isLoaded: drumSampler.loaded,
   pattern: currentPattern,
-  tempo: tempo
+  tempo: tempo,
 });
 ```
 
@@ -224,10 +237,11 @@ logger.info('Drum state', {
 **Common causes and solutions:**
 
 1. **Infinite re-renders**
+
 ```typescript
 // ❌ BAD: This causes infinite loop
 useEffect(() => {
-  setCount(count + 1);  // Updates state on every render
+  setCount(count + 1); // Updates state on every render
 });
 
 // ✅ GOOD: Only runs once
@@ -237,6 +251,7 @@ useEffect(() => {
 ```
 
 2. **Unmemoized callbacks**
+
 ```typescript
 // ❌ BAD: Creates new function every render
 <ExpensiveComponent onUpdate={() => console.log('updated')} />
@@ -263,16 +278,19 @@ User Click → Widget → Transport → Audio Engine → Speakers
 ### Key Services Explained
 
 **1. UnifiedTransport**
+
 - The master clock (like a conductor)
 - Keeps everything in sync
 - Handles play/pause/stop
 
 **2. AudioEngine**
+
 - Loads and plays actual sounds
 - Manages volume and effects
 - Handles Web Audio API
 
 **3. Widgets (Drummer, Bass, etc.)**
+
 - User interface components
 - Send commands to Transport
 - Display visual feedback
@@ -280,20 +298,21 @@ User Click → Widget → Transport → Audio Engine → Speakers
 ### Common Audio Tasks
 
 **Loading a sample:**
+
 ```typescript
 import { logAudioEvent } from '@/shared/debug/AudioDebugger';
 
 async function loadDrumSample() {
   logAudioEvent('DrumLoader', 'loadStart', { sample: 'kick.mp3' });
-  
+
   try {
     const buffer = await audioContext.decodeAudioData(arrayBuffer);
     logAudioEvent('DrumLoader', 'loadSuccess', { sample: 'kick.mp3' });
     return buffer;
   } catch (error) {
-    logAudioEvent('DrumLoader', 'loadError', { 
-      sample: 'kick.mp3', 
-      error: error.message 
+    logAudioEvent('DrumLoader', 'loadError', {
+      sample: 'kick.mp3',
+      error: error.message,
     });
     throw error;
   }
@@ -301,12 +320,13 @@ async function loadDrumSample() {
 ```
 
 **Playing a sound:**
+
 ```typescript
 function playDrum(drumType: string) {
   const { logger } = useCorrelation('DrumPlayer');
-  
+
   logger.info('Playing drum', { drumType, time: Tone.now() });
-  
+
   // Schedule the drum hit
   drumSampler.triggerAttackRelease(drumType, '8n');
 }
@@ -319,13 +339,14 @@ function playDrum(drumType: string) {
 ### Adding a New API Endpoint
 
 1. **Create the endpoint in backend:**
+
 ```typescript
 // apps/backend/src/domains/exercises/exercises.controller.ts
 @Get('my-new-endpoint')
 async getMyData(@Request() req) {
   // The correlation ID is automatically added by middleware
   req.logger.info('Fetching my data');
-  
+
   return {
     data: 'Hello!',
     correlationId: req.correlationId
@@ -334,10 +355,11 @@ async getMyData(@Request() req) {
 ```
 
 2. **Call it from frontend:**
+
 ```typescript
 const { correlationId } = useCorrelation('MyComponent');
-const data = await apiClient.get('/api/exercises/my-new-endpoint', { 
-  correlationId 
+const data = await apiClient.get('/api/exercises/my-new-endpoint', {
+  correlationId,
 });
 ```
 
@@ -348,14 +370,14 @@ import { useAudioDebug } from '@/shared/debug/AudioDebugger';
 
 export function MyMusicComponent() {
   const debug = useAudioDebug('MyMusicComponent');
-  
+
   const playSomething = () => {
     // Log the action
     debug.log('play started', { note: 'C4', velocity: 0.8 });
-    
+
     // Your actual code here
     synthesizer.triggerAttack('C4');
-    
+
     // Log success
     debug.log('play completed');
   };
@@ -374,6 +396,7 @@ export function MyMusicComponent() {
    - Look for long tasks (>50ms)
 
 3. **Add timing logs**
+
 ```typescript
 const startTime = performance.now();
 
@@ -391,11 +414,13 @@ logger.warn('Expensive operation took too long', { duration });
 ### "I can't see the debug panels!"
 
 1. Check your `.env.local`:
+
 ```bash
 NEXT_PUBLIC_DEBUG_AUDIO=true
 ```
 
 2. Restart the frontend:
+
 ```bash
 pm2 restart bassnotion-frontend
 ```
@@ -405,6 +430,7 @@ pm2 restart bassnotion-frontend
 ### "The logs are too noisy!"
 
 Use the filter in Audio Debug Panel or grep in terminal:
+
 ```bash
 # Find only DrummerWidget logs
 grep "DrummerWidget" logs/frontend-out.log
@@ -430,9 +456,10 @@ grep "ERROR" logs/backend-out.log
 2. Open Network tab - are API calls taking long?
 3. Check Audio Debug Panel - are events delayed?
 4. Look for memory leaks:
+
 ```typescript
 // In browser console
-performance.memory
+performance.memory;
 ```
 
 ---
@@ -455,6 +482,7 @@ Before committing code, check:
 ## Quick Reference
 
 ### Environment Variables
+
 ```bash
 # Enable debug mode
 NEXT_PUBLIC_DEBUG_AUDIO=true
@@ -464,6 +492,7 @@ NEXT_PUBLIC_API_URL=http://localhost:3000
 ```
 
 ### PM2 Commands
+
 ```bash
 pm2 status                      # Check what's running
 pm2 logs bassnotion-frontend    # View frontend logs
@@ -473,6 +502,7 @@ pm2 stop all                    # Stop everything
 ```
 
 ### Debug Shortcuts
+
 - Health Check: Look bottom-left
 - Audio Debug: Look bottom-right
 - Correlation ID: Check any log entry
@@ -492,4 +522,4 @@ Remember: Every problem leaves clues in the logs. Follow the correlation IDs lik
 
 ---
 
-*Last updated: August 30, 2025*
+_Last updated: August 30, 2025_

@@ -2,7 +2,8 @@ import { Injectable } from '@nestjs/common';
 import {
   ICreatorRepository,
   PaginatedResult,
-  PaginationOptions } from './creator.repository.interface.js';
+  PaginationOptions,
+} from './creator.repository.interface.js';
 import { Creator } from '../entities/creator.entity.js';
 import { CreatorId } from '../value-objects/creator-id.vo.js';
 import { ChannelUrl } from '../value-objects/channel-url.vo.js';
@@ -64,13 +65,15 @@ export class CachedCreatorRepository implements ICreatorRepository {
           const result = await this.repository.findAll(options);
           return {
             ...result,
-            items: result.items.map((c) => c.toPersistence()) };
+            items: result.items.map((c) => c.toPersistence()),
+          };
         },
         this.TTL / 2, // 30 minutes for list queries
       )
       .then((result) => ({
         ...result,
-        items: result.items.map((data) => this.reconstitute(data)) }));
+        items: result.items.map((data) => this.reconstitute(data)),
+      }));
   }
 
   async findByChannelId(channelId: string): Promise<Creator | null> {
@@ -281,7 +284,8 @@ export class CachedCreatorRepository implements ICreatorRepository {
         ? new Date(data.last_fetched_at)
         : undefined,
       createdAt: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at) });
+      updatedAt: new Date(data.updated_at),
+    });
   }
 
   private getCreatorKey(id: CreatorId): string {

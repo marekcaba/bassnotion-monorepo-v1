@@ -7,5 +7,6 @@ import { RequestContextService } from './services/request-context.service.js';
 @Global()
 @Module({
   providers: [RequestContextService],
-  exports: [RequestContextService] })
+  exports: [RequestContextService],
+})
 export class SharedModule {}

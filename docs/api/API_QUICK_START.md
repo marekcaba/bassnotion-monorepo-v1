@@ -7,12 +7,14 @@ This guide will help you get up and running with the BassNotion API in 5 minutes
 ## Step 1: Access the API
 
 ### Development
+
 ```
 Base URL: http://localhost:3000
 Swagger Docs: http://localhost:3000/api/docs
 ```
 
 ### Production
+
 ```
 Base URL: https://api.bassnotion.com
 ```
@@ -41,6 +43,7 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
 ```
 
 **Response:**
+
 ```json
 {
   "accessToken": "eyJhbGciOiJIUzI1NiIs...",
@@ -57,12 +60,14 @@ Save the `accessToken` for authenticated requests.
 ## Step 4: Make Your First API Call
 
 ### Get All Exercises
+
 ```bash
 curl http://localhost:3000/api/exercises \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 ```
 
 ### Search for Exercises
+
 ```bash
 curl "http://localhost:3000/api/exercises/search?q=blues" \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
@@ -74,11 +79,14 @@ curl "http://localhost:3000/api/exercises/search?q=blues" \
 
 ```javascript
 // JavaScript/Node.js example
-const response = await fetch('http://localhost:3000/api/exercises/difficulty/beginner', {
-  headers: {
-    'Authorization': `Bearer ${accessToken}`
-  }
-});
+const response = await fetch(
+  'http://localhost:3000/api/exercises/difficulty/beginner',
+  {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  },
+);
 
 const data = await response.json();
 console.log(data.exercises);
@@ -92,41 +100,48 @@ formData.append('file', midiFile);
 formData.append('title', 'My Bass Exercise');
 formData.append('difficulty', 'intermediate');
 
-const response = await fetch('http://localhost:3000/api/exercises/upload/midi', {
-  method: 'POST',
-  headers: {
-    'Authorization': `Bearer ${accessToken}`
+const response = await fetch(
+  'http://localhost:3000/api/exercises/upload/midi',
+  {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: formData,
   },
-  body: formData
-});
+);
 ```
 
 ### 3. Save a Custom Bassline
 
 ```javascript
-const response = await fetch('http://localhost:3000/api/exercises/user/save-bassline', {
-  method: 'POST',
-  headers: {
-    'Authorization': `Bearer ${accessToken}`,
-    'Content-Type': 'application/json'
+const response = await fetch(
+  'http://localhost:3000/api/exercises/user/save-bassline',
+  {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      title: 'My Cool Bassline',
+      notes: [
+        { string: 4, fret: 0, duration: 0.25 },
+        { string: 4, fret: 3, duration: 0.25 },
+        { string: 3, fret: 2, duration: 0.25 },
+        { string: 3, fret: 0, duration: 0.25 },
+      ],
+      bpm: 120,
+      key: 'E',
+    }),
   },
-  body: JSON.stringify({
-    title: 'My Cool Bassline',
-    notes: [
-      { string: 4, fret: 0, duration: 0.25 },
-      { string: 4, fret: 3, duration: 0.25 },
-      { string: 3, fret: 2, duration: 0.25 },
-      { string: 3, fret: 0, duration: 0.25 }
-    ],
-    bpm: 120,
-    key: 'E'
-  })
-});
+);
 ```
 
 ## Using with Different Languages
 
 ### Python
+
 ```python
 import requests
 
@@ -146,6 +161,7 @@ exercises = requests.get(
 ```
 
 ### cURL
+
 ```bash
 # Set your token as environment variable
 export TOKEN="your-access-token"
@@ -166,6 +182,7 @@ curl -X POST http://localhost:3000/api/exercises \
 ```
 
 ### Go
+
 ```go
 package main
 
@@ -178,10 +195,10 @@ func getExercises(token string) {
     client := &http.Client{}
     req, _ := http.NewRequest("GET", "http://localhost:3000/api/exercises", nil)
     req.Header.Add("Authorization", "Bearer " + token)
-    
+
     resp, _ := client.Do(req)
     defer resp.Body.Close()
-    
+
     var result map[string]interface{}
     json.NewDecoder(resp.Body).Decode(&result)
 }
@@ -204,10 +221,12 @@ if (!response.ok) {
 ## Rate Limiting
 
 Be aware of rate limits:
+
 - 100 requests per 15 minutes for anonymous users
 - 500 requests per 15 minutes for authenticated users
 
 Check response headers:
+
 ```
 X-RateLimit-Limit: 500
 X-RateLimit-Remaining: 499

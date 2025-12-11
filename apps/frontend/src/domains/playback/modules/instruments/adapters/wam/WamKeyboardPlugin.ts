@@ -17,7 +17,11 @@ import type {
   PluginConfig,
   PluginParameterInfo,
 } from '../../../../types/plugin.js';
-import { PluginState, PluginCategory, ProcessingResultStatus } from '../../../../types/plugin.js';
+import {
+  PluginState,
+  PluginCategory,
+  ProcessingResultStatus,
+} from '../../../../types/plugin.js';
 import { WamKeyboard, KeyboardInstrument } from './WamKeyboard.js';
 import { EventEmitter } from 'events';
 import { createStructuredLogger } from '../../../shared/index.js';
@@ -34,7 +38,8 @@ export class WamKeyboardPlugin extends EventEmitter implements AudioPlugin {
     name: 'WAM Keyboard',
     version: '1.0.0',
     author: 'BassNotion',
-    description: 'Multi-instrument keyboard sampler (Grand Piano, Rhodes, Wurlitzer)',
+    description:
+      'Multi-instrument keyboard sampler (Grand Piano, Rhodes, Wurlitzer)',
     license: 'MIT',
     category: PluginCategory.INSTRUMENT,
     tags: ['keyboard', 'sampler', 'harmony', 'piano'],
@@ -80,7 +85,8 @@ export class WamKeyboardPlugin extends EventEmitter implements AudioPlugin {
   // The actual WamKeyboard instance we're wrapping
   private wamKeyboard: WamKeyboard | null = null;
   private audioContext: AudioContext | null = null;
-  private currentInstrument: KeyboardInstrument = KeyboardInstrument.GRAND_PIANO;
+  private currentInstrument: KeyboardInstrument =
+    KeyboardInstrument.GRAND_PIANO;
 
   constructor() {
     super();
@@ -123,48 +129,74 @@ export class WamKeyboardPlugin extends EventEmitter implements AudioPlugin {
    * Initialize the plugin with AudioContext
    */
   async initialize(context: PluginAudioContext): Promise<void> {
-    if (this.state === PluginState.INACTIVE || this.state === PluginState.ACTIVE) {
-      console.log('[PLAYBACK-ENGINE][WamKeyboardPlugin] Already initialized (state: ' + this.state + '), skipping');
+    if (
+      this.state === PluginState.INACTIVE ||
+      this.state === PluginState.ACTIVE
+    ) {
+      console.log(
+        '[PLAYBACK-ENGINE][WamKeyboardPlugin] Already initialized (state: ' +
+          this.state +
+          '), skipping',
+      );
       logger.warn('WamKeyboardPlugin already initialized, skipping');
       return;
     }
 
     try {
-      console.log('[PLAYBACK-ENGINE][WamKeyboardPlugin] 🎹 Starting initialization...');
+      console.log(
+        '[PLAYBACK-ENGINE][WamKeyboardPlugin] 🎹 Starting initialization...',
+      );
       logger.info('🎹 Initializing WamKeyboardPlugin with AudioContext...');
 
       this.audioContext = context.audioContext as AudioContext;
-      console.log('[PLAYBACK-ENGINE][WamKeyboardPlugin] AudioContext received:', {
-        state: this.audioContext.state,
-        sampleRate: this.audioContext.sampleRate
-      });
+      console.log(
+        '[PLAYBACK-ENGINE][WamKeyboardPlugin] AudioContext received:',
+        {
+          state: this.audioContext.state,
+          sampleRate: this.audioContext.sampleRate,
+        },
+      );
 
       // Create WamKeyboard instance with AudioContext
-      console.log('[PLAYBACK-ENGINE][WamKeyboardPlugin] Creating WamKeyboard instance...');
+      console.log(
+        '[PLAYBACK-ENGINE][WamKeyboardPlugin] Creating WamKeyboard instance...',
+      );
       this.wamKeyboard = new WamKeyboard(this.audioContext);
-      console.log('[PLAYBACK-ENGINE][WamKeyboardPlugin] WamKeyboard instance created');
+      console.log(
+        '[PLAYBACK-ENGINE][WamKeyboardPlugin] WamKeyboard instance created',
+      );
 
       // Initialize WamKeyboard (creates audio node, skip instrument load for now)
-      console.log('[PLAYBACK-ENGINE][WamKeyboardPlugin] Calling wamKeyboard.initialize()...');
+      console.log(
+        '[PLAYBACK-ENGINE][WamKeyboardPlugin] Calling wamKeyboard.initialize()...',
+      );
       await this.wamKeyboard.initialize({ skipInstrumentLoad: true });
-      console.log('[PLAYBACK-ENGINE][WamKeyboardPlugin] wamKeyboard.initialize() completed');
+      console.log(
+        '[PLAYBACK-ENGINE][WamKeyboardPlugin] wamKeyboard.initialize() completed',
+      );
 
       // State transition
       this.state = PluginState.INACTIVE;
       this.emit('initialized');
 
-      console.log('[PLAYBACK-ENGINE][WamKeyboardPlugin] ✅ Initialization complete', {
-        hasWamKeyboard: !!this.wamKeyboard,
-        hasAudioNode: !!this.wamKeyboard?.audioNode,
-        contextState: this.audioContext.state,
-        state: this.state
-      });
+      console.log(
+        '[PLAYBACK-ENGINE][WamKeyboardPlugin] ✅ Initialization complete',
+        {
+          hasWamKeyboard: !!this.wamKeyboard,
+          hasAudioNode: !!this.wamKeyboard?.audioNode,
+          contextState: this.audioContext.state,
+          state: this.state,
+        },
+      );
       logger.info('✅ WamKeyboardPlugin initialized successfully', {
         hasAudioNode: !!this.wamKeyboard.audioNode,
         contextState: this.audioContext.state,
       });
     } catch (error) {
-      console.error('[PLAYBACK-ENGINE][WamKeyboardPlugin] ❌ Initialization FAILED:', error);
+      console.error(
+        '[PLAYBACK-ENGINE][WamKeyboardPlugin] ❌ Initialization FAILED:',
+        error,
+      );
       this.state = PluginState.ERROR;
       this.emit('error', error, { operation: 'initialize' });
       throw error;
@@ -240,7 +272,7 @@ export class WamKeyboardPlugin extends EventEmitter implements AudioPlugin {
   async process(
     inputBuffer: AudioBuffer,
     outputBuffer: AudioBuffer,
-    context: PluginAudioContext
+    context: PluginAudioContext,
   ): Promise<PluginProcessingResult> {
     // WamKeyboard processes audio internally via Web Audio API
     return {
@@ -310,14 +342,19 @@ export class WamKeyboardPlugin extends EventEmitter implements AudioPlugin {
    * Set a parameter value (stub - WamKeyboard doesn't use traditional parameters)
    */
   async setParameter(name: string, value: unknown): Promise<void> {
-    logger.warn('setParameter called but not implemented for WamKeyboard', { name, value });
+    logger.warn('setParameter called but not implemented for WamKeyboard', {
+      name,
+      value,
+    });
   }
 
   /**
    * Get a parameter value (stub)
    */
   getParameter(name: string): unknown {
-    logger.warn('getParameter called but not implemented for WamKeyboard', { name });
+    logger.warn('getParameter called but not implemented for WamKeyboard', {
+      name,
+    });
     return undefined;
   }
 

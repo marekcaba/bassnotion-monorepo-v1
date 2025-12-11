@@ -15,7 +15,10 @@ import { test, expect } from '@playwright/test';
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3001';
 
 test.describe('Webkit React Query Diagnostic', () => {
-  test('diagnose query execution and data loading', async ({ page, browserName }) => {
+  test('diagnose query execution and data loading', async ({
+    page,
+    browserName,
+  }) => {
     // Only run for Webkit
     test.skip(browserName !== 'webkit', 'Webkit-only diagnostic test');
 
@@ -26,7 +29,7 @@ test.describe('Webkit React Query Diagnostic', () => {
     // ========== STEP 1: Set up monitoring ==========
 
     // Capture ALL console output
-    page.on('console', msg => {
+    page.on('console', (msg) => {
       const type = msg.type();
       const text = msg.text();
       logs.push(`[${type.toUpperCase()}] ${text}`);
@@ -34,35 +37,47 @@ test.describe('Webkit React Query Diagnostic', () => {
     });
 
     // Capture page errors
-    page.on('pageerror', error => {
+    page.on('pageerror', (error) => {
       const msg = `[PAGE ERROR] ${error.message}\n${error.stack}`;
       logs.push(msg);
       console.error('[WEBKIT PAGE ERROR]', error);
     });
 
     // Capture network requests
-    page.on('request', request => {
+    page.on('request', (request) => {
       const url = request.url();
       requests.push(`${request.method()} ${url}`);
-      if (url.includes('tutorial') || url.includes('exercise') || url.includes('api')) {
+      if (
+        url.includes('tutorial') ||
+        url.includes('exercise') ||
+        url.includes('api')
+      ) {
         console.log('[WEBKIT REQUEST]', request.method(), url);
       }
     });
 
     // Capture network responses
-    page.on('response', response => {
+    page.on('response', (response) => {
       const url = response.url();
       responses.push(`${response.status()} ${url}`);
-      if (url.includes('tutorial') || url.includes('exercise') || url.includes('api')) {
+      if (
+        url.includes('tutorial') ||
+        url.includes('exercise') ||
+        url.includes('api')
+      ) {
         console.log('[WEBKIT RESPONSE]', response.status(), url);
       }
     });
 
     // Capture failed requests
-    page.on('requestfailed', request => {
+    page.on('requestfailed', (request) => {
       const msg = `[REQUEST FAILED] ${request.url()} - ${request.failure()?.errorText}`;
       logs.push(msg);
-      console.error('[WEBKIT REQUEST FAILED]', request.url(), request.failure()?.errorText);
+      console.error(
+        '[WEBKIT REQUEST FAILED]',
+        request.url(),
+        request.failure()?.errorText,
+      );
     });
 
     // ========== STEP 2: Navigate to page ==========
@@ -70,9 +85,12 @@ test.describe('Webkit React Query Diagnostic', () => {
     console.log('\n========== WEBKIT DIAGNOSTIC TEST STARTED ==========\n');
     console.log('Navigating to tutorial page...');
 
-    await page.goto(`${BASE_URL}/library/how-to-find-notes-on-the-bass-fretboard`, {
-      waitUntil: 'domcontentloaded'
-    });
+    await page.goto(
+      `${BASE_URL}/library/how-to-find-notes-on-the-bass-fretboard`,
+      {
+        waitUntil: 'domcontentloaded',
+      },
+    );
 
     console.log('Page loaded, waiting for network idle...');
     await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {
@@ -94,11 +112,15 @@ test.describe('Webkit React Query Diagnostic', () => {
         // Check for key elements
         hasH1: !!document.querySelector('h1'),
         hasH4: !!document.querySelector('h4'),
-        h4Contents: Array.from(document.querySelectorAll('h4')).map(h => h.textContent?.trim()),
+        h4Contents: Array.from(document.querySelectorAll('h4')).map((h) =>
+          h.textContent?.trim(),
+        ),
 
         // Check for loading/error states
         hasLoadingText: document.body.innerText.includes('Loading'),
-        hasErrorText: document.body.innerText.includes('Error') || document.body.innerText.includes('error'),
+        hasErrorText:
+          document.body.innerText.includes('Error') ||
+          document.body.innerText.includes('error'),
 
         // Check for React Query debug element
         hasRqDebug: !!document.getElementById('rq-debug'),
@@ -106,7 +128,7 @@ test.describe('Webkit React Query Diagnostic', () => {
           const el = document.getElementById('rq-debug');
           if (!el) return null;
           return Object.fromEntries(
-            Array.from(el.attributes).map(a => [a.name, a.value])
+            Array.from(el.attributes).map((a) => [a.name, a.value]),
           );
         })(),
 
@@ -127,14 +149,16 @@ test.describe('Webkit React Query Diagnostic', () => {
     const state10s = await page.evaluate(() => {
       return {
         hasH4: !!document.querySelector('h4'),
-        h4Contents: Array.from(document.querySelectorAll('h4')).map(h => h.textContent?.trim()),
+        h4Contents: Array.from(document.querySelectorAll('h4')).map((h) =>
+          h.textContent?.trim(),
+        ),
         hasLoadingText: document.body.innerText.includes('Loading'),
         hasErrorText: document.body.innerText.includes('Error'),
         rqDebugAttrs: (() => {
           const el = document.getElementById('rq-debug');
           if (!el) return null;
           return Object.fromEntries(
-            Array.from(el.attributes).map(a => [a.name, a.value])
+            Array.from(el.attributes).map((a) => [a.name, a.value]),
           );
         })(),
       };
@@ -150,14 +174,16 @@ test.describe('Webkit React Query Diagnostic', () => {
     const state20s = await page.evaluate(() => {
       return {
         hasH4: !!document.querySelector('h4'),
-        h4Contents: Array.from(document.querySelectorAll('h4')).map(h => h.textContent?.trim()),
+        h4Contents: Array.from(document.querySelectorAll('h4')).map((h) =>
+          h.textContent?.trim(),
+        ),
         hasLoadingText: document.body.innerText.includes('Loading'),
         hasErrorText: document.body.innerText.includes('Error'),
         rqDebugAttrs: (() => {
           const el = document.getElementById('rq-debug');
           if (!el) return null;
           return Object.fromEntries(
-            Array.from(el.attributes).map(a => [a.name, a.value])
+            Array.from(el.attributes).map((a) => [a.name, a.value]),
           );
         })(),
         // Sample of actual body text
@@ -173,44 +199,59 @@ test.describe('Webkit React Query Diagnostic', () => {
 
     console.log('--- Console Logs Summary ---');
     console.log(`Total logs captured: ${logs.length}`);
-    const reactQueryLogs = logs.filter(l =>
-      l.includes('ReactQueryProvider') ||
-      l.includes('QueryCache') ||
-      l.includes('useTutorialExercises')
+    const reactQueryLogs = logs.filter(
+      (l) =>
+        l.includes('ReactQueryProvider') ||
+        l.includes('QueryCache') ||
+        l.includes('useTutorialExercises'),
     );
     console.log(`React Query related logs: ${reactQueryLogs.length}`);
     if (reactQueryLogs.length > 0) {
       console.log('Sample React Query logs:');
-      reactQueryLogs.slice(0, 10).forEach(log => console.log('  ', log));
+      reactQueryLogs.slice(0, 10).forEach((log) => console.log('  ', log));
     }
 
     console.log('\n--- Network Activity Summary ---');
     console.log(`Total requests: ${requests.length}`);
     console.log(`Total responses: ${responses.length}`);
 
-    const apiRequests = requests.filter(r =>
-      r.includes('tutorial') || r.includes('exercise') || r.includes('/api/')
+    const apiRequests = requests.filter(
+      (r) =>
+        r.includes('tutorial') || r.includes('exercise') || r.includes('/api/'),
     );
     console.log(`API requests: ${apiRequests.length}`);
     if (apiRequests.length > 0) {
       console.log('API calls made:');
-      apiRequests.forEach(req => console.log('  ', req));
+      apiRequests.forEach((req) => console.log('  ', req));
     } else {
       console.log('❌ NO API REQUESTS DETECTED');
     }
 
-    const apiResponses = responses.filter(r =>
-      r.includes('tutorial') || r.includes('exercise') || r.includes('/api/')
+    const apiResponses = responses.filter(
+      (r) =>
+        r.includes('tutorial') || r.includes('exercise') || r.includes('/api/'),
     );
     if (apiResponses.length > 0) {
       console.log('API responses received:');
-      apiResponses.forEach(res => console.log('  ', res));
+      apiResponses.forEach((res) => console.log('  ', res));
     }
 
     console.log('\n--- State Evolution ---');
-    console.log('2s:  h4 elements:', state2s.h4Contents.length, state2s.h4Contents);
-    console.log('10s: h4 elements:', state10s.h4Contents.length, state10s.h4Contents);
-    console.log('20s: h4 elements:', state20s.h4Contents.length, state20s.h4Contents);
+    console.log(
+      '2s:  h4 elements:',
+      state2s.h4Contents.length,
+      state2s.h4Contents,
+    );
+    console.log(
+      '10s: h4 elements:',
+      state10s.h4Contents.length,
+      state10s.h4Contents,
+    );
+    console.log(
+      '20s: h4 elements:',
+      state20s.h4Contents.length,
+      state20s.h4Contents,
+    );
 
     console.log('\n--- React Query Debug State ---');
     console.log('2s:  ', state2s.rqDebugAttrs || 'NO DEBUG ELEMENT');
@@ -230,7 +271,9 @@ test.describe('Webkit React Query Diagnostic', () => {
     if (apiRequests.length === 0) {
       console.log('❌ FINDING: No API requests made for tutorial data');
       console.log('   ROOT CAUSE: React Query queryFn never executed');
-      console.log('   IMPLICATION: Confirms React Query v5 + Webkit incompatibility');
+      console.log(
+        '   IMPLICATION: Confirms React Query v5 + Webkit incompatibility',
+      );
     }
 
     if (state20s.hasLoadingText) {
@@ -258,7 +301,7 @@ test.describe('Webkit React Query Diagnostic', () => {
     // Take screenshot for visual inspection
     await page.screenshot({
       path: `./webkit-diagnostic-${Date.now()}.png`,
-      fullPage: true
+      fullPage: true,
     });
     console.log('Screenshot saved to: webkit-diagnostic-<timestamp>.png');
 

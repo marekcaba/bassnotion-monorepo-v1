@@ -123,9 +123,8 @@ const BassLineWidgetComponent = ({
   useEffect(() => {
     const checkPreloadedBass = async () => {
       // Check GlobalSampleCache first
-      const { GlobalSampleCache } = await import(
-        '@/domains/playback/modules/storage/cache/GlobalSampleCache'
-      );
+      const { GlobalSampleCache } =
+        await import('@/domains/playback/modules/storage/cache/GlobalSampleCache');
       const preloadedBass =
         GlobalSampleCache.getCachedInstrument('bass-preloaded');
 
@@ -157,9 +156,8 @@ const BassLineWidgetComponent = ({
 
       try {
         // Dynamic import to avoid SSR issues
-        const { default: WamBass } = await import(
-          '@/domains/playback/modules/instruments/adapters/wam/WamBass'
-        );
+        const { default: WamBass } =
+          await import('@/domains/playback/modules/instruments/adapters/wam/WamBass');
         wamPluginClassRef.current = WamBass;
         setPluginClassLoaded(true);
         logger.debug('WAM Bass plugin class loaded successfully');
@@ -191,9 +189,8 @@ const BassLineWidgetComponent = ({
 
       // Check GlobalSampleCache first for preloaded bass instrument
       try {
-        const { GlobalSampleCache } = await import(
-          '@/domains/playback/modules/storage/cache/GlobalSampleCache'
-        );
+        const { GlobalSampleCache } =
+          await import('@/domains/playback/modules/storage/cache/GlobalSampleCache');
 
         // Check for pre-loaded bass instrument
         const preloadedBass =
@@ -215,13 +212,15 @@ const BassLineWidgetComponent = ({
         }
 
         // FAANG MIDI-based loading: Check for cached metadata about required notes
-        const bassMetadata = GlobalSampleCache.getCachedMetadata('bass-required-notes');
+        const bassMetadata = GlobalSampleCache.getCachedMetadata(
+          'bass-required-notes',
+        );
         if (bassMetadata) {
           logger.info('🎸 FAANG bass metadata found:', {
             exerciseId: bassMetadata.exerciseId,
             requiredNotes: bassMetadata.requiredNotes,
             noteCount: bassMetadata.noteCount,
-            savingsVsFullLoad: `${Math.round((1 - (bassMetadata.noteCount / 24)) * 100)}%`
+            savingsVsFullLoad: `${Math.round((1 - bassMetadata.noteCount / 24) * 100)}%`,
           });
 
           // TODO: When bass samples are implemented in WamBass.loadSamples(),
@@ -229,7 +228,9 @@ const BassLineWidgetComponent = ({
           // instead of loading all 24 bass notes.
           // This will reduce bandwidth and improve load times.
         } else {
-          logger.debug('No FAANG bass metadata found - will load default samples when bass samples are implemented');
+          logger.debug(
+            'No FAANG bass metadata found - will load default samples when bass samples are implemented',
+          );
         }
       } catch (error) {
         logger.debug(
@@ -707,7 +708,6 @@ const BassLineWidgetComponent = ({
             )}
           </div>
         </div>
-
       </div>
 
       {/* Play Control (if provided) */}

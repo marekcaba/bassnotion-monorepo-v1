@@ -21,7 +21,10 @@ import { useCorrelation } from '@/shared/hooks/useCorrelation';
 // Simple logging function
 const log = (message: string, data?: any) => {
   // Only log in debug mode
-  if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_LOG_LEVEL === 'DEBUG') {
+  if (
+    process.env.NODE_ENV === 'development' &&
+    process.env.NEXT_PUBLIC_LOG_LEVEL === 'DEBUG'
+  ) {
     console.debug(`[AudioEnabledTutorial] ${message}`, data);
   }
 };

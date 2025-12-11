@@ -226,7 +226,13 @@ describe('Phase 3.4: Transport ↔ Widgets Integration', () => {
         position: { bars: 1, beats: 0, sixteenths: 0, ticks: 0, seconds: 0.0 },
       }); // Should play
       eventBus.emit('transport:position-updated', {
-        position: { bars: 1, beats: 0, sixteenths: 1, ticks: 0, seconds: 0.125 },
+        position: {
+          bars: 1,
+          beats: 0,
+          sixteenths: 1,
+          ticks: 0,
+          seconds: 0.125,
+        },
       }); // Should NOT play
       eventBus.emit('transport:position-updated', {
         position: { bars: 1, beats: 0, sixteenths: 2, ticks: 0, seconds: 0.25 },
@@ -246,7 +252,7 @@ describe('Phase 3.4: Transport ↔ Widgets Integration', () => {
       // Simulate 20 position updates at 50ms interval (1 second of playback)
       for (let i = 0; i < 20; i++) {
         const beat = Math.floor(i / 5); // 5 updates per beat at 50ms = 250ms/beat
-        const sixteenth = (i % 5) === 0 ? 0 : 1; // Only first update of each beat has sixteenth=0
+        const sixteenth = i % 5 === 0 ? 0 : 1; // Only first update of each beat has sixteenth=0
 
         eventBus.emit('transport:position-updated', {
           position: {
@@ -270,11 +276,19 @@ describe('Phase 3.4: Transport ↔ Widgets Integration', () => {
       const harmonyWidget = new MockWidget('harmony-widget', eventBus);
       const drummerWidget = new MockWidget('drummer-widget', eventBus);
 
-      const harmonyCallback = vi.fn((pos) => harmonyWidget.onPositionUpdate(pos));
-      const drummerCallback = vi.fn((pos) => drummerWidget.onPositionUpdate(pos));
+      const harmonyCallback = vi.fn((pos) =>
+        harmonyWidget.onPositionUpdate(pos),
+      );
+      const drummerCallback = vi.fn((pos) =>
+        drummerWidget.onPositionUpdate(pos),
+      );
 
-      renderHook(() => useTransportPosition({ onPositionUpdate: harmonyCallback }));
-      renderHook(() => useTransportPosition({ onPositionUpdate: drummerCallback }));
+      renderHook(() =>
+        useTransportPosition({ onPositionUpdate: harmonyCallback }),
+      );
+      renderHook(() =>
+        useTransportPosition({ onPositionUpdate: drummerCallback }),
+      );
 
       harmonyWidget.start();
       drummerWidget.start();
@@ -406,7 +420,9 @@ describe('Phase 3.4: Transport ↔ Widgets Integration', () => {
 
       const hooks = widgets.map((widget) => {
         const callback = vi.fn((pos) => widget.onPositionUpdate(pos));
-        return renderHook(() => useTransportPosition({ onPositionUpdate: callback }));
+        return renderHook(() =>
+          useTransportPosition({ onPositionUpdate: callback }),
+        );
       });
 
       widgets.forEach((w) => w.start());
@@ -432,7 +448,11 @@ describe('Phase 3.4: Transport ↔ Widgets Integration', () => {
         for (let i = 0; i < 5; i++) {
           const widget = new MockWidget(`widget-${i}`, eventBus);
           const callback = vi.fn((pos) => widget.onPositionUpdate(pos));
-          hooks.push(renderHook(() => useTransportPosition({ onPositionUpdate: callback })));
+          hooks.push(
+            renderHook(() =>
+              useTransportPosition({ onPositionUpdate: callback }),
+            ),
+          );
           widget.start();
         }
 
@@ -459,7 +479,9 @@ describe('Phase 3.4: Transport ↔ Widgets Integration', () => {
         widget.onPositionUpdate(pos);
       });
 
-      renderHook(() => useTransportPosition({ onPositionUpdate: faultyCallback }));
+      renderHook(() =>
+        useTransportPosition({ onPositionUpdate: faultyCallback }),
+      );
       widget.start();
 
       // First position - should work
@@ -474,7 +496,13 @@ describe('Phase 3.4: Transport ↔ Widgets Integration', () => {
       // Second position - throws error
       expect(() => {
         eventBus.emit('transport:position-updated', {
-          position: { bars: 1, beats: 1, sixteenths: 0, ticks: 0, seconds: 0.5 },
+          position: {
+            bars: 1,
+            beats: 1,
+            sixteenths: 0,
+            ticks: 0,
+            seconds: 0.5,
+          },
         });
       }).toThrow('Widget processing error');
 
@@ -491,7 +519,9 @@ describe('Phase 3.4: Transport ↔ Widgets Integration', () => {
         throw new Error('Bad widget error');
       });
 
-      renderHook(() => useTransportPosition({ onPositionUpdate: goodCallback }));
+      renderHook(() =>
+        useTransportPosition({ onPositionUpdate: goodCallback }),
+      );
       renderHook(() => useTransportPosition({ onPositionUpdate: badCallback }));
 
       goodWidget.start();

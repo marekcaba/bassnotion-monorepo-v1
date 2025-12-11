@@ -7,7 +7,9 @@ import { CorrelationContext } from './correlation.js';
 // Global log transporter that can be set by the application
 let globalLogTransporter: ((entry: LogEntry) => void) | null = null;
 
-export function setGlobalLogTransporter(transporter: (entry: LogEntry) => void): void {
+export function setGlobalLogTransporter(
+  transporter: (entry: LogEntry) => void,
+): void {
   globalLogTransporter = transporter;
 }
 
@@ -133,14 +135,14 @@ function shouldSuppressContext(context: string): boolean {
   if (env === 'production') {
     const allowNoisy = process.env.NEXT_PUBLIC_ALLOW_NOISY_LOGS === 'true';
     if (!allowNoisy) {
-      return NOISY_CONTEXTS.some(noisy => context.includes(noisy));
+      return NOISY_CONTEXTS.some((noisy) => context.includes(noisy));
     }
   }
 
   // In development, suppress noisy contexts by default unless explicitly enabled
   const allowNoisy = process.env.NEXT_PUBLIC_ALLOW_NOISY_LOGS === 'true';
   if (!allowNoisy) {
-    return NOISY_CONTEXTS.some(noisy => context.includes(noisy));
+    return NOISY_CONTEXTS.some((noisy) => context.includes(noisy));
   }
 
   return false;
@@ -151,9 +153,14 @@ function shouldSuppressContext(context: string): boolean {
  */
 export function createStructuredLogger(
   service: string,
-  defaultContext?: Partial<CorrelationContext>
+  defaultContext?: Partial<CorrelationContext>,
 ): StructuredLogger {
-  const log = (level: LogLevel, message: string, data?: Record<string, unknown>, error?: Error) => {
+  const log = (
+    level: LogLevel,
+    message: string,
+    data?: Record<string, unknown>,
+    error?: Error,
+  ) => {
     // Get current log level at runtime (not cached)
     const currentLogLevel = getCurrentLogLevel();
     const isSuppressed = shouldSuppressContext(service);
@@ -254,10 +261,13 @@ export function createStructuredLogger(
   };
 
   return {
-    debug: (message: string, data?: Record<string, unknown>) => log('debug', message, data),
-    info: (message: string, data?: Record<string, unknown>) => log('info', message, data),
-    warn: (message: string, data?: Record<string, unknown>) => log('warn', message, data),
-    error: (message: string, error?: Error, data?: Record<string, unknown>) => 
+    debug: (message: string, data?: Record<string, unknown>) =>
+      log('debug', message, data),
+    info: (message: string, data?: Record<string, unknown>) =>
+      log('info', message, data),
+    warn: (message: string, data?: Record<string, unknown>) =>
+      log('warn', message, data),
+    error: (message: string, error?: Error, data?: Record<string, unknown>) =>
       log('error', message, data, error),
   };
 }
@@ -269,7 +279,7 @@ export function parseStructuredLog(logLine: string): LogEntry | null {
   try {
     const parsed = JSON.parse(logLine);
     return {
-      level: parsed.level?.toLowerCase() as LogLevel || 'info',
+      level: (parsed.level?.toLowerCase() as LogLevel) || 'info',
       message: parsed.message,
       context: {
         correlationId: parsed.correlationId,

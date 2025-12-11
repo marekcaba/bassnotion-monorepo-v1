@@ -13,6 +13,7 @@ During playback, every audio event creates an `AudioBufferSourceNode` that is ad
 ### **Memory Growth Analysis**
 
 **Example**: 10-minute practice session at 120 BPM
+
 ```
 Calculations:
 - 120 BPM = 30 bars/minute
@@ -28,6 +29,7 @@ Total: ~4,840 AudioBufferSourceNode references
 ```
 
 **Memory Impact**:
+
 - Each source + metadata ≈ 100 bytes
 - Tracking map overhead: **484 KB**
 - Actual buffers in memory (due to references): **Megabytes**
@@ -39,16 +41,19 @@ Total: ~4,840 AudioBufferSourceNode references
 ### **Tracking Maps** (in RegionProcessor.ts)
 
 1. **`scheduledAudioSources`** (line 149-152)
+
    ```typescript
    private scheduledAudioSources = new Map<
      AudioBufferSourceNode,
      { type: 'one-shot' | 'sustained'; hasStopScheduled: boolean }
    >();
    ```
+
    - **Purpose**: Track all scheduled sources for cleanup
    - **Problem**: ❌ Never removes finished sources
 
 2. **`activeHarmonySources`** (line 167-175)
+
    ```typescript
    private activeHarmonySources = new Map<
      string,
@@ -60,6 +65,7 @@ Total: ~4,840 AudioBufferSourceNode references
      }>
    >();
    ```
+
    - **Purpose**: Track harmony notes for polyphony
    - **Problem**: ❌ Never removes finished notes
 
@@ -67,6 +73,7 @@ Total: ~4,840 AudioBufferSourceNode references
    ```typescript
    private activeBassSources = new Map<string, AudioBufferSourceNode>();
    ```
+
    - **Purpose**: Track bass notes
    - **Problem**: ❌ Never removes finished notes
 
@@ -94,6 +101,7 @@ Found in 5 schedulers:
 ### **Current Cleanup Logic**
 
 **Only happens in `stop()` method**:
+
 - ✅ Manual stop → `scheduledAudioSources.clear()` (line 476)
 - ✅ Graceful stop → `scheduledAudioSources.clear()` after 3.5s timeout (line 453)
 - ✅ All stops → `activeHarmonySources.clear()` (line 373)
@@ -123,7 +131,7 @@ gain.connect(destination);
 // Track for cleanup
 this.scheduledAudioSources.set(source, {
   type: 'one-shot',
-  hasStopScheduled: false
+  hasStopScheduled: false,
 });
 
 // ✅ ADD THIS: Auto-cleanup when finished
@@ -203,6 +211,7 @@ private registerSourceCleanup(
 #### **2.1 HarmonyScheduler** (2 locations)
 
 **Location 1**: Line 298-318 (Old direct scheduling)
+
 ```typescript
 const source = this.audioContext.createBufferSource();
 source.buffer = buffer;
@@ -230,6 +239,7 @@ if (duration > 0) {
 ```
 
 **Location 2**: Line 763+ (CC64 sustain system)
+
 ```typescript
 const source = this.audioContext.createBufferSource();
 source.buffer = buffer;
@@ -243,7 +253,7 @@ source.onended = () => {
   // Remove from activeHarmonySources
   const activeSources = this.activeHarmonySources?.get(chordId);
   if (activeSources) {
-    const index = activeSources.findIndex(s => s.source === source);
+    const index = activeSources.findIndex((s) => s.source === source);
     if (index !== -1) {
       activeSources.splice(index, 1);
     }
@@ -372,12 +382,15 @@ describe('AudioBufferSourceNode cleanup', () => {
     const scheduler = processor['harmonyScheduler'];
 
     // Schedule a note
-    scheduler.scheduleEvent({
-      position: '0:0:0',
-      type: 'C4',
-      velocity: 0.7,
-      duration: '4n'
-    }, 0.1);
+    scheduler.scheduleEvent(
+      {
+        position: '0:0:0',
+        type: 'C4',
+        velocity: 0.7,
+        duration: '4n',
+      },
+      0.1,
+    );
 
     // Check source was added
     expect(processor['scheduledAudioSources'].size).toBeGreaterThan(0);
@@ -393,11 +406,14 @@ describe('AudioBufferSourceNode cleanup', () => {
     const processor = new RegionProcessor(eventBus);
 
     // Schedule chord
-    processor['harmonyScheduler'].scheduleEvent({
-      position: '0:0:0',
-      type: 'Cmaj',
-      velocity: 0.7
-    }, 0.1);
+    processor['harmonyScheduler'].scheduleEvent(
+      {
+        position: '0:0:0',
+        type: 'Cmaj',
+        velocity: 0.7,
+      },
+      0.1,
+    );
 
     // Check active sources tracked
     expect(processor['activeHarmonySources'].size).toBeGreaterThan(0);
@@ -414,11 +430,14 @@ describe('AudioBufferSourceNode cleanup', () => {
 
     // Simulate 1000 events
     for (let i = 0; i < 1000; i++) {
-      processor['drumScheduler'].scheduleEvent({
-        position: `0:${i}:0`,
-        type: 'kick',
-        velocity: 0.7
-      }, i * 0.5);
+      processor['drumScheduler'].scheduleEvent(
+        {
+          position: `0:${i}:0`,
+          type: 'kick',
+          velocity: 0.7,
+        },
+        i * 0.5,
+      );
     }
 
     // Wait for all to finish
@@ -478,12 +497,14 @@ async function testMemoryLeak() {
 ## ✅ Success Criteria
 
 **Before Fix**:
+
 - ❌ Memory grows linearly with playback duration
 - ❌ `scheduledAudioSources.size` increases forever
 - ❌ 4,840 orphaned references after 10 minutes
 - ❌ Memory pressure on mobile devices
 
 **After Fix**:
+
 - ✅ Memory stable during extended playback
 - ✅ `scheduledAudioSources.size` stays small (~10-50 active sources)
 - ✅ Sources cleaned up as they finish
@@ -539,6 +560,7 @@ After analyzing all 5 schedulers, we discovered that **most cleanup was already 
 **File**: [HarmonyScheduler.ts:316-335](../../../apps/frontend/src/domains/playback/services/core/region-processing/scheduling/HarmonyScheduler.ts#L316-L335)
 
 **Change**:
+
 ```typescript
 // BEFORE (Lines 316-318)
 source.onended = () => {
@@ -567,12 +589,14 @@ source.onended = () => {
 ### Revised Impact Analysis
 
 **Before Fix**:
+
 - **Only HarmonyScheduler Location 1** was leaking sources into `activeHarmonySources`
 - This code path is used for **old direct chord scheduling** (non-CC64 system)
 - Estimated leak: ~300-600 references per 10-minute session (much less than originally thought)
 - Other schedulers were already cleaning up properly
 
 **After Fix**:
+
 - ✅ All 5 schedulers now have complete cleanup
 - ✅ All tracking maps cleaned on source end
 - ✅ Memory should remain stable during extended playback
@@ -581,10 +605,12 @@ source.onended = () => {
 ### Success Criteria (Updated)
 
 **Before Fix**:
+
 - ❌ HarmonyScheduler Location 1 leaves sources in `activeHarmonySources`
 - ✅ All other schedulers already clean (no issues found)
 
 **After Fix**:
+
 - ✅ HarmonyScheduler Location 1 now removes from tracking map
 - ✅ All schedulers have consistent cleanup pattern
 - ✅ Memory stable during extended playback

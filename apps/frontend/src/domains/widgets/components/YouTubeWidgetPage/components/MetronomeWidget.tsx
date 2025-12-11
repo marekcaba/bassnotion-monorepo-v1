@@ -106,9 +106,8 @@ const MetronomeWidgetComponent = ({
   useEffect(() => {
     const checkPreloadedMetronome = async () => {
       // Check GlobalSampleCache first
-      const { GlobalSampleCache } = await import(
-        '@/domains/playback/modules/storage/cache/GlobalSampleCache'
-      );
+      const { GlobalSampleCache } =
+        await import('@/domains/playback/modules/storage/cache/GlobalSampleCache');
       const preloadedMetronome = GlobalSampleCache.getCachedInstrument(
         'metronome-preloaded',
       );
@@ -143,9 +142,8 @@ const MetronomeWidgetComponent = ({
 
       try {
         // Dynamic import to avoid SSR issues
-        const { default: WamMetronome } = await import(
-          '@/domains/playback/modules/instruments/adapters/wam/WamMetronome'
-        );
+        const { default: WamMetronome } =
+          await import('@/domains/playback/modules/instruments/adapters/wam/WamMetronome');
         wamPluginClassRef.current = WamMetronome;
         setPluginClassLoaded(true);
         logger.debug('WAM Metronome plugin class loaded successfully');
@@ -208,9 +206,8 @@ const MetronomeWidgetComponent = ({
 
       // Check GlobalSampleCache first for preloaded metronome
       try {
-        const { GlobalSampleCache } = await import(
-          '@/domains/playback/modules/storage/cache/GlobalSampleCache'
-        );
+        const { GlobalSampleCache } =
+          await import('@/domains/playback/modules/storage/cache/GlobalSampleCache');
         const preloadedMetronome = GlobalSampleCache.getCachedInstrument(
           'metronome-preloaded',
         );
@@ -336,18 +333,20 @@ const MetronomeWidgetComponent = ({
                   id: 'metronome-track',
                   name: 'Metronome',
                   instrumentType: 'metronome',
-                  regions: [{
-                    id: region.id,
-                    trackId: 'metronome-track',
-                    startTime: 0,
-                    duration: beats * 4, // Convert beats to seconds (assuming 4/4 time)
-                    pattern: {
-                      id: 'metronome-pattern',
-                      name: 'Metronome Pattern',
-                      type: 'metronome',
-                      events: pattern.events
-                    }
-                  }]
+                  regions: [
+                    {
+                      id: region.id,
+                      trackId: 'metronome-track',
+                      startTime: 0,
+                      duration: beats * 4, // Convert beats to seconds (assuming 4/4 time)
+                      pattern: {
+                        id: 'metronome-pattern',
+                        name: 'Metronome Pattern',
+                        type: 'metronome',
+                        events: pattern.events,
+                      },
+                    },
+                  ],
                 });
                 logger.debug('Registered track with PlaybackEngine');
               }
@@ -433,18 +432,20 @@ const MetronomeWidgetComponent = ({
               id: 'metronome-track',
               name: 'Metronome',
               instrumentType: 'metronome',
-              regions: [{
-                id: region.id,
-                trackId: 'metronome-track',
-                startTime: 0,
-                duration: beats * 4,
-                pattern: {
-                  id: 'metronome-pattern',
-                  name: 'Metronome Pattern',
-                  type: 'metronome',
-                  events: pattern.events
-                }
-              }]
+              regions: [
+                {
+                  id: region.id,
+                  trackId: 'metronome-track',
+                  startTime: 0,
+                  duration: beats * 4,
+                  pattern: {
+                    id: 'metronome-pattern',
+                    name: 'Metronome Pattern',
+                    type: 'metronome',
+                    events: pattern.events,
+                  },
+                },
+              ],
             });
           }
         }
@@ -484,7 +485,8 @@ const MetronomeWidgetComponent = ({
       });
 
       // Update PlaybackEngine with new pattern
-      const globalServices = (window as any).__globalCoreServices || (window as any).__coreServices;
+      const globalServices =
+        (window as any).__globalCoreServices || (window as any).__coreServices;
       if (globalServices && globalServices.getPlaybackEngine) {
         const playbackEngine = globalServices.getPlaybackEngine();
         if (playbackEngine) {
@@ -494,18 +496,20 @@ const MetronomeWidgetComponent = ({
             id: 'metronome-track',
             name: 'Metronome',
             instrumentType: 'metronome',
-            regions: [{
-              id: region.id,
-              trackId: 'metronome-track',
-              startTime: 0,
-              duration: beats * 4,
-              pattern: {
-                id: 'metronome-pattern',
-                name: 'Metronome Pattern',
-                type: 'metronome',
-                events: pattern.events
-              }
-            }]
+            regions: [
+              {
+                id: region.id,
+                trackId: 'metronome-track',
+                startTime: 0,
+                duration: beats * 4,
+                pattern: {
+                  id: 'metronome-pattern',
+                  name: 'Metronome Pattern',
+                  type: 'metronome',
+                  events: pattern.events,
+                },
+              },
+            ],
           });
         }
       }
@@ -517,7 +521,7 @@ const MetronomeWidgetComponent = ({
     logger.info('🎵 MetronomeWidget: BPM changed', {
       bpm,
       transportTempo: transport.tempo,
-      hasPlugin: !!metronomePluginRef.current
+      hasPlugin: !!metronomePluginRef.current,
     });
     if (metronomePluginRef.current) {
       metronomePluginRef.current.setTempo(bpm);
@@ -676,9 +680,14 @@ const MetronomeWidgetComponent = ({
         const globalServices = WindowRegistry.getCoreServices();
         if (globalServices && globalServices.getInstrumentRegistry) {
           const instrumentRegistry = globalServices.getInstrumentRegistry();
-          if (instrumentRegistry.getActive('metronome') === metronomePluginRef.current) {
+          if (
+            instrumentRegistry.getActive('metronome') ===
+            metronomePluginRef.current
+          ) {
             instrumentRegistry.removeActive('metronome');
-            logger.debug('Removed WAM Metronome from InstrumentRegistry on unmount');
+            logger.debug(
+              'Removed WAM Metronome from InstrumentRegistry on unmount',
+            );
           }
         }
       }
@@ -751,7 +760,6 @@ const MetronomeWidgetComponent = ({
     [wamPluginLoaded],
   );
 
-
   if (!isVisible) return null;
 
   return (
@@ -823,7 +831,9 @@ const MetronomeWidgetComponent = ({
                         min="40"
                         max="300"
                         value={bpm}
-                        onChange={(e) => transport.setTempo(Number(e.target.value))}
+                        onChange={(e) =>
+                          transport.setTempo(Number(e.target.value))
+                        }
                         className="flex-1 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer"
                       />
                       <span className="text-xs text-green-400 font-bold w-10 text-right">
@@ -913,7 +923,6 @@ const MetronomeWidgetComponent = ({
             )}
           </div>
         </div>
-
       </div>
 
       {/* Play Control (if provided) */}

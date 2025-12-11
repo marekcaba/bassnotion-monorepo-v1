@@ -1,15 +1,12 @@
 /**
  * Edge Location Manager
- * 
+ *
  * Manages CDN edge locations and optimal routing
  * Extracted from playback domain for shared infrastructure
  */
 
 import { createStructuredLogger } from '@bassnotion/contracts';
-import type {
-  EdgeLocation,
-  NetworkCondition,
-} from '@bassnotion/contracts';
+import type { EdgeLocation, NetworkCondition } from '@bassnotion/contracts';
 import type { GeolocationCoordinates } from './ICDNService.js';
 
 const logger = createStructuredLogger('EdgeLocationManager');
@@ -55,36 +52,36 @@ export class EdgeLocationManager {
   /**
    * Get optimal edge location for user
    */
-  getOptimalLocation(userLocation?: GeolocationCoordinates): EdgeLocation | null {
+  getOptimalLocation(
+    userLocation?: GeolocationCoordinates,
+  ): EdgeLocation | null {
     const location = userLocation || this.userLocation;
-    
+
     if (!location || this.edgeLocations.length === 0) {
       return this.edgeLocations[0] || null;
     }
 
     // Calculate distances and scores
     const scoredLocations = this.edgeLocations.map((edge) => {
-      const distance = this.calculateDistance(
-        location,
-        { latitude: edge.latitude, longitude: edge.longitude },
-      );
+      const distance = this.calculateDistance(location, {
+        latitude: edge.latitude,
+        longitude: edge.longitude,
+      });
 
       // Score based on distance, performance, and health
       const distanceScore = Math.max(0, 1 - distance / 20000); // Normalize to 0-1
       const performanceScore = edge.performanceScore || 0.5;
       const healthScore = edge.isHealthy ? 1 : 0;
 
-      const totalScore = 
-        distanceScore * 0.5 + 
-        performanceScore * 0.3 + 
-        healthScore * 0.2;
+      const totalScore =
+        distanceScore * 0.5 + performanceScore * 0.3 + healthScore * 0.2;
 
       return { edge, distance, score: totalScore };
     });
 
     // Sort by score and return best
     scoredLocations.sort((a, b) => b.score - a.score);
-    
+
     logger.debug('Optimal edge location selected', {
       location: scoredLocations[0].edge.id,
       distance: scoredLocations[0].distance,
@@ -97,18 +94,23 @@ export class EdgeLocationManager {
   /**
    * Calculate distance between two coordinates (Haversine formula)
    */
-  private calculateDistance(loc1: GeolocationCoordinates, loc2: GeolocationCoordinates): number {
+  private calculateDistance(
+    loc1: GeolocationCoordinates,
+    loc2: GeolocationCoordinates,
+  ): number {
     const R = 6371; // Earth radius in km
     const dLat = this.toRad(loc2.latitude - loc1.latitude);
     const dLon = this.toRad(loc2.longitude - loc1.longitude);
-    
-    const a = 
+
+    const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(this.toRad(loc1.latitude)) * Math.cos(this.toRad(loc2.latitude)) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    
+      Math.cos(this.toRad(loc1.latitude)) *
+        Math.cos(this.toRad(loc2.latitude)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    
+
     return R * c;
   }
 
@@ -119,7 +121,9 @@ export class EdgeLocationManager {
   /**
    * Detect user location using Geolocation API
    */
-  private async detectUserLocation(): Promise<GeolocationCoordinates | undefined> {
+  private async detectUserLocation(): Promise<
+    GeolocationCoordinates | undefined
+  > {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
       return undefined;
     }
@@ -205,9 +209,9 @@ export class EdgeLocationManager {
     const edge = this.edgeLocations.find((e) => e.id === edgeId);
     if (edge) {
       edge.performanceScore = Math.max(0, Math.min(1, performanceScore));
-      logger.debug('Edge location performance updated', { 
-        edgeId, 
-        performanceScore: edge.performanceScore 
+      logger.debug('Edge location performance updated', {
+        edgeId,
+        performanceScore: edge.performanceScore,
       });
     }
   }

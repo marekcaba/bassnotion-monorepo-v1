@@ -15,8 +15,24 @@ const execAsync = promisify(exec);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const INPUT_DIR = join(__dirname, '..', 'apps', 'frontend', 'public', 'samples', 'salamander-piano-full');
-const OUTPUT_DIR = join(__dirname, '..', 'apps', 'frontend', 'public', 'samples', 'salamander-3vel');
+const INPUT_DIR = join(
+  __dirname,
+  '..',
+  'apps',
+  'frontend',
+  'public',
+  'samples',
+  'salamander-piano-full',
+);
+const OUTPUT_DIR = join(
+  __dirname,
+  '..',
+  'apps',
+  'frontend',
+  'public',
+  'samples',
+  'salamander-3vel',
+);
 
 // Test with 3 velocity layers
 const TEST_VELOCITIES = ['v1', 'v8', 'v16']; // pp, mf, ff
@@ -31,7 +47,7 @@ async function ensureDir(dir) {
 
 async function convertFile(inputPath, outputPath) {
   const command = `ffmpeg -i "${inputPath}" -ab 192k -ar 44100 -y "${outputPath}"`;
-  
+
   try {
     await execAsync(command, { maxBuffer: 1024 * 1024 * 10 });
     return true;
@@ -62,29 +78,29 @@ async function main() {
   // Process each test velocity layer
   for (const velDir of TEST_VELOCITIES) {
     console.log(`\n🎵 Processing velocity layer ${velDir}...`);
-    
+
     const inputVelDir = join(INPUT_DIR, velDir);
     const outputVelDir = join(OUTPUT_DIR, velDir);
     await ensureDir(outputVelDir);
 
     const files = await fs.readdir(inputVelDir);
-    const flacFiles = files.filter(f => f.endsWith('.flac'));
-    
+    const flacFiles = files.filter((f) => f.endsWith('.flac'));
+
     console.log(`   Found ${flacFiles.length} FLAC files`);
 
     let converted = 0;
 
     for (const file of flacFiles) {
       const inputPath = join(inputVelDir, file);
-      
+
       // Fix filename for sharp notes
       let outputFile = file.replace('.flac', '.mp3');
       outputFile = outputFile.replace('#', 's'); // Convert D#1.mp3 to Ds1.mp3
-      
+
       const outputPath = join(outputVelDir, outputFile);
 
       process.stdout.write(`\r   Converting: ${converted}/${flacFiles.length}`);
-      
+
       if (await convertFile(inputPath, outputPath)) {
         converted++;
         totalConverted++;
@@ -102,16 +118,16 @@ async function main() {
     version: '3-velocity',
     velocityLayers: 3,
     velocityMapping: {
-      '0-42': 'v1',     // pp (MIDI 0-42)
-      '43-85': 'v8',    // mf (MIDI 43-85)
-      '86-127': 'v16'   // ff (MIDI 86-127)
+      '0-42': 'v1', // pp (MIDI 0-42)
+      '43-85': 'v8', // mf (MIDI 43-85)
+      '86-127': 'v16', // ff (MIDI 86-127)
     },
-    created: new Date().toISOString()
+    created: new Date().toISOString(),
   };
 
   await fs.writeFile(
     join(OUTPUT_DIR, 'metadata.json'),
-    JSON.stringify(metadata, null, 2)
+    JSON.stringify(metadata, null, 2),
   );
 
   console.log(`\n📊 Conversion Summary:`);

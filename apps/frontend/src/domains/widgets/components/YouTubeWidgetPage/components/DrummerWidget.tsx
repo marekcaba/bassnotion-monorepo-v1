@@ -77,8 +77,8 @@ const logger = getLogger('drummer-widget');
  * Map MIDI note numbers to drum types (General MIDI drum map)
  */
 const MIDI_DRUM_MAP: Record<number, 'kick' | 'snare' | 'hihat'> = {
-  36: 'kick',  // Bass Drum 1
-  35: 'kick',  // Acoustic Bass Drum
+  36: 'kick', // Bass Drum 1
+  35: 'kick', // Acoustic Bass Drum
   38: 'snare', // Acoustic Snare
   40: 'snare', // Electric Snare
   42: 'hihat', // Closed Hi-Hat
@@ -112,11 +112,14 @@ function convertMidiToDrumPattern(parsedData: any): DrumPattern {
         // Calculate position within the measure
         const timeInMeasure = note.time - measure.startTime;
         const measureDuration = measure.endTime - measure.startTime;
-        const beatsPerMeasure = parsedData.metadata?.timeSignature?.numerator || 4;
+        const beatsPerMeasure =
+          parsedData.metadata?.timeSignature?.numerator || 4;
         const beatDuration = measureDuration / beatsPerMeasure;
 
         const beat = Math.floor(timeInMeasure / beatDuration);
-        const sixteenth = Math.floor(((timeInMeasure % beatDuration) / beatDuration) * 16);
+        const sixteenth = Math.floor(
+          ((timeInMeasure % beatDuration) / beatDuration) * 16,
+        );
 
         const event: DrumPatternEvent = {
           position: {
@@ -131,10 +134,13 @@ function convertMidiToDrumPattern(parsedData: any): DrumPattern {
         };
 
         pattern.events.push(event);
-        logger.info(`🥁 Added drum event: ${drumType} at ${measureIndex}:${beat}:${sixteenth}`, {
-          velocity: event.velocity.toFixed(2),
-          position: event.position,
-        });
+        logger.info(
+          `🥁 Added drum event: ${drumType} at ${measureIndex}:${beat}:${sixteenth}`,
+          {
+            velocity: event.velocity.toFixed(2),
+            position: event.position,
+          },
+        );
       }
     });
   });
@@ -221,15 +227,17 @@ const DrummerWidgetComponent = ({
   const currentRegionRef = useRef<string | null>(null);
 
   // Use pattern selector hook if tutorialId is provided
-  const patternSelector = tutorialId ? usePatternSelector({
-    tutorialId,
-    onPatternChange: (type, pattern) => {
-      if (type === 'drums' && pattern.midiData) {
-        // Convert pattern library format to widget format
-        handlePatternLibraryChange(pattern);
-      }
-    }
-  }) : null;
+  const patternSelector = tutorialId
+    ? usePatternSelector({
+        tutorialId,
+        onPatternChange: (type, pattern) => {
+          if (type === 'drums' && pattern.midiData) {
+            // Convert pattern library format to widget format
+            handlePatternLibraryChange(pattern);
+          }
+        },
+      })
+    : null;
 
   // DISABLED: DrummerWidget should NOT load MIDI independently
   // GlobalControls is responsible for loading exercise data and adding regions to tracks
@@ -385,9 +393,8 @@ const DrummerWidgetComponent = ({
 
       try {
         // Dynamic import to avoid SSR issues
-        const { default: WamDrummer } = await import(
-          '@/domains/playback/modules/instruments/adapters/wam/WamDrummer'
-        );
+        const { default: WamDrummer } =
+          await import('@/domains/playback/modules/instruments/adapters/wam/WamDrummer');
         wamPluginClassRef.current = WamDrummer;
         setPluginClassLoaded(true);
         logger.debug('WAM Drummer plugin class loaded successfully');
@@ -516,18 +523,20 @@ const DrummerWidgetComponent = ({
                   id: 'drummer-widget-track',
                   name: 'Drums',
                   instrumentType: 'drums',
-                  regions: [{
-                    id: region.id,
-                    trackId: 'drummer-widget-track',
-                    startTime: 0,
-                    duration: pattern.loopLength * 4, // Convert bars to seconds (assuming 4/4 time)
-                    pattern: {
-                      id: 'drum-pattern',
-                      name: 'Drum Pattern',
-                      type: 'drums',
-                      events: pattern.events
-                    }
-                  }]
+                  regions: [
+                    {
+                      id: region.id,
+                      trackId: 'drummer-widget-track',
+                      startTime: 0,
+                      duration: pattern.loopLength * 4, // Convert bars to seconds (assuming 4/4 time)
+                      pattern: {
+                        id: 'drum-pattern',
+                        name: 'Drum Pattern',
+                        type: 'drums',
+                        events: pattern.events,
+                      },
+                    },
+                  ],
                 });
                 logger.debug('Registered drum track with PlaybackEngine');
               }
@@ -623,7 +632,12 @@ const DrummerWidgetComponent = ({
 
     // Update pattern in track when drum pattern changes
     const currentTrack = trackRef.current;
-    if (currentTrack && currentTrack.regions && wamPluginLoaded && currentRegionRef.current) {
+    if (
+      currentTrack &&
+      currentTrack.regions &&
+      wamPluginLoaded &&
+      currentRegionRef.current
+    ) {
       const drumPattern = createDrumPattern();
       // Remove old region and create new one
       currentTrack.removeRegion(currentRegionRef.current);
@@ -687,13 +701,16 @@ const DrummerWidgetComponent = ({
   useEffect(() => {
     return () => {
       const globalServices =
-        (window as any).__globalCoreServices ||
-        (window as any).__coreServices;
+        (window as any).__globalCoreServices || (window as any).__coreServices;
       if (globalServices && globalServices.getInstrumentRegistry) {
         const instrumentRegistry = globalServices.getInstrumentRegistry();
-        if (instrumentRegistry.getActive('drums') === drummerPluginRef.current) {
+        if (
+          instrumentRegistry.getActive('drums') === drummerPluginRef.current
+        ) {
           instrumentRegistry.removeActive('drums');
-          logger.debug('Removed WAM Drummer from InstrumentRegistry on unmount');
+          logger.debug(
+            'Removed WAM Drummer from InstrumentRegistry on unmount',
+          );
         }
       }
     };
@@ -791,112 +808,126 @@ const DrummerWidgetComponent = ({
   );
 
   // Handle pattern change from pattern library
-  const handlePatternLibraryChange = useCallback(async (libraryPattern: any) => {
-    // Load MIDI file from URL
-    if (libraryPattern.midiFileUrl) {
-      try {
-        componentLogger.info('Loading pattern from MIDI:', {
-          name: libraryPattern.name,
-          url: libraryPattern.midiFileUrl,
-          correlationId
-        });
-
-        // Load and parse MIDI file using backend API
-        const { useMidiParsing } = await import('@/domains/admin/hooks/useMidiParsing');
-        const midiParsing = useMidiParsing();
-
-        const parsedData = await midiParsing.parseMidi(
-          'drums-midi', // placeholder ID
-          {
-            midiUrl: libraryPattern.midiFileUrl,
-            bpm: tempo,
-            timeSignature: { numerator: 4, denominator: 4 },
-            totalBars: 2,
-          }
-        );
-
-        // Convert parsed MIDI notes to drum pattern
-        const drumPattern = convertMidiToDrumPattern(parsedData);
-
-        // Update track with new pattern
-        const currentTrack = trackRef.current;
-        if (currentTrack && currentTrack.createRegionFromPattern && currentRegionRef.current) {
-          currentTrack.removeRegion(currentRegionRef.current);
-          const region = currentTrack.createRegionFromPattern(drumPattern, {
-            name: libraryPattern.name || 'Drum Pattern',
-            startPosition: '0:0:0',
-            duration: `${drumPattern.loopLength}:0:0`,
-            loopCount: 0,
-          });
-          currentRegionRef.current = region.id;
-
-          // Update PlaybackEngine with new pattern
-          const globalServices = WindowRegistry.getCoreServices();
-          if (globalServices && globalServices.getPlaybackEngine) {
-            const playbackEngine = globalServices.getPlaybackEngine();
-            if (playbackEngine) {
-              // Unregister old track, then register new one
-              playbackEngine.unregisterTrack('drummer-widget-track');
-              playbackEngine.registerTrack({
-                id: 'drummer-widget-track',
-                name: 'Drums',
-                instrumentType: 'drums',
-                regions: [{
-                  id: region.id,
-                  trackId: 'drummer-widget-track',
-                  startTime: 0,
-                  duration: drumPattern.loopLength * 4,
-                  pattern: {
-                    id: 'drum-pattern',
-                    name: libraryPattern.name || 'Drum Pattern',
-                    type: 'drums',
-                    events: drumPattern.events
-                  }
-                }]
-              });
-            }
-          }
-
-          componentLogger.info('Updated drum pattern from MIDI', {
+  const handlePatternLibraryChange = useCallback(
+    async (libraryPattern: any) => {
+      // Load MIDI file from URL
+      if (libraryPattern.midiFileUrl) {
+        try {
+          componentLogger.info('Loading pattern from MIDI:', {
             name: libraryPattern.name,
-            events: drumPattern.events.length,
-            correlationId
+            url: libraryPattern.midiFileUrl,
+            correlationId,
           });
+
+          // Load and parse MIDI file using backend API
+          const { useMidiParsing } =
+            await import('@/domains/admin/hooks/useMidiParsing');
+          const midiParsing = useMidiParsing();
+
+          const parsedData = await midiParsing.parseMidi(
+            'drums-midi', // placeholder ID
+            {
+              midiUrl: libraryPattern.midiFileUrl,
+              bpm: tempo,
+              timeSignature: { numerator: 4, denominator: 4 },
+              totalBars: 2,
+            },
+          );
+
+          // Convert parsed MIDI notes to drum pattern
+          const drumPattern = convertMidiToDrumPattern(parsedData);
+
+          // Update track with new pattern
+          const currentTrack = trackRef.current;
+          if (
+            currentTrack &&
+            currentTrack.createRegionFromPattern &&
+            currentRegionRef.current
+          ) {
+            currentTrack.removeRegion(currentRegionRef.current);
+            const region = currentTrack.createRegionFromPattern(drumPattern, {
+              name: libraryPattern.name || 'Drum Pattern',
+              startPosition: '0:0:0',
+              duration: `${drumPattern.loopLength}:0:0`,
+              loopCount: 0,
+            });
+            currentRegionRef.current = region.id;
+
+            // Update PlaybackEngine with new pattern
+            const globalServices = WindowRegistry.getCoreServices();
+            if (globalServices && globalServices.getPlaybackEngine) {
+              const playbackEngine = globalServices.getPlaybackEngine();
+              if (playbackEngine) {
+                // Unregister old track, then register new one
+                playbackEngine.unregisterTrack('drummer-widget-track');
+                playbackEngine.registerTrack({
+                  id: 'drummer-widget-track',
+                  name: 'Drums',
+                  instrumentType: 'drums',
+                  regions: [
+                    {
+                      id: region.id,
+                      trackId: 'drummer-widget-track',
+                      startTime: 0,
+                      duration: drumPattern.loopLength * 4,
+                      pattern: {
+                        id: 'drum-pattern',
+                        name: libraryPattern.name || 'Drum Pattern',
+                        type: 'drums',
+                        events: drumPattern.events,
+                      },
+                    },
+                  ],
+                });
+              }
+            }
+
+            componentLogger.info('Updated drum pattern from MIDI', {
+              name: libraryPattern.name,
+              events: drumPattern.events.length,
+              correlationId,
+            });
+          }
+
+          onPatternChange(libraryPattern.name);
+        } catch (error) {
+          componentLogger.error(
+            'Failed to load pattern',
+            error instanceof Error ? error : new Error(String(error)),
+            { correlationId },
+          );
+
+          // Fallback to genre-based pattern
+          const newPattern = {
+            kick: Array(8).fill(0),
+            snare: Array(8).fill(0),
+            hihat: Array(8).fill(0),
+          };
+
+          // Simple pattern generation based on genre
+          if (libraryPattern.genre === 'rock') {
+            newPattern.kick = [1, 0, 0, 0, 1, 0, 0, 0];
+            newPattern.snare = [0, 0, 1, 0, 0, 0, 1, 0];
+            newPattern.hihat = [1, 1, 1, 1, 1, 1, 1, 1];
+          } else if (libraryPattern.genre === 'jazz') {
+            newPattern.kick = [1, 0, 0, 0, 0, 0, 1, 0];
+            newPattern.snare = [0, 0, 0, 0, 1, 0, 0, 0];
+            newPattern.hihat = [1, 0, 1, 1, 0, 1, 1, 0];
+          } else if (libraryPattern.genre === 'funk') {
+            newPattern.kick = [1, 0, 0, 1, 0, 0, 1, 0];
+            newPattern.snare = [0, 1, 0, 1, 0, 0, 1, 0];
+            newPattern.hihat = [1, 1, 0, 1, 1, 0, 1, 1];
+          }
+
+          setCurrentPattern(newPattern);
+          onPatternChange(libraryPattern.name);
         }
-
-        onPatternChange(libraryPattern.name);
-      } catch (error) {
-        componentLogger.error('Failed to load pattern', error instanceof Error ? error : new Error(String(error)), { correlationId });
-
-        // Fallback to genre-based pattern
-        const newPattern = {
-          kick: Array(8).fill(0),
-          snare: Array(8).fill(0),
-          hihat: Array(8).fill(0),
-        };
-
-        // Simple pattern generation based on genre
-        if (libraryPattern.genre === 'rock') {
-          newPattern.kick = [1, 0, 0, 0, 1, 0, 0, 0];
-          newPattern.snare = [0, 0, 1, 0, 0, 0, 1, 0];
-          newPattern.hihat = [1, 1, 1, 1, 1, 1, 1, 1];
-        } else if (libraryPattern.genre === 'jazz') {
-          newPattern.kick = [1, 0, 0, 0, 0, 0, 1, 0];
-          newPattern.snare = [0, 0, 0, 0, 1, 0, 0, 0];
-          newPattern.hihat = [1, 0, 1, 1, 0, 1, 1, 0];
-        } else if (libraryPattern.genre === 'funk') {
-          newPattern.kick = [1, 0, 0, 1, 0, 0, 1, 0];
-          newPattern.snare = [0, 1, 0, 1, 0, 0, 1, 0];
-          newPattern.hihat = [1, 1, 0, 1, 1, 0, 1, 1];
-        }
-
-        setCurrentPattern(newPattern);
-        onPatternChange(libraryPattern.name);
       }
-    }
-    // Note: Removed track from dependencies to prevent infinite loops
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onPatternChange, componentLogger, correlationId, tempo]);
+      // Note: Removed track from dependencies to prevent infinite loops
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    },
+    [onPatternChange, componentLogger, correlationId, tempo],
+  );
 
   // Don't return null when not visible - we need effects to run for plugin loading
   // Just hide the UI
@@ -1016,7 +1047,9 @@ const DrummerWidgetComponent = ({
                       {/* Pattern Library Button */}
                       {tutorialId && (
                         <button
-                          onClick={() => setShowPatternLibrary(!showPatternLibrary)}
+                          onClick={() =>
+                            setShowPatternLibrary(!showPatternLibrary)
+                          }
                           className="p-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors"
                           title="Browse Pattern Library"
                         >
@@ -1029,7 +1062,9 @@ const DrummerWidgetComponent = ({
                     {showPatternLibrary && patternSelector && (
                       <div className="p-2 bg-slate-800 rounded-lg border border-slate-700">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-medium text-slate-300">Pattern Library</span>
+                          <span className="text-xs font-medium text-slate-300">
+                            Pattern Library
+                          </span>
                           <button
                             onClick={() => setShowPatternLibrary(false)}
                             className="text-xs text-slate-500 hover:text-slate-400"
@@ -1038,7 +1073,9 @@ const DrummerWidgetComponent = ({
                           </button>
                         </div>
                         {patternSelector.isLoading ? (
-                          <div className="text-xs text-slate-500">Loading patterns...</div>
+                          <div className="text-xs text-slate-500">
+                            Loading patterns...
+                          </div>
                         ) : (
                           <div className="space-y-1 max-h-32 overflow-y-auto">
                             {patternSelector.availableDrumPatterns.map((p) => (
@@ -1050,7 +1087,8 @@ const DrummerWidgetComponent = ({
                                   setShowPatternLibrary(false);
                                 }}
                                 className={`w-full text-left p-1.5 text-xs rounded hover:bg-slate-700 transition-colors ${
-                                  patternSelector.selectedDrumPattern?.id === p.id
+                                  patternSelector.selectedDrumPattern?.id ===
+                                  p.id
                                     ? 'bg-slate-700 text-orange-400'
                                     : 'text-slate-300'
                                 }`}
@@ -1058,7 +1096,9 @@ const DrummerWidgetComponent = ({
                                 <div className="flex items-center justify-between">
                                   <span>{p.name}</span>
                                   {p.genre && (
-                                    <span className="text-xs text-slate-500">{p.genre}</span>
+                                    <span className="text-xs text-slate-500">
+                                      {p.genre}
+                                    </span>
                                   )}
                                 </div>
                               </button>
@@ -1174,7 +1214,6 @@ const DrummerWidgetComponent = ({
             )}
           </div>
         </div>
-
       </div>
 
       {/* Play Control (if provided) */}

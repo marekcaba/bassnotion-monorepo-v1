@@ -2,7 +2,8 @@ import { Injectable, Inject } from '@nestjs/common';
 import type {
   ICreatorRepository,
   PaginatedResult,
-  PaginationOptions } from './creator.repository.interface.js';
+  PaginationOptions,
+} from './creator.repository.interface.js';
 import { Creator } from '../entities/creator.entity.js';
 import { CreatorId } from '../value-objects/creator-id.vo.js';
 import { ChannelUrl } from '../value-objects/channel-url.vo.js';
@@ -39,7 +40,9 @@ export interface IResultCreatorRepository {
 
 @Injectable()
 export class ResultCreatorRepository implements IResultCreatorRepository {
-  private readonly staticLogger = createStructuredLogger(ResultCreatorRepository.name);
+  private readonly staticLogger = createStructuredLogger(
+    ResultCreatorRepository.name,
+  );
 
   constructor(
     private readonly repository: ICreatorRepository,
@@ -54,8 +57,10 @@ export class ResultCreatorRepository implements IResultCreatorRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      
-      logger.error(`Failed to find creator ${id.value}:`, error as Error, { correlationId });
+
+      logger.error(`Failed to find creator ${id.value}:`, error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -69,11 +74,11 @@ export class ResultCreatorRepository implements IResultCreatorRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      
+
       logger.error(
         `Failed to find creator by channel URL ${channelUrl.value}:`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       return ResultUtils.fail(error as Error);
     }
@@ -88,7 +93,9 @@ export class ResultCreatorRepository implements IResultCreatorRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Failed to find all creators:', error as Error, { correlationId });
+      logger.error('Failed to find all creators:', error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -103,7 +110,7 @@ export class ResultCreatorRepository implements IResultCreatorRepository {
       logger.error(
         `Failed to find creator by channel ID ${channelId}:`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       return ResultUtils.fail(error as Error);
     }
@@ -116,7 +123,9 @@ export class ResultCreatorRepository implements IResultCreatorRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error(`Failed to find creators by name ${name}:`, error as Error, { correlationId });
+      logger.error(`Failed to find creators by name ${name}:`, error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -131,7 +140,7 @@ export class ResultCreatorRepository implements IResultCreatorRepository {
       logger.error(
         `Failed to find stale creators with threshold ${hoursThreshold}:`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       return ResultUtils.fail(error as Error);
     }
@@ -144,7 +153,9 @@ export class ResultCreatorRepository implements IResultCreatorRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error(`Failed to find top ${limit} creators:`, error as Error, { correlationId });
+      logger.error(`Failed to find top ${limit} creators:`, error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -159,7 +170,7 @@ export class ResultCreatorRepository implements IResultCreatorRepository {
       logger.error(
         `Failed to search creators with query "${query}":`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       return ResultUtils.fail(error as Error);
     }
@@ -172,7 +183,9 @@ export class ResultCreatorRepository implements IResultCreatorRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Failed to save creator:', error as Error, { correlationId });
+      logger.error('Failed to save creator:', error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -184,7 +197,11 @@ export class ResultCreatorRepository implements IResultCreatorRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error(`Failed to update creator ${creator.id.value}:`, error as Error, { correlationId });
+      logger.error(
+        `Failed to update creator ${creator.id.value}:`,
+        error as Error,
+        { correlationId },
+      );
       return ResultUtils.fail(error as Error);
     }
   }
@@ -196,7 +213,9 @@ export class ResultCreatorRepository implements IResultCreatorRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error(`Failed to delete creator ${id.value}:`, error as Error, { correlationId });
+      logger.error(`Failed to delete creator ${id.value}:`, error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -211,7 +230,7 @@ export class ResultCreatorRepository implements IResultCreatorRepository {
       logger.error(
         `Failed to check creator existence ${id.value}:`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       return ResultUtils.fail(error as Error);
     }
@@ -227,7 +246,7 @@ export class ResultCreatorRepository implements IResultCreatorRepository {
       logger.error(
         `Failed to check creator existence by channel URL ${channelUrl.value}:`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       return ResultUtils.fail(error as Error);
     }
@@ -240,7 +259,9 @@ export class ResultCreatorRepository implements IResultCreatorRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Failed to find creators by ids:', error as Error, { correlationId });
+      logger.error('Failed to find creators by ids:', error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -252,7 +273,9 @@ export class ResultCreatorRepository implements IResultCreatorRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Failed to find creators by channel URLs:', error as Error, { correlationId });
+      logger.error('Failed to find creators by channel URLs:', error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -264,7 +287,9 @@ export class ResultCreatorRepository implements IResultCreatorRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Failed to save creators batch:', error as Error, { correlationId });
+      logger.error('Failed to save creators batch:', error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -276,7 +301,9 @@ export class ResultCreatorRepository implements IResultCreatorRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Failed to update creators batch:', error as Error, { correlationId });
+      logger.error('Failed to update creators batch:', error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -288,7 +315,9 @@ export class ResultCreatorRepository implements IResultCreatorRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Failed to delete creators batch:', error as Error, { correlationId });
+      logger.error('Failed to delete creators batch:', error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -302,7 +331,9 @@ export class ResultCreatorRepository implements IResultCreatorRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Failed to get all unique channel URLs:', error as Error, { correlationId });
+      logger.error('Failed to get all unique channel URLs:', error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -317,11 +348,11 @@ export class ResultCreatorRepository implements IResultCreatorRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      
+
       logger.error(
         `Failed to count creators by subscriber range ${min}-${max}:`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       return ResultUtils.fail(error as Error);
     }

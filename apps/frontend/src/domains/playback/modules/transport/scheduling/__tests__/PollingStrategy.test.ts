@@ -16,7 +16,9 @@ const createMockClock = (): Clock => {
   let audioTime = 0;
   return {
     getAudioTime: vi.fn(() => audioTime),
-    setAudioTime: (time: number) => { audioTime = time; },
+    setAudioTime: (time: number) => {
+      audioTime = time;
+    },
     isUsingAudioWorklet: vi.fn().mockReturnValue(false),
     setOnTick: vi.fn(),
     start: vi.fn(),
@@ -25,15 +27,16 @@ const createMockClock = (): Clock => {
 };
 
 // Mock Timeline
-const createMockTimeline = (): Timeline => ({
-  updatePositionFromSeconds: vi.fn(),
-  getTransportPosition: vi.fn().mockReturnValue({
-    bars: 0,
-    beats: 0,
-    sixteenths: 0,
-    ticks: 0,
-  }),
-} as unknown as Timeline);
+const createMockTimeline = (): Timeline =>
+  ({
+    updatePositionFromSeconds: vi.fn(),
+    getTransportPosition: vi.fn().mockReturnValue({
+      bars: 0,
+      beats: 0,
+      sixteenths: 0,
+      ticks: 0,
+    }),
+  }) as unknown as Timeline;
 
 describe('PollingStrategy', () => {
   let strategy: PollingStrategy;
@@ -44,7 +47,9 @@ describe('PollingStrategy', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     receivedUpdates = [];
-    mockClock = createMockClock() as Clock & { setAudioTime: (time: number) => void };
+    mockClock = createMockClock() as Clock & {
+      setAudioTime: (time: number) => void;
+    };
     mockTimeline = createMockTimeline();
 
     strategy = new PollingStrategy(mockClock, mockTimeline, {

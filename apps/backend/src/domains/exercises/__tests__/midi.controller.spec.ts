@@ -29,13 +29,19 @@ describe('MidiController - Stateless MIDI Parser (Story 4.4 - Task 1)', () => {
       convertMidiToHarmony: vi.fn(),
     } as any;
 
-    controller = new MidiController(midiParserService, fretboardMapperService, drumMapperService, harmonyMapperService);
+    controller = new MidiController(
+      midiParserService,
+      fretboardMapperService,
+      drumMapperService,
+      harmonyMapperService,
+    );
     vi.clearAllMocks();
   });
 
   describe('POST /api/v1/midi/parse (stateless)', () => {
     const validRequest: StatelessParseMidiRequestDto = {
-      midiUrl: 'https://xyz.supabase.co/storage/v1/object/public/exercise-midi-temp/test.mid',
+      midiUrl:
+        'https://xyz.supabase.co/storage/v1/object/public/exercise-midi-temp/test.mid',
       bpm: 120,
       timeSignature: { numerator: 4, denominator: 4 },
       totalBars: 4,
@@ -73,9 +79,14 @@ describe('MidiController - Stateless MIDI Parser (Story 4.4 - Task 1)', () => {
     };
 
     it('should parse valid MIDI file from Supabase storage URL', async () => {
-      (midiParserService.parseMidiFromUrl as any).mockResolvedValue(mockParseResult);
+      (midiParserService.parseMidiFromUrl as any).mockResolvedValue(
+        mockParseResult,
+      );
 
-      const result = await controller.parseStateless(validRequest, 'test-correlation-id');
+      const result = await controller.parseStateless(
+        validRequest,
+        'test-correlation-id',
+      );
 
       expect(result).toEqual(mockParseResult);
       expect(midiParserService.parseMidiFromUrl).toHaveBeenCalledWith(
@@ -153,7 +164,9 @@ describe('MidiController - Stateless MIDI Parser (Story 4.4 - Task 1)', () => {
     });
 
     it('should accept various time signatures (3/4, 6/8, 7/8)', async () => {
-      (midiParserService.parseMidiFromUrl as any).mockResolvedValue(mockParseResult);
+      (midiParserService.parseMidiFromUrl as any).mockResolvedValue(
+        mockParseResult,
+      );
 
       // Test 3/4
       const request34 = {
@@ -212,7 +225,9 @@ describe('MidiController - Stateless MIDI Parser (Story 4.4 - Task 1)', () => {
     });
 
     it('should accept extreme BPM values within range (40, 300)', async () => {
-      (midiParserService.parseMidiFromUrl as any).mockResolvedValue(mockParseResult);
+      (midiParserService.parseMidiFromUrl as any).mockResolvedValue(
+        mockParseResult,
+      );
 
       // Test minimum BPM (40)
       const requestMin = { ...validRequest, bpm: 40 };
@@ -239,7 +254,9 @@ describe('MidiController - Stateless MIDI Parser (Story 4.4 - Task 1)', () => {
 
     it('should handle parser service errors gracefully', async () => {
       const parserError = new Error('MIDI file is corrupted');
-      (midiParserService.parseMidiFromUrl as any).mockRejectedValue(parserError);
+      (midiParserService.parseMidiFromUrl as any).mockRejectedValue(
+        parserError,
+      );
 
       await expect(
         controller.parseStateless(validRequest, 'test-correlation-id'),
@@ -249,14 +266,19 @@ describe('MidiController - Stateless MIDI Parser (Story 4.4 - Task 1)', () => {
     });
 
     it('should accept .midi extension (case insensitive)', async () => {
-      (midiParserService.parseMidiFromUrl as any).mockResolvedValue(mockParseResult);
+      (midiParserService.parseMidiFromUrl as any).mockResolvedValue(
+        mockParseResult,
+      );
 
       const requestMIDI = {
         ...validRequest,
         midiUrl: 'https://xyz.supabase.co/storage/v1/object/public/test.MIDI',
       };
 
-      const result = await controller.parseStateless(requestMIDI, 'test-correlation-id');
+      const result = await controller.parseStateless(
+        requestMIDI,
+        'test-correlation-id',
+      );
 
       expect(result).toEqual(mockParseResult);
       expect(midiParserService.parseMidiFromUrl).toHaveBeenCalled();
@@ -293,7 +315,8 @@ describe('MidiController - Stateless MIDI Parser (Story 4.4 - Task 1)', () => {
     it('should work without exercise existing in database (no DB lookup)', async () => {
       // This is the key benefit - no database dependency
       const request: StatelessParseMidiRequestDto = {
-        midiUrl: 'https://xyz.supabase.co/storage/v1/object/public/exercise-midi-temp/new-exercise.mid',
+        midiUrl:
+          'https://xyz.supabase.co/storage/v1/object/public/exercise-midi-temp/new-exercise.mid',
         bpm: 120,
         timeSignature: { numerator: 4, denominator: 4 },
         totalBars: 4,
@@ -313,7 +336,10 @@ describe('MidiController - Stateless MIDI Parser (Story 4.4 - Task 1)', () => {
 
       (midiParserService.parseMidiFromUrl as any).mockResolvedValue(mockResult);
 
-      const result = await controller.parseStateless(request, 'test-correlation-id');
+      const result = await controller.parseStateless(
+        request,
+        'test-correlation-id',
+      );
 
       // Should parse successfully without any database call
       expect(result).toEqual(mockResult);
@@ -331,7 +357,8 @@ describe('MidiController - Stateless MIDI Parser (Story 4.4 - Task 1)', () => {
 
     it('should be idempotent (same input = same output, can retry safely)', async () => {
       const request: StatelessParseMidiRequestDto = {
-        midiUrl: 'https://xyz.supabase.co/storage/v1/object/public/exercise-midi-temp/test.mid',
+        midiUrl:
+          'https://xyz.supabase.co/storage/v1/object/public/exercise-midi-temp/test.mid',
         bpm: 120,
         timeSignature: { numerator: 4, denominator: 4 },
         totalBars: 4,

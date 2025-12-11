@@ -11,5 +11,6 @@ import { AuthModule } from '../../domains/user/auth/auth.module.js';
   imports: [DatabaseModule, SharedModule, forwardRef(() => AuthModule)],
   controllers: [LogsController],
   providers: [LogAggregatorService, LogTransportService],
-  exports: [LogAggregatorService, LogTransportService] })
+  exports: [LogAggregatorService, LogTransportService],
+})
 export class LoggingModule {}

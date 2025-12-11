@@ -51,6 +51,7 @@ Check browser console for errors
 ```
 
 ### Quick Fixes for Audio:
+
 1. **AudioContext Suspended**: Need user interaction first
 2. **Samples not loading**: Check Network tab, might be 404
 3. **No sound but no errors**: Check system volume 🔊
@@ -81,6 +82,7 @@ When does it get slow?
 ```
 
 ### Fix Infinite Loops:
+
 ```typescript
 // Find useEffect without dependencies
 useEffect(() => {
@@ -125,6 +127,7 @@ Get the correlation ID from the error
 ```
 
 ### Common API Fixes:
+
 - **404**: Check if endpoint exists in controller
 - **500**: Check backend logs for stack trace
 - **CORS**: Backend running on wrong port
@@ -157,30 +160,30 @@ Step 4: Trace the Journey
 ```
 
 ### Debug Code Template:
+
 ```typescript
 export function ProblematicComponent() {
   const { correlationId, logger } = useCorrelation('Debug');
-  
-  logger.info('Component mounted', { 
+
+  logger.info('Component mounted', {
     correlationId,
-    timestamp: Date.now() 
+    timestamp: Date.now(),
   });
-  
+
   const problematicFunction = async () => {
     logger.info('Function started', { step: 1 });
-    
+
     try {
       logger.info('About to do risky thing', { step: 2 });
       const result = await riskyOperation();
       logger.info('Risky thing succeeded', { step: 3, result });
-      
+
       logger.info('About to do another thing', { step: 4 });
       await anotherOperation();
       logger.info('Another thing succeeded', { step: 5 });
-      
     } catch (error) {
-      logger.error('Failed at step', error, { 
-        lastSuccessfulStep: 'Check logs above' 
+      logger.error('Failed at step', error, {
+        lastSuccessfulStep: 'Check logs above',
       });
       throw error;
     }
@@ -209,6 +212,7 @@ export function ProblematicComponent() {
    - Tracks the entire flow
 
 4. **Follow the Trail**
+
    ```bash
    # See everything for one action
    grep "your-correlation-id" logs/*.log | sort
@@ -262,6 +266,7 @@ free -m
 ```
 
 ### Nuclear Option:
+
 ```bash
 # Complete reset
 git stash
@@ -278,6 +283,7 @@ pm2 start ecosystem.config.cjs
 ## Prevention Checklist ✅
 
 Before deploying:
+
 - [ ] Test with `NEXT_PUBLIC_DEBUG_AUDIO=true`
 - [ ] Check for console errors
 - [ ] Verify health endpoint is green
@@ -285,6 +291,7 @@ Before deploying:
 - [ ] Check for memory leaks (leave running 5 mins)
 
 After deploying:
+
 - [ ] Check health endpoint
 - [ ] Monitor logs for errors
 - [ ] Test critical paths
@@ -297,9 +304,10 @@ After deploying:
 > "Every bug leaves breadcrumbs. Follow the correlation IDs!" 🥖
 
 When in doubt:
+
 1. Get the correlation ID
 2. Check the logs
 3. Add more logging
 4. Try again
 
-*You got this!* 💪
+_You got this!_ 💪

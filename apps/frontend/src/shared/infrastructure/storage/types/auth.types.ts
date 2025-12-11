@@ -1,6 +1,6 @@
 /**
  * Authentication Types for Storage
- * 
+ *
  * Types for managing authentication, sessions, and security
  * in the storage infrastructure.
  */

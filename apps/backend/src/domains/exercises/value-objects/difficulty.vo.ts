@@ -1,7 +1,8 @@
 export enum DifficultyLevel {
   BEGINNER = 'beginner',
   INTERMEDIATE = 'intermediate',
-  ADVANCED = 'advanced' }
+  ADVANCED = 'advanced',
+}
 
 export class Difficulty {
   private constructor(private readonly _value: DifficultyLevel) {}

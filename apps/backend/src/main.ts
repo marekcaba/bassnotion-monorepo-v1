@@ -1,7 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import {
   FastifyAdapter,
-  NestFastifyApplication } from '@nestjs/platform-fastify';
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify';
 import * as dotenv from 'dotenv';
 import fastifyHelmet from '@fastify/helmet';
 import fastifyRateLimit from '@fastify/rate-limit';
@@ -12,7 +13,8 @@ import { ZodValidationPipe } from './shared/pipes/zod-validation.pipe.js';
 import {
   helmetConfig,
   rateLimitConfig,
-  corsConfig } from './config/security.config.js';
+  corsConfig,
+} from './config/security.config.js';
 import { initializeSentry } from './config/sentry.config.js';
 import { setupSwagger } from './config/swagger.config.js';
 // TODO: Fix LogTransportService initialization issue
@@ -75,10 +77,13 @@ async function bootstrap() {
   // TODO: Fix LogTransportService initialization issue
   // const logTransport = app.get(LogTransportService);
   // initializeLogging(logTransport);
-  logger.info('Log aggregation temporarily disabled due to initialization issue', { 
-    aggregationEnabled: false,
-    correlationId: 'system' 
-  });
+  logger.info(
+    'Log aggregation temporarily disabled due to initialization issue',
+    {
+      aggregationEnabled: false,
+      correlationId: 'system',
+    },
+  );
 
   // Enable CORS with centralized config
   app.enableCors(corsConfig);

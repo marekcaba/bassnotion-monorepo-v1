@@ -28,13 +28,18 @@ export interface UsePatternSelectorOptions {
   onPatternChange?: (type: 'drums' | 'harmony', pattern: Pattern) => void;
 }
 
-export function usePatternSelector({ tutorialId, onPatternChange }: UsePatternSelectorOptions) {
+export function usePatternSelector({
+  tutorialId,
+  onPatternChange,
+}: UsePatternSelectorOptions) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
   // Current selected patterns
-  const [selectedDrumPattern, setSelectedDrumPattern] = useState<Pattern | null>(null);
-  const [selectedHarmonyPattern, setSelectedHarmonyPattern] = useState<Pattern | null>(null);
+  const [selectedDrumPattern, setSelectedDrumPattern] =
+    useState<Pattern | null>(null);
+  const [selectedHarmonyPattern, setSelectedHarmonyPattern] =
+    useState<Pattern | null>(null);
 
   // Fetch tutorial pattern configuration and available patterns
   const { data, isLoading } = useQuery({
@@ -45,8 +50,10 @@ export function usePatternSelector({ tutorialId, onPatternChange }: UsePatternSe
 
   // Save user selection mutation
   const saveSelectionMutation = useMutation({
-    mutationFn: (selection: { drumPatternId?: string; harmonyPatternId?: string }) =>
-      patternApi.saveUserSelection(tutorialId, selection),
+    mutationFn: (selection: {
+      drumPatternId?: string;
+      harmonyPatternId?: string;
+    }) => patternApi.saveUserSelection(tutorialId, selection),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ['patterns', 'tutorial', tutorialId],
@@ -58,8 +65,10 @@ export function usePatternSelector({ tutorialId, onPatternChange }: UsePatternSe
   useEffect(() => {
     if (data) {
       // Use user selection if available, otherwise use defaults
-      const drumPattern = data.userSelection?.drumPattern || data.config.defaultDrumPattern;
-      const harmonyPattern = data.userSelection?.harmonyPattern || data.config.defaultHarmonyPattern;
+      const drumPattern =
+        data.userSelection?.drumPattern || data.config.defaultDrumPattern;
+      const harmonyPattern =
+        data.userSelection?.harmonyPattern || data.config.defaultHarmonyPattern;
 
       setSelectedDrumPattern(drumPattern);
       setSelectedHarmonyPattern(harmonyPattern);
@@ -82,7 +91,7 @@ export function usePatternSelector({ tutorialId, onPatternChange }: UsePatternSe
       // Notify parent component
       onPatternChange?.('drums', pattern);
     },
-    [user, selectedHarmonyPattern, saveSelectionMutation, onPatternChange]
+    [user, selectedHarmonyPattern, saveSelectionMutation, onPatternChange],
   );
 
   // Select harmony pattern
@@ -101,7 +110,7 @@ export function usePatternSelector({ tutorialId, onPatternChange }: UsePatternSe
       // Notify parent component
       onPatternChange?.('harmony', pattern);
     },
-    [user, selectedDrumPattern, saveSelectionMutation, onPatternChange]
+    [user, selectedDrumPattern, saveSelectionMutation, onPatternChange],
   );
 
   // Reset to defaults

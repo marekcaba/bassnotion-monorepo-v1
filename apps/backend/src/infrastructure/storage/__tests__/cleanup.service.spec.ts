@@ -45,8 +45,12 @@ describe('CleanupService - Expired File Cleanup (Story 4.4 - Task 2)', () => {
       expect(result.failedCount).toBe(0);
 
       // Should delete expired files
-      expect(supabaseService.deleteTempFile).toHaveBeenCalledWith('uuid1_song1.mid');
-      expect(supabaseService.deleteTempFile).toHaveBeenCalledWith('uuid3_song3.mid');
+      expect(supabaseService.deleteTempFile).toHaveBeenCalledWith(
+        'uuid1_song1.mid',
+      );
+      expect(supabaseService.deleteTempFile).toHaveBeenCalledWith(
+        'uuid3_song3.mid',
+      );
       expect(supabaseService.deleteTempFile).toHaveBeenCalledTimes(2);
     });
 
@@ -160,7 +164,9 @@ describe('CleanupService - Expired File Cleanup (Story 4.4 - Task 2)', () => {
       const listError = new Error('Supabase API unavailable');
       (supabaseService.listTempFiles as any).mockRejectedValue(listError);
 
-      await expect(cleanupService.cleanupExpiredFiles()).rejects.toThrow(listError);
+      await expect(cleanupService.cleanupExpiredFiles()).rejects.toThrow(
+        listError,
+      );
     });
 
     it('should continue cleanup even if some deletions fail', async () => {

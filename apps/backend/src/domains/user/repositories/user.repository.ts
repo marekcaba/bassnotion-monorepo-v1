@@ -4,7 +4,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   IUserRepository,
   PaginatedResult,
-  PaginationOptions } from './user.repository.interface.js';
+  PaginationOptions,
+} from './user.repository.interface.js';
 import { User } from '../entities/user.entity.js';
 import { Email } from '../value-objects/email.vo.js';
 import { UserId } from '../value-objects/user-id.vo.js';
@@ -83,11 +84,14 @@ export class UserRepository implements IUserRepository {
         items: users,
         total: count || 0,
         page: options.page,
-        limit: options.limit };
+        limit: options.limit,
+      };
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error fetching all users:', error as Error, { correlationId });
+      logger.error('Error fetching all users:', error as Error, {
+        correlationId,
+      });
       throw error;
     }
   }
@@ -110,7 +114,11 @@ export class UserRepository implements IUserRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error(`Error fetching users by role ${role.value}:`, error as Error, { correlationId });
+      logger.error(
+        `Error fetching users by role ${role.value}:`,
+        error as Error,
+        { correlationId },
+      );
       throw error;
     }
   }
@@ -133,7 +141,11 @@ export class UserRepository implements IUserRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error(`Error searching users with query "${query}":`, error as Error, { correlationId });
+      logger.error(
+        `Error searching users with query "${query}":`,
+        error as Error,
+        { correlationId },
+      );
       throw error;
     }
   }
@@ -144,7 +156,8 @@ export class UserRepository implements IUserRepository {
       const { error } = await this.supabase.from('profiles').insert({
         ...data,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString() });
+        updated_at: new Date().toISOString(),
+      });
 
       if (error) {
         throw new Error(`Failed to save user: ${error.message}`);
@@ -168,7 +181,8 @@ export class UserRepository implements IUserRepository {
         .from('profiles')
         .update({
           ...data,
-          updated_at: new Date().toISOString() })
+          updated_at: new Date().toISOString(),
+        })
         .eq('id', user.id);
 
       if (error) {
@@ -181,7 +195,9 @@ export class UserRepository implements IUserRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error(`Error updating user ${user.id}:`, error as Error, { correlationId });
+      logger.error(`Error updating user ${user.id}:`, error as Error, {
+        correlationId,
+      });
       throw error;
     }
   }
@@ -245,7 +261,9 @@ export class UserRepository implements IUserRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error fetching users by ids:', error as Error, { correlationId });
+      logger.error('Error fetching users by ids:', error as Error, {
+        correlationId,
+      });
       throw error;
     }
   }
@@ -257,7 +275,8 @@ export class UserRepository implements IUserRepository {
       const data = users.map((user) => ({
         ...user.toPersistence(),
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString() }));
+        updated_at: new Date().toISOString(),
+      }));
 
       const { error } = await this.supabase.from('profiles').insert(data);
 
@@ -267,11 +286,15 @@ export class UserRepository implements IUserRepository {
 
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.debug(`Successfully saved ${users.length} users in batch`, { correlationId });
+      logger.debug(`Successfully saved ${users.length} users in batch`, {
+        correlationId,
+      });
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error saving users batch:', error as Error, { correlationId });
+      logger.error('Error saving users batch:', error as Error, {
+        correlationId,
+      });
       throw error;
     }
   }
@@ -286,7 +309,8 @@ export class UserRepository implements IUserRepository {
           .from('profiles')
           .update({
             ...user.toPersistence(),
-            updated_at: new Date().toISOString() })
+            updated_at: new Date().toISOString(),
+          })
           .eq('id', user.id),
       );
 
@@ -301,11 +325,15 @@ export class UserRepository implements IUserRepository {
 
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.debug(`Successfully updated ${users.length} users in batch`, { correlationId });
+      logger.debug(`Successfully updated ${users.length} users in batch`, {
+        correlationId,
+      });
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error updating users batch:', error as Error, { correlationId });
+      logger.error('Error updating users batch:', error as Error, {
+        correlationId,
+      });
       throw error;
     }
   }
@@ -326,11 +354,15 @@ export class UserRepository implements IUserRepository {
 
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.debug(`Successfully deleted ${ids.length} users in batch`, { correlationId });
+      logger.debug(`Successfully deleted ${ids.length} users in batch`, {
+        correlationId,
+      });
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error deleting users batch:', error as Error, { correlationId });
+      logger.error('Error deleting users batch:', error as Error, {
+        correlationId,
+      });
       throw error;
     }
   }

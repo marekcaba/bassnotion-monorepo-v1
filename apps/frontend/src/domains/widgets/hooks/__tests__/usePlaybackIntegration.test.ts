@@ -110,7 +110,9 @@ describe.skip('usePlaybackIntegration [DEPRECATED - tests for old implementation
 
   describe('Initialization', () => {
     it('should initialize with default state', () => {
-      const { result } = renderHook(() => usePlaybackIntegration(), { wrapper });
+      const { result } = renderHook(() => usePlaybackIntegration(), {
+        wrapper,
+      });
 
       expect(result.current.state.isInitialized).toBe(true);
       expect(result.current.state.isPlaying).toBe(false);
@@ -121,14 +123,18 @@ describe.skip('usePlaybackIntegration [DEPRECATED - tests for old implementation
     });
 
     it('should initialize with engine when ready', () => {
-      const { result } = renderHook(() => usePlaybackIntegration(), { wrapper });
+      const { result } = renderHook(() => usePlaybackIntegration(), {
+        wrapper,
+      });
 
       expect(result.current.engine).toBe(mockEngine);
       expect(result.current.state.isInitialized).toBe(true);
     });
 
     it('should sync with engine state changes', async () => {
-      const { result, rerender } = renderHook(() => usePlaybackIntegration(), { wrapper });
+      const { result, rerender } = renderHook(() => usePlaybackIntegration(), {
+        wrapper,
+      });
 
       // Mock engine state change
       mockEngineState.isPlaying = true;
@@ -230,7 +236,9 @@ describe.skip('usePlaybackIntegration [DEPRECATED - tests for old implementation
 
   describe('Playback Controls', () => {
     it('should provide play control', async () => {
-      const { result } = renderHook(() => usePlaybackIntegration(), { wrapper });
+      const { result } = renderHook(() => usePlaybackIntegration(), {
+        wrapper,
+      });
 
       await act(async () => {
         await result.current.controls.play();
@@ -240,7 +248,9 @@ describe.skip('usePlaybackIntegration [DEPRECATED - tests for old implementation
     });
 
     it('should provide pause control', () => {
-      const { result } = renderHook(() => usePlaybackIntegration(), { wrapper });
+      const { result } = renderHook(() => usePlaybackIntegration(), {
+        wrapper,
+      });
 
       act(() => {
         result.current.controls.pause();
@@ -250,7 +260,9 @@ describe.skip('usePlaybackIntegration [DEPRECATED - tests for old implementation
     });
 
     it('should provide stop control', () => {
-      const { result } = renderHook(() => usePlaybackIntegration(), { wrapper });
+      const { result } = renderHook(() => usePlaybackIntegration(), {
+        wrapper,
+      });
 
       act(() => {
         result.current.controls.stop();
@@ -260,7 +272,9 @@ describe.skip('usePlaybackIntegration [DEPRECATED - tests for old implementation
     });
 
     it('should provide tempo control', () => {
-      const { result } = renderHook(() => usePlaybackIntegration(), { wrapper });
+      const { result } = renderHook(() => usePlaybackIntegration(), {
+        wrapper,
+      });
 
       act(() => {
         result.current.controls.setTempo(160);
@@ -270,7 +284,9 @@ describe.skip('usePlaybackIntegration [DEPRECATED - tests for old implementation
     });
 
     it('should provide volume control', () => {
-      const { result } = renderHook(() => usePlaybackIntegration(), { wrapper });
+      const { result } = renderHook(() => usePlaybackIntegration(), {
+        wrapper,
+      });
 
       act(() => {
         result.current.controls.setVolume('bass', 70);
@@ -283,7 +299,9 @@ describe.skip('usePlaybackIntegration [DEPRECATED - tests for old implementation
     });
 
     it('should provide reset control', async () => {
-      const { result } = renderHook(() => usePlaybackIntegration(), { wrapper });
+      const { result } = renderHook(() => usePlaybackIntegration(), {
+        wrapper,
+      });
 
       await act(async () => {
         await result.current.controls.reset();
@@ -392,7 +410,9 @@ describe.skip('usePlaybackIntegration [DEPRECATED - tests for old implementation
         } as any;
       });
 
-      const { result } = renderHook(() => usePlaybackIntegration(), { wrapper });
+      const { result } = renderHook(() => usePlaybackIntegration(), {
+        wrapper,
+      });
 
       await waitFor(() => {
         expect(result.current.state.isInitialized).toBe(false);
@@ -428,7 +448,9 @@ describe.skip('usePlaybackIntegration [DEPRECATED - tests for old implementation
           }) as any,
       );
 
-      const { result, rerender } = renderHook(() => usePlaybackIntegration(), { wrapper });
+      const { result, rerender } = renderHook(() => usePlaybackIntegration(), {
+        wrapper,
+      });
 
       // Initial latency should be 25
       expect(result.current.state.latency).toBe(25);
@@ -457,7 +479,9 @@ describe.skip('usePlaybackIntegration [DEPRECATED - tests for old implementation
 
   describe('Performance Metrics', () => {
     it('should track latency from engine metrics', () => {
-      const { result } = renderHook(() => usePlaybackIntegration(), { wrapper });
+      const { result } = renderHook(() => usePlaybackIntegration(), {
+        wrapper,
+      });
 
       expect(result.current.state.latency).toBe(25);
     });

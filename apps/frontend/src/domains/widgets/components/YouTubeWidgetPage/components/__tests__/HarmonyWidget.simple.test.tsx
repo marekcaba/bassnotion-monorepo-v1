@@ -78,9 +78,8 @@ describe('HarmonyWidget Simple Tests', () => {
   });
 
   it('should check for pre-loaded instruments on mount', async () => {
-    const { GlobalSampleCache } = await import(
-      '@/domains/playback/modules/storage/cache/GlobalSampleCache'
-    );
+    const { GlobalSampleCache } =
+      await import('@/domains/playback/modules/storage/cache/GlobalSampleCache');
 
     const props = {
       progression: ['C'],

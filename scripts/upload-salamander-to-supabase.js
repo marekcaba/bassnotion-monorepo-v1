@@ -14,9 +14,19 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Load environment variables
-dotenv.config({ path: join(__dirname, '..', 'apps', 'frontend', '.env.local') });
+dotenv.config({
+  path: join(__dirname, '..', 'apps', 'frontend', '.env.local'),
+});
 
-const SAMPLES_DIR = join(__dirname, '..', 'apps', 'frontend', 'public', 'samples', 'salamander-piano');
+const SAMPLES_DIR = join(
+  __dirname,
+  '..',
+  'apps',
+  'frontend',
+  'public',
+  'samples',
+  'salamander-piano',
+);
 const BUCKET_NAME = 'audio-samples';
 const BUCKET_PATH = 'keyboards/salamander-piano';
 
@@ -25,7 +35,9 @@ async function main() {
 
   // Initialize Supabase client
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const supabaseServiceKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseServiceKey) {
     console.error('❌ Missing Supabase credentials in environment variables');
@@ -37,29 +49,31 @@ async function main() {
 
   console.log('🔗 Connecting to Supabase...');
   console.log(`   URL: ${supabaseUrl}`);
-  console.log(`   Using: ${process.env.SUPABASE_SERVICE_ROLE_KEY ? 'Service Role Key' : 'Anon Key'}`);
+  console.log(
+    `   Using: ${process.env.SUPABASE_SERVICE_ROLE_KEY ? 'Service Role Key' : 'Anon Key'}`,
+  );
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
   // Read sample files
   const files = await fs.readdir(SAMPLES_DIR);
-  const mp3Files = files.filter(f => f.endsWith('.mp3'));
-  
+  const mp3Files = files.filter((f) => f.endsWith('.mp3'));
+
   console.log(`\n📦 Found ${mp3Files.length} MP3 files to upload`);
 
   // Upload metadata first
   const metadataPath = join(SAMPLES_DIR, 'metadata.json');
   const metadata = JSON.parse(await fs.readFile(metadataPath, 'utf-8'));
-  
+
   console.log('\n📄 Uploading metadata...');
   const metadataUploadPath = `${BUCKET_PATH}/metadata.json`;
-  
+
   const { error: metadataError } = await supabase.storage
     .from(BUCKET_NAME)
     .upload(metadataUploadPath, await fs.readFile(metadataPath), {
       contentType: 'application/json',
       cacheControl: '3600',
-      upsert: true
+      upsert: true,
     });
 
   if (metadataError) {
@@ -71,25 +85,25 @@ async function main() {
 
   // Upload samples
   console.log('\n🔄 Uploading samples...');
-  
+
   let successCount = 0;
   let failCount = 0;
 
   for (const filename of mp3Files) {
     const filePath = join(SAMPLES_DIR, filename);
     const uploadPath = `${BUCKET_PATH}/${filename}`;
-    
+
     process.stdout.write(`  Uploading ${filename}... `);
-    
+
     try {
       const fileBuffer = await fs.readFile(filePath);
-      
+
       const { error } = await supabase.storage
         .from(BUCKET_NAME)
         .upload(uploadPath, fileBuffer, {
           contentType: 'audio/mpeg',
           cacheControl: '3600',
-          upsert: true
+          upsert: true,
         });
 
       if (error) {
@@ -119,7 +133,7 @@ async function main() {
       license: metadata.license,
       baseUrl: `${supabaseUrl}/storage/v1/object/public/${BUCKET_NAME}/${BUCKET_PATH}`,
       samples: {},
-      uploadedAt: new Date().toISOString()
+      uploadedAt: new Date().toISOString(),
     };
 
     // Add successfully uploaded samples to index
@@ -131,13 +145,13 @@ async function main() {
     // Upload index
     console.log('\n📋 Uploading sample index...');
     const indexPath = `metadata/keyboard-instruments/salamander-piano.json`;
-    
+
     const { error: indexError } = await supabase.storage
       .from(BUCKET_NAME)
       .upload(indexPath, JSON.stringify(indexData, null, 2), {
         contentType: 'application/json',
         cacheControl: '3600',
-        upsert: true
+        upsert: true,
       });
 
     if (indexError) {
@@ -157,7 +171,7 @@ async function main() {
     .from(BUCKET_NAME)
     .list(BUCKET_PATH, {
       limit: 100,
-      offset: 0
+      offset: 0,
     });
 
   if (listError) {

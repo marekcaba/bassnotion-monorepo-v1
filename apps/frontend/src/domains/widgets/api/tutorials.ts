@@ -123,7 +123,8 @@ export async function fetchTutorialExercises(
     hasCreatorName: !!result.tutorial?.creator_name,
     creatorName: result.tutorial?.creator_name,
     hasCreatorAvatar: !!result.tutorial?.creator_avatar_url,
-    creatorAvatar: result.tutorial?.creator_avatar_url?.substring(0, 60) + '...',
+    creatorAvatar:
+      result.tutorial?.creator_avatar_url?.substring(0, 60) + '...',
   });
 
   return result;

@@ -14,8 +14,9 @@ const { Client } = pg;
 
 // Database connection - using pooler for better compatibility
 const client = new Client({
-  connectionString: process.env.DATABASE_URL ||
-    'postgresql://postgres.iuuplfrktnzsbzibpfjm:MN8whatistrueloveWN@aws-0-us-east-1.pooler.supabase.com:6543/postgres'
+  connectionString:
+    process.env.DATABASE_URL ||
+    'postgresql://postgres.iuuplfrktnzsbzibpfjm:MN8whatistrueloveWN@aws-0-us-east-1.pooler.supabase.com:6543/postgres',
 });
 
 /**
@@ -30,7 +31,9 @@ function findCC64DownDuringNote(noteStartTime, midiNoteEndTime, cc64Timeline) {
   // Check if pedal is already DOWN when note starts
   const pedalStateAtStart = getPedalStateAtTime(noteStartTime, cc64Timeline);
   if (pedalStateAtStart) {
-    console.log(`  → Pedal already DOWN at note start (${noteStartTime.toFixed(3)}s)`);
+    console.log(
+      `  → Pedal already DOWN at note start (${noteStartTime.toFixed(3)}s)`,
+    );
     return noteStartTime;
   }
 
@@ -77,7 +80,12 @@ function findNextCC64Up(fromTime, cc64Timeline) {
 /**
  * MAIN CC64 EXTENSION LOGIC (from RegionProcessor line 2222-2279)
  */
-function calculateNoteDuration(noteName, audioTime, midiDuration, cc64Timeline) {
+function calculateNoteDuration(
+  noteName,
+  audioTime,
+  midiDuration,
+  cc64Timeline,
+) {
   console.log(`\n${'='.repeat(80)}`);
   console.log(`NOTE: ${noteName} @ ${audioTime.toFixed(3)}s`);
   console.log(`MIDI duration: ${midiDuration.toFixed(3)}s`);
@@ -93,37 +101,53 @@ function calculateNoteDuration(noteName, audioTime, midiDuration, cc64Timeline) 
 
   console.log(`\n📊 CC64 Timeline (${cc64Timeline.size} events):`);
   for (const [time, isDown] of cc64Timeline) {
-    console.log(`  ${time.toFixed(3)}s: ${isDown ? '🔽 PEDAL DOWN' : '🔼 PEDAL UP'}`);
+    console.log(
+      `  ${time.toFixed(3)}s: ${isDown ? '🔽 PEDAL DOWN' : '🔼 PEDAL UP'}`,
+    );
   }
 
   console.log(`\n🔍 Checking pedal state during note...`);
 
   const midiNoteEndTime = audioTime + midiDuration;
-  const pedalDownTime = findCC64DownDuringNote(audioTime, midiNoteEndTime, cc64Timeline);
+  const pedalDownTime = findCC64DownDuringNote(
+    audioTime,
+    midiNoteEndTime,
+    cc64Timeline,
+  );
 
   if (pedalDownTime === null) {
     console.log(`\n❌ Pedal NOT down during note - using MIDI duration`);
     return { actualDuration, extended: false, reason: 'Pedal not active' };
   }
 
-  console.log(`\n✅ Pedal IS down during note (at ${pedalDownTime.toFixed(3)}s)`);
+  console.log(
+    `\n✅ Pedal IS down during note (at ${pedalDownTime.toFixed(3)}s)`,
+  );
   console.log(`🔍 Finding when pedal goes UP...`);
 
   const pedalUpTime = findNextCC64Up(pedalDownTime, cc64Timeline);
 
   if (pedalUpTime === null) {
     console.log(`\n⚠️  No pedal UP found - note sustains indefinitely`);
-    return { actualDuration: 10.0, extended: true, reason: 'No pedal UP (sustain forever)' };
+    return {
+      actualDuration: 10.0,
+      extended: true,
+      reason: 'No pedal UP (sustain forever)',
+    };
   }
 
   const sustainDuration = pedalUpTime - audioTime;
 
   console.log(`\n📐 Calculating duration:`);
   console.log(`  Pedal UP time: ${pedalUpTime.toFixed(3)}s`);
-  console.log(`  Sustain duration: ${pedalUpTime.toFixed(3)}s - ${audioTime.toFixed(3)}s = ${sustainDuration.toFixed(3)}s`);
+  console.log(
+    `  Sustain duration: ${pedalUpTime.toFixed(3)}s - ${audioTime.toFixed(3)}s = ${sustainDuration.toFixed(3)}s`,
+  );
 
   if (sustainDuration <= 0) {
-    console.log(`\n❌ Edge case: Note starts after pedal UP - using MIDI duration`);
+    console.log(
+      `\n❌ Edge case: Note starts after pedal UP - using MIDI duration`,
+    );
     return { actualDuration, extended: false, reason: 'Note after pedal UP' };
   }
 
@@ -147,14 +171,23 @@ function calculateNoteDuration(noteName, audioTime, midiDuration, cc64Timeline) 
       console.log(`  Type: FULL-SUSTAIN (pedal already down at start)`);
     }
 
-    return { actualDuration, extended: true, reason: 'Pedal extends note', extension };
+    return {
+      actualDuration,
+      extended: true,
+      reason: 'Pedal extends note',
+      extension,
+    };
   } else {
     // IGNORE PEDAL - pedal UP before MIDI note-off (legato pedaling)
     console.log(`\n❌ PEDAL UP WHILE NOTE HELD (legato pedaling)`);
     console.log(`  Pedal UP before note ends - using MIDI duration`);
     console.log(`  This is typical for overlapping chords`);
 
-    return { actualDuration, extended: false, reason: 'Legato pedaling (pedal UP before note-off)' };
+    return {
+      actualDuration,
+      extended: false,
+      reason: 'Legato pedaling (pedal UP before note-off)',
+    };
   }
 }
 
@@ -169,7 +202,7 @@ function parseCC64Timeline(harmonyData) {
   const timeline = new Map();
 
   // CC64 values: 0-63 = UP, 64-127 = DOWN
-  harmonyData.controlChanges.CC64.forEach(event => {
+  harmonyData.controlChanges.CC64.forEach((event) => {
     const isDown = event.value >= 64;
     timeline.set(event.time, isDown);
   });
@@ -221,7 +254,9 @@ async function runDiagnostic() {
     console.log(`\n📊 FULL CC64 TIMELINE (${cc64Timeline.size} events):`);
     console.log('='.repeat(80));
     for (const [time, isDown] of cc64Timeline) {
-      console.log(`${time.toFixed(3)}s: ${isDown ? '🔽 PEDAL DOWN (value ≥64)' : '🔼 PEDAL UP (value <64)'}`);
+      console.log(
+        `${time.toFixed(3)}s: ${isDown ? '🔽 PEDAL DOWN (value ≥64)' : '🔼 PEDAL UP (value <64)'}`,
+      );
     }
 
     // Get some example notes from harmony_notes
@@ -232,7 +267,9 @@ async function runDiagnostic() {
       return;
     }
 
-    console.log(`\n🎹 HARMONY NOTES (showing first 10 of ${harmonyNotes.length}):`);
+    console.log(
+      `\n🎹 HARMONY NOTES (showing first 10 of ${harmonyNotes.length}):`,
+    );
     console.log('='.repeat(80));
 
     // Show first 10 notes with their calculations
@@ -243,7 +280,7 @@ async function runDiagnostic() {
         note.name,
         note.time,
         note.duration,
-        cc64Timeline
+        cc64Timeline,
       );
 
       console.log(`\n📝 RESULT:`);
@@ -269,7 +306,7 @@ async function runDiagnostic() {
         note.name,
         note.time,
         note.duration,
-        cc64Timeline
+        cc64Timeline,
       );
 
       if (result.extended && result.extension) {
@@ -280,17 +317,20 @@ async function runDiagnostic() {
     }
 
     console.log(`Total notes:          ${harmonyNotes.length}`);
-    console.log(`Extended by CC64:     ${extendedCount} (${((extendedCount / harmonyNotes.length) * 100).toFixed(1)}%)`);
+    console.log(
+      `Extended by CC64:     ${extendedCount} (${((extendedCount / harmonyNotes.length) * 100).toFixed(1)}%)`,
+    );
     console.log(`Not extended:         ${harmonyNotes.length - extendedCount}`);
     if (extendedCount > 0) {
-      console.log(`Average extension:    ${(totalExtension / extendedCount).toFixed(3)}s`);
+      console.log(
+        `Average extension:    ${(totalExtension / extendedCount).toFixed(3)}s`,
+      );
       console.log(`Maximum extension:    ${maxExtension.toFixed(3)}s`);
     }
 
     console.log('\n' + '='.repeat(80));
     console.log('✅ Diagnostic complete!');
     console.log('='.repeat(80));
-
   } catch (error) {
     console.error('❌ Error:', error);
   } finally {

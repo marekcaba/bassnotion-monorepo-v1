@@ -8,7 +8,10 @@ import { authService, AuthError } from '../../api/auth';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 // Import the same error handling function used by other auth methods
-function getAuthErrorMessage(error: AuthError, logger: ReturnType<typeof useCorrelation>['logger']): string {
+function getAuthErrorMessage(
+  error: AuthError,
+  logger: ReturnType<typeof useCorrelation>['logger'],
+): string {
   logger.error('[Auth Debug] Original error:', {
     message: error.message,
     status: error.status,
@@ -190,14 +193,20 @@ export function MagicLinkSignIn() {
             className="bg-zinc-800 border-zinc-700 text-white placeholder:text-gray-500"
           />
         </div>
-        <Button type="submit" disabled={isLoading} className="bg-[#ffc700] text-black hover:bg-[#e6b300]">
+        <Button
+          type="submit"
+          disabled={isLoading}
+          className="bg-[#ffc700] text-black hover:bg-[#e6b300]"
+        >
           {isLoading ? 'Processing...' : 'Continue with Magic Link'}
         </Button>
       </form>
 
       {noAccountFound && (
         <div className="mt-2 p-4 border border-zinc-700 rounded-lg bg-zinc-800">
-          <p className="text-sm mb-2 text-gray-300">No account exists for {email}.</p>
+          <p className="text-sm mb-2 text-gray-300">
+            No account exists for {email}.
+          </p>
           <Button
             onClick={() => handleMagicLink(true)}
             disabled={isLoading}

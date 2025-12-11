@@ -7,9 +7,7 @@ import { createStructuredLogger } from '@bassnotion/contracts';
 export class PerformanceMiddleware implements NestMiddleware {
   private logger = createStructuredLogger('performance-middleware');
 
-  constructor(
-    private readonly healthService: HealthService,
-  ) {}
+  constructor(private readonly healthService: HealthService) {}
 
   use(req: Request, res: Response, next: NextFunction) {
     const start = Date.now();
@@ -34,7 +32,8 @@ export class PerformanceMiddleware implements NestMiddleware {
         url,
         statusCode: res.statusCode,
         responseTime,
-        correlationId: req.headers['x-correlation-id'] });
+        correlationId: req.headers['x-correlation-id'],
+      });
 
       // Call original send
       return originalSend.call(res, body);

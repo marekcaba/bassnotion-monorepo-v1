@@ -1,6 +1,16 @@
-import { Injectable, BadRequestException, InternalServerErrorException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import ToneMidiPkg from '@tonejs/midi';
-import type { ParsedMeasure, MidiNoteEvent, MidiControlChangeEvent, ParseMidiResponseDto } from '../dto/parse-midi-response.dto.js';
+import type {
+  ParsedMeasure,
+  MidiNoteEvent,
+  MidiControlChangeEvent,
+  ParseMidiResponseDto,
+} from '../dto/parse-midi-response.dto.js';
 import {
   MusicalTimeConstants,
   absoluteTickToPosition,
@@ -53,7 +63,8 @@ export class MidiParserService {
       this.validateMidiFile(midi);
 
       // Calculate PPQ conversion parameters (needed for both notes and control changes)
-      const midiPPQ = (midi.header as any).ppq || (midi.header as any).ticksPerQuarter || 480;
+      const midiPPQ =
+        (midi.header as any).ppq || (midi.header as any).ticksPerQuarter || 480;
       const TARGET_PPQ = MusicalTimeConstants.PPQ; // 480
       const needsConversion = midiPPQ !== TARGET_PPQ;
 
@@ -66,12 +77,18 @@ export class MidiParserService {
       });
 
       // Extract note events with musical timing
-      const noteEvents = this.extractNoteEvents(midi, timeSignature, midiPPQ, needsConversion, TARGET_PPQ);
+      const noteEvents = this.extractNoteEvents(
+        midi,
+        timeSignature,
+        midiPPQ,
+        needsConversion,
+        TARGET_PPQ,
+      );
 
       // Calculate measureOffset from notes (same logic as groupNotesByMeasure)
       let measureOffset = 0;
       if (noteEvents.length > 0) {
-        const measureNumbers = noteEvents.map(n => n.position?.measure || 0);
+        const measureNumbers = noteEvents.map((n) => n.position?.measure || 0);
         measureOffset = Math.min(...measureNumbers);
         this.logger.log('📊 Calculated measureOffset for CC64 normalization', {
           measureOffset,
@@ -81,7 +98,14 @@ export class MidiParserService {
 
       // Extract control change events (sustain pedal, expression, etc.)
       // CRITICAL: Pass measureOffset so CC64 events use the same reference as notes
-      const controlChanges = this.extractControlChangeEvents(midi, timeSignature, measureOffset, midiPPQ, needsConversion, TARGET_PPQ);
+      const controlChanges = this.extractControlChangeEvents(
+        midi,
+        timeSignature,
+        measureOffset,
+        midiPPQ,
+        needsConversion,
+        TARGET_PPQ,
+      );
 
       // Group notes by measure
       const measures = this.groupNotesByMeasure(
@@ -129,7 +153,10 @@ export class MidiParserService {
   /**
    * Fetch MIDI file from URL
    */
-  private async fetchMidiFile(url: string, correlationId?: string): Promise<ArrayBuffer> {
+  private async fetchMidiFile(
+    url: string,
+    correlationId?: string,
+  ): Promise<ArrayBuffer> {
     try {
       const response = await fetch(url);
 
@@ -159,16 +186,21 @@ export class MidiParserService {
     }
 
     // Find tracks with notes (ignore empty tracks)
-    const tracksWithNotes = midi.tracks.filter((track: any) => track.notes.length > 0);
+    const tracksWithNotes = midi.tracks.filter(
+      (track: any) => track.notes.length > 0,
+    );
 
     if (tracksWithNotes.length === 0) {
       throw new BadRequestException('MIDI file contains no notes');
     }
 
     if (tracksWithNotes.length > 1) {
-      this.logger.warn('MIDI file has multiple tracks with notes, using first track only', {
-        trackCount: tracksWithNotes.length,
-      });
+      this.logger.warn(
+        'MIDI file has multiple tracks with notes, using first track only',
+        {
+          trackCount: tracksWithNotes.length,
+        },
+      );
     }
   }
 
@@ -180,29 +212,33 @@ export class MidiParserService {
     timeSignature: { numerator: number; denominator: number },
     midiPPQ: number,
     needsConversion: boolean,
-    targetPPQ: number
+    targetPPQ: number,
   ): MidiNoteEvent[] {
     // DIAGNOSTIC: Log all tracks to understand MIDI file structure
     this.logger.log('🔍 MIDI File Structure', {
       totalTracks: midi.tracks?.length || 0,
-      tracks: midi.tracks?.map((t: any, idx: number) => ({
-        trackIndex: idx,
-        name: t.name || 'Unnamed',
-        instrument: t.instrument?.name || 'Unknown',
-        channel: t.channel,
-        notesCount: t.notes?.length || 0,
-        firstNotes: t.notes?.slice(0, 3).map((n: any) => ({
-          midi: n.midi,
-          name: n.name,
-          velocity: n.velocity,
-          ticks: n.ticks,
+      tracks:
+        midi.tracks?.map((t: any, idx: number) => ({
+          trackIndex: idx,
+          name: t.name || 'Unnamed',
+          instrument: t.instrument?.name || 'Unknown',
+          channel: t.channel,
+          notesCount: t.notes?.length || 0,
+          firstNotes:
+            t.notes?.slice(0, 3).map((n: any) => ({
+              midi: n.midi,
+              name: n.name,
+              velocity: n.velocity,
+              ticks: n.ticks,
+            })) || [],
         })) || [],
-      })) || [],
     });
 
     // CHANGE: For harmony/piano MIDI, we need ALL tracks with notes (left hand + right hand)
     // Get all tracks with notes
-    const tracksWithNotes = midi.tracks.filter((t: any) => t.notes && t.notes.length > 0);
+    const tracksWithNotes = midi.tracks.filter(
+      (t: any) => t.notes && t.notes.length > 0,
+    );
 
     if (tracksWithNotes.length === 0) {
       this.logger.warn('⚠️ No tracks with notes found in MIDI file!');
@@ -217,7 +253,10 @@ export class MidiParserService {
         channel: t.channel,
         noteCount: t.notes?.length || 0,
       })),
-      totalNotesAcrossAllTracks: tracksWithNotes.reduce((sum: number, t: any) => sum + (t.notes?.length || 0), 0),
+      totalNotesAcrossAllTracks: tracksWithNotes.reduce(
+        (sum: number, t: any) => sum + (t.notes?.length || 0),
+        0,
+      ),
     });
 
     // PPQ parameters passed from parent function
@@ -233,51 +272,55 @@ export class MidiParserService {
       trackCount: tracksWithNotes.length,
     });
 
-    const noteEvents: MidiNoteEvent[] = allNotes.map((note: any, index: number) => {
-      // CRITICAL FIX: Only convert if file PPQ differs from target PPQ
-      // If file is already at 480 PPQ, use ticks directly (no conversion)
-      const normalizedTicks = needsConversion
-        ? Math.round((note.ticks / midiPPQ) * targetPPQ)
-        : note.ticks;
-      const normalizedDurationTicks = needsConversion
-        ? Math.round((note.durationTicks / midiPPQ) * targetPPQ)
-        : note.durationTicks;
+    const noteEvents: MidiNoteEvent[] = allNotes.map(
+      (note: any, index: number) => {
+        // CRITICAL FIX: Only convert if file PPQ differs from target PPQ
+        // If file is already at 480 PPQ, use ticks directly (no conversion)
+        const normalizedTicks = needsConversion
+          ? Math.round((note.ticks / midiPPQ) * targetPPQ)
+          : note.ticks;
+        const normalizedDurationTicks = needsConversion
+          ? Math.round((note.durationTicks / midiPPQ) * targetPPQ)
+          : note.durationTicks;
 
-      // Calculate musical position from ticks
-      const position = absoluteTickToPosition(normalizedTicks, timeSignature);
+        // Calculate musical position from ticks
+        const position = absoluteTickToPosition(normalizedTicks, timeSignature);
 
-      // Infer note duration from tick count
-      const noteDuration = inferNoteDurationFromTicks(normalizedDurationTicks);
-
-      // PPQ DIAGNOSTIC: Log first 3 notes to verify fix
-      if (index < 3) {
-        this.logger.log(`✅ [PPQ FIX VERIFIED] Note ${index + 1}:`, {
-          originalTicks: note.ticks,
-          originalDurationTicks: note.durationTicks,
-          filePPQ: midiPPQ,
-          targetPPQ,
-          needsConversion,
-          normalizedTicks,
+        // Infer note duration from tick count
+        const noteDuration = inferNoteDurationFromTicks(
           normalizedDurationTicks,
+        );
+
+        // PPQ DIAGNOSTIC: Log first 3 notes to verify fix
+        if (index < 3) {
+          this.logger.log(`✅ [PPQ FIX VERIFIED] Note ${index + 1}:`, {
+            originalTicks: note.ticks,
+            originalDurationTicks: note.durationTicks,
+            filePPQ: midiPPQ,
+            targetPPQ,
+            needsConversion,
+            normalizedTicks,
+            normalizedDurationTicks,
+            position,
+            FIX: needsConversion
+              ? `Converted ${note.ticks} from ${midiPPQ} PPQ to ${normalizedTicks} at ${targetPPQ} PPQ`
+              : `No conversion needed - file already at ${targetPPQ} PPQ`,
+          });
+        }
+
+        return {
+          pitch: note.midi,
+          velocity: Math.round(note.velocity * 127), // Tone.js uses 0-1, we want 0-127
+          name: note.name,
+
+          // Musical timing (tempo-independent, 480 PPQ standard after conversion)
           position,
-          FIX: needsConversion
-            ? `Converted ${note.ticks} from ${midiPPQ} PPQ to ${normalizedTicks} at ${targetPPQ} PPQ`
-            : `No conversion needed - file already at ${targetPPQ} PPQ`,
-        });
-      }
-
-      return {
-        pitch: note.midi,
-        velocity: Math.round(note.velocity * 127), // Tone.js uses 0-1, we want 0-127
-        name: note.name,
-
-        // Musical timing (tempo-independent, 480 PPQ standard after conversion)
-        position,
-        noteDuration,
-        durationTicks: normalizedDurationTicks,
-        ticks: normalizedTicks, // 🚨 CRITICAL FIX: Include absolute ticks for consistent timing with CC64 events
-      };
-    });
+          noteDuration,
+          durationTicks: normalizedDurationTicks,
+          ticks: normalizedTicks, // 🚨 CRITICAL FIX: Include absolute ticks for consistent timing with CC64 events
+        };
+      },
+    );
 
     // Sort by musical position (measure, beat, subdivision, tick precision)
     noteEvents.sort((a, b) => {
@@ -311,11 +354,16 @@ export class MidiParserService {
           }
         : null,
       // DIAGNOSTIC: Show all unique MIDI note numbers found
-      uniqueMidiNotes: [...new Set(noteEvents.map(n => n.pitch))].sort((a, b) => a - b),
-      noteBreakdown: noteEvents.reduce((acc, n) => {
-        acc[n.pitch] = (acc[n.pitch] || 0) + 1;
-        return acc;
-      }, {} as Record<number, number>),
+      uniqueMidiNotes: [...new Set(noteEvents.map((n) => n.pitch))].sort(
+        (a, b) => a - b,
+      ),
+      noteBreakdown: noteEvents.reduce(
+        (acc, n) => {
+          acc[n.pitch] = (acc[n.pitch] || 0) + 1;
+          return acc;
+        },
+        {} as Record<number, number>,
+      ),
     });
 
     return noteEvents;
@@ -330,12 +378,14 @@ export class MidiParserService {
     measureOffset: number = 0,
     midiPPQ: number,
     needsConversion: boolean,
-    targetPPQ: number
+    targetPPQ: number,
   ): MidiControlChangeEvent[] {
     this.logger.log('🎛️ Extracting control change events from MIDI');
 
     // Get all tracks with control changes
-    const tracksWithCC = midi.tracks.filter((t: any) => t.controlChanges && Object.keys(t.controlChanges).length > 0);
+    const tracksWithCC = midi.tracks.filter(
+      (t: any) => t.controlChanges && Object.keys(t.controlChanges).length > 0,
+    );
 
     if (tracksWithCC.length === 0) {
       this.logger.log('ℹ️ No control change events found in MIDI file');
@@ -347,10 +397,12 @@ export class MidiParserService {
       trackDetails: tracksWithCC.map((t: any) => ({
         name: t.name || 'Unnamed',
         ccTypes: Object.keys(t.controlChanges),
-        ccCounts: Object.entries(t.controlChanges).map(([cc, events]: [string, any]) => ({
-          cc: cc,
-          count: events.length,
-        })),
+        ccCounts: Object.entries(t.controlChanges).map(
+          ([cc, events]: [string, any]) => ({
+            cc: cc,
+            count: events.length,
+          }),
+        ),
       })),
     });
 
@@ -373,7 +425,10 @@ export class MidiParserService {
             : event.ticks;
 
           // Calculate musical position from ticks
-          const position = absoluteTickToPosition(normalizedTicks, timeSignature);
+          const position = absoluteTickToPosition(
+            normalizedTicks,
+            timeSignature,
+          );
 
           // CRITICAL FIX: Apply the same measureOffset as notes
           // This ensures CC64 events and notes use the same measure reference
@@ -400,16 +455,23 @@ export class MidiParserService {
     this.logger.log('🎛️ Extracted control change events', {
       totalEvents: allControlChanges.length,
       measureOffset,
-      byCC: allControlChanges.reduce((acc, event) => {
-        const ccName = event.cc === 64 ? 'Sustain' : `CC${event.cc}`;
-        acc[ccName] = (acc[ccName] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>),
-      sustainEvents: allControlChanges.filter(e => e.cc === 64).length,
+      byCC: allControlChanges.reduce(
+        (acc, event) => {
+          const ccName = event.cc === 64 ? 'Sustain' : `CC${event.cc}`;
+          acc[ccName] = (acc[ccName] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>,
+      ),
+      sustainEvents: allControlChanges.filter((e) => e.cc === 64).length,
       // DIAGNOSTIC: Show actual CC64 values to verify conversion
       cc64Values: allControlChanges
-        .filter(e => e.cc === 64)
-        .map(e => ({ value: e.value, state: e.value >= 64 ? 'DOWN' : 'UP', measure: e.position.measure }))
+        .filter((e) => e.cc === 64)
+        .map((e) => ({
+          value: e.value,
+          state: e.value >= 64 ? 'DOWN' : 'UP',
+          measure: e.position.measure,
+        }))
         .slice(0, 10), // First 10 sustain events (after offset applied)
     });
 
@@ -432,7 +494,7 @@ export class MidiParserService {
 
     if (noteEvents.length > 0) {
       // Find the actual measure range from notes
-      const measureNumbers = noteEvents.map(n => n.position?.measure || 0);
+      const measureNumbers = noteEvents.map((n) => n.position?.measure || 0);
       const minMeasure = Math.min(...measureNumbers);
       const maxMeasure = Math.max(...measureNumbers);
 
@@ -489,9 +551,10 @@ export class MidiParserService {
     const minExpected = measureOffset;
     const maxExpected = measureOffset + actualTotalBars - 1;
     const notesOutsideMeasures = noteEvents.filter(
-      (note) => !note.position ||
-                note.position.measure < minExpected ||
-                note.position.measure > maxExpected,
+      (note) =>
+        !note.position ||
+        note.position.measure < minExpected ||
+        note.position.measure > maxExpected,
     );
 
     if (notesOutsideMeasures.length > 0) {
@@ -500,26 +563,30 @@ export class MidiParserService {
         totalBars,
         actualTotalBars,
         firstOutsideNote: notesOutsideMeasures[0],
-        allOutsideNoteMeasures: notesOutsideMeasures.map(n => n.position?.measure),
+        allOutsideNoteMeasures: notesOutsideMeasures.map(
+          (n) => n.position?.measure,
+        ),
       });
     }
 
     // DIAGNOSTIC: Log ALL note positions to understand distribution
     this.logger.log('📊 All note positions', {
       totalNotes: noteEvents.length,
-      notePositions: noteEvents.map((n, i) => ({
-        index: i,
-        measure: n.position?.measure,
-        beat: n.position?.beat,
-        pitch: n.pitch,
-        name: n.name,
-      })).slice(0, 20), // Show first 20 notes
+      notePositions: noteEvents
+        .map((n, i) => ({
+          index: i,
+          measure: n.position?.measure,
+          beat: n.position?.beat,
+          pitch: n.pitch,
+          name: n.name,
+        }))
+        .slice(0, 20), // Show first 20 notes
     });
 
     this.logger.log('Grouped notes by measure', {
       measureCount: measures.length,
       notesPerMeasure: measures.map((m) => m.notes.length),
-      measuresWithNotes: measures.filter(m => m.notes.length > 0).length,
+      measuresWithNotes: measures.filter((m) => m.notes.length > 0).length,
     });
 
     return measures;

@@ -101,7 +101,8 @@ class WamPluginSingletonManager {
         // CRITICAL: Check if the preloaded plugin has the correct instrument
         // If a specific instrument was requested, verify it matches
         const loadedInstrument = preloadedPlugin.audioNode.currentInstrument;
-        const needsInstrumentChange = instrument && loadedInstrument !== instrument;
+        const needsInstrumentChange =
+          instrument && loadedInstrument !== instrument;
 
         console.log('🔍🔍🔍 [SINGLETON-PRELOAD-INSTRUMENT-CHECK]', {
           loadedInstrument,
@@ -110,7 +111,9 @@ class WamPluginSingletonManager {
         });
 
         if (needsInstrumentChange) {
-          console.log('🔍🔍🔍 [SINGLETON-PRELOAD-LOADING] Loading correct instrument on preloaded plugin');
+          console.log(
+            '🔍🔍🔍 [SINGLETON-PRELOAD-LOADING] Loading correct instrument on preloaded plugin',
+          );
           logger.info(
             '⚠️ Preloaded plugin has wrong instrument, will load correct one',
             {
@@ -120,7 +123,9 @@ class WamPluginSingletonManager {
           );
           // Load the correct instrument on the preloaded plugin
           await preloadedPlugin.audioNode.loadInstrument(instrument);
-          console.log('🔍🔍🔍 [SINGLETON-PRELOAD-LOADED] Instrument loaded on preloaded plugin');
+          console.log(
+            '🔍🔍🔍 [SINGLETON-PRELOAD-LOADED] Instrument loaded on preloaded plugin',
+          );
           logger.info('✅ Loaded correct instrument on preloaded plugin', {
             instrument,
           });
@@ -132,7 +137,9 @@ class WamPluginSingletonManager {
           refCount: 1,
           context: preloadedPlugin.audioNode.context,
         });
-        console.log('🔍🔍🔍 [SINGLETON-PRELOAD-RETURN] Returning preloaded plugin');
+        console.log(
+          '🔍🔍🔍 [SINGLETON-PRELOAD-RETURN] Returning preloaded plugin',
+        );
         return preloadedPlugin;
       }
     }
@@ -166,7 +173,8 @@ class WamPluginSingletonManager {
       ) {
         // CRITICAL: Check if the cached plugin has the correct instrument
         const loadedInstrument = cachedPlugin.audioNode.currentInstrument;
-        const needsInstrumentChange = instrument && loadedInstrument !== instrument;
+        const needsInstrumentChange =
+          instrument && loadedInstrument !== instrument;
 
         if (needsInstrumentChange) {
           logger.debug(
@@ -207,7 +215,8 @@ class WamPluginSingletonManager {
       if (existing.context.state === 'running' && context.state === 'running') {
         // CRITICAL: Check if the existing plugin has the correct instrument
         const loadedInstrument = existing.plugin.audioNode?.currentInstrument;
-        const needsInstrumentChange = instrument && loadedInstrument !== instrument;
+        const needsInstrumentChange =
+          instrument && loadedInstrument !== instrument;
 
         if (needsInstrumentChange) {
           logger.debug(
@@ -248,11 +257,14 @@ class WamPluginSingletonManager {
       passedState: { instrument },
     });
 
-    console.log('🔍 [CHECKPOINT-7-CREATE-NEW] No cached plugin found, creating new:', {
-      instrument,
-      contextState: context?.state,
-      willPassInstrument: !!instrument,
-    });
+    console.log(
+      '🔍 [CHECKPOINT-7-CREATE-NEW] No cached plugin found, creating new:',
+      {
+        instrument,
+        contextState: context?.state,
+        willPassInstrument: !!instrument,
+      },
+    );
 
     logger.info('🔨 Creating new WamKeyboard plugin instance', {
       requestedInstrument: instrument || 'grandpiano (default)',
@@ -262,46 +274,68 @@ class WamPluginSingletonManager {
       // CRITICAL FIX: DO NOT pass instrument to createInstance - prevents blocking network fetch
       // Plugin creation should be instant (< 100ms)
       // Instrument will be loaded separately AFTER plugin is created using cached buffers
-      console.log('🔍🔍🔍 [SINGLETON] Calling WamKeyboard.createInstance WITHOUT instrument (deferred loading)');
-      console.log('🔍 [CHECKPOINT-7-BEFORE-CREATE] About to call WamKeyboard.createInstance:', {
-        willLoadInstrumentLater: !!instrument,
-        hasContext: !!context,
-      });
+      console.log(
+        '🔍🔍🔍 [SINGLETON] Calling WamKeyboard.createInstance WITHOUT instrument (deferred loading)',
+      );
+      console.log(
+        '🔍 [CHECKPOINT-7-BEFORE-CREATE] About to call WamKeyboard.createInstance:',
+        {
+          willLoadInstrumentLater: !!instrument,
+          hasContext: !!context,
+        },
+      );
 
       // Create plugin WITHOUT instrument - this returns instantly
       const plugin = await WamKeyboard.createInstance(context, {});
 
-      console.log('🔍🔍🔍 [SINGLETON] WamKeyboard.createInstance returned (instant!):', {
-        hasPlugin: !!plugin,
-        hasAudioNode: !!plugin?.audioNode,
-        currentInstrument: plugin?.audioNode?.currentInstrument,
-      });
+      console.log(
+        '🔍🔍🔍 [SINGLETON] WamKeyboard.createInstance returned (instant!):',
+        {
+          hasPlugin: !!plugin,
+          hasAudioNode: !!plugin?.audioNode,
+          currentInstrument: plugin?.audioNode?.currentInstrument,
+        },
+      );
 
-      console.log('🔍 [CHECKPOINT-7-AFTER-CREATE] WamKeyboard.createInstance completed:', {
-        success: !!plugin,
-        hasAudioNode: !!plugin?.audioNode,
-        loadedInstrument: plugin?.audioNode?.currentInstrument,
-        requestedInstrument: instrument,
-      });
+      console.log(
+        '🔍 [CHECKPOINT-7-AFTER-CREATE] WamKeyboard.createInstance completed:',
+        {
+          success: !!plugin,
+          hasAudioNode: !!plugin?.audioNode,
+          loadedInstrument: plugin?.audioNode?.currentInstrument,
+          requestedInstrument: instrument,
+        },
+      );
 
       // CRITICAL FIX: Load instrument AFTER plugin is created
       // This allows using cached buffers from GlobalSampleCache (instant, no network)
       if (instrument && plugin.audioNode) {
-        console.log('🔍 [SINGLETON-INSTRUMENT-LOAD] Loading instrument separately:', instrument);
+        console.log(
+          '🔍 [SINGLETON-INSTRUMENT-LOAD] Loading instrument separately:',
+          instrument,
+        );
         try {
           await plugin.audioNode.loadInstrument(instrument);
-          console.log('✅ [SINGLETON-INSTRUMENT-LOAD] Instrument loaded successfully:', {
-            requestedInstrument: instrument,
-            actualCurrentInstrument: plugin.audioNode.currentInstrument,
-            activeSampler: plugin.audioNode.activeSampler?.constructor?.name,
-            samplerCount: plugin.audioNode.samplers?.size || 0,
-            availableInstruments: Array.from(plugin.audioNode.samplers?.keys() || [])
-          });
+          console.log(
+            '✅ [SINGLETON-INSTRUMENT-LOAD] Instrument loaded successfully:',
+            {
+              requestedInstrument: instrument,
+              actualCurrentInstrument: plugin.audioNode.currentInstrument,
+              activeSampler: plugin.audioNode.activeSampler?.constructor?.name,
+              samplerCount: plugin.audioNode.samplers?.size || 0,
+              availableInstruments: Array.from(
+                plugin.audioNode.samplers?.keys() || [],
+              ),
+            },
+          );
         } catch (error) {
-          logger.error('Failed to load instrument after plugin creation', error);
+          logger.error(
+            'Failed to load instrument after plugin creation',
+            error,
+          );
           console.error('❌ [SINGLETON-INSTRUMENT-LOAD] Load failed:', {
             requestedInstrument: instrument,
-            error: error instanceof Error ? error.message : String(error)
+            error: error instanceof Error ? error.message : String(error),
           });
           // Continue anyway - plugin is created, instrument can be loaded later
         }
@@ -318,19 +352,25 @@ class WamPluginSingletonManager {
 
       // Also cache globally for persistence across re-initializations
       GlobalSampleCache.cacheInstrument(globalCacheKey, plugin);
-      console.log('🔍🔍🔍 [SINGLETON-CACHE-STORED] Stored plugin in GlobalSampleCache:', {
-        key: globalCacheKey,
-        hasPlugin: !!plugin,
-        hasAudioNode: !!plugin?.audioNode,
-        currentInstrument: plugin?.audioNode?.currentInstrument,
-      });
+      console.log(
+        '🔍🔍🔍 [SINGLETON-CACHE-STORED] Stored plugin in GlobalSampleCache:',
+        {
+          key: globalCacheKey,
+          hasPlugin: !!plugin,
+          hasAudioNode: !!plugin?.audioNode,
+          currentInstrument: plugin?.audioNode?.currentInstrument,
+        },
+      );
 
       // Verify it was actually cached
       const verifyCache = GlobalSampleCache.getCachedInstrument(globalCacheKey);
-      console.log('🔍🔍🔍 [SINGLETON-CACHE-VERIFY] Immediately verified cache:', {
-        found: !!verifyCache,
-        hasAudioNode: verifyCache?.audioNode !== undefined,
-      });
+      console.log(
+        '🔍🔍🔍 [SINGLETON-CACHE-VERIFY] Immediately verified cache:',
+        {
+          found: !!verifyCache,
+          hasAudioNode: verifyCache?.audioNode !== undefined,
+        },
+      );
 
       logger.info(
         '✅ Created and cached new WamKeyboard plugin (locally and globally)',
@@ -413,9 +453,8 @@ class WamPluginSingletonManager {
     logger.debug('🔨 Creating new WamDrummer plugin instance');
 
     try {
-      const { default: WamDrummer } = await import(
-        '@/domains/playback/modules/instruments/adapters/wam/WamDrummer'
-      );
+      const { default: WamDrummer } =
+        await import('@/domains/playback/modules/instruments/adapters/wam/WamDrummer');
 
       const plugin = await WamDrummer.createInstance(context);
 

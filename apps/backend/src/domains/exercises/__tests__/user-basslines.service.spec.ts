@@ -99,7 +99,10 @@ describe('UserBasslinesService', () => {
       getCorrelationId: vi.fn().mockReturnValue('test-correlation-id'),
     };
 
-    userBasslinesService = new UserBasslinesService(mockSupabaseService, mockRequestContextService as any);
+    userBasslinesService = new UserBasslinesService(
+      mockSupabaseService,
+      mockRequestContextService as any,
+    );
   });
 
   describe('saveBassline', () => {

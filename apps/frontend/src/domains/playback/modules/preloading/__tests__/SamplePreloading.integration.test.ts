@@ -76,10 +76,10 @@ describe('Sample Preloading Integration', () => {
       // Verify samples were fetched
       expect(fetchMock).toHaveBeenCalledTimes(2);
       expect(fetchMock).toHaveBeenCalledWith(
-        expect.stringContaining('metronome/Click_High.mp3')
+        expect.stringContaining('metronome/Click_High.mp3'),
       );
       expect(fetchMock).toHaveBeenCalledWith(
-        expect.stringContaining('metronome/Click_Low.mp3')
+        expect.stringContaining('metronome/Click_Low.mp3'),
       );
 
       // Verify buffers were cached with correct keys
@@ -131,13 +131,13 @@ describe('Sample Preloading Integration', () => {
       // Verify samples were fetched (kick, snare, hihat)
       expect(fetchMock).toHaveBeenCalledTimes(3);
       expect(fetchMock).toHaveBeenCalledWith(
-        expect.stringContaining('kick-v1.wav')
+        expect.stringContaining('kick-v1.wav'),
       );
       expect(fetchMock).toHaveBeenCalledWith(
-        expect.stringContaining('snare-v1.wav')
+        expect.stringContaining('snare-v1.wav'),
       );
       expect(fetchMock).toHaveBeenCalledWith(
-        expect.stringContaining('hihat-v1.wav')
+        expect.stringContaining('hihat-v1.wav'),
       );
 
       // Verify buffers were cached with multiple keys for compatibility

@@ -12,14 +12,14 @@ This guide helps developers migrate from the old pattern-based widget system to 
 // OLD
 const { registerPattern } = usePatternRegistration({
   widgetId: 'drums-main',
-  widgetType: 'drums'
+  widgetType: 'drums',
 });
 
 // NEW
 const { track, createRegionFromPattern, migratePatternToRegion } = useTrack({
   trackId: 'drums-main',
   name: 'Main Drums',
-  type: 'drums'
+  type: 'drums',
 });
 ```
 
@@ -45,9 +45,9 @@ Take advantage of the region system:
 // Create regions with specific timing
 const region = createRegionFromPattern(pattern, {
   name: 'Verse Pattern',
-  startPosition: '4:0:0',  // Start at bar 4
-  duration: '8:0:0',       // Play for 8 bars
-  loopCount: 2             // Loop twice (not infinite!)
+  startPosition: '4:0:0', // Start at bar 4
+  duration: '8:0:0', // Play for 8 bars
+  loopCount: 2, // Loop twice (not infinite!)
 });
 
 // Create song arrangements
@@ -56,16 +56,16 @@ const createSongStructure = () => {
     name: 'Intro',
     startPosition: '0:0:0',
     duration: '4:0:0',
-    loopCount: 1
+    loopCount: 1,
   });
-  
+
   createRegionFromPattern(versePattern, {
     name: 'Verse',
     startPosition: '4:0:0',
     duration: '8:0:0',
-    loopCount: 1
+    loopCount: 1,
   });
-  
+
   // ... more regions
 };
 ```
@@ -73,12 +73,14 @@ const createSongStructure = () => {
 ## Key Differences
 
 ### Old System (Pattern-Based)
+
 - Patterns play in infinite loops
 - One pattern per widget
 - No timeline concept
 - Direct widget-to-transport coupling
 
 ### New System (Region-Based)
+
 - Regions have start/end positions
 - Multiple regions per track
 - Timeline-based arrangement
@@ -94,9 +96,9 @@ interface Region {
   name: string;
   startPosition: MusicalPosition; // "bar:beat:sixteenth"
   duration: MusicalPosition;
-  pattern?: Pattern;              // Your existing pattern
-  midiEvents?: MidiEvent[];       // Future: direct MIDI
-  loopCount: number;              // 0 = infinite, n = loop n times
+  pattern?: Pattern; // Your existing pattern
+  midiEvents?: MidiEvent[]; // Future: direct MIDI
+  loopCount: number; // 0 = infinite, n = loop n times
   muted: boolean;
   // ... more properties
 }

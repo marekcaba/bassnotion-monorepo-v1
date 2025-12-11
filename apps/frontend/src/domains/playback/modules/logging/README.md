@@ -7,6 +7,7 @@ This module provides enhanced logging infrastructure for the playback domain, im
 ## Features
 
 ### 🔄 Log Aggregation (Phase 5.1.3)
+
 - **Smart Batching**: Groups logs into batches for efficient transmission
 - **Sampling**: Configurable sampling rates to reduce log volume in production
 - **Deduplication**: Prevents duplicate logs within a time window
@@ -14,6 +15,7 @@ This module provides enhanced logging infrastructure for the playback domain, im
 - **Performance-aware**: Built-in timing and threshold monitoring
 
 ### 🔗 Correlation ID Support (Phase 5.1.4)
+
 - **Hierarchical Tracking**: Parent-child relationships for nested operations
 - **Cross-Component Propagation**: Seamless context passing
 - **Distributed Tracing**: Full operation traces across services
@@ -25,7 +27,7 @@ This module provides enhanced logging infrastructure for the playback domain, im
 The module is part of the playback domain and doesn't require separate installation. Import from:
 
 ```typescript
-import { 
+import {
   createPlaybackLogger,
   usePlaybackCorrelation,
   // ... other exports
@@ -53,8 +55,9 @@ logger.error('Operation failed', { error }); // Always logged
 import { usePlaybackCorrelation } from '@/domains/playback/modules/logging';
 
 function AudioPlayer() {
-  const { correlationId, propagator, wrapAsync } = usePlaybackCorrelation('AudioPlayer');
-  
+  const { correlationId, propagator, wrapAsync } =
+    usePlaybackCorrelation('AudioPlayer');
+
   const loadTrack = async (trackId: string) => {
     return wrapAsync(
       async () => {
@@ -63,7 +66,7 @@ function AudioPlayer() {
         return response.json();
       },
       'loadTrack',
-      { trackId }
+      { trackId },
     );
   };
 }
@@ -75,8 +78,8 @@ function AudioPlayer() {
 import { createPerformanceLogger } from '@/domains/playback/modules/logging';
 
 const { logger, startTimer } = createPerformanceLogger('AudioProcessor', {
-  warning: 50,  // Warn if > 50ms
-  error: 200    // Error if > 200ms
+  warning: 50, // Warn if > 50ms
+  error: 200, // Error if > 200ms
 });
 
 const timer = startTimer('processAudio');
@@ -111,7 +114,7 @@ graph TD
     B --> C[AggregatingLogTransporter]
     B --> D[ProductionLogger]
     C --> E[Backend Log Aggregator]
-    
+
     F[usePlaybackCorrelation] --> G[PlaybackCorrelationManager]
     G --> H[CorrelationContext]
     H --> I[Distributed Trace]
@@ -124,16 +127,16 @@ graph TD
 ```typescript
 const logger = createPlaybackLogger('MyComponent', {
   aggregation: {
-    batchSize: 100,              // Logs per batch
-    batchTimeout: 5000,          // Max time before flush (ms)
-    samplingRate: 0.5,           // Sample 50% of logs
-    enableDeduplication: true,   // Remove duplicates
-    aggregationWindow: 60000,    // Aggregate similar logs over 1 minute
+    batchSize: 100, // Logs per batch
+    batchTimeout: 5000, // Max time before flush (ms)
+    samplingRate: 0.5, // Sample 50% of logs
+    enableDeduplication: true, // Remove duplicates
+    aggregationWindow: 60000, // Aggregate similar logs over 1 minute
     samplingRules: [
-      { level: 'error', rate: 1.0 },     // Always log errors
-      { pattern: /critical/i, rate: 1.0 } // Always log critical
-    ]
-  }
+      { level: 'error', rate: 1.0 }, // Always log errors
+      { pattern: /critical/i, rate: 1.0 }, // Always log critical
+    ],
+  },
 });
 ```
 
@@ -144,17 +147,17 @@ import { SAMPLING_PRESETS } from '@/domains/playback/modules/logging';
 
 // Development: Full logging
 const devLogger = createPlaybackLogger('Dev', {
-  aggregation: SAMPLING_PRESETS.development
+  aggregation: SAMPLING_PRESETS.development,
 });
 
 // Production: Optimized sampling
 const prodLogger = createPlaybackLogger('Prod', {
-  aggregation: SAMPLING_PRESETS.production
+  aggregation: SAMPLING_PRESETS.production,
 });
 
 // Performance: Aggressive sampling
 const perfLogger = createPlaybackLogger('Perf', {
-  aggregation: SAMPLING_PRESETS.performance
+  aggregation: SAMPLING_PRESETS.performance,
 });
 ```
 
@@ -165,10 +168,10 @@ const perfLogger = createPlaybackLogger('Perf', {
 ```typescript
 export class AudioComponent {
   private logger = createPlaybackLogger('AudioComponent');
-  
+
   async initialize(): Promise<void> {
     this.logger.info('Initializing audio component');
-    
+
     try {
       await this.loadSamples();
       this.logger.info('Audio component initialized');
@@ -234,17 +237,17 @@ const logger = createPlaybackLogger('HighFrequency', {
       // Always log errors and warnings
       { level: 'error', rate: 1.0 },
       { level: 'warn', rate: 0.9 },
-      
+
       // Sample debug logs heavily
       { level: 'debug', rate: 0.01 },
-      
+
       // Always log specific patterns
       { pattern: /payment|auth/i, rate: 1.0 },
-      
+
       // Sample performance logs by category
-      { category: 'performance', level: 'info', rate: 0.1 }
-    ]
-  }
+      { category: 'performance', level: 'info', rate: 0.1 },
+    ],
+  },
 });
 ```
 
@@ -266,17 +269,15 @@ try {
 ```typescript
 async function processBatch(items: any[]) {
   const { correlationId, wrapAsync } = usePlaybackCorrelation('BatchProcessor');
-  
+
   const results = await Promise.all(
     items.map((item, index) =>
-      wrapAsync(
-        () => processItem(item),
-        `processItem[${index}]`,
-        { itemId: item.id }
-      )
-    )
+      wrapAsync(() => processItem(item), `processItem[${index}]`, {
+        itemId: item.id,
+      }),
+    ),
   );
-  
+
   // Get complete trace of batch processing
   const trace = manager.getTrace(correlationId);
 }
@@ -285,16 +286,19 @@ async function processBatch(items: any[]) {
 ## Performance Considerations
 
 ### Memory Management
+
 - Contexts are automatically cleaned up after 5 minutes
 - Deduplication cache has a sliding window
 - Batch size limits prevent memory bloat
 
 ### CPU Usage
+
 - Sampling reduces processing overhead
 - Aggregation reduces log volume
 - Pattern matching is optimized for performance
 
 ### Network Traffic
+
 - Batching reduces HTTP requests
 - Compression support (when implemented)
 - Retry logic with exponential backoff
@@ -302,18 +306,21 @@ async function processBatch(items: any[]) {
 ## Troubleshooting
 
 ### Logs Not Appearing
+
 1. Check sampling configuration - you may be sampling too aggressively
 2. Verify log level meets minimum threshold
 3. Check if deduplication is filtering repeated logs
 4. Ensure batches are being flushed (check batch timeout)
 
 ### High Memory Usage
+
 1. Reduce aggregation window
 2. Decrease batch size
 3. Enable more aggressive sampling
 4. Check for correlation context leaks
 
 ### Correlation Not Working
+
 1. Ensure correlation ID is being propagated
 2. Check that all components use the same EventBus instance
 3. Verify WebSocket/Worker initialization includes correlation
@@ -354,20 +361,18 @@ async function loadAudio() {
 // After
 async function loadAudio() {
   const { wrapAsync } = usePlaybackCorrelation('AudioLoader');
-  
-  return wrapAsync(
-    async () => {
-      const response = await fetch('/api/audio');
-      return response.json();
-    },
-    'loadAudio'
-  );
+
+  return wrapAsync(async () => {
+    const response = await fetch('/api/audio');
+    return response.json();
+  }, 'loadAudio');
 }
 ```
 
 ## Examples
 
 See the `examples/` directory for complete examples:
+
 - `LoggingPatternExamples.ts` - Various logging patterns
 - `CorrelationIdExamples.ts` - Correlation ID usage patterns
 
@@ -397,33 +402,36 @@ See the `examples/` directory for complete examples:
 ## API Reference
 
 ### createPlaybackLogger
+
 ```typescript
 function createPlaybackLogger(
   name: string,
   options?: {
     correlationId?: string;
     aggregation?: Partial<LogAggregationConfig>;
-  }
-): StructuredLogger
+  },
+): StructuredLogger;
 ```
 
 ### usePlaybackCorrelation
+
 ```typescript
 function usePlaybackCorrelation(
   componentName: string,
-  parentCorrelationId?: string
+  parentCorrelationId?: string,
 ): {
   correlationId: string;
   propagator: CorrelationPropagator;
   wrapAsync: <T>(
     operation: () => Promise<T>,
     operationName: string,
-    metadata?: Record<string, any>
+    metadata?: Record<string, any>,
   ) => Promise<T>;
-}
+};
 ```
 
 ### @Correlated Decorator
+
 ```typescript
 @Correlated(operationName?: string)
 method(...args: any[]): Promise<any>
@@ -432,6 +440,7 @@ method(...args: any[]): Promise<any>
 ## Contributing
 
 When adding new features to this module:
+
 1. Follow the established patterns
 2. Add comprehensive examples
 3. Update this README

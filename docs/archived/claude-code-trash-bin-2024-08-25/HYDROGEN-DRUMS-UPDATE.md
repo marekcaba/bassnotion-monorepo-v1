@@ -7,8 +7,9 @@ Successfully downloaded and uploaded 19 high-quality Hydrogen drum kits to Supab
 ## Uploaded Kits by Category
 
 ### Electronic (7 kits)
+
 - **Classic TR-808** - 19 samples
-- **TR-808/909 Hybrid** - 16 samples  
+- **TR-808/909 Hybrid** - 16 samples
 - **Boss DR-110** - 6 samples
 - **Electric Empire** - 32 samples
 - **K-27 Trash Kit** - 37 samples
@@ -16,6 +17,7 @@ Successfully downloaded and uploaded 19 high-quality Hydrogen drum kits to Supab
 - **VariBreaks** - 16 samples
 
 ### Acoustic (5 kits)
+
 - **Yamaha Vintage Kit** - 36 samples
 - **Colombo Acoustic** - 27 samples
 - **Millo Multi-Layered** - 40 samples
@@ -23,23 +25,28 @@ Successfully downloaded and uploaded 19 high-quality Hydrogen drum kits to Supab
 - **Forzee Stereo Kit** - 124 samples (largest kit!)
 
 ### Hip-Hop (3 kits)
+
 - **Hip-Hop Kit 1** - 16 samples
 - **Hip-Hop Kit 2** - 16 samples
 - **BeatBuddy Kit** - 93 samples
 
 ### Rock (2 kits)
+
 - **Dave Grohl Kit** - 14 samples
 - **John Bonham Kit** - 11 samples
 
 ### Metal (1 kit)
+
 - **Death Metal Kit** - 57 samples
 
 ### Jazz (1 kit)
+
 - **Gimme That Jazz** - 65 samples
 
 ## Storage Location
 
 All kits are stored in Supabase under:
+
 ```
 audio-samples/drums/hydrogen-collection/
 ├── index.json (master index)
@@ -66,8 +73,9 @@ To use these kits in your application:
 ## Missing Kits
 
 The following kits from the official Hydrogen collection couldn't be downloaded automatically and would need manual download:
+
 - The Black Pearl Kit
-- GMRockKit  
+- GMRockKit
 - Jazz Kits 1-4 (download failed)
 - Synthie-1
 - Ian Paice Drumkit

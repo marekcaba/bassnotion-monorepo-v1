@@ -1,9 +1,11 @@
 # Phase 7 Migration Analysis
 
 ## Objective
+
 Carefully analyze each file before removal to ensure no valuable code or patterns are lost during the migration to the new modular architecture.
 
 ## Analysis Process for Each File
+
 1. Identify the new module equivalent
 2. Compare features and implementations
 3. Extract any missing valuable code
@@ -13,6 +15,7 @@ Carefully analyze each file before removal to ensure no valuable code or pattern
 ## Files to Analyze
 
 ### Core Services (services/core/)
+
 - [ ] AudioEngine.ts → modules/audio-engine/
 - [ ] OptimizedAudioEngine.ts → modules/audio-engine/
 - [ ] AudioEngineDelegator.ts → modules/audio-engine/
@@ -25,6 +28,7 @@ Carefully analyze each file before removal to ensure no valuable code or pattern
 - [ ] MultiTrackTimingSynchronizer.ts → modules/tracks/
 
 ### Storage Services (services/storage/)
+
 - [ ] GlobalSampleCache.ts → modules/storage/
 - [ ] CachedToneBufferLoader.ts → modules/storage/
 - [ ] cache/SampleCacheManager.ts → modules/storage/
@@ -34,6 +38,7 @@ Carefully analyze each file before removal to ensure no valuable code or pattern
 - [ ] cache/IntelligentCacheRouter.ts → modules/storage/
 
 ### Plugin Services (services/plugins/)
+
 - [ ] MetronomeInstrumentProcessor.ts → modules/instruments/
 - [ ] InstrumentAssetOptimizer.ts → modules/instruments/
 - [ ] InstrumentLifecycleManager.ts → modules/instruments/
@@ -43,34 +48,42 @@ Carefully analyze each file before removal to ensure no valuable code or pattern
 
 ## Analysis Template
 
-```markdown
+````markdown
 ### File: [filename]
+
 **New Location**: [new module path]
 **Size**: [lines of code]
 **Dependencies**: [key dependencies]
 
 #### Features in Old File:
+
 - [ ] Feature 1
 - [ ] Feature 2
 
 #### Features in New Module:
+
 - [ ] Feature 1
 - [ ] Feature 2
 
 #### Missing Features to Extract:
+
 - [ ] Missing feature 1
 - [ ] Missing feature 2
 
 #### Valuable Patterns/Code:
+
 ```code
 // Code to preserve
 ```
+````
 
 #### Decision:
+
 - [ ] Safe to remove
 - [ ] Need to extract features first
 - [ ] Keep for reference
-```
+
+````
 
 ## Detailed Analysis
 
@@ -179,14 +192,16 @@ private detectBrowser(): { name: string; version: number } | null {
   const ua = navigator.userAgent.toLowerCase();
   // Detection logic...
 }
-```
+````
 
 #### Decision:
+
 - [ ] Safe to remove
 - [x] Need to extract features first
 - [ ] Keep for reference
 
 ### Extraction Progress:
+
 1. ✅ Circuit breaker added to new AudioEngine
    - Added CircuitBreaker instance with config
    - Wrapped critical methods (initialize, start, stop, createSampler)
@@ -210,28 +225,33 @@ private detectBrowser(): { name: string; version: number } | null {
 7. ⏳ Detailed telemetry - pending (low priority)
 
 ### Remaining AudioEngine Tasks:
+
 - [ ] Enhanced telemetry and metrics collection
 - [ ] Instance ID tracking is done, but could add more detailed metrics
 
 ---
 
 ### File: OptimizedAudioEngine.ts
+
 **New Location**: Integrated into modules/audio-engine/core/ToneWrapper.ts
 **Size**: 53 lines
 **Dependencies**: Tone.js modules
 
 #### Features in Old File:
+
 - [x] Selective Tone.js module loading
 - [x] Lazy loading for modules
 - [x] Module caching
 - [x] Reduced bundle size optimization
 
 #### Features in New Module:
+
 - [x] Selective module loading (via enableSelectiveLoading())
 - [x] Lazy loading (via loadModule())
 - [x] Module caching (using loadedModules Map)
 
 #### Extraction Complete:
+
 - Added `enableSelectiveLoading()` method to ToneWrapper
 - Added `performSelectiveLoad()` for minimal module loading
 - Added `loadModule()` for lazy loading additional modules
@@ -239,6 +259,7 @@ private detectBrowser(): { name: string; version: number } | null {
 - Supports both full and selective loading modes
 
 #### Decision:
+
 - [x] Safe to remove
 - [ ] Need to extract features first
 - [ ] Keep for reference
@@ -246,11 +267,13 @@ private detectBrowser(): { name: string; version: number } | null {
 ---
 
 ### File: AudioEngineDelegator.ts
+
 **New Location**: Should be preserved as migration pattern
 **Size**: 342 lines
 **Dependencies**: Both legacy and modular AudioEngine
 
 #### Features in Old File:
+
 - [x] Feature flag based routing
 - [x] Delegation pattern for gradual migration
 - [x] Backward compatibility layer
@@ -258,9 +281,11 @@ private detectBrowser(): { name: string; version: number } | null {
 - [x] Complete interface delegation
 
 #### Features in New Module:
+
 - [ ] Not applicable - this IS the migration layer
 
 #### Decision:
+
 - [ ] Safe to remove
 - [ ] Need to extract features first
 - [x] Keep for reference (valuable migration pattern)

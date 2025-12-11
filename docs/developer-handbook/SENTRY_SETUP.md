@@ -7,6 +7,7 @@ BassNotion uses Sentry for comprehensive error tracking, performance monitoring,
 ## Installation
 
 Already installed:
+
 - Backend: `@sentry/node` and `@sentry/profiling-node`
 - Frontend: `@sentry/nextjs`
 
@@ -51,15 +52,16 @@ SENTRY_AUTH_TOKEN=your-auth-token-for-source-maps
    - API endpoint monitoring
 
 3. **Custom Helpers**
+
    ```typescript
    import { captureError, trackEvent, measurePerformance } from '@/config/sentry.config';
-   
+
    // Capture error with context
    captureError(error, { userId, action: 'createExercise' });
-   
+
    // Track custom events
    trackEvent('user_signup', { plan: 'premium' });
-   
+
    // Measure performance
    const result = await measurePerformance('database.query', async () => {
      return await db.query(...);
@@ -87,13 +89,14 @@ SENTRY_AUTH_TOKEN=your-auth-token-for-source-maps
    - Custom transaction tracking
 
 4. **Audio Error Tracking**
+
    ```typescript
    import { captureAudioError } from '@/shared/utils/sentry';
-   
+
    captureAudioError(error, {
      widget: 'MetronomeWidget',
      action: 'start',
-     audioContext: 'suspended'
+     audioContext: 'suspended',
    });
    ```
 
@@ -110,7 +113,7 @@ try {
   captureError(error, {
     controller: 'ExercisesController',
     method: 'create',
-    data
+    data,
   });
   throw error;
 }
@@ -125,7 +128,7 @@ import { captureWidgetError } from '@/shared/utils/sentry';
 
 function MyWidget() {
   const errorHandler = useErrorHandler();
-  
+
   const handlePlay = async () => {
     try {
       await playAudio();
@@ -141,13 +144,16 @@ function MyWidget() {
 
 ```typescript
 // Frontend
-import { measureAsyncOperation, reportPerformanceMetric } from '@/shared/utils/sentry';
+import {
+  measureAsyncOperation,
+  reportPerformanceMetric,
+} from '@/shared/utils/sentry';
 
 const data = await measureAsyncOperation('load-samples', async () => {
   const startTime = performance.now();
   const samples = await loadSamples();
   const loadTime = performance.now() - startTime;
-  
+
   reportPerformanceMetric('sample-load-time', loadTime);
   return samples;
 });
@@ -163,11 +169,13 @@ const result = await measurePerformance('youtube.fetch', async () => {
 ### Ignored Errors
 
 **Backend:**
+
 - Build errors
 - TypeScript compilation errors
 - Health check requests
 
 **Frontend:**
+
 - ResizeObserver errors
 - Browser extension errors
 - Network errors in development

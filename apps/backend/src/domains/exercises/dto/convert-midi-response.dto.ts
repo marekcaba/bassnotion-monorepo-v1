@@ -1,5 +1,8 @@
 import { z } from 'zod';
-import { MusicalPositionSchema, NoteDurationSchema } from '@bassnotion/contracts';
+import {
+  MusicalPositionSchema,
+  NoteDurationSchema,
+} from '@bassnotion/contracts';
 
 /**
  * Confidence level for a generated note position
@@ -28,7 +31,12 @@ export type AlternativePosition = z.infer<typeof AlternativePositionSchema>;
  */
 export const PositionWarningSchema = z.object({
   /** Warning type */
-  type: z.enum(['large_stretch', 'difficult_shift', 'string_crossing', 'awkward_position']),
+  type: z.enum([
+    'large_stretch',
+    'difficult_shift',
+    'string_crossing',
+    'awkward_position',
+  ]),
   /** Human-readable warning message */
   message: z.string(),
   /** Severity: info, warning, error */

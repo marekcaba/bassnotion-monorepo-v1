@@ -1,4 +1,15 @@
-import { IsString, IsOptional, IsNumber, IsArray, IsBoolean, IsEnum, MinLength, MaxLength, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsArray,
+  IsBoolean,
+  IsEnum,
+  MinLength,
+  MaxLength,
+  Min,
+  Max,
+} from 'class-validator';
 
 export enum TutorialDifficulty {
   BEGINNER = 'beginner',

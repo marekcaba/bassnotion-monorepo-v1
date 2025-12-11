@@ -5,6 +5,7 @@
 The production YouTube tutorial page has poor timing performance (high jitter, drift, low stability) compared to the test-unified-transport page due to multiple layers of event processing:
 
 ### Event Flow Overhead:
+
 1. **UnifiedTransport** → Professional timing with AudioWorklet
 2. **CoreServices EventBus** → Event routing layer
 3. **WidgetSyncService** → Receives from EventBus, re-emits to widgets
@@ -13,12 +14,14 @@ The production YouTube tutorial page has poor timing performance (high jitter, d
 6. **Widget Implementations** → Complex scheduling logic
 
 ### Test Page (Good Performance):
+
 - Direct UnifiedTransport usage
 - No intermediate layers
 - Direct Transport event subscriptions
 - Minimal React re-renders
 
 ### Production Page (Poor Performance):
+
 - 5+ layers of event processing
 - Multiple event re-emissions
 - React context updates causing re-renders
@@ -62,7 +65,7 @@ The production YouTube tutorial page has poor timing performance (high jitter, d
 export function useDirectTransport() {
   const transportRef = useRef<UnifiedTransport | null>(null);
   const eventBusRef = useRef<EventBus | null>(null);
-  
+
   useEffect(() => {
     const coreServices = (window as any).__globalCoreServices;
     if (coreServices) {
@@ -70,7 +73,7 @@ export function useDirectTransport() {
       eventBusRef.current = coreServices.getEventBus();
     }
   }, []);
-  
+
   // Return refs for direct access without React re-renders
   return { transportRef, eventBusRef };
 }

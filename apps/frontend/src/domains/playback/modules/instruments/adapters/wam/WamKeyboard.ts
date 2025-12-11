@@ -51,7 +51,9 @@ abstract class WebAudioModuleBase implements WebAudioModule {
     if (!this.initialized) {
       // CRITICAL FIX: Skip instrument loading during initialization to prevent blocking
       // Instrument will be loaded separately after plugin is created
-      this.audioNode = await this.createAudioNode(state, { skipInstrumentLoad: true });
+      this.audioNode = await this.createAudioNode(state, {
+        skipInstrumentLoad: true,
+      });
       (this as any).initialized = true;
     }
     return this;
@@ -210,14 +212,16 @@ export class WamKeyboardNode implements WamNode {
       hasContext: !!this.context,
       initialInstrument: this.initialInstrument,
       skipInstrumentLoad: options?.skipInstrumentLoad,
-      willLoadInstrument: !!this.initialInstrument && !options?.skipInstrumentLoad,
+      willLoadInstrument:
+        !!this.initialInstrument && !options?.skipInstrumentLoad,
     });
 
     // Create gain node only in browser
     if (typeof window !== 'undefined' && this.context) {
       // FAANG-STYLE: Use InstrumentDependencyManager for independent loading
       // No longer depends on CoreServices being initialized first
-      const { InstrumentDependencyManager } = await import('@/domains/playback/services/InstrumentDependencyManager.js');
+      const { InstrumentDependencyManager } =
+        await import('@/domains/playback/services/InstrumentDependencyManager.js');
       let Tone = null;
 
       try {
@@ -226,7 +230,9 @@ export class WamKeyboardNode implements WamNode {
         logger.info('🎹 WamKeyboard: Tone.js loaded successfully');
       } catch (error) {
         logger.error('🎹 WamKeyboard: Failed to load Tone.js', error);
-        throw new Error(`Failed to initialize WamKeyboard: ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(
+          `Failed to initialize WamKeyboard: ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
 
       // CRITICAL: Set Tone.js to use WAM AudioContext before any Tone operations
@@ -266,10 +272,17 @@ export class WamKeyboardNode implements WamNode {
       // When skipInstrumentLoad=true, we defer loading until after plugin is created
       // This prevents blocking network fetch during initialization
       if (options?.skipInstrumentLoad) {
-        console.log('🔍🔍🔍 [INITIALIZE] Skipping instrument load - will use cached buffers later');
-        logger.info('🎹 WamKeyboardNode.initialize: Skipping instrument load (deferred)');
+        console.log(
+          '🔍🔍🔍 [INITIALIZE] Skipping instrument load - will use cached buffers later',
+        );
+        logger.info(
+          '🎹 WamKeyboardNode.initialize: Skipping instrument load (deferred)',
+        );
       } else if (this.initialInstrument) {
-        console.log('🔍🔍🔍 [INITIALIZE] About to call loadInstrument with:', this.initialInstrument);
+        console.log(
+          '🔍🔍🔍 [INITIALIZE] About to call loadInstrument with:',
+          this.initialInstrument,
+        );
         logger.info(
           `🎹 WamKeyboardNode.initialize: Loading instrument from options: ${this.initialInstrument}`,
           {
@@ -277,10 +290,15 @@ export class WamKeyboardNode implements WamNode {
           },
         );
         await this.loadInstrument(this.initialInstrument);
-        console.log('🔍🔍🔍 [INITIALIZE] loadInstrument completed for:', this.initialInstrument);
+        console.log(
+          '🔍🔍🔍 [INITIALIZE] loadInstrument completed for:',
+          this.initialInstrument,
+        );
       } else {
         console.log('🔍🔍🔍 [INITIALIZE] No initialInstrument, skipping load');
-        logger.info('🎹 WamKeyboardNode.initialize: No initial instrument specified, waiting for exercise load');
+        logger.info(
+          '🎹 WamKeyboardNode.initialize: No initial instrument specified, waiting for exercise load',
+        );
       }
     }
   }
@@ -290,12 +308,16 @@ export class WamKeyboardNode implements WamNode {
    * Returns the sampler if successful, null if insufficient cached data
    * CRITICAL: This allows instant instrument loading without network fetch!
    */
-  private async tryBuildFromCache(instrument: KeyboardInstrument): Promise<any | null> {
+  private async tryBuildFromCache(
+    instrument: KeyboardInstrument,
+  ): Promise<any | null> {
     try {
       // CRITICAL FIX: For now, return null to use the existing VelocitySampler path
       // The VelocitySampler classes already know how to use GlobalSampleCache
       // They just need to be instantiated with the correct AudioContext
-      console.log(`[tryBuildFromCache] Skipping cache build, will use VelocitySampler initialize path`);
+      console.log(
+        `[tryBuildFromCache] Skipping cache build, will use VelocitySampler initialize path`,
+      );
       return null;
 
       // TODO: Future optimization - build Tone.Sampler directly from cached buffers
@@ -324,8 +346,12 @@ export class WamKeyboardNode implements WamNode {
     if (typeof window !== 'undefined' && (window as any).Tone?.Transport) {
       try {
         (window as any).Tone.Transport.cancel(0);
-        console.log('[INSTRUMENT-SWITCH] Cleared Tone.Transport events for instrument switch');
-        logger.info('🎹 Cleared Tone.Transport scheduled events before loading new instrument');
+        console.log(
+          '[INSTRUMENT-SWITCH] Cleared Tone.Transport events for instrument switch',
+        );
+        logger.info(
+          '🎹 Cleared Tone.Transport scheduled events before loading new instrument',
+        );
       } catch (error) {
         logger.warn('Failed to clear Tone.Transport events:', error as Error);
       }
@@ -343,7 +369,9 @@ export class WamKeyboardNode implements WamNode {
     // NEW: Check if we can build sampler from GlobalSampleCache (instant, no network)
     const cachedSampler = await this.tryBuildFromCache(instrument);
     if (cachedSampler) {
-      console.log(`✅ [LOAD-INSTRUMENT] Built ${instrument} from cached buffers (no network fetch!)`);
+      console.log(
+        `✅ [LOAD-INSTRUMENT] Built ${instrument} from cached buffers (no network fetch!)`,
+      );
       logger.info(`✅ Using cached buffers for ${instrument} - instant load!`);
       this.samplers.set(instrument, cachedSampler);
       this.switchToInstrument(instrument);
@@ -351,7 +379,9 @@ export class WamKeyboardNode implements WamNode {
     }
 
     // FALLBACK: No cached buffers, proceed with existing network fetch logic
-    console.log(`⚠️ [LOAD-INSTRUMENT] No cached buffers for ${instrument}, fetching from network...`);
+    console.log(
+      `⚠️ [LOAD-INSTRUMENT] No cached buffers for ${instrument}, fetching from network...`,
+    );
     logger.warn(`⚠️ Falling back to network fetch for ${instrument}`);
 
     // Check global cache for pre-built sampler instance (legacy path)
@@ -371,7 +401,9 @@ export class WamKeyboardNode implements WamNode {
     const preloadedHarmony =
       GlobalSampleCache.getCachedInstrument('harmony-preloaded');
     if (preloadedHarmony && preloadedHarmony.audioNode) {
-      logger.info('🎹 Checking pre-loaded harmony instrument for requested instrument');
+      logger.info(
+        '🎹 Checking pre-loaded harmony instrument for requested instrument',
+      );
 
       // The preloaded harmony is a complete WamKeyboard instance
       // Check if it has the requested instrument already loaded
@@ -453,8 +485,12 @@ export class WamKeyboardNode implements WamNode {
           // CRITICAL FIX: Cached samplers have wrong AudioContext
           // Sampler's audioContext is set during initialize() and can't be changed after
           // We MUST create a new sampler with the correct AudioContext
-          console.warn('🔧 [CACHE-BYPASS] Cached sampler found but AudioContext may be wrong - creating new sampler');
-          logger.warn('🔧 Bypassing cached sampler to ensure correct AudioContext');
+          console.warn(
+            '🔧 [CACHE-BYPASS] Cached sampler found but AudioContext may be wrong - creating new sampler',
+          );
+          logger.warn(
+            '🔧 Bypassing cached sampler to ensure correct AudioContext',
+          );
           // Fall through to create new sampler with correct AudioContext
         } else {
           logger.warn(
@@ -484,8 +520,12 @@ export class WamKeyboardNode implements WamNode {
           console.log('✅ [LOAD-INSTRUMENT] Grand Piano initialized');
           if (this.gainNode) {
             sampler.connect(this.gainNode);
-            console.log('✅ [LOAD-INSTRUMENT] Grand Piano connected to gain node (after init)');
-            logger.info('🎹 Connected Grand Piano sampler to gain node after initialization');
+            console.log(
+              '✅ [LOAD-INSTRUMENT] Grand Piano connected to gain node (after init)',
+            );
+            logger.info(
+              '🎹 Connected Grand Piano sampler to gain node after initialization',
+            );
           }
           break;
 
@@ -500,7 +540,9 @@ export class WamKeyboardNode implements WamNode {
           console.log('✅ [LOAD-INSTRUMENT] Rhodes initialized');
           if (this.gainNode) {
             sampler.connect(this.gainNode);
-            console.log('✅ [LOAD-INSTRUMENT] Rhodes connected to gain node (after init)');
+            console.log(
+              '✅ [LOAD-INSTRUMENT] Rhodes connected to gain node (after init)',
+            );
           }
           break;
 
@@ -515,7 +557,9 @@ export class WamKeyboardNode implements WamNode {
           console.log('✅ [LOAD-INSTRUMENT] Wurlitzer initialized');
           if (this.gainNode) {
             sampler.connect(this.gainNode);
-            console.log('✅ [LOAD-INSTRUMENT] Wurlitzer connected to gain node (after init)');
+            console.log(
+              '✅ [LOAD-INSTRUMENT] Wurlitzer connected to gain node (after init)',
+            );
           }
           break;
 
@@ -567,35 +611,51 @@ export class WamKeyboardNode implements WamNode {
     });
 
     this.samplers.forEach((sampler, instrumentName) => {
-      console.log(`🔌 [DISCONNECT-ALL] Attempting to disconnect ${instrumentName}`, {
-        hasDisconnect: typeof sampler.disconnect === 'function',
-        hasOutput: !!sampler.output,
-        hasReleaseAll: typeof sampler.releaseAll === 'function',
-        constructor: sampler.constructor?.name,
-      });
+      console.log(
+        `🔌 [DISCONNECT-ALL] Attempting to disconnect ${instrumentName}`,
+        {
+          hasDisconnect: typeof sampler.disconnect === 'function',
+          hasOutput: !!sampler.output,
+          hasReleaseAll: typeof sampler.releaseAll === 'function',
+          constructor: sampler.constructor?.name,
+        },
+      );
 
       try {
         // CRITICAL FIX: Release all playing notes BEFORE disconnecting
         // This prevents notes from continuing to play after instrument switch
         if (sampler.releaseAll && typeof sampler.releaseAll === 'function') {
           sampler.releaseAll(0);
-          console.log(`🔇 [DISCONNECT-ALL] Released all notes for ${instrumentName}`);
+          console.log(
+            `🔇 [DISCONNECT-ALL] Released all notes for ${instrumentName}`,
+          );
           logger.info(`🔇 Released all active notes for ${instrumentName}`);
         }
 
         if (sampler.disconnect) {
           sampler.disconnect();
-          console.log(`✅ [DISCONNECT-ALL] Successfully disconnected ${instrumentName}`);
+          console.log(
+            `✅ [DISCONNECT-ALL] Successfully disconnected ${instrumentName}`,
+          );
           logger.info(`✅ Disconnected ${instrumentName} (using disconnect())`);
         } else if (sampler.output) {
           sampler.output.disconnect();
-          console.log(`✅ [DISCONNECT-ALL] Successfully disconnected ${instrumentName} (using output)`);
-          logger.info(`✅ Disconnected ${instrumentName} (using output.disconnect())`);
+          console.log(
+            `✅ [DISCONNECT-ALL] Successfully disconnected ${instrumentName} (using output)`,
+          );
+          logger.info(
+            `✅ Disconnected ${instrumentName} (using output.disconnect())`,
+          );
         }
       } catch (error) {
         // Ignore errors - sampler may already be disconnected
-        console.log(`⚠️ [DISCONNECT-ALL] Could not disconnect ${instrumentName} (may already be disconnected)`);
-        logger.info(`⚠️ Could not disconnect ${instrumentName} (may already be disconnected)`, error);
+        console.log(
+          `⚠️ [DISCONNECT-ALL] Could not disconnect ${instrumentName} (may already be disconnected)`,
+        );
+        logger.info(
+          `⚠️ Could not disconnect ${instrumentName} (may already be disconnected)`,
+          error,
+        );
       }
     });
 
@@ -610,7 +670,8 @@ export class WamKeyboardNode implements WamNode {
       requestedInstrument: instrument,
       currentInstrument: this.currentInstrument,
       hasCurrentSampler: !!this.activeSampler,
-      isAlreadyActive: this.currentInstrument === instrument && !!this.activeSampler,
+      isAlreadyActive:
+        this.currentInstrument === instrument && !!this.activeSampler,
       hasGainNode: !!this.gainNode,
       gainNodeValue: this.gainNode?.gain?.value,
       availableSamplers: Array.from(this.samplers.keys()),
@@ -625,8 +686,12 @@ export class WamKeyboardNode implements WamNode {
 
     // DEFENSIVE CHECK: If the requested instrument is already active and connected, skip
     if (this.currentInstrument === instrument && this.activeSampler) {
-      console.log('⚠️ [SWITCH-INSTRUMENT] Instrument already active, skipping redundant switch');
-      logger.warn(`⚠️ Instrument ${instrument} is already active, skipping switch`);
+      console.log(
+        '⚠️ [SWITCH-INSTRUMENT] Instrument already active, skipping redundant switch',
+      );
+      logger.warn(
+        `⚠️ Instrument ${instrument} is already active, skipping switch`,
+      );
       return;
     }
 
@@ -658,11 +723,15 @@ export class WamKeyboardNode implements WamNode {
       // Velocity samplers don't have output property, connect directly
       if (this.activeSampler.connect) {
         this.activeSampler.connect(this.gainNode);
-        console.log(`✅ [SWITCH-INSTRUMENT] Connected ${instrument} sampler to gain node (direct connect)`);
+        console.log(
+          `✅ [SWITCH-INSTRUMENT] Connected ${instrument} sampler to gain node (direct connect)`,
+        );
         logger.info(`✅ Connected ${instrument} sampler to gain node`);
       } else if (this.activeSampler.output) {
         this.activeSampler.output.connect(this.gainNode);
-        console.log(`✅ [SWITCH-INSTRUMENT] Connected ${instrument} sampler to gain node (via output)`);
+        console.log(
+          `✅ [SWITCH-INSTRUMENT] Connected ${instrument} sampler to gain node (via output)`,
+        );
         logger.info(`✅ Connected ${instrument} sampler output to gain node`);
       }
     } else {
@@ -682,7 +751,7 @@ export class WamKeyboardNode implements WamNode {
       instrument: this.currentInstrument,
       note,
       velocity,
-      time: time?.toFixed(3) || 'immediate'
+      time: time?.toFixed(3) || 'immediate',
     });
 
     logger.info('🎹 triggerNote called:', {
@@ -757,8 +826,10 @@ export class WamKeyboardNode implements WamNode {
           toneTime,
           currentTime: this.context.currentTime.toFixed(3),
           willPlayAt: scheduledPlayTime.toFixed(3),
-          delayMs: toneTime ? (parseFloat(toneTime.substring(1)) * 1000).toFixed(1) : 0,
-          timestamp: Date.now()
+          delayMs: toneTime
+            ? (parseFloat(toneTime.substring(1)) * 1000).toFixed(1)
+            : 0,
+          timestamp: Date.now(),
         });
 
         // CRITICAL FIX: Use triggerAttack instead of triggerAttackRelease
@@ -767,25 +838,31 @@ export class WamKeyboardNode implements WamNode {
         // triggerAttack only starts the note, release is handled by releaseNote() which respects sustainPedal
 
         // DIAGNOSTIC: Log the ACTUAL Tone.js sampler.triggerAttack() call (this is where audio plays!)
-        console.log('[PLAYBACK-PATH] 🎵 Tone.js Sampler.triggerAttack() called (PRIMARY PATH):', {
-          sampler: this.activeSampler?.constructor?.name || 'unknown',
-          currentInstrument: this.currentInstrument,
-          noteName,
-          toneTime,
-          velocity
-        });
+        console.log(
+          '[PLAYBACK-PATH] 🎵 Tone.js Sampler.triggerAttack() called (PRIMARY PATH):',
+          {
+            sampler: this.activeSampler?.constructor?.name || 'unknown',
+            currentInstrument: this.currentInstrument,
+            noteName,
+            toneTime,
+            velocity,
+          },
+        );
         this.activeSampler.triggerAttack(noteName, toneTime, velocity);
       } else if (this.activeSampler.triggerAttack) {
         // For other samplers that support separate attack/release
 
         // DIAGNOSTIC: Log alternative Tone.js sampler path
-        console.log('[PLAYBACK-PATH] 🎵 Tone.js Sampler.triggerAttack() called (FALLBACK PATH):', {
-          sampler: this.activeSampler?.constructor?.name || 'unknown',
-          currentInstrument: this.currentInstrument,
-          noteName,
-          triggerTime,
-          velocity
-        });
+        console.log(
+          '[PLAYBACK-PATH] 🎵 Tone.js Sampler.triggerAttack() called (FALLBACK PATH):',
+          {
+            sampler: this.activeSampler?.constructor?.name || 'unknown',
+            currentInstrument: this.currentInstrument,
+            noteName,
+            triggerTime,
+            velocity,
+          },
+        );
         this.activeSampler.triggerAttack(noteName, triggerTime, velocity);
       } else {
         logger.warn(
@@ -883,7 +960,7 @@ export class WamKeyboardNode implements WamNode {
       type: 'wam-midi',
       time,
       data: {
-        bytes: new Uint8Array([0xB0, cc, value]), // Control Change message
+        bytes: new Uint8Array([0xb0, cc, value]), // Control Change message
       },
     });
 
@@ -1049,7 +1126,6 @@ export class WamKeyboardNode implements WamNode {
     // Tone.js scheduled notes can't play if the sampler isn't connected to anything
     if (this.activeSampler && this.gainNode) {
       try {
-
         // Disconnect sampler from gain node - this breaks the audio path
         this.activeSampler.disconnect();
 
@@ -1061,7 +1137,10 @@ export class WamKeyboardNode implements WamNode {
         // Without this, scheduled notes will play after reconnection
         // This clears the internal Tone.js Transport event queue
         try {
-          if (typeof window !== 'undefined' && (window as any).Tone?.Transport) {
+          if (
+            typeof window !== 'undefined' &&
+            (window as any).Tone?.Transport
+          ) {
             (window as any).Tone.Transport.cancel(0); // Cancel all events from time 0 onwards
           }
         } catch (toneError) {
@@ -1076,7 +1155,7 @@ export class WamKeyboardNode implements WamNode {
             this.activeSampler.connect(this.gainNode);
             this.gainNode.gain.setValueAtTime(0.8, this.context.currentTime);
           }
-        }, 10);  // ← REDUCED from 100ms to 10ms
+        }, 10); // ← REDUCED from 100ms to 10ms
       } catch (e) {
         console.error('❌ [NUCLEAR] Error during disconnect/reconnect:', e);
       }
@@ -1106,14 +1185,17 @@ export class WamKeyboardNode implements WamNode {
         console.log('🔍 [DEBUG] Found active sources:', {
           noteCount: sources.size,
           notes: Array.from(sources.keys()),
-          totalSources: Array.from(sources.values()).reduce((sum: number, arr: any[]) => sum + arr.length, 0)
+          totalSources: Array.from(sources.values()).reduce(
+            (sum: number, arr: any[]) => sum + arr.length,
+            0,
+          ),
         });
 
         sources.forEach((sourceArray: any[], note: string) => {
           sourceArray.forEach((source: any) => {
             try {
               source.disconnect(); // Disconnect BEFORE stop to prevent any sound
-              source.stop(0);      // Then stop the source
+              source.stop(0); // Then stop the source
             } catch (e) {
               // Source may have already ended
             }
@@ -1318,12 +1400,15 @@ export class WamKeyboard extends WebAudioModuleBase {
     initialState?: any & { instrument?: KeyboardInstrument },
     options?: { skipInstrumentLoad?: boolean },
   ): Promise<WamNode> {
-    console.log('🔍🔍🔍 [CREATE-AUDIO-NODE] WamKeyboard.createAudioNode called with state:', {
-      hasState: !!initialState,
-      instrument: initialState?.instrument,
-      skipInstrumentLoad: options?.skipInstrumentLoad,
-      stateKeys: initialState ? Object.keys(initialState) : [],
-    });
+    console.log(
+      '🔍🔍🔍 [CREATE-AUDIO-NODE] WamKeyboard.createAudioNode called with state:',
+      {
+        hasState: !!initialState,
+        instrument: initialState?.instrument,
+        skipInstrumentLoad: options?.skipInstrumentLoad,
+        stateKeys: initialState ? Object.keys(initialState) : [],
+      },
+    );
     this.audioNode = new WamKeyboardNode(this, initialState);
     await this.audioNode.initialize(options);
     return this.audioNode;

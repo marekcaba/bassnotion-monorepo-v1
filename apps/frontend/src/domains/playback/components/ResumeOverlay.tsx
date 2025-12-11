@@ -54,8 +54,14 @@ export function ResumeOverlay() {
       setResumeData(data);
     };
 
-    const unsubscribeResume = eventBus.on('audio:needs-resume', handleNeedsResume);
-    const unsubscribeInterrupt = eventBus.on('audio:interrupted', handleInterrupted);
+    const unsubscribeResume = eventBus.on(
+      'audio:needs-resume',
+      handleNeedsResume,
+    );
+    const unsubscribeInterrupt = eventBus.on(
+      'audio:interrupted',
+      handleInterrupted,
+    );
 
     return () => {
       unsubscribeResume();
@@ -95,7 +101,10 @@ export function ResumeOverlay() {
             position: resumeData.savedPosition,
           });
         } catch (playbackError) {
-          logger.error('ResumeOverlay: Failed to restore playback', playbackError as Error);
+          logger.error(
+            'ResumeOverlay: Failed to restore playback',
+            playbackError as Error,
+          );
           // Audio is still resumed, just playback restoration failed
         }
       }
@@ -160,9 +169,10 @@ export function ResumeOverlay() {
           className={`
             w-full px-6 py-4 rounded-xl font-semibold text-white
             transition-all duration-200 transform
-            ${isResuming
-              ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-purple-600 hover:bg-purple-700 hover:scale-105 active:scale-95'
+            ${
+              isResuming
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-purple-600 hover:bg-purple-700 hover:scale-105 active:scale-95'
             }
           `}
         >
@@ -188,7 +198,9 @@ export function ResumeOverlay() {
             </span>
           ) : (
             <>
-              {resumeData?.wasPlaying ? '▶️ Resume Playback' : '🔊 Enable Audio'}
+              {resumeData?.wasPlaying
+                ? '▶️ Resume Playback'
+                : '🔊 Enable Audio'}
             </>
           )}
         </button>

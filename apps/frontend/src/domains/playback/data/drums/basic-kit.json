@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "author": "BassNotion Team",
   "description": "Standard acoustic drum kit with multiple velocity layers",
-  
+
   "pieces": {
     "kick": {
       "noteMapping": 36,
@@ -205,7 +205,7 @@
       }
     }
   },
-  
+
   "settings": {
     "humanizeAmount": 10,
     "swingAmount": 0,

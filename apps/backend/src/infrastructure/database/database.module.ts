@@ -8,7 +8,8 @@ import { DatabaseCoreService } from './database-core.service.js';
 @Module({
   imports: [ConfigModule],
   providers: [DatabaseService, DatabaseCoreService],
-  exports: [DatabaseService, DatabaseCoreService] })
+  exports: [DatabaseService, DatabaseCoreService],
+})
 export class DatabaseModule {
   private readonly staticLogger = createStructuredLogger(DatabaseModule.name);
 

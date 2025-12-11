@@ -115,9 +115,6 @@ export { UsageAnalytics } from './analytics/UsageAnalytics.js';
 export { PerformanceMetrics } from './analytics/PerformanceMetrics.js';
 export { CacheAnalyticsEngine } from './analytics/CacheAnalyticsEngine.js';
 
-// Cache Synchronization
-export { CacheSynchronizationEngine } from './sync/CacheSynchronizationEngine.js';
-
 // Analytics types
 export type {
   UsageAnalyticsConfig,
@@ -152,26 +149,6 @@ export type {
   HealthFactor,
   AdvancedCacheAnalytics,
 } from './analytics/CacheAnalyticsEngine.js';
-
-// Cache Synchronization types
-export type {
-  ConflictType,
-  SyncEventType,
-  SyncPriority,
-  SynchronizationStrategy,
-  CacheConflictResolution,
-  CacheSynchronizationConfig,
-  CacheLayerConfig,
-  CacheEntry,
-  SynchronizationEvent,
-  ConflictInfo,
-  SynchronizationResult,
-  ConflictResolutionResult,
-  SyncOperationResult,
-  SyncState,
-  LayerSyncStatus,
-  SyncAnalytics,
-} from './sync/CacheSynchronizationEngine.js';
 
 // Batch Operations
 export { BatchProcessor } from './batch/BatchProcessor.js';

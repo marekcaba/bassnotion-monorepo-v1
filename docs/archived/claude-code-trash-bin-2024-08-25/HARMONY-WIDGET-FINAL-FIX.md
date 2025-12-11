@@ -3,6 +3,7 @@
 ## Problem Analysis
 
 The HarmonyWidget had inconsistent loading behavior:
+
 - **Sometimes loads in ~3 seconds** ✅ (when AudioContext state is 'running')
 - **Sometimes hangs indefinitely** ❌ (when AudioContext state is 'suspended')
 
@@ -11,6 +12,7 @@ The root cause: When the AudioContext starts in a 'suspended' state, the Salaman
 ## Solution: Three-Tier Approach
 
 ### 1. HarmonyWidgetFast (Ultra Fast - Recommended)
+
 **Load time: < 0.5 seconds** 🚀
 
 ```typescript
@@ -22,6 +24,7 @@ const synth = new Tone.PolySynth(Tone.Synth).toDestination();
 ```
 
 **Features:**
+
 - Loads instantly with a basic synthesizer
 - Attempts to upgrade to real piano samples in background
 - Never blocks or hangs
@@ -29,25 +32,28 @@ const synth = new Tone.PolySynth(Tone.Synth).toDestination();
 - Works 100% of the time
 
 ### 2. HarmonyWidgetOptimized (With Timeout)
+
 **Load time: 3 seconds or timeout at 10 seconds**
 
 ```typescript
 // Loads samples with a timeout to prevent hanging
 const loadWithTimeout = async () => {
-  const timeoutPromise = new Promise((_, reject) => 
-    setTimeout(() => reject(new Error('Timeout')), 10000)
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('Timeout')), 10000),
   );
-  
+
   return Promise.race([loadPromise, timeoutPromise]);
 };
 ```
 
 **Features:**
+
 - Attempts to load real samples from Supabase
 - Has a 10-second timeout to prevent infinite hanging
 - Still uses the processor even if samples partially load
 
 ### 3. Original HarmonyWidget (Complex)
+
 **Load time: 3-15+ seconds (or hangs)**
 
 - Complex initialization with multiple checks
@@ -57,6 +63,7 @@ const loadWithTimeout = async () => {
 ## The AudioContext Problem
 
 When AudioContext starts in 'suspended' state:
+
 1. Browser blocks audio to save resources/battery
 2. Tone.js Sampler tries to load samples but can't decode them
 3. The loading promise never resolves
@@ -80,16 +87,17 @@ import { HarmonyWidgetFast } from '@/domains/widgets/components/YouTubeWidgetPag
 
 ## Performance Comparison
 
-| Widget Version | Load Time | Reliability | Sample Quality |
-|----------------|-----------|-------------|----------------|
-| **HarmonyWidgetFast** | < 0.5s | 100% | Synth → Samples |
-| HarmonyWidgetOptimized | 3-10s | 95% | Samples only |
-| Original HarmonyWidget | 3-∞s | 60% | Samples only |
-| DrummerWidget | < 1s | 100% | Samples |
+| Widget Version         | Load Time | Reliability | Sample Quality  |
+| ---------------------- | --------- | ----------- | --------------- |
+| **HarmonyWidgetFast**  | < 0.5s    | 100%        | Synth → Samples |
+| HarmonyWidgetOptimized | 3-10s     | 95%         | Samples only    |
+| Original HarmonyWidget | 3-∞s      | 60%         | Samples only    |
+| DrummerWidget          | < 1s      | 100%        | Samples         |
 
 ## Why DrummerWidget Always Works
 
 DrummerWidget uses simpler `Tone.Player` objects that handle suspended AudioContext better:
+
 - Players can load buffers even when context is suspended
 - They resume properly on user interaction
 - Simpler architecture with less complexity
@@ -97,6 +105,7 @@ DrummerWidget uses simpler `Tone.Player` objects that handle suspended AudioCont
 ## Testing
 
 Visit `/test-widget-speed` to compare all three versions:
+
 1. Select widget version from dropdown
 2. Watch load times
 3. Test with page refreshes to see consistency
@@ -104,8 +113,9 @@ Visit `/test-widget-speed` to compare all three versions:
 ## Final Recommendation
 
 **Use HarmonyWidgetFast** - it provides:
+
 - ✅ Instant loading (< 0.5 seconds)
-- ✅ 100% reliability 
+- ✅ 100% reliability
 - ✅ Progressive enhancement (synth → samples)
 - ✅ Never hangs or blocks
 - ✅ Best user experience

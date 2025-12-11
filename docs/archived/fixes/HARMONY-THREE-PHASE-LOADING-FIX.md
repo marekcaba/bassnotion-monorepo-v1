@@ -9,7 +9,7 @@ The system has two separate sample loading mechanisms:
    - Phase 3: Loads 120 additional samples (v1, v6, v14, v16 layers) when ExerciseSelector visible
    - Downloads samples but does NOT cache decoded AudioBuffers (incompatible contexts)
 
-2. **SalamanderVelocitySampler** - Used by WamKeyboard plugin  
+2. **SalamanderVelocitySampler** - Used by WamKeyboard plugin
    - Loads 150 samples (5 layers × 30 notes) when TEST button clicked
    - Uses Tone.Sampler which makes its own HTTP requests
 
@@ -28,7 +28,7 @@ The browser's HTTP cache should handle this automatically:
 1. **Phase 1**: Page loads - no samples
 2. **Phase 2**: User scrolls - InitialSamplePreloader fetches 30 samples
    - Browser caches these HTTP responses
-3. **Phase 3**: ExerciseSelector visible - InitialSamplePreloader fetches 120 more samples  
+3. **Phase 3**: ExerciseSelector visible - InitialSamplePreloader fetches 120 more samples
    - Browser caches these HTTP responses
 4. **TEST clicked**: Tone.Sampler requests same URLs
    - Browser serves from HTTP cache instantly (no network request)

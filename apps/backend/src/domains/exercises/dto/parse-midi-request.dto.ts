@@ -66,4 +66,6 @@ export const StatelessParseMidiRequestSchema = z.object({
     .max(32, 'Total bars must not exceed 32'),
 });
 
-export type StatelessParseMidiRequestDto = z.infer<typeof StatelessParseMidiRequestSchema>;
+export type StatelessParseMidiRequestDto = z.infer<
+  typeof StatelessParseMidiRequestSchema
+>;

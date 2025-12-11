@@ -9,7 +9,13 @@ import {
   BadRequestException,
   Req,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiConsumes } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiConsumes,
+} from '@nestjs/swagger';
 import { SupabaseService } from '../supabase/supabase.service.js';
 import { CleanupService } from './cleanup.service.js';
 import { AdminGuard } from '../../domains/user/auth/guards/admin.guard.js';
@@ -94,7 +100,8 @@ Upload a MIDI file to temporary storage before exercise is saved to database.
       properties: {
         temporaryUrl: {
           type: 'string',
-          example: 'https://xyz.supabase.co/storage/v1/object/sign/exercise-midi-temp/1234567890_abc.mid?token=xyz',
+          example:
+            'https://xyz.supabase.co/storage/v1/object/sign/exercise-midi-temp/1234567890_abc.mid?token=xyz',
           description: 'Signed URL for accessing file (expires in 1 hour)',
         },
         tempPath: {
@@ -178,7 +185,11 @@ Upload a MIDI file to temporary storage before exercise is saved to database.
     }
 
     // Validation: MIME type (should be audio/midi or audio/x-midi)
-    const validMimeTypes = ['audio/midi', 'audio/x-midi', 'application/octet-stream'];
+    const validMimeTypes = [
+      'audio/midi',
+      'audio/x-midi',
+      'application/octet-stream',
+    ];
     if (!validMimeTypes.includes(mimetype)) {
       this.logger.warn('Unexpected MIDI file MIME type', {
         mimetype,
@@ -286,7 +297,8 @@ Temp file is automatically deleted after successful move.
       properties: {
         permanentUrl: {
           type: 'string',
-          example: 'https://xyz.supabase.co/storage/v1/object/public/exercise-midi-files/exercises/abc/bassline.mid',
+          example:
+            'https://xyz.supabase.co/storage/v1/object/public/exercise-midi-files/exercises/abc/bassline.mid',
           description: 'Public URL of file in permanent storage',
         },
         permanentPath: {

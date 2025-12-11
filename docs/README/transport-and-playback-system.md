@@ -7,18 +7,21 @@ BassNotion implements a professional-grade Web DAW transport and playback system
 ## Architecture Principles
 
 ### 1. **Unified Transport Control**
+
 - **Single Source of Truth**: One transport instance coordinates all playback
 - **Atomic Operations**: All widgets start/stop together within <50ms variance
 - **Professional Standards**: DAW-quality timing precision (<2ms jitter)
 - **Sample Accuracy**: 0.0208ms precision at 48kHz sample rate
 
 ### 2. **Widget-Based Audio Architecture**
+
 - **Modular Design**: Each instrument is an independent widget
 - **Observer Pattern**: Widgets observe transport state changes
 - **Synchronized Playback**: All widgets follow the same timeline
 - **Independent Processing**: Each widget manages its own audio rendering
 
 ### 3. **Professional Scheduling**
+
 - **Look-Ahead Scheduling**: 100ms buffer for precise timing
 - **Web Worker Threading**: UI isolation for consistent performance
 - **Adaptive Optimization**: CPU-aware scheduling algorithms
@@ -33,15 +36,15 @@ The heart of the playback system, implementing:
 ```typescript
 interface TransportController {
   // Core transport operations
-  start(): Promise<void>;     // Start playback (all widgets)
-  stop(): void;              // Stop and reset to 0:0:0
-  pause(): void;             // Pause at current position
-  
+  start(): Promise<void>; // Start playback (all widgets)
+  stop(): void; // Stop and reset to 0:0:0
+  pause(): void; // Pause at current position
+
   // State management
   getState(): TransportState;
   setTempo(bpm: number): void;
   setPosition(position: string): void;
-  
+
   // Widget coordination
   register(observer: TransportObserver): void;
   unregister(widgetId: string): void;
@@ -49,6 +52,7 @@ interface TransportController {
 ```
 
 **Key Features:**
+
 - **Command Pattern**: All operations are atomic and reversible
 - **Observer Pattern**: Widgets receive synchronized notifications
 - **Performance Tracking**: Real-time latency and timing metrics
@@ -61,7 +65,7 @@ Each instrument type implements the `TransportObserver` interface:
 ```typescript
 interface TransportObserver {
   widgetId: string;
-  
+
   // Transport event handlers
   onTransportStart(): Promise<void>;
   onTransportStop(): void;
@@ -72,6 +76,7 @@ interface TransportObserver {
 ```
 
 **Widget Types:**
+
 - **BassLineWidget**: Bass guitar playback and visualization
 - **DrummerWidget**: Drum kit playback with velocity layers
 - **HarmonyWidget**: Chord progression and harmony
@@ -84,14 +89,15 @@ Converts exercise data into synchronized audio events:
 ```typescript
 interface ExerciseEvent {
   type: 'bass' | 'drums' | 'harmony' | 'metronome';
-  position: string;        // Musical time (bars:beats:sixteenths)
-  data: any;              // Instrument-specific data
-  duration?: string;       // Event duration
-  velocity?: number;       // Playback intensity (0-127)
+  position: string; // Musical time (bars:beats:sixteenths)
+  data: any; // Instrument-specific data
+  duration?: string; // Event duration
+  velocity?: number; // Playback intensity (0-127)
 }
 ```
 
 **Timeline Features:**
+
 - **Musical Time Mapping**: Exercise ticks → AudioContext time
 - **Tempo Independence**: Events scale with tempo changes
 - **Sample Accuracy**: Sub-millisecond timing precision
@@ -107,7 +113,7 @@ sequenceDiagram
     participant TC as TransportController
     participant Widgets as Audio Widgets
     participant Tone as Tone.js
-    
+
     App->>TC: initialize()
     TC->>Tone: Load Tone.js
     TC->>TC: Configure transport settings
@@ -126,23 +132,23 @@ sequenceDiagram
     participant DW as DrumWidget
     participant HW as HarmonyWidget
     participant MW as MetronomeWidget
-    
+
     User->>TC: start()
-    
+
     par Atomic Widget Start
         TC->>BW: onTransportStart()
         TC->>DW: onTransportStart()
         TC->>HW: onTransportStart()
         TC->>MW: onTransportStart()
     end
-    
+
     par Widget Preparation
         BW-->>TC: Ready
         DW-->>TC: Ready
         HW-->>TC: Ready
         MW-->>TC: Ready
     end
-    
+
     TC->>TC: Start Tone.js transport
     TC->>User: Playback started
 ```
@@ -154,7 +160,7 @@ sequenceDiagram
     participant TC as TransportController
     participant Widgets as All Widgets
     participant Timeline as Exercise Timeline
-    
+
     loop Every 25ms (40fps)
         TC->>TC: Check transport position
         TC->>Timeline: Map position to events
@@ -169,13 +175,13 @@ sequenceDiagram
 
 ### Timing Requirements
 
-| Metric | Target | Actual Performance |
-|--------|--------|-------------------|
-| **Widget Start Variance** | <50ms | <25ms achieved |
-| **Sample Accuracy** | 0.0208ms | 0.015ms achieved |
-| **Average Jitter** | <2ms | <1.5ms achieved |
-| **Position Update Rate** | 40fps | 60fps capable |
-| **CPU Usage** | <50% | <30% typical |
+| Metric                    | Target   | Actual Performance |
+| ------------------------- | -------- | ------------------ |
+| **Widget Start Variance** | <50ms    | <25ms achieved     |
+| **Sample Accuracy**       | 0.0208ms | 0.015ms achieved   |
+| **Average Jitter**        | <2ms     | <1.5ms achieved    |
+| **Position Update Rate**  | 40fps    | 60fps capable      |
+| **CPU Usage**             | <50%     | <30% typical       |
 
 ### Memory Management
 
@@ -227,10 +233,10 @@ export class CustomWidget implements TransportObserver {
   async onTransportStart(): Promise<void> {
     // Prepare audio nodes and buffers
     this.setupAudioGraph();
-    
+
     // Schedule initial events
     this.scheduleUpcomingEvents();
-    
+
     // Widget is ready for playback
     console.log(`${this.widgetId} ready for playback`);
   }
@@ -238,10 +244,10 @@ export class CustomWidget implements TransportObserver {
   onTransportStop(): void {
     // Stop all audio immediately
     this.stopAllAudio();
-    
+
     // Clear scheduled events
     this.scheduledEvents.clear();
-    
+
     // Reset to initial state
     this.resetWidget();
   }
@@ -249,12 +255,12 @@ export class CustomWidget implements TransportObserver {
   onTransportPositionChange(position: string): void {
     // Parse musical position
     const [bars, beats, sixteenths] = position.split(':').map(Number);
-    
+
     // Check for events at this position
     const events = this.getEventsAtPosition(bars, beats, sixteenths);
-    
+
     // Schedule audio events
-    events.forEach(event => this.scheduleAudioEvent(event));
+    events.forEach((event) => this.scheduleAudioEvent(event));
   }
 
   private setupAudioGraph(): void {
@@ -290,21 +296,21 @@ controller.register(customWidget, 1); // Priority 1 (higher = earlier execution)
 ```typescript
 const config: UnifiedTransportConfig = {
   // Timing precision
-  lookAheadTime: 100,        // 100ms look-ahead buffer
-  scheduleInterval: 25,      // 25ms scheduling interval (40fps)
-  
+  lookAheadTime: 100, // 100ms look-ahead buffer
+  scheduleInterval: 25, // 25ms scheduling interval (40fps)
+
   // Performance limits
-  maxStartupLatency: 50,     // 50ms maximum startup time
+  maxStartupLatency: 50, // 50ms maximum startup time
   atomicOperationTimeout: 500, // 500ms command timeout
-  
+
   // Error handling
   enableErrorRecovery: true,
   maxRetries: 3,
-  
+
   // Professional features
   enableProfessionalScheduling: true,
-  sampleRate: 48000,         // 48kHz for 0.0208ms precision
-  enablePerformanceMonitoring: true
+  sampleRate: 48000, // 48kHz for 0.0208ms precision
+  enablePerformanceMonitoring: true,
 };
 
 await controller.initialize(config);
@@ -353,12 +359,12 @@ pnpm vitest run apps/frontend/src/domains/playback/services/__tests__/TransportB
 
 ### Supported Browsers
 
-| Browser | Version | Web Workers | Sample Accuracy | Notes |
-|---------|---------|-------------|-----------------|--------|
-| **Chrome** | 80+ | ✅ | ✅ | Optimal performance |
-| **Firefox** | 75+ | ✅ | ✅ | Full compatibility |
-| **Safari** | 13+ | ✅ | ⚠️ | iOS limitations apply |
-| **Edge** | 80+ | ✅ | ✅ | Chromium-based |
+| Browser     | Version | Web Workers | Sample Accuracy | Notes                 |
+| ----------- | ------- | ----------- | --------------- | --------------------- |
+| **Chrome**  | 80+     | ✅          | ✅              | Optimal performance   |
+| **Firefox** | 75+     | ✅          | ✅              | Full compatibility    |
+| **Safari**  | 13+     | ✅          | ⚠️              | iOS limitations apply |
+| **Edge**    | 80+     | ✅          | ✅              | Chromium-based        |
 
 ### Progressive Enhancement
 
@@ -441,7 +447,7 @@ const controller = UnifiedTransportController.getInstance();
 await controller.initialize({
   lookAheadTime: 100,
   scheduleInterval: 25,
-  enableProfessionalScheduling: true
+  enableProfessionalScheduling: true,
 });
 
 // Create and register a bass widget
@@ -457,7 +463,7 @@ await bassWidget.loadExercise({
     { type: 'bass', position: '0:1:0', data: { note: 'A2' } },
     { type: 'bass', position: '0:2:0', data: { note: 'D2' } },
     { type: 'bass', position: '0:3:0', data: { note: 'G2' } },
-  ]
+  ],
 });
 
 // Start playback

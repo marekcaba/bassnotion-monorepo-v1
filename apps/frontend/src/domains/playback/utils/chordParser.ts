@@ -60,7 +60,20 @@ const CHORD_INTERVALS: Record<string, number[]> = {
 /**
  * Note names in chromatic order
  */
-const CHROMATIC_NOTES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+const CHROMATIC_NOTES = [
+  'C',
+  'Db',
+  'D',
+  'Eb',
+  'E',
+  'F',
+  'Gb',
+  'G',
+  'Ab',
+  'A',
+  'Bb',
+  'B',
+];
 
 /**
  * Enharmonic equivalents (for sharp notation)
@@ -107,14 +120,20 @@ export function parseChord(chordSymbol: string, octave: number = 4): string[] {
  * 'Dm' → { root: 'D', quality: 'm' }
  * 'G#7' → { root: 'G#', quality: '7' }
  */
-function parseChordSymbol(chordSymbol: string): { root: string; quality: string } {
+function parseChordSymbol(chordSymbol: string): {
+  root: string;
+  quality: string;
+} {
   const normalized = chordSymbol.trim();
 
   // Handle flat/sharp in root note
   let root = normalized[0].toUpperCase();
   let qualityStart = 1;
 
-  if (normalized.length > 1 && (normalized[1] === 'b' || normalized[1] === '#')) {
+  if (
+    normalized.length > 1 &&
+    (normalized[1] === 'b' || normalized[1] === '#')
+  ) {
     root += normalized[1];
     qualityStart = 2;
   }
@@ -217,7 +236,10 @@ export function mapVelocityToLayer(velocity: number): string {
  * parseDuration('8n', 120) → 0.25 (eighth note at 120 BPM)
  * parseDuration('2n', 120) → 1.0  (half note at 120 BPM)
  */
-export function parseDuration(duration: string | undefined, bpm: number = 120): number {
+export function parseDuration(
+  duration: string | undefined,
+  bpm: number = 120,
+): number {
   if (!duration) {
     return 0.5; // Default to quarter note
   }

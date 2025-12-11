@@ -23,7 +23,7 @@ describe('TutorialRepository', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     const mockRequestContextService = {
       getLogger: vi.fn().mockReturnValue({
         info: vi.fn(),
@@ -33,8 +33,11 @@ describe('TutorialRepository', () => {
       }),
       getCorrelationId: vi.fn().mockReturnValue('test-correlation-id'),
     };
-    
-    repository = new TutorialRepository(mockSupabase as any, mockRequestContextService as any);
+
+    repository = new TutorialRepository(
+      mockSupabase as any,
+      mockRequestContextService as any,
+    );
   });
 
   describe('findById', () => {

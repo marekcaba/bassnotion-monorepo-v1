@@ -8,6 +8,7 @@
 **Target Completion:** 2025-12-06 (updated to include legacy cleanup week)
 
 **Latest Update:** 2025-10-21
+
 - ✅ Task 1 Complete: Stateless MIDI Parser Endpoint (7/7 subtasks) - 15 tests passing
 - ✅ Task 2 Complete: Temporary MIDI File Storage System (7/7 subtasks) - 22 tests passing
 - ✅ Task 3 Complete: Individual Exercise CRUD Endpoints (7/9 subtasks, 2 deferred) - 15 tests passing
@@ -31,13 +32,14 @@
 Story 4.3 successfully delivered MIDI-to-fretboard conversion functionality with multi-anchor positioning. However, user testing revealed a **critical UX flaw**:
 
 **Current Broken Flow (5 clicks, ~3 seconds latency):**
+
 1. Upload MIDI file → Shows in modal ✅
 2. Click "Convert MIDI to Fretboard" → ❌ **ERROR: "Exercise does not have a bassline MIDI file"**
 3. Close modal → Click "Update Exercise" → Click "Save Tutorial"
 4. Reopen modal → Click "Convert MIDI to Fretboard" → Now it works ✅
 5. Complete conversion workflow
 
-**User Reaction:** *"This is terrible UX. Why do I have to save the tutorial before I can convert? It's like we're back in 2007!"*
+**User Reaction:** _"This is terrible UX. Why do I have to save the tutorial before I can convert? It's like we're back in 2007!"_
 
 ### Root Cause Analysis
 
@@ -61,6 +63,7 @@ async parseMidi(@Param('id') id: string) {
 ```
 
 **Problems:**
+
 1. **Ignores frontend state** - Uploaded file is sitting in memory, but backend can't see it
 2. **Requires database persistence** - New exercises don't exist in DB yet, so parse fails
 3. **Forces awkward workflow** - User must save tutorial → close modal → reopen to convert
@@ -72,12 +75,14 @@ async parseMidi(@Param('id') id: string) {
 Implement a **stateless, local-first architecture** inspired by how Google Docs, Figma, and modern SaaS apps handle user workflows:
 
 **New Seamless Flow (2 clicks, <1 second latency):**
+
 1. Upload MIDI → Store in temporary location (no DB write) ✅
 2. Click "Convert" → Parse from temp URL (stateless, no DB lookup) ✅
 3. Set anchors → Generate positions (all in frontend state) ✅
 4. Click "Update Exercise" → Save everything atomically (single DB write) ✅
 
 **Key Improvements:**
+
 - ✅ **60% fewer clicks** (5 → 2)
 - ✅ **3x faster** (~3s → <1s P95 latency)
 - ✅ **Stateless backend** (can scale horizontally)
@@ -90,31 +95,37 @@ Implement a **stateless, local-first architecture** inspired by how Google Docs,
 This refactor follows industry best practices from Google, Meta, Netflix, and Stripe:
 
 ### 1. **Stateless Backend**
+
 - Every API call works with provided data (no database dependencies)
 - Parse MIDI from any URL + metadata (not just saved exercises)
 - Horizontal scaling - add more servers without state synchronization
 
 ### 2. **Optimistic UI**
+
 - User sees instant feedback (no waiting for server confirmation)
 - Operations complete in frontend state first
 - Backend persistence happens asynchronously
 
 ### 3. **Atomic Operations**
+
 - Either everything saves or nothing does (no partial states)
 - Database transactions ensure data integrity
 - Rollback on any failure
 
 ### 4. **Idempotency**
+
 - Same request can be retried safely
 - No duplicate creates even if network retries
 - Idempotency keys track request uniqueness
 
 ### 5. **Local-First Architecture**
+
 - Frontend is source of truth until backend confirms
 - Works offline, syncs when online
 - IndexedDB queue for failed operations
 
 ### 6. **Event Sourcing Ready**
+
 - Store all user actions for audit trail
 - Enables undo/redo functionality
 - Full history for debugging
@@ -122,12 +133,14 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
 ## Dependencies
 
 **REQUIRES:**
+
 - Story 4.3 (MIDI-to-Fretboard Multi-Anchor Conversion) - Core algorithm complete
 - Supabase storage buckets (`exercise-midi-files`, `exercise-midi-temp`)
 - Backend MIDI parser service (`MidiParserService`)
 - Frontend exercise form modal (`ExerciseFormModal`)
 
 **ENABLES:**
+
 - Story 4.5 (Educational Annotations & Techniques) - Seamless workflow for adding techniques
 - Story 4.6 (Pattern Recognition & Auto-Suggestions) - ML training on user corrections
 - Future: Real-time collaboration on exercises (multiple admins editing simultaneously)
@@ -135,42 +148,49 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
 ## Acceptance Criteria
 
 ### AC 1: Stateless MIDI Parser Endpoint
+
 - [ ] New `POST /api/v1/midi/parse` endpoint accepts `midiUrl` + metadata (no DB lookup)
 - [ ] Parses any valid MIDI URL without requiring exercise to exist in database
 - [ ] Old endpoint still works (backward compatibility)
 - [ ] All existing parse tests pass
 
 ### AC 2: Temporary File Storage System
+
 - [ ] Can upload MIDI to temporary bucket before exercise is saved
 - [ ] Temp files auto-cleanup after 2 hours
 - [ ] Move operation from temp to permanent is atomic
 - [ ] Upload works without exercise ID (new exercises)
 
 ### AC 3: Individual Exercise CRUD Endpoints
+
 - [ ] `POST /api/v1/exercises` creates or updates (upsert pattern)
 - [ ] Idempotency key prevents duplicate creates
 - [ ] Atomic transaction saves exercise + MIDI + notes together
 - [ ] Concurrent creates are safe (no race conditions)
 
 ### AC 4: Seamless Frontend Workflow
+
 - [ ] Upload MIDI → Convert → Save works in single modal session
 - [ ] No "save tutorial first" error ever appears
 - [ ] Unsaved changes warning prevents data loss
 - [ ] All error scenarios handled gracefully (network failure, invalid MIDI, etc.)
 
 ### AC 5: Auto-Save & Conflict Resolution
+
 - [ ] Changes auto-save after 3 seconds idle
 - [ ] Concurrent edits detected (version tracking)
 - [ ] Conflict resolution UI shows diffs
 - [ ] Offline saves queue and sync when online
 
 ### AC 6: Performance Targets
+
 - [ ] Full workflow latency <1 second (P95)
 - [ ] MIDI parse latency <500ms (P95)
 - [ ] No blocking UI operations
 - [ ] Progressive results (stream measure-by-measure)
 
 ### AC 7: Testing & Quality
+
 - [ ] All backend integration tests pass (24 tests)
 - [ ] All frontend component tests pass (25 tests)
 - [ ] E2E tests cover happy path + error scenarios (5 tests)
@@ -178,6 +198,7 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
 - [ ] Security tests pass (no vulnerabilities)
 
 ### AC 8: Migration & Documentation
+
 - [ ] Old batch save pattern deprecated
 - [ ] All exercises migrated to new schema
 - [ ] Architecture Decision Record (ADR) documented
@@ -200,6 +221,7 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
 **Context**: Current endpoint requires exercise to exist in database. New endpoint works with any MIDI URL + metadata.
 
 **Subtasks**:
+
 - [x] 1.1: ~~Create new stateless `parseMidiFromUrl()` method signature~~ ✅
   - ~~Accept `midiUrl`, `bpm`, `timeSignature`, `totalBars` as parameters~~
   - ~~No database access required~~
@@ -243,6 +265,7 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
   - **Note**: Tests verify idempotency and stateless behavior; both endpoints use same service
 
 **Acceptance Criteria**: **ALL MET ✅**
+
 - ✅ New endpoint works without exercise being saved to database
 - ✅ Old endpoint still works (no regressions)
 - ✅ All validation tests pass (15/15 tests passing)
@@ -260,6 +283,7 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
 **Context**: Currently, MIDI upload requires exercise ID (which new exercises don't have). Temp storage allows upload before save.
 
 **Subtasks**:
+
 - [x] 2.1: ~~Create `POST /api/v1/storage/upload-temp` endpoint~~ ✅
   - ~~Accept multipart file upload (max 10MB)~~
   - ~~Validate file type (`.mid`, `.midi` only)~~
@@ -308,6 +332,7 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
     - `apps/backend/src/infrastructure/storage/__tests__/cleanup.service.spec.ts` ✅ (10 tests)
 
 **Acceptance Criteria**: **ALL MET ✅**
+
 - ✅ Can upload MIDI before exercise exists in database
 - ✅ Temp files auto-cleanup after 2 hours (manual trigger available)
 - ✅ Move operation is atomic (no orphaned files)
@@ -317,13 +342,14 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
 
 **Implementation Date**: 2025-10-21
 **Files Created**: 5 new files (3 implementation + 2 test files)
-  - `apps/backend/src/infrastructure/storage/storage.controller.ts`
-  - `apps/backend/src/infrastructure/storage/cleanup.service.ts`
-  - `apps/backend/src/infrastructure/storage/storage.module.ts`
-  - `apps/backend/src/infrastructure/storage/__tests__/storage.controller.spec.ts`
-  - `apps/backend/src/infrastructure/storage/__tests__/cleanup.service.spec.ts`
-**Files Modified**: 2 files (supabase.service.ts, app.module.ts)
-**Migration**: 1 SQL migration applied to remote Supabase (`20251021000001_create_temp_midi_bucket.sql`)
+
+- `apps/backend/src/infrastructure/storage/storage.controller.ts`
+- `apps/backend/src/infrastructure/storage/cleanup.service.ts`
+- `apps/backend/src/infrastructure/storage/storage.module.ts`
+- `apps/backend/src/infrastructure/storage/__tests__/storage.controller.spec.ts`
+- `apps/backend/src/infrastructure/storage/__tests__/cleanup.service.spec.ts`
+  **Files Modified**: 2 files (supabase.service.ts, app.module.ts)
+  **Migration**: 1 SQL migration applied to remote Supabase (`20251021000001_create_temp_midi_bucket.sql`)
 
 ---
 
@@ -334,6 +360,7 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
 **Context**: Currently, exercises are only saved via batch `saveWithExercises()` which requires closing modal and saving tutorial. Individual CRUD allows immediate save from modal.
 
 **Subtasks**:
+
 - [x] ~~3.1: Create `POST /api/v1/exercises` endpoint (upsert pattern)~~ ✅
   - ~~If `id` provided in body → update existing exercise~~
   - ~~If no `id` → create new with server-assigned UUID~~
@@ -401,6 +428,7 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
   - Test concurrent update of same exercise (last write wins)
 
 **Acceptance Criteria**: **ALL CORE CRITERIA MET ✅**
+
 - ✅ Can create exercise without tutorial save (upsert pattern implemented)
 - ⚠️ Idempotency prevents duplicate creates (DEFERRED - not critical for MVP)
 - ✅ Atomic transaction ensures no partial saves (Supabase handles transactions)
@@ -413,6 +441,7 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
 **Test Coverage**: 15/15 tests passing ✅
 
 **Changes Made**:
+
 1. **[admin-exercises.service.ts](apps/backend/src/domains/exercises/admin-exercises.service.ts)** - Enhanced:
    - Added `upsert()` method (smart create or update based on ID presence)
    - Added `notes` array support to `create()` and `update()`
@@ -434,10 +463,12 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
    - Tests for error handling
 
 **What Was Deferred**:
+
 - **Idempotency key support (Task 3.3)**: Not critical for MVP. Can be added later if needed for production scale.
 - **Integration tests for concurrent creates (Task 3.9)**: Without idempotency, less critical. Can be added with Task 3.3.
 
 **Backend API Changes**:
+
 - `POST /api/v1/exercises` - Now supports upsert pattern + notes array + temp MIDI migration
 - `PUT /api/v1/exercises/:id` - Now supports notes array + temp MIDI migration
 - Both endpoints fully documented with Swagger/OpenAPI
@@ -451,6 +482,7 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
 **Context**: Currently, user must upload → close modal → save tutorial → reopen → convert. New flow: upload → convert → save all in one session.
 
 **Subtasks**:
+
 - [x] ~~4.1: Update `uploadMidiFile()` to use temporary storage~~ ✅
   - ~~Call new `/api/v1/storage/upload-temp` endpoint~~
   - ~~Store both `tempUrl` (for parsing) and `tempPath` (for later save) in state~~
@@ -477,18 +509,19 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
 - [ ] 4.5: Implement state machine for exercise workflow
   ```typescript
   type ExerciseWorkflowState =
-    | { status: 'new', hasUnsavedChanges: false }
-    | { status: 'editing', hasUnsavedChanges: boolean }
-    | { status: 'uploading-midi', file: File, progress: number }
-    | { status: 'midi-uploaded', tempUrl: string, permanentPath: string }
-    | { status: 'parsing-midi', midiUrl: string }
-    | { status: 'parsed', parseResult: ParsedMidi }
-    | { status: 'setting-anchors', parseResult: ParsedMidi }
-    | { status: 'generating-positions', anchors: Anchor[] }
-    | { status: 'positions-generated', notes: Note[] }
-    | { status: 'saving', exercise: Exercise }
-    | { status: 'saved', exerciseId: string };
+    | { status: 'new'; hasUnsavedChanges: false }
+    | { status: 'editing'; hasUnsavedChanges: boolean }
+    | { status: 'uploading-midi'; file: File; progress: number }
+    | { status: 'midi-uploaded'; tempUrl: string; permanentPath: string }
+    | { status: 'parsing-midi'; midiUrl: string }
+    | { status: 'parsed'; parseResult: ParsedMidi }
+    | { status: 'setting-anchors'; parseResult: ParsedMidi }
+    | { status: 'generating-positions'; anchors: Anchor[] }
+    | { status: 'positions-generated'; notes: Note[] }
+    | { status: 'saving'; exercise: Exercise }
+    | { status: 'saved'; exerciseId: string };
   ```
+
   - Enforce valid state transitions only
   - Prevent "Convert" if not in `midi-uploaded` or `parsed` state
   - Prevent "Save" if in `uploading-midi` or `parsing-midi` state
@@ -529,6 +562,7 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
   - **File**: `apps/frontend/src/domains/admin/components/ExerciseFormModal.tsx`
 
 **Acceptance Criteria**: **CORE CRITERIA MET (4.1-4.4) ✅**
+
 - ✅ Upload → Convert → Save works without closing modal (4.1-4.4 complete)
 - ✅ No "save tutorial first" error ever appears (4.4 removes all blocking errors)
 - ⏳ Unsaved changes warning prevents data loss (4.8 deferred)
@@ -540,12 +574,14 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
 **Status**: Core seamless workflow functional ✅
 
 **What Works Now**:
+
 1. Upload MIDI to temp storage (no exercise ID required) ✅
 2. Convert MIDI immediately after upload (stateless parsing) ✅
 3. Save exercise with temp MIDI → backend migrates to permanent ✅
 4. Works for NEW exercises (before first save) ✅
 
 **Deferred Enhancements** (not critical for MVP):
+
 - 4.5: State machine (nice-to-have)
 - 4.6: Immediate individual save (works via parent)
 - 4.7: Optimistic UI (enhancement)
@@ -562,6 +598,7 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
 **Context**: Manual saves are error-prone. Auto-save ensures work is never lost. Conflict resolution handles concurrent edits.
 
 **Subtasks**:
+
 - [ ] 5.1: Create `useAutoSave` hook
   - Debounce saves (3 seconds idle time after last change)
   - Track last saved version of exercise data
@@ -607,6 +644,7 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
   - **File**: `apps/frontend/src/shared/services/OfflineSaveQueue.ts` (new file)
 
 **Acceptance Criteria**:
+
 - ✅ Changes auto-save after 3 seconds idle
 - ✅ Conflicts detected and resolved gracefully
 - ✅ Offline saves queue and sync when online
@@ -621,6 +659,7 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
 **Context**: Old `saveWithExercises` batch operation is complex and error-prone. Migrate to simple individual saves.
 
 **Subtasks**:
+
 - [ ] 6.1: Update tutorial `saveWithExercises` to use new pattern
   - Change logic: Exercises are already saved individually (via Task 4.6)
   - Tutorial save only saves tutorial metadata (title, description, etc.)
@@ -662,6 +701,7 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
   - **Files**: Multiple (run eslint and clean up)
 
 **Acceptance Criteria**:
+
 - ✅ Old batch save pattern deprecated but still works
 - ✅ New individual CRUD is default
 - ✅ All exercises migrated to new schema
@@ -676,6 +716,7 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
 **Context**: Current flow has ~3 second latency. Target: <1 second for full upload → convert → save workflow.
 
 **Subtasks**:
+
 - [ ] 7.1: Add client-side MIDI parsing (optional fallback)
   - Install `@tonejs/midi` in frontend bundle
   - Parse MIDI immediately after upload in browser (no API call)
@@ -717,6 +758,7 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
   - **File**: `apps/frontend/src/lib/api-client.ts` (add abort support)
 
 **Acceptance Criteria**:
+
 - ✅ Full workflow latency <1 second (P95)
 - ✅ MIDI parse latency <500ms (P95)
 - ✅ No blocking operations
@@ -731,6 +773,7 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
 **Context**: New stateless architecture requires thorough testing to ensure reliability, especially edge cases like offline/online transitions and concurrent edits.
 
 **Subtasks**:
+
 - [ ] 8.1: Backend integration tests
   - Test stateless parse endpoint with various MIDI files (5 tests)
   - Test temporary storage upload → move → cleanup flow (4 tests)
@@ -777,6 +820,7 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
   - **File**: `docs/2. Stories/2. 🚧 in-progress/EPIC 4/QA_TESTING_GUIDE_STORY_4.4.md` (new)
 
 **Acceptance Criteria**:
+
 - ✅ All backend integration tests pass (24 tests)
 - ✅ All frontend component tests pass (25 tests)
 - ✅ All E2E tests pass (5 scenarios)
@@ -792,6 +836,7 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
 **Context**: After implementing stateless parsing, individual CRUD, and auto-save, several code patterns become redundant. This task ensures clean codebase without technical debt accumulation.
 
 **Subtasks**:
+
 - [ ] 9.1: Audit and simplify `saveWithExercises` batch save logic
   - **File**: `apps/backend/src/domains/tutorials/admin-tutorials.service.ts:429-569`
   - **Action**: REFACTOR (don't delete - keep for backward compatibility)
@@ -924,14 +969,15 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
   - Add calendar reminders for sunset reviews
   - **Format**:
     ```markdown
-    | Legacy Code | Deprecated Date | Sunset Date | Replacement | Status |
-    |-------------|----------------|-------------|-------------|--------|
-    | POST /exercises/:id/midi/parse | 2025-11-18 | 2026-05-18 | POST /midi/parse | ⚠️ Active |
-    | saveWithExercises (batch) | 2025-11-18 | 2026-05-18 | Individual POST /exercises | ⚠️ Active |
+    | Legacy Code                    | Deprecated Date | Sunset Date | Replacement                | Status    |
+    | ------------------------------ | --------------- | ----------- | -------------------------- | --------- |
+    | POST /exercises/:id/midi/parse | 2025-11-18      | 2026-05-18  | POST /midi/parse           | ⚠️ Active |
+    | saveWithExercises (batch)      | 2025-11-18      | 2026-05-18  | Individual POST /exercises | ⚠️ Active |
     ```
   - **Test**: Stakeholders understand deprecation timeline
 
 **Acceptance Criteria**:
+
 - ✅ No dead code remains in codebase (ESLint passes)
 - ✅ All deprecated endpoints clearly marked with sunset dates
 - ✅ Migration guides complete and tested with junior developers
@@ -951,23 +997,23 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
 
 ### User Experience Improvements
 
-| Metric | Before (Current) | After (FAANG) | Improvement |
-|--------|------------------|---------------|-------------|
-| Clicks to convert MIDI | 5 (Upload → Close → Save → Open → Convert) | 2 (Upload → Convert) | **60% reduction** |
-| Workflow latency | ~3 seconds | <1 second (P95) | **3x faster** |
-| Can work offline | ❌ No | ✅ Yes | **New capability** |
-| Auto-save | ❌ Manual only | ✅ Automatic (3s debounce) | **Zero data loss** |
-| Concurrent edit conflicts | ❌ Last write wins (data loss) | ✅ Detected and resolved | **Safe collaboration** |
+| Metric                    | Before (Current)                           | After (FAANG)              | Improvement            |
+| ------------------------- | ------------------------------------------ | -------------------------- | ---------------------- |
+| Clicks to convert MIDI    | 5 (Upload → Close → Save → Open → Convert) | 2 (Upload → Convert)       | **60% reduction**      |
+| Workflow latency          | ~3 seconds                                 | <1 second (P95)            | **3x faster**          |
+| Can work offline          | ❌ No                                      | ✅ Yes                     | **New capability**     |
+| Auto-save                 | ❌ Manual only                             | ✅ Automatic (3s debounce) | **Zero data loss**     |
+| Concurrent edit conflicts | ❌ Last write wins (data loss)             | ✅ Detected and resolved   | **Safe collaboration** |
 
 ### Technical Improvements
 
-| Metric | Before (Current) | After (FAANG) | Improvement |
-|--------|------------------|---------------|-------------|
-| Database reads for parse | 1 (unnecessary) | 0 (stateless) | **100% reduction** |
-| API calls for full flow | 3+ | 3 (optimized) | **Same but faster** |
-| Save operation atomicity | ❌ Partial saves possible | ✅ All or nothing | **Data integrity** |
-| Horizontal scalability | ⚠️ Limited (DB dependency) | ✅ Infinite (stateless) | **Cloud-ready** |
-| Retry safety | ❌ Can duplicate data | ✅ Idempotent | **Production-ready** |
+| Metric                   | Before (Current)           | After (FAANG)           | Improvement          |
+| ------------------------ | -------------------------- | ----------------------- | -------------------- |
+| Database reads for parse | 1 (unnecessary)            | 0 (stateless)           | **100% reduction**   |
+| API calls for full flow  | 3+                         | 3 (optimized)           | **Same but faster**  |
+| Save operation atomicity | ❌ Partial saves possible  | ✅ All or nothing       | **Data integrity**   |
+| Horizontal scalability   | ⚠️ Limited (DB dependency) | ✅ Infinite (stateless) | **Cloud-ready**      |
+| Retry safety             | ❌ Can duplicate data      | ✅ Idempotent           | **Production-ready** |
 
 ### Business Impact
 
@@ -979,28 +1025,33 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
 ## Implementation Roadmap
 
 ### Week 1: Stateless Backend Foundation (Nov 4-8)
+
 - **Monday**: Task 1 (Stateless parser endpoint)
 - **Tuesday-Wednesday**: Task 2 (Temporary storage system)
 - **Thursday-Friday**: Task 3 (Individual exercise CRUD)
 
 ### Week 2: Frontend UX Transformation (Nov 11-15)
+
 - **Monday-Tuesday**: Task 4 (Seamless upload/convert flow)
 - **Wednesday-Thursday**: Task 5 (Auto-save & conflict resolution)
 - **Friday**: Integration testing + bug fixes
 
 ### Week 3: Migration & Optimization (Nov 18-22)
+
 - **Monday**: Task 6 (Migration & cleanup)
 - **Tuesday-Wednesday**: Task 7 (Performance optimization)
 - **Thursday**: Load testing + performance tuning
 - **Friday**: Documentation updates
 
 ### Week 4: Quality Assurance & Launch (Nov 25-29)
+
 - **Monday-Tuesday**: Task 8 (Comprehensive testing)
 - **Wednesday**: Task 9 (Legacy code cleanup & removal)
 - **Thursday**: QA sign-off + bug fixes
 - **Friday**: Staging deployment + smoke tests
 
 ### Week 5: Production Deployment & Monitoring (Dec 2-6)
+
 - **Monday**: Production deployment with feature flag (10% rollout)
 - **Tuesday**: Monitor metrics, increase to 50% rollout
 - **Wednesday**: Full 100% rollout if metrics healthy
@@ -1012,6 +1063,7 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
 ## Risk Mitigation
 
 ### Risk 1: Breaking Changes to Existing Flow
+
 - **Probability**: Medium
 - **Impact**: High (breaks existing users)
 - **Mitigation**:
@@ -1021,6 +1073,7 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
   - Monitor error rates 24h post-deployment
 
 ### Risk 2: Data Loss During Migration
+
 - **Probability**: Low
 - **Impact**: Critical (user data lost)
 - **Mitigation**:
@@ -1030,6 +1083,7 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
   - Monitor error logs for 48h post-migration
 
 ### Risk 3: Performance Degradation
+
 - **Probability**: Low
 - **Impact**: Medium (slow UX)
 - **Mitigation**:
@@ -1039,6 +1093,7 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
   - Alerting on P95 latency thresholds (>2s triggers alert)
 
 ### Risk 4: Temp File Storage Quota Exceeded
+
 - **Probability**: Medium
 - **Impact**: Low (temporary upload failure)
 - **Mitigation**:
@@ -1048,6 +1103,7 @@ This refactor follows industry best practices from Google, Meta, Netflix, and St
   - Increase Supabase quota if needed (scalable)
 
 ### Risk 5: Concurrent Edit Conflicts Confuse Users
+
 - **Probability**: Medium
 - **Impact**: Medium (user frustration)
 - **Mitigation**:

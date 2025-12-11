@@ -7,7 +7,8 @@ import { SupabaseService } from './supabase.service.js';
 @Module({
   imports: [ConfigModule],
   providers: [SupabaseService],
-  exports: [SupabaseService] })
+  exports: [SupabaseService],
+})
 export class SupabaseModule {
   private readonly staticLogger = createStructuredLogger(SupabaseModule.name);
 

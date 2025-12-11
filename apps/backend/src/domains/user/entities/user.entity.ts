@@ -99,7 +99,8 @@ export class User extends AggregateRoot {
       new UserCreatedEvent(user.id, {
         email: email.value,
         displayName,
-        role: role.value }),
+        role: role.value,
+      }),
     );
     return user;
   }
@@ -123,6 +124,7 @@ export class User extends AggregateRoot {
       display_name: this._displayName,
       role: this._role.value,
       avatar_url: this._avatarUrl,
-      last_login_at: this._lastLoginAt?.toISOString() };
+      last_login_at: this._lastLoginAt?.toISOString(),
+    };
   }
 }

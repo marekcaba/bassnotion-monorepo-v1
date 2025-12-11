@@ -1,4 +1,10 @@
-import { IsString, IsOptional, IsNumber, IsArray, ValidateNested } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsArray,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import type { DrumHit, MidiDrumType } from '@bassnotion/contracts';
 

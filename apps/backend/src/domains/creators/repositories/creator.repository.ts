@@ -3,7 +3,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   ICreatorRepository,
   PaginatedResult,
-  PaginationOptions } from './creator.repository.interface.js';
+  PaginationOptions,
+} from './creator.repository.interface.js';
 import { Creator } from '../entities/creator.entity.js';
 import { CreatorId } from '../value-objects/creator-id.vo.js';
 import { ChannelUrl } from '../value-objects/channel-url.vo.js';
@@ -25,7 +26,9 @@ interface CreatorRecord {
 
 @Injectable()
 export class CreatorRepository implements ICreatorRepository {
-  private readonly staticLogger = createStructuredLogger(CreatorRepository.name);
+  private readonly staticLogger = createStructuredLogger(
+    CreatorRepository.name,
+  );
 
   constructor(
     private readonly supabase: SupabaseClient,
@@ -44,7 +47,9 @@ export class CreatorRepository implements ICreatorRepository {
       if (error || !data) {
         const logger = this.requestContext?.getLogger() || this.staticLogger;
         const correlationId = this.requestContext?.getCorrelationId();
-        logger.debug(`Creator not found with id: ${id.value}`, { correlationId });
+        logger.debug(`Creator not found with id: ${id.value}`, {
+          correlationId,
+        });
         return null;
       }
 
@@ -52,7 +57,9 @@ export class CreatorRepository implements ICreatorRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error(`Error finding creator by id ${id.value}:`, error as Error, { correlationId });
+      logger.error(`Error finding creator by id ${id.value}:`, error as Error, {
+        correlationId,
+      });
       throw new Error(
         `Failed to find creator: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
@@ -72,7 +79,7 @@ export class CreatorRepository implements ICreatorRepository {
         const correlationId = this.requestContext?.getCorrelationId();
         logger.debug(
           `Creator not found with channel URL: ${channelUrl.value}`,
-          { correlationId }
+          { correlationId },
         );
         return null;
       }
@@ -84,7 +91,7 @@ export class CreatorRepository implements ICreatorRepository {
       logger.error(
         `Error finding creator by channel URL ${channelUrl.value}:`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       throw new Error(
         `Failed to find creator: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -114,11 +121,14 @@ export class CreatorRepository implements ICreatorRepository {
         items: creators,
         total: count || 0,
         page: options.page,
-        limit: options.limit };
+        limit: options.limit,
+      };
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error fetching all creators:', error as Error, { correlationId });
+      logger.error('Error fetching all creators:', error as Error, {
+        correlationId,
+      });
       throw error;
     }
   }
@@ -134,7 +144,9 @@ export class CreatorRepository implements ICreatorRepository {
       if (error || !data) {
         const logger = this.requestContext?.getLogger() || this.staticLogger;
         const correlationId = this.requestContext?.getCorrelationId();
-        logger.debug(`Creator not found with channel ID: ${channelId}`, { correlationId });
+        logger.debug(`Creator not found with channel ID: ${channelId}`, {
+          correlationId,
+        });
         return null;
       }
 
@@ -145,7 +157,7 @@ export class CreatorRepository implements ICreatorRepository {
       logger.error(
         `Error finding creator by channel ID ${channelId}:`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       throw new Error(
         `Failed to find creator: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -171,7 +183,9 @@ export class CreatorRepository implements ICreatorRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error(`Error fetching creators by name ${name}:`, error as Error, { correlationId });
+      logger.error(`Error fetching creators by name ${name}:`, error as Error, {
+        correlationId,
+      });
       throw error;
     }
   }
@@ -198,7 +212,9 @@ export class CreatorRepository implements ICreatorRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error fetching stale creators:', error as Error, { correlationId });
+      logger.error('Error fetching stale creators:', error as Error, {
+        correlationId,
+      });
       throw error;
     }
   }
@@ -221,7 +237,9 @@ export class CreatorRepository implements ICreatorRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error fetching top creators:', error as Error, { correlationId });
+      logger.error('Error fetching top creators:', error as Error, {
+        correlationId,
+      });
       throw error;
     }
   }
@@ -247,7 +265,7 @@ export class CreatorRepository implements ICreatorRepository {
       logger.error(
         `Error searching creators with query "${query}":`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       throw error;
     }
@@ -264,7 +282,9 @@ export class CreatorRepository implements ICreatorRepository {
 
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.debug(`Successfully saved creator: ${creator.id.value}`, { correlationId });
+      logger.debug(`Successfully saved creator: ${creator.id.value}`, {
+        correlationId,
+      });
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
@@ -287,11 +307,17 @@ export class CreatorRepository implements ICreatorRepository {
 
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.debug(`Successfully updated creator: ${creator.id.value}`, { correlationId });
+      logger.debug(`Successfully updated creator: ${creator.id.value}`, {
+        correlationId,
+      });
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error(`Error updating creator ${creator.id.value}:`, error as Error, { correlationId });
+      logger.error(
+        `Error updating creator ${creator.id.value}:`,
+        error as Error,
+        { correlationId },
+      );
       throw error;
     }
   }
@@ -309,11 +335,15 @@ export class CreatorRepository implements ICreatorRepository {
 
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.debug(`Successfully deleted creator: ${id.value}`, { correlationId });
+      logger.debug(`Successfully deleted creator: ${id.value}`, {
+        correlationId,
+      });
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error(`Error deleting creator ${id.value}:`, error as Error, { correlationId });
+      logger.error(`Error deleting creator ${id.value}:`, error as Error, {
+        correlationId,
+      });
       throw error;
     }
   }
@@ -336,7 +366,7 @@ export class CreatorRepository implements ICreatorRepository {
       logger.error(
         `Error checking existence of creator ${id.value}:`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       throw error;
     }
@@ -362,7 +392,7 @@ export class CreatorRepository implements ICreatorRepository {
       logger.error(
         `Error checking existence of creator by channel URL ${channelUrl.value}:`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       throw error;
     }
@@ -390,7 +420,9 @@ export class CreatorRepository implements ICreatorRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error fetching creators by ids:', error as Error, { correlationId });
+      logger.error('Error fetching creators by ids:', error as Error, {
+        correlationId,
+      });
       throw error;
     }
   }
@@ -419,7 +451,9 @@ export class CreatorRepository implements ICreatorRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error fetching creators by channel URLs:', error as Error, { correlationId });
+      logger.error('Error fetching creators by channel URLs:', error as Error, {
+        correlationId,
+      });
       throw error;
     }
   }
@@ -437,14 +471,15 @@ export class CreatorRepository implements ICreatorRepository {
 
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.debug(
-        `Successfully saved ${creators.length} creators in batch`,
-        { correlationId }
-      );
+      logger.debug(`Successfully saved ${creators.length} creators in batch`, {
+        correlationId,
+      });
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error saving creators batch:', error as Error, { correlationId });
+      logger.error('Error saving creators batch:', error as Error, {
+        correlationId,
+      });
       throw error;
     }
   }
@@ -467,12 +502,14 @@ export class CreatorRepository implements ICreatorRepository {
       const correlationId = this.requestContext?.getCorrelationId();
       logger.debug(
         `Successfully updated ${creators.length} creators in batch`,
-        { correlationId }
+        { correlationId },
       );
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error updating creators batch:', error as Error, { correlationId });
+      logger.error('Error updating creators batch:', error as Error, {
+        correlationId,
+      });
       throw error;
     }
   }
@@ -493,11 +530,15 @@ export class CreatorRepository implements ICreatorRepository {
 
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.debug(`Successfully deleted ${ids.length} creators in batch`, { correlationId });
+      logger.debug(`Successfully deleted ${ids.length} creators in batch`, {
+        correlationId,
+      });
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error deleting creators batch:', error as Error, { correlationId });
+      logger.error('Error deleting creators batch:', error as Error, {
+        correlationId,
+      });
       throw error;
     }
   }
@@ -531,11 +572,14 @@ export class CreatorRepository implements ICreatorRepository {
 
       return Array.from(uniqueChannels.entries()).map(([url, name]) => ({
         url,
-        name }));
+        name,
+      }));
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error fetching unique channel URLs:', error as Error, { correlationId });
+      logger.error('Error fetching unique channel URLs:', error as Error, {
+        correlationId,
+      });
       throw error;
     }
   }
@@ -558,11 +602,11 @@ export class CreatorRepository implements ICreatorRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      
+
       logger.error(
         `Error counting creators by subscriber range ${min}-${max}:`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       throw error;
     }
@@ -581,6 +625,7 @@ export class CreatorRepository implements ICreatorRepository {
         ? new Date(record.last_fetched_at)
         : undefined,
       createdAt: new Date(record.created_at),
-      updatedAt: new Date(record.updated_at) });
+      updatedAt: new Date(record.updated_at),
+    });
   }
 }

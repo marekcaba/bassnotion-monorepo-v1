@@ -117,8 +117,7 @@ export class WindowRegistry {
     if (typeof window === 'undefined') return null;
 
     return (
-      window.__bassnotion_serviceRegistry ||
-      (window as any).__serviceRegistry
+      window.__bassnotion_serviceRegistry || (window as any).__serviceRegistry
     );
   }
 
@@ -144,9 +143,7 @@ export class WindowRegistry {
   static getEventBus(): any {
     if (typeof window === 'undefined') return null;
 
-    return (
-      window.__bassnotion_eventBus || (window as any).__globalEventBus
-    );
+    return window.__bassnotion_eventBus || (window as any).__globalEventBus;
   }
 
   // ============================================================================
@@ -181,7 +178,9 @@ export class WindowRegistry {
   /**
    * Set the AudioContext unsubscribe function
    */
-  static setAudioContextUnsubscribe(unsubscribe: (() => void) | undefined): void {
+  static setAudioContextUnsubscribe(
+    unsubscribe: (() => void) | undefined,
+  ): void {
     if (typeof window === 'undefined') return;
 
     window.__bassnotion_audioContextUnsubscribe = unsubscribe;

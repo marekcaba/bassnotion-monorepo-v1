@@ -26,6 +26,7 @@ import {
   logPlaybackEngineMigrationEvent,
 } from '../../config/featureFlags.js';
 import { WindowRegistry } from '../WindowRegistry.js';
+import { RecoveryEventHandlers } from './RecoveryEventHandlers.js';
 
 export interface CoreServicesConfig {
   enableHighPrecisionTiming?: boolean;
@@ -53,6 +54,7 @@ export class CoreServices {
   private instrumentRegistry: InstrumentRegistry;
   // Phase 3.2: regionProcessor property removed - RegionProcessor deleted
   private playbackEngine: PlaybackEngine | null = null; // Phase 1 Task 1.4: New PlaybackEngine (feature flag)
+  private recoveryHandlers: RecoveryEventHandlers | null = null; // Handles recovery events from ErrorRecoveryRegistry
   private isInitialized = false;
   private isPreInitialized = false;
   private config: Required<CoreServicesConfig>;
@@ -131,9 +133,13 @@ export class CoreServices {
       // 🔧 FIX: Register plugins early to prevent race condition with widgets
       // Widgets need plugins to be available before they mount
       if (this.config.autoLoadPlugins) {
-        logger.info('CoreServices: Registering plugins during pre-initialization...');
+        logger.info(
+          'CoreServices: Registering plugins during pre-initialization...',
+        );
         await registerExistingPlugins(this.pluginManager);
-        logger.info('CoreServices: Plugins registered during pre-initialization');
+        logger.info(
+          'CoreServices: Plugins registered during pre-initialization',
+        );
       }
 
       this.isPreInitialized = true;
@@ -188,10 +194,19 @@ export class CoreServices {
       console.log('[DEBUG-INIT] ✅ registry.initialize() completed!');
       logger.info('CoreServices: Service registry initialized');
 
+      // Initialize RecoveryEventHandlers to wire up recovery strategies from ErrorRecoveryRegistry
+      // This fixes the "dead recovery strategies" issue where events were emitted but nobody listened
+      logger.info('CoreServices: Initializing RecoveryEventHandlers...');
+      this.recoveryHandlers = new RecoveryEventHandlers(this.eventBus);
+      this.recoveryHandlers.register();
+      logger.info('CoreServices: RecoveryEventHandlers registered');
+
       // NOTE: WamKeyboardPlugin is registered during preInitialize() but NOT eagerly loaded
       // The plugin will be loaded lazily when HarmonyWidget first needs it
       // This prevents race conditions with React mounting and StrictMode double-mounting
-      console.log('[MILESTONE] 🎹 STEP 2.5: WamKeyboardPlugin registered (will load on-demand)');
+      console.log(
+        '[MILESTONE] 🎹 STEP 2.5: WamKeyboardPlugin registered (will load on-demand)',
+      );
 
       // Initialize TransportSyncManager after registry (it's not a registered service)
       logger.info('CoreServices: Initializing TransportSyncManager...');
@@ -276,15 +291,18 @@ export class CoreServices {
       });
 
       if (this.regionProcessor || this.playbackEngine) {
-        console.log('[CORESERVICES-BUFFER-INJECTION] Starting buffer injection...');
+        console.log(
+          '[CORESERVICES-BUFFER-INJECTION] Starting buffer injection...',
+        );
         logger.info(
           'CoreServices: Injecting audio buffers for direct scheduling...',
         );
-        const { GlobalSampleCache } = await import(
-          '../../modules/storage/cache/GlobalSampleCache.js'
-        );
+        const { GlobalSampleCache } =
+          await import('../../modules/storage/cache/GlobalSampleCache.js');
         const sampleCache = GlobalSampleCache.getInstance();
-        console.log('[CORESERVICES-BUFFER-INJECTION] Got GlobalSampleCache instance');
+        console.log(
+          '[CORESERVICES-BUFFER-INJECTION] Got GlobalSampleCache instance',
+        );
 
         // Inject metronome buffers for countdown
         // Note: Samples are cached as raw ArrayBuffers, need to decode first
@@ -293,24 +311,38 @@ export class CoreServices {
 
         // Decode from raw if not already decoded
         if (!accentBuffer) {
-          const rawAccent = await sampleCache.getCachedRawBuffer('metronome-high');
+          const rawAccent =
+            await sampleCache.getCachedRawBuffer('metronome-high');
           if (rawAccent) {
-            accentBuffer = await audioContext.decodeAudioData(rawAccent.slice(0));
-            await sampleCache.cacheBuffer('metronome-high', accentBuffer, { isContextCompatible: true });
+            accentBuffer = await audioContext.decodeAudioData(
+              rawAccent.slice(0),
+            );
+            await sampleCache.cacheBuffer('metronome-high', accentBuffer, {
+              isContextCompatible: true,
+            });
           }
         }
 
         if (!clickBuffer) {
-          const rawClick = await sampleCache.getCachedRawBuffer('metronome-low');
+          const rawClick =
+            await sampleCache.getCachedRawBuffer('metronome-low');
           if (rawClick) {
             clickBuffer = await audioContext.decodeAudioData(rawClick.slice(0));
-            await sampleCache.cacheBuffer('metronome-low', clickBuffer, { isContextCompatible: true });
+            await sampleCache.cacheBuffer('metronome-low', clickBuffer, {
+              isContextCompatible: true,
+            });
           }
         }
 
         if (accentBuffer && clickBuffer && this.playbackEngine) {
-          this.playbackEngine.setMetronomeBuffers(accentBuffer, clickBuffer, audioContext.destination);
-          logger.info('✅ CoreServices: Metronome buffers injected for countdown');
+          this.playbackEngine.setMetronomeBuffers(
+            accentBuffer,
+            clickBuffer,
+            audioContext.destination,
+          );
+          logger.info(
+            '✅ CoreServices: Metronome buffers injected for countdown',
+          );
         }
 
         // Inject drum buffers
@@ -375,94 +407,97 @@ export class CoreServices {
           logger.info(
             '✅ CoreServices: Voice cue buffers injected - countdown guidance enabled',
           );
-      } else {
-        logger.warn(
-          '⚠️ CoreServices: Some voice cue buffers not found in cache - countdown may be silent',
-        );
-        logger.debug('Voice cue buffer status:', {
-          found: voiceCuesFound,
-          total: cues.length,
-          missing: cues.filter(
-            (cue) => !sampleCache.getCachedBuffer(`voice-cue-${cue}`),
-          ),
-        });
-      }
+        } else {
+          logger.warn(
+            '⚠️ CoreServices: Some voice cue buffers not found in cache - countdown may be silent',
+          );
+          logger.debug('Voice cue buffer status:', {
+            found: voiceCuesFound,
+            total: cues.length,
+            missing: cues.filter(
+              (cue) => !sampleCache.getCachedBuffer(`voice-cue-${cue}`),
+            ),
+          });
+        }
 
-      // Inject harmony buffers (Wurlitzer/Grand Piano samples)
-      // CRITICAL FIX: Use sharp notation (Cs, Ds, Fs, Gs, As) to match HarmonyPreloadStrategy
-      // Try multiple instrument prefixes since we don't know which instrument was preloaded
-      const harmonyBuffers = new Map<string, AudioBuffer>();
-      const layers = ['v2', 'v3', 'v4', 'v5', 'v6', 'v7']; // Velocity layers (wurlitzer uses v2-v5, grandpiano uses v4-v7)
-      const notes = [
-        'C',
-        'Cs',
-        'D',
-        'Ds',
-        'E',
-        'F',
-        'Fs',
-        'G',
-        'Gs',
-        'A',
-        'As',
-        'B',
-      ]; // Sharp notation
-      const octaves = [2, 3, 4, 5, 6]; // Typical piano range
-      const instrumentPrefixes = [
-        'wurlitzer',
-        'grandpiano',
-        'rhodes',
-        'harmony',
-      ]; // Try all possible prefixes
-      let harmonyBuffersFound = 0;
+        // Inject harmony buffers (Wurlitzer/Grand Piano samples)
+        // CRITICAL FIX: Use sharp notation (Cs, Ds, Fs, Gs, As) to match HarmonyPreloadStrategy
+        // Try multiple instrument prefixes since we don't know which instrument was preloaded
+        const harmonyBuffers = new Map<string, AudioBuffer>();
+        const layers = ['v2', 'v3', 'v4', 'v5', 'v6', 'v7']; // Velocity layers (wurlitzer uses v2-v5, grandpiano uses v4-v7)
+        const notes = [
+          'C',
+          'Cs',
+          'D',
+          'Ds',
+          'E',
+          'F',
+          'Fs',
+          'G',
+          'Gs',
+          'A',
+          'As',
+          'B',
+        ]; // Sharp notation
+        const octaves = [0, 1, 2, 3, 4, 5, 6]; // Full piano range (Wurlitzer shifts down to octave 1)
+        const instrumentPrefixes = [
+          'wurlitzer',
+          'grandpiano',
+          'rhodes',
+          'harmony',
+        ]; // Try all possible prefixes
+        let harmonyBuffersFound = 0;
 
-      for (const layer of layers) {
-        for (const octave of octaves) {
-          for (const note of notes) {
-            const noteName = `${note}${octave}`;
+        for (const layer of layers) {
+          for (const octave of octaves) {
+            for (const note of notes) {
+              const noteName = `${note}${octave}`;
 
-            // Try each instrument prefix until we find a cached buffer
-            let buffer: AudioBuffer | undefined;
-            for (const prefix of instrumentPrefixes) {
-              const cacheKey = `${prefix}-${layer}-${noteName}`;
-              buffer = sampleCache.getCachedBuffer(cacheKey);
-              if (buffer) {
-                break; // Found it!
+              // Try each instrument prefix until we find a cached buffer
+              let buffer: AudioBuffer | undefined;
+              for (const prefix of instrumentPrefixes) {
+                const cacheKey = `${prefix}-${layer}-${noteName}`;
+                buffer = sampleCache.getCachedBuffer(cacheKey);
+                if (buffer) {
+                  break; // Found it!
+                }
               }
-            }
 
-            if (buffer) {
-              // RegionProcessor expects key format: 'v3-C4' (without instrument prefix)
-              harmonyBuffers.set(`${layer}-${noteName}`, buffer);
-              harmonyBuffersFound++;
+              if (buffer) {
+                // RegionProcessor expects key format: 'v3-C4' (without instrument prefix)
+                harmonyBuffers.set(`${layer}-${noteName}`, buffer);
+                harmonyBuffersFound++;
+              }
             }
           }
         }
-      }
 
-      if (harmonyBuffersFound > 0) {
-        this.regionProcessor.setHarmonyBuffers(
-          harmonyBuffers,
-          audioContext.destination,
-        );
-        logger.info(
-          '✅ CoreServices: Harmony buffers injected - direct harmony scheduling enabled',
-          {
-            buffersFound: harmonyBuffersFound,
-            layers: layers.length,
-          },
-        );
-      } else {
-        logger.warn(
-          '⚠️ CoreServices: No harmony buffers found in cache - will fall back to event bus',
-        );
-      }
+        if (harmonyBuffersFound > 0) {
+          this.regionProcessor.setHarmonyBuffers(
+            harmonyBuffers,
+            audioContext.destination,
+          );
+          logger.info(
+            '✅ CoreServices: Harmony buffers injected - direct harmony scheduling enabled',
+            {
+              buffersFound: harmonyBuffersFound,
+              layers: layers.length,
+            },
+          );
+        } else {
+          logger.warn(
+            '⚠️ CoreServices: No harmony buffers found in cache - will fall back to event bus',
+          );
+        }
 
         // Note: RegionProcessor will be started when transport starts (via event listener)
         logger.info(
           'CoreServices: RegionProcessor initialized (will start with transport)',
         );
-        AudioDebugger.getInstance().log('CoreServices', 'region-processor-ready');
+        AudioDebugger.getInstance().log(
+          'CoreServices',
+          'region-processor-ready',
+        );
       } // End of RegionProcessor buffer injection guard
 
       this.isInitialized = true;
@@ -535,6 +570,13 @@ export class CoreServices {
    */
   async dispose(): Promise<void> {
     try {
+      // Dispose RecoveryEventHandlers first
+      if (this.recoveryHandlers) {
+        logger.info('CoreServices: Disposing RecoveryEventHandlers...');
+        this.recoveryHandlers.dispose();
+        this.recoveryHandlers = null;
+      }
+
       // Phase 1 Task 1.4: Dispose PlaybackEngine if it exists
       if (this.playbackEngine) {
         logger.info('CoreServices: Disposing PlaybackEngine...');

@@ -34,12 +34,12 @@ The `RegionProcessor` API is being replaced by the new `PlaybackEngine` API as p
 
 ### Migration Status
 
-| Widget | Status | Call Sites | Completed | Notes |
-|--------|--------|------------|-----------|-------|
-| DrummerWidget | ✅ Complete | 2 | 2025-11-23 | Pattern loading, MIDI import |
-| HarmonyWidget | ✅ Complete | 4 | 2025-11-23 | Complex: PluginManager, buffers |
-| MetronomeWidget | ✅ Complete | 3 | 2025-11-23 | Time signature, BPM changes |
-| VoiceCueWidget | N/A | 0 | - | Instrument type only, no widget |
+| Widget          | Status      | Call Sites | Completed  | Notes                           |
+| --------------- | ----------- | ---------- | ---------- | ------------------------------- |
+| DrummerWidget   | ✅ Complete | 2          | 2025-11-23 | Pattern loading, MIDI import    |
+| HarmonyWidget   | ✅ Complete | 4          | 2025-11-23 | Complex: PluginManager, buffers |
+| MetronomeWidget | ✅ Complete | 3          | 2025-11-23 | Time signature, BPM changes     |
+| VoiceCueWidget  | N/A         | 0          | -          | Instrument type only, no widget |
 
 **Total Migration:** 9 call sites converted, 3 widgets migrated (100%)
 
@@ -71,22 +71,22 @@ Phase 2.2 (Now)          Phase 3.1 (Week 7)        Phase 3.2 (Week 8)
 
 ### API Changes Summary
 
-| Old API (RegionProcessor) | New API (PlaybackEngine) | Status |
-|---------------------------|--------------------------|--------|
-| `getRegionProcessor()` | `getPlaybackEngine()` | ✅ Direct replacement |
-| `registerTracks([track])` | `registerTrack(track)` | ✅ Singular form |
-| `updateTracks([track])` | `unregisterTrack(id) + registerTrack(track)` | ✅ Two-step pattern |
-| `setAudioContext(ctx)` | Set during `initialize(ctx, dest)` | ✅ No-op (initialization only) |
-| `setHarmonyBuffers(...)` | Internal buffer management | ✅ No-op (internal) |
-| `setPluginManager(pm)` | `setPluginManager(pm)` | ✅ Same |
-| `getWamKeyboard()` | `getWamKeyboard()` | ✅ Same |
-| `disableCountdown()` | `setCountdownConfig(beats, false)` | ✅ More flexible |
-| `start()` | `start()` | ✅ Same |
-| `stop(graceful)` | `stop(graceful)` | ✅ Same |
-| `pause()` | `pause()` | ✅ Same |
-| N/A | `resume()` | ✅ New: resume from pause |
-| `.isRunning` | `getState() === 'playing'` | ✅ State machine check |
-| `dispose()` | `dispose()` | ✅ Same |
+| Old API (RegionProcessor) | New API (PlaybackEngine)                     | Status                         |
+| ------------------------- | -------------------------------------------- | ------------------------------ |
+| `getRegionProcessor()`    | `getPlaybackEngine()`                        | ✅ Direct replacement          |
+| `registerTracks([track])` | `registerTrack(track)`                       | ✅ Singular form               |
+| `updateTracks([track])`   | `unregisterTrack(id) + registerTrack(track)` | ✅ Two-step pattern            |
+| `setAudioContext(ctx)`    | Set during `initialize(ctx, dest)`           | ✅ No-op (initialization only) |
+| `setHarmonyBuffers(...)`  | Internal buffer management                   | ✅ No-op (internal)            |
+| `setPluginManager(pm)`    | `setPluginManager(pm)`                       | ✅ Same                        |
+| `getWamKeyboard()`        | `getWamKeyboard()`                           | ✅ Same                        |
+| `disableCountdown()`      | `setCountdownConfig(beats, false)`           | ✅ More flexible               |
+| `start()`                 | `start()`                                    | ✅ Same                        |
+| `stop(graceful)`          | `stop(graceful)`                             | ✅ Same                        |
+| `pause()`                 | `pause()`                                    | ✅ Same                        |
+| N/A                       | `resume()`                                   | ✅ New: resume from pause      |
+| `.isRunning`              | `getState() === 'playing'`                   | ✅ State machine check         |
+| `dispose()`               | `dispose()`                                  | ✅ Same                        |
 
 ---
 
@@ -95,6 +95,7 @@ Phase 2.2 (Now)          Phase 3.1 (Week 7)        Phase 3.2 (Week 8)
 ### Step 1: Update CoreServices Call
 
 **Before:**
+
 ```typescript
 const coreServices = window.__globalCoreServices || window.__coreServices;
 const regionProcessor = coreServices?.getRegionProcessor?.();
@@ -106,6 +107,7 @@ if (!regionProcessor) {
 ```
 
 **After:**
+
 ```typescript
 const coreServices = window.__globalCoreServices || window.__coreServices;
 const playbackEngine = coreServices?.getPlaybackEngine?.();
@@ -125,6 +127,7 @@ if (!playbackEngine) {
 **Pattern A: Initial Registration**
 
 **Before:**
+
 ```typescript
 regionProcessor.registerTracks([
   {
@@ -137,6 +140,7 @@ regionProcessor.registerTracks([
 ```
 
 **After:**
+
 ```typescript
 playbackEngine.registerTrack({
   id: 'widget-track',
@@ -153,6 +157,7 @@ playbackEngine.registerTrack({
 **Pattern B: Track Updates**
 
 **Before:**
+
 ```typescript
 regionProcessor.updateTracks([
   {
@@ -165,6 +170,7 @@ regionProcessor.updateTracks([
 ```
 
 **After:**
+
 ```typescript
 // Two-step pattern: unregister old, register new
 playbackEngine.unregisterTrack('widget-track');
@@ -183,6 +189,7 @@ playbackEngine.registerTrack({
 ### Step 3: Replace State Checks
 
 **Before:**
+
 ```typescript
 const isRunning = (regionProcessor as any).isRunning;
 
@@ -196,6 +203,7 @@ if (isRunning) {
 ```
 
 **After:**
+
 ```typescript
 const isRunning = playbackEngine.getState() === 'playing';
 
@@ -212,6 +220,7 @@ if (isRunning) {
 **Why:** PlaybackEngine uses a state machine (`getState()`) instead of boolean flags.
 
 **Available States:**
+
 - `idle` - Not initialized
 - `loading` - Initializing resources
 - `ready` - Initialized, ready to play
@@ -225,18 +234,20 @@ if (isRunning) {
 ### Step 4: Remove Buffer Management (HarmonyWidget only)
 
 **Before:**
+
 ```typescript
 if (harmonyBuffers && harmonyBuffers.size > 0) {
   regionProcessor.setHarmonyBuffers(
     harmonyBuffers,
     audioContext.destination,
     perNoteVelocityRanges,
-    instrument
+    instrument,
   );
 }
 ```
 
 **After:**
+
 ```typescript
 // Buffer management is now internal to PlaybackEngine
 // Just log for diagnostics (optional)
@@ -256,6 +267,7 @@ if (harmonyBuffers && harmonyBuffers.size > 0) {
 ### Step 5: Verify State Transitions
 
 **Before:**
+
 ```typescript
 // RegionProcessor had limited state checking
 if (regionProcessor.isRunning) {
@@ -266,6 +278,7 @@ if (regionProcessor.isRunning) {
 ```
 
 **After:**
+
 ```typescript
 // PlaybackEngine provides explicit state machine
 const state = playbackEngine.getState();
@@ -292,21 +305,25 @@ if (state === 'playing') {
 **Scenario:** User changes drum pattern, need to update regions during playback.
 
 **Before:**
+
 ```typescript
 useEffect(() => {
   if (globalServices && globalServices.getRegionProcessor) {
     const regionProcessor = globalServices.getRegionProcessor();
 
-    regionProcessor.updateTracks([{
-      id: 'drummer-widget-track',
-      regions: newRegions,
-      instrumentType: 'drums',
-    }]);
+    regionProcessor.updateTracks([
+      {
+        id: 'drummer-widget-track',
+        regions: newRegions,
+        instrumentType: 'drums',
+      },
+    ]);
   }
 }, [selectedPattern]);
 ```
 
 **After:**
+
 ```typescript
 useEffect(() => {
   if (globalServices && globalServices.getPlaybackEngine) {
@@ -336,6 +353,7 @@ useEffect(() => {
 **Scenario:** Complex widget with WAM plugin, velocity layers, and sustain pedal.
 
 **Before:**
+
 ```typescript
 // Setup PluginManager
 regionProcessor.setPluginManager(pluginManager);
@@ -345,7 +363,7 @@ regionProcessor.setHarmonyBuffers(
   harmonyBuffers,
   audioContext.destination,
   perNoteVelocityRanges,
-  instrument
+  instrument,
 );
 
 // Check state
@@ -360,6 +378,7 @@ if (isRunning) {
 ```
 
 **After:**
+
 ```typescript
 // Setup PluginManager (same)
 playbackEngine.setPluginManager(pluginManager);
@@ -391,6 +410,7 @@ if (isRunning) {
 **Scenario:** User changes time signature (4/4 → 3/4) or BPM, need to rebuild metronome pattern.
 
 **Before:**
+
 ```typescript
 useEffect(() => {
   if (globalServices && globalServices.getRegionProcessor) {
@@ -399,16 +419,19 @@ useEffect(() => {
     // Rebuild regions with new time signature
     const newRegions = buildMetronomeRegions(timeSignature, bpm);
 
-    regionProcessor.updateTracks([{
-      id: 'metronome-track',
-      regions: newRegions,
-      instrumentType: 'metronome',
-    }]);
+    regionProcessor.updateTracks([
+      {
+        id: 'metronome-track',
+        regions: newRegions,
+        instrumentType: 'metronome',
+      },
+    ]);
   }
 }, [timeSignature, bpm]);
 ```
 
 **After:**
+
 ```typescript
 useEffect(() => {
   if (globalServices && globalServices.getPlaybackEngine) {
@@ -476,9 +499,7 @@ useEffect(() => {
 ```typescript
 // If PlaybackEngine has issues, temporarily use adapter
 const coreServices = window.__globalCoreServices;
-const adapter = new RegionProcessorAdapter(
-  coreServices.getPlaybackEngine()
-);
+const adapter = new RegionProcessorAdapter(coreServices.getPlaybackEngine());
 
 // Adapter provides backward-compatible API
 adapter.registerTracks([track]);
@@ -509,11 +530,13 @@ pnpm vitest run <widget>.test.ts
 ### Phase 3.1 (Week 7): Mark Adapter for Removal
 
 **Actions:**
+
 1. Add loud deprecation warnings to adapter:
+
 ```typescript
 console.error(
   '🚨 [DEPRECATED] RegionProcessorAdapter will be REMOVED in 1 week! ' +
-  'Migrate to PlaybackEngine immediately. See WIDGET_MIGRATION_GUIDE.md'
+    'Migrate to PlaybackEngine immediately. See WIDGET_MIGRATION_GUIDE.md',
 );
 ```
 
@@ -523,6 +546,7 @@ console.error(
 5. Create migration tickets for any remaining widgets
 
 **Pass Criteria:**
+
 - Zero adapter usage in production widgets
 - All tests passing without adapter
 - Team acknowledged migration deadline
@@ -532,6 +556,7 @@ console.error(
 ### Phase 3.2 (Week 8): Remove Adapter
 
 **Actions:**
+
 1. Delete `RegionProcessorAdapter.ts`
 2. Delete `RegionProcessorAdapter.test.ts`
 3. Remove `getRegionProcessor()` from CoreServices
@@ -540,12 +565,14 @@ console.error(
 6. Run full regression suite: `pnpm vitest run apps/frontend/src/domains/playback/`
 
 **Pass Criteria:**
+
 - No import errors after deletion
 - All tests passing (600+ tests)
 - Zero runtime errors in production
 - Memory usage stable or improved
 
 **Rollback Plan:**
+
 - Revert adapter deletion commit (git revert)
 - Restore RegionProcessor from backup
 - Investigate root cause before attempting removal again
@@ -557,6 +584,7 @@ console.error(
 ### Q: Why two-step pattern (unregister + register) instead of updateTracks()?
 
 **A:** The two-step pattern is explicit and prevents race conditions:
+
 - **Explicit:** Clear what's happening (remove old, add new)
 - **No race conditions:** Can't have two versions of same track registered
 - **Better for debugging:** Each step logged separately
@@ -565,6 +593,7 @@ console.error(
 ### Q: What happens to buffers in HarmonyWidget?
 
 **A:** PlaybackEngine manages buffers internally through `BufferManager`. You no longer need to inject them with `setHarmonyBuffers()`. The engine automatically:
+
 - Loads buffers from GlobalSampleCache
 - Maps notes to velocity layers
 - Handles buffer cleanup on dispose
@@ -572,6 +601,7 @@ console.error(
 ### Q: Can I still use RegionProcessor?
 
 **A:** Yes, until Phase 3.2 (Week 8). The `RegionProcessorAdapter` provides backward compatibility. However:
+
 - ⚠️ Adapter is deprecated (loud warnings in console)
 - ⚠️ Adapter will be removed in Week 8
 - ✅ Migrate now to avoid disruption
@@ -579,6 +609,7 @@ console.error(
 ### Q: How do I test my migration?
 
 **A:** Three-level testing strategy:
+
 1. **Unit tests:** Widget behavior in isolation
 2. **Integration tests:** Widget + PlaybackEngine interactions
 3. **Regression tests:** Run `widget-migration-regression.test.ts` (19 scenarios)
@@ -588,6 +619,7 @@ See [Testing Checklist](#testing-checklist) above.
 ### Q: What if I find a bug in PlaybackEngine?
 
 **A:** Report immediately:
+
 1. Create GitHub issue with "Playback Engine" label
 2. Include reproduction steps
 3. Note if issue exists in RegionProcessor (regression)
@@ -597,6 +629,7 @@ See [Testing Checklist](#testing-checklist) above.
 ### Q: Performance impact of migration?
 
 **A:** **Neutral to positive:**
+
 - ✅ Same or better performance (consolidated architecture)
 - ✅ Reduced memory overhead (single state machine)
 - ✅ Faster state checks (no boolean flags)

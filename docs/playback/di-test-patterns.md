@@ -15,6 +15,7 @@ const mockAudioEngine = createMockAudioEngine();
 ```
 
 Features:
+
 - All factory methods return mock nodes with chainable methods
 - Spies on all method calls for verification
 - Provides sensible defaults for all properties
@@ -25,7 +26,10 @@ Features:
 The `setupDI` utility provides a complete testing environment:
 
 ```typescript
-import { setupDIMocks, cleanupDIMocks } from '@/domains/playback/modules/__tests__/mocks/setupDI';
+import {
+  setupDIMocks,
+  cleanupDIMocks,
+} from '@/domains/playback/modules/__tests__/mocks/setupDI';
 
 beforeEach(() => {
   const { audioEngine, coreServices } = setupDIMocks();
@@ -38,6 +42,7 @@ afterEach(() => {
 ```
 
 Features:
+
 - Sets up global `window.__coreServices`
 - Provides mock AudioEngine and CoreServices
 - Handles cleanup automatically
@@ -51,7 +56,7 @@ Features:
 describe('MyInstrument', () => {
   let instrument: MyInstrument;
   let mockAudioEngine: any;
-  
+
   beforeEach(() => {
     mockAudioEngine = createMockAudioEngine();
     const config = {
@@ -61,14 +66,14 @@ describe('MyInstrument', () => {
     };
     instrument = new MyInstrument(config, mockAudioEngine);
   });
-  
+
   it('should initialize with DI', async () => {
     await instrument.initialize();
-    
+
     expect(instrument.state.isInitialized).toBe(true);
     expect(mockAudioEngine.createSampler).toHaveBeenCalled();
   });
-  
+
   it('should trigger notes correctly', () => {
     instrument.trigger({
       audioTime: 0.5,
@@ -76,13 +81,13 @@ describe('MyInstrument', () => {
       velocity: 0.8,
       data: { note: 'C4' },
     });
-    
+
     const mockSampler = mockAudioEngine.createSampler.mock.results[0].value;
     expect(mockSampler.triggerAttackRelease).toHaveBeenCalledWith(
       'C4',
       expect.any(String),
       0.5,
-      0.8
+      0.8,
     );
   });
 });
@@ -99,17 +104,17 @@ describe('Backward Compatibility', () => {
       Volume: vi.fn(() => mockToneNode()),
       start: vi.fn(),
     }));
-    
+
     const instrument = new MyInstrument(config);
     await expect(instrument.initialize()).resolves.not.toThrow();
   });
-  
+
   it('should use global CoreServices when available', async () => {
     const { coreServices } = setupDIMocks();
-    
+
     const instrument = new MyInstrument(config);
     await instrument.initialize();
-    
+
     expect(coreServices.getAudioEngine).toHaveBeenCalled();
   });
 });
@@ -121,28 +126,28 @@ describe('Backward Compatibility', () => {
 describe('InstrumentProcessor', () => {
   let processor: MyInstrumentProcessor;
   let mockAudioEngine: any;
-  
+
   beforeEach(() => {
     mockAudioEngine = createMockAudioEngine();
     processor = new MyInstrumentProcessor(config, mockAudioEngine);
   });
-  
+
   it('should pass audioEngine through initialize', async () => {
     const customEngine = createMockAudioEngine();
     await processor.initialize(samples, customEngine);
-    
+
     // Should use the engine passed to initialize
     expect(customEngine.createSampler).toHaveBeenCalled();
     expect(mockAudioEngine.createSampler).not.toHaveBeenCalled();
   });
-  
+
   it('should create proper audio chain', async () => {
     await processor.initialize(samples);
-    
+
     const sampler = mockAudioEngine.createSampler.mock.results[0].value;
     const volume = mockAudioEngine.createVolume.mock.results[0].value;
     const destination = mockAudioEngine.getDestination.mock.results[0].value;
-    
+
     expect(sampler.connect).toHaveBeenCalledWith(volume);
     expect(volume.connect).toHaveBeenCalledWith(destination);
   });
@@ -155,7 +160,7 @@ describe('InstrumentProcessor', () => {
 describe('Complex Audio Routing', () => {
   let channel: Channel;
   let mockAudioEngine: any;
-  
+
   beforeEach(() => {
     mockAudioEngine = createMockAudioEngine();
     channel = new Channel({
@@ -163,7 +168,7 @@ describe('Complex Audio Routing', () => {
       audioEngine: mockAudioEngine,
     });
   });
-  
+
   it('should create complete channel strip', () => {
     // Verify all components created
     expect(mockAudioEngine.createGain).toHaveBeenCalledTimes(4); // input, gain, mute, solo
@@ -173,7 +178,7 @@ describe('Complex Audio Routing', () => {
     expect(mockAudioEngine.createCompressor).toHaveBeenCalledTimes(1);
     expect(mockAudioEngine.createGate).toHaveBeenCalledTimes(1);
   });
-  
+
   it('should route signal correctly', () => {
     const nodes = {
       input: mockAudioEngine.createGain.mock.results[0].value,
@@ -181,7 +186,7 @@ describe('Complex Audio Routing', () => {
       panner: mockAudioEngine.createPanner.mock.results[0].value,
       output: mockAudioEngine.createGain.mock.results[3].value,
     };
-    
+
     // Verify signal chain
     expect(nodes.input.connect).toHaveBeenCalledWith(expect.any(Object));
     expect(nodes.gain.connect).toHaveBeenCalledWith(nodes.panner);
@@ -195,39 +200,39 @@ describe('Complex Audio Routing', () => {
 ```typescript
 describe('Mock Verification Patterns', () => {
   let mockAudioEngine: any;
-  
+
   beforeEach(() => {
     mockAudioEngine = createMockAudioEngine();
   });
-  
+
   it('should verify factory method arguments', async () => {
     const instrument = new MyInstrument(config, mockAudioEngine);
     await instrument.initialize();
-    
+
     // Verify specific arguments
     expect(mockAudioEngine.createSampler).toHaveBeenCalledWith({
       urls: expect.any(Object),
       release: 1,
       baseUrl: expect.any(String),
     });
-    
+
     expect(mockAudioEngine.createVolume).toHaveBeenCalledWith(-6);
   });
-  
+
   it('should verify method call order', async () => {
     const instrument = new MyInstrument(config, mockAudioEngine);
     await instrument.initialize();
-    
+
     const callOrder = [
       mockAudioEngine.createVolume,
       mockAudioEngine.createSampler,
       mockAudioEngine.getDestination,
     ];
-    
+
     // Verify calls happened in specific order
     callOrder.forEach((method, index) => {
       expect(method.mock.invocationCallOrder[0]).toBeGreaterThan(
-        index === 0 ? 0 : callOrder[index - 1].mock.invocationCallOrder[0]
+        index === 0 ? 0 : callOrder[index - 1].mock.invocationCallOrder[0],
       );
     });
   });
@@ -239,32 +244,32 @@ describe('Mock Verification Patterns', () => {
 ```typescript
 describe('Integration Tests', () => {
   let diSetup: any;
-  
+
   beforeEach(() => {
     diSetup = setupDIMocks();
   });
-  
+
   afterEach(() => {
     cleanupDIMocks();
   });
-  
+
   it('should integrate with global services', async () => {
     // Component gets audioEngine from global
     const router = new AudioEventRouter();
     await router.initialize();
-    
+
     // Verify it found and used global audioEngine
     expect(diSetup.coreServices.getAudioEngine).toHaveBeenCalled();
     expect(diSetup.audioEngine.createSampler).toHaveBeenCalled();
   });
-  
+
   it('should handle mixed DI usage', async () => {
     const directDI = new BassInstrument(config, diSetup.audioEngine);
     const globalDI = new DrumKit(config); // Uses global
-    
+
     await directDI.initialize();
     await globalDI.initialize();
-    
+
     // Both should work
     expect(directDI.state.isInitialized).toBe(true);
     expect(globalDI.state.isInitialized).toBe(true);
@@ -279,7 +284,7 @@ describe('Integration Tests', () => {
 ```typescript
 it('should handle async sample loading', async () => {
   const mockAudioEngine = createMockAudioEngine();
-  
+
   // Mock async loading
   mockAudioEngine.createSampler.mockImplementation((options) => {
     const sampler = {
@@ -287,19 +292,19 @@ it('should handle async sample loading', async () => {
       loaded: false,
       triggerAttackRelease: vi.fn(),
     };
-    
+
     // Simulate async loading
     setTimeout(() => {
       sampler.loaded = true;
       if (options.onload) options.onload();
     }, 100);
-    
+
     return sampler;
   });
-  
+
   const instrument = new MyInstrument(config, mockAudioEngine);
   await instrument.initialize();
-  
+
   // Wait for loading
   await vi.waitFor(() => {
     expect(instrument.state.isInitialized).toBe(true);
@@ -315,9 +320,9 @@ it('should handle initialization errors gracefully', async () => {
   mockAudioEngine.createSampler.mockImplementation(() => {
     throw new Error('Failed to create sampler');
   });
-  
+
   const instrument = new MyInstrument(config, mockAudioEngine);
-  
+
   await expect(instrument.initialize()).rejects.toThrow();
   expect(instrument.state.isInitialized).toBe(false);
   expect(instrument.state.error).toContain('Failed to initialize');
@@ -329,14 +334,17 @@ it('should handle initialization errors gracefully', async () => {
 ```typescript
 it('should update audio parameters correctly', () => {
   const mockAudioEngine = createMockAudioEngine();
-  const channel = new Channel({ channelId: 'test', audioEngine: mockAudioEngine });
-  
+  const channel = new Channel({
+    channelId: 'test',
+    audioEngine: mockAudioEngine,
+  });
+
   const gainNode = mockAudioEngine.createGain.mock.results[0].value;
-  
+
   // Test volume changes
   channel.setVolume(0.5, 0.1);
   expect(gainNode.gain.rampTo).toHaveBeenCalledWith(0.5, 0.1);
-  
+
   // Test immediate changes
   channel.setVolume(0.8, 0);
   expect(gainNode.gain.value).toBe(0.8);
@@ -351,7 +359,7 @@ it('should update audio parameters correctly', () => {
 // Extend mockAudioEngine for specific tests
 const createCustomMockAudioEngine = () => {
   const base = createMockAudioEngine();
-  
+
   // Add custom behavior
   base.createSampler.mockImplementation((options) => ({
     ...mockToneNode(),
@@ -360,7 +368,7 @@ const createCustomMockAudioEngine = () => {
       console.log(`Triggered ${note} at velocity ${velocity}`);
     }),
   }));
-  
+
   return base;
 };
 ```
@@ -396,23 +404,24 @@ describe('Performance', () => {
   it('should handle multiple instruments efficiently', async () => {
     const mockAudioEngine = createMockAudioEngine();
     const startTime = performance.now();
-    
+
     // Create multiple instruments
-    const instruments = Array.from({ length: 100 }, (_, i) => 
-      new MyInstrument({ id: `inst-${i}` }, mockAudioEngine)
+    const instruments = Array.from(
+      { length: 100 },
+      (_, i) => new MyInstrument({ id: `inst-${i}` }, mockAudioEngine),
     );
-    
+
     // Initialize all
-    await Promise.all(instruments.map(i => i.initialize()));
-    
+    await Promise.all(instruments.map((i) => i.initialize()));
+
     const endTime = performance.now();
     const totalTime = endTime - startTime;
-    
+
     // Should complete in reasonable time
     expect(totalTime).toBeLessThan(1000); // 1 second
-    
+
     // Verify all initialized
-    instruments.forEach(inst => {
+    instruments.forEach((inst) => {
       expect(inst.state.isInitialized).toBe(true);
     });
   });
@@ -422,12 +431,17 @@ describe('Performance', () => {
 ## Debugging Tips
 
 1. **Use Mock Call History**
+
    ```typescript
-   console.log('All createSampler calls:', mockAudioEngine.createSampler.mock.calls);
+   console.log(
+     'All createSampler calls:',
+     mockAudioEngine.createSampler.mock.calls,
+   );
    console.log('First result:', mockAudioEngine.createSampler.mock.results[0]);
    ```
 
 2. **Verify Connection Chain**
+
    ```typescript
    const connections = [];
    mockAudioEngine.createGain.mockImplementation(() => ({
@@ -440,7 +454,7 @@ describe('Performance', () => {
 3. **Track Audio Engine Usage**
    ```typescript
    const usageTracker = new Set();
-   Object.keys(mockAudioEngine).forEach(key => {
+   Object.keys(mockAudioEngine).forEach((key) => {
      const original = mockAudioEngine[key];
      mockAudioEngine[key] = vi.fn((...args) => {
        usageTracker.add(key);
@@ -452,17 +466,21 @@ describe('Performance', () => {
 ## Common Test Failures and Solutions
 
 ### "Cannot read property 'createGain' of undefined"
+
 **Cause**: AudioEngine not properly mocked or passed
 **Solution**: Ensure mockAudioEngine is created and passed to constructor
 
 ### "Tone is not defined"
+
 **Cause**: Direct Tone.js usage without mock
 **Solution**: Use vi.mock('tone') or ensure all usage goes through factories
 
 ### "Maximum call stack exceeded"
+
 **Cause**: Circular mock references
 **Solution**: Use base mockToneNode() function, avoid circular connections
 
 ### "Expected mock function to have been called"
+
 **Cause**: Method not called due to conditional logic
 **Solution**: Verify initialization completed, check state flags

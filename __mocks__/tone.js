@@ -42,7 +42,7 @@ const mockTone = {
   Master: {
     volume: { value: 0 },
   },
-  Gain: vi.fn().mockImplementation(function(value = 1) {
+  Gain: vi.fn().mockImplementation(function (value = 1) {
     const node = createMockToneNode();
     // Tone.js Gain nodes have a gain AudioParam property
     node.gain = {
@@ -51,7 +51,7 @@ const mockTone = {
     };
     return node;
   }),
-  Panner: vi.fn().mockImplementation(function(value = 0) {
+  Panner: vi.fn().mockImplementation(function (value = 0) {
     const node = createMockToneNode();
     // Tone.js Panner nodes have a pan AudioParam property
     node.pan = {
@@ -60,13 +60,13 @@ const mockTone = {
     };
     return node;
   }),
-  Compressor: vi.fn().mockImplementation(function(config) {
+  Compressor: vi.fn().mockImplementation(function (config) {
     return {
       ...createMockToneNode(),
       config,
     };
   }),
-  Limiter: vi.fn().mockImplementation(function(threshold) {
+  Limiter: vi.fn().mockImplementation(function (threshold) {
     return {
       ...createMockToneNode(),
       threshold,
@@ -74,40 +74,40 @@ const mockTone = {
   }),
   Timeline: vi.fn().mockImplementation(() => createMockTimeline()),
   Destination: createMockToneNode(),
-  Reverb: vi.fn().mockImplementation(function(config) {
+  Reverb: vi.fn().mockImplementation(function (config) {
     return {
       ...createMockToneNode(),
       config,
     };
   }),
-  Delay: vi.fn().mockImplementation(function(time, feedback) {
+  Delay: vi.fn().mockImplementation(function (time, feedback) {
     return {
       ...createMockToneNode(),
       time,
       feedback,
     };
   }),
-  FeedbackDelay: vi.fn().mockImplementation(function(time, feedback) {
+  FeedbackDelay: vi.fn().mockImplementation(function (time, feedback) {
     return {
       ...createMockToneNode(),
       time,
       feedback,
     };
   }),
-  Distortion: vi.fn().mockImplementation(function(amount) {
+  Distortion: vi.fn().mockImplementation(function (amount) {
     return {
       ...createMockToneNode(),
       amount,
     };
   }),
-  Filter: vi.fn().mockImplementation(function(frequency, type) {
+  Filter: vi.fn().mockImplementation(function (frequency, type) {
     return {
       ...createMockToneNode(),
       frequency,
       type,
     };
   }),
-  Volume: vi.fn().mockImplementation(function(db = 0) {
+  Volume: vi.fn().mockImplementation(function (db = 0) {
     return {
       ...createMockToneNode(),
       volume: {
@@ -156,5 +156,5 @@ export const {
   Filter,
   Volume,
   Transport,
-  getDestination
+  getDestination,
 } = mockTone;

@@ -123,7 +123,8 @@ export class SustainPedalManager {
 
         // Calculate event time from ABSOLUTE ticks (not relative position)
         // 🚨 CRITICAL FIX: Use original MIDI file BPM, not current transport BPM
-        const originalBpm = (event.data as any)?.originalBpm || Tone.Transport.bpm.value;
+        const originalBpm =
+          (event.data as any)?.originalBpm || Tone.Transport.bpm.value;
         const secondsPerBeat = 60 / originalBpm;
         const ticksPerBeat = 480; // PPQ standard
         const eventTime = (absoluteTicks / ticksPerBeat) * secondsPerBeat;
@@ -131,7 +132,9 @@ export class SustainPedalManager {
         // Apply countdown offset
         const offsetTime =
           this.countdownEnabled && !region.skipCountdownOffset
-            ? this.timeConverter?.parsePosition(`0:${this.countdownOffsetBeats}:0`) || 0
+            ? this.timeConverter?.parsePosition(
+                `0:${this.countdownOffsetBeats}:0`,
+              ) || 0
             : 0;
 
         let absoluteTime = region.startTime + eventTime + offsetTime;
@@ -157,7 +160,7 @@ export class SustainPedalManager {
         if (eventIndex < 5) {
           // eslint-disable-next-line no-console, no-restricted-syntax
           console.log(
-            `[CC64 TIMELINE #${eventIndex}] timelineKey=${timelineKey.toFixed(6)}s (with transportStartTime + sample precision), pedal=${pedalDown ? 'DOWN' : 'UP'}, value=${event.data.value}, absoluteTime=${absoluteTime.toFixed(6)}s, audioTime=${audioTime.toFixed(6)}s`
+            `[CC64 TIMELINE #${eventIndex}] timelineKey=${timelineKey.toFixed(6)}s (with transportStartTime + sample precision), pedal=${pedalDown ? 'DOWN' : 'UP'}, value=${event.data.value}, absoluteTime=${absoluteTime.toFixed(6)}s, audioTime=${audioTime.toFixed(6)}s`,
           );
         }
         eventIndex++;
@@ -197,7 +200,7 @@ export class SustainPedalManager {
     // Enhanced diagnostic with precision info
     // eslint-disable-next-line no-console, no-restricted-syntax
     console.log(
-      `[CC64 CHECK] isPedalDownAtTime(${time.toFixed(6)}s): lastEvent=${lastEventTime.toFixed(6)}s (${eventsFound} events scanned), state=${lastPedalState ? 'DOWN' : 'UP'}, timelineSize=${cc64Timeline.size}, precision=${time === lastEventTime ? 'EXACT' : 'APPROXIMATE'}`
+      `[CC64 CHECK] isPedalDownAtTime(${time.toFixed(6)}s): lastEvent=${lastEventTime.toFixed(6)}s (${eventsFound} events scanned), state=${lastPedalState ? 'DOWN' : 'UP'}, timelineSize=${cc64Timeline.size}, precision=${time === lastEventTime ? 'EXACT' : 'APPROXIMATE'}`,
     );
 
     return lastPedalState;
@@ -211,7 +214,10 @@ export class SustainPedalManager {
    * @param cc64Timeline - Timeline map
    * @returns Audio time of next pedal UP, or null
    */
-  findNextCC64Up(noteStartTime: number, cc64Timeline: Map<number, boolean>): number | null {
+  findNextCC64Up(
+    noteStartTime: number,
+    cc64Timeline: Map<number, boolean>,
+  ): number | null {
     const sortedTimes = Array.from(cc64Timeline.keys()).sort((a, b) => a - b);
 
     for (const time of sortedTimes) {
@@ -233,7 +239,9 @@ export class SustainPedalManager {
   isNoteHeldUntilExerciseEnd(midiNoteEndTime: number): boolean {
     if (this.exerciseEndTime === 0) {
       // eslint-disable-next-line no-console, no-restricted-syntax
-      console.log('[HELD BY HAND CHECK] Exercise end time not set, returning false');
+      console.log(
+        '[HELD BY HAND CHECK] Exercise end time not set, returning false',
+      );
       return false; // Exercise end time not set
     }
 
@@ -243,7 +251,7 @@ export class SustainPedalManager {
 
     // eslint-disable-next-line no-console, no-restricted-syntax
     console.log(
-      `[HELD BY HAND CHECK] midiNoteEnd=${midiNoteEndTime.toFixed(3)}s, exerciseEnd=${this.exerciseEndTime.toFixed(3)}s, diff=${timeDifference.toFixed(3)}s, threshold=${THRESHOLD_MS}s, result=${heldUntilEnd}`
+      `[HELD BY HAND CHECK] midiNoteEnd=${midiNoteEndTime.toFixed(3)}s, exerciseEnd=${this.exerciseEndTime.toFixed(3)}s, diff=${timeDifference.toFixed(3)}s, threshold=${THRESHOLD_MS}s, result=${heldUntilEnd}`,
     );
 
     return heldUntilEnd;
@@ -262,7 +270,7 @@ export class SustainPedalManager {
   findCC64DownDuringNote(
     noteStart: number,
     noteEnd: number,
-    timeline: Map<number, boolean>
+    timeline: Map<number, boolean>,
   ): number | null {
     const sortedTimes = Array.from(timeline.keys()).sort((a, b) => a - b);
 
@@ -291,7 +299,7 @@ export class SustainPedalManager {
         if (timeline.get(eventTime) === true) {
           // eslint-disable-next-line no-console, no-restricted-syntax
           console.log(
-            `[CC64 MID-NOTE] Pedal goes DOWN at ${eventTime.toFixed(3)}s during note playing ${noteStart.toFixed(3)}s-${noteEnd.toFixed(3)}s`
+            `[CC64 MID-NOTE] Pedal goes DOWN at ${eventTime.toFixed(3)}s during note playing ${noteStart.toFixed(3)}s-${noteEnd.toFixed(3)}s`,
           );
           latestPedalDown = eventTime; // Use this pedal DOWN (overrides earlier one)
         }

@@ -85,7 +85,9 @@ export function ScrollTriggerLoader({
           logger.info('✅ All tutorial samples loaded');
         } else {
           // Fallback: Load only essential samples
-          logger.info('[2/3] Loading essential samples (no exercises provided)...');
+          logger.info(
+            '[2/3] Loading essential samples (no exercises provided)...',
+          );
           await preloader.loadEssentialSamples();
           logger.info('✅ Essential samples loaded');
         }

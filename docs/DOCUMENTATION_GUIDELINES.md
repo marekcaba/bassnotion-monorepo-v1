@@ -42,28 +42,33 @@ docs/
 ## 🏗️ Documentation Types & Where They Belong
 
 ### Architecture Documentation
+
 - **Location**: `docs/architecture/`
 - **Examples**: System design, architecture decisions, analysis reports
 - **Naming**: `SYSTEM-COMPONENT-ANALYSIS.md`, `FEATURE-ARCHITECTURE.md`
 
 ### Implementation Summaries
+
 - **Location**: `docs/implementations/`
 - **Purpose**: Document completed features/systems
 - **Naming**: `FEATURE-IMPLEMENTATION-SUMMARY.md`
 - **When**: After implementation is complete and tested
 
 ### Fix Documentation
+
 - **Location**: `docs/archived/fixes/`
 - **Purpose**: Document specific bug fixes
 - **Naming**: `ISSUE-FIX-SUMMARY.md`
 - **Note**: Should be temporary - update main docs instead
 
 ### Developer Guides
+
 - **Location**: `docs/developer-handbook/`
 - **Purpose**: How-to guides, best practices, workflows
 - **Examples**: TROUBLESHOOTING_FLOWCHART.md, CODING_STANDARDS.md
 
 ### Story Documentation
+
 - **Location**: `docs/NEW STORIES/` or `docs/2. Stories/`
 - **Purpose**: Track feature development progress
 - **Naming**: `Story-X.XX-Feature-Name.md`
@@ -74,19 +79,24 @@ docs/
 # Document Title
 
 ## Overview
+
 Brief description of what this document covers.
 
 ## Purpose
+
 Why this document exists and who should read it.
 
 ## Content
+
 Main content organized with clear headings.
 
 ## References
+
 - Link to related docs
 - External resources
 
 ## Last Updated
+
 Date and author
 ```
 

@@ -15,7 +15,9 @@ import type { Timeline } from '../../core/Timeline.js';
 import type { PositionUpdate } from '../../scheduling/types/scheduler.types.js';
 
 // Mock Clock factory
-const createMockClock = (isAudioWorklet = true): Clock & {
+const createMockClock = (
+  isAudioWorklet = true,
+): Clock & {
   triggerTick: (time: number, frame?: number) => void;
   setAudioTimeValue: (time: number) => void;
 } => {
@@ -50,16 +52,17 @@ const createMockClock = (isAudioWorklet = true): Clock & {
 };
 
 // Mock Timeline factory
-const createMockTimeline = (): Timeline => ({
-  updatePositionFromSeconds: vi.fn(),
-  getTransportPosition: vi.fn().mockReturnValue({
-    bars: 0,
-    beats: 0,
-    sixteenths: 0,
-    ticks: 0,
-  }),
-  reset: vi.fn(),
-} as unknown as Timeline);
+const createMockTimeline = (): Timeline =>
+  ({
+    updatePositionFromSeconds: vi.fn(),
+    getTransportPosition: vi.fn().mockReturnValue({
+      bars: 0,
+      beats: 0,
+      sixteenths: 0,
+      ticks: 0,
+    }),
+    reset: vi.fn(),
+  }) as unknown as Timeline;
 
 describe('PositionUpdateScheduler Integration', () => {
   let scheduler: PositionUpdateScheduler;
@@ -242,9 +245,9 @@ describe('PositionUpdateScheduler Integration', () => {
         // 1. In handleTick() for throttle check
         // 2. In emitUpdate() for the timestamp
         // Start at 100ms (past throttle interval from lastEmitTime=0)
-        if (callCount <= 2) return 100;   // First tick - should emit
-        if (callCount <= 4) return 105;   // Second tick - 5ms later, throttled (< 8.33ms)
-        return 108;                        // Third tick - 8ms later, still throttled (< 8.33ms)
+        if (callCount <= 2) return 100; // First tick - should emit
+        if (callCount <= 4) return 105; // Second tick - 5ms later, throttled (< 8.33ms)
+        return 108; // Third tick - 8ms later, still throttled (< 8.33ms)
       });
 
       scheduler.start({ strategy: 'event-driven' });

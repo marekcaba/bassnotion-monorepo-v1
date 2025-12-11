@@ -7,9 +7,9 @@ The tests are passing because they use MOCKED Transport that doesn't actually im
 ```javascript
 // In test/mocks/audioLibraryMocks.ts
 const mockTransport = {
-  scheduleRepeat: vi.fn(),  // <-- Just a mock function that does NOTHING!
+  scheduleRepeat: vi.fn(), // <-- Just a mock function that does NOTHING!
   // ...
-}
+};
 ```
 
 ## Why Tests Pass But Reality Fails
@@ -35,6 +35,7 @@ We see `loopIteration: 0` but never see `1, 2, 3...` - the schedule fires ONCE t
 ## The Real Issue
 
 The disconnect between test mocks and actual Tone.js behavior means:
+
 - We can't trust the tests to catch real Transport issues
 - The actual `Transport.scheduleRepeat` implementation has different behavior than expected
 - Something in the real Tone.js is preventing repeat callbacks after the first execution

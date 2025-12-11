@@ -239,7 +239,9 @@ export class PositionUpdateScheduler implements IPositionUpdateScheduler {
       default:
         // Auto-select: prefer event-driven if configured and AudioWorklet is active
         if (this.config.preferEventDriven && this.clock.isUsingAudioWorklet()) {
-          logger.debug('Auto-selected event-driven strategy (AudioWorklet active)');
+          logger.debug(
+            'Auto-selected event-driven strategy (AudioWorklet active)',
+          );
           return this.eventDrivenStrategy;
         }
         logger.debug('Auto-selected polling strategy');

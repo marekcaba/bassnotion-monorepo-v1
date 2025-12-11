@@ -4,7 +4,7 @@
  * Provides a centralized Tone.js instance to ensure all components use the same
  * Transport and AudioContext. This prevents issues with multiple Tone.js instances
  * where Transport.start() in one instance doesn't affect loops in another.
- * 
+ *
  * Updated to use shared AudioContext from AudioContextManager for DAW-grade audio.
  */
 
@@ -39,20 +39,24 @@ export class ToneProvider {
         // Initialize AudioContextManager first
         await audioContextManager.initialize();
         const sharedContext = audioContextManager.getContext();
-        
+
         // Dynamic import to avoid SSR issues
         const Tone = await import('tone');
-        
+
         // Set Tone.js to use the shared AudioContext
         Tone.setContext(sharedContext);
-        
+
         toneInstance = Tone;
 
-        logInfo('🎵 ToneProvider', 'Tone.js initialized with shared AudioContext', {
-          sampleRate: sharedContext.sampleRate,
-          latency: sharedContext.baseLatency,
-          state: sharedContext.state,
-        });
+        logInfo(
+          '🎵 ToneProvider',
+          'Tone.js initialized with shared AudioContext',
+          {
+            sampleRate: sharedContext.sampleRate,
+            latency: sharedContext.baseLatency,
+            state: sharedContext.state,
+          },
+        );
         logDebug('🎵 ToneProvider', 'Transport instance:', Tone.getTransport());
 
         return Tone;

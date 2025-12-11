@@ -5,6 +5,7 @@ This document provides real-world examples of the DI pattern implementation in t
 ## Example 1: BassInstrument
 
 ### Implementation
+
 ```typescript
 // BassInstrument.ts
 export class BassInstrument extends Instrument<BassInstrumentConfig> {
@@ -21,7 +22,7 @@ export class BassInstrument extends Instrument<BassInstrumentConfig> {
     if (audioEngine) {
       this.audioEngine = audioEngine;
     }
-    
+
     await this.processor.initialize(bassSamples, this.audioEngine);
     this._state.isInitialized = true;
   }
@@ -56,7 +57,9 @@ export class BassInstrumentProcessor {
   }
 
   private createSampler(options: any): any {
-    return this.audioEngine?.createSampler?.(options) || new Tone.Sampler(options);
+    return (
+      this.audioEngine?.createSampler?.(options) || new Tone.Sampler(options)
+    );
   }
 
   private createVolume(db: number): any {
@@ -66,6 +69,7 @@ export class BassInstrumentProcessor {
 ```
 
 ### Testing
+
 ```typescript
 describe('BassInstrument', () => {
   let bassInstrument: BassInstrument;
@@ -78,7 +82,7 @@ describe('BassInstrument', () => {
 
   it('should pass audioEngine to processor', async () => {
     await bassInstrument.initialize();
-    
+
     const processor = (bassInstrument as any).processor;
     expect(processor.audioEngine).toBe(mockAudioEngine);
     expect(mockAudioEngine.createSampler).toHaveBeenCalled();
@@ -90,6 +94,7 @@ describe('BassInstrument', () => {
 ## Example 2: Channel (Mixing Component)
 
 ### Implementation
+
 ```typescript
 export class Channel {
   private audioEngine?: any;
@@ -100,15 +105,15 @@ export class Channel {
 
   constructor(config: ChannelConfig) {
     this.audioEngine = config.audioEngine;
-    
+
     // Create all audio nodes using factory methods
     this.input = this.createGain(1);
     this.gainNode = this.createGain(config.initialState?.volume ?? 0.75);
     this.pannerNode = this.createPanner(config.initialState?.pan ?? 0);
-    
+
     // Create EQ section
     this.eq = this.createEQ();
-    
+
     // Build signal chain
     this.buildSignalChain();
   }
@@ -146,12 +151,15 @@ export class Channel {
   }
 
   private createFilter(options?: any): any {
-    return this.audioEngine?.createFilter?.(options) || new Tone.Filter(options);
+    return (
+      this.audioEngine?.createFilter?.(options) || new Tone.Filter(options)
+    );
   }
 }
 ```
 
 ### Testing
+
 ```typescript
 describe('Channel', () => {
   it('should create channel with DI', () => {
@@ -173,6 +181,7 @@ describe('Channel', () => {
 ## Example 3: Velocity Sampler
 
 ### Implementation
+
 ```typescript
 export class SalamanderVelocitySampler {
   private audioEngine?: any;
@@ -196,7 +205,7 @@ export class SalamanderVelocitySampler {
 
   private async createVelocityLayer(velocity: number): Promise<any> {
     const urls = this.getUrlsForVelocity(velocity);
-    
+
     const sampler = this.createSampler({
       urls,
       release: 1,
@@ -204,7 +213,7 @@ export class SalamanderVelocitySampler {
     });
 
     const volume = this.createVolume(this.velocityToDb(velocity));
-    
+
     sampler.connect(volume);
     volume.connect(this.getDestination());
 
@@ -215,11 +224,11 @@ export class SalamanderVelocitySampler {
     if (this.audioEngine?.createSampler) {
       return this.audioEngine.createSampler(options);
     }
-    
+
     if (!Tone) {
       throw new Error('Tone.js not loaded and no audioEngine provided');
     }
-    
+
     return new Tone.Sampler(options);
   }
 }
@@ -228,6 +237,7 @@ export class SalamanderVelocitySampler {
 ## Example 4: AudioEventRouter Integration
 
 ### Implementation
+
 ```typescript
 export class AudioEventRouter {
   private audioEngine?: any;
@@ -235,8 +245,8 @@ export class AudioEventRouter {
 
   async initialize(context?: AudioContext): Promise<void> {
     // Get AudioEngine from CoreServices
-    const globalServices = (window as any).__coreServices || 
-                         (window as any).__globalCoreServices;
+    const globalServices =
+      (window as any).__coreServices || (window as any).__globalCoreServices;
     if (globalServices?.getAudioEngine) {
       this.audioEngine = globalServices.getAudioEngine();
     }
@@ -249,7 +259,7 @@ export class AudioEventRouter {
     // Create metronome with DI
     const metronome = new Metronome(
       { type: 'metronome', name: 'Metronome' },
-      this.audioEngine
+      this.audioEngine,
     );
     await metronome.initialize(this.audioEngine);
     this.instruments.set('metronome', metronome);
@@ -257,7 +267,7 @@ export class AudioEventRouter {
     // Create drums with DI
     const drums = new DrumKit(
       { id: 'drums', type: 'drums', name: 'Drum Kit' },
-      this.audioEngine
+      this.audioEngine,
     );
     await drums.initialize(this.audioEngine);
     this.instruments.set('drums', drums);
@@ -265,7 +275,7 @@ export class AudioEventRouter {
     // Create bass with DI
     const bass = new BassInstrument(
       { id: 'bass', type: 'bass', name: 'Bass' },
-      this.audioEngine
+      this.audioEngine,
     );
     await bass.initialize(this.audioEngine);
     this.instruments.set('bass', bass);
@@ -273,7 +283,7 @@ export class AudioEventRouter {
     // Create harmony with DI
     const harmony = new HarmonyInstrument(
       { id: 'harmony', type: 'harmony', name: 'Harmony' },
-      this.audioEngine
+      this.audioEngine,
     );
     await harmony.initialize(context, this.audioEngine);
     this.instruments.set('harmony', harmony);
@@ -284,6 +294,7 @@ export class AudioEventRouter {
 ## Example 5: Test Setup Utilities
 
 ### mockAudioEngine.ts
+
 ```typescript
 export const createMockAudioEngine = () => {
   const mockNode = () => ({
@@ -296,41 +307,41 @@ export const createMockAudioEngine = () => {
   return {
     isReady: vi.fn(() => true),
     getTone: vi.fn(() => mockTone),
-    
+
     // Node creation
     createGain: vi.fn((gain) => ({
       ...mockNode(),
       gain: { value: gain ?? 1, rampTo: vi.fn() },
     })),
-    
+
     createSampler: vi.fn((options) => ({
       ...mockNode(),
       triggerAttackRelease: vi.fn(),
       loaded: true,
     })),
-    
+
     createVolume: vi.fn((db) => ({
       ...mockNode(),
       volume: { value: db ?? 0 },
     })),
-    
+
     createPanner: vi.fn((pan) => ({
       ...mockNode(),
       pan: { value: pan ?? 0, rampTo: vi.fn() },
     })),
-    
+
     // Effects
     createReverb: vi.fn(() => ({
       ...mockNode(),
       wet: { value: 0.5 },
     })),
-    
+
     createDelay: vi.fn(() => ({
       ...mockNode(),
       delayTime: { value: 0.25 },
       feedback: { value: 0.5 },
     })),
-    
+
     // Utilities
     getDestination: vi.fn(() => ({ connect: vi.fn() })),
     now: vi.fn(() => 0),
@@ -339,6 +350,7 @@ export const createMockAudioEngine = () => {
 ```
 
 ### setupDI.ts
+
 ```typescript
 export const setupDIMocks = (audioEngine = createMockAudioEngine()) => {
   const mockCoreServices = {
@@ -363,6 +375,7 @@ export const cleanupDIMocks = () => {
 ```
 
 ### Usage in Tests
+
 ```typescript
 describe('MyInstrument Integration', () => {
   let audioEngine: any;
@@ -403,6 +416,7 @@ describe('MyInstrument Integration', () => {
 ## Example 6: Complex Processor Pattern
 
 ### HarmonyProcessor with WAM Integration
+
 ```typescript
 export class WamHarmonyProcessor {
   private audioEngine?: any;
@@ -449,18 +463,19 @@ export class WamHarmonyProcessor {
     const instrument = this.samplers.get(this.currentInstrument);
     if (!instrument) return;
 
-    params.notes.forEach(note => {
+    params.notes.forEach((note) => {
       instrument.sampler.triggerAttackRelease(
         note,
         params.duration,
         params.time,
-        params.velocity
+        params.velocity,
       );
     });
   }
 
   private async loadTone(): Promise<any> {
-    const { loadGlobalTone } = await import('../../services/plugins/toneLoader.js');
+    const { loadGlobalTone } =
+      await import('../../services/plugins/toneLoader.js');
     return loadGlobalTone(this.audioEngine);
   }
 
@@ -482,30 +497,33 @@ export class WamHarmonyProcessor {
 ## Common Pitfalls
 
 1. **Forgetting to pass audioEngine to child components**
+
    ```typescript
    // ❌ Bad
    this.processor = new Processor(config);
-   
+
    // ✅ Good
    this.processor = new Processor(config, this.audioEngine);
    ```
 
 2. **Not checking for audioEngine methods**
+
    ```typescript
    // ❌ Bad
    return this.audioEngine.createGain(gain);
-   
+
    // ✅ Good
    return this.audioEngine?.createGain?.(gain) || new Tone.Gain(gain);
    ```
 
 3. **Creating audio nodes in constructor**
+
    ```typescript
    // ❌ Bad - Tone might not be loaded
    constructor(config: Config, audioEngine?: any) {
      this.sampler = this.createSampler(config.samples);
    }
-   
+
    // ✅ Good - Create in initialize
    async initialize(audioEngine?: any): Promise<void> {
      this.sampler = this.createSampler(config.samples);

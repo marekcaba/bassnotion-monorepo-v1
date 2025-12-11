@@ -6,7 +6,11 @@ export default {
     extend: {
       // Custom font families
       fontFamily: {
-        'mono-display': ['var(--font-courier-prime)', 'ui-monospace', 'monospace'],
+        'mono-display': [
+          'var(--font-courier-prime)',
+          'ui-monospace',
+          'monospace',
+        ],
       },
       // Enhanced breakpoint system for better responsive design
       screens: {

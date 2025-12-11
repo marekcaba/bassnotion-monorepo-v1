@@ -27,7 +27,7 @@ describe('ExerciseRepository Batch Operations', () => {
     };
 
     mockSupabaseClient = createChainableMock();
-    
+
     const mockRequestContextService = {
       getLogger: vi.fn().mockReturnValue({
         info: vi.fn(),
@@ -37,8 +37,11 @@ describe('ExerciseRepository Batch Operations', () => {
       }),
       getCorrelationId: vi.fn().mockReturnValue('test-correlation-id'),
     };
-    
-    repository = new ExerciseRepository(mockSupabaseClient, mockRequestContextService as any);
+
+    repository = new ExerciseRepository(
+      mockSupabaseClient,
+      mockRequestContextService as any,
+    );
   });
 
   describe('saveMany', () => {

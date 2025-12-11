@@ -78,7 +78,11 @@ describe('RegionScheduler', () => {
             pattern: {
               events: [
                 { position: '0:0:0', type: 'harmony-note', data: { ticks: 0 } },
-                { position: '0:1:0', type: 'harmony-note', data: { ticks: 240 } },
+                {
+                  position: '0:1:0',
+                  type: 'harmony-note',
+                  data: { ticks: 240 },
+                },
               ],
             },
           },
@@ -158,7 +162,11 @@ describe('RegionScheduler', () => {
       );
 
       expect(result.totalEvents).toBe(2);
-      expect(mockEmitEvent).toHaveBeenCalledWith('drums', expect.any(Object), 0);
+      expect(mockEmitEvent).toHaveBeenCalledWith(
+        'drums',
+        expect.any(Object),
+        0,
+      );
       expect(mockEmitEvent).toHaveBeenCalledWith(
         'harmony',
         expect.any(Object),

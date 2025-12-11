@@ -5,7 +5,7 @@ export const homeMetadata: Metadata = {
   description:
     'Learn bass guitar with AI-powered tools and interactive exercises.',
   openGraph: {
-    title: 'BassNotion - Your Bass Learning Platform',
+    title: 'Bassicology - Your Bass Learning Platform',
     description:
       'Learn bass guitar with AI-powered tools and interactive exercises.',
     type: 'website',

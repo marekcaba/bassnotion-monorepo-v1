@@ -28,7 +28,10 @@ import { supabase } from '@/infrastructure/supabase/client';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { MidiConversionWizard } from './MidiConversionWizard';
 import { DrumPatternEditor } from './DrumPatternEditor';
-import type { GeneratedExerciseNote, ConfidenceLevel } from '../hooks/useMidiConversion';
+import type {
+  GeneratedExerciseNote,
+  ConfidenceLevel,
+} from '../hooks/useMidiConversion';
 import type {
   DrumHit,
   DrumPatternStats,
@@ -95,8 +98,10 @@ export function ExerciseFormModal({
 
   // Drum pattern state (similar to bass notes)
   const [drumPattern, setDrumPattern] = useState<DrumHit[]>([]);
-  const [drumPatternStats, setDrumPatternStats] = useState<DrumPatternStats | null>(null);
-  const [drumPatternValidation, setDrumPatternValidation] = useState<DrumPatternValidation | null>(null);
+  const [drumPatternStats, setDrumPatternStats] =
+    useState<DrumPatternStats | null>(null);
+  const [drumPatternValidation, setDrumPatternValidation] =
+    useState<DrumPatternValidation | null>(null);
   const [showDrumEditor, setShowDrumEditor] = useState(false);
   const [isConvertingDrums, setIsConvertingDrums] = useState(false);
 
@@ -149,21 +154,30 @@ export function ExerciseFormModal({
 
       // Load existing harmony notes if they exist
       if (exercise.harmonyNotes && exercise.harmonyNotes.length > 0) {
-        console.log('[ExerciseFormModal] Loading existing harmony notes for editing', {
-          noteCount: exercise.harmonyNotes.length,
-          exerciseId: exercise.id.value,
-        });
+        console.log(
+          '[ExerciseFormModal] Loading existing harmony notes for editing',
+          {
+            noteCount: exercise.harmonyNotes.length,
+            exerciseId: exercise.id.value,
+          },
+        );
         setHarmonyNotes(exercise.harmonyNotes);
       } else {
         setHarmonyNotes([]);
       }
 
       // Load existing harmony control changes if they exist
-      if (exercise.harmonyControlChanges && exercise.harmonyControlChanges.length > 0) {
-        console.log('[ExerciseFormModal] Loading existing harmony control changes for editing', {
-          controlChangeCount: exercise.harmonyControlChanges.length,
-          exerciseId: exercise.id.value,
-        });
+      if (
+        exercise.harmonyControlChanges &&
+        exercise.harmonyControlChanges.length > 0
+      ) {
+        console.log(
+          '[ExerciseFormModal] Loading existing harmony control changes for editing',
+          {
+            controlChangeCount: exercise.harmonyControlChanges.length,
+            exerciseId: exercise.id.value,
+          },
+        );
         setHarmonyControlChanges(exercise.harmonyControlChanges);
       } else {
         setHarmonyControlChanges([]);
@@ -171,10 +185,13 @@ export function ExerciseFormModal({
 
       // Load existing drum pattern if it exists
       if (exercise.drumPattern && exercise.drumPattern.length > 0) {
-        console.log('[ExerciseFormModal] Loading existing drum pattern for editing', {
-          hitCount: exercise.drumPattern.length,
-          exerciseId: exercise.id.value,
-        });
+        console.log(
+          '[ExerciseFormModal] Loading existing drum pattern for editing',
+          {
+            hitCount: exercise.drumPattern.length,
+            exerciseId: exercise.id.value,
+          },
+        );
         setDrumPattern(exercise.drumPattern);
       } else {
         setDrumPattern([]);
@@ -209,15 +226,21 @@ export function ExerciseFormModal({
   useEffect(() => {
     // Calculate duration based on measures, beats, BPM, and time signature
     const beatsPerMeasure = formData.timeSignatureNumerator;
-    const totalBeats = (formData.durationMeasures * beatsPerMeasure) + formData.durationBeats;
+    const totalBeats =
+      formData.durationMeasures * beatsPerMeasure + formData.durationBeats;
     const secondsPerBeat = 60 / formData.bpm; // Convert BPM to seconds per beat
     const calculatedDuration = Math.round(totalBeats * secondsPerBeat);
 
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      duration: calculatedDuration
+      duration: calculatedDuration,
     }));
-  }, [formData.durationMeasures, formData.durationBeats, formData.bpm, formData.timeSignatureNumerator]);
+  }, [
+    formData.durationMeasures,
+    formData.durationBeats,
+    formData.bpm,
+    formData.timeSignatureNumerator,
+  ]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -242,10 +265,13 @@ export function ExerciseFormModal({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleMidiFileChange = async (type: 'drummer' | 'bassline' | 'harmony' | 'metronome', file: File | null) => {
+  const handleMidiFileChange = async (
+    type: 'drummer' | 'bassline' | 'harmony' | 'metronome',
+    file: File | null,
+  ) => {
     if (!file) {
       // Remove the file
-      setMidiFiles(prev => {
+      setMidiFiles((prev) => {
         const updated = { ...prev };
         delete updated[type];
         return updated;
@@ -255,37 +281,45 @@ export function ExerciseFormModal({
 
     // Validate file type
     if (!file.type.includes('midi') && !file.name.endsWith('.mid')) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [type]: 'Please select a valid MIDI file (.mid)'
+        [type]: 'Please select a valid MIDI file (.mid)',
       }));
       return;
     }
 
     // Clear any previous error for this type
-    setErrors(prev => {
+    setErrors((prev) => {
       const updated = { ...prev };
       delete updated[type];
       return updated;
     });
 
-    setMidiFiles(prev => ({ ...prev, [type]: file }));
+    setMidiFiles((prev) => ({ ...prev, [type]: file }));
 
     // Story 4.4 - Task 4.1: Upload to temp storage immediately (don't wait for save)
     // This enables the seamless "upload → convert → save" workflow
     await uploadMidiFile(type, file);
   };
 
-  const uploadMidiFile = async (type: 'drummer' | 'bassline' | 'harmony' | 'metronome', file: File): Promise<string | null> => {
+  const uploadMidiFile = async (
+    type: 'drummer' | 'bassline' | 'harmony' | 'metronome',
+    file: File,
+  ): Promise<string | null> => {
     try {
       setUploadingMidi(type);
-      logger.info(`Uploading ${type} MIDI file to temporary storage (Story 4.4 - Task 4.1)`, {
-        fileName: file.name,
-        correlationId
-      });
+      logger.info(
+        `Uploading ${type} MIDI file to temporary storage (Story 4.4 - Task 4.1)`,
+        {
+          fileName: file.name,
+          correlationId,
+        },
+      );
 
       // Get auth session for backend API call
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session?.access_token) {
         throw new Error('You must be logged in to upload MIDI files');
       }
@@ -301,31 +335,38 @@ export function ExerciseFormModal({
           method: 'POST',
           body: formData,
           headers: {
-            'Authorization': `Bearer ${session.access_token}`,
+            Authorization: `Bearer ${session.access_token}`,
             'X-Correlation-ID': correlationId,
           },
           credentials: 'include',
-        }
+        },
       );
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Upload failed' }));
-        throw new Error(errorData.message || `Upload failed with status ${response.status}`);
+        const errorData = await response
+          .json()
+          .catch(() => ({ message: 'Upload failed' }));
+        throw new Error(
+          errorData.message || `Upload failed with status ${response.status}`,
+        );
       }
 
       const { temporaryUrl, tempPath } = await response.json();
 
       // Store temp path for later migration to permanent storage (Task 3)
-      setTempMidiPaths(prev => ({ ...prev, [type]: tempPath }));
+      setTempMidiPaths((prev) => ({ ...prev, [type]: tempPath }));
 
       // Store temporary URL for immediate MIDI parsing (Task 4.2)
-      setMidiUrls(prev => ({ ...prev, [`${type}MidiUrl`]: temporaryUrl }));
+      setMidiUrls((prev) => ({ ...prev, [`${type}MidiUrl`]: temporaryUrl }));
 
-      logger.info(`Successfully uploaded ${type} MIDI file to temporary storage`, {
-        tempPath,
-        temporaryUrl,
-        correlationId
-      });
+      logger.info(
+        `Successfully uploaded ${type} MIDI file to temporary storage`,
+        {
+          tempPath,
+          temporaryUrl,
+          correlationId,
+        },
+      );
 
       // Auto-trigger drum conversion for drummer MIDI
       if (type === 'drummer' && temporaryUrl) {
@@ -340,10 +381,14 @@ export function ExerciseFormModal({
       return temporaryUrl;
     } catch (error) {
       console.error(`Temporary MIDI upload error for ${type}:`, error);
-      logger.error(`Error uploading ${type} MIDI file to temporary storage`, error as Error, { correlationId });
-      setErrors(prev => ({
+      logger.error(
+        `Error uploading ${type} MIDI file to temporary storage`,
+        error as Error,
+        { correlationId },
+      );
+      setErrors((prev) => ({
         ...prev,
-        [type]: `Failed to upload ${type} MIDI file`
+        [type]: `Failed to upload ${type} MIDI file`,
       }));
       return null;
     } finally {
@@ -360,11 +405,13 @@ export function ExerciseFormModal({
       setIsConvertingDrums(true);
       logger.info('Converting drummer MIDI to drum pattern', {
         drummerMidiUrl,
-        correlationId
+        correlationId,
       });
 
       // Get auth session for backend API call
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session?.access_token) {
         throw new Error('You must be logged in');
       }
@@ -376,7 +423,7 @@ export function ExerciseFormModal({
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
+            Authorization: `Bearer ${session.access_token}`,
             'X-Correlation-ID': correlationId,
           },
           credentials: 'include',
@@ -384,11 +431,13 @@ export function ExerciseFormModal({
             exerciseId: exercise?.id || 'new',
             drummerMidiUrl,
           }),
-        }
+        },
       );
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Conversion failed' }));
+        const errorData = await response
+          .json()
+          .catch(() => ({ message: 'Conversion failed' }));
         throw new Error(errorData.message || 'Failed to convert drum MIDI');
       }
 
@@ -397,7 +446,7 @@ export function ExerciseFormModal({
       logger.info('Drummer MIDI converted successfully', {
         totalHits: result.stats.totalHits,
         unknownCount: result.stats.unknownCount,
-        correlationId
+        correlationId,
       });
 
       // Store converted drum pattern
@@ -415,13 +464,14 @@ export function ExerciseFormModal({
 
       // Show editor for review
       setShowDrumEditor(true);
-
     } catch (error) {
       console.error('Drum conversion error:', error);
-      logger.error('Failed to convert drummer MIDI', error as Error, { correlationId });
-      setErrors(prev => ({
+      logger.error('Failed to convert drummer MIDI', error as Error, {
+        correlationId,
+      });
+      setErrors((prev) => ({
         ...prev,
-        drummer: `Failed to convert drum MIDI: ${(error as Error).message}`
+        drummer: `Failed to convert drum MIDI: ${(error as Error).message}`,
       }));
     } finally {
       setIsConvertingDrums(false);
@@ -438,11 +488,13 @@ export function ExerciseFormModal({
       logger.info('Converting harmony MIDI to harmony notes', {
         harmonyMidiUrl,
         harmonyInstrument: formData.harmonyInstrument,
-        correlationId
+        correlationId,
       });
 
       // Get auth session for backend API call
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session?.access_token) {
         throw new Error('You must be logged in');
       }
@@ -454,7 +506,7 @@ export function ExerciseFormModal({
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
+            Authorization: `Bearer ${session.access_token}`,
             'X-Correlation-ID': correlationId,
           },
           credentials: 'include',
@@ -467,11 +519,13 @@ export function ExerciseFormModal({
             },
             totalBars: formData.durationMeasures,
           }),
-        }
+        },
       );
 
       if (!parseResponse.ok) {
-        const errorData = await parseResponse.json().catch(() => ({ message: 'Parse failed' }));
+        const errorData = await parseResponse
+          .json()
+          .catch(() => ({ message: 'Parse failed' }));
         throw new Error(errorData.message || 'Failed to parse harmony MIDI');
       }
 
@@ -486,12 +540,12 @@ export function ExerciseFormModal({
           measure: i + 1,
           noteCount: m.notes?.length || 0,
         })),
-        correlationId
+        correlationId,
       });
 
       logger.info('Harmony MIDI parsed successfully', {
         measureCount: parseResult.measures.length,
-        correlationId
+        correlationId,
       });
 
       // Step 2: Convert parsed measures to harmony notes
@@ -501,7 +555,7 @@ export function ExerciseFormModal({
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
+            Authorization: `Bearer ${session.access_token}`,
             'X-Correlation-ID': correlationId,
           },
           credentials: 'include',
@@ -510,11 +564,13 @@ export function ExerciseFormModal({
             instrumentType: formData.harmonyInstrument,
             controlChanges: parseResult.controlChanges, // Include control changes from parser
           }),
-        }
+        },
       );
 
       if (!convertResponse.ok) {
-        const errorData = await convertResponse.json().catch(() => ({ message: 'Conversion failed' }));
+        const errorData = await convertResponse
+          .json()
+          .catch(() => ({ message: 'Conversion failed' }));
         throw new Error(errorData.message || 'Failed to convert harmony MIDI');
       }
 
@@ -525,7 +581,7 @@ export function ExerciseFormModal({
         uniquePitches: result.analysis.uniquePitches.length,
         velocityLayers: result.analysis.requiredVelocityLayers.length,
         isPolyphonic: result.analysis.isPolyphonic,
-        correlationId
+        correlationId,
       });
 
       // Store converted harmony notes and control changes
@@ -540,13 +596,14 @@ export function ExerciseFormModal({
         analysis: result.analysis,
         correlationId,
       });
-
     } catch (error) {
       console.error('Harmony conversion error:', error);
-      logger.error('Failed to convert harmony MIDI', error as Error, { correlationId });
-      setErrors(prev => ({
+      logger.error('Failed to convert harmony MIDI', error as Error, {
+        correlationId,
+      });
+      setErrors((prev) => ({
         ...prev,
-        harmony: `Failed to convert harmony MIDI: ${(error as Error).message}`
+        harmony: `Failed to convert harmony MIDI: ${(error as Error).message}`,
       }));
     } finally {
       setIsConvertingHarmony(false);
@@ -557,9 +614,9 @@ export function ExerciseFormModal({
     // Story 4.4 - Task 4.4: No longer requires exercise to be saved!
     // Just check if bassline MIDI is uploaded (either in temp or permanent storage)
     if (!midiFiles.bassline && !midiUrls.basslineMidiUrl) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        bassline: 'Please upload a bassline MIDI file first'
+        bassline: 'Please upload a bassline MIDI file first',
       }));
       return;
     }
@@ -568,17 +625,21 @@ export function ExerciseFormModal({
   };
 
   const handleWizardComplete = (notes: GeneratedExerciseNote[]) => {
-    console.log('[ExerciseForm] Wizard complete - saving', notes.length, 'notes');
+    console.log(
+      '[ExerciseForm] Wizard complete - saving',
+      notes.length,
+      'notes',
+    );
 
     // Convert GeneratedExerciseNote[] to ExerciseNote[] format
     // Preserve musical timing data (position, noteDuration, durationTicks)
-    const exerciseNotes = notes.map(note => ({
+    const exerciseNotes = notes.map((note) => ({
       id: note.id,
       string: note.string,
       fret: note.fret,
       note: note.note,
       color: '#3b82f6',
-      techniques: note.warnings?.map(w => w.type) || [],
+      techniques: note.warnings?.map((w) => w.type) || [],
 
       // Musical timing (480 PPQ standard)
       position: note.position,
@@ -592,7 +653,7 @@ export function ExerciseFormModal({
     logger.info('MIDI conversion completed', {
       noteCount: exerciseNotes.length,
       hasMusicalTiming: exerciseNotes[0]?.position !== undefined,
-      correlationId
+      correlationId,
     });
   };
 
@@ -645,8 +706,10 @@ export function ExerciseFormModal({
       drum_pattern: drumPattern, // ALSO keep snake_case for direct API submission
       harmonyNotes: harmonyNotes.length > 0 ? harmonyNotes : [], // Harmony notes from MIDI conversion
       harmony_notes: harmonyNotes.length > 0 ? harmonyNotes : [], // Also keep snake_case for direct API submission
-      harmonyControlChanges: harmonyControlChanges.length > 0 ? harmonyControlChanges : [], // Control changes (sustain pedal, etc.)
-      harmony_control_changes: harmonyControlChanges.length > 0 ? harmonyControlChanges : [], // Also keep snake_case for direct API submission
+      harmonyControlChanges:
+        harmonyControlChanges.length > 0 ? harmonyControlChanges : [], // Control changes (sustain pedal, etc.)
+      harmony_control_changes:
+        harmonyControlChanges.length > 0 ? harmonyControlChanges : [], // Also keep snake_case for direct API submission
       harmonyInstrument: formData.harmonyInstrument, // Harmony instrument type
       harmony_instrument: formData.harmonyInstrument, // Also keep snake_case for direct API submission
       tags: [],
@@ -661,25 +724,28 @@ export function ExerciseFormModal({
       temp_metronome_midi_path: tempMidiPaths.metronome,
     };
 
-    logger.info('Exercise form submitting with temp MIDI paths (Story 4.4 - Task 4.1)', {
-      title: exerciseData.title,
-      bpm: exerciseData.bpm,
-      hasTempBassline: !!tempMidiPaths.bassline,
-      hasTempDrummer: !!tempMidiPaths.drummer,
-      hasTempHarmony: !!tempMidiPaths.harmony,
-      hasTempMetronome: !!tempMidiPaths.metronome,
-      hasGeneratedNotes: generatedNotes.length > 0,
-      // DIAGNOSTIC: Check drum pattern data
-      hasDrumPattern: drumPattern.length > 0,
-      drumPatternHits: drumPattern.length,
-      drumPatternSample: drumPattern[0],
-      // DIAGNOSTIC: Check harmony data
-      hasHarmonyNotes: harmonyNotes.length > 0,
-      harmonyNotesCount: harmonyNotes.length,
-      harmonyControlChangesCount: harmonyControlChanges.length,
-      harmonyInstrument: formData.harmonyInstrument,
-      harmonyAnalysis: harmonyAnalysis,
-    });
+    logger.info(
+      'Exercise form submitting with temp MIDI paths (Story 4.4 - Task 4.1)',
+      {
+        title: exerciseData.title,
+        bpm: exerciseData.bpm,
+        hasTempBassline: !!tempMidiPaths.bassline,
+        hasTempDrummer: !!tempMidiPaths.drummer,
+        hasTempHarmony: !!tempMidiPaths.harmony,
+        hasTempMetronome: !!tempMidiPaths.metronome,
+        hasGeneratedNotes: generatedNotes.length > 0,
+        // DIAGNOSTIC: Check drum pattern data
+        hasDrumPattern: drumPattern.length > 0,
+        drumPatternHits: drumPattern.length,
+        drumPatternSample: drumPattern[0],
+        // DIAGNOSTIC: Check harmony data
+        hasHarmonyNotes: harmonyNotes.length > 0,
+        harmonyNotesCount: harmonyNotes.length,
+        harmonyControlChangesCount: harmonyControlChanges.length,
+        harmonyInstrument: formData.harmonyInstrument,
+        harmonyAnalysis: harmonyAnalysis,
+      },
+    );
 
     onSave(exerciseData);
     onClose();
@@ -736,16 +802,14 @@ export function ExerciseFormModal({
         bassType={formData.bassType}
         existingNotes={existingNotesForWizard}
       />,
-      document.body
+      document.body,
     );
   }
 
   // Otherwise render the form Dialog
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent
-        className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto border-gray-200 shadow-2xl z-[60] bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-100"
-      >
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto border-gray-200 shadow-2xl z-[60] bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-100">
         <DialogHeader className="pb-4 border-b">
           <DialogTitle>
             {exercise ? 'Edit Exercise' : 'Create New Exercise'}
@@ -791,7 +855,9 @@ export function ExerciseFormModal({
                 min={40}
                 max={200}
                 value={formData.bpm}
-                onChange={(e) => handleFieldChange('bpm', parseInt(e.target.value) || 120)}
+                onChange={(e) =>
+                  handleFieldChange('bpm', parseInt(e.target.value) || 120)
+                }
                 className={errors.bpm ? 'border-red-500' : ''}
               />
               {errors.bpm && (
@@ -803,7 +869,9 @@ export function ExerciseFormModal({
               <Label htmlFor="difficulty">Difficulty *</Label>
               <Select
                 value={formData.difficulty}
-                onValueChange={(value) => handleFieldChange('difficulty', value)}
+                onValueChange={(value) =>
+                  handleFieldChange('difficulty', value)
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -820,7 +888,9 @@ export function ExerciseFormModal({
               <Label htmlFor="bassType">Bass Type *</Label>
               <Select
                 value={formData.bassType}
-                onValueChange={(value: '4' | '5' | '6') => handleFieldChange('bassType', value)}
+                onValueChange={(value: '4' | '5' | '6') =>
+                  handleFieldChange('bassType', value)
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -832,7 +902,8 @@ export function ExerciseFormModal({
                 </SelectContent>
               </Select>
               <p className="text-xs text-gray-500">
-                Select the bass type for this exercise. This determines the valid note range for MIDI conversion.
+                Select the bass type for this exercise. This determines the
+                valid note range for MIDI conversion.
               </p>
             </div>
 
@@ -840,25 +911,38 @@ export function ExerciseFormModal({
               <Label htmlFor="harmonyInstrument">
                 <span className="flex items-center gap-2">
                   Step 1: Select Harmony Instrument *
-                  <span className="text-xs font-normal text-blue-600 bg-blue-50 px-2 py-0.5 rounded">1 of 2</span>
+                  <span className="text-xs font-normal text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                    1 of 2
+                  </span>
                 </span>
               </Label>
               <Select
                 value={formData.harmonyInstrument}
-                onValueChange={(value: '' | 'grandpiano' | 'rhodes' | 'wurlitzer' | 'pad') => handleFieldChange('harmonyInstrument', value)}
+                onValueChange={(
+                  value: '' | 'grandpiano' | 'rhodes' | 'wurlitzer' | 'pad',
+                ) => handleFieldChange('harmonyInstrument', value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Choose harmony instrument first..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="grandpiano">Grand Piano (7 velocity layers)</SelectItem>
-                  <SelectItem value="rhodes">Rhodes Electric Piano (4 velocity layers)</SelectItem>
-                  <SelectItem value="wurlitzer">Wurlitzer (5 velocity layers)</SelectItem>
-                  <SelectItem value="pad">Synth Pad (4 velocity layers)</SelectItem>
+                  <SelectItem value="grandpiano">
+                    Grand Piano (7 velocity layers)
+                  </SelectItem>
+                  <SelectItem value="rhodes">
+                    Rhodes Electric Piano (4 velocity layers)
+                  </SelectItem>
+                  <SelectItem value="wurlitzer">
+                    Wurlitzer (5 velocity layers)
+                  </SelectItem>
+                  <SelectItem value="pad">
+                    Synth Pad (4 velocity layers)
+                  </SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-gray-500">
-                Choose the instrument type before uploading MIDI. This determines velocity layer optimization for sample preloading.
+                Choose the instrument type before uploading MIDI. This
+                determines velocity layer optimization for sample preloading.
               </p>
             </div>
           </div>
@@ -872,12 +956,17 @@ export function ExerciseFormModal({
                 min={1}
                 value={formData.durationMeasures}
                 onChange={(e) =>
-                  handleFieldChange('durationMeasures', parseInt(e.target.value) || 4)
+                  handleFieldChange(
+                    'durationMeasures',
+                    parseInt(e.target.value) || 4,
+                  )
                 }
                 className={errors.durationMeasures ? 'border-red-500' : ''}
               />
               {errors.durationMeasures && (
-                <p className="text-sm text-red-500">{errors.durationMeasures}</p>
+                <p className="text-sm text-red-500">
+                  {errors.durationMeasures}
+                </p>
               )}
             </div>
 
@@ -890,7 +979,10 @@ export function ExerciseFormModal({
                 max={3}
                 value={formData.durationBeats}
                 onChange={(e) =>
-                  handleFieldChange('durationBeats', parseInt(e.target.value) || 0)
+                  handleFieldChange(
+                    'durationBeats',
+                    parseInt(e.target.value) || 0,
+                  )
                 }
               />
             </div>
@@ -934,7 +1026,7 @@ export function ExerciseFormModal({
                   onChange={(e) =>
                     handleFieldChange(
                       'timeSignatureNumerator',
-                      parseInt(e.target.value) || 4
+                      parseInt(e.target.value) || 4,
                     )
                   }
                   className="w-16"
@@ -943,7 +1035,10 @@ export function ExerciseFormModal({
                 <Select
                   value={formData.timeSignatureDenominator.toString()}
                   onValueChange={(value) =>
-                    handleFieldChange('timeSignatureDenominator', parseInt(value) || 4)
+                    handleFieldChange(
+                      'timeSignatureDenominator',
+                      parseInt(value) || 4,
+                    )
                   }
                 >
                   <SelectTrigger className="w-16">
@@ -962,7 +1057,9 @@ export function ExerciseFormModal({
 
           {/* MIDI Files Section */}
           <div className="border-t pt-4 rounded-lg p-4 bg-gray-50">
-            <h3 className="text-sm font-semibold mb-3 text-gray-700">MIDI Files (Optional)</h3>
+            <h3 className="text-sm font-semibold mb-3 text-gray-700">
+              MIDI Files (Optional)
+            </h3>
             <div className="grid gap-3">
               {/* Drummer MIDI */}
               <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg transition-colors bg-white hover:bg-gray-50">
@@ -977,7 +1074,9 @@ export function ExerciseFormModal({
                       </p>
                     )}
                     {midiFiles.drummer && (
-                      <p className="text-xs text-gray-500">{midiFiles.drummer.name}</p>
+                      <p className="text-xs text-gray-500">
+                        {midiFiles.drummer.name}
+                      </p>
                     )}
                     {isConvertingDrums && (
                       <p className="text-xs text-blue-600 flex items-center gap-1 mt-1">
@@ -1008,7 +1107,12 @@ export function ExerciseFormModal({
                   <Input
                     type="file"
                     accept=".mid,.midi,audio/midi"
-                    onChange={(e) => handleMidiFileChange('drummer', e.target.files?.[0] || null)}
+                    onChange={(e) =>
+                      handleMidiFileChange(
+                        'drummer',
+                        e.target.files?.[0] || null,
+                      )
+                    }
                     className="hidden"
                     id="drummer-midi"
                   />
@@ -1022,7 +1126,9 @@ export function ExerciseFormModal({
                     >
                       <span>
                         <Upload className="h-4 w-4 mr-2" />
-                        {uploadingMidi === 'drummer' ? 'Uploading...' : 'Upload'}
+                        {uploadingMidi === 'drummer'
+                          ? 'Uploading...'
+                          : 'Upload'}
                       </span>
                     </Button>
                   </Label>
@@ -1033,7 +1139,7 @@ export function ExerciseFormModal({
                       size="sm"
                       onClick={() => {
                         handleMidiFileChange('drummer', null);
-                        setMidiUrls(prev => {
+                        setMidiUrls((prev) => {
                           const updated = { ...prev };
                           delete updated.drummerMidiUrl;
                           return updated;
@@ -1059,7 +1165,9 @@ export function ExerciseFormModal({
                       </p>
                     )}
                     {midiFiles.bassline && (
-                      <p className="text-xs text-gray-500">{midiFiles.bassline.name}</p>
+                      <p className="text-xs text-gray-500">
+                        {midiFiles.bassline.name}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -1067,7 +1175,12 @@ export function ExerciseFormModal({
                   <Input
                     type="file"
                     accept=".mid,.midi,audio/midi"
-                    onChange={(e) => handleMidiFileChange('bassline', e.target.files?.[0] || null)}
+                    onChange={(e) =>
+                      handleMidiFileChange(
+                        'bassline',
+                        e.target.files?.[0] || null,
+                      )
+                    }
                     className="hidden"
                     id="bassline-midi"
                   />
@@ -1081,7 +1194,9 @@ export function ExerciseFormModal({
                     >
                       <span>
                         <Upload className="h-4 w-4 mr-2" />
-                        {uploadingMidi === 'bassline' ? 'Uploading...' : 'Upload'}
+                        {uploadingMidi === 'bassline'
+                          ? 'Uploading...'
+                          : 'Upload'}
                       </span>
                     </Button>
                   </Label>
@@ -1092,7 +1207,7 @@ export function ExerciseFormModal({
                       size="sm"
                       onClick={() => {
                         handleMidiFileChange('bassline', null);
-                        setMidiUrls(prev => {
+                        setMidiUrls((prev) => {
                           const updated = { ...prev };
                           delete updated.basslineMidiUrl;
                           return updated;
@@ -1125,7 +1240,8 @@ export function ExerciseFormModal({
                     </p>
                   )}
                   <p className="text-xs text-blue-700 mt-1">
-                    Use the wizard to automatically generate fretboard positions from your MIDI file
+                    Use the wizard to automatically generate fretboard positions
+                    from your MIDI file
                   </p>
                 </div>
               )}
@@ -1137,11 +1253,15 @@ export function ExerciseFormModal({
                   <div>
                     <p className="text-sm font-medium flex items-center gap-2">
                       Harmony Track
-                      <span className="text-xs font-normal text-blue-600 bg-blue-50 px-2 py-0.5 rounded">Step 2 of 2</span>
+                      <span className="text-xs font-normal text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                        Step 2 of 2
+                      </span>
                     </p>
                     {!formData.harmonyInstrument && !midiFiles.harmony && (
                       <p className="text-xs text-amber-600 flex items-center gap-1 mt-1">
-                        <span className="inline-block w-3 h-3 text-center leading-3 border border-amber-600 rounded-full text-[10px]">!</span>
+                        <span className="inline-block w-3 h-3 text-center leading-3 border border-amber-600 rounded-full text-[10px]">
+                          !
+                        </span>
                         Select harmony instrument above first
                       </p>
                     )}
@@ -1152,7 +1272,9 @@ export function ExerciseFormModal({
                       </p>
                     )}
                     {midiFiles.harmony && (
-                      <p className="text-xs text-gray-500">{midiFiles.harmony.name}</p>
+                      <p className="text-xs text-gray-500">
+                        {midiFiles.harmony.name}
+                      </p>
                     )}
                     {isConvertingHarmony && (
                       <p className="text-xs text-blue-600 flex items-center gap-1">
@@ -1167,11 +1289,23 @@ export function ExerciseFormModal({
                           Converted successfully!
                         </p>
                         <p className="text-xs text-gray-600">
-                          {harmonyNotes.length} notes • {harmonyAnalysis?.uniquePitches.length} unique pitches • {harmonyAnalysis?.requiredVelocityLayers.length} velocity layers
+                          {harmonyNotes.length} notes •{' '}
+                          {harmonyAnalysis?.uniquePitches.length} unique pitches
+                          • {harmonyAnalysis?.requiredVelocityLayers.length}{' '}
+                          velocity layers
                         </p>
                         {harmonyAnalysis && (
                           <p className="text-xs text-blue-600">
-                            Optimization: {Math.round((1 - (harmonyAnalysis.uniquePitches.length * harmonyAnalysis.requiredVelocityLayers.length / (88 * 16))) * 100)}% less samples to load
+                            Optimization:{' '}
+                            {Math.round(
+                              (1 -
+                                (harmonyAnalysis.uniquePitches.length *
+                                  harmonyAnalysis.requiredVelocityLayers
+                                    .length) /
+                                  (88 * 16)) *
+                                100,
+                            )}
+                            % less samples to load
                           </p>
                         )}
                       </div>
@@ -1188,23 +1322,44 @@ export function ExerciseFormModal({
                   <Input
                     type="file"
                     accept=".mid,.midi,audio/midi"
-                    onChange={(e) => handleMidiFileChange('harmony', e.target.files?.[0] || null)}
+                    onChange={(e) =>
+                      handleMidiFileChange(
+                        'harmony',
+                        e.target.files?.[0] || null,
+                      )
+                    }
                     className="hidden"
                     id="harmony-midi"
                     disabled={!formData.harmonyInstrument}
                   />
-                  <Label htmlFor="harmony-midi" className={!formData.harmonyInstrument ? 'pointer-events-none cursor-not-allowed' : 'cursor-pointer'}>
+                  <Label
+                    htmlFor="harmony-midi"
+                    className={
+                      !formData.harmonyInstrument
+                        ? 'pointer-events-none cursor-not-allowed'
+                        : 'cursor-pointer'
+                    }
+                  >
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      disabled={uploadingMidi === 'harmony' || !formData.harmonyInstrument}
-                      className={!formData.harmonyInstrument ? 'opacity-50 bg-gray-200 text-gray-500 border-gray-300 cursor-not-allowed hover:bg-gray-200 hover:text-gray-500' : ''}
+                      disabled={
+                        uploadingMidi === 'harmony' ||
+                        !formData.harmonyInstrument
+                      }
+                      className={
+                        !formData.harmonyInstrument
+                          ? 'opacity-50 bg-gray-200 text-gray-500 border-gray-300 cursor-not-allowed hover:bg-gray-200 hover:text-gray-500'
+                          : ''
+                      }
                       asChild
                     >
                       <span>
                         <Upload className="h-4 w-4 mr-2" />
-                        {uploadingMidi === 'harmony' ? 'Uploading...' : 'Upload'}
+                        {uploadingMidi === 'harmony'
+                          ? 'Uploading...'
+                          : 'Upload'}
                       </span>
                     </Button>
                   </Label>
@@ -1215,7 +1370,7 @@ export function ExerciseFormModal({
                       size="sm"
                       onClick={() => {
                         handleMidiFileChange('harmony', null);
-                        setMidiUrls(prev => {
+                        setMidiUrls((prev) => {
                           const updated = { ...prev };
                           delete updated.harmonyMidiUrl;
                           return updated;
@@ -1241,7 +1396,9 @@ export function ExerciseFormModal({
                       </p>
                     )}
                     {midiFiles.metronome && (
-                      <p className="text-xs text-gray-500">{midiFiles.metronome.name}</p>
+                      <p className="text-xs text-gray-500">
+                        {midiFiles.metronome.name}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -1249,7 +1406,12 @@ export function ExerciseFormModal({
                   <Input
                     type="file"
                     accept=".mid,.midi,audio/midi"
-                    onChange={(e) => handleMidiFileChange('metronome', e.target.files?.[0] || null)}
+                    onChange={(e) =>
+                      handleMidiFileChange(
+                        'metronome',
+                        e.target.files?.[0] || null,
+                      )
+                    }
                     className="hidden"
                     id="metronome-midi"
                   />
@@ -1263,7 +1425,9 @@ export function ExerciseFormModal({
                     >
                       <span>
                         <Upload className="h-4 w-4 mr-2" />
-                        {uploadingMidi === 'metronome' ? 'Uploading...' : 'Upload'}
+                        {uploadingMidi === 'metronome'
+                          ? 'Uploading...'
+                          : 'Upload'}
                       </span>
                     </Button>
                   </Label>
@@ -1274,7 +1438,7 @@ export function ExerciseFormModal({
                       size="sm"
                       onClick={() => {
                         handleMidiFileChange('metronome', null);
-                        setMidiUrls(prev => {
+                        setMidiUrls((prev) => {
                           const updated = { ...prev };
                           delete updated.metronomeMidiUrl;
                           return updated;
@@ -1288,7 +1452,10 @@ export function ExerciseFormModal({
               </div>
 
               {/* Error messages for MIDI uploads */}
-              {(errors.drummer || errors.bassline || errors.harmony || errors.metronome) && (
+              {(errors.drummer ||
+                errors.bassline ||
+                errors.harmony ||
+                errors.metronome) && (
                 <div className="text-sm text-red-500 mt-2 p-2 bg-red-50 dark:bg-red-950/20 rounded">
                   {errors.drummer && <p>Drummer: {errors.drummer}</p>}
                   {errors.bassline && <p>Bass: {errors.bassline}</p>}

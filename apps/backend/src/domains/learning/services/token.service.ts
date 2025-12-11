@@ -27,7 +27,11 @@ export class TokenService {
     const correlationId = this.requestContext?.getCorrelationId();
     // Defensive check for DatabaseService
     if (!this.db) {
-      logger.error('DatabaseService is undefined in TokenService constructor!', new Error('DatabaseService is undefined'), { correlationId });
+      logger.error(
+        'DatabaseService is undefined in TokenService constructor!',
+        new Error('DatabaseService is undefined'),
+        { correlationId },
+      );
     }
   }
 
@@ -36,11 +40,15 @@ export class TokenService {
     const correlationId = this.requestContext?.getCorrelationId();
     // Defensive check for DatabaseService
     if (!this.db || !this.db.supabase) {
-      logger.warn('DatabaseService unavailable - returning zero token balance', { correlationId });
+      logger.warn(
+        'DatabaseService unavailable - returning zero token balance',
+        { correlationId },
+      );
       return {
         available: 0,
         consumed: 0,
-        total: 0 };
+        total: 0,
+      };
     }
 
     const { data: tokens, error } = await this.db.supabase
@@ -62,7 +70,8 @@ export class TokenService {
     return {
       available,
       consumed,
-      total: available + consumed };
+      total: available + consumed,
+    };
   }
 
   async consumeAllTokens(userId: string): Promise<void> {
@@ -70,7 +79,9 @@ export class TokenService {
     const correlationId = this.requestContext?.getCorrelationId();
     // Defensive check for DatabaseService
     if (!this.db || !this.db.supabase) {
-      logger.warn('DatabaseService unavailable - cannot consume tokens', { correlationId });
+      logger.warn('DatabaseService unavailable - cannot consume tokens', {
+        correlationId,
+      });
       return;
     }
 

@@ -2,7 +2,8 @@ import { Injectable, Inject } from '@nestjs/common';
 import type {
   ITutorialRepository,
   PaginatedResult,
-  PaginationOptions } from './tutorial.repository.interface.js';
+  PaginationOptions,
+} from './tutorial.repository.interface.js';
 import { Tutorial } from '../entities/tutorial.entity.js';
 import { TutorialId } from '../value-objects/tutorial-id.vo.js';
 import { TutorialSlug } from '../value-objects/tutorial-slug.vo.js';
@@ -37,7 +38,9 @@ export interface IResultTutorialRepository {
 
 @Injectable()
 export class ResultTutorialRepository implements IResultTutorialRepository {
-  private readonly staticLogger = createStructuredLogger(ResultTutorialRepository.name);
+  private readonly staticLogger = createStructuredLogger(
+    ResultTutorialRepository.name,
+  );
 
   constructor(
     private readonly repository: ITutorialRepository,
@@ -52,7 +55,9 @@ export class ResultTutorialRepository implements IResultTutorialRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error(`Failed to find tutorial ${id.value}:`, error as Error, { correlationId });
+      logger.error(`Failed to find tutorial ${id.value}:`, error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -67,7 +72,7 @@ export class ResultTutorialRepository implements IResultTutorialRepository {
       logger.error(
         `Failed to find tutorial by slug ${slug.value}:`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       return ResultUtils.fail(error as Error);
     }
@@ -82,7 +87,9 @@ export class ResultTutorialRepository implements IResultTutorialRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Failed to find all tutorials:', error as Error, { correlationId });
+      logger.error('Failed to find all tutorials:', error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -96,7 +103,11 @@ export class ResultTutorialRepository implements IResultTutorialRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error(`Failed to find tutorials by level ${level}:`, error as Error, { correlationId });
+      logger.error(
+        `Failed to find tutorials by level ${level}:`,
+        error as Error,
+        { correlationId },
+      );
       return ResultUtils.fail(error as Error);
     }
   }
@@ -110,7 +121,9 @@ export class ResultTutorialRepository implements IResultTutorialRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Failed to find published tutorials:', error as Error, { correlationId });
+      logger.error('Failed to find published tutorials:', error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -125,7 +138,7 @@ export class ResultTutorialRepository implements IResultTutorialRepository {
       logger.error(
         `Failed to search tutorials with query "${query}":`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       return ResultUtils.fail(error as Error);
     }
@@ -141,7 +154,7 @@ export class ResultTutorialRepository implements IResultTutorialRepository {
       logger.error(
         `Failed to find tutorials by author ${authorName}:`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       return ResultUtils.fail(error as Error);
     }
@@ -154,7 +167,9 @@ export class ResultTutorialRepository implements IResultTutorialRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Failed to save tutorial:', error as Error, { correlationId });
+      logger.error('Failed to save tutorial:', error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -169,7 +184,7 @@ export class ResultTutorialRepository implements IResultTutorialRepository {
       logger.error(
         `Failed to update tutorial ${tutorial.id.value}:`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       return ResultUtils.fail(error as Error);
     }
@@ -182,7 +197,9 @@ export class ResultTutorialRepository implements IResultTutorialRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error(`Failed to delete tutorial ${id.value}:`, error as Error, { correlationId });
+      logger.error(`Failed to delete tutorial ${id.value}:`, error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -197,7 +214,7 @@ export class ResultTutorialRepository implements IResultTutorialRepository {
       logger.error(
         `Failed to check tutorial existence ${id.value}:`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       return ResultUtils.fail(error as Error);
     }
@@ -213,7 +230,7 @@ export class ResultTutorialRepository implements IResultTutorialRepository {
       logger.error(
         `Failed to check tutorial existence by slug ${slug.value}:`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       return ResultUtils.fail(error as Error);
     }
@@ -226,7 +243,9 @@ export class ResultTutorialRepository implements IResultTutorialRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Failed to find tutorials by ids:', error as Error, { correlationId });
+      logger.error('Failed to find tutorials by ids:', error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -238,7 +257,9 @@ export class ResultTutorialRepository implements IResultTutorialRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Failed to save tutorials batch:', error as Error, { correlationId });
+      logger.error('Failed to save tutorials batch:', error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -250,7 +271,9 @@ export class ResultTutorialRepository implements IResultTutorialRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Failed to update tutorials batch:', error as Error, { correlationId });
+      logger.error('Failed to update tutorials batch:', error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -262,7 +285,9 @@ export class ResultTutorialRepository implements IResultTutorialRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Failed to delete tutorials batch:', error as Error, { correlationId });
+      logger.error('Failed to delete tutorials batch:', error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }

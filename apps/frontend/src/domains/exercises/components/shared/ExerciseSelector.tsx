@@ -47,16 +47,19 @@ export function ExerciseSelector({
     setLocalExercises(exercises);
   }, [exercises]);
 
-  const handleDragEnd = useCallback((result: DropResult) => {
-    if (!result.destination) return;
+  const handleDragEnd = useCallback(
+    (result: DropResult) => {
+      if (!result.destination) return;
 
-    const items = Array.from(localExercises);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
+      const items = Array.from(localExercises);
+      const [reorderedItem] = items.splice(result.source.index, 1);
+      items.splice(result.destination.index, 0, reorderedItem);
 
-    setLocalExercises(items);
-    onReorderExercises?.(items);
-  }, [localExercises, onReorderExercises]);
+      setLocalExercises(items);
+      onReorderExercises?.(items);
+    },
+    [localExercises, onReorderExercises],
+  );
 
   const renderExerciseCard = (exercise: Exercise, index: number) => {
     const isSelected = exercise.id.value === selectedExerciseId;
@@ -128,7 +131,7 @@ export function ExerciseSelector({
             {(provided) => (
               <div {...provided.droppableProps} ref={provided.innerRef}>
                 {localExercises.map((exercise, index) =>
-                  renderExerciseCard(exercise, index)
+                  renderExerciseCard(exercise, index),
                 )}
                 {provided.placeholder}
               </div>
@@ -140,7 +143,11 @@ export function ExerciseSelector({
           <div className="text-center py-8 text-gray-500">
             <p>No exercises added yet.</p>
             {editable && (
-              <Button onClick={onAddExercise} className="mt-4" variant="outline">
+              <Button
+                onClick={onAddExercise}
+                className="mt-4"
+                variant="outline"
+              >
                 <Plus className="w-4 h-4 mr-1" />
                 Add First Exercise
               </Button>

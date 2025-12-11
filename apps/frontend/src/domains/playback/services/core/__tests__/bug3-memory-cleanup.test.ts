@@ -49,11 +49,12 @@ describe('Bug #3: Memory Leak Prevention', () => {
     };
 
     // Create mock GainNode factory
-    const createMockGain = () => ({
-      gain: { value: 1.0 },
-      connect: vi.fn(),
-      disconnect: vi.fn(),
-    }) as unknown as GainNode;
+    const createMockGain = () =>
+      ({
+        gain: { value: 1.0 },
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+      }) as unknown as GainNode;
 
     // Create mock AudioContext
     mockAudioContext = {
@@ -126,10 +127,16 @@ describe('Bug #3: Memory Leak Prevention', () => {
 
     it('should clean up nested tracking structures', async () => {
       // Simulates activeHarmonySources structure
-      const chordMap = new Map<string, Array<{ source: AudioBufferSourceNode; gain: GainNode }>>();
+      const chordMap = new Map<
+        string,
+        Array<{ source: AudioBufferSourceNode; gain: GainNode }>
+      >();
 
       const chordId = 'chord-0';
-      const chordSources: Array<{ source: AudioBufferSourceNode; gain: GainNode }> = [];
+      const chordSources: Array<{
+        source: AudioBufferSourceNode;
+        gain: GainNode;
+      }> = [];
 
       // Create 3 notes in a chord
       for (let i = 0; i < 3; i++) {

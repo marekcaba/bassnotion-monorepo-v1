@@ -15,7 +15,10 @@ import { TransportClock } from './components/TransportClock';
 import { TimingDebugWindow } from './components/TimingDebugWindow';
 import { useWidgetPageState } from '@/domains/widgets/hooks/useWidgetPageState';
 import { useAudioFretboard } from '@/domains/widgets/hooks/useAudioFretboard';
-import { TransportProvider, useTransportContext } from '@/domains/playback/contexts/TransportContext';
+import {
+  TransportProvider,
+  useTransportContext,
+} from '@/domains/playback/contexts/TransportContext';
 // REMOVED: useExerciseSelection import - not needed for tutorial pages
 import { Button } from '@/shared/components/ui/button';
 import { Play, Pause, Volume2, Settings, Edit2, ArrowLeft } from 'lucide-react';
@@ -204,12 +207,16 @@ function YouTubeWidgetPageContent({
   const [showTimingDebug, setShowTimingDebug] = React.useState(false);
 
   // Wrapped setStringCount to log every change
-  const setStringCount = React.useCallback((value: 4 | 5 | 6 | ((prev: 4 | 5 | 6) => 4 | 5 | 6)) => {
-    setStringCountInternal((prevStringCount) => {
-      const newValue = typeof value === 'function' ? value(prevStringCount) : value;
-      return newValue;
-    });
-  }, []); // Fixed: Empty dependency array - function is stable
+  const setStringCount = React.useCallback(
+    (value: 4 | 5 | 6 | ((prev: 4 | 5 | 6) => 4 | 5 | 6)) => {
+      setStringCountInternal((prevStringCount) => {
+        const newValue =
+          typeof value === 'function' ? value(prevStringCount) : value;
+        return newValue;
+      });
+    },
+    [],
+  ); // Fixed: Empty dependency array - function is stable
 
   // Track why this component is re-rendering (only every 10th render)
   // Moved after playbackControls is defined
@@ -245,8 +252,7 @@ function YouTubeWidgetPageContent({
         // Check individual method references
         const methodChecks: Record<string, boolean> = {};
         Object.keys(transport).forEach((key) => {
-          methodChecks[key] =
-            prevTransportRef.current[key] === transport[key];
+          methodChecks[key] = prevTransportRef.current[key] === transport[key];
         });
         logger.info(`🎮 Method reference checks:`, methodChecks);
       }
@@ -261,7 +267,11 @@ function YouTubeWidgetPageContent({
   const bassMaxFrets = profile?.preferences?.bassConfiguration?.maxFrets;
 
   useEffect(() => {
-    if (!isProfileLoading && bassStringCount !== undefined && bassMaxFrets !== undefined) {
+    if (
+      !isProfileLoading &&
+      bassStringCount !== undefined &&
+      bassMaxFrets !== undefined
+    ) {
       setStringCount(bassStringCount);
       setMaxFrets(bassMaxFrets);
     }
@@ -323,7 +333,8 @@ function YouTubeWidgetPageContent({
       hasExercises: !!exercises,
       exerciseCount: exercises?.length || 0,
       selectedExerciseId,
-      shouldAutoSelect: exercises && exercises.length > 0 && !selectedExerciseId,
+      shouldAutoSelect:
+        exercises && exercises.length > 0 && !selectedExerciseId,
     });
 
     if (exercises && exercises.length > 0 && !selectedExerciseId) {
@@ -373,9 +384,12 @@ function YouTubeWidgetPageContent({
     setIs3DMode((prev) => !prev);
   }, []);
 
-  const handleSetStringCount3D = useCallback((count: number) => {
-    setStringCount(count as 4 | 5 | 6);
-  }, [setStringCount]);
+  const handleSetStringCount3D = useCallback(
+    (count: number) => {
+      setStringCount(count as 4 | 5 | 6);
+    },
+    [setStringCount],
+  );
 
   const handleSetCameraMode = useCallback((mode: CameraMode) => {
     setCameraMode(mode);
@@ -403,7 +417,11 @@ function YouTubeWidgetPageContent({
         condition1: !!exercise?.harmonyInstrument,
         condition2: !!exercise?.harmonyNotes,
         condition3: exercise?.harmonyNotes?.length > 0,
-        allConditionsMet: !!(exercise?.harmonyInstrument && exercise?.harmonyNotes && exercise.harmonyNotes.length > 0),
+        allConditionsMet: !!(
+          exercise?.harmonyInstrument &&
+          exercise?.harmonyNotes &&
+          exercise.harmonyNotes.length > 0
+        ),
       });
 
       if (exercise) {
@@ -432,12 +450,19 @@ function YouTubeWidgetPageContent({
 
         // 🆕 CRITICAL FIX: Load samples for new instrument on-demand
         // This ensures samples are available when switching between exercises with different instruments
-        if (exercise.harmonyInstrument && exercise.harmonyNotes && exercise.harmonyNotes.length > 0) {
-          console.log('🔍 [EXERCISE-SELECT] Checking if samples need loading:', {
-            exerciseId: exercise.id,
-            instrument: exercise.harmonyInstrument,
-            harmonyNotesCount: exercise.harmonyNotes.length,
-          });
+        if (
+          exercise.harmonyInstrument &&
+          exercise.harmonyNotes &&
+          exercise.harmonyNotes.length > 0
+        ) {
+          console.log(
+            '🔍 [EXERCISE-SELECT] Checking if samples need loading:',
+            {
+              exerciseId: exercise.id,
+              instrument: exercise.harmonyInstrument,
+              harmonyNotesCount: exercise.harmonyNotes.length,
+            },
+          );
 
           // Check if samples already cached for this instrument
           const sampleCache = GlobalSampleCache.getInstance();
@@ -445,7 +470,10 @@ function YouTubeWidgetPageContent({
           const alreadyCached = sampleCache.getCachedBuffer(testCacheKey);
 
           if (!alreadyCached) {
-            console.log('📥 [EXERCISE-SELECT] Samples not cached, loading:', exercise.harmonyInstrument);
+            console.log(
+              '📥 [EXERCISE-SELECT] Samples not cached, loading:',
+              exercise.harmonyInstrument,
+            );
             logger.info('Loading samples for new instrument:', {
               instrument: exercise.harmonyInstrument,
               exerciseId: exercise.id,
@@ -468,7 +496,9 @@ function YouTubeWidgetPageContent({
 
                 // CRITICAL FIX: Emit event to trigger HarmonyWidget re-registration
                 // This ensures harmony track gets registered after samples finish loading
-                console.log('📢 [EXERCISE-SELECT] Emitting samples-loaded event for HarmonyWidget');
+                console.log(
+                  '📢 [EXERCISE-SELECT] Emitting samples-loaded event for HarmonyWidget',
+                );
                 emitGlobalEvent('harmony-samples-loaded', {
                   exerciseId: exercise.id,
                   instrument: exercise.harmonyInstrument,
@@ -476,11 +506,17 @@ function YouTubeWidgetPageContent({
                 });
               })
               .catch((error) => {
-                console.error('❌ [EXERCISE-SELECT] Failed to load samples:', error);
+                console.error(
+                  '❌ [EXERCISE-SELECT] Failed to load samples:',
+                  error,
+                );
                 logger.error('Failed to load samples for exercise:', error);
               });
           } else {
-            console.log('✅ [EXERCISE-SELECT] Samples already cached for:', exercise.harmonyInstrument);
+            console.log(
+              '✅ [EXERCISE-SELECT] Samples already cached for:',
+              exercise.harmonyInstrument,
+            );
             logger.info('Samples already cached, skipping load:', {
               instrument: exercise.harmonyInstrument,
             });
@@ -520,20 +556,26 @@ function YouTubeWidgetPageContent({
 
   // Handle play state changes from GlobalControls
   const handlePlayStateChange = useCallback((isPlaying: boolean) => {
-    console.log('🎵 [YOUTUBE-WIDGET] handlePlayStateChange called:', { isPlaying });
+    console.log('🎵 [YOUTUBE-WIDGET] handlePlayStateChange called:', {
+      isPlaying,
+    });
 
     // Update widget state to match transport state
     if (isPlaying) {
       // Only toggle if currently not playing
       if (!widgetStateRef.current.state.isPlaying) {
         widgetStateRef.current.togglePlayback();
-        console.log('🎵 [YOUTUBE-WIDGET] Called widgetState.togglePlayback() to set isPlaying=true');
+        console.log(
+          '🎵 [YOUTUBE-WIDGET] Called widgetState.togglePlayback() to set isPlaying=true',
+        );
       }
     } else {
       // Only toggle if currently playing
       if (widgetStateRef.current.state.isPlaying) {
         widgetStateRef.current.togglePlayback();
-        console.log('🎵 [YOUTUBE-WIDGET] Called widgetState.togglePlayback() to set isPlaying=false');
+        console.log(
+          '🎵 [YOUTUBE-WIDGET] Called widgetState.togglePlayback() to set isPlaying=false',
+        );
       }
     }
   }, []);
@@ -698,12 +740,14 @@ function YouTubeWidgetPageContent({
 
             {/* Admin controls and user indicator on the right */}
             <div className="flex items-center gap-3">
-              {isAdmin && (
-                isPreviewingFromEdit ? (
+              {isAdmin &&
+                (isPreviewingFromEdit ? (
                   // Only show "Back to Edit" when actually previewing from edit mode
                   <Button
                     onClick={() => {
-                      navigateWithTransition(`/admin/tutorials/${tutorialSlug}/edit`);
+                      navigateWithTransition(
+                        `/admin/tutorials/${tutorialSlug}/edit`,
+                      );
                       // Don't remove from sessionStorage here - let the edit page handle it
                     }}
                     className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
@@ -718,7 +762,9 @@ function YouTubeWidgetPageContent({
                     onClick={() => {
                       // Clear any stale preview state when starting a new edit
                       sessionStorage.removeItem('previewingFromEdit');
-                      navigateWithTransition(`/admin/tutorials/${tutorialSlug}/edit`);
+                      navigateWithTransition(
+                        `/admin/tutorials/${tutorialSlug}/edit`,
+                      );
                     }}
                     className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
                     size="sm"
@@ -726,8 +772,7 @@ function YouTubeWidgetPageContent({
                     <Edit2 className="w-4 h-4 mr-1" />
                     Edit
                   </Button>
-                )
-              )}
+                ))}
               <UserIndicator />
             </div>
           </div>

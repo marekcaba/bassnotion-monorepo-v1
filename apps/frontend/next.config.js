@@ -32,7 +32,7 @@ const nextConfig = {
       '.jsx': ['.tsx', '.jsx'],
       '.mjs': ['.mts', '.mjs'],
     };
-    
+
     // Optimize chunk splitting for faster loading
     if (!isServer) {
       config.optimization.splitChunks = {

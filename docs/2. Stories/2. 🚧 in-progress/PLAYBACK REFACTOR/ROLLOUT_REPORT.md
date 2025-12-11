@@ -14,13 +14,13 @@ This document tracks the staged rollout of the new PlaybackEngine to replace the
 
 ### Rollout Timeline
 
-| Phase | Percentage | Duration | Start Date | End Date | Status |
-|-------|-----------|----------|------------|----------|--------|
-| **Phase 1:** Internal Team | 1% | 5 days | 2025-11-23 | 2025-11-27 | 🟡 **In Progress** |
-| **Phase 2:** Beta Users | 10% | 5 days | TBD | TBD | 🔜 Pending |
-| **Phase 3:** General Rollout | 50% | 3 days | TBD | TBD | 🔜 Pending |
-| **Phase 4:** Full Rollout | 100% | 2 days | TBD | TBD | 🔜 Pending |
-| **Total Duration** | - | **15 days** | - | - | - |
+| Phase                        | Percentage | Duration    | Start Date | End Date   | Status             |
+| ---------------------------- | ---------- | ----------- | ---------- | ---------- | ------------------ |
+| **Phase 1:** Internal Team   | 1%         | 5 days      | 2025-11-23 | 2025-11-27 | 🟡 **In Progress** |
+| **Phase 2:** Beta Users      | 10%        | 5 days      | TBD        | TBD        | 🔜 Pending         |
+| **Phase 3:** General Rollout | 50%        | 3 days      | TBD        | TBD        | 🔜 Pending         |
+| **Phase 4:** Full Rollout    | 100%       | 2 days      | TBD        | TBD        | 🔜 Pending         |
+| **Total Duration**           | -          | **15 days** | -          | -          | -                  |
 
 ### Overall Status
 
@@ -50,12 +50,14 @@ NEXT_PUBLIC_AUDIO_ROLLOUT_PERCENTAGE=1
 ### Day 1: November 23, 2025
 
 #### Setup Actions
+
 - [x] Feature flags configured in [featureFlags.ts](../../../apps/frontend/src/domains/playback/config/featureFlags.ts)
 - [x] Environment variables set in .env.local
 - [x] PM2 servers restarted to apply configuration
 - [x] Rollout report initialized
 
 #### Monitoring Checklist
+
 - [x] Dashboard setup verified (Feature flags in place)
 - [x] Error tracking confirmed working (Structured logging enabled)
 - [x] Memory profiling enabled (Browser DevTools ready)
@@ -65,21 +67,25 @@ NEXT_PUBLIC_AUDIO_ROLLOUT_PERCENTAGE=1
 #### Initial Metrics (Baseline)
 
 **Error Rates:**
+
 - PlaybackEngine errors: TBD
 - RegionProcessor errors: TBD
 - Error rate increase: TBD%
 
 **Memory Usage:**
+
 - PlaybackEngine peak memory: TBD MB
 - RegionProcessor peak memory: TBD MB
 - Memory growth over 10 minutes: TBD MB
 
 **Timing Accuracy:**
+
 - Average jitter: TBD ms
 - Max jitter: TBD ms
 - Scheduling latency: TBD ms
 
 **User Experience:**
+
 - Widget load time: TBD ms
 - Exercise switching time: TBD ms
 - User complaints: 0
@@ -87,6 +93,7 @@ NEXT_PUBLIC_AUDIO_ROLLOUT_PERCENTAGE=1
 #### Issues Discovered
 
 **Issue #1: CRITICAL - Rollout percentage logic disables CoreServices at 1%**
+
 - **Severity:** Critical (Blocking)
 - **Discovered:** 2025-11-24 (Day 1)
 - **Symptom:** "Timeout waiting for audio services" error when clicking exercise and play button
@@ -105,6 +112,7 @@ NEXT_PUBLIC_AUDIO_ROLLOUT_PERCENTAGE=1
 - **Status:** WORKAROUND APPLIED - CoreServices now initializes, but proper fix needed before proceeding to Phase 2
 
 **Issue #2: Pre-existing bugs discovered during rollout**
+
 - **Severity:** Medium
 - **Discovered:** 2025-11-24 (Day 1)
 - **Bugs Fixed:**
@@ -113,6 +121,7 @@ NEXT_PUBLIC_AUDIO_ROLLOUT_PERCENTAGE=1
 - **Status:** Fixed
 
 **Issue #3: InitialSamplePreloader using legacy window globals**
+
 - **Severity:** High
 - **Discovered:** 2025-11-24 (Day 1)
 - **Symptom:** "CRITICAL: CoreServices not found!" error during sample preloading
@@ -123,6 +132,7 @@ NEXT_PUBLIC_AUDIO_ROLLOUT_PERCENTAGE=1
 - **Status:** Fixed
 
 **Issue #4: ServiceRegistry mismatch in useTrack causing initialization failures**
+
 - **Severity:** Critical (Blocking)
 - **Discovered:** 2025-11-24 (Day 1)
 - **Symptom:** "Service eventBus not found - ServiceRegistry may not be initialized yet" error when initializing tracks (interactive-fretboard, metronome, drums, etc.)
@@ -138,6 +148,7 @@ NEXT_PUBLIC_AUDIO_ROLLOUT_PERCENTAGE=1
 - **Status:** Fixed - awaiting verification
 
 #### Actions Taken
+
 - [x] Rollout report created
 - [x] Configuration documented in .env.local
 - [x] Feature flags verified in featureFlags.ts
@@ -160,6 +171,7 @@ NEXT_PUBLIC_AUDIO_ROLLOUT_PERCENTAGE=1
 ### Day 2: November 24, 2025
 
 #### Monitoring Checklist
+
 - [ ] Error rates checked (hourly)
 - [ ] Memory usage verified (every 2 hours)
 - [ ] Timing accuracy measured
@@ -169,29 +181,35 @@ NEXT_PUBLIC_AUDIO_ROLLOUT_PERCENTAGE=1
 #### Metrics
 
 **Error Rates:**
+
 - PlaybackEngine errors: TBD
 - RegionProcessor errors: TBD
 - Error rate increase: TBD%
 
 **Memory Usage:**
+
 - PlaybackEngine peak memory: TBD MB
 - RegionProcessor peak memory: TBD MB
 - Memory growth: TBD MB
 
 **Timing Accuracy:**
+
 - Average jitter: TBD ms
 - Max jitter: TBD ms
 - Scheduling latency: TBD ms
 
 **User Experience:**
+
 - Widget load time: TBD ms
 - Exercise switching time: TBD ms
 - User complaints: TBD
 
 #### Issues Discovered
+
 _To be updated_
 
 #### Actions Taken
+
 _To be updated_
 
 ---
@@ -199,6 +217,7 @@ _To be updated_
 ### Day 3: November 25, 2025
 
 #### Monitoring Checklist
+
 - [ ] Error rates stable
 - [ ] Memory usage within limits
 - [ ] Timing accuracy maintained
@@ -206,12 +225,15 @@ _To be updated_
 - [ ] No critical bugs
 
 #### Metrics
+
 _To be updated daily_
 
 #### Issues Discovered
+
 _To be updated_
 
 #### Actions Taken
+
 _To be updated_
 
 ---
@@ -219,6 +241,7 @@ _To be updated_
 ### Day 4: November 26, 2025
 
 #### Monitoring Checklist
+
 - [ ] Error rates stable
 - [ ] Memory usage within limits
 - [ ] Timing accuracy maintained
@@ -226,12 +249,15 @@ _To be updated_
 - [ ] No critical bugs
 
 #### Metrics
+
 _To be updated daily_
 
 #### Issues Discovered
+
 _To be updated_
 
 #### Actions Taken
+
 _To be updated_
 
 ---
@@ -239,6 +265,7 @@ _To be updated_
 ### Day 5: November 27, 2025
 
 #### Monitoring Checklist
+
 - [ ] Final error rate check
 - [ ] Final memory usage check
 - [ ] Final timing accuracy check
@@ -248,21 +275,25 @@ _To be updated_
 #### Final Metrics (Phase 1 Summary)
 
 **Error Rates:**
+
 - PlaybackEngine errors: TBD
 - RegionProcessor errors: TBD
 - Error rate change: TBD%
 
 **Memory Usage:**
+
 - PlaybackEngine avg memory: TBD MB
 - RegionProcessor avg memory: TBD MB
 - Memory improvement: TBD%
 
 **Timing Accuracy:**
+
 - Average jitter: TBD ms (target: <1ms)
 - Max jitter: TBD ms (target: <5ms)
 - Scheduling latency: TBD ms (target: <100ms)
 
 **User Experience:**
+
 - Widget load time: TBD ms
 - Exercise switching time: TBD ms
 - Total user complaints: TBD (target: 0)
@@ -283,6 +314,7 @@ _To be updated_
 **Rationale:** TBD
 
 #### Phase 1 Summary
+
 _To be completed on Day 5_
 
 ---
@@ -303,6 +335,7 @@ NEXT_PUBLIC_AUDIO_ROLLOUT_PERCENTAGE=10
 ```
 
 ### Success Criteria
+
 - [ ] Error rate <5% increase vs baseline
 - [ ] Zero memory leaks reported
 - [ ] Timing accuracy >99%
@@ -310,6 +343,7 @@ NEXT_PUBLIC_AUDIO_ROLLOUT_PERCENTAGE=10
 - [ ] No emergency rollbacks
 
 ### Rollback Trigger
+
 Error rate >10% increase → Immediate rollback
 
 _Phase 2 details to be completed after Phase 1 success_
@@ -332,6 +366,7 @@ NEXT_PUBLIC_AUDIO_ROLLOUT_PERCENTAGE=50
 ```
 
 ### Success Criteria
+
 - [ ] Error rate stable (no increase vs Phase 2)
 - [ ] Memory usage stable
 - [ ] Timing accuracy maintained
@@ -357,6 +392,7 @@ NEXT_PUBLIC_AUDIO_ROLLOUT_PERCENTAGE=100
 ```
 
 ### Success Criteria
+
 - [ ] Error rate matches Phase 3 baseline
 - [ ] Memory usage stable
 - [ ] Timing accuracy >99%
@@ -371,30 +407,35 @@ _Phase 4 details to be completed after Phase 3 success_
 ### Key Metrics Tracked
 
 #### 1. Error Rates
+
 - **Metric:** Errors per 1000 playback sessions
 - **Alert Threshold:** >10% increase
 - **Warning Threshold:** 5-10% increase
 - **Target:** <1% increase vs baseline
 
 #### 2. Memory Usage
+
 - **Metric:** Peak memory during playback
 - **Alert Threshold:** >100MB growth in 10 minutes
 - **Warning Threshold:** 50-100MB growth
 - **Target:** <50MB growth
 
 #### 3. Timing Accuracy
+
 - **Metric:** Average and max jitter in ms
 - **Alert Threshold:** >5ms average jitter
 - **Warning Threshold:** 3-5ms average jitter
 - **Target:** <1ms average, <5ms max
 
 #### 4. Performance Metrics
+
 - **Metric:** Initialization time, scheduling latency
 - **Alert Threshold:** >2x baseline
 - **Warning Threshold:** >1.5x baseline
 - **Target:** Match or improve baseline
 
 #### 5. User Experience
+
 - **Metric:** Widget load time, exercise switching time
 - **Alert Threshold:** >500ms increase
 - **Warning Threshold:** >200ms increase
@@ -461,15 +502,19 @@ GROUP BY engine;
 ```
 
 ### Critical Issues
+
 _No critical issues discovered yet_
 
 ### High Priority Issues
+
 _No high priority issues discovered yet_
 
 ### Medium Priority Issues
+
 _No medium priority issues discovered yet_
 
 ### Low Priority Issues
+
 _No low priority issues discovered yet_
 
 ---
@@ -491,6 +536,7 @@ _No low priority issues discovered yet_
 ```
 
 ### Rollback History
+
 _No rollbacks performed yet_
 
 ---
@@ -500,16 +546,19 @@ _No rollbacks performed yet_
 ### Baseline (RegionProcessor)
 
 **Memory:**
+
 - Peak memory: TBD MB
 - Memory growth (10 min): TBD MB
 - Cleanup time: TBD ms
 
 **Timing:**
+
 - Average jitter: TBD ms
 - Max jitter: TBD ms
 - Scheduling latency (1000 events): TBD ms
 
 **Performance:**
+
 - Initialization time: TBD ms
 - Exercise switching time: TBD ms
 - Widget load time: TBD ms
@@ -517,16 +566,19 @@ _No rollbacks performed yet_
 ### PlaybackEngine (Target)
 
 **Memory:**
+
 - Peak memory: TBD MB (target: ≤baseline)
 - Memory growth (10 min): TBD MB (target: <50MB)
 - Cleanup time: TBD ms (target: <500ms)
 
 **Timing:**
+
 - Average jitter: TBD ms (target: <1ms)
 - Max jitter: TBD ms (target: <5ms)
 - Scheduling latency (1000 events): TBD ms (target: <100ms)
 
 **Performance:**
+
 - Initialization time: TBD ms (target: ≤baseline)
 - Exercise switching time: TBD ms (target: ≤baseline)
 - Widget load time: TBD ms (target: ≤baseline)
@@ -542,18 +594,23 @@ _To be calculated after Phase 1 completion_
 ### Internal Team (Phase 1)
 
 #### Engineering Team
+
 _Feedback to be collected_
 
 #### QA Team
+
 _Feedback to be collected_
 
 #### Product Manager
+
 _Feedback to be collected_
 
 ### Beta Users (Phase 2)
+
 _Feedback to be collected after Phase 2_
 
 ### General Users (Phase 3-4)
+
 _Feedback to be collected after Phase 3-4_
 
 ---
@@ -561,12 +618,15 @@ _Feedback to be collected after Phase 3-4_
 ## Lessons Learned
 
 ### What Went Well
+
 _To be documented throughout rollout_
 
 ### What Could Be Improved
+
 _To be documented throughout rollout_
 
 ### Recommendations for Future Rollouts
+
 _To be documented after completion_
 
 ---
@@ -576,6 +636,7 @@ _To be documented after completion_
 ### A. Environment Configuration
 
 #### Development (.env.local)
+
 ```bash
 # PlaybackEngine Rollout Flags
 NEXT_PUBLIC_ENABLE_NEW_PLAYBACK_ENGINE=true
@@ -585,6 +646,7 @@ NEXT_PUBLIC_AUDIO_ROLLOUT_PERCENTAGE=1
 ```
 
 #### Staging
+
 ```bash
 NEXT_PUBLIC_ENABLE_NEW_PLAYBACK_ENGINE=true
 NEXT_PUBLIC_DEBUG_PLAYBACK_ENGINE_MIGRATION=true
@@ -593,6 +655,7 @@ NEXT_PUBLIC_AUDIO_ROLLOUT_PERCENTAGE=100
 ```
 
 #### Production (varies by phase)
+
 _See phase-specific configuration above_
 
 ### B. Test Results Summary
@@ -626,6 +689,7 @@ _See phase-specific configuration above_
 ## Next Steps
 
 ### Immediate (Day 1)
+
 1. [ ] Configure environment variables in .env.local
 2. [ ] Restart PM2 servers to apply configuration
 3. [ ] Verify feature flags are working
@@ -633,6 +697,7 @@ _See phase-specific configuration above_
 5. [ ] Send team notification about Phase 1 start
 
 ### Short-term (Days 2-5)
+
 1. [ ] Daily metric collection
 2. [ ] Daily team feedback gathering
 3. [ ] Issue tracking and resolution
@@ -640,6 +705,7 @@ _See phase-specific configuration above_
 5. [ ] Prepare Go/No-Go decision for Phase 2
 
 ### Long-term (Phases 2-4)
+
 1. [ ] Progressive rollout to larger user base
 2. [ ] Continuous monitoring and optimization
 3. [ ] Documentation of lessons learned

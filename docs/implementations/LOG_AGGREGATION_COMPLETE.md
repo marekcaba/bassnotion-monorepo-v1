@@ -7,6 +7,7 @@ We've successfully implemented a comprehensive log aggregation service that coll
 ## What Was Implemented
 
 ### 1. Log Aggregation Service (`LogAggregatorService`)
+
 - **Buffered Writing**: Logs are buffered and flushed in batches for efficiency
 - **Multiple Destinations**: Support for file, database, console, and external services
 - **Automatic Rotation**: Log files rotate when they reach size limits
@@ -15,23 +16,27 @@ We've successfully implemented a comprehensive log aggregation service that coll
 - **Performance Optimized**: Minimal impact on application performance
 
 ### 2. Log Transport Service (`LogTransportService`)
+
 - **Global Integration**: Connects structured logger to aggregator
 - **Console Interception**: Captures all console output in production
 - **Flexible Configuration**: Enable/disable based on environment
 
 ### 3. Database Storage
+
 - **Supabase Table**: `structured_logs` table with optimized indexes
 - **Retention Policy**: Automatic cleanup of logs older than 30 days
 - **Summary Views**: Pre-aggregated views for analytics
 - **RLS Policies**: Users can only see their own logs (admins see all)
 
 ### 4. API Endpoints
+
 - **`GET /api/v1/logs/search`**: Search by correlation ID
 - **`GET /api/v1/logs/recent`**: Get recent logs with pagination
 - **`GET /api/v1/logs/stats`**: Get log statistics and error summary
 - **`GET /api/v1/logs/trace`**: Trace complete request flow
 
 ### 5. Frontend Components
+
 - **LogViewer Component**: Interactive log search and visualization
 - **Debug Page**: `/debug/logs` page for log analysis
 - **Timeline View**: Visual representation of request flow
@@ -57,17 +62,20 @@ NEXT_PUBLIC_LOG_AGGREGATION=true # Show aggregation status
 ## How It Works
 
 ### 1. Log Flow
+
 ```
 Application Code → Structured Logger → Log Transporter → Log Aggregator → Destinations
 ```
 
 ### 2. Buffering Strategy
+
 - Logs are buffered up to `LOG_BUFFER_SIZE` entries
 - Buffer flushes every `LOG_FLUSH_INTERVAL` milliseconds
 - Immediate flush when buffer is full
 - Graceful shutdown flushes remaining logs
 
 ### 3. Storage Strategy
+
 - **Files**: JSONL format for easy parsing
 - **Database**: Structured storage with indexes
 - **External**: Optional integration point
@@ -75,16 +83,18 @@ Application Code → Structured Logger → Log Transporter → Log Aggregator �
 ## Usage Examples
 
 ### Backend Service
+
 ```typescript
 const logger = this.requestContext?.getLogger() || this.staticLogger;
-logger.info('Operation completed', { 
-  duration: 1234, 
-  correlationId 
+logger.info('Operation completed', {
+  duration: 1234,
+  correlationId,
 });
 // This log is automatically aggregated
 ```
 
 ### Frontend Component
+
 ```typescript
 const { correlationId, logger } = useCorrelation('MyComponent');
 logger.error('API call failed', error, { correlationId });
@@ -92,9 +102,12 @@ logger.error('API call failed', error, { correlationId });
 ```
 
 ### Searching Logs
+
 ```typescript
 // In debug page or via API
-const trace = await apiClient.get(`/api/v1/logs/trace?correlationId=${correlationId}`);
+const trace = await apiClient.get(
+  `/api/v1/logs/trace?correlationId=${correlationId}`,
+);
 // Returns complete request flow with timing
 ```
 
@@ -122,23 +135,27 @@ docs/
 ## Key Features
 
 ### 1. Correlation Search
+
 - Search all logs for a specific correlation ID
 - See the complete request lifecycle
 - Identify bottlenecks and errors
 
 ### 2. Request Tracing
+
 - Visual timeline of request flow
 - Service-by-service breakdown
 - Duration between events
 - Total request time
 
 ### 3. Error Analysis
+
 - Recent errors dashboard
 - Error grouping by service
 - Stack traces preserved
 - Context data included
 
 ### 4. Performance Monitoring
+
 - Log volume statistics
 - Service-level metrics
 - Buffer performance stats
@@ -165,11 +182,13 @@ docs/
 ## Next Steps
 
 1. **Enable in Production**
+
    ```bash
    LOG_AGGREGATION=true
    ```
 
 2. **Configure External Service** (Optional)
+
    ```bash
    EXTERNAL_LOG_ENDPOINT=https://your-service.com
    EXTERNAL_LOG_API_KEY=your-key
@@ -188,18 +207,21 @@ docs/
 ## Troubleshooting
 
 ### If logs aren't appearing:
+
 1. Check `LOG_AGGREGATION=true`
 2. Verify log directory permissions
 3. Check application logs for errors
 4. Ensure LoggingModule is imported
 
 ### If search is slow:
+
 1. Add more specific indexes
 2. Reduce retention period
 3. Archive old logs
 4. Consider external service
 
 ### If disk fills up:
+
 1. Reduce `LOG_MAX_FILES`
 2. Decrease `LOG_MAX_FILE_SIZE`
 3. Shorten retention period

@@ -184,7 +184,10 @@ export class ServiceRegistry implements Service {
     }
 
     const initializationOrder = this.computeInitializationOrder();
-    console.log('[DEBUG-REGISTRY] 🔍 Initialization order:', initializationOrder);
+    console.log(
+      '[DEBUG-REGISTRY] 🔍 Initialization order:',
+      initializationOrder,
+    );
 
     for (const serviceName of initializationOrder) {
       console.log(`[DEBUG-REGISTRY] Processing service: ${serviceName}`);
@@ -212,7 +215,9 @@ export class ServiceRegistry implements Service {
         serviceInstance.status === 'initialized' ||
         serviceInstance.status === 'started'
       ) {
-        console.log(`[DEBUG-REGISTRY] ⏭️  Skipping ${serviceName} (already ${serviceInstance.status})`);
+        console.log(
+          `[DEBUG-REGISTRY] ⏭️  Skipping ${serviceName} (already ${serviceInstance.status})`,
+        );
         continue;
       }
 
@@ -220,10 +225,14 @@ export class ServiceRegistry implements Service {
 
       if (serviceInstance.instance.initialize) {
         try {
-          console.log(`[DEBUG-REGISTRY] 🚀 Calling initialize() on ${serviceName}...`);
+          console.log(
+            `[DEBUG-REGISTRY] 🚀 Calling initialize() on ${serviceName}...`,
+          );
           this.logger.info(`Initializing ${serviceName}`);
           await serviceInstance.instance.initialize();
-          console.log(`[DEBUG-REGISTRY] ✅ ${serviceName}.initialize() completed`);
+          console.log(
+            `[DEBUG-REGISTRY] ✅ ${serviceName}.initialize() completed`,
+          );
           this.logger.info(`${serviceName} initialized successfully`);
           this.updateServiceStatus(serviceName, 'initialized');
         } catch (error) {

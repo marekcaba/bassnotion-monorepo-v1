@@ -467,7 +467,11 @@ describe('timeUtils', () => {
         { position: '1:0:0:0', bpm: 120, expected: 2 },
         { position: '0:1:0:0', bpm: 120, expected: 0.5 },
         { position: '0:0:2:0', bpm: 120, expected: 0.25 }, // 2 sixteenths
-        { position: { measure: 0, beat: 0, tick: 240 }, bpm: 120, expected: 0.25 },
+        {
+          position: { measure: 0, beat: 0, tick: 240 },
+          bpm: 120,
+          expected: 0.25,
+        },
       ];
 
       for (const { position, bpm, expected } of testCases) {
@@ -477,14 +481,17 @@ describe('timeUtils', () => {
     });
 
     it('should match TimePositionConverter duration parsing', () => {
-      const testCases: Array<{ duration: string; bpm: number; expected: number }> =
-        [
-          { duration: '1n', bpm: 120, expected: 2 }, // Whole note
-          { duration: '2n', bpm: 120, expected: 1 }, // Half note
-          { duration: '4n', bpm: 120, expected: 0.5 }, // Quarter note
-          { duration: '8n', bpm: 120, expected: 0.25 }, // Eighth note
-          { duration: '16n', bpm: 120, expected: 0.125 }, // Sixteenth note
-        ];
+      const testCases: Array<{
+        duration: string;
+        bpm: number;
+        expected: number;
+      }> = [
+        { duration: '1n', bpm: 120, expected: 2 }, // Whole note
+        { duration: '2n', bpm: 120, expected: 1 }, // Half note
+        { duration: '4n', bpm: 120, expected: 0.5 }, // Quarter note
+        { duration: '8n', bpm: 120, expected: 0.25 }, // Eighth note
+        { duration: '16n', bpm: 120, expected: 0.125 }, // Sixteenth note
+      ];
 
       for (const { duration, bpm, expected } of testCases) {
         const result = parseDuration(duration, bpm);

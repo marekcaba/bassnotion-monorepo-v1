@@ -1,6 +1,6 @@
 /**
  * useWidgetAudioRegistration - Deprecated Redirect
- * 
+ *
  * This file redirects to the deprecated implementation for backward compatibility.
  * New code should use:
  * - useTrack() for instrument control

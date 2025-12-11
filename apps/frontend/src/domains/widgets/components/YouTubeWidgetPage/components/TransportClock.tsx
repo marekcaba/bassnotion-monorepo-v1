@@ -47,7 +47,8 @@ export function TransportClock({
   }, []);
 
   const transport = useTransportContext();
-  const { position, tempo, timeSignature, isPlaying, isPaused, isStopped } = transport;
+  const { position, tempo, timeSignature, isPlaying, isPaused, isStopped } =
+    transport;
 
   // 🔧 FLICKER FIX: Validate position before using it
   // During AudioWorklet initialization, position calculations can be corrupted
@@ -57,16 +58,24 @@ export function TransportClock({
     // Beat numbers should be 0-4 in 4/4 time (0-based, with display as 1-based)
     // If beat > beatsPerBar, position calculation is corrupted
     if (position.beats > beatsPerBar || position.beats < 0) {
-      console.warn('⚠️ [FLICKER FIX] Invalid position detected, skipping display update', {
-        position: `${position.bars}:${position.beats}:${position.sixteenths}`,
-        beats: position.beats,
-        beatsPerBar,
-        reason: 'Beat number out of range - likely AudioWorklet not ready',
-      });
+      console.warn(
+        '⚠️ [FLICKER FIX] Invalid position detected, skipping display update',
+        {
+          position: `${position.bars}:${position.beats}:${position.sixteenths}`,
+          beats: position.beats,
+          beatsPerBar,
+          reason: 'Beat number out of range - likely AudioWorklet not ready',
+        },
+      );
       return false;
     }
     return true;
-  }, [position.bars, position.beats, position.sixteenths, timeSignature?.upper]);
+  }, [
+    position.bars,
+    position.beats,
+    position.sixteenths,
+    timeSignature?.upper,
+  ]);
 
   // POSITION CHANGE DETECTION for double countdown bug
   React.useEffect(() => {
@@ -76,7 +85,13 @@ export function TransportClock({
       isValid: isValidPosition,
       timestamp: Date.now(),
     });
-  }, [position.bars, position.beats, position.sixteenths, isPlaying, isValidPosition]);
+  }, [
+    position.bars,
+    position.beats,
+    position.sixteenths,
+    isPlaying,
+    isValidPosition,
+  ]);
 
   // Track render count for this instance
   const renderCountRef = React.useRef(0);
@@ -89,7 +104,9 @@ export function TransportClock({
         position,
         tempo,
         // CRITICAL FIX: Ensure timeSignature object is properly serialized for logging
-        timeSignature: timeSignature ? `${timeSignature.numerator}/${timeSignature.denominator}` : 'undefined',
+        timeSignature: timeSignature
+          ? `${timeSignature.numerator}/${timeSignature.denominator}`
+          : 'undefined',
         timeSignatureRaw: JSON.stringify(timeSignature),
         isPlaying,
         isPaused,
@@ -265,7 +282,8 @@ export function TransportClock({
     // Defensive checks - ensure all position properties are numbers
     const bars = typeof position.bars === 'number' ? position.bars : 0;
     const beats = typeof position.beats === 'number' ? position.beats : 0;
-    const sixteenths = typeof position.sixteenths === 'number' ? position.sixteenths : 0;
+    const sixteenths =
+      typeof position.sixteenths === 'number' ? position.sixteenths : 0;
 
     // COUNTDOWN FIX: Handle negative bars (countdown/pre-roll)
     // Negative bars indicate countdown before the exercise starts
@@ -300,7 +318,8 @@ export function TransportClock({
 
   // Format seconds
   const formatSeconds = () => {
-    if (!position?.seconds || typeof position.seconds !== 'number') return '0.000s';
+    if (!position?.seconds || typeof position.seconds !== 'number')
+      return '0.000s';
     return `${position.seconds.toFixed(3)}s`;
   };
 

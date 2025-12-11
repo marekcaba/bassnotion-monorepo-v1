@@ -36,15 +36,18 @@ export function EditableField({
     setIsEditing(false);
   }, [value]);
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && type !== 'textarea') {
-      e.preventDefault();
-      handleSave();
-    }
-    if (e.key === 'Escape') {
-      handleCancel();
-    }
-  }, [type, handleSave, handleCancel]);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' && type !== 'textarea') {
+        e.preventDefault();
+        handleSave();
+      }
+      if (e.key === 'Escape') {
+        handleCancel();
+      }
+    },
+    [type, handleSave, handleCancel],
+  );
 
   if (isEditing) {
     return (

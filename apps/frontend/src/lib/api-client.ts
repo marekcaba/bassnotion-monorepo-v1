@@ -101,59 +101,59 @@ class ApiClient {
       try {
         const response = await fetch(url, config);
 
-      logger.debug('Response received', {
-        url,
-        status: response.status,
-        statusText: response.statusText,
-        contentType: response.headers.get('content-type'),
-      });
-
-      // TODO: Review non-null assertion - consider null safety
-      if (!response.ok) {
-        let errorData: any = {};
-        const contentType = response.headers.get('content-type');
-
-        try {
-          if (contentType?.includes('application/json')) {
-            errorData = await response.json();
-          } else {
-            // If not JSON, get text content
-            const textError = await response.text();
-            errorData = { message: textError || response.statusText };
-          }
-        } catch (parseError) {
-          errorData = { message: response.statusText };
-        }
-
-        // Use warn for client errors (4xx - validation, auth, etc), error for server errors (5xx)
-        const logMethod = response.status >= 500 ? 'error' : 'warn';
-        logger[logMethod]('API request failed', {
+        logger.debug('Response received', {
           url,
           status: response.status,
           statusText: response.statusText,
-          contentType,
-          error: errorData,
+          contentType: response.headers.get('content-type'),
         });
 
-        throw new ApiError(
-          errorData.message ||
-            `HTTP ${response.status}: ${response.statusText}`,
-          response.status,
-          errorData,
-        );
-      }
+        // TODO: Review non-null assertion - consider null safety
+        if (!response.ok) {
+          let errorData: any = {};
+          const contentType = response.headers.get('content-type');
 
-      // Handle empty responses
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        const data = await response.json();
-        logger.debug('JSON response data', {
-          url,
-          dataKeys: data ? Object.keys(data) : null,
-          dataType: typeof data,
-        });
-        return data;
-      }
+          try {
+            if (contentType?.includes('application/json')) {
+              errorData = await response.json();
+            } else {
+              // If not JSON, get text content
+              const textError = await response.text();
+              errorData = { message: textError || response.statusText };
+            }
+          } catch (parseError) {
+            errorData = { message: response.statusText };
+          }
+
+          // Use warn for client errors (4xx - validation, auth, etc), error for server errors (5xx)
+          const logMethod = response.status >= 500 ? 'error' : 'warn';
+          logger[logMethod]('API request failed', {
+            url,
+            status: response.status,
+            statusText: response.statusText,
+            contentType,
+            error: errorData,
+          });
+
+          throw new ApiError(
+            errorData.message ||
+              `HTTP ${response.status}: ${response.statusText}`,
+            response.status,
+            errorData,
+          );
+        }
+
+        // Handle empty responses
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const data = await response.json();
+          logger.debug('JSON response data', {
+            url,
+            dataKeys: data ? Object.keys(data) : null,
+            dataType: typeof data,
+          });
+          return data;
+        }
 
         return response.text() as unknown as T;
       } catch (error) {

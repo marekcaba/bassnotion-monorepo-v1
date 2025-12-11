@@ -1,12 +1,12 @@
 /**
  * DEPRECATED: usePlaybackIntegration Hook
- * 
+ *
  * This hook represents an old pattern of tightly coupling playback with widgets.
  * In the modern architecture:
  * - Use useTransport() for global playback control
  * - Use useTrack() for individual instrument control
  * - Use EventBus for communication between components
- * 
+ *
  * This file provides a minimal implementation for backward compatibility.
  */
 
@@ -90,7 +90,7 @@ export function usePlaybackIntegration(
   config: PlaybackIntegrationConfig = {},
 ): UsePlaybackIntegrationReturn {
   console.warn(
-    '⚠️ usePlaybackIntegration is deprecated. Use useTransport() for playback control instead.'
+    '⚠️ usePlaybackIntegration is deprecated. Use useTransport() for playback control instead.',
   );
 
   const transport = useTransport();

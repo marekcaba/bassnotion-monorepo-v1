@@ -2,6 +2,10 @@
 
 import React from 'react';
 import type { MidiNoteEvent } from '../hooks/useMidiParsing';
+import {
+  type AccidentalPreference,
+  convertToPreference,
+} from '../utils/fretboardCalculations';
 
 interface NoteQueueProps {
   /** All notes in the current measure */
@@ -12,6 +16,8 @@ interface NoteQueueProps {
   currentNoteIndex: number;
   /** Callback when user clicks a placed note (to review/edit) */
   onNoteClick?: (noteIndex: number) => void;
+  /** Display preference for accidentals (sharps or flats) */
+  accidentalPreference?: AccidentalPreference;
 }
 
 /**
@@ -27,6 +33,7 @@ export function NoteQueue({
   placements,
   currentNoteIndex,
   onNoteClick,
+  accidentalPreference = 'sharps',
 }: NoteQueueProps) {
   if (notes.length === 0) {
     return (
@@ -92,23 +99,27 @@ export function NoteQueue({
                   {/* Note info */}
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className={`font-semibold ${
-                        isPlaced
-                          ? 'text-green-900'
-                          : isCurrent
-                            ? 'text-blue-900'
-                            : 'text-gray-500'
-                      }`}>
+                      <span
+                        className={`font-semibold ${
+                          isPlaced
+                            ? 'text-green-900'
+                            : isCurrent
+                              ? 'text-blue-900'
+                              : 'text-gray-500'
+                        }`}
+                      >
                         Note {index + 1}:
                       </span>
-                      <span className={`font-mono text-sm ${
-                        isPlaced
-                          ? 'text-green-800'
-                          : isCurrent
-                            ? 'text-blue-800'
-                            : 'text-gray-600'
-                      }`}>
-                        {note.name}
+                      <span
+                        className={`font-mono text-sm ${
+                          isPlaced
+                            ? 'text-green-800'
+                            : isCurrent
+                              ? 'text-blue-800'
+                              : 'text-gray-600'
+                        }`}
+                      >
+                        {convertToPreference(note.name, accidentalPreference)}
                       </span>
                     </div>
 

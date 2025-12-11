@@ -1,7 +1,12 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { validatePlacement, findAllPositions } from '../utils/fretboardCalculations';
+import {
+  validatePlacement,
+  findAllPositions,
+  type AccidentalPreference,
+  convertToPreference,
+} from '../utils/fretboardCalculations';
 
 interface InteractiveFretboardProps {
   /** Current note to place (MIDI pitch) */
@@ -20,6 +25,8 @@ interface InteractiveFretboardProps {
   frets?: number;
   /** Whether fretboard is disabled (measure complete) */
   disabled?: boolean;
+  /** Display preference for accidentals (sharps or flats) */
+  accidentalPreference?: AccidentalPreference;
 }
 
 /**
@@ -40,7 +47,12 @@ export function InteractiveFretboard({
   strings,
   frets = 12,
   disabled = false,
+  accidentalPreference = 'sharps',
 }: InteractiveFretboardProps) {
+  // Convert the current note name to the preferred display format
+  const displayNoteName = currentNoteName
+    ? convertToPreference(currentNoteName, accidentalPreference)
+    : undefined;
   // Calculate valid positions for current note
   const validPositions = useMemo(() => {
     if (!currentNotePitch) return [];
@@ -73,7 +85,20 @@ export function InteractiveFretboard({
       };
       const tuning = BASS_TUNINGS[bassType];
       const actualPitch = (tuning[string - 1] ?? 0) + fret;
-      const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+      const notes = [
+        'C',
+        'C#',
+        'D',
+        'D#',
+        'E',
+        'F',
+        'F#',
+        'G',
+        'G#',
+        'A',
+        'A#',
+        'B',
+      ];
       const octave = Math.floor(actualPitch / 12) - 1;
       const noteIndex = actualPitch % 12;
       const actualNoteName = `${notes[noteIndex]}${octave}`;
@@ -87,10 +112,12 @@ export function InteractiveFretboard({
       });
 
       // Show user-friendly error
-      if (confirm(
-        `This position produces ${actualNoteName}, but you need to place ${currentNoteName}.\n\n` +
-        `Click OK to see valid positions highlighted in amber, or Cancel to place it anyway.`
-      )) {
+      if (
+        confirm(
+          `This position produces ${convertToPreference(actualNoteName, accidentalPreference)}, but you need to place ${displayNoteName}.\n\n` +
+            `Click OK to see valid positions highlighted in amber, or Cancel to place it anyway.`,
+        )
+      ) {
         return; // User wants to see highlights, cancel the invalid placement
       }
       // User clicked Cancel = "place it anyway", so fall through to placement
@@ -106,21 +133,24 @@ export function InteractiveFretboard({
       {currentNotePitch && !disabled && (
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-900">
-            <span className="font-semibold">Place note: {currentNoteName}</span>
+            <span className="font-semibold">Place note: {displayNoteName}</span>
             {validPositions.length > 0 && (
               <span className="ml-2 text-blue-700">
-                ({validPositions.length} standard position{validPositions.length > 1 ? 's' : ''} highlighted)
+                ({validPositions.length} standard position
+                {validPositions.length > 1 ? 's' : ''} highlighted)
               </span>
             )}
           </p>
           {validPositions.length > 0 && (
             <p className="text-xs text-blue-600 mt-1">
-              💡 Amber dots show standard positions for this note. You can click anywhere - you have full control!
+              💡 Amber dots show standard positions for this note. You can click
+              anywhere - you have full control!
             </p>
           )}
           {validPositions.length === 0 && (
             <p className="text-xs text-amber-700 mt-1">
-              ⚠️ This note is outside standard range, but you can still place it anywhere you want.
+              ⚠️ This note is outside standard range, but you can still place it
+              anywhere you want.
             </p>
           )}
         </div>
@@ -145,6 +175,7 @@ export function InteractiveFretboard({
           placedNotes={placedNotes}
           onPositionClick={handlePositionClick}
           disabled={disabled}
+          accidentalPreference={accidentalPreference}
         />
       </div>
 
@@ -178,6 +209,7 @@ function InteractiveFretboardGrid({
   placedNotes,
   onPositionClick,
   disabled,
+  accidentalPreference = 'sharps',
 }: {
   bassType: '4' | '5' | '6';
   strings: number;
@@ -186,6 +218,7 @@ function InteractiveFretboardGrid({
   placedNotes: Array<{ noteIndex: number; string: number; fret: number }>;
   onPositionClick: (string: number, fret: number) => void;
   disabled: boolean;
+  accidentalPreference?: AccidentalPreference;
 }) {
   const getStringNames = (numStrings: number): string[] => {
     if (numStrings === 6) {
@@ -200,20 +233,52 @@ function InteractiveFretboardGrid({
   const fretMarkers = [3, 5, 7, 9, 12];
 
   const getNoteName = (stringIndex: number, fret: number): string => {
-    const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const notesSharp = [
+      'C',
+      'C#',
+      'D',
+      'D#',
+      'E',
+      'F',
+      'F#',
+      'G',
+      'G#',
+      'A',
+      'A#',
+      'B',
+    ];
+    const notesFlat = [
+      'C',
+      'Db',
+      'D',
+      'Eb',
+      'E',
+      'F',
+      'Gb',
+      'G',
+      'Ab',
+      'A',
+      'Bb',
+      'B',
+    ];
+    const notes = accidentalPreference === 'flats' ? notesFlat : notesSharp;
     const openStringNote = stringNames[stringIndex];
-    const openStringIndex = notes.indexOf(openStringNote);
+    const openStringIndex = notesSharp.indexOf(openStringNote); // Use sharp array for lookup
     const noteIndex = (openStringIndex + fret) % 12;
     return notes[noteIndex] ?? '';
   };
 
   const isPositionValid = (string: number, fret: number): boolean => {
-    return validPositions.some((pos) => pos.string === string && pos.fret === fret);
+    return validPositions.some(
+      (pos) => pos.string === string && pos.fret === fret,
+    );
   };
 
   const getPlacedNotesAt = (string: number, fret: number): number => {
     // Count how many notes are placed at this position (can be multiple for repeated notes)
-    return placedNotes.filter((note) => note.string === string && note.fret === fret).length;
+    return placedNotes.filter(
+      (note) => note.string === string && note.fret === fret,
+    ).length;
   };
 
   return (
@@ -294,11 +359,14 @@ function InteractiveFretboardGrid({
                             </span>
                           )}
                           {/* Fret marker label */}
-                          {isMarker && !isOpenString && !isValid && placedCount === 0 && (
-                            <span className="text-[7px] font-semibold text-amber-900/60 leading-none">
-                              {getNoteName(stringIndex, fretIndex)}
-                            </span>
-                          )}
+                          {isMarker &&
+                            !isOpenString &&
+                            !isValid &&
+                            placedCount === 0 && (
+                              <span className="text-[7px] font-semibold text-amber-900/60 leading-none">
+                                {getNoteName(stringIndex, fretIndex)}
+                              </span>
+                            )}
                           {/* Placed note indicator - show count if multiple */}
                           {placedCount > 0 && (
                             <span className="text-[10px] font-bold text-white leading-none">

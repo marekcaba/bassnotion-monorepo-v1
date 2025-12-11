@@ -41,13 +41,8 @@ Instead of a fake engine object, you now get direct access to services:
 const engine = result.engine; // Adapter object
 
 // New
-const {
-  coreServices,
-  audioEngine,
-  transport,
-  eventBus,
-  pluginManager,
-} = result.services;
+const { coreServices, audioEngine, transport, eventBus, pluginManager } =
+  result.services;
 ```
 
 ## Migration Examples
@@ -55,6 +50,7 @@ const {
 ### Example 1: Basic Widget
 
 **Before:**
+
 ```typescript
 import { useCorePlaybackEngine } from '@/domains/playback/hooks';
 
@@ -81,6 +77,7 @@ function MyWidget() {
 ```
 
 **After:**
+
 ```typescript
 import { useCoreServices } from '@/domains/playback/hooks';
 
@@ -109,6 +106,7 @@ function MyWidget() {
 ### Example 2: Advanced Usage with Direct Service Access
 
 **Before:**
+
 ```typescript
 import { useCorePlaybackEngine } from '@/domains/playback/hooks';
 
@@ -130,6 +128,7 @@ function AdvancedWidget() {
 ```
 
 **After:**
+
 ```typescript
 import { useCoreServices } from '@/domains/playback/hooks';
 
@@ -141,7 +140,7 @@ function AdvancedWidget() {
       // Direct event bus access
       const unsubscribe = services.eventBus.on(
         'transport:state-changed',
-        handleStateChange
+        handleStateChange,
       );
       return unsubscribe;
     }
@@ -156,7 +155,9 @@ function AdvancedWidget() {
 ## API Differences
 
 ### State Object
+
 The state object remains unchanged:
+
 - `playbackState`
 - `audioContextState`
 - `isInitialized`
@@ -171,7 +172,9 @@ The state object remains unchanged:
 - `hasCriticalAlerts`
 
 ### Controls Object
+
 The controls object remains unchanged:
+
 - `play()`
 - `pause()`
 - `stop()`
@@ -183,7 +186,9 @@ The controls object remains unchanged:
 - Audio source methods (limited support in both)
 
 ### Services Object (New)
+
 Direct access to core services:
+
 - `coreServices` - The main CoreServices instance
 - `audioEngine` - AudioEngine instance
 - `transport` - UnifiedTransport instance
@@ -203,6 +208,7 @@ Direct access to core services:
 The old `useCorePlaybackEngine` hook will continue to work during the transition period. It now uses `useCoreServices` internally, so you can migrate at your own pace.
 
 When you see this warning in the console:
+
 ```
 ⚠️ useCorePlaybackEngine is deprecated. Please migrate to useCoreServices for better performance and features.
 ```
@@ -212,6 +218,7 @@ It's time to update that component!
 ## Common Issues
 
 ### Issue 1: Direct engine access
+
 If your code directly accesses `engine` methods:
 
 ```typescript
@@ -225,6 +232,7 @@ services.eventBus.on('event', handler);
 ```
 
 ### Issue 2: Event names changed
+
 Some event names have changed to be more descriptive:
 
 ```typescript
@@ -236,11 +244,13 @@ Some event names have changed to be more descriptive:
 ```
 
 ### Issue 3: Missing methods
+
 Some methods like `setPitch()` are not yet implemented in the new system. These will log warnings but won't break your app.
 
 ## Need Help?
 
 If you encounter issues during migration:
+
 1. Check the console for specific error messages
 2. Ensure services are initialized before use
 3. Review the new hook implementation in `useCoreServices.ts`

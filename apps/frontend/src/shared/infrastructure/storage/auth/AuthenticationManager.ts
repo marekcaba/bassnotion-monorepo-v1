@@ -1,7 +1,7 @@
 /**
  * Authentication Manager
  * Story 2.4 Subtask 1.2: Sophisticated authentication with token refresh and session management
- * 
+ *
  * Extracted from playback domain to shared infrastructure
  */
 
@@ -226,7 +226,8 @@ export class AuthenticationManager {
       const expiresAt = new Date(session.data.session.expires_at! * 1000);
       const now = new Date();
       const timeUntilExpiry = expiresAt.getTime() - now.getTime();
-      const refreshThreshold = this.config.tokenRefreshConfig?.refreshThreshold || 300000; // 5 minutes
+      const refreshThreshold =
+        this.config.tokenRefreshConfig?.refreshThreshold || 300000; // 5 minutes
 
       if (timeUntilExpiry < refreshThreshold) {
         logger.info('Token approaching expiry, refreshing...', {
@@ -269,7 +270,8 @@ export class AuthenticationManager {
   private startSessionManagement(): void {
     if (!this.config.sessionManagementConfig?.enabled) return;
 
-    const checkInterval = this.config.sessionManagementConfig.sessionCheckInterval;
+    const checkInterval =
+      this.config.sessionManagementConfig.sessionCheckInterval;
     this.sessionTimer = setInterval(() => {
       this.validateAndExtendSession();
     }, checkInterval);
@@ -287,8 +289,10 @@ export class AuthenticationManager {
         return;
       }
 
-      const sessionAge = Date.now() - new Date(session.data.session.created_at!).getTime();
-      const maxAge = this.config.sessionManagementConfig?.maxSessionAge || 86400000; // 24 hours
+      const sessionAge =
+        Date.now() - new Date(session.data.session.created_at!).getTime();
+      const maxAge =
+        this.config.sessionManagementConfig?.maxSessionAge || 86400000; // 24 hours
 
       if (sessionAge > maxAge) {
         logger.info('Session exceeded max age, requiring re-authentication');
@@ -381,11 +385,11 @@ export class AuthenticationManager {
       await this.supabaseClient.auth.signOut();
       this.currentSession = null;
       this.currentToken = null;
-      
+
       if (this.refreshTimer) {
         clearInterval(this.refreshTimer);
       }
-      
+
       if (this.sessionTimer) {
         clearInterval(this.sessionTimer);
       }

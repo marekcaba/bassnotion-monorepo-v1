@@ -1,6 +1,17 @@
 import { UserProfile, createStructuredLogger } from '@bassnotion/contracts';
 import type { UserProfileData } from '@bassnotion/contracts';
-import { Controller, Get, Put, Delete, Body, HttpCode, HttpStatus, UseGuards, Req, NotFoundException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Put,
+  Delete,
+  Body,
+  HttpCode,
+  HttpStatus,
+  UseGuards,
+  Req,
+  NotFoundException,
+} from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 
 import { DatabaseService } from '../../infrastructure/database/database.service.js';
@@ -33,7 +44,8 @@ export class UserController {
       return {
         success: true,
         message: 'Profile fetched successfully',
-        data: userData };
+        data: userData,
+      };
     } catch (error) {
       if (
         error instanceof NotFoundException ||
@@ -45,16 +57,23 @@ export class UserController {
           message: 'Profile not found',
           error: {
             code: 'PROFILE_NOT_FOUND',
-            details: 'User profile not found' } };
+            details: 'User profile not found',
+          },
+        };
       }
 
-      this.staticLogger.error('Unexpected error fetching profile:', error as Error);
+      this.staticLogger.error(
+        'Unexpected error fetching profile:',
+        error as Error,
+      );
       return {
         success: false,
         message: 'Failed to fetch profile',
         error: {
           code: 'PROFILE_FETCH_FAILED',
-          details: error instanceof Error ? error.message : 'Unknown error' } };
+          details: error instanceof Error ? error.message : 'Unknown error',
+        },
+      };
     }
   }
 
@@ -65,7 +84,9 @@ export class UserController {
     @Body() profileData: UserProfileData,
     @Req() request: FastifyRequest & { user: any },
   ): Promise<ApiResponse<UserProfile>> {
-    this.staticLogger.debug(`Profile update request for user: ${request.user.id}`);
+    this.staticLogger.debug(
+      `Profile update request for user: ${request.user.id}`,
+    );
 
     try {
       const updatedProfile = await this.userService.updateProfile(
@@ -76,7 +97,8 @@ export class UserController {
       return {
         success: true,
         message: 'Profile updated successfully',
-        data: updatedProfile };
+        data: updatedProfile,
+      };
     } catch (error) {
       if (
         error instanceof NotFoundException ||
@@ -88,16 +110,23 @@ export class UserController {
           message: 'Profile not found',
           error: {
             code: 'PROFILE_NOT_FOUND',
-            details: 'User profile not found' } };
+            details: 'User profile not found',
+          },
+        };
       }
 
-      this.staticLogger.error('Unexpected error updating profile:', error as Error);
+      this.staticLogger.error(
+        'Unexpected error updating profile:',
+        error as Error,
+      );
       return {
         success: false,
         message: 'Failed to update profile',
         error: {
           code: 'PROFILE_UPDATE_FAILED',
-          details: error instanceof Error ? error.message : 'Unknown error' } };
+          details: error instanceof Error ? error.message : 'Unknown error',
+        },
+      };
     }
   }
 
@@ -108,14 +137,17 @@ export class UserController {
     @Body() body: { password: string },
     @Req() request: FastifyRequest & { user: any },
   ): Promise<ApiResponse<Record<string, never>>> {
-    this.staticLogger.debug(`Account deletion request for user: ${request.user.id}`);
+    this.staticLogger.debug(
+      `Account deletion request for user: ${request.user.id}`,
+    );
 
     try {
       // Verify password before deletion
       const { error: verifyError } =
         await this.db.supabase.auth.signInWithPassword({
           email: request.user.email,
-          password: body.password });
+          password: body.password,
+        });
 
       if (verifyError) {
         this.staticLogger.error(
@@ -127,7 +159,9 @@ export class UserController {
           message: 'Invalid password',
           error: {
             code: 'INVALID_PASSWORD',
-            details: 'Password verification failed' } };
+            details: 'Password verification failed',
+          },
+        };
       }
 
       // Delete the user profile using service
@@ -140,15 +174,21 @@ export class UserController {
       return {
         success: true,
         message: 'Account deleted successfully',
-        data: {} };
+        data: {},
+      };
     } catch (error) {
-      this.staticLogger.error('Unexpected error deleting account:', error as Error);
+      this.staticLogger.error(
+        'Unexpected error deleting account:',
+        error as Error,
+      );
       return {
         success: false,
         message: 'Failed to delete account',
         error: {
           code: 'ACCOUNT_DELETION_FAILED',
-          details: error instanceof Error ? error.message : 'Unknown error' } };
+          details: error instanceof Error ? error.message : 'Unknown error',
+        },
+      };
     }
   }
 }

@@ -72,12 +72,14 @@ export class HealthController {
   @ApiOperation({ summary: 'Get basic health status' })
   @ApiResponse({
     status: 200,
-    description: 'Health status retrieved successfully' })
+    description: 'Health status retrieved successfully',
+  })
   async getHealth(): Promise<HealthStatus> {
     const checks = {
       database: await this.checkDatabase(),
       api: { status: 'healthy' as const }, // API is healthy if we got here
-      supabase: await this.checkSupabase() };
+      supabase: await this.checkSupabase(),
+    };
 
     const overallStatus = this.calculateOverallStatus(checks);
 
@@ -86,7 +88,8 @@ export class HealthController {
       timestamp: new Date().toISOString(),
       checks,
       version: process.env.npm_package_version || 'unknown',
-      uptime: process.uptime() };
+      uptime: process.uptime(),
+    };
 
     this.logger.info('Health check completed', { result });
 
@@ -97,7 +100,8 @@ export class HealthController {
   @ApiOperation({ summary: 'Get detailed health status with system metrics' })
   @ApiResponse({
     status: 200,
-    description: 'Detailed health status retrieved successfully' })
+    description: 'Detailed health status retrieved successfully',
+  })
   async getDetailedHealth(): Promise<DetailedHealthStatus> {
     const basicHealth = await this.getHealth();
 
@@ -118,17 +122,22 @@ export class HealthController {
       system: {
         cpu: {
           usage: Math.round(cpuUsage * 100) / 100,
-          count: cpus.length },
+          count: cpus.length,
+        },
         memory: {
           total: totalMemory,
           used: usedMemory,
           free: freeMemory,
-          percentage: Math.round((usedMemory / totalMemory) * 100) },
-        load: os.loadavg() },
+          percentage: Math.round((usedMemory / totalMemory) * 100),
+        },
+        load: os.loadavg(),
+      },
       process: {
         pid: process.pid,
         memory: process.memoryUsage(),
-        uptime: process.uptime() } };
+        uptime: process.uptime(),
+      },
+    };
 
     return detailed;
   }
@@ -145,7 +154,8 @@ export class HealthController {
   @ApiOperation({ summary: 'Readiness probe for Kubernetes' })
   @ApiResponse({
     status: 200,
-    description: 'Service is ready to handle requests' })
+    description: 'Service is ready to handle requests',
+  })
   async getReadiness(): Promise<{
     ready: boolean;
     checks: Record<string, boolean>;
@@ -156,7 +166,8 @@ export class HealthController {
 
     const checks = {
       database: dbCheck.status === 'healthy',
-      supabase: supabaseCheck.status === 'healthy' };
+      supabase: supabaseCheck.status === 'healthy',
+    };
 
     const ready = Object.values(checks).every((check) => check === true);
 
@@ -167,13 +178,15 @@ export class HealthController {
   @ApiOperation({ summary: 'Get performance metrics' })
   @ApiResponse({
     status: 200,
-    description: 'Performance metrics retrieved successfully' })
+    description: 'Performance metrics retrieved successfully',
+  })
   async getMetrics(): Promise<PerformanceMetrics> {
     const metrics = this.healthService.getMetrics();
 
     return {
       ...metrics,
-      timestamp: new Date().toISOString() };
+      timestamp: new Date().toISOString(),
+    };
   }
 
   private async checkDatabase(): Promise<CheckResult> {
@@ -192,17 +205,20 @@ export class HealthController {
         return {
           status: 'unhealthy',
           responseTime,
-          error: result.error.message };
+          error: result.error.message,
+        };
       }
 
       return {
         status: 'healthy',
-        responseTime };
+        responseTime,
+      };
     } catch (error) {
       return {
         status: 'unhealthy',
         responseTime: Date.now() - start,
-        error: error instanceof Error ? error.message : 'Unknown error' };
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
     }
   }
 
@@ -215,13 +231,15 @@ export class HealthController {
       if (!supabaseUrl) {
         return {
           status: 'unhealthy',
-          error: 'SUPABASE_URL not configured' };
+          error: 'SUPABASE_URL not configured',
+        };
       }
 
       if (!supabaseAnonKey) {
         return {
           status: 'unhealthy',
-          error: 'SUPABASE_ANON_KEY not configured' };
+          error: 'SUPABASE_ANON_KEY not configured',
+        };
       }
 
       // Check if we can reach Supabase with proper authentication
@@ -229,25 +247,30 @@ export class HealthController {
         method: 'HEAD',
         headers: {
           apikey: supabaseAnonKey,
-          Authorization: `Bearer ${supabaseAnonKey}` } });
+          Authorization: `Bearer ${supabaseAnonKey}`,
+        },
+      });
 
       const responseTime = Date.now() - start;
 
       if (response.ok) {
         return {
           status: 'healthy',
-          responseTime };
+          responseTime,
+        };
       }
 
       return {
         status: 'unhealthy',
         responseTime,
-        error: `HTTP ${response.status}` };
+        error: `HTTP ${response.status}`,
+      };
     } catch (error) {
       return {
         status: 'unhealthy',
         responseTime: Date.now() - start,
-        error: error instanceof Error ? error.message : 'Unknown error' };
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
     }
   }
 

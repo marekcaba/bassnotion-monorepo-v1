@@ -1,17 +1,32 @@
-import { Controller, Get, Post, Put, Delete, Param, Query, Body, UseGuards, Request, BadRequestException, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Param,
+  Query,
+  Body,
+  UseGuards,
+  Request,
+  BadRequestException,
+  Req,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import type { FastifyRequest } from 'fastify';
 import { ExercisesService } from './exercises.service.js';
 import {
   ExercisesResponseDto,
-  ExerciseResponseDto } from './dto/exercise-response.dto.js';
+  ExerciseResponseDto,
+} from './dto/exercise-response.dto.js';
 // Custom bassline DTOs are now used in UserBasslinesController
 import {
   FileUploadDto,
   MusicXMLUploadConfigDto,
   MIDIUploadConfigDto,
   FileUploadResponseDto,
-  FileUploadErrorDto } from './dto/file-upload.dto.js';
+  FileUploadErrorDto,
+} from './dto/file-upload.dto.js';
 import { FileUploadService } from './services/file-upload.service.js';
 import { AuthGuard } from '../user/auth/guards/auth.guard.js';
 import { SupabaseService } from '../../infrastructure/supabase/supabase.service.js';
@@ -20,7 +35,9 @@ import { createStructuredLogger } from '@bassnotion/contracts';
 @ApiTags('exercises')
 @Controller('api/exercises')
 export class ExercisesController {
-  private readonly staticLogger = createStructuredLogger(ExercisesController.name);
+  private readonly staticLogger = createStructuredLogger(
+    ExercisesController.name,
+  );
 
   constructor(
     private readonly exercisesService: ExercisesService,
@@ -29,10 +46,14 @@ export class ExercisesController {
   ) {
     // Defensive check for dependency injection issues
     if (!this.exercisesService) {
-      this.staticLogger.error('ExercisesService is undefined - DI failure detected');
+      this.staticLogger.error(
+        'ExercisesService is undefined - DI failure detected',
+      );
     }
     if (!this.fileUploadService) {
-      this.staticLogger.error('FileUploadService is undefined - DI failure detected');
+      this.staticLogger.error(
+        'FileUploadService is undefined - DI failure detected',
+      );
     }
   }
 
@@ -40,7 +61,9 @@ export class ExercisesController {
 
   private checkServiceAvailability(): boolean {
     if (!this.exercisesService) {
-      this.staticLogger.error('ExercisesService is undefined - DI failure detected');
+      this.staticLogger.error(
+        'ExercisesService is undefined - DI failure detected',
+      );
       return false;
     }
     return true;
@@ -60,7 +83,8 @@ export class ExercisesController {
           notes: [],
           is_active: true,
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString() },
+          updated_at: new Date().toISOString(),
+        },
         {
           id: 'mock-2',
           title: 'Mock Exercise 2',
@@ -73,10 +97,12 @@ export class ExercisesController {
           notes: [],
           is_active: true,
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString() },
+          updated_at: new Date().toISOString(),
+        },
       ],
       total: 2,
-      cached: false };
+      cached: false,
+    };
   }
 
   /**
@@ -88,14 +114,17 @@ export class ExercisesController {
   @ApiQuery({
     name: 'page',
     required: false,
-    description: 'Page number (default: 1)' })
+    description: 'Page number (default: 1)',
+  })
   @ApiQuery({
     name: 'limit',
     required: false,
-    description: 'Items per page (default: 10)' })
+    description: 'Items per page (default: 10)',
+  })
   @ApiResponse({
     status: 200,
-    description: 'List of exercises retrieved successfully' })
+    description: 'List of exercises retrieved successfully',
+  })
   @ApiResponse({ status: 400, description: 'Invalid pagination parameters' })
   async getAllExercises(
     @Query('page') page?: string,
@@ -105,7 +134,9 @@ export class ExercisesController {
 
     // Defensive programming: handle DI failure gracefully
     if (!this.checkServiceAvailability()) {
-      this.staticLogger.warn('Returning mock data due to service unavailability');
+      this.staticLogger.warn(
+        'Returning mock data due to service unavailability',
+      );
       return this.getMockExercisesResponse();
     }
 
@@ -129,7 +160,8 @@ export class ExercisesController {
   @ApiQuery({ name: 'q', required: true, description: 'Search query' })
   @ApiResponse({
     status: 200,
-    description: 'Search results returned successfully' })
+    description: 'Search results returned successfully',
+  })
   async searchExercises(
     @Query('q') query: string,
   ): Promise<ExercisesResponseDto> {
@@ -144,7 +176,9 @@ export class ExercisesController {
 
     // Defensive programming: handle DI failure gracefully
     if (!this.checkServiceAvailability()) {
-      this.staticLogger.warn('Returning mock data due to service unavailability');
+      this.staticLogger.warn(
+        'Returning mock data due to service unavailability',
+      );
       return this.getMockExercisesResponse();
     }
 
@@ -177,7 +211,9 @@ export class ExercisesController {
 
     // Defensive programming: handle DI failure gracefully
     if (!this.checkServiceAvailability()) {
-      this.staticLogger.warn('Returning mock data due to service unavailability');
+      this.staticLogger.warn(
+        'Returning mock data due to service unavailability',
+      );
       return this.getMockExercisesResponse();
     }
 
@@ -203,11 +239,15 @@ export class ExercisesController {
    */
   @Get(':id')
   async getExerciseById(@Param('id') id: string): Promise<ExerciseResponseDto> {
-    this.staticLogger.info(`GET /api/exercises/${id} - Fetching exercise by ID`);
+    this.staticLogger.info(
+      `GET /api/exercises/${id} - Fetching exercise by ID`,
+    );
 
     // Defensive programming: handle DI failure gracefully
     if (!this.checkServiceAvailability()) {
-      this.staticLogger.warn('Returning mock data due to service unavailability');
+      this.staticLogger.warn(
+        'Returning mock data due to service unavailability',
+      );
       const mockResponse = this.getMockExercisesResponse();
       return { exercise: mockResponse.exercises[0] };
     }
@@ -244,7 +284,9 @@ export class ExercisesController {
     @Body() exerciseData: unknown,
   ): Promise<ExerciseResponseDto> {
     const userId = req.user?.id;
-    this.staticLogger.info(`POST /api/exercises - Creating exercise, User: ${userId}`);
+    this.staticLogger.info(
+      `POST /api/exercises - Creating exercise, User: ${userId}`,
+    );
 
     if (!userId) {
       throw new BadRequestException('User ID not found in request');
@@ -263,7 +305,10 @@ export class ExercisesController {
       this.staticLogger.info(`Successfully created exercise: ${result.id}`);
       return { exercise: result };
     } catch (error) {
-      this.staticLogger.error(`Error creating exercise for user ${userId}:`, error as Error);
+      this.staticLogger.error(
+        `Error creating exercise for user ${userId}:`,
+        error as Error,
+      );
       throw error;
     }
   }
@@ -531,7 +576,8 @@ export class ExercisesController {
             original_filename: filename,
             file_size: fileSize,
             uploaded_at: new Date().toISOString(),
-            created_by: userId };
+            created_by: userId,
+          };
 
           // Save to database if service is available
           if (this.checkServiceAvailability()) {
@@ -549,7 +595,10 @@ export class ExercisesController {
             );
           }
         } catch (dbError) {
-          this.staticLogger.error('Error saving exercise to database:', dbError as Error);
+          this.staticLogger.error(
+            'Error saving exercise to database:',
+            dbError as Error,
+          );
           // Don't fail the upload if database save fails - file is already stored
           this.staticLogger.warn(
             'MIDI file processed and stored, but database save failed',
@@ -607,11 +656,14 @@ export class ExercisesController {
         .from('exercise-files')
         .getPublicUrl(exercise.midi_file_path);
 
-      this.staticLogger.info(`Generated download URL for exercise ${exerciseId}`);
+      this.staticLogger.info(
+        `Generated download URL for exercise ${exerciseId}`,
+      );
 
       return {
         downloadUrl: data.publicUrl,
-        filename: exercise.original_filename || 'exercise.mid' };
+        filename: exercise.original_filename || 'exercise.mid',
+      };
     } catch (error) {
       this.staticLogger.error(
         `Error generating download URL for exercise ${exerciseId}:`,
@@ -658,7 +710,8 @@ export class ExercisesController {
       if (!exercise.midi_file_path) {
         return {
           success: false,
-          message: 'No MIDI file associated with this exercise' };
+          message: 'No MIDI file associated with this exercise',
+        };
       }
 
       // Delete file from storage
@@ -668,7 +721,10 @@ export class ExercisesController {
         .remove([exercise.midi_file_path]);
 
       if (error) {
-        this.staticLogger.error('Error deleting MIDI file from storage:', error as Error);
+        this.staticLogger.error(
+          'Error deleting MIDI file from storage:',
+          error as Error,
+        );
         throw new BadRequestException('Failed to delete MIDI file');
       }
 
@@ -679,7 +735,8 @@ export class ExercisesController {
           midi_file_path: null,
           original_filename: null,
           file_size: null,
-          uploaded_at: null },
+          uploaded_at: null,
+        },
         userId,
       );
 
@@ -689,7 +746,8 @@ export class ExercisesController {
 
       return {
         success: true,
-        message: 'MIDI file deleted successfully' };
+        message: 'MIDI file deleted successfully',
+      };
     } catch (error) {
       this.staticLogger.error(
         `Error deleting MIDI file for exercise ${exerciseId}:`,
@@ -733,7 +791,8 @@ export class ExercisesController {
           'Articulation detection',
           'Multiple instrument support',
           'Automatic difficulty analysis',
-        ] },
+        ],
+      },
       midi: {
         extensions: ['.mid', '.midi'],
         mimeTypes: ['audio/midi', 'audio/x-midi', 'application/x-midi'],
@@ -744,6 +803,8 @@ export class ExercisesController {
           'Rhythm quantization',
           'Musical analysis',
           'Multiple bass string configurations',
-        ] } };
+        ],
+      },
+    };
   }
 }

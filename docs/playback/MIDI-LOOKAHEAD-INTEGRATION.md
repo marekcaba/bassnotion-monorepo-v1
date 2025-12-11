@@ -7,15 +7,17 @@ Your bass practice platform now has **properly integrated lookahead scheduling**
 ## Integration Flow
 
 ### 1. **Global Timing Configuration** (150ms lookahead)
+
 ```javascript
 // /config/transportTiming.ts
 TRANSPORT_TIMING_CONFIG = {
-  lookAheadTime: 0.15,      // 150ms lookahead
-  updateInterval: 0.02,     // 20ms update cycle
-}
+  lookAheadTime: 0.15, // 150ms lookahead
+  updateInterval: 0.02, // 20ms update cycle
+};
 ```
 
 ### 2. **Tone.js Context Configuration**
+
 ```javascript
 // Applied in ToneWrapper.ts and AudioEngine.ts
 applyTransportTimingConfig(Tone) {
@@ -25,6 +27,7 @@ applyTransportTimingConfig(Tone) {
 ```
 
 ### 3. **Transport Uses Central Config** ✅ FIXED
+
 ```javascript
 // /modules/transport/core/Transport.ts
 constructor() {
@@ -56,15 +59,16 @@ Samples trigger with exact timing
 ## Key Components
 
 ### Scheduler Logic (/modules/transport/core/Scheduler.ts)
+
 ```javascript
 processScheduleQueue(currentTime) {
   const scheduleUntil = currentTime + this.config.lookAheadTime; // 150ms ahead
-  
+
   // Find events in lookahead window
   const eventsToSchedule = this.eventQueue.filter(
     event => event.time > currentTime && event.time <= scheduleUntil
   );
-  
+
   // Schedule with Tone.js
   for (const event of eventsToSchedule) {
     Tone.Transport.schedule(event.callback, event.time);
@@ -73,6 +77,7 @@ processScheduleQueue(currentTime) {
 ```
 
 ### Update Loop
+
 - Runs every **20ms** (50 times per second)
 - Schedules events **150ms** into the future
 - Prevents drift from JavaScript timing variations

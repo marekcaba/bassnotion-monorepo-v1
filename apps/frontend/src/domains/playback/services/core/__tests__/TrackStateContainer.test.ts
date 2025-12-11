@@ -152,7 +152,7 @@ describe('TrackStateContainer', () => {
           return null;
         },
       };
-      
+
       const container = new TrackStateContainer(mockTrack);
 
       container.updateState({ name: 'New Name' }, 'Update name');
@@ -163,7 +163,7 @@ describe('TrackStateContainer', () => {
         previousState: expect.any(Object),
         currentState: mockTrack,
       });
-      
+
       delete (window as any).__serviceRegistry;
     });
 
@@ -186,7 +186,7 @@ describe('TrackStateContainer', () => {
           return null;
         },
       };
-      
+
       const container = new TrackStateContainer(mockTrack);
 
       container.updateState({ name: 'Name 1' }, 'First update');
@@ -199,13 +199,13 @@ describe('TrackStateContainer', () => {
       expect(result).toBe(true);
       expect(mockTrack.name).toBe('Name 1');
       expect(container.historyIndex).toBe(1);
-      
+
       // Event should be emitted
       expect(mockEventBus.emit).toHaveBeenCalledWith('track:undone', {
         trackId: 'track-1',
         description: 'First update',
       });
-      
+
       delete (window as any).__serviceRegistry;
     });
 
@@ -217,7 +217,7 @@ describe('TrackStateContainer', () => {
           return null;
         },
       };
-      
+
       const container = new TrackStateContainer(mockTrack);
 
       container.updateState({ name: 'Name 1' }, 'First update');
@@ -229,13 +229,13 @@ describe('TrackStateContainer', () => {
       expect(result).toBe(true);
       expect(mockTrack.name).toBe('Name 2');
       expect(container.historyIndex).toBe(2);
-      
+
       // Event should be emitted
       expect(mockEventBus.emit).toHaveBeenCalledWith('track:redone', {
         trackId: 'track-1',
         description: 'Second update',
       });
-      
+
       delete (window as any).__serviceRegistry;
     });
 

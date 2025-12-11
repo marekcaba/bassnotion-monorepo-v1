@@ -1,14 +1,16 @@
 # Transport Schedule Timing Issue
 
 ## Problem
+
 Widgets play only 2 hihat sounds then stop. The Transport.scheduleRepeat callbacks execute once but don't continue.
 
 ## Root Cause Analysis
 
 From the logs:
+
 1. Transport starts with `+0.1` delay
 2. First callback executes at time 0.227
-3. Widgets play sounds successfully 
+3. Widgets play sounds successfully
 4. But then something interrupts the schedule
 
 ## Key Evidence
@@ -19,6 +21,7 @@ DrummerWidget.tsx:1077 🥁🥁 DRUM TRANSPORT SCHEDULE EXECUTED! {time: 0.22666
 ```
 
 After this, we see:
+
 ```
 DrummerWidget.tsx:204 🥁 DrummerWidget: Sync state changed: {syncProps.isPlaying: true, final syncIsPlaying: true, Transport?.state: 'started', Tone.Transport.state: 'started', isConnected: true, …}
 ```

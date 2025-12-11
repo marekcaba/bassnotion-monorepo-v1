@@ -13,14 +13,14 @@ This test suite ensures that all critical bug fixes and playback behaviors are p
 
 ### Test Coverage
 
-| Category | Test Files | Test Count | Baseline Status |
-|----------|-----------|------------|-----------------|
-| Memory Leak Prevention | 3 files | 15 tests | ✅ Established |
-| Tempo Change Handling | 2 files | 12 tests | ✅ Established |
-| Event Scheduling Accuracy | 1 file | 8 tests | ✅ Established |
-| Exercise Switching | 1 file | 6 tests | ✅ Established |
-| Performance Baselines | 1 file | 5 tests | ✅ Established |
-| **TOTAL** | **8 files** | **46 tests** | **✅ Complete** |
+| Category                  | Test Files  | Test Count   | Baseline Status |
+| ------------------------- | ----------- | ------------ | --------------- |
+| Memory Leak Prevention    | 3 files     | 15 tests     | ✅ Established  |
+| Tempo Change Handling     | 2 files     | 12 tests     | ✅ Established  |
+| Event Scheduling Accuracy | 1 file      | 8 tests      | ✅ Established  |
+| Exercise Switching        | 1 file      | 6 tests      | ✅ Established  |
+| Performance Baselines     | 1 file      | 5 tests      | ✅ Established  |
+| **TOTAL**                 | **8 files** | **46 tests** | **✅ Complete** |
 
 ---
 
@@ -29,11 +29,13 @@ This test suite ensures that all critical bug fixes and playback behaviors are p
 ### 1.1 Existing Test Files
 
 #### Test File 1: bug3-memory-cleanup.test.ts ✅
+
 **Location:** `apps/frontend/src/domains/playback/services/core/__tests__/bug3-memory-cleanup.test.ts`
 
 **Purpose:** Verify AudioBufferSourceNode cleanup via onended callbacks
 
 **Test Cases:**
+
 1. **Core Cleanup Pattern**
    - ✅ Remove sources from tracking map when onended fires
    - ✅ Handle multiple sources independently (10 sources)
@@ -53,6 +55,7 @@ This test suite ensures that all critical bug fixes and playback behaviors are p
    - ✅ Keep active sources under 50 during playback
 
 **Baseline Metrics:**
+
 - ✅ 100 events → 0 memory leaks
 - ✅ Peak tracking map size < 10 during continuous playback
 - ✅ 1000 sources cleanup < 500ms
@@ -61,11 +64,13 @@ This test suite ensures that all critical bug fixes and playback behaviors are p
 ---
 
 #### Test File 2: memory-leak-integration.test.ts
+
 **Location:** `apps/frontend/src/domains/playback/services/core/__tests__/memory-leak-integration.test.ts`
 
 **Purpose:** Integration test for RegionProcessor memory behavior
 
 **Test Cases:**
+
 1. **Play/Stop Cycles**
    - Test: 100 play/stop cycles
    - Measure: AudioBufferSourceNode accumulation
@@ -82,6 +87,7 @@ This test suite ensures that all critical bug fixes and playback behaviors are p
    - Baseline: <50MB growth, no unbounded increase
 
 **Baseline Metrics:**
+
 - ✅ 100 play/stop cycles → 0 leaked sources
 - ✅ Exercise switching → <100MB total growth
 - ✅ Continuous playback → <50MB/10min growth
@@ -89,11 +95,13 @@ This test suite ensures that all critical bug fixes and playback behaviors are p
 ---
 
 #### Test File 3: HarmonyScheduler.memory.test.ts
+
 **Location:** `apps/frontend/src/domains/playback/services/core/region-processing/scheduling/__tests__/HarmonyScheduler.memory.test.ts`
 
 **Purpose:** Harmony-specific memory leak tests (chord cleanup)
 
 **Test Cases:**
+
 1. **Chord Source Cleanup**
    - Test: Schedule 100 chords (3 notes each = 300 sources)
    - Measure: activeHarmonySources map size after cleanup
@@ -105,6 +113,7 @@ This test suite ensures that all critical bug fixes and playback behaviors are p
    - Baseline: All sources cleaned after release
 
 **Baseline Metrics:**
+
 - ✅ 100 chords (300 sources) → 0 leaks
 - ✅ Sustain pedal → proper cleanup on release
 
@@ -144,7 +153,8 @@ describe('Memory Leak Detection Harness', () => {
       processor.registerTracks([createTestTrack()]);
 
       // Measure initial state
-      const initialSourceCount = (processor as any).scheduledAudioSources?.size || 0;
+      const initialSourceCount =
+        (processor as any).scheduledAudioSources?.size || 0;
 
       // Execute 100 cycles
       for (let i = 0; i < 100; i++) {
@@ -155,7 +165,8 @@ describe('Memory Leak Detection Harness', () => {
       }
 
       // Measure final state
-      const finalSourceCount = (processor as any).scheduledAudioSources?.size || 0;
+      const finalSourceCount =
+        (processor as any).scheduledAudioSources?.size || 0;
 
       // Baseline: No source accumulation
       expect(finalSourceCount).toBe(0);
@@ -181,7 +192,8 @@ describe('Memory Leak Detection Harness', () => {
       processor.stop();
 
       const peak = Math.max(...measurements);
-      const average = measurements.reduce((a, b) => a + b, 0) / measurements.length;
+      const average =
+        measurements.reduce((a, b) => a + b, 0) / measurements.length;
 
       // Baseline: Peak < 50, Average < 20
       expect(peak).toBeLessThan(50);
@@ -204,6 +216,7 @@ describe('Memory Leak Detection Harness', () => {
 ```
 
 **Usage:**
+
 1. Run harness against RegionProcessor (establish baseline)
 2. Run harness against PlaybackEngine (verify match)
 3. Compare results, fail if PlaybackEngine is worse
@@ -215,11 +228,13 @@ describe('Memory Leak Detection Harness', () => {
 ### 2.1 Existing Test Files
 
 #### Test File 1: RegionProcessor.tempo.test.ts ✅
+
 **Location:** `apps/frontend/src/domains/playback/services/core/__tests__/RegionProcessor.tempo.test.ts`
 
 **Purpose:** FAANG-style instant tempo change implementation
 
 **Test Cases:**
+
 1. **Debounced Tempo Changes**
    - ✅ Debounce rapid tempo changes (50ms threshold)
    - ✅ Only reschedule once after debounce period
@@ -242,6 +257,7 @@ describe('Memory Leak Detection Harness', () => {
    - ✅ Only schedule future events
 
 **Baseline Metrics:**
+
 - ✅ Debounce threshold: 50ms
 - ✅ Reschedule calls: 1 per tempo change (not N)
 - ✅ Position drift: <10ms after tempo change
@@ -250,11 +266,13 @@ describe('Memory Leak Detection Harness', () => {
 ---
 
 #### Test File 2: RegionProcessor.tempo.integration.test.ts
+
 **Location:** `apps/frontend/src/domains/playback/services/core/__tests__/RegionProcessor.tempo.integration.test.ts`
 
 **Purpose:** Integration tests for tempo change during playback
 
 **Test Cases:**
+
 1. **Tempo Change During Playback**
    - Test: Change tempo while playing
    - Verify: Smooth transition, no audio glitches
@@ -271,6 +289,7 @@ describe('Memory Leak Detection Harness', () => {
    - Baseline: No errors, accurate timing
 
 **Baseline Metrics:**
+
 - ✅ Tempo change latency < 50ms
 - ✅ Rapid changes → 1 reschedule
 - ✅ Full tempo range supported (40-240 BPM)
@@ -282,6 +301,7 @@ describe('Memory Leak Detection Harness', () => {
 **File:** `regression-suite/tempo-regression.test.ts` (NEW)
 
 **Test Scenarios:**
+
 1. **Bug #6 Fix Verification**
    - Verify 50ms debounce threshold preserved
    - Verify no UI freeze on rapid tempo changes
@@ -303,11 +323,13 @@ describe('Memory Leak Detection Harness', () => {
 ### 3.1 Existing Tests
 
 **Files:**
+
 - `RegionProcessor.phase1.integration.test.ts` - Basic scheduling
 - `RegionProcessor.phase2.integration.test.ts` - Multi-instrument scheduling
 - `RegionProcessor.phase3.integration.test.ts` - Complex patterns
 
 **Test Cases:**
+
 1. **Timing Precision**
    - ✅ Schedule 1000+ events
    - ✅ Measure jitter (variance from expected time)
@@ -323,6 +345,7 @@ describe('Memory Leak Detection Harness', () => {
    - ✅ No audio dropouts during scheduling
 
 **Baseline Metrics:**
+
 - ✅ Average jitter < 1ms
 - ✅ Max jitter < 5ms
 - ✅ Scheduling time < 100ms for 1000 events
@@ -363,7 +386,9 @@ describe('Event Scheduling Accuracy', () => {
     expect(avgJitter).toBeLessThan(1); // <1ms average
     expect(maxJitter).toBeLessThan(5); // <5ms max
 
-    console.log(`✅ Jitter: avg=${avgJitter.toFixed(3)}ms, max=${maxJitter.toFixed(3)}ms`);
+    console.log(
+      `✅ Jitter: avg=${avgJitter.toFixed(3)}ms, max=${maxJitter.toFixed(3)}ms`,
+    );
   });
 });
 ```
@@ -377,6 +402,7 @@ describe('Event Scheduling Accuracy', () => {
 **File:** `regression-suite/exercise-switching.test.ts` (NEW)
 
 **Test Scenarios:**
+
 1. **Rapid Exercise Switching**
    - Test: 100 exercise switches
    - Measure: Memory growth, no crashes
@@ -401,6 +427,7 @@ describe('Event Scheduling Accuracy', () => {
    - Baseline: <100MB total growth
 
 **Baseline Metrics:**
+
 - ✅ 100 switches → <100MB growth
 - ✅ Switch latency < 100ms
 - ✅ 100% success rate (no crashes)
@@ -472,16 +499,16 @@ describe('Exercise Switching Regression', () => {
 
 #### Metrics to Track
 
-| Metric | Baseline (RegionProcessor) | Target (PlaybackEngine) |
-|--------|---------------------------|-------------------------|
-| **Initialization Time** | <500ms | ≤500ms (match) |
-| **First Audio Latency** | <100ms after start() | ≤100ms (match) |
-| **Scheduling 1000 Events** | <100ms | ≤100ms (match) |
-| **Memory (10min playback)** | <50MB growth | ≤50MB (match) |
-| **Tempo Change Latency** | <50ms | ≤50ms (match) |
-| **Exercise Switch Time** | <100ms | ≤100ms (match) |
-| **Peak Active Sources** | <50 | ≤50 (match) |
-| **CPU Usage (playback)** | <5% (single core) | ≤5% (match) |
+| Metric                      | Baseline (RegionProcessor) | Target (PlaybackEngine) |
+| --------------------------- | -------------------------- | ----------------------- |
+| **Initialization Time**     | <500ms                     | ≤500ms (match)          |
+| **First Audio Latency**     | <100ms after start()       | ≤100ms (match)          |
+| **Scheduling 1000 Events**  | <100ms                     | ≤100ms (match)          |
+| **Memory (10min playback)** | <50MB growth               | ≤50MB (match)           |
+| **Tempo Change Latency**    | <50ms                      | ≤50ms (match)           |
+| **Exercise Switch Time**    | <100ms                     | ≤100ms (match)          |
+| **Peak Active Sources**     | <50                        | ≤50 (match)             |
+| **CPU Usage (playback)**    | <5% (single core)          | ≤5% (match)             |
 
 ---
 
@@ -558,7 +585,9 @@ describe('Performance Baselines', () => {
     const growth = finalMemory - initialMemory;
 
     expect(growth).toBeLessThan(50 * 1024 * 1024); // 50MB
-    console.log(`✅ 10min memory growth: ${(growth / 1024 / 1024).toFixed(2)}MB`);
+    console.log(
+      `✅ 10min memory growth: ${(growth / 1024 / 1024).toFixed(2)}MB`,
+    );
   });
 });
 ```
@@ -593,6 +622,7 @@ apps/frontend/src/domains/playback/services/core/__tests__/
 ### 6.2 Test Execution
 
 #### Run All Regression Tests
+
 ```bash
 # Run entire regression suite
 pnpm vitest run apps/frontend/src/domains/playback/services/core/__tests__/regression-suite/
@@ -605,6 +635,7 @@ pnpm vitest run apps/frontend/src/domains/playback/services/core/__tests__/regre
 ```
 
 #### Baseline Establishment (Phase 0.3)
+
 ```bash
 # Run all tests against RegionProcessor to establish baseline
 pnpm vitest run apps/frontend/src/domains/playback/services/core/__tests__/ > baselines/regionprocessor-baseline.txt
@@ -613,6 +644,7 @@ pnpm vitest run apps/frontend/src/domains/playback/services/core/__tests__/ > ba
 ```
 
 #### Comparison (Phase 2.1)
+
 ```bash
 # Run tests against PlaybackEngine
 pnpm vitest run apps/frontend/src/domains/playback/services/core/__tests__/ > baselines/playbackengine-results.txt
@@ -626,6 +658,7 @@ diff baselines/regionprocessor-baseline.txt baselines/playbackengine-results.txt
 ## Section 7: Success Criteria
 
 ### 7.1 Phase 0.3 Complete When:
+
 - [x] All 5 regression test files created
 - [x] Baseline metrics documented for RegionProcessor
 - [x] Memory leak detection harness operational
@@ -635,6 +668,7 @@ diff baselines/regionprocessor-baseline.txt baselines/playbackengine-results.txt
 - [x] Performance baselines established
 
 ### 7.2 Phase 2.1 Complete When (Future):
+
 - [ ] PlaybackEngine passes ALL regression tests
 - [ ] Memory behavior matches or improves baseline
 - [ ] Tempo change latency ≤ RegionProcessor
@@ -647,30 +681,35 @@ diff baselines/regionprocessor-baseline.txt baselines/playbackengine-results.txt
 ## Section 8: Baseline Metrics Summary
 
 ### 8.1 Memory Leak Prevention
+
 - **100 play/stop cycles:** 0 leaked sources ✅
 - **Peak active sources:** <50 during playback ✅
 - **1000 events:** <500ms cleanup time ✅
 - **Continuous playback:** <10 peak tracking map size ✅
 
 ### 8.2 Tempo Change Handling
+
 - **Debounce threshold:** 50ms ✅
 - **Reschedule count:** 1 per tempo change ✅
 - **Position drift:** <10ms after change ✅
 - **UI responsiveness:** No freeze on rapid changes ✅
 
 ### 8.3 Event Scheduling
+
 - **Average jitter:** <1ms ✅
 - **Max jitter:** <5ms ✅
 - **Scheduling time (1000 events):** <100ms ✅
 - **Sync drift:** <2ms between instruments ✅
 
 ### 8.4 Exercise Switching
+
 - **100 switches:** <100MB growth ✅
 - **Switch latency:** <100ms ✅
 - **Success rate:** 100% (no crashes) ✅
 - **Settings preservation:** 100% ✅
 
 ### 8.5 Performance
+
 - **Initialization:** <500ms ✅
 - **First audio latency:** <100ms ✅
 - **10min memory growth:** <50MB ✅
@@ -764,7 +803,7 @@ export function measureMemoryUsage(): number {
 
 export async function profileMemory(
   fn: () => Promise<void>,
-  label: string
+  label: string,
 ): Promise<{ before: number; after: number; growth: number }> {
   const before = measureMemoryUsage();
   await fn();
@@ -782,23 +821,27 @@ export async function profileMemory(
 ## Section 10: Next Steps
 
 ### 10.1 Immediate Actions (Phase 0.3)
+
 1. ✅ Create 5 new regression test files
 2. ✅ Run baseline tests against RegionProcessor
 3. ✅ Document all baseline metrics
 4. ✅ Review with team for completeness
 
 ### 10.2 Phase 1 Actions (Core Refactor)
+
 1. Keep regression tests passing during refactor
 2. Run tests frequently (CI/CD integration)
 3. Monitor for any baseline degradation
 
 ### 10.3 Phase 2 Actions (Migration)
+
 1. Run regression suite against PlaybackEngine
 2. Compare results to baselines
 3. Fix any regressions before proceeding
 4. Document any improvements
 
 ### 10.4 Phase 3 Actions (Rollout)
+
 1. Run regression suite in production environment
 2. Monitor real-world performance metrics
 3. Compare production to test baselines

@@ -23,13 +23,14 @@ Event listeners were not being cleaned up when components unmounted or services 
 ### Missing Cleanup in RegionProcessor
 
 **[RegionProcessor.ts:366](apps/frontend/src/domains/playback/services/core/RegionProcessor.ts#L366)**
+
 ```typescript
 // ❌ BEFORE (BUG):
 this.eventBus.on(
   'transport:tempo-change',
   (data: { tempo: number; bpm: number }) => {
     // Handler code...
-  }
+  },
 );
 // Problem: No way to unsubscribe! Handler stays in memory forever
 ```
@@ -37,6 +38,7 @@ this.eventBus.on(
 ### Missing Cleanup in AudioProvider
 
 **[AudioProvider.tsx:251](apps/frontend/src/domains/playback/providers/AudioProvider.tsx#L251)**
+
 ```typescript
 // ❌ BEFORE (BUG):
 const eventBus = services.getEventBus();
@@ -70,25 +72,28 @@ return () => {
 #### 1. RegionProcessor - Store Unsubscribe Function
 
 **[RegionProcessor.ts:235](apps/frontend/src/domains/playback/services/core/RegionProcessor.ts#L235)**
+
 ```typescript
 // ✅ BUG #7 FIX: Store unsubscribe functions for event listener cleanup
 private unsubscribeTempoChange: (() => void) | null = null;
 ```
 
 **[RegionProcessor.ts:366](apps/frontend/src/domains/playback/services/core/RegionProcessor.ts#L366)**
+
 ```typescript
 // ✅ BUG #7 FIX: Store unsubscribe function for cleanup
 this.unsubscribeTempoChange = this.eventBus.on(
   'transport:tempo-change',
   (data: { tempo: number; bpm: number }) => {
     // Handler code...
-  }
+  },
 );
 ```
 
 #### 2. RegionProcessor - Add dispose() Method
 
 **[RegionProcessor.ts:1278-1302](apps/frontend/src/domains/playback/services/core/RegionProcessor.ts#L1278-L1302)**
+
 ```typescript
 /**
  * ✅ BUG #7 FIX: Dispose method to clean up event listeners and prevent memory leaks
@@ -121,22 +126,28 @@ dispose(): void {
 #### 3. AudioProvider - Store Unsubscribe Function
 
 **[AudioProvider.tsx:103](apps/frontend/src/domains/playback/providers/AudioProvider.tsx#L103)**
+
 ```typescript
 // ✅ BUG #7 FIX: Store unsubscribe function for audio:initialized event
 const unsubscribeAudioInitRef = useRef<(() => void) | null>(null);
 ```
 
 **[AudioProvider.tsx:254](apps/frontend/src/domains/playback/providers/AudioProvider.tsx#L254)**
+
 ```typescript
 // Listen for audio initialization
 // ✅ BUG #7 FIX: Store unsubscribe function for cleanup
 const eventBus = services.getEventBus();
-unsubscribeAudioInitRef.current = eventBus.on('audio:initialized', handleAudioInitialized);
+unsubscribeAudioInitRef.current = eventBus.on(
+  'audio:initialized',
+  handleAudioInitialized,
+);
 ```
 
 #### 4. AudioProvider - Cleanup on Unmount
 
 **[AudioProvider.tsx:309-314](apps/frontend/src/domains/playback/providers/AudioProvider.tsx#L309-L314)**
+
 ```typescript
 // ✅ BUG #7 FIX: Unsubscribe from audio:initialized event
 if (unsubscribeAudioInitRef.current) {
@@ -155,6 +166,7 @@ Created comprehensive test suite: [bug7-event-listener-cleanup.test.ts](apps/fro
 ### Test Results: 19/19 passing ✅
 
 #### EventBus Unsubscribe Functionality (5 tests)
+
 - ✅ Should return unsubscribe function when subscribing to event
 - ✅ Should remove handler when unsubscribe is called
 - ✅ Should clean up event from handlers map when all listeners unsubscribe
@@ -162,6 +174,7 @@ Created comprehensive test suite: [bug7-event-listener-cleanup.test.ts](apps/fro
 - ✅ Should handle unsubscribing from different events independently
 
 #### RegionProcessor dispose() Method (6 tests)
+
 - ✅ Should have dispose method
 - ✅ Should unsubscribe from tempo-change event when disposed
 - ✅ Should clear tempo debounce timer when disposed
@@ -170,15 +183,18 @@ Created comprehensive test suite: [bug7-event-listener-cleanup.test.ts](apps/fro
 - ✅ Should set unsubscribe function to null after disposal
 
 #### Memory Leak Prevention (2 tests)
+
 - ✅ Should not accumulate handlers when creating and disposing multiple instances
 - ✅ Should prevent handlers from being called after component unmount
 
 #### Integration Scenarios (3 tests)
+
 - ✅ Should handle rapid create/dispose cycles (100 instances)
 - ✅ Should maintain EventBus functionality after multiple dispose calls
 - ✅ Should handle dispose during tempo change processing
 
 #### Edge Cases (3 tests)
+
 - ✅ Should handle dispose before any events are emitted
 - ✅ Should handle dispose with null EventBus (defensive coding)
 - ✅ Should clear timer even if unsubscribe is null
@@ -190,11 +206,13 @@ Created comprehensive test suite: [bug7-event-listener-cleanup.test.ts](apps/fro
 ### How to Verify the Fix
 
 1. **Run tests**:
+
    ```bash
    pnpm vitest run apps/frontend/src/domains/playback/services/core/__tests__/bug7-event-listener-cleanup.test.ts
    ```
 
 2. **Check for memory leaks in browser**:
+
    ```typescript
    // In browser console:
    // Create multiple instances
@@ -290,6 +308,7 @@ useEffect(() => {
 ## Related Files
 
 ### Modified Files
+
 1. [RegionProcessor.ts](apps/frontend/src/domains/playback/services/core/RegionProcessor.ts)
    - Line 235: Added `unsubscribeTempoChange` property
    - Line 366: Store unsubscribe function
@@ -301,9 +320,11 @@ useEffect(() => {
    - Lines 309-314: Cleanup on unmount
 
 ### Test Files
+
 1. [bug7-event-listener-cleanup.test.ts](apps/frontend/src/domains/playback/services/core/__tests__/bug7-event-listener-cleanup.test.ts) - NEW: 19 comprehensive tests
 
 ### Related Infrastructure
+
 1. [EventBus.ts](apps/frontend/src/domains/playback/services/core/EventBus.ts)
    - Lines 146-164: `.on()` method returns unsubscribe function
    - Lines 158-163: Unsubscribe implementation

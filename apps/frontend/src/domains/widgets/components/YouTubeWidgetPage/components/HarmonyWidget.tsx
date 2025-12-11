@@ -133,10 +133,9 @@ const HarmonyWidgetComponent = ({
     useState('Jazz Standard');
 
   // Initialize with harmonyInstrument prop if available, otherwise grand piano as the default
-  const [currentInstrument, setCurrentInstrument] =
-    useState<KeyboardInstrumentType | undefined>(
-      harmonyInstrument as KeyboardInstrumentType | undefined
-    );
+  const [currentInstrument, setCurrentInstrument] = useState<
+    KeyboardInstrumentType | undefined
+  >(harmonyInstrument as KeyboardInstrumentType | undefined);
 
   // State initialization on mount
   useEffect(() => {
@@ -144,7 +143,9 @@ const HarmonyWidgetComponent = ({
   }, []); // Empty deps = run once on mount
 
   // CRITICAL: Store currentInstrument in a ref so createAudioNodeAttempt always reads the latest value
-  const currentInstrumentRef = useRef<KeyboardInstrumentType | undefined>(currentInstrument);
+  const currentInstrumentRef = useRef<KeyboardInstrumentType | undefined>(
+    currentInstrument,
+  );
   useEffect(() => {
     currentInstrumentRef.current = currentInstrument;
   }, [currentInstrument]);
@@ -162,7 +163,13 @@ const HarmonyWidgetComponent = ({
       hasHarmonyNotes: !!exercise?.harmonyNotes,
       harmonyNotesCount: exercise?.harmonyNotes?.length || 0,
     });
-  }, [harmonyInstrument, currentInstrument, isPlaying, isVisible, exercise?.id?.value]);
+  }, [
+    harmonyInstrument,
+    currentInstrument,
+    isPlaying,
+    isVisible,
+    exercise?.id?.value,
+  ]);
   const [isMuted, setIsMuted] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [localCurrentChord, setLocalCurrentChord] = useState(currentChord);
@@ -176,15 +183,17 @@ const HarmonyWidgetComponent = ({
   });
 
   // Use pattern selector hook if tutorialId is provided
-  const patternSelector = tutorialId ? usePatternSelector({
-    tutorialId,
-    onPatternChange: (type, pattern) => {
-      if (type === 'harmony' && pattern.midiData) {
-        // Convert pattern library format to chord progression
-        handlePatternLibraryChange(pattern);
-      }
-    }
-  }) : null;
+  const patternSelector = tutorialId
+    ? usePatternSelector({
+        tutorialId,
+        onPatternChange: (type, pattern) => {
+          if (type === 'harmony' && pattern.midiData) {
+            // Convert pattern library format to chord progression
+            handlePatternLibraryChange(pattern);
+          }
+        },
+      })
+    : null;
 
   // Get sync context for global event bus
   const syncContext = useSyncContext();
@@ -198,9 +207,12 @@ const HarmonyWidgetComponent = ({
     // Listen to window event (from ExerciseSelector)
     const handleWindowEvent = (event: Event) => {
       const customEvent = event as CustomEvent;
-      console.log('🎧 [HARMONY-WIDGET] Received harmony-samples-loaded event (window):', customEvent.detail);
+      console.log(
+        '🎧 [HARMONY-WIDGET] Received harmony-samples-loaded event (window):',
+        customEvent.detail,
+      );
       // Increment trigger to force registration effect to re-run
-      setSamplesLoadedTrigger(prev => prev + 1);
+      setSamplesLoadedTrigger((prev) => prev + 1);
     };
 
     window.addEventListener('harmony-samples-loaded', handleWindowEvent);
@@ -208,10 +220,16 @@ const HarmonyWidgetComponent = ({
     // Also listen to sync context event (from YouTubeWidgetPage if used)
     let unsubscribe: (() => void) | undefined;
     if (subscribeToEvent) {
-      unsubscribe = subscribeToEvent('harmony-samples-loaded', (payload: any) => {
-        console.log('🎧 [HARMONY-WIDGET] Received harmony-samples-loaded event (sync):', payload);
-        setSamplesLoadedTrigger(prev => prev + 1);
-      });
+      unsubscribe = subscribeToEvent(
+        'harmony-samples-loaded',
+        (payload: any) => {
+          console.log(
+            '🎧 [HARMONY-WIDGET] Received harmony-samples-loaded event (sync):',
+            payload,
+          );
+          setSamplesLoadedTrigger((prev) => prev + 1);
+        },
+      );
     }
 
     return () => {
@@ -253,13 +271,17 @@ const HarmonyWidgetComponent = ({
 
   // CHECKPOINT 3: useEffect instrument update - when harmonyInstrument prop changes
   useEffect(() => {
-    logger.debug('🔍 [CHECKPOINT-3] harmonyInstrument prop useEffect triggered', {
-      harmonyInstrumentProp: harmonyInstrument,
-      currentInstrumentState: currentInstrument,
-      currentInstrumentRef: currentInstrumentRef.current,
-      willUpdate: !!harmonyInstrument && harmonyInstrument !== currentInstrument,
-      exerciseHarmonyInstrument: exercise?.harmonyInstrument,
-    });
+    logger.debug(
+      '🔍 [CHECKPOINT-3] harmonyInstrument prop useEffect triggered',
+      {
+        harmonyInstrumentProp: harmonyInstrument,
+        currentInstrumentState: currentInstrument,
+        currentInstrumentRef: currentInstrumentRef.current,
+        willUpdate:
+          !!harmonyInstrument && harmonyInstrument !== currentInstrument,
+        exerciseHarmonyInstrument: exercise?.harmonyInstrument,
+      },
+    );
 
     if (harmonyInstrument && harmonyInstrument !== currentInstrument) {
       logger.debug('🔍 [CHECKPOINT-3-UPDATE] Calling setCurrentInstrument', {
@@ -267,7 +289,9 @@ const HarmonyWidgetComponent = ({
         to: harmonyInstrument,
       });
       setCurrentInstrument(harmonyInstrument as KeyboardInstrumentType);
-      logger.debug('🔍 [CHECKPOINT-3-AFTER] After setCurrentInstrument called (state update is async)');
+      logger.debug(
+        '🔍 [CHECKPOINT-3-AFTER] After setCurrentInstrument called (state update is async)',
+      );
     } else {
       logger.debug('🔍 [CHECKPOINT-3-SKIP] Not updating - no change needed');
     }
@@ -287,7 +311,11 @@ const HarmonyWidgetComponent = ({
       currentInstrumentState: currentInstrument,
       harmonyInstrumentProp: harmonyInstrument,
     });
-  }, [exercise?.id, exercise?.harmonyInstrument, exercise?.harmonyNotes?.length]);
+  }, [
+    exercise?.id,
+    exercise?.harmonyInstrument,
+    exercise?.harmonyNotes?.length,
+  ]);
 
   // Log when exercise prop changes
   useEffect(() => {
@@ -301,15 +329,18 @@ const HarmonyWidgetComponent = ({
       // CC64 DIAGNOSTIC: Check if exercise has sustain pedal data
       hasHarmonyControlChanges: !!exercise?.harmonyControlChanges,
       controlChangesCount: exercise?.harmonyControlChanges?.length || 0,
-      cc64Events: exercise?.harmonyControlChanges?.filter((cc: any) => cc.cc === 64).length || 0,
-      cc64Sample: exercise?.harmonyControlChanges
-        ?.filter((cc: any) => cc.cc === 64)
-        .slice(0, 3)
-        .map((cc: any) => ({
-          value: cc.value,
-          state: cc.value >= 64 ? 'DOWN' : 'UP',
-          measure: cc.position?.measure,
-        })) || [],
+      cc64Events:
+        exercise?.harmonyControlChanges?.filter((cc: any) => cc.cc === 64)
+          .length || 0,
+      cc64Sample:
+        exercise?.harmonyControlChanges
+          ?.filter((cc: any) => cc.cc === 64)
+          .slice(0, 3)
+          .map((cc: any) => ({
+            value: cc.value,
+            state: cc.value >= 64 ? 'DOWN' : 'UP',
+            measure: cc.position?.measure,
+          })) || [],
     });
   }, [exercise]);
 
@@ -378,7 +409,10 @@ const HarmonyWidgetComponent = ({
       isCreatingPluginRef: isCreatingPluginRef.current,
       hasKeyboardPlugin: !!keyboardPluginRef.current,
       wamPluginLoaded,
-      willSkip: isCreatingPluginRef.current || !!keyboardPluginRef.current || wamPluginLoaded,
+      willSkip:
+        isCreatingPluginRef.current ||
+        !!keyboardPluginRef.current ||
+        wamPluginLoaded,
     });
 
     // Prevent multiple simultaneous creation attempts
@@ -434,24 +468,33 @@ const HarmonyWidgetComponent = ({
 
     // FALLBACK: If still no context, try window.__audioContext or create new one
     if (!context) {
-      logger.debug('🔍 [CREATE-CHECKPOINT-9.5] No context yet, trying window fallbacks');
+      logger.debug(
+        '🔍 [CREATE-CHECKPOINT-9.5] No context yet, trying window fallbacks',
+      );
 
       // Try window.__audioContext (might be set by InitialSamplePreloader)
       if ((window as any).__audioContext) {
         context = (window as any).__audioContext;
-        logger.debug('🔍 [CREATE-CHECKPOINT-9.6] Got context from window.__audioContext', {
-          hasContext: !!context,
-          contextState: context?.state,
-        });
+        logger.debug(
+          '🔍 [CREATE-CHECKPOINT-9.6] Got context from window.__audioContext',
+          {
+            hasContext: !!context,
+            contextState: context?.state,
+          },
+        );
       }
       // Try Tone.getContext() if available globally
       else if ((window as any).Tone && (window as any).Tone.getContext) {
         const toneContext = (window as any).Tone.getContext();
-        context = toneContext?.rawContext || toneContext?._context || toneContext;
-        logger.debug('🔍 [CREATE-CHECKPOINT-9.7] Got context from window.Tone.getContext()', {
-          hasContext: !!context,
-          contextState: context?.state,
-        });
+        context =
+          toneContext?.rawContext || toneContext?._context || toneContext;
+        logger.debug(
+          '🔍 [CREATE-CHECKPOINT-9.7] Got context from window.Tone.getContext()',
+          {
+            hasContext: !!context,
+            contextState: context?.state,
+          },
+        );
       }
       // Last resort: create a new AudioContext
       else if (typeof AudioContext !== 'undefined') {
@@ -476,8 +519,12 @@ const HarmonyWidgetComponent = ({
     // The browser's autoplay policy prevents AudioContext from starting without user gesture
     // We create the plugin now (with suspended context) and it will auto-resume when user clicks Play
     if (context && context.state === 'suspended') {
-      logger.debug('🔍 [CREATE-CHECKPOINT-11] Context is suspended, will create plugin anyway (browser autoplay policy)');
-      logger.info('🎹 HarmonyWidget: Audio context is suspended (autoplay policy), creating plugin anyway - will resume on Play');
+      logger.debug(
+        '🔍 [CREATE-CHECKPOINT-11] Context is suspended, will create plugin anyway (browser autoplay policy)',
+      );
+      logger.info(
+        '🎹 HarmonyWidget: Audio context is suspended (autoplay policy), creating plugin anyway - will resume on Play',
+      );
       // DON'T call resume() here - it will fail due to autoplay policy
       // AudioContext will auto-resume when user clicks Play button
     }
@@ -489,26 +536,38 @@ const HarmonyWidgetComponent = ({
     });
 
     if (context && context instanceof AudioContext) {
-      logger.debug('🔍 [CREATE-CHECKPOINT-13] Context is AudioContext, state', context.state);
+      logger.debug(
+        '🔍 [CREATE-CHECKPOINT-13] Context is AudioContext, state',
+        context.state,
+      );
       // REMOVED: Early return for suspended context - allow plugin creation
-      logger.debug('🔍 [CREATE-CHECKPOINT-15] Proceeding with plugin creation regardless of context state');
+      logger.debug(
+        '🔍 [CREATE-CHECKPOINT-15] Proceeding with plugin creation regardless of context state',
+      );
 
       try {
-        logger.debug('🔍 [CREATE-CHECKPOINT-16] In try block, reading currentInstrumentRef');
+        logger.debug(
+          '🔍 [CREATE-CHECKPOINT-16] In try block, reading currentInstrumentRef',
+        );
 
         // CHECKPOINT 6: Instrument resolution - read from all possible sources
-        logger.debug('🔍 [CHECKPOINT-6] Instrument resolution from multiple sources', {
-          currentInstrumentRef: currentInstrumentRef.current,
-          currentInstrumentState: currentInstrument,
-          harmonyInstrumentProp: harmonyInstrument,
-          exerciseHarmonyInstrument: exercise?.harmonyInstrument,
-          exerciseId: exercise?.id?.value,
-          exerciseTitle: exercise?.title,
-        });
+        logger.debug(
+          '🔍 [CHECKPOINT-6] Instrument resolution from multiple sources',
+          {
+            currentInstrumentRef: currentInstrumentRef.current,
+            currentInstrumentState: currentInstrument,
+            harmonyInstrumentProp: harmonyInstrument,
+            exerciseHarmonyInstrument: exercise?.harmonyInstrument,
+            exerciseId: exercise?.id?.value,
+            exerciseTitle: exercise?.title,
+          },
+        );
 
         // CRITICAL FIX: Read currentInstrument from ref to get the LATEST value
         // Using ref ensures we don't have stale closure issues
-        const desiredInstrument = currentInstrumentRef.current as KeyboardInstrumentType | undefined;
+        const desiredInstrument = currentInstrumentRef.current as
+          | KeyboardInstrumentType
+          | undefined;
 
         // CRITICAL DEBUG: Log what HarmonyWidget receives from props AND state
         // console.log('🔍 [STATE-FLOW-4] HarmonyWidget createAudioNodeAttempt:', {
@@ -522,10 +581,13 @@ const HarmonyWidgetComponent = ({
         //   hasExercise: !!exercise,
         // });
 
-        logger.debug('🔍 [CREATE-CHECKPOINT-17] Checking if desiredInstrument exists', {
-          desiredInstrument,
-          hasDesiredInstrument: !!desiredInstrument,
-        });
+        logger.debug(
+          '🔍 [CREATE-CHECKPOINT-17] Checking if desiredInstrument exists',
+          {
+            desiredInstrument,
+            hasDesiredInstrument: !!desiredInstrument,
+          },
+        );
 
         logger.debug('🔍 [CHECKPOINT-6-RESULT] Resolved instrument', {
           desiredInstrument,
@@ -535,19 +597,33 @@ const HarmonyWidgetComponent = ({
 
         // CRITICAL: Don't create plugin until we have a valid instrument from exercise
         if (!desiredInstrument) {
-          logger.debug('🔍 [CREATE-CHECKPOINT-18-RETURN] No desiredInstrument, returning early');
-          logger.debug('🔍 [CHECKPOINT-6-EARLY-RETURN] Cannot proceed - no instrument specified from any source');
-          logger.warn('🎹 HarmonyWidget: No harmonyInstrument specified, waiting for exercise to load');
+          logger.debug(
+            '🔍 [CREATE-CHECKPOINT-18-RETURN] No desiredInstrument, returning early',
+          );
+          logger.debug(
+            '🔍 [CHECKPOINT-6-EARLY-RETURN] Cannot proceed - no instrument specified from any source',
+          );
+          logger.warn(
+            '🎹 HarmonyWidget: No harmonyInstrument specified, waiting for exercise to load',
+          );
           isCreatingPluginRef.current = false;
           return;
         }
-        logger.debug('🔍 [CREATE-CHECKPOINT-19] Has desiredInstrument, proceeding to singleton call');
-        logger.debug('🔍 [CHECKPOINT-6-SUCCESS] Instrument resolved successfully', desiredInstrument);
-
-        logger.debug('🔍 [HARMONY-WIDGET] About to get WamKeyboard from PluginManager', {
+        logger.debug(
+          '🔍 [CREATE-CHECKPOINT-19] Has desiredInstrument, proceeding to singleton call',
+        );
+        logger.debug(
+          '🔍 [CHECKPOINT-6-SUCCESS] Instrument resolved successfully',
           desiredInstrument,
-          contextState: context.state,
-        });
+        );
+
+        logger.debug(
+          '🔍 [HARMONY-WIDGET] About to get WamKeyboard from PluginManager',
+          {
+            desiredInstrument,
+            contextState: context.state,
+          },
+        );
         logger.info(
           '🎹 HarmonyWidget: Requesting WamKeyboard from PluginManager with instrument:',
           desiredInstrument,
@@ -558,7 +634,9 @@ const HarmonyWidgetComponent = ({
         // ✅ FIX: Use WindowRegistry instead of direct window access
         const coreServices = WindowRegistry.getCoreServices();
         if (!coreServices) {
-          throw new Error('CoreServices not available - cannot get PluginManager');
+          throw new Error(
+            'CoreServices not available - cannot get PluginManager',
+          );
         }
 
         // DIAGNOSTIC: Check if CoreServices is initialized
@@ -570,14 +648,23 @@ const HarmonyWidgetComponent = ({
 
         // If CoreServices not initialized, initialize it now
         if (!isInitialized) {
-          logger.debug('🔍 [CREATE-CHECKPOINT-19.6] CoreServices not initialized, initializing now');
-          logger.info('CoreServices not initialized, initializing to register plugins...');
+          logger.debug(
+            '🔍 [CREATE-CHECKPOINT-19.6] CoreServices not initialized, initializing now',
+          );
+          logger.info(
+            'CoreServices not initialized, initializing to register plugins...',
+          );
           try {
             await coreServices.initialize();
-            logger.debug('🔍 [CREATE-CHECKPOINT-19.7] CoreServices initialized successfully');
+            logger.debug(
+              '🔍 [CREATE-CHECKPOINT-19.7] CoreServices initialized successfully',
+            );
             logger.info('CoreServices initialized successfully');
           } catch (initError) {
-            logger.debug('🔍 [CREATE-CHECKPOINT-19.8-ERROR] CoreServices initialization failed', initError);
+            logger.debug(
+              '🔍 [CREATE-CHECKPOINT-19.8-ERROR] CoreServices initialization failed',
+              initError,
+            );
             logger.error('CoreServices initialization failed:', initError);
             isCreatingPluginRef.current = false;
             return;
@@ -599,22 +686,32 @@ const HarmonyWidgetComponent = ({
           const currentRetries = pluginCreationRetryCountRef.current;
 
           if (currentRetries >= MAX_RETRIES) {
-            logger.debug(`🔍 [CREATE-CHECKPOINT-20-MAX-RETRIES] Plugin not registered after ${MAX_RETRIES} attempts (${MAX_RETRIES * 100}ms)`);
-            logger.error('WamKeyboard plugin not registered after maximum retries - giving up');
+            logger.debug(
+              `🔍 [CREATE-CHECKPOINT-20-MAX-RETRIES] Plugin not registered after ${MAX_RETRIES} attempts (${MAX_RETRIES * 100}ms)`,
+            );
+            logger.error(
+              'WamKeyboard plugin not registered after maximum retries - giving up',
+            );
             isCreatingPluginRef.current = false;
             pluginCreationRetryCountRef.current = 0; // Reset for potential future attempts
             return;
           }
 
-          logger.debug(`🔍 [CREATE-CHECKPOINT-20] Plugin not registered yet, will retry in 100ms (attempt ${currentRetries + 1}/${MAX_RETRIES})`);
-          logger.info(`WamKeyboard plugin not registered yet, retrying in 100ms... (attempt ${currentRetries + 1}/${MAX_RETRIES})`);
+          logger.debug(
+            `🔍 [CREATE-CHECKPOINT-20] Plugin not registered yet, will retry in 100ms (attempt ${currentRetries + 1}/${MAX_RETRIES})`,
+          );
+          logger.info(
+            `WamKeyboard plugin not registered yet, retrying in 100ms... (attempt ${currentRetries + 1}/${MAX_RETRIES})`,
+          );
           isCreatingPluginRef.current = false;
           pluginCreationRetryCountRef.current++;
 
           // Retry after a short delay to allow CoreServices to finish registering plugins
           setTimeout(() => {
             if (!wamPluginLoaded && !keyboardPluginRef.current) {
-              logger.info('🎹 HarmonyWidget: Retrying plugin creation after registration delay');
+              logger.info(
+                '🎹 HarmonyWidget: Retrying plugin creation after registration delay',
+              );
               createAudioNodeAttempt();
             }
           }, 100);
@@ -626,7 +723,9 @@ const HarmonyWidgetComponent = ({
 
         if (!keyboardPlugin) {
           logger.debug('🔍 [CREATE-CHECKPOINT-20.5] Plugin returned null');
-          logger.error('WamKeyboardPlugin not found in PluginManager (returned null after successful getPlugin call)');
+          logger.error(
+            'WamKeyboardPlugin not found in PluginManager (returned null after successful getPlugin call)',
+          );
           isCreatingPluginRef.current = false;
           return;
         }
@@ -637,7 +736,10 @@ const HarmonyWidgetComponent = ({
           await pluginManager.loadPlugin('wam-keyboard');
         }
 
-        if (keyboardPlugin.state === 'loaded' || keyboardPlugin.state === 'inactive') {
+        if (
+          keyboardPlugin.state === 'loaded' ||
+          keyboardPlugin.state === 'inactive'
+        ) {
           logger.info('Activating WamKeyboardPlugin...');
           await pluginManager.activatePlugin('wam-keyboard');
         }
@@ -645,7 +747,9 @@ const HarmonyWidgetComponent = ({
         // Get the underlying WamKeyboard instance
         const plugin = keyboardPlugin.getWamKeyboard();
         if (!plugin) {
-          logger.error('WamKeyboard instance not initialized in plugin wrapper');
+          logger.error(
+            'WamKeyboard instance not initialized in plugin wrapper',
+          );
           isCreatingPluginRef.current = false;
           return;
         }
@@ -655,7 +759,10 @@ const HarmonyWidgetComponent = ({
           hasAudioNode: !!plugin?.audioNode,
           currentInstrument: plugin?.audioNode?.currentInstrument,
         });
-        logger.info('🎹 HarmonyWidget: Got WamKeyboard from PluginManager:', plugin);
+        logger.info(
+          '🎹 HarmonyWidget: Got WamKeyboard from PluginManager:',
+          plugin,
+        );
 
         // Store the plugin instance
         keyboardPluginRef.current = plugin;
@@ -690,10 +797,13 @@ const HarmonyWidgetComponent = ({
         });
 
         if (loadedInstrument !== desiredInstrument) {
-          logger.info('🎹 HarmonyWidget: Loading desired instrument (mismatch detected)...', {
-            from: loadedInstrument,
-            to: desiredInstrument,
-          });
+          logger.info(
+            '🎹 HarmonyWidget: Loading desired instrument (mismatch detected)...',
+            {
+              from: loadedInstrument,
+              to: desiredInstrument,
+            },
+          );
 
           // Clear events before switching
           if (audioNode.clearEvents) {
@@ -709,12 +819,9 @@ const HarmonyWidgetComponent = ({
             instrument: desiredInstrument,
           });
         } else {
-          logger.info(
-            '🎹 HarmonyWidget: Correct instrument already loaded',
-            {
-              instrument: loadedInstrument,
-            },
-          );
+          logger.info('🎹 HarmonyWidget: Correct instrument already loaded', {
+            instrument: loadedInstrument,
+          });
 
           // Ensure state matches loaded instrument
           if (currentInstrument !== loadedInstrument) {
@@ -739,22 +846,35 @@ const HarmonyWidgetComponent = ({
         }
 
         // Successfully created, reset the flag
-        logger.debug('🔍 [CREATE-CHECKPOINT-20] Successfully created plugin, resetting flag');
+        logger.debug(
+          '🔍 [CREATE-CHECKPOINT-20] Successfully created plugin, resetting flag',
+        );
         isCreatingPluginRef.current = false;
       } catch (error) {
-        logger.debug('🔍 [CREATE-CHECKPOINT-21-ERROR] Error in try block', error);
+        logger.debug(
+          '🔍 [CREATE-CHECKPOINT-21-ERROR] Error in try block',
+          error,
+        );
         logger.error('❌ Failed to create WAM Keyboard plugin:', error);
         isCreatingPluginRef.current = false;
       }
     } else {
-      logger.debug('🔍 [CREATE-CHECKPOINT-22-ELSE] Context not AudioContext or doesn\'t exist');
+      logger.debug(
+        "🔍 [CREATE-CHECKPOINT-22-ELSE] Context not AudioContext or doesn't exist",
+      );
       logger.info('🎹 HarmonyWidget: AudioContext not ready yet', {
         hasContext: !!context,
         contextState: context?.state,
       });
       isCreatingPluginRef.current = false;
     }
-  }, [track.isReady, wamPluginLoaded, pluginClassLoaded, currentInstrument, exercise]); // Added currentInstrument and exercise - needed for closure
+  }, [
+    track.isReady,
+    wamPluginLoaded,
+    pluginClassLoaded,
+    currentInstrument,
+    exercise,
+  ]); // Added currentInstrument and exercise - needed for closure
 
   // CHECKPOINT 4: Plugin creation trigger - when all conditions met
   // CRITICAL FIX: Removed audioServicesReady check to allow plugin creation with suspended AudioContext
@@ -770,8 +890,16 @@ const HarmonyWidgetComponent = ({
       currentInstrumentRef: currentInstrumentRef.current,
       exerciseHarmonyInstrument: exercise?.harmonyInstrument,
       harmonyInstrumentProp: harmonyInstrument,
-      allConditionsMet: typeof window !== 'undefined' && pluginClassLoaded && track.isReady && !wamPluginLoaded,
-      willCallCreateAudioNodeAttempt: typeof window !== 'undefined' && pluginClassLoaded && track.isReady && !wamPluginLoaded,
+      allConditionsMet:
+        typeof window !== 'undefined' &&
+        pluginClassLoaded &&
+        track.isReady &&
+        !wamPluginLoaded,
+      willCallCreateAudioNodeAttempt:
+        typeof window !== 'undefined' &&
+        pluginClassLoaded &&
+        track.isReady &&
+        !wamPluginLoaded,
     });
 
     logger.info('🎹 HarmonyWidget: Phase 2 effect check:', {
@@ -798,12 +926,18 @@ const HarmonyWidgetComponent = ({
         trackIsReady: track.isReady,
         audioServicesReady,
         wamPluginLoaded,
-        reason: !pluginClassLoaded ? 'plugin class not loaded' : !track.isReady ? 'track not ready' : 'plugin already loaded'
+        reason: !pluginClassLoaded
+          ? 'plugin class not loaded'
+          : !track.isReady
+            ? 'track not ready'
+            : 'plugin already loaded',
       });
       return;
     }
 
-    logger.debug('🔍 [CHECKPOINT-4-PROCEED] All conditions met, calling createAudioNodeAttempt');
+    logger.debug(
+      '🔍 [CHECKPOINT-4-PROCEED] All conditions met, calling createAudioNodeAttempt',
+    );
 
     // Add guard to prevent multiple instances
     if (keyboardPluginRef.current) {
@@ -845,7 +979,9 @@ const HarmonyWidgetComponent = ({
           // DON'T call wamPluginSingleton.releasePlugin() - this would delete it from the cache!
           // By not releasing, the plugin stays in GlobalSampleCache and can be reused
 
-          logger.info('✅ HarmonyWidget local ref cleared (plugin kept in singleton cache for reuse)');
+          logger.info(
+            '✅ HarmonyWidget local ref cleared (plugin kept in singleton cache for reuse)',
+          );
         } catch (error) {
           logger.error('Error clearing HarmonyWidget:', error);
         }
@@ -870,7 +1006,9 @@ const HarmonyWidgetComponent = ({
 
   // Handle instrument changes - reload instrument when currentInstrument changes
   // CRITICAL FIX: Track the previous instrument to prevent redundant loadInstrument() calls on initial load
-  const previousInstrumentRef = useRef<KeyboardInstrumentType | undefined>(undefined);
+  const previousInstrumentRef = useRef<KeyboardInstrumentType | undefined>(
+    undefined,
+  );
 
   useEffect(() => {
     // console.log('🔍 [STATE-FLOW-7] reloadInstrument useEffect triggered:', {
@@ -891,7 +1029,10 @@ const HarmonyWidgetComponent = ({
 
       // CRITICAL FIX: Skip if this is the initial load (plugin just created)
       // The instrument was already loaded in createAudioNodeAttempt via WamKeyboard.initialize()
-      if (previousInstrumentRef.current === undefined && keyboardPluginRef.current?.audioNode) {
+      if (
+        previousInstrumentRef.current === undefined &&
+        keyboardPluginRef.current?.audioNode
+      ) {
         // console.log('🔍 [STATE-FLOW-8.5] Initial load detected - instrument already loaded in createAudioNodeAttempt, skipping redundant loadInstrument()');
         previousInstrumentRef.current = currentInstrument;
         return;
@@ -916,7 +1057,9 @@ const HarmonyWidgetComponent = ({
           // Load the new instrument
           if (keyboardPluginRef.current.audioNode.loadInstrument) {
             // console.log('🔍 [STATE-FLOW-10] Calling loadInstrument()...');
-            await keyboardPluginRef.current.audioNode.loadInstrument(currentInstrument);
+            await keyboardPluginRef.current.audioNode.loadInstrument(
+              currentInstrument,
+            );
             // console.log('✅ [STATE-FLOW-11] Successfully reloaded instrument:', currentInstrument);
             // Update the previous instrument tracker
             previousInstrumentRef.current = currentInstrument;
@@ -943,7 +1086,13 @@ const HarmonyWidgetComponent = ({
     };
 
     reloadInstrument();
-  }, [currentInstrument, track.isReady, wamPluginLoaded, audioServicesReady, createAudioNodeAttempt]);
+  }, [
+    currentInstrument,
+    track.isReady,
+    wamPluginLoaded,
+    audioServicesReady,
+    createAudioNodeAttempt,
+  ]);
 
   // Listen for audio services ready event
   useEffect(() => {
@@ -1326,10 +1475,13 @@ const HarmonyWidgetComponent = ({
   // FAANG-STYLE SOLUTION: Use PlaybackEngine for harmony scheduling (matches DrummerWidget architecture)
   const registerHarmonyWithPlaybackEngine = useCallback(async () => {
     const timestamp = new Date().toISOString();
-    console.log('🎹🎹🎹 [HARMONY-WIDGET] registerHarmonyWithPlaybackEngine CALLED', {
-      timestamp,
-      callStack: new Error().stack?.split('\n').slice(1, 4),
-    });
+    console.log(
+      '🎹🎹🎹 [HARMONY-WIDGET] registerHarmonyWithPlaybackEngine CALLED',
+      {
+        timestamp,
+        callStack: new Error().stack?.split('\n').slice(1, 4),
+      },
+    );
 
     // CRITICAL DIAGNOSTIC: Log exercise data IMMEDIATELY (before any early returns)
     logger.debug('🔍 [HARMONY-WIDGET-DEBUG] Exercise data at function start', {
@@ -1342,7 +1494,7 @@ const HarmonyWidgetComponent = ({
       harmonyInstrumentIsNull: exercise?.harmonyInstrument === null,
       harmonyNotesLength: exercise?.harmonyNotes?.length,
       exerciseKeys: exercise ? Object.keys(exercise) : [],
-      exerciseConstructor: exercise?.constructor?.name
+      exerciseConstructor: exercise?.constructor?.name,
     });
 
     const plugin = keyboardPluginRef.current;
@@ -1350,11 +1502,14 @@ const HarmonyWidgetComponent = ({
     // NEW PLAYBACK ENGINE: Plugin is optional now - only needed for legacy manual chord progression
     // The new Scheduler handles harmony directly using buffers, not the WAM plugin
     if (!plugin || !plugin.audioNode) {
-      console.warn('⚠️ [HARMONY-WIDGET] No WAM plugin available - using Scheduler-only mode (buffers + PlaybackEngine)', {
-        hasPlugin: !!plugin,
-        hasAudioNode: !!plugin?.audioNode,
-        usingNewPlaybackEngine: true
-      });
+      console.warn(
+        '⚠️ [HARMONY-WIDGET] No WAM plugin available - using Scheduler-only mode (buffers + PlaybackEngine)',
+        {
+          hasPlugin: !!plugin,
+          hasAudioNode: !!plugin?.audioNode,
+          usingNewPlaybackEngine: true,
+        },
+      );
     } else {
       console.log('✅ [HARMONY-WIDGET] Plugin and audioNode available');
     }
@@ -1363,11 +1518,14 @@ const HarmonyWidgetComponent = ({
       console.error('❌ [HARMONY-WIDGET] No harmony notes to register', {
         hasExercise: !!exercise,
         hasHarmonyNotes: !!exercise?.harmonyNotes,
-        harmonyNotesLength: exercise?.harmonyNotes?.length
+        harmonyNotesLength: exercise?.harmonyNotes?.length,
       });
       return;
     }
-    console.log('✅ [HARMONY-WIDGET] Exercise has harmony notes:', exercise.harmonyNotes.length);
+    console.log(
+      '✅ [HARMONY-WIDGET] Exercise has harmony notes:',
+      exercise.harmonyNotes.length,
+    );
 
     console.log('🎹 [HARMONY-WIDGET] Registering harmony with PlaybackEngine');
 
@@ -1391,7 +1549,8 @@ const HarmonyWidgetComponent = ({
     // This enables instant stop functionality by tracking AudioBufferSourceNodes
     console.log('🔧 [HARMONY-WIDGET] Starting buffer injection...');
     try {
-      const { GlobalSampleCache } = await import('@/domains/playback/modules/storage/cache/GlobalSampleCache.js');
+      const { GlobalSampleCache } =
+        await import('@/domains/playback/modules/storage/cache/GlobalSampleCache.js');
       const sampleCache = GlobalSampleCache.getInstance();
       console.log('✅ [HARMONY-WIDGET] Got GlobalSampleCache instance');
 
@@ -1407,20 +1566,31 @@ const HarmonyWidgetComponent = ({
         harmonyInstrumentType: typeof exercise.harmonyInstrument,
         harmonyInstrumentIsDefined: exercise.harmonyInstrument !== undefined,
         resolvedInstrument: instrument,
-        exerciseKeys: Object.keys(exercise)
+        exerciseKeys: Object.keys(exercise),
       });
-      console.log('🎹 [HARMONY-WIDGET] Looking for instrument-specific buffers:', instrument);
+      console.log(
+        '🎹 [HARMONY-WIDGET] Looking for instrument-specific buffers:',
+        instrument,
+      );
 
       // CRITICAL FIX: Check for RAW ArrayBuffers, not decoded AudioBuffers
       // Samples are cached as raw ArrayBuffer during preloading
-      const allCachedKeys = Array.from((sampleCache as any).samples?.keys() || []);
-      const harmonyCachedKeys = allCachedKeys.filter(key => key.startsWith(`${instrument}-`));
+      const allCachedKeys = Array.from(
+        (sampleCache as any).samples?.keys() || [],
+      );
+      const harmonyCachedKeys = allCachedKeys.filter((key) =>
+        key.startsWith(`${instrument}-`),
+      );
 
       // DEBUG: Check what type of buffers are in cache
       const cachedBufferTypes: Record<string, string> = {};
       for (const key of harmonyCachedKeys.slice(0, 3)) {
         const sample = (sampleCache as any).samples?.get(key);
-        cachedBufferTypes[key] = sample?.buffer ? 'AudioBuffer' : sample?.rawBuffer ? 'ArrayBuffer' : 'none';
+        cachedBufferTypes[key] = sample?.buffer
+          ? 'AudioBuffer'
+          : sample?.rawBuffer
+            ? 'ArrayBuffer'
+            : 'none';
       }
 
       logger.debug('🔍 [HARMONY-WIDGET] Cache diagnostic for ' + instrument, {
@@ -1432,7 +1602,20 @@ const HarmonyWidgetComponent = ({
       // CRITICAL: Check if ALL required notes for THIS exercise are cached
       // This prevents registering before IntersectionObserver finishes preloading
       const midiToNoteName = (midi: number): string => {
-        const noteNames = ['C', 'Cs', 'D', 'Ds', 'E', 'F', 'Fs', 'G', 'Gs', 'A', 'As', 'B'];
+        const noteNames = [
+          'C',
+          'Cs',
+          'D',
+          'Ds',
+          'E',
+          'F',
+          'Fs',
+          'G',
+          'Gs',
+          'A',
+          'As',
+          'B',
+        ];
         const octave = Math.floor(midi / 12) - 1;
         const noteName = noteNames[midi % 12];
         return `${noteName}${octave}`;
@@ -1441,49 +1624,65 @@ const HarmonyWidgetComponent = ({
       // CRITICAL FIX: Apply octave shift to match preloader behavior
       // Wurlitzer samples are stored 1 octave lower to match Logic export
       const octaveShift = instrument === 'wurlitzer' ? 12 : 0;
-      const requiredNotes = exercise.harmonyNotes.map(note =>
-        midiToNoteName(note.pitch - octaveShift)
+      const requiredNotes = exercise.harmonyNotes.map((note) =>
+        midiToNoteName(note.pitch - octaveShift),
       );
       const uniqueRequiredNotes = [...new Set(requiredNotes)];
 
       // Extract cached note names from cache keys (e.g., 'grandpiano-v1-C4' -> 'C4')
       const cachedNoteNames = new Set(
-        harmonyCachedKeys.map(key => key.split('-').pop()).filter(Boolean)
+        harmonyCachedKeys.map((key) => key.split('-').pop()).filter(Boolean),
       );
 
       // CRITICAL FIX: Allow partial sample sets - HarmonySchedulerV2 has fallback logic
       // Changed from 100% requirement to 50% to handle missing samples gracefully
-      const cachedCount = uniqueRequiredNotes.filter(noteName => cachedNoteNames.has(noteName)).length;
-      const coveragePercentage = (cachedCount / uniqueRequiredNotes.length) * 100;
+      const cachedCount = uniqueRequiredNotes.filter((noteName) =>
+        cachedNoteNames.has(noteName),
+      ).length;
+      const coveragePercentage =
+        (cachedCount / uniqueRequiredNotes.length) * 100;
       const minCoverageRequired = 50; // At least 50% of samples must be available
 
       if (coveragePercentage < minCoverageRequired) {
-        const missingNotes = uniqueRequiredNotes.filter(note => !cachedNoteNames.has(note));
-        console.warn('⚠️ [HARMONY-WIDGET] Insufficient samples for exercise, skipping registration', {
-          exerciseId: exercise.id,
-          exerciseTitle: exercise.title,
-          requiredNotes: uniqueRequiredNotes.length,
-          cachedNotes: cachedCount,
-          coveragePercentage: coveragePercentage.toFixed(1) + '%',
-          minRequired: minCoverageRequired + '%',
-          missingNotes,
-          totalCachedKeys: harmonyCachedKeys.length
-        });
+        const missingNotes = uniqueRequiredNotes.filter(
+          (note) => !cachedNoteNames.has(note),
+        );
+        console.warn(
+          '⚠️ [HARMONY-WIDGET] Insufficient samples for exercise, skipping registration',
+          {
+            exerciseId: exercise.id,
+            exerciseTitle: exercise.title,
+            requiredNotes: uniqueRequiredNotes.length,
+            cachedNotes: cachedCount,
+            coveragePercentage: coveragePercentage.toFixed(1) + '%',
+            minRequired: minCoverageRequired + '%',
+            missingNotes,
+            totalCachedKeys: harmonyCachedKeys.length,
+          },
+        );
         return; // Exit early, will retry when more samples load
       }
 
-      const missingNotes = uniqueRequiredNotes.filter(note => !cachedNoteNames.has(note));
+      const missingNotes = uniqueRequiredNotes.filter(
+        (note) => !cachedNoteNames.has(note),
+      );
       if (missingNotes.length > 0) {
-        console.log('⚠️ [HARMONY-WIDGET] Proceeding with partial samples - scheduler will use fallbacks', {
-          coveragePercentage: coveragePercentage.toFixed(1) + '%',
-          cachedNotes: cachedCount,
-          missingNotes,
-        });
+        console.log(
+          '⚠️ [HARMONY-WIDGET] Proceeding with partial samples - scheduler will use fallbacks',
+          {
+            coveragePercentage: coveragePercentage.toFixed(1) + '%',
+            cachedNotes: cachedCount,
+            missingNotes,
+          },
+        );
       } else {
-        console.log('✅ [HARMONY-WIDGET] All required samples cached, proceeding with registration', {
-          requiredNotes: uniqueRequiredNotes,
-          cachedKeys: harmonyCachedKeys.length
-        });
+        console.log(
+          '✅ [HARMONY-WIDGET] All required samples cached, proceeding with registration',
+          {
+            requiredNotes: uniqueRequiredNotes,
+            cachedKeys: harmonyCachedKeys.length,
+          },
+        );
       }
 
       const harmonyBuffers = new Map<string, AudioBuffer>();
@@ -1498,7 +1697,15 @@ const HarmonyWidgetComponent = ({
           const keyWithoutPrefix = cacheKey.replace(`${instrument}-`, '');
           harmonyBuffers.set(keyWithoutPrefix, buffer);
           buffersFound++;
-          console.log(`✅ [HARMONY-WIDGET] Found buffer: ${cacheKey} → ${keyWithoutPrefix}`);
+
+          // 🔍 DIAGNOSTIC: Log F note buffer details
+          if (cacheKey.includes('-F') && !cacheKey.includes('-Fs')) {
+            console.log(`🔍 [F-NOTE-WIDGET] ${cacheKey} → ${keyWithoutPrefix}: length=${buffer.length}, duration=${buffer.duration.toFixed(2)}s, sampleRate=${buffer.sampleRate}`);
+          }
+
+          console.log(
+            `✅ [HARMONY-WIDGET] Found buffer: ${cacheKey} → ${keyWithoutPrefix}`,
+          );
         }
       }
 
@@ -1513,67 +1720,105 @@ const HarmonyWidgetComponent = ({
           hasAudioContext: !!audioContext,
           hasDestination: !!audioContext?.destination,
           destinationType: audioContext?.destination?.constructor?.name,
-          state: audioContext?.state
+          state: audioContext?.state,
         });
 
         if (audioContext?.destination) {
           // Load instrument config to get per-note velocity ranges
           // This tells PlaybackEngine which velocity layer each note actually has
           // (instrument variable already defined above at line 1205)
-          console.log('📖 [HARMONY-WIDGET] Loading instrument config:', instrument);
+          console.log(
+            '📖 [HARMONY-WIDGET] Loading instrument config:',
+            instrument,
+          );
 
           let perNoteVelocityRanges: Record<string, any[]> | undefined;
           try {
             if (instrument === 'wurlitzer') {
-              const wurlitzerConfig = await import('@/domains/playback/data/instruments/wurlitzer/wurlitzer-piano.json');
-              perNoteVelocityRanges = wurlitzerConfig.default.perNoteVelocityRanges;
+              const wurlitzerConfig =
+                await import('@/domains/playback/data/instruments/wurlitzer/wurlitzer-piano.json');
+              perNoteVelocityRanges =
+                wurlitzerConfig.default.perNoteVelocityRanges;
             } else if (instrument === 'grandpiano') {
-              const grandPianoConfig = await import('@/domains/playback/data/instruments/piano/grand-piano.json');
-              perNoteVelocityRanges = grandPianoConfig.default.perNoteVelocityRanges;
+              const grandPianoConfig =
+                await import('@/domains/playback/data/instruments/piano/grand-piano.json');
+              perNoteVelocityRanges =
+                grandPianoConfig.default.perNoteVelocityRanges;
             } else if (instrument === 'rhodes') {
-              const rhodesConfig = await import('@/domains/playback/data/instruments/rhodes/rhodes-piano.json');
-              perNoteVelocityRanges = rhodesConfig.default.perNoteVelocityRanges;
+              const rhodesConfig =
+                await import('@/domains/playback/data/instruments/rhodes/rhodes-piano.json');
+              perNoteVelocityRanges =
+                rhodesConfig.default.perNoteVelocityRanges;
             }
 
             console.log('✅ [HARMONY-WIDGET] Loaded per-note velocity ranges', {
               instrument,
               hasRanges: !!perNoteVelocityRanges,
-              noteCount: perNoteVelocityRanges ? Object.keys(perNoteVelocityRanges).length : 0
+              noteCount: perNoteVelocityRanges
+                ? Object.keys(perNoteVelocityRanges).length
+                : 0,
             });
           } catch (error) {
-            console.error('❌ [HARMONY-WIDGET] Failed to load instrument config', error);
+            console.error(
+              '❌ [HARMONY-WIDGET] Failed to load instrument config',
+              error,
+            );
           }
 
-          playbackEngine.setHarmonyBuffers(harmonyBuffers, audioContext.destination, perNoteVelocityRanges, instrument);
-          console.log('✅ [HARMONY-WIDGET] Harmony buffers injected into PlaybackEngine', {
+          playbackEngine.setHarmonyBuffers(
+            harmonyBuffers,
+            audioContext.destination,
+            perNoteVelocityRanges,
             instrument,
-            buffersInjected: buffersFound,
-            audioContextState: audioContext.state,
-            hasVelocityRanges: !!perNoteVelocityRanges
-          });
+          );
+          console.log(
+            '✅ [HARMONY-WIDGET] Harmony buffers injected into PlaybackEngine',
+            {
+              instrument,
+              buffersInjected: buffersFound,
+              audioContextState: audioContext.state,
+              hasVelocityRanges: !!perNoteVelocityRanges,
+            },
+          );
 
           // CRITICAL FIX: Switch WAM plugin instrument to match the exercise
           // This ensures only the correct instrument plays
-          if (keyboardPluginRef.current?.audioNode && instrument !== currentInstrument) {
-            console.log('🔄 [HARMONY-WIDGET] Switching WAM plugin instrument:', {
-              from: currentInstrument,
-              to: instrument,
-              exerciseId: exercise.id
-            });
+          if (
+            keyboardPluginRef.current?.audioNode &&
+            instrument !== currentInstrument
+          ) {
+            console.log(
+              '🔄 [HARMONY-WIDGET] Switching WAM plugin instrument:',
+              {
+                from: currentInstrument,
+                to: instrument,
+                exerciseId: exercise.id,
+              },
+            );
 
             try {
               if (keyboardPluginRef.current.audioNode.loadInstrument) {
-                await keyboardPluginRef.current.audioNode.loadInstrument(instrument);
-                console.log('✅ [HARMONY-WIDGET] WAM plugin instrument switched to:', instrument);
+                await keyboardPluginRef.current.audioNode.loadInstrument(
+                  instrument,
+                );
+                console.log(
+                  '✅ [HARMONY-WIDGET] WAM plugin instrument switched to:',
+                  instrument,
+                );
                 // Update state to match
                 setCurrentInstrument(instrument);
               }
             } catch (error) {
-              console.error('❌ [HARMONY-WIDGET] Failed to switch WAM plugin instrument:', error);
+              console.error(
+                '❌ [HARMONY-WIDGET] Failed to switch WAM plugin instrument:',
+                error,
+              );
             }
           }
         } else {
-          console.error('❌ [HARMONY-WIDGET] No audioContext.destination available');
+          console.error(
+            '❌ [HARMONY-WIDGET] No audioContext.destination available',
+          );
         }
       } else {
         // CRITICAL FIX: Clear old buffers to prevent playing wrong instrument
@@ -1582,14 +1827,24 @@ const HarmonyWidgetComponent = ({
         const audioEngine = coreServices.getAudioEngine();
         const audioContext = await audioEngine.getContext();
         if (audioContext?.destination) {
-          playbackEngine.setHarmonyBuffers(new Map(), audioContext.destination, undefined, instrument);
-          console.warn('⚠️ [HARMONY-WIDGET] No harmony buffers found in cache - cleared old buffers to prevent wrong instrument playing');
+          playbackEngine.setHarmonyBuffers(
+            new Map(),
+            audioContext.destination,
+            undefined,
+            instrument,
+          );
+          console.warn(
+            '⚠️ [HARMONY-WIDGET] No harmony buffers found in cache - cleared old buffers to prevent wrong instrument playing',
+          );
         } else {
           console.warn('⚠️ [HARMONY-WIDGET] No harmony buffers found in cache');
         }
       }
     } catch (error) {
-      console.error('❌ [HARMONY-WIDGET] Failed to inject harmony buffers', error);
+      console.error(
+        '❌ [HARMONY-WIDGET] Failed to inject harmony buffers',
+        error,
+      );
     }
 
     // Convert harmony notes to Region format
@@ -1603,15 +1858,25 @@ const HarmonyWidgetComponent = ({
     // Collect all event positions (notes + control changes)
     const allEventPositions = [
       ...exercise.harmonyNotes.map((note) => note.position),
-      ...(exercise.harmonyControlChanges || []).map((cc) => cc.position)
+      ...(exercise.harmonyControlChanges || []).map((cc) => cc.position),
     ];
 
     // Find the earliest event (note OR control change)
-    const firstEvent = allEventPositions.reduce<typeof allEventPositions[0] | null>((earliest, pos) => {
+    const firstEvent = allEventPositions.reduce<
+      (typeof allEventPositions)[0] | null
+    >((earliest, pos) => {
       if (!earliest) return pos;
 
-      const earliestTotal = (earliest.measure * 16) + (earliest.beat * 4) + (earliest.subdivision || 0) + (earliest.tick || 0) / 480;
-      const currentTotal = (pos.measure * 16) + (pos.beat * 4) + (pos.subdivision || 0) + (pos.tick || 0) / 480;
+      const earliestTotal =
+        earliest.measure * 16 +
+        earliest.beat * 4 +
+        (earliest.subdivision || 0) +
+        (earliest.tick || 0) / 480;
+      const currentTotal =
+        pos.measure * 16 +
+        pos.beat * 4 +
+        (pos.subdivision || 0) +
+        (pos.tick || 0) / 480;
 
       return currentTotal < earliestTotal ? pos : earliest;
     }, null);
@@ -1623,172 +1888,211 @@ const HarmonyWidgetComponent = ({
     const subdivisionOffset = firstEvent ? firstEvent.subdivision || 0 : 0;
     const tickOffset = firstEvent ? firstEvent.tick || 0 : 0;
 
-    console.log('🎼 [HARMONY-WIDGET] Normalizing MIDI to start at measure 0 (bar 1):', {
-      firstEventOriginal: firstEvent,
-      offsets: { measureOffset, beatOffset, subdivisionOffset, tickOffset },
-      totalNotes: exercise.harmonyNotes.length,
-      totalCCEvents: exercise.harmonyControlChanges?.length || 0,
-      result: 'MIDI file start → measure 0 (bar 1 of exercise), all events shifted by offset',
-    });
+    console.log(
+      '🎼 [HARMONY-WIDGET] Normalizing MIDI to start at measure 0 (bar 1):',
+      {
+        firstEventOriginal: firstEvent,
+        offsets: { measureOffset, beatOffset, subdivisionOffset, tickOffset },
+        totalNotes: exercise.harmonyNotes.length,
+        totalCCEvents: exercise.harmonyControlChanges?.length || 0,
+        result:
+          'MIDI file start → measure 0 (bar 1 of exercise), all events shifted by offset',
+      },
+    );
 
-    const harmonyEvents = exercise.harmonyNotes.map((note: any, index: number) => {
-      // Convert MIDI ticks to seconds using current tempo
-      // Formula: durationSeconds = (durationTicks / 480) * (60 / bpm)
-      // - 480 = MIDI PPQ (Pulses Per Quarter note) - STANDARD MIDI RESOLUTION
-      // - 60 / bpm = seconds per quarter note
-      // - durationTicks / 480 = number of quarter notes
-      // - result = duration in seconds
-      const durationSeconds = note.durationTicks
-        ? (note.durationTicks / 480) * (60 / bpm)
-        : 2; // Fallback to 2 seconds if durationTicks missing
+    // LOG: All notes from Supabase in order
+    console.log('[HARMONY-FLOW] STEP 1 - Supabase notes:', exercise.harmonyNotes.slice(0, 10).map((n: any, i: number) => `${i+1}: ${n.noteName} (MIDI ${n.pitch}) ticks=${n.ticks}`));
 
-      // DIAGNOSTIC: Log first 3 notes to verify BPM and duration calculation
-      if (index < 3) {
-        console.log(`[HARMONY DURATION DIAGNOSTIC] Note ${index + 1}:`, {
-          durationTicks: note.durationTicks,
-          bpm,
-          calculation: `(${note.durationTicks} / 480) * (60 / ${bpm})`,
-          durationSeconds,
-          expectedAt69BPM: (note.durationTicks / 480) * (60 / 69),
-        });
-      }
+    const harmonyEvents = exercise.harmonyNotes.map(
+      (note: any, index: number) => {
+        // Convert MIDI ticks to seconds using current tempo
+        // Formula: durationSeconds = (durationTicks / 480) * (60 / bpm)
+        // - 480 = MIDI PPQ (Pulses Per Quarter note) - STANDARD MIDI RESOLUTION
+        // - 60 / bpm = seconds per quarter note
+        // - durationTicks / 480 = number of quarter notes
+        // - result = duration in seconds
+        const durationSeconds = note.durationTicks
+          ? (note.durationTicks / 480) * (60 / bpm)
+          : 2; // Fallback to 2 seconds if durationTicks missing
 
-      // PPQ DIAGNOSTIC: Verify position.tick and durationTicks are both at 480 PPQ
-      if (index < 3) {
-        console.log(`[PPQ DIAGNOSTIC] Note ${index + 1}:`, {
-          positionTick: note.position.tick || 0,
-          durationTicks: note.durationTicks,
-          tickRatio: ((note.position.tick || 0) / (note.durationTicks || 1)).toFixed(2),
-          expectedPPQ: 480,
-          suspectedPPQ_ifDouble: 'If tick/duration ratio is ~2x expected, position.tick is at 960 PPQ',
-          rawPosition: note.position,
-          interpretation480PPQ: `tick ${note.position.tick} / 480 = ${((note.position.tick || 0) / 480).toFixed(3)} beats`,
-          interpretation960PPQ: `tick ${note.position.tick} / 960 = ${((note.position.tick || 0) / 960).toFixed(3)} beats`,
-        });
-      }
-
-      // 🚨 CRITICAL FIX: Use absolute ticks from database (calculated by backend MIDI parser)
-      // The backend already calculated absolute ticks when parsing the MIDI file
-      const absoluteTicks = note.ticks; // Use ticks directly from database
-
-      // DIAGNOSTIC: Log note data to see if ticks field exists
-      if (index < 5 || index === 8) {
-        console.log(`[HARMONY WIDGET] Note ${index + 1} RAW DATA from database:`, {
-          id: note.id,
-          ticks: note.ticks,
-          ticksType: typeof note.ticks,
-          ticksUndefined: note.ticks === undefined,
-          pitch: note.pitch,
-          noteName: note.noteName,
-          position: note.position,
-          durationTicks: note.durationTicks,
-          allKeys: Object.keys(note),
-        });
-      }
-
-      const eventObject = {
-        position: {
-          measure: note.position.measure - measureOffset,
-          beat: note.position.beat - beatOffset,
-          subdivision: (note.position.subdivision || 0) - subdivisionOffset,
-          tick: (note.position.tick || 0) - tickOffset, // CRITICAL: Preserve MIDI tick precision (480 PPQ)
-        },
-        type: 'harmony-note',
-        velocity: note.velocity / 127, // Normalize to 0-1
-        duration: durationSeconds, // Use actual MIDI duration
-        data: {
-          pitch: note.pitch,
-          noteName: note.noteName || '',
-          midiNote: note.pitch,
-          velocity: note.velocity, // Keep original 0-127 for logging
-          ticks: absoluteTicks, // 🚨 FIX: Include absolute ticks for accurate timing
-          durationTicks: note.durationTicks, // Include duration in ticks
-          originalBpm: exercise.bpm, // 🚨 CRITICAL FIX: Include original MIDI file BPM for tick-to-time conversion
+        // DIAGNOSTIC: Log first 3 notes to verify BPM and duration calculation
+        if (index < 3) {
+          console.log(`[HARMONY DURATION DIAGNOSTIC] Note ${index + 1}:`, {
+            durationTicks: note.durationTicks,
+            bpm,
+            calculation: `(${note.durationTicks} / 480) * (60 / ${bpm})`,
+            durationSeconds,
+            expectedAt69BPM: (note.durationTicks / 480) * (60 / 69),
+          });
         }
-      };
 
-      // DIAGNOSTIC: Verify ticks are being set correctly in event object
-      if (index < 5 || index === 8) {
-        console.log(`[HARMONY WIDGET] Note ${index + 1} EVENT OBJECT created:`, {
-          noteName: note.noteName,
-          absoluteTicksVariable: absoluteTicks,
-          eventDataTicks: eventObject.data.ticks,
-          areEqual: absoluteTicks === eventObject.data.ticks,
-        });
-      }
+        // PPQ DIAGNOSTIC: Verify position.tick and durationTicks are both at 480 PPQ
+        if (index < 3) {
+          console.log(`[PPQ DIAGNOSTIC] Note ${index + 1}:`, {
+            positionTick: note.position.tick || 0,
+            durationTicks: note.durationTicks,
+            tickRatio: (
+              (note.position.tick || 0) / (note.durationTicks || 1)
+            ).toFixed(2),
+            expectedPPQ: 480,
+            suspectedPPQ_ifDouble:
+              'If tick/duration ratio is ~2x expected, position.tick is at 960 PPQ',
+            rawPosition: note.position,
+            interpretation480PPQ: `tick ${note.position.tick} / 480 = ${((note.position.tick || 0) / 480).toFixed(3)} beats`,
+            interpretation960PPQ: `tick ${note.position.tick} / 960 = ${((note.position.tick || 0) / 960).toFixed(3)} beats`,
+          });
+        }
 
-      return eventObject;
-    });
+        // 🚨 CRITICAL FIX: Use absolute ticks from database (calculated by backend MIDI parser)
+        // The backend already calculated absolute ticks when parsing the MIDI file
+        const absoluteTicks = note.ticks; // Use ticks directly from database
+
+        // DIAGNOSTIC: Log note data to see if ticks field exists
+        if (index < 5 || index === 8) {
+          console.log(
+            `[HARMONY WIDGET] Note ${index + 1} RAW DATA from database:`,
+            {
+              id: note.id,
+              ticks: note.ticks,
+              ticksType: typeof note.ticks,
+              ticksUndefined: note.ticks === undefined,
+              pitch: note.pitch,
+              noteName: note.noteName,
+              position: note.position,
+              durationTicks: note.durationTicks,
+              allKeys: Object.keys(note),
+            },
+          );
+        }
+
+        const eventObject = {
+          position: {
+            measure: note.position.measure - measureOffset,
+            beat: note.position.beat - beatOffset,
+            subdivision: (note.position.subdivision || 0) - subdivisionOffset,
+            tick: (note.position.tick || 0) - tickOffset, // CRITICAL: Preserve MIDI tick precision (480 PPQ)
+          },
+          type: 'harmony-note',
+          velocity: note.velocity / 127, // Normalize to 0-1
+          duration: durationSeconds, // Use actual MIDI duration
+          data: {
+            pitch: note.pitch,
+            noteName: note.noteName || '',
+            midiNote: note.pitch,
+            velocity: note.velocity, // Keep original 0-127 for logging
+            ticks: absoluteTicks, // 🚨 FIX: Include absolute ticks for accurate timing
+            durationTicks: note.durationTicks, // Include duration in ticks
+            originalBpm: exercise.bpm, // 🚨 CRITICAL FIX: Include original MIDI file BPM for tick-to-time conversion
+          },
+        };
+
+        // DIAGNOSTIC: Verify ticks are being set correctly in event object
+        if (index < 5 || index === 8) {
+          console.log(
+            `[HARMONY WIDGET] Note ${index + 1} EVENT OBJECT created:`,
+            {
+              noteName: note.noteName,
+              absoluteTicksVariable: absoluteTicks,
+              eventDataTicks: eventObject.data.ticks,
+              areEqual: absoluteTicks === eventObject.data.ticks,
+            },
+          );
+        }
+
+        return eventObject;
+      },
+    );
 
     // Add control change events (sustain pedal, expression, etc.) if present
-    const controlChangeEvents = (exercise.harmonyControlChanges || []).map((cc, index) => {
-      // DIAGNOSTIC: Log CC64 absolute ticks from database
-      if (cc.cc === 64 && index < 3) {
-        console.log(`[HARMONY WIDGET] CC64 event ${index + 1} from database:`, {
-          cc: cc.cc,
-          value: cc.value,
-          absoluteTicks: cc.ticks,
-          position: cc.position,
-        });
-      }
-
-      // Calculate adjusted position (may be negative if CC event is before first note)
-      const rawPosition = {
-        measure: cc.position.measure - measureOffset,
-        beat: cc.position.beat - beatOffset,
-        subdivision: (cc.position.subdivision || 0) - subdivisionOffset,
-        tick: (cc.position.tick || 0) - tickOffset,
-      };
-
-      // CRITICAL FIX: Clamp to prevent negative positions
-      // CC events (like sustain pedal down) often appear BEFORE the first note
-      // Negative positions would cause events to be scheduled incorrectly
-      const adjustedPosition = {
-        measure: Math.max(0, rawPosition.measure),
-        beat: Math.max(0, rawPosition.beat),
-        subdivision: Math.max(0, rawPosition.subdivision),
-        tick: Math.max(0, rawPosition.tick),
-      };
-
-      // Warn if clamping occurred (indicates CC event was before first note)
-      if (rawPosition.measure < 0 || rawPosition.beat < 0 || rawPosition.subdivision < 0 || rawPosition.tick < 0) {
-        console.warn('[CC64 CONVERSION] ⚠️ Negative position detected and clamped:', {
-          ccNumber: cc.cc,
-          ccValue: cc.value,
-          originalPosition: cc.position,
-          offsets: { measureOffset, beatOffset, subdivisionOffset, tickOffset },
-          rawPosition,
-          clampedPosition: adjustedPosition,
-          explanation: 'CC event appeared before first note in MIDI file',
-        });
-      }
-
-      return {
-        position: adjustedPosition,
-        type: 'harmony-control-change',
-        velocity: 0, // Not used for CC events
-        duration: 0, // Not used for CC events
-        data: {
-          cc: cc.cc, // CC number (64 = sustain pedal)
-          value: cc.value, // CC value (0-127)
-          ticks: cc.ticks, // 🚨 FIX: Include absolute ticks for accurate timing
-          originalBpm: exercise.bpm, // 🚨 CRITICAL FIX: Include original MIDI file BPM for tick-to-time conversion
+    const controlChangeEvents = (exercise.harmonyControlChanges || []).map(
+      (cc, index) => {
+        // DIAGNOSTIC: Log CC64 absolute ticks from database
+        if (cc.cc === 64 && index < 3) {
+          console.log(
+            `[HARMONY WIDGET] CC64 event ${index + 1} from database:`,
+            {
+              cc: cc.cc,
+              value: cc.value,
+              absoluteTicks: cc.ticks,
+              position: cc.position,
+            },
+          );
         }
-      };
-    });
+
+        // Calculate adjusted position (may be negative if CC event is before first note)
+        const rawPosition = {
+          measure: cc.position.measure - measureOffset,
+          beat: cc.position.beat - beatOffset,
+          subdivision: (cc.position.subdivision || 0) - subdivisionOffset,
+          tick: (cc.position.tick || 0) - tickOffset,
+        };
+
+        // CRITICAL FIX: Clamp to prevent negative positions
+        // CC events (like sustain pedal down) often appear BEFORE the first note
+        // Negative positions would cause events to be scheduled incorrectly
+        const adjustedPosition = {
+          measure: Math.max(0, rawPosition.measure),
+          beat: Math.max(0, rawPosition.beat),
+          subdivision: Math.max(0, rawPosition.subdivision),
+          tick: Math.max(0, rawPosition.tick),
+        };
+
+        // Warn if clamping occurred (indicates CC event was before first note)
+        if (
+          rawPosition.measure < 0 ||
+          rawPosition.beat < 0 ||
+          rawPosition.subdivision < 0 ||
+          rawPosition.tick < 0
+        ) {
+          console.warn(
+            '[CC64 CONVERSION] ⚠️ Negative position detected and clamped:',
+            {
+              ccNumber: cc.cc,
+              ccValue: cc.value,
+              originalPosition: cc.position,
+              offsets: {
+                measureOffset,
+                beatOffset,
+                subdivisionOffset,
+                tickOffset,
+              },
+              rawPosition,
+              clampedPosition: adjustedPosition,
+              explanation: 'CC event appeared before first note in MIDI file',
+            },
+          );
+        }
+
+        return {
+          position: adjustedPosition,
+          type: 'harmony-control-change',
+          velocity: 0, // Not used for CC events
+          duration: 0, // Not used for CC events
+          data: {
+            cc: cc.cc, // CC number (64 = sustain pedal)
+            value: cc.value, // CC value (0-127)
+            ticks: cc.ticks, // 🚨 FIX: Include absolute ticks for accurate timing
+            originalBpm: exercise.bpm, // 🚨 CRITICAL FIX: Include original MIDI file BPM for tick-to-time conversion
+          },
+        };
+      },
+    );
 
     // Combine note events and control change events
     const allHarmonyEvents = [...harmonyEvents, ...controlChangeEvents];
 
     // DIAGNOSTIC: Verify ticks are preserved in combined array
-    const firstFewNotes = allHarmonyEvents.filter((e: any) => e.type === 'harmony-note').slice(0, 3);
-    console.log('[HARMONY WIDGET] allHarmonyEvents - first 3 notes after combining:',
+    const firstFewNotes = allHarmonyEvents
+      .filter((e: any) => e.type === 'harmony-note')
+      .slice(0, 3);
+    console.log(
+      '[HARMONY WIDGET] allHarmonyEvents - first 3 notes after combining:',
       firstFewNotes.map((e: any, i: number) => ({
         index: i + 1,
         noteName: e.data?.noteName,
         ticks: e.data?.ticks,
         position: e.position,
-      }))
+      })),
     );
 
     // Enhanced diagnostic logging for CC64 debugging
@@ -1826,58 +2130,74 @@ const HarmonyWidgetComponent = ({
         name: 'Harmony Pattern',
         type: 'harmony',
         events: allHarmonyEvents, // Includes both notes and control changes
-      }
+      },
     };
 
     // Register track with PlaybackEngine
     // Use updateTracks if already running, registerTracks if not
     try {
-      const trackData = [{
-        id: 'harmony-widget-track',
-        name: 'Harmony',
-        instrumentType: 'harmony',
-        exerciseId: exercise.id?.value, // For caching CC64 timeline and event schedule
-        regions: [harmonyRegion],
-        audioNode: plugin?.audioNode, // Optional: only used for legacy manual chord progression mode
-      }];
+      const trackData = [
+        {
+          id: 'harmony-widget-track',
+          name: 'Harmony',
+          instrumentType: 'harmony',
+          exerciseId: exercise.id?.value, // For caching CC64 timeline and event schedule
+          regions: [harmonyRegion],
+          audioNode: plugin?.audioNode, // Optional: only used for legacy manual chord progression mode
+        },
+      ];
 
       // Check if PlaybackEngine is already running (play button was clicked before harmony was ready)
       const isRunning = (playbackEngine as any).isRunning;
 
       // FAANG FIX: Pass exercise metadata to PlaybackEngine for early instrument detection
       const exerciseMetadata = {
-        harmonyInstrument: exercise.harmonyInstrument || 'wurlitzer'
+        harmonyInstrument: exercise.harmonyInstrument || 'wurlitzer',
       };
 
-      console.log('🚨🚨🚨 [TIMING-DIAGNOSTIC] About to register harmony track!', {
-        timestamp: new Date().toISOString(),
-        isRunning,
-        method: isRunning ? 'updateTracks' : 'registerTracks',
-        trackId: trackData[0].id,
-        regionsCount: trackData[0].regions.length,
-        eventsCount: allHarmonyEvents.length,
-      });
+      console.log(
+        '🚨🚨🚨 [TIMING-DIAGNOSTIC] About to register harmony track!',
+        {
+          timestamp: new Date().toISOString(),
+          isRunning,
+          method: isRunning ? 'updateTracks' : 'registerTracks',
+          trackId: trackData[0].id,
+          regionsCount: trackData[0].regions.length,
+          eventsCount: allHarmonyEvents.length,
+        },
+      );
 
       if (isRunning) {
-        console.log('⚡ [HARMONY-WIDGET] PlaybackEngine already running - using updateTracks()');
+        console.log(
+          '⚡ [HARMONY-WIDGET] PlaybackEngine already running - using updateTracks()',
+        );
         playbackEngine.updateTracks(trackData, exerciseMetadata);
       } else {
-        console.log('📝 [HARMONY-WIDGET] PlaybackEngine not running yet - using registerTracks()');
+        console.log(
+          '📝 [HARMONY-WIDGET] PlaybackEngine not running yet - using registerTracks()',
+        );
         playbackEngine.registerTracks(trackData);
         // Also set instrument type early for registerTracks path
-        (playbackEngine as any).currentHarmonyInstrument = exerciseMetadata.harmonyInstrument;
+        (playbackEngine as any).currentHarmonyInstrument =
+          exerciseMetadata.harmonyInstrument;
       }
 
-      console.log('✅✅✅ [TIMING-DIAGNOSTIC] Harmony track registration completed!', {
-        timestamp: new Date().toISOString(),
-      });
+      console.log(
+        '✅✅✅ [TIMING-DIAGNOSTIC] Harmony track registration completed!',
+        {
+          timestamp: new Date().toISOString(),
+        },
+      );
 
-      console.log('✅ [HARMONY-WIDGET] Harmony registered with PlaybackEngine', {
-        eventsCount: harmonyEvents.length,
-        duration: harmonyRegion.duration,
-        bpm,
-        method: isRunning ? 'updateTracks' : 'registerTracks',
-      });
+      console.log(
+        '✅ [HARMONY-WIDGET] Harmony registered with PlaybackEngine',
+        {
+          eventsCount: harmonyEvents.length,
+          duration: harmonyRegion.duration,
+          bpm,
+          method: isRunning ? 'updateTracks' : 'registerTracks',
+        },
+      );
 
       logger.info('🎹 Harmony registered with PlaybackEngine', {
         noteCount: harmonyEvents.length,
@@ -1887,7 +2207,10 @@ const HarmonyWidgetComponent = ({
       });
     } catch (error) {
       console.error('❌ [HARMONY-WIDGET] Failed to register harmony:', error);
-      logger.error('Failed to register harmony with PlaybackEngine', error as Error);
+      logger.error(
+        'Failed to register harmony with PlaybackEngine',
+        error as Error,
+      );
     }
   }, [exercise, bpm]); // Removed logger - it's only used for side effects, doesn't affect callback behavior
 
@@ -1971,7 +2294,7 @@ const HarmonyWidgetComponent = ({
         trackIsReady: track.isReady,
         wamPluginLoaded,
         exerciseId: currentExercise?.id?.value,
-      }
+      },
     });
 
     // CRITICAL FIX: Register harmony buffers when exercise changes, regardless of playing state
@@ -1982,8 +2305,10 @@ const HarmonyWidgetComponent = ({
     //
     // NEW PLAYBACK ENGINE FIX: Don't wait for WAM plugin - the new Scheduler handles harmony directly
     // The WAM plugin is only needed for legacy manual chord progression mode
-    const shouldRegister = track.isReady &&
-        currentExercise?.harmonyNotes && currentExercise.harmonyNotes.length > 0;
+    const shouldRegister =
+      track.isReady &&
+      currentExercise?.harmonyNotes &&
+      currentExercise.harmonyNotes.length > 0;
 
     logger.debug('🔍 [CHECKPOINT-10-CONDITIONS] Should register', {
       shouldRegister,
@@ -1994,14 +2319,19 @@ const HarmonyWidgetComponent = ({
     });
 
     if (shouldRegister) {
-      logger.debug('🔍 [CHECKPOINT-10-WILL-REGISTER] All conditions met, calling registerHarmonyWithPlaybackEngine');
-      console.log('🔥🔥🔥 [HARMONY-WIDGET] ALL CONDITIONS MET - Registering harmony buffers!', {
-        timestamp,
-        exerciseId: currentExercise?.id,
-        harmonyNotesCount: currentExercise.harmonyNotes.length,
-        isPlaying: currentIsPlaying,
-        reason: currentIsPlaying ? 'playback started' : 'exercise changed',
-      });
+      logger.debug(
+        '🔍 [CHECKPOINT-10-WILL-REGISTER] All conditions met, calling registerHarmonyWithPlaybackEngine',
+      );
+      console.log(
+        '🔥🔥🔥 [HARMONY-WIDGET] ALL CONDITIONS MET - Registering harmony buffers!',
+        {
+          timestamp,
+          exerciseId: currentExercise?.id,
+          harmonyNotesCount: currentExercise.harmonyNotes.length,
+          isPlaying: currentIsPlaying,
+          reason: currentIsPlaying ? 'playback started' : 'exercise changed',
+        },
+      );
 
       // Register harmony events and buffers for this exercise
       // This updates PlaybackEngine with the correct instrument's buffers
@@ -2010,21 +2340,42 @@ const HarmonyWidgetComponent = ({
     } else {
       const missingConditions = [];
       if (!track.isReady) missingConditions.push('track not ready');
-      if (!currentExercise?.harmonyNotes) missingConditions.push('no harmony notes');
-      if (currentExercise?.harmonyNotes && currentExercise.harmonyNotes.length === 0) missingConditions.push('harmony notes empty');
+      if (!currentExercise?.harmonyNotes)
+        missingConditions.push('no harmony notes');
+      if (
+        currentExercise?.harmonyNotes &&
+        currentExercise.harmonyNotes.length === 0
+      )
+        missingConditions.push('harmony notes empty');
 
-      console.log('⏳ [HARMONY-WIDGET] Waiting for conditions:', missingConditions.join(', '));
+      console.log(
+        '⏳ [HARMONY-WIDGET] Waiting for conditions:',
+        missingConditions.join(', '),
+      );
     }
-  }, [track.isReady, wamPluginLoaded, registerHarmonyWithPlaybackEngine, exercise?.id, samplesLoadedTrigger]);
+  }, [
+    track.isReady,
+    wamPluginLoaded,
+    registerHarmonyWithPlaybackEngine,
+    exercise?.id,
+    samplesLoadedTrigger,
+  ]);
   // CRITICAL: Include exercise?.id to re-register when switching exercises
   // CRITICAL FIX: Include samplesLoadedTrigger to re-register when samples finish loading
 
   // Effect to handle manual chord progression playback (legacy)
   useEffect(() => {
-    if (isPlaying && track.isReady && wamPluginLoaded && keyboardPluginRef.current) {
+    if (
+      isPlaying &&
+      track.isReady &&
+      wamPluginLoaded &&
+      keyboardPluginRef.current
+    ) {
       // Only use manual chord progression if no harmony notes in exercise
       if (!exercise?.harmonyNotes || exercise.harmonyNotes.length === 0) {
-        console.log('⚠️ [HARMONY-WIDGET] NO HARMONY NOTES - Using chord progression');
+        console.log(
+          '⚠️ [HARMONY-WIDGET] NO HARMONY NOTES - Using chord progression',
+        );
         logger.info('🎹 Using manual chord progression for playback');
         scheduleProgression();
       }
@@ -2032,45 +2383,57 @@ const HarmonyWidgetComponent = ({
 
     // PlaybackEngine handles stop automatically - no custom stop logic needed!
     // When stop is clicked, PlaybackEngine.stop() cancels all scheduled sources
-  }, [isPlaying, track.isReady, wamPluginLoaded, exercise, scheduleProgression, logger]);
+  }, [
+    isPlaying,
+    track.isReady,
+    wamPluginLoaded,
+    exercise,
+    scheduleProgression,
+    logger,
+  ]);
 
   // Handle progression changes
   // Handle pattern change from pattern library
-  const handlePatternLibraryChange = useCallback(async (libraryPattern: any) => {
-    // Load MIDI file from URL
-    if (libraryPattern.midiFileUrl) {
-      try {
-        logger.info('Loading harmony pattern from MIDI:', {
-          name: libraryPattern.name,
-          url: libraryPattern.midiFileUrl,
-          correlationId
-        });
+  const handlePatternLibraryChange = useCallback(
+    async (libraryPattern: any) => {
+      // Load MIDI file from URL
+      if (libraryPattern.midiFileUrl) {
+        try {
+          logger.info('Loading harmony pattern from MIDI:', {
+            name: libraryPattern.name,
+            url: libraryPattern.midiFileUrl,
+            correlationId,
+          });
 
-        // TODO: Load and parse MIDI file to extract chord events
-        // const midiData = await loadMidiFile(libraryPattern.midiFileUrl);
-        // const chordEvents = parseChordEvents(midiData);
+          // TODO: Load and parse MIDI file to extract chord events
+          // const midiData = await loadMidiFile(libraryPattern.midiFileUrl);
+          // const chordEvents = parseChordEvents(midiData);
 
-        // For now, use a simple progression based on genre
-        let chords: string[] = [];
+          // For now, use a simple progression based on genre
+          let chords: string[] = [];
 
-        if (libraryPattern.genre === 'jazz') {
-          chords = ['Dm7', 'G7', 'CMaj7', 'Am7'];
-        } else if (libraryPattern.genre === 'pop') {
-          chords = ['C', 'Am', 'F', 'G'];
-        } else if (libraryPattern.genre === 'rock') {
-          chords = ['C5', 'G5', 'A5', 'F5'];
-        } else {
-          chords = ['CMaj7', 'Am7', 'Dm7', 'G7'];
+          if (libraryPattern.genre === 'jazz') {
+            chords = ['Dm7', 'G7', 'CMaj7', 'Am7'];
+          } else if (libraryPattern.genre === 'pop') {
+            chords = ['C', 'Am', 'F', 'G'];
+          } else if (libraryPattern.genre === 'rock') {
+            chords = ['C5', 'G5', 'A5', 'F5'];
+          } else {
+            chords = ['CMaj7', 'Am7', 'Dm7', 'G7'];
+          }
+
+          if (chords.length > 0) {
+            onProgressionChange(chords);
+          }
+        } catch (error) {
+          logger.error('Failed to load harmony pattern:', error, {
+            correlationId,
+          });
         }
-
-        if (chords.length > 0) {
-          onProgressionChange(chords);
-        }
-      } catch (error) {
-        logger.error('Failed to load harmony pattern:', error, { correlationId });
       }
-    }
-  }, [onProgressionChange, logger, correlationId]);
+    },
+    [onProgressionChange, logger, correlationId],
+  );
 
   const handleProgressionChange = useCallback(
     (newProgression: string) => {
@@ -2208,7 +2571,9 @@ const HarmonyWidgetComponent = ({
                       {/* Pattern Library Button */}
                       {tutorialId && (
                         <button
-                          onClick={() => setShowPatternLibrary(!showPatternLibrary)}
+                          onClick={() =>
+                            setShowPatternLibrary(!showPatternLibrary)
+                          }
                           className="p-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors"
                           title="Browse Pattern Library"
                         >
@@ -2221,7 +2586,9 @@ const HarmonyWidgetComponent = ({
                     {showPatternLibrary && patternSelector && (
                       <div className="p-2 bg-slate-800 rounded-lg border border-slate-700">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-medium text-slate-300">Harmony Pattern Library</span>
+                          <span className="text-xs font-medium text-slate-300">
+                            Harmony Pattern Library
+                          </span>
                           <button
                             onClick={() => setShowPatternLibrary(false)}
                             className="text-xs text-slate-500 hover:text-slate-400"
@@ -2230,31 +2597,38 @@ const HarmonyWidgetComponent = ({
                           </button>
                         </div>
                         {patternSelector.isLoading ? (
-                          <div className="text-xs text-slate-500">Loading patterns...</div>
+                          <div className="text-xs text-slate-500">
+                            Loading patterns...
+                          </div>
                         ) : (
                           <div className="space-y-1 max-h-32 overflow-y-auto">
-                            {patternSelector.availableHarmonyPatterns.map((p) => (
-                              <button
-                                key={p.id}
-                                onClick={() => {
-                                  patternSelector.selectHarmonyPattern(p);
-                                  handlePatternLibraryChange(p);
-                                  setShowPatternLibrary(false);
-                                }}
-                                className={`w-full text-left p-1.5 text-xs rounded hover:bg-slate-700 transition-colors ${
-                                  patternSelector.selectedHarmonyPattern?.id === p.id
-                                    ? 'bg-slate-700 text-blue-400'
-                                    : 'text-slate-300'
-                                }`}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <span>{p.name}</span>
-                                  {p.genre && (
-                                    <span className="text-xs text-slate-500">{p.genre}</span>
-                                  )}
-                                </div>
-                              </button>
-                            ))}
+                            {patternSelector.availableHarmonyPatterns.map(
+                              (p) => (
+                                <button
+                                  key={p.id}
+                                  onClick={() => {
+                                    patternSelector.selectHarmonyPattern(p);
+                                    handlePatternLibraryChange(p);
+                                    setShowPatternLibrary(false);
+                                  }}
+                                  className={`w-full text-left p-1.5 text-xs rounded hover:bg-slate-700 transition-colors ${
+                                    patternSelector.selectedHarmonyPattern
+                                      ?.id === p.id
+                                      ? 'bg-slate-700 text-blue-400'
+                                      : 'text-slate-300'
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <span>{p.name}</span>
+                                    {p.genre && (
+                                      <span className="text-xs text-slate-500">
+                                        {p.genre}
+                                      </span>
+                                    )}
+                                  </div>
+                                </button>
+                              ),
+                            )}
                           </div>
                         )}
                       </div>
@@ -2302,7 +2676,6 @@ const HarmonyWidgetComponent = ({
             )}
           </div>
         </div>
-
       </div>
 
       {/* Play Control (if provided) */}

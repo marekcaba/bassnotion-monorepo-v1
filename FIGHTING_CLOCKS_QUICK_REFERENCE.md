@@ -5,9 +5,11 @@
 ### CRITICAL (HIGH SEVERITY)
 
 #### 1. useTransport.ts - Per-Hook Throttling
+
 **Path**: `/apps/frontend/src/domains/playback/hooks/useTransport.ts`
 **Lines**: 190-209, 215-288
 **Issue**: Each useTransport() call has independent throttle + subscription
+
 ```
 Multiple widgets (TransportClock, BassLineWidget, DrummerWidget, HarmonyWidget)
 → Each calls useTransport()
@@ -17,10 +19,12 @@ Multiple widgets (TransportClock, BassLineWidget, DrummerWidget, HarmonyWidget)
 = FIGHTING CLOCKS
 ```
 
-#### 2. TransportClock.tsx - Multiple Component Instances  
+#### 2. TransportClock.tsx - Multiple Component Instances
+
 **Path**: `/apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/components/TransportClock.tsx`
 **Lines**: 82-150, 36
 **Issue**: Component tracks instances with global counter
+
 ```
 Every mount increments globalInstanceCount
 No proper decrement on unmount
@@ -28,9 +32,11 @@ Multiple TransportClock instances = multiple useTransport() calls
 ```
 
 #### 3. TimingWorker.ts - Parallel Web Worker Loop
+
 **Path**: `/apps/frontend/src/domains/playback/modules/transport/workers/TimingWorker.ts`
 **Line**: 296
 **Issue**: Web Worker maintains separate setInterval
+
 ```
 Main thread: Transport.startPositionUpdates() [25ms interval]
 Web Worker: TimingWorker.setInterval() [TIMING_UPDATE_INTERVAL]
@@ -42,9 +48,11 @@ Both firing asynchronously = stuttering/jitter
 ### MEDIUM (MEDIUM SEVERITY)
 
 #### 4. Transport.ts - Position Update Interval
+
 **Path**: `/apps/frontend/src/domains/playback/modules/transport/core/Transport.ts`
 **Lines**: 508-599, 517, 572-574
 **Issue**: Fixed 25ms interval can drift
+
 ```
 - Independent from AudioContext.currentTime
 - No adaptive adjustment to system clock
@@ -52,11 +60,13 @@ Both firing asynchronously = stuttering/jitter
 ```
 
 #### 5. TransportController.ts - Position Callback Chain
+
 **Path**: `/apps/frontend/src/domains/playback/modules/transport/core/TransportController.ts`
 **Lines**: 656-693, 672, 688-692
 **Issue**: Multiple transformation layers
+
 ```
-Transport.startPositionUpdates() 
+Transport.startPositionUpdates()
   → onPositionUpdate callback
   → positionManager.updatePosition()
   → positionManager.getDisplayPosition()
@@ -66,9 +76,11 @@ Each layer introduces potential delay variation
 ```
 
 #### 6. Transport.ts - Clock Per Instance
+
 **Path**: `/apps/frontend/src/domains/playback/modules/transport/core/Transport.ts`
 **Lines**: 68-72
 **Issue**: No clock singleton
+
 ```
 Each Transport creates: new Clock(...)
 Each Clock.getAudioTime() slightly different
@@ -76,9 +88,11 @@ No unified timing source
 ```
 
 #### 7. EventScheduler.ts - Parallel Timer Loops
+
 **Path**: `/apps/frontend/src/domains/playback/modules/transport/scheduling/EventScheduler.ts`
 **Lines**: 76-85
 **Issue**: Two setInterval loops
+
 ```
 scheduleTimer: window.setInterval() [scheduleInterval]
 cleanupTimer: window.setInterval() [cleanupInterval]
@@ -86,9 +100,11 @@ Both independent from Transport position updates
 ```
 
 #### 8. CoreServices.ts - EventBus Per Instance
+
 **Path**: `/apps/frontend/src/domains/playback/services/core/CoreServices.ts`
 **Lines**: 73
 **Issue**: Fresh EventBus each time
+
 ```
 If multiple CoreServices created → multiple EventBus instances
 Subscribers on one bus won't see events from another
@@ -149,19 +165,15 @@ Watch for these signs of fighting clocks:
 1. **URGENT**: Consolidate useTransport() subscriptions
    - Remove per-hook throttling
    - Use single global throttle in TransportController
-   
 2. **HIGH**: Enforce Transport singleton
    - Ensure only one Transport instance exists
    - Verify TransportController.getInstance() used everywhere
-   
 3. **HIGH**: Kill Web Worker timing loop
    - Remove TimingWorker setInterval
    - Use single Transport position updates
-   
 4. **MEDIUM**: Consolidate Clock instances
    - Make Clock singleton if possible
    - Or centralize timing source
-   
 5. **MEDIUM**: Simplify event chain
    - Remove intermediate transformation layers
    - Emit final display position directly
@@ -172,10 +184,10 @@ Watch for these signs of fighting clocks:
 
 ```javascript
 // Check for multiple Transport instances
-window.__debug?.transportInstances?.length
+window.__debug?.transportInstances?.length;
 
-// Check for multiple EventBus instances  
-window.__debug?.eventBusInstances?.length
+// Check for multiple EventBus instances
+window.__debug?.eventBusInstances?.length;
 
 // Monitor position update frequency
 let posUpdateCount = 0;
@@ -189,7 +201,8 @@ setInterval(() => {
 let lastPos = 0;
 window.addEventListener('transport-position-updated', (e) => {
   const newPos = e.detail?.position?.bars || 0;
-  if (newPos < lastPos) console.warn('CLOCK JUMPED BACK:', lastPos, '→', newPos);
+  if (newPos < lastPos)
+    console.warn('CLOCK JUMPED BACK:', lastPos, '→', newPos);
   lastPos = newPos;
 });
 ```
@@ -230,7 +243,7 @@ test('All widgets receive synchronized position updates', async () => {
     drumWidget: null,
     harmonyWidget: null,
   };
-  
+
   // Subscribe to position changes
   eventBus.on('transport:position-updated', (data) => {
     // All hooks should see SAME position
@@ -239,10 +252,10 @@ test('All widgets receive synchronized position updates', async () => {
     positions.drumWidget = data.position;
     positions.harmonyWidget = data.position;
   });
-  
+
   await transport.start();
   await sleep(100);
-  
+
   // All should be identical
   expect(positions.transportClock).toEqual(positions.bassWidget);
   expect(positions.bassWidget).toEqual(positions.drumWidget);

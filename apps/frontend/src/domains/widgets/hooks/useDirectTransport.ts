@@ -83,10 +83,7 @@ export function useDirectTransport(): UseDirectTransportResult {
                 eventBusRef.current?.off('transport:start', handleStart);
                 eventBusRef.current?.off('transport:stop', handleStop);
                 eventBusRef.current?.off('transport:pause', handlePause);
-                eventBusRef.current?.off(
-                  'transport:tempo-change',
-                  handleTempo,
-                );
+                eventBusRef.current?.off('transport:tempo-change', handleTempo);
               };
             }
 

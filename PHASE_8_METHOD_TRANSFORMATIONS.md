@@ -3,6 +3,7 @@
 ## Architecture Change
 
 **Before Phase 8:**
+
 ```
 RegionProcessor
   → Coordinators (BufferCoordinator, ConfigurationCoordinator, LifecycleCoordinator)
@@ -10,6 +11,7 @@ RegionProcessor
 ```
 
 **After Phase 8:**
+
 ```
 RegionProcessor (Thin Facade)
   → Application Services (Service Layer)
@@ -24,6 +26,7 @@ RegionProcessor (Thin Facade)
 #### `enableCountdown()`
 
 **Current Implementation** (Phase 7):
+
 ```typescript
 enableCountdown(timeSignature: {
   numerator: number;
@@ -40,6 +43,7 @@ enableCountdown(timeSignature: {
 ```
 
 **New Implementation** (Phase 8):
+
 ```typescript
 enableCountdown(timeSignature: {
   numerator: number;
@@ -51,6 +55,7 @@ enableCountdown(timeSignature: {
 ```
 
 **What Happens:**
+
 - RegionProcessor calls `configurationManagementService`
 - Service internally calls `configurationCoordinator`
 - Coordinator coordinates across modules
@@ -61,6 +66,7 @@ enableCountdown(timeSignature: {
 #### `disableCountdown()`
 
 **Current** (Phase 7 - 8 lines):
+
 ```typescript
 disableCountdown(): void {
   // Phase 7: Delegate countdown configuration to ConfigurationCoordinator
@@ -74,6 +80,7 @@ disableCountdown(): void {
 ```
 
 **New** (Phase 8 - 3 lines):
+
 ```typescript
 disableCountdown(): void {
   // Phase 8: Delegate to ConfigurationManagementService
@@ -86,6 +93,7 @@ disableCountdown(): void {
 #### `addCountdownRegion()`
 
 **Current** (Phase 7 - 7 lines):
+
 ```typescript
 addCountdownRegion(timeSignature: {
   numerator: number;
@@ -101,6 +109,7 @@ addCountdownRegion(timeSignature: {
 ```
 
 **New** (Phase 8 - 3 lines):
+
 ```typescript
 addCountdownRegion(timeSignature: {
   numerator: number;
@@ -116,6 +125,7 @@ addCountdownRegion(timeSignature: {
 #### `addVoiceCountdownRegion()`
 
 **Current** (Phase 7 - 7 lines):
+
 ```typescript
 addVoiceCountdownRegion(timeSignature: {
   numerator: number;
@@ -131,6 +141,7 @@ addVoiceCountdownRegion(timeSignature: {
 ```
 
 **New** (Phase 8 - 3 lines):
+
 ```typescript
 addVoiceCountdownRegion(timeSignature: {
   numerator: number;
@@ -148,6 +159,7 @@ addVoiceCountdownRegion(timeSignature: {
 #### `setAudioContext()`
 
 **Current** (Phase 7 - 18 lines):
+
 ```typescript
 setAudioContext(context: AudioContext): void {
   this.audioContext = context;
@@ -171,6 +183,7 @@ setAudioContext(context: AudioContext): void {
 ```
 
 **New** (Phase 8 - 3 lines):
+
 ```typescript
 setAudioContext(context: AudioContext): void {
   // Phase 8: Delegate to BufferConfigurationService
@@ -183,6 +196,7 @@ setAudioContext(context: AudioContext): void {
 #### `setMetronomeBuffers()`
 
 **Current** (Phase 7 - 9 lines):
+
 ```typescript
 setMetronomeBuffers(
   accent: AudioBuffer,
@@ -201,6 +215,7 @@ setMetronomeBuffers(
 ```
 
 **New** (Phase 8 - 4 lines):
+
 ```typescript
 setMetronomeBuffers(
   accent: AudioBuffer,
@@ -217,6 +232,7 @@ setMetronomeBuffers(
 #### `setDrumBuffers()`
 
 **Current** (Phase 7 - 11 lines):
+
 ```typescript
 setDrumBuffers(
   kick: AudioBuffer,
@@ -237,6 +253,7 @@ setDrumBuffers(
 ```
 
 **New** (Phase 8 - 5 lines):
+
 ```typescript
 setDrumBuffers(
   kick: AudioBuffer,
@@ -254,6 +271,7 @@ setDrumBuffers(
 #### `setVoiceCueBuffers()`
 
 **Current** (Phase 7 - 9 lines):
+
 ```typescript
 setVoiceCueBuffers(
   samples: Map<string, AudioBuffer>,
@@ -271,6 +289,7 @@ setVoiceCueBuffers(
 ```
 
 **New** (Phase 8 - 4 lines):
+
 ```typescript
 setVoiceCueBuffers(
   samples: Map<string, AudioBuffer>,
@@ -286,6 +305,7 @@ setVoiceCueBuffers(
 #### `setHarmonyBuffers()`
 
 **Current** (Phase 7 - 23 lines):
+
 ```typescript
 async setHarmonyBuffers(
   samples: Map<string, AudioBuffer>,
@@ -313,6 +333,7 @@ async setHarmonyBuffers(
 ```
 
 **New** (Phase 8 - 6 lines):
+
 ```typescript
 async setHarmonyBuffers(
   samples: Map<string, AudioBuffer>,
@@ -335,6 +356,7 @@ async setHarmonyBuffers(
 #### `setBassBuffers()`
 
 **Current** (Phase 7 - 10 lines):
+
 ```typescript
 setBassBuffers(
   samples: Map<string, AudioBuffer>,
@@ -352,6 +374,7 @@ setBassBuffers(
 ```
 
 **New** (Phase 8 - 4 lines):
+
 ```typescript
 setBassBuffers(
   samples: Map<string, AudioBuffer>,
@@ -367,6 +390,7 @@ setBassBuffers(
 #### `loadGrandPianoKeyboardMap()` (private)
 
 **Current** (Phase 7 - 4 lines):
+
 ```typescript
 private async loadGrandPianoKeyboardMap(): Promise<void> {
   this.grandPianoKeyboardMap = await this.bufferCoordinator.loadGrandPianoKeyboardMap(
@@ -376,6 +400,7 @@ private async loadGrandPianoKeyboardMap(): Promise<void> {
 ```
 
 **New** (Phase 8 - 3 lines):
+
 ```typescript
 private async loadGrandPianoKeyboardMap(): Promise<void> {
   // Phase 8: Delegate to BufferConfigurationService
@@ -390,6 +415,7 @@ private async loadGrandPianoKeyboardMap(): Promise<void> {
 #### `scheduleAllRegions()` (private)
 
 **Current** (Phase 6 - 46 lines):
+
 ```typescript
 private scheduleAllRegions(): void {
   if (this.isScheduling) {
@@ -422,6 +448,7 @@ private scheduleAllRegions(): void {
 ```
 
 **New** (Phase 8 - 3 lines):
+
 ```typescript
 private scheduleAllRegions(): void {
   // Phase 8: Delegate to SchedulingOrchestrationService
@@ -434,6 +461,7 @@ private scheduleAllRegions(): void {
 #### `reschedulePendingEvents()` (private)
 
 **Current** (Inline - 106 lines):
+
 ```typescript
 private reschedulePendingEvents(): void {
   if (!this.isRunning) {
@@ -453,6 +481,7 @@ private reschedulePendingEvents(): void {
 ```
 
 **New** (Phase 8 - 3 lines):
+
 ```typescript
 private reschedulePendingEvents(): void {
   // Phase 8: Delegate to SchedulingOrchestrationService
@@ -465,6 +494,7 @@ private reschedulePendingEvents(): void {
 #### `calculateExerciseDuration()` (private)
 
 **Current** (Phase 5 - 22 lines):
+
 ```typescript
 private calculateExerciseDuration(): void {
   const result = this.exerciseDurationCalculator.calculateDuration(
@@ -491,6 +521,7 @@ private calculateExerciseDuration(): void {
 ```
 
 **New** (Phase 8 - 3 lines):
+
 ```typescript
 private calculateExerciseDuration(): void {
   // Phase 8: Delegate to SchedulingOrchestrationService
@@ -503,6 +534,7 @@ private calculateExerciseDuration(): void {
 #### `processCurrentPosition()` (private)
 
 **Current** (Phase 5 - 13 lines):
+
 ```typescript
 private processCurrentPosition(): void {
   this.backupScheduler.processPosition(
@@ -520,6 +552,7 @@ private processCurrentPosition(): void {
 ```
 
 **New** (Phase 8 - 3 lines):
+
 ```typescript
 private processCurrentPosition(): void {
   // Phase 8: Delegate to SchedulingOrchestrationService
@@ -534,6 +567,7 @@ private processCurrentPosition(): void {
 #### `registerTracks()`
 
 **Current** (Phase 6 - 40 lines with harmony validation):
+
 ```typescript
 registerTracks(tracks: Track[]): void {
   this.trackManager.registerTracks(
@@ -556,6 +590,7 @@ registerTracks(tracks: Track[]): void {
 ```
 
 **New** (Phase 8 - 3 lines):
+
 ```typescript
 registerTracks(tracks: Track[]): void {
   // Phase 8: Delegate to TrackRegistrationService
@@ -568,6 +603,7 @@ registerTracks(tracks: Track[]): void {
 #### `updateTracks()`
 
 **Current** (Phase 6 - 14 lines):
+
 ```typescript
 updateTracks(
   tracks: Track[],
@@ -585,6 +621,7 @@ updateTracks(
 ```
 
 **New** (Phase 8 - 4 lines):
+
 ```typescript
 updateTracks(
   tracks: Track[],
@@ -602,6 +639,7 @@ updateTracks(
 #### `setPluginManager()`
 
 **Current** (6 lines):
+
 ```typescript
 setPluginManager(pluginManager: PluginManager): void {
   this.pluginManager = pluginManager;
@@ -612,6 +650,7 @@ setPluginManager(pluginManager: PluginManager): void {
 ```
 
 **New** (Phase 8 - 3 lines):
+
 ```typescript
 setPluginManager(pluginManager: PluginManager): void {
   // Phase 8: Delegate to ConfigurationManagementService
@@ -623,27 +662,27 @@ setPluginManager(pluginManager: PluginManager): void {
 
 ## Summary of Line Reductions
 
-| Method | Current Lines | New Lines | Saved |
-|--------|--------------|-----------|-------|
-| enableCountdown | 8 | 3 | 5 |
-| disableCountdown | 8 | 3 | 5 |
-| addCountdownRegion | 7 | 3 | 4 |
-| addVoiceCountdownRegion | 7 | 3 | 4 |
-| setAudioContext | 18 | 3 | 15 |
-| setMetronomeBuffers | 9 | 4 | 5 |
-| setDrumBuffers | 11 | 5 | 6 |
-| setVoiceCueBuffers | 9 | 4 | 5 |
-| setHarmonyBuffers | 23 | 6 | 17 |
-| setBassBuffers | 10 | 4 | 6 |
-| loadGrandPianoKeyboardMap | 4 | 3 | 1 |
-| scheduleAllRegions | 46 | 3 | 43 |
-| reschedulePendingEvents | 106 | 3 | 103 |
-| calculateExerciseDuration | 22 | 3 | 19 |
-| processCurrentPosition | 13 | 3 | 10 |
-| registerTracks | 40 | 3 | 37 |
-| updateTracks | 14 | 4 | 10 |
-| setPluginManager | 6 | 3 | 3 |
-| **TOTAL** | **361** | **63** | **298** |
+| Method                    | Current Lines | New Lines | Saved   |
+| ------------------------- | ------------- | --------- | ------- |
+| enableCountdown           | 8             | 3         | 5       |
+| disableCountdown          | 8             | 3         | 5       |
+| addCountdownRegion        | 7             | 3         | 4       |
+| addVoiceCountdownRegion   | 7             | 3         | 4       |
+| setAudioContext           | 18            | 3         | 15      |
+| setMetronomeBuffers       | 9             | 4         | 5       |
+| setDrumBuffers            | 11            | 5         | 6       |
+| setVoiceCueBuffers        | 9             | 4         | 5       |
+| setHarmonyBuffers         | 23            | 6         | 17      |
+| setBassBuffers            | 10            | 4         | 6       |
+| loadGrandPianoKeyboardMap | 4             | 3         | 1       |
+| scheduleAllRegions        | 46            | 3         | 43      |
+| reschedulePendingEvents   | 106           | 3         | 103     |
+| calculateExerciseDuration | 22            | 3         | 19      |
+| processCurrentPosition    | 13            | 3         | 10      |
+| registerTracks            | 40            | 3         | 37      |
+| updateTracks              | 14            | 4         | 10      |
+| setPluginManager          | 6             | 3         | 3       |
+| **TOTAL**                 | **361**       | **63**    | **298** |
 
 **Total Line Reduction: ~298 lines** just from these method transformations!
 

@@ -1,9 +1,9 @@
 /**
  * Storage Infrastructure Module
- * 
+ *
  * Provides generic storage functionality that can be used
  * by all domains in the application.
- * 
+ *
  * Architecture:
  * - types/: Shared type definitions
  * - client/: Connection management (pooling, failover)

@@ -10,7 +10,7 @@
       "priority": 1
     },
     "snare": {
-      "id": "snare", 
+      "id": "snare",
       "name": "Snare Drum",
       "aliases": ["sd", "sn", "snr"],
       "midiNote": 38,

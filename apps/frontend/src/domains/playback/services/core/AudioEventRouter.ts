@@ -58,7 +58,10 @@ export class AudioEventRouter {
    * Initialize the router with dependencies
    * Can be called with or without parameters for ServiceRegistry compatibility
    */
-  async initialize(eventBus?: EventBus, audioEngine?: AudioEngine): Promise<void> {
+  async initialize(
+    eventBus?: EventBus,
+    audioEngine?: AudioEngine,
+  ): Promise<void> {
     // If already initialized and no new parameters, just return
     if (this.eventBus && this.audioEngine && !eventBus && !audioEngine) {
       this.logger.info('AudioEventRouter already initialized');
@@ -73,7 +76,9 @@ export class AudioEventRouter {
 
     // Ensure we have both dependencies
     if (!this.eventBus || !this.audioEngine) {
-      this.logger.warn('AudioEventRouter initialized without EventBus or AudioEngine - will need to be initialized again with dependencies');
+      this.logger.warn(
+        'AudioEventRouter initialized without EventBus or AudioEngine - will need to be initialized again with dependencies',
+      );
       return;
     }
 
@@ -84,7 +89,8 @@ export class AudioEventRouter {
 
     // Get InstrumentRegistry from CoreServices if available
     try {
-      const globalServices = (window as any).__coreServices || (window as any).__globalCoreServices;
+      const globalServices =
+        (window as any).__coreServices || (window as any).__globalCoreServices;
       if (globalServices?.getInstrumentRegistry) {
         this.instrumentRegistry = globalServices.getInstrumentRegistry();
         this.logger.info('Got InstrumentRegistry from CoreServices');
@@ -93,13 +99,18 @@ export class AudioEventRouter {
         this.checkRegisteredInstruments();
       }
     } catch (error) {
-      this.logger.warn('Could not get InstrumentRegistry from CoreServices:', error);
+      this.logger.warn(
+        'Could not get InstrumentRegistry from CoreServices:',
+        error,
+      );
     }
 
     // Subscribe to events
     this.subscribeToEvents();
 
-    this.logger.info('AudioEventRouter initialized with EventBus and AudioEngine');
+    this.logger.info(
+      'AudioEventRouter initialized with EventBus and AudioEngine',
+    );
   }
 
   /**
@@ -117,17 +128,22 @@ export class AudioEventRouter {
     } else {
       // Check if there's a preloaded drum kit in GlobalSampleCache
       try {
-        const preloadedDrums = GlobalSampleCache.getCachedInstrument('drums-preloaded');
+        const preloadedDrums =
+          GlobalSampleCache.getCachedInstrument('drums-preloaded');
         if (preloadedDrums && preloadedDrums.trigger) {
           // Register it with the InstrumentRegistry
           this.instrumentRegistry.setActive('drums', preloadedDrums);
           this.drums = preloadedDrums;
           this.legacyDrums = preloadedDrums;
           this.activeInstruments.add('drums');
-          this.logger.info('Found and registered preloaded drums from GlobalSampleCache');
+          this.logger.info(
+            'Found and registered preloaded drums from GlobalSampleCache',
+          );
         }
       } catch (error) {
-        this.logger.debug('Could not check GlobalSampleCache for preloaded drums');
+        this.logger.debug(
+          'Could not check GlobalSampleCache for preloaded drums',
+        );
       }
     }
 
@@ -156,7 +172,9 @@ export class AudioEventRouter {
     } else {
       // Check if there's a preloaded metronome in GlobalSampleCache
       try {
-        const preloadedMetronome = GlobalSampleCache.getCachedInstrument('metronome-preloaded');
+        const preloadedMetronome = GlobalSampleCache.getCachedInstrument(
+          'metronome-preloaded',
+        );
         if (preloadedMetronome) {
           // Add the trigger method if it doesn't exist
           if (!preloadedMetronome.trigger && preloadedMetronome.click) {
@@ -173,11 +191,16 @@ export class AudioEventRouter {
             this.metronome = preloadedMetronome;
             this.legacyMetronome = preloadedMetronome;
             this.activeInstruments.add('metronome');
-            this.logger.info('Found and registered preloaded metronome from GlobalSampleCache');
+            this.logger.info(
+              'Found and registered preloaded metronome from GlobalSampleCache',
+            );
           }
         }
       } catch (error) {
-        this.logger.debug('Could not check GlobalSampleCache for preloaded metronome:', error);
+        this.logger.debug(
+          'Could not check GlobalSampleCache for preloaded metronome:',
+          error,
+        );
       }
     }
   }
@@ -229,10 +252,16 @@ export class AudioEventRouter {
     };
     const instrumentRegisteredUnsubscribe = this.eventBus.on(
       'instrument:registered',
-      instrumentRegisteredHandler
+      instrumentRegisteredHandler,
     );
-    this.eventHandlers.set('instrument:registered', instrumentRegisteredHandler);
-    this.unsubscribeFunctions.set('instrument:registered', instrumentRegisteredUnsubscribe);
+    this.eventHandlers.set(
+      'instrument:registered',
+      instrumentRegisteredHandler,
+    );
+    this.unsubscribeFunctions.set(
+      'instrument:registered',
+      instrumentRegisteredUnsubscribe,
+    );
 
     // Listen for instrument removals
     const instrumentRemovedHandler = (data: any) => {
@@ -266,10 +295,13 @@ export class AudioEventRouter {
     };
     const instrumentRemovedUnsubscribe = this.eventBus.on(
       'instrument:removed',
-      instrumentRemovedHandler
+      instrumentRemovedHandler,
     );
     this.eventHandlers.set('instrument:removed', instrumentRemovedHandler);
-    this.unsubscribeFunctions.set('instrument:removed', instrumentRemovedUnsubscribe);
+    this.unsubscribeFunctions.set(
+      'instrument:removed',
+      instrumentRemovedUnsubscribe,
+    );
 
     // Drum trigger handler (now async)
     const drumHandler = async (data: DrumTriggerEvent) => {
@@ -310,7 +342,10 @@ export class AudioEventRouter {
     const voiceCueHandler = async (data: any) => {
       await this.handleVoiceCueTrigger(data);
     };
-    const voiceCueUnsubscribe = this.eventBus.on('voice-cue-trigger', voiceCueHandler);
+    const voiceCueUnsubscribe = this.eventBus.on(
+      'voice-cue-trigger',
+      voiceCueHandler,
+    );
     this.eventHandlers.set('voice-cue-trigger', voiceCueHandler);
     this.unsubscribeFunctions.set('voice-cue-trigger', voiceCueUnsubscribe);
 
@@ -326,7 +361,7 @@ export class AudioEventRouter {
       metronomeHandler: !!metronomeHandler,
       drumHandler: !!drumHandler,
       eventBusConnected: !!this.eventBus,
-      handlersCount: this.eventHandlers.size
+      handlersCount: this.eventHandlers.size,
     });
   }
 
@@ -378,7 +413,10 @@ export class AudioEventRouter {
           this.logger.info('✅ Got drums from preloadable registry');
 
           // Also register in InstrumentRegistry for other components
-          if (this.instrumentRegistry && !this.instrumentRegistry.hasActive('drums')) {
+          if (
+            this.instrumentRegistry &&
+            !this.instrumentRegistry.hasActive('drums')
+          ) {
             this.instrumentRegistry.setActive('drums', drums);
           }
         }
@@ -443,9 +481,10 @@ export class AudioEventRouter {
             this.drums.stop(noteNumber);
           }, 100); // Short duration for drum hits
         }
-      }
-      else {
-        this.logger.warn('Drums instrument does not have a recognized trigger method');
+      } else {
+        this.logger.warn(
+          'Drums instrument does not have a recognized trigger method',
+        );
       }
 
       this.logger.debug(`Triggered drum: ${data.drum} at ${data.audioTime}`);
@@ -457,7 +496,9 @@ export class AudioEventRouter {
   /**
    * Handle metronome trigger event
    */
-  private async handleMetronomeTrigger(data: MetronomeTriggerEvent): Promise<void> {
+  private async handleMetronomeTrigger(
+    data: MetronomeTriggerEvent,
+  ): Promise<void> {
     this.logger.info(
       `🔔 AudioEventRouter received metronome trigger: beat=${data.beat}, time=${data.audioTime?.toFixed(3)}`,
     );
@@ -469,7 +510,7 @@ export class AudioEventRouter {
       const hasMetronome = this.instrumentRegistry.hasActive('metronome');
       this.logger.debug('Checking for metronome in registry', {
         hasMetronome,
-        registeredTypes: this.instrumentRegistry.getRegisteredTypes()
+        registeredTypes: this.instrumentRegistry.getRegisteredTypes(),
       });
 
       if (hasMetronome) {
@@ -485,7 +526,8 @@ export class AudioEventRouter {
       const preloadableRegistry = getPreloadableRegistry();
       if (preloadableRegistry.hasType('metronome')) {
         // Only try to create if we haven't tried recently (avoid multiple concurrent attempts)
-        const metronome = await preloadableRegistry.getOrCreateByType('metronome');
+        const metronome =
+          await preloadableRegistry.getOrCreateByType('metronome');
         if (metronome) {
           this.metronome = metronome;
           this.legacyMetronome = metronome;
@@ -493,36 +535,50 @@ export class AudioEventRouter {
           this.logger.info('✅ Got metronome from preloadable registry');
 
           // Also register in InstrumentRegistry for other components
-          if (this.instrumentRegistry && !this.instrumentRegistry.hasActive('metronome')) {
+          if (
+            this.instrumentRegistry &&
+            !this.instrumentRegistry.hasActive('metronome')
+          ) {
             this.instrumentRegistry.setActive('metronome', metronome);
           }
         }
       }
     }
 
-    AudioDebugger.getInstance().log('AudioEventRouter', 'metronome-trigger-received', {
-      isRunning: this.isRunning,
-      hasMetronome: !!this.metronome,
-      hasInstrumentRegistry: !!this.instrumentRegistry,
-      beat: data.beat,
-      isDownbeat: data.isDownbeat
-    });
+    AudioDebugger.getInstance().log(
+      'AudioEventRouter',
+      'metronome-trigger-received',
+      {
+        isRunning: this.isRunning,
+        hasMetronome: !!this.metronome,
+        hasInstrumentRegistry: !!this.instrumentRegistry,
+        beat: data.beat,
+        isDownbeat: data.isDownbeat,
+      },
+    );
 
     if (!this.isRunning || !this.metronome) {
       this.logger.warn(
         `Cannot trigger metronome: isRunning=${this.isRunning}, metronome available=${!!this.metronome}`,
       );
-      AudioDebugger.getInstance().log('AudioEventRouter', 'metronome-trigger-blocked', {
-        isRunning: this.isRunning,
-        hasMetronome: !!this.metronome
-      });
+      AudioDebugger.getInstance().log(
+        'AudioEventRouter',
+        'metronome-trigger-blocked',
+        {
+          isRunning: this.isRunning,
+          hasMetronome: !!this.metronome,
+        },
+      );
       return;
     }
 
     try {
       // Check if metronome has appropriate method
       if (typeof this.metronome.trigger === 'function') {
-        AudioDebugger.getInstance().log('AudioEventRouter', 'calling-metronome-trigger');
+        AudioDebugger.getInstance().log(
+          'AudioEventRouter',
+          'calling-metronome-trigger',
+        );
         this.metronome.trigger({
           audioTime: data.audioTime,
           timestamp: data.timestamp,
@@ -532,17 +588,18 @@ export class AudioEventRouter {
             isDownbeat: data.isDownbeat,
           },
         });
-      }
-      else if (typeof this.metronome.triggerClick === 'function') {
-        AudioDebugger.getInstance().log('AudioEventRouter', 'calling-metronome-triggerClick');
+      } else if (typeof this.metronome.triggerClick === 'function') {
+        AudioDebugger.getInstance().log(
+          'AudioEventRouter',
+          'calling-metronome-triggerClick',
+        );
         this.metronome.triggerClick({
           beat: data.beat,
           isDownbeat: data.isDownbeat,
           velocity: data.velocity || 0.8,
           time: data.audioTime,
         });
-      }
-      else {
+      } else {
         this.logger.warn('Metronome does not have a recognized trigger method');
       }
     } catch (error) {
@@ -594,8 +651,7 @@ export class AudioEventRouter {
             inversion: data.inversion,
           },
         });
-      }
-      else if (typeof this.harmony.playChord === 'function') {
+      } else if (typeof this.harmony.playChord === 'function') {
         this.harmony.playChord({
           chord: data.chord,
           root: data.root,
@@ -605,8 +661,7 @@ export class AudioEventRouter {
           time: data.audioTime,
           duration: data.duration || '2n',
         });
-      }
-      else {
+      } else {
         this.logger.warn('Harmony does not have a recognized trigger method');
       }
     } catch (error) {
@@ -652,8 +707,7 @@ export class AudioEventRouter {
             octave: data.octave,
           },
         });
-      }
-      else if (typeof this.bass.triggerNote === 'function') {
+      } else if (typeof this.bass.triggerNote === 'function') {
         this.bass.triggerNote({
           note: data.note,
           octave: data.octave,
@@ -661,8 +715,7 @@ export class AudioEventRouter {
           time: data.audioTime,
           duration: data.duration || '8n',
         });
-      }
-      else {
+      } else {
         this.logger.warn('Bass does not have a recognized trigger method');
       }
     } catch (error) {
@@ -693,7 +746,8 @@ export class AudioEventRouter {
       const preloadableRegistry = getPreloadableRegistry();
       if (preloadableRegistry.hasConfig('voice-cue')) {
         try {
-          const voiceCueInstrument = await preloadableRegistry.getOrCreateByType('voice-cue');
+          const voiceCueInstrument =
+            await preloadableRegistry.getOrCreateByType('voice-cue');
           if (voiceCueInstrument) {
             this.voiceCue = voiceCueInstrument;
             this.legacyVoiceCue = voiceCueInstrument;
@@ -701,37 +755,57 @@ export class AudioEventRouter {
             this.logger.info('✅ Got voice cue from preloadable registry');
 
             // Also register in InstrumentRegistry for other components
-            if (this.instrumentRegistry && !this.instrumentRegistry.hasActive('voice-cue')) {
-              this.instrumentRegistry.setActive('voice-cue', voiceCueInstrument);
+            if (
+              this.instrumentRegistry &&
+              !this.instrumentRegistry.hasActive('voice-cue')
+            ) {
+              this.instrumentRegistry.setActive(
+                'voice-cue',
+                voiceCueInstrument,
+              );
             }
           }
         } catch (error) {
-          this.logger.error('Failed to get voice cue from preloadable registry:', error);
+          this.logger.error(
+            'Failed to get voice cue from preloadable registry:',
+            error,
+          );
         }
       }
     }
 
-    AudioDebugger.getInstance().log('AudioEventRouter', 'voice-cue-trigger-received', {
-      isRunning: this.isRunning,
-      hasVoiceCue: !!this.voiceCue,
-      cue: data.cue
-    });
+    AudioDebugger.getInstance().log(
+      'AudioEventRouter',
+      'voice-cue-trigger-received',
+      {
+        isRunning: this.isRunning,
+        hasVoiceCue: !!this.voiceCue,
+        cue: data.cue,
+      },
+    );
 
     if (!this.isRunning || !this.voiceCue) {
       this.logger.warn(
         `Cannot trigger voice cue: isRunning=${this.isRunning}, voiceCue available=${!!this.voiceCue}`,
       );
-      AudioDebugger.getInstance().log('AudioEventRouter', 'voice-cue-trigger-blocked', {
-        isRunning: this.isRunning,
-        hasVoiceCue: !!this.voiceCue
-      });
+      AudioDebugger.getInstance().log(
+        'AudioEventRouter',
+        'voice-cue-trigger-blocked',
+        {
+          isRunning: this.isRunning,
+          hasVoiceCue: !!this.voiceCue,
+        },
+      );
       return;
     }
 
     try {
       // Check if voice cue has appropriate method
       if (typeof this.voiceCue.trigger === 'function') {
-        AudioDebugger.getInstance().log('AudioEventRouter', 'calling-voice-cue-trigger');
+        AudioDebugger.getInstance().log(
+          'AudioEventRouter',
+          'calling-voice-cue-trigger',
+        );
         this.voiceCue.trigger({
           cue: data.cue,
           time: data.audioTime,
@@ -773,7 +847,9 @@ export class AudioEventRouter {
     // Try to get InstrumentRegistry if we don't have it yet
     if (!this.instrumentRegistry) {
       try {
-        const globalServices = (window as any).__coreServices || (window as any).__globalCoreServices;
+        const globalServices =
+          (window as any).__coreServices ||
+          (window as any).__globalCoreServices;
         if (globalServices?.getInstrumentRegistry) {
           this.instrumentRegistry = globalServices.getInstrumentRegistry();
           this.logger.info('Got InstrumentRegistry from CoreServices on start');
@@ -793,7 +869,7 @@ export class AudioEventRouter {
       hasDrums: !!this.drums,
       hasBass: !!this.bass,
       hasHarmony: !!this.harmony,
-      hasInstrumentRegistry: !!this.instrumentRegistry
+      hasInstrumentRegistry: !!this.instrumentRegistry,
     });
   }
 

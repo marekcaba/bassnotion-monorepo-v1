@@ -10,19 +10,29 @@ BassNotion uses a centralized logging system that allows fine-grained control ov
 
 ```javascript
 // Set overall log level
-logger.setLevel(LogLevel.WARN);  // Only warnings and errors
-logger.setLevel(LogLevel.INFO);  // Normal operation (default)
+logger.setLevel(LogLevel.WARN); // Only warnings and errors
+logger.setLevel(LogLevel.INFO); // Normal operation (default)
 logger.setLevel(LogLevel.DEBUG); // Detailed debugging
 logger.setLevel(LogLevel.VERBOSE); // Everything including timing
 
 // Disable noisy categories
-logger.disableCategories('timing', 'drift', 'transport:position', 'worklet:timing');
+logger.disableCategories(
+  'timing',
+  'drift',
+  'transport:position',
+  'worklet:timing',
+);
 
 // Enable specific categories for debugging
 logger.enableCategories('transport', 'audio');
 
 // Disable all timing-related logs
-logger.disableCategories('timing', 'transport:timing', 'worklet:timing', 'transport:position');
+logger.disableCategories(
+  'timing',
+  'transport:timing',
+  'worklet:timing',
+  'transport:position',
+);
 
 // Production mode - minimal logging
 logger.setLevel(LogLevel.ERROR);
@@ -33,12 +43,14 @@ logger.enableCategories('audio', 'transport');
 ## Log Categories
 
 ### Core Services
+
 - `service` - General service operations
 - `service:init` - Service initialization
 - `service:registry` - Service registry operations
 - `core` - Core services coordination
 
 ### Transport & Timing
+
 - `transport` - Transport operations (play, pause, stop)
 - `transport:timing` - High-frequency timing updates
 - `transport:drift` - Drift compensation
@@ -46,21 +58,25 @@ logger.enableCategories('audio', 'transport');
 - `timing` - General timing operations
 
 ### Audio System
+
 - `audio` - General audio operations
 - `audio:engine` - Audio engine operations
 - `audio:processor` - Instrument processors
 - `audio:event` - Audio event routing
 
 ### Worklet
+
 - `worklet` - AudioWorklet operations
 - `worklet:timing` - AudioWorklet timing updates (very verbose)
 
 ### UI Components
+
 - `ui` - General UI operations
 - `ui:controls` - Control interactions
 - `ui:widget` - Widget operations
 
 ### Other
+
 - `samples` - Sample loading
 - `samples:detail` - Detailed sample loading
 - `pattern` - Pattern operations
@@ -73,20 +89,35 @@ logger.enableCategories('audio', 'transport');
 ## Presets
 
 ### Debug Timing Issues
+
 ```javascript
 // Enable all timing-related logs
 logger.setLevel(LogLevel.VERBOSE);
-logger.enableCategories('transport', 'transport:timing', 'transport:drift', 'worklet', 'worklet:timing');
+logger.enableCategories(
+  'transport',
+  'transport:timing',
+  'transport:drift',
+  'worklet',
+  'worklet:timing',
+);
 ```
 
 ### Debug Audio Issues
+
 ```javascript
 // Enable audio-related logs
 logger.setLevel(LogLevel.DEBUG);
-logger.enableCategories('audio', 'audio:engine', 'audio:processor', 'audio:event', 'samples');
+logger.enableCategories(
+  'audio',
+  'audio:engine',
+  'audio:processor',
+  'audio:event',
+  'samples',
+);
 ```
 
 ### Quiet Mode
+
 ```javascript
 // Minimal logging
 logger.setLevel(LogLevel.ERROR);
@@ -94,10 +125,18 @@ logger.disableCategories('*');
 ```
 
 ### Production Mode
+
 ```javascript
 // Balanced production logging
 logger.setLevel(LogLevel.WARN);
-logger.disableCategories('timing', 'transport:timing', 'transport:position', 'worklet', 'service:init', 'samples:detail');
+logger.disableCategories(
+  'timing',
+  'transport:timing',
+  'transport:position',
+  'worklet',
+  'service:init',
+  'samples:detail',
+);
 ```
 
 ## Environment Variables
@@ -119,9 +158,9 @@ logger.getConfig();
 
 // Configure display options
 logger.configure({
-  useEmojis: false,      // Disable emojis
-  showTimestamp: true,   // Show timestamps
-  useColors: false       // Disable colors
+  useEmojis: false, // Disable emojis
+  showTimestamp: true, // Show timestamps
+  useColors: false, // Disable colors
 });
 ```
 
@@ -145,8 +184,14 @@ logger.getConfig().disabledCategories; // Set of disabled categories
 ### Too Much Console Output
 
 1. Disable timing logs:
+
    ```javascript
-   logger.disableCategories('timing', 'transport:timing', 'transport:position', 'worklet:timing');
+   logger.disableCategories(
+     'timing',
+     'transport:timing',
+     'transport:position',
+     'worklet:timing',
+   );
    ```
 
 2. Set higher log level:
@@ -157,6 +202,7 @@ logger.getConfig().disabledCategories; // Set of disabled categories
 ### Not Seeing Expected Logs
 
 1. Check log level:
+
    ```javascript
    logger.getConfig().level; // Current level
    ```

@@ -2,7 +2,7 @@
 /**
  * Code quality validation script for audio domain
  * Story 3.18.5: Audio Reliability & Technical Debt Elimination
- * 
+ *
  * Validates:
  * - No TODO comments for technical debt
  * - No console.error usage
@@ -19,28 +19,28 @@ const AUDIO_DOMAIN_PATH = 'apps/frontend/src/domains/playback';
 const ERROR_PATTERNS = [
   {
     pattern: /TODO.*Review non-null assertion/gi,
-    message: 'Found TODO for non-null assertion review'
+    message: 'Found TODO for non-null assertion review',
   },
   {
     pattern: /console\.error/g,
-    message: 'Found console.error - use professional error handling instead'
+    message: 'Found console.error - use professional error handling instead',
   },
   {
     pattern: /: any\b/g,
-    message: 'Found "any" type - use proper TypeScript types'
+    message: 'Found "any" type - use proper TypeScript types',
   },
   {
     pattern: /throw new Error\(/g,
-    message: 'Found generic Error - use specific AudioError classes'
+    message: 'Found generic Error - use specific AudioError classes',
   },
   {
     pattern: /\/\/ @ts-ignore/g,
-    message: 'Found @ts-ignore - fix TypeScript errors properly'
+    message: 'Found @ts-ignore - fix TypeScript errors properly',
   },
   {
     pattern: /\/\/ @ts-nocheck/g,
-    message: 'Found @ts-nocheck - enable TypeScript checking'
-  }
+    message: 'Found @ts-nocheck - enable TypeScript checking',
+  },
 ];
 
 interface ValidationResult {
@@ -73,9 +73,9 @@ class AudioCodeValidator {
   private checkTypeScriptCompilation(): void {
     console.log('📋 Checking TypeScript compilation...');
     try {
-      execSync(`pnpm nx run @bassnotion/frontend:typecheck`, { 
+      execSync(`pnpm nx run @bassnotion/frontend:typecheck`, {
         stdio: 'pipe',
-        encoding: 'utf8'
+        encoding: 'utf8',
       });
       console.log('✅ TypeScript compilation passed\n');
     } catch (error) {
@@ -122,7 +122,7 @@ class AudioCodeValidator {
               line: index + 1,
               column: match.index + 1,
               message,
-              code: line.trim()
+              code: line.trim(),
             });
           }
         }
@@ -132,7 +132,7 @@ class AudioCodeValidator {
     if (issues.length > 0) {
       this.results.push({
         file: relative(process.cwd(), filePath),
-        issues
+        issues,
       });
       this.totalIssues += issues.length;
     }
@@ -145,7 +145,9 @@ class AudioCodeValidator {
       return;
     }
 
-    console.log(`\n❌ Found ${this.totalIssues} code quality issues in ${this.results.length} files:\n`);
+    console.log(
+      `\n❌ Found ${this.totalIssues} code quality issues in ${this.results.length} files:\n`,
+    );
 
     for (const result of this.results) {
       console.log(`📁 ${result.file}`);
@@ -169,7 +171,9 @@ class AudioCodeValidator {
       console.log(`   ${count} × ${message}`);
     }
 
-    console.log('\n💡 Run "pnpm nx run @bassnotion/frontend:lint:fix" to auto-fix some issues.');
+    console.log(
+      '\n💡 Run "pnpm nx run @bassnotion/frontend:lint:fix" to auto-fix some issues.',
+    );
     process.exit(1);
   }
 }
@@ -182,7 +186,7 @@ async function validateErrorHandling(): Promise<void> {
     'apps/frontend/src/domains/playback/errors/AudioErrors.ts',
     'apps/frontend/src/domains/playback/errors/ErrorHandler.ts',
     'apps/frontend/src/domains/playback/errors/ErrorRecovery.ts',
-    'apps/frontend/src/domains/playback/errors/ErrorReporting.ts'
+    'apps/frontend/src/domains/playback/errors/ErrorReporting.ts',
   ];
 
   let allFilesExist = true;
@@ -209,7 +213,7 @@ async function validateReliabilityFeatures(): Promise<void> {
     'apps/frontend/src/domains/playback/quality/ReliabilityTesting.ts',
     'apps/frontend/src/domains/playback/quality/PerformanceMonitoring.ts',
     'apps/frontend/src/domains/playback/quality/BrowserCompatibility.ts',
-    'apps/frontend/src/domains/playback/quality/HealthChecks.ts'
+    'apps/frontend/src/domains/playback/quality/HealthChecks.ts',
   ];
 
   let allFilesExist = true;
@@ -236,14 +240,16 @@ async function main() {
 
   const validator = new AudioCodeValidator();
   await validator.validate();
-  
+
   await validateErrorHandling();
   await validateReliabilityFeatures();
 
-  console.log('\n✨ All validations passed! Audio domain meets quality standards.');
+  console.log(
+    '\n✨ All validations passed! Audio domain meets quality standards.',
+  );
 }
 
-main().catch(error => {
+main().catch((error) => {
   console.error('\n💥 Validation failed:', error);
   process.exit(1);
 });

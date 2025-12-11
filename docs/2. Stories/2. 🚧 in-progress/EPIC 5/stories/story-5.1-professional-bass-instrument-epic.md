@@ -33,6 +33,7 @@
 ## Solution / Scope
 
 ### Full Architecture Overview
+
 - ⚡ Replace generic sampling logic with dedicated BassVelocitySampler, ArticulationEngine, and TechniqueManager components per architecture doc.
 - ⚡ Insert new 'Articulation Matrix' phase in the admin MIDI workflow.
 - ⚡ Implement true round-robin & crossfade scheduling (Player arrays, NOT Tone.Sampler).
@@ -41,6 +42,7 @@
 - ⚡ Provide full test strategy, memory/cpu management, and rapid fallback handling for sample gaps.
 
 #### Key Features/Flows
+
 1. **Admin Workflow:**
    - Upload MIDI → Parse → (NEW) Articulation Matrix UI → Set Anchors → Convert → Save
    - Admin selects technique/articulations per note with auto-suggestion assist, can preview, save, or revert.
@@ -53,7 +55,7 @@
    - TechniqueManager manages ~1,100+ samples using Player arrays, NOT Sampler.
    - NoiseEngine triggers contextually (ghost, slap, pop, fret, etc.), velocity-aware.
 4. **Sample Organization:**
-   - String/{technique}/{velocity}/{note}_RRx and articulations/articulationType/{from}-{to}.mp3
+   - String/{technique}/{velocity}/{note}\_RRx and articulations/articulationType/{from}-{to}.mp3
    - Support for full and initial libraries with graceful fallback (pitch-shift or normal triggers)
 5. **Integration:**
    - All backend/frontend flows mapped to existing exercise and playback system
@@ -81,17 +83,20 @@
 ## Tasks / Subtasks
 
 ### Phase 1: Data & Schema
+
 - [ ] Update Zod schemas for articulation (add 'toNote', validate all types)
 - [ ] Extend GeneratedBassNote and ArticulationMatrixEntry for frontend/backend
 - [ ] Unit test type mapping and backward compatibility
 
 ### Phase 2: BassTechniqueManager Implementation
+
 - [ ] Use Tone.Player arrays for RR selection (per string/velocity/technique)
 - [ ] Sample URL resolution system (sharps/strings/rr)
 - [ ] Memory cleanup/disposal logic validated
 - [ ] Unit tests for selection and Player disposal
 
 ### Phase 3: ArticulationEngine
+
 - [ ] Implement sample lookup, load, & fallback for all articulation types
 - [ ] Source-timing scheduling logic (not target note)
 - [ ] Crossfade and tempo-aware blend for long durations
@@ -100,18 +105,21 @@
 - [ ] Full unit tests, including fallback edge cases
 
 ### Phase 4: Admin UI Articulation Matrix
+
 - [ ] BassArticulationMatrix component per doc (table, per-note selectors, auto-suggest, preview)
 - [ ] Wire articulation matrix into upload workflow (step 3)
 - [ ] Validate correct save, preview, and error recovery
 - [ ] Storybook test coverage
 
 ### Phase 5: RegionProcessor Update
+
 - [ ] Implement context-aware scheduling logic (source note time, cross-action tracking)
 - [ ] Add scheduledIndices Set, prevent double-scheduling
 - [ ] Integrate with new note/articulation schemas
 - [ ] Full sequence scheduling tests (normal, articulation, rapid slides)
 
 ### Phase 6: End-to-End QA & Fallback Handling
+
 - [ ] Exercise: 'Come Together' with all articulation types
 - [ ] QA for rapid-fire edge cases, real sample gaps, memory profile under load
 - [ ] Implement 'graceful degradation' fallback report for missing samples
@@ -144,4 +152,5 @@
 - All ACs and tasks trace directly to architecture doc sections
 
 ### Change Log
+
 - 2025-11-16: Initial draft created by BMAD Agent (auto-generated)

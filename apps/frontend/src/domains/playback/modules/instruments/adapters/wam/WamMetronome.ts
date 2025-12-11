@@ -100,7 +100,8 @@ export interface TimeSignature {
 }
 
 // Check if we're in browser environment
-const isBrowser = typeof window !== 'undefined' && typeof AudioContext !== 'undefined';
+const isBrowser =
+  typeof window !== 'undefined' && typeof AudioContext !== 'undefined';
 
 /**
  * Extended GainNode to implement AudioNode interface
@@ -207,11 +208,14 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
   async loadSound(sound: MetronomeSound): Promise<void> {
     try {
       // FIRST: Try to get preloaded decoded AudioBuffers from memory cache
-      const cachedHighBuffer = this.sampleCache.getCachedBuffer('metronome-high');
+      const cachedHighBuffer =
+        this.sampleCache.getCachedBuffer('metronome-high');
       const cachedLowBuffer = this.sampleCache.getCachedBuffer('metronome-low');
 
       if (cachedHighBuffer && cachedLowBuffer) {
-        this.logger.info('✅ Using preloaded metronome samples from memory cache!');
+        this.logger.info(
+          '✅ Using preloaded metronome samples from memory cache!',
+        );
         this.accentBuffer = cachedHighBuffer;
         this.clickBuffer = cachedLowBuffer;
         this.currentSound = sound;
@@ -219,17 +223,26 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
       }
 
       // Not in memory - check IndexedDB for raw ArrayBuffers
-      this.logger.info('⚠️ Preloaded samples not in memory, checking IndexedDB...');
+      this.logger.info(
+        '⚠️ Preloaded samples not in memory, checking IndexedDB...',
+      );
 
-      const rawHighBuffer = await this.sampleCache.getCachedRawBuffer('metronome-high');
-      const rawLowBuffer = await this.sampleCache.getCachedRawBuffer('metronome-low');
+      const rawHighBuffer =
+        await this.sampleCache.getCachedRawBuffer('metronome-high');
+      const rawLowBuffer =
+        await this.sampleCache.getCachedRawBuffer('metronome-low');
 
       if (rawHighBuffer && rawLowBuffer) {
-        console.log('💾 [INDEXEDDB-HIT] Using cached metronome samples from IndexedDB');
-        this.logger.info('💾 IndexedDB cache HIT for metronome samples, decoding...');
+        console.log(
+          '💾 [INDEXEDDB-HIT] Using cached metronome samples from IndexedDB',
+        );
+        this.logger.info(
+          '💾 IndexedDB cache HIT for metronome samples, decoding...',
+        );
 
         // Decode the raw buffers
-        const highAudioBuffer = await this.context.decodeAudioData(rawHighBuffer);
+        const highAudioBuffer =
+          await this.context.decodeAudioData(rawHighBuffer);
         const lowAudioBuffer = await this.context.decodeAudioData(rawLowBuffer);
 
         // Cache decoded buffers in memory for next time
@@ -249,7 +262,7 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
       // Load TWO different samples for low and high clicks
-      const clickSamplePath = 'metronome/Click_low2_fixed.mp3';  // Low pitched click
+      const clickSamplePath = 'metronome/Click_low2_fixed.mp3'; // Low pitched click
       const accentSamplePath = 'metronome/Click_high2_fixed.mp3'; // High pitched accent
 
       const clickUrl = `${supabaseUrl}/storage/v1/object/public/audio-samples/${clickSamplePath}`;
@@ -271,7 +284,9 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
         this.logger.info(`📥 Loading regular click from: ${clickUrl}`);
         const response = await fetch(clickUrl);
         if (!response.ok) {
-          throw new Error(`HTTP error loading click! status: ${response.status}`);
+          throw new Error(
+            `HTTP error loading click! status: ${response.status}`,
+          );
         }
         const arrayBuffer = await response.arrayBuffer();
         const audioBuffer = await this.context.decodeAudioData(arrayBuffer);
@@ -297,7 +312,9 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
         this.logger.info(`📥 Loading accent click from: ${accentUrl}`);
         const response = await fetch(accentUrl);
         if (!response.ok) {
-          throw new Error(`HTTP error loading accent! status: ${response.status}`);
+          throw new Error(
+            `HTTP error loading accent! status: ${response.status}`,
+          );
         }
         const arrayBuffer = await response.arrayBuffer();
         const audioBuffer = await this.context.decodeAudioData(arrayBuffer);
@@ -564,10 +581,13 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
       case 'tempo':
         // ✅ REMOVED: tempo setter - tempo now comes from musicalTruth
         // Tempo changes should be done via musicalTruth.setFromExercise()
-        this.logger.warn('⚠️ WamMetronome received tempo event - ignoring. Use musicalTruth.setFromExercise() instead', {
-          receivedTempo: data.tempo,
-          currentMusicalTruthTempo: musicalTruth.getBPM()
-        });
+        this.logger.warn(
+          '⚠️ WamMetronome received tempo event - ignoring. Use musicalTruth.setFromExercise() instead',
+          {
+            receivedTempo: data.tempo,
+            currentMusicalTruthTempo: musicalTruth.getBPM(),
+          },
+        );
         break;
     }
   }
@@ -701,10 +721,13 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
     }
     if (state.tempo !== undefined) {
       // ✅ REMOVED: tempo setter - tempo now comes from musicalTruth
-      this.logger.warn('⚠️ WamMetronome.setState() received tempo - ignoring. Use musicalTruth.setFromExercise() instead', {
-        receivedTempo: state.tempo,
-        currentMusicalTruthTempo: musicalTruth.getBPM()
-      });
+      this.logger.warn(
+        '⚠️ WamMetronome.setState() received tempo - ignoring. Use musicalTruth.setFromExercise() instead',
+        {
+          receivedTempo: state.tempo,
+          currentMusicalTruthTempo: musicalTruth.getBPM(),
+        },
+      );
     }
     if (state.subdivisions !== undefined) {
       this.subdivisions = state.subdivisions;

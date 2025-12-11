@@ -92,7 +92,8 @@ export class InstrumentDependencyManager {
 
     // Strategy 3: Try to get from CoreServices (if initialized)
     try {
-      const coreServices = (window as any).__globalCoreServices || (window as any).__coreServices;
+      const coreServices =
+        (window as any).__globalCoreServices || (window as any).__coreServices;
       if (coreServices) {
         logger.info('🎵 Attempting to get Tone.js from CoreServices...');
         const audioEngine = coreServices.getAudioEngine?.();
@@ -105,7 +106,9 @@ export class InstrumentDependencyManager {
         }
       }
     } catch (error) {
-      logger.debug('🎵 CoreServices not available or not initialized yet', { error });
+      logger.debug('🎵 CoreServices not available or not initialized yet', {
+        error,
+      });
       // Continue to next strategy
     }
 
@@ -125,7 +128,9 @@ export class InstrumentDependencyManager {
       return tone;
     } catch (error) {
       logger.error('❌ Dynamic import failed', error);
-      throw new Error(`Failed to load Tone.js: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to load Tone.js: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
@@ -141,7 +146,9 @@ export class InstrumentDependencyManager {
    * - Handles suspended state (resumes automatically)
    * - Compatible with Web Audio API security requirements
    */
-  static async getAudioContext(preferredContext?: AudioContext): Promise<AudioContext> {
+  static async getAudioContext(
+    preferredContext?: AudioContext,
+  ): Promise<AudioContext> {
     const startTime = performance.now();
 
     // Use preferred context if provided
@@ -193,7 +200,10 @@ export class InstrumentDependencyManager {
    */
   private static async createAudioContext(): Promise<AudioContext> {
     // Strategy 1: Check for persistent context (set by app)
-    if (typeof window !== 'undefined' && (window as any).__persistentAudioContext) {
+    if (
+      typeof window !== 'undefined' &&
+      (window as any).__persistentAudioContext
+    ) {
       logger.info('🎵 Found persistent AudioContext');
       const context = (window as any).__persistentAudioContext;
       if (context.state === 'suspended') {
@@ -204,7 +214,8 @@ export class InstrumentDependencyManager {
 
     // Strategy 2: Get from CoreServices (if available)
     try {
-      const coreServices = (window as any).__globalCoreServices || (window as any).__coreServices;
+      const coreServices =
+        (window as any).__globalCoreServices || (window as any).__coreServices;
       if (coreServices) {
         logger.info('🎵 Attempting to get AudioContext from CoreServices...');
         const audioEngine = coreServices.getAudioEngine?.();
@@ -220,7 +231,9 @@ export class InstrumentDependencyManager {
         }
       }
     } catch (error) {
-      logger.debug('🎵 CoreServices not available or not initialized yet', { error });
+      logger.debug('🎵 CoreServices not available or not initialized yet', {
+        error,
+      });
       // Continue to next strategy
     }
 
@@ -242,7 +255,8 @@ export class InstrumentDependencyManager {
 
     // Strategy 4: Create new AudioContext
     logger.info('🎵 Creating new AudioContext...');
-    const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
+    const AudioContextClass =
+      (window as any).AudioContext || (window as any).webkitAudioContext;
     if (!AudioContextClass) {
       throw new Error('AudioContext not supported in this browser');
     }
@@ -267,19 +281,22 @@ export class InstrumentDependencyManager {
    * Check if Tone.js is already loaded (non-blocking check)
    */
   static isToneLoaded(): boolean {
-    return this.toneInstance !== null ||
-           (typeof window !== 'undefined' && (
-             !!(window as any).__globalTone ||
-             !!(window as any).Tone
-           ));
+    return (
+      this.toneInstance !== null ||
+      (typeof window !== 'undefined' &&
+        (!!(window as any).__globalTone || !!(window as any).Tone))
+    );
   }
 
   /**
    * Check if AudioContext is already created (non-blocking check)
    */
   static isAudioContextReady(): boolean {
-    return this.audioContextInstance !== null ||
-           (typeof window !== 'undefined' && !!(window as any).__persistentAudioContext);
+    return (
+      this.audioContextInstance !== null ||
+      (typeof window !== 'undefined' &&
+        !!(window as any).__persistentAudioContext)
+    );
   }
 
   /**

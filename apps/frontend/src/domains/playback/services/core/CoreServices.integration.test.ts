@@ -124,26 +124,31 @@ describe('CoreServices Integration with InstrumentRegistry', () => {
 
       // Mock user gesture for AudioContext
       const mockUserGesture = () => {
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const audioContext = new (
+          window.AudioContext || (window as any).webkitAudioContext
+        )();
         return audioContext;
       };
 
-      vi.spyOn(window, 'AudioContext').mockImplementation(() => ({
-        state: 'running',
-        currentTime: 0,
-        sampleRate: 44100,
-        createGain: vi.fn(() => ({
-          gain: { value: 1 },
-          connect: vi.fn(),
-          disconnect: vi.fn(),
-        })),
-        createOscillator: vi.fn(),
-        createAnalyser: vi.fn(),
-        destination: {},
-        resume: vi.fn(() => Promise.resolve()),
-        suspend: vi.fn(() => Promise.resolve()),
-        close: vi.fn(() => Promise.resolve()),
-      } as any));
+      vi.spyOn(window, 'AudioContext').mockImplementation(
+        () =>
+          ({
+            state: 'running',
+            currentTime: 0,
+            sampleRate: 44100,
+            createGain: vi.fn(() => ({
+              gain: { value: 1 },
+              connect: vi.fn(),
+              disconnect: vi.fn(),
+            })),
+            createOscillator: vi.fn(),
+            createAnalyser: vi.fn(),
+            destination: {},
+            resume: vi.fn(() => Promise.resolve()),
+            suspend: vi.fn(() => Promise.resolve()),
+            close: vi.fn(() => Promise.resolve()),
+          }) as any,
+      );
 
       await coreServices.initialize();
 
@@ -164,22 +169,25 @@ describe('CoreServices Integration with InstrumentRegistry', () => {
       const listener = vi.fn();
       eventBus.on('core-services:initialized', listener);
 
-      vi.spyOn(window, 'AudioContext').mockImplementation(() => ({
-        state: 'running',
-        currentTime: 0,
-        sampleRate: 44100,
-        createGain: vi.fn(() => ({
-          gain: { value: 1 },
-          connect: vi.fn(),
-          disconnect: vi.fn(),
-        })),
-        createOscillator: vi.fn(),
-        createAnalyser: vi.fn(),
-        destination: {},
-        resume: vi.fn(() => Promise.resolve()),
-        suspend: vi.fn(() => Promise.resolve()),
-        close: vi.fn(() => Promise.resolve()),
-      } as any));
+      vi.spyOn(window, 'AudioContext').mockImplementation(
+        () =>
+          ({
+            state: 'running',
+            currentTime: 0,
+            sampleRate: 44100,
+            createGain: vi.fn(() => ({
+              gain: { value: 1 },
+              connect: vi.fn(),
+              disconnect: vi.fn(),
+            })),
+            createOscillator: vi.fn(),
+            createAnalyser: vi.fn(),
+            destination: {},
+            resume: vi.fn(() => Promise.resolve()),
+            suspend: vi.fn(() => Promise.resolve()),
+            close: vi.fn(() => Promise.resolve()),
+          }) as any,
+      );
 
       await coreServices.initialize();
 
@@ -202,22 +210,25 @@ describe('CoreServices Integration with InstrumentRegistry', () => {
     it('should start InstrumentRegistry when starting all services', async () => {
       coreServices = new CoreServices();
 
-      vi.spyOn(window, 'AudioContext').mockImplementation(() => ({
-        state: 'running',
-        currentTime: 0,
-        sampleRate: 44100,
-        createGain: vi.fn(() => ({
-          gain: { value: 1 },
-          connect: vi.fn(),
-          disconnect: vi.fn(),
-        })),
-        createOscillator: vi.fn(),
-        createAnalyser: vi.fn(),
-        destination: {},
-        resume: vi.fn(() => Promise.resolve()),
-        suspend: vi.fn(() => Promise.resolve()),
-        close: vi.fn(() => Promise.resolve()),
-      } as any));
+      vi.spyOn(window, 'AudioContext').mockImplementation(
+        () =>
+          ({
+            state: 'running',
+            currentTime: 0,
+            sampleRate: 44100,
+            createGain: vi.fn(() => ({
+              gain: { value: 1 },
+              connect: vi.fn(),
+              disconnect: vi.fn(),
+            })),
+            createOscillator: vi.fn(),
+            createAnalyser: vi.fn(),
+            destination: {},
+            resume: vi.fn(() => Promise.resolve()),
+            suspend: vi.fn(() => Promise.resolve()),
+            close: vi.fn(() => Promise.resolve()),
+          }) as any,
+      );
 
       await coreServices.initialize();
       await coreServices.start();
@@ -234,22 +245,25 @@ describe('CoreServices Integration with InstrumentRegistry', () => {
     it('should clean up InstrumentRegistry on dispose', async () => {
       coreServices = new CoreServices();
 
-      vi.spyOn(window, 'AudioContext').mockImplementation(() => ({
-        state: 'running',
-        currentTime: 0,
-        sampleRate: 44100,
-        createGain: vi.fn(() => ({
-          gain: { value: 1 },
-          connect: vi.fn(),
-          disconnect: vi.fn(),
-        })),
-        createOscillator: vi.fn(),
-        createAnalyser: vi.fn(),
-        destination: {},
-        resume: vi.fn(() => Promise.resolve()),
-        suspend: vi.fn(() => Promise.resolve()),
-        close: vi.fn(() => Promise.resolve()),
-      } as any));
+      vi.spyOn(window, 'AudioContext').mockImplementation(
+        () =>
+          ({
+            state: 'running',
+            currentTime: 0,
+            sampleRate: 44100,
+            createGain: vi.fn(() => ({
+              gain: { value: 1 },
+              connect: vi.fn(),
+              disconnect: vi.fn(),
+            })),
+            createOscillator: vi.fn(),
+            createAnalyser: vi.fn(),
+            destination: {},
+            resume: vi.fn(() => Promise.resolve()),
+            suspend: vi.fn(() => Promise.resolve()),
+            close: vi.fn(() => Promise.resolve()),
+          }) as any,
+      );
 
       await coreServices.initialize();
 
@@ -266,7 +280,8 @@ describe('CoreServices Integration with InstrumentRegistry', () => {
 
   describe('GlobalAudioSystem integration', () => {
     it('should provide InstrumentRegistry through global instance', async () => {
-      const globalInstance = await GlobalAudioSystem.getPreInitializedInstance();
+      const globalInstance =
+        await GlobalAudioSystem.getPreInitializedInstance();
 
       const instrumentRegistry = globalInstance.getInstrumentRegistry();
 

@@ -7,6 +7,7 @@ This guide explains how to use correlation IDs and structured logging in the Bas
 ## What are Correlation IDs?
 
 Think of correlation IDs as "detective badges" for requests. Each request gets a unique badge that follows it everywhere:
+
 - From frontend to backend
 - Through all services
 - Into all log entries
@@ -37,7 +38,7 @@ export class UserController {
     // Correlation ID is automatically available
     const correlationId = (req as any).correlationId;
     const logger = (req as any).logger;
-    
+
     logger.info('Fetching user', { userId: id });
     // Logs will include correlationId automatically
   }
@@ -52,13 +53,13 @@ import { createStructuredLogger } from '@bassnotion/contracts';
 @Injectable()
 export class UserService {
   private logger = createStructuredLogger('user-service');
-  
+
   async findUser(userId: string, correlationId: string) {
     // Create child logger with correlation context
     const log = this.logger.child({ correlationId });
-    
+
     log.info('Starting user lookup', { userId });
-    
+
     try {
       const user = await this.db.findUser(userId);
       log.info('User found', { userId });
@@ -76,22 +77,25 @@ export class UserService {
 ### Why Structured Logging?
 
 Instead of this:
+
 ```typescript
 console.log('User login failed for user@example.com at 2024-08-25 10:30:00');
 ```
 
 We do this:
+
 ```typescript
 logger.warn('User login failed', {
   email: 'user@example.com',
   timestamp: '2024-08-25T10:30:00Z',
   ip: '192.168.1.1',
   reason: 'invalid_password',
-  correlationId: '123e4567-e89b-12d3-a456-426614174000'
+  correlationId: '123e4567-e89b-12d3-a456-426614174000',
 });
 ```
 
 ### Benefits
+
 - **Searchable**: Find all logs for a specific user or IP
 - **Filterable**: Show only errors or warnings
 - **Analyzable**: Track patterns and metrics
@@ -132,7 +136,7 @@ logger.info('Processing payment', {
   amount,
   currency,
   userId,
-  method: 'stripe'
+  method: 'stripe',
 });
 ```
 
@@ -145,9 +149,9 @@ class PaymentProcessor {
     const log = this.logger.child({
       correlationId,
       paymentId: payment.id,
-      userId: payment.userId
+      userId: payment.userId,
     });
-    
+
     log.info('Starting payment processing');
     // All subsequent logs include the context
   }
@@ -158,21 +162,22 @@ class PaymentProcessor {
 
 ```typescript
 // ❌ Bad
-logger.info('User login', { 
+logger.info('User login', {
   email: user.email,
-  password: user.password // NEVER LOG PASSWORDS!
+  password: user.password, // NEVER LOG PASSWORDS!
 });
 
 // ✅ Good
-logger.info('User login', { 
+logger.info('User login', {
   email: user.email,
-  method: 'password'
+  method: 'password',
 });
 ```
 
 ### 4. Use Consistent Field Names
 
 Always use the same field names across the application:
+
 - `userId` (not `user_id`, `uid`, `userID`)
 - `correlationId` (not `correlation_id`, `requestId`)
 - `timestamp` (not `time`, `date`, `created_at`)
@@ -238,15 +243,15 @@ jq 'select(.message == "Login failed" and .timestamp > "2024-08-25T00:00:00Z")' 
 describe('UserService', () => {
   it('should log user creation', async () => {
     const logSpy = jest.spyOn(logger, 'info');
-    
+
     await userService.createUser(userData);
-    
+
     expect(logSpy).toHaveBeenCalledWith(
       'User created',
       expect.objectContaining({
         userId: expect.any(String),
-        email: userData.email
-      })
+        email: userData.email,
+      }),
     );
   });
 });
@@ -263,15 +268,15 @@ describe('UserService', () => {
 @Post('upload')
 async uploadFile(@Req() req, @Body() data) {
   const log = (req as any).logger;
-  
+
   log.info('File upload started', {
     fileName: data.name,
     size: data.size,
     type: data.mimeType
   });
-  
+
   // Process upload...
-  
+
   log.info('File upload completed', {
     fileName: data.name,
     storageUrl: result.url
@@ -290,9 +295,9 @@ try {
     error: error.message,
     stack: error.stack,
     input: sanitizedInput, // Don't log sensitive data
-    correlationId
+    correlationId,
   });
-  
+
   // Re-throw or handle
   throw new ServiceException('Operation failed', error);
 }
@@ -310,7 +315,7 @@ const duration = Date.now() - startTime;
 logger.info('Operation completed', {
   duration,
   resultSize: result.length,
-  ...(duration > 1000 && { warning: 'Slow operation' })
+  ...(duration > 1000 && { warning: 'Slow operation' }),
 });
 ```
 

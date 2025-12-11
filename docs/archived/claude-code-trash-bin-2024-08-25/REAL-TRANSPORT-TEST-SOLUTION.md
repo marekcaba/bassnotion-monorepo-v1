@@ -7,8 +7,8 @@ The tests use mocked Tone.js Transport that doesn't actually implement `schedule
 ```javascript
 // In test/mocks/audioLibraryMocks.ts
 const mockTransport = {
-  scheduleRepeat: vi.fn(),  // Just a mock function!
-}
+  scheduleRepeat: vi.fn(), // Just a mock function!
+};
 ```
 
 This is why tests pass but the real app fails - the mock doesn't simulate the actual behavior.
@@ -18,11 +18,13 @@ This is why tests pass but the real app fails - the mock doesn't simulate the ac
 ### 1. Browser-based Test Page
 
 Created `/apps/frontend/public/test-transport-schedule.html` that tests real Tone.js in the browser:
+
 - Tests Transport.scheduleRepeat with `+0.1` delay (app behavior)
 - Tests immediate start
 - Shows if the issue reproduces in isolation
 
 To use:
+
 ```bash
 pnpm dev:frontend
 # Open http://localhost:3001/test-transport-schedule.html
@@ -31,6 +33,7 @@ pnpm dev:frontend
 ### 2. Real Tone.js Test Utils
 
 Created utilities that use actual Tone.js instead of mocks:
+
 - `/apps/frontend/src/test/utils/realToneTestUtils.ts`
 - `/apps/frontend/src/test/setupRealTone.ts`
 
@@ -47,7 +50,7 @@ describe('DrummerWidget - Real Transport Test', () => {
   it('should maintain schedules across re-renders', async () => {
     // Use real Transport
     await Tone.start();
-    
+
     // Render widget and verify scheduling continues
     // This would catch the real issue!
   });
@@ -69,6 +72,7 @@ describe('DrummerWidget - Real Transport Test', () => {
 ## Likely Root Cause
 
 The widgets are probably:
+
 1. Creating schedules in useEffect
 2. Not properly cleaning up old schedules
 3. Re-rendering and losing schedule references

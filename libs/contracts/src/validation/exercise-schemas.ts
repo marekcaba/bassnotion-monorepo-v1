@@ -174,7 +174,8 @@ export const CreateExerciseRequestSchema = z.object({
     .optional(),
 });
 
-export const UpdateExerciseRequestSchema = CreateExerciseRequestSchema.partial();
+export const UpdateExerciseRequestSchema =
+  CreateExerciseRequestSchema.partial();
 
 // Epic 3 Widget-Specific Schemas
 export const SaveCustomBasslineRequestSchema = z.object({

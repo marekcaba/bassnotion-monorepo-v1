@@ -149,6 +149,8 @@ export class EventRouter {
 
     // Handle harmony
     if (instrumentType === 'harmony') {
+      // LOG: Event arriving at router - include event.type to see what's being routed
+      console.log(`[HARMONY-FLOW] STEP 2 - Router: type="${event.type}" | ${(event.data as any)?.noteName || 'NO_NAME'} (MIDI ${(event.data as any)?.midiNote || 'NO_MIDI'}) at t=${audioTime.toFixed(3)}`);
       return this.harmonyScheduler.schedule(event, audioTime, frame);
     }
 
@@ -212,7 +214,9 @@ export class EventRouter {
           timestamp,
           velocity: event.velocity || 0.8,
         });
-        logger.debug(`Emitted drum-trigger: ${drum} at ${audioTime.toFixed(3)}`);
+        logger.debug(
+          `Emitted drum-trigger: ${drum} at ${audioTime.toFixed(3)}`,
+        );
         break;
       }
 

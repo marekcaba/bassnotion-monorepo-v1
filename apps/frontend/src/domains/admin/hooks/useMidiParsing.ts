@@ -55,84 +55,88 @@ export function useMidiParsing() {
    * @param options - Optional parsing parameters (bpm, timeSignature, totalBars)
    * @returns Parsed MIDI data
    */
-  const parseMidi = useCallback(async (
-    exerciseIdOrUrl: string,
-    options?: {
-      midiUrl?: string;
-      bpm?: number;
-      timeSignature?: { numerator: number; denominator: number };
-      totalBars?: number;
-    }
-  ): Promise<ParseMidiResponse> => {
-    setLoading(true);
-    setError(null);
+  const parseMidi = useCallback(
+    async (
+      exerciseIdOrUrl: string,
+      options?: {
+        midiUrl?: string;
+        bpm?: number;
+        timeSignature?: { numerator: number; denominator: number };
+        totalBars?: number;
+      },
+    ): Promise<ParseMidiResponse> => {
+      setLoading(true);
+      setError(null);
 
-    try {
-      // Story 4.4 - Task 1: Use stateless endpoint if midiUrl provided
-      if (options?.midiUrl) {
-        logger.info('Parsing MIDI file (stateless mode - Story 4.4)', {
-          midiUrl: options.midiUrl,
-          bpm: options.bpm,
-          totalBars: options.totalBars,
+      try {
+        // Story 4.4 - Task 1: Use stateless endpoint if midiUrl provided
+        if (options?.midiUrl) {
+          logger.info('Parsing MIDI file (stateless mode - Story 4.4)', {
+            midiUrl: options.midiUrl,
+            bpm: options.bpm,
+            totalBars: options.totalBars,
+            correlationId,
+          });
+
+          const response = await apiClient.post<ParseMidiResponse>(
+            `/api/v1/midi/parse`,
+            {
+              midiUrl: options.midiUrl,
+              bpm: options.bpm,
+              timeSignature: options.timeSignature,
+              totalBars: options.totalBars,
+            },
+            { correlationId },
+          );
+
+          setData(response);
+          logger.info('MIDI parsing completed (stateless)', {
+            midiUrl: options.midiUrl,
+            totalMeasures: response.totalMeasures,
+            totalNotes: response.totalNotes,
+            correlationId,
+          });
+
+          return response;
+        }
+
+        // Legacy mode: Parse from saved exercise (backward compatibility)
+        logger.info('Parsing MIDI file (legacy mode)', {
+          exerciseId: exerciseIdOrUrl,
           correlationId,
         });
 
         const response = await apiClient.post<ParseMidiResponse>(
-          `/api/v1/midi/parse`,
-          {
-            midiUrl: options.midiUrl,
-            bpm: options.bpm,
-            timeSignature: options.timeSignature,
-            totalBars: options.totalBars,
-          },
+          `/api/v1/exercises/${exerciseIdOrUrl}/midi/parse`,
+          {},
           { correlationId },
         );
 
         setData(response);
-        logger.info('MIDI parsing completed (stateless)', {
-          midiUrl: options.midiUrl,
+        logger.info('MIDI parsing completed (legacy)', {
+          exerciseId: exerciseIdOrUrl,
           totalMeasures: response.totalMeasures,
           totalNotes: response.totalNotes,
           correlationId,
         });
 
         return response;
+      } catch (err) {
+        const error =
+          err instanceof Error ? err : new Error('Failed to parse MIDI');
+        setError(error);
+        logger.error('MIDI parsing failed', error, {
+          exerciseIdOrUrl,
+          hasStatelessUrl: !!options?.midiUrl,
+          correlationId,
+        });
+        throw error;
+      } finally {
+        setLoading(false);
       }
-
-      // Legacy mode: Parse from saved exercise (backward compatibility)
-      logger.info('Parsing MIDI file (legacy mode)', {
-        exerciseId: exerciseIdOrUrl,
-        correlationId,
-      });
-
-      const response = await apiClient.post<ParseMidiResponse>(
-        `/api/v1/exercises/${exerciseIdOrUrl}/midi/parse`,
-        {},
-        { correlationId },
-      );
-
-      setData(response);
-      logger.info('MIDI parsing completed (legacy)', {
-        exerciseId: exerciseIdOrUrl,
-        totalMeasures: response.totalMeasures,
-        totalNotes: response.totalNotes,
-        correlationId,
-      });
-
-      return response;
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to parse MIDI');
-      setError(error);
-      logger.error('MIDI parsing failed', error, {
-        exerciseIdOrUrl,
-        hasStatelessUrl: !!options?.midiUrl,
-        correlationId,
-      });
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  }, [correlationId, logger]);
+    },
+    [correlationId, logger],
+  );
 
   const reset = useCallback(() => {
     setData(null);

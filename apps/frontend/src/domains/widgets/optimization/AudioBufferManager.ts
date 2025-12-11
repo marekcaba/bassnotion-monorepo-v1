@@ -244,7 +244,8 @@ export class AudioBufferManager {
       const startTime = performance.now();
 
       // CRITICAL: Check IndexedDB cache BEFORE network fetch
-      const cachedRawBuffer = await GlobalSampleCache.getInstance().getCachedRawBuffer(asset.url);
+      const cachedRawBuffer =
+        await GlobalSampleCache.getInstance().getCachedRawBuffer(asset.url);
 
       let audioBuffer: AudioBuffer;
 
@@ -263,7 +264,10 @@ export class AudioBufferManager {
         audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
 
         // Cache raw ArrayBuffer to IndexedDB for persistence
-        await GlobalSampleCache.getInstance().cacheBuffer(asset.url, arrayBuffer);
+        await GlobalSampleCache.getInstance().cacheBuffer(
+          asset.url,
+          arrayBuffer,
+        );
         logger.debug(`✅ Widget asset cached to IndexedDB: ${name}`);
       }
 

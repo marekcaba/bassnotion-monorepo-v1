@@ -26,7 +26,9 @@ export class BassPreloadStrategy implements PreloadStrategy {
     try {
       // For bass, essential samples are typically not needed in Phase 2
       // Bass loading is exercise-specific and happens in Phase 3 (loadFullSamples)
-      logger.info('✅ Skipping essential bass samples - will load on-demand in Phase 3');
+      logger.info(
+        '✅ Skipping essential bass samples - will load on-demand in Phase 3',
+      );
 
       return {
         success: true,
@@ -44,7 +46,10 @@ export class BassPreloadStrategy implements PreloadStrategy {
     }
   }
 
-  async loadFullSamples(_config?: PreloadConfig, exercise?: Exercise): Promise<PreloadResult> {
+  async loadFullSamples(
+    _config?: PreloadConfig,
+    exercise?: Exercise,
+  ): Promise<PreloadResult> {
     logger.info('🎸 FAANG MIDI-based bass sample loading...', {
       exerciseId: exercise?.id,
       exerciseTitle: exercise?.title,
@@ -57,7 +62,7 @@ export class BassPreloadStrategy implements PreloadStrategy {
       if (!exercise?.basslineMidiUrl) {
         logger.info('✅ No bassline MIDI file - skipping bass sample loading', {
           exerciseId: exercise?.id,
-          reason: exercise ? 'no basslineMidiUrl' : 'no exercise provided'
+          reason: exercise ? 'no basslineMidiUrl' : 'no exercise provided',
         });
 
         return {
@@ -68,12 +73,17 @@ export class BassPreloadStrategy implements PreloadStrategy {
       }
 
       // 1. Extract unique notes from bassline MIDI file
-      const requiredNotes = await extractNotesFromBasslineMidi(exercise.basslineMidiUrl);
+      const requiredNotes = await extractNotesFromBasslineMidi(
+        exercise.basslineMidiUrl,
+      );
 
       if (requiredNotes.length === 0) {
-        logger.warn('⚠️ Bassline MIDI file contains no notes - skipping sample loading', {
-          midiUrl: exercise.basslineMidiUrl
-        });
+        logger.warn(
+          '⚠️ Bassline MIDI file contains no notes - skipping sample loading',
+          {
+            midiUrl: exercise.basslineMidiUrl,
+          },
+        );
 
         return {
           success: true,
@@ -82,46 +92,56 @@ export class BassPreloadStrategy implements PreloadStrategy {
         };
       }
 
-      logger.info('📊 Bassline MIDI analysis complete - loading exercise-specific samples', {
-        uniqueNotes: requiredNotes.length,
-        noteRange: `${requiredNotes[0]} to ${requiredNotes[requiredNotes.length - 1]}`,
-        totalSamplesToLoad: requiredNotes.length,
-        savedSamples: 24 - requiredNotes.length, // vs loading all 24 bass notes
-        savingsPercentage: `${Math.round((1 - (requiredNotes.length / 24)) * 100)}%`
-      });
+      logger.info(
+        '📊 Bassline MIDI analysis complete - loading exercise-specific samples',
+        {
+          uniqueNotes: requiredNotes.length,
+          noteRange: `${requiredNotes[0]} to ${requiredNotes[requiredNotes.length - 1]}`,
+          totalSamplesToLoad: requiredNotes.length,
+          savedSamples: 24 - requiredNotes.length, // vs loading all 24 bass notes
+          savingsPercentage: `${Math.round((1 - requiredNotes.length / 24) * 100)}%`,
+        },
+      );
 
       // 2. Check if CoreServices and AudioEngine are available
-      const coreServices = (window as any).__globalCoreServices || (window as any).__coreServices;
+      const coreServices =
+        (window as any).__globalCoreServices || (window as any).__coreServices;
 
       if (!coreServices) {
-        logger.warn('CoreServices not available - bass samples will load on widget initialization');
+        logger.warn(
+          'CoreServices not available - bass samples will load on widget initialization',
+        );
         return {
           success: true,
           loaded: 0,
           total: requiredNotes.length,
-          metadata: { requiredNotes } // Pass notes to widget for later use
+          metadata: { requiredNotes }, // Pass notes to widget for later use
         };
       }
 
       const audioEngine = coreServices.getAudioEngine?.();
       if (!audioEngine || !audioEngine.isReady()) {
-        logger.warn('AudioEngine not ready - bass samples will load on widget initialization');
+        logger.warn(
+          'AudioEngine not ready - bass samples will load on widget initialization',
+        );
         return {
           success: true,
           loaded: 0,
           total: requiredNotes.length,
-          metadata: { requiredNotes }
+          metadata: { requiredNotes },
         };
       }
 
       const context = audioEngine.getContext();
       if (!context || context.state !== 'running') {
-        logger.warn('AudioContext not running - bass samples will load on widget initialization');
+        logger.warn(
+          'AudioContext not running - bass samples will load on widget initialization',
+        );
         return {
           success: true,
           loaded: 0,
           total: requiredNotes.length,
-          metadata: { requiredNotes }
+          metadata: { requiredNotes },
         };
       }
 
@@ -136,7 +156,7 @@ export class BassPreloadStrategy implements PreloadStrategy {
 
       logger.info('✅ Bass sample metadata cached for widget initialization', {
         requiredNotes: requiredNotes.join(', '),
-        cacheKey: 'bass-required-notes'
+        cacheKey: 'bass-required-notes',
       });
 
       // 4. Mark progress
@@ -147,14 +167,14 @@ export class BassPreloadStrategy implements PreloadStrategy {
       logger.info('✅ Exercise-specific bass samples prepared', {
         loaded: this.loaded,
         total: this.total,
-        savingsVsFullLoad: `${Math.round((1 - (this.loaded / 24)) * 100)}%`,
+        savingsVsFullLoad: `${Math.round((1 - this.loaded / 24) * 100)}%`,
       });
 
       return {
         success: true,
         loaded: this.loaded,
         total: this.total,
-        metadata: { requiredNotes }
+        metadata: { requiredNotes },
       };
     } catch (error) {
       logger.error('❌ Failed to load MIDI-based bass samples', error);

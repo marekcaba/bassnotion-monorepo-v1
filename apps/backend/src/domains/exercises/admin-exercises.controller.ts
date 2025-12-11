@@ -16,7 +16,13 @@ import {
   NotFoundException,
   Req,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiBody,
+} from '@nestjs/swagger';
 import type { FastifyRequest } from 'fastify';
 import { AdminExercisesService } from './admin-exercises.service.js';
 import { UpdateMidiStatusDto } from './dto/update-midi-status.dto.js';
@@ -49,7 +55,12 @@ export class AdminExercisesController {
     @Query('tutorialId') tutorialId?: string,
     @CorrelationId() correlationId?: string,
   ) {
-    this.logger.log(`Finding all exercises`, { correlationId, page, limit, tutorialId });
+    this.logger.log(`Finding all exercises`, {
+      correlationId,
+      page,
+      limit,
+      tutorialId,
+    });
 
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 20;
@@ -85,7 +96,9 @@ export class AdminExercisesController {
     @Param('tutorialId') tutorialId: string,
     @CorrelationId() correlationId?: string,
   ) {
-    this.logger.log(`Finding exercises for tutorial: ${tutorialId}`, { correlationId });
+    this.logger.log(`Finding exercises for tutorial: ${tutorialId}`, {
+      correlationId,
+    });
 
     return await this.exercisesService.findByTutorialId(tutorialId);
   }
@@ -141,23 +154,49 @@ export class AdminExercisesController {
       type: 'object',
       required: ['tutorial_id', 'title', 'bpm'],
       properties: {
-        id: { type: 'string', format: 'uuid', description: 'Optional: Provide to update existing exercise' },
+        id: {
+          type: 'string',
+          format: 'uuid',
+          description: 'Optional: Provide to update existing exercise',
+        },
         tutorial_id: { type: 'string', format: 'uuid' },
         title: { type: 'string' },
         description: { type: 'string' },
         bpm: { type: 'number', minimum: 40, maximum: 300 },
         total_bars: { type: 'number', minimum: 1, maximum: 32 },
-        time_signature: { type: 'object', properties: { numerator: { type: 'number' }, denominator: { type: 'number' } } },
-        difficulty: { type: 'string', enum: ['beginner', 'intermediate', 'advanced', 'expert'] },
+        time_signature: {
+          type: 'object',
+          properties: {
+            numerator: { type: 'number' },
+            denominator: { type: 'number' },
+          },
+        },
+        difficulty: {
+          type: 'string',
+          enum: ['beginner', 'intermediate', 'advanced', 'expert'],
+        },
         key: { type: 'string' },
-        notes: { type: 'array', items: { type: 'object' }, description: 'Fretboard positions from MIDI conversion' },
-        temp_bassline_midi_path: { type: 'string', description: 'Path to temp MIDI file (will be moved to permanent)' },
+        notes: {
+          type: 'array',
+          items: { type: 'object' },
+          description: 'Fretboard positions from MIDI conversion',
+        },
+        temp_bassline_midi_path: {
+          type: 'string',
+          description: 'Path to temp MIDI file (will be moved to permanent)',
+        },
         bassline_midi_url: { type: 'string', format: 'uri' },
       },
     },
   })
-  @ApiResponse({ status: 201, description: 'Exercise created or updated successfully' })
-  @ApiResponse({ status: 400, description: 'Validation error (invalid BPM, notes, etc.)' })
+  @ApiResponse({
+    status: 201,
+    description: 'Exercise created or updated successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Validation error (invalid BPM, notes, etc.)',
+  })
   async create(
     @Body() createExerciseDto: any,
     @CurrentUser() user: AuthUser,
@@ -182,9 +221,15 @@ export class AdminExercisesController {
 
   @Post('upload-midi/:exerciseId')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Upload MIDI file for exercise (bypasses RLS using service role)' })
+  @ApiOperation({
+    summary: 'Upload MIDI file for exercise (bypasses RLS using service role)',
+  })
   @ApiParam({ name: 'exerciseId', description: 'Exercise ID' })
-  @ApiResponse({ status: 200, description: 'MIDI file uploaded successfully', schema: { type: 'object', properties: { publicUrl: { type: 'string' } } } })
+  @ApiResponse({
+    status: 200,
+    description: 'MIDI file uploaded successfully',
+    schema: { type: 'object', properties: { publicUrl: { type: 'string' } } },
+  })
   async uploadMidi(
     @Req() request: FastifyRequest,
     @Param('exerciseId') exerciseId: string,
@@ -192,7 +237,9 @@ export class AdminExercisesController {
     @CorrelationId() correlationId?: string,
   ) {
     if (!type) {
-      throw new BadRequestException('MIDI type is required (bassline, drummer, harmony, or metronome)');
+      throw new BadRequestException(
+        'MIDI type is required (bassline, drummer, harmony, or metronome)',
+      );
     }
 
     // Get the uploaded file using Fastify's multipart
@@ -219,14 +266,17 @@ export class AdminExercisesController {
       'exercise-midi-files',
       filePath,
       buffer,
-      'audio/midi'
+      'audio/midi',
     );
 
-    this.logger.log(`Successfully uploaded MIDI file for exercise ${exerciseId}`, {
-      correlationId,
-      type,
-      publicUrl,
-    });
+    this.logger.log(
+      `Successfully uploaded MIDI file for exercise ${exerciseId}`,
+      {
+        correlationId,
+        type,
+        publicUrl,
+      },
+    );
 
     return { publicUrl };
   }
@@ -249,7 +299,11 @@ export class AdminExercisesController {
 - Update MIDI URLs after upload
     `.trim(),
   })
-  @ApiParam({ name: 'id', description: 'Exercise ID', example: '550e8400-e29b-41d4-a716-446655440000' })
+  @ApiParam({
+    name: 'id',
+    description: 'Exercise ID',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
   @ApiResponse({ status: 200, description: 'Exercise updated successfully' })
   @ApiResponse({ status: 404, description: 'Exercise not found' })
   async update(
@@ -311,7 +365,9 @@ export class AdminExercisesController {
     for (const id of body.ids) {
       const result = await this.exercisesService.delete(id);
       if (!result) {
-        this.logger.warn(`Exercise ${id} not found during batch delete`, { correlationId });
+        this.logger.warn(`Exercise ${id} not found during batch delete`, {
+          correlationId,
+        });
       }
     }
   }
@@ -327,7 +383,10 @@ export class AdminExercisesController {
       ...updateMidiStatusDto,
     });
 
-    const exercise = await this.exercisesService.updateMidiStatus(id, updateMidiStatusDto);
+    const exercise = await this.exercisesService.updateMidiStatus(
+      id,
+      updateMidiStatusDto,
+    );
     if (!exercise) {
       throw new NotFoundException(`Exercise with ID ${id} not found`);
     }
@@ -388,9 +447,12 @@ export class AdminExercisesController {
     @Body('order_index') orderIndex: number,
     @CorrelationId() correlationId?: string,
   ) {
-    this.logger.log(`Updating exercise order: ${id} to position ${orderIndex}`, {
-      correlationId,
-    });
+    this.logger.log(
+      `Updating exercise order: ${id} to position ${orderIndex}`,
+      {
+        correlationId,
+      },
+    );
 
     const exercise = await this.exercisesService.updateOrder(id, orderIndex);
     if (!exercise) {
@@ -405,7 +467,9 @@ export class AdminExercisesController {
     @Param('difficulty') difficulty: string,
     @CorrelationId() correlationId?: string,
   ) {
-    this.logger.log(`Finding exercises by difficulty: ${difficulty}`, { correlationId });
+    this.logger.log(`Finding exercises by difficulty: ${difficulty}`, {
+      correlationId,
+    });
 
     if (!['beginner', 'intermediate', 'advanced'].includes(difficulty)) {
       throw new BadRequestException('Invalid difficulty level');
@@ -480,7 +544,10 @@ Parses the bassline MIDI file for an exercise and groups notes by measure based 
       },
     },
   })
-  @ApiResponse({ status: 400, description: 'Invalid MIDI file or missing required metadata' })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid MIDI file or missing required metadata',
+  })
   @ApiResponse({ status: 404, description: 'Exercise not found' })
   async parseMidi(
     @Param('id') id: string,
@@ -508,7 +575,9 @@ Parses the bassline MIDI file for an exercise and groups notes by measure based 
 
     // Validate exercise has MIDI file
     if (!exercise.basslineMidiUrl) {
-      throw new BadRequestException('Exercise does not have a bassline MIDI file');
+      throw new BadRequestException(
+        'Exercise does not have a bassline MIDI file',
+      );
     }
 
     // Validate required metadata
@@ -592,7 +661,10 @@ Parses the bassline MIDI file for an exercise and groups notes by measure based 
     schema: {
       type: 'object',
       properties: {
-        notes: { type: 'array', description: 'Generated fretboard positions with metadata' },
+        notes: {
+          type: 'array',
+          description: 'Generated fretboard positions with metadata',
+        },
         totalNotes: { type: 'number', example: 16 },
         playability: {
           type: 'object',
@@ -609,7 +681,10 @@ Parses the bassline MIDI file for an exercise and groups notes by measure based 
       },
     },
   })
-  @ApiResponse({ status: 400, description: 'Invalid anchors or missing MIDI file' })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid anchors or missing MIDI file',
+  })
   @ApiResponse({ status: 404, description: 'Exercise not found' })
   async convertMidiToFretboard(
     @Param('id') id: string,
@@ -630,7 +705,9 @@ Parses the bassline MIDI file for an exercise and groups notes by measure based 
 
     // Validate exercise has MIDI file
     if (!exercise.basslineMidiUrl) {
-      throw new BadRequestException('Exercise does not have a bassline MIDI file');
+      throw new BadRequestException(
+        'Exercise does not have a bassline MIDI file',
+      );
     }
 
     // Validate required metadata
@@ -660,20 +737,24 @@ Parses the bassline MIDI file for an exercise and groups notes by measure based 
 
     // Convert to fretboard positions
     const conversionStartTime = Date.now();
-    const { notes, playability } = await this.fretboardMapperService.convertMidiToFretboard(
-      parseResult.measures,
-      convertRequest.anchors,
-      convertRequest.bassType,
-      correlationId,
-    );
+    const { notes, playability } =
+      await this.fretboardMapperService.convertMidiToFretboard(
+        parseResult.measures,
+        convertRequest.anchors,
+        convertRequest.bassType,
+        correlationId,
+      );
     const processingTimeMs = Date.now() - conversionStartTime;
 
-    this.logger.log(`MIDI to fretboard conversion completed for exercise: ${id}`, {
-      correlationId,
-      totalNotes: notes.length,
-      playabilityScore: playability.overallScore,
-      processingTimeMs,
-    });
+    this.logger.log(
+      `MIDI to fretboard conversion completed for exercise: ${id}`,
+      {
+        correlationId,
+        totalNotes: notes.length,
+        playabilityScore: playability.overallScore,
+        processingTimeMs,
+      },
+    );
 
     return {
       notes,

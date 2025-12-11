@@ -3,6 +3,7 @@
 ## Overview
 
 We have duplicate storage implementations:
+
 - **Legacy**: `/services/storage/` (19 files)
 - **Modern**: `/modules/storage/` (modular, well-organized)
 
@@ -11,6 +12,7 @@ We have duplicate storage implementations:
 ### Phase 1: Identify Service Dependencies
 
 Current services using legacy storage:
+
 1. `AudioSampleManager.ts` - Already updated to use modules ✅
 2. `SupabaseAssetClient.ts` - Already using dynamic imports for modules ✅
 3. `CachedToneBufferLoader.ts` - Needs migration
@@ -19,15 +21,15 @@ Current services using legacy storage:
 
 ### Phase 2: Service-to-Module Mapping
 
-| Legacy Service | Modern Module | Action |
-|----------------|---------------|---------|
-| `SupabaseAssetClient.ts` | `providers/SupabaseProviderAdvanced.ts` | Keep both, client uses provider |
-| `GlobalSampleCache.ts` | `cache/GlobalSampleCache.ts` | Remove service version |
-| `CachedToneBufferLoader.ts` | `loaders/SampleLoader.ts` | Migrate and remove |
-| `AdaptiveAudioStreamer.ts` | `loaders/AssetLoader.ts` | Migrate features |
-| `PredictiveLoadingEngine.ts` | `loaders/PreloadStrategy.ts` | Migrate algorithm |
-| Cache services in `/cache/` | Module `/cache/` | Remove duplicates |
-| Analytics in `/analytics/` | Module `/analytics/` | Remove duplicates |
+| Legacy Service               | Modern Module                           | Action                          |
+| ---------------------------- | --------------------------------------- | ------------------------------- |
+| `SupabaseAssetClient.ts`     | `providers/SupabaseProviderAdvanced.ts` | Keep both, client uses provider |
+| `GlobalSampleCache.ts`       | `cache/GlobalSampleCache.ts`            | Remove service version          |
+| `CachedToneBufferLoader.ts`  | `loaders/SampleLoader.ts`               | Migrate and remove              |
+| `AdaptiveAudioStreamer.ts`   | `loaders/AssetLoader.ts`                | Migrate features                |
+| `PredictiveLoadingEngine.ts` | `loaders/PreloadStrategy.ts`            | Migrate algorithm               |
+| Cache services in `/cache/`  | Module `/cache/`                        | Remove duplicates               |
+| Analytics in `/analytics/`   | Module `/analytics/`                    | Remove duplicates               |
 
 ### Phase 3: Migration Order
 
@@ -57,6 +59,7 @@ Current services using legacy storage:
 ## Implementation Steps
 
 ### Step 1: Remove Direct Duplicates
+
 ```bash
 # Remove duplicate files (after verifying no unique logic)
 rm apps/frontend/src/domains/playback/services/storage/GlobalSampleCache.ts
@@ -66,16 +69,21 @@ rm apps/frontend/src/domains/playback/services/storage/cache/CacheSynchronizatio
 ```
 
 ### Step 2: Update Import References
+
 Update all imports from:
+
 ```typescript
 import { GlobalSampleCache } from '@/domains/playback/services/storage/GlobalSampleCache';
 ```
+
 To:
+
 ```typescript
 import { GlobalSampleCache } from '@/domains/playback/modules/storage/cache/GlobalSampleCache';
 ```
 
 ### Step 3: Migrate Unique Logic
+
 Identify unique features in service implementations and port to modules.
 
 ## Benefits

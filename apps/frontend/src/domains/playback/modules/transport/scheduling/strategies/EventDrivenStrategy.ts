@@ -59,7 +59,9 @@ export class EventDrivenStrategy implements PositionUpdateStrategy {
     this.transportStartTime = startTime;
     // Also reset tempo tracking when transport start time changes
     this.lastTempoChangeTime = startTime;
-    logger.debug('Transport start time set', { startTime: startTime.toFixed(6) });
+    logger.debug('Transport start time set', {
+      startTime: startTime.toFixed(6),
+    });
   }
 
   /**
@@ -80,7 +82,8 @@ export class EventDrivenStrategy implements PositionUpdateStrategy {
     // The Clock.onTick time is already elapsed from start, so we use that reference
     const now = this.clock.getAudioTime();
     const elapsedSinceLastChange = now - this.lastTempoChangeTime;
-    const beatsSinceLastChange = elapsedSinceLastChange * (this.currentBPM / 60);
+    const beatsSinceLastChange =
+      elapsedSinceLastChange * (this.currentBPM / 60);
     this.accumulatedBeats += beatsSinceLastChange;
 
     // Reset timing reference for the new tempo
@@ -193,7 +196,8 @@ export class EventDrivenStrategy implements PositionUpdateStrategy {
     // but we need to track from lastTempoChangeTime for proper compensation
     const absoluteTime = this.transportStartTime + wallClockElapsed;
     const elapsedSinceLastChange = absoluteTime - this.lastTempoChangeTime;
-    const beatsSinceLastChange = elapsedSinceLastChange * (this.currentBPM / 60);
+    const beatsSinceLastChange =
+      elapsedSinceLastChange * (this.currentBPM / 60);
     const totalBeats = this.accumulatedBeats + beatsSinceLastChange;
 
     // Convert beats to "equivalent seconds" at current tempo for downstream compatibility

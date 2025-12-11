@@ -161,6 +161,7 @@
 ## Dev Technical Guidance
 
 ### **Architecture Context**
+
 This story builds upon our completed EPIC 3.18 FAANG-Style Web DAW Architecture, which successfully reduced 56+ services to 5 core services. We're now extending this foundation to support track-based architecture while preserving all existing functionality.
 
 **CRITICAL PROBLEM BEING SOLVED:** Current widget-based system causes tempo fluctuations and timing drift when multiple instruments play simultaneously. The track-based system will eliminate these issues by providing a unified timing architecture with sample-accurate synchronization.
@@ -168,32 +169,37 @@ This story builds upon our completed EPIC 3.18 FAANG-Style Web DAW Architecture,
 ### **Key Technical Assets to Leverage**
 
 **UnifiedTransport.ts (2,585 lines) - TIMING CRITICAL**
+
 - **Sample-accurate timing**: AudioWorklet at 128-sample intervals (2.67ms @ 48kHz)
-- **Advanced drift compensation**: Kalman filter with 3 modes (off/basic/adaptive)  
+- **Advanced drift compensation**: Kalman filter with 3 modes (off/basic/adaptive)
 - **Professional precision**: <1ms drift, <0.5ms jitter, >99.5% stability
 - **Master clock architecture**: Single authoritative time source for all tracks
 - **Musical time system**: bars:beats:sixteenths with 960 PPQ MIDI precision
 - **Location**: `apps/frontend/src/domains/playback/services/core/UnifiedTransport.ts`
 
 **Existing Scheduling Architecture**
+
 - **PatternScheduler.ts (376 lines)** - ✅ **PRODUCTION** - Widget-based pattern scheduling with drum/metronome/harmony support
 - **DrumScheduler.ts (306 lines)** - ❌ **TESTING ONLY** - Redundant with PatternScheduler, used only in diagnostics
 - **transport-scheduler.js (747 lines)** - ❓ **UNUSED** - Web Worker with no active consumers
 - **ProfessionalTransportScheduler** - ❌ **INCOMPLETE** - Just constants, no actual scheduler implementation
 
 **TrackManagerProcessor.ts (1,369 lines)**
+
 - Advanced track classification engine (multi-algorithm)
 - Comprehensive mixing and automation APIs
 - Track dependency management framework
 - **Location**: `apps/frontend/src/domains/playback/services/plugins/TrackManagerProcessor.ts`
 
 **Plugin System (402 lines of types + 67 components)**
+
 - Professional plugin architecture with lifecycle management
 - Type-safe plugin interfaces and capabilities system
 - 25+ working audio plugins ready for track-based refactoring
 - **Location**: `apps/frontend/src/domains/playback/types/plugin.ts`
 
 **AudioEngine.ts (938 lines)**
+
 - 99%+ reliable initialization with circuit breaker protection
 - Professional error handling and browser compatibility
 - Single source of truth for Tone.js access
@@ -204,22 +210,23 @@ This story builds upon our completed EPIC 3.18 FAANG-Style Web DAW Architecture,
 **TIMING PRECISION IS PARAMOUNT - MULTI-TRACK CONSIDERATIONS**
 
 **Master Clock Architecture (CRITICAL)**
+
 ```typescript
 // CRITICAL: Single AudioWorklet master clock for ALL tracks
 class TrackScheduler {
   private transport = UnifiedTransport.getInstance(); // Single source of truth
   private tracks = new Map<string, Track>();
   private trackTimingMetrics = new Map<string, TrackTimingMetrics>();
-  
+
   scheduleTrack(trackId: string, patterns: Pattern[]) {
     // ALL tracks must sync to same AudioWorklet master clock
     // Sample-accurate scheduling with <1ms drift tolerance
     const masterTime = this.transport.getCurrentTime(); // AudioWorklet time
-    
+
     // Validate timing precision per track
     this.validateTrackTiming(trackId, masterTime);
   }
-  
+
   private validateTrackTiming(trackId: string, masterTime: number) {
     // Ensure track stays within 1ms drift tolerance
     // Isolate timing issues to prevent cascade failures
@@ -228,6 +235,7 @@ class TrackScheduler {
 ```
 
 **Pattern Registration Enhancement**
+
 ```typescript
 // Current: Widget-based limitation (PatternScheduler.ts line 63-67)
 const existingWidgetId = this.patternsByType.get(registration.widgetType);
@@ -238,7 +246,7 @@ if (existingWidgetId && existingWidgetId !== widgetId) {
 // Enhanced: Track-based extension of existing PatternScheduler
 class EnhancedPatternScheduler extends PatternScheduler {
   private tracksByType = new Map<string, string[]>(); // widgetType -> trackIds[]
-  
+
   registerTrack(trackId: string, trackConfig: TrackConfig): void {
     // Multiple tracks per instrument type supported
     const tracks = this.tracksByType.get(trackConfig.instrumentType) || [];
@@ -249,8 +257,9 @@ class EnhancedPatternScheduler extends PatternScheduler {
 ```
 
 **CRITICAL: Multi-Track Timing Precision (FIXES TEMPO FLUCTUATIONS)**
+
 - **Root cause**: Current widget system allows independent timing that causes fluctuations
-- **Solution**: Single AudioWorklet master clock eliminates tempo drift between instruments  
+- **Solution**: Single AudioWorklet master clock eliminates tempo drift between instruments
 - **Sample-accurate sync**: All tracks must maintain <1ms drift from AudioWorklet master clock
 - **Timing isolation**: Track timing errors must NOT cascade to other tracks
 - **Cross-track validation**: Verify sample-accurate alignment between tracks
@@ -259,21 +268,24 @@ class EnhancedPatternScheduler extends PatternScheduler {
 - **Output latency handling**: Compensate for Bluetooth/external device delays (newly identified requirement)
 
 **Performance Preservation**
+
 - Maintain current 50,000+ commands/second throughput
-- Preserve 178,000+ events/second event bus performance  
+- Preserve 178,000+ events/second event bus performance
 - Keep <0.1ms pattern overhead per track
 - Ensure memory usage doesn't scale linearly with track count
 - **NEW**: Validate <1ms drift tolerance scales across multiple tracks
 
 **Multi-Track Performance Challenges (from original plan):**
+
 - **Increased CPU load**: Multiple tracks require CPU load balancing
-- **Complex scheduling**: Track synchronization adds overhead  
+- **Complex scheduling**: Track synchronization adds overhead
 - **Memory scaling**: Track count affects memory usage patterns
 - **Mobile optimization**: Track count limitations on mobile devices
 
 ### **Integration Points**
 
 **ServiceRegistry Integration**
+
 ```typescript
 // Enhance existing services with track capabilities
 const enhancedPatternScheduler = new EnhancedPatternScheduler();
@@ -285,6 +297,7 @@ serviceRegistry.register('drumScheduler', drumScheduler); // Leverage existing
 ```
 
 **EventBus Communication**
+
 ```typescript
 // Use existing EventBus for track events
 eventBus.emit('track:created', { trackId, trackConfig });
@@ -292,6 +305,7 @@ eventBus.emit('track:scheduled', { trackId, patterns });
 ```
 
 **Widget Compatibility & Track Migration**
+
 ```typescript
 // Adapter pattern for existing widgets
 class WidgetTrackAdapter {
@@ -316,7 +330,7 @@ interface TrackMixingState {
 class MasterMixBus {
   private tracks = new Map<string, Track>();
   private auxReturns = new Map<string, AuxReturn>();
-  
+
   mixTracks(): AudioBuffer {
     // Sum all track outputs with proper mixing
     // Apply master bus processing
@@ -326,6 +340,7 @@ class MasterMixBus {
 ```
 
 ### **Testing Strategy**
+
 - **CRITICAL**: Multi-track timing precision tests
   - Sample-accurate synchronization validation across 2-8 tracks
   - Drift tolerance testing (<1ms per track)
@@ -338,6 +353,7 @@ class MasterMixBus {
 - Multi-track synchronization stress tests under load
 
 ### **Migration Safety**
+
 - Feature flag controlled rollout
 - Fallback to widget-based system if issues
 - Comprehensive logging and monitoring
@@ -352,6 +368,7 @@ class MasterMixBus {
 #### Task 1: Track Entity System Foundation - COMPLETED (2025-01-09)
 
 **Implementation Summary:**
+
 - Created comprehensive `Track` interface and types in `/apps/frontend/src/domains/playback/types/track.ts`
   - Includes all required properties: ID, name, instrument type, musical properties, mixing state, routing, sync config, automation, plugins, patterns, metrics, and metadata
   - Added enums for TrackState, interfaces for TrackLifecycle, TrackManager, and serialization
@@ -377,11 +394,13 @@ class MasterMixBus {
   - Snapshot system for state restoration
 
 **Testing:**
+
 - Comprehensive unit tests for both Track and TrackStateContainer
 - 48 tests total, all passing
 - Tests cover: construction, initialization, disposal, validation, state management, plugin/pattern management, mixing updates, automation, undo/redo, serialization, and error handling
 
 **Key Design Decisions:**
+
 1. Used singleton serviceRegistry instead of getInstance() pattern to align with existing codebase patterns
 2. Made EventBus and ErrorReporter optional in Track to support testing scenarios
 3. Implemented deep merge for state updates to properly handle nested object changes
@@ -390,6 +409,7 @@ class MasterMixBus {
 6. Integrated with existing error handling system (PlaybackError)
 
 **Integration Points:**
+
 - Uses existing InstrumentType from TrackManagerProcessor
 - Compatible with existing Pattern types
 - Works with existing AudioPlugin interface
@@ -402,7 +422,7 @@ class MasterMixBus {
 - **2025-01-XX**: Updated Task 3 after discovering existing scheduling architecture:
   - Found PatternScheduler.ts (376 lines) - widget-based pattern scheduling ✅ PRODUCTION
   - Found DrumScheduler.ts (306 lines) - testing artifact, redundant ❌ REMOVE
-  - Found transport-scheduler.js (747 lines) - Web Worker, unused ❓ EVALUATE  
+  - Found transport-scheduler.js (747 lines) - Web Worker, unused ❓ EVALUATE
   - Found ProfessionalTransportScheduler - incomplete, just constants ❌ REMOVE
   - Changed approach from "create TrackScheduler" to "enhance existing PatternScheduler"
   - Added architectural debt cleanup to remove redundant schedulers

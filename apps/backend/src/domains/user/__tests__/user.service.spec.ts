@@ -68,9 +68,13 @@ describe('UserService', () => {
       }),
       getCorrelationId: vi.fn().mockReturnValue('test-correlation-id'),
     };
-    
+
     // Create service instance
-    service = new UserService(mockDatabaseService, mockRepository, mockRequestContextService as any);
+    service = new UserService(
+      mockDatabaseService,
+      mockRepository,
+      mockRequestContextService as any,
+    );
   });
 
   afterEach(() => {

@@ -10,12 +10,12 @@ This document details 4 critical bugs discovered in the playback domain that cau
 
 ## Summary Table
 
-| Priority | Bug | Impact | Files Affected |
-|----------|-----|--------|----------------|
-| 🔴 CRITICAL | Race Condition in Initialization | Double buffer loading, unpredictable behavior | 3 files |
-| 🔴 CRITICAL | OfflineAudioContext Incompatibility | Silent audio failures, wasted preloading | 3 files |
-| 🔴 CRITICAL | Memory Leak - AudioBufferSourceNode | Linear memory growth, eventual crash | 6 files |
-| 🟠 HIGH | No Single Source of Truth for AudioContext | Multiple contexts, state mismatches | 5+ files |
+| Priority    | Bug                                        | Impact                                        | Files Affected |
+| ----------- | ------------------------------------------ | --------------------------------------------- | -------------- |
+| 🔴 CRITICAL | Race Condition in Initialization           | Double buffer loading, unpredictable behavior | 3 files        |
+| 🔴 CRITICAL | OfflineAudioContext Incompatibility        | Silent audio failures, wasted preloading      | 3 files        |
+| 🔴 CRITICAL | Memory Leak - AudioBufferSourceNode        | Linear memory growth, eventual crash          | 6 files        |
+| 🟠 HIGH     | No Single Source of Truth for AudioContext | Multiple contexts, state mismatches           | 5+ files       |
 
 ---
 
@@ -26,16 +26,17 @@ This document details 4 critical bugs discovered in the playback domain that cau
 Two independent initialization paths can execute in unpredictable order, causing buffers to be loaded twice and creating timing conflicts.
 
 **Initialization Paths**:
+
 1. **useCoreServices** - Auto-initializes on first **click/touch** → Creates `window.__globalCoreServices`
 2. **ScrollTriggerLoader** - Preloads samples on first **scroll** → Tries to access `window.__globalCoreServices`
 
 ### Race Condition Scenarios
 
-| User Action | Execution Order | Result |
-|------------|-----------------|--------|
-| Scroll → Click Play | `loadEssentialSamples()` runs before `CoreServices` exists | Falls back to OfflineContext, samples loaded twice |
-| Click Play → Scroll | Both run simultaneously | Potential buffer injection conflicts |
-| Rapid Click + Scroll | Undefined execution order | Unpredictable behavior |
+| User Action          | Execution Order                                            | Result                                             |
+| -------------------- | ---------------------------------------------------------- | -------------------------------------------------- |
+| Scroll → Click Play  | `loadEssentialSamples()` runs before `CoreServices` exists | Falls back to OfflineContext, samples loaded twice |
+| Click Play → Scroll  | Both run simultaneously                                    | Potential buffer injection conflicts               |
+| Rapid Click + Scroll | Undefined execution order                                  | Unpredictable behavior                             |
 
 ### Evidence
 
@@ -99,6 +100,7 @@ AudioBuffers decoded with `OfflineAudioContext` cannot be used with a different 
 ### Root Cause
 
 **Phase 2 Preloading** (during scroll, no user gesture):
+
 ```typescript
 // Uses OfflineAudioContext to decode without user interaction
 const offlineContext = new OfflineAudioContext(2, 44100, 44100);
@@ -109,6 +111,7 @@ GlobalSampleCache.cacheBuffer('drum-kick', audioBuffer);
 ```
 
 **Playback** (after user clicks play):
+
 ```typescript
 // Real AudioContext is created
 const context = new AudioContext();
@@ -121,9 +124,11 @@ source.buffer = buffer; // Silent failure or error
 ### Why This Breaks
 
 From Web Audio API specification:
+
 > An AudioBuffer created from one AudioContext cannot be used with a different AudioContext. Attempting to do so will result in an `InvalidStateError`.
 
 Additionally:
+
 - Buffers are tied to the context's sample rate
 - Internal buffer format may differ between contexts
 - Some browsers silently fail, others throw errors
@@ -151,11 +156,12 @@ Comments appear in multiple locations (lines 598, 636, 713) warning against cach
 ### Proposed Solution
 
 **Phase 2 (Scroll Trigger) - URL Caching Only**:
+
 ```typescript
 // Only cache the URL, don't decode yet
 fetch(sampleUrl)
-  .then(response => response.blob())
-  .then(blob => {
+  .then((response) => response.blob())
+  .then((blob) => {
     const url = URL.createObjectURL(blob);
     GlobalSampleCache.cacheUrl('drum-kick', url);
     // Don't decode - just store the URL
@@ -163,6 +169,7 @@ fetch(sampleUrl)
 ```
 
 **Phase 3 (After User Gesture) - Decode with Real Context**:
+
 ```typescript
 // Now we have the real AudioContext
 const context = audioEngine.getContext();
@@ -172,18 +179,19 @@ const url = GlobalSampleCache.getUrl('drum-kick');
 
 // Decode with REAL context
 fetch(url)
-  .then(response => response.arrayBuffer())
-  .then(arrayBuffer => context.decodeAudioData(arrayBuffer))
-  .then(audioBuffer => {
+  .then((response) => response.arrayBuffer())
+  .then((arrayBuffer) => context.decodeAudioData(arrayBuffer))
+  .then((audioBuffer) => {
     // Now buffer is compatible!
     GlobalSampleCache.cacheBuffer('drum-kick', audioBuffer, {
       isContextCompatible: true,
-      contextId: context.id // Track which context it belongs to
+      contextId: context.id, // Track which context it belongs to
     });
   });
 ```
 
 **Add Validation**:
+
 ```typescript
 // In GlobalSampleCache
 getCachedBuffer(path: string): AudioBuffer | null {
@@ -228,6 +236,7 @@ private scheduledAudioSources = new Map<
 ```
 
 **Sources are added** (example from harmony scheduling):
+
 ```typescript
 const source = this.audioContext.createBufferSource();
 source.buffer = buffer;
@@ -236,7 +245,7 @@ source.connect(gain);
 // Added to map
 this.scheduledAudioSources.set(source, {
   type: 'sustained',
-  hasStopScheduled: false
+  hasStopScheduled: false,
 });
 
 source.start(audioTime);
@@ -244,6 +253,7 @@ source.start(audioTime);
 ```
 
 **Similar patterns** in:
+
 - HarmonyScheduler - Creates sources for piano notes
 - BassScheduler - Creates sources for bass notes
 - DrumScheduler - Creates sources for drum hits
@@ -253,6 +263,7 @@ source.start(audioTime);
 ### Memory Growth Analysis
 
 **Example**: 10-minute practice session
+
 - Tempo: 120 BPM
 - Harmony notes: 4 per bar
 - Drum hits: 8 per bar
@@ -286,6 +297,7 @@ Actual buffers may still be in memory due to references = **Megabytes** of waste
 ### Proposed Solution
 
 **Add cleanup in onended callback**:
+
 ```typescript
 const source = this.audioContext.createBufferSource();
 source.buffer = buffer;
@@ -294,7 +306,7 @@ source.connect(gain);
 // Track source
 this.scheduledAudioSources.set(source, {
   type: 'one-shot',
-  hasStopScheduled: false
+  hasStopScheduled: false,
 });
 
 // ✅ ADD CLEANUP
@@ -307,6 +319,7 @@ source.start(audioTime);
 ```
 
 **Add cleanup when stopping**:
+
 ```typescript
 stop(): void {
   // Stop all active sources
@@ -326,6 +339,7 @@ stop(): void {
 ```
 
 **Add periodic garbage collection** (optional safety net):
+
 ```typescript
 private cleanupFinishedSources(): void {
   const now = this.audioContext.currentTime;
@@ -355,6 +369,7 @@ private cleanupFinishedSources(): void {
 ### Problem Statement
 
 Multiple components independently check and manage AudioContext state without coordination, risking:
+
 - Multiple AudioContext instances (browser limit ≈ 6)
 - Instruments using different contexts (audio won't play together)
 - State mismatches between components
@@ -365,6 +380,7 @@ Multiple components independently check and manage AudioContext state without co
 **Multiple context creation points**:
 
 1. **CoreServices** - Creates primary context:
+
    ```typescript
    // apps/frontend/src/domains/playback/services/core/CoreServices.ts:187
    const context = await this.audioEngine.getContext();
@@ -372,6 +388,7 @@ Multiple components independently check and manage AudioContext state without co
    ```
 
 2. **InitialSamplePreloader** - Checks context independently:
+
    ```typescript
    // apps/frontend/src/domains/playback/services/InitialSamplePreloader.ts:90-93
    if (audioEngine?.isReady?.()) {
@@ -383,9 +400,11 @@ Multiple components independently check and manage AudioContext state without co
    ```
 
 3. **WAM Plugins** - May create their own contexts:
+
    ```typescript
    // Widget components get context directly
-   const harmonyInstrument = await wamPluginSingleton.getOrCreateKeyboardPlugin(context);
+   const harmonyInstrument =
+     await wamPluginSingleton.getOrCreateKeyboardPlugin(context);
    ```
 
 4. **useAudio Hook** - Gets context separately:
@@ -396,6 +415,7 @@ Multiple components independently check and manage AudioContext state without co
    ```
 
 **No coordination between checks** - Each component makes independent decisions about:
+
 - When to create a context
 - When to resume/suspend
 - Which context to use
@@ -404,6 +424,7 @@ Multiple components independently check and manage AudioContext state without co
 ### Current State Management Issues
 
 **Polling-based detection**:
+
 ```typescript
 // apps/frontend/src/domains/playback/utils/contextManager.ts:41
 // Checks every 500ms for context changes
@@ -416,6 +437,7 @@ setInterval(() => {
 ```
 
 **Problems**:
+
 - 500ms delay to detect changes
 - No events emitted
 - Other components unaware of changes
@@ -447,12 +469,12 @@ class AudioContextManager {
       this.context.addEventListener('statechange', () => {
         this.eventBus.emit('audio:context-state-changed', {
           state: this.context!.state,
-          contextId: this.context!.id
+          contextId: this.context!.id,
         });
       });
 
       this.eventBus.emit('audio:context-created', {
-        contextId: this.context.id
+        contextId: this.context.id,
       });
     }
 
@@ -474,6 +496,7 @@ class AudioContextManager {
 ```
 
 **All components use centralized access**:
+
 ```typescript
 // Instead of creating their own
 const context = CoreServices.getAudioEngine().getContext();
@@ -487,6 +510,7 @@ eventBus.on('audio:context-state-changed', ({ state }) => {
 ```
 
 **Replace polling with events**:
+
 ```typescript
 // Remove 500ms polling interval
 // Use native statechange event instead
@@ -547,6 +571,7 @@ context.addEventListener('statechange', () => {
 ### Unit Tests
 
 **Bug #3 - Memory Leak**:
+
 ```typescript
 describe('AudioBufferSourceNode cleanup', () => {
   it('should remove sources from map after playback ends', async () => {
@@ -577,6 +602,7 @@ describe('AudioBufferSourceNode cleanup', () => {
 ```
 
 **Bug #4 - Context Centralization**:
+
 ```typescript
 describe('AudioContext state management', () => {
   it('should emit event on context creation', () => {
@@ -601,6 +627,7 @@ describe('AudioContext state management', () => {
 ```
 
 **Bug #2 - Buffer Compatibility**:
+
 ```typescript
 describe('Buffer context validation', () => {
   it('should invalidate buffers from different context', () => {
@@ -624,6 +651,7 @@ describe('Buffer context validation', () => {
 ### Integration Tests
 
 **Bug #1 - Race Condition**:
+
 ```typescript
 describe('Initialization sequence', () => {
   it('should handle scroll before click', async () => {
@@ -687,6 +715,7 @@ describe('Memory leak test', () => {
 Each fix is designed to be independently reversible:
 
 ### Bug #3 Rollback
+
 ```bash
 # Remove onended callbacks
 git revert <commit-hash>
@@ -694,6 +723,7 @@ git revert <commit-hash>
 ```
 
 ### Bug #4 Rollback
+
 ```bash
 # Revert to direct context access
 git revert <commit-hash>
@@ -701,6 +731,7 @@ git revert <commit-hash>
 ```
 
 ### Bug #2 Rollback
+
 ```bash
 # Revert to OfflineContext decoding
 git revert <commit-hash>
@@ -708,6 +739,7 @@ git revert <commit-hash>
 ```
 
 ### Bug #1 Rollback
+
 ```bash
 # Revert to current initialization
 git revert <commit-hash>
@@ -738,16 +770,19 @@ git revert <commit-hash>
 ## File Reference Summary
 
 ### Bug #1: Race Condition
+
 - [apps/frontend/src/domains/playback/hooks/useCoreServices.ts](apps/frontend/src/domains/playback/hooks/useCoreServices.ts) (lines 519-536)
 - [apps/frontend/src/domains/playback/services/InitialSamplePreloader.ts](apps/frontend/src/domains/playback/services/InitialSamplePreloader.ts) (lines 85-98)
 - [apps/frontend/src/domains/playback/components/ScrollTriggerLoader.tsx](apps/frontend/src/domains/playback/components/ScrollTriggerLoader.tsx) (lines 24-55)
 
 ### Bug #2: Buffer Incompatibility
+
 - [apps/frontend/src/domains/playback/modules/storage/cache/GlobalSampleCache.ts](apps/frontend/src/domains/playback/modules/storage/cache/GlobalSampleCache.ts) (entire file)
 - [apps/frontend/src/domains/playback/services/InitialSamplePreloader.ts](apps/frontend/src/domains/playback/services/InitialSamplePreloader.ts) (Phase 2 methods)
 - [apps/frontend/src/domains/playback/services/core/CoreServices.ts](apps/frontend/src/domains/playback/services/core/CoreServices.ts) (lines 196-302)
 
 ### Bug #3: Memory Leak
+
 - [apps/frontend/src/domains/playback/services/core/RegionProcessor.ts](apps/frontend/src/domains/playback/services/core/RegionProcessor.ts) (lines 149-152)
 - [apps/frontend/src/domains/playback/services/core/region-processing/scheduling/HarmonyScheduler.ts](apps/frontend/src/domains/playback/services/core/region-processing/scheduling/HarmonyScheduler.ts)
 - [apps/frontend/src/domains/playback/services/core/region-processing/scheduling/BassScheduler.ts](apps/frontend/src/domains/playback/services/core/region-processing/scheduling/BassScheduler.ts)
@@ -756,6 +791,7 @@ git revert <commit-hash>
 - [apps/frontend/src/domains/playback/services/core/region-processing/scheduling/VoiceCueScheduler.ts](apps/frontend/src/domains/playback/services/core/region-processing/scheduling/VoiceCueScheduler.ts)
 
 ### Bug #4: Context State Management
+
 - [apps/frontend/src/domains/playback/modules/audio-engine/core/AudioContextManager.ts](apps/frontend/src/domains/playback/modules/audio-engine/core/AudioContextManager.ts)
 - [apps/frontend/src/domains/playback/utils/contextManager.ts](apps/frontend/src/domains/playback/utils/contextManager.ts)
 - [apps/frontend/src/domains/playback/services/InitialSamplePreloader.ts](apps/frontend/src/domains/playback/services/InitialSamplePreloader.ts)

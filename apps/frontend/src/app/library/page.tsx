@@ -33,7 +33,8 @@ function YouTubeThumbnail({
   };
 
   // Prefer direct videoId prop, otherwise extract from URL
-  const videoId = propVideoId || (videoUrl ? getYouTubeVideoId(videoUrl) : null);
+  const videoId =
+    propVideoId || (videoUrl ? getYouTubeVideoId(videoUrl) : null);
 
   if (!videoId) {
     // Fallback to music emoji if no valid YouTube ID
@@ -76,7 +77,8 @@ function YouTubeThumbnail({
 
 const getDifficultyColor = (difficulty: any) => {
   // Handle both string and Difficulty object with value property
-  const difficultyValue = typeof difficulty === 'object' ? difficulty?.value : difficulty;
+  const difficultyValue =
+    typeof difficulty === 'object' ? difficulty?.value : difficulty;
   if (!difficultyValue) {
     return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
   }
@@ -95,7 +97,8 @@ const getDifficultyColor = (difficulty: any) => {
 
 const capitalizeDifficulty = (difficulty: any) => {
   // Handle both string and Difficulty object with value property
-  const difficultyValue = typeof difficulty === 'object' ? difficulty?.value : difficulty;
+  const difficultyValue =
+    typeof difficulty === 'object' ? difficulty?.value : difficulty;
   if (!difficultyValue) {
     return 'Unknown';
   }
@@ -115,13 +118,16 @@ export default function LibraryPage() {
       <div className="min-h-screen bg-black">
         {/* Header with Logo */}
         <header className="w-full pt-8 sm:pt-12 pb-5 flex justify-center">
-          <button onClick={() => navigateWithTransition('/')} className="cursor-pointer">
+          <button
+            onClick={() => navigateWithTransition('/')}
+            className="cursor-pointer"
+          >
             <Image
               src="/BASSICOLOGY BIG.png"
               alt="Bassicology"
               width={600}
               height={150}
-              className="w-[220px] sm:w-[320px] md:w-[400px] lg:w-[500px] xl:w-[600px] h-auto"
+              className="w-[180px] sm:w-[260px] md:w-[320px] lg:w-[400px] xl:w-[480px] h-auto"
               priority
             />
           </button>
@@ -139,9 +145,9 @@ export default function LibraryPage() {
                   Tutorial Library
                 </h1>
                 <p className="text-gray-400 text-lg">
-                  Choose from our collection of interactive bass tutorials.
-                  Each lesson includes advanced widgets, sheet music,
-                  fretboard visualization, and personalized takeaways.
+                  Choose from our collection of interactive bass tutorials. Each
+                  lesson includes advanced widgets, sheet music, fretboard
+                  visualization, and personalized takeaways.
                 </p>
               </CardContent>
             </Card>
@@ -164,13 +170,16 @@ export default function LibraryPage() {
       <div className="min-h-screen bg-black">
         {/* Header with Logo */}
         <header className="w-full pt-8 sm:pt-12 pb-5 flex justify-center">
-          <button onClick={() => navigateWithTransition('/')} className="cursor-pointer">
+          <button
+            onClick={() => navigateWithTransition('/')}
+            className="cursor-pointer"
+          >
             <Image
               src="/BASSICOLOGY BIG.png"
               alt="Bassicology"
               width={600}
               height={150}
-              className="w-[220px] sm:w-[320px] md:w-[400px] lg:w-[500px] xl:w-[600px] h-auto"
+              className="w-[180px] sm:w-[260px] md:w-[320px] lg:w-[400px] xl:w-[480px] h-auto"
               priority
             />
           </button>
@@ -222,13 +231,16 @@ export default function LibraryPage() {
     <div className="min-h-screen bg-black">
       {/* Header with Logo */}
       <header className="w-full pt-8 sm:pt-12 pb-5 flex justify-center">
-        <button onClick={() => navigateWithTransition('/')} className="cursor-pointer">
+        <button
+          onClick={() => navigateWithTransition('/')}
+          className="cursor-pointer"
+        >
           <Image
             src="/BASSICOLOGY BIG.png"
             alt="Bassicology"
             width={600}
             height={150}
-            className="w-[220px] sm:w-[320px] md:w-[400px] lg:w-[500px] xl:w-[600px] h-auto"
+            className="w-[180px] sm:w-[260px] md:w-[320px] lg:w-[400px] xl:w-[480px] h-auto"
             priority
           />
         </button>
@@ -283,7 +295,9 @@ export default function LibraryPage() {
               <div
                 key={tutorial.id}
                 className="relative overflow-hidden rounded-3xl cursor-pointer group"
-                onClick={() => navigateWithTransition(`/library/${tutorial.slug}`)}
+                onClick={() =>
+                  navigateWithTransition(`/library/${tutorial.slug}`)
+                }
               >
                 {/* Background */}
                 <div className="absolute inset-0 bg-zinc-900" />
@@ -310,17 +324,17 @@ export default function LibraryPage() {
 
                   {/* Right Side: Content with 18px padding */}
                   <div className="flex-1 p-[18px] flex flex-col justify-between">
-                      {/* Top Content: Title, Description */}
-                      <div className="space-y-2">
-                        <h3 className="text-2xl font-bold text-white leading-tight group-hover:text-[#ffc700] transition-colors duration-300">
-                          {tutorial.title}
-                        </h3>
-                        {tutorial.description && (
-                          <p className="text-gray-400 text-sm leading-relaxed line-clamp-2">
-                            {tutorial.description}
-                          </p>
-                        )}
-                      </div>
+                    {/* Top Content: Title, Description */}
+                    <div className="space-y-2">
+                      <h3 className="text-2xl font-bold text-white leading-tight group-hover:text-[#ffc700] transition-colors duration-300">
+                        {tutorial.title}
+                      </h3>
+                      {tutorial.description && (
+                        <p className="text-gray-400 text-sm leading-relaxed line-clamp-2">
+                          {tutorial.description}
+                        </p>
+                      )}
+                    </div>
 
                     {/* Bottom Content: Badges */}
                     <div className="flex flex-wrap gap-2">
@@ -339,7 +353,8 @@ export default function LibraryPage() {
                       )}
                       {tutorial.exercise_count > 0 && (
                         <span className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold bg-[#ffc700]/20 text-[#ffc700] border-[#ffc700]/30">
-                          {tutorial.exercise_count} exercise{tutorial.exercise_count !== 1 ? 's' : ''}
+                          {tutorial.exercise_count} exercise
+                          {tutorial.exercise_count !== 1 ? 's' : ''}
                         </span>
                       )}
                     </div>

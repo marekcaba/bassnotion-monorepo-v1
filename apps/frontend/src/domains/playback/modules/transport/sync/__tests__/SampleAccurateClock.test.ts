@@ -220,7 +220,7 @@ describe('SampleAccurateClock', () => {
       clock.start();
 
       await expect(clock.waitForFirstUpdate(50)).rejects.toThrow(
-        'AudioWorklet first update timeout after 50ms'
+        'AudioWorklet first update timeout after 50ms',
       );
     });
 

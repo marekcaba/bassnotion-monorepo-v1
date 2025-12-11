@@ -41,15 +41,15 @@ async function listAllFiles(prefix) {
   const files = [];
   let offset = 0;
   const limit = 1000;
-  
+
   while (true) {
     const { data, error } = await supabase.storage
       .from('audio-samples')
       .list(prefix, { limit, offset });
-      
+
     if (error) throw error;
     if (!data || data.length === 0) break;
-    
+
     for (const item of data) {
       if (item.name && !item.id) {
         // It's a file
@@ -60,11 +60,11 @@ async function listAllFiles(prefix) {
         files.push(...subFiles);
       }
     }
-    
+
     if (data.length < limit) break;
     offset += limit;
   }
-  
+
   return files;
 }
 
@@ -75,36 +75,42 @@ async function moveFile(sourcePath, targetPath) {
     const { data, error: downloadError } = await supabase.storage
       .from('audio-samples')
       .download(sourcePath);
-      
+
     if (downloadError) throw downloadError;
-    
+
     // Get the buffer
     const buffer = await data.arrayBuffer();
-    
+
     // Determine content type
-    const contentType = sourcePath.endsWith('.mp3') ? 'audio/mpeg' :
-                       sourcePath.endsWith('.wav') ? 'audio/wav' :
-                       sourcePath.endsWith('.xml') ? 'text/xml' : 'application/json';
-    
+    const contentType = sourcePath.endsWith('.mp3')
+      ? 'audio/mpeg'
+      : sourcePath.endsWith('.wav')
+        ? 'audio/wav'
+        : sourcePath.endsWith('.xml')
+          ? 'text/xml'
+          : 'application/json';
+
     // Upload to new location
     const { error: uploadError } = await supabase.storage
       .from('audio-samples')
       .upload(targetPath, buffer, {
         contentType,
-        upsert: true
+        upsert: true,
       });
-      
+
     if (uploadError) throw uploadError;
-    
+
     // Delete from old location
     const { error: deleteError } = await supabase.storage
       .from('audio-samples')
       .remove([sourcePath]);
-      
+
     if (deleteError) {
-      console.warn(`⚠️  Could not delete ${sourcePath}: ${deleteError.message}`);
+      console.warn(
+        `⚠️  Could not delete ${sourcePath}: ${deleteError.message}`,
+      );
     }
-    
+
     return true;
   } catch (error) {
     console.error(`❌ Failed to move ${sourcePath}: ${error.message}`);
@@ -116,32 +122,32 @@ async function moveFile(sourcePath, targetPath) {
 async function main() {
   console.log('🔄 Reorganizing Hydrogen Drum Kits');
   console.log('==================================\n');
-  
+
   try {
     // Get all files from both locations
     console.log('📂 Scanning current file structure...\n');
-    
+
     const wavFiles = await listAllFiles('drums/hydrogen-collection');
     const mp3Files = await listAllFiles('drums/hydrogen-mp3');
-    
+
     console.log(`Found ${wavFiles.length} files in hydrogen-collection (WAV)`);
     console.log(`Found ${mp3Files.length} files in hydrogen-mp3 (MP3)\n`);
-    
+
     let movedCount = 0;
-    
+
     // Move WAV files
     console.log('📦 Moving WAV files...\n');
     for (const file of wavFiles) {
       // Skip if it's already in the right place
       if (file.includes('/wav/')) continue;
-      
+
       // Determine new path
       const newPath = file
         .replace('drums/hydrogen-collection/', 'drums/hydrogen-kits/wav/')
         .replace('drums/hydrogen-collection', 'drums/hydrogen-kits/wav');
-      
+
       process.stdout.write(`Moving ${path.basename(file)}... `);
-      
+
       const success = await moveFile(file, newPath);
       if (success) {
         movedCount++;
@@ -150,20 +156,20 @@ async function main() {
         console.log('✗');
       }
     }
-    
+
     // Move MP3 files
     console.log('\n📦 Moving MP3 files...\n');
     for (const file of mp3Files) {
       // Skip if it's already in the right place
       if (file.includes('/mp3/')) continue;
-      
+
       // Determine new path
       const newPath = file
         .replace('drums/hydrogen-mp3/', 'drums/hydrogen-kits/mp3/')
         .replace('drums/hydrogen-mp3', 'drums/hydrogen-kits/mp3');
-      
+
       process.stdout.write(`Moving ${path.basename(file)}... `);
-      
+
       const success = await moveFile(file, newPath);
       if (success) {
         movedCount++;
@@ -172,53 +178,59 @@ async function main() {
         console.log('✗');
       }
     }
-    
+
     // Create master index
     console.log('\n📝 Creating master index...\n');
-    
+
     const masterIndex = {
       name: 'Hydrogen Drum Kits Collection',
-      description: 'Complete collection of Hydrogen drum kits in both WAV and MP3 formats',
+      description:
+        'Complete collection of Hydrogen drum kits in both WAV and MP3 formats',
       license: 'GPL2/GPL/CC - Free for commercial use',
       generated: new Date().toISOString(),
       formats: {
         wav: {
           path: 'drums/hydrogen-kits/wav/',
           description: 'Uncompressed audio, best quality',
-          use_cases: ['Studio production', 'High-quality exports', 'Archival']
+          use_cases: ['Studio production', 'High-quality exports', 'Archival'],
         },
         mp3: {
           path: 'drums/hydrogen-kits/mp3/',
           description: 'Compressed audio, optimized for web',
           bitrate: '256kbps',
           compression: '~80% size reduction',
-          use_cases: ['Web playback', 'Mobile apps', 'Quick loading']
-        }
+          use_cases: ['Web playback', 'Mobile apps', 'Quick loading'],
+        },
       },
       categories: [
         'electronic',
-        'acoustic', 
+        'acoustic',
         'hip-hop',
         'rock',
         'metal',
-        'jazz'
+        'jazz',
       ],
-      recommendation: 'Use MP3 format for web playback, WAV for high-quality exports'
+      recommendation:
+        'Use MP3 format for web playback, WAV for high-quality exports',
     };
-    
+
     const { error } = await supabase.storage
       .from('audio-samples')
-      .upload('drums/hydrogen-kits/index.json', JSON.stringify(masterIndex, null, 2), {
-        contentType: 'application/json',
-        upsert: true
-      });
-      
+      .upload(
+        'drums/hydrogen-kits/index.json',
+        JSON.stringify(masterIndex, null, 2),
+        {
+          contentType: 'application/json',
+          upsert: true,
+        },
+      );
+
     if (error) {
       console.error('❌ Failed to create master index:', error.message);
     } else {
       console.log('✓ Created master index');
     }
-    
+
     // Summary
     console.log('\n\n📊 Reorganization Summary:');
     console.log(`Files moved: ${movedCount}`);
@@ -227,12 +239,13 @@ async function main() {
     console.log('   ├── 📁 wav/     (original quality)');
     console.log('   ├── 📁 mp3/     (web optimized)');
     console.log('   └── 📄 index.json');
-    
+
     console.log('\n🎯 Next steps:');
-    console.log('1. Update DrumInstrumentProcessor to use drums/hydrogen-kits/mp3/');
+    console.log(
+      '1. Update DrumInstrumentProcessor to use drums/hydrogen-kits/mp3/',
+    );
     console.log('2. Delete old folders: hydrogen-collection and hydrogen-mp3');
     console.log('3. Test loading from new structure');
-    
   } catch (error) {
     console.error('❌ Error:', error);
   }

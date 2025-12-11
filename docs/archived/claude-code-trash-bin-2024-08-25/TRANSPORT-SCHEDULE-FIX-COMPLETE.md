@@ -11,12 +11,13 @@ The `createDrumLoop` function in DrummerWidget (and similar functions in Metrono
 ## Solution Applied
 
 ### 1. Added Refs for Dynamic Values
+
 ```typescript
 // DrummerWidget
 const isMutedRef = useRef(isMuted);
 const volumeRef = useRef(volume);
 
-// MetronomeWidget  
+// MetronomeWidget
 const isMutedRef = useRef(isMuted);
 const volumeRef = useRef(volume);
 const beatsRef = useRef(beats);
@@ -24,6 +25,7 @@ const mutedBeatsRef = useRef(mutedBeats);
 ```
 
 ### 2. Updated Schedule Callbacks to Use Refs
+
 ```typescript
 // Before
 if (!isMuted && volume > 0) {
@@ -37,6 +39,7 @@ if (!isMutedRef.current && volumeRef.current > 0) {
 ```
 
 ### 3. Removed Unstable Dependencies
+
 ```typescript
 // Before
 }, [samplesLoaded, syncIsPlaying, Tone, audioReady, createDrumLoop]);
@@ -49,6 +52,7 @@ if (!isMutedRef.current && volumeRef.current > 0) {
 ## Testing Verification
 
 Created browser test at `/apps/frontend/public/test-transport-schedule.html` which proved:
+
 - ✅ Transport.scheduleRepeat works correctly
 - ✅ Callbacks continue firing (12 callbacks over 3 seconds)
 - ✅ Issue was in React widget implementation, not Tone.js
@@ -56,9 +60,10 @@ Created browser test at `/apps/frontend/public/test-transport-schedule.html` whi
 ## Key Learning
 
 Tests were passing with mock Transport that doesn't actually repeat:
+
 ```javascript
 // Mock just returns immediately
-scheduleRepeat: vi.fn()
+scheduleRepeat: vi.fn();
 ```
 
 Real Transport.scheduleRepeat works fine, but React effects were destroying it.

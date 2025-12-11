@@ -103,9 +103,7 @@ export function useWamDrummer(
           { AudioEngine },
           { UnifiedTransport },
         ] = await Promise.all([
-          import(
-            '@/domains/playback/modules/instruments/adapters/wam/WamDrummer'
-          ),
+          import('@/domains/playback/modules/instruments/adapters/wam/WamDrummer'),
           import('@/domains/playback/modules/instruments/adapters/wam/WamPluginAdapter'),
           import('@/domains/playback/modules/instruments/adapters/wam/WamHostManager'),
           import('@/domains/playback/services/core/ServiceRegistry'),

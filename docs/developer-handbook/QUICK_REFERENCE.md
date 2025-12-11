@@ -28,12 +28,14 @@ When something breaks:
    - 🔴 Red = Service down
 
 2. **Find the Correlation ID**
+
    ```javascript
    // It's in every log entry
    ERROR: Play failed { correlationId: "abc-123-def-456" }
    ```
 
 3. **Search Logs**
+
    ```bash
    # Find all logs for this action
    grep "abc-123-def-456" logs/*.log
@@ -62,16 +64,17 @@ console.log('Something happened');
 
 // ✅ DO THIS
 const { logger } = useCorrelation('ComponentName');
-logger.info('User action', { 
+logger.info('User action', {
   action: 'play',
   songId: '123',
-  timestamp: Date.now() 
+  timestamp: Date.now(),
 });
 ```
 
 ## 🐛 Common Fixes
 
 ### Page Frozen?
+
 ```typescript
 // Check for these:
 useEffect(() => {
@@ -85,17 +88,19 @@ const handleClick = useCallback(() => {
 ```
 
 ### Audio Not Playing?
+
 ```typescript
 // Add debug logging
 import { logAudioEvent } from '@/shared/debug/AudioDebugger';
 
 logAudioEvent('MyComponent', 'play-attempt', {
   isLoaded: audioLoaded,
-  context: audioContext.state
+  context: audioContext.state,
 });
 ```
 
 ### Can't Find Bug?
+
 ```typescript
 // Add correlation tracking
 const { correlationId, logger } = useCorrelation('BugHunt');
@@ -113,36 +118,39 @@ logger.error('Operation failed', error);
 ## 🛠️ Quick Patterns
 
 ### API Call with Correlation
+
 ```typescript
 const { correlationId } = useCorrelation('MyComponent');
-const result = await apiClient.get('/api/endpoint', { 
-  correlationId 
+const result = await apiClient.get('/api/endpoint', {
+  correlationId,
 });
 ```
 
 ### Component with Debug Logging
+
 ```typescript
 export function MyComponent() {
   const { logger } = useCorrelation('MyComponent');
   const debug = useAudioDebug('MyComponent');
-  
+
   const doSomething = () => {
     logger.info('Starting action');
     debug.log('Audio event', { note: 'C4' });
   };
-  
+
   return <button onClick={doSomething}>Click</button>;
 }
 ```
 
 ### Error Handling
+
 ```typescript
 try {
   await riskyOperation();
 } catch (error) {
   logger.error('Operation failed', error, {
     context: 'Additional context here',
-    correlationId
+    correlationId,
   });
   // Still throw it up
   throw error;
@@ -171,6 +179,7 @@ lsof -i :3001  # Frontend port
 ## 📞 Getting Help
 
 When asking for help, provide:
+
 1. **Correlation ID** from the error
 2. **Screenshot** of debug panels
 3. **Time** when it happened
@@ -181,4 +190,4 @@ When asking for help, provide:
 
 Remember: `Correlation ID = Your Detective Badge` 🔍
 
-*Print this out and keep it handy!*
+_Print this out and keep it handy!_

@@ -3,6 +3,7 @@
 ## Fixed Issues
 
 ### 1. Buffer Loading Errors
+
 The drum samples weren't loading from Supabase, so the widget falls back to synthetic drums (MembraneSynth, NoiseSynth, MetalSynth). The error "buffer is either not set or not loaded" was happening because the code was treating synths like samplers.
 
 **Fix Applied**: Added proper type checking to distinguish between Tone.Sampler (which has a `loaded` property) and synths (which don't):
@@ -16,17 +17,21 @@ if (kickSampler.loaded !== undefined && !kickSampler.loaded) {
 ```
 
 ### 2. Synth Parameter Fixes
+
 The synthetic drums have different APIs:
+
 - **MembraneSynth** (kick): `triggerAttackRelease(duration, time)`
-- **NoiseSynth** (snare): `triggerAttackRelease(duration, time)`  
+- **NoiseSynth** (snare): `triggerAttackRelease(duration, time)`
 - **MetalSynth** (hihat): `triggerAttackRelease(duration, time)`
 
 **Fix Applied**: Adjusted the trigger calls based on whether it's a sampler or synth.
 
 ### 3. Pattern Display Mismatch
+
 The UI shows pattern names like "Rock Steady" but the code has patterns keyed as "Rock Steady" and "Basic Rock". When no match is found, it falls back to "Basic Rock".
 
-**Current Behavior**: 
+**Current Behavior**:
+
 ```typescript
 const hardcodedPattern = drumPatterns[pattern] || drumPatterns['Basic Rock'];
 ```

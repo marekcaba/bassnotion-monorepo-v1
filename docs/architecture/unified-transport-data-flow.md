@@ -19,22 +19,22 @@ sequenceDiagram
     CS->>AE: new AudioEngine(eventBus)
     CS->>UT: UnifiedTransport.getInstance()
     CS->>TSM: TransportSyncManager.getInstance()
-    
+
     CS->>SR: register(all services)
     CS->>CS: initialize()
-    
+
     CS->>SR: initialize()
     SR->>AE: initialize()
     AE->>AE: Create AudioContext
     AE->>AE: Load Tone.js
     AE->>EB: emit('audio:initialized')
-    
+
     SR->>UT: initialize()
     UT->>AW: Load AudioWorklet
     UT->>UT: Setup Kalman Filter
     UT->>UT: Initialize Buffers
     UT->>EB: emit('transport:initialized')
-    
+
     CS->>TSM: initialize(unifiedTransport, eventBus)
     TSM->>EB: Subscribe to transport events
     TSM->>TSM: Start heartbeat timer
@@ -48,28 +48,28 @@ flowchart TD
     B --> C{useTransport Hook}
     C --> D[TransportCommands.play()]
     D --> E[UnifiedTransport.start()]
-    
+
     E --> F[Validate State]
     F --> G[Resume AudioContext]
     G --> H[Reset Position]
     H --> I[Start Timing Sources]
-    
+
     I --> J[AudioWorklet.start()]
     I --> K[WebWorker.start()]
     I --> L[RAF Timer.start()]
-    
+
     J --> M[Emit transport:play]
     K --> M
     L --> M
-    
+
     M --> N[EventBus]
     N --> O[TransportSyncManager]
     O --> P[Broadcast to Widgets]
-    
+
     P --> Q[Widget A]
     P --> R[Widget B]
     P --> S[Widget C]
-    
+
     style A fill:#4CAF50
     style E fill:#2196F3
     style J fill:#FF9800
@@ -84,7 +84,7 @@ flowchart LR
         A[process()] --> B[128 samples]
         B --> C[postMessage]
     end
-    
+
     subgraph MainThread
         C --> D[UnifiedTransport]
         D --> E[Measure Drift]
@@ -92,14 +92,14 @@ flowchart LR
         F --> G[Predict Next]
         G --> H[Schedule Events]
     end
-    
+
     subgraph Scheduling
         H --> I{Buffer Check}
         I -->|Active| J[Execute Now]
         I -->|Future| K[Queue Event]
         K --> L[Triple Buffer]
     end
-    
+
     subgraph Execution
         J --> M[Trigger Callbacks]
         M --> N[Update Metrics]
@@ -107,7 +107,7 @@ flowchart LR
         O -->|Yes| P[Compensate]
         O -->|No| Q[Continue]
     end
-    
+
     style A fill:#FF5722
     style F fill:#03A9F4
     style L fill:#8BC34A
@@ -118,26 +118,26 @@ flowchart LR
 ```mermaid
 stateDiagram-v2
     [*] --> Idle
-    
+
     Idle --> Playing: start()
     Playing --> Paused: pause()
     Paused --> Playing: resume()
     Playing --> Stopped: stop()
     Paused --> Stopped: stop()
     Stopped --> Playing: start()
-    
+
     state Playing {
         [*] --> Scheduling
         Scheduling --> Processing
         Processing --> Broadcasting
         Broadcasting --> Scheduling
-        
+
         state Processing {
             TimingUpdate --> DriftCheck
             DriftCheck --> EventTrigger
             EventTrigger --> MetricsUpdate
         }
-        
+
         state Broadcasting {
             StateChange --> EventBus
             EventBus --> TransportSync
@@ -151,32 +151,32 @@ stateDiagram-v2
 ```mermaid
 flowchart TD
     A[Timing Error Detected] --> B{Error Type}
-    
+
     B -->|AudioContext Suspended| C[User Gesture Required]
     C --> D[Show UI Prompt]
     D --> E[User Interaction]
     E --> F[Resume Context]
-    
+
     B -->|High Drift| G[Drift > 5ms]
     G --> H[Resync Transport]
     H --> I[Reset Buffers]
     I --> J[Recalibrate]
-    
+
     B -->|AudioWorklet Crash| K[Worklet Failed]
     K --> L[Fallback to WebWorker]
     L --> M[Reduce Precision]
     M --> N[Continue Playing]
-    
+
     B -->|CPU Overload| O[CPU > 80%]
     O --> P[Increase Buffer]
     P --> Q[Reduce Update Rate]
     Q --> R[Throttle Events]
-    
+
     F --> S[Normal Operation]
     J --> S
     N --> S
     R --> S
-    
+
     style A fill:#F44336
     style S fill:#4CAF50
 ```
@@ -187,27 +187,27 @@ flowchart TD
 graph TD
     A[Performance Monitor] --> B[Collect Metrics]
     B --> C{CPU Load}
-    
+
     C -->|< 40%| D[Low Load]
     D --> E[Reduce Buffers]
     E --> F[Increase Update Rate]
     F --> G[Lower Latency Mode]
-    
+
     C -->|40-70%| H[Normal Load]
     H --> I[Maintain Settings]
-    
+
     C -->|> 70%| J[High Load]
     J --> K[Increase Buffers]
     K --> L[Reduce Update Rate]
     L --> M[Adaptive Mode]
-    
+
     G --> N[Apply Settings]
     I --> N
     M --> N
-    
+
     N --> O[Measure Impact]
     O --> B
-    
+
     style A fill:#9E9E9E
     style N fill:#00BCD4
 ```

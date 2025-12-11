@@ -23,10 +23,14 @@ import { CreatorsModule } from '../creators/creators.module.js';
     // Base repository
     {
       provide: TutorialRepository,
-      useFactory: (supabaseService: SupabaseService, requestContext: RequestContextService) => {
+      useFactory: (
+        supabaseService: SupabaseService,
+        requestContext: RequestContextService,
+      ) => {
         return new TutorialRepository(supabaseService, requestContext);
       },
-      inject: [SupabaseService, RequestContextService] },
+      inject: [SupabaseService, RequestContextService],
+    },
     // Cached repository (wraps base repository)
     {
       provide: CachedTutorialRepository,
@@ -36,7 +40,8 @@ import { CreatorsModule } from '../creators/creators.module.js';
       ) => {
         return new CachedTutorialRepository(repository, cacheService);
       },
-      inject: [TutorialRepository, CacheService] },
+      inject: [TutorialRepository, CacheService],
+    },
     // Result repository (wraps cached repository)
     {
       provide: 'IResultTutorialRepository',
@@ -52,7 +57,9 @@ import { CreatorsModule } from '../creators/creators.module.js';
           requestContext,
         );
       },
-      inject: [CachedTutorialRepository, ConfigService, RequestContextService] },
+      inject: [CachedTutorialRepository, ConfigService, RequestContextService],
+    },
   ],
-  exports: [TutorialsService] })
+  exports: [TutorialsService],
+})
 export class TutorialsModule {}

@@ -153,7 +153,10 @@ export class SampleAccurateClock {
       // Only log high drift occasionally to reduce spam
       if (drift > this.config.driftThreshold!) {
         // Only log every 1000ms to reduce console spam
-        if (!this.lastDriftWarnTime || Date.now() - this.lastDriftWarnTime > 1000) {
+        if (
+          !this.lastDriftWarnTime ||
+          Date.now() - this.lastDriftWarnTime > 1000
+        ) {
           logger.debug('Drift compensation active', {
             drift: drift.toFixed(2),
             threshold: this.config.driftThreshold,

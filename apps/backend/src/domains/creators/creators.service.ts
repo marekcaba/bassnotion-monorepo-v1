@@ -52,7 +52,9 @@ export class CreatorsService {
       if (!result.ok) {
         const logger = this.requestContext?.getLogger() || this.staticLogger;
         const correlationId = this.requestContext?.getCorrelationId();
-        logger.error('Error fetching creator channels:', result.error, { correlationId });
+        logger.error('Error fetching creator channels:', result.error, {
+          correlationId,
+        });
         return [];
       }
 
@@ -60,7 +62,9 @@ export class CreatorsService {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error in getAllCreatorChannels:', error as Error, { correlationId });
+      logger.error('Error in getAllCreatorChannels:', error as Error, {
+        correlationId,
+      });
       return [];
     }
   }
@@ -85,7 +89,10 @@ export class CreatorsService {
     if (!apiKey) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.warn('YouTube API key not configured. Please set YOUTUBE_API_KEY, GOOGLE_API_KEY, or ensure Google OAuth is configured.', { correlationId });
+      logger.warn(
+        'YouTube API key not configured. Please set YOUTUBE_API_KEY, GOOGLE_API_KEY, or ensure Google OAuth is configured.',
+        { correlationId },
+      );
       return { items: [] };
     }
 
@@ -121,7 +128,9 @@ export class CreatorsService {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error fetching YouTube channel stats:', error as Error, { correlationId });
+      logger.error('Error fetching YouTube channel stats:', error as Error, {
+        correlationId,
+      });
       return { items: [] };
     }
   }
@@ -132,15 +141,16 @@ export class CreatorsService {
   async updateAllCreatorStats(): Promise<void> {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
-    logger.info('Starting daily creator stats update batch job', { correlationId });
+    logger.info('Starting daily creator stats update batch job', {
+      correlationId,
+    });
 
     try {
       // 1. Get all creator channels from tutorials
       const creatorChannels = await this.getAllCreatorChannels();
-      logger.info(
-        `Found ${creatorChannels.length} unique creator channels`,
-        { correlationId }
-      );
+      logger.info(`Found ${creatorChannels.length} unique creator channels`, {
+        correlationId,
+      });
 
       if (creatorChannels.length === 0) {
         const logger = this.requestContext?.getLogger() || this.staticLogger;
@@ -158,12 +168,12 @@ export class CreatorsService {
           const channelId = channelUrl.extractChannelId();
 
           if (!channelId) {
-            const logger = this.requestContext?.getLogger() || this.staticLogger;
+            const logger =
+              this.requestContext?.getLogger() || this.staticLogger;
             const correlationId = this.requestContext?.getCorrelationId();
-            logger.warn(
-              `Could not extract channel ID from ${channel.url}`,
-              { correlationId }
-            );
+            logger.warn(`Could not extract channel ID from ${channel.url}`, {
+              correlationId,
+            });
             continue;
           }
 
@@ -179,14 +189,19 @@ export class CreatorsService {
             creator = Creator.create({
               channelUrl,
               channelId,
-              creatorName: channel.name });
+              creatorName: channel.name,
+            });
           }
 
           creatorsToUpdate.push(creator);
         } catch (error) {
           const logger = this.requestContext?.getLogger() || this.staticLogger;
           const correlationId = this.requestContext?.getCorrelationId();
-          logger.error(`Error processing channel ${channel.url}:`, error as Error, { correlationId });
+          logger.error(
+            `Error processing channel ${channel.url}:`,
+            error as Error,
+            { correlationId },
+          );
         }
       }
 
@@ -195,13 +210,15 @@ export class CreatorsService {
         .map((c) => c.channelId)
         .filter((id): id is string => Boolean(id));
 
-      logger.info(`Processing ${channelIds.length} valid channel IDs`, { correlationId });
+      logger.info(`Processing ${channelIds.length} valid channel IDs`, {
+        correlationId,
+      });
 
       // 4. Fetch YouTube data in batches
       const youtubeData = await this.fetchYouTubeChannelStats(channelIds);
       logger.info(
         `Fetched data for ${youtubeData.items?.length || 0} channels`,
-        { correlationId }
+        { correlationId },
       );
 
       // 5. Update creators with YouTube data
@@ -223,7 +240,8 @@ export class CreatorsService {
             creatorName: youtubeChannel.snippet.title,
             thumbnailUrl:
               youtubeChannel.snippet.thumbnails.medium?.url ||
-              youtubeChannel.snippet.thumbnails.default?.url });
+              youtubeChannel.snippet.thumbnails.default?.url,
+          });
         } else {
           // Mark as fetched even if no data found
           creator.markAsFetched();
@@ -254,12 +272,16 @@ export class CreatorsService {
 
       logger.info(
         `Successfully updated ${successCount} creator stats, ${failureCount} failures`,
-        { correlationId }
+        { correlationId },
       );
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error in updateAllCreatorStats batch job:', error as Error, { correlationId });
+      logger.error(
+        'Error in updateAllCreatorStats batch job:',
+        error as Error,
+        { correlationId },
+      );
       throw error;
     }
   }
@@ -284,11 +306,14 @@ export class CreatorsService {
         subscriberCount: creator.subscriberCount,
         subscriberCountFormatted:
           creator.subscriberCountFormatted || 'No subscriber data',
-        thumbnailUrl: creator.thumbnailUrl };
+        thumbnailUrl: creator.thumbnailUrl,
+      };
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error fetching creator stats:', error as Error, { correlationId });
+      logger.error('Error fetching creator stats:', error as Error, {
+        correlationId,
+      });
       return null;
     }
   }
@@ -303,7 +328,11 @@ export class CreatorsService {
       if (!result.ok) {
         const logger = this.requestContext?.getLogger() || this.staticLogger;
         const correlationId = this.requestContext?.getCorrelationId();
-        logger.error('Error checking stale creator stats:', result.error as Error, { correlationId });
+        logger.error(
+          'Error checking stale creator stats:',
+          result.error as Error,
+          { correlationId },
+        );
         return [];
       }
 
@@ -311,7 +340,9 @@ export class CreatorsService {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error in getStaleCreatorChannels:', error as Error, { correlationId });
+      logger.error('Error in getStaleCreatorChannels:', error as Error, {
+        correlationId,
+      });
       return [];
     }
   }

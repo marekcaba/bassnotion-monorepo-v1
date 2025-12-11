@@ -27,9 +27,9 @@ export class DrumMapperService {
    */
   private readonly DRUM_MAP: Record<number, MidiDrumType> = {
     // === KEYBOARD-BASED DRUM MAPPING (Primary for BassNotion producers) ===
-    24: 'kick',   // C1 - Kick (keyboard mapping)
-    27: 'snare',  // D#1/Eb1 - Snare (keyboard mapping)
-    30: 'hihat',  // F#1/Gb1 - Hi-Hat (keyboard mapping) - simplified to match available pads
+    24: 'kick', // C1 - Kick (keyboard mapping)
+    27: 'snare', // D#1/Eb1 - Snare (keyboard mapping)
+    30: 'hihat', // F#1/Gb1 - Hi-Hat (keyboard mapping) - simplified to match available pads
 
     // === GENERAL MIDI STANDARD ===
     // Kick drums
@@ -237,7 +237,9 @@ export class DrumMapperService {
     }
 
     if (stats.uniqueDrums < 2) {
-      warnings.push('Drum pattern uses very few drums. Consider adding variety.');
+      warnings.push(
+        'Drum pattern uses very few drums. Consider adding variety.',
+      );
     }
 
     return {

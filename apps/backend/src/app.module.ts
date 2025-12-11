@@ -22,7 +22,8 @@ import { LoggingModule } from './infrastructure/logging/logging.module.js';
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true }),
+      isGlobal: true,
+    }),
     SharedModule, // Global module for shared services
     LoggingModule, // Global logging infrastructure
     DatabaseModule,
@@ -38,7 +39,8 @@ import { LoggingModule } from './infrastructure/logging/logging.module.js';
     HealthModule,
   ],
   controllers: [AppController],
-  providers: [AppService, PerformanceMiddleware, CorrelationMiddleware] })
+  providers: [AppService, PerformanceMiddleware, CorrelationMiddleware],
+})
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     // Apply CorrelationMiddleware first to set up correlation IDs

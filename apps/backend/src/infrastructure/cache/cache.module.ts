@@ -33,8 +33,10 @@ const { redisStore } = cacheManagerIoredis;
           ttl: 3600, // 1 hour default
         };
       },
-      inject: [ConfigService] }),
+      inject: [ConfigService],
+    }),
   ],
   providers: [CacheService],
-  exports: [CacheService] })
+  exports: [CacheService],
+})
 export class CacheModule {}

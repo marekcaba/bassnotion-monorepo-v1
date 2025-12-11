@@ -13,21 +13,21 @@ This document defines the feature flag strategy for rolling out the new Playback
 
 ### Feature Flags Added
 
-| Flag | Environment Variable | Default | Purpose |
-|------|---------------------|---------|---------|
-| `ENABLE_NEW_PLAYBACK_ENGINE` | `NEXT_PUBLIC_ENABLE_NEW_PLAYBACK_ENGINE` | `false` | Main toggle for PlaybackEngine |
-| `DEBUG_PLAYBACK_ENGINE_MIGRATION` | `NEXT_PUBLIC_DEBUG_PLAYBACK_ENGINE_MIGRATION` | `false` | Debug logging during rollout |
+| Flag                                  | Environment Variable                              | Default | Purpose                        |
+| ------------------------------------- | ------------------------------------------------- | ------- | ------------------------------ |
+| `ENABLE_NEW_PLAYBACK_ENGINE`          | `NEXT_PUBLIC_ENABLE_NEW_PLAYBACK_ENGINE`          | `false` | Main toggle for PlaybackEngine |
+| `DEBUG_PLAYBACK_ENGINE_MIGRATION`     | `NEXT_PUBLIC_DEBUG_PLAYBACK_ENGINE_MIGRATION`     | `false` | Debug logging during rollout   |
 | `COMPARE_PLAYBACK_ENGINE_PERFORMANCE` | `NEXT_PUBLIC_COMPARE_PLAYBACK_ENGINE_PERFORMANCE` | `false` | Performance comparison metrics |
 
 ### Rollout Timeline
 
-| Phase | Percentage | Duration | Status |
-|-------|-----------|----------|--------|
-| **Phase 1:** Internal Team | 1% | 5 days | 🔜 Pending |
-| **Phase 2:** Beta Users | 10% | 5 days | 🔜 Pending |
-| **Phase 3:** General Rollout | 50% | 3 days | 🔜 Pending |
-| **Phase 4:** Full Rollout | 100% | 2 days | 🔜 Pending |
-| **Total Duration** | - | **15 days** | - |
+| Phase                        | Percentage | Duration    | Status     |
+| ---------------------------- | ---------- | ----------- | ---------- |
+| **Phase 1:** Internal Team   | 1%         | 5 days      | 🔜 Pending |
+| **Phase 2:** Beta Users      | 10%        | 5 days      | 🔜 Pending |
+| **Phase 3:** General Rollout | 50%        | 3 days      | 🔜 Pending |
+| **Phase 4:** Full Rollout    | 100%       | 2 days      | 🔜 Pending |
+| **Total Duration**           | -          | **15 days** | -          |
 
 ---
 
@@ -42,6 +42,7 @@ This document defines the feature flag strategy for rolling out the new Playback
 **Default:** `false` (disabled)
 
 **Behavior:**
+
 ```typescript
 // In CoreServices.ts
 getRegionProcessor(): RegionProcessor {
@@ -60,6 +61,7 @@ getRegionProcessor(): RegionProcessor {
 ```
 
 **Usage Example:**
+
 ```typescript
 import { isNewPlaybackEngineEnabled } from '@/domains/playback/config/featureFlags';
 
@@ -81,6 +83,7 @@ if (isNewPlaybackEngineEnabled()) {
 **Default:** `false`
 
 **Behavior:**
+
 ```typescript
 import { logPlaybackEngineMigrationEvent } from '@/domains/playback/config/featureFlags';
 
@@ -88,16 +91,20 @@ import { logPlaybackEngineMigrationEvent } from '@/domains/playback/config/featu
 logPlaybackEngineMigrationEvent('Exercise loaded', {
   exerciseId: exercise.id,
   trackCount: exercise.tracks.length,
-  engineType: isNewPlaybackEngineEnabled() ? 'PlaybackEngine' : 'RegionProcessor',
+  engineType: isNewPlaybackEngineEnabled()
+    ? 'PlaybackEngine'
+    : 'RegionProcessor',
 });
 ```
 
 **When to Enable:**
+
 - During internal team testing (Phase 1)
 - When investigating user-reported issues
 - For performance profiling
 
 **When to Disable:**
+
 - Production rollout (Phases 3-4) - reduces log noise
 
 ---
@@ -109,6 +116,7 @@ logPlaybackEngineMigrationEvent('Exercise loaded', {
 **Default:** `false`
 
 **Behavior:**
+
 ```typescript
 // In performance test harness
 if (flags.COMPARE_PLAYBACK_ENGINE_PERFORMANCE) {
@@ -125,11 +133,13 @@ if (flags.COMPARE_PLAYBACK_ENGINE_PERFORMANCE) {
 ```
 
 **When to Enable:**
+
 - Phase 1 (Internal team testing)
 - Phase 2 (Beta users - sample only)
 - Performance regression investigation
 
 **When to Disable:**
+
 - After verifying performance matches baselines
 - Full production rollout (reduces overhead)
 
@@ -212,6 +222,7 @@ NEXT_PUBLIC_AUDIO_ROLLOUT_PERCENTAGE=100
 **Decision:** Use environment variables only (no admin UI)
 
 **Rationale:**
+
 - ✅ Simple and reliable
 - ✅ Fast deployment via Vercel environment variables
 - ✅ Audit trail (deployment logs)
@@ -219,6 +230,7 @@ NEXT_PUBLIC_AUDIO_ROLLOUT_PERCENTAGE=100
 - ✅ Consistent with existing feature flag pattern
 
 **Alternative Considered:** Admin UI
+
 - ❌ Additional complexity
 - ❌ Security risk (who has access?)
 - ❌ Deployment delay
@@ -231,6 +243,7 @@ NEXT_PUBLIC_AUDIO_ROLLOUT_PERCENTAGE=100
 #### Updating Flags in Production (Vercel)
 
 **Method 1: Vercel Dashboard**
+
 1. Navigate to Vercel project settings
 2. Go to "Environment Variables"
 3. Update `NEXT_PUBLIC_ENABLE_NEW_PLAYBACK_ENGINE` value
@@ -238,6 +251,7 @@ NEXT_PUBLIC_AUDIO_ROLLOUT_PERCENTAGE=100
 5. **Deployment time:** ~2-3 minutes
 
 **Method 2: Vercel CLI**
+
 ```bash
 # Update environment variable
 vercel env rm NEXT_PUBLIC_ENABLE_NEW_PLAYBACK_ENGINE production
@@ -250,6 +264,7 @@ vercel --prod
 ```
 
 **Method 3: GitHub Actions (Recommended)**
+
 ```yaml
 # .github/workflows/rollout-playback-engine.yml
 name: Rollout PlaybackEngine
@@ -281,12 +296,15 @@ jobs:
 **Trigger:** Critical bug, memory leak, or timing regression detected
 
 **Steps:**
+
 1. **Set rollback flag** (1 minute)
+
    ```bash
    vercel env add NEXT_PUBLIC_ROLLBACK_AUDIO production --value true
    ```
 
 2. **Trigger redeployment** (2 minutes)
+
    ```bash
    vercel --prod
    ```
@@ -299,6 +317,7 @@ jobs:
 **Total Time:** <5 minutes ✅
 
 **Alternative: Disable without full rollback**
+
 ```bash
 # Just disable new engine, keep other features
 vercel env add NEXT_PUBLIC_ENABLE_NEW_PLAYBACK_ENGINE production --value false
@@ -313,20 +332,21 @@ vercel --prod
 
 #### Real-Time Metrics (During Rollout)
 
-| Metric | Source | Alert Threshold |
-|--------|--------|-----------------|
-| **Error Rate** | Vercel Analytics | >10% increase |
-| **Engine Usage** | Feature flag logs | Track % split |
-| **Memory Usage** | Browser DevTools (sampled) | >50MB growth |
-| **Timing Jitter** | Performance API | >5ms avg |
-| **User Complaints** | Support tickets | >5 per day |
-| **Crash Rate** | Error tracking | >1% increase |
+| Metric              | Source                     | Alert Threshold |
+| ------------------- | -------------------------- | --------------- |
+| **Error Rate**      | Vercel Analytics           | >10% increase   |
+| **Engine Usage**    | Feature flag logs          | Track % split   |
+| **Memory Usage**    | Browser DevTools (sampled) | >50MB growth    |
+| **Timing Jitter**   | Performance API            | >5ms avg        |
+| **User Complaints** | Support tickets            | >5 per day      |
+| **Crash Rate**      | Error tracking             | >1% increase    |
 
 ---
 
 #### Logging Strategy
 
 **What to Log:**
+
 ```typescript
 // 1. Engine Selection
 logPlaybackEngineMigrationEvent('Engine selected', {
@@ -361,6 +381,7 @@ if (flags.COMPARE_PLAYBACK_ENGINE_PERFORMANCE) {
 ```
 
 **Log Levels:**
+
 - `DEBUG_PLAYBACK_ENGINE_MIGRATION=true` → All events logged
 - `DEBUG_PLAYBACK_ENGINE_MIGRATION=false` → Only errors logged
 
@@ -369,11 +390,13 @@ if (flags.COMPARE_PLAYBACK_ENGINE_PERFORMANCE) {
 ### 3.2 Monitoring Dashboard
 
 **Tools:**
+
 - **Vercel Analytics** - Error rates, performance metrics
 - **Browser Console** - Structured logs (in development)
 - **LogRocket** (optional) - Session replay for debugging
 
 **Dashboard Queries:**
+
 ```javascript
 // Query 1: Engine usage distribution
 SELECT engine, COUNT(*) as count
@@ -401,11 +424,13 @@ FROM performance_comparisons;
 ### 3.3 Alerts
 
 **Critical Alerts (PagerDuty / Slack)**
+
 - Error rate >10% increase → Immediate investigation
 - Memory leak detected (>100MB growth) → Emergency rollback
 - Crash rate >1% → Emergency rollback
 
 **Warning Alerts (Slack only)**
+
 - Error rate 5-10% increase → Investigate within 1 hour
 - Timing jitter 3-5ms → Monitor closely
 - User complaints >3 per day → Review support tickets
@@ -419,6 +444,7 @@ FROM performance_comparisons;
 **Duration:** 5 days (Week 5)
 
 **Configuration:**
+
 ```bash
 NEXT_PUBLIC_ENABLE_NEW_PLAYBACK_ENGINE=true
 NEXT_PUBLIC_DEBUG_PLAYBACK_ENGINE_MIGRATION=true
@@ -427,11 +453,13 @@ NEXT_PUBLIC_AUDIO_ROLLOUT_PERCENTAGE=1
 ```
 
 **Participants:**
+
 - Engineering team (5-10 users)
 - QA team (2-3 users)
 - Product manager (1 user)
 
 **Activities:**
+
 - ✅ Test all 4 widgets (HarmonyWidget, DrummerWidget, MetronomeWidget, GlobalControls)
 - ✅ Test exercise switching (50+ switches)
 - ✅ Test tempo changes (rapid slider adjustments)
@@ -440,6 +468,7 @@ NEXT_PUBLIC_AUDIO_ROLLOUT_PERCENTAGE=1
 - ✅ Memory leak check (play for 10+ minutes)
 
 **Success Criteria:**
+
 - [ ] Zero critical bugs
 - [ ] Error rate <1% increase vs baseline
 - [ ] Memory growth <50MB per 10 minutes
@@ -455,6 +484,7 @@ NEXT_PUBLIC_AUDIO_ROLLOUT_PERCENTAGE=1
 **Duration:** 5 days (Week 6)
 
 **Configuration:**
+
 ```bash
 NEXT_PUBLIC_ENABLE_NEW_PLAYBACK_ENGINE=true
 NEXT_PUBLIC_DEBUG_PLAYBACK_ENGINE_MIGRATION=false  # Reduce log noise
@@ -463,11 +493,13 @@ NEXT_PUBLIC_AUDIO_ROLLOUT_PERCENTAGE=10
 ```
 
 **Participants:**
+
 - ~100-500 beta users (based on user base size)
 - Opt-in beta program users
 - Power users (high engagement)
 
 **Activities:**
+
 - ✅ Monitor dashboard continuously (every hour)
 - ✅ Track error rates (compare old vs new engine)
 - ✅ Collect user feedback (surveys, support tickets)
@@ -475,6 +507,7 @@ NEXT_PUBLIC_AUDIO_ROLLOUT_PERCENTAGE=10
 - ✅ Memory leak detection (automated tests)
 
 **Success Criteria:**
+
 - [ ] Error rate <5% increase vs baseline
 - [ ] Zero memory leaks reported
 - [ ] Timing accuracy >99%
@@ -492,6 +525,7 @@ NEXT_PUBLIC_AUDIO_ROLLOUT_PERCENTAGE=10
 **Duration:** 3 days (Week 7, Days 1-3)
 
 **Configuration:**
+
 ```bash
 NEXT_PUBLIC_ENABLE_NEW_PLAYBACK_ENGINE=true
 NEXT_PUBLIC_DEBUG_PLAYBACK_ENGINE_MIGRATION=false
@@ -500,15 +534,18 @@ NEXT_PUBLIC_AUDIO_ROLLOUT_PERCENTAGE=50
 ```
 
 **Participants:**
+
 - ~50% of all users
 
 **Activities:**
+
 - ✅ Monitor dashboard hourly (first day)
 - ✅ Monitor dashboard every 4 hours (days 2-3)
 - ✅ Track comparative metrics (new vs old engine)
 - ✅ Response to support tickets within 2 hours
 
 **Success Criteria:**
+
 - [ ] Error rate stable (no increase vs Phase 2)
 - [ ] Memory usage stable
 - [ ] Timing accuracy maintained
@@ -525,6 +562,7 @@ NEXT_PUBLIC_AUDIO_ROLLOUT_PERCENTAGE=50
 **Duration:** 2 days (Week 7, Days 4-5)
 
 **Configuration:**
+
 ```bash
 NEXT_PUBLIC_ENABLE_NEW_PLAYBACK_ENGINE=true
 NEXT_PUBLIC_DEBUG_PLAYBACK_ENGINE_MIGRATION=false
@@ -533,15 +571,18 @@ NEXT_PUBLIC_AUDIO_ROLLOUT_PERCENTAGE=100
 ```
 
 **Participants:**
+
 - 100% of all users
 
 **Activities:**
+
 - ✅ Monitor dashboard closely (first 6 hours)
 - ✅ Monitor dashboard regularly (every 8 hours)
 - ✅ Verify all metrics stable
 - ✅ Announce rollout complete to team
 
 **Success Criteria:**
+
 - [ ] Error rate matches Phase 3 baseline
 - [ ] Memory usage stable
 - [ ] Timing accuracy >99%
@@ -558,7 +599,10 @@ NEXT_PUBLIC_AUDIO_ROLLOUT_PERCENTAGE=100
 **File:** `apps/frontend/src/domains/playback/services/core/CoreServices.ts`
 
 ```typescript
-import { isNewPlaybackEngineEnabled, logPlaybackEngineMigrationEvent } from '../config/featureFlags.js';
+import {
+  isNewPlaybackEngineEnabled,
+  logPlaybackEngineMigrationEvent,
+} from '../config/featureFlags.js';
 import { RegionProcessorAdapter } from './RegionProcessorAdapter.js';
 import { PlaybackEngine } from './PlaybackEngine.js';
 
@@ -596,7 +640,10 @@ export class CoreServices {
 **File:** `apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx`
 
 ```typescript
-import { isNewPlaybackEngineEnabled, logPlaybackEngineMigrationEvent } from '@/domains/playback/config/featureFlags';
+import {
+  isNewPlaybackEngineEnabled,
+  logPlaybackEngineMigrationEvent,
+} from '@/domains/playback/config/featureFlags';
 
 export function HarmonyWidget() {
   const coreServices = useCoreServices();
@@ -606,11 +653,15 @@ export function HarmonyWidget() {
     const processor = coreServices.getRegionProcessor();
 
     logPlaybackEngineMigrationEvent('HarmonyWidget loaded', {
-      engine: isNewPlaybackEngineEnabled() ? 'PlaybackEngine' : 'RegionProcessor',
+      engine: isNewPlaybackEngineEnabled()
+        ? 'PlaybackEngine'
+        : 'RegionProcessor',
     });
 
     // Rest of widget code unchanged (adapter handles compatibility)
-    processor.registerTracks([/* ... */]);
+    processor.registerTracks([
+      /* ... */
+    ]);
   }, []);
 
   // Widget UI code...
@@ -650,8 +701,16 @@ describe('Performance Comparison', () => {
       old: oldMetrics,
       new: newMetrics,
       improvement: {
-        memory: ((oldMetrics.memory - newMetrics.memory) / oldMetrics.memory * 100).toFixed(2) + '%',
-        jitter: ((oldMetrics.jitter - newMetrics.jitter) / oldMetrics.jitter * 100).toFixed(2) + '%',
+        memory:
+          (
+            ((oldMetrics.memory - newMetrics.memory) / oldMetrics.memory) *
+            100
+          ).toFixed(2) + '%',
+        jitter:
+          (
+            ((oldMetrics.jitter - newMetrics.jitter) / oldMetrics.jitter) *
+            100
+          ).toFixed(2) + '%',
       },
     });
 
@@ -668,24 +727,24 @@ describe('Performance Comparison', () => {
 
 ### 6.1 Critical Triggers (Immediate Rollback)
 
-| Condition | Threshold | Action | Time Limit |
-|-----------|-----------|--------|------------|
-| **Error Rate Spike** | >10% increase | Emergency rollback | <5 minutes |
-| **Memory Leak** | >100MB growth in 10 min | Emergency rollback | <5 minutes |
-| **Crash Rate** | >1% of users | Emergency rollback | <5 minutes |
-| **Timing Regression** | >5ms average jitter | Emergency rollback | <5 minutes |
-| **Critical Bug** | Sustain pedal broken, no audio | Emergency rollback | <5 minutes |
+| Condition             | Threshold                      | Action             | Time Limit |
+| --------------------- | ------------------------------ | ------------------ | ---------- |
+| **Error Rate Spike**  | >10% increase                  | Emergency rollback | <5 minutes |
+| **Memory Leak**       | >100MB growth in 10 min        | Emergency rollback | <5 minutes |
+| **Crash Rate**        | >1% of users                   | Emergency rollback | <5 minutes |
+| **Timing Regression** | >5ms average jitter            | Emergency rollback | <5 minutes |
+| **Critical Bug**      | Sustain pedal broken, no audio | Emergency rollback | <5 minutes |
 
 ---
 
 ### 6.2 Warning Triggers (Investigate First)
 
-| Condition | Threshold | Action | Time Limit |
-|-----------|-----------|--------|------------|
-| **Error Rate Increase** | 5-10% increase | Investigate, monitor closely | 1 hour |
-| **Memory Growth** | 50-100MB in 10 min | Check for leaks, monitor | 2 hours |
-| **Timing Drift** | 3-5ms average jitter | Performance profiling | 4 hours |
-| **User Complaints** | 3-5 per day | Review tickets, reproduce | 1 day |
+| Condition               | Threshold            | Action                       | Time Limit |
+| ----------------------- | -------------------- | ---------------------------- | ---------- |
+| **Error Rate Increase** | 5-10% increase       | Investigate, monitor closely | 1 hour     |
+| **Memory Growth**       | 50-100MB in 10 min   | Check for leaks, monitor     | 2 hours    |
+| **Timing Drift**        | 3-5ms average jitter | Performance profiling        | 4 hours    |
+| **User Complaints**     | 3-5 per day          | Review tickets, reproduce    | 1 day      |
 
 ---
 
@@ -725,6 +784,7 @@ END IF
 **Emergency Rollback Steps:**
 
 1. **Set Rollback Flag** (1 minute)
+
    ```bash
    # Method 1: Full rollback
    vercel env add NEXT_PUBLIC_ROLLBACK_AUDIO production --value true
@@ -734,6 +794,7 @@ END IF
    ```
 
 2. **Trigger Deployment** (2 minutes)
+
    ```bash
    vercel --prod
    ```
@@ -754,18 +815,21 @@ END IF
 ### 6.5 Post-Rollback Actions
 
 **Immediate (Within 1 hour):**
+
 - [ ] Create incident postmortem
 - [ ] Collect error logs
 - [ ] Reproduce issue locally
 - [ ] Identify root cause
 
 **Short-Term (Within 1 day):**
+
 - [ ] Fix bug
 - [ ] Add regression test
 - [ ] Test fix in staging
 - [ ] Re-enable flag for internal team (1%)
 
 **Long-Term (Within 1 week):**
+
 - [ ] Verify fix in production (1% rollout)
 - [ ] Gradually re-roll out (10% → 50% → 100%)
 - [ ] Document lesson learned
@@ -777,6 +841,7 @@ END IF
 ### 7.1 Internal Team Communication
 
 **Channels:**
+
 - **Slack #engineering** - Rollout announcements
 - **Slack #playback-migration** - Detailed updates
 - **Email** - Formal announcements
@@ -784,6 +849,7 @@ END IF
 **Templates:**
 
 #### Phase Start Announcement
+
 ```
 🚀 PlaybackEngine Rollout - Phase {N} Starting
 
@@ -801,6 +867,7 @@ We're rolling out the new PlaybackEngine to {X}% of users today.
 ```
 
 #### Rollback Announcement
+
 ```
 ⚠️ ROLLBACK: PlaybackEngine → RegionProcessor
 
@@ -823,10 +890,12 @@ We've rolled back the PlaybackEngine due to: {reason}
 ### 7.2 User Communication
 
 **When to Notify Users:**
+
 - **Never** during gradual rollout (users shouldn't notice)
 - **Only if:** Critical bug affects user experience
 
 **Template (if needed):**
+
 ```
 We recently updated our audio playback system. If you experience
 any issues with playback, please refresh your browser.
@@ -839,6 +908,7 @@ For assistance, contact support@bassnotion.com
 ## Section 8: Success Criteria
 
 ### 8.1 Phase 0.4 Complete When:
+
 - [x] `ENABLE_NEW_PLAYBACK_ENGINE` flag added to config
 - [x] `DEBUG_PLAYBACK_ENGINE_MIGRATION` flag added
 - [x] `COMPARE_PLAYBACK_ENGINE_PERFORMANCE` flag added
@@ -850,6 +920,7 @@ For assistance, contact support@bassnotion.com
 - [x] Communication templates created
 
 ### 8.2 Phase 3.1 (Rollout) Complete When:
+
 - [ ] Phase 1 (1%) successful - 5 days
 - [ ] Phase 2 (10%) successful - 5 days
 - [ ] Phase 3 (50%) successful - 3 days

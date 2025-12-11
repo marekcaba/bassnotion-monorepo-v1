@@ -15,10 +15,12 @@ export const helmetConfig = {
   hsts: {
     maxAge: 31536000,
     includeSubDomains: true,
-    preload: true },
+    preload: true,
+  },
   frameguard: { action: 'deny' },
   hidePoweredBy: true,
-  noSniff: true } as any;
+  noSniff: true,
+} as any;
 
 /**
  * Rate limiting configuration
@@ -56,8 +58,8 @@ export const rateLimitConfig: RateLimitOptions = {
       message: `Rate limit exceeded. Please retry after ${retryAfter}.`,
       rateLimit: {
         limit: context.max,
-        resetTime: resetTime || 'unknown'
-      }
+        resetTime: resetTime || 'unknown',
+      },
     };
   },
 
@@ -75,22 +77,27 @@ export const endpointRateLimits = {
   // Stricter limits for auth endpoints
   auth: {
     max: 5,
-    timeWindow: '15 minutes' },
+    timeWindow: '15 minutes',
+  },
 
   // File upload endpoints
   upload: {
     max: 10,
-    timeWindow: '1 hour' },
+    timeWindow: '1 hour',
+  },
 
   // User profile endpoint (higher limit for development with React Strict Mode)
   userProfile: {
     max: 500,
-    timeWindow: '15 minutes' },
+    timeWindow: '15 minutes',
+  },
 
   // Public API endpoints
   public: {
     max: 200,
-    timeWindow: '15 minutes' } };
+    timeWindow: '15 minutes',
+  },
+};
 
 /**
  * CORS configuration (already in main.ts, but centralized here)
@@ -102,7 +109,8 @@ export const corsConfig = {
   allowedHeaders: ['Content-Type', 'Authorization', 'x-correlation-id'],
   exposedHeaders: ['x-correlation-id'],
   preflightContinue: false,
-  optionsSuccessStatus: 204 };
+  optionsSuccessStatus: 204,
+};
 
 /**
  * Input sanitization options
@@ -122,4 +130,5 @@ export const sanitizationConfig = {
     /<script[^>]*>.*?<\/script>/gi, // Script tags
     /javascript:/gi, // JavaScript protocol
     /on\w+\s*=/gi, // Event handlers
-  ] };
+  ],
+};

@@ -64,7 +64,9 @@ export class WamHarmonyProcessor {
         }
         this.wamKeyboardNode.connect(this.outputNode);
       } else {
-        this.logger.warn('WAM keyboard node or output node not available, skipping connection');
+        this.logger.warn(
+          'WAM keyboard node or output node not available, skipping connection',
+        );
       }
 
       // Cache the plugin for this processor
@@ -151,7 +153,9 @@ export class WamHarmonyProcessor {
         // Schedule each note
         midiNotes.forEach((midiNote, index) => {
           if (!this.context) return;
-          const noteTime = (time !== undefined ? time : this.context.currentTime) + index * 0.01;
+          const noteTime =
+            (time !== undefined ? time : this.context.currentTime) +
+            index * 0.01;
           this.wamKeyboardNode?.triggerNote(
             midiNote,
             Math.round(velocity * 127),
@@ -163,7 +167,9 @@ export class WamHarmonyProcessor {
         const chordNotes = this.parseChord(chord);
         chordNotes.forEach((midiNote, index) => {
           if (!this.context) return;
-          const noteTime = (time !== undefined ? time : this.context.currentTime) + index * 0.01;
+          const noteTime =
+            (time !== undefined ? time : this.context.currentTime) +
+            index * 0.01;
           this.wamKeyboardNode?.triggerNote(
             midiNote,
             Math.round(velocity * 127),

@@ -110,7 +110,10 @@ export class DriftPredictor {
     const isInTransitionPeriod = this.lastResetTime > 0 && timeSinceReset < 500;
 
     // Changed to debug level - 1ms drift is actually excellent, no need to warn
-    if (Math.abs(measurement.drift) > this.driftThreshold && !isInTransitionPeriod) {
+    if (
+      Math.abs(measurement.drift) > this.driftThreshold &&
+      !isInTransitionPeriod
+    ) {
       logger.debug('Drift detected', {
         drift: measurement.drift.toFixed(3),
         filtered: filteredDrift.toFixed(3),

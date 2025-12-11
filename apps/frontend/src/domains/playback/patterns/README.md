@@ -7,7 +7,7 @@ This directory contains the core architectural patterns that enable the BassNoti
 ## Architecture Benefits
 
 - **95%+ automatic error recovery** - Services self-heal from transient failures
-- **50% reduction in cascading failures** - Circuit breakers prevent failure propagation  
+- **50% reduction in cascading failures** - Circuit breakers prevent failure propagation
 - **30% improvement in memory usage** - Resource pooling reduces GC pressure
 - **<50% memory footprint** - Compared to the old 56+ service system
 - **Real-time performance insights** - Comprehensive monitoring and alerting
@@ -20,12 +20,14 @@ This directory contains the core architectural patterns that enable the BassNoti
 **Purpose**: Prevents cascading failures by stopping calls to failing services.
 
 **Features**:
+
 - Adaptive failure thresholds
 - Health check probing
 - Circuit breaker chaining
 - Automatic recovery with exponential backoff
 
 **Usage**:
+
 ```typescript
 const circuitBreaker = circuitBreakerFactory.create('api-service', 'critical', {
   failureThreshold: 3,
@@ -34,16 +36,15 @@ const circuitBreaker = circuitBreakerFactory.create('api-service', 'critical', {
   healthCheckOperation: async () => {
     const response = await fetch('/health');
     return response.ok;
-  }
+  },
 });
 
 // Protected service call
-const result = await circuitBreaker.execute(
-  () => apiService.fetchData()
-);
+const result = await circuitBreaker.execute(() => apiService.fetchData());
 ```
 
 **States**:
+
 - **CLOSED**: Normal operation, requests pass through
 - **OPEN**: Service is failing, requests are blocked
 - **HALF_OPEN**: Testing if service has recovered
@@ -53,12 +54,14 @@ const result = await circuitBreaker.execute(
 **Purpose**: Isolates service failures and provides recovery strategies.
 
 **Features**:
+
 - Service-level error isolation
 - Automatic recovery strategies
 - Error reporting and metrics
 - Fallback service support
 
 **Usage**:
+
 ```typescript
 const errorBoundary = new ServiceErrorBoundary(eventBus, {
   maxErrors: 5,
@@ -72,9 +75,9 @@ const errorBoundary = new ServiceErrorBoundary(eventBus, {
         await delay(1000);
         // Retry logic
       },
-      priority: 10
-    }
-  ]
+      priority: 10,
+    },
+  ],
 });
 
 // Protected operation
@@ -82,11 +85,12 @@ const result = await errorBoundary.protect(
   'database',
   'query',
   () => dbService.query(sql),
-  { userId, requestId } // metadata
+  { userId, requestId }, // metadata
 );
 ```
 
 **Recovery Strategies**:
+
 - Network error retry
 - Service reset on repeated failures
 - Cache clearing on memory errors
@@ -97,6 +101,7 @@ const result = await errorBoundary.protect(
 **Purpose**: Tracks service performance and optimizes resource usage.
 
 **Features**:
+
 - Operation timing and metrics
 - Resource pooling
 - Memory optimization
@@ -104,28 +109,25 @@ const result = await errorBoundary.protect(
 - Baseline comparison
 
 **Usage**:
+
 ```typescript
 const monitor = new EnhancedPerformanceMonitor(eventBus, {
   reportingInterval: 30000,
   memoryWarningThreshold: 100, // MB
-  performanceWarningThreshold: 1000 // ms
+  performanceWarningThreshold: 1000, // ms
 });
 
 // Measure operation performance
-const result = await monitor.measure(
-  'api-service',
-  'fetchUsers',
-  async () => {
-    return await apiService.getUsers();
-  }
-);
+const result = await monitor.measure('api-service', 'fetchUsers', async () => {
+  return await apiService.getUsers();
+});
 
 // Create resource pool
 const connectionPool = monitor.createResourcePool(
   'db-connections',
   10,
   () => new DatabaseConnection(),
-  (conn) => conn.close()
+  (conn) => conn.close(),
 );
 
 // Use pooled resource
@@ -138,6 +140,7 @@ try {
 ```
 
 **Reports**:
+
 ```typescript
 const reports = monitor.generateReport('api-service');
 // {
@@ -158,37 +161,37 @@ class ResilientApiService {
   private circuitBreaker: EnhancedCircuitBreaker;
   private errorBoundary: ServiceErrorBoundary;
   private monitor: EnhancedPerformanceMonitor;
-  
+
   constructor(eventBus: EventBus) {
     // Initialize patterns
     this.errorBoundary = new ServiceErrorBoundary(eventBus);
     this.monitor = new EnhancedPerformanceMonitor(eventBus);
-    
-    this.circuitBreaker = new CircuitBreakerFactory(eventBus)
-      .create('api', 'critical', {
+
+    this.circuitBreaker = new CircuitBreakerFactory(eventBus).create(
+      'api',
+      'critical',
+      {
         failureThreshold: 5,
-        fallbackOperation: () => this.getCachedData()
-      });
+        fallbackOperation: () => this.getCachedData(),
+      },
+    );
   }
-  
+
   async fetchData(id: string): Promise<Data> {
     return this.errorBoundary.protect(
       'api-service',
       'fetchData',
-      () => this.circuitBreaker.execute(
-        () => this.monitor.measure(
-          'api-service',
-          'fetchData',
-          async () => {
+      () =>
+        this.circuitBreaker.execute(() =>
+          this.monitor.measure('api-service', 'fetchData', async () => {
             const response = await fetch(`/api/data/${id}`);
             if (!response.ok) {
               throw new Error(`HTTP ${response.status}`);
             }
             return response.json();
-          }
-        )
-      ),
-      { dataId: id }
+          }),
+        ),
+      { dataId: id },
     );
   }
 }
@@ -199,6 +202,7 @@ class ResilientApiService {
 All patterns emit events for monitoring and alerting:
 
 ### Circuit Breaker Events
+
 - `circuitbreaker:state-changed` - Circuit state transitions
 - `circuitbreaker:fallback-used` - Fallback operation executed
 - `circuitbreaker:health-check-passed` - Service recovered
@@ -206,12 +210,14 @@ All patterns emit events for monitoring and alerting:
 - `circuitbreaker:alert` - Threshold violations
 
 ### Error Boundary Events
+
 - `errorboundary:error` - Error captured
 - `errorboundary:service-isolated` - Service isolated due to errors
 - `errorboundary:recovery-attempted` - Recovery strategy executed
 - `errorboundary:service-restored` - Service back online
 
 ### Performance Monitor Events
+
 - `performance:slow-operation` - Operation exceeded threshold
 - `performance:high-memory` - Memory usage warning
 - `performance:pool-exhausted` - Resource pool depleted
@@ -221,6 +227,7 @@ All patterns emit events for monitoring and alerting:
 ## Configuration Presets
 
 ### High-Throughput Services
+
 ```typescript
 {
   circuitBreaker: {
@@ -240,6 +247,7 @@ All patterns emit events for monitoring and alerting:
 ```
 
 ### Critical Services
+
 ```typescript
 {
   circuitBreaker: {
@@ -260,6 +268,7 @@ All patterns emit events for monitoring and alerting:
 ```
 
 ### Background Services
+
 ```typescript
 {
   circuitBreaker: {
@@ -287,6 +296,7 @@ All patterns emit events for monitoring and alerting:
 ## Performance Considerations
 
 Based on benchmarking results:
+
 - **Overhead per operation**: ~0.007ms
 - **Memory per instance**: < 1KB
 - **Suitable for**: Operations > 0.1ms duration
@@ -295,11 +305,13 @@ Based on benchmarking results:
 ## Testing
 
 All patterns include comprehensive test suites:
+
 - Unit tests: `__tests__/*.test.ts`
 - Integration tests: `__tests__/integration.test.ts`
 - Benchmarks: `__tests__/benchmark.test.ts`
 
 Run tests:
+
 ```bash
 pnpm vitest run apps/frontend/src/domains/playback/patterns/__tests__/
 ```
@@ -315,6 +327,7 @@ To migrate existing services:
 5. **Monitor and tune** based on production metrics
 
 Example migration:
+
 ```typescript
 // Before
 async fetchData() {

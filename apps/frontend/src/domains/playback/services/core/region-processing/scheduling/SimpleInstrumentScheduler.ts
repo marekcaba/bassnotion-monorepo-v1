@@ -81,7 +81,10 @@ export class SimpleInstrumentScheduler {
    * Set buffers from a map (generic interface)
    * Stores buffers internally by their keys for flexible access
    */
-  setBuffers(buffers: Record<string, AudioBuffer>, destination: AudioNode): void {
+  setBuffers(
+    buffers: Record<string, AudioBuffer>,
+    destination: AudioNode,
+  ): void {
     this.buffers.clear();
     Object.entries(buffers).forEach(([key, buffer]) => {
       this.buffers.set(key, buffer);
@@ -188,7 +191,8 @@ export class SimpleInstrumentScheduler {
           }
           silentSamplesAtStart++;
         }
-        firstAudibleSampleTime = (silentSamplesAtStart / buffer.sampleRate) * 1000; // ms
+        firstAudibleSampleTime =
+          (silentSamplesAtStart / buffer.sampleRate) * 1000; // ms
       }
 
       // Create audio source node
@@ -214,7 +218,10 @@ export class SimpleInstrumentScheduler {
       const sourceStartCallEnd = performance.now();
 
       // Store for cleanup - this is a one-shot sample
-      this.scheduledSources.set(source, { type: 'one-shot', hasStopScheduled: false });
+      this.scheduledSources.set(source, {
+        type: 'one-shot',
+        hasStopScheduled: false,
+      });
 
       // Log scheduling with timing details for debugging
       const frameDelta = frame - scheduleFrame;

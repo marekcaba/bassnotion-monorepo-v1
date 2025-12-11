@@ -31,7 +31,7 @@ describe('UserRepository Integration Tests', () => {
       }),
       getCorrelationId: vi.fn().mockReturnValue('test-correlation-id'),
     };
-    
+
     repository = new UserRepository(supabase, mockRequestContextService as any);
 
     // Create test user

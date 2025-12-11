@@ -11,6 +11,7 @@
 ### ⚠️ Phase 1 UX Issue Discovered
 
 **Problem:** The initial implementation has a critical UX flaw - users must save the entire tutorial before they can convert MIDI files. This creates a terrible workflow:
+
 1. Upload MIDI → ❌ Can't convert yet
 2. Close modal → Click "Save Tutorial"
 3. Reopen modal → Now convert works
@@ -22,6 +23,7 @@
 ### ✅ What's Been Completed (Phase 1)
 
 **Backend (100% Complete with Tests)**
+
 - ✅ MIDI Parser Service with measure grouping (8 unit tests passing)
 - ✅ Fretboard Mapper Service with dynamic programming algorithm (10 unit tests passing)
 - ✅ API endpoints for parsing and conversion
@@ -31,6 +33,7 @@
 - ✅ **All 18 backend tests passing** ✓
 
 **Frontend (100% Complete)**
+
 - ✅ Custom hooks for API calls (useMidiParsing, useMidiConversion, useAnchorSelection)
 - ✅ MiniFretboard interactive widget component (12 frets, 4 strings, clickable)
 - ✅ MeasureAnchorSelector with progress tracking and visual indicators
@@ -40,11 +43,13 @@
 - ✅ "Convert MIDI to Fretboard Positions" button with visual feedback
 
 **Ready for Use:**
+
 - ✅ Complete end-to-end workflow from MIDI upload to fretboard visualization
 - ✅ All core features implemented and tested
 - ✅ Production-ready code quality
 
 **Optional Enhancements (Nice-to-Have):**
+
 - Frontend component unit tests (not blocking)
 - Keyboard navigation for fretboard widget (not blocking)
 - Bulk edit actions in note editor (not blocking)
@@ -62,6 +67,7 @@
 **Epic Context:** This is Story 3 of Epic 4 - Content Management & Creation System. This story bridges the gap between MIDI-based playback (Epic 3) and visual fretboard education.
 
 **Dependencies:**
+
 - **REQUIRES:** Story 4.2 (Admin Tutorial & Exercise Creation) - MIDI upload infrastructure exists
 - **REQUIRES:** Playback system from Epic 3 - MIDI playback functional
 - **REQUIRES:** Exercise entity with `basslineMidiUrl` and `notes` fields
@@ -73,6 +79,7 @@ Admins can upload MIDI bassline files via ExerciseFormModal, and the URL is stor
 
 **The Problem:**
 MIDI files contain only pitch and velocity - NOT which string/fret to use. For example, the note A1 (110 Hz) can be played on:
+
 - E string (1st string), fret 5
 - A string (2nd string), fret 0 (open)
 
@@ -82,6 +89,7 @@ Without knowing the bass part's musical context, we can't automatically choose t
 Use a **multi-anchor approach**: Admin sets the first note position for each measure (4-8 clicks), then our algorithm fills in the rest using dynamic programming to minimize hand movement and maximize playability.
 
 **Business Value:**
+
 - **Time Savings:** Reduces exercise creation from 30 minutes to 5 minutes
 - **Quality:** Algorithm-optimized fingerings are more consistent than manual transcription
 - **Scalability:** Enables rapid creation of large exercise libraries
@@ -105,12 +113,13 @@ Use a **multi-anchor approach**: Admin sets the first note position for each mea
    - `exercises.bpm` INTEGER - For timing!
 
 3. **Exercise Entity** ([apps/frontend/src/domains/exercises/entities/exercise.entity.ts](apps/frontend/src/domains/exercises/entities/exercise.entity.ts))
+
    ```typescript
    interface ExerciseNote {
      id: string;
      timestamp: number;
-     string: number;      // 1-6 (THIS is what we need to populate!)
-     fret: number;        // 0-24 (THIS is what we need to populate!)
+     string: number; // 1-6 (THIS is what we need to populate!)
+     fret: number; // 0-24 (THIS is what we need to populate!)
      duration: number;
      note: string;
      color: string;
@@ -189,6 +198,7 @@ Use a **multi-anchor approach**: Admin sets the first note position for each mea
 ## Tasks / Subtasks
 
 ### Task 1: Backend MIDI Parser Service (AC: 1) ✅
+
 - [x] Subtask 1.1: Install `@tonejs/midi` package in backend
 - [x] Subtask 1.2: Create `MidiParserService` class
 - [x] Subtask 1.3: Implement `parseMidiFromUrl()` method
@@ -204,6 +214,7 @@ Use a **multi-anchor approach**: Admin sets the first note position for each mea
 - [x] Subtask 1.7: Handle edge cases (empty MIDI, polyphonic tracks, etc.)
 
 ### Task 2: Backend Fretboard Mapper Service (AC: 3) ✅
+
 - [x] Subtask 2.1: Create `FretboardMapperService` class
 - [x] Subtask 2.2: Implement `getAllPositionsForPitch()` helper
   - Given MIDI pitch and bass type (4/5/6 string), return all valid string/fret combos
@@ -226,6 +237,7 @@ Use a **multi-anchor approach**: Admin sets the first note position for each mea
 - [x] Subtask 2.9: Test with real bass lines (scales, arpeggios, walking bass)
 
 ### Task 3: Backend API Endpoints (AC: 1, 3) ✅
+
 - [x] Subtask 3.1: Extend `AdminExercisesController`
 - [x] Subtask 3.2: Add `POST /api/v1/exercises/:id/midi/parse` endpoint
   - Accepts: `exerciseId` (from URL)
@@ -240,6 +252,7 @@ Use a **multi-anchor approach**: Admin sets the first note position for each mea
 - [x] Subtask 3.7: Document API with Swagger annotations
 
 ### Task 4: Frontend Multi-Anchor Selector Component (AC: 2) ✅
+
 - [x] Subtask 4.1: Create `MeasureAnchorSelector.tsx` component
 - [x] Subtask 4.2: Create measure grid layout (responsive, 2-4 columns)
 - [x] Subtask 4.3: Create mini-fretboard widget component
@@ -257,6 +270,7 @@ Use a **multi-anchor approach**: Admin sets the first note position for each mea
 - [ ] Subtask 4.8: Add component unit tests
 
 ### Task 5: Frontend Note List Editor Component (AC: 4) ✅
+
 - [x] Subtask 5.1: Create `NoteListEditor.tsx` component
 - [x] Subtask 5.2: Implement table layout with columns:
   - #, Pitch, Measure, String, Fret, Confidence, Alternatives, Actions
@@ -279,6 +293,7 @@ Use a **multi-anchor approach**: Admin sets the first note position for each mea
 - [ ] Subtask 5.10: Add component unit tests
 
 ### Task 6: Frontend MIDI Conversion Wizard (AC: 2, 4, 5) ✅
+
 - [x] Subtask 6.1: Create `MidiConversionWizard.tsx` modal component
 - [x] Subtask 6.2: Implement multi-step flow state machine
   - Step 1: Parse MIDI (auto)
@@ -294,6 +309,7 @@ Use a **multi-anchor approach**: Admin sets the first note position for each mea
 - [x] Subtask 6.9: Handle unsaved changes (warn on close)
 
 ### Task 7: Integration with ExerciseFormModal (AC: 5) ✅
+
 - [x] Subtask 7.1: Add "Convert from MIDI" button to `ExerciseFormModal`
   - Show only if `basslineMidiUrl` exists
   - Position below bassline upload section
@@ -308,6 +324,7 @@ Use a **multi-anchor approach**: Admin sets the first note position for each mea
 - [x] Subtask 7.6: QA testing guide created - See [QA_TESTING_GUIDE_STORY_4.3.md](../QA_TESTING_GUIDE_STORY_4.3.md)
 
 ### Task 8: Frontend Hooks & State Management (AC: 5) ✅
+
 - [x] Subtask 8.1: Create `useMidiParsing.ts` hook
   - Calls `POST /exercises/:id/midi/parse`
   - Returns parsed measures + loading/error states
@@ -323,6 +340,7 @@ Use a **multi-anchor approach**: Admin sets the first note position for each mea
 - [ ] Subtask 8.5: Add analytics tracking (conversion started, completed, failed)
 
 ### Task 9: Testing & Validation (AC: 6, 7) ✅
+
 - [x] Subtask 9.1: Create test MIDI files
   - Simple scale (1 octave, 8 notes)
   - Arpeggio pattern (string crossings)
@@ -345,6 +363,7 @@ Use a **multi-anchor approach**: Admin sets the first note position for each mea
   - Ready for manual testing with real exercises
 
 ### Task 10: Documentation & Polish (AC: 7)
+
 - [ ] Subtask 10.1: Add inline code documentation
   - JSDoc for all public methods
   - Algorithm explanation comments
@@ -384,19 +403,21 @@ The BassNotion codebase uses **1-based string numbering** for `ExerciseNote` sto
 ```typescript
 // From libs/contracts/src/types/exercise.ts
 interface ExerciseNote {
-  string: 1 | 2 | 3 | 4 | 5 | 6;  // ✅ 1-based numbering
-  fret: number;                    // 0-24 (0 = open string)
+  string: 1 | 2 | 3 | 4 | 5 | 6; // ✅ 1-based numbering
+  fret: number; // 0-24 (0 = open string)
   // ... other fields
 }
 ```
 
 **Bass String Mappings** (4-string standard tuning EADG):
+
 - `string: 1` = E string (lowest/thickest, MIDI note 28 = E1)
 - `string: 2` = A string (MIDI note 33 = A1)
 - `string: 3` = D string (MIDI note 38 = D2)
 - `string: 4` = G string (highest/thinnest, MIDI note 43 = G2)
 
 **5-string bass** (BEADG):
+
 - `string: 1` = B string (lowest, MIDI note 23 = B0)
 - `string: 2` = E string (MIDI note 28 = E1)
 - `string: 3` = A string (MIDI note 33 = A1)
@@ -404,6 +425,7 @@ interface ExerciseNote {
 - `string: 5` = G string (highest, MIDI note 43 = G2)
 
 **6-string bass** (BEADGC):
+
 - `string: 1` = B string (lowest, MIDI note 23 = B0)
 - `string: 2` = E string (MIDI note 28 = E1)
 - `string: 3` = A string (MIDI note 33 = A1)
@@ -444,16 +466,16 @@ The `FretboardMapperService.convert()` method **MUST** return notes using **1-ba
 // ✅ CORRECT OUTPUT FORMAT
 interface GeneratedExerciseNote {
   id: string;
-  string: 1 | 2 | 3 | 4 | 5 | 6;  // ✅ 1-based!
-  fret: number;                    // 0-24
-  note: string;                    // "E1", "A1", etc.
-  timestamp: number;               // milliseconds
-  duration: number;                // milliseconds
-  position: MusicalPosition;       // {measure, beat, subdivision}
-  noteDuration: NoteDuration;      // 'quarter', 'eighth', etc.
+  string: 1 | 2 | 3 | 4 | 5 | 6; // ✅ 1-based!
+  fret: number; // 0-24
+  note: string; // "E1", "A1", etc.
+  timestamp: number; // milliseconds
+  duration: number; // milliseconds
+  position: MusicalPosition; // {measure, beat, subdivision}
+  noteDuration: NoteDuration; // 'quarter', 'eighth', etc.
   color: string;
   confidence: 'high' | 'medium' | 'low';
-  alternatives: Array<{string: 1 | 2 | 3 | 4 | 5 | 6, fret: number}>;
+  alternatives: Array<{ string: 1 | 2 | 3 | 4 | 5 | 6; fret: number }>;
   warnings: string[];
   measureNumber: number;
 }
@@ -465,27 +487,28 @@ Add these validation checks to `ConvertMidiResponseDto`:
 
 ```typescript
 // In FretboardMapperService.convert() method:
-function validateGeneratedNote(note: GeneratedExerciseNote, bassType: 4 | 5 | 6): void {
+function validateGeneratedNote(
+  note: GeneratedExerciseNote,
+  bassType: 4 | 5 | 6,
+): void {
   // Rule 1: String must be in valid range
   if (note.string < 1 || note.string > bassType) {
     throw new Error(
       `Invalid string ${note.string} for ${bassType}-string bass. ` +
-      `Must be in range [1, ${bassType}].`
+        `Must be in range [1, ${bassType}].`,
     );
   }
 
   // Rule 2: Fret must be in valid range
   if (note.fret < 0 || note.fret > 24) {
-    throw new Error(
-      `Invalid fret ${note.fret}. Must be in range [0, 24].`
-    );
+    throw new Error(`Invalid fret ${note.fret}. Must be in range [0, 24].`);
   }
 
   // Rule 3: All alternatives must also use 1-based indexing
   for (const alt of note.alternatives) {
     if (alt.string < 1 || alt.string > bassType) {
       throw new Error(
-        `Invalid alternative string ${alt.string} for ${bassType}-string bass.`
+        `Invalid alternative string ${alt.string} for ${bassType}-string bass.`,
       );
     }
   }
@@ -502,13 +525,13 @@ Add to **Task 2: Backend Fretboard Mapper Service**:
 describe('FretboardMapperService - String Indexing', () => {
   it('should output 1-based string numbers (not 0-based)', () => {
     const result = mapperService.convert({
-      anchors: [{measureNumber: 1, string: 2, fret: 0}], // A string open
+      anchors: [{ measureNumber: 1, string: 2, fret: 0 }], // A string open
       bassType: 4,
       // ... other params
     });
 
     // All notes should have strings in range [1, 4]
-    result.notes.forEach(note => {
+    result.notes.forEach((note) => {
       expect(note.string).toBeGreaterThanOrEqual(1);
       expect(note.string).toBeLessThanOrEqual(4);
     });
@@ -519,15 +542,17 @@ describe('FretboardMapperService - String Indexing', () => {
     const positions = mapperService.getAllPositionsForPitch(28, 4);
 
     expect(positions).toContainEqual({
-      string: 1,  // ✅ E string is string 1
-      fret: 0     // Open E
+      string: 1, // ✅ E string is string 1
+      fret: 0, // Open E
     });
   });
 
   it('should never output string 0 (common mistake)', () => {
-    const result = mapperService.convert({/* ... */});
+    const result = mapperService.convert({
+      /* ... */
+    });
 
-    result.notes.forEach(note => {
+    result.notes.forEach((note) => {
       expect(note.string).not.toBe(0); // ❌ String 0 is invalid!
     });
   });
@@ -536,11 +561,14 @@ describe('FretboardMapperService - String Indexing', () => {
     // Verify consistency with existing musicxml-parser.ts
     // which also uses 1-based string indexing (see line 367)
     const midiNote = { pitch: 33, velocity: 80 }; // A1
-    const generatedNote = mapperService.convertMidiNoteToExerciseNote(midiNote, {
-      bassType: 4,
-      anchorString: 2,
-      anchorFret: 0
-    });
+    const generatedNote = mapperService.convertMidiNoteToExerciseNote(
+      midiNote,
+      {
+        bassType: 4,
+        anchorString: 2,
+        anchorFret: 0,
+      },
+    );
 
     expect(generatedNote.string).toBe(2); // ✅ A string is string 2
   });
@@ -585,8 +613,8 @@ export class FretboardMapperService {
    */
   getAllPositionsForPitch(
     midiNote: number,
-    bassType: 4 | 5 | 6
-  ): Array<{string: 1 | 2 | 3 | 4 | 5 | 6, fret: number}> {
+    bassType: 4 | 5 | 6,
+  ): Array<{ string: 1 | 2 | 3 | 4 | 5 | 6; fret: number }> {
     // Implementation...
   }
 }
@@ -595,32 +623,35 @@ export class FretboardMapperService {
 ### Common Pitfalls to Avoid
 
 **❌ WRONG: Using 0-based indexing**
+
 ```typescript
 // DON'T DO THIS!
 const note: GeneratedExerciseNote = {
-  string: 0,  // ❌ Invalid! No string 0 exists
+  string: 0, // ❌ Invalid! No string 0 exists
   fret: 5,
   // ...
 };
 ```
 
 **❌ WRONG: Assuming string 0 is valid for 5-string bass**
+
 ```typescript
 // DON'T DO THIS!
 if (bassType === 5) {
   return {
-    string: 0,  // ❌ Wrong! B string should be string 1
-    fret: 0
+    string: 0, // ❌ Wrong! B string should be string 1
+    fret: 0,
   };
 }
 ```
 
 **✅ CORRECT: Always use 1-based for ExerciseNote**
+
 ```typescript
 // DO THIS!
 const note: GeneratedExerciseNote = {
-  string: 1,  // ✅ Correct! Lowest string is always 1
-  fret: 0,    // Open string
+  string: 1, // ✅ Correct! Lowest string is always 1
+  fret: 0, // Open string
   // ...
 };
 ```
@@ -628,6 +659,7 @@ const note: GeneratedExerciseNote = {
 ### Reference Implementation
 
 See existing code that correctly uses 1-based indexing:
+
 - `libs/contracts/src/types/exercise.ts:40` - Canonical type definition
 - `libs/contracts/src/utils/musicxml-parser.ts:367` - MusicXML parser (uses 1-based)
 - `libs/contracts/src/utils/midifile-parser.ts:628` - Existing MIDI parser (uses 1-based)
@@ -748,15 +780,16 @@ This section provides the complete implementation specification for mapping MIDI
 #### Standard Tunings
 
 **4-String Bass (Standard EADG Tuning)**
+
 ```typescript
 const TUNING_4_STRING_STANDARD = {
   strings: 4,
   name: 'Standard (EADG)',
   openStringMidiNotes: [
-    28,  // String 1: E1 (lowest/thickest)
-    33,  // String 2: A1
-    38,  // String 3: D2
-    43   // String 4: G2 (highest/thinnest)
+    28, // String 1: E1 (lowest/thickest)
+    33, // String 2: A1
+    38, // String 3: D2
+    43, // String 4: G2 (highest/thinnest)
   ],
   openStringNames: ['E1', 'A1', 'D2', 'G2'],
   range: { min: 28, max: 67 }, // E1 to G4 (fret 24 on G string)
@@ -764,16 +797,17 @@ const TUNING_4_STRING_STANDARD = {
 ```
 
 **5-String Bass (Standard BEADG Tuning)**
+
 ```typescript
 const TUNING_5_STRING_STANDARD = {
   strings: 5,
   name: 'Standard (BEADG)',
   openStringMidiNotes: [
-    23,  // String 1: B0 (lowest)
-    28,  // String 2: E1
-    33,  // String 3: A1
-    38,  // String 4: D2
-    43   // String 5: G2 (highest)
+    23, // String 1: B0 (lowest)
+    28, // String 2: E1
+    33, // String 3: A1
+    38, // String 4: D2
+    43, // String 5: G2 (highest)
   ],
   openStringNames: ['B0', 'E1', 'A1', 'D2', 'G2'],
   range: { min: 23, max: 67 },
@@ -781,17 +815,18 @@ const TUNING_5_STRING_STANDARD = {
 ```
 
 **6-String Bass (Standard BEADGC Tuning)**
+
 ```typescript
 const TUNING_6_STRING_STANDARD = {
   strings: 6,
   name: 'Standard (BEADGC)',
   openStringMidiNotes: [
-    23,  // String 1: B0 (lowest)
-    28,  // String 2: E1
-    33,  // String 3: A1
-    38,  // String 4: D2
-    43,  // String 5: G2
-    48   // String 6: C3 (highest)
+    23, // String 1: B0 (lowest)
+    28, // String 2: E1
+    33, // String 3: A1
+    38, // String 4: D2
+    43, // String 5: G2
+    48, // String 6: C3 (highest)
   ],
   openStringNames: ['B0', 'E1', 'A1', 'D2', 'G2', 'C3'],
   range: { min: 23, max: 72 }, // B0 to C5 (fret 24 on C string)
@@ -819,7 +854,20 @@ export class TuningConfiguration {
   }
 
   static getNoteName(midiNote: number): string {
-    const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const noteNames = [
+      'C',
+      'C#',
+      'D',
+      'D#',
+      'E',
+      'F',
+      'F#',
+      'G',
+      'G#',
+      'A',
+      'A#',
+      'B',
+    ];
     const octave = Math.floor(midiNote / 12) - 1;
     const noteName = noteNames[midiNote % 12];
     return `${noteName}${octave}`;
@@ -896,8 +944,9 @@ getAllPositionsForPitch(
 #### Examples
 
 **Example 1: MIDI Note 33 (A1) on 4-string bass**
+
 ```typescript
-getAllPositionsForPitch(33, 4)
+getAllPositionsForPitch(33, 4);
 // Returns: [
 //   { string: 1, fret: 5 },  // E string (28) + 5 frets = 33
 //   { string: 2, fret: 0 }   // A string (33) + 0 frets = 33 (open)
@@ -905,8 +954,9 @@ getAllPositionsForPitch(33, 4)
 ```
 
 **Example 2: MIDI Note 43 (G2) on 4-string bass**
+
 ```typescript
-getAllPositionsForPitch(43, 4)
+getAllPositionsForPitch(43, 4);
 // Returns: [
 //   { string: 1, fret: 15 }, // E string (28) + 15 frets = 43
 //   { string: 2, fret: 10 }, // A string (33) + 10 frets = 43
@@ -916,8 +966,9 @@ getAllPositionsForPitch(43, 4)
 ```
 
 **Example 3: MIDI Note 23 (B0) on 5-string bass**
+
 ```typescript
-getAllPositionsForPitch(23, 5)
+getAllPositionsForPitch(23, 5);
 // Returns: [
 //   { string: 1, fret: 0 }   // B string (23) + 0 frets = 23 (open)
 // ]
@@ -925,8 +976,9 @@ getAllPositionsForPitch(23, 5)
 ```
 
 **Example 4: Edge case - High note on 4-string**
+
 ```typescript
-getAllPositionsForPitch(67, 4)
+getAllPositionsForPitch(67, 4);
 // Returns: [
 //   { string: 4, fret: 24 }  // G string (43) + 24 frets = 67 (highest fret)
 // ]
@@ -947,6 +999,7 @@ try {
 ```
 
 **Handler in MidiParserService:**
+
 ```typescript
 function handleOutOfRangeNote(midiNote: number, bassType: 4 | 5 | 6): number {
   const tuning = TuningConfiguration.getTuning(bassType);
@@ -966,8 +1019,8 @@ function handleOutOfRangeNote(midiNote: number, bassType: 4 | 5 | 6): number {
   if (transposedNote !== midiNote) {
     this.logger.warn(
       `MIDI note ${midiNote} (${TuningConfiguration.getNoteName(midiNote)}) ` +
-      `was transposed to ${transposedNote} (${TuningConfiguration.getNoteName(transposedNote)}) ` +
-      `to fit ${bassType}-string bass range`
+        `was transposed to ${transposedNote} (${TuningConfiguration.getNoteName(transposedNote)}) ` +
+        `to fit ${bassType}-string bass range`,
     );
   }
 
@@ -1016,7 +1069,7 @@ function detectPolyphony(midiTrack: MidiTrack): boolean {
 if (detectPolyphony(midiTrack)) {
   throw new Error(
     'POLYPHONIC_MIDI: This MIDI file contains chords or overlapping notes. ' +
-    'Only monophonic basslines are supported. Please export only the bass track.'
+      'Only monophonic basslines are supported. Please export only the bass track.',
   );
 }
 ```
@@ -1039,7 +1092,7 @@ interface Position {
  */
 function calculateTransitionCost(
   prevPosition: Position,
-  currentPosition: Position
+  currentPosition: Position,
 ): number {
   let cost = 0;
 
@@ -1079,9 +1132,10 @@ function calculateTransitionCost(
 #### Position Scoring Examples
 
 **Example 1: Good transition (low cost)**
+
 ```typescript
-const prev = { string: 2, fret: 0 };  // Open A
-const curr = { string: 2, fret: 2 };  // B on A string
+const prev = { string: 2, fret: 0 }; // Open A
+const curr = { string: 2, fret: 2 }; // B on A string
 
 calculateTransitionCost(prev, curr);
 // = 2*2.0 (fret distance) - 1.0 (hand position) - 0.3 (same string)
@@ -1089,9 +1143,10 @@ calculateTransitionCost(prev, curr);
 ```
 
 **Example 2: Large jump (high cost)**
+
 ```typescript
-const prev = { string: 2, fret: 0 };   // Open A
-const curr = { string: 4, fret: 12 };  // C on G string, 12th fret
+const prev = { string: 2, fret: 0 }; // Open A
+const curr = { string: 4, fret: 12 }; // C on G string, 12th fret
 
 calculateTransitionCost(prev, curr);
 // = 12*2.0 (fret distance) + 0.5 (string change)
@@ -1099,9 +1154,10 @@ calculateTransitionCost(prev, curr);
 ```
 
 **Example 3: Open string (low cost bonus)**
+
 ```typescript
-const prev = { string: 2, fret: 2 };  // B on A string
-const curr = { string: 3, fret: 0 };  // Open D
+const prev = { string: 2, fret: 2 }; // B on A string
+const curr = { string: 3, fret: 0 }; // Open D
 
 calculateTransitionCost(prev, curr);
 // = 2*2.0 (fret distance) + 0.5 (string change) - 0.5 (open string)
@@ -1115,7 +1171,7 @@ After the DP algorithm selects the best position, assign a confidence score:
 ```typescript
 function calculateConfidence(
   bestCost: number,
-  alternativePositions: Array<{ position: Position; cost: number }>
+  alternativePositions: Array<{ position: Position; cost: number }>,
 ): 'high' | 'medium' | 'low' {
   if (alternativePositions.length === 0) {
     return 'high'; // Only one position possible
@@ -1158,8 +1214,8 @@ describe('FretboardMapperService - getAllPositionsForPitch', () => {
       const positions = service.getAllPositionsForPitch(33, 4);
 
       expect(positions).toHaveLength(2);
-      expect(positions).toContainEqual({ string: 1, fret: 5 });  // E string
-      expect(positions).toContainEqual({ string: 2, fret: 0 });  // A string (open)
+      expect(positions).toContainEqual({ string: 1, fret: 5 }); // E string
+      expect(positions).toContainEqual({ string: 2, fret: 0 }); // A string (open)
     });
 
     it('should return correct positions for G2 (MIDI 43)', () => {
@@ -1227,7 +1283,7 @@ describe('FretboardMapperService - getAllPositionsForPitch', () => {
     it('should never return string 0 (common bug)', () => {
       for (let midiNote = 28; midiNote <= 67; midiNote++) {
         const positions = service.getAllPositionsForPitch(midiNote, 4);
-        positions.forEach(pos => {
+        positions.forEach((pos) => {
           expect(pos.string).toBeGreaterThan(0);
         });
       }
@@ -1236,7 +1292,7 @@ describe('FretboardMapperService - getAllPositionsForPitch', () => {
     it('should never return fret > 24', () => {
       for (let midiNote = 28; midiNote <= 67; midiNote++) {
         const positions = service.getAllPositionsForPitch(midiNote, 4);
-        positions.forEach(pos => {
+        positions.forEach((pos) => {
           expect(pos.fret).toBeLessThanOrEqual(24);
         });
       }
@@ -1263,11 +1319,9 @@ for (const note of measureNotes) {
   const possiblePositions = this.getAllPositionsForPitch(note.pitch, bassType);
 
   // Step 2: Score each position based on previous position
-  const scoredPositions = possiblePositions.map(pos => ({
+  const scoredPositions = possiblePositions.map((pos) => ({
     position: pos,
-    cost: previousPosition
-      ? calculateTransitionCost(previousPosition, pos)
-      : 0 // First note has no cost
+    cost: previousPosition ? calculateTransitionCost(previousPosition, pos) : 0, // First note has no cost
   }));
 
   // Step 3: Pick best position (minimum cost)
@@ -1277,7 +1331,7 @@ for (const note of measureNotes) {
   // Step 4: Calculate confidence and alternatives
   const confidence = calculateConfidence(
     scoredPositions[0].cost,
-    scoredPositions.slice(1, 4) // Top 3 alternatives
+    scoredPositions.slice(1, 4), // Top 3 alternatives
   );
 
   // Step 5: Add to output
@@ -1286,7 +1340,7 @@ for (const note of measureNotes) {
     string: bestPosition.string,
     fret: bestPosition.fret,
     confidence: confidence,
-    alternatives: scoredPositions.slice(1, 4).map(sp => sp.position)
+    alternatives: scoredPositions.slice(1, 4).map((sp) => sp.position),
   });
 
   previousPosition = bestPosition;
@@ -1378,15 +1432,21 @@ interface MidiTempoEvent {
 // From libs/contracts/src/types/musical-timing.ts
 
 export interface MusicalPosition {
-  measure: number;      // 1-based (measure 1, 2, 3...)
-  beat: number;         // 1-based (beat 1, 2, 3, 4 in 4/4)
-  subdivision: number;  // 0-based (0, 1, 2, 3 for sixteenth notes)
+  measure: number; // 1-based (measure 1, 2, 3...)
+  beat: number; // 1-based (beat 1, 2, 3, 4 in 4/4)
+  subdivision: number; // 0-based (0, 1, 2, 3 for sixteenth notes)
 }
 
 export type NoteDuration =
-  | 'whole' | 'half' | 'quarter' | 'eighth' | 'sixteenth'
-  | 'dotted-quarter' | 'dotted-eighth'
-  | 'triplet-quarter' | 'triplet-eighth'
+  | 'whole'
+  | 'half'
+  | 'quarter'
+  | 'eighth'
+  | 'sixteenth'
+  | 'dotted-quarter'
+  | 'dotted-eighth'
+  | 'triplet-quarter'
+  | 'triplet-eighth'
   | 'tied';
 
 export const DURATION_BEAT_VALUES: Record<NoteDuration, number> = {
@@ -1397,8 +1457,8 @@ export const DURATION_BEAT_VALUES: Record<NoteDuration, number> = {
   sixteenth: 0.25,
   'dotted-quarter': 1.5,
   'dotted-eighth': 0.75,
-  'triplet-quarter': 2/3,
-  'triplet-eighth': 1/3,
+  'triplet-quarter': 2 / 3,
+  'triplet-eighth': 1 / 3,
   // ... more
 };
 ```
@@ -1443,7 +1503,7 @@ function ticksToMilliseconds(ticks: number, ppqn: number, bpm: number): number {
 function ticksToMusicalPosition(
   ticks: number,
   ppqn: number,
-  timeSignature: { numerator: number; denominator: number }
+  timeSignature: { numerator: number; denominator: number },
 ): MusicalPosition {
   // Step 1: Convert ticks to quarter notes
   const quarterNotes = ticks / ppqn;
@@ -1472,17 +1532,17 @@ function ticksToMusicalPosition(
 }
 
 // Example 1: First note (tick 0)
-ticksToMusicalPosition(0, 480, {numerator: 4, denominator: 4})
+ticksToMusicalPosition(0, 480, { numerator: 4, denominator: 4 });
 // Returns: {measure: 1, beat: 1, subdivision: 0}
 
 // Example 2: Quarter note on beat 2 (tick 480)
-ticksToMusicalPosition(480, 480, {numerator: 4, denominator: 4})
+ticksToMusicalPosition(480, 480, { numerator: 4, denominator: 4 });
 // quarterNotes = 1
 // totalBeats = 1
 // measure = 1, beat = 2, subdivision = 0
 
 // Example 3: Start of measure 2 (tick 1920)
-ticksToMusicalPosition(1920, 480, {numerator: 4, denominator: 4})
+ticksToMusicalPosition(1920, 480, { numerator: 4, denominator: 4 });
 // quarterNotes = 4
 // totalBeats = 4
 // measure = 2, beat = 1, subdivision = 0
@@ -1498,10 +1558,7 @@ ticksToMusicalPosition(1920, 480, {numerator: 4, denominator: 4})
  * @param ppqn - Pulses per quarter note
  * @returns Closest NoteDuration type
  */
-function quantizeDuration(
-  durationTicks: number,
-  ppqn: number
-): NoteDuration {
+function quantizeDuration(durationTicks: number, ppqn: number): NoteDuration {
   // Convert to quarter notes
   const quarterNotes = durationTicks / ppqn;
 
@@ -1516,9 +1573,9 @@ function quantizeDuration(
     { type: 'dotted-quarter', quarters: 1.5 },
     { type: 'quarter', quarters: 1 },
     { type: 'dotted-eighth', quarters: 0.75 },
-    { type: 'triplet-quarter', quarters: 2/3 },
+    { type: 'triplet-quarter', quarters: 2 / 3 },
     { type: 'eighth', quarters: 0.5 },
-    { type: 'triplet-eighth', quarters: 1/3 },
+    { type: 'triplet-eighth', quarters: 1 / 3 },
     { type: 'sixteenth', quarters: 0.25 },
   ];
 
@@ -1540,7 +1597,7 @@ function quantizeDuration(
   if (error > closestQuarters * tolerance) {
     console.warn(
       `Duration quantization: ${quarterNotes} quarter notes quantized to ` +
-      `${closestDuration} (${closestQuarters} quarters), error: ${(error/closestQuarters*100).toFixed(1)}%`
+        `${closestDuration} (${closestQuarters} quarters), error: ${((error / closestQuarters) * 100).toFixed(1)}%`,
     );
   }
 
@@ -1548,16 +1605,16 @@ function quantizeDuration(
 }
 
 // Example 1: Exact quarter note (480 ticks at PPQN=480)
-quantizeDuration(480, 480) // Returns: 'quarter'
+quantizeDuration(480, 480); // Returns: 'quarter'
 
 // Example 2: Dotted quarter (720 ticks)
-quantizeDuration(720, 480) // Returns: 'dotted-quarter'
+quantizeDuration(720, 480); // Returns: 'dotted-quarter'
 
 // Example 3: Eighth note (240 ticks)
-quantizeDuration(240, 480) // Returns: 'eighth'
+quantizeDuration(240, 480); // Returns: 'eighth'
 
 // Example 4: Triplet eighth (~160 ticks)
-quantizeDuration(160, 480) // Returns: 'triplet-eighth'
+quantizeDuration(160, 480); // Returns: 'triplet-eighth'
 ```
 
 ### Complete Note Timing Conversion
@@ -1567,22 +1624,22 @@ quantizeDuration(160, 480) // Returns: 'triplet-eighth'
  * Convert MIDI note event to ExerciseNote with both timing formats
  */
 interface MidiNoteEvent {
-  pitch: number;          // MIDI note number
-  velocity: number;       // 0-127
-  startTicks: number;     // Absolute ticks from start
-  durationTicks: number;  // Duration in ticks
+  pitch: number; // MIDI note number
+  velocity: number; // 0-127
+  startTicks: number; // Absolute ticks from start
+  durationTicks: number; // Duration in ticks
 }
 
 interface ConversionContext {
-  ppqn: number;                                      // From MIDI header
-  bpm: number;                                       // From exercise
-  timeSignature: {numerator: number, denominator: number};
-  totalBars: number;                                 // From exercise
+  ppqn: number; // From MIDI header
+  bpm: number; // From exercise
+  timeSignature: { numerator: number; denominator: number };
+  totalBars: number; // From exercise
 }
 
 function convertMidiNoteToExerciseTiming(
   midiNote: MidiNoteEvent,
-  context: ConversionContext
+  context: ConversionContext,
 ): {
   // Legacy timing (milliseconds) - DEPRECATED but required for compatibility
   timestamp: number;
@@ -1596,26 +1653,23 @@ function convertMidiNoteToExerciseTiming(
   const timestamp = ticksToMilliseconds(
     midiNote.startTicks,
     context.ppqn,
-    context.bpm
+    context.bpm,
   );
 
   const duration = ticksToMilliseconds(
     midiNote.durationTicks,
     context.ppqn,
-    context.bpm
+    context.bpm,
   );
 
   // === MODERN TIMING (Musical) ===
   const position = ticksToMusicalPosition(
     midiNote.startTicks,
     context.ppqn,
-    context.timeSignature
+    context.timeSignature,
   );
 
-  const noteDuration = quantizeDuration(
-    midiNote.durationTicks,
-    context.ppqn
-  );
+  const noteDuration = quantizeDuration(midiNote.durationTicks, context.ppqn);
 
   return {
     timestamp,
@@ -1733,7 +1787,7 @@ async parseMidi(exercise: Exercise): Promise<ParsedMeasure[]> {
  */
 function detectPickupMeasure(
   firstNoteStartTicks: number,
-  ticksPerMeasure: number
+  ticksPerMeasure: number,
 ): { hasPickup: boolean; pickupTicks: number } {
   // If first note doesn't start at tick 0, might be a pickup
   if (firstNoteStartTicks > 0 && firstNoteStartTicks < ticksPerMeasure) {
@@ -1755,15 +1809,17 @@ function detectPickupMeasure(
  * For MVP: Use constant BPM from exercise
  * Future: Support tempo map from MIDI tempo events
  */
-function extractTempoMap(midiFile: Midi): Array<{ticks: number, bpm: number}> {
+function extractTempoMap(
+  midiFile: Midi,
+): Array<{ ticks: number; bpm: number }> {
   // @tonejs/midi provides tempo events
   const tempoEvents = midiFile.header.tempos || [];
 
   if (tempoEvents.length > 1) {
     this.logger.warn(
       `MIDI file contains ${tempoEvents.length} tempo changes. ` +
-      `Using constant BPM ${this.exercise.bpm} for now. ` +
-      `Tempo changes are not yet supported.`
+        `Using constant BPM ${this.exercise.bpm} for now. ` +
+        `Tempo changes are not yet supported.`,
     );
   }
 
@@ -1778,20 +1834,23 @@ function extractTempoMap(midiFile: Midi): Array<{ticks: number, bpm: number}> {
 /**
  * Handle time signatures like 5/4, 7/8
  */
-function validateTimeSignature(ts: {numerator: number, denominator: number}): void {
+function validateTimeSignature(ts: {
+  numerator: number;
+  denominator: number;
+}): void {
   const validDenominators = [2, 4, 8, 16];
 
   if (!validDenominators.includes(ts.denominator)) {
     throw new Error(
       `Unsupported time signature denominator: ${ts.denominator}. ` +
-      `Supported: ${validDenominators.join(', ')}`
+        `Supported: ${validDenominators.join(', ')}`,
     );
   }
 
   if (ts.numerator < 1 || ts.numerator > 12) {
     throw new Error(
       `Invalid time signature numerator: ${ts.numerator}. ` +
-      `Must be between 1 and 12.`
+        `Must be between 1 and 12.`,
     );
   }
 }
@@ -1880,7 +1939,9 @@ describe('MidiParserService - Musical Timing Conversion', () => {
     it('should warn on large quantization error', () => {
       const consoleSpy = jest.spyOn(console, 'warn');
       quantizeDuration(350, 480); // Between eighth and quarter
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('quantization'));
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('quantization'),
+      );
     });
   });
 
@@ -1900,7 +1961,7 @@ describe('MidiParserService - Musical Timing Conversion', () => {
           startTicks: 480,
           durationTicks: 480,
         },
-        context
+        context,
       );
 
       // Legacy timing
@@ -1987,10 +2048,10 @@ export enum MidiConversionErrorCode {
  */
 interface MidiConversionError {
   code: MidiConversionErrorCode;
-  message: string;              // User-friendly message
-  details: ErrorDetails;        // Technical details
-  recovery: RecoveryStrategy;   // How to fix the issue
-  correlationId: string;        // For debugging
+  message: string; // User-friendly message
+  details: ErrorDetails; // Technical details
+  recovery: RecoveryStrategy; // How to fix the issue
+  correlationId: string; // For debugging
 }
 
 interface ErrorDetails {
@@ -2006,9 +2067,9 @@ interface ErrorDetails {
 
 interface RecoveryStrategy {
   action: 'retry' | 'fix_data' | 'contact_support' | 'use_manual';
-  steps: string[];              // Actionable steps for user
-  canAutoFix?: boolean;         // Whether system can auto-fix
-  autoFixDescription?: string;  // What auto-fix will do
+  steps: string[]; // Actionable steps for user
+  canAutoFix?: boolean; // Whether system can auto-fix
+  autoFixDescription?: string; // What auto-fix will do
 }
 ```
 
@@ -2017,6 +2078,7 @@ interface RecoveryStrategy {
 #### 1. MIDI File Errors
 
 ##### MIDI_NOT_FOUND
+
 ```typescript
 {
   code: 'MIDI_NOT_FOUND',
@@ -2038,6 +2100,7 @@ interface RecoveryStrategy {
 ```
 
 ##### MIDI_INVALID_FORMAT
+
 ```typescript
 {
   code: 'MIDI_INVALID_FORMAT',
@@ -2061,6 +2124,7 @@ interface RecoveryStrategy {
 ```
 
 ##### MIDI_POLYPHONIC
+
 ```typescript
 {
   code: 'MIDI_POLYPHONIC',
@@ -2088,6 +2152,7 @@ interface RecoveryStrategy {
 ```
 
 ##### MIDI_EMPTY / MIDI_NO_NOTES
+
 ```typescript
 {
   code: 'MIDI_NO_NOTES',
@@ -2114,6 +2179,7 @@ interface RecoveryStrategy {
 #### 2. Pitch/Range Errors
 
 ##### NOTE_OUT_OF_RANGE
+
 ```typescript
 {
   code: 'NOTE_OUT_OF_RANGE',
@@ -2141,6 +2207,7 @@ interface RecoveryStrategy {
 ```
 
 ##### NO_VALID_POSITION
+
 ```typescript
 {
   code: 'NO_VALID_POSITION',
@@ -2171,6 +2238,7 @@ interface RecoveryStrategy {
 #### 3. Timing Errors
 
 ##### INVALID_TIME_SIGNATURE
+
 ```typescript
 {
   code: 'INVALID_TIME_SIGNATURE',
@@ -2193,6 +2261,7 @@ interface RecoveryStrategy {
 ```
 
 ##### MEASURE_MISMATCH
+
 ```typescript
 {
   code: 'MEASURE_MISMATCH',
@@ -2221,6 +2290,7 @@ interface RecoveryStrategy {
 #### 4. Anchor Errors
 
 ##### MISSING_ANCHORS
+
 ```typescript
 {
   code: 'MISSING_ANCHORS',
@@ -2243,6 +2313,7 @@ interface RecoveryStrategy {
 ```
 
 ##### INVALID_ANCHOR_POSITION
+
 ```typescript
 {
   code: 'INVALID_ANCHOR_POSITION',
@@ -2268,6 +2339,7 @@ interface RecoveryStrategy {
 #### 5. Exercise Data Errors
 
 ##### MISSING_REQUIRED_FIELD
+
 ```typescript
 {
   code: 'MISSING_REQUIRED_FIELD',
@@ -2291,6 +2363,7 @@ interface RecoveryStrategy {
 ```
 
 ##### INVALID_BASS_TYPE
+
 ```typescript
 {
   code: 'INVALID_BASS_TYPE',
@@ -2313,6 +2386,7 @@ interface RecoveryStrategy {
 #### 6. Algorithm Errors
 
 ##### PLAYABILITY_TOO_LOW
+
 ```typescript
 {
   code: 'PLAYABILITY_TOO_LOW',
@@ -2357,7 +2431,7 @@ export class MidiConversionErrorHandler {
   createError(
     code: MidiConversionErrorCode,
     details: ErrorDetails,
-    correlationId: string
+    correlationId: string,
   ): MidiConversionError {
     const config = ERROR_CONFIGURATIONS[code];
 
@@ -2384,7 +2458,7 @@ export class MidiConversionErrorHandler {
    */
   async attemptAutoFix(
     error: MidiConversionError,
-    context: any
+    context: any,
   ): Promise<{ fixed: boolean; result?: any }> {
     const handler = AUTO_FIX_HANDLERS[error.code];
 
@@ -2437,7 +2511,7 @@ const AUTO_FIX_HANDLERS: Record<
     const { outOfRangeNotes, bassType } = details;
     const tuning = TuningConfiguration.getTuning(bassType);
 
-    const transposed = outOfRangeNotes.map(note => {
+    const transposed = outOfRangeNotes.map((note) => {
       let pitch = note.pitch;
 
       // Transpose up if too low
@@ -2611,7 +2685,7 @@ describe('MidiConversionErrorHandler', () => {
       const error = errorHandler.createError(
         MidiConversionErrorCode.MIDI_POLYPHONIC,
         { simultaneousNotes: [] },
-        'corr-123'
+        'corr-123',
       );
 
       expect(error.code).toBe('MIDI_POLYPHONIC');
@@ -2627,9 +2701,9 @@ describe('MidiConversionErrorHandler', () => {
         MidiConversionErrorCode.NOTE_OUT_OF_RANGE,
         {
           outOfRangeNotes: [{ pitch: 22, name: 'A#0' }],
-          bassType: 4
+          bassType: 4,
         },
-        'corr-123'
+        'corr-123',
       );
 
       const result = await errorHandler.attemptAutoFix(error, {});
@@ -2642,11 +2716,9 @@ describe('MidiConversionErrorHandler', () => {
       const error = errorHandler.createError(
         MidiConversionErrorCode.MIDI_POLYPHONIC,
         {
-          simultaneousNotes: [
-            { measure: 1, beat: 1, notes: [33, 36, 40] }
-          ]
+          simultaneousNotes: [{ measure: 1, beat: 1, notes: [33, 36, 40] }],
         },
-        'corr-123'
+        'corr-123',
       );
 
       const result = await errorHandler.attemptAutoFix(error, {});
@@ -2658,7 +2730,7 @@ describe('MidiConversionErrorHandler', () => {
       const error = errorHandler.createError(
         MidiConversionErrorCode.MISSING_ANCHORS,
         { missingMeasures: [3, 4] },
-        'corr-123'
+        'corr-123',
       );
 
       const result = await errorHandler.attemptAutoFix(error, {});
@@ -2693,10 +2765,10 @@ describe('MidiConversionErrorHandler', () => {
 interface ExerciseNote {
   id: string;
   timestamp: number;
-  string: number;      // 1-6 ← WE POPULATE THIS!
-  fret: number;        // 0-24 ← WE POPULATE THIS!
+  string: number; // 1-6 ← WE POPULATE THIS!
+  fret: number; // 0-24 ← WE POPULATE THIS!
   duration: number;
-  note: string;        // "E1", "A1", etc.
+  note: string; // "E1", "A1", etc.
   color: string;
   techniques?: string[];
   position?: number;
@@ -2706,25 +2778,25 @@ interface ExerciseNote {
 
 // Parsed MIDI measure from backend
 interface ParsedMeasure {
-  measureNumber: number;    // 1, 2, 3, 4, ...
-  notes: MidiNote[];        // Raw MIDI notes in this measure
-  startTime: number;        // Measure start in milliseconds
-  endTime: number;          // Measure end in milliseconds
+  measureNumber: number; // 1, 2, 3, 4, ...
+  notes: MidiNote[]; // Raw MIDI notes in this measure
+  startTime: number; // Measure start in milliseconds
+  endTime: number; // Measure end in milliseconds
 }
 
 interface MidiNote {
-  pitch: number;            // MIDI note number (0-127)
-  velocity: number;         // 0-127
-  timestamp: number;        // Milliseconds from start
-  duration: number;         // Milliseconds
-  name: string;            // "E1", "A1", etc.
+  pitch: number; // MIDI note number (0-127)
+  velocity: number; // 0-127
+  timestamp: number; // Milliseconds from start
+  duration: number; // Milliseconds
+  name: string; // "E1", "A1", etc.
 }
 
 // Admin's anchor for a measure
 interface MeasureAnchor {
-  measureNumber: number;    // Which measure
-  string: 1 | 2 | 3 | 4 | 5 | 6;  // Which string
-  fret: number;             // 0-24
+  measureNumber: number; // Which measure
+  string: 1 | 2 | 3 | 4 | 5 | 6; // Which string
+  fret: number; // 0-24
 }
 
 // Fretboard position
@@ -2736,9 +2808,9 @@ interface FretboardPosition {
 // Generated note with metadata
 interface GeneratedExerciseNote extends ExerciseNote {
   confidence: 'high' | 'medium' | 'low';
-  alternatives: FretboardPosition[];  // Top 3 alternative positions
-  warnings: string[];                 // "Large stretch", "Position shift"
-  measureNumber: number;              // Which measure this note belongs to
+  alternatives: FretboardPosition[]; // Top 3 alternative positions
+  warnings: string[]; // "Large stretch", "Position shift"
+  measureNumber: number; // Which measure this note belongs to
 }
 
 // ===== API REQUEST/RESPONSE DTOs =====
@@ -2757,18 +2829,18 @@ class ParseMidiResponseDto {
 // Convert MIDI request
 class ConvertMidiRequestDto {
   anchors: MeasureAnchor[];
-  bassType: 4 | 5 | 6;  // Number of strings on bass
+  bassType: 4 | 5 | 6; // Number of strings on bass
 }
 
 class ConvertMidiResponseDto {
   notes: GeneratedExerciseNote[];
-  playabilityScore: number;         // 0-100
+  playabilityScore: number; // 0-100
   statistics: {
     totalNotes: number;
     lowConfidenceCount: number;
     warningCount: number;
     positionShifts: number;
-    averageHandSpan: number;        // Average frets covered
+    averageHandSpan: number; // Average frets covered
   };
 }
 ```
@@ -2784,6 +2856,7 @@ class ConvertMidiResponseDto {
    - Set anchor cost = 0
 
 2. **For Each Subsequent Note in Measure**
+
    ```
    For note N at position i:
      1. Get all valid positions for pitch N on bass type (4/5/6 string)
@@ -2832,6 +2905,7 @@ class ConvertMidiResponseDto {
 ### File Structure
 
 **New Backend Files:**
+
 ```
 apps/backend/src/
 ├── domains/exercises/
@@ -2845,6 +2919,7 @@ apps/backend/src/
 ```
 
 **New Frontend Files:**
+
 ```
 apps/frontend/src/
 ├── domains/admin/
@@ -2860,6 +2935,7 @@ apps/frontend/src/
 ```
 
 **New Shared Types:**
+
 ```
 libs/contracts/src/
 └── types/
@@ -2869,6 +2945,7 @@ libs/contracts/src/
 ### Database Schema Changes
 
 **NONE! All fields already exist:**
+
 - `exercises.bassline_midi_url` ✅
 - `exercises.notes` (JSONB) ✅
 - `exercises.total_bars` ✅
@@ -3013,6 +3090,7 @@ Errors:
 **Scenario:** Admin wants to create an exercise for "Come Together" by The Beatles (verse bassline)
 
 ### Step 1: Create Exercise & Upload MIDI
+
 1. Admin opens `/admin/tutorials/come-together/edit`
 2. Clicks "Add Exercise"
 3. Fills out ExerciseFormModal:
@@ -3023,10 +3101,12 @@ Errors:
    - Uploads `come-together-verse.mid` → `basslineMidiUrl` saved
 
 ### Step 2: Convert from MIDI
+
 1. "Convert from MIDI" button appears
 2. Admin clicks → `MidiConversionWizard` modal opens
 
 **Wizard Step 1: Parse MIDI (auto)**
+
 ```
 ✓ Parsing MIDI file...
 ✓ Found 16 notes across 4 measures
@@ -3034,6 +3114,7 @@ Errors:
 ```
 
 **Wizard Step 2: Anchor Selection**
+
 ```
 Set the first note position for each measure:
 
@@ -3055,6 +3136,7 @@ Progress: 4/4 measures anchored ✓
 ```
 
 **Wizard Step 3: Convert (auto)**
+
 ```
 ✓ Generating fretboard positions...
 ✓ 16 notes mapped
@@ -3063,6 +3145,7 @@ Progress: 4/4 measures anchored ✓
 ```
 
 **Wizard Step 4: Review & Refine**
+
 ```
 Note List Editor:
 
@@ -3086,6 +3169,7 @@ Admin reviews note #3 (yellow confidence):
 ```
 
 ### Step 3: Save Exercise
+
 1. Admin clicks "Save Notes"
 2. Wizard closes, `exercise.notes` now populated with 16 `ExerciseNote` objects
 3. Admin clicks "Save Exercise" in ExerciseFormModal
@@ -3194,7 +3278,6 @@ Admin reviews note #3 (yellow confidence):
 
 ---
 
-
 ---
 
 ## Next Steps: Story 4.4 - FAANG-Level Workflow Refactor
@@ -3206,6 +3289,7 @@ Admin reviews note #3 (yellow confidence):
 **See**: [📋 Story 4.4 - FAANG-Level MIDI Workflow Architecture Refactor](./story-4.4-faang-midi-workflow-refactor.md)
 
 **Benefits**:
+
 - ✅ 60% fewer clicks (5 → 2)
 - ✅ 3x faster (<1s vs ~3s latency)
 - ✅ Auto-save (zero data loss)

@@ -21,6 +21,7 @@ Request → Middleware 1 → Middleware 2 → Controller → Response
 **Location**: `/apps/backend/src/shared/middleware/correlation.middleware.ts`
 
 **What it does**:
+
 - Generates or extracts correlation ID
 - Adds it to request object
 - Adds it to response headers
@@ -35,6 +36,7 @@ Request → Middleware 1 → Middleware 2 → Controller → Response
 **Location**: `/apps/backend/src/shared/middleware/sanitize.middleware.ts`
 
 **What it does**:
+
 - Removes SQL injection attempts
 - Escapes MongoDB operators
 - Blocks XSS attempts
@@ -48,10 +50,12 @@ Request → Middleware 1 → Middleware 2 → Controller → Response
 **Purpose**: Prevents abuse by limiting requests
 
 **Types**:
+
 - **Global**: Via `@fastify/rate-limit` (100 req/15 min)
 - **Endpoint-specific**: Via decorators and guards
 
-**Applied**: 
+**Applied**:
+
 - Global: All routes
 - Specific: Using decorators on controllers
 
@@ -63,9 +67,9 @@ Middleware runs in the order it's applied:
 
 ```typescript
 // In main.ts
-app.use(correlationMiddleware);  // Runs 1st
-app.use(sanitizeMiddleware);     // Runs 2nd
-app.use(authMiddleware);         // Runs 3rd
+app.use(correlationMiddleware); // Runs 1st
+app.use(sanitizeMiddleware); // Runs 2nd
+app.use(authMiddleware); // Runs 3rd
 ```
 
 ### Request Flow
@@ -74,7 +78,7 @@ app.use(authMiddleware);         // Runs 3rd
 // 1. Correlation Middleware adds ID
 req.correlationId = '123-456-789';
 
-// 2. Sanitize Middleware cleans input  
+// 2. Sanitize Middleware cleans input
 req.body.name = sanitize(req.body.name);
 
 // 3. Your controller gets clean, tracked request
@@ -98,14 +102,14 @@ export class TimingMiddleware implements NestMiddleware {
   use(req: FastifyRequest, res: FastifyReply, next: () => void) {
     // Record start time
     const start = Date.now();
-    
+
     // Add cleanup that runs after response
     res.addHook('onSend', async (request, reply, payload) => {
       const duration = Date.now() - start;
       reply.header('X-Response-Time', `${duration}ms`);
       return payload;
     });
-    
+
     // Continue to next middleware
     next();
   }
@@ -119,18 +123,18 @@ export class TimingMiddleware implements NestMiddleware {
 export class AuditMiddleware implements NestMiddleware {
   constructor(
     private auditService: AuditService,
-    private logger: Logger
+    private logger: Logger,
   ) {}
-  
+
   use(req: FastifyRequest, res: FastifyReply, next: () => void) {
     // Log request
     this.auditService.logRequest({
       path: req.url,
       method: req.method,
       ip: req.ip,
-      timestamp: new Date()
+      timestamp: new Date(),
     });
-    
+
     next();
   }
 }
@@ -141,10 +145,11 @@ export class AuditMiddleware implements NestMiddleware {
 ### Global Middleware (All Routes)
 
 In `main.ts`:
+
 ```typescript
 const app = await NestFactory.create<NestFastifyApplication>(
   AppModule,
-  new FastifyAdapter()
+  new FastifyAdapter(),
 );
 
 // Apply globally
@@ -155,13 +160,12 @@ app.use(new SanitizeMiddleware().use);
 ### Module-Specific Middleware
 
 In a module:
+
 ```typescript
 export class UserModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(AuthMiddleware)
-      .forRoutes(UserController);
-      
+    consumer.apply(AuthMiddleware).forRoutes(UserController);
+
     consumer
       .apply(RateLimitMiddleware)
       .forRoutes({ path: 'users/upload', method: RequestMethod.POST });
@@ -172,6 +176,7 @@ export class UserModule implements NestModule {
 ### Route-Specific Middleware
 
 Using guards (recommended for auth/permissions):
+
 ```typescript
 @Controller('admin')
 @UseGuards(AuthGuard, AdminGuard)
@@ -183,18 +188,21 @@ export class AdminController {
 ## Middleware vs Guards vs Interceptors
 
 ### Use Middleware For:
+
 - Request/Response modification
 - Logging and metrics
 - CORS, compression, parsing
 - Adding data to request
 
 ### Use Guards For:
+
 - Authentication checks
 - Authorization/permissions
 - Conditional route access
 - Throwing 401/403 errors
 
 ### Use Interceptors For:
+
 - Response transformation
 - Response caching
 - Exception mapping
@@ -212,10 +220,10 @@ export class ConditionalMiddleware implements NestMiddleware {
     if (process.env.NODE_ENV !== 'production') {
       return next();
     }
-    
+
     // Production-only logic
     // ...
-    
+
     next();
   }
 }
@@ -231,7 +239,7 @@ export class AsyncMiddleware implements NestMiddleware {
       // Async operation
       const data = await this.fetchSomeData();
       (req as any).extraData = data;
-      
+
       next();
     } catch (error) {
       // Handle error
@@ -253,12 +261,12 @@ export class ErrorMiddleware implements NestMiddleware {
       this.logger.error('Request failed', {
         error: error.message,
         path: req.url,
-        method: req.method
+        method: req.method,
       });
-      
+
       res.code(500).send({
         error: 'Internal Server Error',
-        correlationId: (req as any).correlationId
+        correlationId: (req as any).correlationId,
       });
     }
   }
@@ -275,38 +283,30 @@ describe('CorrelationMiddleware', () => {
   let mockReq: Partial<FastifyRequest>;
   let mockRes: Partial<FastifyReply>;
   let nextFn: jest.Mock;
-  
+
   beforeEach(() => {
     middleware = new CorrelationMiddleware();
     mockReq = { headers: {} };
     mockRes = { header: jest.fn() };
     nextFn = jest.fn();
   });
-  
+
   it('should add correlation ID to request', () => {
-    middleware.use(
-      mockReq as FastifyRequest,
-      mockRes as FastifyReply,
-      nextFn
-    );
-    
+    middleware.use(mockReq as FastifyRequest, mockRes as FastifyReply, nextFn);
+
     expect(mockReq.correlationId).toBeDefined();
     expect(mockRes.header).toHaveBeenCalledWith(
       'x-correlation-id',
-      expect.any(String)
+      expect.any(String),
     );
     expect(nextFn).toHaveBeenCalled();
   });
-  
+
   it('should use existing correlation ID', () => {
     mockReq.headers['x-correlation-id'] = 'existing-id';
-    
-    middleware.use(
-      mockReq as FastifyRequest,
-      mockRes as FastifyReply,
-      nextFn
-    );
-    
+
+    middleware.use(mockReq as FastifyRequest, mockRes as FastifyReply, nextFn);
+
     expect(mockReq.correlationId).toBe('existing-id');
   });
 });
@@ -317,33 +317,33 @@ describe('CorrelationMiddleware', () => {
 ```typescript
 describe('Middleware Integration', () => {
   let app: INestApplication;
-  
+
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
-    
+
     app = moduleRef.createNestApplication();
     await app.init();
   });
-  
+
   it('should include correlation ID in response', async () => {
     const response = await request(app.getHttpServer())
       .get('/health')
       .expect(200);
-      
+
     expect(response.headers['x-correlation-id']).toBeDefined();
   });
-  
+
   it('should sanitize malicious input', async () => {
     const response = await request(app.getHttpServer())
       .post('/api/users')
       .send({
         name: "'; DROP TABLE users; --",
-        email: 'test@example.com'
+        email: 'test@example.com',
       })
       .expect(201);
-      
+
     // Name should be sanitized
     expect(response.body.name).not.toContain('DROP TABLE');
   });
@@ -394,7 +394,7 @@ use(req, res, next) {
   if (req.url === '/health') {
     return next();
   }
-  
+
   // Normal processing
   // ...
   next();
@@ -426,15 +426,15 @@ use(req, res, next) {
 ```typescript
 // ❌ Bad - Reveals internal info
 if (!authorized) {
-  res.code(403).send({ 
-    error: 'User lacks admin_write permission on resource /api/users/123' 
+  res.code(403).send({
+    error: 'User lacks admin_write permission on resource /api/users/123',
   });
 }
 
 // ✅ Good - Generic message
 if (!authorized) {
-  res.code(403).send({ 
-    error: 'Forbidden' 
+  res.code(403).send({
+    error: 'Forbidden',
   });
 }
 ```
@@ -445,10 +445,10 @@ Apply rate limiting before expensive operations:
 
 ```typescript
 // Middleware order matters!
-app.use(rateLimitMiddleware);    // Check rate limit first
-app.use(authMiddleware);         // Then authenticate
-app.use(parseBodyMiddleware);    // Then parse body
-app.use(validateMiddleware);     // Then validate
+app.use(rateLimitMiddleware); // Check rate limit first
+app.use(authMiddleware); // Then authenticate
+app.use(parseBodyMiddleware); // Then parse body
+app.use(validateMiddleware); // Then validate
 ```
 
 ## Debugging Middleware
@@ -458,17 +458,17 @@ app.use(validateMiddleware);     // Then validate
 ```typescript
 use(req, res, next) {
   const debug = process.env.DEBUG_MIDDLEWARE === 'true';
-  
+
   if (debug) {
     console.log(`[${this.constructor.name}] Processing ${req.method} ${req.url}`);
   }
-  
+
   // Process...
-  
+
   if (debug) {
     console.log(`[${this.constructor.name}] Completed`);
   }
-  
+
   next();
 }
 ```
@@ -478,13 +478,13 @@ use(req, res, next) {
 ```typescript
 use(req, res, next) {
   const correlationId = (req as any).correlationId;
-  
+
   this.logger.debug('Middleware executing', {
     correlationId,
     middleware: this.constructor.name,
     path: req.url
   });
-  
+
   next();
 }
 ```
@@ -494,7 +494,7 @@ use(req, res, next) {
 ```typescript
 use(req, res, next) {
   const start = performance.now();
-  
+
   res.addHook('onSend', async () => {
     const duration = performance.now() - start;
     if (duration > 100) {
@@ -505,7 +505,7 @@ use(req, res, next) {
       });
     }
   });
-  
+
   next();
 }
 ```

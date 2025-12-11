@@ -75,11 +75,7 @@
     "A7": "{layer}/A7_{layer}.ogg",
     "C8": "{layer}/C8_{layer}.ogg"
   },
-  "defaultLayers": [
-    "v3",
-    "v4",
-    "v5"
-  ],
+  "defaultLayers": ["v3", "v4", "v5"],
   "samplerConfig": {
     "attack": 0.001,
     "decay": 0.1,

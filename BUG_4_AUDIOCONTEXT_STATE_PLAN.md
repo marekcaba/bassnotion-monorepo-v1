@@ -41,6 +41,7 @@ this.startKeepAlive();
 ```
 
 **AudioEngine** wraps this and provides:
+
 - Event emission system (`emit()` method)
 - Circuit breaker protection
 - Singleton pattern
@@ -62,6 +63,7 @@ if (this.currentContext && this.currentContext !== toneContext) {
 ```
 
 **Components getting context independently**:
+
 1. `InitialSamplePreloader.ts` - Calls `audioEngine.getContext()` directly
 2. `useCoreServices.ts` - Gets context via `coreServices.getAudioEngine().getContext()`
 3. WAM Plugins - May create their own contexts
@@ -74,6 +76,7 @@ if (this.currentContext && this.currentContext !== toneContext) {
 ### Phase 1: Enhance AudioContextManager (Already 90% Done!)
 
 The `AudioContextManager` already has:
+
 - ✅ Single global context (`globalContext`)
 - ✅ State change handler registration (`onStateChange`)
 - ✅ Keep-alive mechanism
@@ -154,6 +157,7 @@ export function useAudioContext() {
 **File**: `AudioContextManager.ts`
 
 **Add**:
+
 ```typescript
 private globalEventHandlers = new Set<(state: AudioContextState) => void>();
 
@@ -209,6 +213,7 @@ private handleContextStateChange(state: AudioContextState): void {
 **File**: `contextManager.ts`
 
 **Add deprecation warning**:
+
 ```typescript
 /**
  * @deprecated Use AudioEngine's event system instead.
@@ -223,6 +228,7 @@ export const audioContextManager = AudioContextManager.getInstance();
 **File**: `InitialSamplePreloader.ts`
 
 **Before**:
+
 ```typescript
 const coreServices = window.__globalCoreServices;
 const audioEngine = coreServices.getAudioEngine();
@@ -230,14 +236,13 @@ const context = audioEngine.getContext();
 ```
 
 **After**:
+
 ```typescript
 const coreServices = window.__globalCoreServices;
 const audioEngine = coreServices.getAudioEngine();
 
 // Get context from the SINGLE source of truth
-const context = audioEngine.isReady()
-  ? audioEngine.getContext()
-  : null;
+const context = audioEngine.isReady() ? audioEngine.getContext() : null;
 
 // Subscribe to state changes (if needed)
 const unsubscribe = audioEngine.on('state-changed', (event) => {
@@ -344,15 +349,15 @@ constructor() {
 
 ## 📋 Files to Modify
 
-| File | Change Type | Priority |
-|------|-------------|----------|
-| `AudioContextManager.ts` | Enhance | HIGH |
-| `AudioEngine.ts` | Enhance | HIGH |
-| `useAudioContext.ts` | Create NEW | HIGH |
-| `InitialSamplePreloader.ts` | Update | HIGH |
-| `GlobalSampleCache.ts` | Update | MEDIUM |
-| `contextManager.ts` | Deprecate | MEDIUM |
-| Widget components | Update (use hook) | LOW |
+| File                        | Change Type       | Priority |
+| --------------------------- | ----------------- | -------- |
+| `AudioContextManager.ts`    | Enhance           | HIGH     |
+| `AudioEngine.ts`            | Enhance           | HIGH     |
+| `useAudioContext.ts`        | Create NEW        | HIGH     |
+| `InitialSamplePreloader.ts` | Update            | HIGH     |
+| `GlobalSampleCache.ts`      | Update            | MEDIUM   |
+| `contextManager.ts`         | Deprecate         | MEDIUM   |
+| Widget components           | Update (use hook) | LOW      |
 
 ---
 

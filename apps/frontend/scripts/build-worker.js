@@ -2,7 +2,7 @@
 
 /**
  * Build script to compile Web Worker TypeScript files to JavaScript
- * 
+ *
  * This script:
  * 1. Compiles TimingWorker.ts to JavaScript
  * 2. Removes TypeScript-specific code (imports/exports)
@@ -15,7 +15,7 @@ const { execSync } = require('child_process');
 
 const SOURCE_FILE = path.join(
   __dirname,
-  '../src/domains/playback/modules/transport/workers/TimingWorker.ts'
+  '../src/domains/playback/modules/transport/workers/TimingWorker.ts',
 );
 
 const OUTPUT_DIR = path.join(__dirname, '../public/worklets');
@@ -31,9 +31,12 @@ console.log('Building Web Worker...');
 try {
   // Compile TypeScript to JavaScript using tsc
   console.log('Compiling TypeScript...');
-  execSync(`npx tsc ${SOURCE_FILE} --target ES2020 --module ES2020 --outDir ${OUTPUT_DIR} --removeComments false --lib ES2020,WebWorker,DOM`, {
-    stdio: 'inherit'
-  });
+  execSync(
+    `npx tsc ${SOURCE_FILE} --target ES2020 --module ES2020 --outDir ${OUTPUT_DIR} --removeComments false --lib ES2020,WebWorker,DOM`,
+    {
+      stdio: 'inherit',
+    },
+  );
 
   // Read the compiled file
   const compiledFile = path.join(OUTPUT_DIR, 'TimingWorker.js');
@@ -43,13 +46,16 @@ try {
   content = content.replace(/^import\s+.*$/gm, '');
   content = content.replace(/^export\s+.*$/gm, '');
   content = content.replace(/export\s+{[^}]*};?\s*$/gm, '');
-  
+
   // Remove TypeScript type annotations that might have slipped through
-  content = content.replace(/:\s*(string|number|boolean|any|void|Worker|DOMHighResTimeStamp|MessageEvent|ErrorEvent|TimingUpdate|StatusUpdate|WorkerMessage|TimingConfig|StartMessage|StopMessage|PauseMessage|ResumeMessage|SeekMessage|SetTempoMessage|ConfigMessage)(\[\])?/g, '');
-  
+  content = content.replace(
+    /:\s*(string|number|boolean|any|void|Worker|DOMHighResTimeStamp|MessageEvent|ErrorEvent|TimingUpdate|StatusUpdate|WorkerMessage|TimingConfig|StartMessage|StopMessage|PauseMessage|ResumeMessage|SeekMessage|SetTempoMessage|ConfigMessage)(\[\])?/g,
+    '',
+  );
+
   // Remove interface declarations (they compile to nothing but might leave artifacts)
   content = content.replace(/^interface\s+\w+\s*{[^}]*}\s*$/gm, '');
-  
+
   // Add header comment
   const header = `/**
  * Web Worker for High-Precision Timing
@@ -64,12 +70,12 @@ try {
 
   // Write the final file
   fs.writeFileSync(OUTPUT_FILE, header + content);
-  
+
   // Remove the intermediate compiled file
   fs.unlinkSync(compiledFile);
 
   console.log(`✅ Successfully built ${OUTPUT_FILE}`);
-  
+
   // Verify the output is valid JavaScript
   try {
     require('vm').createScript(fs.readFileSync(OUTPUT_FILE, 'utf8'));
@@ -78,7 +84,6 @@ try {
     console.error('❌ Output contains syntax errors:', error.message);
     process.exit(1);
   }
-
 } catch (error) {
   console.error('❌ Build failed:', error.message);
   process.exit(1);
@@ -87,19 +92,16 @@ try {
 // Also create a development version that logs more
 if (process.env.NODE_ENV === 'development') {
   console.log('Creating development version with extra logging...');
-  
+
   let devContent = fs.readFileSync(OUTPUT_FILE, 'utf8');
-  
+
   // Add development logging
   devContent = devContent.replace(
-    'console.log(\'[TimingWorker] Initialized\')',
-    'console.log(\'[DEV] TimingWorker Initialized\')'
+    "console.log('[TimingWorker] Initialized')",
+    "console.log('[DEV] TimingWorker Initialized')",
   );
-  
-  fs.writeFileSync(
-    path.join(OUTPUT_DIR, 'timing-worker.dev.js'),
-    devContent
-  );
-  
+
+  fs.writeFileSync(path.join(OUTPUT_DIR, 'timing-worker.dev.js'), devContent);
+
   console.log('✅ Development version created');
 }

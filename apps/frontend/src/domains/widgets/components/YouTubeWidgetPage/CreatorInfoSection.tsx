@@ -27,13 +27,16 @@ export function CreatorInfoSection({ tutorialData }: CreatorInfoSectionProps) {
     : defaultCreator;
 
   // Use subscriber count from tutorial data if available, otherwise fetch from API
-  const hasSubscriberCount = tutorialData?.creator_subscriber_count && tutorialData.creator_subscriber_count > 0;
+  const hasSubscriberCount =
+    tutorialData?.creator_subscriber_count &&
+    tutorialData.creator_subscriber_count > 0;
 
   // Only fetch from API if we don't have subscriber count in tutorial data
-  const { subscriberCount: apiSubscriberCount, isLoading } = useYouTubeChannelData(
-    hasSubscriberCount ? undefined : creator.channelUrl,
-    creator.name,
-  );
+  const { subscriberCount: apiSubscriberCount, isLoading } =
+    useYouTubeChannelData(
+      hasSubscriberCount ? undefined : creator.channelUrl,
+      creator.name,
+    );
 
   // Format subscriber count
   const formatSubscriberCount = (count: number): string => {

@@ -19,9 +19,13 @@ const createMockClock = (): Clock & {
 
   const mock = {
     isUsingAudioWorklet: vi.fn().mockReturnValue(true),
-    setOnTick: vi.fn().mockImplementation((callback: ((time: number, frame?: number) => void) | undefined) => {
-      storedCallback = callback;
-    }),
+    setOnTick: vi
+      .fn()
+      .mockImplementation(
+        (callback: ((time: number, frame?: number) => void) | undefined) => {
+          storedCallback = callback;
+        },
+      ),
     triggerTick: (time: number, frame?: number) => {
       if (storedCallback) {
         storedCallback(time, frame);
@@ -43,7 +47,9 @@ const createMockClock = (): Clock & {
 
 describe('EventDrivenStrategy', () => {
   let strategy: EventDrivenStrategy;
-  let mockClock: Clock & { triggerTick: (time: number, frame?: number) => void };
+  let mockClock: Clock & {
+    triggerTick: (time: number, frame?: number) => void;
+  };
   let receivedUpdates: PositionUpdate[];
 
   beforeEach(() => {
@@ -144,9 +150,9 @@ describe('EventDrivenStrategy', () => {
 
       // Simulate rapid ticks (faster than throttle interval)
       vi.spyOn(performance, 'now')
-        .mockReturnValueOnce(0)    // First tick
-        .mockReturnValueOnce(5)    // Second tick (too soon, should be dropped)
-        .mockReturnValueOnce(10);  // Third tick (still too soon)
+        .mockReturnValueOnce(0) // First tick
+        .mockReturnValueOnce(5) // Second tick (too soon, should be dropped)
+        .mockReturnValueOnce(10); // Third tick (still too soon)
 
       mockClock.triggerTick(0.1);
       mockClock.triggerTick(0.2);
@@ -162,10 +168,10 @@ describe('EventDrivenStrategy', () => {
       // 2. In emitUpdate() for the timestamp
       // Start time must be > 8.33ms (throttle interval) from lastEmitTime (0)
       vi.spyOn(performance, 'now')
-        .mockReturnValueOnce(100)   // First tick - throttle check (100ms > 8.33ms from 0)
-        .mockReturnValueOnce(100)   // First tick - timestamp (sets lastEmitTime = 100)
-        .mockReturnValueOnce(110)   // Second tick - throttle check (110 - 100 = 10ms > 8.33ms)
-        .mockReturnValueOnce(110);  // Second tick - timestamp
+        .mockReturnValueOnce(100) // First tick - throttle check (100ms > 8.33ms from 0)
+        .mockReturnValueOnce(100) // First tick - timestamp (sets lastEmitTime = 100)
+        .mockReturnValueOnce(110) // Second tick - throttle check (110 - 100 = 10ms > 8.33ms)
+        .mockReturnValueOnce(110); // Second tick - timestamp
 
       strategy.start();
 

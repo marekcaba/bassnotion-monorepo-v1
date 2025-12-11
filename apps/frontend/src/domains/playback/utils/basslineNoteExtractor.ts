@@ -22,7 +22,7 @@ const logger = getLogger('BasslineNoteExtractor');
  * // Only 4 unique notes instead of loading all 24 bass notes!
  */
 export async function extractNotesFromBasslineMidi(
-  midiUrl: string
+  midiUrl: string,
 ): Promise<string[]> {
   const startTime = performance.now();
 
@@ -77,11 +77,10 @@ export async function extractNotesFromBasslineMidi(
       durationMs: duration,
       lowestNote: uniqueNotes[0],
       highestNote: uniqueNotes[uniqueNotes.length - 1],
-      noteRange: uniqueNotes.join(', ')
+      noteRange: uniqueNotes.join(', '),
     });
 
     return uniqueNotes;
-
   } catch (error) {
     logger.error('❌ Failed to extract notes from bassline MIDI file', error);
 
@@ -100,9 +99,23 @@ export async function extractNotesFromBasslineMidi(
 function noteNameToMidiNumber(noteName: string): number {
   // Note to semitone mapping
   const noteToSemitone: Record<string, number> = {
-    'C': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3,
-    'E': 4, 'F': 5, 'F#': 6, 'Gb': 6, 'G': 7, 'G#': 8,
-    'Ab': 8, 'A': 9, 'A#': 10, 'Bb': 10, 'B': 11
+    C: 0,
+    'C#': 1,
+    Db: 1,
+    D: 2,
+    'D#': 3,
+    Eb: 3,
+    E: 4,
+    F: 5,
+    'F#': 6,
+    Gb: 6,
+    G: 7,
+    'G#': 8,
+    Ab: 8,
+    A: 9,
+    'A#': 10,
+    Bb: 10,
+    B: 11,
   };
 
   // Extract note and octave (e.g., "E1" → "E" and "1")
@@ -139,7 +152,7 @@ export function groupNotesByString(notes: string[]): Record<string, string[]> {
     'E-string (E1-G1)': [],
     'A-string (A1-C2)': [],
     'D-string (D2-F2)': [],
-    'G-string (G2-B2)': []
+    'G-string (G2-B2)': [],
   };
 
   for (const note of notes) {

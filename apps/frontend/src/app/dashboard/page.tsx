@@ -250,13 +250,16 @@ export default function DashboardPage() {
 
       {/* Header with Logo - same as homepage */}
       <header className="w-full pt-8 sm:pt-12 pb-5 flex justify-center">
-        <button onClick={() => navigateWithTransition('/')} className="cursor-pointer">
+        <button
+          onClick={() => navigateWithTransition('/')}
+          className="cursor-pointer"
+        >
           <Image
             src="/BASSICOLOGY BIG.png"
             alt="Bassicology"
             width={600}
             height={150}
-            className="w-[220px] sm:w-[320px] md:w-[400px] lg:w-[500px] xl:w-[600px] h-auto"
+            className="w-[180px] sm:w-[260px] md:w-[320px] lg:w-[400px] xl:w-[480px] h-auto"
             priority
           />
         </button>
@@ -300,9 +303,7 @@ export default function DashboardPage() {
                     Account Information
                   </h3>
                   <div>
-                    <span className="font-medium text-gray-400">
-                      Email:
-                    </span>
+                    <span className="font-medium text-gray-400">Email:</span>
                     <p className="mt-1 break-all text-white">{user.email}</p>
                   </div>
                   <div>
@@ -326,9 +327,7 @@ export default function DashboardPage() {
                     </p>
                   </div>
                   <div>
-                    <span className="font-medium text-gray-400">
-                      User ID:
-                    </span>
+                    <span className="font-medium text-gray-400">User ID:</span>
                     <p className="mt-1 font-mono text-xs break-all text-gray-500">
                       {user.id}
                     </p>
@@ -346,13 +345,13 @@ export default function DashboardPage() {
                         <span className="font-medium text-gray-400">
                           Display Name:
                         </span>
-                        <p className="mt-1 text-white">{profileData.displayName}</p>
+                        <p className="mt-1 text-white">
+                          {profileData.displayName}
+                        </p>
                       </div>
 
                       <div>
-                        <span className="font-medium text-gray-400">
-                          Bio:
-                        </span>
+                        <span className="font-medium text-gray-400">Bio:</span>
                         <p className="mt-1 text-gray-400">
                           {profileData.bio || 'No bio added yet'}
                         </p>
@@ -401,7 +400,9 @@ export default function DashboardPage() {
 
             {/* Password Section */}
             <div className="bg-zinc-900 rounded-lg border border-zinc-800 p-4 sm:p-6 mb-4">
-              <h3 className="font-semibold mb-4 text-white">Password & Security</h3>
+              <h3 className="font-semibold mb-4 text-white">
+                Password & Security
+              </h3>
               <Button
                 onClick={() => setShowPasswordDialog(true)}
                 className="w-full sm:w-auto bg-[#ffc700] text-black hover:bg-[#e6b300]"
@@ -412,9 +413,7 @@ export default function DashboardPage() {
 
             {/* Danger Zone */}
             <div className="bg-red-900/20 border border-red-800/50 rounded-lg p-4 sm:p-6">
-              <h3 className="font-semibold text-red-400 mb-2">
-                Danger Zone
-              </h3>
+              <h3 className="font-semibold text-red-400 mb-2">Danger Zone</h3>
               <p className="text-sm text-gray-400 mb-4">
                 Once you delete your account, there is no going back. Please be
                 certain.

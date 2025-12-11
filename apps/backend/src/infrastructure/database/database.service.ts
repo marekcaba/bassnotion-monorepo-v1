@@ -9,7 +9,8 @@ export class DatabaseService implements OnModuleInit {
   public supabase!: SupabaseClient;
 
   constructor(
-    @Optional() @Inject(RequestContextService)
+    @Optional()
+    @Inject(RequestContextService)
     private readonly requestContext?: RequestContextService,
   ) {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
@@ -32,22 +33,29 @@ export class DatabaseService implements OnModuleInit {
         supabaseUrlLength: supabaseUrl?.length,
         hasServiceRoleKey: !!supabaseServiceRoleKey,
         serviceRoleKeyLength: supabaseServiceRoleKey?.length,
-        correlationId
+        correlationId,
       });
 
       if (!supabaseUrl || !supabaseServiceRoleKey) {
-        logger.warn('Supabase environment variables not found - creating mock client for tests', { correlationId });
+        logger.warn(
+          'Supabase environment variables not found - creating mock client for tests',
+          { correlationId },
+        );
         // Create a mock client for test environments
         this.supabase = {} as SupabaseClient;
         return;
       }
 
       this.supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
-      logger.info('DatabaseService initialized successfully', { correlationId });
+      logger.info('DatabaseService initialized successfully', {
+        correlationId,
+      });
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId() || 'system';
-      logger.error('Error initializing DatabaseService:', error as Error, { correlationId });
+      logger.error('Error initializing DatabaseService:', error as Error, {
+        correlationId,
+      });
       // Create fallback mock client
       this.supabase = {} as SupabaseClient;
     }

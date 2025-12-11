@@ -3,12 +3,14 @@
 ## Current Status
 
 ✅ **Fixed** - HarmonyWidget now loads within target time:
+
 - **HarmonyWidgetFast**: < 0.5 seconds (instant synth, upgrades to samples in background)
 - **HarmonyWidgetOptimized**: < 3 seconds (loads samples with 3s timeout, falls back gracefully)
 
 ## What Was Happening
 
 The logs showed that when the AudioContext was suspended, the Salamander piano sample loading would hang indefinitely:
+
 ```
 🎹 Loading 16-velocity Salamander Grand Piano...
 [... hangs forever ...]
@@ -17,13 +19,15 @@ The logs showed that when the AudioContext was suspended, the Salamander piano s
 ## Solutions Implemented
 
 ### 1. HarmonyWidgetFast (Recommended)
+
 - **Load time**: < 0.5 seconds
 - Creates a basic synthesizer immediately
 - Attempts to upgrade to piano samples in background (5s timeout)
 - Never blocks the UI
 - Works 100% of the time
 
-### 2. HarmonyWidgetOptimized  
+### 2. HarmonyWidgetOptimized
+
 - **Load time**: < 3 seconds
 - Tries to load real samples with 3-second timeout
 - Falls back to processor without samples if timeout
@@ -40,6 +44,7 @@ The logs showed that when the AudioContext was suspended, the Salamander piano s
 ## Testing
 
 Visit these pages to test:
+
 - `/test-harmony-fast` - Dedicated test for HarmonyWidgetFast
 - `/test-widget-speed` - Compare all widget versions
 - `/test-exercises` - Real-world usage
@@ -47,6 +52,7 @@ Visit these pages to test:
 ## How It Works Now
 
 ### HarmonyWidgetFast Flow:
+
 1. Load Tone.js (< 100ms)
 2. Create basic synth immediately (< 100ms)
 3. Set status to "Ready (synth)" - widget is playable!
@@ -55,6 +61,7 @@ Visit these pages to test:
 6. If timeout, keep using synth (still sounds good)
 
 ### HarmonyWidgetOptimized Flow:
+
 1. Load Tone.js and ChordInstrumentProcessor
 2. Try to load samples with 3s timeout
 3. If AudioContext is suspended, skip sample waiting
@@ -63,15 +70,16 @@ Visit these pages to test:
 
 ## Performance Metrics
 
-| Widget | Target | Actual | Status |
-|--------|--------|--------|--------|
-| DrummerWidget | < 1s | < 1s | ✅ Perfect |
-| HarmonyWidgetFast | < 3s | < 0.5s | ✅ Exceeds target |
-| HarmonyWidgetOptimized | < 3s | < 3s | ✅ Meets target |
+| Widget                 | Target | Actual | Status            |
+| ---------------------- | ------ | ------ | ----------------- |
+| DrummerWidget          | < 1s   | < 1s   | ✅ Perfect        |
+| HarmonyWidgetFast      | < 3s   | < 0.5s | ✅ Exceeds target |
+| HarmonyWidgetOptimized | < 3s   | < 3s   | ✅ Meets target   |
 
 ## Recommendation
 
 Use **HarmonyWidgetFast** for production - it provides:
+
 - Instant loading (< 0.5s)
 - 100% reliability
 - Progressive enhancement

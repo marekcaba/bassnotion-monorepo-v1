@@ -24,4 +24,17 @@ export const KEY_PROFILES = {
   minor: [1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0],
 } as const;
 
-export const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'] as const;
+export const NOTE_NAMES = [
+  'C',
+  'C#',
+  'D',
+  'D#',
+  'E',
+  'F',
+  'F#',
+  'G',
+  'G#',
+  'A',
+  'A#',
+  'B',
+] as const;

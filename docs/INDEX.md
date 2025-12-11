@@ -9,16 +9,24 @@ This is the central catalog for all documentation. Please refer to this index be
 ## 🏗️ Project Architecture
 
 ### Core Architecture
+
 - [Tech Stack Overview](./2.%20Technical%20docs/6.%20Tech-Stack.md)
 - [API Documentation](./api/API_DOCUMENTATION.md) - Complete API reference
 - [API Quick Start](./api/API_QUICK_START.md) - Getting started with the API
 
 ### Audio & Playback System
+
 - [Playback System Architecture](./architecture/PLAYBACK_SYSTEM_ARCHITECTURE.md) - **NEW** Complete domain reference (500+ files)
 - [Unified Transport & Track System](./implementations/UNIFIED-TRANSPORT-TRACK-SYSTEM.md) - Core playback architecture
 - [Professional DAW Synchronization](./architecture/professional-daw-synchronization-architecture.md) - Logic Pro X analysis
 
+### Internal Architecture (Data Flow Documentation)
+
+- [Tempo / BPM Data Chain](./internal-architecture/tempo-bpm-data-chain.md) - Complete BPM flow from database to UI
+- [Sheet Music Player Architecture](./internal-architecture/sheet-music-player-architecture.md) - **NEW** OSMD rendering, MusicXML conversion, playback sync
+
 #### Playback Domain Deep Dives
+
 - [Dependency Injection Architecture](./playback/dependency-injection-architecture.md)
 - [DI Examples & Patterns](./playback/di-examples.md)
 - [DI Test Patterns](./playback/di-test-patterns.md)
@@ -26,6 +34,7 @@ This is the central catalog for all documentation. Please refer to this index be
 - [MIDI Lookahead Integration](./playback/MIDI-LOOKAHEAD-INTEGRATION.md)
 
 ### Instrument Implementations
+
 - [Professional Instruments](./implementations/professional-instruments-implementation.md) - Piano, Rhodes, Organ, Pad
 - [Salamander Piano](./implementations/salamander-piano-implementation.md) - Grand piano implementation
 - [Drum Kit Architecture](./architecture/drum-kit-architecture.md) - FAANG-style drum system
@@ -34,17 +43,20 @@ This is the central catalog for all documentation. Please refer to this index be
 ## 👨‍💻 Developer Resources
 
 ### Getting Started
+
 - [Developer Guide](./developer-handbook/DEVELOPER_GUIDE.md) - **START HERE**
 - [New Developer Checklist](./developer-handbook/NEW_DEVELOPER_CHECKLIST.md)
 - [Quick Reference](./developer-handbook/QUICK_REFERENCE.md)
 
 ### Development Guidelines
+
 - [Coding Standards](./developer-handbook/CODING_STANDARDS.md)
 - [React Query Integration](./2.%20Technical%20docs/7.%20React-Query-Integration.md)
 - [Zod Validation Guidelines](./2.%20Technical%20docs/9.%20Zod-Validation-Guidelines.md)
 - [Build and Development](./2.%20Technical%20docs/10.%20Build-and-Development.md)
 
 ### Debugging & Monitoring
+
 - [Troubleshooting Flowchart](./developer-handbook/TROUBLESHOOTING_FLOWCHART.md)
 - [Debugging Examples](./developer-handbook/DEBUGGING_EXAMPLES.md)
 - [Correlation & Logging](./developer-handbook/CORRELATION_AND_LOGGING.md)
@@ -59,13 +71,16 @@ This is the central catalog for all documentation. Please refer to this index be
 ## 📅 Project Management
 
 ### Active Stories
+
 Located in `2. Stories/2. 🚧 in-progress/EPIC 3/`:
+
 - [EPIC 3.18 - FAANG Web DAW Architecture](./2.%20Stories/2.%20🚧%20in-progress/EPIC%203/EPIC-3.18-faang-web-daw-architecture.md)
 - [Story 3.19 - Logic Pro X-Grade Transport System](./NEW%20STORIES/Story-3.19:%20Logic%20Pro%20X-Grade%20Transport%20System.md)
 - [Story 3.21 - Track Based Architecture Migration](./NEW%20STORIES/Story-3.21-Track-Based-Architecture-Migration-Phase-1.md)
 - [Story 3.22 - Professional DAW Sequencer](./NEW%20STORIES/Story%203.22:%20Professional%20DAW%20Sequencer.md)
 
 ### Story Archive
+
 - All completed story documentation in `2. Stories/2. 🚧 in-progress/EPIC 3/stories/`
 
 ## 🔧 Backend & Infrastructure
@@ -102,6 +117,7 @@ Located in `2. Stories/2. 🚧 in-progress/EPIC 3/`:
 ## 📊 Architecture Analysis & Planning
 
 ### System Analysis
+
 - [BassNotion Architecture Analysis](./architecture/analysis/BASSNOTION-ARCHITECTURE-ANALYSIS.md)
 - [Playback Domain Analysis](./architecture/analysis/PLAYBACK_DOMAIN_ANALYSIS.md)
 - [Exercise Repository FAANG Analysis](./architecture/analysis/EXERCISE_REPOSITORY_FAANG_ANALYSIS.md)
@@ -113,6 +129,7 @@ Located in `2. Stories/2. 🚧 in-progress/EPIC 3/`:
 - [Legacy Widget Investigation](./architecture/analysis/LEGACY_WIDGET_INVESTIGATION_REPORT.md)
 
 ### Architecture Plans
+
 - [Playback System Architecture](./architecture/PLAYBACK_SYSTEM_ARCHITECTURE.md) - **NEW** Complete playback domain architecture reference
 - [Professional DAW Synchronization](./architecture/professional-daw-synchronization-architecture.md) - Logic Pro X & Ableton analysis
 - [Drum Kit Architecture](./architecture/drum-kit-architecture.md) - FAANG-style drum kit manifest system
@@ -125,6 +142,7 @@ Located in `2. Stories/2. 🚧 in-progress/EPIC 3/`:
 ## 📦 Implementation Summaries
 
 ### Completed Implementations
+
 - [Phase 2 Hybrid Architecture Progress](./implementations/PHASE_2_HYBRID_ARCHITECTURE_PROGRESS.md) - **NEW** Breaking down 3,301-line god object
 - [Phase 1 Data Extraction Summary](./implementations/PHASE_1_DATA_EXTRACTION_SUMMARY.md) - 75% code reduction via JSON configs
 - [Playback Domain Migration Summary](./implementations/PLAYBACK-DOMAIN-MIGRATION-SUMMARY.md) - Complete modular architecture migration
@@ -136,6 +154,7 @@ Located in `2. Stories/2. 🚧 in-progress/EPIC 3/`:
 - [Widget Sync Extraction Complete](./implementations/WIDGET_SYNC_EXTRACTION_COMPLETE.md)
 
 ### Feature Implementations
+
 - [Unified Transport & Track System](./implementations/UNIFIED-TRANSPORT-TRACK-SYSTEM.md) - Core playback architecture
 - [3D Fretboard Implementation](./implementations/fretboard-3d-implementation.md) - Three.js 3D fretboard
 - [Professional Instruments](./implementations/professional-instruments-implementation.md) - Salamander Piano, Rhodes, Organ, Warm Pad
@@ -144,6 +163,7 @@ Located in `2. Stories/2. 🚧 in-progress/EPIC 3/`:
 - [Harmony Widget Audio](./implementations/harmony-widget-audio-status.md) - Current status & soundfonts
 
 ### Migration Guides
+
 - [Playback Module Migration](./implementations/playback-module-migration.md) - Services to modules architecture migration
 - [Storage Modules Migration Guide](./implementations/MIGRATION-GUIDE-STORAGE-MODULES.md) - Migrating from SupabaseAssetClient to SupabaseProviderAdvanced
 - [Migration Plan: SupabaseAssetClient](./implementations/MIGRATION-PLAN-SUPABASE-ASSET-CLIENT.md) - Detailed migration phases and status
@@ -157,6 +177,7 @@ Located in `2. Stories/2. 🚧 in-progress/EPIC 3/`:
 ## 🚨 Deprecated/Archive
 
 ### Recent Fixes (from root → archived/fixes/)
+
 - [AudioContext Fixes Summary](./archived/fixes/AUDIOCONTEXT-FIXES-SUMMARY.md)
 - [Creator Test Fix Summary](./archived/fixes/CREATOR_TEST_FIX_SUMMARY.md)
 - [Harmony Test Button Performance Fix](./archived/fixes/HARMONY-TEST-BUTTON-PERFORMANCE-FIX.md)
@@ -167,9 +188,11 @@ Located in `2. Stories/2. 🚧 in-progress/EPIC 3/`:
 - [TODO Revert](./archived/fixes/TODO-revert.md)
 
 ### Debugging Sessions (Archived)
+
 - [Click Blocking Debug Progress](./archived/debugging/CLICK-BLOCKING-DEBUG-PROGRESS.md) - 43+ test versions investigation (50KB)
 
 ### Old Documentation (DO NOT USE)
+
 - `archived/claude-code-trash-bin-2024-08-25/` - Historical fixes from August 2024
 - `archived/project-planning-memory-bank/` - Historical project planning docs (pre-2025)
 - `archived/LAST CLAUDE.md` - Archived session notes

@@ -231,10 +231,15 @@ export class AudioEngine {
         await this.preInitialize();
         console.log('[AUDIOENGINE-INIT] Step 1: preInitialize() done');
 
-        console.log('[AUDIOENGINE-INIT] Step 2: Getting or creating AudioContext');
+        console.log(
+          '[AUDIOENGINE-INIT] Step 2: Getting or creating AudioContext',
+        );
         // Get or create AudioContext
         const context = await this.contextManager.getOrCreateContext();
-        console.log('[AUDIOENGINE-INIT] Step 2: AudioContext ready, state:', context.state);
+        console.log(
+          '[AUDIOENGINE-INIT] Step 2: AudioContext ready, state:',
+          context.state,
+        );
 
         console.log('[AUDIOENGINE-INIT] Step 3: Initializing ToneWrapper');
         // Initialize Tone.js with the context
@@ -250,12 +255,16 @@ export class AudioEngine {
         await this.toneWrapper.applyTimingConfig();
         console.log('[AUDIOENGINE-INIT] Step 4: Timing config applied');
 
-        console.log('[AUDIOENGINE-INIT] Step 5: Setting up state change handling');
+        console.log(
+          '[AUDIOENGINE-INIT] Step 5: Setting up state change handling',
+        );
         // Setup state change handling
         this.contextManager.onStateChange(
           this.handleContextStateChange.bind(this),
         );
-        console.log('[AUDIOENGINE-INIT] Step 5: State change handler registered');
+        console.log(
+          '[AUDIOENGINE-INIT] Step 5: State change handler registered',
+        );
 
         console.log('[AUDIOENGINE-INIT] Step 6: Validation check');
         // Validate if enabled

@@ -2,7 +2,8 @@ import { Injectable, Inject } from '@nestjs/common';
 import type {
   IExerciseRepository,
   PaginatedResult,
-  PaginationOptions } from './exercise.repository.interface.js';
+  PaginationOptions,
+} from './exercise.repository.interface.js';
 import { Exercise } from '../entities/exercise.entity.js';
 import { ExerciseId } from '../value-objects/exercise-id.vo.js';
 import { Difficulty } from '../value-objects/difficulty.vo.js';
@@ -29,7 +30,9 @@ export interface IResultExerciseRepository {
 
 @Injectable()
 export class ResultExerciseRepository implements IResultExerciseRepository {
-  private readonly staticLogger = createStructuredLogger(ResultExerciseRepository.name);
+  private readonly staticLogger = createStructuredLogger(
+    ResultExerciseRepository.name,
+  );
 
   constructor(
     private readonly repository: IExerciseRepository,
@@ -44,8 +47,10 @@ export class ResultExerciseRepository implements IResultExerciseRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      
-      logger.error(`Failed to find exercise ${id.value}:`, error as Error, { correlationId });
+
+      logger.error(`Failed to find exercise ${id.value}:`, error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -59,7 +64,9 @@ export class ResultExerciseRepository implements IResultExerciseRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Failed to find all exercises:', error as Error, { correlationId });
+      logger.error('Failed to find all exercises:', error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -74,7 +81,7 @@ export class ResultExerciseRepository implements IResultExerciseRepository {
       logger.error(
         `Failed to find exercises by difficulty ${difficulty.value}:`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       return ResultUtils.fail(error as Error);
     }
@@ -90,7 +97,7 @@ export class ResultExerciseRepository implements IResultExerciseRepository {
       logger.error(
         `Failed to search exercises with query "${query}":`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       return ResultUtils.fail(error as Error);
     }
@@ -103,7 +110,9 @@ export class ResultExerciseRepository implements IResultExerciseRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Failed to save exercise:', error as Error, { correlationId });
+      logger.error('Failed to save exercise:', error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -118,7 +127,7 @@ export class ResultExerciseRepository implements IResultExerciseRepository {
       logger.error(
         `Failed to update exercise ${exercise.id.value}:`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       return ResultUtils.fail(error as Error);
     }
@@ -131,7 +140,9 @@ export class ResultExerciseRepository implements IResultExerciseRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error(`Failed to delete exercise ${id.value}:`, error as Error, { correlationId });
+      logger.error(`Failed to delete exercise ${id.value}:`, error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -146,7 +157,7 @@ export class ResultExerciseRepository implements IResultExerciseRepository {
       logger.error(
         `Failed to check existence of exercise ${id.value}:`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       return ResultUtils.fail(error as Error);
     }
@@ -159,7 +170,9 @@ export class ResultExerciseRepository implements IResultExerciseRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Failed to find exercises by ids:', error as Error, { correlationId });
+      logger.error('Failed to find exercises by ids:', error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -171,7 +184,9 @@ export class ResultExerciseRepository implements IResultExerciseRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Failed to save exercises batch:', error as Error, { correlationId });
+      logger.error('Failed to save exercises batch:', error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -183,7 +198,9 @@ export class ResultExerciseRepository implements IResultExerciseRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Failed to update exercises batch:', error as Error, { correlationId });
+      logger.error('Failed to update exercises batch:', error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -195,7 +212,9 @@ export class ResultExerciseRepository implements IResultExerciseRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Failed to delete exercises batch:', error as Error, { correlationId });
+      logger.error('Failed to delete exercises batch:', error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }

@@ -2,7 +2,8 @@ import { Injectable, Inject } from '@nestjs/common';
 import type {
   IUserRepository,
   PaginatedResult,
-  PaginationOptions } from './user.repository.interface.js';
+  PaginationOptions,
+} from './user.repository.interface.js';
 import { User } from '../entities/user.entity.js';
 import { UserId } from '../value-objects/user-id.vo.js';
 import { Email } from '../value-objects/email.vo.js';
@@ -30,7 +31,9 @@ export interface IResultUserRepository {
 
 @Injectable()
 export class ResultUserRepository implements IResultUserRepository {
-  private readonly staticLogger = createStructuredLogger(ResultUserRepository.name);
+  private readonly staticLogger = createStructuredLogger(
+    ResultUserRepository.name,
+  );
 
   constructor(
     private readonly repository: IUserRepository,
@@ -45,7 +48,9 @@ export class ResultUserRepository implements IResultUserRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error(`Failed to find user ${id.value}:`, error as Error, { correlationId });
+      logger.error(`Failed to find user ${id.value}:`, error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -57,7 +62,11 @@ export class ResultUserRepository implements IResultUserRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error(`Failed to find user by email ${email.value}:`, error as Error, { correlationId });
+      logger.error(
+        `Failed to find user by email ${email.value}:`,
+        error as Error,
+        { correlationId },
+      );
       return ResultUtils.fail(error as Error);
     }
   }
@@ -71,7 +80,9 @@ export class ResultUserRepository implements IResultUserRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Failed to find all users:', error as Error, { correlationId });
+      logger.error('Failed to find all users:', error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -83,7 +94,11 @@ export class ResultUserRepository implements IResultUserRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error(`Failed to find users by role ${role.value}:`, error as Error, { correlationId });
+      logger.error(
+        `Failed to find users by role ${role.value}:`,
+        error as Error,
+        { correlationId },
+      );
       return ResultUtils.fail(error as Error);
     }
   }
@@ -95,7 +110,11 @@ export class ResultUserRepository implements IResultUserRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error(`Failed to search users with query "${query}":`, error as Error, { correlationId });
+      logger.error(
+        `Failed to search users with query "${query}":`,
+        error as Error,
+        { correlationId },
+      );
       return ResultUtils.fail(error as Error);
     }
   }
@@ -119,7 +138,9 @@ export class ResultUserRepository implements IResultUserRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error(`Failed to update user ${user.id}:`, error as Error, { correlationId });
+      logger.error(`Failed to update user ${user.id}:`, error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -131,7 +152,9 @@ export class ResultUserRepository implements IResultUserRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error(`Failed to delete user ${id.value}:`, error as Error, { correlationId });
+      logger.error(`Failed to delete user ${id.value}:`, error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -143,7 +166,11 @@ export class ResultUserRepository implements IResultUserRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error(`Failed to check user existence ${id.value}:`, error as Error, { correlationId });
+      logger.error(
+        `Failed to check user existence ${id.value}:`,
+        error as Error,
+        { correlationId },
+      );
       return ResultUtils.fail(error as Error);
     }
   }
@@ -158,7 +185,7 @@ export class ResultUserRepository implements IResultUserRepository {
       logger.error(
         `Failed to check user existence by email ${email.value}:`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       return ResultUtils.fail(error as Error);
     }
@@ -171,7 +198,9 @@ export class ResultUserRepository implements IResultUserRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Failed to find users by ids:', error as Error, { correlationId });
+      logger.error('Failed to find users by ids:', error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -183,7 +212,9 @@ export class ResultUserRepository implements IResultUserRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Failed to save users batch:', error as Error, { correlationId });
+      logger.error('Failed to save users batch:', error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -195,7 +226,9 @@ export class ResultUserRepository implements IResultUserRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Failed to update users batch:', error as Error, { correlationId });
+      logger.error('Failed to update users batch:', error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }
@@ -207,7 +240,9 @@ export class ResultUserRepository implements IResultUserRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Failed to delete users batch:', error as Error, { correlationId });
+      logger.error('Failed to delete users batch:', error as Error, {
+        correlationId,
+      });
       return ResultUtils.fail(error as Error);
     }
   }

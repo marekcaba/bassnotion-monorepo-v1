@@ -26,19 +26,10 @@ Lint-staged configuration is in `.lintstagedrc.json`:
 
 ```json
 {
-  "*.{js,jsx,ts,tsx}": [
-    "eslint --fix",
-    "prettier --write"
-  ],
-  "*.{json,md,yml,yaml}": [
-    "prettier --write"
-  ],
-  "*.css": [
-    "prettier --write"
-  ],
-  "package.json": [
-    "prettier --write"
-  ]
+  "*.{js,jsx,ts,tsx}": ["eslint --fix", "prettier --write"],
+  "*.{json,md,yml,yaml}": ["prettier --write"],
+  "*.css": ["prettier --write"],
+  "package.json": ["prettier --write"]
 }
 ```
 
@@ -64,6 +55,7 @@ Uses `commitlint` to enforce conventional commit format.
 ### Examples
 
 ✅ Valid commit messages:
+
 ```
 feat: add user authentication
 fix: resolve memory leak in audio player
@@ -72,6 +64,7 @@ test: add unit tests for exercises service
 ```
 
 ❌ Invalid commit messages:
+
 ```
 Added new feature
 fix
@@ -96,6 +89,7 @@ WIP
 - **footer**: Optional, breaking changes or issue references
 
 Example with all parts:
+
 ```
 feat(auth): add JWT refresh token support
 
@@ -130,6 +124,7 @@ git push --no-verify
 ### Hooks not running
 
 1. Check if husky is installed:
+
    ```bash
    ls -la .husky/
    ```
@@ -142,6 +137,7 @@ git push --no-verify
 ### ESLint errors blocking commit
 
 1. Fix errors manually:
+
    ```bash
    pnpm lint:fix
    ```
@@ -154,6 +150,7 @@ git push --no-verify
 ### Commitlint rejecting valid commits
 
 Check the exact error and ensure:
+
 - Type is valid (lowercase)
 - No period at end of subject
 - Subject is not empty
@@ -162,6 +159,7 @@ Check the exact error and ensure:
 ### Tests failing on push
 
 1. Run tests locally first:
+
    ```bash
    pnpm test
    ```
@@ -181,9 +179,7 @@ Edit `.lintstagedrc.json`:
 
 ```json
 {
-  "*.sql": [
-    "sql-formatter --config .sql-formatter.json"
-  ]
+  "*.sql": ["sql-formatter --config .sql-formatter.json"]
 }
 ```
 

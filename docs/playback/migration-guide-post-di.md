@@ -102,10 +102,13 @@ const channel = new Channel({
   audioEngine, // Optional but recommended for new code
 });
 
-const bass = new BassInstrument({
-  id: 'my-bass',
-  type: 'bass',
-}, audioEngine); // Optional but recommended
+const bass = new BassInstrument(
+  {
+    id: 'my-bass',
+    type: 'bass',
+  },
+  audioEngine,
+); // Optional but recommended
 ```
 
 ### 2. Comprehensive Testing
@@ -113,23 +116,26 @@ const bass = new BassInstrument({
 **For tests**, you can now use full mocking capabilities:
 
 ```typescript
-import { setupDIMocks, cleanupDIMocks } from '@/domains/playbook/modules/__tests__/mocks/setupDI';
+import {
+  setupDIMocks,
+  cleanupDIMocks,
+} from '@/domains/playbook/modules/__tests__/mocks/setupDI';
 
 describe('My Component', () => {
   let diSetup: any;
-  
+
   beforeEach(() => {
     diSetup = setupDIMocks();
   });
-  
+
   afterEach(() => {
     cleanupDIMocks();
   });
-  
+
   it('should work with mocked audio', async () => {
     const component = new MyComponent(config, diSetup.audioEngine);
     await component.initialize();
-    
+
     expect(component.state.isInitialized).toBe(true);
     expect(diSetup.audioEngine.createSampler).toHaveBeenCalled();
   });
@@ -163,11 +169,14 @@ bass.trigger({
 const globalServices = (window as any).__coreServices;
 const audioEngine = globalServices?.getAudioEngine?.();
 
-const bass = new BassInstrument({
-  id: 'bass',
-  type: 'bass', 
-  name: 'Bass',
-}, audioEngine); // Explicit DI
+const bass = new BassInstrument(
+  {
+    id: 'bass',
+    type: 'bass',
+    name: 'Bass',
+  },
+  audioEngine,
+); // Explicit DI
 
 await bass.initialize(audioEngine); // Can pass again or omit
 ```
@@ -204,22 +213,22 @@ import { setupDIMocks } from './mocks/setupDI';
 
 describe('BassInstrument', () => {
   let diSetup: any;
-  
+
   beforeEach(() => {
     diSetup = setupDIMocks();
   });
-  
+
   it('should initialize correctly', async () => {
     const bass = new BassInstrument(config, diSetup.audioEngine);
     await bass.initialize();
-    
+
     expect(bass.state.isInitialized).toBe(true);
     expect(diSetup.audioEngine.createSampler).toHaveBeenCalled();
   });
-  
+
   it('should trigger notes', () => {
     bass.trigger({ audioTime: 0, velocity: 0.8, data: { note: 'E1' } });
-    
+
     const mockSampler = diSetup.audioEngine.createSampler.mock.results[0].value;
     expect(mockSampler.triggerAttackRelease).toHaveBeenCalled();
   });
@@ -236,13 +245,14 @@ describe('BassInstrument', () => {
 
 ### 2. Optional Improvements
 
-- **New features**: Consider using DI pattern for better testability  
+- **New features**: Consider using DI pattern for better testability
 - **Testing**: Use new unit testing capabilities for better coverage
 - **Debugging**: Use DI mocks for easier debugging
 
 ### 3. Recommended Patterns
 
 **For new instruments:**
+
 ```typescript
 export class MyNewInstrument extends Instrument {
   constructor(config: MyInstrumentConfig, audioEngine?: any) {
@@ -254,13 +264,14 @@ export class MyNewInstrument extends Instrument {
 ```
 
 **For new components:**
+
 ```typescript
 export class MyNewComponent {
   constructor(config: MyConfig) {
     // Get audioEngine from global services if not provided
     this.audioEngine = config.audioEngine || this.getGlobalAudioEngine();
   }
-  
+
   private getGlobalAudioEngine(): any {
     const services = (window as any).__coreServices;
     return services?.getAudioEngine?.() || null;
@@ -280,16 +291,19 @@ The migration has minimal performance impact:
 ## Benefits Gained
 
 ### 1. Testing Revolution
+
 - **Before**: ~40% test coverage (E2E only)
 - **After**: ~95% test coverage (unit + integration + E2E)
 - **Development speed**: 10x faster test feedback
 
 ### 2. Code Quality
+
 - **Maintainability**: Much easier to modify and extend
 - **Debugability**: Better error isolation and debugging
 - **Reliability**: Earlier bug detection through unit testing
 
-### 3. Developer Experience  
+### 3. Developer Experience
+
 - **New feature development**: Faster with reliable testing
 - **Code reviews**: More confidence in changes
 - **Refactoring**: Safer with comprehensive test coverage
@@ -297,58 +311,71 @@ The migration has minimal performance impact:
 ## Documentation Resources
 
 ### 1. Core Documentation
+
 - **[Dependency Injection Guide](./dependency-injection.md)** - Complete DI pattern documentation
 - **[Migration Guide](./instrument-di-migration-guide.md)** - Step-by-step migration for new code
 - **[Testing Patterns](./di-test-patterns.md)** - Complete testing guide
 - **[Examples](./di-examples.md)** - Real-world usage patterns
 
 ### 2. Architecture Documentation
+
 - **[Architecture Diagrams](./dependency-injection-architecture.md)** - Visual system overview
 - **[Performance Report](./di-performance-report.md)** - Detailed performance analysis
 
 ## FAQs
 
 ### Q: Do I need to change my existing code?
+
 **A: No.** All existing code continues to work exactly as before with 100% backward compatibility.
 
 ### Q: Should I migrate my existing instruments to use DI?
+
 **A: Optional.** Existing instruments work fine as-is. Consider DI for new instruments or when adding comprehensive tests.
 
 ### Q: Will this affect production performance?
+
 **A: Minimal impact.** Less than 6% overhead in worst-case scenarios, typically 2-3% in real usage.
 
 ### Q: How do I write tests for audio components now?
+
 **A: Much easier.** Use the `setupDIMocks()` utility for complete unit testing without browser AudioContext.
 
 ### Q: What if I don't want to use DI?
+
 **A: No problem.** The old patterns continue to work unchanged. DI is available when you need it.
 
 ### Q: Are there any breaking changes?
+
 **A: None.** This is a purely additive refactoring with full backward compatibility.
 
 ## Migration Timeline
 
 ### ✅ Phase 1: Core Infrastructure (Completed)
+
 - AudioEngine factory methods
-- CoreServices integration  
+- CoreServices integration
 - ToneWrapper implementation
 
 ### ✅ Phase 2: Component Updates (Completed)
+
 - All instruments support DI
 - All mixing components support DI
 - Backward compatibility maintained
 
 ### ✅ Phase 3: Testing Infrastructure (Completed)
+
 - Complete mock system
 - Testing utilities
 - Integration tests
 
 ### ✅ Phase 4: Documentation (Completed)
+
 - Migration guides
 - Testing documentation
 - Performance analysis
 
 ### ✅ Phase 5: Production Deployment (Completed)
+
 - All changes deployed
 - Full test coverage achieved
 - Performance validated

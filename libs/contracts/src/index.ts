@@ -49,7 +49,7 @@ export {
   positionToAbsoluteTick,
   absoluteTickToPosition,
   inferNoteDurationFromTicks,
-  noteDurationToTicks
+  noteDurationToTicks,
 } from './types/musical-time.js';
 export { MusicalTimeConverter } from './services/MusicalTimeConverter.js';
 export { ProfessionalDrumProcessor } from './services/ProfessionalDrumProcessor.js';

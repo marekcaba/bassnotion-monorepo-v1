@@ -4,10 +4,10 @@
   "category": "electronic",
   "version": "1.0",
   "description": "Example manifest showing how original filenames map to drum types",
-  
+
   "mapping": {
     "kick": [
-      { 
+      {
         "file": "BD7575.WAV",
         "originalName": "BD7575.WAV",
         "velocity": 2,
@@ -15,15 +15,15 @@
       }
     ],
     "snare": [
-      { 
+      {
         "file": "SD7575.WAV",
-        "originalName": "SD7575.WAV", 
+        "originalName": "SD7575.WAV",
         "velocity": 2,
         "notes": "SD = Snare Drum in Roland naming"
       }
     ],
     "hihat-closed": [
-      { 
+      {
         "file": "CHH.WAV",
         "originalName": "CHH.WAV",
         "velocity": 2,
@@ -31,7 +31,7 @@
       }
     ],
     "hihat-open": [
-      { 
+      {
         "file": "OHH.WAV",
         "originalName": "OHH.WAV",
         "velocity": 2,
@@ -39,7 +39,7 @@
       }
     ],
     "cowbell": [
-      { 
+      {
         "file": "CB.WAV",
         "originalName": "CB.WAV",
         "velocity": 2,
@@ -47,7 +47,7 @@
       }
     ],
     "clap": [
-      { 
+      {
         "file": "CP.WAV",
         "originalName": "CP.WAV",
         "velocity": 2,
@@ -55,7 +55,7 @@
       }
     ]
   },
-  
+
   "benefits": [
     "✅ NO RENAMING NEEDED - Keep original filenames",
     "✅ DrummerWidget knows BD7575.WAV is a 'kick'",
@@ -63,7 +63,7 @@
     "✅ Supports multiple samples per drum type",
     "✅ Add new kits without changing code"
   ],
-  
+
   "usage": {
     "drummerWidget": {
       "comment": "Your widget code would look like this:",

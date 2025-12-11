@@ -32,7 +32,8 @@ async function ensureToneLoaded(
   audioEngine?: any,
 ): Promise<void> {
   // Use InstrumentDependencyManager for independent loading
-  const { InstrumentDependencyManager } = await import('@/domains/playback/services/InstrumentDependencyManager.js');
+  const { InstrumentDependencyManager } =
+    await import('@/domains/playback/services/InstrumentDependencyManager.js');
 
   if (!Tone || preferredContext) {
     try {
@@ -47,7 +48,9 @@ async function ensureToneLoaded(
       ensureToneUsesPersistentContext();
     } catch (error) {
       logger.error('🎵 Wurlitzer: Failed to load Tone.js', { error });
-      throw new Error(`Failed to load Tone.js for Wurlitzer: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to load Tone.js for Wurlitzer: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 }
@@ -80,7 +83,8 @@ export class WurlitzerVelocitySampler {
       validate: true,
     });
     // DIAGNOSTIC: Track instance
-    (this as any)._instanceId = `WV${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+    (this as any)._instanceId =
+      `WV${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
     console.log('[WURLITZER CONSTRUCTOR]', {
       instanceId: (this as any)._instanceId,
     });
@@ -118,7 +122,8 @@ export class WurlitzerVelocitySampler {
       // Load configuration
       this.config = await this.loader.loadInstrumentConfig(CONFIG_PATH);
       // Support both velocityRanges and globalVelocityRanges formats
-      const velocityRanges = this.config.velocityRanges || (this.config as any).globalVelocityRanges;
+      const velocityRanges =
+        this.config.velocityRanges || (this.config as any).globalVelocityRanges;
 
       logger.info('🎹 Loaded Wurlitzer configuration', {
         name: this.config.name,
@@ -213,7 +218,9 @@ export class WurlitzerVelocitySampler {
       // this.destination.toDestination(); // ← REMOVED - was causing unstoppable audio
 
       // Skip CachedToneBufferLoader check - not needed for Wurlitzer
-      logger.debug('🎹 Initializing without CachedToneBufferLoader (no direct toDestination)');
+      logger.debug(
+        '🎹 Initializing without CachedToneBufferLoader (no direct toDestination)',
+      );
 
       // Load optimized velocity layers based on config
       const layersToLoad = velocityLayers ||
@@ -358,7 +365,10 @@ export class WurlitzerVelocitySampler {
 
         // DEBUG: Log first few URLs to check format
         const firstFewUrls = Object.entries(sampleUrls).slice(0, 3);
-        logger.info('🔍 Sample URLs for layer (first 3):', { layer, urls: firstFewUrls });
+        logger.info('🔍 Sample URLs for layer (first 3):', {
+          layer,
+          urls: firstFewUrls,
+        });
 
         // Create Tone.js Sampler
         const sampler = await this.createSampler(sampleUrls);
@@ -437,10 +447,9 @@ export class WurlitzerVelocitySampler {
     }
 
     // Fall back to global velocity ranges
-    const velocityRanges = this.config.velocityRanges || (this.config as any).globalVelocityRanges;
-    const range = velocityRanges?.find(
-      (r: any) => v >= r.min && v <= r.max,
-    );
+    const velocityRanges =
+      this.config.velocityRanges || (this.config as any).globalVelocityRanges;
+    const range = velocityRanges?.find((r: any) => v >= r.min && v <= r.max);
     return range ? range.layer : 'v3';
   }
 
@@ -508,12 +517,15 @@ export class WurlitzerVelocitySampler {
     velocity = 80,
   ): Promise<void> {
     // DIAGNOSTIC: Log every Wurlitzer note trigger to identify dual playback source
-    console.log('[PLAYBACK-PATH] WurlitzerVelocitySampler.triggerAttack() called:', {
-      note,
-      velocity,
-      time: time?.toFixed(3) || 'immediate',
-      isInitialized: this.isInitialized
-    });
+    console.log(
+      '[PLAYBACK-PATH] WurlitzerVelocitySampler.triggerAttack() called:',
+      {
+        note,
+        velocity,
+        time: time?.toFixed(3) || 'immediate',
+        isInitialized: this.isInitialized,
+      },
+    );
 
     if (!this.isInitialized || !this.config) return;
 
@@ -600,7 +612,9 @@ export class WurlitzerVelocitySampler {
     }
 
     this.sustainPedal = pedalDown;
-    logger.info(`🎹 Sustain pedal ${pedalDown ? 'DOWN' : 'UP'} (value: ${value})`);
+    logger.info(
+      `🎹 Sustain pedal ${pedalDown ? 'DOWN' : 'UP'} (value: ${value})`,
+    );
 
     // If pedal is released, release all sustained notes
     if (!pedalDown && this.sustainedNotes.size > 0) {
@@ -693,7 +707,8 @@ export class WurlitzerVelocitySampler {
   async preloadAll(): Promise<void> {
     if (!this.config) return;
 
-    const velocityRanges = this.config.velocityRanges || (this.config as any).globalVelocityRanges;
+    const velocityRanges =
+      this.config.velocityRanges || (this.config as any).globalVelocityRanges;
     const allLayers = velocityRanges?.map((r: any) => r.layer) || [];
     await this.preloadLayers(allLayers);
   }
@@ -750,7 +765,8 @@ export class WurlitzerVelocitySampler {
    */
   getStatus(): any {
     const memoryUsage = this.loadedLayers.size * 10; // ~10MB per layer estimate
-    const velocityRanges = this.config?.velocityRanges || (this.config as any)?.globalVelocityRanges;
+    const velocityRanges =
+      this.config?.velocityRanges || (this.config as any)?.globalVelocityRanges;
 
     return {
       isInitialized: this.isInitialized,

@@ -34,7 +34,11 @@ export class TrackInstrumentUtils {
     if (name.includes('metronome')) return 'metronome';
     if (name.includes('drum')) return 'drums';
     if (name.includes('bass')) return 'bass';
-    if (name.includes('harmony') || name.includes('chord') || name.includes('piano')) {
+    if (
+      name.includes('harmony') ||
+      name.includes('chord') ||
+      name.includes('piano')
+    ) {
       return 'harmony';
     }
     if (name.includes('voice') || name.includes('cue')) return 'voice-cue';

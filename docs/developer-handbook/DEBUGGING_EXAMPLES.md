@@ -5,11 +5,13 @@ Let's walk through actual debugging scenarios step-by-step, showing exactly what
 ## Example 1: "The Play Button Doesn't Work!"
 
 ### What the user reports:
+
 > "I clicked play on the drums but nothing happens!"
 
 ### Step 1: Open the Audio Debug Panel
 
 Set in `.env.local`:
+
 ```
 NEXT_PUBLIC_DEBUG_AUDIO=true
 ```
@@ -23,6 +25,7 @@ Restart and look at bottom-right corner:
 ### Step 2: Click the Play Button
 
 After clicking, you see:
+
 ```
 🎵 Audio Debug (3)     ▼
 
@@ -64,6 +67,7 @@ const handlePlayClick = async () => {
 ### Step 5: Verify the Fix
 
 After fixing, click play again:
+
 ```
 [15:25:12] DrummerWidget → play
 [15:25:12] UnifiedTransport → start
@@ -79,21 +83,24 @@ Success! 🎉
 ## Example 2: "The Page is Frozen!"
 
 ### What the user reports:
+
 > "When I go to the exercise page, everything freezes and I can't click anything!"
 
 ### Step 1: Open Browser Console
 
 You see:
+
 ```
-Warning: Maximum update depth exceeded. This can happen when a 
-component calls setState inside useEffect, but useEffect either 
-doesn't have a dependency array, or one of the dependencies 
+Warning: Maximum update depth exceeded. This can happen when a
+component calls setState inside useEffect, but useEffect either
+doesn't have a dependency array, or one of the dependencies
 changes on every render.
 ```
 
 ### Step 2: Find the Component
 
 The error shows:
+
 ```
 at ExerciseSelector (exercise-selector.tsx:45)
 at FretboardCard (fretboard-card.tsx:123)
@@ -114,14 +121,15 @@ useEffect(() => {
 const { logger } = useCorrelation('ExerciseSelector');
 
 useEffect(() => {
-  logger.info('Effect running', { 
-    exerciseCount: exercises.length 
+  logger.info('Effect running', {
+    exerciseCount: exercises.length,
   });
   setSelectedExercise(exercises[0]);
 }); // Still no array - let's see how often it runs
 ```
 
 Console shows:
+
 ```
 Effect running { exerciseCount: 5 } // 1000+ times per second!
 ```
@@ -145,6 +153,7 @@ Now it only runs when exercises change! 🎉
 ## Example 3: "API Calls Fail Randomly!"
 
 ### What the user reports:
+
 > "Sometimes saving works, sometimes it doesn't. No pattern!"
 
 ### Step 1: Check Health Indicator
@@ -152,6 +161,7 @@ Now it only runs when exercises change! 🎉
 Bottom-left shows: 🟡 (Yellow - degraded)
 
 Click it for details:
+
 ```json
 {
   "status": "degraded",
@@ -172,12 +182,11 @@ const { correlationId, logger } = useCorrelation('SaveButton');
 
 const handleSave = async () => {
   logger.info('Save started', { correlationId });
-  
+
   try {
-    const result = await apiClient.post('/api/exercises/save', 
-      exerciseData, 
-      { correlationId }
-    );
+    const result = await apiClient.post('/api/exercises/save', exerciseData, {
+      correlationId,
+    });
     logger.info('Save succeeded', { correlationId });
   } catch (error) {
     logger.error('Save failed', error, { correlationId });
@@ -188,10 +197,11 @@ const handleSave = async () => {
 ### Step 3: Capture a Failure
 
 When it fails, console shows:
+
 ```
-ERROR: Save failed { 
+ERROR: Save failed {
   correlationId: "xyz-789-abc",
-  error: "Network timeout" 
+  error: "Network timeout"
 }
 ```
 
@@ -202,6 +212,7 @@ grep "xyz-789-abc" logs/backend-out.log
 ```
 
 Results:
+
 ```
 [15:45:23] INFO: Incoming request { correlationId: "xyz-789-abc", url: "/api/exercises/save" }
 [15:45:23] INFO: Saving exercise { correlationId: "xyz-789-abc", exerciseId: "123" }
@@ -219,12 +230,12 @@ const saveWithRetry = async (data: any, retries = 3) => {
       logger.info(`Save attempt ${i + 1}`, { correlationId });
       return await apiClient.post('/api/exercises/save', data, {
         correlationId,
-        timeout: 15000 // Increase timeout
+        timeout: 15000, // Increase timeout
       });
     } catch (error) {
       if (i === retries - 1) throw error;
       logger.warn(`Save failed, retrying...`, { attempt: i + 1 });
-      await new Promise(r => setTimeout(r, 1000)); // Wait 1s
+      await new Promise((r) => setTimeout(r, 1000)); // Wait 1s
     }
   }
 };
@@ -237,11 +248,13 @@ Now it retries and usually succeeds! 🎉
 ## Example 4: "Memory Leak - App Gets Slower Over Time"
 
 ### What the user reports:
+
 > "The app is fast at first, but after 5 minutes it's really sluggish"
 
 ### Step 1: Check Memory Usage
 
 Open browser console:
+
 ```javascript
 console.log(performance.memory);
 // {
@@ -262,6 +275,7 @@ That's too high for our app!
 5. Compare snapshots
 
 You see:
+
 ```
 AudioBuffer: 1,234 instances (+1,200)
 Detached DOM nodes: 567 (+550)
@@ -270,6 +284,7 @@ Detached DOM nodes: 567 (+550)
 ### Step 3: Find the Leak
 
 Add debug logging:
+
 ```typescript
 const { logger } = useCorrelation('AudioBufferDebug');
 
@@ -278,16 +293,17 @@ let bufferCount = 0;
 
 function loadAudioBuffer(url: string) {
   bufferCount++;
-  logger.warn('Loading buffer', { 
-    url, 
-    totalBuffers: bufferCount 
+  logger.warn('Loading buffer', {
+    url,
+    totalBuffers: bufferCount,
   });
-  
+
   // Original code...
 }
 ```
 
 Console shows:
+
 ```
 Loading buffer { url: "kick.mp3", totalBuffers: 1 }
 Loading buffer { url: "kick.mp3", totalBuffers: 2 }
@@ -316,7 +332,7 @@ async function loadAudioBuffer(url: string) {
     logger.info('Using cached buffer', { url });
     return audioBufferCache.get(url);
   }
-  
+
   logger.info('Loading new buffer', { url });
   const buffer = await fetchAndDecode(url);
   audioBufferCache.set(url, buffer);
@@ -336,22 +352,25 @@ Memory usage stays flat now! 🎉
 ## Example 5: "Works on My Machine, Not in Production!"
 
 ### What happens:
+
 > Local: ✅ Everything works
 > Production: ❌ Audio widgets don't load
 
 ### Step 1: Compare Environments
 
 Add debug logging:
+
 ```typescript
 logger.info('Environment check', {
   env: process.env.NODE_ENV,
   apiUrl: process.env.NEXT_PUBLIC_API_URL,
   audioDebug: process.env.NEXT_PUBLIC_DEBUG_AUDIO,
-  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL
+  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
 });
 ```
 
 Local shows:
+
 ```
 Environment check {
   env: "development",
@@ -362,6 +381,7 @@ Environment check {
 ```
 
 Production shows:
+
 ```
 Environment check {
   env: "production",
@@ -381,6 +401,7 @@ Warning: NEXT_PUBLIC_SUPABASE_URL is not defined
 ### Step 3: Fix Production Environment
 
 In your deployment platform (Vercel, etc.):
+
 ```
 NEXT_PUBLIC_API_URL=https://api.bassnotion.com
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
@@ -395,12 +416,13 @@ if (typeof window !== 'undefined') {
   console.log('BassNotion Environment:', {
     api: process.env.NEXT_PUBLIC_API_URL ? '✅' : '❌',
     supabase: process.env.NEXT_PUBLIC_SUPABASE_URL ? '✅' : '❌',
-    version: process.env.NEXT_PUBLIC_VERSION || 'unknown'
+    version: process.env.NEXT_PUBLIC_VERSION || 'unknown',
   });
 }
 ```
 
 Now production shows:
+
 ```
 BassNotion Environment: {
   api: '✅',

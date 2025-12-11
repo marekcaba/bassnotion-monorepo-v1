@@ -28,7 +28,9 @@ export interface RateLimitInfo {
 
 @Injectable()
 export class AuthSecurityService {
-  private readonly staticLogger = createStructuredLogger(AuthSecurityService.name);
+  private readonly staticLogger = createStructuredLogger(
+    AuthSecurityService.name,
+  );
 
   // Rate limiting configuration
   private readonly RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
@@ -52,12 +54,14 @@ export class AuthSecurityService {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
 
-    logger.info('🔧 [AuthSecurityService] Constructor called', { correlationId });
+    logger.info('🔧 [AuthSecurityService] Constructor called', {
+      correlationId,
+    });
     logger.info('🔧 [AuthSecurityService] DatabaseService:', {
       exists: !!this.db,
       type: this.db?.constructor?.name,
       hasSupabase: !!this.db?.supabase,
-      correlationId
+      correlationId,
     });
     // DatabaseService is properly injected - removed faulty defensive check
   }
@@ -69,25 +73,32 @@ export class AuthSecurityService {
     email: string,
     ipAddress: string,
   ): Promise<RateLimitInfo> {
-  const logger = this.requestContext?.getLogger() || this.staticLogger;
-  const correlationId = this.requestContext?.getCorrelationId();
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
     try {
       // Validate input parameters
       if (!email || typeof email !== 'string') {
-        logger.warn('Invalid email provided to checkRateLimit, failing open', { correlationId });
+        logger.warn('Invalid email provided to checkRateLimit, failing open', {
+          correlationId,
+        });
         return {
           isRateLimited: false,
-          attemptsRemaining: this.MAX_ATTEMPTS_PER_EMAIL };
+          attemptsRemaining: this.MAX_ATTEMPTS_PER_EMAIL,
+        };
       }
 
       // Defensive check for DatabaseService
       if (!this.db || !this.db.supabase) {
         const logger = this.requestContext?.getLogger() || this.staticLogger;
         const correlationId = this.requestContext?.getCorrelationId();
-        logger.warn('DatabaseService unavailable - failing open for rate limiting', { correlationId });
+        logger.warn(
+          'DatabaseService unavailable - failing open for rate limiting',
+          { correlationId },
+        );
         return {
           isRateLimited: false,
-          attemptsRemaining: this.MAX_ATTEMPTS_PER_EMAIL };
+          attemptsRemaining: this.MAX_ATTEMPTS_PER_EMAIL,
+        };
       }
 
       const now = new Date();
@@ -140,7 +151,8 @@ export class AuthSecurityService {
         return {
           isRateLimited: true,
           remainingTime,
-          attemptsRemaining: 0 };
+          attemptsRemaining: 0,
+        };
       }
 
       return {
@@ -148,15 +160,19 @@ export class AuthSecurityService {
         attemptsRemaining: Math.min(
           this.MAX_ATTEMPTS_PER_IP - (ipAttempts || 0),
           this.MAX_ATTEMPTS_PER_EMAIL - (emailAttempts || 0),
-        ) };
+        ),
+      };
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error checking rate limit:', error as Error, { correlationId });
+      logger.error('Error checking rate limit:', error as Error, {
+        correlationId,
+      });
       // Fail open for rate limiting to avoid blocking legitimate users
       return {
         isRateLimited: false,
-        attemptsRemaining: this.MAX_ATTEMPTS_PER_EMAIL };
+        attemptsRemaining: this.MAX_ATTEMPTS_PER_EMAIL,
+      };
     }
   }
 
@@ -169,18 +185,26 @@ export class AuthSecurityService {
     try {
       // Validate input parameters
       if (!email || typeof email !== 'string') {
-        logger.warn('Invalid email provided to checkAccountLockout, failing open', { correlationId });
+        logger.warn(
+          'Invalid email provided to checkAccountLockout, failing open',
+          { correlationId },
+        );
         return {
           isLocked: false,
-          failedAttempts: 0 };
+          failedAttempts: 0,
+        };
       }
 
       // Defensive check for DatabaseService
       if (!this.db || !this.db.supabase) {
-        logger.warn('DatabaseService unavailable - failing open for account lockout', { correlationId });
+        logger.warn(
+          'DatabaseService unavailable - failing open for account lockout',
+          { correlationId },
+        );
         return {
           isLocked: false,
-          failedAttempts: 0 };
+          failedAttempts: 0,
+        };
       }
 
       const now = new Date();
@@ -197,7 +221,8 @@ export class AuthSecurityService {
       if (error || !attempts || attempts.length === 0) {
         return {
           isLocked: false,
-          failedAttempts: 0 };
+          failedAttempts: 0,
+        };
       }
 
       // Count consecutive failed attempts (stop at first success)
@@ -222,7 +247,8 @@ export class AuthSecurityService {
       if (!applicableThreshold) {
         return {
           isLocked: false,
-          failedAttempts: consecutiveFailures };
+          failedAttempts: consecutiveFailures,
+        };
       }
 
       // Check if lockout period has expired
@@ -240,20 +266,25 @@ export class AuthSecurityService {
           isLocked: true,
           lockoutUntil,
           failedAttempts: consecutiveFailures,
-          remainingTime };
+          remainingTime,
+        };
       }
 
       return {
         isLocked: false,
-        failedAttempts: consecutiveFailures };
+        failedAttempts: consecutiveFailures,
+      };
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error checking account lockout:', error as Error, { correlationId });
+      logger.error('Error checking account lockout:', error as Error, {
+        correlationId,
+      });
       // Fail open for lockout to avoid permanently blocking users
       return {
         isLocked: false,
-        failedAttempts: 0 };
+        failedAttempts: 0,
+      };
     }
   }
 
@@ -266,18 +297,24 @@ export class AuthSecurityService {
     success: boolean,
     userAgent?: string,
   ): Promise<void> {
-  const logger = this.requestContext?.getLogger() || this.staticLogger;
-  const correlationId = this.requestContext?.getCorrelationId();
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
     try {
       // Validate input parameters
       if (!email || typeof email !== 'string') {
-        logger.warn('Invalid email provided to recordLoginAttempt, skipping record', { correlationId });
+        logger.warn(
+          'Invalid email provided to recordLoginAttempt, skipping record',
+          { correlationId },
+        );
         return;
       }
 
       // Defensive check for DatabaseService
       if (!this.db || !this.db.supabase) {
-        logger.warn('DatabaseService unavailable - cannot record login attempt', { correlationId });
+        logger.warn(
+          'DatabaseService unavailable - cannot record login attempt',
+          { correlationId },
+        );
         return;
       }
 
@@ -286,12 +323,15 @@ export class AuthSecurityService {
         ip_address: ipAddress,
         user_agent: userAgent,
         success,
-        attempted_at: new Date().toISOString() });
+        attempted_at: new Date().toISOString(),
+      });
 
       if (error) {
         const logger = this.requestContext?.getLogger() || this.staticLogger;
         const correlationId = this.requestContext?.getCorrelationId();
-        logger.error('Error recording login attempt:', error as Error, { correlationId });
+        logger.error('Error recording login attempt:', error as Error, {
+          correlationId,
+        });
       }
 
       // Clean up old attempts (older than 7 days) periodically
@@ -302,7 +342,9 @@ export class AuthSecurityService {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error recording login attempt:', error as Error, { correlationId });
+      logger.error('Error recording login attempt:', error as Error, {
+        correlationId,
+      });
     }
   }
 
@@ -368,7 +410,9 @@ export class AuthSecurityService {
       if (error) {
         const logger = this.requestContext?.getLogger() || this.staticLogger;
         const correlationId = this.requestContext?.getCorrelationId();
-        logger.error('Error cleaning up old login attempts:', error as Error, { correlationId });
+        logger.error('Error cleaning up old login attempts:', error as Error, {
+          correlationId,
+        });
       } else {
         const logger = this.requestContext?.getLogger() || this.staticLogger;
         const correlationId = this.requestContext?.getCorrelationId();

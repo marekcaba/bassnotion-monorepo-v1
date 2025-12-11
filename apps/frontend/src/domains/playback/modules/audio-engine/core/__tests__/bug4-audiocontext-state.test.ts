@@ -186,9 +186,11 @@ describe('Bug #4: AudioContext State Management', () => {
     });
 
     it('should work with arrow function handlers', () => {
-      const unsub = AudioContextManager.onGlobalStateChange((state: AudioContextState) => {
-        // Arrow function handler
-      });
+      const unsub = AudioContextManager.onGlobalStateChange(
+        (state: AudioContextState) => {
+          // Arrow function handler
+        },
+      );
 
       expect(typeof unsub).toBe('function');
       unsub();
@@ -252,7 +254,11 @@ describe('Bug #4: AudioContext State Management', () => {
       const globalContext = (AudioContextManager as any).globalContext;
 
       // Can be null initially, but should be reusable
-      expect(globalContext === null || globalContext instanceof AudioContext || typeof globalContext === 'object').toBe(true);
+      expect(
+        globalContext === null ||
+          globalContext instanceof AudioContext ||
+          typeof globalContext === 'object',
+      ).toBe(true);
     });
   });
 

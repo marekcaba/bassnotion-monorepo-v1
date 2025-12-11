@@ -1,11 +1,13 @@
 # HarmonyWidget Performance Optimization
 
 ## Problem
+
 The original HarmonyWidget was taking ages to load (10-15+ seconds) while the DrummerWidget loaded instantly (under 1 second). The issue was complex initialization logic with multiple waiting states and dependencies.
 
 ## Root Causes of Slow Loading
 
 ### Original HarmonyWidget Issues:
+
 1. **Complex initialization chain** - Multiple useEffect hooks with dependencies
 2. **Waiting for audioReady state** - Unnecessary delay waiting for audio context
 3. **Complex Transport monitoring** - Checking Transport state repeatedly
@@ -13,6 +15,7 @@ The original HarmonyWidget was taking ages to load (10-15+ seconds) while the Dr
 5. **Over-engineering** - Too many checks and safeguards that slow down initialization
 
 ### DrummerWidget Success Pattern:
+
 1. **Immediate loading** - Loads Tone.js on mount, no waiting
 2. **Simple initialization** - Direct, straightforward code path
 3. **Preload checking** - Checks BackgroundSampleLoader first
@@ -29,37 +32,37 @@ useEffect(() => {
   const initializeImmediately = async () => {
     // 1. Load Tone.js
     const Tone = await import('tone');
-    
+
     // 2. Check for preloaded samples
     const loader = getBackgroundLoader();
     const preloadedSamples = loader.getPreloadedSamples('harmony');
-    
+
     if (preloadedSamples) {
       processorRef.current = preloadedSamples;
       setSamplesLoaded(true);
       return; // Done!
     }
-    
+
     // 3. Fallback: Load on demand
     const processor = new ChordInstrumentProcessor();
     await processor.setPreset(ChordPreset.PIANO);
     await processor.ensureSamplesLoaded();
-    
+
     processorRef.current = processor;
     setSamplesLoaded(true);
   };
-  
+
   initializeImmediately(); // No waiting!
 }, []); // Run once on mount
 ```
 
 ## Performance Comparison
 
-| Widget | Load Time | Strategy |
-|--------|-----------|----------|
-| DrummerWidget | < 1 second | Immediate loading, simple init |
+| Widget                   | Load Time      | Strategy                       |
+| ------------------------ | -------------- | ------------------------------ |
+| DrummerWidget            | < 1 second     | Immediate loading, simple init |
 | HarmonyWidget (Original) | 10-15+ seconds | Complex checks, waiting states |
-| HarmonyWidgetOptimized | < 1 second | Same as DrummerWidget pattern |
+| HarmonyWidgetOptimized   | < 1 second     | Same as DrummerWidget pattern  |
 
 ## Key Optimizations
 
@@ -107,6 +110,7 @@ import { HarmonyWidgetOptimized } from '@/domains/widgets/components/YouTubeWidg
 ## Testing
 
 Visit `/test-widget-speed` to see the performance comparison between:
+
 - DrummerWidget (fast)
 - HarmonyWidgetOptimized (fast)
 - Original HarmonyWidget (slow)

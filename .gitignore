@@ -49,6 +49,7 @@ Thumbs.db
 
 # Documentation (excluded from repository)
 .docs/
+docs/internal-architecture/
 
 .nx/cache
 .nx/workspace-data

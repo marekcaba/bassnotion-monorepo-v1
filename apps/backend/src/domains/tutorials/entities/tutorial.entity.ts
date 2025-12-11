@@ -53,7 +53,8 @@ export class Tutorial {
       tags: props.tags || [],
       isActive: props.isActive ?? true,
       createdAt: now,
-      updatedAt: now });
+      updatedAt: now,
+    });
   }
 
   static reconstitute(props: TutorialProps): Tutorial {

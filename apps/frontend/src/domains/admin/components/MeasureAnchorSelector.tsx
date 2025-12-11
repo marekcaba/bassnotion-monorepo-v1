@@ -9,7 +9,9 @@ interface MeasureAnchorSelectorProps {
   /** Parsed measures from MIDI file */
   measures: ParsedMeasure[];
   /** Callback when anchors change */
-  onAnchorsChange?: (anchors: { measureNumber: number; string: number; fret: number }[]) => void;
+  onAnchorsChange?: (
+    anchors: { measureNumber: number; string: number; fret: number }[],
+  ) => void;
   /** Initial anchors (for editing) */
   initialAnchors?: { measureNumber: number; string: number; fret: number }[];
   /** Bass type (4, 5, or 6 string) */
@@ -50,7 +52,11 @@ export function MeasureAnchorSelector({
     onAnchorsChange?.(getAnchorsArray());
   }, [anchorCount, getAnchorsArray, onAnchorsChange]);
 
-  const handlePositionSelect = (measureNumber: number, string: number, fret: number) => {
+  const handlePositionSelect = (
+    measureNumber: number,
+    string: number,
+    fret: number,
+  ) => {
     setAnchor(measureNumber, string, fret);
   };
 
@@ -62,7 +68,9 @@ export function MeasureAnchorSelector({
       {/* Progress header */}
       <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-semibold text-gray-700">Anchor Selection Progress</h3>
+          <h3 className="text-sm font-semibold text-gray-700">
+            Anchor Selection Progress
+          </h3>
           <button
             type="button"
             onClick={clearAll}
@@ -78,7 +86,9 @@ export function MeasureAnchorSelector({
             <span className="text-gray-600">
               {anchorCount} of {totalMeasures} measures anchored
             </span>
-            <span className="font-semibold text-gray-700">{completionPercentage}%</span>
+            <span className="font-semibold text-gray-700">
+              {completionPercentage}%
+            </span>
           </div>
           <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
             <div
@@ -93,18 +103,16 @@ export function MeasureAnchorSelector({
         {/* Status message */}
         {isComplete() ? (
           <div className="flex items-center gap-2 text-sm text-green-700">
-            <svg
-              className="w-4 h-4"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
               <path
                 fillRule="evenodd"
                 d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
                 clipRule="evenodd"
               />
             </svg>
-            <span className="font-medium">All measures have anchors! Ready to convert.</span>
+            <span className="font-medium">
+              All measures have anchors! Ready to convert.
+            </span>
           </div>
         ) : (
           <div className="text-sm text-amber-700">
@@ -117,9 +125,10 @@ export function MeasureAnchorSelector({
       {/* Instructions */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
         <p className="text-sm text-blue-800">
-          <span className="font-semibold">Instructions:</span> Click on the fretboard to select
-          the first note position for each measure. This helps the algorithm determine optimal
-          fingering for the rest of the notes in that measure.
+          <span className="font-semibold">Instructions:</span> Click on the
+          fretboard to select the first note position for each measure. This
+          helps the algorithm determine optimal fingering for the rest of the
+          notes in that measure.
         </p>
       </div>
 
@@ -163,8 +172,11 @@ export function MeasureAnchorSelector({
                   )}
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  {measure.notes.length} note{measure.notes.length !== 1 ? 's' : ''}
-                  {firstNote && <span className="ml-2">• First: {firstNote.name}</span>}
+                  {measure.notes.length} note
+                  {measure.notes.length !== 1 ? 's' : ''}
+                  {firstNote && (
+                    <span className="ml-2">• First: {firstNote.name}</span>
+                  )}
                 </p>
               </div>
 

@@ -39,6 +39,7 @@ The unified sample loading system implements a progressive 3-phase loading strat
 ## Loading Phases
 
 ### Phase 1: Initial Page Load (0ms)
+
 - **What happens**: Nothing! Zero loading, zero memory usage
 - **Why**: Fastest possible initial page load
 - **Code location**: Page components render without audio initialization
@@ -51,8 +52,9 @@ graph LR
 ```
 
 ### Phase 2: First User Interaction (scroll/click/touch)
+
 - **Trigger**: ScrollTriggerLoader detects first user gesture
-- **What happens**: 
+- **What happens**:
   - AudioContext initialized/resumed
   - Essential samples loaded
   - Instruments created and cached
@@ -69,24 +71,25 @@ sequenceDiagram
 
     User->>ScrollTriggerLoader: First interaction
     ScrollTriggerLoader->>InitialSamplePreloader: loadEssentialSamples()
-    
+
     InitialSamplePreloader->>InitialSamplePreloader: loadEssentialHarmonyInstrument()
     Note right of InitialSamplePreloader: Creates WamKeyboard instance
     InitialSamplePreloader->>GlobalSampleCache: cacheInstrument('harmony-preloaded')
-    
+
     InitialSamplePreloader->>InitialSamplePreloader: loadEssentialDrumInstrument()
     Note right of InitialSamplePreloader: Creates Tone.Players for drums
     InitialSamplePreloader->>GlobalSampleCache: cacheInstrument('drums-preloaded')
-    
+
     InitialSamplePreloader->>InitialSamplePreloader: loadEssentialMetronomeSamples()
     Note right of InitialSamplePreloader: Caches metronome URLs
     InitialSamplePreloader->>GlobalSampleCache: cacheUrl('metronome/*.mp3')
-    
+
     InitialSamplePreloader-->>ScrollTriggerLoader: Complete
     ScrollTriggerLoader-->>Widgets: dispatch('essentialSamplesReady')
 ```
 
 ### Phase 3: Progressive Enhancement (background)
+
 - **Trigger**: After Phase 2 completes
 - **What happens**: Load full sample sets, additional velocity layers
 - **Duration**: 1-5 seconds (background)
@@ -137,10 +140,10 @@ const loadInstrument = async () => {
   // 2. Create if not cached (fallback)
   const context = await ensureAudioContext();
   const instrument = await createInstrument(context);
-  
+
   // 3. Cache for other widgets
   GlobalSampleCache.cacheInstrument('harmony-preloaded', instrument);
-  
+
   instrumentRef.current = instrument;
   setLoaded(true);
 };
@@ -148,21 +151,23 @@ const loadInstrument = async () => {
 
 ## Cache Keys
 
-| Instrument | Cache Key | Created In |
-|------------|-----------|------------|
-| Harmony/Piano | `'harmony-preloaded'` | Phase 2 |
-| Drums | `'drums-preloaded'` | Phase 2 |
-| Bass | `'bass-preloaded'` | Future (Phase 3) |
-| Metronome | `'metronome-preloaded'` | Future (Phase 3) |
+| Instrument    | Cache Key               | Created In       |
+| ------------- | ----------------------- | ---------------- |
+| Harmony/Piano | `'harmony-preloaded'`   | Phase 2          |
+| Drums         | `'drums-preloaded'`     | Phase 2          |
+| Bass          | `'bass-preloaded'`      | Future (Phase 3) |
+| Metronome     | `'metronome-preloaded'` | Future (Phase 3) |
 
 ## Performance Metrics
 
 ### Before (Multiple Loading Systems)
+
 - Initial load: 2-5 seconds (loading all samples)
 - Memory usage: 150-200MB (duplicate instruments)
 - First playback: 50-200ms delay
 
 ### After (Unified System)
+
 - Initial load: 0ms (nothing loads)
 - Phase 2: 100-300ms (essential samples only)
 - Memory usage: 50-80MB (single instances)
@@ -189,6 +194,7 @@ const loadInstrument = async () => {
 For widgets using the old loading pattern:
 
 ### Old Pattern
+
 ```typescript
 // Each widget loaded independently
 const loadSamples = async () => {
@@ -199,6 +205,7 @@ const loadSamples = async () => {
 ```
 
 ### New Pattern
+
 ```typescript
 // Check cache first
 const loadSamples = async () => {
@@ -215,18 +222,21 @@ const loadSamples = async () => {
 ## Debugging
 
 Enable debug logging:
+
 ```javascript
 // In browser console
 localStorage.setItem('DEBUG_AUDIO', 'true');
 ```
 
 Check cache stats:
+
 ```javascript
-GlobalSampleCache.getStats()
+GlobalSampleCache.getStats();
 // Returns: { samplesCount, instrumentsCount, totalSize }
 ```
 
 Monitor loading phases:
+
 ```javascript
 window.addEventListener('essentialSamplesReady', () => {
   console.log('Phase 2 complete');

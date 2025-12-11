@@ -1,6 +1,6 @@
 /**
  * Prediction Module - Predictive loading and behavior analysis
- * 
+ *
  * Provides intelligent asset prediction and prefetching capabilities
  * through behavior analysis and machine learning models.
  */

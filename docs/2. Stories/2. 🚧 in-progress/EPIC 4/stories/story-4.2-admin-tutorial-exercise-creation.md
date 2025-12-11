@@ -58,32 +58,38 @@
 ### Files Created/Modified:
 
 **Shared Components:**
+
 - `src/domains/tutorials/components/shared/TutorialDisplay.tsx`
 - `src/domains/exercises/components/shared/ExerciseCard.tsx`
 - `src/domains/exercises/components/shared/ExerciseSelector.tsx`
 
 **Admin Components:**
+
 - `src/domains/admin/components/EditableField.tsx`
 - `src/domains/admin/components/MidiDropZone.tsx`
 - `src/domains/admin/components/AdminToolbar.tsx`
 - `src/domains/admin/components/ExerciseFormModal.tsx`
 
 **Admin Pages:**
+
 - `src/app/admin/tutorials/page.tsx`
 - `src/app/admin/tutorials/[slug]/edit/page.tsx`
 - `src/app/admin/tutorials/new/page.tsx`
 
 **Database:**
+
 - `supabase/migrations/20241223_create_tutorials_exercises.sql`
 - `supabase/storage/buckets.sql`
 
 **Repository Updates:**
+
 - `src/domains/tutorials/repositories/tutorial.repository.ts`
 - `src/domains/exercises/repositories/exercise.repository.ts`
 - `src/domains/tutorials/hooks/useTutorialRepository.ts`
 - `src/domains/exercises/hooks/useExerciseRepository.ts`
 
 ### Dependencies Installed:
+
 - `@hello-pangea/dnd` - For drag-and-drop functionality
 
 ## Backend Implementation Progress
@@ -117,6 +123,7 @@
 ### API Endpoints Implemented:
 
 **Tutorials**:
+
 - `GET /api/v1/tutorials` - List all tutorials with pagination
 - `GET /api/v1/tutorials/:id` - Get tutorial by ID
 - `GET /api/v1/tutorials/slug/:slug` - Get tutorial by slug
@@ -128,6 +135,7 @@
 - `GET /api/v1/tutorials/search` - Search tutorials
 
 **Exercises**:
+
 - `GET /api/v1/exercises` - List all exercises with pagination
 - `GET /api/v1/exercises/:id` - Get exercise by ID
 - `GET /api/v1/exercises/tutorial/:tutorialId` - Get exercises by tutorial
@@ -140,36 +148,43 @@
 ### Files Created/Modified (Backend):
 
 **Controllers**:
+
 - `src/domains/tutorials/admin-tutorials.controller.ts`
 - `src/domains/exercises/admin-exercises.controller.ts`
 
 **Services**:
+
 - `src/domains/tutorials/admin-tutorials.service.ts`
 - `src/domains/exercises/admin-exercises.service.ts`
 
 **Guards & Decorators**:
+
 - `src/domains/user/auth/guards/admin.guard.ts`
 - `src/domains/user/auth/decorators/current-user.decorator.ts`
 - `src/shared/decorators/correlation-id.decorator.ts`
 
 **DTOs**:
+
 - `src/domains/tutorials/dto/create-tutorial.dto.ts`
 - `src/domains/tutorials/dto/update-tutorial.dto.ts`
 - `src/domains/exercises/dto/update-midi-status.dto.ts`
 
 **Module Updates**:
+
 - `src/domains/tutorials/tutorials.module.ts` - Added admin controller and service
 - `src/domains/exercises/exercises.module.ts` - Added admin controller and service
 
 ### Integration Status:
 
 **Frontend ✅ Backend ✅**
+
 - Full stack implementation complete
 - All API endpoints implemented and connected
 - Database schema ready for deployment
 - Storage configuration complete
 
 **Testing Required:**
+
 - Component unit tests
 - Integration tests
 - E2E tests for admin workflows
@@ -238,6 +253,7 @@
 **Epic Context:** This is Story 2 of Epic 4 - Content Management & Creation System. This story establishes the foundation for all educational content on the BassNotion platform.
 
 **Dependencies:**
+
 - **REQUIRES:** Story 4.1 (User Authentication & Roles) - Admin role must be established
 - **REQUIRES:** Playback system from Epic 3 fully functional
 - **REQUIRES:** Supabase storage buckets configured
@@ -255,6 +271,7 @@
 To ensure we don't duplicate the existing tutorial page, we will follow a **composition-based approach**:
 
 #### Shared Components (Used by Both Student & Admin Pages)
+
 - `TutorialDisplay` - Renders tutorial title, description, YouTube video
 - `ExerciseCard` - Displays exercise information and playback controls
 - `GlobalControls` - Playback transport controls
@@ -263,6 +280,7 @@ To ensure we don't duplicate the existing tutorial page, we will follow a **comp
 - `ExerciseSelector` - Exercise list and selection UI
 
 #### Admin-Only Components (Wrappers & Extensions)
+
 - `EditableField` - Wrapper that makes any text field editable
 - `MidiDropZone` - Upload interface for MIDI files
 - `AdminToolbar` - Save, publish, preview controls
@@ -366,6 +384,7 @@ To ensure we don't duplicate the existing tutorial page, we will follow a **comp
 ## Tasks / Subtasks
 
 ### Task 0: Component Extraction & Refactoring (Prerequisite)
+
 - [ ] Subtask 0.1: Identify all reusable components in existing tutorial pages
 - [ ] Subtask 0.2: Extract `TutorialDisplay` as shared component
 - [ ] Subtask 0.3: Extract `ExerciseCard` as shared component
@@ -376,6 +395,7 @@ To ensure we don't duplicate the existing tutorial page, we will follow a **comp
 - [ ] Subtask 0.8: Test extracted components work in existing pages
 
 ### Task 1: Database Schema Setup (AC: 1, 2, 5)
+
 - [ ] Subtask 1.1: Create `tutorials` table with all required fields
 - [ ] Subtask 1.2: Create/update `exercises` table with MIDI tracking fields
 - [ ] Subtask 1.3: Set up foreign key relationships and cascade rules
@@ -384,6 +404,7 @@ To ensure we don't duplicate the existing tutorial page, we will follow a **comp
 - [ ] Subtask 1.6: Add indexes for performance optimization
 
 ### Task 2: Storage Bucket Configuration (AC: 3)
+
 - [ ] Subtask 2.1: Create `exercise-files` bucket in Supabase
 - [ ] Subtask 2.2: Configure public read access for bucket
 - [ ] Subtask 2.3: Set up storage policies for admin-only uploads
@@ -392,6 +413,7 @@ To ensure we don't duplicate the existing tutorial page, we will follow a **comp
 - [ ] Subtask 2.6: Set up CDN/caching if available
 
 ### Task 3: Admin Route Structure (AC: 1, 4)
+
 - [ ] Subtask 3.1: Create `/admin/tutorials` list page
 - [ ] Subtask 3.2: Create `/admin/tutorials/new` creation page
 - [ ] Subtask 3.3: Create `/admin/tutorials/[slug]/edit` edit page
@@ -400,6 +422,7 @@ To ensure we don't duplicate the existing tutorial page, we will follow a **comp
 - [ ] Subtask 3.6: Add navigation between admin pages
 
 ### Task 4: Tutorial Editor Component (AC: 1, 4)
+
 - [ ] Subtask 4.1: Create `TutorialEditor` component with form fields
 - [ ] Subtask 4.2: Implement in-place editing for text fields
 - [ ] Subtask 4.3: Add YouTube video preview component
@@ -408,6 +431,7 @@ To ensure we don't duplicate the existing tutorial page, we will follow a **comp
 - [ ] Subtask 4.6: Implement auto-save with debouncing
 
 ### Task 5: Exercise Manager Component (AC: 2, 4)
+
 - [ ] Subtask 5.1: Create `ExerciseManager` component for listing exercises
 - [ ] Subtask 5.2: Implement "Add Exercise" modal/drawer
 - [ ] Subtask 5.3: Create `ExerciseForm` with all metadata fields
@@ -416,6 +440,7 @@ To ensure we don't duplicate the existing tutorial page, we will follow a **comp
 - [ ] Subtask 5.6: Create exercise duplication feature
 
 ### Task 6: MIDI Upload System (AC: 3)
+
 - [ ] Subtask 6.1: Create `MidiDropZone` component for each track
 - [ ] Subtask 6.2: Implement drag-and-drop file handling
 - [ ] Subtask 6.3: Add MIDI file validation (format, size)
@@ -424,6 +449,7 @@ To ensure we don't duplicate the existing tutorial page, we will follow a **comp
 - [ ] Subtask 6.6: Update exercise metadata on successful upload
 
 ### Task 7: Live Preview System (AC: 4)
+
 - [ ] Subtask 7.1: Create preview mode toggle
 - [ ] Subtask 7.2: Integrate with existing playback system
 - [ ] Subtask 7.3: Add "Test Exercise" functionality
@@ -432,6 +458,7 @@ To ensure we don't duplicate the existing tutorial page, we will follow a **comp
 - [ ] Subtask 7.6: Add fullscreen preview option
 
 ### Task 8: Integration with Playback System (AC: 3, 4)
+
 - [ ] Subtask 8.1: Update `ExerciseLoader` to handle admin uploads
 - [ ] Subtask 8.2: Ensure MIDI files load correctly from new structure
 - [ ] Subtask 8.3: Test playback with all track combinations
@@ -507,7 +534,7 @@ CREATE POLICY "Admins can manage tutorials" ON tutorials
 async function uploadMidiFile(
   file: File,
   exerciseId: string,
-  trackType: 'metronome' | 'drums' | 'bass' | 'harmony'
+  trackType: 'metronome' | 'drums' | 'bass' | 'harmony',
 ): Promise<string> {
   // 1. Validate MIDI file
   if (!file.name.endsWith('.mid') && !file.name.endsWith('.midi')) {
@@ -522,7 +549,7 @@ async function uploadMidiFile(
     .from('exercise-files')
     .upload(path, file, {
       upsert: true,
-      contentType: 'audio/midi'
+      contentType: 'audio/midi',
     });
 
   if (error) throw error;
@@ -532,14 +559,14 @@ async function uploadMidiFile(
     .from('exercises')
     .update({
       [`has_${trackType}_midi`]: true,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     })
     .eq('id', exerciseId);
 
   // 5. Return public URL
-  const { data: { publicUrl } } = supabase.storage
-    .from('exercise-files')
-    .getPublicUrl(path);
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from('exercise-files').getPublicUrl(path);
 
   return publicUrl;
 }

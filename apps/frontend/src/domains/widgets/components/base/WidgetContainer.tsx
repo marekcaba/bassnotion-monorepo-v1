@@ -19,8 +19,10 @@ import type {
 // INTERFACES
 // ============================================================================
 
-export interface WidgetContainerProps
-  extends Omit<SyncedWidgetProps, 'children'> {
+export interface WidgetContainerProps extends Omit<
+  SyncedWidgetProps,
+  'children'
+> {
   // Layout props
   className?: string;
   style?: React.CSSProperties;

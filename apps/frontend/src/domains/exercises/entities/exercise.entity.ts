@@ -1,6 +1,11 @@
 import { ExerciseId } from '../value-objects/exercise-id.vo';
 import { Difficulty } from '../value-objects/difficulty.vo';
-import type { DrumHit, GeneratedHarmonyNote, HarmonyInstrumentType, HarmonyControlChange } from '@bassnotion/contracts';
+import type {
+  DrumHit,
+  GeneratedHarmonyNote,
+  HarmonyInstrumentType,
+  HarmonyControlChange,
+} from '@bassnotion/contracts';
 
 // Note type for frontend usage
 export interface ExerciseNote {
@@ -18,8 +23,8 @@ export interface ExerciseNote {
     beat: number;
     subdivision: number;
   };
-  noteDuration?: string;  // 'quarter', 'eighth', etc.
-  durationTicks?: number;  // Duration in ticks at 480 PPQ
+  noteDuration?: string; // 'quarter', 'eighth', etc.
+  durationTicks?: number; // Duration in ticks at 480 PPQ
 }
 
 export interface ExerciseProps {
@@ -242,9 +247,13 @@ export class Exercise {
   }
 
   hasAnyMidiFile(): boolean {
-    return this.hasMidiFile() || this.hasDrummerMidi() ||
-           this.hasBasslineMidi() || this.hasHarmonyMidi() ||
-           this.hasMetronomeMidi();
+    return (
+      this.hasMidiFile() ||
+      this.hasDrummerMidi() ||
+      this.hasBasslineMidi() ||
+      this.hasHarmonyMidi() ||
+      this.hasMetronomeMidi()
+    );
   }
 
   hasNotes(): boolean {
@@ -287,7 +296,11 @@ export class Exercise {
     });
 
     // TEMPORARY DEBUG: Log harmony_notes mapping
-    if (dto.harmony_midi_url || dto.harmony_notes || dto.harmony_control_changes) {
+    if (
+      dto.harmony_midi_url ||
+      dto.harmony_notes ||
+      dto.harmony_control_changes
+    ) {
       console.log('🔍 Exercise.fromDTO - Harmony data:', {
         title: dto.title,
         hasHarmonyMidiUrl: !!dto.harmony_midi_url,

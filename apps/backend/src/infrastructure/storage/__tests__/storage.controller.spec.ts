@@ -61,7 +61,10 @@ describe('StorageController - Temp MIDI Storage (Story 4.4 - Task 2)', () => {
       (supabaseService.uploadToTemp as any).mockResolvedValue(mockUploadResult);
 
       const mockReq = createMockFastifyRequest(validFileData);
-      const result = await controller.uploadTemp(mockReq, 'test-correlation-id');
+      const result = await controller.uploadTemp(
+        mockReq,
+        'test-correlation-id',
+      );
 
       expect(result).toEqual({
         temporaryUrl: mockUploadResult.temporaryUrl,
@@ -85,9 +88,9 @@ describe('StorageController - Temp MIDI Storage (Story 4.4 - Task 2)', () => {
       };
 
       const mockReq = createMockFastifyRequest(oversizedFileData);
-      await expect(controller.uploadTemp(mockReq, 'test-correlation-id')).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        controller.uploadTemp(mockReq, 'test-correlation-id'),
+      ).rejects.toThrow(BadRequestException);
 
       expect(supabaseService.uploadToTemp).not.toHaveBeenCalled();
     });
@@ -99,9 +102,9 @@ describe('StorageController - Temp MIDI Storage (Story 4.4 - Task 2)', () => {
       };
 
       const mockReq = createMockFastifyRequest(invalidFileData);
-      await expect(controller.uploadTemp(mockReq, 'test-correlation-id')).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        controller.uploadTemp(mockReq, 'test-correlation-id'),
+      ).rejects.toThrow(BadRequestException);
 
       expect(supabaseService.uploadToTemp).not.toHaveBeenCalled();
     });
@@ -111,9 +114,9 @@ describe('StorageController - Temp MIDI Storage (Story 4.4 - Task 2)', () => {
       (supabaseService.uploadToTemp as any).mockRejectedValue(networkError);
 
       const mockReq = createMockFastifyRequest(validFileData);
-      await expect(controller.uploadTemp(mockReq, 'test-correlation-id')).rejects.toThrow(
-        networkError,
-      );
+      await expect(
+        controller.uploadTemp(mockReq, 'test-correlation-id'),
+      ).rejects.toThrow(networkError);
     });
 
     it('should handle Supabase quota exceeded error', async () => {
@@ -121,9 +124,9 @@ describe('StorageController - Temp MIDI Storage (Story 4.4 - Task 2)', () => {
       (supabaseService.uploadToTemp as any).mockRejectedValue(quotaError);
 
       const mockReq = createMockFastifyRequest(validFileData);
-      await expect(controller.uploadTemp(mockReq, 'test-correlation-id')).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        controller.uploadTemp(mockReq, 'test-correlation-id'),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -138,7 +141,10 @@ describe('StorageController - Temp MIDI Storage (Story 4.4 - Task 2)', () => {
         'https://xyz.supabase.co/storage/v1/object/public/exercise-midi-files/exercises/exercise-123/1234_bassline.mid';
       (supabaseService.moveToPermanent as any).mockResolvedValue(permanentUrl);
 
-      const result = await controller.moveToPermanent(validRequest, 'test-correlation-id');
+      const result = await controller.moveToPermanent(
+        validRequest,
+        'test-correlation-id',
+      );
 
       expect(result.permanentUrl).toBe(permanentUrl);
       expect(result.permanentPath).toContain('exercises/exercise-123');
@@ -186,7 +192,9 @@ describe('StorageController - Temp MIDI Storage (Story 4.4 - Task 2)', () => {
     };
 
     it('should cleanup expired temp files and return statistics', async () => {
-      (cleanupService.cleanupExpiredFiles as any).mockResolvedValue(mockCleanupResult);
+      (cleanupService.cleanupExpiredFiles as any).mockResolvedValue(
+        mockCleanupResult,
+      );
 
       const result = await controller.cleanup('test-correlation-id');
 
@@ -196,9 +204,13 @@ describe('StorageController - Temp MIDI Storage (Story 4.4 - Task 2)', () => {
 
     it('should handle cleanup errors gracefully', async () => {
       const cleanupError = new Error('Cleanup service unavailable');
-      (cleanupService.cleanupExpiredFiles as any).mockRejectedValue(cleanupError);
+      (cleanupService.cleanupExpiredFiles as any).mockRejectedValue(
+        cleanupError,
+      );
 
-      await expect(controller.cleanup('test-correlation-id')).rejects.toThrow(cleanupError);
+      await expect(controller.cleanup('test-correlation-id')).rejects.toThrow(
+        cleanupError,
+      );
     });
   });
 
@@ -224,7 +236,9 @@ describe('StorageController - Temp MIDI Storage (Story 4.4 - Task 2)', () => {
       const statsError = new Error('Failed to get stats');
       (cleanupService.getTempStorageStats as any).mockRejectedValue(statsError);
 
-      await expect(controller.getStats('test-correlation-id')).rejects.toThrow(statsError);
+      await expect(controller.getStats('test-correlation-id')).rejects.toThrow(
+        statsError,
+      );
     });
   });
 });

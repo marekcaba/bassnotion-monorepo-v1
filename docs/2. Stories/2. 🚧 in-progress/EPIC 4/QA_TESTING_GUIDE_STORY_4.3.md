@@ -42,6 +42,7 @@ You need an admin account to access the exercise creation features.
 ### 3. Test MIDI File
 
 Prepare a simple bass MIDI file for testing:
+
 - Single instrument (bass guitar)
 - 4-8 measures
 - Standard 4/4 time signature
@@ -99,12 +100,14 @@ Prepare a simple bass MIDI file for testing:
 8. Click "Save" to create the exercise
 
 **Expected Results**:
+
 - ✅ Exercise created successfully
 - ✅ MIDI file uploaded to Supabase storage
 - ✅ Exercise ID generated
 - ✅ "Convert MIDI to Fretboard Positions" button appears
 
 **Failure Cases**:
+
 - ❌ Upload fails → Check Supabase storage bucket permissions
 - ❌ Button doesn't appear → Check that `basslineMidiUrl` field is populated and exercise has valid ID
 
@@ -122,6 +125,7 @@ Prepare a simple bass MIDI file for testing:
 4. **Step 1: Parse MIDI** should auto-execute
 
 **Expected Results**:
+
 - ✅ Loading spinner appears
 - ✅ Parsing completes within 2-5 seconds
 - ✅ Summary shows:
@@ -134,17 +138,20 @@ Prepare a simple bass MIDI file for testing:
 **API Endpoint Tested**: `POST /api/v1/exercises/:id/midi/parse`
 
 **Check Backend Logs**:
+
 ```bash
 pm2 logs bassnotion-backend --lines 50
 ```
 
 Look for:
+
 ```
 [AdminExercisesController] Parsing MIDI file
 [MidiParserService] Successfully parsed MIDI
 ```
 
 **Failure Cases**:
+
 - ❌ Parse fails with 404 → MIDI file URL is invalid
 - ❌ Parse fails with 400 → MIDI file is corrupted or invalid format
 - ❌ Parse timeout → MIDI file too large (>5MB)
@@ -171,6 +178,7 @@ Look for:
    - Percentage should update (e.g., "50% complete")
 
 **Expected Results**:
+
 - ✅ Each mini-fretboard is interactive and clickable
 - ✅ Selected positions are visually highlighted (blue dot)
 - ✅ Progress indicator updates correctly
@@ -178,12 +186,14 @@ Look for:
 - ✅ "Next" button enabled when all anchors set
 
 **UI Elements to Verify**:
+
 - Mini-fretboard dimensions: 12 frets × 4 strings
 - Fret markers visible (dots at 3, 5, 7, 9, 12)
 - String labels: E, A, D, G
 - Selected position shows note name (e.g., "E1")
 
 **Failure Cases**:
+
 - ❌ Clicks not registering → Check click handler in `MiniFretboard.tsx`
 - ❌ Progress not updating → Check `useAnchorSelection` hook
 
@@ -201,6 +211,7 @@ Look for:
 4. **Step 3: Review Generated Notes** appears
 
 **Expected Results**:
+
 - ✅ Conversion completes successfully
 - ✅ Notes table populated with all notes
 - ✅ Each note has:
@@ -215,17 +226,20 @@ Look for:
 **API Endpoint Tested**: `POST /api/v1/exercises/:id/midi/convert`
 
 **Check Backend Logs**:
+
 ```bash
 pm2 logs bassnotion-backend --lines 50
 ```
 
 Look for:
+
 ```
 [AdminExercisesController] Converting MIDI to fretboard
 [FretboardMapperService] Successfully converted MIDI
 ```
 
 **Failure Cases**:
+
 - ❌ Conversion fails → Check anchors array is valid
 - ❌ No notes generated → Check MIDI has valid bass notes (pitch 28-48)
 - ❌ Algorithm timeout → MIDI has too many notes (>1000)
@@ -270,6 +284,7 @@ Look for:
    - String Crossings: Count
 
 **Expected Results**:
+
 - ✅ All filters work correctly
 - ✅ Search narrows results
 - ✅ Confidence badges match expected values
@@ -278,6 +293,7 @@ Look for:
 - ✅ Playability score makes sense (simple bassline = high score)
 
 **Manual Verification**:
+
 - Pick a few notes and verify they make musical sense
 - Check that consecutive notes minimize hand movement
 - Verify anchored first notes match your selections from Step 2
@@ -301,6 +317,7 @@ Look for:
 6. Exercise form should now show populated `exercise.notes` array
 
 **Expected Results**:
+
 - ✅ Modal closes smoothly
 - ✅ Exercise form shows notes field populated
 - ✅ Note count matches generated count
@@ -308,6 +325,7 @@ Look for:
 
 **Data Verification**:
 Check that each generated note was mapped correctly:
+
 ```typescript
 {
   id: string;           // Unique ID
@@ -337,6 +355,7 @@ Check that each generated note was mapped correctly:
 6. Play the exercise
 
 **Expected Results**:
+
 - ✅ 3D fretboard loads successfully
 - ✅ Notes appear as colored dots on correct strings and frets
 - ✅ Notes light up in sequence during playback
@@ -344,11 +363,13 @@ Check that each generated note was mapped correctly:
 - ✅ Hand position guidance appears (shows optimal finger placement)
 
 **Playback Verification**:
+
 - Notes should trigger at correct timestamps
 - Visual feedback should match audio
 - Fretboard camera should follow hand position
 
 **Failure Cases**:
+
 - ❌ Notes don't appear → Check `exercise.notes` array in DB
 - ❌ Wrong positions → Re-run conversion with better anchors
 - ❌ Timing off → Check timestamp calculation in conversion
@@ -370,6 +391,7 @@ Check that each generated note was mapped correctly:
 5. Complete conversion
 
 **Expected Results**:
+
 - ✅ 5-string tuning: B0, E1, A1, D2, G2
 - ✅ Mini-fretboards show 5 strings
 - ✅ Notes can be placed on B string
@@ -381,21 +403,25 @@ Repeat for 6-string bass (adds high C string).
 ### Test 9: Edge Cases
 
 #### Empty Measure
+
 1. Upload MIDI with one empty measure (no notes)
 2. Verify conversion skips empty measure
 3. Notes array should not have entries for that measure
 
 #### Polyphonic MIDI (Multiple Notes at Same Time)
+
 1. Upload MIDI with chords or double-stops
 2. Verify parser handles multiple notes at same timestamp
 3. Conversion should generate positions for each note
 
 #### Very Fast Bassline
+
 1. Upload MIDI with 16th notes at 180 BPM
 2. Verify conversion doesn't create impossible stretches
 3. Check playability score is lower (reflects difficulty)
 
 #### Large MIDI File
+
 1. Upload MIDI with 50+ measures
 2. Verify parsing doesn't timeout
 3. Anchor selection should handle scrolling/pagination
@@ -407,6 +433,7 @@ Repeat for 6-string bass (adds high C string).
 ### Test 10: Missing MIDI File
 
 **Steps**:
+
 1. Create exercise without uploading MIDI
 2. Verify "Convert MIDI" button does NOT appear
 
@@ -417,11 +444,13 @@ Repeat for 6-string bass (adds high C string).
 ### Test 11: Corrupted MIDI File
 
 **Steps**:
+
 1. Upload a corrupted or non-MIDI file
 2. Click "Convert MIDI"
 3. Parsing should fail gracefully
 
 **Expected**:
+
 - ✅ Error message appears
 - ✅ User can close wizard and retry
 - ✅ No crash or blank screen
@@ -431,11 +460,13 @@ Repeat for 6-string bass (adds high C string).
 ### Test 12: Network Failure
 
 **Steps**:
+
 1. Start wizard
 2. Stop backend server: `pm2 stop bassnotion-backend`
 3. Try to parse or convert
 
 **Expected**:
+
 - ✅ Error message: "Failed to connect to server"
 - ✅ Retry option available
 - ✅ No data loss (unsaved anchors preserved)
@@ -447,7 +478,7 @@ Repeat for 6-string bass (adds high C string).
 ### Parsing Performance
 
 | MIDI File Size | Expected Parse Time |
-|----------------|---------------------|
+| -------------- | ------------------- |
 | 1-10 measures  | < 1 second          |
 | 10-30 measures | 1-3 seconds         |
 | 30-60 measures | 3-5 seconds         |
@@ -455,12 +486,12 @@ Repeat for 6-string bass (adds high C string).
 
 ### Conversion Performance
 
-| Note Count | Expected Conversion Time |
-|------------|--------------------------|
-| 1-50 notes | < 1 second               |
-| 50-200 notes | 1-3 seconds            |
-| 200-500 notes | 3-5 seconds           |
-| 500+ notes | 5-10 seconds             |
+| Note Count    | Expected Conversion Time |
+| ------------- | ------------------------ |
+| 1-50 notes    | < 1 second               |
+| 50-200 notes  | 1-3 seconds              |
+| 200-500 notes | 3-5 seconds              |
+| 500+ notes    | 5-10 seconds             |
 
 **Note**: Times may vary based on system performance.
 
@@ -471,16 +502,19 @@ Repeat for 6-string bass (adds high C string).
 ### Backend Logs
 
 **View real-time logs**:
+
 ```bash
 pm2 logs bassnotion-backend --lines 100
 ```
 
 **Search for MIDI operations**:
+
 ```bash
 pm2 logs bassnotion-backend --lines 500 --nostream | grep -i "midi"
 ```
 
 **Look for errors**:
+
 ```bash
 pm2 logs bassnotion-backend --lines 500 --nostream | grep -i "error\|fail"
 ```
@@ -490,10 +524,12 @@ pm2 logs bassnotion-backend --lines 500 --nostream | grep -i "error\|fail"
 **Browser Console**: `F12` → Console tab
 
 **Look for correlation IDs**:
+
 - Every API call has a correlation ID
 - Use it to trace requests across frontend/backend
 
 **Example**:
+
 ```
 [useMidiParsing] Parsing MIDI file { exerciseId: "123", correlationId: "abc-def-456" }
 [apiClient] POST /api/v1/exercises/123/midi/parse
@@ -504,14 +540,17 @@ pm2 logs bassnotion-backend --lines 500 --nostream | grep -i "error\|fail"
 ## Known Issues and Workarounds
 
 ### Issue 1: MIDI Parser Timeout
+
 **Symptom**: Large MIDI files (>1000 notes) timeout during parsing
 **Workaround**: Split MIDI into smaller sections
 
 ### Issue 2: Anchor Reset
+
 **Symptom**: Anchors reset when going back to Step 2
 **Workaround**: Set all anchors in one pass, don't navigate back
 
 ### Issue 3: High Confidence Score Mismatch
+
 **Symptom**: Note marked "high confidence" but looks awkward
 **Reason**: Algorithm prioritizes minimal hand movement, may not match human intuition
 **Workaround**: Use alternatives dropdown to select better position

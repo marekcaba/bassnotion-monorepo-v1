@@ -5,16 +5,19 @@
 All three widgets have been updated to use fresh Tone references instead of stale closure-captured ones.
 
 ### 1. HarmonyWidget Fixed ✅
+
 - Loop creation now uses fresh Tone reference: `getTone().Loop()`
 - Transport state checks use fresh reference: `getTone()?.Transport?.state`
 - Added error handling and logging for debugging
 
-### 2. DrummerWidget Fixed ✅  
+### 2. DrummerWidget Fixed ✅
+
 - Loop creation now uses fresh Tone reference: `getTone().Loop()`
 - Transport state checks use fresh reference: `getTone()?.Transport?.state`
 - Fixed polling section to use fresh references
 
 ### 3. MetronomeWidget Fixed ✅
+
 - Loop creation now uses fresh Tone reference: `getTone().Loop()`
 - Transport state checks use fresh reference: `getTone()?.Transport?.state`
 - Fixed both loop creation locations in the widget
@@ -36,6 +39,7 @@ All three widgets have been updated to use fresh Tone references instead of stal
 The core issue was that widgets were checking a stale `Tone` reference that was captured when the component first rendered. Even though Transport was running, widgets saw it as 'stopped' because they were looking at an old reference.
 
 Now all widgets:
+
 1. Create loops using the current Tone instance
 2. Check Transport state using fresh references inside callbacks
 3. Have proper error handling to debug audio issues
@@ -43,6 +47,7 @@ Now all widgets:
 ## Next Steps
 
 If audio still doesn't play after these fixes, the issue is likely in:
+
 1. The audio processors (ChordInstrumentProcessor, etc.)
 2. The AudioContext initialization
 3. Sample loading or audio buffer creation

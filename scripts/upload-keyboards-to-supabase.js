@@ -227,16 +227,18 @@ async function main() {
   // Test Supabase connection
   console.log('🔗 Testing Supabase connection...');
   console.log(`📦 Using bucket: ${BUCKET_NAME}`);
-  
+
   // Test with a simple list operation on the bucket
   try {
     const { data, error } = await supabase.storage
       .from(BUCKET_NAME)
       .list('keyboards/', { limit: 1 });
-      
+
     if (error) {
       console.warn('⚠️  Bucket list test failed:', error.message);
-      console.log('📝 Proceeding with upload anyway (bucket may exist with restricted list permissions)');
+      console.log(
+        '📝 Proceeding with upload anyway (bucket may exist with restricted list permissions)',
+      );
     } else {
       console.log(`✅ Connected to Supabase storage`);
     }

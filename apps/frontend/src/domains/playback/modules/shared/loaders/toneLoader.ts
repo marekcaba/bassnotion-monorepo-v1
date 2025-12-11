@@ -60,9 +60,12 @@ export async function loadGlobalTone(
       return tone;
     } catch (error) {
       // AudioEngine not initialized yet - fallback to window.Tone
-      logger.warn('🎵 toneLoader: AudioEngine not initialized (injected), falling back to window.Tone', {
-        error: error instanceof Error ? error.message : String(error),
-      });
+      logger.warn(
+        '🎵 toneLoader: AudioEngine not initialized (injected), falling back to window.Tone',
+        {
+          error: error instanceof Error ? error.message : String(error),
+        },
+      );
       // Fall through to other methods below
     }
   }
@@ -85,9 +88,12 @@ export async function loadGlobalTone(
       return tone;
     } catch (error) {
       // AudioEngine not initialized yet - fallback to window.Tone
-      logger.warn('🎵 toneLoader: AudioEngine not initialized (CoreServices), falling back to window.Tone', {
-        error: error instanceof Error ? error.message : String(error),
-      });
+      logger.warn(
+        '🎵 toneLoader: AudioEngine not initialized (CoreServices), falling back to window.Tone',
+        {
+          error: error instanceof Error ? error.message : String(error),
+        },
+      );
       // Fall through to window.Tone below
     }
   }

@@ -123,7 +123,9 @@ export class Transport {
     Tone.Transport.bpm.value = this.config.tempo;
 
     this.isInitialized = true;
-    logger.info('Transport initialized (AudioContext will be resumed on user gesture)');
+    logger.info(
+      'Transport initialized (AudioContext will be resumed on user gesture)',
+    );
   }
 
   /**
@@ -155,12 +157,18 @@ export class Transport {
     }
 
     if (this.state === 'playing') {
-      console.warn('🚀 [TRANSPORT DEBUG] Transport already playing, early return!', {
-        state: this.state,
-      });
-      logger.warn('🚀 [TRANSPORT DEBUG] Transport already playing, early return!', {
-        state: this.state,
-      });
+      console.warn(
+        '🚀 [TRANSPORT DEBUG] Transport already playing, early return!',
+        {
+          state: this.state,
+        },
+      );
+      logger.warn(
+        '🚀 [TRANSPORT DEBUG] Transport already playing, early return!',
+        {
+          state: this.state,
+        },
+      );
       return;
     }
 
@@ -178,10 +186,13 @@ export class Transport {
     // Start clock timing (for AudioWorklet mode)
     this.clock.start();
 
-    console.log('🚀 [TRANSPORT DIAGNOSTIC] Clock started, waiting for AudioWorklet first update', {
-      timestamp: performance.now(),
-      note: '🔧 RACE CONDITION FIX: Wait for AudioWorklet to send first timing update',
-    });
+    console.log(
+      '🚀 [TRANSPORT DIAGNOSTIC] Clock started, waiting for AudioWorklet first update',
+      {
+        timestamp: performance.now(),
+        note: '🔧 RACE CONDITION FIX: Wait for AudioWorklet to send first timing update',
+      },
+    );
 
     // 🔧 RACE CONDITION FIX: Wait for AudioWorklet first update before capturing transportStartTime
     // Without this, transportStartTime may be captured as 0 while AudioContext.currentTime is ~32ms,
@@ -192,15 +203,24 @@ export class Transport {
       if (sampleAccurateClock) {
         try {
           await sampleAccurateClock.waitForFirstUpdate(50); // Wait max 50ms
-          console.log('🚀 [RACE CONDITION FIX] First AudioWorklet update received', {
-            timestamp: performance.now(),
-            updateCount: sampleAccurateClock.getUpdateCount(),
-          });
+          console.log(
+            '🚀 [RACE CONDITION FIX] First AudioWorklet update received',
+            {
+              timestamp: performance.now(),
+              updateCount: sampleAccurateClock.getUpdateCount(),
+            },
+          );
         } catch (error) {
-          console.warn('🚀 [RACE CONDITION FIX] Timeout waiting for first update, using AudioContext time', {
-            error: error instanceof Error ? error.message : String(error),
-          });
-          logger.warn('AudioWorklet first update timeout, using AudioContext time', error as Error);
+          console.warn(
+            '🚀 [RACE CONDITION FIX] Timeout waiting for first update, using AudioContext time',
+            {
+              error: error instanceof Error ? error.message : String(error),
+            },
+          );
+          logger.warn(
+            'AudioWorklet first update timeout, using AudioContext time',
+            error as Error,
+          );
         }
       }
     }
@@ -212,8 +232,10 @@ export class Transport {
     this.transportStartTime = this.clock.getAudioTime();
     console.log('🚀 [COUNTDOWN TIME FIX] Captured transport start time', {
       transportStartTime: this.transportStartTime.toFixed(6),
-      explanation: 'Position updates will calculate elapsed time relative to this start point',
-      expectedBehavior: 'First position will be 0s → -1:4:0 (countdown visible!)',
+      explanation:
+        'Position updates will calculate elapsed time relative to this start point',
+      expectedBehavior:
+        'First position will be 0s → -1:4:0 (countdown visible!)',
       captureTimestamp: performance.now(),
     });
     logger.info('🚀 [COUNTDOWN TIME FIX] Transport start time captured', {
@@ -397,7 +419,7 @@ export class Transport {
       oldToneBpm,
       newToneBpm,
       success: newToneBpm === bpm,
-      stack: new Error().stack?.split('\n').slice(2, 4).join(' <- ')
+      stack: new Error().stack?.split('\n').slice(2, 4).join(' <- '),
     });
   }
 
@@ -589,20 +611,29 @@ export class Transport {
     logger.info('🔄 [POSITION DEBUG] startPositionUpdates() called', debugInfo);
 
     if (this.positionUpdateInterval !== null) {
-      console.warn('🔄 [POSITION DEBUG] Interval already exists, early return!', {
-        existingIntervalId: this.positionUpdateInterval,
-      });
-      logger.warn('🔄 [POSITION DEBUG] Interval already exists, early return!', {
-        existingIntervalId: this.positionUpdateInterval,
-      });
+      console.warn(
+        '🔄 [POSITION DEBUG] Interval already exists, early return!',
+        {
+          existingIntervalId: this.positionUpdateInterval,
+        },
+      );
+      logger.warn(
+        '🔄 [POSITION DEBUG] Interval already exists, early return!',
+        {
+          existingIntervalId: this.positionUpdateInterval,
+        },
+      );
       return;
     }
 
     const update = () => {
       if (this.state !== 'playing') {
-        logger.debug('🔄 [POSITION DEBUG] Update callback fired but state not playing', {
-          state: this.state,
-        });
+        logger.debug(
+          '🔄 [POSITION DEBUG] Update callback fired but state not playing',
+          {
+            state: this.state,
+          },
+        );
         return;
       }
 
@@ -615,9 +646,13 @@ export class Transport {
         absoluteTime: absoluteTime.toFixed(6),
         transportStartTime: this.transportStartTime.toFixed(6),
         elapsedTime: elapsedTime.toFixed(6),
-        explanation: 'Using elapsed time (not absolute) ensures countdown starts at 0s → -1:4:0',
+        explanation:
+          'Using elapsed time (not absolute) ensures countdown starts at 0s → -1:4:0',
         isNegative: elapsedTime < 0,
-        warning: elapsedTime < 0 ? '⚠️ NEGATIVE ELAPSED TIME! Clock display will be corrupted!' : undefined,
+        warning:
+          elapsedTime < 0
+            ? '⚠️ NEGATIVE ELAPSED TIME! Clock display will be corrupted!'
+            : undefined,
       });
 
       // ✅ DOUBLE COUNTDOWN FIX: Pass elapsed time (not absolute time)
@@ -650,8 +685,14 @@ export class Transport {
       scheduleIntervalMs: this.config.scheduleInterval * 1000,
       timestamp: Date.now(),
     };
-    console.log('🔄 [POSITION DEBUG] Position update interval CREATED', createdInfo);
-    logger.info('🔄 [POSITION DEBUG] Position update interval CREATED', createdInfo);
+    console.log(
+      '🔄 [POSITION DEBUG] Position update interval CREATED',
+      createdInfo,
+    );
+    logger.info(
+      '🔄 [POSITION DEBUG] Position update interval CREATED',
+      createdInfo,
+    );
   }
 
   /**
@@ -668,14 +709,22 @@ export class Transport {
         nowNull: this.positionUpdateInterval === null,
         timestamp: Date.now(),
       };
-      console.log('🛑 [POSITION DEBUG] Position update interval CLEARED', clearedInfo);
-      logger.info('🛑 [POSITION DEBUG] Position update interval CLEARED', clearedInfo);
+      console.log(
+        '🛑 [POSITION DEBUG] Position update interval CLEARED',
+        clearedInfo,
+      );
+      logger.info(
+        '🛑 [POSITION DEBUG] Position update interval CLEARED',
+        clearedInfo,
+      );
 
       // NOTE: We don't clear positionUpdateCallback here anymore
       // The callback is registered once in TransportController constructor and should persist
       // across start/stop cycles. Clearing it breaks position updates on second playback.
       // Only the interval timer needs to be cleared to stop position updates.
-      logger.debug('Position update interval stopped (callback preserved for restart)');
+      logger.debug(
+        'Position update interval stopped (callback preserved for restart)',
+      );
     } else {
       console.warn('🛑 [POSITION DEBUG] No interval to clear');
       logger.warn('🛑 [POSITION DEBUG] No interval to clear');

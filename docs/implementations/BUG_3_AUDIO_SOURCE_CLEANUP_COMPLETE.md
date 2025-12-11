@@ -17,6 +17,7 @@ During playback, every audio event creates an `AudioBufferSourceNode` that gets 
 - Potential browser crashes during long practice sessions
 
 **Example Memory Growth:**
+
 ```
 10-minute practice session at 120 BPM:
 - Harmony: 300 bars × 4 notes = 1,200 sources
@@ -39,6 +40,7 @@ Memory: ~484 KB tracking maps + megabytes of buffer references
 #### 1. HarmonyScheduler.ts
 
 **Location 1** - Old Direct Scheduling ([HarmonyScheduler.ts:330-348](apps/frontend/src/domains/playback/services/core/region-processing/scheduling/HarmonyScheduler.ts#L330-L348))
+
 ```typescript
 source.onended = () => {
   gainNode.disconnect();
@@ -59,6 +61,7 @@ source.onended = () => {
 ```
 
 **Location 2** - CC64 Sustain System ([HarmonyScheduler.ts:1151+](apps/frontend/src/domains/playback/services/core/region-processing/scheduling/HarmonyScheduler.ts#L1151))
+
 ```typescript
 source.onended = () => {
   // Remove from scheduledAudioSources
@@ -89,6 +92,7 @@ source.onended = () => {
 #### 2. SimpleInstrumentScheduler.ts
 
 **Handles**: Bass, Drums, Metronome, Voice Cues ([SimpleInstrumentScheduler.ts:242-245](apps/frontend/src/domains/playback/services/core/region-processing/scheduling/SimpleInstrumentScheduler.ts#L242-L245))
+
 ```typescript
 // Auto-cleanup after playback
 source.onended = () => {
@@ -129,21 +133,26 @@ Created comprehensive test suite: [bug3-memory-cleanup.test.ts](apps/frontend/sr
 ### Test Results: 8/8 passing ✅
 
 #### Core Cleanup Pattern (3 tests)
+
 - ✅ Should remove sources from tracking map when onended fires
 - ✅ Should handle multiple sources independently
 - ✅ Should clean up nested tracking structures (chord arrays)
 
 #### Memory Stability Simulation (2 tests)
+
 - ✅ Should not accumulate memory during 100 events
 - ✅ Should maintain small map size during continuous playback
 
 #### Error Handling (1 test)
+
 - ✅ Should handle disconnect errors gracefully
 
 #### Performance (1 test)
+
 - ✅ Should clean up 1000 sources quickly
 
 #### Success Criteria (1 test)
+
 - ✅ Should keep active sources under 50 during playback
 
 ---
@@ -188,12 +197,14 @@ setInterval(() => {
 ### Memory Profiling Results
 
 **Before Cleanup** (hypothetical without onended):
+
 - Memory growth: Linear with playback duration
 - 10 minutes: ~4,840 orphaned references
 - 30 minutes: ~14,520 orphaned references
 - Browser eventually crashes
 
 **After Cleanup** (with onended):
+
 - Memory growth: Stable
 - 10 minutes: ~10-50 active sources (playing right now)
 - 30 minutes: ~10-50 active sources (stable)
@@ -206,6 +217,7 @@ setInterval(() => {
 ### Cleanup Scenarios
 
 **Scenario 1: Normal Playback Completion**
+
 ```typescript
 source.start(audioTime);
 source.stop(audioTime + duration);
@@ -214,6 +226,7 @@ source.stop(audioTime + duration);
 ```
 
 **Scenario 2: Manual Stop**
+
 ```typescript
 source.start(audioTime);
 // User clicks stop button
@@ -223,6 +236,7 @@ source.stop(0); // Stop immediately
 ```
 
 **Scenario 3: Natural Duration End**
+
 ```typescript
 source.start(audioTime);
 // No stop() called, buffer plays to end
@@ -260,6 +274,7 @@ source.onended = () => {
 ## Related Files
 
 ### Implementation Files
+
 1. [HarmonyScheduler.ts](apps/frontend/src/domains/playback/services/core/region-processing/scheduling/HarmonyScheduler.ts)
    - Lines 330-348: Old direct scheduling cleanup
    - Lines 1151+: CC64 sustain system cleanup
@@ -273,10 +288,12 @@ source.onended = () => {
    - Lines 150: `activeBassSources` map definition
 
 ### Test Files
+
 1. [bug3-memory-cleanup.test.ts](apps/frontend/src/domains/playback/services/core/__tests__/bug3-memory-cleanup.test.ts) - NEW: 8 comprehensive tests
 2. [memory-leak-integration.test.ts](apps/frontend/src/domains/playback/services/core/__tests__/memory-leak-integration.test.ts) - Extended integration tests
 
 ### Documentation Files
+
 1. [BUG_3_MEMORY_LEAK_FIX_PLAN.md](docs/implementations/BUG_3_MEMORY_LEAK_FIX_PLAN.md) - Original plan and implementation details
 2. [BUGS_1_AND_3_TEST_SUMMARY.md](docs/implementations/BUGS_1_AND_3_TEST_SUMMARY.md) - Test verification summary
 
@@ -285,12 +302,14 @@ source.onended = () => {
 ## User Experience Impact
 
 ### Before (Hypothetical without cleanup)
+
 - Long practice sessions: Browser becomes slow
 - Memory usage: Grows linearly
 - Mobile devices: Crashes after 10-15 minutes
 - Developer tools: Thousands of detached DOM nodes warnings
 
 ### After (With cleanup)
+
 - ✅ Long practice sessions: Smooth performance
 - ✅ Memory usage: Stable, no growth
 - ✅ Mobile devices: Works for hours
@@ -301,6 +320,7 @@ source.onended = () => {
 **User Action**: Practice a 30-minute exercise with backing track
 
 Without cleanup:
+
 ```
 Start: 50 MB heap
 10 min: 150 MB heap (+100 MB)
@@ -310,6 +330,7 @@ Result: Browser starts lagging, mobile device may crash
 ```
 
 With cleanup:
+
 ```
 Start: 50 MB heap
 10 min: 55 MB heap (+5 MB)

@@ -34,7 +34,9 @@ describe('BUG #2: OfflineAudioContext Buffer Compatibility Prevention', () => {
       supabase: {
         storage: {
           from: () => ({
-            getPublicUrl: () => ({ data: { publicUrl: 'https://test.com/sample.mp3' } }),
+            getPublicUrl: () => ({
+              data: { publicUrl: 'https://test.com/sample.mp3' },
+            }),
           }),
         },
       },
@@ -53,11 +55,19 @@ describe('BUG #2: OfflineAudioContext Buffer Compatibility Prevention', () => {
         return new Float32Array(this.length);
       }
 
-      copyFromChannel(destination: Float32Array, channelNumber: number, startInChannel?: number): void {
+      copyFromChannel(
+        destination: Float32Array,
+        channelNumber: number,
+        startInChannel?: number,
+      ): void {
         // Mock implementation
       }
 
-      copyToChannel(source: Float32Array, channelNumber: number, startInChannel?: number): void {
+      copyToChannel(
+        source: Float32Array,
+        channelNumber: number,
+        startInChannel?: number,
+      ): void {
         // Mock implementation
       }
     }
@@ -243,14 +253,17 @@ describe('BUG #2: OfflineAudioContext Buffer Compatibility Prevention', () => {
       });
 
       // ✅ BUG #2 FIX: Use getCachedRawBuffer() to get ArrayBuffer (not getCachedBuffer which returns AudioBuffer)
-      const cachedBuffer = GlobalSampleCache.getInstance().getCachedRawBuffer('grandpiano-v10-C4');
+      const cachedBuffer =
+        GlobalSampleCache.getInstance().getCachedRawBuffer('grandpiano-v10-C4');
 
       // Should be ArrayBuffer
       expect(cachedBuffer).toBeInstanceOf(ArrayBuffer);
 
       // Real AudioContext should be able to decode this
       const realContext = new AudioContext();
-      const decodedBuffer = await realContext.decodeAudioData(cachedBuffer as ArrayBuffer);
+      const decodedBuffer = await realContext.decodeAudioData(
+        cachedBuffer as ArrayBuffer,
+      );
 
       expect(decodedBuffer).toBeDefined();
       expect(decodedBuffer.duration).toBeGreaterThan(0);
@@ -307,7 +320,9 @@ describe('BUG #2: OfflineAudioContext Buffer Compatibility Prevention', () => {
       });
 
       const offlineContext = new OfflineAudioContext(2, 44100, 44100);
-      vi.spyOn(offlineContext, 'decodeAudioData').mockRejectedValue(new Error('Invalid audio data'));
+      vi.spyOn(offlineContext, 'decodeAudioData').mockRejectedValue(
+        new Error('Invalid audio data'),
+      );
 
       const strategy = new DrumPreloadStrategy();
 

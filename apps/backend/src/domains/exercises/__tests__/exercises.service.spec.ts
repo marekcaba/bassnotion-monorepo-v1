@@ -90,7 +90,10 @@ describe('ExercisesService', () => {
       getCorrelationId: vi.fn().mockReturnValue('test-correlation-id'),
     };
 
-    service = new ExercisesService(mockExerciseRepository, mockRequestContextService);
+    service = new ExercisesService(
+      mockExerciseRepository,
+      mockRequestContextService,
+    );
   });
 
   it('should be defined', () => {

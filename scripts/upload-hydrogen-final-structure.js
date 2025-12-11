@@ -38,39 +38,40 @@ const MP3_DIR = path.join(__dirname, '../temp/hydrogen-mp3');
 async function uploadDirectory(localDir, bucketPrefix, format) {
   let uploadCount = 0;
   let errorCount = 0;
-  
+
   async function uploadDir(dir, prefix) {
     const items = fs.readdirSync(dir, { withFileTypes: true });
-    
+
     for (const item of items) {
       const localPath = path.join(dir, item.name);
-      
+
       if (item.isDirectory()) {
         // Recurse into subdirectory
         await uploadDir(localPath, `${prefix}/${item.name}`);
       } else {
         // Upload file
         const bucketPath = `${prefix}/${item.name}`;
-        
+
         try {
           const fileBuffer = fs.readFileSync(localPath);
-          
+
           // Determine content type
           let contentType = 'application/octet-stream';
           if (item.name.endsWith('.wav')) contentType = 'audio/wav';
           else if (item.name.endsWith('.mp3')) contentType = 'audio/mpeg';
           else if (item.name.endsWith('.xml')) contentType = 'text/xml';
-          else if (item.name.endsWith('.json')) contentType = 'application/json';
-          
+          else if (item.name.endsWith('.json'))
+            contentType = 'application/json';
+
           const { error } = await supabase.storage
             .from('audio-samples')
             .upload(bucketPath, fileBuffer, {
               contentType,
-              upsert: true
+              upsert: true,
             });
-            
+
           if (error) throw error;
-          
+
           uploadCount++;
           process.stdout.write('✓');
         } catch (error) {
@@ -81,11 +82,11 @@ async function uploadDirectory(localDir, bucketPrefix, format) {
       }
     }
   }
-  
+
   console.log(`\n📤 Uploading ${format.toUpperCase()} files...`);
   await uploadDir(localDir, bucketPrefix);
   console.log(`\n✓ Uploaded ${uploadCount} files (${errorCount} errors)\n`);
-  
+
   return { uploadCount, errorCount };
 }
 
@@ -105,8 +106,8 @@ function createKitMetadata() {
           'Studio production',
           'High-quality exports',
           'Professional mixing',
-          'Archival storage'
-        ]
+          'Archival storage',
+        ],
       },
       mp3: {
         path: 'mp3/',
@@ -117,9 +118,9 @@ function createKitMetadata() {
           'Web playback',
           'Mobile applications',
           'Quick loading',
-          'Bandwidth-conscious users'
-        ]
-      }
+          'Bandwidth-conscious users',
+        ],
+      },
     },
     kits: {
       electronic: [
@@ -129,30 +130,24 @@ function createKitMetadata() {
         'electric-empire',
         'k27-trash',
         'techno-1',
-        'varibreaks'
+        'varibreaks',
       ],
       acoustic: [
         'yamaha-vintage',
         'colombo-acoustic',
         'millo-multilayered',
         'millo-drums',
-        'forzee-stereo'
+        'forzee-stereo',
       ],
-      'hip-hop': [
-        'hip-hop-1',
-        'hip-hop-2',
-        'beatbuddy'
-      ],
-      rock: [
-        'dave-grohl',
-        'john-bonham'
-      ],
+      'hip-hop': ['hip-hop-1', 'hip-hop-2', 'beatbuddy'],
+      rock: ['dave-grohl', 'john-bonham'],
       metal: ['death-metal'],
-      jazz: ['gimme-jazz']
+      jazz: ['gimme-jazz'],
     },
     total_kits: 19,
     total_samples: 658,
-    recommendation: 'Use MP3 format for web playback to ensure fast loading times. WAV format is available for high-quality exports and professional use.'
+    recommendation:
+      'Use MP3 format for web playback to ensure fast loading times. WAV format is available for high-quality exports and professional use.',
   };
 }
 
@@ -160,63 +155,87 @@ function createKitMetadata() {
 async function main() {
   console.log('🎵 Hydrogen Kits Final Upload');
   console.log('=============================\n');
-  
+
   // Check directories exist
   if (!fs.existsSync(WAV_DIR)) {
-    console.error('❌ WAV directory not found. Run process-and-upload-hydrogen.js first');
+    console.error(
+      '❌ WAV directory not found. Run process-and-upload-hydrogen.js first',
+    );
     process.exit(1);
   }
-  
+
   if (!fs.existsSync(MP3_DIR)) {
-    console.error('❌ MP3 directory not found. Run convert-and-reupload-as-mp3.js first');
+    console.error(
+      '❌ MP3 directory not found. Run convert-and-reupload-as-mp3.js first',
+    );
     process.exit(1);
   }
-  
+
   console.log('📁 Creating organized structure in Supabase...\n');
   console.log('Target: audio-samples/drums/hydrogen-kits/');
   console.log('├── wav/');
   console.log('├── mp3/');
   console.log('└── index.json\n');
-  
+
   // Upload WAV files
-  const wavStats = await uploadDirectory(WAV_DIR, 'drums/hydrogen-kits/wav', 'wav');
-  
+  const wavStats = await uploadDirectory(
+    WAV_DIR,
+    'drums/hydrogen-kits/wav',
+    'wav',
+  );
+
   // Upload MP3 files
-  const mp3Stats = await uploadDirectory(MP3_DIR, 'drums/hydrogen-kits/mp3', 'mp3');
-  
+  const mp3Stats = await uploadDirectory(
+    MP3_DIR,
+    'drums/hydrogen-kits/mp3',
+    'mp3',
+  );
+
   // Create and upload master index
   console.log('📝 Creating master index...');
-  
+
   const metadata = createKitMetadata();
-  
+
   try {
     const { error } = await supabase.storage
       .from('audio-samples')
-      .upload('drums/hydrogen-kits/index.json', JSON.stringify(metadata, null, 2), {
-        contentType: 'application/json',
-        upsert: true
-      });
-      
+      .upload(
+        'drums/hydrogen-kits/index.json',
+        JSON.stringify(metadata, null, 2),
+        {
+          contentType: 'application/json',
+          upsert: true,
+        },
+      );
+
     if (error) throw error;
     console.log('✓ Uploaded master index\n');
   } catch (error) {
     console.error('❌ Failed to upload master index:', error.message);
   }
-  
+
   // Summary
   console.log('\n📊 Upload Summary:');
-  console.log(`WAV files: ${wavStats.uploadCount} uploaded, ${wavStats.errorCount} errors`);
-  console.log(`MP3 files: ${mp3Stats.uploadCount} uploaded, ${mp3Stats.errorCount} errors`);
+  console.log(
+    `WAV files: ${wavStats.uploadCount} uploaded, ${wavStats.errorCount} errors`,
+  );
+  console.log(
+    `MP3 files: ${mp3Stats.uploadCount} uploaded, ${mp3Stats.errorCount} errors`,
+  );
   console.log(`Total files: ${wavStats.uploadCount + mp3Stats.uploadCount}`);
-  
+
   console.log('\n✅ Complete! Hydrogen kits are now organized at:');
   console.log('📍 audio-samples/drums/hydrogen-kits/');
-  
+
   console.log('\n🎯 To use in your app:');
-  console.log('1. Load MP3s from: drums/hydrogen-kits/mp3/{category}/{kit-id}/');
-  console.log('2. Example: drums/hydrogen-kits/mp3/electronic/classic-808/kick.mp3');
+  console.log(
+    '1. Load MP3s from: drums/hydrogen-kits/mp3/{category}/{kit-id}/',
+  );
+  console.log(
+    '2. Example: drums/hydrogen-kits/mp3/electronic/classic-808/kick.mp3',
+  );
   console.log('3. Index available at: drums/hydrogen-kits/index.json');
-  
+
   console.log('\n🧹 Cleanup:');
   console.log('You can now delete the old folders:');
   console.log('- drums/hydrogen-collection/');

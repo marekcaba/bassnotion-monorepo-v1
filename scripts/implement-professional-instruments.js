@@ -2,7 +2,7 @@
 
 /**
  * Story 3.16: Professional Instruments Implementation Plan
- * 
+ *
  * Based on our FAANG-style approach, we'll implement 4 professional instruments:
  * 1. Salamander Grand Piano - DONE (using Tone.Sampler with CDN)
  * 2. Nice Keys Rhodes - TODO (need to download SF2 and extract samples)
@@ -29,9 +29,9 @@ const PROFESSIONAL_INSTRUMENTS = {
 const sampler = new Tone.Sampler({
   urls: { /* 30 sample URLs */ },
   baseUrl: 'https://tonejs.github.io/audio/salamander/'
-});`
+});`,
   },
-  
+
   'nice-keys-rhodes': {
     name: 'Nice Keys Rhodes',
     implementation: 'Tone.Sampler (future)',
@@ -52,9 +52,9 @@ const rhodes = new Tone.PolySynth(Tone.FMSynth, {
   envelope: { attack: 0.01, decay: 0.3, sustain: 0.4, release: 1.2 },
   modulation: { type: 'sine' },
   modulationEnvelope: { attack: 0.01, decay: 0.2, sustain: 0.3, release: 0.5 }
-});`
+});`,
   },
-  
+
   'drawbar-organ': {
     name: 'Drawbar Organ',
     implementation: 'Tone.js Synthesis',
@@ -78,9 +78,9 @@ const organ = new Tone.PolySynth(Tone.Synth, {
 // Add rotary speaker effect
 const rotary = new Tone.Chorus(4, 2.5, 0.5);
 const tremolo = new Tone.Tremolo(6, 0.8).start();
-organ.connect(rotary).connect(tremolo).toDestination();`
+organ.connect(rotary).connect(tremolo).toDestination();`,
   },
-  
+
   'warm-pad-synth': {
     name: 'Warm Pad Synthesizer',
     implementation: 'Tone.js Synthesis',
@@ -118,14 +118,17 @@ const warmPad = new Tone.PolySynth(Tone.Synth, {
 // Add chorus for width
 const chorus = new Tone.Chorus(2, 3.5, 0.7);
 const reverb = new Tone.Reverb({ decay: 4, wet: 0.3 });
-warmPad.connect(chorus).connect(reverb).toDestination();`
-  }
+warmPad.connect(chorus).connect(reverb).toDestination();`,
+  },
 };
 
 // Generate implementation guide
 function generateImplementationGuide() {
-  const guidePath = path.join(__dirname, '../docs/professional-instruments-implementation.md');
-  
+  const guidePath = path.join(
+    __dirname,
+    '../docs/professional-instruments-implementation.md',
+  );
+
   let content = `# Professional Instruments Implementation Guide
 
 ## Story 3.16: Professional Audio Platform Infrastructure
@@ -227,8 +230,11 @@ private async loadInstrumentSound(instrumentType: string): Promise<void> {
 
 // Generate tone.js synthesis examples
 function generateSynthesisExamples() {
-  const examplesPath = path.join(__dirname, '../apps/frontend/src/domains/playback/services/plugins/examples/');
-  
+  const examplesPath = path.join(
+    __dirname,
+    '../apps/frontend/src/domains/playback/services/plugins/examples/',
+  );
+
   if (!fs.existsSync(examplesPath)) {
     fs.mkdirSync(examplesPath, { recursive: true });
   }
@@ -328,19 +334,21 @@ export const PAD_PRESETS = {
 // Main execution
 function main() {
   console.log('🎹 Professional Instruments Implementation\n');
-  
+
   generateImplementationGuide();
   generateSynthesisExamples();
-  
+
   console.log('\n📊 Summary:');
   console.log('✅ Salamander Piano - Implemented with Tone.Sampler');
   console.log('⏳ Nice Keys Rhodes - Pending SF2 extraction');
   console.log('🔧 Drawbar Organ - Ready to implement with synthesis');
   console.log('🔧 Warm Pad Synth - Ready to implement with synthesis');
-  
+
   console.log('\n📝 Next Steps:');
   console.log('1. Test Salamander Piano on /test-harmony page');
-  console.log('2. Implement organ and pad synthesis in ChordInstrumentProcessor');
+  console.log(
+    '2. Implement organ and pad synthesis in ChordInstrumentProcessor',
+  );
   console.log('3. Create UI for switching between instruments');
   console.log('4. Download and process Rhodes SF2 file');
 }

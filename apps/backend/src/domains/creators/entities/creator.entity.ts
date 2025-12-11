@@ -81,7 +81,8 @@ export class Creator {
       thumbnailUrl: props.thumbnailUrl,
       lastFetchedAt: now,
       createdAt: now,
-      updatedAt: now });
+      updatedAt: now,
+    });
   }
 
   static reconstitute(props: CreatorProps): Creator {
@@ -163,6 +164,7 @@ export class Creator {
       thumbnail_url: this.props.thumbnailUrl,
       last_fetched_at: this.props.lastFetchedAt?.toISOString(),
       created_at: this.props.createdAt.toISOString(),
-      updated_at: this.props.updatedAt.toISOString() };
+      updated_at: this.props.updatedAt.toISOString(),
+    };
   }
 }

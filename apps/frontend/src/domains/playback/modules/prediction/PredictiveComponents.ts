@@ -1,6 +1,6 @@
 /**
  * PredictiveComponents - Main orchestrator for predictive loading system
- * 
+ *
  * Coordinates behavior analysis, prediction models, and adaptive learning
  * to provide intelligent asset prefetching and loading optimization.
  */
@@ -33,7 +33,7 @@ const logger = createStructuredLogger('PredictiveComponents');
 
 /**
  * Main orchestrator for predictive loading system
- * 
+ *
  * This class coordinates all predictive loading components and provides
  * a unified interface for the rest of the application.
  */
@@ -60,27 +60,29 @@ export class PredictiveComponents {
 
     // Initialize core components
     if (this.config.behaviorAnalysis.enabled) {
-      this.behaviorAnalyzer = new BehaviorAnalyzer(this.config.behaviorAnalysis);
+      this.behaviorAnalyzer = new BehaviorAnalyzer(
+        this.config.behaviorAnalysis,
+      );
       await this.behaviorAnalyzer.initialize();
     }
 
     if (this.config.intelligentPrefetching.enabled) {
       this.intelligentPrefetcher = new IntelligentPrefetcher(
-        this.config.intelligentPrefetching
+        this.config.intelligentPrefetching,
       );
       await this.intelligentPrefetcher.initialize();
     }
 
     if (this.config.adaptiveLearning.enabled) {
       this.adaptiveLearningManager = new AdaptiveLearningManager(
-        this.config.adaptiveLearning
+        this.config.adaptiveLearning,
       );
       await this.adaptiveLearningManager.initialize();
     }
 
     if (this.config.analytics.enabled) {
       this.analyticsIntegration = new AnalyticsIntegration(
-        this.config.analytics
+        this.config.analytics,
       );
       await this.analyticsIntegration.initialize();
     }
@@ -88,35 +90,35 @@ export class PredictiveComponents {
     // Initialize prediction models
     if (this.config.predictionModels.exerciseProgression.enabled) {
       this.exerciseProgressionModel = new ExerciseProgressionModel(
-        this.config.predictionModels.exerciseProgression
+        this.config.predictionModels.exerciseProgression,
       );
       await this.exerciseProgressionModel.initialize();
     }
 
     if (this.config.predictionModels.assetDemand.enabled) {
       this.assetDemandModel = new AssetDemandModel(
-        this.config.predictionModels.assetDemand
+        this.config.predictionModels.assetDemand,
       );
       await this.assetDemandModel.initialize();
     }
 
     if (this.config.predictionModels.userIntent.enabled) {
       this.userIntentModel = new UserIntentModel(
-        this.config.predictionModels.userIntent
+        this.config.predictionModels.userIntent,
       );
       await this.userIntentModel.initialize();
     }
 
     if (this.config.predictionModels.sessionLength.enabled) {
       this.sessionLengthModel = new SessionLengthModel(
-        this.config.predictionModels.sessionLength
+        this.config.predictionModels.sessionLength,
       );
       await this.sessionLengthModel.initialize();
     }
 
     if (this.config.predictionModels.skillDevelopment.enabled) {
       this.skillDevelopmentModel = new SkillDevelopmentModel(
-        this.config.predictionModels.skillDevelopment
+        this.config.predictionModels.skillDevelopment,
       );
       await this.skillDevelopmentModel.initialize();
     }
@@ -129,7 +131,7 @@ export class PredictiveComponents {
    */
   async generatePredictions(
     userId: string,
-    context: PredictionContext
+    context: PredictionContext,
   ): Promise<AssetPrediction[]> {
     const allPredictions: AssetPrediction[] = [];
 
@@ -138,37 +140,37 @@ export class PredictiveComponents {
 
     if (this.exerciseProgressionModel) {
       modelPromises.push(
-        this.exerciseProgressionModel.generatePredictions(userId, context)
+        this.exerciseProgressionModel.generatePredictions(userId, context),
       );
     }
 
     if (this.assetDemandModel) {
       modelPromises.push(
-        this.assetDemandModel.generatePredictions(userId, context)
+        this.assetDemandModel.generatePredictions(userId, context),
       );
     }
 
     if (this.userIntentModel) {
       modelPromises.push(
-        this.userIntentModel.generatePredictions(userId, context)
+        this.userIntentModel.generatePredictions(userId, context),
       );
     }
 
     if (this.sessionLengthModel) {
       modelPromises.push(
-        this.sessionLengthModel.generatePredictions(userId, context)
+        this.sessionLengthModel.generatePredictions(userId, context),
       );
     }
 
     if (this.skillDevelopmentModel) {
       modelPromises.push(
-        this.skillDevelopmentModel.generatePredictions(userId, context)
+        this.skillDevelopmentModel.generatePredictions(userId, context),
       );
     }
 
     // Wait for all models to complete
     const modelResults = await Promise.all(modelPromises);
-    
+
     // Merge all predictions
     for (const predictions of modelResults) {
       allPredictions.push(...predictions);
@@ -192,7 +194,7 @@ export class PredictiveComponents {
    */
   async triggerModelUpdate(
     userId: string,
-    trigger: ModelUpdateTrigger
+    trigger: ModelUpdateTrigger,
   ): Promise<void> {
     if (this.adaptiveLearningManager) {
       await this.adaptiveLearningManager.triggerModelUpdate(userId, trigger);
@@ -268,11 +270,11 @@ export class PredictiveComponents {
    * Deduplicate and rank predictions by confidence and priority
    */
   private deduplicateAndRankPredictions(
-    predictions: AssetPrediction[]
+    predictions: AssetPrediction[],
   ): AssetPrediction[] {
     // Group by assetId
     const grouped = new Map<string, AssetPrediction[]>();
-    
+
     for (const prediction of predictions) {
       const existing = grouped.get(prediction.assetId) || [];
       existing.push(prediction);
@@ -281,21 +283,21 @@ export class PredictiveComponents {
 
     // For each asset, keep the prediction with highest confidence
     const deduplicated: AssetPrediction[] = [];
-    
+
     for (const [assetId, group] of grouped) {
       const best = group.reduce((prev, curr) => {
         // Prioritize by priority level first, then confidence
         const priorityOrder = { critical: 3, high: 2, medium: 1, low: 0 };
         const prevPriority = priorityOrder[prev.priority] || 0;
         const currPriority = priorityOrder[curr.priority] || 0;
-        
+
         if (currPriority > prevPriority) return curr;
         if (currPriority < prevPriority) return prev;
-        
+
         // Same priority, use confidence
         return curr.confidence > prev.confidence ? curr : prev;
       });
-      
+
       deduplicated.push(best);
     }
 
@@ -304,11 +306,11 @@ export class PredictiveComponents {
       const priorityOrder = { critical: 3, high: 2, medium: 1, low: 0 };
       const aPriority = priorityOrder[a.priority] || 0;
       const bPriority = priorityOrder[b.priority] || 0;
-      
+
       if (aPriority !== bPriority) {
         return bPriority - aPriority;
       }
-      
+
       return b.confidence - a.confidence;
     });
   }

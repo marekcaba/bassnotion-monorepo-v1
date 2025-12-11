@@ -1,6 +1,6 @@
 /**
  * Health Monitor
- * 
+ *
  * Monitors health of storage infrastructure components
  * Extracted from playback domain for shared use
  */
@@ -45,7 +45,7 @@ export class HealthMonitor {
    */
   registerHealthCheck(check: HealthCheck): void {
     this.healthChecks.set(check.name, check);
-    
+
     // Initialize component health
     this.healthStatus.components.set(check.name, {
       status: 'unknown',
@@ -55,7 +55,10 @@ export class HealthMonitor {
       metadata: {},
     });
 
-    logger.info('Health check registered', { name: check.name, critical: check.critical });
+    logger.info('Health check registered', {
+      name: check.name,
+      critical: check.critical,
+    });
   }
 
   /**
@@ -65,7 +68,7 @@ export class HealthMonitor {
     if (this.isRunning) return;
 
     this.isRunning = true;
-    logger.info('Health monitor started', { 
+    logger.info('Health monitor started', {
       checkCount: this.healthChecks.size,
       interval: this.config.healthCheckInterval,
     });
@@ -90,7 +93,7 @@ export class HealthMonitor {
     if (!this.isRunning) return;
 
     this.isRunning = false;
-    
+
     if (this.checkInterval) {
       clearInterval(this.checkInterval);
       this.checkInterval = undefined;
@@ -115,8 +118,8 @@ export class HealthMonitor {
       try {
         const isHealthy = await Promise.race([
           check.check(),
-          new Promise<boolean>((_, reject) => 
-            setTimeout(() => reject(new Error('Health check timeout')), 5000)
+          new Promise<boolean>((_, reject) =>
+            setTimeout(() => reject(new Error('Health check timeout')), 5000),
           ),
         ]);
 
@@ -169,7 +172,10 @@ export class HealthMonitor {
       overallStatus,
       components: this.healthStatus.components,
       issues,
-      lastSuccessfulCheck: issues.length === 0 ? Date.now() : this.healthStatus.lastSuccessfulCheck,
+      lastSuccessfulCheck:
+        issues.length === 0
+          ? Date.now()
+          : this.healthStatus.lastSuccessfulCheck,
       checkDuration: Date.now() - startTime,
       metadata: {
         checksRun: this.healthChecks.size,
@@ -180,12 +186,12 @@ export class HealthMonitor {
     this.lastCheckTime = Date.now();
 
     if (issues.length > 0) {
-      logger.warn('Health issues detected', { 
-        issues: issues.length, 
+      logger.warn('Health issues detected', {
+        issues: issues.length,
         overallStatus,
       });
     } else {
-      logger.debug('Health check completed', { 
+      logger.debug('Health check completed', {
         duration: this.healthStatus.checkDuration,
         status: overallStatus,
       });

@@ -3,6 +3,7 @@
 ## Issues Fixed
 
 ### 1. Frame Tracking Issue (Initial Problem)
+
 **Problem**: `lastAudioWorkletFrame` was showing as 0 in position updates, causing master clock mode to fail.
 
 **Root Cause**: The reinitialized AudioWorklet handler wasn't storing timing values (`lastAudioWorkletTime` and `lastAudioWorkletFrame`).
@@ -10,11 +11,13 @@
 **Fix**: Added the missing assignments in the reinit handler to properly store frame values from AudioWorklet timing updates.
 
 ### 2. 100ms Timing Drift (Main Issue)
+
 **Problem**: Persistent ~100ms timing drift between AudioWorklet and Tone.js Transport, causing systematic sync adjustments.
 
 **Root Cause**: The AudioWorklet and Transport were trying to sync two independent clocks that started at different times. The code was attempting to calculate offsets and compensate, but this created more complexity and drift.
 
 **Fix**: Simplified the approach to treat AudioWorklet as the ONLY source of truth. In master clock mode, we now force Transport to always match AudioWorklet exactly:
+
 ```typescript
 // MASTER CLOCK MODE: AudioWorklet is the ONLY source of truth
 const audioWorkletPosition = this.lastAudioWorkletTime;
@@ -23,17 +26,20 @@ drift = 0; // No drift in master clock mode - AudioWorklet IS the time
 ```
 
 ### 3. Session ID Mismatch (Final Issue)
+
 **Problem**: After pause/resume cycles, AudioWorklet timing updates were rejected due to session ID mismatch (e.g., "sessionId=3, expected=2").
 
 **Root Cause**: When stopping the transport, the AudioWorklet increments its session ID, but UnifiedTransport wasn't incrementing its `expectedSessionId` to match.
 
-**Fix**: 
+**Fix**:
+
 1. Added session ID increment in the `stop()` method to match AudioWorklet's behavior
 2. Added temporary message handler removal to clear any pending messages from the old session
 
 ## Test Results
 
 All tests now pass successfully:
+
 - ✅ No timing drift detected over extended playback
 - ✅ Session IDs remain synchronized through pause/resume/stop cycles
 - ✅ Frame tracking works correctly with proper values

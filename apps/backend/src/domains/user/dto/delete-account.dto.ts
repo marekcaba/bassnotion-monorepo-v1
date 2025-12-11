@@ -4,7 +4,8 @@ import { z } from 'zod';
  * Delete account DTO - requires password confirmation
  */
 export const deleteAccountSchema = z.object({
-  password: z.string().min(1, 'Password is required for account deletion') });
+  password: z.string().min(1, 'Password is required for account deletion'),
+});
 
 export type DeleteAccountData = z.infer<typeof deleteAccountSchema>;
 

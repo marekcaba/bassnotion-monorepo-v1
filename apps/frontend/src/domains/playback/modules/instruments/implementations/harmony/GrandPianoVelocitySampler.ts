@@ -25,7 +25,8 @@ const logger = createStructuredLogger('GrandPianoVelocitySampler');
 let Tone: any = null;
 
 // Import configuration directly (Next.js can't serve JSON from src/)
-const CONFIG: InstrumentSampleConfig = grandPianoConfig as InstrumentSampleConfig;
+const CONFIG: InstrumentSampleConfig =
+  grandPianoConfig as InstrumentSampleConfig;
 
 // FAANG-STYLE: Helper to ensure Tone.js is loaded independently
 async function ensureToneLoaded(
@@ -33,7 +34,8 @@ async function ensureToneLoaded(
   audioEngine?: any,
 ): Promise<void> {
   // Use InstrumentDependencyManager for independent loading
-  const { InstrumentDependencyManager } = await import('@/domains/playback/services/InstrumentDependencyManager.js');
+  const { InstrumentDependencyManager } =
+    await import('@/domains/playback/services/InstrumentDependencyManager.js');
 
   if (!Tone || preferredContext) {
     try {
@@ -48,7 +50,9 @@ async function ensureToneLoaded(
       ensureToneUsesPersistentContext();
     } catch (error) {
       logger.error('🎹 GrandPiano: Failed to load Tone.js', { error });
-      throw new Error(`Failed to load Tone.js for Grand Piano: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to load Tone.js for Grand Piano: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 }
@@ -105,7 +109,8 @@ export class GrandPianoVelocitySampler {
     try {
       // Use imported configuration (no need to fetch from server)
       this.config = CONFIG;
-      const velocityRanges = this.config.velocityRanges || (this.config as any).globalVelocityRanges;
+      const velocityRanges =
+        this.config.velocityRanges || (this.config as any).globalVelocityRanges;
 
       logger.info('🎹 Loaded Grand Piano configuration', {
         name: this.config.name,
@@ -180,7 +185,9 @@ export class GrandPianoVelocitySampler {
       // Audio flows through: WamKeyboard.gainNode → Channel/Bus → Destination
       // Connection happens via connect() method when WamKeyboard initializes
 
-      logger.debug('🎹 Initializing without direct toDestination (proper routing)');
+      logger.debug(
+        '🎹 Initializing without direct toDestination (proper routing)',
+      );
 
       // Load optimized velocity layers based on config
       const layersToLoad = velocityLayers ||
@@ -226,9 +233,9 @@ export class GrandPianoVelocitySampler {
 
       // Create EQ3 (3-band equalizer)
       this.eq = new (Tone as any).EQ3({
-        low: eqConfig.low || 0,      // Flat by default
-        mid: eqConfig.mid || 0,      // Flat by default
-        high: eqConfig.high || 0,    // Flat by default
+        low: eqConfig.low || 0, // Flat by default
+        mid: eqConfig.mid || 0, // Flat by default
+        high: eqConfig.high || 0, // Flat by default
         lowFrequency: eqConfig.lowFrequency || 400,
         highFrequency: eqConfig.highFrequency || 2500,
       });
@@ -321,7 +328,10 @@ export class GrandPianoVelocitySampler {
 
         // DEBUG: Log first few URLs to check format
         const firstFewUrls = Object.entries(sampleUrls).slice(0, 3);
-        logger.info('🔍 Sample URLs for layer (first 3):', { layer, urls: firstFewUrls });
+        logger.info('🔍 Sample URLs for layer (first 3):', {
+          layer,
+          urls: firstFewUrls,
+        });
 
         // Create Tone.js Sampler
         const sampler = await this.createSampler(sampleUrls);
@@ -391,10 +401,9 @@ export class GrandPianoVelocitySampler {
     const v = Math.max(0, Math.min(127, velocity));
 
     // Use global velocity ranges (simple, equal distribution)
-    const velocityRanges = this.config.velocityRanges || (this.config as any).globalVelocityRanges;
-    const range = velocityRanges?.find(
-      (r: any) => v >= r.min && v <= r.max,
-    );
+    const velocityRanges =
+      this.config.velocityRanges || (this.config as any).globalVelocityRanges;
+    const range = velocityRanges?.find((r: any) => v >= r.min && v <= r.max);
     return range ? range.layer : 'v4';
   }
 
@@ -461,12 +470,15 @@ export class GrandPianoVelocitySampler {
     velocity = 80,
   ): Promise<void> {
     // DIAGNOSTIC: Log every Grand Piano note trigger to identify dual playback source
-    console.log('[PLAYBACK-PATH] GrandPianoVelocitySampler.triggerAttack() called:', {
-      note,
-      velocity,
-      time: time?.toFixed(3) || 'immediate',
-      isInitialized: this.isInitialized
-    });
+    console.log(
+      '[PLAYBACK-PATH] GrandPianoVelocitySampler.triggerAttack() called:',
+      {
+        note,
+        velocity,
+        time: time?.toFixed(3) || 'immediate',
+        isInitialized: this.isInitialized,
+      },
+    );
 
     if (!this.isInitialized || !this.config) return;
 
@@ -552,7 +564,9 @@ export class GrandPianoVelocitySampler {
     }
 
     this.sustainPedal = pedalDown;
-    logger.info(`🎹 Sustain pedal ${pedalDown ? 'DOWN' : 'UP'} (value: ${value})`);
+    logger.info(
+      `🎹 Sustain pedal ${pedalDown ? 'DOWN' : 'UP'} (value: ${value})`,
+    );
 
     // If pedal is released, release all sustained notes
     if (!pedalDown && this.sustainedNotes.size > 0) {
@@ -624,7 +638,8 @@ export class GrandPianoVelocitySampler {
   async preloadAll(): Promise<void> {
     if (!this.config) return;
 
-    const velocityRanges = this.config.velocityRanges || (this.config as any).globalVelocityRanges;
+    const velocityRanges =
+      this.config.velocityRanges || (this.config as any).globalVelocityRanges;
     const allLayers = velocityRanges?.map((r: any) => r.layer) || [];
     await this.preloadLayers(allLayers);
   }
@@ -652,14 +667,23 @@ export class GrandPianoVelocitySampler {
             sampler.connect(destination);
           }
         } catch (error) {
-          logger.warn('⚠️ Sampler AudioContext mismatch - bypassing EQ', { error });
-          console.warn('⚠️ [CONNECT] Sampler AudioContext mismatch, connecting directly to destination');
+          logger.warn('⚠️ Sampler AudioContext mismatch - bypassing EQ', {
+            error,
+          });
+          console.warn(
+            '⚠️ [CONNECT] Sampler AudioContext mismatch, connecting directly to destination',
+          );
           // If EQ connection fails, try direct connection
           try {
             sampler.connect(destination);
           } catch (directError) {
-            logger.error('❌ Failed to connect sampler even directly', { directError });
-            console.error('❌ [CONNECT] Complete sampler connection failure:', directError);
+            logger.error('❌ Failed to connect sampler even directly', {
+              directError,
+            });
+            console.error(
+              '❌ [CONNECT] Complete sampler connection failure:',
+              directError,
+            );
           }
         }
       }
@@ -678,8 +702,13 @@ export class GrandPianoVelocitySampler {
         // CRITICAL FIX: EQ may be in different AudioContext than destination
         // This happens when connect() is called before initialize() completes
         // Solution: Dispose of EQ and bypass it
-        logger.warn('⚠️ EQ AudioContext mismatch - disposing and bypassing EQ', { error });
-        console.warn('⚠️ [CONNECT] EQ AudioContext mismatch, disposing EQ and connecting samplers directly');
+        logger.warn(
+          '⚠️ EQ AudioContext mismatch - disposing and bypassing EQ',
+          { error },
+        );
+        console.warn(
+          '⚠️ [CONNECT] EQ AudioContext mismatch, disposing EQ and connecting samplers directly',
+        );
         try {
           this.eq.dispose();
         } catch (disposeError) {
@@ -694,7 +723,9 @@ export class GrandPianoVelocitySampler {
               sampler.disconnect();
               sampler.connect(destination);
             } catch (reconnectError) {
-              logger.error('Failed to reconnect sampler after EQ bypass', { reconnectError });
+              logger.error('Failed to reconnect sampler after EQ bypass', {
+                reconnectError,
+              });
             }
           }
         }
@@ -731,7 +762,8 @@ export class GrandPianoVelocitySampler {
    */
   getStatus(): any {
     const memoryUsage = this.loadedLayers.size * 50; // ~50MB per layer estimate (larger than Wurlitzer)
-    const velocityRanges = this.config?.velocityRanges || (this.config as any)?.globalVelocityRanges;
+    const velocityRanges =
+      this.config?.velocityRanges || (this.config as any)?.globalVelocityRanges;
 
     return {
       isInitialized: this.isInitialized,

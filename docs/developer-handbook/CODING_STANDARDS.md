@@ -13,6 +13,7 @@ Follow these standards to keep our codebase clean, consistent, and debuggable.
 ## 📁 File Organization
 
 ### Naming Conventions
+
 ```
 ✅ GOOD:
 - components/AudioPlayer.tsx      # PascalCase for components
@@ -28,6 +29,7 @@ Follow these standards to keep our codebase clean, consistent, and debuggable.
 ```
 
 ### Import Order
+
 ```typescript
 // 1. External imports
 import React, { useState, useEffect } from 'react';
@@ -45,30 +47,32 @@ import type { AudioConfig } from './types.js';
 ## 🔍 Debugging Standards
 
 ### Every Component Must Have
+
 ```typescript
 export function MyComponent() {
   // 1. Correlation tracking
   const { correlationId, logger } = useCorrelation('MyComponent');
-  
+
   // 2. Debug logging for audio components
   const debug = useAudioDebug('MyComponent');
-  
+
   // 3. Log component lifecycle
   useEffect(() => {
     logger.info('Component mounted');
     return () => logger.info('Component unmounted');
   }, []);
-  
+
   // Your component logic...
 }
 ```
 
 ### API Calls Pattern
+
 ```typescript
 // ✅ GOOD: With correlation and error handling
 async function fetchData() {
   const { correlationId, logger } = useCorrelation('DataFetcher');
-  
+
   try {
     logger.info('Fetching data');
     const result = await apiClient.get('/api/data', { correlationId });
@@ -82,13 +86,14 @@ async function fetchData() {
 
 // ❌ BAD: No correlation or logging
 async function fetchData() {
-  return await fetch('/api/data').then(r => r.json());
+  return await fetch('/api/data').then((r) => r.json());
 }
 ```
 
 ## ⚛️ React Best Practices
 
 ### Prevent Infinite Loops
+
 ```typescript
 // ❌ BAD: Infinite re-render
 useEffect(() => {
@@ -102,18 +107,17 @@ useEffect(() => {
 ```
 
 ### Memoize Expensive Operations
+
 ```typescript
 // ❌ BAD: Recalculates every render
 const expensiveResult = calculateComplexThing(data);
 
 // ✅ GOOD: Only recalculates when data changes
-const expensiveResult = useMemo(() => 
-  calculateComplexThing(data), 
-  [data]
-);
+const expensiveResult = useMemo(() => calculateComplexThing(data), [data]);
 ```
 
 ### Memoize Callbacks
+
 ```typescript
 // ❌ BAD: New function every render
 <ChildComponent onUpdate={() => handleUpdate(id)} />
@@ -128,15 +132,16 @@ const handleUpdateCallback = useCallback(() => {
 ## 🎵 Audio Code Standards
 
 ### Audio Component Pattern
+
 ```typescript
 export function AudioWidget() {
   const { correlationId, logger } = useCorrelation('AudioWidget');
   const debug = useAudioDebug('AudioWidget');
-  
+
   // Log all audio state changes
   const play = useCallback(async () => {
     debug.log('play-start', { time: Date.now() });
-    
+
     try {
       await audioEngine.play();
       debug.log('play-success');
@@ -145,18 +150,19 @@ export function AudioWidget() {
       logger.error('Playback failed', error);
     }
   }, []);
-  
+
   return <button onClick={play}>Play</button>;
 }
 ```
 
 ### Sample Loading Pattern
+
 ```typescript
 async function loadSample(url: string): Promise<AudioBuffer> {
   const { logger } = useCorrelation('SampleLoader');
-  
+
   logger.info('Loading sample', { url });
-  
+
   try {
     // Always check cache first
     const cached = sampleCache.get(url);
@@ -164,14 +170,13 @@ async function loadSample(url: string): Promise<AudioBuffer> {
       logger.info('Using cached sample', { url });
       return cached;
     }
-    
+
     // Load and cache
     const buffer = await fetchAndDecode(url);
     sampleCache.set(url, buffer);
-    
+
     logger.info('Sample loaded', { url, size: buffer.length });
     return buffer;
-    
   } catch (error) {
     logger.error('Failed to load sample', error, { url });
     throw new Error(`Cannot load sample: ${url}`);
@@ -182,6 +187,7 @@ async function loadSample(url: string): Promise<AudioBuffer> {
 ## 🧪 Testing Standards
 
 ### Test File Naming
+
 ```
 ✅ GOOD:
 - Component.test.tsx
@@ -194,6 +200,7 @@ async function loadSample(url: string): Promise<AudioBuffer> {
 ```
 
 ### Test Structure
+
 ```typescript
 describe('ComponentName', () => {
   // Setup
@@ -201,20 +208,20 @@ describe('ComponentName', () => {
     id: '123',
     onUpdate: jest.fn()
   };
-  
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
-  
+
   // Group related tests
   describe('when playing audio', () => {
     it('should log play event', async () => {
       // Arrange
       const { getByRole } = render(<Component {...mockProps} />);
-      
+
       // Act
       fireEvent.click(getByRole('button'));
-      
+
       // Assert
       expect(mockProps.onUpdate).toHaveBeenCalled();
     });
@@ -225,6 +232,7 @@ describe('ComponentName', () => {
 ## 💾 State Management
 
 ### Zustand Store Pattern
+
 ```typescript
 // ✅ GOOD: Typed, with logging
 interface AudioStore {
@@ -237,26 +245,27 @@ interface AudioStore {
 export const useAudioStore = create<AudioStore>((set) => ({
   isPlaying: false,
   volume: 0.8,
-  
+
   setPlaying: (playing) => {
     logAudioEvent('AudioStore', 'setPlaying', { playing });
     set({ isPlaying: playing });
   },
-  
+
   setVolume: (volume) => {
     logAudioEvent('AudioStore', 'setVolume', { volume });
     set({ volume });
-  }
+  },
 }));
 ```
 
 ## 📝 Documentation Standards
 
 ### Component Documentation
+
 ```typescript
 /**
  * AudioPlayer - Main audio playback component
- * 
+ *
  * @example
  * <AudioPlayer
  *   trackId="123"
@@ -276,14 +285,15 @@ export function AudioPlayer({ trackId, onPlaybackEnd }: AudioPlayerProps) {
 ```
 
 ### Function Documentation
+
 ```typescript
 /**
  * Loads and decodes an audio sample from URL
- * 
+ *
  * @param url - The URL of the audio file
  * @returns Decoded AudioBuffer ready for playback
  * @throws Error if loading fails or format unsupported
- * 
+ *
  * @example
  * const buffer = await loadSample('/samples/kick.mp3');
  */
@@ -295,6 +305,7 @@ async function loadSample(url: string): Promise<AudioBuffer> {
 ## 🚫 What NOT to Do
 
 ### Never Do These
+
 ```typescript
 // ❌ Direct console.log
 console.log('Something happened');
@@ -339,6 +350,7 @@ Before submitting a PR, check:
 ## 🎨 Formatting
 
 We use Prettier with these settings:
+
 ```json
 {
   "singleQuote": true,
@@ -350,6 +362,7 @@ We use Prettier with these settings:
 ```
 
 Run before committing:
+
 ```bash
 pnpm lint:fix
 ```
@@ -360,4 +373,4 @@ Remember: **Consistency > Personal Preference**
 
 When in doubt, follow existing patterns in the codebase.
 
-*Last updated: August 30, 2025*
+_Last updated: August 30, 2025_

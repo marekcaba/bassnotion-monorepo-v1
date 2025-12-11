@@ -1,6 +1,6 @@
 /**
  * Shared Storage Types
- * 
+ *
  * Central export point for all storage-related type definitions
  * used across the application.
  */

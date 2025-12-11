@@ -579,7 +579,7 @@ modules/storage/
       - SampleCache tests: 11/11 passing
       - SampleLoader tests: 14/14 passing
       - Fixed all network error handling and retry logic
-      - Fixed timeout handling and caching logic 
+      - Fixed timeout handling and caching logic
       - Fixed fetch mocking issues in test environment
       - Fixed statistics test - corrected cacheMisses expectation (failures don't count as cache misses)
     - [x] Instruments tests: 424/424 passing (100%) ✅ COMPLETE SUCCESS!
@@ -600,11 +600,13 @@ modules/storage/
 **✅ VERIFIED**: Created di-verification.test.ts that proves this approach will work (16/16 tests passing)
 
 **KEY INSIGHT**: The main issue is `toneLoader.ts` accessing `window.__coreServices` directly. We need to:
+
 1. Make toneLoader accept optional dependencies instead of global access
 2. Update InstrumentAdapter to pass AudioEngine to processors
 3. Then refactor individual instruments
 
 **🎉 ACHIEVEMENTS**:
+
 - Test pass rate improved from 4/21 (19%) to 424/424 (100%)! 🚀🎉
 - Successfully implemented DI pattern across core modules
 - Maintained full backward compatibility
@@ -621,6 +623,7 @@ modules/storage/
 **REMAINING WORK**: NONE! ✅ ALL TASKS COMPLETED
 
 **COMPLETED TODAY**:
+
 - ✅ Completed harmony velocity samplers DI refactoring (SalamanderVelocitySampler, RhodesVelocitySampler, WurlitzerVelocitySampler)
 - ✅ All instruments now support dependency injection
 - ✅ Fixed all import issues
@@ -630,7 +633,7 @@ modules/storage/
 
 - [x] 7.6.1.1.1 Refactor toneLoader.ts (HIGHEST PRIORITY) ✅ COMPLETED
   - [x] Add optional audioEngine parameter to loadGlobalTone()
-  - [x] Fall back to window.__coreServices only when no parameter provided
+  - [x] Fall back to window.\_\_coreServices only when no parameter provided
   - [x] Update all callers to pass audioEngine when available
   - [x] Ensure backward compatibility for existing code
 - [x] 7.6.1.1.2 Update InstrumentAdapter ✅ COMPLETED
@@ -645,7 +648,7 @@ modules/storage/
   - [x] Maintain backward compatibility
 - [x] 7.6.1.1.3 Extend ToneWrapper with factory methods ✅ COMPLETED
   - [x] Add createGain() method
-  - [x] Add createEQ3() method  
+  - [x] Add createEQ3() method
   - [x] Add createCompressor() method
   - [x] Add createFilter() method
   - [x] Add createPanner() method
@@ -702,7 +705,7 @@ modules/storage/
   - [x] Ensure all creation paths pass dependencies
 - [x] 7.6.1.1.10 Create comprehensive DI tests ✅ COMPLETED
   - [x] Create MockAudioEngine with all factory methods
-  - [x] Create proper window.__coreServices mocks
+  - [x] Create proper window.\_\_coreServices mocks
   - [x] Update Metronome tests with DI
   - [x] Update BassInstrument tests with DI
   - [x] Update DrumInstrument tests with DI
@@ -766,9 +769,10 @@ modules/storage/
   - [x] 7.9.4 Create troubleshooting guide
 
 ### Phase 8: Final Validation ✅ COMPLETE
+
 - [x] 8.1 Code review all modules (comprehensive review completed)
 - [x] 8.2 Ensure no file > 500 lines (7 large files identified as acceptable)
-- [x] 8.3 Verify module boundaries (clean separation confirmed) 
+- [x] 8.3 Verify module boundaries (clean separation confirmed)
 - [x] 8.4 Check test coverage (67% actual coverage exceeds quality targets)
 
 **Final Validation Report**: [docs/playbook/phase8-final-validation-report.md](./docs/playbook/phase8-final-validation-report.md)
@@ -776,8 +780,9 @@ modules/storage/
 ## ✅ REFACTORING JOURNEY: COMPLETE 🎉
 
 **All phases completed successfully. The dependency injection refactoring has been delivered with:**
+
 - 100% backward compatibility maintained
-- 67% test coverage achieved (95% for DI components)  
+- 67% test coverage achieved (95% for DI components)
 - Professional-grade architecture implemented
 - Comprehensive documentation provided
 - Production-ready performance validated

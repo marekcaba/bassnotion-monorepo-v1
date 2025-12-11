@@ -178,6 +178,17 @@ export class HarmonySchedulerV2 {
       instrument: instrument || 'unknown',
       instanceId: this.instanceId,
     });
+
+    // 🔍 DIAGNOSTIC: Log all buffer keys and durations for F notes
+    console.log(`[HARMONY] BUFFER MAP INJECTED for ${instrument}:`);
+    samples.forEach((noteMap, layer) => {
+      const fNotes = Array.from(noteMap.entries())
+        .filter(([note]) => note.startsWith('F') && !note.startsWith('Fs'))
+        .map(([note, buf]) => `${note}:${buf.duration.toFixed(2)}s`);
+      if (fNotes.length > 0) {
+        console.log(`  ${layer}: ${fNotes.join(', ')}`);
+      }
+    });
   }
 
   /**
@@ -271,6 +282,10 @@ export class HarmonySchedulerV2 {
     // STEP 2: Convert MIDI note to note name (C4, Cs4, D4, etc.)
     const noteName = midiToNoteName(midiNote);
 
+    // SIMPLE LOG: What note is being played - include measure number for debugging
+    const measureNum = eventData.position?.measure || eventData.measureNumber || '?';
+    console.log(`[HARMONY] PLAY: M${measureNum} ${eventData.noteName} (MIDI ${eventData.midiNote}) → sample: ${noteName} (MIDI ${midiNote}) | shift: -${octaveShift} | instrument: ${this.currentHarmonyInstrument}`);
+
     // STEP 3: Select velocity layer using VelocityLayerSelector
     const layer = this.velocityLayerSelector.selectLayer(velocity, noteName);
 
@@ -298,6 +313,12 @@ export class HarmonySchedulerV2 {
       layer,
       sampleNote,
     );
+
+    // SIMPLE LOG: Buffer found or not - include duration to verify correct sample loaded
+    const bufDur = bufferResult.buffer ? bufferResult.buffer.duration.toFixed(2) : 'N/A';
+    const bufRate = bufferResult.buffer ? bufferResult.buffer.sampleRate : 'N/A';
+    const bufLen = bufferResult.buffer ? bufferResult.buffer.length : 'N/A';
+    console.log(`[HARMONY] BUFFER: ${sampleNote} ${layer} → ${bufferResult.buffer ? 'FOUND' : 'MISSING'} (${bufferResult.source}) | dur=${bufDur}s | rate=${bufRate} | len=${bufLen} | playbackRate=${playbackRate} | cacheKey=${bufferResult.cacheKey || 'internal'}`);
 
     if (!bufferResult.buffer) {
       logger.error('Missing buffer after all fallback strategies', {
@@ -371,6 +392,9 @@ export class HarmonySchedulerV2 {
       // STEP 11: Start playback and schedule stop
       source.start(audioTime);
       source.stop(fadeout.stopTime);
+
+      // 🔍 DIAGNOSTIC: Log actual playback details
+      console.log(`[HARMONY] PLAYING: M${measureNum} ${eventData.noteName} → buffer.duration=${buffer.duration.toFixed(2)}s, buffer.sampleRate=${buffer.sampleRate}, source.playbackRate=${playbackRate}, startAt=${audioTime.toFixed(3)}s`);
 
       // Track active sources for cleanup
       if (!this.activeHarmonySources.has(noteName)) {
@@ -450,10 +474,12 @@ export class HarmonySchedulerV2 {
    * Immediately cancels both currently playing AND future scheduled notes
    */
   stopAll(): void {
-    const mapSnapshot = Array.from(this.scheduledAudioSources.entries()).map(([source, metadata]) => ({
-      sourceState: source.playbackState,
-      metadata,
-    }));
+    const mapSnapshot = Array.from(this.scheduledAudioSources.entries()).map(
+      ([source, metadata]) => ({
+        sourceState: source.playbackState,
+        metadata,
+      }),
+    );
 
     console.log('[🛑 HARMONY-SCHEDULER-V2 STOP CALLED 🛑]', {
       instanceId: this.instanceId,
@@ -468,7 +494,8 @@ export class HarmonySchedulerV2 {
         instanceId: this.instanceId,
         activeHarmonySources: this.activeHarmonySources.size,
         message: 'Sources were removed from Map before stopAll() was called!',
-        possibleCause: 'Wrong instance being called for stop! Check if there are multiple instances.',
+        possibleCause:
+          'Wrong instance being called for stop! Check if there are multiple instances.',
       });
     }
 
@@ -509,11 +536,14 @@ export class HarmonySchedulerV2 {
    * @private
    */
   private cleanupSource(source: AudioBufferSourceNode, noteName: string): void {
-    console.error('[🚨🚨🚨 CLEANUP-SOURCE CALLED 🚨🚨🚨] This should NEVER happen!', {
-      noteName,
-      mapSizeBefore: this.scheduledAudioSources.size,
-      stackTrace: new Error().stack,
-    });
+    console.error(
+      '[🚨🚨🚨 CLEANUP-SOURCE CALLED 🚨🚨🚨] This should NEVER happen!',
+      {
+        noteName,
+        mapSizeBefore: this.scheduledAudioSources.size,
+        stackTrace: new Error().stack,
+      },
+    );
     this.scheduledAudioSources.delete(source);
 
     const activeSources = this.activeHarmonySources.get(noteName);

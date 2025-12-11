@@ -2,11 +2,13 @@ import {
   Injectable,
   NotFoundException,
   Inject,
-  BadRequestException } from '@nestjs/common';
+  BadRequestException,
+} from '@nestjs/common';
 import { SupabaseService } from '../../infrastructure/supabase/supabase.service.js';
 import type {
   Tutorial as TutorialContract,
-  TutorialSummary } from '@bassnotion/contracts';
+  TutorialSummary,
+} from '@bassnotion/contracts';
 import type { IResultTutorialRepository } from './repositories/result-tutorial.repository.js';
 import { TutorialId } from './value-objects/tutorial-id.vo.js';
 import { TutorialSlug } from './value-objects/tutorial-slug.vo.js';
@@ -24,7 +26,8 @@ export class TutorialsService {
     // Using repository pattern
     const result = await this.tutorialRepository.findAll({
       page: 1,
-      limit: 100 });
+      limit: 100,
+    });
 
     if (!result.ok) {
       throw new Error(`Failed to fetch tutorials: ${result.error?.message}`);
@@ -62,12 +65,14 @@ export class TutorialsService {
           exercise_count: (countsMap.get(tutorial.id.value) as number) || 0,
           is_active: tutorial.isActive,
           created_at: tutorial.createdAt.toISOString(),
-          updated_at: tutorial.updatedAt.toISOString() }),
+          updated_at: tutorial.updatedAt.toISOString(),
+        }),
       );
 
       return {
         tutorials: tutorialsWithCounts,
-        total: result.value.total };
+        total: result.value.total,
+      };
     }
 
     // Fallback without exercise counts
@@ -88,11 +93,13 @@ export class TutorialsService {
       exercise_count: 0,
       is_active: tutorial.isActive,
       created_at: tutorial.createdAt.toISOString(),
-      updated_at: tutorial.updatedAt.toISOString() }));
+      updated_at: tutorial.updatedAt.toISOString(),
+    }));
 
     return {
       tutorials,
-      total: result.value.total };
+      total: result.value.total,
+    };
   }
 
   async findBySlug(slug: string): Promise<TutorialContract> {
@@ -173,7 +180,8 @@ export class TutorialsService {
 
     return {
       tutorial,
-      exercises: exercises || [] };
+      exercises: exercises || [],
+    };
   }
 
   async findById(id: string): Promise<TutorialContract> {
@@ -215,17 +223,20 @@ export class TutorialsService {
     if (bluesError) {
       results.push({
         exercise: 'Blues Scale Mastery',
-        error: bluesError.message });
+        error: bluesError.message,
+      });
     } else {
       results.push({
         exercise: 'Blues Scale Mastery',
         success: true,
-        updated: bluesExercise });
+        updated: bluesExercise,
+      });
     }
 
     return {
       message: 'Exercise-tutorial relationships updated',
-      results };
+      results,
+    };
   }
 
   private mapToContract(tutorial: Tutorial): TutorialContract {

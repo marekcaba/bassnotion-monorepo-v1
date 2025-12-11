@@ -27,7 +27,12 @@
  * ```
  */
 
-import { EventBus, EventData, EventHandler, EventMetadata } from './EventBus.js';
+import {
+  EventBus,
+  EventData,
+  EventHandler,
+  EventMetadata,
+} from './EventBus.js';
 import { getLogger } from '@/utils/logger.js';
 
 const logger = getLogger('EventScope');
@@ -70,7 +75,9 @@ export class EventScope {
    */
   on<T = EventData>(event: string, handler: EventHandler<T>): () => void {
     if (this.isDisposed) {
-      logger.warn(`EventScope ${this.config.name} already disposed, cannot subscribe to ${event}`);
+      logger.warn(
+        `EventScope ${this.config.name} already disposed, cannot subscribe to ${event}`,
+      );
       return () => {}; // Return no-op
     }
 
@@ -82,7 +89,9 @@ export class EventScope {
 
     // Warn if we're accumulating too many handlers (potential leak)
     if (this.subscriptions.length > this.config.maxHandlers) {
-      logger.warn(`EventScope ${this.config.name} has ${this.subscriptions.length} handlers (max: ${this.config.maxHandlers}). Potential leak?`);
+      logger.warn(
+        `EventScope ${this.config.name} has ${this.subscriptions.length} handlers (max: ${this.config.maxHandlers}). Potential leak?`,
+      );
     }
 
     logger.debug(`EventScope ${this.config.name}: Subscribed to ${event}`, {
@@ -102,7 +111,10 @@ export class EventScope {
   /**
    * Alias for on() to match EventBus interface
    */
-  subscribe<T = EventData>(event: string, handler: EventHandler<T>): () => void {
+  subscribe<T = EventData>(
+    event: string,
+    handler: EventHandler<T>,
+  ): () => void {
     return this.on<T>(event, handler);
   }
 
@@ -112,7 +124,9 @@ export class EventScope {
    */
   emit(event: string, data: EventData = {}, source?: string): Promise<void> {
     if (this.isDisposed) {
-      logger.warn(`EventScope ${this.config.name} already disposed, cannot emit ${event}`);
+      logger.warn(
+        `EventScope ${this.config.name} already disposed, cannot emit ${event}`,
+      );
       return Promise.resolve();
     }
     return this.parentBus.emit(event, data, source);
@@ -138,7 +152,10 @@ export class EventScope {
       try {
         unsubscribe();
       } catch (error) {
-        logger.error(`Error unsubscribing handler in scope ${this.config.name}:`, error as Error);
+        logger.error(
+          `Error unsubscribing handler in scope ${this.config.name}:`,
+          error as Error,
+        );
       }
     }
 

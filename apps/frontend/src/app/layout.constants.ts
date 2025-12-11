@@ -11,6 +11,6 @@ export const courierPrime = Courier_Prime({
 });
 
 export const metadata = {
-  title: 'BassNotion',
+  title: 'Bassicology',
   description: 'Your personal bass guitar learning platform',
 };

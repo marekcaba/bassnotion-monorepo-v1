@@ -61,7 +61,8 @@ async function fetchUserProfile(userId: string): Promise<UserProfileWithRole> {
     success: result.success,
     hasData: !!result.data,
     message: result.message,
-    profileStringCount: result.data?.preferences?.bassConfiguration?.stringCount,
+    profileStringCount:
+      result.data?.preferences?.bassConfiguration?.stringCount,
   });
 
   if (!result.success || !result.data) {
@@ -92,7 +93,10 @@ export function useUserProfile(): UseUserProfileReturn {
     refetchOnReconnect: true, // Refetch when internet reconnects
     retry: (failureCount, error) => {
       // Don't retry on auth errors (4xx)
-      if (error instanceof Error && error.message.includes('not authenticated')) {
+      if (
+        error instanceof Error &&
+        error.message.includes('not authenticated')
+      ) {
         return false;
       }
       return failureCount < 2;
@@ -102,7 +106,9 @@ export function useUserProfile(): UseUserProfileReturn {
   // Function to invalidate cache (use when user updates settings)
   const invalidate = async () => {
     console.log('🔄 Invalidating user profile cache...');
-    await queryClient.invalidateQueries({ queryKey: ['user-profile', user?.id] });
+    await queryClient.invalidateQueries({
+      queryKey: ['user-profile', user?.id],
+    });
   };
 
   if (error) {

@@ -12,7 +12,9 @@ import { RequestContextService } from '../../../shared/services/request-context.
  */
 @Injectable()
 export class ExampleUsageService {
-  private readonly staticLogger = createStructuredLogger(ExampleUsageService.name);
+  private readonly staticLogger = createStructuredLogger(
+    ExampleUsageService.name,
+  );
 
   constructor(
     @Inject('IResultExerciseRepository')
@@ -27,7 +29,7 @@ export class ExampleUsageService {
   async getExercise(id: string) {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
-    
+
     // No try-catch needed!
     const result = await this.exerciseRepository.findById(
       ExerciseId.create(id),
@@ -50,7 +52,7 @@ export class ExampleUsageService {
   async importExercises(exerciseData: any[]) {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
-    
+
     // Convert data to Exercise entities
     const exercises = exerciseData.map((data) =>
       this.createExerciseFromData(data),
@@ -71,7 +73,8 @@ export class ExampleUsageService {
 
     return {
       message: `Successfully imported ${exercises.length} exercises`,
-      count: exercises.length };
+      count: exercises.length,
+    };
   }
 
   /**
@@ -116,7 +119,8 @@ export class ExampleUsageService {
 
     return {
       message: `Promoted ${toUpdate.length} exercises to intermediate`,
-      count: toUpdate.length };
+      count: toUpdate.length,
+    };
   }
 
   /**
@@ -141,7 +145,8 @@ export class ExampleUsageService {
           : exercise.isMediumTempo()
             ? 'medium'
             : 'slow',
-        beginnerFriendly: exercise.canBePlayedByBeginner() };
+        beginnerFriendly: exercise.canBePlayedByBeginner(),
+      };
     });
 
     if (!summaryResult.ok) {

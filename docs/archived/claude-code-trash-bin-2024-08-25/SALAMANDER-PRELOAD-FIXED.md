@@ -3,7 +3,9 @@
 ## The Complete Solution
 
 ### 1. AudioProvider wraps PreloadInitializer
+
 **File**: `/apps/frontend/src/app/layout.tsx`
+
 ```jsx
 <AudioProvider>
   <PreloadInitializer />  <!-- Now INSIDE AudioProvider -->
@@ -14,21 +16,27 @@
 ```
 
 ### 2. PreloadInitializer waits for audio engine
+
 **File**: `/apps/frontend/src/domains/playback/components/PreloadInitializer.tsx`
+
 ```javascript
 const { isReady } = useAudio();
 
 useEffect(() => {
   // Only start preload when audio engine is ready (CoreServices available)
   if (isReady) {
-    console.log('🚀 PreloadInitializer: Audio engine ready, starting preload...');
+    console.log(
+      '🚀 PreloadInitializer: Audio engine ready, starting preload...',
+    );
     PreloadStrategy.startPreload();
   }
 }, [isReady]);
 ```
 
 ### 3. PreloadStrategy loads Salamander immediately
+
 **File**: `/apps/frontend/src/domains/playback/utils/preloadStrategy.ts`
+
 ```javascript
 private static async loadSalamanderSamples() {
   // CoreServices guaranteed to be available
@@ -40,7 +48,9 @@ private static async loadSalamanderSamples() {
 ```
 
 ### 4. HarmonyWidget waits for preloaded samples
+
 **File**: `/apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx`
+
 ```javascript
 // Wait up to 15 seconds for preloaded processor
 let waitAttempts = 0;
@@ -63,28 +73,34 @@ if ((window as any).__preloadedChordProcessor) {
 ## Loading Timeline
 
 ### T=0ms: Page Load
+
 - AudioProvider mounts
 - CoreServices becomes available
 
 ### T=100ms: PreloadInitializer
+
 - Detects isReady = true
 - Calls PreloadStrategy.startPreload()
 
 ### T=200ms: PreloadStrategy
+
 - Starts loading Salamander samples
 - Creates ChordInstrumentProcessor
 - Sets PIANO preset
 
 ### T=200-6000ms: Sample Loading
+
 - 5 velocity layers downloading
 - ~150 individual samples
 
 ### T=6000ms: Ready
+
 - Samples fully loaded
 - Stored in `__preloadedChordProcessor`
 - HarmonyWidget picks it up
 
 ## Console Output (Expected)
+
 ```
 🚀 PreloadInitializer: Audio engine ready, starting preload...
 PreloadStrategy: Started preloading optimizations
@@ -109,4 +125,5 @@ PreloadStrategy: Started preloading optimizations
 5. **No duplicate loading** - Widget uses preloaded processor, doesn't create new one
 
 ## The Result
+
 Salamander samples now load IMMEDIATELY on page load, not when play button is pressed!

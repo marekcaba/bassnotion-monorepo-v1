@@ -1,7 +1,9 @@
 # Smart Loading Solution for Supabase Samples
 
 ## Summary
+
 The buffer errors occur because:
+
 1. SalamanderVelocitySampler loads ALL 88 keys by default in `initialize()`
 2. Loading from Supabase takes 20-40 seconds for all samples
 3. The exercise only needs ~9 notes (C4, E4, G4, F4, A4, C5, G4, B4, D5)
@@ -10,6 +12,7 @@ The buffer errors occur because:
 ## Implementation Needed
 
 ### 1. Pass Exercise Context Early
+
 ```typescript
 // In HarmonyWidget
 const processor = new ChordInstrumentProcessor();
@@ -19,6 +22,7 @@ await processor.setPreset(ChordPreset.PIANO);
 ```
 
 ### 2. Smart Initialize in SalamanderVelocitySampler
+
 ```typescript
 // Instead of loading all 88 keys
 async initialize(requiredNotes?: string[]): Promise<void> {
@@ -30,12 +34,12 @@ async initialize(requiredNotes?: string[]): Promise<void> {
         acc[note] = `${note}.mp3`;
         return acc;
       }, {});
-      
+
       const sampler = new Tone.Sampler({
         urls,
         baseUrl: `${this.supabaseUrl}/Keyboards/salamander/${layer}/`,
       });
-      
+
       await sampler.loaded;
       this.samplers.set(layer, sampler);
     }
@@ -47,24 +51,30 @@ async initialize(requiredNotes?: string[]): Promise<void> {
 ```
 
 ### 3. Benefits
+
 - Load time reduced from 30s to 3-5s
 - Only ~27 samples instead of 1,408
 - No buffer errors because samples are loaded before playback
 
 ## Why Previous Services Had This
+
 The deleted services like:
+
 - `AssetManager.ts` - Managed smart loading
 - `MIDIAssetOrchestrator.ts` - Coordinated exercise-based loading
 - `ResourceManager.ts` - Cached and reused samples
 
 Had sophisticated systems to:
+
 1. Analyze exercise requirements
 2. Preload only needed samples
 3. Cache for reuse
 4. Handle loading states
 
 ## Recommendation
+
 Instead of loading all samples, implement exercise-aware loading that:
+
 1. Extracts notes from exercise
 2. Loads only those samples
 3. Shows loading progress

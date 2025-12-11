@@ -15,10 +15,10 @@ export type MidiDrumType =
   | 'kick'
   | 'snare'
   | 'snare_rimshot'
-  | 'hihat'           // Simplified hi-hat (covers closed, open, pedal)
-  | 'hihat_closed'    // Legacy - use 'hihat' instead
-  | 'hihat_open'      // Legacy - use 'hihat' instead
-  | 'hihat_pedal'     // Legacy - use 'hihat' instead
+  | 'hihat' // Simplified hi-hat (covers closed, open, pedal)
+  | 'hihat_closed' // Legacy - use 'hihat' instead
+  | 'hihat_open' // Legacy - use 'hihat' instead
+  | 'hihat_pedal' // Legacy - use 'hihat' instead
   | 'crash'
   | 'ride'
   | 'ride_bell'
@@ -28,7 +28,7 @@ export type MidiDrumType =
   | 'floor_tom'
   | 'cowbell'
   | 'tambourine'
-  | 'clap'            // Legacy - typically mapped to snare now
+  | 'clap' // Legacy - typically mapped to snare now
   | 'unknown';
 
 /**

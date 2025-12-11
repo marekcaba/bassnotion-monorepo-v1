@@ -9,19 +9,22 @@ Transform BassNotion from widget-based pattern system to track-based WAM plugin 
 ## 📋 MIGRATION CHECKLIST
 
 ### ✅ **PHASE 1: NEW ARCHITECTURE COMPONENTS** (COMPLETED)
+
 - [x] UnifiedTransport with sample-accurate timing
-- [x] EventBus for service communication  
+- [x] EventBus for service communication
 - [x] Track system with multi-track support
 - [x] WAM Drummer plugin implementation
 - [x] New hooks: `useTrack`, `useWAMPlugin`
 
 ### 🚧 **PHASE 2: WIDGET MIGRATION** (IN PROGRESS)
+
 - [ ] **DrummerWidget** → Track-based WAM plugin
 - [ ] **HarmonyWidget** → Track-based WAM plugin
 - [ ] **MetronomeWidget** → Track-based WAM plugin
 - [ ] **BassWidget** → Track-based WAM plugin (if exists)
 
 ### 🗑️ **PHASE 3: OLD SYSTEM CLEANUP** (PENDING)
+
 - [ ] Remove old pattern registration system
 - [ ] Remove widget singleton utilities
 - [ ] Remove PatternScheduler from UnifiedTransport
@@ -35,6 +38,7 @@ Transform BassNotion from widget-based pattern system to track-based WAM plugin 
 ### **Step 1: Replace Imports**
 
 **OLD:**
+
 ```typescript
 import { usePatternRegistration } from '@/domains/widgets/hooks/usePatternRegistration';
 import { useWidgetSync } from '@/domains/widgets/hooks/useWidgetSync';
@@ -42,6 +46,7 @@ import { widgetSingleton } from '@/domains/widgets/utils/widgetSingleton';
 ```
 
 **NEW:**
+
 ```typescript
 import { useTrack } from '@/domains/playback/hooks/useTrack';
 import { useWAMPlugin } from '@/domains/playback/hooks/useWAMPlugin';
@@ -50,6 +55,7 @@ import { useWAMPlugin } from '@/domains/playback/hooks/useWAMPlugin';
 ### **Step 2: Replace Hook Usage**
 
 **OLD PATTERN REGISTRATION:**
+
 ```typescript
 const syncResult = useWidgetSync({
   widgetId: 'drummer-widget',
@@ -59,18 +65,19 @@ const syncResult = useWidgetSync({
 const patternReg = usePatternRegistration({
   widgetId: 'drummer-widget',
   widgetType: 'drums',
-  enabled: true
+  enabled: true,
 });
 ```
 
 **NEW TRACK SYSTEM:**
+
 ```typescript
 // Create dedicated track for this widget
 const track = useTrack({
   trackId: 'drummer-track',
   name: 'Drummer',
   type: 'drums',
-  debugMode: true
+  debugMode: true,
 });
 
 // Load WAM plugin into track
@@ -78,7 +85,7 @@ const wamPlugin = useWAMPlugin({
   track: track.track,
   pluginUrl: '/wam/drummer-plugin',
   autoLoad: true,
-  debugMode: true
+  debugMode: true,
 });
 
 // Transport state comes from track
@@ -88,6 +95,7 @@ const { isPlaying, tempo, currentTime } = track;
 ### **Step 3: Replace Pattern Registration**
 
 **OLD:**
+
 ```typescript
 patternReg.registerPattern(drumPattern, (event, time) => {
   // Handle pattern events
@@ -95,6 +103,7 @@ patternReg.registerPattern(drumPattern, (event, time) => {
 ```
 
 **NEW:**
+
 ```typescript
 // Send pattern directly to WAM plugin
 const wamPattern = {
@@ -102,7 +111,7 @@ const wamPattern = {
   snare: patterns.snare,
   kick: patterns.kick,
   tempo: tempo,
-  timeSignature: [4, 4]
+  timeSignature: [4, 4],
 };
 
 wamPlugin.setParameter('pattern', wamPattern);
@@ -112,11 +121,13 @@ wamPlugin.setParameter('enabled', isPlaying);
 ### **Step 4: Replace Transport Controls**
 
 **OLD:**
+
 ```typescript
 // Widgets shouldn't control transport directly
 ```
 
 **NEW:**
+
 ```typescript
 // Each widget can control its track
 const handlePlay = () => track.play();
@@ -129,18 +140,21 @@ const handleMute = () => track.mute();
 ## 🗂️ FILE CHANGES REQUIRED
 
 ### **Widget Files to Migrate:**
+
 1. `apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/components/DrummerWidget.tsx`
 2. `apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx`
 3. `apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/components/MetronomeWidget.tsx`
 
 ### **Files to DELETE after migration:**
+
 1. `apps/frontend/src/domains/widgets/hooks/usePatternRegistration.ts`
-2. `apps/frontend/src/domains/widgets/hooks/useWidgetSync.ts` 
+2. `apps/frontend/src/domains/widgets/hooks/useWidgetSync.ts`
 3. `apps/frontend/src/domains/widgets/utils/widgetSingleton.ts`
 4. `apps/frontend/src/domains/playback/services/adapters/WidgetTrackAdapter.ts`
 5. `apps/frontend/src/domains/playback/services/PatternScheduler.ts` (if not used by UnifiedTransport)
 
 ### **Files to MODIFY:**
+
 1. `apps/frontend/src/domains/playback/services/core/UnifiedTransport.ts` - Remove PatternScheduler dependency
 2. `apps/frontend/src/domains/playback/providers/AudioProvider.tsx` - Remove pattern scheduler initialization
 
@@ -149,6 +163,7 @@ const handleMute = () => track.mute();
 ## 🎛️ NEW WIDGET ARCHITECTURE
 
 ### **Professional DAW Pattern:**
+
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Widget        │    │     Track       │    │   WAM Plugin    │
@@ -165,6 +180,7 @@ const handleMute = () => track.mute();
 ```
 
 ### **Benefits of New Architecture:**
+
 - ✅ **Sample-accurate timing** via UnifiedTransport
 - ✅ **Multi-track support** (multiple drums, bass, etc.)
 - ✅ **Professional mixing** (volume, pan, mute, solo per track)
@@ -178,16 +194,19 @@ const handleMute = () => track.mute();
 ## 🚀 MIGRATION EXECUTION PLAN
 
 ### **Week 1: DrummerWidget Migration**
+
 1. **Day 1-2**: Test new hooks with existing DrummerWidget
 2. **Day 3-4**: Refactor DrummerWidget to use track system
 3. **Day 5**: Test and debug drum track functionality
 
 ### **Week 2: Other Widgets Migration**
+
 1. **Day 1-2**: Migrate HarmonyWidget to track system
-2. **Day 3-4**: Migrate MetronomeWidget to track system  
+2. **Day 3-4**: Migrate MetronomeWidget to track system
 3. **Day 5**: Integration testing with all widgets
 
 ### **Week 3: System Cleanup**
+
 1. **Day 1-2**: Remove old pattern registration system
 2. **Day 3-4**: Clean up UnifiedTransport and service registry
 3. **Day 5**: Final testing and performance optimization
@@ -197,6 +216,7 @@ const handleMute = () => track.mute();
 ## 🧪 TESTING STRATEGY
 
 ### **Per-Widget Testing:**
+
 ```typescript
 // Test track creation
 const track = useTrack({ trackId: 'test-track', name: 'Test', type: 'drums' });
@@ -216,6 +236,7 @@ expect(track.isPlaying).toBe(true);
 ```
 
 ### **Integration Testing:**
+
 - Multiple tracks playing simultaneously
 - Sample-accurate synchronization between tracks
 - Volume/mute/solo functionality per track
@@ -226,6 +247,7 @@ expect(track.isPlaying).toBe(true);
 ## 📊 SUCCESS METRICS
 
 ### **Functional Requirements:**
+
 - [ ] All widgets work with track system
 - [ ] Sample-accurate timing maintained (<1ms drift)
 - [ ] No pattern registration errors
@@ -233,12 +255,14 @@ expect(track.isPlaying).toBe(true);
 - [ ] No SSR errors
 
 ### **Performance Requirements:**
+
 - [ ] Track creation <100ms
 - [ ] WAM plugin loading <500ms
 - [ ] Audio triggering <10ms latency
 - [ ] Memory usage doesn't increase >20%
 
 ### **User Experience:**
+
 - [ ] Same UI functionality as before
 - [ ] Improved audio quality and timing
 - [ ] No regression in features

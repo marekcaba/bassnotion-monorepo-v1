@@ -7,5 +7,6 @@ import { DatabaseModule } from '../infrastructure/database/database.module.js';
   imports: [DatabaseModule],
   controllers: [HealthController],
   providers: [HealthService],
-  exports: [HealthService] })
+  exports: [HealthService],
+})
 export class HealthModule {}

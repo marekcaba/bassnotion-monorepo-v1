@@ -18,12 +18,12 @@ The playback domain has been refactored to support dependency injection (DI) for
 ```typescript
 export class MyInstrument {
   private audioEngine?: any;
-  
+
   constructor(config: MyInstrumentConfig, audioEngine?: any) {
     this.config = config;
     this.audioEngine = audioEngine;
   }
-  
+
   // Factory method for creating audio nodes
   private createGain(gain?: number): any {
     if (this.audioEngine?.createGain) {
@@ -42,12 +42,12 @@ For classes that need async initialization:
 ```typescript
 export class MyProcessor {
   private audioEngine?: any;
-  
+
   async initialize(audioEngine?: any): Promise<void> {
     if (audioEngine) {
       this.audioEngine = audioEngine;
     }
-    
+
     // Use factory methods for all audio node creation
     const sampler = this.createSampler(options);
     // ... rest of initialization
@@ -65,14 +65,14 @@ private getAudioEngine(): any {
   if (this.audioEngine) {
     return this.audioEngine;
   }
-  
+
   // Try to get from global services
-  const globalServices = (window as any).__coreServices || 
+  const globalServices = (window as any).__coreServices ||
                         (window as any).__globalCoreServices;
   if (globalServices?.getAudioEngine) {
     return globalServices.getAudioEngine();
   }
-  
+
   return null;
 }
 ```
@@ -137,9 +137,9 @@ beforeEach(() => {
 it('should use provided audioEngine for node creation', () => {
   const mockAudioEngine = createMockAudioEngine();
   const instrument = new MyInstrument(config, mockAudioEngine);
-  
+
   instrument.initialize();
-  
+
   expect(mockAudioEngine.createGain).toHaveBeenCalled();
   expect(mockAudioEngine.createSampler).toHaveBeenCalled();
 });
@@ -150,6 +150,7 @@ it('should use provided audioEngine for node creation', () => {
 ### For Existing Instruments
 
 1. Add optional `audioEngine` parameter to constructor:
+
    ```typescript
    constructor(config: Config, audioEngine?: any) {
      // ...
@@ -158,6 +159,7 @@ it('should use provided audioEngine for node creation', () => {
    ```
 
 2. Add factory methods for all Tone.js instantiations:
+
    ```typescript
    private createGain(gain?: number): any {
      return this.audioEngine?.createGain?.(gain) || new Tone.Gain(gain);
@@ -165,10 +167,11 @@ it('should use provided audioEngine for node creation', () => {
    ```
 
 3. Replace all `new Tone.*` calls with factory methods:
+
    ```typescript
    // Before
    this.gainNode = new Tone.Gain(0.5);
-   
+
    // After
    this.gainNode = this.createGain(0.5);
    ```
@@ -208,20 +211,21 @@ The DI pattern maintains 100% backward compatibility:
 export class MyProcessor {
   private audioEngine?: any;
   private tone?: any;
-  
+
   async initialize(audioEngine?: any): Promise<void> {
     this.audioEngine = audioEngine;
     this.tone = await this.loadTone();
-    
+
     // Create nodes using factories
     const sampler = this.createSampler({
       urls: this.samples,
       baseUrl: this.baseUrl,
     });
   }
-  
+
   private async loadTone(): Promise<any> {
-    const { loadGlobalTone } = await import('../../services/plugins/toneLoader.js');
+    const { loadGlobalTone } =
+      await import('../../services/plugins/toneLoader.js');
     return loadGlobalTone(this.audioEngine);
   }
 }
@@ -232,10 +236,10 @@ export class MyProcessor {
 ```typescript
 export class Channel {
   private audioEngine?: any;
-  
+
   constructor(config: ChannelConfig) {
     this.audioEngine = config.audioEngine;
-    
+
     // Create all nodes with factories
     this.gainNode = this.createGain(config.gain);
     this.pannerNode = this.createPanner(config.pan);
@@ -272,11 +276,13 @@ export class Channel {
 ### Debug Tips
 
 1. Add logging to track audioEngine propagation:
+
    ```typescript
    console.log('AudioEngine provided:', !!audioEngine);
    ```
 
 2. Verify factory method usage in tests:
+
    ```typescript
    expect(mockAudioEngine.createGain).toHaveBeenCalledTimes(1);
    ```

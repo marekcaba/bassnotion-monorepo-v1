@@ -1,6 +1,6 @@
 /**
  * Metadata Analysis Module
- * 
+ *
  * Provides comprehensive audio metadata extraction and analysis
  * through a modular architecture.
  */

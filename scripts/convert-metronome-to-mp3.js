@@ -19,7 +19,7 @@ dotenv.config({ path: path.join(process.cwd(), 'apps/backend/.env.local') });
 // Initialize Supabase client
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
 );
 
 async function convertMetronomeFiles() {
@@ -36,7 +36,9 @@ async function convertMetronomeFiles() {
       throw new Error(`Failed to list metronome files: ${listError.message}`);
     }
 
-    const wavFiles = files.filter(f => f.name && f.name.toLowerCase().endsWith('.wav'));
+    const wavFiles = files.filter(
+      (f) => f.name && f.name.toLowerCase().endsWith('.wav'),
+    );
     console.log(`Found ${wavFiles.length} WAV files to convert\n`);
 
     if (wavFiles.length === 0) {
@@ -54,14 +56,16 @@ async function convertMetronomeFiles() {
     for (const file of wavFiles) {
       try {
         console.log(`Processing: ${file.name}`);
-        
+
         // Download WAV file
         const { data: wavData, error: downloadError } = await supabase.storage
           .from('audio-samples')
           .download(`metronome/${file.name}`);
 
         if (downloadError) {
-          throw new Error(`Failed to download ${file.name}: ${downloadError.message}`);
+          throw new Error(
+            `Failed to download ${file.name}: ${downloadError.message}`,
+          );
         }
 
         // Convert Blob to Buffer and save temporarily
@@ -77,7 +81,7 @@ async function convertMetronomeFiles() {
         // Convert to MP3 using FFmpeg
         // Using high quality settings for metronome clicks
         await execAsync(
-          `ffmpeg -i "${wavPath}" -codec:a libmp3lame -b:a 192k -q:a 2 -ar 44100 "${mp3Path}" -y`
+          `ffmpeg -i "${wavPath}" -codec:a libmp3lame -b:a 192k -q:a 2 -ar 44100 "${mp3Path}" -y`,
         );
 
         // Read converted MP3
@@ -88,20 +92,26 @@ async function convertMetronomeFiles() {
           .from('audio-samples')
           .upload(`metronome/${mp3Name}`, mp3Buffer, {
             contentType: 'audio/mpeg',
-            upsert: true
+            upsert: true,
           });
 
         if (uploadError) {
-          throw new Error(`Failed to upload ${mp3Name}: ${uploadError.message}`);
+          throw new Error(
+            `Failed to upload ${mp3Name}: ${uploadError.message}`,
+          );
         }
 
         // Get file sizes for comparison
         const wavStats = await fs.stat(wavPath);
         const mp3Stats = await fs.stat(mp3Path);
-        const reduction = ((1 - mp3Stats.size / wavStats.size) * 100).toFixed(1);
+        const reduction = ((1 - mp3Stats.size / wavStats.size) * 100).toFixed(
+          1,
+        );
 
         console.log(`  ✅ Converted: ${file.name} → ${mp3Name}`);
-        console.log(`     Size: ${(wavStats.size / 1024).toFixed(1)}KB → ${(mp3Stats.size / 1024).toFixed(1)}KB (${reduction}% reduction)`);
+        console.log(
+          `     Size: ${(wavStats.size / 1024).toFixed(1)}KB → ${(mp3Stats.size / 1024).toFixed(1)}KB (${reduction}% reduction)`,
+        );
 
         // Clean up temp files
         await fs.unlink(wavPath);
@@ -127,10 +137,11 @@ async function convertMetronomeFiles() {
       console.log(`  ❌ Failed: ${failed} files`);
     }
     console.log(`  📦 Total size reduction: ~75-80% (typical for WAV→MP3)`);
-    
+
     console.log('\n✨ Metronome MP3 conversion complete!');
-    console.log('The MP3 files are now available in the metronome folder alongside the WAV files.');
-    
+    console.log(
+      'The MP3 files are now available in the metronome folder alongside the WAV files.',
+    );
   } catch (error) {
     console.error('Fatal error:', error);
     process.exit(1);

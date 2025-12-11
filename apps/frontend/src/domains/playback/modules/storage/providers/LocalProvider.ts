@@ -37,6 +37,21 @@ export interface LocalStorageObject {
   updatedAt: number;
 }
 
+export interface LocalProviderMetrics {
+  hitRate: number;
+  missRate: number;
+  averageLatencyMs: number;
+  errorRate: number;
+  totalOperations: number;
+  totalBytes: number;
+  storeCount: number;
+  retrieveCount: number;
+  deleteCount: number;
+  hits: number;
+  misses: number;
+  errors: number;
+}
+
 /**
  * Storage provider for local browser storage
  */
@@ -46,14 +61,20 @@ export class LocalProvider {
   private db?: IDBDatabase;
   private isInitialized = false;
 
-  // Storage metrics
+  // Storage metrics (enhanced for performance tracking)
   private metrics = {
     stored: 0,
     retrieved: 0,
     deleted: 0,
     errors: 0,
     totalSize: 0,
+    // Enhanced performance tracking
+    hits: 0,
+    misses: 0,
+    latencies: [] as number[], // Rolling window of last 100 latencies
   };
+
+  private readonly LATENCY_WINDOW_SIZE = 100;
 
   constructor(config: LocalProviderConfig, eventBus?: EventBus) {
     this.config = config;
@@ -189,6 +210,7 @@ export class LocalProvider {
       });
 
       const duration = performance.now() - startTime;
+      this.recordLatency(duration);
 
       this.eventBus?.emit('storage:stored', {
         path,
@@ -204,6 +226,8 @@ export class LocalProvider {
         metadata: options.metadata,
       };
     } catch (error) {
+      const duration = performance.now() - startTime;
+      this.recordLatency(duration);
       this.metrics.errors++;
 
       this.eventBus?.emit('storage:storeError', {
@@ -259,8 +283,10 @@ export class LocalProvider {
 
       // Update metrics
       this.metrics.retrieved++;
+      this.metrics.hits++;
 
       const duration = performance.now() - startTime;
+      this.recordLatency(duration);
 
       this.eventBus?.emit('storage:retrieved', {
         path,
@@ -277,7 +303,16 @@ export class LocalProvider {
         metadata: storageObject.metadata,
       };
     } catch (error) {
-      this.metrics.errors++;
+      const duration = performance.now() - startTime;
+      this.recordLatency(duration);
+
+      // Check if it's a miss (not found) vs actual error
+      const isNotFound = (error as Error).message === 'File not found';
+      if (isNotFound) {
+        this.metrics.misses++;
+      } else {
+        this.metrics.errors++;
+      }
 
       this.eventBus?.emit('storage:retrieveError', {
         path,
@@ -661,10 +696,56 @@ export class LocalProvider {
   }
 
   /**
-   * Get provider metrics
+   * Get provider metrics (legacy)
    */
   getMetrics(): typeof this.metrics {
     return { ...this.metrics };
+  }
+
+  /**
+   * Record latency for performance tracking
+   */
+  private recordLatency(latencyMs: number): void {
+    this.metrics.latencies.push(latencyMs);
+    // Keep only the last N latencies
+    if (this.metrics.latencies.length > this.LATENCY_WINDOW_SIZE) {
+      this.metrics.latencies = this.metrics.latencies.slice(
+        -this.LATENCY_WINDOW_SIZE,
+      );
+    }
+  }
+
+  /**
+   * Calculate average latency from rolling window
+   */
+  private calculateAverageLatency(): number {
+    if (this.metrics.latencies.length === 0) return 0;
+    const sum = this.metrics.latencies.reduce((a, b) => a + b, 0);
+    return sum / this.metrics.latencies.length;
+  }
+
+  /**
+   * Get comprehensive performance metrics
+   */
+  getPerformanceMetrics(): LocalProviderMetrics {
+    const totalRetrievals = this.metrics.hits + this.metrics.misses;
+    const totalOps =
+      this.metrics.stored + this.metrics.retrieved + this.metrics.deleted;
+
+    return {
+      hitRate: totalRetrievals > 0 ? this.metrics.hits / totalRetrievals : 0,
+      missRate: totalRetrievals > 0 ? this.metrics.misses / totalRetrievals : 0,
+      averageLatencyMs: this.calculateAverageLatency(),
+      errorRate: totalOps > 0 ? this.metrics.errors / totalOps : 0,
+      totalOperations: totalOps,
+      totalBytes: this.metrics.totalSize,
+      storeCount: this.metrics.stored,
+      retrieveCount: this.metrics.retrieved,
+      deleteCount: this.metrics.deleted,
+      hits: this.metrics.hits,
+      misses: this.metrics.misses,
+      errors: this.metrics.errors,
+    };
   }
 
   /**

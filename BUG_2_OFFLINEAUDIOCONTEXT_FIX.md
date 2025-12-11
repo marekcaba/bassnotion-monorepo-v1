@@ -65,7 +65,7 @@ const coreServices = (window as any).__globalCoreServices;
 if (!coreServices) {
   const error = new Error(
     'CRITICAL: CoreServices must be pre-initialized before loadEssentialSamples(). ' +
-    'This indicates Bug #1 (Race Condition) was not properly fixed.'
+      'This indicates Bug #1 (Race Condition) was not properly fixed.',
   );
   logger.error('❌ CoreServices not found:', error);
   throw error;
@@ -101,8 +101,8 @@ if (!coreServices) {
 ```typescript
 export interface CachedSample {
   url: string;
-  buffer?: AudioBuffer;        // Decoded with real AudioContext
-  rawBuffer?: ArrayBuffer;     // Raw audio data (not decoded yet)
+  buffer?: AudioBuffer; // Decoded with real AudioContext
+  rawBuffer?: ArrayBuffer; // Raw audio data (not decoded yet)
   sampler?: Sampler;
   loadedAt: number;
   type: 'buffer' | 'sampler' | 'url' | 'raw';
@@ -270,7 +270,7 @@ console.warn = new Proxy(console.warn, {
       console.error('🚨 BUG #2 WARNING DETECTED:', args);
     }
     return target.apply(thisArg, args);
-  }
+  },
 });
 ```
 
@@ -363,7 +363,7 @@ const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
 GlobalSampleCache.getInstance().cacheBuffer(
   path,
   audioBuffer,
-  { isContextCompatible: true } // ALWAYS pass this flag!
+  { isContextCompatible: true }, // ALWAYS pass this flag!
 );
 
 // ❌ WRONG: Cache AudioBuffer from OfflineAudioContext

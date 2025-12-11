@@ -59,7 +59,9 @@ export class PollingStrategy implements PositionUpdateStrategy {
     this.transportStartTime = startTime;
     // Also reset tempo tracking when transport start time changes
     this.lastTempoChangeTime = startTime;
-    logger.debug('Transport start time set', { startTime: startTime.toFixed(6) });
+    logger.debug('Transport start time set', {
+      startTime: startTime.toFixed(6),
+    });
   }
 
   /**
@@ -83,7 +85,8 @@ export class PollingStrategy implements PositionUpdateStrategy {
     // Snapshot beats accumulated at the old tempo
     const now = this.clock.getAudioTime();
     const elapsedSinceLastChange = now - this.lastTempoChangeTime;
-    const beatsSinceLastChange = elapsedSinceLastChange * (this.currentBPM / 60);
+    const beatsSinceLastChange =
+      elapsedSinceLastChange * (this.currentBPM / 60);
     this.accumulatedBeats += beatsSinceLastChange;
 
     // Reset timing reference for the new tempo
@@ -146,7 +149,8 @@ export class PollingStrategy implements PositionUpdateStrategy {
       // TEMPO COMPENSATION: Calculate total beats across tempo changes
       // This prevents position jumps when tempo changes during playback
       const elapsedSinceLastChange = absoluteTime - this.lastTempoChangeTime;
-      const beatsSinceLastChange = elapsedSinceLastChange * (this.currentBPM / 60);
+      const beatsSinceLastChange =
+        elapsedSinceLastChange * (this.currentBPM / 60);
       const totalBeats = this.accumulatedBeats + beatsSinceLastChange;
 
       // Convert beats to "equivalent seconds" at current tempo for downstream compatibility
@@ -215,10 +219,13 @@ export class PollingStrategy implements PositionUpdateStrategy {
     if (!this.callback) {
       // DIAGNOSTIC: Log if callback is missing
       if (Math.random() < 0.01) {
-        console.warn('⚠️ [PollingStrategy] emitUpdate called but no callback set!', {
-          seconds: seconds.toFixed(3),
-          timestamp: Date.now(),
-        });
+        console.warn(
+          '⚠️ [PollingStrategy] emitUpdate called but no callback set!',
+          {
+            seconds: seconds.toFixed(3),
+            timestamp: Date.now(),
+          },
+        );
       }
       return;
     }

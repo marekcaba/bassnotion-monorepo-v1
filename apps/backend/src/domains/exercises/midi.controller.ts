@@ -94,7 +94,8 @@ This is the FAANG-level stateless approach that enables seamless workflows.
         midiUrl: {
           type: 'string',
           format: 'uri',
-          example: 'https://xyz.supabase.co/storage/v1/object/public/exercise-midi-temp/abc123.mid',
+          example:
+            'https://xyz.supabase.co/storage/v1/object/public/exercise-midi-temp/abc123.mid',
           description: 'HTTPS URL to MIDI file (must be .mid or .midi)',
         },
         bpm: {
@@ -168,11 +169,31 @@ This is the FAANG-level stateless approach that enables seamless workflows.
                 items: {
                   type: 'object',
                   properties: {
-                    pitch: { type: 'number', example: 41, description: 'MIDI note number' },
-                    velocity: { type: 'number', example: 100, description: '0-127' },
-                    name: { type: 'string', example: 'F2', description: 'Note name' },
-                    time: { type: 'number', example: 0.5, description: 'Time in seconds' },
-                    duration: { type: 'number', example: 0.25, description: 'Duration in seconds' },
+                    pitch: {
+                      type: 'number',
+                      example: 41,
+                      description: 'MIDI note number',
+                    },
+                    velocity: {
+                      type: 'number',
+                      example: 100,
+                      description: '0-127',
+                    },
+                    name: {
+                      type: 'string',
+                      example: 'F2',
+                      description: 'Note name',
+                    },
+                    time: {
+                      type: 'number',
+                      example: 0.5,
+                      description: 'Time in seconds',
+                    },
+                    duration: {
+                      type: 'number',
+                      example: 0.25,
+                      description: 'Duration in seconds',
+                    },
                   },
                 },
               },
@@ -388,21 +409,24 @@ This completes the FAANG-level stateless workflow for MIDI conversion.
   })
   @ApiResponse({
     status: 400,
-    description: 'Invalid measures, anchors, or MIDI contains notes outside bass guitar range',
+    description:
+      'Invalid measures, anchors, or MIDI contains notes outside bass guitar range',
     schema: {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 400 },
         message: {
           type: 'string',
-          example: 'MIDI contains 3 notes outside bass guitar range in measure 1. Please ensure all notes are between E1 (MIDI 28) and C4 (MIDI 60) for 4-string bass.',
+          example:
+            'MIDI contains 3 notes outside bass guitar range in measure 1. Please ensure all notes are between E1 (MIDI 28) and C4 (MIDI 60) for 4-string bass.',
         },
         error: { type: 'string', example: 'Bad Request' },
       },
     },
   })
   async convertStateless(
-    @Body() body: { measures: any[]; anchors: any[]; bassType?: '4' | '5' | '6' },
+    @Body()
+    body: { measures: any[]; anchors: any[]; bassType?: '4' | '5' | '6' },
     @CorrelationId() correlationId?: string,
   ) {
     const startTime = Date.now();
@@ -415,11 +439,19 @@ This completes the FAANG-level stateless workflow for MIDI conversion.
     });
 
     // Validate required fields
-    if (!body.measures || !Array.isArray(body.measures) || body.measures.length === 0) {
+    if (
+      !body.measures ||
+      !Array.isArray(body.measures) ||
+      body.measures.length === 0
+    ) {
       throw new BadRequestException('measures array is required');
     }
 
-    if (!body.anchors || !Array.isArray(body.anchors) || body.anchors.length === 0) {
+    if (
+      !body.anchors ||
+      !Array.isArray(body.anchors) ||
+      body.anchors.length === 0
+    ) {
       throw new BadRequestException('anchors array is required');
     }
 
@@ -449,7 +481,10 @@ This completes the FAANG-level stateless workflow for MIDI conversion.
       };
     } catch (error: any) {
       // Convert service errors to BadRequestException so the frontend gets the helpful message
-      if (error?.message && error.message.includes('outside bass guitar range')) {
+      if (
+        error?.message &&
+        error.message.includes('outside bass guitar range')
+      ) {
         throw new BadRequestException(error.message);
       }
       throw error;
@@ -536,7 +571,8 @@ This completes the FAANG-level stateless workflow for MIDI conversion.
       const stats = this.drumMapperService.getDrumPatternStats(drumPattern);
 
       // Step 4: Validate and get warnings
-      const validation = this.drumMapperService.validateDrumPattern(drumPattern);
+      const validation =
+        this.drumMapperService.validateDrumPattern(drumPattern);
 
       const processingTimeMs = Date.now() - startTime;
 
@@ -553,9 +589,10 @@ This completes the FAANG-level stateless workflow for MIDI conversion.
         drumPattern,
         stats,
         warnings: [...validation.warnings],
-        message: validation.warnings.length > 0
-          ? 'Drum pattern converted with warnings. Please review.'
-          : 'Drum pattern converted successfully.',
+        message:
+          validation.warnings.length > 0
+            ? 'Drum pattern converted with warnings. Please review.'
+            : 'Drum pattern converted successfully.',
       };
     } catch (error: any) {
       this.logger.error('Failed to convert drummer MIDI', {
@@ -630,8 +667,16 @@ This is simpler than fretboard conversion - no anchors needed, just extract note
                 items: {
                   type: 'object',
                   properties: {
-                    pitch: { type: 'number', example: 60, description: 'MIDI note (0-127)' },
-                    velocity: { type: 'number', example: 80, description: 'Velocity (0-127)' },
+                    pitch: {
+                      type: 'number',
+                      example: 60,
+                      description: 'MIDI note (0-127)',
+                    },
+                    velocity: {
+                      type: 'number',
+                      example: 80,
+                      description: 'Velocity (0-127)',
+                    },
                     name: { type: 'string', example: 'C4' },
                     time: { type: 'number', example: 0.5 },
                     duration: { type: 'number', example: 0.25 },
@@ -645,7 +690,8 @@ This is simpler than fretboard conversion - no anchors needed, just extract note
           type: 'string',
           enum: ['grandpiano', 'rhodes', 'wurlitzer', 'pad'],
           example: 'grandpiano',
-          description: 'Harmony instrument type (affects velocity layer calculation)',
+          description:
+            'Harmony instrument type (affects velocity layer calculation)',
         },
       },
     },
@@ -667,7 +713,11 @@ This is simpler than fretboard conversion - no anchors needed, just extract note
               velocity: { type: 'number', example: 80 },
               noteName: { type: 'string', example: 'C4' },
               measureNumber: { type: 'number', example: 1 },
-              voiceIndex: { type: 'number', example: 0, description: 'For polyphonic tracking' },
+              voiceIndex: {
+                type: 'number',
+                example: 0,
+                description: 'For polyphonic tracking',
+              },
             },
           },
         },
@@ -718,7 +768,11 @@ This is simpler than fretboard conversion - no anchors needed, just extract note
     });
 
     // Validate required fields
-    if (!body.measures || !Array.isArray(body.measures) || body.measures.length === 0) {
+    if (
+      !body.measures ||
+      !Array.isArray(body.measures) ||
+      body.measures.length === 0
+    ) {
       throw new BadRequestException('measures array is required');
     }
 

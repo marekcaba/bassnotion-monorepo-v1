@@ -1,115 +1,116 @@
 # Click Blocking Debug Progress
 
 ## Problem Description
+
 Tutorial pages are experiencing complete click blocking - the entire page becomes unresponsive to clicks. Other pages work fine, but all tutorial pages are affected. The issue appears to be triggered when clicking on certain components, particularly in the GlobalControls sheet music player.
 
 ## Root Cause Investigation Progress
 
 ### Test Versions Created
 
-| Version | Components Added | Status | Notes |
-|---------|-----------------|--------|-------|
-| **V8** | GlobalControlsCard only | ✅ WORKS | Base version with only the sheet music player |
-| **V9** | V8 + SimpleMetronome (no audio hooks) | ✅ WORKS | Simple UI component without audio initialization |
-| **V10** | V8 + SimpleHarmony (no audio hooks) | ✅ WORKS | Simple UI component without audio initialization |
-| **V11** | V8 + SimpleFourWidgets (container only) | ✅ WORKS | Just the container structure without real widgets |
-| **V12** | V8 + Real MetronomeWidget | ✅ WORKS | Full widget with useTrack, audio context, Tone.js |
-| **V13** | V12 + Real DrummerWidget | ✅ WORKS | Added drum widget with audio processing |
-| **V14** | V13 + Real BassLineWidget | ✅ WORKS | Added bass widget - all good! |
-| **V15** | V14 + Real HarmonyWidget | ✅ WORKS | All 4 widgets work individually! |
-| **V16** | V8 + FourWidgetsCard with all widgets | ⚠️ FREEZES | Works initially, freezes after interaction! |
-| **V17** | V16 + Debug logging | ✅ FOUND ISSUE | Infinite render loop! renderCount: 5644+ |
-| **V18** | Custom container with V15 props | ✅ WORKS | Confirmed: prop mismatch causes the issue! |
-| **V19** | Fixed FourWidgetsCard with useCallback | ✅ WORKS | Fix confirmed working! |
-| **V20** | V19 + AudioEnabledTutorial wrapper | ⚠️ INTERMITTENT | Works initially, freezes on reload (syntax error) |
-| **V21** | V19 + SyncProvider | ✅ WORKS | SyncProvider works perfectly! |
-| **V22** | V21 + YouTubeVideoSection | ✅ WORKS | YouTube video component works! |
-| **V23** | V22 + TutorialInfoCard | ✅ WORKS | Tutorial info component works! |
-| **V24** | V23 + FretboardCard | ✅ FIXED | Reset button works after fix! |
-| **V25** | V24 + Debug logging | ⚠️ INFINITE LOOP | 1970 page renders, 687 content renders! |
-| **V26** | GlobalControls only | ✅ FIXED | 3659 renders (down from 13000+) |
-| **V24** | Everything except AudioEnabledTutorial | ✅ WORKS | Reset button removed, no freezing! |
-| **V25** | Debug version (already exists) | ⏭️ SKIP | Skipping - wrong version |
-| **V26** | Minimal GlobalControls test | ✅ WORKS | Already tested |
-| **V27** | V24 + AudioEnabledTutorial wrapper | ⚠️ FREEZES | Wrapper causes freeze on click! |
-| **V28** | Direct YouTubeWidgetPage (no wrapper) | ⚠️ FREEZES | Issue is in YouTubeWidgetPage, not wrapper! |
-| **V29** | Minimal YouTubeWidgetPage structure | ✅ WORKS | Fixed - was render tracking causing loop |
-| **V30** | V29 without useWidgetPageState hook | ✅ WORKS | Also works - hook not the issue |
-| **V31** | V29 + FourWidgetsCard | ✅ WORKS | Works with widgets - issue elsewhere |
-| **V32** | V31 + sync state listeners | ✅ WORKS | Sync listeners work fine |
-| **V33** | V32 + nested SyncProvider | ✅ WORKS | Nested providers work fine |
-| **V34** | V33 + YouTube/Info/Clock components | ✅ WORKS | Display components work fine |
-| **V35** | V34 + FretboardCard | ⚠️ FREEZES | FretboardCard causes complete freeze! |
-| **V36** | Minimal fretboard content | ✅ WORKS | No SyncedWidget, minimal card UI |
-| **V37** | V34 + minimal fretboard card | ✅ WORKS | Testing simple fretboard with all other components |
-| **V38** | V37 + SyncedWidget wrapper | ✅ WORKS | Testing if SyncedWidget causes freeze |
-| **V39** | V38 + useExerciseSelection hook | ✅ WORKS | Testing if exercise selection hook causes freeze |
-| **V40** | V39 + complex exercise selector UI | ✅ WORKS | Testing full neumorphic exercise cards UI |
-| **V41** | V40 + fretboard grid visualization | ✅ WORKS | Testing interactive fretboard grid with clickable dots |
-| **V42** | V41 + full graphical 2D fretboard | ✅ WORKS | Complete fretboard with SVG graphics and visual polish |
-| **V43** | REAL FretboardCard component | ⚠️ FREEZES | The actual FretboardCard we built for 3 months |
-| **V44** | Fixed fretboard (no infinite loop) | ⚠️ FREEZES | Fixed syncProps.sync.actions dependency issue |
-| **V45** | NO FretboardCard test | ✅ WORKS | Confirms FretboardCard is the source of freeze |
-| **V46** | Real FretboardCard with monitoring | ⚠️ FREEZES | Testing the actual component with render tracking |
-| **V47** | FIXED FretboardCard | 🧪 TESTING | Properly fixed sync.actions dependency with ref |
-| **V48** | Fixed render tracking - NO Fretboard | ✅ WORKS | Fixed infinite loop from render count state updates |
-| **V49** | Complete Fix: Fixed tracking + Fixed Fretboard | ⚠️ ERROR | hasDotsOnHiddenStrings is not a function |
-| **V50** | V49 + Fixed FretboardControls props | ⚠️ FREEZES | Added all required props to FretboardControls |
-| **V51** | V42 + only useFretboard hook | ⚠️ FREEZES | Testing if useFretboard hook causes freeze |
-| **V52** | Minimal fretboard hook without auto-population | ⚠️ FREEZES | Removed auto-population effect from hook |
-| **V53** | Only useFretboardState hook | ⚠️ FREEZES | Testing state management only |
-| **V54** | No fretboard at all | ✅ WORKS | Confirms issue is in fretboard components |
-| **V55** | SyncedWidget + useExerciseSelection | ⚠️ FREEZES | Testing these two components together |
-| **V56** | Only useExerciseSelection (no SyncedWidget) | ⚠️ FREEZES | Isolated useExerciseSelection as the issue |
-| **V57** | No hooks at all (pure local state) | ✅ WORKS | Confirmed useExerciseSelection causes freeze! |
-| **V58** | Fixed useExerciseSelection hook | ❌ ERROR | SyncedWidget prop issues |
-| **V59** | Fixed hook WITHOUT SyncedWidget | ⚠️ FREEZES | The "fixed" hook still has issues |
-| **V60** | Side-by-side hook comparison | ✅ WORKS | Both hooks can be tested without freeze |
-| **V61** | TRULY fixed hook with refs | ✅ WORKS | No freeze, but still 15 renders |
-| **V62** | Simple test page with render tracking | ✅ FIXED | Initially had infinite loop in useEffect, fixed |
-| **V63** | Full page with AudioEnabledTutorial | ⚠️ FREEZES | AudioEnabledTutorial still causes infinite renders |
-| **V64** | Direct YouTubeWidgetPage with mock data | ✅ WORKS | Baseline test - mock data works perfectly |
-| **V65** | V64 + useTutorialExercises hook | ⚠️ FREEZES | Real data from API causes freeze |
-| **V66** | React.use() with mock data | ✅ WORKS | React.use() pattern is not the issue |
-| **V67** | useEffect pattern with real data | ⚠️ FREEZES | Confirms issue is with real data, not React.use() |
-| **V68** | Real tutorial + mock exercises | ✅ WORKS | Tutorial data is fine, problem is exercises |
-| **V69** | Mock tutorial + real exercises | ⚠️ FREEZES | Confirms exercises data causes the freeze |
-| **V70** | Analyzing exercise data structure | ⚠️ FREEZES | Even sanitized exercises cause freeze |
-| **V71** | Real tutorial + empty exercises array | ✅ WORKS | Empty array works, confirms exercises are the issue |
-| **V72** | Testing fixed handleExerciseSelect | ✅ WORKS | Fixed callback with ref pattern works! |
-| **V73** | Real exercises without auto-selection | ⚠️ FREEZES | Even without auto-select, real exercises freeze |
-| **V74** | Empty exercises with auto-selection logic | ⚠️ FREEZES | Auto-selection logic alone causes issues |
-| **V75** | Delayed exercise loading (2s delay) | ✅ WORKS | Deferring load prevents race condition |
-| **V76** | Real exercises with fake IDs (no auto-selection) | ✅ WORKS | Preventing auto-selection fixes freeze |
-| **V77** | Isolated auto-selection test | ✅ WORKS | Simple component with auto-select works in isolation |
-| **V78** | FAANG solution with parent-controlled selection | ⚠️ FREEZES | Lifting state up doesn't fix race condition |
-| **V79** | Deferred exercise loading test | 🧪 TESTING | Tests if deferring exercises to page level works |
-| **V80** | FIXED version with deferred auto-selection | ⚠️ FREEZES | Simple defer not enough - needs gradual updates |
-| **V81** | Gradual exercise selection test | ✅ WORKS | Simple test with minimal gradual updates works |
-| **V82** | FINAL FIX with gradual state updates | ⚠️ FREEZES | Full implementation with gradual updates causes freeze |
-| **V83** | NO auto-selection logic at all | ⚠️ FREEZES | Still freezes even without auto-selection! 3 errors in console |
-| **V84** | Minimal page without real FretboardCard | ✅ WORKS | Confirms issue is specifically in FretboardCard component! |
-| **V85** | Testing SyncedWidget wrapper in isolation | ✅ WORKS | SyncedWidget is NOT the problem - works perfectly! |
-| **V86** | Fixed FretboardCard with ref patterns | ⚠️ FREEZES | Applied fixes but still freezes - issue goes deeper |
-| **V87** | FretboardCard in isolation | 🧪 TESTING | Testing without YouTubeWidgetPage wrapper |
-| **V88** | SyncedWidget minimal test | 🧪 TESTING | Testing just SyncedWidget with basic content |
-| **V89** | Minimal useEffect test | 🧪 TESTING | Testing if basic useEffect works |
-| **V90** | useFretboardState hook test | 🧪 TESTING | Testing state management hook in isolation |
-| **V91** | Minimal FretboardCard replacement | 🧪 TESTING | Simple component without complex hooks |
-| **V92** | Testing with useExerciseSelection | 🧪 TESTING | Adding exercise selection hook |
-| **V93** | Original FretboardCard (reverted) | 🧪 TESTING | Testing with reverted changes |
-| **V94** | FretboardCard with render tracking | 🧪 TESTING | Extensive render counting |
-| **V95** | Real page with debug logging | ✅ FIXED | Found null check issue in FretboardCard |
-| **V96-V112** | Various attempts | ⏭️ SKIPPED | Jumped to v113 due to build issues |
-| **V113** | SyncProvider test | ✅ WORKS | Simple SyncProvider works after fixing syntax error |
-| **V114** | SyncProvider + SyncedWidget + data | ✅ WORKS | Works perfectly with real data, only 3 renders, button clicks work |
-| **V115** | GlobalControlsCard + FourWidgetsCard | 🧪 TESTING | Testing the main problem components (after syntax fix) |
-| **V116** | Full YouTubeWidgetPage | ❌ WHITE PAGE | Initially works but crashes to white page after ~112 re-renders |
-| **V117** | FretboardCard in isolation | ⚠️ EXCESSIVE RENDERS | 33 renders but remains functional, clicks work |
-| **V118** | Memoized exercises test | ❌ FROZEN | Displays properly but completely unclickable |
-| **V119** | Invisible overlay detection | 🧪 TESTING | Tests for overlays blocking clicks with monitoring |
-| **V120** | Event handler integrity test | 🧪 TESTING | Monitors event listener add/remove patterns |
-| **V121** | No FretboardCard test | 🧪 TESTING | Full page without FretboardCard to isolate issue |
+| Version      | Components Added                                 | Status               | Notes                                                              |
+| ------------ | ------------------------------------------------ | -------------------- | ------------------------------------------------------------------ |
+| **V8**       | GlobalControlsCard only                          | ✅ WORKS             | Base version with only the sheet music player                      |
+| **V9**       | V8 + SimpleMetronome (no audio hooks)            | ✅ WORKS             | Simple UI component without audio initialization                   |
+| **V10**      | V8 + SimpleHarmony (no audio hooks)              | ✅ WORKS             | Simple UI component without audio initialization                   |
+| **V11**      | V8 + SimpleFourWidgets (container only)          | ✅ WORKS             | Just the container structure without real widgets                  |
+| **V12**      | V8 + Real MetronomeWidget                        | ✅ WORKS             | Full widget with useTrack, audio context, Tone.js                  |
+| **V13**      | V12 + Real DrummerWidget                         | ✅ WORKS             | Added drum widget with audio processing                            |
+| **V14**      | V13 + Real BassLineWidget                        | ✅ WORKS             | Added bass widget - all good!                                      |
+| **V15**      | V14 + Real HarmonyWidget                         | ✅ WORKS             | All 4 widgets work individually!                                   |
+| **V16**      | V8 + FourWidgetsCard with all widgets            | ⚠️ FREEZES           | Works initially, freezes after interaction!                        |
+| **V17**      | V16 + Debug logging                              | ✅ FOUND ISSUE       | Infinite render loop! renderCount: 5644+                           |
+| **V18**      | Custom container with V15 props                  | ✅ WORKS             | Confirmed: prop mismatch causes the issue!                         |
+| **V19**      | Fixed FourWidgetsCard with useCallback           | ✅ WORKS             | Fix confirmed working!                                             |
+| **V20**      | V19 + AudioEnabledTutorial wrapper               | ⚠️ INTERMITTENT      | Works initially, freezes on reload (syntax error)                  |
+| **V21**      | V19 + SyncProvider                               | ✅ WORKS             | SyncProvider works perfectly!                                      |
+| **V22**      | V21 + YouTubeVideoSection                        | ✅ WORKS             | YouTube video component works!                                     |
+| **V23**      | V22 + TutorialInfoCard                           | ✅ WORKS             | Tutorial info component works!                                     |
+| **V24**      | V23 + FretboardCard                              | ✅ FIXED             | Reset button works after fix!                                      |
+| **V25**      | V24 + Debug logging                              | ⚠️ INFINITE LOOP     | 1970 page renders, 687 content renders!                            |
+| **V26**      | GlobalControls only                              | ✅ FIXED             | 3659 renders (down from 13000+)                                    |
+| **V24**      | Everything except AudioEnabledTutorial           | ✅ WORKS             | Reset button removed, no freezing!                                 |
+| **V25**      | Debug version (already exists)                   | ⏭️ SKIP              | Skipping - wrong version                                           |
+| **V26**      | Minimal GlobalControls test                      | ✅ WORKS             | Already tested                                                     |
+| **V27**      | V24 + AudioEnabledTutorial wrapper               | ⚠️ FREEZES           | Wrapper causes freeze on click!                                    |
+| **V28**      | Direct YouTubeWidgetPage (no wrapper)            | ⚠️ FREEZES           | Issue is in YouTubeWidgetPage, not wrapper!                        |
+| **V29**      | Minimal YouTubeWidgetPage structure              | ✅ WORKS             | Fixed - was render tracking causing loop                           |
+| **V30**      | V29 without useWidgetPageState hook              | ✅ WORKS             | Also works - hook not the issue                                    |
+| **V31**      | V29 + FourWidgetsCard                            | ✅ WORKS             | Works with widgets - issue elsewhere                               |
+| **V32**      | V31 + sync state listeners                       | ✅ WORKS             | Sync listeners work fine                                           |
+| **V33**      | V32 + nested SyncProvider                        | ✅ WORKS             | Nested providers work fine                                         |
+| **V34**      | V33 + YouTube/Info/Clock components              | ✅ WORKS             | Display components work fine                                       |
+| **V35**      | V34 + FretboardCard                              | ⚠️ FREEZES           | FretboardCard causes complete freeze!                              |
+| **V36**      | Minimal fretboard content                        | ✅ WORKS             | No SyncedWidget, minimal card UI                                   |
+| **V37**      | V34 + minimal fretboard card                     | ✅ WORKS             | Testing simple fretboard with all other components                 |
+| **V38**      | V37 + SyncedWidget wrapper                       | ✅ WORKS             | Testing if SyncedWidget causes freeze                              |
+| **V39**      | V38 + useExerciseSelection hook                  | ✅ WORKS             | Testing if exercise selection hook causes freeze                   |
+| **V40**      | V39 + complex exercise selector UI               | ✅ WORKS             | Testing full neumorphic exercise cards UI                          |
+| **V41**      | V40 + fretboard grid visualization               | ✅ WORKS             | Testing interactive fretboard grid with clickable dots             |
+| **V42**      | V41 + full graphical 2D fretboard                | ✅ WORKS             | Complete fretboard with SVG graphics and visual polish             |
+| **V43**      | REAL FretboardCard component                     | ⚠️ FREEZES           | The actual FretboardCard we built for 3 months                     |
+| **V44**      | Fixed fretboard (no infinite loop)               | ⚠️ FREEZES           | Fixed syncProps.sync.actions dependency issue                      |
+| **V45**      | NO FretboardCard test                            | ✅ WORKS             | Confirms FretboardCard is the source of freeze                     |
+| **V46**      | Real FretboardCard with monitoring               | ⚠️ FREEZES           | Testing the actual component with render tracking                  |
+| **V47**      | FIXED FretboardCard                              | 🧪 TESTING           | Properly fixed sync.actions dependency with ref                    |
+| **V48**      | Fixed render tracking - NO Fretboard             | ✅ WORKS             | Fixed infinite loop from render count state updates                |
+| **V49**      | Complete Fix: Fixed tracking + Fixed Fretboard   | ⚠️ ERROR             | hasDotsOnHiddenStrings is not a function                           |
+| **V50**      | V49 + Fixed FretboardControls props              | ⚠️ FREEZES           | Added all required props to FretboardControls                      |
+| **V51**      | V42 + only useFretboard hook                     | ⚠️ FREEZES           | Testing if useFretboard hook causes freeze                         |
+| **V52**      | Minimal fretboard hook without auto-population   | ⚠️ FREEZES           | Removed auto-population effect from hook                           |
+| **V53**      | Only useFretboardState hook                      | ⚠️ FREEZES           | Testing state management only                                      |
+| **V54**      | No fretboard at all                              | ✅ WORKS             | Confirms issue is in fretboard components                          |
+| **V55**      | SyncedWidget + useExerciseSelection              | ⚠️ FREEZES           | Testing these two components together                              |
+| **V56**      | Only useExerciseSelection (no SyncedWidget)      | ⚠️ FREEZES           | Isolated useExerciseSelection as the issue                         |
+| **V57**      | No hooks at all (pure local state)               | ✅ WORKS             | Confirmed useExerciseSelection causes freeze!                      |
+| **V58**      | Fixed useExerciseSelection hook                  | ❌ ERROR             | SyncedWidget prop issues                                           |
+| **V59**      | Fixed hook WITHOUT SyncedWidget                  | ⚠️ FREEZES           | The "fixed" hook still has issues                                  |
+| **V60**      | Side-by-side hook comparison                     | ✅ WORKS             | Both hooks can be tested without freeze                            |
+| **V61**      | TRULY fixed hook with refs                       | ✅ WORKS             | No freeze, but still 15 renders                                    |
+| **V62**      | Simple test page with render tracking            | ✅ FIXED             | Initially had infinite loop in useEffect, fixed                    |
+| **V63**      | Full page with AudioEnabledTutorial              | ⚠️ FREEZES           | AudioEnabledTutorial still causes infinite renders                 |
+| **V64**      | Direct YouTubeWidgetPage with mock data          | ✅ WORKS             | Baseline test - mock data works perfectly                          |
+| **V65**      | V64 + useTutorialExercises hook                  | ⚠️ FREEZES           | Real data from API causes freeze                                   |
+| **V66**      | React.use() with mock data                       | ✅ WORKS             | React.use() pattern is not the issue                               |
+| **V67**      | useEffect pattern with real data                 | ⚠️ FREEZES           | Confirms issue is with real data, not React.use()                  |
+| **V68**      | Real tutorial + mock exercises                   | ✅ WORKS             | Tutorial data is fine, problem is exercises                        |
+| **V69**      | Mock tutorial + real exercises                   | ⚠️ FREEZES           | Confirms exercises data causes the freeze                          |
+| **V70**      | Analyzing exercise data structure                | ⚠️ FREEZES           | Even sanitized exercises cause freeze                              |
+| **V71**      | Real tutorial + empty exercises array            | ✅ WORKS             | Empty array works, confirms exercises are the issue                |
+| **V72**      | Testing fixed handleExerciseSelect               | ✅ WORKS             | Fixed callback with ref pattern works!                             |
+| **V73**      | Real exercises without auto-selection            | ⚠️ FREEZES           | Even without auto-select, real exercises freeze                    |
+| **V74**      | Empty exercises with auto-selection logic        | ⚠️ FREEZES           | Auto-selection logic alone causes issues                           |
+| **V75**      | Delayed exercise loading (2s delay)              | ✅ WORKS             | Deferring load prevents race condition                             |
+| **V76**      | Real exercises with fake IDs (no auto-selection) | ✅ WORKS             | Preventing auto-selection fixes freeze                             |
+| **V77**      | Isolated auto-selection test                     | ✅ WORKS             | Simple component with auto-select works in isolation               |
+| **V78**      | FAANG solution with parent-controlled selection  | ⚠️ FREEZES           | Lifting state up doesn't fix race condition                        |
+| **V79**      | Deferred exercise loading test                   | 🧪 TESTING           | Tests if deferring exercises to page level works                   |
+| **V80**      | FIXED version with deferred auto-selection       | ⚠️ FREEZES           | Simple defer not enough - needs gradual updates                    |
+| **V81**      | Gradual exercise selection test                  | ✅ WORKS             | Simple test with minimal gradual updates works                     |
+| **V82**      | FINAL FIX with gradual state updates             | ⚠️ FREEZES           | Full implementation with gradual updates causes freeze             |
+| **V83**      | NO auto-selection logic at all                   | ⚠️ FREEZES           | Still freezes even without auto-selection! 3 errors in console     |
+| **V84**      | Minimal page without real FretboardCard          | ✅ WORKS             | Confirms issue is specifically in FretboardCard component!         |
+| **V85**      | Testing SyncedWidget wrapper in isolation        | ✅ WORKS             | SyncedWidget is NOT the problem - works perfectly!                 |
+| **V86**      | Fixed FretboardCard with ref patterns            | ⚠️ FREEZES           | Applied fixes but still freezes - issue goes deeper                |
+| **V87**      | FretboardCard in isolation                       | 🧪 TESTING           | Testing without YouTubeWidgetPage wrapper                          |
+| **V88**      | SyncedWidget minimal test                        | 🧪 TESTING           | Testing just SyncedWidget with basic content                       |
+| **V89**      | Minimal useEffect test                           | 🧪 TESTING           | Testing if basic useEffect works                                   |
+| **V90**      | useFretboardState hook test                      | 🧪 TESTING           | Testing state management hook in isolation                         |
+| **V91**      | Minimal FretboardCard replacement                | 🧪 TESTING           | Simple component without complex hooks                             |
+| **V92**      | Testing with useExerciseSelection                | 🧪 TESTING           | Adding exercise selection hook                                     |
+| **V93**      | Original FretboardCard (reverted)                | 🧪 TESTING           | Testing with reverted changes                                      |
+| **V94**      | FretboardCard with render tracking               | 🧪 TESTING           | Extensive render counting                                          |
+| **V95**      | Real page with debug logging                     | ✅ FIXED             | Found null check issue in FretboardCard                            |
+| **V96-V112** | Various attempts                                 | ⏭️ SKIPPED           | Jumped to v113 due to build issues                                 |
+| **V113**     | SyncProvider test                                | ✅ WORKS             | Simple SyncProvider works after fixing syntax error                |
+| **V114**     | SyncProvider + SyncedWidget + data               | ✅ WORKS             | Works perfectly with real data, only 3 renders, button clicks work |
+| **V115**     | GlobalControlsCard + FourWidgetsCard             | 🧪 TESTING           | Testing the main problem components (after syntax fix)             |
+| **V116**     | Full YouTubeWidgetPage                           | ❌ WHITE PAGE        | Initially works but crashes to white page after ~112 re-renders    |
+| **V117**     | FretboardCard in isolation                       | ⚠️ EXCESSIVE RENDERS | 33 renders but remains functional, clicks work                     |
+| **V118**     | Memoized exercises test                          | ❌ FROZEN            | Displays properly but completely unclickable                       |
+| **V119**     | Invisible overlay detection                      | 🧪 TESTING           | Tests for overlays blocking clicks with monitoring                 |
+| **V120**     | Event handler integrity test                     | 🧪 TESTING           | Monitors event listener add/remove patterns                        |
+| **V121**     | No FretboardCard test                            | 🧪 TESTING           | Full page without FretboardCard to isolate issue                   |
 
 ### Key Findings
 
@@ -130,7 +131,7 @@ Tutorial pages are experiencing complete click blocking - the entire page become
 
 ### Initial Fixes Attempted
 
-1. **Fixed recursive call in GlobalControls.tsx**: 
+1. **Fixed recursive call in GlobalControls.tsx**:
    - `handlePlayButtonClick()` was calling itself recursively
    - Fixed with proper retry logic using setTimeout
 
@@ -160,6 +161,7 @@ Tutorial pages are experiencing complete click blocking - the entire page become
 ### Test URLs
 
 All test versions can be accessed at:
+
 ```
 http://localhost:3001/library/come-together/v[VERSION_NUMBER]
 ```
@@ -176,6 +178,7 @@ Example: http://localhost:3001/library/come-together/v13
 ## Conclusion
 
 The issue is NOT in:
+
 - GlobalControlsCard
 - MetronomeWidget
 - DrummerWidget
@@ -186,6 +189,7 @@ The issue is NOT in:
 - Individual widgets (all 4 work fine separately)
 
 The issue WAS in:
+
 - **FourWidgetsCard container** - Was causing infinite render loop
 - The infinite loop was triggered by unmemoized event handlers
 - Handlers were creating new functions on every render
@@ -193,51 +197,70 @@ The issue WAS in:
 ## SOLUTIONS APPLIED ✅
 
 ### Fix 1: FourWidgetsCard Infinite Loop
+
 The fix has been successfully applied to the FourWidgetsCard component:
+
 1. Added `React.useCallback` to memoize all event handlers:
    - `handlePatternChange` - for drum and bass pattern updates
-   - `handleProgressionChange` - for harmony progression updates  
+   - `handleProgressionChange` - for harmony progression updates
    - `handleNextChord` - for chord advancement
 
 2. The circular update in YouTubeWidgetPage line 195 remains commented out
 
 ### Fix 2: GlobalControls Reset Button Freeze
+
 Fixed infinite render loop in GlobalControls.tsx:
+
 1. **Issue**: `setCurrentPosition` was in the dependency array of `attachClickHandlers` callback (line 1325)
 2. **Root Cause**: State setter functions are stable and shouldn't be in deps, but including them caused infinite re-renders when Reset button changed position
 3. **Fix**: Removed `setCurrentPosition` from dependency array while keeping it functional inside the callback
 4. **Result**: Reset button now works without causing page freeze
 
 ### Fix 3: Complete Reset Button Removal
+
 Since the Reset button continued to cause issues:
+
 1. **Removed Reset button** from SheetPlayerToolbar component
-2. **Removed onReset prop** from SheetPlayerToolbar interface  
+2. **Removed onReset prop** from SheetPlayerToolbar interface
 3. **Removed handleToolbarReset** function from GlobalControls
 4. **Removed onResetFretboard** prop from GlobalControls and GlobalControlsCard
 5. **Result**: V24 now works perfectly without any freezing!
 
 ### Fix 4: FretboardCard Infinite Loop
+
 Found the root cause of the main tutorial page freeze:
+
 1. **Issue**: In FretboardCard.tsx line 334, `syncProps.sync.actions` was in the dependency array of `handleExerciseSelect` callback
 2. **Root Cause**: The `sync.actions` object is recreated on every render by SyncedWidget, causing the callback to be recreated
 3. **Chain Reaction**: This triggers the `useEffect` that auto-selects the first exercise, which calls `handleExerciseSelect`, which updates state, causing re-render
 4. **Fix**: Use a ref to store `sync.actions` and access it inside the callback without including it in dependencies
-5. **Implementation**: 
+5. **Implementation**:
+
    ```typescript
    const syncActionsRef = useRef(syncProps.sync?.actions);
    syncActionsRef.current = syncProps.sync?.actions;
-   
-   const handleExerciseSelect = useCallback((exerciseId: string) => {
-     // ... logic ...
-     const syncActions = syncActionsRef.current;
-     if (syncActions?.emitEvent) {
-       syncActions.emitEvent('EXERCISE_CHANGE', { exercise }, 'high');
-     }
-   }, [exercisesList, syncProps.selectedExercise?.id, selectExercise, onExerciseSelect]);
+
+   const handleExerciseSelect = useCallback(
+     (exerciseId: string) => {
+       // ... logic ...
+       const syncActions = syncActionsRef.current;
+       if (syncActions?.emitEvent) {
+         syncActions.emitEvent('EXERCISE_CHANGE', { exercise }, 'high');
+       }
+     },
+     [
+       exercisesList,
+       syncProps.selectedExercise?.id,
+       selectExercise,
+       onExerciseSelect,
+     ],
+   );
    ```
+
 6. **Result**: V47 should work without freezing!
 
-**Current Status**: 
+**Current Status**:
+
 - V24 has all components except AudioEnabledTutorial wrapper and works perfectly
 - V45 confirms that removing FretboardCard fixes the freeze
 - V48 works properly with fixed render tracking
@@ -246,6 +269,7 @@ Found the root cause of the main tutorial page freeze:
 - The main tutorial page should now work without freezing!
 
 ### Main Tutorial Page Status
+
 - **STATUS**: Still NOT working after fixes
 - **Latest Issue**: `TypeError: hasDotsOnHiddenStrings is not a function`
 - **Error Location**: FretboardControls component expects props that aren't being passed
@@ -259,12 +283,14 @@ Found the root cause of the main tutorial page freeze:
 ### FINAL ROOT CAUSE DISCOVERED! 🎯
 
 Through systematic testing (V51-V57), we discovered:
+
 1. **V54 Works**: Page without any fretboard works perfectly
 2. **V55 Freezes**: Adding SyncedWidget + useExerciseSelection causes freeze
 3. **V56 Freezes**: Just useExerciseSelection alone causes freeze
 4. **V57 Works**: Removing useExerciseSelection fixes everything!
 
 **THE CULPRIT**: `useExerciseSelection` hook has an infinite loop caused by:
+
 - Line 228: `useEffect` depends on `loadExercises`
 - Line 95: `loadExercises` is created with `useCallback` that depends on `[isCacheValid, isUsingFallback]`
 - Both `isCacheValid` and `isUsingFallback` are callbacks that get recreated
@@ -277,6 +303,7 @@ Through systematic testing (V51-V57), we discovered:
 ### FAANG-COMPLIANT FIX IMPLEMENTED! ✅
 
 Created `useExerciseSelection.fixed.ts` with these best practices:
+
 1. **Pure Functions Outside Component**: Moved `isCacheValid` and `isUsingFallback` outside the hook
 2. **Stable References**: All callbacks have empty or minimal dependency arrays
 3. **Single Responsibility**: Separated data fetching from state updates
@@ -297,6 +324,7 @@ Through v51-v61 testing, we discovered the exact issue:
 4. **V60/V61 WORK**: Truly fixed version works!
 
 **The Exact Issue**: In `useExerciseSelection.ts` lines 228 and 283:
+
 ```typescript
 // Effect depends on loadExercises
 }, [state.searchQuery, state.selectedDifficulty, loadExercises]);
@@ -310,14 +338,16 @@ const isUsingFallback = useCallback(/* ... */, []);
 ```
 
 This creates an infinite loop:
-1. `isCacheValid`/`isUsingFallback` recreated → 
-2. `loadExercises` recreated → 
-3. Effect triggers → 
-4. State updates → 
-5. Component re-renders → 
+
+1. `isCacheValid`/`isUsingFallback` recreated →
+2. `loadExercises` recreated →
+3. Effect triggers →
+4. State updates →
+5. Component re-renders →
 6. Back to step 1
 
 **The Real Fix (v61)**:
+
 - Store state values in refs
 - Make `loadExercises` truly stable with `[]` deps
 - Break the circular dependency chain completely
@@ -325,6 +355,7 @@ This creates an infinite loop:
 ## SOLUTION IMPLEMENTED ✅
 
 The fix has been applied to the main codebase:
+
 1. **Backed up** original file to `useExerciseSelection.original.bak`
 2. **Applied** the truly fixed version to `useExerciseSelection.ts`
 3. **Key changes**:
@@ -340,28 +371,33 @@ The fix has been applied to the main codebase:
 After extensive debugging, we discovered FOUR separate infinite render loop issues:
 
 ### 1. useExerciseSelection Hook ✅ FIXED
+
 - **Issue**: Circular dependency in useEffect causing infinite re-renders
 - **Fix**: Used refs to store state values and made loadExercises truly stable
 - **Status**: Successfully applied to main codebase
 
-### 2. FretboardCard Component ✅ FIXED  
+### 2. FretboardCard Component ✅ FIXED
+
 - **Issue**: `syncProps.sync.actions` in callback dependency array
 - **Fix**: Used ref pattern to access sync.actions without including in deps
 - **Status**: Successfully applied to main codebase
 
 ### 3. AudioEnabledTutorial Wrapper ❌ STILL PROBLEMATIC
+
 - **Issue**: Multiple state updates on every render, polling mechanism causing cascading updates
 - **Attempted Fix**: Converted state to refs, removed widget timing tracking
 - **Status**: Still causing infinite renders despite fixes
 - **TEMPORARY SOLUTION**: Removed AudioEnabledTutorial wrapper from main tutorial page
 
 ### 4. YouTubeWidgetPage handleExerciseSelect ✅ FIXED
+
 - **Issue**: `exercises` array in callback dependency array causing recreation on data load
 - **Fix**: Used ref pattern to store exercises and removed from dependencies
 - **Status**: Successfully applied to main codebase
 - **Root Cause**: When exercises loaded from API, the callback was recreated, causing FretboardCard to re-render and potentially trigger auto-selection logic in an infinite loop
 
 ### Systematic Testing Results
+
 - **V64**: Mock data only - WORKS ✅
 - **V65**: Real data with useTutorialExercises - FAILS ❌
 - **V66**: React.use() with mock data - WORKS ✅
@@ -371,9 +407,10 @@ After extensive debugging, we discovered FOUR separate infinite render loop issu
 - **V70**: Analyzing exercise data structure - FAILS ❌
 - **V71**: Real tutorial + empty exercises array - WORKS ✅
 
-
 ### Key Discovery Process
+
 Through systematic testing, we isolated the issue to the real exercises data causing infinite re-renders. The problem was in the `handleExerciseSelect` callback having `exercises` in its dependency array, which caused:
+
 1. Exercises load from API
 2. Callback gets recreated due to dependency change
 3. Components using this callback re-render
@@ -382,7 +419,9 @@ Through systematic testing, we isolated the issue to the real exercises data cau
 6. Infinite loop!
 
 ### Final Implementation
+
 The main tutorial page (`/library/[tutorialId]/page.tsx`) now:
+
 1. Renders `YouTubeWidgetPage` directly without `AudioEnabledTutorial` wrapper
 2. Has fixed `handleExerciseSelect` callback using ref pattern for exercises
 3. Works perfectly with real tutorial and exercise data!
@@ -408,25 +447,33 @@ useEffect(() => {
         handleExerciseSelect(firstExercise.id);
       }
     }, 0);
-    
+
     return () => clearTimeout(timeoutId);
   }
-}, [exercisesList.length, localSelectedExerciseId, selectedExerciseIdProp, handleExerciseSelect]);
+}, [
+  exercisesList.length,
+  localSelectedExerciseId,
+  selectedExerciseIdProp,
+  handleExerciseSelect,
+]);
 ```
 
 **Why This Works**:
+
 1. React completes the initial render cycle
 2. All components establish their relationships
 3. The event loop processes the deferred auto-selection
 4. State updates happen after React is ready to handle them
 
 **Test Results**:
+
 - V71: Empty array - WORKS (no auto-selection needed)
 - V75: 2-second delay - WORKS (proves deferring helps)
 - V76: No auto-selection - WORKS (proves auto-selection is the issue)
 - V80: Fixed with deferred auto-selection - TESTING
 
 This fix has been applied to both:
+
 1. `FretboardCard.tsx` - For uncontrolled component mode
 2. `YouTubeWidgetPage.tsx` - For controlled component mode
 
@@ -437,20 +484,24 @@ This fix has been applied to both:
 After extensive testing with V81 and V82, we discovered:
 
 **V81 (Simple Test)**: WORKS ✅
+
 - Simple page with minimal gradual update logic
 - Confirms the gradual update concept can work
 
 **V82 (Full Implementation)**: FREEZES ⚠️
+
 - Full implementation with all "fixes" applied
 - The gradual update pattern causes new issues
 
 **Main Tutorial Page**: WORKS PERFECTLY! ✅
+
 - Without ANY of our "fixes"
 - Using the original code that we thought was broken
 
 ### THE REAL PROBLEM
 
 A critical finding from V74 that we overlooked:
+
 - **V74**: Empty exercises array + auto-selection logic = FREEZES ⚠️
 - This proves the auto-selection logic ITSELF is problematic, not just when combined with real data!
 
@@ -463,6 +514,7 @@ Our "fixes" actually made things WORSE! The main tutorial page works because:
 ### Root Cause Analysis
 
 The actual issue is in the auto-selection logic, specifically:
+
 1. **The auto-selection effect in FretboardCard** (lines 338-345) has problematic dependencies
 2. **V74 proves** even with empty exercises, the auto-selection logic causes infinite loops
 3. **Uncommitted changes** in FretboardCard are affecting test pages but not the main page
@@ -482,19 +534,23 @@ The actual issue is in the auto-selection logic, specifically:
 After extensive testing (V83-V85), we have definitively isolated the issue:
 
 ### What Works:
+
 - **V84**: Minimal page with real data but NO FretboardCard ✅
 - **V85**: SyncedWidget wrapper in isolation ✅
 - **V42**: Full graphical 2D fretboard without real FretboardCard ✅
 
 ### What Doesn't Work:
+
 - **V83**: Page without auto-selection but WITH real FretboardCard ⚠️
 - **V43**: The real FretboardCard component ⚠️
 - All versions that include the real FretboardCard freeze
 
 ### The Issue is Specifically In:
+
 The **FretboardCard component** (`/domains/widgets/components/YouTubeWidgetPage/FretboardCard/FretboardCard.tsx`)
 
 NOT in:
+
 - SyncedWidget wrapper
 - Tutorial/exercise data
 - Auto-selection logic alone
@@ -502,7 +558,9 @@ NOT in:
 - Other components
 
 ### What's Different About FretboardCard:
+
 Looking at the real FretboardCard compared to our working test versions:
+
 1. Complex hooks: `useFretboard`, `useManualSelectionTracking`
 2. Multiple refs and state management
 3. Complex scroll handling and drag functionality
@@ -510,13 +568,16 @@ Looking at the real FretboardCard compared to our working test versions:
 5. Exercise selection logic with multiple dependencies
 
 ### The Real Problem:
+
 The FretboardCard has some internal logic that creates an infinite render loop or blocks the event loop. This could be:
+
 1. A hook with circular dependencies
 2. An effect that runs infinitely
 3. Complex state updates that cascade
 4. Event handlers that block the UI thread
 
 ### Next Steps:
+
 1. Check the `useFretboard` hook for infinite loops
 2. Check scroll/drag event handlers
 3. Look for effects with problematic dependencies
@@ -562,12 +623,14 @@ The FretboardCard has some internal logic that creates an infinite render loop o
 ### V95 Console Logs Revealed:
 
 The exact error causing the freeze:
+
 ```
 TypeError: Cannot read properties of undefined (reading 'emitEvent')
   at handleExerciseSelect (FretboardCard.tsx:291)
 ```
 
-**The Problem**: 
+**The Problem**:
+
 - FretboardCard tries to call `syncProps.sync.actions.emitEvent()` when `sync` is undefined
 - This happens during auto-selection before the component is fully initialized
 - The error is caught by an error boundary which re-renders the component
@@ -575,6 +638,7 @@ TypeError: Cannot read properties of undefined (reading 'emitEvent')
 
 **The Fix Applied**:
 Added null checks to all `syncProps.sync.actions.emitEvent` calls:
+
 ```typescript
 // Before:
 syncProps.sync.actions.emitEvent('EXERCISE_CHANGE', {...});
@@ -586,6 +650,7 @@ if (syncProps.sync?.actions?.emitEvent) {
 ```
 
 **Fixed Lines**:
+
 - Line 290-300: EXERCISE_CHANGE event (initial fix)
 - Line 303-313: TEMPO_CHANGE event
 - Line 317-330: CUSTOM_BASSLINE event
@@ -596,19 +661,23 @@ if (syncProps.sync?.actions?.emitEvent) {
 ## Build Issues Fixed (2025-08-24) 🔧
 
 ### Syntax Errors in GlobalControls.tsx
+
 **First Error (lines 296 & 305)**: Extra closing braces prevented Next.js from building
 **Second Error (line 275)**: Missing closing brace for if block in try-catch structure
-**Symptoms**: 
+**Symptoms**:
+
 - All JavaScript/CSS files returning 404 errors
 - MIME type errors in console
 - Page completely unresponsive (no console logs)
-**Fix**: 
+  **Fix**:
+
 1. Removed extra closing braces on lines 296 and 305
 2. Fixed indentation and added missing closing brace on line 285
 3. Restarted PM2 frontend process after each fix
-**Result**: Build successful, assets served correctly
+   **Result**: Build successful, assets served correctly
 
 ### Current Test Status (v113-v118)
+
 - **V113**: SyncProvider basic test - WORKS ✅
 - **V114**: SyncProvider + SyncedWidget with real data - WORKS ✅ (only 3 renders, buttons clickable)
 - **V115**: GlobalControlsCard + FourWidgetsCard - FIXED ✅ (was missing widgetState prop)
@@ -626,7 +695,7 @@ if (syncProps.sync?.actions?.emitEvent) {
    - The entire UI is frozen - no buttons or interactions work
    - This is different from v116 which crashes to white page
 
-3. **Pattern Emerging**: 
+3. **Pattern Emerging**:
    - v116: Too many re-renders → React gives up → white page
    - v117: Moderate re-renders → UI remains functional
    - v118: Fewer page renders but UI completely frozen → suggests event blocking
@@ -634,7 +703,7 @@ if (syncProps.sync?.actions?.emitEvent) {
 ### Key Findings from v113-v116:
 
 1. **Build Issues Were The Main Problem**: V113 showed 404 errors for all JS/CSS files due to syntax errors in GlobalControls.tsx preventing Next.js build
-2. **Syntax Errors Fixed**: 
+2. **Syntax Errors Fixed**:
    - Removed extra closing braces on lines 296 & 305
    - Added missing closing brace for checkServices function on line 306
    - Build now works correctly
@@ -650,12 +719,14 @@ if (syncProps.sync?.actions?.emitEvent) {
 ### V116 Performance Crash Analysis:
 
 **Console Evidence**:
+
 - FretboardCard renders 24+ times in rapid succession
 - `handleExerciseSelect` recreated 24+ times
 - Multiple YouTubeWidgetPageContent re-renders
 - Page loads initially then shows white screen (React giving up)
 
 **Likely Causes**:
+
 1. **Unstable Dependencies**: Even though `exercises` was removed from deps, `widgetState` might be changing
 2. **Cascading Updates**: Exercise selection triggers multiple state updates across components
 3. **React Concurrent Mode Bailout**: Too many re-renders cause React to stop rendering
@@ -663,18 +734,21 @@ if (syncProps.sync?.actions?.emitEvent) {
 ### V118 Deep Analysis
 
 Looking at the FretboardCard console logs, we can see:
+
 - `handleExerciseSelect` is recreated 24 times
 - Auto-selection effect triggers multiple times
 - The component uses `setTimeout(() => handleExerciseSelect(firstExercise.id), 0)`
 - The auto-select effect doesn't include `handleExerciseSelect` in dependencies
 
 **Possible Causes of v118 Freeze**:
+
 1. **Stale Closure**: Auto-select effect uses old version of `handleExerciseSelect`
 2. **Event Loop Blocking**: Too many deferred operations via setTimeout
 3. **React Concurrent Mode Issue**: React may be suspending updates
 4. **Memory Leak**: Accumulating event listeners or timers
 
 **Test Pages Created**:
+
 - **v119**: Monitors for invisible overlays and tracks all clicks at document level
 - **v120**: Tracks event listener add/remove to detect if handlers are being overwritten
 - **v121**: Removes FretboardCard entirely to confirm it's the source of the freeze
@@ -683,6 +757,7 @@ Looking at the FretboardCard console logs, we can see:
 ### V119-V122 Test Results:
 
 **V119 - Invisible Overlay Detection**:
+
 - ✅ **No invisible overlays detected** blocking clicks
 - ✅ **Clicks work at page level** - test button responds
 - ⚠️ **FretboardCard shows 40+ renders** before stabilizing
@@ -690,6 +765,7 @@ Looking at the FretboardCard console logs, we can see:
 - FretboardCard `handleExerciseSelect` recreated 40+ times
 
 **V120 - Event Handler Integrity**:
+
 - ⚠️ **Crashes to white page after 1 second**
 - Event listeners tracked: multiple click listeners added/removed
 - Page renders tracked before crash
@@ -697,6 +773,7 @@ Looking at the FretboardCard console logs, we can see:
 - React onClick also works before crash
 
 **V121 - Without FretboardCard**:
+
 - ✅ **WORKS PERFECTLY** - All components function normally
 - Only 3 page renders total
 - Click test button works reliably
@@ -704,7 +781,8 @@ Looking at the FretboardCard console logs, we can see:
 - **Confirms FretboardCard is the sole source of the issue**
 
 **V122 - Fixed Auto-Selection Pattern**:
-- ✅ **Works with proper dependencies** 
+
+- ✅ **Works with proper dependencies**
 - Only 8 component renders (vs 40+ in broken version)
 - Shows correct pattern: `handleExerciseSelect` included in useEffect dependencies
 - Hydration error due to render count tracking (non-critical for testing)
@@ -723,6 +801,7 @@ The problem is in **FretboardCard.tsx line 383**:
 ```
 
 **Why This Causes Complete UI Freeze**:
+
 1. Auto-selection effect uses a stale version of `handleExerciseSelect`
 2. Stale closure has outdated state/props references
 3. When called, it triggers unexpected state updates
@@ -761,6 +840,7 @@ The problem is in **FretboardCard.tsx line 383**:
 ### Implementation Details:
 
 1. **useWidgetSync.ts** (lines 80-90):
+
    ```typescript
    const actions = useMemo(
      () => ({
@@ -778,10 +858,11 @@ The problem is in **FretboardCard.tsx line 383**:
 2. **YouTubeWidgetPage.tsx**:
    - Import `useExerciseSelection` hook
    - Update both states in `handleExerciseSelect`:
+
    ```typescript
    // Update widget state with the selected exercise
    widgetState.setSelectedExercise(exercise);
-   
+
    // CRITICAL: Also update global exercise selection so widgets get it
    globalExerciseSelection.selectExercise(exercise);
    ```
@@ -792,12 +873,14 @@ The problem is in **FretboardCard.tsx line 383**:
    - Use `effectiveSelectedExerciseId` from prop instead of local state
 
 ### Current Status:
+
 - Click functionality restored ✅
 - Exercise selection propagates from parent to child ✅
 - Still need to verify exercise dots appear on fretboard ⚠️
 - Re-render count still high (42+) but not blocking UI ⚠️
 
 ### Next Steps:
+
 1. Verify exercise data reaches `useFretboardExercise` hook
 2. Check if dots are being populated on the fretboard
 3. Optimize re-render count if needed
@@ -805,6 +888,7 @@ The problem is in **FretboardCard.tsx line 383**:
 ## Performance Issues - Infinite Re-renders (2025-08-24)
 
 ### Problem Description:
+
 - Initial page load: ~19 renders (acceptable)
 - User interaction (clicking fretboard, changing values): Triggers infinite re-renders
 - FretboardCard component renders 42+ times
@@ -846,7 +930,7 @@ The problem is in **FretboardCard.tsx line 383**:
 
 3. **Click Handler Chain**:
    ```
-   User clicks dot → handleDotClickWithAudio → 
+   User clicks dot → handleDotClickWithAudio →
    → state.handleDotClick (updates selectedDots + selectionOrder)
    → exercise.triggerNote (might update audio state)
    → Two state updates → Multiple re-renders
@@ -873,12 +957,15 @@ The problem is in **FretboardCard.tsx line 383**:
 ## Performance Fixes Applied (2025-08-24)
 
 ### Fix 1: Combined State in useFretboardState
+
 **File**: `useFretboardState.ts`
 **Problem**: Every dot click caused TWO state updates:
+
 - `setSelectedDots` - updates the map
 - `setSelectionOrder` - updates the counter
 
 **Solution**: Combined both into single state object:
+
 ```typescript
 const [dotsState, setDotsState] = useState<{
   selectedDots: SelectedDotsMap;
@@ -892,10 +979,12 @@ const [dotsState, setDotsState] = useState<{
 **Impact**: Reduces re-renders by 50% for dot interactions
 
 ### Fix 2: Stabilized handleExerciseSelect Callback
+
 **File**: `FretboardCard.tsx`
 **Problem**: Callback recreated 42+ times due to `selectedExerciseIdFromSync` dependency
 
 **Solution**: Used ref pattern:
+
 ```typescript
 const selectedExerciseIdRef = useRef(selectedExerciseIdFromSync);
 selectedExerciseIdRef.current = selectedExerciseIdFromSync;
@@ -911,6 +1000,7 @@ const handleExerciseSelect = React.useCallback(
 **Impact**: Callback is now stable across renders
 
 ### Expected Results:
+
 - Initial page load: ~19 renders ✅
 - Clicking on fretboard dots: 1-2 renders per click (down from 42+)
 - No more infinite re-render loops
@@ -928,9 +1018,11 @@ After extensive investigation, we discovered a circular dependency issue with mu
 4. **FretboardCard receiving exercise from both parent prop and sync state**
 
 This created a circular update loop where:
+
 - YouTubeWidgetPage updates local state → updates global selection → triggers sync update → changes syncProps → FretboardCard re-renders → cycle repeats
 
 ### Evidence from Console Logs:
+
 ```
 🔴 FretboardCardContent render #34
 selectedExerciseIdProp: 'e2d5a8f9-c123-4567-8901-234567890124'
@@ -944,20 +1036,16 @@ The mismatch between IDs shows multiple sources of truth competing.
 1. **Removed globalExerciseSelection from YouTubeWidgetPage** ✅
    - Removed references that caused circular updates
    - Tutorial pages now use local state only
-   
 2. **Updated useWidgetSync to not depend on useExerciseSelection** ✅
    - Removed the import and dependency
    - Removed selectedExercise from return value
    - Used useMemo to prevent object recreation
-   
 3. **Modified SyncedWidget to accept selectedExercise as prop** ✅
    - Added selectedExercise prop to interface
    - Changed to use prop instead of sync.selectedExercise
-   
 4. **Updated FretboardCard to pass selectedExercise to SyncedWidget** ✅
    - Find selected exercise from exercises list
    - Pass it as prop to SyncedWidget
-   
 5. **Implemented single source of truth architecture** ✅
    - Parent (YouTubeWidgetPage) owns selectedExerciseId state
    - Children receive exercise as props
@@ -966,6 +1054,7 @@ The mismatch between IDs shows multiple sources of truth competing.
 ### Key Code Changes:
 
 **YouTubeWidgetPage.tsx**:
+
 ```typescript
 // REMOVED: globalExerciseSelection - causes circular updates
 // Tutorial pages should use local state only, not global exercise selection
@@ -976,12 +1065,14 @@ emitGlobalEvent('exercise:selected', { exerciseId, exercise });
 ```
 
 **useWidgetSync.ts**:
+
 ```typescript
 // REMOVED: useExerciseSelection import - causes circular updates
 // REMOVED: selectedExercise - should come from parent props
 ```
 
 **SyncedWidget.tsx**:
+
 ```typescript
 // ADDED: Exercise from parent (single source of truth)
 selectedExercise?: any;
@@ -990,6 +1081,7 @@ selectedExercise: selectedExercise, // USE PROP instead of sync.selectedExercise
 ```
 
 **FretboardCard.tsx**:
+
 ```typescript
 // Find the selected exercise object from the exercises list
 const selectedExercise = exercises?.find(ex => ex.id === selectedExerciseId) || null;
@@ -1000,6 +1092,7 @@ const selectedExercise = exercises?.find(ex => ex.id === selectedExerciseId) || 
 ```
 
 ### Results:
+
 - No more circular dependencies ✅
 - Single source of truth for exercise selection ✅
 - Reduced re-renders significantly ✅
@@ -1008,60 +1101,87 @@ const selectedExercise = exercises?.find(ex => ex.id === selectedExerciseId) || 
 ## Infinite Re-render Loop Redux (2025-08-24) 🔄
 
 ### New Problem Discovered:
+
 Despite all previous fixes, the tutorial page still experiences infinite re-renders when clicking any element. The page becomes completely unresponsive with a spinning cursor.
 
 ### Investigation Summary:
+
 Through extensive debugging and testing, we discovered the application has become a victim of its own reactive architecture. There's a fundamental conflict between:
+
 - **Professional DAW timing requirements** (2.67ms precision, 50ms position updates)
 - **React's rendering expectations** (efficient UI updates, minimal re-renders)
 
 ### Multiple Sources of Re-renders Found:
 
 #### 1. High-Frequency Audio Events (FIXED)
+
 - **Source**: SyncProvider subscribing to POSITION events (50ms intervals)
 - **Impact**: 20 re-renders per second
 - **Fix**: Added comprehensive event filtering to skip high-frequency events
 
 #### 2. Performance Monitoring Intervals (FIXED)
+
 Multiple components had monitoring loops causing periodic re-renders:
 
 a) **SyncPerformanceMonitor** (100ms and 1s intervals)
-   - Fix: Disabled monitoring loops entirely
+
+- Fix: Disabled monitoring loops entirely
 
 b) **SyncedWidget** (1s performance monitoring)
-   - Fix: Removed performanceMetrics from useEffect dependencies
+
+- Fix: Removed performanceMetrics from useEffect dependencies
 
 c) **TransportClock** (500ms audio context checks)
-   - Fix: Reduced frequency to 5 seconds
+
+- Fix: Reduced frequency to 5 seconds
 
 d) **useCorePlaybackEngine** (1s metrics interval)
-   - Fix: Disabled performance monitoring in components:
-     - LooperCard: `enablePerformanceMonitoring: false`
-     - usePlaybackIntegration: `enablePerformanceMonitoring: false`
+
+- Fix: Disabled performance monitoring in components:
+  - LooperCard: `enablePerformanceMonitoring: false`
+  - usePlaybackIntegration: `enablePerformanceMonitoring: false`
 
 #### 3. Unstable Context Values (FIXED)
+
 - **Issue**: SyncProvider recreating performanceMetrics object on every update
 - **Fix**: Created stable performance metrics object with useMemo
 
 ### Key Changes Made:
 
 1. **SyncProvider.tsx**:
+
    ```typescript
    // Added event filtering
    const skipEvents = [
-     'CUSTOM_BASSLINE', 'WIDGET_HEARTBEAT', 'PERFORMANCE_UPDATE',
-     'AUDIO_SOURCE_REGISTERED', 'AUDIO_SOURCE_UNREGISTERED',
-     'POSITION', 'HEARTBEAT', 'TIMELINE_UPDATE', 'MUSICAL_TIME_UPDATE',
-     'SEEK', 'MUTE_CHANGE', 'SOLO_CHANGE', 'TIME_SIGNATURE_CHANGE',
-     'WIDGET_RECONNECT', 'SYNC_RESTART', 'PERFORMANCE_TEST',
-     'track-regions-updated'
+     'CUSTOM_BASSLINE',
+     'WIDGET_HEARTBEAT',
+     'PERFORMANCE_UPDATE',
+     'AUDIO_SOURCE_REGISTERED',
+     'AUDIO_SOURCE_UNREGISTERED',
+     'POSITION',
+     'HEARTBEAT',
+     'TIMELINE_UPDATE',
+     'MUSICAL_TIME_UPDATE',
+     'SEEK',
+     'MUTE_CHANGE',
+     'SOLO_CHANGE',
+     'TIME_SIGNATURE_CHANGE',
+     'WIDGET_RECONNECT',
+     'SYNC_RESTART',
+     'PERFORMANCE_TEST',
+     'track-regions-updated',
    ];
-   
+
    // Created stable performance metrics
-   const stablePerformanceMetrics = useMemo(() => ({
-     ...performanceMetrics,
-     lastUpdateTime: 0, // Prevent re-renders from timestamp updates
-   }), [/* stable dependencies */]);
+   const stablePerformanceMetrics = useMemo(
+     () => ({
+       ...performanceMetrics,
+       lastUpdateTime: 0, // Prevent re-renders from timestamp updates
+     }),
+     [
+       /* stable dependencies */
+     ],
+   );
    ```
 
 2. **Component Updates**:
@@ -1070,10 +1190,12 @@ d) **useCorePlaybackEngine** (1s metrics interval)
    - Used ref patterns for frequently changing values
 
 ### Final Result:
+
 - Infinite re-render loop eliminated ✅
 - Page only re-renders on meaningful user interactions ✅
 - Professional audio timing preserved without UI impact ✅
 - Tutorial pages fully functional without freezing ✅
 
 ### Architecture Recommendation:
+
 Consider implementing a dedicated event bus for high-frequency audio events that doesn't trigger React re-renders. This would allow maintaining professional DAW timing precision while keeping the UI responsive.

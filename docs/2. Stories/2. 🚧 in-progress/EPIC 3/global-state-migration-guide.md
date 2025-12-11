@@ -1,4 +1,5 @@
 # Global State Migration Guide
+
 **Story 3.18.3: Global State Elimination**
 
 ## Overview
@@ -8,22 +9,26 @@ This guide documents the migration from global state patterns to clean dependenc
 ## Migration Status
 
 ### Phase 1: Feature Flags & Infrastructure ✅
+
 - [x] Feature flag system implemented (`featureFlags.ts`)
 - [x] New AudioProvider created with ServiceRegistry
 - [x] Migration helper utilities created
 - [x] Audit script for verification
 
 ### Phase 2: Global State Removal 🚧
+
 - [x] Removed `window.ToneSingleton` from ToneInstanceManager
 - [x] Removed `window.ToneInstanceId` patterns
 - [x] Deprecated global AudioContext manipulation in toneSetup.ts
 - [ ] Remove direct AudioContext creation in:
   - [ ] AudioSampleManager
-  - [ ] HybridDrumSampleManager  
+  - [ ] HybridDrumSampleManager
   - [ ] ChordInstrumentProcessor
 
 ### Phase 3: Direct Tone.js Import Elimination 🚧
+
 Files requiring migration (18 total):
+
 1. [ ] `/services/PluginManager.ts`
 2. [ ] `/services/MixingConsole.ts`
 3. [ ] `/services/IntelligentTempoController.ts`
@@ -44,6 +49,7 @@ Files requiring migration (18 total):
 18. [ ] Test files (lower priority)
 
 ### Phase 4: Service Deletion 📋
+
 - [ ] Delete ToneInstanceManager.ts
 - [ ] Delete AudioContextManager.ts
 - [ ] Delete ToneProvider.tsx (after all components migrated)
@@ -51,12 +57,13 @@ Files requiring migration (18 total):
 ## Migration Patterns
 
 ### Before: Direct Tone Import
+
 ```typescript
 import * as Tone from 'tone';
 
 class MyService {
   private sampler: Tone.Sampler;
-  
+
   constructor() {
     this.sampler = new Tone.Sampler({...});
   }
@@ -64,12 +71,13 @@ class MyService {
 ```
 
 ### After: Dependency Injection
+
 ```typescript
 import { AudioEngine } from '../core/AudioEngine.js';
 
 class MyService {
   private sampler: any;
-  
+
   constructor(private audioEngine: AudioEngine) {
     const Tone = this.audioEngine.getTone();
     this.sampler = new Tone.Sampler({...});
@@ -80,6 +88,7 @@ class MyService {
 ### Component Migration Pattern
 
 #### Before: Using ToneProvider
+
 ```tsx
 import { useTone } from '../providers/ToneProvider';
 
@@ -90,6 +99,7 @@ function MyComponent() {
 ```
 
 #### After: Using AudioProvider
+
 ```tsx
 import { useAudioEngine } from '../providers/AudioProvider';
 
@@ -103,11 +113,13 @@ function MyComponent() {
 ## Rollback Procedures
 
 ### Immediate Rollback (< 1 minute)
+
 1. Set environment variable: `NEXT_PUBLIC_ROLLBACK_AUDIO=true`
 2. Restart the application
 3. All services will use legacy providers
 
 ### Full Rollback (< 5 minutes)
+
 1. Restore deleted files from git:
    ```bash
    git checkout HEAD~1 -- apps/frontend/src/domains/playback/services/ToneInstanceManager.ts
@@ -117,6 +129,7 @@ function MyComponent() {
 3. Deploy the reverted code
 
 ### Gradual Rollout Control
+
 ```bash
 # Start with 10% of users
 NEXT_PUBLIC_AUDIO_ROLLOUT_PERCENTAGE=10
@@ -130,11 +143,13 @@ NEXT_PUBLIC_AUDIO_ROLLOUT_PERCENTAGE=100
 ## Verification
 
 Run the audit script to verify no global state:
+
 ```bash
 pnpm tsx apps/frontend/src/domains/playback/scripts/auditGlobalState.ts
 ```
 
 Expected output:
+
 ```
 ✅ PASS: No global state patterns found!
 The playback domain is clean of global state pollution.
@@ -143,6 +158,7 @@ The playback domain is clean of global state pollution.
 ## Performance Monitoring
 
 Monitor these metrics during rollout:
+
 1. **Audio latency**: Should remain < 10ms
 2. **Memory usage**: Should decrease (no duplicate contexts)
 3. **CPU usage**: Should remain stable
@@ -167,18 +183,20 @@ Monitor these metrics during rollout:
 ### Debug Helpers
 
 Enable migration monitoring:
+
 ```typescript
 // In your app initialization
 import { logMigrationEvent } from '../config/featureFlags';
 
-logMigrationEvent('app-start', { 
-  version: process.env.NEXT_PUBLIC_APP_VERSION 
+logMigrationEvent('app-start', {
+  version: process.env.NEXT_PUBLIC_APP_VERSION,
 });
 ```
 
 ## Architecture Benefits
 
 ### Before (Anti-Patterns)
+
 - 🚫 Global state pollution
 - 🚫 Multiple AudioContext instances
 - 🚫 Tight coupling to Tone.js
@@ -186,6 +204,7 @@ logMigrationEvent('app-start', {
 - 🚫 Memory leaks from globals
 
 ### After (Clean Architecture)
+
 - ✅ Zero global state
 - ✅ Single AudioContext via AudioEngine
 - ✅ Clean dependency injection

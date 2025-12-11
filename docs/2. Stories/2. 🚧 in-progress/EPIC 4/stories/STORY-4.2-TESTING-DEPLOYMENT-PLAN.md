@@ -1,4 +1,5 @@
 # Story 4.2: Testing & Deployment Plan
+
 ## Admin Tutorial & Exercise Creation System
 
 **Date Created:** 2025-10-16
@@ -17,6 +18,7 @@ Story 4.2 implementation is **complete** with all frontend components, backend A
 ### Completed Components
 
 #### Frontend (✅ Complete)
+
 - **Admin Pages:**
   - `/admin/tutorials` - Tutorial list page
   - `/admin/tutorials/new` - Create new tutorial
@@ -31,6 +33,7 @@ Story 4.2 implementation is **complete** with all frontend components, backend A
   - `domains/admin/components/ExerciseListEdit.tsx` - Exercise management
 
 #### Backend (✅ Complete)
+
 - **Controllers:**
   - `AdminTutorialsController` - Full CRUD for tutorials
   - `AdminExercisesController` - Full CRUD for exercises
@@ -45,6 +48,7 @@ Story 4.2 implementation is **complete** with all frontend components, backend A
   - `CorrelationId` decorator - Request tracking
 
 #### Database (✅ Complete)
+
 - **Migrations:**
   - `20250723000002_enhance_tutorials_exercises_story42.sql`
   - `20251002000002_create_exercise_midi_bucket.sql`
@@ -59,11 +63,13 @@ Story 4.2 implementation is **complete** with all frontend components, backend A
 ### 1. Database Migration Validation
 
 **Prerequisites:**
+
 - Supabase project accessible
 - Migrations applied to test database
 - Test admin user created
 
 **Steps:**
+
 ```bash
 # 1. Check Supabase connection
 curl https://htuztkrbuewheehjspcz.supabase.co/rest/v1/
@@ -84,6 +90,7 @@ WHERE email = 'YOUR_TEST_EMAIL@example.com';
 ```
 
 **Verification Checklist:**
+
 - [ ] All Story 4.2 migrations applied successfully
 - [ ] `tutorials` table has: `author_name`, `category`, `tags`, `order_index`, `published_at`, `view_count`, `created_by`
 - [ ] `exercises` table has: `has_metronome_midi`, `has_drums_midi`, `has_bass_midi`, `has_harmony_midi`
@@ -224,6 +231,7 @@ curl -X DELETE http://localhost:3000/api/v1/exercises/EXERCISE_ID \
 ```
 
 **API Testing Checklist:**
+
 - [ ] Admin guard blocks non-admin users
 - [ ] Tutorial creation works
 - [ ] Tutorial listing with pagination works
@@ -246,17 +254,20 @@ curl -X DELETE http://localhost:3000/api/v1/exercises/EXERCISE_ID \
 #### Manual Testing Steps
 
 **Setup:**
+
 1. Start backend: `pm2 restart bassnotion-backend`
 2. Start frontend: `pm2 restart bassnotion-frontend`
 3. Navigate to `http://localhost:3001`
 4. Login as admin user
 
 **Test 1: Admin Access**
+
 - [ ] Navigate to `/admin` (should redirect to `/admin/tutorials`)
 - [ ] Admin layout loads correctly
 - [ ] Navigation menu shows admin options
 
 **Test 2: Tutorial List Page (`/admin/tutorials`)**
+
 - [ ] Page loads without errors
 - [ ] Tutorials are displayed in a table/list
 - [ ] Pagination works (if >20 tutorials)
@@ -265,6 +276,7 @@ curl -X DELETE http://localhost:3000/api/v1/exercises/EXERCISE_ID \
 - [ ] Clicking tutorial redirects to edit page
 
 **Test 3: Create Tutorial (`/admin/tutorials/new`)**
+
 - [ ] Page loads without errors
 - [ ] Form has all required fields:
   - Title (required)
@@ -281,6 +293,7 @@ curl -X DELETE http://localhost:3000/api/v1/exercises/EXERCISE_ID \
 - [ ] Redirects to edit page after creation
 
 **Test 4: Edit Tutorial (`/admin/tutorials/[slug]/edit`)**
+
 - [ ] Page loads with tutorial data
 - [ ] All fields are editable
 - [ ] In-place editing works (if implemented)
@@ -291,6 +304,7 @@ curl -X DELETE http://localhost:3000/api/v1/exercises/EXERCISE_ID \
 - [ ] "Add Exercise" button opens modal/form
 
 **Test 5: Exercise Management**
+
 - [ ] "Add Exercise" button opens form modal
 - [ ] Exercise form has all fields:
   - Title (required)
@@ -307,6 +321,7 @@ curl -X DELETE http://localhost:3000/api/v1/exercises/EXERCISE_ID \
 - [ ] Exercise order persists after save
 
 **Test 6: MIDI File Upload**
+
 - [ ] MIDI drop zones visible for each track type:
   - Metronome
   - Drums
@@ -322,6 +337,7 @@ curl -X DELETE http://localhost:3000/api/v1/exercises/EXERCISE_ID \
 - [ ] Can replace existing MIDI file
 
 **Test 7: Preview & Playback**
+
 - [ ] "Preview" button switches to student view
 - [ ] All components render correctly in preview
 - [ ] MIDI files play correctly (if uploaded)
@@ -329,6 +345,7 @@ curl -X DELETE http://localhost:3000/api/v1/exercises/EXERCISE_ID \
 - [ ] Can return to edit mode
 
 **Test 8: Publish Workflow**
+
 - [ ] "Publish" button visible
 - [ ] Publishing marks tutorial as active
 - [ ] Published tutorials visible to non-admin users
@@ -336,6 +353,7 @@ curl -X DELETE http://localhost:3000/api/v1/exercises/EXERCISE_ID \
 - [ ] Unpublished tutorials hidden from non-admin
 
 **Frontend Testing Checklist:**
+
 - [ ] No console errors on any page
 - [ ] All forms validate input correctly
 - [ ] All CRUD operations work end-to-end
@@ -390,6 +408,7 @@ curl -X DELETE http://localhost:3000/api/v1/exercises/EXERCISE_ID \
    - [ ] Verify MIDI files removed from storage (manual check)
 
 **Integration Checklist:**
+
 - [ ] Full create-to-publish workflow works
 - [ ] MIDI files play correctly in student view
 - [ ] Multi-track synchronization works
@@ -403,6 +422,7 @@ curl -X DELETE http://localhost:3000/api/v1/exercises/EXERCISE_ID \
 ### 5. Performance Testing
 
 **Metrics to Measure:**
+
 - [ ] Tutorial list page load time (<2 seconds)
 - [ ] Tutorial edit page load time (<3 seconds)
 - [ ] MIDI file upload time (<5 seconds for 1MB file)
@@ -410,6 +430,7 @@ curl -X DELETE http://localhost:3000/api/v1/exercises/EXERCISE_ID \
 - [ ] Exercise playback initialization (<2 seconds)
 
 **Load Testing (Optional):**
+
 - [ ] 10 concurrent admin users creating tutorials
 - [ ] 100 concurrent students viewing tutorials
 - [ ] Multiple MIDI uploads simultaneously
@@ -419,6 +440,7 @@ curl -X DELETE http://localhost:3000/api/v1/exercises/EXERCISE_ID \
 ### 6. Security Testing
 
 **Access Control:**
+
 - [ ] Non-admin cannot access `/admin` routes (401/403)
 - [ ] Non-admin cannot call admin API endpoints
 - [ ] Authenticated non-admin cannot modify tutorials
@@ -426,6 +448,7 @@ curl -X DELETE http://localhost:3000/api/v1/exercises/EXERCISE_ID \
 - [ ] RLS policies enforce data access rules
 
 **Input Validation:**
+
 - [ ] XSS prevention (script tags in title/description)
 - [ ] SQL injection prevention (tested by ORM)
 - [ ] File upload validation (MIDI only, size limit)
@@ -433,6 +456,7 @@ curl -X DELETE http://localhost:3000/api/v1/exercises/EXERCISE_ID \
 - [ ] Slug uniqueness validation
 
 **Data Protection:**
+
 - [ ] Sensitive data not exposed in API responses
 - [ ] JWT tokens have proper expiration
 - [ ] Service role key not exposed to frontend
@@ -454,6 +478,7 @@ curl -X DELETE http://localhost:3000/api/v1/exercises/EXERCISE_ID \
 ### Staging Deployment
 
 **Step 1: Database Migration**
+
 ```bash
 # Connect to staging Supabase project
 # Apply migrations in order:
@@ -463,6 +488,7 @@ curl -X DELETE http://localhost:3000/api/v1/exercises/EXERCISE_ID \
 ```
 
 **Step 2: Backend Deployment**
+
 ```bash
 # Build backend
 cd apps/backend
@@ -481,6 +507,7 @@ curl https://staging-api.bassnotion.com/health
 ```
 
 **Step 3: Frontend Deployment**
+
 ```bash
 # Build frontend
 cd apps/frontend
@@ -497,6 +524,7 @@ open https://staging.bassnotion.com
 ```
 
 **Step 4: Smoke Testing**
+
 - [ ] Access staging admin panel
 - [ ] Create test tutorial
 - [ ] Upload test MIDI files
@@ -505,6 +533,7 @@ open https://staging.bassnotion.com
 - [ ] Delete test tutorial
 
 **Step 5: Stakeholder Demo**
+
 - [ ] Schedule demo with product owner
 - [ ] Walk through admin workflow
 - [ ] Collect feedback
@@ -513,12 +542,14 @@ open https://staging.bassnotion.com
 ### Production Deployment
 
 **Prerequisites:**
+
 - [ ] Staging tested and approved
 - [ ] All stakeholders signed off
 - [ ] Rollback plan tested
 - [ ] Backup database before deployment
 
 **Deployment Steps:**
+
 1. [ ] Apply database migrations to production
 2. [ ] Deploy backend to production
 3. [ ] Deploy frontend to production
@@ -531,6 +562,7 @@ open https://staging.bassnotion.com
 ## Known Issues & Limitations
 
 ### Current Limitations:
+
 1. **MIDI File Preview:** No inline MIDI player in admin interface (must test in preview mode)
 2. **Batch Operations:** No bulk upload or batch editing
 3. **Version History:** No undo/redo or version tracking
@@ -538,12 +570,14 @@ open https://staging.bassnotion.com
 5. **Asset Management:** No built-in MIDI file library browser
 
 ### Technical Debt:
+
 1. Need unit tests for admin components
 2. Need E2E tests for admin workflows
 3. Error recovery for failed uploads
 4. Optimistic UI updates needed
 
 ### Future Enhancements:
+
 1. MIDI file editor/viewer
 2. Auto-save every 30 seconds
 3. Collaborative editing (multiple admins)
@@ -574,17 +608,20 @@ Story 4.2 is considered **COMPLETE** when:
 ## Testing Timeline
 
 **Week 1 (Current):**
+
 - Day 1-2: Database migration validation
 - Day 3-4: Backend API testing
 - Day 5: Frontend manual testing
 
 **Week 2:**
+
 - Day 1-2: Integration testing
 - Day 3: Performance and security testing
 - Day 4: Staging deployment
 - Day 5: Stakeholder demo
 
 **Week 3:**
+
 - Day 1-2: Fix issues from testing
 - Day 3: Final regression testing
 - Day 4: Production deployment
@@ -608,6 +645,7 @@ Story 4.2 is considered **COMPLETE** when:
 ### A. Test Data
 
 **Sample Tutorial:**
+
 ```json
 {
   "title": "Walking Bass Fundamentals",
@@ -620,13 +658,14 @@ Story 4.2 is considered **COMPLETE** when:
 ```
 
 **Sample Exercise:**
+
 ```json
 {
   "title": "Exercise 1: Basic Walking Pattern",
   "description": "Practice basic quarter note walking pattern",
   "bpm": 120,
   "duration": 240,
-  "time_signature": {"numerator": 4, "denominator": 4},
+  "time_signature": { "numerator": 4, "denominator": 4 },
   "difficulty": "beginner",
   "order_index": 1
 }
@@ -640,6 +679,7 @@ See `apps/backend/src/domains/tutorials/admin-tutorials.controller.ts` and
 ### C. Database Schema
 
 See migration files:
+
 - `apps/backend/supabase/migrations/20250723000002_enhance_tutorials_exercises_story42.sql`
 - `apps/backend/supabase/migrations/20251002000002_create_exercise_midi_bucket.sql`
 

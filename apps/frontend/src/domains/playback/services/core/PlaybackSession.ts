@@ -92,7 +92,10 @@ export class PlaybackSession {
     musicalTruth.setFromExercise(config.exercise);
 
     // Subscribe to tempo changes through scoped subscription
-    this.eventScope.on('transport:tempo-change', this.handleTempoChange.bind(this));
+    this.eventScope.on(
+      'transport:tempo-change',
+      this.handleTempoChange.bind(this),
+    );
 
     logger.info(`PlaybackSession created`, {
       sessionId: this.id,

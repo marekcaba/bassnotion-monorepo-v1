@@ -1,12 +1,15 @@
 # BackgroundSampleLoader Pre-Initialization Fix
 
 ## The Issue
+
 When clicking "Start Background Loading" before clicking Play:
+
 - AudioEngine is only pre-initialized (Tone.js loaded, no AudioContext)
 - BackgroundSampleLoader tries to call `audioEngine.getTone()` which throws an error
 - This error appears in the console even though the loader gracefully falls back to URL preloading
 
 ## The Solution
+
 1. **Added helper methods to BackgroundSampleLoader:**
    - `canPreloadUrls()`: Always returns true - URLs can be preloaded anytime
    - `isToneReady()`: Checks if AudioEngine is fully initialized
@@ -21,6 +24,7 @@ When clicking "Start Background Loading" before clicking Play:
    - **After Play button**: AudioEngine is fully initialized, loader can create Tone.js objects
 
 ## Testing
+
 1. Load the page
 2. Click "Start Background Loading" immediately
 3. Should see "⏳ Tone.js not ready yet, preloading URLs only" (not an error)
@@ -30,6 +34,7 @@ When clicking "Start Background Loading" before clicking Play:
 7. Now full sample loading works with Tone.js objects
 
 ## Benefits
+
 - No scary error messages in console
 - URLs are cached even before audio initialization
 - Smooth transition from URL preloading to full sample loading

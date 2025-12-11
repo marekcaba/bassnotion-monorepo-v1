@@ -132,7 +132,9 @@ export class DrumPreloadStrategy implements PreloadStrategy {
 
   private async fallbackToUrlCaching(): Promise<PreloadResult> {
     const startTime = performance.now();
-    logger.info('📥 Falling back to buffer preloading for drum samples (AudioEngine not ready)');
+    logger.info(
+      '📥 Falling back to buffer preloading for drum samples (AudioEngine not ready)',
+    );
 
     try {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -153,19 +155,22 @@ export class DrumPreloadStrategy implements PreloadStrategy {
 
       logger.info('📥 Loading essential drum samples:', {
         count: essentialDrums.length,
-        drums: essentialDrums.map(d => d.key),
+        drums: essentialDrums.map((d) => d.key),
       });
 
       for (const drum of essentialDrums) {
         const cacheKey = `drum-${drum.key}`;
 
         // CRITICAL: Check IndexedDB cache BEFORE network fetch
-        const cachedBuffer = await GlobalSampleCache.getInstance().getCachedRawBuffer(cacheKey);
+        const cachedBuffer =
+          await GlobalSampleCache.getInstance().getCachedRawBuffer(cacheKey);
 
         let arrayBuffer: ArrayBuffer;
 
         if (cachedBuffer) {
-          console.log(`💾 [INDEXEDDB-HIT] Using cached drum sample: ${cacheKey}`);
+          console.log(
+            `💾 [INDEXEDDB-HIT] Using cached drum sample: ${cacheKey}`,
+          );
           logger.info(`💾 IndexedDB cache HIT: ${cacheKey}`);
           arrayBuffer = cachedBuffer;
         } else {
@@ -186,8 +191,14 @@ export class DrumPreloadStrategy implements PreloadStrategy {
           // PERSISTENT CACHE: Also stores to IndexedDB for cross-session persistence
 
           // Cache with multiple keys for compatibility
-          await GlobalSampleCache.getInstance().cacheBuffer(cacheKey, arrayBuffer);
-          await GlobalSampleCache.getInstance().cacheBuffer(`drum-pad-${drum.pad}`, arrayBuffer);
+          await GlobalSampleCache.getInstance().cacheBuffer(
+            cacheKey,
+            arrayBuffer,
+          );
+          await GlobalSampleCache.getInstance().cacheBuffer(
+            `drum-pad-${drum.pad}`,
+            arrayBuffer,
+          );
 
           logger.info(`✅ ${drum.key} cached`);
         }
@@ -197,12 +208,15 @@ export class DrumPreloadStrategy implements PreloadStrategy {
       this.total = essentialDrums.length;
 
       const duration = performance.now() - startTime;
-      logger.info('✅ Essential drum samples preloaded as raw ArrayBuffers (BUG #2 FIX)', {
-        duration: `${duration.toFixed(2)}ms`,
-        samplesLoaded: essentialDrums.length,
-        averagePerSample: `${(duration / essentialDrums.length).toFixed(2)}ms`,
-        drums: essentialDrums.map(d => d.key),
-      });
+      logger.info(
+        '✅ Essential drum samples preloaded as raw ArrayBuffers (BUG #2 FIX)',
+        {
+          duration: `${duration.toFixed(2)}ms`,
+          samplesLoaded: essentialDrums.length,
+          averagePerSample: `${(duration / essentialDrums.length).toFixed(2)}ms`,
+          drums: essentialDrums.map((d) => d.key),
+        },
+      );
 
       return {
         success: true,

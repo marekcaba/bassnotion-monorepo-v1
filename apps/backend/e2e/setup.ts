@@ -128,9 +128,8 @@ beforeAll(async () => {
 
     // Import necessary types
     const { ConfigModule, ConfigService } = await import('@nestjs/config');
-    const { AuthController } = await import(
-      '../src/domains/user/auth/auth.controller.js'
-    );
+    const { AuthController } =
+      await import('../src/domains/user/auth/auth.controller.js');
 
     // Create functional mock services that actually work
     const mockConfigService = {
@@ -366,15 +365,12 @@ beforeAll(async () => {
     };
 
     // Import the actual service classes to use as provider tokens
-    const { DatabaseService } = await import(
-      '../src/infrastructure/database/database.service.js'
-    );
-    const { AuthService } = await import(
-      '../src/domains/user/auth/auth.service.js'
-    );
-    const { AuthSecurityService } = await import(
-      '../src/domains/user/auth/services/auth-security.service.js'
-    );
+    const { DatabaseService } =
+      await import('../src/infrastructure/database/database.service.js');
+    const { AuthService } =
+      await import('../src/domains/user/auth/auth.service.js');
+    const { AuthSecurityService } =
+      await import('../src/domains/user/auth/services/auth-security.service.js');
 
     // Create test module with working mock services using correct provider tokens
     const moduleFixture = await Test.createTestingModule({

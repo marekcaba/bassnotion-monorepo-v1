@@ -249,9 +249,8 @@ describe('HarmonyWidget - Audio Connection Tests', () => {
 
     // Set up mock implementations
     // Import the mocks and clear them
-    const { GlobalSampleCache } = await import(
-      '@/domains/playback/modules/storage/cache/GlobalSampleCache'
-    );
+    const { GlobalSampleCache } =
+      await import('@/domains/playback/modules/storage/cache/GlobalSampleCache');
     vi.mocked(GlobalSampleCache.getCachedInstrument).mockClear();
     vi.mocked(GlobalSampleCache.getCachedInstrumentNames).mockClear();
     vi.mocked(GlobalSampleCache.hasInstrument).mockClear();
@@ -332,9 +331,8 @@ describe('HarmonyWidget - Audio Connection Tests', () => {
       render(<HarmonyWidget {...props} />);
 
       // Component first checks for pre-loaded instrument
-      const { GlobalSampleCache } = await import(
-        '@/domains/playback/modules/storage/cache/GlobalSampleCache'
-      );
+      const { GlobalSampleCache } =
+        await import('@/domains/playback/modules/storage/cache/GlobalSampleCache');
 
       // Log mock call information
       console.log(
@@ -542,9 +540,8 @@ describe('HarmonyWidget - Audio Connection Tests', () => {
 
   describe('WAM Plugin Initialization', () => {
     it('should use pre-loaded harmony instrument when available', async () => {
-      const { GlobalSampleCache } = await import(
-        '@/domains/playback/modules/storage/cache/GlobalSampleCache'
-      );
+      const { GlobalSampleCache } =
+        await import('@/domains/playback/modules/storage/cache/GlobalSampleCache');
 
       const preloadedInstrument = {
         audioNode: mockWamKeyboardNode,
@@ -580,9 +577,8 @@ describe('HarmonyWidget - Audio Connection Tests', () => {
     });
 
     it('should create new plugin when no pre-loaded instrument exists', async () => {
-      const { GlobalSampleCache } = await import(
-        '@/domains/playback/modules/storage/cache/GlobalSampleCache'
-      );
+      const { GlobalSampleCache } =
+        await import('@/domains/playback/modules/storage/cache/GlobalSampleCache');
       vi.mocked(GlobalSampleCache.getCachedInstrument).mockReturnValue(null);
 
       const props = {

@@ -3,9 +3,11 @@
 ## ✅ Solution Implemented
 
 ### MPC-Style 16-Pad Sampler
+
 The DrummerWidget has been redesigned as an MPC-style 16-pad sampler (4x4 grid) where each pad can load a sample. This is the industry-standard approach for drum programming.
 
 ### Sample Loading from Supabase
+
 - **Default Kit**: Boss DR-110 from `audio-samples/drums/hydrogen-kits/mp3/electronic/boss-dr110/`
 - **Samples Loaded**:
   - Pad 1: `dr110kik.mp3` (Kick)
@@ -15,6 +17,7 @@ The DrummerWidget has been redesigned as an MPC-style 16-pad sampler (4x4 grid) 
 ### Technical Implementation
 
 #### Fetch-First Loading Strategy
+
 ```typescript
 // Fetch the audio data first
 const response = await fetch(sampleUrl);
@@ -26,19 +29,22 @@ const toneBuffer = new Tone.ToneAudioBuffer(audioBuffer);
 
 // Create sampler with the loaded buffer
 drumPadsRef.current[padNum] = new Tone.Sampler({
-  urls: { C1: toneBuffer }
+  urls: { C1: toneBuffer },
 }).toDestination();
 ```
 
 This approach solves the issue where Tone.Sampler couldn't load external URLs directly.
 
 #### Fallback to Synthesized Drums
+
 If samples fail to load, the system automatically falls back to synthesized drums:
+
 - **Kick**: MembraneSynth (punchy bass sound)
 - **Snare**: NoiseSynth (crisp white noise burst)
 - **Hihat**: MetalSynth (bright metallic sound)
 
 ### UI Features
+
 - **16-Pad Grid**: Visual MPC-style layout
 - **Clickable Pads**: Each pad can be triggered by clicking
 - **Visual Feedback**: Active pads show in orange/red gradient
@@ -46,9 +52,12 @@ If samples fail to load, the system automatically falls back to synthesized drum
 - **Volume Control**: Slider to adjust overall volume
 
 ### Code Architecture
+
 ```typescript
 // MPC-style pad references
-const drumPadsRef = useRef<Record<number, Tone.Sampler | Tone.Synth | null>>({});
+const drumPadsRef = useRef<Record<number, Tone.Sampler | Tone.Synth | null>>(
+  {},
+);
 
 // Boss DR-110 sample mapping
 const BOSS_DR110_MAPPING = {
@@ -60,7 +69,7 @@ const BOSS_DR110_MAPPING = {
 
 ## How It Works
 
-1. **On Component Mount**: 
+1. **On Component Mount**:
    - Waits for user interaction to start AudioContext
    - Loads drum samples from Supabase using fetch API
    - Falls back to synths if loading fails
@@ -99,4 +108,5 @@ const BOSS_DR110_MAPPING = {
 - **Test Page**: `/apps/frontend/src/app/test-transport/page.tsx`
 
 ## Status
+
 ✅ **MVP Complete** - The drum sampler successfully loads and plays samples from Supabase storage using the MPC-style 16-pad interface.

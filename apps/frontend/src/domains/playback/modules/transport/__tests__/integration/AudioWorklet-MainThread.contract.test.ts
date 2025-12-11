@@ -125,7 +125,8 @@ describe('AudioWorklet ↔ Main Thread Contract Tests', () => {
       });
 
       await manager.initialize(mockContext as any);
-      mockWorkletNode = (manager as any).audioWorkletNode as IntegrationMockAudioWorkletNode;
+      mockWorkletNode = (manager as any)
+        .audioWorkletNode as IntegrationMockAudioWorkletNode;
 
       const receivedUpdates: TimingUpdate[] = [];
       manager.on('timing-update', (update: TimingUpdate) => {
@@ -137,10 +138,34 @@ describe('AudioWorklet ↔ Main Thread Contract Tests', () => {
 
       // Send sequence of messages
       const messages = [
-        { type: 'timing-update', time: 0.002667, frame: 128, sessionId, messageSequence: 0 },
-        { type: 'timing-update', time: 0.005333, frame: 256, sessionId, messageSequence: 1 },
-        { type: 'timing-update', time: 0.008000, frame: 384, sessionId, messageSequence: 2 },
-        { type: 'timing-update', time: 0.010667, frame: 512, sessionId, messageSequence: 3 },
+        {
+          type: 'timing-update',
+          time: 0.002667,
+          frame: 128,
+          sessionId,
+          messageSequence: 0,
+        },
+        {
+          type: 'timing-update',
+          time: 0.005333,
+          frame: 256,
+          sessionId,
+          messageSequence: 1,
+        },
+        {
+          type: 'timing-update',
+          time: 0.008,
+          frame: 384,
+          sessionId,
+          messageSequence: 2,
+        },
+        {
+          type: 'timing-update',
+          time: 0.010667,
+          frame: 512,
+          sessionId,
+          messageSequence: 3,
+        },
       ];
 
       messages.forEach((msg) => {
@@ -168,7 +193,8 @@ describe('AudioWorklet ↔ Main Thread Contract Tests', () => {
       });
 
       await manager.initialize(mockContext as any);
-      mockWorkletNode = (manager as any).audioWorkletNode as IntegrationMockAudioWorkletNode;
+      mockWorkletNode = (manager as any)
+        .audioWorkletNode as IntegrationMockAudioWorkletNode;
 
       const receivedUpdates: TimingUpdate[] = [];
       manager.on('timing-update', (update: TimingUpdate) => {
@@ -231,7 +257,8 @@ describe('AudioWorklet ↔ Main Thread Contract Tests', () => {
       });
 
       await manager.initialize(mockContext as any);
-      mockWorkletNode = (manager as any).audioWorkletNode as IntegrationMockAudioWorkletNode;
+      mockWorkletNode = (manager as any)
+        .audioWorkletNode as IntegrationMockAudioWorkletNode;
 
       const receivedUpdates: TimingUpdate[] = [];
       manager.on('timing-update', (update: TimingUpdate) => {
@@ -303,7 +330,8 @@ describe('AudioWorklet ↔ Main Thread Contract Tests', () => {
       });
 
       await manager.initialize(mockContext as any);
-      mockWorkletNode = (manager as any).audioWorkletNode as IntegrationMockAudioWorkletNode;
+      mockWorkletNode = (manager as any)
+        .audioWorkletNode as IntegrationMockAudioWorkletNode;
 
       manager.start();
       const oldSessionId = (manager as any).currentSessionId;
@@ -335,7 +363,8 @@ describe('AudioWorklet ↔ Main Thread Contract Tests', () => {
       });
 
       await manager.initialize(mockContext as any);
-      mockWorkletNode = (manager as any).audioWorkletNode as IntegrationMockAudioWorkletNode;
+      mockWorkletNode = (manager as any)
+        .audioWorkletNode as IntegrationMockAudioWorkletNode;
 
       const receivedUpdates: TimingUpdate[] = [];
       manager.on('timing-update', (update: TimingUpdate) => {
@@ -349,7 +378,7 @@ describe('AudioWorklet ↔ Main Thread Contract Tests', () => {
       const preciseTimings = [
         0.002666667, // Exactly 128 samples @ 48kHz
         0.005333333, // Exactly 256 samples
-        0.008000000, // Exactly 384 samples
+        0.008, // Exactly 384 samples
       ];
 
       preciseTimings.forEach((time, i) => {
@@ -370,7 +399,7 @@ describe('AudioWorklet ↔ Main Thread Contract Tests', () => {
       expect(receivedUpdates).toHaveLength(3);
       expect(receivedUpdates[0].time).toBeCloseTo(0.002666667, 6);
       expect(receivedUpdates[1].time).toBeCloseTo(0.005333333, 6);
-      expect(receivedUpdates[2].time).toBeCloseTo(0.008000000, 6);
+      expect(receivedUpdates[2].time).toBeCloseTo(0.008, 6);
     });
 
     it('should track frame accuracy across sessions', async () => {
@@ -380,7 +409,8 @@ describe('AudioWorklet ↔ Main Thread Contract Tests', () => {
       });
 
       await manager.initialize(mockContext as any);
-      mockWorkletNode = (manager as any).audioWorkletNode as IntegrationMockAudioWorkletNode;
+      mockWorkletNode = (manager as any)
+        .audioWorkletNode as IntegrationMockAudioWorkletNode;
 
       const receivedUpdates: TimingUpdate[] = [];
       manager.on('timing-update', (update: TimingUpdate) => {
@@ -448,7 +478,8 @@ describe('AudioWorklet ↔ Main Thread Contract Tests', () => {
       });
 
       await manager.initialize(mockContext as any);
-      mockWorkletNode = (manager as any).audioWorkletNode as IntegrationMockAudioWorkletNode;
+      mockWorkletNode = (manager as any)
+        .audioWorkletNode as IntegrationMockAudioWorkletNode;
 
       const errors: any[] = [];
       manager.on('timing-warning', (warning: any) => {
@@ -477,7 +508,8 @@ describe('AudioWorklet ↔ Main Thread Contract Tests', () => {
       });
 
       await manager.initialize(mockContext as any);
-      mockWorkletNode = (manager as any).audioWorkletNode as IntegrationMockAudioWorkletNode;
+      mockWorkletNode = (manager as any)
+        .audioWorkletNode as IntegrationMockAudioWorkletNode;
 
       const postMessageSpy = vi.spyOn(mockWorkletNode.port, 'postMessage');
 
@@ -537,7 +569,8 @@ describe('AudioWorklet ↔ Main Thread Contract Tests', () => {
       });
 
       await manager.initialize(mockContext as any);
-      mockWorkletNode = (manager as any).audioWorkletNode as IntegrationMockAudioWorkletNode;
+      mockWorkletNode = (manager as any)
+        .audioWorkletNode as IntegrationMockAudioWorkletNode;
 
       const receivedUpdates: TimingUpdate[] = [];
       manager.on('timing-update', (update: TimingUpdate) => {
@@ -576,7 +609,8 @@ describe('AudioWorklet ↔ Main Thread Contract Tests', () => {
       });
 
       await manager.initialize(mockContext as any);
-      mockWorkletNode = (manager as any).audioWorkletNode as IntegrationMockAudioWorkletNode;
+      mockWorkletNode = (manager as any)
+        .audioWorkletNode as IntegrationMockAudioWorkletNode;
 
       const receivedUpdates: TimingUpdate[] = [];
       manager.on('timing-update', (update: TimingUpdate) => {
@@ -637,7 +671,8 @@ describe('AudioWorklet ↔ Main Thread Contract Tests', () => {
 
       // Access underlying worklet manager
       const workletManager = (clock as any).workletManager;
-      mockWorkletNode = (workletManager as any).audioWorkletNode as IntegrationMockAudioWorkletNode;
+      mockWorkletNode = (workletManager as any)
+        .audioWorkletNode as IntegrationMockAudioWorkletNode;
       const sessionId = (workletManager as any).currentSessionId;
 
       // Simulate timing updates

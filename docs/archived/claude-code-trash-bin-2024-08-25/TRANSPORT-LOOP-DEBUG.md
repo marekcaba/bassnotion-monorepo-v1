@@ -1,6 +1,7 @@
 # Transport Loop Debug Status
 
 ## Current Situation
+
 1. Transport IS starting correctly (logs show `Transport started successfully`)
 2. Widgets ARE detecting Transport start
 3. Loops ARE being created with correct Tone instance
@@ -9,7 +10,9 @@
 ## Debug Tests Added
 
 ### 1. Loop Creation Logging
+
 Added detailed logging when loops are created:
+
 ```
 🎵 HarmonyWidget: Creating loop with Tone instance
 🎵 HarmonyWidget: Loop created
@@ -17,14 +20,18 @@ Added detailed logging when loops are created:
 ```
 
 ### 2. Loop Callback Logging
+
 Added logs at the very start of loop callbacks:
+
 ```
 🎵🎹 HARMONY LOOP CALLBACK EXECUTED!
 🥁🥁 DRUM LOOP CALLBACK ACTUALLY EXECUTED!
 ```
+
 These logs NEVER appear, indicating callbacks aren't running.
 
 ### 3. Test Loop Creation
+
 Added a test that creates a simple loop after 500ms to verify Tone.js Loop functionality.
 
 ## Theories to Test

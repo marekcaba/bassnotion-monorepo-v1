@@ -1,7 +1,7 @@
 /**
  * Security Monitor
  * Story 2.4 Subtask 1.2: Security monitoring and incident tracking
- * 
+ *
  * Extracted from playback domain to shared infrastructure
  */
 
@@ -32,7 +32,10 @@ export class SecurityMonitor {
   private deviceInfo: DeviceInfo;
   private locationInfo?: LocationInfo;
 
-  constructor(config: SecurityMonitoringConfig, metrics: AuthenticationMetrics) {
+  constructor(
+    config: SecurityMonitoringConfig,
+    metrics: AuthenticationMetrics,
+  ) {
     this.config = config;
     this.metrics = metrics;
     this.deviceInfo = this.generateDeviceInfo();
@@ -82,12 +85,16 @@ export class SecurityMonitor {
 
     try {
       if (typeof HTMLCanvasElement === 'undefined') {
-        return 'test-canvas-fingerprint-' + Math.random().toString(36).substr(2, 9);
+        return (
+          'test-canvas-fingerprint-' + Math.random().toString(36).substr(2, 9)
+        );
       }
 
       const canvas = document.createElement('canvas');
       if (!canvas || typeof canvas.getContext !== 'function') {
-        return 'test-canvas-fingerprint-' + Math.random().toString(36).substr(2, 9);
+        return (
+          'test-canvas-fingerprint-' + Math.random().toString(36).substr(2, 9)
+        );
       }
 
       const ctx = canvas.getContext('2d');
@@ -259,7 +266,9 @@ export class SecurityMonitor {
   /**
    * Calculate incident severity
    */
-  private calculateSeverity(type: SecurityIncident['type']): SecurityIncident['severity'] {
+  private calculateSeverity(
+    type: SecurityIncident['type'],
+  ): SecurityIncident['severity'] {
     switch (type) {
       case 'SUSPICIOUS_ACCESS':
         return 'high';
@@ -365,9 +374,7 @@ export class SecurityMonitor {
   cleanup(): void {
     const cutoffTime = Date.now() - 7 * 24 * 60 * 60 * 1000; // 7 days
 
-    this.events = this.events.filter(
-      (e) => e.timestamp.getTime() > cutoffTime,
-    );
+    this.events = this.events.filter((e) => e.timestamp.getTime() > cutoffTime);
 
     this.incidents = this.incidents.filter(
       (i) => i.timestamp.getTime() > cutoffTime || !i.resolved,

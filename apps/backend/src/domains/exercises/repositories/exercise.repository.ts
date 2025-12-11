@@ -3,7 +3,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   IExerciseRepository,
   PaginatedResult,
-  PaginationOptions } from './exercise.repository.interface.js';
+  PaginationOptions,
+} from './exercise.repository.interface.js';
 import { Exercise } from '../entities/exercise.entity.js';
 import { ExerciseId } from '../value-objects/exercise-id.vo.js';
 import { Difficulty } from '../value-objects/difficulty.vo.js';
@@ -44,7 +45,9 @@ interface ExerciseRecord {
 
 @Injectable()
 export class ExerciseRepository implements IExerciseRepository {
-  private readonly staticLogger = createStructuredLogger(ExerciseRepository.name);
+  private readonly staticLogger = createStructuredLogger(
+    ExerciseRepository.name,
+  );
 
   constructor(
     private readonly supabase: SupabaseClient,
@@ -64,7 +67,9 @@ export class ExerciseRepository implements IExerciseRepository {
       if (error || !data) {
         const logger = this.requestContext?.getLogger() || this.staticLogger;
         const correlationId = this.requestContext?.getCorrelationId();
-        logger.debug(`Exercise not found with id: ${id.value}`, { correlationId });
+        logger.debug(`Exercise not found with id: ${id.value}`, {
+          correlationId,
+        });
         return null;
       }
 
@@ -72,7 +77,11 @@ export class ExerciseRepository implements IExerciseRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error(`Error finding exercise by id ${id.value}:`, error as Error, { correlationId });
+      logger.error(
+        `Error finding exercise by id ${id.value}:`,
+        error as Error,
+        { correlationId },
+      );
       throw new Error(
         `Failed to find exercise: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
@@ -104,11 +113,14 @@ export class ExerciseRepository implements IExerciseRepository {
         items: exercises,
         total: count || 0,
         page: options.page,
-        limit: options.limit };
+        limit: options.limit,
+      };
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error fetching all exercises:', error as Error, { correlationId });
+      logger.error('Error fetching all exercises:', error as Error, {
+        correlationId,
+      });
       throw error;
     }
   }
@@ -137,7 +149,7 @@ export class ExerciseRepository implements IExerciseRepository {
       logger.error(
         `Error fetching exercises by difficulty ${difficulty.value}:`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       throw error;
     }
@@ -165,7 +177,7 @@ export class ExerciseRepository implements IExerciseRepository {
       logger.error(
         `Error searching exercises with query "${query}":`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       throw error;
     }
@@ -182,7 +194,9 @@ export class ExerciseRepository implements IExerciseRepository {
 
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.debug(`Successfully saved exercise: ${exercise.id.value}`, { correlationId });
+      logger.debug(`Successfully saved exercise: ${exercise.id.value}`, {
+        correlationId,
+      });
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
@@ -205,11 +219,17 @@ export class ExerciseRepository implements IExerciseRepository {
 
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.debug(`Successfully updated exercise: ${exercise.id.value}`, { correlationId });
+      logger.debug(`Successfully updated exercise: ${exercise.id.value}`, {
+        correlationId,
+      });
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error(`Error updating exercise ${exercise.id.value}:`, error as Error, { correlationId });
+      logger.error(
+        `Error updating exercise ${exercise.id.value}:`,
+        error as Error,
+        { correlationId },
+      );
       throw error;
     }
   }
@@ -228,11 +248,15 @@ export class ExerciseRepository implements IExerciseRepository {
 
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.debug(`Successfully deleted exercise: ${id.value}`, { correlationId });
+      logger.debug(`Successfully deleted exercise: ${id.value}`, {
+        correlationId,
+      });
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error(`Error deleting exercise ${id.value}:`, error as Error, { correlationId });
+      logger.error(`Error deleting exercise ${id.value}:`, error as Error, {
+        correlationId,
+      });
       throw error;
     }
   }
@@ -256,7 +280,7 @@ export class ExerciseRepository implements IExerciseRepository {
       logger.error(
         `Error checking existence of exercise ${id.value}:`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       throw error;
     }
@@ -285,7 +309,9 @@ export class ExerciseRepository implements IExerciseRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error fetching exercises by ids:', error as Error, { correlationId });
+      logger.error('Error fetching exercises by ids:', error as Error, {
+        correlationId,
+      });
       throw error;
     }
   }
@@ -305,12 +331,14 @@ export class ExerciseRepository implements IExerciseRepository {
       const correlationId = this.requestContext?.getCorrelationId();
       logger.debug(
         `Successfully saved ${exercises.length} exercises in batch`,
-        { correlationId }
+        { correlationId },
       );
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error saving exercises batch:', error as Error, { correlationId });
+      logger.error('Error saving exercises batch:', error as Error, {
+        correlationId,
+      });
       throw error;
     }
   }
@@ -340,12 +368,14 @@ export class ExerciseRepository implements IExerciseRepository {
       const correlationId = this.requestContext?.getCorrelationId();
       logger.debug(
         `Successfully updated ${exercises.length} exercises in batch`,
-        { correlationId }
+        { correlationId },
       );
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error updating exercises batch:', error as Error, { correlationId });
+      logger.error('Error updating exercises batch:', error as Error, {
+        correlationId,
+      });
       throw error;
     }
   }
@@ -366,14 +396,15 @@ export class ExerciseRepository implements IExerciseRepository {
 
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.debug(
-        `Successfully deleted ${ids.length} exercises in batch`,
-        { correlationId }
-      );
+      logger.debug(`Successfully deleted ${ids.length} exercises in batch`, {
+        correlationId,
+      });
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error deleting exercises batch:', error as Error, { correlationId });
+      logger.error('Error deleting exercises batch:', error as Error, {
+        correlationId,
+      });
       throw error;
     }
   }
@@ -407,6 +438,7 @@ export class ExerciseRepository implements IExerciseRepository {
       harmonyInstrument: record.harmony_instrument,
       createdBy: record.created_by,
       createdAt: new Date(record.created_at),
-      updatedAt: new Date(record.updated_at) });
+      updatedAt: new Date(record.updated_at),
+    });
   }
 }

@@ -27,6 +27,7 @@ node scripts/create-sample-soundfonts.js
 ```
 
 This creates samples for:
+
 - Salamander Grand Piano
 - Nice Keys Rhodes Electric Piano
 - Versilian Hammond Organ
@@ -66,6 +67,7 @@ node scripts/upload-keyboards-via-api.js
 ## API Endpoints
 
 ### Single Sample Upload
+
 ```
 POST /api/v1/audio-samples/upload
 Authorization: Bearer <token>
@@ -77,6 +79,7 @@ Authorization: Bearer <token>
 ```
 
 ### Batch Upload
+
 ```
 POST /api/v1/audio-samples/upload-batch
 Authorization: Bearer <token>
@@ -92,6 +95,7 @@ Authorization: Bearer <token>
 ```
 
 ### Metadata Creation
+
 ```
 POST /api/v1/audio-samples/metadata
 Authorization: Bearer <token>
@@ -114,11 +118,13 @@ Authorization: Bearer <token>
 ## CDN URLs
 
 After upload, samples are available at:
+
 ```
 https://[supabase-project-id].supabase.co/storage/v1/object/public/audio-samples/[path]
 ```
 
 Example:
+
 ```
 https://htuztkrbuewheehjspcz.supabase.co/storage/v1/object/public/audio-samples/keyboards/salamander-piano/C4.mp3
 ```
@@ -133,20 +139,24 @@ https://htuztkrbuewheehjspcz.supabase.co/storage/v1/object/public/audio-samples/
 ## Troubleshooting
 
 ### "Row-level security policy" Error
+
 - Ensure you're using the backend API, not direct Supabase client
 - Check that backend has SUPABASE_SERVICE_ROLE_KEY configured
 
 ### "No authentication token" Error
+
 - Run get-auth-token.js to obtain a fresh token
 - Ensure token is exported as BASSNOTION_ADMIN_TOKEN
 
 ### "Bucket not found" Error
+
 - Verify audio-samples bucket exists in Supabase dashboard
 - Check bucket has public read permissions
 
 ## Alternative: Direct Supabase Dashboard Upload
 
 For quick testing, you can also upload directly via Supabase dashboard:
+
 1. Go to Storage section
 2. Navigate to audio-samples bucket
 3. Create folders: keyboards/[instrument-name]/

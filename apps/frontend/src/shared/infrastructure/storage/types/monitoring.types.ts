@@ -1,6 +1,6 @@
 /**
  * Monitoring Types for Storage
- * 
+ *
  * Types for tracking performance, health, and analytics
  * in the storage infrastructure.
  */
@@ -144,7 +144,11 @@ export interface IStorageMonitor {
   /**
    * Record a metric
    */
-  recordMetric(metric: string, value: number, tags?: Record<string, string>): void;
+  recordMetric(
+    metric: string,
+    value: number,
+    tags?: Record<string, string>,
+  ): void;
 
   /**
    * Record an error

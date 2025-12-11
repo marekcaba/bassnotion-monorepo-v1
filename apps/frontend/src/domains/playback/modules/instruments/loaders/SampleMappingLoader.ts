@@ -6,6 +6,10 @@
  */
 
 import { createStructuredLogger } from '../../shared/index.js';
+import {
+  protectedSampleFetch,
+  SAMPLE_FETCH_TIMEOUT_MS,
+} from '../../../services/core/SampleLoadingCircuitBreaker.js';
 import type {
   InstrumentSampleConfig,
   DrumKitConfig,
@@ -137,17 +141,14 @@ export class SampleMappingLoader {
 
   /**
    * Perform the actual loading
+   * Protected by circuit breaker to prevent cascading failures
    */
   private async performLoad<T>(path: string): Promise<T> {
     const fullPath = `${this.options.basePath}${path}`;
 
     try {
-      const response = await fetch(fullPath);
-      if (!response.ok) {
-        throw new Error(
-          `Failed to load config from ${fullPath}: ${response.statusText}`,
-        );
-      }
+      // Use circuit breaker protected fetch with 10s timeout
+      const response = await protectedSampleFetch(fullPath, `config-${path}`);
 
       const config = await response.json();
       return config as T;
@@ -168,9 +169,11 @@ export class SampleMappingLoader {
     if (!config.version) errors.push('Missing version');
 
     // Support both velocityRanges (simple) and globalVelocityRanges (advanced per-note config)
-    const hasVelocityRanges = config.velocityRanges && config.velocityRanges.length > 0;
-    const hasGlobalVelocityRanges = (config as any).globalVelocityRanges &&
-                                    (config as any).globalVelocityRanges.length > 0;
+    const hasVelocityRanges =
+      config.velocityRanges && config.velocityRanges.length > 0;
+    const hasGlobalVelocityRanges =
+      (config as any).globalVelocityRanges &&
+      (config as any).globalVelocityRanges.length > 0;
 
     if (!hasVelocityRanges && !hasGlobalVelocityRanges) {
       errors.push('Missing or empty velocityRanges or globalVelocityRanges');
@@ -304,8 +307,8 @@ export class SampleMappingLoader {
 
       const path = storage.bucketPath
         ? hasLayerInPath
-          ? `${storage.bucketPath}/${encodedFileName}`  // fileName has layer already (e.g., "v2/A0_v2.ogg")
-          : `${storage.bucketPath}/${layer}/${encodedFileName}`  // Simple format (e.g., "A0.mp3")
+          ? `${storage.bucketPath}/${encodedFileName}` // fileName has layer already (e.g., "v2/A0_v2.ogg")
+          : `${storage.bucketPath}/${layer}/${encodedFileName}` // Simple format (e.g., "A0.mp3")
         : hasLayerInPath
           ? encodedFileName
           : `${layer}/${encodedFileName}`;
@@ -332,8 +335,10 @@ export class SampleMappingLoader {
     const urls = new Map<string, Map<string, string>>();
 
     // Support both velocityRanges and globalVelocityRanges
-    const velocityRanges = config.velocityRanges || (config as any).globalVelocityRanges;
-    const targetLayers = layers || (velocityRanges ? velocityRanges.map((r: any) => r.layer) : []);
+    const velocityRanges =
+      config.velocityRanges || (config as any).globalVelocityRanges;
+    const targetLayers =
+      layers || (velocityRanges ? velocityRanges.map((r: any) => r.layer) : []);
 
     for (const layer of targetLayers) {
       const layerUrls = new Map<string, string>();

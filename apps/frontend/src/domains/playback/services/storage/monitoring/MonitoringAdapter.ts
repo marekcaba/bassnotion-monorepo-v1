@@ -40,8 +40,9 @@ export class PlaybackMonitoringService extends MonitoringService {
         try {
           if (typeof window === 'undefined') return true; // Skip in SSR
 
-          const audioContext = new (window.AudioContext ||
-            (window as any).webkitAudioContext)();
+          const audioContext = new (
+            window.AudioContext || (window as any).webkitAudioContext
+          )();
           const isHealthy = audioContext.state !== 'suspended';
           audioContext.close();
           return isHealthy;

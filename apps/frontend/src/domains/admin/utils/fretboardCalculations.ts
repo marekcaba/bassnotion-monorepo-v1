@@ -26,9 +26,231 @@ export const BASS_TUNINGS = {
 } as const;
 
 /**
- * Note names in chromatic scale
+ * Note names in chromatic scale (sharps)
  */
-const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+const NOTE_NAMES_SHARP = [
+  'C',
+  'C#',
+  'D',
+  'D#',
+  'E',
+  'F',
+  'F#',
+  'G',
+  'G#',
+  'A',
+  'A#',
+  'B',
+];
+
+/**
+ * Note names in chromatic scale (flats)
+ */
+const NOTE_NAMES_FLAT = [
+  'C',
+  'Db',
+  'D',
+  'Eb',
+  'E',
+  'F',
+  'Gb',
+  'G',
+  'Ab',
+  'A',
+  'Bb',
+  'B',
+];
+
+/**
+ * Legacy export for backward compatibility
+ */
+const NOTE_NAMES = NOTE_NAMES_SHARP;
+
+/**
+ * Enharmonic equivalents mapping
+ * Maps sharp notes to their flat equivalents and vice versa
+ */
+export const ENHARMONIC_MAP: Record<string, string> = {
+  // Sharp to Flat
+  'C#': 'Db',
+  'D#': 'Eb',
+  'F#': 'Gb',
+  'G#': 'Ab',
+  'A#': 'Bb',
+  // Flat to Sharp
+  Db: 'C#',
+  Eb: 'D#',
+  Gb: 'F#',
+  Ab: 'G#',
+  Bb: 'A#',
+};
+
+/**
+ * Display preference for note accidentals
+ */
+export type AccidentalPreference = 'sharps' | 'flats';
+
+/**
+ * Parse a note name into its components
+ *
+ * @param noteName - Note name with optional accidental and octave (e.g., "C#4", "Db3", "E2")
+ * @returns Object with base note, accidental, and octave
+ *
+ * @example
+ * parseNoteName("C#4") // { base: "C", accidental: "#", octave: 4 }
+ * parseNoteName("Db3") // { base: "D", accidental: "b", octave: 3 }
+ * parseNoteName("E2")  // { base: "E", accidental: null, octave: 2 }
+ */
+export function parseNoteName(noteName: string): {
+  base: string;
+  accidental: '#' | 'b' | null;
+  octave: number | null;
+} {
+  // Handle 's' suffix format (e.g., "Cs4" -> "C#4")
+  const normalizedName = noteName.replace(/([A-G])s(\d)/i, '$1#$2');
+
+  const match = normalizedName.match(/^([A-G])([#b])?(-?\d+)?$/i);
+  if (!match) {
+    return {
+      base: noteName[0]?.toUpperCase() || 'C',
+      accidental: null,
+      octave: null,
+    };
+  }
+
+  return {
+    base: match[1].toUpperCase(),
+    accidental: (match[2] as '#' | 'b') || null,
+    octave: match[3] ? parseInt(match[3], 10) : null,
+  };
+}
+
+/**
+ * Get the enharmonic equivalent of a note
+ *
+ * @param noteName - Note name with accidental (e.g., "C#4", "Db3")
+ * @returns Enharmonic equivalent or original if no equivalent exists
+ *
+ * @example
+ * getEnharmonicEquivalent("C#4") // "Db4"
+ * getEnharmonicEquivalent("Db3") // "C#3"
+ * getEnharmonicEquivalent("E2")  // "E2" (no enharmonic)
+ */
+export function getEnharmonicEquivalent(noteName: string): string {
+  const { base, accidental, octave } = parseNoteName(noteName);
+
+  if (!accidental) {
+    return noteName; // Natural notes have no enharmonic equivalent
+  }
+
+  const noteWithAccidental = `${base}${accidental}`;
+  const equivalent = ENHARMONIC_MAP[noteWithAccidental];
+
+  if (!equivalent) {
+    return noteName; // No mapping found
+  }
+
+  return octave !== null ? `${equivalent}${octave}` : equivalent;
+}
+
+/**
+ * Convert a note name to use the specified accidental preference
+ *
+ * @param noteName - Note name (e.g., "C#4", "Db3", "E2")
+ * @param preference - Desired accidental style ('sharps' or 'flats')
+ * @returns Note name in preferred format
+ *
+ * @example
+ * convertToPreference("C#4", "flats")  // "Db4"
+ * convertToPreference("Db3", "sharps") // "C#3"
+ * convertToPreference("E2", "flats")   // "E2" (no change for naturals)
+ */
+export function convertToPreference(
+  noteName: string,
+  preference: AccidentalPreference,
+): string {
+  const { base, accidental, octave } = parseNoteName(noteName);
+
+  if (!accidental) {
+    return noteName; // Natural notes unchanged
+  }
+
+  const isSharp = accidental === '#';
+  const isFlat = accidental === 'b';
+
+  // Already in correct format
+  if (
+    (preference === 'sharps' && isSharp) ||
+    (preference === 'flats' && isFlat)
+  ) {
+    return noteName;
+  }
+
+  // Need to convert
+  return getEnharmonicEquivalent(noteName);
+}
+
+/**
+ * Convert a note name to the internal storage format (always sharps with 's' suffix)
+ *
+ * This is used for sample file lookups where samples are named like "Cs4.wav"
+ *
+ * @param noteName - Note name in any format (e.g., "C#4", "Db4", "Cs4")
+ * @returns Note name with 's' suffix for sharps (e.g., "Cs4")
+ *
+ * @example
+ * toInternalFormat("C#4") // "Cs4"
+ * toInternalFormat("Db4") // "Cs4"
+ * toInternalFormat("Cs4") // "Cs4"
+ * toInternalFormat("E2")  // "E2"
+ */
+export function toInternalFormat(noteName: string): string {
+  // First convert to sharps if it's a flat
+  const sharpNote = convertToPreference(noteName, 'sharps');
+
+  // Then convert # to s for sample file lookup
+  const { base, accidental, octave } = parseNoteName(sharpNote);
+
+  if (accidental === '#') {
+    return octave !== null ? `${base}s${octave}` : `${base}s`;
+  }
+
+  return sharpNote;
+}
+
+/**
+ * Convert internal 's' format to display format with # or b
+ *
+ * @param noteName - Note name in internal format (e.g., "Cs4")
+ * @param preference - Desired accidental style ('sharps' or 'flats')
+ * @returns Note name for display (e.g., "C#4" or "Db4")
+ *
+ * @example
+ * toDisplayFormat("Cs4", "sharps") // "C#4"
+ * toDisplayFormat("Cs4", "flats")  // "Db4"
+ * toDisplayFormat("E2", "sharps")  // "E2"
+ */
+export function toDisplayFormat(
+  noteName: string,
+  preference: AccidentalPreference,
+): string {
+  // Convert 's' to '#' first
+  const normalizedName = noteName.replace(/([A-G])s(\d)/i, '$1#$2');
+
+  // Then apply preference
+  return convertToPreference(normalizedName, preference);
+}
+
+/**
+ * Check if a note has an enharmonic equivalent
+ *
+ * @param noteName - Note name to check
+ * @returns true if note has an enharmonic equivalent
+ */
+export function hasEnharmonic(noteName: string): boolean {
+  const { accidental } = parseNoteName(noteName);
+  return accidental !== null;
+}
 
 /**
  * Calculate MIDI pitch for a given string and fret position
@@ -45,13 +267,15 @@ const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 
 export function calculatePitch(
   string: number,
   fret: number,
-  bassType: '4' | '5' | '6'
+  bassType: '4' | '5' | '6',
 ): number {
   const tuning = BASS_TUNINGS[bassType];
 
   // Validate string number
   if (string < 1 || string > tuning.length) {
-    throw new Error(`Invalid string number ${string} for ${bassType}-string bass`);
+    throw new Error(
+      `Invalid string number ${string} for ${bassType}-string bass`,
+    );
   }
 
   // Validate fret number
@@ -83,7 +307,7 @@ export function validatePlacement(
   notePitch: number,
   string: number,
   fret: number,
-  bassType: '4' | '5' | '6'
+  bassType: '4' | '5' | '6',
 ): boolean {
   try {
     const calculatedPitch = calculatePitch(string, fret, bassType);
@@ -118,7 +342,7 @@ export function midiPitchToNoteName(pitch: number): string {
  */
 export function findAllPositions(
   notePitch: number,
-  bassType: '4' | '5' | '6'
+  bassType: '4' | '5' | '6',
 ): Array<{ string: number; fret: number }> {
   const tuning = BASS_TUNINGS[bassType];
   const positions: Array<{ string: number; fret: number }> = [];
@@ -151,7 +375,7 @@ export function createExerciseNote(
   string: number,
   fret: number,
   measureNumber: number,
-  noteId: string
+  noteId: string,
 ): GeneratedExerciseNote {
   return {
     id: noteId,
@@ -189,7 +413,7 @@ export function createExerciseNote(
  */
 export function getDisplayStringNumber(
   internalString: number,
-  bassType: '4' | '5' | '6'
+  bassType: '4' | '5' | '6',
 ): number {
   // Internal numbering: 1 = highest pitch (G string)
   // Visual numbering: 1 = top string on display (G string)
@@ -206,7 +430,7 @@ export function getDisplayStringNumber(
  */
 export function isMeasureComplete(
   totalNotes: number,
-  placements: Map<number, { string: number; fret: number }>
+  placements: Map<number, { string: number; fret: number }>,
 ): boolean {
   if (placements.size !== totalNotes) {
     return false;

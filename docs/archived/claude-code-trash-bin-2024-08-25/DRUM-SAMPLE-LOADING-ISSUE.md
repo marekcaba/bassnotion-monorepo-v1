@@ -1,6 +1,7 @@
 # Drum Sample Loading Issue Summary
 
 ## Problem
+
 The DrummerWidget is not loading actual drum samples (.wav files) and is falling back to synthesized drums. The Tone.Sampler instances are never created, despite the samples existing in `/drum-kits/hydrogen/classic-808/`.
 
 ## Root Cause Analysis
@@ -34,6 +35,7 @@ The DrummerWidget is not loading actual drum samples (.wav files) and is falling
 ## MVP Approach
 
 For the MVP, the synthesized drums are actually working well:
+
 - Kick: MembraneSynth (good punch)
 - Snare: NoiseSynth (crisp attack)
 - Hihat: MetalSynth (bright metallic sound)
@@ -43,6 +45,7 @@ The user requested "3 samples weighing around 300kb total" - the synthesized dru
 ## Next Steps
 
 To load actual samples:
+
 1. Ensure AudioContext is resumed before sample loading
 2. Remove the `Tone.context.state === 'running'` condition
 3. Load samples after first user interaction

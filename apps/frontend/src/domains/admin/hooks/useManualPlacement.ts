@@ -27,7 +27,7 @@ export interface NotePlacement {
 export function useManualPlacement(
   measures: ParsedMeasure[],
   bassType: '4' | '5' | '6' = '4',
-  existingNotes?: GeneratedExerciseNote[]
+  existingNotes?: GeneratedExerciseNote[],
 ) {
   // Initialize placements from existing notes if provided
   const initialPlacements = useMemo(() => {
@@ -36,7 +36,10 @@ export function useManualPlacement(
     }
 
     // Convert existing notes back to placements structure
-    const placementsMap = new Map<number, Map<number, { string: number; fret: number }>>();
+    const placementsMap = new Map<
+      number,
+      Map<number, { string: number; fret: number }>
+    >();
 
     existingNotes.forEach((note, index) => {
       const measureNumber = note.measureNumber || note.position.measure;
@@ -45,13 +48,14 @@ export function useManualPlacement(
       }
 
       // Find the note index within the measure
-      const measure = measures.find(m => m.measureNumber === measureNumber);
+      const measure = measures.find((m) => m.measureNumber === measureNumber);
       if (measure) {
         // Match note by position/timing to get the correct noteIndex
-        const noteIndex = measure.notes.findIndex(midiNote =>
-          midiNote.position.measure === note.position.measure &&
-          midiNote.position.beat === note.position.beat &&
-          midiNote.position.subdivision === note.position.subdivision
+        const noteIndex = measure.notes.findIndex(
+          (midiNote) =>
+            midiNote.position.measure === note.position.measure &&
+            midiNote.position.beat === note.position.beat &&
+            midiNote.position.subdivision === note.position.subdivision,
         );
 
         if (noteIndex >= 0) {
@@ -67,9 +71,10 @@ export function useManualPlacement(
   }, [existingNotes, measures]);
 
   // Map of measureNumber -> Map of noteIndex -> {string, fret}
-  const [placements, setPlacements] = useState<Map<number, Map<number, { string: number; fret: number }>>>(
-    initialPlacements
-  );
+  const [placements, setPlacements] =
+    useState<Map<number, Map<number, { string: number; fret: number }>>>(
+      initialPlacements,
+    );
 
   // Current measure being edited (1-indexed)
   const [currentMeasureNumber, setCurrentMeasureNumber] = useState(1);
@@ -131,7 +136,8 @@ export function useManualPlacement(
    */
   const areAllMeasuresComplete = useMemo(() => {
     return measures.every((measure) => {
-      const measurePlacements = placements.get(measure.measureNumber) || new Map();
+      const measurePlacements =
+        placements.get(measure.measureNumber) || new Map();
       return isMeasureComplete(measure.notes.length, measurePlacements);
     });
   }, [measures, placements]);
@@ -144,12 +150,14 @@ export function useManualPlacement(
     let placedNotes = 0;
 
     measures.forEach((measure) => {
-      const measurePlacements = placements.get(measure.measureNumber) || new Map();
+      const measurePlacements =
+        placements.get(measure.measureNumber) || new Map();
       placedNotes += measurePlacements.size;
     });
 
     const completedMeasures = measures.filter((measure) => {
-      const measurePlacements = placements.get(measure.measureNumber) || new Map();
+      const measurePlacements =
+        placements.get(measure.measureNumber) || new Map();
       return isMeasureComplete(measure.notes.length, measurePlacements);
     }).length;
 
@@ -158,7 +166,8 @@ export function useManualPlacement(
       placedNotes,
       completedMeasures,
       totalMeasures: measures.length,
-      percentComplete: totalNotes > 0 ? Math.round((placedNotes / totalNotes) * 100) : 0,
+      percentComplete:
+        totalNotes > 0 ? Math.round((placedNotes / totalNotes) * 100) : 0,
     };
   }, [measures, placements]);
 
@@ -169,26 +178,38 @@ export function useManualPlacement(
   const placeNote = useCallback(
     (string: number, fret: number): boolean => {
       if (!currentNote || !currentMeasure) {
-        console.warn('[useManualPlacement] Cannot place note: no current note or measure');
+        console.warn(
+          '[useManualPlacement] Cannot place note: no current note or measure',
+        );
         return false;
       }
 
       // Optional: Warn if placement doesn't match expected pitch (but still allow it)
-      const isValid = validatePlacement(currentNote.pitch, string, fret, bassType);
+      const isValid = validatePlacement(
+        currentNote.pitch,
+        string,
+        fret,
+        bassType,
+      );
       if (!isValid) {
-        console.log('[useManualPlacement] Placing note at non-standard position (admin override)', {
-          notePitch: currentNote.pitch,
-          noteName: currentNote.name,
-          string,
-          fret,
-          bassType,
-        });
+        console.log(
+          '[useManualPlacement] Placing note at non-standard position (admin override)',
+          {
+            notePitch: currentNote.pitch,
+            noteName: currentNote.name,
+            string,
+            fret,
+            bassType,
+          },
+        );
       }
 
       // Add placement (always succeeds - admin knows what they're doing!)
       setPlacements((prev) => {
         const newPlacements = new Map(prev);
-        const measurePlacements = new Map(newPlacements.get(currentMeasureNumber) || new Map());
+        const measurePlacements = new Map(
+          newPlacements.get(currentMeasureNumber) || new Map(),
+        );
 
         measurePlacements.set(currentNoteIndex, { string, fret });
         newPlacements.set(currentMeasureNumber, measurePlacements);
@@ -198,7 +219,13 @@ export function useManualPlacement(
 
       return true;
     },
-    [currentNote, currentMeasure, currentMeasureNumber, currentNoteIndex, bassType]
+    [
+      currentNote,
+      currentMeasure,
+      currentMeasureNumber,
+      currentNoteIndex,
+      bassType,
+    ],
   );
 
   /**
@@ -207,14 +234,18 @@ export function useManualPlacement(
   const undoLastPlacement = useCallback(() => {
     setPlacements((prev) => {
       const newPlacements = new Map(prev);
-      const measurePlacements = new Map(newPlacements.get(currentMeasureNumber) || new Map());
+      const measurePlacements = new Map(
+        newPlacements.get(currentMeasureNumber) || new Map(),
+      );
 
       if (measurePlacements.size === 0) {
         return prev; // Nothing to undo
       }
 
       // Find highest note index and remove it
-      const indices = Array.from(measurePlacements.keys()).sort((a, b) => b - a);
+      const indices = Array.from(measurePlacements.keys()).sort(
+        (a, b) => b - a,
+      );
       const lastIndex = indices[0];
       measurePlacements.delete(lastIndex);
 
@@ -239,7 +270,9 @@ export function useManualPlacement(
    */
   const goToNextMeasure = useCallback(() => {
     const nextMeasureNumber = currentMeasureNumber + 1;
-    const nextMeasure = measures.find((m) => m.measureNumber === nextMeasureNumber);
+    const nextMeasure = measures.find(
+      (m) => m.measureNumber === nextMeasureNumber,
+    );
 
     if (nextMeasure) {
       setCurrentMeasureNumber(nextMeasureNumber);
@@ -251,7 +284,9 @@ export function useManualPlacement(
    */
   const goToPreviousMeasure = useCallback(() => {
     const prevMeasureNumber = currentMeasureNumber - 1;
-    const prevMeasure = measures.find((m) => m.measureNumber === prevMeasureNumber);
+    const prevMeasure = measures.find(
+      (m) => m.measureNumber === prevMeasureNumber,
+    );
 
     if (prevMeasure) {
       setCurrentMeasureNumber(prevMeasureNumber);
@@ -268,7 +303,7 @@ export function useManualPlacement(
         setCurrentMeasureNumber(measureNumber);
       }
     },
-    [measures]
+    [measures],
   );
 
   /**
@@ -282,7 +317,9 @@ export function useManualPlacement(
       const measurePlacements = placements.get(measure.measureNumber);
 
       if (!measurePlacements) {
-        console.warn(`[useManualPlacement] No placements for measure ${measure.measureNumber}`);
+        console.warn(
+          `[useManualPlacement] No placements for measure ${measure.measureNumber}`,
+        );
         return;
       }
 
@@ -292,7 +329,7 @@ export function useManualPlacement(
 
         if (!placement) {
           console.warn(
-            `[useManualPlacement] Missing placement for note ${index} in measure ${measure.measureNumber}`
+            `[useManualPlacement] Missing placement for note ${index} in measure ${measure.measureNumber}`,
           );
           return;
         }
@@ -302,7 +339,7 @@ export function useManualPlacement(
           placement.string,
           placement.fret,
           measure.measureNumber,
-          `note-${noteIdCounter++}`
+          `note-${noteIdCounter++}`,
         );
 
         notes.push(exerciseNote);

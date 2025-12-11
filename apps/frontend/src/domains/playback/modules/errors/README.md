@@ -9,6 +9,7 @@ This module provides a comprehensive error handling system for the playback doma
 ### 1. Domain-Specific Error Classes
 
 #### Error Hierarchy
+
 ```
 PlaybackError (base)
 ├── InstrumentError
@@ -53,16 +54,18 @@ PlaybackError (base)
 ### 2. Error Recovery System
 
 The `ErrorRecoveryRegistry` provides:
+
 - **Priority-based recovery strategies**: Higher priority strategies are tried first
 - **Adaptive strategy selection**: Learns from success rates and recovery times
 - **Domain-specific recovery strategies**: Tailored recovery for each error type
 - **Recovery metrics**: Tracks effectiveness of each strategy
 
 #### Recovery Strategy Example
+
 ```typescript
 const registry = new ErrorRecoveryRegistry(eventBus, {
   enableMetrics: true,
-  strategySelectionMode: 'adaptive'
+  strategySelectionMode: 'adaptive',
 });
 
 // Strategies are automatically registered for:
@@ -78,6 +81,7 @@ const registry = new ErrorRecoveryRegistry(eventBus, {
 The `CircuitBreakerIntegration` protects critical paths:
 
 #### Protected Paths
+
 - **Storage Operations**: Connection, upload, download, auth
 - **Audio Initialization**: Context, instruments, samples, plugins
 - **External APIs**: CDN access, edge locations, analytics
@@ -85,6 +89,7 @@ The `CircuitBreakerIntegration` protects critical paths:
 - **Transport**: Clock sync, worklet init, widget sync
 
 #### Circuit Breaker Features
+
 - **Adaptive thresholds**: Adjusts based on failure patterns
 - **Health checks**: Proactive recovery detection
 - **Fallback operations**: Graceful degradation
@@ -93,6 +98,7 @@ The `CircuitBreakerIntegration` protects critical paths:
 ### 4. Error Reporting Service
 
 The `ErrorReportingService` provides:
+
 - **Error deduplication**: Prevents spam from repeated errors
 - **Trend analysis**: Tracks error patterns over time
 - **Batch reporting**: Efficient remote error submission
@@ -104,7 +110,10 @@ The `ErrorReportingService` provides:
 ### Basic Error Handling
 
 ```typescript
-import { InstrumentError, InstrumentErrorCode } from '@/domains/playback/modules/errors';
+import {
+  InstrumentError,
+  InstrumentErrorCode,
+} from '@/domains/playback/modules/errors';
 
 // Throw domain-specific error
 throw new InstrumentError(
@@ -112,7 +121,7 @@ throw new InstrumentError(
   'Failed to initialize sampler',
   'sampler',
   'bass-sampler-1',
-  originalError
+  originalError,
 );
 ```
 
@@ -128,9 +137,9 @@ try {
 } catch (error) {
   const recovered = await registry.attempt(error, {
     component: 'MyComponent',
-    operation: 'riskyOperation'
+    operation: 'riskyOperation',
   });
-  
+
   if (!recovered) {
     // Handle unrecoverable error
   }
@@ -140,7 +149,10 @@ try {
 ### Circuit Breaker Protection
 
 ```typescript
-import { CircuitBreakerIntegration, CriticalPath } from '@/domains/playback/modules/errors';
+import {
+  CircuitBreakerIntegration,
+  CriticalPath,
+} from '@/domains/playback/modules/errors';
 
 const breakers = new CircuitBreakerIntegration(eventBus);
 
@@ -150,7 +162,7 @@ await breakers.executeWithBreaker(
   async () => {
     return await downloadFile(path);
   },
-  'download-operation'
+  'download-operation',
 );
 ```
 
@@ -164,17 +176,14 @@ function MyComponent() {
     component: 'MyComponent',
     enableRecovery: true,
     enableCircuitBreaker: true,
-    criticalPath: CriticalPath.AUDIO_CONTEXT_INIT
+    criticalPath: CriticalPath.AUDIO_CONTEXT_INIT,
   });
-  
+
   const handleOperation = async () => {
     try {
-      await executeWithErrorHandling(
-        async () => {
-          // Your operation
-        },
-        'operation-name'
-      );
+      await executeWithErrorHandling(async () => {
+        // Your operation
+      }, 'operation-name');
     } catch (error) {
       // Error already reported and recovery attempted
     }
@@ -185,6 +194,7 @@ function MyComponent() {
 ## Error Codes
 
 ### Instrument Errors
+
 - `INSTRUMENT_INIT_FAILED`: Instrument initialization failure
 - `SAMPLER_INIT_FAILED`: Sampler initialization failure
 - `SYNTH_INIT_FAILED`: Synthesizer initialization failure
@@ -195,6 +205,7 @@ function MyComponent() {
 - `CPU_OVERLOAD`: CPU usage threshold exceeded
 
 ### MIDI Errors
+
 - `MIDI_INVALID_FILE`: Invalid MIDI file format
 - `MIDI_PARSE_FAILURE`: MIDI parsing failure
 - `MIDI_INVALID_EVENT`: Invalid MIDI event
@@ -202,6 +213,7 @@ function MyComponent() {
 - `MIDI_TRANSFORM_FAILURE`: MIDI transformation failure
 
 ### Storage Errors
+
 - `STORAGE_CONNECTION_FAILED`: Storage service connection failure
 - `STORAGE_AUTH_FAILED`: Storage authentication failure
 - `STORAGE_UPLOAD_FAILED`: File upload failure
@@ -211,6 +223,7 @@ function MyComponent() {
 - `STORAGE_CIRCUIT_BREAKER_OPEN`: Circuit breaker preventing operations
 
 ### Transport Errors
+
 - `TRANSPORT_CLOCK_SYNC_FAILED`: Clock synchronization failure
 - `TRANSPORT_SCHEDULE_FAILED`: Event scheduling failure
 - `TRANSPORT_TIMELINE_INVALID`: Timeline operation invalid
@@ -220,6 +233,7 @@ function MyComponent() {
 ## Configuration
 
 ### Error Recovery Configuration
+
 ```typescript
 {
   maxRecoveryAttempts: 3,
@@ -230,6 +244,7 @@ function MyComponent() {
 ```
 
 ### Circuit Breaker Configuration
+
 ```typescript
 {
   failureThreshold: 5,
@@ -246,6 +261,7 @@ function MyComponent() {
 ```
 
 ### Error Reporting Configuration
+
 ```typescript
 {
   enableDeduplication: true,
@@ -260,6 +276,7 @@ function MyComponent() {
 ## Monitoring
 
 ### Error Metrics
+
 - Total error count by type and severity
 - Error trends over 1h, 24h, and 7d periods
 - Recovery success rates by strategy
@@ -267,7 +284,9 @@ function MyComponent() {
 - Top errors by frequency
 
 ### Events
+
 The system emits events for monitoring:
+
 - `error:reported`: When an error is reported
 - `recovery:strategy-success`: When recovery succeeds
 - `recovery:strategy-failed`: When recovery fails
@@ -287,6 +306,7 @@ The system emits events for monitoring:
 ## Migration Guide
 
 ### From Generic Errors
+
 ```typescript
 // Before
 throw new Error('Failed to load instrument');
@@ -296,11 +316,12 @@ throw new InstrumentError(
   InstrumentErrorCode.INSTRUMENT_INIT_FAILED,
   'Failed to load instrument',
   'sampler',
-  instrumentId
+  instrumentId,
 );
 ```
 
 ### From Try-Catch to Recovery
+
 ```typescript
 // Before
 try {
@@ -322,6 +343,7 @@ try {
 ```
 
 ### Adding Circuit Breakers
+
 ```typescript
 // Before
 const data = await fetchFromCDN(url);
@@ -329,6 +351,6 @@ const data = await fetchFromCDN(url);
 // After
 const data = await circuitBreakers.executeWithBreaker(
   CriticalPath.CDN_ACCESS,
-  () => fetchFromCDN(url)
+  () => fetchFromCDN(url),
 );
 ```

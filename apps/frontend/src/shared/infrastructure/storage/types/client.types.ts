@@ -1,6 +1,6 @@
 /**
  * Client Management Types
- * 
+ *
  * Types for managing storage client connections, pooling,
  * failover, and geographic optimization.
  */

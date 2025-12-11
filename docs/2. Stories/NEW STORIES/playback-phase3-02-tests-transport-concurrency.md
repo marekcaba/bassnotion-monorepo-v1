@@ -5,12 +5,15 @@
 ---
 
 ## Story Objective
+
 Develop automated tests to cover concurrent operations and state transitions in the Transport module, catching race conditions and concurrency bugs.
 
 ## Background/Context
+
 - Transport state machine has concurrency risks and lacks thorough tests for such scenarios (assessment, Phase 3-2).
 
 ## Requirements
+
 - Identify and document all core Transport entry points susceptible to concurrent access/modification.
 - Write tests simulating concurrent (or rapidly sequenced) commands/operations.
 - Ensure race conditions, edge states, and error recovery are exercised.
@@ -18,6 +21,7 @@ Develop automated tests to cover concurrent operations and state transitions in 
 - Coverage report must show concurrent scenarios explicitly.
 
 ## Acceptance Criteria
+
 - [ ] All critical concurrent/parallel access paths are tested.
 - [ ] Errors or state corruption due to hazards are surfaced and regressed.
 - [ ] Coverage report updated, new tests called out.
@@ -26,5 +30,5 @@ Develop automated tests to cover concurrent operations and state transitions in 
 ---
 
 ## Notes
-- Related files: `src/domains/playback/transport/`, any concurrent transport APIs or hooks
 
+- Related files: `src/domains/playback/transport/`, any concurrent transport APIs or hooks

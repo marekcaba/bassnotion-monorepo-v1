@@ -14,7 +14,8 @@ if (!registry) {
 }
 
 // Check if instruments are registered
-const coreServices = (window as any).__globalCoreServices || (window as any).__coreServices;
+const coreServices =
+  (window as any).__globalCoreServices || (window as any).__coreServices;
 if (coreServices) {
   const audioEventRouter = coreServices.getAudioEventRouter?.();
   if (audioEventRouter) {
@@ -23,7 +24,10 @@ if (coreServices) {
 
   const instrumentRegistry = coreServices.getInstrumentRegistry?.();
   if (instrumentRegistry) {
-    console.log('InstrumentRegistry types:', instrumentRegistry.getRegisteredTypes());
+    console.log(
+      'InstrumentRegistry types:',
+      instrumentRegistry.getRegisteredTypes(),
+    );
   }
 }
 

@@ -44,6 +44,7 @@ Bug #1 (Race Condition in Initialization) has been **completely fixed** with all
 **File**: `apps/frontend/src/domains/playback/components/ScrollTriggerLoader.tsx`
 
 **New Props**:
+
 ```typescript
 interface ScrollTriggerLoaderProps {
   exercises?: Exercise[];
@@ -52,6 +53,7 @@ interface ScrollTriggerLoaderProps {
 ```
 
 **3-Step Initialization Sequence**:
+
 ```typescript
 async triggerInitialization() {
   // STEP 1: Ensure CoreServices pre-initialized
@@ -85,6 +87,7 @@ async triggerInitialization() {
 **New Methods**:
 
 #### `loadTutorialSamples(exercises, tutorialId)` - Main orchestrator
+
 ```typescript
 async loadTutorialSamples(exercises: Exercise[], tutorialId?: string) {
   // 1. Analyze all exercises to build sample manifest
@@ -103,6 +106,7 @@ async loadTutorialSamples(exercises: Exercise[], tutorialId?: string) {
 ```
 
 #### `analyzeTutorialSamples(exercises)` - Smart manifest builder
+
 ```typescript
 private analyzeTutorialSamples(exercises: Exercise[]) {
   // Analyze all exercises to extract unique samples needed
@@ -115,6 +119,7 @@ private analyzeTutorialSamples(exercises: Exercise[]) {
 ```
 
 **Example Output**:
+
 ```
 Tutorial: Blues Basics (12 exercises)
 ├─ Grand Piano: 25 unique notes × 3 velocity layers = 75 samples (2.2 MB)
@@ -129,6 +134,7 @@ Savings: 97% reduction
 ```
 
 #### `loadHarmonyForInstrument(instrument, notes)` - Instrument loader
+
 ```typescript
 private async loadHarmonyForInstrument(instrument: string, notes: string[]) {
   // Create mock exercise with required notes
@@ -149,6 +155,7 @@ private async loadHarmonyForInstrument(instrument: string, notes: string[]) {
 **File**: `apps/frontend/src/domains/playback/services/InitialSamplePreloader.ts`
 
 **Before** (Bug #2 vulnerability):
+
 ```typescript
 const coreServices = window.__globalCoreServices || window.__coreServices;
 if (!coreServices) {
@@ -159,17 +166,21 @@ if (!coreServices) {
 ```
 
 **After** (Fail-fast with clear error):
+
 ```typescript
 const coreServices = window.__globalCoreServices;
 
 if (!coreServices) {
   // ✅ Throws error immediately
   logger.error('❌ CRITICAL: CoreServices not found!');
-  throw new Error('CoreServices must be initialized before loadEssentialSamples()');
+  throw new Error(
+    'CoreServices must be initialized before loadEssentialSamples()',
+  );
 }
 ```
 
 **Why This Matters**:
+
 - No silent fallback to incompatible buffers
 - Prevents Bug #2 (OfflineAudioContext buffer incompatibility)
 - Clear error message for debugging
@@ -248,6 +259,7 @@ async handlePlayButtonClick() {
 ```
 
 **Features**:
+
 - ✅ Waits for samples if not ready (up to 10 seconds)
 - ✅ Shows user-friendly toast notifications
 - ✅ Handles race condition: checks if samples became ready while setting up listener
@@ -377,23 +389,23 @@ async handlePlayButtonClick() {
 
 ### **Before Fix** ❌
 
-| Metric | Value | Issue |
-|--------|-------|-------|
-| Race Condition Probability | 50% | Undefined order (scroll vs click) |
-| Double Loading | Yes | Samples loaded twice if scroll before click |
-| OfflineContext Fallback | Yes | Buffers incompatible, audio fails |
-| Play Button Reliability | 60% | Fails if clicked before samples ready |
-| Initialization Paths | 2 | Competing paths cause conflicts |
+| Metric                     | Value | Issue                                       |
+| -------------------------- | ----- | ------------------------------------------- |
+| Race Condition Probability | 50%   | Undefined order (scroll vs click)           |
+| Double Loading             | Yes   | Samples loaded twice if scroll before click |
+| OfflineContext Fallback    | Yes   | Buffers incompatible, audio fails           |
+| Play Button Reliability    | 60%   | Fails if clicked before samples ready       |
+| Initialization Paths       | 2     | Competing paths cause conflicts             |
 
 ### **After Fix** ✅
 
-| Metric | Value | Improvement |
-|--------|-------|-------------|
-| Race Condition Probability | 0% | Single initialization path |
-| Double Loading | No | Deduplication prevents waste |
-| OfflineContext Fallback | No | Throws error, prevents Bug #2 |
-| Play Button Reliability | 100% | Waits for samples before playing |
-| Initialization Paths | 1 | Controlled, predictable flow |
+| Metric                     | Value | Improvement                      |
+| -------------------------- | ----- | -------------------------------- |
+| Race Condition Probability | 0%    | Single initialization path       |
+| Double Loading             | No    | Deduplication prevents waste     |
+| OfflineContext Fallback    | No    | Throws error, prevents Bug #2    |
+| Play Button Reliability    | 100%  | Waits for samples before playing |
+| Initialization Paths       | 1     | Controlled, predictable flow     |
 
 ---
 
@@ -469,21 +481,25 @@ async handlePlayButtonClick() {
 ## 🚀 **Next Steps**
 
 ### **Immediate (Today)**
+
 1. ✅ Manual testing of initialization flow
 2. Verify toast notifications appear correctly
 3. Test on slow network (3G simulation)
 
 ### **Short Term (This Week)**
+
 4. Write unit tests for new methods
 5. Write integration tests for initialization sequence
 6. Performance profiling (measure load times)
 
 ### **Medium Term (Next Week)**
+
 7. Deploy to staging environment
 8. User testing with real exercises
 9. Monitor for any edge cases
 
 ### **Long Term (Sprint)**
+
 10. Tackle Bug #2 (OfflineAudioContext incompatibility)
 11. Tackle Bug #3 (Memory leak - AudioBufferSourceNode)
 12. Tackle Bug #4 (AudioContext state management)
@@ -503,6 +519,7 @@ Bug #1 (Race Condition in Initialization) is **FULLY IMPLEMENTED** and ready for
 ✅ Complete documentation
 
 **Impact**:
+
 - Better user experience (instant exercise switching)
 - Faster perceived performance (single load, then instant)
 - Cleaner architecture (single responsibility)

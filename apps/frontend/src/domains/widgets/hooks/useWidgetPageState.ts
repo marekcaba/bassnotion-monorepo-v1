@@ -127,8 +127,12 @@ let prevStateRef: WidgetPageState | null = null;
 export function useWidgetPageState() {
   renderCount++;
   // Only log in development with debug mode enabled
-  if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_LOG_LEVEL === 'DEBUG') {
-    if (renderCount % 100 === 0) { // Reduced frequency
+  if (
+    process.env.NODE_ENV === 'development' &&
+    process.env.NEXT_PUBLIC_LOG_LEVEL === 'DEBUG'
+  ) {
+    if (renderCount % 100 === 0) {
+      // Reduced frequency
       logger.debug(`useWidgetPageState render count: ${renderCount}`);
     }
   }
@@ -136,15 +140,22 @@ export function useWidgetPageState() {
   const [state, setState] = useState<WidgetPageState>(initialState);
 
   // Only track state changes in debug mode
-  if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_LOG_LEVEL === 'DEBUG') {
+  if (
+    process.env.NODE_ENV === 'development' &&
+    process.env.NEXT_PUBLIC_LOG_LEVEL === 'DEBUG'
+  ) {
     if (renderCount % 100 === 0 && prevStateRef) {
       const changes: string[] = [];
       if (prevStateRef.isPlaying !== state.isPlaying)
-        changes.push(`isPlaying: ${prevStateRef.isPlaying} -> ${state.isPlaying}`);
+        changes.push(
+          `isPlaying: ${prevStateRef.isPlaying} -> ${state.isPlaying}`,
+        );
       if (prevStateRef.tempo !== state.tempo)
         changes.push(`tempo: ${prevStateRef.tempo} -> ${state.tempo}`);
       if (prevStateRef.selectedExercise?.id !== state.selectedExercise?.id)
-        changes.push(`exercise: ${prevStateRef.selectedExercise?.id} -> ${state.selectedExercise?.id}`);
+        changes.push(
+          `exercise: ${prevStateRef.selectedExercise?.id} -> ${state.selectedExercise?.id}`,
+        );
 
       if (changes.length > 0) {
         logger.debug('State changes:', changes);

@@ -13,7 +13,9 @@ console.log('🎹 Grand Piano Configuration Test\n');
 console.log('='.repeat(50));
 console.log(`Name: ${grandPianoConfig.name}`);
 console.log(`Version: ${grandPianoConfig.version}`);
-console.log(`Total Keys: ${Object.keys(grandPianoConfig.sampleMapping).length}`);
+console.log(
+  `Total Keys: ${Object.keys(grandPianoConfig.sampleMapping).length}`,
+);
 console.log('='.repeat(50));
 
 // Test velocity layer distribution
@@ -26,7 +28,7 @@ velocityRanges.forEach((range, index) => {
   const count = range.max - range.min + 1;
   totalCoverage += count;
   console.log(
-    `${range.layer}: ${String(range.min).padStart(3)} - ${String(range.max).padStart(3)} (${count} values)`
+    `${range.layer}: ${String(range.min).padStart(3)} - ${String(range.max).padStart(3)} (${count} values)`,
   );
 });
 
@@ -105,7 +107,9 @@ function getLayerForVelocity(velocity: number): string {
   return range ? range.layer : 'v4';
 }
 
-const testVelocities = [0, 1, 18, 19, 36, 37, 54, 55, 72, 73, 90, 91, 108, 109, 126, 127];
+const testVelocities = [
+  0, 1, 18, 19, 36, 37, 54, 55, 72, 73, 90, 91, 108, 109, 126, 127,
+];
 
 testVelocities.forEach((vel) => {
   const layer = getLayerForVelocity(vel);

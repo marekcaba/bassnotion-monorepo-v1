@@ -1,6 +1,6 @@
 /**
  * Optimized Next.js Configuration
- * 
+ *
  * Performance optimizations for production builds
  */
 
@@ -61,15 +61,15 @@ const nextConfig = {
       '.jsx': ['.tsx', '.jsx'],
       '.mjs': ['.mts', '.mjs'],
     };
-    
+
     // Production optimizations
     if (!dev && !isServer) {
       // Enable module concatenation
       config.optimization.concatenateModules = true;
-      
+
       // Minimize bundle size
       config.optimization.minimize = true;
-      
+
       // Advanced chunk splitting
       config.optimization.splitChunks = {
         chunks: 'all',
@@ -84,7 +84,7 @@ const nextConfig = {
             priority: 50,
             reuseExistingChunk: true,
           },
-          
+
           // Tone.js chunks - split for parallel loading
           toneCore: {
             test: /[\\/]node_modules[\\/]tone[\\/]build[\\/]esm[\\/]core[\\/]/,
@@ -107,7 +107,7 @@ const nextConfig = {
             reuseExistingChunk: true,
             enforce: true,
           },
-          
+
           // Three.js chunks
           three: {
             test: /[\\/]node_modules[\\/]three[\\/]/,
@@ -121,7 +121,7 @@ const nextConfig = {
             priority: 30,
             reuseExistingChunk: true,
           },
-          
+
           // UI library chunks
           radixUI: {
             test: /[\\/]node_modules[\\/]@radix-ui[\\/]/,
@@ -129,7 +129,7 @@ const nextConfig = {
             priority: 25,
             reuseExistingChunk: true,
           },
-          
+
           // Playback domain chunks
           playbackCore: {
             test: /[\\/]src[\\/]domains[\\/]playback[\\/]modules[\\/](audio-engine|transport)[\\/]/,
@@ -149,18 +149,20 @@ const nextConfig = {
             priority: 10,
             reuseExistingChunk: true,
           },
-          
+
           // Common vendor chunk
           vendor: {
             test: /[\\/]node_modules[\\/]/,
             name(module) {
-              const packageName = module.context.match(/[\\/]node_modules[\\/](.*?)([\\/]|$)/)[1];
+              const packageName = module.context.match(
+                /[\\/]node_modules[\\/](.*?)([\\/]|$)/,
+              )[1];
               return `vendor-${packageName.replace('@', '')}`;
             },
             priority: 5,
             minChunks: 2,
           },
-          
+
           // Default chunk
           default: {
             minChunks: 2,
@@ -169,14 +171,14 @@ const nextConfig = {
           },
         },
       };
-      
+
       // Add bundle size warnings
       config.performance = {
         hints: 'warning',
         maxEntrypointSize: 512000, // 500KB
         maxAssetSize: 512000,
       };
-      
+
       // Add webpack bundle analyzer
       if (process.env.ANALYZE === 'true') {
         const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
@@ -186,11 +188,11 @@ const nextConfig = {
             reportFilename: './analyze.html',
             generateStatsFile: true,
             statsFilename: './stats.json',
-          })
+          }),
         );
       }
     }
-    
+
     // Add aliases for cleaner imports
     config.resolve.alias = {
       ...config.resolve.alias,
@@ -204,7 +206,8 @@ const nextConfig = {
 
   // Configure API routes
   async rewrites() {
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    const backendUrl =
+      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
     return [
       {
         source: '/api/:path*',

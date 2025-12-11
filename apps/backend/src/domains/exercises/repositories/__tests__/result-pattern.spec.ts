@@ -47,8 +47,11 @@ describe('ResultExerciseRepository', () => {
       }),
       getCorrelationId: vi.fn().mockReturnValue('test-correlation-id'),
     };
-    
-    repository = new ResultExerciseRepository(mockBaseRepository, mockRequestContextService as any);
+
+    repository = new ResultExerciseRepository(
+      mockBaseRepository,
+      mockRequestContextService as any,
+    );
   });
 
   describe('findById', () => {

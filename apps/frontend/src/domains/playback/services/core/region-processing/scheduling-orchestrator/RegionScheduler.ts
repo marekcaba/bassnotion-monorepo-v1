@@ -205,7 +205,10 @@ export class RegionScheduler {
 
           // Extract tick from original position if available (not in ParsedPosition interface)
           let tick = 0;
-          if (typeof event.position === 'object' && (event.position as any).tick !== undefined) {
+          if (
+            typeof event.position === 'object' &&
+            (event.position as any).tick !== undefined
+          ) {
             tick = (event.position as any).tick;
           } else if (typeof event.position === 'string') {
             const parts = event.position.split(':');

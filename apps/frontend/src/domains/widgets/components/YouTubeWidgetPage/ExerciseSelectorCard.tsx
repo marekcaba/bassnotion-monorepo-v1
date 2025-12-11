@@ -95,7 +95,8 @@ const difficultyConfig = {
 // Helper function to get difficulty config with fallback
 function getDifficultyConfig(difficulty: any) {
   // Handle both string and Difficulty object with value property
-  const difficultyValue = typeof difficulty === 'object' ? difficulty?.value : difficulty;
+  const difficultyValue =
+    typeof difficulty === 'object' ? difficulty?.value : difficulty;
   const normalizedDifficulty = difficultyValue?.toLowerCase();
   if (normalizedDifficulty in difficultyConfig) {
     return difficultyConfig[
@@ -338,19 +339,26 @@ function ExerciseSelectorCardContent({
                         <div className="flex items-center gap-3 text-xs text-slate-400">
                           <div className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
-                            <span>{formatDurationInBars(exercise.total_bars)}</span>
+                            <span>
+                              {formatDurationInBars(exercise.total_bars)}
+                            </span>
                           </div>
                           <div className="flex items-center gap-1">
                             <Music className="w-3 h-3" />
                             <span>
-                              {exercise.bpm !== undefined && exercise.bpm !== null && exercise.bpm !== 0
+                              {exercise.bpm !== undefined &&
+                              exercise.bpm !== null &&
+                              exercise.bpm !== 0
                                 ? `${exercise.bpm} BPM`
                                 : '-- BPM'}
                             </span>
                           </div>
                           <div className="flex items-center gap-1">
                             <span>
-                              Key: {exercise.key && exercise.key !== '' ? exercise.key : 'N/A'}
+                              Key:{' '}
+                              {exercise.key && exercise.key !== ''
+                                ? exercise.key
+                                : 'N/A'}
                             </span>
                           </div>
                           {exercise.midi_file_path && (

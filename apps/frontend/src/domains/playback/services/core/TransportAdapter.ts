@@ -253,11 +253,14 @@ export class TransportAdapter {
    * @param beats Number of beats in countdown (e.g., 4 for one measure of 4/4)
    */
   setCountdownBeats(beats: number): void {
-    console.log('🎯 [COUNTDOWN FIX] TransportAdapter.setCountdownBeats() called', {
-      beats,
-      timestamp: Date.now(),
-      stack: new Error().stack?.split('\n').slice(2, 5).join('\n'),
-    });
+    console.log(
+      '🎯 [COUNTDOWN FIX] TransportAdapter.setCountdownBeats() called',
+      {
+        beats,
+        timestamp: Date.now(),
+        stack: new Error().stack?.split('\n').slice(2, 5).join('\n'),
+      },
+    );
     this.controller.setCountdownBeats(beats);
   }
 

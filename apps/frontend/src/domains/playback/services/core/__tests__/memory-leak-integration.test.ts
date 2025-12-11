@@ -61,11 +61,16 @@ describe('Bug #3: Memory Leak Integration Tests', () => {
     };
 
     // Create mock GainNode factory
-    const createMockGain = () => ({
-      gain: { value: 1.0, setValueAtTime: vi.fn(), linearRampToValueAtTime: vi.fn() },
-      connect: vi.fn(),
-      disconnect: vi.fn(),
-    }) as unknown as GainNode;
+    const createMockGain = () =>
+      ({
+        gain: {
+          value: 1.0,
+          setValueAtTime: vi.fn(),
+          linearRampToValueAtTime: vi.fn(),
+        },
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+      }) as unknown as GainNode;
 
     // Create mock AudioContext
     mockAudioContext = {
@@ -96,7 +101,10 @@ describe('Bug #3: Memory Leak Integration Tests', () => {
        */
 
       const totalEvents = 3640;
-      const trackingMap = new Map<AudioBufferSourceNode, { type: string; cleaned: boolean }>();
+      const trackingMap = new Map<
+        AudioBufferSourceNode,
+        { type: string; cleaned: boolean }
+      >();
 
       // Simulate scheduling events with cleanup
       for (let i = 0; i < totalEvents; i++) {

@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 
 export const rootMetadata: Metadata = {
   title: {
-    default: 'BassNotion',
-    template: '%s | BassNotion',
+    default: 'Bassicology',
+    template: '%s | Bassicology',
   },
   description:
     'Learn bass guitar with AI-powered tools and interactive exercises.',
@@ -16,9 +16,9 @@ export const rootMetadata: Metadata = {
     'music education',
     'bass practice',
   ],
-  authors: [{ name: 'BassNotion Team' }],
-  creator: 'BassNotion',
-  publisher: 'BassNotion',
+  authors: [{ name: 'Bassicology Team' }],
+  creator: 'Bassicology',
+  publisher: 'Bassicology',
   robots: {
     index: true,
     follow: true,
@@ -29,8 +29,8 @@ export const rootMetadata: Metadata = {
   },
   openGraph: {
     type: 'website',
-    siteName: 'BassNotion',
-    title: 'BassNotion - AI-Powered Bass Learning Platform',
+    siteName: 'Bassicology',
+    title: 'Bassicology - AI-Powered Bass Learning Platform',
     description:
       'Learn bass guitar with AI-powered tools and interactive exercises.',
     images: [
@@ -38,13 +38,13 @@ export const rootMetadata: Metadata = {
         url: '/images/bassnotion-og.jpg',
         width: 1200,
         height: 630,
-        alt: 'BassNotion - AI-Powered Bass Learning Platform',
+        alt: 'Bassicology - AI-Powered Bass Learning Platform',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'BassNotion - AI-Powered Bass Learning Platform',
+    title: 'Bassicology - AI-Powered Bass Learning Platform',
     description:
       'Learn bass guitar with AI-powered tools and interactive exercises.',
     images: ['/images/bassnotion-og.jpg'],

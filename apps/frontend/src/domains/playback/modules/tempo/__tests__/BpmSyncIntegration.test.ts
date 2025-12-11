@@ -112,7 +112,10 @@ describe('BPM Sync Integration', () => {
 
       musicalTruth.setFromExercise(exercise);
 
-      expect(musicalTruth.getTimeSignature()).toEqual({ numerator: 3, denominator: 4 });
+      expect(musicalTruth.getTimeSignature()).toEqual({
+        numerator: 3,
+        denominator: 4,
+      });
       expect(Tone.Transport.timeSignature).toBe(3);
     });
 
@@ -190,7 +193,7 @@ describe('BPM Sync Integration', () => {
       musicalTruth.setFromExercise(exercise);
 
       expect(subscriber).toHaveBeenCalledWith(
-        expect.objectContaining({ bpm: 85 })
+        expect.objectContaining({ bpm: 85 }),
       );
 
       unsubscribe();
@@ -202,7 +205,10 @@ describe('BPM Sync Integration', () => {
       eventBus.on('transport:tempo-change', transportContextHandler);
 
       // Simulate GlobalControls behavior
-      const exercise = { bpm: 75, timeSignature: { numerator: 4, denominator: 4 } };
+      const exercise = {
+        bpm: 75,
+        timeSignature: { numerator: 4, denominator: 4 },
+      };
       musicalTruth.setFromExercise(exercise);
       eventBus.emit('transport:tempo-change', { tempo: exercise.bpm });
 
@@ -248,7 +254,10 @@ describe('BPM Sync Integration', () => {
       musicalTruth.setFromExercise(fullExercise);
 
       expect(musicalTruth.getBPM()).toBe(95);
-      expect(musicalTruth.getTimeSignature()).toEqual({ numerator: 6, denominator: 8 });
+      expect(musicalTruth.getTimeSignature()).toEqual({
+        numerator: 6,
+        denominator: 8,
+      });
       expect(musicalTruth.getDurationBars()).toBe(16);
       expect(Tone.Transport.bpm.value).toBe(95);
       expect(Tone.Transport.timeSignature).toBe(6);
@@ -404,9 +413,11 @@ describe('TransportController.setTempo() - User Tempo Changes', () => {
     Tone.Transport.bpm.value = 69;
 
     // Import TransportController for direct testing
-    const { TransportController } = await import('../../transport/core/TransportController.js');
+    const { TransportController } =
+      await import('../../transport/core/TransportController.js');
     const { EventBus } = await import('../../../services/core/EventBus.js');
-    const { AudioEngine } = await import('../../audio-engine/core/AudioEngine.js');
+    const { AudioEngine } =
+      await import('../../audio-engine/core/AudioEngine.js');
 
     // Create minimal dependencies
     const eventBus = new EventBus();
@@ -432,9 +443,11 @@ describe('TransportController.setTempo() - User Tempo Changes', () => {
   });
 
   it('should emit tempo-change event when user changes tempo', async () => {
-    const { TransportController } = await import('../../transport/core/TransportController.js');
+    const { TransportController } =
+      await import('../../transport/core/TransportController.js');
     const { EventBus } = await import('../../../services/core/EventBus.js');
-    const { AudioEngine } = await import('../../audio-engine/core/AudioEngine.js');
+    const { AudioEngine } =
+      await import('../../audio-engine/core/AudioEngine.js');
 
     const eventBus = new EventBus();
     const audioEngine = {
@@ -458,7 +471,7 @@ describe('TransportController.setTempo() - User Tempo Changes', () => {
     // EventBus passes (data, metadata) as two arguments
     expect(tempoHandler).toHaveBeenCalledWith(
       { bpm: 140, tempo: 140 },
-      expect.objectContaining({ eventId: expect.any(String) })
+      expect.objectContaining({ eventId: expect.any(String) }),
     );
   });
 });
@@ -486,11 +499,13 @@ describe('PlaybackEngine.reschedulePendingEvents() - All Tracks Tempo Sync', () 
    *    - Reschedule ALL tracks at new tempo
    * 5. Without the fix, harmony kept playing at 69 BPM!
    */
-  it('should stop harmony sources when rescheduling after tempo change', async () => {
-    // This test verifies the fix was applied by checking that
-    // PlaybackEngine calls harmonyScheduler.stopAll() during reschedule
+  it('should clear scheduled state when rescheduling after tempo change', async () => {
+    // This test verifies that PlaybackEngine clears scheduled events during reschedule
+    // Note: The architecture has evolved - harmonyScheduler.stopAll() is no longer called
+    // directly in reschedulePendingEvents(). Instead, clearScheduledState() is used.
 
-    const { PlaybackEngine } = await import('../../../services/core/PlaybackEngine.js');
+    const { PlaybackEngine } =
+      await import('../../../services/core/PlaybackEngine.js');
     const { EventBus } = await import('../../../services/core/EventBus.js');
 
     const eventBus = new EventBus();
@@ -498,33 +513,29 @@ describe('PlaybackEngine.reschedulePendingEvents() - All Tracks Tempo Sync', () 
     // Create PlaybackEngine instance
     const playbackEngine = new PlaybackEngine(eventBus);
 
-    // Create mock harmonyScheduler to track stopAll calls
-    const mockStopAll = vi.fn();
-    (playbackEngine as any).harmonyScheduler = {
-      stopAll: mockStopAll,
-      setAudioContext: vi.fn(),
-      setBuffers: vi.fn(),
-      schedule: vi.fn(),
-    };
-
     // Set up minimal state for rescheduling
     (playbackEngine as any).isRunning = true;
     (playbackEngine as any).regionScheduler = {
       scheduleAll: vi.fn().mockReturnValue({ totalEvents: 0, batchCount: 0 }),
     };
     (playbackEngine as any).tracks = new Map();
-    (playbackEngine as any).scheduledIds = new Set();
-    (playbackEngine as any).scheduledEvents = new Map();
 
-    // Trigger reschedulePendingEvents (the method we fixed)
+    // Add some scheduled IDs to verify they get cleared
+    const scheduledIds = new Set([1, 2, 3]);
+    (playbackEngine as any).scheduledIds = scheduledIds;
+    (playbackEngine as any).scheduledEvents = new Map([['event1', {}]]);
+
+    // Trigger reschedulePendingEvents (the method we're testing)
     (playbackEngine as any).reschedulePendingEvents();
 
-    // CRITICAL: harmonyScheduler.stopAll() MUST be called
-    expect(mockStopAll).toHaveBeenCalledTimes(1);
+    // CRITICAL: scheduledIds and scheduledEvents MUST be cleared
+    expect((playbackEngine as any).scheduledIds.size).toBe(0);
+    expect((playbackEngine as any).scheduledEvents.size).toBe(0);
   });
 
-  it('should reschedule all regions after stopping harmony', async () => {
-    const { PlaybackEngine } = await import('../../../services/core/PlaybackEngine.js');
+  it('should clear state then reschedule all regions after tempo change', async () => {
+    const { PlaybackEngine } =
+      await import('../../../services/core/PlaybackEngine.js');
     const { EventBus } = await import('../../../services/core/EventBus.js');
 
     const eventBus = new EventBus();
@@ -533,11 +544,15 @@ describe('PlaybackEngine.reschedulePendingEvents() - All Tracks Tempo Sync', () 
     // Track call order
     const callOrder: string[] = [];
 
-    // Mock harmonyScheduler
-    (playbackEngine as any).harmonyScheduler = {
-      stopAll: vi.fn(() => callOrder.push('stopAll')),
-      setAudioContext: vi.fn(),
-    };
+    // Mock clearScheduledState
+    const originalClearScheduledState = (playbackEngine as any)
+      .clearScheduledState;
+    (playbackEngine as any).clearScheduledState = vi.fn(() => {
+      callOrder.push('clearScheduledState');
+      // Still clear the state
+      (playbackEngine as any).scheduledIds.clear();
+      (playbackEngine as any).scheduledEvents.clear();
+    });
 
     // Mock regionScheduler (required for reschedulePendingEvents to not early-return)
     (playbackEngine as any).regionScheduler = {
@@ -545,25 +560,28 @@ describe('PlaybackEngine.reschedulePendingEvents() - All Tracks Tempo Sync', () 
     };
 
     // Mock scheduleAllRegions method on PlaybackEngine itself
-    // (reschedulePendingEvents calls this.scheduleAllRegions(), not regionScheduler.scheduleAll)
-    const originalScheduleAllRegions = (playbackEngine as any).scheduleAllRegions;
+    const originalScheduleAllRegions = (playbackEngine as any)
+      .scheduleAllRegions;
     (playbackEngine as any).scheduleAllRegions = vi.fn(() => {
       callOrder.push('scheduleAllRegions');
     });
 
     // Set up minimal state - isRunning AND regionScheduler must be truthy
     (playbackEngine as any).isRunning = true;
-    (playbackEngine as any).tracks = new Map([['test-track', { id: 'test-track' }]]);
-    (playbackEngine as any).scheduledIds = new Set();
+    (playbackEngine as any).tracks = new Map([
+      ['test-track', { id: 'test-track' }],
+    ]);
+    (playbackEngine as any).scheduledIds = new Set([1, 2]);
     (playbackEngine as any).scheduledEvents = new Map();
 
     // Trigger reschedule
     (playbackEngine as any).reschedulePendingEvents();
 
-    // Verify call order: stopAll BEFORE scheduleAllRegions
-    expect(callOrder).toEqual(['stopAll', 'scheduleAllRegions']);
+    // Verify call order: clearScheduledState BEFORE scheduleAllRegions
+    expect(callOrder).toEqual(['clearScheduledState', 'scheduleAllRegions']);
 
     // Cleanup
+    (playbackEngine as any).clearScheduledState = originalClearScheduledState;
     (playbackEngine as any).scheduleAllRegions = originalScheduleAllRegions;
   });
 
@@ -576,10 +594,13 @@ describe('PlaybackEngine.reschedulePendingEvents() - All Tracks Tempo Sync', () 
     let tempoChangeReceived = false;
     let receivedTempo: number | null = null;
 
-    eventBus.on('transport:tempo-change', (data: { tempo: number; bpm: number }) => {
-      tempoChangeReceived = true;
-      receivedTempo = data.tempo || data.bpm;
-    });
+    eventBus.on(
+      'transport:tempo-change',
+      (data: { tempo: number; bpm: number }) => {
+        tempoChangeReceived = true;
+        receivedTempo = data.tempo || data.bpm;
+      },
+    );
 
     // Emit tempo change event (simulates what TransportController.setTempo does)
     eventBus.emit('transport:tempo-change', { tempo: 100, bpm: 100 });
@@ -619,9 +640,11 @@ describe('Complete Tempo Change Flow', () => {
    * scheduleAllRegions() at new tempo
    */
   it('should update Tone.Transport and emit event when tempo changes', async () => {
-    const { TransportController } = await import('../../transport/core/TransportController.js');
+    const { TransportController } =
+      await import('../../transport/core/TransportController.js');
     const { EventBus } = await import('../../../services/core/EventBus.js');
-    const { AudioEngine } = await import('../../audio-engine/core/AudioEngine.js');
+    const { AudioEngine } =
+      await import('../../audio-engine/core/AudioEngine.js');
 
     // Set initial state
     Tone.Transport.bpm.value = 69;
@@ -656,9 +679,11 @@ describe('Complete Tempo Change Flow', () => {
   });
 
   it('should handle rapid tempo changes (slider dragging)', async () => {
-    const { TransportController } = await import('../../transport/core/TransportController.js');
+    const { TransportController } =
+      await import('../../transport/core/TransportController.js');
     const { EventBus } = await import('../../../services/core/EventBus.js');
-    const { AudioEngine } = await import('../../audio-engine/core/AudioEngine.js');
+    const { AudioEngine } =
+      await import('../../audio-engine/core/AudioEngine.js');
 
     Tone.Transport.bpm.value = 69;
 

@@ -1,4 +1,5 @@
 # Command System Usage Guide
+
 Story 3.18.4: Service Architecture Implementation
 
 ## Overview
@@ -8,6 +9,7 @@ The Command System implements the Command Pattern to provide undo/redo functiona
 ## Core Concepts
 
 ### Command Pattern
+
 The Command Pattern encapsulates a request as an object, thereby allowing you to parameterize clients with different requests, queue operations, log requests, and support undoable operations.
 
 ### Key Components
@@ -27,7 +29,7 @@ import { Command, CommandResult } from './Command.js';
 export class PlayCommand extends Command<void> {
   constructor(
     private transport: TransportService,
-    private startTime?: number
+    private startTime?: number,
   ) {
     super('play', { startTime });
   }
@@ -98,7 +100,7 @@ export class SetTempoCommand extends Command<number> {
 
   constructor(
     private transport: TransportService,
-    private newTempo: number
+    private newTempo: number,
   ) {
     super('setTempo', { tempo: newTempo });
   }
@@ -115,9 +117,9 @@ export class SetTempoCommand extends Command<number> {
     try {
       // Store previous tempo for undo
       this.previousTempo = this.transport.getTempo();
-      
+
       await this.transport.setTempo(this.newTempo);
-      
+
       const result = {
         success: true,
         data: this.newTempo,
@@ -145,7 +147,7 @@ export class SetTempoCommand extends Command<number> {
 
     try {
       await this.transport.setTempo(this.previousTempo);
-      
+
       const result = {
         success: true,
         data: this.previousTempo,
@@ -261,31 +263,27 @@ export class LoadSongCommand extends CompositeCommand<any> {
       transport: TransportService;
       mixer: MixingConsole;
       sampler: SampleManager;
-    }
+    },
   ) {
     super('loadSong');
-    
+
     // Build command sequence
     this.addCommand(new StopCommand(services.transport));
     this.addCommand(new ClearTracksCommand(services.mixer));
-    
+
     for (const track of songData.tracks) {
-      this.addCommand(new LoadTrackCommand(
-        services.sampler,
-        track
-      ));
+      this.addCommand(new LoadTrackCommand(services.sampler, track));
     }
-    
-    this.addCommand(new SetTempoCommand(
-      services.transport,
-      songData.tempo
-    ));
-    
-    this.addCommand(new SetLoopCommand(
-      services.transport,
-      songData.loopStart,
-      songData.loopEnd
-    ));
+
+    this.addCommand(new SetTempoCommand(services.transport, songData.tempo));
+
+    this.addCommand(
+      new SetLoopCommand(
+        services.transport,
+        songData.loopStart,
+        songData.loopEnd,
+      ),
+    );
   }
 }
 ```
@@ -315,7 +313,7 @@ export class RecordCommand extends Command<RecordingData> {
   private async checkMicrophonePermission(): Promise<boolean> {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach((track) => track.stop());
       return true;
     } catch {
       return false;
@@ -377,9 +375,9 @@ The CommandQueue automatically integrates with a Circuit Breaker to prevent casc
 ```typescript
 const commandQueue = new CommandQueue(eventBus, {
   circuitBreakerConfig: {
-    failureThreshold: 5,    // Opens after 5 failures
+    failureThreshold: 5, // Opens after 5 failures
     recoveryTimeout: 60000, // 1 minute recovery
-  }
+  },
 });
 
 // If too many commands fail, circuit breaker opens
@@ -400,20 +398,24 @@ console.log(`Circuit state: ${metrics.state}`);
 ## Best Practices
 
 ### 1. Command Naming
+
 Use descriptive names that clearly indicate the action:
+
 ```typescript
 // Good
-new PlayCommand()
-new SetTempoCommand()
-new AddTrackCommand()
+new PlayCommand();
+new SetTempoCommand();
+new AddTrackCommand();
 
 // Bad
-new Command1()
-new DoSomething()
+new Command1();
+new DoSomething();
 ```
 
 ### 2. State Management
+
 Always store enough state for proper undo:
+
 ```typescript
 export class MoveNoteCommand extends Command<Note> {
   private previousPosition?: Position;
@@ -421,7 +423,7 @@ export class MoveNoteCommand extends Command<Note> {
   async execute() {
     // Store previous state
     this.previousPosition = this.note.position;
-    
+
     // Perform action
     this.note.moveTo(this.newPosition);
   }
@@ -434,7 +436,9 @@ export class MoveNoteCommand extends Command<Note> {
 ```
 
 ### 3. Idempotency
+
 Make commands idempotent when possible:
+
 ```typescript
 export class MuteTrackCommand extends Command<void> {
   async execute() {
@@ -447,7 +451,9 @@ export class MuteTrackCommand extends Command<void> {
 ```
 
 ### 4. Resource Cleanup
+
 Clean up resources in both success and failure cases:
+
 ```typescript
 export class ProcessAudioCommand extends Command<AudioBuffer> {
   private processor?: AudioProcessor;
@@ -467,11 +473,13 @@ export class ProcessAudioCommand extends Command<AudioBuffer> {
 ```
 
 ### 5. Command Granularity
+
 Keep commands focused on a single responsibility:
+
 ```typescript
 // Good - Single responsibility
-class SetNoteVelocityCommand extends Command<number> { }
-class SetNotePitchCommand extends Command<number> { }
+class SetNoteVelocityCommand extends Command<number> {}
+class SetNotePitchCommand extends Command<number> {}
 
 // Bad - Multiple responsibilities
 class UpdateNoteCommand extends Command<Note> {
@@ -482,7 +490,9 @@ class UpdateNoteCommand extends Command<Note> {
 ## Performance Considerations
 
 ### 1. Command Pooling
+
 For frequently created commands, consider object pooling:
+
 ```typescript
 class NoteCommandPool {
   private pool: PlayNoteCommand[] = [];
@@ -501,25 +511,29 @@ class NoteCommandPool {
 ```
 
 ### 2. Async Operations
+
 Use async/await properly to avoid blocking:
+
 ```typescript
 export class LoadSampleCommand extends Command<AudioBuffer> {
   async execute() {
     // Non-blocking load
     const buffer = await this.loadAudioBuffer(this.url);
-    
+
     // Process in chunks if needed
     if (buffer.length > LARGE_BUFFER_THRESHOLD) {
       await this.processInChunks(buffer);
     }
-    
+
     return { success: true, data: buffer, timestamp: Date.now() };
   }
 }
 ```
 
 ### 3. Memory Management
+
 Clear references to prevent memory leaks:
+
 ```typescript
 export class RecordingCommand extends Command<RecordingData> {
   private audioChunks: Blob[] = [];
@@ -528,7 +542,7 @@ export class RecordingCommand extends Command<RecordingData> {
     // Clear large data
     this.audioChunks = [];
     this.recordingData = undefined;
-    
+
     return { success: true, timestamp: Date.now() };
   }
 }
@@ -607,13 +621,13 @@ describe('CommandQueue Integration', () => {
 class MacroCommand extends CompositeCommand {
   static fromRecording(recording: CommandRecording): MacroCommand {
     const macro = new MacroCommand('recordedMacro');
-    
+
     for (const record of recording.commands) {
       const CommandClass = CommandRegistry.get(record.type);
       const command = new CommandClass(...record.args);
       macro.addCommand(command);
     }
-    
+
     return macro;
   }
 }
@@ -626,7 +640,7 @@ export class ConditionalCommand extends Command<any> {
   constructor(
     private condition: () => boolean,
     private trueCommand: Command<any>,
-    private falseCommand?: Command<any>
+    private falseCommand?: Command<any>,
   ) {
     super('conditional');
   }
@@ -657,7 +671,7 @@ export class ScheduledCommand extends Command<any> {
 
   constructor(
     private command: Command<any>,
-    private delay: number
+    private delay: number,
   ) {
     super('scheduled');
   }
@@ -692,6 +706,7 @@ The Command System provides a robust foundation for implementing undo/redo funct
 - Memory-efficient history management
 
 Use this system whenever you need:
+
 - Undo/redo functionality
 - Command history tracking
 - Batch operations

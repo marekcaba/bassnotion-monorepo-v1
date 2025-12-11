@@ -43,7 +43,9 @@ export function ExerciseListEdit({
                 <h5 className="font-medium">{exercise.title}</h5>
                 <p className="text-sm text-gray-600">{exercise.description}</p>
                 <div className="flex gap-3 mt-1">
-                  <span className="text-xs text-gray-500">BPM: {exercise.bpm}</span>
+                  <span className="text-xs text-gray-500">
+                    BPM: {exercise.bpm}
+                  </span>
                   <span className="text-xs text-gray-500">
                     Level: {exercise.difficulty?.value || 'intermediate'}
                   </span>

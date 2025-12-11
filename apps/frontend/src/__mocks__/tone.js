@@ -22,7 +22,7 @@ const createMockTimeline = () => ({
 });
 
 const mockTone = {
-  Gain: vi.fn().mockImplementation(function(value = 1) {
+  Gain: vi.fn().mockImplementation(function (value = 1) {
     const node = createMockToneNode();
     // Tone.js Gain nodes have a gain AudioParam property
     node.gain = {
@@ -31,7 +31,7 @@ const mockTone = {
     };
     return node;
   }),
-  Panner: vi.fn().mockImplementation(function(value = 0) {
+  Panner: vi.fn().mockImplementation(function (value = 0) {
     const node = createMockToneNode();
     // Tone.js Panner nodes have a pan AudioParam property
     node.pan = {
@@ -40,13 +40,13 @@ const mockTone = {
     };
     return node;
   }),
-  Compressor: vi.fn().mockImplementation(function(config) {
+  Compressor: vi.fn().mockImplementation(function (config) {
     return {
       ...createMockToneNode(),
       config,
     };
   }),
-  Limiter: vi.fn().mockImplementation(function(threshold) {
+  Limiter: vi.fn().mockImplementation(function (threshold) {
     return {
       ...createMockToneNode(),
       threshold,
@@ -54,16 +54,16 @@ const mockTone = {
   }),
   Timeline: vi.fn().mockImplementation(() => createMockTimeline()),
   Destination: createMockToneNode(),
-  Reverb: vi.fn().mockImplementation(function() {
+  Reverb: vi.fn().mockImplementation(function () {
     return createMockToneNode();
   }),
-  Delay: vi.fn().mockImplementation(function() {
+  Delay: vi.fn().mockImplementation(function () {
     return createMockToneNode();
   }),
-  Distortion: vi.fn().mockImplementation(function() {
+  Distortion: vi.fn().mockImplementation(function () {
     return createMockToneNode();
   }),
-  Volume: vi.fn().mockImplementation(function(db = 0) {
+  Volume: vi.fn().mockImplementation(function (db = 0) {
     return {
       ...createMockToneNode(),
       volume: {
@@ -93,6 +93,6 @@ module.exports = mockTone;
 module.exports.default = mockTone;
 
 // Add named exports
-Object.keys(mockTone).forEach(key => {
+Object.keys(mockTone).forEach((key) => {
   module.exports[key] = mockTone[key];
 });

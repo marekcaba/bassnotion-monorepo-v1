@@ -109,7 +109,8 @@ registerProcessor('wam-drummer-processor', WamDrummerProcessor);
 const logger = createStructuredLogger('WamDrummer');
 
 // Check if we're in browser environment
-const isBrowser = typeof window !== 'undefined' && typeof AudioContext !== 'undefined';
+const isBrowser =
+  typeof window !== 'undefined' && typeof AudioContext !== 'undefined';
 
 // Create a base class that works in both environments
 const BaseNode = isBrowser ? GainNode : class FakeGainNode {};
@@ -337,7 +338,9 @@ export class WamDrummerNode extends BaseNode implements WamNode {
         let cachedBuffer = GlobalSampleCache.getCachedBuffer(urlOrBuffer);
 
         if (!cachedBuffer) {
-          cachedBuffer = GlobalSampleCache.getCachedBuffer(`drum-pad-${padNumber}`);
+          cachedBuffer = GlobalSampleCache.getCachedBuffer(
+            `drum-pad-${padNumber}`,
+          );
         }
 
         // Check for specific drum names based on pad number
@@ -351,12 +354,16 @@ export class WamDrummerNode extends BaseNode implements WamNode {
 
           const drumName = drumNameMap[padNumber];
           if (drumName) {
-            cachedBuffer = GlobalSampleCache.getCachedBuffer(`drum-${drumName}`);
+            cachedBuffer = GlobalSampleCache.getCachedBuffer(
+              `drum-${drumName}`,
+            );
           }
         }
 
         if (cachedBuffer) {
-          logger.info(`♻️ Using cached decoded AudioBuffer for pad ${padNumber}`);
+          logger.info(
+            `♻️ Using cached decoded AudioBuffer for pad ${padNumber}`,
+          );
           pad.buffer = cachedBuffer;
           pad.url = urlOrBuffer;
           pad.loaded = true;
@@ -367,10 +374,13 @@ export class WamDrummerNode extends BaseNode implements WamNode {
         let rawArrayBuffer: ArrayBuffer | undefined;
 
         // Try IndexedDB with same key priority
-        rawArrayBuffer = await GlobalSampleCache.getCachedRawBuffer(urlOrBuffer);
+        rawArrayBuffer =
+          await GlobalSampleCache.getCachedRawBuffer(urlOrBuffer);
 
         if (!rawArrayBuffer) {
-          rawArrayBuffer = await GlobalSampleCache.getCachedRawBuffer(`drum-pad-${padNumber}`);
+          rawArrayBuffer = await GlobalSampleCache.getCachedRawBuffer(
+            `drum-pad-${padNumber}`,
+          );
         }
 
         if (!rawArrayBuffer) {
@@ -381,7 +391,9 @@ export class WamDrummerNode extends BaseNode implements WamNode {
           };
           const drumName = drumNameMap[padNumber];
           if (drumName) {
-            rawArrayBuffer = await GlobalSampleCache.getCachedRawBuffer(`drum-${drumName}`);
+            rawArrayBuffer = await GlobalSampleCache.getCachedRawBuffer(
+              `drum-${drumName}`,
+            );
           }
         }
 
@@ -389,8 +401,12 @@ export class WamDrummerNode extends BaseNode implements WamNode {
 
         if (rawArrayBuffer) {
           // Found in IndexedDB - decode it
-          console.log(`💾 [INDEXEDDB-HIT] Using cached raw drum sample for pad ${padNumber}`);
-          logger.info(`💾 IndexedDB cache HIT for pad ${padNumber}, decoding...`);
+          console.log(
+            `💾 [INDEXEDDB-HIT] Using cached raw drum sample for pad ${padNumber}`,
+          );
+          logger.info(
+            `💾 IndexedDB cache HIT for pad ${padNumber}, decoding...`,
+          );
           audioBuffer = await this.context.decodeAudioData(rawArrayBuffer);
 
           // Cache the decoded buffer in memory for future use
@@ -405,7 +421,10 @@ export class WamDrummerNode extends BaseNode implements WamNode {
 
           // Cache both raw (to IndexedDB) and decoded (to memory)
           await GlobalSampleCache.cacheBuffer(urlOrBuffer, arrayBuffer);
-          await GlobalSampleCache.cacheBuffer(`drum-pad-${padNumber}`, arrayBuffer);
+          await GlobalSampleCache.cacheBuffer(
+            `drum-pad-${padNumber}`,
+            arrayBuffer,
+          );
           GlobalSampleCache.cacheBuffer(urlOrBuffer, audioBuffer);
           GlobalSampleCache.cacheBuffer(`drum-pad-${padNumber}`, audioBuffer);
         }
@@ -497,20 +516,20 @@ export class WamDrummerNode extends BaseNode implements WamNode {
   }): void {
     // Map drum names to pad numbers
     const drumToPad: Record<string, number> = {
-      'kick': 1,
-      'snare': 3,
-      'hihat': 5,
-      'openhat': 6,
-      'crash': 9,
-      'ride': 10,
-      'tom1': 11,
-      'tom2': 12,
-      'tom3': 13,
-      'clap': 3,  // Same as snare
-      'rimshot': 4,
-      'cowbell': 14,
-      'tambourine': 15,
-      'shaker': 16,
+      kick: 1,
+      snare: 3,
+      hihat: 5,
+      openhat: 6,
+      crash: 9,
+      ride: 10,
+      tom1: 11,
+      tom2: 12,
+      tom3: 13,
+      clap: 3, // Same as snare
+      rimshot: 4,
+      cowbell: 14,
+      tambourine: 15,
+      shaker: 16,
     };
 
     const drumName = event.data?.drum || 'kick';

@@ -3,6 +3,7 @@
 ## Problem Analysis
 
 ### The Symptoms:
+
 1. First beat stutters/repeats multiple times
 2. Console shows multiple triggers at position 0:0:0
 3. Transport.state shows "stopped" even after calling start()
@@ -17,6 +18,7 @@ The stutter is NOT caused by AudioContext initialization. It's caused by:
 3. **Multiple loops fire callbacks at position 0:0:0** before Transport advances
 
 From the logs:
+
 ```
 🥁 Drummer Loop - Transport state: stopped Position: 0:0:0
 🥁 Triggering kick at subdivision 0, velocity: 127
@@ -27,24 +29,29 @@ From the logs:
 ## Why Current Solutions Don't Work
 
 ### 1. Dynamic Imports (Won't Fix Stutter)
+
 - Solves AudioContext warning
 - Doesn't solve timing/synchronization issues
 - Adds complexity without addressing root cause
 
 ### 2. setTimeout Delays (Band-aid)
+
 ```javascript
 setTimeout(() => {
   loopRef.current.start(0);
 }, 100);
 ```
+
 - Works sometimes but is unreliable
 - Delays playback start
 - Doesn't guarantee Transport is running
 
 ### 3. Transport.start() with offset
+
 ```javascript
 this.toneTransport.start('+0.1', 0);
 ```
+
 - The offset doesn't help if loops are already running
 
 ## The Correct Solution
@@ -84,7 +91,7 @@ if (currentBar === 0 && currentSubdivision === 0) {
   // Check if we've already scheduled this beat
   if (!this.firstBeatScheduled) {
     this.firstBeatScheduled = true;
-    
+
     // Schedule the sound, don't trigger immediately
     Tone.Transport.scheduleOnce((time) => {
       // Trigger sounds here
@@ -100,18 +107,18 @@ if (currentBar === 0 && currentSubdivision === 0) {
 class AudioWidget {
   private loop: Tone.Loop | null = null;
   private isInitialized = false;
-  
+
   async initialize() {
     // 1. Create loop but DON'T start it
     this.loop = new Tone.Loop(callback, '8n');
     this.isInitialized = true;
   }
-  
+
   async startPlayback() {
     if (!this.isInitialized) {
       await this.initialize();
     }
-    
+
     // 2. Start loop only when playback starts
     if (this.loop) {
       // Start at next transport position to avoid double-trigger
@@ -128,10 +135,10 @@ Update CorePlaybackEngine to ensure loops don't start until Transport is actuall
 ```javascript
 public async play(): Promise<void> {
   // ... existing code ...
-  
+
   // Start transport
   this.toneTransport.start();
-  
+
   // Wait for transport to actually start
   await new Promise<void>((resolve) => {
     const checkInterval = setInterval(() => {
@@ -141,7 +148,7 @@ public async play(): Promise<void> {
       }
     }, 10);
   });
-  
+
   // Now emit event to start widgets
   this.emit('playbackStateChanged', { state: 'playing', source: 'engine' });
 }

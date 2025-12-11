@@ -112,7 +112,9 @@ class SyncedWidgetErrorBoundary extends React.Component<
     });
 
     // Log error
-    logger.error(`[${this.props.widgetId}] Widget error:`, error, { errorInfo });
+    logger.error(`[${this.props.widgetId}] Widget error:`, error, {
+      errorInfo,
+    });
 
     // Call error handler
     if (this.props.onError) {

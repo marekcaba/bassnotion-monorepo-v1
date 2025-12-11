@@ -15,13 +15,13 @@ enum DrumType {
   SNARE = 'snare',
   HIHAT_CLOSED = 'hihat-closed',
   HIHAT_OPEN = 'hihat-open',
-  
+
   // Toms
   TOM_HIGH = 'tom-high',
   TOM_MID = 'tom-mid',
   TOM_LOW = 'tom-low',
   TOM_FLOOR = 'tom-floor',
-  
+
   // Cymbals
   CRASH = 'crash',
   CRASH_2 = 'crash-2',
@@ -29,21 +29,21 @@ enum DrumType {
   RIDE_BELL = 'ride-bell',
   SPLASH = 'splash',
   CHINA = 'china',
-  
+
   // Percussion
   COWBELL = 'cowbell',
   CLAP = 'clap',
   TAMBOURINE = 'tambourine',
   SHAKER = 'shaker',
-  
+
   // Electronic
   SYNTH = 'synth',
   FX = 'fx',
-  
+
   // Special
   RIMSHOT = 'rimshot',
   SIDESTICK = 'sidestick',
-  PEDAL_HIHAT = 'pedal-hihat'
+  PEDAL_HIHAT = 'pedal-hihat',
 }
 ```
 
@@ -89,37 +89,36 @@ For existing kits without manifests, use pattern matching:
 ```typescript
 const DRUM_PATTERNS = {
   kick: [
-    /kick/i, /bd/i, /bass\s?drum/i, /bassdrum/i, 
-    /kik/i, /kk/i, /b\.?d\.?/i
+    /kick/i,
+    /bd/i,
+    /bass\s?drum/i,
+    /bassdrum/i,
+    /kik/i,
+    /kk/i,
+    /b\.?d\.?/i,
   ],
-  snare: [
-    /snare/i, /sd/i, /sn/i, /snr/i,
-    /s\.?d\.?/i, /snaredrum/i
-  ],
+  snare: [/snare/i, /sd/i, /sn/i, /snr/i, /s\.?d\.?/i, /snaredrum/i],
   hihat_closed: [
-    /hi[\s-]?hat.*clos/i, /hh.*clos/i, /closed.*hh/i,
-    /ch/i, /hhc/i, /hat.*cl/i
+    /hi[\s-]?hat.*clos/i,
+    /hh.*clos/i,
+    /closed.*hh/i,
+    /ch/i,
+    /hhc/i,
+    /hat.*cl/i,
   ],
   hihat_open: [
-    /hi[\s-]?hat.*open/i, /hh.*open/i, /open.*hh/i,
-    /oh/i, /hho/i, /hat.*op/i
+    /hi[\s-]?hat.*open/i,
+    /hh.*open/i,
+    /open.*hh/i,
+    /oh/i,
+    /hho/i,
+    /hat.*op/i,
   ],
-  crash: [
-    /crash/i, /crsh/i, /cr/i
-  ],
-  ride: [
-    /ride/i, /rd/i
-  ],
-  tom_high: [
-    /tom.*high/i, /high.*tom/i, /tom.*1/i, /ht/i
-  ],
-  tom_mid: [
-    /tom.*mid/i, /mid.*tom/i, /tom.*2/i, /mt/i
-  ],
-  tom_low: [
-    /tom.*low/i, /low.*tom/i, /tom.*3/i, /lt/i,
-    /floor.*tom/i, /ft/i
-  ]
+  crash: [/crash/i, /crsh/i, /cr/i],
+  ride: [/ride/i, /rd/i],
+  tom_high: [/tom.*high/i, /high.*tom/i, /tom.*1/i, /ht/i],
+  tom_mid: [/tom.*mid/i, /mid.*tom/i, /tom.*2/i, /mt/i],
+  tom_low: [/tom.*low/i, /low.*tom/i, /tom.*3/i, /lt/i, /floor.*tom/i, /ft/i],
 };
 ```
 
@@ -129,19 +128,19 @@ const DRUM_PATTERNS = {
 // Pre-compute and cache mappings
 class DrumKitLoader {
   private cache = new Map<string, ProcessedKit>();
-  
+
   async loadKit(kitId: string): Promise<ProcessedKit> {
     // Check cache first
     if (this.cache.has(kitId)) {
       return this.cache.get(kitId)!;
     }
-    
+
     // Load manifest or generate mapping
     const manifest = await this.loadManifest(kitId);
-    const processed = manifest 
+    const processed = manifest
       ? this.processManifest(manifest)
       : await this.generateMapping(kitId);
-    
+
     this.cache.set(kitId, processed);
     return processed;
   }
@@ -151,6 +150,7 @@ class DrumKitLoader {
 ### 5. Fallback Strategy
 
 For unmatched samples:
+
 1. Use machine learning audio classification
 2. Analyze frequency spectrum
 3. Default to "percussion" category

@@ -1,4 +1,9 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+  Inject,
+} from '@nestjs/common';
 import { DatabaseService } from '../database/database.service.js';
 import { createStructuredLogger } from '@bassnotion/contracts';
 import { RequestContextService } from '../../shared/services/request-context.service.js';
@@ -39,7 +44,9 @@ export interface BufferedLog {
 
 @Injectable()
 export class LogAggregatorService implements OnModuleInit, OnModuleDestroy {
-  private readonly staticLogger = createStructuredLogger(LogAggregatorService.name);
+  private readonly staticLogger = createStructuredLogger(
+    LogAggregatorService.name,
+  );
   private config: LogAggregatorConfig;
   private logBuffer: BufferedLog[] = [];
   private flushTimer?: NodeJS.Timeout;
@@ -63,16 +70,17 @@ export class LogAggregatorService implements OnModuleInit, OnModuleDestroy {
       flushInterval: parseInt(process.env.LOG_FLUSH_INTERVAL || '5000'), // 5 seconds
       maxFileSize: parseInt(process.env.LOG_MAX_FILE_SIZE || '10485760'), // 10MB
       maxFiles: parseInt(process.env.LOG_MAX_FILES || '10'),
-      logDir: process.env.LOG_DIR || 'logs/aggregated' };
+      logDir: process.env.LOG_DIR || 'logs/aggregated',
+    };
   }
 
   async onModuleInit() {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
-    
-    logger.info('Initializing log aggregator service', { 
+
+    logger.info('Initializing log aggregator service', {
       config: this.config,
-      correlationId 
+      correlationId,
     });
 
     // Ensure log directory exists
@@ -92,7 +100,7 @@ export class LogAggregatorService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleDestroy() {
     this.isShuttingDown = true;
-    
+
     // Stop flush timer
     if (this.flushTimer) {
       clearInterval(this.flushTimer);
@@ -163,8 +171,8 @@ export class LogAggregatorService implements OnModuleInit, OnModuleDestroy {
       await this.initializeFileStream();
     }
 
-    const lines = logs.map(log => JSON.stringify(log) + '\n').join('');
-    
+    const lines = logs.map((log) => JSON.stringify(log) + '\n').join('');
+
     return new Promise((resolve, reject) => {
       this.fileStream!.write(lines, (error) => {
         if (error) reject(error);
@@ -178,9 +186,8 @@ export class LogAggregatorService implements OnModuleInit, OnModuleDestroy {
    */
   private async flushToDatabase(logs: BufferedLog[]): Promise<void> {
     try {
-      const { error } = await this.db.supabase
-        .from('structured_logs')
-        .insert(logs.map(log => ({
+      const { error } = await this.db.supabase.from('structured_logs').insert(
+        logs.map((log) => ({
           timestamp: log.timestamp,
           level: log.level,
           service: log.service,
@@ -189,7 +196,9 @@ export class LogAggregatorService implements OnModuleInit, OnModuleDestroy {
           user_id: log.userId,
           session_id: log.sessionId,
           data: log.data,
-          error: log.error })));
+          error: log.error,
+        })),
+      );
 
       if (error) {
         throw error;
@@ -206,7 +215,9 @@ export class LogAggregatorService implements OnModuleInit, OnModuleDestroy {
           correlationId: 'system',
           error: {
             name: err.name || 'DatabaseError',
-            message: err.message } };
+            message: err.message,
+          },
+        };
         this.fileStream.write(JSON.stringify(errorLog) + '\n');
       }
     }
@@ -230,8 +241,10 @@ export class LogAggregatorService implements OnModuleInit, OnModuleDestroy {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}` },
-        body: JSON.stringify({ logs }) });
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({ logs }),
+      });
 
       if (!response.ok) {
         throw new Error(`External log service returned ${response.status}`);
@@ -248,7 +261,9 @@ export class LogAggregatorService implements OnModuleInit, OnModuleDestroy {
           correlationId: 'system',
           error: {
             name: err.name || 'ExternalServiceError',
-            message: err.message } };
+            message: err.message,
+          },
+        };
         this.fileStream.write(JSON.stringify(errorLog) + '\n');
       }
     }
@@ -259,11 +274,15 @@ export class LogAggregatorService implements OnModuleInit, OnModuleDestroy {
    */
   private async initializeFileStream(): Promise<void> {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    this.currentLogFile = path.join(this.config.logDir, `structured-logs-${timestamp}.jsonl`);
-    
+    this.currentLogFile = path.join(
+      this.config.logDir,
+      `structured-logs-${timestamp}.jsonl`,
+    );
+
     this.fileStream = createWriteStream(this.currentLogFile, {
       flags: 'a',
-      encoding: 'utf8' });
+      encoding: 'utf8',
+    });
 
     // Rotate logs if file gets too large
     this.fileStream.on('drain', async () => {
@@ -299,13 +318,13 @@ export class LogAggregatorService implements OnModuleInit, OnModuleDestroy {
     try {
       const files = await fs.readdir(this.config.logDir);
       const logFiles = files
-        .filter(f => f.startsWith('structured-logs-') && f.endsWith('.jsonl'))
+        .filter((f) => f.startsWith('structured-logs-') && f.endsWith('.jsonl'))
         .sort()
         .reverse();
 
       // Keep only the most recent files
       const filesToDelete = logFiles.slice(this.config.maxFiles);
-      
+
       for (const file of filesToDelete) {
         await fs.unlink(path.join(this.config.logDir, file));
       }
@@ -323,7 +342,9 @@ export class LogAggregatorService implements OnModuleInit, OnModuleDestroy {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Failed to create log directory', error as Error, { correlationId });
+      logger.error('Failed to create log directory', error as Error, {
+        correlationId,
+      });
     }
   }
 
@@ -342,7 +363,7 @@ export class LogAggregatorService implements OnModuleInit, OnModuleDestroy {
    * Check if a destination is enabled
    */
   private isDestinationEnabled(type: string): boolean {
-    const destination = this.config.destinations.find(d => d.type === type);
+    const destination = this.config.destinations.find((d) => d.type === type);
     return destination?.enabled || false;
   }
 
@@ -361,7 +382,9 @@ export class LogAggregatorService implements OnModuleInit, OnModuleDestroy {
     const results: BufferedLog[] = [];
 
     // Search in current buffer
-    results.push(...this.logBuffer.filter(log => log.correlationId === correlationId));
+    results.push(
+      ...this.logBuffer.filter((log) => log.correlationId === correlationId),
+    );
 
     // Search in database if enabled
     if (this.isDestinationEnabled('database')) {
@@ -373,27 +396,33 @@ export class LogAggregatorService implements OnModuleInit, OnModuleDestroy {
           .order('timestamp', { ascending: true });
 
         if (data) {
-          results.push(...data.map(row => ({
-            timestamp: row.timestamp,
-            level: row.level,
-            service: row.service,
-            message: row.message,
-            correlationId: row.correlation_id,
-            userId: row.user_id,
-            sessionId: row.session_id,
-            data: row.data,
-            error: row.error })));
+          results.push(
+            ...data.map((row) => ({
+              timestamp: row.timestamp,
+              level: row.level,
+              service: row.service,
+              message: row.message,
+              correlationId: row.correlation_id,
+              userId: row.user_id,
+              sessionId: row.session_id,
+              data: row.data,
+              error: row.error,
+            })),
+          );
         }
       } catch (error) {
         const logger = this.requestContext?.getLogger() || this.staticLogger;
-        logger.error('Error searching logs in database', error as Error, { correlationId });
+        logger.error('Error searching logs in database', error as Error, {
+          correlationId,
+        });
       }
     }
 
     // TODO: Search in files (would need to implement file parsing)
 
-    return results.sort((a, b) => 
-      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    return results.sort(
+      (a, b) =>
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
     );
   }
 
@@ -416,26 +445,36 @@ export class LogAggregatorService implements OnModuleInit, OnModuleDestroy {
           .limit(limit - results.length);
 
         if (data) {
-          results.push(...data.map(row => ({
-            timestamp: row.timestamp,
-            level: row.level,
-            service: row.service,
-            message: row.message,
-            correlationId: row.correlation_id,
-            userId: row.user_id,
-            sessionId: row.session_id,
-            data: row.data,
-            error: row.error })));
+          results.push(
+            ...data.map((row) => ({
+              timestamp: row.timestamp,
+              level: row.level,
+              service: row.service,
+              message: row.message,
+              correlationId: row.correlation_id,
+              userId: row.user_id,
+              sessionId: row.session_id,
+              data: row.data,
+              error: row.error,
+            })),
+          );
         }
       } catch (error) {
         const logger = this.requestContext?.getLogger() || this.staticLogger;
         const correlationId = this.requestContext?.getCorrelationId();
-        logger.error('Error getting recent logs from database', error as Error, { correlationId });
+        logger.error(
+          'Error getting recent logs from database',
+          error as Error,
+          { correlationId },
+        );
       }
     }
 
-    return results.sort((a, b) => 
-      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    ).slice(0, limit);
+    return results
+      .sort(
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+      )
+      .slice(0, limit);
   }
 }

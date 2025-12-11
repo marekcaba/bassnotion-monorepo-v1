@@ -17,16 +17,18 @@
 // Lines 572-574:
 this.positionUpdateInterval = window.setInterval(
   update,
-  this.config.scheduleInterval * 1000,  // 25ms default
+  this.config.scheduleInterval * 1000, // 25ms default
 );
 ```
 
-**Problem**: 
+**Problem**:
+
 - Position interval fires independently from system timing
 - Can drift relative to AudioContext.currentTime
 - Creates timing jitter when multiple callbacks fire
 
 **Specific Lines**:
+
 - Line 517: `startPositionUpdates()` - creates interval
 - Line 527: Guard check (prevents duplicate within same Transport)
 - Line 572-574: `window.setInterval()` - creates separate timing loop
@@ -47,22 +49,33 @@ const unsubscribeStart = eventBus.on('transport:start', handleStart);
 const unsubscribeStop = eventBus.on('transport:stop', handleStop);
 const unsubscribePause = eventBus.on('transport:pause', handlePause);
 const unsubscribeResume = eventBus.on('transport:resume', handleResume);
-const unsubscribeTempo = eventBus.on('transport:tempo-change', handleTempoChange);
-const unsubscribeTimeSignature = eventBus.on('transport:time-signature-change', handleTimeSignatureChange);
-const unsubscribePosition = eventBus.on('transport:position-updated', handlePositionUpdate);
+const unsubscribeTempo = eventBus.on(
+  'transport:tempo-change',
+  handleTempoChange,
+);
+const unsubscribeTimeSignature = eventBus.on(
+  'transport:time-signature-change',
+  handleTimeSignatureChange,
+);
+const unsubscribePosition = eventBus.on(
+  'transport:position-updated',
+  handlePositionUpdate,
+);
 const unsubscribeLoop = eventBus.on('transport:loop-change', handleLoopToggle);
 ```
 
-**Fighting Clock Cause**: 
+**Fighting Clock Cause**:
+
 - Lines 190-209: Each hook has own throttle logic
 - Line 194: `if (now - lastPositionUpdateRef.current < 33)` - throttle PER-HOOK
 - Different widgets receive position at different times
 - Results in desynchronized UI updates
 
 **Widget Usage**:
+
 - TransportClock.tsx line 4: `const transport = useTransport()`
 - BassLineWidget.tsx: Likely calls useTransport()
-- DrummerWidget.tsx: Likely calls useTransport()  
+- DrummerWidget.tsx: Likely calls useTransport()
 - HarmonyWidget.tsx: Likely calls useTransport()
 - GlobalControls.tsx: Likely calls useTransport()
 
@@ -88,7 +101,8 @@ constructor(config: Partial<TransportConfig> = {}) {
 }
 ```
 
-**Problem**: 
+**Problem**:
+
 - No clock singleton
 - Each Transport instance has separate Clock
 - Clock.getAudioTime() calls return slightly different values due to measurement jitter
@@ -110,10 +124,10 @@ private setupEventListeners(): void {
     if (this.state !== 'playing') {
       return;  // ⚠️ Stale callback fires AFTER state changes
     }
-    
+
     // Line 672: Update position manager
     this.positionManager.updatePosition(seconds);
-    
+
     // Line 688-692: Re-emit to EventBus
     const displayPosition = this.positionManager.getDisplayPosition();
     this.eventBus.emit('transport:position-updated', {
@@ -141,23 +155,24 @@ private setupEventListeners(): void {
 constructor(config: CoreServicesConfig = {}) {
   // Line 73: Fresh EventBus per CoreServices
   this.eventBus = new EventBus();
-  
+
   // Line 74: AudioEngine created fresh
   this.audioEngine = new AudioEngine(this.eventBus, {...});
-  
+
   // Line 78-87: Transport adapter created fresh
   this.unifiedTransport = TransportAdapter.getInstance(
     this.eventBus,
     this.audioEngine,
     {...},
   );
-  
+
   // Line 88: TransportSyncManager gets singleton
   this.transportSyncManager = TransportSyncManager.getInstance();
 }
 ```
 
-**Problem**: 
+**Problem**:
+
 - If multiple CoreServices instances exist, multiple EventBus instances
 - Each EventBus has separate subscriber lists
 - Events don't propagate across instances
@@ -177,7 +192,7 @@ start(): void {
     () => this.scheduleEvents(),
     this.config.scheduleInterval,  // 25ms
   );
-  
+
   // Cleanup at different interval
   this.cleanupTimer = window.setInterval(
     () => this.cleanupExpiredEvents(),
@@ -187,6 +202,7 @@ start(): void {
 ```
 
 **Problem**:
+
 - Two separate setInterval loops in EventScheduler
 - Transport also runs setInterval (position updates)
 - Three independent timing sources (Clock, EventScheduler, Transport intervals)
@@ -207,19 +223,20 @@ let globalInstanceCount = 0;
 
 export function TransportClock({...}: TransportClockProps) {
   const { correlationId, logger } = useCorrelation('TransportClock');
-  
+
   // Line 82-90: Instance tracking
   useEffect(() => {
     const instanceId = Math.random().toString(36).substr(2, 9);
     globalInstanceCount++;
     const currentInstanceCount = globalInstanceCount;
-    
+
     logger.info(`Instance ${currentInstanceCount} mounting - total: ${globalInstanceCount}`);
   });
 }
 ```
 
-**Problem**: 
+**Problem**:
+
 - Component can mount multiple times
 - Each instance has global state tracking
 - Instance count increments but never decrements properly
@@ -243,6 +260,7 @@ this.intervalId = self.setInterval(() => {
 ```
 
 **Problem**:
+
 - Web Worker runs independent timing loop
 - Separate from main thread Transport.startPositionUpdates()
 - Can cause stuttering when both fire asynchronously
@@ -256,37 +274,37 @@ this.intervalId = self.setInterval(() => {
 ```
 1. Transport.startPositionUpdates() [line 517]
    ↓ every 25ms
-   
+
 2. window.setInterval() [line 572]
    ↓ fires callback
-   
+
 3. this.positionUpdateCallback(relativeTime) [line 563]
    ↓ calls TransportController's callback
-   
+
 4. TransportController.setupEventListeners() [line 656]
    ↓ emits
-   
+
 5. this.eventBus.emit('transport:position-updated') [line 688]
    ↓ broadcasts to all subscribers
-   
+
 6. useTransport() hook [line 249]
    ↓ handlePositionUpdate() called
-   
+
 7. throttle check (per-hook) [line 194]
    ↓ setPosition() if not throttled
-   
+
 8. React re-render
    ↓
-   
+
 9. TransportClock also calls useTransport() [line 36]
    ↓ different throttle point
-   
+
 10. useTransport() in BassLineWidget [if present]
     ↓ another throttle point
-    
+
 11. useTransport() in DrummerWidget [if present]
     ↓ another throttle point
-    
+
 ... N MORE SUBSCRIPTIONS ...
 
 RESULT: Position updates arrive at different times
@@ -308,7 +326,7 @@ async start(): Promise<void> {
     logger.warn('Transport already playing, early return!');
     return;  // ✅ PREVENTS second start()
   }
-  
+
   // So Transport prevents duplicate start...
   // BUT what if start() is called on TWO DIFFERENT Transport instances?
   // That's not prevented!
@@ -320,16 +338,16 @@ async start(): Promise<void> {
 ```typescript
 // Scenario 1: Direct Transport instantiation
 const transport1 = new Transport(); // Instance 1
-transport1.start();  // Interval 1 created
+transport1.start(); // Interval 1 created
 
-const transport2 = new Transport(); // Instance 2  
-transport2.start();  // Interval 2 created
+const transport2 = new Transport(); // Instance 2
+transport2.start(); // Interval 2 created
 
 // Now TWO position update intervals running!
 
 // Scenario 2: Multiple CoreServices
-const cs1 = new CoreServices();  // EventBus 1, Transport 1
-const cs2 = new CoreServices();  // EventBus 2, Transport 2
+const cs1 = new CoreServices(); // EventBus 1, Transport 1
+const cs2 = new CoreServices(); // EventBus 2, Transport 2
 
 // Different event streams!
 ```
@@ -344,20 +362,28 @@ These console.log statements show the fighting clocks:
 // Transport.ts line 524
 console.log('🔄 [POSITION DEBUG] startPositionUpdates() called', debugInfo);
 
-// Transport.ts line 528  
+// Transport.ts line 528
 console.log('🔄 [POSITION DEBUG] Interval already exists, early return!');
 
 // Transport.ts line 551
 console.log('🔄 [POSITION DEBUG] Position update calculation', {
-  currentTime, transportStartTime, relativeTime
+  currentTime,
+  transportStartTime,
+  relativeTime,
 });
 
 // Transport.ts line 582
-console.log('🔄 [POSITION DEBUG] Position update interval CREATED', createdInfo);
+console.log(
+  '🔄 [POSITION DEBUG] Position update interval CREATED',
+  createdInfo,
+);
 
 // TransportController.ts line 680
 console.log('🎯 [COUNTDOWN DEBUG] Position transformation', {
-  rawSeconds, rawPosition, displayPosition, countdownBeats
+  rawSeconds,
+  rawPosition,
+  displayPosition,
+  countdownBeats,
 });
 ```
 
@@ -367,17 +393,17 @@ When you see multiple [POSITION DEBUG] and [COUNTDOWN DEBUG] logs from different
 
 ## SUMMARY TABLE
 
-| # | Issue | File | Lines | Type | Severity |
-|---|-------|------|-------|------|----------|
-| 1 | Position interval drift | Transport.ts | 508-599 | Timer leak | MEDIUM |
-| 2 | Per-hook throttling | useTransport.ts | 190-209 | Design flaw | HIGH |
-| 3 | Multiple EventBus subs | useTransport.ts | 215-288 | Design flaw | HIGH |
-| 4 | Clock not singleton | Transport.ts | 68-72 | Architecture | MEDIUM |
-| 5 | Position callback chain | TransportController.ts | 656-693 | Race condition | MEDIUM |
-| 6 | EventBus per instance | CoreServices.ts | 73 | Architecture | MEDIUM |
-| 7 | Parallel timing loops | EventScheduler.ts | 76-85 | Timer leak | MEDIUM |
-| 8 | Multiple TransportClock | TransportClock.tsx | 82-150 | Component leak | HIGH |
-| 9 | Web Worker interval | TimingWorker.ts | 296 | Timer leak | HIGH |
+| #   | Issue                   | File                   | Lines   | Type           | Severity |
+| --- | ----------------------- | ---------------------- | ------- | -------------- | -------- |
+| 1   | Position interval drift | Transport.ts           | 508-599 | Timer leak     | MEDIUM   |
+| 2   | Per-hook throttling     | useTransport.ts        | 190-209 | Design flaw    | HIGH     |
+| 3   | Multiple EventBus subs  | useTransport.ts        | 215-288 | Design flaw    | HIGH     |
+| 4   | Clock not singleton     | Transport.ts           | 68-72   | Architecture   | MEDIUM   |
+| 5   | Position callback chain | TransportController.ts | 656-693 | Race condition | MEDIUM   |
+| 6   | EventBus per instance   | CoreServices.ts        | 73      | Architecture   | MEDIUM   |
+| 7   | Parallel timing loops   | EventScheduler.ts      | 76-85   | Timer leak     | MEDIUM   |
+| 8   | Multiple TransportClock | TransportClock.tsx     | 82-150  | Component leak | HIGH     |
+| 9   | Web Worker interval     | TimingWorker.ts        | 296     | Timer leak     | HIGH     |
 
 ---
 

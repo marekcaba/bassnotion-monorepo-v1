@@ -127,12 +127,14 @@ const createSupabaseClient = () => {
         // Reduce timeout globally to 3 seconds for faster UX
         const timeoutId = setTimeout(() => controller.abort(), 3000);
 
-        return globalThis.fetch(input, {
-          ...init,
-          signal: controller.signal,
-        }).finally(() => {
-          clearTimeout(timeoutId);
-        });
+        return globalThis
+          .fetch(input, {
+            ...init,
+            signal: controller.signal,
+          })
+          .finally(() => {
+            clearTimeout(timeoutId);
+          });
       },
     },
     // Webkit-specific database configuration

@@ -12,7 +12,12 @@ import type { AudioEngine } from '../../modules/audio-engine/core/AudioEngine.js
 
 const logger = getLogger('PreloadableInstrumentRegistry');
 
-export type InstrumentType = 'metronome' | 'drums' | 'harmony' | 'bass' | 'voice-cue';
+export type InstrumentType =
+  | 'metronome'
+  | 'drums'
+  | 'harmony'
+  | 'bass'
+  | 'voice-cue';
 
 export interface InstrumentConfig {
   type: InstrumentType;
@@ -53,7 +58,8 @@ export class PreloadableInstrumentRegistry {
 
   static getInstance(): PreloadableInstrumentRegistry {
     if (!PreloadableInstrumentRegistry.instance) {
-      PreloadableInstrumentRegistry.instance = new PreloadableInstrumentRegistry();
+      PreloadableInstrumentRegistry.instance =
+        new PreloadableInstrumentRegistry();
     }
     return PreloadableInstrumentRegistry.instance;
   }
@@ -76,12 +82,14 @@ export class PreloadableInstrumentRegistry {
    */
   registerConfig(config: InstrumentConfig): void {
     if (this.instruments.has(config.id)) {
-      logger.warn(`Instrument config ${config.id} already registered, replacing`);
+      logger.warn(
+        `Instrument config ${config.id} already registered, replacing`,
+      );
     }
 
     const preloaded: PreloadedInstrument = {
       config,
-      status: 'config'
+      status: 'config',
     };
 
     this.instruments.set(config.id, preloaded);
@@ -91,7 +99,7 @@ export class PreloadableInstrumentRegistry {
     if (this.eventBus) {
       this.eventBus.emit('preloadable-registry:config-registered', {
         id: config.id,
-        type: config.type
+        type: config.type,
       });
     }
   }
@@ -126,7 +134,9 @@ export class PreloadableInstrumentRegistry {
 
     const context = this.audioEngine.getContext();
     if (!context || context.state !== 'running') {
-      logger.warn(`Cannot create instrument ${id}: AudioContext state is ${context?.state}`);
+      logger.warn(
+        `Cannot create instrument ${id}: AudioContext state is ${context?.state}`,
+      );
       return null;
     }
 
@@ -135,7 +145,10 @@ export class PreloadableInstrumentRegistry {
     logger.info(`Creating instrument ${id} with AudioContext...`);
 
     try {
-      const instance = await preloaded.config.factory(context, this.audioEngine);
+      const instance = await preloaded.config.factory(
+        context,
+        this.audioEngine,
+      );
       preloaded.instance = instance;
       preloaded.status = 'ready';
 
@@ -145,7 +158,7 @@ export class PreloadableInstrumentRegistry {
       if (this.eventBus) {
         this.eventBus.emit('preloadable-registry:instrument-created', {
           id,
-          type: preloaded.config.type
+          type: preloaded.config.type,
         });
       }
 
@@ -204,7 +217,7 @@ export class PreloadableInstrumentRegistry {
    * Get all registered configs
    */
   getAllConfigs(): InstrumentConfig[] {
-    return Array.from(this.instruments.values()).map(p => p.config);
+    return Array.from(this.instruments.values()).map((p) => p.config);
   }
 
   /**
@@ -217,7 +230,7 @@ export class PreloadableInstrumentRegistry {
         type: preloaded.config.type,
         status: preloaded.status,
         hasInstance: !!preloaded.instance,
-        error: preloaded.error?.message
+        error: preloaded.error?.message,
       };
     }
     return status;
@@ -239,7 +252,7 @@ export class PreloadableInstrumentRegistry {
       if (preloaded.status === 'error') {
         throw new Error(`Instrument ${id} failed to create`);
       }
-      await new Promise(resolve => setTimeout(resolve, 50)); // Shorter wait
+      await new Promise((resolve) => setTimeout(resolve, 50)); // Shorter wait
     }
     // Reset status on timeout to allow retry
     const preloaded = this.instruments.get(id);
@@ -259,4 +272,5 @@ export class PreloadableInstrumentRegistry {
 }
 
 // Export singleton getter
-export const getPreloadableRegistry = () => PreloadableInstrumentRegistry.getInstance();
+export const getPreloadableRegistry = () =>
+  PreloadableInstrumentRegistry.getInstance();

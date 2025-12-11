@@ -40,7 +40,9 @@ Three preload strategy files were using `OfflineAudioContext` to decode audio sa
 // ❌ BEFORE (BUG):
 const offlineContext = new OfflineAudioContext(2, 44100, 44100);
 const audioBuffer = await offlineContext.decodeAudioData(arrayBuffer);
-GlobalSampleCache.getInstance().cacheBuffer(key, audioBuffer, { isContextCompatible: true });
+GlobalSampleCache.getInstance().cacheBuffer(key, audioBuffer, {
+  isContextCompatible: true,
+});
 
 // Problem:
 // 1. audioBuffer.sampleRate = 44100 (from OfflineContext)
@@ -74,6 +76,7 @@ GlobalSampleCache.getInstance().cacheBuffer(key, arrayBuffer);
 #### 1. HarmonyPreloadStrategy.ts
 
 **Lines 663-666**: Removed OfflineAudioContext creation
+
 ```typescript
 // Before:
 const offlineContext = new OfflineAudioContext(2, 44100 * 10, 44100);
@@ -84,11 +87,14 @@ const offlineContext = new OfflineAudioContext(2, 44100 * 10, 44100);
 ```
 
 **Lines 715-736**: Cache ArrayBuffer instead of AudioBuffer
+
 ```typescript
 // Before:
 const arrayBuffer = await response.arrayBuffer();
 const audioBuffer = await offlineContext.decodeAudioData(arrayBuffer);
-GlobalSampleCache.getInstance().cacheBuffer(cacheKey, audioBuffer, { isContextCompatible: true });
+GlobalSampleCache.getInstance().cacheBuffer(cacheKey, audioBuffer, {
+  isContextCompatible: true,
+});
 
 // After:
 const arrayBuffer = await response.arrayBuffer();
@@ -116,23 +122,28 @@ Created comprehensive test suite: [bug2-offlinecontext-buffers.test.ts](apps/fro
 ### Test Results: 11/11 passing ✅
 
 #### HarmonyPreloadStrategy Tests (3 tests)
+
 - ✅ Should cache ArrayBuffer (raw data), not AudioBuffer from OfflineContext
 - ✅ Should NOT mark OfflineContext buffers as isContextCompatible
 - ✅ Should NOT create OfflineAudioContext at all (BUG #2 FIX)
 
 #### DrumPreloadStrategy Tests (2 tests)
+
 - ✅ Should cache ArrayBuffer (raw data), not AudioBuffer from OfflineContext
 - ✅ Should NOT use OfflineAudioContext for buffer decoding
 
 #### MetronomePreloadStrategy Tests (2 tests)
+
 - ✅ Should cache ArrayBuffer (raw data), not AudioBuffer from OfflineContext
 - ✅ Should NOT decode samples with OfflineAudioContext
 
 #### Integration Tests (2 tests)
+
 - ✅ Should allow real AudioContext to decode cached ArrayBuffers later
 - ✅ Should prevent caching of AudioBuffers with wrong sampleRate
 
 #### Edge Cases (2 tests)
+
 - ✅ Should handle missing samples gracefully without caching invalid data
 - ✅ Should handle decode errors without caching partial data
 
@@ -143,11 +154,13 @@ Created comprehensive test suite: [bug2-offlinecontext-buffers.test.ts](apps/fro
 ### How to Verify the Fix
 
 1. **Run tests**:
+
    ```bash
    pnpm vitest run apps/frontend/src/domains/playback/modules/preloading/__tests__/bug2-offlinecontext-buffers.test.ts
    ```
 
 2. **Check cache contents**:
+
    ```typescript
    // In browser console:
    const cache = GlobalSampleCache.getInstance();
@@ -191,14 +204,17 @@ Created comprehensive test suite: [bug2-offlinecontext-buffers.test.ts](apps/fro
 ## Related Files
 
 ### Modified Files
+
 1. [HarmonyPreloadStrategy.ts](apps/frontend/src/domains/playback/modules/preloading/strategies/HarmonyPreloadStrategy.ts) - Removed OfflineContext, cache ArrayBuffer
 2. [DrumPreloadStrategy.ts](apps/frontend/src/domains/playback/modules/preloading/strategies/DrumPreloadStrategy.ts) - Removed OfflineContext, cache ArrayBuffer
 3. [MetronomePreloadStrategy.ts](apps/frontend/src/domains/playback/modules/preloading/strategies/MetronomePreloadStrategy.ts) - Removed OfflineContext, cache ArrayBuffer
 
 ### Test Files
+
 1. [bug2-offlinecontext-buffers.test.ts](apps/frontend/src/domains/playback/modules/preloading/__tests__/bug2-offlinecontext-buffers.test.ts) - NEW: 11 comprehensive tests
 
 ### Related Infrastructure
+
 1. [GlobalSampleCache.ts](apps/frontend/src/domains/playback/modules/storage/cache/GlobalSampleCache.ts) - Already supports ArrayBuffer caching
    - `cacheBuffer(path, buffer: AudioBuffer | ArrayBuffer)` - Accepts both types
    - `getCachedRawBuffer(path): ArrayBuffer | undefined` - Returns raw data
@@ -211,6 +227,7 @@ Created comprehensive test suite: [bug2-offlinecontext-buffers.test.ts](apps/fro
 ### For Developers
 
 **Before this fix:**
+
 ```typescript
 // Old pattern (DON'T USE):
 const offlineCtx = new OfflineAudioContext(2, 44100, 44100);
@@ -219,6 +236,7 @@ GlobalSampleCache.getInstance().cacheBuffer(key, audioBuffer);
 ```
 
 **After this fix:**
+
 ```typescript
 // New pattern (CORRECT):
 const arrayBuffer = await response.arrayBuffer();

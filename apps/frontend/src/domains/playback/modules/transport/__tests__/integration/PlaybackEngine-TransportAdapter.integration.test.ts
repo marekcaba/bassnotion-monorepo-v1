@@ -261,7 +261,10 @@ describe('PlaybackEngine ↔ TransportAdapter Integration Tests (Phase 3.2)', ()
     }
 
     // Cleanup TransportAdapter
-    if (transportAdapter && typeof (transportAdapter as any).dispose === 'function') {
+    if (
+      transportAdapter &&
+      typeof (transportAdapter as any).dispose === 'function'
+    ) {
       await (transportAdapter as any).dispose();
     }
 
@@ -398,26 +401,34 @@ describe('PlaybackEngine ↔ TransportAdapter Integration Tests (Phase 3.2)', ()
 
   describe('Integration 3: Event Subscription', () => {
     it('should subscribe to transport:position-updated events', async () => {
-      const initialListenerCount = eventBus.getListenerCount('transport:position-updated');
+      const initialListenerCount = eventBus.getListenerCount(
+        'transport:position-updated',
+      );
 
       // Act: Start PlaybackEngine (which subscribes to position updates)
       playbackEngine.start();
 
       // Assert: Should have subscribed to position updates
-      const afterStartListenerCount = eventBus.getListenerCount('transport:position-updated');
+      const afterStartListenerCount = eventBus.getListenerCount(
+        'transport:position-updated',
+      );
       expect(afterStartListenerCount).toBeGreaterThan(initialListenerCount);
     });
 
     it('should unsubscribe from transport events on stop', async () => {
       // Start PlaybackEngine
       playbackEngine.start();
-      const listenerCountDuringPlayback = eventBus.getListenerCount('transport:position-updated');
+      const listenerCountDuringPlayback = eventBus.getListenerCount(
+        'transport:position-updated',
+      );
 
       // Act: Stop PlaybackEngine
       playbackEngine.stop();
 
       // Assert: Should have unsubscribed from position updates
-      const listenerCountAfterStop = eventBus.getListenerCount('transport:position-updated');
+      const listenerCountAfterStop = eventBus.getListenerCount(
+        'transport:position-updated',
+      );
       expect(listenerCountAfterStop).toBeLessThan(listenerCountDuringPlayback);
     });
 
@@ -494,7 +505,9 @@ describe('PlaybackEngine ↔ TransportAdapter Integration Tests (Phase 3.2)', ()
 
       // Assert: Should emit playback:state-change event
       const events = eventBus.getEmittedEvents();
-      const stateChangeEvents = events.filter((e) => e.event === 'playback:state-change');
+      const stateChangeEvents = events.filter(
+        (e) => e.event === 'playback:state-change',
+      );
 
       expect(stateChangeEvents.length).toBeGreaterThan(0);
       const playingStateChange = stateChangeEvents.find(
@@ -517,7 +530,9 @@ describe('PlaybackEngine ↔ TransportAdapter Integration Tests (Phase 3.2)', ()
 
       // Assert: Should emit playback:tempo-change event
       const events = eventBus.getEmittedEvents();
-      const tempoChangeEvent = events.find((e) => e.event === 'playback:tempo-change');
+      const tempoChangeEvent = events.find(
+        (e) => e.event === 'playback:tempo-change',
+      );
 
       expect(tempoChangeEvent).toBeDefined();
       expect(tempoChangeEvent?.data.bpm).toBe(140);
@@ -537,7 +552,9 @@ describe('PlaybackEngine ↔ TransportAdapter Integration Tests (Phase 3.2)', ()
 
       // Assert: Should only emit one final tempo change event (debounced)
       const events = eventBus.getEmittedEvents();
-      const tempoChangeEvents = events.filter((e) => e.event === 'playback:tempo-change');
+      const tempoChangeEvents = events.filter(
+        (e) => e.event === 'playback:tempo-change',
+      );
 
       // Should have exactly 1 event after debouncing
       expect(tempoChangeEvents.length).toBe(1);
@@ -697,13 +714,17 @@ describe('PlaybackEngine ↔ TransportAdapter Integration Tests (Phase 3.2)', ()
     it('should clean up resources on dispose', async () => {
       playbackEngine.start();
 
-      const listenerCountBefore = eventBus.getListenerCount('transport:position-updated');
+      const listenerCountBefore = eventBus.getListenerCount(
+        'transport:position-updated',
+      );
 
       // Act: Dispose PlaybackEngine
       playbackEngine.dispose();
 
       // Assert: Should clean up listeners
-      const listenerCountAfter = eventBus.getListenerCount('transport:position-updated');
+      const listenerCountAfter = eventBus.getListenerCount(
+        'transport:position-updated',
+      );
       expect(listenerCountAfter).toBeLessThan(listenerCountBefore);
 
       // Should be in idle state

@@ -1,4 +1,5 @@
 # Playback Architecture Refactor: Implementation Plan v2.1
+
 **Status:** Ready for Implementation (with critical gap fills)
 **Priority:** High
 **Estimated Duration:** 6-8 weeks (revised from 5-6 weeks in v2.0, 2-3 weeks in v1.0)
@@ -14,6 +15,7 @@
 The current playback system suffers from **over-extraction syndrome** - RegionProcessor has been refactored into 23+ micro-modules with theatrical delegation patterns that increase complexity rather than reduce it.
 
 **The Problem:**
+
 - RegionProcessor is a hollow coordinator passing 20+ parameters to sub-modules
 - Sub-modules call callbacks back to RegionProcessor (callback ping-pong)
 - 6 different schedulers for what should be one scheduling concern
@@ -22,6 +24,7 @@ The current playback system suffers from **over-extraction syndrome** - RegionPr
 - **Integration with CoreServices/AudioProvider not documented** in original plan
 
 **The Solution:**
+
 - Consolidate 23 micro-modules into 6 properly-scoped components
 - Remove callback ping-pong by having modules own their responsibilities
 - Single Scheduler class handles all instruments (instruments = data, not classes)
@@ -30,6 +33,7 @@ The current playback system suffers from **over-extraction syndrome** - RegionPr
 - **Staged rollout with feature flags** for production safety
 
 **Impact:**
+
 - ✅ **62% fewer lines of code** (5000 → 2000 lines)
 - ✅ **74% fewer files** (23 → 6 files)
 - ✅ **Easier to understand** (less indirection)
@@ -71,6 +75,7 @@ Deep codebase analysis revealed **5 critical gaps** in the v2.0 plan that would 
 **Total Extension:** +4 days
 
 **What Was Missed in v2.0:**
+
 ```typescript
 // AudioProvider.tsx complexity NOT captured in plan:
 - GlobalAudioSystem singleton management
@@ -82,6 +87,7 @@ Deep codebase analysis revealed **5 critical gaps** in the v2.0 plan that would 
 ```
 
 **What v2.1 Adds:**
+
 - **Task 0.6 (Days 6-7):** Complete CoreServices call site mapping
   - Map all 20-30 `getRegionProcessor()` call sites
   - Document GlobalAudioSystem singleton behavior
@@ -89,6 +95,7 @@ Deep codebase analysis revealed **5 critical gaps** in the v2.0 plan that would 
   - Deliverable: `CORE_SERVICES_CALL_SITES.md`
 
 **Why This Matters:** Without this, we would have:
+
 - Missed integration points discovered mid-implementation
 - GlobalAudioSystem singleton conflicts
 - Broken Bug #1 and Bug #3 fixes
@@ -104,6 +111,7 @@ Deep codebase analysis revealed **5 critical gaps** in the v2.0 plan that would 
 
 **What Was Missed in v2.0:**
 Plan identified 8+ state sources but provided NO consolidation strategy:
+
 1. RegionProcessor.isRunning
 2. AudioEngine.isInitialized
 3. CoreServices.isReady
@@ -115,12 +123,14 @@ Plan identified 8+ state sources but provided NO consolidation strategy:
 9. Widget local states (×4 widgets)
 
 **Questions v2.0 Left Unanswered:**
+
 - Which states consolidate into PlaybackEngine?
 - Which states remain separate?
 - How to synchronize during feature flag period?
 - What if widgets check old state properties?
 
 **What v2.1 Adds:**
+
 - **Task 0.7 (Day 8):** Create State Consolidation Strategy
   - State transition matrix: old state → new state
   - Synchronization strategy during migration
@@ -128,6 +138,7 @@ Plan identified 8+ state sources but provided NO consolidation strategy:
   - Deliverable: `STATE_CONSOLIDATION_STRATEGY.md`
 
 **Why This Matters:** Without this, we would have:
+
 - State drift bugs during migration
 - Widgets reading stale state
 - No way to verify migration completeness
@@ -143,6 +154,7 @@ Plan identified 8+ state sources but provided NO consolidation strategy:
 
 **What Was Missed in v2.0:**
 RegionProcessor has complex WAM keyboard integration that v2.0 **completely missed**:
+
 ```typescript
 // NOT DOCUMENTED ANYWHERE IN v2.0 PLAN:
 setPluginManager(pluginManager: PluginManager): void
@@ -152,6 +164,7 @@ private getWamKeyboard(): WamKeyboard | null
 ```
 
 **What v2.1 Adds:**
+
 - **Task 0.9 (Day 10):** Document PluginManager Integration
   - Document current integration in RegionProcessor
   - Test CC64 event routing to WAM keyboard
@@ -160,6 +173,7 @@ private getWamKeyboard(): WamKeyboard | null
   - Deliverable: `PLUGIN_MANAGER_INTEGRATION.md`
 
 **Why This Matters:** Without this, we would have:
+
 - Broken WAM keyboard support in production
 - Sustain pedal not working with WAM instruments
 - Silent failure discovered only in production
@@ -175,6 +189,7 @@ private getWamKeyboard(): WamKeyboard | null
 
 **What Was Missed in v2.0:**
 Plan assumes memory leak exists, but codebase shows partial fixes:
+
 ```typescript
 // Evidence that leak MAY be partially fixed:
 private scheduledAudioSources = new Map<...>  // Structure exists
@@ -185,6 +200,7 @@ dispose() method exists (Bug #7 fix documented)
 **Question:** Is the leak ALREADY fixed?
 
 **What v2.1 Adds:**
+
 - **Task 0.8 (Day 9):** Audit Current Memory Leak Status
   - Write memory leak detection test
   - Run against current RegionProcessor
@@ -193,6 +209,7 @@ dispose() method exists (Bug #7 fix documented)
   - Deliverable: `MEMORY_LEAK_AUDIT.md`
 
 **Why This Matters:** Without this, we might:
+
 - Implement fix for already-fixed bug (wasted effort)
 - Miss real leak because we assumed it was fixed
 - Lack baseline for comparison testing
@@ -206,6 +223,7 @@ dispose() method exists (Bug #7 fix documented)
 **Change:** Updated task from "Fix" to "Preserve"
 
 **What Was Missed in v2.0:**
+
 ```typescript
 // RegionProcessor.ts lines 388-403
 // THIS CODE ALREADY WORKS:
@@ -219,11 +237,13 @@ this.tempoChangeDebounce = window.setTimeout(() => {
 ```
 
 **What v2.1 Changes:**
+
 - Task 1.2 subtask changed from "Implement tempo debouncing" to "**Preserve tempo debouncing**"
 - Added explicit note: "Copy exact implementation from RegionProcessor lines 388-403"
 - Added regression test: "Verify 50ms debounce threshold maintained"
 
 **Why This Matters:**
+
 - Don't reinvent the wheel - working code exists
 - Risk of breaking working implementation
 - Proper preservation ensures no regression
@@ -232,14 +252,14 @@ this.tempoChangeDebounce = window.setTimeout(() => {
 
 ### Summary of v2.1 Additions
 
-| Gap | Priority | Days Added | Deliverable |
-|-----|----------|-----------|-------------|
-| CoreServices Integration | 🚨 HIGH | +2 (Task 0.6) | CORE_SERVICES_CALL_SITES.md |
-| State Consolidation | 🚨 HIGH | +1 (Task 0.7) | STATE_CONSOLIDATION_STRATEGY.md |
-| PluginManager Integration | 🚨 HIGH | +1 (Task 0.9) | PLUGIN_MANAGER_INTEGRATION.md |
-| Memory Leak Audit | ⚠️ MEDIUM | +1 (Task 0.8) | MEMORY_LEAK_AUDIT.md |
-| Tempo Debouncing | ⚠️ MEDIUM | 0 (task update) | Updated Task 1.2 |
-| **TOTAL** | | **+5 days Week 0** + **1-2 weeks buffer** | **6-8 weeks total** |
+| Gap                       | Priority  | Days Added                                | Deliverable                     |
+| ------------------------- | --------- | ----------------------------------------- | ------------------------------- |
+| CoreServices Integration  | 🚨 HIGH   | +2 (Task 0.6)                             | CORE_SERVICES_CALL_SITES.md     |
+| State Consolidation       | 🚨 HIGH   | +1 (Task 0.7)                             | STATE_CONSOLIDATION_STRATEGY.md |
+| PluginManager Integration | 🚨 HIGH   | +1 (Task 0.9)                             | PLUGIN_MANAGER_INTEGRATION.md   |
+| Memory Leak Audit         | ⚠️ MEDIUM | +1 (Task 0.8)                             | MEMORY_LEAK_AUDIT.md            |
+| Tempo Debouncing          | ⚠️ MEDIUM | 0 (task update)                           | Updated Task 1.2                |
+| **TOTAL**                 |           | **+5 days Week 0** + **1-2 weeks buffer** | **6-8 weeks total**             |
 
 ---
 
@@ -249,12 +269,14 @@ this.tempoChangeDebounce = window.setTimeout(() => {
 **v2.1 Timeline:** 6-8 weeks
 
 **Breakdown:**
+
 - Week 0: 5 days → **10 days** (+5 days)
 - Weeks 1-7: Same as v2.0
 - Week 8: **Buffer week** for stabilization (+1 week)
 
 **Critical Success Factor:**
 These gaps would have been discovered during implementation anyway, causing:
+
 - Mid-implementation surprises and replanning
 - Scope creep and timeline slippage
 - Integration failures and emergency fixes
@@ -384,6 +406,7 @@ this.tempoChangeDebounce = window.setTimeout(() => {
 
 **Why the Additional Extension (v2.1)?**
 Codebase analysis revealed 5 critical gaps not captured in v2.0:
+
 - Week 0: Extended from 5 days to **10 days** (added Tasks 0.6-0.9) ⚠️ NEW
   - Complete CoreServices call site mapping (2 days) 🚨 CRITICAL
   - State consolidation strategy (1 day) 🚨 CRITICAL
@@ -396,6 +419,7 @@ Codebase analysis revealed 5 critical gaps not captured in v2.0:
 - Week 8: Stabilization before code deletion (buffer week) ⚠️ NEW
 
 **v2.1 Week Breakdown:**
+
 ```
 Week 0 (10 days): Pre-flight checks + gap analysis
 Week 1-2 (10 days): Core implementation
@@ -407,6 +431,7 @@ Week 8 (5 days): Stabilization and old code removal
 ```
 
 **Critical Success Factors:**
+
 1. **Don't skip Week 0 extended tasks** - They prevent major integration failures
 2. **Don't rush code deletion** - Wait for production stability (Week 8)
 3. **Monitor metrics continuously** - Be ready to rollback at any phase
@@ -488,6 +513,7 @@ start(audioContext, sampleRate, setAudioContext, setSampleRate, ...) {
 ```
 
 **Why This Is Bad:**
+
 - 200 lines of indirection for zero benefit
 - Harder to debug (callback tracing)
 - Harder to understand (why the detour?)
@@ -514,6 +540,7 @@ schedule(event) {
 ```
 
 **FAANG Reality:**
+
 - Instruments are **data** (configuration), not classes
 - One scheduler handles all instruments
 - Instrument-specific behavior is configuration:
@@ -532,16 +559,19 @@ scheduler.schedule(event, INSTRUMENT_CONFIGS[event.instrument]);
 #### 3. Premature Extraction (Single-Function "Classes")
 
 **VelocityLayerSelector** (100 lines):
+
 - Single responsibility: Map MIDI velocity → layer name
 - Used by exactly ONE place (HarmonyScheduler)
 - Should be a 10-line private method
 
 **DiagnosticLogger** (200 lines):
+
 - Single responsibility: Print CC64 timeline to console
 - Used for debugging only
 - Should be a utility function
 
 **ConfigurationManager** (200 lines):
+
 - Three methods: `enableCountdown()`, `disableCountdown()`, `addCountdownRegion()`
 - Just configuration state
 - Should be properties on PlaybackEngine
@@ -553,21 +583,25 @@ scheduler.schedule(event, INSTRUMENT_CONFIGS[event.instrument]);
 ### How Did This Happen?
 
 **Phase 1: "RegionProcessor is too big" (TRUE)**
+
 - Original RegionProcessor: 3000+ lines, did everything
 - Legitimate God Object
 
 **Phase 2: "Extract responsibilities" (GOOD START)**
+
 - Created BufferManager ✅
 - Created SustainPedal logic ✅
 - Created TimeConverter ✅
 
 **Phase 3: "Extract EVERYTHING" (WENT TOO FAR)**
+
 - Extracted single methods into classes
 - Created coordinators to coordinate the modules
 - Split one scheduler into 6 schedulers
 - **Net complexity INCREASED**
 
 **Phase 4: "Coordinator Hell" (COMPOUNDED THE PROBLEM)**
+
 - RegionProcessor became a thin shell
 - LifecycleCoordinator created to orchestrate
 - Callback ping-pong between modules
@@ -579,11 +613,13 @@ scheduler.schedule(event, INSTRUMENT_CONFIGS[event.instrument]);
 **They're bad because they're extracted at the wrong granularity level.**
 
 **Wrong Granularity:**
+
 - VelocityLayerSelector (10 lines of logic)
 - DiagnosticLogger (one console.table call)
 - 6 schedulers (same logic repeated)
 
 **Right Granularity:**
+
 - BufferManager (complex buffer organization)
 - SustainPedal (domain-specific logic)
 - Scheduler (all audio scheduling)
@@ -617,6 +653,7 @@ Integration Updates (MISSING FROM v1.0):
 #### 1. PlaybackEngine.ts (Main Coordinator)
 
 **Responsibilities:**
+
 - Track registration and lifecycle
 - Start/stop/pause playback
 - Countdown configuration
@@ -627,39 +664,42 @@ Integration Updates (MISSING FROM v1.0):
 - **Integration with CoreServices** ⚠️ NEW requirement
 
 **Consolidates:**
+
 - RegionProcessor (coordination logic only)
 - LifecycleCoordinator (lifecycle is coordinator's job)
 - ConfigurationManager (countdown is just configuration)
 - TrackManager (validation is coordination)
 
 **Key Methods:**
+
 ```typescript
 class PlaybackEngine {
   // Core API
-  registerTracks(tracks: Track[]): void
-  start(): void
-  stop(): void
-  pause(): void
-  updateTempo(bpm: number): void  // ⚠️ MUST preserve debouncing from Bug #6
+  registerTracks(tracks: Track[]): void;
+  start(): void;
+  stop(): void;
+  pause(): void;
+  updateTempo(bpm: number): void; // ⚠️ MUST preserve debouncing from Bug #6
 
   // Lifecycle (Bug #7 fix)
-  dispose(): void  // ⚠️ MUST clean up all listeners
+  dispose(): void; // ⚠️ MUST clean up all listeners
 
   // Configuration
-  enableCountdown(timeSignature): void
-  setAudioContext(context: AudioContext): void
+  enableCountdown(timeSignature): void;
+  setAudioContext(context: AudioContext): void;
 
   // State (Bug #1 fix - single source of truth)
-  getState(): PlaybackState
-  isPlaying(): boolean
+  getState(): PlaybackState;
+  isPlaying(): boolean;
 
   // Integration (MISSING FROM v1.0)
-  setPluginManager(pm: PluginManager): void
-  setBufferCache(cache: GlobalSampleCache): void
+  setPluginManager(pm: PluginManager): void;
+  setBufferCache(cache: GlobalSampleCache): void;
 }
 ```
 
 **Critical Bug Preservation:**
+
 ```typescript
 // ⚠️ MUST PRESERVE from RegionProcessor:
 
@@ -697,6 +737,7 @@ dispose() {
 #### 2. Scheduler.ts (Unified Audio Scheduling)
 
 **Responsibilities:**
+
 - Schedule ALL audio events (metronome, drums, bass, harmony, voice cues)
 - Convert musical time → audio time
 - Manage AudioBufferSourceNode lifecycle
@@ -704,6 +745,7 @@ dispose() {
 - Interact with SustainPedal for note duration
 
 **Consolidates:**
+
 - RegionScheduler
 - SimpleInstrumentScheduler (×4 instances)
 - HarmonyScheduler (special logic becomes configuration)
@@ -711,37 +753,39 @@ dispose() {
 - VelocityLayerSelector (inline as private method)
 
 **Key Methods:**
+
 ```typescript
 class Scheduler {
-  schedule(event: ScheduledEvent): void
-  scheduleRegion(region: Region, offsetBeats: number): void
-  cancelAllScheduled(): void
-  cleanupSources(): void  // NEW: Fix memory leak
+  schedule(event: ScheduledEvent): void;
+  scheduleRegion(region: Region, offsetBeats: number): void;
+  cancelAllScheduled(): void;
+  cleanupSources(): void; // NEW: Fix memory leak
 
   // Private helpers
-  private selectVelocityLayer(velocity: number): string
-  private applyInstrumentConfig(event, config): void
+  private selectVelocityLayer(velocity: number): string;
+  private applyInstrumentConfig(event, config): void;
 }
 ```
 
 **Instrument Configs (Data, Not Classes):**
+
 ```typescript
 const INSTRUMENT_CONFIGS = {
   metronome: {
     preserveAttack: true,
     baseVolume: 0.8,
-    bufferMapping: { accent: 'accent', click: 'click' }
+    bufferMapping: { accent: 'accent', click: 'click' },
   },
   drums: {
     preserveAttack: false,
     baseVolume: 0.8,
-    bufferMapping: { kick: 'kick', snare: 'snare', hihat: 'hihat' }
+    bufferMapping: { kick: 'kick', snare: 'snare', hihat: 'hihat' },
   },
   harmony: {
     sustainPedal: true,
     velocityLayers: true,
     baseVolume: 1.0,
-    polyphony: 32
+    polyphony: 32,
   },
   // ...
 };
@@ -752,6 +796,7 @@ const INSTRUMENT_CONFIGS = {
 #### 3. BufferCache.ts ✅ KEEP AS-IS
 
 **Responsibilities:**
+
 - Organize buffers by instrument and layer
 - Provide buffer lookup
 - Manage buffer lifecycle
@@ -763,6 +808,7 @@ const INSTRUMENT_CONFIGS = {
 #### 4. SustainPedal.ts ✅ KEEP AS-IS
 
 **Responsibilities:**
+
 - Build CC64 timeline from MIDI events
 - Calculate note duration based on pedal state
 - Piano-specific sustain logic
@@ -774,20 +820,23 @@ const INSTRUMENT_CONFIGS = {
 #### 5. timeUtils.ts (Pure Functions)
 
 **Responsibilities:**
+
 - Convert musical position → beats
 - Convert beats → seconds (based on BPM)
 - Parse position strings ("0:2:0")
 - Calculate exercise duration
 
 **Refactors:**
+
 - TimePositionConverter (class) → Pure functions
 
 **Key Functions:**
+
 ```typescript
-export function parsePosition(position: string | object, bpm: number): number
-export function beatsToSeconds(beats: number, bpm: number): number
-export function calculateDuration(tracks: Track[], bpm: number): number
-export function parseTransportPosition(pos: Tone.TransportTime): number
+export function parsePosition(position: string | object, bpm: number): number;
+export function beatsToSeconds(beats: number, bpm: number): number;
+export function calculateDuration(tracks: Track[], bpm: number): number;
+export function parseTransportPosition(pos: Tone.TransportTime): number;
 ```
 
 **Size:** ~100 lines (down from 200 lines in TimePositionConverter)
@@ -795,6 +844,7 @@ export function parseTransportPosition(pos: Tone.TransportTime): number
 #### 6. MetricsCollector.ts ✅ KEEP AS-IS
 
 **Responsibilities:**
+
 - Track scheduling performance
 - Collect timing metrics
 - Report statistics
@@ -819,6 +869,7 @@ Week 6: Stabilization & Cleanup
 ```
 
 **Critical Success Factors:**
+
 1. **Don't skip Week 0** - Proper planning prevents major issues
 2. **Preserve all bug fixes** - Test each one explicitly
 3. **Feature flag everything** - Enable gradual rollout
@@ -837,6 +888,7 @@ Week 6: Stabilization & Cleanup
 **Owner:** Architecture Team
 
 **Subtasks:**
+
 - [ ] Map all 8+ state sources to diagram
 - [ ] Document state transitions for each source
 - [ ] Identify state synchronization points
@@ -846,6 +898,7 @@ Week 6: Stabilization & Cleanup
 **Deliverable:** `docs/implementations/STATE_CONSOLIDATION_MAP.md`
 
 **Acceptance Criteria:**
+
 - [ ] All state sources identified and documented
 - [ ] State machine diagrams created
 - [ ] Team reviewed and approved
@@ -857,6 +910,7 @@ Week 6: Stabilization & Cleanup
 **Owner:** Architecture Team
 
 **Subtasks:**
+
 - [ ] Find all call sites to `coreServices.getRegionProcessor()` (estimated 20+)
 - [ ] Document AudioProvider wiring for RegionProcessor
 - [ ] Map PluginManager integration points
@@ -866,6 +920,7 @@ Week 6: Stabilization & Cleanup
 **Deliverable:** `docs/implementations/CORE_SERVICES_INTEGRATION.md`
 
 **Acceptance Criteria:**
+
 - [ ] All 20+ call sites documented
 - [ ] Integration change strategy approved
 - [ ] No missed integration points
@@ -877,6 +932,7 @@ Week 6: Stabilization & Cleanup
 **Owner:** QA + Engineering
 
 **Subtasks:**
+
 - [ ] Document 100+ exercise switching scenarios
 - [ ] Create memory leak detection test harness
 - [ ] Create tempo change regression tests
@@ -886,6 +942,7 @@ Week 6: Stabilization & Cleanup
 **Deliverable:** `apps/frontend/src/domains/playback/services/core/__tests__/regression-suite/`
 
 **Acceptance Criteria:**
+
 - [ ] 100+ test scenarios documented
 - [ ] Baseline metrics captured for comparison
 - [ ] Test suite runs successfully on current code
@@ -897,6 +954,7 @@ Week 6: Stabilization & Cleanup
 **Owner:** DevOps + Engineering
 
 **Subtasks:**
+
 - [ ] Add `ENABLE_NEW_PLAYBACK_ENGINE` feature flag
 - [ ] Create flag management UI (admin panel)
 - [ ] Set up flag monitoring/analytics
@@ -906,6 +964,7 @@ Week 6: Stabilization & Cleanup
 **Deliverable:** Feature flag system ready
 
 **Acceptance Criteria:**
+
 - [ ] Flag exists and defaults to `false`
 - [ ] Can toggle per user/percentage
 - [ ] Monitoring shows flag evaluations
@@ -918,6 +977,7 @@ Week 6: Stabilization & Cleanup
 **Owner:** DevOps + Engineering
 
 **Subtasks:**
+
 - [ ] Create production monitoring dashboard
 - [ ] Set up alerts for key metrics (memory, timing, errors)
 - [ ] Document rollback procedure (flip flag to disable)
@@ -927,6 +987,7 @@ Week 6: Stabilization & Cleanup
 **Deliverable:** `docs/implementations/ROLLBACK_PROCEDURE.md`
 
 **Acceptance Criteria:**
+
 - [ ] Dashboard shows real-time playback health
 - [ ] Alerts trigger on metric degradation >10%
 - [ ] Rollback can happen in <5 minutes
@@ -941,6 +1002,7 @@ Week 6: Stabilization & Cleanup
 **Priority:** HIGH - This task was severely underestimated in original plan
 
 **Subtasks:**
+
 - [ ] **Day 6:** Exhaustive call site analysis
   - [ ] Run: `grep -r "getRegionProcessor" apps/frontend/src` and document all results
   - [ ] For each call site, document:
@@ -962,6 +1024,7 @@ Week 6: Stabilization & Cleanup
 **Deliverable:** `docs/implementations/CORE_SERVICES_CALL_SITES.md`
 
 **Acceptance Criteria:**
+
 - [ ] All getRegionProcessor() call sites documented (expect 20-30)
 - [ ] Migration complexity assessed for each
 - [ ] GlobalAudioSystem singleton behavior verified
@@ -970,6 +1033,7 @@ Week 6: Stabilization & Cleanup
 
 **Why This Matters:**
 Original plan allocated 2 days (Task 1.4, Days 8-9) for CoreServices integration. Codebase analysis revealed:
+
 - AudioProvider has complex initialization with strict ordering
 - GlobalAudioSystem singleton requires careful handling
 - WindowRegistry integration is critical for Bug #3
@@ -986,6 +1050,7 @@ Original plan allocated 2 days (Task 1.4, Days 8-9) for CoreServices integration
 **Priority:** HIGH - Missing from v1.0 plan
 
 **Subtasks:**
+
 - [ ] Create state transition matrix (old state → new state)
   - RegionProcessor.isRunning → PlaybackEngine.getState()
   - AudioEngine.isInitialized → How to handle?
@@ -1011,6 +1076,7 @@ Original plan allocated 2 days (Task 1.4, Days 8-9) for CoreServices integration
 **Deliverable:** `docs/implementations/STATE_CONSOLIDATION_STRATEGY.md`
 
 **Acceptance Criteria:**
+
 - [ ] All 9 state sources have migration plan
 - [ ] State transition matrix documented
 - [ ] Synchronization strategy defined for feature flag period
@@ -1019,6 +1085,7 @@ Original plan allocated 2 days (Task 1.4, Days 8-9) for CoreServices integration
 
 **Why This Matters:**
 Original plan identified 8+ state sources but didn't show HOW to consolidate them. Without this:
+
 - Widgets may read stale state during migration
 - Feature flag toggle could cause state inconsistencies
 - Hard to verify migration completeness
@@ -1034,7 +1101,9 @@ Original plan identified 8+ state sources but didn't show HOW to consolidate the
 **Priority:** MEDIUM - Need to verify plan assumptions
 
 **Subtasks:**
+
 - [ ] Write memory leak detection test
+
   ```typescript
   it('should not leak AudioBufferSourceNodes over 10 plays', () => {
     const engine = new RegionProcessor(eventBus);
@@ -1062,6 +1131,7 @@ Original plan identified 8+ state sources but didn't show HOW to consolidate the
 **Deliverable:** `docs/implementations/MEMORY_LEAK_AUDIT.md`
 
 **Acceptance Criteria:**
+
 - [ ] Memory leak test written and runs successfully
 - [ ] Current behavior documented with evidence
 - [ ] Plan updated based on actual findings
@@ -1069,6 +1139,7 @@ Original plan identified 8+ state sources but didn't show HOW to consolidate the
 
 **Why This Matters:**
 Plan claims "Sources added but NEVER removed" but we found:
+
 - scheduledAudioSources Map exists with metadata
 - WindowRegistry exists (Bug #3 fix)
 - dispose() method exists (Bug #7 fix)
@@ -1086,6 +1157,7 @@ Need to verify if leak is ALREADY fixed before planning a fix.
 **Priority:** HIGH - Not mentioned in v1.0 plan
 
 **Subtasks:**
+
 - [ ] Document current PluginManager integration in RegionProcessor
   - setPluginManager(pluginManager: PluginManager)
   - getWamKeyboard(): WamKeyboard | null
@@ -1109,6 +1181,7 @@ Need to verify if leak is ALREADY fixed before planning a fix.
 **Deliverable:** `docs/implementations/PLUGIN_MANAGER_INTEGRATION.md`
 
 **Acceptance Criteria:**
+
 - [ ] Current integration documented with code examples
 - [ ] Expected behavior verified with tests
 - [ ] PlaybackEngine integration designed
@@ -1116,6 +1189,7 @@ Need to verify if leak is ALREADY fixed before planning a fix.
 
 **Why This Matters:**
 RegionProcessor has complex WAM keyboard integration:
+
 ```typescript
 setPluginManager(pluginManager: PluginManager): void
 private getWamKeyboard(): WamKeyboard | null
@@ -1123,6 +1197,7 @@ private getWamKeyboard(): WamKeyboard | null
 ```
 
 This is NOT mentioned anywhere in the plan. Without it:
+
 - WAM keyboard integration will break
 - Sustain pedal won't work with WAM instruments
 - Silent failure during migration
@@ -1140,6 +1215,7 @@ This is NOT mentioned anywhere in the plan. Without it:
 **Owner:** Senior Engineer
 
 **Subtasks:**
+
 - [ ] **Day 1:** Create `Scheduler.ts` with unified scheduling logic
   - [ ] Implement instrument configuration system
   - [ ] Implement `schedule()` method with configuration dispatch
@@ -1159,6 +1235,7 @@ This is NOT mentioned anywhere in the plan. Without it:
 **Deliverable:** `playback/services/core/Scheduler.ts` (300 lines)
 
 **Acceptance Criteria:**
+
 - [ ] Single `schedule()` method handles all instruments
 - [ ] Instrument behavior controlled by configuration data
 - [ ] Source cleanup prevents memory leaks (Bug #3)
@@ -1166,6 +1243,7 @@ This is NOT mentioned anywhere in the plan. Without it:
 - [ ] No memory leaks in 100-iteration test
 
 **Integration Points:**
+
 - Must work with existing BufferCache
 - Must work with existing SustainPedal
 - Must preserve timing accuracy (99%+ target)
@@ -1177,6 +1255,7 @@ This is NOT mentioned anywhere in the plan. Without it:
 **Owner:** Senior Engineer
 
 **Subtasks:**
+
 - [ ] **Day 4:** Core coordination logic
   - [ ] Create `PlaybackEngine.ts` with state machine
   - [ ] Move track registration from TrackManager
@@ -1199,6 +1278,7 @@ This is NOT mentioned anywhere in the plan. Without it:
 **Deliverable:** `playback/services/core/PlaybackEngine.ts` (500 lines)
 
 **Acceptance Criteria:**
+
 - [ ] PlaybackEngine owns all coordination logic
 - [ ] No more callback delegation
 - [ ] Clean shutdown with `dispose()` (Bug #7)
@@ -1213,6 +1293,7 @@ This is NOT mentioned anywhere in the plan. Without it:
 **Owner:** Mid-Level Engineer
 
 **Subtasks:**
+
 - [ ] Create `timeUtils.ts` with pure functions
 - [ ] Extract functions from TimePositionConverter
 - [ ] Remove class wrapper (pure functions only)
@@ -1222,6 +1303,7 @@ This is NOT mentioned anywhere in the plan. Without it:
 **Deliverable:** `playback/services/core/timeUtils.ts` (100 lines)
 
 **Acceptance Criteria:**
+
 - [ ] All time conversion functions are pure (no state)
 - [ ] Tests verify correctness against old implementation
 - [ ] No dependencies on other modules
@@ -1234,6 +1316,7 @@ This is NOT mentioned anywhere in the plan. Without it:
 **Owner:** Senior Engineer
 
 **Subtasks:**
+
 - [ ] **Day 8:** Add PlaybackEngine to CoreServices
   - [ ] Add `getPlaybackEngine()` method to CoreServices
   - [ ] Wire PlaybackEngine initialization in CoreServices constructor
@@ -1250,6 +1333,7 @@ This is NOT mentioned anywhere in the plan. Without it:
 **Deliverable:** Updated `CoreServices.ts` and `AudioProvider.tsx`
 
 **Acceptance Criteria:**
+
 - [ ] Feature flag controls which engine is used
 - [ ] Both engines can coexist during migration
 - [ ] No breaking changes to existing API
@@ -1263,6 +1347,7 @@ This is NOT mentioned anywhere in the plan. Without it:
 **Owner:** Mid-Level Engineer
 
 **Subtasks:**
+
 - [ ] Register PlaybackEngine instances in WindowRegistry (Bug #3)
 - [ ] Update WindowRegistry to track both RegionProcessor and PlaybackEngine
 - [ ] Test cleanup on page navigation
@@ -1272,6 +1357,7 @@ This is NOT mentioned anywhere in the plan. Without it:
 **Deliverable:** Updated `WindowRegistry.ts`
 
 **Acceptance Criteria:**
+
 - [ ] PlaybackEngine instances tracked
 - [ ] Cleanup works in all scenarios
 - [ ] Bug #3 fix preserved
@@ -1286,6 +1372,7 @@ This is NOT mentioned anywhere in the plan. Without it:
 **Location:** Scheduler.ts (new)
 
 **Current Issue:**
+
 ```typescript
 // RegionProcessor.ts line 123-126
 private scheduledAudioSources = new Map<
@@ -1297,6 +1384,7 @@ private scheduledAudioSources = new Map<
 ```
 
 **Fix:**
+
 ```typescript
 // Scheduler.ts
 class Scheduler {
@@ -1305,7 +1393,7 @@ class Scheduler {
   schedule(event) {
     const source = this.createSource(event);
     source.onended = () => {
-      this.activeSources = this.activeSources.filter(s => s !== source);
+      this.activeSources = this.activeSources.filter((s) => s !== source);
       source.disconnect();
     };
     this.activeSources.push(source);
@@ -1313,7 +1401,7 @@ class Scheduler {
   }
 
   stop() {
-    this.activeSources.forEach(source => {
+    this.activeSources.forEach((source) => {
       source.stop();
       source.disconnect();
     });
@@ -1323,6 +1411,7 @@ class Scheduler {
 ```
 
 **Test:**
+
 ```typescript
 it('should clean up audio sources after playback', () => {
   scheduler.schedule(event);
@@ -1338,6 +1427,7 @@ it('should clean up audio sources after playback', () => {
 **Location:** PlaybackEngine.ts (new)
 
 **Current Issue:**
+
 ```typescript
 // When tempo changes, events are rescheduled
 // But Web Audio timeline events are NOT cancelled
@@ -1345,6 +1435,7 @@ it('should clean up audio sources after playback', () => {
 ```
 
 **Fix:**
+
 ```typescript
 // PlaybackEngine.ts
 updateTempo(newBpm: number) {
@@ -1367,6 +1458,7 @@ updateTempo(newBpm: number) {
 ```
 
 **Test:**
+
 ```typescript
 it('should reschedule events on tempo change', async () => {
   await engine.start();
@@ -1383,6 +1475,7 @@ it('should reschedule events on tempo change', async () => {
 **Location:** PlaybackEngine.ts (new)
 
 **Current Issue:**
+
 ```typescript
 // When switching exercises:
 // - New samples loaded ✅
@@ -1393,6 +1486,7 @@ it('should reschedule events on tempo change', async () => {
 ```
 
 **Fix:**
+
 ```typescript
 // PlaybackEngine.ts
 dispose() {
@@ -1424,6 +1518,7 @@ switchExercise(newExercise) {
 ```
 
 **Test:**
+
 ```typescript
 it('should clean up all resources on dispose', () => {
   engine.loadExercise(exercise1);
@@ -1442,6 +1537,7 @@ it('should clean up all resources on dispose', () => {
 **Location:** PlaybackEngine.ts (new)
 
 **Current Issue:**
+
 ```typescript
 // Playback state scattered across multiple classes:
 // - RegionProcessor.isRunning
@@ -1451,6 +1547,7 @@ it('should clean up all resources on dispose', () => {
 ```
 
 **Fix:**
+
 ```typescript
 // PlaybackEngine.ts - Single source of truth
 class PlaybackEngine {
@@ -1468,16 +1565,17 @@ class PlaybackEngine {
 }
 
 type PlaybackState =
-  | 'uninitialized'  // Before any setup
-  | 'loading'        // Loading samples
-  | 'ready'          // Ready to play
-  | 'playing'        // Currently playing
-  | 'paused'         // Paused
-  | 'stopped'        // Stopped (can resume)
-  | 'disposed';      // Cleaned up
+  | 'uninitialized' // Before any setup
+  | 'loading' // Loading samples
+  | 'ready' // Ready to play
+  | 'playing' // Currently playing
+  | 'paused' // Paused
+  | 'stopped' // Stopped (can resume)
+  | 'disposed'; // Cleaned up
 ```
 
 **Test:**
+
 ```typescript
 it('should transition through states correctly', async () => {
   expect(engine.getState()).toBe('uninitialized');
@@ -1499,6 +1597,7 @@ it('should transition through states correctly', async () => {
 ### Phase 3: Migration (Week 2-3)
 
 **Goals:**
+
 - Switch all callers to use new modules
 - Remove old modules
 - Update tests
@@ -1506,12 +1605,14 @@ it('should transition through states correctly', async () => {
 #### Step 3.1: Update Widget Integration (Days 1-2)
 
 **Widgets to Update:**
+
 - HarmonyWidget
 - DrummerWidget
 - MetronomeWidget
 - VoiceCueWidget
 
 **Changes:**
+
 ```typescript
 // Before (widgets access RegionProcessor)
 const regionProcessor = coreServices.getRegionProcessor();
@@ -1525,6 +1626,7 @@ playbackEngine.registerTrack(harmonyTrack);
 #### Step 3.2: Update Tests (Days 3-4)
 
 **Test Categories:**
+
 1. Unit tests for new modules
 2. Integration tests for PlaybackEngine
 3. Migration tests (old API → new API compatibility)
@@ -1532,6 +1634,7 @@ playbackEngine.registerTrack(harmonyTrack);
 #### Step 3.3: Remove Old Modules (Day 5)
 
 **Delete:**
+
 - LifecycleCoordinator.ts
 - ConfigurationManager.ts
 - TrackManager.ts
@@ -1544,6 +1647,7 @@ playbackEngine.registerTrack(harmonyTrack);
 - TimePositionConverter.ts (class version)
 
 **Keep:**
+
 - BufferManager.ts → Rename to BufferCache.ts
 - SustainPedalManager.ts → Rename to SustainPedal.ts
 - TimingMetricsCollector.ts → Rename to MetricsCollector.ts
@@ -1557,6 +1661,7 @@ playbackEngine.registerTrack(harmonyTrack);
 **Purpose:** Main coordinator for playback operations
 
 **Dependencies:**
+
 ```typescript
 import { Scheduler } from './Scheduler.js';
 import { BufferCache } from './BufferCache.js';
@@ -1567,6 +1672,7 @@ import { EventBus } from './EventBus.js';
 ```
 
 **Class Definition:**
+
 ```typescript
 export class PlaybackEngine {
   private scheduler: Scheduler;
@@ -1590,47 +1696,51 @@ export class PlaybackEngine {
   }
 
   // Initialization
-  setAudioContext(context: AudioContext): void
+  setAudioContext(context: AudioContext): void;
 
   // Track Management
-  registerTrack(track: Track): void
-  registerTracks(tracks: Track[]): void
-  clearTracks(): void
+  registerTrack(track: Track): void;
+  registerTracks(tracks: Track[]): void;
+  clearTracks(): void;
 
   // Countdown Configuration
-  enableCountdown(timeSignature: { numerator: number; denominator: number }): void
-  disableCountdown(): void
-  addCountdownRegion(timeSignature): void
-  addVoiceCountdownRegion(timeSignature): void
+  enableCountdown(timeSignature: {
+    numerator: number;
+    denominator: number;
+  }): void;
+  disableCountdown(): void;
+  addCountdownRegion(timeSignature): void;
+  addVoiceCountdownRegion(timeSignature): void;
 
   // Buffer Management (delegate to BufferCache)
-  setMetronomeBuffers(accent: AudioBuffer, click: AudioBuffer): void
-  setHarmonyBuffers(buffers: Map<string, AudioBuffer>): void
-  setDrumBuffers(buffers: Map<string, AudioBuffer>): void
-  setBassBuffers(buffers: Map<string, AudioBuffer>): void
-  setVoiceCueBuffers(buffers: Map<string, AudioBuffer>): void
+  setMetronomeBuffers(accent: AudioBuffer, click: AudioBuffer): void;
+  setHarmonyBuffers(buffers: Map<string, AudioBuffer>): void;
+  setDrumBuffers(buffers: Map<string, AudioBuffer>): void;
+  setBassBuffers(buffers: Map<string, AudioBuffer>): void;
+  setVoiceCueBuffers(buffers: Map<string, AudioBuffer>): void;
 
   // Playback Control
-  start(): void
-  stop(): void
-  pause(): void
-  updateTempo(bpm: number): void
+  start(): void;
+  stop(): void;
+  pause(): void;
+  updateTempo(bpm: number): void;
 
   // Lifecycle
-  dispose(): void
+  dispose(): void;
 
   // State
-  getState(): PlaybackState
-  isPlaying(): boolean
+  getState(): PlaybackState;
+  isPlaying(): boolean;
 
   // Private Helpers
-  private setState(newState: PlaybackState): void
-  private validateTracks(tracks: Track[]): void
-  private scheduleAllRegions(): void
+  private setState(newState: PlaybackState): void;
+  private validateTracks(tracks: Track[]): void;
+  private scheduleAllRegions(): void;
 }
 ```
 
 **State Machine:**
+
 ```
 uninitialized → loading → ready
                            ↓
@@ -1646,6 +1756,7 @@ uninitialized → loading → ready
 **Purpose:** Schedule all audio events across all instruments
 
 **Dependencies:**
+
 ```typescript
 import { BufferCache } from './BufferCache.js';
 import { SustainPedal } from './SustainPedal.js';
@@ -1653,6 +1764,7 @@ import * as timeUtils from './timeUtils.js';
 ```
 
 **Class Definition:**
+
 ```typescript
 interface InstrumentConfig {
   preserveAttack: boolean;
@@ -1666,7 +1778,12 @@ interface InstrumentConfig {
 const INSTRUMENT_CONFIGS: Record<string, InstrumentConfig> = {
   metronome: { preserveAttack: true, baseVolume: 0.8 },
   drums: { preserveAttack: false, baseVolume: 0.8 },
-  harmony: { sustainPedal: true, velocityLayers: true, polyphony: 32, baseVolume: 1.0 },
+  harmony: {
+    sustainPedal: true,
+    velocityLayers: true,
+    polyphony: 32,
+    baseVolume: 1.0,
+  },
   bass: { sustainPedal: false, baseVolume: 0.9 },
   voiceCue: { preserveAttack: false, baseVolume: 0.9 },
 };
@@ -1683,36 +1800,37 @@ export class Scheduler {
     this.sustainPedal = sustainPedal;
   }
 
-  setAudioContext(context: AudioContext): void
+  setAudioContext(context: AudioContext): void;
 
   // Core Scheduling
-  schedule(event: ScheduledEvent): void
-  scheduleRegion(region: Region, offsetBeats: number, bpm: number): void
-  scheduleAllRegions(tracks: Track[], offsetBeats: number, bpm: number): void
+  schedule(event: ScheduledEvent): void;
+  scheduleRegion(region: Region, offsetBeats: number, bpm: number): void;
+  scheduleAllRegions(tracks: Track[], offsetBeats: number, bpm: number): void;
 
   // Control
-  cancelAllScheduled(): void
-  cleanupSources(): void
+  cancelAllScheduled(): void;
+  cleanupSources(): void;
 
   // Query
-  getActiveSourceCount(): number
+  getActiveSourceCount(): number;
 
   // Private Scheduling Helpers
-  private scheduleMetronome(event, audioTime): void
-  private scheduleDrums(event, audioTime): void
-  private scheduleHarmony(event, audioTime): void
-  private scheduleBass(event, audioTime): void
-  private scheduleVoiceCue(event, audioTime): void
+  private scheduleMetronome(event, audioTime): void;
+  private scheduleDrums(event, audioTime): void;
+  private scheduleHarmony(event, audioTime): void;
+  private scheduleBass(event, audioTime): void;
+  private scheduleVoiceCue(event, audioTime): void;
 
   // Private Utilities
-  private createSource(buffer: AudioBuffer): AudioBufferSourceNode
-  private selectVelocityLayer(velocity: number, instrument: string): string
-  private applyInstrumentConfig(source, event, config): void
-  private calculateNoteDuration(event, config): number
+  private createSource(buffer: AudioBuffer): AudioBufferSourceNode;
+  private selectVelocityLayer(velocity: number, instrument: string): string;
+  private applyInstrumentConfig(source, event, config): void;
+  private calculateNoteDuration(event, config): number;
 }
 ```
 
 **Scheduling Flow:**
+
 ```
 schedule(event) →
   1. Determine instrument type
@@ -1732,6 +1850,7 @@ schedule(event) →
 **Purpose:** Pure time conversion functions
 
 **Exports:**
+
 ```typescript
 /**
  * Parse Tone.js position string to beats
@@ -1740,20 +1859,20 @@ schedule(event) →
  */
 export function parsePosition(
   position: string | object,
-  timeSignature?: { numerator: number; denominator: number }
-): number
+  timeSignature?: { numerator: number; denominator: number },
+): number;
 
 /**
  * Convert beats to seconds based on BPM
  * @example beatsToSeconds(4, 120) → 2 seconds
  */
-export function beatsToSeconds(beats: number, bpm: number): number
+export function beatsToSeconds(beats: number, bpm: number): number;
 
 /**
  * Convert seconds to beats based on BPM
  * @example secondsToBeats(2, 120) → 4 beats
  */
-export function secondsToBeats(seconds: number, bpm: number): number
+export function secondsToBeats(seconds: number, bpm: number): number;
 
 /**
  * Calculate total exercise duration from tracks
@@ -1761,13 +1880,13 @@ export function secondsToBeats(seconds: number, bpm: number): number
 export function calculateDuration(
   tracks: Track[],
   bpm: number,
-  countdownBeats: number
-): number
+  countdownBeats: number,
+): number;
 
 /**
  * Parse Tone.Transport position to seconds
  */
-export function parseTransportPosition(pos: any, bpm: number): number
+export function parseTransportPosition(pos: any, bpm: number): number;
 ```
 
 **No State:** All functions are pure (input → output, no side effects)
@@ -1779,17 +1898,20 @@ export function parseTransportPosition(pos: any, bpm: number): number
 ### Memory Leak Fix (Detailed)
 
 **Root Cause:**
+
 - `AudioBufferSourceNode` instances created during scheduling
 - Added to `scheduledAudioSources` Map
 - Never removed after playback completes
 - Each play session leaks ~50-200 nodes
 
 **Impact:**
+
 - Memory usage grows linearly with play count
 - After 10 play sessions: ~500MB leaked
 - After 50 play sessions: Browser slowdown/crash
 
 **Fix:**
+
 ```typescript
 // Scheduler.ts
 private activeSources: AudioBufferSourceNode[] = [];
@@ -1831,6 +1953,7 @@ stop() {
 ```
 
 **Test:**
+
 ```typescript
 describe('Memory Leak Prevention', () => {
   it('should clean up sources after playback', async () => {
@@ -1845,10 +1968,10 @@ describe('Memory Leak Prevention', () => {
   });
 
   it('should auto-cleanup on source end', async () => {
-    scheduler.schedule(shortEvent);  // 0.1s duration
+    scheduler.schedule(shortEvent); // 0.1s duration
     expect(scheduler.getActiveSourceCount()).toBe(1);
 
-    await wait(200);  // Wait for playback to end
+    await wait(200); // Wait for playback to end
     expect(scheduler.getActiveSourceCount()).toBe(0);
   });
 });
@@ -1857,12 +1980,14 @@ describe('Memory Leak Prevention', () => {
 ### Tempo Change Fix (Detailed)
 
 **Root Cause:**
+
 - Events scheduled in Web Audio timeline with absolute times
 - When tempo changes, new events scheduled with new BPM
 - Old events in timeline NOT cancelled
 - Result: Both old and new events play (double-triggering)
 
 **Example:**
+
 ```
 Initial: BPM 120
 - Event at beat 4 scheduled for audioTime 2.0s
@@ -1875,6 +2000,7 @@ Result: Event plays twice (1.71s and 2.0s)
 ```
 
 **Fix:**
+
 ```typescript
 // PlaybackEngine.ts
 updateTempo(newBpm: number) {
@@ -1935,6 +2061,7 @@ scheduleFromPosition(startBeats: number, bpm: number) {
 ```
 
 **Test:**
+
 ```typescript
 describe('Tempo Change', () => {
   it('should not double-trigger events', async () => {
@@ -1952,7 +2079,7 @@ describe('Tempo Change', () => {
 
     // Verify each event only triggered once
     const eventCounts = countEvents(events);
-    eventCounts.forEach(count => {
+    eventCounts.forEach((count) => {
       expect(count).toBe(1);
     });
   });
@@ -1997,6 +2124,7 @@ getRegionProcessor(): RegionProcessorAdapter {
 ```
 
 **Benefits:**
+
 - Zero breaking changes
 - Can migrate widgets one at a time
 - Remove adapter after full migration
@@ -2009,7 +2137,7 @@ getRegionProcessor(): RegionProcessorAdapter {
 export class RegionProcessor {
   constructor() {
     console.warn(
-      'RegionProcessor is deprecated. Please use PlaybackEngine instead.'
+      'RegionProcessor is deprecated. Please use PlaybackEngine instead.',
     );
   }
 }
@@ -2018,6 +2146,7 @@ export class RegionProcessor {
 ### Migration Checklist
 
 **Phase 1: New Modules Coexist**
+
 - [ ] Create PlaybackEngine.ts
 - [ ] Create Scheduler.ts
 - [ ] Create timeUtils.ts
@@ -2025,6 +2154,7 @@ export class RegionProcessor {
 - [ ] Adapter wraps new modules with old API
 
 **Phase 2: Widget Migration**
+
 - [ ] Update HarmonyWidget to use PlaybackEngine
 - [ ] Update DrummerWidget to use PlaybackEngine
 - [ ] Update MetronomeWidget to use PlaybackEngine
@@ -2032,11 +2162,13 @@ export class RegionProcessor {
 - [ ] Integration tests pass
 
 **Phase 3: Test Migration**
+
 - [ ] Update unit tests to use new modules
 - [ ] Update integration tests
 - [ ] All tests pass
 
 **Phase 4: Cleanup**
+
 - [ ] Remove adapter layer
 - [ ] Delete old modules
 - [ ] Update documentation
@@ -2048,6 +2180,7 @@ export class RegionProcessor {
 ### Unit Tests
 
 **PlaybackEngine Tests:**
+
 ```typescript
 describe('PlaybackEngine', () => {
   describe('Track Management', () => {
@@ -2076,6 +2209,7 @@ describe('PlaybackEngine', () => {
 ```
 
 **Scheduler Tests:**
+
 ```typescript
 describe('Scheduler', () => {
   describe('Event Scheduling', () => {
@@ -2100,6 +2234,7 @@ describe('Scheduler', () => {
 ```
 
 **timeUtils Tests:**
+
 ```typescript
 describe('timeUtils', () => {
   describe('parsePosition', () => {
@@ -2118,6 +2253,7 @@ describe('timeUtils', () => {
 ### Integration Tests
 
 **Full Playback Flow:**
+
 ```typescript
 describe('Playback Integration', () => {
   it('should load exercise and play from start to end', async () => {
@@ -2167,6 +2303,7 @@ describe('Playback Integration', () => {
 ### Performance Tests
 
 **Memory Leak Detection:**
+
 ```typescript
 describe('Memory Performance', () => {
   it('should not leak memory over 100 play cycles', async () => {
@@ -2189,6 +2326,7 @@ describe('Memory Performance', () => {
 ```
 
 **Scheduling Performance:**
+
 ```typescript
 describe('Scheduling Performance', () => {
   it('should schedule 1000 events in < 100ms', () => {
@@ -2196,7 +2334,7 @@ describe('Scheduling Performance', () => {
     const events = generateEvents(1000);
 
     const start = performance.now();
-    events.forEach(event => scheduler.schedule(event));
+    events.forEach((event) => scheduler.schedule(event));
     const duration = performance.now() - start;
 
     expect(duration).toBeLessThan(100);
@@ -2209,18 +2347,21 @@ describe('Scheduling Performance', () => {
 ## Rollout Plan
 
 ### Week 1: Implementation
+
 - [ ] Day 1-3: Create Scheduler.ts
 - [ ] Day 4-5: Create PlaybackEngine.ts
 - [ ] Day 6: Create timeUtils.ts
 - [ ] Day 7: Code review
 
 ### Week 2: Bug Fixes + Testing
+
 - [ ] Day 1-2: Fix memory leak
 - [ ] Day 3-4: Fix tempo change bug
 - [ ] Day 5: Fix exercise switch cleanup
 - [ ] Day 6-7: Integration testing
 
 ### Week 3: Migration + Deployment
+
 - [ ] Day 1-2: Migrate widgets
 - [ ] Day 3: Update tests
 - [ ] Day 4: Code review
@@ -2234,12 +2375,14 @@ describe('Scheduling Performance', () => {
 ### Code Quality Metrics
 
 **Before:**
+
 - Files: 23
 - Lines: ~5000
 - Cyclomatic complexity: High (10+ per method)
 - Test coverage: 65%
 
 **After:**
+
 - Files: 6
 - Lines: ~2000
 - Cyclomatic complexity: Low (< 5 per method)
@@ -2248,11 +2391,13 @@ describe('Scheduling Performance', () => {
 ### Performance Metrics
 
 **Before:**
+
 - Memory leak: 50MB per play session
 - Exercise switch: Memory accumulates
 - Tempo change: Double-triggering
 
 **After:**
+
 - Memory leak: 0MB (sources cleaned up)
 - Exercise switch: Memory stable
 - Tempo change: No double-triggering
@@ -2260,11 +2405,13 @@ describe('Scheduling Performance', () => {
 ### Developer Experience
 
 **Before:**
+
 - Time to understand flow: 2-3 hours
 - Files to read: 10+
 - Callback tracing: Difficult
 
 **After:**
+
 - Time to understand flow: 30 minutes
 - Files to read: 3-4
 - Callback tracing: Direct method calls
@@ -2274,6 +2421,7 @@ describe('Scheduling Performance', () => {
 ## Appendix A: Module Dependency Graph
 
 **Before (Complex):**
+
 ```
 RegionProcessor
 ├── LifecycleCoordinator
@@ -2299,6 +2447,7 @@ RegionProcessor
 ```
 
 **After (Simple):**
+
 ```
 PlaybackEngine
 ├── Scheduler
@@ -2334,9 +2483,9 @@ regionProcessor.start();
 regionProcessor.stop();
 
 // State (scattered)
-regionProcessor.isRunning
-audioEngine.isInitialized
-coreServices.isReady
+regionProcessor.isRunning;
+audioEngine.isInitialized;
+coreServices.isReady;
 ```
 
 ### New API (PlaybackEngine)
@@ -2360,11 +2509,12 @@ playbackEngine.pause();
 playbackEngine.updateTempo(140);
 
 // State (centralized)
-playbackEngine.getState()  // 'playing' | 'paused' | 'stopped' | etc.
-playbackEngine.isPlaying()
+playbackEngine.getState(); // 'playing' | 'paused' | 'stopped' | etc.
+playbackEngine.isPlaying();
 ```
 
 **Key Improvements:**
+
 - Cleaner API (fewer methods, clearer naming)
 - Centralized state
 - Better tempo control
@@ -2377,6 +2527,7 @@ playbackEngine.isPlaying()
 ### Widget Migration Example
 
 **Before:**
+
 ```typescript
 // HarmonyWidget.tsx
 const regionProcessor = coreServices.getRegionProcessor();
@@ -2389,16 +2540,14 @@ regionProcessor.registerTrack({
 });
 
 // Set buffers
-regionProcessor.setHarmonyBuffers(
-  harmonyBuffers,
-  audioContext.destination
-);
+regionProcessor.setHarmonyBuffers(harmonyBuffers, audioContext.destination);
 
 // Start playback
 regionProcessor.start();
 ```
 
 **After:**
+
 ```typescript
 // HarmonyWidget.tsx
 const playbackEngine = coreServices.getPlaybackEngine();
@@ -2418,6 +2567,7 @@ playbackEngine.start();
 ```
 
 **Changes:**
+
 - `getRegionProcessor()` → `getPlaybackEngine()`
 - No need to pass `destination` (handled internally)
 - Simpler API
@@ -2590,12 +2740,14 @@ playbackEngine.start();
 **PROCEED with this v2.1 plan.** The refactor is architecturally sound, and v2.1 addresses all critical gaps:
 
 ✅ **What's Ready:**
+
 - Target architecture is sound (23 → 6 modules)
 - Bug preservation strategy comprehensive
 - Feature flag infrastructure planned
 - Rollout strategy production-ready
 
 ⚠️ **What v2.1 Adds:**
+
 - Complete CoreServices integration analysis (Task 0.6)
 - State consolidation strategy (Task 0.7)
 - PluginManager integration docs (Task 0.9)
@@ -2603,6 +2755,7 @@ playbackEngine.start();
 - Realistic timeline: **6-8 weeks** (not 5-6 weeks)
 
 🚨 **Critical Success Factors:**
+
 1. **Complete all Week 0 tasks** (10 days) - Don't skip discovery
 2. **Don't rush implementation** - 6-8 weeks is realistic, not pessimistic
 3. **Monitor production metrics** - Be ready to rollback at any phase

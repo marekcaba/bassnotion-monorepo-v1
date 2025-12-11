@@ -63,10 +63,14 @@ export class TimingMetricsCollector {
     // Calculate expected frame based on beat number (0, 0.5, 1, 1.5...)
     // Assuming 120 BPM = 2 beats/sec = 0.5sec/beat = 24000 frames/beat at 48kHz
     const expectedBeatNumber = Math.round(transportTime * 2); // 0→0, 0.5→1, 1.0→2, etc
-    const expectedFrame = Math.round(expectedBeatNumber * this.metrics.expectedFrameInterval);
+    const expectedFrame = Math.round(
+      expectedBeatNumber * this.metrics.expectedFrameInterval,
+    );
 
     // Calculate actual frame offset from first beat
-    const firstBeatFrame = Math.round(this.transportStartTime * this.sampleRate);
+    const firstBeatFrame = Math.round(
+      this.transportStartTime * this.sampleRate,
+    );
     const frameFromStart = frame - firstBeatFrame;
 
     // Calculate jitter (deviation from expected grid)
@@ -91,7 +95,8 @@ export class TimingMetricsCollector {
 
     // Calculate average jitter
     const avgFrames =
-      this.metrics.frameDeltas.reduce((a, b) => a + b, 0) / this.metrics.frameDeltas.length;
+      this.metrics.frameDeltas.reduce((a, b) => a + b, 0) /
+      this.metrics.frameDeltas.length;
     this.metrics.avgJitter = (avgFrames / this.sampleRate) * 1000;
   }
 
@@ -107,7 +112,8 @@ export class TimingMetricsCollector {
       // Only report if we have new events (at least 8 new events, or any events after 5 seconds)
       const newEvents = this.metrics.totalEvents - lastReportedCount;
       if (newEvents >= 8 || (newEvents > 0 && this.metrics.totalEvents > 0)) {
-        const accuracy = (this.metrics.perfectFrames / this.metrics.totalEvents) * 100;
+        const accuracy =
+          (this.metrics.perfectFrames / this.metrics.totalEvents) * 100;
 
         logger.info('⏱️  Timing Metrics', {
           totalEvents: this.metrics.totalEvents,

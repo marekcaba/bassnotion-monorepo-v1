@@ -13,7 +13,7 @@ export default function TestAudioFlow() {
   const [toneTransportState, setToneTransportState] = useState('');
 
   const addLog = (message: string) => {
-    setLogs(prev => [...prev, `${new Date().toISOString()}: ${message}`]);
+    setLogs((prev) => [...prev, `${new Date().toISOString()}: ${message}`]);
   };
 
   const initialize = useCallback(async () => {
@@ -41,7 +41,7 @@ export default function TestAudioFlow() {
         triggerClick: (beat: number, velocity: number) => {
           console.log('Metronome triggerClick called!', { beat, velocity });
           addLog(`Metronome click: beat=${beat}, velocity=${velocity}`);
-        }
+        },
       };
       instrumentRegistry.setActive('metronome', testMetronome);
 
@@ -56,23 +56,27 @@ export default function TestAudioFlow() {
           { position: '1:1:0', type: 'click', velocity: 0.6 },
           { position: '1:2:0', type: 'click', velocity: 0.6 },
           { position: '1:3:0', type: 'click', velocity: 0.6 },
-        ]
+        ],
       };
 
       // Register track with RegionProcessor
       addLog('Registering track with RegionProcessor...');
-      playbackEngine.registerTracks([{
-        id: 'test-metronome-track',
-        name: 'Test Metronome',
-        instrumentType: 'metronome',
-        regions: [{
-          id: 'test-region-1',
-          trackId: 'test-metronome-track',
-          startTime: 0,
-          duration: 8,
-          pattern: testPattern
-        }]
-      }]);
+      playbackEngine.registerTracks([
+        {
+          id: 'test-metronome-track',
+          name: 'Test Metronome',
+          instrumentType: 'metronome',
+          regions: [
+            {
+              id: 'test-region-1',
+              trackId: 'test-metronome-track',
+              startTime: 0,
+              duration: 8,
+              pattern: testPattern,
+            },
+          ],
+        },
+      ]);
 
       // Start the region processor
       addLog('Starting RegionProcessor...');
@@ -87,7 +91,6 @@ export default function TestAudioFlow() {
         setTransportState(transport.getState());
         setToneTransportState(Tone.Transport.state);
       }, 100);
-
     } catch (error) {
       addLog(`Error: ${error}`);
       console.error(error);
@@ -107,7 +110,6 @@ export default function TestAudioFlow() {
       // Check Tone.Transport state
       addLog(`Tone.Transport state: ${Tone.Transport.state}`);
       addLog(`Tone.Transport position: ${Tone.Transport.position}`);
-
     } catch (error) {
       addLog(`Error starting: ${error}`);
       console.error(error);
@@ -128,7 +130,6 @@ export default function TestAudioFlow() {
 
       // Check Tone.Transport state
       addLog(`Tone.Transport state: ${Tone.Transport.state}`);
-
     } catch (error) {
       addLog(`Error stopping: ${error}`);
       console.error(error);
@@ -139,7 +140,7 @@ export default function TestAudioFlow() {
     const audioDebugger = AudioDebugger.getInstance();
     const events = audioDebugger.getRecentEvents(20);
     addLog('=== Recent Audio Events ===');
-    events.forEach(event => {
+    events.forEach((event) => {
       addLog(`[${event.source}] ${event.event}`);
     });
     audioDebugger.summary();
@@ -194,7 +195,9 @@ export default function TestAudioFlow() {
           <h2 className="text-lg mb-2">Logs:</h2>
           <div className="max-h-96 overflow-y-auto text-sm font-mono">
             {logs.map((log, i) => (
-              <div key={i} className="mb-1">{log}</div>
+              <div key={i} className="mb-1">
+                {log}
+              </div>
             ))}
           </div>
         </div>

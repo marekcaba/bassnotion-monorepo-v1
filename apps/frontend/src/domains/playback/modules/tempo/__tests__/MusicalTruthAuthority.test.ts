@@ -54,7 +54,10 @@ describe('MusicalTruthAuthority', () => {
   describe('Initialization', () => {
     it('should initialize with default values', () => {
       expect(authority.getBPM()).toBe(120);
-      expect(authority.getTimeSignature()).toEqual({ numerator: 4, denominator: 4 });
+      expect(authority.getTimeSignature()).toEqual({
+        numerator: 4,
+        denominator: 4,
+      });
       expect(authority.getDurationBars()).toBe(4);
       expect(authority.getCountdownBars()).toBe(1);
       expect(authority.getTotalBars()).toBe(5);
@@ -89,7 +92,10 @@ describe('MusicalTruthAuthority', () => {
 
       authority.setFromExercise(exercise);
 
-      expect(authority.getTimeSignature()).toEqual({ numerator: 3, denominator: 4 });
+      expect(authority.getTimeSignature()).toEqual({
+        numerator: 3,
+        denominator: 4,
+      });
     });
 
     it('should calculate duration from total_bars', () => {
@@ -117,20 +123,22 @@ describe('MusicalTruthAuthority', () => {
       expect(authority.getDurationBars()).toBe(4);
     });
 
-    it('should calculate duration from notes array', () => {
+    it('should calculate duration from notes array (with +1 for 0-indexed positions)', () => {
       const exercise: Exercise = {
         bpm: 120,
         timeSignature: { numerator: 4, denominator: 4 },
         notes: [
           { position: { measure: 1 } },
           { position: { measure: 2 } },
-          { position: { measure: 6 } }, // Last note in measure 6
+          { position: { measure: 6 } }, // Last note in measure 6 (0-indexed)
         ],
       };
 
       authority.setFromExercise(exercise);
 
-      expect(authority.getDurationBars()).toBe(6);
+      // Duration is lastMeasure + 1 because positions may be 0-indexed
+      // lastMeasure = 6, so duration = 6 + 1 = 7
+      expect(authority.getDurationBars()).toBe(7);
     });
 
     it('should default to 4 bars if no duration info', () => {
@@ -200,7 +208,7 @@ describe('MusicalTruthAuthority', () => {
         expect.objectContaining({
           bpm: 90,
           timeSignature: { numerator: 4, denominator: 4 },
-        })
+        }),
       );
     });
 
@@ -257,7 +265,10 @@ describe('MusicalTruthAuthority', () => {
     });
 
     it('getTimeSignature() returns current meter', () => {
-      expect(authority.getTimeSignature()).toEqual({ numerator: 3, denominator: 4 });
+      expect(authority.getTimeSignature()).toEqual({
+        numerator: 3,
+        denominator: 4,
+      });
     });
 
     it('getDurationBars() returns exercise duration without countdown', () => {
@@ -418,7 +429,10 @@ describe('MusicalTruthAuthority', () => {
 
       authority.setFromExercise(exercise);
 
-      expect(authority.getTimeSignature()).toEqual({ numerator: 7, denominator: 8 });
+      expect(authority.getTimeSignature()).toEqual({
+        numerator: 7,
+        denominator: 8,
+      });
       expect(Tone.Transport.timeSignature).toBe(7);
     });
   });

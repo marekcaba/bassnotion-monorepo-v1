@@ -197,7 +197,7 @@ describe('Creators API', () => {
 
         // Assert
         expect(consoleErrorSpy).toHaveBeenCalledWith(
-          expect.stringContaining('"message":"Error fetching creator stats:"')
+          expect.stringContaining('"message":"Error fetching creator stats:"'),
         );
         expect(result.error).toBe('Failed to fetch creator stats');
         expect(result.fallback).toEqual({
@@ -224,7 +224,7 @@ describe('Creators API', () => {
 
         // Assert
         expect(consoleErrorSpy).toHaveBeenCalledWith(
-          expect.stringContaining('"message":"Error fetching creator stats:"')
+          expect.stringContaining('"message":"Error fetching creator stats:"'),
         );
         expect(result.error).toBe('Failed to fetch creator stats');
         expect(result.fallback).toEqual({
@@ -382,7 +382,7 @@ describe('Creators API', () => {
 
         // Assert
         expect(consoleErrorSpy).toHaveBeenCalledWith(
-          expect.stringContaining('"message":"Error triggering batch update:"')
+          expect.stringContaining('"message":"Error triggering batch update:"'),
         );
         expect(result.success).toBe(false);
         expect(result.error).toBe('Failed to trigger batch update');
@@ -406,7 +406,7 @@ describe('Creators API', () => {
 
         // Assert
         expect(consoleErrorSpy).toHaveBeenCalledWith(
-          expect.stringContaining('"message":"Error triggering batch update:"')
+          expect.stringContaining('"message":"Error triggering batch update:"'),
         );
         expect(result.success).toBe(false);
         expect(result.error).toBe('Failed to trigger batch update');
@@ -557,7 +557,7 @@ describe('Creators API', () => {
 
         // Assert
         expect(consoleErrorSpy).toHaveBeenCalledWith(
-          expect.stringContaining('"message":"Error checking creator health:"')
+          expect.stringContaining('"message":"Error checking creator health:"'),
         );
         expect(result.success).toBe(false);
         expect(result.error).toBe('Failed to check creator health');
@@ -581,7 +581,7 @@ describe('Creators API', () => {
 
         // Assert
         expect(consoleErrorSpy).toHaveBeenCalledWith(
-          expect.stringContaining('"message":"Error checking creator health:"')
+          expect.stringContaining('"message":"Error checking creator health:"'),
         );
         expect(result.success).toBe(false);
         expect(result.error).toBe('Failed to check creator health');

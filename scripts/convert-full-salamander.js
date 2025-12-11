@@ -15,8 +15,24 @@ const execAsync = promisify(exec);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const INPUT_DIR = join(__dirname, '..', 'apps', 'frontend', 'public', 'samples', 'salamander-piano-full');
-const OUTPUT_DIR = join(__dirname, '..', 'apps', 'frontend', 'public', 'samples', 'salamander-mp3');
+const INPUT_DIR = join(
+  __dirname,
+  '..',
+  'apps',
+  'frontend',
+  'public',
+  'samples',
+  'salamander-piano-full',
+);
+const OUTPUT_DIR = join(
+  __dirname,
+  '..',
+  'apps',
+  'frontend',
+  'public',
+  'samples',
+  'salamander-mp3',
+);
 
 // Conversion settings
 const MP3_BITRATE = '192k'; // Higher quality for multi-velocity
@@ -32,7 +48,7 @@ async function ensureDir(dir) {
 
 async function convertFile(inputPath, outputPath) {
   const command = `ffmpeg -i "${inputPath}" -ab ${MP3_BITRATE} -ar ${SAMPLE_RATE} -y "${outputPath}"`;
-  
+
   try {
     await execAsync(command, { maxBuffer: 1024 * 1024 * 10 });
     return true;
@@ -63,15 +79,20 @@ async function main() {
   // Get all velocity directories
   const entries = await fs.readdir(INPUT_DIR, { withFileTypes: true });
   const velocityDirs = entries
-    .filter(e => e.isDirectory() && e.name.startsWith('v'))
-    .map(e => e.name)
+    .filter((e) => e.isDirectory() && e.name.startsWith('v'))
+    .map((e) => e.name)
     .sort((a, b) => parseInt(a.slice(1)) - parseInt(b.slice(1)));
 
   console.log(`📁 Found ${velocityDirs.length} velocity layers\n`);
 
   // Copy metadata
   const metadataPath = join(INPUT_DIR, 'metadata.json');
-  if (await fs.access(metadataPath).then(() => true).catch(() => false)) {
+  if (
+    await fs
+      .access(metadataPath)
+      .then(() => true)
+      .catch(() => false)
+  ) {
     await fs.copyFile(metadataPath, join(OUTPUT_DIR, 'metadata.json'));
   }
 
@@ -81,14 +102,14 @@ async function main() {
   // Process each velocity layer
   for (const velDir of velocityDirs) {
     console.log(`\n🎵 Processing velocity layer ${velDir}...`);
-    
+
     const inputVelDir = join(INPUT_DIR, velDir);
     const outputVelDir = join(OUTPUT_DIR, velDir);
     await ensureDir(outputVelDir);
 
     const files = await fs.readdir(inputVelDir);
-    const flacFiles = files.filter(f => f.endsWith('.flac'));
-    
+    const flacFiles = files.filter((f) => f.endsWith('.flac'));
+
     console.log(`   Found ${flacFiles.length} FLAC files`);
 
     let converted = 0;
@@ -99,8 +120,10 @@ async function main() {
       const outputFile = file.replace('.flac', '.mp3');
       const outputPath = join(outputVelDir, outputFile);
 
-      process.stdout.write(`\r   Converting: ${converted}/${flacFiles.length} (${failed} failed)`);
-      
+      process.stdout.write(
+        `\r   Converting: ${converted}/${flacFiles.length} (${failed} failed)`,
+      );
+
       if (await convertFile(inputPath, outputPath)) {
         converted++;
         totalConverted++;
@@ -110,7 +133,9 @@ async function main() {
       }
     }
 
-    console.log(`\r   ✅ Converted: ${converted}/${flacFiles.length} (${failed} failed)     `);
+    console.log(
+      `\r   ✅ Converted: ${converted}/${flacFiles.length} (${failed} failed)     `,
+    );
   }
 
   console.log(`\n📊 Conversion Summary:`);
@@ -119,11 +144,14 @@ async function main() {
 
   // Calculate file sizes
   console.log('💾 Calculating file sizes...');
-  
+
   const getDirectorySize = async (dir) => {
     let totalSize = 0;
-    const files = await fs.readdir(dir, { recursive: true, withFileTypes: true });
-    
+    const files = await fs.readdir(dir, {
+      recursive: true,
+      withFileTypes: true,
+    });
+
     for (const file of files) {
       if (file.isFile()) {
         const filePath = join(file.path, file.name);
@@ -131,7 +159,7 @@ async function main() {
         totalSize += stats.size;
       }
     }
-    
+
     return totalSize;
   };
 
@@ -141,27 +169,27 @@ async function main() {
   // Create velocity mapping for easier implementation
   const velocityMap = {
     // MIDI velocity to sample velocity layer mapping
-    '0-8': 'v1',      // ppp
-    '9-16': 'v2',     
-    '17-24': 'v3',    // pp
+    '0-8': 'v1', // ppp
+    '9-16': 'v2',
+    '17-24': 'v3', // pp
     '25-32': 'v4',
-    '33-40': 'v5',    // p
+    '33-40': 'v5', // p
     '41-48': 'v6',
-    '49-56': 'v7',    // mp
+    '49-56': 'v7', // mp
     '57-64': 'v8',
-    '65-72': 'v9',    // mf
+    '65-72': 'v9', // mf
     '73-80': 'v10',
-    '81-88': 'v11',   // f
+    '81-88': 'v11', // f
     '89-96': 'v12',
-    '97-104': 'v13',  // ff
+    '97-104': 'v13', // ff
     '105-112': 'v14',
     '113-120': 'v15', // fff
-    '121-127': 'v16'
+    '121-127': 'v16',
   };
 
   await fs.writeFile(
     join(OUTPUT_DIR, 'velocity-mapping.json'),
-    JSON.stringify(velocityMap, null, 2)
+    JSON.stringify(velocityMap, null, 2),
   );
 
   console.log('✅ Created velocity mapping file');

@@ -7,9 +7,11 @@ The BassNotion platform includes comprehensive monitoring capabilities to ensure
 ## Health Check Endpoints
 
 ### Basic Health Check
+
 - **Endpoint**: `GET /api/health`
 - **Purpose**: Quick health status check
 - **Response**:
+
 ```json
 {
   "status": "healthy",
@@ -33,6 +35,7 @@ The BassNotion platform includes comprehensive monitoring capabilities to ensure
 ```
 
 ### Detailed Health Check
+
 - **Endpoint**: `GET /api/health/detailed`
 - **Purpose**: Comprehensive system metrics
 - **Response**: Includes all basic health data plus:
@@ -43,15 +46,18 @@ The BassNotion platform includes comprehensive monitoring capabilities to ensure
   - Process ID and uptime
 
 ### Liveness Probe
+
 - **Endpoint**: `GET /api/health/live`
 - **Purpose**: Kubernetes liveness probe
 - **Response**: `{ "status": "ok" }`
 - **Use Case**: Determines if the container should be restarted
 
 ### Readiness Probe
+
 - **Endpoint**: `GET /api/health/ready`
 - **Purpose**: Kubernetes readiness probe
 - **Response**:
+
 ```json
 {
   "ready": true,
@@ -61,12 +67,15 @@ The BassNotion platform includes comprehensive monitoring capabilities to ensure
   }
 }
 ```
+
 - **Use Case**: Determines if the container can receive traffic
 
 ### Performance Metrics
+
 - **Endpoint**: `GET /api/health/metrics`
 - **Purpose**: Request and error tracking metrics
 - **Response**:
+
 ```json
 {
   "requests": {
@@ -90,6 +99,7 @@ The BassNotion platform includes comprehensive monitoring capabilities to ensure
 ## Performance Tracking
 
 The system automatically tracks:
+
 - Request count (total, successful, failed)
 - Response times (last 1000 requests)
 - Error rates by type
@@ -100,6 +110,7 @@ Performance data is collected via the `PerformanceMiddleware` which runs on all 
 ## Frontend Health Monitoring
 
 The frontend includes a `HealthStatus` component that:
+
 - Displays real-time health status
 - Shows when the backend is unavailable
 - Positioned at bottom-left of the screen (70px from bottom)
@@ -108,6 +119,7 @@ The frontend includes a `HealthStatus` component that:
 ## Logging
 
 All monitoring endpoints use structured logging with:
+
 - Correlation IDs for request tracking
 - Service identifiers
 - Timestamp and log levels
@@ -135,6 +147,7 @@ All monitoring endpoints use structured logging with:
 ## Integration with Monitoring Services
 
 ### Grafana
+
 ```yaml
 datasources:
   - name: BassNotion Health
@@ -145,6 +158,7 @@ datasources:
 ```
 
 ### Prometheus
+
 ```yaml
 scrape_configs:
   - job_name: 'bassnotion'
@@ -155,6 +169,7 @@ scrape_configs:
 ```
 
 ### Kubernetes
+
 ```yaml
 livenessProbe:
   httpGet:
@@ -174,6 +189,7 @@ readinessProbe:
 ## Troubleshooting
 
 ### Health Check Failures
+
 1. Check individual component status in `/api/health`
 2. Review detailed metrics in `/api/health/detailed`
 3. Check logs for correlation IDs
@@ -181,12 +197,14 @@ readinessProbe:
 5. Check Supabase API availability
 
 ### Performance Issues
+
 1. Monitor `/api/health/metrics` for response times
 2. Check CPU and memory in `/api/health/detailed`
 3. Review error rates by type
 4. Enable debug logging if needed
 
 ### Frontend Connection Issues
+
 1. Check browser console for CORS errors
 2. Verify API URL configuration
 3. Check network tab for failed requests

@@ -14,7 +14,11 @@ interface FourWidgetsCardProps {
   isAdminMode?: boolean;
 }
 
-export function FourWidgetsCard({ widgetState, tutorialId, isAdminMode = false }: FourWidgetsCardProps) {
+export function FourWidgetsCard({
+  widgetState,
+  tutorialId,
+  isAdminMode = false,
+}: FourWidgetsCardProps) {
   const { state, selectedExercise, setState, harmonyInstrument } = widgetState;
 
   // CRITICAL DEBUG: Log every render
@@ -28,7 +32,7 @@ export function FourWidgetsCard({ widgetState, tutorialId, isAdminMode = false }
   // Memoize exercise by ID to prevent object reference changes
   const memoizedExercise = React.useMemo(
     () => selectedExercise,
-    [selectedExercise?.id?.value]
+    [selectedExercise?.id?.value],
   );
 
   // Debug logs disabled - too noisy

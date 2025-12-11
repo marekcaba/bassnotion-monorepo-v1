@@ -5,7 +5,10 @@
  * configured for specific instruments.
  */
 
-import { SimpleInstrumentScheduler, type SchedulerConfig } from './SimpleInstrumentScheduler.js';
+import {
+  SimpleInstrumentScheduler,
+  type SchedulerConfig,
+} from './SimpleInstrumentScheduler.js';
 
 /**
  * MetronomeScheduler - configured for metronome clicks
@@ -16,8 +19,8 @@ export class MetronomeScheduler extends SimpleInstrumentScheduler {
       loggerName: 'MetronomeScheduler',
       instrumentType: 'metronome',
       eventTypeToBufferKey: {
-        'accent': 'accent',
-        'click': 'click',
+        accent: 'accent',
+        click: 'click',
       },
       baseVolume: 1.0,
       preserveAttackEnvelope: true,
@@ -35,15 +38,15 @@ export class DrumScheduler extends SimpleInstrumentScheduler {
       loggerName: 'DrumScheduler',
       instrumentType: 'drums',
       eventTypeToBufferKey: {
-        'kick': 'kick',
-        'snare': 'snare',
-        'hihat': 'hihat',
-        'openhat': 'openhat',
-        'crash': 'crash',
-        'ride': 'ride',
-        'tom1': 'tom1',
-        'tom2': 'tom2',
-        'tom3': 'tom3',
+        kick: 'kick',
+        snare: 'snare',
+        hihat: 'hihat',
+        openhat: 'openhat',
+        crash: 'crash',
+        ride: 'ride',
+        tom1: 'tom1',
+        tom2: 'tom2',
+        tom3: 'tom3',
       },
       baseVolume: 0.8,
       preserveAttackEnvelope: true,

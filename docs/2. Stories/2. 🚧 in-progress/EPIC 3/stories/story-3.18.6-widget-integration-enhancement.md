@@ -12,7 +12,8 @@
 
 **Epic Context:** This is Story 6 of 7 in Epic 3.18 - FAANG-Style Web DAW Architecture Transformation. This is the **HIGH RISK** story that updates all existing widgets and creates the developer experience layer.
 
-**Dependencies:** 
+**Dependencies:**
+
 - **BLOCKED BY:** Story 3.18.5 (Audio Reliability & Technical Debt)
 - **REQUIRES:** 5 core services working reliably with 99%+ success rate
 - **ENABLES:** Story 3.18.7 (Testing & Validation)
@@ -62,6 +63,7 @@
 ## Tasks / Subtasks
 
 ### Task 1: Professional React Hooks (AC: 1)
+
 - [x] Subtask 1.1: Create `useAudio` hook with AudioEngine integration
 - [x] Subtask 1.2: Create `useTransport` hook with TransportController integration
 - [x] Subtask 1.3: Create `usePlugins` hook with PluginManager integration
@@ -70,6 +72,7 @@
 - [x] Subtask 1.6: Create comprehensive unit tests for all hooks
 
 ### Task 2: Enhanced AudioProvider (AC: 2)
+
 - [x] Subtask 2.1: Create new AudioProvider using ServiceRegistry
 - [x] Subtask 2.2: Remove old ToneProvider completely
 - [x] Subtask 2.3: Add proper initialization and error handling
@@ -78,6 +81,7 @@
 - [x] Subtask 2.6: Test provider across different components
 
 ### Task 3: HarmonyWidget Integration (AC: 3)
+
 - [x] Subtask 3.1: Update HarmonyWidget to use new `useAudio` hook
 - [x] Subtask 3.2: Update HarmonyWidget to use new `useTransport` hook
 - [x] Subtask 3.3: Update HarmonyWidget to use new `usePlugins` hook
@@ -86,6 +90,7 @@
 - [x] Subtask 3.6: Validate performance vs. old implementation
 
 ### Task 4: DrummerWidget Integration (AC: 3)
+
 - [x] Subtask 4.1: Update DrummerWidget to use new `useAudio` hook
 - [x] Subtask 4.2: Update DrummerWidget to use new `useTransport` hook
 - [x] Subtask 4.3: Update DrummerWidget to use new `usePlugins` hook
@@ -94,12 +99,14 @@
 - [x] Subtask 4.6: Validate HybridDrumKitSelector integration
 
 ### Task 5: BassLineWidget Integration (AC: 3)
+
 - [x] Subtask 5.1: Update BassLineWidget to use new hooks
 - [x] Subtask 5.2: Preserve all 818 lines of bass-specific functionality
 - [x] Subtask 5.3: Test bassline generation and playback
 - [x] Subtask 5.4: Validate integration with transport system
 
 ### Task 6: Other Widget Updates (AC: 3)
+
 - [x] Subtask 6.1: Update MetronomeWidget (689 lines) to use new hooks
 - [x] Subtask 6.2: Update GlobalControls (1,315 lines) to use new hooks
 - [x] Subtask 6.3: Update LoopGridStrip (695 lines) to use new hooks
@@ -107,6 +114,7 @@
 - [x] Subtask 6.5: Test all widget interactions and synchronization
 
 ### Task 7: SyncedWidget Enhancement (AC: 4)
+
 - [x] Subtask 7.1: Update SyncedWidget base class to use ServiceRegistry
 - [x] Subtask 7.2: Maintain all existing error boundaries
 - [x] Subtask 7.3: Preserve performance monitoring capabilities
@@ -114,6 +122,7 @@
 - [x] Subtask 7.5: Ensure backward compatibility during transition
 
 ### Task 8: Developer Experience & Documentation (AC: 5)
+
 - [x] Subtask 8.1: Create 5-minute widget setup guide
 - [x] Subtask 8.2: Build example widgets demonstrating best practices
 - [x] Subtask 8.3: Create comprehensive hook documentation
@@ -121,6 +130,7 @@
 - [x] Subtask 8.5: Create troubleshooting guide for widget developers
 
 ### Task 9: Validation & Testing (AC: 6)
+
 - [x] Subtask 9.1: Test all widgets individually for functionality preservation
 - [x] Subtask 9.2: Test widget interactions and synchronization
 - [x] Subtask 9.3: Performance testing vs. old implementation
@@ -130,27 +140,33 @@
 ## Deliverables
 
 ### **Primary Deliverable: Professional React Hooks**
+
 **Location:** `apps/frontend/src/domains/playback/hooks/`
 
 **Files:**
+
 - `useAudio.ts` - AudioEngine integration hook
-- `useTransport.ts` - TransportController integration hook  
+- `useTransport.ts` - TransportController integration hook
 - `usePlugins.ts` - PluginManager integration hook
 - `index.ts` - Clean exports for all hooks
 
 ### **Secondary Deliverable: Enhanced AudioProvider**
+
 **Location:** `apps/frontend/src/domains/playback/providers/AudioProvider.tsx`
 
 **Features:**
+
 - ServiceRegistry integration
 - Proper error boundaries
 - Loading state management
 - TypeScript interfaces
 
 ### **Critical Deliverable: Updated Widgets**
+
 **Location:** `apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/components/`
 
 **Updated Files:**
+
 - `HarmonyWidget.tsx` (1,628 lines preserved + enhanced)
 - `DrummerWidget.tsx` (1,301 lines preserved + enhanced)
 - `BassLineWidget.tsx` (818 lines preserved + enhanced)
@@ -159,9 +175,11 @@
 - `LoopGridStrip.tsx` (695 lines preserved + enhanced)
 
 ### **Supporting Deliverable: Developer Experience**
+
 **Location:** `docs/2. Stories/2. 🚧 in-progress/EPIC 3/widget-development-guide.md`
 
 **Content:**
+
 - 5-minute widget setup guide
 - Hook usage examples
 - Best practices
@@ -170,12 +188,14 @@
 ## Definition of Done Checklist
 
 ### **Requirements Met:**
+
 - [x] All functional requirements specified in ACs
 - [x] Widget preservation guaranteed
 - [x] Developer experience prioritized
 - [x] Zero functionality loss commitment
 
 ### **Coding Standards & Project Structure:**
+
 - [x] All hooks follow React best practices
 - [x] TypeScript strict mode throughout
 - [x] Proper error handling without console.error patterns
@@ -183,6 +203,7 @@
 - [x] All imports follow project standards
 
 ### **Testing:**
+
 - [x] Unit tests for all React hooks (>80% coverage)
 - [x] Integration tests for widget interactions
 - [x] Performance tests show no regression
@@ -190,24 +211,28 @@
 - [x] End-to-end widget functionality tests
 
 ### **Functionality & Verification:**
+
 - [x] All widgets preserve 100% of functionality
 - [x] New hooks provide clean, intuitive APIs
 - [x] AudioProvider handles all edge cases
 - [x] SyncedWidget base class enhanced without breaking changes
 
 ### **Story Administration:**
+
 - [x] All 6,500+ lines of widget code preserved and enhanced
 - [x] Developer experience validated with 5-minute setup
 - [x] Documentation complete and reviewed
 - [x] Ready for Story 3.18.7 (Testing & Validation)
 
 ### **Dependencies, Build & Configuration:**
+
 - [x] Project builds with all widget updates
 - [x] No TypeScript errors in any widget
 - [x] Linting passes for all updated files
 - [x] No runtime errors in any widget
 
 ### **Documentation:**
+
 - [x] Hook documentation complete with examples
 - [x] Widget development guide ready
 - [x] Migration notes for widget developers
@@ -218,6 +243,7 @@
 ### **Professional React Hooks**
 
 #### **useAudio Hook:**
+
 ```typescript
 // useAudio.ts - AudioEngine integration
 export function useAudio() {
@@ -242,10 +268,13 @@ export function useAudio() {
     }
   }, [audioEngine]);
 
-  const createSampler = useCallback((config: SamplerConfig) => {
-    if (!isReady) throw new Error('Audio not ready');
-    return audioEngine.createSampler(config);
-  }, [audioEngine, isReady]);
+  const createSampler = useCallback(
+    (config: SamplerConfig) => {
+      if (!isReady) throw new Error('Audio not ready');
+      return audioEngine.createSampler(config);
+    },
+    [audioEngine, isReady],
+  );
 
   const getTone = useCallback(() => {
     if (!isReady) throw new Error('Audio not ready');
@@ -257,16 +286,18 @@ export function useAudio() {
     error,
     createSampler,
     getTone,
-    audioContext: audioEngine.getContext()
+    audioContext: audioEngine.getContext(),
   };
 }
 ```
 
 #### **useTransport Hook:**
+
 ```typescript
 // useTransport.ts - TransportController integration
 export function useTransport() {
-  const transportController = useServiceRegistry().get<TransportController>('transport');
+  const transportController =
+    useServiceRegistry().get<TransportController>('transport');
   const eventBus = useServiceRegistry().get<EventBus>('eventBus');
   const [isPlaying, setIsPlaying] = useState(false);
   const [tempo, setTempo] = useState(120);
@@ -295,16 +326,19 @@ export function useTransport() {
     transportController.stop();
   }, [transportController]);
 
-  const setTempoValue = useCallback((bpm: number) => {
-    transportController.setTempo(bpm);
-  }, [transportController]);
+  const setTempoValue = useCallback(
+    (bpm: number) => {
+      transportController.setTempo(bpm);
+    },
+    [transportController],
+  );
 
   return {
     isPlaying,
     tempo,
     start,
     stop,
-    setTempo: setTempoValue
+    setTempo: setTempoValue,
   };
 }
 ```
@@ -312,41 +346,43 @@ export function useTransport() {
 ### **Widget Integration Pattern**
 
 #### **BEFORE (Old Pattern):**
+
 ```typescript
 // HarmonyWidget.tsx - OLD PATTERN
 import { useTone } from '@/domains/playback/providers/ToneProvider'; // OLD
 
 export function HarmonyWidget() {
   const { tone, isReady } = useTone(); // OLD PATTERN
-  
+
   useEffect(() => {
     if (isReady && tone) {
       // Direct Tone.js usage - OLD
       const sampler = new tone.Sampler(config);
     }
   }, [tone, isReady]);
-  
+
   // ... 1,628 lines of functionality
 }
 ```
 
 #### **AFTER (New Pattern):**
+
 ```typescript
-// HarmonyWidget.tsx - NEW PATTERN  
+// HarmonyWidget.tsx - NEW PATTERN
 import { useAudio, useTransport, usePlugins } from '@/domains/playback/hooks'; // NEW
 
 export function HarmonyWidget() {
   const { createSampler, isReady } = useAudio(); // NEW PATTERN
   const { start, stop, isPlaying } = useTransport(); // NEW PATTERN
   const { getPlugin } = usePlugins(); // NEW PATTERN
-  
+
   useEffect(() => {
     if (isReady) {
       // Clean hook usage - NEW
       const sampler = createSampler(config);
     }
   }, [isReady, createSampler]);
-  
+
   // ... ALL 1,628 lines of functionality PRESERVED
 }
 ```
@@ -362,6 +398,7 @@ export function HarmonyWidget() {
 ### **Developer Experience Goals**
 
 #### **5-Minute Widget Setup:**
+
 ```typescript
 // NewWidget.tsx - Example for developers
 import { useAudio, useTransport } from '@/domains/playback/hooks';
@@ -369,9 +406,9 @@ import { useAudio, useTransport } from '@/domains/playback/hooks';
 export function NewWidget() {
   const { createSampler, isReady } = useAudio();
   const { start, stop, isPlaying } = useTransport();
-  
+
   // Widget implementation - developers never touch Tone.js directly
-  
+
   return (
     <div>
       <button onClick={start} disabled={!isReady}>
@@ -396,6 +433,7 @@ export function NewWidget() {
 ### **Agent Model Used:** `Claude 3.5 Sonnet (claude-3-5-sonnet-20241022)` & `Claude Opus 4 (claude-opus-4-20250514)`
 
 ### **Completion Notes List**
+
 - [x] React hooks created and tested (useAudio, useTransport, usePlugins)
 - [x] AudioProvider enhanced with ServiceRegistry
 - [x] HarmonyWidget updated and functionality preserved (1,628 lines)
@@ -407,6 +445,7 @@ export function NewWidget() {
 - [x] All widgets tested and working (with new hooks integration)
 
 ### **Change Log**
+
 - 2024-XX-XX: Story created as Epic 3.18 breakdown
 - 2024-XX-XX: Blocked pending Story 3.18.5 completion
 - 2024-XX-XX: Widget preservation strategy detailed
@@ -421,4 +460,4 @@ export function NewWidget() {
 **Epic:** 3.18 - FAANG-Style Web DAW Architecture  
 **Priority:** MUST HAVE  
 **Risk Level:** HIGH  
-**Dependencies:** Story 3.18.5 (Audio Reliability & Technical Debt) 
+**Dependencies:** Story 3.18.5 (Audio Reliability & Technical Debt)

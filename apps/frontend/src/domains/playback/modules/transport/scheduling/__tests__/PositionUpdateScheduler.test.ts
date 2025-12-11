@@ -12,28 +12,30 @@ import type { Timeline } from '../../core/Timeline.js';
 import type { PositionUpdate } from '../types/scheduler.types.js';
 
 // Mock Clock
-const createMockClock = (isAudioWorklet = true): Clock => ({
-  isUsingAudioWorklet: vi.fn().mockReturnValue(isAudioWorklet),
-  getAudioTime: vi.fn().mockReturnValue(0),
-  setOnTick: vi.fn(),
-  start: vi.fn(),
-  stop: vi.fn(),
-  destroy: vi.fn(),
-  initialize: vi.fn().mockResolvedValue(undefined),
-  getSampleAccurateClock: vi.fn().mockReturnValue(null),
-} as unknown as Clock);
+const createMockClock = (isAudioWorklet = true): Clock =>
+  ({
+    isUsingAudioWorklet: vi.fn().mockReturnValue(isAudioWorklet),
+    getAudioTime: vi.fn().mockReturnValue(0),
+    setOnTick: vi.fn(),
+    start: vi.fn(),
+    stop: vi.fn(),
+    destroy: vi.fn(),
+    initialize: vi.fn().mockResolvedValue(undefined),
+    getSampleAccurateClock: vi.fn().mockReturnValue(null),
+  }) as unknown as Clock;
 
 // Mock Timeline
-const createMockTimeline = (): Timeline => ({
-  updatePositionFromSeconds: vi.fn(),
-  getTransportPosition: vi.fn().mockReturnValue({
-    bars: 0,
-    beats: 0,
-    sixteenths: 0,
-    ticks: 0,
-  }),
-  reset: vi.fn(),
-} as unknown as Timeline);
+const createMockTimeline = (): Timeline =>
+  ({
+    updatePositionFromSeconds: vi.fn(),
+    getTransportPosition: vi.fn().mockReturnValue({
+      bars: 0,
+      beats: 0,
+      sixteenths: 0,
+      ticks: 0,
+    }),
+    reset: vi.fn(),
+  }) as unknown as Timeline;
 
 describe('PositionUpdateScheduler', () => {
   let scheduler: PositionUpdateScheduler;

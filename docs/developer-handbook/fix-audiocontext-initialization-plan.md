@@ -5,6 +5,7 @@
 The application is experiencing AudioContext initialization errors due to browser autoplay policies. The root cause is that Tone.js is being imported statically in multiple files, causing the AudioContext to be created before any user interaction.
 
 ### Current Issues:
+
 1. **AudioContext Warning**: "The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture"
 2. **First Beat Stutter**: Multiple loops firing at position 0:0:0 due to timing issues
 3. **TypeError**: "Cannot read properties of null (reading 'context')" when Tone is not loaded yet
@@ -12,6 +13,7 @@ The application is experiencing AudioContext initialization errors due to browse
 ## Root Cause Analysis
 
 ### Static Import Chain:
+
 ```
 HarmonyWidget.tsx
   → imports ChordInstrumentProcessor.ts (statically)
@@ -47,12 +49,12 @@ All audio components should follow this pattern:
 ```typescript
 class AudioComponent {
   private toneLoaded = false;
-  
+
   async initialize(): Promise<void> {
     await this.ensureToneLoaded();
     // Now safe to use Tone.js
   }
-  
+
   private async ensureToneLoaded(): Promise<void> {
     if (!this.toneLoaded) {
       await loadTone(); // Centralized loader
@@ -80,6 +82,7 @@ class AudioComponent {
 These files need immediate conversion to dynamic imports:
 
 #### Audio Samplers (causing immediate errors):
+
 - [ ] `SalamanderVelocitySampler.ts`
 - [ ] `WurlitzerVelocitySampler.ts`
 - [ ] `RhodesVelocitySampler.ts`
@@ -87,6 +90,7 @@ These files need immediate conversion to dynamic imports:
 - [ ] `LongPadSampler.ts`
 
 #### Instrument Processors:
+
 - [ ] `ChordInstrumentProcessor.ts` (partially done)
 - [ ] `BassInstrumentProcessor.ts`
 - [ ] `DrumInstrumentProcessor.ts`
@@ -141,7 +145,7 @@ export class SalamanderVelocitySampler {
 
   async initialize(): Promise<void> {
     await this.ensureToneLoaded();
-    
+
     // Now safe to use Tone
     if (Tone.context.state !== 'running') {
       await Tone.start();
@@ -174,7 +178,7 @@ const { Tone, isReady } = useTone(); // From ToneProvider
 
 useEffect(() => {
   if (!isReady || !Tone) return;
-  
+
   // Now safe to create audio nodes
   const sampler = new Tone.Sampler();
 }, [isReady, Tone]);
@@ -183,16 +187,19 @@ useEffect(() => {
 ## Testing Strategy
 
 ### 1. Unit Tests
+
 - Mock dynamic imports in tests
 - Verify lazy loading behavior
 - Test error handling when Tone is not loaded
 
 ### 2. Integration Tests
+
 - Test user gesture requirement
 - Verify no AudioContext until user interaction
 - Test audio playback after initialization
 
 ### 3. Manual Testing Checklist
+
 - [ ] Open page in incognito mode
 - [ ] Verify no console errors on page load
 - [ ] Click "Initialize" button
@@ -223,6 +230,7 @@ For each file being migrated:
 ## Rollback Plan
 
 If issues arise:
+
 1. The changes are isolated per file
 2. Can revert individual files without affecting others
 3. ToneProvider acts as fallback for components still using it
@@ -248,17 +256,21 @@ If issues arise:
 ## Progress Tracking
 
 ### Completed:
+
 - [x] ToneProvider with dynamic loading
 - [x] CorePlaybackEngine using dynamic imports
 - [x] ChordTypes.ts created for type separation
 - [x] Basic widget updates for timing
 
 ### In Progress:
+
 - [ ] SalamanderVelocitySampler.ts conversion
 
 ### Blocked:
+
 - None currently
 
 ### Notes:
+
 - The 100ms delay added to widget loops is a temporary fix
 - Long-term solution requires completing all phases above

@@ -1,6 +1,6 @@
 /**
  * CDN Infrastructure Module
- * 
+ *
  * Provides generic CDN functionality that can be used
  * by all domains in the application
  */

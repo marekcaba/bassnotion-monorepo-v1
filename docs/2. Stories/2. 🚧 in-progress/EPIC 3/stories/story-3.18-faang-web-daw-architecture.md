@@ -34,7 +34,7 @@
    - [ ] Delete 50+ over-engineered service files
    - [ ] Implement exactly 5 core services: AudioEngine, ServiceRegistry, EventBus, TransportController, PluginManager
    - [ ] Each service <200 lines (except PluginManager)
-   - [ ] Remove all *Optimizer.ts, *Monitor.ts, *Engine.ts files (except AudioEngine)
+   - [ ] Remove all *Optimizer.ts, *Monitor.ts, \*Engine.ts files (except AudioEngine)
 
 2. **Zero Global State**
    - [ ] Remove all `(window as any).*` patterns (ToneSingleton, ToneInstanceId)
@@ -73,6 +73,7 @@
 ## Tasks / Subtasks
 
 ### Task 1: Selective Service Deletion & Preservation (AC: 1)
+
 - [ ] Subtask 1.1: **PRESERVE** valuable components: Error handling system (`services/errors/`), MusicalTimeEngine, PrecisionSynchronizationEngine, BaseAudioPlugin, PerformanceMonitor
 - [ ] Subtask 1.2: **PRESERVE** working plugin ecosystem: DrumProcessor, ChordInstrumentProcessor, all samplers (Rhodes, Wurlitzer, Salamander)
 - [ ] Subtask 1.3: **PRESERVE** AssetManager core logic, HybridDrumSampleManager for Supabase integration
@@ -81,6 +82,7 @@
 - [ ] Subtask 1.6: **INTEGRATE** preserved components into 5 core services architecture
 
 ### Task 2: Integrate Core Services with Preserved Components (AC: 1, 2, 4)
+
 - [ ] Subtask 2.1: Create ServiceRegistry class with dependency injection
 - [ ] Subtask 2.2: Create EventBus class enhanced with existing CircuitBreaker for resilience
 - [ ] Subtask 2.3: Enhance AudioEngine with existing PerformanceMonitor and CircuitBreaker integration
@@ -88,6 +90,7 @@
 - [ ] Subtask 2.5: Simplify PluginManager while preserving BaseAudioPlugin interface and existing 25+ plugins
 
 ### Task 3: Eliminate Global State (AC: 2, 3)
+
 - [ ] Subtask 3.1: Remove all `(window as any).ToneSingleton` patterns
 - [ ] Subtask 3.2: Remove all `(window as any).ToneInstanceId` patterns
 - [ ] Subtask 3.3: Replace all direct Tone.js imports with AudioEngine access
@@ -95,12 +98,14 @@
 - [ ] Subtask 3.5: Verify zero global state with comprehensive audit
 
 ### Task 4: Implement Service Architecture (AC: 4)
+
 - [ ] Subtask 4.1: Wire ServiceRegistry to manage all 5 core services
 - [ ] Subtask 4.2: Implement EventBus for all service communication
 - [ ] Subtask 4.3: Add Command pattern for transport operations
 - [ ] Subtask 4.4: Ensure clean dependency injection throughout
 
 ### Task 5: Fix Audio Reliability (AC: 5)
+
 - [ ] Subtask 5.1: Implement robust AudioContext initialization
 - [ ] Subtask 5.2: Add proper error handling without technical debt comments
 - [ ] Subtask 5.3: Test audio playback across different browsers/devices
@@ -108,12 +113,14 @@
 - [ ] Subtask 5.5: Remove all console.error('Failed to...') patterns
 
 ### Task 6: Clean Technical Debt (AC: 6)
+
 - [ ] Subtask 6.1: Remove 100+ "TODO: Review non-null assertion" comments
 - [ ] Subtask 6.2: Enable TypeScript strict mode across all services
 - [ ] Subtask 6.3: Replace any types with proper TypeScript interfaces
 - [ ] Subtask 6.4: Add comprehensive error handling with custom error classes
 
 ### Task 7: Create Developer Experience (AC: 7)
+
 - [ ] Subtask 7.1: Create useAudio hook for basic audio operations
 - [ ] Subtask 7.2: Create useTransport hook for playback control
 - [ ] Subtask 7.3: Create usePlugins hook for audio processing
@@ -121,6 +128,7 @@
 - [ ] Subtask 7.5: Build example widgets demonstrating 5-minute setup
 
 ### Task 8: Widget Integration & Enhancement (AC: 7)
+
 - [ ] Subtask 8.1: Update HarmonyWidget to use new AudioEngine (preserve all 1,628 lines)
 - [ ] Subtask 8.2: Update DrummerWidget to use enhanced TransportController (preserve all 1,301 lines)
 - [ ] Subtask 8.3: Update BassLineWidget to use simplified PluginManager (preserve all 818 lines)
@@ -130,6 +138,7 @@
 - [ ] Subtask 8.7: Validate widget performance improvements
 
 ### Task 9: Testing and Validation (AC: all)
+
 - [ ] Subtask 9.1: Unit tests for all 5 core services
 - [ ] Subtask 9.2: Integration tests for service interactions
 - [ ] Subtask 9.3: E2E tests for widget audio playback
@@ -149,17 +158,17 @@
 // 1. ServiceRegistry - Dependency Injection (replaces 4 competing systems)
 class ServiceRegistry {
   private services = new Map<string, any>();
-  
+
   register<T>(name: string, service: T): void {
     this.services.set(name, service);
   }
-  
+
   get<T>(name: string): T {
     const service = this.services.get(name);
     if (!service) throw new AudioError(`Service ${name} not found`);
     return service;
   }
-  
+
   async initialize(): Promise<void> {
     // Initialize services in correct order
     await this.get<AudioEngine>('audioEngine').initialize();
@@ -173,26 +182,30 @@ class AudioEngine {
   private tone: any = null;
   private context: AudioContext;
   private eventBus: EventBus;
-  
+
   constructor(eventBus: EventBus) {
     this.eventBus = eventBus;
   }
-  
+
   async initialize(): Promise<void> {
-    this.context = new AudioContext({ 
+    this.context = new AudioContext({
       sampleRate: 48000,
-      latencyHint: 'interactive' 
+      latencyHint: 'interactive',
     });
-    
+
     this.tone = await import('tone');
     this.tone.setContext(this.context);
-    
+
     this.eventBus.emit('audio:ready', { context: this.context });
   }
-  
+
   // ONLY way to access Tone.js - no more direct imports
-  getTone(): any { return this.tone; }
-  getContext(): AudioContext { return this.context; }
+  getTone(): any {
+    return this.tone;
+  }
+  getContext(): AudioContext {
+    return this.context;
+  }
   createSampler(config: SamplerConfig): AudioSampler {
     return new this.tone.Sampler(config);
   }
@@ -201,9 +214,9 @@ class AudioEngine {
 // 3. EventBus - Communication Hub (replaces 20+ EventEmitter classes)
 class EventBus {
   private events = new Map<string, Set<Function>>();
-  
+
   emit(event: string, data: any): void {
-    this.events.get(event)?.forEach(handler => {
+    this.events.get(event)?.forEach((handler) => {
       try {
         handler(data);
       } catch (error) {
@@ -212,7 +225,7 @@ class EventBus {
       }
     });
   }
-  
+
   on(event: string, handler: Function): void {
     if (!this.events.has(event)) {
       this.events.set(event, new Set());
@@ -224,22 +237,22 @@ class EventBus {
 // 4. TransportController - Simple Playback (replaces 642-line ProfessionalTransportScheduler)
 class TransportController {
   constructor(
-    private audioEngine: AudioEngine, 
-    private eventBus: EventBus
+    private audioEngine: AudioEngine,
+    private eventBus: EventBus,
   ) {}
-  
+
   start(): void {
     const tone = this.audioEngine.getTone();
     tone.Transport.start();
     this.eventBus.emit('transport:started', { time: tone.now() });
   }
-  
+
   stop(): void {
     const tone = this.audioEngine.getTone();
     tone.Transport.stop();
     this.eventBus.emit('transport:stopped', { time: tone.now() });
   }
-  
+
   setTempo(bpm: number): void {
     const tone = this.audioEngine.getTone();
     tone.Transport.bpm.value = bpm;
@@ -250,18 +263,18 @@ class TransportController {
 // 5. PluginManager - Essential Processing (simplified from 842 lines)
 class PluginManager {
   private plugins = new Map<string, AudioPlugin>();
-  
+
   constructor(
     private audioEngine: AudioEngine,
-    private eventBus: EventBus
+    private eventBus: EventBus,
   ) {}
-  
+
   register(id: string, plugin: AudioPlugin): void {
     plugin.initialize(this.audioEngine);
     this.plugins.set(id, plugin);
     this.eventBus.emit('plugin:registered', { id, plugin });
   }
-  
+
   process(audioData: AudioData): AudioData {
     let result = audioData;
     for (const plugin of this.plugins.values()) {
@@ -277,10 +290,11 @@ class PluginManager {
 **Philosophy: Delete First, Build Second**
 
 #### **Phase 1: Mass Deletion (Week 1)**
+
 ```bash
 # Delete the chaos - remove 50+ over-engineered files
 rm -rf apps/frontend/src/domains/playback/services/MobileOptimizer.ts      # 3,329 lines
-rm -rf apps/frontend/src/domains/playback/services/QualityScaler.ts       # 2,234 lines  
+rm -rf apps/frontend/src/domains/playback/services/QualityScaler.ts       # 2,234 lines
 rm -rf apps/frontend/src/domains/playback/services/AnalyticsEngine.ts     # 2,034 lines
 rm -rf apps/frontend/src/domains/playback/services/ResourceManager.ts     # 1,957 lines
 rm -rf apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler/  # 642 lines
@@ -293,6 +307,7 @@ rm -rf apps/frontend/src/domains/playback/providers/ToneProvider.tsx
 ```
 
 #### **Phase 2: Build 5 Core Services (Week 2)**
+
 1. ServiceRegistry with dependency injection
 2. EventBus for communication
 3. AudioEngine as single Tone.js source
@@ -300,18 +315,21 @@ rm -rf apps/frontend/src/domains/playback/providers/ToneProvider.tsx
 5. PluginManager for processing
 
 #### **Phase 3: Zero Global State (Week 3)**
+
 1. Remove all `(window as any).*` patterns
 2. Update 15+ files with direct Tone.js imports
 3. Replace with AudioEngine access only
 4. Comprehensive global state audit
 
 #### **Phase 4: Widget Integration (Week 4)**
+
 1. Create React hooks: useAudio, useTransport, usePlugins
 2. Build AudioProvider for context
 3. Update existing widgets
 4. 5-minute setup examples
 
 #### **Phase 5: Validation (Week 5)**
+
 1. 99%+ audio initialization success rate
 2. Zero technical debt comments
 3. Comprehensive test coverage
@@ -328,14 +346,14 @@ rm -rf apps/frontend/src/domains/playback/providers/ToneProvider.tsx
 
 ### Success Metrics (vs. Current Chaos)
 
-| Metric | Before | After | 
-|--------|--------|-------|
-| Service Files | 56+ | 5 |
-| Lines of Code | 50,000+ | <5,000 |
-| Global State | Multiple `window.*` | Zero |
-| Tone.js Access | 4 competing ways | 1 way (AudioEngine) |
-| Technical Debt | 100+ TODO comments | Zero |
-| Audio Reliability | Frequent failures | 99%+ success |
+| Metric            | Before              | After               |
+| ----------------- | ------------------- | ------------------- |
+| Service Files     | 56+                 | 5                   |
+| Lines of Code     | 50,000+             | <5,000              |
+| Global State      | Multiple `window.*` | Zero                |
+| Tone.js Access    | 4 competing ways    | 1 way (AudioEngine) |
+| Technical Debt    | 100+ TODO comments  | Zero                |
+| Audio Reliability | Frequent failures   | 99%+ success        |
 
 ## Story Progress Notes
 

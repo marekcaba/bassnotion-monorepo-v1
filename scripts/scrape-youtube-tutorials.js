@@ -15,7 +15,9 @@ const RESULTS_PER_PAGE = 50; // YouTube API max per request
 
 if (!YOUTUBE_API_KEY) {
   console.error('❌ Error: YOUTUBE_API_KEY environment variable is not set');
-  console.error('Please set it with: export YOUTUBE_API_KEY="your-api-key-here"');
+  console.error(
+    'Please set it with: export YOUTUBE_API_KEY="your-api-key-here"',
+  );
   process.exit(1);
 }
 
@@ -50,16 +52,22 @@ async function fetchYouTubeVideos(query, maxResults) {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(`YouTube API error: ${response.status} - ${JSON.stringify(errorData)}`);
+        throw new Error(
+          `YouTube API error: ${response.status} - ${JSON.stringify(errorData)}`,
+        );
       }
 
       const data = await response.json();
 
       // Extract video IDs to fetch durations
-      const videoIds = data.items.map(item => item.id.videoId).filter(Boolean);
+      const videoIds = data.items
+        .map((item) => item.id.videoId)
+        .filter(Boolean);
 
       // Fetch video details including duration
-      const detailsUrl = new URL('https://www.googleapis.com/youtube/v3/videos');
+      const detailsUrl = new URL(
+        'https://www.googleapis.com/youtube/v3/videos',
+      );
       detailsUrl.searchParams.append('part', 'contentDetails,snippet');
       detailsUrl.searchParams.append('id', videoIds.join(','));
       detailsUrl.searchParams.append('key', YOUTUBE_API_KEY);
@@ -68,7 +76,7 @@ async function fetchYouTubeVideos(query, maxResults) {
       const detailsData = await detailsResponse.json();
 
       // Map video details
-      const videosWithDetails = detailsData.items.map(video => ({
+      const videosWithDetails = detailsData.items.map((video) => ({
         id: video.id,
         title: video.snippet.title,
         channel: video.snippet.channelTitle,
@@ -78,7 +86,9 @@ async function fetchYouTubeVideos(query, maxResults) {
       }));
 
       videos.push(...videosWithDetails);
-      console.log(`✅ Fetched ${videosWithDetails.length} videos (Total: ${videos.length})`);
+      console.log(
+        `✅ Fetched ${videosWithDetails.length} videos (Total: ${videos.length})`,
+      );
 
       nextPageToken = data.nextPageToken;
 
@@ -87,8 +97,7 @@ async function fetchYouTubeVideos(query, maxResults) {
       }
 
       // Rate limiting: wait 1 second between requests
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     } catch (error) {
       console.error(`❌ Error fetching page ${page + 1}:`, error.message);
       break;
@@ -162,8 +171,9 @@ async function main() {
     console.log(`📄 Markdown file saved to: ${outputPath}`);
     console.log(`\n📊 Summary:`);
     console.log(`   - Total videos: ${videos.length}`);
-    console.log(`   - Unique channels: ${new Set(videos.map(v => v.channel)).size}`);
-
+    console.log(
+      `   - Unique channels: ${new Set(videos.map((v) => v.channel)).size}`,
+    );
   } catch (error) {
     console.error('\n❌ Error:', error.message);
     process.exit(1);

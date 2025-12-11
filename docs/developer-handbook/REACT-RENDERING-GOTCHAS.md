@@ -1,15 +1,19 @@
 # React Rendering Gotchas & Prevention Guide
 
 ## Overview
+
 This guide documents critical React rendering issues that caused complete page freezes in our application. After extensive debugging through 26 test versions, we identified three major causes that can make pages completely unresponsive.
 
 ## Issue 1: The Fragment Wrapper Issue
 
 ### Problem
+
 Tutorial pages were completely frozen/unclickable. After 20 test versions, the fix was simply wrapping the component in a React fragment `<>...</>`.
 
 ### Root Cause
+
 When a component is returned directly without a wrapper in certain React contexts (especially with complex providers and state management), it can cause:
+
 - Rendering boundary issues
 - Re-render cycles that block event handlers
 - React's reconciliation getting confused about component identity
@@ -17,17 +21,22 @@ When a component is returned directly without a wrapper in certain React context
 ## Issue 2: Unmemoized Event Handlers (FourWidgetsCard)
 
 ### Problem
+
 FourWidgetsCard caused infinite render loops (5000+ renders) making the page freeze after any user interaction.
 
 ### Root Cause
+
 Event handler props were creating new functions on every render:
+
 ```tsx
 // This caused infinite loops
 onNextChord={() => widgetState.setState(...)}
 ```
 
 ### Fix
+
 Always memoize event handlers with useCallback:
+
 ```tsx
 const handleNextChord = useCallback(() => {
   widgetState.setState(...);
@@ -37,18 +46,23 @@ const handleNextChord = useCallback(() => {
 ## Issue 3: State Setters in useEffect Dependencies (GlobalControls)
 
 ### Problem
+
 Clicking the Reset button in GlobalControls caused the entire page to freeze with infinite re-renders.
 
 ### Root Cause
+
 Including `setCurrentPosition` (a state setter) in useEffect dependency array:
+
 ```tsx
 // This caused infinite loops
 }, [transport, setCurrentPosition, currentPosition]);
 ```
 
 ### Fix
+
 Remove state setters from dependencies (they're stable):
-```tsx
+
+````tsx
 // Fixed version
 }, [transport, currentPosition]);
 
@@ -69,10 +83,12 @@ export default function Page() {
     </>
   );
 }
-```
+````
 
 ## 2. ESLint Rule to Enforce Fragments
+
 Add this to `.eslintrc.js`:
+
 ```js
 {
   "rules": {
@@ -87,12 +103,14 @@ Add this to `.eslintrc.js`:
 When facing "page freeze" issues, follow this order:
 
 ### Quick Checks First (5 minutes)
+
 1. **Fragment Check**: Is the main component wrapped in `<>...</>`?
 2. **Console Errors**: Any errors in browser console?
 3. **Event Handlers**: Check for `e.stopPropagation()` or `e.preventDefault()`
 4. **CSS**: Look for `pointer-events: none` or overlapping elements
 
 ### Systematic Isolation (if quick checks fail)
+
 1. **Binary Search**: Comment out half the components, test, repeat
 2. **Minimal Reproduction**: Start with working version, add components one by one
 3. **Check Re-renders**: Add `console.log('render')` to components
@@ -101,16 +119,18 @@ When facing "page freeze" issues, follow this order:
 ## 4. Common React Pitfalls That Block Clicks
 
 ### Infinite Re-render Loops
+
 ```tsx
 // ❌ BAD - Creates new function every render
-<Component onEvent={() => setState(value)} />
+<Component onEvent={() => setState(value)} />;
 
 // ✅ GOOD - Memoized handler
 const handleEvent = useCallback(() => setState(value), []);
-<Component onEvent={handleEvent} />
+<Component onEvent={handleEvent} />;
 ```
 
 ### Circular State Updates
+
 ```tsx
 // ❌ BAD - Effect updates state that triggers itself
 useEffect(() => {
@@ -124,6 +144,7 @@ useEffect(() => {
 ```
 
 ### Z-Index Issues
+
 ```tsx
 // Check for invisible overlays blocking clicks
 <div style={{ position: 'absolute', zIndex: 9999 }} />
@@ -139,10 +160,8 @@ import { render, fireEvent } from '@testing-library/react';
 
 test('component should be clickable', () => {
   const handleClick = jest.fn();
-  const { getByText } = render(
-    <AudioEnabledTutorial {...props} />
-  );
-  
+  const { getByText } = render(<AudioEnabledTutorial {...props} />);
+
   // This test would have failed without the fragment!
   fireEvent.click(getByText('Some Button'));
   expect(handleClick).toHaveBeenCalled();
@@ -152,7 +171,9 @@ test('component should be clickable', () => {
 ## 6. Development Practices
 
 ### Component Template
+
 Use this template for all page components:
+
 ```tsx
 'use client';
 
@@ -164,9 +185,9 @@ interface PageProps {
 
 export default function Page({ params }: PageProps) {
   const resolvedParams = React.use(params);
-  
+
   // ... hooks and logic ...
-  
+
   // ALWAYS return with fragment
   return (
     <>
@@ -177,7 +198,9 @@ export default function Page({ params }: PageProps) {
 ```
 
 ### Pre-commit Hook
+
 Add to `.husky/pre-commit`:
+
 ```bash
 # Check for components returned without fragments
 grep -r "return\s*<[A-Z]" --include="*.tsx" --include="*.jsx" src/app/
@@ -199,16 +222,16 @@ Before spending hours debugging:
 ## Lessons Learned
 
 1. **Simple solutions first**: A 5-second fix (fragment) would have saved hours
-2. **React boundaries matter**: Component wrapping affects rendering behavior  
+2. **React boundaries matter**: Component wrapping affects rendering behavior
 3. **Systematic debugging works**: Our V1-V20 approach found multiple issues
 4. **Document weird fixes**: This guide prevents future frustration
 
 ## The Fragment Rule
 
-**When in doubt, wrap it out!** 
+**When in doubt, wrap it out!**
 
 If a page component is acting weird, just wrap the return in `<>...</>`. It's free, harmless, and might just save your day.
 
 ---
 
-*Remember: The most frustrating bugs often have the simplest fixes. Check the basics before diving deep.*
+_Remember: The most frustrating bugs often have the simplest fixes. Check the basics before diving deep._

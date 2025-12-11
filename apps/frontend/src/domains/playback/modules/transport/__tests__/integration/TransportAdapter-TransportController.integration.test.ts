@@ -181,10 +181,7 @@ describe('TransportAdapter ↔ TransportController Integration Tests (Phase 3.1)
     (TransportAdapter as any).instance = null;
     (TransportController as any).instance = null;
 
-    adapter = TransportAdapter.getInstance(
-      eventBus as any,
-      audioEngine as any,
-    );
+    adapter = TransportAdapter.getInstance(eventBus as any, audioEngine as any);
   });
 
   afterEach(async () => {

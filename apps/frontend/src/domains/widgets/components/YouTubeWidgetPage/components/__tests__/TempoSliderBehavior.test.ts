@@ -514,7 +514,9 @@ describe('Tempo Slider Behavior', () => {
     });
 
     it('should handle transport update errors gracefully', async () => {
-      const errorTempoChange = vi.fn().mockRejectedValue(new Error('Network error'));
+      const errorTempoChange = vi
+        .fn()
+        .mockRejectedValue(new Error('Network error'));
 
       const { result } = renderHook(() =>
         useTempoSlider({

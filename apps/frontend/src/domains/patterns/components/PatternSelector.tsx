@@ -10,8 +10,19 @@ import {
   SelectValue,
 } from '@/shared/components/ui/select';
 import { Badge } from '@/shared/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/shared/components/ui/tabs';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/shared/components/ui/card';
 import { usePatternSelector } from '../hooks/usePatternSelector';
 import { Pattern } from '../repositories/pattern.repository';
 import { Music, Drum, RotateCcw, Lock } from 'lucide-react';
@@ -22,7 +33,11 @@ interface PatternSelectorProps {
   className?: string;
 }
 
-export function PatternSelector({ tutorialId, onPatternChange, className }: PatternSelectorProps) {
+export function PatternSelector({
+  tutorialId,
+  onPatternChange,
+  className,
+}: PatternSelectorProps) {
   const {
     selectedDrumPattern,
     selectedHarmonyPattern,
@@ -42,7 +57,9 @@ export function PatternSelector({ tutorialId, onPatternChange, className }: Patt
     return (
       <Card className={className}>
         <CardContent className="py-8">
-          <div className="text-center text-muted-foreground">Loading patterns...</div>
+          <div className="text-center text-muted-foreground">
+            Loading patterns...
+          </div>
         </CardContent>
       </Card>
     );
@@ -54,7 +71,9 @@ export function PatternSelector({ tutorialId, onPatternChange, className }: Patt
         <CardContent className="py-4">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Lock className="h-4 w-4" />
-            <span className="text-sm">Pattern switching is disabled for this tutorial</span>
+            <span className="text-sm">
+              Pattern switching is disabled for this tutorial
+            </span>
           </div>
         </CardContent>
       </Card>
@@ -70,7 +89,10 @@ export function PatternSelector({ tutorialId, onPatternChange, className }: Patt
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'drums' | 'harmony')}>
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => setActiveTab(v as 'drums' | 'harmony')}
+        >
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="drums" className="flex items-center gap-2">
               <Drum className="h-4 w-4" />
@@ -88,7 +110,9 @@ export function PatternSelector({ tutorialId, onPatternChange, className }: Patt
               <Select
                 value={selectedDrumPattern?.id}
                 onValueChange={(id) => {
-                  const pattern = availableDrumPatterns.find((p) => p.id === id);
+                  const pattern = availableDrumPatterns.find(
+                    (p) => p.id === id,
+                  );
                   if (pattern) selectDrumPattern(pattern);
                 }}
                 disabled={isSaving}
@@ -121,7 +145,9 @@ export function PatternSelector({ tutorialId, onPatternChange, className }: Patt
                 </SelectContent>
               </Select>
               {selectedDrumPattern?.description && (
-                <p className="text-sm text-muted-foreground">{selectedDrumPattern.description}</p>
+                <p className="text-sm text-muted-foreground">
+                  {selectedDrumPattern.description}
+                </p>
               )}
             </div>
           </TabsContent>
@@ -132,7 +158,9 @@ export function PatternSelector({ tutorialId, onPatternChange, className }: Patt
               <Select
                 value={selectedHarmonyPattern?.id}
                 onValueChange={(id) => {
-                  const pattern = availableHarmonyPatterns.find((p) => p.id === id);
+                  const pattern = availableHarmonyPatterns.find(
+                    (p) => p.id === id,
+                  );
                   if (pattern) selectHarmonyPattern(pattern);
                 }}
                 disabled={isSaving}
@@ -165,7 +193,9 @@ export function PatternSelector({ tutorialId, onPatternChange, className }: Patt
                 </SelectContent>
               </Select>
               {selectedHarmonyPattern?.description && (
-                <p className="text-sm text-muted-foreground">{selectedHarmonyPattern.description}</p>
+                <p className="text-sm text-muted-foreground">
+                  {selectedHarmonyPattern.description}
+                </p>
               )}
             </div>
           </TabsContent>

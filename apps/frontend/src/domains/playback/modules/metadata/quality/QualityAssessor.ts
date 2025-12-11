@@ -1,6 +1,6 @@
 /**
  * QualityAssessor - Audio quality assessment
- * 
+ *
  * Evaluates audio quality metrics including SNR, THD,
  * clipping detection, and dynamic range.
  */
@@ -8,11 +8,11 @@
 import { createStructuredLogger } from '@bassnotion/contracts';
 import type { QualityAssessmentResult } from '@bassnotion/contracts';
 import type { AudioProcessingContext } from '../types.js';
-import type { 
-  QualityAssessmentConfig, 
-  ClippingSample, 
+import type {
+  QualityAssessmentConfig,
+  ClippingSample,
   DynamicRangeMetrics,
-  QualityMetrics 
+  QualityMetrics,
 } from './types.js';
 
 const logger = createStructuredLogger('QualityAssessor');
@@ -34,7 +34,7 @@ export class QualityAssessor {
    */
   async assessQuality(
     audioBuffer: AudioBuffer,
-    context: AudioProcessingContext
+    context: AudioProcessingContext,
   ): Promise<QualityAssessmentResult> {
     // Simple mode for testing - return mock data
     if ((context as any).simpleMode) {
@@ -46,7 +46,7 @@ export class QualityAssessor {
     // Calculate quality metrics
     const metrics = this.calculateQualityMetrics(channelData, context);
     const dynamicRange = this.calculateDynamicRangeMetrics(channelData);
-    
+
     // Detect clipping
     const clipping = this.detectClipping(channelData);
 
@@ -62,7 +62,7 @@ export class QualityAssessor {
       qualityScore,
       metrics,
       dynamicRange,
-      clipping
+      clipping,
     );
 
     return {
@@ -82,14 +82,14 @@ export class QualityAssessor {
    */
   private calculateQualityMetrics(
     channelData: Float32Array,
-    context: AudioProcessingContext
+    context: AudioProcessingContext,
   ): QualityMetrics {
     // Calculate SNR (simplified)
     const snr = this.calculateSNR(channelData);
-    
+
     // Calculate THD (simplified)
     const thd = this.calculateTHD(channelData, context);
-    
+
     // Calculate clarity index
     const clarity = this.calculateClarity(channelData);
 
@@ -106,18 +106,22 @@ export class QualityAssessor {
 
     for (let i = 0; i < channelData.length - frameSize; i += frameSize) {
       const frame = channelData.slice(i, i + frameSize);
-      const energy = frame.reduce((sum, sample) => sum + sample * sample, 0) / frameSize;
+      const energy =
+        frame.reduce((sum, sample) => sum + sample * sample, 0) / frameSize;
       frames.push(energy);
     }
 
     frames.sort((a, b) => a - b);
-    
+
     // Estimate noise floor from quietest 10% of frames
     const noiseFrames = frames.slice(0, Math.floor(frames.length * 0.1));
-    const noiseFloor = noiseFrames.reduce((sum, e) => sum + e, 0) / noiseFrames.length;
+    const noiseFloor =
+      noiseFrames.reduce((sum, e) => sum + e, 0) / noiseFrames.length;
 
     // Calculate signal power
-    const signalPower = channelData.reduce((sum, sample) => sum + sample * sample, 0) / channelData.length;
+    const signalPower =
+      channelData.reduce((sum, sample) => sum + sample * sample, 0) /
+      channelData.length;
 
     // SNR in dB
     return noiseFloor > 0 ? 10 * Math.log10(signalPower / noiseFloor) : 60;
@@ -126,10 +130,13 @@ export class QualityAssessor {
   /**
    * Calculate Total Harmonic Distortion
    */
-  private calculateTHD(channelData: Float32Array, context: AudioProcessingContext): number {
+  private calculateTHD(
+    channelData: Float32Array,
+    context: AudioProcessingContext,
+  ): number {
     // Simplified THD calculation
     // In production, would perform FFT and analyze harmonic content
-    
+
     // Count samples near clipping
     let distortedSamples = 0;
     const threshold = 0.95;
@@ -152,13 +159,13 @@ export class QualityAssessor {
     // Calculate zero crossing rate as a proxy for clarity
     let crossings = 0;
     for (let i = 1; i < channelData.length; i++) {
-      if ((channelData[i] >= 0) !== (channelData[i - 1] >= 0)) {
+      if (channelData[i] >= 0 !== channelData[i - 1] >= 0) {
         crossings++;
       }
     }
 
     const zcr = crossings / (channelData.length - 1);
-    
+
     // Map ZCR to clarity score (higher ZCR often means clearer signal)
     return Math.min(zcr * 10, 1.0);
   }
@@ -166,13 +173,18 @@ export class QualityAssessor {
   /**
    * Calculate dynamic range metrics
    */
-  private calculateDynamicRangeMetrics(channelData: Float32Array): DynamicRangeMetrics {
+  private calculateDynamicRangeMetrics(
+    channelData: Float32Array,
+  ): DynamicRangeMetrics {
     // Calculate peak level
     const peak = Math.max(...channelData.map(Math.abs));
     const peakDB = peak > 0 ? 20 * Math.log10(peak) : -100;
 
     // Calculate RMS
-    const sumSquares = channelData.reduce((sum, sample) => sum + sample * sample, 0);
+    const sumSquares = channelData.reduce(
+      (sum, sample) => sum + sample * sample,
+      0,
+    );
     const rms = Math.sqrt(sumSquares / channelData.length);
     const rmsDB = rms > 0 ? 20 * Math.log10(rms) : -100;
 
@@ -193,7 +205,9 @@ export class QualityAssessor {
   /**
    * Detect clipping in audio
    */
-  private detectClipping(channelData: Float32Array): QualityAssessmentResult['clipping'] {
+  private detectClipping(
+    channelData: Float32Array,
+  ): QualityAssessmentResult['clipping'] {
     const threshold = this.config.clippingThreshold;
     const clippingSamples: ClippingSample[] = [];
 
@@ -256,43 +270,41 @@ export class QualityAssessor {
     qualityScore: number,
     metrics: QualityMetrics,
     dynamicRange: DynamicRangeMetrics,
-    clipping: QualityAssessmentResult['clipping']
+    clipping: QualityAssessmentResult['clipping'],
   ): string[] {
     const recommendations: string[] = [];
 
     if (clipping.detected) {
       recommendations.push(
-        `Clipping detected (${clipping.percentage.toFixed(2)}%). Reduce input gain.`
+        `Clipping detected (${clipping.percentage.toFixed(2)}%). Reduce input gain.`,
       );
     }
 
     if (metrics.snr < 40) {
       recommendations.push(
-        'Low SNR detected. Check for noise sources or increase signal level.'
+        'Low SNR detected. Check for noise sources or increase signal level.',
       );
     }
 
     if (metrics.thd > 0.05) {
       recommendations.push(
-        'High distortion detected. Check signal chain for overload.'
+        'High distortion detected. Check signal chain for overload.',
       );
     }
 
     if (dynamicRange.crestFactor < 3) {
-      recommendations.push(
-        'Low dynamic range. Consider reducing compression.'
-      );
+      recommendations.push('Low dynamic range. Consider reducing compression.');
     }
 
     if (dynamicRange.peak > -3) {
       recommendations.push(
-        'Peak level too high. Leave headroom for processing.'
+        'Peak level too high. Leave headroom for processing.',
       );
     }
 
     if (qualityScore < 70) {
       recommendations.push(
-        'Overall quality needs improvement. Review signal chain.'
+        'Overall quality needs improvement. Review signal chain.',
       );
     }
 

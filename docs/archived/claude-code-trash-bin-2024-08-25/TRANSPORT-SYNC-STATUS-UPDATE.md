@@ -3,6 +3,7 @@
 ## ✅ Fixes Applied
 
 ### 1. Transport.scheduleRepeat Implementation
+
 - ✅ Replaced `Tone.Loop` with `Transport.scheduleRepeat` in all widgets
 - ✅ Fixed stale Tone.js references by using `getTone()` for fresh instances
 - ✅ All widget callbacks are now executing when Transport plays
@@ -10,12 +11,14 @@
 ### 2. Widget-Specific Fixes
 
 #### HarmonyWidget
+
 - ✅ Schedule callback executing (`🎵🎹 HARMONY TRANSPORT SCHEDULE EXECUTED!`)
 - ✅ Added debugging to track chord processor initialization
 - ⚠️ Need to verify if `chordProcessorRef.current` is initialized
 - ⚠️ Need to check if `isInitialized` flag is true
 
-#### DrummerWidget  
+#### DrummerWidget
+
 - ✅ Schedule callback executing (`🥁🥁 DRUM TRANSPORT SCHEDULE EXECUTED!`)
 - ✅ Added error handling for buffer loading issues
 - ⚠️ Drum samples failing to load from Supabase
@@ -23,6 +26,7 @@
 - ⚠️ "buffer is either not set or not loaded" errors when trying to play
 
 #### MetronomeWidget
+
 - ✅ Schedule callback executing (`🎵🥁 METRONOME TRANSPORT SCHEDULE EXECUTED!`)
 - ✅ Added volume and mute state checking
 - ✅ Should play clicks if volume > 0 and not muted

@@ -6,6 +6,7 @@ import { useManualPlacement } from '../hooks/useManualPlacement';
 import type { GeneratedExerciseNote } from '../hooks/useMidiConversion';
 import { NoteQueue } from './NoteQueue';
 import { InteractiveFretboard } from './InteractiveFretboard';
+import { type AccidentalPreference } from '../utils/fretboardCalculations';
 
 interface ManualMeasurePlacerProps {
   /** Parsed measures from MIDI file */
@@ -16,6 +17,8 @@ interface ManualMeasurePlacerProps {
   onComplete: (notes: GeneratedExerciseNote[]) => void;
   /** Existing notes to pre-populate (for editing mode) */
   existingNotes?: GeneratedExerciseNote[];
+  /** Display preference for accidentals (sharps or flats) */
+  accidentalPreference?: AccidentalPreference;
 }
 
 /**
@@ -32,6 +35,7 @@ export function ManualMeasurePlacer({
   bassType = '4',
   onComplete,
   existingNotes,
+  accidentalPreference = 'sharps',
 }: ManualMeasurePlacerProps) {
   const {
     currentMeasureNumber,
@@ -70,7 +74,7 @@ export function ManualMeasurePlacer({
   const handleComplete = () => {
     if (!areAllMeasuresComplete) {
       alert(
-        `Please complete all measures first. ${stats.completedMeasures}/${stats.totalMeasures} measures complete.`
+        `Please complete all measures first. ${stats.completedMeasures}/${stats.totalMeasures} measures complete.`,
       );
       return;
     }
@@ -84,7 +88,7 @@ export function ManualMeasurePlacer({
     ([noteIndex, placement]) => ({
       noteIndex,
       ...placement,
-    })
+    }),
   );
 
   if (!currentMeasure) {
@@ -143,13 +147,17 @@ export function ManualMeasurePlacer({
         <div className="flex items-center justify-between text-sm">
           <div className="text-gray-600">
             <span className="font-semibold">{stats.placedNotes}</span> of{' '}
-            <span className="font-semibold">{stats.totalNotes}</span> notes placed
+            <span className="font-semibold">{stats.totalNotes}</span> notes
+            placed
           </div>
           <div className="text-gray-600">
             <span className="font-semibold">{stats.completedMeasures}</span> of{' '}
-            <span className="font-semibold">{stats.totalMeasures}</span> measures complete
+            <span className="font-semibold">{stats.totalMeasures}</span>{' '}
+            measures complete
           </div>
-          <div className="text-lg font-bold text-blue-600">{stats.percentComplete}%</div>
+          <div className="text-lg font-bold text-blue-600">
+            {stats.percentComplete}%
+          </div>
         </div>
 
         {/* Overall progress bar */}
@@ -173,8 +181,12 @@ export function ManualMeasurePlacer({
             notes={currentMeasure.notes}
             placements={currentMeasurePlacements}
             currentNoteIndex={currentNoteIndex}
+            accidentalPreference={accidentalPreference}
             onNoteClick={(noteIndex) => {
-              console.log('[ManualMeasurePlacer] Clicked placed note:', noteIndex);
+              console.log(
+                '[ManualMeasurePlacer] Clicked placed note:',
+                noteIndex,
+              );
               // TODO: Highlight note on fretboard (future enhancement)
             }}
           />
@@ -196,7 +208,9 @@ export function ManualMeasurePlacer({
               type="button"
               onClick={() => {
                 if (
-                  confirm('Clear all placements in this measure? This cannot be undone.')
+                  confirm(
+                    'Clear all placements in this measure? This cannot be undone.',
+                  )
                 ) {
                   clearCurrentMeasure();
                 }
@@ -219,6 +233,7 @@ export function ManualMeasurePlacer({
             bassType={bassType}
             strings={parseInt(bassType)}
             disabled={isCurrentMeasureComplete}
+            accidentalPreference={accidentalPreference}
           />
         </div>
       </div>
@@ -232,7 +247,8 @@ export function ManualMeasurePlacer({
                 ✓ All measures complete!
               </p>
               <p className="text-sm text-green-700">
-                {stats.totalNotes} notes placed across {stats.totalMeasures} measures
+                {stats.totalNotes} notes placed across {stats.totalMeasures}{' '}
+                measures
               </p>
             </div>
             <button

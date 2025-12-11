@@ -19,10 +19,12 @@ All write operations require admin authentication via Bearer token in the Author
 Fetch all tutorials with optional pagination.
 
 **Query Parameters:**
+
 - `page` (number): Page number (default: 1)
 - `limit` (number): Items per page (default: 20)
 
 **Response:**
+
 ```json
 {
   "items": [Tutorial],
@@ -37,6 +39,7 @@ Fetch all tutorials with optional pagination.
 Fetch a single tutorial by ID.
 
 **Response:**
+
 ```json
 {
   "id": "uuid",
@@ -68,6 +71,7 @@ Fetch a tutorial by its slug.
 Create a new tutorial.
 
 **Request Body:**
+
 ```json
 {
   "title": "Tutorial Title",
@@ -109,6 +113,7 @@ Fetch only published tutorials.
 Fetch related tutorials.
 
 **Query Parameters:**
+
 - `limit` (number): Maximum number of results (default: 5)
 
 **Response:** Array of related tutorials
@@ -120,10 +125,12 @@ Fetch related tutorials.
 Fetch all exercises with optional pagination.
 
 **Query Parameters:**
+
 - `page` (number): Page number (default: 1)
 - `limit` (number): Items per page (default: 20)
 
 **Response:**
+
 ```json
 {
   "items": [Exercise],
@@ -138,6 +145,7 @@ Fetch all exercises with optional pagination.
 Fetch a single exercise by ID.
 
 **Response:**
+
 ```json
 {
   "id": "uuid",
@@ -148,7 +156,7 @@ Fetch a single exercise by ID.
   "duration": 60,
   "duration_measures": 4,
   "duration_beats": 0,
-  "time_signature": {"numerator": 4, "denominator": 4},
+  "time_signature": { "numerator": 4, "denominator": 4 },
   "difficulty": "beginner",
   "key": "C",
   "notes": [],
@@ -175,6 +183,7 @@ Fetch all exercises for a specific tutorial.
 Create a new exercise.
 
 **Request Body:**
+
 ```json
 {
   "tutorial_id": "uuid",
@@ -184,7 +193,7 @@ Create a new exercise.
   "duration": 60,
   "duration_measures": 4,
   "duration_beats": 0,
-  "time_signature": {"numerator": 4, "denominator": 4},
+  "time_signature": { "numerator": 4, "denominator": 4 },
   "difficulty": "beginner",
   "key": "C",
   "tags": ["tag1"],
@@ -213,6 +222,7 @@ Delete an exercise.
 Update MIDI file status for an exercise.
 
 **Request Body:**
+
 ```json
 {
   "has_metronome_midi": true,
@@ -233,6 +243,7 @@ Upload a MIDI file for an exercise (handled via Supabase Storage directly).
 **Request:** Multipart form data with file
 
 **Response:**
+
 ```json
 {
   "url": "https://storage.url/path/to/file.mid",
@@ -247,6 +258,7 @@ Upload a MIDI file for an exercise (handled via Supabase Storage directly).
 Fetch multiple tutorials by IDs.
 
 **Request Body:**
+
 ```json
 {
   "ids": ["uuid1", "uuid2", "uuid3"]
@@ -260,6 +272,7 @@ Fetch multiple tutorials by IDs.
 Fetch multiple exercises by IDs.
 
 **Request Body:**
+
 ```json
 {
   "ids": ["uuid1", "uuid2", "uuid3"]
@@ -275,6 +288,7 @@ Fetch multiple exercises by IDs.
 Search tutorials.
 
 **Query Parameters:**
+
 - `q` (string): Search query
 - `level` (string): Filter by difficulty level
 - `tags` (string): Comma-separated tags
@@ -291,6 +305,7 @@ Search tutorials.
 Search exercises.
 
 **Query Parameters:**
+
 - `q` (string): Search query
 - `difficulty` (string): Filter by difficulty
 - `tags` (string): Comma-separated tags
@@ -315,6 +330,7 @@ All errors follow this format:
 ```
 
 **Common Error Codes:**
+
 - `UNAUTHORIZED`: Missing or invalid authentication
 - `FORBIDDEN`: User lacks required permissions
 - `NOT_FOUND`: Resource not found

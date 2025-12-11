@@ -5,7 +5,9 @@ import { RequestContextService } from '../../shared/services/request-context.ser
 
 @Injectable()
 export class AudioSamplesService {
-  private readonly staticLogger = createStructuredLogger(AudioSamplesService.name);
+  private readonly staticLogger = createStructuredLogger(
+    AudioSamplesService.name,
+  );
   private readonly bucketName = 'audio-samples';
 
   constructor(
@@ -31,7 +33,8 @@ export class AudioSamplesService {
         .upload(filePath, fileBuffer, {
           contentType,
           cacheControl: '3600',
-          upsert: true });
+          upsert: true,
+        });
 
       if (error) {
         throw error;
@@ -39,18 +42,21 @@ export class AudioSamplesService {
 
       const publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${this.bucketName}/${filePath}`;
 
-      logger.info(`Sample uploaded successfully: ${filePath}`, { correlationId });
+      logger.info(`Sample uploaded successfully: ${filePath}`, {
+        correlationId,
+      });
 
       return {
         url: publicUrl,
-        path: filePath };
+        path: filePath,
+      };
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
       logger.error(
         `Failed to upload sample: ${error instanceof Error ? error.message : 'Unknown error'}`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       throw error;
     }
@@ -75,13 +81,15 @@ export class AudioSamplesService {
           );
           return {
             ...result,
-            success: true };
+            success: true,
+          };
         } catch (error) {
           return {
             path: sample.path,
             url: '',
             success: false,
-            error: error instanceof Error ? error.message : 'Unknown error' };
+            error: error instanceof Error ? error.message : 'Unknown error',
+          };
         }
       }),
     );
@@ -91,7 +99,7 @@ export class AudioSamplesService {
     const correlationId = this.requestContext?.getCorrelationId();
     logger.info(
       `Batch upload complete: ${successCount}/${samples.length} successful`,
-      { correlationId }
+      { correlationId },
     );
 
     return results;
@@ -108,7 +116,8 @@ export class AudioSamplesService {
       await client.storage.from(this.bucketName).upload(path, metadataBuffer, {
         contentType: 'application/json',
         cacheControl: '3600',
-        upsert: true });
+        upsert: true,
+      });
 
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
@@ -119,7 +128,7 @@ export class AudioSamplesService {
       logger.error(
         `Failed to create metadata: ${error instanceof Error ? error.message : 'Unknown error'}`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       throw error;
     }

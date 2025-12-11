@@ -153,12 +153,17 @@ export class Mixer {
     try {
       this.tone = this.audioEngine.getTone();
     } catch (error) {
-      logger.warn('Mixer: AudioEngine not initialized, using window.Tone fallback', {
-        error: error instanceof Error ? error.message : String(error),
-      });
+      logger.warn(
+        'Mixer: AudioEngine not initialized, using window.Tone fallback',
+        {
+          error: error instanceof Error ? error.message : String(error),
+        },
+      );
       this.tone = (window as any).Tone;
       if (!this.tone) {
-        logger.error('Mixer: No Tone.js instance available (neither AudioEngine nor window.Tone)');
+        logger.error(
+          'Mixer: No Tone.js instance available (neither AudioEngine nor window.Tone)',
+        );
       }
     }
 

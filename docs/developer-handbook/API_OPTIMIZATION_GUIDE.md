@@ -69,7 +69,10 @@ The ApiClient maintains a Map of in-flight GET requests:
 class ApiClient {
   private pendingRequests = new Map<string, Promise<any>>();
 
-  private async request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
+  private async request<T>(
+    endpoint: string,
+    options: RequestOptions = {},
+  ): Promise<T> {
     const cacheKey = method === 'GET' ? `${method}:${url}` : null;
 
     // Check if identical request is already in flight
@@ -115,8 +118,8 @@ React Query caches API responses in memory. When navigating between pages, data 
 const { data: exercises } = useQuery({
   queryKey: ['exercises', tutorialId],
   queryFn: () => fetchExercises(tutorialId),
-  staleTime: 30 * 60 * 1000,  // 30 minutes (aggressive caching)
-  gcTime: 60 * 60 * 1000,     // Keep in cache for 1 hour
+  staleTime: 30 * 60 * 1000, // 30 minutes (aggressive caching)
+  gcTime: 60 * 60 * 1000, // Keep in cache for 1 hour
 });
 ```
 
@@ -126,10 +129,10 @@ const { data: exercises } = useQuery({
 // Default React Query configuration
 queryClient.setDefaultOptions({
   queries: {
-    staleTime: 30 * 60 * 1000,        // Data fresh for 30 min
-    gcTime: 60 * 60 * 1000,           // Keep in cache for 1 hour
-    refetchOnWindowFocus: false,      // Don't refetch on tab switch
-    refetchOnMount: false,            // Don't refetch on remount
+    staleTime: 30 * 60 * 1000, // Data fresh for 30 min
+    gcTime: 60 * 60 * 1000, // Keep in cache for 1 hour
+    refetchOnWindowFocus: false, // Don't refetch on tab switch
+    refetchOnMount: false, // Don't refetch on remount
     retry: (failureCount, error) => {
       // Don't retry on 4xx errors (including 429 rate limits)
       if (error.status >= 400 && error.status < 500) return false;
@@ -181,10 +184,10 @@ async findBySlug(slug: string): Promise<Tutorial> {
 
 ```typescript
 const CACHE_DURATION = {
-  userProfile: 15 * 60,      // 15 minutes (can change frequently)
-  tutorial: 60 * 60,         // 1 hour (rarely changes)
-  exercises: 60 * 60,        // 1 hour (rarely changes)
-  creatorStats: 24 * 60 * 60 // 24 hours (changes very slowly)
+  userProfile: 15 * 60, // 15 minutes (can change frequently)
+  tutorial: 60 * 60, // 1 hour (rarely changes)
+  exercises: 60 * 60, // 1 hour (rarely changes)
+  creatorStats: 24 * 60 * 60, // 24 hours (changes very slowly)
 };
 ```
 
@@ -213,11 +216,13 @@ const tutorials = await apiClient.get('/api/v1/tutorials');
 ### What Gets Deduplicated
 
 ✅ **Deduplicated (GET requests only)**:
+
 - `apiClient.get('/api/user/profile')`
 - `apiClient.get('/api/v1/tutorials')`
 - `apiClient.get('/api/v1/exercises/tutorial/123')`
 
 ❌ **NOT deduplicated (mutations)**:
+
 - `apiClient.post('/api/exercises', data)` - Each POST is unique
 - `apiClient.put('/api/tutorials/123', data)` - Each PUT is unique
 - `apiClient.delete('/api/exercises/456')` - Each DELETE is unique
@@ -294,8 +299,8 @@ export function CreatorInfoSection({ tutorialData }: Props) {
 
   // Only fetch if we don't have subscriber count already
   const { subscriberCount } = useYouTubeChannelData(
-    hasSubscriberCount ? undefined : channelUrl,  // undefined = skip query
-    creatorName
+    hasSubscriberCount ? undefined : channelUrl, // undefined = skip query
+    creatorName,
   );
 
   // Use tutorial data if available, otherwise use API data
@@ -314,10 +319,10 @@ export function CreatorInfoSection({ tutorialData }: Props) {
 ```typescript
 // These will deduplicate automatically if any are identical
 const [profile, tutorials, exercises, creators] = await Promise.all([
-  apiClient.get('/api/user/profile'),        // Deduplicated if called elsewhere
-  apiClient.get('/api/v1/tutorials'),        // Independent
-  apiClient.get('/api/v1/exercises'),        // Independent
-  apiClient.get('/api/creators/stats'),      // Independent
+  apiClient.get('/api/user/profile'), // Deduplicated if called elsewhere
+  apiClient.get('/api/v1/tutorials'), // Independent
+  apiClient.get('/api/v1/exercises'), // Independent
+  apiClient.get('/api/creators/stats'), // Independent
 ]);
 ```
 
@@ -328,6 +333,7 @@ const [profile, tutorials, exercises, creators] = await Promise.all([
 ### Key Metrics to Track
 
 1. **API Call Reduction**
+
    ```typescript
    // Before optimization
    Network tab: 6 calls to /api/user/profile
@@ -338,6 +344,7 @@ const [profile, tutorials, exercises, creators] = await Promise.all([
    ```
 
 2. **Cache Hit Rate**
+
    ```typescript
    // React Query DevTools
    Query: ['exercises', 'tutorial-123']
@@ -357,12 +364,14 @@ const [profile, tutorials, exercises, creators] = await Promise.all([
 ### What to Look For
 
 ✅ **Good signs**:
+
 - Fewer duplicate API calls in Network tab
 - "Deduplicating request" logs in console
 - React Query showing "from cache" in DevTools
 - Lower Supabase query count in dashboard
 
 ❌ **Red flags**:
+
 - Same API call appearing multiple times simultaneously
 - React Query always showing "fetching" (not using cache)
 - Hitting rate limits (429 errors)
@@ -375,6 +384,7 @@ const [profile, tutorials, exercises, creators] = await Promise.all([
 ### DO ✅
 
 1. **Always use `apiClient`** instead of raw `fetch()`
+
    ```typescript
    // Good
    const data = await apiClient.get('/api/endpoint');
@@ -384,48 +394,56 @@ const [profile, tutorials, exercises, creators] = await Promise.all([
    ```
 
 2. **Set appropriate cache times** in React Query
+
    ```typescript
    // Good - aggressive caching for rarely-changing data
-   staleTime: 30 * 60 * 1000  // 30 minutes
+   staleTime: 30 * 60 * 1000; // 30 minutes
 
    // Bad - too aggressive for frequently-changing data
-   staleTime: 0  // Always refetch
+   staleTime: 0; // Always refetch
    ```
 
 3. **Skip API calls when data exists**
+
    ```typescript
    // Good - conditional fetching
-   enabled: !hasData
+   enabled: !hasData;
 
    // Bad - fetch even if we have data
-   enabled: true
+   enabled: true;
    ```
 
 4. **Use React Query for data fetching**
+
    ```typescript
    // Good - built-in caching + deduplication
    const { data } = useQuery(['key'], fetchFn);
 
    // Bad - manual state management
    const [data, setData] = useState();
-   useEffect(() => { fetch().then(setData) }, []);
+   useEffect(() => {
+     fetch().then(setData);
+   }, []);
    ```
 
 ### DON'T ❌
 
 1. **Don't bypass apiClient for API calls**
+
    ```typescript
    // Bad - no deduplication, no correlation IDs, no error handling
-   fetch('/api/endpoint')
+   fetch('/api/endpoint');
    ```
 
 2. **Don't set staleTime to 0 unnecessarily**
+
    ```typescript
    // Bad - defeats caching purpose
-   staleTime: 0
+   staleTime: 0;
    ```
 
 3. **Don't make API calls in render**
+
    ```typescript
    // Bad - can cause infinite loops + duplicate calls
    function Component() {
@@ -444,7 +462,9 @@ const [profile, tutorials, exercises, creators] = await Promise.all([
    ```typescript
    // Bad - forcing refetch defeats optimization
    const { data, refetch } = useQuery(['key'], fetchFn);
-   useEffect(() => { refetch() }, []);  // ❌
+   useEffect(() => {
+     refetch();
+   }, []); // ❌
    ```
 
 ---
@@ -454,11 +474,13 @@ const [profile, tutorials, exercises, creators] = await Promise.all([
 ### Issue: "Still seeing duplicate API calls"
 
 **Check**:
+
 1. Are you using `apiClient.get()` or raw `fetch()`?
 2. Are calls happening simultaneously or sequentially?
 3. Check React strict mode (development) - double renders are expected
 
 **Solution**:
+
 ```typescript
 // Ensure all API calls use apiClient
 import { apiClient } from '@/lib/api-client';
@@ -468,15 +490,17 @@ const data = await apiClient.get('/api/endpoint');
 ### Issue: "React Query not caching"
 
 **Check**:
+
 1. Is `staleTime` set appropriately?
 2. Are query keys consistent?
 3. Is `enabled: false` preventing queries?
 
 **Solution**:
+
 ```typescript
 // Ensure consistent query keys
 const { data } = useQuery({
-  queryKey: ['exercises', tutorialId],  // Same key = shared cache
+  queryKey: ['exercises', tutorialId], // Same key = shared cache
   queryFn: () => fetchExercises(tutorialId),
   staleTime: 30 * 60 * 1000,
 });
@@ -485,17 +509,19 @@ const { data } = useQuery({
 ### Issue: "Hitting rate limits (429 errors)"
 
 **Check**:
+
 1. Are optimizations actually enabled?
 2. Check browser Network tab for duplicate calls
 3. Look for retry loops
 
 **Solution**:
+
 ```typescript
 // Don't retry on 429
 retry: (failureCount, error) => {
   if (error.status === 429) return false;
   return failureCount < 3;
-}
+};
 ```
 
 ---
@@ -556,6 +582,7 @@ async findBySlug(slug: string): Promise<Tutorial> {
 ✅ **Performance boost**: Faster page loads, better UX
 
 **Next Steps**:
+
 1. Review Network tab to verify deduplication working
 2. Check React Query DevTools to monitor cache hits
 3. Monitor Supabase dashboard for query count reduction

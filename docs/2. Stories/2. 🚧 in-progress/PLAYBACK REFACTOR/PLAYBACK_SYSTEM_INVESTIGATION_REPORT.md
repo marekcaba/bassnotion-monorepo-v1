@@ -1,4 +1,5 @@
 # Playback System Investigation Report
+
 ## Behavioral Comparison: Legacy RegionProcessor vs New PlaybackEngine + HarmonySchedulerV2
 
 **Investigation Date**: 2025-11-30  
@@ -13,17 +14,19 @@
 The new modular playback system (PlaybackEngine + HarmonySchedulerV2) has **100% feature parity** with the legacy RegionProcessor while providing significant architectural improvements:
 
 ### Key Metrics
-| Metric | Legacy System | New System | Status |
-|--------|---------------|-----------|--------|
-| **Total Lines of Code** | 1,328 (RegionProcessor only) | 1,691 (PlaybackEngine 552 + Scheduler 595 + HarmonySchedulerV2 544) | ✅ Modular (3 separate concerns) |
-| **Monolithic God Object** | RegionProcessor (1,328 lines) | None (split into 3) | ✅ Fixed |
-| **HarmonyScheduler Size** | 1,477 lines (legacy) | 544 lines (V2) | ✅ 63% reduction |
-| **Module Dependencies** | 17 modules (RegionProcessor) | 1 module (Scheduler) | ✅ Simplified |
-| **Test Coverage** | Phase 4 backup had regression suite | 202 tests passing | ✅ All passing |
-| **Feature Flag Status** | N/A | DISABLED (false) | ⚠️ Legacy active |
-| **Integration Points** | Monolithic | 3 core points | ✅ Cleaner |
+
+| Metric                    | Legacy System                       | New System                                                          | Status                           |
+| ------------------------- | ----------------------------------- | ------------------------------------------------------------------- | -------------------------------- |
+| **Total Lines of Code**   | 1,328 (RegionProcessor only)        | 1,691 (PlaybackEngine 552 + Scheduler 595 + HarmonySchedulerV2 544) | ✅ Modular (3 separate concerns) |
+| **Monolithic God Object** | RegionProcessor (1,328 lines)       | None (split into 3)                                                 | ✅ Fixed                         |
+| **HarmonyScheduler Size** | 1,477 lines (legacy)                | 544 lines (V2)                                                      | ✅ 63% reduction                 |
+| **Module Dependencies**   | 17 modules (RegionProcessor)        | 1 module (Scheduler)                                                | ✅ Simplified                    |
+| **Test Coverage**         | Phase 4 backup had regression suite | 202 tests passing                                                   | ✅ All passing                   |
+| **Feature Flag Status**   | N/A                                 | DISABLED (false)                                                    | ⚠️ Legacy active                 |
+| **Integration Points**    | Monolithic                          | 3 core points                                                       | ✅ Cleaner                       |
 
 ### Current Active System
+
 ```
 ENABLED_NEW_PLAYBACK_ENGINE = false (default)
   ↓
@@ -39,17 +42,19 @@ PlaybackEngine exists but NOT ACTIVE
 ## 1. CURRENT ACTIVE SYSTEM
 
 ### Feature Flag Configuration
+
 **File**: `apps/frontend/src/domains/playback/config/featureFlags.ts`
 
 ```typescript
 // Line 67: DEFAULT STATE
-ENABLE_NEW_PLAYBACK_ENGINE: false  // ← LEGACY SYSTEM IS ACTIVE
+ENABLE_NEW_PLAYBACK_ENGINE: false; // ← LEGACY SYSTEM IS ACTIVE
 
 // To enable new system:
-NEXT_PUBLIC_ENABLE_NEW_PLAYBACK_ENGINE=true
+NEXT_PUBLIC_ENABLE_NEW_PLAYBACK_ENGINE = true;
 ```
 
 ### How the Switch Works
+
 **File**: `apps/frontend/src/domains/playback/services/core/CoreServices.ts`
 
 ```typescript
@@ -72,6 +77,7 @@ if (this.playbackEngine) {
 ```
 
 ### Current Deployment State
+
 - ✅ Both systems instantiated in CoreServices constructor
 - ✅ Legacy RegionProcessor ALWAYS created
 - ✅ PlaybackEngine created ONLY if flag enabled (currently false)
@@ -101,6 +107,7 @@ PlaybackEngine (Central State Machine - 552 lines)
 ```
 
 ### RegionProcessor → PlaybackEngine Migration Adapter
+
 **File**: `apps/frontend/src/domains/playback/services/core/RegionProcessorAdapter.ts`
 
 The adapter provides **backward compatibility** during migration:
@@ -112,8 +119,8 @@ processor.registerTracks([track1, track2]);
 processor.start();
 
 // Maps to new API (PlaybackEngine) via adapter
-adapter.registerTracks([track1, track2])  // → playbackEngine.registerTrack(each)
-adapter.start()                           // → playbackEngine.start()
+adapter.registerTracks([track1, track2]); // → playbackEngine.registerTrack(each)
+adapter.start(); // → playbackEngine.start()
 ```
 
 **Key Design**: Adapter is marked `@deprecated` with clear migration paths in console warnings.
@@ -161,6 +168,7 @@ private harmonyScheduler!: HarmonySchedulerV2; // Modular harmony scheduler (Day
 ```
 
 **Features Implemented**:
+
 - ✅ MIDI note scheduling (11-step pipeline)
 - ✅ Octave shifting (Grand Piano: 0, Wurlitzer/Rhodes: -12)
 - ✅ Velocity layer selection (4-16 layers, per-note ranges)
@@ -173,6 +181,7 @@ private harmonyScheduler!: HarmonySchedulerV2; // Modular harmony scheduler (Day
 ### 3.3 Module Dependencies
 
 #### RegionProcessor Uses (17 modules)
+
 1. ✅ ConfigurationManager
 2. ✅ BufferManager
 3. ✅ TimePositionConverter
@@ -191,6 +200,7 @@ private harmonyScheduler!: HarmonySchedulerV2; // Modular harmony scheduler (Day
 **All modules actively used and maintained.**
 
 #### PlaybackEngine Uses (5 modules)
+
 1. ✅ Scheduler (unified - replaces all 14+ module references)
 2. ✅ EventBus
 3. ✅ PluginManager (injected)
@@ -205,21 +215,22 @@ private harmonyScheduler!: HarmonySchedulerV2; // Modular harmony scheduler (Day
 
 ### 4.1 State Management Equivalence
 
-| Feature | Legacy RegionProcessor | New PlaybackEngine | Equivalence |
-|---------|----------------------|-------------------|-------------|
-| **Playback Control** | start(), stop(), dispose() | start(), stop(), pause(), resume(), dispose() | ✅ Superset |
-| **State Tracking** | isRunning boolean (✅ 32+ consumers) | state machine (7 states) | ✅ More explicit |
-| **Track Management** | registerTracks() + tracks Map | registerTrack() + tracks Map | ✅ Same pattern |
-| **Buffer Injection** | setHarmonyBuffers(), setDrumBuffers(), etc. | setHarmonyBuffers() + scheduler delegation | ✅ Same methods |
-| **Configuration** | countdownOffsetBeats, countdownEnabled | countdownBeats, countdownEnabled | ✅ Same |
-| **Audio Destination** | setAudioContext() + destination | initialize(context, destination) | ✅ Same data |
-| **Error Handling** | Logs + exception throws | Logs + state → error | ✅ Equivalent |
+| Feature               | Legacy RegionProcessor                      | New PlaybackEngine                            | Equivalence      |
+| --------------------- | ------------------------------------------- | --------------------------------------------- | ---------------- |
+| **Playback Control**  | start(), stop(), dispose()                  | start(), stop(), pause(), resume(), dispose() | ✅ Superset      |
+| **State Tracking**    | isRunning boolean (✅ 32+ consumers)        | state machine (7 states)                      | ✅ More explicit |
+| **Track Management**  | registerTracks() + tracks Map               | registerTrack() + tracks Map                  | ✅ Same pattern  |
+| **Buffer Injection**  | setHarmonyBuffers(), setDrumBuffers(), etc. | setHarmonyBuffers() + scheduler delegation    | ✅ Same methods  |
+| **Configuration**     | countdownOffsetBeats, countdownEnabled      | countdownBeats, countdownEnabled              | ✅ Same          |
+| **Audio Destination** | setAudioContext() + destination             | initialize(context, destination)              | ✅ Same data     |
+| **Error Handling**    | Logs + exception throws                     | Logs + state → error                          | ✅ Equivalent    |
 
 **Result**: ✅ COMPLETE BEHAVIORAL EQUIVALENCE
 
 ### 4.2 Scheduling Behavior Equivalence
 
 #### Voice Cue Scheduling
+
 ```
 Legacy:    Event → SimpleInstrumentScheduler → AudioBufferSourceNode
 New:       Event → Scheduler.schedule() → AudioBufferSourceNode
@@ -228,6 +239,7 @@ Status:    ✅ VERIFIED
 ```
 
 #### Metronome Scheduling
+
 ```
 Legacy:    Event → SimpleInstrumentScheduler → AudioBufferSourceNode
 New:       Event → Scheduler.schedule() → AudioBufferSourceNode
@@ -236,6 +248,7 @@ Status:    ✅ VERIFIED
 ```
 
 #### Drum Scheduling
+
 ```
 Legacy:    Event → SimpleInstrumentScheduler → AudioBufferSourceNode
 New:       Event → Scheduler.schedule() → AudioBufferSourceNode
@@ -244,6 +257,7 @@ Status:    ✅ VERIFIED
 ```
 
 #### Harmony Scheduling (CRITICAL)
+
 ```
 Legacy (HarmonyScheduler):     1,477 lines, monolithic
 New (HarmonySchedulerV2):       544 lines, extracted into 5 modules:
@@ -260,6 +274,7 @@ Status:            ✅ FULL FEATURE PARITY
 ```
 
 #### Bass Scheduling
+
 ```
 Legacy:    Event → SimpleInstrumentScheduler → AudioBufferSourceNode
 New:       Event → Scheduler.schedule() → AudioBufferSourceNode
@@ -272,6 +287,7 @@ Status:    ✅ VERIFIED
 ### 4.3 Memory and Performance
 
 #### Memory Cleanup (Bug #7 fix preserved)
+
 ```typescript
 // Legacy
 private unsubscribeTempoChange: (() => void) | null = null;  // Event cleanup
@@ -286,6 +302,7 @@ Status: ✅ EQUIVALENT (new system has better cleanup tracking)
 ```
 
 #### Tempo Change Debouncing (Bug #6 fix preserved)
+
 ```typescript
 // Legacy
 private tempoChangeDebounce: number | null = null;
@@ -299,6 +316,7 @@ Status: ✅ IDENTICAL
 ```
 
 #### Audio Source Tracking
+
 ```typescript
 // Legacy
 private scheduledAudioSources = new Map<AudioBufferSourceNode, {...}>()
@@ -465,6 +483,7 @@ Status: ✅ VERIFIED
 After exhaustive investigation, **NO MISSING FEATURES** detected:
 
 ### Checked Components
+
 - ✅ All 5 critical bug fixes present (Bug #1-7)
 - ✅ All module delegations functional
 - ✅ All buffer types supported
@@ -475,6 +494,7 @@ After exhaustive investigation, **NO MISSING FEATURES** detected:
 - ✅ Feature flag strategy robust
 
 ### Known Minor Differences (NOT ISSUES)
+
 1. **State Representation**: Legacy uses `isRunning` boolean, new uses 7-state machine
    - **Advantage**: New system is more explicit and prevents invalid state transitions
    - **Compatibility**: Fully backward compatible via adapter
@@ -514,6 +534,7 @@ a407434 feat(playback): integrate PlaybackEngine into CoreServices
 ```
 
 ### Backup Verification
+
 ```
 ✅ RegionProcessor.phase1.backup.ts - 158 KB (checkpoint)
 ✅ RegionProcessor.phase2.backup.ts - 155 KB (checkpoint)
@@ -528,6 +549,7 @@ All backups available for regression testing or rollback.
 ## 8. TEST COVERAGE VERIFICATION
 
 ### Test Suite Results
+
 ```
 Location: apps/frontend/src/domains/playback/services/core/scheduling/__tests__/
 
@@ -546,6 +568,7 @@ Regression:  ZERO ✅
 ```
 
 ### Integration Test Coverage
+
 - ✅ Dual-engine coexistence tests
 - ✅ Feature flag rollout tests
 - ✅ State machine validation tests
@@ -557,6 +580,7 @@ Regression:  ZERO ✅
 ## 9. DEPLOYMENT READINESS
 
 ### Pre-Production Checklist
+
 ```
 ✅ Feature flag infrastructure (ON and OFF states tested)
 ✅ Dual-engine coexistence (no conflicts detected)
@@ -571,6 +595,7 @@ Regression:  ZERO ✅
 ```
 
 ### Rollout Plan (From FEATURE_FLAG_STRATEGY.md)
+
 ```
 Phase 1: 1% (5 days)    - Internal team testing
 Phase 2: 10% (5 days)   - Beta users
@@ -585,6 +610,7 @@ Total: 15 days
 ## 10. RECOMMENDATIONS
 
 ### Immediate Actions (If Enabling PlaybackEngine)
+
 1. ✅ Enable `NEXT_PUBLIC_ENABLE_NEW_PLAYBACK_ENGINE=true` in desired environment
 2. ✅ Enable `NEXT_PUBLIC_DEBUG_PLAYBACK_ENGINE_MIGRATION=true` for Phase 1
 3. ✅ Monitor logs for `[PlaybackEngine Migration]` events
@@ -592,12 +618,14 @@ Total: 15 days
 5. ✅ Verify audio output (all instruments)
 
 ### Monitoring Setup (Already Documented)
+
 - Feature flag state logging
 - State transition logging
 - Performance comparison metrics (optional)
 - Error rate monitoring
 
 ### Rollback Procedure (Seconds)
+
 ```bash
 # To disable PlaybackEngine immediately:
 NEXT_PUBLIC_ENABLE_NEW_PLAYBACK_ENGINE=false
@@ -612,7 +640,9 @@ Rollback Time: <5 minutes ✅
 ## 11. CONCLUSION
 
 ### Finding
+
 The new PlaybackEngine + HarmonySchedulerV2 system is **PRODUCTION-READY** with:
+
 - ✅ **100% Feature Parity** with legacy RegionProcessor
 - ✅ **Improved Architecture** (modular, testable, maintainable)
 - ✅ **Zero Regressions** (202/202 tests passing)
@@ -620,6 +650,7 @@ The new PlaybackEngine + HarmonySchedulerV2 system is **PRODUCTION-READY** with:
 - ✅ **Better Code Quality** (63% code reduction in harmony scheduler)
 
 ### Risk Assessment
+
 ```
 Risk Level: 🟢 LOW
 - All behavioral equivalence verified
@@ -630,11 +661,12 @@ Risk Level: 🟢 LOW
 ```
 
 ### Recommendation
+
 **Ready for staged rollout** following the 15-day rollout plan:
+
 1. Phase 1: 1% (5 days) - Internal team
 2. Phase 2: 10% (5 days) - Beta users
 3. Phase 3: 50% (3 days) - General
 4. Phase 4: 100% (2 days) - Full rollout
 
 **Estimated Phase 3 Completion**: 2025-12-15 (if started 2025-11-30)
-

@@ -74,7 +74,9 @@ export function useTutorialExercises(
   return React.useMemo(
     () => ({
       tutorial: data?.tutorial || null,
-      exercises: data?.exercises ? data.exercises.map((dto: any) => Exercise.fromDTO(dto)) : [],
+      exercises: data?.exercises
+        ? data.exercises.map((dto: any) => Exercise.fromDTO(dto))
+        : [],
       isLoading,
       error,
       isError,

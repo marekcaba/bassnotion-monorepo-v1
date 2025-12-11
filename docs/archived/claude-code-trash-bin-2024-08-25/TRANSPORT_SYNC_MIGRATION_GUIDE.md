@@ -7,6 +7,7 @@ This guide describes how to migrate from the current widget sync implementation 
 ## Architecture
 
 ### Current Issues
+
 - ❌ No heartbeat mechanism - widgets timeout after 30s
 - ❌ No latency compensation
 - ❌ No automatic reconnection
@@ -14,6 +15,7 @@ This guide describes how to migrate from the current widget sync implementation 
 - ❌ No error recovery
 
 ### New Architecture
+
 - ✅ Heartbeat-based connection monitoring
 - ✅ Latency-compensated synchronization
 - ✅ Automatic reconnection with exponential backoff
@@ -43,24 +45,24 @@ Replace the current `useWidgetSync` with `useTransportSync`:
 const { isPlaying, position } = useWidgetSync({
   widgetId: 'drummer-widget',
   onPlay: () => startDrumLoop(),
-  onStop: () => stopDrumLoop()
+  onStop: () => stopDrumLoop(),
 });
 
 // New implementation
-const { 
+const {
   isConnected,
-  isPlaying, 
+  isPlaying,
   position,
   tempo,
   latency,
   forceSync,
-  getPerformanceMetrics 
+  getPerformanceMetrics,
 } = useTransportSync({
   widgetId: 'drummer-widget',
   onPlay: (time) => startDrumLoop(time),
   onStop: (time) => stopDrumLoop(time),
   onPositionUpdate: (pos) => updatePosition(pos),
-  enableLatencyCompensation: true
+  enableLatencyCompensation: true,
 });
 ```
 
@@ -72,7 +74,9 @@ Add the transport sync monitor to your layout:
 import { TransportSyncMonitor } from '@/domains/playback/components/TransportSyncMonitor';
 
 // In your layout or debug panel
-{process.env.NODE_ENV === 'development' && <TransportSyncMonitor />}
+{
+  process.env.NODE_ENV === 'development' && <TransportSyncMonitor />;
+}
 ```
 
 ### 4. Update Widget Implementation
@@ -82,7 +86,7 @@ Example for DrummerWidget:
 ```typescript
 export function DrummerWidget({ pattern }: DrummerWidgetProps) {
   const drumLoop = useRef<Tone.Loop | null>(null);
-  
+
   const {
     isConnected,
     isPlaying,
@@ -134,7 +138,7 @@ Position updates are throttled to 60fps by default:
 ```typescript
 // Configure throttling
 TransportSyncManager.getInstance().updateConfig({
-  throttleMs: 33 // 30fps for lower-end devices
+  throttleMs: 33, // 30fps for lower-end devices
 });
 ```
 
@@ -184,12 +188,12 @@ if (!isConnected && !isReconnecting) {
 ```typescript
 // Configure the sync manager globally
 TransportSyncManager.getInstance().updateConfig({
-  heartbeatInterval: 1000,      // 1 second heartbeats
-  syncInterval: 50,             // 50ms position updates
-  reconnectDelay: 1000,         // 1 second before reconnect
-  maxReconnectAttempts: 5,      // Max reconnection attempts
-  batchSize: 10,                // Event batch size
-  throttleMs: 16                // ~60fps throttling
+  heartbeatInterval: 1000, // 1 second heartbeats
+  syncInterval: 50, // 50ms position updates
+  reconnectDelay: 1000, // 1 second before reconnect
+  maxReconnectAttempts: 5, // Max reconnection attempts
+  batchSize: 10, // Event batch size
+  throttleMs: 16, // ~60fps throttling
 });
 ```
 
@@ -198,7 +202,7 @@ TransportSyncManager.getInstance().updateConfig({
 ```typescript
 useTransportSync({
   widgetId: 'my-widget',
-  reconnectAttempts: 10,        // Override global setting
+  reconnectAttempts: 10, // Override global setting
   enableLatencyCompensation: false, // Disable for this widget
   // ...
 });
@@ -222,11 +226,11 @@ import { renderHook } from '@testing-library/react-hooks';
 import { useTransportSync } from '@/domains/widgets/hooks/useTransportSync';
 
 test('widget syncs with transport', async () => {
-  const { result } = renderHook(() => 
+  const { result } = renderHook(() =>
     useTransportSync({
       widgetId: 'test-widget',
-      onPlay: vi.fn()
-    })
+      onPlay: vi.fn(),
+    }),
   );
 
   expect(result.current.isConnected).toBe(true);
@@ -264,6 +268,7 @@ pnpm test TransportWidgetEventFlow.integration.test.ts
 ## Support
 
 For issues or questions:
+
 1. Check the monitoring dashboard for sync health
 2. Review performance metrics
 3. Enable debug logging: `localStorage.setItem('DEBUG_TRANSPORT_SYNC', 'true')`

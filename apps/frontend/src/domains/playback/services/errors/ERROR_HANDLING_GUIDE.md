@@ -1,4 +1,5 @@
 # Error Handling Procedures Guide
+
 Story 3.18.4: Service Architecture Implementation
 
 ## Overview
@@ -40,12 +41,12 @@ try {
   await riskyOperation();
 } catch (error) {
   const classified = classifier.classify(error);
-  
-  console.log(`Type: ${classified.type}`);           // 'network', 'audio', etc.
-  console.log(`Severity: ${classified.severity}`);   // 'low', 'medium', 'high', 'critical'
+
+  console.log(`Type: ${classified.type}`); // 'network', 'audio', etc.
+  console.log(`Severity: ${classified.severity}`); // 'low', 'medium', 'high', 'critical'
   console.log(`Recoverable: ${classified.recoverable}`);
-  console.log(`Category: ${classified.category}`);   // 'transient', 'permanent', 'configuration'
-  
+  console.log(`Category: ${classified.category}`); // 'transient', 'permanent', 'configuration'
+
   // Handle based on classification
   if (classified.recoverable && classified.category === 'transient') {
     await retryOperation();
@@ -56,6 +57,7 @@ try {
 ### Error Types and Handling
 
 #### AudioContextError
+
 ```typescript
 try {
   const context = new AudioContext();
@@ -80,6 +82,7 @@ try {
 ```
 
 #### NetworkError
+
 ```typescript
 try {
   const asset = await fetchAudioAsset(url);
@@ -100,6 +103,7 @@ try {
 ```
 
 #### ResourceError
+
 ```typescript
 try {
   await loadSample(samplePath);
@@ -126,9 +130,9 @@ try {
 import { CircuitBreaker } from './CircuitBreaker.js';
 
 const circuitBreaker = new CircuitBreaker('audioLoader', {
-  failureThreshold: 5,      // Open after 5 failures
-  recoveryTimeout: 30000,   // 30 seconds
-  halfOpenRequests: 3,      // Test with 3 requests
+  failureThreshold: 5, // Open after 5 failures
+  recoveryTimeout: 30000, // 30 seconds
+  halfOpenRequests: 3, // Test with 3 requests
 });
 
 async function loadAudioSafely(url: string) {
@@ -159,7 +163,7 @@ circuitBreaker.on('close', () => {
 const advancedBreaker = new CircuitBreaker('api', {
   failureThreshold: 10,
   recoveryTimeout: 60000,
-  
+
   // Custom failure detection
   isFailure: (error) => {
     // Don't count 404s as failures
@@ -167,17 +171,17 @@ const advancedBreaker = new CircuitBreaker('api', {
     // Count timeouts and 5xx as failures
     return error.isTimeout || error.statusCode >= 500;
   },
-  
+
   // Fallback function
   fallback: async () => {
     return getCachedData();
   },
-  
+
   // Health check
   healthCheck: async () => {
     const response = await fetch('/health');
     return response.ok;
-  }
+  },
 });
 ```
 
@@ -190,13 +194,13 @@ import { ErrorRecovery } from './ErrorRecovery.js';
 
 const recovery = new ErrorRecovery({
   strategies: {
-    'audio_context_suspended': async (error) => {
+    audio_context_suspended: async (error) => {
       const context = error.context;
       await context.resume();
       return { recovered: true };
     },
-    
-    'network_timeout': async (error) => {
+
+    network_timeout: async (error) => {
       // Retry with exponential backoff
       for (let i = 0; i < 3; i++) {
         await sleep(Math.pow(2, i) * 1000);
@@ -207,15 +211,15 @@ const recovery = new ErrorRecovery({
         }
       }
     },
-    
-    'memory_pressure': async (error) => {
+
+    memory_pressure: async (error) => {
       // Free memory and retry
       await clearCache();
       gc(); // If available
       return await error.operation();
-    }
+    },
   },
-  
+
   maxAttempts: 3,
   backoffMultiplier: 2,
 });
@@ -236,6 +240,7 @@ try {
 ### Manual Recovery Procedures
 
 #### 1. Audio Context Recovery
+
 ```typescript
 async function recoverAudioContext() {
   // 1. Check current state
@@ -247,26 +252,27 @@ async function recoverAudioContext() {
       // Continue to step 2
     }
   }
-  
+
   // 2. Create new context if needed
   if (audioContext.state === 'closed') {
     audioContext = new AudioContext();
     await reinitializeAudioGraph();
     return true;
   }
-  
+
   // 3. Handle iOS-specific issues
   if (isIOS() && !audioContext.wasUnlocked) {
     await waitForUserInteraction();
     await unlockAudioContext();
     return true;
   }
-  
+
   return false;
 }
 ```
 
 #### 2. Network Recovery
+
 ```typescript
 async function recoverNetworkOperation(operation: () => Promise<any>) {
   const strategies = [
@@ -275,26 +281,26 @@ async function recoverNetworkOperation(operation: () => Promise<any>) {
       await sleep(1000);
       return operation();
     },
-    
+
     // 2. Use alternative endpoint
     async () => {
       const altEndpoint = getAlternativeEndpoint();
       return operation.withEndpoint(altEndpoint);
     },
-    
+
     // 3. Use cached data
     async () => {
       const cached = await getFromCache(operation.cacheKey);
       if (cached) return cached;
       throw new Error('No cached data available');
     },
-    
+
     // 4. Degrade functionality
     async () => {
       return getMinimalFunctionalityData();
-    }
+    },
   ];
-  
+
   for (const strategy of strategies) {
     try {
       return await strategy();
@@ -302,7 +308,7 @@ async function recoverNetworkOperation(operation: () => Promise<any>) {
       continue;
     }
   }
-  
+
   throw new Error('All recovery strategies failed');
 }
 ```
@@ -319,24 +325,29 @@ const degradation = new GracefulDegradation({
     {
       name: 'full',
       check: () => true, // Always available
-      features: ['high-quality-audio', '3d-visualization', 'effects', 'recording']
+      features: [
+        'high-quality-audio',
+        '3d-visualization',
+        'effects',
+        'recording',
+      ],
     },
     {
       name: 'reduced',
       check: () => performance.memory?.usedJSHeapSize < MEMORY_THRESHOLD,
-      features: ['standard-audio', '2d-visualization', 'basic-effects']
+      features: ['standard-audio', '2d-visualization', 'basic-effects'],
     },
     {
       name: 'minimal',
       check: () => navigator.onLine,
-      features: ['basic-audio', 'simple-ui']
+      features: ['basic-audio', 'simple-ui'],
     },
     {
       name: 'offline',
       check: () => true, // Last resort
-      features: ['cached-content-only']
-    }
-  ]
+      features: ['cached-content-only'],
+    },
+  ],
 });
 
 // Monitor degradation level
@@ -358,24 +369,24 @@ if (degradation.isFeatureAvailable('3d-visualization')) {
 ```typescript
 class FeatureFlags {
   private flags = new Map<string, boolean>();
-  
+
   constructor(private degradation: GracefulDegradation) {
     this.updateFlags();
-    
+
     degradation.on('levelChanged', () => {
       this.updateFlags();
     });
   }
-  
+
   private updateFlags() {
     const level = this.degradation.getCurrentLevel();
-    
+
     this.flags.set('highQualityAudio', level.includes('high-quality-audio'));
     this.flags.set('3dGraphics', level.includes('3d-visualization'));
     this.flags.set('realtimeEffects', level.includes('effects'));
     this.flags.set('cloudSync', level.includes('cloud-features'));
   }
-  
+
   isEnabled(feature: string): boolean {
     return this.flags.get(feature) || false;
   }
@@ -393,22 +404,22 @@ const reporter = new ErrorReporter({
   endpoint: '/api/errors',
   bufferSize: 100,
   flushInterval: 30000, // 30 seconds
-  
+
   // Filter sensitive information
   sanitize: (error) => {
     delete error.userData;
     delete error.authToken;
     return error;
   },
-  
+
   // Sampling
   shouldReport: (error) => {
     // Report all critical errors
     if (error.severity === 'critical') return true;
-    
+
     // Sample 10% of other errors
     return Math.random() < 0.1;
-  }
+  },
 });
 
 // Global error handler
@@ -440,15 +451,15 @@ window.addEventListener('unhandledrejection', (event) => {
 ```typescript
 class ErrorContext {
   private context: Record<string, any> = {};
-  
+
   setUser(userId: string, username: string) {
     this.context.user = { id: userId, username };
   }
-  
+
   setSession(sessionId: string, startTime: number) {
     this.context.session = { id: sessionId, startTime };
   }
-  
+
   setEnvironment(env: Record<string, any>) {
     this.context.environment = {
       ...env,
@@ -457,7 +468,7 @@ class ErrorContext {
       deviceMemory: navigator.deviceMemory,
     };
   }
-  
+
   setPlaybackState(state: PlaybackState) {
     this.context.playback = {
       isPlaying: state.isPlaying,
@@ -466,7 +477,7 @@ class ErrorContext {
       loadedSamples: state.loadedSamples.length,
     };
   }
-  
+
   getContext(): Record<string, any> {
     return {
       ...this.context,
@@ -489,18 +500,18 @@ reporter.setContextProvider(() => errorContext.getContext());
 ```typescript
 class IOSAudioHandler {
   private unlocked = false;
-  
+
   async initialize() {
     if (!this.isIOS()) return;
-    
+
     // Wait for user interaction
     document.addEventListener('touchstart', this.unlock, { once: true });
     document.addEventListener('click', this.unlock, { once: true });
   }
-  
+
   private unlock = async () => {
     if (this.unlocked) return;
-    
+
     try {
       // Create and play silent buffer
       const context = getAudioContext();
@@ -509,12 +520,12 @@ class IOSAudioHandler {
       source.buffer = buffer;
       source.connect(context.destination);
       source.start(0);
-      
+
       // Resume if suspended
       if (context.state === 'suspended') {
         await context.resume();
       }
-      
+
       this.unlocked = true;
       this.emit('unlocked');
     } catch (error) {
@@ -522,7 +533,7 @@ class IOSAudioHandler {
       this.scheduleRetry();
     }
   };
-  
+
   private scheduleRetry() {
     setTimeout(() => {
       document.addEventListener('touchstart', this.unlock, { once: true });
@@ -536,10 +547,10 @@ class IOSAudioHandler {
 ```typescript
 class AndroidMemoryManager {
   private pressureObserver?: MemoryPressureObserver;
-  
+
   initialize() {
     if (!this.isAndroid()) return;
-    
+
     // Monitor memory pressure
     if ('memory' in performance) {
       this.pressureObserver = new MemoryPressureObserver((entries) => {
@@ -547,16 +558,16 @@ class AndroidMemoryManager {
           this.handleMemoryPressure(entry.state);
         }
       });
-      
+
       this.pressureObserver.observe();
     }
-    
+
     // Periodic cleanup
     setInterval(() => {
       this.performCleanup();
     }, 60000); // Every minute
   }
-  
+
   private handleMemoryPressure(state: string) {
     switch (state) {
       case 'critical':
@@ -565,7 +576,7 @@ class AndroidMemoryManager {
         this.reduceSampleQuality();
         this.disableNonEssentialFeatures();
         break;
-        
+
       case 'moderate':
         // Moderate cleanup
         this.clearOldCaches();
@@ -573,15 +584,15 @@ class AndroidMemoryManager {
         break;
     }
   }
-  
+
   private performCleanup() {
     const memory = performance.memory;
     const usage = memory.usedJSHeapSize / memory.jsHeapSizeLimit;
-    
+
     if (usage > 0.9) {
       this.clearOldCaches();
     }
-    
+
     if (usage > 0.95) {
       this.emergencyCleanup();
     }
@@ -598,17 +609,17 @@ describe('ErrorClassifier', () => {
   it('should classify network errors correctly', () => {
     const error = new NetworkError('Connection failed', 0);
     const classification = classifier.classify(error);
-    
+
     expect(classification.type).toBe('network');
     expect(classification.severity).toBe('high');
     expect(classification.recoverable).toBe(true);
     expect(classification.category).toBe('transient');
   });
-  
+
   it('should classify audio errors correctly', () => {
     const error = new AudioContextError('Context not allowed');
     const classification = classifier.classify(error);
-    
+
     expect(classification.type).toBe('audio');
     expect(classification.severity).toBe('medium');
     expect(classification.recoverable).toBe(true);
@@ -622,17 +633,17 @@ describe('ErrorClassifier', () => {
 describe('Error Recovery Integration', () => {
   it('should recover from audio context suspension', async () => {
     const context = new AudioContext();
-    
+
     // Simulate suspension
     await context.suspend();
-    
+
     // Trigger error
     const error = new AudioContextError('Context suspended', context);
-    
+
     // Attempt recovery
     const recovery = new ErrorRecovery();
     const result = await recovery.attempt(error);
-    
+
     expect(result.recovered).toBe(true);
     expect(context.state).toBe('running');
   });
@@ -645,29 +656,29 @@ describe('Error Recovery Integration', () => {
 class ErrorInjector {
   private enabled = false;
   private errorRates = new Map<string, number>();
-  
+
   enable() {
     this.enabled = true;
   }
-  
+
   disable() {
     this.enabled = false;
   }
-  
+
   setErrorRate(operation: string, rate: number) {
     this.errorRates.set(operation, rate);
   }
-  
+
   async execute<T>(operation: string, fn: () => Promise<T>): Promise<T> {
     if (!this.enabled) {
       return fn();
     }
-    
+
     const rate = this.errorRates.get(operation) || 0;
     if (Math.random() < rate) {
       throw new Error(`Injected error for ${operation}`);
     }
-    
+
     return fn();
   }
 }
@@ -690,19 +701,19 @@ Always use error boundaries to prevent cascading failures:
 ```typescript
 export function withErrorBoundary<T>(
   fn: () => Promise<T>,
-  fallback?: T
+  fallback?: T,
 ): Promise<T> {
-  return fn().catch(error => {
+  return fn().catch((error) => {
     console.error('Error boundary caught:', error);
-    
+
     // Report error
     ErrorReporter.report(error);
-    
+
     // Return fallback or rethrow
     if (fallback !== undefined) {
       return fallback;
     }
-    
+
     throw error;
   });
 }
@@ -716,7 +727,7 @@ Always provide context with errors:
 class ContextualError extends Error {
   constructor(
     message: string,
-    public context: Record<string, any>
+    public context: Record<string, any>,
   ) {
     super(message);
     this.name = this.constructor.name;
@@ -740,10 +751,10 @@ Aggregate related errors to avoid spam:
 ```typescript
 class ErrorAggregator {
   private errors = new Map<string, AggregatedError>();
-  
+
   add(error: Error, key?: string) {
     const errorKey = key || error.message;
-    
+
     if (!this.errors.has(errorKey)) {
       this.errors.set(errorKey, {
         error,
@@ -752,30 +763,30 @@ class ErrorAggregator {
         lastSeen: Date.now(),
       });
     }
-    
+
     const aggregated = this.errors.get(errorKey)!;
     aggregated.count++;
     aggregated.lastSeen = Date.now();
-    
+
     // Report if threshold reached
     if (aggregated.count === 10) {
       this.report(errorKey);
     }
   }
-  
+
   report(key: string) {
     const aggregated = this.errors.get(key);
     if (!aggregated) return;
-    
+
     ErrorReporter.report({
       ...aggregated.error,
       aggregation: {
         count: aggregated.count,
         firstSeen: aggregated.firstSeen,
         lastSeen: aggregated.lastSeen,
-      }
+      },
     });
-    
+
     this.errors.delete(key);
   }
 }
@@ -789,7 +800,8 @@ Map technical errors to user-friendly messages:
 const ERROR_MESSAGES = {
   NETWORK_OFFLINE: 'You appear to be offline. Please check your connection.',
   AUDIO_PERMISSION: 'Please allow audio permissions to continue.',
-  BROWSER_UNSUPPORTED: 'Your browser doesn\'t support this feature. Try Chrome or Firefox.',
+  BROWSER_UNSUPPORTED:
+    "Your browser doesn't support this feature. Try Chrome or Firefox.",
   SERVER_ERROR: 'Something went wrong on our end. Please try again.',
   SAMPLE_LOAD_FAILED: 'Unable to load audio. Try refreshing the page.',
 };
@@ -798,11 +810,11 @@ function getUserMessage(error: Error): string {
   if (error instanceof NetworkError && !navigator.onLine) {
     return ERROR_MESSAGES.NETWORK_OFFLINE;
   }
-  
+
   if (error instanceof AudioContextError) {
     return ERROR_MESSAGES.AUDIO_PERMISSION;
   }
-  
+
   // Default message
   return ERROR_MESSAGES.SERVER_ERROR;
 }

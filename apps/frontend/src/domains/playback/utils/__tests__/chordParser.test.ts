@@ -3,7 +3,11 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { parseChord, mapVelocityToLayer, parseDuration } from '../chordParser.js';
+import {
+  parseChord,
+  mapVelocityToLayer,
+  parseDuration,
+} from '../chordParser.js';
 
 describe('chordParser', () => {
   describe('parseChord', () => {

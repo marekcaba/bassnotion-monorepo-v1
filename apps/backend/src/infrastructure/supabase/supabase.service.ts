@@ -23,7 +23,7 @@ export class SupabaseService {
       hasUrl: !!supabaseUrl,
       hasKey: !!supabaseServiceRoleKey,
       url: supabaseUrl?.substring(0, 30) + '...',
-      correlationId
+      correlationId,
     });
 
     // Check for test environment
@@ -31,28 +31,40 @@ export class SupabaseService {
 
     if (!supabaseUrl || !supabaseServiceRoleKey) {
       if (isTestEnv) {
-        logger.warn('🔧 Supabase environment variables not found - creating mock client for tests', {
-          correlationId
-        });
+        logger.warn(
+          '🔧 Supabase environment variables not found - creating mock client for tests',
+          {
+            correlationId,
+          },
+        );
         // Create a mock client for test environments
         this.supabaseClient = {} as SupabaseClient;
       } else {
         // Fail fast in production/development
-        const errorMsg = 'Supabase environment variables are required: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY';
+        const errorMsg =
+          'Supabase environment variables are required: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY';
         logger.error(errorMsg, new Error(errorMsg), { correlationId });
         throw new Error(errorMsg);
       }
     } else {
       try {
-        this.supabaseClient = createClient(supabaseUrl, supabaseServiceRoleKey, {
-          auth: {
-            autoRefreshToken: false,
-            persistSession: false
-          }
+        this.supabaseClient = createClient(
+          supabaseUrl,
+          supabaseServiceRoleKey,
+          {
+            auth: {
+              autoRefreshToken: false,
+              persistSession: false,
+            },
+          },
+        );
+        logger.info('✅ SupabaseService initialized successfully', {
+          correlationId,
         });
-        logger.info('✅ SupabaseService initialized successfully', { correlationId });
       } catch (error) {
-        logger.error('❌ Error creating Supabase client:', error as Error, { correlationId });
+        logger.error('❌ Error creating Supabase client:', error as Error, {
+          correlationId,
+        });
         throw error;
       }
     }
@@ -62,7 +74,10 @@ export class SupabaseService {
     if (!this.supabaseClient) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.warn('⚠️ Supabase client not initialized - returning mock client', { correlationId });
+      logger.warn(
+        '⚠️ Supabase client not initialized - returning mock client',
+        { correlationId },
+      );
       return {} as SupabaseClient;
     }
     return this.supabaseClient;
@@ -84,7 +99,7 @@ export class SupabaseService {
     bucket: string,
     path: string,
     file: Buffer,
-    contentType: string
+    contentType: string,
   ): Promise<string> {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
@@ -94,14 +109,14 @@ export class SupabaseService {
       path,
       contentType,
       fileSize: file.length,
-      correlationId
+      correlationId,
     });
 
     const { error } = await this.supabaseClient.storage
       .from(bucket)
       .upload(path, file, {
         contentType,
-        upsert: false
+        upsert: false,
       });
 
     if (error) {
@@ -109,21 +124,21 @@ export class SupabaseService {
         bucket,
         path,
         contentType,
-        correlationId
+        correlationId,
       });
       throw error;
     }
 
     // Get public URL
-    const { data: { publicUrl } } = this.supabaseClient.storage
-      .from(bucket)
-      .getPublicUrl(path);
+    const {
+      data: { publicUrl },
+    } = this.supabaseClient.storage.from(bucket).getPublicUrl(path);
 
     logger.info('Successfully uploaded file to Supabase Storage', {
       bucket,
       path,
       publicUrl,
-      correlationId
+      correlationId,
     });
 
     return publicUrl;
@@ -175,9 +190,10 @@ export class SupabaseService {
     }
 
     // Generate signed URL that expires in 1 hour (3600 seconds)
-    const { data: signedData, error: signError } = await this.supabaseClient.storage
-      .from(bucket)
-      .createSignedUrl(tempPath, 3600);
+    const { data: signedData, error: signError } =
+      await this.supabaseClient.storage
+        .from(bucket)
+        .createSignedUrl(tempPath, 3600);
 
     if (signError || !signedData) {
       logger.error('Failed to create signed URL for temp file', signError, {
@@ -230,9 +246,8 @@ export class SupabaseService {
     });
 
     // Download from temp
-    const { data: fileData, error: downloadError } = await this.supabaseClient.storage
-      .from(tempBucket)
-      .download(tempPath);
+    const { data: fileData, error: downloadError } =
+      await this.supabaseClient.storage.from(tempBucket).download(tempPath);
 
     if (downloadError || !fileData) {
       logger.error('Failed to download file from temp storage', downloadError, {
@@ -268,16 +283,21 @@ export class SupabaseService {
 
     if (deleteError) {
       // Log warning but don't fail - cleanup will handle it later
-      logger.warn('Failed to delete temp file after move (will be cleaned up later)', {
-        tempBucket,
-        tempPath,
-        error: deleteError.message || String(deleteError),
-        correlationId,
-      });
+      logger.warn(
+        'Failed to delete temp file after move (will be cleaned up later)',
+        {
+          tempBucket,
+          tempPath,
+          error: deleteError.message || String(deleteError),
+          correlationId,
+        },
+      );
     }
 
     // Get public URL from permanent location
-    const { data: { publicUrl } } = this.supabaseClient.storage
+    const {
+      data: { publicUrl },
+    } = this.supabaseClient.storage
       .from(permanentBucket)
       .getPublicUrl(permanentPath);
 

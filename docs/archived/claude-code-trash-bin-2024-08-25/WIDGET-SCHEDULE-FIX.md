@@ -6,14 +6,20 @@ After extensive debugging, I've identified the root cause of why widgets are not
 
 ### The Problem
 
-1. **Drum schedules are created at time 0**: 
+1. **Drum schedules are created at time 0**:
+
    ```typescript
-   const scheduleId = currentTone.Transport.scheduleRepeat((time) => {
-     // callback code...
-   }, drumLoopInterval, 0); // <-- Starting at time 0
+   const scheduleId = currentTone.Transport.scheduleRepeat(
+     (time) => {
+       // callback code...
+     },
+     drumLoopInterval,
+     0,
+   ); // <-- Starting at time 0
    ```
 
 2. **Transport starts at +0.1**:
+
    ```typescript
    // In TransportController.ts
    const startTime = time || '+0.1'; // Default start time with small delay

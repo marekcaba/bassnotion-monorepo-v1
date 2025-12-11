@@ -1,6 +1,6 @@
 /**
  * Performance Metrics Collector
- * 
+ *
  * Collects and analyzes performance metrics for storage operations
  */
 
@@ -66,8 +66,8 @@ export class PerformanceMetricsCollector {
    */
   registerCollector(collector: MetricCollector): void {
     this.collectors.set(collector.name, collector);
-    logger.info('Metric collector registered', { 
-      name: collector.name, 
+    logger.info('Metric collector registered', {
+      name: collector.name,
       unit: collector.unit,
     });
   }
@@ -101,7 +101,7 @@ export class PerformanceMetricsCollector {
     if (!this.isRunning) return;
 
     this.isRunning = false;
-    
+
     if (this.collectInterval) {
       clearInterval(this.collectInterval);
       this.collectInterval = undefined;
@@ -126,10 +126,10 @@ export class PerformanceMetricsCollector {
     );
 
     await Promise.all(collectionPromises);
-    
+
     // Analyze metrics for anomalies
     this.detectAnomalies();
-    
+
     // Generate recommendations
     this.generateRecommendations();
   }
@@ -137,7 +137,11 @@ export class PerformanceMetricsCollector {
   /**
    * Record a metric value
    */
-  recordMetric(name: string, value: number, tags?: Record<string, string>): void {
+  recordMetric(
+    name: string,
+    value: number,
+    tags?: Record<string, string>,
+  ): void {
     // Update history
     let history = this.metricHistory.get(name);
     if (!history) {
@@ -146,7 +150,7 @@ export class PerformanceMetricsCollector {
     }
 
     history.push(value);
-    
+
     // Keep only last 100 values
     if (history.length > 100) {
       history.shift();
@@ -164,12 +168,15 @@ export class PerformanceMetricsCollector {
     success: boolean,
     bytes?: number,
   ): void {
-    const opMetrics = this.metrics.operations[`${operation}s` as keyof typeof this.metrics.operations];
-    
+    const opMetrics =
+      this.metrics.operations[
+        `${operation}s` as keyof typeof this.metrics.operations
+      ];
+
     opMetrics.count++;
     opMetrics.totalTime += duration;
     opMetrics.averageTime = opMetrics.totalTime / opMetrics.count;
-    
+
     if (!success) {
       opMetrics.errors++;
     }
@@ -193,8 +200,10 @@ export class PerformanceMetricsCollector {
       0,
     );
 
-    this.metrics.availability.errorRate = totalOps > 0 ? (totalErrors / totalOps) * 100 : 0;
-    this.metrics.availability.successRate = 100 - this.metrics.availability.errorRate;
+    this.metrics.availability.errorRate =
+      totalOps > 0 ? (totalErrors / totalOps) * 100 : 0;
+    this.metrics.availability.successRate =
+      100 - this.metrics.availability.errorRate;
   }
 
   /**
@@ -204,7 +213,7 @@ export class PerformanceMetricsCollector {
     if (latencies.length === 0) return;
 
     const sorted = [...latencies].sort((a, b) => a - b);
-    
+
     this.metrics.latency.p50 = this.percentile(sorted, 50);
     this.metrics.latency.p90 = this.percentile(sorted, 90);
     this.metrics.latency.p95 = this.percentile(sorted, 95);
@@ -260,24 +269,32 @@ export class PerformanceMetricsCollector {
     const recommendations: PerformanceRecommendation[] = [];
 
     // Check if caching would help
-    if (this.metrics.operations.downloads.count > this.metrics.operations.uploads.count * 10) {
+    if (
+      this.metrics.operations.downloads.count >
+      this.metrics.operations.uploads.count * 10
+    ) {
       recommendations.push({
         type: 'caching',
         priority: 'high',
-        description: 'High download-to-upload ratio suggests caching would improve performance',
+        description:
+          'High download-to-upload ratio suggests caching would improve performance',
         estimatedImpact: 'Could reduce download latency by 50-80%',
       });
     }
 
     // Check if connection pooling needed
-    const avgOperationsPerSecond = 
-      Object.values(this.metrics.operations).reduce((sum, op) => sum + op.count, 0) / 60;
-    
+    const avgOperationsPerSecond =
+      Object.values(this.metrics.operations).reduce(
+        (sum, op) => sum + op.count,
+        0,
+      ) / 60;
+
     if (avgOperationsPerSecond > 10) {
       recommendations.push({
         type: 'connection_pooling',
         priority: 'medium',
-        description: 'High operation rate suggests connection pooling would help',
+        description:
+          'High operation rate suggests connection pooling would help',
         estimatedImpact: 'Could reduce connection overhead by 30%',
       });
     }

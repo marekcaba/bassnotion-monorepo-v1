@@ -8,10 +8,12 @@ export class HealthService {
     total: 0,
     successful: 0,
     failed: 0,
-    responseTimes: [] as number[] };
+    responseTimes: [] as number[],
+  };
   private errorMetrics = {
     total: 0,
-    byType: {} as Record<string, number> };
+    byType: {} as Record<string, number>,
+  };
 
   recordRequest(responseTime: number, success: boolean, error?: string) {
     this.requestMetrics.total++;
@@ -45,10 +47,13 @@ export class HealthService {
         total: this.requestMetrics.total,
         successful: this.requestMetrics.successful,
         failed: this.requestMetrics.failed,
-        averageResponseTime: Math.round(avgResponseTime) },
+        averageResponseTime: Math.round(avgResponseTime),
+      },
       errors: {
         total: this.errorMetrics.total,
-        byType: this.errorMetrics.byType } };
+        byType: this.errorMetrics.byType,
+      },
+    };
   }
 
   resetMetrics() {
@@ -56,10 +61,12 @@ export class HealthService {
       total: 0,
       successful: 0,
       failed: 0,
-      responseTimes: [] };
+      responseTimes: [],
+    };
     this.errorMetrics = {
       total: 0,
-      byType: {} };
+      byType: {},
+    };
     this.logger.info('Metrics reset');
   }
 }

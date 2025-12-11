@@ -21,7 +21,8 @@ export function setupSwagger(app: INestApplication): void {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'JWT',
-        description: 'Enter JWT token from login response' },
+        description: 'Enter JWT token from login response',
+      },
       'access-token',
     )
     .addServer('http://localhost:3000', 'Local development')
@@ -36,9 +37,13 @@ export function setupSwagger(app: INestApplication): void {
       swaggerOptions: {
         persistAuthorization: true,
         tagsSorter: 'alpha',
-        operationsSorter: 'alpha' },
-      customSiteTitle: 'BassNotion API Documentation' });
-    logger.info('✅ Swagger documentation available at: http://localhost:3000/api/docs');
+        operationsSorter: 'alpha',
+      },
+      customSiteTitle: 'BassNotion API Documentation',
+    });
+    logger.info(
+      '✅ Swagger documentation available at: http://localhost:3000/api/docs',
+    );
   } catch (error) {
     logger.error('❌ Failed to setup Swagger UI:', error as Error, {});
   }
@@ -52,8 +57,14 @@ export function setupSwagger(app: INestApplication): void {
       return reply.type('application/json').send(document);
     });
 
-    logger.info('✅ OpenAPI spec available at: http://localhost:3000/api/openapi.json');
+    logger.info(
+      '✅ OpenAPI spec available at: http://localhost:3000/api/openapi.json',
+    );
   } catch (error) {
-    logger.error('❌ Failed to setup OpenAPI JSON endpoint:', error as Error, {});
+    logger.error(
+      '❌ Failed to setup OpenAPI JSON endpoint:',
+      error as Error,
+      {},
+    );
   }
 }

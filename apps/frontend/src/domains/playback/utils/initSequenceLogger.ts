@@ -41,12 +41,12 @@ class InitSequenceLogger {
 
     const logData: StepData = {
       timestamp,
-      ...data
+      ...data,
     };
 
     console.log(
       `[INIT-SEQ ${this.stepCounter}] ${step.toUpperCase()}`,
-      logData
+      logData,
     );
   }
 

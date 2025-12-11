@@ -1,26 +1,32 @@
 import { Injectable, BadRequestException, Inject } from '@nestjs/common';
-import { MusicXMLParser,
+import {
+  MusicXMLParser,
   MIDIFileParser,
   type MusicXMLConversionResult,
   type MIDIFileParsingResult,
   DEFAULT_MIDI_FILE_CONFIG,
   DEFAULT_BASS_CONVERSION_CONFIG,
   type MusicalExercise,
-  type ExerciseDifficulty, createStructuredLogger } from '@bassnotion/contracts';
+  type ExerciseDifficulty,
+  createStructuredLogger,
+} from '@bassnotion/contracts';
 import {
   FileUploadDto,
   MusicXMLUploadConfigDto,
   MIDIUploadConfigDto,
   FileUploadResponseDto,
   FileUploadErrorDto,
-  FileUploadType } from '../dto/file-upload.dto.js';
+  FileUploadType,
+} from '../dto/file-upload.dto.js';
 import { SupabaseService } from '../../../infrastructure/supabase/supabase.service.js';
 import { RequestContextService } from '../../../shared/services/request-context.service.js';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class FileUploadService {
-  private readonly staticLogger = createStructuredLogger(FileUploadService.name);
+  private readonly staticLogger = createStructuredLogger(
+    FileUploadService.name,
+  );
   private musicXMLParser: MusicXMLParser;
   private midiParser: MIDIFileParser;
 
@@ -42,7 +48,7 @@ export class FileUploadService {
   ): Promise<{ filePath: string; publicUrl: string }> {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
-    
+
     try {
       const supabase = this.supabaseService.getClient();
 
@@ -60,7 +66,11 @@ export class FileUploadService {
         });
 
       if (error) {
-        logger.error(`Error uploading file to storage: ${error.message}`, error as Error, { correlationId });
+        logger.error(
+          `Error uploading file to storage: ${error.message}`,
+          error as Error,
+          { correlationId },
+        );
         throw new Error(`File storage failed: ${error.message}`);
       }
 
@@ -73,7 +83,8 @@ export class FileUploadService {
 
       return {
         filePath: data.path,
-        publicUrl: publicUrlData.publicUrl };
+        publicUrl: publicUrlData.publicUrl,
+      };
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
@@ -96,7 +107,11 @@ export class FileUploadService {
       if (error) {
         const logger = this.requestContext?.getLogger() || this.staticLogger;
         const correlationId = this.requestContext?.getCorrelationId();
-        logger.error(`Error deleting file from storage: ${error.message}`, error as Error, { correlationId });
+        logger.error(
+          `Error deleting file from storage: ${error.message}`,
+          error as Error,
+          { correlationId },
+        );
         throw new Error(`File deletion failed: ${error.message}`);
       }
 
@@ -106,7 +121,9 @@ export class FileUploadService {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error in file deletion:', error as Error, { correlationId });
+      logger.error('Error in file deletion:', error as Error, {
+        correlationId,
+      });
       throw error;
     }
   }
@@ -132,7 +149,7 @@ export class FileUploadService {
     try {
       logger.info(
         `Processing and storing uploaded file: ${file.originalname} (${file.size} bytes)`,
-        { correlationId }
+        { correlationId },
       );
 
       // Validate file
@@ -173,16 +190,21 @@ export class FileUploadService {
 
       logger.info(
         `Successfully processed and stored ${file.originalname} in ${result.processingTimeMs.toFixed(2)}ms`,
-        { correlationId }
+        { correlationId },
       );
 
       return {
         ...result,
-        storageInfo };
+        storageInfo,
+      };
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error(`Error processing file ${file.originalname}:`, error as Error, { correlationId });
+      logger.error(
+        `Error processing file ${file.originalname}:`,
+        error as Error,
+        { correlationId },
+      );
 
       return {
         success: false,
@@ -191,7 +213,8 @@ export class FileUploadService {
         errorCode: 'FILE_PROCESSING_ERROR',
         details: error instanceof Error ? error.stack : undefined,
         originalFileName: file.originalname,
-        fileSize: file.size };
+        fileSize: file.size,
+      };
     }
   }
 
@@ -203,14 +226,14 @@ export class FileUploadService {
     uploadDto: FileUploadDto,
     configDto?: MusicXMLUploadConfigDto | MIDIUploadConfigDto,
   ): Promise<FileUploadResponseDto | FileUploadErrorDto> {
-  const logger = this.requestContext?.getLogger() || this.staticLogger;
-  const correlationId = this.requestContext?.getCorrelationId();
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
     const startTime = performance.now();
 
     try {
       logger.info(
         `Processing uploaded file: ${file.originalname} (${file.size} bytes)`,
-        { correlationId }
+        { correlationId },
       );
 
       // Validate file
@@ -237,14 +260,18 @@ export class FileUploadService {
 
       logger.info(
         `Successfully processed ${file.originalname} in ${result.processingTimeMs.toFixed(2)}ms`,
-        { correlationId }
+        { correlationId },
       );
 
       return result;
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
-      
-      logger.error(`Error processing file ${file.originalname}:`, error as Error, { correlationId });
+
+      logger.error(
+        `Error processing file ${file.originalname}:`,
+        error as Error,
+        { correlationId },
+      );
 
       return {
         success: false,
@@ -253,7 +280,8 @@ export class FileUploadService {
         errorCode: 'FILE_PROCESSING_ERROR',
         details: error instanceof Error ? error.stack : undefined,
         originalFileName: file.originalname,
-        fileSize: file.size };
+        fileSize: file.size,
+      };
     }
   }
 
@@ -326,7 +354,8 @@ export class FileUploadService {
             noteCount: exercise.notes.length,
             bpm: exercise.bpm,
             key: exercise.key,
-            timeSignature: `${exercise.timeSignature.numerator}/${exercise.timeSignature.denominator}` }
+            timeSignature: `${exercise.timeSignature.numerator}/${exercise.timeSignature.denominator}`,
+          }
         : undefined,
 
       warnings: conversionResult.warnings || [],
@@ -338,7 +367,8 @@ export class FileUploadService {
         droppedNotes:
           (conversionResult.notes?.length || 0) - (exercise?.notes.length || 0),
         quantizedNotes: 0, // MusicXML doesn't typically need quantization
-      } };
+      },
+    };
 
     return response;
   }
@@ -359,17 +389,22 @@ export class FileUploadService {
         enabled: config?.autoSelectBass ?? true,
         noteRangeFilter: {
           min: config?.bassNoteRangeMin || 23,
-          max: config?.bassNoteRangeMax || 67 },
-        velocityThreshold: 10 },
+          max: config?.bassNoteRangeMax || 67,
+        },
+        velocityThreshold: 10,
+      },
       timingConversion: {
         ...DEFAULT_MIDI_FILE_CONFIG.timingConversion,
-        quantization: (config?.quantization as any) || 'sixteenth' } };
+        quantization: (config?.quantization as any) || 'sixteenth',
+      },
+    };
 
     const bassConfig = {
       ...DEFAULT_BASS_CONVERSION_CONFIG,
       tuning: this.getBassStringConfiguration(
         config?.bassTuning || 'standard4',
-      ) };
+      ),
+    };
 
     // Update parser configurations
     this.midiParser = new MIDIFileParser(parserConfig, bassConfig);
@@ -411,7 +446,8 @@ export class FileUploadService {
         durationSeconds: parsingResult.metadata.durationSeconds,
         notesFound: parsingResult.conversionStats.originalNotes,
         bassTrackFound: !!parsingResult.bassTrack,
-        confidence: parsingResult.bassTrack?.confidence },
+        confidence: parsingResult.bassTrack?.confidence,
+      },
 
       exercise: exercise
         ? {
@@ -422,13 +458,15 @@ export class FileUploadService {
             noteCount: exercise.notes.length,
             bpm: exercise.bpm,
             key: exercise.key,
-            timeSignature: `${exercise.timeSignature.numerator}/${exercise.timeSignature.denominator}` }
+            timeSignature: `${exercise.timeSignature.numerator}/${exercise.timeSignature.denominator}`,
+          }
         : undefined,
 
       warnings: parsingResult.warnings,
       errors: parsingResult.errors,
 
-      conversionStats: parsingResult.conversionStats };
+      conversionStats: parsingResult.conversionStats,
+    };
 
     return response;
   }
@@ -555,72 +593,86 @@ export class FileUploadService {
           stringNumber: 1,
           openNote: 'G',
           openPitch: 43,
-          midiRange: { min: 43, max: 67 } },
+          midiRange: { min: 43, max: 67 },
+        },
         {
           stringNumber: 2,
           openNote: 'D',
           openPitch: 38,
-          midiRange: { min: 38, max: 62 } },
+          midiRange: { min: 38, max: 62 },
+        },
         {
           stringNumber: 3,
           openNote: 'A',
           openPitch: 33,
-          midiRange: { min: 33, max: 57 } },
+          midiRange: { min: 33, max: 57 },
+        },
         {
           stringNumber: 4,
           openNote: 'E',
           openPitch: 28,
-          midiRange: { min: 28, max: 52 } },
+          midiRange: { min: 28, max: 52 },
+        },
       ],
       standard5: [
         {
           stringNumber: 1,
           openNote: 'G',
           openPitch: 43,
-          midiRange: { min: 43, max: 67 } },
+          midiRange: { min: 43, max: 67 },
+        },
         {
           stringNumber: 2,
           openNote: 'D',
           openPitch: 38,
-          midiRange: { min: 38, max: 62 } },
+          midiRange: { min: 38, max: 62 },
+        },
         {
           stringNumber: 3,
           openNote: 'A',
           openPitch: 33,
-          midiRange: { min: 33, max: 57 } },
+          midiRange: { min: 33, max: 57 },
+        },
         {
           stringNumber: 4,
           openNote: 'E',
           openPitch: 28,
-          midiRange: { min: 28, max: 52 } },
+          midiRange: { min: 28, max: 52 },
+        },
         {
           stringNumber: 5,
           openNote: 'B',
           openPitch: 23,
-          midiRange: { min: 23, max: 47 } },
+          midiRange: { min: 23, max: 47 },
+        },
       ],
       dropD: [
         {
           stringNumber: 1,
           openNote: 'G',
           openPitch: 43,
-          midiRange: { min: 43, max: 67 } },
+          midiRange: { min: 43, max: 67 },
+        },
         {
           stringNumber: 2,
           openNote: 'D',
           openPitch: 38,
-          midiRange: { min: 38, max: 62 } },
+          midiRange: { min: 38, max: 62 },
+        },
         {
           stringNumber: 3,
           openNote: 'A',
           openPitch: 33,
-          midiRange: { min: 33, max: 57 } },
+          midiRange: { min: 33, max: 57 },
+        },
         {
           stringNumber: 4,
           openNote: 'D',
           openPitch: 26,
-          midiRange: { min: 26, max: 50 } },
-      ] };
+          midiRange: { min: 26, max: 50 },
+        },
+      ],
+    };
 
     return (
       BASS_TUNINGS[tuning as keyof typeof BASS_TUNINGS] ||

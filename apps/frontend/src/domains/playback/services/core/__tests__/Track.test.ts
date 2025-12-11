@@ -165,11 +165,11 @@ describe('Track', () => {
         id: 'plugin1',
         state: PluginState.LOADED,
         initialize: vi.fn().mockResolvedValue(undefined),
-        metadata: { 
+        metadata: {
           name: 'Test Plugin',
           manufacturer: 'Test',
           version: '1.0.0',
-          category: 'INSTRUMENT' 
+          category: 'INSTRUMENT',
         },
       };
 

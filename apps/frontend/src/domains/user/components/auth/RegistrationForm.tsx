@@ -81,7 +81,9 @@ export function RegistrationForm({
   return (
     <div className={className}>
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-center text-white">Create Account</h2>
+        <h2 className="text-2xl font-bold text-center text-white">
+          Create Account
+        </h2>
         <p className="text-gray-400 text-center mt-2">
           {initialValues?.email
             ? `Create account for ${initialValues.email}`
@@ -161,7 +163,9 @@ export function RegistrationForm({
             name="confirmPassword"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-gray-300">Confirm Password</FormLabel>
+                <FormLabel className="text-gray-300">
+                  Confirm Password
+                </FormLabel>
                 <FormControl>
                   <div className="relative">
                     <Input
@@ -198,7 +202,11 @@ export function RegistrationForm({
             )}
           />
 
-          <Button type="submit" className="w-full bg-[#ffc700] text-black hover:bg-[#e6b300]" disabled={isLoading}>
+          <Button
+            type="submit"
+            className="w-full bg-[#ffc700] text-black hover:bg-[#e6b300]"
+            disabled={isLoading}
+          >
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -230,7 +238,11 @@ export function RegistrationForm({
       <div className="mt-6 text-center">
         <p className="text-sm text-gray-400">
           Already have an account?{' '}
-          <Button variant="link" asChild className="p-0 h-auto text-[#ffc700] hover:text-[#e6b300]">
+          <Button
+            variant="link"
+            asChild
+            className="p-0 h-auto text-[#ffc700] hover:text-[#e6b300]"
+          >
             <TransitionLink href="/login">Sign in</TransitionLink>
           </Button>
         </p>

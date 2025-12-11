@@ -1,10 +1,17 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useMidiParsing, type ParseMidiResponse } from '../hooks/useMidiParsing';
+import {
+  useMidiParsing,
+  type ParseMidiResponse,
+} from '../hooks/useMidiParsing';
 import { type GeneratedExerciseNote } from '../hooks/useMidiConversion';
 import { ManualMeasurePlacer } from './ManualMeasurePlacer';
 import { NoteListEditor } from './NoteListEditor';
+import {
+  type AccidentalPreference,
+  convertToPreference,
+} from '../utils/fretboardCalculations';
 
 interface MidiConversionWizardProps {
   /** Exercise ID (used for legacy mode or conversion API) */
@@ -55,10 +62,16 @@ export function MidiConversionWizard({
   existingNotes,
 }: MidiConversionWizardProps) {
   const [currentStep, setCurrentStep] = useState<WizardStep>('parsing');
-  const [parseResult, setParseResult] = useState<ParseMidiResponse | null>(null);
-  const [convertedNotes, setConvertedNotes] = useState<GeneratedExerciseNote[]>([]);
+  const [parseResult, setParseResult] = useState<ParseMidiResponse | null>(
+    null,
+  );
+  const [convertedNotes, setConvertedNotes] = useState<GeneratedExerciseNote[]>(
+    [],
+  );
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [hasAutoAdvanced, setHasAutoAdvanced] = useState(false); // Track if we've already auto-advanced
+  const [accidentalPreference, setAccidentalPreference] =
+    useState<AccidentalPreference>('sharps');
 
   const { parseMidi, loading: parsing, error: parseError } = useMidiParsing();
 
@@ -69,11 +82,14 @@ export function MidiConversionWizard({
 
       // Story 4.4 - Task 4.3: Use stateless parsing if midiUrl provided
       if (midiUrl) {
-        console.log('[MidiConversionWizard] Using stateless MIDI parsing (Story 4.4)', {
-          midiUrl,
-          bpm,
-          totalBars,
-        });
+        console.log(
+          '[MidiConversionWizard] Using stateless MIDI parsing (Story 4.4)',
+          {
+            midiUrl,
+            bpm,
+            totalBars,
+          },
+        );
         const result = await parseMidi(exerciseId, {
           midiUrl,
           bpm,
@@ -84,9 +100,12 @@ export function MidiConversionWizard({
         setCurrentStep('manual-placement');
       } else {
         // Legacy mode: Parse from saved exercise
-        console.log('[MidiConversionWizard] Using legacy MIDI parsing (exercise ID)', {
-          exerciseId,
-        });
+        console.log(
+          '[MidiConversionWizard] Using legacy MIDI parsing (exercise ID)',
+          {
+            exerciseId,
+          },
+        );
         const result = await parseMidi(exerciseId);
         setParseResult(result);
         setCurrentStep('manual-placement');
@@ -105,11 +124,21 @@ export function MidiConversionWizard({
 
   // Load existing notes after parsing completes (only once on initial load)
   useEffect(() => {
-    if (isOpen && parseResult && existingNotes && existingNotes.length > 0 && !hasAutoAdvanced && currentStep === 'manual-placement') {
-      console.log('[MidiConversionWizard] Loading existing notes (after parsing)', {
-        noteCount: existingNotes.length,
-        parseResultAvailable: !!parseResult,
-      });
+    if (
+      isOpen &&
+      parseResult &&
+      existingNotes &&
+      existingNotes.length > 0 &&
+      !hasAutoAdvanced &&
+      currentStep === 'manual-placement'
+    ) {
+      console.log(
+        '[MidiConversionWizard] Loading existing notes (after parsing)',
+        {
+          noteCount: existingNotes.length,
+          parseResultAvailable: !!parseResult,
+        },
+      );
       setConvertedNotes(existingNotes);
       setCurrentStep('reviewing');
       setHasUnsavedChanges(false); // Existing notes are already saved
@@ -118,14 +147,17 @@ export function MidiConversionWizard({
   }, [isOpen, parseResult, existingNotes, currentStep, hasAutoAdvanced]);
 
   // Handle manual placement completion
-  const handleManualPlacementComplete = useCallback((notes: GeneratedExerciseNote[]) => {
-    console.log('[MidiConversionWizard] Manual placement complete', {
-      noteCount: notes.length,
-    });
-    setConvertedNotes(notes);
-    setHasUnsavedChanges(true);
-    setCurrentStep('reviewing');
-  }, []);
+  const handleManualPlacementComplete = useCallback(
+    (notes: GeneratedExerciseNote[]) => {
+      console.log('[MidiConversionWizard] Manual placement complete', {
+        noteCount: notes.length,
+      });
+      setConvertedNotes(notes);
+      setHasUnsavedChanges(true);
+      setCurrentStep('reviewing');
+    },
+    [],
+  );
 
   const handleNext = async () => {
     if (currentStep === 'reviewing') {
@@ -143,11 +175,27 @@ export function MidiConversionWizard({
   };
 
   const handleConfirm = () => {
-    console.log('[MidiWizard] Save Notes clicked - convertedNotes:', convertedNotes.length, 'notes');
-    console.log('[MidiWizard] Calling onComplete with notes:', convertedNotes);
+    console.log(
+      '[MidiWizard] Save Notes clicked - convertedNotes:',
+      convertedNotes.length,
+      'notes',
+    );
+    console.log('[MidiWizard] Accidental preference:', accidentalPreference);
+
+    // Convert note names to the selected accidental preference before saving
+    // This ensures the stored note names reflect the user's sharp/flat choice
+    const notesWithPreferredAccidentals = convertedNotes.map((note) => ({
+      ...note,
+      note: convertToPreference(note.note, accidentalPreference),
+    }));
+
+    console.log(
+      '[MidiWizard] Calling onComplete with notes (accidentals applied):',
+      notesWithPreferredAccidentals,
+    );
 
     // Save notes to parent and reset wizard state
-    onComplete(convertedNotes);
+    onComplete(notesWithPreferredAccidentals);
 
     console.log('[MidiWizard] onComplete called, resetting wizard state');
 
@@ -165,7 +213,9 @@ export function MidiConversionWizard({
 
   const handleClose = () => {
     if (hasUnsavedChanges && currentStep !== 'parsing') {
-      if (!confirm('You have unsaved changes. Are you sure you want to close?')) {
+      if (
+        !confirm('You have unsaved changes. Are you sure you want to close?')
+      ) {
         return;
       }
     }
@@ -187,7 +237,10 @@ export function MidiConversionWizard({
   return (
     <>
       {/* Modal overlay */}
-      <div className="fixed inset-0 bg-black/50 z-[100]" onClick={handleClose} />
+      <div
+        className="fixed inset-0 bg-black/50 z-[100]"
+        onClick={handleClose}
+      />
 
       {/* Modal content */}
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 pointer-events-none">
@@ -198,13 +251,20 @@ export function MidiConversionWizard({
           {/* Header */}
           <div className="border-b px-6 py-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">MIDI to Fretboard Conversion</h2>
+              <h2 className="text-xl font-bold text-gray-900">
+                MIDI to Fretboard Conversion
+              </h2>
               <button
                 type="button"
                 onClick={handleClose}
                 className="text-gray-400 hover:text-gray-600"
               >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -219,6 +279,39 @@ export function MidiConversionWizard({
             <div className="mt-4">
               <StepIndicator currentStep={currentStep} />
             </div>
+
+            {/* Accidental preference toggle - show after parsing step */}
+            {currentStep !== 'parsing' && (
+              <div className="mt-4 flex items-center justify-end gap-3">
+                <span className="text-sm text-gray-600">
+                  Display accidentals as:
+                </span>
+                <div className="inline-flex rounded-lg border border-gray-200 p-1 bg-gray-50">
+                  <button
+                    type="button"
+                    onClick={() => setAccidentalPreference('sharps')}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                      accidentalPreference === 'sharps'
+                        ? 'bg-white text-blue-700 shadow-sm border border-blue-200'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Sharps (C#, D#, F#)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAccidentalPreference('flats')}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                      accidentalPreference === 'flats'
+                        ? 'bg-white text-blue-700 shadow-sm border border-blue-200'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Flats (Db, Eb, Gb)
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Body */}
@@ -233,7 +326,9 @@ export function MidiConversionWizard({
                 )}
                 {parseError && (
                   <div className="text-red-600">
-                    <p className="font-semibold mb-2">Failed to parse MIDI file</p>
+                    <p className="font-semibold mb-2">
+                      Failed to parse MIDI file
+                    </p>
                     <p className="text-sm">{parseError.message}</p>
                     <button
                       type="button"
@@ -249,20 +344,28 @@ export function MidiConversionWizard({
 
             {currentStep === 'manual-placement' && parseResult && (
               <div>
-                <h3 className="text-lg font-semibold mb-4">Step 1: Place Notes on Fretboard</h3>
+                <h3 className="text-lg font-semibold mb-4">
+                  Step 1: Place Notes on Fretboard
+                </h3>
 
                 {/* Bass Type Display */}
                 <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-blue-900">Bass Type:</span>
+                    <span className="text-sm font-medium text-blue-900">
+                      Bass Type:
+                    </span>
                     <span className="text-sm text-blue-700">
-                      {bassType === '4' && '4-String Bass (G-D-A-E, MIDI 28-67)'}
-                      {bassType === '5' && '5-String Bass (G-D-A-E-B, MIDI 23-67)'}
-                      {bassType === '6' && '6-String Bass (C-G-D-A-E-B, MIDI 23-72)'}
+                      {bassType === '4' &&
+                        '4-String Bass (G-D-A-E, MIDI 28-67)'}
+                      {bassType === '5' &&
+                        '5-String Bass (G-D-A-E-B, MIDI 23-67)'}
+                      {bassType === '6' &&
+                        '6-String Bass (C-G-D-A-E-B, MIDI 23-72)'}
                     </span>
                   </div>
                   <p className="mt-2 text-xs text-blue-600">
-                    To change the bass type, close this wizard and update it in the exercise form.
+                    To change the bass type, close this wizard and update it in
+                    the exercise form.
                   </p>
                 </div>
 
@@ -271,23 +374,38 @@ export function MidiConversionWizard({
                   measures={parseResult.measures}
                   bassType={bassType}
                   onComplete={handleManualPlacementComplete}
-                  existingNotes={convertedNotes.length > 0 ? convertedNotes : undefined}
+                  existingNotes={
+                    convertedNotes.length > 0 ? convertedNotes : undefined
+                  }
+                  accidentalPreference={accidentalPreference}
                 />
               </div>
             )}
 
             {currentStep === 'reviewing' && (
               <div>
-                <h3 className="text-lg font-semibold mb-4">Step 2: Review & Refine Notes</h3>
+                <h3 className="text-lg font-semibold mb-4">
+                  Step 2: Review & Refine Notes
+                </h3>
                 <div className="mb-4 p-4 bg-green-50 rounded-lg border border-green-200">
-                  <h4 className="font-semibold text-green-900 mb-2">Manual Placement Complete</h4>
+                  <h4 className="font-semibold text-green-900 mb-2">
+                    Manual Placement Complete
+                  </h4>
                   <div className="text-sm text-green-800">
                     <div>✓ {convertedNotes.length} notes placed manually</div>
                     <div>✓ All placements are validated and accurate</div>
-                    <div>✓ You can further refine positions below if needed</div>
+                    <div>
+                      ✓ You can further refine positions below if needed
+                    </div>
                   </div>
                 </div>
-                <NoteListEditor notes={convertedNotes} onNotesChange={handleNotesChange} bassType={bassType} />
+                <NoteListEditor
+                  notes={convertedNotes}
+                  onNotesChange={handleNotesChange}
+                  bassType={bassType}
+                  accidentalPreference={accidentalPreference}
+                  onAccidentalPreferenceChange={setAccidentalPreference}
+                />
               </div>
             )}
 
@@ -304,7 +422,9 @@ export function MidiConversionWizard({
                     clipRule="evenodd"
                   />
                 </svg>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Ready to Save</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  Ready to Save
+                </h3>
                 <p className="text-gray-600 mb-6">
                   {convertedNotes.length} notes will be saved to the exercise.
                 </p>
@@ -312,17 +432,12 @@ export function MidiConversionWizard({
                   <h4 className="font-semibold text-gray-700 mb-2">Summary:</h4>
                   <ul className="text-sm text-gray-600 space-y-1">
                     <li>• Total notes: {convertedNotes.length}</li>
-                    <li>
-                      • Placement method: Manual (100% accurate)
-                    </li>
-                    <li>
-                      • All notes validated and playable
-                    </li>
+                    <li>• Placement method: Manual (100% accurate)</li>
+                    <li>• All notes validated and playable</li>
                   </ul>
                 </div>
               </div>
             )}
-
           </div>
 
           {/* Footer */}
@@ -336,7 +451,8 @@ export function MidiConversionWizard({
             </button>
 
             <div className="flex gap-2">
-              {(currentStep === 'reviewing' || currentStep === 'confirming') && (
+              {(currentStep === 'reviewing' ||
+                currentStep === 'confirming') && (
                 <button
                   type="button"
                   onClick={handleBack}

@@ -742,31 +742,41 @@ describe('Clock', () => {
     it('should handle getCurrentTime before initialization', () => {
       clock = new Clock({ useAudioWorklet: false });
 
-      expect(() => clock.getCurrentTime()).toThrow('AudioContext not initialized');
+      expect(() => clock.getCurrentTime()).toThrow(
+        'AudioContext not initialized',
+      );
     });
 
     it('should handle getAudioTime before initialization', () => {
       clock = new Clock({ useAudioWorklet: false });
 
-      expect(() => clock.getAudioTime()).toThrow('AudioContext not initialized');
+      expect(() => clock.getAudioTime()).toThrow(
+        'AudioContext not initialized',
+      );
     });
 
     it('should handle getSampleRate before initialization', () => {
       clock = new Clock({ useAudioWorklet: false });
 
-      expect(() => clock.getSampleRate()).toThrow('AudioContext not initialized');
+      expect(() => clock.getSampleRate()).toThrow(
+        'AudioContext not initialized',
+      );
     });
 
     it('should handle getRawAudioTime before initialization', () => {
       clock = new Clock({ useAudioWorklet: false });
 
-      expect(() => clock.getRawAudioTime()).toThrow('AudioContext not initialized');
+      expect(() => clock.getRawAudioTime()).toThrow(
+        'AudioContext not initialized',
+      );
     });
 
     it('should handle getHardwareTime before initialization', () => {
       clock = new Clock({ useAudioWorklet: false });
 
-      expect(() => clock.getHardwareTime()).toThrow('AudioContext not initialized');
+      expect(() => clock.getHardwareTime()).toThrow(
+        'AudioContext not initialized',
+      );
     });
 
     it('should handle operations on uninitialized clock gracefully', () => {

@@ -427,9 +427,8 @@ describe('AudioSampleManager', () => {
       await audioSampleManager.initialize();
       await audioSampleManager.initialize();
       // Provider is created once during construction, not during initialization
-      const { createSupabaseProviderAdvanced } = await import(
-        '../../../modules/storage/providers/index.js'
-      );
+      const { createSupabaseProviderAdvanced } =
+        await import('../../../modules/storage/providers/index.js');
       expect(createSupabaseProviderAdvanced).toHaveBeenCalledTimes(1);
     });
 

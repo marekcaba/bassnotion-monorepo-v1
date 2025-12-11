@@ -133,12 +133,16 @@ export class PluginManager implements Service {
     });
 
     if (this.isInitialized) {
-      console.log('[PLAYBACK-ENGINE][PluginManager] Already initialized, skipping');
+      console.log(
+        '[PLAYBACK-ENGINE][PluginManager] Already initialized, skipping',
+      );
       return;
     }
 
     try {
-      console.log('[PLAYBACK-ENGINE][PluginManager] Getting AudioContext from AudioEngine...');
+      console.log(
+        '[PLAYBACK-ENGINE][PluginManager] Getting AudioContext from AudioEngine...',
+      );
       // Create plugin audio context from audio engine
       const context = this.audioEngine.getContext();
       console.log('[PLAYBACK-ENGINE][PluginManager] Got AudioContext:', {
@@ -156,9 +160,13 @@ export class PluginManager implements Service {
       } as PluginAudioContext;
 
       this.isInitialized = true;
-      console.log('[PLAYBACK-ENGINE][PluginManager] ✅ Initialization complete - emitting plugin-manager:initialized event');
+      console.log(
+        '[PLAYBACK-ENGINE][PluginManager] ✅ Initialization complete - emitting plugin-manager:initialized event',
+      );
       this.eventBus.emit('plugin-manager:initialized', {});
-      console.log('[PLAYBACK-ENGINE][PluginManager] Event emitted successfully');
+      console.log(
+        '[PLAYBACK-ENGINE][PluginManager] Event emitted successfully',
+      );
     } catch (error) {
       throw new PluginError(
         `Failed to initialize PluginManager: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -221,11 +229,14 @@ export class PluginManager implements Service {
     // 🔧 FIX: Check if PluginManager is initialized before loading plugins
     // PluginManager needs AudioContext from AudioEngine, which is only available after services.initialize()
     if (!this.isInitialized || !this.audioContext) {
-      console.log('[PLAYBACK-ENGINE][PluginManager] ⚠️ Cannot load plugin - PluginManager not initialized yet', {
-        pluginId,
-        isInitialized: this.isInitialized,
-        hasAudioContext: !!this.audioContext,
-      });
+      console.log(
+        '[PLAYBACK-ENGINE][PluginManager] ⚠️ Cannot load plugin - PluginManager not initialized yet',
+        {
+          pluginId,
+          isInitialized: this.isInitialized,
+          hasAudioContext: !!this.audioContext,
+        },
+      );
       throw new PluginError(
         `Cannot load plugin ${pluginId} - PluginManager not initialized. Wait for AudioProvider to initialize services.`,
         pluginId,
@@ -480,7 +491,9 @@ export class PluginManager implements Service {
     this.eventBus.on('transport:tempo-change', (data) => {
       logger.info('🎵 PluginManager: Received tempo-change event', { data });
       this.notifyActivePlugins('tempo-changed', data);
-      logger.info('🎵 PluginManager: Notified plugins', { pluginCount: this.plugins.size });
+      logger.info('🎵 PluginManager: Notified plugins', {
+        pluginCount: this.plugins.size,
+      });
     });
   }
 
@@ -589,19 +602,26 @@ export async function registerExistingPlugins(
   // Check if already registered (idempotent - safe for React StrictMode double mount)
   try {
     pluginManager.getPlugin('wam-keyboard');
-    console.log('[PLAYBACK-ENGINE][Plugin] WamKeyboardPlugin already registered, skipping');
-    logger.info('WamKeyboardPlugin already registered, skipping duplicate registration');
+    console.log(
+      '[PLAYBACK-ENGINE][Plugin] WamKeyboardPlugin already registered, skipping',
+    );
+    logger.info(
+      'WamKeyboardPlugin already registered, skipping duplicate registration',
+    );
   } catch (notFoundError) {
     // Plugin not found - proceed with registration
-    console.log('[PLAYBACK-ENGINE][Plugin] Starting WamKeyboardPlugin registration...');
+    console.log(
+      '[PLAYBACK-ENGINE][Plugin] Starting WamKeyboardPlugin registration...',
+    );
     logger.info('🎹 Registering WamKeyboardPlugin for harmony...');
     try {
-      const { WamKeyboardPlugin } = await import(
-        '../../modules/instruments/adapters/wam/WamKeyboardPlugin.js'
-      );
+      const { WamKeyboardPlugin } =
+        await import('../../modules/instruments/adapters/wam/WamKeyboardPlugin.js');
       const keyboardPlugin = new WamKeyboardPlugin();
       await pluginManager.register(keyboardPlugin as AudioPlugin);
-      console.log('[PLAYBACK-ENGINE][Plugin] WamKeyboardPlugin registered successfully');
+      console.log(
+        '[PLAYBACK-ENGINE][Plugin] WamKeyboardPlugin registered successfully',
+      );
       logger.info('✅ WamKeyboardPlugin registered (id: wam-keyboard)');
     } catch (error) {
       // Only log genuine registration errors, not "already registered" errors
@@ -619,13 +639,9 @@ export async function registerExistingPlugins(
   const pluginModules = [
     import('../../modules/instruments/implementations/bass/BassProcessor.js'),
     import('../../modules/instruments/implementations/drums/DrumProcessor.js'),
-    import(
-      '../../modules/instruments/implementations/metronome/MetronomeInstrumentProcessor.js'
-    ),
+    import('../../modules/instruments/implementations/metronome/MetronomeInstrumentProcessor.js'),
     // ChordInstrumentProcessor removed - use WamHarmonyProcessor instead
-    import(
-      '../../modules/instruments/implementations/drums/DrumInstrumentProcessor.js'
-    ),
+    import('../../modules/instruments/implementations/drums/DrumInstrumentProcessor.js'),
     // All these plugins have been removed or relocated:
     // import('../plugins/SyncProcessor.js'),
     // import('../plugins/InstrumentAssetOptimizer.js'),

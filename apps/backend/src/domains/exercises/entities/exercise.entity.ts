@@ -59,7 +59,8 @@ export class Exercise {
     return new Exercise({
       ...props,
       createdAt: now,
-      updatedAt: now });
+      updatedAt: now,
+    });
   }
 
   static reconstitute(props: ExerciseProps): Exercise {
@@ -148,10 +149,17 @@ export class Exercise {
   }
 
   get harmonyControlChanges(): any[] | undefined {
-    return this.props.harmonyControlChanges ? [...this.props.harmonyControlChanges] : undefined;
+    return this.props.harmonyControlChanges
+      ? [...this.props.harmonyControlChanges]
+      : undefined;
   }
 
-  get harmonyInstrument(): 'grandpiano' | 'rhodes' | 'wurlitzer' | 'pad' | undefined {
+  get harmonyInstrument():
+    | 'grandpiano'
+    | 'rhodes'
+    | 'wurlitzer'
+    | 'pad'
+    | undefined {
     return this.props.harmonyInstrument;
   }
 
@@ -209,9 +217,13 @@ export class Exercise {
   }
 
   hasAnyMidiFile(): boolean {
-    return this.hasMidiFile() || this.hasDrummerMidi() ||
-           this.hasBasslineMidi() || this.hasHarmonyMidi() ||
-           this.hasMetronomeMidi();
+    return (
+      this.hasMidiFile() ||
+      this.hasDrummerMidi() ||
+      this.hasBasslineMidi() ||
+      this.hasHarmonyMidi() ||
+      this.hasMetronomeMidi()
+    );
   }
 
   // Mutation methods
@@ -302,6 +314,7 @@ export class Exercise {
       harmony_instrument: this.props.harmonyInstrument,
       created_by: this.props.createdBy,
       created_at: this.props.createdAt.toISOString(),
-      updated_at: this.props.updatedAt.toISOString() };
+      updated_at: this.props.updatedAt.toISOString(),
+    };
   }
 }

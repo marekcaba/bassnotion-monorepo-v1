@@ -7,7 +7,9 @@ import { toneInstanceManager } from '../services/ToneInstanceManager';
 // Export functions to get global Tone info for backward compatibility
 export function getGlobalTone() {
   // Deprecated - use AudioProvider and useAudioEngine hook instead
-  console.warn('[ToneProvider] getGlobalTone is deprecated. Use AudioProvider.');
+  console.warn(
+    '[ToneProvider] getGlobalTone is deprecated. Use AudioProvider.',
+  );
   return null;
 }
 
@@ -17,7 +19,9 @@ export function getGlobalToneId() {
 
 export function getGlobalContextId() {
   // Deprecated - no longer using global state
-  console.warn('[ToneProvider] getGlobalContextId is deprecated. Global state has been eliminated.');
+  console.warn(
+    '[ToneProvider] getGlobalContextId is deprecated. Global state has been eliminated.',
+  );
   return null;
 }
 
@@ -49,17 +53,17 @@ export function ToneProvider({ children }: ToneProviderProps) {
         // Get the singleton Tone instance
         const Tone = await toneInstanceManager.getTone();
         const Transport = await toneInstanceManager.getTransport();
-        
+
         console.log('🎵 ToneProvider: Using singleton Tone.js instance', {
           instanceId: toneInstanceManager.getInstanceId(),
           transportState: Transport.state,
         });
-        
+
         // Store references
         setTone(Tone);
         setTransport(Transport);
         setIsReady(true);
-        
+
         // Log success
         initLogger.toneInitialized();
       } catch (error) {
@@ -89,9 +93,7 @@ export function ToneProvider({ children }: ToneProviderProps) {
   };
 
   return (
-    <ToneContext.Provider value={contextValue}>
-      {children}
-    </ToneContext.Provider>
+    <ToneContext.Provider value={contextValue}>{children}</ToneContext.Provider>
   );
 }
 

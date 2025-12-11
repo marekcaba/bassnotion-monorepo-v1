@@ -1,6 +1,6 @@
 /**
  * Core Storage Service Interface
- * 
+ *
  * This interface defines the contract for all storage implementations.
  * It provides generic CRUD operations that can be implemented by
  * different storage providers (Supabase, S3, local, etc.)
@@ -73,7 +73,10 @@ export interface IStorageService {
   /**
    * Upload a file to storage
    */
-  upload(file: File | Blob | ArrayBuffer, options: UploadOptions): Promise<UploadResult>;
+  upload(
+    file: File | Blob | ArrayBuffer,
+    options: UploadOptions,
+  ): Promise<UploadResult>;
 
   /**
    * Download a file from storage
@@ -88,7 +91,11 @@ export interface IStorageService {
   /**
    * List files in a bucket/prefix
    */
-  list(bucket: string, prefix?: string, options?: ListOptions): Promise<StorageItem[]>;
+  list(
+    bucket: string,
+    prefix?: string,
+    options?: ListOptions,
+  ): Promise<StorageItem[]>;
 
   /**
    * Get a public URL for a file
@@ -98,7 +105,11 @@ export interface IStorageService {
   /**
    * Get a signed URL for temporary access
    */
-  getSignedUrl(bucket: string, path: string, expiresIn: number): Promise<string>;
+  getSignedUrl(
+    bucket: string,
+    path: string,
+    expiresIn: number,
+  ): Promise<string>;
 
   /**
    * Check if a file exists
@@ -108,12 +119,22 @@ export interface IStorageService {
   /**
    * Copy a file within or between buckets
    */
-  copy(sourceBucket: string, sourcePath: string, destBucket: string, destPath: string): Promise<void>;
+  copy(
+    sourceBucket: string,
+    sourcePath: string,
+    destBucket: string,
+    destPath: string,
+  ): Promise<void>;
 
   /**
    * Move a file within or between buckets
    */
-  move(sourceBucket: string, sourcePath: string, destBucket: string, destPath: string): Promise<void>;
+  move(
+    sourceBucket: string,
+    sourcePath: string,
+    destBucket: string,
+    destPath: string,
+  ): Promise<void>;
 }
 
 /**

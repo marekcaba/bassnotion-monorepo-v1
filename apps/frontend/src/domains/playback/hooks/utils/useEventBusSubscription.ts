@@ -127,7 +127,9 @@ export function useEventBusSubscriptions(
       // Create stable handler that delegates to current ref
       const stableHandler = (data: unknown) => {
         // Find current handler (may have been updated)
-        const currentSub = subscriptionsRef.current.find((s) => s.event === event);
+        const currentSub = subscriptionsRef.current.find(
+          (s) => s.event === event,
+        );
         if (currentSub) {
           currentSub.handler(data);
         }
@@ -166,9 +168,12 @@ export function useStableCallback<T extends (...args: any[]) => any>(
   handlerRef.current = handler;
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  return useCallback(((...args: Parameters<T>) => {
-    return handlerRef.current(...args);
-  }) as T, []);
+  return useCallback(
+    ((...args: Parameters<T>) => {
+      return handlerRef.current(...args);
+    }) as T,
+    [],
+  );
 }
 
 /**

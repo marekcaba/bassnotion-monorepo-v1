@@ -8,7 +8,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   // Check if we're on a tutorial edit page
-  const isTutorialEditPage = pathname?.includes('/admin/tutorials/') && pathname?.includes('/edit');
+  const isTutorialEditPage =
+    pathname?.includes('/admin/tutorials/') && pathname?.includes('/edit');
 
   // For tutorial edit pages, render without admin wrapper
   if (isTutorialEditPage) {

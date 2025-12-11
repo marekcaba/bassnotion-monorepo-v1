@@ -162,7 +162,9 @@ export class ExerciseRepository implements IExerciseRepository {
       const exercises = response.map((dto: any) => Exercise.fromDTO(dto));
       return Result.ok(exercises);
     } catch (error: any) {
-      return Result.fail(error.message || 'Failed to fetch exercises by tutorial ID');
+      return Result.fail(
+        error.message || 'Failed to fetch exercises by tutorial ID',
+      );
     }
   }
 
@@ -198,9 +200,7 @@ export class ExerciseRepository implements IExerciseRepository {
       const response = await apiClient.post(`${this.baseUrl}/batch/create`, {
         exercises: exercises.map((e) => e.toDTO()),
       });
-      const savedExercises = response.map((dto: any) =>
-        Exercise.fromDTO(dto),
-      );
+      const savedExercises = response.map((dto: any) => Exercise.fromDTO(dto));
       return Result.ok(savedExercises);
     } catch (error: any) {
       return Result.fail(error.message || 'Failed to save exercises');

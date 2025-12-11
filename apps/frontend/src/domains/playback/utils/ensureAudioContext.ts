@@ -71,9 +71,12 @@ export async function ensureAudioContext(): Promise<void> {
     try {
       ToneFromEngine = audioEngine.getTone();
     } catch (error) {
-      logger.warn('ensureAudioContext: AudioEngine.getTone() failed, using window.Tone fallback', {
-        error: error instanceof Error ? error.message : String(error),
-      });
+      logger.warn(
+        'ensureAudioContext: AudioEngine.getTone() failed, using window.Tone fallback',
+        {
+          error: error instanceof Error ? error.message : String(error),
+        },
+      );
       ToneFromEngine = (window as any).Tone;
     }
 

@@ -6,12 +6,12 @@ You need to upload **4 voice sample files** to Supabase for the countdown system
 
 ### Required Files
 
-| Filename | Content | Duration | Size | Notes |
-|----------|---------|----------|------|-------|
-| `one.ogg` | Female voice saying "One" | ~0.67s | 11KB | Clear pronunciation, upbeat tone |
-| `two.ogg` | Female voice saying "Two" | ~0.64s | 11KB | Match energy of "one" |
-| `three.ogg` | Female voice saying "Three" | ~0.64s | 4.5KB | Match energy of "one" |
-| `four.ogg` | Female voice saying "Four" | ~0.76s | 11KB | Match energy of "one" |
+| Filename    | Content                     | Duration | Size  | Notes                            |
+| ----------- | --------------------------- | -------- | ----- | -------------------------------- |
+| `one.ogg`   | Female voice saying "One"   | ~0.67s   | 11KB  | Clear pronunciation, upbeat tone |
+| `two.ogg`   | Female voice saying "Two"   | ~0.64s   | 11KB  | Match energy of "one"            |
+| `three.ogg` | Female voice saying "Three" | ~0.64s   | 4.5KB | Match energy of "one"            |
+| `four.ogg`  | Female voice saying "Four"  | ~0.76s   | 11KB  | Match energy of "one"            |
 
 ### Audio Specifications
 
@@ -63,6 +63,7 @@ You need to upload **4 voice sample files** to Supabase for the countdown system
 3. Test one URL in your browser to ensure it downloads/plays
 
 Expected URL format:
+
 ```
 https://[your-project].supabase.co/storage/v1/object/public/audio-samples/voice-cues/one.ogg
 ```
@@ -72,6 +73,7 @@ https://[your-project].supabase.co/storage/v1/object/public/audio-samples/voice-
 ### Test 1: Check Sample Loading
 
 After uploading, check the browser console for:
+
 ```
 🗣️ Registering voice cue instrument configuration...
 Voice cue URL: one -> https://...
@@ -102,6 +104,7 @@ Voice cue URL: four -> https://...
 ### Test 4: Different Time Signatures
 
 Test with various time signatures:
+
 - **4/4**: Should say "one, two, three, four" (4 beats)
 - **3/4**: Should say "one, two, three" (3 beats)
 - **5/4**: Should say "one, two, three, four, five" (5 beats - if you have "five.mp3")
@@ -152,12 +155,14 @@ If you have a good microphone:
 ### Problem: Voice cues not playing
 
 **Check:**
+
 1. Browser console for errors (F12 → Console)
 2. Network tab - are OGG files loading? (F12 → Network → filter by "voice-cues")
 3. Supabase bucket permissions - is `audio-samples` public?
 4. File names - exact match required: `one.ogg`, `two.ogg`, `three.ogg`, `four.ogg`
 
 **Solution:**
+
 ```typescript
 // In console, check if buffers are loaded:
 const coreServices = window.__globalCoreServices;
@@ -170,6 +175,7 @@ const regionProcessor = coreServices?.getRegionProcessor?.();
 **Likely cause:** Silent samples at start of audio file
 
 **Solution:**
+
 1. Open audio file in editor (Audacity)
 2. Zoom in to the beginning
 3. Trim any silence before the voice starts
@@ -181,11 +187,13 @@ const regionProcessor = coreServices?.getRegionProcessor?.();
 **Adjust in code:**
 
 In `RegionProcessor.ts`, line 1312:
+
 ```typescript
 const baseVolume = 0.8; // Change this: 0.0-1.0
 ```
 
 Or in `VoiceCueInstrument.ts`, line 78 (constructor):
+
 ```typescript
 volume: config?.volume ?? 0.8, // Change default volume
 ```
@@ -193,11 +201,13 @@ volume: config?.volume ?? 0.8, // Change default volume
 ### Problem: Voice cues load but don't trigger
 
 **Check:**
+
 1. Is countdown enabled? (Should be by default)
 2. Are there errors in `AudioEventRouter`? Check console
 3. Is voice-cue instrument registered? Check PreloadableInstrumentRegistry
 
 **Debug:**
+
 ```typescript
 // In console:
 const registry = window.__preloadableRegistry;
@@ -208,15 +218,16 @@ registry.hasConfig('voice-cue'); // Should return true
 
 Based on the sample manifest configuration:
 
-| File | Actual Size | Format Details |
-|------|-------------|----------------|
-| `one.ogg` | 11KB | Vorbis quality 4, 44.1kHz stereo |
-| `two.ogg` | 11KB | Vorbis quality 4, 44.1kHz stereo |
-| `three.ogg` | 4.5KB | Vorbis quality 4, 44.1kHz stereo |
-| `four.ogg` | 11KB | Vorbis quality 4, 44.1kHz stereo |
-| **Total** | **37.5KB** | **68% smaller than MP3!** |
+| File        | Actual Size | Format Details                   |
+| ----------- | ----------- | -------------------------------- |
+| `one.ogg`   | 11KB        | Vorbis quality 4, 44.1kHz stereo |
+| `two.ogg`   | 11KB        | Vorbis quality 4, 44.1kHz stereo |
+| `three.ogg` | 4.5KB       | Vorbis quality 4, 44.1kHz stereo |
+| `four.ogg`  | 11KB        | Vorbis quality 4, 44.1kHz stereo |
+| **Total**   | **37.5KB**  | **68% smaller than MP3!**        |
 
 Benefits of OGG Vorbis format:
+
 - Superior compression (68% smaller than MP3)
 - Better audio quality at lower bitrates
 - Native browser support (all modern browsers)
@@ -242,6 +253,7 @@ Before considering the implementation complete:
 Once all files are uploaded and tests pass, your voice cue countdown system is fully operational!
 
 The system will:
+
 - ✅ Automatically load voice samples on page load (highest priority)
 - ✅ Create voice cue track alongside metronome
 - ✅ Schedule voice samples with sample-perfect timing
@@ -252,6 +264,7 @@ The system will:
 ## 🔮 Future Enhancements
 
 Once basic system is working, consider:
+
 1. Multiple voice packs (different languages, voices)
 2. User preference to enable/disable voice cues
 3. Volume control slider for voice cues

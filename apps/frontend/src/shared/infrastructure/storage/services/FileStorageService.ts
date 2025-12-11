@@ -1,9 +1,9 @@
 /**
  * File Storage Service
- * 
+ *
  * Generic implementation of IStorageService that handles
  * file operations using Supabase Storage.
- * 
+ *
  * This service provides the core CRUD operations for file storage
  * and can be extended by domain-specific storage services.
  */
@@ -30,7 +30,10 @@ export class FileStorageService implements IStorageService {
   private config: StorageConfig;
   private requestId = 0;
 
-  constructor(clientManager: SupabaseClientManager, config?: Partial<StorageConfig>) {
+  constructor(
+    clientManager: SupabaseClientManager,
+    config?: Partial<StorageConfig>,
+  ) {
     this.clientManager = clientManager;
     this.config = {
       provider: 'supabase',
@@ -44,7 +47,7 @@ export class FileStorageService implements IStorageService {
    */
   async upload(
     file: File | Blob | ArrayBuffer,
-    options: UploadOptions
+    options: UploadOptions,
   ): Promise<UploadResult> {
     const requestId = this.generateRequestId();
     const startTime = Date.now();
@@ -60,16 +63,16 @@ export class FileStorageService implements IStorageService {
       // Validate file size
       const fileSize = this.getFileSize(file);
       if (this.config.maxFileSize && fileSize > this.config.maxFileSize) {
-        throw new Error(`File size ${fileSize} exceeds maximum allowed size ${this.config.maxFileSize}`);
+        throw new Error(
+          `File size ${fileSize} exceeds maximum allowed size ${this.config.maxFileSize}`,
+        );
       }
 
       // Get client
       const client = await this.clientManager.getClient();
 
       // Convert ArrayBuffer to Blob if needed
-      const uploadFile = file instanceof ArrayBuffer 
-        ? new Blob([file])
-        : file;
+      const uploadFile = file instanceof ArrayBuffer ? new Blob([file]) : file;
 
       // Upload file
       const { data, error } = await client.storage
@@ -133,11 +136,15 @@ export class FileStorageService implements IStorageService {
       let downloadPath = options.path;
       if (options.transform) {
         const params = new URLSearchParams();
-        if (options.transform.width) params.append('width', options.transform.width.toString());
-        if (options.transform.height) params.append('height', options.transform.height.toString());
-        if (options.transform.quality) params.append('quality', options.transform.quality.toString());
-        if (options.transform.format) params.append('format', options.transform.format);
-        
+        if (options.transform.width)
+          params.append('width', options.transform.width.toString());
+        if (options.transform.height)
+          params.append('height', options.transform.height.toString());
+        if (options.transform.quality)
+          params.append('quality', options.transform.quality.toString());
+        if (options.transform.format)
+          params.append('format', options.transform.format);
+
         if (params.toString()) {
           downloadPath = `${options.path}?${params.toString()}`;
         }
@@ -236,7 +243,7 @@ export class FileStorageService implements IStorageService {
   async list(
     bucket: string,
     prefix?: string,
-    options?: ListOptions
+    options?: ListOptions,
   ): Promise<StorageItem[]> {
     const requestId = this.generateRequestId();
 
@@ -250,23 +257,21 @@ export class FileStorageService implements IStorageService {
 
       const client = await this.clientManager.getClient();
 
-      const { data, error } = await client.storage
-        .from(bucket)
-        .list(prefix, {
-          limit: options?.limit || 100,
-          offset: options?.offset || 0,
-          sortBy: {
-            column: options?.sortBy || 'name',
-            order: options?.sortOrder || 'asc',
-          },
-          search: options?.search,
-        });
+      const { data, error } = await client.storage.from(bucket).list(prefix, {
+        limit: options?.limit || 100,
+        offset: options?.offset || 0,
+        sortBy: {
+          column: options?.sortBy || 'name',
+          order: options?.sortOrder || 'asc',
+        },
+        search: options?.search,
+      });
 
       if (error) {
         throw error;
       }
 
-      const items: StorageItem[] = (data || []).map(file => ({
+      const items: StorageItem[] = (data || []).map((file) => ({
         id: file.id || this.generateFileId(file.name),
         name: file.name,
         path: prefix ? `${prefix}/${file.name}` : file.name,
@@ -302,7 +307,9 @@ export class FileStorageService implements IStorageService {
    */
   getPublicUrl(bucket: string, path: string): string {
     // For Supabase, construct the public URL
-    const baseUrl = this.config.baseUrl || 'https://your-project.supabase.co/storage/v1/object/public';
+    const baseUrl =
+      this.config.baseUrl ||
+      'https://your-project.supabase.co/storage/v1/object/public';
     return `${baseUrl}/${bucket}/${path}`;
   }
 
@@ -312,7 +319,7 @@ export class FileStorageService implements IStorageService {
   async getSignedUrl(
     bucket: string,
     path: string,
-    expiresIn: number
+    expiresIn: number,
   ): Promise<string> {
     const requestId = this.generateRequestId();
 
@@ -359,7 +366,7 @@ export class FileStorageService implements IStorageService {
   async exists(bucket: string, path: string): Promise<boolean> {
     try {
       const client = await this.clientManager.getClient();
-      
+
       const { data, error } = await client.storage
         .from(bucket)
         .list(path.substring(0, path.lastIndexOf('/')), {
@@ -370,7 +377,9 @@ export class FileStorageService implements IStorageService {
         return false;
       }
 
-      return data.some(file => file.name === path.substring(path.lastIndexOf('/') + 1));
+      return data.some(
+        (file) => file.name === path.substring(path.lastIndexOf('/') + 1),
+      );
     } catch (error) {
       logger.error('Failed to check file existence', {
         error,
@@ -391,7 +400,7 @@ export class FileStorageService implements IStorageService {
     sourceBucket: string,
     sourcePath: string,
     destBucket: string,
-    destPath: string
+    destPath: string,
   ): Promise<void> {
     const requestId = this.generateRequestId();
 
@@ -437,7 +446,7 @@ export class FileStorageService implements IStorageService {
     sourceBucket: string,
     sourcePath: string,
     destBucket: string,
-    destPath: string
+    destPath: string,
   ): Promise<void> {
     const requestId = this.generateRequestId();
 

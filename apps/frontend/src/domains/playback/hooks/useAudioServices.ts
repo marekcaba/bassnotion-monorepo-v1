@@ -39,8 +39,11 @@ export function useAudioServices() {
   // Use React context when available (preferred)
   return {
     coreServices: context.coreServices,
-    eventBus: context.coreServices?.getEventBus?.() || WindowRegistry.getEventBus(),
-    audioContext: context.coreServices?.getAudioEngine?.()?.getContext?.() || WindowRegistry.getAudioContext(),
+    eventBus:
+      context.coreServices?.getEventBus?.() || WindowRegistry.getEventBus(),
+    audioContext:
+      context.coreServices?.getAudioEngine?.()?.getContext?.() ||
+      WindowRegistry.getAudioContext(),
     tone: WindowRegistry.getTone(), // Tone is not in context, always use WindowRegistry
     serviceRegistry: WindowRegistry.getServiceRegistry(),
     // Additional context flags

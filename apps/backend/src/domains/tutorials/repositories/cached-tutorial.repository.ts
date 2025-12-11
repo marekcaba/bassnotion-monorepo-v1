@@ -2,7 +2,8 @@ import { Injectable } from '@nestjs/common';
 import {
   ITutorialRepository,
   PaginatedResult,
-  PaginationOptions } from './tutorial.repository.interface.js';
+  PaginationOptions,
+} from './tutorial.repository.interface.js';
 import { Tutorial } from '../entities/tutorial.entity.js';
 import { TutorialId } from '../value-objects/tutorial-id.vo.js';
 import { TutorialSlug } from '../value-objects/tutorial-slug.vo.js';
@@ -66,13 +67,15 @@ export class CachedTutorialRepository implements ITutorialRepository {
           const result = await this.repository.findAll(options);
           return {
             ...result,
-            items: result.items.map((t) => t.toPersistence()) };
+            items: result.items.map((t) => t.toPersistence()),
+          };
         },
         this.TTL / 2, // 30 minutes for list queries
       )
       .then((result) => ({
         ...result,
-        items: result.items.map((data) => this.reconstitute(data)) }));
+        items: result.items.map((data) => this.reconstitute(data)),
+      }));
   }
 
   async findByLevel(
@@ -104,13 +107,15 @@ export class CachedTutorialRepository implements ITutorialRepository {
           const result = await this.repository.findPublished(options);
           return {
             ...result,
-            items: result.items.map((t) => t.toPersistence()) };
+            items: result.items.map((t) => t.toPersistence()),
+          };
         },
         this.TTL / 2, // 30 minutes for published content
       )
       .then((result) => ({
         ...result,
-        items: result.items.map((data) => this.reconstitute(data)) }));
+        items: result.items.map((data) => this.reconstitute(data)),
+      }));
   }
 
   async search(query: string): Promise<Tutorial[]> {
@@ -253,7 +258,8 @@ export class CachedTutorialRepository implements ITutorialRepository {
       isActive: data.is_active,
       publishedAt: data.published_at ? new Date(data.published_at) : undefined,
       createdAt: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at) });
+      updatedAt: new Date(data.updated_at),
+    });
   }
 
   private getTutorialKey(id: TutorialId): string {

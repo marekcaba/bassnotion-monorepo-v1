@@ -119,13 +119,19 @@ export class Clock {
         this.audioWorkletActive = false;
       }
     } else if (this.useAudioWorklet && audioContext.state !== 'running') {
-      logger.info('AudioContext suspended - deferring AudioWorklet initialization until context resumes');
+      logger.info(
+        'AudioContext suspended - deferring AudioWorklet initialization until context resumes',
+      );
       // AudioWorklet will be initialized later when context is resumed
     }
 
     // Try Web Worker as fallback if AudioWorklet failed
     // 🔧 FIX: Also defer WebWorker if AudioContext is suspended (may need running context)
-    if (!this.audioWorkletActive && this.useWebWorker && audioContext.state === 'running') {
+    if (
+      !this.audioWorkletActive &&
+      this.useWebWorker &&
+      audioContext.state === 'running'
+    ) {
       try {
         await this.initializeWebWorker();
       } catch (error) {
@@ -135,8 +141,14 @@ export class Clock {
         );
         this.webWorkerActive = false;
       }
-    } else if (!this.audioWorkletActive && this.useWebWorker && audioContext.state !== 'running') {
-      logger.info('AudioContext suspended - deferring WebWorker initialization until context resumes');
+    } else if (
+      !this.audioWorkletActive &&
+      this.useWebWorker &&
+      audioContext.state !== 'running'
+    ) {
+      logger.info(
+        'AudioContext suspended - deferring WebWorker initialization until context resumes',
+      );
       // WebWorker will be initialized later when context is resumed
     }
 
@@ -166,14 +178,19 @@ export class Clock {
         !this.audioWorkletActive &&
         this.useAudioWorklet
       ) {
-        logger.info('Attempting to initialize AudioWorklet now that context is running');
+        logger.info(
+          'Attempting to initialize AudioWorklet now that context is running',
+        );
         try {
           await this.initializeAudioWorklet();
           logger.info('✅ Successfully upgraded to AudioWorklet mode', {
             previousMode: this.webWorkerActive ? 'WebWorker' : 'Basic',
           });
         } catch (error) {
-          logger.warn('Failed to initialize AudioWorklet after context resume', error as Error);
+          logger.warn(
+            'Failed to initialize AudioWorklet after context resume',
+            error as Error,
+          );
 
           // Try WebWorker as fallback
           if (!this.webWorkerActive && this.useWebWorker) {
@@ -181,7 +198,10 @@ export class Clock {
               await this.initializeWebWorker();
               logger.info('✅ Fallback to WebWorker mode successful');
             } catch (workerError) {
-              logger.warn('WebWorker fallback also failed, staying in Basic mode', workerError as Error);
+              logger.warn(
+                'WebWorker fallback also failed, staying in Basic mode',
+                workerError as Error,
+              );
             }
           }
         }
@@ -377,7 +397,8 @@ export class Clock {
       const contextTime = this.audioContext.currentTime;
       const updateCount = this.sampleAccurateClock.getUpdateCount();
       const lastUpdateTime = this.sampleAccurateClock.getLastUpdateTime();
-      const timeSinceLastUpdate = lastUpdateTime > 0 ? performance.now() - lastUpdateTime : 0;
+      const timeSinceLastUpdate =
+        lastUpdateTime > 0 ? performance.now() - lastUpdateTime : 0;
 
       // 🔧 RACE CONDITION DETECTION: Distinguish between AudioWorklet states
       // This provides a SECONDARY DEFENSE against race conditions.
@@ -402,12 +423,22 @@ export class Clock {
           timeSinceLastUpdate,
           updateCount,
         });
-      } else if (workletTime === 0 && contextTime > 0 && updateCount === 0 && !isRunning) {
+      } else if (
+        workletTime === 0 &&
+        contextTime > 0 &&
+        updateCount === 0 &&
+        !isRunning
+      ) {
         // STATE 2: AudioWorklet initialized but NOT started yet - fallback to AudioContext
         baseTime = contextTime;
         _timeSource = 'AudioContext (FALLBACK - NOT STARTED)';
         _fallbackTriggered = true;
-      } else if (workletTime === 0 && contextTime > 0 && updateCount === 0 && isRunning) {
+      } else if (
+        workletTime === 0 &&
+        contextTime > 0 &&
+        updateCount === 0 &&
+        isRunning
+      ) {
         // STATE 3: AudioWorklet IS running but no updates yet (STARTUP RACE)
         // This should be RARE now that Transport.start() calls waitForFirstUpdate()
         // If we see this log frequently, it indicates waitForFirstUpdate() may be timing out
@@ -438,7 +469,9 @@ export class Clock {
       _timeSource = 'AudioContext (fallback)';
       logger.debug('getAudioTime() from AudioContext fallback', {
         returnedTime: baseTime.toFixed(6),
-        reason: this.useHardwareClock ? 'useHardwareClock enabled but offset removed' : 'AudioWorklet/WebWorker not active',
+        reason: this.useHardwareClock
+          ? 'useHardwareClock enabled but offset removed'
+          : 'AudioWorklet/WebWorker not active',
       });
     }
 
@@ -737,7 +770,10 @@ export class Clock {
 
     // CLEANUP FIX: Remove AudioContext statechange listener to prevent memory leak
     if (this.stateChangeListener && this.audioContext) {
-      this.audioContext.removeEventListener('statechange', this.stateChangeListener);
+      this.audioContext.removeEventListener(
+        'statechange',
+        this.stateChangeListener,
+      );
       this.stateChangeListener = null;
       logger.info('Removed AudioContext statechange listener');
     }
@@ -782,7 +818,10 @@ export class Clock {
 
     // CLEANUP FIX: Remove AudioContext statechange listener to prevent memory leak
     if (this.stateChangeListener && this.audioContext) {
-      this.audioContext.removeEventListener('statechange', this.stateChangeListener);
+      this.audioContext.removeEventListener(
+        'statechange',
+        this.stateChangeListener,
+      );
       this.stateChangeListener = null;
     }
 

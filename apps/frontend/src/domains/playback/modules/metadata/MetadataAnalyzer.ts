@@ -14,7 +14,10 @@ import type {
   AnalysisConfig,
 } from '@bassnotion/contracts';
 
-import type { MetadataAnalyzerConfig, AudioProcessingContext } from './types.js';
+import type {
+  MetadataAnalyzerConfig,
+  AudioProcessingContext,
+} from './types.js';
 import { TempoDetector } from './tempo/TempoDetector.js';
 import { KeyDetector } from './key/KeyDetector.js';
 import { SpectralAnalyzer } from './spectral/SpectralAnalyzer.js';
@@ -170,7 +173,7 @@ export class MetadataAnalyzer {
 
       // Perform parallel analysis
       logger.info('Starting parallel audio analysis', { filename });
-      
+
       const [
         tempoResult,
         keyResult,
@@ -202,7 +205,7 @@ export class MetadataAnalyzer {
       // Cache the result
       this.cache.set(cacheKey, analysisResult);
 
-      logger.info('Audio analysis completed successfully', { 
+      logger.info('Audio analysis completed successfully', {
         filename,
         duration: decodedAudio.duration,
         tempo: tempoResult.bpm,
@@ -230,7 +233,9 @@ export class MetadataAnalyzer {
   /**
    * Decode audio data with error handling
    */
-  private async decodeAudioData(audioBuffer: ArrayBuffer): Promise<AudioBuffer> {
+  private async decodeAudioData(
+    audioBuffer: ArrayBuffer,
+  ): Promise<AudioBuffer> {
     try {
       return await this.audioContext.decodeAudioData(audioBuffer.slice(0));
     } catch (error) {
@@ -339,7 +344,7 @@ export class MetadataAnalyzer {
    */
   async dispose(): Promise<void> {
     logger.info('Disposing MetadataAnalyzer');
-    
+
     // Clear cache
     this.cache.dispose();
 

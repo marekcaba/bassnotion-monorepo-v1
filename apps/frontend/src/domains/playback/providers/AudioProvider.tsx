@@ -211,12 +211,13 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
 
         // PHASE 1: Eager initialization - creates AudioContext in suspended state
         // This allows samples to preload and plugins to register before user interaction
-        logger.info('AudioProvider: Starting eager initialization (AudioContext will be suspended)...');
+        logger.info(
+          'AudioProvider: Starting eager initialization (AudioContext will be suspended)...',
+        );
 
         // Clean up any incompatible cached buffers before initializing
-        const { AudioContextCompatibility } = await import(
-          '../services/storage/AudioContextCompatibility.js'
-        );
+        const { AudioContextCompatibility } =
+          await import('../services/storage/AudioContextCompatibility.js');
         AudioContextCompatibility.cleanupIncompatibleBuffers();
 
         // BUG #4 FIX: Subscribe to AudioContext state changes (event-driven, not polling!)
@@ -235,7 +236,9 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
 
         try {
           initSeq.log('services-init-start');
-          logger.info('AudioProvider: Starting services.initialize() - will create AudioContext in suspended state');
+          logger.info(
+            'AudioProvider: Starting services.initialize() - will create AudioContext in suspended state',
+          );
 
           // Initialize all services - AudioContext will be created in suspended state
           await services.initialize();
@@ -246,18 +249,22 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
 
           initSeq.log('audiocontext-created', {
             contextState: context.state,
-            sampleRate: context.sampleRate
+            sampleRate: context.sampleRate,
           });
 
           initSeq.log('services-init-done');
-          logger.info('AudioProvider: Eager initialization complete (AudioContext suspended, plugins registered)');
+          logger.info(
+            'AudioProvider: Eager initialization complete (AudioContext suspended, plugins registered)',
+          );
 
           // Note: Click listener for context resume is registered in separate useEffect
           // to avoid StrictMode double-mount issues
-
         } catch (error) {
           initSeq.log('services-init-done', { error: String(error) });
-          logger.error('AudioProvider: Failed during initialization', error as Error);
+          logger.error(
+            'AudioProvider: Failed during initialization',
+            error as Error,
+          );
         }
 
         // ✅ CRITICAL FIX: Update state AFTER services.initialize() completes
@@ -276,7 +283,10 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
         // Dispatch a custom event to notify waiting hooks
         window.dispatchEvent(new Event('audioServicesReady'));
 
-        initSeq.log('state-updated', { isInitialized: true, coreServicesReady: true });
+        initSeq.log('state-updated', {
+          isInitialized: true,
+          coreServicesReady: true,
+        });
 
         logger.info(
           'AudioProvider: Context state updated - isInitialized: true',
@@ -327,10 +337,11 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
       const unsubscribe = WindowRegistry.getAudioContextUnsubscribe();
       if (typeof unsubscribe === 'function') {
         unsubscribe();
-        logger.info('AudioProvider: Unsubscribed from AudioContext state changes');
+        logger.info(
+          'AudioProvider: Unsubscribed from AudioContext state changes',
+        );
         WindowRegistry.setAudioContextUnsubscribe(undefined);
       }
-
 
       if (services) {
         logMigrationEvent('Cleaning up AudioProvider');
@@ -355,7 +366,10 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
   // This runs independently of initialization to avoid StrictMode double-mount issues
   // IMPORTANT: Depends on isInitialized (not coreServicesReady) to ensure services.initialize() completed
   useEffect(() => {
-    initSeq.log('resume-effect-mounted', { isInitialized, hasCoreServices: !!coreServices });
+    initSeq.log('resume-effect-mounted', {
+      isInitialized,
+      hasCoreServices: !!coreServices,
+    });
 
     if (!isInitialized || !coreServices) {
       return;
@@ -382,13 +396,18 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
           // This provides a backup mechanism for browsers that have quirky promise behavior
           const stateChangeHandler = () => {
             if (context.state === 'running') {
-              initSeq.log('resume-success', { via: 'onstatechange', contextState: context.state });
-              logger.info('AudioProvider: Context running (detected via onstatechange)');
+              initSeq.log('resume-success', {
+                via: 'onstatechange',
+                contextState: context.state,
+              });
+              logger.info(
+                'AudioProvider: Context running (detected via onstatechange)',
+              );
 
               // Emit event for tracking/analytics
               coreServices.getEventBus().emit('audio:activated', {
                 timestamp: Date.now(),
-                sampleRate: context.sampleRate
+                sampleRate: context.sampleRate,
               });
 
               // Remove listener once fired
@@ -405,33 +424,45 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
           const resumePromise = context.resume();
 
           // Handle the promise asynchronously (this is fine - the call itself was synchronous)
-          resumePromise.then(() => {
-            initSeq.log('resume-success', { via: 'promise', contextState: context.state, sampleRate: context.sampleRate });
-            logger.info('AudioProvider: AudioContext resumed successfully', {
-              state: context.state,
-              sampleRate: context.sampleRate
+          resumePromise
+            .then(() => {
+              initSeq.log('resume-success', {
+                via: 'promise',
+                contextState: context.state,
+                sampleRate: context.sampleRate,
+              });
+              logger.info('AudioProvider: AudioContext resumed successfully', {
+                state: context.state,
+                sampleRate: context.sampleRate,
+              });
+
+              // Remove Safari fallback listener if promise resolved successfully
+              context.removeEventListener('statechange', stateChangeHandler);
+
+              // Emit event for tracking/analytics
+              coreServices.getEventBus().emit('audio:activated', {
+                timestamp: Date.now(),
+                sampleRate: context.sampleRate,
+              });
+            })
+            .catch((err) => {
+              initSeq.log('resume-failed', { error: String(err) });
+              logger.error('AudioProvider: Resume failed', err as Error);
+
+              // Keep Safari fallback active if promise failed
             });
-
-            // Remove Safari fallback listener if promise resolved successfully
-            context.removeEventListener('statechange', stateChangeHandler);
-
-            // Emit event for tracking/analytics
-            coreServices.getEventBus().emit('audio:activated', {
-              timestamp: Date.now(),
-              sampleRate: context.sampleRate
-            });
-          }).catch(err => {
-            initSeq.log('resume-failed', { error: String(err) });
-            logger.error('AudioProvider: Resume failed', err as Error);
-
-            // Keep Safari fallback active if promise failed
-          });
         } else {
-          initSeq.log('resume-called', { alreadyRunning: true, contextState: context.state });
+          initSeq.log('resume-called', {
+            alreadyRunning: true,
+            contextState: context.state,
+          });
         }
       } catch (error) {
         initSeq.log('resume-failed', { error: String(error) });
-        logger.error('AudioProvider: Failed to resume AudioContext', error as Error);
+        logger.error(
+          'AudioProvider: Failed to resume AudioContext',
+          error as Error,
+        );
       }
     };
 
@@ -440,17 +471,19 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
     // Note: scroll doesn't work - browsers don't consider it a valid activation gesture
     const gestureEvents = ['click', 'touchstart', 'keydown'];
 
-    gestureEvents.forEach(eventType => {
+    gestureEvents.forEach((eventType) => {
       // Don't use passive for these - they need to be activation gestures
       document.addEventListener(eventType, resumeAudioContext, { once: true });
     });
 
     initSeq.log('listener-registered', { events: gestureEvents });
-    logger.info('[INIT] Gesture listeners registered', { events: gestureEvents });
+    logger.info('[INIT] Gesture listeners registered', {
+      events: gestureEvents,
+    });
 
     // Cleanup: Remove all listeners if component unmounts before interaction
     return () => {
-      gestureEvents.forEach(eventType => {
+      gestureEvents.forEach((eventType) => {
         document.removeEventListener(eventType, resumeAudioContext);
       });
       logger.info('[INIT] Gesture listeners cleaned up');

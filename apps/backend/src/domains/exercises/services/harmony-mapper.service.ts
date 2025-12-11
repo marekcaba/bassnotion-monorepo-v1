@@ -89,17 +89,20 @@ export class HarmonyMapperService {
     // DIAGNOSTIC: Log what we received
     this.logger.debug('📊 Measures received for harmony conversion', {
       measureCount: measures.length,
-      measuresWithNotes: measures.filter(m => m.notes && m.notes.length > 0).length,
+      measuresWithNotes: measures.filter((m) => m.notes && m.notes.length > 0)
+        .length,
       allMeasureNoteCounts: measures.map((m, i) => ({
         measure: i + 1,
         noteCount: m.notes?.length || 0,
         hasNotes: !!m.notes && m.notes.length > 0,
       })),
-      firstMeasure: measures[0] ? {
-        measureNumber: measures[0].measureNumber,
-        noteCount: measures[0].notes?.length || 0,
-        firstNote: measures[0].notes?.[0],
-      } : null,
+      firstMeasure: measures[0]
+        ? {
+            measureNumber: measures[0].measureNumber,
+            noteCount: measures[0].notes?.length || 0,
+            firstNote: measures[0].notes?.[0],
+          }
+        : null,
     });
 
     // 1. Extract all notes from all measures (polyphonic support)
@@ -121,12 +124,15 @@ export class HarmonyMapperService {
         sortedByPitch.forEach((note, voiceIndex) => {
           // DIAGNOSTIC: Log first 3 notes to verify tick precision
           if (noteIdCounter <= 3) {
-            this.logger.log(`[TICK DIAGNOSTIC] Note ${noteIdCounter} position:`, {
-              noteName: note.name,
-              position: note.position,
-              tick: note.position?.tick,
-              durationTicks: note.durationTicks,
-            });
+            this.logger.log(
+              `[TICK DIAGNOSTIC] Note ${noteIdCounter} position:`,
+              {
+                noteName: note.name,
+                position: note.position,
+                tick: note.position?.tick,
+                durationTicks: note.durationTicks,
+              },
+            );
           }
 
           allNotes.push({
@@ -139,15 +145,16 @@ export class HarmonyMapperService {
             durationTicks: note.durationTicks,
             ticks: (note as any).ticks, // 🚨 CRITICAL FIX: Include absolute ticks for consistent timing with CC64
             measureNumber: measure.measureNumber,
-            voiceIndex:
-              simultaneousNotes.length > 1 ? voiceIndex : undefined,
+            voiceIndex: simultaneousNotes.length > 1 ? voiceIndex : undefined,
           });
         });
       }
     }
 
     // 2. Process control changes - add measure numbers
-    const processedControlChanges: HarmonyControlChange[] = (controlChanges || []).map(cc => {
+    const processedControlChanges: HarmonyControlChange[] = (
+      controlChanges || []
+    ).map((cc) => {
       // Find which measure this CC event belongs to based on its position
       const measureNumber = cc.position?.measure || 1;
 
@@ -243,8 +250,8 @@ export class HarmonyMapperService {
       (a, b) => a - b,
     );
 
-    // Calculate octave range (MIDI note 60 = C4, octave = Math.floor(pitch / 12))
-    const octaves = uniquePitches.map((p) => Math.floor(p / 12));
+    // Calculate octave range (MIDI note 60 = C4, octave = Math.floor(pitch / 12) - 1)
+    const octaves = uniquePitches.map((p) => Math.floor(p / 12) - 1);
     const octaveRange = {
       min: Math.min(...octaves),
       max: Math.max(...octaves),
@@ -258,9 +265,7 @@ export class HarmonyMapperService {
     );
 
     // Detect polyphony
-    const notesWithVoices = notes.filter(
-      (n) => n.voiceIndex !== undefined,
-    );
+    const notesWithVoices = notes.filter((n) => n.voiceIndex !== undefined);
     const isPolyphonic = notesWithVoices.length > 0;
     const maxVoiceCount = isPolyphonic
       ? Math.max(...notesWithVoices.map((n) => (n.voiceIndex ?? 0) + 1))
@@ -300,8 +305,7 @@ export class HarmonyMapperService {
 
     for (const range of config.ranges) {
       // Check if this velocity range overlaps with [minVelocity, maxVelocity]
-      const overlaps =
-        range.min <= maxVelocity && range.max >= minVelocity;
+      const overlaps = range.min <= maxVelocity && range.max >= minVelocity;
 
       if (overlaps) {
         requiredLayers.push(range.layer);

@@ -72,7 +72,9 @@ function calculateActualBarsFromNotes(exercise: Exercise): number {
 
   // PRIORITY 2: Calculate from duration_beats
   if (exercise.duration_beats && exercise.timeSignature?.numerator) {
-    return Math.ceil(exercise.duration_beats / exercise.timeSignature.numerator);
+    return Math.ceil(
+      exercise.duration_beats / exercise.timeSignature.numerator,
+    );
   }
 
   // PRIORITY 3: Use last note's measure position (may be 0-indexed!)
@@ -312,7 +314,9 @@ export class MusicalTruthScope {
    */
   subscribe(callback: (truth: MusicalTruth) => void): () => void {
     if (this.isDisposed) {
-      return () => { /* no-op for disposed scope */ };
+      return () => {
+        /* no-op for disposed scope */
+      };
     }
 
     const unsubscribe = this.authority.subscribe(callback);

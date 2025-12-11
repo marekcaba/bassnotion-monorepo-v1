@@ -206,7 +206,9 @@ export function useTrack(options: UseTrackOptions): UseTrackReturn {
         // The local serviceRegistry prop may not be the same instance as the global one
         const globalRegistry = WindowRegistry.getServiceRegistry();
         if (!globalRegistry) {
-          throw new Error('Global ServiceRegistry not found after waitForServices()');
+          throw new Error(
+            'Global ServiceRegistry not found after waitForServices()',
+          );
         }
         eventBusRef.current = globalRegistry.get<EventBus>('eventBus');
         transportRef.current = TransportAdapter.getInstance();

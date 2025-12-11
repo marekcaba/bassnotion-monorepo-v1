@@ -1,12 +1,16 @@
 /**
  * SpectralAnalyzer - Frequency spectrum analysis
- * 
+ *
  * Analyzes spectral characteristics of audio including
  * frequency distribution, centroid, and harmonic content.
  */
 
 import { createStructuredLogger } from '@bassnotion/contracts';
-import type { SpectralAnalysisResult, FrequencyBinData, HarmonicContent } from '@bassnotion/contracts';
+import type {
+  SpectralAnalysisResult,
+  FrequencyBinData,
+  HarmonicContent,
+} from '@bassnotion/contracts';
 import type { AudioProcessingContext } from '../types.js';
 import type { SpectralAnalysisConfig, SpectralFrame } from './types.js';
 import { FREQUENCY_RANGES } from './types.js';
@@ -30,7 +34,7 @@ export class SpectralAnalyzer {
    */
   async analyzeSpectrum(
     audioBuffer: AudioBuffer,
-    context: AudioProcessingContext
+    context: AudioProcessingContext,
   ): Promise<SpectralAnalysisResult> {
     // Simple mode for testing - return mock data
     if ((context as any).simpleMode) {
@@ -43,19 +47,28 @@ export class SpectralAnalyzer {
     const spectrum = this.calculateAverageSpectrum(channelData, context);
 
     // Calculate spectral features
-    const spectralCentroid = this.calculateSpectralCentroid(spectrum, context.sampleRate);
+    const spectralCentroid = this.calculateSpectralCentroid(
+      spectrum,
+      context.sampleRate,
+    );
     const spectralRolloff = this.calculateSpectralRolloff(spectrum);
     const spectralFlux = this.calculateSpectralFlux(channelData, context);
     const zeroCrossingRate = this.calculateZeroCrossingRate(channelData);
 
     // Analyze frequency distribution
-    const frequencyBins = this.analyzeFrequencyBins(spectrum, context.sampleRate);
+    const frequencyBins = this.analyzeFrequencyBins(
+      spectrum,
+      context.sampleRate,
+    );
 
     // Calculate dynamic range
     const dynamicRange = this.calculateDynamicRange(channelData);
 
     // Analyze harmonic content
-    const harmonicContent = this.analyzeHarmonicContent(spectrum, context.sampleRate);
+    const harmonicContent = this.analyzeHarmonicContent(
+      spectrum,
+      context.sampleRate,
+    );
 
     return {
       spectralCentroid,
@@ -73,7 +86,7 @@ export class SpectralAnalyzer {
    */
   private calculateAverageSpectrum(
     channelData: Float32Array,
-    context: AudioProcessingContext
+    context: AudioProcessingContext,
   ): Float32Array {
     const { fftSize } = this.config;
     const hopSize = fftSize / 2;
@@ -121,8 +134,10 @@ export class SpectralAnalyzer {
         break;
       case 'blackman':
         for (let i = 0; i < N; i++) {
-          const window = 0.42 - 0.5 * Math.cos((2 * Math.PI * i) / (N - 1)) +
-                        0.08 * Math.cos((4 * Math.PI * i) / (N - 1));
+          const window =
+            0.42 -
+            0.5 * Math.cos((2 * Math.PI * i) / (N - 1)) +
+            0.08 * Math.cos((4 * Math.PI * i) / (N - 1));
           windowed[i] = frame[i] * window;
         }
         break;
@@ -144,7 +159,7 @@ export class SpectralAnalyzer {
       let imag = 0;
 
       for (let n = 0; n < N; n++) {
-        const angle = -2 * Math.PI * k * n / N;
+        const angle = (-2 * Math.PI * k * n) / N;
         real += frame[n] * Math.cos(angle);
         imag += frame[n] * Math.sin(angle);
       }
@@ -158,7 +173,10 @@ export class SpectralAnalyzer {
   /**
    * Calculate spectral centroid
    */
-  private calculateSpectralCentroid(spectrum: Float32Array, sampleRate: number): number {
+  private calculateSpectralCentroid(
+    spectrum: Float32Array,
+    sampleRate: number,
+  ): number {
     let weightedSum = 0;
     let magnitudeSum = 0;
 
@@ -195,7 +213,7 @@ export class SpectralAnalyzer {
    */
   private calculateSpectralFlux(
     channelData: Float32Array,
-    context: AudioProcessingContext
+    context: AudioProcessingContext,
   ): number {
     const { fftSize } = this.config;
     const hopSize = fftSize / 2;
@@ -231,7 +249,7 @@ export class SpectralAnalyzer {
     let crossings = 0;
 
     for (let i = 1; i < channelData.length; i++) {
-      if ((channelData[i] >= 0) !== (channelData[i - 1] >= 0)) {
+      if (channelData[i] >= 0 !== channelData[i - 1] >= 0) {
         crossings++;
       }
     }
@@ -244,7 +262,7 @@ export class SpectralAnalyzer {
    */
   private analyzeFrequencyBins(
     spectrum: Float32Array,
-    sampleRate: number
+    sampleRate: number,
   ): FrequencyBinData {
     const binData: FrequencyBinData = {
       subBass: 0,
@@ -303,11 +321,12 @@ export class SpectralAnalyzer {
    */
   private analyzeHarmonicContent(
     spectrum: Float32Array,
-    sampleRate: number
+    sampleRate: number,
   ): HarmonicContent {
     // Find fundamental frequency
     const fundamentalBin = this.findFundamentalFrequency(spectrum);
-    const fundamentalFreq = (fundamentalBin * sampleRate) / (2 * spectrum.length);
+    const fundamentalFreq =
+      (fundamentalBin * sampleRate) / (2 * spectrum.length);
 
     // Analyze harmonics
     const harmonicStrengths: number[] = [];
@@ -321,14 +340,17 @@ export class SpectralAnalyzer {
     // Calculate harmonic ratio
     const fundamentalStrength = spectrum[fundamentalBin] || 0;
     const totalHarmonic = harmonicStrengths.reduce((sum, h) => sum + h, 0);
-    const harmonicRatio = fundamentalStrength > 0 
-      ? totalHarmonic / (fundamentalStrength + totalHarmonic)
-      : 0;
+    const harmonicRatio =
+      fundamentalStrength > 0
+        ? totalHarmonic / (fundamentalStrength + totalHarmonic)
+        : 0;
 
     return {
       harmonicRatio,
       fundamentalStrength: fundamentalStrength / Math.max(...spectrum),
-      harmonicDistribution: harmonicStrengths.map(h => h / Math.max(...harmonicStrengths)),
+      harmonicDistribution: harmonicStrengths.map(
+        (h) => h / Math.max(...harmonicStrengths),
+      ),
     };
   }
 
@@ -341,7 +363,8 @@ export class SpectralAnalyzer {
     let maxValue = 0;
 
     // Start from bin 1 to avoid DC
-    for (let i = 1; i < spectrum.length / 4; i++) { // Look in lower quarter
+    for (let i = 1; i < spectrum.length / 4; i++) {
+      // Look in lower quarter
       if (spectrum[i] > maxValue) {
         maxValue = spectrum[i];
         maxBin = i;

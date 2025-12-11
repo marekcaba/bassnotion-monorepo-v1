@@ -10,11 +10,10 @@ export class LogTransportService {
     debug: console.debug,
     info: console.info,
     warn: console.warn,
-    error: console.error };
+    error: console.error,
+  };
 
-  constructor(
-    private readonly logAggregator: LogAggregatorService,
-  ) {
+  constructor(private readonly logAggregator: LogAggregatorService) {
     this.interceptConsoleLogs();
   }
 
@@ -23,8 +22,8 @@ export class LogTransportService {
    */
   private interceptConsoleLogs(): void {
     // Only intercept in production or when LOG_AGGREGATION is enabled
-    const shouldIntercept = 
-      process.env.NODE_ENV === 'production' || 
+    const shouldIntercept =
+      process.env.NODE_ENV === 'production' ||
       process.env.LOG_AGGREGATION === 'true';
 
     if (!shouldIntercept) {
@@ -50,21 +49,24 @@ export class LogTransportService {
       if (args.length === 1 && typeof args[0] === 'string') {
         try {
           const parsed = JSON.parse(args[0]);
-          
+
           // Check if it's a structured log
           if (parsed.service && parsed.message && parsed.correlationId) {
-            this.logAggregator.log({
-              timestamp: parsed.timestamp || new Date().toISOString(),
-              level: parsed.level || level.toUpperCase(),
-              service: parsed.service,
-              message: parsed.message,
-              correlationId: parsed.correlationId,
-              userId: parsed.userId,
-              sessionId: parsed.sessionId,
-              data: parsed.data,
-              error: parsed.error }).catch(() => {
-              // Ignore aggregator errors to prevent loops
-            });
+            this.logAggregator
+              .log({
+                timestamp: parsed.timestamp || new Date().toISOString(),
+                level: parsed.level || level.toUpperCase(),
+                service: parsed.service,
+                message: parsed.message,
+                correlationId: parsed.correlationId,
+                userId: parsed.userId,
+                sessionId: parsed.sessionId,
+                data: parsed.data,
+                error: parsed.error,
+              })
+              .catch(() => {
+                // Ignore aggregator errors to prevent loops
+              });
           }
         } catch {
           // Not JSON, ignore
@@ -86,7 +88,7 @@ export class LogTransportService {
       sessionId?: string;
       data?: Record<string, any>;
       error?: Error;
-    }
+    },
   ): Promise<void> {
     await this.logAggregator.log({
       timestamp: new Date().toISOString(),
@@ -97,10 +99,14 @@ export class LogTransportService {
       userId: options?.userId,
       sessionId: options?.sessionId,
       data: options?.data,
-      error: options?.error ? {
-        name: options.error.name,
-        message: options.error.message,
-        stack: options.error.stack } : undefined });
+      error: options?.error
+        ? {
+            name: options.error.name,
+            message: options.error.message,
+            stack: options.error.stack,
+          }
+        : undefined,
+    });
   }
 
   /**
@@ -108,13 +114,14 @@ export class LogTransportService {
    */
   createLogger(service: string, defaultContext?: Record<string, any>) {
     return {
-      debug: (message: string, data?: Record<string, any>) => 
+      debug: (message: string, data?: Record<string, any>) =>
         this.log('debug', service, message, { ...defaultContext, data }),
-      info: (message: string, data?: Record<string, any>) => 
+      info: (message: string, data?: Record<string, any>) =>
         this.log('info', service, message, { ...defaultContext, data }),
-      warn: (message: string, data?: Record<string, any>) => 
+      warn: (message: string, data?: Record<string, any>) =>
         this.log('warn', service, message, { ...defaultContext, data }),
-      error: (message: string, error?: Error, data?: Record<string, any>) => 
-        this.log('error', service, message, { ...defaultContext, error, data }) };
+      error: (message: string, error?: Error, data?: Record<string, any>) =>
+        this.log('error', service, message, { ...defaultContext, error, data }),
+    };
   }
 }

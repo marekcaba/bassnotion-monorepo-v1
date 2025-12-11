@@ -4,7 +4,9 @@ import { createStructuredLogger } from '@bassnotion/contracts';
 
 @Controller('api/creators')
 export class CreatorsController {
-  private readonly staticLogger = createStructuredLogger(CreatorsController.name);
+  private readonly staticLogger = createStructuredLogger(
+    CreatorsController.name,
+  );
 
   constructor(private readonly creatorsService: CreatorsService) {}
 
@@ -34,19 +36,24 @@ export class CreatorsController {
           error: 'Creator stats not found',
           fallback: {
             creatorName: 'Creator',
-            subscriberCountFormatted: 'Subscribe' } };
+            subscriberCountFormatted: 'Subscribe',
+          },
+        };
       }
 
       return {
         success: true,
-        data: stats };
+        data: stats,
+      };
     } catch (error) {
       this.staticLogger.error('Error fetching creator stats:', error as Error);
       return {
         error: 'Failed to fetch creator stats',
         fallback: {
           creatorName: 'Creator',
-          subscriberCountFormatted: 'Subscribe' } };
+          subscriberCountFormatted: 'Subscribe',
+        },
+      };
     }
   }
 
@@ -64,13 +71,15 @@ export class CreatorsController {
       return {
         success: true,
         message: 'Batch update completed successfully',
-        timestamp: new Date().toISOString() };
+        timestamp: new Date().toISOString(),
+      };
     } catch (error) {
       this.staticLogger.error('Error in manual batch update:', error as Error);
       return {
         error: 'Batch update failed',
         message: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString() };
+        timestamp: new Date().toISOString(),
+      };
     }
   }
 
@@ -91,13 +100,16 @@ export class CreatorsController {
           totalChannels: allChannels.length,
           staleChannels: staleChannels.length,
           freshChannels: allChannels.length - staleChannels.length,
-          lastUpdate: new Date().toISOString() },
-        needsUpdate: staleChannels.length > 0 };
+          lastUpdate: new Date().toISOString(),
+        },
+        needsUpdate: staleChannels.length > 0,
+      };
     } catch (error) {
       this.staticLogger.error('Error checking health status:', error as Error);
       return {
         error: 'Failed to check health status',
-        message: error instanceof Error ? error.message : 'Unknown error' };
+        message: error instanceof Error ? error.message : 'Unknown error',
+      };
     }
   }
 }

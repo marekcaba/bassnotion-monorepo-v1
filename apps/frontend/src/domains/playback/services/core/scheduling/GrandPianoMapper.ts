@@ -89,9 +89,8 @@ export class GrandPianoMapper {
 
       // Fallback to import (if cache miss)
       logger.info('Cache miss, loading from JSON import...');
-      const imported = await import(
-        '@/domains/playback/data/instruments/piano/grandpiano-keyboard-map.json'
-      );
+      const imported =
+        await import('@/domains/playback/data/instruments/piano/grandpiano-keyboard-map.json');
 
       this.keyboardMap = imported.noteMap as KeyboardMap;
 

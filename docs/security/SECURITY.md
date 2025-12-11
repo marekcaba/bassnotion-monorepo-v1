@@ -33,6 +33,7 @@ export const helmetConfig = {
 ```
 
 **Headers Set:**
+
 - `X-Content-Type-Options: nosniff` - Prevents MIME type sniffing
 - `X-Frame-Options: DENY` - Prevents clickjacking
 - `X-XSS-Protection: 0` - Disabled (modern browsers have better protections)
@@ -50,14 +51,17 @@ export const rateLimitConfig = {
   allowList: ['127.0.0.1'], // Localhost exempted
   skipSuccessfulRequests: false,
   keyGenerator: (request: any) => {
-    return request.headers['x-forwarded-for'] || 
-           request.connection.remoteAddress || 
-           request.ip;
+    return (
+      request.headers['x-forwarded-for'] ||
+      request.connection.remoteAddress ||
+      request.ip
+    );
   },
 };
 ```
 
 **Features:**
+
 - 100 requests per 15 minutes per IP (default)
 - 500 requests for authenticated users
 - Custom headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`
@@ -71,8 +75,12 @@ Controlled Cross-Origin Resource Sharing:
 export const corsConfig = {
   origin: (origin: string | undefined, callback: Function) => {
     const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['*'];
-    
-    if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+
+    if (
+      !origin ||
+      allowedOrigins.includes('*') ||
+      allowedOrigins.includes(origin)
+    ) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
@@ -81,7 +89,11 @@ export const corsConfig = {
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Correlation-ID'],
-  exposedHeaders: ['X-Correlation-ID', 'X-RateLimit-Limit', 'X-RateLimit-Remaining'],
+  exposedHeaders: [
+    'X-Correlation-ID',
+    'X-RateLimit-Limit',
+    'X-RateLimit-Remaining',
+  ],
 };
 ```
 
@@ -99,12 +111,17 @@ All input is sanitized to prevent XSS and injection attacks:
 ```
 
 **Example Sanitization:**
+
 ```javascript
 // Input
-{ title: '<script>alert("xss")</script>Hello' }
+{
+  title: '<script>alert("xss")</script>Hello';
+}
 
 // Output
-{ title: 'Hello' }
+{
+  title: 'Hello';
+}
 ```
 
 ### 5. Correlation ID Tracking
@@ -135,6 +152,7 @@ Every request gets a unique correlation ID for tracing:
 ```
 
 Protects endpoints requiring authentication:
+
 - Validates JWT token
 - Extracts user information
 - Adds user to request object
@@ -173,6 +191,7 @@ const allowedMimeTypes = [
 ### Parameterized Queries
 
 All database queries use Supabase client which:
+
 - Prevents SQL injection
 - Uses parameterized queries
 - Validates data types
@@ -190,8 +209,9 @@ All database queries use Supabase client which:
 ### Request Validation
 
 Using Zod schemas for:
+
 - Type validation
-- Data sanitization  
+- Data sanitization
 - Required field enforcement
 - Format validation (email, UUID, etc.)
 
@@ -262,6 +282,7 @@ pnpm test apps/backend/src/shared/middleware/__tests__/
 ```
 
 Tests cover:
+
 - XSS prevention
 - SQL injection blocking
 - Rate limiting
@@ -271,6 +292,7 @@ Tests cover:
 ### Manual Testing
 
 1. **XSS Testing:**
+
    ```bash
    curl -X POST http://localhost:3000/api/exercises \
      -H "Content-Type: application/json" \
@@ -278,6 +300,7 @@ Tests cover:
    ```
 
 2. **Rate Limit Testing:**
+
    ```bash
    for i in {1..101}; do
      curl http://localhost:3000/api/health

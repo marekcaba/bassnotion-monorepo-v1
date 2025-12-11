@@ -13,6 +13,10 @@ import {
   getPreloadableRegistry,
   type InstrumentConfig,
 } from './core/PreloadableInstrumentRegistry.js';
+import {
+  protectedSampleFetch,
+  isSampleLoadingAvailable,
+} from './core/SampleLoadingCircuitBreaker.js';
 
 const logger = getLogger('InitialSamplePreloader');
 
@@ -89,8 +93,12 @@ export class InitialSamplePreloader {
 
       if (!coreServices) {
         // This should NEVER happen now, but adding defensive check
-        logger.error('❌ CRITICAL: CoreServices not found! This indicates a bug in initialization sequence.');
-        throw new Error('CoreServices must be initialized before loadEssentialSamples()');
+        logger.error(
+          '❌ CRITICAL: CoreServices not found! This indicates a bug in initialization sequence.',
+        );
+        throw new Error(
+          'CoreServices must be initialized before loadEssentialSamples()',
+        );
       }
 
       const audioEngine = coreServices.getAudioEngine();
@@ -150,7 +158,9 @@ export class InitialSamplePreloader {
         window.dispatchEvent(new Event('essentialSamplesReady'));
         window.dispatchEvent(new Event('samplesReady')); // GlobalControls waits for this
 
-        logger.info('✅ Dispatched samplesReady and essentialSamplesReady events');
+        logger.info(
+          '✅ Dispatched samplesReady and essentialSamplesReady events',
+        );
       }
     } catch (error) {
       logger.error('❌ Failed to register instrument configs:', error);
@@ -179,16 +189,26 @@ export class InitialSamplePreloader {
     const loadingKey = `harmony-${instrument}`;
 
     if (this.loadingPromises.has(loadingKey)) {
-      console.log('⏭️ [DEDUPLICATION] Already loading samples for:', instrument);
-      logger.info('Samples already loading for instrument, waiting for completion:', {
+      console.log(
+        '⏭️ [DEDUPLICATION] Already loading samples for:',
         instrument,
-      });
+      );
+      logger.info(
+        'Samples already loading for instrument, waiting for completion:',
+        {
+          instrument,
+        },
+      );
       // Return existing promise to avoid duplicate loads
       return this.loadingPromises.get(loadingKey);
     }
 
     // Create loading promise and store it
-    const loadingPromise = this.executeLoadFullSamples(exercise, instrument, loadingKey);
+    const loadingPromise = this.executeLoadFullSamples(
+      exercise,
+      instrument,
+      loadingKey,
+    );
     this.loadingPromises.set(loadingKey, loadingPromise);
 
     try {
@@ -208,7 +228,10 @@ export class InitialSamplePreloader {
    * @param exercises - Array of exercises in the tutorial
    * @param tutorialId - Tutorial ID (for logging)
    */
-  async loadTutorialSamples(exercises: any[], tutorialId?: string): Promise<void> {
+  async loadTutorialSamples(
+    exercises: any[],
+    tutorialId?: string,
+  ): Promise<void> {
     logger.info('🎯 Tutorial-level sample loading started', {
       tutorialId,
       exerciseCount: exercises.length,
@@ -222,7 +245,7 @@ export class InitialSamplePreloader {
       uniqueInstruments: Object.keys(requiredSamples.harmony).length,
       totalHarmonyNotes: Object.values(requiredSamples.harmony).reduce(
         (sum: number, notes: any) => sum + notes.length,
-        0
+        0,
       ),
       hasBass: requiredSamples.bass.length > 0,
       hasDrums: requiredSamples.drums,
@@ -233,10 +256,12 @@ export class InitialSamplePreloader {
       const loadingTasks = [];
 
       // Load harmony samples for each instrument used in tutorial
-      for (const [instrument, notes] of Object.entries(requiredSamples.harmony)) {
+      for (const [instrument, notes] of Object.entries(
+        requiredSamples.harmony,
+      )) {
         if (notes.length > 0) {
           loadingTasks.push(
-            this.loadHarmonyForInstrument(instrument, notes as string[])
+            this.loadHarmonyForInstrument(instrument, notes as string[]),
           );
         }
       }
@@ -328,7 +353,7 @@ export class InitialSamplePreloader {
    */
   private async loadHarmonyForInstrument(
     instrument: string,
-    notes: string[]
+    notes: string[],
   ): Promise<void> {
     logger.info(`Loading harmony samples for ${instrument}`, {
       noteCount: notes.length,
@@ -348,7 +373,11 @@ export class InitialSamplePreloader {
     };
 
     // Use existing loadFullSamples logic
-    await this.executeLoadFullSamples(mockExercise, instrument, `tutorial-${instrument}`);
+    await this.executeLoadFullSamples(
+      mockExercise,
+      instrument,
+      `tutorial-${instrument}`,
+    );
   }
 
   /**
@@ -365,7 +394,11 @@ export class InitialSamplePreloader {
    * Internal method that actually performs the sample loading
    * Extracted to enable deduplication in loadFullSamples
    */
-  private async executeLoadFullSamples(exercise: any, instrument: string, loadingKey: string): Promise<void> {
+  private async executeLoadFullSamples(
+    exercise: any,
+    instrument: string,
+    loadingKey: string,
+  ): Promise<void> {
     console.log('🎵 [LOADING-START] Starting sample load for:', {
       instrument,
       exerciseId: exercise?.id,
@@ -379,13 +412,15 @@ export class InitialSamplePreloader {
     try {
       // FAANG SOLUTION: Use HarmonyPreloadStrategy with exercise data
       // This will extract notes from MIDI and load ONLY required samples
-      const { HarmonyPreloadStrategy } = await import(
-        '../modules/preloading/strategies/HarmonyPreloadStrategy.js'
-      );
+      const { HarmonyPreloadStrategy } =
+        await import('../modules/preloading/strategies/HarmonyPreloadStrategy.js');
       const harmonyStrategy = new HarmonyPreloadStrategy();
 
       // Load ONLY harmony samples required by exercise MIDI file
-      const harmonyResult = await harmonyStrategy.loadFullSamples(undefined, exercise);
+      const harmonyResult = await harmonyStrategy.loadFullSamples(
+        undefined,
+        exercise,
+      );
 
       console.log('🎵 [AFTER-HARMONY-LOAD] Harmony loading completed:', {
         success: harmonyResult.success,
@@ -402,21 +437,29 @@ export class InitialSamplePreloader {
               : 'N/A',
         });
 
-        console.log('🔧 [BEFORE-PLAYBACK-ENGINE] About to inject buffers into PlaybackEngine');
+        console.log(
+          '🔧 [BEFORE-PLAYBACK-ENGINE] About to inject buffers into PlaybackEngine',
+        );
 
         // CRITICAL: Inject harmony buffers into PlaybackEngine immediately after loading
         // This enables direct AudioBufferSourceNode scheduling for instant stop functionality
         try {
           // ✅ FIX: Use WindowRegistry key instead of legacy __globalCoreServices
-          const coreServices = (window as any).__bassnotion_coreServices || (window as any).__globalCoreServices;
+          const coreServices =
+            (window as any).__bassnotion_coreServices ||
+            (window as any).__globalCoreServices;
 
           if (!coreServices) {
-            logger.warn('⚠️ CoreServices not initialized yet - harmony buffers will be injected later');
+            logger.warn(
+              '⚠️ CoreServices not initialized yet - harmony buffers will be injected later',
+            );
           } else {
             // Phase 3.1: Use PlaybackEngine instead of RegionProcessor
             const playbackEngine = coreServices.getPlaybackEngine();
             if (!playbackEngine) {
-              logger.warn('⚠️ PlaybackEngine not available - harmony buffers will be injected later');
+              logger.warn(
+                '⚠️ PlaybackEngine not available - harmony buffers will be injected later',
+              );
               return;
             }
             const sampleCache = GlobalSampleCache.getInstance();
@@ -428,11 +471,17 @@ export class InitialSamplePreloader {
 
             // ✅ FIX: Get actually cached keys instead of iterating through all possibilities
             // This matches what HarmonyWidget does (line 1414)
-            const allCachedKeys = Array.from((sampleCache as any).samples?.keys() || []);
-            const harmonyCachedKeys = allCachedKeys.filter(key => key.startsWith(`${instrument}-`));
+            const allCachedKeys = Array.from(
+              (sampleCache as any).samples?.keys() || [],
+            );
+            const harmonyCachedKeys = allCachedKeys.filter((key) =>
+              key.startsWith(`${instrument}-`),
+            );
 
-            console.log(`🔍 [BUFFER-INJECTION] Found ${harmonyCachedKeys.length} cached buffers for ${instrument}:`,
-              harmonyCachedKeys.slice(0, 5));
+            console.log(
+              `🔍 [BUFFER-INJECTION] Found ${harmonyCachedKeys.length} cached buffers for ${instrument}:`,
+              harmonyCachedKeys.slice(0, 5),
+            );
 
             // Get audioContext for decoding raw buffers from CoreServices
             const audioEngine = coreServices.getAudioEngine();
@@ -447,15 +496,25 @@ export class InitialSamplePreloader {
 
               if (!buffer) {
                 // Buffer not decoded yet - get raw ArrayBuffer and decode it
-                const rawBuffer = await sampleCache.getCachedRawBuffer(cacheKey);
+                const rawBuffer =
+                  await sampleCache.getCachedRawBuffer(cacheKey);
                 if (rawBuffer && audioContext) {
                   try {
-                    buffer = await audioContext.decodeAudioData(rawBuffer.slice(0));
+                    buffer = await audioContext.decodeAudioData(
+                      rawBuffer.slice(0),
+                    );
                     // Cache the decoded buffer for next time
-                    await sampleCache.cacheBuffer(cacheKey, buffer, { isContextCompatible: true });
-                    console.log(`🔄 [BUFFER-INJECTION] Decoded raw buffer on-demand: ${cacheKey}`);
+                    await sampleCache.cacheBuffer(cacheKey, buffer, {
+                      isContextCompatible: true,
+                    });
+                    console.log(
+                      `🔄 [BUFFER-INJECTION] Decoded raw buffer on-demand: ${cacheKey}`,
+                    );
                   } catch (error) {
-                    console.error(`❌ [BUFFER-INJECTION] Failed to decode ${cacheKey}:`, error);
+                    console.error(
+                      `❌ [BUFFER-INJECTION] Failed to decode ${cacheKey}:`,
+                      error,
+                    );
                   }
                 }
               }
@@ -469,35 +528,50 @@ export class InitialSamplePreloader {
               }
             }
 
-            console.log(`✅ [BUFFER-INJECTION] Collected ${buffersFound} buffers for PlaybackEngine`)
+            console.log(
+              `✅ [BUFFER-INJECTION] Collected ${buffersFound} buffers for PlaybackEngine`,
+            );
 
             if (buffersFound > 0 && playbackEngine) {
               // audioContext already obtained above before the loop
               // Phase 3.1: Use PlaybackEngine.setHarmonyBuffers()
-              playbackEngine.setHarmonyBuffers(harmonyBuffers, audioContext.destination);
+              playbackEngine.setHarmonyBuffers(
+                harmonyBuffers,
+                audioContext.destination,
+              );
               logger.info('✅ Harmony buffers injected into PlaybackEngine', {
                 instrument,
                 buffersInjected: buffersFound,
-                cachedKeys: harmonyCachedKeys.length
+                cachedKeys: harmonyCachedKeys.length,
               });
             } else {
               logger.warn('⚠️ No harmony buffers available for injection', {
                 instrument,
-                buffersFound
+                buffersFound,
               });
             }
           }
         } catch (error) {
-          console.error('❌ [REGIONPROCESSOR-ERROR] Failed to inject buffers:', error);
-          logger.error('Failed to inject harmony buffers into PlaybackEngine', error as Error);
+          console.error(
+            '❌ [REGIONPROCESSOR-ERROR] Failed to inject buffers:',
+            error,
+          );
+          logger.error(
+            'Failed to inject harmony buffers into PlaybackEngine',
+            error as Error,
+          );
         }
 
-        console.log('✅ [AFTER-PLAYBACK-ENGINE] PlaybackEngine injection attempt completed');
+        console.log(
+          '✅ [AFTER-PLAYBACK-ENGINE] PlaybackEngine injection attempt completed',
+        );
 
         // CRITICAL FIX: Inject voice cue buffers into PlaybackEngine
         // Voice cue samples are preloaded (lines 1518-1533) but were never injected
         try {
-          const coreServices = (window as any).__bassnotion_coreServices || (window as any).__globalCoreServices;
+          const coreServices =
+            (window as any).__bassnotion_coreServices ||
+            (window as any).__globalCoreServices;
 
           if (coreServices) {
             // Phase 3.1: Use PlaybackEngine instead of RegionProcessor
@@ -518,15 +592,25 @@ export class InitialSamplePreloader {
 
                 if (!buffer) {
                   // Buffer not decoded yet - get raw ArrayBuffer and decode it
-                  const rawBuffer = await sampleCache.getCachedRawBuffer(cacheKey);
+                  const rawBuffer =
+                    await sampleCache.getCachedRawBuffer(cacheKey);
                   if (rawBuffer && audioContext) {
                     try {
-                      buffer = await audioContext.decodeAudioData(rawBuffer.slice(0));
+                      buffer = await audioContext.decodeAudioData(
+                        rawBuffer.slice(0),
+                      );
                       // Cache the decoded buffer for next time
-                      await sampleCache.cacheBuffer(cacheKey, buffer, { isContextCompatible: true });
-                      console.log(`🔄 [VOICE-CUE-INJECTION] Decoded raw buffer on-demand: ${cacheKey}`);
+                      await sampleCache.cacheBuffer(cacheKey, buffer, {
+                        isContextCompatible: true,
+                      });
+                      console.log(
+                        `🔄 [VOICE-CUE-INJECTION] Decoded raw buffer on-demand: ${cacheKey}`,
+                      );
                     } catch (error) {
-                      console.error(`❌ [VOICE-CUE-INJECTION] Failed to decode ${cacheKey}:`, error);
+                      console.error(
+                        `❌ [VOICE-CUE-INJECTION] Failed to decode ${cacheKey}:`,
+                        error,
+                      );
                     }
                   }
                 }
@@ -546,20 +630,35 @@ export class InitialSamplePreloader {
                   voiceCueRecord[key] = buffer;
                 });
 
-                playbackEngine.setVoiceCueBuffers(voiceCueRecord, audioContext.destination);
-                logger.info('✅ Voice cue buffers injected into PlaybackEngine', {
-                  buffersInjected: Object.keys(voiceCueRecord).length,
-                  bufferKeys: Object.keys(voiceCueRecord),
-                });
-                console.log(`✅ [VOICE-CUE-INJECTION] Injected ${Object.keys(voiceCueRecord).length} voice cue buffers:`, Object.keys(voiceCueRecord));
+                playbackEngine.setVoiceCueBuffers(
+                  voiceCueRecord,
+                  audioContext.destination,
+                );
+                logger.info(
+                  '✅ Voice cue buffers injected into PlaybackEngine',
+                  {
+                    buffersInjected: Object.keys(voiceCueRecord).length,
+                    bufferKeys: Object.keys(voiceCueRecord),
+                  },
+                );
+                console.log(
+                  `✅ [VOICE-CUE-INJECTION] Injected ${Object.keys(voiceCueRecord).length} voice cue buffers:`,
+                  Object.keys(voiceCueRecord),
+                );
               } else {
                 logger.warn('⚠️ No voice cue buffers available for injection');
               }
             }
           }
         } catch (error) {
-          console.error('❌ [VOICE-CUE-ERROR] Failed to inject voice cue buffers:', error);
-          logger.error('Failed to inject voice cue buffers into PlaybackEngine', error as Error);
+          console.error(
+            '❌ [VOICE-CUE-ERROR] Failed to inject voice cue buffers:',
+            error,
+          );
+          logger.error(
+            'Failed to inject voice cue buffers into PlaybackEngine',
+            error as Error,
+          );
         }
       } else {
         logger.warn('⚠️ Harmony sample loading completed with warnings', {
@@ -575,7 +674,9 @@ export class InitialSamplePreloader {
       // 🆕 EARLY RETURN: For now, skip bass loading when called from handleExerciseSelect
       // This avoids unnecessary loading and ensures fast harmony-only loading
       if (!exercise?.basslineMidiUrl) {
-        console.log('⏭️ [SKIP-BASS] No bassline MIDI, returning harmony result only');
+        console.log(
+          '⏭️ [SKIP-BASS] No bassline MIDI, returning harmony result only',
+        );
 
         console.log('✅ [LOADING-COMPLETE] Sample load completed for:', {
           instrument,
@@ -588,13 +689,15 @@ export class InitialSamplePreloader {
 
       // FAANG SOLUTION: Use BassPreloadStrategy with exercise data
       // This will extract notes from bassline MIDI and prepare metadata for widget
-      const { BassPreloadStrategy } = await import(
-        '../modules/preloading/strategies/BassPreloadStrategy.js'
-      );
+      const { BassPreloadStrategy } =
+        await import('../modules/preloading/strategies/BassPreloadStrategy.js');
       const bassStrategy = new BassPreloadStrategy();
 
       // Load ONLY bass samples required by exercise bassline MIDI file
-      const bassResult = await bassStrategy.loadFullSamples(undefined, exercise);
+      const bassResult = await bassStrategy.loadFullSamples(
+        undefined,
+        exercise,
+      );
 
       if (bassResult.success) {
         logger.info('✅ Bass FAANG smart loading complete', {
@@ -709,8 +812,8 @@ export class InitialSamplePreloader {
       if (!coreServices) {
         const error = new Error(
           'CRITICAL: CoreServices must be pre-initialized before loadEssentialSamples(). ' +
-          'This indicates Bug #1 (Race Condition) was not properly fixed. ' +
-          'ScrollTriggerLoader should create CoreServices before calling this method.'
+            'This indicates Bug #1 (Race Condition) was not properly fixed. ' +
+            'ScrollTriggerLoader should create CoreServices before calling this method.',
         );
         logger.error('❌ CoreServices not found:', error);
         throw error;
@@ -719,7 +822,9 @@ export class InitialSamplePreloader {
       // Step 2: Check if AudioEngine is ready
       const audioEngine = coreServices.getAudioEngine?.();
       if (!audioEngine || !audioEngine.isReady()) {
-        logger.warn('AudioEngine not ready yet, will retry after initialization');
+        logger.warn(
+          'AudioEngine not ready yet, will retry after initialization',
+        );
         // Return early - samples will load on-demand when needed
         return;
       }
@@ -736,7 +841,7 @@ export class InitialSamplePreloader {
       if (!context || context.state !== 'running') {
         logger.warn(
           `AudioContext state: ${context?.state || 'null'}, cannot load samples yet. ` +
-          `Samples will load on-demand when AudioContext is running.`
+            `Samples will load on-demand when AudioContext is running.`,
         );
         // Return early - don't use OfflineContext fallback!
         // Samples will be loaded later when user clicks play and AudioContext is running
@@ -861,8 +966,11 @@ export class InitialSamplePreloader {
         GlobalSampleCache.getInstance().cacheUrl(`piano-${layer}-${note}`, url);
 
         try {
-          const response = await fetch(url, { mode: 'cors' });
-          if (!response.ok) throw new Error(`Failed to fetch ${note}`);
+          // Use circuit breaker protected fetch with 10s timeout
+          const response = await protectedSampleFetch(
+            url,
+            `harmony-${note}-${layer}`,
+          );
 
           const arrayBuffer = await response.arrayBuffer();
 
@@ -910,7 +1018,7 @@ export class InitialSamplePreloader {
 
       if (!coreServices) {
         const error = new Error(
-          'CRITICAL: CoreServices must be pre-initialized before loadEssentialDrumInstrument().'
+          'CRITICAL: CoreServices must be pre-initialized before loadEssentialDrumInstrument().',
         );
         logger.error('❌ CoreServices not found:', error);
         throw error;
@@ -934,7 +1042,7 @@ export class InitialSamplePreloader {
       const context = ToneInstance.context;
       if (!context || context.state !== 'running') {
         logger.warn(
-          `Tone context state: ${context?.state || 'null'}, drums will load on-demand`
+          `Tone context state: ${context?.state || 'null'}, drums will load on-demand`,
         );
         return;
       }
@@ -1069,11 +1177,11 @@ export class InitialSamplePreloader {
 
         try {
           logger.info(`📥 Fetching ${sample.name}...`);
-          const response = await fetch(url, { mode: 'cors' });
-          if (!response.ok)
-            throw new Error(
-              `Failed to fetch ${sample.name}: ${response.status}`,
-            );
+          // Use circuit breaker protected fetch with 10s timeout
+          const response = await protectedSampleFetch(
+            url,
+            `drum-${sample.name}`,
+          );
 
           const arrayBuffer = await response.arrayBuffer();
 
@@ -1161,9 +1269,8 @@ export class InitialSamplePreloader {
 
       // Step 4: Create WamMetronome instance
       logger.info('AudioContext is running! Creating WamMetronome instance...');
-      const { default: WamMetronome } = await import(
-        '@/domains/playback/modules/instruments/adapters/wam/WamMetronome'
-      );
+      const { default: WamMetronome } =
+        await import('@/domains/playback/modules/instruments/adapters/wam/WamMetronome');
 
       // Create the metronome plugin
       const metronomePlugin = await WamMetronome.createInstance(context);
@@ -1208,9 +1315,8 @@ export class InitialSamplePreloader {
       priority: 10,
       factory: async (context: AudioContext) => {
         logger.info('Creating WamMetronome with AudioContext...');
-        const { default: WamMetronome } = await import(
-          '@/domains/playback/modules/instruments/adapters/wam/WamMetronome'
-        );
+        const { default: WamMetronome } =
+          await import('@/domains/playback/modules/instruments/adapters/wam/WamMetronome');
 
         // Create the metronome plugin
         const metronomePlugin = await WamMetronome.createInstance(context);
@@ -1402,9 +1508,8 @@ export class InitialSamplePreloader {
       factory: async (context: AudioContext, audioEngine: any) => {
         logger.info('Creating VoiceCueInstrument with AudioContext...');
 
-        const { VoiceCueInstrument } = await import(
-          '../modules/instruments/implementations/voice-cue/VoiceCueInstrument.js'
-        );
+        const { VoiceCueInstrument } =
+          await import('../modules/instruments/implementations/voice-cue/VoiceCueInstrument.js');
 
         // Get Supabase client to construct URLs
         const { supabase } = await import('@/infrastructure/supabase/client');
@@ -1468,13 +1573,17 @@ export class InitialSamplePreloader {
         (window as any).__bassnotion_coreServices;
 
       if (!coreServices) {
-        logger.info('CoreServices not available yet, setup will be done on play');
+        logger.info(
+          'CoreServices not available yet, setup will be done on play',
+        );
         return;
       }
 
       const eventBus = coreServices?.getEventBus?.();
       if (!eventBus) {
-        logger.info('EventBus not available yet, PlaybackEngine will be set up on play');
+        logger.info(
+          'EventBus not available yet, PlaybackEngine will be set up on play',
+        );
         return;
       }
 
@@ -1482,11 +1591,15 @@ export class InitialSamplePreloader {
       // PlaybackEngine is at 100% rollout, RegionProcessor is legacy
       const playbackEngine = coreServices.getPlaybackEngine();
       if (!playbackEngine) {
-        logger.warn('PlaybackEngine not available, skipping buffer pre-configuration');
+        logger.warn(
+          'PlaybackEngine not available, skipping buffer pre-configuration',
+        );
         return;
       }
 
-      logger.info('✅ Using PlaybackEngine for buffer preloading (Phase 3.1 refactor)');
+      logger.info(
+        '✅ Using PlaybackEngine for buffer preloading (Phase 3.1 refactor)',
+      );
 
       // Store configuration for play button to use
       (window as any).__tracksPreConfigured = true;
@@ -1635,12 +1748,17 @@ export class InitialSamplePreloader {
           const primaryCacheKey = sample.cacheKeys[0];
 
           // CRITICAL: Check IndexedDB cache BEFORE network fetch
-          const cachedBuffer = await GlobalSampleCache.getInstance().getCachedRawBuffer(primaryCacheKey);
+          const cachedBuffer =
+            await GlobalSampleCache.getInstance().getCachedRawBuffer(
+              primaryCacheKey,
+            );
 
           let arrayBuffer: ArrayBuffer;
 
           if (cachedBuffer) {
-            console.log(`💾 [INDEXEDDB-HIT] Using cached sample: ${primaryCacheKey}`);
+            console.log(
+              `💾 [INDEXEDDB-HIT] Using cached sample: ${primaryCacheKey}`,
+            );
             logger.info(`💾 IndexedDB cache HIT: ${sample.path}`);
             arrayBuffer = cachedBuffer;
             successCount++;
@@ -1653,14 +1771,12 @@ export class InitialSamplePreloader {
             // Cache the URL
             GlobalSampleCache.getInstance().cacheUrl(sample.path, url);
 
-            // Download the file
+            // Download the file with circuit breaker protection
             logger.info(`📥 Fetching ${sample.path}...`);
-            const response = await fetch(url, { mode: 'cors' });
-            if (!response.ok) {
-              throw new Error(
-                `Failed to fetch ${sample.path}: ${response.status}`,
-              );
-            }
+            const response = await protectedSampleFetch(
+              url,
+              `essential-${sample.path}`,
+            );
 
             arrayBuffer = await response.arrayBuffer();
 
@@ -1757,11 +1873,11 @@ export class InitialSamplePreloader {
 
         try {
           logger.info(`📥 Fetching ${sample.name}...`);
-          const response = await fetch(url, { mode: 'cors' });
-          if (!response.ok)
-            throw new Error(
-              `Failed to fetch ${sample.name}: ${response.status}`,
-            );
+          // Use circuit breaker protected fetch with 10s timeout
+          const response = await protectedSampleFetch(
+            url,
+            `metronome-${sample.name}`,
+          );
 
           const arrayBuffer = await response.arrayBuffer();
 
@@ -1908,9 +2024,11 @@ export class InitialSamplePreloader {
             );
 
             try {
-              const response = await fetch(url, { mode: 'cors' });
-              if (!response.ok)
-                throw new Error(`Failed to fetch ${layer}/${note}`);
+              // Use circuit breaker protected fetch with 10s timeout
+              const response = await protectedSampleFetch(
+                url,
+                `full-harmony-${note}-${layer}`,
+              );
 
               const arrayBuffer = await response.arrayBuffer();
               const audioBuffer = await offlineContext.decodeAudioData(
@@ -1924,8 +2042,13 @@ export class InitialSamplePreloader {
               logger.info(
                 `  ✓ Full harmony: ${layer}/${note} verified (${audioBuffer.duration.toFixed(2)}s)`,
               );
-            } catch {
-              // Silently skip missing samples
+            } catch (error) {
+              // Log at warn level - sample may be missing or circuit breaker open
+              logger.warn(`Failed to load harmony sample ${note}/${layer}`, {
+                error: error instanceof Error ? error.message : 'Unknown error',
+                note,
+                layer,
+              });
             }
           })();
 
@@ -1983,9 +2106,11 @@ export class InitialSamplePreloader {
         GlobalSampleCache.getInstance().cacheUrl(`drum-pad-${sample.pad}`, url);
 
         try {
-          // Fetch the audio data
-          const response = await fetch(url, { mode: 'cors' });
-          if (!response.ok) throw new Error(`Failed to fetch ${sample.name}`);
+          // Use circuit breaker protected fetch with 10s timeout
+          const response = await protectedSampleFetch(
+            url,
+            `preload-drum-${sample.name}`,
+          );
 
           const arrayBuffer = await response.arrayBuffer();
 
@@ -2077,10 +2202,11 @@ export class InitialSamplePreloader {
             );
 
             try {
-              // Fetch the audio data
-              const response = await fetch(url, { mode: 'cors' });
-              if (!response.ok)
-                throw new Error(`Failed to fetch ${layer}/${note}`);
+              // Use circuit breaker protected fetch with 10s timeout
+              const response = await protectedSampleFetch(
+                url,
+                `preload-harmony-${note}-${layer}`,
+              );
 
               const arrayBuffer = await response.arrayBuffer();
 
@@ -2097,9 +2223,11 @@ export class InitialSamplePreloader {
               logger.info(
                 `  ✓ Preloaded piano: ${layer}/${note} verified (${audioBuffer.duration.toFixed(2)}s)`,
               );
-            } catch {
-              // Don't warn for every missing sample, this is expected
-              // Salamander doesn't have all notes in all layers
+            } catch (error) {
+              // Log at debug level - Salamander doesn't have all notes in all layers
+              logger.debug(`Sample not available: ${note}/${layer}`, {
+                error: error instanceof Error ? error.message : 'Unknown error',
+              });
             }
           })();
 
@@ -2126,6 +2254,28 @@ export class InitialSamplePreloader {
       isComplete: this.preloadComplete,
       isPreloading: this.isPreloading,
       cacheStats: GlobalSampleCache.getInstance().getStats(),
+    };
+  }
+
+  /**
+   * Check if sample loading is available (circuit not open)
+   * Call this before starting playback to block if samples unavailable
+   */
+  canPlayback(): boolean {
+    return isSampleLoadingAvailable();
+  }
+
+  /**
+   * Get circuit breaker status for UI display
+   */
+  getLoadingStatus(): { available: boolean; message?: string } {
+    if (isSampleLoadingAvailable()) {
+      return { available: true };
+    }
+    return {
+      available: false,
+      message:
+        'Audio samples temporarily unavailable. Please try again shortly.',
     };
   }
 }

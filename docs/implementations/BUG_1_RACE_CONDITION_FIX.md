@@ -17,11 +17,13 @@ Fixed the race condition between `useCoreServices` and `ScrollTriggerLoader` by 
 **File**: `apps/frontend/src/domains/playback/hooks/useCoreServices.ts`
 
 **What Changed**:
+
 - Removed auto-initialize useEffect that listened for click/touchstart events
 - Added comment explaining the new initialization flow
 - `initialize()` method still available for manual calls (used by play button)
 
 **Why**:
+
 - Prevents race condition with ScrollTriggerLoader
 - ScrollTriggerLoader now has full control over initialization timing
 - Single entry point for initialization instead of two competing paths
@@ -33,6 +35,7 @@ Fixed the race condition between `useCoreServices` and `ScrollTriggerLoader` by 
 **File**: `apps/frontend/src/domains/playback/components/ScrollTriggerLoader.tsx`
 
 **What Changed**:
+
 - Added props: `exercises?: Exercise[]` and `tutorialId?: string`
 - New 3-step initialization sequence:
   1. **Ensure CoreServices exists** - Create and pre-initialize if missing (loads Tone.js, no AudioContext)
@@ -40,6 +43,7 @@ Fixed the race condition between `useCoreServices` and `ScrollTriggerLoader` by 
   3. **Emit events** - `samplesReady` and `essentialSamplesLoaded` (backward compat)
 
 **New Initialization Flow**:
+
 ```typescript
 async handleFirstInteraction() {
   // STEP 1: Ensure CoreServices pre-initialized
@@ -63,6 +67,7 @@ async handleFirstInteraction() {
 ```
 
 **Benefits**:
+
 - Eliminates race condition - CoreServices ALWAYS created first
 - Single initialization path - predictable, testable
 - Tutorial-level loading - all samples ready upfront
@@ -77,6 +82,7 @@ async handleFirstInteraction() {
 **New Methods**:
 
 #### `loadTutorialSamples(exercises, tutorialId)`
+
 Loads ALL samples for ALL exercises in a tutorial upfront.
 
 ```typescript
@@ -97,9 +103,11 @@ async loadTutorialSamples(exercises: Exercise[], tutorialId?: string) {
 ```
 
 #### `analyzeTutorialSamples(exercises)`
+
 Analyzes all exercises to build a manifest of required samples.
 
 **Returns**:
+
 ```typescript
 {
   harmony: {
@@ -112,9 +120,11 @@ Analyzes all exercises to build a manifest of required samples.
 ```
 
 #### `loadHarmonyForInstrument(instrument, notes)`
+
 Loads specific harmony samples for an instrument.
 
 **Smart Loading**:
+
 - Only loads notes actually used across all exercises
 - Reuses existing `HarmonyPreloadStrategy`
 - Example: Loads 43 samples instead of 1,408 (97% savings)
@@ -124,11 +134,13 @@ Loads specific harmony samples for an instrument.
 ### 4. Updated InitialSamplePreloader Error Handling ✅
 
 **What Changed**:
+
 - Removed fallback to `OfflineAudioContext`
 - Now **throws error** if CoreServices doesn't exist
 - Added defensive check with clear error message
 
 **Before**:
+
 ```typescript
 const coreServices = window.__globalCoreServices || window.__coreServices;
 if (!coreServices) {
@@ -139,16 +151,20 @@ if (!coreServices) {
 ```
 
 **After**:
+
 ```typescript
 const coreServices = window.__globalCoreServices;
 
 if (!coreServices) {
   logger.error('❌ CRITICAL: CoreServices not found!');
-  throw new Error('CoreServices must be initialized before loadEssentialSamples()');
+  throw new Error(
+    'CoreServices must be initialized before loadEssentialSamples()',
+  );
 }
 ```
 
 **Why**:
+
 - Fails fast if initialization sequence is broken
 - No silent fallback to incompatible OfflineContext (Bug #2)
 - Clear error message for debugging
@@ -160,6 +176,7 @@ if (!coreServices) {
 **File**: `apps/frontend/src/app/library/[tutorialId]/page.tsx`
 
 **What Changed**:
+
 ```typescript
 // Before
 <ScrollTriggerLoader />
@@ -172,6 +189,7 @@ if (!coreServices) {
 ```
 
 **Why**:
+
 - Enables tutorial-level sample loading
 - Passes exercises so loader knows what samples to fetch
 
@@ -233,21 +251,25 @@ User clicks play:
 ## Benefits
 
 ### ✅ Eliminates Race Condition
+
 - **Single entry point**: ScrollTriggerLoader controls everything
 - **Predictable order**: CoreServices → Samples → Ready
 - **No timing conflicts**: Samples load AFTER CoreServices exists
 
 ### ✅ Better User Experience
+
 - **Instant exercise switching**: All samples preloaded
 - **Guaranteed playback**: Play button always works (if samples ready)
 - **Faster perceived performance**: Single 2-3s load, then instant forever
 
 ### ✅ Cleaner Architecture
+
 - **Separation of concerns**: ScrollTriggerLoader = orchestrator, useCoreServices = hook
 - **Fail-fast**: Errors caught early with clear messages
 - **Maintainable**: Single code path, easier to debug
 
 ### ✅ Smart Loading
+
 - **Tutorial-level optimization**: Analyze all exercises once
 - **Minimal downloads**: Only loads samples actually used
 - **Example savings**: 43 samples vs 1,408 (97% reduction)
@@ -257,18 +279,21 @@ User clicks play:
 ## Testing Checklist
 
 ### Unit Tests (TODO)
+
 - [ ] CoreServices pre-initializes before sample loading
 - [ ] loadTutorialSamples analyzes exercises correctly
 - [ ] Harmony samples loaded for each unique instrument
 - [ ] Essential samples loaded as fallback
 
 ### Integration Tests (TODO)
+
 - [ ] Scroll → Samples load → Play works
 - [ ] Click → Samples load → Play works
 - [ ] Fast scroll + click → No duplicate loading
 - [ ] Exercise switch → No loading delay
 
 ### Edge Cases (TODO)
+
 - [ ] No exercises provided → Falls back to essential
 - [ ] Network failure → Retries, then errors gracefully
 - [ ] CoreServices exists → Doesn't recreate
@@ -279,6 +304,7 @@ User clicks play:
 ## Remaining Work
 
 ### 1. Add Ready Check to Play Button
+
 **Status**: TODO (Next task)
 
 Play button should wait for `samplesReady` before starting playback.
@@ -299,16 +325,19 @@ async handlePlayButtonClick() {
 ```
 
 ### 2. Add Loading UI
+
 **Status**: TODO
 
 Show progress indicator while tutorial samples load.
 
 **Options**:
+
 - Toast notification: "Loading tutorial sounds... (2.1 MB)"
 - Progress bar: "[████████░░░] 80%"
 - Disable play button until ready
 
 ### 3. Testing
+
 **Status**: TODO
 
 Comprehensive testing of new initialization flow.
@@ -318,12 +347,14 @@ Comprehensive testing of new initialization flow.
 ## Success Metrics
 
 ### Before Fix
+
 - ❌ Race condition: 50% chance of wrong execution order
 - ❌ Double loading: Samples loaded twice if scroll before click
 - ❌ OfflineContext fallback: Buffers incompatible, audio fails
 - ❌ Unpredictable: Different behavior based on user actions
 
 ### After Fix
+
 - ✅ Single initialization path: 100% predictable
 - ✅ No double loading: Deduplication prevents waste
 - ✅ No OfflineContext: Real AudioContext or throw error

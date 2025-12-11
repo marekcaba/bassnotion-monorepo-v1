@@ -2,7 +2,8 @@ import { Injectable } from '@nestjs/common';
 import {
   IExerciseRepository,
   PaginatedResult,
-  PaginationOptions } from './exercise.repository.interface.js';
+  PaginationOptions,
+} from './exercise.repository.interface.js';
 import { Exercise } from '../entities/exercise.entity.js';
 import { ExerciseId } from '../value-objects/exercise-id.vo.js';
 import { Difficulty } from '../value-objects/difficulty.vo.js';
@@ -48,13 +49,15 @@ export class CachedExerciseRepository implements IExerciseRepository {
           const result = await this.repository.findAll(options);
           return {
             ...result,
-            items: result.items.map((e) => e.toPersistence()) };
+            items: result.items.map((e) => e.toPersistence()),
+          };
         },
         this.TTL / 2, // 30 minutes for list queries
       )
       .then((result) => ({
         ...result,
-        items: result.items.map((data) => this.reconstitute(data)) }));
+        items: result.items.map((data) => this.reconstitute(data)),
+      }));
   }
 
   async findByDifficulty(difficulty: Difficulty): Promise<Exercise[]> {
@@ -183,6 +186,7 @@ export class CachedExerciseRepository implements IExerciseRepository {
       uploadedAt: data.uploaded_at ? new Date(data.uploaded_at) : undefined,
       createdBy: data.created_by,
       createdAt: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at) });
+      updatedAt: new Date(data.updated_at),
+    });
   }
 }

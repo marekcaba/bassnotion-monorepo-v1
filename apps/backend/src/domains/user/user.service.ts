@@ -1,6 +1,17 @@
-import { Injectable, NotFoundException, BadRequestException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Inject,
+} from '@nestjs/common';
 import { DatabaseService } from '../../infrastructure/database/database.service.js';
-import { UserProfile, UserProfileData, BassConfiguration, userProfileSchema, createStructuredLogger } from '@bassnotion/contracts';
+import {
+  UserProfile,
+  UserProfileData,
+  BassConfiguration,
+  userProfileSchema,
+  createStructuredLogger,
+} from '@bassnotion/contracts';
 import type { IResultUserRepository } from './repositories/result-user.repository.js';
 import { UserId } from './value-objects/user-id.vo.js';
 import { Email } from './value-objects/email.vo.js';
@@ -73,12 +84,16 @@ export class UserService {
             beatsPerMeasure: 4,
             subdivision: 1,
             accentFirstBeat: true,
-            volume: 75 },
+            volume: 75,
+          },
           bassConfiguration: {
             stringCount: 4,
-            maxFrets: 24 } },
+            maxFrets: 24,
+          },
+        },
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString() };
+        updatedAt: new Date().toISOString(),
+      };
     }
 
     return this.mapProfileToUserProfile(profile);
@@ -101,10 +116,15 @@ export class UserService {
         await this.db.supabase.auth.admin.updateUserById(userId, {
           user_metadata: {
             display_name: validatedData.displayName,
-            full_name: validatedData.displayName } });
+            full_name: validatedData.displayName,
+          },
+        });
 
       if (authUpdateError) {
-        logger.warn('Failed to update auth user metadata:', { error: authUpdateError, correlationId });
+        logger.warn('Failed to update auth user metadata:', {
+          error: authUpdateError,
+          correlationId,
+        });
         // Don't fail the entire operation if auth metadata update fails
       }
     }
@@ -116,7 +136,8 @@ export class UserService {
         display_name: validatedData.displayName,
         bio: validatedData.bio,
         avatar_url: validatedData.avatarUrl,
-        updated_at: new Date().toISOString() })
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', userId)
       .select()
       .single();
@@ -124,7 +145,9 @@ export class UserService {
     if (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error updating profile:', error as Error, { correlationId });
+      logger.error('Error updating profile:', error as Error, {
+        correlationId,
+      });
       throw new Error(`Failed to update profile: ${error.message}`);
     }
 
@@ -141,7 +164,9 @@ export class UserService {
   ): Promise<UserProfile> {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
-    logger.debug(`Updating bass configuration for user: ${userId}`, { correlationId });
+    logger.debug(`Updating bass configuration for user: ${userId}`, {
+      correlationId,
+    });
 
     // Validate bass configuration
     if (bassConfig.stringCount < 4 || bassConfig.stringCount > 6) {
@@ -157,7 +182,8 @@ export class UserService {
       .update({
         bass_string_count: bassConfig.stringCount,
         bass_max_frets: bassConfig.maxFrets,
-        updated_at: new Date().toISOString() })
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', userId)
       .select()
       .single();
@@ -165,7 +191,9 @@ export class UserService {
     if (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error updating bass configuration:', error as Error, { correlationId });
+      logger.error('Error updating bass configuration:', error as Error, {
+        correlationId,
+      });
       throw new Error(`Failed to update bass configuration: ${error.message}`);
     }
 
@@ -179,7 +207,9 @@ export class UserService {
   async getBassConfiguration(userId: string): Promise<BassConfiguration> {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
-    logger.debug(`Getting bass configuration for user: ${userId}`, { correlationId });
+    logger.debug(`Getting bass configuration for user: ${userId}`, {
+      correlationId,
+    });
 
     const { data: profile, error } = await this.db.supabase
       .from('profiles')
@@ -188,7 +218,9 @@ export class UserService {
       .single();
 
     if (error) {
-      logger.error('Error fetching bass configuration:', error as Error, { correlationId });
+      logger.error('Error fetching bass configuration:', error as Error, {
+        correlationId,
+      });
       throw new Error(`Failed to fetch bass configuration: ${error.message}`);
     }
 
@@ -198,7 +230,8 @@ export class UserService {
 
     return {
       stringCount: profile.bass_string_count || 4,
-      maxFrets: profile.bass_max_frets || 24 };
+      maxFrets: profile.bass_max_frets || 24,
+    };
   }
 
   async deleteProfile(userId: string): Promise<void> {
@@ -222,7 +255,9 @@ export class UserService {
     // Delete the user using repository
     const deleteResult = await this.userRepository.delete(userIdVO);
     if (!deleteResult.ok) {
-      logger.error('Error deleting user:', deleteResult.error as Error, { correlationId });
+      logger.error('Error deleting user:', deleteResult.error as Error, {
+        correlationId,
+      });
       throw new Error(`Failed to delete user: ${deleteResult.error?.message}`);
     }
 
@@ -233,7 +268,9 @@ export class UserService {
     if (deleteError) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error deleting user account:', deleteError, { correlationId });
+      logger.error('Error deleting user account:', deleteError, {
+        correlationId,
+      });
       // Don't throw here as the user entity is already deleted
     }
 
@@ -249,7 +286,10 @@ export class UserService {
   }> {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
-    logger.debug(`Finding all profiles with limit: ${limit}, offset: ${offset}`, { correlationId });
+    logger.debug(
+      `Finding all profiles with limit: ${limit}, offset: ${offset}`,
+      { correlationId },
+    );
 
     // Get total count
     const { count, error: countError } = await this.db.supabase
@@ -257,7 +297,9 @@ export class UserService {
       .select('*', { count: 'exact', head: true });
 
     if (countError) {
-      logger.error('Error counting profiles:', countError as Error, { correlationId });
+      logger.error('Error counting profiles:', countError as Error, {
+        correlationId,
+      });
       throw new Error(`Failed to count profiles: ${countError.message}`);
     }
 
@@ -271,7 +313,9 @@ export class UserService {
     if (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error fetching profiles:', error as Error, { correlationId });
+      logger.error('Error fetching profiles:', error as Error, {
+        correlationId,
+      });
       throw new Error(`Failed to fetch profiles: ${error.message}`);
     }
 
@@ -280,13 +324,16 @@ export class UserService {
         profiles?.map((profile: any) =>
           this.mapProfileToUserProfile(profile),
         ) || [],
-      total: count || 0 };
+      total: count || 0,
+    };
   }
 
   async searchProfiles(searchTerm: string, limit = 20): Promise<UserProfile[]> {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
-    logger.debug(`Searching profiles with term: ${searchTerm}`, { correlationId });
+    logger.debug(`Searching profiles with term: ${searchTerm}`, {
+      correlationId,
+    });
 
     if (!searchTerm || searchTerm.trim().length < 2) {
       throw new BadRequestException(
@@ -304,7 +351,9 @@ export class UserService {
       .order('created_at', { ascending: false });
 
     if (error) {
-      logger.error('Error searching profiles:', error as Error, { correlationId });
+      logger.error('Error searching profiles:', error as Error, {
+        correlationId,
+      });
       throw new Error(`Failed to search profiles: ${error.message}`);
     }
 
@@ -330,7 +379,9 @@ export class UserService {
       .single();
 
     if (error) {
-      logger.error('Error fetching user stats:', error as Error, { correlationId });
+      logger.error('Error fetching user stats:', error as Error, {
+        correlationId,
+      });
       throw new Error(`Failed to fetch user stats: ${error.message}`);
     }
 
@@ -358,7 +409,8 @@ export class UserService {
     return {
       profileCompleteness,
       accountAge,
-      lastActivity: profile.updated_at };
+      lastActivity: profile.updated_at,
+    };
   }
 
   // Repository-based methods for user management
@@ -371,7 +423,9 @@ export class UserService {
     const result = await this.userRepository.findByEmail(emailVO);
 
     if (!result.ok) {
-      logger.error('Error finding user by email:', result.error as Error, { correlationId });
+      logger.error('Error finding user by email:', result.error as Error, {
+        correlationId,
+      });
       throw new Error(`Failed to find user: ${result.error?.message}`);
     }
 
@@ -423,7 +477,9 @@ export class UserService {
   ): Promise<void> {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
-    logger.debug(`Updating user role: ${userId} to ${newRole}`, { correlationId });
+    logger.debug(`Updating user role: ${userId} to ${newRole}`, {
+      correlationId,
+    });
 
     const userIdVO = UserId.create(userId);
     const userResult = await this.userRepository.findById(userIdVO);
@@ -466,7 +522,9 @@ export class UserService {
 
     const updateResult = await this.userRepository.update(user);
     if (!updateResult.ok) {
-      logger.error('Failed to record login:', updateResult.error as Error, { correlationId });
+      logger.error('Failed to record login:', updateResult.error as Error, {
+        correlationId,
+      });
       // Don't throw here as this is not critical
     }
   }

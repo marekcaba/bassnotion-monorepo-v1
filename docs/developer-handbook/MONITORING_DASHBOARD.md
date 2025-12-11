@@ -5,7 +5,7 @@
 BassNotion includes a comprehensive monitoring dashboard for tracking system health, performance metrics, and real-time analytics. The dashboard provides visibility into:
 
 - System health status
-- Service availability 
+- Service availability
 - Performance metrics
 - Real-time resource usage
 - Historical trends
@@ -70,7 +70,7 @@ The dashboard supports configurable refresh intervals:
 
 - 5 seconds (default)
 - 10 seconds
-- 30 seconds  
+- 30 seconds
 - 1 minute
 
 ## Health Check Endpoints
@@ -78,11 +78,13 @@ The dashboard supports configurable refresh intervals:
 The monitoring system uses these endpoints:
 
 ### Basic Health Check
+
 ```bash
 GET /api/health
 ```
 
 Returns basic health status:
+
 ```json
 {
   "status": "ok",
@@ -93,6 +95,7 @@ Returns basic health status:
 ```
 
 ### Detailed Health Check
+
 ```bash
 GET /api/health/detailed
 ```
@@ -100,6 +103,7 @@ GET /api/health/detailed
 Returns comprehensive system information including CPU, memory, and service status.
 
 ### Liveness Probe
+
 ```bash
 GET /api/health/live
 ```
@@ -107,6 +111,7 @@ GET /api/health/live
 Simple check to verify the service is running.
 
 ### Readiness Probe
+
 ```bash
 GET /api/health/ready
 ```
@@ -114,6 +119,7 @@ GET /api/health/ready
 Verifies all dependencies are ready to handle requests.
 
 ### Performance Metrics
+
 ```bash
 GET /api/health/metrics
 ```
@@ -131,6 +137,7 @@ Returns performance metrics for API endpoints.
 ### Backend Integration
 
 The health endpoints are implemented in:
+
 - `/apps/backend/src/health/health.controller.ts` (TypeScript implementation)
 - `/apps/backend/src/health.js` (Fallback for PM2)
 

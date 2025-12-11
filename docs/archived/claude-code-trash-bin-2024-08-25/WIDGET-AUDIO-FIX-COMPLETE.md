@@ -1,13 +1,16 @@
 # Widget Audio Fix Complete! 🎉
 
 ## Problem Summary
+
 User reported: "the WIDGETS ARE NOT OUTPUTING ANY AUDIO"
+
 - Widgets didn't show visual indicators
 - Harmony widget wasn't firing up
 - Metronome didn't work
 - Drummer only played for 1 second
 
 ## Root Cause
+
 The issue was complex and had multiple layers:
 
 1. **Initial Issue**: Widgets scheduled at time 0, but Transport started at +0.1
@@ -15,6 +18,7 @@ The issue was complex and had multiple layers:
 3. **Final Issue**: Tone.js limitation - schedules with future start time (+0.1) created when Transport is stopped also don't execute
 
 ## The Solution
+
 Added Transport state checking to ensure widgets only create schedules AFTER Transport has actually started:
 
 ```typescript
@@ -32,16 +36,19 @@ if (currentTone.Transport.state !== 'started') {
 ```
 
 ## Results
+
 ✅ Widgets now wait for Transport to start
 ✅ Schedules are created in "started" state
 ✅ Audio plays correctly for full duration
 ✅ 64 drum hits triggered in test (32 snare, 32 hihat)
 
 ## Files Modified
+
 1. `apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/components/DrummerWidget.tsx`
 2. `apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx`
 
 ## Key Learnings
+
 - Tone.js schedules created when Transport is stopped may not execute
 - Schedules with future start times (+0.1) created when stopped don't work
 - Always ensure Transport is in "started" state before creating schedules

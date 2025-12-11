@@ -14,6 +14,7 @@
 **Finding:** Bug #3 (Memory Leak) has been **FULLY RESOLVED** in the current codebase.
 
 **Evidence:**
+
 - ✅ All schedulers implement `source.onended` cleanup callbacks
 - ✅ `scheduledAudioSources.delete(source)` removes sources from tracking maps
 - ✅ `gain.disconnect()` disconnects audio nodes
@@ -21,6 +22,7 @@
 - ✅ Tests pass: 1000 sources cleaned up in <500ms with 0 memory growth
 
 **Impact on Refactor:**
+
 - ✅ Task 1.1 changes from "Fix memory leak" to "Preserve cleanup logic"
 - ✅ Copy working cleanup pattern to new PlaybackEngine/Scheduler
 - ✅ Regression tests already exist - just run them against new implementation
@@ -45,23 +47,24 @@
 
 ### 1.1 Existing Test Files
 
-| Test File | Purpose | Test Count | Status |
-|-----------|---------|------------|--------|
-| [bug3-memory-cleanup.test.ts](../../../apps/frontend/src/domains/playback/services/core/__tests__/bug3-memory-cleanup.test.ts) | Core cleanup pattern verification | 8 tests | ✅ PASSING |
-| [HarmonyScheduler.memory.test.ts](../../../apps/frontend/src/domains/playback/services/core/region-processing/scheduling/__tests__/HarmonyScheduler.memory.test.ts) | HarmonyScheduler-specific leak tests | 12 tests | ✅ PASSING |
-| [memory-leak-integration.test.ts](../../../apps/frontend/src/domains/playback/services/core/__tests__/memory-leak-integration.test.ts) | End-to-end leak detection | TBD | ✅ EXISTS |
+| Test File                                                                                                                                                           | Purpose                              | Test Count | Status     |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | ---------- | ---------- |
+| [bug3-memory-cleanup.test.ts](../../../apps/frontend/src/domains/playback/services/core/__tests__/bug3-memory-cleanup.test.ts)                                      | Core cleanup pattern verification    | 8 tests    | ✅ PASSING |
+| [HarmonyScheduler.memory.test.ts](../../../apps/frontend/src/domains/playback/services/core/region-processing/scheduling/__tests__/HarmonyScheduler.memory.test.ts) | HarmonyScheduler-specific leak tests | 12 tests   | ✅ PASSING |
+| [memory-leak-integration.test.ts](../../../apps/frontend/src/domains/playback/services/core/__tests__/memory-leak-integration.test.ts)                              | End-to-end leak detection            | TBD        | ✅ EXISTS  |
 
 **Total Test Coverage:** 20+ tests specifically for memory leak prevention
 
 ### 1.2 Key Test Results
 
 #### Test 1: Single Source Cleanup
+
 ```typescript
 it('should remove sources from tracking map when onended fires', async () => {
   const trackingMap = new Map<AudioBufferSourceNode, any>();
 
   source.onended = () => {
-    trackingMap.delete(source);  // THE FIX
+    trackingMap.delete(source); // THE FIX
     gain.disconnect();
   };
 
@@ -71,7 +74,7 @@ it('should remove sources from tracking map when onended fires', async () => {
   expect(trackingMap.size).toBe(1);
 
   // After onended: cleaned up (size = 0)
-  await new Promise(resolve => setTimeout(resolve, 50));
+  await new Promise((resolve) => setTimeout(resolve, 50));
   expect(trackingMap.size).toBe(0);
 });
 ```
@@ -79,6 +82,7 @@ it('should remove sources from tracking map when onended fires', async () => {
 **Result:** ✅ PASS - Sources removed after playback
 
 #### Test 2: Multiple Sources (100 events)
+
 ```typescript
 it('should not accumulate memory during 100 events', async () => {
   for (let i = 0; i < 100; i++) {
@@ -87,17 +91,18 @@ it('should not accumulate memory during 100 events', async () => {
     source.start(0.1);
   }
 
-  expect(createdSources.length).toBe(100);  // All created
+  expect(createdSources.length).toBe(100); // All created
 
-  await new Promise(resolve => setTimeout(resolve, 100));
+  await new Promise((resolve) => setTimeout(resolve, 100));
 
-  expect(trackingMap.size).toBe(0);  // All cleaned up
+  expect(trackingMap.size).toBe(0); // All cleaned up
 });
 ```
 
 **Result:** ✅ PASS - Zero memory accumulation over 100 events
 
 #### Test 3: Continuous Playback (50 cycles)
+
 ```typescript
 it('should maintain small map size during continuous playback', async () => {
   const maxSizes: number[] = [];
@@ -105,18 +110,19 @@ it('should maintain small map size during continuous playback', async () => {
   for (let i = 0; i < 50; i++) {
     scheduleSource();
     maxSizes.push(trackingMap.size);
-    await new Promise(resolve => setTimeout(resolve, 15));
+    await new Promise((resolve) => setTimeout(resolve, 15));
   }
 
   const peakSize = Math.max(...maxSizes);
-  expect(peakSize).toBeLessThan(10);  // Peak <10 sources
-  expect(trackingMap.size).toBeLessThan(3);  // Final <3 sources
+  expect(peakSize).toBeLessThan(10); // Peak <10 sources
+  expect(trackingMap.size).toBeLessThan(3); // Final <3 sources
 });
 ```
 
 **Result:** ✅ PASS - Peak size <10, final size <3
 
 #### Test 4: Large Scale (1000 sources)
+
 ```typescript
 it('should clean up 1000 sources quickly', async () => {
   for (let i = 0; i < 1000; i++) {
@@ -124,12 +130,12 @@ it('should clean up 1000 sources quickly', async () => {
   }
 
   const setupTime = performance.now() - startTime;
-  expect(setupTime).toBeLessThan(500);  // Setup <500ms
+  expect(setupTime).toBeLessThan(500); // Setup <500ms
 
-  await new Promise(resolve => setTimeout(resolve, 200));
+  await new Promise((resolve) => setTimeout(resolve, 200));
 
-  expect(trackingMap.size).toBe(0);  // All cleaned up
-  expect(cleanupTime).toBeLessThan(500);  // Cleanup <500ms
+  expect(trackingMap.size).toBe(0); // All cleaned up
+  expect(cleanupTime).toBeLessThan(500); // Cleanup <500ms
 });
 ```
 
@@ -147,24 +153,25 @@ it('should clean up 1000 sources quickly', async () => {
 // Auto-cleanup on end
 source.onended = () => {
   // Clean up audio source when playback ends
-  this.scheduledAudioSources.delete(source);  // ✅ FIX: Remove from tracking map
-  gain.disconnect();  // ✅ FIX: Disconnect audio node
+  this.scheduledAudioSources.delete(source); // ✅ FIX: Remove from tracking map
+  gain.disconnect(); // ✅ FIX: Disconnect audio node
 
   // Remove from active sources
   const activeSources = this.activeHarmonySources.get(noteName);
   if (activeSources) {
     const index = activeSources.findIndex((s) => s.source === source);
     if (index !== -1) {
-      activeSources.splice(index, 1);  // ✅ FIX: Remove from array
+      activeSources.splice(index, 1); // ✅ FIX: Remove from array
     }
     if (activeSources.length === 0) {
-      this.activeHarmonySources.delete(noteName);  // ✅ FIX: Clean up empty entry
+      this.activeHarmonySources.delete(noteName); // ✅ FIX: Clean up empty entry
     }
   }
 };
 ```
 
 **Key Points:**
+
 - ✅ Removes source from `scheduledAudioSources` Map
 - ✅ Disconnects gain node
 - ✅ Removes from `activeHarmonySources` nested structure
@@ -177,12 +184,13 @@ source.onended = () => {
 ```typescript
 // Auto-cleanup after playback
 source.onended = () => {
-  this.scheduledSources.delete(source);  // ✅ FIX: Remove from tracking
-  velocityGain.disconnect();  // ✅ FIX: Disconnect audio node
+  this.scheduledSources.delete(source); // ✅ FIX: Remove from tracking
+  velocityGain.disconnect(); // ✅ FIX: Disconnect audio node
 };
 ```
 
 **Instruments Using This:**
+
 - Drums (DrumScheduler)
 - Metronome (MetronomeScheduler)
 - Voice Cues (VoiceCueScheduler)
@@ -200,6 +208,7 @@ private scheduledAudioSources = new Map<
 ```
 
 **Usage:**
+
 - ✅ Schedulers add sources to this map
 - ✅ `onended` callbacks remove sources
 - ✅ `stop()` method iterates and disconnects all remaining sources
@@ -215,13 +224,13 @@ private scheduledAudioSources = new Map<
 
 **Coverage:**
 
-| Test Category | Tests | Purpose |
-|--------------|-------|---------|
-| **Core Cleanup** | 3 tests | Verify onended removes from map |
-| **Memory Stability** | 2 tests | Verify no accumulation over time |
-| **Error Handling** | 1 test | Verify cleanup survives disconnect errors |
-| **Performance** | 1 test | Verify 1000 sources clean up fast |
-| **Success Criteria** | 1 test | Verify peak <50 sources during playback |
+| Test Category        | Tests   | Purpose                                   |
+| -------------------- | ------- | ----------------------------------------- |
+| **Core Cleanup**     | 3 tests | Verify onended removes from map           |
+| **Memory Stability** | 2 tests | Verify no accumulation over time          |
+| **Error Handling**   | 1 test  | Verify cleanup survives disconnect errors |
+| **Performance**      | 1 test  | Verify 1000 sources clean up fast         |
+| **Success Criteria** | 1 test  | Verify peak <50 sources during playback   |
 
 **Total:** 8 comprehensive tests
 
@@ -231,13 +240,13 @@ private scheduledAudioSources = new Map<
 
 **Coverage:**
 
-| Test Category | Tests | Purpose |
-|--------------|-------|---------|
-| **Old Chord Path** | 3 tests | Verify cleanup in chord scheduling |
-| **CC64 Sustain** | 1 test | Verify cleanup with sustain pedal |
-| **Extended Playback** | 2 tests | Verify no accumulation over 100 chords |
-| **Edge Cases** | 3 tests | Empty chords, no stop(), double disconnect |
-| **Performance** | 1 test | 1000 notes in <1s |
+| Test Category         | Tests   | Purpose                                    |
+| --------------------- | ------- | ------------------------------------------ |
+| **Old Chord Path**    | 3 tests | Verify cleanup in chord scheduling         |
+| **CC64 Sustain**      | 1 test  | Verify cleanup with sustain pedal          |
+| **Extended Playback** | 2 tests | Verify no accumulation over 100 chords     |
+| **Edge Cases**        | 3 tests | Empty chords, no stop(), double disconnect |
+| **Performance**       | 1 test  | 1000 notes in <1s                          |
 
 **Total:** 10 tests for HarmonyScheduler specifically
 
@@ -253,6 +262,7 @@ pnpm vitest run apps/frontend/src/domains/playback/services/core/__tests__/memor
 ```
 
 **Expected Output:**
+
 - ✅ All tests PASS
 - ✅ Execution time <5 seconds
 - ✅ No memory warnings
@@ -264,12 +274,12 @@ pnpm vitest run apps/frontend/src/domains/playback/services/core/__tests__/memor
 
 ### 4.1 Baseline: Current RegionProcessor
 
-| Scenario | Sources Created | Peak Active | Final Active | Memory Growth |
-|----------|----------------|-------------|--------------|---------------|
-| **10 play cycles** | 10 | 1-2 | 0 | 0 MB |
-| **100 play cycles** | 100 | 5-10 | 0 | 0 MB |
-| **1000 play cycles** | 1000 | 10-30 | 0 | 0 MB |
-| **Continuous 10min** | ~5000 | 10-50 | 0 | <10 MB |
+| Scenario             | Sources Created | Peak Active | Final Active | Memory Growth |
+| -------------------- | --------------- | ----------- | ------------ | ------------- |
+| **10 play cycles**   | 10              | 1-2         | 0            | 0 MB          |
+| **100 play cycles**  | 100             | 5-10        | 0            | 0 MB          |
+| **1000 play cycles** | 1000            | 10-30       | 0            | 0 MB          |
+| **Continuous 10min** | ~5000           | 10-50       | 0            | <10 MB        |
 
 **Conclusion:** ✅ NO UNBOUNDED GROWTH - Memory stays flat
 
@@ -293,11 +303,13 @@ Time (s)  | Map Size | Sources Created | Comment
 ### 4.3 Performance Characteristics
 
 **Cleanup Speed:**
+
 - **Single source:** <10ms (onended callback fires)
 - **100 sources:** <100ms (all cleaned up)
 - **1000 sources:** <500ms (verified in tests)
 
 **Memory Overhead:**
+
 - **Map overhead:** ~24 bytes per source
 - **Peak (50 sources):** ~1.2 KB map overhead
 - **Negligible** compared to AudioBuffer sizes (100KB-1MB per buffer)
@@ -309,6 +321,7 @@ Time (s)  | Map Size | Sources Created | Comment
 ### 5.1 Original Bug (Before Fix)
 
 **Problem:**
+
 ```typescript
 // OLD CODE (hypothetical - not in current codebase):
 const source = audioContext.createBufferSource();
@@ -320,6 +333,7 @@ source.start(when);
 ```
 
 **Symptoms:**
+
 - Memory growth ~50MB per 10-minute session
 - Tracking map size grows unbounded
 - Browser eventually slows down
@@ -328,14 +342,15 @@ source.start(when);
 ### 5.2 The Fix (Current Implementation)
 
 **Solution:**
+
 ```typescript
 // CURRENT CODE (working):
 const source = audioContext.createBufferSource();
-this.scheduledAudioSources.set(source, metadata);  // Track it
+this.scheduledAudioSources.set(source, metadata); // Track it
 
 source.onended = () => {
-  this.scheduledAudioSources.delete(source);  // ✅ REMOVE from tracking
-  gain.disconnect();  // ✅ DISCONNECT audio graph
+  this.scheduledAudioSources.delete(source); // ✅ REMOVE from tracking
+  gain.disconnect(); // ✅ DISCONNECT audio graph
   // Clean up nested structures (activeHarmonySources, etc.)
 };
 
@@ -349,6 +364,7 @@ source.start(when);
 ```
 
 **Why It Works:**
+
 1. **Automatic Cleanup:** `onended` fires when playback ends (no manual tracking needed)
 2. **Complete Removal:** Source removed from ALL data structures
 3. **Graph Disconnection:** Audio nodes disconnected (breaks references)
@@ -358,14 +374,14 @@ source.start(when);
 
 **Cleanup Locations:**
 
-| Scheduler | onended Callback | scheduledAudioSources | activeHarmonySources | Status |
-|-----------|-----------------|----------------------|---------------------|--------|
-| **HarmonyScheduler** | ✅ Lines 1151-1167 | ✅ Removes | ✅ Removes | FIXED |
-| **SimpleInstrumentScheduler** | ✅ Lines 242-245 | ✅ Removes | N/A | FIXED |
-| **DrumScheduler** | ✅ (via Simple) | ✅ Removes | N/A | FIXED |
-| **MetronomeScheduler** | ✅ (via Simple) | ✅ Removes | N/A | FIXED |
-| **VoiceCueScheduler** | ✅ (via Simple) | ✅ Removes | N/A | FIXED |
-| **BassScheduler** | ✅ (via Simple) | ✅ Removes | N/A | FIXED |
+| Scheduler                     | onended Callback   | scheduledAudioSources | activeHarmonySources | Status |
+| ----------------------------- | ------------------ | --------------------- | -------------------- | ------ |
+| **HarmonyScheduler**          | ✅ Lines 1151-1167 | ✅ Removes            | ✅ Removes           | FIXED  |
+| **SimpleInstrumentScheduler** | ✅ Lines 242-245   | ✅ Removes            | N/A                  | FIXED  |
+| **DrumScheduler**             | ✅ (via Simple)    | ✅ Removes            | N/A                  | FIXED  |
+| **MetronomeScheduler**        | ✅ (via Simple)    | ✅ Removes            | N/A                  | FIXED  |
+| **VoiceCueScheduler**         | ✅ (via Simple)    | ✅ Removes            | N/A                  | FIXED  |
+| **BassScheduler**             | ✅ (via Simple)    | ✅ Removes            | N/A                  | FIXED  |
 
 **Conclusion:** ✅ ALL SCHEDULERS implement cleanup correctly
 
@@ -381,7 +397,7 @@ source.start(when);
 // 1. Track source creation
 this.scheduledAudioSources.set(source, {
   type: 'sustained' | 'one-shot',
-  hasStopScheduled: boolean
+  hasStopScheduled: boolean,
 });
 
 // 2. Register cleanup callback IMMEDIATELY after creation
@@ -401,6 +417,7 @@ source.start(when);
 ```
 
 **Key Principles:**
+
 1. ✅ **Immediate Registration:** Register `onended` BEFORE `start()`
 2. ✅ **Complete Removal:** Delete from ALL tracking structures
 3. ✅ **Disconnect Nodes:** Call `disconnect()` on all related nodes
@@ -426,7 +443,7 @@ export class Scheduler {
     buffer: AudioBuffer,
     audioTime: number,
     duration: number,
-    instrumentType: string
+    instrumentType: string,
   ): void {
     const source = this.audioContext.createBufferSource();
     const gain = this.audioContext.createGain();
@@ -438,12 +455,12 @@ export class Scheduler {
     // Track source creation
     this.activeSources.set(source, {
       type: duration > 0 ? 'sustained' : 'one-shot',
-      hasStopScheduled: duration > 0
+      hasStopScheduled: duration > 0,
     });
 
     // ✅ CRITICAL: Register cleanup callback BEFORE start()
     source.onended = () => {
-      this.activeSources.delete(source);  // ✅ Remove from tracking
+      this.activeSources.delete(source); // ✅ Remove from tracking
 
       // Safely disconnect (handle already-disconnected case)
       try {
@@ -505,7 +522,7 @@ describe('Scheduler - Memory Leak Prevention (Bug #3 Preserved)', () => {
     expect(scheduler['activeSources'].size).toBe(10);
 
     // Wait for cleanup
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     // Should be empty (all cleaned up)
     expect(scheduler['activeSources'].size).toBe(0);
@@ -519,7 +536,7 @@ describe('Scheduler - Memory Leak Prevention (Bug #3 Preserved)', () => {
       source.start(0.1);
     }
 
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await new Promise((resolve) => setTimeout(resolve, 200));
 
     expect(scheduler['activeSources'].size).toBe(0);
   });
@@ -531,11 +548,11 @@ describe('Scheduler - Memory Leak Prevention (Bug #3 Preserved)', () => {
     for (let i = 0; i < 200; i++) {
       scheduler.scheduleNote(mockBuffer, i * 0.05, 1.0, 'harmony');
       sizes.push(scheduler['activeSources'].size);
-      await new Promise(resolve => setTimeout(resolve, 5));
+      await new Promise((resolve) => setTimeout(resolve, 5));
     }
 
     const maxSize = Math.max(...sizes);
-    expect(maxSize).toBeLessThan(50);  // Baseline from Task 0.3
+    expect(maxSize).toBeLessThan(50); // Baseline from Task 0.3
   });
 });
 ```
@@ -547,6 +564,7 @@ describe('Scheduler - Memory Leak Prevention (Bug #3 Preserved)', () => {
 ### 7.1 Original Task (Before Audit)
 
 **OLD Task 1.1 Description:**
+
 ```
 - [ ] Day 2: Implement cleanup and velocity layers
   - [ ] Implement `cleanupSources()` method based on Task 0.7 findings:
@@ -578,11 +596,13 @@ describe('Scheduler - Memory Leak Prevention (Bug #3 Preserved)', () => {
 ### 7.3 Acceptance Criteria Update
 
 **OLD Acceptance Criteria:**
+
 ```
 - [ ] Source cleanup prevents memory leaks (verified against baseline)
 ```
 
 **NEW Acceptance Criteria:**
+
 ```
 - [x] Memory leak is ALREADY FIXED in current code (verified in Task 0.7)
 - [ ] Source cleanup logic PRESERVED in new Scheduler (copied verbatim)
@@ -599,6 +619,7 @@ describe('Scheduler - Memory Leak Prevention (Bug #3 Preserved)', () => {
 ### 8.1 Success Criteria (From REGRESSION_TEST_SUITE.md)
 
 **Memory Leak Prevention:**
+
 - ✅ **Peak Sources:** <50 active sources during playback
 - ✅ **Memory Growth:** <10MB per 10 minutes of playback
 - ✅ **Cleanup Speed:** <500ms for 1000 sources
@@ -609,6 +630,7 @@ describe('Scheduler - Memory Leak Prevention (Bug #3 Preserved)', () => {
 ### 8.2 Verification Checklist for New PlaybackEngine
 
 During Task 1.1 (Scheduler implementation):
+
 - [ ] Copy onended callback pattern from existing schedulers
 - [ ] Register cleanup BEFORE source.start()
 - [ ] Delete source from activeSources Map
@@ -620,6 +642,7 @@ During Task 1.1 (Scheduler implementation):
 - [ ] Measure: 1000 sources cleanup <500ms ✓
 
 During Task 2.1 (Bug Fix Verification):
+
 - [ ] Run full memory leak test suite
 - [ ] Measure heap growth over 100 cycles
 - [ ] Verify onended callbacks fire correctly

@@ -53,7 +53,10 @@ async function getMusicalTruthBPM(page: Page): Promise<number | null> {
 }
 
 // Helper to wait for CoreServices to be ready
-async function waitForCoreServices(page: Page, timeout = 15000): Promise<boolean> {
+async function waitForCoreServices(
+  page: Page,
+  timeout = 15000,
+): Promise<boolean> {
   try {
     await page.waitForFunction(
       () => {
@@ -226,7 +229,9 @@ test.describe('BPM Display and Sync', () => {
   });
 
   test.describe('BPM Value Ranges', () => {
-    test('should have tempo in reasonable range via UnifiedTransport', async ({ page }) => {
+    test('should have tempo in reasonable range via UnifiedTransport', async ({
+      page,
+    }) => {
       await page.goto(testTutorialUrl);
       await page.waitForLoadState('networkidle');
       await page.waitForTimeout(3000);
@@ -246,7 +251,11 @@ test.describe('BPM Display and Sync', () => {
       });
 
       // If tempo is available, it should be in a reasonable range
-      if (transportInfo.available && transportInfo.hasTempo && transportInfo.tempo !== null) {
+      if (
+        transportInfo.available &&
+        transportInfo.hasTempo &&
+        transportInfo.tempo !== null
+      ) {
         expect(transportInfo.tempo).toBeGreaterThanOrEqual(40);
         expect(transportInfo.tempo).toBeLessThanOrEqual(240);
       }

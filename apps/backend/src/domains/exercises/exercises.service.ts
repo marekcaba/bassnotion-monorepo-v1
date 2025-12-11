@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, InternalServerErrorException, BadRequestException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  InternalServerErrorException,
+  BadRequestException,
+  Inject,
+} from '@nestjs/common';
 import type { IResultExerciseRepository } from './repositories/result-exercise.repository.js';
 import { Exercise } from './entities/exercise.entity.js';
 import { ExerciseId } from './value-objects/exercise-id.vo.js';
@@ -6,10 +12,12 @@ import { Difficulty } from './value-objects/difficulty.vo.js';
 import {
   ExerciseDto,
   ExercisesResponseDto,
-  ExerciseResponseDto } from './dto/exercise-response.dto.js';
+  ExerciseResponseDto,
+} from './dto/exercise-response.dto.js';
 import {
   validateCreateExercise,
-  validateUpdateExercise } from './dto/create-exercise.dto.js';
+  validateUpdateExercise,
+} from './dto/create-exercise.dto.js';
 import { createStructuredLogger } from '@bassnotion/contracts';
 import { RequestContextService } from '../../shared/services/request-context.service.js';
 
@@ -36,18 +44,22 @@ export class ExercisesService {
     const correlationId = this.requestContext?.getCorrelationId();
 
     try {
-      logger.debug(`Fetching exercises - page: ${page}, limit: ${limit}`, { correlationId });
+      logger.debug(`Fetching exercises - page: ${page}, limit: ${limit}`, {
+        correlationId,
+      });
 
       const result = await this.exerciseRepository.findAll({ page, limit });
 
       if (!result.ok) {
-        logger.error('Error fetching exercises:', result.error, { correlationId });
+        logger.error('Error fetching exercises:', result.error, {
+          correlationId,
+        });
         throw new InternalServerErrorException('Failed to fetch exercises');
       }
 
       logger.debug(
         `Found ${result.value.items.length} exercises (total: ${result.value.total})`,
-        { correlationId }
+        { correlationId },
       );
 
       // Convert entities to DTOs
@@ -61,7 +73,9 @@ export class ExercisesService {
         cached: false, // TODO: Implement caching in Phase 4
       };
     } catch (error) {
-      logger.error('Error in getAllExercises:', error as Error, { correlationId });
+      logger.error('Error in getAllExercises:', error as Error, {
+        correlationId,
+      });
       throw new InternalServerErrorException('Failed to fetch exercises');
     }
   }
@@ -72,7 +86,7 @@ export class ExercisesService {
   async getExerciseById(id: string): Promise<ExerciseResponseDto> {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
-    
+
     try {
       logger.debug(`Fetching exercise with ID: ${id}`, { correlationId });
 
@@ -85,7 +99,9 @@ export class ExercisesService {
       const result = await this.exerciseRepository.findById(exerciseId);
 
       if (!result.ok) {
-        logger.error('Error fetching exercise:', result.error, { correlationId });
+        logger.error('Error fetching exercise:', result.error, {
+          correlationId,
+        });
         throw new InternalServerErrorException('Failed to fetch exercise');
       }
 
@@ -97,9 +113,12 @@ export class ExercisesService {
       logger.debug(`Found exercise: ${result.value.title}`, { correlationId });
 
       return {
-        exercise: this.mapEntityToDto(result.value) };
+        exercise: this.mapEntityToDto(result.value),
+      };
     } catch (error) {
-      logger.error(`Error in getExerciseById(${id}):`, error as Error, { correlationId });
+      logger.error(`Error in getExerciseById(${id}):`, error as Error, {
+        correlationId,
+      });
       if (
         error instanceof NotFoundException ||
         error instanceof BadRequestException
@@ -119,14 +138,18 @@ export class ExercisesService {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
     try {
-      logger.debug(`Fetching exercises with difficulty: ${difficulty}`, { correlationId });
+      logger.debug(`Fetching exercises with difficulty: ${difficulty}`, {
+        correlationId,
+      });
 
       const difficultyVO = Difficulty.create(difficulty);
       const result =
         await this.exerciseRepository.findByDifficulty(difficultyVO);
 
       if (!result.ok) {
-        logger.error('Error fetching exercises by difficulty:', result.error, { correlationId });
+        logger.error('Error fetching exercises by difficulty:', result.error, {
+          correlationId,
+        });
         throw new InternalServerErrorException(
           'Failed to fetch exercises by difficulty',
         );
@@ -134,7 +157,7 @@ export class ExercisesService {
 
       logger.debug(
         `Found ${result.value.length} exercises with difficulty ${difficulty}`,
-        { correlationId }
+        { correlationId },
       );
 
       return {
@@ -142,12 +165,13 @@ export class ExercisesService {
           this.mapEntityToDto(exercise),
         ),
         total: result.value.length,
-        cached: false };
+        cached: false,
+      };
     } catch (error) {
       logger.error(
         `Error in getExercisesByDifficulty(${difficulty}):`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       throw new InternalServerErrorException(
         'Failed to fetch exercises by difficulty',
@@ -162,18 +186,22 @@ export class ExercisesService {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
     try {
-      logger.debug(`Searching exercises with query: ${query}`, { correlationId });
+      logger.debug(`Searching exercises with query: ${query}`, {
+        correlationId,
+      });
 
       const result = await this.exerciseRepository.search(query);
 
       if (!result.ok) {
-        logger.error('Error searching exercises:', result.error, { correlationId });
+        logger.error('Error searching exercises:', result.error, {
+          correlationId,
+        });
         throw new InternalServerErrorException('Failed to search exercises');
       }
 
       logger.debug(
         `Found ${result.value.length} exercises matching query: ${query}`,
-        { correlationId }
+        { correlationId },
       );
 
       return {
@@ -181,9 +209,12 @@ export class ExercisesService {
           this.mapEntityToDto(exercise),
         ),
         total: result.value.length,
-        cached: false };
+        cached: false,
+      };
     } catch (error) {
-      logger.error(`Error in searchExercises(${query}):`, error as Error, { correlationId });
+      logger.error(`Error in searchExercises(${query}):`, error as Error, {
+        correlationId,
+      });
       throw new InternalServerErrorException('Failed to search exercises');
     }
   }
@@ -215,21 +246,28 @@ export class ExercisesService {
         notes: validatedData.notes || [],
         tags: [], // tags are not in the CreateExerciseRequestSchema
         isActive: true,
-        createdBy });
+        createdBy,
+      });
 
       // Save through repository
       const saveResult = await this.exerciseRepository.save(exercise);
 
       if (!saveResult.ok) {
-        logger.error('Error saving exercise:', saveResult.error, { correlationId });
+        logger.error('Error saving exercise:', saveResult.error, {
+          correlationId,
+        });
         throw new InternalServerErrorException('Failed to create exercise');
       }
 
-      logger.debug(`Successfully created exercise: ${exercise.id.value}`, { correlationId });
+      logger.debug(`Successfully created exercise: ${exercise.id.value}`, {
+        correlationId,
+      });
 
       return this.mapEntityToDto(exercise);
     } catch (error) {
-      logger.error('Error in createExercise:', error as Error, { correlationId });
+      logger.error('Error in createExercise:', error as Error, {
+        correlationId,
+      });
       throw new InternalServerErrorException('Failed to create exercise');
     }
   }
@@ -255,10 +293,9 @@ export class ExercisesService {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
     try {
-      logger.debug(
-        `Creating exercise with MIDI file: ${exerciseData.title}`,
-        { correlationId }
-      );
+      logger.debug(`Creating exercise with MIDI file: ${exerciseData.title}`, {
+        correlationId,
+      });
 
       // Create domain entity
       const exercise = Exercise.create({
@@ -276,14 +313,18 @@ export class ExercisesService {
         originalFilename: exerciseData.original_filename,
         fileSize: exerciseData.file_size,
         uploadedAt: new Date(exerciseData.uploaded_at),
-        createdBy: exerciseData.created_by });
+        createdBy: exerciseData.created_by,
+      });
 
       // Save through repository
       const saveResult = await this.exerciseRepository.save(exercise);
 
       if (!saveResult.ok) {
-        logger.error('Error saving exercise with MIDI file:',
-          saveResult.error, { correlationId });
+        logger.error(
+          'Error saving exercise with MIDI file:',
+          saveResult.error,
+          { correlationId },
+        );
         throw new InternalServerErrorException(
           'Failed to create exercise with MIDI file',
         );
@@ -291,12 +332,14 @@ export class ExercisesService {
 
       logger.debug(
         `Successfully created exercise with MIDI: ${exercise.id.value}`,
-        { correlationId }
+        { correlationId },
       );
 
       return this.mapEntityToDto(exercise);
     } catch (error) {
-      logger.error('Error in createExerciseWithMidiFile:', error as Error, { correlationId });
+      logger.error('Error in createExerciseWithMidiFile:', error as Error, {
+        correlationId,
+      });
       throw new InternalServerErrorException(
         'Failed to create exercise with MIDI file',
       );
@@ -328,8 +371,9 @@ export class ExercisesService {
       const findResult = await this.exerciseRepository.findById(id);
 
       if (!findResult.ok) {
-        logger.error('Error fetching exercise for update:',
-          findResult.error, { correlationId });
+        logger.error('Error fetching exercise for update:', findResult.error, {
+          correlationId,
+        });
         throw new InternalServerErrorException(
           'Failed to fetch exercise for update',
         );
@@ -359,15 +403,21 @@ export class ExercisesService {
       const updateResult = await this.exerciseRepository.update(exercise);
 
       if (!updateResult.ok) {
-        logger.error('Error updating exercise:', updateResult.error, { correlationId });
+        logger.error('Error updating exercise:', updateResult.error, {
+          correlationId,
+        });
         throw new InternalServerErrorException('Failed to update exercise');
       }
 
-      logger.debug(`Successfully updated exercise: ${exercise.id.value}`, { correlationId });
+      logger.debug(`Successfully updated exercise: ${exercise.id.value}`, {
+        correlationId,
+      });
 
       return this.mapEntityToDto(exercise);
     } catch (error) {
-      logger.error(`Error in updateExercise(${exerciseId}):`, error as Error, { correlationId });
+      logger.error(`Error in updateExercise(${exerciseId}):`, error as Error, {
+        correlationId,
+      });
       if (
         error instanceof NotFoundException ||
         error instanceof BadRequestException
@@ -418,6 +468,7 @@ export class ExercisesService {
       tutorial_id: persistenceData.tutorial_id,
       created_by: persistenceData.created_by,
       created_at: persistenceData.created_at,
-      updated_at: persistenceData.updated_at } as ExerciseDto;
+      updated_at: persistenceData.updated_at,
+    } as ExerciseDto;
   }
 }

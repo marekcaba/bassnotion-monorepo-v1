@@ -17,25 +17,33 @@ export class DatabaseCoreService implements OnModuleInit {
 
   private initializeClient(): void {
     try {
-      this.logger.debug('DatabaseCoreService initializing...', { correlationId: 'system' });
+      this.logger.debug('DatabaseCoreService initializing...', {
+        correlationId: 'system',
+      });
 
       // Use environment variables directly
       const supabaseUrl = process.env.SUPABASE_URL;
       const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
       if (!supabaseUrl || !supabaseServiceRoleKey) {
-        this.logger.warn('Supabase environment variables not found', { 
+        this.logger.warn('Supabase environment variables not found', {
           correlationId: 'system',
           hasUrl: !!supabaseUrl,
-          hasKey: !!supabaseServiceRoleKey
+          hasKey: !!supabaseServiceRoleKey,
         });
         return;
       }
 
       this.supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
-      this.logger.info('DatabaseCoreService initialized successfully', { correlationId: 'system' });
+      this.logger.info('DatabaseCoreService initialized successfully', {
+        correlationId: 'system',
+      });
     } catch (error) {
-      this.logger.error('Error initializing DatabaseCoreService:', error as Error, { correlationId: 'system' });
+      this.logger.error(
+        'Error initializing DatabaseCoreService:',
+        error as Error,
+        { correlationId: 'system' },
+      );
       throw error;
     }
   }

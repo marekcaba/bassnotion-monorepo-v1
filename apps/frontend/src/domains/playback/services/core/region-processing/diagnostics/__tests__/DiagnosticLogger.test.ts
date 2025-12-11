@@ -119,7 +119,9 @@ describe('DiagnosticLogger', () => {
       );
 
       // Should log summary
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('SUMMARY:'));
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('SUMMARY:'),
+      );
     });
 
     it('should handle empty event array', () => {

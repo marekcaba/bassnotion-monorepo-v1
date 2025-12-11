@@ -420,7 +420,8 @@ export function useViewTransitionRouter() {
 
   const navigateWithTransition = useCallback(
     async (url: string) => {
-      const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+      const currentPath =
+        typeof window !== 'undefined' ? window.location.pathname : '';
 
       // Guard: Don't navigate if already on the target URL
       if (currentPath === url) {
@@ -428,7 +429,10 @@ export function useViewTransitionRouter() {
         return;
       }
 
-      logger.debug('Navigating with transition:', { from: currentPath, to: url });
+      logger.debug('Navigating with transition:', {
+        from: currentPath,
+        to: url,
+      });
 
       // TODO: Review non-null assertion - consider null safety
       if (!document.startViewTransition) {

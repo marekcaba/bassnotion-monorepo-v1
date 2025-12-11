@@ -472,8 +472,9 @@ export class AudioContextManager {
     if (this.config.sampleRate) return this.config.sampleRate;
 
     // Use browser default for best compatibility
-    const tempContext = new ((window as any).AudioContext ||
-      (window as any).webkitAudioContext)();
+    const tempContext = new (
+      (window as any).AudioContext || (window as any).webkitAudioContext
+    )();
     const sampleRate = tempContext.sampleRate;
     tempContext.close();
 

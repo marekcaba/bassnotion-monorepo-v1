@@ -7,15 +7,12 @@ This guide demonstrates how to create a new audio widget in BassNotion using the
 ### Prerequisites
 
 1. Ensure your app is wrapped with the `AudioProvider`:
+
 ```tsx
 import { AudioProvider } from '@/domains/playback/providers/AudioProvider';
 
 function App() {
-  return (
-    <AudioProvider>
-      {/* Your app content */}
-    </AudioProvider>
-  );
+  return <AudioProvider>{/* Your app content */}</AudioProvider>;
 }
 ```
 
@@ -46,9 +43,7 @@ export function MyNewWidget() {
   return (
     <div className="my-widget">
       <h3>My Audio Widget</h3>
-      <button onClick={handlePlay}>
-        {isPlaying ? 'Stop' : 'Play'}
-      </button>
+      <button onClick={handlePlay}>{isPlaying ? 'Stop' : 'Play'}</button>
       <p>Tempo: {tempo} BPM</p>
     </div>
   );
@@ -81,7 +76,7 @@ export function PianoWidget() {
           },
           baseUrl: '/samples/piano/',
         });
-        
+
         samplerRef.current = sampler;
       } catch (error) {
         console.error('Failed to create sampler:', error);
@@ -121,7 +116,7 @@ import { usePlugins } from '@/domains/playback/hooks';
 
 export function EffectsWidget() {
   const { getPlugin, activatePlugin } = usePlugins();
-  
+
   const addReverb = async () => {
     // Get reverb plugin
     const reverb = getPlugin('reverb');
@@ -130,9 +125,7 @@ export function EffectsWidget() {
     }
   };
 
-  return (
-    <button onClick={addReverb}>Add Reverb</button>
-  );
+  return <button onClick={addReverb}>Add Reverb</button>;
 }
 ```
 
@@ -144,13 +137,13 @@ Provides access to the audio engine for creating samplers and accessing Tone.js.
 
 ```tsx
 const {
-  isReady,           // boolean - Audio engine initialized
-  isInitializing,    // boolean - Currently initializing
-  error,             // Error | null - Initialization error
-  createSampler,     // Function - Create a new sampler
-  getTone,           // Function - Get Tone.js instance
-  audioContext,      // AudioContext | null
-  initialize,        // Function - Manual initialization
+  isReady, // boolean - Audio engine initialized
+  isInitializing, // boolean - Currently initializing
+  error, // Error | null - Initialization error
+  createSampler, // Function - Create a new sampler
+  getTone, // Function - Get Tone.js instance
+  audioContext, // AudioContext | null
+  initialize, // Function - Manual initialization
 } = useAudio();
 ```
 
@@ -160,20 +153,20 @@ Controls playback and transport state.
 
 ```tsx
 const {
-  isPlaying,         // boolean
-  isPaused,          // boolean
-  isStopped,         // boolean
-  tempo,             // number - Current BPM
-  timeSignature,     // TimeSignature
-  position,          // TransportPosition
-  start,             // Function - Start playback
-  stop,              // Function - Stop playback
-  pause,             // Function - Pause playback
-  setTempo,          // Function - Set BPM
-  setTimeSignature,  // Function - Set time signature
-  seekTo,            // Function - Seek to position
-  setLoop,           // Function - Set loop points
-  isLoopEnabled,     // boolean
+  isPlaying, // boolean
+  isPaused, // boolean
+  isStopped, // boolean
+  tempo, // number - Current BPM
+  timeSignature, // TimeSignature
+  position, // TransportPosition
+  start, // Function - Start playback
+  stop, // Function - Stop playback
+  pause, // Function - Pause playback
+  setTempo, // Function - Set BPM
+  setTimeSignature, // Function - Set time signature
+  seekTo, // Function - Seek to position
+  setLoop, // Function - Set loop points
+  isLoopEnabled, // boolean
 } = useTransport();
 ```
 
@@ -183,15 +176,15 @@ Manages audio plugins and effects.
 
 ```tsx
 const {
-  isReady,                // boolean
-  error,                  // Error | null
-  getPlugin,              // Function - Get plugin by ID
-  getAllPlugins,          // Function - Get all plugins
+  isReady, // boolean
+  error, // Error | null
+  getPlugin, // Function - Get plugin by ID
+  getAllPlugins, // Function - Get all plugins
   getPluginsByCapability, // Function - Filter by capability
-  activatePlugin,         // Function - Activate plugin
-  deactivatePlugin,       // Function - Deactivate plugin
-  getPluginState,         // Function - Get plugin state
-  registerPlugin,         // Function - Register new plugin
+  activatePlugin, // Function - Activate plugin
+  deactivatePlugin, // Function - Deactivate plugin
+  getPluginState, // Function - Get plugin state
+  registerPlugin, // Function - Register new plugin
 } = usePlugins();
 ```
 
@@ -212,13 +205,13 @@ if (!isReady) {
 ```tsx
 useEffect(() => {
   let sampler;
-  
+
   const init = async () => {
     sampler = await createSampler(config);
   };
-  
+
   init();
-  
+
   return () => {
     if (sampler) {
       sampler.dispose();
@@ -246,10 +239,7 @@ import { SyncedWidget } from '@/domains/widgets/components/base';
 
 export function MySyncedWidget() {
   return (
-    <SyncedWidget
-      widgetId="my-widget"
-      widgetName="My Widget"
-    >
+    <SyncedWidget widgetId="my-widget" widgetName="My Widget">
       {(syncProps) => (
         <div>
           <p>Is Playing: {syncProps.isPlaying}</p>
@@ -308,20 +298,14 @@ export function DrumPad() {
 
 ```tsx
 export function TransportControl() {
-  const { 
-    isPlaying, 
-    tempo, 
-    start, 
-    stop, 
-    setTempo 
-  } = useTransport();
+  const { isPlaying, tempo, start, stop, setTempo } = useTransport();
 
   return (
     <div className="transport-control">
       <button onClick={isPlaying ? stop : start}>
         {isPlaying ? '⏸️' : '▶️'}
       </button>
-      
+
       <input
         type="range"
         min="60"
@@ -338,42 +322,48 @@ export function TransportControl() {
 ## Troubleshooting
 
 ### "AudioEngine not available"
+
 - Ensure your component is wrapped with `AudioProvider`
 - Check that audio services are initialized
 
 ### "Audio not ready"
+
 - Audio initialization happens asynchronously
 - Always check `isReady` before audio operations
 
 ### Transport not syncing
+
 - Verify you're using the shared transport from `useTransport()`
 - Don't create separate Tone.Transport instances
 
 ### Memory leaks
+
 - Always dispose of samplers and audio nodes in cleanup
 - Use the cleanup function in useEffect
 
 ## Migration from Old Pattern
 
 ### Before (Old Pattern)
+
 ```tsx
 import { useTone } from '@/domains/playback/providers/ToneProvider';
 
 function OldWidget() {
   const { Tone, isReady } = useTone();
-  
+
   // Direct Tone.js usage
   const sampler = new Tone.Sampler(...);
 }
 ```
 
 ### After (New Pattern)
+
 ```tsx
 import { useAudio } from '@/domains/playback/hooks';
 
 function NewWidget() {
   const { isReady, createSampler } = useAudio();
-  
+
   // Clean hook usage - no direct Tone.js
   const sampler = await createSampler(...);
 }
@@ -382,6 +372,7 @@ function NewWidget() {
 ## Summary
 
 With the new professional React hooks:
+
 - ✅ No direct Tone.js usage needed
 - ✅ Type-safe audio operations
 - ✅ Built-in error handling

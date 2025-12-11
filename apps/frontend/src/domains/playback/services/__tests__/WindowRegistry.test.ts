@@ -396,9 +396,7 @@ describe('WindowRegistry - BUG #8: Window Object Pollution Prevention', () => {
       const keys = Object.keys(all);
 
       // Should only have one __bassnotion_coreServices key
-      const coreServicesKeys = keys.filter((k) =>
-        k.includes('coreServices'),
-      );
+      const coreServicesKeys = keys.filter((k) => k.includes('coreServices'));
       expect(coreServicesKeys.length).toBe(1);
       expect(all.__bassnotion_coreServices).toBe(service2);
     });

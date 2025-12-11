@@ -13,11 +13,11 @@ export function generateCorrelationId(): string {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return crypto.randomUUID();
   }
-  
+
   // Fallback for older browsers
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
 }
@@ -25,15 +25,17 @@ export function generateCorrelationId(): string {
 /**
  * Extract correlation ID from headers or generate new one
  */
-export function getCorrelationId(headers?: Record<string, string | string[] | undefined>): string {
+export function getCorrelationId(
+  headers?: Record<string, string | string[] | undefined>,
+): string {
   if (!headers) return generateCorrelationId();
-  
+
   const correlationId = headers[CORRELATION_HEADER];
-  
+
   if (Array.isArray(correlationId)) {
     return correlationId[0] || generateCorrelationId();
   }
-  
+
   return correlationId || generateCorrelationId();
 }
 
@@ -50,7 +52,7 @@ export interface CorrelationContext {
 
 export function createCorrelationContext(
   correlationId: string,
-  additional?: Partial<CorrelationContext>
+  additional?: Partial<CorrelationContext>,
 ): CorrelationContext {
   return {
     correlationId,

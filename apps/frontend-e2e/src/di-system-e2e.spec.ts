@@ -1,6 +1,6 @@
 /**
  * E2E Test for Dependency Injection System
- * 
+ *
  * This test verifies that the DI system works correctly in a real browser
  * environment with actual audio context and playback functionality.
  */
@@ -11,10 +11,10 @@ test.describe('Dependency Injection E2E Tests', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to a page with audio capabilities
     await page.goto('http://localhost:3001');
-    
+
     // Wait for the page to load and audio to initialize
     await page.waitForTimeout(2000);
-    
+
     // Ensure audio context is available
     await page.evaluate(() => {
       if (!window.AudioContext && !window.webkitAudioContext) {
@@ -23,10 +23,13 @@ test.describe('Dependency Injection E2E Tests', () => {
     });
   });
 
-  test('should have CoreServices available with AudioEngine', async ({ page }) => {
+  test('should have CoreServices available with AudioEngine', async ({
+    page,
+  }) => {
     // Check that CoreServices is available and has AudioEngine
     const coreServicesAvailable = await page.evaluate(() => {
-      const services = (window as any).__coreServices || (window as any).__globalCoreServices;
+      const services =
+        (window as any).__coreServices || (window as any).__globalCoreServices;
       return {
         hasServices: !!services,
         hasAudioEngine: !!services?.getAudioEngine,
@@ -43,22 +46,28 @@ test.describe('Dependency Injection E2E Tests', () => {
     const result = await page.evaluate(async () => {
       try {
         // Get AudioEngine from global services
-        const services = (window as any).__coreServices || (window as any).__globalCoreServices;
+        const services =
+          (window as any).__coreServices ||
+          (window as any).__globalCoreServices;
         const audioEngine = services?.getAudioEngine?.();
-        
+
         if (!audioEngine) {
           return { success: false, error: 'No AudioEngine available' };
         }
 
-        // Import instrument dynamically 
-        const { BassInstrument } = await import('/src/domains/playback/modules/instruments/implementations/bass/BassInstrument.js');
-        
+        // Import instrument dynamically
+        const { BassInstrument } =
+          await import('/src/domains/playback/modules/instruments/implementations/bass/BassInstrument.js');
+
         // Create instrument with DI
-        const bass = new (BassInstrument as any)({
-          id: 'test-bass',
-          name: 'E2E Test Bass',
-          type: 'bass',
-        }, audioEngine);
+        const bass = new (BassInstrument as any)(
+          {
+            id: 'test-bass',
+            name: 'E2E Test Bass',
+            type: 'bass',
+          },
+          audioEngine,
+        );
 
         // Initialize
         await bass.initialize();
@@ -83,16 +92,22 @@ test.describe('Dependency Injection E2E Tests', () => {
     expect(result.instrumentId).toBe('test-bass');
   });
 
-  test('should create mixing components with DI in browser', async ({ page }) => {
+  test('should create mixing components with DI in browser', async ({
+    page,
+  }) => {
     const result = await page.evaluate(async () => {
       try {
         // Get AudioEngine from global services
-        const services = (window as any).__coreServices || (window as any).__globalCoreServices;
+        const services =
+          (window as any).__coreServices ||
+          (window as any).__globalCoreServices;
         const audioEngine = services?.getAudioEngine?.();
 
         // Import mixing components
-        const { Channel } = await import('/src/domains/playback/modules/tracks/mixing/Channel.js');
-        const { Bus } = await import('/src/domains/playback/modules/tracks/mixing/Bus.js');
+        const { Channel } =
+          await import('/src/domains/playback/modules/tracks/mixing/Channel.js');
+        const { Bus } =
+          await import('/src/domains/playback/modules/tracks/mixing/Bus.js');
 
         // Create components with DI
         const channel = new (Channel as any)({
@@ -139,7 +154,9 @@ test.describe('Dependency Injection E2E Tests', () => {
     const result = await page.evaluate(async () => {
       try {
         // Get AudioEngine from global services
-        const services = (window as any).__coreServices || (window as any).__globalCoreServices;
+        const services =
+          (window as any).__coreServices ||
+          (window as any).__globalCoreServices;
         const audioEngine = services?.getAudioEngine?.();
 
         if (!audioEngine) {
@@ -192,7 +209,8 @@ test.describe('Dependency Injection E2E Tests', () => {
     const result = await page.evaluate(async () => {
       try {
         // Import instrument
-        const { BassInstrument } = await import('/src/domains/playback/modules/instruments/implementations/bass/BassInstrument.js');
+        const { BassInstrument } =
+          await import('/src/domains/playback/modules/instruments/implementations/bass/BassInstrument.js');
 
         // Create instrument WITHOUT audioEngine (backward compatibility)
         const bassNoAuth = new (BassInstrument as any)({
@@ -222,12 +240,16 @@ test.describe('Dependency Injection E2E Tests', () => {
     expect(result.id).toBe('bass-no-di');
   });
 
-  test('should verify DI system maintains audio functionality', async ({ page }) => {
+  test('should verify DI system maintains audio functionality', async ({
+    page,
+  }) => {
     // This test ensures that the DI refactoring didn't break actual audio
     const result = await page.evaluate(async () => {
       try {
         // Get services
-        const services = (window as any).__coreServices || (window as any).__globalCoreServices;
+        const services =
+          (window as any).__coreServices ||
+          (window as any).__globalCoreServices;
         const audioEngine = services?.getAudioEngine?.();
 
         // Check if audio context is available
@@ -236,13 +258,17 @@ test.describe('Dependency Injection E2E Tests', () => {
         }
 
         // Import and create a bass instrument
-        const { BassInstrument } = await import('/src/domains/playback/modules/instruments/implementations/bass/BassInstrument.js');
-        
-        const bass = new (BassInstrument as any)({
-          id: 'e2e-bass',
-          name: 'E2E Bass',
-          type: 'bass',
-        }, audioEngine);
+        const { BassInstrument } =
+          await import('/src/domains/playback/modules/instruments/implementations/bass/BassInstrument.js');
+
+        const bass = new (BassInstrument as any)(
+          {
+            id: 'e2e-bass',
+            name: 'E2E Bass',
+            type: 'bass',
+          },
+          audioEngine,
+        );
 
         await bass.initialize();
 

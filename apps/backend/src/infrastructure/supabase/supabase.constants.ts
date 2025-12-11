@@ -12,5 +12,7 @@ export const SUPABASE_TABLES = {
   EXERCISE_RESULTS: 'exercise_results',
 } as const;
 
-export type SupabaseBucket = typeof SUPABASE_BUCKETS[keyof typeof SUPABASE_BUCKETS];
-export type SupabaseTable = typeof SUPABASE_TABLES[keyof typeof SUPABASE_TABLES];
+export type SupabaseBucket =
+  (typeof SUPABASE_BUCKETS)[keyof typeof SUPABASE_BUCKETS];
+export type SupabaseTable =
+  (typeof SUPABASE_TABLES)[keyof typeof SUPABASE_TABLES];

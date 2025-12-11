@@ -13,11 +13,13 @@ The main issue was a `return` statement at line 180 in `InitialSamplePreloader.l
 ## Implementation
 
 ### Phase 1: Initial Page Load
+
 - No instruments created
 - No samples loaded
 - Zero memory usage
 
 ### Phase 2: First User Interaction (Scroll/Click/Touch)
+
 - `ScrollTriggerLoader` triggers `loadEssentialSamples()`
 - Creates actual instruments:
   - **Harmony**: `WamKeyboard` instance via singleton → cached as 'harmony-preloaded'
@@ -27,6 +29,7 @@ The main issue was a `return` statement at line 180 in `InitialSamplePreloader.l
 - Result: Instruments ready with essential samples
 
 ### Phase 3: ExerciseSelector Visible
+
 - `ExerciseSelector` IntersectionObserver triggers `loadFullSamples()`
 - `InitialSamplePreloader.loadFullHarmonyInstrument()` runs:
   - Uses existing WamKeyboard instance from Phase 2
@@ -34,18 +37,20 @@ The main issue was a `return` statement at line 180 in `InitialSamplePreloader.l
 - Result: Instrument has full quality samples
 
 ### Widget Loading Pattern (All Widgets)
+
 - Widget mounts and checks `GlobalSampleCache` first
 - If cached instrument found → use immediately
 - If not found → create new (rare fallback case)
 - Example for TEST button click:
   1. Check for 'harmony-preloaded' in cache
-  2. Use existing instance immediately  
+  2. Use existing instance immediately
   3. Just resume AudioContext and play
 - Result: **Instant playback, no loading delay!**
 
 ## Key Components
 
 ### InitialSamplePreloader (FIXED)
+
 ```typescript
 loadEssentialSamples(): Phase 2 - Creates instruments with essential samples
 ├── loadEssentialHarmonyInstrument(): Creates WamKeyboard → cache as 'harmony-preloaded'
@@ -56,12 +61,15 @@ loadFullSamples(): Phase 3 - Loads additional samples for full quality
 ```
 
 ### GlobalSampleCache
+
 - Central storage for all preloaded instruments
 - Prevents duplicate loading across widgets
 - Methods: `getCachedInstrument()`, `cacheInstrument()`, `getStats()`
 
 ### Widget Integration
+
 All widgets now follow the cache-first pattern:
+
 ```typescript
 const preloaded = GlobalSampleCache.getCachedInstrument('instrument-key');
 if (preloaded) {
@@ -82,12 +90,14 @@ if (preloaded) {
 ## Implementation Results
 
 ### Before (Multiple Systems)
+
 - 4+ competing loading systems
 - Samples loaded 2-4x (memory waste)
 - Phase 2 didn't create instruments (bug)
 - 50-200ms delay on first playback
 
 ### After (Unified System)
+
 - Single loading system with GlobalSampleCache
 - Instruments created once, shared everywhere
 - Phase 2 properly creates instruments
@@ -114,6 +124,7 @@ if (preloaded) {
 ## Testing
 
 ### Manual Testing Steps
+
 1. Clear browser cache and reload page
 2. Open DevTools Network tab and Console
 3. Scroll down - should see:
@@ -124,8 +135,9 @@ if (preloaded) {
 5. Check cache stats: `GlobalSampleCache.getStats()` in console
 
 ### Automated Tests Created
+
 - Unit tests for InitialSamplePreloader phases
-- GlobalSampleCache operation tests  
+- GlobalSampleCache operation tests
 - Widget cache integration tests
 - ScrollTriggerLoader behavior tests
 - End-to-end loading flow tests

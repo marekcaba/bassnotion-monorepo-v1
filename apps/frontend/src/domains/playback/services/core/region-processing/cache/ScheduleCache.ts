@@ -31,7 +31,11 @@ export class ScheduleCache {
   /**
    * Generate cache key from exercise ID, BPM, and countdown beats
    */
-  private generateCacheKey(exerciseId: string, bpm: number, countdownBeats: number): string {
+  private generateCacheKey(
+    exerciseId: string,
+    bpm: number,
+    countdownBeats: number,
+  ): string {
     return `${exerciseId}_${bpm}_${countdownBeats}`;
   }
 
@@ -44,7 +48,11 @@ export class ScheduleCache {
    */
   get(exerciseId: string): CachedSchedule | null {
     const currentBpm = Tone.Transport.bpm.value;
-    const cacheKey = this.generateCacheKey(exerciseId, currentBpm, this.countdownOffsetBeats);
+    const cacheKey = this.generateCacheKey(
+      exerciseId,
+      currentBpm,
+      this.countdownOffsetBeats,
+    );
 
     const cached = this.exerciseScheduleCache.get(cacheKey);
 
@@ -71,7 +79,11 @@ export class ScheduleCache {
    * @param schedule - Schedule data to cache
    */
   set(exerciseId: string, schedule: CachedSchedule): void {
-    const cacheKey = this.generateCacheKey(exerciseId, schedule.bpm, schedule.countdownBeats);
+    const cacheKey = this.generateCacheKey(
+      exerciseId,
+      schedule.bpm,
+      schedule.countdownBeats,
+    );
 
     // LRU eviction: If cache is full, remove oldest entry
     if (this.exerciseScheduleCache.size >= this.MAX_CACHE_ENTRIES) {
@@ -109,7 +121,9 @@ export class ScheduleCache {
     keysToDelete.forEach((key) => this.exerciseScheduleCache.delete(key));
 
     if (keysToDelete.length > 0) {
-      logger.info(`🗑️ Cleared ${keysToDelete.length} cache entries for exercise ${exerciseId}`);
+      logger.info(
+        `🗑️ Cleared ${keysToDelete.length} cache entries for exercise ${exerciseId}`,
+      );
     }
   }
 

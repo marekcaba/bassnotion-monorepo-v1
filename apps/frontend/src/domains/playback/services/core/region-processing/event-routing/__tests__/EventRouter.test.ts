@@ -78,7 +78,10 @@ describe('EventRouter', () => {
     it('should convert transport time to audio time using transportStartTime', () => {
       router.setTransportStartTime(10.0); // Start at 10s
 
-      const event: PatternEvent = { type: 'metronome-click', position: '0:0:0' };
+      const event: PatternEvent = {
+        type: 'metronome-click',
+        position: '0:0:0',
+      };
       router.emitEvent('metronome', event, 2.0); // Event at 2s transport time
 
       // Should schedule at 10 + 2 = 12s audio time
@@ -92,7 +95,10 @@ describe('EventRouter', () => {
     it('should perform sample-accurate rounding', () => {
       router.setTransportStartTime(0);
 
-      const event: PatternEvent = { type: 'metronome-click', position: '0:0:0' };
+      const event: PatternEvent = {
+        type: 'metronome-click',
+        position: '0:0:0',
+      };
       // 2.123456789s should round to exact frame boundary
       router.emitEvent('metronome', event, 2.123456789);
 
@@ -110,7 +116,10 @@ describe('EventRouter', () => {
     it('should track timing accuracy', () => {
       router.setTransportStartTime(0);
 
-      const event: PatternEvent = { type: 'metronome-click', position: '0:0:0' };
+      const event: PatternEvent = {
+        type: 'metronome-click',
+        position: '0:0:0',
+      };
       router.emitEvent('metronome', event, 1.5);
 
       const frame = Math.round(1.5 * 48000);
@@ -126,7 +135,10 @@ describe('EventRouter', () => {
     it('should route metronome to metronome scheduler', () => {
       router.setTransportStartTime(0);
 
-      const event: PatternEvent = { type: 'metronome-click', position: '0:0:0' };
+      const event: PatternEvent = {
+        type: 'metronome-click',
+        position: '0:0:0',
+      };
       router.emitEvent('metronome', event, 1.0);
 
       expect(mockMetronomeScheduler.schedule).toHaveBeenCalledWith(
@@ -143,7 +155,11 @@ describe('EventRouter', () => {
       const event: PatternEvent = { type: 'kick', position: '0:0:0' };
       router.emitEvent('drums', event, 1.0);
 
-      expect(mockDrumScheduler.schedule).toHaveBeenCalledWith(event, 1.0, 48000);
+      expect(mockDrumScheduler.schedule).toHaveBeenCalledWith(
+        event,
+        1.0,
+        48000,
+      );
       expect(mockEventBus.emit).not.toHaveBeenCalled();
     });
 
@@ -167,7 +183,11 @@ describe('EventRouter', () => {
       const event: PatternEvent = { type: 'note', position: '0:0:0' };
       router.emitEvent('bass', event, 1.0);
 
-      expect(mockBassScheduler.schedule).toHaveBeenCalledWith(event, 1.0, 48000);
+      expect(mockBassScheduler.schedule).toHaveBeenCalledWith(
+        event,
+        1.0,
+        48000,
+      );
       expect(mockEventBus.emit).not.toHaveBeenCalled();
     });
 
@@ -347,7 +367,10 @@ describe('EventRouter', () => {
       router.setTransportStartTime(5.0);
 
       const events = [
-        { instrument: 'metronome', event: { type: 'click', position: '0:0:0' } },
+        {
+          instrument: 'metronome',
+          event: { type: 'click', position: '0:0:0' },
+        },
         { instrument: 'drums', event: { type: 'kick', position: '0:1:0' } },
         { instrument: 'bass', event: { type: 'E2', position: '0:2:0' } },
         {

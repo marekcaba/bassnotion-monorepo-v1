@@ -3,7 +3,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   ITutorialRepository,
   PaginatedResult,
-  PaginationOptions } from './tutorial.repository.interface.js';
+  PaginationOptions,
+} from './tutorial.repository.interface.js';
 import { Tutorial } from '../entities/tutorial.entity.js';
 import { TutorialId } from '../value-objects/tutorial-id.vo.js';
 import { TutorialSlug } from '../value-objects/tutorial-slug.vo.js';
@@ -42,7 +43,9 @@ interface TutorialRecord {
 
 @Injectable()
 export class TutorialRepository implements ITutorialRepository {
-  private readonly staticLogger = createStructuredLogger(TutorialRepository.name);
+  private readonly staticLogger = createStructuredLogger(
+    TutorialRepository.name,
+  );
   private supabaseClient?: SupabaseClient;
 
   constructor(
@@ -69,7 +72,9 @@ export class TutorialRepository implements ITutorialRepository {
       if (error || !data) {
         const logger = this.requestContext?.getLogger() || this.staticLogger;
         const correlationId = this.requestContext?.getCorrelationId();
-        logger.debug(`Tutorial not found with id: ${id.value}`, { correlationId });
+        logger.debug(`Tutorial not found with id: ${id.value}`, {
+          correlationId,
+        });
         return null;
       }
 
@@ -77,7 +82,11 @@ export class TutorialRepository implements ITutorialRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error(`Error finding tutorial by id ${id.value}:`, error as Error, { correlationId });
+      logger.error(
+        `Error finding tutorial by id ${id.value}:`,
+        error as Error,
+        { correlationId },
+      );
       throw new Error(
         `Failed to find tutorial: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
@@ -95,7 +104,9 @@ export class TutorialRepository implements ITutorialRepository {
       if (error || !data) {
         const logger = this.requestContext?.getLogger() || this.staticLogger;
         const correlationId = this.requestContext?.getCorrelationId();
-        logger.debug(`Tutorial not found with slug: ${slug.value}`, { correlationId });
+        logger.debug(`Tutorial not found with slug: ${slug.value}`, {
+          correlationId,
+        });
         return null;
       }
 
@@ -103,7 +114,11 @@ export class TutorialRepository implements ITutorialRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error(`Error finding tutorial by slug ${slug.value}:`, error as Error, { correlationId });
+      logger.error(
+        `Error finding tutorial by slug ${slug.value}:`,
+        error as Error,
+        { correlationId },
+      );
       throw new Error(
         `Failed to find tutorial: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
@@ -134,11 +149,14 @@ export class TutorialRepository implements ITutorialRepository {
         items: tutorials,
         total: count || 0,
         page: options.page,
-        limit: options.limit };
+        limit: options.limit,
+      };
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error fetching all tutorials:', error as Error, { correlationId });
+      logger.error('Error fetching all tutorials:', error as Error, {
+        correlationId,
+      });
       throw error;
     }
   }
@@ -163,7 +181,11 @@ export class TutorialRepository implements ITutorialRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error(`Error fetching tutorials by level ${level}:`, error as Error, { correlationId });
+      logger.error(
+        `Error fetching tutorials by level ${level}:`,
+        error as Error,
+        { correlationId },
+      );
       throw error;
     }
   }
@@ -196,11 +218,14 @@ export class TutorialRepository implements ITutorialRepository {
         items: tutorials,
         total: count || 0,
         page: options.page,
-        limit: options.limit };
+        limit: options.limit,
+      };
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error fetching published tutorials:', error as Error, { correlationId });
+      logger.error('Error fetching published tutorials:', error as Error, {
+        correlationId,
+      });
       throw error;
     }
   }
@@ -228,7 +253,7 @@ export class TutorialRepository implements ITutorialRepository {
       logger.error(
         `Error searching tutorials with query "${query}":`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       throw error;
     }
@@ -257,7 +282,7 @@ export class TutorialRepository implements ITutorialRepository {
       logger.error(
         `Error fetching tutorials by author ${authorName}:`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       throw error;
     }
@@ -274,7 +299,9 @@ export class TutorialRepository implements ITutorialRepository {
 
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.debug(`Successfully saved tutorial: ${tutorial.id.value}`, { correlationId });
+      logger.debug(`Successfully saved tutorial: ${tutorial.id.value}`, {
+        correlationId,
+      });
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
@@ -297,11 +324,17 @@ export class TutorialRepository implements ITutorialRepository {
 
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.debug(`Successfully updated tutorial: ${tutorial.id.value}`, { correlationId });
+      logger.debug(`Successfully updated tutorial: ${tutorial.id.value}`, {
+        correlationId,
+      });
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error(`Error updating tutorial ${tutorial.id.value}:`, error as Error, { correlationId });
+      logger.error(
+        `Error updating tutorial ${tutorial.id.value}:`,
+        error as Error,
+        { correlationId },
+      );
       throw error;
     }
   }
@@ -320,11 +353,15 @@ export class TutorialRepository implements ITutorialRepository {
 
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.debug(`Successfully deleted tutorial: ${id.value}`, { correlationId });
+      logger.debug(`Successfully deleted tutorial: ${id.value}`, {
+        correlationId,
+      });
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error(`Error deleting tutorial ${id.value}:`, error as Error, { correlationId });
+      logger.error(`Error deleting tutorial ${id.value}:`, error as Error, {
+        correlationId,
+      });
       throw error;
     }
   }
@@ -347,7 +384,7 @@ export class TutorialRepository implements ITutorialRepository {
       logger.error(
         `Error checking existence of tutorial ${id.value}:`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       throw error;
     }
@@ -373,7 +410,7 @@ export class TutorialRepository implements ITutorialRepository {
       logger.error(
         `Error checking existence of tutorial by slug ${slug.value}:`,
         error as Error,
-        { correlationId }
+        { correlationId },
       );
       throw error;
     }
@@ -401,7 +438,9 @@ export class TutorialRepository implements ITutorialRepository {
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error fetching tutorials by ids:', error as Error, { correlationId });
+      logger.error('Error fetching tutorials by ids:', error as Error, {
+        correlationId,
+      });
       throw error;
     }
   }
@@ -421,12 +460,14 @@ export class TutorialRepository implements ITutorialRepository {
       const correlationId = this.requestContext?.getCorrelationId();
       logger.debug(
         `Successfully saved ${tutorials.length} tutorials in batch`,
-        { correlationId }
+        { correlationId },
       );
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error saving tutorials batch:', error as Error, { correlationId });
+      logger.error('Error saving tutorials batch:', error as Error, {
+        correlationId,
+      });
       throw error;
     }
   }
@@ -456,12 +497,14 @@ export class TutorialRepository implements ITutorialRepository {
       const correlationId = this.requestContext?.getCorrelationId();
       logger.debug(
         `Successfully updated ${tutorials.length} tutorials in batch`,
-        { correlationId }
+        { correlationId },
       );
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error updating tutorials batch:', error as Error, { correlationId });
+      logger.error('Error updating tutorials batch:', error as Error, {
+        correlationId,
+      });
       throw error;
     }
   }
@@ -482,14 +525,15 @@ export class TutorialRepository implements ITutorialRepository {
 
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.debug(
-        `Successfully deleted ${ids.length} tutorials in batch`,
-        { correlationId }
-      );
+      logger.debug(`Successfully deleted ${ids.length} tutorials in batch`, {
+        correlationId,
+      });
     } catch (error) {
       const logger = this.requestContext?.getLogger() || this.staticLogger;
       const correlationId = this.requestContext?.getCorrelationId();
-      logger.error('Error deleting tutorials batch:', error as Error, { correlationId });
+      logger.error('Error deleting tutorials batch:', error as Error, {
+        correlationId,
+      });
       throw error;
     }
   }
@@ -513,8 +557,10 @@ export class TutorialRepository implements ITutorialRepository {
       createdAt: new Date(record.created_at),
       updatedAt: new Date(record.updated_at),
       // New fields for draft and MIDI support
-      status: record.status as 'draft' | 'published' | 'archived' || 'draft',
-      lastModified: record.last_modified ? new Date(record.last_modified) : undefined,
+      status: (record.status as 'draft' | 'published' | 'archived') || 'draft',
+      lastModified: record.last_modified
+        ? new Date(record.last_modified)
+        : undefined,
       autoSaveVersion: record.auto_save_version || 0,
       drummerMidiUrl: record.drummer_midi_url,
       basslineMidiUrl: record.bassline_midi_url,

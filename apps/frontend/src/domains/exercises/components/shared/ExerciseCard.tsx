@@ -2,7 +2,12 @@
 
 import React from 'react';
 import { Exercise } from '@/domains/exercises/entities/exercise.entity';
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 import { Play, Pause, Music, Clock, Activity } from 'lucide-react';
@@ -100,9 +105,11 @@ export function ExerciseCard({
         <div className="flex items-center justify-between mt-3">
           <Badge
             variant={
-              exercise.difficulty.value === 'beginner' ? 'default' :
-              exercise.difficulty.value === 'intermediate' ? 'secondary' :
-              'destructive'
+              exercise.difficulty.value === 'beginner'
+                ? 'default'
+                : exercise.difficulty.value === 'intermediate'
+                  ? 'secondary'
+                  : 'destructive'
             }
           >
             {exercise.difficulty.value}

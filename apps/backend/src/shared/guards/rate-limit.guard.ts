@@ -3,7 +3,8 @@ import {
   CanActivate,
   ExecutionContext,
   HttpException,
-  HttpStatus } from '@nestjs/common';
+  HttpStatus,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { FastifyRequest } from 'fastify';
 import { createStructuredLogger } from '@bassnotion/contracts';
@@ -21,9 +22,7 @@ export class RateLimitGuard implements CanActivate {
   private store: RateLimitStore = {};
   private logger = createStructuredLogger('rate-limit-guard');
 
-  constructor(
-    private reflector: Reflector,
-  ) {
+  constructor(private reflector: Reflector) {
     // Clean up expired entries every minute
     setInterval(() => this.cleanup(), 60000);
   }
@@ -53,7 +52,8 @@ export class RateLimitGuard implements CanActivate {
       // Create new entry or reset expired one
       entry = {
         count: 0,
-        resetTime: now + windowMs };
+        resetTime: now + windowMs,
+      };
       this.store[key] = entry;
     }
 
@@ -65,7 +65,11 @@ export class RateLimitGuard implements CanActivate {
       const remainingTime = Math.ceil((entry.resetTime - now) / 1000);
 
       this.logger.warn('Rate limit exceeded', {
-        key, limit: rateLimitOptions.max || 100, current: entry.count, remainingTime });
+        key,
+        limit: rateLimitOptions.max || 100,
+        current: entry.count,
+        remainingTime,
+      });
 
       throw new HttpException(
         {
@@ -75,7 +79,9 @@ export class RateLimitGuard implements CanActivate {
           rateLimit: {
             limit: rateLimitOptions.max || 100,
             current: entry.count,
-            resetTime: new Date(entry.resetTime).toISOString() } },
+            resetTime: new Date(entry.resetTime).toISOString(),
+          },
+        },
         HttpStatus.TOO_MANY_REQUESTS,
       );
     }
@@ -132,7 +138,8 @@ export class RateLimitGuard implements CanActivate {
       hour: 60 * 60 * 1000,
       hours: 60 * 60 * 1000,
       day: 24 * 60 * 60 * 1000,
-      days: 24 * 60 * 60 * 1000 };
+      days: 24 * 60 * 60 * 1000,
+    };
 
     const match = timeWindow.match(/^(\d+)\s*(\w+)$/);
     if (!match) {

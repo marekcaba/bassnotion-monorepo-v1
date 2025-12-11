@@ -22,14 +22,17 @@ export const RateLimit = (options: RateLimitOptions) =>
 export const AuthRateLimit = () =>
   RateLimit({
     max: 5,
-    timeWindow: '15 minutes' });
+    timeWindow: '15 minutes',
+  });
 
 export const UploadRateLimit = () =>
   RateLimit({
     max: 10,
-    timeWindow: '1 hour' });
+    timeWindow: '1 hour',
+  });
 
 export const PublicApiRateLimit = () =>
   RateLimit({
     max: 200,
-    timeWindow: '15 minutes' });
+    timeWindow: '15 minutes',
+  });

@@ -76,7 +76,12 @@ export function AdminToolbar({
                 Published
               </Badge>
             ) : (
-              <Badge variant="outline" className="text-gray-300 border-gray-600">Draft</Badge>
+              <Badge
+                variant="outline"
+                className="text-gray-300 border-gray-600"
+              >
+                Draft
+              </Badge>
             )}
           </div>
 

@@ -42,12 +42,16 @@ describe('UserRepository', () => {
       }),
       getCorrelationId: vi.fn().mockReturnValue('test-correlation-id'),
     };
-    
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         {
           provide: UserRepository,
-          useFactory: () => new UserRepository(mockSupabaseClient, mockRequestContextService as any),
+          useFactory: () =>
+            new UserRepository(
+              mockSupabaseClient,
+              mockRequestContextService as any,
+            ),
         },
       ],
     }).compile();

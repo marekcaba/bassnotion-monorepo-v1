@@ -56,7 +56,10 @@ describe('MidiParserService', () => {
       expect(result.durationSeconds).toBe(8);
       expect(result.measures).toHaveLength(4);
       expect(result.metadata.bpm).toBe(120);
-      expect(result.metadata.timeSignature).toEqual({ numerator: 4, denominator: 4 });
+      expect(result.metadata.timeSignature).toEqual({
+        numerator: 4,
+        denominator: 4,
+      });
     });
 
     it('should throw BadRequestException if MIDI file fetch fails', async () => {
@@ -245,7 +248,10 @@ describe('MidiParserService', () => {
       );
 
       expect(result.measures).toHaveLength(3);
-      expect(result.metadata.timeSignature).toEqual({ numerator: 3, denominator: 4 });
+      expect(result.metadata.timeSignature).toEqual({
+        numerator: 3,
+        denominator: 4,
+      });
     });
 
     it('should convert velocity from 0-1 to 0-127', async () => {

@@ -4,8 +4,7 @@ import { Button } from './button';
 import { Icons } from '@/shared/components/ui/icons';
 import { cn } from '@/shared/utils';
 
-interface GoogleSignInButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface GoogleSignInButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   isLoading?: boolean;
 }
 

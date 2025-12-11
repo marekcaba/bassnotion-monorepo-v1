@@ -41,12 +41,17 @@ export class MetronomePreloadStrategy implements PreloadStrategy {
 
       // Load and cache HIGH click
       // CRITICAL: Check IndexedDB cache BEFORE network fetch
-      const cachedHighBuffer = await GlobalSampleCache.getInstance().getCachedRawBuffer('metronome-high');
+      const cachedHighBuffer =
+        await GlobalSampleCache.getInstance().getCachedRawBuffer(
+          'metronome-high',
+        );
 
       let highArrayBuffer: ArrayBuffer;
 
       if (cachedHighBuffer) {
-        console.log('💾 [INDEXEDDB-HIT] Using cached metronome sample: metronome-high');
+        console.log(
+          '💾 [INDEXEDDB-HIT] Using cached metronome sample: metronome-high',
+        );
         logger.info('💾 IndexedDB cache HIT: metronome-high');
         highArrayBuffer = cachedHighBuffer;
       } else {
@@ -59,18 +64,26 @@ export class MetronomePreloadStrategy implements PreloadStrategy {
 
         // ✅ BUG #2 FIX: Cache raw ArrayBuffer, NOT decoded AudioBuffer from OfflineContext
         // PERSISTENT CACHE: Also stores to IndexedDB for cross-session persistence
-        await GlobalSampleCache.getInstance().cacheBuffer('metronome-high', highArrayBuffer);
+        await GlobalSampleCache.getInstance().cacheBuffer(
+          'metronome-high',
+          highArrayBuffer,
+        );
         logger.info('✅ High click cached');
       }
 
       // Load and cache LOW click
       // CRITICAL: Check IndexedDB cache BEFORE network fetch
-      const cachedLowBuffer = await GlobalSampleCache.getInstance().getCachedRawBuffer('metronome-low');
+      const cachedLowBuffer =
+        await GlobalSampleCache.getInstance().getCachedRawBuffer(
+          'metronome-low',
+        );
 
       let lowArrayBuffer: ArrayBuffer;
 
       if (cachedLowBuffer) {
-        console.log('💾 [INDEXEDDB-HIT] Using cached metronome sample: metronome-low');
+        console.log(
+          '💾 [INDEXEDDB-HIT] Using cached metronome sample: metronome-low',
+        );
         logger.info('💾 IndexedDB cache HIT: metronome-low');
         lowArrayBuffer = cachedLowBuffer;
       } else {
@@ -83,7 +96,10 @@ export class MetronomePreloadStrategy implements PreloadStrategy {
 
         // ✅ BUG #2 FIX: Cache raw ArrayBuffer, NOT decoded AudioBuffer from OfflineContext
         // PERSISTENT CACHE: Also stores to IndexedDB for cross-session persistence
-        await GlobalSampleCache.getInstance().cacheBuffer('metronome-low', lowArrayBuffer);
+        await GlobalSampleCache.getInstance().cacheBuffer(
+          'metronome-low',
+          lowArrayBuffer,
+        );
         logger.info('✅ Low click cached');
       }
 
@@ -91,11 +107,14 @@ export class MetronomePreloadStrategy implements PreloadStrategy {
       this.total = 2;
 
       const duration = performance.now() - startTime;
-      logger.info('✅ Essential metronome samples preloaded as raw ArrayBuffers (BUG #2 FIX)', {
-        duration: `${duration.toFixed(2)}ms`,
-        samplesLoaded: 2,
-        averagePerSample: `${(duration / 2).toFixed(2)}ms`,
-      });
+      logger.info(
+        '✅ Essential metronome samples preloaded as raw ArrayBuffers (BUG #2 FIX)',
+        {
+          duration: `${duration.toFixed(2)}ms`,
+          samplesLoaded: 2,
+          averagePerSample: `${(duration / 2).toFixed(2)}ms`,
+        },
+      );
 
       return {
         success: true,

@@ -94,7 +94,7 @@ export class AdminTutorialsService {
   }
 
   async findBySlug(slug: string) {
-    const { data, error} = await this.supabaseService
+    const { data, error } = await this.supabaseService
       .getClient()
       .from('tutorials')
       .select('*')
@@ -122,7 +122,10 @@ export class AdminTutorialsService {
       .order('created_at', { ascending: true }); // Order by created_at instead of position
 
     if (error) {
-      this.logger.error(`Failed to fetch exercises for tutorial ${tutorialId}`, error);
+      this.logger.error(
+        `Failed to fetch exercises for tutorial ${tutorialId}`,
+        error,
+      );
       throw new Error('Failed to fetch exercises');
     }
 
@@ -146,8 +149,9 @@ export class AdminTutorialsService {
         slug: slug,
         description: createTutorialDto.description,
         youtube_id: createTutorialDto.youtube_id || '',
-        youtube_url: createTutorialDto.youtube_id ?
-          `https://www.youtube.com/watch?v=${createTutorialDto.youtube_id}` : null,
+        youtube_url: createTutorialDto.youtube_id
+          ? `https://www.youtube.com/watch?v=${createTutorialDto.youtube_id}`
+          : null,
         duration: createTutorialDto.duration || 0,
         author_name: createTutorialDto.author_name,
         // Note: thumbnail_url column doesn't exist - thumbnails are generated from YouTube ID
@@ -198,8 +202,9 @@ export class AdminTutorialsService {
     if (updateTutorialDto.youtube_id !== undefined) {
       updateData.youtube_id = updateTutorialDto.youtube_id;
       // Also update youtube_url to keep both columns in sync
-      updateData.youtube_url = updateTutorialDto.youtube_id ?
-        `https://www.youtube.com/watch?v=${updateTutorialDto.youtube_id}` : null;
+      updateData.youtube_url = updateTutorialDto.youtube_id
+        ? `https://www.youtube.com/watch?v=${updateTutorialDto.youtube_id}`
+        : null;
     }
 
     if (updateTutorialDto.duration !== undefined) {
@@ -231,7 +236,8 @@ export class AdminTutorialsService {
 
     // Core Concept fields
     if (updateTutorialDto.core_concept_description !== undefined) {
-      updateData.core_concept_description = updateTutorialDto.core_concept_description;
+      updateData.core_concept_description =
+        updateTutorialDto.core_concept_description;
     }
 
     if (updateTutorialDto.core_concept_points !== undefined) {
@@ -256,7 +262,8 @@ export class AdminTutorialsService {
     }
 
     if (updateTutorialDto.creator_subscriber_count !== undefined) {
-      updateData.creator_subscriber_count = updateTutorialDto.creator_subscriber_count;
+      updateData.creator_subscriber_count =
+        updateTutorialDto.creator_subscriber_count;
     }
 
     const { data, error } = await this.supabaseService
@@ -359,7 +366,9 @@ export class AdminTutorialsService {
       .neq('id', id)
       .eq('is_active', true)
       .not('published_at', 'is', null)
-      .or(`tags.cs.{${tutorial.tags?.join(',')}},difficulty.eq.${tutorial.difficulty}`)
+      .or(
+        `tags.cs.{${tutorial.tags?.join(',')}},difficulty.eq.${tutorial.difficulty}`,
+      )
       .limit(limit);
 
     if (error) {
@@ -392,7 +401,7 @@ export class AdminTutorialsService {
 
     // Apply search query
     query = query.or(
-      `title.ilike.%${filters.query}%,description.ilike.%${filters.query}%,tags.cs.{${filters.query}}`
+      `title.ilike.%${filters.query}%,description.ilike.%${filters.query}%,tags.cs.{${filters.query}}`,
     );
 
     // Apply filters
@@ -449,7 +458,7 @@ export class AdminTutorialsService {
     // DEBUG: Log incoming exercise notes AND MIDI URLs
     this.logger.log('saveWithExercises - Incoming exercises:', {
       exerciseCount: dto.exercises.length,
-      exercises: dto.exercises.map(ex => ({
+      exercises: dto.exercises.map((ex) => ({
         id: ex.id || 'NEW',
         title: ex.title,
         notesCount: ex.notes?.length || 0,
@@ -482,7 +491,9 @@ export class AdminTutorialsService {
         slug: slug,
         description: dto.description,
         youtube_id: dto.youtube_id,
-        youtube_url: dto.youtube_id ? `https://www.youtube.com/watch?v=${dto.youtube_id}` : null,
+        youtube_url: dto.youtube_id
+          ? `https://www.youtube.com/watch?v=${dto.youtube_id}`
+          : null,
         duration: dto.duration,
         author_name: dto.author_name,
         level: dto.difficulty,
@@ -508,12 +519,18 @@ export class AdminTutorialsService {
         .single();
 
       if (tutorialError) {
-        this.logger.error('Failed to update tutorial in batch save', tutorialError);
+        this.logger.error(
+          'Failed to update tutorial in batch save',
+          tutorialError,
+        );
 
         // Check for duplicate slug constraint violation (PostgreSQL error code 23505)
-        if (tutorialError.code === '23505' && tutorialError.message?.includes('tutorials_slug_key')) {
+        if (
+          tutorialError.code === '23505' &&
+          tutorialError.message?.includes('tutorials_slug_key')
+        ) {
           throw new ConflictException(
-            `A tutorial with the slug "${slug}" already exists. Please use a different title or slug.`
+            `A tutorial with the slug "${slug}" already exists. Please use a different title or slug.`,
           );
         }
 
@@ -522,8 +539,8 @@ export class AdminTutorialsService {
       }
 
       // Step 2: Process exercises - separate creates and updates
-      const exercisesToCreate = dto.exercises.filter(ex => !ex.id);
-      const exercisesToUpdate = dto.exercises.filter(ex => ex.id);
+      const exercisesToCreate = dto.exercises.filter((ex) => !ex.id);
+      const exercisesToUpdate = dto.exercises.filter((ex) => ex.id);
 
       const createdExercises = [];
       const updatedExercises = [];
@@ -532,7 +549,7 @@ export class AdminTutorialsService {
       if (exercisesToCreate.length > 0) {
         // Process temp MIDI files before inserting (Story 4.4 - Task 3.4)
         const exerciseInserts = await Promise.all(
-          exercisesToCreate.map(async ex => {
+          exercisesToCreate.map(async (ex) => {
             // Generate exercise ID for MIDI file paths
             const exerciseId = crypto.randomUUID();
 
@@ -543,10 +560,13 @@ export class AdminTutorialsService {
             let finalMetronomeMidiUrl = ex.metronome_midi_url;
 
             if (ex.temp_bassline_midi_path) {
-              this.logger.log('Migrating bassline MIDI from temp to permanent storage', {
-                exerciseId,
-                tempPath: ex.temp_bassline_midi_path,
-              });
+              this.logger.log(
+                'Migrating bassline MIDI from temp to permanent storage',
+                {
+                  exerciseId,
+                  tempPath: ex.temp_bassline_midi_path,
+                },
+              );
               const permanentPath = `exercises/${exerciseId}/${Date.now()}_bassline.mid`;
               finalBasslineMidiUrl = await this.supabaseService.moveToPermanent(
                 ex.temp_bassline_midi_path,
@@ -572,11 +592,12 @@ export class AdminTutorialsService {
             }
             if (ex.temp_metronome_midi_path) {
               const permanentPath = `exercises/${exerciseId}/${Date.now()}_metronome.mid`;
-              finalMetronomeMidiUrl = await this.supabaseService.moveToPermanent(
-                ex.temp_metronome_midi_path,
-                'exercise-midi-files',
-                permanentPath,
-              );
+              finalMetronomeMidiUrl =
+                await this.supabaseService.moveToPermanent(
+                  ex.temp_metronome_midi_path,
+                  'exercise-midi-files',
+                  permanentPath,
+                );
             }
 
             return {
@@ -588,7 +609,10 @@ export class AdminTutorialsService {
               duration: ex.duration ?? 0,
               total_bars: ex.total_bars ?? 4,
               duration_beats: ex.duration_beats,
-              time_signature: ex.time_signature ?? { numerator: 4, denominator: 4 },
+              time_signature: ex.time_signature ?? {
+                numerator: 4,
+                denominator: 4,
+              },
               bpm: ex.bpm ?? 120,
               key: ex.key ?? 'C',
               notes: ex.notes || [],
@@ -605,7 +629,7 @@ export class AdminTutorialsService {
               created_at: now,
               updated_at: now,
             };
-          })
+          }),
         );
 
         const { data: createdData, error: createError } = await client
@@ -625,7 +649,7 @@ export class AdminTutorialsService {
       if (exercisesToUpdate.length > 0) {
         // Process temp MIDI files before updating (Story 4.4 - Task 3.4)
         const exerciseUpdates = await Promise.all(
-          exercisesToUpdate.map(async ex => {
+          exercisesToUpdate.map(async (ex) => {
             // Handle temp MIDI file migration - all 4 MIDI types
             let finalBasslineMidiUrl = ex.bassline_midi_url;
             let finalDrummerMidiUrl = ex.drummer_midi_url || ex.drums_midi_url;
@@ -633,10 +657,13 @@ export class AdminTutorialsService {
             let finalMetronomeMidiUrl = ex.metronome_midi_url;
 
             if (ex.temp_bassline_midi_path) {
-              this.logger.log('Migrating bassline MIDI from temp to permanent storage (update)', {
-                exerciseId: ex.id,
-                tempPath: ex.temp_bassline_midi_path,
-              });
+              this.logger.log(
+                'Migrating bassline MIDI from temp to permanent storage (update)',
+                {
+                  exerciseId: ex.id,
+                  tempPath: ex.temp_bassline_midi_path,
+                },
+              );
               const permanentPath = `exercises/${ex.id}/${Date.now()}_bassline.mid`;
               finalBasslineMidiUrl = await this.supabaseService.moveToPermanent(
                 ex.temp_bassline_midi_path,
@@ -668,11 +695,12 @@ export class AdminTutorialsService {
             }
             if (ex.temp_metronome_midi_path) {
               const permanentPath = `exercises/${ex.id}/${Date.now()}_metronome.mid`;
-              finalMetronomeMidiUrl = await this.supabaseService.moveToPermanent(
-                ex.temp_metronome_midi_path,
-                'exercise-midi-files',
-                permanentPath,
-              );
+              finalMetronomeMidiUrl =
+                await this.supabaseService.moveToPermanent(
+                  ex.temp_metronome_midi_path,
+                  'exercise-midi-files',
+                  permanentPath,
+                );
             }
 
             return {
@@ -684,7 +712,10 @@ export class AdminTutorialsService {
               duration: ex.duration ?? 0,
               total_bars: ex.total_bars ?? 4,
               duration_beats: ex.duration_beats,
-              time_signature: ex.time_signature ?? { numerator: 4, denominator: 4 },
+              time_signature: ex.time_signature ?? {
+                numerator: 4,
+                denominator: 4,
+              },
               bpm: ex.bpm ?? 120,
               key: ex.key ?? 'C',
               notes: ex.notes || [],
@@ -700,13 +731,13 @@ export class AdminTutorialsService {
               is_active: ex.is_active ?? true,
               updated_at: now,
             };
-          })
+          }),
         );
 
         // DEBUG: Log exact data being sent to database
         this.logger.log('🔍 About to upsert exercise updates:', {
           count: exerciseUpdates.length,
-          updates: exerciseUpdates.map(ex => ({
+          updates: exerciseUpdates.map((ex) => ({
             id: ex.id,
             title: ex.title,
             drummer_midi_url: ex.drummer_midi_url,
@@ -726,7 +757,7 @@ export class AdminTutorialsService {
           success: !updateError,
           error: updateError,
           updatedCount: updatedData?.length,
-          updatedExercises: updatedData?.map(ex => ({
+          updatedExercises: updatedData?.map((ex) => ({
             id: ex.id,
             title: ex.title,
             drummer_midi_url: ex.drummer_midi_url,
@@ -743,8 +774,9 @@ export class AdminTutorialsService {
       }
 
       // Step 5: Return complete result
-      const allExercises = [...createdExercises, ...updatedExercises]
-        .sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+      const allExercises = [...createdExercises, ...updatedExercises].sort(
+        (a, b) => (a.order_index || 0) - (b.order_index || 0),
+      );
 
       return {
         tutorial: tutorialData,

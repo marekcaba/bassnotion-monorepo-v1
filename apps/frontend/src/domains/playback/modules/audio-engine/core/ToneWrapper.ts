@@ -342,9 +342,8 @@ export class ToneWrapper {
 
     try {
       // Import and apply professional DAW timing configuration
-      const { applyTransportTimingConfig } = await import(
-        '@/domains/playback/config/transportTiming'
-      );
+      const { applyTransportTimingConfig } =
+        await import('@/domains/playback/config/transportTiming');
       applyTransportTimingConfig(tone);
       logger.info('Applied professional transport timing configuration');
     } catch (error) {

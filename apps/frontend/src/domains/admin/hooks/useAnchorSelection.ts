@@ -10,13 +10,16 @@ export function useAnchorSelection(totalMeasures: number) {
   /**
    * Set anchor for a specific measure
    */
-  const setAnchor = useCallback((measureNumber: number, string: number, fret: number) => {
-    setAnchors((prev) => {
-      const next = new Map(prev);
-      next.set(measureNumber, { measureNumber, string, fret });
-      return next;
-    });
-  }, []);
+  const setAnchor = useCallback(
+    (measureNumber: number, string: number, fret: number) => {
+      setAnchors((prev) => {
+        const next = new Map(prev);
+        next.set(measureNumber, { measureNumber, string, fret });
+        return next;
+      });
+    },
+    [],
+  );
 
   /**
    * Remove anchor for a specific measure
@@ -64,7 +67,9 @@ export function useAnchorSelection(totalMeasures: number) {
    * Get all anchors as an array
    */
   const getAnchorsArray = useCallback((): MeasureAnchor[] => {
-    return Array.from(anchors.values()).sort((a, b) => a.measureNumber - b.measureNumber);
+    return Array.from(anchors.values()).sort(
+      (a, b) => a.measureNumber - b.measureNumber,
+    );
   }, [anchors]);
 
   /**

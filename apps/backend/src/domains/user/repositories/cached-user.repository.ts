@@ -2,7 +2,8 @@ import { Injectable } from '@nestjs/common';
 import {
   IUserRepository,
   PaginatedResult,
-  PaginationOptions } from './user.repository.interface.js';
+  PaginationOptions,
+} from './user.repository.interface.js';
 import { User } from '../entities/user.entity.js';
 import { UserId } from '../value-objects/user-id.vo.js';
 import { Email } from '../value-objects/email.vo.js';
@@ -65,13 +66,15 @@ export class CachedUserRepository implements IUserRepository {
           const result = await this.repository.findAll(options);
           return {
             ...result,
-            items: result.items.map((u) => u.toPersistence()) };
+            items: result.items.map((u) => u.toPersistence()),
+          };
         },
         this.TTL / 2, // 30 minutes for list queries
       )
       .then((result) => ({
         ...result,
-        items: result.items.map((data) => this.reconstitute(data)) }));
+        items: result.items.map((data) => this.reconstitute(data)),
+      }));
   }
 
   async findByRole(role: UserRole): Promise<User[]> {

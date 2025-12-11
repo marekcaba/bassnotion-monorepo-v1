@@ -70,7 +70,10 @@ describe('AdminExercisesService - Story 4.4 CRUD Enhancements', () => {
       };
 
       const mockCreated = { id: 'exercise-456', ...exerciseWithNotes };
-      mockSupabaseClient.single.mockResolvedValueOnce({ data: mockCreated, error: null });
+      mockSupabaseClient.single.mockResolvedValueOnce({
+        data: mockCreated,
+        error: null,
+      });
 
       const result = await service.create(exerciseWithNotes);
 
@@ -93,8 +96,15 @@ describe('AdminExercisesService - Story 4.4 CRUD Enhancements', () => {
         created_by: 'user-123',
       };
 
-      const mockCreated = { id: 'exercise-789', ...exerciseWithoutNotes, notes: [] };
-      mockSupabaseClient.single.mockResolvedValueOnce({ data: mockCreated, error: null });
+      const mockCreated = {
+        id: 'exercise-789',
+        ...exerciseWithoutNotes,
+        notes: [],
+      };
+      mockSupabaseClient.single.mockResolvedValueOnce({
+        data: mockCreated,
+        error: null,
+      });
 
       await service.create(exerciseWithoutNotes);
 
@@ -119,11 +129,19 @@ describe('AdminExercisesService - Story 4.4 CRUD Enhancements', () => {
         created_by: 'user-123',
       };
 
-      const permanentUrl = 'https://storage.supabase.co/exercise-midi-files/exercises/exercise-456/123456_bassline.mid';
+      const permanentUrl =
+        'https://storage.supabase.co/exercise-midi-files/exercises/exercise-456/123456_bassline.mid';
       mockSupabaseService.moveFile.mockResolvedValueOnce(permanentUrl);
 
-      const mockCreated = { id: 'exercise-456', ...exerciseWithTempMidi, bassline_midi_url: permanentUrl };
-      mockSupabaseClient.single.mockResolvedValueOnce({ data: mockCreated, error: null });
+      const mockCreated = {
+        id: 'exercise-456',
+        ...exerciseWithTempMidi,
+        bassline_midi_url: permanentUrl,
+      };
+      mockSupabaseClient.single.mockResolvedValueOnce({
+        data: mockCreated,
+        error: null,
+      });
 
       await service.create(exerciseWithTempMidi);
 
@@ -153,7 +171,10 @@ describe('AdminExercisesService - Story 4.4 CRUD Enhancements', () => {
       };
 
       const mockCreated = { id: 'exercise-789', ...exerciseWithExistingMidi };
-      mockSupabaseClient.single.mockResolvedValueOnce({ data: mockCreated, error: null });
+      mockSupabaseClient.single.mockResolvedValueOnce({
+        data: mockCreated,
+        error: null,
+      });
 
       await service.create(exerciseWithExistingMidi);
 
@@ -183,7 +204,10 @@ describe('AdminExercisesService - Story 4.4 CRUD Enhancements', () => {
       };
 
       const mockUpdated = { id: 'exercise-123', ...updateWithNotes };
-      mockSupabaseClient.single.mockResolvedValueOnce({ data: mockUpdated, error: null });
+      mockSupabaseClient.single.mockResolvedValueOnce({
+        data: mockUpdated,
+        error: null,
+      });
 
       await service.update('exercise-123', updateWithNotes);
 
@@ -201,7 +225,10 @@ describe('AdminExercisesService - Story 4.4 CRUD Enhancements', () => {
       };
 
       const mockUpdated = { id: 'exercise-123', ...updateWithoutNotes };
-      mockSupabaseClient.single.mockResolvedValueOnce({ data: mockUpdated, error: null });
+      mockSupabaseClient.single.mockResolvedValueOnce({
+        data: mockUpdated,
+        error: null,
+      });
 
       await service.update('exercise-123', updateWithoutNotes);
 
@@ -219,11 +246,18 @@ describe('AdminExercisesService - Story 4.4 CRUD Enhancements', () => {
         title: 'Updated with new MIDI',
       };
 
-      const permanentUrl = 'https://storage.supabase.co/exercise-midi-files/exercises/exercise-123/789012_bassline.mid';
+      const permanentUrl =
+        'https://storage.supabase.co/exercise-midi-files/exercises/exercise-123/789012_bassline.mid';
       mockSupabaseService.moveFile.mockResolvedValueOnce(permanentUrl);
 
-      const mockUpdated = { id: 'exercise-123', bassline_midi_url: permanentUrl };
-      mockSupabaseClient.single.mockResolvedValueOnce({ data: mockUpdated, error: null });
+      const mockUpdated = {
+        id: 'exercise-123',
+        bassline_midi_url: permanentUrl,
+      };
+      mockSupabaseClient.single.mockResolvedValueOnce({
+        data: mockUpdated,
+        error: null,
+      });
 
       await service.update('exercise-123', updateWithTempMidi);
 
@@ -254,7 +288,10 @@ describe('AdminExercisesService - Story 4.4 CRUD Enhancements', () => {
       };
 
       const mockCreated = { id: 'exercise-new-456', ...newExercise };
-      mockSupabaseClient.single.mockResolvedValueOnce({ data: mockCreated, error: null });
+      mockSupabaseClient.single.mockResolvedValueOnce({
+        data: mockCreated,
+        error: null,
+      });
 
       const result = await service.upsert(newExercise);
 
@@ -271,7 +308,10 @@ describe('AdminExercisesService - Story 4.4 CRUD Enhancements', () => {
 
       // Mock findById to return existing exercise
       mockSupabaseClient.single
-        .mockResolvedValueOnce({ data: { id: 'exercise-existing-123' }, error: null }) // findById
+        .mockResolvedValueOnce({
+          data: { id: 'exercise-existing-123' },
+          error: null,
+        }) // findById
         .mockResolvedValueOnce({ data: { ...existingExercise }, error: null }); // update
 
       const result = await service.upsert(existingExercise);
@@ -323,7 +363,7 @@ describe('AdminExercisesService - Story 4.4 CRUD Enhancements', () => {
       // Supabase will return error for validation failures (if we add constraints)
       mockSupabaseClient.single.mockResolvedValueOnce({
         data: null,
-        error: { message: 'BPM must be between 40-300' }
+        error: { message: 'BPM must be between 40-300' },
       });
 
       await expect(service.create(invalidBpm)).rejects.toThrow();
@@ -354,7 +394,7 @@ describe('AdminExercisesService - Story 4.4 CRUD Enhancements', () => {
       // Validation should catch this (either in DTO or database constraints)
       mockSupabaseClient.single.mockResolvedValueOnce({
         data: null,
-        error: { message: 'String must be between 1-6' }
+        error: { message: 'String must be between 1-6' },
       });
 
       await expect(service.create(invalidNotes)).rejects.toThrow();
@@ -375,19 +415,23 @@ describe('AdminExercisesService - Story 4.4 CRUD Enhancements', () => {
 
       mockSupabaseClient.single.mockResolvedValueOnce({
         data: null,
-        error: { message: 'Database error' }
+        error: { message: 'Database error' },
       });
 
-      await expect(service.create(exercise)).rejects.toThrow('Failed to create exercise');
+      await expect(service.create(exercise)).rejects.toThrow(
+        'Failed to create exercise',
+      );
     });
 
     it('should return null when update finds no exercise', async () => {
       mockSupabaseClient.single.mockResolvedValueOnce({
         data: null,
-        error: { code: 'PGRST116' }
+        error: { code: 'PGRST116' },
       });
 
-      const result = await service.update('nonexistent-id', { title: 'Updated' });
+      const result = await service.update('nonexistent-id', {
+        title: 'Updated',
+      });
 
       expect(result).toBeNull();
     });
@@ -404,7 +448,9 @@ describe('AdminExercisesService - Story 4.4 CRUD Enhancements', () => {
         created_by: 'user-123',
       };
 
-      mockSupabaseService.moveFile.mockRejectedValueOnce(new Error('File not found'));
+      mockSupabaseService.moveFile.mockRejectedValueOnce(
+        new Error('File not found'),
+      );
 
       await expect(service.create(exerciseWithTempMidi)).rejects.toThrow();
     });

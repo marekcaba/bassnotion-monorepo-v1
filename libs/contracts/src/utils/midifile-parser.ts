@@ -81,8 +81,14 @@ export class MIDIFileParser {
       try {
         // Debug logging to understand the import structure
         logger.info('Midi:', { Midi, correlationId: 'system' });
-        logger.info('typeof Midi:', { type: typeof Midi, correlationId: 'system' });
-        logger.info('Midi.constructor:', { constructor: Midi.constructor, correlationId: 'system' });
+        logger.info('typeof Midi:', {
+          type: typeof Midi,
+          correlationId: 'system',
+        });
+        logger.info('Midi.constructor:', {
+          constructor: Midi.constructor,
+          correlationId: 'system',
+        });
 
         parsedMidi = new Midi(fileBuffer);
       } catch (parseError) {
@@ -284,12 +290,17 @@ export class MIDIFileParser {
             tracks.push(trackData);
           }
         } catch (trackError) {
-          logger.warn(`Error processing track ${index}:`, { error: trackError, correlationId: 'system' });
+          logger.warn(`Error processing track ${index}:`, {
+            error: trackError,
+            correlationId: 'system',
+          });
           // Continue processing other tracks
         }
       });
     } catch (error) {
-      logger.error('Error in processTracks forEach:', error as Error, { correlationId: 'system' });
+      logger.error('Error in processTracks forEach:', error as Error, {
+        correlationId: 'system',
+      });
       throw new Error(
         `Error processing MIDI tracks: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
@@ -393,7 +404,9 @@ export class MIDIFileParser {
     // Process events with error handling
     try {
       if (!track.events || !Array.isArray(track.events)) {
-        logger.warn(`Track ${trackIndex} has invalid events structure`, { correlationId: 'system' });
+        logger.warn(`Track ${trackIndex} has invalid events structure`, {
+          correlationId: 'system',
+        });
         return null;
       }
 

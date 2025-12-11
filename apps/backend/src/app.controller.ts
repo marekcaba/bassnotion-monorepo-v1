@@ -17,6 +17,7 @@ export class AppController {
     return {
       message: 'Debug: Check if UserController routes are available',
       expectedRoutes: ['PUT /user/profile', 'DELETE /user/account'],
-      instructions: 'Try accessing these routes to see if they exist' };
+      instructions: 'Try accessing these routes to see if they exist',
+    };
   }
 }

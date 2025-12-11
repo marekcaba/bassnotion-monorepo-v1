@@ -12,6 +12,7 @@
 Phase 8 successfully implemented Service Layer architecture with 100% test coverage. However, RegionProcessor remains at **1,183 lines** versus the target of **~650 lines**.
 
 Phase 9 would address **structural complexity** (not architectural complexity):
+
 - Constructor bloat (282 lines of dependency wiring)
 - Duplicate state management
 - Lifecycle method complexity
@@ -25,16 +26,16 @@ Phase 9 would address **structural complexity** (not architectural complexity):
 
 ### RegionProcessor Line Breakdown
 
-| Component | Lines | % of Total | Issue |
-|-----------|-------|------------|-------|
-| Constructor | 282 | 24% | Manual dependency wiring |
-| State Variables | ~50 | 4% | Duplicate for backward compat |
-| Lifecycle (start/stop) | 95 | 8% | Complex callback chains |
-| Private Helpers | 290 | 25% | Many small delegations |
-| Documentation | ~100 | 8% | Verbose comments |
-| Public API | ~200 | 17% | Clean service delegation ✅ |
-| Misc | ~166 | 14% | Imports, types, etc. |
-| **Total** | **1,183** | **100%** | Target: 650 lines |
+| Component              | Lines     | % of Total | Issue                         |
+| ---------------------- | --------- | ---------- | ----------------------------- |
+| Constructor            | 282       | 24%        | Manual dependency wiring      |
+| State Variables        | ~50       | 4%         | Duplicate for backward compat |
+| Lifecycle (start/stop) | 95        | 8%         | Complex callback chains       |
+| Private Helpers        | 290       | 25%        | Many small delegations        |
+| Documentation          | ~100      | 8%         | Verbose comments              |
+| Public API             | ~200      | 17%        | Clean service delegation ✅   |
+| Misc                   | ~166      | 14%        | Imports, types, etc.          |
+| **Total**              | **1,183** | **100%**   | Target: 650 lines             |
 
 ### What's Good ✅
 
@@ -181,12 +182,14 @@ constructor(
 ```
 
 **Benefits**:
+
 - ✅ Constructor reduced from 282 → ~130 lines (-152 lines)
 - ✅ Dependency graph visible in one place
 - ✅ Easier to test (can inject mock dependencies)
 - ✅ Clearer initialization sequence
 
 **Risks**:
+
 - ⚠️ Adds another class to maintain
 - ⚠️ Factory becomes complex if not organized well
 
@@ -214,6 +217,7 @@ private lastBeatThreshold: number = 0;
 ```
 
 **Issue**: This state is **duplicated** from modules:
+
 - `harmonyBuffers` duplicates `BufferRegistry.getHarmonyBuffers()`
 - `countdownOffsetBeats` duplicates `CountdownManager.getOffsetBeats()`
 - etc.
@@ -247,12 +251,14 @@ get exerciseEndTime(): number {
 ```
 
 **Benefits**:
+
 - ✅ No duplicate state (-50 lines)
 - ✅ Single source of truth
 - ✅ Always up-to-date values
 - ✅ Easier to maintain
 
 **Risks**:
+
 - ⚠️ Modules must expose getters (small change required)
 - ⚠️ Slight performance overhead (negligible in practice)
 
@@ -267,6 +273,7 @@ get exerciseEndTime(): number {
 #### Current Lifecycle Methods (95 lines)
 
 **`start()` method** (60 lines):
+
 ```typescript
 async start(): Promise<void> {
   if (this.isRunning) return;
@@ -292,6 +299,7 @@ async start(): Promise<void> {
 ```
 
 **`stop()` method** (28 lines):
+
 ```typescript
 stop(immediate = false): void {
   if (!this.isRunning) return;
@@ -314,16 +322,17 @@ export class LifecycleService {
   constructor(
     private instanceId: string,
     private deps: LifecycleServiceDeps,
-    private callbacks: LifecycleServiceCallbacks
+    private callbacks: LifecycleServiceCallbacks,
   ) {}
 
   async start(): Promise<void> {
     if (this.deps.getIsRunning()) return;
 
-    await this.deps.lifecycleCoordinator.start(
+    await this.deps.lifecycleCoordinator
+      .start
       // All the complex logic moved here
       // ...
-    );
+      ();
 
     this.callbacks.setIsRunning(true);
   }
@@ -355,11 +364,13 @@ stop(immediate = false): void {
 ```
 
 **Benefits**:
+
 - ✅ Consistent with other services
 - ✅ Lifecycle testable in isolation
 - ✅ RegionProcessor methods reduced to 3 lines each
 
 **Risks**:
+
 - ⚠️ Lifecycle is fundamentally different from other services
 - ⚠️ May add indirection without real benefit
 - ⚠️ `start()` and `stop()` need direct access to internal state
@@ -401,6 +412,7 @@ private getWamKeyboard(): any {
 #### Proposed Solution: Relocate to Modules
 
 **Move to `TrackAnalyzer.ts`**:
+
 ```typescript
 export class TrackAnalyzer {
   static inferInstrumentType(track: Track): string {
@@ -415,6 +427,7 @@ getInstrumentType(track: Track): string {
 ```
 
 **Move to `VelocityLayerSelector.ts`**:
+
 ```typescript
 export class VelocityLayerSelector {
   detectSparseSampling(buffers: Map<string, AudioBuffer>): boolean {
@@ -424,17 +437,20 @@ export class VelocityLayerSelector {
 ```
 
 **Move to `PluginManager.ts`**:
+
 ```typescript
 // getWamKeyboard() becomes direct call:
 this.pluginManager.getWamKeyboard();
 ```
 
 **Benefits**:
+
 - ✅ Logic lives with related functionality
 - ✅ Helpers testable independently
 - ✅ RegionProcessor becomes even cleaner
 
 **Risks**:
+
 - ⚠️ Modules need to expose more methods
 - ⚠️ May scatter logic too much
 
@@ -449,6 +465,7 @@ Instead of a factory, introduce a proper DI container.
 #### Using InversifyJS
 
 **Install**:
+
 ```bash
 pnpm add inversify reflect-metadata
 ```
@@ -494,12 +511,14 @@ const processor = container.get<RegionProcessor>(TYPES.RegionProcessor);
 ```
 
 **Benefits**:
+
 - ✅ True inversion of control
 - ✅ Zero manual wiring
 - ✅ Easy to swap implementations
 - ✅ Excellent for testing
 
 **Risks**:
+
 - ⚠️ Learning curve for team
 - ⚠️ More boilerplate (decorators)
 - ⚠️ Adds framework dependency
@@ -513,13 +532,11 @@ const processor = container.get<RegionProcessor>(TYPES.RegionProcessor);
 ### Option: Minimal Structural Cleanup
 
 **Do**:
+
 1. ✅ Extract `RegionProcessorFactory` (-150 lines, 2-3 hours)
 2. ✅ Remove duplicate state with getters (-50 lines, 1-2 hours)
 
-**Don't**:
-3. ❌ Extract LifecycleService (over-engineering)
-4. ❌ Relocate helper methods (diminishing returns)
-5. ❌ Add DI container (unnecessary complexity)
+**Don't**: 3. ❌ Extract LifecycleService (over-engineering) 4. ❌ Relocate helper methods (diminishing returns) 5. ❌ Add DI container (unnecessary complexity)
 
 **Total Effort**: 3-5 hours
 **Total Reduction**: ~200 lines
@@ -528,26 +545,31 @@ const processor = container.get<RegionProcessor>(TYPES.RegionProcessor);
 ### Why This Approach?
 
 **Factory Pattern**:
+
 - Real benefit: Cleaner constructor, easier testing
 - Low risk: Factory is optional, fallback exists
 - Good ROI: 3 hours for -150 lines
 
 **State Cleanup**:
+
 - Real benefit: Single source of truth
 - Low risk: Just exposes existing getters
 - Good ROI: 2 hours for -50 lines
 
 **Skip Lifecycle Service**:
+
 - Lifecycle is special, doesn't benefit from service pattern
 - Would add complexity without reducing lines much
 - `start()` and `stop()` need direct state access
 
 **Skip Helper Relocation**:
+
 - Diminishing returns (only -50 lines)
 - Risk of scattering logic too much
 - Current organization is fine
 
 **Skip DI Container**:
+
 - Big investment (6-8 hours)
 - Adds framework dependency
 - Factory pattern is "good enough"
@@ -561,6 +583,7 @@ const processor = container.get<RegionProcessor>(TYPES.RegionProcessor);
 **Estimated Time**: 2-3 hours
 
 **Subtasks**:
+
 1. Create `RegionProcessorFactory.ts` with builder methods
 2. Extract dependency instantiation from constructor
 3. Extract dependency wiring logic
@@ -577,6 +600,7 @@ const processor = container.get<RegionProcessor>(TYPES.RegionProcessor);
 **Estimated Time**: 1-2 hours
 
 **Subtasks**:
+
 1. Add getters to BufferRegistry for harmony/bass/voice state
 2. Add getter to CountdownManager for offset beats
 3. Add getters to SchedulingOrchestrationService for timing
@@ -590,14 +614,14 @@ const processor = container.get<RegionProcessor>(TYPES.RegionProcessor);
 
 ## Decision Matrix
 
-| Option | Effort | Lines Saved | Risk | Benefit | Recommend? |
-|--------|--------|-------------|------|---------|------------|
-| **Factory Pattern** | 2-3h | -150 | Low | High | ✅ **YES** |
-| **State Cleanup** | 1-2h | -50 | Low | Medium | ✅ **YES** |
-| **Lifecycle Service** | 2-3h | -45 | Medium | Low | ❌ NO |
-| **Helper Relocation** | 2-3h | -50 | Medium | Low | ❌ NO |
-| **DI Container** | 6-8h | -150 | High | Medium | ❌ NO |
-| **Do Nothing** | 0h | 0 | None | None | ✅ **ALSO VALID** |
+| Option                | Effort | Lines Saved | Risk   | Benefit | Recommend?        |
+| --------------------- | ------ | ----------- | ------ | ------- | ----------------- |
+| **Factory Pattern**   | 2-3h   | -150        | Low    | High    | ✅ **YES**        |
+| **State Cleanup**     | 1-2h   | -50         | Low    | Medium  | ✅ **YES**        |
+| **Lifecycle Service** | 2-3h   | -45         | Medium | Low     | ❌ NO             |
+| **Helper Relocation** | 2-3h   | -50         | Medium | Low     | ❌ NO             |
+| **DI Container**      | 6-8h   | -150        | High   | Medium  | ❌ NO             |
+| **Do Nothing**        | 0h     | 0           | None   | None    | ✅ **ALSO VALID** |
 
 ---
 
@@ -606,17 +630,20 @@ const processor = container.get<RegionProcessor>(TYPES.RegionProcessor);
 ### Phase 9 Recommendation: OPTIONAL
 
 **Current State**:
+
 - ✅ Phase 8 architecture is solid and production-ready
 - ✅ 100% test coverage maintained
 - ✅ FAANG best practices implemented
 - ⚠️ RegionProcessor at 1,183 lines (target was 650)
 
 **If You Pursue Phase 9**:
+
 1. Extract `RegionProcessorFactory` (-150 lines)
 2. Remove duplicate state with getters (-50 lines)
 3. **Result**: ~983 lines (17% reduction, good enough)
 
 **If You Skip Phase 9**:
+
 - Current architecture is maintainable
 - Focus effort on new features instead
 - Revisit if constructor becomes painful
@@ -627,6 +654,7 @@ const processor = container.get<RegionProcessor>(TYPES.RegionProcessor);
 ---
 
 **Next Steps**:
+
 1. ✅ Ship Phase 8 (it's complete!)
 2. 📋 Keep Phase 9 as technical debt backlog item
 3. 🚀 Build features on the solid foundation

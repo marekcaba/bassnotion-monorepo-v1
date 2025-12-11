@@ -3,17 +3,20 @@
 ## Latest Update (Aug 1, 2025)
 
 ### Current Issue
+
 - Transport is running but widgets are not following the transport
-- Widgets show `hasTone: false, audioReady: false` 
+- Widgets show `hasTone: false, audioReady: false`
 - No sound coming from any widgets
 - Transport starts but immediately stops
 
 ### Root Causes
+
 1. The useAudio hook was not properly receiving the audio ready state from the AudioProvider
 2. The widgets (DrummerWidget, MetronomeWidget) were missing their actual sound generation loops
 3. **Multiple widgets were trying to control Transport independently, causing conflicts**
 
 ### Applied Fixes
+
 1. Updated `getTone()` in useAudio to return null instead of throwing errors
 2. Added event listener for `audioServicesReady` in useAudio hook
 3. Added proper initialization state checking
@@ -28,6 +31,7 @@
 12. **Fixed JavaScript hoisting issue - moved createDrumLoop before useEffect that uses it**
 
 ### Current Status
+
 - ✅ Widgets now get Tone.js access (`hasTone: true, audioReady: true`)
 - ✅ Drum samples load successfully from Supabase
 - ✅ DrummerWidget creates a Tone.js Loop that plays drum patterns
@@ -41,6 +45,7 @@
 ## Issues Fixed
 
 ### 1. Transport Synchronization
+
 - **Problem**: Widgets were using non-existent `(Transport as any)?._synchronizedStartTime`
 - **Solution**: Replaced with consistent `'+0.05'` start time across all widgets
 - **Files Updated**:
@@ -49,6 +54,7 @@
   - HarmonyWidget.tsx
 
 ### 2. AudioContext Suspension
+
 - **Problem**: "The AudioContext was not allowed to start"
 - **Solution**: Added `Tone.start()` calls before starting Transport
 - **Files Updated**:
@@ -56,18 +62,21 @@
   - GlobalControls.tsx (added audio initialization on play button click)
 
 ### 3. Audio System Access
+
 - **Problem**: Widgets showing `hasTone: false, audioReady: false`
 - **Solution**: Updated useAudio hook to check for `__coreServices` first
 - **Files Updated**:
   - useAudio.ts (now supports both CoreServices and ServiceRegistry)
 
 ### 4. Duplicate ToneProvider
+
 - **Problem**: YouTubeWidgetPage had duplicate ToneProvider wrapper
 - **Solution**: Removed the duplicate wrapper
 - **Files Updated**:
   - YouTubeWidgetPage.tsx
 
 ### 5. Drum Sample Loading
+
 - **Problem**: 404 errors for drum samples - wrong paths
 - **Solution**: Updated to use correct Supabase paths: `drums/hydrogen-kits/mp3/rock/dave-grohl`
 - **Files Updated**:
@@ -83,6 +92,7 @@
 ## Testing
 
 To verify the fixes:
+
 1. Open the test exercises page: http://localhost:3001/test-exercises
 2. Click the play button
 3. Check browser console for:
@@ -95,4 +105,4 @@ To verify the fixes:
 - All drum samples should load from Supabase, not locally
 - Using existing Hydrogen drum kits already uploaded to Supabase
 - The Dave Grohl kit uses specific naming: `kik.mp3` instead of `kick.mp3`
-EOF < /dev/null
+  EOF < /dev/null

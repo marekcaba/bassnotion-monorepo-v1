@@ -16,7 +16,10 @@ export default function TestAuthPage() {
   }, []);
 
   const checkSession = async () => {
-    const { data: { session }, error } = await supabase.auth.getSession();
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession();
     if (error) {
       setError(`Session error: ${error.message}`);
     } else {
@@ -30,7 +33,9 @@ export default function TestAuthPage() {
     setProfileResponse(null);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
       if (!session?.access_token) {
         setError('No session token available');
@@ -44,7 +49,7 @@ export default function TestAuthPage() {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
         credentials: 'include',
       });
@@ -57,14 +62,18 @@ export default function TestAuthPage() {
         data: data,
         headers: {
           contentType: response.headers.get('content-type'),
-        }
+        },
       });
 
       if (!response.ok) {
-        setError(`Profile request failed: ${response.status} ${response.statusText}`);
+        setError(
+          `Profile request failed: ${response.status} ${response.statusText}`,
+        );
       }
     } catch (err) {
-      setError(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setError(
+        `Error: ${err instanceof Error ? err.message : 'Unknown error'}`,
+      );
     } finally {
       setIsLoading(false);
     }
@@ -75,7 +84,9 @@ export default function TestAuthPage() {
     setError(null);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
       if (!session?.access_token) {
         setError('No session token available');
@@ -87,7 +98,7 @@ export default function TestAuthPage() {
       const response = await fetch('http://localhost:3000/api/health', {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
       });
 
@@ -97,10 +108,12 @@ export default function TestAuthPage() {
       setProfileResponse({
         status: response.status,
         data: data,
-        test: 'health-check'
+        test: 'health-check',
       });
     } catch (err) {
-      setError(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setError(
+        `Error: ${err instanceof Error ? err.message : 'Unknown error'}`,
+      );
     } finally {
       setIsLoading(false);
     }
@@ -123,7 +136,9 @@ export default function TestAuthPage() {
         console.log('Login successful:', data);
       }
     } catch (err) {
-      setError(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setError(
+        `Error: ${err instanceof Error ? err.message : 'Unknown error'}`,
+      );
     } finally {
       setIsLoading(false);
     }
@@ -148,11 +163,24 @@ export default function TestAuthPage() {
           <h2 className="text-lg font-semibold mb-4">Current Session</h2>
           {session ? (
             <div className="space-y-2 text-sm">
-              <p><strong>User ID:</strong> {session.user?.id}</p>
-              <p><strong>Email:</strong> {session.user?.email}</p>
-              <p><strong>Provider:</strong> {session.user?.app_metadata?.provider}</p>
-              <p><strong>Token (first 20 chars):</strong> {session.access_token?.substring(0, 20)}...</p>
-              <p><strong>Expires at:</strong> {new Date(session.expires_at * 1000).toLocaleString()}</p>
+              <p>
+                <strong>User ID:</strong> {session.user?.id}
+              </p>
+              <p>
+                <strong>Email:</strong> {session.user?.email}
+              </p>
+              <p>
+                <strong>Provider:</strong>{' '}
+                {session.user?.app_metadata?.provider}
+              </p>
+              <p>
+                <strong>Token (first 20 chars):</strong>{' '}
+                {session.access_token?.substring(0, 20)}...
+              </p>
+              <p>
+                <strong>Expires at:</strong>{' '}
+                {new Date(session.expires_at * 1000).toLocaleString()}
+              </p>
             </div>
           ) : (
             <p className="text-gray-500">No active session</p>
@@ -166,13 +194,20 @@ export default function TestAuthPage() {
           <Button onClick={loginTestUser} disabled={isLoading}>
             Login Test User
           </Button>
-          <Button onClick={testProfileEndpoint} disabled={isLoading || !session}>
+          <Button
+            onClick={testProfileEndpoint}
+            disabled={isLoading || !session}
+          >
             Test Profile Endpoint
           </Button>
           <Button onClick={testBackendAuth} disabled={isLoading || !session}>
             Test Health Check
           </Button>
-          <Button onClick={signOut} disabled={isLoading || !session} variant="destructive">
+          <Button
+            onClick={signOut}
+            disabled={isLoading || !session}
+            variant="destructive"
+          >
             Sign Out
           </Button>
         </div>

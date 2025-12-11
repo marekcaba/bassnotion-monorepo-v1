@@ -1,7 +1,8 @@
 import {
   Injectable,
   NestMiddleware,
-  BadRequestException } from '@nestjs/common';
+  BadRequestException,
+} from '@nestjs/common';
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { sanitizationConfig } from '../../config/security.config.js';
 import { createStructuredLogger } from '@bassnotion/contracts';
@@ -35,7 +36,10 @@ export class SanitizeMiddleware implements NestMiddleware {
       next();
     } catch (error) {
       this.logger.warn('Input sanitization failed', {
-        error: error instanceof Error ? error.message : 'Unknown error', url: req.url, method: req.method });
+        error: error instanceof Error ? error.message : 'Unknown error',
+        url: req.url,
+        method: req.method,
+      });
 
       if (error instanceof BadRequestException) {
         throw error;

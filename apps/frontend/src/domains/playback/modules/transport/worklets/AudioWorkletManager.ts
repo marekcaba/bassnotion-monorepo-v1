@@ -192,7 +192,8 @@ export class AudioWorkletManager extends EventEmitter {
     if (data.sessionId !== this.currentSessionId) {
       // Suppress expected stale warnings for 200ms after stop (race condition cleanup)
       const timeSinceStop = performance.now() - this.lastStopTime;
-      const isExpectedStaleMessage = this.lastStopTime > 0 && timeSinceStop < 200;
+      const isExpectedStaleMessage =
+        this.lastStopTime > 0 && timeSinceStop < 200;
 
       if (!isExpectedStaleMessage) {
         logger.warn('Rejecting stale timing update', {
