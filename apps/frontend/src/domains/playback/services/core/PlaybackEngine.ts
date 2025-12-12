@@ -1495,6 +1495,45 @@ export class PlaybackEngine {
   }
 
   /**
+   * Set drum buffers for direct audio scheduling
+   * This configures the DrumScheduler to play drum samples
+   *
+   * @param buffers - Record mapping drum types to AudioBuffers
+   *                  Keys should match DrumScheduler's eventTypeToBufferKey:
+   *                  'kick', 'snare', 'hihat', 'openhat', 'crash', 'ride', 'tom1', 'tom2', 'tom3'
+   * @param destination - AudioNode to connect drum output to
+   */
+  setDrumBuffers(
+    buffers: Record<string, AudioBuffer>,
+    destination: AudioNode,
+  ): void {
+    if (!this.audioContext || !destination) {
+      this.logger.warn(
+        'Cannot set drum buffers: audio context or destination not ready',
+      );
+      return;
+    }
+
+    if (!this.drumScheduler) {
+      this.logger.warn('Cannot set drum buffers: drumScheduler not initialized');
+      return;
+    }
+
+    // Set audio context on scheduler (may already be set, but safe to call again)
+    this.drumScheduler.setAudioContext(this.audioContext);
+
+    // Set buffers with destination
+    this.drumScheduler.setBuffers(buffers, destination);
+
+    this.logger.info('Drum buffers set', {
+      bufferCount: Object.keys(buffers).length,
+      bufferKeys: Object.keys(buffers),
+      hasDestination: !!destination,
+      instanceId: this.instanceId,
+    });
+  }
+
+  /**
    * Get statistics for monitoring
    */
   getStats() {

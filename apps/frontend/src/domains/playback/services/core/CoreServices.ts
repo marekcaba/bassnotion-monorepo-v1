@@ -359,7 +359,18 @@ export class CoreServices {
               audioContext.destination,
             );
           }
-          // Note: PlaybackEngine doesn't have setDrumBuffers yet - drums handled by DrummerWidget
+          // Inject drum buffers into PlaybackEngine for DrumScheduler
+          if (this.playbackEngine) {
+            const drumBuffers: Record<string, AudioBuffer> = {
+              kick: kickBuffer,
+              snare: snareBuffer,
+              hihat: hihatBuffer,
+            };
+            this.playbackEngine.setDrumBuffers(
+              drumBuffers,
+              audioContext.destination,
+            );
+          }
           logger.info(
             '✅ CoreServices: Drum buffers injected - direct audio scheduling enabled',
           );
