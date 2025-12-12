@@ -90,6 +90,12 @@ export class SustainPedalHandler {
    */
   public setCC64Timeline(timeline: Map<number, boolean>): void {
     this.cc64Timeline = timeline;
+    // 🔍 DIAGNOSTIC: Log full timeline with DOWN/UP events
+    const sortedEntries = Array.from(timeline.entries()).sort((a, b) => a[0] - b[0]);
+    console.log(`[CC64 DIAGNOSTIC] setCC64Timeline - FULL TIMELINE (${timeline.size} events):`);
+    sortedEntries.forEach(([time, down], i) => {
+      console.log(`  ${i}: ${time.toFixed(3)}s = ${down ? '⬇️ DOWN' : '⬆️ UP'}`);
+    });
     logger.info('CC64 timeline set', {
       eventCount: timeline.size,
     });
@@ -130,6 +136,17 @@ export class SustainPedalHandler {
     noteName: string,
     buffer: AudioBuffer,
   ): SustainAnalysisResult {
+    // 🔍 DIAGNOSTIC: Log every analyzeSustain call
+    console.log(`[CC64 DIAGNOSTIC] analyzeSustain called`, {
+      noteName,
+      audioTime: audioTime.toFixed(3),
+      midiDuration: midiDuration.toFixed(3),
+      timelineSize: this.cc64Timeline.size,
+      timelineKeys: this.cc64Timeline.size > 0
+        ? Array.from(this.cc64Timeline.keys()).slice(0, 5).map(k => k.toFixed(3))
+        : 'EMPTY',
+    });
+
     // Initialize result with defaults (no sustain)
     const result: SustainAnalysisResult = {
       shouldEnableLooping: false,
@@ -148,6 +165,7 @@ export class SustainPedalHandler {
 
     // No CC64 timeline - return MIDI duration
     if (this.cc64Timeline.size === 0) {
+      console.log(`[CC64 DIAGNOSTIC] ❌ Timeline EMPTY for ${noteName} - returning MIDI duration`);
       return result;
     }
 

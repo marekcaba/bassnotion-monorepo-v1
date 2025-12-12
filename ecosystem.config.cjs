@@ -9,8 +9,8 @@ module.exports = {
       env: {
         NODE_ENV: 'development',
         PORT: '3000',
-        // Prevent NX daemon conflicts
-        NX_DAEMON: 'true',
+        // Disable NX daemon to prevent socket conflicts
+        NX_DAEMON: 'false',
         NX_SKIP_NX_CACHE: 'false',
       },
       watch: false,
@@ -34,8 +34,8 @@ module.exports = {
       env: {
         NODE_ENV: 'development',
         PORT: '3001',
-        // Prevent NX daemon conflicts
-        NX_DAEMON: 'true',
+        // Disable NX daemon to prevent socket conflicts
+        NX_DAEMON: 'false',
         NX_SKIP_NX_CACHE: 'false',
       },
       watch: false,

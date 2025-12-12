@@ -173,8 +173,15 @@ export class InitialSamplePreloader {
    * Load exercise-specific samples using FAANG MIDI-based smart loading
    * Called when ExerciseSelector becomes visible
    * @param exercise - Exercise to load samples for (uses MIDI files to determine required samples)
+   * @param options.skipBufferInjection - If true, only cache samples without injecting into PlaybackEngine
+   *                                      Use this for background preloading to avoid race conditions
    */
-  async loadFullSamples(exercise?: any): Promise<any> {
+  async loadFullSamples(
+    exercise?: any,
+    options?: { skipBufferInjection?: boolean },
+  ): Promise<any> {
+    const skipBufferInjection = options?.skipBufferInjection ?? false;
+
     logger.info('🚀 Phase 3: FAANG MIDI-based smart sample loading...', {
       exerciseId: exercise?.id,
       exerciseTitle: exercise?.title,
@@ -182,6 +189,7 @@ export class InitialSamplePreloader {
       hasDrummerMidi: !!exercise?.drummerMidiUrl,
       hasBasslineMidi: !!exercise?.basslineMidiUrl,
       harmonyInstrument: exercise?.harmonyInstrument,
+      skipBufferInjection,
     });
 
     // 🆕 DEDUPLICATION: Check if already loading this instrument
@@ -189,10 +197,6 @@ export class InitialSamplePreloader {
     const loadingKey = `harmony-${instrument}`;
 
     if (this.loadingPromises.has(loadingKey)) {
-      console.log(
-        '⏭️ [DEDUPLICATION] Already loading samples for:',
-        instrument,
-      );
       logger.info(
         'Samples already loading for instrument, waiting for completion:',
         {
@@ -208,6 +212,7 @@ export class InitialSamplePreloader {
       exercise,
       instrument,
       loadingKey,
+      skipBufferInjection,
     );
     this.loadingPromises.set(loadingKey, loadingPromise);
 
@@ -362,10 +367,11 @@ export class InitialSamplePreloader {
 
     // Create a mock exercise with the required notes
     // This allows us to reuse the existing HarmonyPreloadStrategy
+    // NOTE: pitch must be a number for midiToNoteName to work correctly
     const mockExercise = {
       harmonyInstrument: instrument,
       harmonyNotes: notes.map((pitch) => ({
-        pitch,
+        pitch: typeof pitch === 'string' ? parseInt(pitch, 10) : pitch,
         velocity: 80, // Use medium velocity to load middle layers
         time: 0,
         duration: 1,
@@ -393,22 +399,14 @@ export class InitialSamplePreloader {
   /**
    * Internal method that actually performs the sample loading
    * Extracted to enable deduplication in loadFullSamples
+   * @param skipBufferInjection - If true, only cache samples without injecting into PlaybackEngine
    */
   private async executeLoadFullSamples(
     exercise: any,
-    instrument: string,
-    loadingKey: string,
+    _instrument: string,
+    _loadingKey: string,
+    skipBufferInjection: boolean = false,
   ): Promise<void> {
-    console.log('🎵 [LOADING-START] Starting sample load for:', {
-      instrument,
-      exerciseId: exercise?.id,
-      loadingKey,
-      hasHarmonyNotes: !!exercise?.harmonyNotes,
-      harmonyNotesCount: exercise?.harmonyNotes?.length || 0,
-      harmonyInstrument: exercise?.harmonyInstrument,
-      firstThreeNotes: exercise?.harmonyNotes?.slice(0, 3),
-    });
-
     try {
       // FAANG SOLUTION: Use HarmonyPreloadStrategy with exercise data
       // This will extract notes from MIDI and load ONLY required samples
@@ -422,12 +420,6 @@ export class InitialSamplePreloader {
         exercise,
       );
 
-      console.log('🎵 [AFTER-HARMONY-LOAD] Harmony loading completed:', {
-        success: harmonyResult.success,
-        loaded: harmonyResult.loaded,
-        total: harmonyResult.total,
-      });
-
       if (harmonyResult.success) {
         logger.info('✅ Harmony FAANG smart loading complete', {
           samplesLoaded: harmonyResult.loaded,
@@ -437,12 +429,21 @@ export class InitialSamplePreloader {
               : 'N/A',
         });
 
-        console.log(
-          '🔧 [BEFORE-PLAYBACK-ENGINE] About to inject buffers into PlaybackEngine',
-        );
-
         // CRITICAL: Inject harmony buffers into PlaybackEngine immediately after loading
         // This enables direct AudioBufferSourceNode scheduling for instant stop functionality
+        // RACE CONDITION FIX: Skip injection for background preloading to avoid overwriting active instrument
+        if (skipBufferInjection) {
+          logger.info(
+            '⏭️ Skipping buffer injection (background preload mode)',
+            {
+              instrument: exercise?.harmonyInstrument || 'grandpiano',
+              exerciseId: exercise?.id,
+            },
+          );
+          // Return early - samples are cached but not injected
+          return;
+        }
+
         try {
           // ✅ FIX: Use WindowRegistry key instead of legacy __globalCoreServices
           const coreServices =
@@ -478,11 +479,6 @@ export class InitialSamplePreloader {
               key.startsWith(`${instrument}-`),
             );
 
-            console.log(
-              `🔍 [BUFFER-INJECTION] Found ${harmonyCachedKeys.length} cached buffers for ${instrument}:`,
-              harmonyCachedKeys.slice(0, 5),
-            );
-
             // Get audioContext for decoding raw buffers from CoreServices
             const audioEngine = coreServices.getAudioEngine();
             const audioContext = audioEngine.getContext();
@@ -507,14 +503,8 @@ export class InitialSamplePreloader {
                     await sampleCache.cacheBuffer(cacheKey, buffer, {
                       isContextCompatible: true,
                     });
-                    console.log(
-                      `🔄 [BUFFER-INJECTION] Decoded raw buffer on-demand: ${cacheKey}`,
-                    );
                   } catch (error) {
-                    console.error(
-                      `❌ [BUFFER-INJECTION] Failed to decode ${cacheKey}:`,
-                      error,
-                    );
+                    logger.error(`Failed to decode buffer ${cacheKey}`, error as Error);
                   }
                 }
               }
@@ -528,16 +518,15 @@ export class InitialSamplePreloader {
               }
             }
 
-            console.log(
-              `✅ [BUFFER-INJECTION] Collected ${buffersFound} buffers for PlaybackEngine`,
-            );
-
             if (buffersFound > 0 && playbackEngine) {
               // audioContext already obtained above before the loop
               // Phase 3.1: Use PlaybackEngine.setHarmonyBuffers()
+              // FIX: Pass instrument name so HarmonySchedulerV2 uses correct instrument
               playbackEngine.setHarmonyBuffers(
                 harmonyBuffers,
                 audioContext.destination,
+                undefined, // perNoteVelocityRanges
+                instrument, // instrumentName - CRITICAL for correct sample playback
               );
               logger.info('✅ Harmony buffers injected into PlaybackEngine', {
                 instrument,
@@ -552,19 +541,11 @@ export class InitialSamplePreloader {
             }
           }
         } catch (error) {
-          console.error(
-            '❌ [REGIONPROCESSOR-ERROR] Failed to inject buffers:',
-            error,
-          );
           logger.error(
             'Failed to inject harmony buffers into PlaybackEngine',
             error as Error,
           );
         }
-
-        console.log(
-          '✅ [AFTER-PLAYBACK-ENGINE] PlaybackEngine injection attempt completed',
-        );
 
         // CRITICAL FIX: Inject voice cue buffers into PlaybackEngine
         // Voice cue samples are preloaded (lines 1518-1533) but were never injected
@@ -603,14 +584,8 @@ export class InitialSamplePreloader {
                       await sampleCache.cacheBuffer(cacheKey, buffer, {
                         isContextCompatible: true,
                       });
-                      console.log(
-                        `🔄 [VOICE-CUE-INJECTION] Decoded raw buffer on-demand: ${cacheKey}`,
-                      );
                     } catch (error) {
-                      console.error(
-                        `❌ [VOICE-CUE-INJECTION] Failed to decode ${cacheKey}:`,
-                        error,
-                      );
+                      logger.error(`Failed to decode voice cue ${cacheKey}`, error as Error);
                     }
                   }
                 }
@@ -641,20 +616,12 @@ export class InitialSamplePreloader {
                     bufferKeys: Object.keys(voiceCueRecord),
                   },
                 );
-                console.log(
-                  `✅ [VOICE-CUE-INJECTION] Injected ${Object.keys(voiceCueRecord).length} voice cue buffers:`,
-                  Object.keys(voiceCueRecord),
-                );
               } else {
                 logger.warn('⚠️ No voice cue buffers available for injection');
               }
             }
           }
         } catch (error) {
-          console.error(
-            '❌ [VOICE-CUE-ERROR] Failed to inject voice cue buffers:',
-            error,
-          );
           logger.error(
             'Failed to inject voice cue buffers into PlaybackEngine',
             error as Error,
@@ -666,24 +633,8 @@ export class InitialSamplePreloader {
         });
       }
 
-      console.log('🔍 [BEFORE-BASS-CHECK] Checking if bass loading needed:', {
-        hasBasslineMidiUrl: !!exercise?.basslineMidiUrl,
-        basslineMidiUrl: exercise?.basslineMidiUrl,
-      });
-
-      // 🆕 EARLY RETURN: For now, skip bass loading when called from handleExerciseSelect
-      // This avoids unnecessary loading and ensures fast harmony-only loading
+      // EARLY RETURN: Skip bass loading when no bassline MIDI
       if (!exercise?.basslineMidiUrl) {
-        console.log(
-          '⏭️ [SKIP-BASS] No bassline MIDI, returning harmony result only',
-        );
-
-        console.log('✅ [LOADING-COMPLETE] Sample load completed for:', {
-          instrument,
-          loadingKey,
-          harmonyResult,
-        });
-
         return harmonyResult;
       }
 
@@ -733,22 +684,10 @@ export class InitialSamplePreloader {
         window.dispatchEvent(new Event('samplesPreloaded'));
       }
 
-      console.log('✅ [LOADING-COMPLETE] Sample load completed for:', {
-        instrument,
-        loadingKey,
-        harmonyResult,
-      });
-
-      // Return the harmony result for caller
       return harmonyResult;
     } catch (error) {
-      console.error('❌ [LOADING-ERROR] Failed to load samples for:', {
-        instrument,
-        loadingKey,
-        error,
-      });
-      logger.error('❌ Failed to load exercise samples:', error);
-      throw error; // Re-throw to ensure promise rejects
+      logger.error('Failed to load exercise samples', error as Error);
+      throw error;
     }
   }
 
@@ -1756,10 +1695,7 @@ export class InitialSamplePreloader {
           let arrayBuffer: ArrayBuffer;
 
           if (cachedBuffer) {
-            console.log(
-              `💾 [INDEXEDDB-HIT] Using cached sample: ${primaryCacheKey}`,
-            );
-            logger.info(`💾 IndexedDB cache HIT: ${sample.path}`);
+            logger.info(`IndexedDB cache HIT: ${sample.path}`);
             arrayBuffer = cachedBuffer;
             successCount++;
           } else {
@@ -2290,15 +2226,6 @@ export function getPreloadedHarmonyInstrument(): any {
   return GlobalSampleCache.getInstance().getCachedInstrument(
     'harmony-preloaded',
   );
-}
-
-/**
- * @deprecated Legacy helper - no longer used after Phase 3.1 refactor
- * Get pre-configured RegionProcessor if available
- * Will be removed in Phase 3.2
- */
-export function getPreConfiguredRegionProcessor(): any {
-  return (window as any).__preConfiguredRegionProcessor;
 }
 
 /**

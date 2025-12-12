@@ -16,6 +16,7 @@ import type {
   PluginProcessingResult,
   PluginConfig,
   PluginParameterInfo,
+  PluginActivateOptions,
 } from '../../../../types/plugin.js';
 import {
   PluginState,
@@ -204,9 +205,10 @@ export class WamKeyboardPlugin extends EventEmitter implements AudioPlugin {
   }
 
   /**
-   * Activate the plugin (load default instrument)
+   * Activate the plugin (load instrument)
+   * @param options - Optional activation options including instrument to load
    */
-  async activate(): Promise<void> {
+  async activate(options?: PluginActivateOptions): Promise<void> {
     if (this.state === PluginState.ACTIVE) {
       logger.warn('WamKeyboardPlugin already active, skipping');
       return;
@@ -217,17 +219,28 @@ export class WamKeyboardPlugin extends EventEmitter implements AudioPlugin {
     }
 
     try {
-      logger.info('▶️ Activating WamKeyboardPlugin...');
+      // Use instrument from options if provided, otherwise use current/default
+      const instrumentToLoad = options?.instrument
+        ? (options.instrument as KeyboardInstrument)
+        : this.currentInstrument;
 
-      // Load default instrument (Grand Piano)
-      await this.wamKeyboard.audioNode.loadInstrument(this.currentInstrument);
+      logger.info('▶️ Activating WamKeyboardPlugin...', {
+        requestedInstrument: options?.instrument,
+        instrumentToLoad,
+      });
+
+      // Load the specified instrument
+      await this.wamKeyboard.audioNode.loadInstrument(instrumentToLoad);
+
+      // Update current instrument to match what was loaded
+      this.currentInstrument = instrumentToLoad;
 
       // State transition
       this.state = PluginState.ACTIVE;
       this.emit('activated');
 
       logger.info('✅ WamKeyboardPlugin activated', {
-        instrument: this.currentInstrument,
+        instrument: instrumentToLoad,
       });
     } catch (error) {
       this.state = PluginState.ERROR;

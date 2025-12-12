@@ -865,9 +865,9 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
 
             // CRITICAL FIX: For Grand Piano, create cache aliases for ALL notes that map to this physical sample
             // (not just notes in current exercise - allows instant switching between exercises)
-            // Only create aliases when we fetched from network (not from cache)
+            // FIX: Create aliases for BOTH network-fetched AND cached samples (needed after page reload)
             let aliasCount = 0; // Declare outside if block for logging
-            if (!cachedBuffer && instrument === 'grandpiano') {
+            if (instrument === 'grandpiano') {
               // Get keyboard map from cache (already loaded above at line 614)
               const keyboardMap =
                 GlobalSampleCache.getInstance().getCachedMetadata(

@@ -520,6 +520,31 @@ function YouTubeWidgetPageContent({
             logger.info('Samples already cached, skipping load:', {
               instrument: exercise.harmonyInstrument,
             });
+
+            // CRITICAL FIX: Still emit the event so HarmonyWidget switches to correct instrument
+            // Even when cached, we need to trigger re-registration with the new instrument's buffers
+            console.log(
+              '📢 [EXERCISE-SELECT] Emitting samples-loaded event (cached) for HarmonyWidget',
+            );
+            // Emit via window for HarmonyWidget's window listener
+            if (typeof window !== 'undefined') {
+              const event = new CustomEvent('harmony-samples-loaded', {
+                detail: {
+                  exerciseId: exercise.id,
+                  instrument: exercise.harmonyInstrument,
+                  samplesLoaded: true,
+                  fromCache: true,
+                },
+              });
+              window.dispatchEvent(event);
+            }
+            // Also emit via sync context
+            emitGlobalEvent('harmony-samples-loaded', {
+              exerciseId: exercise.id,
+              instrument: exercise.harmonyInstrument,
+              samplesLoaded: true,
+              fromCache: true,
+            });
           }
         }
       }

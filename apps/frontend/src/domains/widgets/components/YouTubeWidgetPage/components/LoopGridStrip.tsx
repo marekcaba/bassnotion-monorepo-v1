@@ -1,14 +1,9 @@
 'use client';
 
-import React, {
-  useState,
-  useRef,
-  useCallback,
-  useMemo,
-  useEffect,
-} from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import type { Exercise, TimeSignature } from '@bassnotion/contracts';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { useTransportPosition } from '@/domains/widgets/hooks/useTransportPosition';
 
 export interface LoopRegion {
   startMeasure: number;
@@ -43,7 +38,7 @@ export function LoopGridStrip({
   onSeek,
   className = '',
 }: LoopGridStripProps) {
-  const { correlationId, logger } = useCorrelation('LoopGridStrip');
+  const { logger } = useCorrelation('LoopGridStrip');
   // Use prop value for loopRegion (controlled component)
   const loopRegion = loopRegionProp || null;
   const [isDragging, setIsDragging] = useState(false);
@@ -57,6 +52,30 @@ export function LoopGridStrip({
 
   // Get beats per measure from exercise
   const beatsPerMeasure = exercise?.timeSignature?.numerator || 4;
+
+  // Track current musical position from transport for accurate beat highlighting
+  const [currentMusicalPosition, setCurrentMusicalPosition] = useState<{
+    bars: number;
+    beats: number;
+    sixteenths: number;
+  } | null>(null);
+
+  // Subscribe to transport position updates for real-time beat tracking
+  useTransportPosition({
+    onPositionUpdate: useCallback((position) => {
+      // [DIAGNOSTIC] Log position updates to verify transport sync is working
+      // Remove after confirming fix works
+      if (position.bars >= 0 && position.beats === 0 && position.sixteenths === 0) {
+        console.log('[LoopGridStrip DIAGNOSTIC] Beat 1 of bar', position.bars + 1);
+      }
+      setCurrentMusicalPosition({
+        bars: position.bars,
+        beats: position.beats,
+        sixteenths: position.sixteenths,
+      });
+    }, []),
+    enabled: true,
+  });
 
   // Helper to check if two regions are equal
   const areRegionsEqual = (
@@ -138,21 +157,31 @@ export function LoopGridStrip({
     [measures.length, beatsPerMeasure],
   );
 
-  // Calculate current playback position as percentage
+  // Calculate current playback beat position directly from musical position
+  // This is much more accurate than converting time->percentage->beats
+  const playbackBeatPosition = useMemo(() => {
+    if (!currentMusicalPosition) return 0;
+
+    // During countdown (negative bars), don't show progress
+    if (currentMusicalPosition.bars < 0) return 0;
+
+    // Calculate the absolute beat position (1-based to match measure indices)
+    // bars are 0-indexed from transport, beats are 0-indexed within bar
+    const absoluteBeat =
+      currentMusicalPosition.bars * beatsPerMeasure +
+      currentMusicalPosition.beats +
+      1; // +1 for 1-based index
+
+    return absoluteBeat;
+  }, [currentMusicalPosition, beatsPerMeasure]);
+
+  // Keep playbackPosition for backward compatibility (percentage-based)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const playbackPosition = useMemo(() => {
     if (duration === 0) return 0;
-
-    // Both currentTime and duration should be in milliseconds
-    // Convert to seconds for calculation
     const durationInSeconds = duration / 1000;
     const currentTimeInSeconds = currentTime / 1000;
-
-    const percentage = Math.min(
-      (currentTimeInSeconds / durationInSeconds) * 100,
-      100,
-    );
-
-    return percentage;
+    return Math.min((currentTimeInSeconds / durationInSeconds) * 100, 100);
   }, [currentTime, duration]);
 
   // Handle measure click
@@ -547,10 +576,8 @@ export function LoopGridStrip({
                       currentBeatPosition >= selectionStartBeat &&
                       currentBeatPosition <= selectionEndBeat;
 
-                    // Calculate if this beat has been played (yellow trail)
-                    const totalBeats = measures.length * beatsPerMeasure;
-                    const playbackBeatPosition =
-                      Math.floor((playbackPosition / 100) * totalBeats) + 1;
+                    // Check if this beat has been played (yellow trail)
+                    // Uses playbackBeatPosition from useTransportPosition hook for accurate musical sync
                     const hasBeenPlayed =
                       currentBeatPosition <= playbackBeatPosition;
 

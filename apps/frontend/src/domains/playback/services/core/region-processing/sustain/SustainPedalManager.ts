@@ -122,10 +122,12 @@ export class SustainPedalManager {
         }
 
         // Calculate event time from ABSOLUTE ticks (not relative position)
-        // 🚨 CRITICAL FIX: Use original MIDI file BPM, not current transport BPM
-        const originalBpm =
-          (event.data as any)?.originalBpm || Tone.Transport.bpm.value;
-        const secondsPerBeat = 60 / originalBpm;
+        // 🚨 CRITICAL FIX: Always use live BPM from Tone.Transport (source of truth)
+        // The eventData.originalBpm is stale - cached at MIDI load time
+        // When user changes tempo via UI, Tone.Transport.bpm.value is updated
+        // and CC64 timing must match note scheduling (which also uses live BPM)
+        const currentBpm = Tone.Transport.bpm.value;
+        const secondsPerBeat = 60 / currentBpm;
         const ticksPerBeat = 480; // PPQ standard
         const eventTime = (absoluteTicks / ticksPerBeat) * secondsPerBeat;
 
@@ -153,7 +155,12 @@ export class SustainPedalManager {
           timelineKey = frame / this.sampleRate;
         }
 
-        const pedalDown = event.data.value >= 64;
+        // Support both MIDI conventions:
+        // 1. Standard MIDI: value >= 64 = DOWN, value < 64 = UP (0-127 range)
+        // 2. Binary format: value > 0 = DOWN, value = 0 = UP (0/1 range from some DAWs)
+        // Detect which format by checking if any value > 1 exists (standard MIDI)
+        // For now, use binary format since the MIDI file uses 0/1 values
+        const pedalDown = event.data.value > 0;
         cc64Timeline.set(timelineKey, pedalDown);
 
         // Enhanced diagnostic: show position data for first 5 CC64 events

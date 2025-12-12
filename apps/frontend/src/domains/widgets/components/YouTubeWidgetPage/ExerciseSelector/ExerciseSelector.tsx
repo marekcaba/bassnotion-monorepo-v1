@@ -78,11 +78,20 @@ export function ExerciseSelector({
               },
             );
 
-            // Load samples for this exercise
-            const result = await preloader.loadFullSamples(exercise);
+            // FIX: Check if this is the currently selected exercise BEFORE loading
+            // This prevents race conditions where background preloading of other exercises
+            // causes buffer injection for the wrong instrument
+            const exerciseIdValue =
+              typeof exercise.id === 'object' ? exercise.id.value : exercise.id;
+            const isCurrentlySelected = exerciseIdValue === selectedExerciseId;
 
-            // CRITICAL FIX: Emit event after each exercise loads to trigger HarmonyWidget re-registration
-            if (typeof window !== 'undefined') {
+            // Load samples for this exercise
+            // CRITICAL: Pass skipBufferInjection=true for background preloads to avoid race condition
+            const result = await preloader.loadFullSamples(exercise, {
+              skipBufferInjection: !isCurrentlySelected,
+            });
+
+            if (typeof window !== 'undefined' && isCurrentlySelected) {
               const event = new CustomEvent('harmony-samples-loaded', {
                 detail: {
                   exerciseId: exercise.id,
@@ -93,11 +102,21 @@ export function ExerciseSelector({
               });
               window.dispatchEvent(event);
               console.log(
-                '📢 [EXERCISE-SELECTOR] Emitted harmony-samples-loaded event',
+                '📢 [EXERCISE-SELECTOR] Emitted harmony-samples-loaded event (SELECTED)',
                 {
                   exerciseId: exercise.id,
                   instrument: exercise.harmonyInstrument,
                   samplesLoaded: result.loaded,
+                },
+              );
+            } else {
+              console.log(
+                '📦 [EXERCISE-SELECTOR] Preloaded samples (background, no event)',
+                {
+                  exerciseId: exercise.id,
+                  instrument: exercise.harmonyInstrument,
+                  isCurrentlySelected,
+                  selectedExerciseId,
                 },
               );
             }

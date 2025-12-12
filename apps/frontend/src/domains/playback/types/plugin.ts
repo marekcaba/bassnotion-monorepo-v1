@@ -271,6 +271,17 @@ export interface PluginProcessingResult {
 }
 
 /**
+ * Options for plugin activation
+ * Plugin-specific options can be passed during activation
+ */
+export interface PluginActivateOptions {
+  /** For keyboard plugins: which instrument to load on activation */
+  instrument?: 'grandpiano' | 'rhodes' | 'wurlitzer' | 'pad';
+  /** Generic settings that plugins can use */
+  [key: string]: unknown;
+}
+
+/**
  * Base Audio Plugin Interface
  *
  * All audio plugins must implement this interface for integration
@@ -291,7 +302,7 @@ export interface AudioPlugin {
    */
   load(): Promise<void>;
   initialize(context: PluginAudioContext): Promise<void>;
-  activate(): Promise<void>;
+  activate(options?: PluginActivateOptions): Promise<void>;
   deactivate(): Promise<void>;
   dispose(): Promise<void>;
 

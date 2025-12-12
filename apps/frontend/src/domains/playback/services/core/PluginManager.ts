@@ -18,6 +18,7 @@ import type {
   PluginAudioContext,
   PluginCapabilities,
   PluginProcessingResult,
+  PluginActivateOptions,
 } from '../../types/plugin.js';
 
 const logger = getLogger('PluginManager');
@@ -275,8 +276,13 @@ export class PluginManager implements Service {
 
   /**
    * Activate a plugin
+   * @param pluginId - The plugin ID to activate
+   * @param options - Optional activation options (e.g., instrument for keyboard plugins)
    */
-  async activatePlugin(pluginId: string): Promise<void> {
+  async activatePlugin(
+    pluginId: string,
+    options?: PluginActivateOptions,
+  ): Promise<void> {
     const registration = this.plugins.get(pluginId);
     if (!registration) {
       throw new PluginError(`Plugin ${pluginId} not found`, pluginId);
@@ -292,9 +298,9 @@ export class PluginManager implements Service {
       await this.loadPlugin(pluginId);
     }
 
-    // Activate the plugin
+    // Activate the plugin with options
     if (plugin.state === PluginState.INACTIVE) {
-      await plugin.activate();
+      await plugin.activate(options);
     }
 
     this.pluginStates.set(pluginId, plugin.state);

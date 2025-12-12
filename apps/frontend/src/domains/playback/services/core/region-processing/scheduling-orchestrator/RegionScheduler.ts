@@ -222,23 +222,27 @@ export class RegionScheduler {
           );
         });
 
-        // CC64: Build timeline
-        if (cachedSchedule && instrumentType === 'harmony') {
-          currentCC64Timeline = cachedSchedule.cc64Timeline;
-          // eslint-disable-next-line no-console
-          console.log(
-            `[CC64] ♻️ Using CACHED timeline with ${currentCC64Timeline.size} pedal events`,
-          );
-        } else {
-          currentCC64Timeline = buildCC64Timeline(sortedEvents, region);
-          // eslint-disable-next-line no-console
-          console.log(
-            `[CC64] 🔨 Built NEW timeline with ${currentCC64Timeline.size} pedal events`,
-          );
-        }
+        // CC64: Build timeline ONLY for harmony regions
+        // Other regions (countdown, metronome, voice-cue) don't have CC64 data
+        // and should NOT overwrite the harmony timeline
+        if (instrumentType === 'harmony') {
+          if (cachedSchedule) {
+            currentCC64Timeline = cachedSchedule.cc64Timeline;
+            // eslint-disable-next-line no-console
+            console.log(
+              `[CC64] ♻️ Using CACHED timeline with ${currentCC64Timeline.size} pedal events`,
+            );
+          } else {
+            currentCC64Timeline = buildCC64Timeline(sortedEvents, region);
+            // eslint-disable-next-line no-console
+            console.log(
+              `[CC64] 🔨 Built NEW timeline with ${currentCC64Timeline.size} pedal events`,
+            );
+          }
 
-        // Sync CC64 timeline to HarmonyScheduler
-        setCurrentCC64Timeline(currentCC64Timeline);
+          // Sync CC64 timeline to HarmonyScheduler ONLY for harmony regions
+          setCurrentCC64Timeline(currentCC64Timeline);
+        }
 
         if (currentCC64Timeline.size > 0) {
           const timeline = Array.from(currentCC64Timeline.entries())

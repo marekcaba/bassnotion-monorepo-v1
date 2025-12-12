@@ -29,10 +29,11 @@ export function FourWidgetsCard({
   //   stateHarmonyInstrument: state.harmonyInstrument,
   // });
 
-  // Memoize exercise by ID to prevent object reference changes
+  // Memoize exercise by ID AND harmonyInstrument to ensure instrument changes are detected
+  // FIX: Include harmonyInstrument in deps to ensure HarmonyWidget gets updated exercise
   const memoizedExercise = React.useMemo(
     () => selectedExercise,
-    [selectedExercise?.id?.value],
+    [selectedExercise?.id?.value, selectedExercise?.harmonyInstrument],
   );
 
   // Debug logs disabled - too noisy

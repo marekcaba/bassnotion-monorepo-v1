@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback, useMemo, useRef } from 'react';
-import { createStructuredLogger } from '@bassnotion/contracts';
+import { useState, useCallback } from 'react';
+import { createStructuredLogger } from '@/utils/logger.js';
 
 const logger = createStructuredLogger('useWidgetPageState');
 
@@ -46,7 +46,7 @@ export interface WidgetPageState {
 
 // Import Exercise type from contracts
 import type { Exercise } from '@bassnotion/contracts';
-import { useCorrelation } from '@/shared/hooks/useCorrelation';
+// useCorrelation removed - not needed here
 import { musicalTruth } from '@/domains/playback/modules/tempo/MusicalTruthAuthority.js';
 // Epic 3.18: ExerciseTimelineIntegrator removed
 // import { exerciseTimelineIntegrator } from '@/domains/playback/services/ExerciseTimelineIntegrator';
@@ -158,7 +158,7 @@ export function useWidgetPageState() {
         );
 
       if (changes.length > 0) {
-        logger.debug('State changes:', changes);
+        logger.debug('State changes:', { changes });
       }
     }
   }
@@ -223,16 +223,6 @@ export function useWidgetPageState() {
         return;
       }
 
-      // CRITICAL DEBUG: Log exercise entity to trace harmonyInstrument
-      // console.log('🔍 [STATE-FLOW-1] setSelectedExercise called with:', {
-      //   exerciseId: exercise.id?.value,
-      //   title: exercise.title,
-      //   harmonyInstrument: exercise.harmonyInstrument,
-      //   hasHarmonyInstrumentGetter: typeof exercise.harmonyInstrument !== 'undefined',
-      //   exerciseType: typeof exercise,
-      //   exerciseConstructor: exercise.constructor?.name,
-      // });
-
       // Convert Exercise to ExerciseData format for timeline integration
       const exerciseData = {
         id: exercise.id,
@@ -292,22 +282,11 @@ export function useWidgetPageState() {
           userTempo: exercise.bpm,
         });
       } catch (error) {
-        logger.error('Failed to load exercise into timeline:', error);
+        logger.error('Failed to load exercise into timeline:', error instanceof Error ? error : undefined);
       }
 
-      // CRITICAL DEBUG: Extract harmonyInstrument BEFORE setting state
-      // No default instrument - use exercise's harmonyInstrument or undefined
-      const extractedHarmonyInstrument = exercise.harmonyInstrument;
-
-      // console.log('🔍 [STATE-FLOW-2] Extracting harmonyInstrument:', {
-      //   exerciseId: exercise.id.value,
-      //   title: exercise.title,
-      //   rawHarmonyInstrument: exercise.harmonyInstrument,
-      //   extractedHarmonyInstrument,
-      //   typeOf: typeof exercise.harmonyInstrument,
-      //   isUndefined: exercise.harmonyInstrument === undefined,
-      //   isNull: exercise.harmonyInstrument === null,
-      // });
+      // Extract harmonyInstrument - use exercise's harmony_instrument or undefined
+      const extractedHarmonyInstrument = exercise.harmony_instrument;
 
       setState((prev) => {
         const newState = {
@@ -315,14 +294,6 @@ export function useWidgetPageState() {
           selectedExercise: exercise,
           harmonyInstrument: extractedHarmonyInstrument,
         };
-
-        // console.log('🔍 [STATE-FLOW-3] New state object created:', {
-        //   selectedExerciseId: newState.selectedExercise?.id.value,
-        //   selectedExerciseTitle: newState.selectedExercise?.title,
-        //   stateHarmonyInstrument: newState.harmonyInstrument,
-        //   exerciseHarmonyInstrument: newState.selectedExercise?.harmonyInstrument,
-        //   prevHarmonyInstrument: prev.harmonyInstrument,
-        // });
 
         // Update widget states based on exercise data
         if (exercise) {

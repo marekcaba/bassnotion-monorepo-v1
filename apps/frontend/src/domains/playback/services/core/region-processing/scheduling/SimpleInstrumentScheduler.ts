@@ -46,7 +46,7 @@ export class SimpleInstrumentScheduler {
   private sampleRate: number = 48000;
   private scheduledSources = new Map<
     AudioBufferSourceNode,
-    { type: 'one-shot'; hasStopScheduled: boolean }
+    { type: 'one-shot'; hasStopScheduled: boolean; gain: GainNode }
   >();
   private instanceId: string;
   private tracks: Map<string, any>; // Reference to track registry for validation
@@ -221,6 +221,7 @@ export class SimpleInstrumentScheduler {
       this.scheduledSources.set(source, {
         type: 'one-shot',
         hasStopScheduled: false,
+        gain: velocityGain,
       });
 
       // Log scheduling with timing details for debugging
@@ -265,23 +266,38 @@ export class SimpleInstrumentScheduler {
   }
 
   /**
-   * Stop all scheduled sources
-   * Immediately cancels both currently playing AND future scheduled sounds
+   * Stop all scheduled sources with a short fadeout to avoid clicks/pops
+   * Applies 50ms fadeout before stopping to eliminate audio artifacts
    */
   stopAll(): void {
-    console.log(`[${this.config.loggerName} STOP] Stopping all sources`, {
+    console.log(`[${this.config.loggerName} STOP] Stopping all sources with fadeout`, {
       scheduledCount: this.scheduledSources.size,
     });
 
+    const FADEOUT_TIME = 0.05; // 50ms fadeout to avoid clicks
+    const currentTime = this.audioContext?.currentTime ?? 0;
+    const stopTime = currentTime + FADEOUT_TIME;
+
+    let fadedCount = 0;
     let stoppedCount = 0;
     let errorCount = 0;
 
     this.scheduledSources.forEach((metadata, source) => {
       try {
-        // CRITICAL: Use stop(0) or stop(currentTime) to immediately cancel future scheduled starts
-        // Plain stop() won't cancel sounds scheduled to start in the future
+        // Apply quick fadeout via gain node to avoid click/pop
+        if (this.audioContext && metadata.gain) {
+          const gain = metadata.gain;
+          // Cancel any existing automation and ramp to silence
+          gain.gain.cancelScheduledValues(currentTime);
+          gain.gain.setValueAtTime(gain.gain.value, currentTime);
+          gain.gain.linearRampToValueAtTime(0, stopTime);
+          fadedCount++;
+        }
+
+        // Schedule stop after fadeout completes
+        // CRITICAL: Use explicit time to cancel future scheduled starts too
         if (this.audioContext) {
-          source.stop(this.audioContext.currentTime);
+          source.stop(stopTime + 0.001); // Tiny buffer after fade
         } else {
           source.stop(0);
         }
@@ -295,9 +311,11 @@ export class SimpleInstrumentScheduler {
 
     this.scheduledSources.clear();
 
-    console.log(`[${this.config.loggerName} STOP] Sources stopped`, {
+    console.log(`[${this.config.loggerName} STOP] Sources stopped with fadeout`, {
+      fadedCount,
       stoppedCount,
       errorCount,
+      fadeoutMs: FADEOUT_TIME * 1000,
     });
   }
 }

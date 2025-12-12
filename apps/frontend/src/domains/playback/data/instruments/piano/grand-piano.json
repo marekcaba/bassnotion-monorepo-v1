@@ -84,12 +84,55 @@
     "curve": "exponential"
   },
   "effects": {
-    "eq": {
-      "low": 0,
-      "mid": 0,
-      "high": 0,
-      "lowFrequency": 400,
-      "highFrequency": 2500
+    "parametricEQ": {
+      "preset": "grandPiano",
+      "bands": [
+        {
+          "id": "highpass",
+          "type": "highpass",
+          "frequency": 50,
+          "q": 0.71,
+          "order": 4,
+          "enabled": true,
+          "description": "48dB/oct high-pass to remove rumble"
+        },
+        {
+          "id": "low-shelf",
+          "type": "lowshelf",
+          "frequency": 230,
+          "gain": 3,
+          "q": 1.0,
+          "enabled": true,
+          "description": "Low shelf boost for warmth"
+        },
+        {
+          "id": "notch-500",
+          "type": "peaking",
+          "frequency": 500,
+          "gain": -4,
+          "q": 2.5,
+          "enabled": true,
+          "description": "Notch cut to reduce muddiness"
+        },
+        {
+          "id": "notch-1120",
+          "type": "peaking",
+          "frequency": 1120,
+          "gain": 2.6,
+          "q": 1.8,
+          "enabled": true,
+          "description": "Notch boost for presence"
+        },
+        {
+          "id": "high-shelf",
+          "type": "highshelf",
+          "frequency": 535,
+          "gain": -2.8,
+          "q": 1.0,
+          "enabled": true,
+          "description": "High shelf cut to tame harshness"
+        }
+      ]
     }
   }
 }

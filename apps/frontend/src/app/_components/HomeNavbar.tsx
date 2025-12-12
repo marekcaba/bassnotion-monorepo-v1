@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { useAuth } from '@/domains/user/hooks/use-auth';
 import { authService } from '@/domains/user/api/auth';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
+import { UserIndicator } from '@/domains/user/components/UserIndicator';
 
 const NAV_LINKS = [
   { label: 'Practice', href: '/library' },
@@ -64,14 +65,8 @@ export function HomeNavbar() {
           </div>
 
           {/* Desktop Auth Button - Right */}
-          <div className="hidden md:flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleAuthButtonClick}
-              className="border border-[#ffc700] text-[#ffc700] hover:bg-[#ffc700] hover:text-black px-5 py-1.5 rounded transition-colors text-sm font-medium"
-            >
-              {isAuthenticated ? 'Dashboard' : 'Login'}
-            </button>
+          <div className="hidden md:flex items-center gap-3">
+            <UserIndicator />
             {isAuthenticated && (
               <button
                 type="button"
@@ -165,6 +160,11 @@ export function HomeNavbar() {
 
             {/* Mobile Nav Links */}
             <div className="flex flex-col px-6 space-y-4">
+              {/* User Indicator at top of mobile menu */}
+              <div className="pb-2 border-b border-zinc-700">
+                <UserIndicator />
+              </div>
+
               {NAV_LINKS.map((link) => (
                 <button
                   key={link.label}
@@ -174,15 +174,6 @@ export function HomeNavbar() {
                   {link.label}
                 </button>
               ))}
-
-              {/* Mobile Auth Button */}
-              <button
-                type="button"
-                onClick={handleAuthButtonClick}
-                className="mt-4 border border-[#ffc700] text-[#ffc700] hover:bg-[#ffc700] hover:text-black px-4 py-2 rounded transition-colors text-center"
-              >
-                {isAuthenticated ? 'Dashboard' : 'Login'}
-              </button>
 
               {/* Mobile Logout Button */}
               {isAuthenticated && (

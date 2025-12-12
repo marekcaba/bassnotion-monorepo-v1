@@ -44,6 +44,12 @@ import { GrandPianoMapper } from './GrandPianoMapper.js';
 import { FadeoutManager } from './FadeoutManager.js';
 import { BufferFallbackStrategy } from './BufferFallbackStrategy.js';
 
+// EQ for Grand Piano
+import {
+  ParametricEQ,
+  GRAND_PIANO_EQ_PRESET,
+} from '../../../modules/audio-engine/processors/ParametricEQ.js';
+
 const logger = createStructuredLogger('HarmonySchedulerV2');
 
 /**
@@ -75,6 +81,10 @@ export class HarmonySchedulerV2 {
   private sampleRate = 48000;
   private transportStartTime = 0;
 
+  // Grand Piano EQ - inserted between gain nodes and destination
+  private grandPianoEQ: ParametricEQ | null = null;
+  private eqOutputNode: AudioNode | null = null; // What sources connect to (EQ input or direct destination)
+
   // Buffer storage
   private harmonyBuffers = new Map<string, Map<string, AudioBuffer>>();
   // Structure: harmonyBuffers.get('v10').get('D4') → AudioBuffer
@@ -86,8 +96,7 @@ export class HarmonySchedulerV2 {
   private exerciseEndTime = 0;
   private lastBeatThreshold = 0;
 
-  // CC64 sustain timeline (injected from outside)
-  private currentCC64Timeline = new Map<number, boolean>();
+  // CC64 sustain timeline is managed by SustainPedalHandler (set via setCurrentCC64Timeline)
 
   // Active source tracking for polyphony and cleanup
   private activeHarmonySources = new Map<string, ActiveSource[]>();
@@ -131,6 +140,12 @@ export class HarmonySchedulerV2 {
     // Initialize extracted modules
     this.velocityLayerSelector = new VelocityLayerSelector();
     this.sustainPedalHandler = new SustainPedalHandler();
+
+    // 🔍 DIAGNOSTIC: Log sustainPedalHandler instance for debugging
+    console.log(`[CC64 DIAGNOSTIC] HarmonySchedulerV2 created sustainPedalHandler`, {
+      instanceId,
+      sustainPedalHandler: this.sustainPedalHandler,
+    });
   }
 
   /**
@@ -172,11 +187,15 @@ export class HarmonySchedulerV2 {
       await GrandPianoMapper.loadKeyboardMap();
     }
 
+    // Set up EQ for Grand Piano
+    this.setupEQ(instrument, destination);
+
     logger.info('Harmony buffers injected', {
       layerCount: samples.size,
       layers: Array.from(samples.keys()),
       instrument: instrument || 'unknown',
       instanceId: this.instanceId,
+      hasEQ: !!this.grandPianoEQ,
     });
 
     // 🔍 DIAGNOSTIC: Log all buffer keys and durations for F notes
@@ -192,6 +211,67 @@ export class HarmonySchedulerV2 {
   }
 
   /**
+   * Set up EQ for Grand Piano instrument
+   * Creates ParametricEQ and inserts it between gain nodes and destination
+   */
+  private setupEQ(
+    instrument: HarmonyInstrument | undefined,
+    destination: AudioNode,
+  ): void {
+    // Dispose previous EQ if exists
+    if (this.grandPianoEQ) {
+      try {
+        this.grandPianoEQ.dispose();
+      } catch (e) {
+        // Ignore dispose errors
+      }
+      this.grandPianoEQ = null;
+    }
+
+    // Only create EQ for Grand Piano
+    if (instrument !== 'grandpiano') {
+      this.eqOutputNode = destination;
+      console.log(`[HARMONY-EQ] No EQ for instrument: ${instrument}, connecting directly to destination`);
+      return;
+    }
+
+    if (!this.audioContext) {
+      console.warn('[HARMONY-EQ] Cannot set up EQ: AudioContext not available');
+      this.eqOutputNode = destination;
+      return;
+    }
+
+    try {
+      // Create Grand Piano EQ with professional preset
+      this.grandPianoEQ = ParametricEQ.createWithPreset(
+        this.audioContext,
+        GRAND_PIANO_EQ_PRESET,
+      );
+
+      // Connect EQ output to destination
+      this.grandPianoEQ.output.connect(destination);
+
+      // Sources should connect to EQ input
+      this.eqOutputNode = this.grandPianoEQ.input;
+
+      console.log('[HARMONY-EQ] ✅ Grand Piano EQ created and connected', {
+        bands: this.grandPianoEQ.getBands().length,
+        instanceId: this.instanceId,
+      });
+
+      logger.info('Grand Piano EQ configured', {
+        bands: this.grandPianoEQ.getBands().length,
+        instanceId: this.instanceId,
+      });
+    } catch (error) {
+      console.error('[HARMONY-EQ] ❌ Failed to set up EQ:', error);
+      logger.warn('Failed to set up Grand Piano EQ', { error });
+      this.grandPianoEQ = null;
+      this.eqOutputNode = destination;
+    }
+  }
+
+  /**
    * Set exercise timing for last-note ring-out detection
    */
   setExerciseTiming(endTime: number, lastBeatThreshold: number): void {
@@ -203,9 +283,11 @@ export class HarmonySchedulerV2 {
 
   /**
    * Set current CC64 timeline (injected from RegionProcessor)
+   * Propagates timeline to SustainPedalHandler for analyzeSustain() to use
    */
   setCurrentCC64Timeline(timeline: Map<number, boolean>): void {
-    this.currentCC64Timeline = timeline;
+    // Propagate timeline directly to SustainPedalHandler so analyzeSustain() can use it
+    this.sustainPedalHandler.setCC64Timeline(timeline);
   }
 
   /**
@@ -336,12 +418,12 @@ export class HarmonySchedulerV2 {
 
     try {
       // STEP 6: Analyze CC64 sustain using SustainPedalHandler
+      // Timeline is already set via setCurrentCC64Timeline() → sustainPedalHandler.setCC64Timeline()
       const sustainResult = this.sustainPedalHandler.analyzeSustain(
         audioTime,
         duration,
         noteName,
         buffer,
-        this.currentCC64Timeline,
       );
 
       const actualDuration = sustainResult.sustainedDuration;
@@ -370,9 +452,13 @@ export class HarmonySchedulerV2 {
       const targetGain = (velocity / 127) * 0.8;
       gain.gain.setValueAtTime(targetGain, audioTime);
 
-      // Connect audio graph
+      // Connect audio graph: source → gain → EQ (if Grand Piano) → destination
       source.connect(gain);
-      gain.connect(this.audioDestination);
+      // Use eqOutputNode if available (routes through EQ for Grand Piano)
+      const outputNode = this.eqOutputNode || this.audioDestination;
+      if (outputNode) {
+        gain.connect(outputNode);
+      }
 
       // STEP 9: Determine if this is the last note (for special fadeout)
       const noteEndTime = audioTime + actualDuration;
@@ -471,9 +557,11 @@ export class HarmonySchedulerV2 {
 
   /**
    * Stop all active harmony sources
-   * Immediately cancels both currently playing AND future scheduled notes
+   *
+   * @param graceful - If true, applies a 4-second ring-out (1.5s hold + 2.5s fade) for sustained notes
+   *                   If false, immediately cancels ALL sources including future scheduled notes
    */
-  stopAll(): void {
+  stopAll(graceful = false): void {
     const mapSnapshot = Array.from(this.scheduledAudioSources.entries()).map(
       ([source, metadata]) => ({
         sourceState: source.playbackState,
@@ -485,6 +573,7 @@ export class HarmonySchedulerV2 {
       instanceId: this.instanceId,
       scheduledCount: this.scheduledAudioSources.size,
       activeCount: this.activeHarmonySources.size,
+      graceful,
       mapSnapshot: mapSnapshot.slice(0, 5), // Show first 5 for brevity
       totalSources: mapSnapshot.length,
     });
@@ -499,15 +588,78 @@ export class HarmonySchedulerV2 {
       });
     }
 
+    // Ring-out timing constants
+    const RING_OUT_HOLD = 1.5; // 1.5 second hold at current volume
+    const RING_OUT_FADE = 2.5; // 2.5 second fadeout
+    const currentTime = this.audioContext?.currentTime ?? 0;
+    const fadeStartTime = currentTime + RING_OUT_HOLD;
+    const stopTime = fadeStartTime + RING_OUT_FADE;
+
     let stoppedCount = 0;
+    let fadedCount = 0;
     let errorCount = 0;
+
+    // For graceful stop, apply fade to active harmony sources via their gain nodes
+    if (graceful && this.audioContext) {
+      this.activeHarmonySources.forEach((sources, noteName) => {
+        sources.forEach(({ gain, gainValue }) => {
+          try {
+            // Cancel any existing automation
+            gain.gain.cancelScheduledValues(currentTime);
+            // Hold current gain for 1 second
+            gain.gain.setValueAtTime(gainValue, currentTime);
+            gain.gain.linearRampToValueAtTime(gainValue, fadeStartTime);
+            // Fade to silence over 1 second
+            gain.gain.exponentialRampToValueAtTime(0.001, stopTime);
+            fadedCount++;
+          } catch (e) {
+            errorCount++;
+          }
+        });
+      });
+      console.log('[HARMONY GRACEFUL] Applied 2s ring-out fade', {
+        fadedCount,
+        holdUntil: fadeStartTime.toFixed(3),
+        fadeEndAt: stopTime.toFixed(3),
+      });
+    }
+
+    // For manual stop (non-graceful), apply a quick 50ms fadeout to avoid clicks
+    const MANUAL_FADEOUT_TIME = 0.05; // 50ms fadeout for manual stop
+    const manualStopTime = currentTime + MANUAL_FADEOUT_TIME;
+
+    // Apply fadeout to all active sources for manual stop (before stopping)
+    if (!graceful && this.audioContext) {
+      this.activeHarmonySources.forEach((sources) => {
+        sources.forEach(({ gain, gainValue }) => {
+          try {
+            gain.gain.cancelScheduledValues(currentTime);
+            gain.gain.setValueAtTime(gainValue, currentTime);
+            gain.gain.linearRampToValueAtTime(0, manualStopTime);
+            fadedCount++;
+          } catch (e) {
+            // Ignore - gain may already be disconnected
+          }
+        });
+      });
+      console.log('[HARMONY MANUAL STOP] Applied 50ms fadeout', {
+        fadedCount,
+        fadeEndAt: manualStopTime.toFixed(3),
+      });
+    }
 
     this.scheduledAudioSources.forEach((metadata, source) => {
       try {
-        // CRITICAL: Use stop(0) to stop immediately, canceling future scheduled starts
-        // Plain stop() won't cancel future starts, only stops currently playing sources
+        if (graceful && metadata.hasStopScheduled) {
+          // GRACEFUL: Reschedule stop to after the fade completes
+          // Cancel existing stop and schedule new one
+          source.stop(stopTime + 0.01); // Small buffer after fade
+          return;
+        }
+
+        // Schedule stop after fadeout (or immediately if no context)
         if (this.audioContext) {
-          source.stop(this.audioContext.currentTime);
+          source.stop(graceful ? stopTime + 0.01 : manualStopTime + 0.001);
         } else {
           source.stop(0);
         }
@@ -519,13 +671,15 @@ export class HarmonySchedulerV2 {
       }
     });
 
+    // Clear tracking maps (for graceful, sources will auto-cleanup when they end)
     this.scheduledAudioSources.clear();
     this.activeHarmonySources.clear();
 
     console.log('[HARMONY-SCHEDULER-V2 STOP] Sources stopped', {
       stoppedCount,
+      fadedCount,
       errorCount,
-      cleared: true,
+      graceful,
     });
   }
 

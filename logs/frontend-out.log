@@ -1,221 +1,563 @@
-2025-12-11 00:27:14 +01:00:  [37m[1m○[22m[39m Compiling /library/[tutorialId] ...
-2025-12-11 00:27:32 +01:00:  [32m[1m✓[22m[39m Compiled /library/[tutorialId] in 19.1s (6133 modules)
-2025-12-11 00:27:33 +01:00:  [32m[1m✓[22m[39m Compiled in 1028ms (2845 modules)
-2025-12-11 00:27:34 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765409254468-7polh'[39m }
-2025-12-11 00:27:34 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 21138ms
-2025-12-11 00:27:37 +01:00:  [37m[1m○[22m[39m Compiling /_not-found ...
-2025-12-11 00:27:42 +01:00:  [32m[1m✓[22m[39m Compiled /_not-found in 6.1s (6102 modules)
-2025-12-11 00:27:44 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 7287ms
-2025-12-11 00:33:24 +01:00:  [32m[1m✓[22m[39m Compiled in 2.2s (6115 modules)
-2025-12-11 00:33:24 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 133ms
-2025-12-11 00:33:24 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765409604945-od5bg'[39m }
-2025-12-11 00:33:25 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 836ms
-2025-12-11 00:36:59 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 226ms
-2025-12-11 00:38:05 +01:00:  [37m[1m○[22m[39m Compiling /_not-found ...
-2025-12-11 00:38:05 +01:00:  [32m[1m✓[22m[39m Compiled /_not-found in 986ms (3271 modules)
-2025-12-11 00:38:06 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1775ms
-2025-12-11 00:41:48 +01:00:  [32m[1m✓[22m[39m Compiled in 2.8s (6115 modules)
-2025-12-11 00:41:48 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 174ms
-2025-12-11 00:41:49 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765410109139-8v2ua'[39m }
-2025-12-11 00:41:49 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 989ms
-2025-12-11 00:41:51 +01:00:  [37m[1m○[22m[39m Compiling /_not-found ...
-2025-12-11 00:41:51 +01:00:  [32m[1m✓[22m[39m Compiled /_not-found in 782ms (3271 modules)
-2025-12-11 00:41:51 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1275ms
-2025-12-11 00:45:54 +01:00:  [32m[1m✓[22m[39m Compiled in 2.1s (6115 modules)
-2025-12-11 00:45:54 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765410354912-37il0'[39m }
-2025-12-11 00:45:55 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 1233ms
-2025-12-11 00:45:55 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 2059ms
-2025-12-11 00:45:55 +01:00:  [32m[1m✓[22m[39m Compiled /_not-found in 357ms (3271 modules)
-2025-12-11 00:45:56 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 783ms
-2025-12-11 00:47:19 +01:00:  [32m[1m✓[22m[39m Compiled in 2.1s (6115 modules)
-2025-12-11 00:47:20 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765410440478-ck2tm'[39m }
-2025-12-11 00:47:21 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 1437ms
-2025-12-11 00:47:21 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 2300ms
-2025-12-11 00:47:21 +01:00:  [32m[1m✓[22m[39m Compiled /_not-found in 405ms (3271 modules)
-2025-12-11 00:47:22 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 855ms
-2025-12-11 00:47:28 +01:00:  [32m[1m✓[22m[39m Compiled in 1030ms (6116 modules)
-2025-12-11 00:47:28 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 104ms
-2025-12-11 00:47:29 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765410449136-vshey'[39m }
-2025-12-11 00:47:29 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 612ms
-2025-12-11 00:47:29 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 35ms
-2025-12-11 00:47:45 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 56ms
-2025-12-11 00:47:45 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 66ms
-2025-12-11 00:54:06 +01:00:  [32m[1m✓[22m[39m Compiled in 8s (6115 modules)
-2025-12-11 00:54:06 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 197ms
-2025-12-11 00:54:22 +01:00:  [32m[1m✓[22m[39m Compiled in 1605ms (6115 modules)
-2025-12-11 00:54:22 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 181ms
-2025-12-11 00:54:23 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765410863201-bozwm'[39m }
-2025-12-11 00:54:24 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 1562ms
-2025-12-11 00:54:29 +01:00:  [37m[1m○[22m[39m Compiling /_not-found ...
-2025-12-11 00:54:29 +01:00:  [32m[1m✓[22m[39m Compiled /_not-found in 891ms (3271 modules)
-2025-12-11 00:54:29 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1460ms
-2025-12-11 00:55:49 +01:00:  [32m[1m✓[22m[39m Compiled in 2.1s (6115 modules)
-2025-12-11 00:55:50 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 138ms
-2025-12-11 00:55:50 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765410950333-tktx7'[39m }
-2025-12-11 00:55:50 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 903ms
-2025-12-11 00:55:51 +01:00:  [32m[1m✓[22m[39m Compiled /_not-found in 409ms (3271 modules)
-2025-12-11 00:55:51 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 826ms
-2025-12-11 00:56:08 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765410968957-zb8iv'[39m }
-2025-12-11 00:56:09 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 503ms
-2025-12-11 00:56:09 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 17ms
-2025-12-11 00:57:56 +01:00:  [32m[1m✓[22m[39m Compiled in 2.8s (6115 modules)
-2025-12-11 00:57:57 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 115ms
-2025-12-11 00:57:57 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765411077622-mu8k9'[39m }
-2025-12-11 00:57:58 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 1154ms
-2025-12-11 00:57:59 +01:00:  [37m[1m○[22m[39m Compiling /_not-found ...
-2025-12-11 00:57:59 +01:00:  [32m[1m✓[22m[39m Compiled /_not-found in 570ms (3271 modules)
-2025-12-11 00:57:59 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1133ms
-2025-12-11 00:58:18 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765411098354-u52pw'[39m }
-2025-12-11 00:58:18 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 559ms
-2025-12-11 00:58:18 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 23ms
-2025-12-11 01:01:25 +01:00:  [32m[1m✓[22m[39m Compiled in 11.6s (6115 modules)
-2025-12-11 01:01:29 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 2963ms
-2025-12-11 01:01:30 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765411290197-xsv4r'[39m }
-2025-12-11 01:01:31 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 2129ms
-2025-12-11 01:02:03 +01:00:  [37m[1m○[22m[39m Compiling /_not-found ...
-2025-12-11 01:02:04 +01:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1025ms (3271 modules)
-2025-12-11 01:02:05 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1648ms
-2025-12-11 01:03:33 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765411413168-k0ht6'[39m }
-2025-12-11 01:03:33 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 452ms
-2025-12-11 01:03:33 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 26ms
-2025-12-11 08:33:34 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 103ms
-2025-12-11 08:33:34 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 32ms
-2025-12-11 08:36:43 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 68ms
-2025-12-11 08:36:43 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 27ms
-2025-12-11 09:16:18 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 173ms
-2025-12-11 09:16:19 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 49ms
-2025-12-11 09:43:49 +01:00:  [32m[1m✓[22m[39m Compiled in 4.7s (6115 modules)
-2025-12-11 09:43:49 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 213ms
-2025-12-11 09:43:49 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765442629895-ggjmm'[39m }
-2025-12-11 09:43:50 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 1127ms
-2025-12-11 09:43:54 +01:00:  [32m[1m✓[22m[39m Compiled in 848ms (6115 modules)
-2025-12-11 09:43:54 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 96ms
-2025-12-11 09:43:55 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765442635077-yjlaj'[39m }
-2025-12-11 09:43:55 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 561ms
-2025-12-11 09:44:12 +01:00:  [32m[1m✓[22m[39m Compiled in 780ms (6115 modules)
-2025-12-11 09:44:13 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 90ms
-2025-12-11 09:44:13 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765442653242-0fll8'[39m }
-2025-12-11 09:44:13 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 433ms
-2025-12-11 09:44:44 +01:00:  [32m[1m✓[22m[39m Compiled in 809ms (6115 modules)
-2025-12-11 09:44:44 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765442684555-59g5z'[39m }
-2025-12-11 09:44:44 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 800ms
-2025-12-11 09:44:44 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 1110ms
-2025-12-11 09:44:54 +01:00: 
-2025-12-11 09:44:54 +01:00: > nx run @bassnotion/frontend:serve
-2025-12-11 09:44:54 +01:00: 
-2025-12-11 09:44:55 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.1.8[39m[22m
-2025-12-11 09:44:55 +01:00:    - Local:        http://localhost:3001
-2025-12-11 09:44:55 +01:00:    - Network:      http://10.0.0.6:3001
-2025-12-11 09:44:55 +01:00:    - Environments: .env.local, .env
-2025-12-11 09:44:55 +01:00:  [32m[1m✓[22m[39m Starting...
-2025-12-11 09:44:57 +01:00:  [32m[1m✓[22m[39m Ready in 1990ms
-2025-12-11 09:45:06 +01:00:  [37m[1m○[22m[39m Compiling /_not-found ...
-2025-12-11 09:45:22 +01:00:  [32m[1m✓[22m[39m Compiled /library/[tutorialId] in 16.8s (6116 modules)
-2025-12-11 09:45:23 +01:00:  GET /_next/static/chunks/_app-pages-browser_src_domains_playback_modules_preloading_strategies_HarmonyPreloadStrategy_ts.js [33m404[39m in 17834ms
-2025-12-11 09:45:23 +01:00:  GET /_next/static/chunks/_app-pages-browser_src_domains_playback_data_instruments_wurlitzer_wurlitzer-piano_json.js [33m404[39m in 17842ms
-2025-12-11 09:45:23 +01:00:  GET /_next/static/chunks/_app-pages-browser_src_domains_playback_services_InstrumentDependencyManager_ts.js [33m404[39m in 17681ms
-2025-12-11 09:45:24 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765442724468-618ob'[39m }
-2025-12-11 09:45:24 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 17619ms
-2025-12-11 09:45:24 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 17ms
-2025-12-11 09:51:23 +01:00:  [32m[1m✓[22m[39m Compiled in 2.7s (6115 modules)
-2025-12-11 09:51:23 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 146ms
-2025-12-11 09:54:43 +01:00:  [32m[1m✓[22m[39m Compiled in 2.5s (6115 modules)
-2025-12-11 09:54:43 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 129ms
-2025-12-11 09:55:14 +01:00:  [32m[1m✓[22m[39m Compiled in 1576ms (6115 modules)
-2025-12-11 09:55:15 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 193ms
-2025-12-11 09:55:20 +01:00: 
-2025-12-11 09:55:20 +01:00: > nx run @bassnotion/frontend:serve
-2025-12-11 09:55:20 +01:00: 
-2025-12-11 09:55:21 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.1.8[39m[22m
-2025-12-11 09:55:21 +01:00:    - Local:        http://localhost:3001
-2025-12-11 09:55:21 +01:00:    - Network:      http://10.0.0.6:3001
-2025-12-11 09:55:21 +01:00:    - Environments: .env.local, .env
-2025-12-11 09:55:21 +01:00:  [32m[1m✓[22m[39m Starting...
-2025-12-11 09:55:23 +01:00:  [32m[1m✓[22m[39m Ready in 3s
-2025-12-11 09:55:46 +01:00:  [37m[1m○[22m[39m Compiling /library/[tutorialId] ...
-2025-12-11 09:55:56 +01:00:  [32m[1m✓[22m[39m Compiled /library/[tutorialId] in 11s (6115 modules)
-2025-12-11 09:55:57 +01:00:  [32m[1m✓[22m[39m Compiled in 1000ms (2845 modules)
-2025-12-11 09:55:58 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765443358029-o0env'[39m }
-2025-12-11 09:55:58 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 13005ms
-2025-12-11 09:56:00 +01:00:  [37m[1m○[22m[39m Compiling /_not-found ...
-2025-12-11 09:56:03 +01:00:  [32m[1m✓[22m[39m Compiled /_not-found in 4s (6102 modules)
-2025-12-11 09:56:03 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 4596ms
-2025-12-11 09:57:03 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765443423056-znk6d'[39m }
-2025-12-11 09:57:03 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 579ms
-2025-12-11 09:57:03 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 28ms
-2025-12-11 09:59:08 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 110ms
-2025-12-11 09:59:08 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 23ms
-2025-12-11 09:59:16 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 79ms
-2025-12-11 09:59:16 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 23ms
-2025-12-11 10:27:41 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 69ms
-2025-12-11 10:27:42 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 24ms
-2025-12-11 10:34:44 +01:00: 
-2025-12-11 10:34:44 +01:00: > nx run @bassnotion/frontend:serve
-2025-12-11 10:34:44 +01:00: 
-2025-12-11 10:34:45 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.1.8[39m[22m
-2025-12-11 10:34:45 +01:00:    - Local:        http://localhost:3001
-2025-12-11 10:34:45 +01:00:    - Network:      http://10.0.0.6:3001
-2025-12-11 10:34:45 +01:00:    - Environments: .env.local, .env
-2025-12-11 10:34:45 +01:00:  [32m[1m✓[22m[39m Starting...
-2025-12-11 10:34:57 +01:00:  [32m[1m✓[22m[39m Ready in 11.7s
-2025-12-11 10:43:06 +01:00:  [37m[1m○[22m[39m Compiling /library/[tutorialId] ...
-2025-12-11 10:43:12 +01:00:  [32m[1m✓[22m[39m Compiled /library/[tutorialId] in 7.3s (6101 modules)
-2025-12-11 10:43:13 +01:00:  [32m[1m✓[22m[39m Compiled in 715ms (2831 modules)
-2025-12-11 10:43:14 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765446194380-96q9l'[39m }
-2025-12-11 10:43:15 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 9408ms
-2025-12-11 10:43:15 +01:00:  [37m[1m○[22m[39m Compiling /_not-found ...
-2025-12-11 10:43:17 +01:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1877ms (6102 modules)
-2025-12-11 10:43:17 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 2424ms
-2025-12-11 10:47:21 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765446441727-u6uf3'[39m }
-2025-12-11 10:47:22 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 533ms
-2025-12-11 10:47:22 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 14ms
-2025-12-11 10:50:11 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 59ms
-2025-12-11 10:50:11 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 25ms
-2025-12-11 10:53:01 +01:00:  [32m[1m✓[22m[39m Compiled in 5.7s (6115 modules)
-2025-12-11 10:53:01 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 135ms
-2025-12-11 10:53:08 +01:00:  [32m[1m✓[22m[39m Compiled in 2.2s (6115 modules)
-2025-12-11 10:53:08 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 104ms
-2025-12-11 10:53:18 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765446798196-uxxpl'[39m }
-2025-12-11 10:53:18 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 844ms
-2025-12-11 10:53:19 +01:00:  [32m[1m✓[22m[39m Compiled /_not-found in 509ms (3271 modules)
-2025-12-11 10:53:20 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1103ms
-2025-12-11 11:18:29 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765448309373-btfl2'[39m }
-2025-12-11 11:18:29 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 488ms
-2025-12-11 11:18:30 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 48ms
-2025-12-11 11:18:55 +01:00:  [32m[1m✓[22m[39m Compiled in 4.3s (6116 modules)
-2025-12-11 11:18:55 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 167ms
-2025-12-11 11:18:55 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765448335749-9lfn1'[39m }
-2025-12-11 11:18:56 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 1023ms
-2025-12-11 11:18:56 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 44ms
-2025-12-11 11:19:01 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 44ms
-2025-12-11 11:19:01 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 27ms
-2025-12-11 11:19:20 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 49ms
-2025-12-11 11:19:20 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 17ms
-2025-12-11 11:20:45 +01:00:  [32m[1m✓[22m[39m Compiled in 2.5s (6115 modules)
-2025-12-11 11:20:46 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 249ms
-2025-12-11 11:21:54 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765448514346-3bjk3'[39m }
-2025-12-11 11:21:54 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 786ms
-2025-12-11 11:21:55 +01:00:  [37m[1m○[22m[39m Compiling /_not-found ...
-2025-12-11 11:21:55 +01:00:  [32m[1m✓[22m[39m Compiled /_not-found in 867ms (3271 modules)
-2025-12-11 11:21:56 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1261ms
-2025-12-11 11:23:58 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765448638247-42fvk'[39m }
-2025-12-11 11:23:58 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 454ms
-2025-12-11 11:23:58 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 45ms
-2025-12-11 11:27:35 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 102ms
-2025-12-11 11:27:39 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 40ms
-2025-12-11 11:34:25 +01:00:  [32m[1m✓[22m[39m Compiled in 2.5s (6115 modules)
-2025-12-11 11:34:25 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 122ms
-2025-12-11 11:34:26 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765449266057-rgps9'[39m }
-2025-12-11 11:34:26 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 613ms
-2025-12-11 11:34:28 +01:00:  [37m[1m○[22m[39m Compiling /_not-found ...
-2025-12-11 11:34:28 +01:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1017ms (3271 modules)
-2025-12-11 11:34:28 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1398ms
-2025-12-11 11:34:40 +01:00:  [32m[1m✓[22m[39m Compiled in 1027ms (6116 modules)
-2025-12-11 11:34:40 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 105ms
-2025-12-11 11:34:52 +01:00:  [32m[1m✓[22m[39m Compiled in 1184ms (6116 modules)
-2025-12-11 11:34:52 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 85ms
-2025-12-11 11:35:13 +01:00:  [32m[1m✓[22m[39m Compiled in 1016ms (6116 modules)
-2025-12-11 11:35:13 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 115ms
-2025-12-11 11:37:39 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765449459329-d1p4g'[39m }
-2025-12-11 11:37:40 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 1523ms
-2025-12-11 11:37:40 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 55ms
+2025-12-12 00:34:36 +01:00:  [37m[1m○[22m[39m Compiling /dashboard ...
+2025-12-12 00:34:40 +01:00:  [32m[1m✓[22m[39m Compiled /dashboard in 4.9s (6207 modules)
+2025-12-12 00:34:40 +01:00:  GET /dashboard [32m200[39m in 5059ms
+2025-12-12 00:36:01 +01:00:  [37m[1m○[22m[39m Compiling /library ...
+2025-12-12 00:36:05 +01:00:  [32m[1m✓[22m[39m Compiled /library in 4.8s (6218 modules)
+2025-12-12 00:36:05 +01:00:  GET /library [32m200[39m in 4930ms
+2025-12-12 00:36:05 +01:00:  GET /library [32m200[39m in 11ms
+2025-12-12 00:36:06 +01:00:  GET /dashboard [32m200[39m in 622ms
+2025-12-12 00:36:32 +01:00:  GET /library [32m200[39m in 21ms
+2025-12-12 00:36:33 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 121ms
+2025-12-12 00:46:12 +01:00:  [32m[1m✓[22m[39m Compiled in 5.1s (6225 modules)
+2025-12-12 00:46:13 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 128ms
+2025-12-12 00:46:13 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765496773451-5eu5h'[39m }
+2025-12-12 00:46:14 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 1056ms
+2025-12-12 00:46:19 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 156ms
+2025-12-12 00:46:21 +01:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-12-12 00:46:21 +01:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1013ms (3328 modules)
+2025-12-12 00:46:22 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1456ms
+2025-12-12 00:47:43 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765496863678-yrr86'[39m }
+2025-12-12 00:47:43 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 415ms
+2025-12-12 00:47:44 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 31ms
+2025-12-12 00:50:37 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 76ms
+2025-12-12 00:50:38 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 42ms
+2025-12-12 00:54:59 +01:00:  [32m[1m✓[22m[39m Compiled in 3.4s (6225 modules)
+2025-12-12 00:54:59 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 163ms
+2025-12-12 00:54:59 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765497299590-7a8jv'[39m }
+2025-12-12 00:55:00 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 698ms
+2025-12-12 00:55:17 +01:00:  [32m[1m✓[22m[39m Compiled in 1383ms (6225 modules)
+2025-12-12 00:55:17 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 142ms
+2025-12-12 00:55:17 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765497317560-n390g'[39m }
+2025-12-12 00:55:17 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 608ms
+2025-12-12 00:55:40 +01:00:  [32m[1m✓[22m[39m Compiled in 3.4s (6225 modules)
+2025-12-12 00:55:41 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765497341435-ouc2a'[39m }
+2025-12-12 00:55:41 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 1287ms
+2025-12-12 00:55:41 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 3023ms
+2025-12-12 00:56:29 +01:00:  [32m[1m✓[22m[39m Compiled in 1724ms (6225 modules)
+2025-12-12 00:56:30 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 145ms
+2025-12-12 00:56:30 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765497390272-gh5qd'[39m }
+2025-12-12 00:56:30 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 701ms
+2025-12-12 00:56:50 +01:00:  [32m[1m✓[22m[39m Compiled in 2.3s (6225 modules)
+2025-12-12 00:56:50 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 121ms
+2025-12-12 00:56:50 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765497410603-eqnst'[39m }
+2025-12-12 00:56:50 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 440ms
+2025-12-12 00:57:07 +01:00:  [32m[1m✓[22m[39m Compiled in 1469ms (6225 modules)
+2025-12-12 00:57:07 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 123ms
+2025-12-12 00:57:08 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765497428106-o99w1'[39m }
+2025-12-12 00:57:08 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 462ms
+2025-12-12 00:57:35 +01:00:  [32m[1m✓[22m[39m Compiled in 3s (6225 modules)
+2025-12-12 00:57:35 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 135ms
+2025-12-12 00:58:09 +01:00: 
+2025-12-12 00:58:09 +01:00: > nx run @bassnotion/frontend:serve
+2025-12-12 00:58:09 +01:00: 
+2025-12-12 00:58:10 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.1.8[39m[22m
+2025-12-12 00:58:10 +01:00:    - Local:        http://localhost:3001
+2025-12-12 00:58:10 +01:00:    - Network:      http://10.0.0.6:3001
+2025-12-12 00:58:10 +01:00:    - Environments: .env.local, .env
+2025-12-12 00:58:10 +01:00:  [32m[1m✓[22m[39m Starting...
+2025-12-12 00:58:12 +01:00:  [32m[1m✓[22m[39m Ready in 2.1s
+2025-12-12 01:03:24 +01:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-12-12 01:03:38 +01:00:  [32m[1m✓[22m[39m Compiled /library/[tutorialId] in 15.6s (6116 modules)
+2025-12-12 01:03:39 +01:00:  GET /_next/static/css/app/layout.css?v=1765497455179 [33m404[39m in 16559ms
+2025-12-12 01:03:39 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 16578ms
+2025-12-12 01:03:40 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765497820676-u0dhv'[39m }
+2025-12-12 01:03:40 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 16537ms
+2025-12-12 01:03:41 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 30ms
+2025-12-12 08:40:56 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 127ms
+2025-12-12 08:40:57 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 23ms
+2025-12-12 08:41:33 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 60ms
+2025-12-12 08:41:33 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 22ms
+2025-12-12 08:45:02 +01:00:  [32m[1m✓[22m[39m Compiled in 2.3s (6115 modules)
+2025-12-12 08:45:02 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 129ms
+2025-12-12 08:45:02 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765525502496-no26o'[39m }
+2025-12-12 08:45:03 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 883ms
+2025-12-12 08:45:25 +01:00:  [32m[1m✓[22m[39m Compiled in 1139ms (6115 modules)
+2025-12-12 08:45:25 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 107ms
+2025-12-12 08:45:26 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765525526033-xm4k1'[39m }
+2025-12-12 08:45:26 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 697ms
+2025-12-12 08:46:00 +01:00:  [32m[1m✓[22m[39m Compiled in 1264ms (6115 modules)
+2025-12-12 08:46:01 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 162ms
+2025-12-12 08:46:01 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765525561417-o80yb'[39m }
+2025-12-12 08:46:01 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 554ms
+2025-12-12 08:46:26 +01:00:  [32m[1m✓[22m[39m Compiled in 1449ms (6115 modules)
+2025-12-12 08:46:27 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765525587062-3zbct'[39m }
+2025-12-12 08:46:27 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 1024ms
+2025-12-12 08:46:27 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 1416ms
+2025-12-12 08:47:00 +01:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-12-12 08:47:02 +01:00:  [32m[1m✓[22m[39m Compiled /_not-found in 2.3s (3271 modules)
+2025-12-12 08:47:02 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 2723ms
+2025-12-12 08:48:18 +01:00: 
+2025-12-12 08:48:18 +01:00: > nx run @bassnotion/frontend:serve
+2025-12-12 08:48:18 +01:00: 
+2025-12-12 08:48:19 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.1.8[39m[22m
+2025-12-12 08:48:19 +01:00:    - Local:        http://localhost:3001
+2025-12-12 08:48:19 +01:00:    - Network:      http://10.0.0.6:3001
+2025-12-12 08:48:19 +01:00:    - Environments: .env.local, .env
+2025-12-12 08:48:19 +01:00:  [32m[1m✓[22m[39m Starting...
+2025-12-12 08:48:21 +01:00:  [32m[1m✓[22m[39m Ready in 2.2s
+2025-12-12 08:50:10 +01:00:  [37m[1m○[22m[39m Compiling /library/[tutorialId] ...
+2025-12-12 08:50:17 +01:00:  [32m[1m✓[22m[39m Compiled /library/[tutorialId] in 7.9s (6101 modules)
+2025-12-12 08:50:18 +01:00:  [32m[1m✓[22m[39m Compiled in 737ms (2831 modules)
+2025-12-12 08:50:19 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765525819455-caris'[39m }
+2025-12-12 08:50:20 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 10212ms
+2025-12-12 08:50:20 +01:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-12-12 08:50:22 +01:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1774ms (6102 modules)
+2025-12-12 08:50:22 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 2305ms
+2025-12-12 09:00:09 +01:00:  [32m[1m✓[22m[39m Compiled in 5.5s (6115 modules)
+2025-12-12 09:00:10 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 186ms
+2025-12-12 09:00:20 +01:00:  [32m[1m✓[22m[39m Compiled in 2s (6115 modules)
+2025-12-12 09:00:20 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 111ms
+2025-12-12 09:00:42 +01:00:  [32m[1m✓[22m[39m Compiled in 1485ms (6115 modules)
+2025-12-12 09:00:43 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 222ms
+2025-12-12 09:00:58 +01:00:  [32m[1m✓[22m[39m Compiled in 1736ms (6115 modules)
+2025-12-12 09:00:58 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 126ms
+2025-12-12 09:01:10 +01:00:  [32m[1m✓[22m[39m Compiled in 1873ms (6115 modules)
+2025-12-12 09:01:10 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 94ms
+2025-12-12 09:01:49 +01:00:  [32m[1m✓[22m[39m Compiled in 1793ms (6115 modules)
+2025-12-12 09:01:50 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 160ms
+2025-12-12 09:02:25 +01:00: 
+2025-12-12 09:02:25 +01:00: > nx run @bassnotion/frontend:serve
+2025-12-12 09:02:25 +01:00: 
+2025-12-12 09:02:26 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.1.8[39m[22m
+2025-12-12 09:02:26 +01:00:    - Local:        http://localhost:3001
+2025-12-12 09:02:26 +01:00:    - Network:      http://10.0.0.6:3001
+2025-12-12 09:02:26 +01:00:    - Environments: .env.local, .env
+2025-12-12 09:02:26 +01:00:  [32m[1m✓[22m[39m Starting...
+2025-12-12 09:02:28 +01:00:  [32m[1m✓[22m[39m Ready in 2.3s
+2025-12-12 09:03:41 +01:00:  [37m[1m○[22m[39m Compiling /library/[tutorialId] ...
+2025-12-12 09:03:51 +01:00:  [32m[1m✓[22m[39m Compiled /library/[tutorialId] in 10.8s (6115 modules)
+2025-12-12 09:03:52 +01:00:  [32m[1m✓[22m[39m Compiled in 964ms (2845 modules)
+2025-12-12 09:03:52 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765526632943-0u2o0'[39m }
+2025-12-12 09:03:53 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 13282ms
+2025-12-12 09:03:54 +01:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-12-12 09:03:56 +01:00:  [32m[1m✓[22m[39m Compiled /_not-found in 2.4s (6102 modules)
+2025-12-12 09:03:57 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 3105ms
+2025-12-12 09:04:02 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765526642286-zrah0'[39m }
+2025-12-12 09:04:02 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 474ms
+2025-12-12 09:04:02 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 26ms
+2025-12-12 09:05:23 +01:00:  [32m[1m✓[22m[39m Compiled in 2.8s (6115 modules)
+2025-12-12 09:05:23 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 143ms
+2025-12-12 09:05:29 +01:00:  [32m[1m✓[22m[39m Compiled in 1508ms (6115 modules)
+2025-12-12 09:05:30 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 146ms
+2025-12-12 09:06:03 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765526763047-yot2z'[39m }
+2025-12-12 09:06:03 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 955ms
+2025-12-12 09:06:04 +01:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-12-12 09:06:04 +01:00:  [32m[1m✓[22m[39m Compiled /_not-found in 529ms (3271 modules)
+2025-12-12 09:06:05 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1262ms
+2025-12-12 09:06:25 +01:00: 
+2025-12-12 09:06:25 +01:00: > nx run @bassnotion/frontend:serve
+2025-12-12 09:06:25 +01:00: 
+2025-12-12 09:06:26 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.1.8[39m[22m
+2025-12-12 09:06:26 +01:00:    - Local:        http://localhost:3001
+2025-12-12 09:06:26 +01:00:    - Network:      http://10.0.0.6:3001
+2025-12-12 09:06:26 +01:00:    - Environments: .env.local, .env
+2025-12-12 09:06:26 +01:00:  [32m[1m✓[22m[39m Starting...
+2025-12-12 09:06:28 +01:00:  [32m[1m✓[22m[39m Ready in 2.2s
+2025-12-12 09:36:26 +01:00:  [37m[1m○[22m[39m Compiling /login ...
+2025-12-12 09:36:34 +01:00:  [32m[1m✓[22m[39m Compiled /login in 8.7s (4642 modules)
+2025-12-12 09:36:34 +01:00:  GET /login?reason=idle [32m200[39m in 9374ms
+2025-12-12 09:36:34 +01:00:  GET /login?reason=idle [32m200[39m in 267ms
+2025-12-12 09:36:35 +01:00:  [32m[1m✓[22m[39m Compiled in 871ms (2112 modules)
+2025-12-12 09:54:23 +01:00:  [32m[1m✓[22m[39m Compiled in 1400ms (2112 modules)
+2025-12-12 09:54:30 +01:00: 
+2025-12-12 09:54:30 +01:00: > nx run @bassnotion/frontend:serve
+2025-12-12 09:54:30 +01:00: 
+2025-12-12 09:54:31 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.1.8[39m[22m
+2025-12-12 09:54:31 +01:00:    - Local:        http://localhost:3001
+2025-12-12 09:54:31 +01:00:    - Network:      http://10.0.0.6:3001
+2025-12-12 09:54:31 +01:00:    - Environments: .env.local, .env
+2025-12-12 09:54:31 +01:00:  [32m[1m✓[22m[39m Starting...
+2025-12-12 09:54:33 +01:00:  [32m[1m✓[22m[39m Ready in 2.2s
+2025-12-12 09:54:45 +01:00:  [37m[1m○[22m[39m Compiling /dashboard ...
+2025-12-12 09:54:53 +01:00:  [32m[1m✓[22m[39m Compiled /dashboard in 9.1s (4690 modules)
+2025-12-12 09:54:54 +01:00:  GET /dashboard [32m200[39m in 9767ms
+2025-12-12 09:54:54 +01:00:  GET /dashboard [32m200[39m in 258ms
+2025-12-12 09:54:54 +01:00:  [32m[1m✓[22m[39m Compiled in 869ms (2136 modules)
+2025-12-12 09:54:56 +01:00:  [37m[1m○[22m[39m Compiling /library ...
+2025-12-12 09:54:58 +01:00:  [32m[1m✓[22m[39m Compiled /library in 2.1s (4689 modules)
+2025-12-12 09:54:58 +01:00:  GET /library [32m200[39m in 2746ms
+2025-12-12 09:54:58 +01:00:  GET /dashboard [32m200[39m in 2172ms
+2025-12-12 09:55:01 +01:00:  GET /library [32m200[39m in 12ms
+2025-12-12 09:55:03 +01:00:  [37m[1m○[22m[39m Compiling /library/[tutorialId] ...
+2025-12-12 09:55:06 +01:00:  [32m[1m✓[22m[39m Compiled /library/[tutorialId] in 2.8s (6205 modules)
+2025-12-12 09:55:06 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 3392ms
+2025-12-12 09:55:06 +01:00:  GET /library [32m200[39m in 410ms
+2025-12-12 09:55:08 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 11ms
+2025-12-12 09:55:10 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765529709960-5cwxg'[39m }
+2025-12-12 09:55:10 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 1190ms
+2025-12-12 09:55:15 +01:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-12-12 09:55:16 +01:00:  [32m[1m✓[22m[39m Compiled /_not-found in 2.2s (6206 modules)
+2025-12-12 09:55:17 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 2794ms
+2025-12-12 09:55:18 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765529718930-vy032'[39m }
+2025-12-12 09:55:19 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 362ms
+2025-12-12 09:55:19 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 24ms
+2025-12-12 09:57:04 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 57ms
+2025-12-12 09:57:05 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 23ms
+2025-12-12 10:02:15 +01:00:  [32m[1m✓[22m[39m Compiled in 2.7s (6163 modules)
+2025-12-12 10:02:15 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 161ms
+2025-12-12 10:02:20 +01:00: 
+2025-12-12 10:02:20 +01:00: > nx run @bassnotion/frontend:serve
+2025-12-12 10:02:20 +01:00: 
+2025-12-12 10:02:21 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.1.8[39m[22m
+2025-12-12 10:02:21 +01:00:    - Local:        http://localhost:3001
+2025-12-12 10:02:21 +01:00:    - Network:      http://10.0.0.6:3001
+2025-12-12 10:02:21 +01:00:    - Environments: .env.local, .env
+2025-12-12 10:02:21 +01:00:  [32m[1m✓[22m[39m Starting...
+2025-12-12 10:02:23 +01:00:  [32m[1m✓[22m[39m Ready in 1960ms
+2025-12-12 10:05:45 +01:00: 
+2025-12-12 10:05:45 +01:00: > nx run @bassnotion/frontend:serve
+2025-12-12 10:05:45 +01:00: 
+2025-12-12 10:05:46 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.1.8[39m[22m
+2025-12-12 10:05:46 +01:00:    - Local:        http://localhost:3001
+2025-12-12 10:05:46 +01:00:    - Network:      http://10.0.0.6:3001
+2025-12-12 10:05:46 +01:00:    - Environments: .env.local, .env
+2025-12-12 10:05:46 +01:00:  [32m[1m✓[22m[39m Starting...
+2025-12-12 10:05:48 +01:00:  [32m[1m✓[22m[39m Ready in 2.2s
+2025-12-12 10:09:01 +01:00:  [37m[1m○[22m[39m Compiling /library/[tutorialId] ...
+2025-12-12 10:09:12 +01:00:  [32m[1m✓[22m[39m Compiled /library/[tutorialId] in 11.5s (6115 modules)
+2025-12-12 10:09:13 +01:00:  [32m[1m✓[22m[39m Compiled in 997ms (2845 modules)
+2025-12-12 10:09:13 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765530553583-cjbb6'[39m }
+2025-12-12 10:09:14 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 13461ms
+2025-12-12 10:09:15 +01:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-12-12 10:09:17 +01:00:  [32m[1m✓[22m[39m Compiled /_not-found in 2.6s (6102 modules)
+2025-12-12 10:09:18 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 3437ms
+2025-12-12 10:09:20 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765530560355-btwre'[39m }
+2025-12-12 10:09:20 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 490ms
+2025-12-12 10:09:20 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 28ms
+2025-12-12 10:11:31 +01:00:  [32m[1m✓[22m[39m Compiled in 2.4s (6115 modules)
+2025-12-12 10:11:31 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 162ms
+2025-12-12 10:11:38 +01:00:  [32m[1m✓[22m[39m Compiled in 996ms (6115 modules)
+2025-12-12 10:11:38 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 121ms
+2025-12-12 10:11:58 +01:00:  [32m[1m✓[22m[39m Compiled in 1247ms (6115 modules)
+2025-12-12 10:11:59 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 166ms
+2025-12-12 10:12:14 +01:00:  [32m[1m✓[22m[39m Compiled in 2s (6115 modules)
+2025-12-12 10:12:15 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 124ms
+2025-12-12 10:12:21 +01:00: 
+2025-12-12 10:12:21 +01:00: > nx run @bassnotion/frontend:serve
+2025-12-12 10:12:21 +01:00: 
+2025-12-12 10:12:22 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.1.8[39m[22m
+2025-12-12 10:12:22 +01:00:    - Local:        http://localhost:3001
+2025-12-12 10:12:22 +01:00:    - Network:      http://10.0.0.6:3001
+2025-12-12 10:12:22 +01:00:    - Environments: .env.local, .env
+2025-12-12 10:12:22 +01:00:  [32m[1m✓[22m[39m Starting...
+2025-12-12 10:12:24 +01:00:  [32m[1m✓[22m[39m Ready in 2s
+2025-12-12 10:12:41 +01:00:  [37m[1m○[22m[39m Compiling /library/[tutorialId] ...
+2025-12-12 10:12:52 +01:00:  [32m[1m✓[22m[39m Compiled /library/[tutorialId] in 11.6s (6115 modules)
+2025-12-12 10:12:53 +01:00:  [32m[1m✓[22m[39m Compiled in 1456ms (2845 modules)
+2025-12-12 10:12:54 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765530774632-jbypd'[39m }
+2025-12-12 10:12:55 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 14710ms
+2025-12-12 10:12:56 +01:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-12-12 10:12:58 +01:00:  [32m[1m✓[22m[39m Compiled /_not-found in 2.6s (6102 modules)
+2025-12-12 10:12:58 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 3355ms
+2025-12-12 10:20:45 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765531245113-i4sk1'[39m }
+2025-12-12 10:20:45 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 937ms
+2025-12-12 10:20:52 +01:00:  [32m[1m✓[22m[39m Compiled in 2.2s (2845 modules)
+2025-12-12 10:20:52 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 45ms
+2025-12-12 10:20:52 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 74ms
+2025-12-12 10:25:01 +01:00:  [32m[1m✓[22m[39m Compiled in 1781ms (2845 modules)
+2025-12-12 10:25:01 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 19ms
+2025-12-12 11:20:05 +01:00:  [37m[1m○[22m[39m Compiling /login ...
+2025-12-12 11:20:06 +01:00:  [32m[1m✓[22m[39m Compiled /login in 2.2s (6152 modules)
+2025-12-12 11:20:07 +01:00:  GET /login?reason=idle [32m200[39m in 2352ms
+2025-12-12 11:42:09 +01:00:  [32m[1m✓[22m[39m Compiled in 2.8s (6138 modules)
+2025-12-12 11:42:19 +01:00:  [32m[1m✓[22m[39m Compiled in 1164ms (6138 modules)
+2025-12-12 11:42:47 +01:00:  [32m[1m✓[22m[39m Compiled in 854ms (6138 modules)
+2025-12-12 11:43:10 +01:00:  [32m[1m✓[22m[39m Compiled in 1466ms (6138 modules)
+2025-12-12 11:43:25 +01:00:  [32m[1m✓[22m[39m Compiled in 983ms (6138 modules)
+2025-12-12 11:43:56 +01:00: 
+2025-12-12 11:43:56 +01:00: > nx run @bassnotion/frontend:serve
+2025-12-12 11:43:56 +01:00: 
+2025-12-12 11:43:57 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.1.8[39m[22m
+2025-12-12 11:43:57 +01:00:    - Local:        http://localhost:3001
+2025-12-12 11:43:57 +01:00:    - Network:      http://10.0.0.6:3001
+2025-12-12 11:43:57 +01:00:    - Environments: .env.local, .env
+2025-12-12 11:43:57 +01:00:  [32m[1m✓[22m[39m Starting...
+2025-12-12 11:44:00 +01:00:  [32m[1m✓[22m[39m Ready in 2.3s
+2025-12-12 11:46:04 +01:00:  [37m[1m○[22m[39m Compiling /login ...
+2025-12-12 11:46:12 +01:00:  [32m[1m✓[22m[39m Compiled /login in 8.9s (4642 modules)
+2025-12-12 11:46:13 +01:00:  GET /login?reason=idle [32m200[39m in 10124ms
+2025-12-12 11:46:13 +01:00:  [32m[1m✓[22m[39m Compiled in 1421ms (2112 modules)
+2025-12-12 11:46:18 +01:00:  GET /login?email=marekcaba%40seznam.cz&password=Testtest2 [32m200[39m in 34ms
+2025-12-12 11:46:24 +01:00:  [37m[1m○[22m[39m Compiling /dashboard ...
+2025-12-12 11:46:25 +01:00:  [32m[1m✓[22m[39m Compiled /dashboard in 2.1s (4689 modules)
+2025-12-12 11:46:25 +01:00:  GET /dashboard [32m200[39m in 2248ms
+2025-12-12 11:46:28 +01:00:  [37m[1m○[22m[39m Compiling /library ...
+2025-12-12 11:46:28 +01:00:  [32m[1m✓[22m[39m Compiled /library in 1222ms (4702 modules)
+2025-12-12 11:46:28 +01:00:  GET /library [32m200[39m in 1310ms
+2025-12-12 11:46:29 +01:00:  GET /dashboard [32m200[39m in 498ms
+2025-12-12 11:50:39 +01:00:  GET /library [32m200[39m in 28ms
+2025-12-12 11:50:41 +01:00:  [37m[1m○[22m[39m Compiling /library/[tutorialId] ...
+2025-12-12 11:50:44 +01:00:  [32m[1m✓[22m[39m Compiled /library/[tutorialId] in 4s (6218 modules)
+2025-12-12 11:50:45 +01:00:  GET /library [32m200[39m in 513ms
+2025-12-12 11:50:45 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 4687ms
+2025-12-12 11:50:47 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 13ms
+2025-12-12 11:50:50 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765536650828-u99nk'[39m }
+2025-12-12 11:50:51 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 455ms
+2025-12-12 12:01:55 +01:00:  [32m[1m✓[22m[39m Compiled in 2.7s (2898 modules)
+2025-12-12 12:01:55 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 60ms
+2025-12-12 12:02:37 +01:00:  [32m[1m✓[22m[39m Compiled in 5s (6225 modules)
+2025-12-12 12:02:38 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765537358624-3uusd'[39m }
+2025-12-12 12:02:39 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 2034ms
+2025-12-12 12:02:39 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 3872ms
+2025-12-12 12:02:47 +01:00:  [32m[1m✓[22m[39m Compiled in 3.9s (6225 modules)
+2025-12-12 12:02:47 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 143ms
+2025-12-12 12:02:47 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765537367658-brclh'[39m }
+2025-12-12 12:02:48 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 736ms
+2025-12-12 12:02:53 +01:00:  [32m[1m✓[22m[39m Compiled in 1748ms (6225 modules)
+2025-12-12 12:02:53 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 241ms
+2025-12-12 12:02:53 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765537373774-c26bh'[39m }
+2025-12-12 12:02:54 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 562ms
+2025-12-12 12:37:01 +01:00:  [32m[1m✓[22m[39m Compiled in 2.5s (6227 modules)
+2025-12-12 12:37:02 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765539422881-flah1'[39m }
+2025-12-12 12:37:03 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 1871ms
+2025-12-12 12:37:03 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 3555ms
+2025-12-12 12:37:07 +01:00:  [32m[1m✓[22m[39m Compiled in 1264ms (6227 modules)
+2025-12-12 12:37:08 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765539428182-67ejc'[39m }
+2025-12-12 12:37:08 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 1233ms
+2025-12-12 12:37:08 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 1702ms
+2025-12-12 12:37:25 +01:00:  [32m[1m✓[22m[39m Compiled in 1287ms (6227 modules)
+2025-12-12 12:37:25 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765539445674-ik7wi'[39m }
+2025-12-12 12:37:26 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 859ms
+2025-12-12 12:37:26 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 691ms
+2025-12-12 12:37:37 +01:00: 
+2025-12-12 12:37:37 +01:00: > nx run @bassnotion/frontend:serve
+2025-12-12 12:37:37 +01:00: 
+2025-12-12 12:37:38 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.1.8[39m[22m
+2025-12-12 12:37:38 +01:00:    - Local:        http://localhost:3001
+2025-12-12 12:37:38 +01:00:    - Network:      http://10.0.0.6:3001
+2025-12-12 12:37:38 +01:00:    - Environments: .env.local, .env
+2025-12-12 12:37:38 +01:00:  [32m[1m✓[22m[39m Starting...
+2025-12-12 12:37:40 +01:00:  [32m[1m✓[22m[39m Ready in 2.1s
+2025-12-12 12:39:20 +01:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-12-12 12:39:36 +01:00:  [32m[1m✓[22m[39m Compiled /library/[tutorialId] in 16.4s (6118 modules)
+2025-12-12 12:39:37 +01:00:  GET /_next/static/chunks/_app-pages-browser_src_domains_playback_modules_preloading_strategies_HarmonyPreloadStrategy_ts.js [33m404[39m in 17486ms
+2025-12-12 12:39:37 +01:00:  GET /_next/static/chunks/_app-pages-browser_src_domains_playback_data_instruments_wurlitzer_wurlitzer-piano_json.js [33m404[39m in 17508ms
+2025-12-12 12:39:37 +01:00:  GET /_next/static/chunks/_app-pages-browser_src_domains_playback_services_InstrumentDependencyManager_ts.js [33m404[39m in 17309ms
+2025-12-12 12:39:38 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765539578249-yx95b'[39m }
+2025-12-12 12:39:38 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 17581ms
+2025-12-12 12:40:47 +01:00:  [32m[1m✓[22m[39m Compiled in 3.1s (6117 modules)
+2025-12-12 12:40:47 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 172ms
+2025-12-12 12:40:48 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765539648219-pvuvg'[39m }
+2025-12-12 12:40:48 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 902ms
+2025-12-12 12:41:01 +01:00:  [32m[1m✓[22m[39m Compiled in 1762ms (6117 modules)
+2025-12-12 12:41:01 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765539661923-jj8zw'[39m }
+2025-12-12 12:41:02 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 1265ms
+2025-12-12 12:41:02 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 1716ms
+2025-12-12 12:41:07 +01:00: 
+2025-12-12 12:41:07 +01:00: > nx run @bassnotion/frontend:serve
+2025-12-12 12:41:07 +01:00: 
+2025-12-12 12:41:08 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.1.8[39m[22m
+2025-12-12 12:41:08 +01:00:    - Local:        http://localhost:3001
+2025-12-12 12:41:08 +01:00:    - Network:      http://10.0.0.6:3001
+2025-12-12 12:41:08 +01:00:    - Environments: .env.local, .env
+2025-12-12 12:41:08 +01:00:  [32m[1m✓[22m[39m Starting...
+2025-12-12 12:41:10 +01:00:  [32m[1m✓[22m[39m Ready in 2.1s
+2025-12-12 12:41:22 +01:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-12-12 12:41:36 +01:00:  [32m[1m✓[22m[39m Compiled /library/[tutorialId] in 14.5s (6118 modules)
+2025-12-12 12:41:37 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 15634ms
+2025-12-12 12:41:37 +01:00:  GET /_next/static/css/app/layout.css?v=1765539661658 [33m404[39m in 15627ms
+2025-12-12 12:41:38 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765539698192-c8ppq'[39m }
+2025-12-12 12:41:38 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 14078ms
+2025-12-12 12:41:38 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 14ms
+2025-12-12 12:42:59 +01:00:  [32m[1m✓[22m[39m Compiled in 3.5s (6117 modules)
+2025-12-12 12:42:59 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 231ms
+2025-12-12 12:43:00 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765539780244-4cxen'[39m }
+2025-12-12 12:43:00 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 1143ms
+2025-12-12 12:43:02 +01:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-12-12 12:43:02 +01:00:  [32m[1m✓[22m[39m Compiled /_not-found in 896ms (3272 modules)
+2025-12-12 12:43:03 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1423ms
+2025-12-12 12:43:17 +01:00:  [32m[1m✓[22m[39m Compiled in 1802ms (6118 modules)
+2025-12-12 12:43:17 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 214ms
+2025-12-12 12:43:17 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765539797889-wvwbt'[39m }
+2025-12-12 12:43:18 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 722ms
+2025-12-12 12:43:18 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 55ms
+2025-12-12 12:43:24 +01:00:  [32m[1m✓[22m[39m Compiled in 1748ms (6118 modules)
+2025-12-12 12:43:24 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 157ms
+2025-12-12 12:43:24 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765539804540-1ge54'[39m }
+2025-12-12 12:43:24 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 530ms
+2025-12-12 12:43:25 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 44ms
+2025-12-12 12:43:38 +01:00:  [32m[1m✓[22m[39m Compiled in 3.3s (6118 modules)
+2025-12-12 12:43:38 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765539818964-45b36'[39m }
+2025-12-12 12:43:39 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 1462ms
+2025-12-12 12:43:39 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 3420ms
+2025-12-12 12:43:39 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 74ms
+2025-12-12 12:43:46 +01:00:  [32m[1m✓[22m[39m Compiled in 2.2s (6118 modules)
+2025-12-12 12:43:46 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 117ms
+2025-12-12 12:43:46 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765539826534-vkss9'[39m }
+2025-12-12 12:43:47 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 764ms
+2025-12-12 12:43:47 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 42ms
+2025-12-12 12:43:52 +01:00: 
+2025-12-12 12:43:52 +01:00: > nx run @bassnotion/frontend:serve
+2025-12-12 12:43:52 +01:00: 
+2025-12-12 12:43:53 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.1.8[39m[22m
+2025-12-12 12:43:53 +01:00:    - Local:        http://localhost:3001
+2025-12-12 12:43:53 +01:00:    - Network:      http://10.0.0.6:3001
+2025-12-12 12:43:53 +01:00:    - Environments: .env.local, .env
+2025-12-12 12:43:53 +01:00:  [32m[1m✓[22m[39m Starting...
+2025-12-12 12:43:55 +01:00:  [32m[1m✓[22m[39m Ready in 2.3s
+2025-12-12 12:44:02 +01:00:  [37m[1m○[22m[39m Compiling /library/[tutorialId] ...
+2025-12-12 12:44:13 +01:00:  [32m[1m✓[22m[39m Compiled /library/[tutorialId] in 11.7s (6117 modules)
+2025-12-12 12:44:14 +01:00:  [32m[1m✓[22m[39m Compiled in 1558ms (2846 modules)
+2025-12-12 12:44:15 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765539855287-qhxx4'[39m }
+2025-12-12 12:44:15 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 14206ms
+2025-12-12 12:44:16 +01:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-12-12 12:44:19 +01:00:  [32m[1m✓[22m[39m Compiled /_not-found in 2.7s (6104 modules)
+2025-12-12 12:44:19 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 3511ms
+2025-12-12 12:44:33 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765539873699-clknh'[39m }
+2025-12-12 12:44:34 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 468ms
+2025-12-12 12:44:34 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 62ms
+2025-12-12 12:46:18 +01:00:  [32m[1m✓[22m[39m Compiled in 3.1s (6117 modules)
+2025-12-12 12:46:18 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 265ms
+2025-12-12 12:46:19 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765539979202-zcocr'[39m }
+2025-12-12 12:46:19 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 1504ms
+2025-12-12 12:46:21 +01:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-12-12 12:46:21 +01:00:  [32m[1m✓[22m[39m Compiled /_not-found in 800ms (3272 modules)
+2025-12-12 12:46:21 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1404ms
+2025-12-12 12:46:26 +01:00:  [32m[1m✓[22m[39m Compiled in 2.9s (6118 modules)
+2025-12-12 12:46:26 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 198ms
+2025-12-12 12:46:26 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765539986811-gls1m'[39m }
+2025-12-12 12:46:28 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 99ms
+2025-12-12 12:46:28 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 1505ms
+2025-12-12 12:46:39 +01:00:  [32m[1m✓[22m[39m Compiled in 2.3s (6118 modules)
+2025-12-12 12:46:40 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765540000309-fya27'[39m }
+2025-12-12 12:46:40 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 1094ms
+2025-12-12 12:46:40 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 1645ms
+2025-12-12 12:46:41 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 55ms
+2025-12-12 12:46:58 +01:00:  [32m[1m✓[22m[39m Compiled in 1741ms (6118 modules)
+2025-12-12 12:46:58 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 183ms
+2025-12-12 12:46:58 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765540018993-sss8e'[39m }
+2025-12-12 12:46:59 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 701ms
+2025-12-12 12:47:00 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 149ms
+2025-12-12 12:47:10 +01:00:  [32m[1m✓[22m[39m Compiled in 2.4s (6118 modules)
+2025-12-12 12:47:10 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 112ms
+2025-12-12 12:47:11 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765540031008-zzomy'[39m }
+2025-12-12 12:47:11 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 536ms
+2025-12-12 12:47:11 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 47ms
+2025-12-12 12:47:23 +01:00: 
+2025-12-12 12:47:23 +01:00: > nx run @bassnotion/frontend:serve
+2025-12-12 12:47:23 +01:00: 
+2025-12-12 12:47:24 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.1.8[39m[22m
+2025-12-12 12:47:24 +01:00:    - Local:        http://localhost:3001
+2025-12-12 12:47:24 +01:00:    - Network:      http://10.0.0.6:3001
+2025-12-12 12:47:24 +01:00:    - Environments: .env.local, .env
+2025-12-12 12:47:24 +01:00:  [32m[1m✓[22m[39m Starting...
+2025-12-12 12:47:26 +01:00:  [32m[1m✓[22m[39m Ready in 2.2s
+2025-12-12 12:47:32 +01:00:  [37m[1m○[22m[39m Compiling /library/[tutorialId] ...
+2025-12-12 12:47:43 +01:00:  [32m[1m✓[22m[39m Compiled /library/[tutorialId] in 11.1s (6117 modules)
+2025-12-12 12:47:44 +01:00:  [32m[1m✓[22m[39m Compiled in 1150ms (2846 modules)
+2025-12-12 12:47:44 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765540064956-vcagp'[39m }
+2025-12-12 12:47:45 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 13615ms
+2025-12-12 12:47:46 +01:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-12-12 12:47:48 +01:00:  [32m[1m✓[22m[39m Compiled /_not-found in 2s (6104 modules)
+2025-12-12 12:47:48 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 2645ms
+2025-12-12 12:49:26 +01:00:  [32m[1m✓[22m[39m Compiled in 3.9s (6117 modules)
+2025-12-12 12:49:26 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765540166533-aaag5'[39m }
+2025-12-12 12:49:27 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 958ms
+2025-12-12 12:49:27 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 2812ms
+2025-12-12 12:49:28 +01:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-12-12 12:49:28 +01:00:  [32m[1m✓[22m[39m Compiled /_not-found in 620ms (3272 modules)
+2025-12-12 12:49:29 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1413ms
+2025-12-12 12:49:34 +01:00:  [32m[1m✓[22m[39m Compiled in 1236ms (6118 modules)
+2025-12-12 12:49:34 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 219ms
+2025-12-12 12:49:35 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765540175021-gan0y'[39m }
+2025-12-12 12:49:35 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 592ms
+2025-12-12 12:49:35 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 42ms
+2025-12-12 12:49:49 +01:00:  [32m[1m✓[22m[39m Compiled in 1243ms (6118 modules)
+2025-12-12 12:49:50 +01:00: [WURLITZER CONSTRUCTOR] { instanceId: [32m'WV1765540190226-he2ds'[39m }
+2025-12-12 12:49:50 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 971ms
+2025-12-12 12:49:50 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 1589ms
+2025-12-12 12:49:50 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 39ms
+2025-12-12 12:50:13 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 51ms
+2025-12-12 12:50:13 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 86ms
+2025-12-12 13:46:00 +01:00:  [37m[1m○[22m[39m Compiling /login ...
+2025-12-12 13:46:03 +01:00:  [32m[1m✓[22m[39m Compiled /login in 4s (6154 modules)
+2025-12-12 13:46:03 +01:00:  GET /login?reason=idle [32m200[39m in 4174ms
+2025-12-12 15:24:24 +01:00:  [37m[1m○[22m[39m Compiling /dashboard ...
+2025-12-12 15:24:28 +01:00:  [32m[1m✓[22m[39m Compiled /dashboard in 4.8s (6201 modules)
+2025-12-12 15:24:28 +01:00:  GET /dashboard [32m200[39m in 5024ms
+2025-12-12 15:25:44 +01:00:  [37m[1m○[22m[39m Compiling /library ...
+2025-12-12 15:25:49 +01:00:  [32m[1m✓[22m[39m Compiled /library in 5.5s (6183 modules)
+2025-12-12 15:25:49 +01:00:  GET /library [32m200[39m in 5635ms
+2025-12-12 15:25:52 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 180ms
+2025-12-12 15:25:57 +01:00:  GET /library [32m200[39m in 24ms
+2025-12-12 15:27:44 +01:00:  [32m[1m✓[22m[39m Compiled in 3.7s (6170 modules)
+2025-12-12 15:27:54 +01:00:  [32m[1m✓[22m[39m Compiled in 1432ms (2899 modules)
+2025-12-12 15:28:04 +01:00:  [32m[1m✓[22m[39m Compiled in 1873ms (2899 modules)
+2025-12-12 15:30:14 +01:00:  [37m[1m○[22m[39m Compiling /library ...
+2025-12-12 15:30:14 +01:00:  [32m[1m✓[22m[39m Compiled /library in 1518ms (3298 modules)
+2025-12-12 15:30:14 +01:00:  GET /library [32m200[39m in 1744ms
+2025-12-12 15:30:17 +01:00:  GET /library [32m200[39m in 759ms
+2025-12-12 15:30:18 +01:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-12-12 15:30:19 +01:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1033ms (3299 modules)
+2025-12-12 15:30:19 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1568ms
+2025-12-12 15:30:24 +01:00:  [37m[1m○[22m[39m Compiling /dashboard ...
+2025-12-12 15:30:27 +01:00:  [32m[1m✓[22m[39m Compiled /dashboard in 2.8s (3328 modules)
+2025-12-12 15:30:27 +01:00:  GET /dashboard [32m200[39m in 2859ms
+2025-12-12 15:30:34 +01:00:  GET /library [32m200[39m in 55ms
+2025-12-12 16:27:28 +01:00:  [37m[1m○[22m[39m Compiling /login ...
+2025-12-12 16:27:29 +01:00:  [32m[1m✓[22m[39m Compiled /login in 1973ms (3335 modules)
+2025-12-12 16:27:29 +01:00:  GET /login?reason=idle [32m200[39m in 2146ms
+2025-12-12 16:49:02 +01:00: 
+2025-12-12 16:49:02 +01:00:  NX   Daemon process terminated and closed the connection
+2025-12-12 16:49:02 +01:00: 
+2025-12-12 16:49:02 +01:00: Please rerun the command, which will restart the daemon.
+2025-12-12 16:49:02 +01:00: If you get this error again, check for any errors in the daemon process logs found in: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/.nx/workspace-data/d/daemon.log
+2025-12-12 16:49:02 +01:00: 
+2025-12-12 16:51:52 +01:00: 
+2025-12-12 16:51:52 +01:00:  NX   Daemon process terminated and closed the connection
+2025-12-12 16:51:52 +01:00: 
+2025-12-12 16:51:52 +01:00: Please rerun the command, which will restart the daemon.
+2025-12-12 16:51:52 +01:00: If you get this error again, check for any errors in the daemon process logs found in: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/.nx/workspace-data/d/daemon.log
+2025-12-12 16:51:52 +01:00: 
+2025-12-12 16:53:15 +01:00: 
+2025-12-12 16:53:15 +01:00: 
+2025-12-12 16:53:15 +01:00: 
+2025-12-12 16:53:15 +01:00:  NX   Successfully ran target serve for project @bassnotion/frontend
+2025-12-12 16:53:15 +01:00: 
+2025-12-12 16:53:15 +01:00: 
+2025-12-12 16:53:15 +01:00: 
+2025-12-12 16:53:15 +01:00:  NX   Daemon process terminated and closed the connection
+2025-12-12 16:53:15 +01:00: 
+2025-12-12 16:53:15 +01:00: Please rerun the command, which will restart the daemon.
+2025-12-12 16:53:15 +01:00: If you get this error again, check for any errors in the daemon process logs found in: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/.nx/workspace-data/d/daemon.log
+2025-12-12 16:53:15 +01:00: 
+2025-12-12 16:53:36 +01:00: 
+2025-12-12 16:53:36 +01:00:  NX   Daemon process terminated and closed the connection
+2025-12-12 16:53:36 +01:00: 
+2025-12-12 16:53:36 +01:00: Please rerun the command, which will restart the daemon.
+2025-12-12 16:53:36 +01:00: If you get this error again, check for any errors in the daemon process logs found in: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/.nx/workspace-data/d/daemon.log
+2025-12-12 16:53:36 +01:00: 
+2025-12-12 16:54:55 +01:00: 
+2025-12-12 16:54:55 +01:00:  NX   Daemon process terminated and closed the connection
+2025-12-12 16:54:55 +01:00: 
+2025-12-12 16:54:55 +01:00: Please rerun the command, which will restart the daemon.
+2025-12-12 16:54:55 +01:00: If you get this error again, check for any errors in the daemon process logs found in: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/.nx/workspace-data/d/daemon.log
+2025-12-12 16:54:55 +01:00: 
+2025-12-12 16:55:55 +01:00: 
+2025-12-12 16:55:55 +01:00: > nx run @bassnotion/frontend:serve
+2025-12-12 16:55:55 +01:00: 
+2025-12-12 16:55:56 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.8[39m[22m
+2025-12-12 16:55:56 +01:00:    - Local:        http://localhost:3001
+2025-12-12 16:55:56 +01:00:    - Network:      http://10.0.0.6:3001
+2025-12-12 16:55:56 +01:00:    - Environments: .env.local, .env
+2025-12-12 16:55:56 +01:00:  [32m[1m✓[22m[39m Starting...
+2025-12-12 16:55:59 +01:00:  [32m[1m✓[22m[39m Ready in 2.7s
+2025-12-12 16:56:12 +01:00:  [37m[1m○[22m[39m Compiling / ...
+2025-12-12 16:56:25 +01:00:  [32m[1m✓[22m[39m Compiled / in 13.8s (4762 modules)
+2025-12-12 16:56:26 +01:00:  GET / [32m200[39m in 14763ms
+2025-12-12 16:56:26 +01:00:  [32m[1m✓[22m[39m Compiled in 1377ms (2144 modules)
+2025-12-12 16:59:22 +01:00:  GET / [32m200[39m in 117ms
+2025-12-12 16:59:23 +01:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-12-12 16:59:25 +01:00:  [32m[1m✓[22m[39m Compiled /_not-found in 2.1s (4731 modules)
+2025-12-12 16:59:25 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 2637ms
+2025-12-12 17:05:29 +01:00:  GET / [32m200[39m in 200ms
+2025-12-12 17:05:29 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 41ms
+2025-12-12 17:05:36 +01:00:  [37m[1m○[22m[39m Compiling /library ...
+2025-12-12 17:05:37 +01:00:  [32m[1m✓[22m[39m Compiled /library in 1680ms (4748 modules)
+2025-12-12 17:05:37 +01:00:  GET /library [32m200[39m in 1801ms
+2025-12-12 17:05:39 +01:00:  [37m[1m○[22m[39m Compiling /library/[tutorialId] ...
+2025-12-12 17:05:47 +01:00:  [32m[1m✓[22m[39m Compiled /library/[tutorialId] in 8s (6270 modules)
+2025-12-12 17:05:48 +01:00:  GET /library [32m200[39m in 689ms
+2025-12-12 17:05:48 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 9050ms
+2025-12-12 17:05:48 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 75ms
+2025-12-12 17:05:54 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 27ms

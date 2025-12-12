@@ -318,6 +318,11 @@ export class PlaybackEngine {
       this.sustainPedalManager = new SustainPedalManager();
       this.scheduleCache = new ScheduleCache();
 
+      // Configure SustainPedalManager with dependencies
+      // CRITICAL: These must be set before buildTimeline() is called
+      this.sustainPedalManager.setAudioContext(audioContext);
+      this.sustainPedalManager.setTimeConverter(this.musicalTimeConverter);
+
       // Initialize diagnostic logger for CC64 debugging
       this.diagnosticLogger = new DiagnosticLogger(
         this.instanceId,
@@ -958,6 +963,21 @@ export class PlaybackEngine {
         transportSeconds: Tone.Transport.seconds,
       });
     }
+
+    // CRITICAL: Sync transportStartTime to SustainPedalManager
+    // This ensures CC64 timeline keys match note audioTime values
+    if (this.sustainPedalManager) {
+      this.sustainPedalManager.setTransportStartTime(time);
+      this.sustainPedalManager.setCountdownConfig(
+        this.countdownBeats,
+        this.countdownEnabled,
+      );
+      this.logger.debug('Synced SustainPedalManager timing', {
+        transportStartTime: time.toFixed(3),
+        countdownBeats: this.countdownBeats,
+        countdownEnabled: this.countdownEnabled,
+      });
+    }
   }
 
   /**
@@ -1153,8 +1173,11 @@ export class PlaybackEngine {
       console.log('[PLAYBACK-ENGINE STOP] Voice cue stopped');
     }
     if (this.harmonyScheduler) {
-      this.harmonyScheduler.stopAll();
-      console.log('[PLAYBACK-ENGINE STOP] Harmony stopped');
+      // Pass graceful flag to harmony scheduler
+      // graceful=true: Let sustained notes ring out (auto-stop at exercise end)
+      // graceful=false: Immediately stop all notes (manual stop button)
+      this.harmonyScheduler.stopAll(graceful);
+      console.log('[PLAYBACK-ENGINE STOP] Harmony stopped', { graceful });
     }
 
     // Unsubscribe from Transport position updates (FIGHTING CLOCKS FIX)
@@ -1297,6 +1320,15 @@ export class PlaybackEngine {
     perNoteVelocityRanges?: any,
     instrumentName?: string,
   ): void {
+    // DIAGNOSTIC: Log when harmony buffers are set
+    console.log('🎹 [BUFFER-SWITCH-DEBUG] PlaybackEngine.setHarmonyBuffers called:', {
+      instrumentName,
+      bufferCount: buffers.size,
+      hasDestination: !!destination,
+      hasAudioContext: !!this.audioContext,
+      sampleBufferKeys: Array.from(buffers.keys()).slice(0, 5), // First 5 keys for brevity
+    });
+
     if (!this.audioContext || !destination) {
       this.logger.warn(
         'Cannot set harmony buffers: audio context or destination not ready',

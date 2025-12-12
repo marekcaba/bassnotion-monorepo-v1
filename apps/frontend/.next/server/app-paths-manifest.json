@@ -1,4 +1,6 @@
 {
-  "/_not-found/page": "app/_not-found/page.js",
-  "/library/[tutorialId]/page": "app/library/[tutorialId]/page.js"
+  "/page": "app/page.js",
+  "/library/page": "app/library/page.js",
+  "/library/[tutorialId]/page": "app/library/[tutorialId]/page.js",
+  "/_not-found/page": "app/_not-found/page.js"
 }

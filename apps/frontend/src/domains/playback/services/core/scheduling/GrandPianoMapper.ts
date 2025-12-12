@@ -60,18 +60,58 @@ export type KeyboardMap = Record<string, NoteMapping>;
  * - 4 samples per octave: A (9), C (0), D# (3), F# (6)
  * - Max pitch-shift: ±1 semitone
  * - Playback rates: 1.059 (+1 semitone), 0.944 (-1 semitone), 1.0 (exact)
+ *
+ * Singleton Pattern: Use GrandPianoMapper.hasKeyboardMap(), GrandPianoMapper.loadKeyboardMap(), etc.
  */
 export class GrandPianoMapper {
+  // Singleton instance
+  private static instance: GrandPianoMapper | null = null;
   private keyboardMap: KeyboardMap | null = null;
 
   /**
+   * Get singleton instance (creates one if needed)
+   */
+  public static getInstance(): GrandPianoMapper {
+    if (!GrandPianoMapper.instance) {
+      GrandPianoMapper.instance = new GrandPianoMapper();
+    }
+    return GrandPianoMapper.instance;
+  }
+
+  // Static proxy methods for singleton access
+  public static hasKeyboardMap(): boolean {
+    return GrandPianoMapper.getInstance().hasKeyboardMap();
+  }
+
+  public static async loadKeyboardMap(cache?: GlobalSampleCache): Promise<void> {
+    return GrandPianoMapper.getInstance().loadKeyboardMapInstance(cache);
+  }
+
+  public static mapNote(noteName: string): NoteMapping | null {
+    return GrandPianoMapper.getInstance().mapNote(noteName);
+  }
+
+  public static getKeyboardMap(): KeyboardMap | null {
+    return GrandPianoMapper.getInstance().getKeyboardMap();
+  }
+
+  public static clear(): void {
+    GrandPianoMapper.getInstance().clear();
+  }
+
+  public static isSparseInstrument(noteNames: Set<string>): boolean {
+    return GrandPianoMapper.getInstance().isSparseInstrument(noteNames);
+  }
+
+  /**
    * Load keyboard map from cache (preferred) or fallback to JSON import
+   * (Instance method - use static GrandPianoMapper.loadKeyboardMap() for singleton access)
    *
    * Cache is populated by HarmonyPreloadStrategy during preload
    *
    * @param cache - Optional GlobalSampleCache instance (for testing)
    */
-  public async loadKeyboardMap(cache?: GlobalSampleCache): Promise<void> {
+  public async loadKeyboardMapInstance(cache?: GlobalSampleCache): Promise<void> {
     try {
       logger.info('Loading Grand Piano keyboard map...');
 

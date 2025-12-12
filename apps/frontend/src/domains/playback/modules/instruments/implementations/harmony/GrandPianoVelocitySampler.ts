@@ -18,6 +18,11 @@ import type {
 } from '../../types/sample-mapping.js';
 import { createStructuredLogger } from '../../../shared/index.js';
 import grandPianoConfig from '../../../../data/instruments/piano/grand-piano.json';
+import {
+  ParametricEQ,
+  GRAND_PIANO_EQ_PRESET,
+  type ParametricEQConfig,
+} from '../../../audio-engine/processors/ParametricEQ.js';
 
 const logger = createStructuredLogger('GrandPianoVelocitySampler');
 
@@ -64,7 +69,7 @@ export class GrandPianoVelocitySampler {
   private isInitialized = false;
   private loadingPromises: Map<string, Promise<void>> = new Map();
   private destination: any | null = null;
-  private eq: any | null = null; // EQ3 for piano tone shaping
+  private eq: ParametricEQ | null = null; // Professional parametric EQ for piano tone shaping
   private activeNotes: Map<string, number> = new Map();
   private sustainPedal = false; // Sustain pedal state (CC64)
   private sustainedNotes: Set<string> = new Set(); // Notes held by sustain pedal
@@ -175,10 +180,8 @@ export class GrandPianoVelocitySampler {
       // Create destination node
       this.destination = new (Tone as any).Gain(1);
 
-      // Set up EQ if configured (flat by default)
-      if (this.config.effects?.eq) {
-        this.setupEQ();
-      }
+      // Set up professional parametric EQ for Grand Piano
+      this.setupEQ();
 
       // CRITICAL: DO NOT connect directly to destination (speakers)!
       // This creates a ROGUE AUDIO PATH that bypasses gain control
@@ -223,33 +226,81 @@ export class GrandPianoVelocitySampler {
   }
 
   /**
-   * Set up EQ effect (flat by default, adjustable later)
+   * Set up professional parametric EQ for Grand Piano
+   * Uses Web Audio API BiquadFilters for precise control:
+   * - High-pass at 50Hz (48dB/oct) to remove rumble
+   * - Low shelf boost at 230Hz for warmth
+   * - Notch cut at 500Hz to reduce muddiness
+   * - Notch boost at 1120Hz for presence
+   * - High shelf cut at 535Hz to tame harshness
    */
   private setupEQ(): void {
-    if (!this.config?.effects?.eq) return;
+    // DIAGNOSTIC: Log EQ setup attempt
+    console.log('[GRAND PIANO EQ] setupEQ called', {
+      hasAudioContext: !!this.audioContext,
+      audioContextState: this.audioContext?.state,
+      hasDestination: !!this.destination,
+    });
+
+    if (!this.audioContext) {
+      console.warn('[GRAND PIANO EQ] Cannot set up EQ: AudioContext not available');
+      logger.warn('Cannot set up EQ: AudioContext not available');
+      return;
+    }
+
+    // Ensure we have a native AudioContext (not Tone.js wrapper)
+    const nativeContext =
+      (this.audioContext as any)._context ||
+      (this.audioContext as any).rawContext ||
+      this.audioContext;
+
+    console.log('[GRAND PIANO EQ] Using AudioContext:', {
+      isNative: nativeContext instanceof AudioContext,
+      sampleRate: nativeContext.sampleRate,
+      state: nativeContext.state,
+    });
 
     try {
-      const eqConfig = this.config.effects.eq;
+      // Create professional parametric EQ with Grand Piano preset
+      this.eq = ParametricEQ.createWithPreset(
+        nativeContext,
+        GRAND_PIANO_EQ_PRESET,
+      );
 
-      // Create EQ3 (3-band equalizer)
-      this.eq = new (Tone as any).EQ3({
-        low: eqConfig.low || 0, // Flat by default
-        mid: eqConfig.mid || 0, // Flat by default
-        high: eqConfig.high || 0, // Flat by default
-        lowFrequency: eqConfig.lowFrequency || 400,
-        highFrequency: eqConfig.highFrequency || 2500,
+      console.log('[GRAND PIANO EQ] ParametricEQ created successfully', {
+        bands: this.eq.getBands().length,
+        input: !!this.eq.input,
+        output: !!this.eq.output,
       });
 
-      // Connect EQ to destination
-      this.eq.connect(this.destination);
+      // Connect EQ output to destination (Tone.js Gain node)
+      // We need to connect the native Web Audio output to Tone.js input
+      if (this.destination) {
+        // Get the native Web Audio node from Tone.js Gain
+        const destinationNode =
+          this.destination._gainNode || this.destination.input || this.destination;
 
-      logger.info('✅ EQ configured (flat)', {
-        low: eqConfig.low || 0,
-        mid: eqConfig.mid || 0,
-        high: eqConfig.high || 0,
+        console.log('[GRAND PIANO EQ] Connecting EQ output to destination', {
+          destinationType: destinationNode?.constructor?.name,
+        });
+
+        this.eq.output.connect(destinationNode);
+        console.log('[GRAND PIANO EQ] ✅ EQ connected to destination');
+      }
+
+      logger.info('✅ Professional Parametric EQ configured for Grand Piano', {
+        bands: GRAND_PIANO_EQ_PRESET.bands.map((b) => ({
+          id: b.id,
+          type: b.type,
+          freq: b.frequency,
+          gain: b.gain,
+          q: b.q,
+        })),
       });
     } catch (error) {
-      logger.warn('Failed to set up EQ', { error });
+      console.error('[GRAND PIANO EQ] ❌ Failed to set up parametric EQ:', error);
+      logger.warn('Failed to set up parametric EQ', { error });
+      this.eq = null;
     }
   }
 
@@ -336,11 +387,34 @@ export class GrandPianoVelocitySampler {
         // Create Tone.js Sampler
         const sampler = await this.createSampler(sampleUrls);
 
-        // Connect to EQ or destination
+        // Connect sampler to EQ input (or directly to destination if no EQ)
+        console.log(`[GRAND PIANO EQ] Connecting sampler for layer ${layer}`, {
+          hasEQ: !!this.eq,
+          hasDestination: !!this.destination,
+        });
+
         if (this.eq) {
-          sampler.connect(this.eq);
+          // Get the Tone.js sampler's output and connect to ParametricEQ input
+          const samplerOutput = sampler.output || sampler;
+          try {
+            // Tone.js nodes have a .connect() that can accept Web Audio nodes
+            sampler.connect(this.eq.input);
+            console.log(`[GRAND PIANO EQ] ✅ Sampler ${layer} connected to EQ input`);
+          } catch (e) {
+            // Fallback: try to get the native node
+            console.warn(`[GRAND PIANO EQ] Direct connect failed for ${layer}, trying native node`, e);
+            logger.warn('Direct connect failed, trying native node connection');
+            if (samplerOutput._gainNode) {
+              samplerOutput._gainNode.connect(this.eq.input);
+              console.log(`[GRAND PIANO EQ] ✅ Sampler ${layer} connected via native node`);
+            } else {
+              sampler.connect(this.destination);
+              console.log(`[GRAND PIANO EQ] ⚠️ Sampler ${layer} bypassed EQ, connected to destination`);
+            }
+          }
         } else if (this.destination) {
           sampler.connect(this.destination);
+          console.log(`[GRAND PIANO EQ] ⚠️ No EQ available, sampler ${layer} connected directly to destination`);
         }
 
         this.samplers.set(layer, sampler);
@@ -591,15 +665,42 @@ export class GrandPianoVelocitySampler {
   }
 
   /**
-   * Set EQ parameters
+   * Update a specific EQ band
+   * @param bandId - Band identifier (e.g., 'highpass', 'low-shelf', 'notch-500', 'notch-1120', 'high-shelf')
+   * @param params - Parameters to update (frequency, gain, q, enabled)
    */
-  setEQ(low: number, mid: number, high: number): void {
+  updateEQBand(
+    bandId: string,
+    params: { frequency?: number; gain?: number; q?: number; enabled?: boolean },
+  ): void {
     if (this.eq) {
-      this.eq.low.value = low;
-      this.eq.mid.value = mid;
-      this.eq.high.value = high;
-      logger.info('🎹 EQ updated', { low, mid, high });
+      this.eq.updateBand(bandId, params);
+      logger.info('🎹 EQ band updated', { bandId, params });
     }
+  }
+
+  /**
+   * Set EQ bypass state
+   */
+  setEQBypass(bypass: boolean): void {
+    if (this.eq) {
+      this.eq.setBypass(bypass);
+      logger.info('🎹 EQ bypass', { bypass });
+    }
+  }
+
+  /**
+   * Get current EQ configuration
+   */
+  getEQBands(): Array<{
+    id: string;
+    type: string;
+    frequency: number;
+    gain?: number;
+    q?: number;
+    enabled?: boolean;
+  }> {
+    return this.eq?.getBands() || [];
   }
 
   /**
@@ -646,12 +747,41 @@ export class GrandPianoVelocitySampler {
 
   /**
    * Connect to audio destination
+   * Audio chain: Samplers → ParametricEQ → Destination
    */
   connect(destination: any): void {
     this.destination = destination;
 
-    // CRITICAL FIX: Wrap ALL sampler connections in try-catch
-    // AudioContext mismatches can occur if samplers were created in different context
+    // Get the native Web Audio node from the destination (could be Tone.js or native)
+    const destNode = destination._gainNode || destination.input || destination;
+
+    // Connect EQ output to destination first
+    if (this.eq) {
+      try {
+        this.eq.output.disconnect();
+      } catch (e) {
+        // Ignore disconnect errors
+      }
+
+      try {
+        this.eq.output.connect(destNode);
+        logger.info('✅ EQ output connected to destination');
+      } catch (error) {
+        // CRITICAL FIX: EQ may be in different AudioContext than destination
+        logger.warn(
+          '⚠️ EQ AudioContext mismatch - disposing and bypassing EQ',
+          { error },
+        );
+        try {
+          this.eq.dispose();
+        } catch (disposeError) {
+          logger.warn('Failed to dispose EQ', { disposeError });
+        }
+        this.eq = null;
+      }
+    }
+
+    // Connect all samplers to EQ input (or directly to destination if no EQ)
     for (const sampler of this.samplers.values()) {
       if (sampler) {
         try {
@@ -662,71 +792,18 @@ export class GrandPianoVelocitySampler {
 
         try {
           if (this.eq) {
-            sampler.connect(this.eq);
+            // Connect sampler to EQ input
+            sampler.connect(this.eq.input);
           } else {
+            // No EQ, connect directly to destination
             sampler.connect(destination);
           }
         } catch (error) {
-          logger.warn('⚠️ Sampler AudioContext mismatch - bypassing EQ', {
-            error,
-          });
-          console.warn(
-            '⚠️ [CONNECT] Sampler AudioContext mismatch, connecting directly to destination',
-          );
-          // If EQ connection fails, try direct connection
+          logger.warn('⚠️ Sampler connection failed, trying direct', { error });
           try {
             sampler.connect(destination);
           } catch (directError) {
-            logger.error('❌ Failed to connect sampler even directly', {
-              directError,
-            });
-            console.error(
-              '❌ [CONNECT] Complete sampler connection failure:',
-              directError,
-            );
-          }
-        }
-      }
-    }
-
-    if (this.eq) {
-      try {
-        this.eq.disconnect();
-      } catch (e) {
-        // Ignore disconnect errors
-      }
-
-      try {
-        this.eq.connect(destination);
-      } catch (error) {
-        // CRITICAL FIX: EQ may be in different AudioContext than destination
-        // This happens when connect() is called before initialize() completes
-        // Solution: Dispose of EQ and bypass it
-        logger.warn(
-          '⚠️ EQ AudioContext mismatch - disposing and bypassing EQ',
-          { error },
-        );
-        console.warn(
-          '⚠️ [CONNECT] EQ AudioContext mismatch, disposing EQ and connecting samplers directly',
-        );
-        try {
-          this.eq.dispose();
-        } catch (disposeError) {
-          logger.warn('Failed to dispose EQ', { disposeError });
-        }
-        this.eq = null;
-
-        // Reconnect all samplers directly to destination (bypass EQ)
-        for (const sampler of this.samplers.values()) {
-          if (sampler) {
-            try {
-              sampler.disconnect();
-              sampler.connect(destination);
-            } catch (reconnectError) {
-              logger.error('Failed to reconnect sampler after EQ bypass', {
-                reconnectError,
-              });
-            }
+            logger.error('❌ Failed to connect sampler', { error: directError });
           }
         }
       }
@@ -739,12 +816,20 @@ export class GrandPianoVelocitySampler {
   disconnect(): void {
     for (const sampler of this.samplers.values()) {
       if (sampler) {
-        sampler.disconnect();
+        try {
+          sampler.disconnect();
+        } catch (e) {
+          // Ignore disconnect errors
+        }
       }
     }
 
     if (this.eq) {
-      this.eq.disconnect();
+      try {
+        this.eq.output.disconnect();
+      } catch (e) {
+        // Ignore disconnect errors
+      }
     }
   }
 

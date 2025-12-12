@@ -362,9 +362,20 @@ export class WamKeyboardNode implements WamNode {
     this.disconnectAllSamplers();
 
     if (this.samplers.has(instrument)) {
+      console.log(`🔄 [INSTRUMENT-SWITCH-DEBUG] Reusing cached sampler for ${instrument}`, {
+        requestedInstrument: instrument,
+        currentInstrument: this.currentInstrument,
+        cachedSamplerKeys: Array.from(this.samplers.keys()),
+        willSkipNewSamplerCreation: true,
+      });
       this.switchToInstrument(instrument);
       return;
     }
+    console.log(`🆕 [INSTRUMENT-SWITCH-DEBUG] No cached sampler for ${instrument}, will create new one`, {
+      requestedInstrument: instrument,
+      currentInstrument: this.currentInstrument,
+      cachedSamplerKeys: Array.from(this.samplers.keys()),
+    });
 
     // NEW: Check if we can build sampler from GlobalSampleCache (instant, no network)
     const cachedSampler = await this.tryBuildFromCache(instrument);
@@ -598,97 +609,44 @@ export class WamKeyboardNode implements WamNode {
    * This is the "single wire guarantee" - only one sampler can be connected to gainNode
    */
   private disconnectAllSamplers(): void {
-    console.log('🔌 [DISCONNECT-ALL] Starting disconnection', {
-      totalSamplers: this.samplers.size,
-      samplerNames: Array.from(this.samplers.keys()),
-      currentInstrument: this.currentInstrument,
-      activeSampler: this.activeSampler ? 'exists' : 'null',
-    });
-
     logger.info('🔌 Disconnecting ALL samplers to ensure single instrument', {
       totalSamplers: this.samplers.size,
-      samplerNames: Array.from(this.samplers.keys()),
     });
 
     this.samplers.forEach((sampler, instrumentName) => {
-      console.log(
-        `🔌 [DISCONNECT-ALL] Attempting to disconnect ${instrumentName}`,
-        {
-          hasDisconnect: typeof sampler.disconnect === 'function',
-          hasOutput: !!sampler.output,
-          hasReleaseAll: typeof sampler.releaseAll === 'function',
-          constructor: sampler.constructor?.name,
-        },
-      );
-
       try {
         // CRITICAL FIX: Release all playing notes BEFORE disconnecting
         // This prevents notes from continuing to play after instrument switch
         if (sampler.releaseAll && typeof sampler.releaseAll === 'function') {
           sampler.releaseAll(0);
-          console.log(
-            `🔇 [DISCONNECT-ALL] Released all notes for ${instrumentName}`,
-          );
-          logger.info(`🔇 Released all active notes for ${instrumentName}`);
         }
 
         if (sampler.disconnect) {
           sampler.disconnect();
-          console.log(
-            `✅ [DISCONNECT-ALL] Successfully disconnected ${instrumentName}`,
-          );
-          logger.info(`✅ Disconnected ${instrumentName} (using disconnect())`);
         } else if (sampler.output) {
           sampler.output.disconnect();
-          console.log(
-            `✅ [DISCONNECT-ALL] Successfully disconnected ${instrumentName} (using output)`,
-          );
-          logger.info(
-            `✅ Disconnected ${instrumentName} (using output.disconnect())`,
-          );
         }
       } catch (error) {
         // Ignore errors - sampler may already be disconnected
-        console.log(
-          `⚠️ [DISCONNECT-ALL] Could not disconnect ${instrumentName} (may already be disconnected)`,
-        );
-        logger.info(
+        logger.debug(
           `⚠️ Could not disconnect ${instrumentName} (may already be disconnected)`,
-          error,
         );
       }
     });
-
-    console.log('🔌 [DISCONNECT-ALL] Disconnection complete');
   }
 
   /**
    * Switch active instrument
    */
   private switchToInstrument(instrument: KeyboardInstrument): void {
-    console.log('🔄 [SWITCH-INSTRUMENT] switchToInstrument called', {
-      requestedInstrument: instrument,
-      currentInstrument: this.currentInstrument,
-      hasCurrentSampler: !!this.activeSampler,
-      isAlreadyActive:
-        this.currentInstrument === instrument && !!this.activeSampler,
-      hasGainNode: !!this.gainNode,
-      gainNodeValue: this.gainNode?.gain?.value,
-      availableSamplers: Array.from(this.samplers.keys()),
-    });
-
     logger.info(`🎹 switchToInstrument called for ${instrument}`, {
       hasCurrentSampler: !!this.activeSampler,
       hasGainNode: !!this.gainNode,
-      gainNodeValue: this.gainNode?.gain?.value,
       availableSamplers: Array.from(this.samplers.keys()),
     });
 
     // DEFENSIVE CHECK: If the requested instrument is already active and connected, skip
     if (this.currentInstrument === instrument && this.activeSampler) {
-      console.log(
-        '⚠️ [SWITCH-INSTRUMENT] Instrument already active, skipping redundant switch',
-      );
       logger.warn(
         `⚠️ Instrument ${instrument} is already active, skipping switch`,
       );
@@ -704,34 +662,16 @@ export class WamKeyboardNode implements WamNode {
     this.activeSampler = this.samplers.get(instrument);
 
     if (this.activeSampler && this.gainNode) {
-      console.log('🔗 [SWITCH-INSTRUMENT] Connecting sampler to gain node', {
-        instrument,
-        samplerType: this.activeSampler.constructor?.name,
-        hasConnect: typeof this.activeSampler.connect === 'function',
-        hasOutput: !!this.activeSampler.output,
-      });
-
       logger.info(`🎹 Connecting ${instrument} sampler:`, {
         samplerType: this.activeSampler.constructor?.name,
-        hasConnect: typeof this.activeSampler.connect === 'function',
-        hasOutput: !!this.activeSampler.output,
-        samplerStatus: this.activeSampler.getStatus
-          ? this.activeSampler.getStatus()
-          : 'no status method',
       });
 
       // Velocity samplers don't have output property, connect directly
       if (this.activeSampler.connect) {
         this.activeSampler.connect(this.gainNode);
-        console.log(
-          `✅ [SWITCH-INSTRUMENT] Connected ${instrument} sampler to gain node (direct connect)`,
-        );
         logger.info(`✅ Connected ${instrument} sampler to gain node`);
       } else if (this.activeSampler.output) {
         this.activeSampler.output.connect(this.gainNode);
-        console.log(
-          `✅ [SWITCH-INSTRUMENT] Connected ${instrument} sampler to gain node (via output)`,
-        );
         logger.info(`✅ Connected ${instrument} sampler output to gain node`);
       }
     } else {
@@ -749,9 +689,15 @@ export class WamKeyboardNode implements WamNode {
     // DIAGNOSTIC: Log every WamKeyboard note trigger to identify dual playback source
     console.log('[PLAYBACK-PATH] WamKeyboard triggering note:', {
       instrument: this.currentInstrument,
+      activeSamplerType: this.activeSampler?.constructor?.name,
       note,
       velocity,
       time: time?.toFixed(3) || 'immediate',
+      // CRITICAL: Check if activeSampler matches currentInstrument
+      samplerMismatch: this.activeSampler?.constructor?.name !==
+        (this.currentInstrument === 'grandpiano' ? 'GrandPianoVelocitySampler' :
+         this.currentInstrument === 'wurlitzer' ? 'WurlitzerVelocitySampler' :
+         this.currentInstrument === 'rhodes' ? 'RhodesVelocitySampler' : 'Unknown'),
     });
 
     logger.info('🎹 triggerNote called:', {

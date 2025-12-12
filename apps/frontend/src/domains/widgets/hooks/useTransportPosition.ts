@@ -1,6 +1,5 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { EventBus } from '@/domains/playback/services/core/EventBus';
-import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 interface TransportPosition {
   bars: number;
@@ -18,12 +17,15 @@ interface UseTransportPositionOptions {
 /**
  * Direct subscription to EventBus transport position updates for timing-critical audio playback.
  * This bypasses WidgetSyncService for minimal latency.
+ *
+ * Automatically retries connection when CoreServices becomes available.
  */
 export function useTransportPosition({
   onPositionUpdate,
   enabled = true,
 }: UseTransportPositionOptions) {
   const callbackRef = useRef(onPositionUpdate);
+  const [retryCount, setRetryCount] = useState(0);
 
   // Update callback ref to avoid stale closures
   useEffect(() => {
@@ -35,38 +37,48 @@ export function useTransportPosition({
       return;
     }
 
-    // Removed console.log to prevent performance issues
-    // logger.info('[useTransportPosition] Hook enabled, attempting to connect to EventBus...');
-
     // Get EventBus directly from CoreServices
     const coreServices =
       (window as any).__coreServices || (window as any).__globalCoreServices;
+
     if (!coreServices || typeof coreServices.getEventBus !== 'function') {
-      // Only log warnings once, not on every render
-      // logger.warn('useTransportPosition: EventBus not available', {
-      //   hasCoreServices: !!coreServices,
-      //   hasGetEventBus:
-      //     coreServices && typeof coreServices.getEventBus === 'function',
-      // });
-      return;
+      // CoreServices not ready yet - set up listener for when they become available
+      const handleServicesReady = () => {
+        console.log('[useTransportPosition] Services ready event received, retrying...');
+        setRetryCount((c) => c + 1);
+      };
+
+      // Listen for various service ready events
+      window.addEventListener('audioServicesReady', handleServicesReady);
+      window.addEventListener('coreServicesReady', handleServicesReady);
+
+      // Also set up a polling retry (in case events are missed)
+      const retryTimer = setTimeout(() => {
+        const services = (window as any).__coreServices || (window as any).__globalCoreServices;
+        if (services && typeof services.getEventBus === 'function') {
+          console.log('[useTransportPosition] Services found on retry, connecting...');
+          setRetryCount((c) => c + 1);
+        }
+      }, 500);
+
+      return () => {
+        window.removeEventListener('audioServicesReady', handleServicesReady);
+        window.removeEventListener('coreServicesReady', handleServicesReady);
+        clearTimeout(retryTimer);
+      };
     }
 
     const eventBus = coreServices.getEventBus() as EventBus;
     if (!eventBus) {
-      // logger.warn('useTransportPosition: EventBus not initialized');
       return;
     }
 
-    // Removed console.log to prevent performance issues
-    // logger.info('[useTransportPosition] Successfully connected to EventBus, subscribing to transport:position-updated');
+    console.log('[useTransportPosition] Connected to EventBus, subscribing to position updates');
 
     // Subscribe directly to transport position updates
     const handlePositionUpdate = (data: any) => {
       // The event data might be wrapped in a 'position' property
       const positionData = data?.position || data;
-
-      // Removed console.log that fires on every position update (50ms) - causes massive performance issues!
-      // logger.info('[useTransportPosition] Received position update:', positionData);
 
       if (
         positionData &&
@@ -83,15 +95,10 @@ export function useTransportPosition({
       handlePositionUpdate,
     );
 
-    // Removed console.log to prevent performance issues
-    // logger.info('[useTransportPosition] Subscribed to transport:position-updated events');
-
     return () => {
-      // Removed console.log to prevent performance issues
-      // logger.info('[useTransportPosition] Unsubscribing from transport:position-updated');
       unsubscribe();
     };
-  }, [enabled]);
+  }, [enabled, retryCount]);
 }
 
 /**
