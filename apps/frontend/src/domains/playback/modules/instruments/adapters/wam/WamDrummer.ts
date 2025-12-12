@@ -28,6 +28,7 @@ import type {
 } from '../../../../types/wam.js';
 import { GlobalSampleCache } from '../../../storage/cache/GlobalSampleCache.js';
 import { createStructuredLogger } from '../../../shared/index.js';
+import { DEFAULT_KIT_PATH, FALLBACK_KIT_PATH } from '@/domains/playback/data/drums/index.js';
 
 // MIDI note mapping for 16 pads (following MPC-style layout)
 const PAD_MIDI_NOTES = {
@@ -736,13 +737,34 @@ export default class WamDrummer implements Partial<WebAudioModule> {
 
       if (!url) {
         // Fallback to Supabase if not cached
+        // Try standard kit structure first, then fallback to hydrogen kit
         const { supabase } = await import('@/infrastructure/supabase/client');
-        const kitPath = 'drums/hydrogen-kits/colombo-acoustic';
-        const fullPath = `${kitPath}/${sample.file}`;
+        const drumKey = sample.file.replace('-v1.wav', '');
 
-        const urlResult = supabase.storage
+        // Try standard kit structure: {basePath}/{drum}/{drum}-v1.wav
+        let fullPath = `${DEFAULT_KIT_PATH}/${drumKey}/${sample.file}`;
+        let urlResult = supabase.storage
           .from('audio-samples')
           .getPublicUrl(fullPath).data.publicUrl;
+
+        // Check if file exists, if not use fallback
+        try {
+          const testResponse = await fetch(urlResult, { method: 'HEAD' });
+          if (!testResponse.ok && FALLBACK_KIT_PATH) {
+            // Use fallback hydrogen kit structure
+            fullPath = `${FALLBACK_KIT_PATH}/${sample.file}`;
+            urlResult = supabase.storage
+              .from('audio-samples')
+              .getPublicUrl(fullPath).data.publicUrl;
+          }
+        } catch {
+          // On error, use fallback
+          fullPath = `${FALLBACK_KIT_PATH}/${sample.file}`;
+          urlResult = supabase.storage
+            .from('audio-samples')
+            .getPublicUrl(fullPath).data.publicUrl;
+        }
+
         url = urlResult;
       } else {
         logger.info(`♻️ Using cached URL for pad ${sample.pad}`);

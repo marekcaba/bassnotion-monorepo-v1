@@ -9,6 +9,7 @@ import { PreloadConfig, PreloadResult } from '../types/index.js';
 import { GlobalSampleCache } from '../../storage/cache/GlobalSampleCache.js';
 import { wamPluginSingleton } from '@/domains/widgets/utils/wamPluginSingleton.js';
 import { getLogger } from '@/utils/logger.js';
+import { DEFAULT_KIT_PATH, FALLBACK_KIT_PATH } from '@/domains/playback/data/drums/index.js';
 
 const logger = getLogger('DrumPreloadStrategy');
 
@@ -17,6 +18,7 @@ export class DrumPreloadStrategy implements PreloadStrategy {
   private drumInstrument: any = null;
   private loaded = 0;
   private total = 0;
+  private kitPath: string = DEFAULT_KIT_PATH;
 
   private readonly drumConfig = [
     { pad: 0, file: 'kick', name: 'Kick' },
@@ -175,11 +177,18 @@ export class DrumPreloadStrategy implements PreloadStrategy {
           arrayBuffer = cachedBuffer;
         } else {
           // Not in cache, fetch from network
-          const kitPath = 'drums/hydrogen-kits/colombo-acoustic';
-          const url = `${supabaseUrl}/storage/v1/object/public/audio-samples/${kitPath}/${drum.file}`;
+          // Try standard kit first, fallback to hydrogen kit if not available
+          let url = `${supabaseUrl}/storage/v1/object/public/audio-samples/${this.kitPath}/${drum.key}/${drum.file}`;
+          let response = await fetch(url);
+
+          // Fallback to hydrogen kit structure if standard kit fails
+          if (!response.ok && FALLBACK_KIT_PATH) {
+            logger.info(`Standard kit sample not found, trying fallback: ${drum.key}`);
+            url = `${supabaseUrl}/storage/v1/object/public/audio-samples/${FALLBACK_KIT_PATH}/${drum.file}`;
+            response = await fetch(url);
+          }
 
           logger.info(`📥 Fetching ${drum.key}...`);
-          const response = await fetch(url);
           if (!response.ok) {
             throw new Error(`Failed to fetch ${drum.key}: ${response.status}`);
           }

@@ -17,6 +17,7 @@ import {
   protectedSampleFetch,
   isSampleLoadingAvailable,
 } from './core/SampleLoadingCircuitBreaker.js';
+import { FALLBACK_KIT_PATH as FALLBACK_DRUM_KIT_PATH } from '@/domains/playback/data/drums/index.js';
 
 const logger = getLogger('InitialSamplePreloader');
 
@@ -989,7 +990,7 @@ export class InitialSamplePreloader {
       // Step 5: Create drum samplers
       logger.info('AudioContext is running! Creating drum samplers...');
       const { supabase } = await import('@/infrastructure/supabase/client');
-      const kitPath = 'drums/hydrogen-kits/colombo-acoustic';
+      const kitPath = FALLBACK_DRUM_KIT_PATH;
 
       const drumPads: Record<number, any> = {};
       const essentialDrums = [
@@ -1092,7 +1093,7 @@ export class InitialSamplePreloader {
 
     try {
       const { supabase } = await import('@/infrastructure/supabase/client');
-      const kitPath = 'drums/hydrogen-kits/colombo-acoustic';
+      const kitPath = FALLBACK_DRUM_KIT_PATH;
 
       const essentialDrums = [
         { pad: 1, file: 'kick-v1.wav', name: 'kick' },
@@ -1307,7 +1308,7 @@ export class InitialSamplePreloader {
         }
 
         const { supabase } = await import('@/infrastructure/supabase/client');
-        const kitPath = 'drums/hydrogen-kits/colombo-acoustic';
+        const kitPath = FALLBACK_DRUM_KIT_PATH;
 
         const drumPads: Record<number, any> = {};
         const essentialDrums = [
@@ -1662,17 +1663,17 @@ export class InitialSamplePreloader {
           path: 'metronome/Click_high2_fixed.mp3',
           cacheKeys: ['metronome-high'],
         },
-        // Essential drum samples
+        // Essential drum samples (using fallback kit path)
         {
-          path: 'drums/hydrogen-kits/colombo-acoustic/kick-v1.wav',
+          path: `${FALLBACK_DRUM_KIT_PATH}/kick-v1.wav`,
           cacheKeys: ['drum-kick', 'drum-pad-1'],
         },
         {
-          path: 'drums/hydrogen-kits/colombo-acoustic/snare-v1.wav',
+          path: `${FALLBACK_DRUM_KIT_PATH}/snare-v1.wav`,
           cacheKeys: ['drum-snare', 'drum-pad-3'],
         },
         {
-          path: 'drums/hydrogen-kits/colombo-acoustic/hihat-v1.wav',
+          path: `${FALLBACK_DRUM_KIT_PATH}/hihat-v1.wav`,
           cacheKeys: ['drum-hihat', 'drum-pad-5'],
         },
       ];
@@ -2023,7 +2024,7 @@ export class InitialSamplePreloader {
 
     try {
       const { supabase } = await import('@/infrastructure/supabase/client');
-      const kitPath = 'drums/hydrogen-kits/colombo-acoustic';
+      const kitPath = FALLBACK_DRUM_KIT_PATH;
 
       const samples = [
         { pad: 1, file: 'kick-v1.wav', name: 'kick' },
