@@ -3,6 +3,10 @@
  * Initializes Tone.js without starting AudioContext
  */
 
+import { getLogger } from '@/utils/logger.js';
+
+const logger = getLogger('toneInitializer');
+
 let toneInstance: typeof import('tone') | null = null;
 let isInitialized = false;
 
@@ -29,7 +33,14 @@ export async function initializeToneWithoutAudioContext() {
     isInitialized = true;
 
     // Configure global settings
-    Tone.Transport.bpm.value = 120;
+    // TEMPO FIX: Do NOT set Tone.Transport.bpm here!
+    // MusicalTruthAuthority is the single source of truth for tempo.
+    // Tone.Transport.bpm will be set when:
+    // 1. An exercise is loaded via musicalTruth.setFromExercise()
+    // 2. User adjusts tempo via musicalTruth.setBPM()
+    // Setting a hardcoded 120 BPM here would overwrite the exercise tempo
+    // when the exercise is loaded and cause tempo bugs.
+    // Tone.Transport.bpm.value = 120; // ❌ REMOVED - bypasses MusicalTruthAuthority
     Tone.Transport.swing = 0;
     Tone.Transport.swingSubdivision = '8n';
 

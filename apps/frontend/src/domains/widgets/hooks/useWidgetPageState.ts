@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { createStructuredLogger } from '@/utils/logger.js';
+import { getLogger } from '@/utils/logger.js';
 
-const logger = createStructuredLogger('useWidgetPageState');
+const logger = getLogger('useWidgetPageState');
 
 // Global State Interface as specified in the story
 export interface WidgetPageState {

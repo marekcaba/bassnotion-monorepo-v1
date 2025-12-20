@@ -15,6 +15,7 @@
 
 import { getLogger } from '@/utils/logger.js';
 import type { PatternEvent } from '../types/region.types.js';
+import { InstrumentTimingDiagnostic } from '../../diagnostics/InstrumentTimingDiagnostic.js';
 
 /**
  * Configuration for SimpleInstrumentScheduler
@@ -199,9 +200,15 @@ export class SimpleInstrumentScheduler {
       const source = this.audioContext.createBufferSource();
       source.buffer = buffer;
 
-      // Create gain for velocity control
+      // Create gain for velocity control with fade-in to prevent audio spike/click
       const velocityGain = this.audioContext.createGain();
-      velocityGain.gain.value = velocity * this.config.baseVolume!;
+      const targetGain = velocity * this.config.baseVolume!;
+
+      // CRITICAL: Use 10ms exponential fade-in to prevent audio spike on playback start
+      // Setting gain.value directly causes an abrupt jump that creates audible clicks
+      const FADE_IN_DURATION = 0.01; // 10ms - imperceptible but eliminates clicks
+      velocityGain.gain.setValueAtTime(0.001, audioTime); // Start near-zero (not 0 for exponential ramp)
+      velocityGain.gain.exponentialRampToValueAtTime(targetGain, audioTime + FADE_IN_DURATION);
 
       // Connect: source → gain → destination
       source.connect(velocityGain);
@@ -227,6 +234,26 @@ export class SimpleInstrumentScheduler {
       // Log scheduling with timing details for debugging
       const frameDelta = frame - scheduleFrame;
       const timeDelta = (frameDelta / this.sampleRate) * 1000; // ms
+
+      // 🎯 TIMING DIAGNOSTIC: Record for cross-instrument comparison
+      if (InstrumentTimingDiagnostic.isEnabled()) {
+        // Extract beat/measure from event data if available
+        const beat = event.data?.beat || Math.floor((audioTime % 4) + 1);
+        const measure = event.data?.measure || Math.floor(audioTime / 4) + 1;
+
+        InstrumentTimingDiagnostic.record({
+          instrument: this.config.instrumentType as 'drums' | 'metronome' | 'bass' | 'voice-cue',
+          eventType: event.data?.drum || event.data?.cue || event.type,
+          scheduledAudioTime: audioTime,
+          jsExecutionTime: sourceStartCallEnd,
+          scheduleFrame,
+          targetFrame: frame,
+          lookaheadMs: timeDelta,
+          beat,
+          measure,
+        });
+      }
+
       this.logger.info(
         `🎯 FAANG: Direct audio scheduled - ${this.config.instrumentType} ${event.type}`,
         {
@@ -266,15 +293,33 @@ export class SimpleInstrumentScheduler {
   }
 
   /**
-   * Stop all scheduled sources with a short fadeout to avoid clicks/pops
-   * Applies 50ms fadeout before stopping to eliminate audio artifacts
+   * Stop all scheduled sources
+   *
+   * @param graceful - If true (exercise natural end), let one-shot samples finish naturally
+   *                   If false (manual stop), apply quick 50ms fadeout to avoid clicks
+   *
+   * Stop Modes:
+   * - Manual Stop (graceful=false): 50ms quick fade - fast cutoff without clicks
+   * - Exercise End (graceful=true): Let samples ring out - no intervention, just clear tracking
    */
-  stopAll(): void {
-    console.log(`[${this.config.loggerName} STOP] Stopping all sources with fadeout`, {
+  stopAll(graceful = false): void {
+    console.log(`[${this.config.loggerName} STOP] Stopping sources`, {
       scheduledCount: this.scheduledSources.size,
+      graceful,
     });
 
-    const FADEOUT_TIME = 0.05; // 50ms fadeout to avoid clicks
+    // GRACEFUL STOP: Let one-shot samples finish naturally
+    // One-shot drum/metronome samples are short (< 1 second) and should ring out
+    if (graceful) {
+      console.log(`[${this.config.loggerName} STOP] Graceful stop - letting ${this.scheduledSources.size} samples ring out naturally`);
+      // Just clear the tracking map - samples will finish on their own
+      // The onended callbacks will handle cleanup
+      this.scheduledSources.clear();
+      return;
+    }
+
+    // MANUAL STOP: Quick 50ms fadeout to avoid clicks
+    const FADEOUT_TIME = 0.05;
     const currentTime = this.audioContext?.currentTime ?? 0;
     const stopTime = currentTime + FADEOUT_TIME;
 
@@ -295,9 +340,8 @@ export class SimpleInstrumentScheduler {
         }
 
         // Schedule stop after fadeout completes
-        // CRITICAL: Use explicit time to cancel future scheduled starts too
         if (this.audioContext) {
-          source.stop(stopTime + 0.001); // Tiny buffer after fade
+          source.stop(stopTime + 0.001);
         } else {
           source.stop(0);
         }

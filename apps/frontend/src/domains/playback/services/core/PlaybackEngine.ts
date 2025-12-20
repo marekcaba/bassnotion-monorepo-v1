@@ -19,8 +19,19 @@
  */
 
 import { getLogger } from '@/utils/logger.js';
-import * as Tone from 'tone';
 import { Scheduler } from './Scheduler.js';
+
+// Helper to get Tone from window (must be initialized before PlaybackEngine is used)
+function getTone(): any {
+  if (typeof window !== 'undefined') {
+    // Check both locations where Tone.js may be stored
+    const tone = (window as any).Tone || (window as any).__globalTone;
+    if (tone) {
+      return tone;
+    }
+  }
+  throw new Error('PlaybackEngine: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+}
 import type { EventBus } from './EventBus.js';
 import type { PluginManager } from './PluginManager.js';
 import type { WamKeyboard } from '../../modules/instruments/adapters/wam/WamKeyboard.js';
@@ -44,6 +55,8 @@ import { TrackInstrumentUtils } from './utils/TrackInstrumentUtils.js';
 import { TRANSPORT_TIMING_CONFIG } from '../../config/transportTiming.js';
 import { WindowRegistry } from '../WindowRegistry.js';
 import { DiagnosticLogger } from './region-processing/diagnostics/DiagnosticLogger.js';
+import { lifecycle } from '../../utils/InitializationLifecycleLogger.js';
+import { Mixer } from '../../modules/tracks/mixing/Mixer.js';
 
 /**
  * Playback engine state machine
@@ -441,9 +454,34 @@ export class PlaybackEngine {
 
   /**
    * Register a track
+   * Includes defensive check to prevent duplicate tracks of singleton instrument types
    */
   registerTrack(track: Track): void {
+    // Singleton instrument types - only one track of these types should exist
+    const singletonTypes = ['metronome', 'voice-cue'];
+
+    if (track.instrumentType && singletonTypes.includes(track.instrumentType)) {
+      // Check if a different track with the same instrumentType already exists
+      const existingTrack = Array.from(this.tracks.values()).find(
+        (t) => t.instrumentType === track.instrumentType && t.id !== track.id
+      );
+
+      if (existingTrack) {
+        // Remove the old track to prevent duplicates
+        this.logger.warn(
+          `Removing existing ${track.instrumentType} track (${existingTrack.id}) before registering new one (${track.id})`,
+        );
+        this.tracks.delete(existingTrack.id);
+      }
+    }
+
     this.tracks.set(track.id, track);
+    lifecycle.checkpoint('TRACK_REGISTERED', {
+      trackId: track.id,
+      instrumentType: track.instrumentType,
+      regionsCount: track.regions.length,
+      isPlaying: this.state === 'playing',
+    });
     this.logger.info(`Track registered: ${track.id}`, {
       instrumentType: track.instrumentType,
       regionsCount: track.regions.length,
@@ -504,6 +542,44 @@ export class PlaybackEngine {
   unregisterTrack(trackId: string): void {
     this.tracks.delete(trackId);
     this.logger.info(`Track unregistered: ${trackId}`);
+  }
+
+  /**
+   * Clear all drum tracks and stop any scheduled drum events
+   * Call this before loading a new exercise to prevent old drum patterns from persisting
+   */
+  clearDrumTracks(): void {
+    // 1. Stop all scheduled drum sources immediately (not graceful - force stop)
+    if (this.drumScheduler) {
+      this.drumScheduler.stopAll(false); // false = immediate stop with fadeout
+      console.log('[PLAYBACK-ENGINE] Cleared drum scheduler sources');
+    }
+
+    // 2. Find and unregister all drum tracks
+    const drumTrackIds: string[] = [];
+    this.tracks.forEach((track, trackId) => {
+      if (track.instrumentType === 'drums') {
+        drumTrackIds.push(trackId);
+      }
+    });
+
+    for (const trackId of drumTrackIds) {
+      this.tracks.delete(trackId);
+      console.log('[PLAYBACK-ENGINE] Unregistered drum track:', trackId);
+    }
+
+    // 3. Clear any scheduled drum events from the tracking sets
+    // Events are keyed by region ID, remove any drum-related ones
+    this.scheduledEvents.forEach((eventSet, regionId) => {
+      if (regionId.includes('drum')) {
+        this.scheduledEvents.delete(regionId);
+      }
+    });
+
+    this.logger.info('Cleared all drum tracks and scheduled events', {
+      unregisteredTracks: drumTrackIds.length,
+      instanceId: this.instanceId,
+    });
   }
 
   /**
@@ -712,6 +788,11 @@ export class PlaybackEngine {
    * Inlined from LifecycleCoordinator.start()
    */
   start(): void {
+    lifecycle.checkpoint('PLAYBACK_START_REQUESTED', {
+      tracksCount: this.tracks.size,
+      trackIds: Array.from(this.tracks.keys()),
+    });
+
     // DIAGNOSTIC: Log start() call and current state
     console.log('[PlaybackEngine.start() DIAGNOSTIC]', {
       currentState: this.state,
@@ -742,10 +823,16 @@ export class PlaybackEngine {
     }
 
     // Get AudioContext from Tone.js if not set
+    const Tone = getTone();
     if (!this.audioContext && Tone.context) {
+      lifecycle.checkpoint('AUDIOCONTEXT_CREATING');
       this.logger.warn('Using Tone.context as fallback for AudioContext');
       this.audioContext = Tone.context as unknown as AudioContext;
       this.sampleRate = this.audioContext.sampleRate;
+      lifecycle.checkpoint('AUDIOCONTEXT_RUNNING', {
+        sampleRate: this.sampleRate,
+        state: this.audioContext.state,
+      });
     }
 
     if (!this.audioContext) {
@@ -789,9 +876,21 @@ export class PlaybackEngine {
       startupLookahead: `${startupLookahead * 1000}ms`,
     });
 
+    // PHASE 2.5: Apply master fade-in to prevent audio spike on playback start
+    // This ramps master gain from near-zero to full over 20ms, eliminating clicks
+    try {
+      const mixer = Mixer.getInstance();
+      mixer.applyMasterFadeIn(this.transportStartTime);
+    } catch (e) {
+      // Mixer may not be initialized yet - continue without master fade
+      this.logger.warn('Could not apply master fade-in (Mixer not ready)', { error: e });
+    }
+
     // PHASE 3: Initial scheduling
     this.isInitialScheduling = true;
+    lifecycle.checkpoint('SCHEDULE_ALL_REGIONS_START', { tracksCount: this.tracks.size });
     this.scheduleAllRegions();
+    lifecycle.checkpoint('SCHEDULE_ALL_REGIONS_COMPLETE', { tracksCount: this.tracks.size });
     this.isInitialScheduling = false;
 
     // PHASE 4: Subscribe to Transport position updates via EventBus (FIGHTING CLOCKS FIX)
@@ -829,6 +928,10 @@ export class PlaybackEngine {
     // Update state
     this.isRunning = true;
     this.setState('playing');
+    lifecycle.checkpoint('TRANSPORT_STARTED', {
+      instanceId: this.instanceId,
+      tracksCount: this.tracks.size,
+    });
 
     this.logger.info('✅ Playback started with 4-phase scheduling', {
       instanceId: this.instanceId,
@@ -956,6 +1059,7 @@ export class PlaybackEngine {
   private syncTransportStartTime(time: number): void {
     // Set Tone.Transport time offset to align with transport start time
     // This ensures all Tone.Transport.schedule() calls use the correct time reference
+    const Tone = getTone();
     if (this.audioContext) {
       Tone.Transport.seconds = 0;
       this.logger.debug('Synced transport start time', {
@@ -997,6 +1101,7 @@ export class PlaybackEngine {
    */
   private clearScheduledState(): void {
     // Clear Tone.Transport scheduled events
+    const Tone = getTone();
     this.scheduledIds.forEach((toneId) => {
       try {
         Tone.Transport.clear(toneId);
@@ -1156,26 +1261,27 @@ export class PlaybackEngine {
     });
 
     // Stop all instrument schedulers - this cancels their active audio sources
+    // Pass graceful flag to all schedulers:
+    // - graceful=true (auto-stop at exercise end): Apply smooth fadeout for natural finish
+    // - graceful=false (manual stop): Quick fadeout to avoid clicks
     if (this.metronomeScheduler) {
-      this.metronomeScheduler.stopAll();
-      console.log('[PLAYBACK-ENGINE STOP] Metronome stopped');
+      this.metronomeScheduler.stopAll(graceful);
+      console.log('[PLAYBACK-ENGINE STOP] Metronome stopped', { graceful });
     }
     if (this.drumScheduler) {
-      this.drumScheduler.stopAll();
-      console.log('[PLAYBACK-ENGINE STOP] Drums stopped');
+      this.drumScheduler.stopAll(graceful);
+      console.log('[PLAYBACK-ENGINE STOP] Drums stopped', { graceful });
     }
     if (this.bassScheduler) {
-      this.bassScheduler.stopAll();
-      console.log('[PLAYBACK-ENGINE STOP] Bass stopped');
+      this.bassScheduler.stopAll(graceful);
+      console.log('[PLAYBACK-ENGINE STOP] Bass stopped', { graceful });
     }
     if (this.voiceCueScheduler) {
-      this.voiceCueScheduler.stopAll();
-      console.log('[PLAYBACK-ENGINE STOP] Voice cue stopped');
+      this.voiceCueScheduler.stopAll(graceful);
+      console.log('[PLAYBACK-ENGINE STOP] Voice cue stopped', { graceful });
     }
     if (this.harmonyScheduler) {
-      // Pass graceful flag to harmony scheduler
-      // graceful=true: Let sustained notes ring out (auto-stop at exercise end)
-      // graceful=false: Immediately stop all notes (manual stop button)
+      // Harmony has longer ring-out time (4 seconds for sustained notes)
       this.harmonyScheduler.stopAll(graceful);
       console.log('[PLAYBACK-ENGINE STOP] Harmony stopped', { graceful });
     }
@@ -1209,6 +1315,9 @@ export class PlaybackEngine {
 
     // Update state
     this.state = 'stopped';
+    lifecycle.checkpoint('PLAYBACK_STOPPED', {
+      instanceId: this.instanceId,
+    });
 
     this.logger.info('PlaybackEngine stopped - all audio sources cancelled', {
       instanceId: this.instanceId,

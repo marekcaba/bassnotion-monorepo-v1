@@ -23,8 +23,19 @@ import {
 import { TransportError } from '../types/errors.js';
 import { createStructuredLogger } from '../../shared/index.js';
 import { TRANSPORT_TIMING_CONFIG } from '../../../config/transportTiming.js';
-import * as Tone from 'tone';
 import { musicalTruth } from '../../tempo/MusicalTruthAuthority.js';
+
+// Helper to get Tone from window (must be initialized before Transport is used)
+function getTone(): any {
+  if (typeof window !== 'undefined') {
+    // Check both locations where Tone.js may be stored
+    const tone = (window as any).Tone || (window as any).__globalTone;
+    if (tone) {
+      return tone;
+    }
+  }
+  throw new Error('Transport: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+}
 
 const logger = createStructuredLogger('Transport');
 
@@ -119,8 +130,14 @@ export class Transport {
     // Just configure Tone.js transport without starting it:
     // await Tone.start(); // ❌ REMOVED - blocks initialization
 
-    // ✅ Configure Tone.js transport tempo without resuming AudioContext
-    Tone.Transport.bpm.value = this.config.tempo;
+    // TEMPO FIX: Do NOT set Tone.Transport.bpm here!
+    // MusicalTruthAuthority is the single source of truth for tempo.
+    // Tone.Transport.bpm will be set when:
+    // 1. An exercise is loaded via musicalTruth.setFromExercise()
+    // 2. User adjusts tempo via musicalTruth.setBPM()
+    // Setting a default here (e.g., 120) would cause the exercise tempo to be overwritten.
+    // const Tone = getTone();
+    // Tone.Transport.bpm.value = this.config.tempo; // ❌ REMOVED - bypasses MusicalTruthAuthority
 
     this.isInitialized = true;
     logger.info(
@@ -173,6 +190,7 @@ export class Transport {
     }
 
     // Start Tone.js transport
+    const Tone = getTone();
     Tone.Transport.start();
 
     // Start scheduler
@@ -286,6 +304,7 @@ export class Transport {
     }
 
     // Stop Tone.js transport
+    const Tone = getTone();
     Tone.Transport.stop();
 
     // CRITICAL FIX: Cancel all scheduled events on Tone.Transport
@@ -341,6 +360,7 @@ export class Transport {
     }
 
     // Pause Tone.js transport
+    const Tone = getTone();
     Tone.Transport.pause();
 
     // Pause clock timing (for AudioWorklet mode)
@@ -365,6 +385,7 @@ export class Transport {
     }
 
     // Resume Tone.js transport
+    const Tone = getTone();
     Tone.Transport.start();
 
     // Resume clock timing (for AudioWorklet mode)
@@ -387,6 +408,7 @@ export class Transport {
     this.timeline.setPosition(position);
 
     // Update Tone.js position
+    const Tone = getTone();
     const tonePosition = this.timeline.positionToToneFormat(position);
     Tone.Transport.position = tonePosition;
 
@@ -405,21 +427,29 @@ export class Transport {
 
   /**
    * Set tempo
+   *
+   * IMPORTANT: This delegates to MusicalTruthAuthority which is the ONE source of truth
+   * for tempo. MusicalTruthAuthority handles:
+   * - Updating internal truth.bpm
+   * - Syncing Tone.Transport.bpm.value
+   * - Notifying all listeners
    */
   setTempo(bpm: number): void {
     const oldBpm = this.config.tempo;
-    const oldToneBpm = Tone.Transport.bpm.value;
+
+    // 🎵 TEMPO FIX: Delegate to MusicalTruthAuthority instead of direct Tone.Transport write
+    // This ensures ALL tempo changes go through the single source of truth
+    musicalTruth.setBPM(bpm);
+
+    // Update local config and timeline to stay in sync
     this.config.tempo = bpm;
     this.timeline.setTempo(bpm);
-    Tone.Transport.bpm.value = bpm;
-    const newToneBpm = Tone.Transport.bpm.value;
-    logger.info('🎵 Transport.setTempo called', {
+
+    logger.info('🎵 Transport.setTempo delegated to musicalTruth', {
       requestedBpm: bpm,
       oldBpm,
-      oldToneBpm,
-      newToneBpm,
-      success: newToneBpm === bpm,
-      stack: new Error().stack?.split('\n').slice(2, 4).join(' <- '),
+      newBpm: musicalTruth.getBPM(),
+      source: 'Transport.setTempo -> musicalTruth.setBPM',
     });
   }
 
@@ -435,8 +465,13 @@ export class Transport {
    */
   getCurrentTime(): number {
     // If we're using Tone.js in compatibility mode, use its time
-    if (this.config.enableLegacyCompatibility && typeof Tone !== 'undefined') {
-      return Tone.Transport.seconds;
+    if (this.config.enableLegacyCompatibility) {
+      try {
+        const Tone = getTone();
+        return Tone.Transport.seconds;
+      } catch {
+        // Tone not loaded yet, use clock
+      }
     }
     // Otherwise use our clock
     return this.clock.getCurrentTime();
@@ -533,6 +568,7 @@ export class Transport {
    */
   setLoopEnabled(enabled: boolean): void {
     this.timeline.setLoopEnabled(enabled);
+    const Tone = getTone();
     Tone.Transport.loop = enabled;
   }
 
@@ -543,6 +579,7 @@ export class Transport {
     this.timeline.setLoopPoints(start, end);
 
     // Convert to Tone format
+    const Tone = getTone();
     const startStr = this.timeline.positionToToneFormat(start);
     const endStr = this.timeline.positionToToneFormat(end);
 
@@ -642,32 +679,38 @@ export class Transport {
       const absoluteTime = this.clock.getAudioTime();
       const elapsedTime = absoluteTime - this.transportStartTime;
 
-      console.log('🔄 [COUNTDOWN TIME FIX] Position update', {
-        absoluteTime: absoluteTime.toFixed(6),
-        transportStartTime: this.transportStartTime.toFixed(6),
-        elapsedTime: elapsedTime.toFixed(6),
-        explanation:
-          'Using elapsed time (not absolute) ensures countdown starts at 0s → -1:4:0',
-        isNegative: elapsedTime < 0,
-        warning:
-          elapsedTime < 0
-            ? '⚠️ NEGATIVE ELAPSED TIME! Clock display will be corrupted!'
-            : undefined,
-      });
+      // 🎯 VISUAL LOOKAHEAD COMPENSATION: Subtract scheduling lookahead from visual position
+      // Audio is scheduled 150ms ahead for timing stability (TRANSPORT_TIMING_CONFIG.lookAheadTime)
+      // Without compensation, UI appears 150ms ahead of actual audio playback
+      // The startupLookahead (300ms) is already handled via transportStartTime offset
+      const visualLookahead = TRANSPORT_TIMING_CONFIG.lookAheadTime; // 150ms
+      const visualElapsedTime = Math.max(0, elapsedTime - visualLookahead);
+
+      // Only log occasionally to reduce console spam (every ~500ms)
+      if (Math.floor(elapsedTime * 2) !== Math.floor((elapsedTime - 0.02) * 2)) {
+        console.log('🔄 [VISUAL SYNC] Position update with lookahead compensation', {
+          absoluteTime: absoluteTime.toFixed(3),
+          elapsedTime: elapsedTime.toFixed(3),
+          visualLookahead: (visualLookahead * 1000).toFixed(0) + 'ms',
+          visualElapsedTime: visualElapsedTime.toFixed(3),
+          explanation: 'UI delayed by lookahead to match when audio actually plays',
+        });
+      }
 
       // ✅ DOUBLE COUNTDOWN FIX: Pass elapsed time (not absolute time)
       // MusicalPositionManager.getDisplayPosition() handles countdown offset exclusively
-      // Using elapsedTime ensures we start from position 0:0:0 (raw) → -1:4:0 (display)
-      // Previously, we passed absoluteTime (~2.5s) which skipped countdown entirely
-      this.timeline.updatePositionFromSeconds(elapsedTime);
+      // Using visualElapsedTime ensures UI syncs with actual audio playback
+      // The lookahead compensation delays the visual by 150ms to match scheduled audio
+      this.timeline.updatePositionFromSeconds(visualElapsedTime);
 
       // Emit position update event (would integrate with EventBus)
       const position = this.timeline.getTransportPosition();
-      logger.debug('Position update', { position, elapsedTime });
+      logger.debug('Position update', { position, visualElapsedTime });
 
-      // Call position update callback if registered with ELAPSED time
+      // Call position update callback if registered with VISUAL COMPENSATED time
+      // This ensures all downstream consumers (EventBus, widgets) get the same synced time
       if (this.positionUpdateCallback) {
-        this.positionUpdateCallback(elapsedTime);
+        this.positionUpdateCallback(visualElapsedTime);
       }
     };
 

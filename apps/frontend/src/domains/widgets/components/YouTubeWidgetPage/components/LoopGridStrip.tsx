@@ -20,6 +20,8 @@ export interface LoopGridStripProps {
   onLoopRegionChange: (region: LoopRegion | null) => void;
   onSeek?: (position: number) => void; // Seek to position in seconds
   className?: string;
+  /** Current tempo from transport - use this instead of exercise.bpm for accurate timing when user changes tempo */
+  currentTempo?: number;
 }
 
 export interface MeasureData {
@@ -37,6 +39,7 @@ export function LoopGridStrip({
   onLoopRegionChange,
   onSeek,
   className = '',
+  currentTempo,
 }: LoopGridStripProps) {
   const { logger } = useCorrelation('LoopGridStrip');
   // Use prop value for loopRegion (controlled component)
@@ -109,7 +112,9 @@ export function LoopGridStrip({
       numerator: 4,
       denominator: 4,
     };
-    const bpm = exercise.bpm || 120;
+    // TEMPO FIX: Use currentTempo (from transport) if provided, otherwise fall back to exercise.bpm
+    // This ensures the loop strip updates when user changes tempo via slider
+    const bpm = currentTempo || exercise.bpm || 120;
     const beatsPerMeasure = timeSignature.numerator;
 
     // Use total_bars directly (primary field - musicians think in bars!)
@@ -132,6 +137,7 @@ export function LoopGridStrip({
     exercise?.bpm,
     exercise?.timeSignature,
     duration,
+    currentTempo, // TEMPO FIX: Recalculate when tempo changes
   ]);
 
   // Calculate measure and beat from mouse position (discrete incremental)
@@ -165,12 +171,13 @@ export function LoopGridStrip({
     // During countdown (negative bars), don't show progress
     if (currentMusicalPosition.bars < 0) return 0;
 
-    // Calculate the absolute beat position (1-based to match measure indices)
-    // bars are 0-indexed from transport, beats are 0-indexed within bar
+    // Display positions use 1-based bars and beats (DAW convention)
+    // bars: 1 = first bar, beats: 1 = first beat
+    // We need to calculate absolute beat position (1-based) for comparing with currentBeatPosition
+    // which is also 1-based: (measure.index - 1) * beatsPerMeasure + beatNumber
     const absoluteBeat =
-      currentMusicalPosition.bars * beatsPerMeasure +
-      currentMusicalPosition.beats +
-      1; // +1 for 1-based index
+      (currentMusicalPosition.bars - 1) * beatsPerMeasure +
+      currentMusicalPosition.beats;
 
     return absoluteBeat;
   }, [currentMusicalPosition, beatsPerMeasure]);

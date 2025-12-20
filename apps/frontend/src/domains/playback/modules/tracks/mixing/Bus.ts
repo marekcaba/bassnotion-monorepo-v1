@@ -8,7 +8,8 @@
  * - Monitor Bus: Separate monitoring mix
  */
 
-import * as Tone from 'tone';
+import { getTone } from '@/domains/playback/utils/tone';
+import type * as ToneTypes from 'tone';
 import { Channel } from './Channel.js';
 import { EventBus, createStructuredLogger } from '../../shared/index.js';
 
@@ -28,14 +29,14 @@ export interface BusConfig {
 }
 
 export interface BusDynamics {
-  compressor: Tone.Compressor;
-  limiter: Tone.Limiter;
+  compressor: ToneTypes.Compressor;
+  limiter: ToneTypes.Limiter;
   bypassed: boolean;
 }
 
 export interface BusInsert {
   id: string;
-  effect: Tone.ToneAudioNode;
+  effect: ToneTypes.ToneAudioNode;
   bypassed: boolean;
   wetDry?: number;
 }
@@ -48,13 +49,13 @@ export class Bus {
   public parentBusId?: string;
 
   // Audio nodes
-  private input: Tone.Gain;
-  private output: Tone.Gain;
-  private gainNode: Tone.Gain;
+  private input: ToneTypes.Gain;
+  private output: ToneTypes.Gain;
+  private gainNode: ToneTypes.Gain;
 
   // Processing
   private dynamics?: BusDynamics;
-  private eq?: Tone.EQ3;
+  private eq?: ToneTypes.EQ3;
   private inserts: BusInsert[] = [];
 
   // Child management
@@ -62,8 +63,8 @@ export class Bus {
   private connectedChannels = new Set<string>();
 
   // Metering
-  private meter: Tone.Meter;
-  private analyser: Tone.Analyser;
+  private meter: ToneTypes.Meter;
+  private analyser: ToneTypes.Analyser;
 
   // State
   private gain: number;
@@ -149,7 +150,7 @@ export class Bus {
    * Build signal chain
    */
   private buildSignalChain(): void {
-    let currentNode: Tone.ToneAudioNode = this.input;
+    let currentNode: ToneTypes.ToneAudioNode = this.input;
 
     // Gain stage
     currentNode.connect(this.gainNode);
@@ -279,7 +280,7 @@ export class Bus {
    * Set gain in dB
    */
   setGainDb(db: number, rampTime = 0.05): void {
-    const tone = this.audioEngine?.getTone?.() || Tone;
+    const tone = this.getTone();
     const linear = tone.dbToGain(db);
     this.setGain(linear, rampTime);
   }
@@ -373,7 +374,7 @@ export class Bus {
   /**
    * Add insert effect
    */
-  addInsert(effect: Tone.ToneAudioNode, position?: number): string {
+  addInsert(effect: ToneTypes.ToneAudioNode, position?: number): string {
     const insertId = `bus-insert-${Date.now()}`;
     const insert: BusInsert = {
       id: insertId,
@@ -466,7 +467,7 @@ export class Bus {
       }
     }
 
-    const tone = this.audioEngine?.getTone?.() || Tone;
+    const tone = this.getTone();
     return tone.gainToDb(peak);
   }
 
@@ -485,21 +486,21 @@ export class Bus {
     }
 
     const rms = Math.sqrt(sum / waveform.length);
-    const tone = this.audioEngine?.getTone?.() || Tone;
+    const tone = this.getTone();
     return tone.gainToDb(rms);
   }
 
   /**
    * Get input node
    */
-  getInput(): Tone.ToneAudioNode {
+  getInput(): ToneTypes.ToneAudioNode {
     return this.input;
   }
 
   /**
    * Get output node
    */
-  getOutput(): Tone.ToneAudioNode {
+  getOutput(): ToneTypes.ToneAudioNode {
     return this.output;
   }
 
@@ -585,35 +586,67 @@ export class Bus {
   }
 
   // Factory methods for DI support
+  // Uses audioEngine if available, otherwise falls back to global Tone from window
+  private getTone(): any {
+    if (this.audioEngine?.getTone) {
+      return this.audioEngine.getTone();
+    }
+    // Fallback to global Tone (loaded by previous initialization)
+    // Check both locations where Tone.js may be stored
+    if (typeof window !== 'undefined') {
+      const tone = (window as any).Tone || (window as any).__globalTone;
+      if (tone) {
+        return tone;
+      }
+    }
+    throw new Error('Bus: No Tone.js instance available. Ensure AudioEngine is initialized.');
+  }
+
   private createGain(gain?: number): any {
-    return this.audioEngine?.createGain?.(gain) || new Tone.Gain({ gain });
+    if (this.audioEngine?.createGain) {
+      return this.audioEngine.createGain(gain);
+    }
+    const Tone = this.getTone();
+    return new Tone.Gain({ gain });
   }
 
   private createMeter(options?: any): any {
-    return this.audioEngine?.createMeter?.(options) || new Tone.Meter(options);
+    if (this.audioEngine?.createMeter) {
+      return this.audioEngine.createMeter(options);
+    }
+    const Tone = this.getTone();
+    return new Tone.Meter(options);
   }
 
   private createAnalyser(type?: string, size?: number): any {
-    return (
-      this.audioEngine?.createAnalyser?.(type, size) ||
-      new Tone.Analyser(type as any, size)
-    );
+    if (this.audioEngine?.createAnalyser) {
+      return this.audioEngine.createAnalyser(type, size);
+    }
+    const Tone = this.getTone();
+    return new Tone.Analyser(type as any, size);
   }
 
   private createCompressor(options?: any): any {
-    return (
-      this.audioEngine?.createCompressor?.(options) ||
-      new Tone.Compressor(options)
-    );
+    if (this.audioEngine?.createCompressor) {
+      return this.audioEngine.createCompressor(options);
+    }
+    const Tone = this.getTone();
+    return new Tone.Compressor(options);
   }
 
   private createLimiter(options?: any): any {
-    return (
-      this.audioEngine?.createLimiter?.(options) || new Tone.Limiter(options)
-    );
+    if (this.audioEngine?.createLimiter) {
+      return this.audioEngine.createLimiter(options);
+    }
+    const Tone = this.getTone();
+    return new Tone.Limiter(options);
   }
 
   private createEQ3(options?: any): any {
-    return this.audioEngine?.createEQ3?.(options) || new Tone.EQ3(options);
+    if (this.audioEngine?.createEQ3) {
+      return this.audioEngine.createEQ3(options);
+    }
+    const Tone = this.getTone();
+    return new Tone.EQ3(options);
   }
 }

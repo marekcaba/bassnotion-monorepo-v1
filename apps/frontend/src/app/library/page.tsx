@@ -4,9 +4,10 @@ import Image from 'next/image';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
-import { Clock, Loader2, AlertCircle, Plus } from 'lucide-react';
+import { Clock, Loader2, AlertCircle, Plus, ArrowLeft } from 'lucide-react';
 import { useTutorials } from '@/domains/widgets/hooks/useTutorials';
 import { useUserProfile } from '@/domains/user/hooks/use-user-profile';
+import { UserIndicator } from '@/domains/user/components/UserIndicator';
 import { HomeNavbar } from '../_components/HomeNavbar';
 import type { TutorialSummary } from '@bassnotion/contracts';
 
@@ -109,13 +110,15 @@ export default function LibraryPage() {
   const { navigateWithTransition } = useViewTransitionRouter();
   const { tutorials, total, isLoading, error, isError, refetch } =
     useTutorials();
-  const { profile } = useUserProfile();
+  const { profile, cachedRole } = useUserProfile();
 
-  const isAdmin = profile?.role === 'admin';
+  // Use cached role for immediate display, fall back to profile role when loaded
+  // This prevents layout shift on page reload/navigation
+  const isAdmin = profile?.role === 'admin' || cachedRole === 'admin';
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-black">
+      <div className="min-h-screen">
         {/* Header with Logo */}
         <header className="w-full pt-8 sm:pt-12 pb-5 flex justify-center">
           <button
@@ -136,8 +139,27 @@ export default function LibraryPage() {
         {/* Navbar */}
         <HomeNavbar />
 
-        <div className="container mx-auto px-4 py-6 max-w-2xl">
+        <div className="mx-auto px-4 py-6 w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl">
           <div className="space-y-6">
+            {/* User Indicator and Navigation Controls */}
+            <div className="flex justify-between items-center gap-3">
+              {/* Back to Home button on the left */}
+              <Button
+                onClick={() => navigateWithTransition('/')}
+                variant="ghost"
+                size="sm"
+                className="text-white/70 hover:text-white p-2"
+                title="Back to Home"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+
+              {/* User indicator on the right */}
+              <div className="flex items-center gap-3">
+                <UserIndicator />
+              </div>
+            </div>
+
             {/* Title Section */}
             <Card className="bg-zinc-900 border border-zinc-800">
               <CardContent className="p-8 text-center">
@@ -149,6 +171,16 @@ export default function LibraryPage() {
                   lesson includes advanced widgets, sheet music, fretboard
                   visualization, and personalized takeaways.
                 </p>
+                {isAdmin && (
+                  <Button
+                    onClick={() => navigateWithTransition('/admin/tutorials/new')}
+                    className="mt-4 bg-[#ffc700] text-black hover:bg-[#e6b300]"
+                    size="sm"
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    New Tutorial
+                  </Button>
+                )}
               </CardContent>
             </Card>
 
@@ -167,7 +199,7 @@ export default function LibraryPage() {
 
   if (isError || error) {
     return (
-      <div className="min-h-screen bg-black">
+      <div className="min-h-screen">
         {/* Header with Logo */}
         <header className="w-full pt-8 sm:pt-12 pb-5 flex justify-center">
           <button
@@ -188,8 +220,27 @@ export default function LibraryPage() {
         {/* Navbar */}
         <HomeNavbar />
 
-        <div className="container mx-auto px-4 py-6 max-w-2xl">
+        <div className="mx-auto px-4 py-6 w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl">
           <div className="space-y-6">
+            {/* User Indicator and Navigation Controls */}
+            <div className="flex justify-between items-center gap-3">
+              {/* Back to Home button on the left */}
+              <Button
+                onClick={() => navigateWithTransition('/')}
+                variant="ghost"
+                size="sm"
+                className="text-white/70 hover:text-white p-2"
+                title="Back to Home"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+
+              {/* User indicator on the right */}
+              <div className="flex items-center gap-3">
+                <UserIndicator />
+              </div>
+            </div>
+
             {/* Title Section */}
             <Card className="bg-zinc-900 border border-zinc-800">
               <CardContent className="p-8 text-center">
@@ -199,6 +250,16 @@ export default function LibraryPage() {
                 <p className="text-gray-400 text-lg">
                   Choose from our collection of interactive bass tutorials.
                 </p>
+                {isAdmin && (
+                  <Button
+                    onClick={() => navigateWithTransition('/admin/tutorials/new')}
+                    className="mt-4 bg-[#ffc700] text-black hover:bg-[#e6b300]"
+                    size="sm"
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    New Tutorial
+                  </Button>
+                )}
               </CardContent>
             </Card>
 
@@ -228,7 +289,7 @@ export default function LibraryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen">
       {/* Header with Logo */}
       <header className="w-full pt-8 sm:pt-12 pb-5 flex justify-center">
         <button
@@ -250,8 +311,27 @@ export default function LibraryPage() {
       <HomeNavbar />
 
       {/* Main content */}
-      <div className="container mx-auto px-4 py-6 max-w-2xl">
+      <div className="mx-auto px-4 py-6 w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl">
         <div className="space-y-6">
+          {/* User Indicator and Navigation Controls */}
+          <div className="flex justify-between items-center gap-3">
+            {/* Back to Home button on the left */}
+            <Button
+              onClick={() => navigateWithTransition('/')}
+              variant="ghost"
+              size="sm"
+              className="text-white/70 hover:text-white p-2"
+              title="Back to Home"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+
+            {/* User indicator on the right */}
+            <div className="flex items-center gap-3">
+              <UserIndicator />
+            </div>
+          </div>
+
           {/* Title Section */}
           <Card className="bg-zinc-900 border border-zinc-800">
             <CardContent className="p-8 text-center">

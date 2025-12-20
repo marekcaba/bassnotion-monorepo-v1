@@ -8,7 +8,18 @@
 
 import { getLogger } from '@/utils/logger.js';
 import type { CachedSchedule } from '../types/region.types.js';
-import * as Tone from 'tone';
+
+// Helper to get Tone from window (must be initialized before ScheduleCache is used)
+function getTone(): any {
+  if (typeof window !== 'undefined') {
+    // Check both locations where Tone.js may be stored
+    const tone = (window as any).Tone || (window as any).__globalTone;
+    if (tone) {
+      return tone;
+    }
+  }
+  throw new Error('ScheduleCache: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+}
 
 const logger = getLogger('ScheduleCache');
 
@@ -47,6 +58,7 @@ export class ScheduleCache {
    * @returns Cached schedule or null
    */
   get(exerciseId: string): CachedSchedule | null {
+    const Tone = getTone();
     const currentBpm = Tone.Transport.bpm.value;
     const cacheKey = this.generateCacheKey(
       exerciseId,

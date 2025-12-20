@@ -8,7 +8,8 @@
  * Part of Story 3.21 Task 6 - Track Mixing and Routing System
  */
 
-import * as Tone from 'tone';
+import { getTone } from '@/domains/playback/utils/tone';
+import type * as ToneTypes from 'tone';
 import { Track } from '../core/Track.js';
 import {
   EventBus,
@@ -35,6 +36,18 @@ const serviceRegistry = {
   },
 };
 
+// Helper to get Tone from window (must be initialized before Mixer is used)
+function getToneFromWindow(): any {
+  if (typeof window !== 'undefined') {
+    // Check both locations where Tone.js may be stored
+    const tone = (window as any).Tone || (window as any).__globalTone;
+    if (tone) {
+      return tone;
+    }
+  }
+  throw new Error('Mixer: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+}
+
 class AudioEngine {
   private static instance: AudioEngine | null = null;
 
@@ -45,28 +58,28 @@ class AudioEngine {
     return AudioEngine.instance;
   }
 
-  getTone(): typeof Tone {
-    return Tone;
+  getTone(): any {
+    return getToneFromWindow();
   }
 }
 
 export interface TrackChannel {
   trackId: string;
-  input: Tone.ToneAudioNode;
-  output: Tone.ToneAudioNode;
+  input: ToneTypes.ToneAudioNode;
+  output: ToneTypes.ToneAudioNode;
 
   // Processing nodes
-  gain: Tone.Gain;
-  panner: Tone.Panner;
-  mute: Tone.Gain;
-  solo: Tone.Gain;
+  gain: ToneTypes.Gain;
+  panner: ToneTypes.Panner;
+  mute: ToneTypes.Gain;
+  solo: ToneTypes.Gain;
 
   // Effects chain
-  effectsChain: Tone.ToneAudioNode[];
-  effectsSend: Tone.Gain;
+  effectsChain: ToneTypes.ToneAudioNode[];
+  effectsSend: ToneTypes.Gain;
 
   // Sends
-  sends: Map<string, Tone.Gain>;
+  sends: Map<string, ToneTypes.Gain>;
 
   // State
   isMuted: boolean;
@@ -80,14 +93,14 @@ export interface MixBus {
   type: 'master' | 'sub' | 'aux';
 
   // Audio nodes
-  input: Tone.ToneAudioNode;
-  output: Tone.ToneAudioNode;
-  gain: Tone.Gain;
+  input: ToneTypes.ToneAudioNode;
+  output: ToneTypes.ToneAudioNode;
+  gain: ToneTypes.Gain;
 
   // Processing
-  effectsChain: Tone.ToneAudioNode[];
-  compressor?: Tone.Compressor;
-  limiter?: Tone.Limiter;
+  effectsChain: ToneTypes.ToneAudioNode[];
+  compressor?: ToneTypes.Compressor;
+  limiter?: ToneTypes.Limiter;
 
   // Routing
   parentBusId?: string;
@@ -123,7 +136,7 @@ export class Mixer {
   // Core dependencies
   private audioEngine: AudioEngine;
   private eventBus?: EventBus;
-  private tone: typeof Tone;
+  private tone: any;
 
   // Mixing infrastructure
   private trackChannels = new Map<string, TrackChannel>();
@@ -135,12 +148,12 @@ export class Mixer {
 
   // Solo management
   private soloedTracks = new Set<string>();
-  private soloMute: Tone.Gain | null = null;
+  private soloMute: ToneTypes.Gain | null = null;
 
   // Automation
   private automationTimelines = new Map<
     string,
-    Map<string, Tone.Timeline<TimelineAutomationPoint>>
+    Map<string, ToneTypes.Timeline<TimelineAutomationPoint>>
   >();
 
   // Snapshots for recall
@@ -201,32 +214,22 @@ export class Mixer {
 
   /**
    * Create master bus
+   * Clean signal path - no processing on master bus for now
    */
   private createMasterBus(): void {
     const masterGain = new this.tone.Gain(1);
-    const masterLimiter = new this.tone.Limiter(-3);
-    const masterCompressor = new this.tone.Compressor({
-      threshold: -12,
-      ratio: 4,
-      attack: 0.003,
-      release: 0.1,
-    });
 
-    // Chain: input -> compressor -> limiter -> gain -> output
-    masterCompressor.connect(masterLimiter);
-    masterLimiter.connect(masterGain);
+    // Clean routing: input -> gain -> output (no compression/limiting for now)
     masterGain.connect(this.tone.getDestination());
 
     this.masterBus = {
       busId: 'master',
       name: 'Master Bus',
       type: 'master',
-      input: masterCompressor,
+      input: masterGain,
       output: masterGain,
       gain: masterGain,
       effectsChain: [],
-      compressor: masterCompressor,
-      limiter: masterLimiter,
       childBusIds: [],
     };
 
@@ -608,7 +611,7 @@ export class Mixer {
   /**
    * Add effect to track
    */
-  public addTrackEffect(trackId: string, effect: Tone.ToneAudioNode): void {
+  public addTrackEffect(trackId: string, effect: ToneTypes.ToneAudioNode): void {
     const channel = this.trackChannels.get(trackId);
     if (!channel) return;
 
@@ -641,7 +644,7 @@ export class Mixer {
   /**
    * Add effect to bus (including aux return channels)
    */
-  public addBusEffect(busId: string, effect: Tone.ToneAudioNode): void {
+  public addBusEffect(busId: string, effect: ToneTypes.ToneAudioNode): void {
     const bus = this.mixBuses.get(busId);
     if (!bus) return;
 
@@ -853,7 +856,7 @@ export class Mixer {
     // Create timeline for each automated parameter
     const trackTimelines = new Map<
       string,
-      Tone.Timeline<TimelineAutomationPoint>
+      ToneTypes.Timeline<TimelineAutomationPoint>
     >();
 
     for (const automation of automations) {
@@ -980,12 +983,78 @@ export class Mixer {
   }
 
   /**
+   * Get the master bus for external access
+   */
+  public getMasterBus(): MixBus | null {
+    return this.masterBus;
+  }
+
+  /**
+   * Get the master bus input node for connecting instruments
+   * This routes audio through the master compressor and limiter
+   *
+   * @returns The master bus input node, or null if mixer not initialized
+   */
+  public getMasterBusInput(): ToneTypes.ToneAudioNode | null {
+    if (!this.masterBus) {
+      logger.warn('🎛️ Mixer: Master bus not initialized');
+      return null;
+    }
+    return this.masterBus.input;
+  }
+
+  /**
+   * Get the AudioNode version of master bus input for Web Audio API connections
+   * Used when connecting native AudioNodes (like from WamDrummer) to the mixer
+   *
+   * @returns The underlying AudioNode of the master bus input, or null if not available
+   */
+  public getMasterBusInputAsAudioNode(): AudioNode | null {
+    const input = this.getMasterBusInput();
+    if (!input) return null;
+
+    // Tone.js nodes have an underlying Web Audio node we can access
+    // Most Tone nodes expose this as .input or can be used directly in connect()
+    return (input as any).input || (input as any)._gainNode || input as unknown as AudioNode;
+  }
+
+  /**
    * Convert musical position to seconds
    */
   private musicalPositionToSeconds(position: MusicalPosition): number {
     // MusicalPosition is a string in "bars:beats:sixteenths" format
     // Use Tone.js to convert it
     return this.tone.Transport.toSeconds(position);
+  }
+
+  /**
+   * Apply master fade-in to prevent audio spike on playback start
+   *
+   * @param startTime - AudioContext time when playback starts
+   * @param fadeDuration - Fade duration in seconds (default 20ms)
+   *
+   * This prevents the audio spike/click that occurs when playback starts
+   * by ramping the master gain from near-zero to full over a short duration.
+   */
+  public applyMasterFadeIn(startTime: number, fadeDuration = 0.02): void {
+    if (!this.masterBus) {
+      logger.warn('🎛️ Mixer: Cannot apply master fade-in - no master bus');
+      return;
+    }
+
+    const masterGain = this.masterBus.gain;
+    const targetGain = masterGain.gain.value || 1;
+
+    // CRITICAL: Use exponential ramp from near-zero to prevent audio spike
+    // Start at 0.001 (not 0, as exponential ramp requires non-zero start)
+    masterGain.gain.setValueAtTime(0.001, startTime);
+    masterGain.gain.exponentialRampToValueAtTime(targetGain, startTime + fadeDuration);
+
+    logger.info('🎛️ Mixer: Applied master fade-in', {
+      startTime: startTime.toFixed(3),
+      fadeDuration: `${fadeDuration * 1000}ms`,
+      targetGain,
+    });
   }
 
   /**

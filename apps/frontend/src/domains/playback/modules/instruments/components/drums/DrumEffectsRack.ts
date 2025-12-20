@@ -4,7 +4,19 @@
  * Effects processing for drum instruments
  */
 
-import * as Tone from 'tone';
+import type * as ToneTypes from 'tone';
+
+// Helper to get Tone from window (must be initialized before DrumEffectsRack is used)
+function getTone(): typeof import('tone') {
+  if (typeof window !== 'undefined') {
+    // Check both locations where Tone.js may be stored
+    const tone = (window as any).Tone || (window as any).__globalTone;
+    if (tone) {
+      return tone;
+    }
+  }
+  throw new Error('DrumEffectsRack: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+}
 import { BaseInstrumentEffects } from '../../architecture/IInstrumentEffects.js';
 import type {
   EffectsChainConfig,
@@ -50,18 +62,18 @@ export interface DrumEffectsConfig extends EffectsChainConfig {
  */
 export class DrumEffectsRack extends BaseInstrumentEffects {
   // Additional drum-specific effects
-  private gate: Tone.Gate | null = null;
-  private transientShaper: Tone.Envelope | null = null;
-  private bitCrusher: Tone.BitCrusher | null = null;
-  private saturator: Tone.Distortion | null = null;
+  private gate: ToneTypes.Gate | null = null;
+  private transientShaper: ToneTypes.Envelope | null = null;
+  private bitCrusher: ToneTypes.BitCrusher | null = null;
+  private saturator: ToneTypes.Distortion | null = null;
 
   // Parallel processing
-  private parallelCompressor: Tone.Compressor | null = null;
-  private parallelMix: Tone.CrossFade | null = null;
+  private parallelCompressor: ToneTypes.Compressor | null = null;
+  private parallelMix: ToneTypes.CrossFade | null = null;
 
   // Room ambience
-  private roomReverb: Tone.Reverb | null = null;
-  private roomMix: Tone.CrossFade | null = null;
+  private roomReverb: ToneTypes.Reverb | null = null;
+  private roomMix: ToneTypes.CrossFade | null = null;
 
   constructor(config?: DrumEffectsConfig) {
     super(config);
@@ -75,6 +87,8 @@ export class DrumEffectsRack extends BaseInstrumentEffects {
    * Setup drum-specific effects
    */
   private setupDrumEffects(config: DrumEffectsConfig): void {
+    const Tone = getTone();
+
     // Gate
     if (config.effects.gateThreshold !== undefined) {
       this.gate = new Tone.Gate({
@@ -120,6 +134,8 @@ export class DrumEffectsRack extends BaseInstrumentEffects {
     threshold: number;
     ratio: number;
   }): void {
+    const Tone = getTone();
+
     this.parallelCompressor = new Tone.Compressor({
       threshold: config.threshold,
       ratio: config.ratio,
@@ -143,6 +159,8 @@ export class DrumEffectsRack extends BaseInstrumentEffects {
     damping: number;
     mix: number;
   }): void {
+    const Tone = getTone();
+
     this.roomReverb = new Tone.Reverb({
       decay: config.size,
       preDelay: 0.01,
@@ -260,6 +278,7 @@ export class DrumEffectsRack extends BaseInstrumentEffects {
    */
   setGate(threshold: number, release?: number): void {
     if (!this.gate) {
+      const Tone = getTone();
       this.gate = new Tone.Gate({
         threshold,
         attack: 0.001,
@@ -292,6 +311,7 @@ export class DrumEffectsRack extends BaseInstrumentEffects {
    */
   setBitCrusher(bits: number, mix = 1): void {
     if (!this.bitCrusher) {
+      const Tone = getTone();
       this.bitCrusher = new Tone.BitCrusher({ bits, wet: mix });
       this.rebuildEffectsChain();
     } else {
@@ -407,7 +427,7 @@ export class DrumEffectsRack extends BaseInstrumentEffects {
   setPunch(attack: number, sustain: number): void {
     // This would require a more sophisticated transient shaper
     // For now, we can approximate with compressor settings
-    const compressor = this.effectNodes.get('compressor') as Tone.Compressor;
+    const compressor = this.effectNodes.get('compressor') as ToneTypes.Compressor;
     if (compressor) {
       compressor.attack.value = Math.max(0.001, 0.01 - attack * 0.009);
       compressor.release.value = Math.max(0.01, 0.1 * sustain);

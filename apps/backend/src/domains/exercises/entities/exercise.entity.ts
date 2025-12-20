@@ -44,6 +44,8 @@ export interface ExerciseProps {
   harmonyNotes?: any[]; // GeneratedHarmonyNote[] - using any to avoid circular imports
   harmonyControlChanges?: any[]; // HarmonyControlChange[] - MIDI control events (sustain, expression)
   harmonyInstrument?: 'grandpiano' | 'rhodes' | 'wurlitzer' | 'pad';
+  // Drum pattern data (from DrumPatternEditor)
+  drumPattern?: any[]; // DrumHit[] - using any to avoid circular imports
   createdBy?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -161,6 +163,10 @@ export class Exercise {
     | 'pad'
     | undefined {
     return this.props.harmonyInstrument;
+  }
+
+  get drumPattern(): any[] | undefined {
+    return this.props.drumPattern ? [...this.props.drumPattern] : undefined;
   }
 
   get createdAt(): Date {
@@ -312,6 +318,7 @@ export class Exercise {
       harmony_notes: this.props.harmonyNotes,
       harmony_control_changes: this.props.harmonyControlChanges,
       harmony_instrument: this.props.harmonyInstrument,
+      drum_pattern: this.props.drumPattern,
       created_by: this.props.createdBy,
       created_at: this.props.createdAt.toISOString(),
       updated_at: this.props.updatedAt.toISOString(),

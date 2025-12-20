@@ -14,15 +14,20 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import * as Tone from 'tone';
 
-// Mock Tone.js Transport
-vi.mock('tone', () => ({
-  Transport: {
+// Set up mock Tone.Transport on window BEFORE importing MusicalTruthAuthority
+// We set it up on the real window object (provided by jsdom)
+const setupWindowTone = () => {
+  const transport = {
     bpm: { value: 120 },
     timeSignature: 4,
-  },
-}));
+  };
+  (window as any).Tone = { Transport: transport };
+  return transport;
+};
+
+// Set up the mock - this happens before imports due to ES module evaluation
+const mockTransport = setupWindowTone();
 
 // Import after mock setup
 import {
@@ -35,17 +40,24 @@ import {
 describe('MusicalTruthAuthority', () => {
   let authority: MusicalTruthAuthority;
 
+  // Access the mock Transport via window.Tone (same object the code uses)
+  const getToneTransport = () => (window as any).Tone.Transport;
+
   beforeEach(() => {
     // Create fresh instance for each test
     authority = new MusicalTruthAuthority();
-    // Reset Tone.Transport mock
-    Tone.Transport.bpm.value = 120;
-    Tone.Transport.timeSignature = 4;
+    // Reset mock Tone.Transport values before each test
+    const transport = getToneTransport();
+    transport.bpm.value = 120;
+    transport.timeSignature = 4;
   });
 
   afterEach(() => {
     vi.clearAllMocks();
   });
+
+  // Helper alias for cleaner test assertions
+  const Tone = { get Transport() { return getToneTransport(); } };
 
   // ============================================================================
   // Initialization Tests
@@ -434,6 +446,370 @@ describe('MusicalTruthAuthority', () => {
         denominator: 8,
       });
       expect(Tone.Transport.timeSignature).toBe(7);
+    });
+  });
+
+  // ============================================================================
+  // setBPM() Tests
+  // ============================================================================
+
+  describe('setBPM()', () => {
+    it('should set BPM and sync with Tone.Transport', () => {
+      authority.setBPM(100);
+
+      expect(authority.getBPM()).toBe(100);
+      expect(Tone.Transport.bpm.value).toBe(100);
+    });
+
+    it('should reject BPM below 20', () => {
+      authority.setBPM(100); // Set initial valid value
+      authority.setBPM(19); // Try to set invalid value
+
+      expect(authority.getBPM()).toBe(100); // Should remain unchanged
+    });
+
+    it('should reject BPM above 300', () => {
+      authority.setBPM(100); // Set initial valid value
+      authority.setBPM(301); // Try to set invalid value
+
+      expect(authority.getBPM()).toBe(100); // Should remain unchanged
+    });
+
+    it('should accept BPM at boundary values (20 and 300)', () => {
+      authority.setBPM(20);
+      expect(authority.getBPM()).toBe(20);
+
+      authority.setBPM(300);
+      expect(authority.getBPM()).toBe(300);
+    });
+
+    it('should notify listeners when BPM changes', () => {
+      const listener = vi.fn();
+      authority.subscribe(listener);
+
+      authority.setBPM(95);
+
+      expect(listener).toHaveBeenCalledTimes(1);
+      expect(listener).toHaveBeenCalledWith(
+        expect.objectContaining({ bpm: 95 }),
+      );
+    });
+
+    it('should automatically set userHasModifiedTempo flag to true', () => {
+      expect(authority.hasUserModifiedTempo()).toBe(false);
+
+      authority.setBPM(100);
+
+      expect(authority.hasUserModifiedTempo()).toBe(true);
+    });
+  });
+
+  // ============================================================================
+  // User Tempo Modification Tracking Tests
+  // ============================================================================
+
+  describe('User Tempo Modification Tracking', () => {
+    it('hasUserModifiedTempo() should return false initially', () => {
+      expect(authority.hasUserModifiedTempo()).toBe(false);
+    });
+
+    it('hasUserModifiedTempo() should return true after setBPM()', () => {
+      authority.setBPM(100);
+      expect(authority.hasUserModifiedTempo()).toBe(true);
+    });
+
+    it('setUserModifiedTempo() should manually set the flag', () => {
+      authority.setUserModifiedTempo(true);
+      expect(authority.hasUserModifiedTempo()).toBe(true);
+
+      authority.setUserModifiedTempo(false);
+      expect(authority.hasUserModifiedTempo()).toBe(false);
+    });
+
+    it('resetUserModifiedTempo() should reset the flag and original BPM', () => {
+      // First load an exercise
+      const exercise: Exercise = {
+        bpm: 69,
+        timeSignature: { numerator: 4, denominator: 4 },
+      };
+      authority.setFromExercise(exercise);
+
+      // Then modify tempo
+      authority.setBPM(100);
+      expect(authority.hasUserModifiedTempo()).toBe(true);
+      expect(authority.getOriginalExerciseBpm()).toBe(69);
+
+      // Reset
+      authority.resetUserModifiedTempo();
+
+      expect(authority.hasUserModifiedTempo()).toBe(false);
+      expect(authority.getOriginalExerciseBpm()).toBeNull();
+    });
+
+    it('getOriginalExerciseBpm() should return null initially', () => {
+      expect(authority.getOriginalExerciseBpm()).toBeNull();
+    });
+
+    it('getOriginalExerciseBpm() should return exercise BPM after setFromExercise()', () => {
+      const exercise: Exercise = {
+        bpm: 69,
+        timeSignature: { numerator: 4, denominator: 4 },
+      };
+      authority.setFromExercise(exercise);
+
+      expect(authority.getOriginalExerciseBpm()).toBe(69);
+    });
+
+    it('getOriginalExerciseBpm() should NOT update when preserveBPM is true', () => {
+      // First load an exercise
+      const exercise1: Exercise = {
+        bpm: 69,
+        timeSignature: { numerator: 4, denominator: 4 },
+      };
+      authority.setFromExercise(exercise1);
+      expect(authority.getOriginalExerciseBpm()).toBe(69);
+
+      // Modify tempo
+      authority.setBPM(100);
+
+      // Load same exercise again with preserveBPM
+      authority.setFromExercise(exercise1, { preserveBPM: true });
+
+      // Original should still be 69 (not updated to exercise.bpm again)
+      expect(authority.getOriginalExerciseBpm()).toBe(69);
+      expect(authority.getBPM()).toBe(100); // User's tempo preserved
+    });
+  });
+
+  // ============================================================================
+  // preserveBPM Option Tests
+  // ============================================================================
+
+  describe('preserveBPM Option', () => {
+    it('should use exercise BPM when preserveBPM is false', () => {
+      const exercise: Exercise = {
+        bpm: 69,
+        timeSignature: { numerator: 4, denominator: 4 },
+      };
+
+      authority.setBPM(100); // Set different tempo first
+      authority.setFromExercise(exercise, { preserveBPM: false });
+
+      expect(authority.getBPM()).toBe(69);
+    });
+
+    it('should preserve current BPM when preserveBPM is true', () => {
+      const exercise: Exercise = {
+        bpm: 69,
+        timeSignature: { numerator: 4, denominator: 4 },
+      };
+
+      authority.setBPM(100); // Set different tempo first
+      authority.setFromExercise(exercise, { preserveBPM: true });
+
+      expect(authority.getBPM()).toBe(100);
+    });
+
+    it('should auto-detect user modification when preserveBPM not specified', () => {
+      const exercise: Exercise = {
+        bpm: 69,
+        timeSignature: { numerator: 4, denominator: 4 },
+      };
+
+      // Load exercise initially
+      authority.setFromExercise(exercise);
+      expect(authority.getBPM()).toBe(69);
+
+      // User modifies tempo
+      authority.setBPM(100);
+      expect(authority.hasUserModifiedTempo()).toBe(true);
+
+      // Load same exercise again without specifying preserveBPM
+      // Should auto-detect and preserve user's tempo
+      authority.setFromExercise(exercise);
+
+      expect(authority.getBPM()).toBe(100);
+    });
+
+    it('should use exercise BPM when user has NOT modified tempo (auto-detect)', () => {
+      const exercise1: Exercise = {
+        bpm: 69,
+        timeSignature: { numerator: 4, denominator: 4 },
+      };
+      const exercise2: Exercise = {
+        bpm: 120,
+        timeSignature: { numerator: 4, denominator: 4 },
+      };
+
+      // Load first exercise
+      authority.setFromExercise(exercise1);
+      expect(authority.getBPM()).toBe(69);
+
+      // Reset flag (simulating exercise change)
+      authority.resetUserModifiedTempo();
+
+      // Load second exercise - should use its BPM since user hasn't modified
+      authority.setFromExercise(exercise2);
+
+      expect(authority.getBPM()).toBe(120);
+    });
+
+    it('should sync Tone.Transport.bpm even when preserving user tempo', () => {
+      const exercise: Exercise = {
+        bpm: 69,
+        timeSignature: { numerator: 4, denominator: 4 },
+      };
+
+      authority.setBPM(100);
+      authority.setFromExercise(exercise, { preserveBPM: true });
+
+      // Tone.Transport should still be synced with the truth (100)
+      expect(Tone.Transport.bpm.value).toBe(100);
+    });
+  });
+
+  // ============================================================================
+  // MusicalTruthScope Tests
+  // ============================================================================
+
+  describe('MusicalTruthScope', () => {
+    it('should create a scope with automatic cleanup', () => {
+      const scope = authority.createScope('test-scope');
+      const listener = vi.fn();
+
+      scope.subscribe(listener);
+      expect(authority.getListenerCount()).toBe(1);
+
+      // Dispose should remove listener
+      scope.dispose();
+      expect(authority.getListenerCount()).toBe(0);
+    });
+
+    it('scope should delegate getBPM() to authority', () => {
+      const exercise: Exercise = {
+        bpm: 95,
+        timeSignature: { numerator: 4, denominator: 4 },
+      };
+      authority.setFromExercise(exercise);
+
+      const scope = authority.createScope();
+
+      expect(scope.getBPM()).toBe(95);
+    });
+
+    it('scope should delegate getTimeSignature() to authority', () => {
+      const exercise: Exercise = {
+        bpm: 120,
+        timeSignature: { numerator: 3, denominator: 4 },
+      };
+      authority.setFromExercise(exercise);
+
+      const scope = authority.createScope();
+
+      expect(scope.getTimeSignature()).toEqual({
+        numerator: 3,
+        denominator: 4,
+      });
+    });
+
+    it('scope should delegate time conversion methods', () => {
+      const exercise: Exercise = {
+        bpm: 120, // 2 beats per second
+        timeSignature: { numerator: 4, denominator: 4 },
+      };
+      authority.setFromExercise(exercise);
+
+      const scope = authority.createScope();
+
+      expect(scope.secondsToBeats(1)).toBe(2);
+      expect(scope.beatsToSeconds(2)).toBe(1);
+    });
+
+    it('disposed scope should not add new subscriptions', () => {
+      const scope = authority.createScope();
+      scope.dispose();
+
+      const listener = vi.fn();
+      scope.subscribe(listener);
+
+      const exercise: Exercise = {
+        bpm: 120,
+        timeSignature: { numerator: 4, denominator: 4 },
+      };
+      authority.setFromExercise(exercise);
+
+      expect(listener).not.toHaveBeenCalled();
+    });
+  });
+
+  // ============================================================================
+  // Complete Flow Tests (Integration-style)
+  // ============================================================================
+
+  describe('Complete User Flow', () => {
+    it('should handle full tempo modification lifecycle', () => {
+      const exercise: Exercise = {
+        bpm: 69,
+        timeSignature: { numerator: 4, denominator: 4 },
+        total_bars: 8,
+      };
+
+      // 1. Initial exercise load
+      authority.setFromExercise(exercise);
+      expect(authority.getBPM()).toBe(69);
+      expect(authority.hasUserModifiedTempo()).toBe(false);
+      expect(authority.getOriginalExerciseBpm()).toBe(69);
+
+      // 2. User modifies tempo via slider
+      authority.setBPM(100);
+      expect(authority.getBPM()).toBe(100);
+      expect(authority.hasUserModifiedTempo()).toBe(true);
+      expect(authority.getOriginalExerciseBpm()).toBe(69);
+
+      // 3. User clicks Play again (same exercise)
+      authority.setFromExercise(exercise);
+      expect(authority.getBPM()).toBe(100); // Preserved!
+      expect(authority.hasUserModifiedTempo()).toBe(true);
+
+      // 4. User selects different exercise
+      authority.resetUserModifiedTempo();
+      const exercise2: Exercise = {
+        bpm: 120,
+        timeSignature: { numerator: 4, denominator: 4 },
+        total_bars: 4,
+      };
+      authority.setFromExercise(exercise2);
+      expect(authority.getBPM()).toBe(120); // New exercise tempo
+      expect(authority.hasUserModifiedTempo()).toBe(false);
+      expect(authority.getOriginalExerciseBpm()).toBe(120);
+    });
+
+    it('should maintain Tone.Transport sync throughout lifecycle', () => {
+      const exercise: Exercise = {
+        bpm: 69,
+        timeSignature: { numerator: 4, denominator: 4 },
+      };
+
+      // 1. Load exercise
+      authority.setFromExercise(exercise);
+      expect(Tone.Transport.bpm.value).toBe(69);
+
+      // 2. User changes tempo
+      authority.setBPM(100);
+      expect(Tone.Transport.bpm.value).toBe(100);
+
+      // 3. Replay with preserved tempo
+      authority.setFromExercise(exercise, { preserveBPM: true });
+      expect(Tone.Transport.bpm.value).toBe(100);
+
+      // 4. Reset and load new exercise
+      authority.resetUserModifiedTempo();
+      const exercise2: Exercise = {
+        bpm: 120,
+        timeSignature: { numerator: 4, denominator: 4 },
+      };
+      authority.setFromExercise(exercise2);
+      expect(Tone.Transport.bpm.value).toBe(120);
     });
   });
 });

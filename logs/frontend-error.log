@@ -1,105 +1,49 @@
-2025-12-12 00:36:05 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 00:46:13 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 00:54:59 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 00:55:17 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 00:55:38 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 00:56:30 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 00:56:50 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 00:57:07 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 08:45:02 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 08:45:25 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 08:46:01 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 08:46:25 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 09:55:06 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 11:46:28 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 11:50:44 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 12:02:35 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 12:02:47 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 12:02:53 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 12:03:11 +01:00:  [31m[1m⨯[22m[39m ./src/domains/playback/modules/audio-engine/processors/ParametricEQ.ts:16:1
-2025-12-12 12:03:11 +01:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../../../shared/index.js[39m'
-2025-12-12 12:03:11 +01:00:   14 |  */
-2025-12-12 12:03:11 +01:00:   15 |
-2025-12-12 12:03:11 +01:00: > 16 | import { createStructuredLogger } from '../../../shared/index.js';
-2025-12-12 12:03:11 +01:00:      | ^
-2025-12-12 12:03:11 +01:00:   17 |
-2025-12-12 12:03:11 +01:00:   18 | const logger = createStructuredLogger('ParametricEQ');
-2025-12-12 12:03:11 +01:00:   19 |
-2025-12-12 12:03:11 +01:00: https://nextjs.org/docs/messages/module-not-found
-2025-12-12 12:03:11 +01:00: Import trace for requested module:
-2025-12-12 12:03:11 +01:00: ./src/domains/playback/modules/instruments/implementations/harmony/GrandPianoVelocitySampler.ts
-2025-12-12 12:03:11 +01:00: ./src/domains/playback/modules/instruments/adapters/wam/WamKeyboard.ts
-2025-12-12 12:03:11 +01:00: ./src/domains/playback/modules/instruments/adapters/wam/WamKeyboardPlugin.ts
-2025-12-12 12:03:11 +01:00: ./src/domains/playback/services/core/PluginManager.ts
-2025-12-12 12:03:11 +01:00: ./src/domains/playback/services/core/index.ts
-2025-12-12 12:03:11 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
-2025-12-12 12:13:47 +01:00:  [31m[1m⨯[22m[39m ./src/domains/playback/modules/audio-engine/processors/ParametricEQ.ts:16:1
-2025-12-12 12:13:47 +01:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../../../shared/index.js[39m'
-2025-12-12 12:13:47 +01:00:   14 |  */
-2025-12-12 12:13:47 +01:00:   15 |
-2025-12-12 12:13:47 +01:00: > 16 | import { createStructuredLogger } from '../../../shared/index.js';
-2025-12-12 12:13:47 +01:00:      | ^
-2025-12-12 12:13:47 +01:00:   17 |
-2025-12-12 12:13:47 +01:00:   18 | const logger = createStructuredLogger('ParametricEQ');
-2025-12-12 12:13:47 +01:00:   19 |
-2025-12-12 12:13:47 +01:00: https://nextjs.org/docs/messages/module-not-found
-2025-12-12 12:13:47 +01:00: Import trace for requested module:
-2025-12-12 12:13:47 +01:00: ./src/domains/playback/modules/instruments/implementations/harmony/GrandPianoVelocitySampler.ts
-2025-12-12 12:13:47 +01:00: ./src/domains/playback/modules/instruments/adapters/wam/WamKeyboard.ts
-2025-12-12 12:13:47 +01:00: ./src/domains/playback/modules/instruments/adapters/wam/WamKeyboardPlugin.ts
-2025-12-12 12:13:47 +01:00: ./src/domains/playback/services/core/PluginManager.ts
-2025-12-12 12:13:47 +01:00: ./src/domains/playback/services/core/index.ts
-2025-12-12 12:13:47 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
-2025-12-12 12:15:21 +01:00:  [31m[1m⨯[22m[39m ./src/domains/playback/modules/audio-engine/processors/ParametricEQ.ts:16:1
-2025-12-12 12:15:21 +01:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../../../shared/index.js[39m'
-2025-12-12 12:15:21 +01:00:   14 |  */
-2025-12-12 12:15:21 +01:00:   15 |
-2025-12-12 12:15:21 +01:00: > 16 | import { createStructuredLogger } from '../../../shared/index.js';
-2025-12-12 12:15:21 +01:00:      | ^
-2025-12-12 12:15:21 +01:00:   17 |
-2025-12-12 12:15:21 +01:00:   18 | const logger = createStructuredLogger('ParametricEQ');
-2025-12-12 12:15:21 +01:00:   19 |
-2025-12-12 12:15:21 +01:00: https://nextjs.org/docs/messages/module-not-found
-2025-12-12 12:15:21 +01:00: Import trace for requested module:
-2025-12-12 12:15:21 +01:00: ./src/domains/playback/modules/instruments/implementations/harmony/GrandPianoVelocitySampler.ts
-2025-12-12 12:15:21 +01:00: ./src/domains/playback/modules/instruments/adapters/wam/WamKeyboard.ts
-2025-12-12 12:15:21 +01:00: ./src/domains/playback/modules/instruments/adapters/wam/WamKeyboardPlugin.ts
-2025-12-12 12:15:21 +01:00: ./src/domains/playback/services/core/PluginManager.ts
-2025-12-12 12:15:21 +01:00: ./src/domains/playback/services/core/index.ts
-2025-12-12 12:15:21 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
-2025-12-12 12:36:11 +01:00:  [31m[1m⨯[22m[39m ./src/domains/playback/modules/audio-engine/processors/ParametricEQ.ts:16:1
-2025-12-12 12:36:11 +01:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../../../shared/index.js[39m'
-2025-12-12 12:36:11 +01:00:   14 |  */
-2025-12-12 12:36:11 +01:00:   15 |
-2025-12-12 12:36:11 +01:00: > 16 | import { createStructuredLogger } from '../../../shared/index.js';
-2025-12-12 12:36:11 +01:00:      | ^
-2025-12-12 12:36:11 +01:00:   17 |
-2025-12-12 12:36:11 +01:00:   18 | const logger = createStructuredLogger('ParametricEQ');
-2025-12-12 12:36:11 +01:00:   19 |
-2025-12-12 12:36:11 +01:00: https://nextjs.org/docs/messages/module-not-found
-2025-12-12 12:36:11 +01:00: Import trace for requested module:
-2025-12-12 12:36:11 +01:00: ./src/domains/playback/modules/instruments/implementations/harmony/GrandPianoVelocitySampler.ts
-2025-12-12 12:36:11 +01:00: ./src/domains/playback/modules/instruments/adapters/wam/WamKeyboard.ts
-2025-12-12 12:36:11 +01:00: ./src/domains/playback/modules/instruments/adapters/wam/WamKeyboardPlugin.ts
-2025-12-12 12:36:11 +01:00: ./src/domains/playback/services/core/PluginManager.ts
-2025-12-12 12:36:11 +01:00: ./src/domains/playback/services/core/index.ts
-2025-12-12 12:36:11 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
-2025-12-12 12:37:00 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 12:37:06 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 12:37:25 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 12:40:47 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 12:41:00 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 12:42:59 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 12:43:17 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 12:43:24 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 12:43:36 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 12:43:46 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 12:46:18 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 12:46:26 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 12:46:39 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 12:46:58 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 12:47:10 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 12:49:24 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 12:49:34 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 12:49:48 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-12 17:05:47 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 00:23:33 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 00:35:10 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 00:36:21 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 00:46:18 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 00:56:17 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 00:57:44 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 00:58:16 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 00:58:33 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 01:04:43 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 01:05:52 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 01:06:45 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 01:07:00 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 01:10:58 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 01:11:04 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 01:11:16 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 01:11:23 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 01:11:32 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 01:11:38 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 01:16:48 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 01:17:10 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 01:17:27 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 01:17:43 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 01:18:06 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 01:18:22 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 01:18:43 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 01:18:55 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 01:19:03 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 01:21:56 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 01:22:26 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 01:22:50 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 01:22:59 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 01:23:21 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 09:22:10 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 09:23:03 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 09:29:25 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 09:30:39 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 09:30:54 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 09:31:17 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 12:51:42 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 13:04:44 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 17:34:51 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 17:35:11 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 18:05:34 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 18:23:35 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 18:31:13 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 19:09:39 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 19:12:02 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 19:13:10 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-20 19:41:06 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload

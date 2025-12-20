@@ -128,3 +128,61 @@
     display: none;
   }
 }
+
+/* ===== UI ZONE SYSTEM ===== */
+/* Multi-UI library support with CSS containment for isolation */
+
+@layer components {
+  /* Zone container - prevents style bleeding between UI libraries */
+  .ui-zone {
+    /* CSS containment prevents style leakage */
+    contain: layout style;
+    isolation: isolate;
+
+    /* Ensure zone fills the viewport for background to show */
+    min-height: 100vh;
+
+    /* Default theme variables (overridden by ThemeInjector) */
+    --theme-primary-h: 270;
+    --theme-primary-s: 70%;
+    --theme-primary-l: 55%;
+    --theme-secondary-h: 230;
+    --theme-secondary-s: 80%;
+    --theme-secondary-l: 65%;
+    --theme-accent-h: 35;
+    --theme-accent-s: 90%;
+    --theme-accent-l: 55%;
+  }
+
+  /* Zone card - base styling for cards within zones */
+  .zone-card {
+    @apply rounded-xl border transition-all duration-200;
+  }
+
+  /* Library-specific zone styling */
+  .ui-zone[data-library='shadcn'] {
+    /* Use existing shadcn variables */
+  }
+
+  .ui-zone[data-library='nextui'] {
+    /* NextUI-specific overrides */
+    --ui-radius: 14px;
+  }
+
+  .ui-zone[data-library='daisyui'] {
+    /* DaisyUI-specific overrides */
+    --ui-radius: 0.5rem;
+  }
+
+  .ui-zone[data-library='mantine'] {
+    /* Mantine-specific overrides */
+    --ui-radius: 0.75rem;
+  }
+}
+
+/* Import effect styles */
+@import './effects/glass.css';
+@import './effects/neumorphic.css';
+@import './effects/gradient.css';
+@import './effects/backgrounds.css';
+@import './effects/skeleton.css';

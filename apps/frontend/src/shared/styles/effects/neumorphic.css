@@ -1,0 +1,228 @@
+/**
+ * Neumorphism Effect Styles
+ *
+ * Provides soft UI / neumorphic design effects with customizable
+ * colors and intensities.
+ *
+ * Applied when data-effect="neumorphic" is set on the ui-zone.
+ * Color controlled by data-neuro-color attribute.
+ * Intensity controlled by data-neuro-intensity attribute.
+ */
+
+/* ===== NEUMORPHIC COLOR VARIABLES ===== */
+/* Neutral (default) */
+.ui-zone[data-effect='neumorphic'][data-neuro-color='neutral'] {
+  --neuro-base-h: 220;
+  --neuro-base-s: 10%;
+  --neuro-base-l: 12%;
+  --neuro-light-l: 18%;
+  --neuro-dark-l: 6%;
+}
+
+/* Purple */
+.ui-zone[data-effect='neumorphic'][data-neuro-color='purple'] {
+  --neuro-base-h: 270;
+  --neuro-base-s: 15%;
+  --neuro-base-l: 12%;
+  --neuro-light-l: 20%;
+  --neuro-dark-l: 5%;
+}
+
+/* Blue */
+.ui-zone[data-effect='neumorphic'][data-neuro-color='blue'] {
+  --neuro-base-h: 220;
+  --neuro-base-s: 20%;
+  --neuro-base-l: 12%;
+  --neuro-light-l: 20%;
+  --neuro-dark-l: 5%;
+}
+
+/* Emerald */
+.ui-zone[data-effect='neumorphic'][data-neuro-color='emerald'] {
+  --neuro-base-h: 160;
+  --neuro-base-s: 15%;
+  --neuro-base-l: 11%;
+  --neuro-light-l: 18%;
+  --neuro-dark-l: 5%;
+}
+
+/* Amber */
+.ui-zone[data-effect='neumorphic'][data-neuro-color='amber'] {
+  --neuro-base-h: 35;
+  --neuro-base-s: 18%;
+  --neuro-base-l: 12%;
+  --neuro-light-l: 20%;
+  --neuro-dark-l: 5%;
+}
+
+/* Rose */
+.ui-zone[data-effect='neumorphic'][data-neuro-color='rose'] {
+  --neuro-base-h: 350;
+  --neuro-base-s: 18%;
+  --neuro-base-l: 12%;
+  --neuro-light-l: 20%;
+  --neuro-dark-l: 5%;
+}
+
+/* ===== INTENSITY VARIABLES ===== */
+/* Subtle */
+.ui-zone[data-effect='neumorphic'][data-neuro-intensity='subtle'] {
+  --neuro-shadow-size: 4px;
+  --neuro-shadow-blur: 8px;
+  --neuro-inset-size: 2px;
+  --neuro-inset-blur: 4px;
+}
+
+/* Medium (default) */
+.ui-zone[data-effect='neumorphic'][data-neuro-intensity='medium'] {
+  --neuro-shadow-size: 8px;
+  --neuro-shadow-blur: 16px;
+  --neuro-inset-size: 4px;
+  --neuro-inset-blur: 8px;
+}
+
+/* Strong */
+.ui-zone[data-effect='neumorphic'][data-neuro-intensity='strong'] {
+  --neuro-shadow-size: 12px;
+  --neuro-shadow-blur: 24px;
+  --neuro-inset-size: 6px;
+  --neuro-inset-blur: 12px;
+}
+
+/* ===== BASE NEUMORPHIC STYLES ===== */
+/* Neumorphic effect for zone cards */
+.ui-zone[data-effect='neumorphic'] .zone-card {
+  background: hsl(var(--neuro-base-h) var(--neuro-base-s) var(--neuro-base-l));
+  border: none;
+  box-shadow:
+    var(--neuro-shadow-size) var(--neuro-shadow-size) var(--neuro-shadow-blur) hsl(var(--neuro-base-h) calc(var(--neuro-base-s) + 5%) var(--neuro-dark-l)),
+    calc(var(--neuro-shadow-size) * -1) calc(var(--neuro-shadow-size) * -1) var(--neuro-shadow-blur) hsl(var(--neuro-base-h) var(--neuro-base-s) var(--neuro-light-l));
+  border-radius: 1rem;
+}
+
+/* Neumorphic inset (pressed) variant */
+.ui-zone[data-effect='neumorphic'] .zone-card--inset,
+.ui-zone[data-effect='neumorphic'] .zone-card.inset {
+  box-shadow:
+    inset var(--neuro-inset-size) var(--neuro-inset-size) var(--neuro-inset-blur) hsl(var(--neuro-base-h) calc(var(--neuro-base-s) + 5%) var(--neuro-dark-l)),
+    inset calc(var(--neuro-inset-size) * -1) calc(var(--neuro-inset-size) * -1) var(--neuro-inset-blur) hsl(var(--neuro-base-h) var(--neuro-base-s) var(--neuro-light-l));
+}
+
+/* Neumorphic button */
+.ui-zone[data-effect='neumorphic'] .zone-button {
+  background: hsl(var(--neuro-base-h) var(--neuro-base-s) var(--neuro-base-l));
+  border: none;
+  box-shadow:
+    calc(var(--neuro-shadow-size) / 2) calc(var(--neuro-shadow-size) / 2) var(--neuro-shadow-blur) hsl(var(--neuro-base-h) calc(var(--neuro-base-s) + 5%) var(--neuro-dark-l)),
+    calc(var(--neuro-shadow-size) / -2) calc(var(--neuro-shadow-size) / -2) var(--neuro-shadow-blur) hsl(var(--neuro-base-h) var(--neuro-base-s) var(--neuro-light-l));
+  border-radius: 0.75rem;
+  transition: all 0.15s ease;
+}
+
+.ui-zone[data-effect='neumorphic'] .zone-button:hover {
+  box-shadow:
+    calc(var(--neuro-shadow-size) * 0.75) calc(var(--neuro-shadow-size) * 0.75) calc(var(--neuro-shadow-blur) * 1.2) hsl(var(--neuro-base-h) calc(var(--neuro-base-s) + 5%) calc(var(--neuro-dark-l) - 1%)),
+    calc(var(--neuro-shadow-size) * -0.75) calc(var(--neuro-shadow-size) * -0.75) calc(var(--neuro-shadow-blur) * 1.2) hsl(var(--neuro-base-h) var(--neuro-base-s) calc(var(--neuro-light-l) + 2%));
+}
+
+.ui-zone[data-effect='neumorphic'] .zone-button:active {
+  box-shadow:
+    inset calc(var(--neuro-inset-size) / 2) calc(var(--neuro-inset-size) / 2) var(--neuro-inset-blur) hsl(var(--neuro-base-h) calc(var(--neuro-base-s) + 5%) var(--neuro-dark-l)),
+    inset calc(var(--neuro-inset-size) / -2) calc(var(--neuro-inset-size) / -2) var(--neuro-inset-blur) hsl(var(--neuro-base-h) var(--neuro-base-s) var(--neuro-light-l));
+}
+
+/* Neumorphic input field */
+.ui-zone[data-effect='neumorphic'] .zone-input {
+  background: hsl(var(--neuro-base-h) var(--neuro-base-s) var(--neuro-base-l));
+  border: none;
+  box-shadow:
+    inset calc(var(--neuro-inset-size) / 2) calc(var(--neuro-inset-size) / 2) calc(var(--neuro-inset-blur) * 0.6) hsl(var(--neuro-base-h) calc(var(--neuro-base-s) + 5%) var(--neuro-dark-l)),
+    inset calc(var(--neuro-inset-size) / -2) calc(var(--neuro-inset-size) / -2) calc(var(--neuro-inset-blur) * 0.6) hsl(var(--neuro-base-h) var(--neuro-base-s) var(--neuro-light-l));
+  border-radius: 0.5rem;
+}
+
+/* Neumorphic slider track */
+.ui-zone[data-effect='neumorphic'] .zone-slider-track {
+  background: hsl(var(--neuro-base-h) var(--neuro-base-s) var(--neuro-base-l));
+  box-shadow:
+    inset calc(var(--neuro-inset-size) / 2) calc(var(--neuro-inset-size) / 2) var(--neuro-inset-blur) hsl(var(--neuro-base-h) calc(var(--neuro-base-s) + 5%) var(--neuro-dark-l)),
+    inset calc(var(--neuro-inset-size) / -2) calc(var(--neuro-inset-size) / -2) var(--neuro-inset-blur) hsl(var(--neuro-base-h) var(--neuro-base-s) var(--neuro-light-l));
+  border-radius: 9999px;
+}
+
+/* Neumorphic slider thumb */
+.ui-zone[data-effect='neumorphic'] .zone-slider-thumb {
+  background: hsl(var(--neuro-base-h) var(--neuro-base-s) calc(var(--neuro-base-l) + 2%));
+  box-shadow:
+    calc(var(--neuro-shadow-size) / 3) calc(var(--neuro-shadow-size) / 3) calc(var(--neuro-shadow-blur) / 2) hsl(var(--neuro-base-h) calc(var(--neuro-base-s) + 5%) var(--neuro-dark-l)),
+    calc(var(--neuro-shadow-size) / -3) calc(var(--neuro-shadow-size) / -3) calc(var(--neuro-shadow-blur) / 2) hsl(var(--neuro-base-h) var(--neuro-base-s) calc(var(--neuro-light-l) + 4%));
+  border-radius: 50%;
+}
+
+/* ===== CIRCULAR NEUMORPHIC ELEMENTS ===== */
+.ui-zone[data-effect='neumorphic'] .neu-circle {
+  background: hsl(var(--neuro-base-h) var(--neuro-base-s) var(--neuro-base-l));
+  border-radius: 50%;
+  box-shadow:
+    calc(var(--neuro-shadow-size) / 2) calc(var(--neuro-shadow-size) / 2) var(--neuro-shadow-blur) hsl(var(--neuro-base-h) calc(var(--neuro-base-s) + 5%) var(--neuro-dark-l)),
+    calc(var(--neuro-shadow-size) / -2) calc(var(--neuro-shadow-size) / -2) var(--neuro-shadow-blur) hsl(var(--neuro-base-h) var(--neuro-base-s) var(--neuro-light-l));
+}
+
+.ui-zone[data-effect='neumorphic'] .neu-circle--inset {
+  box-shadow:
+    inset calc(var(--neuro-inset-size) * 0.75) calc(var(--neuro-inset-size) * 0.75) var(--neuro-inset-blur) hsl(var(--neuro-base-h) calc(var(--neuro-base-s) + 5%) var(--neuro-dark-l)),
+    inset calc(var(--neuro-inset-size) * -0.75) calc(var(--neuro-inset-size) * -0.75) var(--neuro-inset-blur) hsl(var(--neuro-base-h) var(--neuro-base-s) var(--neuro-light-l));
+}
+
+/* ===== CONVEX/CONCAVE VARIANTS ===== */
+/* Convex - raised appearance */
+.ui-zone[data-effect='neumorphic'] .zone-card--convex {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--neuro-base-h) var(--neuro-base-s) calc(var(--neuro-base-l) + 3%)),
+    hsl(var(--neuro-base-h) var(--neuro-base-s) calc(var(--neuro-base-l) - 2%))
+  );
+}
+
+/* Concave - sunken appearance */
+.ui-zone[data-effect='neumorphic'] .zone-card--concave {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--neuro-base-h) var(--neuro-base-s) calc(var(--neuro-base-l) - 2%)),
+    hsl(var(--neuro-base-h) var(--neuro-base-s) calc(var(--neuro-base-l) + 3%))
+  );
+}
+
+/* ===== FLAT NEUMORPHIC ===== */
+/* Flat with subtle shadow */
+.ui-zone[data-effect='neumorphic'] .zone-card--flat {
+  box-shadow:
+    calc(var(--neuro-shadow-size) / 2) calc(var(--neuro-shadow-size) / 2) calc(var(--neuro-shadow-blur) * 0.6) hsl(var(--neuro-base-h) calc(var(--neuro-base-s) + 5%) var(--neuro-dark-l) / 0.5),
+    calc(var(--neuro-shadow-size) / -2) calc(var(--neuro-shadow-size) / -2) calc(var(--neuro-shadow-blur) * 0.6) hsl(var(--neuro-base-h) var(--neuro-base-s) var(--neuro-light-l) / 0.5);
+}
+
+/* ===== ACCENT GLOW ===== */
+/* Add a colored glow based on neuro color */
+.ui-zone[data-effect='neumorphic'] .zone-card--glow {
+  box-shadow:
+    var(--neuro-shadow-size) var(--neuro-shadow-size) var(--neuro-shadow-blur) hsl(var(--neuro-base-h) calc(var(--neuro-base-s) + 5%) var(--neuro-dark-l)),
+    calc(var(--neuro-shadow-size) * -1) calc(var(--neuro-shadow-size) * -1) var(--neuro-shadow-blur) hsl(var(--neuro-base-h) var(--neuro-base-s) var(--neuro-light-l)),
+    0 0 calc(var(--neuro-shadow-blur) * 1.5) hsl(var(--neuro-base-h) 50% 40% / 0.3);
+}
+
+/* ===== LEGACY FALLBACK ===== */
+/* Fallback for when neuro variables aren't set */
+.ui-zone[data-effect='neumorphic']:not([data-neuro-color]) {
+  --neuro-base-h: 220;
+  --neuro-base-s: 10%;
+  --neuro-base-l: 12%;
+  --neuro-light-l: 18%;
+  --neuro-dark-l: 6%;
+}
+
+.ui-zone[data-effect='neumorphic']:not([data-neuro-intensity]) {
+  --neuro-shadow-size: 8px;
+  --neuro-shadow-blur: 16px;
+  --neuro-inset-size: 4px;
+  --neuro-inset-blur: 8px;
+}

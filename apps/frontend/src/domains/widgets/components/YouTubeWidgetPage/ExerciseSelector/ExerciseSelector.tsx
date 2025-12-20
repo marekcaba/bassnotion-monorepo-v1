@@ -17,8 +17,12 @@ import {
 } from 'lucide-react';
 import { getSamplePreloader } from '@/domains/playback/services/InitialSamplePreloader.bridge';
 import { getLogger } from '@/utils/logger.js';
+import { logSkeletonDebug } from '@/utils/skeletonDebug';
 
 const logger = getLogger('exercise-selector');
+
+// SKELETON-DEBUG: Component mount tracking
+let exerciseSelectorRenderCount = 0;
 
 interface ExerciseSelectorProps {
   exercises: any[];
@@ -35,6 +39,12 @@ export function ExerciseSelector({
   loading = false,
   error = null,
 }: ExerciseSelectorProps) {
+  exerciseSelectorRenderCount++;
+  logSkeletonDebug('📋', 'ExerciseSelector', exerciseSelectorRenderCount, {
+    exerciseCount: exercises?.length ?? 0,
+    selectedExerciseId,
+  });
+
   const [hoveredExerciseId, setHoveredExerciseId] = useState<string | null>(
     null,
   );
@@ -321,21 +331,26 @@ export function ExerciseSelector({
             exercises
               .filter((exercise) => exercise?.id && exercise?.title)
               .map((exercise, index) => {
-                const isSelected = selectedExerciseId === exercise.id;
-                const isHovered = hoveredExerciseId === exercise.id;
+                // Handle both string IDs and ExerciseId objects
+                const exerciseIdStr =
+                  typeof exercise.id === 'object' && exercise.id !== null
+                    ? (exercise.id as any).value
+                    : exercise.id;
+                const isSelected = selectedExerciseId === exerciseIdStr;
+                const isHovered = hoveredExerciseId === exerciseIdStr;
                 const difficultyConfig = getDifficultyConfig(
                   exercise.difficulty,
                 );
 
                 return (
                   <div
-                    key={exercise.id}
+                    key={exerciseIdStr}
                     className={`
                     relative group cursor-pointer transition-all duration-500 transform
                     ${isSelected ? 'scale-[0.99]' : 'scale-100 hover:scale-[1.01]'}
                   `}
-                    onClick={() => onExerciseSelect(exercise.id)}
-                    onMouseEnter={() => setHoveredExerciseId(exercise.id)}
+                    onClick={() => onExerciseSelect(exerciseIdStr)}
+                    onMouseEnter={() => setHoveredExerciseId(exerciseIdStr)}
                     onMouseLeave={() => setHoveredExerciseId(null)}
                   >
                     {/* Exercise Card */}
@@ -469,6 +484,66 @@ export function ExerciseSelector({
               })}
         </div>
       </CardContent>
+    </Card>
+  );
+}
+
+/**
+ * Skeleton loading state for ExerciseSelector
+ * Shows 3 exercise card placeholders with shimmer effect
+ */
+export function ExerciseSelectorSkeleton() {
+  return (
+    <Card className="w-full bg-gradient-to-br from-slate-800/70 to-slate-900/70 backdrop-blur-xl shadow-[10px_10px_30px_rgba(0,0,0,0.7),-10px_-10px_30px_rgba(255,255,255,0.05)] rounded-3xl border border-slate-700/40 overflow-hidden">
+      <CardHeader className="relative bg-gradient-to-r from-slate-800/95 via-slate-800/85 to-slate-900/95 p-6 border-b border-slate-700/40">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            {/* Icon Container Skeleton */}
+            <div className="relative p-4 rounded-2xl bg-slate-700/70">
+              <div className="skeleton-shimmer w-7 h-7 rounded" />
+            </div>
+            <div>
+              <div className="skeleton-shimmer h-7 w-40 rounded mb-2" />
+              <div className="skeleton-shimmer h-4 w-56 rounded" />
+            </div>
+          </div>
+          {/* Stats Badge Skeleton */}
+          <div className="skeleton-shimmer px-4 py-2.5 rounded-2xl w-28 h-10" />
+        </div>
+      </CardHeader>
+
+      <CardContent className="p-6 bg-gradient-to-b from-slate-800/40 to-slate-900/60">
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className={`p-5 rounded-2xl bg-slate-700/50 border border-slate-600/30 skeleton-delay-${i}`}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 space-y-3">
+                  {/* Title row */}
+                  <div className="flex items-center gap-3">
+                    <div className="skeleton-shimmer w-10 h-10 rounded-xl" />
+                    <div className="skeleton-shimmer h-5 flex-1 max-w-[200px] rounded" />
+                  </div>
+                  {/* Info row */}
+                  <div className="flex items-center gap-6">
+                    <div className="skeleton-shimmer w-20 h-4 rounded" />
+                    <div className="skeleton-shimmer w-20 h-4 rounded" />
+                    <div className="skeleton-shimmer w-20 h-4 rounded" />
+                  </div>
+                </div>
+                {/* Right side */}
+                <div className="flex items-center gap-3">
+                  <div className="skeleton-shimmer w-24 h-8 rounded-xl" />
+                  <div className="skeleton-shimmer w-10 h-10 rounded-xl" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+      <span className="sr-only">Loading exercises...</span>
     </Card>
   );
 }

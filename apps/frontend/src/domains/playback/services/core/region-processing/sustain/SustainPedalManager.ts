@@ -13,8 +13,19 @@
  * exactly match note scheduling times.
  */
 
-import * as Tone from 'tone';
 import type { Region } from '../types/region.types.js';
+
+// Helper to get Tone from window (must be initialized before SustainPedalManager is used)
+function getTone(): any {
+  if (typeof window !== 'undefined') {
+    // Check both locations where Tone.js may be stored
+    const tone = (window as any).Tone || (window as any).__globalTone;
+    if (tone) {
+      return tone;
+    }
+  }
+  throw new Error('SustainPedalManager: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+}
 
 export class SustainPedalManager {
   // Timeline builder state
@@ -89,6 +100,7 @@ export class SustainPedalManager {
    */
   buildTimeline(events: any[], region: Region): Map<number, boolean> {
     const cc64Timeline = new Map<number, boolean>();
+    const Tone = getTone();
 
     let eventIndex = 0;
     events.forEach((event) => {

@@ -374,8 +374,15 @@ export class ExerciseLoader {
         trackId,
         name: `${exercise.title} - ${trackId}`,
         startPosition: { bars: 0, beats: 0, sixteenths: 0, ticks: 0 },
-        length: { bars: 0, beats: 0, sixteenths: 0, ticks: 0 },
-        events: [],
+        duration: { bars: 0, beats: 0, sixteenths: 0, ticks: 0 },
+        loopCount: 1,
+        muted: false,
+        pattern: {
+          id: `pattern-${trackId}-${Date.now()}`,
+          name: `${exercise.title} - ${trackId} Pattern`,
+          type: trackId === 'drums' ? 'drum' : 'midi',
+          events: [],
+        },
         color: this.getColorForTrack(trackId),
       };
     }
@@ -398,17 +405,106 @@ export class ExerciseLoader {
       exercise.bpm,
     );
 
+    // Convert MIDI events to pattern events format expected by RegionScheduler
+    const patternEvents = events.map((e) => {
+      // Calculate position as string for Tone.js format: "bars:beats:sixteenths"
+      // - bars: 0-based measure number
+      // - beats: 0-3 (beat within the measure for 4/4 time)
+      // - sixteenths: 0-3 (sixteenth note subdivision within the beat)
+      const normalizedTime = e.time - startTime;
+      const beatsPerSecond = exercise.bpm / 60;
+      const totalBeats = normalizedTime * beatsPerSecond;
+
+      // Use integer math to avoid floating point issues
+      // Round to nearest 16th note for precision
+      const totalSixteenths = Math.round(totalBeats * 4);
+      const beatsPerBar = 4; // Assuming 4/4 time
+      const sixteenthsPerBar = beatsPerBar * 4; // 16 sixteenths per bar
+
+      const bars = Math.floor(totalSixteenths / sixteenthsPerBar);
+      const sixteenthsInBar = totalSixteenths % sixteenthsPerBar;
+      const beats = Math.floor(sixteenthsInBar / 4);
+      const sixteenths = sixteenthsInBar % 4;
+
+      // Use drumType if available (from loadFromDrumPattern), otherwise fall back to MIDI note mapping
+      const drumType = (e as any).drumType || this.getMidiNoteDrumType(e.note || 36);
+      // Normalize drum type: snare_rimshot -> snare, hihat_closed/hihat_open -> hihat
+      const normalizedDrumType = this.normalizeDrumType(drumType);
+
+      return {
+        position: `${bars}:${beats}:${sixteenths}`,
+        type: normalizedDrumType,
+        drum: normalizedDrumType,
+        velocity: (e.velocity || 100) / 127, // Normalize to 0-1
+        midiNote: e.note,
+      };
+    });
+
+    // Calculate loopCount for drum patterns based on exercise.total_bars
+    // This enables automatic pattern repetition to fill the exercise duration
+    let loopCount = 1; // Default: play pattern once
+    let patternMeasureCount = 1; // Track pattern length for duration calculation
+    const beatsPerBar = exercise.timeSignature?.numerator || 4;
+
+    if (trackId === 'drums' && exercise.total_bars && exercise.total_bars > 0 && events.length > 0) {
+      // Calculate pattern measure span from event times
+      // Find the highest measure number to determine pattern length
+      const maxMeasure = events.reduce((max, e) => {
+        const normalizedTime = e.time - startTime;
+        const beatsPerSecond = exercise.bpm / 60;
+        const totalBeats = normalizedTime * beatsPerSecond;
+        const measure = Math.floor(totalBeats / beatsPerBar);
+        return Math.max(max, measure);
+      }, 0);
+
+      patternMeasureCount = maxMeasure + 1; // Convert 0-based to count
+
+      if (patternMeasureCount > 0) {
+        loopCount = Math.ceil(exercise.total_bars / patternMeasureCount);
+        // eslint-disable-next-line no-console
+        console.log(`[DRUM LOOPING] 🔄 loopCount=${loopCount} (total_bars=${exercise.total_bars}, patternMeasures=${patternMeasureCount})`);
+        logger.info('🔄 Calculated drum pattern loopCount', {
+          exerciseTitle: exercise.title,
+          exerciseTotalBars: exercise.total_bars,
+          patternMeasureCount,
+          loopCount,
+        });
+      }
+    }
+
+    // CRITICAL FIX: For drum patterns with looping, use the full pattern length
+    // (patternMeasures × beatsPerBar) not the last event time.
+    // This ensures loops start at correct bar boundaries, not at the last hit position.
+    let regionDuration = length;
+    if (trackId === 'drums' && loopCount > 1) {
+      // Calculate duration as full bars (patternMeasureCount × beatsPerBar beats)
+      const durationInBeats = patternMeasureCount * beatsPerBar;
+      regionDuration = {
+        bars: patternMeasureCount,
+        beats: 0,
+        sixteenths: 0,
+        ticks: 0,
+      };
+      // eslint-disable-next-line no-console
+      console.log(`[DRUM LOOPING] 🔄 Region duration fixed: ${durationInBeats} beats (${patternMeasureCount} bars × ${beatsPerBar} beats/bar)`);
+    }
+
     return {
       id: `region-${trackId}-${Date.now()}`,
       trackId,
       name: `${exercise.title} - ${trackId}`,
       startPosition,
       startTime: 0, // Start at beat 0 - display offset handles countdown timing
-      length,
-      events: events.map((e) => ({
-        ...e,
-        time: e.time - startTime, // Normalize to region start
-      })),
+      duration: regionDuration, // Use full bar duration for looping patterns
+      loopCount, // Pattern repetition count (default 1, calculated for drums)
+      muted: false, // Required by RegionModel
+      // ✅ FIX: RegionScheduler expects region.pattern.events, not region.events
+      pattern: {
+        id: `pattern-${trackId}-${Date.now()}`,
+        name: `${exercise.title} - ${trackId} Pattern`,
+        type: trackId === 'drums' ? 'drum' : 'midi',
+        events: patternEvents,
+      },
       color: this.getColorForTrack(trackId),
     };
   }
@@ -449,6 +545,70 @@ export class ExerciseLoader {
 
     const trackType = trackId.split('-')[0];
     return colors[trackType] || colors.unknown;
+  }
+
+  /**
+   * Convert MIDI note number to drum type string
+   * Uses General MIDI drum mapping
+   *
+   * IMPORTANT: Buffer keys used by DrumScheduler are simplified:
+   * 'kick', 'snare', 'hihat' - so all hi-hat variants map to 'hihat'
+   */
+  private getMidiNoteDrumType(midiNote: number): string {
+    // General MIDI drum mapping - simplified to match buffer keys
+    // DrumScheduler only has: kick, snare, hihat buffers
+    const drumMap: Record<number, string> = {
+      35: 'kick', // Acoustic Bass Drum
+      36: 'kick', // Bass Drum 1
+      38: 'snare', // Acoustic Snare
+      40: 'snare', // Electric Snare
+      42: 'hihat', // Closed Hi-Hat -> maps to 'hihat' buffer
+      44: 'hihat', // Pedal Hi-Hat -> maps to 'hihat' buffer
+      46: 'hihat', // Open Hi-Hat -> maps to 'hihat' buffer
+      49: 'kick', // Crash Cymbal 1 -> fallback to kick (no crash buffer yet)
+      51: 'hihat', // Ride Cymbal 1 -> fallback to hihat (no ride buffer yet)
+      53: 'hihat', // Ride Bell -> fallback to hihat
+      41: 'kick', // Low Floor Tom -> fallback to kick (no tom buffer yet)
+      43: 'kick', // High Floor Tom -> fallback to kick
+      45: 'snare', // Low Tom -> fallback to snare
+      47: 'snare', // Low-Mid Tom -> fallback to snare
+      48: 'snare', // Hi-Mid Tom -> fallback to snare
+      50: 'snare', // High Tom -> fallback to snare
+    };
+
+    return drumMap[midiNote] || 'kick'; // Default to kick if unknown
+  }
+
+  /**
+   * Normalize drum type from DrumPatternEditor to simplified buffer keys
+   * DrumScheduler only has: 'kick', 'snare', 'hihat' buffers
+   */
+  private normalizeDrumType(drumType: string): string {
+    // Map various drum type names to the 3 available buffer keys
+    const normalizeMap: Record<string, string> = {
+      // Kicks
+      kick: 'kick',
+      bass_drum: 'kick',
+      // Snares
+      snare: 'snare',
+      snare_rimshot: 'snare',
+      rimshot: 'snare',
+      clap: 'snare',
+      // Hi-hats
+      hihat: 'hihat',
+      hihat_closed: 'hihat',
+      hihat_open: 'hihat',
+      hihat_pedal: 'hihat',
+      // Cymbals -> hihat (no separate buffer)
+      crash: 'hihat',
+      ride: 'hihat',
+      // Toms -> kick or snare based on pitch
+      tom_low: 'kick',
+      tom_mid: 'snare',
+      tom_high: 'snare',
+    };
+
+    return normalizeMap[drumType] || 'kick'; // Default to kick if unknown
   }
 
   /**
@@ -598,17 +758,26 @@ export class ExerciseLoader {
       });
 
       // Convert DrumHit[] to MidiEvent[]
-      const midiEvents: MidiEvent[] = drumPattern.map((hit) => {
+      const midiEvents: MidiEvent[] = drumPattern.map((hit, index) => {
         // Calculate absolute time from musical position
-        // CRITICAL FIX: Drum patterns use 1-based measure numbering, convert to 0-based for timing
+        // DrumPatternEditor uses 0-based indexing for measure and beat
         const beatsPerBar = exercise.timeSignature?.numerator || 4;
+        const PPQ = 480; // Pulses per quarter note
+
+        // Use tick-based calculation for precision when available
+        // tick: 0-479 represents position within the beat at 480 PPQ
+        const tickWithinBeat = hit.position.tick ?? (hit.position.subdivision * (PPQ / 4));
+        const fractionalBeat = tickWithinBeat / PPQ;
+
+        // Total beats from start (0-based measure and beat)
         const totalBeats =
-          (hit.position.measure - 1) * beatsPerBar + // Convert 1-based to 0-based measure
+          hit.position.measure * beatsPerBar + // 0-based measure
           hit.position.beat +
-          hit.position.subdivision / 4;
-        const timeInSeconds = (totalBeats / exercise.bpm) * 60;
+          fractionalBeat;
+        const timeInSeconds = totalBeats * (60 / exercise.bpm);
 
         // General MIDI drum channel is 9 (index 9)
+        // CRITICAL: Preserve drum type from DrumHit for proper scheduling
         return {
           type: 'noteOn',
           time: timeInSeconds,
@@ -616,6 +785,7 @@ export class ExerciseLoader {
           note: hit.midiNote,
           velocity: hit.velocity,
           duration: (hit.durationTicks / 480) * (60 / exercise.bpm), // Convert ticks to seconds (480 PPQ)
+          drumType: hit.drum, // Preserve drum type (kick, snare_rimshot, hihat_closed, etc.)
         };
       });
 

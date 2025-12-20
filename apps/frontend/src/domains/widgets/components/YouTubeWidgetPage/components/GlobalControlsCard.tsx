@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Card, CardContent } from '@/shared/components/ui/card';
+import { ZoneCard, ZoneCardContent } from '@/ui-libraries';
 import { GlobalControls } from './GlobalControls';
 
 interface GlobalControlsCardProps {
@@ -83,8 +83,8 @@ export function GlobalControlsCard({
   const duration = calculateDuration(selectedExercise);
 
   return (
-    <Card className="overflow-visible border-0 shadow-none bg-transparent">
-      <CardContent className="p-0 overflow-visible">
+    <ZoneCard className="zone-card overflow-visible border-0 shadow-none bg-transparent">
+      <ZoneCardContent className="p-0 overflow-visible">
         <GlobalControls
           selectedExercise={selectedExercise}
           duration={duration}
@@ -99,7 +99,77 @@ export function GlobalControlsCard({
           isLoopEnabled={isLoopEnabled}
           onPlayStateChange={onPlayStateChange}
         />
-      </CardContent>
-    </Card>
+      </ZoneCardContent>
+    </ZoneCard>
+  );
+}
+
+/**
+ * Skeleton loading state for GlobalControlsCard
+ * Matches the neumorphic design of GlobalControls
+ */
+export function GlobalControlsCardSkeleton() {
+  return (
+    <ZoneCard className="zone-card overflow-visible border-0 shadow-none bg-transparent">
+      <ZoneCardContent className="p-0 overflow-visible">
+        {/* Neumorphic container matching GlobalControls */}
+        <div className="bg-slate-800 rounded-2xl p-4 shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)]">
+          <div className="flex flex-col gap-3">
+            {/* First Row - Mode Button, Playback Controls, View Button */}
+            <div className="flex items-center justify-between">
+              {/* Left - 3D Mode Toggle (w-24 to match actual) */}
+              <div className="flex justify-center items-center py-2 w-24">
+                <div className="skeleton-shimmer w-20 h-10 rounded-xl" />
+              </div>
+
+              {/* Center - Playback Controls */}
+              <div className="flex flex-col items-center justify-center gap-2">
+                {/* Countdown dots placeholder */}
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div
+                      key={i}
+                      className="skeleton-shimmer w-3 h-3 rounded-full"
+                    />
+                  ))}
+                </div>
+                {/* Transport buttons - 5 buttons matching actual layout */}
+                <div className="flex items-center justify-center gap-4">
+                  <div className="skeleton-shimmer w-10 h-10 rounded-full" />
+                  <div className="skeleton-shimmer w-10 h-10 rounded-full" />
+                  <div className="skeleton-shimmer w-[78px] h-[78px] rounded-full" />
+                  <div className="skeleton-shimmer w-10 h-10 rounded-full" />
+                  <div className="skeleton-shimmer w-10 h-10 rounded-full" />
+                </div>
+              </div>
+
+              {/* Right - View Button (w-24 to match actual) */}
+              <div className="flex justify-center items-center py-2 w-24">
+                <div className="skeleton-shimmer w-20 h-10 rounded-xl" />
+              </div>
+            </div>
+          </div>
+
+          {/* Sheet Music Section - matches actual: mt-4 border-t pt-4 */}
+          <div className="mt-4 border-t border-slate-700/30 pt-4">
+            {/* Sheet music display placeholder - 150px height with neumorphic paper style */}
+            <div
+              className="skeleton-shimmer w-full"
+              style={{
+                height: '150px',
+                borderRadius: '28px',
+              }}
+            />
+            {/* SheetPlayerToolbar placeholder - small toolbar below */}
+            <div className="flex items-center justify-center gap-2 mt-3">
+              <div className="skeleton-shimmer w-8 h-8 rounded-lg" />
+              <div className="skeleton-shimmer w-8 h-8 rounded-lg" />
+              <div className="skeleton-shimmer w-8 h-8 rounded-lg" />
+            </div>
+          </div>
+        </div>
+      </ZoneCardContent>
+      <span className="sr-only">Loading playback controls...</span>
+    </ZoneCard>
   );
 }

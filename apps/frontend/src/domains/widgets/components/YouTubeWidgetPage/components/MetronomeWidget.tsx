@@ -10,15 +10,16 @@ import {
 } from '@/domains/playback/utils/ensureAudioContext';
 import { getLogger } from '@/utils/logger.js';
 import type { MusicalPosition } from '@bassnotion/contracts/types/musical-time';
-import { useTransportPosition } from '@/domains/widgets/hooks/useTransportPosition';
+// 🔧 FIX: Removed useTransportPosition - now using RAF-based interpolation directly from TransportContext
 import type {
   MetronomePattern,
   MetronomePatternEvent,
 } from '@/domains/playback/types/pattern';
 import { toMusicalPosition } from '@/domains/playback/types/pattern';
-import { EventBus } from '@/domains/playback/services/core/EventBus';
+// 🔧 FIX: Removed EventBus import - no longer using EventBus subscription for transport state
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
+import { lifecycle } from '@/domains/playback/utils/InitializationLifecycleLogger.js';
 
 // Metronome sound presets
 const MetronomeSound = {
@@ -72,7 +73,9 @@ const MetronomeWidgetComponent = ({
   const [metronomeDots, setMetronomeDots] = useState(initialDots);
   const [volume, setVolume] = useState(80);
   const [isMuted, setIsMuted] = useState(false);
-  const [isTransportPlaying, setIsTransportPlaying] = useState(false);
+  // 🔧 FIX: REMOVED isTransportPlaying local state - now use TransportContext's isPlaying directly
+  // The local state via EventBus was getting out of sync with TransportContext, causing the beat indicator
+  // to continue animating after playback stopped (same issue as DrummerWidget)
   const [isExpanded, setIsExpanded] = useState(false);
   const [beats, setBeats] = useState(timeSignature?.numerator || 4);
   const [noteValue, setNoteValue] = useState(timeSignature?.denominator || 4);
@@ -101,6 +104,11 @@ const MetronomeWidgetComponent = ({
   const currentPatternRef = useRef<any[]>([]);
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const currentRegionRef = useRef<string | null>(null);
+
+  // Lifecycle checkpoint: Widget mounted
+  useEffect(() => {
+    lifecycle.checkpoint('METRONOME_WIDGET_MOUNTED');
+  }, []);
 
   // Check for preloaded metronome on mount
   useEffect(() => {
@@ -139,6 +147,7 @@ const MetronomeWidgetComponent = ({
 
     const loadPluginClass = async () => {
       logger.debug('Loading plugin class...');
+      lifecycle.checkpoint('METRONOME_PLUGIN_LOADING');
 
       try {
         // Dynamic import to avoid SSR issues
@@ -257,11 +266,21 @@ const MetronomeWidgetComponent = ({
         }
 
         if (context && context instanceof AudioContext) {
+          lifecycle.checkpoint('PLUGIN_AUDIOCONTEXT_CHECK', {
+            widget: 'metronome',
+            contextState: context.state,
+          });
+
           // Check if context is running or needs to be resumed
           if (context.state === 'suspended') {
             logger.debug(
               'AudioContext is suspended, waiting for user gesture...',
             );
+            lifecycle.checkpoint('PLUGIN_CREATION_BLOCKED', {
+              widget: 'metronome',
+              reason: 'AudioContext suspended',
+              contextState: context.state,
+            });
             // Don't create the audio node yet, wait for audioContextStarted event
             return;
           }
@@ -277,9 +296,23 @@ const MetronomeWidgetComponent = ({
           const audioNode = await plugin.createAudioNode();
           logger.debug('Created audio node:', audioNode);
 
-          // Connect to destination
-          audioNode.connect(context.destination);
-          logger.debug('Connected to audio destination');
+          // Connect to master bus for proper mixing (with fallback to destination)
+          try {
+            const { Mixer } = await import('@/domains/playback/modules/tracks/mixing/Mixer.js');
+            const mixer = Mixer.getInstance();
+            const masterBusInput = mixer.getMasterBusInputAsAudioNode();
+            if (masterBusInput) {
+              audioNode.connect(masterBusInput);
+              logger.debug('Connected to master bus for mixing');
+            } else {
+              audioNode.connect(context.destination);
+              logger.debug('Connected to destination (master bus not ready)');
+            }
+          } catch (e) {
+            // Fallback to direct destination if mixer not available
+            audioNode.connect(context.destination);
+            logger.debug('Connected to destination (mixer not available)');
+          }
 
           // Store the audio node on the plugin for easy access
           plugin.audioNode = audioNode;
@@ -287,6 +320,7 @@ const MetronomeWidgetComponent = ({
           setWamPluginLoaded(true);
 
           logger.debug('WAM Metronome plugin loaded and connected');
+          lifecycle.checkpoint('METRONOME_PLUGIN_LOADED');
 
           // Register with InstrumentRegistry so AudioEventRouter can use it
           if (globalServices && globalServices.getInstrumentRegistry) {
@@ -329,14 +363,16 @@ const MetronomeWidgetComponent = ({
             if (globalServices && globalServices.getPlaybackEngine) {
               const playbackEngine = globalServices.getPlaybackEngine();
               if (playbackEngine) {
+                // Use consistent track ID 'metronome' to prevent duplicate track registration
+                playbackEngine.unregisterTrack('metronome'); // Remove any existing metronome track first
                 playbackEngine.registerTrack({
-                  id: 'metronome-track',
+                  id: 'metronome',
                   name: 'Metronome',
                   instrumentType: 'metronome',
                   regions: [
                     {
                       id: region.id,
-                      trackId: 'metronome-track',
+                      trackId: 'metronome',
                       startTime: 0,
                       duration: beats * 4, // Convert beats to seconds (assuming 4/4 time)
                       pattern: {
@@ -426,16 +462,16 @@ const MetronomeWidgetComponent = ({
         if (globalServices && globalServices.getPlaybackEngine) {
           const playbackEngine = globalServices.getPlaybackEngine();
           if (playbackEngine) {
-            // Unregister old track, then register new one
-            playbackEngine.unregisterTrack('metronome-track');
+            // Unregister old track, then register new one (use consistent ID 'metronome')
+            playbackEngine.unregisterTrack('metronome');
             playbackEngine.registerTrack({
-              id: 'metronome-track',
+              id: 'metronome',
               name: 'Metronome',
               instrumentType: 'metronome',
               regions: [
                 {
                   id: region.id,
-                  trackId: 'metronome-track',
+                  trackId: 'metronome',
                   startTime: 0,
                   duration: beats * 4,
                   pattern: {
@@ -490,16 +526,16 @@ const MetronomeWidgetComponent = ({
       if (globalServices && globalServices.getPlaybackEngine) {
         const playbackEngine = globalServices.getPlaybackEngine();
         if (playbackEngine) {
-          // Unregister old track, then register new one
-          playbackEngine.unregisterTrack('metronome-track');
+          // Unregister old track, then register new one (use consistent ID 'metronome')
+          playbackEngine.unregisterTrack('metronome');
           playbackEngine.registerTrack({
-            id: 'metronome-track',
+            id: 'metronome',
             name: 'Metronome',
             instrumentType: 'metronome',
             regions: [
               {
                 id: region.id,
-                trackId: 'metronome-track',
+                trackId: 'metronome',
                 startTime: 0,
                 duration: beats * 4,
                 pattern: {
@@ -634,44 +670,9 @@ const MetronomeWidgetComponent = ({
   // NOTE: Pattern trigger events are handled by AudioEventRouter
   // The widget only needs to create patterns and handle visual updates
 
-  // Monitor transport state directly from EventBus
-  useEffect(() => {
-    const coreServices = WindowRegistry.getCoreServices();
-    if (!coreServices || typeof coreServices.getEventBus !== 'function') {
-      return;
-    }
-
-    const eventBus = coreServices.getEventBus();
-    if (!eventBus) {
-      return;
-    }
-
-    const handleTransportStart = () => {
-      componentLogger.debug('Transport started', { correlationId });
-      setIsTransportPlaying(true);
-    };
-
-    const handleTransportStop = () => {
-      componentLogger.debug('Transport stopped', { correlationId });
-      setIsTransportPlaying(false);
-      setMetronomeDots(initialDots);
-    };
-
-    const handleTransportPause = () => {
-      componentLogger.debug('Transport paused', { correlationId });
-      setIsTransportPlaying(false);
-    };
-
-    const unsubStart = eventBus.on('transport:start', handleTransportStart);
-    const unsubStop = eventBus.on('transport:stop', handleTransportStop);
-    const unsubPause = eventBus.on('transport:pause', handleTransportPause);
-
-    return () => {
-      unsubStart();
-      unsubStop();
-      unsubPause();
-    };
-  }, []);
+  // 🔧 FIX: REMOVED EventBus subscription for transport state
+  // Now using TransportContext's isPlaying directly (via useTransportContext() above)
+  // This ensures beat indicator stops immediately when transport stops, without EventBus sync delays
 
   // Cleanup effect to unregister from InstrumentRegistry on unmount
   useEffect(() => {
@@ -694,32 +695,132 @@ const MetronomeWidgetComponent = ({
     };
   }, []);
 
+  // Get isPlaying from TransportContext (same source as TransportClock which works)
+  const { position: transportPosition, isPlaying: isTransportContextPlaying } = transport;
+
+  // 🔧 FIX: Use TransportContext's isPlaying as the AUTHORITATIVE source for beat indicator
+  // The prop (isPlayingProp) indicates user INTENT to play, but TransportContext indicates ACTUAL playback state
+  // When transport stops (auto-complete or manual), TransportContext.isPlaying becomes false immediately
+  // This ensures beat indicator stops even if useWidgetPageState hasn't synced yet
+  //
+  // Previous bug: isPlaying = isPlayingProp || isTransportPlaying (via EventBus)
+  // - When transport stopped, EventBus handler set isTransportPlaying to false
+  // - But isPlayingProp stayed true (useWidgetPageState doesn't sync with transport:stop)
+  // - Result: true || false = true, beat indicator kept animating
+  //
+  // Fix: For beat indicator control, ONLY use TransportContext's isPlaying
+  const isPlaying = isTransportContextPlaying;
+
   // Handle play state changes (simplified - no longer schedules its own pattern)
   useEffect(() => {
-    if (!isPlayingProp && !isTransportPlaying && metronomePluginRef.current) {
+    if (!isPlaying && metronomePluginRef.current) {
       // Reset visual when stopped
       setMetronomeDots(initialDots);
     }
-  }, [isPlayingProp, isTransportPlaying]);
+  }, [isPlaying]);
 
-  // Use either prop or transport state
-  const isPlaying = isPlayingProp || isTransportPlaying;
+  // ============================================================================
+  // RAF-BASED INTERPOLATION FOR SMOOTH BEAT HIGHLIGHTING
+  // ============================================================================
+  // Problem: setInterval(20ms) position updates via useTransportPosition cause ±20-40ms jitter
+  // Solution: Store snapshot with performance.now() timestamp, interpolate in RAF
+  // Result: Frame-perfect 60fps animation (~16.7ms precision vs ±40ms jitter)
+  // ============================================================================
 
-  // Subscribe to transport position updates for beat highlighting
-  useTransportPosition({
-    onPositionUpdate: (position) => {
-      // Position updates are too frequent for logging
+  // State for current beat (0-indexed for display)
+  const [currentBeat, setCurrentBeat] = useState(0);
 
-      // COUNTDOWN FIX: Don't update beat indicators during countdown (negative bars)
-      // Let the red countdown dots handle the countdown visualization
-      if (position.bars < 0) {
+  // Ref to track current beat without causing RAF loop restarts
+  const currentBeatRef = useRef(currentBeat);
+  useEffect(() => {
+    currentBeatRef.current = currentBeat;
+  }, [currentBeat]);
+
+  // 🔧 FIX: Track isPlaying in a ref so RAF loop can check it in real-time
+  const isPlayingRef = useRef(isPlaying);
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
+
+  // Position snapshot for RAF interpolation
+  interface PositionSnapshot {
+    bars: number;
+    beats: number; // 1-based (display position)
+    sixteenths: number;
+    seconds: number;
+    capturedAt: number; // performance.now() when captured
+  }
+  const positionSnapshotRef = useRef<PositionSnapshot | null>(null);
+  const rafIdRef = useRef<number | null>(null);
+
+  // Update snapshot when TransportContext position changes
+  useEffect(() => {
+    if (!isPlaying || !isVisible) {
+      positionSnapshotRef.current = null;
+      return;
+    }
+
+    // transportPosition comes from useTransportContext
+    if (transportPosition) {
+      positionSnapshotRef.current = {
+        bars: transportPosition.bars,
+        beats: transportPosition.beats,
+        sixteenths: transportPosition.sixteenths,
+        seconds: transportPosition.seconds,
+        capturedAt: performance.now(),
+      };
+    }
+  }, [transportPosition, isPlaying, isVisible]);
+
+  // RAF loop for smooth beat highlighting
+  useEffect(() => {
+    if (!isPlaying || !isVisible) {
+      // Clean up RAF when not playing
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
+      positionSnapshotRef.current = null;
+      return;
+    }
+
+    const updateBeat = () => {
+      // 🔧 FIX: Check isPlaying via ref to catch stop events immediately
+      if (!isPlayingRef.current) {
+        return; // Don't schedule next frame
+      }
+
+      const snapshot = positionSnapshotRef.current;
+
+      if (!snapshot) {
+        rafIdRef.current = requestAnimationFrame(updateBeat);
         return;
       }
 
-      if (isPlaying) {
-        // Update dots based on transport position
-        const beatIndex = position.beats % beats;
-        // Beat changes happen frequently, no need to log
+      // COUNTDOWN FIX: Don't update beat indicators during countdown (negative bars)
+      if (snapshot.bars < 0) {
+        rafIdRef.current = requestAnimationFrame(updateBeat);
+        return;
+      }
+
+      // Interpolate current position based on elapsed time since snapshot
+      const elapsed = (performance.now() - snapshot.capturedAt) / 1000;
+      const beatDuration = 60 / bpm;
+
+      // Calculate interpolated beat position
+      const sixteenthsPerBeat = 4;
+      const totalSixteenthsAtSnapshot = (snapshot.beats - 1) * sixteenthsPerBeat + snapshot.sixteenths;
+      const elapsedSixteenths = (elapsed / beatDuration) * sixteenthsPerBeat;
+      const interpolatedTotalSixteenths = totalSixteenthsAtSnapshot + elapsedSixteenths;
+
+      // Convert to beat index (0-based for array indexing)
+      const interpolatedBeat = Math.floor(interpolatedTotalSixteenths / sixteenthsPerBeat);
+      const beatIndex = interpolatedBeat % beats;
+
+      // Only update state if beat changed
+      if (beatIndex !== currentBeatRef.current) {
+        setCurrentBeat(beatIndex);
+        // Update dots
         setMetronomeDots((prev) =>
           prev.map((dot, index) => ({
             ...dot,
@@ -727,9 +828,20 @@ const MetronomeWidgetComponent = ({
           })),
         );
       }
-    },
-    enabled: isPlaying && isVisible,
-  });
+
+      rafIdRef.current = requestAnimationFrame(updateBeat);
+    };
+
+    // Start RAF loop
+    rafIdRef.current = requestAnimationFrame(updateBeat);
+
+    return () => {
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
+    };
+  }, [isPlaying, isVisible, bpm, beats]);
 
   // Test click function - wrapped with lightweight audio context initialization
   const testClick = useCallback(
@@ -811,7 +923,7 @@ const MetronomeWidgetComponent = ({
                         key={dot.id}
                         className={`w-3 h-3 rounded-full transition-all duration-200 ${
                           dot.isCurrent && isPlaying
-                            ? 'bg-green-400 shadow-lg shadow-green-400/50'
+                            ? 'bg-orange-400 shadow-lg shadow-orange-400/50'
                             : 'bg-green-500'
                         }`}
                       />
@@ -823,23 +935,7 @@ const MetronomeWidgetComponent = ({
               <div className="flex items-center gap-4 w-full">
                 <div className="flex-1">
                   <div className="flex flex-col gap-2">
-                    {/* BPM Slider */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-slate-400 w-16">BPM:</span>
-                      <input
-                        type="range"
-                        min="40"
-                        max="300"
-                        value={bpm}
-                        onChange={(e) =>
-                          transport.setTempo(Number(e.target.value))
-                        }
-                        className="flex-1 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer"
-                      />
-                      <span className="text-xs text-green-400 font-bold w-10 text-right">
-                        {bpm}
-                      </span>
-                    </div>
+                    {/* BPM Slider removed - tempo control is in TransportClock only */}
 
                     {/* Sound Selector */}
                     <div className="flex items-center gap-2">

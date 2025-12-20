@@ -342,9 +342,12 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
    * Get Tone.js instance
    */
   private async _getToneJS(): Promise<any> {
-    // Try to get from window first
+    // Check both locations where Tone.js may be stored
     if ((window as any).Tone) {
       return (window as any).Tone;
+    }
+    if ((window as any).__globalTone) {
+      return (window as any).__globalTone;
     }
 
     // Try to get from CoreServices

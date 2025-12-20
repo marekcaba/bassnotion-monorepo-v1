@@ -18,8 +18,11 @@ import { Track } from '../services/core/Track.js';
 import { serviceRegistry } from '../services/core/ServiceRegistry.js';
 import { EventBus } from '../services/core/EventBus.js';
 import type { TrackMixingState } from '../types/track.js';
-import * as Tone from 'tone';
+import type * as ToneTypes from 'tone';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { createStructuredLogger } from '@bassnotion/contracts';
+
+const logger = createStructuredLogger('useTrackMixing');
 
 export interface UseTrackMixingOptions {
   track: Track;
@@ -42,7 +45,7 @@ export interface TrackMixingControls {
   toggleSolo: () => void;
 
   // Advanced features
-  addEffect: (effect: Tone.ToneAudioNode) => void;
+  addEffect: (effect: ToneTypes.ToneAudioNode) => void;
   createSend: (
     auxBusId: string,
     level?: number,
@@ -222,7 +225,7 @@ export function useTrackMixing(
    * Add effect to track
    */
   const addEffect = useCallback(
-    (effect: Tone.ToneAudioNode) => {
+    (effect: ToneTypes.ToneAudioNode) => {
       if (!mixingEngineRef.current) return;
 
       debug('Adding effect');
@@ -324,7 +327,7 @@ export interface UseMixBusesState {
   ) => string;
 
   // Bus effects
-  addBusEffect: (busId: string, effect: Tone.ToneAudioNode) => void;
+  addBusEffect: (busId: string, effect: ToneTypes.ToneAudioNode) => void;
   removeBusEffect: (busId: string, effectIndex: number) => void;
 }
 
@@ -419,7 +422,7 @@ export function useMixBuses(): UseMixBusesState {
   );
 
   const addBusEffect = useCallback(
-    (busId: string, effect: Tone.ToneAudioNode) => {
+    (busId: string, effect: ToneTypes.ToneAudioNode) => {
       if (!mixingEngineRef.current) return;
 
       mixingEngineRef.current.addBusEffect(busId, effect);

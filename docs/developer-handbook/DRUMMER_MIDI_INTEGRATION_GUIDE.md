@@ -12,7 +12,7 @@
 ### 2. Frontend (Complete)
 
 - ✅ **Shared Types**: `@bassnotion/contracts` exports DrumHit, DrumType, etc.
-- ✅ **DrumPatternEditor**: Modal for reviewing/editing converted drum pattern
+- ✅ **DrumPatternEditor**: Grid-based editor modal for creating/editing drum patterns
 - ✅ **Colors & Display Names**: Visual drum representation
 
 ## What's Left - Integration Steps
@@ -30,7 +30,7 @@ const [drumPatternStats, setDrumPatternStats] =
   useState<DrumPatternStats | null>(null);
 const [drumPatternValidation, setDrumPatternValidation] =
   useState<DrumPatternValidation | null>(null);
-const [showDrumEditor, setShowDrumEditor] = useState(false);
+const [showDrumGridEditor, setShowDrumGridEditor] = useState(false);
 const [isConvertingDrums, setIsConvertingDrums] = useState(false);
 ```
 
@@ -155,29 +155,26 @@ const exerciseData = {
 };
 ```
 
-### Step 5: Add DrumPatternEditor to Render
+### Step 5: Add DrumPatternEditorModal to Render
 
-**Add before the closing `</Dialog>`** (around line 900):
+**Add before the closing `</Dialog>`** (around line 1506):
 
 ```tsx
-{
-  /* Drum Pattern Editor Modal */
-}
-{
-  showDrumEditor && drumPatternStats && drumPatternValidation && (
-    <DrumPatternEditor
-      isOpen={showDrumEditor}
-      onClose={() => setShowDrumEditor(false)}
-      drumPattern={drumPattern}
-      stats={drumPatternStats}
-      validation={drumPatternValidation}
-      onSave={(updatedPattern) => {
-        setDrumPattern(updatedPattern);
-        setShowDrumEditor(false);
-      }}
-    />
-  );
-}
+{/* Drum Pattern Grid Editor */}
+<DrumPatternEditorModal
+  isOpen={showDrumGridEditor}
+  onClose={() => setShowDrumGridEditor(false)}
+  initialPattern={drumPattern}
+  onSave={(pattern, metadata) => {
+    setDrumPattern(pattern);
+    setShowDrumGridEditor(false);
+  }}
+  contextTempo={formData.bpm}
+  contextTimeSignature={{
+    numerator: formData.timeSignatureNumerator,
+    denominator: formData.timeSignatureDenominator,
+  }}
+/>
 ```
 
 ### Step 6: Add Import Statements
@@ -185,7 +182,8 @@ const exerciseData = {
 **Add to the top of ExerciseFormModal.tsx:**
 
 ```typescript
-import { DrumPatternEditor } from './DrumPatternEditor';
+import { DrumPatternEditorModal } from './DrumPatternEditor/DrumPatternEditorModal.js';
+import type { PatternMetadata } from './DrumPatternEditor/types.js';
 import type {
   DrumHit,
   DrumPatternStats,
@@ -226,7 +224,7 @@ import type {
    - Select a MIDI file in admin exercise editor
    - File uploads to temp storage
    - Auto-converts to drum pattern
-   - DrumPatternEditor modal opens
+   - DrumPatternEditorModal (grid editor) opens automatically
 
 2. **Review & Edit**
    - Admin reviews auto-converted drum hits
@@ -249,8 +247,8 @@ import type {
 - ✅ `apps/backend/src/domains/exercises/dto/convert-drum-midi.dto.ts` - API types
 - ✅ `apps/backend/src/domains/exercises/midi.controller.ts` - Endpoint
 - ✅ `apps/backend/src/domains/exercises/exercises.module.ts` - Registration
-- ✅ `apps/frontend/src/domains/admin/components/DrumPatternEditor.tsx` - Editor modal
-- ⏳ `apps/frontend/src/domains/admin/components/ExerciseFormModal.tsx` - Integration (follow steps above)
+- ✅ `apps/frontend/src/domains/admin/components/DrumPatternEditor/` - Grid-based editor
+- ✅ `apps/frontend/src/domains/admin/components/ExerciseFormModal.tsx` - Integration complete
 
 ## Benefits
 

@@ -17,7 +17,18 @@
  * - ONE call sets everything: musicalTruth.setFromExercise(exercise)
  */
 
-import * as Tone from 'tone';
+// Helper to get Tone from window (returns null if not available)
+// MusicalTruthAuthority can work without Tone.js - it just won't sync with Tone.Transport
+function getTone(): any | null {
+  if (typeof window !== 'undefined') {
+    // Check both locations where Tone.js may be stored
+    const tone = (window as any).Tone || (window as any).__globalTone;
+    if (tone) {
+      return tone;
+    }
+  }
+  return null; // Gracefully return null instead of throwing
+}
 
 export interface TimeSignature {
   numerator: number; // Beats per bar (e.g., 4 in 4/4)
@@ -101,6 +112,52 @@ export class MusicalTruthAuthority {
   private listeners = new Set<(truth: MusicalTruth) => void>();
 
   /**
+   * Flag to track if user has manually modified the tempo via UI
+   * Used by setFromExercise to decide whether to preserve user's tempo
+   * This is the CENTRAL place for tracking user tempo modifications
+   */
+  private _userHasModifiedTempo = false;
+
+  /**
+   * Store the original exercise BPM to detect if user changed from it
+   */
+  private _originalExerciseBpm: number | null = null;
+
+  /**
+   * Check if user has manually modified the tempo
+   * This is the ONE source of truth for tempo modification tracking
+   */
+  hasUserModifiedTempo(): boolean {
+    return this._userHasModifiedTempo;
+  }
+
+  /**
+   * Mark that user has modified the tempo
+   * Called automatically by setBPM(), but can be set manually if needed
+   */
+  setUserModifiedTempo(value: boolean): void {
+    this._userHasModifiedTempo = value;
+    console.log(`🎵 [TEMPO] MusicalTruthAuthority._userHasModifiedTempo set to ${value}`);
+  }
+
+  /**
+   * Reset the user modified tempo flag
+   * Call this when loading a NEW exercise (not replaying same one)
+   */
+  resetUserModifiedTempo(): void {
+    this._userHasModifiedTempo = false;
+    this._originalExerciseBpm = null;
+    console.log(`🎵 [TEMPO] MusicalTruthAuthority user tempo flag RESET`);
+  }
+
+  /**
+   * Get the original exercise BPM (before user modifications)
+   */
+  getOriginalExerciseBpm(): number | null {
+    return this._originalExerciseBpm;
+  }
+
+  /**
    * THE ONE METHOD to set all musical parameters from exercise data
    * This is the ONLY way to update the musical truth
    *
@@ -111,25 +168,51 @@ export class MusicalTruthAuthority {
   setFromExercise(exercise: Exercise, options?: SetFromExerciseOptions): void {
     const durationBars = calculateActualBarsFromNotes(exercise);
     const currentBpm = this.truth.bpm;
-    const shouldPreserveBpm = options?.preserveBPM === true;
+
+    // TEMPO FIX: Auto-detect if user has modified tempo
+    // If options.preserveBPM is explicitly set, use that
+    // Otherwise, use the internal _userHasModifiedTempo flag as the source of truth
+    const shouldPreserveBpm = options?.preserveBPM ?? this._userHasModifiedTempo;
+    const newBpm = shouldPreserveBpm ? currentBpm : exercise.bpm;
+
+    // 🔍 TEMPO DIAGNOSTIC: Log exercise tempo loading
+    console.log(`🎵 [TEMPO] MusicalTruthAuthority.setFromExercise() called`, {
+      exerciseBpm: exercise.bpm,
+      currentBpm,
+      optionsPreserveBPM: options?.preserveBPM,
+      userHasModifiedTempo: this._userHasModifiedTempo,
+      shouldPreserveBpm,
+      resultingBpm: newBpm,
+      durationBars,
+      timeSignature: `${exercise.timeSignature.numerator}/${exercise.timeSignature.denominator}`,
+    });
 
     this.truth = {
       // TEMPO FIX: Preserve user's BPM if they manually modified it
-      bpm: shouldPreserveBpm ? currentBpm : exercise.bpm,
+      bpm: newBpm,
       timeSignature: exercise.timeSignature,
       durationBars: durationBars,
       countdownBars: 1, // Always 1 bar of countdown
       totalBars: durationBars + 1, // Exercise + countdown
     };
 
-    // Synchronize Tone.Transport immediately
-    // This ensures the Web Audio API timing matches our truth
-    // Only update BPM if we're not preserving user's tempo
+    // Store original exercise BPM for reference
+    // Only update if we're NOT preserving user's tempo (i.e., loading fresh exercise)
     if (!shouldPreserveBpm) {
-      Tone.Transport.bpm.value = this.truth.bpm;
+      this._originalExerciseBpm = exercise.bpm;
     }
-    // Note: When preserveBPM=true, we skip Tone.Transport.bpm update to preserve user's tempo
-    Tone.Transport.timeSignature = this.truth.timeSignature.numerator;
+
+    // Synchronize Tone.Transport if available
+    // This ensures the Web Audio API timing matches our truth
+    const Tone = getTone();
+    if (Tone) {
+      // Always sync Tone.Transport.bpm with our truth
+      // Whether it's exercise BPM or user's preserved BPM, they should match
+      Tone.Transport.bpm.value = this.truth.bpm;
+      Tone.Transport.timeSignature = this.truth.timeSignature.numerator;
+      console.log(`🎵 [TEMPO] Tone.Transport synced - bpm: ${Tone.Transport.bpm.value}, timeSignature: ${Tone.Transport.timeSignature}`);
+    }
+    // If Tone.js not loaded yet, Transport will sync when audio system initializes
 
     // Notify all listeners (systems that need to react to changes)
     this.listeners.forEach((fn) => fn(this.truth));
@@ -155,13 +238,37 @@ export class MusicalTruthAuthority {
    */
   setBPM(bpm: number): void {
     if (bpm < 20 || bpm > 300) {
+      // 🔍 TEMPO DIAGNOSTIC: Log rejected BPM
+      console.log(`🎵 [TEMPO] MusicalTruthAuthority.setBPM() REJECTED - out of range`, {
+        requestedBpm: bpm,
+        validRange: '20-300',
+      });
       return;
     }
 
+    const previousBpm = this.truth.bpm;
     this.truth.bpm = bpm;
 
-    // Synchronize Tone.Transport immediately
-    Tone.Transport.bpm.value = bpm;
+    // TEMPO FIX: Automatically mark that user has modified tempo
+    // This ensures setFromExercise() will preserve user's tempo on next play
+    this._userHasModifiedTempo = true;
+
+    // 🔍 TEMPO DIAGNOSTIC: Log user tempo change
+    console.log(`🎵 [TEMPO] MusicalTruthAuthority.setBPM() called`, {
+      previousBpm,
+      newBpm: bpm,
+      userHasModifiedTempo: this._userHasModifiedTempo,
+      source: 'user slider or API',
+    });
+
+    // Synchronize Tone.Transport immediately if available
+    const Tone = getTone();
+    if (Tone) {
+      Tone.Transport.bpm.value = bpm;
+      // 🔍 TEMPO DIAGNOSTIC: Verify Tone.Transport sync
+      console.log(`🎵 [TEMPO] Tone.Transport.bpm.value set to ${Tone.Transport.bpm.value}`);
+    }
+    // If Tone.js not loaded yet, Transport will sync when audio system initializes
 
     // Notify all listeners (systems that need to react to tempo changes)
     this.listeners.forEach((fn) => fn(this.truth));

@@ -50,6 +50,9 @@ import {
   GRAND_PIANO_EQ_PRESET,
 } from '../../../modules/audio-engine/processors/ParametricEQ.js';
 
+// Timing diagnostic
+import { InstrumentTimingDiagnostic } from '../diagnostics/InstrumentTimingDiagnostic.js';
+
 const logger = createStructuredLogger('HarmonySchedulerV2');
 
 /**
@@ -170,6 +173,39 @@ export class HarmonySchedulerV2 {
     perNoteVelocityRanges?: PerNoteVelocityRanges,
     instrument?: HarmonyInstrument,
   ): Promise<void> {
+    // CRITICAL FIX: Stop all active sources when switching instruments
+    // This prevents audio doubling when changing from one instrument to another
+    // (e.g., Wurlitzer → Grand Piano). Without this, old scheduled notes continue
+    // playing with the previous instrument's samples while new notes play with
+    // the new instrument's samples, causing the "two pianos" effect.
+    const isInstrumentChanging =
+      instrument !== this.currentHarmonyInstrument &&
+      this.currentHarmonyInstrument !== null;
+    const hasActiveSources =
+      this.scheduledAudioSources.size > 0 ||
+      this.activeHarmonySources.size > 0;
+
+    if (isInstrumentChanging) {
+      console.log(
+        '[HARMONY-SCHEDULER-V2] 🔄 Instrument changed',
+        {
+          oldInstrument: this.currentHarmonyInstrument,
+          newInstrument: instrument,
+          scheduledCount: this.scheduledAudioSources.size,
+          activeCount: this.activeHarmonySources.size,
+          willStopSources: hasActiveSources,
+        },
+      );
+
+      // Only call stopAll if there are sources to stop
+      // This avoids the "Map is EMPTY" error when switching before any notes played
+      if (hasActiveSources) {
+        // Use graceful=false for quick 50ms fadeout when switching instruments
+        // This prevents clicks while stopping audio quickly
+        this.stopAll(false);
+      }
+    }
+
     this.harmonyBuffers = samples;
     this.audioDestination = destination;
     this.currentHarmonyInstrument = instrument || null;
@@ -302,12 +338,7 @@ export class HarmonySchedulerV2 {
    * @returns true if successfully scheduled, false to fall back to event bus
    */
   schedule(event: PatternEvent, audioTime: number, frame: number): boolean {
-    logger.debug('HarmonySchedulerV2 schedule entry', {
-      eventType: event.type,
-      audioTime,
-      frame,
-    });
-
+    // Debug logging removed for performance - object construction adds ~2ms even when filtered
     const eventData = event.data as any;
 
     // Handle control change events (sustain pedal, etc.)
@@ -316,14 +347,9 @@ export class HarmonySchedulerV2 {
       eventData?.cc !== undefined
     ) {
       if (eventData.cc === 64) {
-        // CC64 = Sustain Pedal (logged but not processed - pre-calculated timeline)
-        logger.debug('CC64 event acknowledged', {
-          value: eventData.value,
-          audioTime,
-        });
+        // CC64 = Sustain Pedal (acknowledged but not processed - pre-calculated timeline)
         return true;
       } else {
-        logger.debug(`Unsupported CC${eventData.cc} - only CC64 implemented`);
         return false;
       }
     }
@@ -364,9 +390,8 @@ export class HarmonySchedulerV2 {
     // STEP 2: Convert MIDI note to note name (C4, Cs4, D4, etc.)
     const noteName = midiToNoteName(midiNote);
 
-    // SIMPLE LOG: What note is being played - include measure number for debugging
+    // Get measure number for diagnostics (used below if diagnostic enabled)
     const measureNum = eventData.position?.measure || eventData.measureNumber || '?';
-    console.log(`[HARMONY] PLAY: M${measureNum} ${eventData.noteName} (MIDI ${eventData.midiNote}) → sample: ${noteName} (MIDI ${midiNote}) | shift: -${octaveShift} | instrument: ${this.currentHarmonyInstrument}`);
 
     // STEP 3: Select velocity layer using VelocityLayerSelector
     const layer = this.velocityLayerSelector.selectLayer(velocity, noteName);
@@ -396,11 +421,7 @@ export class HarmonySchedulerV2 {
       sampleNote,
     );
 
-    // SIMPLE LOG: Buffer found or not - include duration to verify correct sample loaded
-    const bufDur = bufferResult.buffer ? bufferResult.buffer.duration.toFixed(2) : 'N/A';
-    const bufRate = bufferResult.buffer ? bufferResult.buffer.sampleRate : 'N/A';
-    const bufLen = bufferResult.buffer ? bufferResult.buffer.length : 'N/A';
-    console.log(`[HARMONY] BUFFER: ${sampleNote} ${layer} → ${bufferResult.buffer ? 'FOUND' : 'MISSING'} (${bufferResult.source}) | dur=${bufDur}s | rate=${bufRate} | len=${bufLen} | playbackRate=${playbackRate} | cacheKey=${bufferResult.cacheKey || 'internal'}`);
+    // Buffer logging removed for performance - was adding ~5ms per note
 
     if (!bufferResult.buffer) {
       logger.error('Missing buffer after all fallback strategies', {
@@ -456,8 +477,13 @@ export class HarmonySchedulerV2 {
       source.connect(gain);
       // Use eqOutputNode if available (routes through EQ for Grand Piano)
       const outputNode = this.eqOutputNode || this.audioDestination;
+
+      // Audio graph logging removed for performance - was adding ~3ms per note
+
       if (outputNode) {
         gain.connect(outputNode);
+      } else {
+        console.error('[HARMONY] ❌ NO OUTPUT NODE - audio will NOT play!');
       }
 
       // STEP 9: Determine if this is the last note (for special fadeout)
@@ -476,11 +502,31 @@ export class HarmonySchedulerV2 {
       );
 
       // STEP 11: Start playback and schedule stop
+      const sourceStartTime = performance.now();
       source.start(audioTime);
       source.stop(fadeout.stopTime);
+      const sourceStartEnd = performance.now();
 
-      // 🔍 DIAGNOSTIC: Log actual playback details
-      console.log(`[HARMONY] PLAYING: M${measureNum} ${eventData.noteName} → buffer.duration=${buffer.duration.toFixed(2)}s, buffer.sampleRate=${buffer.sampleRate}, source.playbackRate=${playbackRate}, startAt=${audioTime.toFixed(3)}s`);
+      // 🎯 TIMING DIAGNOSTIC: Record for cross-instrument comparison
+      if (InstrumentTimingDiagnostic.isEnabled()) {
+        const scheduleFrame = Math.round((this.audioContext?.currentTime || 0) * (this.audioContext?.sampleRate || 48000));
+        const targetFrame = Math.round(audioTime * (this.audioContext?.sampleRate || 48000));
+        const lookaheadMs = (targetFrame - scheduleFrame) / (this.audioContext?.sampleRate || 48000) * 1000;
+
+        InstrumentTimingDiagnostic.record({
+          instrument: 'harmony',
+          eventType: eventData.noteName || `midi-${event.data?.midi}`,
+          scheduledAudioTime: audioTime,
+          jsExecutionTime: sourceStartEnd,
+          scheduleFrame,
+          targetFrame,
+          lookaheadMs,
+          beat: ((measureNum - 1) * 4 + 1) % 4 + 1, // Approximate beat from measure
+          measure: measureNum,
+        });
+      }
+
+      // Playback logging removed for performance - was adding ~5ms per note
 
       // Track active sources for cleanup
       if (!this.activeHarmonySources.has(noteName)) {
@@ -501,25 +547,12 @@ export class HarmonySchedulerV2 {
         hasStopScheduled: true,
       });
 
-      console.log('[🔥 HARMONY-V2 NEW CODE LOADED 🔥] Source tracked!', {
-        instanceId: this.instanceId,
-        noteName,
-        mapSize: this.scheduledAudioSources.size,
-        audioTime,
-      });
+      // Source tracking logging removed for performance
 
       // CRITICAL: DO NOT auto-cleanup on onended during normal playback!
       // We need to keep ALL sources tracked so stopAll() can cancel future scheduled notes.
       // Only clean up the active harmony sources (for polyphony), not the tracking Map.
       source.onended = () => {
-        console.log('[✅ ONENDED FIRED - NOT REMOVING FROM MAP ✅]', {
-          instanceId: this.instanceId,
-          noteName,
-          audioTime,
-          currentMapSize: this.scheduledAudioSources.size,
-          keepingSourceInMap: true,
-        });
-
         // Only clean up the activeHarmonySources for polyphony management
         // DO NOT remove from scheduledAudioSources - we need it for stopAll()
         const activeSources = this.activeHarmonySources.get(noteName);
@@ -535,18 +568,7 @@ export class HarmonySchedulerV2 {
         }
       };
 
-      logger.debug('Harmony MIDI note scheduled', {
-        midiNote,
-        noteName,
-        sampleNote,
-        layer,
-        velocity,
-        audioTime,
-        duration,
-        actualDuration,
-        fadeoutType: fadeout.type,
-        bufferSource: bufferResult.source,
-      });
+      // Debug logging removed for performance - object construction adds ~3ms even when filtered
 
       return true;
     } catch (error) {

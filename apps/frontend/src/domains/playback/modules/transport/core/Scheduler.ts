@@ -11,9 +11,20 @@
 import { TimingEvent, ScheduleOptions } from '../types/index.js';
 import { SchedulingError } from '../types/errors.js';
 import { createStructuredLogger } from '../../shared/index.js';
-import * as Tone from 'tone';
 
 const logger = createStructuredLogger('TransportScheduler');
+
+// Helper to get Tone from window (must be initialized before Scheduler is used)
+function getTone(): any {
+  if (typeof window !== 'undefined') {
+    // Check both locations where Tone.js may be stored
+    const tone = (window as any).Tone || (window as any).__globalTone;
+    if (tone) {
+      return tone;
+    }
+  }
+  throw new Error('Scheduler: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+}
 
 export interface SchedulerConfig {
   lookAheadTime: number; // seconds
@@ -86,6 +97,7 @@ export class Scheduler {
     this.insertSorted(fullEvent);
 
     // If running and event is within lookahead, schedule immediately
+    const Tone = getTone();
     if (this.isRunning && Tone.Transport.state === 'started') {
       const currentTime = Tone.Transport.seconds;
       if (event.time <= currentTime + this.config.lookAheadTime) {
@@ -113,8 +125,9 @@ export class Scheduler {
     const id = this.generateEventId('repeat');
 
     try {
+      const Tone = getTone();
       const scheduleId = Tone.Transport.scheduleRepeat(
-        (time) => {
+        (time: number) => {
           try {
             callback(time);
           } catch (error) {
@@ -143,6 +156,7 @@ export class Scheduler {
     // Cancel if already scheduled with Tone
     const scheduleId = this.scheduledEvents.get(eventId);
     if (scheduleId !== undefined) {
+      const Tone = getTone();
       Tone.Transport.clear(scheduleId);
       this.scheduledEvents.delete(eventId);
       logger.debug('Event cancelled', { eventId });
@@ -154,6 +168,7 @@ export class Scheduler {
    */
   clearAllScheduledEvents(): void {
     // Clear Tone.js scheduled events
+    const Tone = getTone();
     for (const [_eventId, scheduleId] of this.scheduledEvents) {
       Tone.Transport.clear(scheduleId);
     }
@@ -204,9 +219,10 @@ export class Scheduler {
       });
 
     // Schedule events with Tone.js
+    const Tone = getTone();
     for (const event of eventsToSchedule) {
       try {
-        const scheduleId = Tone.Transport.schedule((time) => {
+        const scheduleId = Tone.Transport.schedule((time: number) => {
           try {
             event.callback(time);
 
@@ -251,6 +267,7 @@ export class Scheduler {
     }
 
     const update = () => {
+      const Tone = getTone();
       if (!this.isRunning || Tone.Transport.state !== 'started') {
         return;
       }
@@ -327,6 +344,7 @@ export class Scheduler {
    * Schedule immediate execution (next possible slot)
    */
   scheduleImmediate(callback: (time: number) => void): string {
+    const Tone = getTone();
     const time = Tone.Transport.seconds + 0.001; // 1ms in future
     return this.scheduleOnce(callback, time);
   }

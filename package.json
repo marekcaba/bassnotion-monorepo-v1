@@ -111,6 +111,7 @@
     "clsx": "^2.1.1",
     "dotenv": "^16.5.0",
     "fast-xml-parser": "^5.2.5",
+    "immer": "^11.0.1",
     "lucide-react": "^0.263.1",
     "next": "15.3.8",
     "react": "19.1.0",

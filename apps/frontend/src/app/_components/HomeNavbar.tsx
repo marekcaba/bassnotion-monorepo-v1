@@ -1,10 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { useAuth } from '@/domains/user/hooks/use-auth';
-import { authService } from '@/domains/user/api/auth';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
-import { UserIndicator } from '@/domains/user/components/UserIndicator';
 
 const NAV_LINKS = [
   { label: 'Practice', href: '/library' },
@@ -14,7 +11,6 @@ const NAV_LINKS = [
 
 export function HomeNavbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { isAuthenticated } = useAuth();
   const { navigateWithTransition } = useViewTransitionRouter();
 
   const handleNavClick = useCallback(
@@ -27,30 +23,15 @@ export function HomeNavbar() {
     [navigateWithTransition],
   );
 
-  const handleAuthButtonClick = useCallback(() => {
-    setIsMobileMenuOpen(false);
-    const target = isAuthenticated ? '/dashboard' : '/login';
-    navigateWithTransition(target);
-  }, [isAuthenticated, navigateWithTransition]);
-
-  const handleLogout = useCallback(async () => {
-    setIsMobileMenuOpen(false);
-    await authService.signOut();
-    navigateWithTransition('/');
-  }, [navigateWithTransition]);
-
   const toggleMobileMenu = useCallback(() => {
     setIsMobileMenuOpen((prev) => !prev);
   }, []);
 
   return (
     <>
-      {/* Navbar - 3 buttons center, Login/Dashboard far right */}
-      <nav className="w-full bg-black py-4">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-          {/* Spacer for left side to balance layout */}
-          <div className="hidden md:block w-24" />
-
+      {/* Navbar - 3 buttons center */}
+      <nav className="w-full bg-transparent py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-center">
           {/* Desktop Navigation - Center */}
           <div className="hidden md:flex items-center gap-8">
             {NAV_LINKS.map((link) => (
@@ -62,34 +43,6 @@ export function HomeNavbar() {
                 {link.label}
               </button>
             ))}
-          </div>
-
-          {/* Desktop Auth Button - Right */}
-          <div className="hidden md:flex items-center gap-3">
-            <UserIndicator />
-            {isAuthenticated && (
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="border border-[#ffc700] text-[#ffc700] hover:bg-[#ffc700] hover:text-black w-8 h-8 rounded transition-colors flex items-center justify-center"
-                aria-label="Log out"
-                title="Log out"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                  />
-                </svg>
-              </button>
-            )}
           </div>
 
           {/* Mobile Hamburger Button */}
@@ -160,11 +113,6 @@ export function HomeNavbar() {
 
             {/* Mobile Nav Links */}
             <div className="flex flex-col px-6 space-y-4">
-              {/* User Indicator at top of mobile menu */}
-              <div className="pb-2 border-b border-zinc-700">
-                <UserIndicator />
-              </div>
-
               {NAV_LINKS.map((link) => (
                 <button
                   key={link.label}
@@ -174,30 +122,6 @@ export function HomeNavbar() {
                   {link.label}
                 </button>
               ))}
-
-              {/* Mobile Logout Button */}
-              {isAuthenticated && (
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="mt-2 border border-gray-500 text-gray-400 hover:border-red-500 hover:text-red-500 px-4 py-2 rounded transition-colors text-center flex items-center justify-center gap-2"
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                    />
-                  </svg>
-                  Log out
-                </button>
-              )}
             </div>
           </div>
         </div>

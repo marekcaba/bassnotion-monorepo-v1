@@ -19,6 +19,8 @@ import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
 import { usePatternSelector } from '@/domains/patterns/hooks/usePatternSelector';
 import { Music2 } from 'lucide-react';
 import { useSyncContext } from '../../base/SyncProvider';
+import { lifecycle } from '@/domains/playback/utils/InitializationLifecycleLogger.js';
+import { musicalTruth } from '@/domains/playback/modules/tempo/MusicalTruthAuthority.js';
 // Dynamic import to avoid SSR issues
 const KeyboardInstrument = {
   GRAND_PIANO: 'grandpiano',
@@ -195,6 +197,7 @@ const HarmonyWidgetComponent = ({
   const [samplesLoadedTrigger, setSamplesLoadedTrigger] = useState(0);
 
   // Listen for harmony-samples-loaded event to re-trigger registration
+  // Also listen for samplesReady event from ScrollTriggerLoader (for initial load after scroll)
   useEffect(() => {
     // Listen to window event (from ExerciseSelector)
     const handleWindowEvent = (event: Event) => {
@@ -207,7 +210,18 @@ const HarmonyWidgetComponent = ({
       setSamplesLoadedTrigger((prev) => prev + 1);
     };
 
+    // Listen for samplesReady from ScrollTriggerLoader (handles initial load after scroll)
+    // This ensures HarmonyWidget registers after ScrollTriggerLoader finishes loading
+    const handleSamplesReady = () => {
+      console.log(
+        '🎧 [HARMONY-WIDGET] Received samplesReady event from ScrollTriggerLoader',
+      );
+      // Increment trigger to force registration effect to re-run
+      setSamplesLoadedTrigger((prev) => prev + 1);
+    };
+
     window.addEventListener('harmony-samples-loaded', handleWindowEvent);
+    window.addEventListener('samplesReady', handleSamplesReady);
 
     // Also listen to sync context event (from YouTubeWidgetPage if used)
     let unsubscribe: (() => void) | undefined;
@@ -226,6 +240,7 @@ const HarmonyWidgetComponent = ({
 
     return () => {
       window.removeEventListener('harmony-samples-loaded', handleWindowEvent);
+      window.removeEventListener('samplesReady', handleSamplesReady);
       if (unsubscribe) unsubscribe();
     };
   }, [subscribeToEvent]);
@@ -329,8 +344,9 @@ const HarmonyWidgetComponent = ({
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isCreatingPluginRef = useRef<boolean>(false);
 
-  // Log initial component state
+  // Lifecycle checkpoint and log initial component state
   useEffect(() => {
+    lifecycle.checkpoint('HARMONY_WIDGET_MOUNTED');
     logger.info('🎹 HarmonyWidget: Component mounted with initial state:', {
       audioServicesReady,
       wamPluginLoaded,
@@ -368,6 +384,7 @@ const HarmonyWidgetComponent = ({
       // The singleton will handle checking for pre-loaded instruments
       // We just need to mark that we're ready to create the plugin
       setPluginClassLoaded(true);
+      lifecycle.checkpoint('HARMONY_PLUGIN_LOADING');
       logger.info('✅ Ready to use WAM plugin singleton');
     };
 
@@ -486,6 +503,11 @@ const HarmonyWidgetComponent = ({
       isAudioContext: context instanceof AudioContext,
     });
 
+    lifecycle.checkpoint('PLUGIN_AUDIOCONTEXT_CHECK', {
+      widget: 'harmony',
+      contextState: context?.state || 'no-context',
+    });
+
     // CRITICAL FIX: Allow plugin creation with suspended AudioContext
     // The browser's autoplay policy prevents AudioContext from starting without user gesture
     // We create the plugin now (with suspended context) and it will auto-resume when user clicks Play
@@ -496,6 +518,11 @@ const HarmonyWidgetComponent = ({
       logger.info(
         '🎹 HarmonyWidget: Audio context is suspended (autoplay policy), creating plugin anyway - will resume on Play',
       );
+      lifecycle.checkpoint('PLUGIN_CREATION_RETRY', {
+        widget: 'harmony',
+        reason: 'Proceeding despite suspended AudioContext (will resume on Play)',
+        contextState: context.state,
+      });
       // DON'T call resume() here - it will fail due to autoplay policy
       // AudioContext will auto-resume when user clicks Play button
     }
@@ -749,10 +776,23 @@ const HarmonyWidgetComponent = ({
         const audioNode = plugin.audioNode;
         logger.info('🎹 HarmonyWidget: Got audio node from plugin:', audioNode);
 
-        // For now, connect directly to destination until proper track routing is implemented
-        // The issue is that the track system expects specific plugin types and routing
-        audioNode.connect(context.destination);
-        logger.info('🎹 HarmonyWidget: Connected to audio destination');
+        // Connect to master bus for proper mixing (with fallback to destination)
+        try {
+          const { Mixer } = await import('@/domains/playback/modules/tracks/mixing/Mixer.js');
+          const mixer = Mixer.getInstance();
+          const masterBusInput = mixer.getMasterBusInputAsAudioNode();
+          if (masterBusInput) {
+            audioNode.connect(masterBusInput);
+            logger.info('🎹 HarmonyWidget: Connected to master bus for mixing');
+          } else {
+            audioNode.connect(context.destination);
+            logger.info('🎹 HarmonyWidget: Connected to destination (master bus not ready)');
+          }
+        } catch (e) {
+          // Fallback to direct destination if mixer not available
+          audioNode.connect(context.destination);
+          logger.info('🎹 HarmonyWidget: Connected to destination (mixer not available)');
+        }
 
         // Check the gain node value
         if (audioNode.gainNode) {
@@ -808,6 +848,9 @@ const HarmonyWidgetComponent = ({
         }
 
         setWamPluginLoaded(true);
+        lifecycle.checkpoint('HARMONY_PLUGIN_LOADED', {
+          instrument: loadedInstrument || 'unknown',
+        });
         logger.info(
           '✅ WAM Keyboard plugin loaded and connected for HarmonyWidget',
         );
@@ -898,17 +941,24 @@ const HarmonyWidgetComponent = ({
       logger.debug('🔍 [CHECKPOINT-4-SKIP] Window undefined, skipping');
       return;
     }
-    if (!pluginClassLoaded || !track.isReady || wamPluginLoaded) {
+    // SEO OPTIMIZATION: Wait for scroll trigger before creating plugin
+    // This prevents sample loading before user scrolls, keeping initial page load fast
+    const samplesReady = WindowRegistry.getSamplesReady();
+
+    if (!pluginClassLoaded || !track.isReady || wamPluginLoaded || !samplesReady) {
       logger.debug('🔍 [CHECKPOINT-4-SKIP] Conditions not met', {
         pluginClassLoaded,
         trackIsReady: track.isReady,
         audioServicesReady,
         wamPluginLoaded,
+        samplesReady,
         reason: !pluginClassLoaded
           ? 'plugin class not loaded'
           : !track.isReady
             ? 'track not ready'
-            : 'plugin already loaded',
+            : !samplesReady
+              ? 'samples not ready (waiting for scroll)'
+              : 'plugin already loaded',
       });
       return;
     }
@@ -929,6 +979,7 @@ const HarmonyWidgetComponent = ({
     wamPluginLoaded,
     pluginClassLoaded,
     createAudioNodeAttempt,
+    samplesLoadedTrigger, // Re-run when samplesReady event fires (after scroll)
   ]);
 
   // Cleanup effect - dispose plugin when component unmounts
@@ -1048,9 +1099,9 @@ const HarmonyWidgetComponent = ({
         } catch (error) {
           console.error('❌ [INSTRUMENT-SWITCH-DEBUG] Failed to reload instrument:', error);
         }
-      } else if (track.isReady && audioServicesReady && !wamPluginLoaded) {
+      } else if (track.isReady && audioServicesReady && !wamPluginLoaded && WindowRegistry.getSamplesReady()) {
         // Plugin doesn't exist yet - create it with the new instrument
-        // CRITICAL: Must wait for audioServicesReady before calling createAudioNodeAttempt()
+        // CRITICAL: Must wait for audioServicesReady AND samplesReady before calling createAudioNodeAttempt()
         console.log('🎹 [INSTRUMENT-SWITCH-DEBUG] Creating plugin for new instrument:', currentInstrument);
         createAudioNodeAttempt();
         // Update the previous instrument tracker after creation
@@ -1061,7 +1112,8 @@ const HarmonyWidgetComponent = ({
           trackIsReady: track.isReady,
           wamPluginLoaded,
           audioServicesReady,
-          reason: !track.isReady ? 'track not ready' : !audioServicesReady ? 'audio services not ready' : wamPluginLoaded ? 'plugin already loaded' : 'unknown',
+          samplesReady: WindowRegistry.getSamplesReady(),
+          reason: !track.isReady ? 'track not ready' : !audioServicesReady ? 'audio services not ready' : wamPluginLoaded ? 'plugin already loaded' : !WindowRegistry.getSamplesReady() ? 'samples not ready (waiting for scroll)' : 'unknown',
         });
       }
     };
@@ -1116,8 +1168,8 @@ const HarmonyWidgetComponent = ({
       logger.info('🎹 HarmonyWidget: Audio services ready event received');
       setAudioServicesReady(true);
 
-      // Force check if we can create plugin now
-      if (!wamPluginLoaded && pluginClassLoaded && track.isReady) {
+      // Force check if we can create plugin now (also check samplesReady for SEO optimization)
+      if (!wamPluginLoaded && pluginClassLoaded && track.isReady && WindowRegistry.getSamplesReady()) {
         logger.info(
           '🎹 HarmonyWidget: Audio ready, attempting to create plugin...',
         );
@@ -1131,8 +1183,8 @@ const HarmonyWidgetComponent = ({
       // Trigger a retry by incrementing the counter
       setRetryCount((prev) => prev + 1);
 
-      // Force check if we can create plugin now
-      if (!wamPluginLoaded && pluginClassLoaded && track.isReady) {
+      // Force check if we can create plugin now (also check samplesReady for SEO optimization)
+      if (!wamPluginLoaded && pluginClassLoaded && track.isReady && WindowRegistry.getSamplesReady()) {
         logger.info(
           '🎹 HarmonyWidget: Audio context started, attempting to create plugin...',
         );
@@ -1202,11 +1254,13 @@ const HarmonyWidgetComponent = ({
         pluginClassLoaded,
     });
 
+    // SEO OPTIMIZATION: Also check samplesReady before creating plugin
     if (
       audioServicesReady &&
       track.isReady &&
       !wamPluginLoaded &&
-      pluginClassLoaded
+      pluginClassLoaded &&
+      WindowRegistry.getSamplesReady()
     ) {
       logger.info(
         '🎹 HarmonyWidget: Audio services ready, retrying plugin load...',
@@ -1279,6 +1333,9 @@ const HarmonyWidgetComponent = ({
           );
           keyboardPluginRef.current = preloadedInstrument;
           setWamPluginLoaded(true);
+          lifecycle.checkpoint('HARMONY_PLUGIN_LOADED', {
+            instrument: 'preloaded',
+          });
 
           // Ensure proper volume is set
           await preloadedInstrument.audioNode.setParameterValues({
@@ -1456,10 +1513,17 @@ const HarmonyWidgetComponent = ({
   // FAANG-STYLE SOLUTION: Use PlaybackEngine for harmony scheduling (matches DrummerWidget architecture)
   const registerHarmonyWithPlaybackEngine = useCallback(async () => {
     const timestamp = new Date().toISOString();
+
+    // 🎵 TEMPO FIX: Read BPM directly from MusicalTruthAuthority (the ONE source of truth)
+    // Do NOT use the bpm state variable - it may be stale (initialized to 120 at component mount)
+    const currentBpm = musicalTruth.getBPM();
+    console.log(`🎵 [TEMPO] HarmonyWidget using BPM from musicalTruth: ${currentBpm}`);
+
     console.log(
       '🎹🎹🎹 [HARMONY-WIDGET] registerHarmonyWithPlaybackEngine CALLED',
       {
         timestamp,
+        currentBpm, // Log the actual BPM being used
         callStack: new Error().stack?.split('\n').slice(1, 4),
       },
     );
@@ -1914,21 +1978,21 @@ const HarmonyWidgetComponent = ({
     const harmonyEvents = exercise.harmonyNotes.map(
       (note: any, index: number) => {
         // Convert MIDI ticks to seconds using current tempo
-        // Formula: durationSeconds = (durationTicks / 480) * (60 / bpm)
+        // Formula: durationSeconds = (durationTicks / 480) * (60 / currentBpm)
         // - 480 = MIDI PPQ (Pulses Per Quarter note) - STANDARD MIDI RESOLUTION
-        // - 60 / bpm = seconds per quarter note
+        // - 60 / currentBpm = seconds per quarter note
         // - durationTicks / 480 = number of quarter notes
         // - result = duration in seconds
         const durationSeconds = note.durationTicks
-          ? (note.durationTicks / 480) * (60 / bpm)
+          ? (note.durationTicks / 480) * (60 / currentBpm)
           : 2; // Fallback to 2 seconds if durationTicks missing
 
         // DIAGNOSTIC: Log first 3 notes to verify BPM and duration calculation
         if (index < 3) {
           console.log(`[HARMONY DURATION DIAGNOSTIC] Note ${index + 1}:`, {
             durationTicks: note.durationTicks,
-            bpm,
-            calculation: `(${note.durationTicks} / 480) * (60 / ${bpm})`,
+            currentBpm,
+            calculation: `(${note.durationTicks} / 480) * (60 / ${currentBpm})`,
             durationSeconds,
             expectedAt69BPM: (note.durationTicks / 480) * (60 / 69),
           });
@@ -2125,14 +2189,14 @@ const HarmonyWidgetComponent = ({
         position: e.position,
         type: e.type,
       })),
-      bpm,
+      currentBpm,
     });
 
     const harmonyRegion = {
       id: `harmony-region-${exercise.id?.value || 'default'}`,
       trackId: 'harmony-widget-track',
       startTime: 0,
-      duration: (exercise.durationBeats || 32) * (60 / bpm),
+      duration: (exercise.durationBeats || 32) * (60 / currentBpm),
       pattern: {
         id: `harmony-pattern-${exercise.id?.value || 'default'}`,
         name: 'Harmony Pattern',
@@ -2202,7 +2266,7 @@ const HarmonyWidgetComponent = ({
         {
           eventsCount: harmonyEvents.length,
           duration: harmonyRegion.duration,
-          bpm,
+          currentBpm, // Using musicalTruth.getBPM() - the ONE source of truth
           method: isRunning ? 'updateTracks' : 'registerTracks',
         },
       );
@@ -2210,7 +2274,7 @@ const HarmonyWidgetComponent = ({
       logger.info('🎹 Harmony registered with PlaybackEngine', {
         noteCount: harmonyEvents.length,
         exerciseId: exercise.id?.value,
-        bpm,
+        currentBpm, // Using musicalTruth.getBPM() - the ONE source of truth
         isRunning,
       });
     } catch (error) {
@@ -2220,7 +2284,7 @@ const HarmonyWidgetComponent = ({
         error as Error,
       );
     }
-  }, [exercise, bpm]); // exercise must be in deps - callback needs to recreate when exercise changes
+  }, [exercise]); // TEMPO FIX: Removed bpm from deps - we now read directly from musicalTruth.getBPM()
 
   // Schedule chord progression (fallback when no exercise harmony_notes)
   const scheduleProgression = useCallback(() => {
@@ -2234,9 +2298,12 @@ const HarmonyWidgetComponent = ({
     const context = track.track?.audioContext;
     if (!context) return;
 
+    // 🎵 TEMPO FIX: Read BPM directly from MusicalTruthAuthority (the ONE source of truth)
+    const currentBpm = musicalTruth.getBPM();
+
     // Get current transport time
     const currentTime = context.currentTime;
-    const beatDuration = 60 / bpm; // Duration of one beat in seconds
+    const beatDuration = 60 / currentBpm; // Duration of one beat in seconds
 
     // Clear any existing pattern
     currentPatternRef.current = [];
@@ -2271,7 +2338,7 @@ const HarmonyWidgetComponent = ({
     });
 
     lastScheduledTimeRef.current = scheduleTime;
-  }, [selectedProgression, bpm, onNextChord]); // Removed track.isPlaying - it's checked inside the function, no need as dependency
+  }, [selectedProgression, onNextChord]); // TEMPO FIX: Removed bpm from deps - we now read directly from musicalTruth.getBPM()
 
   // CHECKPOINT 10: PlaybackEngine registration - track when and why registration runs
   useEffect(() => {

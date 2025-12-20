@@ -8,7 +8,7 @@
  * Part of Story 2.1: Task 14, Subtask 14.4
  */
 
-import * as Tone from 'tone';
+import type * as ToneTypes from 'tone';
 import {
   createStructuredLogger,
   PluginMetadata,
@@ -22,6 +22,18 @@ import {
   PluginState,
   AudioPlugin,
 } from '../../../shared/index.js';
+
+// Helper to get Tone from window (must be initialized before DrumProcessor is used)
+function getTone(): typeof import('tone') {
+  if (typeof window !== 'undefined') {
+    // Check both locations where Tone.js may be stored
+    const tone = (window as any).Tone || (window as any).__globalTone;
+    if (tone) {
+      return tone;
+    }
+  }
+  throw new Error('DrumProcessor: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+}
 
 // BaseAudioPlugin stub implementation
 abstract class BaseAudioPlugin implements AudioPlugin {
@@ -330,21 +342,21 @@ export class DrumProcessor extends BaseAudioPlugin {
   private _timeDomainData!: Float32Array;
 
   // Tone.js components
-  private inputGain: Tone.Gain | null = null;
-  private outputGain: Tone.Gain | null = null;
-  private metronome: Tone.Oscillator | null = null;
-  private metronomeGain: Tone.Gain | null = null;
-  private metronomeEnvelope: Tone.AmplitudeEnvelope | null = null;
+  private inputGain: ToneTypes.Gain | null = null;
+  private outputGain: ToneTypes.Gain | null = null;
+  private metronome: ToneTypes.Oscillator | null = null;
+  private metronomeGain: ToneTypes.Gain | null = null;
+  private metronomeEnvelope: ToneTypes.AmplitudeEnvelope | null = null;
 
   // Drum pattern components
-  private drumSampler: Tone.Sampler | null = null;
-  private drumSequencer: Tone.Sequence | null = null;
+  private drumSampler: ToneTypes.Sampler | null = null;
+  private drumSequencer: ToneTypes.Sequence | null = null;
 
   // EQ for drum enhancement
-  private kickEQ: Tone.Filter | null = null;
-  private snareEQ: Tone.Filter | null = null;
-  private hihatEQ: Tone.Filter | null = null;
-  private overheadEQ: Tone.Filter | null = null;
+  private kickEQ: ToneTypes.Filter | null = null;
+  private snareEQ: ToneTypes.Filter | null = null;
+  private hihatEQ: ToneTypes.Filter | null = null;
+  private overheadEQ: ToneTypes.Filter | null = null;
 
   // Beat detection state
   private beatDetectionState = {
@@ -542,6 +554,7 @@ export class DrumProcessor extends BaseAudioPlugin {
     parameterId: string,
     value: unknown,
   ): Promise<void> {
+    const Tone = getTone();
     try {
       switch (parameterId) {
         case 'beatSensitivity':
@@ -553,9 +566,12 @@ export class DrumProcessor extends BaseAudioPlugin {
           break;
 
         case 'metronomeBpm':
-          if (this.drumSequencer) {
-            Tone.Transport.bpm.value = value as number;
-          }
+          // TEMPO FIX: Do NOT set Tone.Transport.bpm here!
+          // MusicalTruthAuthority is the single source of truth for tempo.
+          // Setting it here would overwrite the tempo set by the user or exercise.
+          // Tone.Transport.bpm is managed by MusicalTruthAuthority.setBPM()
+          // This parameter change is logged but not applied to Transport.
+          logger.info('metronomeBpm parameter changed (managed by MusicalTruthAuthority)', { value });
           break;
 
         case 'metronomeVolume':
@@ -725,11 +741,11 @@ export class DrumProcessor extends BaseAudioPlugin {
     }
   }
 
-  public getToneNode(): Tone.ToneAudioNode | null {
+  public getToneNode(): ToneTypes.ToneAudioNode | null {
     return this.inputGain;
   }
 
-  public connectToTone(destination: Tone.ToneAudioNode): void {
+  public connectToTone(destination: ToneTypes.ToneAudioNode): void {
     if (this.outputGain) {
       this.outputGain.connect(destination);
     }
@@ -813,6 +829,8 @@ export class DrumProcessor extends BaseAudioPlugin {
   private async createAnalysisChain(
     context: PluginAudioContext,
   ): Promise<void> {
+    const Tone = getTone();
+
     // Ensure Tone.js context is started and set up
     try {
       // Check if we need to start Tone.js context
@@ -913,6 +931,8 @@ export class DrumProcessor extends BaseAudioPlugin {
   private async createDrumComponents(
     _context: PluginAudioContext,
   ): Promise<void> {
+    const Tone = getTone();
+
     try {
       // Create metronome with proper Tone.js syntax
       this.metronome = new Tone.Oscillator({ frequency: 800, type: 'sine' });
@@ -1202,10 +1222,18 @@ export class DrumProcessor extends BaseAudioPlugin {
   }
 
   private startMetronome(): void {
+    const Tone = getTone();
+
     // TODO: Review non-null assertion - consider null safety
     if (!this.metronome || !this.metronomeEnvelope) return;
 
-    const bpm = this.getParameter('metronomeBpm') as number;
+    // TEMPO FIX: Do NOT set Tone.Transport.bpm here!
+    // MusicalTruthAuthority is the single source of truth for tempo.
+    // Tone.Transport.bpm is already set correctly by musicalTruth.setFromExercise()
+    // or musicalTruth.setBPM() when the user adjusts the tempo slider.
+    // Just log the current tempo for debugging purposes.
+    const currentBpm = Tone.Transport.bpm.value;
+    logger.info('startMetronome: using current Transport tempo', { currentBpm });
 
     // Create metronome sequence
     const metronomeSequence = new Tone.Sequence(
@@ -1218,7 +1246,7 @@ export class DrumProcessor extends BaseAudioPlugin {
       '4n',
     );
 
-    Tone.Transport.bpm.value = bpm;
+    // TEMPO FIX: Removed direct Tone.Transport.bpm.value write
     metronomeSequence.start(0);
 
     if (Tone.Transport.state !== 'started') {
@@ -1227,11 +1255,14 @@ export class DrumProcessor extends BaseAudioPlugin {
   }
 
   private stopMetronome(): void {
+    const Tone = getTone();
     // Stop metronome sequences
     Tone.Transport.cancel();
   }
 
   private async updateDrumPattern(style: string): Promise<void> {
+    const Tone = getTone();
+
     // TODO: Review non-null assertion - consider null safety
     if (!this.drumSampler) return;
 
@@ -1263,6 +1294,8 @@ export class DrumProcessor extends BaseAudioPlugin {
   }
 
   private startDrumPattern(): void {
+    const Tone = getTone();
+
     if (this.drumSequencer) {
       this.drumSequencer.start(0);
 

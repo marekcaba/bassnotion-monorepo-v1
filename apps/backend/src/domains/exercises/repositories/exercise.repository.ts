@@ -436,6 +436,7 @@ export class ExerciseRepository implements IExerciseRepository {
       harmonyNotes: record.harmony_notes,
       harmonyControlChanges: record.harmony_control_changes,
       harmonyInstrument: record.harmony_instrument,
+      drumPattern: record.drum_pattern,
       createdBy: record.created_by,
       createdAt: new Date(record.created_at),
       updatedAt: new Date(record.updated_at),

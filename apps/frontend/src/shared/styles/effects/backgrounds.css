@@ -1,0 +1,276 @@
+/**
+ * Advanced Background Themes
+ *
+ * A comprehensive library of background effects including:
+ * - Solid colors
+ * - Directional gradients
+ * - Radial gradients
+ * - Mesh gradients
+ * - Animated backgrounds
+ * - Ambient/Atmospheric effects
+ */
+
+/* ===== SOLID DARKS ===== */
+.ui-zone[data-background='dark'] {
+  background: linear-gradient(180deg, hsl(220 15% 10%) 0%, hsl(220 20% 8%) 100%);
+}
+
+.ui-zone[data-background='darker'] {
+  background: linear-gradient(180deg, hsl(220 18% 7%) 0%, hsl(220 22% 5%) 100%);
+}
+
+.ui-zone[data-background='darkest'] {
+  background: linear-gradient(180deg, hsl(220 20% 4%) 0%, hsl(220 25% 2%) 100%);
+}
+
+/* ===== SUBTLE GRADIENTS ===== */
+.ui-zone[data-background='gradient-dark'] {
+  background: linear-gradient(
+    135deg,
+    hsl(220 20% 8%) 0%,
+    hsl(240 15% 10%) 50%,
+    hsl(260 18% 8%) 100%
+  );
+}
+
+.ui-zone[data-background='gradient-purple'] {
+  background: linear-gradient(
+    135deg,
+    hsl(270 30% 12%) 0%,
+    hsl(280 25% 8%) 50%,
+    hsl(260 20% 10%) 100%
+  );
+}
+
+.ui-zone[data-background='gradient-blue'] {
+  background: linear-gradient(
+    135deg,
+    hsl(220 35% 10%) 0%,
+    hsl(210 30% 8%) 50%,
+    hsl(230 25% 12%) 100%
+  );
+}
+
+.ui-zone[data-background='gradient-emerald'] {
+  background: linear-gradient(
+    135deg,
+    hsl(160 30% 8%) 0%,
+    hsl(170 25% 6%) 50%,
+    hsl(150 20% 10%) 100%
+  );
+}
+
+.ui-zone[data-background='gradient-amber'] {
+  background: linear-gradient(
+    135deg,
+    hsl(30 30% 10%) 0%,
+    hsl(25 25% 7%) 50%,
+    hsl(35 20% 8%) 100%
+  );
+}
+
+/* ===== RADIAL GRADIENTS ===== */
+.ui-zone[data-background='gradient-radial-purple'] {
+  background: radial-gradient(
+    ellipse at 50% 0%,
+    hsl(280 40% 20%) 0%,
+    hsl(270 30% 10%) 40%,
+    hsl(260 25% 5%) 100%
+  );
+}
+
+.ui-zone[data-background='gradient-radial-blue'] {
+  background: radial-gradient(
+    ellipse at 50% 0%,
+    hsl(220 45% 20%) 0%,
+    hsl(230 35% 10%) 40%,
+    hsl(240 25% 5%) 100%
+  );
+}
+
+.ui-zone[data-background='gradient-radial-center'] {
+  background: radial-gradient(
+    circle at 50% 50%,
+    hsl(260 30% 15%) 0%,
+    hsl(250 25% 8%) 50%,
+    hsl(240 20% 4%) 100%
+  );
+}
+
+/* ===== MESH GRADIENTS ===== */
+.ui-zone[data-background='mesh-purple-blue'] {
+  background:
+    radial-gradient(at 0% 0%, hsl(280 50% 15%) 0%, transparent 50%),
+    radial-gradient(at 100% 0%, hsl(220 50% 15%) 0%, transparent 50%),
+    radial-gradient(at 100% 100%, hsl(260 40% 12%) 0%, transparent 50%),
+    radial-gradient(at 0% 100%, hsl(240 40% 12%) 0%, transparent 50%),
+    hsl(250 25% 6%);
+}
+
+.ui-zone[data-background='mesh-sunset'] {
+  background:
+    radial-gradient(at 0% 0%, hsl(330 50% 18%) 0%, transparent 50%),
+    radial-gradient(at 100% 0%, hsl(30 50% 15%) 0%, transparent 50%),
+    radial-gradient(at 50% 100%, hsl(280 40% 10%) 0%, transparent 60%),
+    hsl(350 30% 6%);
+}
+
+.ui-zone[data-background='mesh-aurora'] {
+  background:
+    radial-gradient(at 20% 0%, hsl(160 60% 15%) 0%, transparent 40%),
+    radial-gradient(at 80% 20%, hsl(280 50% 15%) 0%, transparent 40%),
+    radial-gradient(at 40% 80%, hsl(200 50% 12%) 0%, transparent 40%),
+    radial-gradient(at 90% 90%, hsl(320 40% 12%) 0%, transparent 40%),
+    hsl(220 25% 5%);
+}
+
+.ui-zone[data-background='mesh-ocean'] {
+  background:
+    radial-gradient(at 0% 50%, hsl(200 60% 15%) 0%, transparent 50%),
+    radial-gradient(at 100% 30%, hsl(180 50% 12%) 0%, transparent 50%),
+    radial-gradient(at 50% 100%, hsl(220 45% 10%) 0%, transparent 50%),
+    hsl(210 30% 5%);
+}
+
+/* ===== ANIMATED BACKGROUNDS ===== */
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes aurora-flow {
+  0% {
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 100% 100%;
+  }
+  100% {
+    background-position: 0% 0%;
+  }
+}
+
+.ui-zone[data-background='animated-gradient'] {
+  background: linear-gradient(
+    -45deg,
+    hsl(260 30% 10%),
+    hsl(280 35% 12%),
+    hsl(220 30% 10%),
+    hsl(240 35% 12%)
+  );
+  background-size: 400% 400%;
+  animation: gradient-shift 15s ease infinite;
+}
+
+.ui-zone[data-background='animated-pulse'] {
+  background: hsl(250 25% 6%);
+  position: relative;
+}
+
+.ui-zone[data-background='animated-pulse']::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 50% 50%,
+    hsl(270 40% 20%) 0%,
+    transparent 50%
+  );
+  animation: pulse-glow 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.ui-zone[data-background='animated-aurora'] {
+  background: linear-gradient(
+    135deg,
+    hsl(160 50% 10%),
+    hsl(200 45% 12%),
+    hsl(280 40% 12%),
+    hsl(320 35% 10%),
+    hsl(160 50% 10%)
+  );
+  background-size: 300% 300%;
+  animation: aurora-flow 20s ease infinite;
+}
+
+/* ===== AMBIENT/ATMOSPHERIC ===== */
+.ui-zone[data-background='ambient-stars'] {
+  background: hsl(240 20% 4%);
+  position: relative;
+}
+
+.ui-zone[data-background='ambient-stars']::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 10% 10%, white 50%, transparent 50%),
+    radial-gradient(1px 1px at 20% 40%, white 50%, transparent 50%),
+    radial-gradient(1.5px 1.5px at 30% 20%, white 50%, transparent 50%),
+    radial-gradient(1px 1px at 40% 60%, white 50%, transparent 50%),
+    radial-gradient(1px 1px at 50% 30%, white 50%, transparent 50%),
+    radial-gradient(1.5px 1.5px at 60% 80%, white 50%, transparent 50%),
+    radial-gradient(1px 1px at 70% 10%, white 50%, transparent 50%),
+    radial-gradient(1px 1px at 80% 50%, white 50%, transparent 50%),
+    radial-gradient(1.5px 1.5px at 90% 70%, white 50%, transparent 50%),
+    radial-gradient(1px 1px at 15% 85%, white 50%, transparent 50%),
+    radial-gradient(1px 1px at 25% 55%, white 50%, transparent 50%),
+    radial-gradient(1px 1px at 35% 75%, white 50%, transparent 50%),
+    radial-gradient(1.5px 1.5px at 45% 15%, white 50%, transparent 50%),
+    radial-gradient(1px 1px at 55% 45%, white 50%, transparent 50%),
+    radial-gradient(1px 1px at 65% 25%, white 50%, transparent 50%),
+    radial-gradient(1px 1px at 75% 95%, white 50%, transparent 50%),
+    radial-gradient(1.5px 1.5px at 85% 35%, white 50%, transparent 50%),
+    radial-gradient(1px 1px at 95% 65%, white 50%, transparent 50%);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.ui-zone[data-background='ambient-glow'] {
+  background:
+    radial-gradient(
+      ellipse 80% 50% at 50% 100%,
+      hsl(270 50% 15%) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse 60% 40% at 50% 0%,
+      hsl(220 40% 12%) 0%,
+      transparent 50%
+    ),
+    hsl(250 25% 5%);
+}
+
+.ui-zone[data-background='ambient-fog'] {
+  background: hsl(220 20% 6%);
+  position: relative;
+}
+
+.ui-zone[data-background='ambient-fog']::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 100% 50% at 20% 80%, hsl(220 20% 15% / 0.4) 0%, transparent 50%),
+    radial-gradient(ellipse 80% 40% at 80% 20%, hsl(240 15% 12% / 0.3) 0%, transparent 50%),
+    radial-gradient(ellipse 120% 60% at 50% 50%, hsl(230 18% 10% / 0.2) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* ===== SPECIAL ===== */
+.ui-zone[data-background='transparent'] {
+  background: transparent;
+}
