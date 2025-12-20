@@ -25,8 +25,19 @@
  * Only ONE session active at a time. Creating a new session MUST dispose the old one.
  */
 
-import * as Tone from 'tone';
 import { EventScope } from './EventScope.js';
+
+// Helper to get Tone from window (must be initialized before PlaybackSession is used)
+function getTone(): any {
+  if (typeof window !== 'undefined') {
+    // Check both locations where Tone.js may be stored
+    const tone = (window as any).Tone || (window as any).__globalTone;
+    if (tone) {
+      return tone;
+    }
+  }
+  throw new Error('PlaybackSession: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+}
 import { EventBus } from './EventBus.js';
 import {
   musicalTruth,
@@ -115,6 +126,7 @@ export class PlaybackSession {
 
     logger.info(`Starting playback`, { sessionId: this.id });
 
+    const Tone = getTone();
     this.transportStartTime = Tone.context.currentTime + 0.05;
     this.state = 'playing';
 
@@ -149,6 +161,7 @@ export class PlaybackSession {
     this.timers.clear();
 
     // Clear ALL scheduled Tone.Transport events
+    const Tone = getTone();
     for (const id of this.scheduledIds) {
       try {
         Tone.Transport.clear(id);
@@ -255,9 +268,10 @@ export class PlaybackSession {
     this.timers.clear();
 
     // Clear old scheduled events
+    const ToneInTempo = getTone();
     for (const id of this.scheduledIds) {
       try {
-        Tone.Transport.clear(id);
+        ToneInTempo.Transport.clear(id);
       } catch (e) {
         // Already cleared
       }

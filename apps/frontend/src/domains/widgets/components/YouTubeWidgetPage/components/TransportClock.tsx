@@ -7,6 +7,7 @@ import { LoopGridStrip } from './LoopGridStrip';
 import type { LoopRegion } from './LoopGridStrip';
 import type { Exercise } from '@bassnotion/contracts';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { logSkeletonDebug } from '@/utils/skeletonDebug';
 
 interface TransportClockProps {
   selectedExercise?: Exercise;
@@ -32,6 +33,11 @@ export function TransportClock({
 }: TransportClockProps) {
   const { correlationId, logger } = useCorrelation('TransportClock');
   transportClockRenderCount++;
+
+  // SKELETON-DEBUG: Log first 5 renders with timing (using shared baseline)
+  logSkeletonDebug('⏱️', 'TransportClock', transportClockRenderCount, {
+    hasExercise: !!selectedExercise,
+  });
 
   // MOUNT/UNMOUNT DETECTION for double countdown bug
   React.useEffect(() => {
@@ -400,7 +406,7 @@ export function TransportClock({
   );
 
   return (
-    <div className="bg-slate-800 rounded-2xl p-3 shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)]">
+    <div className="zone-card bg-slate-800 rounded-2xl p-3 shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)]">
       {/* First Row - Time Signature, Clock, Tempo */}
       <div className="flex items-center justify-between mb-3">
         {/* Time Signature - Left */}
@@ -464,8 +470,10 @@ export function TransportClock({
           duration={(() => {
             if (!selectedExercise) return 0;
             // Calculate duration in milliseconds from beats and BPM
-            if (selectedExercise.duration_beats && selectedExercise.bpm) {
-              const beatsPerSecond = selectedExercise.bpm / 60;
+            // TEMPO FIX: Use current transport tempo for duration calculation
+            const effectiveBpm = tempo || selectedExercise.bpm;
+            if (selectedExercise.duration_beats && effectiveBpm) {
+              const beatsPerSecond = effectiveBpm / 60;
               const durationSeconds =
                 selectedExercise.duration_beats / beatsPerSecond;
               return durationSeconds * 1000; // Convert to milliseconds
@@ -477,8 +485,48 @@ export function TransportClock({
           onLoopRegionChange={onLoopRegionChange || (() => undefined)}
           onSeek={onSeek}
           className="[&>div]:bg-transparent [&>div]:shadow-none [&>div]:p-0"
+          currentTempo={tempo}
         />
       </div>
+    </div>
+  );
+}
+
+/**
+ * Skeleton loading state for TransportClock
+ * Shows placeholder for time signature, clock display, and timeline strip
+ */
+export function TransportClockSkeleton() {
+  return (
+    <div className="zone-card bg-slate-800 rounded-2xl p-3 shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)]">
+      {/* First Row - Time Signature, Clock, Tempo */}
+      <div className="flex items-center justify-between mb-3">
+        {/* Time Signature Skeleton */}
+        <div className="bg-slate-700 rounded-xl px-4 py-2 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4),inset_-2px_-2px_4px_rgba(255,255,255,0.08)]">
+          <div className="skeleton-shimmer h-3 w-8 rounded mb-1" />
+          <div className="skeleton-shimmer h-6 w-12 rounded" />
+        </div>
+
+        {/* Master Clock Skeleton */}
+        <div className="flex-1 flex justify-center">
+          <div className="bg-slate-900 rounded-2xl px-8 py-3 shadow-[inset_3px_3px_6px_rgba(0,0,0,0.6),inset_-3px_-3px_6px_rgba(255,255,255,0.1)]">
+            <div className="flex items-center gap-3">
+              <div className="skeleton-shimmer w-2 h-2 rounded-full" />
+              <div className="skeleton-shimmer h-8 w-28 rounded" />
+            </div>
+          </div>
+        </div>
+
+        {/* Tempo Skeleton */}
+        <div className="bg-slate-700 rounded-xl px-4 py-2 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4),inset_-2px_-2px_4px_rgba(255,255,255,0.08)] flex flex-col items-center">
+          <div className="skeleton-shimmer h-6 w-12 rounded mb-1" />
+          <div className="skeleton-shimmer h-3 w-8 rounded" />
+        </div>
+      </div>
+
+      {/* Timeline Strip Skeleton */}
+      <div className="skeleton-shimmer h-12 w-full rounded-lg" />
+      <span className="sr-only">Loading transport controls...</span>
     </div>
   );
 }

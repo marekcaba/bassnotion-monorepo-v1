@@ -3,7 +3,6 @@
  * Handles user gesture requirements for browser security
  */
 
-import * as Tone from 'tone';
 import {
   getPersistentAudioContext,
   getOrCreatePersistentAudioContext,
@@ -12,6 +11,18 @@ import {
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { createStructuredLogger } from '@bassnotion/contracts';
 import { WindowRegistry } from '../services/WindowRegistry.js';
+
+// Helper to get Tone from window (must be initialized before these functions are used)
+function getTone(): any {
+  if (typeof window !== 'undefined') {
+    // Check both locations where Tone.js may be stored
+    const tone = (window as any).Tone || (window as any).__globalTone;
+    if (tone) {
+      return tone;
+    }
+  }
+  throw new Error('ensureAudioContext: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+}
 
 const logger = createStructuredLogger('ensureAudioContext');
 
@@ -39,6 +50,7 @@ export async function ensureAudioContext(): Promise<void> {
       if (persistentContext.state === 'suspended') {
         await persistentContext.resume();
       }
+      const Tone = getTone();
       if (Tone.context.state === 'suspended') {
         await Tone.start();
       }
@@ -54,6 +66,7 @@ export async function ensureAudioContext(): Promise<void> {
       if (persistentContext.state === 'suspended') {
         await persistentContext.resume();
       }
+      const Tone = getTone();
       if (Tone.context.state === 'suspended') {
         await Tone.start();
       }
@@ -156,6 +169,9 @@ export async function ensureAudioContextLightweight(): Promise<void> {
     // ✅ FIX: Use WindowRegistry instead of direct window access
     const globalServices = WindowRegistry.getCoreServices();
 
+    // Get Tone once for this function
+    const Tone = getTone();
+
     if (globalServices) {
       const audioEngine = globalServices.getAudioEngine?.();
       logger.info('ensureAudioContextLightweight: Global services check', {
@@ -217,8 +233,13 @@ export async function ensureAudioContextLightweight(): Promise<void> {
   } catch (error) {
     logger.error('ensureAudioContextLightweight: Failed:', error);
     // Fallback to just starting Tone
-    if (Tone.context.state === 'suspended') {
-      await Tone.start();
+    try {
+      const ToneFallback = getTone();
+      if (ToneFallback.context.state === 'suspended') {
+        await ToneFallback.start();
+      }
+    } catch {
+      // Tone not available, nothing we can do
     }
   }
 }

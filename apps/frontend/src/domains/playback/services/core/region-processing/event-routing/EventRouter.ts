@@ -108,18 +108,11 @@ export class EventRouter {
 
     const timestamp = Date.now();
 
-    // DEBUG: Log harmony-control-change events
-    if (event.type === 'harmony-control-change') {
-      // eslint-disable-next-line no-console
-      console.log(
-        `[EMIT EVENT] ⚠️ harmony-control-change detected: cc=${(event.data as any)?.cc}, value=${(event.data as any)?.value}, audioTime=${audioTime.toFixed(3)}`,
-      );
-    }
+    // Debug logging removed for performance
 
     // FAANG SOLUTION: Try direct audio scheduling first (sample-perfect)
     if (this.scheduleAudioDirect(instrumentType, event, audioTime, frame)) {
       // Successfully scheduled directly - skip event bus
-      logger.debug(`Direct audio scheduling used for ${instrumentType}`);
       return;
     }
 
@@ -149,8 +142,6 @@ export class EventRouter {
 
     // Handle harmony
     if (instrumentType === 'harmony') {
-      // LOG: Event arriving at router - include event.type to see what's being routed
-      console.log(`[HARMONY-FLOW] STEP 2 - Router: type="${event.type}" | ${(event.data as any)?.noteName || 'NO_NAME'} (MIDI ${(event.data as any)?.midiNote || 'NO_MIDI'}) at t=${audioTime.toFixed(3)}`);
       return this.harmonyScheduler.schedule(event, audioTime, frame);
     }
 

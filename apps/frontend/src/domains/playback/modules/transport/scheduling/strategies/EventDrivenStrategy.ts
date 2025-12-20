@@ -7,8 +7,19 @@
  * @module transport/scheduling/strategies/EventDrivenStrategy
  */
 
-import * as Tone from 'tone';
 import { getLogger } from '@/utils/logger.js';
+
+// Helper to get Tone from window (must be initialized before EventDrivenStrategy is used)
+function getTone(): any {
+  if (typeof window !== 'undefined') {
+    // Check both locations where Tone.js may be stored
+    const tone = (window as any).Tone || (window as any).__globalTone;
+    if (tone) {
+      return tone;
+    }
+  }
+  throw new Error('EventDrivenStrategy: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+}
 import type { Clock } from '../../core/Clock.js';
 import type {
   PositionUpdate,
@@ -110,6 +121,7 @@ export class EventDrivenStrategy implements PositionUpdateStrategy {
     // TEMPO COMPENSATION: Initialize tracking for this playback session
     this.accumulatedBeats = 0;
     this.lastTempoChangeTime = this.transportStartTime;
+    const Tone = getTone();
     this.currentBPM = Tone.Transport.bpm.value;
 
     // Subscribe to Clock.onTick

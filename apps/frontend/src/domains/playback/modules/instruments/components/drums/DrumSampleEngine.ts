@@ -4,13 +4,25 @@
  * Manages drum sample loading and playback
  */
 
-import * as Tone from 'tone';
+import type * as ToneTypes from 'tone';
 import {
   BaseInstrumentCore,
   ISamplerCore,
 } from '../../architecture/IInstrumentCore.js';
 import type { Note } from '../../architecture/IInstrumentCore.js';
 import { createStructuredLogger } from '@bassnotion/contracts';
+
+// Helper to get Tone from window (must be initialized before DrumSampleEngine is used)
+function getTone(): typeof import('tone') {
+  if (typeof window !== 'undefined') {
+    // Check both locations where Tone.js may be stored
+    const tone = (window as any).Tone || (window as any).__globalTone;
+    if (tone) {
+      return tone;
+    }
+  }
+  throw new Error('DrumSampleEngine: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+}
 
 const logger = createStructuredLogger('DrumSampleEngine');
 
@@ -28,8 +40,8 @@ export interface DrumKitPiece {
   };
   midiNote?: number; // MIDI note mapping
   group?: string; // For choke groups (e.g., 'hihat')
-  envelope?: Partial<Tone.EnvelopeOptions>;
-  filter?: Partial<Tone.FilterOptions>;
+  envelope?: Partial<ToneTypes.EnvelopeOptions>;
+  filter?: Partial<ToneTypes.FilterOptions>;
 }
 
 export interface DrumKit {
@@ -63,42 +75,25 @@ export class DrumSampleEngine
   readonly name = 'Drum Sample Engine';
 
   private kit: DrumKit | null = null;
-  private samplers: Map<string, Tone.Sampler> = new Map();
+  private samplers: Map<string, ToneTypes.Sampler> = new Map();
   private chokeGroups: Map<string, Set<string>> = new Map();
-  private volume: Tone.Volume;
-  private reverb: Tone.Reverb;
-  private compressor: Tone.Compressor;
-  private reverbMix: Tone.CrossFade;
+  private volume: ToneTypes.Volume | null = null;
+  private reverb: ToneTypes.Reverb | null = null;
+  private compressor: ToneTypes.Compressor | null = null;
+  private reverbMix: ToneTypes.CrossFade | null = null;
+
+  // Store options for deferred initialization
+  private options: DrumSampleEngineOptions;
 
   constructor(options: DrumSampleEngineOptions = {}) {
     super();
-
-    // Create effects chain
-    this.volume = new Tone.Volume(options.volume || -6);
-    this.reverb = new Tone.Reverb({ decay: 2, wet: 0 });
-    this.compressor = new Tone.Compressor({
-      threshold: -12,
-      ratio: 4,
-      attack: 0.003,
-      release: 0.1,
-    });
-    this.reverbMix = new Tone.CrossFade(options.reverb || 0);
-
-    // Connect chain: samplers -> compressor -> reverbMix -> volume
-    this.compressor.connect(this.reverbMix.a);
-    this.compressor.connect(this.reverb);
-    this.reverb.connect(this.reverbMix.b);
-    this.reverbMix.connect(this.volume);
-
-    this.output = this.volume;
+    this.options = options;
 
     if (options.kit) {
       this.kit = options.kit;
     }
 
-    if (!options.compression) {
-      this.compressor.wet.value = 0;
-    }
+    // Audio nodes will be created during initialize()
   }
 
   async initialize(): Promise<void> {
@@ -107,6 +102,31 @@ export class DrumSampleEngine
     this.state.loading = true;
 
     try {
+      const Tone = getTone();
+
+      // Create effects chain (deferred from constructor)
+      this.volume = new Tone.Volume(this.options.volume || -6);
+      this.reverb = new Tone.Reverb({ decay: 2, wet: 0 });
+      this.compressor = new Tone.Compressor({
+        threshold: -12,
+        ratio: 4,
+        attack: 0.003,
+        release: 0.1,
+      });
+      this.reverbMix = new Tone.CrossFade(this.options.reverb || 0);
+
+      // Connect chain: samplers -> compressor -> reverbMix -> volume
+      this.compressor.connect(this.reverbMix.a);
+      this.compressor.connect(this.reverb);
+      this.reverb.connect(this.reverbMix.b);
+      this.reverbMix.connect(this.volume);
+
+      this.output = this.volume;
+
+      if (!this.options.compression) {
+        this.compressor.wet.value = 0;
+      }
+
       if (this.kit) {
         await this.loadKit(this.kit);
       }
@@ -130,10 +150,15 @@ export class DrumSampleEngine
   async dispose(): Promise<void> {
     this.unloadSamples();
 
-    this.volume.dispose();
-    this.reverb.dispose();
-    this.compressor.dispose();
-    this.reverbMix.dispose();
+    this.volume?.dispose();
+    this.reverb?.dispose();
+    this.compressor?.dispose();
+    this.reverbMix?.dispose();
+
+    this.volume = null;
+    this.reverb = null;
+    this.compressor = null;
+    this.reverbMix = null;
 
     this.state.ready = false;
     this.state.initialized = false;
@@ -181,11 +206,13 @@ export class DrumSampleEngine
     drumId: string,
     piece: DrumKitPiece,
   ): Promise<void> {
+    const Tone = getTone();
+
     // Build URL map for sampler
     const urls: Record<string, string> = {};
     let noteCounter = 60; // Start from C4
 
-    for (const [velocity, sampleUrl] of Object.entries(piece.samples)) {
+    for (const [_velocity, sampleUrl] of Object.entries(piece.samples)) {
       if (typeof sampleUrl === 'string') {
         urls[Tone.Frequency(noteCounter, 'midi').toNote()] = sampleUrl;
         noteCounter++;
@@ -204,7 +231,7 @@ export class DrumSampleEngine
       onload: () => {
         logger.info(`Loaded drum piece: ${piece.name}`);
       },
-      onerror: (error) => {
+      onerror: (error: Error) => {
         logger.error(`Failed to load drum piece: ${piece.name}`, error);
       },
     });
@@ -215,7 +242,9 @@ export class DrumSampleEngine
     }
 
     // Connect to effects chain
-    sampler.connect(this.compressor);
+    if (this.compressor) {
+      sampler.connect(this.compressor);
+    }
 
     this.samplers.set(drumId, sampler);
   }
@@ -224,6 +253,7 @@ export class DrumSampleEngine
    * Trigger a drum sound
    */
   trigger(note: Note): void {
+    const Tone = getTone();
     const drumNote = note as DrumNote;
     const drumId = drumNote.drum;
     const sampler = this.samplers.get(drumId);
@@ -313,6 +343,7 @@ export class DrumSampleEngine
     velocity: number,
     piece: DrumKitPiece,
   ): { note: string; sampleIndex: number } {
+    const Tone = getTone();
     const velocityKeys = Object.keys(piece.samples)
       .map((v) => parseInt(v))
       .sort((a, b) => a - b);
@@ -375,6 +406,8 @@ export class DrumSampleEngine
 
   // ISamplerCore implementation
   async loadSamples(urls: Record<string, string>): Promise<void> {
+    const Tone = getTone();
+
     // Convert to drum kit format
     const customKit: DrumKit = {
       id: 'custom',

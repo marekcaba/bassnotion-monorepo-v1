@@ -1,4 +1,4 @@
 {
-  "/library/[tutorialId]/page": "app/library/[tutorialId]/page.js",
-  "/library/page": "app/library/page.js"
+  "/library/page": "app/library/page.js",
+  "/library/[tutorialId]/page": "app/library/[tutorialId]/page.js"
 }

@@ -12,6 +12,7 @@ import { getLogger } from '@/utils/logger.js';
 import { AudioDebugPanel } from '@/shared/debug/AudioDebugger';
 import { HealthStatus } from '@/shared/components/HealthStatus';
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
+import { ThemedLayout } from './_components/ThemedLayout';
 
 const logger = getLogger('app');
 
@@ -46,7 +47,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <AudioProvider>
             {/* Phase 1: PreloadInitializer removed - samples will load on user interaction */}
             <AuthProviderWrapper>
-              <ReactQueryProvider>{children}</ReactQueryProvider>
+              <ReactQueryProvider>
+                <ThemedLayout>{children}</ThemedLayout>
+              </ReactQueryProvider>
             </AuthProviderWrapper>
           </AudioProvider>
           <Toaster />

@@ -1,12 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/shared/components/ui/card';
+import { ZoneCard, ZoneCardContent } from '@/ui-libraries';
 import { Target } from 'lucide-react';
 import { createStructuredLogger } from '@bassnotion/contracts';
 
@@ -33,6 +28,7 @@ import { FretboardGrid } from './components/FretboardGrid';
 import Fretboard3D from './components/Fretboard3D';
 import { convertTo3DFormat } from './utils/formatConversion';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { logSkeletonDebug } from '@/utils/skeletonDebug';
 
 // Render counter for debugging
 let fretboardCardRenderCount = 0;
@@ -121,8 +117,9 @@ export const FretboardCard = React.memo(
   }: FretboardCardProps) {
     const { correlationId, logger } = useCorrelation('FretboardCard');
     // Find the selected exercise object from the exercises list
+    // Note: ex.id is an ExerciseId value object, so we compare with its .value property
     const selectedExercise =
-      exercises?.find((ex) => ex.id === selectedExerciseId) || null;
+      exercises?.find((ex) => ex.id.value === selectedExerciseId) || null;
 
     return (
       <SyncedWidget
@@ -257,6 +254,14 @@ const FretboardCardContent = React.memo(
   }) {
     // Enhanced debug logging to track render causes
     fretboardCardRenderCount++;
+
+    // SKELETON-DEBUG: Log first 5 renders with timing (using shared baseline)
+    logSkeletonDebug('🎸', 'FretboardCard', fretboardCardRenderCount, {
+      hasExercises: !!exercises,
+      exerciseCount: exercises?.length ?? 0,
+      selectedExerciseId,
+    });
+
     logger.info(
       `🎸 FretboardCardContent RENDER #${fretboardCardRenderCount}:`,
       {
@@ -382,7 +387,7 @@ const FretboardCardContent = React.memo(
         );
 
         const exercise = exercisesListRef.current.find(
-          (ex) => ex.id === exerciseId,
+          (ex) => ex.id.value === exerciseId,
         );
         if (exercise) {
           // Check if this exercise is already selected by comparing with sync state
@@ -855,8 +860,8 @@ const FretboardCardContent = React.memo(
     );
 
     return (
-      <Card className="bg-transparent border-transparent shadow-none overflow-visible">
-        <CardContent className="p-0 overflow-visible">
+      <ZoneCard className="zone-card bg-transparent border-transparent shadow-none overflow-visible">
+        <ZoneCardContent className="p-0 overflow-visible">
           {/* Transparent Fretboard Container */}
           <div className="relative">
             {/* Conditional fretboard rendering based on mode */}
@@ -1008,8 +1013,8 @@ const FretboardCardContent = React.memo(
               </div>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </ZoneCardContent>
+      </ZoneCard>
     );
   },
   (prevProps, nextProps) => {
@@ -1079,3 +1084,49 @@ const FretboardCardContent = React.memo(
     return isEqual;
   },
 );
+
+/**
+ * Skeleton loading state for FretboardCard
+ * Shows placeholder for fretboard visualization area
+ */
+export function FretboardCardSkeleton() {
+  return (
+    <ZoneCard className="zone-card bg-transparent border-transparent shadow-none overflow-visible">
+      <ZoneCardContent className="p-0 overflow-visible">
+        <div className="relative mx-auto" style={{ width: 568, height: 290 }}>
+          {/* Fretboard Grid Skeleton with glassmorphism */}
+          <div className="skeleton-glass w-full h-full rounded-xl">
+            {/* String lines placeholder */}
+            <div className="absolute inset-0 flex flex-col justify-evenly p-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div
+                  key={i}
+                  className="skeleton-shimmer h-1 w-full rounded-full opacity-30"
+                />
+              ))}
+            </div>
+            {/* Fret markers placeholder */}
+            <div className="absolute inset-0 flex justify-evenly items-center p-4">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
+                <div
+                  key={i}
+                  className="skeleton-shimmer w-1 h-32 rounded-full opacity-20"
+                />
+              ))}
+            </div>
+            {/* Note dot placeholders */}
+            <div className="absolute inset-0 flex flex-wrap gap-8 justify-center items-center p-8">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div
+                  key={i}
+                  className={`skeleton-shimmer w-8 h-8 rounded-full skeleton-delay-${i}`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </ZoneCardContent>
+      <span className="sr-only">Loading fretboard visualization...</span>
+    </ZoneCard>
+  );
+}

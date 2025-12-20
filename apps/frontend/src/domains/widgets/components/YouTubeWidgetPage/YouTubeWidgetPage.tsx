@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useCallback } from 'react';
+import Image from 'next/image';
 // Import our new components
 import { YouTubeVideoSection } from './YouTubeVideoSection';
 import { TutorialInfoCard } from './TutorialInfoCard';
@@ -34,6 +35,12 @@ import type { Tutorial } from '@bassnotion/contracts';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { getSamplePreloader } from '@/domains/playback/services/InitialSamplePreloader.js';
 import { GlobalSampleCache } from '@/domains/playback/modules/storage/cache/GlobalSampleCache.js';
+import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
+// UIZoneProvider and ThemeSwitcher are now applied at root layout level
+// Only NextUIZoneProvider is needed here for NextUI component support
+import { NextUIZoneProvider } from '@/ui-libraries';
+import { logSkeletonDebug } from '@/utils/skeletonDebug';
+import { HomeNavbar } from '@/app/_components/HomeNavbar';
 
 const logger = getLogger('youtube-widget');
 
@@ -56,6 +63,13 @@ function YouTubeWidgetPageContent({
   exercises,
 }: YouTubeWidgetPageProps) {
   youTubeWidgetPageContentRenderCount++;
+
+  // SKELETON-DEBUG: Log first 5 renders with timing (using shared baseline)
+  logSkeletonDebug('🎬', 'YouTubeWidgetPageContent', youTubeWidgetPageContentRenderCount, {
+    hasTutorialData: !!tutorialData,
+    hasExercises: !!exercises,
+    exerciseCount: exercises?.length ?? 0,
+  });
 
   // Track prop changes
   const propChanges: string[] = [];
@@ -343,29 +357,33 @@ function YouTubeWidgetPageContent({
         const firstExercise = exercises[0];
         if (firstExercise?.id && !selectedExerciseId) {
           console.log(
-            '🎯 [YOUTUBE-WIDGET] Auto-selecting first exercise in parent (deferred 150ms):',
+            '🎯 [YOUTUBE-WIDGET] Auto-selecting first exercise via handleExerciseSelect:',
             {
               exerciseId: firstExercise.id,
               exerciseTitle: firstExercise.title,
               hasHarmonyNotes: !!firstExercise.harmonyNotes,
+              harmonyInstrument: firstExercise.harmonyInstrument,
             },
           );
-          // Update state gradually
-          setSelectedExerciseId(firstExercise.id);
-          // Update widget state after a frame
-          requestAnimationFrame(() => {
-            // console.log('🔍 [STATE-FLOW-0] Calling setSelectedExercise with:', {
-            //   exerciseId: firstExercise.id,
-            //   exerciseTitle: firstExercise.title,
-            //   harmonyInstrument: firstExercise.harmonyInstrument,
-            //   harmony_instrument: firstExercise.harmony_instrument,
-            //   hasHarmonyInstrument: !!firstExercise.harmonyInstrument,
-            //   allKeys: Object.keys(firstExercise),
-            // });
-            widgetStateRef.current.setSelectedExercise(firstExercise);
-            console.log('✅ [YOUTUBE-WIDGET] Exercise set in widgetState');
-            // REMOVED: globalExerciseSelection update - not needed
-          });
+          // CRITICAL FIX: Use handleExerciseSelect instead of direct state updates
+          // This ensures harmony-samples-loaded event is emitted for auto-selected exercises
+          const exerciseIdStr =
+            typeof firstExercise.id === 'object'
+              ? firstExercise.id.value
+              : firstExercise.id;
+
+          if (handleExerciseSelectRef.current) {
+            handleExerciseSelectRef.current(exerciseIdStr);
+          } else {
+            console.error(
+              '❌ [YOUTUBE-WIDGET] handleExerciseSelectRef not ready!',
+            );
+            // Fallback to direct state update
+            setSelectedExerciseId(firstExercise.id);
+            requestAnimationFrame(() => {
+              widgetStateRef.current.setSelectedExercise(firstExercise);
+            });
+          }
         }
       }, 150); // 150ms delay to let FretboardCard initialize first
 
@@ -376,6 +394,11 @@ function YouTubeWidgetPageContent({
   // Store widgetState methods in refs to avoid dependencies
   const widgetStateRef = useRef(widgetState);
   widgetStateRef.current = widgetState;
+
+  // Ref for handleExerciseSelect to avoid stale closure in auto-selection effect
+  const handleExerciseSelectRef = useRef<(exerciseId: string) => void>(
+    () => {},
+  );
 
   // REMOVED: globalExerciseSelectionRef - not needed without global selection
 
@@ -402,7 +425,14 @@ function YouTubeWidgetPageContent({
   const handleExerciseSelect = useCallback(
     async (exerciseId: string) => {
       // Find the exercise from the exercises array using ref
-      const exercise = exercisesRef.current?.find((ex) => ex.id === exerciseId);
+      // Handle both string IDs and ExerciseId objects
+      const exercise = exercisesRef.current?.find((ex) => {
+        const exIdStr =
+          typeof ex.id === 'object' && ex.id !== null
+            ? (ex.id as any).value
+            : ex.id;
+        return exIdStr === exerciseId;
+      });
 
       console.log('🔍🔍🔍 [EXERCISE-SELECT-DEBUG] Raw exercise data:', {
         exerciseId,
@@ -448,8 +478,14 @@ function YouTubeWidgetPageContent({
         // Only emit to sync context for widget synchronization
         emitGlobalEvent('exercise:selected', { exerciseId, exercise });
 
-        // 🆕 CRITICAL FIX: Load samples for new instrument on-demand
-        // This ensures samples are available when switching between exercises with different instruments
+        // 🆕 SEO OPTIMIZATION: Defer sample loading to ScrollTriggerLoader
+        // Auto-selection happens at T+150ms for fast page load, but sample loading is deferred
+        // until user scrolls (handled by ScrollTriggerLoader.loadTutorialSamples).
+        // This ensures fast initial page render for SEO while still loading samples before play.
+        //
+        // For SUBSEQUENT exercise selections (after scroll has occurred), we load immediately.
+        const scrollHasTriggered = WindowRegistry.getSamplesReady();
+
         if (
           exercise.harmonyInstrument &&
           exercise.harmonyNotes &&
@@ -461,8 +497,19 @@ function YouTubeWidgetPageContent({
               exerciseId: exercise.id,
               instrument: exercise.harmonyInstrument,
               harmonyNotesCount: exercise.harmonyNotes.length,
+              scrollHasTriggered,
             },
           );
+
+          // If scroll hasn't happened yet, skip loading - ScrollTriggerLoader handles it
+          if (!scrollHasTriggered) {
+            console.log(
+              '⏳ [EXERCISE-SELECT] Scroll not triggered yet, deferring sample load to ScrollTriggerLoader',
+            );
+            // Don't load samples yet - ScrollTriggerLoader will handle it on scroll
+            // This keeps initial page load fast for SEO
+            return;
+          }
 
           // Check if samples already cached for this instrument
           const sampleCache = GlobalSampleCache.getInstance();
@@ -485,9 +532,9 @@ function YouTubeWidgetPageContent({
               .then((result) => {
                 console.log('✅ [EXERCISE-SELECT] Samples loaded:', {
                   instrument: exercise.harmonyInstrument,
-                  loaded: result.loaded,
-                  total: result.total,
-                  success: result.success,
+                  loaded: result?.loaded ?? 'N/A',
+                  total: result?.total ?? 'N/A',
+                  success: result?.success ?? true,
                 });
                 logger.info('Samples loaded successfully for exercise:', {
                   instrument: exercise.harmonyInstrument,
@@ -499,10 +546,22 @@ function YouTubeWidgetPageContent({
                 console.log(
                   '📢 [EXERCISE-SELECT] Emitting samples-loaded event for HarmonyWidget',
                 );
+                // Emit via window for HarmonyWidget's window listener
+                if (typeof window !== 'undefined') {
+                  const event = new CustomEvent('harmony-samples-loaded', {
+                    detail: {
+                      exerciseId: exercise.id,
+                      instrument: exercise.harmonyInstrument,
+                      samplesLoaded: result?.loaded ?? true,
+                    },
+                  });
+                  window.dispatchEvent(event);
+                }
+                // Also emit via sync context
                 emitGlobalEvent('harmony-samples-loaded', {
                   exerciseId: exercise.id,
                   instrument: exercise.harmonyInstrument,
-                  samplesLoaded: result.loaded,
+                  samplesLoaded: result?.loaded ?? true,
                 });
               })
               .catch((error) => {
@@ -551,6 +610,9 @@ function YouTubeWidgetPageContent({
     },
     [emitGlobalEvent], // Only depend on emitGlobalEvent
   );
+
+  // Keep ref in sync with latest handleExerciseSelect
+  handleExerciseSelectRef.current = handleExerciseSelect;
 
   const handleDotClick = useCallback(
     (stringIndex: number, fret: number | 'open') => {
@@ -746,9 +808,29 @@ function YouTubeWidgetPageContent({
   }, []);
 
   return (
-    <div className="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen">
+      {/* Header with Logo - Same as home/library pages */}
+      <header className="w-full pt-8 sm:pt-12 pb-5 flex justify-center">
+        <button
+          onClick={() => navigateWithTransition('/')}
+          className="cursor-pointer"
+        >
+          <Image
+            src="/BASSICOLOGY BIG.png"
+            alt="Bassicology"
+            width={600}
+            height={150}
+            className="w-[180px] sm:w-[260px] md:w-[320px] lg:w-[400px] xl:w-[480px] h-auto"
+            priority
+          />
+        </button>
+      </header>
+
+      {/* Navbar */}
+      <HomeNavbar />
+
       {/* Mobile-first central container */}
-      <div className="mx-auto px-4 py-6 max-w-[600px]">
+      <div className="mx-auto px-4 py-6 w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl">
         <div className="space-y-4">
           {/* User Indicator and Admin Controls */}
           <div className="flex justify-between items-center gap-3">
@@ -939,19 +1021,22 @@ export function YouTubeWidgetPage({
     }
   });
 
+  // UIZoneProvider is now at root layout level - no need to wrap here
   return (
-    <TransportProvider>
-      <SyncProvider
-        debugMode={false} // Disable debug mode to reduce console noise
-        monitoringInterval={30000} // 30 seconds - much less frequent to prevent re-render loops
-        enableGlobalMonitoring={false} // CRITICAL FIX: Disable monitoring to prevent 1s re-render loop
-      >
-        <YouTubeWidgetPageContent
-          tutorialData={tutorialData}
-          tutorialSlug={tutorialSlug}
-          exercises={exercises}
-        />
-      </SyncProvider>
-    </TransportProvider>
+    <NextUIZoneProvider>
+      <TransportProvider>
+        <SyncProvider
+          debugMode={false} // Disable debug mode to reduce console noise
+          monitoringInterval={30000} // 30 seconds - much less frequent to prevent re-render loops
+          enableGlobalMonitoring={false} // CRITICAL FIX: Disable monitoring to prevent 1s re-render loop
+        >
+          <YouTubeWidgetPageContent
+            tutorialData={tutorialData}
+            tutorialSlug={tutorialSlug}
+            exercises={exercises}
+          />
+        </SyncProvider>
+      </TransportProvider>
+    </NextUIZoneProvider>
   );
 }

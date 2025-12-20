@@ -126,6 +126,10 @@ export class WamDrummerNode extends BaseNode implements WamNode {
   private _isActive: boolean = true; // Start active by default
   private _activeSources: Set<AudioBufferSourceNode> = new Set();
 
+  // Master volume control
+  private _masterVolume: number = 0.8;
+  private _isMuted: boolean = false;
+
   module: WebAudioModule;
 
   constructor(module: WebAudioModule, options?: AudioNodeOptions) {
@@ -168,6 +172,59 @@ export class WamDrummerNode extends BaseNode implements WamNode {
       this.padPanners.set(i, panner);
       this.samplers.set(i, []);
     }
+  }
+
+  // ============================================================================
+  // MASTER VOLUME AND MUTE CONTROL
+  // ============================================================================
+  // These methods control the overall output level of the drum instrument
+  // Used by DrummerWidget's volume knob and mute button
+  // ============================================================================
+
+  /**
+   * Set master volume (0-1 range)
+   * Controls the gain of the WamDrummerNode which all pads route through
+   */
+  setVolume(volume: number): void {
+    this._masterVolume = Math.max(0, Math.min(1, volume));
+    if (!this._isMuted && isBrowser) {
+      // WamDrummerNode extends GainNode, so 'this' has a gain property
+      (this as unknown as GainNode).gain.setValueAtTime(
+        this._masterVolume,
+        this.module.audioContext.currentTime
+      );
+    }
+    logger.debug('🥁 WamDrummer: Master volume set', { volume: this._masterVolume });
+  }
+
+  /**
+   * Set mute state
+   * When muted, sets gain to 0; when unmuted, restores to _masterVolume
+   */
+  setMute(muted: boolean): void {
+    this._isMuted = muted;
+    if (isBrowser) {
+      const targetGain = muted ? 0 : this._masterVolume;
+      (this as unknown as GainNode).gain.setValueAtTime(
+        targetGain,
+        this.module.audioContext.currentTime
+      );
+    }
+    logger.debug('🥁 WamDrummer: Mute state set', { muted: this._isMuted });
+  }
+
+  /**
+   * Get current master volume
+   */
+  getVolume(): number {
+    return this._masterVolume;
+  }
+
+  /**
+   * Get current mute state
+   */
+  isMuted(): boolean {
+    return this._isMuted;
   }
 
   // WAM Node interface methods

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { EventBus } from '@/domains/playback/services/core/EventBus';
+import { WindowRegistry } from '@/domains/playback/services/WindowRegistry';
 
 interface TransportPosition {
   bars: number;
@@ -37,9 +38,8 @@ export function useTransportPosition({
       return;
     }
 
-    // Get EventBus directly from CoreServices
-    const coreServices =
-      (window as any).__coreServices || (window as any).__globalCoreServices;
+    // Get EventBus directly from CoreServices via WindowRegistry
+    const coreServices = WindowRegistry.getCoreServices();
 
     if (!coreServices || typeof coreServices.getEventBus !== 'function') {
       // CoreServices not ready yet - set up listener for when they become available
@@ -54,7 +54,7 @@ export function useTransportPosition({
 
       // Also set up a polling retry (in case events are missed)
       const retryTimer = setTimeout(() => {
-        const services = (window as any).__coreServices || (window as any).__globalCoreServices;
+        const services = WindowRegistry.getCoreServices();
         if (services && typeof services.getEventBus === 'function') {
           console.log('[useTransportPosition] Services found on retry, connecting...');
           setRetryCount((c) => c + 1);
@@ -123,7 +123,16 @@ export function isBarStart(position: TransportPosition): boolean {
 
 /**
  * Helper to convert position to a beat index (0-7 for 8th notes in a bar)
+ *
+ * @param position - TransportPosition with 1-based display beats (from getDisplayPosition())
+ * @returns Zero-based beat index for grid highlighting (0-7 for 8 eighth notes)
+ *
+ * Display position uses 1-based beats (1,2,3,4) - DAW convention
+ * Array indices are 0-based (0,1,2,3) - programming convention
+ * We subtract 1 to convert from 1-based to 0-based
  */
 export function positionToBeatIndex(position: TransportPosition): number {
-  return position.beats * 2 + Math.floor(position.sixteenths / 2);
+  // Convert 1-based display beat to 0-based for array indexing
+  const zeroBasedBeats = position.beats - 1;
+  return zeroBasedBeats * 2 + Math.floor(position.sixteenths / 2);
 }

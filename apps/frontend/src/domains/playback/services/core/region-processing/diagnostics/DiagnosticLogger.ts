@@ -7,7 +7,17 @@
  * - MIDI note name conversion
  */
 
-import * as Tone from 'tone';
+// Helper to get Tone from window (must be initialized before DiagnosticLogger is used)
+function getTone(): any {
+  if (typeof window !== 'undefined') {
+    // Check both locations where Tone.js may be stored
+    const tone = (window as any).Tone || (window as any).__globalTone;
+    if (tone) {
+      return tone;
+    }
+  }
+  throw new Error('DiagnosticLogger: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+}
 
 export class DiagnosticLogger {
   private instanceId: string;
@@ -107,6 +117,9 @@ export class DiagnosticLogger {
       midiDuration: number;
       midiEndTime: number;
     }> = [];
+
+    // Get Tone once for all calculations in this method
+    const Tone = getTone();
 
     let noteIndex = 0;
     sortedEvents.forEach((event) => {

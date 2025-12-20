@@ -181,16 +181,54 @@ export function SheetMusicDisplay({
         osmd.EngravingRules.NewSystemAtXMLNewSystemAttribute = false; // Ignore system breaks in MusicXML
         osmd.EngravingRules.NewPageAtXMLNewPageAttribute = false; // Ignore page breaks in MusicXML
 
-        // Use DYNAMIC spacing - let OSMD calculate optimal spacing per note duration
-        // This gives natural, professional-looking notation
+        // ========== MEASURE WIDTH & SPACING CONFIGURATION ==========
+        //
+        // STRATEGY: Use DYNAMIC measure width - let OSMD calculate based on content
+        // This sizes each measure to fit its notes, avoiding excess empty space
+        //
+        // OSMD units: 1 unit ≈ 10 pixels (at zoom 1.0)
+
+        // DYNAMIC measure width - let OSMD size measures based on content
         osmd.EngravingRules.FixedMeasureWidth = false;
 
-        // Voice spacing control (0.85 = 15% tighter than default for compact look)
-        osmd.EngravingRules.VoiceSpacingMultiplierVexflow = 0.85;
-        osmd.EngravingRules.VoiceSpacingAddendVexflow = 0;
+        // MARGINS: These control measure container width, NOT internal note positioning
+        // Note: MeasureLeftMargin doesn't push the first note further from the barline
+        // VexFlow's formatter controls internal note positions
+        osmd.EngravingRules.MeasureLeftMargin = 1.5;
+        osmd.EngravingRules.MeasureRightMargin = 1.5;
 
-        // Minimum distance between notes (in units)
-        osmd.EngravingRules.MinNoteDistance = 3;
+        // VOICE SPACING: How notes are distributed WITHIN the measure
+        osmd.EngravingRules.VoiceSpacingMultiplierVexflow = 0.85;
+        osmd.EngravingRules.VoiceSpacingAddendVexflow = 2;
+
+        // NOTE DISTANCE: Minimum space between adjacent notes
+        osmd.EngravingRules.MinNoteDistance = 4;
+
+        // SOFTMAX: VexFlow's spacing algorithm factor
+        // Lower = more compact/uniform, Higher = more proportional to duration
+        osmd.EngravingRules.SoftmaxFactorVexFlow = 5; // OSMD default for compact layout
+
+        // Don't stretch - we want compact measures
+        osmd.EngravingRules.StretchLastSystemLine = false;
+
+        // DEBUG: Log ALL EngravingRules to see what's available
+        console.log('[SheetMusicDisplay] ALL EngravingRules keys:', Object.keys(osmd.EngravingRules));
+
+        // DEBUG: Log OSMD configuration BEFORE render
+        console.log('[SheetMusicDisplay] OSMD EngravingRules APPLIED:', {
+          // Measure width settings
+          FixedMeasureWidth: osmd.EngravingRules.FixedMeasureWidth,
+          FixedMeasureWidthFixedValue: osmd.EngravingRules.FixedMeasureWidthFixedValue,
+          // Measure margins (space from barline to notes)
+          MeasureLeftMargin: osmd.EngravingRules.MeasureLeftMargin,
+          MeasureRightMargin: osmd.EngravingRules.MeasureRightMargin,
+          // Voice/note spacing
+          VoiceSpacingMultiplierVexflow: osmd.EngravingRules.VoiceSpacingMultiplierVexflow,
+          VoiceSpacingAddendVexflow: osmd.EngravingRules.VoiceSpacingAddendVexflow,
+          MinNoteDistance: osmd.EngravingRules.MinNoteDistance,
+          // Softmax factor for proportional spacing
+          SoftmaxFactorVexFlow: osmd.EngravingRules.SoftmaxFactorVexFlow,
+        });
 
         // Keep single horizontal line (no system breaks)
         osmd.EngravingRules.RenderSingleHorizontalStaffline = true;
@@ -206,6 +244,80 @@ export function SheetMusicDisplay({
 
         // Render the score
         osmd.render();
+
+        // DEBUG: Inspect rendered measure positions AFTER render
+        console.log('[SheetMusicDisplay] POST-RENDER inspection:');
+
+        // Access the graphic sheet to inspect actual measure positions
+        if (osmd.GraphicSheet && osmd.GraphicSheet.MeasureList) {
+          const measureList = osmd.GraphicSheet.MeasureList;
+          console.log('[SheetMusicDisplay] Total measures:', measureList.length);
+
+          measureList.forEach((measureArray: unknown[], measureIndex: number) => {
+            if (measureArray && measureArray.length > 0) {
+              const measure = measureArray[0] as {
+                PositionAndShape?: {
+                  AbsolutePosition?: { x: number; y: number };
+                  Size?: { width: number; height: number };
+                  BorderLeft?: number;
+                  BorderRight?: number;
+                };
+                staffEntries?: Array<{
+                  PositionAndShape?: {
+                    AbsolutePosition?: { x: number };
+                  };
+                }>;
+              };
+              if (measure && measure.PositionAndShape) {
+                const pos = measure.PositionAndShape;
+                console.log(`[SheetMusicDisplay] Measure ${measureIndex}:`, {
+                  absoluteX: pos.AbsolutePosition?.x,
+                  absoluteY: pos.AbsolutePosition?.y,
+                  width: pos.Size?.width,
+                  height: pos.Size?.height,
+                  borderLeft: pos.BorderLeft,
+                  borderRight: pos.BorderRight,
+                });
+
+                // Log first and last staff entry positions within measure
+                if (measure.staffEntries && measure.staffEntries.length > 0) {
+                  const firstEntry = measure.staffEntries[0];
+                  const lastEntry = measure.staffEntries[measure.staffEntries.length - 1];
+                  const firstX = firstEntry?.PositionAndShape?.AbsolutePosition?.x || 0;
+                  const lastX = lastEntry?.PositionAndShape?.AbsolutePosition?.x || 0;
+                  const measureStart = pos.AbsolutePosition?.x || 0;
+                  const measureEnd = measureStart + (pos.Size?.width || 0);
+
+                  // Calculate ACTUAL margins (distance from barline to notes)
+                  const actualLeftMargin = firstX - measureStart;
+                  const actualRightMargin = measureEnd - lastX;
+
+                  console.log(`[SheetMusicDisplay] Measure ${measureIndex} MARGINS:`, {
+                    entryCount: measure.staffEntries.length,
+                    measureStart: measureStart.toFixed(2),
+                    measureEnd: measureEnd.toFixed(2),
+                    firstNoteX: firstX.toFixed(2),
+                    lastNoteX: lastX.toFixed(2),
+                    LEFT_MARGIN: actualLeftMargin.toFixed(2),
+                    RIGHT_MARGIN: actualRightMargin.toFixed(2),
+                    DIFFERENCE: (actualRightMargin - actualLeftMargin).toFixed(2),
+                  });
+                }
+              }
+            }
+          });
+        }
+
+        // Also log the ACTUAL EngravingRules after render to verify they were used
+        console.log('[SheetMusicDisplay] EngravingRules AFTER render:', {
+          FixedMeasureWidth: osmd.EngravingRules.FixedMeasureWidth,
+          FixedMeasureWidthFixedValue: osmd.EngravingRules.FixedMeasureWidthFixedValue,
+          MeasureLeftMargin: osmd.EngravingRules.MeasureLeftMargin,
+          MeasureRightMargin: osmd.EngravingRules.MeasureRightMargin,
+          // Check if there are additional margin settings
+          DistanceBetweenLastInstructionAndRepetitionBarline: osmd.EngravingRules.DistanceBetweenLastInstructionAndRepetitionBarline,
+          RepetitionEndInstructionXShift: osmd.EngravingRules.RepetitionEndInstructionXShift,
+        });
 
         // Check if effect is still active after async render
         if (!isActive) {

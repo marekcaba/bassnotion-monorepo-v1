@@ -70,10 +70,21 @@
  * ```
  */
 
-import * as Tone from 'tone';
 import { EventEmitter } from '../shared/EventEmitter.js';
 import { createStructuredLogger } from '../../shared/index.js';
 import type { MusicalPosition, TimeSignature } from '../../types/index.js';
+
+// Helper to get Tone from window (must be initialized before MusicalPositionManager is used)
+function getTone(): any {
+  if (typeof window !== 'undefined') {
+    // Check both locations where Tone.js may be stored
+    const tone = (window as any).Tone || (window as any).__globalTone;
+    if (tone) {
+      return tone;
+    }
+  }
+  throw new Error('MusicalPositionManager: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+}
 
 const logger = createStructuredLogger('MusicalPositionManager');
 
@@ -141,6 +152,7 @@ export class MusicalPositionManager extends EventEmitter {
    */
   secondsToPosition(seconds: number): MusicalPosition {
     // FAANG FIX: Always use current Tone.Transport BPM (single source of truth)
+    const Tone = getTone();
     const currentBpm = Tone.Transport.bpm.value;
     const beatsPerSecond = currentBpm / 60;
     const sixteenthsPerSecond = beatsPerSecond * 4;
@@ -180,6 +192,7 @@ export class MusicalPositionManager extends EventEmitter {
 
     // FAANG FIX: Always use current Tone.Transport BPM (single source of truth)
     // this.tempo might be stale if tempo changed via transport without calling setTempo()
+    const Tone = getTone();
     const currentBpm = Tone.Transport.bpm.value;
     const beatsPerSecond = currentBpm / 60;
     const sixteenthsPerSecond = beatsPerSecond * 4;

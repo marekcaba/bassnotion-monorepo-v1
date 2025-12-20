@@ -137,6 +137,98 @@ const getDurationInQuarterNotes = (duration: NoteDuration): number => {
   }
 };
 
+// Dynamic measure width calculation
+// Calculates optimal width based on note density and duration types
+interface MeasureWidthConfig {
+  baseMinWidth: number; // Minimum width for empty/sparse measures
+  firstMeasureExtra: number; // Extra space for clef + time signature
+  pixelsPerBeat: number; // Base pixels per beat
+  minNoteSpacing: number; // Minimum spacing between notes
+}
+
+const DEFAULT_WIDTH_CONFIG: MeasureWidthConfig = {
+  baseMinWidth: 150, // Minimum measure width
+  firstMeasureExtra: 60, // Extra for clef + time sig
+  pixelsPerBeat: 40, // Base width per beat
+  minNoteSpacing: 25, // Minimum space between note heads
+};
+
+const calculateMeasureWidth = (
+  measureNotes: ExerciseNote[],
+  beatsPerMeasure: number,
+  isFirstMeasure: boolean,
+  config: MeasureWidthConfig = DEFAULT_WIDTH_CONFIG,
+): number => {
+  // Start with base width based on beats
+  let width = config.pixelsPerBeat * beatsPerMeasure;
+
+  // Count the number of note events (notes + rests that will be rendered)
+  // Each note/rest needs minimum spacing
+  const noteCount = measureNotes.length;
+
+  // Calculate minimum width needed for note spacing
+  const spacingWidth = noteCount * config.minNoteSpacing;
+
+  // Check for short duration notes that need more space
+  let hasShortNotes = false;
+  let shortestDuration = 4; // Start with whole note
+
+  measureNotes.forEach((note) => {
+    const duration = getDurationInQuarterNotes(note.duration || 'quarter');
+    if (duration < shortestDuration) {
+      shortestDuration = duration;
+    }
+    if (duration <= 0.25) {
+      // 16th notes or shorter
+      hasShortNotes = true;
+    }
+  });
+
+  // Scale up width for measures with many short notes
+  // Shorter notes need more horizontal space for readability
+  if (hasShortNotes) {
+    const densityMultiplier = Math.max(1, noteCount / 4); // Scale based on note count
+    width = Math.max(width, spacingWidth * densityMultiplier);
+  } else {
+    width = Math.max(width, spacingWidth);
+  }
+
+  // Ensure minimum width
+  width = Math.max(width, config.baseMinWidth);
+
+  // Add extra space for first measure (clef + time signature)
+  if (isFirstMeasure) {
+    width += config.firstMeasureExtra;
+  }
+
+  const finalWidth = Math.round(width);
+
+  // DEBUG: Log measure width calculation
+  console.log('[SheetPlayer] calculateMeasureWidth:', {
+    isFirstMeasure,
+    noteCount,
+    beatsPerMeasure,
+    spacingWidth,
+    hasShortNotes,
+    shortestDuration,
+    baseMinWidth: config.baseMinWidth,
+    calculatedWidth: finalWidth,
+  });
+
+  return finalWidth;
+};
+
+// Calculate widths for all measures
+const calculateAllMeasureWidths = (
+  measures: ExerciseNote[][],
+  beatsPerMeasure: number,
+  config: MeasureWidthConfig = DEFAULT_WIDTH_CONFIG,
+): number[] => {
+  return measures.map((measureNotes, index) =>
+    calculateMeasureWidth(measureNotes, beatsPerMeasure, index === 0, config),
+  );
+};
+
 const convertDurationToRests = (duration: number): string[] => {
   const rests: string[] = [];
   let remaining = duration;
@@ -388,7 +480,17 @@ function SheetPlayerCardContent({ syncProps }: SheetPlayerCardContentProps) {
 
   // VexFlow rendering effect - Industry best practices approach
   useEffect(() => {
-    if (!containerRef.current || exerciseNotes.length === 0) return;
+    console.log('[SheetPlayer] useEffect triggered - checking conditions:', {
+      hasContainer: !!containerRef.current,
+      exerciseNotesLength: exerciseNotes.length,
+    });
+
+    if (!containerRef.current || exerciseNotes.length === 0) {
+      console.log('[SheetPlayer] Early return - missing container or no notes');
+      return;
+    }
+
+    console.log('[SheetPlayer] VexFlow render starting...');
 
     logger.warn('[SheetPlayer] VexFlow render triggered:', {
       isPlaying: syncProps.isPlaying,
@@ -587,13 +689,21 @@ function SheetPlayerCardContent({ syncProps }: SheetPlayerCardContentProps) {
       // Get actual parent container width dynamically
       const containerWidth = container.parentElement?.clientWidth || 600;
 
-      // Use EXACT same dimensions as working FretboardCard
-      const svgHeight = 120; // Optimal height for staff display (from FretboardCard)
-      const baseMeasureWidth = 180; // Base width for regular measures
-      const firstMeasureWidth = 220; // Wider first measure for clef + time signature
-      const totalStaffWidth =
-        firstMeasureWidth + baseMeasureWidth * (measures.length - 1);
+      // Calculate dynamic measure widths based on note content
+      const svgHeight = 120; // Optimal height for staff display
+      const measureWidths = calculateAllMeasureWidths(measures, beatsPerMeasure);
+      const totalStaffWidth = measureWidths.reduce((sum, w) => sum + w, 0);
       const svgWidth = Math.max(containerWidth, totalStaffWidth + 40); // Ensure scrollability
+
+      // DEBUG: Log all measure widths
+      console.log('[SheetPlayer] renderSimpleNotation - measure widths:', {
+        measureCount: measures.length,
+        measureWidths,
+        totalStaffWidth,
+        svgWidth,
+        containerWidth,
+        beatsPerMeasure,
+      });
 
       // Create renderer following VexFlow best practices
       const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
@@ -604,13 +714,12 @@ function SheetPlayerCardContent({ syncProps }: SheetPlayerCardContentProps) {
       // Store reference to SVG element for click handling
       const svgElement = renderer.ctx.svg as SVGElement;
 
-      // Use EXACT same approach as working FretboardCard
-      const rowY = 0; // No top padding (from FretboardCard)
+      // Position and layout configuration
+      const rowY = 0; // No top padding
       const rowStartX = Math.max(20, (svgWidth - totalStaffWidth) / 2); // Center horizontally
 
-      // Create staves for all measures in a single row with proper widths
+      // Create staves for all measures using dynamic widths
       const staves = [];
-      const measureWidths = [];
       let currentX = rowStartX;
 
       for (
@@ -618,10 +727,17 @@ function SheetPlayerCardContent({ syncProps }: SheetPlayerCardContentProps) {
         measureIndex < measures.length;
         measureIndex++
       ) {
-        // First measure is wider to accommodate clef and time signature
-        const currentMeasureWidth =
-          measureIndex === 0 ? firstMeasureWidth : baseMeasureWidth;
-        measureWidths.push(currentMeasureWidth);
+        // Use pre-calculated dynamic width for this measure
+        const currentMeasureWidth = measureWidths[measureIndex];
+
+        // DEBUG: Log each stave creation
+        console.log(`[SheetPlayer] Creating stave ${measureIndex}:`, {
+          measureIndex,
+          currentMeasureWidth,
+          currentX,
+          rowY,
+          notesInMeasure: measures[measureIndex]?.length || 0,
+        });
 
         const stave = new VF.Stave(currentX, rowY, currentMeasureWidth);
 

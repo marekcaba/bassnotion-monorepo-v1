@@ -11,7 +11,8 @@
  * - Insert effects
  */
 
-import * as Tone from 'tone';
+import { getTone } from '@/domains/playback/utils/tone';
+import type * as ToneTypes from 'tone';
 import type { TrackMixingState } from '../../../types/track.js';
 import { EventBus, createStructuredLogger } from '../../shared/index.js';
 
@@ -27,21 +28,21 @@ export interface ChannelConfig {
 
 export interface ChannelInsert {
   id: string;
-  effect: Tone.ToneAudioNode;
+  effect: ToneTypes.ToneAudioNode;
   bypassed: boolean;
   wetDry?: number;
 }
 
 export interface ChannelEQ {
-  highShelf: Tone.EQ3;
-  parametric: Tone.Filter[];
+  highShelf: ToneTypes.EQ3;
+  parametric: ToneTypes.Filter[];
   bypassed: boolean;
 }
 
 export interface ChannelDynamics {
-  gate?: Tone.Gate;
-  compressor?: Tone.Compressor;
-  limiter?: Tone.Limiter;
+  gate?: ToneTypes.Gate;
+  compressor?: ToneTypes.Compressor;
+  limiter?: ToneTypes.Limiter;
   bypassed: boolean;
 }
 
@@ -51,27 +52,27 @@ export class Channel {
   public name: string;
 
   // Audio nodes
-  private input: Tone.Gain;
-  private output: Tone.Gain;
+  private input: ToneTypes.Gain;
+  private output: ToneTypes.Gain;
 
   // Channel strip components
-  private gainNode: Tone.Gain;
-  private pannerNode: Tone.Panner;
-  private muteNode: Tone.Gain;
-  private soloNode: Tone.Gain;
+  private gainNode: ToneTypes.Gain;
+  private pannerNode: ToneTypes.Panner;
+  private muteNode: ToneTypes.Gain;
+  private soloNode: ToneTypes.Gain;
 
   // Processing
   private eq: ChannelEQ;
   private dynamics: ChannelDynamics;
   private inserts: ChannelInsert[] = [];
-  private sends: Map<string, Tone.Gain> = new Map();
+  private sends: Map<string, ToneTypes.Gain> = new Map();
 
   // State
   private state: TrackMixingState;
 
   // Metering
-  private meter: Tone.Meter;
-  private analyser: Tone.Analyser;
+  private meter: ToneTypes.Meter;
+  private analyser: ToneTypes.Analyser;
 
   // Event handling
   private eventBus?: EventBus;
@@ -192,7 +193,7 @@ export class Channel {
    */
   private buildSignalChain(): void {
     // Input -> Dynamics -> EQ -> Inserts -> Gain -> Pan -> Mute -> Solo -> Meter -> Output
-    let currentNode: Tone.ToneAudioNode = this.input;
+    let currentNode: ToneTypes.ToneAudioNode = this.input;
 
     // Dynamics section (optional)
     if (this.dynamics.gate && !this.dynamics.bypassed) {
@@ -262,7 +263,8 @@ export class Channel {
    * Set volume in dB
    */
   setVolumeDb(db: number, rampTime = 0.05): void {
-    const linear = Tone.dbToGain(db);
+    const tone = this.getTone();
+    const linear = tone.dbToGain(db);
     this.setVolume(linear, rampTime);
   }
 
@@ -316,7 +318,7 @@ export class Channel {
   /**
    * Add send
    */
-  addSend(sendId: string, level = 0.5): Tone.Gain {
+  addSend(sendId: string, level = 0.5): ToneTypes.Gain {
     if (this.sends.has(sendId)) {
       throw new Error(`Send ${sendId} already exists`);
     }
@@ -377,7 +379,7 @@ export class Channel {
   /**
    * Add insert effect
    */
-  addInsert(effect: Tone.ToneAudioNode, position?: number): string {
+  addInsert(effect: ToneTypes.ToneAudioNode, position?: number): string {
     const insertId = `insert-${Date.now()}`;
     const insert: ChannelInsert = {
       id: insertId,
@@ -554,14 +556,14 @@ export class Channel {
   /**
    * Get input node
    */
-  getInput(): Tone.ToneAudioNode {
+  getInput(): ToneTypes.ToneAudioNode {
     return this.input;
   }
 
   /**
    * Get output node
    */
-  getOutput(): Tone.ToneAudioNode {
+  getOutput(): ToneTypes.ToneAudioNode {
     return this.output;
   }
 
@@ -645,43 +647,83 @@ export class Channel {
   }
 
   // Factory methods for DI support
+  // Uses audioEngine if available, otherwise falls back to global Tone from window
+  private getTone(): any {
+    if (this.audioEngine?.getTone) {
+      return this.audioEngine.getTone();
+    }
+    // Fallback to global Tone (loaded by previous initialization)
+    // Check both locations where Tone.js may be stored
+    if (typeof window !== 'undefined') {
+      const tone = (window as any).Tone || (window as any).__globalTone;
+      if (tone) {
+        return tone;
+      }
+    }
+    throw new Error('Channel: No Tone.js instance available. Ensure AudioEngine is initialized.');
+  }
+
   private createGain(gain?: number): any {
-    return this.audioEngine?.createGain?.(gain) || new Tone.Gain({ gain });
+    if (this.audioEngine?.createGain) {
+      return this.audioEngine.createGain(gain);
+    }
+    const Tone = this.getTone();
+    return new Tone.Gain({ gain });
   }
 
   private createPanner(pan?: number): any {
-    return this.audioEngine?.createPanner?.(pan) || new Tone.Panner({ pan });
+    if (this.audioEngine?.createPanner) {
+      return this.audioEngine.createPanner(pan);
+    }
+    const Tone = this.getTone();
+    return new Tone.Panner({ pan });
   }
 
   private createEQ3(options?: any): any {
-    return this.audioEngine?.createEQ3?.(options) || new Tone.EQ3(options);
+    if (this.audioEngine?.createEQ3) {
+      return this.audioEngine.createEQ3(options);
+    }
+    const Tone = this.getTone();
+    return new Tone.EQ3(options);
   }
 
   private createFilter(options?: any): any {
-    return (
-      this.audioEngine?.createFilter?.(options) || new Tone.Filter(options)
-    );
+    if (this.audioEngine?.createFilter) {
+      return this.audioEngine.createFilter(options);
+    }
+    const Tone = this.getTone();
+    return new Tone.Filter(options);
   }
 
   private createCompressor(options?: any): any {
-    return (
-      this.audioEngine?.createCompressor?.(options) ||
-      new Tone.Compressor(options)
-    );
+    if (this.audioEngine?.createCompressor) {
+      return this.audioEngine.createCompressor(options);
+    }
+    const Tone = this.getTone();
+    return new Tone.Compressor(options);
   }
 
   private createGate(options?: any): any {
-    return this.audioEngine?.createGate?.(options) || new Tone.Gate(options);
+    if (this.audioEngine?.createGate) {
+      return this.audioEngine.createGate(options);
+    }
+    const Tone = this.getTone();
+    return new Tone.Gate(options);
   }
 
   private createMeter(options?: any): any {
-    return this.audioEngine?.createMeter?.(options) || new Tone.Meter(options);
+    if (this.audioEngine?.createMeter) {
+      return this.audioEngine.createMeter(options);
+    }
+    const Tone = this.getTone();
+    return new Tone.Meter(options);
   }
 
   private createAnalyser(type?: string, size?: number): any {
-    return (
-      this.audioEngine?.createAnalyser?.(type, size) ||
-      new Tone.Analyser(type as any, size)
-    );
+    if (this.audioEngine?.createAnalyser) {
+      return this.audioEngine.createAnalyser(type, size);
+    }
+    const Tone = this.getTone();
+    return new Tone.Analyser(type as any, size);
   }
 }

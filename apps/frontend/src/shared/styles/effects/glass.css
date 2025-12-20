@@ -1,0 +1,85 @@
+/**
+ * Glassmorphism Effect Styles
+ *
+ * Provides frosted glass effects using backdrop-filter.
+ * Applied when data-effect="glass" is set on the ui-zone.
+ */
+
+/* Glass effect for zone cards */
+.ui-zone[data-effect='glass'] .zone-card {
+  background: hsl(var(--theme-primary-h) 10% 15% / 0.6);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid hsl(var(--theme-primary-h) 20% 40% / 0.3);
+  box-shadow:
+    0 8px 32px hsl(var(--theme-primary-h) 50% 10% / 0.3),
+    inset 0 1px 0 hsl(0 0% 100% / 0.1);
+}
+
+/* Glass effect intensity variants */
+.ui-zone[data-effect='glass'] .zone-card--light {
+  background: hsl(var(--theme-primary-h) 10% 20% / 0.4);
+  backdrop-filter: blur(8px) saturate(150%);
+  -webkit-backdrop-filter: blur(8px) saturate(150%);
+}
+
+.ui-zone[data-effect='glass'] .zone-card--heavy {
+  background: hsl(var(--theme-primary-h) 10% 10% / 0.8);
+  backdrop-filter: blur(20px) saturate(200%);
+  -webkit-backdrop-filter: blur(20px) saturate(200%);
+}
+
+/* Glass button variant */
+.ui-zone[data-effect='glass'] .zone-button {
+  background: hsl(var(--theme-primary-h) var(--theme-primary-s) var(--theme-primary-l) / 0.3);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid hsl(var(--theme-primary-h) var(--theme-primary-s) 60% / 0.4);
+  transition: all 0.2s ease;
+}
+
+.ui-zone[data-effect='glass'] .zone-button:hover {
+  background: hsl(var(--theme-primary-h) var(--theme-primary-s) var(--theme-primary-l) / 0.5);
+  border-color: hsl(var(--theme-primary-h) var(--theme-primary-s) 70% / 0.6);
+}
+
+/* Glass container utility */
+.glass-container {
+  background: hsl(220 10% 15% / 0.6);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid hsl(220 20% 30% / 0.3);
+  border-radius: 1rem;
+}
+
+.glass-container--themed {
+  background: hsl(var(--theme-primary-h) 10% 15% / 0.6);
+  border-color: hsl(var(--theme-primary-h) 20% 40% / 0.3);
+}
+
+/* Glass overlay for modals/dialogs */
+.glass-overlay {
+  background: hsl(220 20% 5% / 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Subtle glass highlight effect */
+.glass-highlight {
+  position: relative;
+}
+
+.glass-highlight::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    hsl(0 0% 100% / 0.2),
+    transparent
+  );
+}

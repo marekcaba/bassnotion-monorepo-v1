@@ -23,8 +23,10 @@ export async function loadGlobalTone(
 
   // If we have a preferred context and Tone is available, just return Tone
   // DON'T switch contexts - this causes buffer invalidation issues
-  if (preferredContext && (window as any).Tone) {
-    const Tone = (window as any).Tone;
+  // Check both locations where Tone.js may be stored
+  const globalTone = (window as any).Tone || (window as any).__globalTone;
+  if (preferredContext && globalTone) {
+    const Tone = globalTone;
     logger.info(
       '🎵 toneLoader: Using shared AudioContext, not switching Tone.js context',
     );
@@ -98,17 +100,16 @@ export async function loadGlobalTone(
     }
   }
 
-  // Fallback: Try to get from window.Tone
-  if ((window as any).Tone) {
-    const tone = (window as any).Tone;
-
+  // Fallback: Try to get from window.Tone or window.__globalTone
+  const fallbackTone = (window as any).Tone || (window as any).__globalTone;
+  if (fallbackTone) {
     if (flags.ENABLE_MIGRATION_MONITORING) {
-      logger.info('🎵 toneLoader: Using window.Tone as fallback', {
-        contextState: tone.context.state,
+      logger.info('🎵 toneLoader: Using window.Tone/__globalTone as fallback', {
+        contextState: fallbackTone.context.state,
       });
     }
 
-    return tone;
+    return fallbackTone;
   }
 
   // No CoreServices available - error

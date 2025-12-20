@@ -1,0 +1,149 @@
+/**
+ * Gradient Effect Styles
+ *
+ * Provides gradient-based visual effects.
+ * Applied when data-effect="gradient" is set on the ui-zone.
+ */
+
+/* Gradient effect for zone cards */
+.ui-zone[data-effect='gradient'] .zone-card {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--theme-primary-h) var(--theme-primary-s) var(--theme-primary-l) / 0.15) 0%,
+    hsl(var(--theme-secondary-h) var(--theme-secondary-s) var(--theme-secondary-l) / 0.1) 50%,
+    hsl(var(--theme-primary-h) 20% 10% / 0.2) 100%
+  );
+  border: 1px solid hsl(var(--theme-primary-h) 30% 40% / 0.3);
+  box-shadow: 0 4px 20px hsl(var(--theme-primary-h) 50% 20% / 0.2);
+}
+
+/* Gradient border effect */
+.ui-zone[data-effect='gradient'] .zone-card--border-gradient {
+  background: hsl(220 10% 8%);
+  border: none;
+  position: relative;
+}
+
+.ui-zone[data-effect='gradient'] .zone-card--border-gradient::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    hsl(var(--theme-primary-h) var(--theme-primary-s) var(--theme-primary-l)),
+    hsl(var(--theme-secondary-h) var(--theme-secondary-s) var(--theme-secondary-l)),
+    hsl(var(--theme-accent-h) var(--theme-accent-s) var(--theme-accent-l))
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+/* Gradient button */
+.ui-zone[data-effect='gradient'] .zone-button {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--theme-primary-h) var(--theme-primary-s) var(--theme-primary-l)),
+    hsl(var(--theme-secondary-h) var(--theme-secondary-s) var(--theme-secondary-l))
+  );
+  border: none;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px hsl(var(--theme-primary-h) 50% 30% / 0.4);
+  transition: all 0.2s ease;
+}
+
+.ui-zone[data-effect='gradient'] .zone-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px hsl(var(--theme-primary-h) 50% 30% / 0.5);
+}
+
+.ui-zone[data-effect='gradient'] .zone-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px hsl(var(--theme-primary-h) 50% 30% / 0.4);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--theme-primary-h) var(--theme-primary-s) var(--theme-primary-l)),
+    hsl(var(--theme-secondary-h) var(--theme-secondary-s) var(--theme-secondary-l))
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Animated gradient background */
+.gradient-animated {
+  background: linear-gradient(
+    -45deg,
+    hsl(var(--theme-primary-h) var(--theme-primary-s) var(--theme-primary-l)),
+    hsl(var(--theme-secondary-h) var(--theme-secondary-s) var(--theme-secondary-l)),
+    hsl(var(--theme-accent-h) var(--theme-accent-s) var(--theme-accent-l)),
+    hsl(var(--theme-primary-h) var(--theme-primary-s) var(--theme-primary-l))
+  );
+  background-size: 400% 400%;
+  animation: gradient-shift 8s ease infinite;
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Gradient glow effect */
+.gradient-glow {
+  position: relative;
+}
+
+.gradient-glow::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(
+    135deg,
+    hsl(var(--theme-primary-h) var(--theme-primary-s) var(--theme-primary-l) / 0.5),
+    hsl(var(--theme-secondary-h) var(--theme-secondary-s) var(--theme-secondary-l) / 0.5)
+  );
+  border-radius: inherit;
+  filter: blur(8px);
+  z-index: -1;
+  opacity: 0.6;
+}
+
+/* Mesh gradient background */
+.gradient-mesh {
+  background-color: hsl(220 15% 8%);
+  background-image:
+    radial-gradient(
+      at 40% 20%,
+      hsl(var(--theme-primary-h) var(--theme-primary-s) var(--theme-primary-l) / 0.3) 0px,
+      transparent 50%
+    ),
+    radial-gradient(
+      at 80% 0%,
+      hsl(var(--theme-secondary-h) var(--theme-secondary-s) var(--theme-secondary-l) / 0.2) 0px,
+      transparent 50%
+    ),
+    radial-gradient(
+      at 0% 50%,
+      hsl(var(--theme-accent-h) var(--theme-accent-s) var(--theme-accent-l) / 0.15) 0px,
+      transparent 50%
+    );
+}

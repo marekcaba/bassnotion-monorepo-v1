@@ -1,0 +1,58 @@
+/**
+ * Skeleton Loading Animation Styles
+ *
+ * Premium shimmer effect for loading states.
+ * Inspired by FAANG loading patterns (YouTube, Facebook, LinkedIn).
+ */
+
+/* Shimmer animation keyframes */
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Base shimmer class */
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(220 15% 20% / 0.4) 0%,
+    hsl(220 15% 30% / 0.6) 50%,
+    hsl(220 15% 20% / 0.4) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+/* Glassmorphism skeleton variant - matches app design system */
+.skeleton-glass {
+  background: linear-gradient(
+    90deg,
+    hsl(220 10% 15% / 0.3) 0%,
+    hsl(220 10% 25% / 0.5) 50%,
+    hsl(220 10% 15% / 0.3) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  backdrop-filter: blur(8px);
+  border: 1px solid hsl(220 20% 30% / 0.2);
+}
+
+/* Reduced motion support - accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer,
+  .skeleton-glass {
+    animation: none;
+    background: hsl(220 15% 25% / 0.5);
+  }
+}
+
+/* Staggered animation delays for multiple skeleton items */
+.skeleton-delay-1 { animation-delay: 0.1s; }
+.skeleton-delay-2 { animation-delay: 0.2s; }
+.skeleton-delay-3 { animation-delay: 0.3s; }
+.skeleton-delay-4 { animation-delay: 0.4s; }
+.skeleton-delay-5 { animation-delay: 0.5s; }

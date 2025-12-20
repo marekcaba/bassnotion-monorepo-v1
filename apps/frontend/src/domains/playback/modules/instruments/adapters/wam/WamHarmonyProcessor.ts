@@ -53,7 +53,25 @@ export class WamHarmonyProcessor {
       if (this.context) {
         this.outputNode = this.context.createGain();
         this.outputNode.gain.value = this.volume;
-        this.outputNode.connect(this.context.destination);
+
+        // Connect to master bus for proper mixing (with fallback to destination)
+        try {
+          // Dynamic import to avoid circular dependencies
+          const { Mixer } = await import('@/domains/playback/modules/tracks/mixing/Mixer.js');
+          const mixer = Mixer.getInstance();
+          const masterBusInput = mixer.getMasterBusInputAsAudioNode();
+          if (masterBusInput) {
+            this.outputNode.connect(masterBusInput);
+            this.logger.info('Connected to master bus for mixing');
+          } else {
+            this.outputNode.connect(this.context.destination);
+            this.logger.info('Connected to destination (master bus not ready)');
+          }
+        } catch (e) {
+          // Fallback to direct destination if mixer not available
+          this.outputNode.connect(this.context.destination);
+          this.logger.info('Connected to destination (mixer not available)');
+        }
       }
 
       // Disconnect from destination and reconnect through our gain

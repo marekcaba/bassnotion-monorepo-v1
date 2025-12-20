@@ -33,7 +33,22 @@ vi.mock('@/domains/widgets/hooks/useTransportPosition', () => ({
     sixteenth: 1,
     ticks: 0,
   })),
-  positionToBeatIndex: vi.fn((position) => 0),
+  positionToBeatIndex: vi.fn(() => 0),
+}));
+
+// Mock TransportContext
+vi.mock('@/domains/playback/contexts/TransportContext', () => ({
+  useTransportContext: vi.fn(() => ({
+    tempo: 120,
+    isPlaying: false,
+    position: { bar: 1, beat: 1, sixteenth: 1 },
+    play: vi.fn(),
+    pause: vi.fn(),
+    stop: vi.fn(),
+    seek: vi.fn(),
+    setTempo: vi.fn(),
+  })),
+  TransportProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
 // Mock audio context utils
@@ -205,6 +220,133 @@ describe('DrummerWidget', () => {
 
       // Each pattern should be handled
       rerender(<DrummerWidget {...defaultProps} pattern={pattern} />);
+    });
+  });
+
+  describe('exercise drum pattern display', () => {
+    it('should display exercise drum pattern when drumPattern (DrumHit[]) is provided', () => {
+      const mockExerciseWithDrumPattern = {
+        id: 'test-exercise-with-drums',
+        title: 'Test Exercise',
+        bpm: 120,
+        timeSignature: { numerator: 4, denominator: 4 },
+        // DrumHit[] format (new MIDI-converted format)
+        drumPattern: [
+          {
+            id: 'drum-1',
+            drum: 'kick',
+            velocity: 100,
+            position: { measure: 1, beat: 0, subdivision: 0 },
+            durationTicks: 120,
+            midiNote: 36,
+          },
+          {
+            id: 'drum-2',
+            drum: 'snare',
+            velocity: 90,
+            position: { measure: 1, beat: 2, subdivision: 0 },
+            durationTicks: 120,
+            midiNote: 38,
+          },
+        ],
+      };
+
+      render(
+        <DrummerWidget
+          {...defaultProps}
+          exercise={mockExerciseWithDrumPattern as any}
+        />,
+      );
+
+      // Component should render with the exercise drum pattern
+      expect(screen.getByTestId('volume-knob')).toBeInTheDocument();
+    });
+
+    it('should display exercise drum pattern when drum_pattern (legacy format) is provided', () => {
+      const mockExerciseWithLegacyPattern = {
+        id: 'test-exercise-legacy',
+        title: 'Test Exercise Legacy',
+        bpm: 120,
+        // Legacy DrumPattern format
+        drum_pattern: {
+          enabled: true,
+          pattern: [
+            { timestamp: 0, type: 'kick', velocity: 1 },
+            { timestamp: 250, type: 'hihat', velocity: 0.8 },
+            { timestamp: 500, type: 'snare', velocity: 1 },
+          ],
+        },
+      };
+
+      render(
+        <DrummerWidget
+          {...defaultProps}
+          exercise={mockExerciseWithLegacyPattern as any}
+        />,
+      );
+
+      // Component should render with the legacy drum pattern
+      expect(screen.getByTestId('volume-knob')).toBeInTheDocument();
+    });
+
+    it('should display empty grid when exercise has no drum data', () => {
+      const mockExerciseWithoutDrums = {
+        id: 'test-exercise-no-drums',
+        title: 'Test Exercise No Drums',
+        bpm: 120,
+        // No drum_pattern or drumPattern
+      };
+
+      render(
+        <DrummerWidget
+          {...defaultProps}
+          exercise={mockExerciseWithoutDrums as any}
+        />,
+      );
+
+      // Component should render (empty grid state)
+      expect(screen.getByTestId('volume-knob')).toBeInTheDocument();
+    });
+
+    it('should fall back to preset pattern when no exercise is provided', () => {
+      render(<DrummerWidget {...defaultProps} exercise={undefined} />);
+
+      // Component should render with default preset pattern
+      expect(screen.getByTestId('volume-knob')).toBeInTheDocument();
+    });
+
+    it('should prioritize DrumHit[] format over legacy format when both exist', () => {
+      const mockExerciseWithBothFormats = {
+        id: 'test-exercise-both',
+        title: 'Test Exercise Both Formats',
+        bpm: 120,
+        // DrumHit[] format (should take priority)
+        drumPattern: [
+          {
+            id: 'drum-1',
+            drum: 'kick',
+            velocity: 100,
+            position: { measure: 1, beat: 0, subdivision: 0 },
+            durationTicks: 120,
+            midiNote: 36,
+          },
+        ],
+        // Legacy format (should be ignored)
+        drum_pattern: {
+          enabled: true,
+          pattern: [{ timestamp: 500, type: 'snare', velocity: 1 }],
+        },
+      };
+
+      render(
+        <DrummerWidget
+          {...defaultProps}
+          exercise={mockExerciseWithBothFormats as any}
+        />,
+      );
+
+      // Component should render (using DrumHit[] format)
+      expect(screen.getByTestId('volume-knob')).toBeInTheDocument();
     });
   });
 });

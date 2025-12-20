@@ -88,9 +88,10 @@ export function TransportProvider({
     numerator: 4,
     denominator: 4,
   });
+  // Initialize with display format (1-based) - position 0:0:0 displays as 1:1:0
   const [position, setPosition] = useState<TransportPosition>({
-    bars: 0,
-    beats: 0,
+    bars: 1,
+    beats: 1,
     sixteenths: 0,
     ticks: 0,
     seconds: 0,
@@ -105,8 +106,13 @@ export function TransportProvider({
   // Initialize transport and EventBus (runs once)
   useEffect(() => {
     // Prevent double initialization in React Strict Mode
-    if (initRef.current) return;
-    initRef.current = true;
+    // IMPORTANT: Only skip if we already have a transport (successful init)
+    // Previously, we set initRef.current = true before checking if init succeeded,
+    // which caused a race condition where failed init attempts would prevent retries.
+    if (initRef.current && transportRef.current) {
+      logger.debug('[TransportContext] Already initialized, skipping');
+      return;
+    }
 
     const initializeTransport = () => {
       try {
@@ -181,8 +187,9 @@ export function TransportProvider({
           setIsLoopEnabled(transportRef.current.isLoopEnabled());
         }
 
-        // Mark services as ready
+        // Mark services as ready and prevent future re-initialization
         setServicesReady(true);
+        initRef.current = true; // Only set after successful init
         logger.info('[TransportContext] Services initialized and ready');
 
         return true;
@@ -271,10 +278,15 @@ export function TransportProvider({
   const lastPositionRef = useRef<TransportPosition | null>(null);
 
   const handlePositionUpdate = useCallback(
-    (data: { position: TransportPosition }) => {
+    (data: { position: TransportPosition; seconds?: number; timestamp?: number }) => {
       // Position updates are already throttled at 60Hz by Transport
       // No additional throttling needed here
-      const pos = data.position;
+      // IMPORTANT: Merge seconds from event data into position object
+      // EventBus emits { position: {bars, beats...}, seconds: X } but TransportPosition expects seconds inside
+      const pos: TransportPosition = {
+        ...data.position,
+        seconds: data.seconds ?? data.position.seconds ?? 0,
+      };
       const lastPos = lastPositionRef.current;
 
       // DEBUG: Log position jumps (backwards in time)
@@ -425,13 +437,25 @@ export function TransportProvider({
   }, []);
 
   const setTempoValue = useCallback(async (bpm: number) => {
-    if (!transportRef.current) {
-      logger.debug(
-        `[TransportContext] Transport not ready yet, cannot set tempo to ${bpm}`,
-      );
-      return;
-    }
-    await transportRef.current.setTempo(bpm);
+    // 🔍 TEMPO DIAGNOSTIC: Log entry point for tempo changes from UI
+    const previousBpm = musicalTruth.getBPM();
+    console.log(`🎵 [TEMPO-CONTEXT] TransportContext.setTempoValue() called`, {
+      requestedBpm: bpm,
+      previousMusicalTruthBpm: previousBpm,
+    });
+
+    // TEMPO FIX: Use MusicalTruthAuthority as the single source of truth!
+    // This ensures ALL tempo changes go through the same code path:
+    // 1. Updates musicalTruth.truth.bpm
+    // 2. Writes to Tone.Transport.bpm.value
+    // 3. Notifies all subscribers (including this context)
+    //
+    // Previously this called transportRef.current.setTempo(bpm) which
+    // bypassed MusicalTruthAuthority and caused tempo inconsistencies.
+    musicalTruth.setBPM(bpm);
+    logger.debug(
+      `[TransportContext] Tempo set via MusicalTruthAuthority to ${bpm}`,
+    );
   }, []);
 
   const setTimeSignatureValue = useCallback((ts: TimeSignature) => {

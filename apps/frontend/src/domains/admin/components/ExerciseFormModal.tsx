@@ -23,11 +23,12 @@ import {
 import { Exercise } from '@/domains/exercises/entities/exercise.entity';
 import { ExerciseId } from '@/domains/exercises/value-objects/exercise-id.vo';
 import { Difficulty } from '@/domains/exercises/value-objects/difficulty.vo';
-import { Upload, X, FileAudio, CheckCircle2, Wand2 } from 'lucide-react';
+import { Upload, X, FileAudio, CheckCircle2, Wand2, LayoutGrid } from 'lucide-react';
 import { supabase } from '@/infrastructure/supabase/client';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { MidiConversionWizard } from './MidiConversionWizard';
-import { DrumPatternEditor } from './DrumPatternEditor';
+import { DrumPatternEditorModal } from './DrumPatternEditor/DrumPatternEditorModal.js';
+import type { PatternMetadata } from './DrumPatternEditor/types.js';
 import type {
   GeneratedExerciseNote,
   ConfidenceLevel,
@@ -102,7 +103,7 @@ export function ExerciseFormModal({
     useState<DrumPatternStats | null>(null);
   const [drumPatternValidation, setDrumPatternValidation] =
     useState<DrumPatternValidation | null>(null);
-  const [showDrumEditor, setShowDrumEditor] = useState(false);
+  const [showDrumGridEditor, setShowDrumGridEditor] = useState(false);
   const [isConvertingDrums, setIsConvertingDrums] = useState(false);
 
   // Harmony notes state (similar to bass/drum patterns)
@@ -462,8 +463,8 @@ export function ExerciseFormModal({
         correlationId,
       });
 
-      // Show editor for review
-      setShowDrumEditor(true);
+      // Show grid editor for review/editing
+      setShowDrumGridEditor(true);
     } catch (error) {
       console.error('Drum conversion error:', error);
       logger.error('Failed to convert drummer MIDI', error as Error, {
@@ -476,6 +477,18 @@ export function ExerciseFormModal({
     } finally {
       setIsConvertingDrums(false);
     }
+  };
+
+  /**
+   * Handle save from drum grid editor
+   */
+  const handleGridEditorSave = (pattern: DrumHit[], _metadata: PatternMetadata) => {
+    logger.info('Grid editor save', {
+      hitCount: pattern.length,
+      correlationId,
+    });
+    setDrumPattern(pattern);
+    setShowDrumGridEditor(false);
   };
 
   /**
@@ -1094,12 +1107,25 @@ export function ExerciseFormModal({
                           type="button"
                           variant="link"
                           size="sm"
-                          className="h-auto p-0 text-xs"
-                          onClick={() => setShowDrumEditor(true)}
+                          className="h-auto p-0 text-xs text-blue-600"
+                          onClick={() => setShowDrumGridEditor(true)}
                         >
-                          Review Pattern
+                          <LayoutGrid className="h-3 w-3 mr-1" />
+                          Edit Pattern
                         </Button>
                       </div>
+                    )}
+                    {drumPattern.length === 0 && !isConvertingDrums && !midiFiles.drummer && !midiUrls.drummerMidiUrl && (
+                      <Button
+                        type="button"
+                        variant="link"
+                        size="sm"
+                        className="h-auto p-0 text-xs text-blue-600 mt-1"
+                        onClick={() => setShowDrumGridEditor(true)}
+                      >
+                        <LayoutGrid className="h-3 w-3 mr-1" />
+                        Create Pattern from Scratch
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -1477,20 +1503,18 @@ export function ExerciseFormModal({
         </DialogFooter>
       </DialogContent>
 
-      {/* Drum Pattern Editor Modal */}
-      {showDrumEditor && drumPatternStats && drumPatternValidation && (
-        <DrumPatternEditor
-          isOpen={showDrumEditor}
-          onClose={() => setShowDrumEditor(false)}
-          drumPattern={drumPattern}
-          stats={drumPatternStats}
-          validation={drumPatternValidation}
-          onSave={(updatedPattern) => {
-            setDrumPattern(updatedPattern);
-            setShowDrumEditor(false);
-          }}
-        />
-      )}
+      {/* Drum Pattern Grid Editor */}
+      <DrumPatternEditorModal
+        isOpen={showDrumGridEditor}
+        onClose={() => setShowDrumGridEditor(false)}
+        initialPattern={drumPattern}
+        onSave={handleGridEditorSave}
+        contextTempo={formData.bpm}
+        contextTimeSignature={{
+          numerator: formData.timeSignatureNumerator,
+          denominator: formData.timeSignatureDenominator,
+        }}
+      />
     </Dialog>
   );
 }

@@ -5,7 +5,17 @@
  * to maintain perfect synchronization across the application.
  */
 
-import * as Tone from 'tone';
+// Helper to get Tone from window (must be initialized before transportSync functions are used)
+function getTone(): typeof import('tone') {
+  if (typeof window !== 'undefined') {
+    // Check both locations where Tone.js may be stored
+    const tone = (window as any).Tone || (window as any).__globalTone;
+    if (tone) {
+      return tone;
+    }
+  }
+  throw new Error('transportSync: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+}
 
 // Professional timing is now handled internally by UnifiedTransport
 // No separate initialization needed - see deprecated timing files
@@ -26,6 +36,7 @@ export interface TransportSyncOptions {
  */
 export function scheduleTransportSync(options: TransportSyncOptions): number {
   const { interval, startOffset = '0:0:0', callback } = options;
+  const Tone = getTone();
 
   // PERFORMANCE OPTIMIZATION: Trust Tone.Transport's internal scheduling
   // UnifiedTransport already handles professional timing with AudioWorklet
@@ -45,6 +56,7 @@ export function getCurrentTransportPosition(): {
   seconds: number;
   position: string;
 } {
+  const Tone = getTone();
   const position = Tone.Transport.position as string;
   const [bars, beats, sixteenths] = position.split(':').map(Number);
 
@@ -61,6 +73,8 @@ export function getCurrentTransportPosition(): {
  * Calculate the time offset needed to sync with the global transport
  */
 export function getTransportSyncOffset(): number {
+  const Tone = getTone();
+
   if (Tone.Transport.state === 'stopped') {
     return 0;
   }
@@ -92,6 +106,7 @@ export function shouldRescheduleEvents(
   lastScheduleTime: number,
   lastTransportState: string,
 ): boolean {
+  const Tone = getTone();
   const currentState = Tone.Transport.state;
   const currentTime = Tone.Transport.seconds;
 
