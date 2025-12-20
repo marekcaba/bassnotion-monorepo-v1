@@ -16,6 +16,7 @@
 
 import { loadGlobalTone } from '../../../shared/loaders/toneLoader.js';
 import { createStructuredLogger } from '@bassnotion/contracts';
+import { musicalTruth } from '../../../tempo/MusicalTruthAuthority.js';
 
 const logger = createStructuredLogger('MetronomeInstrumentProcessor');
 
@@ -451,8 +452,11 @@ export class MetronomeInstrumentProcessor {
         Tone.Transport.start();
       }
 
-      // Set transport BPM
-      Tone.Transport.bpm.value = this.config.tempo;
+      // TEMPO FIX: Do NOT set Tone.Transport.bpm here!
+      // MusicalTruthAuthority is the single source of truth for tempo.
+      // Setting it here would overwrite the user's exercise tempo (e.g., 69 BPM)
+      // with this.config.tempo (which defaults to 120 BPM).
+      // Tone.Transport.bpm is already set correctly by musicalTruth.setFromExercise()
 
       // Schedule initial events
       this.scheduleNextEvents();
@@ -496,23 +500,35 @@ export class MetronomeInstrumentProcessor {
 
   /**
    * Set tempo with smooth transition
+   *
+   * IMPORTANT: This delegates to MusicalTruthAuthority which is the ONE source of truth
+   * for tempo. MusicalTruthAuthority handles syncing with Tone.Transport.bpm.
+   *
+   * Note: Smooth transitions (rampTo) are NOT supported through MusicalTruthAuthority
+   * as it sets immediate values. For smooth transitions, consider implementing
+   * a ramping mechanism in MusicalTruthAuthority if needed in the future.
    */
   public setTempo(tempo: number, transitionTime = 0): void {
-    // Clamp tempo to valid range
+    // Clamp tempo to valid range (MusicalTruthAuthority uses 20-300, we use 30-300 for metronome)
     const clampedTempo = Math.max(30, Math.min(300, tempo));
     if (tempo !== clampedTempo) {
       logger.warn('Tempo out of range (30-300 BPM), clamping to valid range');
     }
     tempo = clampedTempo;
 
+    // 🎵 TEMPO FIX: Delegate to MusicalTruthAuthority instead of direct Tone.Transport write
+    // This ensures ALL tempo changes go through the single source of truth
+    // Note: transitionTime is ignored since musicalTruth sets immediate values
     if (transitionTime > 0) {
-      // Smooth tempo transition
-      Tone.Transport.bpm.rampTo(tempo, transitionTime);
-    } else {
-      // Immediate tempo change
-      Tone.Transport.bpm.value = tempo;
+      logger.info('🎵 MetronomeInstrumentProcessor: Smooth tempo transition requested but using immediate change via musicalTruth', {
+        requestedTempo: tempo,
+        transitionTime,
+      });
     }
 
+    musicalTruth.setBPM(tempo);
+
+    // Update local state to stay in sync
     this.config.tempo = tempo;
     this.state.currentTempo = tempo;
 

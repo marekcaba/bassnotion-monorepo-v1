@@ -1,6 +1,17 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { WidgetSyncManager } from '../../playback/modules/transport/sync/WidgetSyncManager';
-import * as Tone from 'tone';
+
+// Helper to get Tone from window (must be initialized before useTransportSync is used)
+function getTone(): typeof import('tone') {
+  if (typeof window !== 'undefined') {
+    // Check both locations where Tone.js may be stored
+    const tone = (window as any).Tone || (window as any).__globalTone;
+    if (tone) {
+      return tone;
+    }
+  }
+  throw new Error('useTransportSync: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+}
 
 // Helper function to format musical position
 const formatPosition = (pos: {
@@ -171,6 +182,7 @@ export function useTransportSync({
       // Calculate position with latency compensation
       let compensatedPosition = data.position;
       if (enableLatencyCompensation && syncState.isPlaying) {
+        const Tone = getTone();
         const latencyOffset = syncState.latency / 1000;
         const ticks =
           Tone.Time(data.position).toTicks() +
@@ -212,6 +224,7 @@ export function useTransportSync({
 
       if (onPlay) {
         // Schedule play at the compensated time
+        const Tone = getTone();
         if (Tone.context.state === 'running') {
           onPlay(compensatedTime);
         } else {

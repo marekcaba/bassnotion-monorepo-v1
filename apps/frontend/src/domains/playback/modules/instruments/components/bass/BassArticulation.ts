@@ -4,7 +4,7 @@
  * Handles bass playing techniques and articulations
  */
 
-import * as Tone from 'tone';
+import { getTone } from '@/domains/playback/utils/tone';
 import type { BassNote } from './BassSynthEngine.js';
 import { createStructuredLogger } from '@bassnotion/contracts';
 
@@ -422,13 +422,14 @@ export class BassArticulation {
   /**
    * Schedule filter modulation
    */
-  private scheduleFilterModulation(
+  private async scheduleFilterModulation(
     filter: any,
     modulation: ArticulationParams['filterModulation'],
     startTime?: number,
-  ): void {
+  ): Promise<void> {
     if (!modulation) return;
 
+    const Tone = await getTone();
     const time = startTime || Tone.now();
     const originalFreq = filter.frequency.value;
     const targetFreq = originalFreq * (1 + modulation.amount);
@@ -450,13 +451,14 @@ export class BassArticulation {
   /**
    * Schedule pitch bend
    */
-  private schedulePitchBend(
+  private async schedulePitchBend(
     detuneParam: any,
     bend: ArticulationParams['pitchBend'],
     startTime?: number,
-  ): void {
+  ): Promise<void> {
     if (!bend) return;
 
+    const Tone = await getTone();
     const time = startTime || Tone.now();
     const cents = bend.amount * 100; // Convert semitones to cents
 

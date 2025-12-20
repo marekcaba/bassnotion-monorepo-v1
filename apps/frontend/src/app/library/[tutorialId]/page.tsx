@@ -2,9 +2,11 @@
 
 import React from 'react';
 import { YouTubeWidgetPage } from '@/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage';
+import { TutorialPageSkeleton } from '@/domains/widgets/components/YouTubeWidgetPage/TutorialPageSkeleton';
 import { useTutorialExercises } from '@/domains/widgets/hooks/useTutorialExercises';
 import { ScrollTriggerLoader } from '@/domains/playback/components/ScrollTriggerLoader';
 import { getLogger } from '@/utils/logger';
+import { logSkeletonDebug, getSkeletonDebugTime, resetSkeletonDebugBaseline } from '@/utils/skeletonDebug';
 
 const logger = getLogger('TutorialPage');
 
@@ -65,6 +67,14 @@ let tutorialPageRenderCount = 0;
 export default function TutorialPage({ params }: TutorialPageProps) {
   tutorialPageRenderCount++;
 
+  // Reset baseline on first render of a new page load
+  if (tutorialPageRenderCount === 1) {
+    resetSkeletonDebugBaseline();
+  }
+
+  // SKELETON-DEBUG: Log first 5 renders with timing
+  logSkeletonDebug('📃', 'TutorialPage', tutorialPageRenderCount);
+
   if (tutorialPageRenderCount % 10 === 0) {
     logger.info(`🔄 TutorialPage (ROOT) RENDER #${tutorialPageRenderCount}`);
   }
@@ -97,15 +107,21 @@ export default function TutorialPage({ params }: TutorialPageProps) {
   );
 
   // Handle loading state - AFTER all hooks
+  // Using FAANG-style skeleton loading for better perceived performance
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-lg">Loading tutorial...</p>
-        </div>
-      </div>
-    );
+    if (tutorialPageRenderCount <= 5) {
+      console.log(`⏳ [SKELETON-DEBUG] Showing skeleton at +${getSkeletonDebugTime()}ms`);
+    }
+    return <TutorialPageSkeleton />;
+  }
+
+  // SKELETON-DEBUG: Log when we switch from skeleton to content
+  if (tutorialPageRenderCount <= 5) {
+    console.log(`✅ [SKELETON-DEBUG] Loading complete! Rendering content at +${getSkeletonDebugTime()}ms`, {
+      hasExercises: !!exercises,
+      exerciseCount: exercises?.length ?? 0,
+      tutorialTitle: tutorial?.title,
+    });
   }
 
   // Handle error state - AFTER all hooks

@@ -18,6 +18,7 @@ import {
   isSampleLoadingAvailable,
 } from './core/SampleLoadingCircuitBreaker.js';
 import { FALLBACK_KIT_PATH as FALLBACK_DRUM_KIT_PATH } from '@/domains/playback/data/drums/index.js';
+import { lifecycle } from '@/domains/playback/utils/InitializationLifecycleLogger';
 
 const logger = getLogger('InitialSamplePreloader');
 
@@ -262,12 +263,14 @@ export class InitialSamplePreloader {
       const loadingTasks = [];
 
       // Load harmony samples for each instrument used in tutorial
+      // CRITICAL: Pass skipBufferInjection=true to prevent overwriting active instrument's buffers
+      // Tutorial loading should ONLY cache samples, HarmonyWidget is responsible for buffer injection
       for (const [instrument, notes] of Object.entries(
         requiredSamples.harmony,
       )) {
         if (notes.length > 0) {
           loadingTasks.push(
-            this.loadHarmonyForInstrument(instrument, notes as string[]),
+            this.loadHarmonyForInstrument(instrument, notes as string[], true),
           );
         }
       }
@@ -356,14 +359,18 @@ export class InitialSamplePreloader {
 
   /**
    * Load harmony samples for a specific instrument
+   * @param skipBufferInjection - If true, only cache samples without injecting into PlaybackEngine
+   *                              Used for background tutorial preloading to avoid overwriting active instrument
    */
   private async loadHarmonyForInstrument(
     instrument: string,
     notes: string[],
+    skipBufferInjection: boolean = false,
   ): Promise<void> {
     logger.info(`Loading harmony samples for ${instrument}`, {
       noteCount: notes.length,
       notes: notes.slice(0, 10), // Log first 10 notes
+      skipBufferInjection,
     });
 
     // Create a mock exercise with the required notes
@@ -384,6 +391,7 @@ export class InitialSamplePreloader {
       mockExercise,
       instrument,
       `tutorial-${instrument}`,
+      skipBufferInjection,
     );
   }
 
@@ -1633,6 +1641,11 @@ export class InitialSamplePreloader {
     const startTime = performance.now();
     logger.info('📥 Pre-downloading sample files...');
 
+    lifecycle.checkpoint('SAMPLE_TYPE_LOADING_START', {
+      type: 'essential',
+      phase: 'downloadAndCacheSampleFiles',
+    });
+
     try {
       const { supabase } = await import('@/infrastructure/supabase/client');
 
@@ -1697,9 +1710,17 @@ export class InitialSamplePreloader {
 
           if (cachedBuffer) {
             logger.info(`IndexedDB cache HIT: ${sample.path}`);
+            lifecycle.checkpoint('SAMPLE_CACHE_HIT', {
+              key: primaryCacheKey,
+              path: sample.path,
+            });
             arrayBuffer = cachedBuffer;
             successCount++;
           } else {
+            lifecycle.checkpoint('SAMPLE_CACHE_MISS', {
+              key: primaryCacheKey,
+              path: sample.path,
+            });
             // Not in cache, fetch from network
             const url = supabase.storage
               .from('audio-samples')
@@ -1763,6 +1784,13 @@ export class InitialSamplePreloader {
         samplesLoaded: successCount,
         samplesTotal: sampleFiles.length,
         averagePerSample: `${(totalDuration / successCount).toFixed(2)}ms`,
+      });
+
+      lifecycle.checkpoint('SAMPLE_TYPE_LOADING_COMPLETE', {
+        type: 'essential',
+        loaded: successCount,
+        total: sampleFiles.length,
+        durationMs: totalDuration,
       });
 
       // Mark samples as downloaded

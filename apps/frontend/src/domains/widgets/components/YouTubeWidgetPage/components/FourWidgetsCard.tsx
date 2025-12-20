@@ -1,12 +1,69 @@
 'use client';
 
 import React from 'react';
-import { Card, CardContent } from '@/shared/components/ui/card';
-import { MetronomeWidget } from './MetronomeWidget';
-import { DrummerWidget } from './DrummerWidget';
-import { BassLineWidget } from './BassLineWidget';
-import { HarmonyWidget } from './HarmonyWidget';
+import dynamic from 'next/dynamic';
+import { ZoneCard, ZoneCardContent } from '@/ui-libraries';
 import { UseWidgetPageStateReturn } from '@/domains/widgets/hooks/useWidgetPageState';
+import { getSkeletonDebugTime } from '@/utils/skeletonDebug';
+
+// Widget loading skeleton component - upgraded with shimmer effect
+function WidgetSkeleton({ name }: { name: string }) {
+  return (
+    <div className="skeleton-glass bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="skeleton-shimmer w-4 h-4 rounded" />
+        <div className="skeleton-shimmer h-4 w-24 rounded" />
+      </div>
+      <div className="skeleton-shimmer h-8 rounded" />
+      <span className="sr-only">Loading {name} widget...</span>
+    </div>
+  );
+}
+
+// Dynamic imports with loading states - reduces initial bundle by ~300KB per widget
+const MetronomeWidget = dynamic(
+  () => import('./MetronomeWidget').then((m) => {
+    console.log(`📦 [SKELETON-DEBUG] MetronomeWidget loaded at +${getSkeletonDebugTime()}ms`);
+    return m.MetronomeWidget;
+  }),
+  {
+    ssr: false,
+    loading: () => <WidgetSkeleton name="Metronome" />,
+  }
+);
+
+const DrummerWidget = dynamic(
+  () => import('./DrummerWidget').then((m) => {
+    console.log(`📦 [SKELETON-DEBUG] DrummerWidget loaded at +${getSkeletonDebugTime()}ms`);
+    return m.DrummerWidget;
+  }),
+  {
+    ssr: false,
+    loading: () => <WidgetSkeleton name="Drummer" />,
+  }
+);
+
+const BassLineWidget = dynamic(
+  () => import('./BassLineWidget').then((m) => {
+    console.log(`📦 [SKELETON-DEBUG] BassLineWidget loaded at +${getSkeletonDebugTime()}ms`);
+    return m.BassLineWidget;
+  }),
+  {
+    ssr: false,
+    loading: () => <WidgetSkeleton name="Bass Line" />,
+  }
+);
+
+const HarmonyWidget = dynamic(
+  () => import('./HarmonyWidget').then((m) => {
+    console.log(`📦 [SKELETON-DEBUG] HarmonyWidget loaded at +${getSkeletonDebugTime()}ms`);
+    return m.HarmonyWidget;
+  }),
+  {
+    ssr: false,
+    loading: () => <WidgetSkeleton name="Harmony" />,
+  }
+);
 
 interface FourWidgetsCardProps {
   widgetState: UseWidgetPageStateReturn;
@@ -101,8 +158,8 @@ export function FourWidgetsCard({
   }, [setState]);
 
   return (
-    <Card className="bg-transparent border-transparent shadow-none">
-      <CardContent className="px-0 pb-6 pt-0">
+    <ZoneCard className="zone-card bg-transparent border-transparent shadow-none">
+      <ZoneCardContent className="px-0 pb-6 pt-0">
         {/* 4 Widgets in Vertical Stack (1x4) as specified */}
         <div className="space-y-2">
           {/* 1. Metronome Widget */}
@@ -171,7 +228,35 @@ export function FourWidgetsCard({
             ))}
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </ZoneCardContent>
+    </ZoneCard>
+  );
+}
+
+/**
+ * Skeleton loading state for FourWidgetsCard
+ * Shows placeholders for all 4 widget cards
+ */
+export function FourWidgetsCardSkeleton() {
+  return (
+    <ZoneCard className="zone-card bg-transparent border-transparent shadow-none">
+      <ZoneCardContent className="px-0 pb-6 pt-0">
+        <div className="space-y-2">
+          <WidgetSkeleton name="Metronome" />
+          <WidgetSkeleton name="Drummer" />
+          <WidgetSkeleton name="Bass Line" />
+          <WidgetSkeleton name="Harmony" />
+        </div>
+        <div className="mt-4 text-center">
+          <div className="skeleton-shimmer h-3 w-64 mx-auto rounded" />
+          <div className="flex justify-center gap-2 mt-2">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="skeleton-shimmer w-2 h-2 rounded-full" />
+            ))}
+          </div>
+        </div>
+      </ZoneCardContent>
+      <span className="sr-only">Loading widgets...</span>
+    </ZoneCard>
   );
 }

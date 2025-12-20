@@ -21,8 +21,19 @@
  */
 
 import { getLogger } from '@/utils/logger.js';
-import * as Tone from 'tone';
 import type { ParsedPosition } from '../types/region.types.js';
+
+// Helper to get Tone from window (must be initialized before TimePositionConverter is used)
+function getTone(): any {
+  if (typeof window !== 'undefined') {
+    // Check both locations where Tone.js may be stored
+    const tone = (window as any).Tone || (window as any).__globalTone;
+    if (tone) {
+      return tone;
+    }
+  }
+  throw new Error('TimePositionConverter: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+}
 
 const logger = getLogger('TimePositionConverter');
 
@@ -58,6 +69,7 @@ export class TimePositionConverter {
   parsePosition(position: PositionInput): number {
     try {
       // Get current BPM from Tone.Transport (single source of truth)
+      const Tone = getTone();
       const currentBpm = Tone.Transport.bpm.value;
       const secondsPerBeat = 60 / currentBpm;
 
@@ -147,6 +159,7 @@ export class TimePositionConverter {
    * Get current BPM from Tone.Transport
    */
   getCurrentBPM(): number {
+    const Tone = getTone();
     return Tone.Transport.bpm.value;
   }
 
@@ -158,6 +171,7 @@ export class TimePositionConverter {
    */
   parseDuration(duration: string): number {
     try {
+      const Tone = getTone();
       const currentBpm = Tone.Transport.bpm.value;
       const secondsPerBeat = 60 / currentBpm;
 

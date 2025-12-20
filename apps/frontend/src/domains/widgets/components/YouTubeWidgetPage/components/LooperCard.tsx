@@ -156,8 +156,10 @@ function LooperCardContent({
                 if (!exercise) return 0;
 
                 // Calculate duration in milliseconds from beats and BPM
-                if (exercise.duration_beats && exercise.bpm) {
-                  const beatsPerSecond = exercise.bpm / 60;
+                // TEMPO FIX: Use current transport tempo for duration calculation
+                const effectiveBpm = syncProps.tempo || exercise.bpm;
+                if (exercise.duration_beats && effectiveBpm) {
+                  const beatsPerSecond = effectiveBpm / 60;
                   const durationSeconds =
                     exercise.duration_beats / beatsPerSecond;
                   return durationSeconds * 1000; // Convert to milliseconds
@@ -170,6 +172,7 @@ function LooperCardContent({
               onLoopRegionChange={onLoopRegionChange || (() => undefined)}
               onSeek={handleSeek}
               className="[&>div]:bg-transparent [&>div]:shadow-none [&>div]:p-0"
+              currentTempo={syncProps.tempo}
             />
           </div>
         </div>

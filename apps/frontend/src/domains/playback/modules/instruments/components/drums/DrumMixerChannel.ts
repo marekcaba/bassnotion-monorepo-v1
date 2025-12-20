@@ -4,8 +4,20 @@
  * Individual drum channel mixing with volume, pan, sends, and EQ
  */
 
-import * as Tone from 'tone';
+import type * as ToneTypes from 'tone';
 import { createStructuredLogger } from '@bassnotion/contracts';
+
+// Helper to get Tone from window (must be initialized before DrumMixerChannel is used)
+function getTone(): typeof import('tone') {
+  if (typeof window !== 'undefined') {
+    // Check both locations where Tone.js may be stored
+    const tone = (window as any).Tone || (window as any).__globalTone;
+    if (tone) {
+      return tone;
+    }
+  }
+  throw new Error('DrumMixerChannel: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+}
 
 const logger = createStructuredLogger('DrumMixerChannel');
 
@@ -50,18 +62,18 @@ export class DrumMixerChannel {
   readonly name: string;
 
   // Audio nodes
-  private input: Tone.Gain;
-  private volume: Tone.Volume;
-  private panner: Tone.Panner;
-  private eq3: Tone.EQ3;
-  private compressor: Tone.Compressor;
-  private meter: Tone.Meter;
-  private mute: Tone.Gain;
-  private output: Tone.Gain;
+  private input!: ToneTypes.Gain;
+  private volume!: ToneTypes.Volume;
+  private panner!: ToneTypes.Panner;
+  private eq3!: ToneTypes.EQ3;
+  private compressor!: ToneTypes.Compressor;
+  private meter!: ToneTypes.Meter;
+  private mute!: ToneTypes.Gain;
+  private output!: ToneTypes.Gain;
 
   // Sends
-  private sendNodes: Map<string, Tone.Gain> = new Map();
-  private sendTargets: Map<string, Tone.ToneAudioNode> = new Map();
+  private sendNodes: Map<string, ToneTypes.Gain> = new Map();
+  private sendTargets: Map<string, ToneTypes.ToneAudioNode> = new Map();
 
   // State
   private state: DrumChannelState = {
@@ -79,6 +91,8 @@ export class DrumMixerChannel {
   private levelCallbacks: Set<(peak: number, rms: number) => void> = new Set();
 
   constructor(config: DrumChannelConfig) {
+    const Tone = getTone();
+
     this.id = config.id;
     this.name = config.name;
 
@@ -136,14 +150,14 @@ export class DrumMixerChannel {
   /**
    * Get input node
    */
-  getInput(): Tone.ToneAudioNode {
+  getInput(): ToneTypes.ToneAudioNode {
     return this.input;
   }
 
   /**
    * Get output node
    */
-  getOutput(): Tone.ToneAudioNode {
+  getOutput(): ToneTypes.ToneAudioNode {
     return this.output;
   }
 
@@ -317,6 +331,7 @@ export class DrumMixerChannel {
       return;
     }
 
+    const Tone = getTone();
     const send = new Tone.Gain({ gain: amount });
     this.panner.connect(send);
     this.sendNodes.set(sendName, send);
@@ -352,7 +367,7 @@ export class DrumMixerChannel {
   /**
    * Connect send to target
    */
-  connectSend(sendName: string, target: Tone.ToneAudioNode): void {
+  connectSend(sendName: string, target: ToneTypes.ToneAudioNode): void {
     const send = this.sendNodes.get(sendName);
     if (!send) {
       logger.warn(`Send ${sendName} not found`);

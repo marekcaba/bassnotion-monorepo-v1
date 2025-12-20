@@ -4,7 +4,8 @@
  * Effects processing optimized for bass frequencies
  */
 
-import * as Tone from 'tone';
+import { getTone } from '@/domains/playback/utils/tone';
+import type * as ToneTypes from 'tone';
 import { BaseInstrumentEffects } from '../../architecture/IInstrumentEffects.js';
 import type {
   EffectsChainConfig,
@@ -59,20 +60,20 @@ export interface BassEffectsConfig extends EffectsChainConfig {
  */
 export class BassEffectsChain extends BaseInstrumentEffects {
   // Bass-specific effects
-  private bassEnhancer: Tone.MultibandSplit | null = null;
-  private subEnhancer: Tone.Oscillator | null = null;
-  private octaver: Tone.PitchShift | null = null;
-  private envelopeFollower: Tone.Follower | null = null;
-  private autoWah: Tone.AutoWah | null = null;
+  private bassEnhancer: ToneTypes.MultibandSplit | null = null;
+  private subEnhancer: ToneTypes.Oscillator | null = null;
+  private octaver: ToneTypes.PitchShift | null = null;
+  private envelopeFollower: ToneTypes.Follower | null = null;
+  private autoWah: ToneTypes.AutoWah | null = null;
 
   // Amp simulation
-  private preAmp: Tone.Distortion | null = null;
-  private toneStack: Tone.EQ3 | null = null;
-  private cabinet: Tone.Convolver | null = null;
+  private preAmp: ToneTypes.Distortion | null = null;
+  private toneStack: ToneTypes.EQ3 | null = null;
+  private cabinet: ToneTypes.Convolver | null = null;
 
   // Sidechain compression
-  private sidechainCompressor: Tone.Compressor | null = null;
-  private sidechainGate: Tone.Gate | null = null;
+  private sidechainCompressor: ToneTypes.Compressor | null = null;
+  private sidechainGate: ToneTypes.Gate | null = null;
 
   constructor(config?: BassEffectsConfig) {
     super(config);
@@ -85,30 +86,30 @@ export class BassEffectsChain extends BaseInstrumentEffects {
   /**
    * Setup bass-specific effects
    */
-  private setupBassEffects(config: BassEffectsConfig): void {
+  private async setupBassEffects(config: BassEffectsConfig): Promise<void> {
     // Bass enhancer
     if (config.effects.enhancer) {
-      this.setupBassEnhancer(config.effects.enhancer);
+      await this.setupBassEnhancer(config.effects.enhancer);
     }
 
     // Octaver
     if (config.effects.octaver) {
-      this.setupOctaver(config.effects.octaver);
+      await this.setupOctaver(config.effects.octaver);
     }
 
     // Envelope follower / Auto-wah
     if (config.effects.envelope) {
-      this.setupEnvelopeEffects(config.effects.envelope);
+      await this.setupEnvelopeEffects(config.effects.envelope);
     }
 
     // Amp simulation
     if (config.ampSimulation?.enabled) {
-      this.setupAmpSimulation(config.ampSimulation);
+      await this.setupAmpSimulation(config.ampSimulation);
     }
 
     // Sidechain compression
     if (config.sidechain?.enabled) {
-      this.setupSidechain(config.sidechain);
+      await this.setupSidechain(config.sidechain);
     }
 
     // Rebuild the effects chain
@@ -118,8 +119,10 @@ export class BassEffectsChain extends BaseInstrumentEffects {
   /**
    * Setup bass frequency enhancer
    */
-  private setupBassEnhancer(params: BassEffectParams['enhancer']): void {
+  private async setupBassEnhancer(params: BassEffectParams['enhancer']): Promise<void> {
     if (!params) return;
+
+    const Tone = await getTone();
 
     // Create multiband splitter for frequency-specific processing
     this.bassEnhancer = new Tone.MultibandSplit({
@@ -143,8 +146,10 @@ export class BassEffectsChain extends BaseInstrumentEffects {
   /**
    * Setup octaver effect
    */
-  private setupOctaver(params: BassEffectParams['octaver']): void {
+  private async setupOctaver(params: BassEffectParams['octaver']): Promise<void> {
     if (!params) return;
+
+    const Tone = await getTone();
 
     this.octaver = new Tone.PitchShift({
       pitch: params.octaveDown || -12, // Default one octave down
@@ -160,8 +165,10 @@ export class BassEffectsChain extends BaseInstrumentEffects {
   /**
    * Setup envelope-based effects
    */
-  private setupEnvelopeEffects(params: BassEffectParams['envelope']): void {
+  private async setupEnvelopeEffects(params: BassEffectParams['envelope']): Promise<void> {
     if (!params) return;
+
+    const Tone = await getTone();
 
     // Envelope follower
     this.envelopeFollower = new Tone.Follower({
@@ -188,8 +195,10 @@ export class BassEffectsChain extends BaseInstrumentEffects {
   /**
    * Setup amp simulation
    */
-  private setupAmpSimulation(config: BassEffectsConfig['ampSimulation']): void {
+  private async setupAmpSimulation(config: BassEffectsConfig['ampSimulation']): Promise<void> {
     if (!config) return;
+
+    const Tone = await getTone();
 
     // Pre-amp stage
     this.preAmp = new Tone.Distortion({
@@ -215,8 +224,10 @@ export class BassEffectsChain extends BaseInstrumentEffects {
   /**
    * Setup sidechain compression
    */
-  private setupSidechain(config: BassEffectsConfig['sidechain']): void {
+  private async setupSidechain(config: BassEffectsConfig['sidechain']): Promise<void> {
     if (!config) return;
+
+    const Tone = await getTone();
 
     this.sidechainCompressor = new Tone.Compressor({
       threshold: -20,
@@ -432,11 +443,12 @@ export class BassEffectsChain extends BaseInstrumentEffects {
   /**
    * Trigger sidechain (e.g., from kick drum)
    */
-  triggerSidechain(): void {
+  async triggerSidechain(): Promise<void> {
     if (!this.sidechainCompressor) return;
 
     // In a real implementation, this would be triggered by an external source
     // For now, we'll simulate it
+    const Tone = await getTone();
     const now = Tone.now();
     this.sidechainCompressor.reduction;
 

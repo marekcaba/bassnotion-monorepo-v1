@@ -278,6 +278,263 @@ afterEach(() => {
 
 // Additional protection: Force restoration if globals are corrupted
 beforeEach(() => {
+  // Setup window.Tone mock for lazy-loaded Tone.js access
+  // This is required for getTone() helpers used throughout the codebase
+  if (global.window && !(global.window as any).Tone) {
+    const mockTransport = {
+      state: 'stopped' as 'stopped' | 'started' | 'paused',
+      position: '0:0:0',
+      seconds: 0,
+      bpm: { value: 120, rampTo: vi.fn() },
+      timeSignature: 4,
+      loop: false,
+      loopStart: 0,
+      loopEnd: '4m',
+      start: vi.fn(),
+      stop: vi.fn(),
+      pause: vi.fn(),
+      cancel: vi.fn(),
+      schedule: vi.fn(() => 0),
+      scheduleRepeat: vi.fn(() => 0),
+      scheduleOnce: vi.fn(() => 0),
+      clear: vi.fn(),
+    };
+
+    const mockContext = {
+      state: 'running',
+      currentTime: 0,
+      sampleRate: 44100,
+      destination: { connect: vi.fn(), disconnect: vi.fn() },
+      resume: vi.fn().mockResolvedValue(undefined),
+      suspend: vi.fn().mockResolvedValue(undefined),
+      close: vi.fn().mockResolvedValue(undefined),
+    };
+
+    (global.window as any).Tone = {
+      // Transport
+      Transport: mockTransport,
+
+      // Context
+      context: mockContext,
+      getContext: vi.fn(() => mockContext),
+      setContext: vi.fn(),
+      start: vi.fn().mockResolvedValue(undefined),
+
+      // Time utilities
+      Time: vi.fn((val: any) => ({
+        toTicks: vi.fn(() => 0),
+        toSeconds: vi.fn(() => 0),
+        toBarsBeatsSixteenths: vi.fn(() => '0:0:0'),
+        valueOf: vi.fn(() => 0),
+      })),
+      Ticks: vi.fn((val: any) => ({
+        toTicks: vi.fn(() => val),
+        toSeconds: vi.fn(() => 0),
+        toBarsBeatsSixteenths: vi.fn(() => '0:0:0'),
+      })),
+      Frequency: vi.fn((val: any) => ({
+        toFrequency: vi.fn(() => 440),
+        toMidi: vi.fn(() => 69),
+        valueOf: vi.fn(() => 440),
+      })),
+
+      // Audio nodes
+      Gain: vi.fn(() => ({
+        connect: vi.fn().mockReturnThis(),
+        disconnect: vi.fn(),
+        dispose: vi.fn(),
+        gain: { value: 1, rampTo: vi.fn(), setValueAtTime: vi.fn() },
+        toDestination: vi.fn().mockReturnThis(),
+      })),
+      Volume: vi.fn(() => ({
+        connect: vi.fn().mockReturnThis(),
+        disconnect: vi.fn(),
+        dispose: vi.fn(),
+        volume: { value: 0, rampTo: vi.fn() },
+        toDestination: vi.fn().mockReturnThis(),
+      })),
+      Panner: vi.fn(() => ({
+        connect: vi.fn().mockReturnThis(),
+        disconnect: vi.fn(),
+        dispose: vi.fn(),
+        pan: { value: 0, rampTo: vi.fn() },
+      })),
+      EQ3: vi.fn(() => ({
+        connect: vi.fn().mockReturnThis(),
+        disconnect: vi.fn(),
+        dispose: vi.fn(),
+        high: { value: 0 },
+        mid: { value: 0 },
+        low: { value: 0 },
+        highFrequency: { value: 5000 },
+        lowFrequency: { value: 400 },
+        Q: { value: 1 },
+      })),
+      Compressor: vi.fn(() => ({
+        connect: vi.fn().mockReturnThis(),
+        disconnect: vi.fn(),
+        dispose: vi.fn(),
+        threshold: { value: -24 },
+        ratio: { value: 4 },
+        attack: { value: 0.003 },
+        release: { value: 0.25 },
+        reduction: 0,
+      })),
+      Meter: vi.fn(() => ({
+        connect: vi.fn().mockReturnThis(),
+        disconnect: vi.fn(),
+        dispose: vi.fn(),
+        getValue: vi.fn(() => -60),
+      })),
+      Filter: vi.fn(() => ({
+        connect: vi.fn().mockReturnThis(),
+        disconnect: vi.fn(),
+        dispose: vi.fn(),
+        frequency: { value: 1000 },
+        Q: { value: 1 },
+        type: 'lowpass',
+      })),
+      Reverb: vi.fn(() => ({
+        connect: vi.fn().mockReturnThis(),
+        disconnect: vi.fn(),
+        dispose: vi.fn(),
+        decay: 1.5,
+        preDelay: 0.01,
+        wet: { value: 0.5 },
+      })),
+      CrossFade: vi.fn(() => ({
+        connect: vi.fn().mockReturnThis(),
+        disconnect: vi.fn(),
+        dispose: vi.fn(),
+        fade: { value: 0.5 },
+        a: { connect: vi.fn() },
+        b: { connect: vi.fn() },
+      })),
+      Gate: vi.fn(() => ({
+        connect: vi.fn().mockReturnThis(),
+        disconnect: vi.fn(),
+        dispose: vi.fn(),
+        threshold: -40,
+        attack: 0.001,
+        release: 0.1,
+      })),
+      BitCrusher: vi.fn(() => ({
+        connect: vi.fn().mockReturnThis(),
+        disconnect: vi.fn(),
+        dispose: vi.fn(),
+        bits: 8,
+        wet: { value: 1 },
+      })),
+      Distortion: vi.fn(() => ({
+        connect: vi.fn().mockReturnThis(),
+        disconnect: vi.fn(),
+        dispose: vi.fn(),
+        distortion: 0.5,
+        wet: { value: 1 },
+      })),
+
+      // Instruments/Sources
+      Oscillator: vi.fn(() => ({
+        connect: vi.fn().mockReturnThis(),
+        disconnect: vi.fn(),
+        dispose: vi.fn(),
+        start: vi.fn(),
+        stop: vi.fn(),
+        frequency: { value: 440 },
+        type: 'sine',
+      })),
+      Sampler: vi.fn(() => ({
+        connect: vi.fn().mockReturnThis(),
+        disconnect: vi.fn(),
+        dispose: vi.fn(),
+        triggerAttack: vi.fn(),
+        triggerRelease: vi.fn(),
+        triggerAttackRelease: vi.fn(),
+        loaded: Promise.resolve(),
+      })),
+      Player: vi.fn(() => ({
+        connect: vi.fn().mockReturnThis(),
+        disconnect: vi.fn(),
+        dispose: vi.fn(),
+        start: vi.fn(),
+        stop: vi.fn(),
+        loaded: Promise.resolve(),
+        buffer: null,
+      })),
+
+      // Envelopes
+      AmplitudeEnvelope: vi.fn(() => ({
+        connect: vi.fn().mockReturnThis(),
+        disconnect: vi.fn(),
+        dispose: vi.fn(),
+        triggerAttack: vi.fn(),
+        triggerRelease: vi.fn(),
+        attack: 0.01,
+        decay: 0.1,
+        sustain: 0.5,
+        release: 0.5,
+      })),
+      Envelope: vi.fn(() => ({
+        connect: vi.fn().mockReturnThis(),
+        disconnect: vi.fn(),
+        dispose: vi.fn(),
+        triggerAttack: vi.fn(),
+        triggerRelease: vi.fn(),
+      })),
+
+      // Scheduling
+      Sequence: vi.fn(() => ({
+        start: vi.fn(),
+        stop: vi.fn(),
+        dispose: vi.fn(),
+        events: [],
+      })),
+      Part: vi.fn(() => ({
+        start: vi.fn(),
+        stop: vi.fn(),
+        dispose: vi.fn(),
+        events: [],
+      })),
+      Loop: vi.fn(() => ({
+        start: vi.fn(),
+        stop: vi.fn(),
+        dispose: vi.fn(),
+      })),
+
+      // Utilities
+      now: vi.fn(() => 0),
+      immediate: vi.fn(() => 0),
+      Destination: {
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+        volume: { value: 0 },
+      },
+      Master: {
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+        volume: { value: 0 },
+      },
+
+      // Buffer
+      Buffer: vi.fn(() => ({
+        loaded: Promise.resolve(),
+        duration: 1,
+        length: 44100,
+        numberOfChannels: 2,
+        sampleRate: 44100,
+        get: vi.fn(),
+        toArray: vi.fn(() => [new Float32Array(44100)]),
+      })),
+      ToneAudioBuffer: vi.fn(() => ({
+        loaded: Promise.resolve(),
+        duration: 1,
+        length: 44100,
+        numberOfChannels: 2,
+        sampleRate: 44100,
+      })),
+    };
+  }
+
   try {
     // Quick check for critical global corruption
     if (

@@ -323,6 +323,9 @@ export class AdminExercisesService {
         updateExerciseDto.harmony_control_changes;
     if (updateExerciseDto.harmony_instrument !== undefined)
       updateData.harmony_instrument = updateExerciseDto.harmony_instrument;
+    // Drum pattern data
+    if (updateExerciseDto.drum_pattern !== undefined)
+      updateData.drum_pattern = updateExerciseDto.drum_pattern;
 
     const { data, error } = await this.supabaseService
       .getClient()

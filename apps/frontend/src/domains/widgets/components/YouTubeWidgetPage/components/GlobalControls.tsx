@@ -29,7 +29,6 @@ import { Button } from '@/shared/components/ui/button';
 import { useTransportContext } from '@/domains/playback/contexts/TransportContext';
 import { useTrack } from '@/domains/playback/hooks';
 import type { CoreServices } from '@/domains/playback/services/core/CoreServices.js';
-import * as Tone from 'tone';
 // Phase 3.1.2: Removed dead import - RegionProcessor not used (uses adapter via CoreServices)
 import { ExerciseLoader } from '@/domains/playback/modules/exercises/core/ExerciseLoader.js';
 import { getLogger } from '@/utils/logger.js';
@@ -42,10 +41,24 @@ import { useAudioServices } from '@/domains/playback/providers/AudioProvider';
 import { SheetMusicDisplay } from '../../SheetMusic/index.js';
 
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { logSkeletonDebug } from '@/utils/skeletonDebug';
 import { useCountdown } from '@/domains/widgets/hooks/useCountdown';
 import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
+import { musicalTruth } from '@/domains/playback/modules/tempo/MusicalTruthAuthority';
 
 const logger = getLogger('global-controls');
+
+// Helper to get Tone from window (must be initialized before GlobalControls is used)
+function getTone(): typeof import('tone') {
+  if (typeof window !== 'undefined') {
+    // Check both locations where Tone.js may be stored
+    const tone = (window as any).Tone || (window as any).__globalTone;
+    if (tone) {
+      return tone;
+    }
+  }
+  throw new Error('GlobalControls: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+}
 
 // VexFlow utility functions for sheet music
 const convertNoteDurationToVexFlow = (
@@ -120,6 +133,43 @@ const getOctaveFromNote = (noteName: string): number => {
   // Extract octave from note name (e.g., "A2" -> 2)
   const match = noteName.match(/\d+/);
   return match ? parseInt(match[0]) : 2;
+};
+
+/**
+ * Normalize drum type to buffer key
+ * DrumScheduler only has: kick, snare, hihat buffers
+ * So we need to map detailed drum types to these simplified keys
+ */
+const normalizeDrumTypeToBufferKey = (drumType: string): string => {
+  const mapping: Record<string, string> = {
+    // Kick variants
+    kick: 'kick',
+    // Snare variants
+    snare: 'snare',
+    snare_rimshot: 'snare',
+    clap: 'snare',
+    // Hi-hat variants - ALL map to 'hihat'
+    hihat: 'hihat',
+    hihat_closed: 'hihat',
+    hihat_open: 'hihat',
+    hihat_pedal: 'hihat',
+    // Cymbals fallback to hihat
+    crash: 'hihat',
+    crash_1: 'hihat',
+    crash_2: 'hihat',
+    ride: 'hihat',
+    ride_bell: 'hihat',
+    splash: 'hihat',
+    // Toms fallback based on pitch
+    tom_high: 'snare',
+    tom_mid: 'snare',
+    tom_low: 'kick',
+    tom_1: 'snare',
+    tom_2: 'snare',
+    tom_3: 'kick',
+    floor_tom: 'kick',
+  };
+  return mapping[drumType] || 'kick'; // Default to kick
 };
 
 // Determine stem direction based on staff position (professional engraving standard)
@@ -285,6 +335,12 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
   onPlayStateChange,
 }) => {
   globalControlsRenderCount++;
+
+  // SKELETON-DEBUG: Log first 5 renders with timing (using shared baseline)
+  logSkeletonDebug('🎛️', 'GlobalControls', globalControlsRenderCount, {
+    hasExercise: !!selectedExercise,
+    exerciseId: selectedExercise?.id,
+  });
 
   // ✅ FIX: Get services directly from AudioProvider context (no race conditions)
   const {
@@ -483,9 +539,8 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
   const lastUserVolume = useRef(1.0); // Set default to 100%
   const ignoreNextSyncTempo = useRef(false);
 
-  // FAANG SOLUTION: Track if user manually modified tempo
-  // "Last explicit user action wins" - user tempo changes take priority over exercise defaults
-  const hasUserModifiedTempo = useRef(false);
+  // TEMPO FIX: Removed local hasUserModifiedTempo ref - now using musicalTruth.hasUserModifiedTempo()
+  // as the SINGLE source of truth for user tempo modifications
   const currentExerciseId = useRef<string | null>(null);
   // Sheet music state
   const [currentPosition, setCurrentPosition] = useState(2);
@@ -951,7 +1006,11 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
         const currentMetronomeTrack = metronomeTrackRef.current;
         const currentDrumTrack = drumTrackRef.current;
 
-        if (currentMetronomeTrack.regions.length === 0 && selectedExercise) {
+        // FIX: Use track.regions (sync) instead of hook's regions state (async)
+        if (
+          (currentMetronomeTrack.track?.regions?.length || 0) === 0 &&
+          selectedExercise
+        ) {
           logger.info(
             '🎵 Metronome regions empty, creating them now with correct tempo:',
             selectedExercise.bpm,
@@ -961,8 +1020,10 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
           currentMetronomeTrack.clearRegions();
 
           // Calculate exercise parameters
+          // Priority: total_bars > duration_beats > fallback (4 bars)
           const beatsPerBar = selectedExercise.timeSignature?.numerator || 4;
-          const totalBeats = selectedExercise.duration_beats || 16;
+          const totalBars = selectedExercise.total_bars || 4;
+          const totalBeats = selectedExercise.duration_beats || totalBars * beatsPerBar;
 
           // Generate metronome events
           const events = [];
@@ -1025,38 +1086,43 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
           },
         });
 
+        // FIX: Use track.regions (sync) instead of hook's regions state (async)
+        // The hook's `regions` property is React state that updates asynchronously after setRegions()
+        // But we just called addRegion() which updates track.regions synchronously
+        const metronomeRegions = currentMetronomeTrack.track?.regions || [];
+        const drumRegions = currentDrumTrack.track?.regions || [];
+
         if (
           playbackEngine &&
-          (currentMetronomeTrack.regions.length > 0 ||
-            currentDrumTrack.regions.length > 0)
+          (metronomeRegions.length > 0 || drumRegions.length > 0)
         ) {
           const tracksToRegister = [];
-          if (currentMetronomeTrack.regions.length > 0) {
+          if (metronomeRegions.length > 0) {
             tracksToRegister.push({
               id: 'metronome',
               name: 'Metronome',
-              regions: currentMetronomeTrack.regions,
+              regions: metronomeRegions,
               instrumentType: 'metronome',
             });
             logger.debug(
-              `🎵 Registering metronome track with ${currentMetronomeTrack.regions.length} regions`,
+              `🎵 Registering metronome track with ${metronomeRegions.length} regions`,
             );
           }
-          if (currentDrumTrack.regions.length > 0) {
+          if (drumRegions.length > 0) {
             tracksToRegister.push({
               id: 'drums',
               name: 'Drums',
-              regions: currentDrumTrack.regions,
+              regions: drumRegions,
               instrumentType: 'drums',
             });
             logger.debug(
-              `🎵 Registering drum track with ${currentDrumTrack.regions.length} regions`,
+              `🎵 Registering drum track with ${drumRegions.length} regions`,
             );
           } else {
             logger.warn('🎵 No drum regions found to register!', {
               drumTrack: currentDrumTrack,
-              hasRegions: !!currentDrumTrack?.regions,
-              regionsArray: currentDrumTrack?.regions,
+              hasRegions: !!currentDrumTrack?.track?.regions,
+              regionsArray: drumRegions,
             });
           }
 
@@ -1071,8 +1137,8 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
             '🎵 No tracks with regions to register or no PlaybackEngine',
             {
               hasEngine: !!playbackEngine,
-              metronomeRegions: currentMetronomeTrack?.regions?.length || 0,
-              drumRegions: currentDrumTrack?.regions?.length || 0,
+              metronomeRegions: metronomeRegions.length,
+              drumRegions: drumRegions.length,
             },
           );
         }
@@ -1147,9 +1213,10 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
         // This ensures isCountingDown is set to true before isPlaying
         // Prevents the Stop icon from flashing briefly
         logger.info('🎵 Starting visual countdown');
-        const audioContext = Tone.context;
+        const ToneRef = getTone();
+        const audioContext = ToneRef.context;
         // FAANG FIX: Use current transport BPM for countdown, not exercise's stored BPM
-        const currentBpm = transport?.getTempo?.() || Tone.Transport.bpm.value;
+        const currentBpm = transport?.getTempo?.() || ToneRef.Transport.bpm.value;
         startCountdown(currentBpm, audioContext, null as any).catch((error) => {
           logger.error('❌ Visual countdown failed:', error);
           // Non-fatal, audio countdown is already scheduled
@@ -1168,10 +1235,21 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
         // - transport.setExerciseDuration()
         // - transport.setCountdownBeats()
         // All systems will now read from musicalTruth singleton
-        const { musicalTruth } =
-          await import('@/domains/playback/modules/tempo/MusicalTruthAuthority.js');
-        // TEMPO FIX: preserveBPM=true keeps user's tempo slider value instead of resetting to exercise.bpm
-        musicalTruth.setFromExercise(selectedExercise, { preserveBPM: true });
+        // TEMPO FIX: MusicalTruthAuthority now auto-detects if user modified tempo
+        // No need to pass preserveBPM - it uses internal _userHasModifiedTempo flag
+        // Using the static import at the top of the file instead of dynamic import
+
+        // 🔍 TEMPO DIAGNOSTIC: Log before calling setFromExercise
+        console.log(`🎵 [TEMPO-EXERCISE] GlobalControls calling musicalTruth.setFromExercise()`, {
+          exerciseId: selectedExercise.id,
+          exerciseTitle: selectedExercise.title,
+          exerciseBpm: selectedExercise.bpm,
+          musicalTruthHasUserModifiedTempo: musicalTruth.hasUserModifiedTempo(),
+          currentMusicalTruthBpm: musicalTruth.getBPM(),
+        });
+
+        // setFromExercise will automatically preserve BPM if user modified it
+        musicalTruth.setFromExercise(selectedExercise);
 
         console.log(
           '✅ [MUSICAL TRUTH] Set from exercise - ALL systems synchronized:',
@@ -1237,6 +1315,13 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
 
   const handleTempoChange = useCallback(
     async (newTempo: number) => {
+      // 🔍 TEMPO DIAGNOSTIC: Log user tempo slider change
+      console.log(`🎵 [TEMPO-SLIDER] GlobalControls.handleTempoChange() called`, {
+        newTempo,
+        previousLocalTempo: localTempo,
+        musicalTruthUserModifiedTempoBefore: musicalTruth.hasUserModifiedTempo(),
+      });
+
       try {
         // Update local state immediately for responsive UI
         setLocalTempo(newTempo);
@@ -1245,10 +1330,10 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
         // Set flag to ignore the next sync update to prevent feedback
         ignoreNextSyncTempo.current = true;
 
-        // FAANG SOLUTION: Mark that user manually changed tempo
-        hasUserModifiedTempo.current = true;
+        // Note: musicalTruth.setBPM() (called via transport.setTempo) will automatically
+        // set the userHasModifiedTempo flag in MusicalTruthAuthority - no need to track locally
 
-        // Update tempo using transport
+        // Update tempo using transport (which calls musicalTruth.setBPM)
         await transport.setTempo(newTempo);
 
         // Clear any pending sync
@@ -1257,9 +1342,11 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
         }
 
         // Reset ignore flag after tempo change
+        // TEMPO FIX: Increased timeout from 100ms to 500ms to allow React state propagation
+        // The old 100ms was too short - React batching and context updates can take longer
         tempoTimeoutRef.current = setTimeout(() => {
           ignoreNextSyncTempo.current = false;
-        }, 100);
+        }, 500);
       } catch (error) {
         logger.error('Error setting tempo:', error);
       }
@@ -1267,12 +1354,43 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
     [transport],
   );
 
+  // TEMPO FIX: Use a ref to track localTempo for comparison in useEffect
+  // This prevents stale closure bugs where the effect captures an old localTempo value
+  const localTempoRef = useRef(localTempo);
+  useEffect(() => {
+    localTempoRef.current = localTempo;
+  }, [localTempo]);
+
   // Sync local state with transport tempo
   useEffect(() => {
     if (!isDraggingTempo && !ignoreNextSyncTempo.current && transport.tempo) {
       // Only update if the value is significantly different
       const tempoThreshold = 1;
-      if (Math.abs(transport.tempo - localTempo) > tempoThreshold) {
+      // TEMPO FIX: Use ref instead of state to avoid stale closure
+      const currentLocalTempo = localTempoRef.current;
+      if (Math.abs(transport.tempo - currentLocalTempo) > tempoThreshold) {
+        // TEMPO FIX: Use musicalTruth.hasUserModifiedTempo() as the single source of truth
+        const userModifiedTempo = musicalTruth.hasUserModifiedTempo();
+
+        // 🔍 TEMPO DIAGNOSTIC: Log sync effect attempting to update localTempo
+        console.log(`🎵 [TEMPO-SYNC] Sync effect updating localTempo`, {
+          fromLocalTempo: currentLocalTempo,
+          toTransportTempo: transport.tempo,
+          isDraggingTempo,
+          ignoreNextSyncTempo: ignoreNextSyncTempo.current,
+          musicalTruthUserModifiedTempo: userModifiedTempo,
+          lastUserTempo: lastUserTempo.current,
+        });
+
+        // TEMPO FIX: If user recently modified tempo and transport.tempo differs from lastUserTempo,
+        // this is likely a stale value from before the user's change. Skip the update.
+        if (userModifiedTempo && lastUserTempo.current !== null) {
+          if (Math.abs(transport.tempo - lastUserTempo.current) > tempoThreshold) {
+            console.log(`🎵 [TEMPO-SYNC] Skipping sync - user tempo ${lastUserTempo.current} differs from transport ${transport.tempo}`);
+            return;
+          }
+        }
+
         setLocalTempo(transport.tempo);
       }
     }
@@ -1431,11 +1549,14 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
         }
 
         // Reset Tone.Transport position to start (this will be -1 bar after countdown is enabled)
-        if (typeof Tone !== 'undefined' && Tone.Transport) {
-          Tone.Transport.position = 0;
+        try {
+          const ToneRef = getTone();
+          ToneRef.Transport.position = 0;
           logger.info(
             '🎮 GlobalControls: Reset transport position to 0:0:0 for new exercise',
           );
+        } catch {
+          // Tone.js not loaded yet, skip transport reset
         }
       } catch (error) {
         logger.warn(
@@ -1471,23 +1592,33 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
       try {
         // ✅ SET THE ONE SINGLE SOURCE OF MUSICAL TRUTH
         // This establishes tempo, time signature, and duration from the exercise
-        // Note: User tempo modifications are not yet supported with musicalTruth - future enhancement
-        const { musicalTruth } =
-          await import('@/domains/playback/modules/tempo/MusicalTruthAuthority.js');
+        // Using the static import at the top of the file
 
         const exerciseIdChanged =
           currentExerciseId.current !== selectedExercise.id;
         if (exerciseIdChanged) {
           currentExerciseId.current = selectedExercise.id;
-          hasUserModifiedTempo.current = false;
+          // TEMPO FIX: Use musicalTruth.resetUserModifiedTempo() as the single source of truth
+          musicalTruth.resetUserModifiedTempo();
         }
 
         // Set musical truth from exercise (replaces setTempo, setTimeSignature, etc.)
+        // Note: setFromExercise will automatically preserve BPM if user modified it
         musicalTruth.setFromExercise(selectedExercise);
         logger.info(
           '✅ [loadExercise] Musical truth established:',
           musicalTruth.getTruth(),
         );
+
+        // CRITICAL: Clear drum tracks from PlaybackEngine BEFORE clearing regions
+        // This stops any scheduled drum audio sources and unregisters old drum tracks
+        // Fixes bug where drum patterns from previous exercise persist after switching
+        const coreServicesForDrumCleanup = WindowRegistry.getCoreServices();
+        const playbackEngineForCleanup = coreServicesForDrumCleanup?.getPlaybackEngine?.();
+        if (playbackEngineForCleanup?.clearDrumTracks) {
+          playbackEngineForCleanup.clearDrumTracks();
+          console.log('[GlobalControls] Cleared drum tracks from PlaybackEngine before loading new exercise');
+        }
 
         // Clear existing regions
         metronomeTrackRef.current.clearRegions();
@@ -1557,27 +1688,34 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
               }
 
               // Phase 3.3: Register tracks with PlaybackEngine
-              const playbackEngine = coreServices.getPlaybackEngine();
+              // ✅ FIX: Use WindowRegistry to get CoreServices, check method exists
+              const coreServicesForPlayback = WindowRegistry.getCoreServices();
+              const playbackEngine = coreServicesForPlayback?.getPlaybackEngine?.();
               const tracks = [];
-              if (metronomeTrackRef.current.regions?.length > 0) {
+              // CRITICAL FIX: Use track.regions (synchronous) instead of hook's regions state (asynchronous)
+              if ((metronomeTrackRef.current.track?.regions?.length || 0) > 0) {
                 tracks.push(metronomeTrackRef.current.track);
                 logger.info(
                   '🎮 GlobalControls: Registering metronome track with PlaybackEngine',
                 );
               }
-              if (drumTrackRef.current.regions?.length > 0) {
+              if ((drumTrackRef.current.track?.regions?.length || 0) > 0) {
                 tracks.push(drumTrackRef.current.track);
                 logger.info(
-                  '🎮 GlobalControls: Registering drum track with RegionProcessor',
+                  '🎮 GlobalControls: Registering drum track with PlaybackEngine',
                 );
               }
 
-              if (tracks.length > 0) {
+              if (tracks.length > 0 && playbackEngine) {
                 playbackEngine.registerTracks(tracks);
                 logger.info(
                   '🎮 GlobalControls: Registered',
                   tracks.length,
-                  'tracks with RegionProcessor',
+                  'tracks with PlaybackEngine',
+                );
+              } else if (tracks.length > 0 && !playbackEngine) {
+                logger.warn(
+                  '🎮 GlobalControls: PlaybackEngine not available, skipping track registration',
                 );
               }
 
@@ -1650,32 +1788,34 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
               // Bass and harmony will be added when those instruments are ready
             }
 
-            // Register tracks with RegionProcessor
-            const coreServicesForRegion = (window as any).__globalCoreServices;
-            if (coreServicesForRegion) {
-              const playbackEngine = coreServices.getPlaybackEngine();
+            // Register tracks with PlaybackEngine
+            // ✅ FIX: Use WindowRegistry to get CoreServices, check method exists
+            const coreServicesForRegion = WindowRegistry.getCoreServices();
+            if (coreServicesForRegion?.getPlaybackEngine) {
+              const playbackEngine = coreServicesForRegion.getPlaybackEngine();
 
               // Build tracks array with regions
+              // CRITICAL FIX: Use track.regions (synchronous) instead of hook's regions state (asynchronous)
               const tracks = [];
-              if (metronomeTrackRef.current.regions?.length > 0) {
+              if ((metronomeTrackRef.current.track?.regions?.length || 0) > 0) {
                 tracks.push(metronomeTrackRef.current.track);
                 logger.info(
                   '🎮 GlobalControls: Registering metronome track with PlaybackEngine',
                 );
               }
-              if (drumTrackRef.current.regions?.length > 0) {
+              if ((drumTrackRef.current.track?.regions?.length || 0) > 0) {
                 tracks.push(drumTrackRef.current.track);
                 logger.info(
-                  '🎮 GlobalControls: Registering drum track with RegionProcessor',
+                  '🎮 GlobalControls: Registering drum track with PlaybackEngine',
                 );
               }
 
-              if (tracks.length > 0) {
+              if (tracks.length > 0 && playbackEngine) {
                 playbackEngine.registerTracks(tracks);
                 logger.info(
                   '🎮 GlobalControls: Registered',
                   tracks.length,
-                  'tracks with RegionProcessor',
+                  'tracks with PlaybackEngine',
                 );
               }
             }
@@ -1755,6 +1895,8 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
                       numerator: 4,
                       denominator: 4,
                     },
+                    // CRITICAL: Pass total_bars for drum pattern looping calculation
+                    total_bars: selectedExercise.total_bars,
                   } as any,
                 );
 
@@ -1881,31 +2023,39 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
               }
             }
 
-            // Register tracks with RegionProcessor if we loaded any regions
+            // Register tracks with PlaybackEngine if we loaded any regions
+            // ✅ FIX: Use WindowRegistry to get CoreServices, check method exists
             if (allRegions.length > 0) {
-              const playbackEngine = coreServices.getPlaybackEngine();
+              const coreServicesForWidgetMidi = WindowRegistry.getCoreServices();
+              const playbackEngine = coreServicesForWidgetMidi?.getPlaybackEngine?.();
               const tracks = [];
 
-              if (metronomeTrackRef.current.regions?.length > 0) {
+              // CRITICAL FIX: Use track.regions (synchronous) instead of hook's regions state (asynchronous)
+              // After addRegion(), track.regions is updated immediately, but React state updates async
+              if ((metronomeTrackRef.current.track?.regions?.length || 0) > 0) {
                 tracks.push(metronomeTrackRef.current.track);
                 logger.info(
                   '🎮 GlobalControls: Registering metronome track with PlaybackEngine',
                 );
               }
 
-              if (drumTrackRef.current.regions?.length > 0) {
+              if ((drumTrackRef.current.track?.regions?.length || 0) > 0) {
                 tracks.push(drumTrackRef.current.track);
                 logger.info(
-                  '🎮 GlobalControls: Registering drum track with RegionProcessor',
+                  '🎮 GlobalControls: Registering drum track with PlaybackEngine',
                 );
               }
 
-              if (tracks.length > 0) {
+              if (tracks.length > 0 && playbackEngine) {
                 playbackEngine.registerTracks(tracks);
                 logger.info(
                   '🎮 GlobalControls: Registered',
                   tracks.length,
                   'tracks from per-widget MIDI files',
+                );
+              } else if (tracks.length > 0 && !playbackEngine) {
+                logger.warn(
+                  '🎮 GlobalControls: PlaybackEngine not available for per-widget MIDI tracks',
                 );
               }
 
@@ -2055,20 +2205,35 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
               // Convert DrumHit[] to the event format expected by regions
               const convertedEvents = selectedExercise.drumPattern.map(
                 (hit: any) => {
-                  // CRITICAL: Convert measure:beat to region-relative format (0:totalBeats:subdivision)
-                  // This prevents double-offset when region.startTime=4 is added to Tone.Time("measure:beat")
+                  // DrumPatternEditor uses 0-based measure and beat indexing
+                  // Convert to region-relative format using totalBeats from start
                   const timeSignature = selectedExercise.timeSignature || {
                     numerator: 4,
                     denominator: 4,
                   };
+
+                  // Calculate total beats from the start (0-based)
                   const totalBeats =
                     (hit.position.measure || 0) * timeSignature.numerator +
                     (hit.position.beat || 0);
 
+                  // Use tick for precise subdivision when available (480 PPQ)
+                  // tick 0 = beat start, tick 240 = upbeat (8th note)
+                  // Tone.js position format: "measure:beats:sixteenths"
+                  // subdivision should be 0-3 for 16th note positions within a beat
+                  const PPQ = 480;
+                  const tick = hit.position.tick ?? (hit.position.subdivision || 0) * (PPQ / 4);
+                  // Convert tick to 16th note subdivision (0-3)
+                  // tick 0-119 = 0, tick 120-239 = 1, tick 240-359 = 2, tick 360-479 = 3
+                  const sixteenthSubdivision = Math.floor((tick / PPQ) * 4);
+
+                  // CRITICAL: Normalize drum type to buffer key (e.g., hihat_closed -> hihat)
+                  // DrumScheduler only has: kick, snare, hihat buffers
+                  const normalizedDrum = normalizeDrumTypeToBufferKey(hit.drum || 'kick');
                   return {
-                    position: `0:${totalBeats}:${hit.position.subdivision || 0}`,
-                    type: hit.drum || 'kick',
-                    drum: hit.drum || 'kick',
+                    position: `0:${totalBeats}:${sixteenthSubdivision}`,
+                    type: normalizedDrum,
+                    drum: normalizedDrum,
                     // CRITICAL: Velocity from MIDI is 0-127, normalize to 0-1 for audio playback
                     velocity: hit.velocity ? hit.velocity / 127 : 0.7,
                     midiNote: hit.midiNote,
@@ -2186,46 +2351,48 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
           }
 
           // Phase 3.3: Register tracks with PlaybackEngine for fallback patterns
-          const coreServicesRef = (window as any).__globalCoreServices;
-          if (coreServicesRef) {
-            const playbackEngine = coreServicesRef.getPlaybackEngine();
+          // ✅ FIX: Use WindowRegistry to get CoreServices, check method exists
+          const coreServicesRefFallback = WindowRegistry.getCoreServices();
+          if (coreServicesRefFallback?.getPlaybackEngine) {
+            const playbackEngine = coreServicesRefFallback.getPlaybackEngine();
 
             // Build tracks array with regions
+            // CRITICAL FIX: Use track.regions (synchronous) instead of hook's regions state (asynchronous)
             const tracks = [];
-            if (metronomeTrackRef.current.regions?.length > 0) {
+            if ((metronomeTrackRef.current.track?.regions?.length || 0) > 0) {
               tracks.push(metronomeTrackRef.current.track);
               logger.info(
                 '🎮 GlobalControls: Registering metronome track (fallback)',
               );
             }
-            if (drumTrackRef.current.regions?.length > 0) {
+            if ((drumTrackRef.current.track?.regions?.length || 0) > 0) {
               tracks.push(drumTrackRef.current.track);
               logger.info(
                 '🎮 GlobalControls: Registering drum track (fallback)',
               );
             }
 
-            if (tracks.length > 0) {
-              regionProcessor.registerTracks(tracks);
+            if (tracks.length > 0 && playbackEngine) {
+              playbackEngine.registerTracks(tracks);
               logger.info(
                 '🎮 GlobalControls: Registered',
                 tracks.length,
-                'tracks with RegionProcessor (fallback)',
+                'tracks with PlaybackEngine (fallback)',
               );
             }
           }
         } // End of fallback pattern creation (if !midiLoaded)
 
         // Update local UI state to match the tempo we set
-        // FAANG SOLUTION: Only update UI if we actually changed the tempo
-        if (exerciseIdChanged || !hasUserModifiedTempo.current) {
+        // TEMPO FIX: Use musicalTruth as the single source of truth
+        if (exerciseIdChanged || !musicalTruth.hasUserModifiedTempo()) {
           if (selectedExercise.bpm) {
             setLocalTempo(selectedExercise.bpm);
             lastUserTempo.current = selectedExercise.bpm;
           }
         } else {
-          // User modified tempo - keep UI showing current transport tempo
-          setLocalTempo(transport.tempo);
+          // User modified tempo - keep UI showing current musical truth tempo
+          setLocalTempo(musicalTruth.getBPM());
         }
 
         logger.debug('🎮 GlobalControls: Exercise loaded successfully');

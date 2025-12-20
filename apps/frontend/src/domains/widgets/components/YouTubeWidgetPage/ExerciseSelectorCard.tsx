@@ -183,11 +183,16 @@ function ExerciseSelectorCardContent({
   const [selectedExerciseId, setSelectedExerciseId] = useState<string>('');
 
   const handleExerciseSelect = (exerciseId: string) => {
-    const exercise = exercises.find((ex) => ex.id === exerciseId);
+    // Handle both Exercise entity (id.value) and plain Exercise interface (id as string)
+    const exercise = exercises.find((ex) => {
+      const exId = typeof ex.id === 'object' && ex.id !== null ? ex.id.value : ex.id;
+      return exId === exerciseId;
+    });
     if (exercise) {
       // Check if this exercise is already selected by comparing with sync state
       // Use the current syncProps.selectedExercise from the current render
-      const wasAlreadySelected = syncProps.selectedExercise?.id === exerciseId;
+      const syncExId = syncProps.selectedExercise?.id;
+      const wasAlreadySelected = (typeof syncExId === 'object' && syncExId !== null ? syncExId.value : syncExId) === exerciseId;
 
       // Add a unique selection timestamp to track user clicks
       const timestamp = Date.now();

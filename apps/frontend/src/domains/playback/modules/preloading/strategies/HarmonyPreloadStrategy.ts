@@ -15,6 +15,7 @@ import grandPianoKeyboardMap from '@/domains/playback/data/instruments/piano/gra
 import wurlitzerConfig from '@/domains/playback/data/instruments/wurlitzer/wurlitzer-piano.json';
 import rhodesConfig from '@/domains/playback/data/instruments/rhodes/rhodes-piano.json';
 import { midiToNoteName } from '@/domains/playback/utils/midiUtils';
+import { lifecycle } from '@/domains/playback/utils/InitializationLifecycleLogger';
 
 const logger = getLogger('HarmonyPreloadStrategy');
 
@@ -708,6 +709,13 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
       })),
     });
 
+    lifecycle.checkpoint('SAMPLE_DOWNLOAD_START', {
+      type: 'harmony',
+      instrument,
+      uniqueNotes: sampleMap.size,
+      totalSamples,
+    });
+
     logger.info(
       '🎹 Pre-downloading harmony samples as AudioBuffers using smart sample map',
       {
@@ -796,11 +804,23 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
                 `💾 [SAMPLES][IndexedDB-HIT] Using cached sample: ${cacheKey}`,
               );
               logger.info(`💾 IndexedDB cache HIT: ${cacheKey}`);
+              lifecycle.checkpoint('SAMPLE_CACHE_HIT', {
+                key: cacheKey,
+                instrument,
+                layer,
+                noteName,
+              });
               arrayBuffer = cachedBuffer;
 
               // 🔍 DIAGNOSTIC: Log ALL cache hits with exact byte sizes
               console.log(`🔍 [CACHE-HIT] ${instrument}-${layer}-${noteName}: ${arrayBuffer.byteLength} bytes`);
             } else {
+              lifecycle.checkpoint('SAMPLE_CACHE_MISS', {
+                key: cacheKey,
+                instrument,
+                layer,
+                noteName,
+              });
               // Not in cache, fetch from network
               const url = supabase.storage
                 .from(config.bucket)
@@ -967,6 +987,14 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
           successRate: `${Math.round((samplesLoaded / totalSamples) * 100)}%`,
         },
       );
+
+      lifecycle.checkpoint('SAMPLE_DOWNLOAD_COMPLETE', {
+        type: 'harmony',
+        instrument,
+        loaded: samplesLoaded,
+        total: totalSamples,
+        durationMs: duration,
+      });
 
       return {
         success: true,

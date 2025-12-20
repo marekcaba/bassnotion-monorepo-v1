@@ -4,7 +4,8 @@
  * Synthesis engine for bass sounds with multiple oscillator types
  */
 
-import * as Tone from 'tone';
+import { getTone } from '@/domains/playback/utils/tone';
+import type * as ToneTypes from 'tone';
 import {
   BaseInstrumentCore,
   ISynthCore,
@@ -54,11 +55,11 @@ export class BassSynthEngine extends BaseInstrumentCore implements ISynthCore {
   readonly type = 'bass';
   readonly name = 'Bass Synth Engine';
 
-  private synth: Tone.PolySynth | null = null;
-  private subOscillator: Tone.Oscillator | null = null;
-  private filter: Tone.Filter | null = null;
-  private envelope: Tone.AmplitudeEnvelope | null = null;
-  private volume: Tone.Volume;
+  private synth: ToneTypes.PolySynth | null = null;
+  private subOscillator: ToneTypes.Oscillator | null = null;
+  private filter: ToneTypes.Filter | null = null;
+  private envelope: ToneTypes.AmplitudeEnvelope | null = null;
+  private volume: ToneTypes.Volume | null = null;
 
   // Synthesis options
   private options: BassSynthOptions = {
@@ -89,9 +90,7 @@ export class BassSynthEngine extends BaseInstrumentCore implements ISynthCore {
       this.options = { ...this.options, ...options };
     }
 
-    // Create output volume
-    this.volume = new Tone.Volume(-6);
-    this.output = this.volume;
+    // Volume will be created during initialization
   }
 
   async initialize(): Promise<void> {
@@ -100,6 +99,12 @@ export class BassSynthEngine extends BaseInstrumentCore implements ISynthCore {
     this.state.loading = true;
 
     try {
+      const Tone = await getTone();
+
+      // Create output volume
+      this.volume = new Tone.Volume(-6);
+      this.output = this.volume;
+
       // Create main synthesizer
       this.synth = new Tone.PolySynth(Tone.Synth, {
         oscillator: {
@@ -169,12 +174,13 @@ export class BassSynthEngine extends BaseInstrumentCore implements ISynthCore {
     this.subOscillator?.dispose();
     this.filter?.dispose();
     this.envelope?.dispose();
-    this.volume.dispose();
+    this.volume?.dispose();
 
     this.synth = null;
     this.subOscillator = null;
     this.filter = null;
     this.envelope = null;
+    this.volume = null;
 
     this.state.ready = false;
     this.state.initialized = false;
@@ -185,11 +191,12 @@ export class BassSynthEngine extends BaseInstrumentCore implements ISynthCore {
   /**
    * Trigger a bass note
    */
-  trigger(note: Note): void {
+  async trigger(note: Note): Promise<void> {
     if (!this.synth || !this.state.ready) return;
 
+    const Tone = await getTone();
     const bassNote = note as BassNote;
-    const frequency = this.getFrequency(bassNote);
+    const frequency = await this.getFrequency(bassNote);
     const time = bassNote.time || Tone.now();
 
     // Apply technique modifiers
@@ -212,12 +219,12 @@ export class BassSynthEngine extends BaseInstrumentCore implements ISynthCore {
         bassNote.string || 3,
         bassNote.slide.to,
       );
-      this.synth.frequency.rampTo(targetFreq, bassNote.slide.duration, time);
+      (this.synth as any).frequency?.rampTo?.(targetFreq, bassNote.slide.duration, time);
     }
 
     // Handle vibrato
     if (bassNote.vibrato && this.synth) {
-      this.applyVibrato(bassNote.vibrato, time);
+      await this.applyVibrato(bassNote.vibrato, time);
     }
 
     // Track active note
@@ -235,11 +242,12 @@ export class BassSynthEngine extends BaseInstrumentCore implements ISynthCore {
   /**
    * Release a bass note
    */
-  release(note: Note): void {
+  async release(note: Note): Promise<void> {
     if (!this.synth || !this.state.ready) return;
 
+    const Tone = await getTone();
     const bassNote = note as BassNote;
-    const frequency = this.getFrequency(bassNote);
+    const frequency = await this.getFrequency(bassNote);
     const time = bassNote.time || Tone.now();
 
     // Release main synth
@@ -341,11 +349,13 @@ export class BassSynthEngine extends BaseInstrumentCore implements ISynthCore {
   /**
    * Apply vibrato effect
    */
-  private applyVibrato(
+  private async applyVibrato(
     vibrato: { rate: number; depth: number },
     time: number,
-  ): void {
+  ): Promise<void> {
     if (!this.synth) return;
+
+    const Tone = await getTone();
 
     const lfo = new Tone.LFO({
       frequency: vibrato.rate,
@@ -353,7 +363,7 @@ export class BassSynthEngine extends BaseInstrumentCore implements ISynthCore {
       max: vibrato.depth * 100,
     });
 
-    lfo.connect(this.synth.detune);
+    (lfo as any).connect?.((this.synth as any).detune);
     lfo.start(time);
 
     // Clean up LFO after note ends (approximate)
@@ -366,7 +376,7 @@ export class BassSynthEngine extends BaseInstrumentCore implements ISynthCore {
   /**
    * Get frequency from bass note
    */
-  private getFrequency(note: BassNote): number {
+  private async getFrequency(note: BassNote): Promise<number> {
     // If pitch is specified as frequency
     if (typeof note.pitch === 'number') {
       return note.pitch;
@@ -379,6 +389,7 @@ export class BassSynthEngine extends BaseInstrumentCore implements ISynthCore {
 
     // Parse note name
     if (typeof note.pitch === 'string') {
+      const Tone = await getTone();
       return Tone.Frequency(note.pitch).toFrequency();
     }
 

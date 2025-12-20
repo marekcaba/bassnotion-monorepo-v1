@@ -21,10 +21,21 @@
  * - Defense-in-depth backup scheduling
  */
 
-import * as Tone from 'tone';
 import { getLogger } from '@/utils/logger.js';
 
 const logger = getLogger('RegionProcessor');
+
+// Helper to get Tone from window (must be initialized before RegionScheduler is used)
+function getTone(): any {
+  if (typeof window !== 'undefined') {
+    // Check both locations where Tone.js may be stored
+    const tone = (window as any).Tone || (window as any).__globalTone;
+    if (tone) {
+      return tone;
+    }
+  }
+  throw new Error('RegionScheduler: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+}
 
 // Types
 interface PatternEvent {
@@ -37,10 +48,46 @@ interface PatternEvent {
   data?: any;
 }
 
+interface MusicalPosition {
+  bars?: number;
+  beats?: number;
+  sixteenths?: number;
+  ticks?: number;
+}
+
+/**
+ * Convert a duration (either number of beats or MusicalPosition) to total beats
+ * @param duration - Either a number (already in beats) or a MusicalPosition object
+ * @param beatsPerBar - Number of beats per bar (default 4 for 4/4 time)
+ * @returns Total number of beats
+ */
+function durationToBeats(duration: number | MusicalPosition, beatsPerBar = 4): number {
+  // If it's already a number, return it
+  if (typeof duration === 'number') {
+    return duration;
+  }
+
+  // Convert MusicalPosition to total beats
+  // Each bar has beatsPerBar beats, each beat has 4 sixteenths, 480 ticks per beat
+  const bars = duration.bars ?? 0;
+  const beats = duration.beats ?? 0;
+  const sixteenths = duration.sixteenths ?? 0;
+  const ticks = duration.ticks ?? 0;
+
+  const totalBeats =
+    bars * beatsPerBar +
+    beats +
+    sixteenths / 4 +
+    ticks / 480;
+
+  return totalBeats;
+}
+
 interface Region {
   id: string;
   startTime: number;
-  duration: number;
+  duration: number | MusicalPosition; // Can be beats (number) or MusicalPosition object
+  loopCount?: number; // Number of times to repeat the pattern (default 1, 0 = infinite)
   skipCountdownOffset?: boolean;
   pattern?: {
     events: PatternEvent[];
@@ -176,51 +223,7 @@ export class RegionScheduler {
           return 0;
         });
 
-        // DIAGNOSTIC: Log first few notes
-        const firstThreeNotes = sortedEvents
-          .filter((e) => e.type === 'harmony-note')
-          .slice(0, 3);
-        // eslint-disable-next-line no-console
-        console.log(
-          '[REGIONPROCESSOR] First 3 harmony notes after sort:',
-          firstThreeNotes.map((e, i) => ({
-            index: i + 1,
-            type: e.type,
-            noteName: (e as any).data?.noteName,
-            ticks: (e as any).data?.ticks,
-            position: e.position,
-          })),
-        );
-
-        // [CC64 DIAGNOSTIC] Log first 10 events
-        // eslint-disable-next-line no-console
-        console.log(
-          `[CC64 DIAGNOSTIC] First 10 events after sorting (region: ${region.id}):`,
-        );
-        sortedEvents.slice(0, 10).forEach((event, i) => {
-          const parsedPos = parsePositionToObject(event.position);
-          const isCC64 =
-            event.type === 'harmony-control-change' &&
-            (event as any).data?.cc === 64;
-
-          // Extract tick from original position if available (not in ParsedPosition interface)
-          let tick = 0;
-          if (
-            typeof event.position === 'object' &&
-            (event.position as any).tick !== undefined
-          ) {
-            tick = (event.position as any).tick;
-          } else if (typeof event.position === 'string') {
-            const parts = event.position.split(':');
-            tick = parseInt(parts[3] || '0', 10);
-          }
-
-          // eslint-disable-next-line no-console
-          console.log(
-            `  ${i}: ${event.type}${isCC64 ? ' (CC64)' : ''} @ ${parsedPos.bars}:${parsedPos.beats}:${parsedPos.sixteenths}:${tick}`,
-            isCC64 ? `value=${(event as any).data?.value}` : '',
-          );
-        });
+        // CC64 diagnostic logs removed for performance
 
         // CC64: Build timeline ONLY for harmony regions
         // Other regions (countdown, metronome, voice-cue) don't have CC64 data
@@ -228,154 +231,108 @@ export class RegionScheduler {
         if (instrumentType === 'harmony') {
           if (cachedSchedule) {
             currentCC64Timeline = cachedSchedule.cc64Timeline;
-            // eslint-disable-next-line no-console
-            console.log(
-              `[CC64] ♻️ Using CACHED timeline with ${currentCC64Timeline.size} pedal events`,
-            );
           } else {
             currentCC64Timeline = buildCC64Timeline(sortedEvents, region);
-            // eslint-disable-next-line no-console
-            console.log(
-              `[CC64] 🔨 Built NEW timeline with ${currentCC64Timeline.size} pedal events`,
-            );
           }
 
           // Sync CC64 timeline to HarmonyScheduler ONLY for harmony regions
           setCurrentCC64Timeline(currentCC64Timeline);
         }
 
-        if (currentCC64Timeline.size > 0) {
-          const timeline = Array.from(currentCC64Timeline.entries())
-            .sort((a, b) => a[0] - b[0])
-            .map(
-              ([time, down]) => `${time.toFixed(3)}s=${down ? 'DOWN' : 'UP'}`,
-            )
-            .join(', ');
-          // eslint-disable-next-line no-console
-          console.log(`[CC64] Timeline: ${timeline}`);
-
-          logCC64DiagnosticTable(sortedEvents, region);
-        }
+        // CC64 timeline logging removed for performance
 
         // Track harmony notes for diagnostic
         let harmonyNoteCount = 0;
 
-        sortedEvents.forEach((event, eventIndex) => {
-          const eventKey = `${region.id}_${eventIndex}`;
+        // Get BPM for duration calculations (used for looping)
+        const Tone = getTone();
+        const currentBpm = Tone.Transport.bpm.value;
+        const secondsPerBeat = 60 / currentBpm;
 
-          // Skip if already scheduled
-          const trackEvents = scheduledEvents.get(trackId);
-          if (trackEvents && trackEvents.has(eventKey)) return;
+        // SCHEDULING-TIME LOOPING: Calculate loop count and region duration
+        // loopCount: 1 = play once (default), 2+ = repeat, 0 = infinite (not supported yet)
+        const effectiveLoopCount = Math.max(1, region.loopCount ?? 1);
 
-          // Calculate absolute time
-          const eventData = (event as any).data;
-          // FIX: Always use live BPM from Tone.Transport (source of truth)
-          // The eventData.originalBpm is stale - cached at event creation time
-          // When user changes tempo via UI, Tone.Transport.bpm.value is updated
-          // by musicalTruth.setBPM() and we must use that live value
-          const currentBpm = Tone.Transport.bpm.value;
-          let eventTime: number;
+        // Convert duration to beats (handles both number and MusicalPosition formats)
+        const regionDurationInBeats = durationToBeats(region.duration);
+        const regionDurationInSeconds = regionDurationInBeats * secondsPerBeat;
 
-          if (eventData?.ticks !== undefined) {
-            // Use absolute ticks with LIVE BPM (not stale originalBpm)
-            const secondsPerBeat = 60 / currentBpm;
-            const ticksPerBeat = 480;
-            const absoluteTicks = eventData.ticks;
-            eventTime = (absoluteTicks / ticksPerBeat) * secondsPerBeat;
+        // Loop logging removed for performance
 
-            if (
-              event.type === 'harmony-note' &&
-              (harmonyNoteCount < 3 || harmonyNoteCount === 8)
-            ) {
-              // eslint-disable-next-line no-console
-              console.log(
-                `[ABSOLUTE TICK SCHEDULING] Harmony Note ${harmonyNoteCount + 1}:`,
-                {
-                  absoluteTicks,
-                  currentBpm,
-                  eventTime: eventTime.toFixed(6),
-                  position: event.position,
-                  noteName: eventData?.noteName,
-                },
+        // Loop through pattern repetitions
+        for (let loopNum = 0; loopNum < effectiveLoopCount; loopNum++) {
+          // Calculate time offset for this loop iteration
+          const loopOffset = loopNum * regionDurationInSeconds;
+
+          sortedEvents.forEach((event, eventIndex) => {
+            // Include loop number in event key to prevent duplicate detection across loops
+            const eventKey = `${region.id}_${eventIndex}_loop${loopNum}`;
+
+            // Skip if already scheduled
+            const trackEvents = scheduledEvents.get(trackId);
+            if (trackEvents && trackEvents.has(eventKey)) return;
+
+            // Calculate absolute time
+            const eventData = (event as any).data;
+            // FIX: Always use live BPM from Tone.Transport (source of truth)
+            // The eventData.originalBpm is stale - cached at event creation time
+            // When user changes tempo via UI, Tone.Transport.bpm.value is updated
+            // by musicalTruth.setBPM() and we must use that live value
+            let eventTime: number;
+
+            if (eventData?.ticks !== undefined) {
+              // Use absolute ticks with LIVE BPM (not stale originalBpm)
+              const ticksPerBeat = 480;
+              const absoluteTicks = eventData.ticks;
+              eventTime = (absoluteTicks / ticksPerBeat) * secondsPerBeat;
+
+              // Harmony note logging removed for performance
+              if (event.type === 'harmony-note') harmonyNoteCount++;
+            } else {
+              // Fallback to position parsing
+              eventTime = parsePosition(
+                typeof event.position === 'string' ? event.position : '0:0:0',
               );
+
+              // Harmony note logging removed for performance
+              if (event.type === 'harmony-note') harmonyNoteCount++;
             }
-            if (event.type === 'harmony-note') harmonyNoteCount++;
-          } else {
-            // Fallback to position parsing
-            eventTime = parsePosition(
-              typeof event.position === 'string' ? event.position : '0:0:0',
-            );
 
-            if (
-              event.type === 'harmony-note' &&
-              (harmonyNoteCount < 3 || harmonyNoteCount === 8)
-            ) {
-              // eslint-disable-next-line no-console
-              console.log(
-                `[RELATIVE TICK SCHEDULING] Harmony Note ${harmonyNoteCount + 1}:`,
-                {
-                  position: event.position,
-                  calculatedTime: eventTime.toFixed(6),
-                  WARNING: 'ticks undefined - using relative position',
-                },
-              );
+            // Apply countdown offset
+            const offsetTime =
+              countdownEnabled && !region.skipCountdownOffset
+                ? parsePosition(`0:${countdownOffsetBeats}:0`)
+                : 0;
+
+            // CRITICAL: Add loopOffset for pattern repetition
+            const absoluteTime = region.startTime + eventTime + offsetTime + loopOffset;
+
+            // Round to 3 decimals to group events at same time
+            const timeKey = Math.round(absoluteTime * 1000) / 1000;
+
+            if (!eventsByTime.has(timeKey)) {
+              eventsByTime.set(timeKey, []);
             }
-            if (event.type === 'harmony-note') harmonyNoteCount++;
-          }
 
-          // Apply countdown offset
-          const offsetTime =
-            countdownEnabled && !region.skipCountdownOffset
-              ? parsePosition(`0:${countdownOffsetBeats}:0`)
-              : 0;
-
-          const absoluteTime = region.startTime + eventTime + offsetTime;
-
-          if (eventIndex < 3) {
-            logger.info(`🎯 Absolute time calculation`, {
-              'region.startTime': region.startTime,
-              eventTime,
-              offsetTime,
-              absoluteTime,
+            eventsByTime.get(timeKey)!.push({
+              instrumentType,
+              event,
+              eventKey,
+              regionId: region.id,
             });
-          }
 
-          // Round to 3 decimals to group events at same time
-          const timeKey = Math.round(absoluteTime * 1000) / 1000;
-
-          if (!eventsByTime.has(timeKey)) {
-            eventsByTime.set(timeKey, []);
-          }
-
-          eventsByTime.get(timeKey)!.push({
-            instrumentType,
-            event,
-            eventKey,
-            regionId: region.id,
+            // Mark as scheduled
+            if (!scheduledEvents.has(trackId)) {
+              scheduledEvents.set(trackId, new Set());
+            }
+            scheduledEvents.get(trackId)!.add(eventKey);
+            newlyScheduledCount++;
           });
-
-          // Mark as scheduled
-          if (!scheduledEvents.has(trackId)) {
-            scheduledEvents.set(trackId, new Set());
-          }
-          scheduledEvents.get(trackId)!.add(eventKey);
-          newlyScheduledCount++; // Track newly scheduled events
-
-          logger.info(
-            `📅 Collected ${instrumentType} event at ${absoluteTime}s: ${event.type}`,
-          );
-        });
+        } // End loop iteration
       });
     });
 
-    // Log batching stats
-    const batchedEventCount = Array.from(scheduledEvents.values()).reduce(
-      (sum, set) => sum + set.size,
-      0,
-    );
-    logger.info(
-      `📦 Batched ${eventsByTime.size} unique time points with ${batchedEventCount} total events`,
-    );
+    // Batching stats logging removed for performance
 
     // Second pass: schedule audio for all events
     eventsByTime.forEach((events, timeKey) => {
@@ -384,54 +341,28 @@ export class RegionScheduler {
       const absoluteAudioTime = transportStartTime + timeKey;
 
       if (absoluteAudioTime < currentAudioTime) {
-        logger.debug(`⏭️  Skipping past event batch at ${timeKey}s`, {
-          absoluteAudioTime: absoluteAudioTime.toFixed(6),
-          currentAudioTime: currentAudioTime.toFixed(6),
-          eventCount: events.length,
-        });
+        // Skip past events silently - debug logging removed for performance
         return;
       }
 
       try {
-        const batchStartTime = performance.now();
-
-        events.forEach(({ instrumentType, event }, index) => {
-          const eventStartTime = performance.now();
-
-          // Schedule audio directly with absolute audio time (transportStartTime + relative time)
+        // Schedule all events in this batch
+        events.forEach(({ instrumentType, event }) => {
           emitEvent(instrumentType, event, absoluteAudioTime);
-
-          const eventEndTime = performance.now();
-
-          logger.info(
-            `⏱️ Event ${index + 1}/${events.length} in batch: ${instrumentType}`,
-            {
-              eventProcessingTime: `${(eventEndTime - eventStartTime).toFixed(3)}ms`,
-              timeSinceBatchStart: `${(eventStartTime - batchStartTime).toFixed(3)}ms`,
-            },
-          );
         });
-
-        const batchTotalTime = performance.now() - batchStartTime;
-        logger.info(
-          `✅ Batch completed: ${events.length} events in ${batchTotalTime.toFixed(3)}ms`,
-        );
       } catch (error) {
         logger.error(`Failed to schedule events at time ${timeKey}: ${error}`);
       }
     });
 
-    logger.info(
-      `✅ Scheduled ${newlyScheduledCount} audio events total in ${eventsByTime.size} batches`,
-    );
-
     // Cache timeline for future use
     if (exerciseId && !cachedSchedule && currentCC64Timeline.size > 0) {
+      const ToneForCache = getTone();
       const schedule: CachedSchedule = {
         cc64Timeline: new Map(currentCC64Timeline),
         calculatedEvents: [],
         cachedAt: Date.now(),
-        bpm: Tone.Transport.bpm.value,
+        bpm: ToneForCache.Transport.bpm.value,
         countdownBeats: countdownOffsetBeats,
       };
 
@@ -460,6 +391,7 @@ export class RegionScheduler {
     countdownEnabled: boolean,
     countdownOffsetBeats: number,
   ): { exerciseEndTime: number; lastBeatThreshold: number } {
+    const Tone = getTone();
     const currentBpm = Tone.Transport.bpm.value;
     const secondsPerBeat = 60 / currentBpm;
     let maxEndTime = 0;
@@ -522,6 +454,7 @@ export class RegionScheduler {
       return;
     }
 
+    const Tone = getTone();
     const currentTime = Tone.Transport.seconds;
 
     // Process events within lookahead window
@@ -538,8 +471,8 @@ export class RegionScheduler {
 
         // Check if we're within this region's time range
         // FAANG FIX: region.duration is in BEATS, must convert to seconds using current BPM!
-        const currentBpm = Tone.Transport.bpm.value;
-        const secondsPerBeat = 60 / currentBpm;
+        const currentBpmForRegion = Tone.Transport.bpm.value;
+        const secondsPerBeat = 60 / currentBpmForRegion;
         const regionDurationInSeconds = region.duration * secondsPerBeat;
 
         if (
@@ -565,28 +498,40 @@ export class RegionScheduler {
           if (absoluteTime >= currentTime && absoluteTime <= lookAheadEnd) {
             // CRITICAL FIX: Check the MAIN event key to avoid double-scheduling
             // The backup scheduler should NOT reschedule events that are already scheduled
-            const mainEventKey = `${region.id}_${eventIndex}`;
+            // Main scheduler uses keys like: "${region.id}_${eventIndex}_loop${loopNum}"
+            // We need to check for all possible loop variations
             const backupEventKey = `backup_${region.id}_${event.position}_${Math.floor(absoluteTime)}`;
 
             // Skip if already scheduled by main scheduler OR backup scheduler
             const trackEvents = scheduledEvents.get(trackId);
-            const hasMainKey = trackEvents && trackEvents.has(mainEventKey);
+
+            // Check for main scheduler keys with any loop number (0-9 covers typical use cases)
+            let hasMainKey = false;
+            if (trackEvents) {
+              for (let loopNum = 0; loopNum < 10; loopNum++) {
+                if (trackEvents.has(`${region.id}_${eventIndex}_loop${loopNum}`)) {
+                  hasMainKey = true;
+                  break;
+                }
+              }
+            }
             const hasBackupKey = trackEvents && trackEvents.has(backupEventKey);
 
             if (!hasMainKey && !hasBackupKey) {
               // Schedule it immediately - absoluteTime is in seconds
-              const toneId = Tone.Transport.schedule((time) => {
+              const toneId = Tone.Transport.schedule((backupTime: number) => {
                 if (!isRunning) return;
-                // CRITICAL FIX: Use absoluteTime (intended time in seconds) not time (Tone's lookahead time)
+                // CRITICAL FIX: Use absoluteTime (intended time in seconds) not backupTime (Tone's lookahead time)
                 // Must match the main scheduling method to avoid timing drift
                 emitEvent(instrumentType, event, absoluteTime);
               }, absoluteTime);
 
-              // Mark BOTH keys as scheduled to prevent duplicate scheduling
+              // Mark as scheduled to prevent duplicate scheduling
+              // Use loop0 as the main event key (backup scheduler assumes loop 0)
               if (!scheduledEvents.has(trackId)) {
                 scheduledEvents.set(trackId, new Set());
               }
-              scheduledEvents.get(trackId)!.add(mainEventKey);
+              scheduledEvents.get(trackId)!.add(`${region.id}_${eventIndex}_loop0`);
               scheduledEvents.get(trackId)!.add(backupEventKey);
               scheduledIds.add(toneId);
             }

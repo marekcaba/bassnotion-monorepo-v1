@@ -10,7 +10,7 @@ export default function HomePage() {
 
   return (
     <>
-      <main className="min-h-screen flex flex-col bg-black">
+      <main className="min-h-screen flex flex-col">
         {/* Add debug component for responsive testing */}
         <ResponsiveDebug showAlways={true} />
 

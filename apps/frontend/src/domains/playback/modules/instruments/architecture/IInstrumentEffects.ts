@@ -4,7 +4,19 @@
  * Manages audio effects and signal processing
  */
 
-import type * as Tone from 'tone';
+import type * as ToneTypes from 'tone';
+
+// Helper to get Tone from window (must be initialized before effects are used)
+function getTone(): typeof import('tone') {
+  if (typeof window !== 'undefined') {
+    // Check both locations where Tone.js may be stored
+    const tone = (window as any).Tone || (window as any).__globalTone;
+    if (tone) {
+      return tone;
+    }
+  }
+  throw new Error('IInstrumentEffects: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+}
 
 export interface AudioEffect {
   id: string;
@@ -13,7 +25,7 @@ export interface AudioEffect {
   enabled: boolean;
   wet: number; // 0-1
   params: Record<string, any>;
-  node?: Tone.ToneAudioNode;
+  node?: ToneTypes.ToneAudioNode;
 }
 
 export type EffectType =
@@ -77,7 +89,7 @@ export interface IInstrumentEffects {
  * Factory for creating effect nodes
  */
 export interface IEffectFactory {
-  createEffect(type: EffectType, params?: any): Tone.ToneAudioNode;
+  createEffect(type: EffectType, params?: any): ToneTypes.ToneAudioNode;
   getDefaultParams(type: EffectType): Record<string, any>;
   validateParams(type: EffectType, params: any): boolean;
 }
@@ -95,13 +107,15 @@ export abstract class BaseInstrumentEffects implements IInstrumentEffects {
     dryWet: 1,
   };
 
-  protected input: Tone.Gain;
-  protected output: Tone.Gain;
-  protected drySignal: Tone.Gain;
-  protected wetSignal: Tone.Gain;
-  protected effectsChain: Tone.ToneAudioNode[] = [];
+  protected input!: ToneTypes.Gain;
+  protected output!: ToneTypes.Gain;
+  protected drySignal!: ToneTypes.Gain;
+  protected wetSignal!: ToneTypes.Gain;
+  protected effectsChain: ToneTypes.ToneAudioNode[] = [];
 
   constructor() {
+    const Tone = getTone();
+
     // Create signal flow
     this.input = new Tone.Gain({ gain: 1 });
     this.output = new Tone.Gain({ gain: 1 });
@@ -116,7 +130,7 @@ export abstract class BaseInstrumentEffects implements IInstrumentEffects {
     this.input.connect(this.wetSignal);
   }
 
-  abstract createEffect(type: EffectType, params?: any): Tone.ToneAudioNode;
+  abstract createEffect(type: EffectType, params?: any): ToneTypes.ToneAudioNode;
 
   addEffect(effectOrType: AudioEffect | EffectType, params?: any): string {
     let effect: AudioEffect;
@@ -244,6 +258,7 @@ export abstract class BaseInstrumentEffects implements IInstrumentEffects {
   }
 
   setChainOptions(options: EffectsChainOptions): void {
+    const Tone = getTone();
     this.chainOptions = { ...this.chainOptions, ...options };
 
     if (options.inputGain !== undefined) {
@@ -272,7 +287,7 @@ export abstract class BaseInstrumentEffects implements IInstrumentEffects {
 
     // Build new chain
     this.effectsChain = [];
-    let lastNode: Tone.ToneAudioNode = this.wetSignal;
+    let lastNode: ToneTypes.ToneAudioNode = this.wetSignal;
 
     for (const effectId of this.effectOrder) {
       const effect = this.effects.get(effectId);

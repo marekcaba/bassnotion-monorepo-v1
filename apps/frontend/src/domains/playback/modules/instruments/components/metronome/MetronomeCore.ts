@@ -4,10 +4,22 @@
  * Core metronome functionality - click generation and sample playback
  */
 
-import * as Tone from 'tone';
+import type * as ToneTypes from 'tone';
 import { BaseInstrumentCore } from '../../architecture/IInstrumentCore.js';
 import type { Note } from '../../architecture/IInstrumentCore.js';
 import { createStructuredLogger } from '@bassnotion/contracts';
+
+// Helper to get Tone from window (must be initialized before MetronomeCore is used)
+function getTone(): typeof import('tone') {
+  if (typeof window !== 'undefined') {
+    // Check both locations where Tone.js may be stored
+    const tone = (window as any).Tone || (window as any).__globalTone;
+    if (tone) {
+      return tone;
+    }
+  }
+  throw new Error('MetronomeCore: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+}
 
 const logger = createStructuredLogger('MetronomeCore');
 
@@ -41,13 +53,13 @@ export class MetronomeCore extends BaseInstrumentCore {
   readonly name = 'Metronome Core';
 
   private config: MetronomeConfig;
-  private samplers: Map<string, Tone.Sampler> = new Map();
+  private samplers: Map<string, ToneTypes.Sampler> = new Map();
   private synths: Map<
     string,
-    Tone.Synth | Tone.MembraneSynth | Tone.MetalSynth | Tone.NoiseSynth
+    ToneTypes.Synth | ToneTypes.MembraneSynth | ToneTypes.MetalSynth | ToneTypes.NoiseSynth
   > = new Map();
-  private volume: Tone.Volume;
-  private panner: Tone.Panner;
+  private volume: ToneTypes.Volume | null = null;
+  private panner: ToneTypes.Panner | null = null;
 
   constructor(config: Partial<MetronomeConfig> = {}) {
     super();
@@ -98,13 +110,7 @@ export class MetronomeCore extends BaseInstrumentCore {
       ...config,
     };
 
-    // Create audio nodes
-    this.volume = new Tone.Volume(this.config.volume);
-    this.panner = new Tone.Panner(this.config.pan);
-
-    // Connect chain
-    this.panner.connect(this.volume);
-    this.output = this.volume;
+    // Audio nodes will be created during initialization
   }
 
   async initialize(): Promise<void> {
@@ -113,6 +119,16 @@ export class MetronomeCore extends BaseInstrumentCore {
     this.state.loading = true;
 
     try {
+      const Tone = getTone();
+
+      // Create audio nodes
+      this.volume = new Tone.Volume(this.config.volume);
+      this.panner = new Tone.Panner(this.config.pan);
+
+      // Connect chain
+      this.panner.connect(this.volume);
+      this.output = this.volume;
+
       // Create synths for each click type
       await this.createClickSound('accent', this.config.accentClick);
       await this.createClickSound('regular', this.config.regularClick);
@@ -145,8 +161,11 @@ export class MetronomeCore extends BaseInstrumentCore {
     this.synths.clear();
 
     // Dispose audio nodes
-    this.volume.dispose();
-    this.panner.dispose();
+    this.volume?.dispose();
+    this.panner?.dispose();
+
+    this.volume = null;
+    this.panner = null;
 
     this.state.ready = false;
     this.state.initialized = false;
@@ -155,6 +174,7 @@ export class MetronomeCore extends BaseInstrumentCore {
   }
 
   trigger(note: Note): void {
+    const Tone = getTone();
     const metronomeNote = note as MetronomeNote;
     const clickType = metronomeNote.clickType || 'regular';
     const time = metronomeNote.time || Tone.now();
@@ -168,16 +188,14 @@ export class MetronomeCore extends BaseInstrumentCore {
       // Use sampler if available
       sampler.triggerAttackRelease(note.pitch || 'C4', '8n', time, velocity);
     } else if (synth) {
-      // Use synth
-      if (synth instanceof Tone.MembraneSynth) {
-        synth.triggerAttackRelease(note.pitch || 'C2', '8n', time, velocity);
-      } else if (
-        synth instanceof Tone.MetalSynth ||
-        synth instanceof Tone.NoiseSynth
-      ) {
-        synth.triggerAttackRelease('8n', time, velocity);
+      // Use synth - check by synth type string in config instead of instanceof
+      const synthConfig = this.getSynthConfigForType(clickType);
+      if (synthConfig?.synth === 'membrane') {
+        (synth as ToneTypes.MembraneSynth).triggerAttackRelease(note.pitch || 'C2', '8n', time, velocity);
+      } else if (synthConfig?.synth === 'metal' || synthConfig?.synth === 'noise') {
+        (synth as ToneTypes.MetalSynth | ToneTypes.NoiseSynth).triggerAttackRelease('8n', time, velocity);
       } else {
-        synth.triggerAttackRelease(note.pitch || 'C4', '8n', time, velocity);
+        (synth as ToneTypes.Synth).triggerAttackRelease(note.pitch || 'C4', '8n', time, velocity);
       }
     }
 
@@ -197,6 +215,15 @@ export class MetronomeCore extends BaseInstrumentCore {
     }, time + 0.1);
   }
 
+  private getSynthConfigForType(type: string): ClickSound | null {
+    switch (type) {
+      case 'accent': return this.config.accentClick;
+      case 'regular': return this.config.regularClick;
+      case 'subdivision': return this.config.subdivisionClick;
+      default: return null;
+    }
+  }
+
   release(note: Note): void {
     // Metronome clicks are typically one-shot, so release is a no-op
     // But we'll clear from active notes if needed
@@ -211,6 +238,7 @@ export class MetronomeCore extends BaseInstrumentCore {
     type: string,
     config: ClickSound,
   ): Promise<void> {
+    const Tone = getTone();
     if (config.url) {
       // Load sample
       const sampler = new Tone.Sampler({
@@ -220,16 +248,16 @@ export class MetronomeCore extends BaseInstrumentCore {
         onload: () => {
           logger.info(`Loaded sample for ${type}`, { url: config.url });
         },
-      }).connect(this.panner);
+      }).connect(this.panner!);
 
       this.samplers.set(type, sampler);
     } else if (config.synth) {
       // Create synth
       let synth:
-        | Tone.Synth
-        | Tone.MembraneSynth
-        | Tone.MetalSynth
-        | Tone.NoiseSynth;
+        | ToneTypes.Synth
+        | ToneTypes.MembraneSynth
+        | ToneTypes.MetalSynth
+        | ToneTypes.NoiseSynth;
 
       switch (config.synth) {
         case 'membrane':
@@ -245,7 +273,7 @@ export class MetronomeCore extends BaseInstrumentCore {
           synth = new Tone.Synth(config.synthParams);
       }
 
-      synth.connect(this.panner);
+      synth.connect(this.panner!);
       this.synths.set(type, synth);
     }
   }
@@ -292,7 +320,9 @@ export class MetronomeCore extends BaseInstrumentCore {
    */
   setVolume(volumeDb: number): void {
     this.config.volume = volumeDb;
-    this.volume.volume.value = volumeDb;
+    if (this.volume) {
+      this.volume.volume.value = volumeDb;
+    }
   }
 
   /**
@@ -300,7 +330,9 @@ export class MetronomeCore extends BaseInstrumentCore {
    */
   setPan(pan: number): void {
     this.config.pan = Math.max(-1, Math.min(1, pan));
-    this.panner.pan.value = this.config.pan;
+    if (this.panner) {
+      this.panner.pan.value = this.config.pan;
+    }
   }
 
   /**

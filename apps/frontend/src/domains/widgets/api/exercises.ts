@@ -206,8 +206,25 @@ export async function getExercises(): Promise<GetExercisesResponse> {
             };
           }
 
+          // Transform snake_case to camelCase for backend API response
+          const transformedExercises = response.exercises.map((exercise: any) => {
+            if (exercise.drum_pattern && Array.isArray(exercise.drum_pattern)) {
+              exercise.drumPattern = exercise.drum_pattern;
+            }
+            if (exercise.harmony_notes) {
+              exercise.harmonyNotes = exercise.harmony_notes;
+            }
+            if (exercise.harmony_control_changes) {
+              exercise.harmonyControlChanges = exercise.harmony_control_changes;
+            }
+            if (exercise.harmony_instrument) {
+              exercise.harmonyInstrument = exercise.harmony_instrument;
+            }
+            return exercise;
+          });
+
           return {
-            exercises: response.exercises,
+            exercises: transformedExercises,
           };
         } catch (error: any) {
           logger.error('Backend API error, falling back to Supabase:', error);
@@ -284,11 +301,36 @@ export async function getExercises(): Promise<GetExercisesResponse> {
           );
         }
 
+        // Transform snake_case drum_pattern to camelCase drumPattern
+        // The database stores drum_pattern but GlobalControls expects drumPattern
+        if (exercise.drum_pattern && Array.isArray(exercise.drum_pattern)) {
+          exercise.drumPattern = exercise.drum_pattern;
+          logger.info(
+            '🎯 Transformed drum_pattern to drumPattern for:',
+            exercise.title,
+            'hits:',
+            exercise.drumPattern.length,
+          );
+        }
+
+        // Also transform other snake_case fields that GlobalControls might need
+        if (exercise.harmony_notes) {
+          exercise.harmonyNotes = exercise.harmony_notes;
+        }
+        if (exercise.harmony_control_changes) {
+          exercise.harmonyControlChanges = exercise.harmony_control_changes;
+        }
+        if (exercise.harmony_instrument) {
+          exercise.harmonyInstrument = exercise.harmony_instrument;
+        }
+
         logger.info('🎯 Final exercise data:', {
           id: exercise.id,
           title: exercise.title,
           notesCount: exercise.notes?.length || 0,
           hasNotes: !!(exercise.notes && exercise.notes.length > 0),
+          hasDrumPattern: !!(exercise.drumPattern && exercise.drumPattern.length > 0),
+          drumPatternHits: exercise.drumPattern?.length || 0,
         });
 
         return exercise;
@@ -338,7 +380,21 @@ export async function getExercise(
           const response = await apiClient.get<{ exercise: Exercise }>(
             `/api/exercises/${exerciseId}`,
           );
-          return response;
+          // Transform snake_case to camelCase for backend API response
+          const exercise = response.exercise as any;
+          if (exercise.drum_pattern && Array.isArray(exercise.drum_pattern)) {
+            exercise.drumPattern = exercise.drum_pattern;
+          }
+          if (exercise.harmony_notes) {
+            exercise.harmonyNotes = exercise.harmony_notes;
+          }
+          if (exercise.harmony_control_changes) {
+            exercise.harmonyControlChanges = exercise.harmony_control_changes;
+          }
+          if (exercise.harmony_instrument) {
+            exercise.harmonyInstrument = exercise.harmony_instrument;
+          }
+          return { exercise };
         } catch (error: any) {
           logger.error('Backend API error, falling back to Supabase:', error);
           // Fall through to Supabase implementation
@@ -376,6 +432,26 @@ export async function getExercise(
         }
       } else if (!data.notes) {
         data.notes = [];
+      }
+
+      // Transform snake_case to camelCase for Supabase response
+      if (data.drum_pattern && Array.isArray(data.drum_pattern)) {
+        data.drumPattern = data.drum_pattern;
+        logger.info(
+          '🎯 Transformed drum_pattern to drumPattern for:',
+          data.title,
+          'hits:',
+          data.drumPattern.length,
+        );
+      }
+      if (data.harmony_notes) {
+        data.harmonyNotes = data.harmony_notes;
+      }
+      if (data.harmony_control_changes) {
+        data.harmonyControlChanges = data.harmony_control_changes;
+      }
+      if (data.harmony_instrument) {
+        data.harmonyInstrument = data.harmony_instrument;
       }
 
       return {
