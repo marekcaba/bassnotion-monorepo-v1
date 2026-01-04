@@ -3,7 +3,8 @@
 import React, { useState, useRef, useCallback, useMemo } from 'react';
 import type { Exercise, TimeSignature } from '@bassnotion/contracts';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
-import { useTransportPosition } from '@/domains/widgets/hooks/useTransportPosition';
+import { useLoopStripSync } from '@/domains/widgets/hooks/useBeatGridSync';
+import { useTransportContext } from '@/domains/playback/contexts/TransportContext';
 
 export interface LoopRegion {
   startMeasure: number;
@@ -56,28 +57,24 @@ export function LoopGridStrip({
   // Get beats per measure from exercise
   const beatsPerMeasure = exercise?.timeSignature?.numerator || 4;
 
-  // Track current musical position from transport for accurate beat highlighting
-  const [currentMusicalPosition, setCurrentMusicalPosition] = useState<{
-    bars: number;
-    beats: number;
-    sixteenths: number;
-  } | null>(null);
+  // Get transport state for playback status
+  const transport = useTransportContext();
+  const isPlaying = transport.isPlaying;
 
-  // Subscribe to transport position updates for real-time beat tracking
-  useTransportPosition({
-    onPositionUpdate: useCallback((position) => {
-      // [DIAGNOSTIC] Log position updates to verify transport sync is working
-      // Remove after confirming fix works
-      if (position.bars >= 0 && position.beats === 0 && position.sixteenths === 0) {
-        console.log('[LoopGridStrip DIAGNOSTIC] Beat 1 of bar', position.bars + 1);
-      }
-      setCurrentMusicalPosition({
-        bars: position.bars,
-        beats: position.beats,
-        sixteenths: position.sixteenths,
-      });
-    }, []),
-    enabled: true,
+  // Calculate total beats for the loop strip
+  const totalMeasures = exercise?.total_bars || 4;
+  const totalBeats = totalMeasures * beatsPerMeasure;
+
+  // 🚀 JITTER FIX: Direct DOM beat synchronization (bypasses React state)
+  // This hook subscribes directly to AtomicPlaybackClock and updates DOM via classList.toggle()
+  // instead of React state, eliminating jitter from React's batched updates.
+  const { registerBeatIndicator } = useLoopStripSync({
+    totalBeats,
+    beatsPerMeasure,
+    isPlaying,
+    playedClass: 'bg-yellow-400 shadow-[0_0_4px_rgba(250,204,21,0.9)]',
+    unplayedClass: 'bg-slate-500 shadow-[0_0_1px_rgba(0,0,0,0.8)]',
+    isVisible: true,
   });
 
   // Helper to check if two regions are equal
@@ -163,33 +160,8 @@ export function LoopGridStrip({
     [measures.length, beatsPerMeasure],
   );
 
-  // Calculate current playback beat position directly from musical position
-  // This is much more accurate than converting time->percentage->beats
-  const playbackBeatPosition = useMemo(() => {
-    if (!currentMusicalPosition) return 0;
-
-    // During countdown (negative bars), don't show progress
-    if (currentMusicalPosition.bars < 0) return 0;
-
-    // Display positions use 1-based bars and beats (DAW convention)
-    // bars: 1 = first bar, beats: 1 = first beat
-    // We need to calculate absolute beat position (1-based) for comparing with currentBeatPosition
-    // which is also 1-based: (measure.index - 1) * beatsPerMeasure + beatNumber
-    const absoluteBeat =
-      (currentMusicalPosition.bars - 1) * beatsPerMeasure +
-      currentMusicalPosition.beats;
-
-    return absoluteBeat;
-  }, [currentMusicalPosition, beatsPerMeasure]);
-
-  // Keep playbackPosition for backward compatibility (percentage-based)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const playbackPosition = useMemo(() => {
-    if (duration === 0) return 0;
-    const durationInSeconds = duration / 1000;
-    const currentTimeInSeconds = currentTime / 1000;
-    return Math.min((currentTimeInSeconds / durationInSeconds) * 100, 100);
-  }, [currentTime, duration]);
+  // NOTE: playbackBeatPosition calculation removed - now using direct DOM via useLoopStripSync
+  // The hook subscribes to AtomicPlaybackClock and updates beat indicators directly via classList.toggle()
 
   // Handle measure click
   const handleMeasureClick = useCallback(
@@ -565,6 +537,8 @@ export function LoopGridStrip({
                 </div>
 
                 {/* Beat indicators with selection highlighting */}
+                {/* 🚀 JITTER FIX: Direct DOM beat indicators via ref registration */}
+                {/* The hook's classList.toggle() updates these divs directly, bypassing React */}
                 <div className="absolute bottom-1 left-0 right-0 flex justify-evenly">
                   {Array.from({ length: beatsPerMeasure }, (_, i) => {
                     const beatNumber = i + 1;
@@ -583,20 +557,16 @@ export function LoopGridStrip({
                       currentBeatPosition >= selectionStartBeat &&
                       currentBeatPosition <= selectionEndBeat;
 
-                    // Check if this beat has been played (yellow trail)
-                    // Uses playbackBeatPosition from useTransportPosition hook for accurate musical sync
-                    const hasBeenPlayed =
-                      currentBeatPosition <= playbackBeatPosition;
-
+                    // Selection highlighting (blue) is still React-based since it doesn't need
+                    // real-time updates. The playback trail (yellow) is now direct DOM via hook.
                     return (
                       <div
                         key={i}
+                        ref={(el) => registerBeatIndicator(measure.index, beatNumber, el)}
                         className={`w-1 h-1 rounded-full transition-colors duration-150 ${
-                          hasBeenPlayed
-                            ? 'bg-yellow-400 shadow-[0_0_4px_rgba(250,204,21,0.9)]'
-                            : isBeatSelected
-                              ? 'bg-blue-400 shadow-[0_0_4px_rgba(59,130,246,0.9)]'
-                              : 'bg-slate-500 shadow-[0_0_1px_rgba(0,0,0,0.8)]'
+                          isBeatSelected
+                            ? 'bg-blue-400 shadow-[0_0_4px_rgba(59,130,246,0.9)]'
+                            : 'bg-slate-500 shadow-[0_0_1px_rgba(0,0,0,0.8)]'
                         }`}
                       />
                     );

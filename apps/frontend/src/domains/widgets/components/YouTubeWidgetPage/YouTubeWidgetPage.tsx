@@ -3,9 +3,9 @@
 import React, { useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 // Import our new components
-import { YouTubeVideoSection } from './YouTubeVideoSection';
-import { TutorialInfoCard } from './TutorialInfoCard';
+import { TutorialVideoCard } from './TutorialVideoCard';
 import { ExerciseSelector } from './ExerciseSelector';
+import { ExerciseControlPanel } from './ExerciseControlPanel';
 import { FretboardCard } from './FretboardCard';
 import Fretboard3D from './FretboardCard/components/Fretboard3D';
 
@@ -18,7 +18,7 @@ import { useWidgetPageState } from '@/domains/widgets/hooks/useWidgetPageState';
 import { useAudioFretboard } from '@/domains/widgets/hooks/useAudioFretboard';
 import {
   TransportProvider,
-  useTransportContext,
+  useTransportControls,
 } from '@/domains/playback/contexts/TransportContext';
 // REMOVED: useExerciseSelection import - not needed for tutorial pages
 import { Button } from '@/shared/components/ui/button';
@@ -36,6 +36,9 @@ import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { getSamplePreloader } from '@/domains/playback/services/InitialSamplePreloader.js';
 import { GlobalSampleCache } from '@/domains/playback/modules/storage/cache/GlobalSampleCache.js';
 import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
+import { musicalTruth } from '@/domains/playback/modules/tempo/MusicalTruthAuthority.js';
+// XState Phase 2: Shadow mode integration
+import { usePageInitialization } from '@/domains/widgets/machines/index.js';
 // UIZoneProvider and ThemeSwitcher are now applied at root layout level
 // Only NextUIZoneProvider is needed here for NextUI component support
 import { NextUIZoneProvider } from '@/ui-libraries';
@@ -97,6 +100,35 @@ function YouTubeWidgetPageContent({
   // Only log hook calls every 10th render
   if (youTubeWidgetPageContentRenderCount % 10 === 0) {
     logger.info('🔍 HOOK CALLS - starting hook calls...');
+  }
+
+  // XState Phase 2: Shadow mode - page initialization state machine
+  // This runs alongside the existing initialization logic for comparison
+  const pageInit = usePageInitialization({
+    tutorial: tutorialData ? {
+      id: tutorialData.id,
+      title: tutorialData.title,
+      slug: tutorialSlug || '',
+    } : undefined,
+    exercises: exercises?.map(e => ({
+      id: e.id,
+      name: e.name || e.title || 'Untitled',
+      tutorialId: tutorialData?.id || '',
+    })),
+    shadowMode: true, // Enable shadow mode logging
+    autoDetectScroll: true,
+  });
+
+  // Log XState state for debugging (only on significant renders)
+  if (youTubeWidgetPageContentRenderCount <= 5 || youTubeWidgetPageContentRenderCount % 20 === 0) {
+    console.log('[XState Shadow] Page Init State:', {
+      state: pageInit.state,
+      progress: pageInit.loadingProgress,
+      step: pageInit.loadingMessage,
+      isReady: pageInit.isReady,
+      isLoading: pageInit.isLoading,
+      hasError: pageInit.hasError,
+    });
   }
 
   const widgetState = useWidgetPageState();
@@ -210,8 +242,10 @@ function YouTubeWidgetPageContent({
   // REMOVED: globalExerciseSelection - causes circular updates
   // Tutorial pages should use local state only, not global exercise selection
 
-  // Get transport for seek functionality
-  const transport = useTransportContext();
+  // PERFORMANCE FIX: Use useTransportControls to avoid re-renders on position updates (60Hz)
+  // YouTubeWidgetPageContent only needs controls (start, stop, pause, seekTo, isPlaying),
+  // not the rapidly-changing position. Position-dependent UI is in child components.
+  const transport = useTransportControls();
   const [is3DMode, setIs3DMode] = React.useState(false);
   const [selectedDots, setSelectedDots] = React.useState<Map<string, number[]>>(
     new Map(),
@@ -341,7 +375,20 @@ function YouTubeWidgetPageContent({
   const exercisesRef = useRef(exercises);
   exercisesRef.current = exercises;
 
+  // PERF FIX: Memoize exercises array to prevent re-renders when reference changes but content is same
+  // Only recompute when exercise IDs actually change (not on every parent render)
+  const memoizedExercises = React.useMemo(() => {
+    return exercises;
+  }, [
+    // Use a stable key based on exercise IDs and count
+    // This ensures the array reference only changes when exercises actually change
+    exercises?.length,
+    exercises?.map(e => typeof e.id === 'object' ? e.id.value : e.id).join(','),
+  ]);
+
   // FAANG Solution: Auto-select first exercise when exercises load (parent controls selection)
+  // FIX: Removed 150ms setTimeout - FretboardCard handles selectedExerciseId changes reactively
+  // The delay was causing widgets to mount with undefined exercise, triggering warnings
   useEffect(() => {
     console.log('🔍 [YOUTUBE-WIDGET] Auto-selection effect triggered:', {
       hasExercises: !!exercises,
@@ -352,42 +399,36 @@ function YouTubeWidgetPageContent({
     });
 
     if (exercises && exercises.length > 0 && !selectedExerciseId) {
-      // CRITICAL FIX: Defer auto-selection with longer delay to avoid race condition
-      const timeoutId = setTimeout(() => {
-        const firstExercise = exercises[0];
-        if (firstExercise?.id && !selectedExerciseId) {
-          console.log(
-            '🎯 [YOUTUBE-WIDGET] Auto-selecting first exercise via handleExerciseSelect:',
-            {
-              exerciseId: firstExercise.id,
-              exerciseTitle: firstExercise.title,
-              hasHarmonyNotes: !!firstExercise.harmonyNotes,
-              harmonyInstrument: firstExercise.harmonyInstrument,
-            },
+      const firstExercise = exercises[0];
+      if (firstExercise?.id) {
+        console.log(
+          '🎯 [YOUTUBE-WIDGET] Auto-selecting first exercise IMMEDIATELY:',
+          {
+            exerciseId: firstExercise.id,
+            exerciseTitle: firstExercise.title,
+            hasHarmonyNotes: !!firstExercise.harmonyNotes,
+            harmonyInstrument: firstExercise.harmonyInstrument,
+          },
+        );
+
+        const exerciseIdStr =
+          typeof firstExercise.id === 'object'
+            ? firstExercise.id.value
+            : firstExercise.id;
+
+        // Select immediately - no delay needed
+        // FretboardCard and other widgets handle exercise prop changes reactively
+        if (handleExerciseSelectRef.current) {
+          handleExerciseSelectRef.current(exerciseIdStr);
+        } else {
+          // Fallback to direct state update if ref not ready yet
+          console.warn(
+            '⚠️ [YOUTUBE-WIDGET] handleExerciseSelectRef not ready, using direct state update',
           );
-          // CRITICAL FIX: Use handleExerciseSelect instead of direct state updates
-          // This ensures harmony-samples-loaded event is emitted for auto-selected exercises
-          const exerciseIdStr =
-            typeof firstExercise.id === 'object'
-              ? firstExercise.id.value
-              : firstExercise.id;
-
-          if (handleExerciseSelectRef.current) {
-            handleExerciseSelectRef.current(exerciseIdStr);
-          } else {
-            console.error(
-              '❌ [YOUTUBE-WIDGET] handleExerciseSelectRef not ready!',
-            );
-            // Fallback to direct state update
-            setSelectedExerciseId(firstExercise.id);
-            requestAnimationFrame(() => {
-              widgetStateRef.current.setSelectedExercise(firstExercise);
-            });
-          }
+          setSelectedExerciseId(firstExercise.id);
+          widgetStateRef.current.setSelectedExercise(firstExercise);
         }
-      }, 150); // 150ms delay to let FretboardCard initialize first
-
-      return () => clearTimeout(timeoutId);
+      }
     }
   }, [exercises, selectedExerciseId]); // Removed widgetState and globalExerciseSelection - using refs
 
@@ -884,13 +925,29 @@ function YouTubeWidgetPageContent({
             </div>
           </div>
 
-          {/* 1. YouTube Video Section - Standalone at the top */}
-          <YouTubeVideoSection tutorialData={tutorialData} />
+          {/* 1. Tutorial Video Card - Title, Creator, Video, Description, Core Concept */}
+          <TutorialVideoCard tutorialData={tutorialData} />
 
-          {/* 2. Tutorial Info Card - Separate card with tutorial details */}
-          <TutorialInfoCard tutorialData={tutorialData} />
+          {/* NEW: Exercise Control Panel - Compact selector with controls (PREVIEW) */}
+          <ExerciseControlPanel
+            exercises={exercises || []}
+            selectedExerciseId={selectedExerciseId}
+            onExerciseSelect={handleExerciseSelect}
+            isPlaying={transport?.isPlaying || false}
+            onPlayToggle={() => {
+              if (transport?.isPlaying) {
+                transport.pause?.();
+              } else {
+                transport?.start?.();
+              }
+            }}
+            is3DMode={widgetState.is3DMode}
+            onToggle3DMode={() => widgetState.setIs3DMode(!widgetState.is3DMode)}
+            cameraMode={widgetState.cameraMode}
+            onCameraModeChange={(mode) => widgetState.setCameraMode(mode)}
+          />
 
-          {/* 3. Exercise Selector - Now separated from Fretboard */}
+          {/* 3. Exercise Selector - OLD VERSION (keeping for comparison) */}
           <ExerciseSelector
             exercises={exercises || []}
             selectedExerciseId={selectedExerciseId}
@@ -927,7 +984,7 @@ function YouTubeWidgetPageContent({
             onTiltAngleChange={handleTiltAngleChange}
             tutorialData={tutorialData}
             tutorialSlug={tutorialSlug}
-            exercises={exercises}
+            exercises={memoizedExercises}
             selectedExerciseId={selectedExerciseId}
             onExerciseSelect={handleExerciseSelect}
           />
@@ -935,7 +992,7 @@ function YouTubeWidgetPageContent({
           {/* 6. Global Playback Controls Card - Dedicated panel for global controls */}
           <GlobalControlsCard
             selectedExercise={widgetState.selectedExercise}
-            exercises={exercises}
+            exercises={memoizedExercises}
             is3DMode={is3DMode}
             tiltAngle={tiltAngle}
             hasSelectedDots={selectedDots.size > 0}
@@ -1020,6 +1077,69 @@ export function YouTubeWidgetPage({
       );
     }
   });
+
+  // ============================================================================
+  // TEMPO INITIALIZATION FIX v2: Pre-seed MusicalTruthAuthority BEFORE render
+  // ============================================================================
+  // Problem: On hard reload, TransportContext's useState(() => musicalTruth.getBPM())
+  // runs BEFORE the parent's useMemo can pre-seed the tempo. React initializes child
+  // component state during the same render phase, so useMemo in parent is too late.
+  //
+  // Solution v2: Pre-seed IMMEDIATELY when exercises prop changes, using a ref to
+  // track if we've already pre-seeded for this set of exercises. This happens
+  // at the TOP of the render function, before any JSX is returned.
+  // ============================================================================
+  const hasPreseededRef = React.useRef(false);
+  const lastExercisesRef = React.useRef<typeof exercises>(null);
+
+  // TEMPO DEBUG: Log EVERY render to see if exercises are available
+  console.log(`🎵 [TEMPO-DEBUG] YouTubeWidgetPage render - BEFORE preseed check`, {
+    hasExercises: !!exercises,
+    exercisesLength: exercises?.length,
+    firstExerciseBpm: exercises?.[0]?.bpm,
+    lastExercisesRef: lastExercisesRef.current?.length,
+    exercisesChanged: exercises !== lastExercisesRef.current,
+    musicalTruthCurrentBpm: musicalTruth.getBPM(),
+  });
+
+  // Pre-seed SYNCHRONOUSLY at render time, BEFORE returning JSX
+  // This must happen before TransportProvider's useState initializer runs
+  if (exercises && exercises.length > 0 && exercises !== lastExercisesRef.current) {
+    lastExercisesRef.current = exercises;
+    const firstExercise = exercises[0];
+
+    if (firstExercise?.bpm && firstExercise.bpm > 0) {
+      // Only pre-seed if:
+      // 1. User hasn't manually modified tempo
+      // 2. Current BPM differs from exercise BPM (avoid redundant updates)
+      const currentBpm = musicalTruth.getBPM();
+      const userModified = musicalTruth.hasUserModifiedTempo();
+
+      if (!userModified && currentBpm !== firstExercise.bpm) {
+        console.log(`🎵 [TEMPO-PRESEED v2] Pre-seeding musicalTruth BEFORE TransportProvider mount`, {
+          exerciseBpm: firstExercise.bpm,
+          exerciseTitle: firstExercise.title,
+          previousBpm: currentBpm,
+          reason: 'exercises prop changed',
+        });
+
+        // Pre-seed musicalTruth with exercise BPM
+        musicalTruth.setFromExercise({
+          bpm: firstExercise.bpm,
+          timeSignature: firstExercise.timeSignature || { numerator: 4, denominator: 4 },
+          total_bars: firstExercise.total_bars,
+          duration_beats: firstExercise.duration_beats,
+        });
+
+        hasPreseededRef.current = true;
+      } else if (userModified) {
+        console.log(`🎵 [TEMPO-PRESEED v2] Skipping - user has modified tempo`, {
+          currentBpm,
+          exerciseBpm: firstExercise.bpm,
+        });
+      }
+    }
+  }
 
   // UIZoneProvider is now at root layout level - no need to wrap here
   return (

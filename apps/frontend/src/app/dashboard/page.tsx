@@ -21,6 +21,7 @@ import { useAuthRedirect } from '@/domains/user/hooks/use-auth-redirect';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { useUserProfile } from '@/domains/user/hooks/use-user-profile';
 import { HomeNavbar } from '../_components/HomeNavbar';
+import { UserIndicator } from '@/domains/user/components/UserIndicator';
 
 export default function DashboardPage() {
   const { user, session, isAuthenticated, isReady, reset } = useAuth();
@@ -248,21 +249,37 @@ export default function DashboardPage() {
       {/* Add debug component for responsive testing */}
       <ResponsiveDebug showAlways={true} />
 
-      {/* Header with Logo - same as homepage */}
-      <header className="w-full pt-8 sm:pt-12 pb-5 flex justify-center">
-        <button
-          onClick={() => navigateWithTransition('/')}
-          className="cursor-pointer"
-        >
-          <Image
-            src="/BASSICOLOGY BIG.png"
-            alt="Bassicology"
-            width={600}
-            height={150}
-            className="w-[180px] sm:w-[260px] md:w-[320px] lg:w-[400px] xl:w-[480px] h-auto"
-            priority
-          />
-        </button>
+      {/* Header with Logo and User Indicator */}
+      <header className="w-full pt-8 sm:pt-12 pb-5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+          {/* Spacer for centering */}
+          <div className="hidden sm:block w-[200px]" />
+
+          {/* Logo - centered */}
+          <button
+            onClick={() => navigateWithTransition('/')}
+            className="cursor-pointer"
+          >
+            <Image
+              src="/BASSICOLOGY BIG.png"
+              alt="Bassicology"
+              width={600}
+              height={150}
+              className="w-[180px] sm:w-[260px] md:w-[320px] lg:w-[400px] xl:w-[480px] h-auto"
+              priority
+            />
+          </button>
+
+          {/* User Indicator with Logout - right side */}
+          <div className="hidden sm:block">
+            <UserIndicator />
+          </div>
+        </div>
+
+        {/* Mobile User Indicator - below logo */}
+        <div className="sm:hidden flex justify-center mt-4">
+          <UserIndicator />
+        </div>
       </header>
 
       {/* Navbar - use shared HomeNavbar component */}

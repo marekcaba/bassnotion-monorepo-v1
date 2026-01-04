@@ -18,6 +18,7 @@ import type {
   MetadataAnalyzerConfig,
   AudioProcessingContext,
 } from './types.js';
+import { getOrCreatePersistentAudioContext, getPersistentAudioContext } from '../../utils/audioContext.js';
 import { TempoDetector } from './tempo/TempoDetector.js';
 import { KeyDetector } from './key/KeyDetector.js';
 import { SpectralAnalyzer } from './spectral/SpectralAnalyzer.js';
@@ -34,7 +35,7 @@ const logger = createStructuredLogger('MetadataAnalyzer');
  * a modular architecture with specialized analyzers.
  */
 export class MetadataAnalyzer {
-  private audioContext: AudioContext;
+  private audioContext: AudioContext | null = null;
   private config: MetadataAnalyzerConfig;
   private cache: AnalysisCache;
   private isInitialized = false;
@@ -91,35 +92,32 @@ export class MetadataAnalyzer {
       instrumentModelVersion: '1.0.0',
     });
 
-    // Check if AudioContext is available
+    // AudioContext is lazily initialized in initialize() to use the singleton pattern
+    // This prevents multiple AudioContext creation warnings
+    // Check if AudioContext API is available
     if (
       typeof AudioContext === 'undefined' &&
       typeof (global as any).AudioContext === 'undefined'
     ) {
-      logger.error('AudioContext is not available in this environment');
-      throw new Error('AudioContext is not available');
+      logger.warn('AudioContext API not available - MetadataAnalyzer will operate in limited mode');
+    } else {
+      // Try to get existing persistent context (may be null if not yet created)
+      this.audioContext = getPersistentAudioContext();
+    }
+  }
+
+  /**
+   * Get AudioContext, creating it via singleton if needed
+   * This is an internal helper that ensures we have a valid context
+   */
+  private async getAudioContext(): Promise<AudioContext> {
+    if (this.audioContext && this.audioContext.state !== 'closed') {
+      return this.audioContext;
     }
 
-    // Initialize AudioContext with error handling
-    try {
-      this.audioContext = new AudioContext({
-        sampleRate: this.config.sampleRate,
-      });
-    } catch (error) {
-      logger.warn(
-        'AudioContext not supported, MetadataAnalyzer will operate in limited mode:',
-        error,
-      );
-      // Create a mock AudioContext for limited functionality
-      this.audioContext = {
-        state: 'suspended',
-        sampleRate: this.config.sampleRate,
-        resume: () => Promise.resolve(),
-        decodeAudioData: () =>
-          Promise.reject(new Error('AudioContext not available')),
-        close: () => Promise.resolve(),
-      } as any;
-    }
+    // Use the singleton pattern to get or create the AudioContext
+    this.audioContext = await getOrCreatePersistentAudioContext();
+    return this.audioContext;
   }
 
   /**
@@ -127,8 +125,10 @@ export class MetadataAnalyzer {
    */
   async initialize(): Promise<void> {
     try {
-      if (this.audioContext.state === 'suspended') {
-        await this.audioContext.resume();
+      // Ensure we have an AudioContext via the singleton pattern
+      const context = await this.getAudioContext();
+      if (context.state === 'suspended') {
+        await context.resume();
       }
       this.isInitialized = true;
       logger.info('MetadataAnalyzer initialized successfully');
@@ -162,9 +162,10 @@ export class MetadataAnalyzer {
       // Decode audio data
       const decodedAudio = await this.decodeAudioData(audioBuffer);
 
-      // Create processing context
+      // Create processing context using the singleton AudioContext
+      const audioContext = await this.getAudioContext();
       const context: AudioProcessingContext = {
-        audioContext: this.audioContext,
+        audioContext: audioContext,
         sampleRate: decodedAudio.sampleRate,
         fftSize: this.config.fftSize,
         windowFunction: this.config.windowFunction,
@@ -237,7 +238,8 @@ export class MetadataAnalyzer {
     audioBuffer: ArrayBuffer,
   ): Promise<AudioBuffer> {
     try {
-      return await this.audioContext.decodeAudioData(audioBuffer.slice(0));
+      const context = await this.getAudioContext();
+      return await context.decodeAudioData(audioBuffer.slice(0));
     } catch (error) {
       logger.error('Failed to decode audio data', error);
       throw new Error(`Audio decoding failed: ${error}`);
@@ -348,23 +350,11 @@ export class MetadataAnalyzer {
     // Clear cache
     this.cache.dispose();
 
-    // Close AudioContext
-    if (this.audioContext.state !== 'closed') {
-      try {
-        if (typeof this.audioContext.close === 'function') {
-          await this.audioContext.close();
-        } else {
-          logger.warn(
-            'AudioContext.close() not available, likely in test environment',
-          );
-        }
-      } catch (error) {
-        logger.warn(
-          'MetadataAnalyzer AudioContext cleanup failed, likely in test environment:',
-          error,
-        );
-      }
-    }
+    // Note: Do NOT close the AudioContext here - it's a shared singleton
+    // Closing it would break audio for the entire application
+    // The AudioContext is managed by the AudioContextManager and should only
+    // be closed when the entire application is shutting down
+    this.audioContext = null;
 
     this.isInitialized = false;
   }

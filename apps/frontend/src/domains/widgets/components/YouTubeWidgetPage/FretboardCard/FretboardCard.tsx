@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ZoneCard, ZoneCardContent } from '@/ui-libraries';
 import { Target } from 'lucide-react';
 import { createStructuredLogger } from '@bassnotion/contracts';
@@ -513,13 +513,13 @@ const FretboardCardContent = React.memo(
     const sharedStringCount = stringCount3D ?? 4;
 
     // DEBUG: Track fretboard hook dependencies
-    // CRITICAL FIX: Don't include currentTime in dependencies to prevent re-renders
-    // currentTime changes constantly during playback (up to 60 times per second)
+    // NOTE: currentTime IS included in dependencies now to enable measure-based opacity updates
+    // The arePropsEqual function throttles re-renders to every 100ms to balance performance
     const fretboardSyncProps = React.useMemo(() => {
       const props = {
         selectedExercise: syncProps.selectedExercise,
         isPlaying: syncProps.isPlaying,
-        currentTime: syncProps.currentTime, // Still pass it, but don't depend on it
+        currentTime: syncProps.currentTime,
         tempo: syncProps.tempo,
         masterVolume: syncProps.masterVolume,
         sync: syncProps.sync, // For emitEvent functionality
@@ -532,7 +532,7 @@ const FretboardCardContent = React.memo(
     }, [
       syncProps.selectedExercise,
       syncProps.isPlaying,
-      // REMOVED: syncProps.currentTime - this changes constantly and causes re-renders
+      syncProps.currentTime, // Now included - arePropsEqual throttles to every 100ms
       syncProps.tempo,
       syncProps.masterVolume,
       syncProps.sync,
@@ -859,6 +859,26 @@ const FretboardCardContent = React.memo(
       },
     );
 
+    // PERFORMANCE FIX: Memoize callbacks passed to FretboardGrid to prevent re-renders
+    // These inline functions were creating new references on every render, defeating React.memo
+    const handleGridDragStart = React.useCallback(
+      (e: React.DragEvent, stringIndex: number, fret: number | 'open') => {
+        const orders = fretboard.checkGetDotOrder(stringIndex, fret);
+        const order = orders.length > 0 ? orders[0] : 0;
+        if (order !== undefined) {
+          fretboard.handleDragStart(stringIndex, fret, order);
+        }
+      },
+      [fretboard.checkGetDotOrder, fretboard.handleDragStart],
+    );
+
+    const handleGridDrop = React.useCallback(
+      (e: React.DragEvent, targetStringIndex: number, targetFret: number | 'open') => {
+        dotSelectionHandlers.handleDragDrop(targetStringIndex, targetFret);
+      },
+      [dotSelectionHandlers.handleDragDrop],
+    );
+
     return (
       <ZoneCard className="zone-card bg-transparent border-transparent shadow-none overflow-visible">
         <ZoneCardContent className="p-0 overflow-visible">
@@ -972,25 +992,11 @@ const FretboardCardContent = React.memo(
                       isExerciseNote={fretboard.isExerciseNote}
                       isCurrentNote={fretboard.isCurrentNote}
                       zoomLevel={zoomLevel}
-                      onDragStart={(e, stringIndex, fret) => {
-                        const orders = fretboard.checkGetDotOrder(
-                          stringIndex,
-                          fret,
-                        );
-                        const order = orders.length > 0 ? orders[0] : 0;
-                        if (order !== undefined) {
-                          fretboard.handleDragStart(stringIndex, fret, order);
-                        }
-                      }}
+                      onDragStart={handleGridDragStart}
                       onDragOver={handleDragOver}
                       onDragEnter={fretboard.handleDragEnter}
                       onDragLeave={fretboard.handleDragLeave}
-                      onDrop={(e, targetStringIndex, targetFret) => {
-                        dotSelectionHandlers.handleDragDrop(
-                          targetStringIndex,
-                          targetFret,
-                        );
-                      }}
+                      onDrop={handleGridDrop}
                       onDragEnd={fretboard.handleDragEnd}
                       onDotClick={fretboard.handleDotClickWithAudio}
                       onDotSecondSelection={
@@ -999,6 +1005,19 @@ const FretboardCardContent = React.memo(
                       onDotRemoval={dotSelectionHandlers.handleDotRemoval2D}
                       segmentFunctions={fretboard.segmentFunctions}
                       highlightingFunctions={fretboard.highlightingFunctions}
+                      getMeasureOpacity={fretboard.measureOpacity.getNoteOpacity}
+                      getMeasureHighlight={fretboard.measureOpacity.getMeasureHighlight}
+                      measureOpacityTransition={fretboard.measureOpacity.transitionDuration}
+                      measureAwareConnections={fretboard.exercise.measureAwareConnections}
+                      currentMeasure0Based={fretboard.exercise.currentMeasure0Based}
+                      nextNoteToPlay={fretboard.nextNoteToPlay}
+                      exerciseNotes={fretboard.exerciseData.exerciseNotes}
+                      currentMeasureFromNote={fretboard.exercise.currentMeasureFromNote}
+                      // Props for useFretboardNoteSync - direct DOM note synchronization
+                      // Use fretboard.exercise.tempo which subscribes to musicalTruth for accurate BPM
+                      isPlaying={syncProps.isPlaying}
+                      tempo={fretboard.exercise.tempo}
+                      maxFrets={maxFrets}
                     />
                   </div>
                 </div>
@@ -1070,7 +1089,14 @@ const FretboardCardContent = React.memo(
       changes.push('syncProps.masterVolume');
     if (prevProps.syncProps.sync !== nextProps.syncProps.sync)
       changes.push('syncProps.sync');
-    // IGNORE currentTime - it changes constantly
+    // Check currentTime for measure-based opacity updates
+    // Only re-render if time has changed enough to potentially affect measure display
+    // (approximately every 100ms to balance responsiveness with performance)
+    const prevTime = prevProps.syncProps.currentTime || 0;
+    const nextTime = nextProps.syncProps.currentTime || 0;
+    if (Math.abs(nextTime - prevTime) > 100) {
+      changes.push('syncProps.currentTime');
+    }
 
     const isEqual = changes.length === 0;
 

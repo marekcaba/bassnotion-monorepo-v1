@@ -120,5 +120,5 @@
     "v4": { "min": 77, "max": 102, "label": "Loud" },
     "v5": { "min": 103, "max": 127, "label": "Accent" }
   },
-  "fallbackKit": "drums/hydrogen-kits/colombo-acoustic"
+  "fallbackKit": "drums/admin-samples/Default kit"
 }

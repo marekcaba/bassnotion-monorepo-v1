@@ -17,8 +17,14 @@ import {
   protectedSampleFetch,
   isSampleLoadingAvailable,
 } from './core/SampleLoadingCircuitBreaker.js';
-import { FALLBACK_KIT_PATH as FALLBACK_DRUM_KIT_PATH } from '@/domains/playback/data/drums/index.js';
+import { FALLBACK_KIT_PATH as FALLBACK_DRUM_KIT_PATH, DEFAULT_KIT_SAMPLES } from '@/domains/playback/data/drums/index.js';
 import { lifecycle } from '@/domains/playback/utils/InitializationLifecycleLogger';
+import { DEFAULT_HARMONY_INSTRUMENT } from '@/domains/playback/constants';
+
+// Instrument configs with perNoteVelocityRanges for accurate velocity layer selection
+import wurlitzerConfig from '@/domains/playback/data/instruments/wurlitzer/wurlitzer-piano.json';
+import grandPianoConfig from '@/domains/playback/data/instruments/piano/grand-piano.json';
+import rhodesConfig from '@/domains/playback/data/instruments/rhodes/rhodes-piano.json';
 
 const logger = getLogger('InitialSamplePreloader');
 
@@ -195,7 +201,7 @@ export class InitialSamplePreloader {
     });
 
     // 🆕 DEDUPLICATION: Check if already loading this instrument
-    const instrument = exercise?.harmonyInstrument || 'grandpiano';
+    const instrument = exercise?.harmonyInstrument || DEFAULT_HARMONY_INSTRUMENT;
     const loadingKey = `harmony-${instrument}`;
 
     if (this.loadingPromises.has(loadingKey)) {
@@ -254,7 +260,8 @@ export class InitialSamplePreloader {
         (sum: number, notes: any) => sum + notes.length,
         0,
       ),
-      hasBass: requiredSamples.bass.length > 0,
+      hasBass: requiredSamples.bassExercises.length > 0,
+      bassExerciseCount: requiredSamples.bassExercises.length,
       hasDrums: requiredSamples.drums,
     });
 
@@ -270,14 +277,19 @@ export class InitialSamplePreloader {
       )) {
         if (notes.length > 0) {
           loadingTasks.push(
-            this.loadHarmonyForInstrument(instrument, notes as string[], true),
+            this.loadHarmonyForInstrument(
+              instrument,
+              notes as { pitch: number; velocity: number }[],
+              true,
+            ),
           );
         }
       }
 
-      // Load bass samples if any exercise uses bass
-      if (requiredSamples.bass.length > 0) {
-        loadingTasks.push(this.loadBassSamples(requiredSamples.bass));
+      // Load bass samples for each exercise that has bass notes
+      // Bass samples come from exercise.notes (fretboard data stored in database)
+      for (const exercise of requiredSamples.bassExercises) {
+        loadingTasks.push(this.loadBassSamplesForExercise(exercise));
       }
 
       // Load drums, metronome, voice cues (essential for all exercises)
@@ -301,57 +313,76 @@ export class InitialSamplePreloader {
   /**
    * Analyze all exercises in a tutorial to determine which samples are needed
    * Returns a manifest of all unique samples required across all exercises
+   *
+   * FIX: Now preserves full harmonyNotes (including velocities) instead of just pitches
+   * This ensures correct velocity layers are preloaded for each note
    */
   private analyzeTutorialSamples(exercises: any[]): {
-    harmony: Record<string, string[]>; // instrument -> unique notes
-    bass: string[]; // unique bass notes
+    harmony: Record<string, { pitch: number; velocity: number }[]>; // instrument -> notes with velocities
+    bassExercises: any[]; // exercises that have bass notes
     drums: boolean; // always true
   } {
     const manifest: {
-      harmony: Record<string, Set<string>>;
-      bass: Set<string>;
+      harmony: Record<string, Map<string, { pitch: number; velocity: number }>>;
+      bassExercises: any[];
       drums: boolean;
     } = {
       harmony: {},
-      bass: new Set(),
+      bassExercises: [],
       drums: true,
     };
 
     // Analyze each exercise
     for (const exercise of exercises) {
-      // Extract harmony notes
+      // Extract harmony notes WITH velocities
       if (exercise.harmonyNotes && exercise.harmonyNotes.length > 0) {
-        const instrument = exercise.harmonyInstrument || 'grandpiano';
+        const instrument = exercise.harmonyInstrument || DEFAULT_HARMONY_INSTRUMENT;
 
         if (!manifest.harmony[instrument]) {
-          manifest.harmony[instrument] = new Set();
+          manifest.harmony[instrument] = new Map();
         }
 
-        // Extract unique pitches from harmony notes
+        // Extract notes with velocities, keeping highest velocity per pitch
+        // (different velocities map to different layers, we need to load the correct layer)
         for (const note of exercise.harmonyNotes) {
           if (note.pitch) {
-            manifest.harmony[instrument].add(note.pitch);
+            const key = `${note.pitch}-${note.velocity}`;
+            // Store unique pitch+velocity combinations to load correct layers
+            if (!manifest.harmony[instrument].has(key)) {
+              manifest.harmony[instrument].set(key, {
+                pitch: note.pitch,
+                velocity: note.velocity || 80, // Default velocity if missing
+              });
+            }
           }
         }
       }
 
-      // Extract bass notes (if we add bass support later)
-      // For now, leaving this empty
+      // Check if exercise has bass notes (stored in exercise.notes array)
+      if (exercise.notes && exercise.notes.length > 0) {
+        // Check if any notes are on bass strings (1-5 for 5-string bass)
+        const hasBassNotes = exercise.notes.some(
+          (note: any) => note.string >= 1 && note.string <= 5
+        );
+        if (hasBassNotes) {
+          manifest.bassExercises.push(exercise);
+        }
+      }
     }
 
-    // Convert Sets to Arrays for easier handling
+    // Convert Maps to Arrays for easier handling
     const result: {
-      harmony: Record<string, string[]>;
-      bass: string[];
+      harmony: Record<string, { pitch: number; velocity: number }[]>;
+      bassExercises: any[];
       drums: boolean;
     } = {
       harmony: {},
-      bass: Array.from(manifest.bass),
+      bassExercises: manifest.bassExercises,
       drums: manifest.drums,
     };
 
-    for (const [instrument, notes] of Object.entries(manifest.harmony)) {
-      result.harmony[instrument] = Array.from(notes);
+    for (const [instrument, noteMap] of Object.entries(manifest.harmony)) {
+      result.harmony[instrument] = Array.from(noteMap.values());
     }
 
     return result;
@@ -359,12 +390,16 @@ export class InitialSamplePreloader {
 
   /**
    * Load harmony samples for a specific instrument
+   * @param notes - Array of notes with pitch and velocity (from analyzeTutorialSamples)
    * @param skipBufferInjection - If true, only cache samples without injecting into PlaybackEngine
    *                              Used for background tutorial preloading to avoid overwriting active instrument
+   *
+   * FIX: Now uses actual exercise velocities instead of hardcoded 1/127
+   * This ensures the correct velocity layers are preloaded for each note
    */
   private async loadHarmonyForInstrument(
     instrument: string,
-    notes: string[],
+    notes: { pitch: number; velocity: number }[],
     skipBufferInjection: boolean = false,
   ): Promise<void> {
     logger.info(`Loading harmony samples for ${instrument}`, {
@@ -375,12 +410,12 @@ export class InitialSamplePreloader {
 
     // Create a mock exercise with the required notes
     // This allows us to reuse the existing HarmonyPreloadStrategy
-    // NOTE: pitch must be a number for midiToNoteName to work correctly
+    // FIX: Use actual velocities from exercise data to load correct layers
     const mockExercise = {
       harmonyInstrument: instrument,
-      harmonyNotes: notes.map((pitch) => ({
-        pitch: typeof pitch === 'string' ? parseInt(pitch, 10) : pitch,
-        velocity: 80, // Use medium velocity to load middle layers
+      harmonyNotes: notes.map((note) => ({
+        pitch: note.pitch,
+        velocity: note.velocity,
         time: 0,
         duration: 1,
       })),
@@ -396,13 +431,42 @@ export class InitialSamplePreloader {
   }
 
   /**
-   * Load bass samples (placeholder for future implementation)
+   * Load bass samples for a specific exercise
+   * Uses exercise.notes (fretboard data from database)
    */
-  private async loadBassSamples(notes: string[]): Promise<void> {
-    logger.info('Bass sample loading not yet implemented', {
-      noteCount: notes.length,
+  private async loadBassSamplesForExercise(exercise: any): Promise<void> {
+    logger.info('🎸 Loading bass samples for exercise', {
+      exerciseId: exercise?.id,
+      exerciseTitle: exercise?.title,
+      noteCount: exercise?.notes?.length ?? 0,
     });
-    // TODO: Implement bass sample loading when BassPreloadStrategy is ready
+
+    try {
+      const { BassPreloadStrategy } = await import(
+        '../modules/preloading/strategies/BassPreloadStrategy.js'
+      );
+      const bassStrategy = new BassPreloadStrategy();
+
+      const bassResult = await bassStrategy.loadFullSamples(undefined, exercise);
+
+      if (bassResult.success) {
+        logger.info('✅ Bass FAANG smart loading complete', {
+          exerciseId: exercise?.id,
+          samplesLoaded: bassResult.loaded,
+          savingsVsFullLoad:
+            bassResult.loaded > 0
+              ? `${Math.round((1 - bassResult.loaded / 110) * 100)}%`
+              : 'N/A',
+        });
+      } else {
+        logger.warn('⚠️ Bass sample loading completed with warnings', {
+          exerciseId: exercise?.id,
+          error: bassResult.error,
+        });
+      }
+    } catch (error) {
+      logger.error('❌ Failed to load bass samples', error as Error);
+    }
   }
 
   /**
@@ -438,6 +502,9 @@ export class InitialSamplePreloader {
               : 'N/A',
         });
 
+        // NOTE: Bass samples are now loaded through loadBassSamplesForExercise()
+        // which uses exercise.notes (fretboard data from database) instead of MIDI files
+
         // CRITICAL: Inject harmony buffers into PlaybackEngine immediately after loading
         // This enables direct AudioBufferSourceNode scheduling for instant stop functionality
         // RACE CONDITION FIX: Skip injection for background preloading to avoid overwriting active instrument
@@ -445,7 +512,7 @@ export class InitialSamplePreloader {
           logger.info(
             '⏭️ Skipping buffer injection (background preload mode)',
             {
-              instrument: exercise?.harmonyInstrument || 'grandpiano',
+              instrument: exercise?.harmonyInstrument || DEFAULT_HARMONY_INSTRUMENT,
               exerciseId: exercise?.id,
             },
           );
@@ -475,7 +542,8 @@ export class InitialSamplePreloader {
             const sampleCache = GlobalSampleCache.getInstance();
 
             // Get the instrument that was just preloaded
-            const instrument = exercise?.harmonyInstrument || 'wurlitzer';
+            // FIX: Use shared constant to ensure consistency with HarmonyPreloadStrategy
+            const instrument = exercise?.harmonyInstrument || DEFAULT_HARMONY_INSTRUMENT;
 
             const harmonyBuffers = new Map<string, AudioBuffer>();
 
@@ -530,17 +598,25 @@ export class InitialSamplePreloader {
             if (buffersFound > 0 && playbackEngine) {
               // audioContext already obtained above before the loop
               // Phase 3.1: Use PlaybackEngine.setHarmonyBuffers()
-              // FIX: Pass instrument name so HarmonySchedulerV2 uses correct instrument
+              // FIX: Pass perNoteVelocityRanges from instrument config for accurate velocity layer selection
+              const instrumentConfigs: Record<string, any> = {
+                wurlitzer: wurlitzerConfig,
+                grandpiano: grandPianoConfig,
+                rhodes: rhodesConfig,
+              };
+              const perNoteVelocityRanges = instrumentConfigs[instrument]?.perNoteVelocityRanges;
+
               playbackEngine.setHarmonyBuffers(
                 harmonyBuffers,
                 audioContext.destination,
-                undefined, // perNoteVelocityRanges
+                perNoteVelocityRanges, // Accurate per-note velocity ranges from instrument config
                 instrument, // instrumentName - CRITICAL for correct sample playback
               );
               logger.info('✅ Harmony buffers injected into PlaybackEngine', {
                 instrument,
                 buffersInjected: buffersFound,
                 cachedKeys: harmonyCachedKeys.length,
+                hasPerNoteVelocityRanges: !!perNoteVelocityRanges,
               });
             } else {
               logger.warn('⚠️ No harmony buffers available for injection', {
@@ -642,40 +718,8 @@ export class InitialSamplePreloader {
         });
       }
 
-      // EARLY RETURN: Skip bass loading when no bassline MIDI
-      if (!exercise?.basslineMidiUrl) {
-        return harmonyResult;
-      }
-
-      // FAANG SOLUTION: Use BassPreloadStrategy with exercise data
-      // This will extract notes from bassline MIDI and prepare metadata for widget
-      const { BassPreloadStrategy } =
-        await import('../modules/preloading/strategies/BassPreloadStrategy.js');
-      const bassStrategy = new BassPreloadStrategy();
-
-      // Load ONLY bass samples required by exercise bassline MIDI file
-      const bassResult = await bassStrategy.loadFullSamples(
-        undefined,
-        exercise,
-      );
-
-      if (bassResult.success) {
-        logger.info('✅ Bass FAANG smart loading complete', {
-          samplesLoaded: bassResult.loaded,
-          savingsVsFullLoad:
-            bassResult.loaded > 0
-              ? `${Math.round((1 - bassResult.loaded / 24) * 100)}%`
-              : 'N/A',
-        });
-      } else {
-        logger.warn('⚠️ Bass sample loading completed with warnings', {
-          error: bassResult.error,
-        });
-      }
-
-      // LEGACY LOADING DISABLED - No longer load all 120 harmony samples or 24 bass samples
-      // await this.loadFullHarmonyInstrument();  // DISABLED
-      // await this.loadFullBassInstrument();  // DISABLED
+      // Note: Bass loading is now handled earlier in this function (before skipBufferInjection check)
+      // to ensure bass samples are cached even in background preload mode
 
       this.preloadComplete = true;
 
@@ -1002,9 +1046,9 @@ export class InitialSamplePreloader {
 
       const drumPads: Record<number, any> = {};
       const essentialDrums = [
-        { pad: 1, file: 'kick-v1.wav', name: 'kick' },
-        { pad: 3, file: 'snare-v1.wav', name: 'snare' },
-        { pad: 5, file: 'hihat-v1.wav', name: 'hihat' },
+        { pad: 1, file: DEFAULT_KIT_SAMPLES.kick, name: 'kick' },
+        { pad: 3, file: DEFAULT_KIT_SAMPLES.snare, name: 'snare' },
+        { pad: 5, file: DEFAULT_KIT_SAMPLES.hihat, name: 'hihat' },
       ];
 
       // Create Players for each drum
@@ -1104,9 +1148,9 @@ export class InitialSamplePreloader {
       const kitPath = FALLBACK_DRUM_KIT_PATH;
 
       const essentialDrums = [
-        { pad: 1, file: 'kick-v1.wav', name: 'kick' },
-        { pad: 3, file: 'snare-v1.wav', name: 'snare' },
-        { pad: 5, file: 'hihat-v1.wav', name: 'hihat' },
+        { pad: 1, file: DEFAULT_KIT_SAMPLES.kick, name: 'kick' },
+        { pad: 3, file: DEFAULT_KIT_SAMPLES.snare, name: 'snare' },
+        { pad: 5, file: DEFAULT_KIT_SAMPLES.hihat, name: 'hihat' },
       ];
 
       logger.info('📥 Loading essential drum samples:', {
@@ -1320,9 +1364,9 @@ export class InitialSamplePreloader {
 
         const drumPads: Record<number, any> = {};
         const essentialDrums = [
-          { pad: 1, file: 'kick-v1.wav', name: 'kick' },
-          { pad: 3, file: 'snare-v1.wav', name: 'snare' },
-          { pad: 5, file: 'hihat-v1.wav', name: 'hihat' },
+          { pad: 1, file: DEFAULT_KIT_SAMPLES.kick, name: 'kick' },
+          { pad: 3, file: DEFAULT_KIT_SAMPLES.snare, name: 'snare' },
+          { pad: 5, file: DEFAULT_KIT_SAMPLES.hihat, name: 'hihat' },
         ];
 
         // Create Players for each drum
@@ -1676,17 +1720,17 @@ export class InitialSamplePreloader {
           path: 'metronome/Click_high2_fixed.mp3',
           cacheKeys: ['metronome-high'],
         },
-        // Essential drum samples (using fallback kit path)
+        // Essential drum samples (using admin-uploaded default kit)
         {
-          path: `${FALLBACK_DRUM_KIT_PATH}/kick-v1.wav`,
+          path: `${FALLBACK_DRUM_KIT_PATH}/${DEFAULT_KIT_SAMPLES.kick}`,
           cacheKeys: ['drum-kick', 'drum-pad-1'],
         },
         {
-          path: `${FALLBACK_DRUM_KIT_PATH}/snare-v1.wav`,
+          path: `${FALLBACK_DRUM_KIT_PATH}/${DEFAULT_KIT_SAMPLES.snare}`,
           cacheKeys: ['drum-snare', 'drum-pad-3'],
         },
         {
-          path: `${FALLBACK_DRUM_KIT_PATH}/hihat-v1.wav`,
+          path: `${FALLBACK_DRUM_KIT_PATH}/${DEFAULT_KIT_SAMPLES.hihat}`,
           cacheKeys: ['drum-hihat', 'drum-pad-5'],
         },
       ];
@@ -2055,9 +2099,9 @@ export class InitialSamplePreloader {
       const kitPath = FALLBACK_DRUM_KIT_PATH;
 
       const samples = [
-        { pad: 1, file: 'kick-v1.wav', name: 'kick' },
-        { pad: 3, file: 'snare-v1.wav', name: 'snare' },
-        { pad: 5, file: 'hihat-v1.wav', name: 'hihat' },
+        { pad: 1, file: DEFAULT_KIT_SAMPLES.kick, name: 'kick' },
+        { pad: 3, file: DEFAULT_KIT_SAMPLES.snare, name: 'snare' },
+        { pad: 5, file: DEFAULT_KIT_SAMPLES.hihat, name: 'hihat' },
       ];
 
       const loadPromises = samples.map(async (sample) => {

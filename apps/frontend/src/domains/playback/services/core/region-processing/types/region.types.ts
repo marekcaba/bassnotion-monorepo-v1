@@ -7,6 +7,25 @@ export interface PatternEvent {
   type: string;
   velocity?: number;
   duration?: string;
+  /**
+   * Instrument-specific event data:
+   * - drums: { drum: 'kick' | 'snare' | 'hihat' | ... }
+   * - voice-cue: { cue: 'one' | 'two' | 'three' | 'four' }
+   * - bass: { midiNote: number, note: string, string: number, fret: number }
+   */
+  data?: {
+    // Drums
+    drum?: string;
+    // Voice cues
+    cue?: string;
+    // Bass sampler
+    midiNote?: number;
+    note?: string;
+    string?: number;
+    fret?: number;
+    // Generic extension
+    [key: string]: any;
+  };
   // NOTE: We deliberately do NOT cache absolute time here
   // Time is calculated on-demand via parsePosition() using current Tone.Transport.bpm
   // This ensures tempo changes work correctly

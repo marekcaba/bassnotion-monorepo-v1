@@ -29,7 +29,7 @@ export const TRANSPORT_TIMING_CONFIG = {
    * Lower values = lower latency but less stable timing
    * Higher values = more stable timing but higher latency
    */
-  lookAheadTime: 0.15, // 150ms - increased for rock-solid timing stability
+  lookAheadTime: 0.2, // 200ms - unified with SampleAccurateClock defaults for consistency
 
   /**
    * Update interval in seconds

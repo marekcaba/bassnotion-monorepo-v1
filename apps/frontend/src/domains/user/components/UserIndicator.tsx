@@ -1,15 +1,18 @@
 'use client';
 
-import React from 'react';
-import { User, Crown, LogIn } from 'lucide-react';
-import { useAuth } from '../hooks/use-auth';
+import React, { useCallback, useState } from 'react';
+import { User, Crown, LogIn, LogOut } from 'lucide-react';
+import { useAuth, useAuthStore } from '../hooks/use-auth';
 import { useUserProfile } from '../hooks/use-user-profile';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
+import { authService } from '../api/auth';
 
 export function UserIndicator() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isInitialized } = useAuth();
+  const reset = useAuthStore((state) => state.reset);
   const { profile, isLoading, cachedRole, cachedDisplayName, isHydrated } = useUserProfile();
   const { navigateWithTransition } = useViewTransitionRouter();
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   // We need BOTH cached role AND a display name source to show immediately
   // Otherwise we'd show "User" placeholder which looks bad
@@ -24,9 +27,37 @@ export function UserIndicator() {
     }
   };
 
-  // IMPORTANT: Before hydration OR while waiting for display name, show placeholder
-  // This prevents hydration mismatch AND the "User" → real name flash
-  if (!isHydrated || (cachedRole && !hasDisplayNameSource)) {
+  const handleSignOut = useCallback(
+    async (e: React.MouseEvent) => {
+      e.stopPropagation(); // Prevent triggering the parent click handler
+      try {
+        setIsSigningOut(true);
+        await authService.signOut();
+        reset();
+        navigateWithTransition('/');
+      } catch (error) {
+        console.error('Sign out error:', error);
+      } finally {
+        setIsSigningOut(false);
+      }
+    },
+    [reset, navigateWithTransition]
+  );
+
+  // IMPORTANT: Before hydration OR while auth is still initializing, show placeholder
+  // This prevents hydration mismatch AND flash of wrong content
+  // Also wait for auth to be initialized before showing "Not logged in"
+  if (!isHydrated || (!isInitialized && !cachedRole)) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+        <div className="w-4 h-4" />
+        <span className="text-sm text-transparent">Loading...</span>
+      </div>
+    );
+  }
+
+  // If we have cached role but waiting for display name, show loading
+  if (cachedRole && !hasDisplayNameSource) {
     return (
       <div className="flex items-center gap-2 px-3 py-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
         <div className="w-4 h-4" />
@@ -42,26 +73,36 @@ export function UserIndicator() {
       profile?.displayName || cachedDisplayName || user?.email?.split('@')[0];
 
     return (
-      <div
-        className="flex items-center gap-2 px-3 py-2 bg-slate-800/50 rounded-lg border border-slate-700/50 cursor-pointer hover:bg-slate-800/70 transition-colors"
-        onClick={handleClick}
-        title="Go to Dashboard"
-      >
-        {isAdmin ? (
-          <Crown className="w-4 h-4 text-yellow-400" />
-        ) : (
-          <User className="w-4 h-4 text-blue-400" />
-        )}
-        <span className="text-sm text-white">{displayName}</span>
-        <span
-          className={`px-2 py-1 text-xs font-medium rounded ${
-            isAdmin
-              ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
-              : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-          }`}
+      <div className="flex items-center gap-2">
+        <div
+          className="flex items-center gap-2 px-3 py-2 bg-slate-800/50 rounded-lg border border-slate-700/50 cursor-pointer hover:bg-slate-800/70 transition-colors"
+          onClick={handleClick}
+          title="Go to Dashboard"
         >
-          {isAdmin ? 'Admin' : 'User'}
-        </span>
+          {isAdmin ? (
+            <Crown className="w-4 h-4 text-yellow-400" />
+          ) : (
+            <User className="w-4 h-4 text-blue-400" />
+          )}
+          <span className="text-sm text-white">{displayName}</span>
+          <span
+            className={`px-2 py-1 text-xs font-medium rounded ${
+              isAdmin
+                ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+            }`}
+          >
+            {isAdmin ? 'Admin' : 'User'}
+          </span>
+        </div>
+        <button
+          onClick={handleSignOut}
+          disabled={isSigningOut}
+          className="flex items-center justify-center p-2 bg-slate-800/50 rounded-lg border border-slate-700/50 cursor-pointer hover:bg-red-500/20 hover:border-red-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Sign out"
+        >
+          <LogOut className="w-4 h-4 text-slate-400 hover:text-red-400" />
+        </button>
       </div>
     );
   }
@@ -95,26 +136,36 @@ export function UserIndicator() {
   const displayName = profile?.displayName || user.email?.split('@')[0] || 'User';
 
   return (
-    <div
-      className="flex items-center gap-2 px-3 py-2 bg-slate-800/50 rounded-lg border border-slate-700/50 cursor-pointer hover:bg-slate-800/70 transition-colors"
-      onClick={handleClick}
-      title="Go to Dashboard"
-    >
-      {isAdmin ? (
-        <Crown className="w-4 h-4 text-yellow-400" />
-      ) : (
-        <User className="w-4 h-4 text-blue-400" />
-      )}
-      <span className="text-sm text-white">{displayName}</span>
-      <span
-        className={`px-2 py-1 text-xs font-medium rounded ${
-          isAdmin
-            ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
-            : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-        }`}
+    <div className="flex items-center gap-2">
+      <div
+        className="flex items-center gap-2 px-3 py-2 bg-slate-800/50 rounded-lg border border-slate-700/50 cursor-pointer hover:bg-slate-800/70 transition-colors"
+        onClick={handleClick}
+        title="Go to Dashboard"
       >
-        {isAdmin ? 'Admin' : 'User'}
-      </span>
+        {isAdmin ? (
+          <Crown className="w-4 h-4 text-yellow-400" />
+        ) : (
+          <User className="w-4 h-4 text-blue-400" />
+        )}
+        <span className="text-sm text-white">{displayName}</span>
+        <span
+          className={`px-2 py-1 text-xs font-medium rounded ${
+            isAdmin
+              ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+              : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+          }`}
+        >
+          {isAdmin ? 'Admin' : 'User'}
+        </span>
+      </div>
+      <button
+        onClick={handleSignOut}
+        disabled={isSigningOut}
+        className="flex items-center justify-center p-2 bg-slate-800/50 rounded-lg border border-slate-700/50 cursor-pointer hover:bg-red-500/20 hover:border-red-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        title="Sign out"
+      >
+        <LogOut className="w-4 h-4 text-slate-400 hover:text-red-400" />
+      </button>
     </div>
   );
 }

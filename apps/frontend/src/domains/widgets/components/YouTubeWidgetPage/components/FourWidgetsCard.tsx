@@ -76,7 +76,43 @@ export function FourWidgetsCard({
   tutorialId,
   isAdminMode = false,
 }: FourWidgetsCardProps) {
-  const { state, selectedExercise, setState, harmonyInstrument } = widgetState;
+  const { state, selectedExercise, setState, harmonyInstrument, setVolume, toggleMuted } = widgetState;
+
+  // Memoized volume change handlers to prevent re-renders
+  const handleMetronomeVolumeChange = React.useCallback(
+    (volume: number) => setVolume('metronome', volume),
+    [setVolume]
+  );
+  const handleDrumsVolumeChange = React.useCallback(
+    (volume: number) => setVolume('drums', volume),
+    [setVolume]
+  );
+  const handleBassVolumeChange = React.useCallback(
+    (volume: number) => setVolume('bass', volume),
+    [setVolume]
+  );
+  const handleHarmonyVolumeChange = React.useCallback(
+    (volume: number) => setVolume('harmony', volume),
+    [setVolume]
+  );
+
+  // Memoized mute toggle handlers
+  const handleMetronomeMuteToggle = React.useCallback(
+    () => toggleMuted('metronome'),
+    [toggleMuted]
+  );
+  const handleDrumsMuteToggle = React.useCallback(
+    () => toggleMuted('drums'),
+    [toggleMuted]
+  );
+  const handleBassMuteToggle = React.useCallback(
+    () => toggleMuted('bass'),
+    [toggleMuted]
+  );
+  const handleHarmonyMuteToggle = React.useCallback(
+    () => toggleMuted('harmony'),
+    [toggleMuted]
+  );
 
   // CRITICAL DEBUG: Log every render
   // console.log('🔍 [STATE-FLOW-3.5] FourWidgetsCard render:', {
@@ -167,6 +203,10 @@ export function FourWidgetsCard({
             isVisible={state.widgets.metronome.isVisible}
             isPlaying={state.isPlaying}
             timeSignature={selectedExercise?.timeSignature}
+            volume={state.volume.metronome}
+            isMuted={state.muted.metronome}
+            onVolumeChange={handleMetronomeVolumeChange}
+            onMuteToggle={handleMetronomeMuteToggle}
           />
 
           {/* 2. Drummer Widget */}
@@ -180,6 +220,10 @@ export function FourWidgetsCard({
               handlePatternChange('drummer', pattern)
             }
             isAdminMode={isAdminMode}
+            volume={state.volume.drums}
+            isMuted={state.muted.drums}
+            onVolumeChange={handleDrumsVolumeChange}
+            onMuteToggle={handleDrumsMuteToggle}
           />
 
           {/* 3. Bass Line Widget */}
@@ -192,6 +236,10 @@ export function FourWidgetsCard({
               handlePatternChange('bassLine', pattern)
             }
             isAdminMode={isAdminMode}
+            volume={state.volume.bass}
+            isMuted={state.muted.bass}
+            onVolumeChange={handleBassVolumeChange}
+            onMuteToggle={handleBassMuteToggle}
           />
 
           {/* 4. Harmony Widget */}
@@ -206,6 +254,10 @@ export function FourWidgetsCard({
             onNextChord={handleNextChord}
             onProgressionChange={handleProgressionChange}
             isAdminMode={isAdminMode}
+            volume={state.volume.harmony}
+            isMuted={state.muted.harmony}
+            onVolumeChange={handleHarmonyVolumeChange}
+            onMuteToggle={handleHarmonyMuteToggle}
           />
         </div>
 

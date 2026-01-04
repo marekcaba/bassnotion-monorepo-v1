@@ -8,6 +8,7 @@ import type { LoopRegion } from './LoopGridStrip';
 import type { Exercise } from '@bassnotion/contracts';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { logSkeletonDebug } from '@/utils/skeletonDebug';
+import { useTransportClockSync } from '@/domains/widgets/hooks/useBeatGridSync';
 
 interface TransportClockProps {
   selectedExercise?: Exercise;
@@ -40,21 +41,32 @@ export function TransportClock({
   });
 
   // MOUNT/UNMOUNT DETECTION for double countdown bug
-  React.useEffect(() => {
-    console.log('🔴 [MOUNT DEBUG] TransportClock MOUNTED', {
-      timestamp: Date.now(),
-      selectedExercise: selectedExercise?.id,
-    });
-    return () => {
-      console.log('🔴 [UNMOUNT DEBUG] TransportClock UNMOUNTING', {
-        timestamp: Date.now(),
-      });
-    };
-  }, []);
+  // TEMPORARILY DISABLED - too noisy in console
+  // React.useEffect(() => {
+  //   console.log('🔴 [MOUNT DEBUG] TransportClock MOUNTED', {
+  //     timestamp: Date.now(),
+  //     selectedExercise: selectedExercise?.id,
+  //   });
+  //   return () => {
+  //     console.log('🔴 [UNMOUNT DEBUG] TransportClock UNMOUNTING', {
+  //       timestamp: Date.now(),
+  //     });
+  //   };
+  // }, []);
 
   const transport = useTransportContext();
   const { position, tempo, timeSignature, isPlaying, isPaused, isStopped } =
     transport;
+
+  // 🚀 JITTER FIX: Direct DOM position display synchronization (bypasses React state)
+  // This hook subscribes directly to AtomicPlaybackClock and updates the position text
+  // via DOM manipulation, eliminating jitter from React's batched updates.
+  const beatsPerMeasure = timeSignature?.numerator || 4;
+  const { registerPositionDisplay, registerPlayingIndicator } = useTransportClockSync({
+    isPlaying,
+    beatsPerMeasure,
+    isVisible: true,
+  });
 
   // 🔧 FLICKER FIX: Validate position before using it
   // During AudioWorklet initialization, position calculations can be corrupted
@@ -84,20 +96,21 @@ export function TransportClock({
   ]);
 
   // POSITION CHANGE DETECTION for double countdown bug
-  React.useEffect(() => {
-    console.log('📍 [POSITION DEBUG] TransportClock received new position', {
-      position: `${position.bars}:${position.beats}:${position.sixteenths}`,
-      isPlaying,
-      isValid: isValidPosition,
-      timestamp: Date.now(),
-    });
-  }, [
-    position.bars,
-    position.beats,
-    position.sixteenths,
-    isPlaying,
-    isValidPosition,
-  ]);
+  // TEMPORARILY DISABLED - too noisy in console
+  // React.useEffect(() => {
+  //   console.log('📍 [POSITION DEBUG] TransportClock received new position', {
+  //     position: `${position.bars}:${position.beats}:${position.sixteenths}`,
+  //     isPlaying,
+  //     isValid: isValidPosition,
+  //     timestamp: Date.now(),
+  //   });
+  // }, [
+  //   position.bars,
+  //   position.beats,
+  //   position.sixteenths,
+  //   isPlaying,
+  //   isValidPosition,
+  // ]);
 
   // Track render count for this instance
   const renderCountRef = React.useRef(0);
@@ -135,7 +148,17 @@ export function TransportClock({
   audioContextStateRef.current = audioContextState;
 
   // Get current display tempo - prioritize transport tempo, then user-set, then exercise default
+  // 🎵 TEMPO DEBUG: Log what value is being used for display
   const displayTempo = tempo || userTempo || selectedExercise?.bpm;
+
+  // TEMPO DEBUG: Log on every render to trace the 120 BPM issue
+  console.log(`🎵 [TEMPO-DEBUG] TransportClock render #${transportClockRenderCount}`, {
+    tempo_from_context: tempo,
+    userTempo: userTempo,
+    exerciseBpm: selectedExercise?.bpm,
+    displayTempo: displayTempo,
+    exerciseTitle: selectedExercise?.title?.substring(0, 30),
+  });
 
   // Initialize user tempo when exercise changes
   useEffect(() => {
@@ -420,14 +443,22 @@ export function TransportClock({
         </div>
 
         {/* Master Clock - Center */}
+        {/* 🚀 JITTER FIX: Direct DOM position display via ref registration */}
+        {/* The hook's textContent update bypasses React for jitter-free updates */}
         <div className="flex-1 flex justify-center">
           <div className="bg-slate-900 rounded-2xl px-8 py-3 shadow-[inset_3px_3px_6px_rgba(0,0,0,0.6),inset_-3px_-3px_6px_rgba(255,255,255,0.1)]">
             <div className="flex items-center gap-3">
               <div
+                ref={registerPlayingIndicator}
                 className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-green-500' : 'bg-slate-600'} shadow-[0_0_4px_rgba(0,255,0,0.6)]`}
               />
-              <div className="text-3xl font-mono-display font-bold text-white tracking-wider tabular-nums">
-                {formatPosition()}
+              {/* Position display - content set by useTransportClockSync hook via direct DOM */}
+              {/* Initial value shown before hook takes over, then hook updates via textContent */}
+              <div
+                ref={registerPositionDisplay}
+                className="text-3xl font-mono-display font-bold text-white tracking-wider tabular-nums"
+              >
+                1:1:00
               </div>
             </div>
           </div>

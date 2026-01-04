@@ -238,6 +238,7 @@ export function useTrackMigration(
 
     // Configuration access
     tempo: trackData.tempo,
+    currentTime: trackData.currentTime, // CRITICAL: Pass through currentTime for measure highlighting
     masterVolume: trackData.track?.mixing.volume || globalConfig.masterVolume,
     pitch: globalConfig.pitch,
     swingFactor: globalConfig.swingFactor,

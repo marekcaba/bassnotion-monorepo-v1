@@ -57,6 +57,9 @@ export class VelocityLayerSelector {
   private instrument: HarmonyInstrument;
   private perNoteRanges?: PerNoteVelocityRanges;
 
+  // Diagnostic counter to limit log spam
+  private diagnosticLogCount = 0;
+
   /**
    * Create a new VelocityLayerSelector
    *
@@ -64,7 +67,7 @@ export class VelocityLayerSelector {
    * @param perNoteRanges - Optional per-note velocity configuration from instrument JSON
    */
   constructor(
-    instrument: HarmonyInstrument,
+    instrument: HarmonyInstrument = 'wurlitzer',
     perNoteRanges?: PerNoteVelocityRanges,
   ) {
     this.instrument = instrument;
@@ -97,12 +100,25 @@ export class VelocityLayerSelector {
     if (this.perNoteRanges) {
       const layer = this.selectLayerFromPerNoteRanges(velocity, noteName);
       if (layer) {
+        // DIAGNOSTIC: Log per-note layer selection
+        if (this.diagnosticLogCount < 5) {
+          console.log(`[SCHEDULER DIAGNOSTIC] Per-note layer: ${noteName} velocity=${velocity} -> ${layer}`);
+          this.diagnosticLogCount++;
+        }
         return layer;
       }
     }
 
     // Fallback to instrument-specific velocity mapping
-    return this.selectLayerFromInstrumentRanges(velocity);
+    const fallbackLayer = this.selectLayerFromInstrumentRanges(velocity);
+
+    // DIAGNOSTIC: Log fallback layer selection
+    if (this.diagnosticLogCount < 10) {
+      console.log(`[SCHEDULER DIAGNOSTIC] Fallback layer: ${noteName} velocity=${velocity} -> ${fallbackLayer} (hasPerNoteRanges=${!!this.perNoteRanges})`);
+      this.diagnosticLogCount++;
+    }
+
+    return fallbackLayer;
   }
 
   /**
@@ -239,11 +255,21 @@ export class VelocityLayerSelector {
    * Used when loading new instrument config
    */
   public setPerNoteRanges(ranges: PerNoteVelocityRanges | undefined): void {
+    const noteCount = ranges ? Object.keys(ranges).length : 0;
+    // DIAGNOSTIC: Log when per-note ranges are set
+    console.log(`[SCHEDULER DIAGNOSTIC] setPerNoteRanges called: hasRanges=${!!ranges}, noteCount=${noteCount}`);
+    if (ranges && noteCount > 0) {
+      // Log a sample of the ranges to verify they're correct
+      const sampleNotes = Object.keys(ranges).slice(0, 3);
+      console.log(`[SCHEDULER DIAGNOSTIC] Sample notes: ${sampleNotes.join(', ')}`);
+    }
     logger.info('Per-note velocity ranges updated', {
       hasRanges: !!ranges,
-      noteCount: ranges ? Object.keys(ranges).length : 0,
+      noteCount,
     });
     this.perNoteRanges = ranges;
+    // Reset diagnostic counter to show new layer selections
+    this.diagnosticLogCount = 0;
   }
 
   /**

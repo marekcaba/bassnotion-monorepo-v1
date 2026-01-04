@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 interface VolumeKnobProps {
@@ -10,6 +10,7 @@ interface VolumeKnobProps {
   size?: number; // Size in pixels
   isMuted?: boolean;
   onMuteToggle?: () => void;
+  defaultValue?: number; // Default value to reset to (0-100), defaults to 80
 }
 
 export function VolumeKnob({
@@ -19,6 +20,7 @@ export function VolumeKnob({
   size = 56,
   isMuted = false,
   onMuteToggle,
+  defaultValue = 80,
 }: VolumeKnobProps) {
   const { correlationId, logger } = useCorrelation('VolumeKnob');
   const [isDragging, setIsDragging] = useState(false);
@@ -27,6 +29,7 @@ export function VolumeKnob({
   const centerButtonRef = useRef<HTMLDivElement>(null);
   const startAngleRef = useRef<number>(0);
   const startValueRef = useRef<number>(0);
+  const lastClickTimeRef = useRef<number>(0);
 
   // Update current value when prop changes
   useEffect(() => {
@@ -63,7 +66,33 @@ export function VolumeKnob({
     return angle - 180; // Convert to -135 to 135 range
   };
 
-  const handleStart = (clientX: number, clientY: number) => {
+  // Reset to default value
+  const resetToDefault = useCallback(() => {
+    logger.info('VolumeKnob: Resetting to default value', defaultValue);
+    setCurrentValue(defaultValue);
+    onChange(defaultValue);
+  }, [defaultValue, onChange, logger]);
+
+  const handleStart = (clientX: number, clientY: number, e?: React.MouseEvent) => {
+    // Check for Option/Alt + Click to reset (Pro Tools / Logic Pro style)
+    if (e?.altKey) {
+      e.preventDefault();
+      e.stopPropagation();
+      resetToDefault();
+      return;
+    }
+
+    // Check for double-click to reset (Ableton / JUCE style)
+    const now = Date.now();
+    const timeSinceLastClick = now - lastClickTimeRef.current;
+    lastClickTimeRef.current = now;
+
+    if (timeSinceLastClick < 300) {
+      // Double-click detected (300ms threshold)
+      resetToDefault();
+      return;
+    }
+
     logger.info('VolumeKnob: Starting drag at', clientX, clientY);
     setIsDragging(true);
     startAngleRef.current = clientX; // Store starting X position for horizontal drag
@@ -150,7 +179,7 @@ export function VolumeKnob({
         onMouseDown={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          handleStart(e.clientX, e.clientY);
+          handleStart(e.clientX, e.clientY, e);
         }}
         onTouchStart={(e) => {
           e.preventDefault();
@@ -160,6 +189,7 @@ export function VolumeKnob({
           }
         }}
         onDragStart={(e) => e.preventDefault()}
+        title="Drag to adjust volume. Double-click or Option/Alt+click to reset."
       >
         {/* Inner knob with inset shadow */}
         <div className="absolute inset-2 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 shadow-[inset_3px_3px_6px_rgba(0,0,0,0.8),inset_-3px_-3px_6px_rgba(255,255,255,0.2)]">

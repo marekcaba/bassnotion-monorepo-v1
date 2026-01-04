@@ -44,6 +44,8 @@ export interface ExerciseNote {
 
   // Musical Timing (NEW)
   duration: NoteDuration; // 'quarter', 'eighth', etc.
+  noteDuration?: NoteDuration; // Alias for duration (from MIDI conversion)
+  durationTicks?: number; // Duration in MIDI ticks (480 PPQ) - most precise from MIDI conversion
   position: MusicalPosition; // {measure: 1, beat: 1, subdivision: 0}
 
   // Legacy timing (DEPRECATED - for backwards compatibility)

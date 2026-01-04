@@ -58,6 +58,9 @@ export class Transport {
   // Captures audioContext.currentTime when transport starts to calculate relative elapsed time
   // This ensures position updates start from 0s (showing -1:4:0 countdown) instead of skipping ahead
   private transportStartTime: number = 0;
+  // Flag to indicate if transportStartTime was set externally (by PlaybackEngine)
+  // If true, start() will NOT override it with its own calculation
+  private transportStartTimeSetExternally: boolean = false;
 
   // Metrics tracking
   private metrics: TimingMetrics = {
@@ -158,6 +161,25 @@ export class Transport {
   }
 
   /**
+   * 🔧 TIMING SYNC FIX: Set transportStartTime externally from PlaybackEngine
+   * This ensures Transport uses the SAME transportStartTime as PlaybackEngine,
+   * preventing visual-audio desync caused by Transport capturing its own value later.
+   * @param time - The audioContext.currentTime when playback actually starts (from PlaybackEngine)
+   */
+  setTransportStartTime(time: number): void {
+    this.transportStartTime = time;
+    this.transportStartTimeSetExternally = true;
+    console.log('🎯 [TIMING SYNC] Transport received transportStartTime from PlaybackEngine', {
+      transportStartTime: time.toFixed(3) + 's',
+      setExternally: true,
+    });
+    logger.info('🎯 [TIMING SYNC] Transport received transportStartTime from PlaybackEngine', {
+      transportStartTime: time,
+      setExternally: true,
+    });
+  }
+
+  /**
    * Start transport playback
    */
   async start(): Promise<void> {
@@ -220,7 +242,7 @@ export class Transport {
       const sampleAccurateClock = this.clock.getSampleAccurateClock();
       if (sampleAccurateClock) {
         try {
-          await sampleAccurateClock.waitForFirstUpdate(50); // Wait max 50ms
+          await sampleAccurateClock.waitForFirstUpdate(100); // Wait max 100ms - allows AudioWorklet more time to start
           console.log(
             '🚀 [RACE CONDITION FIX] First AudioWorklet update received',
             {
@@ -243,20 +265,17 @@ export class Transport {
       }
     }
 
-    // 🔧 COUNTDOWN TIME FIX: Capture transport start time AFTER waiting for first update
-    // This creates a reference point (t=0) for calculating elapsed time
-    // Without this, position updates use audioContext.currentTime directly (~2.5s)
-    // which causes the countdown to be skipped entirely
+    // 🔧 VISUAL TIMING FIX: ALWAYS capture transportStartTime from Clock for visual position
+    // The external transportStartTime from PlaybackEngine is for audio scheduling (EventRouter),
+    // NOT for visual position calculation. The Clock may use AudioWorklet which has its own
+    // time reference (starts from 0 when playback begins), so we must capture from the same source.
     this.transportStartTime = this.clock.getAudioTime();
-    console.log('🚀 [COUNTDOWN TIME FIX] Captured transport start time', {
+    console.log('🚀 [VISUAL TIMING] Captured transportStartTime from Clock for visual sync', {
       transportStartTime: this.transportStartTime.toFixed(6),
-      explanation:
-        'Position updates will calculate elapsed time relative to this start point',
-      expectedBehavior:
-        'First position will be 0s → -1:4:0 (countdown visible!)',
-      captureTimestamp: performance.now(),
+      clockSource: this.clock.isUsingAudioWorklet() ? 'AudioWorklet' : 'AudioContext',
+      explanation: 'Visual position calculated relative to Clock time, not PlaybackEngine time',
     });
-    logger.info('🚀 [COUNTDOWN TIME FIX] Transport start time captured', {
+    logger.info('🚀 [VISUAL TIMING] Transport captured Clock-based transportStartTime', {
       transportStartTime: this.transportStartTime,
     });
 
@@ -331,11 +350,12 @@ export class Transport {
       ticks: 0,
     });
 
-    // 🔧 COUNTDOWN TIME FIX: Reset transport start time on stop
-    // Ensures clean restart - next start() will capture fresh start time
+    // 🔧 TIMING SYNC FIX: Reset transport start time and flag on stop
+    // Ensures clean restart - next start() will wait for PlaybackEngine to sync
     this.transportStartTime = 0;
-    console.log('🛑 [COUNTDOWN TIME FIX] Reset transport start time to 0');
-    logger.info('🛑 [COUNTDOWN TIME FIX] Transport start time reset');
+    this.transportStartTimeSetExternally = false;
+    console.log('🛑 [TIMING SYNC] Reset transport start time and sync flag');
+    logger.info('🛑 [TIMING SYNC] Transport start time and sync flag reset');
 
     // FAANG FIX: DO NOT reset Tone.Transport.position here!
     // TransportController.stop() handles this with countdown-aware logic.
@@ -679,28 +699,43 @@ export class Transport {
       const absoluteTime = this.clock.getAudioTime();
       const elapsedTime = absoluteTime - this.transportStartTime;
 
-      // 🎯 VISUAL LOOKAHEAD COMPENSATION: Subtract scheduling lookahead from visual position
-      // Audio is scheduled 150ms ahead for timing stability (TRANSPORT_TIMING_CONFIG.lookAheadTime)
-      // Without compensation, UI appears 150ms ahead of actual audio playback
-      // The startupLookahead (300ms) is already handled via transportStartTime offset
-      const visualLookahead = TRANSPORT_TIMING_CONFIG.lookAheadTime; // 150ms
-      const visualElapsedTime = Math.max(0, elapsedTime - visualLookahead);
+      // 🎯 AUDIO-UI SYNC FIX: Compensate for startup lookahead
+      //
+      // Timing flow:
+      // 1. Transport.start() captures transportStartTime = audioContext.currentTime (T)
+      // 2. PlaybackEngine schedules audio to start at T + startupLookahead (T + 300ms)
+      // 3. Visual updates calculate elapsedTime = currentTime - T
+      //
+      // Problem: At T + 400ms:
+      //   - elapsedTime = 400ms (time since Transport started)
+      //   - But audio has only been playing for 100ms (400ms - 300ms startupLookahead)
+      //   - Visual would be 300ms AHEAD of audio!
+      //
+      // Fix: Delay visual by startupLookahead so visual matches when audio actually plays
+      // The lookAheadTime (150ms) is for audio scheduling precision, NOT visual offset.
+      // It ensures audio events are queued 150ms before they play, but doesn't affect
+      // when the audio actually starts relative to transport start.
+      //
+      // Without this fix: Visual is 300ms ahead of audio
+      // With this fix: Visual syncs precisely with audio playback
+      const visualElapsedTime = Math.max(0, elapsedTime - TRANSPORT_TIMING_CONFIG.startupLookahead);
 
       // Only log occasionally to reduce console spam (every ~500ms)
       if (Math.floor(elapsedTime * 2) !== Math.floor((elapsedTime - 0.02) * 2)) {
         console.log('🔄 [VISUAL SYNC] Position update with lookahead compensation', {
           absoluteTime: absoluteTime.toFixed(3),
+          transportStartTime: this.transportStartTime.toFixed(3),
           elapsedTime: elapsedTime.toFixed(3),
-          visualLookahead: (visualLookahead * 1000).toFixed(0) + 'ms',
+          startupLookahead: (TRANSPORT_TIMING_CONFIG.startupLookahead * 1000).toFixed(0) + 'ms',
           visualElapsedTime: visualElapsedTime.toFixed(3),
-          explanation: 'UI delayed by lookahead to match when audio actually plays',
+          explanation: 'Visual delayed by startupLookahead to match when audio actually plays',
         });
       }
 
       // ✅ DOUBLE COUNTDOWN FIX: Pass elapsed time (not absolute time)
       // MusicalPositionManager.getDisplayPosition() handles countdown offset exclusively
       // Using visualElapsedTime ensures UI syncs with actual audio playback
-      // The lookahead compensation delays the visual by 150ms to match scheduled audio
+      // The startupLookahead compensation (300ms) delays visual to match audio playback moment
       this.timeline.updatePositionFromSeconds(visualElapsedTime);
 
       // Emit position update event (would integrate with EventBus)

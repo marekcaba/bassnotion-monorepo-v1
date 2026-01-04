@@ -1,0 +1,388 @@
+================================================================================
+AUDIO SCHEDULING VISUAL DIAGRAMS
+================================================================================
+
+1. LOOK-AHEAD SCHEDULING WINDOW
+================================================================================
+
+Timeline View:
+┌─────────────────────────────────────────────────────────────────────────┐
+│  PLAYBACK TIME (seconds)                                                │
+└─────────────────────────────────────────────────────────────────────────┘
+
+         Scheduler Window   Event         Scheduler Window
+         [150ms]            Plays         [150ms]
+          ↓                  ↓             ↓
+┌────────────────────┐  ┌──┐  ┌────────────────────┐
+│ Check [1.85-2.0s]  │  │  │  │ Check [2.02-2.17s] │
+└────────────────────┘  └──┘  └────────────────────┘
+    1.85s              2.0s     2.02s
+    ├─────── 20ms ─────┤
+                        ├─────── 20ms ─────┤
+
+
+UPDATE CYCLE (every 20ms):
+┌─────┬─────┬─────┬─────┬─────┐
+│ t=0 │ 20ms│ 40ms│ 60ms│ 80ms│
+├─────┼─────┼─────┼─────┼─────┤
+│ ✓   │ ✓   │ ✓   │ ✓   │ ✓   │  Scheduler checks
+└─────┴─────┴─────┴─────┴─────┘
+
+EVENTS SCHEDULED:
+┌──────────────────────────────────────────────────┐
+│ At t=0ms:    Schedule events in [0-150ms]        │
+│ At t=20ms:   Schedule events in [20-170ms]       │
+│ At t=40ms:   Schedule events in [40-190ms]       │
+│ At t=60ms:   Schedule events in [60-210ms]       │
+│ At t=80ms:   Schedule events in [80-230ms]       │
+│ ... (by t=150ms, events up to 300ms are ready!) │
+└──────────────────────────────────────────────────┘
+
+BENEFIT: No event gets scheduled with less than 150ms notice!
+
+
+2. EVENT TIMING CALCULATION
+================================================================================
+
+MIDI Data → Scheduled Time Formula:
+
+    MIDI Ticks (960)
+          │
+          ├─→ Divide by 480 (ticks/beat)
+          │   960 ÷ 480 = 2 beats
+          │
+          ├─→ Multiply by (60 / BPM)
+          │   2 × (60 / 120) = 1.0 second
+          │
+          ├─→ Add region start time
+          │   1.0 + 0.3 = 1.3 seconds (relative to transport)
+          │
+          ├─→ Add countdown offset (if enabled)
+          │   1.3 + 0.0 = 1.3 seconds
+          │
+          └─→ Add loop offset (if repeating)
+              1.3 + 0.0 = 1.3 seconds FINAL TIME
+
+
+BATCHING STRATEGY:
+┌────────────────┐
+│ absoluteTime   │  1.3000 seconds
+└────────────────┘
+          │
+          ├─→ Math.round(1.3000 * 1000) = 1300
+          │   Math.round(1300) / 1000 = 1.300
+          │
+          └─→ Group by this timeKey
+              ├─ All events at 1.300s go together
+              ├─ Prevents sequential callback delays
+              └─ Usually 3-4 instruments per batch
+
+
+3. FRAME-BASED TIMING (48kHz Sample Rate)
+================================================================================
+
+TIME ↔ FRAME CONVERSION:
+
+    frames = seconds × 48000
+    
+    0.5s  → 24,000 frames
+    1.0s  → 48,000 frames
+    1.3s  → 62,400 frames
+    2.0s  → 96,000 frames
+
+LOOK-AHEAD IN FRAMES:
+
+    150ms look-ahead = 150 × 48 = 7,200 frames
+
+    ┌─────────────────────────────────────┐
+    │ At scheduling (t=1.85s):            │
+    │ scheduleFrame = 88,800 frames       │
+    │                                     │
+    │ Target play (t=2.0s):               │
+    │ targetFrame = 96,000 frames         │
+    │                                     │
+    │ Look-ahead distance:                │
+    │ 96,000 - 88,800 = 7,200 frames      │
+    │ 7,200 ÷ 48 = 150ms ✓                │
+    └─────────────────────────────────────┘
+
+SCHEDULING EVENT VISUALIZATION:
+
+    Frame Timeline (48kHz):
+    ─────────────────────────────────────────
+    0       24000    48000    72000    96000   frames
+    0s      0.5s     1.0s     1.5s     2.0s    seconds
+                                ↑
+                          Event should play here
+                          (targetFrame = 96000)
+
+    At scheduler check (t=1.85s = 88800 frames):
+    
+    ──────────────────────╥──────────────────────
+    ...    88800   90600  99000  103200...     frames
+    ...    1.85s   1.887s 2.06s  2.15s...     seconds
+           ↑              ↑
+        Check here    Schedule until here
+        (current)     (current + 150ms)
+
+
+4. VISUAL VS AUDIO TIMING
+================================================================================
+
+AUDIO SCHEDULING:
+┌──────────────────────────────────────────────┐
+│ Scheduled at t=1.85s                         │
+│ For execution at t=2.0s                      │
+│ Look-ahead: 150ms                            │
+│                                              │
+│ Executed by Web Audio API (not JS!)          │
+│ Sample-accurate: ±20 microseconds            │
+│ From Tone.js → sampler.start() call          │
+└──────────────────────────────────────────────┘
+    ↑                              ↑
+    PREDICTABLE                    JITTER-FREE
+
+
+VISUAL UPDATE:
+┌──────────────────────────────────────────────┐
+│ Animation Frame #120 (t≈2.0s)                │
+│ requestAnimationFrame() called                │
+│                                              │
+│ Read: AudioContext.currentTime               │
+│ Update: UI position for note                 │
+│                                              │
+│ Next frame in 16.67ms                        │
+│                                              │
+│ Sync error: ±5-10ms from audio               │
+└──────────────────────────────────────────────┘
+    ↑                              ↑
+    ANIMATION RATE BOUND           ~60fps
+
+
+TIMELINE COMPARISON:
+    
+    Audio:  ●●●●●●●●●●●●●●●●●●● (scheduled 150ms ahead)
+    Visual:       ↓ frame ↓ frame ↓ frame ↓ frame ↓
+                  ├─16.67ms─┤
+
+
+5. CROSS-INSTRUMENT TIMING MEASUREMENT
+================================================================================
+
+DIAGNOSTIC DATA COLLECTION:
+
+Beat 2:1 (measure 2, beat 1) - All play at t=2.0s
+
+    Instrument   Scheduled  jsExecution  Delta   Status
+    ──────────────────────────────────────────────────
+    Drums        2.000s     1849.2ms     0.0ms   🥇 First
+    Metronome    2.000s     1849.3ms     0.1ms   ✅ GOOD
+    Harmony      2.000s     1849.4ms     0.2ms   ✅ GOOD
+    Bass         2.000s     1850.1ms     0.9ms   ✅ GOOD
+
+    MAX DELTA: 0.9ms (< 5ms target ✓)
+
+GROUPING STRATEGY:
+┌─────────────────────────────────────────┐
+│ Round scheduledAudioTime to 10ms         │
+│ beatKey = measure:audioTime              │
+│                                          │
+│ "2:2000" → measure 2, t=2.0s             │
+│ All instruments on same beat grouped     │
+│ Compare jsExecution times                │
+└─────────────────────────────────────────┘
+
+REPORT OUTPUT:
+┌──────────────────────────────────────────┐
+│ 📊 Beat-by-beat comparison:              │
+│ ─────────────────────────────────────── │
+│ Beat 2:1 maxDelta: 0.9ms  ✅             │
+│ Beat 2:2 maxDelta: 1.1ms  ✅             │
+│ Beat 2:3 maxDelta: 0.7ms  ✅             │
+│ Beat 2:4 maxDelta: 1.3ms  ✅             │
+│                                          │
+│ 📊 Overall statistics:                   │
+│ ─────────────────────────────────────── │
+│ Total beats: 30                          │
+│ Max timing difference: 1.3ms             │
+│ Avg timing difference: 0.8ms             │
+│                                          │
+│ ✅ GOOD: < 5ms across all instruments   │
+└──────────────────────────────────────────┘
+
+
+6. TEMPO CHANGE COMPENSATION
+================================================================================
+
+SCENARIO: BPM changes from 120 → 140 during playback
+
+Timeline:
+┌─────────────────────────────────────────────────────┐
+│                                                     │
+│ At t=2.5s: BPM = 120, accumulatedBeats = 0         │
+│ ├─ Elapsed: 2.5s                                   │
+│ ├─ Beats: 2.5 × (120/60) = 5 beats                 │
+│ └─ Store: accumulatedBeats = 5                     │
+│                                                     │
+│     [TEMPO CHANGE: 120 → 140 BPM]                  │
+│                                                     │
+│ At t=2.6s: BPM = 140, accumulatedBeats = 5        │
+│ ├─ Elapsed since change: 0.1s                      │
+│ ├─ Beats since change: 0.1 × (140/60) = 0.233     │
+│ ├─ Total beats: 5 + 0.233 = 5.233 beats           │
+│ └─ Position: 5.233 / (140/60) = 2.244s            │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+
+RESULT:
+    Without compensation:
+    └─ Position would jump from 2.5s to 2.6s (wrong!)
+
+    With compensation:
+    └─ Position smoothly transitions
+    └─ No jitter or visual glitches
+
+
+7. DRIFT DETECTION & CORRECTION
+================================================================================
+
+DRIFT TRACKING (Kalman Filter):
+
+    Expected: 2.0s
+    Actual:   2.001s
+    Drift:    +1ms
+
+    ┌─────────────────────────────────────┐
+    │ Kalman Filter (3 measurements):     │
+    │ Measurement 1: +0.5ms  ✓            │
+    │ Measurement 2: +1.0ms  ✓            │
+    │ Measurement 3: +1.2ms  ← Trend     │
+    │                                     │
+    │ Prediction: +1.5ms (future drift)  │
+    │ Confidence: 0.85 (85%)             │
+    │ Trend: increasing (getting worse)  │
+    └─────────────────────────────────────┘
+
+DRIFT CORRECTION:
+
+    Drift detected: +2.0ms (significant, > 1ms threshold)
+    
+    Apply: 10% correction factor
+    ├─ driftOffset += 2.0 × 0.1 = +0.2ms
+    │
+    └─ Next 10 seconds: gradually applies corrections
+       ├─ 1s:  -0.1ms
+       ├─ 5s:  -0.2ms (now offset)
+       ├─ 10s: -0.3ms (further corrected)
+       └─ 20s: -0.2ms (converged)
+
+RESULT: Smooth, imperceptible drift correction
+
+
+8. SCHEDULING LAYERS - COMPLETE VIEW
+================================================================================
+
+┌─────────────────────────────────────────────────────────────┐
+│ LAYER 1: EVENT CREATION                                     │
+├─────────────────────────────────────────────────────────────┤
+│ ├─ MIDI ticks: 960                                          │
+│ ├─ Region: 0.3s start                                       │
+│ └─ Result: 1.3s absolute time                              │
+└─────────────────────────────────────────────────────────────┘
+    ↓
+┌─────────────────────────────────────────────────────────────┐
+│ LAYER 2: SCHEDULING                                         │
+├─────────────────────────────────────────────────────────────┤
+│ ├─ Current time: 1.15s                                      │
+│ ├─ Look-ahead: 150ms                                        │
+│ ├─ Window: [1.15 - 1.30s]                                  │
+│ ├─ Event 1.3s in window: YES ✓                             │
+│ └─ Tone.Transport.schedule(callback, 1.3)                 │
+└─────────────────────────────────────────────────────────────┘
+    ↓
+┌─────────────────────────────────────────────────────────────┐
+│ LAYER 3: WEB AUDIO EXECUTION                               │
+├─────────────────────────────────────────────────────────────┤
+│ ├─ At t=1.3s (Web Audio API thread)                        │
+│ ├─ Tone.js invokes callback                                │
+│ ├─ sampler.start(audioContext.currentTime)                │
+│ └─ Timing: sample-accurate ±20µs                           │
+└─────────────────────────────────────────────────────────────┘
+    ↓
+┌─────────────────────────────────────────────────────────────┐
+│ LAYER 4: VISUAL FEEDBACK                                    │
+├─────────────────────────────────────────────────────────────┤
+│ ├─ Next animation frame ≤16.67ms away                      │
+│ ├─ Read: AudioContext.currentTime                          │
+│ ├─ Render: UI update                                        │
+│ └─ Sync error: ±5-10ms (acceptable)                        │
+└─────────────────────────────────────────────────────────────┘
+
+
+9. POLLING VS EVENT-DRIVEN UPDATE STRATEGIES
+================================================================================
+
+POLLING (50Hz - 20ms interval):
+┌──────────────────────────────────┐
+│ Time    Action                    │
+├──────────────────────────────────┤
+│ 0.0ms  ├─ Check: [0.0 - 0.15]   │
+│ 20ms   ├─ Check: [0.02 - 0.17]  │
+│ 40ms   ├─ Check: [0.04 - 0.19]  │
+│ 60ms   ├─ Check: [0.06 - 0.21]  │
+│ 80ms   ├─ Check: [0.08 - 0.23]  │
+└──────────────────────────────────┘
+
+UPDATE RATE: 50 events/second
+CPU: Low, predictable
+
+
+EVENT-DRIVEN (120Hz - 8.33ms):
+┌──────────────────────────────────┐
+│ Time    Action                    │
+├──────────────────────────────────┤
+│ 0.0ms  ├─ Check: [0.0 - 0.15]   │
+│ 8.33ms ├─ Check: [0.008 - 0.16] │
+│ 16.7ms ├─ Check: [0.017 - 0.17] │
+│ 25ms   ├─ Check: [0.025 - 0.18] │
+│ 33ms   ├─ Check: [0.033 - 0.19] │
+└──────────────────────────────────┘
+
+UPDATE RATE: 120 events/second
+CPU: Higher, but more responsive
+
+
+10. TIMELINE: COMPLETE EVENT JOURNEY
+================================================================================
+
+EVENT TIMELINE:
+
+t = 0.0s    ┌─ PLAYBACK STARTS
+            │
+t = 1.15s   ├─ Scheduler wakes up
+            │  └─ Check: events in [1.15 - 1.30s]?
+            │  └─ Finds: event at 1.3s
+            │  └─ Schedules with Tone.js
+            │
+t = 1.3s    ├─ EVENT PLAYS (Web Audio API)
+            │  └─ Tone.js invokes callback
+            │  └─ sampler.start(context.currentTime)
+            │  └─ Audio generated: sample-accurate
+            │
+t = 1.3s    ├─ AUDIO LATENCY (~25ms average)
++ 25ms      │  └─ Audio hardware processes
+            │
+t ≈ 1.325s  ├─ AUDIO HEARD
+            │  └─ Physical sound in speaker
+            │
+t ≈ 1.327s  ├─ NEXT ANIMATION FRAME
+            │  └─ requestAnimationFrame callback
+            │  └─ Reads: context.currentTime ≈ 1.327s
+            │  └─ Updates: visual fretboard display
+            │
+RESULT      └─ Audio and visual synchronized
+               (timing error: ±5-10ms acceptable)
+
+================================================================================
+END OF DIAGRAMS
+================================================================================

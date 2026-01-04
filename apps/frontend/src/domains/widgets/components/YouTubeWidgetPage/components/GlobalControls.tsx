@@ -26,7 +26,7 @@ import type {
 } from '@bassnotion/contracts';
 import { MIDIFileParser } from '@bassnotion/contracts';
 import { Button } from '@/shared/components/ui/button';
-import { useTransportContext } from '@/domains/playback/contexts/TransportContext';
+import { useTransportControls, useTransportPosition } from '@/domains/playback/contexts/TransportContext';
 import { useTrack } from '@/domains/playback/hooks';
 import type { CoreServices } from '@/domains/playback/services/core/CoreServices.js';
 // Phase 3.1.2: Removed dead import - RegionProcessor not used (uses adapter via CoreServices)
@@ -317,6 +317,74 @@ interface GlobalControlsProps {
   onPlayStateChange?: (isPlaying: boolean) => void;
 }
 
+// ============================================================================
+// POSITION-AWARE SHEET MUSIC COMPONENT
+// ============================================================================
+// PERFORMANCE FIX: This component isolates position subscription to prevent
+// GlobalControls from re-rendering 60 times/second during playback.
+// Only this component re-renders on position updates.
+interface PositionAwareSheetMusicProps {
+  notes: ExerciseNote[];
+  bpm: number;
+  timeSignature: { numerator: number; denominator: number } | undefined;
+  title?: string;
+  width: number | undefined;
+  height: number;
+  maxMeasuresPerSystem: number;
+  totalBars: number;
+  onReady: () => void;
+}
+
+let positionAwareSheetMusicRenderCount = 0;
+
+const PositionAwareSheetMusic = React.memo<PositionAwareSheetMusicProps>(
+  ({
+    notes,
+    bpm,
+    timeSignature,
+    title,
+    width,
+    height,
+    maxMeasuresPerSystem,
+    totalBars,
+    onReady,
+  }) => {
+    positionAwareSheetMusicRenderCount++;
+    // Subscribe to position updates - only this component re-renders
+    const position = useTransportPosition();
+    const { isPlaying } = useTransportControls();
+
+    // Log every 50th render to track position-based re-renders
+    if (positionAwareSheetMusicRenderCount % 50 === 0) {
+      logger.debug(
+        `PositionAwareSheetMusic render #${positionAwareSheetMusicRenderCount}`,
+        {
+          position: position ? `${position.bars}:${position.beats}` : 'null',
+          isPlaying,
+        },
+      );
+    }
+
+    return (
+      <SheetMusicDisplay
+        notes={notes}
+        bpm={bpm}
+        timeSignature={timeSignature}
+        title={title}
+        width={width}
+        height={height}
+        maxMeasuresPerSystem={maxMeasuresPerSystem}
+        totalBars={totalBars}
+        isPlaying={isPlaying}
+        currentBar={position?.bars ?? 0}
+        currentPosition={position ?? undefined}
+        onReady={onReady}
+      />
+    );
+  },
+);
+PositionAwareSheetMusic.displayName = 'PositionAwareSheetMusic';
+
 // Add a render counter for GlobalControls
 let globalControlsRenderCount = 0;
 
@@ -350,16 +418,17 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
     coreServicesReady,
   } = useAudioServices();
 
-  // Log renders every 10th time
-  if (globalControlsRenderCount % 10 === 0) {
-    logger.info(`🎯 GlobalControls RENDER #${globalControlsRenderCount}`, {
-      selectedExerciseId: selectedExercise?.id,
-      duration,
-      is3DMode,
-      coreServicesReady, // Log readiness state
-      timestamp: Date.now(),
-    });
-  }
+  // Render counter logging disabled - was causing 176+ log entries during playback
+  // Enable for debugging by uncommenting:
+  // if (globalControlsRenderCount % 10 === 0) {
+  //   logger.info(`GlobalControls RENDER #${globalControlsRenderCount}`, {
+  //     selectedExerciseId: selectedExercise?.id,
+  //     duration,
+  //     is3DMode,
+  //     coreServicesReady,
+  //     timestamp: Date.now(),
+  //   });
+  // }
 
   // Track prop changes
   const prevPropsRef = useRef<GlobalControlsProps>({
@@ -415,14 +484,16 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
       );
     }
 
-    if (changedProps.length > 0 || globalControlsRenderCount % 10 === 0) {
-      logger.info(`🎮 GlobalControls RENDER #${globalControlsRenderCount}:`, {
-        changedProps,
-        selectedExerciseId: selectedExercise?.id,
-        exerciseNotesLength: selectedExercise?.notes?.length || 0,
-        timestamp: Date.now(),
-      });
-    }
+    // Prop change logging disabled - was causing excessive log spam during playback
+    // Enable for debugging by uncommenting:
+    // if (changedProps.length > 0 || globalControlsRenderCount % 10 === 0) {
+    //   logger.info(`GlobalControls RENDER #${globalControlsRenderCount}:`, {
+    //     changedProps,
+    //     selectedExerciseId: selectedExercise?.id,
+    //     exerciseNotesLength: selectedExercise?.notes?.length || 0,
+    //     timestamp: Date.now(),
+    //   });
+    // }
 
     // Update prev props
     prevPropsRef.current = {
@@ -435,7 +506,7 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
       loopRegion,
       isLoopEnabled,
     };
-  });
+  }, [selectedExercise, duration, is3DMode, tiltAngle, hasSelectedDots, cameraMode, loopRegion, isLoopEnabled]);
   // Core DAW state
   const [coreServices, setCoreServices] = useState<CoreServices | null>(null);
   const [systemInitialized, setSystemInitialized] = useState(false);
@@ -443,8 +514,9 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
   const [isLoadingExercise, setIsLoadingExercise] = useState(false);
   const loadingRef = useRef(false);
 
-  // Use transport directly for playback control
-  const transport = useTransportContext();
+  // PERFORMANCE FIX: Use useTransportControls for stable controls (prevents 60Hz re-renders)
+  // Position updates are handled by PositionAwareSheetMusic component below
+  const transport = useTransportControls();
   // Create tracks using hooks
   const metronomeTrack = useTrack({
     trackId: 'metronome',
@@ -458,6 +530,13 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
     name: 'Drums',
     type: 'instrument',
     debugMode: false, // Disable debug logging for cleaner console
+  });
+
+  const bassTrack = useTrack({
+    trackId: 'bass-widget-track',
+    name: 'Bass',
+    type: 'bass',
+    debugMode: false,
   });
 
   // Countdown hook for metronome countdown before playback
@@ -572,16 +651,28 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
 
   // Normalize notes to handle field name variations (duration vs noteDuration)
   // CRITICAL: Memoize to prevent SheetMusicDisplay from re-rendering on every render
-  // PERFORMANCE FIX: Depend on activeExercise?.notes directly, not rawNotes intermediate
-  // The || [] was creating new array reference on every render
+  // PERFORMANCE FIX: Depend on exercise ID, not notes array reference
+  // The .map() creates a new array on every call, so we must stabilize dependencies
+  // Using exercise ID ensures we only recalculate when the exercise actually changes
+  const activeExerciseId = activeExercise?.id;
+  const rawNotesLength = activeExercise?.notes?.length ?? 0;
+
+  // Store notes in ref to access current value without triggering recalculation
+  const rawNotesRef = useRef(activeExercise?.notes);
+  rawNotesRef.current = activeExercise?.notes;
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentional: use ID + length for stable invalidation, ref for data access
   const exerciseNotes: ExerciseNote[] = useMemo(() => {
-    const notes = activeExercise?.notes || [];
+    const notes = rawNotesRef.current;
+    if (!notes || notes.length === 0) {
+      return [];
+    }
     return notes.map((note: any) => ({
       ...note,
       // Handle both 'duration' and 'noteDuration' field names
       duration: note.duration || note.noteDuration || 'quarter',
     }));
-  }, [activeExercise?.notes]);
+  }, [activeExerciseId, rawNotesLength]);
 
   const exerciseBpm = activeExercise?.bpm || 120;
   const exerciseKey = activeExercise?.key || 'C';
@@ -641,32 +732,34 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
     }
   }, [exerciseNotes]);
 
-  // Handle MusicXML upload
-  const handleMusicXMLUpload = (exercise: Exercise) => {
+  // Handle MusicXML upload - memoized to prevent re-renders
+  const handleMusicXMLUpload = useCallback((exercise: Exercise) => {
     setImportedExercise(exercise);
     setImportSource('musicxml');
     setCurrentPosition(1);
-  };
+  }, []);
 
-  // Handle MIDI upload
-  const handleMIDIUpload = (exercise: Exercise) => {
+  // Handle MIDI upload - memoized to prevent re-renders
+  const handleMIDIUpload = useCallback((exercise: Exercise) => {
     setImportedExercise(exercise);
     setImportSource('midi');
     setCurrentPosition(1);
-  };
+  }, []);
 
-  const handleUploadError = (error: string) => {
+  // Handle upload error - memoized to prevent re-renders
+  const handleUploadError = useCallback((error: string) => {
     logger.error('File upload error:', error);
-  };
+  }, []);
 
-  const handleClearImported = () => {
+  // Handle clear imported - memoized to prevent re-renders
+  const handleClearImported = useCallback(() => {
     setImportedExercise(null);
     setImportSource(null);
     setCurrentPosition(2);
-  };
+  }, []);
 
-  // Handle file input change
-  const handleFileSelect = async (
+  // Handle file input change - memoized to prevent re-renders
+  const handleFileSelect = useCallback(async (
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const file = event.target.files?.[0];
@@ -733,7 +826,7 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
 
     // Clear the input value so the same file can be selected again
     event.target.value = '';
-  };
+  }, [handleMusicXMLUpload, handleMIDIUpload, handleUploadError]);
 
   // Debounced sync to prevent rapid fire events during slider drag
   const tempoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -744,8 +837,8 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
   // Region processor for audio playback
   const regionProcessorRef = useRef<RegionProcessor | null>(null);
 
-  // Global playback control handlers
-  const handlePlayButtonClick = async () => {
+  // Global playback control handlers - memoized to prevent re-renders
+  const handlePlayButtonClick = useCallback(async () => {
     logger.debug('🎵 PLAY BUTTON CLICKED - simplified handler');
 
     // CRITICAL: Prevent playback when no exercise is selected
@@ -817,11 +910,70 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
       logger.debug('✅ Samples already ready, proceeding with playback');
     }
 
+    // CRITICAL: Check if exercise has bass notes and wait for bass buffers
+    const hasBassNotes = selectedExercise?.notes?.some(
+      (note: any) => note.string >= 1 && note.string <= 5
+    );
+
+    if (hasBassNotes && !WindowRegistry.getBassBuffersReady(selectedExercise?.id)) {
+      logger.warn('⚠️ Bass buffers not ready yet, waiting...');
+
+      const { toast } = await import('@/shared/hooks/use-toast');
+      toast({
+        title: 'Loading Bass Sounds...',
+        description: 'Please wait while we prepare the bass samples.',
+      });
+
+      try {
+        // Wait for bassBuffersReady event with 10 second timeout
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error('Timeout waiting for bass buffers to load'));
+          }, 10000);
+
+          const handleBassBuffersReady = (event: Event) => {
+            const customEvent = event as CustomEvent;
+            // Check if this is for our exercise
+            if (customEvent.detail?.exerciseId === selectedExercise?.id) {
+              clearTimeout(timeout);
+              window.removeEventListener('bassBuffersReady', handleBassBuffersReady);
+              resolve();
+            }
+          };
+
+          // Check if bass buffers became ready while we were setting up listener
+          if (WindowRegistry.getBassBuffersReady(selectedExercise?.id)) {
+            clearTimeout(timeout);
+            resolve();
+            return;
+          }
+
+          window.addEventListener('bassBuffersReady', handleBassBuffersReady);
+        });
+
+        logger.info('✅ Bass buffers ready, continuing with playback');
+        toast({
+          title: 'Ready!',
+          description: 'Bass samples loaded successfully.',
+        });
+      } catch (error) {
+        logger.error('❌ Failed to wait for bass buffers:', error);
+        toast({
+          title: 'Bass Loading Error',
+          description: 'Bass samples may not play correctly. Continuing anyway.',
+          variant: 'destructive',
+        });
+        // Don't return - continue with playback even without bass
+      }
+    } else if (hasBassNotes) {
+      logger.debug('✅ Bass buffers already ready, proceeding with playback');
+    }
+
     logger.debug('🎵 Transport state:', {
       isPlaying: transport.isPlaying,
       isPaused: transport.isPaused,
       isStopped: transport.isStopped,
-      position: transport.position,
+      // Note: position is now tracked separately via PositionAwareSheetMusic component
     });
 
     // Log current track regions
@@ -1065,6 +1217,93 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
           );
         }
 
+        // CRITICAL FIX: If drum regions are empty but we have a drum pattern, create them NOW
+        // This handles the case where loadExercise ran before AudioContext was ready (track not initialized)
+        if (
+          (currentDrumTrack.track?.regions?.length || 0) === 0 &&
+          selectedExercise?.drumPattern &&
+          Array.isArray(selectedExercise.drumPattern) &&
+          selectedExercise.drumPattern.length > 0 &&
+          currentDrumTrack.isInitialized
+        ) {
+          logger.info(
+            '🎵 Drum regions empty but pattern exists, creating them now:',
+            { hitCount: selectedExercise.drumPattern.length },
+          );
+
+          // Clear any old regions first
+          currentDrumTrack.clearRegions();
+
+          // Convert DrumHit[] to events
+          const timeSignature = selectedExercise.timeSignature || {
+            numerator: 4,
+            denominator: 4,
+          };
+          const beatsPerBar = timeSignature.numerator;
+
+          const drumEvents = selectedExercise.drumPattern.map((hit: any) => {
+            // Calculate total beats from the start (0-based)
+            const totalBeats =
+              (hit.position.measure || 0) * beatsPerBar +
+              (hit.position.beat || 0);
+
+            // Use tick for precise subdivision when available (480 PPQ)
+            const PPQ = 480;
+            const tick = hit.position.tick ?? (hit.position.subdivision || 0) * (PPQ / 4);
+            const sixteenthSubdivision = Math.floor((tick / PPQ) * 4);
+
+            // Normalize drum type to buffer key
+            const normalizedDrum = normalizeDrumTypeToBufferKey(hit.drum || 'kick');
+            return {
+              position: `0:${totalBeats}:${sixteenthSubdivision}`,
+              type: normalizedDrum,
+              drum: normalizedDrum,
+              velocity: hit.velocity ? hit.velocity / 127 : 0.7,
+              midiNote: hit.midiNote,
+            };
+          });
+
+          // Calculate pattern measure count for looping
+          const maxMeasure = selectedExercise.drumPattern.reduce((max: number, hit: any) => {
+            return Math.max(max, hit.position.measure || 0);
+          }, 0);
+          const patternMeasureCount = maxMeasure + 1;
+          const loopCount = selectedExercise.total_bars
+            ? Math.ceil(selectedExercise.total_bars / patternMeasureCount)
+            : 1;
+
+          // Create and add drum region
+          const drumRegion = {
+            id: `drum-region-${selectedExercise.id}`,
+            trackId: currentDrumTrack.track?.id || 'drums',
+            name: 'Drum Pattern',
+            startTime: 0,
+            duration: {
+              bars: patternMeasureCount,
+              beats: 0,
+              sixteenths: 0,
+              ticks: 0,
+            },
+            loopCount,
+            muted: false,
+            pattern: {
+              id: `drum-pattern-${selectedExercise.id}`,
+              name: 'Drum Pattern',
+              type: 'drum',
+              timeSignature,
+              events: drumEvents,
+            },
+          };
+
+          currentDrumTrack.addRegion(drumRegion as any);
+          logger.info(
+            '🎵 Created drum regions with',
+            drumEvents.length,
+            'events, loopCount:',
+            loopCount,
+          );
+        }
+
         // Register tracks with regions if we have a processor but need to set up tracks
         // Use refs to get the latest track state with regions
         logger.debug('🎵 Checking tracks for registration:', {
@@ -1091,10 +1330,11 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
         // But we just called addRegion() which updates track.regions synchronously
         const metronomeRegions = currentMetronomeTrack.track?.regions || [];
         const drumRegions = currentDrumTrack.track?.regions || [];
+        const bassRegions = bassTrackRef.current.track?.regions || [];
 
         if (
           playbackEngine &&
-          (metronomeRegions.length > 0 || drumRegions.length > 0)
+          (metronomeRegions.length > 0 || drumRegions.length > 0 || bassRegions.length > 0)
         ) {
           const tracksToRegister = [];
           if (metronomeRegions.length > 0) {
@@ -1125,6 +1365,17 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
               regionsArray: drumRegions,
             });
           }
+          if (bassRegions.length > 0) {
+            tracksToRegister.push({
+              id: 'bass-widget-track',
+              name: 'Bass',
+              regions: bassRegions,
+              instrumentType: 'bass',
+            });
+            logger.debug(
+              `🎵 Registering bass track with ${bassRegions.length} regions`,
+            );
+          }
 
           if (playbackEngine && tracksToRegister.length > 0) {
             playbackEngine.registerTracks(tracksToRegister);
@@ -1139,6 +1390,7 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
               hasEngine: !!playbackEngine,
               metronomeRegions: metronomeRegions.length,
               drumRegions: drumRegions.length,
+              bassRegions: bassRegions.length,
             },
           );
         }
@@ -1187,48 +1439,12 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
           playbackEngine.addVoiceCountdownRegion(timeSignature);
         }
 
-        // STEP 5: Start PlaybackEngine BEFORE transport
-        // This must happen here because tracks are registered asynchronously by widgets (MetronomeWidget, etc.)
-        // If we wait for transport:start event, tracks won't be registered yet
-        console.log(
-          '[PLAYBACK-DIAGNOSTIC] About to call playbackEngine.start()',
-          {
-            hasPlaybackEngine: !!playbackEngine,
-            playbackEngineType: playbackEngine?.constructor?.name,
-          },
-        );
-
-        if (playbackEngine) {
-          console.log(
-            '[PLAYBACK-DIAGNOSTIC] Calling playbackEngine.start() now!',
-          );
-          playbackEngine.start();
-          logger.debug('🎵 Started PlaybackEngine');
-          console.log('[PLAYBACK-DIAGNOSTIC] playbackEngine.start() completed');
-        } else {
-          console.error('[PLAYBACK-DIAGNOSTIC] No playbackEngine available!');
-        }
-
-        // STEP 6: Start visual countdown BEFORE transport.start()
-        // This ensures isCountingDown is set to true before isPlaying
-        // Prevents the Stop icon from flashing briefly
-        logger.info('🎵 Starting visual countdown');
-        const ToneRef = getTone();
-        const audioContext = ToneRef.context;
-        // FAANG FIX: Use current transport BPM for countdown, not exercise's stored BPM
-        const currentBpm = transport?.getTempo?.() || ToneRef.Transport.bpm.value;
-        startCountdown(currentBpm, audioContext, null as any).catch((error) => {
-          logger.error('❌ Visual countdown failed:', error);
-          // Non-fatal, audio countdown is already scheduled
-        });
-
-        // STEP 7: Position reset handled by TransportController.start()
-        // FAANG FIX: DO NOT manually set Tone.Transport.position here!
-        // TransportController.start() calls positionManager.resetToStart() which manages position correctly.
-        // Manual manipulation here creates race conditions with TransportController's position management,
-        // causing the clock to show "3:1:00" on 2nd playback instead of "1:0:00".
-
-        // STEP 8: ✅ SET THE ONE SINGLE SOURCE OF MUSICAL TRUTH
+        // STEP 5: ✅ SET THE ONE SINGLE SOURCE OF MUSICAL TRUTH **FIRST**
+        // CRITICAL: This MUST happen BEFORE playbackEngine.start() and startCountdown()
+        // so that Tone.Transport.bpm is set to the exercise tempo (e.g., 69 BPM)
+        // before any scheduling or countdown calculations happen.
+        // Otherwise, scheduling uses Tone.js default of 120 BPM.
+        //
         // This ONE call replaces:
         // - transport.setTempo()
         // - transport.setTimeSignature()
@@ -1237,7 +1453,6 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
         // All systems will now read from musicalTruth singleton
         // TEMPO FIX: MusicalTruthAuthority now auto-detects if user modified tempo
         // No need to pass preserveBPM - it uses internal _userHasModifiedTempo flag
-        // Using the static import at the top of the file instead of dynamic import
 
         // 🔍 TEMPO DIAGNOSTIC: Log before calling setFromExercise
         console.log(`🎵 [TEMPO-EXERCISE] GlobalControls calling musicalTruth.setFromExercise()`, {
@@ -1267,6 +1482,47 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
           '✅ Musical truth established from exercise',
           musicalTruth.getTruth(),
         );
+
+        // STEP 6: Start PlaybackEngine AFTER musicalTruth is set
+        // This ensures scheduling uses the correct BPM from Tone.Transport.bpm
+        // Tracks are registered asynchronously by widgets (MetronomeWidget, etc.)
+        // If we wait for transport:start event, tracks won't be registered yet
+        console.log(
+          '[PLAYBACK-DIAGNOSTIC] About to call playbackEngine.start()',
+          {
+            hasPlaybackEngine: !!playbackEngine,
+            playbackEngineType: playbackEngine?.constructor?.name,
+          },
+        );
+
+        if (playbackEngine) {
+          console.log(
+            '[PLAYBACK-DIAGNOSTIC] Calling playbackEngine.start() now!',
+          );
+          playbackEngine.start();
+          logger.debug('🎵 Started PlaybackEngine');
+          console.log('[PLAYBACK-DIAGNOSTIC] playbackEngine.start() completed');
+        } else {
+          console.error('[PLAYBACK-DIAGNOSTIC] No playbackEngine available!');
+        }
+
+        // STEP 7: Start visual countdown AFTER musicalTruth is set
+        // This ensures correct BPM is used for countdown timing
+        logger.info('🎵 Starting visual countdown');
+        const ToneRef = getTone();
+        const audioContext = ToneRef.context;
+        // Now Tone.Transport.bpm.value has the correct exercise BPM from setFromExercise
+        const currentBpm = transport?.getTempo?.() || ToneRef.Transport.bpm.value;
+        startCountdown(currentBpm, audioContext, null as any).catch((error) => {
+          logger.error('❌ Visual countdown failed:', error);
+          // Non-fatal, audio countdown is already scheduled
+        });
+
+        // STEP 8: Position reset handled by TransportController.start()
+        // FAANG FIX: DO NOT manually set Tone.Transport.position here!
+        // TransportController.start() calls positionManager.resetToStart() which manages position correctly.
+        // Manual manipulation here creates race conditions with TransportController's position management,
+        // causing the clock to show "3:1:00" on 2nd playback instead of "1:0:00".
 
         // STEP 9: Start transport - everything should be ready!
         // The countdown is now part of the timeline (beats 0-3), exercise starts at beat 4
@@ -1311,7 +1567,16 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
         setIsTogglingPlayback(false);
       }, 100);
     }
-  };
+  }, [
+    selectedExercise,
+    transport,
+    countdownState.isCountingDown,
+    cancelCountdown,
+    startCountdown,
+    isTogglingPlayback,
+    systemInitialized,
+    onPlayStateChange,
+  ]);
 
   const handleTempoChange = useCallback(
     async (newTempo: number) => {
@@ -1396,24 +1661,11 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
     }
   }, [transport.tempo, isDraggingTempo]);
 
-  // Update position based on transport
-  useEffect(() => {
-    // Skip updating if user is seeking
-    if (isUserSeeking.current) {
-      return;
-    }
-
-    if (transport.position && exerciseNotes.length > 0) {
-      // Convert transport position to sheet music position
-      const currentBeat =
-        transport.position.bars * 4 + transport.position.beats;
-      const maxPosition = exerciseNotes.length;
-      const newPosition = Math.min(Math.floor(currentBeat) + 1, maxPosition);
-      if (newPosition > 0) {
-        setCurrentPosition(newPosition);
-      }
-    }
-  }, [transport.position, exerciseNotes.length]); // Removed currentPosition to prevent circular dependency
+  // PERFORMANCE FIX: Position tracking moved to PositionAwareSheetMusic component
+  // This effect was causing 60Hz re-renders. Now the position-dependent UI updates
+  // happen in the isolated PositionAwareSheetMusic component.
+  // The currentPosition state is no longer needed here as the sheet music component
+  // handles its own position tracking via useTransportPosition().
 
   // Track the last loaded exercise to prevent reloading
   const lastLoadedExerciseRef = useRef<string | null>(null);
@@ -1421,12 +1673,14 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
   // Store track methods in refs to avoid dependency issues
   const metronomeTrackRef = useRef(metronomeTrack);
   const drumTrackRef = useRef(drumTrack);
+  const bassTrackRef = useRef(bassTrack);
 
   // Update refs when tracks change
   useEffect(() => {
     metronomeTrackRef.current = metronomeTrack;
     drumTrackRef.current = drumTrack;
-  }, [metronomeTrack, drumTrack]);
+    bassTrackRef.current = bassTrack;
+  }, [metronomeTrack, drumTrack, bassTrack]);
 
   // Load exercise data when selected
   useEffect(() => {
@@ -1501,12 +1755,39 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
     });
 
     // Helper: Wait for track initialization with retry logic
+    // FIXED: Increased timeout from 2s to 10s and added audioServicesReady event listener
+    // Tracks can only initialize after AudioContext is created (requires user gesture)
     const waitForTrackInit = async (
       trackRef: React.MutableRefObject<any>,
       trackName: string,
-      maxRetries = 20,
+      maxRetries = 100, // 100 * 100ms = 10 seconds max wait
       retryDelay = 100,
     ): Promise<boolean> => {
+      // Create a promise that resolves when audioServicesReady fires
+      const audioReadyPromise = new Promise<void>((resolve) => {
+        // Check if already initialized
+        if (trackRef.current?.isInitialized && trackRef.current?.addRegion) {
+          resolve();
+          return;
+        }
+
+        const handler = () => {
+          window.removeEventListener('audioServicesReady', handler);
+          resolve();
+        };
+        window.addEventListener('audioServicesReady', handler);
+
+        // Also timeout after maxRetries * retryDelay
+        setTimeout(() => {
+          window.removeEventListener('audioServicesReady', handler);
+          resolve();
+        }, maxRetries * retryDelay);
+      });
+
+      // Wait for audio services to be ready first (or timeout)
+      await audioReadyPromise;
+
+      // Now poll for track initialization
       for (let i = 0; i < maxRetries; i++) {
         if (trackRef.current?.isInitialized && trackRef.current?.addRegion) {
           logger.info(
@@ -1705,6 +1986,12 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
                   '🎮 GlobalControls: Registering drum track with PlaybackEngine',
                 );
               }
+              if ((bassTrackRef.current.track?.regions?.length || 0) > 0) {
+                tracks.push(bassTrackRef.current.track);
+                logger.info(
+                  '🎮 GlobalControls: Registering bass track with PlaybackEngine',
+                );
+              }
 
               if (tracks.length > 0 && playbackEngine) {
                 playbackEngine.registerTracks(tracks);
@@ -1807,6 +2094,12 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
                 tracks.push(drumTrackRef.current.track);
                 logger.info(
                   '🎮 GlobalControls: Registering drum track with PlaybackEngine',
+                );
+              }
+              if ((bassTrackRef.current.track?.regions?.length || 0) > 0) {
+                tracks.push(bassTrackRef.current.track);
+                logger.info(
+                  '🎮 GlobalControls: Registering bass track with PlaybackEngine',
                 );
               }
 
@@ -1965,12 +2258,55 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
               }
             }
 
-            // Load bassline MIDI if available
-            if (selectedExercise.basslineMidiUrl) {
+            // Load bass notes from exercise.notes (fretboard data)
+            // Bass notes are stored in the exercise's notes array
+            const bassNotes = activeExercise?.notes || [];
+            if (bassNotes.length > 0) {
               logger.info(
-                '🎮 GlobalControls: Bassline MIDI detected but bass track not yet implemented',
+                '🎮 GlobalControls: Loading bass from exercise notes',
+                {
+                  noteCount: bassNotes.length,
+                },
               );
-              // TODO: Load bassline when bass track is ready
+              try {
+                const bassResult = await exerciseLoader.loadFromBassNotes(
+                  bassNotes,
+                  {
+                    id: selectedExercise.id.value,
+                    title: selectedExercise.title,
+                    bpm: selectedExercise.bpm,
+                    timeSignature: selectedExercise.timeSignature || {
+                      numerator: 4,
+                      denominator: 4,
+                    },
+                    total_bars: selectedExercise.total_bars,
+                  } as any,
+                );
+
+                // Wait for bass track initialization, then add regions
+                const bassTrackReady = await waitForTrackInit(
+                  bassTrackRef,
+                  'Bass',
+                );
+                if (bassTrackReady) {
+                  for (const region of bassResult.regions) {
+                    bassTrackRef.current.addRegion(region as any);
+                    allRegions.push(region);
+                    logger.info(
+                      '🎮 GlobalControls: Added bass region from exercise notes',
+                    );
+                  }
+                } else {
+                  logger.error(
+                    '🎮 GlobalControls: Bass track failed to initialize, regions not added',
+                  );
+                }
+              } catch (error) {
+                logger.error(
+                  '🎮 GlobalControls: Error loading bass notes:',
+                  error,
+                );
+              }
             }
 
             // Load harmony MIDI if available
@@ -2043,6 +2379,13 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
                 tracks.push(drumTrackRef.current.track);
                 logger.info(
                   '🎮 GlobalControls: Registering drum track with PlaybackEngine',
+                );
+              }
+
+              if ((bassTrackRef.current.track?.regions?.length || 0) > 0) {
+                tracks.push(bassTrackRef.current.track);
+                logger.info(
+                  '🎮 GlobalControls: Registering bass track with PlaybackEngine',
                 );
               }
 
@@ -2371,6 +2714,12 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
                 '🎮 GlobalControls: Registering drum track (fallback)',
               );
             }
+            if ((bassTrackRef.current.track?.regions?.length || 0) > 0) {
+              tracks.push(bassTrackRef.current.track);
+              logger.info(
+                '🎮 GlobalControls: Registering bass track (fallback)',
+              );
+            }
 
             if (tracks.length > 0 && playbackEngine) {
               playbackEngine.registerTracks(tracks);
@@ -2459,6 +2808,21 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
       document.removeEventListener('touchend', handleGlobalTouchEnd);
     };
   }, [isDraggingTempo, handleTempoMouseUp]);
+
+  // Sheet music ready callback - memoized to prevent PositionAwareSheetMusic re-renders
+  const handleSheetMusicReady = useCallback(() => {
+    logger.debug('Sheet music rendered successfully');
+  }, []);
+
+  // Camera mode toggle callback - memoized to prevent re-renders
+  const handleCameraModeToggle = useCallback(() => {
+    onCameraModeChange?.(cameraMode === 'overview' ? 'action' : 'overview');
+  }, [cameraMode, onCameraModeChange]);
+
+  // Tilt angle toggle callback - memoized to prevent re-renders
+  const handleTiltAngleToggle = useCallback(() => {
+    onTiltAngleChange?.(tiltAngle === 35 ? 0 : 35);
+  }, [tiltAngle, onTiltAngleChange]);
 
   // Calculate beats per measure for processing
   const beatsPerMeasure = timeSignature.numerator;
@@ -3029,61 +3393,9 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
     };
   }, [exerciseNotes.length, attachClickHandlers, cleanupExistingHandlers]); // Include all dependencies used in handlers
 
-  // Handle auto-scroll during playback
-  useEffect(() => {
-    if (
-      !transport.isPlaying ||
-      !scrollContainerRef.current ||
-      exerciseNotes.length === 0
-    )
-      return;
-
-    // Clear any saved position when starting playback
-    if (savedScrollPosition.current > 0) {
-      savedScrollPosition.current = 0;
-    }
-
-    // Use transport position directly for more accurate timing
-    if (transport.position) {
-      // Calculate which note/measure we should be at based on transport position
-      const currentBeat =
-        transport.position.bars * 4 + transport.position.beats;
-
-      // Find the note that should be playing at this beat
-      let targetMeasure = 1;
-      let accumulatedBeats = 0;
-
-      for (const note of exerciseNotes) {
-        const noteDuration = getDurationInQuarterNotes(
-          note.duration || 'quarter',
-        );
-        if (accumulatedBeats + noteDuration > currentBeat) {
-          targetMeasure = note.position?.measure || 1;
-          break;
-        }
-        accumulatedBeats += noteDuration;
-      }
-
-      // Calculate scroll position for the target measure
-      const baseMeasureWidth = 180;
-      const firstMeasureWidth = 220;
-      const containerWidth = scrollContainerRef.current.clientWidth;
-
-      let measureX = 20; // Left padding
-      if (targetMeasure > 1) {
-        measureX += firstMeasureWidth + (targetMeasure - 2) * baseMeasureWidth;
-      }
-
-      // Center the measure in view
-      const targetScroll =
-        measureX +
-        (targetMeasure === 1 ? firstMeasureWidth : baseMeasureWidth) / 2 -
-        containerWidth / 2;
-
-      // Use direct assignment instead of scrollTo for immediate response
-      scrollContainerRef.current.scrollLeft = Math.max(0, targetScroll);
-    }
-  }, [transport.position, transport.isPlaying, exerciseNotes]);
+  // PERFORMANCE FIX: Auto-scroll during playback is now handled by PositionAwareSheetMusic
+  // component which has access to position updates without causing GlobalControls re-renders.
+  // The scroll behavior is integrated into the sheet music rendering component.
 
   // Industry standard: Separate data processing from rendering - Proper MIDI timing approach
   const processNotesForDisplay = (
@@ -4015,11 +4327,7 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
               {is3DMode ? (
                 /* 3D Mode: Camera Controls Toggle */
                 <button
-                  onClick={() =>
-                    onCameraModeChange?.(
-                      cameraMode === 'overview' ? 'action' : 'overview',
-                    )
-                  }
+                  onClick={handleCameraModeToggle}
                   className="px-3 py-2 rounded-xl bg-slate-800 text-sm font-medium transition-all duration-300 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] text-blue-400"
                 >
                   {cameraMode === 'overview' ? 'Overview' : 'Action'}
@@ -4027,7 +4335,7 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
               ) : (
                 /* 2D Mode: Tilt Controls Toggle */
                 <button
-                  onClick={() => onTiltAngleChange?.(tiltAngle === 35 ? 0 : 35)}
+                  onClick={handleTiltAngleToggle}
                   className="px-3 py-2 rounded-xl bg-slate-800 text-sm font-medium transition-all duration-300 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] text-green-400"
                 >
                   {tiltAngle === 35 ? 'Overview' : 'Flat'}
@@ -4083,7 +4391,8 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
                   alignItems: 'center',
                 }}
               >
-                <SheetMusicDisplay
+                {/* PERFORMANCE FIX: Use PositionAwareSheetMusic to isolate position updates */}
+                <PositionAwareSheetMusic
                   notes={exerciseNotes}
                   bpm={exerciseBpm}
                   timeSignature={timeSignature}
@@ -4092,12 +4401,7 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
                   height={150}
                   maxMeasuresPerSystem={2}
                   totalBars={exerciseTotalBars}
-                  isPlaying={transport.isPlaying}
-                  currentBar={transport.position?.bars ?? 0}
-                  currentPosition={transport.position ?? undefined}
-                  onReady={() => {
-                    logger.debug('Sheet music rendered successfully');
-                  }}
+                  onReady={handleSheetMusicReady}
                 />
               </div>
             </div>

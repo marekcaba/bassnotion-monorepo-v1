@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { authService } from '../../api/auth';
@@ -33,7 +33,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const { toast } = useToast();
   const [showIdleWarning, setShowIdleWarning] = useState(false);
 
-  const handleIdleLogout = async () => {
+  // Use ref to store resetIdleTimer to avoid circular dependency
+  const resetIdleTimerRef = useRef<() => void>(() => {});
+
+  // Memoize callbacks to prevent re-renders and avoid setState during render errors
+  // See: CLAUDE.md "React Best Practices" - Always memoize event handlers passed as props
+  const handleIdleLogout = useCallback(async () => {
     setShowIdleWarning(false);
     await authService.signOut();
     navigateWithTransition('/login?reason=idle');
@@ -42,13 +47,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       description: 'You were logged out due to inactivity.',
       variant: 'destructive',
     });
-  };
+  }, [navigateWithTransition, toast]);
 
-  const handleIdleWarning = () => {
+  const handleIdleWarning = useCallback(() => {
     setShowIdleWarning(true);
-  };
+  }, []);
 
-  const handleExtendSession = async () => {
+  const handleExtendSession = useCallback(async () => {
     setShowIdleWarning(false);
     try {
       const { session } = await authService.refreshSession();
@@ -59,12 +64,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
           apiClient.setAuthToken(session.access_token);
         }
       }
-      resetIdleTimer();
+      // Use ref to avoid circular dependency with useIdleTimeout
+      resetIdleTimerRef.current();
     } catch (error) {
       logger.error('Failed to refresh session:', error);
-      handleIdleLogout();
+      // Call logout logic inline to avoid circular dependency
+      setShowIdleWarning(false);
+      await authService.signOut();
+      navigateWithTransition('/login?reason=idle');
+      toast({
+        title: 'Session Expired',
+        description: 'You were logged out due to inactivity.',
+        variant: 'destructive',
+      });
     }
-  };
+  }, [setSession, logger, navigateWithTransition, toast]);
 
   // Only enable idle timeout when auth is ready and user is authenticated
   // This prevents event listener overload during webkit startup
@@ -75,6 +89,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     onIdle: handleIdleLogout,
     onWarning: handleIdleWarning,
   });
+
+  // Keep ref updated with latest resetIdleTimer
+  resetIdleTimerRef.current = resetIdleTimer;
 
   useEffect(() => {
     let mounted = true;

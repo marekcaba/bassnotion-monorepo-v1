@@ -601,6 +601,14 @@ export class GlobalSampleCacheImpl {
   }
 
   /**
+   * Get all sample keys in the cache
+   * Useful for iterating over cached samples by instrument prefix
+   */
+  getAllSampleKeys(): string[] {
+    return Array.from(this.samples.keys());
+  }
+
+  /**
    * Cache metadata for preload strategies (e.g., required notes from MIDI analysis)
    */
   cacheMetadata(key: string, data: any): void {
@@ -624,6 +632,14 @@ export class GlobalSampleCacheImpl {
       return cached.data;
     }
     return undefined;
+  }
+
+  /**
+   * Get cached metadata (alias for getCachedMetadata)
+   * Used by BassPreloadStrategy and BassLineWidget
+   */
+  getMetadata(key: string): any | undefined {
+    return this.getCachedMetadata(key);
   }
 
   /**
@@ -1152,6 +1168,8 @@ export const GlobalSampleCache = {
     GlobalSampleCacheImpl.getInstance().getCachedInstrument(name),
   getCachedInstrumentNames: () =>
     GlobalSampleCacheImpl.getInstance().getCachedInstrumentNames(),
+  getAllSampleKeys: () =>
+    GlobalSampleCacheImpl.getInstance().getAllSampleKeys(),
   cacheUrl: (path: string, url: string) =>
     GlobalSampleCacheImpl.getInstance().cacheUrl(path, url),
   cacheBuffer: async (
@@ -1180,8 +1198,13 @@ export const GlobalSampleCache = {
   // Performance tracking
   getPerformanceReport: () =>
     GlobalSampleCacheImpl.getInstance().getPerformanceReport(),
-  // Note: these methods don't exist on the implementation - remove them
-  // getAudioBuffer: (url: string) => GlobalSampleCacheImpl.getInstance().getAudioBuffer(url),
-  // cacheAudioBuffer: (url: string, buffer: AudioBuffer) => GlobalSampleCacheImpl.getInstance().cacheAudioBuffer(url, buffer),
-  // clearCache: () => GlobalSampleCacheImpl.getInstance().clearCache(),
+  // Metadata methods for FAANG preload strategies
+  getMetadata: (key: string) =>
+    GlobalSampleCacheImpl.getInstance().getCachedMetadata(key),
+  cacheMetadata: (key: string, data: any) =>
+    GlobalSampleCacheImpl.getInstance().cacheMetadata(key, data),
+  clearMetadata: (key: string) =>
+    GlobalSampleCacheImpl.getInstance().clearMetadata(key),
+  clearAllMetadata: () =>
+    GlobalSampleCacheImpl.getInstance().clearAllMetadata(),
 };

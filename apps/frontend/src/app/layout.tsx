@@ -13,6 +13,11 @@ import { AudioDebugPanel } from '@/shared/debug/AudioDebugger';
 import { HealthStatus } from '@/shared/components/HealthStatus';
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
 import { ThemedLayout } from './_components/ThemedLayout';
+// Phase 5: XState DevTools for visual state machine debugging
+import {
+  XStateDevToolsProvider,
+  XStateDebugPanel,
+} from '@/domains/playback/machines';
 
 const logger = getLogger('app');
 
@@ -44,17 +49,22 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body className={`${inter.className} ${courierPrime.variable}`}>
         <ErrorBoundary>
-          <AudioProvider>
-            {/* Phase 1: PreloadInitializer removed - samples will load on user interaction */}
-            <AuthProviderWrapper>
-              <ReactQueryProvider>
-                <ThemedLayout>{children}</ThemedLayout>
-              </ReactQueryProvider>
-            </AuthProviderWrapper>
-          </AudioProvider>
-          <Toaster />
-          <AudioDebugPanel />
-          <HealthStatus />
+          {/* Phase 5: XState DevTools Provider wraps entire app for state debugging */}
+          <XStateDevToolsProvider showStatus={true}>
+            <AudioProvider>
+              {/* Phase 1: PreloadInitializer removed - samples will load on user interaction */}
+              <AuthProviderWrapper>
+                <ReactQueryProvider>
+                  <ThemedLayout>{children}</ThemedLayout>
+                </ReactQueryProvider>
+              </AuthProviderWrapper>
+            </AudioProvider>
+            <Toaster />
+            <AudioDebugPanel />
+            <HealthStatus />
+            {/* Phase 5: XState Debug Panel - floating UI for quick debugging access */}
+            <XStateDebugPanel position="bottom-left" keyboardShortcut="alt+x" />
+          </XStateDevToolsProvider>
         </ErrorBoundary>
       </body>
     </html>

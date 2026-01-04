@@ -1,0 +1,98 @@
+{
+  "name": "BassMods Finger",
+  "version": "1.0.0",
+  "description": "5-string bass samples recorded with finger technique at forte velocity. 110 total samples covering the full range of a 5-string bass guitar.",
+  "baseUrl": "https://iuuplfrktnzsbzibpfjm.supabase.co/storage/v1/object/public/audio-samples",
+  "technique": "finger",
+  "velocity": "f",
+  "format": {
+    "type": "ogg",
+    "codec": "vorbis",
+    "sampleRate": 32000,
+    "quality": 2
+  },
+  "strings": [
+    {
+      "name": "B",
+      "displayName": "B String (Low)",
+      "openNote": "B0",
+      "openMidiNote": 23,
+      "maxFret": 21,
+      "sampleCount": 22,
+      "noteRange": {
+        "low": "B0",
+        "high": "Gs2",
+        "lowMidi": 23,
+        "highMidi": 44
+      }
+    },
+    {
+      "name": "E",
+      "displayName": "E String",
+      "openNote": "E1",
+      "openMidiNote": 28,
+      "maxFret": 21,
+      "sampleCount": 22,
+      "noteRange": {
+        "low": "E1",
+        "high": "Cs3",
+        "lowMidi": 28,
+        "highMidi": 49
+      }
+    },
+    {
+      "name": "A",
+      "displayName": "A String",
+      "openNote": "A1",
+      "openMidiNote": 33,
+      "maxFret": 21,
+      "sampleCount": 22,
+      "noteRange": {
+        "low": "A1",
+        "high": "Fs3",
+        "lowMidi": 33,
+        "highMidi": 54
+      }
+    },
+    {
+      "name": "D",
+      "displayName": "D String",
+      "openNote": "D2",
+      "openMidiNote": 38,
+      "maxFret": 21,
+      "sampleCount": 22,
+      "noteRange": {
+        "low": "D2",
+        "high": "As3",
+        "lowMidi": 38,
+        "highMidi": 59
+      }
+    },
+    {
+      "name": "G",
+      "displayName": "G String (High)",
+      "openNote": "G2",
+      "openMidiNote": 43,
+      "maxFret": 21,
+      "sampleCount": 22,
+      "noteRange": {
+        "low": "G2",
+        "high": "E4",
+        "lowMidi": 43,
+        "highMidi": 64
+      }
+    }
+  ],
+  "totalSamples": 110,
+  "urlPattern": "{baseUrl}/Bass/BassMods/Fingers-f/{string}%20string/{note}_f_finger_{string}string.ogg",
+  "noteNaming": {
+    "convention": "{NoteName}{Octave}",
+    "sharpSymbol": "s",
+    "examples": ["B0", "Cs1", "E1", "Fs2", "A2", "Ds3"]
+  },
+  "midiRange": {
+    "min": 23,
+    "max": 64,
+    "description": "B0 (MIDI 23) to E4 (MIDI 64)"
+  }
+}

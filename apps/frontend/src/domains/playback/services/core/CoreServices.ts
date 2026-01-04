@@ -19,6 +19,7 @@ import { InstrumentRegistry } from './InstrumentRegistry.js';
 // Phase 3.3: RegionProcessorAdapter deleted - all widgets use PlaybackEngine directly
 import { PlaybackEngine } from './PlaybackEngine.js';
 import { AudioDebugger } from './AudioDebugger.js';
+import { BeatEmitter, getBeatEmitter } from './BeatEmitter.js';
 import { getLogger } from '@/utils/logger.js';
 import { getPreloadableRegistry } from './PreloadableInstrumentRegistry.js';
 import {
@@ -57,6 +58,7 @@ export class CoreServices {
   // Phase 3.2: regionProcessor property removed - RegionProcessor deleted
   private playbackEngine: PlaybackEngine | null = null; // Phase 1 Task 1.4: New PlaybackEngine (feature flag)
   private recoveryHandlers: RecoveryEventHandlers | null = null; // Handles recovery events from ErrorRecoveryRegistry
+  private beatEmitter: BeatEmitter | null = null; // Audio-synchronized beat events via Tone.Draw
   private isInitialized = false;
   private isPreInitialized = false;
   private hasSamplesReadyListener = false; // Track if we've set up the deferred buffer injection listener
@@ -194,23 +196,31 @@ export class CoreServices {
       console.log('[DEBUG-INIT] ✅ audioEngine.initialize() completed!');
       logger.info('CoreServices: AudioEngine fully initialized');
 
-      // Initialize Mixer early so instruments can connect to master bus
-      // The Mixer needs Tone.js to be loaded, which happens after AudioEngine.initialize()
-      logger.info('CoreServices: Initializing Mixer (master bus)...');
-      try {
-        const mixer = Mixer.getInstance();
-        logger.info('CoreServices: Mixer initialized with master bus');
-        console.log('[DEBUG-INIT] ✅ Mixer initialized with master bus');
-      } catch (mixerError) {
-        logger.warn('CoreServices: Failed to initialize Mixer (will initialize on demand)', mixerError);
-      }
-
-      // Initialize service registry (handles dependency order)
+      // Initialize service registry FIRST (handles dependency order)
+      // This ensures EventBus is available for Mixer and other services
       console.log('[DEBUG-INIT] 🔍 About to call registry.initialize()...');
       logger.info('CoreServices: Initializing service registry...');
       await this.registry.initialize();
       console.log('[DEBUG-INIT] ✅ registry.initialize() completed!');
       logger.info('CoreServices: Service registry initialized');
+
+      // Set global registry IMMEDIATELY after initialization
+      // This allows singletons like Mixer to access EventBus via window.__serviceRegistry
+      if (typeof window !== 'undefined') {
+        (window as any).__serviceRegistry = this.registry;
+        logger.debug('CoreServices: Global __serviceRegistry set');
+      }
+
+      // Initialize Mixer AFTER registry so EventBus is available
+      // The Mixer needs Tone.js (from AudioEngine) and EventBus (from registry)
+      logger.info('CoreServices: Initializing Mixer (master bus)...');
+      try {
+        Mixer.getInstance();
+        logger.info('CoreServices: Mixer initialized with master bus');
+        console.log('[DEBUG-INIT] ✅ Mixer initialized with master bus');
+      } catch (mixerError) {
+        logger.warn('CoreServices: Failed to initialize Mixer (will initialize on demand)', mixerError);
+      }
 
       // Initialize RecoveryEventHandlers to wire up recovery strategies from ErrorRecoveryRegistry
       // This fixes the "dead recovery strategies" issue where events were emitted but nobody listened
@@ -284,6 +294,12 @@ export class CoreServices {
           state: this.playbackEngine.getState(),
         });
         logger.info('CoreServices: PlaybackEngine initialized and ready');
+
+        // Initialize BeatEmitter for audio-synchronized visual beat events
+        logger.info('CoreServices: Initializing BeatEmitter...');
+        this.beatEmitter = getBeatEmitter();
+        this.beatEmitter.initialize(this.eventBus);
+        logger.info('CoreServices: BeatEmitter initialized');
       } else if (this.regionProcessor) {
         // Legacy path: Initialize RegionProcessor if PlaybackEngine is disabled
         logger.info('CoreServices: Setting AudioContext on RegionProcessor...');
@@ -366,10 +382,14 @@ export class CoreServices {
         });
 
         if (accentBuffer && clickBuffer && this.playbackEngine) {
+          // Use instrument gain node for volume control
+          const metronomeGainNode = this.playbackEngine.getOrCreateInstrumentGainNode('metronome');
+          const metronomeDestination = metronomeGainNode || audioContext.destination;
+
           this.playbackEngine.setMetronomeBuffers(
             accentBuffer,
             clickBuffer,
-            audioContext.destination,
+            metronomeDestination,
           );
           logger.info(
             '✅ CoreServices: Metronome buffers injected for countdown',
@@ -396,12 +416,16 @@ export class CoreServices {
         });
 
         if (kickBuffer && snareBuffer && hihatBuffer) {
+          // Use instrument gain node for volume control, fallback to destination
+          const drumsGainNode = this.playbackEngine?.getOrCreateInstrumentGainNode('drums');
+          const drumsDestination = drumsGainNode || audioContext.destination;
+
           if (this.regionProcessor) {
             this.regionProcessor.setDrumBuffers(
               kickBuffer,
               snareBuffer,
               hihatBuffer,
-              audioContext.destination,
+              drumsDestination,
             );
           }
           // Inject drum buffers into PlaybackEngine for DrumScheduler
@@ -413,7 +437,7 @@ export class CoreServices {
             };
             this.playbackEngine.setDrumBuffers(
               drumBuffers,
-              audioContext.destination,
+              drumsDestination,
             );
           }
           logger.info(
@@ -690,6 +714,41 @@ export class CoreServices {
         reason: 'samplesReady event received',
       });
 
+      // ✅ FIX: Check if audioEngine is ready before attempting buffer injection
+      // samplesReady often fires before user interaction (before AudioContext is available)
+      if (!this.audioEngine.isReady()) {
+        logger.info('CoreServices: AudioEngine not ready yet - deferring buffer injection until initialization');
+
+        // Set up a one-time listener for when CoreServices is fully initialized
+        let unsubscribe: (() => void) | null = null;
+        const handleInitialized = async () => {
+          // Unsubscribe immediately to simulate "once" behavior
+          if (unsubscribe) {
+            unsubscribe();
+            unsubscribe = null;
+          }
+
+          logger.info('CoreServices: AudioEngine now ready - retrying buffer injection');
+          try {
+            await this.reinjectAllBuffers();
+            lifecycle.checkpoint('BUFFER_REINJECTION_COMPLETE', {
+              success: true,
+            });
+            logger.info('CoreServices: Deferred buffer injection completed successfully');
+          } catch (error) {
+            logger.error('CoreServices: Deferred buffer re-injection failed:', error);
+            lifecycle.checkpoint('BUFFER_REINJECTION_COMPLETE', {
+              success: false,
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
+        };
+
+        // Listen for initialization event (using subscribe which returns unsubscribe function)
+        unsubscribe = this.eventBus.on('core-services:initialized', handleInitialized);
+        return;
+      }
+
       try {
         await this.reinjectAllBuffers();
         lifecycle.checkpoint('BUFFER_REINJECTION_COMPLETE', {
@@ -788,10 +847,14 @@ export class CoreServices {
 
     // Inject metronome buffers
     if (accentBuffer && clickBuffer) {
+      // Use instrument gain node for volume control
+      const metronomeGainNode = this.playbackEngine.getOrCreateInstrumentGainNode('metronome');
+      const metronomeDestination = metronomeGainNode || audioContext.destination;
+
       this.playbackEngine.setMetronomeBuffers(
         accentBuffer,
         clickBuffer,
-        audioContext.destination,
+        metronomeDestination,
       );
       logger.info('✅ CoreServices: Metronome buffers re-injected');
       lifecycle.checkpoint('METRONOME_BUFFERS_INJECTED');
@@ -799,12 +862,16 @@ export class CoreServices {
 
     // Inject drum buffers
     if (kickBuffer && snareBuffer && hihatBuffer) {
+      // Use instrument gain node for volume control
+      const drumsGainNode = this.playbackEngine.getOrCreateInstrumentGainNode('drums');
+      const drumsDestination = drumsGainNode || audioContext.destination;
+
       const drumBuffers: Record<string, AudioBuffer> = {
         kick: kickBuffer,
         snare: snareBuffer,
         hihat: hihatBuffer,
       };
-      this.playbackEngine.setDrumBuffers(drumBuffers, audioContext.destination);
+      this.playbackEngine.setDrumBuffers(drumBuffers, drumsDestination);
       logger.info('✅ CoreServices: Drum buffers re-injected');
       lifecycle.checkpoint('DRUM_BUFFERS_INJECTED');
     } else {
@@ -892,6 +959,13 @@ export class CoreServices {
         logPlaybackEngineMigrationEvent('PlaybackEngine disposed');
       }
 
+      // Dispose BeatEmitter
+      if (this.beatEmitter) {
+        logger.info('CoreServices: Disposing BeatEmitter...');
+        this.beatEmitter.dispose();
+        this.beatEmitter = null;
+      }
+
       await this.registry.dispose();
       this.isInitialized = false;
       this.eventBus.emit('core-services:disposed', {});
@@ -943,6 +1017,10 @@ export class CoreServices {
 
   getInstrumentRegistry(): InstrumentRegistry {
     return this.instrumentRegistry;
+  }
+
+  getBeatEmitter(): BeatEmitter | null {
+    return this.beatEmitter;
   }
 
   /**
@@ -1008,6 +1086,12 @@ export class CoreServices {
           this.playbackEngine.stop(graceful);
         }
 
+        // Stop BeatEmitter (stops audio-synchronized beat events)
+        if (this.beatEmitter) {
+          this.beatEmitter.stop();
+          logger.info('BeatEmitter stopped');
+        }
+
         // CRITICAL FIX: Stop AudioEventRouter (prevents new triggers from being routed)
         await this.audioEventRouter.stop();
         logger.info('AudioEventRouter stopped');
@@ -1019,7 +1103,25 @@ export class CoreServices {
       },
     );
 
-    // Listen for transport start to restart audio components
+    // Listen for playback:starting to configure and start BeatEmitter
+    // BeatEmitter calculates beat position from Transport.seconds for jitter-free timing
+    this.eventBus.on('playback:starting', () => {
+      if (this.beatEmitter && this.playbackEngine) {
+        const countdownBeats = this.playbackEngine.getCountdownConfig().beats;
+        this.beatEmitter.configure({
+          countdownBeats,
+          beatsPerMeasure: 4, // Default 4/4 time
+        });
+        this.beatEmitter.start();
+        logger.info('BeatEmitter started', { countdownBeats });
+      } else if (this.beatEmitter) {
+        // Fallback if PlaybackEngine not available
+        this.beatEmitter.start();
+        logger.info('BeatEmitter started (no countdown config)');
+      }
+    });
+
+    // Listen for transport start to restart other audio components
     // This ensures second/third/etc playback rounds work the same as first playback
     this.eventBus.on('transport:start', async () => {
       logger.info('Transport starting, restarting audio components');

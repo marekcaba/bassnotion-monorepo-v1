@@ -130,12 +130,19 @@ export const STANDARD_KIT: DrumKitManifest = {
     v4: { min: 77, max: 102, label: 'Loud' },
     v5: { min: 103, max: 127, label: 'Accent' },
   },
-  fallbackKit: 'drums/hydrogen-kits/colombo-acoustic',
+  fallbackKit: 'drums/admin-samples/Default kit',
 };
 
 // Export kit paths for easy access
 export const DEFAULT_KIT_PATH = STANDARD_KIT.basePath;
-export const FALLBACK_KIT_PATH = STANDARD_KIT.fallbackKit || 'drums/hydrogen-kits/colombo-acoustic';
+export const FALLBACK_KIT_PATH = STANDARD_KIT.fallbackKit || 'drums/admin-samples/Default kit';
+
+// New sample file mappings for the admin-uploaded default kit
+export const DEFAULT_KIT_SAMPLES = {
+  kick: 'Kick1.wav',
+  snare: 'Snare1.wav',
+  hihat: 'Hihat1_closed.wav',
+} as const;
 
 // Re-export types
 export type { DrumKitManifest, DrumPiece, VelocityLayer } from './types.js';

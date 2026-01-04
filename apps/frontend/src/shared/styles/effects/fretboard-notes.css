@@ -1,0 +1,424 @@
+/**
+ * Fretboard Note Sync CSS States
+ *
+ * These classes are toggled directly via DOM classList operations
+ * by useFretboardNoteSync hook for jitter-free visual updates.
+ *
+ * The direct DOM approach bypasses React's batched state updates
+ * to achieve sub-16ms visual precision needed for musical accuracy.
+ *
+ * Visual States:
+ * - note-active: Currently playing note (bright highlight with pulse)
+ * - note-preview: Next note to be played (subtle glow indication)
+ * - note-played: Already played in current measure (dimmed)
+ */
+
+/* =============================================================================
+   NOTE STATE CLASSES - Direct DOM Sync
+   ============================================================================= */
+
+/**
+ * Currently Active Note
+ * Full highlight with outer glow and bright ring
+ * This is the note that's being played RIGHT NOW
+ */
+.note-active {
+  /* Yellow ring with 4px outer glow */
+  box-shadow:
+    0 0 0 1px rgba(250, 204, 21, 0.9),
+    0 0 4px 1px rgba(250, 204, 21, 0.5) !important;
+
+  /* Slight scale-up for emphasis */
+  transform: scale(1.1) rotateX(0deg) !important;
+
+  /* Smooth transition for entering active state */
+  transition:
+    box-shadow 50ms ease-out,
+    transform 50ms ease-out !important;
+
+  /* CSS VARIABLE OPACITY: Active notes always fully visible (ignore measure opacity) */
+  /* Uses fade opacity from React for edge fading, but forces measure opacity to 1 */
+  --measure-opacity: 1;
+  opacity: calc(var(--fade-opacity, 1) * 1) !important;
+  z-index: 30 !important;
+}
+
+/**
+ * Preview Note (Next to Play)
+ * NO glow - just normal appearance to indicate which note is coming up
+ */
+.note-preview {
+  /* No glow - keep the dot's existing shadow */
+
+  /* CSS VARIABLE OPACITY: Preview notes fully visible (respects fade only) */
+  opacity: calc(var(--fade-opacity, 1) * 1) !important;
+
+  /* Layer below active but above played */
+  z-index: 25 !important;
+}
+
+/**
+ * Played Note (Already Triggered in Current Measure)
+ *
+ * SINGLE-LAYER ARCHITECTURE: When a note is played, setDotPlayed() switches it to
+ * .note-other-measure which turns the dot GREY (visible, same as non-exercise dots).
+ *
+ * This .note-played class is kept for:
+ * 1. State tracking (queries like "find all played dots")
+ * 2. Explicit played state identification
+ *
+ * The grey styling is done by .note-other-measure CSS class.
+ */
+.note-played {
+  /* Grey styling is handled by .note-other-measure class (applied by setDotPlayed) */
+  /* This class just marks the played state for queries/debugging */
+
+  /* Instant state change - no transition */
+  transition: none !important;
+}
+
+/**
+ * Played Note on Fret Marker Position (3,5,7,9,12,15,17,19,21,24)
+ *
+ * SINGLE-LAYER: Played notes show as grey regardless of fret marker position.
+ */
+.note-played.fret-marker {
+  /* SINGLE-LAYER: Grey via .note-other-measure */
+}
+
+/**
+ * Played Note But Same Position Exists in Next Measure (GREEN)
+ * Shows at 30% opacity with GREEN color (for odd 0-based measures: 0, 2, 4...)
+ */
+.note-played-next-measure-green {
+  /* Green background for next measure preview */
+  background-color: rgb(34, 197, 94) !important; /* Tailwind green-500 */
+
+  /* CSS VARIABLE OPACITY: 30% measure opacity × fade opacity */
+  --measure-opacity: 0.3;
+  opacity: calc(var(--fade-opacity, 1) * 0.3) !important;
+
+  /* Keep z-index below active but above regular */
+  z-index: 20 !important;
+
+  /* Quick transition */
+  transition:
+    opacity 100ms ease-out,
+    background-color 100ms ease-out !important;
+}
+
+/**
+ * Played Note But Same Position Exists in Next Measure (ORANGE)
+ * Shows at 30% opacity with ORANGE color (for even 0-based measures: 1, 3, 5...)
+ */
+.note-played-next-measure-orange {
+  /* Orange background for next measure preview */
+  background-color: rgb(249, 115, 22) !important; /* Tailwind orange-500 */
+
+  /* CSS VARIABLE OPACITY: 30% measure opacity × fade opacity */
+  --measure-opacity: 0.3;
+  opacity: calc(var(--fade-opacity, 1) * 0.3) !important;
+
+  /* Keep z-index below active but above regular */
+  z-index: 20 !important;
+
+  /* Quick transition */
+  transition:
+    opacity 100ms ease-out,
+    background-color 100ms ease-out !important;
+}
+
+/* =============================================================================
+   COMBINATION STATES - Priority Handling
+   ============================================================================= */
+
+/**
+ * When a note is both active AND in preview position (edge case during fast playback)
+ * Active takes full precedence
+ */
+.note-active.note-preview {
+  /* Active state wins - fully visible (respects fade only) */
+  --measure-opacity: 1;
+  opacity: calc(var(--fade-opacity, 1) * 1) !important;
+}
+
+/**
+ * When a note is marked as played but also preview for next occurrence
+ * Preview takes precedence to show anticipation - restore highlight color
+ */
+.note-played.note-preview {
+  /* Preview styling overrides played - remove the grey override */
+  background-color: inherit !important; /* Let the React-controlled color show through */
+  /* 85% opacity × fade opacity */
+  opacity: calc(var(--fade-opacity, 1) * 0.85) !important;
+  filter: none !important;
+}
+
+/* =============================================================================
+   CSS VARIABLE-BASED OPACITY SYSTEM
+   =============================================================================
+
+   ARCHITECTURE: Two CSS variables combine to create final opacity:
+
+   1. --fade-opacity (0-1): Set by React inline style for scroll-based edge fading
+      - Fades dots at viewport edges during horizontal scroll
+      - Default: 1 (fully visible)
+
+   2. --measure-opacity (0-1): Set by useFretboardNoteSync at 60fps
+      - Controls measure-based preview opacity (current=1, next=0.3)
+      - Default: 1 (fully visible)
+
+   FINAL OPACITY = --fade-opacity × --measure-opacity
+
+   This architecture:
+   - Eliminates collision between React inline styles and CSS classes
+   - Provides 60fps measure-based updates (bypasses React batching)
+   - Preserves scroll-based edge fading from React
+   - Uses calc() to multiply both opacities together
+
+   OPACITY RULES (SINGLE-LAYER ARCHITECTURE):
+   - Current measure: --measure-opacity: 1 → 100% × fade (highlighted green/orange)
+   - Next measure: --measure-opacity: 0.3 → 30% × fade (highlighted preview)
+   - Other measures: --measure-opacity: 1 → 100% × fade (GREY - visible)
+
+   ANIMATION STATE PRIORITY (highest to lowest):
+   1. .note-active (currently playing) - always 100% (ignores measure opacity)
+   2. .note-played + .note-other-measure (already played) - GREY (visible, 100% opacity)
+   3. .note-played-next-measure-* (played but exists in next) - 30%
+   4. .note-current-measure (upcoming in current measure) - 100%
+   5. .note-next-measure (preview for next measure) - 30%
+   ============================================================================= */
+
+/**
+ * Base opacity rule for all note dots
+ * Uses CSS variables set by React (--fade-opacity) and useFretboardNoteSync (--measure-opacity)
+ * The calc() multiplies them together for combined effect
+ */
+[class*="note-"] {
+  /* Default both variables to 1 for dots without explicit values */
+  --fade-opacity: 1;
+  --measure-opacity: 1;
+}
+
+/**
+ * CRITICAL FIX: Base rule for fretboard dots that uses CSS variables
+ *
+ * PROBLEM: React re-renders overwrite the className attribute, stripping
+ * measure classes (note-next-measure, etc.) added by useFretboardNoteSync.
+ * Without those classes, there's no CSS rule applying the calc() opacity.
+ *
+ * SOLUTION: This rule targets all .fretboard-dot elements and applies
+ * opacity: calc(--fade-opacity * --measure-opacity). Since --measure-opacity
+ * is set via element.style.setProperty() (inline style), it persists across
+ * React re-renders and this rule applies it to actual opacity.
+ *
+ * The specific measure classes (note-current-measure, note-next-measure, etc.)
+ * can still override this with their own !important rules when present.
+ */
+.fretboard-dot {
+  /* Apply CSS variable-based opacity even without measure classes */
+  /* --fade-opacity: set by React for edge fading */
+  /* --measure-opacity: set by useFretboardNoteSync via inline style */
+  opacity: calc(var(--fade-opacity, 1) * var(--measure-opacity, 1));
+}
+
+/**
+ * Notes in current measure (not yet played)
+ * Full measure opacity (100%) with highlight color (green/orange from React)
+ * Applied by useFretboardNoteSync when note's measure === currentMeasure
+ */
+.note-current-measure {
+  /* Full visibility for current measure notes */
+  --measure-opacity: 1;
+  /* Final opacity combines fade and measure */
+  opacity: calc(var(--fade-opacity, 1) * var(--measure-opacity, 1)) !important;
+  /* Instant state changes - no transitions to avoid flicker */
+  transition: none !important;
+}
+
+/**
+ * Notes in next measure (30% preview)
+ * Applied by useFretboardNoteSync when note's measure === currentMeasure + 1
+ */
+.note-next-measure {
+  /* Preview opacity for next measure notes */
+  --measure-opacity: 0.3;
+  /* Final opacity combines fade and measure */
+  opacity: calc(var(--fade-opacity, 1) * var(--measure-opacity, 1)) !important;
+  /* Instant state changes - no transitions to avoid flicker */
+  transition: none !important;
+}
+
+/**
+ * FIRST note of next measure (transition target - 100% opacity)
+ * Applied by useFretboardNoteSync to the chronologically first note in next measure.
+ * This ensures the upcoming note is fully visible from the start of the current measure,
+ * providing visual anticipation for the player.
+ */
+.note-next-measure-first {
+  /* Full visibility for the transition target note */
+  --measure-opacity: 1;
+  /* Final opacity combines fade and measure */
+  opacity: calc(var(--fade-opacity, 1) * 1) !important;
+  /* Instant state changes - no transitions to avoid flicker */
+  transition: none !important;
+}
+
+/**
+ * Notes in OTHER measures (not current, not next)
+ * These dots are shown as GREY (unhighlighted) - they look like static fretboard dots.
+ * Applied by useFretboardNoteSync when note's measure !== currentMeasure AND !== nextMeasure
+ *
+ * SINGLE-LAYER ARCHITECTURE: All dots are in one layer.
+ * - Current/next measure dots: highlighted (green/orange)
+ * - Other measure dots: grey (same as non-exercise dots)
+ * - Played dots: grey (transitioned from highlighted to grey)
+ */
+.note-other-measure {
+  /* Grey background - looks like static fretboard dot */
+  background-color: rgb(71, 85, 105) !important; /* Tailwind slate-600 */
+  /* Full visibility - NOT hidden */
+  --measure-opacity: 1;
+  opacity: calc(var(--fade-opacity, 1) * 1) !important;
+  /* Instant state changes - no transitions to avoid flicker */
+  transition: none !important;
+}
+
+/**
+ * Fret marker positions (3,5,7,9,12,15,17,19,21,24) in other measures
+ * These return to the LIGHTER grey (slate-500) that marks special frets,
+ * not the standard slate-600 grey used for regular dots.
+ */
+.note-other-measure.fret-marker {
+  /* Lighter grey for fret markers - matches their original styling */
+  background-color: rgb(100, 116, 139) !important; /* Tailwind slate-500 */
+}
+
+/**
+ * When note-active is applied, it always takes precedence (100% opacity)
+ * Active notes ignore measure-based opacity - always fully visible
+ */
+.note-active.note-next-measure,
+.note-active.note-current-measure {
+  --measure-opacity: 1;
+  opacity: calc(var(--fade-opacity, 1) * 1) !important;
+}
+
+/**
+ * When note-played is applied to a current-measure note
+ * Grey color, full opacity (measure opacity = 1)
+ */
+.note-played.note-current-measure {
+  --measure-opacity: 1;
+  opacity: calc(var(--fade-opacity, 1) * 1) !important;
+}
+
+/**
+ * Transition target note (first note of next measure that's in preview state)
+ * Still shows at 30% measure opacity to maintain visual consistency
+ */
+.note-next-measure.note-preview {
+  /* Preview notes in next measure keep 30% measure opacity */
+  --measure-opacity: 0.3;
+  opacity: calc(var(--fade-opacity, 1) * 0.3) !important;
+}
+
+/* =============================================================================
+   CONNECTION LINE STATES - Dot-to-Dot Dismissal
+   ============================================================================= */
+
+/**
+ * Connection Line Base
+ * Applied to all SVG connection lines between notes
+ */
+.connection-line {
+  /* GPU acceleration for smooth opacity transitions */
+  will-change: opacity;
+}
+
+/**
+ * Played Connection Line
+ * When the source note of a line has been played, the line should hide.
+ * This class is added/removed by useFretboardNoteSync via direct DOM manipulation.
+ */
+.line-played {
+  /* Instant hide - no transition to avoid visual artifacts */
+  opacity: 0 !important;
+
+  /* FLICKER FIX v9: Disabled transition for instant state changes */
+  /* Previously 100ms transition caused intermediate opacity values */
+  transition: none !important;
+
+  /* Don't block pointer events when hidden */
+  pointer-events: none;
+}
+
+/**
+ * Clean up will-change when not playing (applied via parent class)
+ */
+.playback-stopped .connection-line {
+  will-change: auto;
+}
+
+/* =============================================================================
+   ANIMATION KEYFRAMES - REMOVED
+   ============================================================================= */
+
+/*
+ * Note: Pulse animation keyframes have been removed.
+ *
+ * The FretboardCard now uses static highlight only (yellow ring, no pulsing)
+ * to avoid animation collisions between:
+ * - Tailwind animate-pulse (removed from FretboardDot.tsx)
+ * - CSS keyframe animations (removed here)
+ * - Direct DOM transitions via useFretboardNoteSync
+ *
+ * All playback-related animations are now handled solely through CSS classes
+ * toggled by useFretboardNoteSync for jitter-free 60fps performance.
+ */
+
+/* =============================================================================
+   PERFORMANCE OPTIMIZATIONS
+   ============================================================================= */
+
+/**
+ * Hint to browser that these elements will be animated
+ * Helps with compositing layer creation
+ */
+[class*="note-"] {
+  will-change: transform, opacity, box-shadow;
+}
+
+/**
+ * Clean up will-change when not playing
+ * Prevents memory overhead when idle
+ */
+.playback-stopped [class*="note-"] {
+  will-change: auto;
+}
+
+/* =============================================================================
+   DARK MODE ADJUSTMENTS
+   ============================================================================= */
+
+.dark .note-active {
+  /* Yellow ring with 4px outer glow - slightly brighter for dark mode */
+  box-shadow:
+    0 0 0 1px rgba(253, 224, 71, 0.95),
+    0 0 4px 1px rgba(253, 224, 71, 0.6) !important;
+}
+
+/* .note-preview has no glow in dark mode either */
+
+/**
+ * SINGLE-LAYER: Dark mode variants for .note-played are no longer needed.
+ * The .note-other-measure class styles dots as grey for all modes.
+ * Kept for backwards compatibility but does nothing.
+ */
+.dark .note-played {
+  /* SINGLE-LAYER: Grey via .note-other-measure */
+}
+
+.dark .note-played.fret-marker {
+  /* SINGLE-LAYER: Grey via .note-other-measure */
+}

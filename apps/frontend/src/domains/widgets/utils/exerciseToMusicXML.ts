@@ -18,13 +18,38 @@ interface ExerciseToMusicXMLOptions {
   totalBars?: number; // Total number of measures to render (if not provided, inferred from notes)
 }
 
-interface TimelineItem {
+/**
+ * A single item in the quantized timeline (note or rest)
+ * Used internally for MusicXML generation and exported for fretboard sync
+ */
+export interface TimelineItem {
   type: 'note' | 'rest';
   note?: ExerciseNote;
   duration: string;
   startBeat: number;
   /** Quantized duration in quarter notes (for sheet music rendering) */
   quantizedDuration?: number;
+}
+
+/**
+ * A timeline entry with absolute time in seconds
+ * Used by useFretboardNoteSync for precise visual synchronization
+ */
+export interface QuantizedTimelineEntry {
+  /** Type of entry - 'note' shows highlight, 'rest' clears highlight */
+  type: 'note' | 'rest';
+  /** Start time in seconds (includes countdown offset) */
+  startTime: number;
+  /** End time in seconds (when this entry ends, not when next starts) */
+  endTime: number;
+  /** Original note data (undefined for rests) */
+  note?: ExerciseNote;
+  /** Index of the note in the original exercise notes array (-1 for rests) */
+  noteIndex: number;
+  /** 0-based measure this entry belongs to */
+  measure: number;
+  /** Duration in quarter notes (quantized to 16th notes) */
+  durationBeats: number;
 }
 
 /**
@@ -284,7 +309,7 @@ function fillMeasureWithRests(
 
     if (index < notePositions.length - 1) {
       // There's a next note - duration is until that note starts
-      const nextNoteStart = notePositions[index + 1].startBeat;
+      const nextNoteStart = notePositions[index + 1]?.startBeat ?? beatsPerMeasure;
       displayDuration = nextNoteStart - noteBeat;
     } else {
       // Last note in measure - duration extends to end of measure
@@ -857,3 +882,131 @@ ${measuresXML}
 
   return musicXML;
 }
+
+// ============================================================================
+// QUANTIZED TIMELINE FOR FRETBOARD NOTE SYNC
+// ============================================================================
+
+/**
+ * Options for building a quantized timeline
+ */
+export interface BuildQuantizedTimelineOptions {
+  /** Exercise notes array */
+  notes: ExerciseNote[];
+  /** Tempo in BPM */
+  bpm: number;
+  /** Time signature (defaults to 4/4) */
+  timeSignature?: TimeSignature;
+  /** Number of countdown beats before exercise starts (defaults to 4) */
+  countdownBeats?: number;
+  /** Total number of measures (optional, inferred from notes if not provided) */
+  totalBars?: number;
+}
+
+/**
+ * Builds a flat quantized timeline with absolute times in seconds.
+ *
+ * This function creates a timeline where:
+ * 1. All notes are quantized to 16th note grid (0.25 beats)
+ * 2. Gaps between notes become explicit rest entries
+ * 3. Each entry has absolute start/end times in seconds
+ * 4. No entries overlap - they form a continuous sequence
+ *
+ * The timeline is used by useFretboardNoteSync for jitter-free visual sync:
+ * - During 'note' entries: the corresponding note is highlighted
+ * - During 'rest' entries: no note is highlighted
+ *
+ * @param options - Configuration including notes, tempo, time signature
+ * @returns Array of QuantizedTimelineEntry sorted by startTime
+ *
+ * @example
+ * ```ts
+ * const timeline = buildQuantizedTimeline({
+ *   notes: exercise.notes,
+ *   bpm: 120,
+ *   timeSignature: { numerator: 4, denominator: 4 },
+ *   countdownBeats: 4,
+ * });
+ *
+ * // Result: [
+ * //   { type: 'note', startTime: 2.0, endTime: 2.5, noteIndex: 0, ... },
+ * //   { type: 'rest', startTime: 2.5, endTime: 3.0, noteIndex: -1, ... },
+ * //   { type: 'note', startTime: 3.0, endTime: 3.5, noteIndex: 1, ... },
+ * //   ...
+ * // ]
+ * ```
+ */
+export function buildQuantizedTimeline(
+  options: BuildQuantizedTimelineOptions,
+): QuantizedTimelineEntry[] {
+  const {
+    notes,
+    bpm,
+    timeSignature = { numerator: 4, denominator: 4 },
+    countdownBeats = 4,
+    totalBars,
+  } = options;
+
+  if (notes.length === 0) return [];
+
+  // Calculate timing constants
+  const secondsPerBeat = 60 / bpm;
+  const beatsPerMeasure = timeSignature.numerator;
+  const secondsPerMeasure = secondsPerBeat * beatsPerMeasure;
+
+  // Countdown offset (notes are scheduled AFTER countdown)
+  const countdownOffsetSeconds = countdownBeats * secondsPerBeat;
+
+  // Step 1: Organize notes into measures using existing function
+  const measures = organizeNotesIntoMeasures(notes, timeSignature, totalBars);
+
+  // Step 2: Process each measure to create timeline with rests
+  const timeline: QuantizedTimelineEntry[] = [];
+
+  // Build a map from note object to original index for lookup
+  const noteToIndexMap = new Map<ExerciseNote, number>();
+  notes.forEach((note, index) => {
+    noteToIndexMap.set(note, index);
+  });
+
+  measures.forEach((measureNotes, measureIndex) => {
+    // Use fillMeasureWithRests to get quantized timeline items
+    const measureTimeline = fillMeasureWithRests(measureNotes, beatsPerMeasure);
+
+    // Convert measure-relative items to absolute time entries
+    measureTimeline.forEach((item) => {
+      // Calculate absolute time
+      const measureStartTime =
+        countdownOffsetSeconds + measureIndex * secondsPerMeasure;
+      const startTime = measureStartTime + item.startBeat * secondsPerBeat;
+
+      // Use quantizedDuration for accurate duration (already in quarter notes)
+      const durationBeats = item.quantizedDuration ?? 1;
+      const endTime = startTime + durationBeats * secondsPerBeat;
+
+      // Find original note index (-1 for rests)
+      let noteIndex = -1;
+      if (item.type === 'note' && item.note) {
+        noteIndex = noteToIndexMap.get(item.note) ?? -1;
+      }
+
+      timeline.push({
+        type: item.type,
+        startTime,
+        endTime,
+        note: item.note,
+        noteIndex,
+        measure: measureIndex,
+        durationBeats,
+      });
+    });
+  });
+
+  // Sort by start time (should already be sorted, but ensure it)
+  timeline.sort((a, b) => a.startTime - b.startTime);
+
+  return timeline;
+}
+
+// Export helper functions for external use
+export { organizeNotesIntoMeasures, fillMeasureWithRests };

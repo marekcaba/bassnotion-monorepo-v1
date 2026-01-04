@@ -662,7 +662,7 @@ export async function registerExistingPlugins(
   // Load all plugin modules
   const loadedModules = await Promise.all(pluginModules);
 
-  // Register each plugin
+  // Register each plugin with idempotent check (safe for React StrictMode double mount)
   for (const module of loadedModules) {
     // Each module should export a default plugin class
     const PluginClass =
@@ -676,6 +676,20 @@ export async function registerExistingPlugins(
       try {
         const plugin = new PluginClass();
         if (plugin) {
+          const pluginId = (plugin as AudioPlugin).metadata?.id;
+
+          // Check if already registered (idempotent - prevents duplicate registration warnings)
+          if (pluginId) {
+            try {
+              pluginManager.getPlugin(pluginId);
+              // Plugin already registered, skip silently
+              logger.debug(`Plugin ${pluginId} already registered, skipping`);
+              continue;
+            } catch {
+              // Plugin not found - proceed with registration
+            }
+          }
+
           await pluginManager.register(plugin as AudioPlugin);
         }
       } catch (error) {

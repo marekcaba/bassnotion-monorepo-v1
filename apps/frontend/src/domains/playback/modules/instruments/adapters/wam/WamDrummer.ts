@@ -28,7 +28,6 @@ import type {
 } from '../../../../types/wam.js';
 import { GlobalSampleCache } from '../../../storage/cache/GlobalSampleCache.js';
 import { createStructuredLogger } from '../../../shared/index.js';
-import { DEFAULT_KIT_PATH, FALLBACK_KIT_PATH } from '@/domains/playback/data/drums/index.js';
 
 // MIDI note mapping for 16 pads (following MPC-style layout)
 const PAD_MIDI_NOTES = {
@@ -782,10 +781,14 @@ export default class WamDrummer implements Partial<WebAudioModule> {
   async loadDefaultKit(): Promise<void> {
     if (!this.drummerNode) return;
 
+    // Default kit samples - direct URLs to admin-uploaded samples
+    const DEFAULT_KIT_BASE =
+      'https://iuuplfrktnzsbzibpfjm.supabase.co/storage/v1/object/public/audio-samples/drums/admin-samples/Default%20kit';
+
     const samples = [
-      { pad: 1, file: 'kick-v1.wav' }, // Kick
-      { pad: 3, file: 'snare-v1.wav' }, // Snare
-      { pad: 5, file: 'hihat-v1.wav' }, // Closed HH
+      { pad: 1, name: 'Kick', file: 'Kick1.wav' },
+      { pad: 3, name: 'Snare', file: 'Snare1.wav' },
+      { pad: 5, name: 'HiHat', file: 'Hihat1_closed.wav' },
     ];
 
     for (const sample of samples) {
@@ -793,38 +796,10 @@ export default class WamDrummer implements Partial<WebAudioModule> {
       let url = GlobalSampleCache.getCachedUrl(`drum-pad-${sample.pad}`);
 
       if (!url) {
-        // Fallback to Supabase if not cached
-        // Try standard kit structure first, then fallback to hydrogen kit
-        const { supabase } = await import('@/infrastructure/supabase/client');
-        const drumKey = sample.file.replace('-v1.wav', '');
-
-        // Try standard kit structure: {basePath}/{drum}/{drum}-v1.wav
-        let fullPath = `${DEFAULT_KIT_PATH}/${drumKey}/${sample.file}`;
-        let urlResult = supabase.storage
-          .from('audio-samples')
-          .getPublicUrl(fullPath).data.publicUrl;
-
-        // Check if file exists, if not use fallback
-        try {
-          const testResponse = await fetch(urlResult, { method: 'HEAD' });
-          if (!testResponse.ok && FALLBACK_KIT_PATH) {
-            // Use fallback hydrogen kit structure
-            fullPath = `${FALLBACK_KIT_PATH}/${sample.file}`;
-            urlResult = supabase.storage
-              .from('audio-samples')
-              .getPublicUrl(fullPath).data.publicUrl;
-          }
-        } catch {
-          // On error, use fallback
-          fullPath = `${FALLBACK_KIT_PATH}/${sample.file}`;
-          urlResult = supabase.storage
-            .from('audio-samples')
-            .getPublicUrl(fullPath).data.publicUrl;
-        }
-
-        url = urlResult;
+        // Use direct URL to admin-uploaded samples
+        url = `${DEFAULT_KIT_BASE}/${sample.file}`;
       } else {
-        logger.info(`♻️ Using cached URL for pad ${sample.pad}`);
+        logger.info(`♻️ Using cached URL for pad ${sample.pad} (${sample.name})`);
       }
 
       if (url) {

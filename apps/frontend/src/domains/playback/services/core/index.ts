@@ -27,6 +27,10 @@ export { TransportAdapter as UnifiedTransport } from './TransportAdapter.js'; //
 export { TransportSyncManager } from './TransportSyncManager.js';
 export { PluginManager, registerExistingPlugins } from './PluginManager.js';
 
+// BeatEmitter - Audio-synchronized visual beat events via Tone.Draw
+export { BeatEmitter, getBeatEmitter } from './BeatEmitter.js';
+export type { BeatEvent, BeatEmitterConfig } from './BeatEmitter.js';
+
 // Story 3.21 services
 // Note: TrackManager is implemented as EnhancedTrackManagerProcessor in plugins directory
 export { Track } from './Track.js';

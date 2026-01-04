@@ -27,12 +27,13 @@ export class TimingMetricsCollector {
     avgJitter: 0,
     perfectFrames: 0,
     lastBeatTime: 0,
-    expectedFrameInterval: 24000, // 0.5s at 48kHz
+    expectedFrameInterval: 24000, // 0.5s at 48kHz (default 120 BPM)
   };
 
   private metricsInterval: any = null;
-  private sampleRate: number = 48000;
-  private transportStartTime: number = 0;
+  private sampleRate = 48000;
+  private transportStartTime = 0;
+  private currentTempo = 120; // Default tempo in BPM
 
   constructor() {
     // Empty constructor
@@ -53,28 +54,67 @@ export class TimingMetricsCollector {
   }
 
   /**
+   * Set tempo (BPM) for timing calculations
+   *
+   * This recalculates expectedFrameInterval based on the actual exercise tempo.
+   * Without this, the collector assumes 120 BPM which causes massive jitter
+   * calculations when the exercise uses a different tempo (e.g., 69 BPM).
+   *
+   * Formula: expectedFrameInterval = sampleRate / (bpm / 60)
+   * - At 120 BPM: 48000 / (120/60) = 48000 / 2 = 24000 frames/beat
+   * - At 69 BPM: 48000 / (69/60) = 48000 / 1.15 = 41739 frames/beat
+   *
+   * @param bpm - Tempo in beats per minute
+   */
+  setTempo(bpm: number): void {
+    if (bpm <= 0) {
+      logger.warn('Invalid tempo provided, using default 120 BPM', { bpm });
+      bpm = 120;
+    }
+
+    this.currentTempo = bpm;
+
+    // Calculate frames per beat: sampleRate / (bpm / 60) = sampleRate * 60 / bpm
+    const beatsPerSecond = bpm / 60;
+    this.metrics.expectedFrameInterval = Math.round(
+      this.sampleRate / beatsPerSecond,
+    );
+
+    logger.info('[TimingMetricsCollector] Tempo set', {
+      bpm,
+      expectedFrameInterval: this.metrics.expectedFrameInterval,
+      sampleRate: this.sampleRate,
+      framesPerBeat: this.metrics.expectedFrameInterval,
+    });
+  }
+
+  /**
    * Track timing accuracy for a scheduled event
-   * @param frame - Target frame number for the event
-   * @param transportTime - Transport time in beats
+   * @param frame - Target frame number for the event (absolute AudioContext frame)
+   * @param transportTime - Transport time in SECONDS (not beats!)
    */
   track(frame: number, transportTime: number): void {
     this.metrics.totalEvents++;
 
-    // Calculate expected frame based on beat number (0, 0.5, 1, 1.5...)
-    // Assuming 120 BPM = 2 beats/sec = 0.5sec/beat = 24000 frames/beat at 48kHz
-    const expectedBeatNumber = Math.round(transportTime * 2); // 0→0, 0.5→1, 1.0→2, etc
-    const expectedFrame = Math.round(
-      expectedBeatNumber * this.metrics.expectedFrameInterval,
+    // transportTime is in SECONDS, not beats!
+    // Convert to expected frame directly: expectedFrame = transportTime * sampleRate
+    // This gives us the frame offset from transport start (t=0)
+    const expectedFrameFromTransportStart = Math.round(
+      transportTime * this.sampleRate,
     );
 
-    // Calculate actual frame offset from first beat
-    const firstBeatFrame = Math.round(
+    // The actual frame passed is an absolute AudioContext frame
+    // We need to convert it to frame-from-transport-start for comparison
+    const transportStartFrame = Math.round(
       this.transportStartTime * this.sampleRate,
     );
-    const frameFromStart = frame - firstBeatFrame;
+    const actualFrameFromTransportStart = frame - transportStartFrame;
 
-    // Calculate jitter (deviation from expected grid)
-    const jitterFrames = Math.abs(frameFromStart - expectedFrame);
+    // Calculate jitter (deviation from expected position)
+    // Both values are now in "frames from transport start" for apples-to-apples comparison
+    const jitterFrames = Math.abs(
+      actualFrameFromTransportStart - expectedFrameFromTransportStart,
+    );
     const jitterMs = (jitterFrames / this.sampleRate) * 1000;
 
     // Track perfect frames (within 1 frame tolerance)
@@ -146,8 +186,16 @@ export class TimingMetricsCollector {
 
   /**
    * Reset timing metrics
+   *
+   * Preserves the current tempo setting to maintain correct expectedFrameInterval.
+   * If tempo was previously set, the expectedFrameInterval will be recalculated
+   * based on that tempo rather than resetting to the default 120 BPM.
    */
   reset(): void {
+    // Preserve the current expectedFrameInterval based on the set tempo
+    // instead of resetting to hardcoded 24000 (120 BPM)
+    const preservedInterval = this.metrics.expectedFrameInterval;
+
     this.metrics = {
       totalEvents: 0,
       frameDeltas: [],
@@ -155,8 +203,13 @@ export class TimingMetricsCollector {
       avgJitter: 0,
       perfectFrames: 0,
       lastBeatTime: 0,
-      expectedFrameInterval: 24000,
+      expectedFrameInterval: preservedInterval,
     };
+
+    logger.debug('[TimingMetricsCollector] Reset with preserved tempo', {
+      preservedTempo: this.currentTempo,
+      expectedFrameInterval: preservedInterval,
+    });
   }
 
   /**

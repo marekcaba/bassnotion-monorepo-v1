@@ -600,8 +600,10 @@ export class HarmonySchedulerV2 {
       totalSources: mapSnapshot.length,
     });
 
-    if (this.scheduledAudioSources.size === 0) {
-      console.error('[🚨 STOP PROBLEM 🚨] Map is EMPTY at stop time!', {
+    // If map is empty but we have active sources, that's a real problem (instance mismatch)
+    // If both are empty, it's normal - playback ended naturally or was never started
+    if (this.scheduledAudioSources.size === 0 && this.activeHarmonySources.size > 0) {
+      console.error('[🚨 STOP PROBLEM 🚨] scheduledAudioSources is EMPTY but activeHarmonySources has content!', {
         instanceId: this.instanceId,
         activeHarmonySources: this.activeHarmonySources.size,
         message: 'Sources were removed from Map before stopAll() was called!',

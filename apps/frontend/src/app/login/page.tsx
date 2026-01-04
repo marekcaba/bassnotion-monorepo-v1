@@ -24,11 +24,26 @@ function LoginPageContent() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const searchParams = useSearchParams();
   const message = searchParams.get('message');
+  const reason = searchParams.get('reason');
 
-  const { setUser, setSession } = useAuth();
-  const { redirectAfterAuth } = useAuthRedirect();
+  const { setUser, setSession, isAuthenticated, isReady } = useAuth();
+  const { redirectAfterAuth, redirectToDashboard } = useAuthRedirect();
   const { toast } = useToast();
   const { logger } = useCorrelation('LoginPage');
+
+  // Redirect authenticated users to dashboard (unless they were redirected here for a reason)
+  useEffect(() => {
+    // Skip redirect if user was sent here due to idle timeout or other explicit reasons
+    if (reason === 'idle') {
+      return;
+    }
+
+    // Wait for auth to be ready, then redirect if authenticated
+    if (isReady && isAuthenticated) {
+      logger.info('User already authenticated, redirecting to dashboard');
+      redirectToDashboard();
+    }
+  }, [isReady, isAuthenticated, reason, redirectToDashboard, logger]);
 
   // Show messages from URL params (e.g., after registration)
   useEffect(() => {

@@ -249,20 +249,48 @@ export function useTrack(options: UseTrackOptions): UseTrackReturn {
         // Subscribe to transport events
         if (eventBusRef.current) {
           unsubscribersRef.current = [
+            // 🎯 FLICKER FIX: Subscribe to playback:starting which fires BEFORE scheduling
+            // This ensures isPlaying=true AND currentTime=0 are set ATOMICALLY
+            // before the blocking scheduleAllRegions() runs (500-1000ms)
+            eventBusRef.current.on(
+              'playback:starting',
+              (data: { position?: number }) => {
+                setIsPlaying(true);
+                setCurrentTime(data.position ?? 0); // Always 0 at start
+              },
+            ),
             eventBusRef.current.on('transport:start', () => setIsPlaying(true)),
             eventBusRef.current.on('transport:resume', () =>
               setIsPlaying(true),
             ),
-            eventBusRef.current.on('transport:stop', () => setIsPlaying(false)),
+            eventBusRef.current.on('transport:stop', () => {
+              setIsPlaying(false);
+              setCurrentTime(0); // Reset time on stop
+            }),
             eventBusRef.current.on('transport:pause', () =>
               setIsPlaying(false),
             ),
             eventBusRef.current.on(
               'transport:tempo-change',
-              (newTempo: number) => setTempo(newTempo),
+              (data: { tempo?: number; bpm?: number } | number) => {
+                // Handle both formats: { tempo: number } or just a number
+                const newTempo = typeof data === 'number' ? data : (data.tempo ?? data.bpm ?? 120);
+                setTempo(newTempo);
+              },
             ),
-            eventBusRef.current.on('transport:time-update', (time: number) =>
-              setCurrentTime(time),
+            // Subscribe to 'transport:position-updated' which contains seconds for time tracking
+            // The event payload is { position: TransportPosition, seconds: number }
+            eventBusRef.current.on(
+              'transport:position-updated',
+              (data: { position: any; seconds?: number }) => {
+                // Convert seconds to milliseconds for currentTime
+                const timeMs = (data.seconds ?? data.position?.seconds ?? 0) * 1000;
+                // DEBUG: Disabled - was causing 416+ log entries per session
+                // if (Math.random() < 0.05) { // 5% sampling
+                //   console.log(`[USETRACK-TIME-DEBUG] trackId=${trackId}, seconds=${data.seconds?.toFixed(3)}, timeMs=${timeMs.toFixed(0)}`);
+                // }
+                setCurrentTime(timeMs);
+              },
             ),
           ];
         }

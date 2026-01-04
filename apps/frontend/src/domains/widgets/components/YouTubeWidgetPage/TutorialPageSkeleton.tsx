@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { TutorialInfoCardSkeleton } from './TutorialInfoCard';
+import { TutorialVideoCardSkeleton } from './TutorialVideoCard';
+import { ExerciseControlPanelSkeleton } from './ExerciseControlPanel';
 import { ExerciseSelectorSkeleton } from './ExerciseSelector/ExerciseSelector';
 import { TransportClockSkeleton } from './components/TransportClock';
 import { FretboardCardSkeleton } from './FretboardCard/FretboardCard';
@@ -9,41 +10,23 @@ import { GlobalControlsCardSkeleton } from './components/GlobalControlsCard';
 import { FourWidgetsCardSkeleton } from './components/FourWidgetsCard';
 
 /**
- * Skeleton for YouTube Video Section
- * Matches the exact structure: aspect-video container + creator info bar below
+ * Skeleton for HomeNavbar
+ * Shows 3 navigation button placeholders on desktop, hamburger on mobile
  */
-function YouTubeVideoSectionSkeleton() {
+function HomeNavbarSkeleton() {
   return (
-    <div className="space-y-4">
-      {/* YouTube Video Player Skeleton - matches actual component structure */}
-      <div className="relative">
-        <div className="aspect-video bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 rounded-xl overflow-hidden relative shadow-2xl">
-          {/* Thumbnail placeholder with play button */}
-          <div className="absolute inset-0 skeleton-shimmer" />
-          {/* Play button overlay */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-16 h-16 bg-slate-700/50 rounded-full flex items-center justify-center">
-              <div className="w-0 h-0 border-l-[16px] border-l-slate-500 border-t-[12px] border-t-transparent border-b-[12px] border-b-transparent ml-1" />
-            </div>
-          </div>
+    <nav className="w-full bg-transparent py-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-center">
+        {/* Desktop Navigation skeleton - 3 buttons */}
+        <div className="hidden md:flex items-center gap-8">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="skeleton-shimmer h-4 w-16 rounded" />
+          ))}
         </div>
+        {/* Mobile hamburger skeleton */}
+        <div className="md:hidden skeleton-shimmer w-6 h-6 rounded" />
       </div>
-
-      {/* Creator Info Section Skeleton - 90% width like actual component */}
-      <div className="w-[90%] mx-auto">
-        <div className="flex items-center gap-3 p-3 bg-slate-800/40 backdrop-blur-xl rounded-lg border border-slate-700/50 shadow-lg">
-          {/* Avatar skeleton */}
-          <div className="skeleton-shimmer w-10 h-10 rounded-full flex-shrink-0" />
-          {/* Creator info skeleton */}
-          <div className="flex-1 min-w-0 space-y-1">
-            <div className="skeleton-shimmer h-4 w-32 rounded" />
-            <div className="skeleton-shimmer h-3 w-24 rounded" />
-          </div>
-          {/* Subscribe button skeleton */}
-          <div className="skeleton-shimmer h-9 w-24 rounded-full flex-shrink-0" />
-        </div>
-      </div>
-    </div>
+    </nav>
   );
 }
 
@@ -136,27 +119,28 @@ export function TutorialPageSkeleton() {
         <div className="skeleton-shimmer w-[180px] sm:w-[260px] md:w-[320px] lg:w-[400px] xl:w-[480px] h-[45px] sm:h-[65px] md:h-[80px] lg:h-[100px] xl:h-[120px] rounded-lg" />
       </header>
 
+      {/* Navbar Skeleton */}
+      <HomeNavbarSkeleton />
+
       {/* Mobile-first central container - matches YouTubeWidgetPageContent */}
       <div className="mx-auto px-4 py-6 w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl">
         <div className="space-y-4">
           {/* 0. User Indicator and Admin Controls */}
+          {/* Only show back button - user indicator hidden when not logged in */}
           <div className="flex justify-between items-center gap-3">
             {/* Back button skeleton */}
             <div className="skeleton-shimmer w-9 h-9 rounded-md" />
-            {/* Admin controls + user indicator */}
-            <div className="flex items-center gap-3">
-              <div className="skeleton-shimmer w-16 h-8 rounded-md" />
-              <div className="skeleton-shimmer w-9 h-9 rounded-full" />
-            </div>
+            {/* Empty spacer - no user indicator shown for non-logged in users */}
+            <div className="w-9" />
           </div>
 
-          {/* 1. YouTube Video Section - with Creator Info below */}
-          <YouTubeVideoSectionSkeleton />
+          {/* 1. Tutorial Video Card (Title + Description + Core Concept + Video + Creator) */}
+          <TutorialVideoCardSkeleton />
 
-          {/* 2. Tutorial Info Card */}
-          <TutorialInfoCardSkeleton />
+          {/* 2. Exercise Control Panel (NEW - compact selector with controls) */}
+          <ExerciseControlPanelSkeleton />
 
-          {/* 3. Exercise Selector */}
+          {/* 3. Exercise Selector (OLD - kept for comparison) */}
           <ExerciseSelectorSkeleton />
 
           {/* 4. Transport Clock with Timeline Loop Strip */}

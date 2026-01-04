@@ -18,6 +18,8 @@ import type {
 import { toMusicalPosition } from '@/domains/playback/types/pattern';
 // 🔧 FIX: Removed EventBus import - no longer using EventBus subscription for transport state
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { useVisualBeat } from '@/domains/widgets/hooks/useVisualBeat';
+import { useQuarterNoteBeatSync } from '@/domains/widgets/hooks/useBeatGridSync';
 import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
 import { lifecycle } from '@/domains/playback/utils/InitializationLifecycleLogger.js';
 
@@ -40,6 +42,14 @@ interface MetronomeWidgetProps {
     numerator: number;
     denominator: number;
   };
+  /** Controlled volume (0-100). If provided, widget uses this instead of local state */
+  volume?: number;
+  /** Controlled mute state. If provided, widget uses this instead of local state */
+  isMuted?: boolean;
+  /** Callback when volume changes (for controlled mode) */
+  onVolumeChange?: (volume: number) => void;
+  /** Callback when mute state changes (for controlled mode) */
+  onMuteToggle?: () => void;
 }
 
 interface MetronomeDot {
@@ -62,6 +72,10 @@ const MetronomeWidgetComponent = ({
   onToggleVisibility,
   onTogglePlay,
   timeSignature,
+  volume: controlledVolume,
+  isMuted: controlledMuted,
+  onVolumeChange,
+  onMuteToggle,
 }: MetronomeWidgetProps) => {
   const { correlationId, logger: componentLogger } =
     useCorrelation('MetronomeWidget');
@@ -71,8 +85,30 @@ const MetronomeWidgetComponent = ({
   const bpm = transport.tempo;
 
   const [metronomeDots, setMetronomeDots] = useState(initialDots);
-  const [volume, setVolume] = useState(80);
-  const [isMuted, setIsMuted] = useState(false);
+  // Support both controlled and uncontrolled modes for volume/mute
+  const [localVolume, setLocalVolume] = useState(80);
+  const [localMuted, setLocalMuted] = useState(false);
+
+  // Use controlled values if provided, otherwise use local state
+  const volume = controlledVolume !== undefined ? controlledVolume : localVolume;
+  const isMuted = controlledMuted !== undefined ? controlledMuted : localMuted;
+
+  // Handler that works in both controlled and uncontrolled modes
+  const handleVolumeChange = useCallback((newVolume: number) => {
+    if (onVolumeChange) {
+      onVolumeChange(newVolume);
+    } else {
+      setLocalVolume(newVolume);
+    }
+  }, [onVolumeChange]);
+
+  const handleMuteToggle = useCallback(() => {
+    if (onMuteToggle) {
+      onMuteToggle();
+    } else {
+      setLocalMuted(!localMuted);
+    }
+  }, [onMuteToggle, localMuted]);
   // 🔧 FIX: REMOVED isTransportPlaying local state - now use TransportContext's isPlaying directly
   // The local state via EventBus was getting out of sync with TransportContext, causing the beat indicator
   // to continue animating after playback stopped (same issue as DrummerWidget)
@@ -404,10 +440,21 @@ const MetronomeWidgetComponent = ({
 
   // Handle volume changes
   useEffect(() => {
+    const effectiveVolume = isMuted ? 0 : volume / 100;
+
+    // Update WAM plugin volume (legacy path)
     if (metronomePluginRef.current) {
       metronomePluginRef.current.audioNode?.setParameterValues({
-        volume: isMuted ? 0 : volume / 100,
+        volume: effectiveVolume,
       });
+    }
+
+    // Update PlaybackEngine metronome volume (new path)
+    const coreServices = WindowRegistry.getCoreServices();
+    const playbackEngine = coreServices?.getPlaybackEngine?.();
+    if (playbackEngine) {
+      playbackEngine.setInstrumentVolume('metronome', effectiveVolume);
+      playbackEngine.setInstrumentMuted('metronome', isMuted);
     }
   }, [volume, isMuted]);
 
@@ -719,129 +766,29 @@ const MetronomeWidgetComponent = ({
     }
   }, [isPlaying]);
 
-  // ============================================================================
-  // RAF-BASED INTERPOLATION FOR SMOOTH BEAT HIGHLIGHTING
-  // ============================================================================
-  // Problem: setInterval(20ms) position updates via useTransportPosition cause ±20-40ms jitter
-  // Solution: Store snapshot with performance.now() timestamp, interpolate in RAF
-  // Result: Frame-perfect 60fps animation (~16.7ms precision vs ±40ms jitter)
-  // ============================================================================
+  // Use jitter-free visual beat hook (RAF-based, not Tone.Draw-based)
+  // This calculates beat position directly from AudioContext.currentTime
+  // ensuring metronome indicator timing is perfectly synchronized with audio
+  const { beatIndex: currentBeat, isCountdown } = useVisualBeat(
+    beats, // beatsPerMeasure
+    isPlaying,
+    isVisible,
+  );
 
-  // State for current beat (0-indexed for display)
-  const [currentBeat, setCurrentBeat] = useState(0);
+  // 🚀 JITTER FIX: Direct DOM beat synchronization (bypasses React state)
+  // This hook subscribes directly to AtomicPlaybackClock and uses beatIndex (quarter notes)
+  // instead of eighthNoteIndex, updating DOM via classList.toggle() to eliminate jitter.
+  // Debug with: window.__DEBUG_DOM_TIMING = true
+  const { registerIndicator: registerBeatIndicator } = useQuarterNoteBeatSync({
+    beats,  // Use quarter-note beats count (4 for 4/4 time)
+    isPlaying,
+    activeClass: 'bg-green-400 shadow-lg shadow-green-400/50',  // Brighter green for active beat
+    inactiveClass: 'bg-green-600',  // Darker green for inactive beats
+    isVisible,
+  });
 
-  // Ref to track current beat without causing RAF loop restarts
-  const currentBeatRef = useRef(currentBeat);
-  useEffect(() => {
-    currentBeatRef.current = currentBeat;
-  }, [currentBeat]);
-
-  // 🔧 FIX: Track isPlaying in a ref so RAF loop can check it in real-time
-  const isPlayingRef = useRef(isPlaying);
-  useEffect(() => {
-    isPlayingRef.current = isPlaying;
-  }, [isPlaying]);
-
-  // Position snapshot for RAF interpolation
-  interface PositionSnapshot {
-    bars: number;
-    beats: number; // 1-based (display position)
-    sixteenths: number;
-    seconds: number;
-    capturedAt: number; // performance.now() when captured
-  }
-  const positionSnapshotRef = useRef<PositionSnapshot | null>(null);
-  const rafIdRef = useRef<number | null>(null);
-
-  // Update snapshot when TransportContext position changes
-  useEffect(() => {
-    if (!isPlaying || !isVisible) {
-      positionSnapshotRef.current = null;
-      return;
-    }
-
-    // transportPosition comes from useTransportContext
-    if (transportPosition) {
-      positionSnapshotRef.current = {
-        bars: transportPosition.bars,
-        beats: transportPosition.beats,
-        sixteenths: transportPosition.sixteenths,
-        seconds: transportPosition.seconds,
-        capturedAt: performance.now(),
-      };
-    }
-  }, [transportPosition, isPlaying, isVisible]);
-
-  // RAF loop for smooth beat highlighting
-  useEffect(() => {
-    if (!isPlaying || !isVisible) {
-      // Clean up RAF when not playing
-      if (rafIdRef.current !== null) {
-        cancelAnimationFrame(rafIdRef.current);
-        rafIdRef.current = null;
-      }
-      positionSnapshotRef.current = null;
-      return;
-    }
-
-    const updateBeat = () => {
-      // 🔧 FIX: Check isPlaying via ref to catch stop events immediately
-      if (!isPlayingRef.current) {
-        return; // Don't schedule next frame
-      }
-
-      const snapshot = positionSnapshotRef.current;
-
-      if (!snapshot) {
-        rafIdRef.current = requestAnimationFrame(updateBeat);
-        return;
-      }
-
-      // COUNTDOWN FIX: Don't update beat indicators during countdown (negative bars)
-      if (snapshot.bars < 0) {
-        rafIdRef.current = requestAnimationFrame(updateBeat);
-        return;
-      }
-
-      // Interpolate current position based on elapsed time since snapshot
-      const elapsed = (performance.now() - snapshot.capturedAt) / 1000;
-      const beatDuration = 60 / bpm;
-
-      // Calculate interpolated beat position
-      const sixteenthsPerBeat = 4;
-      const totalSixteenthsAtSnapshot = (snapshot.beats - 1) * sixteenthsPerBeat + snapshot.sixteenths;
-      const elapsedSixteenths = (elapsed / beatDuration) * sixteenthsPerBeat;
-      const interpolatedTotalSixteenths = totalSixteenthsAtSnapshot + elapsedSixteenths;
-
-      // Convert to beat index (0-based for array indexing)
-      const interpolatedBeat = Math.floor(interpolatedTotalSixteenths / sixteenthsPerBeat);
-      const beatIndex = interpolatedBeat % beats;
-
-      // Only update state if beat changed
-      if (beatIndex !== currentBeatRef.current) {
-        setCurrentBeat(beatIndex);
-        // Update dots
-        setMetronomeDots((prev) =>
-          prev.map((dot, index) => ({
-            ...dot,
-            isCurrent: index === beatIndex,
-          })),
-        );
-      }
-
-      rafIdRef.current = requestAnimationFrame(updateBeat);
-    };
-
-    // Start RAF loop
-    rafIdRef.current = requestAnimationFrame(updateBeat);
-
-    return () => {
-      if (rafIdRef.current !== null) {
-        cancelAnimationFrame(rafIdRef.current);
-        rafIdRef.current = null;
-      }
-    };
-  }, [isPlaying, isVisible, bpm, beats]);
+  // NOTE: Removed React state update for dots - now using direct DOM via useQuarterNoteBeatSync
+  // The old code that used setMetronomeDots to update isCurrent is no longer needed
 
   // Test click function - wrapped with lightweight audio context initialization
   const testClick = useCallback(
@@ -885,11 +832,12 @@ const MetronomeWidgetComponent = ({
         <div className="flex justify-center items-center w-20 h-16">
           <VolumeKnob
             value={volume}
-            onChange={setVolume}
+            onChange={handleVolumeChange}
             color="bg-green-400"
             size={45}
             isMuted={isMuted}
-            onMuteToggle={() => setIsMuted(!isMuted)}
+            onMuteToggle={handleMuteToggle}
+            defaultValue={80}
           />
         </div>
 
@@ -917,15 +865,14 @@ const MetronomeWidgetComponent = ({
                     volume === 0 ? 'opacity-50' : ''
                   }`}
                 >
+                  {/* 🚀 JITTER FIX: Direct DOM beat indicators via ref registration */}
+                  {/* The hook's classList.toggle() updates these divs directly, bypassing React */}
                   <div className="flex gap-1">
-                    {metronomeDots.slice(0, beats).map((dot) => (
+                    {Array.from({ length: beats }, (_, idx) => (
                       <div
-                        key={dot.id}
-                        className={`w-3 h-3 rounded-full transition-all duration-200 ${
-                          dot.isCurrent && isPlaying
-                            ? 'bg-orange-400 shadow-lg shadow-orange-400/50'
-                            : 'bg-green-500'
-                        }`}
+                        key={idx}
+                        ref={(el) => registerBeatIndicator(0, idx, el)}
+                        className="w-3 h-3 rounded-full transition-all duration-200 bg-green-600"
                       />
                     ))}
                   </div>

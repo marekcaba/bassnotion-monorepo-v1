@@ -1520,7 +1520,7 @@
     "B5": "{layer}/B5_{layer}.ogg",
     "C6": "{layer}/C6_{layer}.ogg"
   },
-  "defaultLayers": ["v2", "v3"],
+  "defaultLayers": ["v1", "v2", "v3", "v4", "v5"],
   "samplerConfig": {
     "attack": 0.001,
     "release": 0.4,
@@ -1528,7 +1528,7 @@
     "volume": 0
   },
   "optimization": {
-    "preloadPriority": ["v2", "v3"],
+    "preloadPriority": ["v3", "v2", "v4", "v1", "v5"],
     "memoryLimit": 100,
     "streamingEnabled": false,
     "compressionFormat": "ogg"

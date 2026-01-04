@@ -22,6 +22,8 @@ import type {
 } from '@/domains/playback/types/pattern';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { usePatternSelector } from '@/domains/patterns/hooks/usePatternSelector';
+import { useAtomicBeat } from '@/domains/widgets/hooks/useAtomicBeat';
+import { useBeatGridSync } from '@/domains/widgets/hooks/useBeatGridSync';
 import { Settings2, Music2 } from 'lucide-react';
 import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
 import { lifecycle } from '@/domains/playback/utils/InitializationLifecycleLogger.js';
@@ -36,6 +38,14 @@ interface DrummerWidgetProps {
   onToggleVisibility?: () => void;
   onTogglePlay?: () => void;
   isAdminMode?: boolean;
+  /** Controlled volume (0-100). If provided, widget uses this instead of local state */
+  volume?: number;
+  /** Controlled mute state. If provided, widget uses this instead of local state */
+  isMuted?: boolean;
+  /** Callback when volume changes (for controlled mode) */
+  onVolumeChange?: (volume: number) => void;
+  /** Callback when mute state changes (for controlled mode) */
+  onMuteToggle?: () => void;
 }
 
 // Helper to convert simple array to GridCell array (for preset patterns)
@@ -328,6 +338,10 @@ const DrummerWidgetComponent = ({
   onToggleVisibility,
   onTogglePlay,
   isAdminMode = false,
+  volume: controlledVolume,
+  isMuted: controlledMuted,
+  onVolumeChange,
+  onMuteToggle,
 }: DrummerWidgetProps) => {
   const { correlationId, logger: componentLogger } =
     useCorrelation('DrummerWidget');
@@ -360,18 +374,86 @@ const DrummerWidgetComponent = ({
     transportRef.current = transport;
   }, [transport]);
 
-  const [currentBeat, setCurrentBeat] = useState(0);
-  const [currentMeasure, setCurrentMeasure] = useState(0); // Track which measure to display in grid
-  // Separate state for display measure (used by useMemo) vs playback measure tracking
-  // This prevents RAF loop from triggering grid recalculation on every measure
+  // 🎯 FAA-GRADE ATOMIC CLOCK: Use the AtomicPlaybackClock for jitter-free visual sync
+  // This uses the SAME transportStartTime as PlaybackEngine with lookahead compensation,
+  // ensuring visuals show ACTUAL audio position (not where audio WILL BE).
+  // Note: Use transport.isPlaying directly since the derived isPlaying variable is defined later
+  // Note: isCountdown and eighthNoteDurationMs are extracted but unused since beat indicator
+  // is now handled by useBeatGridSync direct DOM updates (see jitter fix below)
+  const {
+    eighthNoteIndex: currentBeat,
+    measureIndex: hookMeasure,
+    isCountdown: _isCountdown,
+    eighthNoteDurationMs: _eighthNoteDurationMs,
+  } = useAtomicBeat(
+    4, // beatsPerMeasure
+    transport.isPlaying,
+    isVisible,
+  );
+
+  // 🚀 JITTER FIX: Direct DOM beat synchronization (bypasses React state)
+  // This hook subscribes directly to AtomicPlaybackClock and updates DOM via classList.toggle()
+  // instead of React state, eliminating the +/-75-95ms jitter from React's batched updates.
+  // Debug with: window.__DEBUG_DOM_TIMING = true
+  const { registerIndicator, getEighthNoteDurationMs } = useBeatGridSync({
+    rows: 3,       // hihat (0), snare (1), kick (2)
+    columns: 8,    // 8 eighth notes per bar
+    isPlaying: transport.isPlaying,
+    activeClass: 'opacity-100',
+    inactiveClass: 'opacity-0',
+    isVisible,
+  });
+
+  // 🔬 RENDER TIMING DIAGNOSTIC: Measure when React actually commits the beat change to DOM
+  // Enable in browser console: window.__DEBUG_RENDER_TIMING = true
+  const lastRenderedBeatRef = useRef(-1);
+  const lastRenderTimeRef = useRef(0);
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).__DEBUG_RENDER_TIMING && transport.isPlaying) {
+      const now = performance.now();
+      const interval = lastRenderTimeRef.current > 0 ? now - lastRenderTimeRef.current : 0;
+
+      if (currentBeat !== lastRenderedBeatRef.current) {
+        console.log(`[RENDER_TIMING] Beat ${currentBeat} RENDERED at ${now.toFixed(1)}ms, interval: ${interval.toFixed(1)}ms`);
+        lastRenderedBeatRef.current = currentBeat;
+        lastRenderTimeRef.current = now;
+      }
+    }
+  }, [currentBeat, transport.isPlaying]);
+
+  // Track which measure to display in grid (wraps around exercisePatternMeasureCount)
   const [displayMeasure, setDisplayMeasure] = useState(0);
+  // Note: currentMeasure is calculated below, after exercisePatternMeasureCount is defined
+
   // 🔧 FIX: REMOVED isTransportPlaying local state - now use TransportContext's isPlaying directly
   // The local state via EventBus was getting out of sync with TransportContext, causing the RAF loop
   // to continue running after playback stopped (because EventBus handler wasn't being called)
   const [isExpanded, setIsExpanded] = useState(false);
   const [showPatternLibrary, setShowPatternLibrary] = useState(false);
-  const [volume, setVolume] = useState(80);
-  const [isMuted, setIsMuted] = useState(false);
+  // Support both controlled and uncontrolled modes for volume/mute
+  const [localVolume, setLocalVolume] = useState(80);
+  const [localMuted, setLocalMuted] = useState(false);
+
+  // Use controlled values if provided, otherwise use local state
+  const volume = controlledVolume !== undefined ? controlledVolume : localVolume;
+  const isMuted = controlledMuted !== undefined ? controlledMuted : localMuted;
+
+  // Handler that works in both controlled and uncontrolled modes
+  const handleVolumeChange = useCallback((newVolume: number) => {
+    if (onVolumeChange) {
+      onVolumeChange(newVolume);
+    } else {
+      setLocalVolume(newVolume);
+    }
+  }, [onVolumeChange]);
+
+  const handleMuteToggle = useCallback(() => {
+    if (onMuteToggle) {
+      onMuteToggle();
+    } else {
+      setLocalMuted(!localMuted);
+    }
+  }, [onMuteToggle, localMuted]);
   // Initialize with empty pattern - useEffect will populate with correct data
   // This prevents showing stale preset pattern before exercise data loads
   const [currentPattern, setCurrentPattern] = useState(EMPTY_GRID_PATTERN);
@@ -387,6 +469,12 @@ const DrummerWidgetComponent = ({
     }
     return getPatternMeasureCount(drumHits);
   }, [exercise?.id, (exercise as any)?.drumPattern]);
+
+  // Calculate current measure index from unified beat indicator hook
+  // Must be defined AFTER exercisePatternMeasureCount
+  const currentMeasure = exercisePatternMeasureCount > 0
+    ? hookMeasure % exercisePatternMeasureCount
+    : 0;
 
   // Memoize exercise drum pattern to avoid recalculating on every render
   // This converts DrumHit[] or legacy DrumPattern from exercise to the compact 3x8 grid format
@@ -925,14 +1013,25 @@ const DrummerWidgetComponent = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trackIsReady, wamPluginLoaded, pluginClassLoaded, pluginLoadAttempts]);
 
-  // Handle volume changes
+  // Handle volume changes - apply to both WAM plugin and PlaybackEngine
   useEffect(() => {
+    const effectiveVolume = isMuted ? 0 : volume / 100;
+
+    // Update WAM plugin volume (legacy path)
     if (drummerPluginRef.current && drummerPluginRef.current.audioNode) {
       const audioNode = drummerPluginRef.current.audioNode;
       if (audioNode.setVolume) {
-        audioNode.setVolume(isMuted ? 0 : volume / 100);
+        audioNode.setVolume(effectiveVolume);
         audioNode.setMute(isMuted);
       }
+    }
+
+    // Update PlaybackEngine drums volume (new path)
+    const coreServices = WindowRegistry.getCoreServices();
+    const playbackEngine = coreServices?.getPlaybackEngine?.();
+    if (playbackEngine) {
+      playbackEngine.setInstrumentVolume('drums', effectiveVolume);
+      playbackEngine.setInstrumentMuted('drums', isMuted);
     }
   }, [volume, isMuted]);
 
@@ -1105,232 +1204,32 @@ const DrummerWidgetComponent = ({
   // The prop can still be used for other purposes (like showing play button state)
   const isPlaying = isTransportContextPlaying;
 
-  // Handle play state changes (simplified - no longer schedules its own pattern)
+  // Handle play state changes (simplified - beat indicator comes from hook)
   useEffect(() => {
     if (!isPlaying) {
-      // Reset visual when stopped
-      setCurrentBeat(0);
-      setCurrentMeasure(0); // Reset to first measure
-      setDisplayMeasure(0); // Reset display measure too
+      setDisplayMeasure(0); // Reset display measure when stopped
     }
   }, [isPlaying]);
 
   // Reset measure when exercise changes
   useEffect(() => {
-    setCurrentMeasure(0);
     setDisplayMeasure(0);
   }, [exercise?.id]);
 
   // NOTE: Pattern trigger events are handled by AudioEventRouter
   // The widget only needs to create patterns and handle visual updates
 
-  // ============================================================================
-  // FAANG-LEVEL RAF INTERPOLATION FOR SMOOTH BEAT HIGHLIGHTING
-  // ============================================================================
-  // Problem: setInterval(20ms) position updates cause ±20-40ms jitter
-  // Solution: Store snapshot with performance.now() timestamp, interpolate in RAF
-  // Result: Frame-perfect 60fps animation (~16.7ms precision vs ±40ms jitter)
-  // ============================================================================
-
-  // Snapshot of position + high-resolution timestamp for interpolation
-  const positionSnapshotRef = useRef<{
-    seconds: number;        // Transport position in seconds
-    capturedAt: number;     // performance.now() when captured
-    tempo: number;          // BPM for time-to-beat conversion
-    bars: number;           // Current bar (for countdown detection)
-  } | null>(null);
-
-  // RAF loop reference for cleanup
-  const rafIdRef = useRef<number | null>(null);
-
-  // Timing precision diagnostics
-  const beatTimingDiagnosticsRef = useRef<{
-    lastBeatChangeTime: number;      // When beat last changed (performance.now())
-    lastBeatIndex: number;           // What beat we changed to
-    expectedBeatDuration: number;    // Expected ms per 8th note based on tempo
-    driftSamples: number[];          // Recent drift measurements in ms
-  }>({
-    lastBeatChangeTime: 0,
-    lastBeatIndex: -1,
-    expectedBeatDuration: 0,
-    driftSamples: [],
-  });
-
-  // Refs to track current beat/measure without causing RAF loop restarts
-  const currentBeatRef = useRef(currentBeat);
-  const currentMeasureRef = useRef(currentMeasure);
-  const displayMeasureRef = useRef(displayMeasure);
-  // 🔧 FIX: Track isPlaying in a ref so RAF loop can check it in real-time
-  // This prevents the RAF loop from continuing after playback stops
-  const isPlayingRef = useRef(isPlaying);
+  // Beat indicator timing is now handled by useBeatIndicator hook (single source of truth)
+  // Update displayMeasure when measure changes (for multi-measure pattern display)
+  const prevMeasureRef = useRef(currentMeasure);
   useEffect(() => {
-    currentBeatRef.current = currentBeat;
-  }, [currentBeat]);
-  useEffect(() => {
-    currentMeasureRef.current = currentMeasure;
-  }, [currentMeasure]);
-  useEffect(() => {
-    displayMeasureRef.current = displayMeasure;
-  }, [displayMeasure]);
-  useEffect(() => {
-    isPlayingRef.current = isPlaying;
-  }, [isPlaying]);
-
-  // Update snapshot when TransportContext position changes
-  useEffect(() => {
-    if (!isPlaying || !isVisible) {
-      positionSnapshotRef.current = null;
-      return;
+    if (currentMeasure !== prevMeasureRef.current) {
+      prevMeasureRef.current = currentMeasure;
+      if (exercisePatternMeasureCount > 1) {
+        setDisplayMeasure(currentMeasure);
+      }
     }
-
-    // Store snapshot with high-resolution timestamp
-    positionSnapshotRef.current = {
-      seconds: transportPosition.seconds,
-      capturedAt: performance.now(),
-      tempo: tempo,
-      bars: transportPosition.bars,
-    };
-  }, [transportPosition.seconds, transportPosition.bars, tempo, isPlaying, isVisible]);
-
-  // RAF-based interpolation loop - runs at 60fps for smooth animation
-  useEffect(() => {
-    if (!isPlaying || !isVisible) {
-      // Stop RAF loop when not playing
-      if (rafIdRef.current !== null) {
-        cancelAnimationFrame(rafIdRef.current);
-        rafIdRef.current = null;
-      }
-      // Reset diagnostics
-      beatTimingDiagnosticsRef.current = {
-        lastBeatChangeTime: 0,
-        lastBeatIndex: -1,
-        expectedBeatDuration: 0,
-        driftSamples: [],
-      };
-      return;
-    }
-
-    // Debug: Log when RAF loop starts
-    console.log('🔄 [RAF DEBUG] Starting RAF loop', { isPlaying, isVisible });
-
-    const updateBeat = () => {
-      // 🔧 FIX: Check isPlaying via ref to catch stop events immediately
-      // Without this, the RAF loop might continue for 1-2 frames after stop
-      // because the closure captured the old isPlaying value
-      if (!isPlayingRef.current) {
-        console.log('🛑 [RAF DEBUG] Stopping - isPlaying became false');
-        return; // Don't schedule next frame
-      }
-
-      const snapshot = positionSnapshotRef.current;
-
-      if (!snapshot) {
-        // Debug: Log when no snapshot
-        console.log('🔄 [RAF DEBUG] No snapshot yet, waiting...');
-        rafIdRef.current = requestAnimationFrame(updateBeat);
-        return;
-      }
-
-      // COUNTDOWN FIX: Don't update during countdown (negative bars)
-      if (snapshot.bars < 0) {
-        rafIdRef.current = requestAnimationFrame(updateBeat);
-        return;
-      }
-
-      // Interpolate current time based on elapsed performance.now() since snapshot
-      const now = performance.now();
-      const elapsedSinceSnapshot = (now - snapshot.capturedAt) / 1000; // Convert ms to seconds
-      const interpolatedSeconds = snapshot.seconds + elapsedSinceSnapshot;
-
-      // Convert seconds to beat index (0-7 for 8 eighth notes per bar)
-      // Formula: (seconds * tempo / 60) * 2 gives 8th note position
-      // Then modulo 8 for bar-wrapped position
-      const eighthNotesPerSecond = (snapshot.tempo / 60) * 2; // 8th notes per second
-      const totalEighthNotes = interpolatedSeconds * eighthNotesPerSecond;
-      const beatIndex = Math.floor(totalEighthNotes) % 8;
-
-      // Only update state if beat actually changed (avoid unnecessary re-renders)
-      // Use ref to get current value without stale closure
-      if (beatIndex !== currentBeatRef.current && beatIndex >= 0 && beatIndex < 8) {
-        // 📊 TIMING PRECISION DIAGNOSTICS
-        const diag = beatTimingDiagnosticsRef.current;
-        const expectedBeatDuration = (60 / snapshot.tempo) * 1000 / 2; // ms per 8th note
-        diag.expectedBeatDuration = expectedBeatDuration;
-
-        if (diag.lastBeatChangeTime > 0 && diag.lastBeatIndex >= 0) {
-          const actualDelta = now - diag.lastBeatChangeTime;
-          // Handle wrap-around (beat 7 -> 0)
-          const beatDelta = beatIndex > diag.lastBeatIndex
-            ? beatIndex - diag.lastBeatIndex
-            : (8 - diag.lastBeatIndex) + beatIndex;
-          const expectedDelta = expectedBeatDuration * beatDelta;
-          const drift = actualDelta - expectedDelta;
-
-          // Keep last 16 samples (2 bars worth)
-          diag.driftSamples.push(drift);
-          if (diag.driftSamples.length > 16) {
-            diag.driftSamples.shift();
-          }
-
-          // Calculate statistics
-          const avgDrift = diag.driftSamples.reduce((a, b) => a + b, 0) / diag.driftSamples.length;
-          const maxDrift = Math.max(...diag.driftSamples.map(Math.abs));
-
-          // Log every beat change with precision stats
-          console.log(`🎯 [RAF PRECISION] Beat ${diag.lastBeatIndex} → ${beatIndex} | delta: ${actualDelta.toFixed(1)}ms | expected: ${expectedDelta.toFixed(1)}ms | drift: ${drift > 0 ? '+' : ''}${drift.toFixed(1)}ms | avg: ${avgDrift > 0 ? '+' : ''}${avgDrift.toFixed(1)}ms | max: ±${maxDrift.toFixed(1)}ms`);
-        }
-
-        diag.lastBeatChangeTime = now;
-        diag.lastBeatIndex = beatIndex;
-
-        setCurrentBeat(beatIndex);
-      }
-
-      // Calculate measure for multi-measure patterns
-      // 🔧 FIX: Use displayPosition.bars (countdown-adjusted, 1-based) instead of calculating from seconds
-      // The 'seconds' value includes countdown time, so calculating bars from it gives wrong measure
-      // displayPosition.bars is 1-based (first bar = 1), convert to 0-based measure index
-      // Example: displayBars=1 → measure=0, displayBars=2 → measure=1
-      const measure = ((snapshot.bars - 1) % exercisePatternMeasureCount + exercisePatternMeasureCount) % exercisePatternMeasureCount;
-
-      // 🔍 MEASURE OFFSET DEBUG: Log on measure changes to diagnose grid/audio mismatch
-      if (measure !== currentMeasureRef.current) {
-        console.log('🥁 [MEASURE DEBUG]', {
-          displayBars: snapshot.bars, // From TransportContext (1-based, countdown-adjusted)
-          measure, // 0-based measure index for grid pattern
-          exercisePatternMeasureCount,
-          note: 'FIXED: Now using displayBars (countdown-adjusted) instead of calculating from seconds.',
-        });
-      }
-
-      // Update internal tracking measure
-      if (measure !== currentMeasureRef.current) {
-        setCurrentMeasure(measure);
-        // Also update display measure (for grid pattern switching)
-        // But only if the pattern actually has multiple measures
-        if (exercisePatternMeasureCount > 1 && measure !== displayMeasureRef.current) {
-          setDisplayMeasure(measure);
-        }
-      }
-
-      // Continue RAF loop
-      rafIdRef.current = requestAnimationFrame(updateBeat);
-    };
-
-    // Start RAF loop
-    rafIdRef.current = requestAnimationFrame(updateBeat);
-
-    // Cleanup on unmount or when dependencies change
-    return () => {
-      if (rafIdRef.current !== null) {
-        cancelAnimationFrame(rafIdRef.current);
-        rafIdRef.current = null;
-      }
-    };
-  // Note: currentBeat and currentMeasure intentionally NOT in dependencies
-  // The RAF loop reads them via closure but should not restart when they change
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPlaying, isVisible, exercisePatternMeasureCount]);
+  }, [currentMeasure, exercisePatternMeasureCount]);
 
   // Test drum function - wrapped with audio context initialization
   const testDrumSound = useCallback(
@@ -1520,11 +1419,12 @@ const DrummerWidgetComponent = ({
         <div className="flex justify-center items-center w-20 h-16">
           <VolumeKnob
             value={volume}
-            onChange={setVolume}
+            onChange={handleVolumeChange}
             color="bg-orange-400"
             size={45}
             isMuted={isMuted}
-            onMuteToggle={() => setIsMuted(!isMuted)}
+            onMuteToggle={handleMuteToggle}
+            defaultValue={80}
           />
         </div>
 
@@ -1555,8 +1455,23 @@ const DrummerWidgetComponent = ({
                   }`}
                 >
                   {/* Compact beat dots in 3x8 grid with 16th note subdivisions */}
-                  <div className="grid grid-rows-3 grid-cols-8 gap-1">
-                    {/* Hi-hat row */}
+                  {/*
+                    JITTER-FREE DIRECT DOM SOLUTION:
+                    1. Beat indicators use ref registration (registerIndicator)
+                    2. useBeatGridSync hook updates DOM directly via classList.toggle()
+                    3. Bypasses React state entirely for beat position updates
+                    4. GPU acceleration via will-change and transform: translateZ(0)
+                    5. CSS custom property for fade duration (calculated once)
+
+                    Debug timing: window.__DEBUG_DOM_TIMING = true
+                  */}
+                  <div
+                    className="grid grid-rows-3 grid-cols-8 gap-1"
+                    style={{
+                      '--beat-fade-duration': `${Math.min(getEighthNoteDurationMs() * 0.4, 200)}ms`
+                    } as React.CSSProperties}
+                  >
+                    {/* Hi-hat row (row index 0) */}
                     {currentPattern.hihat.map((cell, idx) => (
                       <div key={`hh-${idx}`} className="relative flex items-center justify-center">
                         {/* Main 8th note dot */}
@@ -1565,16 +1480,17 @@ const DrummerWidgetComponent = ({
                             cell.main ? 'bg-orange-500' : 'bg-slate-700'
                           }`}
                         />
-                        {/* Highlight overlay - fades in fast, fades out slow for trailing effect */}
+                        {/* Highlight overlay - DIRECT DOM via ref, bypasses React state */}
                         <div
+                          ref={(el) => registerIndicator(0, idx, el)}
                           style={{
-                            transition: currentBeat === idx && isPlaying
-                              ? 'opacity 50ms ease-out'  // Fast fade in
-                              : 'opacity 150ms ease-in', // Fade out tail
+                            // STABLE transition - only opacity changes, transition stays constant
+                            transition: 'opacity var(--beat-fade-duration, 174ms) ease-out',
+                            // GPU acceleration hints
+                            willChange: 'opacity',
+                            transform: 'translateZ(0)',
                           }}
-                          className={`absolute inset-0 w-2 h-2 rounded-full bg-green-400 shadow-lg shadow-green-400/50 ${
-                            currentBeat === idx && isPlaying ? 'opacity-100' : 'opacity-0'
-                          }`}
+                          className="absolute inset-0 w-2 h-2 rounded-full bg-green-400 shadow-lg shadow-green-400/50 opacity-0"
                         />
                         {/* 16th note subdivision tick - ONLY show if there's a hit */}
                         {cell.sixteenth === 1 && idx < 7 && (
@@ -1583,7 +1499,7 @@ const DrummerWidgetComponent = ({
                       </div>
                     ))}
 
-                    {/* Snare row */}
+                    {/* Snare row (row index 1) */}
                     {currentPattern.snare.map((cell, idx) => (
                       <div key={`sn-${idx}`} className="relative flex items-center justify-center">
                         {/* Main 8th note dot */}
@@ -1592,16 +1508,15 @@ const DrummerWidgetComponent = ({
                             cell.main ? 'bg-orange-500' : 'bg-slate-700'
                           }`}
                         />
-                        {/* Highlight overlay - fades in fast, fades out slow for trailing effect */}
+                        {/* Highlight overlay - DIRECT DOM via ref, bypasses React state */}
                         <div
+                          ref={(el) => registerIndicator(1, idx, el)}
                           style={{
-                            transition: currentBeat === idx && isPlaying
-                              ? 'opacity 50ms ease-out'  // Fast fade in
-                              : 'opacity 150ms ease-in', // Fade out tail
+                            transition: 'opacity var(--beat-fade-duration, 174ms) ease-out',
+                            willChange: 'opacity',
+                            transform: 'translateZ(0)',
                           }}
-                          className={`absolute inset-0 w-2 h-2 rounded-full bg-green-400 shadow-lg shadow-green-400/50 ${
-                            currentBeat === idx && isPlaying ? 'opacity-100' : 'opacity-0'
-                          }`}
+                          className="absolute inset-0 w-2 h-2 rounded-full bg-green-400 shadow-lg shadow-green-400/50 opacity-0"
                         />
                         {/* 16th note subdivision tick - ONLY show if there's a hit */}
                         {cell.sixteenth === 1 && idx < 7 && (
@@ -1610,7 +1525,7 @@ const DrummerWidgetComponent = ({
                       </div>
                     ))}
 
-                    {/* Kick row */}
+                    {/* Kick row (row index 2) */}
                     {currentPattern.kick.map((cell, idx) => (
                       <div key={`k-${idx}`} className="relative flex items-center justify-center">
                         {/* Main 8th note dot */}
@@ -1619,16 +1534,15 @@ const DrummerWidgetComponent = ({
                             cell.main ? 'bg-orange-500' : 'bg-slate-700'
                           }`}
                         />
-                        {/* Highlight overlay - fades in fast, fades out slow for trailing effect */}
+                        {/* Highlight overlay - DIRECT DOM via ref, bypasses React state */}
                         <div
+                          ref={(el) => registerIndicator(2, idx, el)}
                           style={{
-                            transition: currentBeat === idx && isPlaying
-                              ? 'opacity 50ms ease-out'  // Fast fade in
-                              : 'opacity 150ms ease-in', // Fade out tail
+                            transition: 'opacity var(--beat-fade-duration, 174ms) ease-out',
+                            willChange: 'opacity',
+                            transform: 'translateZ(0)',
                           }}
-                          className={`absolute inset-0 w-2 h-2 rounded-full bg-green-400 shadow-lg shadow-green-400/50 ${
-                            currentBeat === idx && isPlaying ? 'opacity-100' : 'opacity-0'
-                          }`}
+                          className="absolute inset-0 w-2 h-2 rounded-full bg-green-400 shadow-lg shadow-green-400/50 opacity-0"
                         />
                         {/* 16th note subdivision tick - ONLY show if there's a hit */}
                         {cell.sixteenth === 1 && idx < 7 && (

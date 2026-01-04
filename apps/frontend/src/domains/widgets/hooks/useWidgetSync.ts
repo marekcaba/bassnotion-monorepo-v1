@@ -118,11 +118,11 @@ export function useWidgetSync(options: UseWidgetSyncOptions) {
       state,
       performanceMetrics,
 
-      // Playback state (from global store)
+      // Playback state (from global store via useTrackMigration)
       isPlaying: playbackState.isPlaying,
       currentTime: playbackState.currentTime || 0,
       tempo: playbackState.tempo,
-      masterVolume: playbackState.volume,
+      masterVolume: playbackState.masterVolume, // Fixed: was using .volume but useTrackMigration returns .masterVolume
       // REMOVED: selectedExercise - should come from parent props
 
       // Methods
@@ -142,7 +142,7 @@ export function useWidgetSync(options: UseWidgetSyncOptions) {
       playbackState.isPlaying,
       playbackState.currentTime,
       playbackState.tempo,
-      playbackState.volume,
+      playbackState.masterVolume,
       emitUpdate,
       handleCommand,
       actions,

@@ -57,6 +57,8 @@ import { WindowRegistry } from '../WindowRegistry.js';
 import { DiagnosticLogger } from './region-processing/diagnostics/DiagnosticLogger.js';
 import { lifecycle } from '../../utils/InitializationLifecycleLogger.js';
 import { Mixer } from '../../modules/tracks/mixing/Mixer.js';
+import { musicalTruth } from '../../modules/tempo/MusicalTruthAuthority.js';
+import { getAtomicPlaybackClock } from './AtomicPlaybackClock.js';
 
 /**
  * Playback engine state machine
@@ -189,6 +191,14 @@ export class PlaybackEngine {
   // CC64 timeline state
   private currentCC64Timeline = new Map<number, boolean>();
 
+  // Per-instrument volume control (gain nodes)
+  private instrumentGainNodes = new Map<string, GainNode>();
+  private instrumentMuteStates = new Map<string, boolean>();
+  private instrumentVolumeLevels = new Map<string, number>(); // Store intended volume levels (0-1)
+
+  // Current tempo tracking (for metrics collector sync)
+  private currentTempo = 120; // Default tempo in BPM
+
   constructor(eventBus: EventBus, config: PlaybackEngineConfig = {}) {
     this.instanceId = Math.random().toString(36).substring(2, 11);
     this.logger = getLogger('PlaybackEngine');
@@ -246,6 +256,14 @@ export class PlaybackEngine {
           state: this.state,
           instanceId: this.instanceId,
         });
+
+        // CRITICAL FIX: Always update currentTempo and sync to metrics collector
+        // This ensures timing accuracy calculations use the correct BPM
+        // regardless of whether playback is running
+        this.currentTempo = newTempo;
+        if (this.metricsCollector) {
+          this.metricsCollector.setTempo(newTempo);
+        }
 
         if (!this.isRunning) {
           this.logger.info(
@@ -360,6 +378,13 @@ export class PlaybackEngine {
       this.regionScheduler = new RegionScheduler(this.instanceId);
       this.metricsCollector = new TimingMetricsCollector();
       this.eventRouter = new EventRouter(this.instanceId);
+
+      // CRITICAL FIX: Initialize TimingMetricsCollector with actual sample rate
+      // Without this, the collector uses hardcoded 48000 Hz causing jitter miscalculation
+      this.metricsCollector.setSampleRate(this.sampleRate);
+      this.logger.debug('TimingMetricsCollector initialized with sample rate', {
+        sampleRate: this.sampleRate,
+      });
 
       // Set audio context for all instrument schedulers
       this.metronomeScheduler!.setAudioContext(audioContext);
@@ -596,6 +621,17 @@ export class PlaybackEngine {
     this.countdownBeats = beats;
     this.countdownEnabled = enabled;
     this.logger.info('Countdown config updated', { beats, enabled });
+  }
+
+  /**
+   * Get countdown configuration
+   * Used by BeatEmitter to configure countdown for visual beat sync
+   */
+  getCountdownConfig(): { beats: number; enabled: boolean } {
+    return {
+      beats: this.countdownBeats,
+      enabled: this.countdownEnabled,
+    };
   }
 
   /**
@@ -870,6 +906,45 @@ export class PlaybackEngine {
     this.transportStartTime = this.audioContext.currentTime + startupLookahead;
     this.syncTransportStartTime(this.transportStartTime);
 
+    // CRITICAL FIX: Set transport start time on metrics collector
+    // Without this, jitter calculations use transportStartTime=0, causing 409ms+ jitter reports
+    if (this.metricsCollector) {
+      this.metricsCollector.setTransportStartTime(this.transportStartTime);
+
+      // CRITICAL FIX: Sync tempo to metrics collector
+      // Without this, the collector assumes 120 BPM which causes 3% accuracy
+      // instead of 90%+ when the exercise uses a different tempo (e.g., 69 BPM)
+      const actualTempo = currentToneBpm || this.currentTempo;
+      this.currentTempo = actualTempo;
+      this.metricsCollector.setTempo(actualTempo);
+      this.logger.info('🎯 TimingMetricsCollector tempo synced', {
+        bpm: actualTempo,
+        source: currentToneBpm ? 'Tone.Transport' : 'currentTempo',
+      });
+    }
+
+    // 🔧 CRITICAL FIX: Sync EventRouter's transportStartTime
+    // Without this, EventRouter uses transportStartTime=0 and schedules audio
+    // at transport-relative times (e.g., 3.478s) instead of AudioContext times
+    // (e.g., 12.9s + 3.478s = 16.378s), causing audio to play in the past!
+    this.eventRouter.setTransportStartTime(this.transportStartTime);
+    console.log('[PLAYBACK-ENGINE START] 🔧 Synced EventRouter transportStartTime', {
+      transportStartTime: this.transportStartTime.toFixed(3),
+    });
+
+    // 🎯 ATOMIC CLOCK SYNC: Start the AtomicPlaybackClock with the SAME transportStartTime
+    // This ensures visual beat indicators are perfectly synced with audio scheduling.
+    // The AtomicPlaybackClock applies lookahead compensation so visuals show ACTUAL audio position.
+    const atomicClock = getAtomicPlaybackClock();
+    atomicClock.setAudioContext(this.audioContext);
+    atomicClock.setTransportStartTime(this.transportStartTime);
+    atomicClock.configure(4, musicalTruth.getCountdownBeats()); // 4/4 time signature
+    atomicClock.start();
+    console.log('[PLAYBACK-ENGINE START] 🎯 AtomicPlaybackClock started', {
+      transportStartTime: this.transportStartTime.toFixed(3),
+      countdownBeats: musicalTruth.getCountdownBeats(),
+    });
+
     this.logger.info('🎯 Transport start anchor captured (BEFORE scheduling)', {
       transportStartTime: this.transportStartTime.toFixed(3),
       currentContextTime: this.audioContext.currentTime.toFixed(3),
@@ -886,8 +961,48 @@ export class PlaybackEngine {
       this.logger.warn('Could not apply master fade-in (Mixer not ready)', { error: e });
     }
 
+    // 🎯 FLICKER FIX: Set state and emit event BEFORE blocking scheduling
+    // This ensures widgets receive isPlaying=true with position=0 IMMEDIATELY,
+    // before the 500-1000ms scheduleAllRegions() blocks the main thread.
+    // Without this, widgets see isPlaying=true only AFTER scheduling completes,
+    // at which point currentTime has already progressed to ~1500ms.
+    this.isRunning = true;
+    this.setState('playing');
+
+    // Calculate countdown duration in milliseconds for visual beat indicators
+    // This allows widgets to correctly offset their beat calculations
+    const countdownBeats = musicalTruth.getCountdownBeats();
+    const bpm = musicalTruth.getBPM();
+    const countdownDurationMs = (countdownBeats / bpm) * 60 * 1000;
+
+    // Emit playback:starting with position=0 for widgets to sync BEFORE scheduling
+    // Include countdownDurationMs for useBeatIndicator to calculate correct beat positions
+    // Include transportStartTime for BeatEmitter to sync visual events with audio
+    this.eventBus.emit('playback:starting', {
+      instanceId: this.instanceId,
+      position: 0,
+      timestamp: Date.now(),
+      countdownDurationMs, // For jitter-free visual beat calculation
+      transportStartTime: this.transportStartTime, // For BeatEmitter audio sync
+    });
+
+    lifecycle.checkpoint('PLAYBACK_STATE_SET', {
+      state: 'playing',
+      isRunning: true,
+      emittedStartingEvent: true,
+    });
+
     // PHASE 3: Initial scheduling
     this.isInitialScheduling = true;
+
+    // 🔍 DIAGNOSTIC: Verify scheduledEvents was cleared before scheduling
+    console.log('[PLAYBACK-ENGINE START] 🔍 PHASE 3: About to schedule all regions', {
+      scheduledEventsSize: this.scheduledEvents.size,
+      scheduledIdsSize: this.scheduledIds.size,
+      tracksCount: this.tracks.size,
+      shouldBothBeZero: this.scheduledEvents.size === 0 && this.scheduledIds.size === 0,
+    });
+
     lifecycle.checkpoint('SCHEDULE_ALL_REGIONS_START', { tracksCount: this.tracks.size });
     this.scheduleAllRegions();
     lifecycle.checkpoint('SCHEDULE_ALL_REGIONS_COMPLETE', { tracksCount: this.tracks.size });
@@ -925,9 +1040,8 @@ export class PlaybackEngine {
       },
     );
 
-    // Update state
-    this.isRunning = true;
-    this.setState('playing');
+    // Note: State was already set to 'playing' BEFORE scheduling (FLICKER FIX)
+    // to ensure widgets receive isPlaying=true with position=0 immediately
     lifecycle.checkpoint('TRANSPORT_STARTED', {
       instanceId: this.instanceId,
       tracksCount: this.tracks.size,
@@ -938,7 +1052,8 @@ export class PlaybackEngine {
       tracksCount: this.tracks.size,
     });
 
-    // Emit playback start event
+    // Emit playback:start for backwards compatibility (after scheduling complete)
+    // Note: playback:starting was already emitted BEFORE scheduling with position=0
     this.eventBus.emit('playback:start', { instanceId: this.instanceId });
   }
 
@@ -1082,6 +1197,14 @@ export class PlaybackEngine {
         countdownEnabled: this.countdownEnabled,
       });
     }
+
+    // 🔧 TIMING SYNC FIX: Publish transportStartTime via EventBus for Transport to sync
+    // Transport will receive this BEFORE its start() is called, ensuring it uses
+    // the SAME transportStartTime as PlaybackEngine (no visual-audio desync)
+    this.eventBus.emit('playback:transportStartTime', { transportStartTime: time });
+    console.log('🎯 [TIMING SYNC] PlaybackEngine published transportStartTime via EventBus', {
+      transportStartTime: time.toFixed(3) + 's',
+    });
   }
 
   /**
@@ -1100,6 +1223,12 @@ export class PlaybackEngine {
    * Inlined from LifecycleCoordinator
    */
   private clearScheduledState(): void {
+    // 🔍 DIAGNOSTIC: Log before clearing
+    console.log('[PLAYBACK-ENGINE] 🧹 clearScheduledState() called', {
+      scheduledEventsSize: this.scheduledEvents.size,
+      scheduledIdsSize: this.scheduledIds.size,
+    });
+
     // Clear Tone.Transport scheduled events
     const Tone = getTone();
     this.scheduledIds.forEach((toneId) => {
@@ -1111,6 +1240,13 @@ export class PlaybackEngine {
     });
     this.scheduledIds.clear();
     this.scheduledEvents.clear();
+
+    // 🔍 DIAGNOSTIC: Log after clearing
+    console.log('[PLAYBACK-ENGINE] 🧹 clearScheduledState() completed', {
+      scheduledEventsSize: this.scheduledEvents.size,
+      scheduledIdsSize: this.scheduledIds.size,
+      bothAreZero: this.scheduledEvents.size === 0 && this.scheduledIds.size === 0,
+    });
   }
 
   /**
@@ -1292,11 +1428,39 @@ export class PlaybackEngine {
       this.positionCallbackCleanup = null;
     }
 
-    // 🔧 SECOND PLAYBACK FIX: Reset timing and state for clean restart
-    // This mirrors the Transport.stop() cleanup pattern to ensure
-    // second playback cycle works correctly without clock corruption
+    // 🔧 SECOND PLAYBACK FIX: Clear ALL Tone.Transport scheduled events
+    // CRITICAL: Cancel all scheduled events on Tone.Transport BEFORE clearing tracking
+    // Without this, events from previous playback may fire during next playback
+    try {
+      const Tone = getTone();
+      // Method 1: Clear tracked event IDs (events we scheduled ourselves)
+      let clearedCount = 0;
+      this.scheduledIds.forEach((toneId) => {
+        try {
+          Tone.Transport.clear(toneId);
+          clearedCount++;
+        } catch (e) {
+          // Ignore errors when clearing (event may have already fired)
+        }
+      });
+      // Method 2: Cancel ALL events as nuclear option (catches any untracked events)
+      Tone.Transport.cancel(0);
+      console.log('[PLAYBACK-ENGINE STOP] 🧹 Cleared ALL Tone.Transport events', {
+        trackedIdsCancelled: clearedCount,
+        nuclearCancelCalled: true,
+      });
+    } catch (e) {
+      console.warn('[PLAYBACK-ENGINE STOP] Could not clear Tone.Transport events', e);
+    }
+
+    // Reset timing and state for clean restart
     this.transportStartTime = 0;
     console.log('[PLAYBACK-ENGINE STOP] Reset transportStartTime to 0');
+
+    // 🎯 ATOMIC CLOCK STOP: Stop the visual beat clock
+    const atomicClock = getAtomicPlaybackClock();
+    atomicClock.stop();
+    console.log('[PLAYBACK-ENGINE STOP] 🎯 AtomicPlaybackClock stopped');
 
     // Reset running state (critical for second playback to schedule regions)
     this.isRunning = false;
@@ -1430,12 +1594,21 @@ export class PlaybackEngine {
     instrumentName?: string,
   ): void {
     // DIAGNOSTIC: Log when harmony buffers are set
+    const allKeys = Array.from(buffers.keys());
+    const v4Keys = allKeys.filter(k => k.includes('v4'));
+    const v5Keys = allKeys.filter(k => k.includes('v5'));
+    const uniqueLayersFromKeys = [...new Set(allKeys.map(k => k.split('-')[0]))];
     console.log('🎹 [BUFFER-SWITCH-DEBUG] PlaybackEngine.setHarmonyBuffers called:', {
       instrumentName,
       bufferCount: buffers.size,
       hasDestination: !!destination,
       hasAudioContext: !!this.audioContext,
-      sampleBufferKeys: Array.from(buffers.keys()).slice(0, 5), // First 5 keys for brevity
+      // LOG ALL KEYS AS STRINGS to avoid console collapsing
+      allKeysStr: allKeys.join(', '),
+      v4KeysStr: v4Keys.join(', '),
+      v5KeysStr: v5Keys.join(', '),
+      uniqueLayersStr: uniqueLayersFromKeys.join(', '),
+      uniqueLayerCount: uniqueLayersFromKeys.length,
     });
 
     if (!this.audioContext || !destination) {
@@ -1497,6 +1670,9 @@ export class PlaybackEngine {
         );
       } else {
         // Flat structure from HarmonyWidget - convert to nested
+        // Keys come in format "v3-Cs4" from HarmonyWidget (already stripped of instrument prefix)
+        const parseResults: Array<{key: string, layer: string, note: string, parts: number}> = [];
+
         (buffers as Map<string, AudioBuffer>).forEach((buffer, key) => {
           // Keys are like "v3-Cs4" or "C4"
           // Extract layer and note name
@@ -1504,20 +1680,37 @@ export class PlaybackEngine {
           let layer: string;
           let noteName: string;
 
-          if (parts.length === 2) {
-            // Format: "v3-Cs4"
+          if (parts.length >= 2 && /^v\d+$/.test(parts[0])) {
+            // Format: "v3-Cs4" or "v3-Gs4" etc
+            // First part is velocity layer (v1, v2, v3, v4, v5)
             layer = parts[0];
-            noteName = parts[1];
+            // Rest is note name (could be "Cs4" or "Gs4" etc)
+            noteName = parts.slice(1).join('-');
           } else {
-            // Format: "Cs4" (single layer)
+            // Format: "Cs4" (single layer without velocity prefix)
             layer = 'v1';
             noteName = key;
           }
+
+          parseResults.push({ key, layer, note: noteName, parts: parts.length });
 
           if (!nestedBuffers.has(layer)) {
             nestedBuffers.set(layer, new Map());
           }
           nestedBuffers.get(layer)!.set(noteName, buffer);
+        });
+
+        // Diagnostic: Log ALL keys and their parsed layers/notes
+        console.log('🔍 [BUFFER-PARSE-DEBUG] All buffer keys parsed:', {
+          totalKeys: parseResults.length,
+          byLayer: Object.fromEntries(
+            [...new Set(parseResults.map(r => r.layer))].map(layer => [
+              layer,
+              parseResults.filter(r => r.layer === layer).map(r => r.note)
+            ])
+          ),
+          firstFew: parseResults.slice(0, 5),
+          problematic: parseResults.filter(r => r.parts !== 2),
         });
       }
 
@@ -1643,6 +1836,74 @@ export class PlaybackEngine {
   }
 
   /**
+   * Set bass sample buffers for the bass scheduler
+   *
+   * Buffers are keyed by MIDI note number (as string), e.g., "40", "45"
+   * for direct lookup from PatternEvent.data.midiNote
+   *
+   * @param buffers - Record of MIDI note numbers to AudioBuffers
+   * @param destination - Audio destination node
+   */
+  setBassBuffers(
+    buffers: Record<string, AudioBuffer>,
+    destination: AudioNode,
+  ): void {
+    if (!this.audioContext || !destination) {
+      this.logger.warn(
+        'Cannot set bass buffers: audio context or destination not ready',
+      );
+      return;
+    }
+
+    if (!this.bassScheduler) {
+      this.logger.warn('Cannot set bass buffers: bassScheduler not initialized');
+      return;
+    }
+
+    // Set audio context on scheduler (may already be set, but safe to call again)
+    this.bassScheduler.setAudioContext(this.audioContext);
+
+    // Set buffers with destination
+    this.bassScheduler.setBuffers(buffers, destination);
+
+    this.logger.info('Bass buffers set', {
+      bufferCount: Object.keys(buffers).length,
+      bufferKeys: Object.keys(buffers).slice(0, 10), // Log first 10 keys
+      midiNoteRange: this.getMidiNoteRange(Object.keys(buffers)),
+      hasDestination: !!destination,
+      instanceId: this.instanceId,
+    });
+  }
+
+  /**
+   * Helper to get MIDI note range from buffer keys
+   */
+  private getMidiNoteRange(keys: string[]): string {
+    const midiNotes = keys.map((k) => parseInt(k, 10)).filter((n) => !isNaN(n));
+    if (midiNotes.length === 0) return 'none';
+    const min = Math.min(...midiNotes);
+    const max = Math.max(...midiNotes);
+    return `${min}-${max} (${midiNotes.length} notes)`;
+  }
+
+  /**
+   * Clear all bass buffers from the bass scheduler
+   * Call this when switching exercises to ensure the new exercise's bass samples
+   * are loaded fresh without contamination from the previous exercise
+   */
+  clearBassBuffers(): void {
+    if (!this.bassScheduler) {
+      this.logger.warn('Cannot clear bass buffers: bassScheduler not initialized');
+      return;
+    }
+
+    this.bassScheduler.clearBuffers();
+    this.logger.info('Bass buffers cleared for exercise switch', {
+      instanceId: this.instanceId,
+    });
+  }
+
+  /**
    * Get statistics for monitoring
    */
   getStats() {
@@ -1655,5 +1916,139 @@ export class PlaybackEngine {
       countdownEnabled: this.countdownEnabled,
       countdownBeats: this.countdownBeats,
     };
+  }
+
+  // ==========================================
+  // Per-Instrument Volume Control
+  // ==========================================
+
+  /**
+   * Get or create a gain node for an instrument type
+   * This allows per-instrument volume and mute control.
+   * When creating a new node, any previously stored volume/mute state is applied.
+   */
+  getOrCreateInstrumentGainNode(
+    instrumentType: 'metronome' | 'drums' | 'bass' | 'harmony',
+  ): GainNode | null {
+    if (!this.audioContext) {
+      this.logger.debug('Cannot create instrument gain node: no audio context');
+      return null;
+    }
+
+    // Return existing gain node if already created
+    if (this.instrumentGainNodes.has(instrumentType)) {
+      return this.instrumentGainNodes.get(instrumentType)!;
+    }
+
+    // Create new gain node and connect to destination
+    const gainNode = this.audioContext.createGain();
+    gainNode.connect(this.audioContext.destination);
+    this.instrumentGainNodes.set(instrumentType, gainNode);
+
+    // Use previously stored values if available, otherwise set defaults
+    // This ensures volume/mute states set before gain node creation are preserved
+    const storedVolume = this.instrumentVolumeLevels.get(instrumentType);
+    const storedMute = this.instrumentMuteStates.get(instrumentType);
+
+    const volume = storedVolume ?? 0.8; // Default volume 80%
+    const isMuted = storedMute ?? false;
+
+    // Store the values (either existing or defaults)
+    if (storedVolume === undefined) {
+      this.instrumentVolumeLevels.set(instrumentType, volume);
+    }
+    if (storedMute === undefined) {
+      this.instrumentMuteStates.set(instrumentType, isMuted);
+    }
+
+    // Apply the initial gain value
+    const effectiveVolume = isMuted ? 0 : volume;
+    gainNode.gain.value = effectiveVolume;
+
+    this.logger.info(`Created gain node for ${instrumentType} (volume: ${volume}, muted: ${isMuted})`);
+    return gainNode;
+  }
+
+  /**
+   * Set volume for a specific instrument (0-1 range)
+   * Note: Volume is always stored, even if gain node doesn't exist yet.
+   * The volume will be applied when the gain node is created.
+   */
+  setInstrumentVolume(
+    instrumentType: 'metronome' | 'drums' | 'bass' | 'harmony',
+    volume: number,
+  ): void {
+    // Always store the intended volume level first (before mute consideration)
+    // This ensures the value is saved even if gain node doesn't exist yet
+    const clampedVolume = Math.max(0, Math.min(1, volume));
+    this.instrumentVolumeLevels.set(instrumentType, clampedVolume);
+
+    // Try to get or create the gain node
+    const gainNode = this.getOrCreateInstrumentGainNode(instrumentType);
+    if (!gainNode) {
+      // No audio context available yet - volume is stored and will be applied
+      // when the gain node is created (getOrCreateInstrumentGainNode sets default from stored value)
+      this.logger.debug(`Volume stored for ${instrumentType}: ${volume} (gain node will be created later)`);
+      return;
+    }
+
+    const isMuted = this.instrumentMuteStates.get(instrumentType) ?? false;
+    const effectiveVolume = isMuted ? 0 : clampedVolume;
+
+    // Smooth volume change to avoid clicks
+    const currentTime = this.audioContext?.currentTime ?? 0;
+    gainNode.gain.setTargetAtTime(effectiveVolume, currentTime, 0.02);
+
+    this.logger.debug(`Volume set for ${instrumentType}: ${volume} (effective: ${effectiveVolume})`);
+  }
+
+  /**
+   * Set mute state for a specific instrument
+   * Note: Mute state is always stored, even if gain node doesn't exist yet.
+   * The mute state will be applied when the gain node is created.
+   */
+  setInstrumentMuted(
+    instrumentType: 'metronome' | 'drums' | 'bass' | 'harmony',
+    muted: boolean,
+  ): void {
+    // Always store the mute state first
+    // This ensures the value is saved even if gain node doesn't exist yet
+    this.instrumentMuteStates.set(instrumentType, muted);
+
+    // Try to get or create the gain node
+    const gainNode = this.getOrCreateInstrumentGainNode(instrumentType);
+    if (!gainNode) {
+      // No audio context available yet - mute state is stored and will be applied
+      // when the gain node is created
+      this.logger.debug(`Mute state stored for ${instrumentType}: ${muted} (gain node will be created later)`);
+      return;
+    }
+
+    // When muted, set gain to 0; otherwise restore the stored volume level
+    const storedVolume = this.instrumentVolumeLevels.get(instrumentType) ?? 0.8;
+    const effectiveVolume = muted ? 0 : storedVolume;
+
+    const currentTime = this.audioContext?.currentTime ?? 0;
+    gainNode.gain.setTargetAtTime(effectiveVolume, currentTime, 0.01);
+
+    this.logger.debug(`Mute set for ${instrumentType}: ${muted} (restored volume: ${storedVolume})`);
+  }
+
+  /**
+   * Get the current mute state for an instrument
+   */
+  isInstrumentMuted(
+    instrumentType: 'metronome' | 'drums' | 'bass' | 'harmony',
+  ): boolean {
+    return this.instrumentMuteStates.get(instrumentType) ?? false;
+  }
+
+  /**
+   * Get the current volume level for an instrument (0-1 range)
+   */
+  getInstrumentVolume(
+    instrumentType: 'metronome' | 'drums' | 'bass' | 'harmony',
+  ): number {
+    return this.instrumentVolumeLevels.get(instrumentType) ?? 0.8;
   }
 }

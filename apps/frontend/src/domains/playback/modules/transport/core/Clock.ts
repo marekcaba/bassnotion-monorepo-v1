@@ -14,6 +14,7 @@ import { ClockSyncError } from '../types/errors.js';
 import { createStructuredLogger } from '../shared/index.js';
 import { SampleAccurateClock } from '../sync/SampleAccurateClock.js';
 import { WorkerTimingManager } from '../sync/WorkerTimingManager.js';
+import { TRANSPORT_TIMING_CONFIG } from '../../../config/transportTiming.js';
 
 const logger = createStructuredLogger('TransportClock');
 
@@ -183,6 +184,16 @@ export class Clock {
         );
         try {
           await this.initializeAudioWorklet();
+
+          // TIMING JITTER FIX: Stop the 1-second sync interval when upgrading to AudioWorklet
+          // AudioWorklet provides sample-accurate timing, so the sync interval is not needed
+          // and can cause timing jitter interference with position updates
+          if (this.clockSyncInterval !== null) {
+            clearInterval(this.clockSyncInterval);
+            this.clockSyncInterval = null;
+            logger.info('Stopped clock sync interval after AudioWorklet upgrade');
+          }
+
           logger.info('✅ Successfully upgraded to AudioWorklet mode', {
             previousMode: this.webWorkerActive ? 'WebWorker' : 'Basic',
           });
@@ -236,9 +247,12 @@ export class Clock {
     logger.debug('Initializing AudioWorklet clock...');
 
     // Create SampleAccurateClock
+    // DRIFT FIX: Use TRANSPORT_TIMING_CONFIG.updateInterval (20ms) instead of 2.67ms
+    // The mismatch between AudioWorklet (2.67ms) and Transport (20ms) intervals was causing drift
+    // By aligning them, we reduce timing discrepancies that accumulate over time
     this.sampleAccurateClock = new SampleAccurateClock({
-      updateInterval: 0.00267, // 128 samples @ 48kHz
-      lookAheadTime: 0.2,
+      updateInterval: TRANSPORT_TIMING_CONFIG.updateInterval, // 20ms - aligned with Transport scheduler
+      lookAheadTime: TRANSPORT_TIMING_CONFIG.lookAheadTime, // 150ms - consistent with Transport
       driftThreshold: 1,
       workletPath: this.config.audioWorkletPath,
     });
@@ -699,8 +713,20 @@ export class Clock {
 
   /**
    * Start periodic sync
+   *
+   * TIMING JITTER FIX: This method is only useful when AudioWorklet is NOT active.
+   * When AudioWorklet is active, it provides sample-accurate timing and this
+   * sync interval is not needed. Running both can cause timing jitter.
    */
   startPeriodicSync(): void {
+    // TIMING JITTER FIX: Don't start sync if AudioWorklet is active
+    // The 1-second sync interval can interfere with position updates,
+    // causing a 19ms micro-jitter pattern every ~1 second
+    if (this.audioWorkletActive) {
+      logger.debug('Skipping periodic sync - AudioWorklet active');
+      return;
+    }
+
     if (this.clockSyncInterval !== null) {
       return; // Already syncing
     }
@@ -763,10 +789,8 @@ export class Clock {
       this.clockSyncInterval = null;
     }
 
-    if (this.driftMeasurementInterval !== null) {
-      clearInterval(this.driftMeasurementInterval);
-      this.driftMeasurementInterval = null;
-    }
+    // NOTE: driftMeasurementInterval was removed in Phase 2 cleanup
+    // The adaptive drift compensation feature is deprecated
 
     // CLEANUP FIX: Remove AudioContext statechange listener to prevent memory leak
     if (this.stateChangeListener && this.audioContext) {

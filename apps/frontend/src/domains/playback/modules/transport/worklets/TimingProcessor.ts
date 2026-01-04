@@ -193,11 +193,11 @@ class TimingProcessor extends AudioWorkletProcessor {
         const expectedInterval = this.updateInterval;
         const drift = Math.abs(actualInterval - expectedInterval);
 
-        // Warn if drift is too high (increased threshold to reduce false positives)
+        // Warn if drift is too high - using tight threshold for faster correction
         // NOTE: With FAANG direct scheduling, these warnings don't affect audio timing
         // which is scheduled directly to AudioContext bypassing JavaScript timing
-        if (drift > 0.01) {
-          // 10ms threshold (increased from 5ms)
+        if (drift > 0.002) {
+          // 2ms threshold - tight threshold catches drift early before it accumulates
           this.missedUpdates++;
           const warningMessage: TimingMessage = {
             type: 'timing-warning',

@@ -31,41 +31,23 @@ export const useFretboard = (
     tiltAngle?: number;
   },
 ) => {
-  logger.info(`🔥 useFretboard: hook called`, {
-    syncPropsKeys: Object.keys(syncProps || {}),
-    selectedExerciseId: syncProps?.selectedExercise?.id,
-    isPlaying: syncProps?.isPlaying,
-    currentTime: syncProps?.currentTime,
-    configStringCount: config?.stringCount,
-    timestamp: Date.now(),
-  });
+  // Hook logging disabled for performance (runs every render)
+  // Uncomment for debugging hook behavior
 
   // State management with config from user profile
-  logger.info(`🔥 useFretboard: calling useFretboardState`);
   const state = useFretboardState(config);
-  logger.info(`🔥 useFretboard: useFretboardState returned`, {
-    selectedDotsSize: state.selectedDots.size,
-    stringCount: state.stringCount,
-  });
 
   // Connection highlighting
-  logger.info(`🔥 useFretboard: calling useFretboardConnections`);
   const connections = useFretboardConnections(
     state.selectedDots,
     state.stringCount,
   );
 
   // Exercise integration with auto-population enabled
-  logger.info(`🔥 useFretboard: calling useFretboardExercise`);
   const exercise = useFretboardExercise(syncProps, {
     setSelectedDots: state.setSelectedDots,
     autoPopulateOnExerciseLoad: true, // Enable auto-population when exercises change
     stringCount: state.stringCount, // Pass string count to audio system
-  });
-  logger.info(`🔥 useFretboard: useFretboardExercise returned`, {
-    hasExercise: exercise.exerciseData.hasExercise,
-    exerciseNotesLength: exercise.exerciseData.exerciseNotes.length,
-    selectedExerciseId: exercise.exerciseData.selectedExercise?.id,
   });
 
   // Enhanced dot click handler that integrates audio and sync
@@ -203,5 +185,11 @@ export const useFretboard = (
     isExerciseNote: exercise.isExerciseNote,
     isCurrentNote: exercise.isCurrentNote,
     exerciseData: exercise.exerciseData,
+
+    // Measure-based opacity for playback animation
+    measureOpacity: exercise.measureOpacity,
+
+    // Next note to play indicator (for yellow ring)
+    nextNoteToPlay: exercise.nextNoteToPlay,
   };
 };

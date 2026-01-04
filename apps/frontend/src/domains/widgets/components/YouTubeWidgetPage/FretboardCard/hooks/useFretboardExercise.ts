@@ -1,14 +1,21 @@
-import { useMemo, useCallback, useEffect, useRef } from 'react';
-import type { SyncedWidgetRenderProps } from '../../../base';
+import { useMemo, useCallback, useEffect, useRef, useState } from 'react';
 import { createStructuredLogger } from '@bassnotion/contracts';
-import type { ExerciseNote } from '@bassnotion/contracts';
+import type { ExerciseNote, TimeSignature } from '@bassnotion/contracts';
 import type {
   Fret,
   BasslineData,
   CustomBasslineEvent,
 } from '../types/fretboardTypes';
 import { useAudioFretboard } from '../../../../hooks/useAudioFretboard';
-import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { useMeasureOpacity } from './useMeasureOpacity';
+// Use the same source of truth as the rest of the platform
+import {
+  musicalTruth,
+  type MusicalTruth,
+} from '@/domains/playback/modules/tempo/MusicalTruthAuthority';
+// TIMING SYNC FIX: Use AtomicPlaybackClock via useFretboardAtomicSync hook
+// This ensures FretboardCard uses the same timing source as all other widgets
+import { useFretboardAtomicSync } from '@/domains/widgets/hooks/useBeatGridSync';
 
 const logger = createStructuredLogger('useFretboardExercise');
 
@@ -34,14 +41,8 @@ export const useFretboardExercise = (
     stringCount?: 4 | 5 | 6;
   },
 ) => {
-  logger.info(`🔥 useFretboardExercise: hook called`, {
-    selectedExerciseId: syncProps?.selectedExercise?.id,
-    isPlaying: syncProps?.isPlaying,
-    currentTime: syncProps?.currentTime,
-    optionsStringCount: options?.stringCount,
-    autoPopulate: options?.autoPopulateOnExerciseLoad,
-    timestamp: Date.now(),
-  });
+  // Hook logging disabled for performance (runs every render)
+  // Uncomment for debugging hook behavior
 
   // Extract options with defaults
   const {
@@ -62,6 +63,9 @@ export const useFretboardExercise = (
   const lastExerciseIdRef = useRef<string | null>(null);
   const lastPopulationTimestampRef = useRef<number>(0);
 
+  // NOTE: Previous refs (wasPlayingRef, playbackJustStartedRef, playbackStartedAtRef)
+  // were removed as part of TIMING SYNC FIX - AtomicPlaybackClock handles all timing
+
   // Extract exercise data from sync props
   const exerciseData = useMemo(() => {
     const selectedExercise = syncProps.selectedExercise;
@@ -75,6 +79,350 @@ export const useFretboardExercise = (
       exerciseProgress: hasExercise ? (exerciseNotes.length / 100) * 100 : 0, // Simple progress calculation
     };
   }, [syncProps.selectedExercise]);
+
+  // CRITICAL FIX: Subscribe to musicalTruth changes to get REACTIVE tempo updates
+  // Previously, musicalTruth.getBPM() was called once at render time,
+  // which happened BEFORE setFromExercise() was called, returning default 120 BPM.
+  // Now we use state + subscription to react when tempo actually changes.
+  const [musicalTruthState, setMusicalTruthState] = useState<MusicalTruth>(() =>
+    musicalTruth.getTruth(),
+  );
+
+  useEffect(() => {
+    // Subscribe to musicalTruth changes
+    const unsubscribe = musicalTruth.subscribe((truth) => {
+      // Logging disabled for performance
+      setMusicalTruthState(truth);
+    });
+
+    // Also sync on mount in case we missed an update
+    setMusicalTruthState(musicalTruth.getTruth());
+
+    return unsubscribe;
+  }, []);
+
+  // Use the reactive state instead of direct musicalTruth calls
+  const exerciseTempo = musicalTruthState.bpm;
+  const exerciseTimeSignature: TimeSignature = musicalTruthState.timeSignature;
+
+  // Calculate countdown offset in milliseconds using MUSICAL TRUTH (reactive state)
+  // The transport's currentTime includes the countdown period
+  // We need to subtract this to get the "exercise time" for measure highlighting
+  const countdownBars = musicalTruthState.countdownBars;
+  const beatsPerBar = exerciseTimeSignature.numerator;
+  const msPerBeat = (60 / exerciseTempo) * 1000;
+  const countdownDurationMs = countdownBars * beatsPerBar * msPerBeat;
+
+  // =============================================================================
+  // TIMING SYNC FIX: Use AtomicPlaybackClock via useFretboardAtomicSync
+  // =============================================================================
+  // Previously, this hook used a custom useAnimationTime() function that:
+  // 1. Subscribed to EventBus 'transport:position-updated' events (~30Hz)
+  // 2. Ran its own RAF loop for time interpolation
+  //
+  // This was redundant because useFretboardNoteSync already subscribes to
+  // AtomicPlaybackClock for note highlighting. Now ALL timing comes from
+  // the same source, ensuring perfect sync with other widgets.
+  // =============================================================================
+  const atomicSync = useFretboardAtomicSync({
+    isPlaying: syncProps.isPlaying,
+    isVisible: true,
+    // Use countdown beats (bars * beatsPerBar)
+    countdownBeats: countdownBars * beatsPerBar,
+    beatsPerMeasure: beatsPerBar,
+  });
+
+  // exerciseTimeMs from atomicSync is already countdown-adjusted:
+  // - Negative during countdown
+  // - Positive after countdown starts
+  // We use Math.max(0, ...) to ensure we don't use negative values for note lookup
+  const exerciseTime = Math.max(0, atomicSync.exerciseTimeMs);
+
+  // rawCurrentTime is needed for countdown detection in unifiedPlaybackState
+  // Calculate it from atomicSync: visualSeconds includes countdown, so we need to convert
+  const rawCurrentTime = atomicSync.visualSeconds * 1000;
+
+  // Track previous note index for transition logging (must be outside useMemo!)
+  const prevNoteIndexRef = useRef<number>(-1);
+
+  // Reset note tracking when playback stops or exercise changes
+  useEffect(() => {
+    if (!syncProps.isPlaying) {
+      prevNoteIndexRef.current = -1;
+    }
+  }, [syncProps.isPlaying, syncProps.selectedExercise?.id]);
+
+  // DEBUG: Time logging disabled after timing fix verification
+  // Uncomment for debugging timing issues
+  // if (syncProps.isPlaying && rawCurrentTime > 0) {
+  //   const expectedMsPerBar = (60 / exerciseTempo) * 1000 * beatsPerBar;
+  //   const currentBar = Math.floor(exerciseTime / expectedMsPerBar) + 1;
+  //   console.log(`[TIMING-DEBUG] rawCurrentTime=${rawCurrentTime.toFixed(0)}ms, exerciseTime=${exerciseTime.toFixed(0)}ms, currentBar=${currentBar}`);
+  // }
+
+  // Track previous measure for transition logging
+  const prevMeasureRef = useRef<number>(-1);
+
+  // =============================================================================
+  // FLICKER FIX v9: UNIFIED PLAYBACK STATE CALCULATION
+  // =============================================================================
+  // CRITICAL: Both currentMeasureFromNote AND nextNoteToPlay MUST be calculated
+  // in the SAME useMemo to prevent React batching from causing them to desync.
+  //
+  // Previously, these were in separate useMemo hooks. During React's batched updates,
+  // one could update before the other, causing:
+  // - currentMeasureFromNote = 0 (old value)
+  // - nextNoteToPlay.noteIndex = 5 (new value, in measure 1)
+  //
+  // This caused FretboardGrid to render dots with inconsistent state:
+  // - isDotPlayedInCurrentMeasure used nextNoteToPlay.noteIndex (new)
+  // - getMeasureHighlight used currentMeasure (old)
+  // Result: ~50ms flicker where wrong dots briefly highlight
+  //
+  // Solution: Calculate BOTH values in a single useMemo so they're always consistent.
+  // =============================================================================
+
+  // FLICKER DEBUG v16: Track previous unified state to detect measure transitions
+  const prevUnifiedMeasureRef = useRef<number>(-1);
+
+  // PERFORMANCE FIX: Quantize exerciseTime to reduce useMemo recalculations
+  // The visual ring animation runs at 60fps via useFretboardNoteSync (direct DOM).
+  // React state only needs to update when the NOTE INDEX changes (~1-10x per second).
+  // By quantizing to 20ms, we reduce recalculations from 60/sec to ~50/sec max,
+  // while still catching note changes promptly (notes are typically 100-500ms apart).
+  const quantizedExerciseTime = useMemo(() => {
+    // Quantize to 20ms buckets - fine enough to catch note changes
+    return Math.floor(exerciseTime / 20) * 20;
+  }, [exerciseTime]);
+
+  const unifiedPlaybackState = useMemo(() => {
+    // Default return value for when there's no exercise
+    const defaultState = {
+      currentMeasureFromNote: 0,
+      nextNoteToPlay: null as {
+        stringIndex: number;
+        fret: Fret;
+        noteIndex: number;
+      } | null,
+    };
+
+    if (!exerciseData.hasExercise || exerciseData.exerciseNotes.length === 0) {
+      return defaultState;
+    }
+
+    const notes = exerciseData.exerciseNotes;
+    const maxString = Math.max(...notes.map((n: ExerciseNote) => n.string));
+
+    // Helper to convert note to fretboard position
+    const noteToPosition = (note: ExerciseNote, index: number) => {
+      let stringIndex: number;
+      if (maxString <= 4) {
+        stringIndex = 5 - note.string;
+      } else if (maxString <= 5) {
+        stringIndex = 5 - note.string;
+      } else {
+        stringIndex = 6 - note.string;
+      }
+      const fret: Fret = note.fret === 0 ? 'open' : note.fret;
+      return { stringIndex, fret, noteIndex: index };
+    };
+
+    // When not playing, return first note's measure and position
+    if (!syncProps.isPlaying) {
+      return {
+        currentMeasureFromNote: notes[0].position?.measure ?? 0,
+        nextNoteToPlay: noteToPosition(notes[0], 0),
+      };
+    }
+
+    // During countdown (before exercise starts), show first note
+    if (rawCurrentTime < countdownDurationMs) {
+      return {
+        currentMeasureFromNote: 0,
+        nextNoteToPlay: noteToPosition(notes[0], 0),
+      };
+    }
+
+    // Calculate timing constants
+    const msPerBeat = (60 / exerciseTempo) * 1000;
+    const beatsPerMeasure = exerciseTimeSignature.numerator;
+    const msPerMeasure = msPerBeat * beatsPerMeasure;
+    const TICKS_PER_BEAT = 480;
+
+    // Helper to convert MusicalPosition to milliseconds
+    const positionToMs = (
+      pos:
+        | {
+            measure?: number;
+            beat?: number;
+            subdivision?: number;
+            tick?: number;
+          }
+        | undefined,
+    ): number => {
+      const measure = pos?.measure ?? 0;
+      const beat = pos?.beat ?? 0;
+      const subdivision = pos?.subdivision ?? 0;
+      const tick = pos?.tick;
+
+      const tickWithinBeat =
+        tick !== undefined ? tick : subdivision * (TICKS_PER_BEAT / 4);
+      const fractionalBeat = tickWithinBeat / TICKS_PER_BEAT;
+
+      return (
+        measure * msPerMeasure + beat * msPerBeat + fractionalBeat * msPerBeat
+      );
+    };
+
+    // Find which note is currently playing - this determines BOTH measure and next note
+    // PERF FIX: Use quantizedExerciseTime for note lookup to reduce recalculations
+    for (let i = 0; i < notes.length; i++) {
+      const note = notes[i];
+      const noteStartMs = positionToMs(note.position);
+
+      let noteEndMs: number;
+      if (i < notes.length - 1) {
+        const nextNote = notes[i + 1];
+        noteEndMs = positionToMs(nextNote.position);
+      } else {
+        // Use durationTicks for precise timing (480 ticks = 1 beat)
+        // Fallback to 480 (quarter note) if not available
+        const durationTicks = note.durationTicks ?? TICKS_PER_BEAT;
+        const durationBeats = durationTicks / TICKS_PER_BEAT;
+        noteEndMs = noteStartMs + durationBeats * msPerBeat;
+      }
+
+      if (quantizedExerciseTime >= noteStartMs && quantizedExerciseTime < noteEndMs) {
+        // Found the current note - return BOTH measure and position together
+        // This ensures they're always consistent!
+        return {
+          currentMeasureFromNote: note.position?.measure ?? 0,
+          nextNoteToPlay: noteToPosition(note, i),
+        };
+      }
+    }
+
+    // If before first note, show first note
+    const firstNoteStart = positionToMs(notes[0].position);
+    if (quantizedExerciseTime < firstNoteStart) {
+      return {
+        currentMeasureFromNote: notes[0].position?.measure ?? 0,
+        nextNoteToPlay: noteToPosition(notes[0], 0),
+      };
+    }
+
+    // All notes played - calculate measure from time, no note to play
+    const measureFromTime = Math.floor(quantizedExerciseTime / msPerMeasure);
+    return {
+      currentMeasureFromNote: measureFromTime,
+      nextNoteToPlay: null,
+    };
+  }, [
+    syncProps.isPlaying,
+    exerciseData.hasExercise,
+    exerciseData.exerciseNotes,
+    quantizedExerciseTime, // PERF FIX: Use quantized time (20ms buckets) instead of raw time
+    exerciseTempo,
+    exerciseTimeSignature.numerator,
+    rawCurrentTime,
+    countdownDurationMs,
+    // PERF FIX: Removed animationState.time - visual ring animation at 60fps
+    // is handled by useFretboardNoteSync (direct DOM), not React state.
+    // React state only needs to update when note changes, not every frame.
+  ]);
+
+  // Extract values from unified state for use in the rest of the hook
+  const { currentMeasureFromNote, nextNoteToPlay } = unifiedPlaybackState;
+
+  // FLICKER DEBUG v16: Log measure transitions at the useMemo level (not useEffect)
+  // This shows us EXACTLY when React computes new values
+  const debugMemo = (window as any).__DEBUG_MEMO_TIMING__ === true;
+  if (debugMemo && syncProps.isPlaying) {
+    const prevMeasure = prevUnifiedMeasureRef.current;
+    if (prevMeasure !== currentMeasureFromNote) {
+      console.log(
+        `📊 [MEMO] Measure computed: ${prevMeasure}→${currentMeasureFromNote} | ` +
+          `noteIdx=${nextNoteToPlay?.noteIndex ?? 'null'} | ` +
+          `time=${performance.now().toFixed(1)}ms`,
+      );
+    }
+    prevUnifiedMeasureRef.current = currentMeasureFromNote;
+  }
+
+  // =============================================================================
+  // FLICKER DEBUG v10: Log EVERY state update to track the source of flicker
+  // PERF FIX: All logging gated behind debug flag. Enable with:
+  // window.__DEBUG_UNIFIED_STATE__ = true
+  // =============================================================================
+  const debugUnifiedState = (window as any).__DEBUG_UNIFIED_STATE__ === true;
+  const prevUnifiedStateRef = useRef<{
+    measure: number;
+    noteIndex: number | null;
+    exerciseTime: number;
+  } | null>(null);
+
+  // This runs on EVERY render (not in useEffect) to catch state during React's commit phase
+  // PERF FIX: Only track state when debug is enabled
+  if (debugUnifiedState && syncProps.isPlaying) {
+    const currState = {
+      measure: currentMeasureFromNote,
+      noteIndex: nextNoteToPlay?.noteIndex ?? null,
+      exerciseTime: Math.round(exerciseTime),
+    };
+
+    const prevState = prevUnifiedStateRef.current;
+    if (prevState) {
+      const measureChanged = prevState.measure !== currState.measure;
+
+      // Only log measure transitions (these are the ones that matter for flicker)
+      // Note changes within the same measure are expected and don't cause flicker
+      if (measureChanged) {
+        console.log(
+          `🔵 [UNIFIED-STATE] MEASURE CHANGE: ` +
+            `measure: ${prevState.measure}→${currState.measure} | ` +
+            `noteIdx: ${prevState.noteIndex}→${currState.noteIndex} | ` +
+            `time: ${prevState.exerciseTime}→${currState.exerciseTime}ms`,
+        );
+      }
+    }
+    prevUnifiedStateRef.current = currState;
+  }
+
+  // DIAGNOSTIC: Log measure transitions to debug flicker
+  // PERF FIX: Gated behind debug flag
+  useEffect(() => {
+    const debugMeasureTransition = (window as any).__DEBUG_MEASURE_TRANSITION__ === true;
+    if (!debugMeasureTransition) return;
+
+    if (
+      syncProps.isPlaying &&
+      prevMeasureRef.current !== currentMeasureFromNote
+    ) {
+      console.log(
+        `🔴 [MEASURE-TRANSITION] measure: ${prevMeasureRef.current} → ${currentMeasureFromNote} | ` +
+          `exerciseTime=${exerciseTime.toFixed(0)}ms | rawCurrentTime=${rawCurrentTime.toFixed(0)}ms`,
+      );
+      prevMeasureRef.current = currentMeasureFromNote;
+    }
+  }, [
+    syncProps.isPlaying,
+    currentMeasureFromNote,
+    exerciseTime,
+    rawCurrentTime,
+  ]);
+
+  // Measure-based opacity for playback animation
+  // Shows current measure at 100%, next measure at 30%, others hidden
+  // SINGLE SOURCE OF TRUTH: currentMeasureFromNote is the authoritative measure
+  const measureOpacity = useMeasureOpacity({
+    exerciseNotes: exerciseData.exerciseNotes,
+    currentTime: exerciseTime, // Used for beat calculation only
+    isPlaying: syncProps.isPlaying || false,
+    tempo: exerciseTempo,
+    timeSignature: exerciseTimeSignature,
+    stringCount,
+    currentMeasure: currentMeasureFromNote,
+  });
 
   // Check if a position matches an exercise note
   const isExerciseNote = useCallback(
@@ -444,6 +792,86 @@ export const useFretboardExercise = (
     return audioIntegration.playbackIntegration;
   }, [audioIntegration.playbackIntegration]);
 
+  // Generate measure-aware connections from exercise notes
+  // Each connection knows which measure its endpoints belong to
+  // This allows FretboardGrid to show connections only for notes in current/next measure
+  const measureAwareConnections = useMemo(() => {
+    if (!exerciseData.hasExercise || exerciseData.exerciseNotes.length < 2) {
+      return [];
+    }
+
+    const connections: Array<{
+      pos1: { stringIndex: number; fret: Fret };
+      pos2: { stringIndex: number; fret: Fret };
+      measure1: number; // 0-based measure index for pos1
+      measure2: number; // 0-based measure index for pos2
+      sourceNoteIndex: number; // Index of the source note in exercise (for dot-to-dot line hiding)
+    }> = [];
+
+    const notes = exerciseData.exerciseNotes;
+    const maxString = Math.max(...notes.map((n: ExerciseNote) => n.string));
+
+    // Detect if notes use 0-indexed or 1-indexed measures
+    // This matches the logic in organizeNotesIntoMeasures from exerciseToMusicXML.ts
+    // If any note has measure: 0, they're 0-indexed; otherwise 1-indexed
+    const isZeroIndexed = notes.some((n: ExerciseNote) => n.position?.measure === 0);
+
+    // Create connections between consecutive notes in the exercise
+    for (let i = 0; i < notes.length - 1; i++) {
+      const note1 = notes[i];
+      const note2 = notes[i + 1];
+
+      // Calculate string indices based on exercise type
+      let stringIndex1: number;
+      let stringIndex2: number;
+
+      if (maxString <= 4) {
+        stringIndex1 = 5 - note1.string;
+        stringIndex2 = 5 - note2.string;
+      } else if (maxString <= 5) {
+        stringIndex1 = 5 - note1.string;
+        stringIndex2 = 5 - note2.string;
+      } else {
+        stringIndex1 = 6 - note1.string;
+        stringIndex2 = 6 - note2.string;
+      }
+
+      const fret1: Fret = note1.fret === 0 ? 'open' : note1.fret;
+      const fret2: Fret = note2.fret === 0 ? 'open' : note2.fret;
+
+      // Get measure from note position and normalize to 0-based
+      // This matches the logic in organizeNotesIntoMeasures:
+      // - For 0-indexed: measure 0 -> index 0
+      // - For 1-indexed: measure 1 -> index 0 (subtract 1)
+      const rawMeasure1 = note1.position?.measure ?? 0;
+      const rawMeasure2 = note2.position?.measure ?? 0;
+      const measure1 = isZeroIndexed ? rawMeasure1 : rawMeasure1 - 1;
+      const measure2 = isZeroIndexed ? rawMeasure2 : rawMeasure2 - 1;
+
+      connections.push({
+        pos1: { stringIndex: stringIndex1, fret: fret1 },
+        pos2: { stringIndex: stringIndex2, fret: fret2 },
+        measure1,
+        measure2,
+        sourceNoteIndex: i, // Index of the source note (note1) in the exercise
+      });
+    }
+
+    return connections;
+  }, [exerciseData.exerciseNotes, exerciseData.hasExercise]);
+
+  // Get the current measure (0-based) for connection visibility checking
+  // FLICKER FIX v11: measureOpacity.currentMeasure is ALREADY 0-based (same as currentMeasureFromNote)
+  // The previous code subtracted 1, causing currentMeasure0Based to be off by 1 from currentMeasureFromNote
+  // This caused connection lines to use a different measure than dot highlighting during transitions
+  const currentMeasure0Based = useMemo(() => {
+    if (!syncProps.isPlaying) return 0;
+    return measureOpacity.currentMeasure; // Already 0-based, no conversion needed
+  }, [syncProps.isPlaying, measureOpacity.currentMeasure]);
+
+  // NOTE: nextNoteToPlay is now computed in unifiedPlaybackState useMemo above
+  // to ensure it's always consistent with currentMeasureFromNote (FLICKER FIX v9)
+
   return {
     // Exercise data
     exerciseData,
@@ -469,5 +897,23 @@ export const useFretboardExercise = (
     createNoteEvent,
     playbackIntegration,
     audioIntegration,
+
+    // Measure-based opacity for playback animation
+    measureOpacity,
+
+    // Measure-aware connections for accurate line highlighting during playback
+    measureAwareConnections,
+    currentMeasure0Based,
+
+    // Next note to play indicator (for yellow ring)
+    nextNoteToPlay,
+
+    // FLICKER FIX v6: Export note-based measure for direct use by FretboardGrid
+    // This is the authoritative source for current measure during playback
+    // FretboardGrid should use this instead of deriving from nextNoteToPlay
+    currentMeasureFromNote,
+
+    // Tempo from musicalTruth - for direct DOM note sync in useFretboardNoteSync
+    tempo: exerciseTempo,
   };
 };

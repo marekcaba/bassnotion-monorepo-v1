@@ -33,6 +33,8 @@ interface BassNotionWindow {
   __bassnotion_samplesReady?: boolean;
   __bassnotion_essentialSamplesLoaded?: boolean;
   __bassnotion_initializationFailed?: boolean;
+  __bassnotion_bassBuffersReady?: boolean;
+  __bassnotion_bassBuffersExerciseId?: string;
 
   // Service Registry (for debugging)
   __bassnotion_serviceRegistry?: any;
@@ -330,6 +332,60 @@ export class WindowRegistry {
       (window as any).__initializationFailed ||
       false
     );
+  }
+
+  // ============================================================================
+  // BASS BUFFERS READINESS
+  // ============================================================================
+
+  /**
+   * Set the bass buffers ready flag for a specific exercise
+   * @param ready - Whether bass buffers are ready
+   * @param exerciseId - The exercise ID for which buffers are ready
+   */
+  static setBassBuffersReady(ready: boolean, exerciseId?: string): void {
+    if (typeof window === 'undefined') return;
+
+    window.__bassnotion_bassBuffersReady = ready;
+    window.__bassnotion_bassBuffersExerciseId = exerciseId;
+
+    // Dispatch event for listeners
+    if (ready && exerciseId) {
+      window.dispatchEvent(
+        new CustomEvent('bassBuffersReady', { detail: { exerciseId } })
+      );
+      console.log('🎸 [BASS-REGISTRY] Bass buffers ready event dispatched', {
+        exerciseId,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
+
+  /**
+   * Get the bass buffers ready flag
+   * @param exerciseId - Optional exercise ID to check readiness for specific exercise
+   */
+  static getBassBuffersReady(exerciseId?: string): boolean {
+    if (typeof window === 'undefined') return false;
+
+    const isReady = window.__bassnotion_bassBuffersReady || false;
+    const readyExerciseId = window.__bassnotion_bassBuffersExerciseId;
+
+    // If no exercise ID specified, just return the ready flag
+    if (!exerciseId) return isReady;
+
+    // If exercise ID specified, check if buffers are ready for THAT exercise
+    return isReady && readyExerciseId === exerciseId;
+  }
+
+  /**
+   * Clear bass buffers ready flag (call when switching exercises)
+   */
+  static clearBassBuffersReady(): void {
+    if (typeof window === 'undefined') return;
+
+    window.__bassnotion_bassBuffersReady = false;
+    window.__bassnotion_bassBuffersExerciseId = undefined;
   }
 
   // ============================================================================

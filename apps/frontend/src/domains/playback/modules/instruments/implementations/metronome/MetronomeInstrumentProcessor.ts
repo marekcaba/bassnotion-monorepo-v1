@@ -17,6 +17,7 @@
 import { loadGlobalTone } from '../../../shared/loaders/toneLoader.js';
 import { createStructuredLogger } from '@bassnotion/contracts';
 import { musicalTruth } from '../../../tempo/MusicalTruthAuthority.js';
+import { TRANSPORT_TIMING_CONFIG } from '../../../../config/transportTiming.js';
 
 const logger = createStructuredLogger('MetronomeInstrumentProcessor');
 
@@ -1030,7 +1031,7 @@ export class MetronomeInstrumentProcessor {
       },
       advancedTiming: {
         precisionMode: TimingPrecision.HIGH,
-        lookAhead: 25, // 25ms lookahead
+        lookAhead: TRANSPORT_TIMING_CONFIG.lookAheadTime * 1000, // Use unified timing config (200ms)
         bufferSize: 256,
         latencyCompensation: 0,
         clockSource: ClockSource.AUDIO_CLOCK,

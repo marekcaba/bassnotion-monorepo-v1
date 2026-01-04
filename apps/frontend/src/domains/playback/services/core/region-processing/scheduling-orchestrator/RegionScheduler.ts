@@ -307,6 +307,18 @@ export class RegionScheduler {
             // CRITICAL: Add loopOffset for pattern repetition
             const absoluteTime = region.startTime + eventTime + offsetTime + loopOffset;
 
+            // RING-TIMING-DEBUG: Log first few bass notes to compare with ring calculation
+            if (instrumentType === 'bass' && loopNum === 0 && eventIndex < 3) {
+              const eventMeasure = event.data?.measure ?? event.data?.position?.measure ?? 'unknown';
+              const eventBeat = event.data?.beat ?? event.data?.position?.beat ?? 'unknown';
+              console.log(`🔧 [REGION-SCHED-TIMING] === BASS NOTE ${eventIndex} ===`);
+              console.log(`🔧 [REGION-SCHED-TIMING] region.startTime=${region.startTime.toFixed(4)}s`);
+              console.log(`🔧 [REGION-SCHED-TIMING] eventTime=${eventTime.toFixed(4)}s`);
+              console.log(`🔧 [REGION-SCHED-TIMING] offsetTime=${offsetTime.toFixed(4)}s (countdownOffsetBeats=${countdownOffsetBeats})`);
+              console.log(`🔧 [REGION-SCHED-TIMING] absoluteTime=${absoluteTime.toFixed(4)}s = ${(absoluteTime * 1000).toFixed(0)}ms`);
+              console.log(`🔧 [REGION-SCHED-TIMING] Note: measure=${eventMeasure}, beat=${eventBeat}`);
+            }
+
             // Round to 3 decimals to group events at same time
             const timeKey = Math.round(absoluteTime * 1000) / 1000;
 
@@ -337,6 +349,9 @@ export class RegionScheduler {
     // Second pass: schedule audio for all events
     eventsByTime.forEach((events, timeKey) => {
       // Skip past events
+      // NOTE: timeKey is already absolute (includes countdown offset etc.)
+      // EventRouter.emitEvent() will add transportStartTime to convert to AudioContext time
+      // So we check against (transportStartTime + timeKey) for past event detection
       const currentAudioTime = audioContext?.currentTime || 0;
       const absoluteAudioTime = transportStartTime + timeKey;
 
@@ -347,8 +362,12 @@ export class RegionScheduler {
 
       try {
         // Schedule all events in this batch
+        // CRITICAL FIX: Pass timeKey (relative transport time), NOT absoluteAudioTime
+        // EventRouter.emitEvent() will add transportStartTime to convert to AudioContext time
+        // Previously we were passing absoluteAudioTime which already includes transportStartTime,
+        // causing transportStartTime to be added TWICE (once here, once in EventRouter)
         events.forEach(({ instrumentType, event }) => {
-          emitEvent(instrumentType, event, absoluteAudioTime);
+          emitEvent(instrumentType, event, timeKey);
         });
       } catch (error) {
         logger.error(`Failed to schedule events at time ${timeKey}: ${error}`);

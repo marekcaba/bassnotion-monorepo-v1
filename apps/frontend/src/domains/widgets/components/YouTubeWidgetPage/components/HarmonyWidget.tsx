@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { VolumeKnob } from './VolumeKnob';
 import { ChordSlotSelector } from './ChordSlotSelector';
 import { ProfessionalKeyboardSelector } from './ProfessionalKeyboardSelector';
@@ -10,7 +10,7 @@ import {
   ensureAudioContext,
   withAudioContext,
 } from '@/domains/playback/utils/ensureAudioContext';
-import { getPersistentAudioContext } from '@/domains/playback/utils/audioContext';
+import { getPersistentAudioContext, getOrCreatePersistentAudioContext } from '@/domains/playback/utils/audioContext';
 import type { MusicalPosition } from '@bassnotion/contracts/types/musical-time';
 // PHASE 2: wamPluginSingleton removed - now using PluginManager for unified singleton management
 import { GlobalSampleCache } from '@/domains/playback/modules/storage';
@@ -19,8 +19,11 @@ import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
 import { usePatternSelector } from '@/domains/patterns/hooks/usePatternSelector';
 import { Music2 } from 'lucide-react';
 import { useSyncContext } from '../../base/SyncProvider';
+import { useVisualBeat } from '@/domains/widgets/hooks/useVisualBeat';
+import { useMeasureSync } from '@/domains/widgets/hooks/useBeatGridSync';
 import { lifecycle } from '@/domains/playback/utils/InitializationLifecycleLogger.js';
 import { musicalTruth } from '@/domains/playback/modules/tempo/MusicalTruthAuthority.js';
+import { DEFAULT_HARMONY_INSTRUMENT } from '@/domains/playback/constants';
 // Dynamic import to avoid SSR issues
 const KeyboardInstrument = {
   GRAND_PIANO: 'grandpiano',
@@ -45,6 +48,14 @@ interface HarmonyWidgetProps {
   onTogglePlay?: () => void;
   isAdminMode?: boolean;
   // Note: tempo removed - now using useTransport() hook like Drummer/Metronome
+  /** Controlled volume (0-100). If provided, widget uses this instead of local state */
+  volume?: number;
+  /** Controlled mute state. If provided, widget uses this instead of local state */
+  isMuted?: boolean;
+  /** Callback when volume changes (for controlled mode) */
+  onVolumeChange?: (volume: number) => void;
+  /** Callback when mute state changes (for controlled mode) */
+  onMuteToggle?: () => void;
 }
 
 // Professional chord progressions with musical timing
@@ -105,6 +116,10 @@ const HarmonyWidgetComponent = ({
   onToggleVisibility,
   onTogglePlay,
   isAdminMode = false,
+  volume: controlledVolume,
+  isMuted: controlledMuted,
+  onVolumeChange,
+  onMuteToggle,
 }: HarmonyWidgetProps) => {
   const { correlationId, logger } = useCorrelation('HarmonyWidget');
 
@@ -121,7 +136,30 @@ const HarmonyWidgetComponent = ({
     }
   }, [transportTempo, bpm]);
 
-  const [volume, setVolume] = useState(80);
+  // Support both controlled and uncontrolled modes for volume/mute
+  const [localVolume, setLocalVolume] = useState(80);
+  const [localMuted, setLocalMuted] = useState(false);
+
+  // Use controlled values if provided, otherwise use local state
+  const volume = controlledVolume !== undefined ? controlledVolume : localVolume;
+  const isMuted = controlledMuted !== undefined ? controlledMuted : localMuted;
+
+  // Handler that works in both controlled and uncontrolled modes
+  const handleVolumeChange = useCallback((newVolume: number) => {
+    if (onVolumeChange) {
+      onVolumeChange(newVolume);
+    } else {
+      setLocalVolume(newVolume);
+    }
+  }, [onVolumeChange]);
+
+  const handleMuteToggle = useCallback(() => {
+    if (onMuteToggle) {
+      onMuteToggle();
+    } else {
+      setLocalMuted(!localMuted);
+    }
+  }, [onMuteToggle, localMuted]);
   const [showPatternLibrary, setShowPatternLibrary] = useState(false);
   const [selectedProgression, setSelectedProgression] =
     useState('Jazz Standard');
@@ -164,9 +202,35 @@ const HarmonyWidgetComponent = ({
     isVisible,
     exercise?.id?.value,
   ]);
-  const [isMuted, setIsMuted] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [localCurrentChord, setLocalCurrentChord] = useState(currentChord);
+
+  // Use jitter-free visual beat hook (RAF-based, not Tone.Draw-based)
+  // This calculates beat position directly from AudioContext.currentTime
+  // ensuring chord indicator timing is perfectly synchronized with audio
+  const { beatIndex, measureIndex, isCountdown } = useVisualBeat(
+    4, // beatsPerMeasure
+    isPlaying,
+    isVisible,
+  );
+
+  // 🚀 JITTER FIX: Direct DOM chord synchronization (bypasses React state)
+  // This hook subscribes directly to AtomicPlaybackClock and updates DOM via classList.toggle()
+  // instead of React state, eliminating jitter from React's batched updates.
+  // Debug with: window.__DEBUG_DOM_TIMING = true
+  const { registerChordIndicator } = useMeasureSync({
+    chordCount: progression.length,
+    isPlaying,
+    activeClass: 'bg-blue-400 text-white shadow-lg shadow-blue-400/50',
+    inactiveClass: 'bg-slate-700 text-slate-400',
+    isVisible,
+  });
+
+  // Calculate current chord index from unified timing (kept for current chord display text)
+  // Each measure shows a different chord (cycles through progression)
+  const localCurrentChord = useMemo(() => {
+    if (!isPlaying || progression.length === 0) return 0;
+    return measureIndex % progression.length;
+  }, [isPlaying, measureIndex, progression.length]);
 
   // Create a track for harmony
   const track = useTrack({
@@ -175,6 +239,16 @@ const HarmonyWidgetComponent = ({
     type: 'harmony',
     debugMode: true,
   });
+
+  // PERFORMANCE FIX: Extract track.isReady as a stable primitive
+  // This prevents the registration effect from re-running when the track object changes
+  const trackIsReady = track.isReady;
+
+  // PERFORMANCE FIX: Calculate harmony note count as a stable number
+  // Avoids recreating the callback when note array reference changes but content is same
+  const harmonyNoteCount = useMemo(() => {
+    return exercise?.harmonyNotes?.length || 0;
+  }, [exercise?.harmonyNotes]);
 
   // Use pattern selector hook if tutorialId is provided
   const patternSelector = tutorialId
@@ -197,7 +271,7 @@ const HarmonyWidgetComponent = ({
   const [samplesLoadedTrigger, setSamplesLoadedTrigger] = useState(0);
 
   // Listen for harmony-samples-loaded event to re-trigger registration
-  // Also listen for samplesReady event from ScrollTriggerLoader (for initial load after scroll)
+  // Also listen for samplesReady and samplesPreloaded events from InitialSamplePreloader
   useEffect(() => {
     // Listen to window event (from ExerciseSelector)
     const handleWindowEvent = (event: Event) => {
@@ -220,8 +294,20 @@ const HarmonyWidgetComponent = ({
       setSamplesLoadedTrigger((prev) => prev + 1);
     };
 
+    // TIMING FIX: Listen for samplesPreloaded event from InitialSamplePreloader
+    // This event fires AFTER full exercise-specific samples are loaded (including harmony)
+    // This fixes the race condition where HarmonyWidget tried to register before samples loaded
+    const handleSamplesPreloaded = () => {
+      console.log(
+        '🎧 [HARMONY-WIDGET] Received samplesPreloaded event - full samples loaded!',
+      );
+      // Increment trigger to force registration effect to re-run with fully loaded samples
+      setSamplesLoadedTrigger((prev) => prev + 1);
+    };
+
     window.addEventListener('harmony-samples-loaded', handleWindowEvent);
     window.addEventListener('samplesReady', handleSamplesReady);
+    window.addEventListener('samplesPreloaded', handleSamplesPreloaded);
 
     // Also listen to sync context event (from YouTubeWidgetPage if used)
     let unsubscribe: (() => void) | undefined;
@@ -241,12 +327,18 @@ const HarmonyWidgetComponent = ({
     return () => {
       window.removeEventListener('harmony-samples-loaded', handleWindowEvent);
       window.removeEventListener('samplesReady', handleSamplesReady);
+      window.removeEventListener('samplesPreloaded', handleSamplesPreloaded);
       if (unsubscribe) unsubscribe();
     };
   }, [subscribeToEvent]);
 
   // Track the plugin attached to our track
   const trackPluginRef = useRef<any>(null);
+
+  // PERFORMANCE FIX: Use refs to track if registration has been done for this exercise
+  // This prevents multiple re-registrations due to unstable dependencies
+  const lastRegisteredExerciseIdRef = useRef<string | null>(null);
+  const isRegisteringRef = useRef(false);
 
   // Refs to stabilize registration effect dependencies
   const exerciseRef = useRef(exercise);
@@ -484,15 +576,21 @@ const HarmonyWidgetComponent = ({
           },
         );
       }
-      // Last resort: create a new AudioContext
+      // Last resort: use the singleton pattern to get or create AudioContext
+      // This prevents multiple AudioContext warnings and ensures app-wide consistency
       else if (typeof AudioContext !== 'undefined') {
-        context = new AudioContext();
-        logger.debug('🔍 [CREATE-CHECKPOINT-9.8] Created NEW AudioContext', {
-          hasContext: !!context,
-          contextState: context?.state,
-        });
-        // Store it globally for reuse
-        (window as any).__audioContext = context;
+        // Note: getOrCreatePersistentAudioContext is async, so we use getPersistentAudioContext here
+        // since this code path runs in a synchronous callback. The context may be null initially
+        // but will be created on first user interaction via getOrCreatePersistentAudioContext.
+        context = getPersistentAudioContext();
+        if (!context) {
+          logger.debug('🔍 [CREATE-CHECKPOINT-9.8] No persistent context available yet - will be created on user interaction');
+        } else {
+          logger.debug('🔍 [CREATE-CHECKPOINT-9.8] Got persistent AudioContext', {
+            hasContext: !!context,
+            contextState: context?.state,
+          });
+        }
       }
     }
 
@@ -1024,12 +1122,24 @@ const HarmonyWidgetComponent = ({
     };
   }, []);
 
-  // Handle volume changes
+  // Handle volume changes - apply to both WAM plugin and PlaybackEngine
   useEffect(() => {
+    const effectiveVolume = isMuted ? 0 : volume / 100;
+
+    // Update WAM plugin volume (legacy path)
     if (keyboardPluginRef.current) {
       keyboardPluginRef.current.audioNode?.setParameterValues({
-        volume: isMuted ? 0 : volume / 100,
+        volume: effectiveVolume,
       });
+    }
+
+    // Update PlaybackEngine harmony volume (new path)
+    const coreServices = WindowRegistry.getCoreServices();
+    const playbackEngine = coreServices?.getPlaybackEngine?.();
+    if (playbackEngine) {
+      playbackEngine.setInstrumentVolume('harmony', effectiveVolume);
+      playbackEngine.setInstrumentMuted('harmony', isMuted);
+      console.log('🔊 [HARMONY-WIDGET] Volume updated via PlaybackEngine:', { volume, isMuted, effectiveVolume });
     }
   }, [volume, isMuted]);
 
@@ -1512,6 +1622,23 @@ const HarmonyWidgetComponent = ({
   // Schedule harmony notes from exercise data
   // FAANG-STYLE SOLUTION: Use PlaybackEngine for harmony scheduling (matches DrummerWidget architecture)
   const registerHarmonyWithPlaybackEngine = useCallback(async () => {
+    // PERFORMANCE FIX: Prevent multiple simultaneous registrations
+    if (isRegisteringRef.current) {
+      console.log('🎹 [HARMONY-WIDGET] Registration already in progress, skipping');
+      return;
+    }
+
+    // PERFORMANCE FIX: Skip if already registered for this exercise + trigger combo
+    const registrationKey = `${exercise?.id?.value || exercise?.id}-${samplesLoadedTrigger}`;
+    if (lastRegisteredExerciseIdRef.current === registrationKey) {
+      console.log('🎹 [HARMONY-WIDGET] Already registered for this exercise+trigger, skipping', {
+        registrationKey,
+      });
+      return;
+    }
+
+    isRegisteringRef.current = true;
+
     const timestamp = new Date().toISOString();
 
     // 🎵 TEMPO FIX: Read BPM directly from MusicalTruthAuthority (the ONE source of truth)
@@ -1565,6 +1692,7 @@ const HarmonyWidgetComponent = ({
         hasHarmonyNotes: !!exercise?.harmonyNotes,
         harmonyNotesLength: exercise?.harmonyNotes?.length,
       });
+      isRegisteringRef.current = false; // Reset flag before early return
       return;
     }
     console.log(
@@ -1579,6 +1707,7 @@ const HarmonyWidgetComponent = ({
     const coreServices = WindowRegistry.getCoreServices();
     if (!coreServices) {
       console.error('❌ [HARMONY-WIDGET] No core services available');
+      isRegisteringRef.current = false; // Reset flag before early return
       return;
     }
     console.log('✅ [HARMONY-WIDGET] Core services available');
@@ -1586,6 +1715,7 @@ const HarmonyWidgetComponent = ({
     const playbackEngine = coreServices.getPlaybackEngine();
     if (!playbackEngine) {
       console.error('❌ [HARMONY-WIDGET] No PlaybackEngine available');
+      isRegisteringRef.current = false; // Reset flag before early return
       return;
     }
     console.log('✅ [HARMONY-WIDGET] PlaybackEngine available');
@@ -1601,7 +1731,8 @@ const HarmonyWidgetComponent = ({
 
       // CRITICAL: Get the instrument name BEFORE loading buffers
       // We need this to find the correct instrument-specific cache keys
-      const instrument = exercise.harmonyInstrument || 'wurlitzer';
+      // FIX: Use shared constant to ensure consistency with HarmonyPreloadStrategy
+      const instrument = exercise.harmonyInstrument || DEFAULT_HARMONY_INSTRUMENT;
 
       // CRITICAL DIAGNOSTIC: Log exercise data to verify harmonyInstrument field
       console.log('🎹 [HARMONY-WIDGET] Exercise instrument detection:', {
@@ -1618,22 +1749,21 @@ const HarmonyWidgetComponent = ({
         instrument,
       );
 
-      // CRITICAL FIX: Check for RAW ArrayBuffers, not decoded AudioBuffers
-      // Samples are cached as raw ArrayBuffer during preloading
-      const allCachedKeys = Array.from(
-        (sampleCache as any).samples?.keys() || [],
-      );
-      const harmonyCachedKeys = allCachedKeys.filter((key) =>
+      // CRITICAL FIX: Use proper public API to get all cached keys
+      // Previously used private property access which only worked sometimes
+      const allCachedKeys = sampleCache.getAllSampleKeys();
+      const harmonyCachedKeys = allCachedKeys.filter((key: string) =>
         key.startsWith(`${instrument}-`),
       );
 
-      // DEBUG: Check what type of buffers are in cache
+      // DEBUG: Check what type of buffers are in cache using public API
       const cachedBufferTypes: Record<string, string> = {};
       for (const key of harmonyCachedKeys.slice(0, 3)) {
-        const sample = (sampleCache as any).samples?.get(key);
-        cachedBufferTypes[key] = sample?.buffer
+        const hasDecodedBuffer = sampleCache.getCachedBuffer(key) !== undefined;
+        const hasRawBuffer = (await sampleCache.getCachedRawBuffer(key)) !== undefined;
+        cachedBufferTypes[key] = hasDecodedBuffer
           ? 'AudioBuffer'
-          : sample?.rawBuffer
+          : hasRawBuffer
             ? 'ArrayBuffer'
             : 'none';
       }
@@ -1692,8 +1822,10 @@ const HarmonyWidgetComponent = ({
         const missingNotes = uniqueRequiredNotes.filter(
           (note) => !cachedNoteNames.has(note),
         );
+        // TIMING FIX: This warning typically appears when samplesReady fires before full preload completes
+        // Will automatically retry when samplesPreloaded event fires with fully loaded samples
         console.warn(
-          '⚠️ [HARMONY-WIDGET] Insufficient samples for exercise, skipping registration',
+          '⚠️ [HARMONY-WIDGET] Insufficient samples - waiting for preload to complete',
           {
             exerciseId: exercise.id,
             exerciseTitle: exercise.title,
@@ -1701,11 +1833,14 @@ const HarmonyWidgetComponent = ({
             cachedNotes: cachedCount,
             coveragePercentage: coveragePercentage.toFixed(1) + '%',
             minRequired: minCoverageRequired + '%',
-            missingNotes,
+            missingNotes: missingNotes.slice(0, 5), // Limit to first 5 for readability
             totalCachedKeys: harmonyCachedKeys.length,
+            hint: 'Will retry on samplesPreloaded event',
           },
         );
-        return; // Exit early, will retry when more samples load
+        // CRITICAL FIX: Reset registration flag so next attempt (after samplesPreloaded) can proceed
+        isRegisteringRef.current = false;
+        return; // Exit early, will retry when samplesPreloaded event fires
       }
 
       const missingNotes = uniqueRequiredNotes.filter(
@@ -1837,12 +1972,21 @@ const HarmonyWidgetComponent = ({
             );
           }
 
+          // Use instrument gain node for volume control, fallback to destination
+          const harmonyGainNode = playbackEngine.getOrCreateInstrumentGainNode('harmony');
+          const destination = harmonyGainNode || audioContext.destination;
+
           playbackEngine.setHarmonyBuffers(
             harmonyBuffers,
-            audioContext.destination,
+            destination,
             perNoteVelocityRanges,
             instrument,
           );
+
+          // Apply initial volume/mute state
+          const effectiveVolume = isMuted ? 0 : volume / 100;
+          playbackEngine.setInstrumentVolume('harmony', effectiveVolume);
+          playbackEngine.setInstrumentMuted('harmony', isMuted);
           console.log(
             '✅ [HARMONY-WIDGET] Harmony buffers injected into PlaybackEngine',
             {
@@ -2223,8 +2367,9 @@ const HarmonyWidgetComponent = ({
       const isRunning = (playbackEngine as any).isRunning;
 
       // FAANG FIX: Pass exercise metadata to PlaybackEngine for early instrument detection
+      // FIX: Use shared constant to ensure consistency with HarmonyPreloadStrategy
       const exerciseMetadata = {
-        harmonyInstrument: exercise.harmonyInstrument || 'wurlitzer',
+        harmonyInstrument: exercise.harmonyInstrument || DEFAULT_HARMONY_INSTRUMENT,
       };
 
       console.log(
@@ -2277,14 +2422,19 @@ const HarmonyWidgetComponent = ({
         currentBpm, // Using musicalTruth.getBPM() - the ONE source of truth
         isRunning,
       });
+
+      // PERFORMANCE FIX: Mark registration complete for this exercise+trigger
+      lastRegisteredExerciseIdRef.current = `${exercise?.id?.value || exercise?.id}-${samplesLoadedTrigger}`;
     } catch (error) {
       console.error('❌ [HARMONY-WIDGET] Failed to register harmony:', error);
       logger.error(
         'Failed to register harmony with PlaybackEngine',
         error as Error,
       );
+    } finally {
+      isRegisteringRef.current = false;
     }
-  }, [exercise]); // TEMPO FIX: Removed bpm from deps - we now read directly from musicalTruth.getBPM()
+  }, [exercise?.id, samplesLoadedTrigger]); // PERFORMANCE FIX: Use stable exercise.id, not whole object
 
   // Schedule chord progression (fallback when no exercise harmony_notes)
   const scheduleProgression = useCallback(() => {
@@ -2341,6 +2491,7 @@ const HarmonyWidgetComponent = ({
   }, [selectedProgression, onNextChord]); // TEMPO FIX: Removed bpm from deps - we now read directly from musicalTruth.getBPM()
 
   // CHECKPOINT 10: PlaybackEngine registration - track when and why registration runs
+  // PERFORMANCE FIX: Use stable primitives (trackIsReady, harmonyNoteCount) instead of object references
   useEffect(() => {
     const timestamp = Date.now();
     const currentExercise = exerciseRef.current;
@@ -2358,15 +2509,15 @@ const HarmonyWidgetComponent = ({
     logger.info('🎹🎹🎹 [HARMONY-WIDGET] Registration effect triggered:', {
       timestamp,
       isPlaying: currentIsPlaying,
-      trackIsReady: track.isReady,
+      trackIsReady,  // PERFORMANCE FIX: Use stable primitive
       wamPluginLoaded,
       hasPlugin: !!keyboardPluginRef.current,
       hasExercise: !!currentExercise,
-      hasHarmonyNotes: !!currentExercise?.harmonyNotes,
-      harmonyNotesCount: currentExercise?.harmonyNotes?.length || 0,
+      hasHarmonyNotes: harmonyNoteCount > 0,  // PERFORMANCE FIX: Use stable primitive
+      harmonyNotesCount: harmonyNoteCount,  // PERFORMANCE FIX: Use stable primitive
       exerciseId: currentExercise?.id?.value,
       changedDependencies: {
-        trackIsReady: track.isReady,
+        trackIsReady,  // PERFORMANCE FIX: Use stable primitive
         wamPluginLoaded,
         exerciseId: currentExercise?.id?.value,
       },
@@ -2380,16 +2531,14 @@ const HarmonyWidgetComponent = ({
     //
     // NEW PLAYBACK ENGINE FIX: Don't wait for WAM plugin - the new Scheduler handles harmony directly
     // The WAM plugin is only needed for legacy manual chord progression mode
-    const shouldRegister =
-      track.isReady &&
-      currentExercise?.harmonyNotes &&
-      currentExercise.harmonyNotes.length > 0;
+    // PERFORMANCE FIX: Use stable primitives instead of object references
+    const shouldRegister = trackIsReady && harmonyNoteCount > 0;
 
     logger.debug('🔍 [CHECKPOINT-10-CONDITIONS] Should register', {
       shouldRegister,
-      trackIsReady: track.isReady,
-      hasHarmonyNotes: !!currentExercise?.harmonyNotes,
-      harmonyNotesLength: currentExercise?.harmonyNotes?.length || 0,
+      trackIsReady,  // PERFORMANCE FIX: Use stable primitive
+      hasHarmonyNotes: harmonyNoteCount > 0,  // PERFORMANCE FIX: Use stable primitive
+      harmonyNotesLength: harmonyNoteCount,  // PERFORMANCE FIX: Use stable primitive
       usingNewPlaybackEngine: true, // Using Scheduler directly, not WAM plugin
     });
 
@@ -2402,7 +2551,7 @@ const HarmonyWidgetComponent = ({
         {
           timestamp,
           exerciseId: currentExercise?.id,
-          harmonyNotesCount: currentExercise.harmonyNotes.length,
+          harmonyNotesCount: harmonyNoteCount,  // PERFORMANCE FIX: Use stable primitive
           isPlaying: currentIsPlaying,
           reason: currentIsPlaying ? 'playback started' : 'exercise changed',
         },
@@ -2414,14 +2563,8 @@ const HarmonyWidgetComponent = ({
       registerHarmonyWithPlaybackEngine();
     } else {
       const missingConditions = [];
-      if (!track.isReady) missingConditions.push('track not ready');
-      if (!currentExercise?.harmonyNotes)
-        missingConditions.push('no harmony notes');
-      if (
-        currentExercise?.harmonyNotes &&
-        currentExercise.harmonyNotes.length === 0
-      )
-        missingConditions.push('harmony notes empty');
+      if (!trackIsReady) missingConditions.push('track not ready');  // PERFORMANCE FIX: Use stable primitive
+      if (harmonyNoteCount === 0) missingConditions.push('no harmony notes');  // PERFORMANCE FIX: Use stable primitive
 
       console.log(
         '⏳ [HARMONY-WIDGET] Waiting for conditions:',
@@ -2429,7 +2572,8 @@ const HarmonyWidgetComponent = ({
       );
     }
   }, [
-    track.isReady,
+    trackIsReady,           // PERFORMANCE FIX: stable boolean, not object reference
+    harmonyNoteCount,       // PERFORMANCE FIX: stable number via useMemo
     wamPluginLoaded,
     registerHarmonyWithPlaybackEngine,
     exercise?.id,
@@ -2439,15 +2583,17 @@ const HarmonyWidgetComponent = ({
   // CRITICAL FIX: Include samplesLoadedTrigger to re-register when samples finish loading
 
   // Effect to handle manual chord progression playback (legacy)
+  // PERFORMANCE FIX: Use stable primitives instead of object references
   useEffect(() => {
     if (
       isPlaying &&
-      track.isReady &&
+      trackIsReady &&  // PERFORMANCE FIX: Use stable primitive
       wamPluginLoaded &&
       keyboardPluginRef.current
     ) {
       // Only use manual chord progression if no harmony notes in exercise
-      if (!exercise?.harmonyNotes || exercise.harmonyNotes.length === 0) {
+      // PERFORMANCE FIX: Use stable primitive harmonyNoteCount
+      if (harmonyNoteCount === 0) {
         console.log(
           '⚠️ [HARMONY-WIDGET] NO HARMONY NOTES - Using chord progression',
         );
@@ -2460,9 +2606,9 @@ const HarmonyWidgetComponent = ({
     // When stop is clicked, PlaybackEngine.stop() cancels all scheduled sources
   }, [
     isPlaying,
-    track.isReady,
+    trackIsReady,       // PERFORMANCE FIX: stable boolean, not object reference
     wamPluginLoaded,
-    exercise,
+    harmonyNoteCount,   // PERFORMANCE FIX: stable number via useMemo
     scheduleProgression,
     logger,
   ]);
@@ -2536,11 +2682,12 @@ const HarmonyWidgetComponent = ({
         <div className="flex justify-center items-center w-20 h-16">
           <VolumeKnob
             value={volume}
-            onChange={setVolume}
+            onChange={handleVolumeChange}
             color="bg-blue-400"
             size={45}
             isMuted={isMuted}
-            onMuteToggle={() => setIsMuted(!isMuted)}
+            onMuteToggle={handleMuteToggle}
+            defaultValue={80}
           />
         </div>
 
@@ -2568,16 +2715,14 @@ const HarmonyWidgetComponent = ({
                     volume === 0 ? 'opacity-50' : ''
                   }`}
                 >
-                  {/* Chord progression dots */}
+                  {/* 🚀 JITTER FIX: Direct DOM chord indicators via ref registration */}
+                  {/* The hook's classList.toggle() updates these divs directly, bypassing React */}
                   <div className="flex gap-1">
                     {progression.slice(0, 4).map((chord, idx) => (
                       <div
                         key={idx}
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-medium transition-all duration-200 ${
-                          idx === localCurrentChord && isPlaying
-                            ? 'bg-blue-400 text-white shadow-lg shadow-blue-400/50'
-                            : 'bg-slate-700 text-slate-400'
-                        }`}
+                        ref={(el) => registerChordIndicator(idx, el)}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-medium transition-all duration-200 bg-slate-700 text-slate-400"
                       >
                         {chord?.split('/')[0] || 'C'}
                       </div>
@@ -2709,7 +2854,7 @@ const HarmonyWidgetComponent = ({
                       </div>
                     )}
 
-                    {/* Current Chord Display */}
+                    {/* 🚀 JITTER FIX: Current Chord Display with direct DOM updates */}
                     <div className="flex items-center gap-1">
                       <span className="text-xs text-slate-400 w-16">
                         Chords:
@@ -2718,11 +2863,8 @@ const HarmonyWidgetComponent = ({
                         {progression.map((chord, idx) => (
                           <div
                             key={idx}
-                            className={`w-8 h-6 rounded text-xs flex items-center justify-center font-medium transition-all duration-200 cursor-default ${
-                              idx === localCurrentChord && isPlaying
-                                ? 'bg-blue-400 text-white shadow-lg shadow-blue-400/50'
-                                : 'bg-slate-700 text-slate-400'
-                            }`}
+                            ref={(el) => registerChordIndicator(idx, el)}
+                            className="w-8 h-6 rounded text-xs flex items-center justify-center font-medium transition-all duration-200 cursor-default bg-slate-700 text-slate-400"
                           >
                             {chord?.split('/')[0] || 'C'}
                           </div>

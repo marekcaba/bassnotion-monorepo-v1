@@ -21,6 +21,10 @@ interface FretboardDotProps {
   onDragEnd: DragEndHandler;
   onClick: DotClickHandler;
   stringName: string; // E.g., "E", "A", "D", "G", "B"
+  /** Opacity based on measure-relative playback position (0-1). When undefined, defaults to 1. */
+  measureOpacity?: number;
+  // Note: opacityTransitionDuration removed - CSS classes handle all animation timing
+  // via direct DOM manipulation in useFretboardNoteSync for jitter-free 60fps updates
 }
 
 export const FretboardDot: React.FC<FretboardDotProps> = ({
@@ -38,6 +42,7 @@ export const FretboardDot: React.FC<FretboardDotProps> = ({
   onDragEnd,
   onClick,
   stringName,
+  measureOpacity,
 }) => {
   const handleDragStart = (e: React.DragEvent) => {
     if (orderNumbers.length > 0) {
@@ -56,7 +61,9 @@ export const FretboardDot: React.FC<FretboardDotProps> = ({
     } else if (isDraggedOver) {
       return 'bg-blue-500 text-white border-2 border-blue-300';
     } else if (isCurrentNote) {
-      return 'bg-orange-500 text-white animate-pulse shadow-lg ring-2 ring-orange-300';
+      // Static highlight only - CSS .note-active handles the yellow ring via direct DOM
+      // Removed animate-pulse to prevent collision with CSS transitions
+      return 'bg-orange-500 text-white shadow-lg ring-2 ring-orange-300';
     } else if (fret !== 'open' && [3, 5, 7, 9, 12].includes(fret)) {
       // Fret markers (3rd, 5th, 7th, 9th, 12th frets) - exact styling from original
       return 'bg-slate-500 hover:bg-blue-400 text-white';
@@ -72,6 +79,20 @@ export const FretboardDot: React.FC<FretboardDotProps> = ({
     : 'rounded-full cursor-pointer relative flex items-center justify-center text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 focus:ring-offset-slate-800';
 
   const dotSize = 26;
+
+  // Calculate final opacity:
+  // 1. measureOpacity controls visibility based on current playback measure (undefined = 1.0)
+  // 2. isBeingDragged reduces opacity to 0.5 during drag operations
+  // 3. If measureOpacity is 0, dot should be completely hidden
+  const baseOpacity = measureOpacity ?? 1;
+  const finalOpacity = isBeingDragged ? Math.min(baseOpacity, 0.5) : baseOpacity;
+
+  // Build transition property - NO opacity transition to avoid collision with CSS classes
+  // CSS classes (.note-active, .note-played, etc.) handle all playback-related animations
+  // via direct DOM manipulation in useFretboardNoteSync for jitter-free 60fps updates
+  // Only background-color transition remains for hover states
+  const transition = 'background-color 0.15s ease-in-out';
+
   const dotStyle = {
     position: 'absolute' as const,
     left: x - dotSize / 2,
@@ -79,10 +100,12 @@ export const FretboardDot: React.FC<FretboardDotProps> = ({
     width: dotSize,
     height: dotSize,
     zIndex: 20,
-    pointerEvents: 'auto' as const,
-    transition: 'background-color 0.15s ease-in-out, opacity 0.15s ease-in-out',
-    opacity: isBeingDragged ? 0.5 : 1,
+    pointerEvents: finalOpacity > 0 ? ('auto' as const) : ('none' as const), // Disable interaction when hidden
+    transition,
+    opacity: finalOpacity,
     transform: 'rotateX(0deg)', // Counter-rotation for better 3D effect
+    // Hide from screen readers when invisible
+    visibility: finalOpacity === 0 ? ('hidden' as const) : ('visible' as const),
   };
 
   return (

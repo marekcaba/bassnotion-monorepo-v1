@@ -723,8 +723,8 @@ export function ExerciseFormModal({
         harmonyControlChanges.length > 0 ? harmonyControlChanges : [], // Control changes (sustain pedal, etc.)
       harmony_control_changes:
         harmonyControlChanges.length > 0 ? harmonyControlChanges : [], // Also keep snake_case for direct API submission
-      harmonyInstrument: formData.harmonyInstrument, // Harmony instrument type
-      harmony_instrument: formData.harmonyInstrument, // Also keep snake_case for direct API submission
+      harmonyInstrument: formData.harmonyInstrument || null, // Harmony instrument type (null when cleared)
+      harmony_instrument: formData.harmonyInstrument || null, // Also keep snake_case for direct API submission
       tags: [],
       isActive: true,
       // Include existing MIDI URLs (already camelCase) and any newly uploaded ones (also camelCase now)
@@ -1158,7 +1158,7 @@ export function ExerciseFormModal({
                       </span>
                     </Button>
                   </Label>
-                  {(midiFiles.drummer || midiUrls.drummerMidiUrl) && (
+                  {(midiFiles.drummer || midiUrls.drummerMidiUrl || drumPattern.length > 0) && (
                     <Button
                       type="button"
                       variant="ghost"
@@ -1168,6 +1168,15 @@ export function ExerciseFormModal({
                         setMidiUrls((prev) => {
                           const updated = { ...prev };
                           delete updated.drummerMidiUrl;
+                          return updated;
+                        });
+                        // Clear drum pattern data so it's removed from Supabase on save
+                        setDrumPattern([]);
+                        setDrumPatternStats(null);
+                        setDrumPatternValidation(null);
+                        setTempMidiPaths((prev) => {
+                          const updated = { ...prev };
+                          delete updated.drummer;
                           return updated;
                         });
                       }}
@@ -1226,7 +1235,7 @@ export function ExerciseFormModal({
                       </span>
                     </Button>
                   </Label>
-                  {(midiFiles.bassline || midiUrls.basslineMidiUrl) && (
+                  {(midiFiles.bassline || midiUrls.basslineMidiUrl || generatedNotes.length > 0) && (
                     <Button
                       type="button"
                       variant="ghost"
@@ -1236,6 +1245,13 @@ export function ExerciseFormModal({
                         setMidiUrls((prev) => {
                           const updated = { ...prev };
                           delete updated.basslineMidiUrl;
+                          return updated;
+                        });
+                        // Clear bass notes data so it's removed from Supabase on save
+                        setGeneratedNotes([]);
+                        setTempMidiPaths((prev) => {
+                          const updated = { ...prev };
+                          delete updated.bassline;
                           return updated;
                         });
                       }}
@@ -1389,7 +1405,7 @@ export function ExerciseFormModal({
                       </span>
                     </Button>
                   </Label>
-                  {(midiFiles.harmony || midiUrls.harmonyMidiUrl) && (
+                  {(midiFiles.harmony || midiUrls.harmonyMidiUrl || harmonyNotes.length > 0) && (
                     <Button
                       type="button"
                       variant="ghost"
@@ -1399,6 +1415,19 @@ export function ExerciseFormModal({
                         setMidiUrls((prev) => {
                           const updated = { ...prev };
                           delete updated.harmonyMidiUrl;
+                          return updated;
+                        });
+                        // Clear harmony data so it's removed from Supabase on save
+                        setHarmonyNotes([]);
+                        setHarmonyControlChanges([]);
+                        setHarmonyAnalysis(null);
+                        setFormData((prev) => ({
+                          ...prev,
+                          harmonyInstrument: '' as '' | 'grandpiano' | 'rhodes' | 'wurlitzer' | 'pad',
+                        }));
+                        setTempMidiPaths((prev) => {
+                          const updated = { ...prev };
+                          delete updated.harmony;
                           return updated;
                         });
                       }}

@@ -16,6 +16,13 @@ export interface WidgetPageState {
     metronome: number;
     drums: number;
     bass: number;
+    harmony: number;
+  };
+  muted: {
+    metronome: boolean;
+    drums: boolean;
+    bass: boolean;
+    harmony: boolean;
   };
 
   // Exercise Data
@@ -84,6 +91,13 @@ const initialState: WidgetPageState = {
     metronome: 70,
     drums: 60,
     bass: 75,
+    harmony: 80,
+  },
+  muted: {
+    metronome: false,
+    drums: false,
+    bass: false,
+    harmony: false,
   },
 
   // Exercise Data
@@ -209,6 +223,20 @@ export function useWidgetPageState() {
     [],
   );
 
+  // Mute toggle for different audio sources
+  const toggleMuted = useCallback(
+    (source: keyof WidgetPageState['muted']) => {
+      setState((prev) => ({
+        ...prev,
+        muted: {
+          ...prev.muted,
+          [source]: !prev.muted[source],
+        },
+      }));
+    },
+    [],
+  );
+
   // Exercise selection with data integration
   const setSelectedExercise = useCallback(
     async (exercise: Exercise | undefined) => {
@@ -285,8 +313,9 @@ export function useWidgetPageState() {
         logger.error('Failed to load exercise into timeline:', error instanceof Error ? error : undefined);
       }
 
-      // Extract harmonyInstrument - use exercise's harmony_instrument or undefined
-      const extractedHarmonyInstrument = exercise.harmony_instrument;
+      // Extract harmonyInstrument - use Exercise entity's camelCase getter
+      // Note: Exercise entity uses camelCase getters (harmonyInstrument), not snake_case (harmony_instrument)
+      const extractedHarmonyInstrument = exercise.harmonyInstrument;
 
       setState((prev) => {
         const newState = {
@@ -449,6 +478,7 @@ export function useWidgetPageState() {
     setCurrentTime,
     setTempo,
     setVolume,
+    toggleMuted,
     setSelectedExercise,
     toggleWidgetVisibility,
     nextChord,

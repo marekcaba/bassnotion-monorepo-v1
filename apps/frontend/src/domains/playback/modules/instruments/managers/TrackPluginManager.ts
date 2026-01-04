@@ -13,6 +13,7 @@
 
 import { EventBus } from '../../shared/index.js';
 import { createStructuredLogger } from '@/shared/utils/errorHandling';
+import { getPersistentAudioContext } from '../../../utils/audioContext.js';
 import type { AudioPlugin } from '../../../types/plugin.js';
 import {
   PluginCategory,
@@ -160,12 +161,13 @@ export class TrackPluginManager {
         isActive: true,
       };
 
-      // Initialize plugin with a minimal context
+      // Initialize plugin with the shared AudioContext singleton
+      const sharedContext = getPersistentAudioContext();
       const context: any = {
-        audioContext: new AudioContext(),
-        sampleRate: 48000,
+        audioContext: sharedContext,
+        sampleRate: sharedContext?.sampleRate ?? 48000,
         bufferSize: 1024,
-        currentTime: 0,
+        currentTime: sharedContext?.currentTime ?? 0,
       };
       await plugin.initialize(context);
 
@@ -305,11 +307,12 @@ export class TrackPluginManager {
 
         // Process audio through plugin's process method
         const outputBuffer = processedData; // Assuming processedData is AudioBuffer
+        const sharedContext = getPersistentAudioContext();
         const context: any = {
-          audioContext: new AudioContext(),
-          sampleRate: 48000,
+          audioContext: sharedContext,
+          sampleRate: sharedContext?.sampleRate ?? 48000,
           bufferSize: 1024,
-          currentTime: Date.now() / 1000,
+          currentTime: sharedContext?.currentTime ?? Date.now() / 1000,
         };
         const result = await instance.plugin.process(
           processedData,

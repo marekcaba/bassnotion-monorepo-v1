@@ -229,16 +229,6 @@ export class PollingStrategy implements PositionUpdateStrategy {
 
   private emitUpdate(seconds: number): void {
     if (!this.callback) {
-      // DIAGNOSTIC: Log if callback is missing
-      if (Math.random() < 0.01) {
-        console.warn(
-          '⚠️ [PollingStrategy] emitUpdate called but no callback set!',
-          {
-            seconds: seconds.toFixed(3),
-            timestamp: Date.now(),
-          },
-        );
-      }
       return;
     }
 
@@ -247,15 +237,6 @@ export class PollingStrategy implements PositionUpdateStrategy {
       source: 'polling',
       timestamp: performance.now(),
     };
-
-    // DIAGNOSTIC: Log emitted updates (5% sample)
-    if (Math.random() < 0.05) {
-      console.log('🎯 [PollingStrategy] emitUpdate', {
-        seconds: seconds.toFixed(3),
-        source: 'polling',
-        timestamp: Date.now(),
-      });
-    }
 
     this.callback(update);
   }

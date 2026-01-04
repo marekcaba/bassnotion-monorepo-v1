@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MidiDrumType, DrumHit } from '@bassnotion/contracts';
 import { DRUM_TO_MIDI_NOTE, PPQ } from '../constants.js';
 import { musicalToSeconds } from '../utils/gridPositionUtils.js';
+import { getOrCreatePersistentAudioContext } from '@/domains/playback/utils/audioContext';
 
 /**
  * Playback state for the hook
@@ -95,8 +96,9 @@ export function useDrumEditorPlayback(): UseDrumEditorPlaybackReturn {
   useEffect(() => {
     const initialize = async () => {
       try {
-        // Create AudioContext (will be suspended until user interaction)
-        const ctx = new AudioContext();
+        // Use the singleton AudioContext to prevent multiple context warnings
+        // getOrCreatePersistentAudioContext handles all browser compatibility
+        const ctx = await getOrCreatePersistentAudioContext();
         audioContextRef.current = ctx;
 
         // Load essential drum samples from Supabase
@@ -105,11 +107,11 @@ export function useDrumEditorPlayback(): UseDrumEditorPlaybackReturn {
           throw new Error('Supabase URL not configured');
         }
 
-        // Essential samples to load (fallback kit has these)
+        // Essential samples to load (admin-uploaded default kit)
         const essentialSamples = [
-          { key: 'kick', path: 'drums/hydrogen-kits/colombo-acoustic/kick-v1.wav' },
-          { key: 'snare', path: 'drums/hydrogen-kits/colombo-acoustic/snare-v1.wav' },
-          { key: 'hihat', path: 'drums/hydrogen-kits/colombo-acoustic/hihat-v1.wav' },
+          { key: 'kick', path: 'drums/admin-samples/Default kit/Kick1.wav' },
+          { key: 'snare', path: 'drums/admin-samples/Default kit/Snare1.wav' },
+          { key: 'hihat', path: 'drums/admin-samples/Default kit/Hihat1_closed.wav' },
         ];
 
         // Load samples in parallel
@@ -153,7 +155,7 @@ export function useDrumEditorPlayback(): UseDrumEditorPlaybackReturn {
 
     initialize();
 
-    // Cleanup
+    // Cleanup - stop scheduled sources but DON'T close the shared AudioContext
     return () => {
       if (playbackIntervalRef.current) {
         cancelAnimationFrame(playbackIntervalRef.current);
@@ -166,7 +168,8 @@ export function useDrumEditorPlayback(): UseDrumEditorPlaybackReturn {
           // Ignore errors from already stopped sources
         }
       });
-      audioContextRef.current?.close();
+      // Note: Do NOT close audioContextRef.current here - it's the shared singleton
+      // Closing it would break audio for the entire application
     };
   }, []);
 

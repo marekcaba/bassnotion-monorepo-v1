@@ -735,11 +735,12 @@ export class TransportController implements Service {
         return;
       }
 
-      // DEBUG: Log source of position update
-      console.log('[TRANSPORT DEBUG] Transport.onPositionUpdate', {
-        source: 'internal-timing',
-        seconds: seconds.toFixed(3),
-      });
+      // Position update logging disabled - was causing 433+ logs in 15 seconds during playback
+      // Enable for debugging by uncommenting:
+      // console.log('[TRANSPORT DEBUG] Transport.onPositionUpdate', {
+      //   source: 'internal-timing',
+      //   seconds: seconds.toFixed(3),
+      // });
 
       // Update position using internal transport timing (AudioContext.currentTime)
       // This is sample-accurate and reliable, unlike Tone.Transport.position
@@ -750,17 +751,16 @@ export class TransportController implements Service {
       const displayPosition = this.positionManager.getDisplayPosition();
       const rawPosition = this.positionManager.getPosition();
 
-      // POSITION DEBUG: Log the transformation (reduced frequency)
-      if (Math.random() < 0.1) {
-        // 10% of updates
-        console.log('🎵 [POSITION UPDATE] Internal timing', {
-          seconds: seconds.toFixed(3),
-          rawPosition: `${rawPosition.bars}:${rawPosition.beats}:${rawPosition.sixteenths}`,
-          displayPosition: `${displayPosition.bars}:${displayPosition.beats}:${displayPosition.sixteenths}`,
-          countdownBeats: this.positionManager.getCountdownBeats(),
-          note: 'Sample-accurate timing + simplified countdown = smooth clock!',
-        });
-      }
+      // Position transformation logging disabled - was causing ~43 logs in 15 seconds (10% sampling)
+      // Enable for debugging by uncommenting:
+      // if (Math.random() < 0.1) {
+      //   console.log('🎵 [POSITION UPDATE] Internal timing', {
+      //     seconds: seconds.toFixed(3),
+      //     rawPosition: `${rawPosition.bars}:${rawPosition.beats}:${rawPosition.sixteenths}`,
+      //     displayPosition: `${displayPosition.bars}:${displayPosition.beats}:${displayPosition.sixteenths}`,
+      //     countdownBeats: this.positionManager.getCountdownBeats(),
+      //   });
+      // }
 
       // Emit position update (using the correct event name that useTransport expects)
       this.eventBus.emit('transport:position-updated', {
@@ -777,6 +777,19 @@ export class TransportController implements Service {
 
     this.positionManager.on('tempoChange', ({ current }) => {
       logger.debug('Tempo changed via position manager', { bpm: current });
+    });
+
+    // 🔧 TIMING SYNC FIX: Subscribe to PlaybackEngine's transportStartTime
+    // This ensures Transport uses the SAME transportStartTime as PlaybackEngine,
+    // eliminating visual-audio desync at playback start (rushed first 2 beats issue)
+    this.eventBus.on('playback:transportStartTime', (data: { transportStartTime: number }) => {
+      this.transport.setTransportStartTime(data.transportStartTime);
+      console.log('🎯 [TIMING SYNC] TransportController forwarded transportStartTime to Transport', {
+        transportStartTime: data.transportStartTime.toFixed(3) + 's',
+      });
+      logger.info('🎯 Synced Transport with PlaybackEngine transportStartTime', {
+        transportStartTime: data.transportStartTime,
+      });
     });
   }
 
@@ -814,11 +827,12 @@ export class TransportController implements Service {
 
       this.lastPositionEmitTime = now;
 
-      // DEBUG: Log source of position update
-      console.log('[TRANSPORT DEBUG] Clock.onTick', {
-        source: 'audioworklet',
-        time: time.toFixed(3),
-      });
+      // Clock.onTick logging disabled - fires at high frequency during playback
+      // Enable for debugging by uncommenting:
+      // console.log('[TRANSPORT DEBUG] Clock.onTick', {
+      //   source: 'audioworklet',
+      //   time: time.toFixed(3),
+      // });
 
       // Update position using AudioWorklet timing
       this.positionManager.updatePosition(time);

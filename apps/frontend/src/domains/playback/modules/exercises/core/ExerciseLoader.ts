@@ -426,18 +426,45 @@ export class ExerciseLoader {
       const beats = Math.floor(sixteenthsInBar / 4);
       const sixteenths = sixteenthsInBar % 4;
 
-      // Use drumType if available (from loadFromDrumPattern), otherwise fall back to MIDI note mapping
-      const drumType = (e as any).drumType || this.getMidiNoteDrumType(e.note || 36);
-      // Normalize drum type: snare_rimshot -> snare, hihat_closed/hihat_open -> hihat
-      const normalizedDrumType = this.normalizeDrumType(drumType);
+      // Determine event type based on track type
+      // Bass events need type: 'bass' for EventRouter to route to BassScheduler
+      // Drum events use normalized drum types (kick, snare, hihat)
+      const isBassTrack = trackId.includes('bass');
 
-      return {
-        position: `${bars}:${beats}:${sixteenths}`,
-        type: normalizedDrumType,
-        drum: normalizedDrumType,
-        velocity: (e.velocity || 100) / 127, // Normalize to 0-1
-        midiNote: e.note,
-      };
+      if (isBassTrack) {
+        // Bass event - EventRouter routes to BassScheduler based on type: 'bass'
+        // TEMPO FIX: Calculate durationInBeats for live tempo recalculation
+        const bassDurationSeconds = e.duration || 0.5;
+        const bassDurationInBeats = bassDurationSeconds * (exercise.bpm / 60);
+        return {
+          position: `${bars}:${beats}:${sixteenths}`,
+          type: 'bass',
+          velocity: (e.velocity || 100) / 127, // Normalize to 0-1
+          duration: e.duration ? `${e.duration}s` : '0.5s', // Duration in Tone.js format
+          data: {
+            midiNote: e.note,
+            string: (e as any).string,
+            fret: (e as any).fret,
+            noteName: (e as any).noteName,
+            // TEMPO FIX: Store duration in beats + original BPM for live tempo recalculation
+            // This allows SimpleInstrumentScheduler to adjust duration when user changes tempo
+            durationInBeats: bassDurationInBeats,
+            originalBpm: exercise.bpm,
+          },
+        };
+      } else {
+        // Drum event - use drumType for proper scheduling
+        const drumType = (e as any).drumType || this.getMidiNoteDrumType(e.note || 36);
+        const normalizedDrumType = this.normalizeDrumType(drumType);
+
+        return {
+          position: `${bars}:${beats}:${sixteenths}`,
+          type: normalizedDrumType,
+          drum: normalizedDrumType,
+          velocity: (e.velocity || 100) / 127, // Normalize to 0-1
+          midiNote: e.note,
+        };
+      }
     });
 
     // Calculate loopCount for drum patterns based on exercise.total_bars
@@ -843,6 +870,171 @@ export class ExerciseLoader {
         exerciseId: exercise.id,
         exerciseTitle: exercise.title,
         patternLength: drumPattern.length,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        errorStack: error instanceof Error ? error.stack : undefined,
+        error,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Load from exercise bass notes (ExerciseNote[] from fretboard data)
+   *
+   * Converts exercise notes to bass regions for playback.
+   * Each note has string/fret position which is converted to MIDI note.
+   *
+   * @param bassNotes - ExerciseNote[] containing fretboard positions
+   * @param exercise - Exercise metadata for context
+   * @returns LoadResult with session, regions, and MIDI events
+   */
+  public async loadFromBassNotes(
+    bassNotes: import('@bassnotion/contracts').ExerciseNote[],
+    exercise: Exercise,
+  ): Promise<LoadResult> {
+    try {
+      logger.info('Loading from bass notes', {
+        exerciseId: exercise.id,
+        exerciseTitle: exercise.title,
+        noteCount: bassNotes.length,
+      });
+
+      // Bass string tuning (open string MIDI notes)
+      // String numbers are from HIGH to LOW: string 1 = G (highest), string 4 = E (lowest)
+      // 4-string bass: E1=28, A1=33, D2=38, G2=43
+      // 5-string bass adds: B0=23 (low B, string 5)
+      const STRING_TO_OPEN_MIDI: Record<number, number> = {
+        1: 43, // G2 (highest string on 4-string)
+        2: 38, // D2
+        3: 33, // A1
+        4: 28, // E1 (lowest string on 4-string)
+        5: 23, // B0 (5-string bass low B)
+      };
+
+      // Convert ExerciseNote[] to MidiEvent[]
+      const midiEvents: MidiEvent[] = bassNotes.map((note) => {
+        // Calculate MIDI note from string + fret
+        const openStringMidi = STRING_TO_OPEN_MIDI[note.string] || 28; // Default to E string
+        const midiNote = openStringMidi + note.fret;
+
+        // Calculate absolute time from musical position
+        const beatsPerBar = exercise.timeSignature?.numerator || 4;
+        const PPQ = 480; // Pulses per quarter note
+
+        // Use tick for precision (0-479 represents position within the beat at 480 PPQ)
+        // If tick is not available, fall back to subdivision (0-3 represents 16th note position)
+        const tickWithinBeat = note.position?.tick ?? ((note.position?.subdivision || 0) * (PPQ / 4));
+        const fractionalBeat = tickWithinBeat / PPQ;
+
+        // Total beats from start
+        // ExerciseNote position is 0-based: measure 0 = bar 1, beat 0 = first beat
+        const totalBeats =
+          (note.position?.measure || 0) * beatsPerBar + // 0-based measure
+          (note.position?.beat || 0) + // 0-based beat
+          fractionalBeat;
+        const timeInSeconds = totalBeats * (60 / exercise.bpm);
+
+        // Calculate duration in seconds
+        // Support both formats: "quarter-dotted" and "dotted-quarter"
+        const durationMap: Record<string, number> = {
+          // Standard names
+          whole: 4,
+          half: 2,
+          'half-dotted': 3,
+          'dotted-half': 3,
+          quarter: 1,
+          'quarter-dotted': 1.5,
+          'dotted-quarter': 1.5,
+          eighth: 0.5,
+          'eighth-dotted': 0.75,
+          'dotted-eighth': 0.75,
+          sixteenth: 0.25,
+          '8th-triplet': 1 / 3,
+          '16th-triplet': 1 / 6,
+        };
+        // Also try using durationTicks if available for more precision
+        let durationInBeats = 1;
+        if ((note as any).durationTicks) {
+          // durationTicks at 480 PPQ: 480 = quarter note, 960 = half, etc.
+          durationInBeats = (note as any).durationTicks / PPQ;
+        } else {
+          durationInBeats = durationMap[(note as any).noteDuration || note.duration] || 1;
+        }
+        const durationInSeconds = durationInBeats * (60 / exercise.bpm);
+
+        return {
+          type: 'noteOn',
+          time: timeInSeconds,
+          channel: 0, // Bass channel
+          note: midiNote,
+          velocity: 100, // Default velocity
+          duration: durationInSeconds,
+          // Bass-specific data for BassScheduler lookup
+          midiNote,
+          string: note.string,
+          fret: note.fret,
+          noteName: note.note,
+          // TEMPO FIX: Store duration in beats + original BPM for live tempo recalculation
+          // This allows SimpleInstrumentScheduler to adjust duration when user changes tempo
+          durationInBeats,
+          originalBpm: exercise.bpm,
+        };
+      });
+
+      // Create region from events
+      const trackId = 'bass-widget-track';
+      const region = this.createRegionFromEvents(trackId, midiEvents, exercise);
+
+      // Create track with region
+      const track: import('@/domains/playback/models/SessionModel').TrackModel =
+        {
+          id: trackId,
+          name: 'Bass',
+          type: 'bass',
+          regions: [region],
+          muted: false,
+          solo: false,
+          volume: 0.7,
+          pan: 0,
+          order: 1,
+          color: this.getColorForTrack(trackId),
+        };
+
+      // Create session with track
+      const session = this.sessionManager.createSession({
+        id: `session-${exercise.id}-bass-${Date.now()}`,
+        name: exercise.title,
+        tempo: exercise.bpm,
+        timeSignature: exercise.timeSignature || {
+          numerator: 4,
+          denominator: 4,
+        },
+        tracks: [track],
+        metadata: {
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      });
+
+      // Extract regions from session tracks
+      const allRegions: RegionModel[] = [];
+      for (const sessionTrack of session.tracks) {
+        allRegions.push(...sessionTrack.regions);
+      }
+
+      logger.info('Loaded from bass notes successfully', {
+        exerciseId: exercise.id,
+        midiEventCount: midiEvents.length,
+        trackCount: session.tracks.length,
+        regionCount: allRegions.length,
+      });
+
+      return { session, regions: allRegions, midiEvents };
+    } catch (error) {
+      logger.error('Failed to load from bass notes', {
+        exerciseId: exercise.id,
+        exerciseTitle: exercise.title,
+        noteCount: bassNotes.length,
         errorMessage: error instanceof Error ? error.message : 'Unknown error',
         errorStack: error instanceof Error ? error.stack : undefined,
         error,

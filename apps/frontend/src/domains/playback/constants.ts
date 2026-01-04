@@ -11,6 +11,23 @@ import type { CoreAudioEngineConfig, MobileAudioConfig } from './types/audio';
 import { PluginCategory, PluginPriority } from './types/plugin';
 
 // ============================================================================
+// HARMONY INSTRUMENT DEFAULTS
+// ============================================================================
+
+/**
+ * Default harmony instrument when exercise.harmonyInstrument is not specified.
+ *
+ * CRITICAL: This value MUST be used consistently across:
+ * - HarmonyPreloadStrategy.ts (loadFullSamples)
+ * - HarmonyWidget.tsx (registerHarmonyWithPlaybackEngine)
+ * - InitialSamplePreloader.ts (harmony buffer injection)
+ *
+ * Inconsistent defaults cause 0% sample coverage issue where preloader
+ * stores samples with one instrument prefix but widget looks for another.
+ */
+export const DEFAULT_HARMONY_INSTRUMENT = 'grandpiano' as const;
+
+// ============================================================================
 // AUDIO ENGINE DEFAULTS
 // ============================================================================
 
