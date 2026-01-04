@@ -35,19 +35,20 @@ This project is currently in **active development** with **NO production users o
 
 **Current Logger Setup:**
 
-- **Environment**: `NEXT_PUBLIC_LOG_LEVEL=INFO` in `.env.local`
+- **Default Log Level**: ERROR (unless `NEXT_PUBLIC_LOG_LEVEL` is set in `.env.local`)
 - **Two Logger Systems**:
-  1. **Frontend Logger** (`apps/frontend/src/utils/logger.ts`) - Category-based with disabled list
-  2. **Structured Logger** (`libs/contracts/src/utils/structured-logger.ts`) - Used by RegionProcessor
+  1. **Frontend Logger** (`apps/frontend/src/utils/logger.ts`) - Category-based with disabled list, defaults to ERROR
+  2. **Structured Logger** (`libs/contracts/src/utils/structured-logger.ts`) - Defaults to ERROR in production, INFO in development
 
-**RegionProcessor Logger Status:**
+**Log Level Behavior:**
 
-- Uses: `getLogger('RegionProcessor')` from `@/utils/logger.js`
-- **NOT in disabled categories list** - logs WILL show
-- Log levels enabled: `ERROR`, `WARN`, `INFO` (DEBUG and VERBOSE disabled by default)
+- Without `NEXT_PUBLIC_LOG_LEVEL` set: defaults to **ERROR** level
+- With `NEXT_PUBLIC_LOG_LEVEL=INFO`: shows ERROR, WARN, INFO
+- Log levels available: `ERROR`, `WARN`, `INFO`, `DEBUG`, `VERBOSE` (Frontend) / `TRACE` (Structured)
 - Current calls in code:
-  - `logger.info()` - ✅ WILL SHOW (level INFO)
-  - `logger.debug()` - ❌ WON'T SHOW (level DEBUG > INFO threshold)
+  - `logger.error()` - ✅ ALWAYS SHOWS
+  - `logger.info()` - ❌ WON'T SHOW unless level is INFO or higher
+  - `logger.debug()` - ❌ WON'T SHOW unless level is DEBUG or higher
 
 **How to Enable Debug Logs:**
 
@@ -115,6 +116,31 @@ import { AuthUser } from '@/domains/user/auth/types/auth.types';
 import { Injectable } from '@nestjs/common';
 ```
 
+### TypeScript Path Aliases
+
+**Frontend (`apps/frontend/tsconfig.json`):**
+```typescript
+@/*                    → ./src/*
+@/domains/*            → ./src/domains/*
+@/shared/*             → ./src/shared/*
+@bassnotion/contracts  → ../../libs/contracts/dist/src
+
+// Playback module aliases (for internal playback domain imports)
+@playback/shared       → ./src/domains/playback/modules/shared/index.js
+@playback/audio-engine → ./src/domains/playback/modules/audio-engine/index.js
+@playback/transport    → ./src/domains/playback/modules/transport/index.js
+@playback/instruments  → ./src/domains/playback/modules/instruments/index.js
+@playback/tracks       → ./src/domains/playback/modules/tracks/index.js
+@playback/storage      → ./src/domains/playback/modules/storage/index.js
+```
+
+**Workspace (`tsconfig.base.json`):**
+```typescript
+@bassnotion/backend    → apps/backend/src/index.ts
+@bassnotion/contracts  → libs/contracts/dist/src/index.d.ts
+@bassnotion/frontend   → apps/frontend/src/index.ts
+```
+
 ## Commands
 
 ### Development
@@ -151,27 +177,35 @@ pnpm nx run-many --target=build --all
 pnpm nx build @bassnotion/backend
 pnpm nx build @bassnotion/contracts
 
-# Frontend build workaround (due to nx/Next.js 15.3.2 compatibility issue)
+# Frontend build workaround (due to nx/Next.js compatibility issue)
 # The nx build for frontend may fail with "Html import" errors
 # Use this direct Next.js build command instead:
 cd apps/frontend && pnpm next build
 ```
 
-**Note**: There's a known issue with @nx/next plugin and Next.js 15.3.2 App Router that causes build failures through nx. The frontend builds successfully using Next.js directly.
+**Note**: There's a known issue with @nx/next plugin and Next.js App Router that causes build failures through nx. The frontend builds successfully using Next.js directly.
 
 ### Testing with Vitest
 
 ```bash
-# Run tests for specific directories (ALWAYS use this format)
-pnpm vitest run apps/backend/src/
-pnpm vitest run apps/frontend/src/
-pnpm vitest run libs/contracts/src/
+# Run all tests
+pnpm test
+
+# Run tests by app (uses package.json scripts)
+pnpm test:frontend              # All frontend tests
+pnpm test:backend               # All backend tests
+
+# Run domain-specific tests
+pnpm test:frontend:playback     # Playback domain only
+pnpm test:frontend:user         # User domain only
+pnpm test:frontend:widgets      # Widgets domain only
+pnpm test:frontend:shared       # Shared utilities
 
 # Run a specific test file
 pnpm vitest run apps/backend/src/domains/user/auth/auth.service.spec.ts
 
 # Watch mode for development
-pnpm vitest apps/frontend/src/ --watch
+pnpm vitest --watch
 ```
 
 ### Linting & Type Checking
@@ -223,29 +257,32 @@ pm2 delete all
 ```
 bassnotion-monorepo-v1/
 ├── apps/
-│   ├── backend/          # NestJS API (Port 3000)
-│   ├── frontend/         # Next.js app (Port 3001)
-│   └── frontend-e2e/     # Playwright tests
+│   ├── backend/          # NestJS + Fastify API (Port 3000)
+│   ├── frontend/         # Next.js 15 App Router (Port 3001)
+│   └── frontend-e2e/     # Playwright E2E tests
 ├── libs/
-│   └── contracts/        # Shared TypeScript types & Zod schemas
+│   └── contracts/        # Shared types, Zod schemas, utilities
 ├── docs/                 # Technical documentation
-├── bmad-agent/          # AI agent configurations
-└── memory-bank/         # Project context & progress
+├── scripts/              # Build and utility scripts
+├── supabase/             # Database migrations & config
+├── bmad-agent/           # AI agent configurations
+└── memory-bank/          # Project context & progress
 ```
 
 ### Technology Stack
 
-- **Frontend**: Next.js 15.3.2 (App Router) + React 19.1.0 + TypeScript 5.7.2
-- **Backend**: NestJS 11.0.0 + TypeScript 5.7.2
+- **Frontend**: Next.js 15.3.8 (App Router) + React 19.1.0 + TypeScript 5.7.3
+- **Backend**: NestJS 11.0.0 + Fastify 4.24 + TypeScript 5.7.3 (NOT Express!)
 - **Database**: Supabase (PostgreSQL)
 - **Authentication**: Supabase Auth
-- **UI Components**: shadcn/ui + Radix UI + Tailwind CSS
-- **State Management**: Zustand + TanStack Query
-- **3D Graphics**: Three.js + React Three Fiber
-- **Audio Processing**: Tone.js + Web Audio API
-- **Forms**: React Hook Form + Zod validation
-- **Build Tools**: Nx + Vite
-- **Testing**: Vitest (unit) + Playwright (e2e)
+- **UI Components**: shadcn/ui + Radix UI + Tailwind CSS 3.4
+- **State Management**: Zustand 5 + TanStack Query 5 + XState 5 (for complex flows)
+- **3D Graphics**: Three.js 0.170 + React Three Fiber 9 + Drei 9
+- **Audio Processing**: Tone.js 15 + Web Audio API + WebMIDI
+- **Music Notation**: VexFlow 4 + OpenSheetMusicDisplay 1.9
+- **Forms**: React Hook Form 7 + Zod 3.25 validation
+- **Build Tools**: Nx 21.2 + Vite 6.3
+- **Testing**: Vitest 3.1 (unit) + Playwright 1.52 (e2e)
 
 ### Domain Architecture
 
@@ -253,25 +290,50 @@ The project follows Domain-Driven Design with these core domains:
 
 #### Frontend Domains (`apps/frontend/src/domains/`)
 
-- **user**: Authentication, profiles, settings
-- **playback**: Audio/video playback, 3D fretboard visualization
-- **widgets**: YouTube integration, interactive tools
-- **exercises**: Practice materials, progress tracking
-- **tutorials**: Educational content, lessons
+- **admin**: Admin features, drum pattern editor
 - **creators**: Content creator features
+- **exercises**: Practice materials, progress tracking
+- **patterns**: Pattern selection & management
+- **playback**: Audio/video playback, 3D fretboard visualization (largest domain - 33+ subdirectories)
+- **tutorials**: Educational content, lessons
+- **user**: Authentication, profiles, settings
+- **widgets**: YouTube integration, interactive tools
 
 #### Backend Domains (`apps/backend/src/domains/`)
 
-- **user**: User management, authentication
-- **youtube**: YouTube API integration, batch processing
+- **audio-samples**: Audio file management
+- **creators**: Content creator features
 - **exercises**: Exercise data management
+- **learning**: Learning/token services
 - **tutorials**: Tutorial content management
+- **user**: User management, authentication (with auth/, repositories/, entities/, value-objects/)
+- **shared**: Cross-domain utilities
+
+**Backend Architecture Notes:**
+- Uses **CQRS pattern** (`@nestjs/cqrs`) for command/query separation
+- Uses **Fastify** (not Express) - important for middleware/plugin compatibility
+- Repository pattern with string tokens for DI (e.g., `'IResultExerciseRepository'`)
 
 ### Shared Contracts (`libs/contracts/src/`)
 
 - Type-safe API contracts using Zod schemas
 - Shared between frontend and backend
 - Ensures type safety across the entire stack
+
+**Key shared utilities:**
+- `MusicalTimeConverter` - Musical timing calculations (bars, beats, ticks)
+- `ProfessionalDrumProcessor` - Drum pattern processing
+- `structured-logger` - Correlation-aware logging
+- `correlation` - Request correlation ID utilities
+
+**Structure:**
+```
+libs/contracts/src/
+├── types/           # TypeScript interfaces (exercise, playback, musical-time, etc.)
+├── validation/      # Zod schemas (auth, exercise, playback, etc.)
+├── services/        # Shared services (MusicalTimeConverter, ProfessionalDrumProcessor)
+└── utils/           # Utilities (structured-logger, correlation, parsers)
+```
 
 ## Key Patterns & Conventions
 
@@ -324,16 +386,16 @@ NEXT_PUBLIC_APP_URL=http://localhost:3001
 NEXT_PUBLIC_API_URL=http://localhost:3000
 
 # Logging Configuration (optional)
-# Log levels: ERROR, WARN, INFO, DEBUG, TRACE
-# Production defaults to ERROR, Development defaults to INFO
-NEXT_PUBLIC_LOG_LEVEL=INFO
+# Log levels: ERROR, WARN, INFO, DEBUG, VERBOSE (Frontend) / TRACE (Structured)
+# Default: ERROR (if not set)
+# NEXT_PUBLIC_LOG_LEVEL=INFO  # Uncomment to see INFO logs
 
-# Suppress noisy contexts in development
-# Set to true to reduce log spam from high-frequency components
-NEXT_PUBLIC_SUPPRESS_NOISY_LOGS=false
-
-# Allow noisy logs in production (not recommended)
+# Allow noisy logs (contexts like TransportClock, EventBus, etc.)
+# Default: false - noisy contexts are suppressed
 NEXT_PUBLIC_ALLOW_NOISY_LOGS=false
+
+# Audio debugging
+# NEXT_PUBLIC_DEBUG_AUDIO=true  # Uncomment to enable audio debug panel
 ```
 
 ### Backend (.env)
@@ -471,6 +533,25 @@ These issues can make pages completely unresponsive. Follow these rules to preve
        widgetState.setSelectedExercise(selectedExercise);
      }
    }, [selectedExercise?.id]);
+   ```
+
+6. **Use Zustand's useShallow for Object Selectors**:
+
+   ```tsx
+   // ❌ BAD: Object reference changes every render
+   const { isPlaying, tempo } = useTransportStore((state) => ({
+     isPlaying: state.isPlaying,
+     tempo: state.tempo,
+   }));
+
+   // ✅ GOOD: useShallow prevents unnecessary re-renders
+   import { useShallow } from 'zustand/react/shallow';
+   const { isPlaying, tempo } = useTransportStore(
+     useShallow((state) => ({
+       isPlaying: state.isPlaying,
+       tempo: state.tempo,
+     }))
+   );
    ```
 
 ### Debugging Frozen Pages
