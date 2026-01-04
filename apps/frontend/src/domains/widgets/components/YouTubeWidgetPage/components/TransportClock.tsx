@@ -148,17 +148,7 @@ export function TransportClock({
   audioContextStateRef.current = audioContextState;
 
   // Get current display tempo - prioritize transport tempo, then user-set, then exercise default
-  // 🎵 TEMPO DEBUG: Log what value is being used for display
   const displayTempo = tempo || userTempo || selectedExercise?.bpm;
-
-  // TEMPO DEBUG: Log on every render to trace the 120 BPM issue
-  console.log(`🎵 [TEMPO-DEBUG] TransportClock render #${transportClockRenderCount}`, {
-    tempo_from_context: tempo,
-    userTempo: userTempo,
-    exerciseBpm: selectedExercise?.bpm,
-    displayTempo: displayTempo,
-    exerciseTitle: selectedExercise?.title?.substring(0, 30),
-  });
 
   // Initialize user tempo when exercise changes
   useEffect(() => {

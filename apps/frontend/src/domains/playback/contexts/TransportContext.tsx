@@ -91,12 +91,7 @@ export function TransportProvider({
 }: TransportProviderProps) {
   const [state, setState] = useState<TransportState>('stopped');
   // 🔧 FIX: Initialize tempo from musicalTruth (source of truth) instead of hardcoded 120
-  // TEMPO DEBUG: Log what musicalTruth returns at useState initialization time
-  const [tempo, setTempo] = useState(() => {
-    const initialBpm = musicalTruth.getBPM();
-    console.log(`🎵 [TEMPO-DEBUG] TransportContext useState initializer: musicalTruth.getBPM() = ${initialBpm}`);
-    return initialBpm;
-  });
+  const [tempo, setTempo] = useState(() => musicalTruth.getBPM());
   const [timeSignature, setTimeSignature] = useState<TimeSignature>({
     numerator: 4,
     denominator: 4,

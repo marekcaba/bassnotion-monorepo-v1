@@ -1210,13 +1210,6 @@ export function useFretboardNoteSync(
       elementToNoteIndices.set(element, existing);
     });
 
-    // DEBUG: Log elements with multiple notes (position sharing)
-    // eslint-disable-next-line no-console, no-restricted-syntax
-    console.log(
-      `   📊 [ELEMENT-MAP] uniqueElements=${elementToNoteIndices.size} | ` +
-      `multiNoteElements=${Array.from(elementToNoteIndices.values()).filter(arr => arr.length > 1).length}`
-    );
-
     // Process each unique element once, using the BEST state from all its notes
     elementToNoteIndices.forEach((noteIndices, element) => {
       // Determine the best state for this element based on all notes at this position
@@ -1694,24 +1687,7 @@ export function useFretboardNoteSync(
     const { visualSeconds, isCountdown } = state;
 
     // ============================================================================
-    // DIAGNOSTIC LOGGING - Animation Receiver
-    // Log everything the animation callback receives
-    // ============================================================================
     const currentTimeline = timelineRef.current;
-    const activeNoteIndexForLog = findNoteAtTime(currentTimeline, visualSeconds);
-    const activeEntry = activeNoteIndexForLog >= 0
-      ? currentTimeline.find(e => e.type === 'note' && e.noteIndex === activeNoteIndexForLog)
-      : null;
-
-    // eslint-disable-next-line no-console, no-restricted-syntax
-    console.log(
-      `🔄 [ANIM-RECV] t=${visualSeconds.toFixed(3)}s | ` +
-      `measure=${state.measureIndex} beat=${state.beatIndex} | ` +
-      `countdown=${isCountdown} | ` +
-      `noteIdx=${activeNoteIndexForLog} | ` +
-      `pos=${activeEntry ? `${activeEntry.position.stringIndex}:${activeEntry.position.fret}` : 'N/A'} | ` +
-      `entry: start=${activeEntry?.startTime.toFixed(3) ?? 'N/A'}s end=${activeEntry?.endTime.toFixed(3) ?? 'N/A'}s dur=${activeEntry?.durationBeats.toFixed(2) ?? 'N/A'}beats`
-    );
 
     // During countdown OR before first note starts, show the FIRST note with yellow ring
     // This ensures consistency with other widgets (DrummerWidget, MetronomeWidget, LoopGridStrip)
@@ -1820,13 +1796,6 @@ export function useFretboardNoteSync(
       // This replaces the React-based inline opacity calculation in FretboardGrid.
       // Now all opacity is controlled via CSS classes applied at 60fps.
       updateMeasureOpacityClasses(currentMeasure);
-
-      // Compact measure change log
-      // eslint-disable-next-line no-console, no-restricted-syntax
-      console.log(
-        `🎵 [MEASURE] ${previousMeasureRef.current}→${currentMeasure} | cleared ${clearedDots} dots, ${clearedLines} lines | t=${visualSeconds.toFixed(3)}s | ` +
-        `activeNote=${activeNoteIndex} prevNote=${previousNoteIndexRef.current}`
-      );
 
       previousMeasureRef.current = currentMeasure;
 

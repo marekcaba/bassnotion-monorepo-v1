@@ -1092,16 +1092,6 @@ export function YouTubeWidgetPage({
   const hasPreseededRef = React.useRef(false);
   const lastExercisesRef = React.useRef<typeof exercises>(null);
 
-  // TEMPO DEBUG: Log EVERY render to see if exercises are available
-  console.log(`🎵 [TEMPO-DEBUG] YouTubeWidgetPage render - BEFORE preseed check`, {
-    hasExercises: !!exercises,
-    exercisesLength: exercises?.length,
-    firstExerciseBpm: exercises?.[0]?.bpm,
-    lastExercisesRef: lastExercisesRef.current?.length,
-    exercisesChanged: exercises !== lastExercisesRef.current,
-    musicalTruthCurrentBpm: musicalTruth.getBPM(),
-  });
-
   // Pre-seed SYNCHRONOUSLY at render time, BEFORE returning JSX
   // This must happen before TransportProvider's useState initializer runs
   if (exercises && exercises.length > 0 && exercises !== lastExercisesRef.current) {

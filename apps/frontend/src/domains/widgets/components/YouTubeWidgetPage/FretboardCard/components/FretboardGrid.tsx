@@ -318,19 +318,6 @@ export const FretboardGrid: React.FC<FretboardGridProps> = React.memo(({
     ? (syncMeasure >= 0 ? syncMeasure : lastKnownMeasureRef.current)
     : (currentMeasureFromNoteProp ?? 0);
 
-  // GRANULAR LOG: Track measure source during playback
-  // This helps diagnose when React uses stale measure values
-  const prevMeasureLogRef = useRef<number>(-1);
-  if (isPlaying && prevMeasureLogRef.current !== currentMeasureFromNote) {
-    // eslint-disable-next-line no-console
-    console.log(
-      `🔗 [GRID-MEASURE] currentMeasure=${currentMeasureFromNote} | ` +
-      `syncMeasure=${syncMeasure} | lastKnown=${lastKnownMeasureRef.current} | ` +
-      `prop=${currentMeasureFromNoteProp ?? 'null'} | counter=${measureChangeCounter}`
-    );
-    prevMeasureLogRef.current = currentMeasureFromNote;
-  }
-
   // Build a map from position key to note indices for registerNoteRef usage
   // This allows us to find which notes correspond to a fretboard position
   const positionToNoteIndexMap = useMemo(() => {
