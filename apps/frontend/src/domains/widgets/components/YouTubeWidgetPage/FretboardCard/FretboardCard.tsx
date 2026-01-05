@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { ZoneCard, ZoneCardContent } from '@/ui-libraries';
 import { Target } from 'lucide-react';
 import { createStructuredLogger } from '@bassnotion/contracts';
@@ -25,8 +25,29 @@ import { ExerciseProgressBar } from './components/ExerciseProgressBar';
 import { FretboardControls } from './components/FretboardControls';
 import { FretboardModeControls } from './components/FretboardModeControls';
 import { FretboardGrid } from './components/FretboardGrid';
-import Fretboard3D from './components/Fretboard3D';
 import { convertTo3DFormat } from './utils/formatConversion';
+
+// Lazy load Fretboard3D to defer Three.js bundle (~400-600KB) until 3D mode is activated
+const Fretboard3D = lazy(() => import('./components/Fretboard3D'));
+
+/**
+ * Loading fallback for lazy-loaded Fretboard3D component.
+ * Matches the container dimensions (568x290) to prevent layout shift.
+ */
+function Fretboard3DLoadingFallback() {
+  return (
+    <div
+      className="flex items-center justify-center bg-slate-900/50 rounded-xl"
+      style={{ width: '100%', height: '100%' }}
+    >
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+        <span className="text-sm text-slate-400">Loading 3D Fretboard...</span>
+      </div>
+    </div>
+  );
+}
+
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { logSkeletonDebug } from '@/utils/skeletonDebug';
 
@@ -910,21 +931,23 @@ const FretboardCardContent = React.memo(
                       height: '100%',
                     }}
                   >
-                    <Fretboard3D
-                      stringCount={sharedStringCount as 4 | 5 | 6}
-                      maxFrets={maxFrets}
-                      selectedDots={convertTo3DFormat(
-                        sharedSelectedDots,
-                        sharedStringCount,
-                      )}
-                      onDotClick={(stringIndex, fret) => {
-                        // Convert 3D format call to standard format for consistency
-                        fretboard.handleDotClickWithAudio(stringIndex, fret);
-                      }}
-                      cameraDistance={7}
-                      cameraMode={sharedCameraMode}
-                      onCameraModeChange={sharedSetCameraMode}
-                    />
+                    <Suspense fallback={<Fretboard3DLoadingFallback />}>
+                      <Fretboard3D
+                        stringCount={sharedStringCount as 4 | 5 | 6}
+                        maxFrets={maxFrets}
+                        selectedDots={convertTo3DFormat(
+                          sharedSelectedDots,
+                          sharedStringCount,
+                        )}
+                        onDotClick={(stringIndex, fret) => {
+                          // Convert 3D format call to standard format for consistency
+                          fretboard.handleDotClickWithAudio(stringIndex, fret);
+                        }}
+                        cameraDistance={7}
+                        cameraMode={sharedCameraMode}
+                        onCameraModeChange={sharedSetCameraMode}
+                      />
+                    </Suspense>
                   </div>
                 </div>
               </div>

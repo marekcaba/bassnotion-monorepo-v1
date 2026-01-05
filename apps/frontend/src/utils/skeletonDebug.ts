@@ -3,7 +3,12 @@
  *
  * Provides a shared baseline timestamp for all skeleton debug logs.
  * This ensures all component render times are measured from the same starting point.
+ *
+ * Note: Logs are controlled by VERBOSE_DEBUG flag.
+ * Enable with NEXT_PUBLIC_VERBOSE_DEBUG=true in .env.local
  */
+
+import { isVerboseDebugEnabled } from '@/config/debug';
 
 // Initialize the baseline on module load
 const SKELETON_DEBUG_KEY = '__SKELETON_DEBUG_START';
@@ -33,7 +38,8 @@ export function resetSkeletonDebugBaseline(): void {
 }
 
 /**
- * Log a skeleton debug message with consistent formatting
+ * Log a skeleton debug message with consistent formatting.
+ * Only logs when VERBOSE_DEBUG is enabled.
  */
 export function logSkeletonDebug(
   emoji: string,
@@ -41,7 +47,7 @@ export function logSkeletonDebug(
   renderCount: number,
   data?: Record<string, any>
 ): void {
-  if (renderCount <= 5) {
+  if (isVerboseDebugEnabled() && renderCount <= 5) {
     console.log(
       `${emoji} [SKELETON-DEBUG] ${component} render #${renderCount} at +${getSkeletonDebugTime()}ms`,
       data ?? {}

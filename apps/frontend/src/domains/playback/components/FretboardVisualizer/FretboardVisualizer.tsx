@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { memo, useState, useCallback, useMemo, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import { Fretboard3D } from './components/Fretboard3D';
@@ -18,7 +18,67 @@ export interface FretboardVisualizerProps {
   onEditModeToggle?: (isEditMode: boolean) => void;
 }
 
-export function FretboardVisualizer({
+/**
+ * Compares notes arrays for equality to prevent unnecessary re-renders.
+ * Uses reference equality first, then shallow comparison of note properties.
+ */
+function areNotesEqual(
+  prevNotes: ExerciseNote[],
+  nextNotes: ExerciseNote[],
+): boolean {
+  if (prevNotes === nextNotes) return true;
+  if (prevNotes.length !== nextNotes.length) return false;
+
+  return prevNotes.every((prevNote, index) => {
+    const nextNote = nextNotes[index];
+    return (
+      prevNote.id === nextNote.id &&
+      prevNote.timestamp === nextNote.timestamp &&
+      prevNote.fret === nextNote.fret &&
+      prevNote.string === nextNote.string &&
+      prevNote.duration === nextNote.duration
+    );
+  });
+}
+
+/**
+ * Custom comparison function for FretboardVisualizer props.
+ * Returns true if props are equal (skip re-render), false otherwise.
+ *
+ * Three.js Canvas re-renders are expensive, so we carefully compare:
+ * - Primitive props directly
+ * - Notes array with shallow comparison
+ * - Callbacks by reference (assuming parent memoizes them)
+ */
+function areFretboardVisualizerPropsEqual(
+  prevProps: FretboardVisualizerProps,
+  nextProps: FretboardVisualizerProps,
+): boolean {
+  // Compare primitive props
+  if (
+    prevProps.currentTime !== nextProps.currentTime ||
+    prevProps.bpm !== nextProps.bpm ||
+    prevProps.isPlaying !== nextProps.isPlaying ||
+    prevProps.isEditMode !== nextProps.isEditMode
+  ) {
+    return false;
+  }
+
+  // Compare callback references (parent should memoize these)
+  if (
+    prevProps.onCameraReset !== nextProps.onCameraReset ||
+    prevProps.onSettingsClick !== nextProps.onSettingsClick ||
+    prevProps.onNotesChange !== nextProps.onNotesChange ||
+    prevProps.onEditModeToggle !== nextProps.onEditModeToggle
+  ) {
+    return false;
+  }
+
+  // Compare notes array
+  return areNotesEqual(prevProps.notes, nextProps.notes);
+}
+
+function FretboardVisualizerComponent({
   notes,
   currentTime,
   bpm,
@@ -185,3 +245,19 @@ export function FretboardVisualizer({
     </div>
   );
 }
+
+/**
+ * FretboardVisualizer - Memoized Three.js fretboard visualization component.
+ *
+ * This component renders an expensive Three.js Canvas, so it uses React.memo
+ * with a custom comparison function to prevent unnecessary re-renders.
+ *
+ * Performance optimization notes:
+ * - Three.js Canvas re-renders are costly (full WebGL context updates)
+ * - Parent components should memoize callback props with useCallback
+ * - Notes array is compared by value to allow parent state updates
+ */
+export const FretboardVisualizer = memo(
+  FretboardVisualizerComponent,
+  areFretboardVisualizerPropsEqual,
+);

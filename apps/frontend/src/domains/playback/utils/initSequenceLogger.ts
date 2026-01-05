@@ -3,7 +3,13 @@
  *
  * Minimal diagnostic logger for tracking audio initialization flow.
  * Filter console with: [INIT-SEQ]
+ *
+ * Note: Disabled by default for clean console. Enable via:
+ *   - Set NEXT_PUBLIC_VERBOSE_DEBUG=true in .env.local, or
+ *   - Call window.initSeq.enable() in browser console
  */
+
+import { VERBOSE_DEBUG } from '@/config/debug';
 
 type InitStep =
   | 'provider-mount'
@@ -31,7 +37,8 @@ interface StepData {
 
 class InitSequenceLogger {
   private stepCounter = 0;
-  private enabled = true;
+  // Default to disabled unless VERBOSE_DEBUG is enabled
+  private enabled = VERBOSE_DEBUG;
 
   log(step: InitStep, data?: Partial<StepData>) {
     if (!this.enabled) return;

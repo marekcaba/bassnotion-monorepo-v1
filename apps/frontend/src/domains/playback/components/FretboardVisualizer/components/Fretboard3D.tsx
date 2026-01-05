@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback } from 'react';
+import React, { memo, useCallback } from 'react';
 import type { ExerciseNote } from '../types/fretboard';
 
 interface Fretboard3DProps {
@@ -12,7 +12,59 @@ interface Fretboard3DProps {
   onNoteSelect?: (index: number | null) => void;
 }
 
-export function Fretboard3D({
+/**
+ * Compares notes arrays for equality.
+ * Used by the memoization comparison function.
+ */
+function areNotesEqual(
+  prevNotes: ExerciseNote[] | undefined,
+  nextNotes: ExerciseNote[] | undefined,
+): boolean {
+  if (prevNotes === nextNotes) return true;
+  if (!prevNotes || !nextNotes) return prevNotes === nextNotes;
+  if (prevNotes.length !== nextNotes.length) return false;
+
+  return prevNotes.every((prevNote, index) => {
+    const nextNote = nextNotes[index];
+    return (
+      prevNote.id === nextNote.id &&
+      prevNote.timestamp === nextNote.timestamp &&
+      prevNote.fret === nextNote.fret &&
+      prevNote.string === nextNote.string &&
+      prevNote.duration === nextNote.duration
+    );
+  });
+}
+
+/**
+ * Custom comparison function for Fretboard3D props.
+ * This component renders many Three.js meshes (dots for each fret/string),
+ * so preventing unnecessary re-renders is critical for performance.
+ */
+function areFretboard3DPropsEqual(
+  prevProps: Fretboard3DProps,
+  nextProps: Fretboard3DProps,
+): boolean {
+  // Compare primitive props
+  if (
+    prevProps.visible !== nextProps.visible ||
+    prevProps.strings !== nextProps.strings ||
+    prevProps.isEditMode !== nextProps.isEditMode ||
+    prevProps.selectedNote !== nextProps.selectedNote
+  ) {
+    return false;
+  }
+
+  // Compare callback reference
+  if (prevProps.onNoteSelect !== nextProps.onNoteSelect) {
+    return false;
+  }
+
+  // Compare notes array
+  return areNotesEqual(prevProps.notes, nextProps.notes);
+}
+
+function Fretboard3DComponent({
   visible = true,
   strings = 4,
   notes = [],
@@ -122,3 +174,19 @@ export function Fretboard3D({
     </>
   );
 }
+
+/**
+ * Fretboard3D - Memoized 3D fretboard mesh renderer.
+ *
+ * This component renders a grid of Three.js meshes (52 dots for 4 strings x 13 frets)
+ * plus additional meshes for each note. Re-renders are expensive due to the
+ * number of 3D objects created.
+ *
+ * Performance optimization:
+ * - Uses React.memo with custom comparison to prevent unnecessary re-renders
+ * - Parent should memoize onNoteSelect callback with useCallback
+ */
+export const Fretboard3D = memo(
+  Fretboard3DComponent,
+  areFretboard3DPropsEqual,
+);

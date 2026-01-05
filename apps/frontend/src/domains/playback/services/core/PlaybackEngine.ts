@@ -608,6 +608,45 @@ export class PlaybackEngine {
   }
 
   /**
+   * Clear all bass tracks and stop any scheduled bass events
+   * Call this before loading a new exercise to prevent bass sample doubling
+   * (bass regions accumulate without clearing, causing louder and louder bass)
+   */
+  clearBassTracks(): void {
+    // 1. Stop all scheduled bass sources immediately (not graceful - force stop)
+    if (this.bassScheduler) {
+      this.bassScheduler.stopAll(false); // false = immediate stop with fadeout
+      console.log('[PLAYBACK-ENGINE] Cleared bass scheduler sources');
+    }
+
+    // 2. Find and unregister all bass tracks
+    const bassTrackIds: string[] = [];
+    this.tracks.forEach((track, trackId) => {
+      if (track.instrumentType === 'bass') {
+        bassTrackIds.push(trackId);
+      }
+    });
+
+    for (const trackId of bassTrackIds) {
+      this.tracks.delete(trackId);
+      console.log('[PLAYBACK-ENGINE] Unregistered bass track:', trackId);
+    }
+
+    // 3. Clear any scheduled bass events from the tracking sets
+    // Events are keyed by region ID, remove any bass-related ones
+    this.scheduledEvents.forEach((eventSet, regionId) => {
+      if (regionId.includes('bass')) {
+        this.scheduledEvents.delete(regionId);
+      }
+    });
+
+    this.logger.info('Cleared all bass tracks and scheduled events', {
+      unregisteredTracks: bassTrackIds.length,
+      instanceId: this.instanceId,
+    });
+  }
+
+  /**
    * Get all tracks
    */
   getTracks(): Map<string, Track> {
@@ -1395,6 +1434,18 @@ export class PlaybackEngine {
       instanceId: this.instanceId,
       graceful,
     });
+
+    // PHASE 0: Apply master fade-out FIRST to prevent audio spike
+    // This ramps master gain to near-zero over 30ms before stopping sources
+    try {
+      const mixer = Mixer.getInstance();
+      // Fire and forget - don't wait for fade to complete
+      // The 30ms fade happens while we clean up below
+      mixer.applyMasterFadeOut(0.03);
+    } catch (e) {
+      // Mixer may not be initialized - continue without master fade
+      this.logger.warn('Could not apply master fade-out (Mixer not ready)', { error: e });
+    }
 
     // Stop all instrument schedulers - this cancels their active audio sources
     // Pass graceful flag to all schedulers:

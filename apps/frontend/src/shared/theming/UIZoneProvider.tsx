@@ -31,7 +31,7 @@ import {
 } from './types';
 
 // Available options for each setting
-const AVAILABLE_LIBRARIES: UILibrary[] = ['shadcn', 'nextui'];
+const AVAILABLE_LIBRARIES: UILibrary[] = ['shadcn'];
 const AVAILABLE_VARIANTS: ThemeVariant[] = ['default', 'purple', 'blue', 'green', 'orange'];
 const AVAILABLE_EFFECTS: StyleEffect[] = ['flat', 'glass', 'neumorphic', 'gradient'];
 const AVAILABLE_BACKGROUNDS: BackgroundTheme[] = [

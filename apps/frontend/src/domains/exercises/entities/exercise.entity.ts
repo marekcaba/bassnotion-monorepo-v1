@@ -6,6 +6,7 @@ import type {
   HarmonyInstrumentType,
   HarmonyControlChange,
 } from '@bassnotion/contracts';
+import { isVerboseDebugEnabled } from '@/config/debug';
 
 // Note type for frontend usage
 export interface ExerciseNote {
@@ -284,34 +285,36 @@ export class Exercise {
   // Factory method for creating from API response
   static fromDTO(dto: any): Exercise {
     // CRITICAL DEBUG: Log the entire DTO to see what backend is sending
-    console.log('🔍 [EXERCISE-DTO] Received DTO from backend:', {
-      title: dto.title,
-      id: dto.id,
-      harmony_instrument: dto.harmony_instrument,
-      harmonyInstrument: dto.harmonyInstrument, // Check if camelCase version exists
-      hasHarmonyMidiUrl: !!dto.harmony_midi_url,
-      hasHarmonyNotes: !!dto.harmony_notes,
-      harmonyNotesCount: dto.harmony_notes?.length || 0,
-      allKeys: Object.keys(dto),
-    });
-
-    // TEMPORARY DEBUG: Log harmony_notes mapping
-    if (
-      dto.harmony_midi_url ||
-      dto.harmony_notes ||
-      dto.harmony_control_changes
-    ) {
-      console.log('🔍 Exercise.fromDTO - Harmony data:', {
+    if (isVerboseDebugEnabled()) {
+      console.log('🔍 [EXERCISE-DTO] Received DTO from backend:', {
         title: dto.title,
+        id: dto.id,
+        harmony_instrument: dto.harmony_instrument,
+        harmonyInstrument: dto.harmonyInstrument, // Check if camelCase version exists
         hasHarmonyMidiUrl: !!dto.harmony_midi_url,
         hasHarmonyNotes: !!dto.harmony_notes,
         harmonyNotesCount: dto.harmony_notes?.length || 0,
-        hasHarmonyControlChanges: !!dto.harmony_control_changes,
-        harmonyControlChangesCount: dto.harmony_control_changes?.length || 0,
-        harmonyInstrument: dto.harmony_instrument,
-        firstHarmonyNote: dto.harmony_notes?.[0],
-        firstControlChange: dto.harmony_control_changes?.[0],
+        allKeys: Object.keys(dto),
       });
+
+      // TEMPORARY DEBUG: Log harmony_notes mapping
+      if (
+        dto.harmony_midi_url ||
+        dto.harmony_notes ||
+        dto.harmony_control_changes
+      ) {
+        console.log('🔍 Exercise.fromDTO - Harmony data:', {
+          title: dto.title,
+          hasHarmonyMidiUrl: !!dto.harmony_midi_url,
+          hasHarmonyNotes: !!dto.harmony_notes,
+          harmonyNotesCount: dto.harmony_notes?.length || 0,
+          hasHarmonyControlChanges: !!dto.harmony_control_changes,
+          harmonyControlChangesCount: dto.harmony_control_changes?.length || 0,
+          harmonyInstrument: dto.harmony_instrument,
+          firstHarmonyNote: dto.harmony_notes?.[0],
+          firstControlChange: dto.harmony_control_changes?.[0],
+        });
+      }
     }
 
     const exercise = Exercise.reconstitute({
@@ -347,12 +350,14 @@ export class Exercise {
     });
 
     // CRITICAL DEBUG: Verify the exercise entity has the field after creation
-    console.log('🔍 [EXERCISE-ENTITY] Created entity:', {
-      title: exercise.title,
-      harmonyInstrument: exercise.harmonyInstrument,
-      harmonyInstrumentFromProps: exercise._props?.harmonyInstrument,
-      propsKeys: Object.keys(exercise._props || {}),
-    });
+    if (isVerboseDebugEnabled()) {
+      console.log('🔍 [EXERCISE-ENTITY] Created entity:', {
+        title: exercise.title,
+        harmonyInstrument: exercise.harmonyInstrument,
+        harmonyInstrumentFromProps: exercise._props?.harmonyInstrument,
+        propsKeys: Object.keys(exercise._props || {}),
+      });
+    }
 
     return exercise;
   }

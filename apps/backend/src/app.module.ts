@@ -14,6 +14,7 @@ import { SupabaseModule } from './infrastructure/supabase/supabase.module.js';
 import { CacheModule } from './infrastructure/cache/cache.module.js';
 import { StorageModule } from './infrastructure/storage/storage.module.js';
 import { HealthModule } from './health/health.module.js';
+import { BillingModule } from './domains/billing/billing.module.js';
 import { PerformanceMiddleware } from './shared/middleware/performance.middleware.js';
 import { CorrelationMiddleware } from './shared/middleware/correlation.middleware.js';
 import { SharedModule } from './shared/shared.module.js';
@@ -37,6 +38,7 @@ import { LoggingModule } from './infrastructure/logging/logging.module.js';
     CreatorsModule,
     AudioSamplesModule,
     HealthModule,
+    BillingModule,
   ],
   controllers: [AppController],
   providers: [AppService, PerformanceMiddleware, CorrelationMiddleware],

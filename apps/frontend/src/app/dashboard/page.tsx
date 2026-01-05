@@ -230,7 +230,13 @@ export default function DashboardPage() {
   // Show loading state while auth is initializing
   if (!isReady) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4 bg-black">
+      <div
+        className="min-h-screen flex items-center justify-center px-4"
+        style={{
+          background:
+            'radial-gradient(ellipse at 50% 0%, hsl(220 45% 20%) 0%, hsl(230 35% 10%) 40%, hsl(240 25% 5%) 100%)',
+        }}
+      >
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ffc700] mx-auto"></div>
           <p className="mt-2 text-gray-400">Loading...</p>
@@ -245,7 +251,13 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div
+      className="min-h-screen"
+      style={{
+        background:
+          'radial-gradient(ellipse at 50% 0%, hsl(220 45% 20%) 0%, hsl(230 35% 10%) 40%, hsl(240 25% 5%) 100%)',
+      }}
+    >
       {/* Add debug component for responsive testing */}
       <ResponsiveDebug showAlways={true} />
 

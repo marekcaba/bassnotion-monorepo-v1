@@ -6,6 +6,7 @@
  */
 
 import { useEffect, useCallback, useRef, useMemo, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { usePlaybackStore, playbackSelectors } from '../store/playbackStore';
 import {
   CoreServices,
@@ -145,9 +146,10 @@ export function useCoreServices(
   const isInitialized = usePlaybackStore(selectIsInitialized);
   const isLoading = usePlaybackStore(selectIsLoading);
   const error = usePlaybackStore(selectError);
-  const config = usePlaybackStore(selectConfig);
+  // Use useShallow for object/array selectors to prevent unnecessary re-renders
+  const config = usePlaybackStore(useShallow(selectConfig));
   const performanceMetrics = usePlaybackStore(selectPerformanceMetrics);
-  const performanceAlerts = usePlaybackStore(selectPerformanceAlerts);
+  const performanceAlerts = usePlaybackStore(useShallow(selectPerformanceAlerts));
 
   // Action selectors
   const setInitialized = usePlaybackStore(selectSetInitialized);

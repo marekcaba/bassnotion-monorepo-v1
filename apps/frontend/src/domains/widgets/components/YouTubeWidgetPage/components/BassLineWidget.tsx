@@ -15,6 +15,7 @@ import type { MusicalPosition } from '@bassnotion/contracts/types/musical-time';
 import type { Exercise } from '@bassnotion/contracts';
 import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
 import { GlobalSampleCache } from '@/domains/playback/modules/storage/cache/GlobalSampleCache';
+import { isVerboseDebugEnabled } from '@/config/debug';
 
 // Bass articulation types
 const BassArticulation = {
@@ -173,13 +174,17 @@ const BassLineWidgetComponent = ({
   useEffect(() => {
     const handleBassSamplesLoaded = (event: Event) => {
       const customEvent = event as CustomEvent;
-      console.log('🎸 [BASS-WIDGET] Received bass-samples-loaded event:', customEvent.detail);
+      if (isVerboseDebugEnabled()) {
+        console.log('🎸 [BASS-WIDGET] Received bass-samples-loaded event:', customEvent.detail);
+      }
       // Increment trigger to force registration effect to re-run
       setSamplesLoadedTrigger(prev => prev + 1);
     };
 
     const handleSamplesReady = () => {
-      console.log('🎸 [BASS-WIDGET] Received samplesReady event from ScrollTriggerLoader');
+      if (isVerboseDebugEnabled()) {
+        console.log('🎸 [BASS-WIDGET] Received samplesReady event from ScrollTriggerLoader');
+      }
       setSamplesLoadedTrigger(prev => prev + 1);
     };
 
@@ -200,10 +205,12 @@ const BassLineWidgetComponent = ({
   const prevExerciseIdRef = useRef<string | undefined>(undefined);
   useEffect(() => {
     if (exercise?.id !== prevExerciseIdRef.current) {
-      console.log('🎸 [BASS-WIDGET] Exercise changed, clearing bass buffers ready flag', {
-        prevExerciseId: prevExerciseIdRef.current,
-        newExerciseId: exercise?.id,
-      });
+      if (isVerboseDebugEnabled()) {
+        console.log('🎸 [BASS-WIDGET] Exercise changed, clearing bass buffers ready flag', {
+          prevExerciseId: prevExerciseIdRef.current,
+          newExerciseId: exercise?.id,
+        });
+      }
       WindowRegistry.clearBassBuffersReady();
       prevExerciseIdRef.current = exercise?.id;
     }
@@ -397,27 +404,33 @@ const BassLineWidgetComponent = ({
   const registerBassWithPlaybackEngine = useCallback(async () => {
     // PERFORMANCE FIX: Prevent multiple simultaneous registrations
     if (isRegisteringRef.current) {
-      console.log('🎸 [BASS-WIDGET] Registration already in progress, skipping');
+      if (isVerboseDebugEnabled()) {
+        console.log('🎸 [BASS-WIDGET] Registration already in progress, skipping');
+      }
       return;
     }
 
     // PERFORMANCE FIX: Skip if already registered for this exercise + trigger combo
     const registrationKey = `${exercise?.id}-${samplesLoadedTrigger}`;
     if (lastRegisteredExerciseIdRef.current === registrationKey) {
-      console.log('🎸 [BASS-WIDGET] Already registered for this exercise+trigger, skipping', {
-        registrationKey,
-      });
+      if (isVerboseDebugEnabled()) {
+        console.log('🎸 [BASS-WIDGET] Already registered for this exercise+trigger, skipping', {
+          registrationKey,
+        });
+      }
       return;
     }
 
     isRegisteringRef.current = true;
 
-    const timestamp = new Date().toISOString();
-    console.log('🎸🎸🎸 [BASS-WIDGET] registerBassWithPlaybackEngine CALLED', {
-      timestamp,
-      exerciseId: exercise?.id,
-      hasNotes: !!exercise?.notes?.length,
-    });
+    if (isVerboseDebugEnabled()) {
+      const timestamp = new Date().toISOString();
+      console.log('🎸🎸🎸 [BASS-WIDGET] registerBassWithPlaybackEngine CALLED', {
+        timestamp,
+        exerciseId: exercise?.id,
+        hasNotes: !!exercise?.notes?.length,
+      });
+    }
 
     // Get CoreServices and PlaybackEngine
     const coreServices = WindowRegistry.getCoreServices();
@@ -432,7 +445,9 @@ const BassLineWidgetComponent = ({
       return;
     }
 
-    console.log('✅ [BASS-WIDGET] PlaybackEngine available, starting buffer injection...');
+    if (isVerboseDebugEnabled()) {
+      console.log('✅ [BASS-WIDGET] PlaybackEngine available, starting buffer injection...');
+    }
 
     try {
       const sampleCache = GlobalSampleCache.getInstance();
@@ -448,11 +463,13 @@ const BassLineWidgetComponent = ({
       if (metadata && metadata.exerciseId === exercise?.id && metadata.midiNotes?.length > 0) {
         // Metadata matches current exercise - use it
         midiNotesToLoad = metadata.midiNotes;
-        console.log('✅ [BASS-WIDGET] Using cached metadata for current exercise:', {
-          exerciseId: exercise?.id,
-          noteCount: midiNotesToLoad.length,
-          midiNotes: midiNotesToLoad,
-        });
+        if (isVerboseDebugEnabled()) {
+          console.log('✅ [BASS-WIDGET] Using cached metadata for current exercise:', {
+            exerciseId: exercise?.id,
+            noteCount: midiNotesToLoad.length,
+            midiNotes: midiNotesToLoad,
+          });
+        }
       } else if (exercise?.notes && exercise.notes.length > 0) {
         // Metadata is for wrong exercise OR missing - derive from exercise.notes
         // Bass strings are 1-5 (5-string bass) or 1-4 (4-string bass)
@@ -482,13 +499,15 @@ const BassLineWidgetComponent = ({
         });
 
         midiNotesToLoad = Array.from(midiNoteSet).sort((a, b) => a - b);
-        console.log('✅ [BASS-WIDGET] Derived MIDI notes from exercise.notes:', {
-          exerciseId: exercise?.id,
-          cachedExerciseId: metadata?.exerciseId,
-          bassNotesCount: bassNotes.length,
-          uniqueMidiNotes: midiNotesToLoad.length,
-          midiNotes: midiNotesToLoad,
-        });
+        if (isVerboseDebugEnabled()) {
+          console.log('✅ [BASS-WIDGET] Derived MIDI notes from exercise.notes:', {
+            exerciseId: exercise?.id,
+            cachedExerciseId: metadata?.exerciseId,
+            bassNotesCount: bassNotes.length,
+            uniqueMidiNotes: midiNotesToLoad.length,
+            midiNotes: midiNotesToLoad,
+          });
+        }
       }
 
       if (midiNotesToLoad.length === 0) {
@@ -503,7 +522,9 @@ const BassLineWidgetComponent = ({
       // This prevents the "AudioContext not available. Call initialize() first." error
       // which happens when the effect runs before user interaction initializes AudioEngine
       if (!audioEngine?.isInitialized) {
-        console.log('⏳ [BASS-WIDGET] AudioEngine not initialized yet, will retry when user interacts');
+        if (isVerboseDebugEnabled()) {
+          console.log('⏳ [BASS-WIDGET] AudioEngine not initialized yet, will retry when user interacts');
+        }
         return;
       }
 
@@ -514,12 +535,14 @@ const BassLineWidgetComponent = ({
         return;
       }
 
-      console.log('🎧 [BASS-WIDGET] AudioContext info:', {
-        hasAudioEngine: !!audioEngine,
-        hasAudioContext: !!audioContext,
-        hasDestination: !!audioContext.destination,
-        state: audioContext.state,
-      });
+      if (isVerboseDebugEnabled()) {
+        console.log('🎧 [BASS-WIDGET] AudioContext info:', {
+          hasAudioEngine: !!audioEngine,
+          hasAudioContext: !!audioContext,
+          hasDestination: !!audioContext.destination,
+          state: audioContext.state,
+        });
+      }
 
       // Decode cached ArrayBuffers and collect into a Record
       const bassBuffers: Record<string, AudioBuffer> = {};
@@ -532,11 +555,13 @@ const BassLineWidgetComponent = ({
         const rawBuffer = await sampleCache.getCachedRawBuffer(cacheKey);
         if (rawBuffer) {
           try {
-            console.log(`🔍 [BASS DECODE] Decoding ${cacheKey}`, {
-              rawBufferSize: rawBuffer.byteLength,
-              audioContextSampleRate: audioContext.sampleRate,
-              audioContextState: audioContext.state,
-            });
+            if (isVerboseDebugEnabled()) {
+              console.log(`🔍 [BASS DECODE] Decoding ${cacheKey}`, {
+                rawBufferSize: rawBuffer.byteLength,
+                audioContextSampleRate: audioContext.sampleRate,
+                audioContextState: audioContext.state,
+              });
+            }
 
             const buffer = await audioContext.decodeAudioData(rawBuffer.slice(0));
 
@@ -551,16 +576,18 @@ const BassLineWidgetComponent = ({
             }
             const rmsLevel = Math.sqrt(rmsSum / Math.min(4800, channelData.length));
 
-            console.log(`✅ [BASS DECODE] Decoded ${cacheKey}`, {
-              midiNote,
-              duration: buffer.duration.toFixed(2) + 's',
-              sampleRate: buffer.sampleRate,
-              channels: buffer.numberOfChannels,
-              first100msMaxAmplitude: maxAmplitude.toFixed(4),
-              first100msRMSLevel: rmsLevel.toFixed(4),
-              // Check if buffer has actual attack content
-              hasStrongAttack: maxAmplitude > 0.1 ? 'YES' : 'WEAK/MISSING',
-            });
+            if (isVerboseDebugEnabled()) {
+              console.log(`✅ [BASS DECODE] Decoded ${cacheKey}`, {
+                midiNote,
+                duration: buffer.duration.toFixed(2) + 's',
+                sampleRate: buffer.sampleRate,
+                channels: buffer.numberOfChannels,
+                first100msMaxAmplitude: maxAmplitude.toFixed(4),
+                first100msRMSLevel: rmsLevel.toFixed(4),
+                // Check if buffer has actual attack content
+                hasStrongAttack: maxAmplitude > 0.1 ? 'YES' : 'WEAK/MISSING',
+              });
+            }
 
             bassBuffers[String(midiNote)] = buffer;
             buffersDecoded++;
@@ -572,12 +599,14 @@ const BassLineWidgetComponent = ({
         }
       }
 
-      console.log('✅ [BASS-WIDGET] Buffer decoding complete:', {
-        exerciseId: exercise?.id,
-        totalNotes: midiNotesToLoad.length,
-        buffersDecoded,
-        bufferKeys: Object.keys(bassBuffers),
-      });
+      if (isVerboseDebugEnabled()) {
+        console.log('✅ [BASS-WIDGET] Buffer decoding complete:', {
+          exerciseId: exercise?.id,
+          totalNotes: midiNotesToLoad.length,
+          buffersDecoded,
+          bufferKeys: Object.keys(bassBuffers),
+        });
+      }
 
       if (buffersDecoded > 0) {
         // Use instrument gain node for volume control, fallback to destination
@@ -595,12 +624,14 @@ const BassLineWidgetComponent = ({
         // Also store locally for test playback
         bassBuffersRef.current = bassBuffers;
 
-        console.log('✅ [BASS-WIDGET] Bass buffers injected into PlaybackEngine', {
-          exerciseId: exercise?.id,
-          buffersInjected: buffersDecoded,
-          midiNoteRange: `${Math.min(...midiNotesToLoad)}-${Math.max(...midiNotesToLoad)}`,
-          audioContextState: audioContext.state,
-        });
+        if (isVerboseDebugEnabled()) {
+          console.log('✅ [BASS-WIDGET] Bass buffers injected into PlaybackEngine', {
+            exerciseId: exercise?.id,
+            buffersInjected: buffersDecoded,
+            midiNoteRange: `${Math.min(...midiNotesToLoad)}-${Math.max(...midiNotesToLoad)}`,
+            audioContextState: audioContext.state,
+          });
+        }
 
         // CRITICAL: Set the bass buffers ready flag so GlobalControls knows playback can start
         WindowRegistry.setBassBuffersReady(true, exercise?.id);
@@ -611,10 +642,12 @@ const BassLineWidgetComponent = ({
         setSamplerReady(true);
       } else if (midiNotesToLoad.length > 0) {
         // NO BUFFERS DECODED - Need to trigger the preload strategy!
-        console.log('🔄 [BASS-WIDGET] No cached buffers - triggering BassPreloadStrategy...', {
-          exerciseId: exercise?.id,
-          midiNotesToLoad,
-        });
+        if (isVerboseDebugEnabled()) {
+          console.log('🔄 [BASS-WIDGET] No cached buffers - triggering BassPreloadStrategy...', {
+            exerciseId: exercise?.id,
+            midiNotesToLoad,
+          });
+        }
 
         try {
           // Dynamically import BassPreloadStrategy
@@ -624,18 +657,24 @@ const BassLineWidgetComponent = ({
           const bassStrategy = new BassPreloadStrategy();
 
           // Load samples for this exercise
-          console.log('📥 [BASS-WIDGET] Calling BassPreloadStrategy.loadFullSamples()...');
+          if (isVerboseDebugEnabled()) {
+            console.log('📥 [BASS-WIDGET] Calling BassPreloadStrategy.loadFullSamples()...');
+          }
           const result = await bassStrategy.loadFullSamples(undefined, exercise);
 
-          console.log('✅ [BASS-WIDGET] BassPreloadStrategy result:', {
-            success: result.success,
-            loaded: result.loaded,
-            total: result.total,
-          });
+          if (isVerboseDebugEnabled()) {
+            console.log('✅ [BASS-WIDGET] BassPreloadStrategy result:', {
+              success: result.success,
+              loaded: result.loaded,
+              total: result.total,
+            });
+          }
 
           if (result.success && result.loaded > 0) {
             // Samples are now cached - try again to decode and inject
-            console.log('🔄 [BASS-WIDGET] Samples loaded, retrying buffer injection...');
+            if (isVerboseDebugEnabled()) {
+              console.log('🔄 [BASS-WIDGET] Samples loaded, retrying buffer injection...');
+            }
 
             // Use loadFromCachedMetadata to decode and inject
             const loadResult = await bassStrategy.loadFromCachedMetadata(audioContext);
@@ -651,14 +690,18 @@ const BassLineWidgetComponent = ({
                 // CRITICAL: Set the bass buffers ready flag
                 WindowRegistry.setBassBuffersReady(true, exercise?.id);
 
-                console.log('✅ [BASS-WIDGET] Bass buffers loaded via preload strategy', {
-                  exerciseId: exercise?.id,
-                  buffersLoaded: Object.keys(loadedBuffers).length,
-                });
+                if (isVerboseDebugEnabled()) {
+                  console.log('✅ [BASS-WIDGET] Bass buffers loaded via preload strategy', {
+                    exerciseId: exercise?.id,
+                    buffersLoaded: Object.keys(loadedBuffers).length,
+                  });
+                }
               }
             }
           } else {
-            console.warn('⚠️ [BASS-WIDGET] BassPreloadStrategy failed to load samples');
+            if (isVerboseDebugEnabled()) {
+              console.warn('⚠️ [BASS-WIDGET] BassPreloadStrategy failed to load samples');
+            }
           }
         } catch (preloadError) {
           console.error('❌ [BASS-WIDGET] Failed to trigger BassPreloadStrategy:', preloadError);
@@ -693,22 +736,26 @@ const BassLineWidgetComponent = ({
   useEffect(() => {
     const shouldRegister = trackIsReady && bassNoteCount > 0;
 
-    console.log('🔍 [BASS-CHECKPOINT] Should register bass:', {
-      shouldRegister,
-      trackIsReady,
-      bassNoteCount,
-      exerciseId: exercise?.id,
-    });
+    if (isVerboseDebugEnabled()) {
+      console.log('🔍 [BASS-CHECKPOINT] Should register bass:', {
+        shouldRegister,
+        trackIsReady,
+        bassNoteCount,
+        exerciseId: exercise?.id,
+      });
+    }
 
     if (shouldRegister) {
-      console.log(
-        '🔥🔥🔥 [BASS-WIDGET] ALL CONDITIONS MET - Registering bass buffers!',
-        {
-          exerciseId: exercise?.id,
-          bassNoteCount,
-          reason: 'exercise loaded or samples ready',
-        },
-      );
+      if (isVerboseDebugEnabled()) {
+        console.log(
+          '🔥🔥🔥 [BASS-WIDGET] ALL CONDITIONS MET - Registering bass buffers!',
+          {
+            exerciseId: exercise?.id,
+            bassNoteCount,
+            reason: 'exercise loaded or samples ready',
+          },
+        );
+      }
 
       // Register bass events and buffers for this exercise
       registerBassWithPlaybackEngine();
@@ -914,9 +961,11 @@ const BassLineWidgetComponent = ({
     const playbackEngine = coreServices?.getPlaybackEngine?.();
     if (playbackEngine?.clearBassBuffers) {
       playbackEngine.clearBassBuffers();
-      console.log('🎸 [BASS-WIDGET] Cleared bass buffers for exercise switch', {
-        newExerciseId: exercise.id,
-      });
+      if (isVerboseDebugEnabled()) {
+        console.log('🎸 [BASS-WIDGET] Cleared bass buffers for exercise switch', {
+          newExerciseId: exercise.id,
+        });
+      }
     }
 
     // Also clear local buffer cache
@@ -961,7 +1010,9 @@ const BassLineWidgetComponent = ({
 
     // Get first available buffer from cache
     const availableKeys = Object.keys(bassBuffersRef.current);
-    console.log('🎸 [BASS TEST] Available buffers:', availableKeys);
+    if (isVerboseDebugEnabled()) {
+      console.log('🎸 [BASS TEST] Available buffers:', availableKeys);
+    }
 
     const bufferKey = availableKeys[0] || '34'; // Use first available, fallback to 34
     let buffer = bassBuffersRef.current[bufferKey];
@@ -990,14 +1041,16 @@ const BassLineWidgetComponent = ({
       maxAmp = Math.max(maxAmp, Math.abs(channelData[i]));
     }
 
-    console.log('🎸 [BASS TEST] Direct Playback Test', {
-      bufferDuration: buffer.duration.toFixed(2) + 's',
-      sampleRate: buffer.sampleRate,
-      channels: buffer.numberOfChannels,
-      first100msMaxAmplitude: maxAmp.toFixed(4),
-      contextSampleRate: context.sampleRate,
-      contextState: context.state,
-    });
+    if (isVerboseDebugEnabled()) {
+      console.log('🎸 [BASS TEST] Direct Playback Test', {
+        bufferDuration: buffer.duration.toFixed(2) + 's',
+        sampleRate: buffer.sampleRate,
+        channels: buffer.numberOfChannels,
+        first100msMaxAmplitude: maxAmp.toFixed(4),
+        contextSampleRate: context.sampleRate,
+        contextState: context.state,
+      });
+    }
 
     // Play DIRECTLY to destination - no gain nodes, no effects
     const source = context.createBufferSource();
@@ -1005,19 +1058,23 @@ const BassLineWidgetComponent = ({
     source.connect(context.destination);
     source.start(context.currentTime);
 
-    console.log('🎸 [BASS TEST] Playing raw buffer directly to destination (no processing)');
+    if (isVerboseDebugEnabled()) {
+      console.log('🎸 [BASS TEST] Playing raw buffer directly to destination (no processing)');
 
-    // Also expose to window for manual testing
-    (window as any).__testBassBuffer = buffer;
-    (window as any).__testBassContext = context;
-    console.log('🎸 [BASS TEST] Buffer exposed as window.__testBassBuffer, context as window.__testBassContext');
-    console.log('🎸 [BASS TEST] To test manually: const s = window.__testBassContext.createBufferSource(); s.buffer = window.__testBassBuffer; s.connect(window.__testBassContext.destination); s.start();');
+      // Also expose to window for manual testing
+      (window as any).__testBassBuffer = buffer;
+      (window as any).__testBassContext = context;
+      console.log('🎸 [BASS TEST] Buffer exposed as window.__testBassBuffer, context as window.__testBassContext');
+      console.log('🎸 [BASS TEST] To test manually: const s = window.__testBassContext.createBufferSource(); s.buffer = window.__testBassBuffer; s.connect(window.__testBassContext.destination); s.start();');
+    }
   }, []);
 
   // Expose test function to window for console access
   useEffect(() => {
     (window as any).__testBassDirectPlayback = testDirectPlayback;
-    console.log('🎸 [BASS-WIDGET] Direct test function exposed as window.__testBassDirectPlayback()');
+    if (isVerboseDebugEnabled()) {
+      console.log('🎸 [BASS-WIDGET] Direct test function exposed as window.__testBassDirectPlayback()');
+    }
   }, [testDirectPlayback]);
 
   // Fretboard visualization helpers

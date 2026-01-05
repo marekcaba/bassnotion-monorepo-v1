@@ -9,6 +9,7 @@
  */
 
 import { useCallback, useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { usePlaybackStore } from '../store/playbackStore';
 import type { PlaybackState, AudioPerformanceMetrics } from '../types/audio';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
@@ -119,8 +120,12 @@ export function usePlaybackState(widgetId?: string): UsePlaybackStateReturn {
   const performanceMetrics = usePlaybackStore(
     (state) => state.performanceMetrics,
   );
-  const syncEvents = usePlaybackStore((state) => state.syncEvents);
-  const config = usePlaybackStore((state) => state.config);
+  // Use useShallow for object selectors to prevent unnecessary re-renders
+  // These objects change reference on any store update without shallow comparison
+  const syncEvents = usePlaybackStore(
+    useShallow((state) => state.syncEvents),
+  );
+  const config = usePlaybackStore(useShallow((state) => state.config));
 
   // Action selectors
   const setPlaybackState = usePlaybackStore((state) => state.setPlaybackState);

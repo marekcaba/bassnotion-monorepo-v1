@@ -43,12 +43,20 @@ export class AudioWorkletManager extends EventEmitter {
   private lastValidTime = 0;
   private lastValidFrame = 0;
   private lastStopTime = 0; // Track when we last stopped to suppress expected stale warnings
+  private staleWarningCount = 0; // Track consecutive stale warnings to reduce log spam
 
   // Configuration
   private config: Required<AudioWorkletConfig>;
 
   // Message handler reference for cleanup
   private messageHandler: ((event: MessageEvent) => void) | null = null;
+
+  // DEBUG: Message counting for loss analysis
+  private debugCounters = {
+    received: 0,
+    validated: 0,
+    emitted: 0,
+  };
 
   constructor(config: AudioWorkletConfig) {
     super();
@@ -166,6 +174,7 @@ export class AudioWorkletManager extends EventEmitter {
 
       switch (data.type) {
         case 'timing-update':
+          this.debugCounters.received++;
           this.handleTimingUpdate(data);
           break;
 
@@ -190,19 +199,34 @@ export class AudioWorkletManager extends EventEmitter {
   private handleTimingUpdate(data: TimingMessage): void {
     // Validate session ID
     if (data.sessionId !== this.currentSessionId) {
-      // Suppress expected stale warnings for 200ms after stop (race condition cleanup)
+      // Suppress expected stale warnings for 500ms after stop (race condition cleanup)
+      // Extended from 200ms to account for slower message processing
       const timeSinceStop = performance.now() - this.lastStopTime;
       const isExpectedStaleMessage =
-        this.lastStopTime > 0 && timeSinceStop < 200;
+        this.lastStopTime > 0 && timeSinceStop < 500;
 
+      this.staleWarningCount++;
+
+      // Only log first warning and then summary to reduce console spam
       if (!isExpectedStaleMessage) {
-        logger.warn('Rejecting stale timing update', {
-          received: data.sessionId,
-          expected: this.currentSessionId,
-        });
+        if (this.staleWarningCount === 1) {
+          logger.warn('Rejecting stale timing update', {
+            received: data.sessionId,
+            expected: this.currentSessionId,
+          });
+        } else if (this.staleWarningCount % 50 === 0) {
+          logger.warn('Stale timing updates summary', {
+            count: this.staleWarningCount,
+            received: data.sessionId,
+            expected: this.currentSessionId,
+          });
+        }
       }
       return;
     }
+
+    // Reset stale warning counter on valid message
+    this.staleWarningCount = 0;
 
     // Validate message sequence
     if (data.messageSequence! <= this.expectedMessageSequence) {
@@ -252,6 +276,8 @@ export class AudioWorkletManager extends EventEmitter {
       updateCount: data.updateCount!,
     };
 
+    this.debugCounters.validated++;
+    this.debugCounters.emitted++;
     this.emit('timing-update', update);
   }
 
@@ -291,6 +317,10 @@ export class AudioWorkletManager extends EventEmitter {
    * Stop playback
    */
   stop(): void {
+    // Reset counters for next session
+    this.debugCounters = { received: 0, validated: 0, emitted: 0 };
+    this.staleWarningCount = 0; // Reset stale warning counter
+
     // Increment session ID to invalidate old timing updates
     this.currentSessionId++;
     this.expectedMessageSequence = -1;

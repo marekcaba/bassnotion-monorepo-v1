@@ -1043,18 +1043,75 @@ export class Mixer {
     }
 
     const masterGain = this.masterBus.gain;
-    const targetGain = masterGain.gain.value || 1;
+    const currentTime = this.tone?.context?.currentTime ?? 0;
+
+    // ALWAYS target gain of 1 (full volume) - don't read current value
+    // as it may be 0.001 from a previous fade-out
+    const targetGain = 1;
+
+    // Cancel any scheduled values from previous fade-out
+    masterGain.gain.cancelScheduledValues(currentTime);
 
     // CRITICAL: Use exponential ramp from near-zero to prevent audio spike
     // Start at 0.001 (not 0, as exponential ramp requires non-zero start)
     masterGain.gain.setValueAtTime(0.001, startTime);
     masterGain.gain.exponentialRampToValueAtTime(targetGain, startTime + fadeDuration);
+  }
 
-    logger.info('🎛️ Mixer: Applied master fade-in', {
-      startTime: startTime.toFixed(3),
-      fadeDuration: `${fadeDuration * 1000}ms`,
-      targetGain,
-    });
+  /**
+   * Apply master fade-out to prevent audio spike on playback stop
+   *
+   * @param fadeDuration - Fade duration in seconds (default 30ms)
+   *
+   * This prevents the audio spike/click that occurs when playback stops
+   * by ramping the master gain to near-zero before stopping audio sources.
+   * Note: The gain stays at near-zero until the next applyMasterFadeIn call,
+   * which will properly reset and ramp up the gain.
+   */
+  public applyMasterFadeOut(fadeDuration = 0.03): void {
+    if (!this.masterBus) {
+      logger.warn('🎛️ Mixer: Cannot apply master fade-out - no master bus');
+      return;
+    }
+
+    const masterGain = this.masterBus.gain;
+    const currentTime = this.tone?.context?.currentTime ?? 0;
+
+    // Get the actual current gain value BEFORE canceling (could be mid-fade-in)
+    const currentGain = masterGain.gain.value;
+
+    // Cancel any scheduled automation from fade-in
+    masterGain.gain.cancelScheduledValues(currentTime);
+
+    // Only fade if gain is above near-zero (avoid re-fading)
+    if (currentGain <= 0.002) {
+      return;
+    }
+
+    // Set current value and ramp to near-zero
+    masterGain.gain.setValueAtTime(currentGain, currentTime);
+    masterGain.gain.exponentialRampToValueAtTime(0.001, currentTime + fadeDuration);
+
+    // NOTE: Don't reset gain here - let applyMasterFadeIn handle it on next play
+    // This avoids race conditions where reset happens after next play starts
+  }
+
+  /**
+   * Immediately reset master gain to full volume
+   * Called after fade-out is complete and sources are stopped
+   */
+  public resetMasterGain(): void {
+    if (!this.masterBus) {
+      return;
+    }
+
+    const masterGain = this.masterBus.gain;
+    const currentTime = this.tone?.context?.currentTime ?? 0;
+
+    masterGain.gain.cancelScheduledValues(currentTime);
+    masterGain.gain.setValueAtTime(1, currentTime);
+
+    logger.debug('🎛️ Mixer: Reset master gain to 1');
   }
 
   /**

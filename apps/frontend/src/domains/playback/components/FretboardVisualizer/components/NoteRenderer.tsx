@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { memo, useMemo } from 'react';
 import * as THREE from 'three';
 import { ExerciseNote } from '../types/fretboard';
 import {
@@ -20,6 +20,50 @@ interface NoteRendererProps {
   visible?: boolean;
 }
 
+/**
+ * Compares notes arrays for equality.
+ * Checks both array length and individual note properties.
+ */
+function areNotesEqual(
+  prevNotes: ExerciseNote[],
+  nextNotes: ExerciseNote[],
+): boolean {
+  if (prevNotes === nextNotes) return true;
+  if (prevNotes.length !== nextNotes.length) return false;
+
+  return prevNotes.every((prevNote, index) => {
+    const nextNote = nextNotes[index];
+    return (
+      prevNote.id === nextNote.id &&
+      prevNote.timestamp === nextNote.timestamp &&
+      prevNote.string === nextNote.string &&
+      prevNote.fret === nextNote.fret
+    );
+  });
+}
+
+/**
+ * Custom comparison for NoteRenderer props.
+ * This component creates Three.js materials and geometries for each visible note,
+ * so avoiding unnecessary re-renders is important for performance.
+ */
+function areNoteRendererPropsEqual(
+  prevProps: NoteRendererProps,
+  nextProps: NoteRendererProps,
+): boolean {
+  // Compare primitive props
+  if (
+    prevProps.currentTime !== nextProps.currentTime ||
+    prevProps.bpm !== nextProps.bpm ||
+    prevProps.visible !== nextProps.visible
+  ) {
+    return false;
+  }
+
+  // Compare notes array
+  return areNotesEqual(prevProps.notes, nextProps.notes);
+}
+
 interface RenderedNote {
   note: ExerciseNote;
   position: THREE.Vector3;
@@ -27,7 +71,7 @@ interface RenderedNote {
   scale: number;
 }
 
-export function NoteRenderer({
+function NoteRendererComponent({
   notes,
   currentTime,
   bpm,
@@ -105,3 +149,19 @@ export function NoteRenderer({
     </group>
   );
 }
+
+/**
+ * NoteRenderer - Memoized Three.js note visualization component.
+ *
+ * Renders spheres and labels for each visible note based on current playback time.
+ * Creates new Three.js materials for each note, making re-renders expensive.
+ *
+ * Performance optimization:
+ * - Uses React.memo with custom comparison
+ * - Internal useMemo for rendered notes calculation
+ * - Only re-renders when notes, currentTime, bpm, or visible actually change
+ */
+export const NoteRenderer = memo(
+  NoteRendererComponent,
+  areNoteRendererPropsEqual,
+);

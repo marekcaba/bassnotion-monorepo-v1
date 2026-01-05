@@ -62,6 +62,10 @@ export class Clock {
   // CLEANUP FIX: Store listener reference for proper cleanup
   private stateChangeListener: (() => void) | null = null;
 
+  // EVENT-DRIVEN FIX: Track if start() was called before AudioWorklet was ready
+  // If true, we need to start SampleAccurateClock once AudioWorklet is initialized
+  private pendingStart = false;
+
   constructor(config: ClockConfig = {}) {
     // Handle legacy config options
     const legacyConfig = config as any;
@@ -197,6 +201,14 @@ export class Clock {
           logger.info('✅ Successfully upgraded to AudioWorklet mode', {
             previousMode: this.webWorkerActive ? 'WebWorker' : 'Basic',
           });
+
+          // EVENT-DRIVEN FIX: If start() was called before AudioWorklet was ready,
+          // start the SampleAccurateClock now that it's initialized
+          if (this.pendingStart && this.sampleAccurateClock) {
+            console.log(`📊 [CLOCK DEBUG] Processing pendingStart - starting SampleAccurateClock now`);
+            this.sampleAccurateClock.start();
+            this.pendingStart = false;
+          }
         } catch (error) {
           logger.warn(
             'Failed to initialize AudioWorklet after context resume',
@@ -262,12 +274,25 @@ export class Clock {
       this.currentTime = time;
       this.currentFrame = frame;
       this.lastUpdateTime = performance.now();
+      // Debug: log first 3 ticks to verify callback chain
+      if (frame <= 3) {
+        console.log(`📊 [CLOCK DEBUG] sampleAccurateClock.onTick #${frame}`, {
+          time: time.toFixed(3),
+          hasOnTick: !!this.onTick,
+        });
+      }
       this.onTick?.(time);
     });
 
     // Initialize with AudioContext
     await this.sampleAccurateClock.initialize(this.audioContext);
     this.audioWorkletActive = true;
+
+    console.log(`📊 [CLOCK DEBUG] initializeAudioWorklet() complete`, {
+      audioWorkletActive: this.audioWorkletActive,
+      hasExternalOnTick: !!this.onTick,
+      note: 'External onTick should be true if TransportController.setupClockSubscription() was called before this',
+    });
 
     logger.info('AudioWorklet clock initialized successfully');
   }
@@ -338,10 +363,23 @@ export class Clock {
    * Start timing updates
    */
   start(): void {
+    console.log(`📊 [CLOCK DEBUG] Clock.start() called`, {
+      audioWorkletActive: this.audioWorkletActive,
+      hasSampleAccurateClock: !!this.sampleAccurateClock,
+      webWorkerActive: this.webWorkerActive,
+      useAudioWorklet: this.useAudioWorklet,
+    });
     if (this.audioWorkletActive && this.sampleAccurateClock) {
       this.sampleAccurateClock.start();
+      this.pendingStart = false;
     } else if (this.webWorkerActive && this.workerTimingManager) {
       this.workerTimingManager.start();
+      this.pendingStart = false;
+    } else if (this.useAudioWorklet && !this.audioWorkletActive) {
+      // EVENT-DRIVEN FIX: AudioWorklet not ready yet, mark as pending
+      // SampleAccurateClock will be started once AudioWorklet initializes
+      this.pendingStart = true;
+      console.log(`📊 [CLOCK DEBUG] AudioWorklet not ready, marking pendingStart=true`);
     }
   }
 
@@ -349,6 +387,9 @@ export class Clock {
    * Stop timing updates
    */
   stop(): void {
+    // Clear pending start on stop
+    this.pendingStart = false;
+
     if (this.audioWorkletActive && this.sampleAccurateClock) {
       this.sampleAccurateClock.stop();
     } else if (this.webWorkerActive && this.workerTimingManager) {
@@ -668,6 +709,12 @@ export class Clock {
    * Set tick callback
    */
   setOnTick(callback: (time: number) => void): void {
+    console.log(`📊 [CLOCK DEBUG] setOnTick() called`, {
+      hadPreviousCallback: !!this.onTick,
+      isInitialized: this.isInitialized,
+      audioWorkletActive: this.audioWorkletActive,
+      hasSampleAccurateClock: !!this.sampleAccurateClock,
+    });
     this.onTick = callback;
   }
 

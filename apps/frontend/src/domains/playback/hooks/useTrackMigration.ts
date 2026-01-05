@@ -8,6 +8,7 @@
  */
 
 import { useMemo, useCallback } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useTrack } from './useTrack.js';
 import { usePlaybackStore } from '../store/playbackStore';
 import type { InstrumentType } from '../types/track.js';
@@ -111,8 +112,11 @@ export function useTrackMigration(
   const performanceMetrics = usePlaybackStore(
     (state) => state.performanceMetrics,
   );
-  const globalConfig = usePlaybackStore((state) => state.config);
-  const globalSyncEvents = usePlaybackStore((state) => state.syncEvents);
+  // Use useShallow for object selectors to prevent unnecessary re-renders
+  const globalConfig = usePlaybackStore(useShallow((state) => state.config));
+  const globalSyncEvents = usePlaybackStore(
+    useShallow((state) => state.syncEvents),
+  );
   const setGlobalTempo = usePlaybackStore((state) => state.setTempo);
   const setPitch = usePlaybackStore((state) => state.setPitch);
 

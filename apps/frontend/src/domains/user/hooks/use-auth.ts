@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
+import { useShallow } from 'zustand/react/shallow';
 import type { User, Session } from '@supabase/supabase-js';
 
 interface AuthState {
@@ -77,17 +78,28 @@ export const useAuthStore = create<AuthState>()(
 );
 
 // Computed state selectors
+// Use useShallow to prevent re-renders when unrelated store values change
 export const useAuth = () => {
-  const state = useAuthStore();
+  const state = useAuthStore(
+    useShallow((s) => ({
+      user: s.user,
+      session: s.session,
+      isLoading: s.isLoading,
+      isInitialized: s.isInitialized,
+      setUser: s.setUser,
+      setSession: s.setSession,
+      setLoading: s.setLoading,
+      setInitialized: s.setInitialized,
+      reset: s.reset,
+    })),
+  );
 
   return {
     ...state,
     // Computed properties for easier usage
-    // TODO: Review non-null assertion - consider null safety
     isAuthenticated: !!state.user && !!state.session,
     isReady: state.isInitialized,
     // Quick check - don't block if auth is still loading, assume not authenticated
-    // TODO: Review non-null assertion - consider null safety
     isAuthenticatedSync: !!state.user && !!state.session && state.isInitialized,
   };
 };

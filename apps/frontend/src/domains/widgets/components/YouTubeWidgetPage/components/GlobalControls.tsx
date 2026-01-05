@@ -48,6 +48,25 @@ import { musicalTruth } from '@/domains/playback/modules/tempo/MusicalTruthAutho
 
 const logger = getLogger('global-controls');
 
+// Preload flag for Fretboard3D component to prevent multiple import attempts
+let fretboard3DPreloaded = false;
+
+/**
+ * Preloads the Fretboard3D component and its Three.js bundle (~400-600KB).
+ * Called on hover over the 3D toggle button to eliminate perceived loading time.
+ * Uses a module-level flag to ensure the import only happens once.
+ */
+const preloadFretboard3D = () => {
+  if (!fretboard3DPreloaded) {
+    fretboard3DPreloaded = true;
+    // Silent preload - the import is cached by webpack/bundler
+    import('../FretboardCard/components/Fretboard3D').catch(() => {
+      // Reset flag on error so it can be retried
+      fretboard3DPreloaded = false;
+    });
+  }
+};
+
 // Helper to get Tone from window (must be initialized before GlobalControls is used)
 function getTone(): typeof import('tone') {
   if (typeof window !== 'undefined') {
@@ -1901,9 +1920,18 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
           console.log('[GlobalControls] Cleared drum tracks from PlaybackEngine before loading new exercise');
         }
 
-        // Clear existing regions
+        // CRITICAL: Also clear bass tracks from PlaybackEngine to prevent sample doubling
+        // Without this, bass regions accumulate with each exercise switch causing louder bass
+        if (playbackEngineForCleanup?.clearBassTracks) {
+          playbackEngineForCleanup.clearBassTracks();
+          console.log('[GlobalControls] Cleared bass tracks from PlaybackEngine before loading new exercise');
+        }
+
+        // Clear existing regions (metronome, drums, AND bass)
         metronomeTrackRef.current.clearRegions();
         drumTrackRef.current.clearRegions();
+        bassTrackRef.current.clearRegions();
+        console.log('[GlobalControls] Cleared all track regions (metronome, drums, bass) for new exercise');
 
         // Check if we have MIDI file from Supabase storage or other sources
         let midiLoaded = false;
@@ -4241,6 +4269,7 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
             <div className="flex justify-center items-center py-2 w-24">
               <button
                 onClick={onToggle3DMode}
+                onMouseEnter={preloadFretboard3D}
                 className="px-3 py-2 rounded-xl bg-slate-800 text-sm font-medium transition-all duration-300 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] text-slate-300"
               >
                 {is3DMode ? '2D Mode' : '3D Mode'}

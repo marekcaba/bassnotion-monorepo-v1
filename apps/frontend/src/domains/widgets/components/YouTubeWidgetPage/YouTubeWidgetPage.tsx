@@ -7,7 +7,6 @@ import { TutorialVideoCard } from './TutorialVideoCard';
 import { ExerciseSelector } from './ExerciseSelector';
 import { ExerciseControlPanel } from './ExerciseControlPanel';
 import { FretboardCard } from './FretboardCard';
-import Fretboard3D from './FretboardCard/components/Fretboard3D';
 
 import { FourWidgetsCard } from './components/FourWidgetsCard';
 import { GlobalControlsCard } from './components/GlobalControlsCard';
@@ -40,8 +39,7 @@ import { musicalTruth } from '@/domains/playback/modules/tempo/MusicalTruthAutho
 // XState Phase 2: Shadow mode integration
 import { usePageInitialization } from '@/domains/widgets/machines/index.js';
 // UIZoneProvider and ThemeSwitcher are now applied at root layout level
-// Only NextUIZoneProvider is needed here for NextUI component support
-import { NextUIZoneProvider } from '@/ui-libraries';
+// NextUI was removed - all components now use shadcn/ui
 import { logSkeletonDebug } from '@/utils/skeletonDebug';
 import { HomeNavbar } from '@/app/_components/HomeNavbar';
 
@@ -1133,20 +1131,18 @@ export function YouTubeWidgetPage({
 
   // UIZoneProvider is now at root layout level - no need to wrap here
   return (
-    <NextUIZoneProvider>
-      <TransportProvider>
-        <SyncProvider
-          debugMode={false} // Disable debug mode to reduce console noise
-          monitoringInterval={30000} // 30 seconds - much less frequent to prevent re-render loops
-          enableGlobalMonitoring={false} // CRITICAL FIX: Disable monitoring to prevent 1s re-render loop
-        >
-          <YouTubeWidgetPageContent
-            tutorialData={tutorialData}
-            tutorialSlug={tutorialSlug}
-            exercises={exercises}
-          />
-        </SyncProvider>
-      </TransportProvider>
-    </NextUIZoneProvider>
+    <TransportProvider>
+      <SyncProvider
+        debugMode={false} // Disable debug mode to reduce console noise
+        monitoringInterval={30000} // 30 seconds - much less frequent to prevent re-render loops
+        enableGlobalMonitoring={false} // CRITICAL FIX: Disable monitoring to prevent 1s re-render loop
+      >
+        <YouTubeWidgetPageContent
+          tutorialData={tutorialData}
+          tutorialSlug={tutorialSlug}
+          exercises={exercises}
+        />
+      </SyncProvider>
+    </TransportProvider>
   );
 }

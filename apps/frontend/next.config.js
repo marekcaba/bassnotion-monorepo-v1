@@ -1,8 +1,19 @@
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
     // Enable experimental features for better performance
-    optimizePackageImports: ['tone'],
+    // Optimize imports for large packages to improve tree-shaking
+    optimizePackageImports: [
+      'tone',
+      'three',
+      '@react-three/drei',
+      'vexflow',
+      'opensheetmusicdisplay',
+    ],
   },
   // Configure path mapping for the monorepo structure
   transpilePackages: [],
@@ -33,11 +44,42 @@ const nextConfig = {
       '.mjs': ['.mts', '.mjs'],
     };
 
+    // Exclude server-only Sentry packages from client bundle
+    // These packages (orchestrion_js.js, tracing-hooks) are Node.js-only
+    // and add ~3.3MB to client bundle unnecessarily
+    if (!isServer) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        '@sentry/node': false,
+        '@sentry/node-core': false,
+        '@apm-js-collab/tracing-hooks': false,
+        '@apm-js-collab/code-transformer': false,
+      };
+    }
+
     // Optimize chunk splitting for faster loading
     if (!isServer) {
       config.optimization.splitChunks = {
         chunks: 'all',
         cacheGroups: {
+          // Split Three.js core into its own chunk (~600KB savings from main bundle)
+          // This is the largest 3D library and should load separately
+          threeCore: {
+            test: /[\\/]node_modules[\\/]three[\\/]/,
+            name: 'three-core',
+            chunks: 'all',
+            priority: 30,
+            reuseExistingChunk: true,
+          },
+          // Split React Three Fiber bindings into a separate chunk
+          // Depends on three-core, so lower priority to ensure proper chunking
+          reactThree: {
+            test: /[\\/]node_modules[\\/]@react-three[\\/]/,
+            name: 'react-three',
+            chunks: 'all',
+            priority: 25,
+            reuseExistingChunk: true,
+          },
           // Split Tone.js into separate chunks for parallel loading
           toneCore: {
             test: /[\\/]node_modules[\\/]tone[\\/]build[\\/]esm[\\/]core[\\/]/,
@@ -49,6 +91,15 @@ const nextConfig = {
             test: /[\\/]node_modules[\\/]tone[\\/]build[\\/]esm[\\/]instrument[\\/]/,
             name: 'tone-instruments',
             priority: 15,
+            reuseExistingChunk: true,
+          },
+          // Split Sheet Music libraries into their own chunk (~500KB savings)
+          // VexFlow and OpenSheetMusicDisplay are only used in notation components
+          sheetMusic: {
+            test: /[\\/]node_modules[\\/](vexflow|opensheetmusicdisplay)[\\/]/,
+            name: 'sheet-music',
+            chunks: 'all',
+            priority: 18,
             reuseExistingChunk: true,
           },
           // Separate audio engine code
@@ -178,4 +229,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withBundleAnalyzer(nextConfig);

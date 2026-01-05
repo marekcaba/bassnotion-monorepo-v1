@@ -648,9 +648,12 @@ export class HarmonySchedulerV2 {
       });
     }
 
-    // For manual stop (non-graceful), apply a quick 50ms fadeout to avoid clicks
-    const MANUAL_FADEOUT_TIME = 0.05; // 50ms fadeout for manual stop
+    // For manual stop (non-graceful), apply a quick 30ms fadeout to avoid clicks
+    const MANUAL_FADEOUT_TIME = 0.03; // 30ms fadeout for manual stop (matches other schedulers)
     const manualStopTime = currentTime + MANUAL_FADEOUT_TIME;
+
+    // Collect sources to disconnect after fadeout
+    const sourcesToDisconnect: AudioBufferSourceNode[] = [];
 
     // Apply fadeout to all active sources for manual stop (before stopping)
     if (!graceful && this.audioContext) {
@@ -666,7 +669,7 @@ export class HarmonySchedulerV2 {
           }
         });
       });
-      console.log('[HARMONY MANUAL STOP] Applied 50ms fadeout', {
+      console.log('[HARMONY MANUAL STOP] Applied 30ms fadeout', {
         fadedCount,
         fadeEndAt: manualStopTime.toFixed(3),
       });
@@ -687,7 +690,9 @@ export class HarmonySchedulerV2 {
         } else {
           source.stop(0);
         }
-        source.disconnect();
+        // DON'T disconnect immediately - this causes audio spike!
+        // Collect for delayed disconnect after fadeout
+        sourcesToDisconnect.push(source);
         stoppedCount++;
       } catch (e) {
         // Source may have already stopped/disconnected or never started
@@ -698,6 +703,19 @@ export class HarmonySchedulerV2 {
     // Clear tracking maps (for graceful, sources will auto-cleanup when they end)
     this.scheduledAudioSources.clear();
     this.activeHarmonySources.clear();
+
+    // Disconnect sources AFTER fadeout completes (async cleanup)
+    if (sourcesToDisconnect.length > 0 && !graceful) {
+      setTimeout(() => {
+        sourcesToDisconnect.forEach((source) => {
+          try {
+            source.disconnect();
+          } catch {
+            // Already disconnected
+          }
+        });
+      }, MANUAL_FADEOUT_TIME * 1000 + 10); // 10ms buffer after fadeout
+    }
 
     console.log('[HARMONY-SCHEDULER-V2 STOP] Sources stopped', {
       stoppedCount,

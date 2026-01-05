@@ -28,20 +28,18 @@ import type { UILibrary } from '@/shared/theming/types';
 
 // Import library-specific components
 import * as ShadcnComponents from './shadcn/components';
-import * as NextUIComponents from './nextui/components';
-
-// Re-export provider
-export { NextUIZoneProvider } from './nextui/provider';
 
 /**
  * Component mapping by library
+ * Note: NextUI was removed to reduce bundle size (~160KB savings)
+ * All UI components now use shadcn/ui exclusively
  */
 const componentMap = {
   shadcn: ShadcnComponents,
-  nextui: NextUIComponents,
   // Future libraries would be added here
   daisyui: ShadcnComponents, // Fallback to shadcn for now
   mantine: ShadcnComponents, // Fallback to shadcn for now
+  nextui: ShadcnComponents, // Fallback to shadcn (NextUI removed)
 } as const;
 
 /**

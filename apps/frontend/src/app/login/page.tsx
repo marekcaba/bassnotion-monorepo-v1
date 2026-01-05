@@ -138,7 +138,13 @@ function LoginPageContent() {
   };
 
   return (
-    <div className="min-h-screen bg-black">
+    <div
+      className="min-h-screen"
+      style={{
+        background:
+          'radial-gradient(ellipse at 50% 0%, hsl(220 45% 20%) 0%, hsl(230 35% 10%) 40%, hsl(240 25% 5%) 100%)',
+      }}
+    >
       {/* Header with Logo - same as homepage */}
       <header className="w-full pt-8 sm:pt-12 pb-5 flex justify-center">
         <button
@@ -211,7 +217,17 @@ function LoginPageContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-black" />}>
+    <Suspense
+      fallback={
+        <div
+          className="min-h-screen"
+          style={{
+            background:
+              'radial-gradient(ellipse at 50% 0%, hsl(220 45% 20%) 0%, hsl(230 35% 10%) 40%, hsl(240 25% 5%) 100%)',
+          }}
+        />
+      }
+    >
       <LoginPageContent />
     </Suspense>
   );

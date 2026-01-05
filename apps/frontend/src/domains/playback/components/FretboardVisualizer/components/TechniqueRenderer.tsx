@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { memo, useMemo } from 'react';
 import * as THREE from 'three';
 import { ExerciseNote, TechniqueTypes } from '../types/fretboard';
 import { calculateNotePosition } from '../utils/fretboardGeometry';
@@ -9,6 +9,50 @@ interface TechniqueRendererProps {
   notes: ExerciseNote[];
   currentTime: number;
   visible?: boolean;
+}
+
+/**
+ * Compares notes arrays for technique rendering equality.
+ * Only compares properties relevant to technique visualization.
+ */
+function areNotesEqual(
+  prevNotes: ExerciseNote[],
+  nextNotes: ExerciseNote[],
+): boolean {
+  if (prevNotes === nextNotes) return true;
+  if (prevNotes.length !== nextNotes.length) return false;
+
+  return prevNotes.every((prevNote, index) => {
+    const nextNote = nextNotes[index];
+    return (
+      prevNote.id === nextNote.id &&
+      prevNote.timestamp === nextNote.timestamp &&
+      prevNote.string === nextNote.string &&
+      prevNote.fret === nextNote.fret &&
+      prevNote.technique === nextNote.technique
+    );
+  });
+}
+
+/**
+ * Custom comparison for TechniqueRenderer props.
+ * This component creates complex Three.js geometries (Bezier curves, shapes)
+ * for each technique, making re-renders computationally expensive.
+ */
+function areTechniqueRendererPropsEqual(
+  prevProps: TechniqueRendererProps,
+  nextProps: TechniqueRendererProps,
+): boolean {
+  // Compare primitive props
+  if (
+    prevProps.currentTime !== nextProps.currentTime ||
+    prevProps.visible !== nextProps.visible
+  ) {
+    return false;
+  }
+
+  // Compare notes array
+  return areNotesEqual(prevProps.notes, nextProps.notes);
 }
 
 interface RenderedTechnique {
@@ -188,7 +232,7 @@ class HarmonicRenderer {
   }
 }
 
-export function TechniqueRenderer({
+function TechniqueRendererComponent({
   notes,
   currentTime,
   visible = true,
@@ -271,6 +315,22 @@ export function TechniqueRenderer({
     </group>
   );
 }
+
+/**
+ * TechniqueRenderer - Memoized Three.js technique visualization component.
+ *
+ * Renders visual indicators for bass techniques (hammer-on, pull-off, slide, bend, harmonic).
+ * Creates complex Three.js geometries including Bezier curves and shapes.
+ *
+ * Performance optimization:
+ * - Uses React.memo with custom comparison
+ * - Internal useMemo for renderers and technique calculations
+ * - Only re-renders when notes, currentTime, or visible actually change
+ */
+export const TechniqueRenderer = memo(
+  TechniqueRendererComponent,
+  areTechniqueRendererPropsEqual,
+);
 
 // Export individual renderers for testing and extensibility
 export {

@@ -1,10 +1,12 @@
 /**
  * React Hook for Track Repository
  *
- * Provides convenient access to track data and operations
+ * Provides convenient access to track data and operations.
+ * Uses useShallow for object selectors to prevent unnecessary re-renders.
  */
 
 import { useEffect } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useTrackRepositoryStore } from '../track/index.js';
 import { TrackId } from '../value-objects/index.js';
 
@@ -12,8 +14,17 @@ import { TrackId } from '../value-objects/index.js';
  * Hook to get a single track by ID
  */
 export function useTrack(trackId: string | TrackId | null) {
+  // Use useShallow to prevent re-renders when unrelated store values change
   const { tracks, findTrackById, loadTracks, isLoading, error } =
-    useTrackRepositoryStore();
+    useTrackRepositoryStore(
+      useShallow((state) => ({
+        tracks: state.tracks,
+        findTrackById: state.findTrackById,
+        loadTracks: state.loadTracks,
+        isLoading: state.isLoading,
+        error: state.error,
+      })),
+    );
 
   useEffect(() => {
     if (tracks.length === 0 && !isLoading) {
@@ -36,6 +47,7 @@ export function useTrack(trackId: string | TrackId | null) {
  * Hook to get all tracks
  */
 export function useTracks() {
+  // Use useShallow to prevent re-renders when unrelated store values change
   const {
     tracks,
     loadTracks,
@@ -45,7 +57,18 @@ export function useTracks() {
     deleteTrack,
     deleteAllTracks,
     reorderTracks,
-  } = useTrackRepositoryStore();
+  } = useTrackRepositoryStore(
+    useShallow((state) => ({
+      tracks: state.tracks,
+      loadTracks: state.loadTracks,
+      isLoading: state.isLoading,
+      error: state.error,
+      createTrack: state.createTrack,
+      deleteTrack: state.deleteTrack,
+      deleteAllTracks: state.deleteAllTracks,
+      reorderTracks: state.reorderTracks,
+    })),
+  );
 
   useEffect(() => {
     if (tracks.length === 0 && !isLoading) {
@@ -69,8 +92,15 @@ export function useTracks() {
  * Hook for track selection management
  */
 export function useTrackSelection() {
+  // Use useShallow to prevent re-renders when unrelated store values change
   const { selectedTrackId, selectTrack, getSelectedTrack } =
-    useTrackRepositoryStore();
+    useTrackRepositoryStore(
+      useShallow((state) => ({
+        selectedTrackId: state.selectedTrackId,
+        selectTrack: state.selectTrack,
+        getSelectedTrack: state.getSelectedTrack,
+      })),
+    );
 
   const selectedTrack = getSelectedTrack();
 
@@ -90,6 +120,7 @@ export function useTrackSelection() {
  * Hook for track mute/solo management
  */
 export function useTrackMuteSolo() {
+  // Use useShallow to prevent re-renders when unrelated store values change
   const {
     tracks,
     soloedTrackIds,
@@ -97,7 +128,16 @@ export function useTrackMuteSolo() {
     clearAllSolo,
     muteTrack,
     toggleMute,
-  } = useTrackRepositoryStore();
+  } = useTrackRepositoryStore(
+    useShallow((state) => ({
+      tracks: state.tracks,
+      soloedTrackIds: state.soloedTrackIds,
+      toggleSolo: state.toggleSolo,
+      clearAllSolo: state.clearAllSolo,
+      muteTrack: state.muteTrack,
+      toggleMute: state.toggleMute,
+    })),
+  );
 
   const handleToggleSolo = (trackId: string | TrackId) => {
     const id = typeof trackId === 'string' ? TrackId.create(trackId) : trackId;
@@ -144,8 +184,14 @@ export function useTrackMuteSolo() {
  * Hook for track volume and pan control
  */
 export function useTrackMixing(trackId: string | TrackId) {
-  const { findTrackById, setTrackVolume, setTrackPan } =
-    useTrackRepositoryStore();
+  // Use useShallow to prevent re-renders when unrelated store values change
+  const { findTrackById, setTrackVolume, setTrackPan } = useTrackRepositoryStore(
+    useShallow((state) => ({
+      findTrackById: state.findTrackById,
+      setTrackVolume: state.setTrackVolume,
+      setTrackPan: state.setTrackPan,
+    })),
+  );
 
   const id = typeof trackId === 'string' ? TrackId.create(trackId) : trackId;
   const track = findTrackById(id);
@@ -170,8 +216,16 @@ export function useTrackMixing(trackId: string | TrackId) {
  * Hook to get tracks by instrument type
  */
 export function useTracksByType(instrumentType: string) {
+  // Use useShallow to prevent re-renders when unrelated store values change
   const { tracks, findTracksByType, loadTracks, isLoading } =
-    useTrackRepositoryStore();
+    useTrackRepositoryStore(
+      useShallow((state) => ({
+        tracks: state.tracks,
+        findTracksByType: state.findTracksByType,
+        loadTracks: state.loadTracks,
+        isLoading: state.isLoading,
+      })),
+    );
 
   useEffect(() => {
     if (tracks.length === 0 && !isLoading) {

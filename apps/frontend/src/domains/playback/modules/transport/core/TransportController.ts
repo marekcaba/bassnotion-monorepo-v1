@@ -18,6 +18,7 @@ import { EventBus } from '../../../services/core/EventBus.js';
 import { AudioEngine } from '../../../services/core/AudioEngine.js';
 import { createStructuredLogger } from '../../shared/index.js';
 import { musicalTruth } from '../../tempo/MusicalTruthAuthority.js';
+import { TRANSPORT_TIMING_CONFIG } from '../../../config/transportTiming.js';
 import type {
   TransportConfig,
   TransportState,
@@ -69,6 +70,22 @@ export class TransportController implements Service {
   private lastPositionEmitTime = 0;
   private readonly positionUpdateInterval: number;
   private useClockOnTick = false;
+
+  // Performance comparison metrics
+  private perfMetrics = {
+    updateCount: 0,
+    startTime: 0,
+    intervals: [] as number[],
+    lastUpdateTime: 0,
+  };
+
+  // DEBUG: Track Clock.onTick callback reception for loss analysis
+  private clockTickCounters = {
+    received: 0,
+    throttled: 0,
+    notPlaying: 0,
+    emitted: 0,
+  };
 
   // Singleton
   private static instance: TransportController | null = null;
@@ -208,6 +225,16 @@ export class TransportController implements Service {
 
     logger.info('Starting playback...');
 
+    // Reset performance metrics for this playback session
+    this.perfMetrics = {
+      updateCount: 0,
+      startTime: performance.now(),
+      intervals: [],
+      lastUpdateTime: 0,
+    };
+
+    logger.info('Position update mode', { mode: this.useClockOnTick ? 'EVENT-DRIVEN' : 'POLLING' });
+
     // FAANG FIX: ALWAYS reset Tone.Transport.position to 0 before starting playback
     // This prevents position accumulation bugs from previous stop() calls.
     // The position manager handles countdown offset display, so transport should
@@ -263,7 +290,10 @@ export class TransportController implements Service {
     }
 
     // Start transport
-    this.transport.start();
+    // DUAL UPDATE FIX: Pass useClockOnTick to Transport.start() so it knows
+    // whether to start its own position update interval (POLLING mode) or not (EVENT-DRIVEN mode)
+    // When useClockOnTick=true, position updates come from Clock.onTick via setupClockSubscription()
+    this.transport.start(this.useClockOnTick);
 
     // Start Tone.Transport for legacy compatibility
     if (this.config.enableLegacyCompatibility) {
@@ -336,6 +366,31 @@ export class TransportController implements Service {
       previousState: this.state,
       graceful,
     });
+
+    // Log performance metrics summary
+    if (this.perfMetrics.updateCount > 0) {
+      const elapsedMs = performance.now() - this.perfMetrics.startTime;
+      const actualHz = (this.perfMetrics.updateCount / elapsedMs) * 1000;
+
+      // Calculate jitter (standard deviation of intervals)
+      const intervals = this.perfMetrics.intervals;
+      const avgInterval = intervals.length > 0 ? intervals.reduce((a, b) => a + b, 0) / intervals.length : 0;
+      const variance = intervals.length > 0
+        ? intervals.reduce((sum, val) => sum + Math.pow(val - avgInterval, 2), 0) / intervals.length
+        : 0;
+      const jitter = Math.sqrt(variance);
+
+      logger.info('Position update performance', {
+        mode: this.useClockOnTick ? 'EVENT-DRIVEN' : 'POLLING',
+        totalUpdates: this.perfMetrics.updateCount,
+        actualHz: actualHz.toFixed(1),
+        avgIntervalMs: avgInterval.toFixed(2),
+        jitterMs: jitter.toFixed(2),
+      });
+    }
+
+    // Reset clock tick counters for next session
+    this.clockTickCounters = { received: 0, throttled: 0, notPlaying: 0, emitted: 0 };
 
     // Stop transport
     this.transport.stop();
@@ -735,6 +790,21 @@ export class TransportController implements Service {
         return;
       }
 
+      // Track performance metrics for POLLING mode (only if not using Clock.onTick)
+      if (!this.useClockOnTick) {
+        const now = performance.now();
+        if (this.perfMetrics.lastUpdateTime > 0) {
+          const interval = now - this.perfMetrics.lastUpdateTime;
+          this.perfMetrics.intervals.push(interval);
+          // Keep only last 1000 intervals to avoid memory bloat
+          if (this.perfMetrics.intervals.length > 1000) {
+            this.perfMetrics.intervals.shift();
+          }
+        }
+        this.perfMetrics.lastUpdateTime = now;
+        this.perfMetrics.updateCount++;
+      }
+
       // Position update logging disabled - was causing 433+ logs in 15 seconds during playback
       // Enable for debugging by uncommenting:
       // console.log('[TRANSPORT DEBUG] Transport.onPositionUpdate', {
@@ -814,46 +884,58 @@ export class TransportController implements Service {
 
     // Subscribe to high-frequency AudioWorklet updates (374 Hz)
     clock.setOnTick((time: number) => {
+      this.clockTickCounters.received++;
+
       // Only process position updates when playing
       if (this.state !== 'playing') {
+        this.clockTickCounters.notPlaying++;
         return;
       }
 
       // Throttle to configured update rate (default: 120 Hz = 8.3ms)
       const now = performance.now();
       if (now - this.lastPositionEmitTime < this.positionUpdateInterval) {
+        this.clockTickCounters.throttled++;
         return; // Drop this update (throttling)
       }
 
       this.lastPositionEmitTime = now;
 
-      // Clock.onTick logging disabled - fires at high frequency during playback
-      // Enable for debugging by uncommenting:
-      // console.log('[TRANSPORT DEBUG] Clock.onTick', {
-      //   source: 'audioworklet',
-      //   time: time.toFixed(3),
-      // });
+      // Track performance metrics for EVENT-DRIVEN mode
+      if (this.perfMetrics.lastUpdateTime > 0) {
+        const interval = now - this.perfMetrics.lastUpdateTime;
+        this.perfMetrics.intervals.push(interval);
+        // Keep only last 1000 intervals to avoid memory bloat
+        if (this.perfMetrics.intervals.length > 1000) {
+          this.perfMetrics.intervals.shift();
+        }
+      }
+      this.perfMetrics.lastUpdateTime = now;
+      this.perfMetrics.updateCount++;
 
-      // Update position using AudioWorklet timing
-      this.positionManager.updatePosition(time);
+      // Log first few updates to verify callback is working
+      if (this.perfMetrics.updateCount <= 3) {
+        console.log(`📊 [PERF] Clock.onTick callback #${this.perfMetrics.updateCount}`, {
+          time: time.toFixed(3),
+          throttleMs: this.positionUpdateInterval.toFixed(2),
+        });
+      }
+
+      // Apply startupLookahead compensation to sync visual with audio
+      // Audio starts playing after startupLookahead (300ms), so delay visual position
+      const visualTime = Math.max(0, time - TRANSPORT_TIMING_CONFIG.startupLookahead);
+
+      // Update position using lookahead-compensated time
+      this.positionManager.updatePosition(visualTime);
 
       // Get display position (adjusted for countdown)
       const displayPosition = this.positionManager.getDisplayPosition();
 
-      // DIAGNOSTIC: Log throttled update rate (10% sample)
-      if (Math.random() < 0.1) {
-        logger.debug('Clock.onTick position update', {
-          time: time.toFixed(3),
-          displayPosition: `${displayPosition.bars}:${displayPosition.beats}:${displayPosition.sixteenths}`,
-          throttleMs: this.positionUpdateInterval.toFixed(2),
-          note: 'Event-driven from AudioWorklet (Phase 2)',
-        });
-      }
-
       // Emit position update to EventBus
+      this.clockTickCounters.emitted++;
       this.eventBus.emit('transport:position-updated', {
         position: displayPosition,
-        seconds: time,
+        seconds: visualTime,
         timestamp: now,
       });
     });

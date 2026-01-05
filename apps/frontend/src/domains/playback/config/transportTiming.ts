@@ -35,8 +35,12 @@ export const TRANSPORT_TIMING_CONFIG = {
    * Update interval in seconds
    * How often the scheduler checks for new events to schedule.
    * Should be less than lookAheadTime.
+   *
+   * NOTE: AudioWorklet → main thread has ~28% message loss due to browser
+   * main thread congestion. To achieve ~50 Hz actual throughput (~20ms),
+   * we send at 100 Hz (10ms) to compensate.
    */
-  updateInterval: 0.02, // 20ms - 50 updates per second for tighter timing
+  updateInterval: 0.01, // 10ms - 100 Hz to compensate for ~28% message loss → ~50 Hz actual
 
   /**
    * Maximum scheduling distance in seconds

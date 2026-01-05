@@ -468,14 +468,17 @@ export class SimpleInstrumentScheduler {
       return;
     }
 
-    // MANUAL STOP: Quick 50ms fadeout to avoid clicks
-    const FADEOUT_TIME = 0.05;
+    // MANUAL STOP: Quick 30ms fadeout to avoid clicks
+    const FADEOUT_TIME = 0.03; // 30ms matches master fade-out
     const currentTime = this.audioContext?.currentTime ?? 0;
     const stopTime = currentTime + FADEOUT_TIME;
 
     let fadedCount = 0;
     let stoppedCount = 0;
     let errorCount = 0;
+
+    // Collect sources to disconnect after fadeout
+    const sourcesToDisconnect: Array<{ source: AudioBufferSourceNode; gain: GainNode }> = [];
 
     this.scheduledSources.forEach((metadata, source) => {
       try {
@@ -487,6 +490,9 @@ export class SimpleInstrumentScheduler {
           gain.gain.setValueAtTime(gain.gain.value, currentTime);
           gain.gain.linearRampToValueAtTime(0, stopTime);
           fadedCount++;
+
+          // Collect for delayed disconnect
+          sourcesToDisconnect.push({ source, gain });
         }
 
         // Schedule stop after fadeout completes
@@ -495,7 +501,8 @@ export class SimpleInstrumentScheduler {
         } else {
           source.stop(0);
         }
-        source.disconnect();
+        // DON'T disconnect immediately - this causes the spike!
+        // The fadeout needs the audio chain intact to work
         stoppedCount++;
       } catch (e) {
         // Source may have already stopped/disconnected or never started
@@ -504,6 +511,20 @@ export class SimpleInstrumentScheduler {
     });
 
     this.scheduledSources.clear();
+
+    // Disconnect sources AFTER fadeout completes (async cleanup)
+    if (sourcesToDisconnect.length > 0) {
+      setTimeout(() => {
+        sourcesToDisconnect.forEach(({ source, gain }) => {
+          try {
+            source.disconnect();
+            gain.disconnect();
+          } catch {
+            // Already disconnected
+          }
+        });
+      }, FADEOUT_TIME * 1000 + 10); // 10ms buffer after fadeout
+    }
 
     console.log(`[${this.config.loggerName} STOP] Sources stopped with fadeout`, {
       fadedCount,

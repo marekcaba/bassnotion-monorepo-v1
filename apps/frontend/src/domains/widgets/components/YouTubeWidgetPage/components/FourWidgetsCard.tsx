@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { ZoneCard, ZoneCardContent } from '@/ui-libraries';
 import { UseWidgetPageStateReturn } from '@/domains/widgets/hooks/useWidgetPageState';
 import { getSkeletonDebugTime } from '@/utils/skeletonDebug';
+import { isVerboseDebugEnabled } from '@/config/debug';
 
 // Widget loading skeleton component - upgraded with shimmer effect
 function WidgetSkeleton({ name }: { name: string }) {
@@ -23,7 +24,9 @@ function WidgetSkeleton({ name }: { name: string }) {
 // Dynamic imports with loading states - reduces initial bundle by ~300KB per widget
 const MetronomeWidget = dynamic(
   () => import('./MetronomeWidget').then((m) => {
-    console.log(`📦 [SKELETON-DEBUG] MetronomeWidget loaded at +${getSkeletonDebugTime()}ms`);
+    if (isVerboseDebugEnabled()) {
+      console.log(`📦 [SKELETON-DEBUG] MetronomeWidget loaded at +${getSkeletonDebugTime()}ms`);
+    }
     return m.MetronomeWidget;
   }),
   {
@@ -34,7 +37,9 @@ const MetronomeWidget = dynamic(
 
 const DrummerWidget = dynamic(
   () => import('./DrummerWidget').then((m) => {
-    console.log(`📦 [SKELETON-DEBUG] DrummerWidget loaded at +${getSkeletonDebugTime()}ms`);
+    if (isVerboseDebugEnabled()) {
+      console.log(`📦 [SKELETON-DEBUG] DrummerWidget loaded at +${getSkeletonDebugTime()}ms`);
+    }
     return m.DrummerWidget;
   }),
   {
@@ -45,7 +50,9 @@ const DrummerWidget = dynamic(
 
 const BassLineWidget = dynamic(
   () => import('./BassLineWidget').then((m) => {
-    console.log(`📦 [SKELETON-DEBUG] BassLineWidget loaded at +${getSkeletonDebugTime()}ms`);
+    if (isVerboseDebugEnabled()) {
+      console.log(`📦 [SKELETON-DEBUG] BassLineWidget loaded at +${getSkeletonDebugTime()}ms`);
+    }
     return m.BassLineWidget;
   }),
   {
@@ -56,7 +63,9 @@ const BassLineWidget = dynamic(
 
 const HarmonyWidget = dynamic(
   () => import('./HarmonyWidget').then((m) => {
-    console.log(`📦 [SKELETON-DEBUG] HarmonyWidget loaded at +${getSkeletonDebugTime()}ms`);
+    if (isVerboseDebugEnabled()) {
+      console.log(`📦 [SKELETON-DEBUG] HarmonyWidget loaded at +${getSkeletonDebugTime()}ms`);
+    }
     return m.HarmonyWidget;
   }),
   {

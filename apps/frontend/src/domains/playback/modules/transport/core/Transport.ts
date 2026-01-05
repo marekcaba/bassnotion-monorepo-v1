@@ -62,6 +62,10 @@ export class Transport {
   // If true, start() will NOT override it with its own calculation
   private transportStartTimeSetExternally: boolean = false;
 
+  // Position update mode: true = EVENT-DRIVEN (Clock.onTick), false = POLLING (setInterval)
+  // Stored on start() so resume() can preserve the same mode
+  private skipPositionUpdates: boolean = false;
+
   // Metrics tracking
   private metrics: TimingMetrics = {
     stability: 100,
@@ -181,33 +185,19 @@ export class Transport {
 
   /**
    * Start transport playback
+   * @param skipPositionUpdates - If true, don't start position update interval (EVENT-DRIVEN mode)
+   *                              When true, position updates come from Clock.onTick via TransportController
    */
-  async start(): Promise<void> {
-    const startDebug = {
-      isInitialized: this.isInitialized,
-      currentState: this.state,
-      timestamp: Date.now(),
-    };
-    console.log('🚀 [TRANSPORT DEBUG] Transport.start() called', startDebug);
-    logger.info('🚀 [TRANSPORT DEBUG] Transport.start() called', startDebug);
+  async start(skipPositionUpdates = false): Promise<void> {
+    // Store mode for use in resume()
+    this.skipPositionUpdates = skipPositionUpdates;
 
     if (!this.isInitialized) {
       throw new TransportError('Transport not initialized');
     }
 
     if (this.state === 'playing') {
-      console.warn(
-        '🚀 [TRANSPORT DEBUG] Transport already playing, early return!',
-        {
-          state: this.state,
-        },
-      );
-      logger.warn(
-        '🚀 [TRANSPORT DEBUG] Transport already playing, early return!',
-        {
-          state: this.state,
-        },
-      );
+      logger.warn('Transport already playing, ignoring start()');
       return;
     }
 
@@ -218,90 +208,47 @@ export class Transport {
     // Start scheduler
     this.scheduler.start();
 
-    console.log('🚀 [TRANSPORT DIAGNOSTIC] About to start clock', {
-      audioWorkletActive: (this.clock as any).audioWorkletActive,
-      timestamp: performance.now(),
-    });
-
     // Start clock timing (for AudioWorklet mode)
     this.clock.start();
 
-    console.log(
-      '🚀 [TRANSPORT DIAGNOSTIC] Clock started, waiting for AudioWorklet first update',
-      {
-        timestamp: performance.now(),
-        note: '🔧 RACE CONDITION FIX: Wait for AudioWorklet to send first timing update',
-      },
-    );
-
-    // 🔧 RACE CONDITION FIX: Wait for AudioWorklet first update before capturing transportStartTime
+    // Wait for AudioWorklet first update before capturing transportStartTime
     // Without this, transportStartTime may be captured as 0 while AudioContext.currentTime is ~32ms,
     // causing negative elapsed time calculations that corrupt the clock display.
-    // This barrier ensures the AudioWorklet has sent its first timing update (~3ms delay).
     if (this.clock.isUsingAudioWorklet()) {
       const sampleAccurateClock = this.clock.getSampleAccurateClock();
       if (sampleAccurateClock) {
         try {
-          await sampleAccurateClock.waitForFirstUpdate(100); // Wait max 100ms - allows AudioWorklet more time to start
-          console.log(
-            '🚀 [RACE CONDITION FIX] First AudioWorklet update received',
-            {
-              timestamp: performance.now(),
-              updateCount: sampleAccurateClock.getUpdateCount(),
-            },
-          );
+          await sampleAccurateClock.waitForFirstUpdate(100);
         } catch (error) {
-          console.warn(
-            '🚀 [RACE CONDITION FIX] Timeout waiting for first update, using AudioContext time',
-            {
-              error: error instanceof Error ? error.message : String(error),
-            },
-          );
-          logger.warn(
-            'AudioWorklet first update timeout, using AudioContext time',
-            error as Error,
-          );
+          logger.warn('AudioWorklet first update timeout, using AudioContext time', error as Error);
         }
       }
     }
 
-    // 🔧 VISUAL TIMING FIX: ALWAYS capture transportStartTime from Clock for visual position
-    // The external transportStartTime from PlaybackEngine is for audio scheduling (EventRouter),
+    // Capture transportStartTime from Clock for visual position
+    // The external transportStartTime from PlaybackEngine is for audio scheduling,
     // NOT for visual position calculation. The Clock may use AudioWorklet which has its own
     // time reference (starts from 0 when playback begins), so we must capture from the same source.
     this.transportStartTime = this.clock.getAudioTime();
-    console.log('🚀 [VISUAL TIMING] Captured transportStartTime from Clock for visual sync', {
-      transportStartTime: this.transportStartTime.toFixed(6),
-      clockSource: this.clock.isUsingAudioWorklet() ? 'AudioWorklet' : 'AudioContext',
-      explanation: 'Visual position calculated relative to Clock time, not PlaybackEngine time',
-    });
-    logger.info('🚀 [VISUAL TIMING] Transport captured Clock-based transportStartTime', {
+    logger.info('Transport captured Clock-based transportStartTime', {
       transportStartTime: this.transportStartTime,
+      clockSource: this.clock.isUsingAudioWorklet() ? 'AudioWorklet' : 'AudioContext',
     });
 
     // Update state
     this.state = 'playing';
-    console.log('🚀 [TRANSPORT DEBUG] Transport state set to playing', {
-      state: this.state,
-    });
-    logger.info('🚀 [TRANSPORT DEBUG] Transport state set to playing', {
-      state: this.state,
-    });
 
-    // Start position updates
-    console.log('🚀 [TRANSPORT DEBUG] About to call startPositionUpdates()');
-    logger.info('🚀 [TRANSPORT DEBUG] About to call startPositionUpdates()', {
-      timestamp: Date.now(),
-    });
-    this.startPositionUpdates();
+    // Start position updates (unless EVENT-DRIVEN mode via Clock.onTick)
+    // When skipPositionUpdates=true (EVENT-DRIVEN mode), position updates come from
+    // Clock.onTick via TransportController.setupClockSubscription() instead of
+    // the setInterval loop in startPositionUpdates().
+    if (!skipPositionUpdates) {
+      this.startPositionUpdates();
+    }
 
-    console.log('🚀 [TRANSPORT DEBUG] Transport started', {
+    logger.info('Transport started', {
+      mode: skipPositionUpdates ? 'EVENT-DRIVEN' : 'POLLING',
       audioWorkletMode: this.clock.isUsingAudioWorklet(),
-      state: this.state,
-    });
-    logger.info('🚀 [TRANSPORT DEBUG] Transport started', {
-      audioWorkletMode: this.clock.isUsingAudioWorklet(),
-      state: this.state,
     });
   }
 
@@ -414,10 +361,12 @@ export class Transport {
     // Update state
     this.state = 'playing';
 
-    // Resume position updates
-    this.startPositionUpdates();
+    // Resume position updates (only in POLLING mode, EVENT-DRIVEN uses Clock.onTick)
+    if (!this.skipPositionUpdates) {
+      this.startPositionUpdates();
+    }
 
-    logger.info('Transport resumed');
+    logger.info('Transport resumed', { mode: this.skipPositionUpdates ? 'EVENT-DRIVEN' : 'POLLING' });
   }
 
   /**
@@ -628,6 +577,14 @@ export class Transport {
    */
   isUsingAudioWorklet(): boolean {
     return this.config.enableAudioWorklet ?? true;
+  }
+
+  /**
+   * Get the Clock instance for event-driven position updates
+   * Used by TransportController.setupClockSubscription() when NEXT_PUBLIC_USE_CLOCK_ONTICK=true
+   */
+  getClock(): Clock {
+    return this.clock;
   }
 
   /**
