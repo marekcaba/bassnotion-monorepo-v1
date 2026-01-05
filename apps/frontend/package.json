@@ -71,7 +71,7 @@
     "autoprefixer": "^10.4.16",
     "dotenv": "^16.6.1",
     "eslint": "^8.57.1",
-    "eslint-config-next": "15.3.2",
+    "eslint-config-next": "15.3.8",
     "jsdom": "25.0.1",
     "postcss": "^8.4.32",
     "resize-observer-polyfill": "^1.5.1",

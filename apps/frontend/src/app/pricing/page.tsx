@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { PricingSection } from '@/domains/billing/components/PricingSection';
@@ -9,10 +9,9 @@ import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router'
 import { HomeNavbar } from '../_components/HomeNavbar';
 import { UserIndicator } from '@/domains/user/components/UserIndicator';
 
-export default function PricingPage() {
+function PaymentStatusHandler() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  const { navigateWithTransition } = useViewTransitionRouter();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -29,7 +28,8 @@ export default function PricingPage() {
     if (success === 'true') {
       toast({
         title: 'Payment Successful!',
-        description: 'Thank you for your purchase. Your access has been activated.',
+        description:
+          'Thank you for your purchase. Your access has been activated.',
         variant: 'success',
       });
       // Clean URL
@@ -45,8 +45,17 @@ export default function PricingPage() {
     }
   }, [mounted, searchParams, toast]);
 
+  return null;
+}
+
+export default function PricingPage() {
+  const { navigateWithTransition } = useViewTransitionRouter();
+
   return (
     <>
+      <Suspense fallback={null}>
+        <PaymentStatusHandler />
+      </Suspense>
       <div
         className="min-h-screen"
         style={{
@@ -99,8 +108,9 @@ export default function PricingPage() {
                 Choose Your Plan
               </h1>
               <p className="text-lg text-gray-400 max-w-2xl mx-auto">
-                Start your bass guitar journey with BassNotion. Get access to professional
-                tutorials, interactive exercises, and a 3D fretboard visualization.
+                Start your bass guitar journey with BassNotion. Get access to
+                professional tutorials, interactive exercises, and a 3D
+                fretboard visualization.
               </p>
             </div>
 
@@ -115,7 +125,10 @@ export default function PricingPage() {
             <p>Secure payments powered by Stripe</p>
             <p className="mt-2">
               Questions? Contact us at{' '}
-              <a href="mailto:support@bassnotion.com" className="text-[#ffc700] hover:underline">
+              <a
+                href="mailto:support@bassnotion.com"
+                className="text-[#ffc700] hover:underline"
+              >
                 support@bassnotion.com
               </a>
             </p>
