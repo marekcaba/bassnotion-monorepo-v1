@@ -1,8 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import type { ParsedMeasure } from '../hooks/useMidiParsing';
-import { useManualPlacement } from '../hooks/useManualPlacement';
+import { useManualPlacement, type FingerIndex } from '../hooks/useManualPlacement';
 import type { GeneratedExerciseNote } from '../hooks/useMidiConversion';
 import { NoteQueue } from './NoteQueue';
 import { InteractiveFretboard } from './InteractiveFretboard';
@@ -55,10 +55,20 @@ export function ManualMeasurePlacer({
     generateExerciseNotes,
   } = useManualPlacement(measures, bassType, existingNotes);
 
+  // State for currently selected finger
+  const [selectedFinger, setSelectedFinger] = useState<FingerIndex | undefined>(undefined);
+
   // Handle position selection from fretboard
   const handlePositionSelect = (string: number, fret: number) => {
     // Always allow placement - admin has full control
-    placeNote(string, fret);
+    // Auto-determine finger based on fret:
+    // - Fret 0 (open string) = 'O' (no finger needed)
+    // - Fret > 0 = use selected finger, or undefined if 'O' was selected
+    const fingerToUse = fret === 0
+      ? 'O' as FingerIndex
+      : (selectedFinger === 'O' ? undefined : selectedFinger);
+
+    placeNote(string, fret, fingerToUse);
   };
 
   // Handle navigation to next measure
@@ -181,7 +191,10 @@ export function ManualMeasurePlacer({
             notes={currentMeasure.notes}
             placements={currentMeasurePlacements}
             currentNoteIndex={currentNoteIndex}
+            selectedFinger={selectedFinger}
+            onFingerSelect={setSelectedFinger}
             accidentalPreference={accidentalPreference}
+            bassType={bassType}
             onNoteClick={(noteIndex) => {
               console.log(
                 '[ManualMeasurePlacer] Clicked placed note:',

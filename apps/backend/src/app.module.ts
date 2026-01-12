@@ -15,6 +15,7 @@ import { CacheModule } from './infrastructure/cache/cache.module.js';
 import { StorageModule } from './infrastructure/storage/storage.module.js';
 import { HealthModule } from './health/health.module.js';
 import { BillingModule } from './domains/billing/billing.module.js';
+import { PatternsModule } from './domains/patterns/patterns.module.js';
 import { PerformanceMiddleware } from './shared/middleware/performance.middleware.js';
 import { CorrelationMiddleware } from './shared/middleware/correlation.middleware.js';
 import { SharedModule } from './shared/shared.module.js';
@@ -26,12 +27,12 @@ import { LoggingModule } from './infrastructure/logging/logging.module.js';
       isGlobal: true,
     }),
     SharedModule, // Global module for shared services
-    LoggingModule, // Global logging infrastructure
     DatabaseModule,
     SupabaseModule,
+    AuthModule, // Must be before LoggingModule (AuthGuard dependency)
+    LoggingModule, // Global logging infrastructure
     CacheModule,
     StorageModule, // Story 4.4 - Temporary MIDI file storage
-    AuthModule,
     UserModule,
     ExercisesModule,
     TutorialsModule,
@@ -39,6 +40,7 @@ import { LoggingModule } from './infrastructure/logging/logging.module.js';
     AudioSamplesModule,
     HealthModule,
     BillingModule,
+    PatternsModule,
   ],
   controllers: [AppController],
   providers: [AppService, PerformanceMiddleware, CorrelationMiddleware],

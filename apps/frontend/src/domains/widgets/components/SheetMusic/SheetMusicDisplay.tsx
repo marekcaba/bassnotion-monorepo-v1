@@ -810,7 +810,7 @@ export function SheetMusicDisplay({
           alignItems: 'center',
           paddingLeft: '30px',
           paddingRight: '30px',
-        }}
+                  }}
       />
     </div>
   );

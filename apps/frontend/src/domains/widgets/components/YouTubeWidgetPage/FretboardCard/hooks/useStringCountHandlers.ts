@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import type { StringCount, SelectedDotsMap } from '../types/fretboardTypes';
 import {
   hasDotsOnHiddenStrings,
@@ -23,6 +23,19 @@ export function useStringCountHandlers({
 }: UseStringCountHandlersProps) {
   const [warningMessage, setWarningMessage] = useState<string | null>(null);
 
+  // Store timeout ID for cleanup on unmount or exercise switch
+  const warningTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (warningTimeoutRef.current) {
+        clearTimeout(warningTimeoutRef.current);
+        warningTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
   /**
    * Handle string count changes with validation
    */
@@ -41,8 +54,16 @@ export function useStringCountHandlers({
         );
         setWarningMessage(warningMsg);
 
+        // Clear any existing timeout before setting a new one
+        if (warningTimeoutRef.current) {
+          clearTimeout(warningTimeoutRef.current);
+        }
+
         // Auto-hide warning after 5 seconds
-        setTimeout(() => setWarningMessage(null), 5000);
+        warningTimeoutRef.current = setTimeout(() => {
+          setWarningMessage(null);
+          warningTimeoutRef.current = null;
+        }, 5000);
         return;
       }
 
@@ -85,9 +106,13 @@ export function useStringCountHandlers({
   );
 
   /**
-   * Clear the warning message
+   * Clear the warning message and cancel any pending timeout
    */
   const clearWarningMessage = useCallback(() => {
+    if (warningTimeoutRef.current) {
+      clearTimeout(warningTimeoutRef.current);
+      warningTimeoutRef.current = null;
+    }
     setWarningMessage(null);
   }, []);
 

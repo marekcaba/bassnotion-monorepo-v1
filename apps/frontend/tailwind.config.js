@@ -6,6 +6,15 @@ export default {
     extend: {
       // Custom font families
       fontFamily: {
+        sans: [
+          '-apple-system',
+          'BlinkMacSystemFont',
+          '"Segoe UI"',
+          'Roboto',
+          'Helvetica',
+          'Arial',
+          'sans-serif',
+        ],
         'mono-display': [
           'var(--font-courier-prime)',
           'ui-monospace',

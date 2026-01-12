@@ -24,7 +24,7 @@ const logger = getLogger('app');
 // Story 3.18.3: Replaced initializeAudio import with AudioProvider component
 // The AudioProvider handles all audio initialization with clean dependency injection
 
-import { inter, courierPrime, metadata } from './layout.constants';
+import { courierPrime, metadata } from './layout.constants';
 
 export const generateMetadata = () => metadata;
 
@@ -47,7 +47,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/site.webmanifest" />
       </head>
-      <body className={`${inter.className} ${courierPrime.variable}`}>
+      <body className={`font-sans ${courierPrime.variable}`}>
         <ErrorBoundary>
           {/* Phase 5: XState DevTools Provider wraps entire app for state debugging */}
           <XStateDevToolsProvider showStatus={true}>

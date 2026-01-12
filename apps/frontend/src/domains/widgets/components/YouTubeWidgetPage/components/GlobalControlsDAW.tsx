@@ -38,14 +38,7 @@ interface GlobalControlsDAWProps {
   exercises?: Exercise[];
   duration: number;
   // Fretboard actions
-  is3DMode?: boolean;
-  tiltAngle?: number;
   hasSelectedDots?: boolean;
-  cameraMode?: 'overview' | 'action';
-  // Fretboard action callbacks
-  onToggle3DMode?: () => void;
-  onTiltAngleChange?: (angle: number) => void;
-  onCameraModeChange?: (mode: 'overview' | 'action') => void;
   onResetFretboard?: () => void;
   // Loop settings
   loopRegion?: {
@@ -61,13 +54,7 @@ export const GlobalControlsDAW: React.FC<GlobalControlsDAWProps> = ({
   selectedExercise,
   exercises = [],
   duration,
-  is3DMode = false,
-  tiltAngle = 35,
   hasSelectedDots = false,
-  cameraMode = 'overview',
-  onToggle3DMode,
-  onTiltAngleChange,
-  onCameraModeChange,
   onResetFretboard,
   loopRegion,
   isLoopEnabled = false,
@@ -232,7 +219,8 @@ export const GlobalControlsDAW: React.FC<GlobalControlsDAWProps> = ({
         }
 
         // Create test drum pattern (same as test page)
-        if (drumTrack.isInitialized && selectedExercise.drum_pattern?.enabled) {
+        const hasDrumPattern = !!(selectedExercise.drumPattern && selectedExercise.drumPattern.length > 0);
+        if (drumTrack.isInitialized && hasDrumPattern) {
           const drumRegion = {
             id: 'drum-test-region',
             trackId: 'drums',
@@ -505,35 +493,13 @@ export const GlobalControlsDAW: React.FC<GlobalControlsDAWProps> = ({
         </Button>
 
         {/* Fretboard Controls */}
-        {onToggle3DMode && (
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={onToggle3DMode}
-              className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white"
-            >
-              {is3DMode ? '2D View' : '3D View'}
-            </Button>
-
-            {is3DMode && onTiltAngleChange && (
-              <input
-                type="range"
-                min="0"
-                max="90"
-                value={tiltAngle}
-                onChange={(e) => onTiltAngleChange(Number(e.target.value))}
-                className="w-24"
-              />
-            )}
-
-            {hasSelectedDots && onResetFretboard && (
-              <Button
-                onClick={onResetFretboard}
-                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white"
-              >
-                Clear
-              </Button>
-            )}
-          </div>
+        {hasSelectedDots && onResetFretboard && (
+          <Button
+            onClick={onResetFretboard}
+            className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white"
+          >
+            Clear
+          </Button>
         )}
 
         {/* Transport Position */}

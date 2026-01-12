@@ -1,11 +1,72 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ZoneCard, ZoneCardContent } from '@/ui-libraries';
 import { Target } from 'lucide-react';
-import { createStructuredLogger } from '@bassnotion/contracts';
+import { createStructuredLogger, type FretboardViewConfig, type FretboardScrollMode } from '@bassnotion/contracts';
 
 const logger = createStructuredLogger('FretboardCard');
+
+// Fretboard view preset configurations
+// Exported so YouTubeWidgetPage can update debug panel when preset changes
+export const FRETBOARD_VIEW_PRESETS = {
+  default: {
+    scrollMode: 'follow' as FretboardScrollMode,
+    zoomLevel: 1.15,
+    initialFret: 0,
+    visibleFretRange: null as { start: number; end: number } | null,
+    // 3D overlay settings (default values)
+    overlay3D: null as null | {
+      sceneX: number;
+      sceneY: number;
+      sceneZ: number;
+      scale: number;
+      scaleX: number;
+      scaleY: number;
+      rotX: number;
+      rotY: number;
+      rotZ: number;
+      canvasOffsetX: number;
+      canvasOffsetY: number;
+      camDist: number;
+      fov: number;
+      camY: number;
+      persp: number;
+      originX: number;
+      originY: number;
+      tiltYOffset: number;
+      tiltXOffset: number;
+    },
+  },
+  octave: {
+    scrollMode: 'locked' as FretboardScrollMode,
+    zoomLevel: 1.30, // Wider zoom for octave patterns
+    initialFret: 0, // Start at fret 0 for octave view
+    visibleFretRange: { start: 0, end: 13 },
+    // 3D overlay settings from user's calibrated values
+    overlay3D: {
+      sceneX: 3,
+      sceneY: 0,
+      sceneZ: -151,
+      scale: 1.30,
+      scaleX: 0.959,
+      scaleY: 0.949,
+      rotX: 3,
+      rotY: -33,
+      rotZ: 0,
+      canvasOffsetX: 25,
+      canvasOffsetY: 3,
+      camDist: 740,
+      fov: -4,
+      camY: 0,
+      persp: 0.98,
+      originX: 247,
+      originY: 136,
+      tiltYOffset: -39,
+      tiltXOffset: 311,
+    },
+  },
+};
 // Removed useExerciseSelection - parent manages exercise selection now
 import { SyncedWidget } from '../../base';
 import type { SyncedWidgetRenderProps } from '../../base';
@@ -26,29 +87,10 @@ import { FretboardControls } from './components/FretboardControls';
 import { FretboardModeControls } from './components/FretboardModeControls';
 import { FretboardGrid } from './components/FretboardGrid';
 import { convertTo3DFormat } from './utils/formatConversion';
-
-// Lazy load Fretboard3D to defer Three.js bundle (~400-600KB) until 3D mode is activated
-const Fretboard3D = lazy(() => import('./components/Fretboard3D'));
-
-/**
- * Loading fallback for lazy-loaded Fretboard3D component.
- * Matches the container dimensions (568x290) to prevent layout shift.
- */
-function Fretboard3DLoadingFallback() {
-  return (
-    <div
-      className="flex items-center justify-center bg-slate-900/50 rounded-xl"
-      style={{ width: '100%', height: '100%' }}
-    >
-      <div className="flex flex-col items-center gap-3">
-        <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-        <span className="text-sm text-slate-400">Loading 3D Fretboard...</span>
-      </div>
-    </div>
-  );
-}
+import { Ring3DOverlayCanvas, useRingOverlay, DEFAULT_RING_CONFIG } from './overlays';
 
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { useSnapshotTransition } from '@/shared/hooks/useSnapshotTransition';
 import { logSkeletonDebug } from '@/utils/skeletonDebug';
 
 // Render counter for debugging
@@ -95,46 +137,85 @@ let fretboardCardRenderCount = 0;
  * - Uses useAudioFretboard hook for consistent audio behavior
  */
 interface FretboardCardProps {
-  is3DMode?: boolean;
-  onToggle3DMode?: () => void;
   // Shared state props from parent
   selectedDots3D?: Map<string, number[]>;
   setSelectedDots3D?: (selectedDots: Map<string, number[]>) => void;
   stringCount3D?: 4 | 5 | 6;
   setStringCount3D?: (count: 4 | 5 | 6) => void;
-  cameraMode?: 'overview' | 'action';
-  setCameraMode?: (mode: 'overview' | 'action') => void;
   maxFrets?: number;
-  tiltAngle?: number;
   onMaxFretsChange?: (frets: number) => void;
-  onTiltAngleChange?: (angle: number) => void;
   // Exercise-related props
   tutorialData?: any;
   tutorialSlug?: string;
   exercises?: any[];
   selectedExerciseId?: string | null; // Add this prop from parent
   onExerciseSelect?: (exerciseId: string) => void;
+  // DEBUG: XYZ rotation for 3D overlay calibration
+  debugRotation?: { x: number; y: number; z: number };
+  // DEBUG: 3D Overlay-specific calibration (Three.js scene controls)
+  overlay3DConfig?: {
+    rotationX: number;
+    rotationY: number;
+    rotationZ: number;
+    scaleX: number;
+    scaleY: number;
+    offsetX: number;
+    offsetY: number;
+    sceneX: number;
+    sceneY: number;
+    sceneZ: number;
+    cameraDistance: number;
+    fovOffset: number;
+    originX: number;
+    originY: number;
+    contentScale: number;
+    positioningMode?: 'flat' | 'tilted-plane' | 'screen-space';
+    tiltAxisOffset?: number; // Slides content along tilted plane Y axis
+    tiltAxisOffsetX?: number; // Slides content along tilted plane X axis
+    perspectiveMultiplier?: number; // CSS perspective multiplier for 3D/2D alignment
+    // Bloom post-processing controls
+    bloomEnabled?: boolean;
+    bloomIntensity?: number;
+    bloomThreshold?: number;
+  };
+  // DEBUG: Hide 2D fretboard to see only 3D overlay
+  hide2DFretboard?: boolean;
+  // DEBUG: Hide 3D overlay
+  hide3DFretboard?: boolean;
 }
 
 export const FretboardCard = React.memo(
   function FretboardCard({
-    is3DMode = false,
-    onToggle3DMode,
     selectedDots3D,
     setSelectedDots3D,
     stringCount3D,
     setStringCount3D,
-    cameraMode,
-    setCameraMode,
     maxFrets = 25,
-    tiltAngle = 35,
     onMaxFretsChange,
-    onTiltAngleChange,
     tutorialData,
     tutorialSlug,
     exercises,
     selectedExerciseId,
     onExerciseSelect,
+    debugRotation = { x: 51, y: 0, z: 0 }, // DEBUG: XYZ rotation for calibration (51° tilt default)
+    overlay3DConfig = {
+      rotationX: 0, rotationY: 0, rotationZ: 0,
+      scaleX: 0.959, scaleY: 0.949,
+      offsetX: 25, offsetY: 3,
+      sceneX: 3, sceneY: 0, sceneZ: 193,
+      cameraDistance: 740, fovOffset: 0,
+      originX: 284, originY: 136,
+      contentScale: 1.30,
+      positioningMode: 'flat',
+      tiltAxisOffset: -23,
+      tiltAxisOffsetX: 448,
+      perspectiveMultiplier: 0.98,
+      leftFadeZone: 10,
+      rightFadeZone: 10,
+      fadeEdgeAngle: 0,
+    }, // DEBUG: 3D overlay controls - calibrated defaults
+    hide2DFretboard = true, // Hide 2D fretboard by default - use 3D overlay only
+    hide3DFretboard = false, // DEBUG: Hide 3D overlay
   }: FretboardCardProps) {
     const { correlationId, logger } = useCorrelation('FretboardCard');
     // Find the selected exercise object from the exercises list
@@ -159,23 +240,21 @@ export const FretboardCard = React.memo(
         {(syncProps: SyncedWidgetRenderProps) => (
           <FretboardCardContent
             syncProps={syncProps}
-            is3DMode={is3DMode}
-            onToggle3DMode={onToggle3DMode}
             selectedDots3D={selectedDots3D}
             setSelectedDots3D={setSelectedDots3D}
             stringCount3D={stringCount3D}
             setStringCount3D={setStringCount3D}
-            cameraMode={cameraMode}
-            setCameraMode={setCameraMode}
             maxFrets={maxFrets}
-            tiltAngle={tiltAngle}
             onMaxFretsChange={onMaxFretsChange}
-            onTiltAngleChange={onTiltAngleChange}
             tutorialData={tutorialData}
             tutorialSlug={tutorialSlug}
             exercises={exercises}
             selectedExerciseId={selectedExerciseId}
             onExerciseSelect={onExerciseSelect}
+            debugRotation={debugRotation}
+            overlay3DConfig={overlay3DConfig}
+            hide2DFretboard={hide2DFretboard}
+            hide3DFretboard={hide3DFretboard}
           />
         )}
       </SyncedWidget>
@@ -185,9 +264,6 @@ export const FretboardCard = React.memo(
     // Custom comparison to identify what's causing re-renders
     const changes: string[] = [];
 
-    if (prevProps.is3DMode !== nextProps.is3DMode) changes.push('is3DMode');
-    if (prevProps.onToggle3DMode !== nextProps.onToggle3DMode)
-      changes.push('onToggle3DMode');
     if (prevProps.selectedDots3D !== nextProps.selectedDots3D)
       changes.push('selectedDots3D');
     if (prevProps.setSelectedDots3D !== nextProps.setSelectedDots3D)
@@ -196,14 +272,7 @@ export const FretboardCard = React.memo(
       changes.push('stringCount3D');
     if (prevProps.setStringCount3D !== nextProps.setStringCount3D)
       changes.push('setStringCount3D');
-    if (prevProps.cameraMode !== nextProps.cameraMode)
-      changes.push('cameraMode');
-    if (prevProps.setCameraMode !== nextProps.setCameraMode)
-      changes.push('setCameraMode');
     if (prevProps.maxFrets !== nextProps.maxFrets) changes.push('maxFrets');
-    if (prevProps.tiltAngle !== nextProps.tiltAngle) changes.push('tiltAngle');
-    if (prevProps.onTiltAngleChange !== nextProps.onTiltAngleChange)
-      changes.push('onTiltAngleChange');
     if (prevProps.tutorialData !== nextProps.tutorialData)
       changes.push('tutorialData');
     if (prevProps.tutorialSlug !== nextProps.tutorialSlug)
@@ -213,6 +282,14 @@ export const FretboardCard = React.memo(
       changes.push('selectedExerciseId');
     if (prevProps.onExerciseSelect !== nextProps.onExerciseSelect)
       changes.push('onExerciseSelect');
+    if (prevProps.debugRotation !== nextProps.debugRotation)
+      changes.push('debugRotation');
+    if (prevProps.overlay3DConfig !== nextProps.overlay3DConfig)
+      changes.push('overlay3DConfig');
+    if (prevProps.hide2DFretboard !== nextProps.hide2DFretboard)
+      changes.push('hide2DFretboard');
+    if (prevProps.hide3DFretboard !== nextProps.hide3DFretboard)
+      changes.push('hide3DFretboard');
 
     const isEqual = changes.length === 0;
 
@@ -237,41 +314,68 @@ let globalRenderCount = 0;
 const FretboardCardContent = React.memo(
   function FretboardCardContent({
     syncProps,
-    is3DMode = false,
-    onToggle3DMode,
     selectedDots3D,
     setSelectedDots3D,
     stringCount3D,
     setStringCount3D,
-    cameraMode,
-    setCameraMode,
     maxFrets = 25,
-    tiltAngle = 35,
     onMaxFretsChange,
-    onTiltAngleChange,
     tutorialData,
     tutorialSlug,
     exercises,
     selectedExerciseId,
     onExerciseSelect,
+    debugRotation = { x: 51, y: 0, z: 0 }, // DEBUG: XYZ rotation for calibration (51° tilt default)
+    overlay3DConfig = {
+      rotationX: 0, rotationY: 0, rotationZ: 0,
+      scaleX: 0.959, scaleY: 0.949,
+      offsetX: 25, offsetY: 3,
+      sceneX: 3, sceneY: 0, sceneZ: 193,
+      cameraDistance: 740, fovOffset: 0,
+      originX: 284, originY: 136,
+      contentScale: 1.30,
+      positioningMode: 'flat',
+      tiltAxisOffset: -23,
+      tiltAxisOffsetX: 448,
+      perspectiveMultiplier: 0.98,
+      leftFadeZone: 10,
+      rightFadeZone: 10,
+      fadeEdgeAngle: 0,
+    }, // DEBUG: 3D overlay controls - calibrated defaults
+    hide2DFretboard = true, // Hide 2D fretboard by default - use 3D overlay only
+    hide3DFretboard = false, // DEBUG: Hide 3D overlay
   }: FretboardCardContentProps & {
-    is3DMode?: boolean;
-    onToggle3DMode?: () => void;
     selectedDots3D?: Map<string, number[]>;
     setSelectedDots3D?: (selectedDots: Map<string, number[]>) => void;
     stringCount3D?: 4 | 5 | 6;
     setStringCount3D?: (count: 4 | 5 | 6) => void;
-    cameraMode?: 'overview' | 'action';
-    setCameraMode?: (mode: 'overview' | 'action') => void;
     maxFrets?: number;
-    tiltAngle?: number;
     onMaxFretsChange?: (frets: number) => void;
-    onTiltAngleChange?: (angle: number) => void;
     tutorialData?: any;
     tutorialSlug?: string;
     exercises?: any[];
     selectedExerciseId?: string | null;
     onExerciseSelect?: (exerciseId: string) => void;
+    debugRotation?: { x: number; y: number; z: number }; // DEBUG: XYZ rotation for calibration
+    overlay3DConfig?: {
+      rotationX: number; rotationY: number; rotationZ: number;
+      scaleX: number; scaleY: number;
+      offsetX: number; offsetY: number;
+      sceneX: number; sceneY: number; sceneZ: number;
+      cameraDistance: number; fovOffset: number;
+      originX: number; originY: number;
+      contentScale: number;
+      positioningMode?: 'flat' | 'tilted-plane' | 'screen-space';
+      tiltAxisOffset?: number;
+      tiltAxisOffsetX?: number;
+      perspectiveMultiplier?: number;
+      // Bloom controls
+      bloomEnabled?: boolean;
+      bloomIntensity?: number;
+      bloomThreshold?: number;
+    }; // DEBUG: 3D overlay controls
+    hide2DFretboard?: boolean; // DEBUG: Hide 2D fretboard
+    hide3DFretboard?: boolean; // DEBUG: Hide 3D overlay
   }) {
     // Enhanced debug logging to track render causes
     fretboardCardRenderCount++;
@@ -293,10 +397,8 @@ const FretboardCardContent = React.memo(
         currentTime: syncProps.currentTime,
         timestamp: Date.now(),
         propsChanged: {
-          is3DMode,
           stringCount3D,
           maxFrets,
-          tiltAngle,
         },
       },
     );
@@ -314,7 +416,6 @@ const FretboardCardContent = React.memo(
       masterVolume: syncProps.masterVolume,
       exercisesLength: exercises?.length,
       selectedExerciseId,
-      is3DMode,
     });
 
     const currentProps = {
@@ -326,7 +427,6 @@ const FretboardCardContent = React.memo(
       masterVolume: syncProps.masterVolume,
       exercisesLength: exercises?.length,
       selectedExerciseId,
-      is3DMode,
     };
 
     const changedProps: string[] = [];
@@ -358,11 +458,38 @@ const FretboardCardContent = React.memo(
     // Zoom state - default to 115%
     const [zoomLevel, setZoomLevel] = useState(1.15);
 
+    // Scroll mode state - controls auto-scroll behavior during playback
+    // 'follow' = camera follows current note, 'locked' = view stays fixed
+    const [scrollMode, setScrollMode] = useState<FretboardScrollMode>('follow');
+
+    // Effective overlay3D config - merges preset settings with per-exercise overrides
+    // When octave preset is used, this will use the preset's 3D settings
+    const [effectiveOverlay3DConfig, setEffectiveOverlay3DConfig] = useState(overlay3DConfig);
+
+    // Sync effectiveOverlay3DConfig when overlay3DConfig prop changes (e.g., from debug controls)
+    React.useEffect(() => {
+      setEffectiveOverlay3DConfig(overlay3DConfig);
+    }, [overlay3DConfig]);
+
+    // Ring overlay state for Guitar Hero-style animated rings
+    // This state controls whether the 3D ring overlay is shown in 2D mode
+    // NOTE: Set to true for debugging/calibration of 3D canvas alignment
+    const [showRingOverlay, setShowRingOverlay] = useState(true);
+    const fretboardContainerRef = useRef<HTMLDivElement>(null);
+
+    // Get ring overlay configuration with premium access check
+    const ringOverlay = useRingOverlay({
+      tutorialSlug,
+      userPreferences: showRingOverlay ? { enabled: true } : { enabled: false },
+    });
+
     // Scroll container ref for auto-scroll functionality
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, scrollLeft: 0 });
     const [hasUserScrolled, setHasUserScrolled] = useState(false);
+    // PERFORMANCE: Removed scrollLeft state - it was causing re-renders
+    // The 3D overlay now reads scroll directly from scrollContainerRef via useFrame
 
     // Use prop exercises only (no global exercise selection hook)
     const exercisesList = exercises || [];
@@ -511,14 +638,14 @@ const FretboardCardContent = React.memo(
 
     // Only reset scroll to 0 if user hasn't manually scrolled
     React.useEffect(() => {
-      if (!hasUserScrolled && scrollContainerRef.current && !is3DMode) {
+      if (!hasUserScrolled && scrollContainerRef.current) {
         scrollContainerRef.current.scrollLeft = 0;
       }
-    }, [is3DMode, hasUserScrolled]);
+    }, [hasUserScrolled]);
 
     // Set initial scroll position on mount only
     React.useEffect(() => {
-      if (scrollContainerRef.current && !is3DMode) {
+      if (scrollContainerRef.current) {
         scrollContainerRef.current.scrollLeft = 0;
       }
     }, []); // Run only on mount
@@ -563,14 +690,13 @@ const FretboardCardContent = React.memo(
       const config = {
         stringCount: sharedStringCount,
         maxFrets: maxFrets,
-        tiltAngle: tiltAngle,
       };
       logger.info(
         `🎯 FretboardCard: fretboardConfig memoized for render #${globalRenderCount}`,
         config,
       );
       return config;
-    }, [sharedStringCount, maxFrets, tiltAngle]);
+    }, [sharedStringCount, maxFrets]);
 
     // Use the main fretboard hook that combines all functionality
     logger.info(
@@ -590,12 +716,6 @@ const FretboardCardContent = React.memo(
       setStringCount3D ||
       ((count: StringCount) => {
         logger.info('No setStringCount3D provided, count:', count);
-      });
-    const sharedCameraMode = cameraMode || 'overview';
-    const sharedSetCameraMode =
-      setCameraMode ||
-      ((mode: 'overview' | 'action') => {
-        logger.info('No setCameraMode provided, mode:', mode);
       });
 
     // Manual selection tracking hook
@@ -638,6 +758,46 @@ const FretboardCardContent = React.memo(
     const audioState = { isRegistered: false, hasError: false };
     const audioControls = { register: () => {}, unregister: () => {} };
 
+    // =============================================================================
+    // EXERCISE TRANSITION - Snapshot Pattern (Double Buffer)
+    // =============================================================================
+    // Problem: React immediately renders new exercise data when selectedExercise changes.
+    // Solution: Use snapshot transition to control WHEN we switch the displayed data.
+    //
+    // - displayNotes = What we RENDER (OLD data during fade-out, NEW after swap)
+    // - sourceData = What React gives us (changes immediately)
+    //
+    // Timeline:
+    //   User clicks → fade-out (OLD visible) → SWAP → fade-in (NEW visible)
+    // =============================================================================
+    const FADE_DURATION_MS = 500;
+
+    // Snapshot transition for exercise notes - controls when data visually changes
+    const {
+      displayData: displayNotes,
+      opacity: fadeOpacity,
+      fadeDuration,
+      phase: transitionPhase,
+    } = useSnapshotTransition(
+      fretboard.exerciseData.exerciseNotes,
+      fretboard.exerciseData.selectedExercise?.id,
+      { fadeDuration: FADE_DURATION_MS, debug: false }
+    );
+
+    // Snapshot transition for tempo - must stay in sync with notes
+    const { displayData: displayTempo } = useSnapshotTransition(
+      fretboard.exercise.tempo,
+      fretboard.exerciseData.selectedExercise?.id,
+      { fadeDuration: FADE_DURATION_MS }
+    );
+
+    // Snapshot transition for overlay3D config - different exercises may have different views
+    const { displayData: displayOverlay3D } = useSnapshotTransition(
+      effectiveOverlay3DConfig,
+      fretboard.exerciseData.selectedExercise?.id,
+      { fadeDuration: FADE_DURATION_MS }
+    );
+
     // Get selected exercise from sync props for GlobalControls
     const activeExercise = syncProps.selectedExercise;
 
@@ -664,7 +824,6 @@ const FretboardCardContent = React.memo(
 
     // Dot synchronization hook
     useDotSynchronization({
-      is3DMode,
       localDots: fretboard.selectedDots,
       sharedDots: sharedSelectedDots,
       localStringCount: fretboard.stringCount,
@@ -765,10 +924,115 @@ const FretboardCardContent = React.memo(
       });
     }, []);
 
-    // Auto-scroll during playback to follow current note (only if user hasn't manually scrolled)
+    // Apply fretboard view config when exercise changes
     React.useEffect(() => {
+      const exercise = syncProps.selectedExercise;
+      if (!exercise) return;
+
+      // DIAGNOSTIC: Log the exercise object structure to debug config retrieval
+      console.log('🎸 [FRETBOARD-CONFIG-DEBUG] Exercise object:', {
+        id: exercise.id,
+        title: (exercise as any).title,
+        // Check all possible property names
+        fretboardViewConfig: (exercise as any).fretboardViewConfig,
+        fretboard_view_config: (exercise as any).fretboard_view_config,
+        _props: (exercise as any)._props,
+        // Log all keys on the exercise object
+        allKeys: Object.keys(exercise),
+        // Check if it has the getter
+        hasGetter: typeof Object.getOwnPropertyDescriptor(Object.getPrototypeOf(exercise), 'fretboardViewConfig')?.get === 'function',
+      });
+
+      // Get fretboard view config from exercise (handle both entity and raw DTO)
+      const config = (exercise as any).fretboardViewConfig || (exercise as any).fretboard_view_config;
+      const preset = config?.preset || 'default';
+      const presetConfig = FRETBOARD_VIEW_PRESETS[preset as keyof typeof FRETBOARD_VIEW_PRESETS] || FRETBOARD_VIEW_PRESETS.default;
+
+      console.log(`🎸 [FRETBOARD-CONFIG-DEBUG] Config detection:`, {
+        configFound: !!config,
+        configValue: config,
+        detectedPreset: preset,
+        willApplyOverlay3D: !!presetConfig.overlay3D,
+      });
+
+      logger.info(`🎸 Applying fretboard view config for exercise:`, {
+        exerciseId: exercise.id,
+        preset,
+        zoomLevel: config?.zoomLevel ?? presetConfig.zoomLevel,
+        scrollMode: config?.scrollMode ?? presetConfig.scrollMode,
+        initialFret: config?.initialFret ?? presetConfig.initialFret,
+        hasOverlay3D: !!presetConfig.overlay3D,
+      });
+
+      // Apply zoom level
+      setZoomLevel(config?.zoomLevel ?? presetConfig.zoomLevel);
+
+      // Apply scroll mode
+      setScrollMode(config?.scrollMode ?? presetConfig.scrollMode);
+
+      // Apply 3D overlay settings from preset
+      if (presetConfig.overlay3D) {
+        // Merge preset overlay3D values with existing overlay3DConfig
+        // This preserves all properties (colors, bloom, fade zones, etc.) while only
+        // overriding the specific position/scale/rotation values from the preset
+        const presetOverlay = presetConfig.overlay3D;
+        setEffectiveOverlay3DConfig((prev) => ({
+          ...prev,  // Keep all existing properties (colors, bloom, fade zones, etc.)
+          rotationX: presetOverlay.rotX,
+          rotationY: presetOverlay.rotY,
+          rotationZ: presetOverlay.rotZ,
+          contentScaleX: presetOverlay.scaleX,
+          contentScaleY: presetOverlay.scaleY,
+          offsetX: presetOverlay.canvasOffsetX,
+          offsetY: presetOverlay.canvasOffsetY,
+          sceneX: presetOverlay.sceneX,
+          sceneY: presetOverlay.sceneY,
+          sceneZ: presetOverlay.sceneZ,
+          cameraDistance: presetOverlay.camDist,
+          fovOffset: presetOverlay.fov,
+          cameraY: presetOverlay.camY,
+          originX: presetOverlay.originX,
+          originY: presetOverlay.originY,
+          contentScale: presetOverlay.scale,
+          // Keep positioningMode as 'flat' - dots stay at Z=0, scene rotation handles tilt
+          positioningMode: 'flat' as const,
+          tiltAxisOffset: presetOverlay.tiltYOffset,
+          tiltAxisOffsetX: presetOverlay.tiltXOffset,
+          perspectiveMultiplier: presetOverlay.persp,
+        }));
+        logger.info(`🎸 Applied octave preset 3D overlay settings:`, presetOverlay);
+      } else {
+        // Use default overlay config passed via props
+        setEffectiveOverlay3DConfig(overlay3DConfig);
+      }
+
+      // Apply initial scroll position (only if not user-scrolled and has initialFret)
+      const initialFret = config?.initialFret ?? presetConfig.initialFret;
+      if (initialFret > 0) {
+        // Reset hasUserScrolled for new exercise
+        setHasUserScrolled(false);
+        // Small delay to allow component to mount before scrolling
+        setTimeout(() => {
+          scrollToFret(initialFret);
+        }, 100);
+      } else {
+        // Reset to start for default view
+        setHasUserScrolled(false);
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+        }
+      }
+    }, [syncProps.selectedExercise?.id, scrollToFret, overlay3DConfig]);
+
+    // Auto-scroll during playback to follow current note
+    // Only active when: scrollMode is 'follow', user hasn't manually scrolled, and playback is active
+    React.useEffect(() => {
+      // Skip auto-scroll if mode is 'locked' - view stays fixed at initial position
+      if (scrollMode === 'locked') {
+        return;
+      }
+
       if (
-        !is3DMode &&
         !hasUserScrolled &&
         fretboard.exercise.audioIntegration.playbackPosition?.isPlaying
       ) {
@@ -819,7 +1083,7 @@ const FretboardCardContent = React.memo(
         }
       }
     }, [
-      is3DMode,
+      scrollMode,
       hasUserScrolled,
       fretboard.exercise.audioIntegration.playbackPosition?.isPlaying,
       fretboard.exercise.audioIntegration.playbackPosition?.currentNote,
@@ -903,103 +1167,63 @@ const FretboardCardContent = React.memo(
     return (
       <ZoneCard className="zone-card bg-transparent border-transparent shadow-none overflow-visible">
         <ZoneCardContent className="p-0 overflow-visible">
-          {/* Transparent Fretboard Container */}
-          <div className="relative">
-            {/* Conditional fretboard rendering based on mode */}
-            {is3DMode ? (
-              /* 3D Mode Fretboard - No zoom container needed */
+          {/* Transparent Fretboard Container - overflow:visible allows 3D overlay to extend beyond bounds */}
+          <div className="relative" style={{ overflow: 'visible' }}>
+            {/* 2D Mode Fretboard - With zoom and horizontal scroll */}
+            <div
+              ref={fretboardContainerRef}
+              className="relative mx-auto"
+              style={{
+                width: 568, // Full container width // Fixed viewport width
+                height: 290, // Fixed height
+                overflow: 'visible', // Allow shadows to extend in all directions
+                perspective: '800px', // Add perspective here
+              }}
+            >
               <div
-                className="flex justify-center items-center mx-auto"
+                ref={(el) => {
+                  scrollContainerRef.current = el;
+                  if (el && !hasUserScrolled) {
+                    // Only set to 0 if user hasn't manually scrolled
+                    el.scrollLeft = 0;
+                  }
+                }}
+                className="overflow-x-auto overflow-y-hidden h-full flex items-center"
                 style={{
-                  width: 568, // Full container width
-                  height: 290,
-                  overflow: 'visible',
+                  cursor: isDragging ? 'grabbing' : 'grab',
+                  scrollbarWidth: 'none', // Firefox
+                  msOverflowStyle: 'none', // IE/Edge
+                  // DEBUG: Full XYZ rotation for 3D overlay calibration
+                  transform: `rotateX(${debugRotation.x}deg) rotateY(${debugRotation.y}deg) rotateZ(${debugRotation.z}deg)`,
+                  transformStyle: 'preserve-3d',
+                  transformOrigin: 'center center',
+                }}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseLeave}
+                onScroll={() => {
+                  // Mark that user has scrolled when any scroll event occurs
+                  // PERFORMANCE: Only track hasUserScrolled flag, no state updates for scroll position
+                  if (scrollContainerRef.current && scrollContainerRef.current.scrollLeft > 0) {
+                    setHasUserScrolled(true);
+                  }
                 }}
               >
-                <div
-                  className="flex flex-col items-center py-2"
-                  style={{
-                    perspective: '1000px',
-                    width: '100%',
-                    height: '100%',
-                  }}
-                >
-                  <div
-                    className="flex flex-col items-center relative"
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                    }}
-                  >
-                    <Suspense fallback={<Fretboard3DLoadingFallback />}>
-                      <Fretboard3D
-                        stringCount={sharedStringCount as 4 | 5 | 6}
-                        maxFrets={maxFrets}
-                        selectedDots={convertTo3DFormat(
-                          sharedSelectedDots,
-                          sharedStringCount,
-                        )}
-                        onDotClick={(stringIndex, fret) => {
-                          // Convert 3D format call to standard format for consistency
-                          fretboard.handleDotClickWithAudio(stringIndex, fret);
-                        }}
-                        cameraDistance={7}
-                        cameraMode={sharedCameraMode}
-                        onCameraModeChange={sharedSetCameraMode}
-                      />
-                    </Suspense>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              /* 2D Mode Fretboard - With zoom and horizontal scroll */
-              <div
-                className="relative mx-auto"
-                style={{
-                  width: 568, // Full container width // Fixed viewport width
-                  height: 290, // Fixed height same as 3D mode
-                  overflow: 'visible', // Allow shadows to extend in all directions
-                  perspective: '800px', // Add perspective here
-                }}
-              >
-                <div
-                  ref={(el) => {
-                    scrollContainerRef.current = el;
-                    if (el && !is3DMode && !hasUserScrolled) {
-                      // Only set to 0 if user hasn't manually scrolled
-                      el.scrollLeft = 0;
-                    }
-                  }}
-                  className="overflow-x-auto overflow-y-hidden h-full flex items-center"
-                  style={{
-                    cursor: isDragging ? 'grabbing' : 'grab',
-                    scrollbarWidth: 'none', // Firefox
-                    msOverflowStyle: 'none', // IE/Edge
-                    transform: `rotateX(${tiltAngle}deg)`, // Apply tilt to scroll container
-                    transformStyle: 'preserve-3d',
-                    transformOrigin: 'center center',
-                  }}
-                  onMouseDown={handleMouseDown}
-                  onMouseMove={handleMouseMove}
-                  onMouseUp={handleMouseUp}
-                  onMouseLeave={handleMouseLeave}
-                  onScroll={() => {
-                    // Mark that user has scrolled when any scroll event occurs
-                    if (
-                      scrollContainerRef.current &&
-                      scrollContainerRef.current.scrollLeft > 0
-                    ) {
-                      setHasUserScrolled(true);
-                    }
-                  }}
-                >
-                  <style jsx>{`
-                    div::-webkit-scrollbar {
-                      display: none; /* Chrome/Safari/Webkit */
-                    }
-                  `}</style>
+                <style jsx>{`
+                  div::-webkit-scrollbar {
+                    display: none; /* Chrome/Safari/Webkit */
+                  }
+                `}</style>
+                {/* 2D Fretboard - CONDITIONALLY RENDERED when not hidden */}
+                {/* When hide2DFretboard is true, we don't render the FretboardGrid at all (not just hide with CSS) */}
+                {/* This prevents 2D elements from appearing in DOM inspector and improves performance */}
+                {!hide2DFretboard && (
                   <div
                     style={{
+                      position: 'relative', // For absolute positioning of 3D overlay
+                      width: 568 + 600, // Extra 600px allows scrolling to see all frets up to 24
+                      height: 290, // Match fretboard container height for proper canvas sizing
                       transform: `scale(${zoomLevel})`,
                       transformOrigin: '0 0', // Start zoom from top-left (open strings position)
                       transition: 'transform 0.2s ease-out',
@@ -1007,7 +1231,6 @@ const FretboardCardContent = React.memo(
                   >
                     <FretboardGrid
                       stringCount={sharedStringCount}
-                      tiltAngle={tiltAngle}
                       frets={fretboard.frets}
                       selectedDots={fretboard.selectedDots}
                       draggedDot={fretboard.state.draggedDot}
@@ -1034,16 +1257,59 @@ const FretboardCardContent = React.memo(
                       measureAwareConnections={fretboard.exercise.measureAwareConnections}
                       currentMeasure0Based={fretboard.exercise.currentMeasure0Based}
                       nextNoteToPlay={fretboard.nextNoteToPlay}
-                      exerciseNotes={fretboard.exerciseData.exerciseNotes}
+                      exerciseNotes={displayNotes}
                       currentMeasureFromNote={fretboard.exercise.currentMeasureFromNote}
                       // Props for useFretboardNoteSync - direct DOM note synchronization
-                      // Use fretboard.exercise.tempo which subscribes to musicalTruth for accurate BPM
                       isPlaying={syncProps.isPlaying}
-                      tempo={fretboard.exercise.tempo}
+                      tempo={displayTempo}
                       maxFrets={maxFrets}
                     />
                   </div>
-                </div>
+                )}
+              </div>
+            </div>
+
+            {/* Guitar Hero-style 3D Ring Overlay - COMPLETELY OUTSIDE fretboard container
+                to prevent clipping when rotated. Uses absolute positioning relative to parent.
+                Has overflow:visible and no clipping boundaries.
+                NOTE: Removed exerciseNotes.length > 0 condition so fretboard is visible even when empty */}
+            {!hide3DFretboard && ringOverlay.config.enabled && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: 568,
+                  height: 290,
+                  pointerEvents: 'none',
+                  overflow: 'visible',
+                  // NO clipping - allow 3D to extend in all directions
+                }}
+              >
+                <Ring3DOverlayCanvas
+                  fretboardRef={fretboardContainerRef}
+                  exerciseNotes={displayNotes}
+                  currentTime={syncProps.currentTime}
+                  isPlaying={syncProps.isPlaying}
+                  config={ringOverlay.config}
+                  stringCount={sharedStringCount}
+                  maxFrets={maxFrets}
+                  countdownBeats={4}
+                  tempo={displayTempo}
+                  tiltAngle={debugRotation.x} // Use DEBUG panel X (Tilt) so 3D matches 2D CSS rotateX
+                  overlay3DConfig={displayOverlay3D}
+                  debugRotation={debugRotation}
+                  // PERFORMANCE: Pass ref to scroll container instead of scroll value
+                  // This allows Three.js to read scroll in useFrame without React re-renders
+                  scrollContainerRef={scrollContainerRef}
+                  // Exercise ID for detecting exercise changes (fade transitions)
+                  exerciseId={selectedExerciseId}
+                  // Exercise transition fade - controlled by snapshot transition
+                  fadeOpacity={fadeOpacity}
+                  fadeDuration={fadeDuration}
+                  // Transition phase for camera zoom animation
+                  transitionPhase={transitionPhase}
+                />
               </div>
             )}
 
@@ -1067,15 +1333,18 @@ const FretboardCardContent = React.memo(
     const changes: string[] = [];
 
     // Check each prop individually
-    if (prevProps.is3DMode !== nextProps.is3DMode) changes.push('is3DMode');
     if (prevProps.selectedDots3D !== nextProps.selectedDots3D)
       changes.push('selectedDots3D');
     if (prevProps.stringCount3D !== nextProps.stringCount3D)
       changes.push('stringCount3D');
-    if (prevProps.cameraMode !== nextProps.cameraMode)
-      changes.push('cameraMode');
     if (prevProps.maxFrets !== nextProps.maxFrets) changes.push('maxFrets');
-    if (prevProps.tiltAngle !== nextProps.tiltAngle) changes.push('tiltAngle');
+    // DEBUG: Check debugRotation for 3D overlay calibration
+    if (
+      prevProps.debugRotation?.x !== nextProps.debugRotation?.x ||
+      prevProps.debugRotation?.y !== nextProps.debugRotation?.y ||
+      prevProps.debugRotation?.z !== nextProps.debugRotation?.z
+    )
+      changes.push('debugRotation');
     if (prevProps.tutorialData !== nextProps.tutorialData)
       changes.push('tutorialData');
     if (prevProps.tutorialSlug !== nextProps.tutorialSlug)
@@ -1085,8 +1354,6 @@ const FretboardCardContent = React.memo(
       changes.push('selectedExerciseId');
     if (prevProps.onExerciseSelect !== nextProps.onExerciseSelect)
       changes.push('onExerciseSelect');
-    if (prevProps.onToggle3DMode !== nextProps.onToggle3DMode)
-      changes.push('onToggle3DMode');
     if (prevProps.setSelectedDots3D !== nextProps.setSelectedDots3D)
       changes.push('setSelectedDots3D');
     if (prevProps.setStringCount3D !== nextProps.setStringCount3D)
@@ -1097,6 +1364,15 @@ const FretboardCardContent = React.memo(
       changes.push('onMaxFretsChange');
     if (prevProps.onTiltAngleChange !== nextProps.onTiltAngleChange)
       changes.push('onTiltAngleChange');
+    // DEBUG: Check overlay3DConfig for 3D overlay calibration
+    if (prevProps.overlay3DConfig !== nextProps.overlay3DConfig)
+      changes.push('overlay3DConfig');
+    // DEBUG: Check hide2DFretboard for visibility toggle
+    if (prevProps.hide2DFretboard !== nextProps.hide2DFretboard)
+      changes.push('hide2DFretboard');
+    // DEBUG: Check hide3DFretboard for visibility toggle
+    if (prevProps.hide3DFretboard !== nextProps.hide3DFretboard)
+      changes.push('hide3DFretboard');
 
     // Check syncProps (but ignore currentTime)
     if (

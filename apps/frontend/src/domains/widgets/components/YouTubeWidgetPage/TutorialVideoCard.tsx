@@ -5,6 +5,15 @@ import { Button } from '@/shared/components/ui/button';
 import { useYouTubeChannelData } from '../../hooks/useYouTubeChannelData';
 import type { Tutorial } from '@bassnotion/contracts';
 
+// Gradient settings type for the creator overlay
+interface GradientSettings {
+  fromOpacity: number;
+  viaOpacity: number;
+  viaPosition: number;
+  paddingTop: number;
+  paddingBottom: number;
+}
+
 // Extended tutorial data that may include additional fields from the API
 interface ExtendedTutorialData extends Tutorial {
   level?: string;
@@ -90,11 +99,11 @@ function CustomYouTubeThumbnail({
   const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
 
   return (
-    <div className="absolute inset-0 cursor-pointer group" onClick={onPlay}>
+    <div className="absolute inset-0 cursor-pointer group rounded-2xl overflow-hidden" onClick={onPlay}>
       <img
         src={thumbnailUrl}
         alt="Video thumbnail"
-        className="w-full h-full object-cover"
+        className="w-full h-full object-cover rounded-2xl"
         onError={(e) => {
           const target = e.target as HTMLImageElement;
           if (target.src.includes('maxresdefault')) {
@@ -116,8 +125,10 @@ function CustomYouTubeThumbnail({
 // Inline Creator Info Section
 function CreatorInfo({
   tutorialData,
+  isOverlay = false,
 }: {
   tutorialData?: ExtendedTutorialData;
+  isOverlay?: boolean;
 }) {
   const defaultCreator = {
     name: 'Rick Astley',
@@ -160,8 +171,27 @@ function CreatorInfo({
     return null;
   }
 
+  // Overlay style: transparent background, white text
+  // Non-overlay style: dark background, standard styling
+  const containerClass = isOverlay
+    ? 'flex items-center gap-3'
+    : 'flex items-center gap-3 p-3 bg-slate-700/30 rounded-lg';
+
+  const avatarBorderClass = isOverlay
+    ? 'border-2 border-white/40'
+    : 'border-2 border-slate-600';
+
+  const avatarFallbackClass = isOverlay
+    ? 'bg-white/20 text-white'
+    : 'bg-slate-700 text-slate-400';
+
+  const subscriberTextClass = isOverlay
+    ? 'text-white/70 text-xs'
+    : 'text-slate-400 text-xs';
+
   return (
-    <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-lg">
+    <div className={containerClass}>
+      {/* Avatar */}
       {creator.avatarUrl ? (
         <a
           href={creator.channelUrl || '#'}
@@ -172,15 +202,16 @@ function CreatorInfo({
           <img
             src={creator.avatarUrl}
             alt={`${creator.name} avatar`}
-            className="w-10 h-10 rounded-full object-cover border-2 border-slate-600"
+            className={`w-10 h-10 rounded-full object-cover ${avatarBorderClass}`}
           />
         </a>
       ) : (
-        <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-slate-400 text-sm font-medium">
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${avatarFallbackClass}`}>
           {creator.name.charAt(0).toUpperCase()}
         </div>
       )}
 
+      {/* Creator Name & Subscriber Count */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           {creator.channelUrl ? (
@@ -198,7 +229,7 @@ function CreatorInfo({
             </p>
           )}
         </div>
-        <p className="text-slate-400 text-xs">
+        <p className={subscriberTextClass}>
           {hasSubscriberCount
             ? subscriberCount
             : isLoading
@@ -207,11 +238,15 @@ function CreatorInfo({
         </p>
       </div>
 
+      {/* Subscribe Button */}
       <div className="flex-shrink-0">
         {creator.channelUrl ? (
           <Button
             size="sm"
-            className="bg-white hover:bg-gray-100 text-black font-medium px-4 py-2 rounded-full transition-colors duration-200"
+            className={isOverlay
+              ? 'bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-1.5 rounded-full transition-colors duration-200 text-sm shadow-lg'
+              : 'bg-white hover:bg-gray-100 text-black font-medium px-4 py-2 rounded-full transition-colors duration-200'
+            }
             onClick={() =>
               window.open(creator.channelUrl, '_blank', 'noopener,noreferrer')
             }
@@ -234,6 +269,15 @@ function CreatorInfo({
 
 export function TutorialVideoCard({ tutorialData }: TutorialVideoCardProps) {
   const [playing, setPlaying] = useState(false);
+
+  // Fixed gradient settings (no longer debug-adjustable)
+  const gradientSettings: GradientSettings = {
+    fromOpacity: 81,
+    viaOpacity: 0,
+    viaPosition: 100,
+    paddingTop: 32,
+    paddingBottom: 7,
+  };
 
   // Tutorial data with fallbacks
   const title = tutorialData?.title || 'Come Together';
@@ -282,67 +326,74 @@ export function TutorialVideoCard({ tutorialData }: TutorialVideoCardProps) {
 
   return (
     <div className="space-y-4">
-      {/* Card 1: Title + Description + Core Concept */}
-      <div className="relative px-6 py-6 space-y-4 bg-slate-800/40 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-2xl">
-        {/* Difficulty Tag - Top Right Corner */}
-        <div className="absolute top-4 right-4 z-10">
-          <span className="bg-orange-500 text-white px-2 py-0.5 rounded-full text-xs font-medium shadow-lg">
-            {difficulty}
-          </span>
+      {/* Hero Card: Video with Creator Overlay + Title/Description/Core Concept */}
+      <div className="relative bg-slate-800/40 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-2xl overflow-hidden">
+        {/* Video Section with Creator Overlay */}
+        <div className="relative">
+          {/* Embedded Video */}
+          <div className="aspect-video bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 overflow-hidden relative group rounded-2xl">
+            {!playing ? (
+              <CustomYouTubeThumbnail
+                videoUrl={videoUrl}
+                onPlay={() => setPlaying(true)}
+              />
+            ) : (
+              <SimpleYouTubePlayer videoUrl={videoUrl} playing={playing} />
+            )}
+          </div>
+
+          {/* Creator Info Overlay - Bottom of video with gradient */}
+          {/* pointer-events-none allows clicks to pass through to thumbnail, pointer-events-auto on CreatorInfo keeps buttons clickable */}
+          {/* Fades out when video is playing to not obstruct YouTube controls */}
+          <div
+            className={`absolute bottom-0 left-0 right-0 pointer-events-none transition-opacity duration-500 ease-out rounded-b-2xl ${
+              playing ? 'opacity-0' : 'opacity-100'
+            }`}
+            style={{
+              background: `linear-gradient(to top, rgba(0,0,0,${gradientSettings.fromOpacity / 100}), rgba(0,0,0,${gradientSettings.viaOpacity / 100}) ${gradientSettings.viaPosition}%, transparent)`,
+              padding: `${gradientSettings.paddingTop * 4}px 16px ${gradientSettings.paddingBottom * 4}px 16px`,
+            }}
+          >
+            <div className={`pointer-events-auto ${playing ? 'pointer-events-none' : ''}`}>
+              <CreatorInfo tutorialData={tutorialData} isOverlay />
+            </div>
+          </div>
+
         </div>
 
-        {/* Title Header */}
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-300 via-purple-300 to-pink-300 bg-clip-text text-transparent">
+        {/* Content Section: Title + Description + Core Concept */}
+        <div className="px-6 py-5 space-y-4">
+          {/* Title Header */}
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-300 via-purple-300 to-pink-300 bg-clip-text text-transparent">
             {title}
           </h1>
-        </div>
 
-        {/* Description */}
-        <p className="text-slate-400 text-base">{description}</p>
+          {/* Description */}
+          <p className="text-slate-400 text-sm">{description}</p>
 
-        {/* Core Concept Section */}
-        <div className="border-t border-slate-700/50 pt-4">
-          <h3 className="text-xl font-semibold text-white mb-3">
-            Core Concept
-          </h3>
-          <p className="text-slate-400 text-base leading-relaxed mb-4">
-            {coreConcept.description}
-          </p>
+          {/* Core Concept Section */}
+          <div className="border-t border-slate-700/50 pt-4">
+            <h3 className="text-lg font-semibold text-white mb-2">
+              Core Concept
+            </h3>
+            <p className="text-slate-400 text-sm leading-relaxed mb-3">
+              {coreConcept.description}
+            </p>
 
-          {/* Core Concept Bullet Points */}
-          <div className="space-y-2">
-            {Array.isArray(coreConcept.points) &&
-              coreConcept.points.map((point, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-2 text-green-300"
-                >
-                  <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                  <span className="text-sm">{point}</span>
-                </div>
-              ))}
+            {/* Core Concept Bullet Points */}
+            <div className="space-y-1.5">
+              {Array.isArray(coreConcept.points) &&
+                coreConcept.points.map((point, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-2 text-green-300"
+                  >
+                    <div className="w-1.5 h-1.5 bg-green-400 rounded-full flex-shrink-0"></div>
+                    <span className="text-xs">{point}</span>
+                  </div>
+                ))}
+            </div>
           </div>
-        </div>
-      </div>
-
-      {/* Card 2: Video + Creator Info */}
-      <div className="rounded-2xl overflow-hidden">
-        {/* Embedded Video (full width) */}
-        <div className="aspect-video bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 overflow-hidden relative group shadow-xl">
-          {!playing ? (
-            <CustomYouTubeThumbnail
-              videoUrl={videoUrl}
-              onPlay={() => setPlaying(true)}
-            />
-          ) : (
-            <SimpleYouTubePlayer videoUrl={videoUrl} playing={playing} />
-          )}
-        </div>
-
-        {/* Creator Info / Subscribe (with padding) */}
-        <div className="px-6 pt-4 pb-6 bg-slate-800/40 backdrop-blur-xl">
-          <CreatorInfo tutorialData={tutorialData} />
         </div>
       </div>
     </div>
@@ -355,52 +406,61 @@ export function TutorialVideoCard({ tutorialData }: TutorialVideoCardProps) {
 export function TutorialVideoCardSkeleton() {
   return (
     <div className="space-y-4">
-      {/* Card 1: Title + Description + Core Concept skeleton */}
-      <div className="relative px-6 py-6 space-y-4 bg-slate-800/40 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-2xl">
-        <div className="absolute top-4 right-4 z-10">
-          <div className="skeleton-shimmer w-16 h-5 rounded-full" />
-        </div>
+      {/* Hero Card skeleton */}
+      <div className="relative bg-slate-800/40 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-2xl overflow-hidden">
+        {/* Video section with creator overlay skeleton */}
+        <div className="relative">
+          {/* Video skeleton */}
+          <div className="aspect-video skeleton-shimmer" />
 
-        {/* Title skeleton */}
-        <div className="skeleton-shimmer h-9 w-3/4 rounded-lg" />
-
-        {/* Description skeleton */}
-        <div className="skeleton-shimmer h-5 w-full rounded mb-2" />
-        <div className="skeleton-shimmer h-5 w-2/3 rounded" />
-
-        {/* Core concept skeleton */}
-        <div className="border-t border-slate-700/50 pt-4">
-          <div className="skeleton-shimmer h-6 w-32 rounded mb-3" />
-          <div className="skeleton-shimmer h-4 w-full rounded mb-2" />
-          <div className="skeleton-shimmer h-4 w-5/6 rounded mb-4" />
-          <div className="space-y-2">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center gap-2">
-                <div className="skeleton-shimmer w-2 h-2 rounded-full" />
-                <div
-                  className="skeleton-shimmer h-4 rounded"
-                  style={{ width: `${60 + i * 10}%` }}
-                />
+          {/* Creator overlay skeleton */}
+          <div
+            className="absolute bottom-0 left-0 right-0"
+            style={{
+              background: 'linear-gradient(to top, rgba(0,0,0,1), rgba(0,0,0,0) 100%)',
+              padding: '48px 16px 16px 16px',
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="skeleton-shimmer w-10 h-10 rounded-full" />
+              <div className="flex-1">
+                <div className="skeleton-shimmer h-4 w-28 rounded mb-1" />
+                <div className="skeleton-shimmer h-3 w-20 rounded" />
               </div>
-            ))}
+              <div className="skeleton-shimmer w-20 h-8 rounded-full" />
+            </div>
+          </div>
+
+          {/* Difficulty tag skeleton */}
+          <div className="absolute top-3 right-3 z-10">
+            <div className="skeleton-shimmer w-16 h-6 rounded-full" />
           </div>
         </div>
-      </div>
 
-      {/* Card 2: Video + Creator Info skeleton */}
-      <div className="rounded-2xl overflow-hidden">
-        {/* Video skeleton (full width) */}
-        <div className="aspect-video skeleton-shimmer" />
+        {/* Content section skeleton */}
+        <div className="px-6 py-5 space-y-4">
+          {/* Title skeleton */}
+          <div className="skeleton-shimmer h-7 w-3/4 rounded-lg" />
 
-        {/* Creator info skeleton (with padding) */}
-        <div className="px-6 pt-4 pb-6 bg-slate-800/40 backdrop-blur-xl">
-          <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-lg">
-            <div className="skeleton-shimmer w-10 h-10 rounded-full" />
-            <div className="flex-1">
-              <div className="skeleton-shimmer h-4 w-32 rounded mb-1" />
-              <div className="skeleton-shimmer h-3 w-24 rounded" />
+          {/* Description skeleton */}
+          <div className="skeleton-shimmer h-4 w-full rounded" />
+
+          {/* Core concept skeleton */}
+          <div className="border-t border-slate-700/50 pt-4">
+            <div className="skeleton-shimmer h-5 w-28 rounded mb-2" />
+            <div className="skeleton-shimmer h-4 w-full rounded mb-1" />
+            <div className="skeleton-shimmer h-4 w-5/6 rounded mb-3" />
+            <div className="space-y-1.5">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <div className="skeleton-shimmer w-1.5 h-1.5 rounded-full" />
+                  <div
+                    className="skeleton-shimmer h-3 rounded"
+                    style={{ width: `${50 + i * 10}%` }}
+                  />
+                </div>
+              ))}
             </div>
-            <div className="skeleton-shimmer w-20 h-8 rounded-full" />
           </div>
         </div>
       </div>

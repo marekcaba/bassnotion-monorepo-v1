@@ -1,3 +1,4 @@
 {
+  "/dashboard/page": "app/dashboard/page.js",
   "/library/[tutorialId]/page": "app/library/[tutorialId]/page.js"
 }

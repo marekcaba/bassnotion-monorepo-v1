@@ -5,9 +5,7 @@ import {
   Play,
   Heart,
   Star,
-  Box,
   Square,
-  Eye,
   Music,
   Clock,
   Zap,
@@ -33,14 +31,6 @@ interface ExerciseControlPanelProps {
   // Transport controls (optional - for when wired up)
   isPlaying?: boolean;
   onPlayToggle?: () => void;
-
-  // 3D mode controls (optional)
-  is3DMode?: boolean;
-  onToggle3DMode?: () => void;
-
-  // Camera mode (optional)
-  cameraMode?: 'overview' | 'action';
-  onCameraModeChange?: (mode: 'overview' | 'action') => void;
 
   // Loading state
   loading?: boolean;
@@ -230,10 +220,6 @@ export function ExerciseControlPanel({
   onExerciseSelect,
   isPlaying = false,
   onPlayToggle,
-  is3DMode = false,
-  onToggle3DMode,
-  cameraMode = 'overview',
-  onCameraModeChange,
   loading = false,
 }: ExerciseControlPanelProps) {
   // Local state for favorites (mockup - would be persisted in real implementation)
@@ -306,13 +292,8 @@ export function ExerciseControlPanel({
       {/* Control Bar */}
       <div className="px-4 py-3 border-t border-slate-700/50 bg-gradient-to-r from-slate-900/50 to-slate-800/50">
         <div className="flex items-center justify-between">
-          {/* Left: 3D Mode */}
-          <ControlButton
-            icon={Box}
-            label={is3DMode ? '3D' : '2D'}
-            isActive={is3DMode}
-            onClick={onToggle3DMode}
-          />
+          {/* Left: Spacer for layout balance */}
+          <div className="w-10" />
 
           {/* Center-Left: Favorite */}
           <ControlButton
@@ -352,17 +333,8 @@ export function ExerciseControlPanel({
             }}
           />
 
-          {/* Right: Overview */}
-          <ControlButton
-            icon={Eye}
-            label={cameraMode === 'overview' ? 'Over' : 'Action'}
-            isActive={cameraMode === 'overview'}
-            onClick={() =>
-              onCameraModeChange?.(
-                cameraMode === 'overview' ? 'action' : 'overview'
-              )
-            }
-          />
+          {/* Right: Spacer for layout balance */}
+          <div className="w-10" />
         </div>
       </div>
     </div>

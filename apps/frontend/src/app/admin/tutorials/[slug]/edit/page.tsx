@@ -7,7 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 // Import tutorial page components individually so we can wrap them
 import { YouTubeVideoSection } from '@/domains/widgets/components/YouTubeWidgetPage/YouTubeVideoSection';
 import { TutorialInfoCard } from '@/domains/widgets/components/YouTubeWidgetPage/TutorialInfoCard';
-import { ExerciseSelector } from '@/domains/widgets/components/YouTubeWidgetPage/ExerciseSelector';
+// ExerciseSelector merged into GlobalControlsCard
 import { TransportClock } from '@/domains/widgets/components/YouTubeWidgetPage/components/TransportClock';
 import { FretboardCard } from '@/domains/widgets/components/YouTubeWidgetPage/FretboardCard/FretboardCard';
 import { GlobalControlsCard } from '@/domains/widgets/components/YouTubeWidgetPage/components/GlobalControlsCard';
@@ -564,10 +564,16 @@ export default function AdminTutorialEditPage({
     setEditMode(editMode === componentName ? null : componentName);
   };
 
+  // Radial blue background style used across the app
+  const radialBlueBackground = {
+    background:
+      'radial-gradient(ellipse at 50% 0%, hsl(220 45% 20%) 0%, hsl(230 35% 10%) 40%, hsl(240 25% 5%) 100%)',
+  };
+
   // Check auth state
   if (!isReady) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={radialBlueBackground}>
         <div className="text-center text-white">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
           <p>Checking authentication...</p>
@@ -578,7 +584,7 @@ export default function AdminTutorialEditPage({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={radialBlueBackground}>
         <div className="text-center text-white">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
           <p>Loading tutorial...</p>
@@ -589,7 +595,7 @@ export default function AdminTutorialEditPage({
 
   if (!tutorial) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={radialBlueBackground}>
         <div className="text-center text-white">
           <h1 className="text-2xl font-bold mb-4">Tutorial Not Found</h1>
           <Button
@@ -656,7 +662,7 @@ export default function AdminTutorialEditPage({
   return (
     <>
       {/* Main Tutorial Page Layout - Full width background outside SyncProvider */}
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <div className="min-h-screen" style={radialBlueBackground}>
         <TransportProvider>
           <SyncProvider>
             {/* Edit Modal */}
@@ -1618,17 +1624,7 @@ export default function AdminTutorialEditPage({
                   </Button>
                 </div>
 
-                {/* Exercise Selector with edit button */}
-                <EditableSection
-                  title="Exercises"
-                  onEdit={() => toggleEditMode('exercises')}
-                >
-                  <ExerciseSelector
-                    exercises={formattedExercises || []}
-                    selectedExerciseId={selectedExerciseId}
-                    onExerciseSelect={setSelectedExerciseId}
-                  />
-                </EditableSection>
+                {/* Exercise Selector - Now integrated into GlobalControlsCard below */}
 
                 {/* Transport Clock */}
                 <TransportClock
@@ -1643,8 +1639,6 @@ export default function AdminTutorialEditPage({
 
                 {/* Fretboard Card */}
                 <FretboardCard
-                  is3DMode={false}
-                  onToggle3DMode={() => {}}
                   selectedDots3D={new Map()}
                   setSelectedDots3D={() => {}}
                   stringCount3D={stringCount}
@@ -1661,13 +1655,20 @@ export default function AdminTutorialEditPage({
                   onExerciseSelect={setSelectedExerciseId}
                 />
 
-                {/* Global Controls */}
-                <GlobalControlsCard
-                  selectedExercise={formattedExercises.find(
-                    (e) => e.id === selectedExerciseId,
-                  )}
-                  exercises={formattedExercises}
-                />
+                {/* Global Controls with Exercise List */}
+                <EditableSection
+                  title="Exercises"
+                  onEdit={() => toggleEditMode('exercises')}
+                >
+                  <GlobalControlsCard
+                    selectedExercise={formattedExercises.find(
+                      (e) => e.id === selectedExerciseId,
+                    )}
+                    exercises={formattedExercises}
+                    onExerciseSelect={setSelectedExerciseId}
+                    showExerciseList={true}
+                  />
+                </EditableSection>
 
                 {/* Four Widgets */}
                 <FourWidgetsCard

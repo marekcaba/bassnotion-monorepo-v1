@@ -38,7 +38,13 @@ export const ExerciseNoteSchema = z.object({
 
   is_harmonic: z.boolean().optional(),
   pluck_position: z.enum(['neck', 'middle', 'bridge']).optional(),
-  finger_index: z.number().int().min(1).max(4).optional(),
+  finger_index: z.union([
+    z.literal(1),
+    z.literal(2),
+    z.literal(3),
+    z.literal(4),
+    z.literal('T'),
+  ]).optional(), // 1=index, 2=middle, 3=ring, 4=pinky, T=thumb
 
   display_symbol: z.string().optional(),
 });
@@ -103,6 +109,24 @@ export const HarmonyVoicingSchema = z.object({
   ),
 });
 
+// Fretboard view configuration schema
+export const FretboardViewPresetSchema = z.enum(['default', 'octave']);
+export const FretboardScrollModeSchema = z.enum(['locked', 'follow']);
+
+export const FretboardViewConfigSchema = z.object({
+  preset: FretboardViewPresetSchema,
+  scrollMode: FretboardScrollModeSchema.optional(),
+  zoomLevel: z.number().min(0.5).max(2.0).optional(),
+  initialFret: z.number().int().min(0).max(24).optional(),
+  visibleFretRange: z
+    .object({
+      start: z.number().int().min(0).max(24),
+      end: z.number().int().min(0).max(24),
+    })
+    .optional(),
+  sceneX: z.number().optional(),
+});
+
 // Epic 4 Compatible Exercise Schema (with multi-track support)
 export const ExerciseSchema = z.object({
   id: z.string().min(1, 'Exercise ID is required'),
@@ -125,6 +149,9 @@ export const ExerciseSchema = z.object({
   drum_pattern: DrumPatternSchema.optional(),
   harmony_voicing: HarmonyVoicingSchema.optional(),
   track_configuration: TrackConfigurationSchema.optional(),
+
+  // Fretboard display configuration
+  fretboard_view_config: FretboardViewConfigSchema.optional(),
 
   is_active: z.boolean(),
   created_by: z.string().optional(),
@@ -227,6 +254,7 @@ export const ValidatedExerciseSchema = ExerciseSchema.extend({
 export type ExerciseNoteInput = z.infer<typeof ExerciseNoteSchema>;
 export type ExerciseInput = z.infer<typeof ExerciseSchema>;
 export type CustomBasslineInput = z.infer<typeof CustomBasslineSchema>;
+export type FretboardViewConfigInput = z.infer<typeof FretboardViewConfigSchema>;
 export type CreateExerciseRequestInput = z.infer<
   typeof CreateExerciseRequestSchema
 >;

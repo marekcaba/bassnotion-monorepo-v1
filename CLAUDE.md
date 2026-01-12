@@ -27,6 +27,36 @@ This project is currently in **active development** with **NO production users o
 
 **Current Development Mode:** Rapid iteration with production-quality code preparation.
 
+## Agent Usage Requirements
+
+### Clean Code Architect Agent (MANDATORY FOR CODE CHANGES)
+
+**CRITICAL**: When implementing new features, writing new code, or refactoring existing code, you MUST use the `clean-code-architect` agent via the Task tool.
+
+**When to use clean-code-architect:**
+- Implementing any new feature or functionality
+- Writing new components, services, hooks, or utilities
+- Refactoring existing code for better maintainability
+- Any code changes beyond simple one-line fixes
+
+**How to invoke:**
+```
+Task tool with subagent_type="clean-code-architect"
+```
+
+**What this agent ensures:**
+- Code follows SOLID principles
+- DRY (Don't Repeat Yourself) is enforced
+- Proper abstractions and reusability
+- Production-quality, maintainable code
+- Consistent patterns across the codebase
+
+**Exceptions (can skip clean-code-architect):**
+- Single-line typo fixes
+- Simple config changes (env files, package.json versions)
+- Documentation-only changes
+- Research/exploration tasks (use Explore agent instead)
+
 ## Critical Rules
 
 ### Logger Configuration (CHECK BEFORE ADDING LOGS!)

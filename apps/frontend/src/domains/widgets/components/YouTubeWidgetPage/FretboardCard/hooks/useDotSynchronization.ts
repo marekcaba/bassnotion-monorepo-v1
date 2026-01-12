@@ -1,8 +1,7 @@
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback } from 'react';
 import type { SelectedDotsMap, StringCount } from '../types/fretboardTypes';
 
 interface UseDotSynchronizationProps {
-  is3DMode: boolean;
   localDots: SelectedDotsMap;
   sharedDots: SelectedDotsMap;
   localStringCount: StringCount;
@@ -16,11 +15,10 @@ interface UseDotSynchronizationProps {
 }
 
 /**
- * Hook to handle bidirectional synchronization between 2D and 3D modes
+ * Hook to handle dot synchronization between local and shared state
  * Manages dot state and string count synchronization
  */
 export function useDotSynchronization({
-  is3DMode,
   localDots,
   sharedDots,
   localStringCount,
@@ -59,9 +57,9 @@ export function useDotSynchronization({
     [],
   );
 
-  // Real-time synchronization: 2D → shared state (when in 2D mode)
+  // Real-time synchronization: local → shared state
   useEffect(() => {
-    if (!is3DMode && !areDotsEqual(localDots, sharedDots)) {
+    if (!areDotsEqual(localDots, sharedDots)) {
       // Mark that user has made manual selections if this is a user-initiated change
       if (localDots.size > 0) {
         onUserManualSelection();
@@ -77,34 +75,8 @@ export function useDotSynchronization({
   }, [
     localDots,
     sharedDots,
-    is3DMode,
     areDotsEqual,
     setSharedDots,
-    setSelectionOrder,
-    calculateMaxOrder,
-    onUserManualSelection,
-  ]);
-
-  // Real-time synchronization: shared state → 2D (when in 3D mode)
-  useEffect(() => {
-    if (is3DMode && !areDotsEqual(sharedDots, localDots)) {
-      // Mark that user has made manual selections if this is a user-initiated change
-      if (sharedDots.size > 0) {
-        onUserManualSelection();
-      }
-
-      setLocalDots(sharedDots);
-
-      // Calculate and set the selection order counter based on the highest order number
-      const maxOrder = calculateMaxOrder(sharedDots);
-      setSelectionOrder(maxOrder);
-    }
-  }, [
-    sharedDots,
-    localDots,
-    is3DMode,
-    areDotsEqual,
-    setLocalDots,
     setSelectionOrder,
     calculateMaxOrder,
     onUserManualSelection,
@@ -113,26 +85,6 @@ export function useDotSynchronization({
   // REMOVED: String count synchronization - NO AUTOMATIC SYNCING
   // String count comes from parent (profile settings) as the SINGLE SOURCE OF TRUTH
   // User can manually change it via UI controls, but it flows DOWN from parent only
-
-  // Mode switching synchronization
-  useEffect(() => {
-    // Only sync when mode changes, not during normal operation
-    if (!is3DMode) {
-      // When switching from 3D to 2D, sync shared state to 2D local state
-      if (!areDotsEqual(sharedDots, localDots)) {
-        setLocalDots(sharedDots);
-
-        // Calculate and set the selection order counter to maintain proper sequencing
-        const maxOrder = calculateMaxOrder(sharedDots);
-        setSelectionOrder(maxOrder);
-      }
-    } else {
-      // When switching from 2D to 3D, sync 2D local state to shared state
-      if (!areDotsEqual(localDots, sharedDots)) {
-        setSharedDots(localDots);
-      }
-    }
-  }, [is3DMode]); // Only trigger when mode changes
 
   /**
    * Force sync from local to shared (used after exercise load)

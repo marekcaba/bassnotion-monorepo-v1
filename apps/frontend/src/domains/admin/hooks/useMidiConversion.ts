@@ -69,6 +69,9 @@ export interface GeneratedExerciseNote {
   warnings?: PositionWarning[];
   score: number;
 
+  // Fingering (optional - assigned by admin)
+  finger_index?: 1 | 2 | 3 | 4 | 'T'; // 1=index, 2=middle, 3=ring, 4=pinky, T=thumb
+
   // Legacy (optional, for backward compatibility)
   timestamp?: number;
   duration?: number;

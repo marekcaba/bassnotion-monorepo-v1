@@ -39,6 +39,10 @@ export type {
   DrumPattern,
   HarmonyVoicing,
   HarmonyControlChange, // MIDI control change events for harmony instruments
+  // Fretboard view configuration types
+  FretboardViewPreset,
+  FretboardScrollMode,
+  FretboardViewConfig,
   // Story 3.8: Enhanced Bassline Persistence Types
   BasslineMetadata,
   SavedBassline,
@@ -364,6 +368,21 @@ export type {
 } from './storage.js';
 
 export type { LearningProgress } from './learning.js';
+
+// Pattern Library types (drum pattern library feature)
+export type {
+  PatternTimeSignature,
+  PatternEvent,
+  PatternMidiData,
+  PatternGenre,
+  PatternDifficulty,
+  PatternLibraryItem,
+  PatternLibraryFilter,
+  PatternLibraryResponse,
+  PatternLibraryItemResponse,
+  CreatePatternInput,
+} from './pattern-library.js';
+export { GENRE_DISPLAY_NAMES, GENRE_COLORS } from './pattern-library.js';
 export type { AnalysisResult, AudioAnalysis, AudioNote } from './analysis.js';
 
 // MusicXML types for sheet music import

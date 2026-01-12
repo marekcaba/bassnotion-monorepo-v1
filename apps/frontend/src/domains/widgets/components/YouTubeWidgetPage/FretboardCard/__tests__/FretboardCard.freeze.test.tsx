@@ -138,7 +138,7 @@ describe('FretboardCard Freeze Detection', () => {
     // Test with minimal props to isolate issues
     const { container } = render(
       <TestWrapper>
-        <FretboardCardWithTracking is3DMode={false} tiltAngle={35} />
+        <FretboardCardWithTracking tiltAngle={35} />
       </TestWrapper>,
     );
 

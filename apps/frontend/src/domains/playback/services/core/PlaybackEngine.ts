@@ -647,6 +647,36 @@ export class PlaybackEngine {
   }
 
   /**
+   * Clear all harmony tracks and scheduled events.
+   * Used when switching exercises to ensure old harmony data doesn't persist.
+   */
+  clearHarmonyTracks(): void {
+    // 1. Stop all scheduled harmony sources immediately (not graceful - force stop)
+    if (this.harmonyScheduler) {
+      this.harmonyScheduler.stopAll(false); // false = immediate stop with fadeout
+      console.log('[PLAYBACK-ENGINE] Cleared harmony scheduler sources');
+    }
+
+    // 2. Find and unregister all harmony tracks
+    const harmonyTrackIds: string[] = [];
+    this.tracks.forEach((track, trackId) => {
+      if (track.instrumentType === 'harmony') {
+        harmonyTrackIds.push(trackId);
+      }
+    });
+
+    for (const trackId of harmonyTrackIds) {
+      this.tracks.delete(trackId);
+      console.log('[PLAYBACK-ENGINE] Unregistered harmony track:', trackId);
+    }
+
+    this.logger.info('Cleared all harmony tracks and scheduled events', {
+      unregisteredTracks: harmonyTrackIds.length,
+      instanceId: this.instanceId,
+    });
+  }
+
+  /**
    * Get all tracks
    */
   getTracks(): Map<string, Track> {

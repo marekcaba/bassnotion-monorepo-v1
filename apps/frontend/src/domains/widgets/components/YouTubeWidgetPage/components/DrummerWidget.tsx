@@ -951,11 +951,10 @@ const DrummerWidgetComponent = ({
           // CRITICAL FIX: Only register drum pattern if exercise actually has drums enabled
           // Previously this would unconditionally create a "Rock Steady" pattern with kick on beat 1,
           // causing intermittent kick drums on first beat even when exercise has no drum data
+          const hasDrumPattern = !!(exercise?.drumPattern && exercise.drumPattern.length > 0);
           const exerciseHasDrums =
             exercise &&
-            (exercise.drummer_midi_url ||
-              (exercise.drumPattern && exercise.drumPattern.length > 0) ||
-              exercise.drum_pattern?.enabled);
+            (exercise.drummer_midi_url || hasDrumPattern);
 
           if (!exerciseHasDrums) {
             logger.debug(
@@ -963,8 +962,8 @@ const DrummerWidgetComponent = ({
               {
                 exerciseId: exercise?.id,
                 drummerMidiUrl: exercise?.drummer_midi_url,
-                drumPatternLength: exercise?.drumPattern?.length,
-                drumPatternEnabled: exercise?.drum_pattern?.enabled,
+                drumPatternLength: exercise?.drumPattern?.length || 0,
+                hasDrumPattern,
               },
             );
           }

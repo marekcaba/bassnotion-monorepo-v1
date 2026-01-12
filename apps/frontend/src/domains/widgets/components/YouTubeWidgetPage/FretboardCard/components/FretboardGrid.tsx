@@ -84,7 +84,6 @@ export interface NextNoteToPlay {
 
 interface FretboardGridProps {
   stringCount: StringCount;
-  tiltAngle: number;
   frets: number[];
   selectedDots: SelectedDotsMap;
   draggedDot: DraggedDot | null;
@@ -153,7 +152,6 @@ interface FretboardGridProps {
 // actual visual data changes (measure, noteIndex, selectedDots, etc.)
 export const FretboardGrid: React.FC<FretboardGridProps> = React.memo(({
   stringCount,
-  tiltAngle,
   frets,
   selectedDots,
   draggedDot,
@@ -184,8 +182,13 @@ export const FretboardGrid: React.FC<FretboardGridProps> = React.memo(({
   tempo = 120,
   maxFrets: maxFretsFromProps = 24,
 }) => {
-  // Scroll position state for fade calculation
-  const [scrollLeft, setScrollLeft] = useState(0);
+  // PERFORMANCE: Use ref for immediate scroll tracking + throttled state for fade opacity
+  // - scrollLeftRef: Updated on every scroll event (no re-renders) - used by 3D overlay
+  // - scrollLeftState: Updated every 100ms (throttled re-renders) - used for fade calculations
+  // This gives smooth 3D overlay scrolling while keeping fade effects working
+  const scrollLeftRef = useRef(0);
+  const [scrollLeftState, setScrollLeftState] = useState(0);
+  const scrollThrottleRef = useRef<NodeJS.Timeout | null>(null);
 
   // =============================================================================
   // MEASURE CHANGE RE-RENDER TRIGGER
@@ -787,29 +790,47 @@ export const FretboardGrid: React.FC<FretboardGridProps> = React.memo(({
   // Dropdown menu state for each dot
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
-  // Listen to scroll events from parent container
+  // PERFORMANCE: Listen to scroll events with THROTTLED state updates
+  // - Ref is updated immediately (for 3D overlay smooth sync)
+  // - State is updated every 100ms (for fade opacity calculations - reduces re-renders 10x)
   useEffect(() => {
     const handleScroll = () => {
-      // Find the scroll container (parent of this grid)
       const scrollContainer = document.querySelector('.overflow-x-auto');
       if (scrollContainer) {
-        setScrollLeft(scrollContainer.scrollLeft);
+        const newScrollLeft = scrollContainer.scrollLeft;
+
+        // IMMEDIATE: Update ref for 3D overlay (no re-render)
+        scrollLeftRef.current = newScrollLeft;
+
+        // THROTTLED: Update state for fade opacity (re-render every 100ms max)
+        if (!scrollThrottleRef.current) {
+          scrollThrottleRef.current = setTimeout(() => {
+            setScrollLeftState(scrollLeftRef.current);
+            scrollThrottleRef.current = null;
+          }, 100); // 100ms = 10 updates/second max (was 60/second before)
+        }
       }
     };
 
     const scrollContainer = document.querySelector('.overflow-x-auto');
     if (scrollContainer) {
-      scrollContainer.addEventListener('scroll', handleScroll);
+      // PERFORMANCE: Use passive listener for better scroll performance
+      scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
 
-      // Initialize scroll position state (position is managed by parent component)
-      setScrollLeft(scrollContainer.scrollLeft);
+      // Initialize both ref and state
+      const initialScroll = scrollContainer.scrollLeft;
+      scrollLeftRef.current = initialScroll;
+      setScrollLeftState(initialScroll);
 
       return () => {
         scrollContainer.removeEventListener('scroll', handleScroll);
+        // Clear any pending throttle timeout
+        if (scrollThrottleRef.current) {
+          clearTimeout(scrollThrottleRef.current);
+        }
       };
     }
 
-    // Return empty cleanup function when no scroll container is found
     return () => {};
   }, []);
 
@@ -943,9 +964,12 @@ export const FretboardGrid: React.FC<FretboardGridProps> = React.memo(({
   };
 
   // Calculate fade opacity based on dot position relative to viewport
+  // PERFORMANCE: Uses throttled state (100ms updates) instead of per-scroll-event state
+  // This reduces re-renders from 60/sec to 10/sec while keeping fade effect working
   const calculateFadeOpacity = (fret: Fret) => {
     const containerWidth = 568; // Viewport width (physical container)
     const fadeZoneWidth = 40; // Fade zone width for both sides
+    const scrollLeft = scrollLeftState; // Read from throttled state for fade calculations
 
     // Calculate dot X position (including dot radius for accurate edge detection)
     // Scale the dot position to match the zoom level
@@ -1288,7 +1312,7 @@ export const FretboardGrid: React.FC<FretboardGridProps> = React.memo(({
         ) : isCurrentNoteAtPos ? (
           <span className="text-xs text-white">♫</span>
         ) : fret === 'open' ? (
-          <span className="text-xs font-semibold text-white select-none">
+          <span className={`text-xs font-semibold select-none ${shouldShowAsHighlighted || isExerciseNoteAtPos ? 'text-black' : 'text-white'}`}>
             {stringName}
           </span>
         ) : fret === 12 ? (
@@ -1526,18 +1550,20 @@ export const FretboardGrid: React.FC<FretboardGridProps> = React.memo(({
               <g mask="url(#dot-cutout-mask)" style={{ willChange: 'opacity' }}>
                 {memoizedConnectionLines.map((lineData) => {
                   // Calculate fade opacity based on scroll position (dynamic)
+                  // PERFORMANCE: Read from throttled state (100ms updates)
                   const containerWidth = 568;
                   const fadeZoneWidth = 40;
+                  const currentScrollLeft = scrollLeftState;
                   const scaledLineX1 = lineData.x1 * zoomLevel;
                   const scaledLineX2 = lineData.x2 * zoomLevel;
                   const lineCenterX = (scaledLineX1 + scaledLineX2) / 2;
-                  const viewportLeft = scrollLeft;
-                  const viewportRight = scrollLeft + containerWidth;
+                  const viewportLeft = currentScrollLeft;
+                  const viewportRight = currentScrollLeft + containerWidth;
                   const leftFadeEndX = viewportLeft + fadeZoneWidth;
                   const rightFadeStartX = viewportRight - fadeZoneWidth;
 
                   let lineFadeOpacity = 1;
-                  if (scrollLeft > 0 && lineCenterX < leftFadeEndX) {
+                  if (currentScrollLeft > 0 && lineCenterX < leftFadeEndX) {
                     const fadeProgress = (leftFadeEndX - lineCenterX) / fadeZoneWidth;
                     lineFadeOpacity = Math.max(0, 1 - fadeProgress);
                   }

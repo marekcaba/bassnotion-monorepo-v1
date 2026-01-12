@@ -78,6 +78,7 @@ Located in `2. Stories/2. 🚧 in-progress/EPIC 3/`:
 - [Story 3.19 - Logic Pro X-Grade Transport System](./NEW%20STORIES/Story-3.19:%20Logic%20Pro%20X-Grade%20Transport%20System.md)
 - [Story 3.21 - Track Based Architecture Migration](./NEW%20STORIES/Story-3.21-Track-Based-Architecture-Migration-Phase-1.md)
 - [Story 3.22 - Professional DAW Sequencer](./NEW%20STORIES/Story%203.22:%20Professional%20DAW%20Sequencer.md)
+- [STORY: Guitar Hero Ring Overlay](./NEW%20STORIES/STORY-guitar-hero-ring-overlay.md) - **NEW** Animated ring overlay for 2D fretboard
 
 ### Story Archive
 

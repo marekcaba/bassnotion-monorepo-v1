@@ -167,7 +167,8 @@ export class TutorialsService {
         drum_pattern,
         harmony_notes,
         harmony_control_changes,
-        harmony_instrument
+        harmony_instrument,
+        fretboard_view_config
       `,
         )
         .eq('tutorial_id', tutorial.id)

@@ -2598,6 +2598,65 @@ const HarmonyWidgetComponent = ({
     lastScheduledTimeRef.current = scheduleTime;
   }, [selectedProgression, onNextChord]); // TEMPO FIX: Removed bpm from deps - we now read directly from musicalTruth.getBPM()
 
+  // Track previous exercise ID to detect exercise changes
+  const previousExerciseIdRef = useRef<string | null>(null);
+
+  // CRITICAL FIX: Handle exercise switching - clear old harmony and reset registration state
+  // This ensures proper cleanup and re-registration when switching between exercises
+  useEffect(() => {
+    const currentExercise = exerciseRef.current;
+    const exerciseId = currentExercise?.id?.value || currentExercise?.id;
+    const previousExerciseId = previousExerciseIdRef.current;
+
+    // Detect if exercise actually changed (not just initial mount)
+    const exerciseChanged = previousExerciseId !== null && previousExerciseId !== exerciseId;
+
+    // Update tracked exercise ID
+    previousExerciseIdRef.current = exerciseId || null;
+
+    // When exercise changes, ALWAYS reset registration tracking
+    // This ensures the new exercise will be properly registered (including CC64 data)
+    if (exerciseChanged) {
+      console.log('🔄 [HARMONY-WIDGET] Exercise changed - resetting registration state', {
+        previousExerciseId,
+        newExerciseId: exerciseId,
+        newExerciseTitle: currentExercise?.title,
+        hasHarmonyNotes: harmonyNoteCount > 0,
+      });
+
+      // Reset the registration tracking so the new exercise can register fresh
+      lastRegisteredExerciseIdRef.current = null;
+    }
+
+    // When switching TO an exercise with NO harmony notes, also clear the PlaybackEngine
+    if (harmonyNoteCount === 0 && exerciseId) {
+      console.log('🧹 [HARMONY-WIDGET] Exercise has no harmony notes - clearing harmony tracks', {
+        exerciseId,
+        exerciseTitle: currentExercise?.title,
+      });
+
+      // Clear harmony from PlaybackEngine
+      const coreServices = WindowRegistry.getCoreServices();
+      const playbackEngine = coreServices?.getPlaybackEngine?.();
+      if (playbackEngine?.clearHarmonyTracks) {
+        playbackEngine.clearHarmonyTracks();
+        console.log('✅ [HARMONY-WIDGET] Harmony tracks cleared from PlaybackEngine');
+      }
+
+      // Also clear the WAM plugin events if it exists
+      if (keyboardPluginRef.current?.audioNode?.clearEvents) {
+        keyboardPluginRef.current.audioNode.clearEvents();
+        console.log('✅ [HARMONY-WIDGET] Cleared events from WAM keyboard plugin');
+      }
+
+      // Release any playing notes
+      if (keyboardPluginRef.current?.audioNode?.activeSampler?.releaseAll) {
+        keyboardPluginRef.current.audioNode.activeSampler.releaseAll();
+        console.log('✅ [HARMONY-WIDGET] Released all active sampler notes');
+      }
+    }
+  }, [exercise?.id, harmonyNoteCount]);
+
   // CHECKPOINT 10: PlaybackEngine registration - track when and why registration runs
   // PERFORMANCE FIX: Use stable primitives (trackIsReady, harmonyNoteCount) instead of object references
   useEffect(() => {

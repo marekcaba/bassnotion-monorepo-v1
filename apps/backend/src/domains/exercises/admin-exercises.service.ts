@@ -214,6 +214,8 @@ export class AdminExercisesService {
         harmony_control_changes:
           createExerciseDto.harmony_control_changes || [],
         harmony_instrument: createExerciseDto.harmony_instrument || null,
+        // Fretboard view configuration
+        fretboard_view_config: createExerciseDto.fretboard_view_config || { preset: 'default' },
       })
       .select()
       .single();
@@ -242,6 +244,14 @@ export class AdminExercisesService {
   }
 
   async update(id: string, updateExerciseDto: any) {
+    // DIAGNOSTIC: Log incoming fretboard_view_config
+    this.logger.log('🎸 Update exercise received', {
+      exerciseId: id,
+      hasFretboardViewConfig: !!updateExerciseDto.fretboard_view_config,
+      fretboardViewConfig: updateExerciseDto.fretboard_view_config,
+      allKeys: Object.keys(updateExerciseDto),
+    });
+
     const updateData: any = {
       updated_at: new Date().toISOString(),
     };
@@ -326,6 +336,9 @@ export class AdminExercisesService {
     // Drum pattern data
     if (updateExerciseDto.drum_pattern !== undefined)
       updateData.drum_pattern = updateExerciseDto.drum_pattern;
+    // Fretboard view configuration
+    if (updateExerciseDto.fretboard_view_config !== undefined)
+      updateData.fretboard_view_config = updateExerciseDto.fretboard_view_config;
 
     const { data, error } = await this.supabaseService
       .getClient()

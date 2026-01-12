@@ -3,11 +3,70 @@
 import React from 'react';
 import { TutorialVideoCardSkeleton } from './TutorialVideoCard';
 import { ExerciseControlPanelSkeleton } from './ExerciseControlPanel';
-import { ExerciseSelectorSkeleton } from './ExerciseSelector/ExerciseSelector';
 import { TransportClockSkeleton } from './components/TransportClock';
 import { FretboardCardSkeleton } from './FretboardCard/FretboardCard';
 import { GlobalControlsCardSkeleton } from './components/GlobalControlsCard';
 import { FourWidgetsCardSkeleton } from './components/FourWidgetsCard';
+
+/**
+ * Skeleton for ExerciseSelector
+ * Inlined here after removing the standalone ExerciseSelector component
+ * (functionality merged into GlobalControlsCard)
+ */
+function ExerciseSelectorSkeleton() {
+  return (
+    <div className="relative bg-gradient-to-br from-slate-800/80 via-slate-800/60 to-slate-900/80 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden shadow-2xl shadow-black/20">
+      {/* Glassmorphism overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-black/10 pointer-events-none" />
+
+      {/* Header */}
+      <div className="relative px-5 py-4 border-b border-white/10 bg-white/5">
+        <div className="flex items-center gap-3">
+          <div className="skeleton-shimmer w-10 h-10 rounded-xl" />
+          <div>
+            <div className="skeleton-shimmer w-24 h-5 rounded mb-1.5" />
+            <div className="skeleton-shimmer w-16 h-3 rounded" />
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="relative p-4">
+        {/* Exercise list skeleton */}
+        <div className="space-y-2">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              style={{ animationDelay: `${i * 100}ms` }}
+              className="px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 animate-pulse"
+            >
+              <div className="flex items-center gap-3">
+                <div className="skeleton-shimmer w-7 h-7 rounded-lg" />
+                <div className="skeleton-shimmer flex-1 h-4 rounded max-w-[160px]" />
+                <div className="skeleton-shimmer w-2.5 h-2.5 rounded-full" />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Description box skeleton */}
+        <div className="mt-4 p-4 rounded-xl bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10">
+          <div className="flex items-center justify-between mb-3">
+            <div className="skeleton-shimmer w-32 h-5 rounded" />
+            <div className="skeleton-shimmer w-20 h-5 rounded-md" />
+          </div>
+          <div className="skeleton-shimmer w-full h-4 rounded mb-2" />
+          <div className="skeleton-shimmer w-3/4 h-4 rounded mb-4" />
+          <div className="flex gap-5 pt-3 border-t border-white/10">
+            <div className="skeleton-shimmer w-16 h-3 rounded" />
+            <div className="skeleton-shimmer w-16 h-3 rounded" />
+            <div className="skeleton-shimmer w-16 h-3 rounded" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /**
  * Skeleton for HomeNavbar

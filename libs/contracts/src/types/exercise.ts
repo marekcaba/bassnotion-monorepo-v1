@@ -72,7 +72,7 @@ export interface ExerciseNote {
   vibrato_intensity?: 'light' | 'medium' | 'heavy';
   is_harmonic?: boolean;
   pluck_position?: 'neck' | 'middle' | 'bridge';
-  finger_index?: number; // 1-4, T for thumb
+  finger_index?: 1 | 2 | 3 | 4 | 'T'; // 1=index, 2=middle, 3=ring, 4=pinky, T=thumb
 
   display_symbol?: string; // "h", "p", "/", "\", "x", "()", "~", ">", "T", "P"
 }
@@ -155,6 +155,23 @@ export type HarmonyInstrumentType =
   | 'wurlitzer' // Wurlitzer Electric Piano
   | 'pad'; // Synth Pad
 
+// Fretboard view configuration types
+export type FretboardViewPreset = 'default' | 'octave';
+export type FretboardScrollMode = 'locked' | 'follow';
+
+export interface FretboardViewConfig {
+  preset: FretboardViewPreset;
+  // Optional overrides (for future extensibility)
+  scrollMode?: FretboardScrollMode;
+  zoomLevel?: number; // 0.5 - 2.0
+  initialFret?: number; // 0 - 24
+  visibleFretRange?: {
+    start: number; // 0 - 24
+    end: number; // 0 - 24
+  };
+  sceneX?: number; // Override default scene positioning
+}
+
 // Epic 4 Compatible Exercise Schema (with multi-track support)
 export interface Exercise {
   id: string;
@@ -188,6 +205,9 @@ export interface Exercise {
   harmony_control_changes?: HarmonyControlChange[]; // MIDI control events (sustain, expression)
   harmony_instrument?: HarmonyInstrumentType; // Default harmony instrument
   track_configuration?: TrackConfiguration; // Multi-track configuration
+
+  // Fretboard display configuration
+  fretboard_view_config?: FretboardViewConfig; // Per-exercise fretboard view settings
 
   // MIDI Files (uploaded to Supabase storage)
   harmony_midi_url?: string; // URL to uploaded MIDI file for harmony/keys track

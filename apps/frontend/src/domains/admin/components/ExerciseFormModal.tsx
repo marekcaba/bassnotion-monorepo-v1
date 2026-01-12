@@ -23,7 +23,7 @@ import {
 import { Exercise } from '@/domains/exercises/entities/exercise.entity';
 import { ExerciseId } from '@/domains/exercises/value-objects/exercise-id.vo';
 import { Difficulty } from '@/domains/exercises/value-objects/difficulty.vo';
-import { Upload, X, FileAudio, CheckCircle2, Wand2, LayoutGrid } from 'lucide-react';
+import { Upload, X, FileAudio, CheckCircle2, Wand2, LayoutGrid, Library } from 'lucide-react';
 import { supabase } from '@/infrastructure/supabase/client';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { MidiConversionWizard } from './MidiConversionWizard';
@@ -37,7 +37,9 @@ import type {
   DrumHit,
   DrumPatternStats,
   DrumPatternValidation,
+  PatternLibraryItem,
 } from '@bassnotion/contracts';
+import { PatternLibrarySelector } from './PatternLibrarySelector.js';
 
 interface ExerciseFormModalProps {
   isOpen: boolean;
@@ -69,6 +71,7 @@ export function ExerciseFormModal({
     timeSignatureDenominator: 4,
     bassType: '4' as '4' | '5' | '6',
     harmonyInstrument: '' as '' | 'grandpiano' | 'rhodes' | 'wurlitzer' | 'pad',
+    fretboardViewPreset: 'default' as 'default' | 'octave',
   });
 
   const [midiFiles, setMidiFiles] = useState<{
@@ -104,6 +107,7 @@ export function ExerciseFormModal({
   const [drumPatternValidation, setDrumPatternValidation] =
     useState<DrumPatternValidation | null>(null);
   const [showDrumGridEditor, setShowDrumGridEditor] = useState(false);
+  const [showPatternLibrary, setShowPatternLibrary] = useState(false);
   const [isConvertingDrums, setIsConvertingDrums] = useState(false);
 
   // Harmony notes state (similar to bass/drum patterns)
@@ -133,6 +137,7 @@ export function ExerciseFormModal({
         timeSignatureDenominator: exercise.timeSignature?.denominator || 4,
         bassType: (exercise as any).bassType || '4', // Default to 4-string if not set
         harmonyInstrument: exercise.harmonyInstrument || 'grandpiano',
+        fretboardViewPreset: exercise.fretboardViewConfig?.preset || 'default',
       });
       // Set existing MIDI URLs
       setMidiUrls({
@@ -212,6 +217,7 @@ export function ExerciseFormModal({
         timeSignatureDenominator: 4,
         bassType: '4',
         harmonyInstrument: 'grandpiano',
+        fretboardViewPreset: 'default',
       });
       setMidiFiles({});
       setMidiUrls({});
@@ -492,6 +498,22 @@ export function ExerciseFormModal({
   };
 
   /**
+   * Handle pattern selection from the library
+   */
+  const handlePatternLibrarySelect = (drumHits: DrumHit[], pattern: PatternLibraryItem) => {
+    logger.info('Pattern library selection', {
+      patternId: pattern.id,
+      patternName: pattern.name,
+      hitCount: drumHits.length,
+      correlationId,
+    });
+    setDrumPattern(drumHits);
+    setShowPatternLibrary(false);
+    // Optionally open the grid editor for review/editing
+    setShowDrumGridEditor(true);
+  };
+
+  /**
    * Convert harmony MIDI to harmony notes
    * Called automatically after harmony MIDI upload
    */
@@ -658,6 +680,9 @@ export function ExerciseFormModal({
       position: note.position,
       noteDuration: note.noteDuration,
       durationTicks: note.durationTicks,
+
+      // Fingering
+      finger_index: note.finger_index,
     }));
 
     setGeneratedNotes(exerciseNotes);
@@ -725,6 +750,8 @@ export function ExerciseFormModal({
         harmonyControlChanges.length > 0 ? harmonyControlChanges : [], // Also keep snake_case for direct API submission
       harmonyInstrument: formData.harmonyInstrument || null, // Harmony instrument type (null when cleared)
       harmony_instrument: formData.harmonyInstrument || null, // Also keep snake_case for direct API submission
+      fretboardViewConfig: { preset: formData.fretboardViewPreset }, // Fretboard view configuration
+      fretboard_view_config: { preset: formData.fretboardViewPreset }, // Also keep snake_case for direct API submission
       tags: [],
       isActive: true,
       // Include existing MIDI URLs (already camelCase) and any newly uploaded ones (also camelCase now)
@@ -845,18 +872,23 @@ export function ExerciseFormModal({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="description">Description *</Label>
+            <Label htmlFor="description">Description * (max 280 characters)</Label>
             <Textarea
               id="description"
               value={formData.description}
-              onChange={(e) => handleFieldChange('description', e.target.value)}
-              placeholder="Brief description of the exercise"
+              onChange={(e) => {
+                const value = e.target.value.slice(0, 280);
+                handleFieldChange('description', value);
+              }}
+              placeholder="Brief description of the exercise (max 3 lines)"
               rows={3}
+              maxLength={280}
               className={errors.description ? 'border-red-500' : ''}
             />
-            {errors.description && (
-              <p className="text-sm text-red-500">{errors.description}</p>
-            )}
+            <div className="flex justify-between text-xs text-gray-500">
+              <span>{errors.description && <span className="text-red-500">{errors.description}</span>}</span>
+              <span>{formData.description.length}/280</span>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -917,6 +949,31 @@ export function ExerciseFormModal({
               <p className="text-xs text-gray-500">
                 Select the bass type for this exercise. This determines the
                 valid note range for MIDI conversion.
+              </p>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="fretboardViewPreset">Fretboard View</Label>
+              <Select
+                value={formData.fretboardViewPreset}
+                onValueChange={(value: 'default' | 'octave') =>
+                  handleFieldChange('fretboardViewPreset', value)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="default">
+                    Default (Follow notes, standard zoom)
+                  </SelectItem>
+                  <SelectItem value="octave">
+                    Octave View (Locked, frets 0-13)
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500">
+                Controls how the fretboard displays during exercise playback.
               </p>
             </div>
 
@@ -1116,16 +1173,29 @@ export function ExerciseFormModal({
                       </div>
                     )}
                     {drumPattern.length === 0 && !isConvertingDrums && !midiFiles.drummer && !midiUrls.drummerMidiUrl && (
-                      <Button
-                        type="button"
-                        variant="link"
-                        size="sm"
-                        className="h-auto p-0 text-xs text-blue-600 mt-1"
-                        onClick={() => setShowDrumGridEditor(true)}
-                      >
-                        <LayoutGrid className="h-3 w-3 mr-1" />
-                        Create Pattern from Scratch
-                      </Button>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Button
+                          type="button"
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 text-xs text-blue-600"
+                          onClick={() => setShowDrumGridEditor(true)}
+                        >
+                          <LayoutGrid className="h-3 w-3 mr-1" />
+                          Create from Scratch
+                        </Button>
+                        <span className="text-xs text-gray-400">or</span>
+                        <Button
+                          type="button"
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 text-xs text-purple-600"
+                          onClick={() => setShowPatternLibrary(true)}
+                        >
+                          <Library className="h-3 w-3 mr-1" />
+                          Choose from Library
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1540,6 +1610,19 @@ export function ExerciseFormModal({
         onSave={handleGridEditorSave}
         contextTempo={formData.bpm}
         contextTimeSignature={{
+          numerator: formData.timeSignatureNumerator,
+          denominator: formData.timeSignatureDenominator,
+        }}
+      />
+
+      {/* Pattern Library Selector */}
+      <PatternLibrarySelector
+        isOpen={showPatternLibrary}
+        onClose={() => setShowPatternLibrary(false)}
+        onSelect={handlePatternLibrarySelect}
+        targetBars={formData.durationMeasures}
+        targetBpm={formData.bpm}
+        timeSignature={{
           numerator: formData.timeSignatureNumerator,
           denominator: formData.timeSignatureDenominator,
         }}

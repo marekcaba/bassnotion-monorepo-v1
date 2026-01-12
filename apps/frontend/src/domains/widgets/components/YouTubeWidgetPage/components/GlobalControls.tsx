@@ -18,7 +18,7 @@ import {
   Upload,
   FileText,
 } from 'lucide-react';
-import { SheetPlayerToolbar } from './SheetPlayerToolbar';
+// SheetPlayerToolbar moved to SheetPlayerCard
 import type {
   MusicalExercise as Exercise,
   ExerciseNote,
@@ -26,7 +26,10 @@ import type {
 } from '@bassnotion/contracts';
 import { MIDIFileParser } from '@bassnotion/contracts';
 import { Button } from '@/shared/components/ui/button';
-import { useTransportControls, useTransportPosition } from '@/domains/playback/contexts/TransportContext';
+import {
+  useTransportControls,
+  useTransportPosition,
+} from '@/domains/playback/contexts/TransportContext';
 import { useTrack } from '@/domains/playback/hooks';
 import type { CoreServices } from '@/domains/playback/services/core/CoreServices.js';
 // Phase 3.1.2: Removed dead import - RegionProcessor not used (uses adapter via CoreServices)
@@ -34,11 +37,7 @@ import { ExerciseLoader } from '@/domains/playback/modules/exercises/core/Exerci
 import { getLogger } from '@/utils/logger.js';
 import { useAudioServices } from '@/domains/playback/providers/AudioProvider';
 
-// VexFlow imports for sheet music (DEPRECATED - keeping for reference)
-// import * as VF from 'vexflow';
-
-// OpenSheetMusicDisplay - Professional notation rendering
-import { SheetMusicDisplay } from '../../SheetMusic/index.js';
+// SheetMusicDisplay moved to SheetPlayerCard
 
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { logSkeletonDebug } from '@/utils/skeletonDebug';
@@ -47,25 +46,6 @@ import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
 import { musicalTruth } from '@/domains/playback/modules/tempo/MusicalTruthAuthority';
 
 const logger = getLogger('global-controls');
-
-// Preload flag for Fretboard3D component to prevent multiple import attempts
-let fretboard3DPreloaded = false;
-
-/**
- * Preloads the Fretboard3D component and its Three.js bundle (~400-600KB).
- * Called on hover over the 3D toggle button to eliminate perceived loading time.
- * Uses a module-level flag to ensure the import only happens once.
- */
-const preloadFretboard3D = () => {
-  if (!fretboard3DPreloaded) {
-    fretboard3DPreloaded = true;
-    // Silent preload - the import is cached by webpack/bundler
-    import('../FretboardCard/components/Fretboard3D').catch(() => {
-      // Reset flag on error so it can be retried
-      fretboard3DPreloaded = false;
-    });
-  }
-};
 
 // Helper to get Tone from window (must be initialized before GlobalControls is used)
 function getTone(): typeof import('tone') {
@@ -76,7 +56,9 @@ function getTone(): typeof import('tone') {
       return tone;
     }
   }
-  throw new Error('GlobalControls: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+  throw new Error(
+    'GlobalControls: Tone.js not loaded. Ensure AudioEngine is initialized first.',
+  );
 }
 
 // VexFlow utility functions for sheet music
@@ -315,15 +297,11 @@ const convertDurationToRests = (duration: number): string[] => {
 interface GlobalControlsProps {
   selectedExercise?: Exercise;
   duration: number;
+  // Exercise navigation
+  exercises?: Exercise[];
+  onExerciseSelect?: (exerciseId: string) => void;
   // Fretboard actions
-  is3DMode?: boolean;
-  tiltAngle?: number;
   hasSelectedDots?: boolean;
-  cameraMode?: 'overview' | 'action';
-  // Fretboard action callbacks
-  onToggle3DMode?: () => void;
-  onTiltAngleChange?: (angle: number) => void;
-  onCameraModeChange?: (mode: 'overview' | 'action') => void;
   // Loop settings
   loopRegion?: {
     startMeasure: number;
@@ -337,72 +315,7 @@ interface GlobalControlsProps {
 }
 
 // ============================================================================
-// POSITION-AWARE SHEET MUSIC COMPONENT
-// ============================================================================
-// PERFORMANCE FIX: This component isolates position subscription to prevent
-// GlobalControls from re-rendering 60 times/second during playback.
-// Only this component re-renders on position updates.
-interface PositionAwareSheetMusicProps {
-  notes: ExerciseNote[];
-  bpm: number;
-  timeSignature: { numerator: number; denominator: number } | undefined;
-  title?: string;
-  width: number | undefined;
-  height: number;
-  maxMeasuresPerSystem: number;
-  totalBars: number;
-  onReady: () => void;
-}
-
-let positionAwareSheetMusicRenderCount = 0;
-
-const PositionAwareSheetMusic = React.memo<PositionAwareSheetMusicProps>(
-  ({
-    notes,
-    bpm,
-    timeSignature,
-    title,
-    width,
-    height,
-    maxMeasuresPerSystem,
-    totalBars,
-    onReady,
-  }) => {
-    positionAwareSheetMusicRenderCount++;
-    // Subscribe to position updates - only this component re-renders
-    const position = useTransportPosition();
-    const { isPlaying } = useTransportControls();
-
-    // Log every 50th render to track position-based re-renders
-    if (positionAwareSheetMusicRenderCount % 50 === 0) {
-      logger.debug(
-        `PositionAwareSheetMusic render #${positionAwareSheetMusicRenderCount}`,
-        {
-          position: position ? `${position.bars}:${position.beats}` : 'null',
-          isPlaying,
-        },
-      );
-    }
-
-    return (
-      <SheetMusicDisplay
-        notes={notes}
-        bpm={bpm}
-        timeSignature={timeSignature}
-        title={title}
-        width={width}
-        height={height}
-        maxMeasuresPerSystem={maxMeasuresPerSystem}
-        totalBars={totalBars}
-        isPlaying={isPlaying}
-        currentBar={position?.bars ?? 0}
-        currentPosition={position ?? undefined}
-        onReady={onReady}
-      />
-    );
-  },
-);
-PositionAwareSheetMusic.displayName = 'PositionAwareSheetMusic';
+// PositionAwareSheetMusic moved to SheetPlayerCard
 
 // Add a render counter for GlobalControls
 let globalControlsRenderCount = 0;
@@ -410,13 +323,9 @@ let globalControlsRenderCount = 0;
 const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
   selectedExercise,
   duration,
-  is3DMode = false,
-  tiltAngle = 35,
+  exercises = [],
+  onExerciseSelect,
   hasSelectedDots = false,
-  cameraMode = 'overview',
-  onToggle3DMode,
-  onTiltAngleChange,
-  onCameraModeChange,
   loopRegion,
   isLoopEnabled = false,
   onPlayStateChange,
@@ -453,10 +362,7 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
   const prevPropsRef = useRef<GlobalControlsProps>({
     selectedExercise: undefined,
     duration: 0,
-    is3DMode: false,
-    tiltAngle: 35,
     hasSelectedDots: false,
-    cameraMode: 'overview',
     loopRegion: null,
     isLoopEnabled: false,
   });
@@ -474,24 +380,9 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
         `duration: ${prevPropsRef.current.duration} -> ${duration}`,
       );
     }
-    if (prevPropsRef.current.is3DMode !== is3DMode) {
-      changedProps.push(
-        `is3DMode: ${prevPropsRef.current.is3DMode} -> ${is3DMode}`,
-      );
-    }
-    if (prevPropsRef.current.tiltAngle !== tiltAngle) {
-      changedProps.push(
-        `tiltAngle: ${prevPropsRef.current.tiltAngle} -> ${tiltAngle}`,
-      );
-    }
     if (prevPropsRef.current.hasSelectedDots !== hasSelectedDots) {
       changedProps.push(
         `hasSelectedDots: ${prevPropsRef.current.hasSelectedDots} -> ${hasSelectedDots}`,
-      );
-    }
-    if (prevPropsRef.current.cameraMode !== cameraMode) {
-      changedProps.push(
-        `cameraMode: ${prevPropsRef.current.cameraMode} -> ${cameraMode}`,
       );
     }
     if (prevPropsRef.current.loopRegion !== loopRegion) {
@@ -518,14 +409,11 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
     prevPropsRef.current = {
       selectedExercise,
       duration,
-      is3DMode,
-      tiltAngle,
       hasSelectedDots,
-      cameraMode,
       loopRegion,
       isLoopEnabled,
     };
-  }, [selectedExercise, duration, is3DMode, tiltAngle, hasSelectedDots, cameraMode, loopRegion, isLoopEnabled]);
+  }, [selectedExercise, duration, hasSelectedDots, loopRegion, isLoopEnabled]);
   // Core DAW state
   const [coreServices, setCoreServices] = useState<CoreServices | null>(null);
   const [systemInitialized, setSystemInitialized] = useState(false);
@@ -778,74 +666,77 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
   }, []);
 
   // Handle file input change - memoized to prevent re-renders
-  const handleFileSelect = useCallback(async (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const handleFileSelect = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
 
-    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+      const fileExtension = file.name.split('.').pop()?.toLowerCase();
 
-    if (fileExtension === 'xml' || fileExtension === 'musicxml') {
-      // Process MusicXML file
-      try {
-        const text = await file.text();
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(text, 'text/xml');
+      if (fileExtension === 'xml' || fileExtension === 'musicxml') {
+        // Process MusicXML file
+        try {
+          const text = await file.text();
+          const parser = new DOMParser();
+          const xmlDoc = parser.parseFromString(text, 'text/xml');
 
-        // Create a mock exercise from the MusicXML (simplified version)
-        const exercise: Exercise = {
-          id: `imported-${Date.now()}`,
-          title: file.name.replace(/\.(xml|musicxml)$/i, ''),
-          notes: [], // This would need proper MusicXML parsing
-          bpm: 120,
-          timeSignature: { numerator: 4, denominator: 4 },
-          key: 'C',
-          difficulty: 'intermediate',
-          duration: 0,
-          duration_beats: 16, // Default to 4 bars
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
+          // Create a mock exercise from the MusicXML (simplified version)
+          const exercise: Exercise = {
+            id: `imported-${Date.now()}`,
+            title: file.name.replace(/\.(xml|musicxml)$/i, ''),
+            notes: [], // This would need proper MusicXML parsing
+            bpm: 120,
+            timeSignature: { numerator: 4, denominator: 4 },
+            key: 'C',
+            difficulty: 'intermediate',
+            duration: 0,
+            duration_beats: 16, // Default to 4 bars
+            is_active: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
 
-        handleMusicXMLUpload(exercise);
-      } catch (error) {
-        handleUploadError('Failed to parse MusicXML file');
-      }
-    } else if (fileExtension === 'mid' || fileExtension === 'midi') {
-      // Process MIDI file using the actual MIDI parser
-      try {
-        const arrayBuffer = await file.arrayBuffer();
-        const parser = new MIDIFileParser();
-
-        const parsingResult = await parser.parseFile(arrayBuffer, file.name);
-
-        if (!parsingResult.success) {
-          throw new Error(
-            `MIDI parsing failed: ${parsingResult.errors.join(', ')}`,
-          );
+          handleMusicXMLUpload(exercise);
+        } catch (error) {
+          handleUploadError('Failed to parse MusicXML file');
         }
+      } else if (fileExtension === 'mid' || fileExtension === 'midi') {
+        // Process MIDI file using the actual MIDI parser
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const parser = new MIDIFileParser();
 
-        if (!parsingResult.exercise) {
-          throw new Error(
-            'No bass track found in MIDI file. Try a MIDI file with bass content.',
-          );
+          const parsingResult = await parser.parseFile(arrayBuffer, file.name);
+
+          if (!parsingResult.success) {
+            throw new Error(
+              `MIDI parsing failed: ${parsingResult.errors.join(', ')}`,
+            );
+          }
+
+          if (!parsingResult.exercise) {
+            throw new Error(
+              'No bass track found in MIDI file. Try a MIDI file with bass content.',
+            );
+          }
+
+          handleMIDIUpload(parsingResult.exercise);
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : 'Failed to parse MIDI file';
+          handleUploadError(errorMessage);
         }
-
-        handleMIDIUpload(parsingResult.exercise);
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : 'Failed to parse MIDI file';
-        handleUploadError(errorMessage);
+      } else {
+        handleUploadError(`Unsupported file format: ${fileExtension}`);
       }
-    } else {
-      handleUploadError(`Unsupported file format: ${fileExtension}`);
-    }
 
-    // Clear the input value so the same file can be selected again
-    event.target.value = '';
-  }, [handleMusicXMLUpload, handleMIDIUpload, handleUploadError]);
+      // Clear the input value so the same file can be selected again
+      event.target.value = '';
+    },
+    [handleMusicXMLUpload, handleMIDIUpload, handleUploadError],
+  );
 
   // Debounced sync to prevent rapid fire events during slider drag
   const tempoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -855,6 +746,53 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
 
   // Region processor for audio playback
   const regionProcessorRef = useRef<RegionProcessor | null>(null);
+
+  // Exercise navigation handlers
+  const currentExerciseIndex = useMemo(() => {
+    if (!selectedExercise || !exercises.length) return -1;
+    return exercises.findIndex((ex) => {
+      const exId = typeof ex.id === 'object' ? ex.id.value : ex.id;
+      const selectedId =
+        typeof selectedExercise.id === 'object'
+          ? selectedExercise.id.value
+          : selectedExercise.id;
+      return exId === selectedId;
+    });
+  }, [selectedExercise, exercises]);
+
+  const handlePreviousExercise = useCallback(() => {
+    if (!onExerciseSelect || exercises.length === 0) return;
+
+    // If no exercise selected or at first, go to last exercise
+    const newIndex =
+      currentExerciseIndex <= 0
+        ? exercises.length - 1
+        : currentExerciseIndex - 1;
+    const exercise = exercises[newIndex];
+    if (exercise) {
+      const exerciseId =
+        typeof exercise.id === 'object' ? exercise.id.value : exercise.id;
+      onExerciseSelect(exerciseId);
+      logger.info('⏮️ Previous exercise selected', { newIndex, exerciseId });
+    }
+  }, [currentExerciseIndex, exercises, onExerciseSelect]);
+
+  const handleNextExercise = useCallback(() => {
+    if (!onExerciseSelect || exercises.length === 0) return;
+
+    // If no exercise selected or at last, go to first exercise
+    const newIndex =
+      currentExerciseIndex >= exercises.length - 1
+        ? 0
+        : currentExerciseIndex + 1;
+    const exercise = exercises[newIndex];
+    if (exercise) {
+      const exerciseId =
+        typeof exercise.id === 'object' ? exercise.id.value : exercise.id;
+      onExerciseSelect(exerciseId);
+      logger.info('⏭️ Next exercise selected', { newIndex, exerciseId });
+    }
+  }, [currentExerciseIndex, exercises, onExerciseSelect]);
 
   // Global playback control handlers - memoized to prevent re-renders
   const handlePlayButtonClick = useCallback(async () => {
@@ -931,10 +869,13 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
 
     // CRITICAL: Check if exercise has bass notes and wait for bass buffers
     const hasBassNotes = selectedExercise?.notes?.some(
-      (note: any) => note.string >= 1 && note.string <= 5
+      (note: any) => note.string >= 1 && note.string <= 5,
     );
 
-    if (hasBassNotes && !WindowRegistry.getBassBuffersReady(selectedExercise?.id)) {
+    if (
+      hasBassNotes &&
+      !WindowRegistry.getBassBuffersReady(selectedExercise?.id)
+    ) {
       logger.warn('⚠️ Bass buffers not ready yet, waiting...');
 
       const { toast } = await import('@/shared/hooks/use-toast');
@@ -955,7 +896,10 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
             // Check if this is for our exercise
             if (customEvent.detail?.exerciseId === selectedExercise?.id) {
               clearTimeout(timeout);
-              window.removeEventListener('bassBuffersReady', handleBassBuffersReady);
+              window.removeEventListener(
+                'bassBuffersReady',
+                handleBassBuffersReady,
+              );
               resolve();
             }
           };
@@ -979,7 +923,8 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
         logger.error('❌ Failed to wait for bass buffers:', error);
         toast({
           title: 'Bass Loading Error',
-          description: 'Bass samples may not play correctly. Continuing anyway.',
+          description:
+            'Bass samples may not play correctly. Continuing anyway.',
           variant: 'destructive',
         });
         // Don't return - continue with playback even without bass
@@ -999,7 +944,10 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
     logger.debug('🎵 Current track regions:', {
       metronomeRegions: metronomeTrackRef.current?.regions?.length || 0,
       drumRegions: drumTrackRef.current?.regions?.length || 0,
-      drumEnabled: selectedExercise?.drum_pattern?.enabled,
+      hasDrumPattern: !!(
+        selectedExercise?.drumPattern && selectedExercise.drumPattern.length > 0
+      ),
+      drumPatternHits: selectedExercise?.drumPattern?.length || 0,
       exerciseId: selectedExercise?.id,
     });
 
@@ -1194,7 +1142,8 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
           // Priority: total_bars > duration_beats > fallback (4 bars)
           const beatsPerBar = selectedExercise.timeSignature?.numerator || 4;
           const totalBars = selectedExercise.total_bars || 4;
-          const totalBeats = selectedExercise.duration_beats || totalBars * beatsPerBar;
+          const totalBeats =
+            selectedExercise.duration_beats || totalBars * beatsPerBar;
 
           // Generate metronome events
           const events = [];
@@ -1268,11 +1217,14 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
 
             // Use tick for precise subdivision when available (480 PPQ)
             const PPQ = 480;
-            const tick = hit.position.tick ?? (hit.position.subdivision || 0) * (PPQ / 4);
+            const tick =
+              hit.position.tick ?? (hit.position.subdivision || 0) * (PPQ / 4);
             const sixteenthSubdivision = Math.floor((tick / PPQ) * 4);
 
             // Normalize drum type to buffer key
-            const normalizedDrum = normalizeDrumTypeToBufferKey(hit.drum || 'kick');
+            const normalizedDrum = normalizeDrumTypeToBufferKey(
+              hit.drum || 'kick',
+            );
             return {
               position: `0:${totalBeats}:${sixteenthSubdivision}`,
               type: normalizedDrum,
@@ -1283,9 +1235,12 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
           });
 
           // Calculate pattern measure count for looping
-          const maxMeasure = selectedExercise.drumPattern.reduce((max: number, hit: any) => {
-            return Math.max(max, hit.position.measure || 0);
-          }, 0);
+          const maxMeasure = selectedExercise.drumPattern.reduce(
+            (max: number, hit: any) => {
+              return Math.max(max, hit.position.measure || 0);
+            },
+            0,
+          );
           const patternMeasureCount = maxMeasure + 1;
           const loopCount = selectedExercise.total_bars
             ? Math.ceil(selectedExercise.total_bars / patternMeasureCount)
@@ -1353,7 +1308,9 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
 
         if (
           playbackEngine &&
-          (metronomeRegions.length > 0 || drumRegions.length > 0 || bassRegions.length > 0)
+          (metronomeRegions.length > 0 ||
+            drumRegions.length > 0 ||
+            bassRegions.length > 0)
         ) {
           const tracksToRegister = [];
           if (metronomeRegions.length > 0) {
@@ -1474,13 +1431,17 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
         // No need to pass preserveBPM - it uses internal _userHasModifiedTempo flag
 
         // 🔍 TEMPO DIAGNOSTIC: Log before calling setFromExercise
-        console.log(`🎵 [TEMPO-EXERCISE] GlobalControls calling musicalTruth.setFromExercise()`, {
-          exerciseId: selectedExercise.id,
-          exerciseTitle: selectedExercise.title,
-          exerciseBpm: selectedExercise.bpm,
-          musicalTruthHasUserModifiedTempo: musicalTruth.hasUserModifiedTempo(),
-          currentMusicalTruthBpm: musicalTruth.getBPM(),
-        });
+        console.log(
+          `🎵 [TEMPO-EXERCISE] GlobalControls calling musicalTruth.setFromExercise()`,
+          {
+            exerciseId: selectedExercise.id,
+            exerciseTitle: selectedExercise.title,
+            exerciseBpm: selectedExercise.bpm,
+            musicalTruthHasUserModifiedTempo:
+              musicalTruth.hasUserModifiedTempo(),
+            currentMusicalTruthBpm: musicalTruth.getBPM(),
+          },
+        );
 
         // setFromExercise will automatically preserve BPM if user modified it
         musicalTruth.setFromExercise(selectedExercise);
@@ -1531,7 +1492,8 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
         const ToneRef = getTone();
         const audioContext = ToneRef.context;
         // Now Tone.Transport.bpm.value has the correct exercise BPM from setFromExercise
-        const currentBpm = transport?.getTempo?.() || ToneRef.Transport.bpm.value;
+        const currentBpm =
+          transport?.getTempo?.() || ToneRef.Transport.bpm.value;
         startCountdown(currentBpm, audioContext, null as any).catch((error) => {
           logger.error('❌ Visual countdown failed:', error);
           // Non-fatal, audio countdown is already scheduled
@@ -1600,11 +1562,15 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
   const handleTempoChange = useCallback(
     async (newTempo: number) => {
       // 🔍 TEMPO DIAGNOSTIC: Log user tempo slider change
-      console.log(`🎵 [TEMPO-SLIDER] GlobalControls.handleTempoChange() called`, {
-        newTempo,
-        previousLocalTempo: localTempo,
-        musicalTruthUserModifiedTempoBefore: musicalTruth.hasUserModifiedTempo(),
-      });
+      console.log(
+        `🎵 [TEMPO-SLIDER] GlobalControls.handleTempoChange() called`,
+        {
+          newTempo,
+          previousLocalTempo: localTempo,
+          musicalTruthUserModifiedTempoBefore:
+            musicalTruth.hasUserModifiedTempo(),
+        },
+      );
 
       try {
         // Update local state immediately for responsive UI
@@ -1669,8 +1635,12 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
         // TEMPO FIX: If user recently modified tempo and transport.tempo differs from lastUserTempo,
         // this is likely a stale value from before the user's change. Skip the update.
         if (userModifiedTempo && lastUserTempo.current !== null) {
-          if (Math.abs(transport.tempo - lastUserTempo.current) > tempoThreshold) {
-            console.log(`🎵 [TEMPO-SYNC] Skipping sync - user tempo ${lastUserTempo.current} differs from transport ${transport.tempo}`);
+          if (
+            Math.abs(transport.tempo - lastUserTempo.current) > tempoThreshold
+          ) {
+            console.log(
+              `🎵 [TEMPO-SYNC] Skipping sync - user tempo ${lastUserTempo.current} differs from transport ${transport.tempo}`,
+            );
             return;
           }
         }
@@ -1879,8 +1849,11 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
         has_midiFileUrl: !!selectedExercise.midiFileUrl,
         has_midi_url: !!selectedExercise.midi_url,
         has_midi_data: !!selectedExercise.midi_data,
-        has_drum_pattern: !!selectedExercise.drum_pattern,
-        drum_pattern_enabled: selectedExercise.drum_pattern?.enabled,
+        has_drum_pattern: !!(
+          selectedExercise.drumPattern &&
+          selectedExercise.drumPattern.length > 0
+        ),
+        drum_pattern_hits: selectedExercise.drumPattern?.length || 0,
         // NEW: Per-widget MIDI URLs
         has_drummerMidiUrl: !!(selectedExercise as any).drummerMidiUrl,
         has_basslineMidiUrl: !!(selectedExercise as any).basslineMidiUrl,
@@ -1914,24 +1887,31 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
         // This stops any scheduled drum audio sources and unregisters old drum tracks
         // Fixes bug where drum patterns from previous exercise persist after switching
         const coreServicesForDrumCleanup = WindowRegistry.getCoreServices();
-        const playbackEngineForCleanup = coreServicesForDrumCleanup?.getPlaybackEngine?.();
+        const playbackEngineForCleanup =
+          coreServicesForDrumCleanup?.getPlaybackEngine?.();
         if (playbackEngineForCleanup?.clearDrumTracks) {
           playbackEngineForCleanup.clearDrumTracks();
-          console.log('[GlobalControls] Cleared drum tracks from PlaybackEngine before loading new exercise');
+          console.log(
+            '[GlobalControls] Cleared drum tracks from PlaybackEngine before loading new exercise',
+          );
         }
 
         // CRITICAL: Also clear bass tracks from PlaybackEngine to prevent sample doubling
         // Without this, bass regions accumulate with each exercise switch causing louder bass
         if (playbackEngineForCleanup?.clearBassTracks) {
           playbackEngineForCleanup.clearBassTracks();
-          console.log('[GlobalControls] Cleared bass tracks from PlaybackEngine before loading new exercise');
+          console.log(
+            '[GlobalControls] Cleared bass tracks from PlaybackEngine before loading new exercise',
+          );
         }
 
         // Clear existing regions (metronome, drums, AND bass)
         metronomeTrackRef.current.clearRegions();
         drumTrackRef.current.clearRegions();
         bassTrackRef.current.clearRegions();
-        console.log('[GlobalControls] Cleared all track regions (metronome, drums, bass) for new exercise');
+        console.log(
+          '[GlobalControls] Cleared all track regions (metronome, drums, bass) for new exercise',
+        );
 
         // Check if we have MIDI file from Supabase storage or other sources
         let midiLoaded = false;
@@ -1999,7 +1979,8 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
               // Phase 3.3: Register tracks with PlaybackEngine
               // ✅ FIX: Use WindowRegistry to get CoreServices, check method exists
               const coreServicesForPlayback = WindowRegistry.getCoreServices();
-              const playbackEngine = coreServicesForPlayback?.getPlaybackEngine?.();
+              const playbackEngine =
+                coreServicesForPlayback?.getPlaybackEngine?.();
               const tracks = [];
               // CRITICAL FIX: Use track.regions (synchronous) instead of hook's regions state (asynchronous)
               if ((metronomeTrackRef.current.track?.regions?.length || 0) > 0) {
@@ -2390,8 +2371,10 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
             // Register tracks with PlaybackEngine if we loaded any regions
             // ✅ FIX: Use WindowRegistry to get CoreServices, check method exists
             if (allRegions.length > 0) {
-              const coreServicesForWidgetMidi = WindowRegistry.getCoreServices();
-              const playbackEngine = coreServicesForWidgetMidi?.getPlaybackEngine?.();
+              const coreServicesForWidgetMidi =
+                WindowRegistry.getCoreServices();
+              const playbackEngine =
+                coreServicesForWidgetMidi?.getPlaybackEngine?.();
               const tracks = [];
 
               // CRITICAL FIX: Use track.regions (synchronous) instead of hook's regions state (asynchronous)
@@ -2521,23 +2504,25 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
 
           // Create drum pattern if enabled
           const drum = drumTrackRef.current;
+          const hasDrumPatternData = !!(
+            selectedExercise.drumPattern &&
+            selectedExercise.drumPattern.length > 0
+          );
           logger.debug('🎮 GlobalControls: Drum track state:', {
             isInitialized: drum.isInitialized,
             hasTrack: !!drum.track,
             trackId: drum.track?.id,
             trackName: drum.track?.name,
-            drumEnabled: selectedExercise.drum_pattern?.enabled,
-            drumPatternData: selectedExercise.drum_pattern,
+            hasDrumPattern: hasDrumPatternData,
+            drumPatternHits: selectedExercise.drumPattern?.length || 0,
             regionsBeforeAdd: drum.regions?.length || 0,
           });
           logger.info('🎮 GlobalControls: Checking drum pattern conditions:', {
             drumInitialized: drum.isInitialized,
             hasTrack: !!drum.track,
-            drumPatternEnabled: selectedExercise.drum_pattern?.enabled,
+            hasDrumPattern: hasDrumPatternData,
             willLoadDrums:
-              drum.isInitialized &&
-              drum.track &&
-              selectedExercise.drum_pattern?.enabled,
+              drum.isInitialized && drum.track && hasDrumPatternData,
           });
 
           // CRITICAL FIX: Only add pattern-based drum region if midiLoaded is true
@@ -2550,13 +2535,19 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
           );
           const willSkip = midiLoaded; // If MIDI was loaded above, skip pattern fallback
 
-          console.error('🔍 DRUM REGIONS CHECK:', {
+          // DIAGNOSTIC: Check drum pattern state (using logger.info instead of console.error to avoid Next.js error overlay)
+          logger.info('🔍 DRUM REGIONS CHECK:', {
             midiLoaded,
             hasDrumPattern,
             willSkip,
+            drumPatternLength: selectedExercise?.drumPattern?.length || 0,
+            drumPatternType: typeof selectedExercise?.drumPattern,
+            exerciseId: selectedExercise?.id,
             message: willSkip
               ? '✅ SKIPPING - MIDI already loaded by ExerciseLoader'
-              : '⚠️ NO MIDI - will add pattern-based fallback',
+              : hasDrumPattern
+                ? '🎵 Using pre-converted drumPattern array'
+                : '⚠️ No drum pattern data found',
           });
 
           if (
@@ -2593,14 +2584,18 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
                   // Tone.js position format: "measure:beats:sixteenths"
                   // subdivision should be 0-3 for 16th note positions within a beat
                   const PPQ = 480;
-                  const tick = hit.position.tick ?? (hit.position.subdivision || 0) * (PPQ / 4);
+                  const tick =
+                    hit.position.tick ??
+                    (hit.position.subdivision || 0) * (PPQ / 4);
                   // Convert tick to 16th note subdivision (0-3)
                   // tick 0-119 = 0, tick 120-239 = 1, tick 240-359 = 2, tick 360-479 = 3
                   const sixteenthSubdivision = Math.floor((tick / PPQ) * 4);
 
                   // CRITICAL: Normalize drum type to buffer key (e.g., hihat_closed -> hihat)
                   // DrumScheduler only has: kick, snare, hihat buffers
-                  const normalizedDrum = normalizeDrumTypeToBufferKey(hit.drum || 'kick');
+                  const normalizedDrum = normalizeDrumTypeToBufferKey(
+                    hit.drum || 'kick',
+                  );
                   return {
                     position: `0:${totalBeats}:${sixteenthSubdivision}`,
                     type: normalizedDrum,
@@ -2616,35 +2611,10 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
               logger.info(
                 `🎮 GlobalControls: Using ${drumEvents.length} drum hits from pre-converted drumPattern`,
               );
-            } else if (selectedExercise.drum_pattern?.pattern) {
-              // Alternative format: pattern string like "kick-snare-kick-snare"
-              const pattern = selectedExercise.drum_pattern.pattern.split('-');
-              const beatsPerMeasure = 4;
-              const measures = Math.ceil(
-                (selectedExercise.duration_beats || 16) / beatsPerMeasure,
-              );
+            }
 
-              for (let measure = 0; measure < measures; measure++) {
-                for (
-                  let beat = 0;
-                  beat < beatsPerMeasure && beat < pattern.length;
-                  beat++
-                ) {
-                  const drumType = pattern[beat % pattern.length];
-                  if (drumType && drumType !== 'rest') {
-                    drumEvents.push({
-                      position: `${measure}:${beat}:0`,
-                      type: drumType,
-                      drum: drumType,
-                      velocity: drumType === 'kick' ? 0.8 : 0.7,
-                    });
-                  }
-                }
-              }
-              logger.debug(
-                `🎮 GlobalControls: Generated ${drumEvents.length} drum events from pattern string`,
-              );
-            } else {
+            // If no drum hits were found in drumPattern array, log warning
+            if (drumEvents.length === 0) {
               // Fallback: Generate a basic pattern if no specific data provided
               logger.warn(
                 '🎮 GlobalControls: No drum pattern data found, using default pattern',
@@ -2841,16 +2811,6 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
   const handleSheetMusicReady = useCallback(() => {
     logger.debug('Sheet music rendered successfully');
   }, []);
-
-  // Camera mode toggle callback - memoized to prevent re-renders
-  const handleCameraModeToggle = useCallback(() => {
-    onCameraModeChange?.(cameraMode === 'overview' ? 'action' : 'overview');
-  }, [cameraMode, onCameraModeChange]);
-
-  // Tilt angle toggle callback - memoized to prevent re-renders
-  const handleTiltAngleToggle = useCallback(() => {
-    onTiltAngleChange?.(tiltAngle === 35 ? 0 : 35);
-  }, [tiltAngle, onTiltAngleChange]);
 
   // Calculate beats per measure for processing
   const beatsPerMeasure = timeSignature.numerator;
@@ -4260,20 +4220,14 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
       `}</style>
 
       {/* Global Controls - Neumorphic style matching subwidgets */}
-      <div className="bg-slate-800 rounded-2xl p-4 shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)]">
+      <div className="bg-transparent rounded-2xl p-4">
         {/* Two-Row Player Layout */}
         <div className="flex flex-col gap-3">
           {/* First Row - Mode Button, Playback Controls, View Button */}
           <div className="flex items-center justify-between">
-            {/* Left Side - 3D Mode Toggle */}
+            {/* Left Side - Spacer for layout balance */}
             <div className="flex justify-center items-center py-2 w-24">
-              <button
-                onClick={onToggle3DMode}
-                onMouseEnter={preloadFretboard3D}
-                className="px-3 py-2 rounded-xl bg-slate-800 text-sm font-medium transition-all duration-300 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] text-slate-300"
-              >
-                {is3DMode ? '2D Mode' : '3D Mode'}
-              </button>
+              {/* Empty spacer to maintain layout symmetry */}
             </div>
 
             {/* Center - Playback Controls */}
@@ -4303,16 +4257,28 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
                 </div>
               )}
 
-              <div className="flex items-center justify-center gap-4">
-                <button className="p-2 rounded-full bg-slate-800 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200">
-                  <Heart className="w-4 h-4 text-slate-400" />
+              <div className="flex items-center justify-center gap-2">
+                {/* Like button - spaced from previous */}
+                <button className="p-3 rounded-full bg-slate-800 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200 mr-8">
+                  <Heart className="w-5 h-5 text-slate-400" />
                 </button>
-                <button className="p-2 rounded-full bg-slate-800 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200">
-                  <SkipBack className="w-4 h-4 text-slate-300" />
+                {/* Previous button */}
+                <button
+                  onClick={handlePreviousExercise}
+                  disabled={exercises.length === 0}
+                  className={`p-3 rounded-full bg-slate-800 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200 ${exercises.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  title={
+                    exercises.length === 0
+                      ? 'No exercises available'
+                      : 'Previous exercise'
+                  }
+                >
+                  <SkipBack className="w-5 h-5 text-slate-300" />
                 </button>
+                {/* Play button */}
                 <button
                   onClick={handlePlayButtonClick}
-                  className={`rounded-full shadow-[4px_4px_8px_rgba(0,0,0,0.5),-4px_-4px_8px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200 flex items-center justify-center relative ${!selectedExercise ? 'bg-slate-600 opacity-50 cursor-not-allowed' : 'bg-blue-500'}`}
+                  className={`mx-2 rounded-full shadow-[4px_4px_8px_rgba(0,0,0,0.5),-4px_-4px_8px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200 flex items-center justify-center relative ${!selectedExercise ? 'bg-slate-600 opacity-50 cursor-not-allowed' : 'bg-blue-500'}`}
                   style={{ width: '78px', height: '78px' }}
                   title={
                     !selectedExercise
@@ -4335,11 +4301,22 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
                     <Play className="w-5 h-5 ml-0.5 text-white" />
                   )}
                 </button>
-                <button className="p-2 rounded-full bg-slate-800 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200">
-                  <SkipForward className="w-4 h-4 text-slate-300" />
+                {/* Next button */}
+                <button
+                  onClick={handleNextExercise}
+                  disabled={exercises.length === 0}
+                  className={`p-3 rounded-full bg-slate-800 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200 ${exercises.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  title={
+                    exercises.length === 0
+                      ? 'No exercises available'
+                      : 'Next exercise'
+                  }
+                >
+                  <SkipForward className="w-5 h-5 text-slate-300" />
                 </button>
-                <button className="p-2 rounded-full bg-slate-800 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200">
-                  <Star className="w-4 h-4 text-slate-400" />
+                {/* Favorite button - spaced from next */}
+                <button className="p-3 rounded-full bg-slate-800 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200 ml-8">
+                  <Star className="w-5 h-5 text-slate-400" />
                 </button>
               </div>
               {/* Show message when no exercise selected */}
@@ -4350,114 +4327,11 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
               )}
             </div>
 
-            {/* Right Side - View Button */}
+            {/* Right Side - Spacer for layout balance */}
             <div className="flex justify-center items-center py-2 w-24">
-              {/* Single Toggle Button */}
-              {is3DMode ? (
-                /* 3D Mode: Camera Controls Toggle */
-                <button
-                  onClick={handleCameraModeToggle}
-                  className="px-3 py-2 rounded-xl bg-slate-800 text-sm font-medium transition-all duration-300 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] text-blue-400"
-                >
-                  {cameraMode === 'overview' ? 'Overview' : 'Action'}
-                </button>
-              ) : (
-                /* 2D Mode: Tilt Controls Toggle */
-                <button
-                  onClick={handleTiltAngleToggle}
-                  className="px-3 py-2 rounded-xl bg-slate-800 text-sm font-medium transition-all duration-300 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] text-green-400"
-                >
-                  {tiltAngle === 35 ? 'Overview' : 'Flat'}
-                </button>
-              )}
+              {/* Empty spacer to maintain layout symmetry */}
             </div>
           </div>
-        </div>
-
-        {/* Hidden file input for sheet player toolbar */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".xml,.musicxml,.mid,.midi"
-          onChange={handleFileSelect}
-          style={{ display: 'none' }}
-        />
-
-        {/* Sheet Music Section - Integrated within the same panel */}
-        <div className="mt-4 border-t border-slate-700/30 pt-4">
-          {/* OpenSheetMusicDisplay - Professional Notation */}
-          {exerciseNotes.length > 0 ? (
-            <div
-              ref={scrollContainerRef}
-              className="w-full scrollbar-hide"
-              style={{
-                height: '150px', // Match SheetMusicDisplay height
-                borderRadius: '28px',
-                background: 'linear-gradient(135deg, #bfbfbf 0%, #d1d1d1 100%)',
-                boxShadow:
-                  'inset 5px 5px 10px #b3b3b3, inset -5px -5px 10px #dfdfdf',
-                position: 'relative',
-                zIndex: 1,
-                isolation: 'isolate',
-                overflowX: 'auto',
-                overflowY: 'hidden',
-              }}
-              onScroll={(e) => {
-                // Save scroll position only when not playing
-                if (!transport.isPlaying) {
-                  savedScrollPosition.current = e.currentTarget.scrollLeft;
-                }
-              }}
-            >
-              <div
-                className="min-w-full"
-                style={{
-                  height: '100%',
-                  position: 'relative',
-                  pointerEvents: 'auto',
-                  cursor: 'default',
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
-              >
-                {/* PERFORMANCE FIX: Use PositionAwareSheetMusic to isolate position updates */}
-                <PositionAwareSheetMusic
-                  notes={exerciseNotes}
-                  bpm={exerciseBpm}
-                  timeSignature={timeSignature}
-                  title={activeExercise?.title}
-                  width={undefined}
-                  height={150}
-                  maxMeasuresPerSystem={2}
-                  totalBars={exerciseTotalBars}
-                  onReady={handleSheetMusicReady}
-                />
-              </div>
-            </div>
-          ) : (
-            <div
-              className="flex items-center justify-center h-32 flex-col gap-4"
-              style={{
-                borderRadius: '28px',
-                background: 'linear-gradient(135deg, #bfbfbf 0%, #d1d1d1 100%)',
-                boxShadow:
-                  'inset 5px 5px 10px #b3b3b3, inset -5px -5px 10px #dfdfdf',
-              }}
-            >
-              <span className="text-slate-600 text-sm">
-                No exercise selected
-              </span>
-            </div>
-          )}
-
-          {/* Sheet Player Toolbar */}
-          <SheetPlayerToolbar
-            exercise={activeExercise}
-            onImport={handleToolbarImport}
-            onSave={handleToolbarSave}
-            onExportPDF={handleToolbarExportPDF}
-            disabled={false}
-          />
         </div>
       </div>
     </>
@@ -4474,20 +4348,11 @@ const arePropsEqual = (
     selectedExerciseId:
       prevProps.selectedExercise?.id === nextProps.selectedExercise?.id,
     duration: prevProps.duration === nextProps.duration,
-    is3DMode: prevProps.is3DMode === nextProps.is3DMode,
-    tiltAngle: prevProps.tiltAngle === nextProps.tiltAngle,
     hasSelectedDots: prevProps.hasSelectedDots === nextProps.hasSelectedDots,
-    cameraMode: prevProps.cameraMode === nextProps.cameraMode,
     loopRegion:
       JSON.stringify(prevProps.loopRegion) ===
       JSON.stringify(nextProps.loopRegion),
     isLoopEnabled: prevProps.isLoopEnabled === nextProps.isLoopEnabled,
-    // Check callback references
-    onToggle3DMode: prevProps.onToggle3DMode === nextProps.onToggle3DMode,
-    onTiltAngleChange:
-      prevProps.onTiltAngleChange === nextProps.onTiltAngleChange,
-    onCameraModeChange:
-      prevProps.onCameraModeChange === nextProps.onCameraModeChange,
   };
 
   const allEqual = Object.values(checks).every((check) => check);

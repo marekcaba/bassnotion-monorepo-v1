@@ -293,7 +293,7 @@ if (typeof window !== 'undefined') {
       });
     });
 
-    document.querySelectorAll('.fretboard-dot').forEach((dot) => {
+    document.querySelectorAll('.fretboard-dot:not(.fretboard-2d-hidden .fretboard-dot)').forEach((dot) => {
       mutationObserver!.observe(dot, {
         attributes: true,
         attributeOldValue: true,
@@ -302,7 +302,7 @@ if (typeof window !== 'undefined') {
     });
 
     // eslint-disable-next-line no-console
-    console.log(`🔬 [MUTATION WATCH] Started watching ${document.querySelectorAll('.fretboard-dot').length} dots for external changes`);
+    console.log(`🔬 [MUTATION WATCH] Started watching ${document.querySelectorAll('.fretboard-dot:not(.fretboard-2d-hidden .fretboard-dot)').length} dots for external changes`);
   };
 
   (window as any).__STOP_MUTATION_WATCH__ = () => {
@@ -393,7 +393,7 @@ if (typeof window !== 'undefined') {
     }
 
     const inspect = () => {
-      const dots = document.querySelectorAll('.fretboard-dot');
+      const dots = document.querySelectorAll('.fretboard-dot:not(.fretboard-2d-hidden .fretboard-dot)');
       const summary = {
         total: dots.length,
         current: 0,
@@ -531,7 +531,7 @@ if (typeof window !== 'undefined') {
     let lastState = '';
 
     watchInterval = setInterval(() => {
-      const dots = document.querySelectorAll('.fretboard-dot');
+      const dots = document.querySelectorAll('.fretboard-dot:not(.fretboard-2d-hidden .fretboard-dot)');
       let foundDot: Element | null = null;
 
       dots.forEach((dot) => {
@@ -614,7 +614,7 @@ function toFret(fretNumber: number): Fret {
  * @param time - Current time in seconds
  * @returns noteIndex of the active note, or -1 if no note is active (rest or outside timeline)
  */
-function findNoteAtTime(timeline: NoteTimelineEntry[], time: number): number {
+export function findNoteAtTime(timeline: NoteTimelineEntry[], time: number): number {
   if (timeline.length === 0) return -1;
 
   const firstEntry = timeline[0];
@@ -708,7 +708,7 @@ function findNoteAtTime(timeline: NoteTimelineEntry[], time: number): number {
  * @param time - Current time in seconds
  * @returns The timeline entry containing this time, or null if outside timeline
  */
-function findEntryAtTime(
+export function findEntryAtTime(
   timeline: NoteTimelineEntry[],
   time: number,
 ): NoteTimelineEntry | null {
@@ -1441,7 +1441,7 @@ export function useFretboardNoteSync(
     // DIAGNOSTIC: Check computed opacity for 30% elements IMMEDIATELY
     // This helps identify if CSS is not being applied correctly
     // ==========================================================================
-    if (elementsAt30.length > 0) {
+    if (elementsAt30.length > 0 && isDebugEnabled()) {
       // Use requestAnimationFrame to ensure CSS has been applied
       requestAnimationFrame(() => {
         elementsAt30.forEach(({ noteIndices }) => {
@@ -1489,6 +1489,7 @@ export function useFretboardNoteSync(
       // This tests if the .fretboard-dot CSS rule persists the opacity
       // ==========================================================================
       setTimeout(() => {
+        if (!isDebugEnabled()) return;
         // eslint-disable-next-line no-console, no-restricted-syntax
         console.log(`\n   🔄 [POST-REACT-RENDER-CHECK] Verifying 30% opacity persists after ~100ms...`);
         elementsAt30.forEach(({ noteIndices }) => {
@@ -1501,15 +1502,15 @@ export function useFretboardNoteSync(
             const measureOpacityVar = el.style.getPropertyValue('--measure-opacity');
             const parsed = parseFloat(computedOpacity);
 
-            if (parsed > 0.5) {
+            if (parsed > 0.5 && isDebugEnabled()) {
               // eslint-disable-next-line no-console, no-restricted-syntax
-              console.error(
+              console.log(
                 `   🚨 [POST-REACT-BUG!] After ~100ms: noteIndices=[${noteIndices.join(',')}] | ` +
                 `computed=${computedOpacity} (should be ~0.3) | ` +
                 `--measure-opacity=${measureOpacityVar} | classes=[${cssClasses}] | ` +
                 `REACT LIKELY OVERWROTE THE CLASSES!`
               );
-            } else {
+            } else if (isDebugEnabled()) {
               // eslint-disable-next-line no-console, no-restricted-syntax
               console.log(
                 `   ✅ [POST-REACT-OK] noteIndices=[${noteIndices.join(',')}] | ` +
@@ -1541,7 +1542,7 @@ export function useFretboardNoteSync(
     if (isUltraDebugEnabled()) {
       setTimeout(() => {
         // Wait a frame for CSS to fully apply
-        const allDots = document.querySelectorAll('.fretboard-dot');
+        const allDots = document.querySelectorAll('.fretboard-dot:not(.fretboard-2d-hidden .fretboard-dot)');
         const issues: string[] = [];
 
         allDots.forEach((dot) => {

@@ -7,7 +7,7 @@
  * Integrates grid, transport controls, and toolbar.
  */
 
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -29,7 +29,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
-import { Save, X, Trash2, Undo, Redo, ZoomIn, ZoomOut } from 'lucide-react';
+import { Save, X, Trash2, Undo, Redo, ZoomIn, ZoomOut, Library, Loader2 } from 'lucide-react';
+import { useCreatePattern } from '../../hooks/usePatternLibrary.js';
+import { GENRE_DISPLAY_NAMES } from '@bassnotion/contracts';
+import type { PatternGenre, PatternDifficulty } from '@bassnotion/contracts';
 import { DrumGrid } from './DrumGrid.js';
 import { DrumEditorTransport } from './DrumEditorTransport.js';
 import type { DrumPatternEditorModalProps, PatternMetadata, GridResolution } from './types.js';
@@ -110,6 +113,16 @@ export function DrumPatternEditorModal({
   // Local state for pattern name input
   const [localPatternName, setLocalPatternName] = React.useState(patternName);
 
+  // Save to Library state
+  const [showSaveToLibrary, setShowSaveToLibrary] = useState(false);
+  const [libraryDescription, setLibraryDescription] = useState('');
+  const [libraryGenre, setLibraryGenre] = useState<PatternGenre>('rock');
+  const [libraryDifficulty, setLibraryDifficulty] = useState<PatternDifficulty>('intermediate');
+  const [libraryBpmMin, setLibraryBpmMin] = useState(80);
+  const [libraryBpmMax, setLibraryBpmMax] = useState(140);
+  const [libraryTags, setLibraryTags] = useState('');
+  const createPattern = useCreatePattern();
+
   // Initialize store when modal opens
   // NOTE: We use getState() to avoid infinite loops from function reference changes
   useEffect(() => {
@@ -160,6 +173,48 @@ export function DrumPatternEditorModal({
     store.stop();
     onClose();
   }, [onClose]);
+
+  // Handle save to library
+  const handleSaveToLibrary = useCallback(async () => {
+    const store = useDrumEditorStore.getState();
+    const tags = libraryTags
+      .split(',')
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0);
+
+    try {
+      await createPattern.mutateAsync({
+        name: localPatternName || 'Untitled Pattern',
+        description: libraryDescription,
+        genre: libraryGenre,
+        difficulty: libraryDifficulty,
+        bars: store.bars,
+        timeSignature: store.timeSignature,
+        bpmRange: { min: libraryBpmMin, max: libraryBpmMax },
+        tags,
+        drumHits: store.pattern,
+      });
+
+      setShowSaveToLibrary(false);
+      // Reset form
+      setLibraryDescription('');
+      setLibraryTags('');
+      alert('Pattern saved to library successfully!');
+    } catch (error) {
+      alert(
+        `Failed to save pattern: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }, [
+    localPatternName,
+    libraryDescription,
+    libraryGenre,
+    libraryDifficulty,
+    libraryBpmMin,
+    libraryBpmMax,
+    libraryTags,
+    createPattern,
+  ]);
 
   // Handle clear pattern
   const handleClear = useCallback(() => {
@@ -436,6 +491,15 @@ export function DrumPatternEditorModal({
                   Cancel
                 </Button>
                 <Button
+                  variant="outline"
+                  onClick={() => setShowSaveToLibrary(true)}
+                  disabled={isEmpty}
+                  className="border-zinc-700 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 disabled:bg-zinc-800 disabled:text-zinc-600"
+                >
+                  <Library className="h-4 w-4 mr-2" />
+                  Save to Library
+                </Button>
+                <Button
                   onClick={handleSave}
                   disabled={isEmpty}
                   className="bg-blue-600 hover:bg-blue-500 text-white disabled:bg-zinc-700 disabled:text-zinc-500"
@@ -448,6 +512,151 @@ export function DrumPatternEditorModal({
           </DialogFooter>
         </DialogPrimitive.Content>
       </DialogPortal>
+
+      {/* Save to Library Dialog */}
+      {showSaveToLibrary && (
+        <Dialog open={showSaveToLibrary} onOpenChange={setShowSaveToLibrary}>
+          <DialogPortal>
+            <DialogOverlay className="z-[70] bg-black/80" />
+            <DialogPrimitive.Content
+              className="fixed left-[50%] top-[50%] z-[75] w-full max-w-md translate-x-[-50%] translate-y-[-50%] flex flex-col gap-4 border border-zinc-700 bg-zinc-950 p-6 shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-xl"
+            >
+              <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-zinc-950 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 disabled:pointer-events-none text-zinc-400 hover:text-zinc-100">
+                <X className="h-4 w-4" />
+                <span className="sr-only">Close</span>
+              </DialogPrimitive.Close>
+
+              <DialogHeader>
+                <DialogTitle className="text-zinc-100 flex items-center gap-2">
+                  <Library className="h-5 w-5 text-blue-500" />
+                  Save to Pattern Library
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="space-y-4">
+                {/* Pattern Name (read-only, from parent) */}
+                <div className="space-y-2">
+                  <Label className="text-zinc-300">Pattern Name</Label>
+                  <Input
+                    value={localPatternName}
+                    disabled
+                    className="bg-zinc-900 border-zinc-700 text-zinc-400"
+                  />
+                </div>
+
+                {/* Description */}
+                <div className="space-y-2">
+                  <Label className="text-zinc-300">Description</Label>
+                  <textarea
+                    value={libraryDescription}
+                    onChange={(e) => setLibraryDescription(e.target.value)}
+                    placeholder="Describe this pattern..."
+                    className="w-full h-20 px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-zinc-100 placeholder:text-zinc-500 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 resize-none"
+                  />
+                </div>
+
+                {/* Genre & Difficulty */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-zinc-300">Genre</Label>
+                    <Select value={libraryGenre} onValueChange={(v) => setLibraryGenre(v as PatternGenre)}>
+                      <SelectTrigger className="bg-zinc-900 border-zinc-700 text-zinc-100">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-zinc-900 border-zinc-700">
+                        {Object.entries(GENRE_DISPLAY_NAMES).map(([key, label]) => (
+                          <SelectItem key={key} value={key} className="text-zinc-100 focus:bg-zinc-800">
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-zinc-300">Difficulty</Label>
+                    <Select value={libraryDifficulty} onValueChange={(v) => setLibraryDifficulty(v as PatternDifficulty)}>
+                      <SelectTrigger className="bg-zinc-900 border-zinc-700 text-zinc-100">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-zinc-900 border-zinc-700">
+                        <SelectItem value="beginner" className="text-zinc-100 focus:bg-zinc-800">Beginner</SelectItem>
+                        <SelectItem value="intermediate" className="text-zinc-100 focus:bg-zinc-800">Intermediate</SelectItem>
+                        <SelectItem value="advanced" className="text-zinc-100 focus:bg-zinc-800">Advanced</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* BPM Range */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-zinc-300">Min BPM</Label>
+                    <Input
+                      type="number"
+                      value={libraryBpmMin}
+                      onChange={(e) => setLibraryBpmMin(parseInt(e.target.value) || 60)}
+                      min={20}
+                      max={300}
+                      className="bg-zinc-900 border-zinc-700 text-zinc-100"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-zinc-300">Max BPM</Label>
+                    <Input
+                      type="number"
+                      value={libraryBpmMax}
+                      onChange={(e) => setLibraryBpmMax(parseInt(e.target.value) || 140)}
+                      min={20}
+                      max={300}
+                      className="bg-zinc-900 border-zinc-700 text-zinc-100"
+                    />
+                  </div>
+                </div>
+
+                {/* Tags */}
+                <div className="space-y-2">
+                  <Label className="text-zinc-300">Tags (comma-separated)</Label>
+                  <Input
+                    value={libraryTags}
+                    onChange={(e) => setLibraryTags(e.target.value)}
+                    placeholder="groove, syncopated, funky"
+                    className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
+                  />
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex justify-end gap-2 pt-4 border-t border-zinc-800">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowSaveToLibrary(false)}
+                  className="border-zinc-700 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSaveToLibrary}
+                  disabled={createPattern.isPending || !libraryDescription.trim()}
+                  className="bg-blue-600 hover:bg-blue-500 text-white disabled:bg-zinc-700 disabled:text-zinc-500"
+                >
+                  {createPattern.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Library className="h-4 w-4 mr-2" />
+                      Save to Library
+                    </>
+                  )}
+                </Button>
+              </div>
+            </DialogPrimitive.Content>
+          </DialogPortal>
+        </Dialog>
+      )}
     </Dialog>
   );
 }

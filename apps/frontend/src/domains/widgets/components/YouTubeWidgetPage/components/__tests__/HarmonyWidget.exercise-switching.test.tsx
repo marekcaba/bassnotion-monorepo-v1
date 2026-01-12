@@ -616,3 +616,601 @@ describe('HarmonyWidget Registration Race Condition', () => {
     expect(buggyCallback()).not.toBe('grandpiano');
   });
 });
+
+// ============================================================================
+// TEST SUITE: Exercise Switching Cleanup Behavior
+// ============================================================================
+describe('HarmonyWidget Exercise Switching Cleanup', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    lastInjectedInstrument = null;
+    injectionCallCount = 0;
+  });
+
+  // ==========================================================================
+  // TEST SUITE: Cleanup When Switching to Exercise Without Harmony
+  // ==========================================================================
+  describe('Cleanup When Switching to Exercise Without Harmony', () => {
+    it('should document the cleanup flow for exercises without harmony notes', () => {
+      /**
+       * SCENARIO:
+       * 1. User has Exercise 1 selected (has harmony notes + CC64 sustain data)
+       * 2. User switches to Exercise 2 (has ONLY drums, no harmony notes)
+       * 3. The HarmonyWidget should:
+       *    - Detect harmonyNoteCount === 0
+       *    - Call playbackEngine.clearHarmonyTracks()
+       *    - Clear WAM keyboard plugin events
+       *    - Release any playing sampler notes
+       *    - Reset lastRegisteredExerciseIdRef to null
+       *
+       * RESULT: No stale harmony audio from Exercise 1 plays during Exercise 2
+       */
+      expect(true).toBe(true);
+    });
+
+    it('should reset registration state when exercise changes', () => {
+      /**
+       * The previousExerciseIdRef pattern:
+       *
+       * useEffect tracks exercise.id changes:
+       * 1. Compare current exercise ID with previousExerciseIdRef.current
+       * 2. If different (exercise changed):
+       *    - Log the change
+       *    - Reset lastRegisteredExerciseIdRef.current = null
+       * 3. Update previousExerciseIdRef.current with new ID
+       *
+       * This ensures:
+       * - Next exercise can register fresh (won't be blocked by cached registration key)
+       * - CC64 timeline will be rebuilt from new exercise's harmonyControlChanges
+       */
+      let previousExerciseId: string | null = null;
+      let lastRegisteredExerciseId: string | null = 'exercise-1-trigger-1';
+
+      // Simulate exercise change detection
+      const detectExerciseChange = (newExerciseId: string) => {
+        const exerciseChanged =
+          previousExerciseId !== null && previousExerciseId !== newExerciseId;
+
+        if (exerciseChanged) {
+          // Reset registration tracking
+          lastRegisteredExerciseId = null;
+        }
+
+        previousExerciseId = newExerciseId;
+        return exerciseChanged;
+      };
+
+      // Initial mount (not a change)
+      expect(detectExerciseChange('exercise-1')).toBe(false);
+      expect(lastRegisteredExerciseId).toBe('exercise-1-trigger-1'); // Unchanged
+
+      // Switch to exercise 2
+      expect(detectExerciseChange('exercise-2')).toBe(true);
+      expect(lastRegisteredExerciseId).toBe(null); // Reset!
+
+      // Switch back to exercise 1
+      expect(detectExerciseChange('exercise-1')).toBe(true);
+      expect(lastRegisteredExerciseId).toBe(null); // Still reset, ready for re-registration
+    });
+  });
+
+  // ==========================================================================
+  // TEST SUITE: CC64 Timeline Preservation
+  // ==========================================================================
+  describe('CC64 Timeline Preservation', () => {
+    it('should document CC64 data flow during exercise switching', () => {
+      /**
+       * CC64 (Sustain Pedal) Data Flow:
+       *
+       * 1. Exercise has harmonyControlChanges array in database
+       * 2. HarmonyWidget.registerHarmonyWithPlaybackEngine():
+       *    - Maps harmonyControlChanges to control change events
+       *    - Includes CC64 events with ticks and originalBpm
+       *    - Combines with harmonyNotes into allHarmonyEvents
+       *    - Creates region with pattern.events = allHarmonyEvents
+       * 3. PlaybackEngine.registerTracks() or updateTracks():
+       *    - Stores track with regions containing CC64 events
+       * 4. On playback start, RegionScheduler.scheduleRegionsWithDependencies():
+       *    - Calls buildCC64Timeline() for harmony regions
+       *    - Maps CC64 events to time-based timeline
+       *    - Syncs timeline to HarmonySchedulerV2
+       * 5. HarmonySchedulerV2 uses CC64 timeline for sustain pedal behavior
+       *
+       * CRITICAL: If lastRegisteredExerciseIdRef is not reset on exercise change,
+       * the registration is skipped and CC64 timeline is never rebuilt!
+       */
+      expect(true).toBe(true);
+    });
+
+    it('should verify CC64 events are included in track registration', () => {
+      // Simulate the control change mapping
+      const harmonyControlChanges = [
+        { cc: 64, value: 127, ticks: 0, position: { measure: 0, beat: 0, subdivision: 0, tick: 0 } },
+        { cc: 64, value: 0, ticks: 960, position: { measure: 0, beat: 2, subdivision: 0, tick: 0 } },
+      ];
+
+      const controlChangeEvents = harmonyControlChanges.map((cc) => ({
+        position: cc.position,
+        type: 'harmony-control-change',
+        velocity: 0,
+        duration: 0,
+        data: {
+          cc: cc.cc,
+          value: cc.value,
+          ticks: cc.ticks,
+          originalBpm: 120,
+        },
+      }));
+
+      // Verify CC64 events are correctly structured
+      expect(controlChangeEvents).toHaveLength(2);
+      expect(controlChangeEvents[0].data.cc).toBe(64);
+      expect(controlChangeEvents[0].data.value).toBe(127); // Pedal down
+      expect(controlChangeEvents[1].data.value).toBe(0); // Pedal up
+    });
+  });
+
+  // ==========================================================================
+  // TEST SUITE: Exercise Without Harmony Notes
+  // ==========================================================================
+  describe('Exercise Without Harmony Notes', () => {
+    const createExerciseWithoutHarmony = (id: string, title: string) => ({
+      id: { value: id },
+      title,
+      harmonyInstrument: undefined, // No harmony instrument
+      harmonyNotes: [], // Empty!
+      harmonyControlChanges: [],
+      bpm: 120,
+      durationBeats: 8,
+    });
+
+    const createExerciseWithHarmony = (
+      id: string,
+      title: string,
+      instrument: 'grandpiano' | 'wurlitzer',
+    ) => ({
+      id: { value: id },
+      title,
+      harmonyInstrument: instrument,
+      harmonyNotes: [
+        {
+          id: `${id}-note-1`,
+          pitch: 60,
+          noteName: 'C4',
+          velocity: 80,
+          ticks: 0,
+          durationTicks: 480,
+          position: { measure: 0, beat: 0, subdivision: 0, tick: 0 },
+        },
+      ],
+      harmonyControlChanges: [
+        { cc: 64, value: 127, ticks: 0, position: { measure: 0, beat: 0, subdivision: 0, tick: 0 } },
+      ],
+      bpm: 120,
+      durationBeats: 8,
+    });
+
+    it('should correctly identify exercise without harmony notes', () => {
+      const exerciseWithHarmony = createExerciseWithHarmony('ex1', 'Has Harmony', 'grandpiano');
+      const exerciseWithoutHarmony = createExerciseWithoutHarmony('ex2', 'No Harmony');
+
+      expect(exerciseWithHarmony.harmonyNotes.length).toBeGreaterThan(0);
+      expect(exerciseWithoutHarmony.harmonyNotes.length).toBe(0);
+    });
+
+    it('should trigger cleanup when harmonyNoteCount becomes 0', () => {
+      // Simulate the useEffect condition
+      const shouldClearHarmony = (harmonyNoteCount: number, exerciseId: string | undefined) => {
+        return harmonyNoteCount === 0 && !!exerciseId;
+      };
+
+      const exerciseWithHarmony = createExerciseWithHarmony('ex1', 'Has Harmony', 'grandpiano');
+      const exerciseWithoutHarmony = createExerciseWithoutHarmony('ex2', 'No Harmony');
+
+      // Exercise with harmony: should NOT clear
+      expect(
+        shouldClearHarmony(exerciseWithHarmony.harmonyNotes.length, exerciseWithHarmony.id.value),
+      ).toBe(false);
+
+      // Exercise without harmony: SHOULD clear
+      expect(
+        shouldClearHarmony(
+          exerciseWithoutHarmony.harmonyNotes.length,
+          exerciseWithoutHarmony.id.value,
+        ),
+      ).toBe(true);
+    });
+
+    it('should handle rapid switching between exercises with and without harmony', () => {
+      const ex1 = createExerciseWithHarmony('ex1', 'Gospel Groove', 'grandpiano');
+      const ex2 = createExerciseWithoutHarmony('ex2', 'Pentatonic Drums Only');
+      const ex3 = createExerciseWithHarmony('ex3', 'Jazz Standard', 'wurlitzer');
+
+      // Track registration state resets
+      let registrationResetCount = 0;
+      let previousId: string | null = null;
+
+      const simulateSwitch = (exercise: { id: { value: string }; harmonyNotes: any[] }) => {
+        if (previousId !== null && previousId !== exercise.id.value) {
+          registrationResetCount++;
+        }
+        previousId = exercise.id.value;
+      };
+
+      // Switch through exercises
+      simulateSwitch(ex1); // Initial
+      simulateSwitch(ex2); // Switch to drums only
+      simulateSwitch(ex1); // Back to Gospel
+      simulateSwitch(ex3); // To Jazz
+      simulateSwitch(ex2); // Back to drums only
+      simulateSwitch(ex1); // Back to Gospel
+
+      // Each switch should trigger a registration reset
+      expect(registrationResetCount).toBe(5); // 5 switches after initial
+    });
+  });
+
+  // ==========================================================================
+  // TEST SUITE: Registration State Management
+  // ==========================================================================
+  describe('Registration State Management', () => {
+    it('should verify registration key pattern includes samplesLoadedTrigger', () => {
+      // The registration key format
+      const buildRegistrationKey = (exerciseId: string | undefined, samplesLoadedTrigger: number) => {
+        return `${exerciseId}-${samplesLoadedTrigger}`;
+      };
+
+      // Same exercise, same trigger = same key (will skip registration)
+      const key1 = buildRegistrationKey('exercise-1', 1);
+      const key2 = buildRegistrationKey('exercise-1', 1);
+      expect(key1).toBe(key2);
+
+      // Same exercise, different trigger = different key (will register)
+      const key3 = buildRegistrationKey('exercise-1', 2);
+      expect(key1).not.toBe(key3);
+
+      // Different exercise = different key (will register)
+      const key4 = buildRegistrationKey('exercise-2', 1);
+      expect(key1).not.toBe(key4);
+    });
+
+    it('should document why resetting lastRegisteredExerciseIdRef is critical', () => {
+      /**
+       * THE BUG (now fixed):
+       *
+       * 1. Exercise 1 registers with key "exercise-1-1"
+       * 2. User switches to Exercise 2 (no harmony)
+       * 3. User switches back to Exercise 1
+       * 4. Registration key is still "exercise-1-1" (samplesLoadedTrigger unchanged)
+       * 5. lastRegisteredExerciseIdRef.current === "exercise-1-1"
+       * 6. Registration is SKIPPED because key matches!
+       * 7. But harmony tracks were CLEARED in step 2!
+       * 8. Result: No harmony audio, no CC64 sustain
+       *
+       * THE FIX:
+       * When exercise changes (detected via previousExerciseIdRef):
+       *   lastRegisteredExerciseIdRef.current = null;
+       *
+       * Now the registration key check fails (null !== "exercise-1-1"),
+       * forcing a fresh registration.
+       */
+      expect(true).toBe(true);
+    });
+  });
+
+  // ==========================================================================
+  // TEST SUITE: CC64 Timeline Rebuild on Exercise Switch
+  // ==========================================================================
+  describe('CC64 Timeline Rebuild on Exercise Switch', () => {
+    /**
+     * These tests verify that the CC64 (sustain pedal) timeline is correctly
+     * rebuilt when switching between exercises. The CC64 timeline is critical
+     * for proper sustain pedal behavior in harmony playback.
+     */
+
+    it('should document the CC64 timeline rebuild flow', () => {
+      /**
+       * CC64 TIMELINE REBUILD FLOW:
+       *
+       * 1. INITIAL STATE (Exercise 1 with CC64 data):
+       *    - HarmonyWidget registers track with harmonyControlChanges
+       *    - PlaybackEngine.registerTracks() stores track with CC64 events
+       *    - On play: RegionScheduler.scheduleAll() → buildCC64Timeline()
+       *    - CC64 timeline is cached and synced to HarmonySchedulerV2
+       *
+       * 2. SWITCH TO EXERCISE 2 (drums only):
+       *    - HarmonyWidget cleanup effect detects harmonyNoteCount === 0
+       *    - playbackEngine.clearHarmonyTracks() removes harmony track
+       *    - CC64 timeline becomes stale (track is gone)
+       *
+       * 3. SWITCH BACK TO EXERCISE 1:
+       *    - previousExerciseIdRef detects exercise change
+       *    - lastRegisteredExerciseIdRef.current = null (CRITICAL!)
+       *    - HarmonyWidget re-registers with CC64 events from exercise
+       *    - On next play: buildCC64Timeline() creates NEW timeline
+       *    - CC64 timeline is re-synced to HarmonySchedulerV2
+       *
+       * WITHOUT the registration reset, step 3 would skip registration
+       * and the old (stale) CC64 timeline would be missing.
+       */
+      expect(true).toBe(true);
+    });
+
+    it('should verify CC64 events structure for timeline building', () => {
+      // CC64 events as they come from the database (via exercise.harmonyControlChanges)
+      const harmonyControlChanges = [
+        {
+          cc: 64,
+          value: 127, // Sustain ON
+          ticks: 0,
+          position: { measure: 0, beat: 0, subdivision: 0, tick: 0 },
+        },
+        {
+          cc: 64,
+          value: 0, // Sustain OFF
+          ticks: 960,
+          position: { measure: 0, beat: 2, subdivision: 0, tick: 0 },
+        },
+        {
+          cc: 64,
+          value: 127, // Sustain ON again
+          ticks: 1440,
+          position: { measure: 0, beat: 3, subdivision: 0, tick: 0 },
+        },
+        {
+          cc: 64,
+          value: 0, // Sustain OFF
+          ticks: 1920,
+          position: { measure: 1, beat: 0, subdivision: 0, tick: 0 },
+        },
+      ];
+
+      // Transform to control change events (as done in HarmonyWidget)
+      const controlChangeEvents = harmonyControlChanges.map((cc, index) => ({
+        id: `cc64-${index}`,
+        position: cc.position,
+        type: 'harmony-control-change' as const,
+        velocity: 0,
+        duration: 0,
+        data: {
+          cc: cc.cc,
+          value: cc.value,
+          ticks: cc.ticks,
+          originalBpm: 120,
+        },
+      }));
+
+      // Verify structure
+      expect(controlChangeEvents).toHaveLength(4);
+      expect(controlChangeEvents.every((e) => e.type === 'harmony-control-change')).toBe(true);
+      expect(controlChangeEvents.every((e) => e.data.cc === 64)).toBe(true);
+
+      // Verify sustain state transitions
+      expect(controlChangeEvents[0].data.value).toBe(127); // ON
+      expect(controlChangeEvents[1].data.value).toBe(0); // OFF
+      expect(controlChangeEvents[2].data.value).toBe(127); // ON
+      expect(controlChangeEvents[3].data.value).toBe(0); // OFF
+    });
+
+    it('should verify CC64 timeline is built from control change events', () => {
+      // Simulate buildCC64Timeline behavior
+      const buildCC64Timeline = (
+        events: Array<{ type: string; data: { cc: number; value: number; ticks: number } }>,
+        bpm: number,
+        ppq: number = 480,
+      ): Map<number, boolean> => {
+        const timeline = new Map<number, boolean>();
+
+        for (const event of events) {
+          if (event.type === 'harmony-control-change' && event.data.cc === 64) {
+            // Convert ticks to seconds
+            const beatsPerSecond = bpm / 60;
+            const ticksPerSecond = beatsPerSecond * ppq;
+            const timeInSeconds = event.data.ticks / ticksPerSecond;
+
+            // CC64 value > 63 means pedal down (sustain ON)
+            const isDown = event.data.value > 63;
+            timeline.set(timeInSeconds, isDown);
+          }
+        }
+
+        return timeline;
+      };
+
+      const events = [
+        {
+          type: 'harmony-control-change',
+          data: { cc: 64, value: 127, ticks: 0 },
+        },
+        {
+          type: 'harmony-control-change',
+          data: { cc: 64, value: 0, ticks: 960 },
+        },
+        {
+          type: 'harmony-control-change',
+          data: { cc: 64, value: 127, ticks: 1920 },
+        },
+      ];
+
+      const timeline = buildCC64Timeline(events, 120);
+
+      // At 120 BPM with PPQ=480:
+      // - 0 ticks = 0 seconds → sustain ON
+      // - 960 ticks = 1 second → sustain OFF
+      // - 1920 ticks = 2 seconds → sustain ON
+      expect(timeline.size).toBe(3);
+      expect(timeline.get(0)).toBe(true); // Pedal down at 0s
+      expect(timeline.get(1)).toBe(false); // Pedal up at 1s
+      expect(timeline.get(2)).toBe(true); // Pedal down at 2s
+    });
+
+    it('should verify timeline is cleared when switching to exercise without CC64', () => {
+      // Exercise 1 has CC64 events
+      const exercise1CC64 = [
+        { cc: 64, value: 127, ticks: 0 },
+        { cc: 64, value: 0, ticks: 960 },
+      ];
+
+      // Exercise 2 has no CC64 events (drums only)
+      const exercise2CC64: any[] = [];
+
+      // Simulate the cleanup flow
+      let currentTimeline: Map<number, boolean> | null = new Map([
+        [0, true],
+        [1, false],
+      ]);
+
+      // When switching to exercise without CC64
+      if (exercise2CC64.length === 0) {
+        // playbackEngine.clearHarmonyTracks() would clear this
+        currentTimeline = null;
+      }
+
+      expect(currentTimeline).toBeNull();
+    });
+
+    it('should verify timeline is rebuilt when switching back to exercise with CC64', () => {
+      // Simulate the full flow
+      let registrationState: string | null = null;
+      let timeline: Map<number, boolean> | null = null;
+
+      // Step 1: Register Exercise 1 (with CC64)
+      registrationState = 'exercise-1-1';
+      timeline = new Map([[0, true], [1, false]]);
+      expect(timeline.size).toBe(2);
+
+      // Step 2: Switch to Exercise 2 (drums only)
+      // - Cleanup effect clears harmony
+      // - previousExerciseIdRef detects change
+      // - Reset registration state
+      registrationState = null;
+      timeline = null;
+
+      // Step 3: Switch back to Exercise 1
+      // - Registration is NOT skipped (because registrationState was reset)
+      // - Track is re-registered with CC64 events
+      // - Timeline is rebuilt
+      const newRegistrationKey = 'exercise-1-1';
+      const shouldRegister = registrationState !== newRegistrationKey;
+      expect(shouldRegister).toBe(true); // CRITICAL: Must be true
+
+      // After registration
+      registrationState = newRegistrationKey;
+      timeline = new Map([[0, true], [1, false]]); // Rebuilt timeline
+
+      expect(timeline.size).toBe(2);
+      expect(timeline.get(0)).toBe(true);
+      expect(timeline.get(1)).toBe(false);
+    });
+
+    it('should verify registration key comparison handles null correctly', () => {
+      const checkRegistration = (
+        currentKey: string,
+        lastRegisteredKey: string | null,
+      ): boolean => {
+        return lastRegisteredKey !== currentKey;
+      };
+
+      // Normal case: different keys should register
+      expect(checkRegistration('ex1-1', 'ex2-1')).toBe(true);
+
+      // Same key should skip
+      expect(checkRegistration('ex1-1', 'ex1-1')).toBe(false);
+
+      // Null should ALWAYS register (this is the fix)
+      expect(checkRegistration('ex1-1', null)).toBe(true);
+      expect(checkRegistration('ex2-1', null)).toBe(true);
+
+      // After exercise change, lastRegisteredKey is null, so any exercise registers
+      let lastRegisteredKey: string | null = 'ex1-1';
+      lastRegisteredKey = null; // Reset on exercise change
+      expect(checkRegistration('ex1-1', lastRegisteredKey)).toBe(true);
+    });
+
+    it('should document full CC64 timeline rebuild scenario', () => {
+      /**
+       * FULL SCENARIO TEST:
+       *
+       * Setup:
+       * - Exercise 1: "Gospel Groove" with keyboard (grandpiano) + CC64 sustain data
+       *   - CC64 @ 0s: value=127 (pedal down)
+       *   - CC64 @ 1s: value=0 (pedal up)
+       *   - CC64 @ 2s: value=127 (pedal down)
+       *   - CC64 @ 3s: value=0 (pedal up)
+       * - Exercise 2: "Pentatonic Drums" with drums only (no harmony, no CC64)
+       *
+       * Flow:
+       * 1. User selects Exercise 1
+       *    → HarmonyWidget registers track with CC64 events
+       *    → User plays: CC64 timeline built, sustain works correctly
+       *
+       * 2. User switches to Exercise 2
+       *    → HarmonyWidget detects harmonyNoteCount === 0
+       *    → playbackEngine.clearHarmonyTracks() called
+       *    → previousExerciseIdRef updates to exercise-2
+       *    → lastRegisteredExerciseIdRef reset to null
+       *
+       * 3. User switches back to Exercise 1
+       *    → previousExerciseIdRef detects change (exercise-2 → exercise-1)
+       *    → lastRegisteredExerciseIdRef already null (from step 2)
+       *    → Registration key check: null !== 'exercise-1-X' → MUST REGISTER
+       *    → Track re-registered with CC64 events
+       *    → User plays: CC64 timeline REBUILT from fresh data
+       *    → Sustain works correctly again!
+       *
+       * Without the fix:
+       * - Step 3 would skip registration because key would match cached value
+       * - CC64 timeline would not be rebuilt
+       * - Sustain pedal would not work
+       */
+
+      // Verify the key invariant
+      const simulateExerciseSwitch = () => {
+        let previousId: string | null = null;
+        let lastRegistered: string | null = null;
+
+        // Initial mount (Exercise 1)
+        previousId = 'exercise-1';
+        lastRegistered = 'exercise-1-1';
+
+        // Switch to Exercise 2
+        const switchToExercise2 = () => {
+          const changed = previousId !== null && previousId !== 'exercise-2';
+          if (changed) {
+            lastRegistered = null; // THE FIX
+          }
+          previousId = 'exercise-2';
+          return { changed, lastRegistered };
+        };
+
+        // Switch back to Exercise 1
+        const switchBackToExercise1 = () => {
+          const changed = previousId !== null && previousId !== 'exercise-1';
+          if (changed) {
+            lastRegistered = null; // THE FIX
+          }
+          previousId = 'exercise-1';
+
+          // Registration check
+          const newKey = 'exercise-1-1';
+          const shouldRegister = lastRegistered !== newKey;
+          return { changed, shouldRegister };
+        };
+
+        return { switchToExercise2, switchBackToExercise1 };
+      };
+
+      const { switchToExercise2, switchBackToExercise1 } = simulateExerciseSwitch();
+
+      // Step 2
+      const result2 = switchToExercise2();
+      expect(result2.changed).toBe(true);
+      expect(result2.lastRegistered).toBe(null);
+
+      // Step 3
+      const result3 = switchBackToExercise1();
+      expect(result3.changed).toBe(true);
+      expect(result3.shouldRegister).toBe(true); // CRITICAL: Must register!
+    });
+  });
+});

@@ -5,8 +5,12 @@ import type {
   GeneratedHarmonyNote,
   HarmonyInstrumentType,
   HarmonyControlChange,
+  FretboardViewConfig,
 } from '@bassnotion/contracts';
 import { isVerboseDebugEnabled } from '@/config/debug';
+
+// Finger index type for bass fingering (fretting hand)
+export type FingerIndex = 1 | 2 | 3 | 4 | 'O'; // 1=index, 2=middle, 3=ring, 4=pinky, O=open string
 
 // Note type for frontend usage
 export interface ExerciseNote {
@@ -26,6 +30,9 @@ export interface ExerciseNote {
   };
   noteDuration?: string; // 'quarter', 'eighth', etc.
   durationTicks?: number; // Duration in ticks at 480 PPQ
+
+  // Fingering
+  finger_index?: FingerIndex; // Which finger plays this note
 }
 
 export interface ExerciseProps {
@@ -58,6 +65,8 @@ export interface ExerciseProps {
   harmonyNotes?: GeneratedHarmonyNote[]; // Pre-converted harmony notes
   harmonyControlChanges?: HarmonyControlChange[]; // MIDI control events (sustain, expression)
   harmonyInstrument?: HarmonyInstrumentType; // Default harmony instrument
+  // Fretboard display configuration
+  fretboardViewConfig?: FretboardViewConfig;
   createdBy?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -186,6 +195,10 @@ export class Exercise {
 
   get harmonyInstrument(): HarmonyInstrumentType | undefined {
     return this._props.harmonyInstrument;
+  }
+
+  get fretboardViewConfig(): FretboardViewConfig | undefined {
+    return this._props.fretboardViewConfig;
   }
 
   get createdBy(): string | undefined {
@@ -344,6 +357,7 @@ export class Exercise {
       harmonyNotes: dto.harmony_notes,
       harmonyControlChanges: dto.harmony_control_changes,
       harmonyInstrument: dto.harmony_instrument,
+      fretboardViewConfig: dto.fretboard_view_config,
       createdBy: dto.created_by,
       createdAt: new Date(dto.created_at),
       updatedAt: new Date(dto.updated_at),
@@ -391,6 +405,7 @@ export class Exercise {
       harmony_notes: this._props.harmonyNotes,
       harmony_control_changes: this._props.harmonyControlChanges,
       harmony_instrument: this._props.harmonyInstrument,
+      fretboard_view_config: this._props.fretboardViewConfig,
       created_by: this._props.createdBy,
       created_at: this._props.createdAt.toISOString(),
       updated_at: this._props.updatedAt.toISOString(),

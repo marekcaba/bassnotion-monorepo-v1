@@ -1,9 +1,15 @@
 /**
  * Billing API Client
  * Handles all communication with the billing backend endpoints
+ *
+ * NOTE: Stripe integration is not yet complete. The billing endpoints
+ * will return 500 errors until connected to Stripe in production.
+ * For development, we return mock data to prevent console spam.
+ *
+ * TODO: Connect to Stripe before production launch
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import {
   ProductsResponse,
   CheckoutSessionResponse,
@@ -14,14 +20,36 @@ import {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
+// ============================================================================
+// DEVELOPMENT MODE - Billing API not connected to Stripe yet
+// ============================================================================
+// Set to true to bypass billing API calls and return mock data
+// This prevents 500 errors and console spam during development
+// TODO: Set to false when Stripe integration is complete
+const BILLING_DEV_MODE = true;
+
+// Mock data for development
+const MOCK_USER_ACCESS: UserAccessStatus = {
+  hasActiveSubscription: true, // Pretend user has premium for dev/testing
+  subscriptionStatus: 'active',
+  subscriptionPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+  purchasedCourses: [],
+};
+// ============================================================================
+
 /**
- * Get Supabase client for auth token
+ * Singleton Supabase client to prevent "Multiple GoTrueClient instances" warning
  */
-function getSupabaseClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  );
+let supabaseClient: SupabaseClient | null = null;
+
+function getSupabaseClient(): SupabaseClient {
+  if (!supabaseClient) {
+    supabaseClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    );
+  }
+  return supabaseClient;
 }
 
 /**
@@ -110,8 +138,16 @@ export const billingApi = {
   /**
    * Get current user's access status (subscriptions and purchases)
    * Requires authentication
+   *
+   * NOTE: In BILLING_DEV_MODE, returns mock data to avoid 500 errors
+   * from the unconnected Stripe backend.
    */
   async getUserAccess(): Promise<UserAccessStatus> {
+    // DEV MODE: Return mock data to prevent console errors
+    if (BILLING_DEV_MODE) {
+      return MOCK_USER_ACCESS;
+    }
+
     const headers = await getAuthHeaders();
 
     const response = await fetch(`${API_BASE_URL}/api/v1/billing/access`, {

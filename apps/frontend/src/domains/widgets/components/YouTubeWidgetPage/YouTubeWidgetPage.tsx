@@ -4,12 +4,12 @@ import React, { useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 // Import our new components
 import { TutorialVideoCard } from './TutorialVideoCard';
-import { ExerciseSelector } from './ExerciseSelector';
-import { ExerciseControlPanel } from './ExerciseControlPanel';
-import { FretboardCard } from './FretboardCard';
+// ExerciseSelector merged into GlobalControlsCard
+import { FretboardCard, FRETBOARD_VIEW_PRESETS } from './FretboardCard';
 
 import { FourWidgetsCard } from './components/FourWidgetsCard';
 import { GlobalControlsCard } from './components/GlobalControlsCard';
+import { SheetPlayerCard } from './components/SheetPlayerCard';
 import { TeachingTakeawayCard } from './TeachingTakeawayCard';
 import { TransportClock } from './components/TransportClock';
 import { TimingDebugWindow } from './components/TimingDebugWindow';
@@ -244,7 +244,6 @@ function YouTubeWidgetPageContent({
   // YouTubeWidgetPageContent only needs controls (start, stop, pause, seekTo, isPlaying),
   // not the rapidly-changing position. Position-dependent UI is in child components.
   const transport = useTransportControls();
-  const [is3DMode, setIs3DMode] = React.useState(false);
   const [selectedDots, setSelectedDots] = React.useState<Map<string, number[]>>(
     new Map(),
   );
@@ -346,11 +345,168 @@ function YouTubeWidgetPageContent({
       );
     };
   }, []); // FIXED: Empty dependency array - listener should only be set up once
-  const [tiltAngle, setTiltAngle] = React.useState(35);
-  const [cameraDistance, _setCameraDistance] = React.useState(7);
-  const [cameraMode, setCameraMode] = React.useState<'overview' | 'action'>(
-    'overview',
-  );
+
+  // DEBUG: XYZ rotation controls for 2D fretboard CSS transform
+  // These rotate the 2D fretboard (and affect where 3D overlay appears)
+  // CALIBRATED DEFAULT: 51° tilt provides optimal Guitar Hero-style view
+  const [debugRotation, setDebugRotation] = React.useState({
+    x: 51, // Calibrated tilt angle (was 39°)
+    y: 0,
+    z: 0,
+  });
+
+  // DEBUG: Hide 2D fretboard to see only the 3D overlay
+  const [hide2DFretboard, setHide2DFretboard] = React.useState(true); // Default to hidden - use 3D overlay only
+
+  // DEBUG: Hide 3D fretboard overlay
+  const [hide3DFretboard, setHide3DFretboard] = React.useState(false);
+
+  // DEBUG: 3D Overlay-specific controls for calibrating the Three.js scene
+  // These control the 3D camera/scene independently from the 2D CSS transform
+  // CALIBRATED DEFAULTS: These values align 3D overlay with 2D fretboard after string order fix
+  const [overlay3DConfig, setOverlay3DConfig] = React.useState({
+    rotationX: 0, // 3D scene rotation around X axis
+    rotationY: 0, // 3D scene rotation around Y axis
+    rotationZ: 0, // 3D scene rotation around Z axis
+    offsetX: 25, // Horizontal offset in pixels (calibrated)
+    offsetY: 3, // Vertical offset in pixels (calibrated)
+    // Scene position controls (in pixels, matching CSS coordinate system)
+    sceneX: 3, // Scene translation X (calibrated)
+    sceneY: 0, // Scene translation Y - keep at 0 so rotation center matches CSS transform-origin: center center
+    sceneZ: 174, // Scene translation Z (depth) (re-calibrated after string order fix - was 193)
+    // Camera controls
+    cameraDistance: 740, // Camera Z distance (calibrated)
+    fovOffset: 0, // Fine-tune FOV (added to calculated value)
+    // Transform origin (pivot point for rotations)
+    originX: 284, // Center of 568px canvas
+    originY: 136, // Calibrated Y origin
+    // Content scale for fine-tuning 3D/2D size match
+    contentScale: 1.30, // Scales the 3D content area uniformly (calibrated)
+    // Independent X scale for fixing horizontal stretch (perspective distortion)
+    contentScaleX: 0.959, // Scales only X axis (calibrated)
+    // Independent Y scale for fixing vertical stretch (perspective distortion)
+    contentScaleY: 0.949, // Scales only Y axis (calibrated)
+    // Camera Y offset to adjust perspective vanishing point (affects top/bottom ratio)
+    cameraY: 0, // Shifts camera up/down to match CSS perspective-origin
+    // Perspective multiplier - scales how much the perspective effect applies when tilted
+    // 1.0 = normal, <1.0 = less perspective (top/bottom more equal), >1.0 = more perspective
+    perspectiveMultiplier: 0.98, // Calibrated
+    // Top edge width scale - scales X width of dots near the top of fretboard
+    // 1.0 = no change, <1.0 = narrower top edge, >1.0 = wider top edge
+    topEdgeScale: 1.0,
+    // Bottom edge width scale - scales X width of dots near the bottom of fretboard
+    // 1.0 = no change, <1.0 = narrower bottom edge, >1.0 = wider bottom edge
+    bottomEdgeScale: 1.0,
+    // Positioning mode for how 3D dots are placed relative to tilt
+    // 'flat' = original (dots at Z=0, scene rotation handles tilt)
+    // 'tilted-plane' = dots placed ON tilted plane in 3D space
+    // 'screen-space' = dots positioned to match CSS screen positions
+    positioningMode: 'flat' as 'flat' | 'tilted-plane' | 'screen-space',
+    // Tilt axis offset - slides content along the tilted plane axis
+    // Positive = slide toward top (away from camera), Negative = slide toward bottom (toward camera)
+    tiltAxisOffset: -23, // Calibrated for 3D dot alignment
+    // Tilt axis X offset - slides content left/right on the tilted plane
+    tiltAxisOffsetX: 448, // Calibrated
+    // Edge fade zones (percentage of viewport width)
+    leftFadeZone: 10, // Left edge fade (0-20%) - calibrated
+    rightFadeZone: 10, // Right edge fade (0-20%) - calibrated
+    // Fade edge angle - controls perspective convergence of fade edges toward vanishing point
+    // 0 = vertical edges, higher values = more angled toward center
+    fadeEdgeAngle: 0, // Degrees (0-45), 0° = vertical edges (calibrated)
+    // Yellow active ring controls
+    activeRingZOffset: -1, // Z offset of yellow ring relative to dot (in pixels)
+    activeRingRadius: 13, // Outer radius of the yellow ring
+    activeRingTubeRadius: 1.25, // Thickness of the ring tube
+    // Active dot color (currently playing note)
+    activeDotColor: '#16a34a', // green-600
+    // Yellow ring color (active note indicator)
+    activeRingColor: '#facc15', // yellow-400
+    // Bloom post-processing controls (enabled by default)
+    bloomEnabled: true,
+    bloomIntensity: 0.0,
+    bloomThreshold: 1.0,
+    // Finger label positioning
+    fingerLabelOffsetX: 0,
+    fingerLabelOffsetY: -2,
+  });
+
+  // Adjust sceneX based on string count (4-string needs different positioning)
+  // 4-string fretboard: sceneX = 20 (default for 4-string layout)
+  // 5-string fretboard: sceneX = 3 (calibrated for 5-string layout)
+  useEffect(() => {
+    const targetSceneX = stringCount === 4 ? 20 : 3;
+    setOverlay3DConfig((prev) => {
+      if (prev.sceneX !== targetSceneX) {
+        return { ...prev, sceneX: targetSceneX };
+      }
+      return prev;
+    });
+  }, [stringCount]);
+
+  // Update debug panel (overlay3DConfig) when exercise preset changes
+  // This ensures the debug panel sliders reflect the actual values being applied
+  useEffect(() => {
+    const exercise = widgetState.selectedExercise;
+    const presetName = exercise?.fretboardViewConfig?.preset || 'default';
+    const preset = FRETBOARD_VIEW_PRESETS[presetName as keyof typeof FRETBOARD_VIEW_PRESETS];
+
+    console.log('[YOUTUBE-WIDGET] Preset change detected:', {
+      exerciseId: exercise?.id,
+      presetName,
+      hasOverlay3D: !!preset?.overlay3D,
+    });
+
+    if (preset?.overlay3D) {
+      // Apply preset's 3D overlay values to debug panel
+      const o = preset.overlay3D;
+      setOverlay3DConfig((prev) => ({
+        ...prev,
+        sceneX: o.sceneX,
+        sceneY: o.sceneY,
+        sceneZ: o.sceneZ,
+        contentScale: o.scale,
+        contentScaleX: o.scaleX,
+        contentScaleY: o.scaleY,
+        rotationX: o.rotX,
+        rotationY: o.rotY,
+        rotationZ: o.rotZ,
+        offsetX: o.canvasOffsetX,
+        offsetY: o.canvasOffsetY,
+        cameraDistance: o.camDist,
+        fovOffset: o.fov,
+        cameraY: o.camY,
+        perspectiveMultiplier: o.persp,
+        originX: o.originX,
+        originY: o.originY,
+        tiltAxisOffset: o.tiltYOffset,
+        tiltAxisOffsetX: o.tiltXOffset,
+      }));
+    } else if (presetName === 'default') {
+      // Reset to default values when switching back to default preset
+      setOverlay3DConfig((prev) => ({
+        ...prev,
+        sceneX: stringCount === 4 ? 20 : 3,
+        sceneY: 0,
+        sceneZ: 174,
+        contentScale: 1.30,
+        contentScaleX: 0.959,
+        contentScaleY: 0.949,
+        rotationX: 0,
+        rotationY: 0,
+        rotationZ: 0,
+        offsetX: 25,
+        offsetY: 3,
+        cameraDistance: 740,
+        fovOffset: 0,
+        cameraY: 0,
+        perspectiveMultiplier: 0.98,
+        originX: 284,
+        originY: 136,
+        tiltAxisOffset: -23,
+        tiltAxisOffsetX: 448,
+      }));
+    }
+  }, [widgetState.selectedExercise?.id, widgetState.selectedExercise?.fretboardViewConfig?.preset, stringCount]);
 
   // FAANG Solution: Lift selected exercise state to parent
   const [selectedExerciseId, setSelectedExerciseId] = React.useState<
@@ -442,20 +598,12 @@ function YouTubeWidgetPageContent({
   // REMOVED: globalExerciseSelectionRef - not needed without global selection
 
   // Memoize event handlers to prevent re-renders
-  const handleToggle3DMode = useCallback(() => {
-    setIs3DMode((prev) => !prev);
-  }, []);
-
   const handleSetStringCount3D = useCallback(
     (count: number) => {
       setStringCount(count as 4 | 5 | 6);
     },
     [setStringCount],
   );
-
-  const handleSetCameraMode = useCallback((mode: CameraMode) => {
-    setCameraMode(mode);
-  }, []);
 
   const handleSetSelectedDots3D = useCallback((dots: Set<string>) => {
     setSelectedDots(dots);
@@ -501,9 +649,8 @@ function YouTubeWidgetPageContent({
           duration: exercise.duration,
           duration_beats: exercise.duration_beats,
           timeSignature: exercise.timeSignature,
-          hasDrumPattern: !!exercise.drum_pattern,
-          drumPatternEnabled: exercise.drum_pattern?.enabled,
-          drumPatternLength: exercise.drum_pattern?.pattern?.length,
+          hasDrumPattern: !!(exercise.drumPattern && exercise.drumPattern.length > 0),
+          drumPatternHits: exercise.drumPattern?.length || 0,
           harmonyInstrument: exercise.harmonyInstrument,
         });
 
@@ -674,10 +821,6 @@ function YouTubeWidgetPageContent({
 
   const handleResetSelection = useCallback(() => {
     setSelectedDots(new Map());
-  }, []);
-
-  const handleTiltAngleChange = useCallback((newTiltAngle: number) => {
-    setTiltAngle(newTiltAngle);
   }, []);
 
   // Handle play state changes from GlobalControls
@@ -926,33 +1069,854 @@ function YouTubeWidgetPageContent({
           {/* 1. Tutorial Video Card - Title, Creator, Video, Description, Core Concept */}
           <TutorialVideoCard tutorialData={tutorialData} />
 
-          {/* NEW: Exercise Control Panel - Compact selector with controls (PREVIEW) */}
-          <ExerciseControlPanel
-            exercises={exercises || []}
+          {/* 2. Exercise Selector - Now integrated into GlobalControlsCard */}
+
+          {/* DEBUG: 3D Overlay-specific Calibration Controls */}
+          {false && (
+            <div className="mb-4 p-4 bg-purple-900/30 rounded-lg border border-purple-700">
+              <div className="text-xs font-mono text-purple-400 mb-3">
+                🎮 DEBUG: 3D Overlay Scene Controls (Three.js)
+              </div>
+
+              {/* Row 1: XYZ Rotation */}
+              <div className="grid grid-cols-3 gap-4 mb-4">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-red-400 font-mono">
+                    3D Rot X: {overlay3DConfig.rotationX}°
+                  </label>
+                  <input
+                    type="range"
+                    min="-180"
+                    max="180"
+                    value={overlay3DConfig.rotationX}
+                    onChange={(e) =>
+                      setOverlay3DConfig((prev) => ({
+                        ...prev,
+                        rotationX: Number(e.target.value),
+                      }))
+                    }
+                    className="accent-red-500"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-green-400 font-mono">
+                    3D Rot Y: {overlay3DConfig.rotationY}°
+                  </label>
+                  <input
+                    type="range"
+                    min="-180"
+                    max="180"
+                    value={overlay3DConfig.rotationY}
+                    onChange={(e) =>
+                      setOverlay3DConfig((prev) => ({
+                        ...prev,
+                        rotationY: Number(e.target.value),
+                      }))
+                    }
+                    className="accent-green-500"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-blue-400 font-mono">
+                    3D Rot Z: {overlay3DConfig.rotationZ}°
+                  </label>
+                  <input
+                    type="range"
+                    min="-180"
+                    max="180"
+                    value={overlay3DConfig.rotationZ}
+                    onChange={(e) =>
+                      setOverlay3DConfig((prev) => ({
+                        ...prev,
+                        rotationZ: Number(e.target.value),
+                      }))
+                    }
+                    className="accent-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* Row 2: Canvas Offset X/Y (CSS positioning) */}
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-cyan-400 font-mono">
+                    Canvas Offset X: {overlay3DConfig.offsetX}px
+                  </label>
+                  <input
+                    type="range"
+                    min="-1000"
+                    max="500"
+                    value={overlay3DConfig.offsetX}
+                    onChange={(e) =>
+                      setOverlay3DConfig((prev) => ({
+                        ...prev,
+                        offsetX: Number(e.target.value),
+                      }))
+                    }
+                    className="accent-cyan-500"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-pink-400 font-mono">
+                    Canvas Offset Y: {overlay3DConfig.offsetY}px
+                  </label>
+                  <input
+                    type="range"
+                    min="-200"
+                    max="200"
+                    value={overlay3DConfig.offsetY}
+                    onChange={(e) =>
+                      setOverlay3DConfig((prev) => ({
+                        ...prev,
+                        offsetY: Number(e.target.value),
+                      }))
+                    }
+                    className="accent-pink-500"
+                  />
+                </div>
+              </div>
+
+              {/* Row 4: Scene Position X/Y/Z (Three.js world coordinates) */}
+              <div className="grid grid-cols-3 gap-4 mb-4">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-red-300 font-mono">
+                    Scene X: {overlay3DConfig.sceneX}px
+                  </label>
+                  <input
+                    type="range"
+                    min="-300"
+                    max="300"
+                    value={overlay3DConfig.sceneX}
+                    onChange={(e) =>
+                      setOverlay3DConfig((prev) => ({
+                        ...prev,
+                        sceneX: Number(e.target.value),
+                      }))
+                    }
+                    className="accent-red-300"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-green-300 font-mono">
+                    Scene Y: {overlay3DConfig.sceneY}px
+                  </label>
+                  <input
+                    type="range"
+                    min="-300"
+                    max="300"
+                    value={overlay3DConfig.sceneY}
+                    onChange={(e) =>
+                      setOverlay3DConfig((prev) => ({
+                        ...prev,
+                        sceneY: Number(e.target.value),
+                      }))
+                    }
+                    className="accent-green-300"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-blue-300 font-mono">
+                    Scene Z: {overlay3DConfig.sceneZ}px
+                  </label>
+                  <input
+                    type="range"
+                    min="-500"
+                    max="500"
+                    value={overlay3DConfig.sceneZ}
+                    onChange={(e) =>
+                      setOverlay3DConfig((prev) => ({
+                        ...prev,
+                        sceneZ: Number(e.target.value),
+                      }))
+                    }
+                    className="accent-blue-300"
+                  />
+                </div>
+              </div>
+
+              {/* Row 5: Camera Distance, FOV, Camera Y & Perspective Multiplier */}
+              <div className="grid grid-cols-4 gap-3 mb-4">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-violet-400 font-mono">
+                    Cam Dist: {overlay3DConfig.cameraDistance}px
+                  </label>
+                  <input
+                    type="range"
+                    min="400"
+                    max="3200"
+                    step="10"
+                    value={overlay3DConfig.cameraDistance}
+                    onChange={(e) =>
+                      setOverlay3DConfig((prev) => ({
+                        ...prev,
+                        cameraDistance: Number(e.target.value),
+                      }))
+                    }
+                    className="accent-violet-500"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-amber-400 font-mono">
+                    FOV: {overlay3DConfig.fovOffset}°
+                  </label>
+                  <input
+                    type="range"
+                    min="-30"
+                    max="30"
+                    value={overlay3DConfig.fovOffset}
+                    onChange={(e) =>
+                      setOverlay3DConfig((prev) => ({
+                        ...prev,
+                        fovOffset: Number(e.target.value),
+                      }))
+                    }
+                    className="accent-amber-500"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-indigo-400 font-mono">
+                    Cam Y: {overlay3DConfig.cameraY}px
+                  </label>
+                  <input
+                    type="range"
+                    min="-200"
+                    max="200"
+                    value={overlay3DConfig.cameraY}
+                    onChange={(e) =>
+                      setOverlay3DConfig((prev) => ({
+                        ...prev,
+                        cameraY: Number(e.target.value),
+                      }))
+                    }
+                    className="accent-indigo-500"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-pink-400 font-mono">
+                    Persp: {overlay3DConfig.perspectiveMultiplier.toFixed(2)}x
+                  </label>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="1.5"
+                    step="0.01"
+                    value={overlay3DConfig.perspectiveMultiplier}
+                    onChange={(e) =>
+                      setOverlay3DConfig((prev) => ({
+                        ...prev,
+                        perspectiveMultiplier: Number(e.target.value),
+                      }))
+                    }
+                    className="accent-pink-500"
+                  />
+                </div>
+              </div>
+
+              {/* Row 6: Transform Origin */}
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-teal-400 font-mono">
+                    Origin X: {overlay3DConfig.originX}px
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="568"
+                    value={overlay3DConfig.originX}
+                    onChange={(e) =>
+                      setOverlay3DConfig((prev) => ({
+                        ...prev,
+                        originX: Number(e.target.value),
+                      }))
+                    }
+                    className="accent-teal-500"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-rose-400 font-mono">
+                    Origin Y: {overlay3DConfig.originY}px
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="290"
+                    value={overlay3DConfig.originY}
+                    onChange={(e) =>
+                      setOverlay3DConfig((prev) => ({
+                        ...prev,
+                        originY: Number(e.target.value),
+                      }))
+                    }
+                    className="accent-rose-500"
+                  />
+                </div>
+              </div>
+
+              {/* Row 7: Content Scale (uniform), Scale X (horizontal), Scale Y (vertical) */}
+              <div className="grid grid-cols-3 gap-4 mb-4">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-lime-400 font-mono">
+                    Scale: {overlay3DConfig.contentScale.toFixed(2)}x
+                  </label>
+                  <input
+                    type="range"
+                    min="0.8"
+                    max="1.3"
+                    step="0.01"
+                    value={overlay3DConfig.contentScale}
+                    onChange={(e) =>
+                      setOverlay3DConfig((prev) => ({
+                        ...prev,
+                        contentScale: Number(e.target.value),
+                      }))
+                    }
+                    className="accent-lime-500"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-emerald-400 font-mono">
+                    Scale X: {overlay3DConfig.contentScaleX.toFixed(3)}x
+                  </label>
+                  <input
+                    type="range"
+                    min="0.9"
+                    max="1.1"
+                    step="0.001"
+                    value={overlay3DConfig.contentScaleX}
+                    onChange={(e) =>
+                      setOverlay3DConfig((prev) => ({
+                        ...prev,
+                        contentScaleX: Number(e.target.value),
+                      }))
+                    }
+                    className="accent-emerald-500"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-teal-400 font-mono">
+                    Scale Y: {overlay3DConfig.contentScaleY.toFixed(3)}x
+                  </label>
+                  <input
+                    type="range"
+                    min="0.9"
+                    max="1.1"
+                    step="0.001"
+                    value={overlay3DConfig.contentScaleY}
+                    onChange={(e) =>
+                      setOverlay3DConfig((prev) => ({
+                        ...prev,
+                        contentScaleY: Number(e.target.value),
+                      }))
+                    }
+                    className="accent-teal-500"
+                  />
+                </div>
+              </div>
+
+              {/* Row 8: Tilt Axis Offsets (slides along tilted plane - Y and X) */}
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-amber-400 font-mono">
+                    Tilt Y Offset: {overlay3DConfig.tiltAxisOffset}px
+                  </label>
+                  <input
+                    type="range"
+                    min="-150"
+                    max="150"
+                    step="1"
+                    value={overlay3DConfig.tiltAxisOffset}
+                    onChange={(e) =>
+                      setOverlay3DConfig((prev) => ({
+                        ...prev,
+                        tiltAxisOffset: Number(e.target.value),
+                      }))
+                    }
+                    className="accent-amber-500"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-orange-400 font-mono">
+                    Tilt X Offset: {overlay3DConfig.tiltAxisOffsetX}px
+                  </label>
+                  <input
+                    type="range"
+                    min="-500"
+                    max="500"
+                    step="1"
+                    value={overlay3DConfig.tiltAxisOffsetX}
+                    onChange={(e) =>
+                      setOverlay3DConfig((prev) => ({
+                        ...prev,
+                        tiltAxisOffsetX: Number(e.target.value),
+                      }))
+                    }
+                    className="accent-orange-500"
+                  />
+                </div>
+              </div>
+
+              {/* Row 9: Positioning Mode Toggle */}
+              <div className="flex flex-wrap gap-2 items-center">
+                <span className="text-xs text-gray-400 font-mono">Position Mode:</span>
+                {(['flat', 'tilted-plane', 'screen-space'] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() =>
+                      setOverlay3DConfig((prev) => ({
+                        ...prev,
+                        positioningMode: mode,
+                      }))
+                    }
+                    className={`px-2 py-1 text-xs rounded ${
+                      overlay3DConfig.positioningMode === mode
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    {mode}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => {
+                  setOverlay3DConfig({
+                    rotationX: 0,
+                    rotationY: 0,
+                    rotationZ: 0,
+                    offsetX: 0,
+                    offsetY: 0,
+                    sceneX: 0,
+                    sceneY: 0, // Keep at 0 so rotation center matches CSS
+                    sceneZ: 0,
+                    cameraDistance: 800,
+                    fovOffset: 0,
+                    originX: 284,
+                    originY: 145,
+                    contentScale: 1.0,
+                    contentScaleX: 1.0,
+                    contentScaleY: 1.0,
+                    cameraY: 0,
+                    perspectiveMultiplier: 1.0,
+                    topEdgeScale: 1.0,
+                    bottomEdgeScale: 1.0,
+                    positioningMode: 'screen-space',
+                    tiltAxisOffset: 0,
+                    tiltAxisOffsetX: 0,
+                    leftFadeZone: 10,
+                    rightFadeZone: 10,
+                    fadeEdgeAngle: 0,
+                  });
+                }}
+                className="px-3 py-1 text-xs bg-purple-700 hover:bg-purple-600 rounded"
+              >
+                Reset 3D Overlay
+              </button>
+
+              {/* Hide 2D Fretboard checkbox */}
+              <label className="flex items-center gap-2 text-xs text-zinc-400 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={hide2DFretboard}
+                  onChange={(e) => setHide2DFretboard(e.target.checked)}
+                  className="w-4 h-4 accent-red-500"
+                />
+                Hide 2D Fretboard
+              </label>
+
+              {/* Hide 3D Fretboard checkbox */}
+              <label className="flex items-center gap-2 text-xs text-zinc-400 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={hide3DFretboard}
+                  onChange={(e) => setHide3DFretboard(e.target.checked)}
+                  className="w-4 h-4 accent-blue-500"
+                />
+                Hide 3D Overlay
+              </label>
+
+              {/* Yellow Active Ring Controls */}
+              <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-purple-700">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-yellow-400 font-mono">
+                    Ring Z Offset: {overlay3DConfig.activeRingZOffset}px
+                  </label>
+                  <input
+                    type="range"
+                    min="-20"
+                    max="20"
+                    step="0.5"
+                    value={overlay3DConfig.activeRingZOffset}
+                    onChange={(e) =>
+                      setOverlay3DConfig((prev) => ({
+                        ...prev,
+                        activeRingZOffset: Number(e.target.value),
+                      }))
+                    }
+                    className="accent-yellow-500"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-yellow-400 font-mono">
+                    Ring Radius: {overlay3DConfig.activeRingRadius}px
+                  </label>
+                  <input
+                    type="range"
+                    min="5"
+                    max="30"
+                    step="0.5"
+                    value={overlay3DConfig.activeRingRadius}
+                    onChange={(e) =>
+                      setOverlay3DConfig((prev) => ({
+                        ...prev,
+                        activeRingRadius: Number(e.target.value),
+                      }))
+                    }
+                    className="accent-yellow-500"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-yellow-400 font-mono">
+                    Ring Tube: {overlay3DConfig.activeRingTubeRadius}px
+                  </label>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="5"
+                    step="0.25"
+                    value={overlay3DConfig.activeRingTubeRadius}
+                    onChange={(e) =>
+                      setOverlay3DConfig((prev) => ({
+                        ...prev,
+                        activeRingTubeRadius: Number(e.target.value),
+                      }))
+                    }
+                    className="accent-yellow-500"
+                  />
+                </div>
+              </div>
+
+              {/* Color Pickers */}
+              <div className="mt-4 pt-4 border-t border-purple-700 grid grid-cols-2 gap-4">
+                {/* Active Dot Color Picker */}
+                <div className="flex items-center gap-3">
+                  <label className="text-xs text-green-400 font-mono">
+                    Active Dot:
+                  </label>
+                  <input
+                    type="color"
+                    value={overlay3DConfig.activeDotColor}
+                    onChange={(e) =>
+                      setOverlay3DConfig((prev) => ({
+                        ...prev,
+                        activeDotColor: e.target.value,
+                      }))
+                    }
+                    className="w-10 h-8 cursor-pointer rounded border border-green-500"
+                  />
+                  <span className="text-xs text-zinc-400 font-mono">
+                    {overlay3DConfig.activeDotColor}
+                  </span>
+                </div>
+
+                {/* Active Ring Color Picker */}
+                <div className="flex items-center gap-3">
+                  <label className="text-xs text-yellow-400 font-mono">
+                    Ring Color:
+                  </label>
+                  <input
+                    type="color"
+                    value={overlay3DConfig.activeRingColor}
+                    onChange={(e) =>
+                      setOverlay3DConfig((prev) => ({
+                        ...prev,
+                        activeRingColor: e.target.value,
+                      }))
+                    }
+                    className="w-10 h-8 cursor-pointer rounded border border-yellow-500"
+                  />
+                  <span className="text-xs text-zinc-400 font-mono">
+                    {overlay3DConfig.activeRingColor}
+                  </span>
+                </div>
+              </div>
+
+              {/* Finger Label Position Controls */}
+              <div className="mt-4 pt-4 border-t border-purple-700">
+                <div className="text-xs font-mono text-cyan-400 mb-2">
+                  🔢 Finger Label Offset
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-cyan-400 font-mono">
+                      X: {overlay3DConfig.fingerLabelOffsetX ?? 0}
+                    </label>
+                    <input
+                      type="range"
+                      min="-20"
+                      max="20"
+                      step="1"
+                      value={overlay3DConfig.fingerLabelOffsetX ?? 0}
+                      onChange={(e) =>
+                        setOverlay3DConfig((prev) => ({
+                          ...prev,
+                          fingerLabelOffsetX: Number(e.target.value),
+                        }))
+                      }
+                      className="accent-cyan-500"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-cyan-400 font-mono">
+                      Y: {overlay3DConfig.fingerLabelOffsetY ?? 0}
+                    </label>
+                    <input
+                      type="range"
+                      min="-20"
+                      max="20"
+                      step="1"
+                      value={overlay3DConfig.fingerLabelOffsetY ?? 0}
+                      onChange={(e) =>
+                        setOverlay3DConfig((prev) => ({
+                          ...prev,
+                          fingerLabelOffsetY: Number(e.target.value),
+                        }))
+                      }
+                      className="accent-cyan-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          )}
+
+          {/* DEBUG: 3D Overlay XYZ Rotation Controls */}
+          {false && (
+            <div className="mb-4 p-4 bg-zinc-900 rounded-lg border border-zinc-700">
+              <div className="text-xs font-mono text-zinc-400 mb-3">
+                🔧 DEBUG: 3D Overlay XYZ Rotation Controls
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                {/* X Rotation (tilt forward/backward) */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-red-400 font-mono">
+                    X (Tilt): {debugRotation.x}°
+                  </label>
+                  <input
+                    type="range"
+                    min="-90"
+                    max="90"
+                    value={debugRotation.x}
+                    onChange={(e) => {
+                      const newX = Number(e.target.value);
+                      setDebugRotation((prev) => ({ ...prev, x: newX }));
+                    }}
+                    className="accent-red-500"
+                  />
+                </div>
+                {/* Y Rotation (spin left/right) */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-green-400 font-mono">
+                    Y (Spin): {debugRotation.y}°
+                  </label>
+                  <input
+                    type="range"
+                    min="-180"
+                    max="180"
+                    value={debugRotation.y}
+                    onChange={(e) =>
+                      setDebugRotation((prev) => ({
+                        ...prev,
+                        y: Number(e.target.value),
+                      }))
+                    }
+                    className="accent-green-500"
+                  />
+                </div>
+                {/* Z Rotation (roll) */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-blue-400 font-mono">
+                    Z (Roll): {debugRotation.z}°
+                  </label>
+                  <input
+                    type="range"
+                    min="-90"
+                    max="90"
+                    value={debugRotation.z}
+                    onChange={(e) =>
+                      setDebugRotation((prev) => ({
+                        ...prev,
+                        z: Number(e.target.value),
+                      }))
+                    }
+                    className="accent-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* Edge Fade Controls */}
+              <div className="mt-4 pt-3 border-t border-zinc-700">
+                <div className="text-xs text-zinc-500 mb-2">Edge Fade Zones</div>
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Left Fade Zone */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-amber-400 font-mono">
+                      Left Fade: {overlay3DConfig.leftFadeZone}%
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="20"
+                      value={overlay3DConfig.leftFadeZone}
+                      onChange={(e) =>
+                        setOverlay3DConfig((prev) => ({
+                          ...prev,
+                          leftFadeZone: Number(e.target.value),
+                        }))
+                      }
+                      className="accent-amber-500"
+                    />
+                  </div>
+                  {/* Right Fade Zone */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-purple-400 font-mono">
+                      Right Fade: {overlay3DConfig.rightFadeZone}%
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="20"
+                      value={overlay3DConfig.rightFadeZone}
+                      onChange={(e) =>
+                        setOverlay3DConfig((prev) => ({
+                          ...prev,
+                          rightFadeZone: Number(e.target.value),
+                        }))
+                      }
+                      className="accent-purple-500"
+                    />
+                  </div>
+                </div>
+                {/* Fade Edge Angle - Controls perspective convergence of fade edges */}
+                <div className="flex flex-col gap-1 mt-3">
+                  <label className="text-xs text-cyan-400 font-mono">
+                    Edge Angle: {overlay3DConfig.fadeEdgeAngle}° (0=vertical, higher=more perspective)
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="45"
+                    step="1"
+                    value={overlay3DConfig.fadeEdgeAngle}
+                    onChange={(e) =>
+                      setOverlay3DConfig((prev) => ({
+                        ...prev,
+                        fadeEdgeAngle: Number(e.target.value),
+                      }))
+                    }
+                    className="accent-cyan-500"
+                  />
+                </div>
+              </div>
+
+              {/* Bloom Post-Processing Controls */}
+              <div className="mt-4 pt-4 border-t border-purple-700">
+                <div className="text-xs font-mono text-yellow-400 mb-2">
+                  ✨ Bloom Post-Processing
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-yellow-400 font-mono">
+                      Intensity: {overlay3DConfig.bloomIntensity?.toFixed(2) ?? '0.00'}
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="2"
+                      step="0.05"
+                      value={overlay3DConfig.bloomIntensity ?? 0}
+                      onChange={(e) =>
+                        setOverlay3DConfig((prev) => ({
+                          ...prev,
+                          bloomIntensity: Number(e.target.value),
+                        }))
+                      }
+                      className="accent-yellow-500"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-orange-400 font-mono">
+                      Threshold: {overlay3DConfig.bloomThreshold?.toFixed(2) ?? '1.00'}
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={overlay3DConfig.bloomThreshold ?? 1}
+                      onChange={(e) =>
+                        setOverlay3DConfig((prev) => ({
+                          ...prev,
+                          bloomThreshold: Number(e.target.value),
+                        }))
+                      }
+                      className="accent-orange-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  setDebugRotation({ x: 0, y: 0, z: 0 });
+                }}
+                className="mt-2 px-3 py-1 text-xs bg-zinc-700 hover:bg-zinc-600 rounded"
+              >
+                Reset to Flat
+              </button>
+            </div>
+          )}
+
+          {/* 4. Interactive Fretboard Card - Now without Exercise Selector */}
+          <FretboardCard
+            selectedDots3D={selectedDots}
+            setSelectedDots3D={handleSetSelectedDots3D}
+            stringCount3D={stringCount}
+            setStringCount3D={handleSetStringCount3D}
+            maxFrets={maxFrets}
+            tutorialData={tutorialData}
+            tutorialSlug={tutorialSlug}
+            exercises={memoizedExercises}
             selectedExerciseId={selectedExerciseId}
             onExerciseSelect={handleExerciseSelect}
-            isPlaying={transport?.isPlaying || false}
-            onPlayToggle={() => {
-              if (transport?.isPlaying) {
-                transport.pause?.();
-              } else {
-                transport?.start?.();
-              }
-            }}
-            is3DMode={widgetState.is3DMode}
-            onToggle3DMode={() => widgetState.setIs3DMode(!widgetState.is3DMode)}
-            cameraMode={widgetState.cameraMode}
-            onCameraModeChange={(mode) => widgetState.setCameraMode(mode)}
+            debugRotation={debugRotation}
+            overlay3DConfig={overlay3DConfig}
+            hide2DFretboard={hide2DFretboard}
+            hide3DFretboard={hide3DFretboard}
           />
 
-          {/* 3. Exercise Selector - OLD VERSION (keeping for comparison) */}
-          <ExerciseSelector
-            exercises={exercises || []}
-            selectedExerciseId={selectedExerciseId}
+          {/* 5. Global Playback Controls Card - Dedicated panel for global controls */}
+          <GlobalControlsCard
+            selectedExercise={widgetState.selectedExercise}
+            exercises={memoizedExercises}
             onExerciseSelect={handleExerciseSelect}
+            hasSelectedDots={selectedDots.size > 0}
+            loopRegion={widgetState.loopRegion}
+            isLoopEnabled={widgetState.isLoopEnabled}
+            onPlayStateChange={handlePlayStateChange}
           />
 
-          {/* 4. Transport Clock with Timeline Loop Strip */}
+          {/* 6. Four Widgets Card - 4 essential widgets (metronome, drums, bass, harmony) */}
+          <FourWidgetsCard
+            widgetState={widgetState}
+            tutorialId={tutorialData?.id}
+          />
+
+          {/* 7. Sheet Player Card - Standalone sheet music display */}
+          <SheetPlayerCard selectedExercise={widgetState.selectedExercise} />
+
+          {/* 8. Transport Clock with Timeline Loop Strip */}
           <TransportClock
             selectedExercise={widgetState.selectedExercise}
             loopRegion={widgetState.loopRegion}
@@ -967,49 +1931,7 @@ function YouTubeWidgetPageContent({
             }}
           />
 
-          {/* 5. Interactive Fretboard Card - Now without Exercise Selector */}
-          <FretboardCard
-            is3DMode={is3DMode}
-            onToggle3DMode={handleToggle3DMode}
-            selectedDots3D={selectedDots}
-            setSelectedDots3D={handleSetSelectedDots3D}
-            stringCount3D={stringCount}
-            setStringCount3D={handleSetStringCount3D}
-            cameraMode={cameraMode}
-            setCameraMode={handleSetCameraMode}
-            maxFrets={maxFrets}
-            tiltAngle={tiltAngle}
-            onTiltAngleChange={handleTiltAngleChange}
-            tutorialData={tutorialData}
-            tutorialSlug={tutorialSlug}
-            exercises={memoizedExercises}
-            selectedExerciseId={selectedExerciseId}
-            onExerciseSelect={handleExerciseSelect}
-          />
-
-          {/* 6. Global Playback Controls Card - Dedicated panel for global controls */}
-          <GlobalControlsCard
-            selectedExercise={widgetState.selectedExercise}
-            exercises={memoizedExercises}
-            is3DMode={is3DMode}
-            tiltAngle={tiltAngle}
-            hasSelectedDots={selectedDots.size > 0}
-            cameraMode={cameraMode}
-            onToggle3DMode={handleToggle3DMode}
-            onTiltAngleChange={handleTiltAngleChange}
-            onCameraModeChange={handleSetCameraMode}
-            loopRegion={widgetState.loopRegion}
-            isLoopEnabled={widgetState.isLoopEnabled}
-            onPlayStateChange={handlePlayStateChange}
-          />
-
-          {/* 7. Four Widgets Card - 4 essential widgets */}
-          <FourWidgetsCard
-            widgetState={widgetState}
-            tutorialId={tutorialData?.id}
-          />
-
-          {/* 8. Teaching Takeaway Card - Lesson summaries */}
+          {/* 9. Teaching Takeaway Card - Lesson summaries */}
           <TeachingTakeawayCard tutorialData={tutorialData} />
 
           {/* Debug: Timing analysis toggle */}

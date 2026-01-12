@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, Global } from '@nestjs/common';
 import { createStructuredLogger } from '@bassnotion/contracts';
 
 import { AuthController } from './auth.controller.js';
@@ -8,6 +8,7 @@ import { AuthSecurityService } from './services/auth-security.service.js';
 import { PasswordSecurityService } from './services/password-security.service.js';
 import { DatabaseModule } from '../../../infrastructure/database/database.module.js';
 
+@Global()
 @Module({
   imports: [DatabaseModule],
   controllers: [AuthController],

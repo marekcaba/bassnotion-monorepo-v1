@@ -284,6 +284,20 @@
   transition: none !important;
 }
 
+/* Text color for grey background (other measure) - white for visibility */
+.note-other-measure > span {
+  color: white !important;
+}
+
+/* Text color for highlighted backgrounds (current/next measure) - black for visibility on green/orange */
+.note-current-measure > span,
+.note-next-measure > span,
+.note-next-measure-first > span,
+.note-active > span,
+.note-preview > span {
+  color: black !important;
+}
+
 /**
  * Fret marker positions (3,5,7,9,12,15,17,19,21,24) in other measures
  * These return to the LIGHTER grey (slate-500) that marks special frets,

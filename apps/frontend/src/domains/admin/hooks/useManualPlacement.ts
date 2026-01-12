@@ -8,12 +8,18 @@ import {
 } from '../utils/fretboardCalculations';
 
 /**
- * Placement for a single note (string + fret position)
+ * Finger index type for bass fingering (fretting hand)
+ */
+export type FingerIndex = 1 | 2 | 3 | 4 | 'O'; // 1=index, 2=middle, 3=ring, 4=pinky, O=open string
+
+/**
+ * Placement for a single note (string + fret position + optional finger)
  */
 export interface NotePlacement {
   noteIndex: number; // Index within measure (0 = first note)
   string: number;
   fret: number;
+  finger_index?: FingerIndex;
 }
 
 /**
@@ -32,13 +38,13 @@ export function useManualPlacement(
   // Initialize placements from existing notes if provided
   const initialPlacements = useMemo(() => {
     if (!existingNotes || existingNotes.length === 0) {
-      return new Map<number, Map<number, { string: number; fret: number }>>();
+      return new Map<number, Map<number, { string: number; fret: number; finger_index?: FingerIndex }>>();
     }
 
     // Convert existing notes back to placements structure
     const placementsMap = new Map<
       number,
-      Map<number, { string: number; fret: number }>
+      Map<number, { string: number; fret: number; finger_index?: FingerIndex }>
     >();
 
     existingNotes.forEach((note, index) => {
@@ -62,6 +68,7 @@ export function useManualPlacement(
           placementsMap.get(measureNumber)!.set(noteIndex, {
             string: note.string,
             fret: note.fret,
+            finger_index: note.finger_index,
           });
         }
       }
@@ -70,9 +77,9 @@ export function useManualPlacement(
     return placementsMap;
   }, [existingNotes, measures]);
 
-  // Map of measureNumber -> Map of noteIndex -> {string, fret}
+  // Map of measureNumber -> Map of noteIndex -> {string, fret, finger_index?}
   const [placements, setPlacements] =
-    useState<Map<number, Map<number, { string: number; fret: number }>>>(
+    useState<Map<number, Map<number, { string: number; fret: number; finger_index?: FingerIndex }>>>(
       initialPlacements,
     );
 
@@ -172,11 +179,11 @@ export function useManualPlacement(
   }, [measures, placements]);
 
   /**
-   * Place a note at a string/fret position
+   * Place a note at a string/fret position with optional finger assignment
    * Note: We allow any placement - admin has full control
    */
   const placeNote = useCallback(
-    (string: number, fret: number): boolean => {
+    (string: number, fret: number, finger_index?: FingerIndex): boolean => {
       if (!currentNote || !currentMeasure) {
         console.warn(
           '[useManualPlacement] Cannot place note: no current note or measure',
@@ -211,7 +218,7 @@ export function useManualPlacement(
           newPlacements.get(currentMeasureNumber) || new Map(),
         );
 
-        measurePlacements.set(currentNoteIndex, { string, fret });
+        measurePlacements.set(currentNoteIndex, { string, fret, finger_index });
         newPlacements.set(currentMeasureNumber, measurePlacements);
 
         return newPlacements;
@@ -341,6 +348,11 @@ export function useManualPlacement(
           measure.measureNumber,
           `note-${noteIdCounter++}`,
         );
+
+        // Add finger_index if assigned
+        if (placement.finger_index) {
+          exerciseNote.finger_index = placement.finger_index;
+        }
 
         notes.push(exerciseNote);
       });

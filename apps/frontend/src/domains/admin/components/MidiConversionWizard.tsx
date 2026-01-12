@@ -433,6 +433,7 @@ export function MidiConversionWizard({
                   <ul className="text-sm text-gray-600 space-y-1">
                     <li>• Total notes: {convertedNotes.length}</li>
                     <li>• Placement method: Manual (100% accurate)</li>
+                    <li>• Finger assignments: {convertedNotes.filter(n => n.finger_index !== undefined).length}/{convertedNotes.length}</li>
                     <li>• All notes validated and playable</li>
                   </ul>
                 </div>
@@ -451,8 +452,7 @@ export function MidiConversionWizard({
             </button>
 
             <div className="flex gap-2">
-              {(currentStep === 'reviewing' ||
-                currentStep === 'confirming') && (
+              {(currentStep === 'reviewing' || currentStep === 'confirming') && (
                 <button
                   type="button"
                   onClick={handleBack}
@@ -470,7 +470,7 @@ export function MidiConversionWizard({
                   onClick={handleNext}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                 >
-                  Continue
+                  Continue to Confirm
                 </button>
               )}
 

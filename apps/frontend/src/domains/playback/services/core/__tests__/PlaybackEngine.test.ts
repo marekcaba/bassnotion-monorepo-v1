@@ -1015,4 +1015,315 @@ describe('PlaybackEngine', () => {
       });
     });
   });
+
+  // ==========================================================================
+  // TEST SUITE: Exercise Switching Cleanup
+  // ==========================================================================
+  describe('Exercise Switching Cleanup', () => {
+    let engine: PlaybackEngine;
+    let audioContext: AudioContext;
+    let audioDestination: AudioNode;
+
+    beforeEach(async () => {
+      engine = new PlaybackEngine(eventBus);
+      audioContext = createMockAudioContext();
+      audioDestination = createMockAudioDestination();
+      await engine.initialize(audioContext, audioDestination);
+    });
+
+    afterEach(() => {
+      engine.dispose();
+    });
+
+    describe('clearHarmonyTracks', () => {
+      it('should remove all harmony tracks from engine', async () => {
+        // Register multiple track types
+        const harmonyTrack1: Track = {
+          id: 'harmony-track-1',
+          name: 'Harmony 1',
+          instrumentType: 'harmony',
+          regions: [],
+          exerciseId: 'exercise-1',
+        };
+
+        const harmonyTrack2: Track = {
+          id: 'harmony-track-2',
+          name: 'Harmony 2',
+          instrumentType: 'harmony',
+          regions: [],
+          exerciseId: 'exercise-1',
+        };
+
+        const drumTrack: Track = {
+          id: 'drum-track',
+          name: 'Drums',
+          instrumentType: 'drums',
+          regions: [],
+          exerciseId: 'exercise-1',
+        };
+
+        const bassTrack: Track = {
+          id: 'bass-track',
+          name: 'Bass',
+          instrumentType: 'bass',
+          regions: [],
+          exerciseId: 'exercise-1',
+        };
+
+        engine.registerTrack(harmonyTrack1);
+        engine.registerTrack(harmonyTrack2);
+        engine.registerTrack(drumTrack);
+        engine.registerTrack(bassTrack);
+
+        expect(engine.getTracks().size).toBe(4);
+
+        // Clear harmony tracks
+        engine.clearHarmonyTracks();
+
+        // Only non-harmony tracks should remain
+        expect(engine.getTracks().size).toBe(2);
+        expect(engine.getTracks().has('harmony-track-1')).toBe(false);
+        expect(engine.getTracks().has('harmony-track-2')).toBe(false);
+        expect(engine.getTracks().has('drum-track')).toBe(true);
+        expect(engine.getTracks().has('bass-track')).toBe(true);
+      });
+
+      it('should handle clearing when no harmony tracks exist', async () => {
+        const drumTrack: Track = {
+          id: 'drum-track',
+          name: 'Drums',
+          instrumentType: 'drums',
+          regions: [],
+        };
+
+        engine.registerTrack(drumTrack);
+        expect(engine.getTracks().size).toBe(1);
+
+        // Should not throw when no harmony tracks
+        expect(() => engine.clearHarmonyTracks()).not.toThrow();
+        expect(engine.getTracks().size).toBe(1);
+      });
+
+      it('should handle clearing when engine has no tracks', async () => {
+        expect(engine.getTracks().size).toBe(0);
+
+        // Should not throw when no tracks at all
+        expect(() => engine.clearHarmonyTracks()).not.toThrow();
+        expect(engine.getTracks().size).toBe(0);
+      });
+    });
+
+    describe('clearDrumTracks', () => {
+      it('should remove all drum tracks from engine', async () => {
+        const harmonyTrack: Track = {
+          id: 'harmony-track',
+          name: 'Harmony',
+          instrumentType: 'harmony',
+          regions: [],
+        };
+
+        const drumTrack1: Track = {
+          id: 'drum-track-1',
+          name: 'Drums 1',
+          instrumentType: 'drums',
+          regions: [],
+        };
+
+        const drumTrack2: Track = {
+          id: 'drum-track-2',
+          name: 'Drums 2',
+          instrumentType: 'drums',
+          regions: [],
+        };
+
+        engine.registerTrack(harmonyTrack);
+        engine.registerTrack(drumTrack1);
+        engine.registerTrack(drumTrack2);
+
+        expect(engine.getTracks().size).toBe(3);
+
+        engine.clearDrumTracks();
+
+        expect(engine.getTracks().size).toBe(1);
+        expect(engine.getTracks().has('harmony-track')).toBe(true);
+        expect(engine.getTracks().has('drum-track-1')).toBe(false);
+        expect(engine.getTracks().has('drum-track-2')).toBe(false);
+      });
+    });
+
+    describe('clearBassTracks', () => {
+      it('should remove all bass tracks from engine', async () => {
+        const harmonyTrack: Track = {
+          id: 'harmony-track',
+          name: 'Harmony',
+          instrumentType: 'harmony',
+          regions: [],
+        };
+
+        const bassTrack1: Track = {
+          id: 'bass-track-1',
+          name: 'Bass 1',
+          instrumentType: 'bass',
+          regions: [],
+        };
+
+        const bassTrack2: Track = {
+          id: 'bass-track-2',
+          name: 'Bass 2',
+          instrumentType: 'bass',
+          regions: [],
+        };
+
+        engine.registerTrack(harmonyTrack);
+        engine.registerTrack(bassTrack1);
+        engine.registerTrack(bassTrack2);
+
+        expect(engine.getTracks().size).toBe(3);
+
+        engine.clearBassTracks();
+
+        expect(engine.getTracks().size).toBe(1);
+        expect(engine.getTracks().has('harmony-track')).toBe(true);
+        expect(engine.getTracks().has('bass-track-1')).toBe(false);
+        expect(engine.getTracks().has('bass-track-2')).toBe(false);
+      });
+    });
+
+    describe('Full Exercise Switch Flow', () => {
+      it('should properly switch from exercise with harmony to exercise without', async () => {
+        // Exercise 1: Has harmony + drums
+        const exercise1Harmony: Track = {
+          id: 'ex1-harmony',
+          name: 'Exercise 1 Harmony',
+          instrumentType: 'harmony',
+          regions: [],
+          exerciseId: 'exercise-1',
+        };
+
+        const exercise1Drums: Track = {
+          id: 'ex1-drums',
+          name: 'Exercise 1 Drums',
+          instrumentType: 'drums',
+          regions: [],
+          exerciseId: 'exercise-1',
+        };
+
+        engine.registerTrack(exercise1Harmony);
+        engine.registerTrack(exercise1Drums);
+        expect(engine.getTracks().size).toBe(2);
+
+        // Start playback
+        engine.start();
+        expect(engine.getState()).toBe('playing');
+
+        // Stop for exercise switch
+        engine.stop();
+
+        // Clear harmony (Exercise 2 has no harmony)
+        engine.clearHarmonyTracks();
+
+        // Clear old drums
+        engine.clearDrumTracks();
+
+        // Register Exercise 2 (drums only)
+        const exercise2Drums: Track = {
+          id: 'ex2-drums',
+          name: 'Exercise 2 Drums',
+          instrumentType: 'drums',
+          regions: [],
+          exerciseId: 'exercise-2',
+        };
+
+        engine.registerTrack(exercise2Drums);
+
+        // Verify only Exercise 2 drums remain
+        expect(engine.getTracks().size).toBe(1);
+        expect(engine.getTracks().has('ex2-drums')).toBe(true);
+        expect(engine.getTracks().has('ex1-harmony')).toBe(false);
+        expect(engine.getTracks().has('ex1-drums')).toBe(false);
+      });
+
+      it('should properly switch back to exercise with harmony', async () => {
+        // Start with Exercise 2 (drums only)
+        const exercise2Drums: Track = {
+          id: 'ex2-drums',
+          name: 'Exercise 2 Drums',
+          instrumentType: 'drums',
+          regions: [],
+          exerciseId: 'exercise-2',
+        };
+
+        engine.registerTrack(exercise2Drums);
+        expect(engine.getTracks().size).toBe(1);
+
+        // Switch to Exercise 1 (has harmony + drums)
+        engine.stop();
+        engine.clearDrumTracks();
+
+        const exercise1Harmony: Track = {
+          id: 'ex1-harmony',
+          name: 'Exercise 1 Harmony',
+          instrumentType: 'harmony',
+          regions: [],
+          exerciseId: 'exercise-1',
+        };
+
+        const exercise1Drums: Track = {
+          id: 'ex1-drums',
+          name: 'Exercise 1 Drums',
+          instrumentType: 'drums',
+          regions: [],
+          exerciseId: 'exercise-1',
+        };
+
+        engine.registerTrack(exercise1Harmony);
+        engine.registerTrack(exercise1Drums);
+
+        // Verify Exercise 1 tracks are registered
+        expect(engine.getTracks().size).toBe(2);
+        expect(engine.getTracks().has('ex1-harmony')).toBe(true);
+        expect(engine.getTracks().has('ex1-drums')).toBe(true);
+        expect(engine.getTracks().has('ex2-drums')).toBe(false);
+      });
+
+      it('should clear all instrument types when doing full exercise switch', async () => {
+        // Register all instrument types
+        const harmonyTrack: Track = {
+          id: 'harmony',
+          name: 'Harmony',
+          instrumentType: 'harmony',
+          regions: [],
+          exerciseId: 'exercise-1',
+        };
+
+        const drumTrack: Track = {
+          id: 'drums',
+          name: 'Drums',
+          instrumentType: 'drums',
+          regions: [],
+          exerciseId: 'exercise-1',
+        };
+
+        const bassTrack: Track = {
+          id: 'bass',
+          name: 'Bass',
+          instrumentType: 'bass',
+          regions: [],
+          exerciseId: 'exercise-1',
+        };
+
+        engine.registerTrack(harmonyTrack);
+        engine.registerTrack(drumTrack);
+        engine.registerTrack(bassTrack);
+        expect(engine.getTracks().size).toBe(3);
+
+        // Clear all for exercise switch
+        engine.clearHarmonyTracks();
+        engine.clearDrumTracks();
+        engine.clearBassTracks();
+
+        expect(engine.getTracks().size).toBe(0);
+      });
+    });
+  });
 });
