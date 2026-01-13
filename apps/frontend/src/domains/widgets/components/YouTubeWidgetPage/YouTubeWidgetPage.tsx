@@ -49,6 +49,7 @@ interface YouTubeWidgetPageProps {
   tutorialData?: Tutorial;
   tutorialSlug?: string;
   exercises?: any[]; // Exercise data from tutorial API
+  initialExerciseId?: string; // Optional: pre-select a specific exercise (e.g., from favorites)
 }
 
 // Render counter for debugging
@@ -62,6 +63,7 @@ function YouTubeWidgetPageContent({
   tutorialData,
   tutorialSlug,
   exercises,
+  initialExerciseId,
 }: YouTubeWidgetPageProps) {
   youTubeWidgetPageContentRenderCount++;
 
@@ -509,9 +511,10 @@ function YouTubeWidgetPageContent({
   }, [widgetState.selectedExercise?.id, widgetState.selectedExercise?.fretboardViewConfig?.preset, stringCount]);
 
   // FAANG Solution: Lift selected exercise state to parent
+  // Initialize with initialExerciseId if provided (e.g., from favorites navigation)
   const [selectedExerciseId, setSelectedExerciseId] = React.useState<
     string | null
-  >(null);
+  >(initialExerciseId || null);
 
   // Use refs to track previous values and prevent infinite loops
   const prevSelectedExerciseRef = useRef<any>(null);
@@ -540,19 +543,56 @@ function YouTubeWidgetPageContent({
     exercises?.map(e => typeof e.id === 'object' ? e.id.value : e.id).join(','),
   ]);
 
-  // FAANG Solution: Auto-select first exercise when exercises load (parent controls selection)
+  // Track if we've already handled the initial exercise selection
+  const initialExerciseHandledRef = useRef(false);
+
+  // FAANG Solution: Auto-select exercise when exercises load (parent controls selection)
+  // Priority: initialExerciseId (from favorites) > first exercise
   // FIX: Removed 150ms setTimeout - FretboardCard handles selectedExerciseId changes reactively
-  // The delay was causing widgets to mount with undefined exercise, triggering warnings
   useEffect(() => {
     console.log('🔍 [YOUTUBE-WIDGET] Auto-selection effect triggered:', {
       hasExercises: !!exercises,
       exerciseCount: exercises?.length || 0,
       selectedExerciseId,
-      shouldAutoSelect:
-        exercises && exercises.length > 0 && !selectedExerciseId,
+      initialExerciseId,
+      initialExerciseHandled: initialExerciseHandledRef.current,
     });
 
-    if (exercises && exercises.length > 0 && !selectedExerciseId) {
+    if (!exercises || exercises.length === 0) return;
+
+    // Helper to get exercise ID as string
+    const getExerciseIdStr = (ex: any) =>
+      typeof ex.id === 'object' ? ex.id.value : ex.id;
+
+    // If we have an initialExerciseId and haven't handled it yet, select that exercise
+    if (initialExerciseId && !initialExerciseHandledRef.current) {
+      const targetExercise = exercises.find(
+        (ex) => getExerciseIdStr(ex) === initialExerciseId
+      );
+
+      if (targetExercise) {
+        console.log(
+          '🎯 [YOUTUBE-WIDGET] Selecting initial exercise from favorites:',
+          {
+            exerciseId: initialExerciseId,
+            exerciseTitle: targetExercise.title,
+          },
+        );
+
+        initialExerciseHandledRef.current = true;
+
+        if (handleExerciseSelectRef.current) {
+          handleExerciseSelectRef.current(initialExerciseId);
+        } else {
+          setSelectedExerciseId(initialExerciseId);
+          widgetStateRef.current.setSelectedExercise(targetExercise);
+        }
+        return;
+      }
+    }
+
+    // Fall back to first exercise if no selection yet
+    if (!selectedExerciseId) {
       const firstExercise = exercises[0];
       if (firstExercise?.id) {
         console.log(
@@ -565,17 +605,11 @@ function YouTubeWidgetPageContent({
           },
         );
 
-        const exerciseIdStr =
-          typeof firstExercise.id === 'object'
-            ? firstExercise.id.value
-            : firstExercise.id;
+        const exerciseIdStr = getExerciseIdStr(firstExercise);
 
-        // Select immediately - no delay needed
-        // FretboardCard and other widgets handle exercise prop changes reactively
         if (handleExerciseSelectRef.current) {
           handleExerciseSelectRef.current(exerciseIdStr);
         } else {
-          // Fallback to direct state update if ref not ready yet
           console.warn(
             '⚠️ [YOUTUBE-WIDGET] handleExerciseSelectRef not ready, using direct state update',
           );
@@ -584,7 +618,7 @@ function YouTubeWidgetPageContent({
         }
       }
     }
-  }, [exercises, selectedExerciseId]); // Removed widgetState and globalExerciseSelection - using refs
+  }, [exercises, selectedExerciseId, initialExerciseId]);
 
   // Store widgetState methods in refs to avoid dependencies
   const widgetStateRef = useRef(widgetState);
@@ -1904,6 +1938,7 @@ function YouTubeWidgetPageContent({
             hasSelectedDots={selectedDots.size > 0}
             loopRegion={widgetState.loopRegion}
             isLoopEnabled={widgetState.isLoopEnabled}
+            onToggleLoop={widgetState.toggleLoopEnabled}
             onPlayStateChange={handlePlayStateChange}
           />
 
@@ -1963,6 +1998,7 @@ export function YouTubeWidgetPage({
   tutorialData,
   tutorialSlug,
   exercises,
+  initialExerciseId,
 }: YouTubeWidgetPageProps) {
   const { correlationId, logger } = useCorrelation('YouTubeWidgetPage');
   youTubeWidgetPageRenderCount++;
@@ -2063,6 +2099,7 @@ export function YouTubeWidgetPage({
           tutorialData={tutorialData}
           tutorialSlug={tutorialSlug}
           exercises={exercises}
+          initialExerciseId={initialExerciseId}
         />
       </SyncProvider>
     </TransportProvider>

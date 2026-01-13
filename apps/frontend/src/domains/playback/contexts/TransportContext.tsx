@@ -170,12 +170,13 @@ export function TransportProvider({
       // - 'starting' is between ready->playing (valid when real is 'playing')
       // - 'stopping' is between playing->stopped (valid when real is 'stopped')
       // - 'loading' is between idle->ready (valid when initializing)
-      // - 'ready' can occur briefly when machine just finished loading
+      // - 'ready' can occur briefly when machine just finished loading or when nothing was playing
       const isMatch = mappedReal === xstateState ||
         // START: real='playing', xstate could be 'starting' (async scheduling) or 'ready' (just got event)
         (mappedReal === 'playing' && (xstateState === 'starting' || xstateState === 'ready')) ||
-        // STOP: real='stopped', xstate could be 'stopping' (async cleanup) or 'playing' (just got event)
-        (mappedReal === 'stopped' && (xstateState === 'stopping' || xstateState === 'playing')) ||
+        // STOP: real='stopped', xstate could be 'stopping' (async cleanup), 'playing' (just got event),
+        // or 'ready' (stop called before playback started - nothing was playing)
+        (mappedReal === 'stopped' && (xstateState === 'stopping' || xstateState === 'playing' || xstateState === 'ready')) ||
         // Machine still loading
         (xstateState === 'loading') ||
         // Machine in idle (not yet initialized)
@@ -479,6 +480,11 @@ export function TransportProvider({
   const handleStop = useCallback(() => {
     logger.debug('[TransportContext] Received transport:stop event');
     setState('stopped');
+
+    // FIX: Reset lastPositionRef to prevent spurious "backwards position jump" warning
+    // When stopping, the position resets to 1:1:0:0 which would otherwise trigger a
+    // backwards jump warning from the previous playback position
+    lastPositionRef.current = null;
 
     // XSTATE SHADOW: Mirror the event to XState machine
     // FLICKER FIX v10: Use ref to avoid handler recreation on playbackMachine changes

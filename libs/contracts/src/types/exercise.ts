@@ -219,6 +219,9 @@ export interface Exercise {
   created_by?: string;
   created_at: string;
   updated_at: string;
+
+  // Social features (denormalized for performance)
+  like_count?: number; // Number of public likes - maintained by database trigger
 }
 
 // Alias for backward compatibility

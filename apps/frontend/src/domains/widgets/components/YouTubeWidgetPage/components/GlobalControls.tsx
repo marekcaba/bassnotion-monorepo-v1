@@ -17,6 +17,8 @@ import {
   RotateCw,
   Upload,
   FileText,
+  MessageCircle,
+  Repeat,
 } from 'lucide-react';
 // SheetPlayerToolbar moved to SheetPlayerCard
 import type {
@@ -44,6 +46,12 @@ import { logSkeletonDebug } from '@/utils/skeletonDebug';
 import { useCountdown } from '@/domains/widgets/hooks/useCountdown';
 import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
 import { musicalTruth } from '@/domains/playback/modules/tempo/MusicalTruthAuthority';
+import { useLikeStatus, useToggleLike } from '@/domains/social/hooks/useLikes';
+import { useFavoriteStatus, useToggleFavorite } from '@/domains/social/hooks/useFavorites';
+import { useAuth } from '@/domains/user/hooks/use-auth';
+import { toast } from '@/shared/hooks/use-toast';
+import { ToastAction } from '@/shared/components/ui/toast';
+import { useRouter } from 'next/navigation';
 
 const logger = getLogger('global-controls');
 
@@ -310,6 +318,7 @@ interface GlobalControlsProps {
     endBeat?: number;
   } | null;
   isLoopEnabled?: boolean;
+  onToggleLoop?: () => void;
   // Play state callback - called when transport starts/stops
   onPlayStateChange?: (isPlaying: boolean) => void;
 }
@@ -328,6 +337,7 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
   hasSelectedDots = false,
   loopRegion,
   isLoopEnabled = false,
+  onToggleLoop,
   onPlayStateChange,
 }) => {
   globalControlsRenderCount++;
@@ -743,6 +753,141 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
 
   // Prevent multiple simultaneous playback toggles
   const [isTogglingPlayback, setIsTogglingPlayback] = useState(false);
+
+  // Router for auth redirect
+  const router = useRouter();
+
+  // Auth state for checking if user is logged in
+  const { isAuthenticated, isReady: isAuthReady } = useAuth();
+
+  // Extract exercise ID for social hooks
+  const exerciseId = useMemo(() => {
+    if (!selectedExercise) return '';
+    return typeof selectedExercise.id === 'object'
+      ? selectedExercise.id.value
+      : selectedExercise.id;
+  }, [selectedExercise]);
+
+  // Like and Favorite hooks with API integration
+  const { data: likeStatus } = useLikeStatus(exerciseId);
+  const { data: favoriteStatus } = useFavoriteStatus(exerciseId);
+  const toggleLikeMutation = useToggleLike(exerciseId);
+  const toggleFavoriteMutation = useToggleFavorite(exerciseId);
+
+  // Derive state from API
+  const isLiked = likeStatus?.is_liked ?? false;
+  const likeCount = likeStatus?.like_count ?? 0;
+  const isFavorited = favoriteStatus?.is_favorited ?? false;
+
+  // Sparkle animation states (UI only)
+  const [likeSparkles, setLikeSparkles] = useState<{ id: number; x: number; y: number; scale: number; rotation: number }[]>([]);
+  const [favoriteSparkles, setFavoriteSparkles] = useState<{ id: number; x: number; y: number; scale: number; rotation: number }[]>([]);
+  const [loopSparkles, setLoopSparkles] = useState<{ id: number; x: number; y: number; scale: number; rotation: number }[]>([]);
+  const [commentSparkles, setCommentSparkles] = useState<{ id: number; x: number; y: number; scale: number; rotation: number }[]>([]);
+
+  // Toggle state for comment (UI only - coming soon feature)
+  const [isCommented, setIsCommented] = useState(false);
+
+  // Bump states to temporarily disable hover effect after toggling off
+  const [loopBump, setLoopBump] = useState(false);
+  const [commentBump, setCommentBump] = useState(false);
+
+  // Helper to show auth required toast
+  const showAuthRequiredToast = useCallback(() => {
+    toast({
+      title: 'Sign in required',
+      description: 'You need to be signed in to use this feature.',
+      action: (
+        <ToastAction
+          altText="Sign up"
+          onClick={() => router.push('/auth/signup')}
+        >
+          Sign up
+        </ToastAction>
+      ),
+    });
+  }, [router]);
+
+  // Helper to generate sparkle animation
+  const generateSparkles = useCallback((rotationRange: number) => {
+    return Array.from({ length: 6 }, (_, i) => {
+      // 12 o'clock = -90° (up), 3 o'clock = 0° (right) in standard coords
+      // Spread 90° from -90° to 0°
+      const angle = (-90 + (i * 90) / 5 + (Math.random() * 15 - 7.5)) * (Math.PI / 180);
+      const distance = 18 + Math.random() * 12;
+      return {
+        id: Date.now() + i,
+        x: Math.cos(angle) * distance,
+        y: Math.sin(angle) * distance,
+        scale: 0.7 + Math.random() * 0.5,
+        rotation: Math.random() * rotationRange - rotationRange / 2,
+      };
+    });
+  }, []);
+
+  // Handle like button click with sparkle animation (only on activation)
+  const handleLikeClick = useCallback(() => {
+    // Check if no exercise selected
+    if (!exerciseId) {
+      toast({
+        title: 'No exercise selected',
+        description: 'Please select an exercise first.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Check authentication
+    if (isAuthReady && !isAuthenticated) {
+      showAuthRequiredToast();
+      return;
+    }
+
+    // Prevent double-clicks during mutation
+    if (toggleLikeMutation.isPending) return;
+
+    // Only show sparkles when activating (going from false to true)
+    if (!isLiked) {
+      const sparkles = generateSparkles(40);
+      setLikeSparkles(sparkles);
+      setTimeout(() => setLikeSparkles([]), 600);
+    }
+
+    // Call API
+    toggleLikeMutation.mutate();
+  }, [exerciseId, isAuthReady, isAuthenticated, showAuthRequiredToast, toggleLikeMutation, isLiked, generateSparkles]);
+
+  // Handle favorite button click with sparkle animation (only on activation)
+  const handleFavoriteClick = useCallback(() => {
+    // Check if no exercise selected
+    if (!exerciseId) {
+      toast({
+        title: 'No exercise selected',
+        description: 'Please select an exercise first.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Check authentication
+    if (isAuthReady && !isAuthenticated) {
+      showAuthRequiredToast();
+      return;
+    }
+
+    // Prevent double-clicks during mutation
+    if (toggleFavoriteMutation.isPending) return;
+
+    // Only show sparkles when activating (going from false to true)
+    if (!isFavorited) {
+      const sparkles = generateSparkles(60);
+      setFavoriteSparkles(sparkles);
+      setTimeout(() => setFavoriteSparkles([]), 600);
+    }
+
+    // Call API
+    toggleFavoriteMutation.mutate();
+  }, [exerciseId, isAuthReady, isAuthenticated, showAuthRequiredToast, toggleFavoriteMutation, isFavorited, generateSparkles]);
 
   // Region processor for audio playback
   const regionProcessorRef = useRef<RegionProcessor | null>(null);
@@ -2673,15 +2818,18 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
             );
 
             // Verify the region was actually added
-            const regionsAfterAdd = drum.regions?.length || 0;
+            // CRITICAL FIX: Check track.regions directly, NOT hook state (drum.regions)
+            // Hook state is updated asynchronously via setRegions(), so it won't be
+            // reflected until the next render. The Track instance is updated synchronously.
+            const regionsAfterAdd = drum.track?.regions?.length || 0;
             logger.debug(
               `🎮 GlobalControls: Drum track now has ${regionsAfterAdd} regions`,
             );
 
-            // Double-check via the ref
-            const refRegions = drumTrackRef.current?.regions?.length || 0;
+            // Also log hook state for comparison (will likely be 0 until next render)
+            const hookRegions = drum.regions?.length || 0;
             logger.debug(
-              `🎮 GlobalControls: DrumTrackRef has ${refRegions} regions`,
+              `🎮 GlobalControls: Hook state has ${hookRegions} regions (async update pending)`,
             );
 
             if (regionsAfterAdd === 0) {
@@ -4258,10 +4406,73 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
               )}
 
               <div className="flex items-center justify-center gap-2">
-                {/* Like button - spaced from previous */}
-                <button className="p-3 rounded-full bg-slate-800 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200 mr-8">
-                  <Heart className="w-5 h-5 text-slate-400" />
-                </button>
+                {/* Loop button - connected to actual loop functionality */}
+                <div className="relative">
+                  <button
+                    onClick={() => {
+                      if (!isLoopEnabled) {
+                        const sparkles = generateSparkles(90);
+                        setLoopSparkles(sparkles);
+                        setTimeout(() => setLoopSparkles([]), 600);
+                      } else {
+                        // Toggling off - set bump to force raised state
+                        setLoopBump(true);
+                      }
+                      // Call the actual loop toggle function
+                      onToggleLoop?.();
+                    }}
+                    onMouseLeave={() => setLoopBump(false)}
+                    className={`p-3 rounded-full bg-slate-800 transition-all duration-200 ${isLoopEnabled ? 'shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)]' : loopBump ? 'shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)]' : 'shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)]'}`}
+                    title={isLoopEnabled ? 'Disable loop' : 'Enable loop'}
+                  >
+                    <Repeat
+                      className={`w-5 h-5 transition-all duration-300 ease-out ${isLoopEnabled ? 'text-green-500 scale-110' : 'text-slate-400'}`}
+                    />
+                  </button>
+                  {/* Sparkle loop animation */}
+                  {loopSparkles.map((sparkle) => (
+                    <Repeat
+                      key={sparkle.id}
+                      className="absolute w-2 h-2 text-green-400 pointer-events-none animate-sparkle-burst"
+                      style={{
+                        top: '50%',
+                        left: '50%',
+                        '--sparkle-x': `${sparkle.x}px`,
+                        '--sparkle-y': `${sparkle.y}px`,
+                        '--sparkle-scale': sparkle.scale,
+                        '--sparkle-rotation': `${sparkle.rotation}deg`,
+                      } as React.CSSProperties}
+                    />
+                  ))}
+                </div>
+                {/* Favorite button */}
+                <div className="relative ml-8 mr-8">
+                  <button
+                    onClick={handleFavoriteClick}
+                    disabled={toggleFavoriteMutation.isPending}
+                    className={`p-3 rounded-full bg-slate-800 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200 ${isFavorited ? 'shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)]' : ''} ${toggleFavoriteMutation.isPending ? 'opacity-70' : ''}`}
+                    title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+                  >
+                    <Star
+                      className={`w-5 h-5 transition-all duration-300 ease-out ${isFavorited ? 'text-amber-400 fill-amber-400 scale-110' : 'text-slate-400'}`}
+                    />
+                  </button>
+                  {/* Sparkle stars animation */}
+                  {favoriteSparkles.map((sparkle) => (
+                    <Star
+                      key={sparkle.id}
+                      className="absolute w-2 h-2 text-amber-300 fill-amber-300 pointer-events-none animate-sparkle-burst"
+                      style={{
+                        top: '50%',
+                        left: '50%',
+                        '--sparkle-x': `${sparkle.x}px`,
+                        '--sparkle-y': `${sparkle.y}px`,
+                        '--sparkle-scale': sparkle.scale,
+                        '--sparkle-rotation': `${sparkle.rotation}deg`,
+                      } as React.CSSProperties}
+                    />
+                  ))}
+                </div>
                 {/* Previous button */}
                 <button
                   onClick={handlePreviousExercise}
@@ -4314,10 +4525,82 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
                 >
                   <SkipForward className="w-5 h-5 text-slate-300" />
                 </button>
-                {/* Favorite button - spaced from next */}
-                <button className="p-3 rounded-full bg-slate-800 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200 ml-8">
-                  <Star className="w-5 h-5 text-slate-400" />
-                </button>
+                {/* Like button - spaced from next */}
+                <div className="relative ml-8">
+                  <button
+                    onClick={handleLikeClick}
+                    disabled={toggleLikeMutation.isPending}
+                    className={`p-3 rounded-full bg-slate-800 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200 ${isLiked ? 'shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)]' : ''} ${toggleLikeMutation.isPending ? 'opacity-70' : ''}`}
+                    title={isLiked ? 'Unlike' : 'Like'}
+                  >
+                    <Heart
+                      className={`w-5 h-5 transition-all duration-300 ease-out ${isLiked ? 'text-red-500 fill-red-500 scale-110' : 'text-slate-400'}`}
+                    />
+                  </button>
+                  {/* Like count badge - grey for others, red when user has liked */}
+                  {likeCount > 0 && (
+                    <span className={`absolute -top-1 -right-1 text-xs font-medium rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 shadow-md transition-colors duration-300 ${isLiked ? 'bg-red-500 text-white' : 'bg-slate-600 text-slate-200'}`}>
+                      {likeCount > 99 ? '99+' : likeCount}
+                    </span>
+                  )}
+                  {/* Sparkle hearts animation */}
+                  {likeSparkles.map((sparkle) => (
+                    <Heart
+                      key={sparkle.id}
+                      className="absolute w-2 h-2 text-red-400 fill-red-400 pointer-events-none animate-sparkle-burst"
+                      style={{
+                        top: '50%',
+                        left: '50%',
+                        '--sparkle-x': `${sparkle.x}px`,
+                        '--sparkle-y': `${sparkle.y}px`,
+                        '--sparkle-scale': sparkle.scale,
+                        '--sparkle-rotation': `${sparkle.rotation}deg`,
+                      } as React.CSSProperties}
+                    />
+                  ))}
+                </div>
+                {/* Comment button */}
+                <div className="relative ml-8">
+                  <button
+                    onClick={() => {
+                      if (!isCommented) {
+                        const sparkles = generateSparkles(90);
+                        setCommentSparkles(sparkles);
+                        setTimeout(() => setCommentSparkles([]), 600);
+                      } else {
+                        // Toggling off - set bump to force raised state
+                        setCommentBump(true);
+                      }
+                      setIsCommented(!isCommented);
+                      toast({
+                        title: 'Comments coming soon!',
+                        description: 'You\'ll be able to discuss exercises with other musicians.',
+                      });
+                    }}
+                    onMouseLeave={() => setCommentBump(false)}
+                    className={`p-3 rounded-full bg-slate-800 transition-all duration-200 ${isCommented ? 'shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)]' : commentBump ? 'shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)]' : 'shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)]'}`}
+                    title="Comments (coming soon)"
+                  >
+                    <MessageCircle
+                      className={`w-5 h-5 transition-all duration-300 ease-out ${isCommented ? 'text-white fill-white scale-110' : 'text-slate-400'}`}
+                    />
+                  </button>
+                  {/* Sparkle comment animation */}
+                  {commentSparkles.map((sparkle) => (
+                    <MessageCircle
+                      key={sparkle.id}
+                      className="absolute w-2 h-2 text-white fill-white pointer-events-none animate-sparkle-burst"
+                      style={{
+                        top: '50%',
+                        left: '50%',
+                        '--sparkle-x': `${sparkle.x}px`,
+                        '--sparkle-y': `${sparkle.y}px`,
+                        '--sparkle-scale': sparkle.scale,
+                        '--sparkle-rotation': `${sparkle.rotation}deg`,
+                      } as React.CSSProperties}
+                    />
+                  ))}
+                </div>
               </div>
               {/* Show message when no exercise selected */}
               {!selectedExercise && (
@@ -4357,25 +4640,20 @@ const arePropsEqual = (
 
   const allEqual = Object.values(checks).every((check) => check);
 
-  // ALWAYS log props comparison for debugging
-  logger.info('🔍 GlobalControls arePropsEqual check:', {
-    allEqual,
-    selectedExerciseChanged: !checks.selectedExercise,
-    prevExerciseId: prevProps.selectedExercise?.id,
-    nextExerciseId: nextProps.selectedExercise?.id,
-    renderCount: globalControlsRenderCount,
-  });
-
-  // Log what changed every 10th check
-  if (!allEqual && globalControlsRenderCount % 10 === 0) {
-    const changedProps = Object.entries(checks)
-      .filter(([_, equal]) => !equal)
-      .map(([key]) => key);
-    logger.info('🎯 GlobalControls props changed:', {
-      changedProps,
-      renderCount: globalControlsRenderCount,
-    });
-  }
+  // PERFORMANCE FIX: Removed per-comparison logging that was causing 1400+ log entries during playback
+  // The parent component re-renders frequently (e.g., currentTime changes), triggering React.memo comparisons.
+  // When allEqual=true, GlobalControls correctly does NOT re-render. The comparisons are expected React behavior.
+  //
+  // To debug props changes, uncomment the block below:
+  // if (!allEqual) {
+  //   const changedProps = Object.entries(checks)
+  //     .filter(([_, equal]) => !equal)
+  //     .map(([key]) => key);
+  //   logger.info('🎯 GlobalControls props changed, will re-render:', {
+  //     changedProps,
+  //     renderCount: globalControlsRenderCount,
+  //   });
+  // }
 
   return allEqual;
 };

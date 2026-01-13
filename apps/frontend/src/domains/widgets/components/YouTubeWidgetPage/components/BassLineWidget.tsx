@@ -212,6 +212,10 @@ const BassLineWidgetComponent = ({
         });
       }
       WindowRegistry.clearBassBuffersReady();
+      // CRITICAL FIX: Also clear lastRegisteredExerciseIdRef so re-registration can happen
+      // This fixes the bug where switching back to the same exercise would skip registration
+      // because the registrationKey matched the cached key even though buffers were cleared
+      lastRegisteredExerciseIdRef.current = null;
       prevExerciseIdRef.current = exercise?.id;
     }
   }, [exercise?.id]);

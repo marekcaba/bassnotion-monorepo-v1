@@ -179,7 +179,9 @@ export class SustainPedalHandler {
 
     if (pedalDownTime === null) {
       // Pedal never affects this note - use MIDI duration
+      // This is normal for notes that play outside the pedal timeline
       result.debugInfo.reason = 'pedal-never-down';
+      // Note: Removed noisy diagnostic logging - pedal not affecting all notes is expected behavior
       return result;
     }
 
@@ -227,7 +229,13 @@ export class SustainPedalHandler {
       }
     } else {
       // No pedal UP found - calculate duration based on exercise timing
+      // This is expected for exercises that end with pedal DOWN
       const noteStartsInLastBeat = audioTime >= this.lastBeatThreshold;
+
+      // Note: Removed noisy diagnostic logging - this is expected for exercises ending with pedal DOWN
+      // The fallback logic below handles this correctly:
+      // - Notes in last beat: Cap at exerciseEndTime + 3s
+      // - Notes before last beat: Use full buffer duration
 
       if (noteStartsInLastBeat && this.exerciseEndTime > 0) {
         // Cap at exercise end + 3s to prevent 8+ second samples ringing forever
@@ -360,14 +368,18 @@ export class SustainPedalHandler {
   }
 
   /**
-   * Clear timeline (for cleanup)
+   * Clear timeline (for cleanup on exercise switch)
    */
   public clear(): void {
+    const previousSize = this.cc64Timeline.size;
     this.cc64Timeline.clear();
     this.sortedTimelineKeys = []; // Also clear the cached sorted keys
     this.exerciseEndTime = 0;
     this.lastBeatThreshold = 0;
-    logger.info('SustainPedalHandler cleared');
+    logger.info('SustainPedalHandler cleared', {
+      previousEventCount: previousSize,
+      reason: 'exercise-switch',
+    });
   }
 
   /**

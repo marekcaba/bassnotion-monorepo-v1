@@ -11,6 +11,7 @@ import {
 } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { BassSettingsCard } from '../BassSettingsCard';
+import { MyFavoritesCard } from '../MyFavoritesCard';
 
 interface DashboardCard {
   id: string;
@@ -132,6 +133,9 @@ export function DashboardContent() {
     <div className="space-y-4">
       {/* Bass Configuration */}
       <BassSettingsCard onSettingsChange={handleBassSettingsChange} />
+
+      {/* My Favorites */}
+      <MyFavoritesCard />
 
       {/* Controls */}
       <div className="flex gap-2 flex-wrap">

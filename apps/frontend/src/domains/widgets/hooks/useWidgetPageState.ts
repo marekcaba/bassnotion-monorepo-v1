@@ -322,6 +322,9 @@ export function useWidgetPageState() {
           ...prev,
           selectedExercise: exercise,
           harmonyInstrument: extractedHarmonyInstrument,
+          // Reset loop state when switching exercises
+          loopRegion: null,
+          isLoopEnabled: false,
         };
 
         // Update widget states based on exercise data

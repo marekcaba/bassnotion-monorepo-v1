@@ -7,6 +7,26 @@ import { createStructuredLogger, type FretboardViewConfig, type FretboardScrollM
 
 const logger = createStructuredLogger('FretboardCard');
 
+// =============================================================================
+// GLOBAL CSS KEYFRAMES INJECTION
+// =============================================================================
+// Inject fadeIn keyframes at module load time to ensure they're available
+// before any component tries to use them. This prevents race conditions
+// where the animation might not be defined when the element mounts.
+const FADE_IN_KEYFRAMES_ID = 'fretboard-fade-in-keyframes';
+
+if (typeof document !== 'undefined' && !document.getElementById(FADE_IN_KEYFRAMES_ID)) {
+  const style = document.createElement('style');
+  style.id = FADE_IN_KEYFRAMES_ID;
+  style.textContent = `
+    @keyframes fretboardFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 // Fretboard view preset configurations
 // Exported so YouTubeWidgetPage can update debug panel when preset changes
 export const FRETBOARD_VIEW_PRESETS = {
@@ -92,6 +112,24 @@ import { Ring3DOverlayCanvas, useRingOverlay, DEFAULT_RING_CONFIG } from './over
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { useSnapshotTransition } from '@/shared/hooks/useSnapshotTransition';
 import { logSkeletonDebug } from '@/utils/skeletonDebug';
+import type { ExerciseNote } from '@bassnotion/contracts';
+
+// =============================================================================
+// FAANG ATOMIC TRANSITION TYPE
+// =============================================================================
+// Problem: Three independent useSnapshotTransition hooks (notes, tempo, overlay3D)
+// can get out of sync during rapid exercise switching, causing stale data display.
+//
+// Solution: Combine all transition-sensitive data into a single atomic object.
+// This ensures ALL data swaps together at the exact same moment during SWAP phase.
+// =============================================================================
+interface AtomicExerciseDisplayData {
+  notes: ExerciseNote[];
+  tempo: number;
+  overlay3DConfig: FretboardCardProps['overlay3DConfig'] | null;
+  // Include exercise ID for debugging
+  exerciseId: string | undefined;
+}
 
 // Render counter for debugging
 let fretboardCardRenderCount = 0;
@@ -477,6 +515,85 @@ const FretboardCardContent = React.memo(
     const [showRingOverlay, setShowRingOverlay] = useState(true);
     const fretboardContainerRef = useRef<HTMLDivElement>(null);
 
+    // =============================================================================
+    // INITIAL FRETBOARD REVEAL ON SCROLL
+    // =============================================================================
+    // The fretboard content is hidden until the user scrolls to the sentinel.
+    // When revealed, it fades in with a zoom animation for a polished effect.
+    // Subsequent exercise changes animate normally.
+    const [isInitialRevealComplete, setIsInitialRevealComplete] = useState(false);
+    const [showFretboardContent, setShowFretboardContent] = useState(false);
+    const animationTriggerSentinelRef = useRef<HTMLDivElement>(null);
+
+    // Track when the initial fade animation has completed (after CSS animation finishes)
+    // We use CSS @keyframes animation for reliable fade-in, not state-driven transitions
+    const [initialFadeComplete, setInitialFadeComplete] = useState(false);
+
+    // DEBUG: Log state on every render (fadeOpacity is logged after it's defined below)
+
+    // IntersectionObserver to detect when the sentinel comes into view
+    useEffect(() => {
+      // Skip if initial reveal is already complete
+      if (isInitialRevealComplete) {
+        console.log('[ZOOM-DEBUG] Initial reveal already complete, skipping observer');
+        return;
+      }
+
+      const sentinel = animationTriggerSentinelRef.current;
+      console.log('[ZOOM-DEBUG] IntersectionObserver setup - sentinel:', sentinel);
+      if (!sentinel) {
+        console.log('[ZOOM-DEBUG] ❌ No sentinel element found!');
+        return;
+      }
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          const entry = entries[0];
+          console.log('[ZOOM-DEBUG] IntersectionObserver callback:', {
+            isIntersecting: entry.isIntersecting,
+            intersectionRatio: entry.intersectionRatio,
+          });
+          if (entry.isIntersecting) {
+            console.log('[ZOOM-DEBUG] 🎯 Sentinel in view! Revealing fretboard content');
+            setShowFretboardContent(true);
+            setIsInitialRevealComplete(true);
+          }
+        },
+        {
+          // Trigger as soon as the sentinel enters the viewport
+          threshold: 0,
+          rootMargin: '0px',
+        }
+      );
+
+      observer.observe(sentinel);
+      console.log('[ZOOM-DEBUG] Observer started watching sentinel');
+
+      return () => {
+        console.log('[ZOOM-DEBUG] Observer disconnected');
+        observer.disconnect();
+      };
+    }, [isInitialRevealComplete]);
+
+    // Mark fade animation as complete after the CSS animation finishes
+    // We use CSS @keyframes animation for reliable fade-in, not state-driven transitions
+    // NOTE: Using hardcoded 500ms here since fadeDuration is defined later in the component
+    const INITIAL_FADE_DURATION = 500;
+    useEffect(() => {
+      if (showFretboardContent && !initialFadeComplete) {
+        console.log('[ZOOM-DEBUG] 🌟 CSS fade-in animation started');
+
+        // Mark the initial fade as complete after the CSS animation finishes
+        // This allows subsequent exercise changes to use the snapshot transition opacity
+        const timer = setTimeout(() => {
+          console.log('[ZOOM-DEBUG] ✅ Initial fade animation complete');
+          setInitialFadeComplete(true);
+        }, INITIAL_FADE_DURATION);
+
+        return () => clearTimeout(timer);
+      }
+    }, [showFretboardContent, initialFadeComplete]);
+
     // Get ring overlay configuration with premium access check
     const ringOverlay = useRingOverlay({
       tutorialSlug,
@@ -759,44 +876,115 @@ const FretboardCardContent = React.memo(
     const audioControls = { register: () => {}, unregister: () => {} };
 
     // =============================================================================
-    // EXERCISE TRANSITION - Snapshot Pattern (Double Buffer)
+    // EXERCISE TRANSITION - FAANG Atomic Snapshot Pattern (Double Buffer)
     // =============================================================================
-    // Problem: React immediately renders new exercise data when selectedExercise changes.
-    // Solution: Use snapshot transition to control WHEN we switch the displayed data.
+    // Problem: Three independent useSnapshotTransition hooks (notes, tempo, overlay3D)
+    // can get out of sync during rapid exercise switching, causing stale data display.
+    // For example: notes from exercise A displayed with tempo from exercise B.
     //
-    // - displayNotes = What we RENDER (OLD data during fade-out, NEW after swap)
-    // - sourceData = What React gives us (changes immediately)
+    // FAANG Solution: Combine ALL transition-sensitive data into a SINGLE atomic object.
+    // This ensures notes, tempo, and overlay3D config swap together at the EXACT same
+    // moment during the SWAP phase. No more transient mismatches between data sources.
     //
     // Timeline:
-    //   User clicks → fade-out (OLD visible) → SWAP → fade-in (NEW visible)
+    //   User clicks → fade-out (OLD atomic data visible) → SWAP → fade-in (NEW atomic data visible)
     // =============================================================================
     const FADE_DURATION_MS = 500;
 
-    // Snapshot transition for exercise notes - controls when data visually changes
+    // Create atomic source data object - all related data combined
+    // useMemo ensures we only create a new object when constituent parts actually change
+    const atomicSourceData = React.useMemo<AtomicExerciseDisplayData>(() => ({
+      notes: fretboard.exerciseData.exerciseNotes,
+      tempo: fretboard.exercise.tempo,
+      overlay3DConfig: effectiveOverlay3DConfig ?? null,
+      exerciseId: fretboard.exerciseData.selectedExercise?.id,
+    }), [
+      fretboard.exerciseData.exerciseNotes,
+      fretboard.exercise.tempo,
+      effectiveOverlay3DConfig,
+      fretboard.exerciseData.selectedExercise?.id,
+    ]);
+
+    // SINGLE atomic transition for ALL exercise-related display data
+    // This guarantees notes, tempo, and overlay3D config swap together atomically
     const {
-      displayData: displayNotes,
+      displayData: atomicDisplayData,
       opacity: fadeOpacity,
       fadeDuration,
       phase: transitionPhase,
     } = useSnapshotTransition(
-      fretboard.exerciseData.exerciseNotes,
-      fretboard.exerciseData.selectedExercise?.id,
+      atomicSourceData,
+      // CRITICAL: Use .value to get the string ID, not the ExerciseId object
+      // Object references would always be different, breaking key comparison
+      fretboard.exerciseData.selectedExercise?.id?.value,
       { fadeDuration: FADE_DURATION_MS, debug: false }
     );
 
-    // Snapshot transition for tempo - must stay in sync with notes
-    const { displayData: displayTempo } = useSnapshotTransition(
-      fretboard.exercise.tempo,
-      fretboard.exerciseData.selectedExercise?.id,
-      { fadeDuration: FADE_DURATION_MS }
-    );
+    // Destructure for backward compatibility with existing code
+    const displayNotes = atomicDisplayData.notes;
+    const displayTempo = atomicDisplayData.tempo;
+    // Convert null back to undefined for prop compatibility (optional prop expects undefined, not null)
+    const displayOverlay3D = atomicDisplayData.overlay3DConfig ?? undefined;
 
-    // Snapshot transition for overlay3D config - different exercises may have different views
-    const { displayData: displayOverlay3D } = useSnapshotTransition(
-      effectiveOverlay3DConfig,
-      fretboard.exerciseData.selectedExercise?.id,
-      { fadeDuration: FADE_DURATION_MS }
-    );
+    // =============================================================================
+    // EFFECTIVE TRANSITION PHASE FOR ZOOM ANIMATION
+    // DEBUG: Log state on every render (after fadeOpacity is defined)
+    console.log('[ZOOM-DEBUG] Render state:', {
+      isInitialRevealComplete,
+      showFretboardContent,
+      initialFadeComplete,
+      fadeOpacity,
+      usingCSSAnimation: !initialFadeComplete,
+      sentinelExists: !!animationTriggerSentinelRef.current,
+    });
+
+    // =============================================================================
+    // When fretboard is first revealed (showFretboardContent becomes true), we want
+    // to trigger the zoom animation. We do this by forcing 'fading-in' phase temporarily.
+    // After the zoom animation completes, we go back to normal phase pass-through.
+    const [forceInitialZoom, setForceInitialZoom] = useState(false);
+    const initialRevealDoneRef = useRef(false);
+
+    // When showFretboardContent becomes true for the first time, trigger zoom animation
+    // IMPORTANT: We delay setting forceInitialZoom so the 3D overlay mounts with 'stable' first,
+    // then we switch to 'fading-in' to trigger the zoom animation (the overlay detects phase CHANGES)
+    useEffect(() => {
+      if (showFretboardContent && !initialRevealDoneRef.current) {
+        initialRevealDoneRef.current = true;
+        console.log('[ZOOM-DEBUG] 🎬 Initial reveal - scheduling fading-in after mount');
+
+        // Longer delay to ensure 3D overlay fully mounts and initializes with 'stable' phase
+        // The overlay needs to render at least once with 'stable' before we switch to 'fading-in'
+        const MOUNT_DELAY = 200; // ms - give time for React to mount and Three.js to initialize
+        const startTimer = setTimeout(() => {
+          console.log('[ZOOM-DEBUG] 🚀 Now forcing fading-in to trigger zoom animation');
+          setForceInitialZoom(true);
+        }, MOUNT_DELAY);
+
+        // Clear the force after zoom animation duration (1500ms in Ring3DOverlayCanvas)
+        const endTimer = setTimeout(() => {
+          console.log('[ZOOM-DEBUG] ✅ Zoom animation complete - clearing forceInitialZoom');
+          setForceInitialZoom(false);
+        }, MOUNT_DELAY + 1600);
+
+        return () => {
+          clearTimeout(startTimer);
+          clearTimeout(endTimer);
+        };
+      }
+    }, [showFretboardContent]);
+
+    // Compute effective transition phase for the 3D overlay
+    const effectiveTransitionPhase = React.useMemo(() => {
+      // During initial reveal, force 'fading-in' to trigger zoom animation
+      if (forceInitialZoom) {
+        console.log('[ZOOM-DEBUG] effectiveTransitionPhase: FORCING fading-in for initial reveal');
+        return 'fading-in' as const;
+      }
+
+      console.log('[ZOOM-DEBUG] effectiveTransitionPhase: passing through', transitionPhase);
+      return transitionPhase;
+    }, [forceInitialZoom, transitionPhase]);
 
     // Get selected exercise from sync props for GlobalControls
     const activeExercise = syncProps.selectedExercise;
@@ -1170,14 +1358,24 @@ const FretboardCardContent = React.memo(
           {/* Transparent Fretboard Container - overflow:visible allows 3D overlay to extend beyond bounds */}
           <div className="relative" style={{ overflow: 'visible' }}>
             {/* 2D Mode Fretboard - With zoom and horizontal scroll */}
+            {/* Initially hidden until user scrolls to sentinel, then fades in with zoom animation */}
             <div
               ref={fretboardContainerRef}
               className="relative mx-auto"
               style={{
-                width: 568, // Full container width // Fixed viewport width
-                height: 290, // Fixed height
-                overflow: 'visible', // Allow shadows to extend in all directions
-                perspective: '800px', // Add perspective here
+                width: 568,
+                height: 290,
+                overflow: 'visible',
+                perspective: '800px',
+                // Opacity logic:
+                // - Before initial reveal: element doesn't exist (conditional rendering)
+                // - During initial reveal: CSS animation fades from 0 to 1
+                // - After initial fade complete: use fadeOpacity for subsequent exercise transitions
+                // This ensures both the initial fade-in AND subsequent exercise fades work correctly
+                opacity: initialFadeComplete ? fadeOpacity : undefined,  // Let CSS animation control during initial reveal
+                // Use CSS animation for initial reveal, then CSS transition for exercise changes
+                animation: !initialFadeComplete ? `fretboardFadeIn ${INITIAL_FADE_DURATION}ms ease-out forwards` : undefined,
+                transition: initialFadeComplete ? `opacity ${fadeDuration}ms ease-out` : undefined,
               }}
             >
               <div
@@ -1272,8 +1470,8 @@ const FretboardCardContent = React.memo(
             {/* Guitar Hero-style 3D Ring Overlay - COMPLETELY OUTSIDE fretboard container
                 to prevent clipping when rotated. Uses absolute positioning relative to parent.
                 Has overflow:visible and no clipping boundaries.
-                NOTE: Removed exerciseNotes.length > 0 condition so fretboard is visible even when empty */}
-            {!hide3DFretboard && ringOverlay.config.enabled && (
+                NOTE: Only render after showFretboardContent is true (sentinel reached) */}
+            {showFretboardContent && !hide3DFretboard && ringOverlay.config.enabled && (
               <div
                 style={{
                   position: 'absolute',
@@ -1284,6 +1482,10 @@ const FretboardCardContent = React.memo(
                   pointerEvents: 'none',
                   overflow: 'visible',
                   // NO clipping - allow 3D to extend in all directions
+                  // Apply same opacity/animation as fretboard container for initial reveal fade
+                  opacity: initialFadeComplete ? fadeOpacity : undefined,
+                  animation: !initialFadeComplete ? `fretboardFadeIn ${INITIAL_FADE_DURATION}ms ease-out forwards` : undefined,
+                  transition: initialFadeComplete ? `opacity ${fadeDuration}ms ease-out` : undefined,
                 }}
               >
                 <Ring3DOverlayCanvas
@@ -1308,7 +1510,10 @@ const FretboardCardContent = React.memo(
                   fadeOpacity={fadeOpacity}
                   fadeDuration={fadeDuration}
                   // Transition phase for camera zoom animation
-                  transitionPhase={transitionPhase}
+                  transitionPhase={effectiveTransitionPhase}
+                  // Initial reveal: trigger zoom animation immediately on mount
+                  // This bypasses phase change detection to solve the race condition
+                  triggerZoomOnMount={forceInitialZoom}
                 />
               </div>
             )}
@@ -1322,6 +1527,8 @@ const FretboardCardContent = React.memo(
             )}
           </div>
         </ZoneCardContent>
+        {/* Sentinel element for triggering initial zoom animation when user scrolls to GlobalControls area */}
+        <div ref={animationTriggerSentinelRef} aria-hidden="true" style={{ height: 1 }} />
       </ZoneCard>
     );
   },

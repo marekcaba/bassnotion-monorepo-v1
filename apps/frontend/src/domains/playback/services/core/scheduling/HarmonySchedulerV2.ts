@@ -44,6 +44,12 @@ import { GrandPianoMapper } from './GrandPianoMapper.js';
 import { FadeoutManager } from './FadeoutManager.js';
 import { BufferFallbackStrategy } from './BufferFallbackStrategy.js';
 
+// FAANG FIX: Import MusicalTimeConverter for tick-to-seconds conversion
+import { MusicalTimeConverter } from '@bassnotion/contracts';
+
+// FAANG FIX: Import Tone for live BPM access
+import * as Tone from 'tone';
+
 // EQ for Grand Piano
 import {
   ParametricEQ,
@@ -385,7 +391,28 @@ export class HarmonySchedulerV2 {
     const octaveShift = this.currentHarmonyInstrument === 'grandpiano' ? 0 : 12;
     const midiNote = eventData.midiNote - octaveShift;
     const velocity = eventData.velocity || event.velocity * 127;
-    const duration = event.duration || 2; // Default 2 seconds
+
+    // FAANG FIX: Convert durationTicks to seconds using LIVE BPM at playback time
+    // This ensures correct timing even when BPM changes between registration and playback
+    // Priority: 1) event.durationTicks (preferred), 2) eventData.durationTicks, 3) event.duration (legacy), 4) default 2s
+    let duration: number;
+    const durationTicks = event.durationTicks ?? eventData.durationTicks;
+    if (durationTicks !== undefined && durationTicks > 0) {
+      const liveBpm = Tone.Transport.bpm.value;
+      duration = MusicalTimeConverter.ticksToSeconds(durationTicks, liveBpm);
+      // Only log if in development mode and significant duration
+      if (process.env.NODE_ENV === 'development' && duration > 4) {
+        logger.debug('Duration converted from ticks at playback time', {
+          durationTicks,
+          liveBpm,
+          durationSeconds: duration.toFixed(3),
+          noteName: midiToNoteName(midiNote),
+        });
+      }
+    } else {
+      // Legacy fallback: use pre-calculated duration or default
+      duration = typeof event.duration === 'number' ? event.duration : 2;
+    }
 
     // STEP 2: Convert MIDI note to note name (C4, Cs4, D4, etc.)
     const noteName = midiToNoteName(midiNote);
@@ -723,6 +750,15 @@ export class HarmonySchedulerV2 {
       errorCount,
       graceful,
     });
+  }
+
+  /**
+   * Clear CC64 timeline in SustainPedalHandler
+   * Call this when switching exercises to prevent stale pedal data
+   */
+  clearCC64Timeline(): void {
+    this.sustainPedalHandler.clear();
+    console.log('[HARMONY-SCHEDULER-V2] CC64 timeline cleared for exercise switch');
   }
 
   // Phase 4.1: midiToNoteName() extracted to shared utils/midiUtils.ts

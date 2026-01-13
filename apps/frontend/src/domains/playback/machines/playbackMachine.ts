@@ -13,7 +13,7 @@
  * - Testable state transitions
  */
 
-import { setup, assign, fromPromise, emit } from 'xstate';
+import { setup, assign, fromPromise } from 'xstate';
 import type { EventBus } from '../services/core/EventBus.js';
 import { musicalTruth } from '../modules/tempo/MusicalTruthAuthority.js';
 
@@ -494,6 +494,11 @@ export const playbackMachine = setup({
             { type: 'logTransition', params: { from: 'idle', to: 'loading' } },
           ],
         },
+        // FIX: Ignore STOP in idle state (nothing to stop, stay idle)
+        // Prevents XState shadow mode mismatch if stop() called before initialization
+        STOP: {
+          // Stay in idle, do nothing
+        },
       },
     },
 
@@ -525,6 +530,14 @@ export const playbackMachine = setup({
           ],
         },
       },
+
+      on: {
+        // FIX: Ignore STOP during loading (nothing playing yet, stay loading)
+        // Prevents XState shadow mode mismatch if stop() called during initialization
+        STOP: {
+          // Stay in loading, do nothing - will complete initialization normally
+        },
+      },
     },
 
     // =========================================================================
@@ -543,6 +556,15 @@ export const playbackMachine = setup({
             'emitTransportStartTime',
             'emitStarting',
             { type: 'logTransition', params: { from: 'ready', to: 'starting' } },
+          ],
+        },
+        // FIX: Allow STOP in ready state to transition to stopped
+        // This fixes XState shadow mode mismatch when stop() is called before playback starts
+        STOP: {
+          target: 'stopped',
+          actions: [
+            'emitStop',
+            { type: 'logTransition', params: { from: 'ready', to: 'stopped' } },
           ],
         },
         REGISTER_TRACK: {

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useSearchParams } from 'next/navigation';
 import { YouTubeWidgetPage } from '@/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage';
 import { TutorialPageSkeleton } from '@/domains/widgets/components/YouTubeWidgetPage/TutorialPageSkeleton';
 import { useTutorialExercises } from '@/domains/widgets/hooks/useTutorialExercises';
@@ -91,6 +92,10 @@ export default function TutorialPage({ params }: TutorialPageProps) {
   const resolvedParams = React.use(params);
   const tutorialSlug = resolvedParams.tutorialId;
 
+  // Get initial exercise ID from URL query params (e.g., from favorites navigation)
+  const searchParams = useSearchParams();
+  const initialExerciseId = searchParams.get('exerciseId') || undefined;
+
   // Load real tutorial data from API
   const { tutorial, exercises, isLoading, error } =
     useTutorialExercises(tutorialSlug);
@@ -153,6 +158,7 @@ export default function TutorialPage({ params }: TutorialPageProps) {
           tutorialData={memoizedTutorial}
           tutorialSlug={tutorialSlug}
           exercises={memoizedExercises}
+          initialExerciseId={initialExerciseId}
         />
       </ErrorBoundary>
     </>

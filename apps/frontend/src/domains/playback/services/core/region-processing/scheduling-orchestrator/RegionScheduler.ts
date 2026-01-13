@@ -418,9 +418,16 @@ export class RegionScheduler {
     // Find the latest end time across all regions
     tracks.forEach((track) => {
       track.regions.forEach((region) => {
-        const regionDurationInSeconds = region.duration * secondsPerBeat;
+        // 🔧 FIX: Handle all duration formats (number in beats OR MusicalPosition object)
+        // durationToBeats() safely converts objects like {bars: 8, beats: 0} to total beats
+        const durationInBeats = durationToBeats(region.duration);
+        const regionDurationInSeconds = durationInBeats * secondsPerBeat;
         const regionEndTime = region.startTime + regionDurationInSeconds;
-        maxEndTime = Math.max(maxEndTime, regionEndTime);
+
+        // 🔧 FIX: Skip invalid durations that would produce NaN
+        if (!isNaN(regionEndTime) && isFinite(regionEndTime)) {
+          maxEndTime = Math.max(maxEndTime, regionEndTime);
+        }
       });
     });
 
@@ -492,7 +499,9 @@ export class RegionScheduler {
         // FAANG FIX: region.duration is in BEATS, must convert to seconds using current BPM!
         const currentBpmForRegion = Tone.Transport.bpm.value;
         const secondsPerBeat = 60 / currentBpmForRegion;
-        const regionDurationInSeconds = region.duration * secondsPerBeat;
+        // 🔧 FIX: Handle all duration formats (number in beats OR MusicalPosition object)
+        const durationInBeats = durationToBeats(region.duration);
+        const regionDurationInSeconds = durationInBeats * secondsPerBeat;
 
         if (
           currentTime < region.startTime ||

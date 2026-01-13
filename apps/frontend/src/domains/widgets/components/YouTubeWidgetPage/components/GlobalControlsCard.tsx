@@ -56,6 +56,7 @@ interface GlobalControlsCardProps {
     endBeat?: number;
   } | null;
   isLoopEnabled?: boolean;
+  onToggleLoop?: () => void;
   // Play state callback
   onPlayStateChange?: (isPlaying: boolean) => void;
   // Exercise list options
@@ -71,6 +72,7 @@ export function GlobalControlsCard({
   hasSelectedDots,
   loopRegion,
   isLoopEnabled,
+  onToggleLoop,
   onPlayStateChange,
   showExerciseList = true,
   exerciseListLoading = false,
@@ -232,6 +234,7 @@ export function GlobalControlsCard({
               hasSelectedDots={hasSelectedDots}
               loopRegion={loopRegion}
               isLoopEnabled={isLoopEnabled}
+              onToggleLoop={onToggleLoop}
               onPlayStateChange={onPlayStateChange}
             />
           </div>

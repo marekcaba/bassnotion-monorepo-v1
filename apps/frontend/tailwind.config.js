@@ -123,6 +123,23 @@ export default {
         '2xl': '1.5rem',
         '3xl': '2rem',
       },
+      // Sparkle burst animation for like/favorite buttons
+      keyframes: {
+        'sparkle-burst': {
+          '0%': {
+            transform: 'translate(-50%, -50%) scale(0) rotate(0deg)',
+            opacity: '1',
+          },
+          '100%': {
+            transform:
+              'translate(calc(-50% + var(--sparkle-x)), calc(-50% + var(--sparkle-y))) scale(var(--sparkle-scale)) rotate(var(--sparkle-rotation))',
+            opacity: '0',
+          },
+        },
+      },
+      animation: {
+        'sparkle-burst': 'sparkle-burst 600ms ease-out forwards',
+      },
     },
   },
   variants: {

@@ -242,4 +242,79 @@ export class MusicalTimeConverter {
       subdivision: quantizedSubdivision,
     };
   }
+
+  // ============================================================================
+  // FAANG FIX: MIDI Tick Conversion Methods
+  // ============================================================================
+  // These methods convert MIDI ticks to real-time using LIVE BPM, ensuring
+  // correct timing even when BPM changes between event registration and playback.
+  // Standard MIDI resolution is 480 PPQ (pulses per quarter note).
+  // ============================================================================
+
+  /**
+   * Standard MIDI resolution: 480 ticks per quarter note (beat)
+   */
+  static readonly MIDI_PPQ = 480;
+
+  /**
+   * Convert MIDI ticks to seconds using the given BPM
+   *
+   * FAANG FIX: This should be called at PLAYBACK TIME with live BPM,
+   * not at registration time when BPM might be stale.
+   *
+   * @param ticks - MIDI ticks (at 480 PPQ resolution)
+   * @param bpm - Current beats per minute (use live value from Tone.Transport)
+   * @returns Duration in seconds
+   *
+   * @example
+   * // At playback time, use live BPM:
+   * const liveBpm = Tone.Transport.bpm.value;
+   * const durationSeconds = MusicalTimeConverter.ticksToSeconds(960, liveBpm);
+   * // At 120 BPM: 960 ticks = 2 beats = 1.0 seconds
+   * // At 69 BPM: 960 ticks = 2 beats = 1.739 seconds
+   */
+  static ticksToSeconds(ticks: number, bpm: number): number {
+    if (bpm <= 0) {
+      throw new Error('BPM must be greater than 0');
+    }
+    const beatsPerSecond = bpm / 60;
+    const ticksPerSecond = this.MIDI_PPQ * beatsPerSecond;
+    return ticks / ticksPerSecond;
+  }
+
+  /**
+   * Convert seconds to MIDI ticks using the given BPM
+   *
+   * @param seconds - Duration in seconds
+   * @param bpm - Beats per minute
+   * @returns MIDI ticks at 480 PPQ
+   */
+  static secondsToTicks(seconds: number, bpm: number): number {
+    if (bpm <= 0) {
+      throw new Error('BPM must be greater than 0');
+    }
+    const beatsPerSecond = bpm / 60;
+    const ticksPerSecond = this.MIDI_PPQ * beatsPerSecond;
+    return Math.round(seconds * ticksPerSecond);
+  }
+
+  /**
+   * Convert MIDI ticks to beats
+   *
+   * @param ticks - MIDI ticks at 480 PPQ
+   * @returns Number of beats
+   */
+  static ticksToBeats(ticks: number): number {
+    return ticks / this.MIDI_PPQ;
+  }
+
+  /**
+   * Convert beats to MIDI ticks
+   *
+   * @param beats - Number of beats
+   * @returns MIDI ticks at 480 PPQ
+   */
+  static beatsToTicks(beats: number): number {
+    return Math.round(beats * this.MIDI_PPQ);
+  }
 }

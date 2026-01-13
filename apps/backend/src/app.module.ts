@@ -16,6 +16,7 @@ import { StorageModule } from './infrastructure/storage/storage.module.js';
 import { HealthModule } from './health/health.module.js';
 import { BillingModule } from './domains/billing/billing.module.js';
 import { PatternsModule } from './domains/patterns/patterns.module.js';
+import { SocialModule } from './domains/social/social.module.js';
 import { PerformanceMiddleware } from './shared/middleware/performance.middleware.js';
 import { CorrelationMiddleware } from './shared/middleware/correlation.middleware.js';
 import { SharedModule } from './shared/shared.module.js';
@@ -41,6 +42,7 @@ import { LoggingModule } from './infrastructure/logging/logging.module.js';
     HealthModule,
     BillingModule,
     PatternsModule,
+    SocialModule,
   ],
   controllers: [AppController],
   providers: [AppService, PerformanceMiddleware, CorrelationMiddleware],

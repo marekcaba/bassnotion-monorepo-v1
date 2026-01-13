@@ -102,12 +102,19 @@ export interface Region {
 
 /**
  * Pattern event structure
+ *
+ * FAANG FIX: Duration can be specified as:
+ * 1. `durationTicks` (preferred) - Raw MIDI ticks, converted to seconds at playback using live BPM
+ * 2. `duration` (legacy) - Pre-calculated duration in seconds or Tone.js format
+ *
+ * Using durationTicks ensures correct timing even when BPM changes between registration and playback.
  */
 export interface PatternEvent {
   position: string; // Musical time in Tone.js format
   type: string;
   velocity?: number;
-  duration?: string;
+  duration?: string | number; // Legacy: pre-calculated duration (may use stale BPM)
+  durationTicks?: number; // FAANG FIX: Raw MIDI ticks at 480 PPQ (preferred - converts at playback)
   midiNote?: number;
   noteName?: string;
 }
@@ -655,6 +662,11 @@ export class PlaybackEngine {
     if (this.harmonyScheduler) {
       this.harmonyScheduler.stopAll(false); // false = immediate stop with fadeout
       console.log('[PLAYBACK-ENGINE] Cleared harmony scheduler sources');
+
+      // 🔧 FIX: Clear CC64 timeline to prevent stale pedal data on exercise switch
+      // Without this, the old exercise's CC64 timeline persists in SustainPedalHandler
+      // causing sustain pedal to behave incorrectly for the new exercise
+      this.harmonyScheduler.clearCC64Timeline();
     }
 
     // 2. Find and unregister all harmony tracks
@@ -668,6 +680,13 @@ export class PlaybackEngine {
     for (const trackId of harmonyTrackIds) {
       this.tracks.delete(trackId);
       console.log('[PLAYBACK-ENGINE] Unregistered harmony track:', trackId);
+    }
+
+    // 3. Clear cached schedule for the exercise being switched away from
+    // This ensures fresh CC64 timeline on next playback
+    if (this.scheduleCache) {
+      this.scheduleCache.clearAll();
+      console.log('[PLAYBACK-ENGINE] Cleared schedule cache for exercise switch');
     }
 
     this.logger.info('Cleared all harmony tracks and scheduled events', {
@@ -974,6 +993,16 @@ export class PlaybackEngine {
     const startupLookahead = TRANSPORT_TIMING_CONFIG.startupLookahead;
     this.transportStartTime = this.audioContext.currentTime + startupLookahead;
     this.syncTransportStartTime(this.transportStartTime);
+
+    // 🚨 CRITICAL FIX: Clear schedule cache on every playback start
+    // The CC64 timeline keys include transportStartTime which changes every playback.
+    // Cached timeline from previous playback has stale keys (e.g., 19.3s instead of 56.3s)
+    // causing pedal lookups to fail and notes to sustain forever.
+    // Clearing cache ensures timeline is rebuilt with fresh transportStartTime.
+    if (this.scheduleCache) {
+      this.scheduleCache.clearAll();
+      console.log('[PLAYBACK-ENGINE START] 🗑️ Cleared schedule cache for fresh CC64 timeline');
+    }
 
     // CRITICAL FIX: Set transport start time on metrics collector
     // Without this, jitter calculations use transportStartTime=0, causing 409ms+ jitter reports
@@ -1366,6 +1395,11 @@ export class PlaybackEngine {
     }
 
     try {
+      // 🔧 FIX: Sync ScheduleCache countdown config BEFORE cache lookup
+      // Without this, cache key uses countdownOffsetBeats=0 (default) for lookup
+      // but stores with actual countdownBeats value, causing cache key mismatch
+      this.scheduleCache.setCountdownOffsetBeats(this.countdownBeats);
+
       // Call RegionScheduler.scheduleAll() with all required dependencies
       const result = this.regionScheduler.scheduleAll(
         this.tracks,
@@ -1396,12 +1430,28 @@ export class PlaybackEngine {
         this.syncCC64Timeline.bind(this),
         // Dependency 16: calculateExerciseDuration
         () => {
-          // RegionScheduler handles this internally via calculateDuration() method
-          this.regionScheduler!.calculateDuration(
+          // RegionScheduler calculates exercise duration and last beat timing
+          const { exerciseEndTime, lastBeatThreshold } = this.regionScheduler!.calculateDuration(
             Array.from(this.tracks.values()),
             this.countdownEnabled,
             this.countdownBeats,
           );
+
+          // 🚨 CRITICAL FIX: Pass exercise timing to HarmonyScheduler → SustainPedalHandler
+          // Without this, notes at the end of the exercise sustain forever because
+          // SustainPedalHandler doesn't know when to cap the sustain duration.
+          // This enables the "cap at exercise end + 3s" logic for last-beat notes.
+          if (this.harmonyScheduler) {
+            // Add transportStartTime to convert from transport-relative to audio time
+            const audioExerciseEndTime = this.transportStartTime + exerciseEndTime;
+            const audioLastBeatThreshold = this.transportStartTime + lastBeatThreshold;
+            this.harmonyScheduler.setExerciseTiming(audioExerciseEndTime, audioLastBeatThreshold);
+            console.log('[PLAYBACK-ENGINE] Set exercise timing for sustain capping', {
+              exerciseEndTime: audioExerciseEndTime.toFixed(3),
+              lastBeatThreshold: audioLastBeatThreshold.toFixed(3),
+              transportStartTime: this.transportStartTime.toFixed(3),
+            });
+          }
         },
       );
 

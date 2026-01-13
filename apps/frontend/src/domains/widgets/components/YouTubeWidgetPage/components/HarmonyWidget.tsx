@@ -2178,9 +2178,14 @@ const HarmonyWidgetComponent = ({
     // We need to shift all positions so the first event starts at measure 0 (which represents bar 1 in 0-indexed calculation)
 
     // Collect all event positions (notes + control changes)
+    // Filter out any undefined positions to prevent errors
     const allEventPositions = [
-      ...latestExercise.harmonyNotes.map((note: any) => note.position),
-      ...(latestExercise.harmonyControlChanges || []).map((cc: any) => cc.position),
+      ...latestExercise.harmonyNotes
+        .map((note: any) => note.position)
+        .filter((pos: any) => pos && typeof pos.measure === 'number' && typeof pos.beat === 'number'),
+      ...(latestExercise.harmonyControlChanges || [])
+        .map((cc: any) => cc.position)
+        .filter((pos: any) => pos && typeof pos.measure === 'number' && typeof pos.beat === 'number'),
     ];
 
     // Find the earliest event (note OR control change)
@@ -2224,44 +2229,56 @@ const HarmonyWidgetComponent = ({
       );
 
       // LOG: All notes from Supabase in order
-      console.log('[HARMONY-FLOW] STEP 1 - Supabase notes:', latestExercise.harmonyNotes.slice(0, 10).map((n: any, i: number) => `${i+1}: ${n.noteName} (MIDI ${n.pitch}) ticks=${n.ticks}`));
+      console.log('[HARMONY-FLOW] STEP 1 - Supabase notes:', latestExercise.harmonyNotes.slice(0, 10).map((n: any, i: number) => `${i+1}: ${n.noteName || 'unknown'} (MIDI ${n.pitch ?? '?'}) ticks=${n.ticks ?? 'N/A'}`));
     }
 
-    const harmonyEvents = latestExercise.harmonyNotes.map(
-      (note: any, index: number) => {
-        // Convert MIDI ticks to seconds using current tempo
-        // Formula: durationSeconds = (durationTicks / 480) * (60 / currentBpm)
-        // - 480 = MIDI PPQ (Pulses Per Quarter note) - STANDARD MIDI RESOLUTION
-        // - 60 / currentBpm = seconds per quarter note
-        // - durationTicks / 480 = number of quarter notes
-        // - result = duration in seconds
-        const durationSeconds = note.durationTicks
-          ? (note.durationTicks / 480) * (60 / currentBpm)
-          : 2; // Fallback to 2 seconds if durationTicks missing
+    const harmonyEvents = latestExercise.harmonyNotes
+      .filter((note: any) => {
+        // Guard against notes with missing position data
+        if (!note.position || typeof note.position.measure !== 'number' || typeof note.position.beat !== 'number') {
+          console.warn('[HARMONY-WIDGET] Skipping note with missing position:', note);
+          return false;
+        }
+        return true;
+      })
+      .map((note: any, index: number) => {
+        // 🚨 FAANG FIX: Store raw durationTicks, NOT pre-calculated seconds!
+        // Duration will be converted to seconds at PLAYBACK TIME using live BPM.
+        // This fixes the BPM mismatch bug when switching exercises.
+        //
+        // OLD BUG: durationSeconds was calculated here with potentially stale BPM,
+        // causing CC64 timeline mismatch when playback uses different BPM.
+        //
+        // Formula (applied at playback): durationSeconds = (durationTicks / 480) * (60 / liveBpm)
+        const rawDurationTicks = note.durationTicks || 960; // Fallback to 2 beats (960 ticks) if missing
 
-        // DIAGNOSTIC: Log first 3 notes to verify BPM and duration calculation
+        // DIAGNOSTIC: Log first 3 notes to verify tick-based approach
         if (isVerboseDebugEnabled() && index < 3) {
+          // Calculate what duration WOULD be at different BPMs (for diagnostic only)
+          const durationAt120BPM = (rawDurationTicks / 480) * (60 / 120);
+          const durationAt69BPM = (rawDurationTicks / 480) * (60 / 69);
+
           console.log(`[HARMONY DURATION DIAGNOSTIC] Note ${index + 1}:`, {
-            durationTicks: note.durationTicks,
-            currentBpm,
-            calculation: `(${note.durationTicks} / 480) * (60 / ${currentBpm})`,
-            durationSeconds,
-            expectedAt69BPM: (note.durationTicks / 480) * (60 / 69),
+            durationTicks: rawDurationTicks,
+            currentBpm, // This is potentially stale - that's why we store ticks!
+            approach: 'FAANG FIX: Storing raw ticks, converting at playback',
+            durationAt120BPM: durationAt120BPM.toFixed(3),
+            durationAt69BPM: durationAt69BPM.toFixed(3),
+            note: 'Duration will be calculated at playback using Tone.Transport.bpm.value',
           });
 
           // PPQ DIAGNOSTIC: Verify position.tick and durationTicks are both at 480 PPQ
+          const positionTick = note.position?.tick ?? 0;
           console.log(`[PPQ DIAGNOSTIC] Note ${index + 1}:`, {
-            positionTick: note.position.tick || 0,
-            durationTicks: note.durationTicks,
-            tickRatio: (
-              (note.position.tick || 0) / (note.durationTicks || 1)
-            ).toFixed(2),
+            positionTick,
+            durationTicks: rawDurationTicks,
+            tickRatio: (positionTick / (rawDurationTicks || 1)).toFixed(2),
             expectedPPQ: 480,
             suspectedPPQ_ifDouble:
               'If tick/duration ratio is ~2x expected, position.tick is at 960 PPQ',
             rawPosition: note.position,
-            interpretation480PPQ: `tick ${note.position.tick} / 480 = ${((note.position.tick || 0) / 480).toFixed(3)} beats`,
-            interpretation960PPQ: `tick ${note.position.tick} / 960 = ${((note.position.tick || 0) / 960).toFixed(3)} beats`,
+            interpretation480PPQ: `tick ${positionTick} / 480 = ${(positionTick / 480).toFixed(3)} beats`,
+            interpretation960PPQ: `tick ${positionTick} / 960 = ${(positionTick / 960).toFixed(3)} beats`,
           });
         }
 
@@ -2296,15 +2313,18 @@ const HarmonyWidgetComponent = ({
           },
           type: 'harmony-note',
           velocity: note.velocity / 127, // Normalize to 0-1
-          duration: durationSeconds, // Use actual MIDI duration
+          // 🚨 FAANG FIX: Store durationTicks at TOP LEVEL for HarmonySchedulerV2 to convert at playback
+          // DO NOT store pre-calculated duration - it uses potentially stale BPM!
+          durationTicks: rawDurationTicks, // Raw MIDI ticks - converted to seconds at playback with live BPM
+          // duration: undefined - intentionally omitted to force scheduler to use durationTicks
           data: {
             pitch: note.pitch,
             noteName: note.noteName || '',
             midiNote: note.pitch,
             velocity: note.velocity, // Keep original 0-127 for logging
             ticks: absoluteTicks, // 🚨 FIX: Include absolute ticks for accurate timing
-            durationTicks: note.durationTicks, // Include duration in ticks
-            originalBpm: latestExercise.bpm, // 🚨 CRITICAL FIX: Include original MIDI file BPM for tick-to-time conversion
+            durationTicks: rawDurationTicks, // Also in data for backward compatibility
+            originalBpm: latestExercise.bpm, // Keep for reference/debugging only
           },
         };
 
@@ -2432,7 +2452,8 @@ const HarmonyWidgetComponent = ({
         })),
         sampleDurations: harmonyEvents.slice(0, 5).map((e: any) => ({
           note: e.data.noteName,
-          durationSeconds: e.duration.toFixed(3),
+          durationTicks: e.durationTicks ?? 'N/A', // FAANG FIX: Now stores ticks, not pre-calculated duration
+          durationNote: 'Converted to seconds at playback time using live BPM',
         })),
         sampleControlChanges: controlChangeEvents.slice(0, 5).map((e: any) => ({
           cc: e.data.cc,
@@ -2448,7 +2469,7 @@ const HarmonyWidgetComponent = ({
       id: `harmony-region-${latestExercise.id?.value || 'default'}`,
       trackId: 'harmony-widget-track',
       startTime: 0,
-      duration: (latestExercise.durationBeats || 32) * (60 / currentBpm),
+      duration: latestExercise.durationBeats || 32, // Duration in BEATS (not seconds) - RegionScheduler converts to seconds using BPM
       pattern: {
         id: `harmony-pattern-${latestExercise.id?.value || 'default'}`,
         name: 'Harmony Pattern',
@@ -2614,34 +2635,36 @@ const HarmonyWidgetComponent = ({
     // Update tracked exercise ID
     previousExerciseIdRef.current = exerciseId || null;
 
-    // When exercise changes, ALWAYS reset registration tracking
-    // This ensures the new exercise will be properly registered (including CC64 data)
+    // When exercise changes, ALWAYS clear old harmony tracks and reset registration
+    // This ensures the new exercise will be properly registered with fresh CC64 data
     if (exerciseChanged) {
-      console.log('🔄 [HARMONY-WIDGET] Exercise changed - resetting registration state', {
+      console.log('🔄 [HARMONY-WIDGET] Exercise changed - clearing old harmony and resetting state', {
         previousExerciseId,
         newExerciseId: exerciseId,
         newExerciseTitle: currentExercise?.title,
         hasHarmonyNotes: harmonyNoteCount > 0,
       });
 
-      // Reset the registration tracking so the new exercise can register fresh
-      lastRegisteredExerciseIdRef.current = null;
-    }
-
-    // When switching TO an exercise with NO harmony notes, also clear the PlaybackEngine
-    if (harmonyNoteCount === 0 && exerciseId) {
-      console.log('🧹 [HARMONY-WIDGET] Exercise has no harmony notes - clearing harmony tracks', {
-        exerciseId,
-        exerciseTitle: currentExercise?.title,
-      });
-
-      // Clear harmony from PlaybackEngine
+      // 🚨 CRITICAL FIX: ALWAYS clear harmony tracks when switching exercises
+      // This ensures old CC64 timeline and cached events are removed before new exercise loads
+      // Without this, the cache returns stale CC64 timeline from previous exercise
       const coreServices = WindowRegistry.getCoreServices();
       const playbackEngine = coreServices?.getPlaybackEngine?.();
       if (playbackEngine?.clearHarmonyTracks) {
         playbackEngine.clearHarmonyTracks();
-        console.log('✅ [HARMONY-WIDGET] Harmony tracks cleared from PlaybackEngine');
+        console.log('✅ [HARMONY-WIDGET] Cleared old harmony tracks and CC64 timeline for exercise switch');
       }
+
+      // Reset the registration tracking so the new exercise can register fresh
+      lastRegisteredExerciseIdRef.current = null;
+    }
+
+    // When switching TO an exercise with NO harmony notes, also clear WAM plugin state
+    if (harmonyNoteCount === 0 && exerciseId) {
+      console.log('🧹 [HARMONY-WIDGET] Exercise has no harmony notes - clearing remaining state', {
+        exerciseId,
+        exerciseTitle: currentExercise?.title,
+      });
 
       // Also clear the WAM plugin events if it exists
       if (keyboardPluginRef.current?.audioNode?.clearEvents) {

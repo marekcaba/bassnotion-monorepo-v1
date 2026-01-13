@@ -115,6 +115,13 @@ interface CSSMatchingCameraProps {
   zoomDuration?: number;
   /** How much to pull back the camera at start (multiplier, default 1.15 = 15% further) */
   pullBackMultiplier?: number;
+  /**
+   * When true, triggers zoom animation immediately on mount regardless of phase.
+   * This bypasses the phase change detection and solves the race condition where
+   * the component might mount when transitionPhase is already 'fading-in'.
+   * Use this for the initial fretboard reveal sequence.
+   */
+  triggerZoomOnMount?: boolean;
 }
 
 function CSSMatchingCamera({
@@ -125,6 +132,7 @@ function CSSMatchingCamera({
   transitionPhase = 'stable',
   zoomDuration = 1500,
   pullBackMultiplier = 1.15,
+  triggerZoomOnMount = false,
 }: CSSMatchingCameraProps) {
   const { set, size } = useThree();
   const cameraRef = useRef<THREE.PerspectiveCamera>(null);
@@ -137,9 +145,37 @@ function CSSMatchingCamera({
     targetZ: cssPerspective,
   });
   const prevPhaseRef = useRef(transitionPhase);
+  // Track if we've handled the triggerZoomOnMount to avoid re-triggering
+  const hasTriggeredOnMountRef = useRef(false);
 
-  // Detect phase change to 'fading-in' to start zoom animation
+  // Handle triggerZoomOnMount - start animation immediately on mount
+  // This bypasses the phase change detection and solves the race condition
   useEffect(() => {
+    if (triggerZoomOnMount && !hasTriggeredOnMountRef.current) {
+      hasTriggeredOnMountRef.current = true;
+      // Start zoom animation immediately
+      animationRef.current = {
+        isAnimating: true,
+        startTime: performance.now(),
+        startZ: cssPerspective * pullBackMultiplier,
+        targetZ: cssPerspective,
+      };
+      console.log('[CSSMatchingCamera] 🎬 Starting zoom animation on mount (triggerZoomOnMount):', {
+        startZ: cssPerspective * pullBackMultiplier,
+        targetZ: cssPerspective,
+        duration: zoomDuration,
+      });
+    }
+  }, [triggerZoomOnMount, cssPerspective, pullBackMultiplier, zoomDuration]);
+
+  // Detect phase change to 'fading-in' to start zoom animation (normal exercise changes)
+  useEffect(() => {
+    // Skip if triggerZoomOnMount is active - that takes precedence
+    if (triggerZoomOnMount && hasTriggeredOnMountRef.current) {
+      prevPhaseRef.current = transitionPhase;
+      return;
+    }
+
     if (prevPhaseRef.current !== 'fading-in' && transitionPhase === 'fading-in') {
       // Start zoom animation - camera zooms IN from pulled back position
       animationRef.current = {
@@ -148,14 +184,14 @@ function CSSMatchingCamera({
         startZ: cssPerspective * pullBackMultiplier,
         targetZ: cssPerspective,
       };
-      isDebugEnabled() && console.log('[CSSMatchingCamera] 🎬 Starting zoom animation:', {
+      isDebugEnabled() && console.log('[CSSMatchingCamera] 🎬 Starting zoom animation (phase change):', {
         startZ: cssPerspective * pullBackMultiplier,
         targetZ: cssPerspective,
         duration: zoomDuration,
       });
     }
     prevPhaseRef.current = transitionPhase;
-  }, [transitionPhase, cssPerspective, pullBackMultiplier, zoomDuration]);
+  }, [transitionPhase, cssPerspective, pullBackMultiplier, zoomDuration, triggerZoomOnMount]);
 
   // Smooth animation with useFrame (60fps)
   useFrame(() => {
@@ -619,6 +655,13 @@ export interface Ring3DOverlayCanvasProps {
   fadeDuration?: number;
   /** Transition phase from useSnapshotTransition - triggers camera zoom on 'fading-in' */
   transitionPhase?: 'stable' | 'fading-out' | 'fading-in';
+  /**
+   * When true, triggers zoom animation immediately on mount regardless of phase.
+   * This bypasses the phase change detection and solves the race condition where
+   * the component might mount when transitionPhase is already 'fading-in'.
+   * Use this for the initial fretboard reveal sequence.
+   */
+  triggerZoomOnMount?: boolean;
 }
 
 // Stable time signature reference to avoid timeline rebuilds
@@ -3032,6 +3075,7 @@ export function Ring3DOverlayCanvas({
   fadeOpacity = 1, // Controlled by parent for exercise transitions
   fadeDuration = 500, // Transition duration in ms
   transitionPhase = 'stable', // Transition phase for camera zoom animation
+  triggerZoomOnMount = false, // When true, starts zoom animation immediately on mount
 }: Ring3DOverlayCanvasProps): React.ReactNode {
   // Suppress unused variable warnings for reserved props
   void _fretboardRef;
@@ -3712,6 +3756,7 @@ export function Ring3DOverlayCanvas({
         fovOffset={overlay3DConfig.fovOffset}
         cameraY={overlay3DConfig.cameraY}
         transitionPhase={transitionPhase}
+        triggerZoomOnMount={triggerZoomOnMount}
       />
 
       {/* Clipping Planes Manager - clips 3D content to viewport width

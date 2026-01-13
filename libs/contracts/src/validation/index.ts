@@ -22,3 +22,6 @@ export * from './playback-schemas.js';
 
 // Musical time validation - Shared schemas for MIDI parsing and conversion
 export * from './musical-time-schemas.js';
+
+// Social features validation - Likes and Favorites
+export * from './social-schemas.js';

@@ -70,6 +70,54 @@ export class MusicalTimeConverter {
   }
 
   /**
+   * FAANG FIX: Convert ticks to seconds using live BPM
+   * This should be called at PLAYBACK TIME with live BPM from Tone.Transport.bpm.value,
+   * not at registration time when BPM might be stale.
+   *
+   * @param ticks - Tick position (480 PPQ resolution)
+   * @param bpm - Current tempo in BPM (use live value from Tone.Transport)
+   * @param resolution - Ticks per quarter note (default: 480)
+   * @returns Duration in seconds
+   *
+   * @example
+   * // At playback time, use live BPM:
+   * const liveBpm = Tone.Transport.bpm.value;
+   * const durationSeconds = MusicalTimeConverter.ticksToSeconds(960, liveBpm);
+   * // At 120 BPM: 960 ticks = 2 beats = 1.0 seconds
+   * // At 69 BPM: 960 ticks = 2 beats = 1.739 seconds
+   */
+  public static ticksToSeconds(
+    ticks: number,
+    bpm: number,
+    resolution: number = this.TICKS_PER_QUARTER,
+  ): number {
+    if (bpm <= 0) throw new Error('Invalid BPM: must be greater than 0');
+    if (resolution <= 0) throw new Error('Resolution must be positive');
+
+    // Convert ticks to milliseconds, then to seconds
+    const milliseconds = this.tickToMilliseconds(ticks, bpm, resolution);
+    return milliseconds / 1000;
+  }
+
+  /**
+   * Convert seconds to ticks using BPM
+   * @param seconds - Duration in seconds
+   * @param bpm - Tempo in BPM
+   * @param resolution - Ticks per quarter note (default: 480)
+   * @returns Tick count
+   */
+  public static secondsToTicks(
+    seconds: number,
+    bpm: number,
+    resolution: number = this.TICKS_PER_QUARTER,
+  ): number {
+    if (bpm <= 0) throw new Error('Invalid BPM: must be greater than 0');
+    if (resolution <= 0) throw new Error('Resolution must be positive');
+
+    return this.millisecondsToTick(seconds * 1000, bpm, resolution);
+  }
+
+  /**
    * Convert musical position (bar, beat, subdivision) to tick position
    * @param position - Musical position
    * @param timeSignature - Time signature

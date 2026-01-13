@@ -1,257 +1,1169 @@
-2026-01-12 00:22:54 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 00:22:54 +01:00: [1m[31m[39m[22m
-2026-01-12 00:24:27 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 00:24:27 +01:00: [1m[31m[39m[22m
-2026-01-12 00:30:22 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 00:30:22 +01:00: [1m[31m[39m[22m
-2026-01-12 00:37:05 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 00:37:05 +01:00: [1m[31m[39m[22m
-2026-01-12 01:03:47 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 01:03:47 +01:00: [1m[31m[39m[22m
-2026-01-12 01:04:40 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 01:04:40 +01:00: [1m[31m[39m[22m
-2026-01-12 01:17:42 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 01:17:42 +01:00: [1m[31m[39m[22m
-2026-01-12 01:20:23 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 01:20:23 +01:00: [1m[31m[39m[22m
-2026-01-12 01:24:34 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 01:24:34 +01:00: [1m[31m[39m[22m
-2026-01-12 01:24:38 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 01:24:38 +01:00: [1m[31m[39m[22m
-2026-01-12 01:26:52 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 01:26:52 +01:00: [1m[31m[39m[22m
-2026-01-12 01:29:05 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 01:29:05 +01:00: [1m[31m[39m[22m
-2026-01-12 01:30:30 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 01:30:30 +01:00: [1m[31m[39m[22m
-2026-01-12 01:45:21 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 01:45:21 +01:00: [1m[31m[39m[22m
-2026-01-12 01:45:46 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 01:45:46 +01:00: [1m[31m[39m[22m
-2026-01-12 09:53:21 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 09:53:21 +01:00: [1m[31m[39m[22m
-2026-01-12 09:55:47 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 09:55:47 +01:00: [1m[31m[39m[22m
-2026-01-12 09:56:34 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 09:56:34 +01:00: [1m[31m[39m[22m
-2026-01-12 10:01:23 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 10:01:23 +01:00: [1m[31m[39m[22m
-2026-01-12 10:13:49 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 10:13:49 +01:00: [1m[31m[39m[22m
-2026-01-12 10:20:30 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 10:20:30 +01:00: [1m[31m[39m[22m
-2026-01-12 10:23:10 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 10:23:10 +01:00: [1m[31m[39m[22m
-2026-01-12 10:26:53 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 10:26:53 +01:00: [1m[31m[39m[22m
-2026-01-12 10:31:06 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 10:31:06 +01:00: [1m[31m[39m[22m
-2026-01-12 10:34:07 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 10:34:07 +01:00: [1m[31m[39m[22m
-2026-01-12 10:46:33 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 10:46:33 +01:00: [1m[31m[39m[22m
-2026-01-12 10:46:58 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 10:46:58 +01:00: [1m[31m[39m[22m
-2026-01-12 10:47:13 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 10:47:13 +01:00: [1m[31m[39m[22m
-2026-01-12 10:50:04 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 10:50:04 +01:00: [1m[31m[39m[22m
-2026-01-12 10:50:33 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 10:50:33 +01:00: [1m[31m[39m[22m
-2026-01-12 10:52:04 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 10:52:04 +01:00: [1m[31m[39m[22m
-2026-01-12 10:58:55 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 10:58:55 +01:00: [1m[31m[39m[22m
-2026-01-12 11:13:29 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 11:13:29 +01:00: [1m[31m[39m[22m
-2026-01-12 11:18:03 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 11:18:03 +01:00: [1m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31mTypeError: fetch failed[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m[90m    at node:internal/deps/undici/undici:13510:13[39m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    at _handleRequest [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    at _request [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    at SupabaseAuthClient._getUser [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/GoTrueClient.ts:1725:16[90m)[39m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    at SupabaseAuthClient.getUser [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/GoTrueClient.ts:1706:14[90m)[39m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    at AuthService.validateToken [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/auth.service.js:399:48[90m)[39m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    at AuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/auth.guard.js:36:26[90m)[39m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    at GuardsConsumer.tryActivate [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/guards/guards-consumer.js:22:17[90m)[39m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    at canActivateFn [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:135:33[90m)[39m[31m {[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m  [cause]: Error: getaddrinfo ENOTFOUND iuuplfrktnzsbzibpfjm.supabase.co[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m  [90m    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:120:26)[39m[31m {[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    errno: [33m-3008[39m[31m,[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    code: [32m'ENOTFOUND'[39m[31m,[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    syscall: [32m'getaddrinfo'[39m[31m,[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    hostname: [32m'iuuplfrktnzsbzibpfjm.supabase.co'[39m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m  }[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m}[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase auth.getUser error: AuthRetryableFetchError: fetch failed[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    at _handleRequest [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:191:11[90m)[39m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    at _request [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    at SupabaseAuthClient._getUser [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/GoTrueClient.ts:1725:16[90m)[39m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    at SupabaseAuthClient.getUser [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/GoTrueClient.ts:1706:14[90m)[39m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    at AuthService.validateToken [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/auth.service.js:399:48[90m)[39m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    at AuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/auth.guard.js:36:26[90m)[39m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    at GuardsConsumer.tryActivate [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/guards/guards-consumer.js:22:17[90m)[39m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    at canActivateFn [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:135:33[90m)[39m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:42:31 {[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m  __isAuthError: [33mtrue[39m[31m,[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m  status: [33m0[39m[31m,[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m  code: [90mundefined[39m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m} [39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Token validation error: UnauthorizedException: Token validation failed: fetch failed[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    at AuthService.validateToken [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/auth.service.js:402:23[90m)[39m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    at AuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/auth.guard.js:36:26[90m)[39m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    at GuardsConsumer.tryActivate [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/guards/guards-consumer.js:22:17[90m)[39m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    at canActivateFn [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:135:33[90m)[39m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:42:31[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-proxy.js:9:17[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    at Object.<anonymous> [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-explorer.js:199:17[90m)[39m[31m {[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m  response: {[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    message: [32m'Token validation failed: fetch failed'[39m[31m,[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    error: [32m'Unauthorized'[39m[31m,[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    statusCode: [33m401[39m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m  },[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m  status: [33m401[39m[31m,[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m  options: {}[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m} [39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] Token validation failed UnauthorizedException: Token validation failed: fetch failed[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    at AuthService.validateToken [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/auth.service.js:402:23[90m)[39m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    at AuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/auth.guard.js:36:26[90m)[39m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    at GuardsConsumer.tryActivate [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/guards/guards-consumer.js:22:17[90m)[39m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    at canActivateFn [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:135:33[90m)[39m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:42:31[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-proxy.js:9:17[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    at Object.<anonymous> [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-explorer.js:199:17[90m)[39m[31m {[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m  response: {[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    message: [32m'Token validation failed: fetch failed'[39m[31m,[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    error: [32m'Unauthorized'[39m[31m,[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m    statusCode: [33m401[39m[31m[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m  },[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m  status: [33m401[39m[31m,[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m  options: {}[39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m} [39m[22m
-2026-01-12 11:37:29 +01:00: [1m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31mTypeError: fetch failed[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m[90m    at node:internal/deps/undici/undici:13510:13[39m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    at _handleRequest [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    at _request [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    at SupabaseAuthClient._getUser [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/GoTrueClient.ts:1725:16[90m)[39m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    at SupabaseAuthClient.getUser [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/GoTrueClient.ts:1706:14[90m)[39m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    at AuthService.validateToken [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/auth.service.js:399:48[90m)[39m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    at AuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/auth.guard.js:36:26[90m)[39m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    at GuardsConsumer.tryActivate [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/guards/guards-consumer.js:22:17[90m)[39m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    at canActivateFn [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:135:33[90m)[39m[31m {[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m  [cause]: Error: getaddrinfo ENOTFOUND iuuplfrktnzsbzibpfjm.supabase.co[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m  [90m    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:120:26)[39m[31m {[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    errno: [33m-3008[39m[31m,[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    code: [32m'ENOTFOUND'[39m[31m,[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    syscall: [32m'getaddrinfo'[39m[31m,[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    hostname: [32m'iuuplfrktnzsbzibpfjm.supabase.co'[39m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m  }[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m}[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase auth.getUser error: AuthRetryableFetchError: fetch failed[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    at _handleRequest [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:191:11[90m)[39m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    at _request [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    at SupabaseAuthClient._getUser [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/GoTrueClient.ts:1725:16[90m)[39m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    at SupabaseAuthClient.getUser [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/GoTrueClient.ts:1706:14[90m)[39m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    at AuthService.validateToken [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/auth.service.js:399:48[90m)[39m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    at AuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/auth.guard.js:36:26[90m)[39m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    at GuardsConsumer.tryActivate [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/guards/guards-consumer.js:22:17[90m)[39m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    at canActivateFn [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:135:33[90m)[39m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:42:31 {[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m  __isAuthError: [33mtrue[39m[31m,[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m  status: [33m0[39m[31m,[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m  code: [90mundefined[39m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m} [39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Token validation error: UnauthorizedException: Token validation failed: fetch failed[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    at AuthService.validateToken [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/auth.service.js:402:23[90m)[39m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    at AuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/auth.guard.js:36:26[90m)[39m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    at GuardsConsumer.tryActivate [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/guards/guards-consumer.js:22:17[90m)[39m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    at canActivateFn [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:135:33[90m)[39m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:42:31[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-proxy.js:9:17[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    at Object.<anonymous> [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-explorer.js:199:17[90m)[39m[31m {[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m  response: {[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    message: [32m'Token validation failed: fetch failed'[39m[31m,[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    error: [32m'Unauthorized'[39m[31m,[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    statusCode: [33m401[39m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m  },[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m  status: [33m401[39m[31m,[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m  options: {}[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m} [39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] Token validation failed UnauthorizedException: Token validation failed: fetch failed[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    at AuthService.validateToken [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/auth.service.js:402:23[90m)[39m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    at AuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/auth.guard.js:36:26[90m)[39m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    at GuardsConsumer.tryActivate [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/guards/guards-consumer.js:22:17[90m)[39m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    at canActivateFn [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:135:33[90m)[39m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:42:31[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-proxy.js:9:17[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    at Object.<anonymous> [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-explorer.js:199:17[90m)[39m[31m {[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m  response: {[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    message: [32m'Token validation failed: fetch failed'[39m[31m,[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    error: [32m'Unauthorized'[39m[31m,[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m    statusCode: [33m401[39m[31m[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m  },[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m  status: [33m401[39m[31m,[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m  options: {}[39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m} [39m[22m
-2026-01-12 11:37:30 +01:00: [1m[31m[39m[22m
-2026-01-12 11:37:32 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 11:37:32 +01:00: [1m[31m[39m[22m
-2026-01-12 11:38:12 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 11:38:12 +01:00: [1m[31m[39m[22m
-2026-01-12 11:41:44 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 11:41:44 +01:00: [1m[31m[39m[22m
-2026-01-12 11:45:20 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 11:45:20 +01:00: [1m[31m[39m[22m
-2026-01-12 11:45:49 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 11:45:49 +01:00: [1m[31m[39m[22m
-2026-01-12 11:58:08 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 11:58:08 +01:00: [1m[31m[39m[22m
-2026-01-12 12:14:27 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 12:14:27 +01:00: [1m[31m[39m[22m
-2026-01-12 12:14:35 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 12:14:35 +01:00: [1m[31m[39m[22m
-2026-01-12 12:22:19 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 12:22:19 +01:00: [1m[31m[39m[22m
-2026-01-12 14:54:11 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 14:54:11 +01:00: [1m[31m[39m[22m
-2026-01-12 14:54:39 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 14:54:39 +01:00: [1m[31m[39m[22m
-2026-01-12 14:58:05 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 14:58:05 +01:00: [1m[31m[39m[22m
-2026-01-12 15:04:51 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 15:04:51 +01:00: [1m[31m[39m[22m
-2026-01-12 15:58:27 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 15:58:27 +01:00: [1m[31m[39m[22m
-2026-01-12 16:03:04 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 16:03:04 +01:00: [1m[31m[39m[22m
-2026-01-12 16:03:09 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 16:03:09 +01:00: [1m[31m[39m[22m
-2026-01-12 16:04:31 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 16:04:31 +01:00: [1m[31m[39m[22m
-2026-01-12 16:39:36 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 16:39:36 +01:00: [1m[31m[39m[22m
-2026-01-12 16:39:45 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 16:39:45 +01:00: [1m[31m[39m[22m
-2026-01-12 17:16:13 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 17:16:13 +01:00: [1m[31m[39m[22m
-2026-01-12 18:23:10 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
-2026-01-12 18:23:10 +01:00: [1m[31m[39m[22m
+2026-01-13 00:34:03 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 00:34:03 +01:00: [1m[31m[39m[22m
+2026-01-13 00:34:03 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 00:34:03 +01:00: [1m[31m[39m[22m
+2026-01-13 00:34:29 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 00:34:29 +01:00: [1m[31m[39m[22m
+2026-01-13 00:34:30 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 00:34:30 +01:00: [1m[31m[39m[22m
+2026-01-13 00:34:30 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 00:34:30 +01:00: [1m[31m[39m[22m
+2026-01-13 00:34:48 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 00:34:48 +01:00: [1m[31m[39m[22m
+2026-01-13 00:34:48 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 00:34:48 +01:00: [1m[31m[39m[22m
+2026-01-13 00:35:01 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 00:35:01 +01:00: [1m[31m[39m[22m
+2026-01-13 00:35:01 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 00:35:01 +01:00: [1m[31m[39m[22m
+2026-01-13 00:59:12 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 00:59:12 +01:00: [1m[31m[39m[22m
+2026-01-13 00:59:12 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 00:59:12 +01:00: [1m[31m[39m[22m
+2026-01-13 00:59:14 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 00:59:14 +01:00: [1m[31m[39m[22m
+2026-01-13 00:59:14 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 00:59:14 +01:00: [1m[31m[39m[22m
+2026-01-13 00:59:45 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 00:59:45 +01:00: [1m[31m[39m[22m
+2026-01-13 00:59:45 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 00:59:45 +01:00: [1m[31m[39m[22m
+2026-01-13 01:00:03 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:00:03 +01:00: [1m[31m[39m[22m
+2026-01-13 01:00:03 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:00:03 +01:00: [1m[31m[39m[22m
+2026-01-13 01:07:19 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:07:19 +01:00: [1m[31m[39m[22m
+2026-01-13 01:07:19 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:07:19 +01:00: [1m[31m[39m[22m
+2026-01-13 01:07:40 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:07:40 +01:00: [1m[31m[39m[22m
+2026-01-13 01:07:40 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:07:40 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:07:40 +01:00: [1m[31m[39m[22m
+2026-01-13 01:08:06 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:08:06 +01:00: [1m[31m[39m[22m
+2026-01-13 01:08:06 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:08:06 +01:00: [1m[31m[39m[22m
+2026-01-13 01:08:06 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:08:06 +01:00: [1m[31m[39m[22m
+2026-01-13 01:08:13 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:08:13 +01:00: [1m[31m[39m[22m
+2026-01-13 01:08:13 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:08:13 +01:00: [1m[31m[39m[22m
+2026-01-13 01:09:09 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:09:09 +01:00: [1m[31m[39m[22m
+2026-01-13 01:09:09 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:09:09 +01:00: [1m[31m[39m[22m
+2026-01-13 01:12:24 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:12:24 +01:00: [1m[31m[39m[22m
+2026-01-13 01:12:25 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:12:25 +01:00: [1m[31m[39m[22m
+2026-01-13 01:12:25 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:12:25 +01:00: [1m[31m[39m[22m
+2026-01-13 01:14:44 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:14:44 +01:00: [1m[31m[39m[22m
+2026-01-13 01:14:45 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:14:45 +01:00: [1m[31m[39m[22m
+2026-01-13 01:14:45 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:14:45 +01:00: [1m[31m[39m[22m
+2026-01-13 01:14:55 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:14:55 +01:00: [1m[31m[39m[22m
+2026-01-13 01:14:55 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:14:55 +01:00: [1m[31m[39m[22m
+2026-01-13 01:14:55 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:14:55 +01:00: [1m[31m[39m[22m
+2026-01-13 01:15:06 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:15:06 +01:00: [1m[31m[39m[22m
+2026-01-13 01:15:06 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:15:06 +01:00: [1m[31m[39m[22m
+2026-01-13 01:21:58 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:21:58 +01:00: [1m[31m[39m[22m
+2026-01-13 01:21:58 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:21:58 +01:00: [1m[31m[39m[22m
+2026-01-13 01:21:58 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:21:58 +01:00: [1m[31m[39m[22m
+2026-01-13 01:22:04 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:22:04 +01:00: [1m[31m[39m[22m
+2026-01-13 01:22:04 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:22:04 +01:00: [1m[31m[39m[22m
+2026-01-13 01:22:04 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:22:04 +01:00: [1m[31m[39m[22m
+2026-01-13 01:22:15 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:22:15 +01:00: [1m[31m[39m[22m
+2026-01-13 01:22:15 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:22:15 +01:00: [1m[31m[39m[22m
+2026-01-13 01:24:59 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:24:59 +01:00: [1m[31m[39m[22m
+2026-01-13 01:25:00 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:25:00 +01:00: [1m[31m[39m[22m
+2026-01-13 01:25:00 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:25:00 +01:00: [1m[31m[39m[22m
+2026-01-13 01:25:45 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:25:45 +01:00: [1m[31m[39m[22m
+2026-01-13 01:25:45 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:25:45 +01:00: [1m[31m[39m[22m
+2026-01-13 01:25:45 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:25:45 +01:00: [1m[31m[39m[22m
+2026-01-13 01:25:53 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:25:53 +01:00: [1m[31m[39m[22m
+2026-01-13 01:25:53 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:25:53 +01:00: [1m[31m[39m[22m
+2026-01-13 01:25:53 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:25:53 +01:00: [1m[31m[39m[22m
+2026-01-13 01:26:01 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:26:01 +01:00: [1m[31m[39m[22m
+2026-01-13 01:26:01 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 01:26:01 +01:00: [1m[31m[39m[22m
+2026-01-13 07:13:08 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 07:13:08 +01:00: [1m[31m[39m[22m
+2026-01-13 07:13:08 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 07:13:08 +01:00: [1m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase auth.getUser error: AuthApiError: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at handleError [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:102:9[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at _handleRequest [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:195:5[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at _request [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at SupabaseAuthClient._getUser [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/GoTrueClient.ts:1725:16[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at SupabaseAuthClient.getUser [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/GoTrueClient.ts:1706:14[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at AuthService.validateToken [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/auth.service.js:399:48[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at AuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/auth.guard.js:36:26[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at GuardsConsumer.tryActivate [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/guards/guards-consumer.js:22:17[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at canActivateFn [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:135:33[90m)[39m[31m {[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m  __isAuthError: [33mtrue[39m[31m,[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m  status: [33m403[39m[31m,[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m  code: [32m'bad_jwt'[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m} [39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Token validation error: UnauthorizedException: Token validation failed: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at AuthService.validateToken [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/auth.service.js:402:23[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at AuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/auth.guard.js:36:26[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at GuardsConsumer.tryActivate [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/guards/guards-consumer.js:22:17[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at canActivateFn [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:135:33[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:42:31[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-proxy.js:9:17[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at Object.<anonymous> [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-explorer.js:199:17[90m)[39m[31m {[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m  response: {[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    message: [32m'Token validation failed: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired'[39m[31m,[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    error: [32m'Unauthorized'[39m[31m,[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    statusCode: [33m401[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m  },[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m  status: [33m401[39m[31m,[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m  options: {}[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m} [39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] Token validation failed UnauthorizedException: Token validation failed: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at AuthService.validateToken [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/auth.service.js:402:23[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at AuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/auth.guard.js:36:26[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at GuardsConsumer.tryActivate [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/guards/guards-consumer.js:22:17[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at canActivateFn [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:135:33[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:42:31[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-proxy.js:9:17[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at Object.<anonymous> [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-explorer.js:199:17[90m)[39m[31m {[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m  response: {[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    message: [32m'Token validation failed: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired'[39m[31m,[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    error: [32m'Unauthorized'[39m[31m,[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    statusCode: [33m401[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m  },[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m  status: [33m401[39m[31m,[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m  options: {}[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m} [39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase auth.getUser error: AuthApiError: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at handleError [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:102:9[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at _handleRequest [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:195:5[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at _request [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at SupabaseAuthClient._getUser [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/GoTrueClient.ts:1725:16[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at SupabaseAuthClient.getUser [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/GoTrueClient.ts:1706:14[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at AuthService.validateToken [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/auth.service.js:399:48[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at AuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/auth.guard.js:36:26[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at OptionalAuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/optional-auth.guard.js:16:13[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at GuardsConsumer.tryActivate [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/guards/guards-consumer.js:22:17[90m)[39m[31m {[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m  __isAuthError: [33mtrue[39m[31m,[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m  status: [33m403[39m[31m,[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m  code: [32m'bad_jwt'[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m} [39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Token validation error: UnauthorizedException: Token validation failed: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at AuthService.validateToken [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/auth.service.js:402:23[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at AuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/auth.guard.js:36:26[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at OptionalAuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/optional-auth.guard.js:16:13[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at GuardsConsumer.tryActivate [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/guards/guards-consumer.js:22:17[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at canActivateFn [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:135:33[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:42:31[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-proxy.js:9:17[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at Object.<anonymous> [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-explorer.js:199:17[90m)[39m[31m {[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m  response: {[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    message: [32m'Token validation failed: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired'[39m[31m,[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    error: [32m'Unauthorized'[39m[31m,[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    statusCode: [33m401[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m  },[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m  status: [33m401[39m[31m,[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m  options: {}[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m} [39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] Token validation failed UnauthorizedException: Token validation failed: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at AuthService.validateToken [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/auth.service.js:402:23[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at AuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/auth.guard.js:36:26[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at OptionalAuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/optional-auth.guard.js:16:13[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at GuardsConsumer.tryActivate [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11
+2026-01-13 07:13:09 +01:00: .1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/guards/guards-consumer.js:22:17[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at canActivateFn [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:135:33[90m)[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:42:31[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-proxy.js:9:17[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    at Object.<anonymous> [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-explorer.js:199:17[90m)[39m[31m {[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m  response: {[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    message: [32m'Token validation failed: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired'[39m[31m,[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    error: [32m'Unauthorized'[39m[31m,[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m    statusCode: [33m401[39m[31m[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m  },[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m  status: [33m401[39m[31m,[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m  options: {}[39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m} [39m[22m
+2026-01-13 07:13:09 +01:00: [1m[31m[39m[22m
+2026-01-13 07:13:10 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 07:13:10 +01:00: [1m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase auth.getUser error: AuthApiError: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at handleError [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:102:9[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at _handleRequest [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:195:5[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at _request [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at SupabaseAuthClient._getUser [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/GoTrueClient.ts:1725:16[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at SupabaseAuthClient.getUser [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/GoTrueClient.ts:1706:14[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at AuthService.validateToken [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/auth.service.js:399:48[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at AuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/auth.guard.js:36:26[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at GuardsConsumer.tryActivate [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/guards/guards-consumer.js:22:17[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at canActivateFn [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:135:33[90m)[39m[31m {[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m  __isAuthError: [33mtrue[39m[31m,[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m  status: [33m403[39m[31m,[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m  code: [32m'bad_jwt'[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m} [39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Token validation error: UnauthorizedException: Token validation failed: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at AuthService.validateToken [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/auth.service.js:402:23[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at AuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/auth.guard.js:36:26[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at GuardsConsumer.tryActivate [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/guards/guards-consumer.js:22:17[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at canActivateFn [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:135:33[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:42:31[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-proxy.js:9:17[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at Object.<anonymous> [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-explorer.js:199:17[90m)[39m[31m {[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m  response: {[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    message: [32m'Token validation failed: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired'[39m[31m,[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    error: [32m'Unauthorized'[39m[31m,[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    statusCode: [33m401[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m  },[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m  status: [33m401[39m[31m,[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m  options: {}[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m} [39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] Token validation failed UnauthorizedException: Token validation failed: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at AuthService.validateToken [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/auth.service.js:402:23[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at AuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/auth.guard.js:36:26[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at GuardsConsumer.tryActivate [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/guards/guards-consumer.js:22:17[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at canActivateFn [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:135:33[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:42:31[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-proxy.js:9:17[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at Object.<anonymous> [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-explorer.js:199:17[90m)[39m[31m {[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m  response: {[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    message: [32m'Token validation failed: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired'[39m[31m,[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    error: [32m'Unauthorized'[39m[31m,[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    statusCode: [33m401[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m  },[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m  status: [33m401[39m[31m,[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m  options: {}[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m} [39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase auth.getUser error: AuthApiError: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at handleError [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:102:9[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at _handleRequest [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:195:5[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at _request [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at SupabaseAuthClient._getUser [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/GoTrueClient.ts:1725:16[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at SupabaseAuthClient.getUser [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/GoTrueClient.ts:1706:14[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at AuthService.validateToken [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/auth.service.js:399:48[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at AuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/auth.guard.js:36:26[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at OptionalAuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/optional-auth.guard.js:16:13[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at GuardsConsumer.tryActivate [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/guards/guards-consumer.js:22:17[90m)[39m[31m {[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m  __isAuthError: [33mtrue[39m[31m,[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m  status: [33m403[39m[31m,[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m  code: [32m'bad_jwt'[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m} [39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Token validation error: UnauthorizedException: Token validation failed: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at AuthService.validateToken [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/auth.service.js:402:23[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at AuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/auth.guard.js:36:26[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at OptionalAuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/optional-auth.guard.js:16:13[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at GuardsConsumer.tryActivate [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/guards/guards-consumer.js:22:17[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at canActivateFn [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:135:33[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:42:31[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-proxy.js:9:17[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at Object.<anonymous> [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-explorer.js:199:17[90m)[39m[31m {[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m  response: {[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    message: [32m'Token validation failed: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired'[39m[31m,[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    error: [32m'Unauthorized'[39m[31m,[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    statusCode: [33m401[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m  },[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m  status: [33m401[39m[31m,[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m  options: {}[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m} [39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] Token validation failed UnauthorizedException: Token validation failed: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at AuthService.validateToken [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/auth.service.js:402:23[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at AuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/auth.guard.js:36:26[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at OptionalAuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/optional-auth.guard.js:16:13[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at GuardsConsumer.tryActivate [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/guards/guards-consumer.js:22:17[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at canActivateFn [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:135:33[90m)[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:42:31[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-proxy.js:9:17[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    at Object.<anonymous> [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-explorer.js:199:17[90m)[39m[31m {[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m  response: {[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    message: [32m'Token validation failed: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired'[39m[31m,[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    error: [32m'Unauthorized'[39m[31m,[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m    statusCode: [33m401[39m[31m[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m  },[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m  status: [33m401[39m[31m,[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m  options: {}[39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m} [39m[22m
+2026-01-13 09:44:55 +01:00: [1m[31m[39m[22m
+2026-01-13 09:44:57 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 09:44:57 +01:00: [1m[31m[39m[22m
+2026-01-13 09:45:02 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 09:45:02 +01:00: [1m[31m[39m[22m
+2026-01-13 09:45:02 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 09:45:02 +01:00: [1m[31m[39m[22m
+2026-01-13 09:45:02 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 09:45:02 +01:00: [1m[31m[39m[22m
+2026-01-13 09:45:11 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 09:45:11 +01:00: [1m[31m[39m[22m
+2026-01-13 09:45:11 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 09:45:11 +01:00: [1m[31m[39m[22m
+2026-01-13 09:45:50 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 09:45:50 +01:00: [1m[31m[39m[22m
+2026-01-13 09:45:50 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 09:45:50 +01:00: [1m[31m[39m[22m
+2026-01-13 09:45:50 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 09:45:50 +01:00: [1m[31m[39m[22m
+2026-01-13 09:45:57 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 09:45:57 +01:00: [1m[31m[39m[22m
+2026-01-13 09:45:57 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 09:45:57 +01:00: [1m[31m[39m[22m
+2026-01-13 09:46:39 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 09:46:39 +01:00: [1m[31m[39m[22m
+2026-01-13 09:46:39 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 09:46:39 +01:00: [1m[31m[39m[22m
+2026-01-13 09:46:39 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 09:46:39 +01:00: [1m[31m[39m[22m
+2026-01-13 09:49:47 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 09:49:47 +01:00: [1m[31m[39m[22m
+2026-01-13 09:49:47 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 09:49:47 +01:00: [1m[31m[39m[22m
+2026-01-13 09:49:47 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 09:49:47 +01:00: [1m[31m[39m[22m
+2026-01-13 09:53:22 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 09:53:22 +01:00: [1m[31m[39m[22m
+2026-01-13 09:53:23 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 09:53:23 +01:00: [1m[31m[39m[22m
+2026-01-13 09:53:23 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 09:53:23 +01:00: [1m[31m[39m[22m
+2026-01-13 09:53:42 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 09:53:42 +01:00: [1m[31m[39m[22m
+2026-01-13 09:53:42 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 09:53:42 +01:00: [1m[31m[39m[22m
+2026-01-13 10:04:27 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:04:27 +01:00: [1m[31m[39m[22m
+2026-01-13 10:04:28 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:04:28 +01:00: [1m[31m[39m[22m
+2026-01-13 10:04:28 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:04:28 +01:00: [1m[31m[39m[22m
+2026-01-13 10:05:10 +01:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2026-01-13 10:06:38 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:06:38 +01:00: [1m[31m[39m[22m
+2026-01-13 10:06:38 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:06:38 +01:00: [1m[31m[39m[22m
+2026-01-13 10:06:38 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:06:38 +01:00: [1m[31m[39m[22m
+2026-01-13 10:08:11 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:08:11 +01:00: [1m[31m[39m[22m
+2026-01-13 10:08:11 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:08:11 +01:00: [1m[31m[39m[22m
+2026-01-13 10:08:11 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:08:11 +01:00: [1m[31m[39m[22m
+2026-01-13 10:08:28 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:08:28 +01:00: [1m[31m[39m[22m
+2026-01-13 10:08:28 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:08:28 +01:00: [1m[31m[39m[22m
+2026-01-13 10:08:28 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:08:28 +01:00: [1m[31m[39m[22m
+2026-01-13 10:10:09 +01:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2026-01-13 10:10:10 +01:00: [1m[31mBuild failed, waiting for changes to restart...[39m[22m
+2026-01-13 10:10:13 +01:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2026-01-13 10:10:43 +01:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2026-01-13 10:11:20 +01:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2026-01-13 10:11:21 +01:00: [1m[31mBuild failed, waiting for changes to restart...[39m[22m
+2026-01-13 10:11:24 +01:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2026-01-13 10:13:07 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:13:07 +01:00: [1m[31m[39m[22m
+2026-01-13 10:13:07 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:13:07 +01:00: [1m[31m[39m[22m
+2026-01-13 10:13:20 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:13:20 +01:00: [1m[31m[39m[22m
+2026-01-13 10:13:21 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:13:21 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:13:21 +01:00: [1m[31m[39m[22m
+2026-01-13 10:13:31 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:13:31 +01:00: [1m[31m[39m[22m
+2026-01-13 10:13:31 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:13:31 +01:00: [1m[31m[39m[22m
+2026-01-13 10:13:31 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:13:31 +01:00: [1m[31m[39m[22m
+2026-01-13 10:16:52 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:16:52 +01:00: [1m[31m[39m[22m
+2026-01-13 10:16:52 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:16:52 +01:00: [1m[31m[39m[22m
+2026-01-13 10:16:57 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:16:57 +01:00: [1m[31m[39m[22m
+2026-01-13 10:16:57 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:16:57 +01:00: [1m[31m[39m[22m
+2026-01-13 10:16:57 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:16:57 +01:00: [1m[31m[39m[22m
+2026-01-13 10:18:59 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:18:59 +01:00: [1m[31m[39m[22m
+2026-01-13 10:18:59 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:18:59 +01:00: [1m[31m[39m[22m
+2026-01-13 10:19:06 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:19:06 +01:00: [1m[31m[39m[22m
+2026-01-13 10:19:07 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:19:07 +01:00: [1m[31m[39m[22m
+2026-01-13 10:19:07 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:19:07 +01:00: [1m[31m[39m[22m
+2026-01-13 10:19:38 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:19:38 +01:00: [1m[31m[39m[22m
+2026-01-13 10:19:38 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:19:38 +01:00: [1m[31m[39m[22m
+2026-01-13 10:19:40 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:19:40 +01:00: [1m[31m[39m[22m
+2026-01-13 10:19:40 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:19:40 +01:00: [1m[31m[39m[22m
+2026-01-13 10:35:11 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:35:11 +01:00: [1m[31m[39m[22m
+2026-01-13 10:35:11 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:35:11 +01:00: [1m[31m[39m[22m
+2026-01-13 10:37:55 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:37:55 +01:00: [1m[31m[39m[22m
+2026-01-13 10:37:56 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:37:56 +01:00: [1m[31m[39m[22m
+2026-01-13 10:37:56 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:37:56 +01:00: [1m[31m[39m[22m
+2026-01-13 10:39:49 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:39:49 +01:00: [1m[31m[39m[22m
+2026-01-13 10:39:49 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:39:49 +01:00: [1m[31m[39m[22m
+2026-01-13 10:39:49 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:39:49 +01:00: [1m[31m[39m[22m
+2026-01-13 10:45:01 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:45:01 +01:00: [1m[31m[39m[22m
+2026-01-13 10:45:01 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:45:01 +01:00: [1m[31m[39m[22m
+2026-01-13 10:45:01 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:45:01 +01:00: [1m[31m[39m[22m
+2026-01-13 10:45:18 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:45:18 +01:00: [1m[31m[39m[22m
+2026-01-13 10:45:19 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:45:19 +01:00: [1m[31m[39m[22m
+2026-01-13 10:45:19 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:45:19 +01:00: [1m[31m[39m[22m
+2026-01-13 10:45:37 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:45:37 +01:00: [1m[31m[39m[22m
+2026-01-13 10:45:38 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:45:38 +01:00: [1m[31m[39m[22m
+2026-01-13 10:45:38 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:45:38 +01:00: [1m[31m[39m[22m
+2026-01-13 10:48:40 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:48:40 +01:00: [1m[31m[39m[22m
+2026-01-13 10:48:40 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 10:48:40 +01:00: [1m[31m[39m[22m
+2026-01-13 11:14:11 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 11:14:11 +01:00: [1m[31m[39m[22m
+2026-01-13 11:14:11 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 11:14:11 +01:00: [1m[31m[39m[22m
+2026-01-13 11:14:27 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 11:14:27 +01:00: [1m[31m[39m[22m
+2026-01-13 11:14:27 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 11:14:27 +01:00: [1m[31m[39m[22m
+2026-01-13 11:14:44 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 11:14:44 +01:00: [1m[31m[39m[22m
+2026-01-13 11:14:44 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 11:14:44 +01:00: [1m[31m[39m[22m
+2026-01-13 11:14:44 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 11:14:44 +01:00: [1m[31m[39m[22m
+2026-01-13 11:14:50 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 11:14:50 +01:00: [1m[31m[39m[22m
+2026-01-13 11:14:50 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 11:14:50 +01:00: [1m[31m[39m[22m
+2026-01-13 11:38:13 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 11:38:13 +01:00: [1m[31m[39m[22m
+2026-01-13 11:38:13 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 11:38:13 +01:00: [1m[31m[39m[22m
+2026-01-13 11:38:13 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 11:38:13 +01:00: [1m[31m[39m[22m
+2026-01-13 11:38:54 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 11:38:54 +01:00: [1m[31m[39m[22m
+2026-01-13 11:38:54 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 11:38:54 +01:00: [1m[31m[39m[22m
+2026-01-13 11:46:46 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 11:46:46 +01:00: [1m[31m[39m[22m
+2026-01-13 11:46:46 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 11:46:46 +01:00: [1m[31m[39m[22m
+2026-01-13 11:47:03 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 11:47:03 +01:00: [1m[31m[39m[22m
+2026-01-13 11:47:03 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 11:47:03 +01:00: [1m[31m[39m[22m
+2026-01-13 11:50:22 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 11:50:22 +01:00: [1m[31m[39m[22m
+2026-01-13 11:50:22 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 11:50:22 +01:00: [1m[31m[39m[22m
+2026-01-13 11:50:24 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 11:50:24 +01:00: [1m[31m[39m[22m
+2026-01-13 11:50:24 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 11:50:24 +01:00: [1m[31m[39m[22m
+2026-01-13 11:57:16 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 11:57:16 +01:00: [1m[31m[39m[22m
+2026-01-13 11:57:16 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 11:57:16 +01:00: [1m[31m[39m[22m
+2026-01-13 11:59:58 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 11:59:58 +01:00: [1m[31m[39m[22m
+2026-01-13 11:59:58 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 11:59:58 +01:00: [1m[31m[39m[22m
+2026-01-13 12:00:23 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:00:23 +01:00: [1m[31m[39m[22m
+2026-01-13 12:00:24 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:00:24 +01:00: [1m[31m[39m[22m
+2026-01-13 12:00:24 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:00:24 +01:00: [1m[31m[39m[22m
+2026-01-13 12:01:34 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:01:34 +01:00: [1m[31m[39m[22m
+2026-01-13 12:01:34 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:01:34 +01:00: [1m[31m[39m[22m
+2026-01-13 12:02:47 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:02:47 +01:00: [1m[31m[39m[22m
+2026-01-13 12:02:47 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:02:47 +01:00: [1m[31m[39m[22m
+2026-01-13 12:07:08 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:07:08 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:07:08 +01:00: [1m[31m[39m[22m
+2026-01-13 12:07:26 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:07:26 +01:00: [1m[31m[39m[22m
+2026-01-13 12:07:26 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:07:26 +01:00: [1m[31m[39m[22m
+2026-01-13 12:07:26 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:07:26 +01:00: [1m[31m[39m[22m
+2026-01-13 12:07:32 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:07:32 +01:00: [1m[31m[39m[22m
+2026-01-13 12:07:32 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:07:32 +01:00: [1m[31m[39m[22m
+2026-01-13 12:07:32 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:07:32 +01:00: [1m[31m[39m[22m
+2026-01-13 12:08:30 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] No token provided in request  [39m[22m
+2026-01-13 12:08:30 +01:00: [1m[31m[39m[22m
+2026-01-13 12:08:30 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] No token provided in request  [39m[22m
+2026-01-13 12:08:30 +01:00: [1m[31m[39m[22m
+2026-01-13 12:08:30 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] No token provided in request  [39m[22m
+2026-01-13 12:08:30 +01:00: [1m[31m[39m[22m
+2026-01-13 12:08:33 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] No token provided in request  [39m[22m
+2026-01-13 12:08:33 +01:00: [1m[31m[39m[22m
+2026-01-13 12:08:36 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] No token provided in request  [39m[22m
+2026-01-13 12:08:36 +01:00: [1m[31m[39m[22m
+2026-01-13 12:08:36 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] No token provided in request  [39m[22m
+2026-01-13 12:08:36 +01:00: [1m[31m[39m[22m
+2026-01-13 12:08:37 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] No token provided in request  [39m[22m
+2026-01-13 12:08:37 +01:00: [1m[31m[39m[22m
+2026-01-13 12:08:43 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] No token provided in request  [39m[22m
+2026-01-13 12:08:43 +01:00: [1m[31m[39m[22m
+2026-01-13 12:08:51 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] No token provided in request  [39m[22m
+2026-01-13 12:08:51 +01:00: [1m[31m[39m[22m
+2026-01-13 12:08:52 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] No token provided in request  [39m[22m
+2026-01-13 12:08:52 +01:00: [1m[31m[39m[22m
+2026-01-13 12:08:53 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] No token provided in request  [39m[22m
+2026-01-13 12:08:53 +01:00: [1m[31m[39m[22m
+2026-01-13 12:08:56 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] No token provided in request  [39m[22m
+2026-01-13 12:08:56 +01:00: [1m[31m[39m[22m
+2026-01-13 12:08:56 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] No token provided in request  [39m[22m
+2026-01-13 12:08:56 +01:00: [1m[31m[39m[22m
+2026-01-13 12:09:26 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:09:26 +01:00: [1m[31m[39m[22m
+2026-01-13 12:09:26 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:09:26 +01:00: [1m[31m[39m[22m
+2026-01-13 12:10:12 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:10:12 +01:00: [1m[31m[39m[22m
+2026-01-13 12:10:13 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:10:13 +01:00: [1m[31m[39m[22m
+2026-01-13 12:10:50 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:10:50 +01:00: [1m[31m[39m[22m
+2026-01-13 12:10:50 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:10:50 +01:00: [1m[31m[39m[22m
+2026-01-13 12:11:06 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] No token provided in request  [39m[22m
+2026-01-13 12:11:06 +01:00: [1m[31m[39m[22m
+2026-01-13 12:11:08 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:11:08 +01:00: [1m[31m[39m[22m
+2026-01-13 12:11:08 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] No token provided in request  [39m[22m
+2026-01-13 12:11:08 +01:00: [1m[31m[39m[22m
+2026-01-13 12:11:09 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] No token provided in request  [39m[22m
+2026-01-13 12:11:09 +01:00: [1m[31m[39m[22m
+2026-01-13 12:11:09 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:11:09 +01:00: [1m[31m[39m[22m
+2026-01-13 12:11:09 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:11:09 +01:00: [1m[31m[39m[22m
+2026-01-13 12:11:09 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] No token provided in request  [39m[22m
+2026-01-13 12:11:09 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] No token provided in request  [39m[22m
+2026-01-13 12:11:09 +01:00: [1m[31m[39m[22m
+2026-01-13 12:11:15 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] No token provided in request  [39m[22m
+2026-01-13 12:11:15 +01:00: [1m[31m[39m[22m
+2026-01-13 12:11:15 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] No token provided in request  [39m[22m
+2026-01-13 12:11:15 +01:00: [1m[31m[39m[22m
+2026-01-13 12:11:20 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] No token provided in request  [39m[22m
+2026-01-13 12:11:20 +01:00: [1m[31m[39m[22m
+2026-01-13 12:11:21 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] No token provided in request  [39m[22m
+2026-01-13 12:11:21 +01:00: [1m[31m[39m[22m
+2026-01-13 12:12:00 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:12:00 +01:00: [1m[31m[39m[22m
+2026-01-13 12:12:04 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:12:04 +01:00: [1m[31m[39m[22m
+2026-01-13 12:12:06 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:12:06 +01:00: [1m[31m[39m[22m
+2026-01-13 12:12:07 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:12:07 +01:00: [1m[31m[39m[22m
+2026-01-13 12:12:09 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:12:09 +01:00: [1m[31m[39m[22m
+2026-01-13 12:12:10 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:12:10 +01:00: [1m[31m[39m[22m
+2026-01-13 12:12:21 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:12:21 +01:00: [1m[31m[39m[22m
+2026-01-13 12:12:25 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:12:25 +01:00: [1m[31m[39m[22m
+2026-01-13 12:12:33 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:12:33 +01:00: [1m[31m[39m[22m
+2026-01-13 12:12:33 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:12:33 +01:00: [1m[31m[39m[22m
+2026-01-13 12:12:55 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:12:55 +01:00: [1m[31m[39m[22m
+2026-01-13 12:12:55 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:12:55 +01:00: [1m[31m[39m[22m
+2026-01-13 12:12:55 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:12:55 +01:00: [1m[31m[39m[22m
+2026-01-13 12:15:47 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:15:47 +01:00: [1m[31m[39m[22m
+2026-01-13 12:15:47 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:15:47 +01:00: [1m[31m[39m[22m
+2026-01-13 12:15:50 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:15:50 +01:00: [1m[31m[39m[22m
+2026-01-13 12:15:50 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:15:50 +01:00: [1m[31m[39m[22m
+2026-01-13 12:15:59 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:15:59 +01:00: [1m[31m[39m[22m
+2026-01-13 12:15:59 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:15:59 +01:00: [1m[31m[39m[22m
+2026-01-13 12:15:59 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:15:59 +01:00: [1m[31m[39m[22m
+2026-01-13 12:16:59 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:16:59 +01:00: [1m[31m[39m[22m
+2026-01-13 12:17:00 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:17:00 +01:00: [1m[31m[39m[22m
+2026-01-13 12:17:01 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:17:01 +01:00: [1m[31m[39m[22m
+2026-01-13 12:17:02 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:17:02 +01:00: [1m[31m[39m[22m
+2026-01-13 12:17:12 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:17:12 +01:00: [1m[31m[39m[22m
+2026-01-13 12:17:12 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:17:12 +01:00: [1m[31m[39m[22m
+2026-01-13 12:17:13 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:17:13 +01:00: [1m[31m[39m[22m
+2026-01-13 12:17:13 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:17:13 +01:00: [1m[31m[39m[22m
+2026-01-13 12:19:13 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] No token provided in request  [39m[22m
+2026-01-13 12:19:13 +01:00: [1m[31m[39m[22m
+2026-01-13 12:19:23 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] No token provided in request  [39m[22m
+2026-01-13 12:19:23 +01:00: [1m[31m[39m[22m
+2026-01-13 12:19:29 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] No token provided in request  [39m[22m
+2026-01-13 12:19:29 +01:00: [1m[31m[39m[22m
+2026-01-13 12:19:32 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] No token provided in request  [39m[22m
+2026-01-13 12:19:32 +01:00: [1m[31m[39m[22m
+2026-01-13 12:19:36 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] No token provided in request  [39m[22m
+2026-01-13 12:19:36 +01:00: [1m[31m[39m[22m
+2026-01-13 12:19:40 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] No token provided in request  [39m[22m
+2026-01-13 12:19:40 +01:00: [1m[31m[39m[22m
+2026-01-13 12:19:50 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:19:50 +01:00: [1m[31m[39m[22m
+2026-01-13 12:19:50 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:19:50 +01:00: [1m[31m[39m[22m
+2026-01-13 12:19:50 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:19:50 +01:00: [1m[31m[39m[22m
+2026-01-13 12:21:00 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:21:00 +01:00: [1m[31m[39m[22m
+2026-01-13 12:21:00 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:21:00 +01:00: [1m[31m[39m[22m
+2026-01-13 12:23:01 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:23:01 +01:00: [1m[31m[39m[22m
+2026-01-13 12:23:01 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:23:01 +01:00: [1m[31m[39m[22m
+2026-01-13 12:23:05 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:23:05 +01:00: [1m[31m[39m[22m
+2026-01-13 12:23:06 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:23:06 +01:00: [1m[31m[39m[22m
+2026-01-13 12:23:06 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:23:06 +01:00: [1m[31m[39m[22m
+2026-01-13 12:23:17 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:23:17 +01:00: [1m[31m[39m[22m
+2026-01-13 12:23:20 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:23:20 +01:00: [1m[31m[39m[22m
+2026-01-13 12:23:21 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:23:21 +01:00: [1m[31m[39m[22m
+2026-01-13 12:23:23 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:23:23 +01:00: [1m[31m[39m[22m
+2026-01-13 12:23:23 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:23:23 +01:00: [1m[31m[39m[22m
+2026-01-13 12:23:24 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:23:24 +01:00: [1m[31m[39m[22m
+2026-01-13 12:23:24 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:23:24 +01:00: [1m[31m[39m[22m
+2026-01-13 12:23:26 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:23:26 +01:00: [1m[31m[39m[22m
+2026-01-13 12:24:56 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:24:56 +01:00: [1m[31m[39m[22m
+2026-01-13 12:24:56 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:24:56 +01:00: [1m[31m[39m[22m
+2026-01-13 12:25:25 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:25:25 +01:00: [1m[31m[39m[22m
+2026-01-13 12:25:25 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:25:25 +01:00: [1m[31m[39m[22m
+2026-01-13 12:25:25 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:25:25 +01:00: [1m[31m[39m[22m
+2026-01-13 12:27:47 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:27:47 +01:00: [1m[31m[39m[22m
+2026-01-13 12:27:47 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:27:47 +01:00: [1m[31m[39m[22m
+2026-01-13 12:27:51 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:27:51 +01:00: [1m[31m[39m[22m
+2026-01-13 12:27:51 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:27:51 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:27:51 +01:00: [1m[31m[39m[22m
+2026-01-13 12:28:05 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:28:05 +01:00: [1m[31m[39m[22m
+2026-01-13 12:28:06 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:28:06 +01:00: [1m[31m[39m[22m
+2026-01-13 12:28:06 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:28:06 +01:00: [1m[31m[39m[22m
+2026-01-13 12:29:58 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:29:58 +01:00: [1m[31m[39m[22m
+2026-01-13 12:29:58 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:29:58 +01:00: [1m[31m[39m[22m
+2026-01-13 12:30:31 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:30:31 +01:00: [1m[31m[39m[22m
+2026-01-13 12:30:31 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:30:31 +01:00: [1m[31m[39m[22m
+2026-01-13 12:30:48 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:30:48 +01:00: [1m[31m[39m[22m
+2026-01-13 12:30:49 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:30:49 +01:00: [1m[31m[39m[22m
+2026-01-13 12:30:49 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:30:49 +01:00: [1m[31m[39m[22m
+2026-01-13 12:43:32 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:43:32 +01:00: [1m[31m[39m[22m
+2026-01-13 12:43:32 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:43:32 +01:00: [1m[31m[39m[22m
+2026-01-13 12:47:01 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:47:01 +01:00: [1m[31m[39m[22m
+2026-01-13 12:47:01 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 12:47:01 +01:00: [1m[31m[39m[22m
+2026-01-13 15:56:48 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 15:56:48 +01:00: [1m[31m[39m[22m
+2026-01-13 15:56:52 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 15:56:52 +01:00: [1m[31m[39m[22m
+2026-01-13 15:57:13 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 15:57:13 +01:00: [1m[31m[39m[22m
+2026-01-13 15:57:13 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 15:57:13 +01:00: [1m[31m[39m[22m
+2026-01-13 15:57:28 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 15:57:28 +01:00: [1m[31m[39m[22m
+2026-01-13 15:57:29 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 15:57:29 +01:00: [1m[31m[39m[22m
+2026-01-13 15:57:29 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 15:57:29 +01:00: [1m[31m[39m[22m
+2026-01-13 15:57:47 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 15:57:47 +01:00: [1m[31m[39m[22m
+2026-01-13 15:57:47 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 15:57:47 +01:00: [1m[31m[39m[22m
+2026-01-13 16:00:29 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:00:29 +01:00: [1m[31m[39m[22m
+2026-01-13 16:00:29 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:00:29 +01:00: [1m[31m[39m[22m
+2026-01-13 16:00:29 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:00:29 +01:00: [1m[31m[39m[22m
+2026-01-13 16:00:34 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:00:34 +01:00: [1m[31m[39m[22m
+2026-01-13 16:00:34 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:00:34 +01:00: [1m[31m[39m[22m
+2026-01-13 16:02:51 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:02:51 +01:00: [1m[31m[39m[22m
+2026-01-13 16:02:51 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:02:51 +01:00: [1m[31m[39m[22m
+2026-01-13 16:02:55 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:02:55 +01:00: [1m[31m[39m[22m
+2026-01-13 16:02:56 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:02:56 +01:00: [1m[31m[39m[22m
+2026-01-13 16:02:56 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:02:56 +01:00: [1m[31m[39m[22m
+2026-01-13 16:03:00 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:03:00 +01:00: [1m[31m[39m[22m
+2026-01-13 16:03:00 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:03:00 +01:00: [1m[31m[39m[22m
+2026-01-13 16:03:45 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:03:45 +01:00: [1m[31m[39m[22m
+2026-01-13 16:03:45 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:03:45 +01:00: [1m[31m[39m[22m
+2026-01-13 16:03:45 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:03:45 +01:00: [1m[31m[39m[22m
+2026-01-13 16:03:49 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:03:49 +01:00: [1m[31m[39m[22m
+2026-01-13 16:03:49 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:03:49 +01:00: [1m[31m[39m[22m
+2026-01-13 16:06:04 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:06:04 +01:00: [1m[31m[39m[22m
+2026-01-13 16:06:04 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:06:04 +01:00: [1m[31m[39m[22m
+2026-01-13 16:06:04 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:06:04 +01:00: [1m[31m[39m[22m
+2026-01-13 16:06:12 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:06:12 +01:00: [1m[31m[39m[22m
+2026-01-13 16:06:12 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:06:12 +01:00: [1m[31m[39m[22m
+2026-01-13 16:13:17 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:13:17 +01:00: [1m[31m[39m[22m
+2026-01-13 16:13:17 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:13:17 +01:00: [1m[31m[39m[22m
+2026-01-13 16:13:37 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:13:37 +01:00: [1m[31m[39m[22m
+2026-01-13 16:13:38 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:13:38 +01:00: [1m[31m[39m[22m
+2026-01-13 16:13:38 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:13:38 +01:00: [1m[31m[39m[22m
+2026-01-13 16:13:44 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:13:44 +01:00: [1m[31m[39m[22m
+2026-01-13 16:13:44 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:13:44 +01:00: [1m[31m[39m[22m
+2026-01-13 16:18:11 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:18:11 +01:00: [1m[31m[39m[22m
+2026-01-13 16:18:11 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:18:11 +01:00: [1m[31m[39m[22m
+2026-01-13 16:18:15 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:18:15 +01:00: [1m[31m[39m[22m
+2026-01-13 16:18:15 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:18:15 +01:00: [1m[31m[39m[22m
+2026-01-13 16:18:15 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:18:15 +01:00: [1m[31m[39m[22m
+2026-01-13 16:18:43 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:18:43 +01:00: [1m[31m[39m[22m
+2026-01-13 16:18:43 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:18:43 +01:00: [1m[31m[39m[22m
+2026-01-13 16:18:48 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:18:48 +01:00: [1m[31m[39m[22m
+2026-01-13 16:18:48 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:18:48 +01:00: [1m[31m[39m[22m
+2026-01-13 16:29:15 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:29:15 +01:00: [1m[31m[39m[22m
+2026-01-13 16:29:15 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:29:15 +01:00: [1m[31m[39m[22m
+2026-01-13 16:29:40 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:29:40 +01:00: [1m[31m[39m[22m
+2026-01-13 16:29:40 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:29:40 +01:00: [1m[31m[39m[22m
+2026-01-13 16:29:40 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:29:40 +01:00: [1m[31m[39m[22m
+2026-01-13 16:31:57 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:31:57 +01:00: [1m[31m[39m[22m
+2026-01-13 16:31:57 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:31:57 +01:00: [1m[31m[39m[22m
+2026-01-13 16:32:01 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:32:01 +01:00: [1m[31m[39m[22m
+2026-01-13 16:32:01 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:32:01 +01:00: [1m[31m[39m[22m
+2026-01-13 16:32:01 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:32:01 +01:00: [1m[31m[39m[22m
+2026-01-13 16:32:28 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:32:28 +01:00: [1m[31m[39m[22m
+2026-01-13 16:32:29 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:32:29 +01:00: [1m[31m[39m[22m
+2026-01-13 16:32:29 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:32:29 +01:00: [1m[31m[39m[22m
+2026-01-13 16:33:48 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:33:48 +01:00: [1m[31m[39m[22m
+2026-01-13 16:33:48 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:33:48 +01:00: [1m[31m[39m[22m
+2026-01-13 16:33:52 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:33:52 +01:00: [1m[31m[39m[22m
+2026-01-13 16:33:53 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:33:53 +01:00: [1m[31m[39m[22m
+2026-01-13 16:33:53 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:33:53 +01:00: [1m[31m[39m[22m
+2026-01-13 16:34:01 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:34:01 +01:00: [1m[31m[39m[22m
+2026-01-13 16:34:01 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:34:01 +01:00: [1m[31m[39m[22m
+2026-01-13 16:36:43 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:36:43 +01:00: [1m[31m[39m[22m
+2026-01-13 16:36:43 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:36:43 +01:00: [1m[31m[39m[22m
+2026-01-13 16:36:50 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:36:50 +01:00: [1m[31m[39m[22m
+2026-01-13 16:36:50 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:36:50 +01:00: [1m[31m[39m[22m
+2026-01-13 16:36:50 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:36:50 +01:00: [1m[31m[39m[22m
+2026-01-13 16:37:01 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:37:01 +01:00: [1m[31m[39m[22m
+2026-01-13 16:37:01 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:37:01 +01:00: [1m[31m[39m[22m
+2026-01-13 16:38:46 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:38:46 +01:00: [1m[31m[39m[22m
+2026-01-13 16:38:47 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:38:47 +01:00: [1m[31m[39m[22m
+2026-01-13 16:38:55 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:38:55 +01:00: [1m[31m[39m[22m
+2026-01-13 16:39:10 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:39:10 +01:00: [1m[31m[39m[22m
+2026-01-13 16:39:10 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:39:10 +01:00: [1m[31m[39m[22m
+2026-01-13 16:39:10 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:39:10 +01:00: [1m[31m[39m[22m
+2026-01-13 16:39:16 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:39:16 +01:00: [1m[31m[39m[22m
+2026-01-13 16:39:16 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:39:16 +01:00: [1m[31m[39m[22m
+2026-01-13 16:39:21 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:39:21 +01:00: [1m[31m[39m[22m
+2026-01-13 16:39:22 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:39:22 +01:00: [1m[31m[39m[22m
+2026-01-13 16:39:48 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:39:48 +01:00: [1m[31m[39m[22m
+2026-01-13 16:39:48 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:39:48 +01:00: [1m[31m[39m[22m
+2026-01-13 16:39:51 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:39:51 +01:00: [1m[31m[39m[22m
+2026-01-13 16:39:51 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:39:51 +01:00: [1m[31m[39m[22m
+2026-01-13 16:42:41 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:42:41 +01:00: [1m[31m[39m[22m
+2026-01-13 16:42:41 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:42:41 +01:00: [1m[31m[39m[22m
+2026-01-13 16:42:41 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:42:41 +01:00: [1m[31m[39m[22m
+2026-01-13 16:42:45 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:42:45 +01:00: [1m[31m[39m[22m
+2026-01-13 16:42:45 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:42:45 +01:00: [1m[31m[39m[22m
+2026-01-13 16:45:03 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:45:03 +01:00: [1m[31m[39m[22m
+2026-01-13 16:45:03 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:45:03 +01:00: [1m[31m[39m[22m
+2026-01-13 16:45:06 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:45:06 +01:00: [1m[31m[39m[22m
+2026-01-13 16:45:06 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:45:06 +01:00: [1m[31m[39m[22m
+2026-01-13 16:45:08 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:45:08 +01:00: [1m[31m[39m[22m
+2026-01-13 16:45:09 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:45:09 +01:00: [1m[31m[39m[22m
+2026-01-13 16:45:10 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:45:10 +01:00: [1m[31m[39m[22m
+2026-01-13 16:45:10 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:45:10 +01:00: [1m[31m[39m[22m
+2026-01-13 16:45:35 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:45:35 +01:00: [1m[31m[39m[22m
+2026-01-13 16:47:13 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:47:13 +01:00: [1m[31m[39m[22m
+2026-01-13 16:47:13 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:47:13 +01:00: [1m[31m[39m[22m
+2026-01-13 16:49:43 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:49:43 +01:00: [1m[31m[39m[22m
+2026-01-13 16:49:43 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:49:43 +01:00: [1m[31m[39m[22m
+2026-01-13 16:49:47 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:49:47 +01:00: [1m[31m[39m[22m
+2026-01-13 16:49:47 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:49:47 +01:00: [1m[31m[39m[22m
+2026-01-13 16:49:47 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:49:47 +01:00: [1m[31m[39m[22m
+2026-01-13 16:49:56 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:49:56 +01:00: [1m[31m[39m[22m
+2026-01-13 16:49:56 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 16:49:56 +01:00: [1m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase auth.getUser error: AuthApiError: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at handleError [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:102:9[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at _handleRequest [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:195:5[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at _request [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at SupabaseAuthClient._getUser [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/GoTrueClient.ts:1725:16[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at SupabaseAuthClient.getUser [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/GoTrueClient.ts:1706:14[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at AuthService.validateToken [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/auth.service.js:399:48[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at AuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/auth.guard.js:36:26[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at OptionalAuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/optional-auth.guard.js:16:13[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at GuardsConsumer.tryActivate [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/guards/guards-consumer.js:22:17[90m)[39m[31m {[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m  __isAuthError: [33mtrue[39m[31m,[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m  status: [33m403[39m[31m,[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m  code: [32m'bad_jwt'[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m} [39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Token validation error: UnauthorizedException: Token validation failed: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at AuthService.validateToken [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/auth.service.js:402:23[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at AuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/auth.guard.js:36:26[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at OptionalAuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/optional-auth.guard.js:16:13[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at GuardsConsumer.tryActivate [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/guards/guards-consumer.js:22:17[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at canActivateFn [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:135:33[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:42:31[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-proxy.js:9:17[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at Object.<anonymous> [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-explorer.js:199:17[90m)[39m[31m {[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m  response: {[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    message: [32m'Token validation failed: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired'[39m[31m,[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    error: [32m'Unauthorized'[39m[31m,[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    statusCode: [33m401[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m  },[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m  status: [33m401[39m[31m,[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m  options: {}[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m} [39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] Token validation failed UnauthorizedException: Token validation failed: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at AuthService.validateToken [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/auth.service.js:402:23[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at AuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/auth.guard.js:36:26[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at OptionalAuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/optional-auth.guard.js:16:13[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at GuardsConsumer.tryActivate [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/guards/guards-consumer.js:22:17[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at canActivateFn [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:135:33[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:42:31[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-proxy.js:9:17[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at Object.<anonymous> [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-explorer.js:199:17[90m)[39m[31m {[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m  response: {[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    message: [32m'Token validation failed: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired'[39m[31m,[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    error: [32m'Unauthorized'[39m[31m,[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    statusCode: [33m401[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m  },[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m  status: [33m401[39m[31m,[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m  options: {}[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m} [39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase auth.getUser error: AuthApiError: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at handleError [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:102:9[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at _handleRequest [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:195:5[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at _request [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at SupabaseAuthClient._getUser [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/GoTrueClient.ts:1725:16[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at SupabaseAuthClient.getUser [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@supabase+auth-js@2.87.1/node_modules/[4m@supabase[24m/auth-js/src/GoTrueClient.ts:1706:14[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at AuthService.validateToken [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/auth.service.js:399:48[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at AuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/auth.guard.js:36:26[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at GuardsConsumer.tryActivate [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/guards/guards-consumer.js:22:17[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at canActivateFn [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:135:33[90m)[39m[31m {[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m  __isAuthError: [33mtrue[39m[31m,[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m  status: [33m403[39m[31m,[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m  code: [32m'bad_jwt'[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m} [39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Token validation error: UnauthorizedException: Token validation failed: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at AuthService.validateToken [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/auth.service.js:402:23[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at AuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/auth.guard.js:36:26[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at GuardsConsumer.tryActivate [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/guards/guards-consumer.js:22:17[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at canActivateFn [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:135:33[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:42:31[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-proxy.js:9:17[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at Object.<anonymous> [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-explorer.js:199:17[90m)[39m[31m {[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m  response: {[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    message: [32m'Token validation failed: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired'[39m[31m,[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    error: [32m'Unauthorized'[39m[31m,[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    statusCode: [33m401[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m  },[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m  status: [33m401[39m[31m,[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m  options: {}[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m} [39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m[ERROR] [AuthGuard.canActivate] Token validation failed UnauthorizedException: Token validation failed: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at AuthService.validateToken [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/auth.service.js:402:23[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at AuthGuard.canActivate [90m(file:///Users/marekcaba/Documents/Projekty%202024/%F0%9F%9F%A3%20BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/[39m[31mdist/apps/backend/src/domains/user/auth/guards/auth.guard.js:36:26[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at GuardsConsumer.tryActivate [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/guards/guards-consumer.js:22:17[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at canActivateFn [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:135:33[90m)[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-execution-context.js:42:31[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at [90m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-proxy.js:9:17[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    at Object.<anonymous> [90m(/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39m[31mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.9_@nestjs+common@11.1.9_class-transformer@0.5.1_class-validator@0.14._2a93bac0155235b3cba674d456ebf43e/node_modules/[4m@nestjs[24m/core/router/router-explorer.js:199:17[90m)[39m[31m {[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m  response: {[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    message: [32m'Token validation failed: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired'[39m[31m,[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    error: [32m'Unauthorized'[39m[31m,[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m    statusCode: [33m401[39m[31m[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m  },[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m  status: [33m401[39m[31m,[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m  options: {}[39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m} [39m[22m
+2026-01-13 17:09:10 +01:00: [1m[31m[39m[22m
+2026-01-13 17:09:11 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 17:09:11 +01:00: [1m[31m[39m[22m
+2026-01-13 19:22:14 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 19:22:14 +01:00: [1m[31m[39m[22m
+2026-01-13 19:22:23 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 19:22:23 +01:00: [1m[31m[39m[22m
+2026-01-13 19:23:09 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 19:23:09 +01:00: [1m[31m[39m[22m
+2026-01-13 19:23:14 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 19:23:14 +01:00: [1m[31m[39m[22m
+2026-01-13 19:23:14 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 19:23:14 +01:00: [1m[31m[39m[22m
+2026-01-13 19:23:19 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 19:23:19 +01:00: [1m[31m[39m[22m
+2026-01-13 19:23:19 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 19:23:19 +01:00: [1m[31m[39m[22m
+2026-01-13 19:28:57 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 19:28:57 +01:00: [1m[31m[39m[22m
+2026-01-13 19:28:57 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 19:28:57 +01:00: [1m[31m[39m[22m
+2026-01-13 19:29:51 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 19:29:51 +01:00: [1m[31m[39m[22m
+2026-01-13 19:29:51 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 19:29:51 +01:00: [1m[31m[39m[22m
+2026-01-13 19:32:23 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 19:32:23 +01:00: [1m[31m[39m[22m
+2026-01-13 19:32:23 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 19:32:23 +01:00: [1m[31m[39m[22m
+2026-01-13 19:32:26 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 19:32:26 +01:00: [1m[31m[39m[22m
+2026-01-13 19:32:27 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 19:32:27 +01:00: [1m[31m[39m[22m
+2026-01-13 19:32:27 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 19:32:27 +01:00: [1m[31m[39m[22m
+2026-01-13 19:32:53 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 19:32:53 +01:00: [1m[31m[39m[22m
+2026-01-13 19:32:53 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 19:32:53 +01:00: [1m[31m[39m[22m
+2026-01-13 19:32:58 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 19:32:58 +01:00: [1m[31m[39m[22m
+2026-01-13 19:32:58 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 19:32:58 +01:00: [1m[31m[39m[22m
+2026-01-13 19:35:39 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 19:35:39 +01:00: [1m[31m[39m[22m
+2026-01-13 19:35:40 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 19:35:40 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 19:35:40 +01:00: [1m[31m[39m[22m
+2026-01-13 19:35:59 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 19:35:59 +01:00: [1m[31m[39m[22m
+2026-01-13 19:35:59 +01:00: [1m[31m[ERROR] [AuthService.validateToken] Supabase client not initialized  [39m[22m
+2026-01-13 19:35:59 +01:00: [1m[31m[39m[22m
