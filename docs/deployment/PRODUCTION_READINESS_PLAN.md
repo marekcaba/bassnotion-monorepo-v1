@@ -30,9 +30,14 @@ A common source of confusion, so let's get it out of the way up front:
 ### 1.1 Snapshot before starting
 - [x] Commit current state or create a safety tag: `git tag pre-production-audit-snapshot` (points to `a5626d2`)
 - [x] Push tag: `git push origin pre-production-audit-snapshot` (used `-c http.version=HTTP/1.1` due to Apple Git 2.39.5 HTTP/2 multiplexing bug in non-TTY shells; workaround pinned globally)
-- [ ] Verify local dev works (PM2 backend + frontend running, main pages load)
+- [x] Verify local dev works — PM2 backend + frontend both online; `localhost:3001` returns HTTP 200; `localhost:3000/api/health` returns `{"status":"healthy"}` with database + Supabase healthy (had to `pm2 restart bassnotion-backend` first; the existing process wasn't listening on 3000)
 
-**Bonus fix discovered during 1.1:** CI was broken — lockfile v9 (pnpm 10) vs workflows pinned to pnpm 8. Fixed all 4 workflows + added `packageManager: pnpm@10.11.0` to root `package.json`. See PR `fix/ci-pnpm-version`.
+**Bonus fixes during 1.1 — repository cleanup completed:**
+- [x] CI lockfile-mismatch fixed → PR #55 (`fix/ci-pnpm-version`). Bumped all 4 workflows from pnpm 8 → 10; pinned `packageManager: pnpm@10.11.0` in root `package.json`.
+- [x] All 5 stale branches archived as `archive/<name>-2026-05-12` tags pushed to remote, then deleted locally (`feature/drum-pattern-editor`, `backup-before-cleanup-phase7`, `fix/downgrade-react-webkit-compatibility`, `refactor/region-processor-breakdown`, local stale `main`).
+- [x] All 4 stashes archived as `archive/stash-*-2026-05-12` tags pushed to remote, then dropped. Stash list empty.
+- [x] Repository hygiene: stopped tracking `.next/`, `logs/`, `tsconfig.tsbuildinfo`, `supabase/.temp/` (now properly gitignored); added `*.tsbuildinfo`, `supabase/.temp/`, `.claude/scheduled_tasks.lock` to `.gitignore`.
+- [x] **NEW BASELINE on `main` (origin/main = `fc754b9`):** "chore: pre-production baseline snapshot" — bundles ~5 months of feature/drum-pattern-editor work (543 files: drum pattern editor, billing, widget refactor, assessment domain, 22 Supabase migrations, etc.). Force-pushed with `--force-with-lease`. Pre-snapshot state preserved at tag `pre-production-audit-snapshot`.
 
 ### 1.2 Critical CVE audit
 - [ ] Run `pnpm audit --audit-level critical` and save the output to `docs/security/audit-baseline.md`
