@@ -94,11 +94,11 @@ eslint: { ignoreDuringBuilds: true }
 - [ ] Either update `next.config.js`, or document in `docs/security/tech-debt.md` why it stays
 - [ ] Commit
 
-### 2.2 Clean up Railway placeholder credentials
-- [ ] Open [railway.json](../../railway.json)
-- [ ] Remove `SUPABASE_URL` and `SUPABASE_KEY` from `environments.production.variables`
-- [ ] Verify in Railway dashboard that real values are in Railway env secrets (not in the repo)
-- [ ] Commit: `chore(security): remove placeholder Supabase credentials from railway.json`
+### 2.2 Clean up Railway placeholder credentials (DONE — moved into PR #56)
+- [x] Removed `SUPABASE_URL` and `SUPABASE_KEY` placeholders from `railway.json`
+- [x] Removed stale `DEPLOYMENT_TRIGGER` marker
+- [ ] **Verify in Railway dashboard (USER):** confirm `SUPABASE_URL`, `SUPABASE_KEY`, `SUPABASE_SERVICE_ROLE_KEY` are set as env secrets in Backend service Variables
+- [x] Also deleted `scripts/fix-harmony5-exercise.sh` (one-off script that leaked the production Supabase project URL)
 
 **Acceptance criteria for Phase 2:**
 - CI typecheck step fails on real TS errors (not ignored)
