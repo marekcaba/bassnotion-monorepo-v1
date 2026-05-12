@@ -57,23 +57,21 @@ A common source of confusion, so let's get it out of the way up front:
 - After: 155 vulns (17 low | 58 moderate | 80 high | **0 critical**)
 - 80 remaining high CVEs are mostly minimatch/picomatch ReDoS in dev tools — to be addressed alongside Next.js 15.5 bump in Phase 1.4
 
-### 1.4 Next.js upgrade 15.3.8 → 15.5.16+
-**Risk:** Minor version bump, but Next.js sometimes changes App Router behavior.
-- [ ] Read the changelog: https://github.com/vercel/next.js/releases
-- [ ] `cd apps/frontend && pnpm update next@latest`
-- [ ] Build locally: `cd apps/frontend && pnpm next build`
-- [ ] If build fails → fix per the errors (often just typing)
-- [ ] PM2 restart frontend → test:
-  - [ ] Login flow
-  - [ ] Tutorial loads
-  - [ ] Audio playback works
-  - [ ] 3D fretboard renders
-  - [ ] Admin tutorial editor
-- [ ] Commit: `fix(security): upgrade Next.js to X.Y.Z for CVE-XXXX`
+### 1.4 Next.js upgrade 15.3.8 → 15.5.18 (DONE)
+- [x] Confirmed Next 15.5.18 is the latest stable 15.x and accepts React 19.1.0 as peer
+- [x] Bumped `next` exact pin in 2 package.json files (root + apps/frontend)
+- [x] `pnpm install` succeeded
+- [x] `pnpm next build` succeeded — all routes built (static + dynamic), no compile errors
+- [x] PM2 restart all → backend `/api/health` healthy, frontend HTTP 200
+- [x] Patched RSC cache poisoning CVE GHSA-wfc6-r584-vfw7 (was `>=14.2.0 <15.5.16`)
+- [ ] **Manual UI smoke check (USER):** open the frontend in a browser, test login → tutorial → audio playback → 3D fretboard → admin editor. PM2 says it's serving but only you can confirm the UX
 
-### 1.5 Re-audit
-- [ ] `pnpm audit --audit-level high` — target: 0 critical, ideally 0 high
-- [ ] If some highs remain → file an issue/note but don't block (highs aren't production blockers)
+Stayed on 15.x per CLAUDE.md constraint. Next 16 requires explicit `--turbopack`/`--webpack` flag and changes config schema — deferred to a separate explicit migration.
+
+### 1.5 Re-audit (DONE)
+- [x] `pnpm audit --audit-level critical` returns **0** (was 4)
+- [x] Total: 188 → 135 vulnerabilities
+- [ ] Remaining 72 highs are mostly transitive minimatch/picomatch ReDoS in build tooling — low real-world risk, but tracked. Address opportunistically (e.g. when Nx 21 lands a release that bumps them)
 
 **Acceptance criteria for Phase 1:**
 - `pnpm audit --audit-level critical` returns 0
