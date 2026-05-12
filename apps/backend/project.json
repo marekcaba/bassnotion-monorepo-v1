@@ -12,7 +12,7 @@
       "options": {
         "outputPath": "dist/apps/backend",
         "main": "apps/backend/src/main.ts",
-        "tsConfig": "apps/backend/tsconfig.json",
+        "tsConfig": "apps/backend/tsconfig.build.json",
         "assets": ["apps/backend/src/assets"]
       },
       "configurations": {

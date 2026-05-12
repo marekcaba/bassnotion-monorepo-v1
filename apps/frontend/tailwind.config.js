@@ -20,6 +20,23 @@ export default {
           'ui-monospace',
           'monospace',
         ],
+        heading: [
+          'var(--font-podium-sharp)',
+          'var(--font-bebas-neue)',
+          'Impact',
+          'sans-serif',
+        ],
+        'dm-body': [
+          'var(--font-dm-sans)',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          'sans-serif',
+        ],
+        mono: [
+          'var(--font-dm-mono)',
+          'ui-monospace',
+          'monospace',
+        ],
       },
       // Enhanced breakpoint system for better responsive design
       screens: {
@@ -88,6 +105,16 @@ export default {
           DEFAULT: 'var(--card)',
           foreground: 'var(--card-foreground)',
         },
+        sidebar: {
+          DEFAULT: 'hsl(var(--sidebar-background))',
+          foreground: 'hsl(var(--sidebar-foreground))',
+          primary: 'hsl(var(--sidebar-primary))',
+          'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
+          accent: 'hsl(var(--sidebar-accent))',
+          'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
+          border: 'hsl(var(--sidebar-border))',
+          ring: 'hsl(var(--sidebar-ring))',
+        },
       },
       // Enhanced spacing for better responsive design
       spacing: {
@@ -136,9 +163,50 @@ export default {
             opacity: '0',
           },
         },
+        // Fade in animation for overlays
+        fadeIn: {
+          '0%': {
+            opacity: '0',
+          },
+          '100%': {
+            opacity: '1',
+          },
+        },
+        // Fade in with slight scale for content
+        fadeInUp: {
+          '0%': {
+            opacity: '0',
+            transform: 'translateY(10px)',
+          },
+          '100%': {
+            opacity: '1',
+            transform: 'translateY(0)',
+          },
+        },
+        // Slide up from below with fade
+        slideUp: {
+          '0%': {
+            opacity: '0',
+            transform: 'translateY(24px)',
+          },
+          '100%': {
+            opacity: '1',
+            transform: 'translateY(0)',
+          },
+        },
+        // Waveform bars animation for audio preview
+        waveform: {
+          '0%, 100%': { height: '4px' },
+          '50%': { height: '100%' },
+        },
       },
       animation: {
         'sparkle-burst': 'sparkle-burst 600ms ease-out forwards',
+        'fade-in': 'fadeIn 400ms ease-out',
+        'fade-in-up': 'fadeInUp 400ms ease-out',
+        'slide-up': 'slideUp 0.5s ease-out both',
+        'slide-up-delayed': 'slideUp 0.5s ease-out 0.2s both',
+        waveform: 'waveform 0.8s ease-in-out infinite',
       },
     },
   },

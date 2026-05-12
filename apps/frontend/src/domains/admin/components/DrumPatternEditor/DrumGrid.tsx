@@ -11,12 +11,9 @@ import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { DrumLaneRow } from './DrumLaneRow.js';
 import type { DrumGridProps, MusicalPosition, MidiDrumType, DrumLaneConfig } from './types.js';
-import {
-  useDrumEditorStore,
-  selectTotalColumns,
-} from './hooks/useDrumEditorStore.js';
+import { useDrumEditorStore } from './hooks/useDrumEditorStore.js';
 import { CELL_DIMENSIONS, RESOLUTION_TO_CELLS_PER_BEAT, ZOOM_LIMITS } from './constants.js';
-import { tickToColumn } from './utils/gridPositionUtils.js';
+import { tickToColumn, getTotalColumns } from './utils/gridPositionUtils.js';
 
 /**
  * Calculate distance between two touch points (for mobile touch screens)
@@ -147,7 +144,7 @@ export function DrumGrid({
 
   // Calculate total columns
   const totalColumns = useMemo(
-    () => selectTotalColumns({ bars, gridResolution: resolution, timeSignature } as any),
+    () => getTotalColumns(bars, resolution, timeSignature),
     [bars, resolution, timeSignature]
   );
 

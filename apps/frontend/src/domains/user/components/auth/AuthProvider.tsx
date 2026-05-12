@@ -7,6 +7,7 @@ import { authService } from '../../api/auth';
 import { useAuth } from '../../hooks/use-auth';
 import { useIdleTimeout } from '../../hooks/use-idle-timeout';
 import { IdleWarningDialog } from './IdleWarningDialog';
+import { AuthErrorBoundary } from '@/shared/components/ErrorBoundary';
 import { useToast } from '@/shared/hooks/use-toast';
 import { supabase } from '@/infrastructure/supabase/client';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
@@ -17,7 +18,7 @@ interface AuthProviderProps {
   children: React.ReactNode;
 }
 
-export function AuthProvider({ children }: AuthProviderProps) {
+function AuthProviderContent({ children }: AuthProviderProps) {
   const { correlationId, logger } = useCorrelation('AuthProvider');
   const {
     setUser,
@@ -101,11 +102,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const isE2ETesting =
       typeof window !== 'undefined' &&
       (process.env.NODE_ENV === 'test' ||
-        (window as any).__playwright ||
-        (window as any).playwright ||
+        window.__playwright ||
+        window.playwright ||
         navigator.webdriver ||
-        (window as any).__webdriver ||
-        (window as any)._phantom);
+        window.__webdriver ||
+        window._phantom);
 
     // Get initial session
     const initializeAuth = async () => {
@@ -299,5 +300,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         countdownSeconds={300} // 5 minutes
       />
     </>
+  );
+}
+
+export function AuthProvider({ children }: AuthProviderProps) {
+  return (
+    <AuthErrorBoundary>
+      <AuthProviderContent>{children}</AuthProviderContent>
+    </AuthErrorBoundary>
   );
 }

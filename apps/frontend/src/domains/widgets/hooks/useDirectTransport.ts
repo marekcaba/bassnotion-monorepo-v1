@@ -48,8 +48,7 @@ export function useDirectTransport(): UseDirectTransportResult {
       // Wait for CoreServices
       let attempts = 0;
       while (attempts < 30) {
-        const coreServices = (window as any)
-          .__globalCoreServices as CoreServices;
+        const coreServices = window.__globalCoreServices as CoreServices | undefined;
 
         if (coreServices) {
           try {

@@ -1,3 +1,4 @@
+import type { AnyBlock } from '@bassnotion/contracts';
 import { TutorialId } from '../value-objects/tutorial-id.vo.js';
 import { TutorialSlug } from '../value-objects/tutorial-slug.vo.js';
 
@@ -31,6 +32,16 @@ export interface TutorialProps {
   creatorChannelUrl?: string;
   creatorAvatarUrl?: string;
   creatorSubscriberCount?: number;
+  category?: string;
+  // Modular block system
+  blocks?: AnyBlock[];
+  // Act 1: Understand fields (legacy)
+  understandVideoUrl?: string;
+  understandVideoLibraryId?: string;
+  understandHeadline?: string;
+  understandQuestions?: any[];
+  titleHighlightWords?: string[];
+  sidebarTitle?: string;
 }
 
 export class Tutorial {
@@ -163,6 +174,39 @@ export class Tutorial {
     return this.props.creatorSubscriberCount;
   }
 
+  get category(): string | undefined {
+    return this.props.category;
+  }
+
+  // Act 1: Understand getters
+  get understandVideoUrl(): string | undefined {
+    return this.props.understandVideoUrl;
+  }
+
+  get understandVideoLibraryId(): string | undefined {
+    return this.props.understandVideoLibraryId;
+  }
+
+  get understandHeadline(): string | undefined {
+    return this.props.understandHeadline;
+  }
+
+  get understandQuestions(): any[] {
+    return this.props.understandQuestions || [];
+  }
+
+  get titleHighlightWords(): string[] {
+    return this.props.titleHighlightWords || [];
+  }
+
+  get sidebarTitle(): string | undefined {
+    return this.props.sidebarTitle;
+  }
+
+  get blocks(): AnyBlock[] {
+    return this.props.blocks || [];
+  }
+
   // Business logic methods
   isBeginnerFriendly(): boolean {
     return this.props.level === 'beginner';
@@ -275,6 +319,21 @@ export class Tutorial {
       bassline_midi_url: this.props.basslineMidiUrl,
       harmony_midi_url: this.props.harmonyMidiUrl,
       deleted_at: this.props.deletedAt?.toISOString(),
+      // Creator fields for YouTube attribution
+      creator_name: this.props.creatorName,
+      creator_channel_url: this.props.creatorChannelUrl,
+      creator_avatar_url: this.props.creatorAvatarUrl,
+      creator_subscriber_count: this.props.creatorSubscriberCount,
+      category: this.props.category,
+      // Modular block system
+      blocks: this.props.blocks || [],
+      // Act 1: Understand fields (legacy)
+      understand_video_url: this.props.understandVideoUrl,
+      understand_video_library_id: this.props.understandVideoLibraryId,
+      understand_headline: this.props.understandHeadline,
+      understand_questions: this.props.understandQuestions,
+      title_highlight_words: this.props.titleHighlightWords,
+      sidebar_title: this.props.sidebarTitle,
     };
   }
 }

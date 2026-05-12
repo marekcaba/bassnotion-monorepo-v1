@@ -4,6 +4,8 @@ import { supabase } from '@/infrastructure/supabase/client';
 import type {
   UserProfileData,
   BassConfigurationData,
+  LearningStyle,
+  UserProfile,
 } from '@bassnotion/contracts';
 import { getLogger } from '@/utils/logger.js';
 
@@ -93,6 +95,35 @@ export class ProfileService {
       return result.data;
     } catch (error) {
       logger.error('Delete account error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update learning style preference
+   */
+  async updateLearningStyle(learningStyle: LearningStyle): Promise<UserProfile> {
+    try {
+      const headers = await this.getAuthHeaders();
+      const url = `${this.backendUrl}/api/user/preferences/learning-style`;
+
+      logger.debug('Updating learning style:', { learningStyle, url });
+
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ learningStyle }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Failed to update learning style');
+      }
+
+      return result.data;
+    } catch (error) {
+      logger.error('Update learning style error:', error);
       throw error;
     }
   }

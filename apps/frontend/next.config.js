@@ -143,6 +143,14 @@ const nextConfig = {
       'https://*.supabase.co',
       'https://api.supabase.co',
       'wss://*.supabase.co',
+      // Bunny Stream CDN for video player (primary)
+      'https://*.mediadelivery.net',
+      'https://*.bunnycdn.com',
+      'https://assets.mediadelivery.net',
+      // Vimeo API for video player (legacy support)
+      'https://vimeo.com',
+      'https://*.vimeo.com',
+      'https://*.vimeocdn.com',
     ];
 
     // Add localhost URLs for development
@@ -184,8 +192,8 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              // Removed YouTube from script-src - much more secure! Added blob: for AudioWorklet
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: https://vercel.live https://*.supabase.co https://cdn.jsdelivr.net",
+              // Added blob: for AudioWorklet, assets.mediadelivery.net for Bunny Stream Player.js
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: https://vercel.live https://*.supabase.co https://cdn.jsdelivr.net https://assets.mediadelivery.net",
               // Allow Web Workers for Tone.js audio processing
               "worker-src 'self' blob:",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
@@ -195,8 +203,8 @@ const nextConfig = {
               // Allow audio/video from self and Supabase storage
               "media-src 'self' https://*.supabase.co https://htuztkrbuewheehjspcz.supabase.co blob:",
               `connect-src ${connectSrc.join(' ')}`,
-              // Allow YouTube iframes - sandboxed and secure
-              "frame-src 'self' https://www.youtube.com https://youtube.com",
+              // Allow YouTube, Bunny Stream, and Vimeo iframes - sandboxed and secure
+              "frame-src 'self' https://www.youtube.com https://youtube.com https://iframe.mediadelivery.net https://player.mediadelivery.net https://player.vimeo.com https://vimeo.com",
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",

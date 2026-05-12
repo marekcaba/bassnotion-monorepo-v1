@@ -244,7 +244,7 @@ export class WamKeyboardNode implements WamNode {
           Tone.context?._context ||
           Tone.context?._nativeAudioContext ||
           Tone.context?.rawContext;
-        const persistentContext = (window as any).__persistentAudioContext;
+        const persistentContext = window.__persistentAudioContext;
 
         if (toneContext && this.context && toneContext !== this.context) {
           // Check if using persistent context
@@ -343,9 +343,9 @@ export class WamKeyboardNode implements WamNode {
 
     // CRITICAL FIX: Clear ALL Tone.Transport scheduled events BEFORE switching instruments
     // This prevents stale events from previous instrument playing alongside new instrument
-    if (typeof window !== 'undefined' && (window as any).Tone?.Transport) {
+    if (typeof window !== 'undefined' && window.Tone?.Transport) {
       try {
-        (window as any).Tone.Transport.cancel(0);
+        window.Tone.Transport.cancel(0);
         console.log(
           '[INSTRUMENT-SWITCH] Cleared Tone.Transport events for instrument switch',
         );
@@ -430,7 +430,7 @@ export class WamKeyboardNode implements WamNode {
         const existingSamplerContext =
           existingSampler.destination?.context ||
           existingSampler.samplers?.values()?.next()?.value?.context;
-        const persistentContext = (window as any).__persistentAudioContext;
+        const persistentContext = window.__persistentAudioContext;
 
         if (existingSamplerContext && this.context) {
           // Get the actual native context from Tone wrapper if needed
@@ -1085,9 +1085,9 @@ export class WamKeyboardNode implements WamNode {
         try {
           if (
             typeof window !== 'undefined' &&
-            (window as any).Tone?.Transport
+            window.Tone?.Transport
           ) {
-            (window as any).Tone.Transport.cancel(0); // Cancel all events from time 0 onwards
+            window.Tone.Transport.cancel(0); // Cancel all events from time 0 onwards
           }
         } catch (toneError) {
           console.error('Failed to cancel Tone.Transport events:', toneError);

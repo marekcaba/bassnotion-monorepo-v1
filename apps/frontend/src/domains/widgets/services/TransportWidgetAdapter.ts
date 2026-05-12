@@ -39,7 +39,7 @@ class UnifiedTransportController {
 
   constructor() {
     // Try to get UnifiedTransport from CoreServices
-    const coreServices = (window as any).__coreServices;
+    const coreServices = window.__coreServices;
     if (coreServices) {
       try {
         this.unifiedTransport =

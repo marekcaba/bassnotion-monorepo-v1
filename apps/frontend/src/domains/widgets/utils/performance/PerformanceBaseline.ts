@@ -192,24 +192,23 @@ export class PerformanceBaseline {
   private async measureMemoryUsage(): Promise<
     WidgetPerformanceMetrics['memory']
   > {
-    const performance = (window as any).performance;
-
     let heapUsed = 0;
     let heapTotal = 0;
     const external = 0;
     let arrayBuffers = 0;
 
-    if (performance?.memory) {
+    if (window.performance.memory) {
+      const memory = window.performance.memory;
       heapUsed =
-        Math.round((performance.memory.usedJSHeapSize / 1024 / 1024) * 100) /
+        Math.round((memory.usedJSHeapSize / 1024 / 1024) * 100) /
         100;
       heapTotal =
-        Math.round((performance.memory.totalJSHeapSize / 1024 / 1024) * 100) /
+        Math.round((memory.totalJSHeapSize / 1024 / 1024) * 100) /
         100;
       arrayBuffers =
         Math.round(
-          ((performance.memory.totalJSHeapSize -
-            performance.memory.usedJSHeapSize) /
+          ((memory.totalJSHeapSize -
+            memory.usedJSHeapSize) /
             1024 /
             1024) *
             100,

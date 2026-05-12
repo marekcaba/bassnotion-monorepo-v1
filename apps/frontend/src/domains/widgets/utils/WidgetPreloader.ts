@@ -56,19 +56,19 @@ class WidgetPreloaderSingleton {
   private readonly widgetImports = [
     {
       name: 'MetronomeWidget',
-      import: () => import('../components/YouTubeWidgetPage/components/MetronomeWidget'),
+      import: () => import('../components/YouTubeWidgetPage/MetronomeWidget/index.js'),
     },
     {
       name: 'DrummerWidget',
-      import: () => import('../components/YouTubeWidgetPage/components/DrummerWidget'),
+      import: () => import('../components/YouTubeWidgetPage/DrummerWidget/index.js'),
     },
     {
       name: 'BassLineWidget',
-      import: () => import('../components/YouTubeWidgetPage/components/BassLineWidget'),
+      import: () => import('../components/YouTubeWidgetPage/BassLineWidget/index.js'),
     },
     {
       name: 'HarmonyWidget',
-      import: () => import('../components/YouTubeWidgetPage/components/HarmonyWidget'),
+      import: () => import('../components/YouTubeWidgetPage/HarmonyWidget/index.js'),
     },
   ];
 
@@ -105,7 +105,7 @@ class WidgetPreloaderSingleton {
 
     // Use requestIdleCallback for non-blocking parallel load
     if ('requestIdleCallback' in window) {
-      (window as any).requestIdleCallback(() => this.loadAllWidgets(), {
+      (window as { requestIdleCallback: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number }).requestIdleCallback(() => this.loadAllWidgets(), {
         timeout: 300, // Aggressive timeout - we want these loaded fast
       });
     } else {

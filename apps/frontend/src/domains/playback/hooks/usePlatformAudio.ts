@@ -116,8 +116,7 @@ export function usePlatformAudio(): PlatformAudioState {
 
         // Strategy 2: Fallback to global singleton (universal access)
         if (!coreServices) {
-          const globalServices = (window as any)
-            .__globalCoreServices as CoreServices;
+          const globalServices = window.__globalCoreServices as CoreServices | undefined;
           if (globalServices) {
             coreServices = globalServices;
             logger.info(
@@ -139,8 +138,7 @@ export function usePlatformAudio(): PlatformAudioState {
                 }, 10000);
 
                 const checkServices = () => {
-                  const services = (window as any)
-                    .__globalCoreServices as CoreServices;
+                  const services = window.__globalCoreServices as CoreServices | undefined;
                   if (services) {
                     clearTimeout(timeout);
                     window.removeEventListener(

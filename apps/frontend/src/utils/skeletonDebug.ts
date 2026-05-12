@@ -14,16 +14,16 @@ import { isVerboseDebugEnabled } from '@/config/debug';
 const SKELETON_DEBUG_KEY = '__SKELETON_DEBUG_START';
 
 // Initialize baseline if not already set
-if (typeof window !== 'undefined' && !(window as any)[SKELETON_DEBUG_KEY]) {
-  (window as any)[SKELETON_DEBUG_KEY] = performance.now();
+if (typeof window !== 'undefined' && !window.__SKELETON_DEBUG_START) {
+  window.__SKELETON_DEBUG_START = performance.now();
 }
 
 /**
  * Get the elapsed time since skeleton debug baseline was initialized
  */
 export function getSkeletonDebugTime(): string {
-  if (typeof window !== 'undefined' && (window as any)[SKELETON_DEBUG_KEY]) {
-    return (performance.now() - (window as any)[SKELETON_DEBUG_KEY]).toFixed(0);
+  if (typeof window !== 'undefined' && window.__SKELETON_DEBUG_START) {
+    return (performance.now() - window.__SKELETON_DEBUG_START).toFixed(0);
   }
   return '0';
 }
@@ -33,7 +33,7 @@ export function getSkeletonDebugTime(): string {
  */
 export function resetSkeletonDebugBaseline(): void {
   if (typeof window !== 'undefined') {
-    (window as any)[SKELETON_DEBUG_KEY] = performance.now();
+    window.__SKELETON_DEBUG_START = performance.now();
   }
 }
 

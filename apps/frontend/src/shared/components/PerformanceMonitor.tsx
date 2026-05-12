@@ -68,7 +68,8 @@ export function PerformanceMonitor() {
     if (!('memory' in performance)) return;
 
     const updateMemory = () => {
-      const memory = (performance as any).memory;
+      const memory = window.performance.memory;
+      if (!memory) return;
       const used = memory.usedJSHeapSize;
       const limit = memory.jsHeapSizeLimit;
       const percentage = Math.round((used / limit) * 100);

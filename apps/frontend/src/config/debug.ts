@@ -28,8 +28,8 @@ export const VERBOSE_DEBUG =
 // Runtime toggle support for browser console debugging
 if (typeof window !== 'undefined') {
   // Allow runtime toggle via window.__enableVerboseDebug(true/false)
-  (window as any).__enableVerboseDebug = (enabled: boolean) => {
-    (window as any).__VERBOSE_DEBUG_OVERRIDE = enabled;
+  window.__enableVerboseDebug = (enabled: boolean) => {
+    window.__VERBOSE_DEBUG_OVERRIDE = enabled;
     console.log(
       `🔧 Verbose debug ${enabled ? 'ENABLED' : 'DISABLED'} (runtime override)`
     );
@@ -37,7 +37,7 @@ if (typeof window !== 'undefined') {
   };
 
   // Expose current state for debugging
-  (window as any).__isVerboseDebugEnabled = () => isVerboseDebugEnabled();
+  window.__isVerboseDebugEnabled = () => isVerboseDebugEnabled();
 }
 
 /**
@@ -46,8 +46,8 @@ if (typeof window !== 'undefined') {
  * For static checks at module load, use VERBOSE_DEBUG constant directly.
  */
 export function isVerboseDebugEnabled(): boolean {
-  if (typeof window !== 'undefined' && (window as any).__VERBOSE_DEBUG_OVERRIDE !== undefined) {
-    return (window as any).__VERBOSE_DEBUG_OVERRIDE;
+  if (typeof window !== 'undefined' && window.__VERBOSE_DEBUG_OVERRIDE !== undefined) {
+    return window.__VERBOSE_DEBUG_OVERRIDE;
   }
   return VERBOSE_DEBUG;
 }

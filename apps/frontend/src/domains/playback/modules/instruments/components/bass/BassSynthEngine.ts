@@ -214,12 +214,18 @@ export class BassSynthEngine extends BaseInstrumentCore implements ISynthCore {
     }
 
     // Handle slide
+    // Note: PolySynth doesn't support frequency ramp directly; slide effects
+    // would need a monophonic synth or per-voice control. For now, we log
+    // the slide request but the effect is not implemented for PolySynth.
     if (bassNote.slide && this.synth) {
       const targetFreq = this.getFrequencyFromFret(
         bassNote.string || 3,
         bassNote.slide.to,
       );
-      (this.synth as any).frequency?.rampTo?.(targetFreq, bassNote.slide.duration, time);
+      logger.debug('Slide effect requested but not implemented for PolySynth', {
+        targetFreq,
+        duration: bassNote.slide.duration,
+      });
     }
 
     // Handle vibrato
@@ -348,29 +354,23 @@ export class BassSynthEngine extends BaseInstrumentCore implements ISynthCore {
 
   /**
    * Apply vibrato effect
+   * Note: PolySynth doesn't expose a global detune parameter, so vibrato
+   * is not directly applicable. This would require a monophonic synth or
+   * per-voice detune modulation. For now, we log the request.
    */
   private async applyVibrato(
     vibrato: { rate: number; depth: number },
-    time: number,
+    _time: number,
   ): Promise<void> {
     if (!this.synth) return;
 
-    const Tone = await getTone();
-
-    const lfo = new Tone.LFO({
-      frequency: vibrato.rate,
-      min: -vibrato.depth * 100,
-      max: vibrato.depth * 100,
+    // PolySynth doesn't expose detune for LFO modulation.
+    // Vibrato would need to be implemented at the voice level or
+    // by using a monophonic synth instead.
+    logger.debug('Vibrato effect requested but not implemented for PolySynth', {
+      rate: vibrato.rate,
+      depth: vibrato.depth,
     });
-
-    (lfo as any).connect?.((this.synth as any).detune);
-    lfo.start(time);
-
-    // Clean up LFO after note ends (approximate)
-    Tone.Transport.schedule(() => {
-      lfo.stop();
-      lfo.dispose();
-    }, time + 5); // 5 seconds max vibrato
   }
 
   /**

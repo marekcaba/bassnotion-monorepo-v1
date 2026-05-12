@@ -47,7 +47,44 @@ vi.mock('@/utils/logger.js', () => ({
   }),
 }));
 
-import { BassLineWidget } from '../BassLineWidget';
+// Mock TransportContext - BassLineWidget uses useTransportControls for tempo
+vi.mock('@/domains/playback/contexts/TransportContext', () => ({
+  useTransportControls: vi.fn(() => ({
+    tempo: 120,
+    isPlaying: false,
+    isPaused: false,
+    isStopped: true,
+    setTempo: vi.fn(),
+    timeSignature: { numerator: 4, denominator: 4 },
+    servicesReady: true,
+  })),
+}));
+
+// Mock WindowRegistry
+vi.mock('@/domains/playback/services/WindowRegistry.js', () => ({
+  WindowRegistry: {
+    getCoreServices: vi.fn(() => null),
+    clearBassBuffersReady: vi.fn(),
+    setBassBuffersReady: vi.fn(),
+  },
+}));
+
+// Mock GlobalSampleCache
+vi.mock('@/domains/playback/modules/storage/cache/GlobalSampleCache', () => ({
+  GlobalSampleCache: {
+    getInstance: vi.fn(() => ({
+      getMetadata: vi.fn(() => null),
+      getCachedRawBuffer: vi.fn(() => null),
+    })),
+  },
+}));
+
+// Mock debug config
+vi.mock('@/config/debug', () => ({
+  isVerboseDebugEnabled: vi.fn(() => false),
+}));
+
+import { BassLineWidget } from '../../BassLineWidget/index.js';
 
 describe('BassLineWidget', () => {
   const defaultProps = {
@@ -57,7 +94,6 @@ describe('BassLineWidget', () => {
     onTogglePlay: vi.fn(),
     onPatternChange: vi.fn(),
     onToggleVisibility: vi.fn(),
-    tempo: 120,
   };
 
   beforeEach(() => {
@@ -74,9 +110,8 @@ describe('BassLineWidget', () => {
   it('should not render when not visible', () => {
     render(<BassLineWidget {...defaultProps} isVisible={false} />);
 
-    // The component should still mount but be hidden
-    const container = document.querySelector('[data-visible="false"]');
-    expect(container).toBeInTheDocument();
+    // When isVisible=false, the component returns null and doesn't render anything
+    expect(screen.queryByTestId('volume-knob')).toBeNull();
   });
 
   it('should handle pattern changes', () => {
@@ -90,16 +125,12 @@ describe('BassLineWidget', () => {
     // we'd need to simulate the actual UI interaction
   });
 
-  it('should initialize with correct tempo', () => {
-    const { rerender } = render(
-      <BassLineWidget {...defaultProps} tempo={140} />,
-    );
+  it('should initialize with correct tempo from context', () => {
+    // Tempo now comes from useTransportControls context, not props
+    render(<BassLineWidget {...defaultProps} />);
 
-    // Verify the component receives the tempo prop
-    expect(defaultProps.tempo).toBe(120);
-
-    // Update tempo
-    rerender(<BassLineWidget {...defaultProps} tempo={140} />);
+    // The component should render and use tempo from context (mocked at 120)
+    expect(screen.getByTestId('volume-knob')).toBeInTheDocument();
   });
 
   it('should handle play/pause toggle', () => {
@@ -126,10 +157,10 @@ describe('BassLineWidget', () => {
       />,
     );
 
-    // Component should be visible
-    expect(document.querySelector('[data-visible="true"]')).toBeTruthy();
+    // Component should be visible (renders the volume knob)
+    expect(screen.getByTestId('volume-knob')).toBeInTheDocument();
 
-    // Change visibility
+    // Change visibility to false
     rerender(
       <BassLineWidget
         {...defaultProps}
@@ -138,8 +169,8 @@ describe('BassLineWidget', () => {
       />,
     );
 
-    // Component should be hidden
-    expect(document.querySelector('[data-visible="false"]')).toBeTruthy();
+    // Component should not render when not visible
+    expect(screen.queryByTestId('volume-knob')).toBeNull();
   });
 
   it('should handle exercise prop', () => {

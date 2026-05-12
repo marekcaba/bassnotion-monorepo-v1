@@ -265,8 +265,11 @@ export class WamKeyboardPlugin extends EventEmitter implements AudioPlugin {
     try {
       logger.info('⏸️ Deactivating WamKeyboardPlugin...');
 
-      // Release all playing notes
-      this.wamKeyboard.audioNode.releaseAll();
+      // Clear events and release all playing notes via WamKeyboardNode.clearEvents()
+      // This method handles instant silence and note release properly
+      if (typeof this.wamKeyboard.audioNode.clearEvents === 'function') {
+        this.wamKeyboard.audioNode.clearEvents();
+      }
 
       // State transition
       this.state = PluginState.INACTIVE;
@@ -320,6 +323,36 @@ export class WamKeyboardPlugin extends EventEmitter implements AudioPlugin {
       this.emit('error', error, { operation: 'dispose' });
       throw error;
     }
+  }
+
+  /**
+   * Reset plugin state for tutorial switching
+   * Clears all playing notes and resets internal state without disposing the plugin
+   */
+  resetState(): void {
+    logger.info('🔄 Resetting WamKeyboardPlugin state for tutorial switch...');
+
+    if (this.wamKeyboard && this.wamKeyboard.audioNode) {
+      // Clear any pending events - this also releases active notes via NUCLEAR OPTION
+      // The clearEvents() method in WamKeyboardNode:
+      // 1. Empties the event queue
+      // 2. Disconnects sampler output for instant silence
+      // 3. Releases all active notes via the sampler
+      if (typeof this.wamKeyboard.audioNode.clearEvents === 'function') {
+        this.wamKeyboard.audioNode.clearEvents();
+        logger.info('🔄 Cleared events and released notes');
+      }
+
+      // Reset sustain pedal state if the method exists
+      if (typeof (this.wamKeyboard.audioNode as any).resetSustain === 'function') {
+        (this.wamKeyboard.audioNode as any).resetSustain();
+      }
+    }
+
+    // Reset to default instrument (will be overwritten by new tutorial's exercise)
+    this.currentInstrument = KeyboardInstrument.GRAND_PIANO;
+
+    logger.info('✅ WamKeyboardPlugin state reset complete');
   }
 
   /**

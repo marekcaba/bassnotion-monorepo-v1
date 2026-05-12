@@ -79,21 +79,20 @@ export class InstrumentDependencyManager {
    */
   private static async loadTone(): Promise<any> {
     // Strategy 1: Check window.__globalTone (set by ToneWrapper)
-    if (typeof window !== 'undefined' && (window as any).__globalTone) {
+    if (typeof window !== 'undefined' && window.__globalTone) {
       logger.info('🎵 Found Tone.js at window.__globalTone');
-      return (window as any).__globalTone;
+      return window.__globalTone;
     }
 
     // Strategy 2: Check window.Tone (legacy/manual script tag)
-    if (typeof window !== 'undefined' && (window as any).Tone) {
+    if (typeof window !== 'undefined' && window.Tone) {
       logger.info('🎵 Found Tone.js at window.Tone');
-      return (window as any).Tone;
+      return window.Tone;
     }
 
     // Strategy 3: Try to get from CoreServices (if initialized)
     try {
-      const coreServices =
-        (window as any).__globalCoreServices || (window as any).__coreServices;
+      const coreServices = window.__globalCoreServices || window.__coreServices;
       if (coreServices) {
         logger.info('🎵 Attempting to get Tone.js from CoreServices...');
         const audioEngine = coreServices.getAudioEngine?.();
@@ -120,8 +119,8 @@ export class InstrumentDependencyManager {
 
       // Set on window for compatibility with other code
       if (typeof window !== 'undefined') {
-        (window as any).__globalTone = tone;
-        (window as any).Tone = tone;
+        window.__globalTone = tone;
+        window.Tone = tone;
       }
 
       logger.info('🎵 Tone.js dynamically imported successfully');
@@ -200,12 +199,9 @@ export class InstrumentDependencyManager {
    */
   private static async createAudioContext(): Promise<AudioContext> {
     // Strategy 1: Check for persistent context (set by app)
-    if (
-      typeof window !== 'undefined' &&
-      (window as any).__persistentAudioContext
-    ) {
+    if (typeof window !== 'undefined' && window.__persistentAudioContext) {
       logger.info('🎵 Found persistent AudioContext');
-      const context = (window as any).__persistentAudioContext;
+      const context = window.__persistentAudioContext;
       if (context.state === 'suspended') {
         await context.resume();
       }
@@ -214,8 +210,7 @@ export class InstrumentDependencyManager {
 
     // Strategy 2: Get from CoreServices (if available)
     try {
-      const coreServices =
-        (window as any).__globalCoreServices || (window as any).__coreServices;
+      const coreServices = window.__globalCoreServices || window.__coreServices;
       if (coreServices) {
         logger.info('🎵 Attempting to get AudioContext from CoreServices...');
         const audioEngine = coreServices.getAudioEngine?.();
@@ -255,8 +250,7 @@ export class InstrumentDependencyManager {
 
     // Strategy 4: Create new AudioContext
     logger.info('🎵 Creating new AudioContext...');
-    const AudioContextClass =
-      (window as any).AudioContext || (window as any).webkitAudioContext;
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextClass) {
       throw new Error('AudioContext not supported in this browser');
     }
@@ -271,7 +265,7 @@ export class InstrumentDependencyManager {
 
     // Store as persistent context for future use
     if (typeof window !== 'undefined') {
-      (window as any).__persistentAudioContext = context;
+      window.__persistentAudioContext = context;
     }
 
     return context;
@@ -284,7 +278,7 @@ export class InstrumentDependencyManager {
     return (
       this.toneInstance !== null ||
       (typeof window !== 'undefined' &&
-        (!!(window as any).__globalTone || !!(window as any).Tone))
+        (!!window.__globalTone || !!window.Tone))
     );
   }
 
@@ -295,7 +289,7 @@ export class InstrumentDependencyManager {
     return (
       this.audioContextInstance !== null ||
       (typeof window !== 'undefined' &&
-        !!(window as any).__persistentAudioContext)
+        !!window.__persistentAudioContext)
     );
   }
 

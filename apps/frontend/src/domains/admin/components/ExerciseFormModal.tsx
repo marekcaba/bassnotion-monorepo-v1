@@ -40,6 +40,7 @@ import type {
   PatternLibraryItem,
 } from '@bassnotion/contracts';
 import { PatternLibrarySelector } from './PatternLibrarySelector.js';
+import { FeatureErrorBoundary } from '@/shared/components/ErrorBoundary';
 
 interface ExerciseFormModalProps {
   isOpen: boolean;
@@ -49,7 +50,7 @@ interface ExerciseFormModalProps {
   tutorialId: string;
 }
 
-export function ExerciseFormModal({
+function ExerciseFormModalContent({
   isOpen,
   onClose,
   onSave,
@@ -135,7 +136,7 @@ export function ExerciseFormModal({
         key: exercise.key,
         timeSignatureNumerator: exercise.timeSignature?.numerator || 4,
         timeSignatureDenominator: exercise.timeSignature?.denominator || 4,
-        bassType: (exercise as any).bassType || '4', // Default to 4-string if not set
+        bassType: (exercise as { bassType?: string }).bassType || '4', // Default to 4-string if not set
         harmonyInstrument: exercise.harmonyInstrument || 'grandpiano',
         fretboardViewPreset: exercise.fretboardViewConfig?.preset || 'default',
       });
@@ -818,7 +819,7 @@ export function ExerciseFormModal({
             confidence: 'high' as ConfidenceLevel,
             alternatives: [],
             warnings: note.techniques?.map((t) => ({
-              type: t as any,
+              type: t as 'large_stretch' | 'difficult_shift' | 'string_crossing' | 'awkward_position',
               message: t,
               severity: 'info' as const,
             })),
@@ -1628,5 +1629,18 @@ export function ExerciseFormModal({
         }}
       />
     </Dialog>
+  );
+}
+
+export function ExerciseFormModal(props: ExerciseFormModalProps) {
+  // Don't render error boundary if modal is not open
+  if (!props.isOpen) {
+    return null;
+  }
+
+  return (
+    <FeatureErrorBoundary featureName="Exercise Form" onRetry={props.onClose}>
+      <ExerciseFormModalContent {...props} />
+    </FeatureErrorBoundary>
   );
 }

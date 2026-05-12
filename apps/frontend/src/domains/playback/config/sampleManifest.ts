@@ -305,10 +305,9 @@ export function estimateLoadTime(bytes: number, mbps = 1): number {
 export function getRecommendedQuality(
   connectionType?: string,
 ): 'essential' | 'standard' | 'premium' {
-  // Use Network Information API if available
-  if ('connection' in navigator) {
-    const connection = (navigator as any).connection;
-    const effectiveType = connection?.effectiveType;
+  // Use Network Information API if available (typed in window.d.ts)
+  if (navigator.connection) {
+    const effectiveType = navigator.connection.effectiveType;
 
     switch (effectiveType) {
       case 'slow-2g':

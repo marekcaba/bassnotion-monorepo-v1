@@ -471,7 +471,7 @@ export class Channel {
     const clampedGain = Math.max(-24, Math.min(24, gain));
     const band = this.eq.parametric[bandIndex];
     if (band && 'gain' in band) {
-      (band as any).gain.value = clampedGain;
+      (band as { gain: { value: number } }).gain.value = clampedGain;
     }
   }
 
@@ -655,7 +655,7 @@ export class Channel {
     // Fallback to global Tone (loaded by previous initialization)
     // Check both locations where Tone.js may be stored
     if (typeof window !== 'undefined') {
-      const tone = (window as any).Tone || (window as any).__globalTone;
+      const tone = window.Tone || window.__globalTone;
       if (tone) {
         return tone;
       }
@@ -719,11 +719,11 @@ export class Channel {
     return new Tone.Meter(options);
   }
 
-  private createAnalyser(type?: string, size?: number): any {
+  private createAnalyser(type?: 'fft' | 'waveform', size?: number): any {
     if (this.audioEngine?.createAnalyser) {
       return this.audioEngine.createAnalyser(type, size);
     }
     const Tone = this.getTone();
-    return new Tone.Analyser(type as any, size);
+    return new Tone.Analyser(type, size);
   }
 }

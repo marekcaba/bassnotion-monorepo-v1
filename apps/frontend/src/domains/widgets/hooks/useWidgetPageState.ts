@@ -475,6 +475,7 @@ export function useWidgetPageState() {
   return {
     // State - direct exposure so React can track changes
     state,
+    setState, // Expose for components that need fine-grained state updates
 
     // Actions (these are already stable due to useCallback)
     togglePlayback,

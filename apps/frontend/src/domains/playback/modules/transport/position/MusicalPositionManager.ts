@@ -78,7 +78,7 @@ import type { MusicalPosition, TimeSignature } from '../../types/index.js';
 function getTone(): any {
   if (typeof window !== 'undefined') {
     // Check both locations where Tone.js may be stored
-    const tone = (window as any).Tone || (window as any).__globalTone;
+    const tone = window.Tone || window.__globalTone;
     if (tone) {
       return tone;
     }

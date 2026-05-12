@@ -13,7 +13,9 @@ import {
   Logger,
   BadRequestException,
   NotFoundException,
+  Req,
 } from '@nestjs/common';
+import type { FastifyRequest } from 'fastify';
 import { AdminTutorialsService } from './admin-tutorials.service.js';
 import { CreateTutorialDto } from './dto/create-tutorial.dto.js';
 import { CreatorsService } from '../creators/creators.service.js';
@@ -23,6 +25,7 @@ import { AdminGuard } from '../user/auth/guards/admin.guard.js';
 import { CurrentUser } from '../user/auth/decorators/current-user.decorator.js';
 import type { AuthUser } from '../user/auth/types/auth.types.js';
 import { CorrelationId } from '../../shared/decorators/correlation-id.decorator.js';
+import { SupabaseService } from '../../infrastructure/supabase/supabase.service.js';
 
 @Controller('api/v1/tutorials')
 export class AdminTutorialsController {
@@ -31,6 +34,7 @@ export class AdminTutorialsController {
   constructor(
     private readonly tutorialsService: AdminTutorialsService,
     private readonly creatorsService: CreatorsService,
+    private readonly supabaseService: SupabaseService,
   ) {}
 
   @Get()
@@ -305,6 +309,122 @@ export class AdminTutorialsController {
       durationMin: durationMin ? parseInt(durationMin, 10) : undefined,
       durationMax: durationMax ? parseInt(durationMax, 10) : undefined,
     });
+  }
+
+  /**
+   * Upload tutorial thumbnail image
+   * POST /api/v1/tutorials/:id/upload-thumbnail
+   *
+   * Uploads a custom thumbnail image for a tutorial.
+   * Uses service role key to bypass storage RLS policies.
+   */
+  @Post(':id/upload-thumbnail')
+  @UseGuards(AdminGuard)
+  @HttpCode(HttpStatus.OK)
+  async uploadThumbnail(
+    @Param('id') tutorialId: string,
+    @Req() req: FastifyRequest,
+    @CurrentUser() user: AuthUser,
+    @CorrelationId() correlationId?: string,
+  ) {
+    this.logger.log('Uploading tutorial thumbnail', {
+      correlationId,
+      tutorialId,
+      userId: user.id,
+    });
+
+    // Verify tutorial exists
+    const tutorial = await this.tutorialsService.findById(tutorialId);
+    if (!tutorial) {
+      throw new NotFoundException(`Tutorial with ID ${tutorialId} not found`);
+    }
+
+    // Get the multipart file from Fastify request
+    const data = await req.file();
+
+    if (!data) {
+      throw new BadRequestException('No file uploaded');
+    }
+
+    const { file, filename, mimetype } = data;
+
+    // Read file buffer from stream
+    const chunks: Buffer[] = [];
+    for await (const chunk of file) {
+      chunks.push(chunk);
+    }
+    const buffer = Buffer.concat(chunks);
+    const fileSize = buffer.length;
+
+    this.logger.log('Thumbnail file received', {
+      filename,
+      fileSize,
+      mimetype,
+      correlationId,
+    });
+
+    // Validation: file size (max 5MB)
+    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+    if (fileSize > MAX_FILE_SIZE) {
+      throw new BadRequestException(
+        `File too large: ${fileSize} bytes (max ${MAX_FILE_SIZE} bytes)`,
+      );
+    }
+
+    // Validation: file type (must be an image)
+    const validMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!validMimeTypes.includes(mimetype)) {
+      throw new BadRequestException(
+        `Invalid file type: ${mimetype} (must be JPEG, PNG, WebP, or GIF)`,
+      );
+    }
+
+    // Generate unique filename
+    const fileExt = filename.split('.').pop() || 'jpg';
+    const uniqueFilename = `${tutorialId}-${Date.now()}.${fileExt}`;
+    const filePath = `tutorials/${tutorialId}/${uniqueFilename}`;
+
+    try {
+      // Upload using service role (bypasses RLS)
+      const publicUrl = await this.supabaseService.uploadFile(
+        'tutorial-thumbnails',
+        filePath,
+        buffer,
+        mimetype,
+      );
+
+      this.logger.log('Successfully uploaded tutorial thumbnail', {
+        tutorialId,
+        filePath,
+        publicUrl,
+        correlationId,
+      });
+
+      // Update the tutorial's thumbnail_url in the database
+      await this.tutorialsService.update(tutorialId, {
+        thumbnail_url: publicUrl,
+      });
+
+      this.logger.log('Updated tutorial thumbnail_url in database', {
+        tutorialId,
+        publicUrl,
+        correlationId,
+      });
+
+      return {
+        publicUrl,
+        filePath,
+        filename,
+        fileSize,
+      };
+    } catch (error: any) {
+      this.logger.error('Failed to upload tutorial thumbnail', error, {
+        tutorialId,
+        filename,
+        correlationId,
+      });
+      throw new BadRequestException('Failed to upload thumbnail: ' + error.message);
+    }
   }
 
   @Post('fetch-youtube-channel-info')

@@ -8,7 +8,7 @@
 
 import { GlobalSampleCache } from '../modules/storage/cache/GlobalSampleCache.js';
 import { getLogger } from '@/utils/logger.js';
-import { wamPluginSingleton } from '@/domains/widgets/utils/wamPluginSingleton.js';
+import { wamPluginSingleton } from '../modules/instruments/wamPluginSingleton.js';
 import {
   getPreloadableRegistry,
   type InstrumentConfig,
@@ -160,7 +160,7 @@ export class InitialSamplePreloader {
       // Dispatch events to notify that essential samples are ready
       if (typeof window !== 'undefined') {
         // Set window flag for backward compatibility
-        (window as any).__samplesReady = true;
+        window.__samplesReady = true;
 
         // Dispatch both events
         window.dispatchEvent(new Event('essentialSamplesReady'));
@@ -240,10 +240,12 @@ export class InitialSamplePreloader {
    *
    * @param exercises - Array of exercises in the tutorial
    * @param tutorialId - Tutorial ID (for logging)
+   * @param onProgress - Optional callback for progress tracking (0-100)
    */
   async loadTutorialSamples(
     exercises: any[],
     tutorialId?: string,
+    onProgress?: (progress: number) => void,
   ): Promise<void> {
     logger.info('🎯 Tutorial-level sample loading started', {
       tutorialId,
@@ -265,9 +267,25 @@ export class InitialSamplePreloader {
       hasDrums: requiredSamples.drums,
     });
 
+    // Report initial progress
+    onProgress?.(5);
+
     try {
-      // Load all samples in parallel
-      const loadingTasks = [];
+      // Count total tasks for progress tracking
+      const harmonyInstruments = Object.keys(requiredSamples.harmony).length;
+      const bassExerciseCount = requiredSamples.bassExercises.length;
+      const totalTasks = harmonyInstruments + bassExerciseCount + 1; // +1 for essential samples
+      let completedTasks = 0;
+
+      const reportProgress = () => {
+        completedTasks++;
+        // Progress from 5% to 95% based on task completion
+        const progress = 5 + Math.round((completedTasks / totalTasks) * 90);
+        onProgress?.(progress);
+      };
+
+      // Load all samples in parallel with progress tracking
+      const loadingTasks: Promise<void>[] = [];
 
       // Load harmony samples for each instrument used in tutorial
       // CRITICAL: Pass skipBufferInjection=true to prevent overwriting active instrument's buffers
@@ -281,7 +299,7 @@ export class InitialSamplePreloader {
               instrument,
               notes as { pitch: number; velocity: number }[],
               true,
-            ),
+            ).then(() => reportProgress()),
           );
         }
       }
@@ -289,11 +307,15 @@ export class InitialSamplePreloader {
       // Load bass samples for each exercise that has bass notes
       // Bass samples come from exercise.notes (fretboard data stored in database)
       for (const exercise of requiredSamples.bassExercises) {
-        loadingTasks.push(this.loadBassSamplesForExercise(exercise));
+        loadingTasks.push(
+          this.loadBassSamplesForExercise(exercise).then(() => reportProgress()),
+        );
       }
 
       // Load drums, metronome, voice cues (essential for all exercises)
-      loadingTasks.push(this.loadEssentialSamples());
+      loadingTasks.push(
+        this.loadEssentialSamples().then(() => reportProgress()),
+      );
 
       // Wait for all samples to load
       await Promise.all(loadingTasks);
@@ -304,6 +326,7 @@ export class InitialSamplePreloader {
       });
 
       this.preloadComplete = true;
+      onProgress?.(100);
     } catch (error) {
       logger.error('❌ Failed to load tutorial samples:', error);
       throw error;
@@ -523,8 +546,8 @@ export class InitialSamplePreloader {
         try {
           // ✅ FIX: Use WindowRegistry key instead of legacy __globalCoreServices
           const coreServices =
-            (window as any).__bassnotion_coreServices ||
-            (window as any).__globalCoreServices;
+            window.__bassnotion_coreServices ||
+            window.__globalCoreServices;
 
           if (!coreServices) {
             logger.warn(
@@ -636,8 +659,8 @@ export class InitialSamplePreloader {
         // Voice cue samples are preloaded (lines 1518-1533) but were never injected
         try {
           const coreServices =
-            (window as any).__bassnotion_coreServices ||
-            (window as any).__globalCoreServices;
+            window.__bassnotion_coreServices ||
+            window.__globalCoreServices;
 
           if (coreServices) {
             // Phase 3.1: Use PlaybackEngine instead of RegionProcessor
@@ -733,7 +756,7 @@ export class InitialSamplePreloader {
 
       // Dispatch event to notify that all samples are ready
       if (typeof window !== 'undefined') {
-        (window as any).__samplesPreloaded = true;
+        window.__samplesPreloaded = true;
         window.dispatchEvent(new Event('samplesPreloaded'));
       }
 
@@ -1560,9 +1583,9 @@ export class InitialSamplePreloader {
   private async setupRegionProcessorWithTracks(): Promise<void> {
     try {
       const coreServices =
-        (window as any).__globalCoreServices ||
-        (window as any).__coreServices ||
-        (window as any).__bassnotion_coreServices;
+        window.__globalCoreServices ||
+        window.__coreServices ||
+        window.__bassnotion_coreServices;
 
       if (!coreServices) {
         logger.info(
@@ -1594,7 +1617,7 @@ export class InitialSamplePreloader {
       );
 
       // Store configuration for play button to use
-      (window as any).__tracksPreConfigured = true;
+      window.__tracksPreConfigured = true;
     } catch (error) {
       logger.error('Failed to setup PlaybackEngine:', error);
     }
@@ -1838,7 +1861,7 @@ export class InitialSamplePreloader {
       });
 
       // Mark samples as downloaded
-      (window as any).__sampleFilesDownloaded = true;
+      window.__sampleFilesDownloaded = true;
     } catch (error) {
       logger.error('Failed to download sample files:', error);
     }
@@ -2305,12 +2328,12 @@ export function getPreloadedHarmonyInstrument(): any {
  * Check if tracks are pre-configured
  */
 export function areTracksPreConfigured(): boolean {
-  return !!(window as any).__tracksPreConfigured;
+  return !!window.__tracksPreConfigured;
 }
 
 /**
  * Check if sample files are downloaded
  */
 export function areSampleFilesDownloaded(): boolean {
-  return !!(window as any).__sampleFilesDownloaded;
+  return !!window.__sampleFilesDownloaded;
 }

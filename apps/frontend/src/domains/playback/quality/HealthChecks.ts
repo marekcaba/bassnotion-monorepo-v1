@@ -6,7 +6,16 @@
  */
 
 import { EventBus } from '../services/core/EventBus.js';
-import { ServiceRegistry } from '../services/core/ServiceRegistry.js';
+import { ServiceRegistry, Service } from '../services/core/ServiceRegistry.js';
+
+/**
+ * Interface for services that can provide audio engine capabilities
+ */
+interface AudioEngineService extends Service {
+  isReady?(): boolean;
+  getContext?(): AudioContext;
+  getPerformanceMetrics?(): Record<string, unknown>;
+}
 
 export interface HealthCheck {
   name: string;
@@ -188,7 +197,9 @@ export class HealthChecks {
    */
   private async checkAudioContext(): Promise<HealthCheckResult> {
     try {
-      const audioEngine = this.serviceRegistry.get('AudioEngine');
+      const audioEngine = this.serviceRegistry.get('AudioEngine') as
+        | AudioEngineService
+        | undefined;
       if (!audioEngine) {
         return {
           name: 'audio-context',
@@ -198,7 +209,7 @@ export class HealthChecks {
         };
       }
 
-      if (!(audioEngine as any).isReady?.()) {
+      if (!audioEngine.isReady?.()) {
         return {
           name: 'audio-context',
           status: 'unhealthy',
@@ -207,7 +218,15 @@ export class HealthChecks {
         };
       }
 
-      const context = (audioEngine as any).getContext?.();
+      const context = audioEngine.getContext?.();
+      if (!context) {
+        return {
+          name: 'audio-context',
+          status: 'unhealthy',
+          message: 'AudioContext not available',
+          timestamp: Date.now(),
+        };
+      }
       const state = context.state;
 
       if (state === 'running') {
@@ -254,8 +273,9 @@ export class HealthChecks {
    */
   private async checkServiceRegistry(): Promise<HealthCheckResult> {
     try {
-      const serviceCount = (this.serviceRegistry as any).getAll?.()?.size || 0;
       const healthReport = await this.serviceRegistry.healthCheck();
+      // Get service count from healthReport.services
+      const serviceCount = Object.keys(healthReport?.services ?? {}).length;
 
       if (healthReport.overall === 'healthy') {
         return {
@@ -367,13 +387,11 @@ export class HealthChecks {
         received = true;
       };
 
-      this.eventBus.on('health:test-event', testHandler);
+      // EventBus.on() returns an unsubscribe function
+      const unsubscribe = this.eventBus.on('health:test-event', testHandler);
       this.eventBus.emit('health:test-event', { test: true });
-      if ((this.eventBus as any).off) {
-        (this.eventBus as any).off('health:test-event', testHandler);
-      } else if ((this.eventBus as any).removeListener) {
-        (this.eventBus as any).removeListener('health:test-event', testHandler);
-      }
+      // Cleanup using the returned unsubscribe function
+      unsubscribe();
 
       if (received) {
         return {
@@ -530,8 +548,10 @@ export class HealthChecks {
   private async checkResources(): Promise<HealthCheckResult> {
     try {
       // Check available resources
-      const audioEngine = this.serviceRegistry.get('AudioEngine');
-      const metrics = (audioEngine as any)?.getPerformanceMetrics?.();
+      const audioEngine = this.serviceRegistry.get('AudioEngine') as
+        | AudioEngineService
+        | undefined;
+      const metrics = audioEngine?.getPerformanceMetrics?.();
 
       return {
         name: 'resources',

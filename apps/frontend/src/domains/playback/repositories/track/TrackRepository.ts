@@ -9,6 +9,7 @@ import { ITrackRepository } from '../interfaces/ITrackRepository.js';
 import { TrackId, Volume, Pan } from '../value-objects/index.js';
 import { TrackEntity } from '../entities/index.js';
 import type { TrackState } from '../../types/track.js';
+import type { InstrumentType } from '../../modules/shared/index.js';
 import { createStructuredLogger } from '../../modules/shared/index.js';
 
 const logger = createStructuredLogger('TrackRepository');
@@ -181,7 +182,7 @@ export class TrackRepository implements ITrackRepository {
       {
         id: TrackId.create(stored.id),
         name: stored.name,
-        instrumentType: stored.instrumentType as any,
+        instrumentType: stored.instrumentType as InstrumentType,
         volume: Volume.create(stored.volume),
         pan: Pan.create(stored.pan),
         isMuted: stored.isMuted,

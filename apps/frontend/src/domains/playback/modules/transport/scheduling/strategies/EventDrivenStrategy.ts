@@ -10,10 +10,10 @@
 import { getLogger } from '@/utils/logger.js';
 
 // Helper to get Tone from window (must be initialized before EventDrivenStrategy is used)
-function getTone(): any {
+function getTone(): NonNullable<typeof window.Tone> {
   if (typeof window !== 'undefined') {
     // Check both locations where Tone.js may be stored
-    const tone = (window as any).Tone || (window as any).__globalTone;
+    const tone = window.Tone || window.__globalTone;
     if (tone) {
       return tone;
     }
@@ -140,8 +140,10 @@ export class EventDrivenStrategy implements PositionUpdateStrategy {
       return;
     }
 
-    // Clear Clock.onTick subscription
-    this.clock.setOnTick(undefined as any);
+    // Clear Clock.onTick subscription with no-op callback
+    this.clock.setOnTick(() => {
+      // Intentionally empty - clears the callback
+    });
 
     this._isActive = false;
     this.isPausedState = false;

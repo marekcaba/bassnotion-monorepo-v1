@@ -6,6 +6,7 @@ import {
 import { BassSettingsCard } from '../BassSettingsCard';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { useUserProfile } from '@/domains/user/hooks/use-user-profile';
+import { JourneySection } from '@/domains/journey/components';
 
 export function DashboardContent() {
   const { correlationId, logger } = useCorrelation('DashboardContent');
@@ -18,9 +19,9 @@ export function DashboardContent() {
   const showTransitionStats = () => {
     if (
       typeof window !== 'undefined' &&
-      (window as any).__bassnotionTransitionStats
+      window.__bassnotionTransitionStats
     ) {
-      (window as any).__bassnotionTransitionStats();
+      window.__bassnotionTransitionStats();
     } else {
       logger.info(
         'No transition stats available yet. Navigate between pages to see stats.',
@@ -54,10 +55,12 @@ export function DashboardContent() {
   return (
     <div className="space-y-6">
       <div className="rounded-lg border bg-card p-6">
-        // TODO: Review non-null assertion - consider null safety
         <h2 className="text-xl font-semibold mb-4">Welcome to BassNotion!</h2>
         <p className="text-muted-foreground">Your music learning dashboard.</p>
       </div>
+
+      {/* Your Journey Section */}
+      <JourneySection />
 
       {/* Bass Configuration Section */}
       <div className="p-4 bg-red-100 border-2 border-red-500 rounded">

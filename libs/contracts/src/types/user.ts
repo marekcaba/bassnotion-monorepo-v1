@@ -1,4 +1,18 @@
 import { MetronomeSettings } from './common.js';
+import type {
+  SkillLevel,
+  PrimaryGoal,
+  BassTechnique,
+  MusicGenre,
+} from './assessment.js';
+
+/**
+ * Learning Style - User preference for journey progression
+ * - free_flow: Complete at own pace, no restrictions
+ * - guided_practice: Soft nudges between checkpoints
+ * - strict_mode: Must complete recommended sessions before proceeding
+ */
+export type LearningStyle = 'free_flow' | 'guided_practice' | 'strict_mode';
 
 export interface User {
   id: string;
@@ -19,6 +33,15 @@ export interface UserProfile extends User {
   avatarUrl?: string;
   role?: 'user' | 'admin' | 'moderator'; // User role
   preferences: UserPreferences;
+
+  // Assessment results (from entrance quiz)
+  skillLevel?: SkillLevel;
+  assessmentCompleted?: boolean;
+  assessmentCompletedAt?: string;
+  assessmentScore?: number;
+  primaryGoal?: PrimaryGoal;
+  preferredTechniques?: BassTechnique[];
+  preferredGenres?: MusicGenre[];
 }
 
 export interface UserPreferences {
@@ -26,6 +49,7 @@ export interface UserPreferences {
   emailNotifications: boolean;
   defaultMetronomeSettings: MetronomeSettings;
   bassConfiguration: BassConfiguration;
+  learningStyle: LearningStyle;
 }
 
 export interface BassConfiguration {

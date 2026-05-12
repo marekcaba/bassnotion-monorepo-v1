@@ -462,8 +462,8 @@ export class SyncPerformanceMonitor {
 
   private updateSystemMetrics(): void {
     // Memory usage (if available)
-    if ('memory' in performance) {
-      const memInfo = (performance as any).memory;
+    const memInfo = window.performance.memory;
+    if (memInfo) {
       this.systemMetrics.memoryUsage = memInfo.usedJSHeapSize / (1024 * 1024); // Convert to MB
     }
 

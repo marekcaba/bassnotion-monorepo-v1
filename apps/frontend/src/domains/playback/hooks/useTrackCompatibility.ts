@@ -14,8 +14,11 @@ import { serviceRegistry } from '../services/core/ServiceRegistry.js';
 import { EventBus } from '../services/core/EventBus.js';
 import type { Track } from '../types/track.js';
 import type { Pattern, PatternEvent } from '../types/pattern.js';
-import type { WidgetSyncEvent } from '../../widgets/services/WidgetSyncService.js';
+import type { WidgetSyncEvent } from '@/shared/types/widget-sync.types';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { createStructuredLogger } from '@bassnotion/contracts';
+
+const logger = createStructuredLogger('useTrackCompatibility');
 
 // Singleton adapter instance
 let widgetTrackAdapter: WidgetTrackAdapter | null = null;
@@ -305,10 +308,17 @@ export function useTrackCompatibility(
 }
 
 /**
+ * Props interface for components wrapped with track compatibility
+ */
+export interface WithTrackCompatibilityProps {
+  trackCompatibility: TrackCompatibilityState;
+}
+
+/**
  * Higher-order component for widget compatibility
  */
 export function withTrackCompatibility<P extends object>(
-  Component: React.ComponentType<P>,
+  Component: React.ComponentType<P & WithTrackCompatibilityProps>,
   widgetType: string,
 ): React.ComponentType<P & { widgetId: string }> {
   return function WrappedComponent(props: P & { widgetId: string }) {
@@ -320,6 +330,6 @@ export function withTrackCompatibility<P extends object>(
     return React.createElement(Component, {
       ...props,
       trackCompatibility: compatibility,
-    } as any);
+    } as P & WithTrackCompatibilityProps);
   };
 }

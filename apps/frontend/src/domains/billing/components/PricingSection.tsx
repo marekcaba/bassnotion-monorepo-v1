@@ -3,12 +3,13 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PricingCard } from './PricingCard';
+import { BillingErrorBoundary } from '@/shared/components/ErrorBoundary';
 import { useProducts, useCreateCheckoutSession, useUserAccess } from '../hooks/useBilling';
 import { useAuth } from '@/domains/user/hooks/use-auth';
 import { CourseType } from '../types/billing.types';
 import { useToast } from '@/shared/hooks/use-toast';
 
-export function PricingSection() {
+function PricingSectionContent() {
   const router = useRouter();
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
@@ -140,5 +141,13 @@ export function PricingSection() {
         </p>
       </div>
     </div>
+  );
+}
+
+export function PricingSection() {
+  return (
+    <BillingErrorBoundary>
+      <PricingSectionContent />
+    </BillingErrorBoundary>
   );
 }

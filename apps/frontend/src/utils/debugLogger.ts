@@ -56,7 +56,7 @@ const debugLogger = new DebugLogger();
 
 // Make it globally available
 if (typeof window !== 'undefined') {
-  (window as any).__debugLogger = debugLogger;
+  window.__debugLogger = debugLogger;
 }
 
 export { debugLogger };

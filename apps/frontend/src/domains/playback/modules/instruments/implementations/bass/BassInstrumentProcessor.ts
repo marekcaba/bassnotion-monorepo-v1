@@ -163,7 +163,7 @@ export class BassInstrumentProcessor {
   private async ensureToneLoaded(): Promise<void> {
     if (!Tone) {
       // Simple fallback for Tone loading
-      Tone = (window as any)?.Tone || {};
+      Tone = (typeof window !== 'undefined' ? window.Tone : null) || {};
       logger.info(
         '🎵 Using global Tone.js instance in BassInstrumentProcessor',
       );

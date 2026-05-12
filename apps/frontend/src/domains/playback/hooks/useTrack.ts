@@ -463,7 +463,7 @@ export function useTrack(options: UseTrackOptions): UseTrackReturn {
         trackId: track.id,
         name: config?.name || `${pattern.id} Region`,
         startPosition: config?.startPosition || '0:0:0',
-        duration: config?.duration || `${(pattern as any).loopLength || 1}:0:0`,
+        duration: config?.duration || `${'loopLength' in pattern ? pattern.loopLength : 1}:0:0`,
         pattern,
         loopCount: config?.loopCount ?? 0,
         muted: config?.muted || false,

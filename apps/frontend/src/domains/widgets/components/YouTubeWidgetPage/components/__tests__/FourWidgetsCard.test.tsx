@@ -113,7 +113,7 @@ vi.mock('../MetronomeWidget', () => ({
   },
 }));
 
-vi.mock('../DrummerWidget', () => ({
+vi.mock('../../DrummerWidget/index.js', () => ({
   DrummerWidget: ({ pattern, isPlaying, isVisible }: any) => {
     if (!isVisible) return null;
     return (

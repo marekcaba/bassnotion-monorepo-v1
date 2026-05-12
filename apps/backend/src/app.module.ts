@@ -17,6 +17,8 @@ import { HealthModule } from './health/health.module.js';
 import { BillingModule } from './domains/billing/billing.module.js';
 import { PatternsModule } from './domains/patterns/patterns.module.js';
 import { SocialModule } from './domains/social/social.module.js';
+import { AssessmentModule } from './domains/assessment/assessment.module.js';
+import { JourneyModule } from './domains/journey/journey.module.js';
 import { PerformanceMiddleware } from './shared/middleware/performance.middleware.js';
 import { CorrelationMiddleware } from './shared/middleware/correlation.middleware.js';
 import { SharedModule } from './shared/shared.module.js';
@@ -43,6 +45,8 @@ import { LoggingModule } from './infrastructure/logging/logging.module.js';
     BillingModule,
     PatternsModule,
     SocialModule,
+    AssessmentModule, // Entrance assessment quiz
+    JourneyModule, // Learning journey system
   ],
   controllers: [AppController],
   providers: [AppService, PerformanceMiddleware, CorrelationMiddleware],

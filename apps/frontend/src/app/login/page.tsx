@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { LoginData } from '@bassnotion/contracts';
+import { AuthErrorBoundary } from '@/shared/components/ErrorBoundary';
 
 import { LoginForm } from '@/domains/user/components/auth';
 import { MagicLinkSignIn } from '@/domains/user/components/auth/MagicLinkSignIn';
@@ -80,7 +81,7 @@ function LoginPageContent() {
 
         if (result.success) {
           // Redirect to dashboard for testing - no need for success toast
-          navigateWithTransition('/dashboard');
+          navigateWithTransition('/app');
         } else {
           throw new Error(
             result.message || result.error?.message || 'Login failed',
@@ -217,18 +218,20 @@ function LoginPageContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense
-      fallback={
-        <div
-          className="min-h-screen"
-          style={{
-            background:
-              'radial-gradient(ellipse at 50% 0%, hsl(220 45% 20%) 0%, hsl(230 35% 10%) 40%, hsl(240 25% 5%) 100%)',
-          }}
-        />
-      }
-    >
-      <LoginPageContent />
-    </Suspense>
+    <AuthErrorBoundary>
+      <Suspense
+        fallback={
+          <div
+            className="min-h-screen"
+            style={{
+              background:
+                'radial-gradient(ellipse at 50% 0%, hsl(220 45% 20%) 0%, hsl(230 35% 10%) 40%, hsl(240 25% 5%) 100%)',
+            }}
+          />
+        }
+      >
+        <LoginPageContent />
+      </Suspense>
+    </AuthErrorBoundary>
   );
 }

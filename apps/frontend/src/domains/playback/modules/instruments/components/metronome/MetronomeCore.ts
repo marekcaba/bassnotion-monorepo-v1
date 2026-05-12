@@ -13,9 +13,9 @@ import { createStructuredLogger } from '@bassnotion/contracts';
 function getTone(): typeof import('tone') {
   if (typeof window !== 'undefined') {
     // Check both locations where Tone.js may be stored
-    const tone = (window as any).Tone || (window as any).__globalTone;
+    const tone = window.Tone || window.__globalTone;
     if (tone) {
-      return tone;
+      return tone as typeof import('tone');
     }
   }
   throw new Error('MetronomeCore: Tone.js not loaded. Ensure AudioEngine is initialized first.');

@@ -53,6 +53,7 @@
     "next-env.d.ts",
     "src/**/*.ts",
     "src/**/*.tsx",
+    "src/types/**/*.d.ts",
     ".next/types/**/*.ts",
     "react-three-fiber.d.ts",
     "vitest.config.ts"

@@ -79,10 +79,8 @@ originalConsole.log('🔍 Console debug utility loaded');
 
 // Make these available globally for debugging
 if (typeof window !== 'undefined') {
-  (window as any).__debugConsole = {
-    getState: getConsoleState,
+  window.__debugConsole = {
     restore: forceRestoreConsole,
     original: originalConsole,
-    history: overrideHistory,
   };
 }

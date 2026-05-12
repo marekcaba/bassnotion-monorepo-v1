@@ -145,12 +145,10 @@ export class DeviceCapabilityDetector {
    * Detect platform type
    */
   private detectPlatform(): 'desktop' | 'mobile' | 'tablet' | 'embedded' {
-    // Check for test environment mocking first
-    if (typeof (navigator as any).mockPlatform === 'string') {
-      logger.info(
-        `📱 Using mocked platform: ${(navigator as any).mockPlatform}`,
-      );
-      return (navigator as any).mockPlatform;
+    // Check for test environment mocking first (mockPlatform is defined in window.d.ts)
+    if (navigator.mockPlatform) {
+      logger.info(`📱 Using mocked platform: ${navigator.mockPlatform}`);
+      return navigator.mockPlatform;
     }
 
     const userAgent = navigator.userAgent.toLowerCase();
@@ -228,10 +226,9 @@ export class DeviceCapabilityDetector {
    * Detect total memory
    */
   private detectTotalMemory(): number {
-    // deviceMemory is experimental API
-    const deviceMemoryGB = (navigator as any).deviceMemory;
-    if (typeof deviceMemoryGB === 'number') {
-      return deviceMemoryGB * 1024; // Convert GB to MB
+    // deviceMemory is experimental API (defined in window.d.ts)
+    if (typeof navigator.deviceMemory === 'number') {
+      return navigator.deviceMemory * 1024; // Convert GB to MB
     }
 
     // Fallback estimation based on platform
@@ -262,10 +259,10 @@ export class DeviceCapabilityDetector {
    * Calculate current memory usage
    */
   private calculateMemoryUsage(): number {
-    // Use performance.memory if available
-    if ((performance as any).memory) {
-      const memInfo = (performance as any).memory;
-      return (memInfo.usedJSHeapSize / memInfo.totalJSHeapSize) * 100;
+    // Use performance.memory if available (defined in window.d.ts)
+    if (performance.memory) {
+      const { usedJSHeapSize, totalJSHeapSize } = performance.memory;
+      return (usedJSHeapSize / totalJSHeapSize) * 100;
     }
 
     // Fallback estimation
@@ -277,23 +274,20 @@ export class DeviceCapabilityDetector {
    */
   private detectNetworkType(): 'wifi' | 'cellular' | 'ethernet' | 'unknown' {
     try {
-      // Check for test environment mock first
-      if ((global.navigator as any)?.connection) {
-        const mockConnection = (global.navigator as any).connection;
-        if (mockConnection.type) {
-          logger.info(`🌐 Using mocked network type: ${mockConnection.type}`);
-          return mockConnection.type;
-        }
-      }
-
-      // Network Connection API is experimental
+      // Network Connection API (defined in window.d.ts)
       const connection =
-        (navigator as any).connection ||
-        (navigator as any).mozConnection ||
-        (navigator as any).webkitConnection;
+        navigator.connection ||
+        navigator.mozConnection ||
+        navigator.webkitConnection;
 
       if (connection?.type) {
-        return connection.type;
+        // Type narrowing: connection.type is optional, return as correct union type
+        const connType = connection.type;
+        if (connType === 'wifi' || connType === 'cellular' || connType === 'ethernet') {
+          return connType;
+        }
+        // Map other connection types to unknown
+        return 'unknown';
       }
     } catch (error) {
       logger.warn('Could not detect network type:', {
@@ -309,10 +303,11 @@ export class DeviceCapabilityDetector {
    */
   private detectNetworkSpeed(): 'slow' | 'medium' | 'fast' | 'ultra' {
     try {
+      // Network Connection API (defined in window.d.ts)
       const connection =
-        (navigator as any).connection ||
-        (navigator as any).mozConnection ||
-        (navigator as any).webkitConnection;
+        navigator.connection ||
+        navigator.mozConnection ||
+        navigator.webkitConnection;
 
       if (connection?.effectiveType) {
         switch (connection.effectiveType) {
@@ -323,8 +318,6 @@ export class DeviceCapabilityDetector {
             return 'medium';
           case '4g':
             return 'fast';
-          case '5g':
-            return 'ultra';
           default:
             return 'medium';
         }
@@ -363,10 +356,11 @@ export class DeviceCapabilityDetector {
    */
   private estimateBandwidth(): number {
     try {
+      // Network Connection API (defined in window.d.ts)
       const connection =
-        (navigator as any).connection ||
-        (navigator as any).mozConnection ||
-        (navigator as any).webkitConnection;
+        navigator.connection ||
+        navigator.mozConnection ||
+        navigator.webkitConnection;
 
       return connection?.downlink || 10; // Mbps
     } catch (error) {
@@ -382,20 +376,12 @@ export class DeviceCapabilityDetector {
    */
   private async getBatteryLevel(): Promise<number> {
     try {
-      // Check for test environment mock first
-      if ((global.navigator as any)?.getBattery) {
-        const mockBattery = await (global.navigator as any).getBattery();
-        if (mockBattery && typeof mockBattery.level === 'number') {
-          logger.info(
-            `🔋 Using mocked battery level: ${mockBattery.level * 100}%`,
-          );
-          return mockBattery.level * 100;
-        }
+      // Battery API (defined in window.d.ts)
+      if (navigator.getBattery) {
+        const battery = await navigator.getBattery();
+        return battery.level * 100;
       }
-
-      // Battery API is experimental
-      const battery = await (navigator as any).getBattery?.();
-      return battery ? battery.level * 100 : 100;
+      return 100; // Default for devices without Battery API
     } catch (error) {
       logger.warn('Could not get battery level:', {
         error: error instanceof Error ? error.message : String(error),
@@ -409,17 +395,12 @@ export class DeviceCapabilityDetector {
    */
   private async getBatteryCharging(): Promise<boolean> {
     try {
-      // Check for test environment mock first
-      if ((global.navigator as any)?.getBattery) {
-        const mockBattery = await (global.navigator as any).getBattery();
-        if (mockBattery && typeof mockBattery.charging === 'boolean') {
-          return mockBattery.charging;
-        }
+      // Battery API (defined in window.d.ts)
+      if (navigator.getBattery) {
+        const battery = await navigator.getBattery();
+        return battery.charging;
       }
-
-      // Battery API is experimental
-      const battery = await (navigator as any).getBattery?.();
-      return battery ? battery.charging : true;
+      return true; // Default for devices without Battery API
     } catch (error) {
       logger.warn('Could not get battery charging status:', {
         error: error instanceof Error ? error.message : String(error),
@@ -433,10 +414,11 @@ export class DeviceCapabilityDetector {
    */
   async getNetworkCapabilities(): Promise<NetworkCapabilities> {
     try {
+      // Network Connection API (defined in window.d.ts)
       const connection =
-        (navigator as any).connection ||
-        (navigator as any).mozConnection ||
-        (navigator as any).webkitConnection;
+        navigator.connection ||
+        navigator.mozConnection ||
+        navigator.webkitConnection;
 
       if (connection) {
         return {

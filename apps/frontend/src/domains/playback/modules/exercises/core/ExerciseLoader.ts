@@ -25,7 +25,7 @@ import {
   type ParsedMidiFile,
   type MidiEvent as MidiFileEvent,
 } from '../../midi/parser/MidiFileParser.js';
-import type { MidiEvent } from '../../midi/types.js';
+import type { MidiEvent, BassMidiEvent, DrumMidiEvent, ExerciseNoteWithDuration } from '../../midi/types.js';
 import type { Track } from '../../tracks/core/Track.js';
 
 export interface ExerciseLoaderConfig {
@@ -436,6 +436,8 @@ export class ExerciseLoader {
         // TEMPO FIX: Calculate durationInBeats for live tempo recalculation
         const bassDurationSeconds = e.duration || 0.5;
         const bassDurationInBeats = bassDurationSeconds * (exercise.bpm / 60);
+        // Cast to BassMidiEvent for type-safe access to bass-specific properties
+        const bassEvent = e as BassMidiEvent;
         return {
           position: `${bars}:${beats}:${sixteenths}`,
           type: 'bass',
@@ -443,9 +445,9 @@ export class ExerciseLoader {
           duration: e.duration ? `${e.duration}s` : '0.5s', // Duration in Tone.js format
           data: {
             midiNote: e.note,
-            string: (e as any).string,
-            fret: (e as any).fret,
-            noteName: (e as any).noteName,
+            string: bassEvent.string,
+            fret: bassEvent.fret,
+            noteName: bassEvent.noteName,
             // TEMPO FIX: Store duration in beats + original BPM for live tempo recalculation
             // This allows SimpleInstrumentScheduler to adjust duration when user changes tempo
             durationInBeats: bassDurationInBeats,
@@ -454,7 +456,9 @@ export class ExerciseLoader {
         };
       } else {
         // Drum event - use drumType for proper scheduling
-        const drumType = (e as any).drumType || this.getMidiNoteDrumType(e.note || 36);
+        // Cast to DrumMidiEvent for type-safe access to drumType
+        const drumEvent = e as DrumMidiEvent;
+        const drumType = drumEvent.drumType || this.getMidiNoteDrumType(e.note || 36);
         const normalizedDrumType = this.normalizeDrumType(drumType);
 
         return {
@@ -953,12 +957,14 @@ export class ExerciseLoader {
           '16th-triplet': 1 / 6,
         };
         // Also try using durationTicks if available for more precision
+        // Cast to ExerciseNoteWithDuration for optional extended properties
+        const extendedNote = note as ExerciseNoteWithDuration;
         let durationInBeats = 1;
-        if ((note as any).durationTicks) {
+        if (extendedNote.durationTicks) {
           // durationTicks at 480 PPQ: 480 = quarter note, 960 = half, etc.
-          durationInBeats = (note as any).durationTicks / PPQ;
+          durationInBeats = extendedNote.durationTicks / PPQ;
         } else {
-          durationInBeats = durationMap[(note as any).noteDuration || note.duration] || 1;
+          durationInBeats = durationMap[extendedNote.noteDuration || note.duration] || 1;
         }
         const durationInSeconds = durationInBeats * (60 / exercise.bpm);
 

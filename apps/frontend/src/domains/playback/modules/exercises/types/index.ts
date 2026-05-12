@@ -9,6 +9,7 @@ import type {
   RegionModel,
 } from '../../../models/SessionModel.js';
 import type { MidiEvent } from '../../midi/types.js';
+export type { MidiEvent } from '../../midi/types.js';
 
 /**
  * Exercise loader configuration

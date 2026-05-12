@@ -18,13 +18,13 @@ export function getPersistentAudioContext(): AudioContext | null {
   }
 
   // Check for the persistent context stored by AudioEngine
-  const persistentContext = (window as any).__persistentAudioContext;
+  const persistentContext = window.__persistentAudioContext;
   if (persistentContext && persistentContext.state !== 'closed') {
     return persistentContext;
   }
 
   // Fallback: Check AudioEngine's global context
-  const AudioEngine = (window as any).__AudioEngine;
+  const AudioEngine = window.__AudioEngine as { globalContext?: AudioContext } | undefined;
   if (
     AudioEngine &&
     AudioEngine.globalContext &&
@@ -34,7 +34,7 @@ export function getPersistentAudioContext(): AudioContext | null {
   }
 
   // Fallback: Check Tone.js context
-  const Tone = (window as any).Tone;
+  const Tone = window.Tone;
   if (Tone && Tone.context) {
     // Get the native AudioContext from Tone's wrapper
     const toneContext =
@@ -70,14 +70,14 @@ export async function getOrCreatePersistentAudioContext(): Promise<AudioContext>
   );
 
   const AudioContextConstructor =
-    window.AudioContext || (window as any).webkitAudioContext;
-  const context = new AudioContextConstructor({
+    window.AudioContext || window.webkitAudioContext;
+  const context = new AudioContextConstructor!({
     latencyHint: 'balanced',
     sampleRate: 48000,
   });
 
   // Store as persistent context
-  (window as any).__persistentAudioContext = context;
+  window.__persistentAudioContext = context;
 
   // Resume if needed
   if (context.state === 'suspended') {
@@ -126,7 +126,7 @@ export function getAudioContextInfo(): {
  * Ensure Tone.js is using the persistent audio context
  */
 export function ensureToneUsesPersistentContext(): void {
-  const Tone = (window as any).Tone;
+  const Tone = window.Tone;
   if (!Tone) return;
 
   const persistentContext = getPersistentAudioContext();

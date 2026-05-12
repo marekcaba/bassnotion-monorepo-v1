@@ -209,7 +209,7 @@ export const FretboardGrid: React.FC<FretboardGridProps> = React.memo(({
   const handleMeasureChange = useCallback((newMeasure: number) => {
     setMeasureChangeCounter((prev) => {
       // Debug log only when enabled
-      if ((window as any).__DEBUG_MEASURE_SYNC__ === true) {
+      if (window.__DEBUG_MEASURE_SYNC__ === true) {
         // eslint-disable-next-line no-console
         console.log(`🔄 [GRID] Measure change trigger: measure=${newMeasure} counter=${prev + 1}`);
       }
@@ -416,7 +416,7 @@ export const FretboardGrid: React.FC<FretboardGridProps> = React.memo(({
   // console.log overhead during normal playback. Enable with:
   // window.__DEBUG_GRID_RENDER__ = true
   // =============================================================================
-  const debugGridRender = (window as any).__DEBUG_GRID_RENDER__ === true;
+  const debugGridRender = window.__DEBUG_GRID_RENDER__ === true;
   const prevRenderMeasureRef = useRef<number>(-1);
 
   // Only log when measure changes during playback AND debug is enabled
@@ -461,7 +461,7 @@ export const FretboardGrid: React.FC<FretboardGridProps> = React.memo(({
   // PERF FIX: Only run this expensive useEffect when debug mode is enabled
   // This effect builds and compares highlight state arrays which is expensive
   useEffect(() => {
-    const debugRenderState = (window as any).__DEBUG_RENDER_STATE__ === true;
+    const debugRenderState = window.__DEBUG_RENDER_STATE__ === true;
 
     // PERF FIX: Skip entirely if debug is disabled - saves significant overhead
     if (!debugRenderState) return;
@@ -763,7 +763,7 @@ export const FretboardGrid: React.FC<FretboardGridProps> = React.memo(({
 
     // DEBUG: Log when memoization recalculates (should only happen on measure change)
     // Enable with: window.__DEBUG_LINE_MEMO__ = true
-    if (typeof window !== 'undefined' && (window as any).__DEBUG_LINE_MEMO__ === true) {
+    if (typeof window !== 'undefined' && window.__DEBUG_LINE_MEMO__ === true) {
       // eslint-disable-next-line no-console
       console.log(
         `📐 [LINE-MEMO] Recalculated! measure=${currentMeasureFromNote} | ` +
@@ -1115,7 +1115,7 @@ export const FretboardGrid: React.FC<FretboardGridProps> = React.memo(({
     // This is the FINAL computed visual state. If the flicker is caused by wrong
     // CSS classes being applied, we'll see it here.
     // Enable: window.__DEBUG_DOT_CSS__ = true
-    const debugDotCss = (window as any).__DEBUG_DOT_CSS__ === true;
+    const debugDotCss = window.__DEBUG_DOT_CSS__ === true;
 
     // Determine dot styling
     const getDotClassName = () => {

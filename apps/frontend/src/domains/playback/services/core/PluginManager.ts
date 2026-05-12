@@ -11,7 +11,7 @@ import { Service } from './ServiceRegistry.js';
 import { EventBus } from './EventBus.js';
 import { AudioEngine } from '../../modules/audio-engine/core/AudioEngine.js';
 import { getLogger } from '@/utils/logger.js';
-import { PluginState, PluginCategory } from '../../types/plugin.js';
+import { PluginState, PluginCategory, ProcessingResultStatus } from '../../types/plugin.js';
 import type {
   AudioPlugin,
   PluginMetadata,
@@ -20,6 +20,32 @@ import type {
   PluginProcessingResult,
   PluginActivateOptions,
 } from '../../types/plugin.js';
+
+/**
+ * Extended plugin capabilities interface with features array
+ */
+interface PluginCapabilitiesWithFeatures extends PluginCapabilities {
+  features?: string[];
+}
+
+/**
+ * Plugin with event handler methods for notification
+ */
+interface PluginWithEventHandlers extends AudioPlugin {
+  [key: `on${string}`]: ((data?: unknown) => void) | undefined;
+}
+
+/**
+ * Module exports for dynamic plugin loading
+ */
+interface PluginModule {
+  BassProcessor?: new () => AudioPlugin;
+  DrumProcessor?: new () => AudioPlugin;
+  HarmonyProcessor?: new () => AudioPlugin;
+  MetronomeProcessor?: new () => AudioPlugin;
+  EffectsProcessor?: new () => AudioPlugin;
+  [key: string]: unknown;
+}
 
 const logger = getLogger('PluginManager');
 
@@ -61,7 +87,7 @@ class BaseAudioPlugin {
     // Implementation placeholder
     return {
       success: true,
-      status: 'success' as any,
+      status: ProcessingResultStatus.SUCCESS,
       processingTime: 0,
       bypassMode: false,
       processedSamples: 0,
@@ -364,12 +390,11 @@ export class PluginManager implements Service {
     const result: AudioPlugin[] = [];
 
     for (const registration of this.plugins.values()) {
-      if (
-        registration.plugin.capabilities &&
-        'features' in registration.plugin.capabilities &&
-        (registration.plugin.capabilities as any).features?.includes(capability)
-      ) {
-        result.push(registration.plugin);
+      if (registration.plugin.capabilities) {
+        const capabilities = registration.plugin.capabilities as PluginCapabilitiesWithFeatures;
+        if (capabilities.features?.includes(capability)) {
+          result.push(registration.plugin);
+        }
       }
     }
 
@@ -381,6 +406,31 @@ export class PluginManager implements Service {
    */
   getPluginState(pluginId: string): PluginState | undefined {
     return this.pluginStates.get(pluginId);
+  }
+
+  /**
+   * Reset a plugin's internal state (for tutorial switching)
+   * Calls the plugin's resetState method if it exists
+   */
+  resetPluginState(pluginId: string): void {
+    const registration = this.plugins.get(pluginId);
+    if (!registration) {
+      logger.warn(`Plugin ${pluginId} not found for reset`);
+      return;
+    }
+
+    const { plugin } = registration;
+
+    // Check if plugin has a resetState method
+    if (typeof (plugin as any).resetState === 'function') {
+      logger.info(`🔄 Resetting plugin state: ${pluginId}`);
+      (plugin as any).resetState();
+      this.eventBus.emit('plugin-manager:plugin-reset', {
+        pluginId,
+      });
+    } else {
+      logger.debug(`Plugin ${pluginId} does not have resetState method`);
+    }
   }
 
   /**
@@ -541,15 +591,15 @@ export class PluginManager implements Service {
   /**
    * Notify active plugins of an event
    */
-  private notifyActivePlugins(event: string, data?: any): void {
+  private notifyActivePlugins(event: string, data?: unknown): void {
     for (const [pluginId, state] of this.pluginStates) {
       if (state === PluginState.ACTIVE) {
         const registration = this.plugins.get(pluginId);
         if (registration) {
           // Emit event to plugin if it has a handler
-          const handler = (registration.plugin as any)[
-            `on${event.charAt(0).toUpperCase() + event.slice(1)}`
-          ];
+          const pluginWithHandlers = registration.plugin as PluginWithEventHandlers;
+          const handlerName = `on${event.charAt(0).toUpperCase() + event.slice(1)}` as keyof PluginWithEventHandlers;
+          const handler = pluginWithHandlers[handlerName];
           if (typeof handler === 'function') {
             try {
               handler.call(registration.plugin, data);
@@ -665,18 +715,19 @@ export async function registerExistingPlugins(
   // Register each plugin with idempotent check (safe for React StrictMode double mount)
   for (const module of loadedModules) {
     // Each module should export a default plugin class
+    const typedModule = module as PluginModule;
     const PluginClass =
-      (module as any).BassProcessor ||
-      (module as any).DrumProcessor ||
-      (module as any).HarmonyProcessor ||
-      (module as any).MetronomeProcessor ||
-      (module as any).EffectsProcessor ||
-      Object.values(module)[0];
+      typedModule.BassProcessor ||
+      typedModule.DrumProcessor ||
+      typedModule.HarmonyProcessor ||
+      typedModule.MetronomeProcessor ||
+      typedModule.EffectsProcessor ||
+      (Object.values(module)[0] as (new () => AudioPlugin) | undefined);
     if (PluginClass && typeof PluginClass === 'function') {
       try {
         const plugin = new PluginClass();
         if (plugin) {
-          const pluginId = (plugin as AudioPlugin).metadata?.id;
+          const pluginId = plugin.metadata?.id;
 
           // Check if already registered (idempotent - prevents duplicate registration warnings)
           if (pluginId) {
@@ -690,7 +741,7 @@ export async function registerExistingPlugins(
             }
           }
 
-          await pluginManager.register(plugin as AudioPlugin);
+          await pluginManager.register(plugin);
         }
       } catch (error) {
         logger.warn('Failed to register plugin:', {

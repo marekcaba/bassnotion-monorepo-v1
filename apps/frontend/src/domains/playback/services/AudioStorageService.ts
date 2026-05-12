@@ -210,9 +210,11 @@ export class AudioStorageService {
   ): Promise<AudioBuffer> {
     // This is a simplified version - in reality, you'd use Web Audio API
     // or a proper audio decoding library
-    const audioContext = new (
-      window.AudioContext || (window as any).webkitAudioContext
-    )();
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) {
+      throw new Error('AudioContext not supported in this browser');
+    }
+    const audioContext = new AudioContextClass();
 
     const arrayBuffer =
       result.data instanceof Blob

@@ -38,15 +38,22 @@ vi.mock('@/domains/widgets/hooks/useTransportPosition', () => ({
 
 // Mock TransportContext
 vi.mock('@/domains/playback/contexts/TransportContext', () => ({
-  useTransportContext: vi.fn(() => ({
+  useTransportControls: vi.fn(() => ({
     tempo: 120,
     isPlaying: false,
-    position: { bar: 1, beat: 1, sixteenth: 1 },
-    play: vi.fn(),
-    pause: vi.fn(),
+    isPaused: false,
+    isStopped: true,
+    start: vi.fn(),
     stop: vi.fn(),
-    seek: vi.fn(),
+    pause: vi.fn(),
     setTempo: vi.fn(),
+    seekTo: vi.fn(),
+    setLoop: vi.fn(),
+    setExerciseDuration: vi.fn(),
+    setTimeSignature: vi.fn(),
+    timeSignature: { numerator: 4, denominator: 4 },
+    isLoopEnabled: false,
+    servicesReady: true,
   })),
   TransportProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
@@ -100,7 +107,7 @@ vi.mock('@/utils/logger.js', () => ({
   }),
 }));
 
-import { DrummerWidget } from '../DrummerWidget';
+import { DrummerWidget } from '../../DrummerWidget/index.js';
 
 describe('DrummerWidget', () => {
   const defaultProps = {

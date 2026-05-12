@@ -335,7 +335,7 @@ export const getLogger = (category: string) => logger.getLogger(category);
 
 // Development helpers - make logger available on window but don't log about it
 if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-  (window as any).logger = logger;
-  (window as any).LogLevel = LogLevel;
+  window.logger = logger;
+  window.LogLevel = LogLevel;
   // Removed console.log statements to reduce initial noise
 }

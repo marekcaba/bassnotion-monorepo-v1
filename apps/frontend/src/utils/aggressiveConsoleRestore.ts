@@ -9,9 +9,8 @@ export function aggressiveConsoleRestore() {
   if (typeof window === 'undefined') return;
 
   // Method 1: Try to use __debugConsole if available
-  const debugConsole = (window as any).__debugConsole;
-  if (debugConsole?.original) {
-    Object.assign(console, debugConsole.original);
+  if (window.__debugConsole?.original) {
+    Object.assign(console, window.__debugConsole.original);
     logger.info('✅ Console restored from __debugConsole');
     return;
   }
@@ -45,8 +44,9 @@ export function aggressiveConsoleRestore() {
       });
 
       // Also try to replace the entire console object
+      // Note: This may fail if console is read-only, which is fine
       try {
-        (window as any).console = pristineConsole;
+        Object.assign(console, pristineConsole);
       } catch (e) {
         // Might be read-only, ignore
       }

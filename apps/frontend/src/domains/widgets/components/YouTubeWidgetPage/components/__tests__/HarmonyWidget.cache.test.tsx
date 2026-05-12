@@ -3,11 +3,11 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { GlobalSampleCache } from '@/domains/playback/modules/storage/cache/GlobalSampleCache';
-import { wamPluginSingleton } from '@/domains/widgets/utils/wamPluginSingleton';
+import { wamPluginSingleton } from '@/domains/playback/modules/instruments/wamPluginSingleton';
 
 // Mock dependencies
 vi.mock('@/domains/playback/modules/storage/cache/GlobalSampleCache');
-vi.mock('@/domains/widgets/utils/wamPluginSingleton');
+vi.mock('@/domains/playback/modules/instruments/wamPluginSingleton');
 
 describe('HarmonyWidget - Cache Integration Tests', () => {
   const mockWamKeyboard = {

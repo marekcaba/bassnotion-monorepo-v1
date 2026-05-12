@@ -277,11 +277,15 @@ export class BassPreloadStrategy implements PreloadStrategy {
 
       // 4. Try to inject into PlaybackEngine if AudioContext is available
       // This is optional - if not available now, loadFromCachedMetadata() will do it later
-      const coreServices =
-        (window as any).__globalCoreServices || (window as any).__coreServices;
+      const coreServices = window.__globalCoreServices || window.__coreServices;
+      // Type assertion for CoreServices interface
+      const typedCoreServices = coreServices as {
+        getAudioEngine?: () => { getContext?: () => AudioContext | null; isReady?: () => boolean } | null;
+        getPlaybackEngine?: () => { setBassBuffers: (buffers: Record<string, AudioBuffer>, destination: AudioNode) => void } | null;
+      } | undefined;
 
-      if (coreServices) {
-        const audioEngine = coreServices.getAudioEngine?.();
+      if (typedCoreServices) {
+        const audioEngine = typedCoreServices.getAudioEngine?.();
         const context = audioEngine?.getContext?.();
 
         if (context && context.state === 'running') {

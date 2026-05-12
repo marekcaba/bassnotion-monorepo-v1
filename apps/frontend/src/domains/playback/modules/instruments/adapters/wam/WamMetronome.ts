@@ -341,21 +341,24 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
   /**
    * Get Tone.js instance
    */
-  private async _getToneJS(): Promise<any> {
+  private async _getToneJS(): Promise<typeof window.Tone | null> {
     // Check both locations where Tone.js may be stored
-    if ((window as any).Tone) {
-      return (window as any).Tone;
+    if (window.Tone) {
+      return window.Tone;
     }
-    if ((window as any).__globalTone) {
-      return (window as any).__globalTone;
+    if (window.__globalTone) {
+      return window.__globalTone;
     }
 
     // Try to get from CoreServices
-    const coreServices =
-      (window as any).__coreServices || (window as any).__globalCoreServices;
-    if (coreServices && typeof coreServices.getAudioEngine === 'function') {
-      const audioEngine = coreServices.getAudioEngine();
-      if (audioEngine && typeof audioEngine.getTone === 'function') {
+    const coreServices = window.__coreServices || window.__globalCoreServices;
+    // Type assertion for CoreServices interface
+    const typedCoreServices = coreServices as {
+      getAudioEngine?: () => { getTone?: () => typeof window.Tone } | null;
+    } | undefined;
+    if (typedCoreServices?.getAudioEngine) {
+      const audioEngine = typedCoreServices.getAudioEngine();
+      if (audioEngine?.getTone) {
         return audioEngine.getTone();
       }
     }

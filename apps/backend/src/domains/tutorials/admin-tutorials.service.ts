@@ -50,10 +50,30 @@ export class AdminTutorialsService {
       throw new Error('Failed to fetch tutorials');
     }
 
+    // Get exercise counts for all tutorials
+    const { data: exerciseCounts, error: countError } = await client
+      .rpc('get_tutorials_with_exercise_count');
+
+    let itemsWithCounts = data || [];
+
+    if (!countError && exerciseCounts) {
+      const countsMap = new Map(
+        exerciseCounts.map((tc: { id: string; exercise_count: number }) => [
+          tc.id,
+          tc.exercise_count,
+        ]),
+      );
+
+      itemsWithCounts = (data || []).map((tutorial: any) => ({
+        ...tutorial,
+        exercise_count: countsMap.get(tutorial.id) || 0,
+      }));
+    }
+
     const totalPages = Math.ceil((count || 0) / limit);
 
     return {
-      items: data || [],
+      items: itemsWithCounts,
       total: count || 0,
       page,
       limit,
@@ -215,8 +235,9 @@ export class AdminTutorialsService {
       updateData.author_name = updateTutorialDto.author_name;
     }
 
-    // Note: thumbnail_url column doesn't exist in the database
-    // Thumbnails are generated from YouTube ID on the frontend
+    if (updateTutorialDto.thumbnail_url !== undefined) {
+      updateData.thumbnail_url = updateTutorialDto.thumbnail_url;
+    }
 
     if (updateTutorialDto.difficulty !== undefined) {
       updateData.level = updateTutorialDto.difficulty; // Map difficulty to level
@@ -264,6 +285,10 @@ export class AdminTutorialsService {
     if (updateTutorialDto.creator_subscriber_count !== undefined) {
       updateData.creator_subscriber_count =
         updateTutorialDto.creator_subscriber_count;
+    }
+
+    if ((updateTutorialDto as any).blocks !== undefined) {
+      updateData.blocks = (updateTutorialDto as any).blocks;
     }
 
     const { data, error } = await this.supabaseService
@@ -496,6 +521,7 @@ export class AdminTutorialsService {
           : null,
         duration: dto.duration,
         author_name: dto.author_name,
+        thumbnail_url: dto.thumbnail_url, // Custom thumbnail from Supabase storage
         level: dto.difficulty,
         category: dto.category,
         tags: dto.tags || [],
@@ -507,6 +533,15 @@ export class AdminTutorialsService {
         creator_channel_url: dto.creator_channel_url,
         creator_avatar_url: dto.creator_avatar_url,
         creator_subscriber_count: dto.creator_subscriber_count,
+        // Modular block system
+        blocks: dto.blocks || [],
+        // Act 1: Understand fields (legacy)
+        understand_video_url: dto.understand_video_url,
+        understand_video_library_id: dto.understand_video_library_id,
+        understand_headline: dto.understand_headline,
+        understand_questions: dto.understand_questions || [],
+        title_highlight_words: dto.title_highlight_words || [],
+        sidebar_title: dto.sidebar_title,
         updated_at: now,
         last_modified: now,
       };

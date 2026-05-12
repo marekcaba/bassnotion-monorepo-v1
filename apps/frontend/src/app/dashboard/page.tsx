@@ -3,7 +3,19 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Home, Edit, Trash2, Library, Settings } from 'lucide-react';
+import {
+  Home,
+  Edit,
+  Trash2,
+  Library,
+  Settings,
+  Shield,
+  BookOpen,
+  ClipboardCheck,
+  Music,
+  Activity,
+} from 'lucide-react';
+import { PageErrorBoundary } from '@/shared/components/ErrorBoundary';
 import { useAuth } from '@/domains/user/hooks/use-auth';
 import { authService } from '@/domains/user/api/auth';
 import { profileService } from '@/domains/user/api/profile';
@@ -23,7 +35,7 @@ import { useUserProfile } from '@/domains/user/hooks/use-user-profile';
 import { HomeNavbar } from '../_components/HomeNavbar';
 import { UserIndicator } from '@/domains/user/components/UserIndicator';
 
-export default function DashboardPage() {
+function DashboardPageContent() {
   const { user, session, isAuthenticated, isReady, reset } = useAuth();
   const _router = useRouter();
   const { toast } = useToast();
@@ -421,6 +433,65 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          {/* Admin Tools - Only visible for admins */}
+          {profile?.role === 'admin' && (
+            <div className="mt-6 sm:mt-8">
+              <div className="flex items-center gap-2 mb-4">
+                <Shield className="h-5 w-5 text-amber-500" />
+                <h2 className="text-lg sm:text-xl font-semibold text-white">
+                  Admin Tools
+                </h2>
+              </div>
+              <div className="bg-gradient-to-br from-amber-900/20 to-orange-900/10 rounded-lg border border-amber-800/30 p-4 sm:p-6">
+                <p className="text-sm text-amber-200/70 mb-4">
+                  Administrative tools and content management
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <button
+                    onClick={() => navigateWithTransition('/admin/tutorials')}
+                    className="flex items-center gap-3 p-4 bg-zinc-900/80 hover:bg-zinc-800 rounded-lg border border-zinc-700/50 hover:border-amber-600/50 transition-all group"
+                  >
+                    <BookOpen className="h-5 w-5 text-amber-500 group-hover:text-amber-400" />
+                    <div className="text-left">
+                      <div className="font-medium text-white text-sm">Tutorials</div>
+                      <div className="text-xs text-gray-500">Manage content</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => navigateWithTransition('/admin/assessment/flow')}
+                    className="flex items-center gap-3 p-4 bg-zinc-900/80 hover:bg-zinc-800 rounded-lg border border-zinc-700/50 hover:border-amber-600/50 transition-all group"
+                  >
+                    <ClipboardCheck className="h-5 w-5 text-amber-500 group-hover:text-amber-400" />
+                    <div className="text-left">
+                      <div className="font-medium text-white text-sm">Assessment</div>
+                      <div className="text-xs text-gray-500">Flow editor</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => navigateWithTransition('/admin/instruments/wurlitzer')}
+                    className="flex items-center gap-3 p-4 bg-zinc-900/80 hover:bg-zinc-800 rounded-lg border border-zinc-700/50 hover:border-amber-600/50 transition-all group"
+                  >
+                    <Music className="h-5 w-5 text-amber-500 group-hover:text-amber-400" />
+                    <div className="text-left">
+                      <div className="font-medium text-white text-sm">Wurlitzer</div>
+                      <div className="text-xs text-gray-500">Instrument test</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => navigateWithTransition('/admin/monitoring')}
+                    className="flex items-center gap-3 p-4 bg-zinc-900/80 hover:bg-zinc-800 rounded-lg border border-zinc-700/50 hover:border-amber-600/50 transition-all group"
+                  >
+                    <Activity className="h-5 w-5 text-amber-500 group-hover:text-amber-400" />
+                    <div className="text-left">
+                      <div className="font-medium text-white text-sm">Monitoring</div>
+                      <div className="text-xs text-gray-500">System health</div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Account Settings */}
           <div className="mt-6 sm:mt-8">
             <h2 className="text-lg sm:text-xl font-semibold mb-4 text-white">
@@ -498,5 +569,13 @@ export default function DashboardPage() {
         onSubmit={handleProfileUpdate}
       />
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <PageErrorBoundary pageName="Dashboard">
+      <DashboardPageContent />
+    </PageErrorBoundary>
   );
 }

@@ -7,7 +7,11 @@ import { Input } from '@/shared/components/ui/input';
 import { authService, AuthError } from '../../api/auth';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
-// Import the same error handling function used by other auth methods
+/**
+ * Get user-friendly error message for auth errors.
+ * SECURITY: All messages are intentionally generic to prevent email enumeration.
+ * We never reveal whether an email exists in the system.
+ */
 function getAuthErrorMessage(
   error: AuthError,
   logger: ReturnType<typeof useCorrelation>['logger'],
@@ -18,7 +22,7 @@ function getAuthErrorMessage(
     name: error.name,
   });
 
-  // Handle specific error codes
+  // Handle rate limit errors (safe to be specific about these)
   if (error.message?.includes('over_email_send_rate_limit')) {
     return 'Too many emails sent. Please wait a few minutes before trying again.';
   }
@@ -27,27 +31,28 @@ function getAuthErrorMessage(
     return 'Email rate limit exceeded. Please try again in a few minutes.';
   }
 
-  if (error.message?.includes('Invalid login credentials')) {
-    return 'Invalid email or password. Please check your credentials and try again.';
+  if (error.status === 429) {
+    return 'Too many requests. Please wait a moment and try again.';
   }
 
-  if (error.message?.includes('Invalid email or password')) {
-    return 'Invalid email or password. Please check your credentials and try again.';
+  // SECURITY: Generic message for all credential-related errors
+  // This prevents email enumeration by not revealing if email exists
+  if (
+    error.message?.includes('Invalid login credentials') ||
+    error.message?.includes('Invalid email or password') ||
+    error.message?.includes('User not found') ||
+    error.message?.includes('Email not confirmed')
+  ) {
+    return 'Unable to process your request. Please check your email address and try again.';
   }
 
-  if (error.message?.includes('Email not confirmed')) {
-    return 'Please check your email and click the confirmation link before signing in.';
-  }
-
-  if (error.message?.includes('User not found')) {
-    return 'No account found with this email address. Please sign up first.';
-  }
-
+  // SECURITY: Generic message for registration-related errors
+  // Don't reveal if email already exists
   if (
     error.message?.includes('Email already registered') ||
     error.message?.includes('User already registered')
   ) {
-    return 'An account with this email already exists. Please sign in instead.';
+    return 'Unable to complete request. Please try signing in instead.';
   }
 
   if (error.message?.includes('Password should be at least')) {
@@ -58,64 +63,73 @@ function getAuthErrorMessage(
     return 'New account registration is currently disabled. Please contact support.';
   }
 
-  if (error.status === 429) {
-    return 'Too many requests. Please wait a moment and try again.';
-  }
-
   if (error.status === 422) {
-    return 'Invalid input. Please check your email and password format.';
+    return 'Invalid input. Please check your email format.';
   }
 
   if (error.status === 400) {
-    return 'Bad request. Please check your input and try again.';
+    return 'Invalid request. Please check your input and try again.';
   }
 
-  // Return the original message for unknown errors
-  return error.message || 'An unexpected error occurred. Please try again.';
+  // Generic fallback - don't expose internal error details
+  return 'An unexpected error occurred. Please try again.';
 }
 
+/**
+ * MagicLinkSignIn Component
+ *
+ * SECURITY FIX: This component no longer checks if a user exists before sending
+ * a magic link. Instead, it always attempts to send a magic link with
+ * shouldCreateUser: true, which:
+ * - Creates a new account if the email doesn't exist
+ * - Sends a sign-in link if the email exists
+ *
+ * This prevents email enumeration attacks where attackers could determine
+ * which emails are registered in the system.
+ */
 export function MagicLinkSignIn() {
   const { logger } = useCorrelation('MagicLinkSignIn');
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [noAccountFound, setNoAccountFound] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
   const { toast } = useToast();
 
-  const handleMagicLink = async (createAccount = false) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
     try {
       setIsLoading(true);
+      setEmailSent(false);
 
-      const { error } = await authService.signInWithMagicLink(
-        email,
-        createAccount,
-      );
+      // SECURITY: Always send magic link with shouldCreateUser: true
+      // This way we don't reveal whether the account exists
+      // - If account exists: sends sign-in link
+      // - If account doesn't exist: creates account and sends link
+      const { error } = await authService.signInWithMagicLink(email, true);
 
       if (error) throw error;
 
+      // SECURITY: Use consistent messaging regardless of account state
+      setEmailSent(true);
       toast({
         title: 'Check your email',
-        description: createAccount
-          ? 'We sent you a magic link to create your account and sign in.'
-          : 'We sent you a magic link to sign in.',
+        description:
+          'If this email is valid, we sent you a magic link. Click it to continue.',
       });
-
-      setNoAccountFound(false);
     } catch (error: unknown) {
-      // Use the same error handling as other auth methods
-      let userFriendlyMessage = 'Failed to send magic link';
+      let userFriendlyMessage = 'Unable to process your request';
 
-      // More robust error handling for production builds
       const errorMessage = (error as { message?: string })?.message || '';
       const errorStatus = (error as { status?: number })?.status;
 
-      // Check for rate limit errors first (most specific)
+      // Check for rate limit errors first (safe to be specific)
       if (
         errorMessage.includes('email rate limit exceeded') ||
         errorMessage.includes('over_email_send_rate_limit') ||
         errorStatus === 429
       ) {
         userFriendlyMessage =
-          'Email rate limit exceeded. Please try again in a few minutes.';
+          'Too many requests. Please wait a few minutes and try again.';
       } else if (
         errorMessage.includes('rate limit') ||
         errorMessage.includes('too many')
@@ -124,50 +138,8 @@ export function MagicLinkSignIn() {
           'Too many requests. Please wait a moment and try again.';
       } else if (error instanceof AuthError) {
         userFriendlyMessage = getAuthErrorMessage(error, logger);
-      } else if (error instanceof Error) {
-        userFriendlyMessage = error.message;
       }
-
-      toast({
-        title: 'Error',
-        description: userFriendlyMessage,
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    try {
-      setIsLoading(true);
-      setNoAccountFound(false);
-
-      // First check if user exists
-      const { exists, error: checkError } =
-        await authService.checkUserExists(email);
-
-      if (checkError) throw checkError;
-
-      if (!exists) {
-        // Show inline message for new user
-        setNoAccountFound(true);
-        return;
-      }
-
-      // Existing user - send magic link
-      await handleMagicLink(false);
-    } catch (error) {
-      // Use the same error handling as other auth methods
-      let userFriendlyMessage = 'Failed to check email';
-
-      if (error instanceof AuthError) {
-        userFriendlyMessage = getAuthErrorMessage(error, logger);
-      } else if (error instanceof Error) {
-        userFriendlyMessage = error.message;
-      }
+      // SECURITY: Don't expose raw error messages to the user
 
       toast({
         title: 'Error',
@@ -202,24 +174,17 @@ export function MagicLinkSignIn() {
         </Button>
       </form>
 
-      {noAccountFound && (
-        <div className="mt-2 p-4 border border-zinc-700 rounded-lg bg-zinc-800">
-          <p className="text-sm mb-2 text-gray-300">
-            No account exists for {email}.
+      {emailSent && (
+        <div className="mt-2 p-4 border border-green-700 rounded-lg bg-green-900/20">
+          <p className="text-sm text-green-300">
+            Check your email for a magic link. If you don't see it, check your
+            spam folder.
           </p>
-          <Button
-            onClick={() => handleMagicLink(true)}
-            disabled={isLoading}
-            variant="secondary"
-            className="w-full bg-zinc-700 text-white hover:bg-zinc-600"
-          >
-            Create New Account
-          </Button>
         </div>
       )}
 
       <p className="text-sm text-gray-400 text-center">
-        We'll send you a magic link to sign in instantly.
+        We'll send you a magic link to sign in or create an account.
       </p>
     </div>
   );

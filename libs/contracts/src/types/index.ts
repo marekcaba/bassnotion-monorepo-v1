@@ -1,5 +1,18 @@
 // Re-export all types from their respective modules
 export type { MetronomeSettings, TokenInfo, TokenStatus } from './common.js';
+
+// API Data Transfer Objects (shared between frontend domains)
+export type {
+  ExerciseDTO,
+  TutorialDTO,
+  TutorialLevelType,
+  TutorialStatusType,
+  TutorialSectionDTO,
+  TutorialListResponseDTO,
+  TutorialWithExercisesResponseDTO,
+  SaveWithExercisesResponseDTO,
+  PaginatedResponseDTO,
+} from './api-dto.js';
 export type {
   User,
   AuthUser,
@@ -7,6 +20,7 @@ export type {
   UserPreferences as UserPreferencesBase,
   BassConfiguration,
   AuthCredentials,
+  LearningStyle,
 } from './user.js';
 // Content management types (high-level metadata)
 export type { Content, ContentExercise, ExerciseMetadata } from './content.js';
@@ -19,6 +33,9 @@ export type {
   TutorialExercisesResponse,
   CreateTutorialDto,
   UpdateTutorialDto,
+  // Act 1: Understand types
+  UnderstandQuestion,
+  UnderstandQuestionOption,
 } from './tutorial.js';
 
 // Musical exercise types (detailed exercise data with notes, timing, etc.)
@@ -109,6 +126,7 @@ export type {
 } from './playback.js';
 
 // Story 2.4: Advanced Asset Management & CDN Integration types
+// Re-exported from modular storage types
 export type {
   // Core storage configuration
   SupabaseAssetClientConfig,
@@ -274,7 +292,6 @@ export type {
   CompressionPreset,
   CompressionProfile,
   NetworkAdaptiveConfig,
-  QualityMetrics,
 
   // Cache Synchronization Types (Story 2.4 Subtask 6.5)
   CacheLayerConfig,
@@ -365,9 +382,115 @@ export type {
   HarmonicContent,
   OnsetDetectionResult,
   AnalysisResult as AudioAnalysisResult,
-} from './storage.js';
+} from './storage/index.js';
 
 export type { LearningProgress } from './learning.js';
+
+// Assessment types (entrance quiz)
+export type {
+  // Legacy assessment types (V1 - single video)
+  SkillLevel,
+  PrimaryGoal,
+  BassTechnique as AssessmentBassTechnique,
+  MusicGenre,
+  QuestionType,
+  QuestionOption,
+  DragDropConfig,
+  TextInputConfig,
+  AssessmentQuestion,
+  QuizAnswer,
+  AssessmentResult,
+  AssessmentStatus,
+  CompleteAssessmentRequest,
+  CompleteAssessmentResponse,
+  GetAssessmentStatusResponse,
+  AssessmentConfig,
+  AssessmentProgress,
+  AudioConfig,
+
+  // Segment-based assessment types (V2 - branching flow)
+  SkillBucket,
+  SegmentTopic,
+  VideoSegment,
+  FlowNodeType,
+  EdgeConditionType,
+  FlowNode,
+  EdgeConditionValue,
+  FlowEdge,
+  AssessmentFlowGraph,
+  SegmentQuestionType,
+  SegmentQuestionCategory,
+  SegmentQuestionOption,
+  SkillVerificationConfig,
+  SegmentQuestion,
+  CoachInsightTemplate,
+  SessionStatus,
+  AssessmentSession,
+  AssessmentSessionState,
+  SegmentAssessmentResult,
+  CreateSessionRequest,
+  CreateSessionResponse,
+  UpdateSessionRequest,
+  MatchInsightRequest,
+  MatchInsightResponse,
+  CompleteSegmentAssessmentRequest,
+  CompleteSegmentAssessmentResponse,
+} from './assessment.js';
+
+// Learning journey types
+export type {
+  JourneyStatus,
+  JourneyMilestone,
+  MilestoneUnlockCriteria,
+  LearningJourney,
+  UserJourney,
+  UserJourneyWithDetails,
+  JourneyProgress,
+  GetUserJourneyResponse,
+  GetAvailableJourneysResponse,
+  AssignJourneyRequest,
+  AssignJourneyResponse,
+  UpdateJourneyProgressRequest,
+  UpdateJourneyProgressResponse,
+  JourneyMatchScore,
+  JourneyMatchResult,
+} from './journey.js';
+
+// Block-based tutorial system types
+export type {
+  BlockType,
+  VideoOverlayType,
+  // Video overlay event types
+  QuizOverlayContent,
+  PrepOverlayContent,
+  RecordOverlayContent,
+  ListenOverlayContent,
+  UploadOverlayContent,
+  ReflectOverlayContent,
+  OverlayContentMap,
+  VideoOverlayEvent,
+  AnyVideoOverlayEvent,
+  // Block config types
+  VideoBlockConfig,
+  ExerciseBlockConfig,
+  GrooveBlockConfig,
+  TextBlockConfig,
+  CelebrationBlockConfig,
+  ExplainMediaType,
+  ExplainMediaItem,
+  ExplainSlide,
+  ExplainBlockConfig,
+  BlockConfigMap,
+  TutorialBlock,
+  VideoBlock,
+  ExerciseBlock,
+  GrooveBlock,
+  TextBlock,
+  CelebrationBlock,
+  ExplainBlock,
+  AnyBlock,
+  BlockProgress,
+} from './block.js';
 
 // Pattern Library types (drum pattern library feature)
 export type {
@@ -557,7 +680,7 @@ export type {
   BandwidthAdaptationConfig,
   NetworkDetectionConfig,
   BandwidthAdaptationRule,
-  NetworkCondition,
+  CDNNetworkCondition as NetworkCondition,
   BufferManagementConfig,
   QualityAdaptationConfig,
   DeviceDetectionConfig,
@@ -781,4 +904,4 @@ export type {
   IntelligentSampleCacheConfig,
   BandwidthThresholds,
   LatencyThresholds,
-} from './storage.js';
+} from './storage/index.js';

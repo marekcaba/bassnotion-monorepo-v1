@@ -12,6 +12,13 @@ import {
 import { Badge } from '@/shared/components/ui/badge';
 import { Input } from '@/shared/components/ui/input';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select';
+import {
   Table,
   TableBody,
   TableCell,
@@ -153,6 +160,54 @@ export default function AdminTutorialsPage() {
     }
   };
 
+  const handleCategoryChange = async (tutorialId: string, category: string) => {
+    try {
+      logger.info('Updating tutorial category', { tutorialId, category });
+
+      // Find the tutorial to update
+      const tutorial = tutorials.find((t) => t.id.value === tutorialId);
+      if (!tutorial) return;
+
+      // Create updated tutorial with new category
+      const updated = Tutorial.reconstitute({
+        id: tutorial.id,
+        title: tutorial.title,
+        slug: tutorial.slug,
+        description: tutorial.description,
+        youtubeId: tutorial.youtubeId,
+        duration: tutorial.duration,
+        authorName: tutorial.authorName,
+        thumbnailUrl: tutorial.thumbnailUrl,
+        level: tutorial.level,
+        tags: tutorial.tags,
+        isActive: tutorial.isActive,
+        publishedAt: tutorial.publishedAt,
+        createdAt: tutorial.createdAt,
+        updatedAt: new Date(),
+        sections: tutorial.sections,
+        viewCount: tutorial.viewCount,
+        status: tutorial.status,
+        category: category || undefined,
+      });
+
+      const result = await tutorialRepo.update(updated);
+
+      if (result.isSuccess()) {
+        logger.info('Tutorial category updated successfully', { tutorialId, category });
+        // Update local state
+        setTutorials((prev) =>
+          prev.map((t) => (t.id.value === tutorialId ? result.value : t)),
+        );
+      } else {
+        logger.error('Failed to update tutorial category', result.error);
+        alert('Failed to update category');
+      }
+    } catch (error) {
+      logger.error('Error updating tutorial category', error);
+      alert('An error occurred while updating the category');
+    }
+  };
+
   const filteredTutorials = tutorials.filter(
     (tutorial) =>
       tutorial.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -240,6 +295,8 @@ export default function AdminTutorialsPage() {
                   <TableHead>Title</TableHead>
                   <TableHead>Level</TableHead>
                   <TableHead>Duration</TableHead>
+                  <TableHead>Exercises</TableHead>
+                  <TableHead>Product</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Views</TableHead>
                   <TableHead>Created</TableHead>
@@ -271,6 +328,23 @@ export default function AdminTutorialsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>{tutorial.getDurationFormatted()}</TableCell>
+                    <TableCell>{tutorial.exerciseCount}</TableCell>
+                    <TableCell>
+                      <Select
+                        value={tutorial.category || ''}
+                        onValueChange={(value) =>
+                          handleCategoryChange(tutorial.id.value, value)
+                        }
+                      >
+                        <SelectTrigger className="w-[140px] h-8 text-xs">
+                          <SelectValue placeholder="Select..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="starter-kit">Starter Kit</SelectItem>
+                          <SelectItem value="revisiting-basics">Revisiting Basics</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
                     <TableCell>
                       {tutorial.isPublished() ? (
                         <Badge className="bg-green-600">Published</Badge>

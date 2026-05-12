@@ -4,6 +4,9 @@
  * Complete MIDI processing functionality
  */
 
+// Types
+export * from './types.js';
+
 // Parser components
 export * from './parser/index.js';
 

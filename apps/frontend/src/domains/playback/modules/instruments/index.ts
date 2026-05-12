@@ -82,3 +82,6 @@ export { default as WamBass } from './adapters/wam/WamBass.js';
 export { default as WamKeyboard } from './adapters/wam/WamKeyboard.js';
 export { default as WamMetronome } from './adapters/wam/WamMetronome.js';
 export { WamHarmonyProcessor } from './adapters/wam/WamHarmonyProcessor.js';
+
+// WAM Plugin Singleton (manages global WAM plugin instances)
+export { wamPluginSingleton } from './wamPluginSingleton.js';

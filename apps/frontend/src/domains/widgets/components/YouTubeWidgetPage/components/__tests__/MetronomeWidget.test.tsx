@@ -84,7 +84,50 @@ vi.mock('@/utils/logger.js', () => ({
   }),
 }));
 
-import { MetronomeWidget } from '../MetronomeWidget';
+// Mock TransportContext - MetronomeWidget uses useTransportControls
+vi.mock('@/domains/playback/contexts/TransportContext', () => ({
+  useTransportControls: vi.fn(() => ({
+    tempo: 120,
+    isPlaying: false,
+    isPaused: false,
+    isStopped: true,
+    setTempo: vi.fn(),
+    timeSignature: { numerator: 4, denominator: 4 },
+    servicesReady: true,
+  })),
+}));
+
+// Mock WindowRegistry
+vi.mock('@/domains/playback/services/WindowRegistry.js', () => ({
+  WindowRegistry: {
+    getCoreServices: vi.fn(() => null),
+    getSamplesReady: vi.fn(() => false),
+  },
+}));
+
+// Mock debug config
+vi.mock('@/config/debug', () => ({
+  isVerboseDebugEnabled: vi.fn(() => false),
+}));
+
+// Mock visual beat hook
+vi.mock('@/domains/widgets/hooks/useVisualBeat', () => ({
+  useVisualBeat: vi.fn(() => ({
+    beatIndex: 0,
+    isActive: false,
+    sixteenthIndex: 0,
+  })),
+}));
+
+// Mock quarter note beat sync hook
+vi.mock('@/domains/widgets/hooks/useQuarterNoteBeatSync', () => ({
+  useQuarterNoteBeatSync: vi.fn(() => ({
+    beatIndex: 0,
+    isActive: false,
+  })),
+}));
+
+import { MetronomeWidget } from '../../MetronomeWidget/index.js';
 
 describe('MetronomeWidget', () => {
   const defaultProps = {
@@ -110,9 +153,8 @@ describe('MetronomeWidget', () => {
   it('should not render when not visible', () => {
     render(<MetronomeWidget {...defaultProps} isVisible={false} />);
 
-    // The component should still mount but be hidden
-    const container = document.querySelector('[data-visible="false"]');
-    expect(container).toBeInTheDocument();
+    // When isVisible=false, the component returns null
+    expect(screen.queryByTestId('volume-knob')).toBeNull();
   });
 
   it('should handle BPM changes', () => {
@@ -155,10 +197,10 @@ describe('MetronomeWidget', () => {
       />,
     );
 
-    // Component should be visible
-    expect(document.querySelector('[data-visible="true"]')).toBeTruthy();
+    // Component should be visible (renders the volume knob)
+    expect(screen.getByTestId('volume-knob')).toBeInTheDocument();
 
-    // Change visibility
+    // Change visibility to false
     rerender(
       <MetronomeWidget
         {...defaultProps}
@@ -167,8 +209,8 @@ describe('MetronomeWidget', () => {
       />,
     );
 
-    // Component should be hidden
-    expect(document.querySelector('[data-visible="false"]')).toBeTruthy();
+    // Component should not render when not visible
+    expect(screen.queryByTestId('volume-knob')).toBeNull();
   });
 
   it('should initialize with correct number of dots', () => {

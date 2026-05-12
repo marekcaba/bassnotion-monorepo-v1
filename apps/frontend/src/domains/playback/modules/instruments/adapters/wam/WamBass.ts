@@ -199,7 +199,7 @@ export class WamBassNode implements WamNode {
     // Create audio nodes only in browser
     if (typeof window !== 'undefined' && this.context) {
       // CRITICAL: Set Tone.js to use WAM AudioContext before any Tone operations
-      const Tone = (window as any).Tone;
+      const Tone = window.Tone;
       if (Tone) {
         // DON'T switch Tone.js context - use the shared context
         // This was causing multiple context switches and buffer errors
@@ -322,20 +322,23 @@ export class WamBassNode implements WamNode {
   /**
    * Get Tone.js instance
    */
-  private async getToneJS(): Promise<any> {
+  private async getToneJS(): Promise<typeof window.Tone | null> {
     // Check both locations where Tone.js may be stored
-    if ((window as any).Tone) {
-      return (window as any).Tone;
+    if (window.Tone) {
+      return window.Tone;
     }
-    if ((window as any).__globalTone) {
-      return (window as any).__globalTone;
+    if (window.__globalTone) {
+      return window.__globalTone;
     }
 
-    const coreServices =
-      (window as any).__coreServices || (window as any).__globalCoreServices;
-    if (coreServices && typeof coreServices.getAudioEngine === 'function') {
-      const audioEngine = coreServices.getAudioEngine();
-      if (audioEngine && typeof audioEngine.getTone === 'function') {
+    const coreServices = window.__coreServices || window.__globalCoreServices;
+    // Type assertion for CoreServices interface
+    const typedCoreServices = coreServices as {
+      getAudioEngine?: () => { getTone?: () => typeof window.Tone } | null;
+    } | undefined;
+    if (typedCoreServices?.getAudioEngine) {
+      const audioEngine = typedCoreServices.getAudioEngine();
+      if (audioEngine?.getTone) {
         return audioEngine.getTone();
       }
     }

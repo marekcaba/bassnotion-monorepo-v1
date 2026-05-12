@@ -13,6 +13,12 @@ import type {
   DrumEvent,
   DrumTrackData,
 } from '../types/musical-time.js';
+import {
+  toDrumType,
+  toComplexityLevel,
+  resolveStyleAlias,
+  getTomTypeByIndex,
+} from './type-conversions.js';
 
 export interface LegacyDrumPattern {
   enabled: boolean;
@@ -61,7 +67,7 @@ export class DrumPatternMigration {
       if (grid && Array.isArray(grid)) {
         const drumEvents = ProfessionalDrumProcessor.convertGridToEvents(
           grid,
-          drumType as any,
+          toDrumType(drumType),
           1, // 1 bar
           this.getVelocityForDrum(drumType),
         );
@@ -106,7 +112,7 @@ export class DrumPatternMigration {
 
         const drumEvents = ProfessionalDrumProcessor.convertGridToEvents(
           gridArray,
-          drumType as any,
+          toDrumType(drumType),
           1,
           100, // Base velocity
         );
@@ -170,25 +176,13 @@ export class DrumPatternMigration {
     complexity = 5,
     bars = 1,
   ): DrumPattern {
-    const styleMap: Record<string, any> = {
-      rock: 'rock',
-      jazz: 'jazz',
-      funk: 'funk',
-      latin: 'latin',
-      reggae: 'reggae',
-      shuffle: 'shuffle',
-      'rock steady': 'rock',
-      'jazz swing': 'jazz',
-      'funk groove': 'funk',
-      'bossa nova': 'latin',
-    };
-
-    const mappedStyle = styleMap[style.toLowerCase()] || 'rock';
+    const mappedStyle = resolveStyleAlias(style);
+    const complexityLevel = toComplexityLevel(complexity);
 
     return ProfessionalDrumProcessor.generatePattern(
       {
         style: mappedStyle,
-        complexity: Math.min(Math.max(complexity, 1), 10) as any,
+        complexity: complexityLevel,
         fills: complexity >= 7,
         ghost_notes: complexity >= 5,
         accents: complexity >= 3,
@@ -233,7 +227,7 @@ export class DrumPatternMigration {
 
     return ProfessionalDrumProcessor.convertGridToEvents(
       expanded16Pattern,
-      drumType as any,
+      toDrumType(drumType),
       1,
       this.getVelocityForDrum(drumType),
     );
@@ -295,11 +289,10 @@ export class DrumPatternMigration {
 
       case 'tom':
         // Tom fill
-        const toms = ['tom1', 'tom2', 'tom3'];
         for (let i = 0; i < 12; i++) {
           fillEvents.push({
             tick: i * (ticksPerBeat / 3), // Triplets
-            drum: toms[i % 3] as any,
+            drum: getTomTypeByIndex(i),
             velocity: 85 + i * 3,
           });
         }

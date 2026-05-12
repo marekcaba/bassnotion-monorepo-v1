@@ -9,7 +9,7 @@ import type { SyncedWidgetRenderProps } from '../../base';
 import type { LoopRegion } from './LoopGridStrip';
 import type { MusicalExercise as Exercise } from '@bassnotion/contracts';
 import { useWidgetPageState } from '@/domains/widgets/hooks/useWidgetPageState';
-import { useTransportContext } from '@/domains/playback/contexts/TransportContext';
+import { useTransportControls } from '@/domains/playback/contexts/TransportContext';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 interface LooperCardProps {
@@ -67,7 +67,7 @@ function LooperCardContent({
   onToggleLoop?: () => void;
 }) {
   const widgetState = useWidgetPageState();
-  const transport = useTransportContext();
+  const transport = useTransportControls();
 
   // Looper knob state
   const [selectedLooperBars, setSelectedLooperBars] = useState<number | null>(

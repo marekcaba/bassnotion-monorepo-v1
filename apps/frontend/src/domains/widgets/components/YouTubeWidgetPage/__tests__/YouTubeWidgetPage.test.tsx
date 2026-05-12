@@ -70,7 +70,7 @@ vi.mock('./components/MetronomeWidget', () => ({
   ),
 }));
 
-vi.mock('./components/DrummerWidget', () => ({
+vi.mock('../DrummerWidget/index.js', () => ({
   DrummerWidget: () => (
     <div>
       <h3>🥁 Drummer</h3>

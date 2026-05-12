@@ -54,7 +54,7 @@ export interface SampleLoaderConfig {
 export class SampleLoader {
   private config: SampleLoaderConfig;
   private cache?: SampleCache;
-  private eventBus?: EventBus;
+  protected eventBus?: EventBus;
   private tone?: typeof Tone;
 
   // Loading state

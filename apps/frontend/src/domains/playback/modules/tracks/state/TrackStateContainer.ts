@@ -82,8 +82,8 @@ export class TrackStateContainer implements ITrackStateContainer {
     // Try to get EventBus from service registry
     try {
       // Try global window first
-      if (typeof window !== 'undefined' && (window as any).__serviceRegistry) {
-        this.eventBus = (window as any).__serviceRegistry.get('eventBus');
+      if (typeof window !== 'undefined' && window.__serviceRegistry) {
+        this.eventBus = (window.__serviceRegistry as { get: (key: string) => EventBus | undefined }).get('eventBus');
       }
     } catch (error) {
       // EventBus is optional - continue without it

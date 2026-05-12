@@ -293,7 +293,7 @@ export class PerformanceOptimizer extends EventEmitter {
 
       logger.info(`🔍 Platform detection: ${oldPlatform} -> ${newPlatform}`);
       logger.info(`🔍 Navigator userAgent: ${navigator.userAgent}`);
-      logger.info(`🔍 Mock platform: ${(navigator as any).mockPlatform}`);
+      logger.info(`🔍 Mock platform: ${navigator.mockPlatform}`);
 
       if (this.deviceCapabilities.platform !== 'mobile') {
         logger.info('⚠️ Device is not mobile, skipping mobile optimizations');
@@ -561,8 +561,8 @@ export class PerformanceOptimizer extends EventEmitter {
   }
 
   private detectTotalMemory(): number {
-    // deviceMemory is experimental API
-    return ((navigator as any).deviceMemory || 4) * 1024; // Convert GB to MB
+    // deviceMemory is experimental API (defined in window.d.ts)
+    return (navigator.deviceMemory || 4) * 1024; // Convert GB to MB
   }
 
   private detectAvailableMemory(): number {
@@ -577,21 +577,12 @@ export class PerformanceOptimizer extends EventEmitter {
 
   private detectNetworkType(): 'wifi' | 'cellular' | 'ethernet' | 'unknown' {
     try {
-      // Check for test environment mock first
-      if ((global.navigator as any).connection) {
-        const mockConnection = (global.navigator as any).connection;
-        if (mockConnection.type) {
-          logger.info(`🌐 Using mocked network type: ${mockConnection.type}`);
-          return mockConnection.type;
-        }
-      }
-
-      // Network Connection API is experimental
+      // Network Connection API (defined in window.d.ts)
       const connection =
-        (navigator as any).connection ||
-        (navigator as any).mozConnection ||
-        (navigator as any).webkitConnection;
-      if (connection) {
+        navigator.connection ||
+        navigator.mozConnection ||
+        navigator.webkitConnection;
+      if (connection?.type) {
         if (connection.type === 'wifi') return 'wifi';
         if (connection.type === 'cellular') return 'cellular';
         if (connection.type === 'ethernet') return 'ethernet';
@@ -604,12 +595,12 @@ export class PerformanceOptimizer extends EventEmitter {
 
   private detectNetworkSpeed(): 'slow' | 'medium' | 'fast' | 'ultra' {
     try {
-      // Network Connection API is experimental
+      // Network Connection API (defined in window.d.ts)
       const connection =
-        (navigator as any).connection ||
-        (navigator as any).mozConnection ||
-        (navigator as any).webkitConnection;
-      if (connection && connection.effectiveType) {
+        navigator.connection ||
+        navigator.mozConnection ||
+        navigator.webkitConnection;
+      if (connection?.effectiveType) {
         switch (connection.effectiveType) {
           case 'slow-2g':
           case '2g':
@@ -619,7 +610,7 @@ export class PerformanceOptimizer extends EventEmitter {
           case '4g':
             return 'fast';
           default:
-            return 'ultra';
+            return 'medium';
         }
       }
     } catch {
@@ -635,11 +626,11 @@ export class PerformanceOptimizer extends EventEmitter {
 
   private estimateBandwidth(): number {
     try {
-      // Network Connection API is experimental
+      // Network Connection API (defined in window.d.ts)
       const connection =
-        (navigator as any).connection ||
-        (navigator as any).mozConnection ||
-        (navigator as any).webkitConnection;
+        navigator.connection ||
+        navigator.mozConnection ||
+        navigator.webkitConnection;
       return connection?.downlink || 10; // Mbps
     } catch {
       return 10; // Default bandwidth
@@ -648,20 +639,12 @@ export class PerformanceOptimizer extends EventEmitter {
 
   private async getBatteryLevel(): Promise<number> {
     try {
-      // Check for test environment mock first
-      if ((global.navigator as any).getBattery) {
-        const mockBattery = await (global.navigator as any).getBattery();
-        if (mockBattery && typeof mockBattery.level === 'number') {
-          logger.info(
-            `🔋 Using mocked battery level: ${mockBattery.level * 100}%`,
-          );
-          return mockBattery.level * 100;
-        }
+      // Battery API (defined in window.d.ts)
+      if (navigator.getBattery) {
+        const battery = await navigator.getBattery();
+        return battery.level * 100;
       }
-
-      // Battery API is experimental
-      const battery = await (navigator as any).getBattery?.();
-      return battery ? battery.level * 100 : 100;
+      return 100; // Default for devices without Battery API
     } catch {
       return 100; // Default for non-mobile devices
     }
@@ -669,29 +652,22 @@ export class PerformanceOptimizer extends EventEmitter {
 
   private async getBatteryCharging(): Promise<boolean> {
     try {
-      // Check for test environment mock first
-      if ((global.navigator as any).getBattery) {
-        const mockBattery = await (global.navigator as any).getBattery();
-        if (mockBattery && typeof mockBattery.charging === 'boolean') {
-          return mockBattery.charging;
-        }
+      // Battery API (defined in window.d.ts)
+      if (navigator.getBattery) {
+        const battery = await navigator.getBattery();
+        return battery.charging;
       }
-
-      // Battery API is experimental
-      const battery = await (navigator as any).getBattery?.();
-      return battery ? battery.charging : true;
+      return true; // Default for devices without Battery API
     } catch {
       return true; // Default for non-mobile devices
     }
   }
 
   private detectPlatform(): 'desktop' | 'mobile' | 'tablet' | 'embedded' {
-    // First check if we're in a test environment with mocked platform
-    if (typeof (navigator as any).mockPlatform === 'string') {
-      logger.info(
-        `📱 Using mocked platform: ${(navigator as any).mockPlatform}`,
-      );
-      return (navigator as any).mockPlatform;
+    // First check if we're in a test environment with mocked platform (defined in window.d.ts)
+    if (navigator.mockPlatform) {
+      logger.info(`📱 Using mocked platform: ${navigator.mockPlatform}`);
+      return navigator.mockPlatform;
     }
 
     // Check for test environment patterns in user agent

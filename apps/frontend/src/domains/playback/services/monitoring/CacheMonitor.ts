@@ -230,7 +230,7 @@ export const cacheMonitor = CacheMonitor.getInstance();
 
 // Make available globally for debugging
 if (typeof window !== 'undefined') {
-  (window as any).cacheMonitor = cacheMonitor;
+  window.cacheMonitor = cacheMonitor;
   logger.info('📊 Cache monitor available at window.cacheMonitor');
   logger.info('   - window.cacheMonitor.printReport() - Show full report');
   logger.info('   - window.cacheMonitor.getSummary() - Get summary');

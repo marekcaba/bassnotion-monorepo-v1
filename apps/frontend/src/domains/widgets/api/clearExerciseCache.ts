@@ -21,7 +21,7 @@ export function clearExerciseCache() {
 
   // Also try to clear module-level cache if available
   if (typeof window !== 'undefined') {
-    (window as any).__clearExerciseCache?.();
+    window.__clearExerciseCache?.();
   }
 
   logger.info(
@@ -31,5 +31,5 @@ export function clearExerciseCache() {
 
 // Make it available globally in development
 if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-  (window as any).clearExerciseCache = clearExerciseCache;
+  window.clearExerciseCache = clearExerciseCache;
 }

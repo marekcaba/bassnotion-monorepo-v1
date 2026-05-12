@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
+import * as THREE from 'three';
 import { FretboardState, ExerciseNote } from '../types/fretboard';
 import { getVisibleNotes, sortNotesByTiming } from '../utils/notePositioning';
 
@@ -52,8 +53,8 @@ export function useFretboardState({
       notes: sortedNotes,
       bpm,
       camera: {
-        position: { x: 0, y: 200, z: 400 } as any,
-        target: { x: 0, y: 0, z: -200 } as any,
+        position: new THREE.Vector3(0, 200, 400),
+        target: new THREE.Vector3(0, 0, -200),
         zoom: 1,
         enablePan: true,
         enableZoom: true,

@@ -10,6 +10,14 @@ import {
   PaginatedResult,
 } from './IRepository.js';
 
+/** Helper to check if error has status property for HTTP errors */
+function getErrorStatus(error: unknown): number | undefined {
+  if (error && typeof error === 'object' && 'status' in error) {
+    return (error as { status?: number }).status;
+  }
+  return undefined;
+}
+
 export abstract class BaseRepository<TEntity, TId, TDTO> implements IRepository<
   TEntity,
   TId
@@ -170,7 +178,7 @@ export abstract class BaseRepository<TEntity, TId, TDTO> implements IRepository<
       const response = await this.apiClient.head(`${this.baseUrl}/${id}`);
       return response.status === 200;
     } catch (error) {
-      if ((error as any).status === 404) {
+      if (getErrorStatus(error) === 404) {
         return false;
       }
       this.logger.error('Failed to check if entity exists', error as Error, {
@@ -200,7 +208,8 @@ export abstract class BaseRepository<TEntity, TId, TDTO> implements IRepository<
 
   // Default implementation for partial DTO mapping
   protected mapToPartialDTO(entity: Partial<TEntity>): Partial<TDTO> {
-    // Default implementation - override if needed
-    return entity as any;
+    // Default implementation assumes TEntity and TDTO have compatible shapes
+    // Override in subclasses if custom mapping is needed
+    return entity as unknown as Partial<TDTO>;
   }
 }

@@ -155,8 +155,8 @@ export class AudioBufferManager {
    */
   private detectLowEndDevice(): boolean {
     // Check memory (if available)
-    if (typeof navigator !== 'undefined' && (navigator as any).deviceMemory) {
-      return (navigator as any).deviceMemory < 4; // Less than 4GB RAM
+    if (typeof navigator !== 'undefined' && navigator.deviceMemory) {
+      return navigator.deviceMemory < 4; // Less than 4GB RAM
     }
 
     // Check CPU cores (if available)

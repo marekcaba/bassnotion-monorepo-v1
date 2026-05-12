@@ -72,19 +72,19 @@ export const GlobalControlsDAW: React.FC<GlobalControlsDAWProps> = ({
   const metronomeTrack = useTrack({
     trackId: 'metronome',
     name: 'Metronome',
-    type: 'instrument',
+    type: 'metronome',
   });
 
   const drumTrack = useTrack({
     trackId: 'drums',
     name: 'Drums',
-    type: 'instrument',
+    type: 'drums',
   });
 
   const keyboardTrack = useTrack({
     trackId: 'keyboard',
     name: 'Keyboard',
-    type: 'instrument',
+    type: 'harmony',
   });
 
   // Local state for UI
@@ -105,7 +105,7 @@ export const GlobalControlsDAW: React.FC<GlobalControlsDAWProps> = ({
       logger.info('🎵 GlobalControlsDAW: Initializing DAW system...');
 
       // Get CoreServices
-      const services = (window as any).__globalCoreServices;
+      const services = window.__globalCoreServices;
       if (!services) {
         logger.error('🎵 GlobalControlsDAW: CoreServices not available');
         return;

@@ -110,31 +110,11 @@ export class AudioContextError extends PlaybackError {
         return true;
       }
 
-      // Check global webkitAudioContext
-      if (
-        typeof (global as any)?.webkitAudioContext !== 'undefined' &&
-        (global as any)?.webkitAudioContext !== null
-      ) {
-        return true;
-      }
-
-      // Check window AudioContext (only if different from global)
+      // Check window webkitAudioContext (Safari)
       if (
         typeof window !== 'undefined' &&
-        (window as any)?.AudioContext !== AudioContext &&
-        typeof (window as any)?.AudioContext !== 'undefined' &&
-        (window as any)?.AudioContext !== null
-      ) {
-        return true;
-      }
-
-      // Check window webkitAudioContext (only if different from global)
-      if (
-        typeof window !== 'undefined' &&
-        (window as any)?.webkitAudioContext !==
-          (global as any)?.webkitAudioContext &&
-        typeof (window as any)?.webkitAudioContext !== 'undefined' &&
-        (window as any)?.webkitAudioContext !== null
+        window.webkitAudioContext !== undefined &&
+        window.webkitAudioContext !== null
       ) {
         return true;
       }

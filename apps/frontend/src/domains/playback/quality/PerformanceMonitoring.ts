@@ -272,7 +272,7 @@ export class PerformanceMonitoring {
    */
   private async getAudioLatency(): Promise<number> {
     try {
-      const context = (window as any).audioContext;
+      const context = window.audioContext;
       if (context) {
         return (context.baseLatency + context.outputLatency) * 1000; // Convert to ms
       }

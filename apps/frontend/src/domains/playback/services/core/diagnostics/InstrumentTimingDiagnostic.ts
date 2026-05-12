@@ -263,5 +263,5 @@ export const InstrumentTimingDiagnostic = new InstrumentTimingDiagnosticClass();
 
 // Expose on window for console access
 if (typeof window !== 'undefined') {
-  (window as any).__timingDiagnostic = InstrumentTimingDiagnostic;
+  window.__timingDiagnostic = InstrumentTimingDiagnostic;
 }

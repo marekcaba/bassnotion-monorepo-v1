@@ -262,11 +262,10 @@ export class ProductionLogger {
   private getPerformanceContext():
     | NonNullable<LogEntry['context']>['performance']
     | undefined {
-    const memory = performance.memory
+    const memInfo = window.performance.memory;
+    const memory = memInfo
       ? {
-          memory: Math.round(
-            (performance as any).memory.usedJSHeapSize / (1024 * 1024),
-          ),
+          memory: Math.round(memInfo.usedJSHeapSize / (1024 * 1024)),
         }
       : {};
 

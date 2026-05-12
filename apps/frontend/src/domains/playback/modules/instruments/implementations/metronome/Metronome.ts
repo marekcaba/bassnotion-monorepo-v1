@@ -84,10 +84,9 @@ export class Metronome extends BaseInstrument {
     // Try to get audioEngine from global DI if not already set
     if (!this.audioEngine && typeof window !== 'undefined') {
       const globalServices =
-        (window as any)?.__coreServices ||
-        (window as any)?.__globalCoreServices;
-      if (globalServices && globalServices.getAudioEngine) {
-        this.audioEngine = globalServices.getAudioEngine();
+        window.__coreServices || window.__globalCoreServices;
+      if (globalServices && typeof globalServices === 'object' && 'getAudioEngine' in globalServices) {
+        this.audioEngine = (globalServices as { getAudioEngine: () => unknown }).getAudioEngine();
       }
     }
 

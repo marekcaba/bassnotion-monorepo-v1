@@ -63,6 +63,8 @@ export class CoreServices {
   private isPreInitialized = false;
   private hasSamplesReadyListener = false; // Track if we've set up the deferred buffer injection listener
   private config: Required<CoreServicesConfig>;
+  private eventSubscriptions: Array<() => void> = []; // Store unsubscribe functions to prevent event listener leaks
+  private samplesReadyHandler: (() => void) | null = null; // Store samplesReady handler for cleanup
 
   constructor(config: CoreServicesConfig = {}) {
     this.config = {
@@ -207,7 +209,7 @@ export class CoreServices {
       // Set global registry IMMEDIATELY after initialization
       // This allows singletons like Mixer to access EventBus via window.__serviceRegistry
       if (typeof window !== 'undefined') {
-        (window as any).__serviceRegistry = this.registry;
+        window.__serviceRegistry = this.registry;
         logger.debug('CoreServices: Global __serviceRegistry set');
       }
 
@@ -708,7 +710,8 @@ export class CoreServices {
       return;
     }
 
-    const handleSamplesReady = async () => {
+    // Store handler reference for cleanup in dispose()
+    this.samplesReadyHandler = async () => {
       logger.info('CoreServices: samplesReady event received - re-injecting buffers...');
       lifecycle.checkpoint('BUFFER_REINJECTION_START', {
         reason: 'samplesReady event received',
@@ -745,7 +748,9 @@ export class CoreServices {
         };
 
         // Listen for initialization event (using subscribe which returns unsubscribe function)
+        // Store unsubscribe for cleanup
         unsubscribe = this.eventBus.on('core-services:initialized', handleInitialized);
+        this.eventSubscriptions.push(unsubscribe);
         return;
       }
 
@@ -768,12 +773,14 @@ export class CoreServices {
     if (WindowRegistry.getSamplesReady()) {
       logger.info('CoreServices: Samples already ready - immediately re-injecting buffers');
       this.hasSamplesReadyListener = true;
-      handleSamplesReady();
+      this.samplesReadyHandler();
       return;
     }
 
     // Normal fast path: Add listener before samples finish loading
-    window.addEventListener('samplesReady', handleSamplesReady, { once: true });
+    // Note: Using { once: true } means the listener auto-removes after firing,
+    // but we still need to track it for cleanup if dispose() is called before the event fires
+    window.addEventListener('samplesReady', this.samplesReadyHandler as EventListener, { once: true });
     this.hasSamplesReadyListener = true;
 
     logger.info('CoreServices: Set up deferred buffer injection listener for samplesReady event');
@@ -944,6 +951,22 @@ export class CoreServices {
    */
   async dispose(): Promise<void> {
     try {
+      // Unsubscribe all event listeners to prevent memory leaks
+      logger.info('CoreServices: Unsubscribing event listeners...');
+      for (const unsubscribe of this.eventSubscriptions) {
+        unsubscribe();
+      }
+      this.eventSubscriptions = [];
+      logger.info('CoreServices: Event listeners unsubscribed');
+
+      // Remove samplesReady window listener if it exists
+      if (this.samplesReadyHandler && typeof window !== 'undefined') {
+        window.removeEventListener('samplesReady', this.samplesReadyHandler);
+        this.samplesReadyHandler = null;
+        this.hasSamplesReadyListener = false;
+        logger.info('CoreServices: samplesReady listener removed');
+      }
+
       // Dispose RecoveryEventHandlers first
       if (this.recoveryHandlers) {
         logger.info('CoreServices: Disposing RecoveryEventHandlers...');
@@ -1065,10 +1088,11 @@ export class CoreServices {
 
   /**
    * Set up event listeners
+   * All subscriptions are stored for cleanup in dispose() to prevent memory leaks
    */
   private setupEventListeners(): void {
     // Listen for transport stop to stop all audio playback components
-    this.eventBus.on(
+    const unsubTransportStop = this.eventBus.on(
       'transport:stop',
       async (data: { timestamp: number; graceful?: boolean }) => {
         const graceful = data.graceful ?? false;
@@ -1102,10 +1126,11 @@ export class CoreServices {
         logger.info('PluginManager stopped - all WAM plugins cleared');
       },
     );
+    this.eventSubscriptions.push(unsubTransportStop);
 
     // Listen for playback:starting to configure and start BeatEmitter
     // BeatEmitter calculates beat position from Transport.seconds for jitter-free timing
-    this.eventBus.on('playback:starting', () => {
+    const unsubPlaybackStarting = this.eventBus.on('playback:starting', () => {
       if (this.beatEmitter && this.playbackEngine) {
         const countdownBeats = this.playbackEngine.getCountdownConfig().beats;
         this.beatEmitter.configure({
@@ -1120,10 +1145,11 @@ export class CoreServices {
         logger.info('BeatEmitter started (no countdown config)');
       }
     });
+    this.eventSubscriptions.push(unsubPlaybackStarting);
 
     // Listen for transport start to restart other audio components
     // This ensures second/third/etc playback rounds work the same as first playback
-    this.eventBus.on('transport:start', async () => {
+    const unsubTransportStart = this.eventBus.on('transport:start', async () => {
       logger.info('Transport starting, restarting audio components');
 
       // Restart AudioEventRouter if it was stopped
@@ -1144,6 +1170,7 @@ export class CoreServices {
         logger.error('Failed to restart PluginManager:', error);
       }
     });
+    this.eventSubscriptions.push(unsubTransportStart);
 
     // NOTE: RegionProcessor start is managed by GlobalControls, not by event listener
     // This is because tracks are registered asynchronously by widgets (MetronomeWidget)
@@ -1238,7 +1265,7 @@ class GlobalAudioSystem {
 
       // Store globally for cross-component access
       GlobalAudioSystem.instance = services;
-      (window as any).__globalCoreServices = services;
+      window.__globalCoreServices = services;
 
       return services;
     })();
@@ -1282,7 +1309,7 @@ class GlobalAudioSystem {
     try {
       await GlobalAudioSystem.instance.dispose();
       GlobalAudioSystem.instance = null;
-      delete (window as any).__globalCoreServices;
+      delete window.__globalCoreServices;
       logger.info(
         'GlobalAudioSystem: Global audio system disposed successfully',
       );
@@ -1299,7 +1326,7 @@ class GlobalAudioSystem {
     GlobalAudioSystem.instance = null;
     GlobalAudioSystem.initializationPromise = null;
     GlobalAudioSystem.isDisposing = false;
-    delete (window as any).__globalCoreServices;
+    delete window.__globalCoreServices;
   }
 }
 

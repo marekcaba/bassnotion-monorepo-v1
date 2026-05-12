@@ -51,11 +51,12 @@ function getClassLogger(target: any, className?: string): StructuredLogger {
  */
 function getMetricsCollector(): MetricsCollector | null {
   try {
-    // Get singleton instances if available
+    // Get singleton instances if available (use window for typed access)
     const eventBus =
-      (globalThis as any).__playbackEventBus || EventBus.getInstance();
+      (typeof window !== 'undefined' && window.__playbackEventBus as EventBus | undefined) ||
+      EventBus.getInstance();
     const prodLogger =
-      (globalThis as any).__playbackLogger ||
+      (typeof window !== 'undefined' && window.__playbackLogger as ProductionLogger | undefined) ||
       new ProductionLogger(eventBus, { enabled: true });
 
     return MetricsCollector.getInstance(eventBus, prodLogger);

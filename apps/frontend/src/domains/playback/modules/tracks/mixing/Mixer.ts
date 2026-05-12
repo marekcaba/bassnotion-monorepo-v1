@@ -29,8 +29,8 @@ type TimelineAutomationPoint = AutomationPoint & { time: number };
 // Local service implementations
 const serviceRegistry = {
   get<T>(name: string): T {
-    if (typeof window !== 'undefined' && (window as any).__serviceRegistry) {
-      return (window as any).__serviceRegistry.get(name);
+    if (typeof window !== 'undefined' && window.__serviceRegistry) {
+      return (window.__serviceRegistry as { get: <T>(name: string) => T }).get<T>(name);
     }
     throw new Error(`Service ${name} not found`);
   },
@@ -40,7 +40,7 @@ const serviceRegistry = {
 function getToneFromWindow(): any {
   if (typeof window !== 'undefined') {
     // Check both locations where Tone.js may be stored
-    const tone = (window as any).Tone || (window as any).__globalTone;
+    const tone = window.Tone || window.__globalTone;
     if (tone) {
       return tone;
     }
@@ -172,7 +172,7 @@ export class Mixer {
           error: error instanceof Error ? error.message : String(error),
         },
       );
-      this.tone = (window as any).Tone;
+      this.tone = window.Tone;
       if (!this.tone) {
         logger.error(
           'Mixer: No Tone.js instance available (neither AudioEngine nor window.Tone)',
@@ -332,7 +332,7 @@ export class Mixer {
     // Dispose effects
     for (const effect of channel.effectsChain) {
       if ('dispose' in effect) {
-        (effect as any).dispose();
+        (effect as { dispose: () => void }).dispose();
       }
     }
 
@@ -733,7 +733,7 @@ export class Mixer {
 
     // Dispose effect if possible
     if (effect && 'dispose' in effect) {
-      (effect as any).dispose();
+      (effect as { dispose: () => void }).dispose();
     }
 
     // Remove from chain
@@ -1015,7 +1015,9 @@ export class Mixer {
 
     // Tone.js nodes have an underlying Web Audio node we can access
     // Most Tone nodes expose this as .input or can be used directly in connect()
-    return (input as any).input || (input as any)._gainNode || input as unknown as AudioNode;
+    type ToneNodeInternal = { input?: AudioNode; _gainNode?: AudioNode };
+    const toneInput = input as ToneNodeInternal;
+    return toneInput.input || toneInput._gainNode || (input as unknown as AudioNode);
   }
 
   /**

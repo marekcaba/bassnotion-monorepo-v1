@@ -1,5 +1,5 @@
 import { UserProfile, createStructuredLogger } from '@bassnotion/contracts';
-import type { UserProfileData } from '@bassnotion/contracts';
+import type { UserProfileData, LearningStyle } from '@bassnotion/contracts';
 import {
   Controller,
   Get,
@@ -124,6 +124,59 @@ export class UserController {
         message: 'Failed to update profile',
         error: {
           code: 'PROFILE_UPDATE_FAILED',
+          details: error instanceof Error ? error.message : 'Unknown error',
+        },
+      };
+    }
+  }
+
+  @Put('preferences/learning-style')
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async updateLearningStyle(
+    @Body() body: { learningStyle: LearningStyle },
+    @Req() request: FastifyRequest & { user: any },
+  ): Promise<ApiResponse<UserProfile>> {
+    this.staticLogger.debug(
+      `Learning style update request for user: ${request.user.id}`,
+    );
+
+    try {
+      const updatedProfile = await this.userService.updateLearningStyle(
+        request.user.id,
+        body.learningStyle,
+      );
+
+      return {
+        success: true,
+        message: 'Learning style updated successfully',
+        data: updatedProfile,
+      };
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        (error instanceof Error && error.message.includes('Not found'))
+      ) {
+        this.staticLogger.error('Profile not found:', error);
+        return {
+          success: false,
+          message: 'Profile not found',
+          error: {
+            code: 'PROFILE_NOT_FOUND',
+            details: 'User profile not found',
+          },
+        };
+      }
+
+      this.staticLogger.error(
+        'Unexpected error updating learning style:',
+        error as Error,
+      );
+      return {
+        success: false,
+        message: 'Failed to update learning style',
+        error: {
+          code: 'LEARNING_STYLE_UPDATE_FAILED',
           details: error instanceof Error ? error.message : 'Unknown error',
         },
       };

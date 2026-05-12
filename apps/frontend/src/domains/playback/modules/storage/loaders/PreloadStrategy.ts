@@ -533,14 +533,11 @@ export class PreloadStrategy {
   private initializeNetworkMonitoring(): void {
     if (!this.config.networkAware) return;
 
-    // Monitor connection changes
-    if (typeof window !== 'undefined' && 'connection' in navigator) {
-      const connection = (navigator as any).connection;
-      if (connection) {
-        connection.addEventListener('change', () => {
-          this.updateNetworkSpeed();
-        });
-      }
+    // Monitor connection changes (typed in window.d.ts)
+    if (typeof window !== 'undefined' && navigator.connection) {
+      navigator.connection.onchange = () => {
+        this.updateNetworkSpeed();
+      };
     }
   }
 
@@ -553,21 +550,19 @@ export class PreloadStrategy {
 
     this.lastNetworkCheck = now;
 
-    if (typeof window !== 'undefined' && 'connection' in navigator) {
-      const connection = (navigator as any).connection;
-      if (connection && connection.effectiveType) {
-        switch (connection.effectiveType) {
-          case 'slow-2g':
-          case '2g':
-            this.currentNetworkSpeed = 'slow';
-            break;
-          case '3g':
-            this.currentNetworkSpeed = 'medium';
-            break;
-          case '4g':
-            this.currentNetworkSpeed = 'fast';
-            break;
-        }
+    if (typeof window !== 'undefined' && navigator.connection) {
+      const effectiveType = navigator.connection.effectiveType;
+      switch (effectiveType) {
+        case 'slow-2g':
+        case '2g':
+          this.currentNetworkSpeed = 'slow';
+          break;
+        case '3g':
+          this.currentNetworkSpeed = 'medium';
+          break;
+        case '4g':
+          this.currentNetworkSpeed = 'fast';
+          break;
       }
     }
   }

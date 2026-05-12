@@ -360,7 +360,7 @@ function checkWebAudioSupport(): boolean {
     // TODO: Review non-null assertion - consider null safety
     return !!(
       typeof window !== 'undefined' &&
-      (window.AudioContext || (window as any).webkitAudioContext)
+      (window.AudioContext || window.webkitAudioContext)
     );
   } catch {
     return false;

@@ -601,6 +601,31 @@ export class GlobalSampleCacheImpl {
   }
 
   /**
+   * Clear a specific cached instrument
+   * Used when switching tutorials to force reload with new exercise data
+   */
+  clearInstrument(name: string): boolean {
+    const existed = this.instruments.has(name);
+    if (existed) {
+      this.instruments.delete(name);
+      logger.info(`🗑️ Cleared cached instrument: ${name}`, {
+        remainingInstruments: Array.from(this.instruments.keys()),
+      });
+    }
+    return existed;
+  }
+
+  /**
+   * Clear all cached instruments
+   * Used for complete audio system reset
+   */
+  clearAllInstruments(): void {
+    const count = this.instruments.size;
+    this.instruments.clear();
+    logger.info(`🗑️ Cleared all ${count} cached instruments`);
+  }
+
+  /**
    * Get all sample keys in the cache
    * Useful for iterating over cached samples by instrument prefix
    */
@@ -1181,6 +1206,10 @@ export const GlobalSampleCache = {
     GlobalSampleCacheImpl.getInstance().cacheSampler(path, sampler),
   cacheInstrument: (name: string, sampler: any) =>
     GlobalSampleCacheImpl.getInstance().cacheInstrument(name, sampler),
+  clearInstrument: (name: string) =>
+    GlobalSampleCacheImpl.getInstance().clearInstrument(name),
+  clearAllInstruments: () =>
+    GlobalSampleCacheImpl.getInstance().clearAllInstruments(),
   clearBuffer: (path: string) =>
     GlobalSampleCacheImpl.getInstance().clearBuffer(path),
   clearAllBuffers: () => GlobalSampleCacheImpl.getInstance().clearAllBuffers(),

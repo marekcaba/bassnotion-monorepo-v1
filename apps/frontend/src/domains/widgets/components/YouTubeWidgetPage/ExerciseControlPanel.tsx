@@ -10,6 +10,7 @@ import {
   Clock,
   Zap,
   Target,
+  Lock,
 } from 'lucide-react';
 import type { Exercise } from '@bassnotion/contracts';
 
@@ -55,60 +56,127 @@ function getExerciseId(exercise: Exercise): string {
 }
 
 // Difficulty colors with neumorphic style
-const difficultyStyles: Record<string, { bg: string; text: string; glow: string }> = {
+const difficultyStyles = {
   beginner: { bg: 'bg-emerald-500/20', text: 'text-emerald-400', glow: 'shadow-emerald-500/20' },
   intermediate: { bg: 'bg-amber-500/20', text: 'text-amber-400', glow: 'shadow-amber-500/20' },
-  advanced: { bg: 'bg-orange-500/20', text: 'text-orange-400', glow: 'shadow-orange-500/20' },
+  advanced: { bg: 'bg-red-500/20', text: 'text-red-400', glow: 'shadow-red-500/20' },
   expert: { bg: 'bg-red-500/20', text: 'text-red-400', glow: 'shadow-red-500/20' },
-};
+} as const;
+
+type DifficultyKey = keyof typeof difficultyStyles;
+
+function getDifficultyStyle(difficulty: string) {
+  if (difficulty in difficultyStyles) {
+    return difficultyStyles[difficulty as DifficultyKey];
+  }
+  return difficultyStyles.beginner;
+}
+
+// Difficulties that should be locked (require premium/upgrade)
+const LOCKED_DIFFICULTIES = ['advanced', 'hard', 'expert'];
+
+// Number of practice completions required per exercise
+const REQUIRED_COMPLETIONS = 4;
+
+// Progress dots component showing practice completion status
+function ProgressDots({
+  completed,
+  total,
+  isLocked,
+}: {
+  completed: number;
+  total: number;
+  isLocked: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-1">
+      {Array.from({ length: total }).map((_, i) => (
+        <div
+          key={i}
+          className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+            isLocked
+              ? 'bg-slate-600/50'
+              : i < completed
+                ? 'bg-emerald-400 shadow-sm shadow-emerald-400/50'
+                : 'bg-slate-600 border border-slate-500/50'
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
 
 // Compact exercise item with neumorphic styling
 function ExerciseItem({
   exercise,
   index,
   isSelected,
+  isLocked,
+  completedCount,
   onSelect,
 }: {
   exercise: Exercise;
   index: number;
   isSelected: boolean;
+  isLocked: boolean;
+  completedCount: number;
   onSelect: () => void;
 }) {
   const title = safeString(exercise.title) || 'Untitled Exercise';
   const difficulty = safeString(exercise.difficulty) || 'beginner';
-  const diffStyle = difficultyStyles[difficulty] || difficultyStyles.beginner;
+  const diffStyle = getDifficultyStyle(difficulty);
+  const isCompleted = completedCount >= REQUIRED_COMPLETIONS;
 
   return (
     <button
-      onClick={onSelect}
+      onClick={() => !isLocked && onSelect()}
+      disabled={isLocked}
       className={`w-full text-left p-2.5 rounded-xl transition-all duration-300 ${
-        isSelected
-          ? 'bg-gradient-to-r from-blue-600/30 to-purple-600/20 border border-blue-500/40 shadow-lg shadow-blue-500/10'
-          : 'bg-slate-700/20 border border-slate-700/30 hover:bg-slate-700/40 hover:border-slate-600/50 hover:shadow-md'
+        isLocked
+          ? 'bg-slate-700/10 border border-slate-600/30 cursor-not-allowed'
+          : isSelected
+            ? 'bg-gradient-to-r from-blue-600/30 to-purple-600/20 border border-blue-500/40 shadow-lg shadow-blue-500/10'
+            : 'bg-slate-700/20 border border-slate-700/30 hover:bg-slate-700/40 hover:border-slate-600/50 hover:shadow-md'
       }`}
+      title={isLocked ? 'Complete all exercises above to unlock' : undefined}
     >
       <div className="flex items-center gap-3">
-        {/* Exercise number badge */}
-        <div
-          className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold transition-all duration-300 ${
-            isSelected
-              ? 'bg-gradient-to-br from-blue-500 to-purple-500 text-white shadow-lg shadow-blue-500/30'
-              : 'bg-slate-700/50 text-slate-400'
-          }`}
-        >
-          {index + 1}
-        </div>
+        {/* Lock icon or Exercise number badge */}
+        {isLocked ? (
+          <div className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center bg-slate-700/30">
+            <Lock className="w-4 h-4 text-slate-400" />
+          </div>
+        ) : (
+          <div
+            className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold transition-all duration-300 ${
+              isCompleted
+                ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/30'
+                : isSelected
+                  ? 'bg-gradient-to-br from-blue-500 to-purple-500 text-white shadow-lg shadow-blue-500/30'
+                  : 'bg-slate-700/50 text-slate-400'
+            }`}
+          >
+            {isCompleted ? '✓' : index + 1}
+          </div>
+        )}
 
         {/* Title */}
         <div className="flex-1 min-w-0">
           <h4
             className={`font-medium text-sm truncate transition-colors duration-200 ${
-              isSelected ? 'text-white' : 'text-slate-300'
+              isLocked ? 'text-slate-400' : isSelected ? 'text-white' : 'text-slate-300'
             }`}
           >
             {title}
           </h4>
         </div>
+
+        {/* Progress dots */}
+        <ProgressDots
+          completed={completedCount}
+          total={REQUIRED_COMPLETIONS}
+          isLocked={isLocked}
+        />
 
         {/* Difficulty badge */}
         <span
@@ -139,7 +207,7 @@ function ExerciseDescriptionBox({ exercise }: { exercise: Exercise | undefined }
   const totalBars = exercise.total_bars || '?';
   const bpm = exercise.bpm || '?';
   const musicalKey = safeString(exercise.key) || '?';
-  const diffStyle = difficultyStyles[difficulty] || difficultyStyles.beginner;
+  const diffStyle = getDifficultyStyle(difficulty);
 
   return (
     <div className="p-4 bg-gradient-to-br from-slate-700/30 to-slate-800/40 rounded-xl border border-slate-600/30 shadow-inner">
@@ -269,18 +337,87 @@ export function ExerciseControlPanel({
             No exercises available
           </div>
         ) : (
-          exercises.map((exercise, index) => {
-            const exId = getExerciseId(exercise);
+          (() => {
+            // Split exercises into unlocked and locked
+            const unlockedExercises: Array<{ exercise: Exercise; index: number }> = [];
+            const lockedExercises: Array<{ exercise: Exercise; index: number }> = [];
+
+            exercises.forEach((exercise, index) => {
+              const difficulty = safeString(exercise.difficulty).toLowerCase();
+              const isLocked = LOCKED_DIFFICULTIES.includes(difficulty);
+              if (isLocked) {
+                lockedExercises.push({ exercise, index });
+              } else {
+                unlockedExercises.push({ exercise, index });
+              }
+            });
+
+            // Calculate progress for the progress bar
+            // For now, hardcoded to 0 completions per exercise
+            const totalRequired = unlockedExercises.length * REQUIRED_COMPLETIONS;
+            const totalCompleted = 0; // TODO: Sum of all completed counts
+            const progressPercent = totalRequired > 0 ? (totalCompleted / totalRequired) * 100 : 0;
+
             return (
-              <ExerciseItem
-                key={exId}
-                exercise={exercise}
-                index={index}
-                isSelected={exId === selectedExerciseId}
-                onSelect={() => onExerciseSelect(exId)}
-              />
+              <>
+                {/* Unlocked exercises */}
+                {unlockedExercises.map(({ exercise, index }) => {
+                  const exId = getExerciseId(exercise);
+                  return (
+                    <ExerciseItem
+                      key={exId}
+                      exercise={exercise}
+                      index={index}
+                      isSelected={exId === selectedExerciseId}
+                      isLocked={false}
+                      completedCount={0} // TODO: Get from state/props
+                      onSelect={() => onExerciseSelect(exId)}
+                    />
+                  );
+                })}
+
+                {/* Progress bar before locked exercises */}
+                {lockedExercises.length > 0 && (
+                  <div className="py-3">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-[10px] uppercase tracking-wider text-slate-500 font-medium">
+                        Advanced Grooves
+                      </span>
+                      <div className="flex-1 h-px bg-slate-700/50" />
+                      <span className="text-[10px] text-slate-500">
+                        {Math.round(progressPercent)}%
+                      </span>
+                    </div>
+                    <div className="h-1 bg-slate-700/50 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-500"
+                        style={{ width: `${progressPercent}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-1.5 text-center">
+                      Complete all exercises above to unlock
+                    </p>
+                  </div>
+                )}
+
+                {/* Locked exercises */}
+                {lockedExercises.map(({ exercise, index }) => {
+                  const exId = getExerciseId(exercise);
+                  return (
+                    <ExerciseItem
+                      key={exId}
+                      exercise={exercise}
+                      index={index}
+                      isSelected={exId === selectedExerciseId}
+                      isLocked={true}
+                      completedCount={0}
+                      onSelect={() => onExerciseSelect(exId)}
+                    />
+                  );
+                })}
+              </>
             );
-          })
+          })()
         )}
       </div>
 

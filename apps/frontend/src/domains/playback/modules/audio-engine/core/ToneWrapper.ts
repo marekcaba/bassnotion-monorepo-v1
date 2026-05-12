@@ -9,7 +9,34 @@
  */
 
 import { createStructuredLogger } from '../../shared/index.js';
-import { ToneModule, SamplerConfig, AudioSampler } from '../types/index.js';
+import {
+  ToneModule,
+  SamplerConfig,
+  AudioSampler,
+  ToneGain,
+  ToneEQ3,
+  ToneCompressor,
+  ToneFilter,
+  TonePanner,
+  ToneVolume,
+  ToneMeter,
+  ToneAnalyser,
+  ToneReverb,
+  ToneDelay,
+  ToneDistortion,
+  ToneGate,
+  ToneLimiter,
+  ToneSynth,
+  ToneMonoSynth,
+  ToneNoiseSynth,
+  ToneMembraneSynth,
+  TonePlayer,
+  ToneOscillator,
+  ToneAmplitudeEnvelope,
+  ToneSequence,
+  ToneTransport,
+  ToneAudioNode,
+} from '../types/index.js';
 
 const logger = createStructuredLogger('ToneWrapper');
 
@@ -20,7 +47,7 @@ export class ToneWrapper {
   private loadPromise: Promise<void> | null = null;
 
   // Selective loading support
-  private loadedModules = new Map<string, any>();
+  private loadedModules = new Map<string, unknown>();
   private useSelectiveLoading = false;
 
   // Private constructor for singleton pattern
@@ -90,8 +117,11 @@ export class ToneWrapper {
       const toneModule = await import('tone');
 
       // Handle both default export and namespace export
-      this.tone = ((toneModule as any).default ||
-        toneModule) as any as ToneModule;
+      // Tone.js exports match our ToneModule interface
+      const loadedTone =
+        (toneModule as unknown as { default?: ToneModule }).default ||
+        (toneModule as unknown as ToneModule);
+      this.tone = loadedTone;
 
       // Verify Tone has required methods
       if (!this.tone || typeof this.tone.start !== 'function') {
@@ -132,10 +162,14 @@ export class ToneWrapper {
       ]);
 
       // Extract Transport (it might be default export or named export)
+      const transportExport = transportModule as unknown as {
+        Transport?: ToneTransport;
+        default?: ToneTransport;
+      };
       const Transport =
-        (transportModule as any).Transport ||
-        (transportModule as any).default ||
-        transportModule;
+        transportExport.Transport ||
+        transportExport.default ||
+        (transportModule as unknown as ToneTransport);
 
       // Create minimal Tone object
       this.tone = {
@@ -164,14 +198,14 @@ export class ToneWrapper {
   /**
    * Lazy load additional Tone.js modules
    */
-  async loadModule(moduleName: string): Promise<any> {
+  async loadModule(moduleName: string): Promise<unknown> {
     // Check cache first
     if (this.loadedModules.has(moduleName)) {
       logger.debug(`Module ${moduleName} already loaded`);
       return this.loadedModules.get(moduleName);
     }
 
-    const moduleMap: Record<string, () => Promise<any>> = {
+    const moduleMap: Record<string, () => Promise<Record<string, unknown>>> = {
       Reverb: async () => {
         const Tone = await import('tone');
         return { Reverb: Tone.Reverb };
@@ -221,7 +255,8 @@ export class ToneWrapper {
 
       // Also add to the main Tone object if using selective loading
       if (this.useSelectiveLoading && this.tone) {
-        (this.tone as any)[moduleName] = module;
+        // Use index signature for dynamic module assignment
+        this.tone[moduleName] = module;
       }
 
       logger.info(`Module ${moduleName} loaded successfully`);
@@ -304,7 +339,8 @@ export class ToneWrapper {
         toneSampler.triggerAttackRelease(note, duration, time, velocity);
       },
       connect: (destination: AudioNode | AudioSampler) => {
-        toneSampler.connect(destination as any);
+        // ToneSampler.connect accepts ToneAudioNode | AudioNode
+        toneSampler.connect(destination as ToneAudioNode | AudioNode);
       },
       disconnect: () => {
         toneSampler.disconnect();
@@ -321,16 +357,22 @@ export class ToneWrapper {
   /**
    * Get Tone.js context wrapper
    */
-  getContext(): any {
+  getContext(): AudioContext {
     const tone = this.getTone();
+    if (!tone) {
+      throw new Error('Tone.js not loaded');
+    }
     return tone.context;
   }
 
   /**
    * Get Tone.js Transport
    */
-  getTransport(): any {
+  getTransport(): ToneTransport {
     const tone = this.getTone();
+    if (!tone) {
+      throw new Error('Tone.js not loaded');
+    }
     return tone.Transport;
   }
 
@@ -363,171 +405,267 @@ export class ToneWrapper {
   // These provide a centralized way to create Tone objects for dependency injection
 
   /**
+   * Helper to get tone module with null check
+   */
+  private getToneOrThrow(): ToneModule {
+    const tone = this.getTone();
+    if (!tone) {
+      throw new Error('Tone.js not loaded');
+    }
+    return tone;
+  }
+
+  /**
    * Create a Gain node
    */
-  createGain(gain?: number): any {
-    const tone = this.getTone() as any;
+  createGain(gain?: number): ToneGain {
+    const tone = this.getToneOrThrow();
+    if (!tone.Gain) {
+      throw new Error('Tone.Gain not available');
+    }
     return new tone.Gain(gain);
   }
 
   /**
    * Create an EQ3 node
    */
-  createEQ3(options?: any): any {
-    const tone = this.getTone() as any;
+  createEQ3(options?: Partial<{ low: number; mid: number; high: number }>): ToneEQ3 {
+    const tone = this.getToneOrThrow();
+    if (!tone.EQ3) {
+      throw new Error('Tone.EQ3 not available');
+    }
     return new tone.EQ3(options);
   }
 
   /**
    * Create a Compressor node
    */
-  createCompressor(options?: any): any {
-    const tone = this.getTone() as any;
+  createCompressor(
+    options?: Partial<{
+      threshold: number;
+      ratio: number;
+      attack: number;
+      release: number;
+    }>,
+  ): ToneCompressor {
+    const tone = this.getToneOrThrow();
+    if (!tone.Compressor) {
+      throw new Error('Tone.Compressor not available');
+    }
     return new tone.Compressor(options);
   }
 
   /**
    * Create a Filter node
    */
-  createFilter(options?: any): any {
-    const tone = this.getTone() as any;
-    return new tone.Filter(options);
+  createFilter(
+    frequency?: number,
+    type?: BiquadFilterType,
+    rolloff?: number,
+  ): ToneFilter {
+    const tone = this.getToneOrThrow();
+    if (!tone.Filter) {
+      throw new Error('Tone.Filter not available');
+    }
+    return new tone.Filter(frequency, type, rolloff);
   }
 
   /**
    * Create a Panner node
    */
-  createPanner(pan?: number): any {
-    const tone = this.getTone() as any;
+  createPanner(pan?: number): TonePanner {
+    const tone = this.getToneOrThrow();
+    if (!tone.Panner) {
+      throw new Error('Tone.Panner not available');
+    }
     return new tone.Panner(pan);
   }
 
   /**
    * Create a Volume node
    */
-  createVolume(volume?: number): any {
-    const tone = this.getTone() as any;
+  createVolume(volume?: number): ToneVolume {
+    const tone = this.getToneOrThrow();
+    if (!tone.Volume) {
+      throw new Error('Tone.Volume not available');
+    }
     return new tone.Volume(volume);
   }
 
   /**
    * Create a Meter node
    */
-  createMeter(options?: any): any {
-    const tone = this.getTone() as any;
+  createMeter(options?: Partial<{ normalRange: boolean }>): ToneMeter {
+    const tone = this.getToneOrThrow();
+    if (!tone.Meter) {
+      throw new Error('Tone.Meter not available');
+    }
     return new tone.Meter(options);
   }
 
   /**
    * Create an Analyser node
    */
-  createAnalyser(type?: string, size?: number): any {
-    const tone = this.getTone() as any;
+  createAnalyser(type?: 'fft' | 'waveform', size?: number): ToneAnalyser {
+    const tone = this.getToneOrThrow();
+    if (!tone.Analyser) {
+      throw new Error('Tone.Analyser not available');
+    }
     return new tone.Analyser(type, size);
   }
 
   /**
    * Create a MonoSynth
    */
-  createMonoSynth(options?: any): any {
-    const tone = this.getTone() as any;
+  createMonoSynth(options?: Record<string, unknown>): ToneMonoSynth {
+    const tone = this.getToneOrThrow();
+    if (!tone.MonoSynth) {
+      throw new Error('Tone.MonoSynth not available');
+    }
     return new tone.MonoSynth(options);
   }
 
   /**
    * Create a Player
    */
-  createPlayer(options?: any): any {
-    const tone = this.getTone() as any;
-    return new tone.Player(options);
+  createPlayer(url?: string | AudioBuffer): TonePlayer {
+    const tone = this.getToneOrThrow();
+    if (!tone.Player) {
+      throw new Error('Tone.Player not available');
+    }
+    return new tone.Player(url);
   }
 
   /**
    * Create an Oscillator
    */
-  createOscillator(options?: any): any {
-    const tone = this.getTone() as any;
-    return new tone.Oscillator(options);
+  createOscillator(frequency?: number, type?: string): ToneOscillator {
+    const tone = this.getToneOrThrow();
+    if (!tone.Oscillator) {
+      throw new Error('Tone.Oscillator not available');
+    }
+    return new tone.Oscillator(frequency, type);
   }
 
   /**
    * Create an AmplitudeEnvelope
    */
-  createAmplitudeEnvelope(options?: any): any {
-    const tone = this.getTone() as any;
+  createAmplitudeEnvelope(
+    options?: Partial<{
+      attack: number;
+      decay: number;
+      sustain: number;
+      release: number;
+    }>,
+  ): ToneAmplitudeEnvelope {
+    const tone = this.getToneOrThrow();
+    if (!tone.AmplitudeEnvelope) {
+      throw new Error('Tone.AmplitudeEnvelope not available');
+    }
     return new tone.AmplitudeEnvelope(options);
   }
 
   /**
    * Create a Sequence
    */
-  createSequence(callback: any, events: any, subdivision?: any): any {
-    const tone = this.getTone() as any;
+  createSequence(
+    callback: (time: number, note: unknown) => void,
+    events: unknown[],
+    subdivision?: string,
+  ): ToneSequence {
+    const tone = this.getToneOrThrow();
+    if (!tone.Sequence) {
+      throw new Error('Tone.Sequence not available');
+    }
     return new tone.Sequence(callback, events, subdivision);
   }
 
   /**
    * Create a Synth
    */
-  createSynth(options?: any): any {
-    const tone = this.getTone() as any;
+  createSynth(options?: Record<string, unknown>): ToneSynth {
+    const tone = this.getToneOrThrow();
+    if (!tone.Synth) {
+      throw new Error('Tone.Synth not available');
+    }
     return new tone.Synth(options);
   }
 
   /**
    * Create a NoiseSynth
    */
-  createNoiseSynth(options?: any): any {
-    const tone = this.getTone() as any;
+  createNoiseSynth(options?: Record<string, unknown>): ToneNoiseSynth {
+    const tone = this.getToneOrThrow();
+    if (!tone.NoiseSynth) {
+      throw new Error('Tone.NoiseSynth not available');
+    }
     return new tone.NoiseSynth(options);
   }
 
   /**
    * Create a MembraneSynth
    */
-  createMembraneSynth(options?: any): any {
-    const tone = this.getTone() as any;
+  createMembraneSynth(options?: Record<string, unknown>): ToneMembraneSynth {
+    const tone = this.getToneOrThrow();
+    if (!tone.MembraneSynth) {
+      throw new Error('Tone.MembraneSynth not available');
+    }
     return new tone.MembraneSynth(options);
   }
 
   /**
    * Create a Gate
    */
-  createGate(options?: any): any {
-    const tone = this.getTone() as any;
-    return new tone.Gate(options);
+  createGate(threshold?: number): ToneGate {
+    const tone = this.getToneOrThrow();
+    if (!tone.Gate) {
+      throw new Error('Tone.Gate not available');
+    }
+    return new tone.Gate(threshold);
   }
 
   /**
    * Create a Limiter
    */
-  createLimiter(options?: any): any {
-    const tone = this.getTone() as any;
-    return new tone.Limiter(options);
+  createLimiter(threshold?: number): ToneLimiter {
+    const tone = this.getToneOrThrow();
+    if (!tone.Limiter) {
+      throw new Error('Tone.Limiter not available');
+    }
+    return new tone.Limiter(threshold);
   }
 
   /**
    * Create a Reverb
    */
-  createReverb(options?: any): any {
-    const tone = this.getTone() as any;
-    return new tone.Reverb(options);
+  createReverb(decay?: number): ToneReverb {
+    const tone = this.getToneOrThrow();
+    if (!tone.Reverb) {
+      throw new Error('Tone.Reverb not available');
+    }
+    return new tone.Reverb(decay);
   }
 
   /**
    * Create a Delay
    */
-  createDelay(options?: any): any {
-    const tone = this.getTone() as any;
-    return new tone.Delay(options);
+  createDelay(delayTime?: number, feedback?: number): ToneDelay {
+    const tone = this.getToneOrThrow();
+    if (!tone.Delay) {
+      throw new Error('Tone.Delay not available');
+    }
+    return new tone.Delay(delayTime, feedback);
   }
 
   /**
    * Create a Distortion
    */
-  createDistortion(options?: any): any {
-    const tone = this.getTone() as any;
-    return new tone.Distortion(options);
+  createDistortion(distortion?: number): ToneDistortion {
+    const tone = this.getToneOrThrow();
+    if (!tone.Distortion) {
+      throw new Error('Tone.Distortion not available');
+    }
+    return new tone.Distortion(distortion);
   }
 
   /**

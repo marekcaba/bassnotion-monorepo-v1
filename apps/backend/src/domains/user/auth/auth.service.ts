@@ -133,6 +133,8 @@ export class AuthService implements OnModuleInit {
       logger.debug('Password security validation passed', { correlationId });
 
       // 2. CHECK IF USER ALREADY EXISTS
+      // SECURITY: We still check for existing users internally, but return a generic
+      // error message to prevent email enumeration attacks
       logger.debug('Checking if user already exists...', { correlationId });
       const { data: existingUser } = await this.db.supabase
         .from('profiles')
@@ -141,12 +143,18 @@ export class AuthService implements OnModuleInit {
         .single();
 
       if (existingUser) {
+        // SECURITY: Use generic error message that doesn't reveal email exists
+        // Log the real reason internally for debugging
+        logger.debug(
+          `Registration attempt for existing email: ${signUpDto.email}`,
+          { correlationId },
+        );
         return {
           success: false,
-          message: 'User already exists',
+          message: 'Unable to create account',
           error: {
-            code: 'USER_ALREADY_EXISTS',
-            details: 'A user with this email already exists.',
+            code: 'REGISTRATION_FAILED',
+            details: 'Unable to create account. Please try signing in instead.',
           },
         };
       }

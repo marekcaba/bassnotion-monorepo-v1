@@ -14,7 +14,7 @@ export class AudioDebugger {
       AudioDebugger.instance = new AudioDebugger();
       // Expose to window for console access
       if (typeof window !== 'undefined') {
-        (window as any).__audioDebugger = AudioDebugger.instance;
+        window.__audioDebugger = AudioDebugger.instance;
       }
     }
     return AudioDebugger.instance;

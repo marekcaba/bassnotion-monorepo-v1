@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent } from '@/shared/components/ui/card';
+import { PageErrorBoundary } from '@/shared/components/ErrorBoundary';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 import { Clock, Loader2, AlertCircle, Plus, ArrowLeft } from 'lucide-react';
 import { useTutorials } from '@/domains/widgets/hooks/useTutorials';
@@ -11,20 +12,22 @@ import { UserIndicator } from '@/domains/user/components/UserIndicator';
 import { HomeNavbar } from '../_components/HomeNavbar';
 import type { TutorialSummary } from '@bassnotion/contracts';
 
-// YouTube Thumbnail Component
-interface YouTubeThumbnailProps {
+// Tutorial Thumbnail Component - supports custom thumbnails and YouTube auto-generated
+interface TutorialThumbnailProps {
   videoId?: string;
   videoUrl?: string;
+  customThumbnailUrl?: string;
   title: string;
   className?: string;
 }
 
-function YouTubeThumbnail({
+function TutorialThumbnail({
   videoId: propVideoId,
   videoUrl,
+  customThumbnailUrl,
   title,
   className = '',
-}: YouTubeThumbnailProps) {
+}: TutorialThumbnailProps) {
   // Extract YouTube video ID from URL if needed
   const getYouTubeVideoId = (url: string): string | null => {
     const regex =
@@ -37,8 +40,27 @@ function YouTubeThumbnail({
   const videoId =
     propVideoId || (videoUrl ? getYouTubeVideoId(videoUrl) : null);
 
+  // If custom thumbnail exists, use it (takes priority)
+  if (customThumbnailUrl) {
+    console.log('[TutorialThumbnail] Using custom thumbnail:', { title, customThumbnailUrl });
+    return (
+      <div className={`overflow-hidden ${className}`}>
+        <img
+          src={customThumbnailUrl}
+          alt={`${title} thumbnail`}
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            console.error('[TutorialThumbnail] Failed to load custom thumbnail - URL:', customThumbnailUrl, '- Title:', title);
+          }}
+        />
+      </div>
+    );
+  }
+
+  console.log('[TutorialThumbnail] No custom thumbnail:', { title, customThumbnailUrl, videoId });
+
+  // No custom thumbnail and no YouTube video - show placeholder
   if (!videoId) {
-    // Fallback to music emoji if no valid YouTube ID
     return (
       <div
         className={`bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-xl flex items-center justify-center ${className}`}
@@ -106,7 +128,7 @@ const capitalizeDifficulty = (difficulty: any) => {
   return difficultyValue.charAt(0).toUpperCase() + difficultyValue.slice(1);
 };
 
-export default function LibraryPage() {
+function LibraryPageContent() {
   const { navigateWithTransition } = useViewTransitionRouter();
   const { tutorials, total, isLoading, error, isError, refetch } =
     useTutorials();
@@ -389,12 +411,14 @@ export default function LibraryPage() {
                 <div className="absolute inset-0 rounded-3xl border border-zinc-800 group-hover:border-[#ffc700]/50 transition-all duration-500" />
 
                 {/* Container with no padding - full bleed layout - Fixed height 157.5px */}
+                {console.log('[Library] Tutorial data:', { title: tutorial.title, thumbnail_url: tutorial.thumbnail_url, youtube_id: tutorial.youtube_id })}
                 <div className="relative flex items-stretch h-[157.5px]">
                   {/* Left Side: Fixed 16:9 thumbnail with no padding */}
                   <div className="relative flex-shrink-0 w-[280px] overflow-hidden rounded-l-3xl">
-                    <YouTubeThumbnail
+                    <TutorialThumbnail
                       videoId={tutorial.youtube_id}
                       videoUrl={tutorial.youtube_url}
+                      customThumbnailUrl={tutorial.thumbnail_url}
                       title={tutorial.title}
                       className="w-full h-full object-cover rounded-l-3xl"
                     />
@@ -451,5 +475,13 @@ export default function LibraryPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LibraryPage() {
+  return (
+    <PageErrorBoundary pageName="Tutorial Library">
+      <LibraryPageContent />
+    </PageErrorBoundary>
   );
 }

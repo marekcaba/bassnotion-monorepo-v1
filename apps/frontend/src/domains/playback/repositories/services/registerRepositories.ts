@@ -4,11 +4,19 @@
  * Integrates the repository pattern with the existing DI system
  */
 
-import { serviceRegistry } from '../../services/core/ServiceRegistry.js';
+import { serviceRegistry, Service } from '../../services/core/ServiceRegistry.js';
 import { RepositoryService } from './RepositoryService.js';
 import { createStructuredLogger } from '../../modules/shared/index.js';
 
 const logger = createStructuredLogger('RepositoryRegistration');
+
+/**
+ * Wrapper service that provides repository access
+ * Implements Service interface for compatibility with ServiceRegistry
+ */
+interface RepositoryAccessorService<T> extends Service {
+  getRepository(): T;
+}
 
 /**
  * Register all playback repositories with the service registry
@@ -33,17 +41,21 @@ export async function registerPlaybackRepositories(): Promise<void> {
     serviceRegistry.register('repositoryService', repositoryService);
 
     // Also register individual repository accessors for convenience
-    serviceRegistry.register('trackRepository', {
+    // Type the accessor services properly
+    const trackAccessor: RepositoryAccessorService<ReturnType<typeof repositoryService.getTrackRepository>> = {
       getRepository: () => repositoryService.getTrackRepository(),
-    } as any);
+    };
+    serviceRegistry.register('trackRepository', trackAccessor);
 
-    serviceRegistry.register('pluginPresetRepository', {
+    const pluginAccessor: RepositoryAccessorService<ReturnType<typeof repositoryService.getPluginPresetRepository>> = {
       getRepository: () => repositoryService.getPluginPresetRepository(),
-    } as any);
+    };
+    serviceRegistry.register('pluginPresetRepository', pluginAccessor);
 
-    serviceRegistry.register('transportRepository', {
+    const transportAccessor: RepositoryAccessorService<ReturnType<typeof repositoryService.getTransportRepository>> = {
       getRepository: () => repositoryService.getTransportRepository(),
-    } as any);
+    };
+    serviceRegistry.register('transportRepository', transportAccessor);
 
     logger.info('Playback repositories registered successfully');
   } catch (error) {

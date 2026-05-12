@@ -31,6 +31,8 @@ import { FileUploadService } from './services/file-upload.service.js';
 import { AuthGuard } from '../user/auth/guards/auth.guard.js';
 import { SupabaseService } from '../../infrastructure/supabase/supabase.service.js';
 import { createStructuredLogger } from '@bassnotion/contracts';
+import { UploadRateLimit } from '../../shared/decorators/rate-limit.decorator.js';
+import { RateLimitGuard } from '../../shared/guards/rate-limit.guard.js';
 
 @ApiTags('exercises')
 @Controller('api/exercises')
@@ -362,9 +364,11 @@ export class ExercisesController {
    * Upload and process MusicXML file to create bass exercise
    *
    * FIXED: Using Fastify multipart instead of Express FileInterceptor
+   * SECURITY: Rate limited to 10 uploads per hour per user to prevent DoS
    */
   @Post('upload/musicxml')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, RateLimitGuard)
+  @UploadRateLimit()
   async uploadMusicXML(
     @Request() req: any,
     @Req() fastifyReq: FastifyRequest,
@@ -466,9 +470,11 @@ export class ExercisesController {
    * Upload and process MIDI file to create bass exercise
    *
    * FIXED: Using Fastify multipart instead of Express FileInterceptor
+   * SECURITY: Rate limited to 10 uploads per hour per user to prevent DoS
    */
   @Post('upload/midi')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, RateLimitGuard)
+  @UploadRateLimit()
   async uploadMIDI(
     @Request() req: any,
     @Req() fastifyReq: FastifyRequest,

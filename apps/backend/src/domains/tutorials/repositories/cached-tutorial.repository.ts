@@ -1,231 +1,208 @@
 import { Injectable } from '@nestjs/common';
 import {
   ITutorialRepository,
-  PaginatedResult,
   PaginationOptions,
+  PaginatedResult,
 } from './tutorial.repository.interface.js';
 import { Tutorial } from '../entities/tutorial.entity.js';
 import { TutorialId } from '../value-objects/tutorial-id.vo.js';
 import { TutorialSlug } from '../value-objects/tutorial-slug.vo.js';
 import { CacheService } from '../../../infrastructure/cache/cache.service.js';
+import { CachedRepository } from '../../../infrastructure/cache/cached-repository.base.js';
 import { TutorialRepository } from './tutorial.repository.js';
 
+/**
+ * Cached tutorial data structure (snake_case from database/cache).
+ * This interface matches the output of Tutorial.toPersistence().
+ */
+interface CachedTutorialData {
+  id: string;
+  title: string;
+  slug: string;
+  description: string;
+  youtube_id: string;
+  duration: number;
+  author_name: string;
+  thumbnail_url?: string;
+  level: 'beginner' | 'intermediate' | 'advanced';
+  tags: string[];
+  is_active: boolean;
+  published_at?: string;
+  created_at: string;
+  updated_at: string;
+  category?: string;
+  // Draft & MIDI fields
+  status?: string;
+  last_modified?: string;
+  auto_save_version?: number;
+  drummer_midi_url?: string;
+  bassline_midi_url?: string;
+  harmony_midi_url?: string;
+  deleted_at?: string;
+  // Creator fields
+  creator_name?: string;
+  creator_channel_url?: string;
+  creator_avatar_url?: string;
+  creator_subscriber_count?: number;
+  // Modular block system
+  blocks?: any[];
+  // Act 1: Understand fields (legacy)
+  understand_video_url?: string;
+  understand_video_library_id?: string;
+  understand_headline?: string;
+  understand_questions?: any[];
+  title_highlight_words?: string[];
+  sidebar_title?: string;
+}
+
+/**
+ * Cached decorator for TutorialRepository.
+ *
+ * Extends CachedRepository base class to provide consistent caching behavior
+ * while implementing domain-specific methods like findBySlug, findByLevel, etc.
+ *
+ * Cache key patterns:
+ * - tutorial:{id} - Single entity
+ * - tutorial:slug:{slug} - By slug lookup
+ * - tutorial:exists:{id} - Existence check
+ * - tutorial:slug:exists:{slug} - Slug existence check
+ * - tutorials:list:page:{n}:limit:{m} - Pagination
+ * - tutorials:published:page:{n}:limit:{m} - Published pagination
+ * - tutorials:level:{level} - By level
+ * - tutorials:author:{name} - By author
+ */
 @Injectable()
-export class CachedTutorialRepository implements ITutorialRepository {
-  private readonly TTL = 3600; // 1 hour
-
-  constructor(
-    public readonly repository: TutorialRepository,
-    private readonly cache: CacheService,
-  ) {}
-
-  async findById(id: TutorialId): Promise<Tutorial | null> {
-    const key = this.getTutorialKey(id);
-
-    return this.cache
-      .wrap(
-        key,
-        async () => {
-          const tutorial = await this.repository.findById(id);
-          return tutorial ? tutorial.toPersistence() : null;
-        },
-        this.TTL,
-      )
-      .then((data) => {
-        if (!data) return null;
-        return this.reconstitute(data);
-      });
+export class CachedTutorialRepository
+  extends CachedRepository<Tutorial, TutorialId, TutorialRepository>
+  implements ITutorialRepository
+{
+  constructor(repository: TutorialRepository, cache: CacheService) {
+    super(repository, cache, { ttl: 3600 }); // 1 hour default TTL
   }
 
+  // ============================================================================
+  // Domain-Specific Methods
+  // ============================================================================
+
+  /**
+   * Find a tutorial by slug with caching.
+   */
   async findBySlug(slug: TutorialSlug): Promise<Tutorial | null> {
-    const key = this.getSlugKey(slug);
-
-    return this.cache
-      .wrap(
-        key,
-        async () => {
-          const tutorial = await this.repository.findBySlug(slug);
-          return tutorial ? tutorial.toPersistence() : null;
-        },
-        this.TTL,
-      )
-      .then((data) => {
-        if (!data) return null;
-        return this.reconstitute(data);
-      });
+    return this.findByAlternateKey(this.getSlugKey(slug), () =>
+      this.repository.findBySlug(slug),
+    );
   }
 
-  async findAll(
-    options: PaginationOptions,
-  ): Promise<PaginatedResult<Tutorial>> {
-    const key = this.getPaginationKey(options);
-
-    return this.cache
-      .wrap(
-        key,
-        async () => {
-          const result = await this.repository.findAll(options);
-          return {
-            ...result,
-            items: result.items.map((t) => t.toPersistence()),
-          };
-        },
-        this.TTL / 2, // 30 minutes for list queries
-      )
-      .then((result) => ({
-        ...result,
-        items: result.items.map((data) => this.reconstitute(data)),
-      }));
-  }
-
+  /**
+   * Find tutorials by level with caching.
+   */
   async findByLevel(
     level: 'beginner' | 'intermediate' | 'advanced',
   ): Promise<Tutorial[]> {
-    const key = this.getLevelKey(level);
-
-    return this.cache
-      .wrap(
-        key,
-        async () => {
-          const tutorials = await this.repository.findByLevel(level);
-          return tutorials.map((t) => t.toPersistence());
-        },
-        this.TTL,
-      )
-      .then((items) => items.map((data) => this.reconstitute(data)));
+    return this.findListByCriteria(this.getLevelKey(level), () =>
+      this.repository.findByLevel(level),
+    );
   }
 
+  /**
+   * Find published tutorials with pagination and caching.
+   */
   async findPublished(
     options: PaginationOptions,
   ): Promise<PaginatedResult<Tutorial>> {
-    const key = this.getPublishedKey(options);
-
-    return this.cache
-      .wrap(
-        key,
-        async () => {
-          const result = await this.repository.findPublished(options);
-          return {
-            ...result,
-            items: result.items.map((t) => t.toPersistence()),
-          };
-        },
-        this.TTL / 2, // 30 minutes for published content
-      )
-      .then((result) => ({
-        ...result,
-        items: result.items.map((data) => this.reconstitute(data)),
-      }));
+    return this.findPaginatedByCriteria(this.getPublishedKey(options), () =>
+      this.repository.findPublished(options),
+    );
   }
 
-  async search(query: string): Promise<Tutorial[]> {
-    // Don't cache search results as they're too dynamic
-    return this.repository.search(query);
-  }
-
+  /**
+   * Find tutorials by author with caching.
+   */
   async findByAuthor(authorName: string): Promise<Tutorial[]> {
-    const key = this.getAuthorKey(authorName);
-
-    return this.cache
-      .wrap(
-        key,
-        async () => {
-          const tutorials = await this.repository.findByAuthor(authorName);
-          return tutorials.map((t) => t.toPersistence());
-        },
-        this.TTL,
-      )
-      .then((items) => items.map((data) => this.reconstitute(data)));
+    return this.findListByCriteria(this.getAuthorKey(authorName), () =>
+      this.repository.findByAuthor(authorName),
+    );
   }
 
-  async save(tutorial: Tutorial): Promise<void> {
-    await this.repository.save(tutorial);
-    await this.invalidateCache(tutorial);
-  }
-
-  async update(tutorial: Tutorial): Promise<void> {
-    await this.repository.update(tutorial);
-    await this.invalidateCache(tutorial);
-  }
-
-  async delete(id: TutorialId): Promise<void> {
-    // Get the tutorial first to invalidate slug cache
-    const tutorial = await this.repository.findById(id);
-    await this.repository.delete(id);
-
-    if (tutorial) {
-      await this.invalidateCache(tutorial);
-    }
-    await this.cache.del(this.getTutorialKey(id));
-    await this.invalidateLists();
-  }
-
-  async exists(id: TutorialId): Promise<boolean> {
-    const key = this.getExistsKey(id);
-
-    return this.cache.wrap(key, () => this.repository.exists(id), this.TTL);
-  }
-
+  /**
+   * Check if a tutorial exists by slug with caching.
+   */
   async existsBySlug(slug: TutorialSlug): Promise<boolean> {
-    const key = this.getSlugExistsKey(slug);
-
-    return this.cache.wrap(
-      key,
-      () => this.repository.existsBySlug(slug),
-      this.TTL,
+    return this.existsByAlternateKey(this.getSlugExistsKey(slug), () =>
+      this.repository.existsBySlug(slug),
     );
   }
 
-  async findByIds(ids: TutorialId[]): Promise<Tutorial[]> {
-    if (ids.length === 0) return [];
+  // ============================================================================
+  // Abstract Method Implementations
+  // ============================================================================
 
-    // For batch operations, we'll check cache for each individual item
-    // and only fetch missing ones from the database
-    const cachedResults: (Tutorial | null)[] = await Promise.all(
-      ids.map((id) => this.findById(id)),
-    );
-
-    return cachedResults.filter(
-      (tutorial): tutorial is Tutorial => tutorial !== null,
-    );
+  protected reconstitute(data: unknown): Tutorial {
+    const d = data as CachedTutorialData;
+    return Tutorial.reconstitute({
+      id: TutorialId.create(d.id),
+      title: d.title,
+      slug: TutorialSlug.create(d.slug),
+      description: d.description,
+      youtubeId: d.youtube_id,
+      duration: d.duration,
+      authorName: d.author_name,
+      thumbnailUrl: d.thumbnail_url,
+      level: d.level,
+      tags: d.tags || [],
+      isActive: d.is_active,
+      publishedAt: d.published_at ? new Date(d.published_at) : undefined,
+      createdAt: new Date(d.created_at),
+      updatedAt: new Date(d.updated_at),
+      category: d.category,
+      // Draft & MIDI fields
+      status: (d.status as 'draft' | 'published' | 'archived') || 'draft',
+      lastModified: d.last_modified ? new Date(d.last_modified) : undefined,
+      autoSaveVersion: d.auto_save_version || 0,
+      drummerMidiUrl: d.drummer_midi_url,
+      basslineMidiUrl: d.bassline_midi_url,
+      harmonyMidiUrl: d.harmony_midi_url,
+      deletedAt: d.deleted_at ? new Date(d.deleted_at) : undefined,
+      // Creator fields
+      creatorName: d.creator_name,
+      creatorChannelUrl: d.creator_channel_url,
+      creatorAvatarUrl: d.creator_avatar_url,
+      creatorSubscriberCount: d.creator_subscriber_count,
+      // Modular block system
+      blocks: d.blocks || [],
+      // Act 1: Understand fields
+      understandVideoUrl: d.understand_video_url,
+      understandVideoLibraryId: d.understand_video_library_id,
+      understandHeadline: d.understand_headline,
+      understandQuestions: d.understand_questions || [],
+      titleHighlightWords: d.title_highlight_words || [],
+      sidebarTitle: d.sidebar_title,
+    });
   }
 
-  async saveMany(tutorials: Tutorial[]): Promise<void> {
-    await this.repository.saveMany(tutorials);
-
-    // Invalidate cache for all saved tutorials
-    await Promise.all(
-      tutorials.map((tutorial) => this.invalidateCache(tutorial)),
-    );
-    await this.invalidateLists();
+  protected toPersistence(entity: Tutorial): unknown {
+    return entity.toPersistence();
   }
 
-  async updateMany(tutorials: Tutorial[]): Promise<void> {
-    await this.repository.updateMany(tutorials);
-
-    // Invalidate cache for all updated tutorials
-    await Promise.all(
-      tutorials.map((tutorial) => this.invalidateCache(tutorial)),
-    );
-    await this.invalidateLists();
+  protected getEntityKey(id: TutorialId): string {
+    return `tutorial:${id.value}`;
   }
 
-  async deleteMany(ids: TutorialId[]): Promise<void> {
-    // Get tutorials first to invalidate slug caches
-    const tutorials = await this.repository.findByIds(ids);
-    await this.repository.deleteMany(ids);
+  protected getExistsKey(id: TutorialId): string {
+    return `tutorial:exists:${id.value}`;
+  }
 
-    // Invalidate cache for all deleted tutorials
+  protected getPaginationKey(options: PaginationOptions): string {
+    return `tutorials:list:page:${options.page}:limit:${options.limit}`;
+  }
+
+  protected getEntityId(entity: Tutorial): TutorialId {
+    return entity.id;
+  }
+
+  protected async invalidateEntityCache(tutorial: Tutorial): Promise<void> {
     await Promise.all([
-      ...tutorials.map((tutorial) => this.invalidateCache(tutorial)),
-      ...ids.map((id) => this.cache.del(this.getTutorialKey(id))),
-    ]);
-    await this.invalidateLists();
-  }
-
-  private async invalidateCache(tutorial: Tutorial): Promise<void> {
-    await Promise.all([
-      this.cache.del(this.getTutorialKey(tutorial.id)),
+      this.cache.del(this.getEntityKey(tutorial.id)),
       this.cache.del(this.getSlugKey(tutorial.slug)),
       this.cache.del(this.getExistsKey(tutorial.id)),
       this.cache.del(this.getSlugExistsKey(tutorial.slug)),
@@ -234,44 +211,19 @@ export class CachedTutorialRepository implements ITutorialRepository {
     ]);
   }
 
-  private async invalidateLists(): Promise<void> {
-    // Invalidate all paginated results
-    // In production, you might want to track specific keys
+  protected async invalidateLists(): Promise<void> {
     await Promise.all([
       this.cache.del('tutorials:list:*'),
       this.cache.del('tutorials:published:*'),
     ]);
   }
 
-  private reconstitute(data: any): Tutorial {
-    return Tutorial.reconstitute({
-      id: TutorialId.create(data.id),
-      title: data.title,
-      slug: TutorialSlug.create(data.slug),
-      description: data.description,
-      youtubeId: data.youtube_id,
-      duration: data.duration,
-      authorName: data.author_name,
-      thumbnailUrl: data.thumbnail_url,
-      level: data.level,
-      tags: data.tags || [],
-      isActive: data.is_active,
-      publishedAt: data.published_at ? new Date(data.published_at) : undefined,
-      createdAt: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at),
-    });
-  }
-
-  private getTutorialKey(id: TutorialId): string {
-    return `tutorial:${id.value}`;
-  }
+  // ============================================================================
+  // Domain-Specific Cache Keys
+  // ============================================================================
 
   private getSlugKey(slug: TutorialSlug): string {
     return `tutorial:slug:${slug.value}`;
-  }
-
-  private getExistsKey(id: TutorialId): string {
-    return `tutorial:exists:${id.value}`;
   }
 
   private getSlugExistsKey(slug: TutorialSlug): string {
@@ -284,10 +236,6 @@ export class CachedTutorialRepository implements ITutorialRepository {
 
   private getAuthorKey(authorName: string): string {
     return `tutorials:author:${authorName.toLowerCase()}`;
-  }
-
-  private getPaginationKey(options: PaginationOptions): string {
-    return `tutorials:list:page:${options.page}:limit:${options.limit}`;
   }
 
   private getPublishedKey(options: PaginationOptions): string {

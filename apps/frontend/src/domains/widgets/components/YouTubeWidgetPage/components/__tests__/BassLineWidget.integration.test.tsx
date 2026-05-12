@@ -46,10 +46,16 @@ const mockPlaybackEngine = {
   bassScheduler: {
     buffers: new Map(),
   },
+  setInstrumentVolume: vi.fn(),
+  setInstrumentMuted: vi.fn(),
+  setBassBuffers: vi.fn(),
+  clearBassBuffers: vi.fn(),
+  getOrCreateInstrumentGainNode: vi.fn(),
 };
 
 const mockAudioEngine = {
   isReady: vi.fn(() => true),
+  isInitialized: true,
   getContext: vi.fn(() => mockAudioContext),
 };
 
@@ -62,6 +68,8 @@ const mockCoreServices = {
 vi.mock('@/domains/playback/services/WindowRegistry.js', () => ({
   WindowRegistry: {
     getCoreServices: vi.fn(() => mockCoreServices),
+    clearBassBuffersReady: vi.fn(),
+    setBassBuffersReady: vi.fn(),
   },
 }));
 
@@ -96,12 +104,16 @@ vi.mock('@/domains/playback/hooks/useTrack', () => ({
   })),
 }));
 
-// Mock useTransportContext
+// Mock useTransportControls
 vi.mock('@/domains/playback/contexts/TransportContext', () => ({
-  useTransportContext: vi.fn(() => ({
+  useTransportControls: vi.fn(() => ({
     tempo: 120,
     isPlaying: false,
-    currentPosition: '0:0:0',
+    isPaused: false,
+    isStopped: true,
+    setTempo: vi.fn(),
+    timeSignature: { numerator: 4, denominator: 4 },
+    servicesReady: true,
   })),
 }));
 
@@ -113,6 +125,11 @@ vi.mock('@/utils/logger.js', () => ({
     warn: vi.fn(),
     debug: vi.fn(),
   }),
+}));
+
+// Mock debug config
+vi.mock('@/config/debug', () => ({
+  isVerboseDebugEnabled: vi.fn(() => false),
 }));
 
 // Mock VolumeKnob
@@ -132,7 +149,7 @@ vi.mock('../VolumeKnob', () => ({
   ),
 }));
 
-import { BassLineWidget } from '../BassLineWidget';
+import { BassLineWidget } from '../../BassLineWidget/index.js';
 
 describe('BassLineWidget + EventBus Integration', () => {
   const defaultProps = {

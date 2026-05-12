@@ -446,8 +446,12 @@ export class InstrumentLifecycleManager {
       ]);
 
       // Force garbage collection if available
-      if (this.config.aggressiveCleanup && (global as any).gc) {
-        (global as any).gc();
+      if (
+        this.config.aggressiveCleanup &&
+        typeof window !== 'undefined' &&
+        typeof window.gc === 'function'
+      ) {
+        window.gc();
       }
 
       // Calculate total memory freed

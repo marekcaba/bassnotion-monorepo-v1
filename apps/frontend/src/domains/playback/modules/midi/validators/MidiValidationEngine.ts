@@ -383,7 +383,7 @@ export class MidiValidationEngine {
           for (const track of file.tracks) {
             for (const event of track.events) {
               if (event.type === 'setTempo' && 'bpm' in event) {
-                const bpm = (event as any).bpm;
+                const bpm = (event as { bpm: number }).bpm;
                 if (bpm < 20 || bpm > 300) {
                   violations.push({
                     ruleId: 'strict.valid-tempo-range',
@@ -411,7 +411,7 @@ export class MidiValidationEngine {
           for (const track of file.tracks) {
             for (const event of track.events) {
               if (event.type === 'setTempo' && 'bpm' in event) {
-                const bpm = (event as any).bpm;
+                const bpm = (event as { bpm: number }).bpm;
                 if (bpm < 40 || bpm > 200) {
                   violations.push({
                     ruleId: 'standard.reasonable-tempo',

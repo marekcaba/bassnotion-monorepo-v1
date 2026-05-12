@@ -77,7 +77,7 @@ const logger = getLogger('AtomicPlaybackClock');
 
 // Debug flag - set to true in browser console: window.__DEBUG_ATOMIC_CLOCK = true
 const isDebugEnabled = () =>
-  typeof window !== 'undefined' && (window as any).__DEBUG_ATOMIC_CLOCK;
+  typeof window !== 'undefined' && window.__DEBUG_ATOMIC_CLOCK;
 
 /**
  * Visual beat state emitted to subscribers

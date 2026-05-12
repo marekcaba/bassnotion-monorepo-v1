@@ -3,19 +3,25 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
 import { ZoneCard, ZoneCardContent } from '@/ui-libraries';
+import { WidgetErrorBoundary } from '@/shared/components/ErrorBoundary';
 import { UseWidgetPageStateReturn } from '@/domains/widgets/hooks/useWidgetPageState';
 import { getSkeletonDebugTime } from '@/utils/skeletonDebug';
 import { isVerboseDebugEnabled } from '@/config/debug';
 
-// Widget loading skeleton component - upgraded with shimmer effect
+// Widget loading skeleton component - upgraded with glassmorphism style
 function WidgetSkeleton({ name }: { name: string }) {
   return (
-    <div className="skeleton-glass bg-slate-800/50 rounded-lg p-4 border border-slate-700">
-      <div className="flex items-center gap-2 mb-2">
-        <div className="skeleton-shimmer w-4 h-4 rounded" />
-        <div className="skeleton-shimmer h-4 w-24 rounded" />
+    <div className="relative bg-gradient-to-br from-slate-800/80 via-slate-800/60 to-slate-900/80 backdrop-blur-xl rounded-2xl border border-white/10 px-4 py-1 h-24 shadow-2xl shadow-black/20 overflow-hidden">
+      {/* Glassmorphism overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-black/10 pointer-events-none" />
+      <div className="relative flex items-center gap-4 h-full">
+        <div className="skeleton-shimmer w-12 h-12 rounded-full" />
+        <div className="flex-1">
+          <div className="skeleton-shimmer h-4 w-24 rounded mb-2" />
+          <div className="skeleton-shimmer h-3 w-32 rounded" />
+        </div>
+        <div className="skeleton-shimmer w-16 h-10 rounded-xl" />
       </div>
-      <div className="skeleton-shimmer h-8 rounded" />
       <span className="sr-only">Loading {name} widget...</span>
     </div>
   );
@@ -23,7 +29,7 @@ function WidgetSkeleton({ name }: { name: string }) {
 
 // Dynamic imports with loading states - reduces initial bundle by ~300KB per widget
 const MetronomeWidget = dynamic(
-  () => import('./MetronomeWidget').then((m) => {
+  () => import('../MetronomeWidget/index.js').then((m) => {
     if (isVerboseDebugEnabled()) {
       console.log(`📦 [SKELETON-DEBUG] MetronomeWidget loaded at +${getSkeletonDebugTime()}ms`);
     }
@@ -36,7 +42,7 @@ const MetronomeWidget = dynamic(
 );
 
 const DrummerWidget = dynamic(
-  () => import('./DrummerWidget').then((m) => {
+  () => import('../DrummerWidget/index.js').then((m) => {
     if (isVerboseDebugEnabled()) {
       console.log(`📦 [SKELETON-DEBUG] DrummerWidget loaded at +${getSkeletonDebugTime()}ms`);
     }
@@ -49,7 +55,7 @@ const DrummerWidget = dynamic(
 );
 
 const BassLineWidget = dynamic(
-  () => import('./BassLineWidget').then((m) => {
+  () => import('../BassLineWidget/index.js').then((m) => {
     if (isVerboseDebugEnabled()) {
       console.log(`📦 [SKELETON-DEBUG] BassLineWidget loaded at +${getSkeletonDebugTime()}ms`);
     }
@@ -62,7 +68,7 @@ const BassLineWidget = dynamic(
 );
 
 const HarmonyWidget = dynamic(
-  () => import('./HarmonyWidget').then((m) => {
+  () => import('../HarmonyWidget/index.js').then((m) => {
     if (isVerboseDebugEnabled()) {
       console.log(`📦 [SKELETON-DEBUG] HarmonyWidget loaded at +${getSkeletonDebugTime()}ms`);
     }
@@ -202,72 +208,87 @@ export function FourWidgetsCard({
     }));
   }, [setState]);
 
+  // Memoized pattern change handlers to prevent unnecessary re-renders
+  // These replace inline arrow functions that were creating new references on every render
+  const handleDrummerPatternChange = React.useCallback(
+    (pattern: string) => handlePatternChange('drummer', pattern),
+    [handlePatternChange]
+  );
+  const handleBassLinePatternChange = React.useCallback(
+    (pattern: string) => handlePatternChange('bassLine', pattern),
+    [handlePatternChange]
+  );
+
   return (
     <ZoneCard className="zone-card bg-transparent border-transparent shadow-none">
       <ZoneCardContent className="px-0 pb-6 pt-0">
         {/* 4 Widgets in Vertical Stack (1x4) as specified */}
         <div className="space-y-2">
           {/* 1. Metronome Widget */}
-          <MetronomeWidget
-            isVisible={state.widgets.metronome.isVisible}
-            isPlaying={state.isPlaying}
-            timeSignature={selectedExercise?.timeSignature}
-            volume={state.volume.metronome}
-            isMuted={state.muted.metronome}
-            onVolumeChange={handleMetronomeVolumeChange}
-            onMuteToggle={handleMetronomeMuteToggle}
-          />
+          <WidgetErrorBoundary widgetName="Metronome">
+            <MetronomeWidget
+              isVisible={state.widgets.metronome.isVisible}
+              isPlaying={state.isPlaying}
+              timeSignature={selectedExercise?.timeSignature}
+              volume={state.volume.metronome}
+              isMuted={state.muted.metronome}
+              onVolumeChange={handleMetronomeVolumeChange}
+              onMuteToggle={handleMetronomeMuteToggle}
+            />
+          </WidgetErrorBoundary>
 
           {/* 2. Drummer Widget */}
-          <DrummerWidget
-            pattern={state.widgets.drummer.pattern}
-            isVisible={state.widgets.drummer.isVisible}
-            isPlaying={state.isPlaying}
-            exercise={selectedExercise}
-            tutorialId={tutorialId}
-            onPatternChange={(pattern) =>
-              handlePatternChange('drummer', pattern)
-            }
-            isAdminMode={isAdminMode}
-            volume={state.volume.drums}
-            isMuted={state.muted.drums}
-            onVolumeChange={handleDrumsVolumeChange}
-            onMuteToggle={handleDrumsMuteToggle}
-          />
+          <WidgetErrorBoundary widgetName="Drums">
+            <DrummerWidget
+              pattern={state.widgets.drummer.pattern}
+              isVisible={state.widgets.drummer.isVisible}
+              isPlaying={state.isPlaying}
+              exercise={selectedExercise}
+              tutorialId={tutorialId}
+              onPatternChange={handleDrummerPatternChange}
+              isAdminMode={isAdminMode}
+              volume={state.volume.drums}
+              isMuted={state.muted.drums}
+              onVolumeChange={handleDrumsVolumeChange}
+              onMuteToggle={handleDrumsMuteToggle}
+            />
+          </WidgetErrorBoundary>
 
           {/* 3. Bass Line Widget */}
-          <BassLineWidget
-            pattern={state.widgets.bassLine.pattern}
-            isVisible={state.widgets.bassLine.isVisible}
-            isPlaying={state.isPlaying}
-            exercise={selectedExercise}
-            onPatternChange={(pattern) =>
-              handlePatternChange('bassLine', pattern)
-            }
-            isAdminMode={isAdminMode}
-            volume={state.volume.bass}
-            isMuted={state.muted.bass}
-            onVolumeChange={handleBassVolumeChange}
-            onMuteToggle={handleBassMuteToggle}
-          />
+          <WidgetErrorBoundary widgetName="Bass">
+            <BassLineWidget
+              pattern={state.widgets.bassLine.pattern}
+              isVisible={state.widgets.bassLine.isVisible}
+              isPlaying={state.isPlaying}
+              exercise={selectedExercise}
+              onPatternChange={handleBassLinePatternChange}
+              isAdminMode={isAdminMode}
+              volume={state.volume.bass}
+              isMuted={state.muted.bass}
+              onVolumeChange={handleBassVolumeChange}
+              onMuteToggle={handleBassMuteToggle}
+            />
+          </WidgetErrorBoundary>
 
           {/* 4. Harmony Widget */}
-          <HarmonyWidget
-            progression={state.widgets.harmony.progression}
-            currentChord={state.widgets.harmony.currentChord || 0}
-            isVisible={state.widgets.harmony.isVisible}
-            isPlaying={state.isPlaying}
-            tutorialId={tutorialId}
-            harmonyInstrument={harmonyInstrument}
-            exercise={memoizedExercise}
-            onNextChord={handleNextChord}
-            onProgressionChange={handleProgressionChange}
-            isAdminMode={isAdminMode}
-            volume={state.volume.harmony}
-            isMuted={state.muted.harmony}
-            onVolumeChange={handleHarmonyVolumeChange}
-            onMuteToggle={handleHarmonyMuteToggle}
-          />
+          <WidgetErrorBoundary widgetName="Harmony">
+            <HarmonyWidget
+              progression={state.widgets.harmony.progression}
+              currentChord={state.widgets.harmony.currentChord || 0}
+              isVisible={state.widgets.harmony.isVisible}
+              isPlaying={state.isPlaying}
+              tutorialId={tutorialId}
+              harmonyInstrument={harmonyInstrument}
+              exercise={memoizedExercise}
+              onNextChord={handleNextChord}
+              onProgressionChange={handleProgressionChange}
+              isAdminMode={isAdminMode}
+              volume={state.volume.harmony}
+              isMuted={state.muted.harmony}
+              onVolumeChange={handleHarmonyVolumeChange}
+              onMuteToggle={handleHarmonyMuteToggle}
+            />
+          </WidgetErrorBoundary>
         </div>
 
         {/* Widget Synchronization Status */}

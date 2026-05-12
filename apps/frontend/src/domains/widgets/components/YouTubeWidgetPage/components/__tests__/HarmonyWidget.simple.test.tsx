@@ -1,7 +1,64 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import { HarmonyWidget } from '../HarmonyWidget';
+import { HarmonyWidget } from '../../HarmonyWidget/index.js';
+
+// Mock TransportContext
+vi.mock('@/domains/playback/contexts/TransportContext', () => ({
+  useTransportControls: () => ({
+    tempo: 120,
+    isPlaying: false,
+    isPaused: false,
+    isStopped: true,
+    setTempo: vi.fn(),
+    timeSignature: { numerator: 4, denominator: 4 },
+    servicesReady: true,
+  }),
+}));
+
+// Mock SyncContext - path relative to HarmonyWidget location
+vi.mock('@/domains/widgets/components/base/SyncProvider.js', () => ({
+  useSyncContext: () => ({
+    subscribeToEvent: vi.fn(),
+    publishEvent: vi.fn(),
+  }),
+}));
+
+// Mock useVisualBeat
+vi.mock('@/domains/widgets/hooks/useVisualBeat', () => ({
+  useVisualBeat: () => ({
+    beatIndex: 0,
+    measureIndex: 0,
+    isCountdown: false,
+  }),
+}));
+
+// Mock useMeasureSync
+vi.mock('@/domains/widgets/hooks/useBeatGridSync', () => ({
+  useMeasureSync: () => ({
+    registerChordIndicator: vi.fn(),
+  }),
+}));
+
+// Mock correlation hook
+vi.mock('@/shared/hooks/useCorrelation', () => ({
+  useCorrelation: () => ({
+    correlationId: 'test-correlation-id',
+    logger: {
+      info: vi.fn(),
+      debug: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    },
+  }),
+}));
+
+// Mock lifecycle
+vi.mock('@/domains/playback/utils/InitializationLifecycleLogger.js', () => ({
+  lifecycle: {
+    checkpoint: vi.fn(),
+  },
+}));
 
 // Mock dependencies
 vi.mock('@/domains/playback/hooks/useTrack', () => ({

@@ -368,7 +368,7 @@ export class MidiPipelinePresets {
     for (const track of file.tracks) {
       const tempoEvent = track.events.find((e) => e.type === 'setTempo');
       if (tempoEvent && 'bpm' in tempoEvent) {
-        return (tempoEvent as any).bpm;
+        return (tempoEvent as { bpm: number }).bpm;
       }
     }
     return 120; // Default BPM

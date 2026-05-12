@@ -80,7 +80,7 @@ class TonePreloaderSingleton {
     // This runs when the browser is idle, before user interaction
     // Timeout of 500ms ensures we start loading quickly even if busy
     if ('requestIdleCallback' in window) {
-      (window as any).requestIdleCallback(
+      window.requestIdleCallback(
         () => this.eagerLoad(),
         { timeout: 500 } // Max 500ms to wait for idle time - aggressive but not blocking
       );
@@ -122,7 +122,7 @@ class TonePreloaderSingleton {
 
       // Cache in window for immediate access
       if (typeof window !== 'undefined') {
-        (window as any).__preloadedTone = this.toneModule;
+        window.__preloadedTone = this.toneModule;
       }
 
       // Emit event for any listeners

@@ -96,6 +96,20 @@ export interface UseAudioFretboardConfig {
 }
 
 /**
+ * Playback integration shape for audio fretboard
+ * Narrowly typed for the specific properties accessed
+ */
+interface PlaybackIntegrationShape {
+  engine?: {
+    processNoteEvent?: (event: BassNoteEvent) => void;
+  };
+  state?: {
+    isInitialized?: boolean;
+    error?: Error | null;
+  };
+}
+
+/**
  * Hook return interface
  */
 export interface UseAudioFretboardReturn {
@@ -107,7 +121,7 @@ export interface UseAudioFretboardReturn {
   triggerNote: (stringIndex: number, fret: number | 'open') => void;
 
   // Playback integration (temporarily null due to build issues)
-  playbackIntegration: any; // UsePlaybackIntegrationReturn | null;
+  playbackIntegration: PlaybackIntegrationShape | null;
 
   // Audio state
   isAudioEnabled: boolean;
@@ -598,13 +612,13 @@ export function useAudioFretboard(
 
       // TODO: Re-enable when playback domain build issues are resolved
       // Attempt to trigger actual audio if playback integration is available
-      if (playbackIntegration && (playbackIntegration as any)?.engine) {
+      if (playbackIntegration?.engine) {
         try {
           // Trigger note
           // Note triggered: { note, octave, string, fret }
 
           // Trigger audio with BassInstrumentProcessor
-          (playbackIntegration as any).engine.processNoteEvent?.(noteEvent);
+          playbackIntegration.engine.processNoteEvent?.(noteEvent);
         } catch (error) {
           logger.warn('⚠️ Audio trigger failed:', error);
         }
@@ -620,12 +634,12 @@ export function useAudioFretboard(
   const isAudioEnabled = useMemo(() => {
     return (
       autoPlayOnClick &&
-      (playbackIntegration as any)?.state?.isInitialized === true
+      playbackIntegration?.state?.isInitialized === true
     );
   }, [autoPlayOnClick, playbackIntegration]);
 
   const audioError = useMemo(() => {
-    return (playbackIntegration as any)?.state?.error || null;
+    return playbackIntegration?.state?.error || null;
   }, [playbackIntegration]);
 
   /**

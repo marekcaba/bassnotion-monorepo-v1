@@ -11,7 +11,7 @@
 
 import type { TrackAutomation, AutomationPoint } from '../../../types/track.js';
 
-type AutomationCurveType = 'linear' | 'exponential' | 'step';
+type AutomationCurveType = 'linear' | 'exponential' | 'step' | 'curve';
 import {
   EventBus,
   createStructuredLogger,
@@ -19,6 +19,56 @@ import {
 } from '../../shared/index.js';
 
 const logger = createStructuredLogger('AutomationLane');
+
+/**
+ * Extended automation point with optional curve type
+ */
+interface AutomationPointWithCurve extends AutomationPoint {
+  curve?: AutomationCurveType;
+}
+
+/**
+ * Legacy musical position format (bars/beats/sixteenths)
+ * This is used for backward compatibility with older data formats
+ */
+interface LegacyMusicalPosition {
+  bars: number;
+  beats: number;
+  sixteenths: number;
+}
+
+/**
+ * Extract bars/beats/sixteenths from a MusicalPosition
+ * Handles both string format and object formats (standard and legacy)
+ */
+function extractPositionComponents(position: MusicalPosition): { bars: number; beats: number; sixteenths: number } {
+  if (typeof position === 'string') {
+    const parts = position.split(':').map(Number);
+    return {
+      bars: parts[0] ?? 0,
+      beats: parts[1] ?? 0,
+      sixteenths: parts[2] ?? 0,
+    };
+  }
+
+  // Handle standard format (measure/beat/subdivision)
+  if ('measure' in position) {
+    return {
+      bars: position.measure,
+      beats: position.beat,
+      sixteenths: position.subdivision,
+    };
+  }
+
+  // Handle legacy format (bars/beats/sixteenths) - type assertion is safe here
+  // because we've already checked it's not a string and not standard format
+  const legacyPos = position as unknown as LegacyMusicalPosition;
+  return {
+    bars: legacyPos.bars ?? 0,
+    beats: legacyPos.beats ?? 0,
+    sixteenths: legacyPos.sixteenths ?? 0,
+  };
+}
 
 export type AutomationMode = 'read' | 'write' | 'touch' | 'latch' | 'off';
 
@@ -94,7 +144,7 @@ export class AutomationLane implements TrackAutomation {
 
     // Add curve property if provided
     if (curve) {
-      (point as any).curve = curve;
+      (point as AutomationPointWithCurve).curve = curve;
     }
 
     // Remove existing point at same position
@@ -146,7 +196,7 @@ export class AutomationLane implements TrackAutomation {
       point.value = this.clampValue(value);
       // Add curve property if provided
       if (curve) {
-        (point as any).curve = curve;
+        (point as AutomationPointWithCurve).curve = curve;
       }
       this.isDirty = true;
       this.emitChange('pointUpdated', point);
@@ -411,32 +461,11 @@ export class AutomationLane implements TrackAutomation {
    * Compare musical positions
    */
   private comparePositions(a: MusicalPosition, b: MusicalPosition): number {
-    // Handle both string and object formats
-    let aBars = 0,
-      aBeats = 0,
-      aSixteenths = 0;
-    let bBars = 0,
-      bBeats = 0,
-      bSixteenths = 0;
+    const aPos = extractPositionComponents(a);
+    const bPos = extractPositionComponents(b);
 
-    if (typeof a === 'string') {
-      [aBars = 0, aBeats = 0, aSixteenths = 0] = a.split(':').map(Number);
-    } else if (typeof a === 'object' && a !== null) {
-      aBars = (a as any).bars || 0;
-      aBeats = (a as any).beats || 0;
-      aSixteenths = (a as any).sixteenths || 0;
-    }
-
-    if (typeof b === 'string') {
-      [bBars = 0, bBeats = 0, bSixteenths = 0] = b.split(':').map(Number);
-    } else if (typeof b === 'object' && b !== null) {
-      bBars = (b as any).bars || 0;
-      bBeats = (b as any).beats || 0;
-      bSixteenths = (b as any).sixteenths || 0;
-    }
-
-    const totalA = aBars * 16 + aBeats * 4 + aSixteenths;
-    const totalB = bBars * 16 + bBeats * 4 + bSixteenths;
+    const totalA = aPos.bars * 16 + aPos.beats * 4 + aPos.sixteenths;
+    const totalB = bPos.bars * 16 + bPos.beats * 4 + bPos.sixteenths;
     return totalA - totalB;
   }
 
@@ -457,55 +486,19 @@ export class AutomationLane implements TrackAutomation {
     prev: AutomationPoint,
     next: AutomationPoint,
   ): number {
-    // Handle both string and object formats
-    let prevBars = 0,
-      prevBeats = 0,
-      prevSixteenths = 0;
-    let nextBars = 0,
-      nextBeats = 0,
-      nextSixteenths = 0;
-    let posBars = 0,
-      posBeats = 0,
-      posSixteenths = 0;
+    const prevPos = extractPositionComponents(prev.position);
+    const nextPos = extractPositionComponents(next.position);
+    const curPos = extractPositionComponents(position);
 
-    if (typeof prev.position === 'string') {
-      [prevBars = 0, prevBeats = 0, prevSixteenths = 0] = prev.position
-        .split(':')
-        .map(Number);
-    } else if (typeof prev.position === 'object' && prev.position !== null) {
-      prevBars = (prev.position as any).bars || 0;
-      prevBeats = (prev.position as any).beats || 0;
-      prevSixteenths = (prev.position as any).sixteenths || 0;
-    }
-
-    if (typeof next.position === 'string') {
-      [nextBars = 0, nextBeats = 0, nextSixteenths = 0] = next.position
-        .split(':')
-        .map(Number);
-    } else if (typeof next.position === 'object' && next.position !== null) {
-      nextBars = (next.position as any).bars || 0;
-      nextBeats = (next.position as any).beats || 0;
-      nextSixteenths = (next.position as any).sixteenths || 0;
-    }
-
-    if (typeof position === 'string') {
-      [posBars = 0, posBeats = 0, posSixteenths = 0] = position
-        .split(':')
-        .map(Number);
-    } else if (typeof position === 'object' && position !== null) {
-      posBars = (position as any).bars || 0;
-      posBeats = (position as any).beats || 0;
-      posSixteenths = (position as any).sixteenths || 0;
-    }
-
-    const prevTotal = prevBars * 16 + prevBeats * 4 + prevSixteenths;
-    const nextTotal = nextBars * 16 + nextBeats * 4 + nextSixteenths;
-    const posTotal = posBars * 16 + posBeats * 4 + posSixteenths;
+    const prevTotal = prevPos.bars * 16 + prevPos.beats * 4 + prevPos.sixteenths;
+    const nextTotal = nextPos.bars * 16 + nextPos.beats * 4 + nextPos.sixteenths;
+    const posTotal = curPos.bars * 16 + curPos.beats * 4 + curPos.sixteenths;
 
     const ratio = (posTotal - prevTotal) / (nextTotal - prevTotal);
 
     // Check if the previous point has a specific curve type
-    const curveType = (prev as any).curve || this.curveType;
+    const prevWithCurve = prev as AutomationPointWithCurve;
+    const curveType = prevWithCurve.curve || this.curveType;
 
     switch (curveType) {
       case 'linear': {

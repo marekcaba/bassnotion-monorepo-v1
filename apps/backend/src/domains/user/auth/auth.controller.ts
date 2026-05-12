@@ -95,20 +95,18 @@ export class AuthController {
     const result = await this.authService.registerUser(signUpDto);
 
     // Return appropriate HTTP status codes based on the result
+    // SECURITY: We intentionally do NOT differentiate status codes between
+    // "user exists" and "registration failed" to prevent email enumeration.
+    // All registration failures return 400 Bad Request.
     if (!result.success) {
       let statusCode = HttpStatus.BAD_REQUEST; // Default to 400
 
       // Map specific error codes to appropriate HTTP status codes
-      if (result.error?.code === 'USER_EXISTS') {
-        statusCode = HttpStatus.CONFLICT; // 409
-      } else if (result.error?.code === 'SERVICE_UNAVAILABLE') {
+      // SECURITY: Removed USER_EXISTS -> 409 CONFLICT mapping to prevent enumeration
+      if (result.error?.code === 'SERVICE_UNAVAILABLE') {
         statusCode = HttpStatus.SERVICE_UNAVAILABLE; // 503
-      } else if (
-        result.error?.code === 'COMPROMISED_PASSWORD' ||
-        result.error?.code === 'WEAK_PASSWORD'
-      ) {
-        statusCode = HttpStatus.BAD_REQUEST; // 400
       }
+      // Password-related errors and all other failures use 400
 
       throw new HttpException(result, statusCode);
     }

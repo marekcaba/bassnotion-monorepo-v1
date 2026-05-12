@@ -10,6 +10,7 @@ import {
   SampleLoader,
   type LoadOptions,
   type LoadResult,
+  type SampleLoaderConfig,
 } from './SampleLoader.js';
 import { SampleCache } from '../cache/SampleCache.js';
 import { EventBus, createStructuredLogger } from '../../shared/index.js';
@@ -78,6 +79,11 @@ export interface AssetLoaderConfig {
 }
 
 /**
+ * Combined config type for AssetLoader
+ */
+export type AssetLoaderFullConfig = AssetLoaderConfig & SampleLoaderConfig;
+
+/**
  * Manages loading of various asset types with manifest support
  */
 export class AssetLoader extends SampleLoader {
@@ -87,11 +93,21 @@ export class AssetLoader extends SampleLoader {
   private dependencyGraph = new Map<string, Set<string>>();
 
   constructor(
-    config: AssetLoaderConfig & ConstructorParameters<typeof SampleLoader>[0],
+    config: AssetLoaderFullConfig,
     cache?: SampleCache,
     eventBus?: EventBus,
   ) {
-    super(config as any, cache, eventBus);
+    // Extract SampleLoaderConfig properties for parent constructor
+    const sampleLoaderConfig: SampleLoaderConfig = {
+      baseUrl: config.baseUrl,
+      defaultQuality: config.defaultQuality,
+      maxRetries: config.maxRetries,
+      retryDelay: config.retryDelay,
+      timeout: config.timeout,
+      enableAnalytics: config.enableAnalytics,
+      enableQualityAdaptation: config.enableQualityAdaptation,
+    };
+    super(sampleLoaderConfig, cache, eventBus);
     this.assetConfig = config;
   }
 
@@ -523,9 +539,8 @@ export class AssetLoader extends SampleLoader {
     asset: AssetDefinition,
     result: AssetLoadResult,
   ): void {
-    const eventBus = (this as any).eventBus;
-    if (eventBus) {
-      eventBus.emit('asset:loaded', {
+    if (this.eventBus) {
+      this.eventBus.emit('asset:loaded', {
         assetId: asset.id,
         assetType: asset.type,
         success: result.success,
@@ -540,9 +555,8 @@ export class AssetLoader extends SampleLoader {
    * Emit batch progress
    */
   private emitBatchProgress(progress: BatchLoadProgress): void {
-    const eventBus = (this as any).eventBus;
-    if (eventBus) {
-      eventBus.emit('asset:batchProgress', progress);
+    if (this.eventBus) {
+      this.eventBus.emit('asset:batchProgress', progress);
     }
   }
 

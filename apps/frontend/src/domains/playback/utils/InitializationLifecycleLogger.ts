@@ -351,5 +351,5 @@ export const lifecycle = new InitializationLifecycleLogger();
 
 // Expose to window for debugging
 if (typeof window !== 'undefined') {
-  (window as any).__lifecycle = lifecycle;
+  window.__lifecycle = lifecycle;
 }

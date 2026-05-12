@@ -221,7 +221,7 @@ export function TransportProvider({
         } else {
           // Fallback to registry
           const actualRegistry =
-            registry || serviceRegistry || (window as any).__serviceRegistry;
+            registry || serviceRegistry || window.__serviceRegistry;
           if (!actualRegistry) {
             logger.debug(
               '[TransportContext] ServiceRegistry not found yet, waiting...',
@@ -386,8 +386,22 @@ export function TransportProvider({
       }
 
       // AudioEngine exposes getContext() after full initialization
+      // IMPORTANT: Check isReady() BEFORE calling getContext() to avoid throwing
       const audioEngine = coreServices.getAudioEngine?.();
-      const audioContext = audioEngine?.getContext?.() as AudioContext | undefined;
+      if (!audioEngine?.isReady?.()) {
+        console.log('[XState Shadow] AudioEngine not ready yet');
+        return;
+      }
+
+      // Safe to call getContext() now that we've verified isReady()
+      let audioContext: AudioContext | undefined;
+      try {
+        audioContext = audioEngine.getContext();
+      } catch (error) {
+        // AudioEngine may not be fully initialized yet
+        console.log('[XState Shadow] getContext() failed, waiting for initialization');
+        return;
+      }
       const audioDestination = audioContext?.destination;
 
       // FLICKER FIX v10: Use ref to access machine
@@ -850,17 +864,29 @@ export function TransportProvider({
   );
 
   // Safe timeSignature with toString method
+  // Handles both proper TimeSignature objects and legacy nested structures
   const safeTimeSignature = useMemo(() => {
     const ts = timeSignature || { numerator: 4, denominator: 4 };
 
+    // Extract numerator - handle both number and nested object cases
     const numValue =
       typeof ts.numerator === 'number'
         ? ts.numerator
-        : (ts.numerator as any)?.numerator || 4;
+        : typeof ts.numerator === 'object' &&
+            ts.numerator !== null &&
+            'numerator' in ts.numerator
+          ? (ts.numerator as { numerator: number }).numerator
+          : 4;
+
+    // Extract denominator - handle both number and nested object cases
     const denValue =
       typeof ts.denominator === 'number'
         ? ts.denominator
-        : (ts.denominator as any)?.denominator || 4;
+        : typeof ts.denominator === 'object' &&
+            ts.denominator !== null &&
+            'denominator' in ts.denominator
+          ? (ts.denominator as { denominator: number }).denominator
+          : 4;
 
     const safe: TimeSignature & { toString(): string } = {
       numerator: numValue,

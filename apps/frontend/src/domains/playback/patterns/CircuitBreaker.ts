@@ -304,18 +304,20 @@ export class EnhancedCircuitBreaker {
       );
     }
 
-    // Update the base circuit breaker config
-    (this as any).config.failureThreshold = Math.round(
-      this.currentFailureThreshold,
-    );
+    // Update the enhanced config's failure threshold
+    // Note: This doesn't affect the base circuit breaker directly,
+    // but tracks the adaptive threshold for metrics/monitoring
+    this.config.failureThreshold = Math.round(this.currentFailureThreshold);
   }
 
   /**
    * Force circuit to half-open state (for health check recovery)
+   * Resets the base circuit breaker to allow testing
    */
   private forceHalfOpen(): void {
-    (this as any).state = 'half-open';
-    (this as any).successCount = 0;
+    // The base circuit breaker doesn't expose half-open directly
+    // Reset allows the next request to test recovery
+    this.circuitBreaker.reset();
   }
 
   /**

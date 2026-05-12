@@ -41,6 +41,36 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                     Tutorials
                   </a>
                   <a
+                    href="/admin/assessment"
+                    className="inline-flex items-center border-b-2 border-transparent hover:border-gray-300 px-1 pt-1 text-sm font-medium text-gray-900"
+                  >
+                    Assessment (V1)
+                  </a>
+                  <a
+                    href="/admin/assessment/segments"
+                    className="inline-flex items-center border-b-2 border-transparent hover:border-gray-300 px-1 pt-1 text-sm font-medium text-gray-900"
+                  >
+                    Segments
+                  </a>
+                  <a
+                    href="/admin/assessment/questions"
+                    className="inline-flex items-center border-b-2 border-transparent hover:border-gray-300 px-1 pt-1 text-sm font-medium text-gray-900"
+                  >
+                    Questions
+                  </a>
+                  <a
+                    href="/admin/assessment/insights"
+                    className="inline-flex items-center border-b-2 border-transparent hover:border-gray-300 px-1 pt-1 text-sm font-medium text-gray-900"
+                  >
+                    Insights
+                  </a>
+                  <a
+                    href="/admin/assessment/flow"
+                    className="inline-flex items-center border-b-2 border-transparent hover:border-gray-300 px-1 pt-1 text-sm font-medium text-gray-900"
+                  >
+                    Flow Editor
+                  </a>
+                  <a
                     href="/admin/instruments/wurlitzer"
                     className="inline-flex items-center border-b-2 border-transparent hover:border-gray-300 px-1 pt-1 text-sm font-medium text-gray-900"
                   >

@@ -24,10 +24,10 @@ import { getLogger } from '@/utils/logger.js';
 import type { ParsedPosition } from '../types/region.types.js';
 
 // Helper to get Tone from window (must be initialized before TimePositionConverter is used)
-function getTone(): any {
+function getTone(): NonNullable<typeof window.Tone> {
   if (typeof window !== 'undefined') {
     // Check both locations where Tone.js may be stored
-    const tone = (window as any).Tone || (window as any).__globalTone;
+    const tone = window.Tone || window.__globalTone;
     if (tone) {
       return tone;
     }

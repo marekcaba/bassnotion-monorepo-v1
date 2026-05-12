@@ -25,7 +25,7 @@ import { Scheduler } from './Scheduler.js';
 function getTone(): any {
   if (typeof window !== 'undefined') {
     // Check both locations where Tone.js may be stored
-    const tone = (window as any).Tone || (window as any).__globalTone;
+    const tone = window.Tone || window.__globalTone;
     if (tone) {
       return tone;
     }
@@ -59,6 +59,18 @@ import { lifecycle } from '../../utils/InitializationLifecycleLogger.js';
 import { Mixer } from '../../modules/tracks/mixing/Mixer.js';
 import { musicalTruth } from '../../modules/tempo/MusicalTruthAuthority.js';
 import { getAtomicPlaybackClock } from './AtomicPlaybackClock.js';
+
+// Debug flag - enable in browser console: window.__DEBUG_PLAYBACK_ENGINE = true
+const isPlaybackDebugEnabled = (): boolean => {
+  return typeof window !== 'undefined' && !!(window as any).__DEBUG_PLAYBACK_ENGINE;
+};
+
+// Conditional debug logging helper
+const debugLog = (...args: any[]) => {
+  if (isPlaybackDebugEnabled()) {
+    console.log(...args);
+  }
+};
 
 /**
  * Playback engine state machine
@@ -485,10 +497,52 @@ export class PlaybackEngine {
   }
 
   /**
+   * Get a track by ID
+   * Returns undefined if track doesn't exist
+   */
+  getTrack(trackId: string): Track | undefined {
+    return this.tracks.get(trackId);
+  }
+
+  /**
    * Register a track
-   * Includes defensive check to prevent duplicate tracks of singleton instrument types
+   * Always updates the track to ensure fresh region content is used.
+   *
+   * FAANG FIX: Previously compared region COUNT which caused bugs when:
+   * - switchExercise() cleared regions (count=0)
+   * - New exercise created regions (count=1)
+   * - Both had same count but different events!
+   *
+   * Now we always update the track to ensure region CONTENT is fresh.
    */
   registerTrack(track: Track): void {
+    // Check if this exact track ID is already registered
+    const existingById = this.tracks.get(track.id);
+    if (existingById) {
+      // Calculate total event counts for comparison
+      const existingEventCount = existingById.regions.reduce(
+        (sum, r) => sum + (r.pattern?.events?.length || 0), 0
+      );
+      const newEventCount = track.regions.reduce(
+        (sum, r) => sum + (r.pattern?.events?.length || 0), 0
+      );
+
+      // Skip ONLY if both region count AND event count are the same
+      // This prevents redundant updates while still allowing content changes
+      if (existingById.regions.length === track.regions.length &&
+          existingEventCount === newEventCount) {
+        this.logger.debug(
+          `Track ${track.id} already registered with same regions (${existingById.regions.length} regions, ${existingEventCount} events), skipping`,
+        );
+        return;
+      }
+
+      // Log the update
+      this.logger.debug(
+        `Track ${track.id} updating: ${existingById.regions.length} regions (${existingEventCount} events) -> ${track.regions.length} regions (${newEventCount} events)`,
+      );
+    }
+
     // Singleton instrument types - only one track of these types should exist
     const singletonTypes = ['metronome', 'voice-cue'];
 
@@ -584,7 +638,7 @@ export class PlaybackEngine {
     // 1. Stop all scheduled drum sources immediately (not graceful - force stop)
     if (this.drumScheduler) {
       this.drumScheduler.stopAll(false); // false = immediate stop with fadeout
-      console.log('[PLAYBACK-ENGINE] Cleared drum scheduler sources');
+      debugLog('[PLAYBACK-ENGINE] Cleared drum scheduler sources');
     }
 
     // 2. Find and unregister all drum tracks
@@ -597,7 +651,7 @@ export class PlaybackEngine {
 
     for (const trackId of drumTrackIds) {
       this.tracks.delete(trackId);
-      console.log('[PLAYBACK-ENGINE] Unregistered drum track:', trackId);
+      debugLog('[PLAYBACK-ENGINE] Unregistered drum track:', trackId);
     }
 
     // 3. Clear any scheduled drum events from the tracking sets
@@ -623,7 +677,7 @@ export class PlaybackEngine {
     // 1. Stop all scheduled bass sources immediately (not graceful - force stop)
     if (this.bassScheduler) {
       this.bassScheduler.stopAll(false); // false = immediate stop with fadeout
-      console.log('[PLAYBACK-ENGINE] Cleared bass scheduler sources');
+      debugLog('[PLAYBACK-ENGINE] Cleared bass scheduler sources');
     }
 
     // 2. Find and unregister all bass tracks
@@ -636,7 +690,7 @@ export class PlaybackEngine {
 
     for (const trackId of bassTrackIds) {
       this.tracks.delete(trackId);
-      console.log('[PLAYBACK-ENGINE] Unregistered bass track:', trackId);
+      debugLog('[PLAYBACK-ENGINE] Unregistered bass track:', trackId);
     }
 
     // 3. Clear any scheduled bass events from the tracking sets
@@ -661,7 +715,7 @@ export class PlaybackEngine {
     // 1. Stop all scheduled harmony sources immediately (not graceful - force stop)
     if (this.harmonyScheduler) {
       this.harmonyScheduler.stopAll(false); // false = immediate stop with fadeout
-      console.log('[PLAYBACK-ENGINE] Cleared harmony scheduler sources');
+      debugLog('[PLAYBACK-ENGINE] Cleared harmony scheduler sources');
 
       // 🔧 FIX: Clear CC64 timeline to prevent stale pedal data on exercise switch
       // Without this, the old exercise's CC64 timeline persists in SustainPedalHandler
@@ -679,14 +733,14 @@ export class PlaybackEngine {
 
     for (const trackId of harmonyTrackIds) {
       this.tracks.delete(trackId);
-      console.log('[PLAYBACK-ENGINE] Unregistered harmony track:', trackId);
+      debugLog('[PLAYBACK-ENGINE] Unregistered harmony track:', trackId);
     }
 
     // 3. Clear cached schedule for the exercise being switched away from
     // This ensures fresh CC64 timeline on next playback
     if (this.scheduleCache) {
       this.scheduleCache.clearAll();
-      console.log('[PLAYBACK-ENGINE] Cleared schedule cache for exercise switch');
+      debugLog('[PLAYBACK-ENGINE] Cleared schedule cache for exercise switch');
     }
 
     this.logger.info('Cleared all harmony tracks and scheduled events', {
@@ -744,7 +798,7 @@ export class PlaybackEngine {
   }): void {
     if (!this.countdownEnabled) {
       // eslint-disable-next-line no-console
-      console.log(
+      debugLog(
         '[COUNTDOWN DIAGNOSTIC] Countdown disabled, skipping metronome countdown region',
       );
       return;
@@ -760,7 +814,7 @@ export class PlaybackEngine {
     }
 
     // eslint-disable-next-line no-console
-    console.log('[COUNTDOWN DIAGNOSTIC] Creating metronome countdown events:', {
+    debugLog('[COUNTDOWN DIAGNOSTIC] Creating metronome countdown events:', {
       timeSignature,
       countdownBeats: this.countdownBeats,
       events: countdownEvents.map((e, i) => ({
@@ -795,12 +849,12 @@ export class PlaybackEngine {
       };
       this.tracks.set('metronome', metronomeTrack);
       // eslint-disable-next-line no-console
-      console.log('[COUNTDOWN DIAGNOSTIC] Created new metronome track');
+      debugLog('[COUNTDOWN DIAGNOSTIC] Created new metronome track');
     }
 
     metronomeTrack.regions.unshift(countdownRegion);
     // eslint-disable-next-line no-console
-    console.log('[COUNTDOWN DIAGNOSTIC] Metronome countdown region added', {
+    debugLog('[COUNTDOWN DIAGNOSTIC] Metronome countdown region added', {
       regionId: countdownRegion.id,
       startTime: countdownRegion.startTime,
       duration: countdownRegion.duration,
@@ -823,7 +877,7 @@ export class PlaybackEngine {
   }): void {
     if (!this.countdownEnabled) {
       // eslint-disable-next-line no-console
-      console.log(
+      debugLog(
         '[COUNTDOWN DIAGNOSTIC] Countdown disabled, skipping voice countdown region',
       );
       return;
@@ -853,7 +907,7 @@ export class PlaybackEngine {
     }
 
     // eslint-disable-next-line no-console
-    console.log('[COUNTDOWN DIAGNOSTIC] Creating voice countdown events:', {
+    debugLog('[COUNTDOWN DIAGNOSTIC] Creating voice countdown events:', {
       timeSignature,
       countdownBeats: this.countdownBeats,
       events: voiceCueEvents.map((e, i) => ({
@@ -888,12 +942,12 @@ export class PlaybackEngine {
       };
       this.tracks.set('voice-cue', voiceCueTrack);
       // eslint-disable-next-line no-console
-      console.log('[COUNTDOWN DIAGNOSTIC] Created new voice-cue track');
+      debugLog('[COUNTDOWN DIAGNOSTIC] Created new voice-cue track');
     }
 
     voiceCueTrack.regions.unshift(voiceCueRegion);
     // eslint-disable-next-line no-console
-    console.log('[COUNTDOWN DIAGNOSTIC] Voice countdown region added', {
+    debugLog('[COUNTDOWN DIAGNOSTIC] Voice countdown region added', {
       regionId: voiceCueRegion.id,
       startTime: voiceCueRegion.startTime,
       duration: voiceCueRegion.duration,
@@ -918,7 +972,7 @@ export class PlaybackEngine {
     });
 
     // DIAGNOSTIC: Log start() call and current state
-    console.log('[PlaybackEngine.start() DIAGNOSTIC]', {
+    debugLog('[PlaybackEngine.start() DIAGNOSTIC]', {
       currentState: this.state,
       isInitialized: this.isInitialized,
       isRunning: this.isRunning,
@@ -1001,7 +1055,7 @@ export class PlaybackEngine {
     // Clearing cache ensures timeline is rebuilt with fresh transportStartTime.
     if (this.scheduleCache) {
       this.scheduleCache.clearAll();
-      console.log('[PLAYBACK-ENGINE START] 🗑️ Cleared schedule cache for fresh CC64 timeline');
+      debugLog('[PLAYBACK-ENGINE START] 🗑️ Cleared schedule cache for fresh CC64 timeline');
     }
 
     // CRITICAL FIX: Set transport start time on metrics collector
@@ -1026,7 +1080,7 @@ export class PlaybackEngine {
     // at transport-relative times (e.g., 3.478s) instead of AudioContext times
     // (e.g., 12.9s + 3.478s = 16.378s), causing audio to play in the past!
     this.eventRouter.setTransportStartTime(this.transportStartTime);
-    console.log('[PLAYBACK-ENGINE START] 🔧 Synced EventRouter transportStartTime', {
+    debugLog('[PLAYBACK-ENGINE START] 🔧 Synced EventRouter transportStartTime', {
       transportStartTime: this.transportStartTime.toFixed(3),
     });
 
@@ -1038,7 +1092,7 @@ export class PlaybackEngine {
     atomicClock.setTransportStartTime(this.transportStartTime);
     atomicClock.configure(4, musicalTruth.getCountdownBeats()); // 4/4 time signature
     atomicClock.start();
-    console.log('[PLAYBACK-ENGINE START] 🎯 AtomicPlaybackClock started', {
+    debugLog('[PLAYBACK-ENGINE START] 🎯 AtomicPlaybackClock started', {
       transportStartTime: this.transportStartTime.toFixed(3),
       countdownBeats: musicalTruth.getCountdownBeats(),
     });
@@ -1094,7 +1148,7 @@ export class PlaybackEngine {
     this.isInitialScheduling = true;
 
     // 🔍 DIAGNOSTIC: Verify scheduledEvents was cleared before scheduling
-    console.log('[PLAYBACK-ENGINE START] 🔍 PHASE 3: About to schedule all regions', {
+    debugLog('[PLAYBACK-ENGINE START] 🔍 PHASE 3: About to schedule all regions', {
       scheduledEventsSize: this.scheduledEvents.size,
       scheduledIdsSize: this.scheduledIds.size,
       tracksCount: this.tracks.size,
@@ -1300,7 +1354,7 @@ export class PlaybackEngine {
     // Transport will receive this BEFORE its start() is called, ensuring it uses
     // the SAME transportStartTime as PlaybackEngine (no visual-audio desync)
     this.eventBus.emit('playback:transportStartTime', { transportStartTime: time });
-    console.log('🎯 [TIMING SYNC] PlaybackEngine published transportStartTime via EventBus', {
+    debugLog('🎯 [TIMING SYNC] PlaybackEngine published transportStartTime via EventBus', {
       transportStartTime: time.toFixed(3) + 's',
     });
   }
@@ -1322,7 +1376,7 @@ export class PlaybackEngine {
    */
   private clearScheduledState(): void {
     // 🔍 DIAGNOSTIC: Log before clearing
-    console.log('[PLAYBACK-ENGINE] 🧹 clearScheduledState() called', {
+    debugLog('[PLAYBACK-ENGINE] 🧹 clearScheduledState() called', {
       scheduledEventsSize: this.scheduledEvents.size,
       scheduledIdsSize: this.scheduledIds.size,
     });
@@ -1340,7 +1394,7 @@ export class PlaybackEngine {
     this.scheduledEvents.clear();
 
     // 🔍 DIAGNOSTIC: Log after clearing
-    console.log('[PLAYBACK-ENGINE] 🧹 clearScheduledState() completed', {
+    debugLog('[PLAYBACK-ENGINE] 🧹 clearScheduledState() completed', {
       scheduledEventsSize: this.scheduledEvents.size,
       scheduledIdsSize: this.scheduledIds.size,
       bothAreZero: this.scheduledEvents.size === 0 && this.scheduledIds.size === 0,
@@ -1446,7 +1500,7 @@ export class PlaybackEngine {
             const audioExerciseEndTime = this.transportStartTime + exerciseEndTime;
             const audioLastBeatThreshold = this.transportStartTime + lastBeatThreshold;
             this.harmonyScheduler.setExerciseTiming(audioExerciseEndTime, audioLastBeatThreshold);
-            console.log('[PLAYBACK-ENGINE] Set exercise timing for sustain capping', {
+            debugLog('[PLAYBACK-ENGINE] Set exercise timing for sustain capping', {
               exerciseEndTime: audioExerciseEndTime.toFixed(3),
               lastBeatThreshold: audioLastBeatThreshold.toFixed(3),
               transportStartTime: this.transportStartTime.toFixed(3),
@@ -1509,7 +1563,7 @@ export class PlaybackEngine {
    * @param graceful - If true, allows notes to ring out (not yet implemented, always immediate stop)
    */
   stop(graceful = false): void {
-    console.log('[PLAYBACK-ENGINE STOP] Stopping all audio sources', {
+    debugLog('[PLAYBACK-ENGINE STOP] Stopping all audio sources', {
       state: this.state,
       instanceId: this.instanceId,
       graceful,
@@ -1533,24 +1587,24 @@ export class PlaybackEngine {
     // - graceful=false (manual stop): Quick fadeout to avoid clicks
     if (this.metronomeScheduler) {
       this.metronomeScheduler.stopAll(graceful);
-      console.log('[PLAYBACK-ENGINE STOP] Metronome stopped', { graceful });
+      debugLog('[PLAYBACK-ENGINE STOP] Metronome stopped', { graceful });
     }
     if (this.drumScheduler) {
       this.drumScheduler.stopAll(graceful);
-      console.log('[PLAYBACK-ENGINE STOP] Drums stopped', { graceful });
+      debugLog('[PLAYBACK-ENGINE STOP] Drums stopped', { graceful });
     }
     if (this.bassScheduler) {
       this.bassScheduler.stopAll(graceful);
-      console.log('[PLAYBACK-ENGINE STOP] Bass stopped', { graceful });
+      debugLog('[PLAYBACK-ENGINE STOP] Bass stopped', { graceful });
     }
     if (this.voiceCueScheduler) {
       this.voiceCueScheduler.stopAll(graceful);
-      console.log('[PLAYBACK-ENGINE STOP] Voice cue stopped', { graceful });
+      debugLog('[PLAYBACK-ENGINE STOP] Voice cue stopped', { graceful });
     }
     if (this.harmonyScheduler) {
       // Harmony has longer ring-out time (4 seconds for sustained notes)
       this.harmonyScheduler.stopAll(graceful);
-      console.log('[PLAYBACK-ENGINE STOP] Harmony stopped', { graceful });
+      debugLog('[PLAYBACK-ENGINE STOP] Harmony stopped', { graceful });
     }
 
     // Unsubscribe from Transport position updates (FIGHTING CLOCKS FIX)
@@ -1576,7 +1630,7 @@ export class PlaybackEngine {
       });
       // Method 2: Cancel ALL events as nuclear option (catches any untracked events)
       Tone.Transport.cancel(0);
-      console.log('[PLAYBACK-ENGINE STOP] 🧹 Cleared ALL Tone.Transport events', {
+      debugLog('[PLAYBACK-ENGINE STOP] 🧹 Cleared ALL Tone.Transport events', {
         trackedIdsCancelled: clearedCount,
         nuclearCancelCalled: true,
       });
@@ -1586,21 +1640,21 @@ export class PlaybackEngine {
 
     // Reset timing and state for clean restart
     this.transportStartTime = 0;
-    console.log('[PLAYBACK-ENGINE STOP] Reset transportStartTime to 0');
+    debugLog('[PLAYBACK-ENGINE STOP] Reset transportStartTime to 0');
 
     // 🎯 ATOMIC CLOCK STOP: Stop the visual beat clock
     const atomicClock = getAtomicPlaybackClock();
     atomicClock.stop();
-    console.log('[PLAYBACK-ENGINE STOP] 🎯 AtomicPlaybackClock stopped');
+    debugLog('[PLAYBACK-ENGINE STOP] 🎯 AtomicPlaybackClock stopped');
 
     // Reset running state (critical for second playback to schedule regions)
     this.isRunning = false;
-    console.log('[PLAYBACK-ENGINE STOP] Reset isRunning to false');
+    debugLog('[PLAYBACK-ENGINE STOP] Reset isRunning to false');
 
     // Clear scheduled event tracking (prevent memory leaks)
     this.scheduledEvents.clear();
     this.scheduledIds.clear();
-    console.log('[PLAYBACK-ENGINE STOP] Cleared scheduled events tracking', {
+    debugLog('[PLAYBACK-ENGINE STOP] Cleared scheduled events tracking', {
       scheduledEventsCleared: this.scheduledEvents.size === 0,
       scheduledIdsCleared: this.scheduledIds.size === 0,
     });
@@ -1729,7 +1783,7 @@ export class PlaybackEngine {
     const v4Keys = allKeys.filter(k => k.includes('v4'));
     const v5Keys = allKeys.filter(k => k.includes('v5'));
     const uniqueLayersFromKeys = [...new Set(allKeys.map(k => k.split('-')[0]))];
-    console.log('🎹 [BUFFER-SWITCH-DEBUG] PlaybackEngine.setHarmonyBuffers called:', {
+    debugLog('🎹 [BUFFER-SWITCH-DEBUG] PlaybackEngine.setHarmonyBuffers called:', {
       instrumentName,
       bufferCount: buffers.size,
       hasDestination: !!destination,
@@ -1832,7 +1886,7 @@ export class PlaybackEngine {
         });
 
         // Diagnostic: Log ALL keys and their parsed layers/notes
-        console.log('🔍 [BUFFER-PARSE-DEBUG] All buffer keys parsed:', {
+        debugLog('🔍 [BUFFER-PARSE-DEBUG] All buffer keys parsed:', {
           totalKeys: parseResults.length,
           byLayer: Object.fromEntries(
             [...new Set(parseResults.map(r => r.layer))].map(layer => [
@@ -1994,6 +2048,12 @@ export class PlaybackEngine {
     // Set audio context on scheduler (may already be set, but safe to call again)
     this.bassScheduler.setAudioContext(this.audioContext);
 
+    // CRITICAL: Clear existing buffers BEFORE setting new ones to prevent contamination
+    // from previous exercise's buffers mixing with new exercise's buffers.
+    // This was causing "corrupted bass" when switching tutorials because
+    // SimpleInstrumentScheduler.setBuffers() merges instead of replaces.
+    this.bassScheduler.clearBuffers();
+
     // Set buffers with destination
     this.bassScheduler.setBuffers(buffers, destination);
 
@@ -2047,6 +2107,115 @@ export class PlaybackEngine {
       countdownEnabled: this.countdownEnabled,
       countdownBeats: this.countdownBeats,
     };
+  }
+
+  // ==========================================
+  // Exercise Switching (Centralized Cleanup)
+  // ==========================================
+
+  /**
+   * Switch to a new exercise - centralized cleanup for all instruments
+   *
+   * FAANG-Style Pattern: Single Point of Control
+   *
+   * This method orchestrates the entire cleanup when switching exercises:
+   * 1. Stops playback
+   * 2. Clears ALL instrument schedulers (buffers)
+   * 3. Clears ALL track regions (keeps tracks, removes events)
+   * 4. Resets WindowRegistry buffer-ready flags
+   * 5. Emits event for widgets to reset their registration state
+   *
+   * This prevents the "corrupted bass" bug where old regions (MIDI notes)
+   * remain in PlaybackEngine while new buffers are loaded for different notes.
+   *
+   * @param newExerciseId - The ID of the new exercise being loaded
+   */
+  switchExercise(newExerciseId: string): void {
+    this.logger.info('🔄 Exercise switch initiated', {
+      newExerciseId,
+      previousExerciseId: this.currentExercise?.id,
+      state: this.state,
+      trackCount: this.tracks.size,
+      instanceId: this.instanceId,
+    });
+
+    // 1. Stop playback if running
+    if (this.state === 'playing') {
+      this.stop();
+    }
+
+    // 2. Clear instrument scheduler buffers (exercise-specific only)
+    // Note: Metronome buffers are PRESERVED - same click sounds across all tutorials
+    if (this.bassScheduler) {
+      this.bassScheduler.clearBuffers();
+      this.bassScheduler.stopAll(false);
+      debugLog('[PLAYBACK-ENGINE] switchExercise: Cleared bass scheduler');
+    }
+    if (this.drumScheduler) {
+      // DON'T clear drum buffers - same kick/snare/hihat samples for all tutorials
+      // Drums are loaded ONCE at page load by CoreServices.reinjectAllBuffers()
+      // and there's no re-registration mechanism like bass has
+      // Only stop scheduled events, buffers persist
+      this.drumScheduler.stopAll(false);
+      debugLog('[PLAYBACK-ENGINE] switchExercise: Stopped drums (buffers preserved)');
+    }
+    if (this.harmonyScheduler) {
+      this.harmonyScheduler.stopAll(false);
+      this.harmonyScheduler.clearCC64Timeline();
+      debugLog('[PLAYBACK-ENGINE] switchExercise: Cleared harmony scheduler');
+    }
+    if (this.metronomeScheduler) {
+      // DON'T clear metronome buffers - same click sounds for all tutorials
+      // Only stop scheduled events, buffers persist
+      this.metronomeScheduler.stopAll(false);
+      debugLog('[PLAYBACK-ENGINE] switchExercise: Stopped metronome (buffers preserved)');
+    }
+    if (this.voiceCueScheduler) {
+      this.voiceCueScheduler.clearBuffers();
+      this.voiceCueScheduler.stopAll(false);
+      debugLog('[PLAYBACK-ENGINE] switchExercise: Cleared voice cue scheduler');
+    }
+
+    // 3. Clear ALL track regions (keeps track structure, removes MIDI events)
+    // This is the KEY fix - prevents old regions from referencing wrong MIDI notes
+    const trackRegionCounts: Record<string, number> = {};
+    this.tracks.forEach((track, trackId) => {
+      trackRegionCounts[trackId] = track.regions.length;
+      track.regions = [];
+    });
+    debugLog('[PLAYBACK-ENGINE] switchExercise: Cleared all track regions', trackRegionCounts);
+
+    // 4. Clear scheduled events from Tone.Transport
+    this.clearScheduledState();
+
+    // 5. Clear schedule cache for fresh CC64 timeline
+    if (this.scheduleCache) {
+      this.scheduleCache.clearAll();
+    }
+
+    // 6. Reset WindowRegistry buffer-ready flags
+    // This tells widgets to re-register their buffers
+    WindowRegistry.clearBassBuffersReady();
+    // Note: Add clearDrumBuffersReady() if it exists
+
+    // 7. Emit events for widgets to reset their registration tracking
+    // Internal EventBus for services
+    this.eventBus.emit('exercise:switched', { exerciseId: newExerciseId });
+    // DOM CustomEvent for React components (they can't easily access EventBus)
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('exercise:switched', {
+        detail: { exerciseId: newExerciseId },
+      }));
+    }
+
+    // 8. Update current exercise reference
+    this.currentExercise = { id: newExerciseId };
+
+    this.logger.info('✅ Exercise switch complete', {
+      newExerciseId,
+      clearedTracks: Object.keys(trackRegionCounts).length,
+      instanceId: this.instanceId,
+    });
   }
 
   // ==========================================

@@ -140,6 +140,10 @@ export class SaveTutorialWithExercisesDto {
 
   @IsOptional()
   @IsString()
+  thumbnail_url?: string; // Custom thumbnail URL from Supabase storage
+
+  @IsOptional()
+  @IsString()
   difficulty?: string;
 
   @IsOptional()
@@ -183,6 +187,37 @@ export class SaveTutorialWithExercisesDto {
   @IsOptional()
   @IsNumber()
   creator_subscriber_count?: number;
+
+  // Modular block system
+  @IsOptional()
+  @IsArray()
+  blocks?: any[];
+
+  // Act 1: Understand fields (legacy)
+  @IsOptional()
+  @IsString()
+  understand_video_url?: string;
+
+  @IsOptional()
+  @IsString()
+  understand_video_library_id?: string;
+
+  @IsOptional()
+  @IsString()
+  understand_headline?: string;
+
+  @IsOptional()
+  @IsArray()
+  understand_questions?: any[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  title_highlight_words?: string[];
+
+  @IsOptional()
+  @IsString()
+  sidebar_title?: string;
 
   @IsArray()
   @ValidateNested({ each: true })

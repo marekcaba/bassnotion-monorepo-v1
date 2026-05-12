@@ -297,14 +297,12 @@ export abstract class BaseTechniqueRenderer implements TechniqueRenderer {
     } else {
       // UPGRADED: Fallback for test objects without traverse - just handle the object itself
       if (object instanceof THREE.Mesh) {
-        if ((object as any).geometry) (object as any).geometry.dispose();
-        if ((object as any).material) {
-          const material = (object as any).material;
-          if (Array.isArray(material)) {
-            material.forEach((mat) => mat.dispose && mat.dispose());
-          } else if (material.dispose) {
-            material.dispose();
-          }
+        object.geometry?.dispose();
+        const material = object.material;
+        if (Array.isArray(material)) {
+          material.forEach((mat) => mat.dispose?.());
+        } else if (material) {
+          material.dispose?.();
         }
       }
     }

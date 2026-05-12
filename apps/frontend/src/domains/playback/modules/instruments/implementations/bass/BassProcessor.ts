@@ -167,8 +167,14 @@ export class BassProcessor extends BaseAudioPlugin {
   private inputGain: any = null;
   private outputGain: any = null;
 
-  // Processing state
-  private processingMetrics = {
+  // Processing state with extended metrics for optimization tracking
+  private processingMetrics: {
+    processingTime: number;
+    cpuUsage: number;
+    memoryUsage: number;
+    samplesProcessed: number;
+    lastProcessingValue?: number; // Used to prevent V8 optimization removal
+  } = {
     processingTime: 0,
     cpuUsage: 0,
     memoryUsage: 0,
@@ -190,8 +196,8 @@ export class BassProcessor extends BaseAudioPlugin {
 
   private isTestMode(): boolean {
     return (
-      typeof (globalThis as any).vi !== 'undefined' ||
-      typeof (globalThis as any).describe !== 'undefined' ||
+      typeof globalThis.vi !== 'undefined' ||
+      typeof globalThis.describe !== 'undefined' ||
       process.env.NODE_ENV === 'test'
     );
   }
@@ -222,8 +228,8 @@ export class BassProcessor extends BaseAudioPlugin {
 
       // Check if we're in a test environment by looking for vitest globals
       const isTestEnvironment =
-        typeof (globalThis as any).vi !== 'undefined' ||
-        typeof (globalThis as any).describe !== 'undefined' ||
+        typeof globalThis.vi !== 'undefined' ||
+        typeof globalThis.describe !== 'undefined' ||
         process.env.NODE_ENV === 'test';
 
       if (!isTestEnvironment) {
@@ -507,7 +513,7 @@ export class BassProcessor extends BaseAudioPlugin {
         // Just enough work to not be optimized away by V8
         const processingAccumulator =
           inputBuffer.length * 0.001 + Math.random() * 0.0001;
-        (this.processingMetrics as any).lastProcessingValue =
+        this.processingMetrics.lastProcessingValue =
           processingAccumulator;
 
         // Update metrics with minimal overhead
@@ -591,7 +597,7 @@ export class BassProcessor extends BaseAudioPlugin {
       }
 
       // Ensure the work isn't optimized away
-      (this.processingMetrics as any).lastProcessingValue =
+      this.processingMetrics.lastProcessingValue =
         processingAccumulator;
 
       // Audio processing is handled by Tone.js audio graph

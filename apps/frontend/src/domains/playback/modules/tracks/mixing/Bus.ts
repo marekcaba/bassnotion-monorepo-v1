@@ -594,7 +594,7 @@ export class Bus {
     // Fallback to global Tone (loaded by previous initialization)
     // Check both locations where Tone.js may be stored
     if (typeof window !== 'undefined') {
-      const tone = (window as any).Tone || (window as any).__globalTone;
+      const tone = window.Tone || window.__globalTone;
       if (tone) {
         return tone;
       }
@@ -618,12 +618,12 @@ export class Bus {
     return new Tone.Meter(options);
   }
 
-  private createAnalyser(type?: string, size?: number): any {
+  private createAnalyser(type?: 'fft' | 'waveform', size?: number): any {
     if (this.audioEngine?.createAnalyser) {
       return this.audioEngine.createAnalyser(type, size);
     }
     const Tone = this.getTone();
-    return new Tone.Analyser(type as any, size);
+    return new Tone.Analyser(type, size);
   }
 
   private createCompressor(options?: any): any {

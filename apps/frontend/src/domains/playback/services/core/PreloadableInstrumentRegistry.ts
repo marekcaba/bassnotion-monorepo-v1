@@ -52,7 +52,7 @@ export class PreloadableInstrumentRegistry {
     logger.info('PreloadableInstrumentRegistry created');
     // Make available in window for debugging
     if (typeof window !== 'undefined') {
-      (window as any).__preloadableRegistry = this;
+      window.__preloadableRegistry = this;
     }
   }
 
@@ -79,12 +79,21 @@ export class PreloadableInstrumentRegistry {
 
   /**
    * Register an instrument configuration (no AudioContext needed)
+   *
+   * Optimization: Skip re-registration if config with same ID already exists.
+   * This prevents unnecessary "already registered, replacing" warnings that
+   * spam the console on every exercise switch.
    */
   registerConfig(config: InstrumentConfig): void {
-    if (this.instruments.has(config.id)) {
-      logger.warn(
-        `Instrument config ${config.id} already registered, replacing`,
+    const existing = this.instruments.get(config.id);
+    if (existing) {
+      // Config already registered - skip silently to avoid log spam
+      // The factory function is the same, only exercise-specific metadata might differ
+      // which doesn't affect the instrument instance
+      logger.debug(
+        `Instrument config ${config.id} already registered, skipping re-registration`,
       );
+      return;
     }
 
     const preloaded: PreloadedInstrument = {

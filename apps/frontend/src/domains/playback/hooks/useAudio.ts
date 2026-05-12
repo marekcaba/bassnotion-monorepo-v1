@@ -51,7 +51,7 @@ export function useAudio(serviceRegistry?: ServiceRegistry): UseAudioResult {
           const engine = serviceRegistry.get<AudioEngine>('audioEngine');
           if (engine) {
             audioEngineRef.current = engine;
-            if ((engine as any).isInitialized) {
+            if (engine.isReady()) {
               setIsReady(true);
               logger.info(
                 'useAudio: Got AudioEngine from provided ServiceRegistry',
@@ -62,11 +62,11 @@ export function useAudio(serviceRegistry?: ServiceRegistry): UseAudioResult {
         }
 
         // Try CoreServices first (new approach)
-        const coreServices = (window as any).__globalCoreServices;
+        const coreServices = window.__globalCoreServices;
         if (coreServices) {
           audioEngineRef.current = coreServices.getAudioEngine();
-          // Check if already initialized
-          if ((audioEngineRef.current as any).isInitialized) {
+          // Check if already initialized using the public isReady() method
+          if (audioEngineRef.current?.isReady()) {
             setIsReady(true);
             logger.info(
               'useAudio: Got AudioEngine from CoreServices, ready:',
@@ -138,7 +138,7 @@ export function useAudio(serviceRegistry?: ServiceRegistry): UseAudioResult {
       setError(null);
 
       try {
-        if (!(audioEngineRef.current as any).isInitialized) {
+        if (!audioEngineRef.current.isReady()) {
           await audioEngineRef.current.initialize();
         }
         setIsReady(true);
@@ -155,11 +155,11 @@ export function useAudio(serviceRegistry?: ServiceRegistry): UseAudioResult {
     }
 
     // Check if we have CoreServices
-    const coreServices = (window as any).__globalCoreServices;
+    const coreServices = window.__globalCoreServices;
     logger.info('useAudio.initialize(): Checking for CoreServices:', {
-      hasGlobalCoreServices: !!(window as any).__globalCoreServices,
-      hasCoreServices: !!(window as any).__coreServices,
-      hasServiceRegistry: !!(window as any).__serviceRegistry,
+      hasGlobalCoreServices: !!window.__globalCoreServices,
+      hasCoreServices: !!window.__coreServices,
+      hasServiceRegistry: !!window.__serviceRegistry,
       coreServicesValue: coreServices,
     });
 

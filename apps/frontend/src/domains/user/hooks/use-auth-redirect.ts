@@ -8,13 +8,44 @@ import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router'
 interface UseAuthRedirectOptions {
   defaultRedirect?: string;
   requireEmailConfirmation?: boolean;
+  /** If true, checks assessment status and redirects to /assessment if not completed */
+  checkAssessment?: boolean;
+}
+
+/**
+ * Check if user has completed assessment
+ * Returns true if completed, false if not, null if check failed
+ */
+async function checkAssessmentStatus(): Promise<boolean | null> {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/assessment/status`,
+      {
+        credentials: 'include',
+      },
+    );
+
+    if (!response.ok) {
+      console.warn('Failed to check assessment status:', response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    return data.completed === true;
+  } catch (err) {
+    console.warn('Error checking assessment status:', err);
+    return null;
+  }
 }
 
 export const useAuthRedirect = (options: UseAuthRedirectOptions = {}) => {
   const _router = useRouter();
   const { navigateWithTransition } = useViewTransitionRouter();
-  const { defaultRedirect = '/dashboard', requireEmailConfirmation = true } =
-    options;
+  const {
+    defaultRedirect = '/app',
+    requireEmailConfirmation = true,
+    checkAssessment = true,
+  } = options;
 
   const pendingRedirectRef = useRef<{
     destination: string;
@@ -41,24 +72,37 @@ export const useAuthRedirect = (options: UseAuthRedirectOptions = {}) => {
   );
 
   const redirectAfterAuth = useCallback(
-    (user: User | null) => {
-      // TODO: Review non-null assertion - consider null safety
+    async (user: User | null) => {
       if (!user) {
         scheduleRedirect('/login');
         return;
       }
 
       // Check if email confirmation is required and user hasn't confirmed
-      // TODO: Review non-null assertion - consider null safety
       if (requireEmailConfirmation && !user.email_confirmed_at) {
         scheduleRedirect('/verify-email');
         return;
       }
 
-      // Always redirect to dashboard for simplicity with smooth transition
+      // Check if assessment is required and not completed
+      if (checkAssessment) {
+        const isAssessmentCompleted = await checkAssessmentStatus();
+
+        // If assessment not completed (or check succeeded and returned false),
+        // redirect to assessment
+        if (isAssessmentCompleted === false) {
+          scheduleRedirect('/assessment');
+          return;
+        }
+
+        // If check failed (null), fall through to default redirect
+        // This prevents blocking users if the API is down
+      }
+
+      // Redirect to dashboard or default route
       scheduleRedirect(defaultRedirect);
     },
-    [scheduleRedirect, defaultRedirect, requireEmailConfirmation],
+    [scheduleRedirect, defaultRedirect, requireEmailConfirmation, checkAssessment],
   );
 
   const redirectToLogin = useCallback(() => {
@@ -71,6 +115,10 @@ export const useAuthRedirect = (options: UseAuthRedirectOptions = {}) => {
 
   const redirectToHome = useCallback(() => {
     scheduleRedirect('/');
+  }, [scheduleRedirect]);
+
+  const redirectToAssessment = useCallback(() => {
+    scheduleRedirect('/assessment');
   }, [scheduleRedirect]);
 
   // Cleanup on unmount
@@ -87,6 +135,7 @@ export const useAuthRedirect = (options: UseAuthRedirectOptions = {}) => {
     redirectToLogin,
     redirectToDashboard,
     redirectToHome,
+    redirectToAssessment,
     scheduleRedirect,
   };
 };

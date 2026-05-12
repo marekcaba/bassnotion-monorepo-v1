@@ -298,16 +298,19 @@ export abstract class BaseAudioPlugin implements AudioPlugin {
     event: K,
     handler: PluginEvents[K],
   ): () => void {
-    this._emitter.on(event as string, handler as any);
+    // Cast to generic listener type for Node EventEmitter compatibility
+    const listener = handler as (...args: unknown[]) => void;
+    this._emitter.on(event as string, listener);
     // Return unsubscribe function
-    return () => this._emitter.off(event as string, handler as any);
+    return () => this._emitter.off(event as string, listener);
   }
 
   /**
    * Remove event listener - implements AudioPlugin interface
    */
   off<K extends keyof PluginEvents>(event: K, handler: PluginEvents[K]): void {
-    this._emitter.off(event as string, handler as any);
+    const listener = handler as (...args: unknown[]) => void;
+    this._emitter.off(event as string, listener);
   }
 
   // Abstract methods for subclasses to implement

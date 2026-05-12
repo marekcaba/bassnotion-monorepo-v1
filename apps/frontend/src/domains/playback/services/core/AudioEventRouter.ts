@@ -90,7 +90,7 @@ export class AudioEventRouter {
     // Get InstrumentRegistry from CoreServices if available
     try {
       const globalServices =
-        (window as any).__coreServices || (window as any).__globalCoreServices;
+        window.__coreServices || window.__globalCoreServices;
       if (globalServices?.getInstrumentRegistry) {
         this.instrumentRegistry = globalServices.getInstrumentRegistry();
         this.logger.info('Got InstrumentRegistry from CoreServices');
@@ -848,8 +848,8 @@ export class AudioEventRouter {
     if (!this.instrumentRegistry) {
       try {
         const globalServices =
-          (window as any).__coreServices ||
-          (window as any).__globalCoreServices;
+          window.__coreServices ||
+          window.__globalCoreServices;
         if (globalServices?.getInstrumentRegistry) {
           this.instrumentRegistry = globalServices.getInstrumentRegistry();
           this.logger.info('Got InstrumentRegistry from CoreServices on start');

@@ -259,8 +259,8 @@ export class PerformanceOptimizer {
     this.clearWeakReferences();
 
     // Force GC if available (development only)
-    if ('gc' in globalThis && typeof (globalThis as any).gc === 'function') {
-      (globalThis as any).gc();
+    if (typeof window !== 'undefined' && typeof window.gc === 'function') {
+      window.gc();
     }
 
     const gcTime = performance.now() - startTime;

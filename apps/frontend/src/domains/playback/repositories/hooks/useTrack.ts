@@ -9,6 +9,7 @@ import { useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useTrackRepositoryStore } from '../track/index.js';
 import { TrackId } from '../value-objects/index.js';
+import type { InstrumentType } from '../../modules/shared/index.js';
 
 /**
  * Hook to get a single track by ID
@@ -233,7 +234,7 @@ export function useTracksByType(instrumentType: string) {
     }
   }, [tracks.length, isLoading, loadTracks]);
 
-  const filteredTracks = findTracksByType(instrumentType as any);
+  const filteredTracks = findTracksByType(instrumentType as InstrumentType);
 
   return {
     tracks: filteredTracks,

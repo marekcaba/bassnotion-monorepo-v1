@@ -107,23 +107,23 @@ function AudioEnabledTutorialContent({
         if (attempts === 0 || attempts % 5 === 0) {
           addLog(`🔍 Attempt ${attempts + 1}: Checking for CoreServices...`);
           addLog(
-            `Global vars: __globalCoreServices=${!!(window as any).__globalCoreServices}, __coreServices=${!!(window as any).__coreServices}`,
+            `Global vars: __globalCoreServices=${!!window.__globalCoreServices}, __coreServices=${!!window.__coreServices}`,
           );
         }
 
-        if ((window as any).__globalCoreServices) {
-          const services = (window as any).__globalCoreServices;
+        if (window.__globalCoreServices) {
+          const services = window.__globalCoreServices;
           coreServicesRef.current = services;
 
           try {
-            const unifiedTransport = services.getUnifiedTransport();
+            const unifiedTransport = (services as { getUnifiedTransport: () => unknown }).getUnifiedTransport();
             transportRef.current = unifiedTransport;
 
             addLog('✅ CoreServices detected and loaded');
 
             // Store references globally for debugging
-            (window as any).__tutorialCoreServices = services;
-            (window as any).__tutorialTransport = unifiedTransport;
+            (window as { __tutorialCoreServices?: unknown }).__tutorialCoreServices = services;
+            (window as { __tutorialTransport?: unknown }).__tutorialTransport = unifiedTransport;
 
             // Only update state once when ready
             if (mountedRef.current) {
@@ -186,9 +186,9 @@ function AudioEnabledTutorialContent({
   log('🔍 AudioEnabledTutorial render:', {
     audioInitialized,
     hasGlobalCoreServices:
-      typeof window !== 'undefined' && !!(window as any).__globalCoreServices,
+      typeof window !== 'undefined' && !!window.__globalCoreServices,
     hasLegacyCoreServices:
-      typeof window !== 'undefined' && !!(window as any).__coreServices,
+      typeof window !== 'undefined' && !!window.__coreServices,
     coreServices: !!coreServicesRef.current,
   });
 

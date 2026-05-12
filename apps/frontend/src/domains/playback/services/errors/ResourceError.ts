@@ -44,7 +44,7 @@ export enum ResourceErrorCode {
 }
 
 export class ResourceError extends PlaybackError {
-  public readonly resourceType?: 'memory' | 'asset' | 'buffer' | 'cpu' | 'disk';
+  public readonly resourceType: 'memory' | 'asset' | 'buffer' | 'cpu' | 'disk';
   public readonly requestedSize?: number;
   public readonly availableSize?: number;
   public readonly utilizationPercentage?: number;
@@ -73,9 +73,21 @@ export class ResourceError extends PlaybackError {
     super(errorDetails, cause);
     this.name = 'ResourceError';
 
-    // Extract resource-specific context
+    // Extract resource-specific context - assign directly in constructor
     this.resourceType = this.extractResourceType(code);
-    this.extractResourceMetrics(context);
+
+    // Extract resource metrics from context
+    const metrics = context.performanceMetrics as {
+      requestedSize?: number;
+      availableSize?: number;
+      utilizationPercentage?: number;
+    } | undefined;
+
+    if (metrics) {
+      this.requestedSize = metrics.requestedSize;
+      this.availableSize = metrics.availableSize;
+      this.utilizationPercentage = metrics.utilizationPercentage;
+    }
   }
 
   private extractResourceType(
@@ -87,15 +99,6 @@ export class ResourceError extends PlaybackError {
     if (code.includes('CPU')) return 'cpu';
     if (code.includes('DISK')) return 'disk';
     return 'memory';
-  }
-
-  private extractResourceMetrics(context: Partial<ErrorContext>): void {
-    const metrics = context.performanceMetrics;
-    if (metrics) {
-      (this as any).requestedSize = metrics.requestedSize;
-      (this as any).availableSize = metrics.availableSize;
-      (this as any).utilizationPercentage = metrics.utilizationPercentage;
-    }
   }
 
   /**

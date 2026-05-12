@@ -61,11 +61,15 @@ export class TutorialsService {
           headline: undefined,
           concepts: tutorial.tags,
           thumbnail: tutorial.thumbnailUrl,
+          thumbnail_url: tutorial.thumbnailUrl,
           rating: undefined,
           exercise_count: (countsMap.get(tutorial.id.value) as number) || 0,
           is_active: tutorial.isActive,
           created_at: tutorial.createdAt.toISOString(),
           updated_at: tutorial.updatedAt.toISOString(),
+          category: tutorial.category,
+          sidebar_title: tutorial.sidebarTitle,
+          blocks: tutorial.blocks,
         }),
       );
 
@@ -89,11 +93,15 @@ export class TutorialsService {
       headline: undefined,
       concepts: tutorial.tags,
       thumbnail: tutorial.thumbnailUrl,
+      thumbnail_url: tutorial.thumbnailUrl,
       rating: undefined,
       exercise_count: 0,
       is_active: tutorial.isActive,
       created_at: tutorial.createdAt.toISOString(),
       updated_at: tutorial.updatedAt.toISOString(),
+      category: tutorial.category,
+      sidebar_title: tutorial.sidebarTitle,
+      blocks: tutorial.blocks,
     }));
 
     return {
@@ -251,6 +259,7 @@ export class TutorialsService {
       youtube_url: tutorial.youtubeId, // Map youtubeId to youtube_url
       duration: tutorial.duration?.toString(),
       thumbnail: tutorial.thumbnailUrl,
+      thumbnail_url: tutorial.thumbnailUrl, // Custom thumbnail from Supabase storage
       is_active: tutorial.isActive,
       created_at: tutorial.createdAt.toISOString(),
       updated_at: tutorial.updatedAt.toISOString(),
@@ -263,6 +272,15 @@ export class TutorialsService {
       creator_channel_url: tutorial.creatorChannelUrl,
       creator_avatar_url: tutorial.creatorAvatarUrl,
       creator_subscriber_count: tutorial.creatorSubscriberCount,
+      // Act 1: Understand fields
+      understand_video_url: tutorial.understandVideoUrl,
+      understand_video_library_id: tutorial.understandVideoLibraryId,
+      understand_headline: tutorial.understandHeadline,
+      understand_questions: tutorial.understandQuestions,
+      title_highlight_words: tutorial.titleHighlightWords,
+      sidebar_title: tutorial.sidebarTitle,
+      // Modular block system
+      blocks: tutorial.blocks,
     };
   }
 }

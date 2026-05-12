@@ -183,7 +183,7 @@ export function useCoreServices(
       setError(null);
 
       // Check if services already exist globally
-      let services = (window as any).__globalCoreServices;
+      let services = window.__globalCoreServices as CoreServices | undefined;
 
       if (!services) {
         logger.info('Creating new CoreServices instance...');
@@ -198,7 +198,7 @@ export function useCoreServices(
         await services.preInitialize();
 
         // Store globally
-        (window as any).__globalCoreServices = services;
+        window.__globalCoreServices = services;
       }
 
       coreServicesRef.current = services;
@@ -330,8 +330,8 @@ export function useCoreServices(
       await coreServicesRef.current.dispose();
 
       // Remove from global
-      if ((window as any).__globalCoreServices === coreServicesRef.current) {
-        delete (window as any).__globalCoreServices;
+      if (window.__globalCoreServices === coreServicesRef.current) {
+        window.__globalCoreServices = undefined;
       }
 
       coreServicesRef.current = null;

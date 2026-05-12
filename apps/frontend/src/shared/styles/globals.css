@@ -24,6 +24,19 @@
     --input: 0 0% 89.8%;
     --ring: 0 0% 3.9%;
     --radius: 0.75rem;
+    --sidebar-background: 240 10% 3.9%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 45 100% 50%;
+    --sidebar-primary-foreground: 0 0% 9%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 45 100% 50%;
+    --chart-1: 45 100% 50%;
+    --chart-2: 150 55% 55%;
+    --chart-3: 220 80% 65%;
+    --chart-4: 275 100% 75%;
+    --chart-5: 340 100% 75%;
   }
 
   .dark {
@@ -46,6 +59,19 @@
     --border: 0 0% 14.9%;
     --input: 0 0% 14.9%;
     --ring: 0 0% 83.1%;
+    --sidebar-background: 240 10% 3.9%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 45 100% 50%;
+    --sidebar-primary-foreground: 0 0% 9%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 45 100% 50%;
+    --chart-1: 45 100% 50%;
+    --chart-2: 150 55% 55%;
+    --chart-3: 220 80% 65%;
+    --chart-4: 275 100% 75%;
+    --chart-5: 340 100% 75%;
   }
 }
 
@@ -112,6 +138,37 @@
   }
   100% {
     opacity: 0;
+  }
+}
+
+/* ===== ANIMATED BORDER (rotating gradient) ===== */
+@keyframes border-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes scale-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.95);
+  }
+}
+
+/* ===== PANEL SLIDE-UP ANIMATION ===== */
+@keyframes panelSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

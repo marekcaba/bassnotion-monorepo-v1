@@ -7,7 +7,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { DrummerWidget } from '../components/YouTubeWidgetPage/components/DrummerWidget';
+import { DrummerWidget } from '../components/YouTubeWidgetPage/DrummerWidget/index.js';
 import { useTrackCompatibility } from '@/domains/playback/hooks/useTrackCompatibility';
 import { useTrackMixing } from '@/domains/playback/hooks/useTrackMixing';
 import { useTrackTiming } from '@/domains/playback/hooks/useTrackTiming';

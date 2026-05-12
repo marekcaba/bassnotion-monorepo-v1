@@ -300,7 +300,7 @@ function recordTransitionStats(): TransitionStats {
 
 // Export for debugging - only in browser environment
 if (typeof window !== 'undefined') {
-  (window as any).__bassnotionTransitionStats = () => {
+  window.__bassnotionTransitionStats = () => {
     const measures = performance.getEntriesByType('measure');
     const _preheatMeasure = measures.find(
       (m) => m.name === 'bassnotion-preheat',

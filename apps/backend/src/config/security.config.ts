@@ -99,11 +99,60 @@ export const endpointRateLimits = {
   },
 };
 
+/** Default browser origins for local dev (localhost vs 127.0.0.1 are different Origins). */
+const LOCAL_DEV_ORIGINS = [
+  'http://localhost:3001',
+  'http://localhost:3000',
+  'http://127.0.0.1:3001',
+  'http://127.0.0.1:3000',
+] as const;
+
+async function resolveCorsOrigin(
+  origin: string | undefined,
+): Promise<boolean | string> {
+  if (!origin) {
+    return true;
+  }
+
+  const allowedEnv = process.env.ALLOWED_ORIGINS;
+
+  // main.ts sets this to * when FRONTEND_URL is unset; with credentials we reflect the request origin.
+  if (allowedEnv === '*') {
+    return true;
+  }
+
+  const fromEnv =
+    allowedEnv
+      ?.split(',')
+      .map((o) => o.trim())
+      .filter(Boolean) ?? [];
+
+  const allow = new Set<string>([...LOCAL_DEV_ORIGINS, ...fromEnv]);
+  if (allow.has(origin)) {
+    return true;
+  }
+
+  if (process.env.NODE_ENV !== 'production') {
+    try {
+      const u = new URL(origin);
+      const localHost =
+        u.hostname === 'localhost' || u.hostname === '127.0.0.1';
+      if (localHost && (u.protocol === 'http:' || u.protocol === 'https:')) {
+        return true;
+      }
+    } catch {
+      // ignore invalid origin
+    }
+  }
+
+  return false;
+}
+
 /**
- * CORS configuration (already in main.ts, but centralized here)
+ * CORS configuration (honors ALLOWED_ORIGINS from main.ts + local dev hostnames)
  */
 export const corsConfig = {
-  origin: ['http://localhost:3001', 'http://localhost:3000'],
+  origin: resolveCorsOrigin,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-correlation-id'],

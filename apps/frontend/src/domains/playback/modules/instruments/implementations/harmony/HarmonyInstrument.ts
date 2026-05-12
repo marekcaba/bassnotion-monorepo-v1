@@ -67,8 +67,8 @@ export class HarmonyInstrument extends BaseInstrument {
       // Initialize processor with audio context
       const audioContext =
         context ||
-        (window as any).AudioContext ||
-        (window as any).webkitAudioContext;
+        window.AudioContext ||
+        window.webkitAudioContext;
       // Pass audioEngine to processor if it supports it
       await this.processor.initialize(audioContext, this.audioEngine);
 

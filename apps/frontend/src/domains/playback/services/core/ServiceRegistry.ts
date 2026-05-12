@@ -853,7 +853,7 @@ export const serviceRegistry = {
 
     // Check window globals as fallback
     if (typeof window !== 'undefined') {
-      const windowRegistry = (window as any).__serviceRegistry;
+      const windowRegistry = window.__serviceRegistry;
       if (windowRegistry && windowRegistry.has(name)) {
         return windowRegistry.get(name) as T;
       }
@@ -871,7 +871,7 @@ export const serviceRegistry = {
     }
 
     if (typeof window !== 'undefined') {
-      const windowRegistry = (window as any).__serviceRegistry;
+      const windowRegistry = window.__serviceRegistry;
       if (windowRegistry) {
         return windowRegistry.has(name);
       }

@@ -65,3 +65,12 @@ docs/internal-architecture/
 # Logs (SECURITY: Never commit logs to repository)
 logs/
 *.log
+
+# TypeScript incremental build info
+*.tsbuildinfo
+
+# Supabase local CLI temp files
+supabase/.temp/
+
+# Claude Code AI assistant runtime state
+.claude/scheduled_tasks.lock

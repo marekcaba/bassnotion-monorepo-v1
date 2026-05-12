@@ -13,7 +13,7 @@
 
 import { GlobalSampleCache } from '../../../storage/cache/GlobalSampleCache.js';
 import { getLogger } from '@/utils/logger.js';
-import { wamPluginSingleton } from '@/domains/widgets/utils/wamPluginSingleton.js';
+import { wamPluginSingleton } from '../../wamPluginSingleton.js';
 // import type WamKeyboard from './WamKeyboard.js';
 
 export interface ChordTriggerParams {

@@ -11,6 +11,7 @@ import {
   BassConfiguration,
   userProfileSchema,
   createStructuredLogger,
+  LearningStyle,
 } from '@bassnotion/contracts';
 import type { IResultUserRepository } from './repositories/result-user.repository.js';
 import { UserId } from './value-objects/user-id.vo.js';
@@ -90,6 +91,7 @@ export class UserService {
             stringCount: 4,
             maxFrets: 24,
           },
+          learningStyle: 'free_flow',
         },
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -232,6 +234,56 @@ export class UserService {
       stringCount: profile.bass_string_count || 4,
       maxFrets: profile.bass_max_frets || 24,
     };
+  }
+
+  async updateLearningStyle(
+    userId: string,
+    learningStyle: LearningStyle,
+  ): Promise<UserProfile> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+    logger.debug(`Updating learning style for user: ${userId}`, {
+      correlationId,
+    });
+
+    // Validate learning style
+    const validStyles: LearningStyle[] = [
+      'free_flow',
+      'guided_practice',
+      'strict_mode',
+    ];
+    if (!validStyles.includes(learningStyle)) {
+      throw new BadRequestException(
+        `Invalid learning style. Must be one of: ${validStyles.join(', ')}`,
+      );
+    }
+
+    const { data: updatedProfile, error } = await this.db.supabase
+      .from('profiles')
+      .update({
+        learning_style: learningStyle,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) {
+      logger.error('Error updating learning style:', error as Error, {
+        correlationId,
+      });
+      throw new Error(`Failed to update learning style: ${error.message}`);
+    }
+
+    if (!updatedProfile) {
+      throw new NotFoundException(`Profile not found for user: ${userId}`);
+    }
+
+    logger.info(`Learning style updated to ${learningStyle} for user: ${userId}`, {
+      correlationId,
+    });
+
+    return this.mapProfileToUserProfile(updatedProfile);
   }
 
   async deleteProfile(userId: string): Promise<void> {
@@ -554,6 +606,7 @@ export class UserService {
           stringCount: profile.bass_string_count || 4,
           maxFrets: profile.bass_max_frets || 24,
         },
+        learningStyle: profile.learning_style || 'free_flow',
       },
     };
   }

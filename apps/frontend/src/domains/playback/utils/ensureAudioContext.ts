@@ -16,7 +16,7 @@ import { WindowRegistry } from '../services/WindowRegistry.js';
 function getTone(): any {
   if (typeof window !== 'undefined') {
     // Check both locations where Tone.js may be stored
-    const tone = (window as any).Tone || (window as any).__globalTone;
+    const tone = window.Tone || window.__globalTone;
     if (tone) {
       return tone;
     }
@@ -90,7 +90,7 @@ export async function ensureAudioContext(): Promise<void> {
           error: error instanceof Error ? error.message : String(error),
         },
       );
-      ToneFromEngine = (window as any).Tone;
+      ToneFromEngine = window.Tone;
     }
 
     if (ToneFromEngine && ToneFromEngine.context.state === 'suspended') {
@@ -101,7 +101,7 @@ export async function ensureAudioContext(): Promise<void> {
 
     // Only initialize services if explicitly needed (not for simple audio tests)
     // This was causing ALL instruments to load when just testing metronome
-    const shouldFullyInitialize = (window as any).__ensureAudioContextFullInit;
+    const shouldFullyInitialize = (window as { __ensureAudioContextFullInit?: boolean }).__ensureAudioContextFullInit;
 
     if (shouldFullyInitialize && !globalServices.isReady()) {
       logger.info(

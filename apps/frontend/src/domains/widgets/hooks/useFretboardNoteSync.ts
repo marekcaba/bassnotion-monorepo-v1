@@ -232,336 +232,26 @@ export interface FretboardNoteSyncResult {
 // This is the SINGLE SOURCE OF TRUTH for all fretboard animation logic.
 
 // ============================================================================
-// DEBUG UTILITIES
+// DEBUG UTILITIES - Imported from separate debug module
 // ============================================================================
-
-/**
- * Debug flag - enable in browser console: window.__DEBUG_FRETBOARD_SYNC = true
- */
-const isDebugEnabled = () =>
-  typeof window !== 'undefined' &&
-  (window as unknown as { __DEBUG_FRETBOARD_SYNC?: boolean })
-    .__DEBUG_FRETBOARD_SYNC;
-
-/**
- * ULTRA DEBUG: Enable this to log EVERY single DOM mutation and computed style
- * Enable in browser console: window.__ULTRA_DEBUG__ = true
- */
-const isUltraDebugEnabled = () =>
-  typeof window !== 'undefined' &&
-  (window as unknown as { __ULTRA_DEBUG__?: boolean })
-    .__ULTRA_DEBUG__;
-
-/**
- * MUTATION OBSERVER: Track any external changes to fretboard dots
- * Call window.__START_MUTATION_WATCH__() to enable
- */
-if (typeof window !== 'undefined') {
-  let mutationObserver: MutationObserver | null = null;
-
-  (window as any).__START_MUTATION_WATCH__ = () => {
-    if (mutationObserver) {
-      mutationObserver.disconnect();
-    }
-
-    mutationObserver = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-          const el = mutation.target as HTMLElement;
-          if (el.classList.contains('fretboard-dot')) {
-            // eslint-disable-next-line no-console
-            console.log(
-              `🔬 [MUTATION] Dot class changed externally!\n` +
-              `   Old: ${mutation.oldValue}\n` +
-              `   New: ${el.className}\n` +
-              `   Title: ${el.title || 'N/A'}`
-            );
-          }
-        }
-        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
-          const el = mutation.target as HTMLElement;
-          if (el.classList.contains('fretboard-dot')) {
-            // eslint-disable-next-line no-console
-            console.log(
-              `🔬 [MUTATION] Dot style changed!\n` +
-              `   Style: ${el.getAttribute('style')}\n` +
-              `   Computed opacity: ${window.getComputedStyle(el).opacity}\n` +
-              `   Title: ${el.title || 'N/A'}`
-            );
-          }
-        }
-      });
-    });
-
-    document.querySelectorAll('.fretboard-dot:not(.fretboard-2d-hidden .fretboard-dot)').forEach((dot) => {
-      mutationObserver!.observe(dot, {
-        attributes: true,
-        attributeOldValue: true,
-        attributeFilter: ['class', 'style'],
-      });
-    });
-
-    // eslint-disable-next-line no-console
-    console.log(`🔬 [MUTATION WATCH] Started watching ${document.querySelectorAll('.fretboard-dot:not(.fretboard-2d-hidden .fretboard-dot)').length} dots for external changes`);
-  };
-
-  (window as any).__STOP_MUTATION_WATCH__ = () => {
-    if (mutationObserver) {
-      mutationObserver.disconnect();
-      mutationObserver = null;
-      // eslint-disable-next-line no-console
-      console.log('🔬 [MUTATION WATCH] Stopped');
-    }
-  };
-
-  // eslint-disable-next-line no-console
-  console.log('🔬 Mutation watch available: __START_MUTATION_WATCH__() and __STOP_MUTATION_WATCH__()');
-}
-
-/**
- * Debug flag for comprehensive line lifecycle tracking
- * Enable in browser console: window.__DEBUG_LINE_LIFECYCLE__ = true
- *
- * This will log EVERY line state change with full context:
- * - When a line is hidden (addClass 'line-played')
- * - When a line is restored (removeClass 'line-played')
- * - Current measure, note index, timestamp
- */
-const isLineLifecycleDebugEnabled = () =>
-  typeof window !== 'undefined' &&
-  (window as unknown as { __DEBUG_LINE_LIFECYCLE__?: boolean })
-    .__DEBUG_LINE_LIFECYCLE__;
-
-/**
- * Log line state changes for debugging
- */
-function logLineStateChange(
-  action: 'HIDE' | 'RESTORE' | 'QUERY',
-  context: {
-    noteIndex?: number;
-    lineSelector?: string;
-    lineFound?: boolean;
-    measure?: number;
-    time?: number;
-    reason?: string;
-    linesAffected?: number;
-    lineDetails?: string;
-  }
-): void {
-  if (!isLineLifecycleDebugEnabled()) return;
-
-  const emoji = action === 'HIDE' ? '🔴' : action === 'RESTORE' ? '🟢' : '🔍';
-  const t = context.time !== undefined ? `t=${context.time.toFixed(3)}s` : '';
-  const m = context.measure !== undefined ? `m=${context.measure}` : '';
-  const n = context.noteIndex !== undefined ? `note#${context.noteIndex}` : '';
-
-  // eslint-disable-next-line no-console, no-restricted-syntax
-  console.log(
-    `${emoji} [LINE-LIFECYCLE] ${action} | ${[m, n, t].filter(Boolean).join(' | ')} | ` +
-    `${context.reason || ''} | ` +
-    `selector="${context.lineSelector || 'N/A'}" found=${context.lineFound ?? 'N/A'} ` +
-    `affected=${context.linesAffected ?? 1} ${context.lineDetails || ''}`
-  );
-}
-
-// ============================================================================
-// VISUAL DOM INSPECTOR - Enable with window.__INSPECT_DOTS__()
-// ============================================================================
-
-/**
- * Visual DOM Inspector - Call from browser console to see actual dot states
- *
- * Usage:
- *   window.__INSPECT_DOTS__()           - Snapshot of all dots
- *   window.__INSPECT_DOTS__(true)       - Start continuous monitoring (every 500ms)
- *   window.__INSPECT_DOTS__(false)      - Stop continuous monitoring
- *   window.__WATCH_DOT__('2,5')         - Watch a specific position continuously
- *
- * This helps find bugs that don't appear in console logs by showing
- * the ACTUAL computed styles and classes on DOM elements.
- */
-if (typeof window !== 'undefined') {
-  let inspectorInterval: ReturnType<typeof setInterval> | null = null;
-  let watchedPosition: string | null = null;
-  let watchInterval: ReturnType<typeof setInterval> | null = null;
-
-  (window as any).__INSPECT_DOTS__ = (continuous?: boolean) => {
-    // Stop existing interval if any
-    if (inspectorInterval) {
-      clearInterval(inspectorInterval);
-      inspectorInterval = null;
-    }
-
-    const inspect = () => {
-      const dots = document.querySelectorAll('.fretboard-dot:not(.fretboard-2d-hidden .fretboard-dot)');
-      const summary = {
-        total: dots.length,
-        current: 0,
-        nextFirst: 0,
-        next: 0,
-        other: 0,
-        active: 0,
-        played: 0,
-        noMeasureClass: 0,
-        issues: [] as string[],
-      };
-
-      const dotStates: Array<{
-        position: string;
-        classes: string;
-        measureOpacity: string;
-        computedOpacity: string;
-        bgColor: string;
-        issue?: string;
-      }> = [];
-
-      dots.forEach((dot) => {
-        const classes = dot.className;
-        const style = window.getComputedStyle(dot);
-        const measureOpacity = (dot as HTMLElement).style.getPropertyValue('--measure-opacity') || 'not-set';
-        const computedOpacity = style.opacity;
-        const bgColor = style.backgroundColor;
-
-        // Extract position from data attributes or infer from classes
-        const position = (dot as HTMLElement).title?.match(/Fret (\d+).*String/)?.[1] || 'unknown';
-
-        // Count states
-        if (classes.includes('note-current-measure')) summary.current++;
-        else if (classes.includes('note-next-measure-first')) summary.nextFirst++;
-        else if (classes.includes('note-next-measure')) summary.next++;
-        else if (classes.includes('note-other-measure')) summary.other++;
-        else if (classes.includes('note-')) summary.noMeasureClass++; // Has note- class but no measure class
-
-        if (classes.includes('note-active')) summary.active++;
-        if (classes.includes('note-played')) summary.played++;
-
-        // Detect issues
-        let issue: string | undefined;
-
-        // Issue 1: Has note-next-measure but opacity is not ~0.3
-        if (classes.includes('note-next-measure') && !classes.includes('note-next-measure-first')) {
-          const opacityNum = parseFloat(computedOpacity);
-          if (opacityNum > 0.5) {
-            issue = `OPACITY BUG: next-measure dot has ${computedOpacity} opacity (should be ~0.3)`;
-            summary.issues.push(`${position}: ${issue}`);
-          }
-        }
-
-        // Issue 2: Has measure class but --measure-opacity not set
-        if (classes.includes('note-current-measure') || classes.includes('note-next-measure')) {
-          if (measureOpacity === 'not-set') {
-            issue = `CSS VAR MISSING: has measure class but --measure-opacity not set`;
-            summary.issues.push(`${position}: ${issue}`);
-          }
-        }
-
-        // Issue 3: Conflicting classes
-        // FIX: Use word boundary regex to avoid substring matching
-        // (e.g., 'note-next-measure-first'.includes('note-next-measure') is true but wrong)
-        const measureClasses = ['note-current-measure', 'note-next-measure', 'note-next-measure-first', 'note-other-measure'];
-        const classesArray = classes.split(' ');
-        const activeMeasureClasses = measureClasses.filter(c => classesArray.includes(c));
-        if (activeMeasureClasses.length > 1) {
-          issue = `CONFLICTING CLASSES: ${activeMeasureClasses.join(', ')}`;
-          summary.issues.push(`${position}: ${issue}`);
-        }
-
-        dotStates.push({
-          position,
-          classes: classes.split(' ').filter(c => c.startsWith('note-')).join(' '),
-          measureOpacity,
-          computedOpacity,
-          bgColor: bgColor.includes('rgb') ? bgColor : 'unknown',
-          issue,
-        });
-      });
-
-      // eslint-disable-next-line no-console
-      console.log('%c📊 DOT STATE SNAPSHOT', 'font-size: 14px; font-weight: bold; color: #4CAF50');
-      // eslint-disable-next-line no-console
-      console.log(`   Total: ${summary.total} | Current: ${summary.current} | NextFirst: ${summary.nextFirst} | Next: ${summary.next} | Other: ${summary.other}`);
-      // eslint-disable-next-line no-console
-      console.log(`   Active: ${summary.active} | Played: ${summary.played} | No measure class: ${summary.noMeasureClass}`);
-
-      if (summary.issues.length > 0) {
-        // eslint-disable-next-line no-console
-        console.log('%c🚨 ISSUES DETECTED:', 'color: red; font-weight: bold');
-        summary.issues.forEach(issue => {
-          // eslint-disable-next-line no-console
-          console.log(`   ${issue}`);
-        });
-      }
-
-      // eslint-disable-next-line no-console
-      console.table(dotStates.filter(d => d.classes.length > 0));
-
-      return summary;
-    };
-
-    if (continuous === true) {
-      // eslint-disable-next-line no-console
-      console.log('🔄 Starting continuous dot inspection (every 500ms). Call __INSPECT_DOTS__(false) to stop.');
-      inspectorInterval = setInterval(inspect, 500);
-    } else if (continuous === false) {
-      // eslint-disable-next-line no-console
-      console.log('⏹️ Stopped continuous dot inspection.');
-    }
-
-    return inspect();
-  };
-
-  (window as any).__WATCH_DOT__ = (positionKey: string | null) => {
-    // Stop existing watch
-    if (watchInterval) {
-      clearInterval(watchInterval);
-      watchInterval = null;
-    }
-
-    if (positionKey === null) {
-      watchedPosition = null;
-      // eslint-disable-next-line no-console
-      console.log('⏹️ Stopped watching dot.');
-      return;
-    }
-
-    watchedPosition = positionKey;
-    // eslint-disable-next-line no-console
-    console.log(`👁️ Watching dot at position "${positionKey}" - logs will appear when state changes`);
-
-    let lastState = '';
-
-    watchInterval = setInterval(() => {
-      const dots = document.querySelectorAll('.fretboard-dot:not(.fretboard-2d-hidden .fretboard-dot)');
-      let foundDot: Element | null = null;
-
-      dots.forEach((dot) => {
-        const title = (dot as HTMLElement).title || '';
-        if (title.includes(`Fret ${positionKey.split(',')[1]}`) || (dot as HTMLElement).dataset.position === positionKey) {
-          foundDot = dot;
-        }
-      });
-
-      if (!foundDot) return;
-
-      const classes = (foundDot as HTMLElement).className.split(' ').filter((c: string) => c.startsWith('note-')).sort().join(' ');
-      const measureOpacity = (foundDot as HTMLElement).style.getPropertyValue('--measure-opacity') || 'not-set';
-      const computedOpacity = window.getComputedStyle(foundDot).opacity;
-
-      const currentState = `${classes}|${measureOpacity}|${computedOpacity}`;
-
-      if (currentState !== lastState) {
-        lastState = currentState;
-        // eslint-disable-next-line no-console
-        console.log(
-          `👁️ [${positionKey}] CHANGED: classes=[${classes}] --measure-opacity=${measureOpacity} computed=${computedOpacity}`
-        );
-      }
-    }, 100);
-  };
-
-  // eslint-disable-next-line no-console
-  console.log('🔧 Visual inspectors loaded: __INSPECT_DOTS__() and __WATCH_DOT__(position)');
-}
+// Debug utilities are extracted to useFretboardNoteSync.debug.ts to keep this file focused.
+// The debug module sets up window globals on import (side effect).
+//
+// Available debug flags (set in browser console):
+//   window.__DEBUG_FRETBOARD_SYNC = true   - General sync debugging
+//   window.__ULTRA_DEBUG__ = true          - Ultra verbose logging
+//   window.__DEBUG_LINE_LIFECYCLE__ = true - Connection line state tracking
+//
+// Available debug functions:
+//   window.__START_MUTATION_WATCH__()      - Start watching dot mutations
+//   window.__STOP_MUTATION_WATCH__()       - Stop watching dot mutations
+//   window.__INSPECT_DOTS__()              - Snapshot of all dot states
+//   window.__WATCH_DOT__('2,5')            - Watch a specific position
+import {
+  isDebugEnabled,
+  isUltraDebugEnabled,
+  logLineStateChange,
+} from './useFretboardNoteSync.debug.js';
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -659,19 +349,21 @@ export function findNoteAtTime(timeline: NoteTimelineEntry[], time: number): num
       // Check if there's a next entry that starts exactly at this time (back-to-back notes)
       const nextEntry = timeline[result + 1];
 
-      // DIAGNOSTIC: Log when we're at a transition boundary for notes 3-7
-      const entryNoteIdx = entry.type === 'note' ? entry.noteIndex : -1;
-      const nextNoteIdx = nextEntry?.type === 'note' ? nextEntry.noteIndex : -1;
-      if ((entryNoteIdx >= 3 && entryNoteIdx <= 7) || (nextNoteIdx >= 3 && nextNoteIdx <= 7)) {
-        const gap = nextEntry ? nextEntry.startTime - entry.endTime : NaN;
-        // eslint-disable-next-line no-console
-        console.log(
-          `[TRANSITION-BOUNDARY] t=${time.toFixed(6)}s | ` +
-          `entry#${result}(idx=${entryNoteIdx}) end=${entry.endTime.toFixed(6)}s | ` +
-          `next#${result+1}(idx=${nextNoteIdx}) start=${nextEntry?.startTime.toFixed(6) ?? 'N/A'}s | ` +
-          `gap=${(gap * 1000).toFixed(3)}ms | ` +
-          `time>=nextStart: ${nextEntry ? time >= nextEntry.startTime : 'N/A'}`
-        );
+      // DIAGNOSTIC: Log when we're at a transition boundary for notes 3-7 (debug only)
+      if (isDebugEnabled()) {
+        const entryNoteIdx = entry.type === 'note' ? entry.noteIndex : -1;
+        const nextNoteIdx = nextEntry?.type === 'note' ? nextEntry.noteIndex : -1;
+        if ((entryNoteIdx >= 3 && entryNoteIdx <= 7) || (nextNoteIdx >= 3 && nextNoteIdx <= 7)) {
+          const gap = nextEntry ? nextEntry.startTime - entry.endTime : NaN;
+          // eslint-disable-next-line no-console
+          console.log(
+            `[TRANSITION-BOUNDARY] t=${time.toFixed(6)}s | ` +
+            `entry#${result}(idx=${entryNoteIdx}) end=${entry.endTime.toFixed(6)}s | ` +
+            `next#${result+1}(idx=${nextNoteIdx}) start=${nextEntry?.startTime.toFixed(6) ?? 'N/A'}s | ` +
+            `gap=${(gap * 1000).toFixed(3)}ms | ` +
+            `time>=nextStart: ${nextEntry ? time >= nextEntry.startTime : 'N/A'}`
+          );
+        }
       }
 
       if (nextEntry && time >= nextEntry.startTime && time < nextEntry.endTime) {
@@ -1006,45 +698,44 @@ export function useFretboardNoteSync(
     const firstEntry = built[0];
     const lastEntry = built[built.length - 1];
 
-    // ============================================================================
-    // DIAGNOSTIC LOGGING - Timeline Build
-    // Log the complete timeline data structure
-    // ============================================================================
-    // eslint-disable-next-line no-console, no-restricted-syntax
-    console.log(
-      `📋 [TIMELINE-BUILD] ===== TIMELINE DATA =====\n` +
-      `  Notes: ${noteEntries.length} | Rests: ${restEntries.length} | Total entries: ${built.length}\n` +
-      `  Tempo: ${tempo} BPM | Time Sig: ${timeSignature.numerator}/${timeSignature.denominator}\n` +
-      `  Countdown: ${countdownBeats} beats\n` +
-      `  Duration: ${lastEntry ? (lastEntry.endTime - (firstEntry?.startTime ?? 0)).toFixed(2) : '0'}s`
-    );
+    // DIAGNOSTIC LOGGING - Timeline Build (debug only)
+    if (isDebugEnabled()) {
+      // eslint-disable-next-line no-console, no-restricted-syntax
+      console.log(
+        `📋 [TIMELINE-BUILD] ===== TIMELINE DATA =====\n` +
+        `  Notes: ${noteEntries.length} | Rests: ${restEntries.length} | Total entries: ${built.length}\n` +
+        `  Tempo: ${tempo} BPM | Time Sig: ${timeSignature.numerator}/${timeSignature.denominator}\n` +
+        `  Countdown: ${countdownBeats} beats\n` +
+        `  Duration: ${lastEntry ? (lastEntry.endTime - (firstEntry?.startTime ?? 0)).toFixed(2) : '0'}s`
+      );
 
-    // Log each entry in detail (ALWAYS - for debugging)
-    // eslint-disable-next-line no-console, no-restricted-syntax
-    console.log(`📋 [TIMELINE-BUILD] ----- Entry Details -----`);
-    built.forEach((entry, i) => {
-      const duration = entry.endTime - entry.startTime;
-      const durationMs = duration * 1000;
-      if (entry.type === 'note' && entry.note) {
-        // eslint-disable-next-line no-console, no-restricted-syntax
-        console.log(
-          `  [${i}] NOTE idx=${entry.noteIndex} | ` +
-          `str${entry.note.string}:fret${entry.note.fret} | ` +
-          `m${entry.measure} | ` +
-          `${entry.startTime.toFixed(3)}s → ${entry.endTime.toFixed(3)}s | ` +
-          `dur=${duration.toFixed(3)}s (${durationMs.toFixed(0)}ms) = ${entry.durationBeats.toFixed(2)} beats`
-        );
-      } else {
-        // eslint-disable-next-line no-console, no-restricted-syntax
-        console.log(
-          `  [${i}] REST | m${entry.measure} | ` +
-          `${entry.startTime.toFixed(3)}s → ${entry.endTime.toFixed(3)}s | ` +
-          `dur=${duration.toFixed(3)}s (${durationMs.toFixed(0)}ms)`
-        );
-      }
-    });
-    // eslint-disable-next-line no-console, no-restricted-syntax
-    console.log(`📋 [TIMELINE-BUILD] ===== END TIMELINE =====`);
+      // Log each entry in detail
+      // eslint-disable-next-line no-console, no-restricted-syntax
+      console.log(`📋 [TIMELINE-BUILD] ----- Entry Details -----`);
+      built.forEach((entry, i) => {
+        const duration = entry.endTime - entry.startTime;
+        const durationMs = duration * 1000;
+        if (entry.type === 'note' && entry.note) {
+          // eslint-disable-next-line no-console, no-restricted-syntax
+          console.log(
+            `  [${i}] NOTE idx=${entry.noteIndex} | ` +
+            `str${entry.note.string}:fret${entry.note.fret} | ` +
+            `m${entry.measure} | ` +
+            `${entry.startTime.toFixed(3)}s → ${entry.endTime.toFixed(3)}s | ` +
+            `dur=${duration.toFixed(3)}s (${durationMs.toFixed(0)}ms) = ${entry.durationBeats.toFixed(2)} beats`
+          );
+        } else {
+          // eslint-disable-next-line no-console, no-restricted-syntax
+          console.log(
+            `  [${i}] REST | m${entry.measure} | ` +
+            `${entry.startTime.toFixed(3)}s → ${entry.endTime.toFixed(3)}s | ` +
+            `dur=${duration.toFixed(3)}s (${durationMs.toFixed(0)}ms)`
+          );
+        }
+      });
+      // eslint-disable-next-line no-console, no-restricted-syntax
+      console.log(`📋 [TIMELINE-BUILD] ===== END TIMELINE =====`);
+    }
 
     return built;
   }, [exerciseNotes, tempo, timeSignature, countdownBeats]);
@@ -1118,12 +809,14 @@ export function useFretboardNoteSync(
     const stateCounts = { current: 0, nextFirst: 0, next: 0, other: 0 };
     const stateDetails: Array<{ noteIndices: number[]; state: string; opacity: string }> = [];
 
-    // Summary log for measure change (always log for debugging)
-    // eslint-disable-next-line no-console, no-restricted-syntax
-    console.log(
-      `🎯 [MEASURE-OPACITY] START measure=${newMeasure} next=${nextMeasure} | ` +
-      `registeredNotes=${noteRefs.current.size} | timeline=${currentTimeline.length} entries`
-    );
+    // Summary log for measure change (debug only)
+    if (isDebugEnabled()) {
+      // eslint-disable-next-line no-console, no-restricted-syntax
+      console.log(
+        `🎯 [MEASURE-OPACITY] START measure=${newMeasure} next=${nextMeasure} | ` +
+        `registeredNotes=${noteRefs.current.size} | timeline=${currentTimeline.length} entries`
+      );
+    }
 
     // Build a map of noteIndex -> measure for quick lookup
     const noteToMeasure = new Map<number, number>();
@@ -1154,7 +847,7 @@ export function useFretboardNoteSync(
     }
 
     // DEBUG: Log which note is considered "first" in next measure
-    if (allNotesInNextMeasure.length > 0) {
+    if (isDebugEnabled() && allNotesInNextMeasure.length > 0) {
       // eslint-disable-next-line no-console, no-restricted-syntax
       console.log(
         `   🎯 [NEXT-MEASURE-NOTES] firstNoteIndex=${firstNoteIndexInNextMeasure} | ` +
@@ -1173,7 +866,7 @@ export function useFretboardNoteSync(
         });
       }
     }
-    if (allNotesInCurrentMeasure.length > 0) {
+    if (isDebugEnabled() && allNotesInCurrentMeasure.length > 0) {
       // eslint-disable-next-line no-console, no-restricted-syntax
       console.log(
         `   📍 [CURRENT-MEASURE-NOTES] measure=${newMeasure} | ` +
@@ -1185,7 +878,7 @@ export function useFretboardNoteSync(
     const currentPositions = new Set(allNotesInCurrentMeasure.map(n => `${n.string}-${n.fret}`));
     const nextPositions = new Set(allNotesInNextMeasure.map(n => `${n.string}-${n.fret}`));
     const sharedPositions = Array.from(currentPositions).filter(pos => nextPositions.has(pos));
-    if (sharedPositions.length > 0) {
+    if (isDebugEnabled() && sharedPositions.length > 0) {
       // eslint-disable-next-line no-console, no-restricted-syntax
       console.log(
         `   ⚠️ [SHARED-POSITIONS] ${sharedPositions.length} positions appear in BOTH measures: ${sharedPositions.join(', ')}`
@@ -1237,19 +930,23 @@ export function useFretboardNoteSync(
           bestState = 'next-first';
           bestNoteIndex = noteIndex;
           // DEBUG: Log why this element got next-first
-          // eslint-disable-next-line no-console, no-restricted-syntax
-          console.log(
-            `      🔍 [NEXT-FIRST-MATCH] noteIndex=${noteIndex} === firstNoteIndexInNextMeasure=${firstNoteIndexInNextMeasure} ` +
-            `| noteMeasure=${noteMeasure} nextMeasure=${nextMeasure}`
-          );
+          if (isDebugEnabled()) {
+            // eslint-disable-next-line no-console, no-restricted-syntax
+            console.log(
+              `      🔍 [NEXT-FIRST-MATCH] noteIndex=${noteIndex} === firstNoteIndexInNextMeasure=${firstNoteIndexInNextMeasure} ` +
+              `| noteMeasure=${noteMeasure} nextMeasure=${nextMeasure}`
+            );
+          }
         } else if (isNextMeasure && bestState !== 'next-first') {
           bestState = 'next';
           bestNoteIndex = noteIndex;
           // DEBUG: Log why this element got next (30% preview)
-          // eslint-disable-next-line no-console, no-restricted-syntax
-          console.log(
-            `      📐 [NEXT-MATCH] noteIndex=${noteIndex} in nextMeasure=${nextMeasure} | noteMeasure=${noteMeasure}`
-          );
+          if (isDebugEnabled()) {
+            // eslint-disable-next-line no-console, no-restricted-syntax
+            console.log(
+              `      📐 [NEXT-MATCH] noteIndex=${noteIndex} in nextMeasure=${nextMeasure} | noteMeasure=${noteMeasure}`
+            );
+          }
         }
         // 'other' is default, no update needed
       }
@@ -1262,18 +959,22 @@ export function useFretboardNoteSync(
       // Only flag as bug if element has notes in next but NOT in current, yet got wrong state
       if (hasNoteInNext && !hasNoteInCurrent && bestState !== 'next' && bestState !== 'next-first') {
         // TRUE BUG: Notes ONLY in next measure but got 'other' or 'current' state
-        // eslint-disable-next-line no-console, no-restricted-syntax
-        console.error(
-          `      🚨 [NEXT-ONLY-BUG] Notes ONLY in nextMeasure but got state='${bestState}' | ` +
-          `noteIndices=[${noteIndices.join(',')}] | measures=[${noteIndices.map(idx => noteToMeasure.get(idx)).join(',')}]`
-        );
+        if (isDebugEnabled()) {
+          // eslint-disable-next-line no-console, no-restricted-syntax
+          console.error(
+            `      🚨 [NEXT-ONLY-BUG] Notes ONLY in nextMeasure but got state='${bestState}' | ` +
+            `noteIndices=[${noteIndices.join(',')}] | measures=[${noteIndices.map(idx => noteToMeasure.get(idx)).join(',')}]`
+          );
+        }
       } else if (hasNoteInNext && hasNoteInCurrent && bestState === 'current') {
         // EXPECTED: Element has notes in both current and next - current wins (100% opacity)
-        // eslint-disable-next-line no-console, no-restricted-syntax
-        console.log(
-          `      ✅ [CURRENT-WINS] Notes in both current(${newMeasure}) and next(${nextMeasure}) → showing as current | ` +
-          `noteIndices=[${noteIndices.join(',')}]`
-        );
+        if (isDebugEnabled()) {
+          // eslint-disable-next-line no-console, no-restricted-syntax
+          console.log(
+            `      ✅ [CURRENT-WINS] Notes in both current(${newMeasure}) and next(${nextMeasure}) → showing as current | ` +
+            `noteIndices=[${noteIndices.join(',')}]`
+          );
+        }
       }
 
       // Apply classes based on best state
@@ -1284,7 +985,7 @@ export function useFretboardNoteSync(
 
       // DEBUG: Log ALL elements that get 100% opacity in preview measure
       // This catches both next-first (correct) and unexpected cases
-      if (isNextFirst || (hasNoteInNext && !hasNoteInCurrent && bestState !== 'next')) {
+      if (isDebugEnabled() && (isNextFirst || (hasNoteInNext && !hasNoteInCurrent && bestState !== 'next'))) {
         const noteMeasures = noteIndices.map(idx => noteToMeasure.get(idx));
         // eslint-disable-next-line no-console, no-restricted-syntax
         console.log(
@@ -1369,7 +1070,7 @@ export function useFretboardNoteSync(
       const hasStaleOtherClass = !isOtherMeasure && actualClasses.includes(CSS_CLASSES.DOT_OTHER_MEASURE);
       const hasAnyStaleClass = hasStaleCurrentClass || hasStaleNextClass || hasStaleNextFirstClass || hasStaleOtherClass;
 
-      if (opacityMismatch || classMismatch || hasAnyStaleClass) {
+      if (isDebugEnabled() && (opacityMismatch || classMismatch || hasAnyStaleClass)) {
         const measuresAtPosition = noteIndices.map(idx => noteToMeasure.get(idx) ?? -1);
         // eslint-disable-next-line no-console, no-restricted-syntax
         console.error(
@@ -1410,31 +1111,34 @@ export function useFretboardNoteSync(
     });
 
     // GRANULAR SUMMARY LOG: What actually got set
-    // eslint-disable-next-line no-console, no-restricted-syntax
-    console.log(
-      `🎯 [MEASURE-OPACITY] DONE measure=${newMeasure} | ` +
-      `COUNTS: current=${stateCounts.current} nextFirst=${stateCounts.nextFirst} next=${stateCounts.next} other=${stateCounts.other} | ` +
-      `TOTAL=${stateCounts.current + stateCounts.nextFirst + stateCounts.next + stateCounts.other}`
-    );
-
-    // Log elements getting 30% opacity (should be next measure except firstNoteInNextMeasure)
     const elementsAt30 = stateDetails.filter(d => d.opacity === '0.3');
-    if (elementsAt30.length > 0) {
-      // eslint-disable-next-line no-console, no-restricted-syntax
-      console.log(
-        `   📊 Elements at 30% opacity (next measure): ${elementsAt30.length} elements | ` +
-        `noteIndices: [${elementsAt30.map(e => e.noteIndices.join(',')).join('], [')}]`
-      );
-    }
-
-    // Log elements at 100% that are in "next" category (should only be firstNoteInNextMeasure)
     const elementsAt100NextFirst = stateDetails.filter(d => d.state === 'next-first');
-    if (elementsAt100NextFirst.length > 0) {
+
+    if (isDebugEnabled()) {
       // eslint-disable-next-line no-console, no-restricted-syntax
       console.log(
-        `   📊 Elements at 100% (next-first): ${elementsAt100NextFirst.length} elements | ` +
-        `noteIndices: [${elementsAt100NextFirst.map(e => e.noteIndices.join(',')).join('], [')}]`
+        `🎯 [MEASURE-OPACITY] DONE measure=${newMeasure} | ` +
+        `COUNTS: current=${stateCounts.current} nextFirst=${stateCounts.nextFirst} next=${stateCounts.next} other=${stateCounts.other} | ` +
+        `TOTAL=${stateCounts.current + stateCounts.nextFirst + stateCounts.next + stateCounts.other}`
       );
+
+      // Log elements getting 30% opacity (should be next measure except firstNoteInNextMeasure)
+      if (elementsAt30.length > 0) {
+        // eslint-disable-next-line no-console, no-restricted-syntax
+        console.log(
+          `   📊 Elements at 30% opacity (next measure): ${elementsAt30.length} elements | ` +
+          `noteIndices: [${elementsAt30.map(e => e.noteIndices.join(',')).join('], [')}]`
+        );
+      }
+
+      // Log elements at 100% that are in "next" category (should only be firstNoteInNextMeasure)
+      if (elementsAt100NextFirst.length > 0) {
+        // eslint-disable-next-line no-console, no-restricted-syntax
+        console.log(
+          `   📊 Elements at 100% (next-first): ${elementsAt100NextFirst.length} elements | ` +
+          `noteIndices: [${elementsAt100NextFirst.map(e => e.noteIndices.join(',')).join('], [')}]`
+        );
+      }
     }
 
     // ==========================================================================
@@ -1525,7 +1229,7 @@ export function useFretboardNoteSync(
     // CRITICAL: Check for elements in next measure that got 100% but shouldn't
     // (i.e., they are "next" but not "next-first", yet have opacity 1)
     const unexpectedAt100 = stateDetails.filter(d => d.state === 'next' && d.opacity === '1');
-    if (unexpectedAt100.length > 0) {
+    if (isDebugEnabled() && unexpectedAt100.length > 0) {
       // eslint-disable-next-line no-console, no-restricted-syntax
       console.error(
         `🚨 [BUG] Elements in NEXT measure have 100% opacity but should be 30%! | ` +
@@ -1774,23 +1478,25 @@ export function useFretboardNoteSync(
       // already-played notes. Only lines from currentMeasure onwards get cleared.
       const { clearedDots, clearedLines } = clearAllPlayedStates(currentMeasure);
 
-      // VALIDATION: Check that clearing actually worked
-      // clearAllPlayedStates() should remove ALL measure-related and played-related classes
-      const staleDotsAfterClear = document.querySelectorAll(
-        `.${CSS_CLASSES.FRETBOARD_DOT}.${CSS_CLASSES.DOT_PLAYED}, ` +
-        `.${CSS_CLASSES.FRETBOARD_DOT}.${CSS_CLASSES.DOT_PLAYED_NEXT_MEASURE_GREEN}, ` +
-        `.${CSS_CLASSES.FRETBOARD_DOT}.${CSS_CLASSES.DOT_PLAYED_NEXT_MEASURE_ORANGE}, ` +
-        `.${CSS_CLASSES.FRETBOARD_DOT}.${CSS_CLASSES.DOT_CURRENT_MEASURE}, ` +
-        `.${CSS_CLASSES.FRETBOARD_DOT}.${CSS_CLASSES.DOT_NEXT_MEASURE}, ` +
-        `.${CSS_CLASSES.FRETBOARD_DOT}.${CSS_CLASSES.DOT_NEXT_MEASURE_FIRST}, ` +
-        `.${CSS_CLASSES.FRETBOARD_DOT}.${CSS_CLASSES.DOT_OTHER_MEASURE}`
-      );
-      if (staleDotsAfterClear.length > 0) {
-        // eslint-disable-next-line no-console, no-restricted-syntax
-        console.error(
-          `🚨 [CLEAR-FAILED] Measure ${previousMeasureRef.current}→${currentMeasure} | ` +
-          `${staleDotsAfterClear.length} dots still have stale classes after clearAllPlayedStates!`
+      // VALIDATION: Check that clearing actually worked (debug only)
+      if (isDebugEnabled()) {
+        // clearAllPlayedStates() should remove ALL measure-related and played-related classes
+        const staleDotsAfterClear = document.querySelectorAll(
+          `.${CSS_CLASSES.FRETBOARD_DOT}.${CSS_CLASSES.DOT_PLAYED}, ` +
+          `.${CSS_CLASSES.FRETBOARD_DOT}.${CSS_CLASSES.DOT_PLAYED_NEXT_MEASURE_GREEN}, ` +
+          `.${CSS_CLASSES.FRETBOARD_DOT}.${CSS_CLASSES.DOT_PLAYED_NEXT_MEASURE_ORANGE}, ` +
+          `.${CSS_CLASSES.FRETBOARD_DOT}.${CSS_CLASSES.DOT_CURRENT_MEASURE}, ` +
+          `.${CSS_CLASSES.FRETBOARD_DOT}.${CSS_CLASSES.DOT_NEXT_MEASURE}, ` +
+          `.${CSS_CLASSES.FRETBOARD_DOT}.${CSS_CLASSES.DOT_NEXT_MEASURE_FIRST}, ` +
+          `.${CSS_CLASSES.FRETBOARD_DOT}.${CSS_CLASSES.DOT_OTHER_MEASURE}`
         );
+        if (staleDotsAfterClear.length > 0) {
+          // eslint-disable-next-line no-console, no-restricted-syntax
+          console.error(
+            `🚨 [CLEAR-FAILED] Measure ${previousMeasureRef.current}→${currentMeasure} | ` +
+            `${staleDotsAfterClear.length} dots still have stale classes after clearAllPlayedStates!`
+          );
+        }
       }
 
       // SINGLE SOURCE OF TRUTH: Update measure-based opacity classes
@@ -1829,7 +1535,7 @@ export function useFretboardNoteSync(
     // Only update DOM if note changed (optimization)
     if (activeNoteIndex === previousNoteIndexRef.current) {
       // DIAGNOSTIC: Log if measure just changed but note didn't
-      if (measureJustChanged) {
+      if (isDebugEnabled() && measureJustChanged) {
         // eslint-disable-next-line no-console
         console.log(
           `[MEASURE-NO-NOTE-CHANGE] m${currentMeasure} | activeNote=${activeNoteIndex} = prevNote | t=${visualSeconds.toFixed(3)}s`
@@ -1838,9 +1544,8 @@ export function useFretboardNoteSync(
       return;
     }
 
-    // TIMING ACCURACY DIAGNOSTIC: Compare expected vs actual activation time
-    // For notes 3-8, log when they become active vs when they SHOULD become active
-    if (activeNoteIndex >= 3 && activeNoteIndex <= 8) {
+    // TIMING ACCURACY DIAGNOSTIC: Compare expected vs actual activation time (debug only)
+    if (isDebugEnabled() && activeNoteIndex >= 3 && activeNoteIndex <= 8) {
       const newEntry = currentTimeline.find(
         (e) => e.type === 'note' && e.noteIndex === activeNoteIndex
       );
@@ -2174,11 +1879,11 @@ export function useFretboardNoteSync(
       // Initial state: measure 0 is "current" (will be played first)
       const initialMeasure = 0;
 
-      // Compact initial log
-      // eslint-disable-next-line no-console, no-restricted-syntax
-      console.log(`🎯 [INIT] Applying measure opacity | notes=${noteRefs.current.size}`);
-
       // Apply measure-based opacity classes for initial render
+      if (isDebugEnabled()) {
+        // eslint-disable-next-line no-console, no-restricted-syntax
+        console.log(`🎯 [INIT] Applying measure opacity | notes=${noteRefs.current.size}`);
+      }
       updateMeasureOpacityClasses(initialMeasure);
     }, 50); // 50ms delay to ensure refs are registered
 

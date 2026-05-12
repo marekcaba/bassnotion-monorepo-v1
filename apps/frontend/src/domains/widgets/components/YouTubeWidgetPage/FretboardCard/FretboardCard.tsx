@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ZoneCard, ZoneCardContent } from '@/ui-libraries';
 import { Target } from 'lucide-react';
 import { createStructuredLogger, type FretboardViewConfig, type FretboardScrollMode } from '@bassnotion/contracts';
+import { isVerboseDebugEnabled } from '@/config/debug';
 
 const logger = createStructuredLogger('FretboardCard');
 
@@ -516,6 +517,39 @@ const FretboardCardContent = React.memo(
     const fretboardContainerRef = useRef<HTMLDivElement>(null);
 
     // =============================================================================
+    // RESPONSIVE SCALING
+    // =============================================================================
+    // The fretboard renders at a fixed 568x290 base size internally.
+    // We measure the available container width and apply CSS transform: scale()
+    // so it fills up to 800px wide while preserving all internal pixel math.
+    const FRETBOARD_BASE_WIDTH = 568;
+    const FRETBOARD_BASE_HEIGHT = 290;
+    const responsiveWrapperRef = useRef<HTMLDivElement>(null);
+    const [responsiveScale, setResponsiveScale] = useState(1);
+
+    useEffect(() => {
+      const wrapper = responsiveWrapperRef.current;
+      if (!wrapper) return;
+
+      const updateScale = () => {
+        const availableWidth = wrapper.clientWidth;
+        const MAX_SCALED_WIDTH = 640;
+        // Scale to fill available width, capped at 800px, never below 1
+        const scale = Math.min(
+          MAX_SCALED_WIDTH / FRETBOARD_BASE_WIDTH,
+          Math.max(1, availableWidth / FRETBOARD_BASE_WIDTH),
+        );
+        setResponsiveScale(scale);
+      };
+
+      updateScale();
+
+      const observer = new ResizeObserver(updateScale);
+      observer.observe(wrapper);
+      return () => observer.disconnect();
+    }, []);
+
+    // =============================================================================
     // INITIAL FRETBOARD REVEAL ON SCROLL
     // =============================================================================
     // The fretboard content is hidden until the user scrolls to the sentinel.
@@ -535,26 +569,26 @@ const FretboardCardContent = React.memo(
     useEffect(() => {
       // Skip if initial reveal is already complete
       if (isInitialRevealComplete) {
-        console.log('[ZOOM-DEBUG] Initial reveal already complete, skipping observer');
+        if (isVerboseDebugEnabled()) console.log('[ZOOM-DEBUG] Initial reveal already complete, skipping observer');
         return;
       }
 
       const sentinel = animationTriggerSentinelRef.current;
-      console.log('[ZOOM-DEBUG] IntersectionObserver setup - sentinel:', sentinel);
+      if (isVerboseDebugEnabled()) console.log('[ZOOM-DEBUG] IntersectionObserver setup - sentinel:', sentinel);
       if (!sentinel) {
-        console.log('[ZOOM-DEBUG] ❌ No sentinel element found!');
+        if (isVerboseDebugEnabled()) console.log('[ZOOM-DEBUG] ❌ No sentinel element found!');
         return;
       }
 
       const observer = new IntersectionObserver(
         (entries) => {
           const entry = entries[0];
-          console.log('[ZOOM-DEBUG] IntersectionObserver callback:', {
+          if (isVerboseDebugEnabled()) console.log('[ZOOM-DEBUG] IntersectionObserver callback:', {
             isIntersecting: entry.isIntersecting,
             intersectionRatio: entry.intersectionRatio,
           });
           if (entry.isIntersecting) {
-            console.log('[ZOOM-DEBUG] 🎯 Sentinel in view! Revealing fretboard content');
+            if (isVerboseDebugEnabled()) console.log('[ZOOM-DEBUG] 🎯 Sentinel in view! Revealing fretboard content');
             setShowFretboardContent(true);
             setIsInitialRevealComplete(true);
           }
@@ -567,10 +601,10 @@ const FretboardCardContent = React.memo(
       );
 
       observer.observe(sentinel);
-      console.log('[ZOOM-DEBUG] Observer started watching sentinel');
+      if (isVerboseDebugEnabled()) console.log('[ZOOM-DEBUG] Observer started watching sentinel');
 
       return () => {
-        console.log('[ZOOM-DEBUG] Observer disconnected');
+        if (isVerboseDebugEnabled()) console.log('[ZOOM-DEBUG] Observer disconnected');
         observer.disconnect();
       };
     }, [isInitialRevealComplete]);
@@ -578,15 +612,15 @@ const FretboardCardContent = React.memo(
     // Mark fade animation as complete after the CSS animation finishes
     // We use CSS @keyframes animation for reliable fade-in, not state-driven transitions
     // NOTE: Using hardcoded 500ms here since fadeDuration is defined later in the component
-    const INITIAL_FADE_DURATION = 500;
+    const INITIAL_FADE_DURATION = 1000;
     useEffect(() => {
       if (showFretboardContent && !initialFadeComplete) {
-        console.log('[ZOOM-DEBUG] 🌟 CSS fade-in animation started');
+        if (isVerboseDebugEnabled()) console.log('[ZOOM-DEBUG] 🌟 CSS fade-in animation started');
 
         // Mark the initial fade as complete after the CSS animation finishes
         // This allows subsequent exercise changes to use the snapshot transition opacity
         const timer = setTimeout(() => {
-          console.log('[ZOOM-DEBUG] ✅ Initial fade animation complete');
+          if (isVerboseDebugEnabled()) console.log('[ZOOM-DEBUG] ✅ Initial fade animation complete');
           setInitialFadeComplete(true);
         }, INITIAL_FADE_DURATION);
 
@@ -929,46 +963,48 @@ const FretboardCardContent = React.memo(
     // =============================================================================
     // EFFECTIVE TRANSITION PHASE FOR ZOOM ANIMATION
     // DEBUG: Log state on every render (after fadeOpacity is defined)
-    console.log('[ZOOM-DEBUG] Render state:', {
-      isInitialRevealComplete,
-      showFretboardContent,
-      initialFadeComplete,
-      fadeOpacity,
-      usingCSSAnimation: !initialFadeComplete,
-      sentinelExists: !!animationTriggerSentinelRef.current,
-    });
+    if (isVerboseDebugEnabled()) {
+      console.log('[ZOOM-DEBUG] Render state:', {
+        isInitialRevealComplete,
+        showFretboardContent,
+        initialFadeComplete,
+        fadeOpacity,
+        usingCSSAnimation: !initialFadeComplete,
+        sentinelExists: !!animationTriggerSentinelRef.current,
+      });
+    }
 
     // =============================================================================
     // When fretboard is first revealed (showFretboardContent becomes true), we want
     // to trigger the zoom animation. We do this by forcing 'fading-in' phase temporarily.
     // After the zoom animation completes, we go back to normal phase pass-through.
-    const [forceInitialZoom, setForceInitialZoom] = useState(false);
+    // Track when initial zoom animation is done (after 1700ms from reveal)
+    const [initialZoomDone, setInitialZoomDone] = useState(false);
     const initialRevealDoneRef = useRef(false);
 
-    // When showFretboardContent becomes true for the first time, trigger zoom animation
-    // IMPORTANT: We delay setting forceInitialZoom so the 3D overlay mounts with 'stable' first,
-    // then we switch to 'fading-in' to trigger the zoom animation (the overlay detects phase CHANGES)
+    // forceInitialZoom is true when:
+    // - showFretboardContent is true (sentinel triggered)
+    // - AND initial zoom animation hasn't completed yet
+    // This is computed directly, not via useEffect, so it's available on first render
+    const forceInitialZoom = showFretboardContent && !initialZoomDone;
+
+    // Log the initial reveal
     useEffect(() => {
       if (showFretboardContent && !initialRevealDoneRef.current) {
         initialRevealDoneRef.current = true;
-        console.log('[ZOOM-DEBUG] 🎬 Initial reveal - scheduling fading-in after mount');
+        if (isVerboseDebugEnabled()) {
+          console.log('[ZOOM-DEBUG] 🎬 Initial reveal - forceInitialZoom is now true');
+        }
 
-        // Longer delay to ensure 3D overlay fully mounts and initializes with 'stable' phase
-        // The overlay needs to render at least once with 'stable' before we switch to 'fading-in'
-        const MOUNT_DELAY = 200; // ms - give time for React to mount and Three.js to initialize
-        const startTimer = setTimeout(() => {
-          console.log('[ZOOM-DEBUG] 🚀 Now forcing fading-in to trigger zoom animation');
-          setForceInitialZoom(true);
-        }, MOUNT_DELAY);
-
-        // Clear the force after zoom animation duration (1500ms in Ring3DOverlayCanvas)
+        // Mark zoom animation as done after it completes (1500ms + buffer)
         const endTimer = setTimeout(() => {
-          console.log('[ZOOM-DEBUG] ✅ Zoom animation complete - clearing forceInitialZoom');
-          setForceInitialZoom(false);
-        }, MOUNT_DELAY + 1600);
+          if (isVerboseDebugEnabled()) {
+            console.log('[ZOOM-DEBUG] ✅ Zoom animation complete - setting initialZoomDone');
+          }
+          setInitialZoomDone(true);
+        }, 1700);
 
         return () => {
-          clearTimeout(startTimer);
           clearTimeout(endTimer);
         };
       }
@@ -978,11 +1014,15 @@ const FretboardCardContent = React.memo(
     const effectiveTransitionPhase = React.useMemo(() => {
       // During initial reveal, force 'fading-in' to trigger zoom animation
       if (forceInitialZoom) {
-        console.log('[ZOOM-DEBUG] effectiveTransitionPhase: FORCING fading-in for initial reveal');
+        if (isVerboseDebugEnabled()) {
+          console.log('[ZOOM-DEBUG] effectiveTransitionPhase: FORCING fading-in for initial reveal');
+        }
         return 'fading-in' as const;
       }
 
-      console.log('[ZOOM-DEBUG] effectiveTransitionPhase: passing through', transitionPhase);
+      if (isVerboseDebugEnabled()) {
+        console.log('[ZOOM-DEBUG] effectiveTransitionPhase: passing through', transitionPhase);
+      }
       return transitionPhase;
     }, [forceInitialZoom, transitionPhase]);
 
@@ -1355,8 +1395,24 @@ const FretboardCardContent = React.memo(
     return (
       <ZoneCard className="zone-card bg-transparent border-transparent shadow-none overflow-visible">
         <ZoneCardContent className="p-0 overflow-visible">
-          {/* Transparent Fretboard Container - overflow:visible allows 3D overlay to extend beyond bounds */}
-          <div className="relative" style={{ overflow: 'visible' }}>
+          {/* Responsive scaling wrapper — measures available width, scales fretboard to fill */}
+          <div
+            ref={responsiveWrapperRef}
+            className="w-full"
+            style={{
+              height: FRETBOARD_BASE_HEIGHT * responsiveScale,
+              overflow: 'visible',
+            }}
+          >
+          {/* Transparent Fretboard Container - scaled from 568px base to fill available width */}
+          <div
+            className="relative"
+            style={{
+              overflow: 'visible',
+              transform: `scale(${responsiveScale})`,
+              transformOrigin: 'top center',
+            }}
+          >
             {/* 2D Mode Fretboard - With zoom and horizontal scroll */}
             {/* Initially hidden until user scrolls to sentinel, then fades in with zoom animation */}
             <div
@@ -1367,14 +1423,16 @@ const FretboardCardContent = React.memo(
                 height: 290,
                 overflow: 'visible',
                 perspective: '800px',
+                // Visibility logic:
+                // - Before sentinel: completely hidden (visibility:hidden preserves layout)
+                // - After sentinel triggers showFretboardContent: visible with fade animation
+                visibility: showFretboardContent ? 'visible' : 'hidden',
                 // Opacity logic:
-                // - Before initial reveal: element doesn't exist (conditional rendering)
                 // - During initial reveal: CSS animation fades from 0 to 1
                 // - After initial fade complete: use fadeOpacity for subsequent exercise transitions
-                // This ensures both the initial fade-in AND subsequent exercise fades work correctly
-                opacity: initialFadeComplete ? fadeOpacity : undefined,  // Let CSS animation control during initial reveal
+                opacity: showFretboardContent ? (initialFadeComplete ? fadeOpacity : 0) : 0,
                 // Use CSS animation for initial reveal, then CSS transition for exercise changes
-                animation: !initialFadeComplete ? `fretboardFadeIn ${INITIAL_FADE_DURATION}ms ease-out forwards` : undefined,
+                animation: showFretboardContent && !initialFadeComplete ? `fretboardFadeIn ${INITIAL_FADE_DURATION}ms ease-out forwards` : undefined,
                 transition: initialFadeComplete ? `opacity ${fadeDuration}ms ease-out` : undefined,
               }}
             >
@@ -1483,7 +1541,8 @@ const FretboardCardContent = React.memo(
                   overflow: 'visible',
                   // NO clipping - allow 3D to extend in all directions
                   // Apply same opacity/animation as fretboard container for initial reveal fade
-                  opacity: initialFadeComplete ? fadeOpacity : undefined,
+                  // CRITICAL: Set opacity to 0 during CSS animation, not undefined!
+                  opacity: initialFadeComplete ? fadeOpacity : 0,  // Start at 0 for CSS animation
                   animation: !initialFadeComplete ? `fretboardFadeIn ${INITIAL_FADE_DURATION}ms ease-out forwards` : undefined,
                   transition: initialFadeComplete ? `opacity ${fadeDuration}ms ease-out` : undefined,
                 }}
@@ -1525,6 +1584,7 @@ const FretboardCardContent = React.memo(
                 {String(fretboard.exercise.audioIntegration.audioError)}
               </div>
             )}
+          </div>
           </div>
         </ZoneCardContent>
         {/* Sentinel element for triggering initial zoom animation when user scrolls to GlobalControls area */}
@@ -1625,7 +1685,7 @@ export function FretboardCardSkeleton() {
   return (
     <ZoneCard className="zone-card bg-transparent border-transparent shadow-none overflow-visible">
       <ZoneCardContent className="p-0 overflow-visible">
-        <div className="relative mx-auto" style={{ width: 568, height: 290 }}>
+        <div className="relative w-full" style={{ aspectRatio: '568 / 290' }}>
           {/* Fretboard Grid Skeleton with glassmorphism */}
           <div className="skeleton-glass w-full h-full rounded-xl">
             {/* String lines placeholder */}

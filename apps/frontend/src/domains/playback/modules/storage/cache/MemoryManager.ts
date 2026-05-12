@@ -198,19 +198,16 @@ export class MemoryManager {
     usedMemory: number;
     availableMemory: number;
   } {
-    // Browser environment
-    if (typeof window !== 'undefined' && 'performance' in window) {
-      // Use performance.memory if available (Chrome)
-      const perfMemory = (performance as any).memory;
-      if (perfMemory) {
-        return {
-          totalMemory: perfMemory.jsHeapSizeLimit || 2 * 1024 * 1024 * 1024, // 2GB default
-          usedMemory: perfMemory.usedJSHeapSize || 0,
-          availableMemory:
-            (perfMemory.jsHeapSizeLimit || 2 * 1024 * 1024 * 1024) -
-            (perfMemory.usedJSHeapSize || 0),
-        };
-      }
+    // Browser environment - use typed performance.memory (window.d.ts)
+    if (typeof window !== 'undefined' && window.performance.memory) {
+      const perfMemory = window.performance.memory;
+      return {
+        totalMemory: perfMemory.jsHeapSizeLimit || 2 * 1024 * 1024 * 1024, // 2GB default
+        usedMemory: perfMemory.usedJSHeapSize || 0,
+        availableMemory:
+          (perfMemory.jsHeapSizeLimit || 2 * 1024 * 1024 * 1024) -
+          (perfMemory.usedJSHeapSize || 0),
+      };
     }
 
     // Node.js environment
@@ -371,9 +368,9 @@ export class MemoryManager {
    * Trigger garbage collection if available
    */
   private triggerGarbageCollection(): void {
-    if (typeof window !== 'undefined' && (window as any).gc) {
+    if (typeof window !== 'undefined' && window.gc) {
       try {
-        (window as any).gc();
+        window.gc();
         this.lastGC = Date.now();
         this.gcCount++;
         logger.info('Garbage collection triggered');

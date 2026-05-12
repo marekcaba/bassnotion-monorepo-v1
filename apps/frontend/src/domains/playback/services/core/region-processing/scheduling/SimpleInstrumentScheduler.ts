@@ -23,9 +23,9 @@ import { parsePositionToObject } from '../../timeUtils.js';
  * Helper to get Tone from window (must be initialized before scheduling)
  * Returns null if Tone.js is not loaded (graceful fallback)
  */
-function getTone(): any | null {
+function getTone(): typeof window.Tone | null {
   if (typeof window !== 'undefined') {
-    const tone = (window as any).Tone || (window as any).__globalTone;
+    const tone = window.Tone || window.__globalTone;
     if (tone) {
       return tone;
     }
@@ -127,10 +127,13 @@ export class SimpleInstrumentScheduler {
    */
   clearBuffers(): void {
     const count = this.buffers.size;
+    // DEBUG: Log stack trace to find who is clearing buffers
+    const stack = new Error().stack?.split('\n').slice(1, 6).join('\n') || 'no stack';
     this.buffers.clear();
     this.logger.info(`🗑️ ${this.config.loggerName} buffers cleared`, {
       previousCount: count,
       instanceId: this.instanceId,
+      calledFrom: stack,
     });
   }
 
@@ -159,6 +162,15 @@ export class SimpleInstrumentScheduler {
         const midiKey = String(event.data.midiNote);
         if (this.buffers.has(midiKey)) {
           return this.buffers.get(midiKey)!;
+        }
+        // DEBUG: Log buffer lookup failure for bass
+        if (this.config.instrumentType === 'bass') {
+          console.warn(`🔍 [BASS-BUFFER-LOOKUP] MISS for midiNote=${event.data.midiNote} (key="${midiKey}")`, {
+            bufferCount: this.buffers.size,
+            availableKeys: Array.from(this.buffers.keys()).slice(0, 10),
+            eventType: event.type,
+            eventData: event.data,
+          });
         }
       }
     }
@@ -200,6 +212,18 @@ export class SimpleInstrumentScheduler {
         },
       );
       return false; // Fall back to event bus
+    }
+
+    // DEBUG: Log bass event details BEFORE buffer lookup
+    if (this.config.instrumentType === 'bass') {
+      console.log(`🔍 [BASS-SCHEDULER-DEBUG] About to look up buffer for event:`, {
+        eventType: event.type,
+        hasMidiNote: event.data?.midiNote !== undefined,
+        midiNote: event.data?.midiNote,
+        eventData: event.data,
+        bufferCount: this.buffers.size,
+        bufferKeys: Array.from(this.buffers.keys()),
+      });
     }
 
     // Get buffer for this event

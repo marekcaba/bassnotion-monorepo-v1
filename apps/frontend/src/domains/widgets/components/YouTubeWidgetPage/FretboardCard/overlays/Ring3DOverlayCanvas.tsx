@@ -51,10 +51,10 @@ const CSS_PERSPECTIVE = 800; // Must match the CSS perspective value in Fretboar
 // Toggle from browser console: window.RING_DEBUG = true/false
 // =============================================================================
 if (typeof window !== 'undefined') {
-  (window as any).RING_DEBUG = (window as any).RING_DEBUG ?? false;
+  window.RING_DEBUG = window.RING_DEBUG ?? false;
 }
 // Helper to check debug flag - returns false during SSR
-const isDebugEnabled = () => typeof window !== 'undefined' && (window as any).RING_DEBUG === true;
+const isDebugEnabled = () => typeof window !== 'undefined' && window.RING_DEBUG === true;
 
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
@@ -76,6 +76,7 @@ const globalClippingPlanes = [
 import { useFretboardNoteSync, findNoteAtTime, type NoteTimelineEntry } from '@/domains/widgets/hooks/useFretboardNoteSync';
 import { buildQuantizedTimeline } from '@/domains/widgets/utils/exerciseToMusicXML';
 import { getAtomicPlaybackClock } from '@/domains/playback/services/core/AtomicPlaybackClock';
+import { isVerboseDebugEnabled } from '@/config/debug';
 import type { RingOverlayConfig } from './RingOverlayConfig.js';
 import { OVERLAY_LIGHTING_CONFIG } from './RingOverlayConfig.js';
 import { RingOverlayGroup } from './RingOverlayGroup.js';
@@ -223,8 +224,10 @@ function CSSMatchingCamera({
     if (cameraRef.current) {
       const camera = cameraRef.current;
 
-      // If we're starting in fading-in phase, start pulled back for animation
-      const initialZ = transitionPhase === 'fading-in'
+      // If we're starting with zoom animation (fading-in phase or triggerZoomOnMount),
+      // start camera pulled back so it can zoom in
+      const shouldStartPulledBack = transitionPhase === 'fading-in' || triggerZoomOnMount;
+      const initialZ = shouldStartPulledBack
         ? cssPerspective * pullBackMultiplier
         : cssPerspective;
 
@@ -261,7 +264,7 @@ function CSSMatchingCamera({
         note: 'Tilt is applied via scene rotation, not camera. cameraY affects top/bottom perspective ratio.',
       });
     }
-  }, [canvasHeight, cssPerspective, fovOffset, cameraY, set, size, transitionPhase, pullBackMultiplier]);
+  }, [canvasHeight, cssPerspective, fovOffset, cameraY, set, size, transitionPhase, pullBackMultiplier, triggerZoomOnMount]);
 
   return (
     <perspectiveCamera
@@ -434,8 +437,8 @@ const MIN_DELTA_TIME = 8; // ms - roughly half a frame at 60fps
 // Debug: Track frame timing to detect dropped frames
 // Toggle from browser console: window.SCROLL_DEBUG = true (logs only lag)
 // Toggle from browser console: window.SCROLL_DEBUG_ALL = true (logs every frame)
-const isScrollDebugEnabled = () => typeof window !== 'undefined' && (window as any).SCROLL_DEBUG === true;
-const isScrollDebugAllEnabled = () => typeof window !== 'undefined' && (window as any).SCROLL_DEBUG_ALL === true;
+const isScrollDebugEnabled = () => typeof window !== 'undefined' && window.SCROLL_DEBUG === true;
+const isScrollDebugAllEnabled = () => typeof window !== 'undefined' && window.SCROLL_DEBUG_ALL === true;
 
 function ScrollOffsetGroup({ scrollLeftRef, viewportWidth, fullContentWidth, children }: ScrollOffsetGroupProps) {
   const groupRef = useRef<THREE.Group>(null);
@@ -632,7 +635,7 @@ export interface Ring3DOverlayCanvasProps {
     activeRingRadius?: number;     // Outer radius of ring (default 15)
     activeRingTubeRadius?: number; // Thickness of the tube (default 1.5)
     // Active dot color (currently playing note)
-    activeDotColor?: string;       // Hex color string (default '#16a34a')
+    activeDotColor?: string;       // Hex color string (default '#3b82f6')
     // Active ring color (yellow ring indicator)
     activeRingColor?: string;      // Hex color string (default '#facc15')
     // Bloom post-processing controls
@@ -705,7 +708,7 @@ interface DebugVisualizationProps {
   activeRingRadius?: number;     // Outer radius of ring (default 15)
   activeRingTubeRadius?: number; // Thickness of the tube (default 1.5)
   // Active dot color (currently playing note)
-  activeDotColor?: string;       // Hex color string (default '#16a34a')
+  activeDotColor?: string;       // Hex color string (default '#3b82f6')
   // Active ring color (yellow ring indicator)
   activeRingColor?: string;      // Hex color string (default '#facc15')
   // Finger label positioning (for default view adjustment)
@@ -791,7 +794,7 @@ function DebugVisualization({
   activeRingZOffset = -1,
   activeRingRadius = 13,
   activeRingTubeRadius = 1,
-  activeDotColor = '#16a34a',
+  activeDotColor = '#3b82f6',
   activeRingColor = '#facc15',
   fingerLabelOffsetX = 0,
   fingerLabelOffsetY = 0,
@@ -821,17 +824,17 @@ function DebugVisualization({
     opacityLevels: [1.0, 1.0, 0.8], // Active 100%, preview 100%, third note 80%
   };
 
-  // Convert hex color strings to numbers (e.g., '#16a34a' -> 0x16a34a)
+  // Convert hex color strings to numbers (e.g., '#3b82f6' -> 0x3b82f6)
   const activeDotColorHex = parseInt(activeDotColor.replace('#', ''), 16);
   const activeRingColorHex = parseInt(activeRingColor.replace('#', ''), 16);
 
   const DOT_COLORS = {
-    BLUE: 0x3b82f6,   // Exercise notes within lookahead window
-    GREEN: activeDotColorHex,  // Currently playing note (from prop)
+    BLUE: activeDotColorHex,  // Currently playing note (from prop, default blue)
+    GREEN: 0x16a34a,   // Preview/next note (green-600, darker)
     GREY: 0x475569,   // Regular fret positions (slate-600)
     GREY_LIGHT: 0x64748b, // Marker frets: open, 3, 5, 7, 9, 12, 15, 17, 19, 21 (slate-500)
     ACTIVE_RING: activeRingColorHex, // Ring color (from prop)
-    PREVIEW_RING: 0xf97316, // Orange-500 for next note preview ring
+    PREVIEW_RING: 0xfacc15, // Yellow-400 for next note preview ring
   };
 
   // Marker frets that should be lighter grey (matching 2D fretboard)
@@ -983,17 +986,17 @@ function DebugVisualization({
       return { color: greyColor, opacity: 1.0, isActive: false, isRoundedRect };
     }
 
-    // Check if this position is the ACTIVE note
+    // Check if this position is the ACTIVE note - show as BLUE
     const activeNote = notesAtPosition.find((n) => n.noteIndex === activeNoteIndex);
     if (activeNote) {
-      return { color: DOT_COLORS.GREEN, opacity: LOOKAHEAD_CONFIG.opacityLevels[0], isActive: true, isRoundedRect };
+      return { color: DOT_COLORS.BLUE, opacity: LOOKAHEAD_CONFIG.opacityLevels[0], isActive: true, isRoundedRect };
     }
 
-    // Check if this position is the NEXT note (first upcoming) - show as BLUE
+    // Check if this position is the NEXT note (first upcoming) - show as GREEN
     const nextUpcoming = upcomingNotes[0];
     if (nextUpcoming && notesAtPosition.some((n) => n.noteIndex === nextUpcoming.noteIndex)) {
       return {
-        color: DOT_COLORS.BLUE,
+        color: DOT_COLORS.GREEN,
         opacity: LOOKAHEAD_CONFIG.opacityLevels[1] ?? 1.0,
         isActive: false,
         isRoundedRect,
@@ -3583,12 +3586,14 @@ export function Ring3DOverlayCanvas({
         : 'none';
 
   // DEBUG: Log render values for fade debugging
-  console.log('[FADE-DEBUG] RENDER:', {
-    exerciseId,
-    fadeOpacity,
-    notesCount: exerciseNotes?.length ?? 0,
-    tempo,
-  });
+  if (isVerboseDebugEnabled()) {
+    console.log('[FADE-DEBUG] RENDER:', {
+      exerciseId,
+      fadeOpacity,
+      notesCount: exerciseNotes?.length ?? 0,
+      tempo,
+    });
+  }
 
   // Outer container - absolute positioning, contains the perspective context
   // Includes exercise transition fade animation for smooth switching
@@ -3916,7 +3921,7 @@ export function Ring3DOverlayCanvas({
                       activeRingZOffset={overlay3DConfig.activeRingZOffset ?? 1}
                       activeRingRadius={overlay3DConfig.activeRingRadius ?? 15}
                       activeRingTubeRadius={overlay3DConfig.activeRingTubeRadius ?? 1.5}
-                      activeDotColor={overlay3DConfig.activeDotColor ?? '#16a34a'}
+                      activeDotColor={overlay3DConfig.activeDotColor ?? '#3b82f6'}
                       activeRingColor={overlay3DConfig.activeRingColor ?? '#facc15'}
                       fingerLabelOffsetX={overlay3DConfig.fingerLabelOffsetX ?? 0}
                       fingerLabelOffsetY={overlay3DConfig.fingerLabelOffsetY ?? 0}

@@ -403,8 +403,8 @@ function SheetPlayerCardContent({ syncProps }: SheetPlayerCardContentProps) {
 
         // Get EventBus and emit seek event
         const coreServices =
-          (window as any).__coreServices ||
-          (window as any).__globalCoreServices;
+          window.__coreServices ||
+          window.__globalCoreServices;
         if (coreServices && coreServices.getEventBus) {
           const eventBus = coreServices.getEventBus();
           if (eventBus) {

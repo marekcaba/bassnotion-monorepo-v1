@@ -177,8 +177,8 @@ export class MemoryManager {
     };
 
     // Use performance.memory if available (Chrome/Edge)
-    if (typeof performance !== 'undefined' && (performance as any).memory) {
-      const memory = (performance as any).memory;
+    if (typeof performance !== 'undefined' && window.performance.memory) {
+      const memory = window.performance.memory;
       metrics.heapUsed = this.bytesToMB(memory.usedJSHeapSize || 0);
       metrics.heapTotal = this.bytesToMB(memory.totalJSHeapSize || 0);
       metrics.heapLimit = this.bytesToMB(memory.jsHeapSizeLimit || 0);
@@ -488,9 +488,10 @@ Generated: ${new Date().toISOString()}
    */
   private suggestGarbageCollection(): void {
     // Force garbage collection if available (development/debugging)
-    if (typeof window !== 'undefined' && (window as any).gc) {
+    const windowWithGc = window as { gc?: () => void };
+    if (typeof window !== 'undefined' && windowWithGc.gc) {
       try {
-        (window as any).gc();
+        windowWithGc.gc();
         logger.debug('[MemoryManager] Triggered garbage collection');
       } catch {
         // Ignore errors - GC not available
@@ -498,8 +499,8 @@ Generated: ${new Date().toISOString()}
     }
 
     // Log memory usage for debugging
-    if (typeof performance !== 'undefined' && (performance as any).memory) {
-      const memory = (performance as any).memory;
+    if (typeof performance !== 'undefined' && window.performance.memory) {
+      const memory = window.performance.memory;
       logger.debug('[MemoryManager] Memory after cleanup:', {
         used: this.bytesToMB(memory.usedJSHeapSize).toFixed(1) + 'MB',
         total: this.bytesToMB(memory.totalJSHeapSize).toFixed(1) + 'MB',

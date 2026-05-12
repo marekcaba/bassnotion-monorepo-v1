@@ -18,6 +18,7 @@ import type {
   DrumPatternEvent,
 } from '@/domains/playback/types/pattern';
 import type { MusicalPosition } from '@/domains/playback/modules/transport/types/index.js';
+import { PluginState } from '@/domains/playback/types/plugin';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { logger } from '@/domains/playback/utils/logger.js';
 
@@ -150,7 +151,7 @@ export function useWamDrummer(
         // Override the load method since we already have the instance
         adapter['wamInstance'] = wamInstance;
         adapter['wamNode'] = drummerNode;
-        adapter['_state'] = 'active' as any;
+        adapter['_state'] = PluginState.ACTIVE;
 
         adapterRef.current = adapter;
 

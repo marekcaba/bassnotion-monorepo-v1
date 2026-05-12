@@ -111,12 +111,12 @@ export class AnalyticsIntegration {
     // Add default providers if none specified
     if (this.providers.length === 0) {
       // Google Analytics
-      if (typeof window !== 'undefined' && (window as any).gtag) {
+      if (typeof window !== 'undefined' && window.gtag) {
         this.providers.push(new GoogleAnalyticsProvider());
       }
 
       // Sentry
-      if (typeof window !== 'undefined' && (window as any).Sentry) {
+      if (typeof window !== 'undefined' && window.Sentry) {
         this.providers.push(new SentryProvider());
       }
     }
@@ -441,8 +441,8 @@ class GoogleAnalyticsProvider implements AnalyticsProvider {
   name = 'Google Analytics';
 
   async track(event: AnalyticsEvent): Promise<void> {
-    if (typeof window !== 'undefined' && (window as any).gtag) {
-      (window as any).gtag('event', event.name, {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', event.name, {
         event_category: event.category,
         ...event.properties,
       });
@@ -450,8 +450,8 @@ class GoogleAnalyticsProvider implements AnalyticsProvider {
   }
 
   async identify(userId: string, traits?: Record<string, any>): Promise<void> {
-    if (typeof window !== 'undefined' && (window as any).gtag) {
-      (window as any).gtag('config', 'GA_MEASUREMENT_ID', {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('config', 'GA_MEASUREMENT_ID', {
         user_id: userId,
         ...traits,
       });
@@ -459,8 +459,8 @@ class GoogleAnalyticsProvider implements AnalyticsProvider {
   }
 
   async reportError(report: ErrorReport): Promise<void> {
-    if (typeof window !== 'undefined' && (window as any).gtag) {
-      (window as any).gtag('event', 'exception', {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'exception', {
         description: report.error.message,
         fatal: report.context.severity === 'fatal',
       });
@@ -479,19 +479,18 @@ class SentryProvider implements AnalyticsProvider {
   name = 'Sentry';
 
   async track(event: AnalyticsEvent): Promise<void> {
-    if (typeof window !== 'undefined' && (window as any).Sentry) {
-      (window as any).Sentry.addBreadcrumb({
+    if (typeof window !== 'undefined' && window.Sentry) {
+      window.Sentry.addBreadcrumb({
         message: event.name,
         category: event.category,
         data: event.properties,
-        timestamp: event.timestamp! / 1000,
       });
     }
   }
 
   async identify(userId: string, traits?: Record<string, any>): Promise<void> {
-    if (typeof window !== 'undefined' && (window as any).Sentry) {
-      (window as any).Sentry.setUser({
+    if (typeof window !== 'undefined' && window.Sentry) {
+      window.Sentry.setUser({
         id: userId,
         ...traits,
       });
@@ -499,24 +498,30 @@ class SentryProvider implements AnalyticsProvider {
   }
 
   async reportError(report: ErrorReport): Promise<void> {
-    if (typeof window !== 'undefined' && (window as any).Sentry) {
-      const Sentry = (window as any).Sentry;
+    if (typeof window !== 'undefined' && window.Sentry) {
+      const Sentry = window.Sentry;
 
-      Sentry.withScope((scope: any) => {
-        scope.setLevel(report.context.severity);
-        scope.setContext('audio', {
+      Sentry.withScope((scope: unknown) => {
+        const typedScope = scope as {
+          setLevel: (level: string) => void;
+          setContext: (name: string, context: Record<string, unknown>) => void;
+          setTag: (key: string, value: string) => void;
+          setExtra: (key: string, value: unknown) => void;
+        };
+        typedScope.setLevel(report.context.severity);
+        typedScope.setContext('audio', {
           state: report.context.audioState,
         });
 
         if (report.context.tags) {
           Object.entries(report.context.tags).forEach(([key, value]) => {
-            scope.setTag(key, value);
+            typedScope.setTag(key, value);
           });
         }
 
         if (report.context.extra) {
           Object.entries(report.context.extra).forEach(([key, value]) => {
-            scope.setExtra(key, value);
+            typedScope.setExtra(key, value);
           });
         }
 
@@ -526,8 +531,8 @@ class SentryProvider implements AnalyticsProvider {
   }
 
   setContext(context: Record<string, any>): void {
-    if (typeof window !== 'undefined' && (window as any).Sentry) {
-      (window as any).Sentry.setContext('session', context);
+    if (typeof window !== 'undefined' && window.Sentry) {
+      window.Sentry.setContext('session', context);
     }
   }
 }

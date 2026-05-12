@@ -179,7 +179,7 @@ export function useMeasureOpacity(
   const currentPosition = useMemo((): MusicalPosition => {
     // DEBUG: Log currentTime value to understand why measure isn't updating
     // Enable with: window.__DEBUG_FRETBOARD__ = true
-    if (isPlaybackEffective && (window as any).__DEBUG_FRETBOARD__) {
+    if (isPlaybackEffective && window.__DEBUG_FRETBOARD__) {
       console.log(
         `[OPACITY-TIME-DEBUG] effectiveTime=${effectiveTime}ms, tempo=${tempo}, isPlaybackEffective=${isPlaybackEffective}`,
       );
@@ -349,7 +349,7 @@ export function useMeasureOpacity(
 
     // Debug: Log measure indexing information
     // Enable with: window.__DEBUG_OPACITY__ = true
-    if (exerciseNotes.length > 0 && typeof window !== 'undefined' && (window as any).__DEBUG_OPACITY__) {
+    if (exerciseNotes.length > 0 && typeof window !== 'undefined' && window.__DEBUG_OPACITY__) {
       const sortedMeasures = Array.from(allMeasures).sort((a, b) => a - b);
       const isZeroIndexedLocal = exerciseNotes.some((n) => n.position?.measure === 0);
       // eslint-disable-next-line no-console
@@ -414,7 +414,7 @@ export function useMeasureOpacity(
 
       // DEBUG: Log opacity decisions
       // Enable with: window.__DEBUG_OPACITY__ = true
-      const debugOpacity = typeof window !== 'undefined' && (window as any).__DEBUG_OPACITY__;
+      const debugOpacity = typeof window !== 'undefined' && window.__DEBUG_OPACITY__;
 
       // Check if note appears in current measure - full highlight
       if (noteMeasures.includes(measure)) {

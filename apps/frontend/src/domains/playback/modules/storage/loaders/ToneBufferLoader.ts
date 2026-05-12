@@ -131,8 +131,7 @@ export class ToneBufferLoader {
               return { success: true, note, source: 'cached' } as LoadResult;
             } catch (cacheError) {
               // Check if buffer is from persistent context
-              const persistentContext = (window as any)
-                .__persistentAudioContext;
+              const persistentContext = window.__persistentAudioContext;
               if (
                 persistentContext &&
                 cachedBuffer.context === persistentContext

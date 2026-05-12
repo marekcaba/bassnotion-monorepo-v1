@@ -19,10 +19,10 @@
 
 // Helper to get Tone from window (returns null if not available)
 // MusicalTruthAuthority can work without Tone.js - it just won't sync with Tone.Transport
-function getTone(): any | null {
+function getTone(): typeof window.Tone | null {
   if (typeof window !== 'undefined') {
     // Check both locations where Tone.js may be stored
-    const tone = (window as any).Tone || (window as any).__globalTone;
+    const tone = window.Tone || window.__globalTone;
     if (tone) {
       return tone;
     }

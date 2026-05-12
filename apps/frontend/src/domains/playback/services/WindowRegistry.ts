@@ -8,52 +8,12 @@
  * and provides clear documentation of all globals.
  *
  * All BassNotion globals use the `__bassnotion_` prefix to avoid conflicts.
+ *
+ * NOTE: Window interface extensions are defined in /src/types/window.d.ts
+ * which provides comprehensive type definitions for all window properties
+ * used throughout the codebase. That file is automatically included via
+ * tsconfig.json includes.
  */
-
-/**
- * BassNotion Window Interface
- * Extends the global Window object with our application-specific globals
- */
-interface BassNotionWindow {
-  // Core Services
-  __bassnotion_coreServices?: any;
-
-  // Event System
-  __bassnotion_eventBus?: any;
-
-  // AudioContext Management
-  __bassnotion_audioContext?: AudioContext;
-  __bassnotion_audioContextUnsubscribe?: () => void;
-
-  // Playback Engines (Phase 1 Task 1.5 - Dual-Engine Tracking)
-  __bassnotion_regionProcessor?: any;
-  __bassnotion_playbackEngine?: any;
-
-  // Initialization Flags
-  __bassnotion_samplesReady?: boolean;
-  __bassnotion_essentialSamplesLoaded?: boolean;
-  __bassnotion_initializationFailed?: boolean;
-  __bassnotion_bassBuffersReady?: boolean;
-  __bassnotion_bassBuffersExerciseId?: string;
-
-  // Service Registry (for debugging)
-  __bassnotion_serviceRegistry?: any;
-
-  // Legacy keys (for migration period - will be removed)
-  __globalCoreServices?: any;
-  __coreServices?: any;
-  __serviceRegistry?: any;
-  __persistentAudioContext?: AudioContext;
-  __globalEventBus?: any;
-  __samplesReady?: boolean;
-  __essentialSamplesLoaded?: boolean;
-  __initializationFailed?: boolean;
-  __audioContextUnsubscribe?: () => void;
-}
-
-declare global {
-  interface Window extends BassNotionWindow {}
-}
 
 /**
  * Centralized registry for all window globals
@@ -76,8 +36,8 @@ export class WindowRegistry {
     window.__bassnotion_coreServices = services;
 
     // Clean up legacy keys
-    delete (window as any).__globalCoreServices;
-    delete (window as any).__coreServices;
+    delete window.__globalCoreServices;
+    delete window.__coreServices;
   }
 
   /**
@@ -91,8 +51,8 @@ export class WindowRegistry {
     return (
       window.__bassnotion_coreServices ||
       // Fallback to legacy for migration period
-      (window as any).__globalCoreServices ||
-      (window as any).__coreServices
+      window.__globalCoreServices ||
+      window.__coreServices
     );
   }
 
@@ -109,7 +69,7 @@ export class WindowRegistry {
     window.__bassnotion_serviceRegistry = registry;
 
     // Clean up legacy key
-    delete (window as any).__serviceRegistry;
+    delete window.__serviceRegistry;
   }
 
   /**
@@ -119,7 +79,7 @@ export class WindowRegistry {
     if (typeof window === 'undefined') return null;
 
     return (
-      window.__bassnotion_serviceRegistry || (window as any).__serviceRegistry
+      window.__bassnotion_serviceRegistry || window.__serviceRegistry
     );
   }
 
@@ -136,7 +96,7 @@ export class WindowRegistry {
     window.__bassnotion_eventBus = eventBus;
 
     // Clean up legacy key
-    delete (window as any).__globalEventBus;
+    delete window.__globalEventBus;
   }
 
   /**
@@ -145,7 +105,7 @@ export class WindowRegistry {
   static getEventBus(): any {
     if (typeof window === 'undefined') return null;
 
-    return window.__bassnotion_eventBus || (window as any).__globalEventBus;
+    return window.__bassnotion_eventBus || window.__globalEventBus;
   }
 
   // ============================================================================
@@ -161,7 +121,7 @@ export class WindowRegistry {
     window.__bassnotion_audioContext = context;
 
     // Clean up legacy key
-    delete (window as any).__persistentAudioContext;
+    delete window.__persistentAudioContext;
   }
 
   /**
@@ -172,7 +132,7 @@ export class WindowRegistry {
 
     return (
       window.__bassnotion_audioContext ||
-      (window as any).__persistentAudioContext ||
+      window.__persistentAudioContext ||
       null
     );
   }
@@ -189,7 +149,7 @@ export class WindowRegistry {
 
     if (!unsubscribe) {
       delete window.__bassnotion_audioContextUnsubscribe;
-      delete (window as any).__audioContextUnsubscribe;
+      delete window.__audioContextUnsubscribe;
     }
   }
 
@@ -201,7 +161,7 @@ export class WindowRegistry {
 
     return (
       window.__bassnotion_audioContextUnsubscribe ||
-      (window as any).__audioContextUnsubscribe
+      window.__audioContextUnsubscribe
     );
   }
 
@@ -268,7 +228,7 @@ export class WindowRegistry {
     window.__bassnotion_samplesReady = ready;
 
     // ✅ FIX: Also set legacy key for backward compatibility with GlobalControls
-    (window as any).__samplesReady = ready;
+    window.__samplesReady = ready;
   }
 
   /**
@@ -279,7 +239,7 @@ export class WindowRegistry {
 
     return (
       window.__bassnotion_samplesReady ||
-      (window as any).__samplesReady ||
+      window.__samplesReady ||
       false
     );
   }
@@ -293,7 +253,7 @@ export class WindowRegistry {
     window.__bassnotion_essentialSamplesLoaded = loaded;
 
     // Clean up legacy key
-    delete (window as any).__essentialSamplesLoaded;
+    delete window.__essentialSamplesLoaded;
   }
 
   /**
@@ -304,7 +264,7 @@ export class WindowRegistry {
 
     return (
       window.__bassnotion_essentialSamplesLoaded ||
-      (window as any).__essentialSamplesLoaded ||
+      window.__essentialSamplesLoaded ||
       false
     );
   }
@@ -318,7 +278,7 @@ export class WindowRegistry {
     window.__bassnotion_initializationFailed = failed;
 
     // Clean up legacy key
-    delete (window as any).__initializationFailed;
+    delete window.__initializationFailed;
   }
 
   /**
@@ -329,7 +289,7 @@ export class WindowRegistry {
 
     return (
       window.__bassnotion_initializationFailed ||
-      (window as any).__initializationFailed ||
+      window.__initializationFailed ||
       false
     );
   }
@@ -389,6 +349,63 @@ export class WindowRegistry {
   }
 
   // ============================================================================
+  // ACT 2 PRELOAD TRACKING
+  // ============================================================================
+
+  /**
+   * Set the Act 2 preload progress (0-100)
+   * Used by useActAwarePreload to track background sample loading progress
+   */
+  static setAct2PreloadProgress(progress: number): void {
+    if (typeof window === 'undefined') return;
+
+    window.__bassnotion_act2PreloadProgress = Math.min(100, Math.max(0, progress));
+  }
+
+  /**
+   * Get the Act 2 preload progress (0-100)
+   */
+  static getAct2PreloadProgress(): number {
+    if (typeof window === 'undefined') return 0;
+
+    return window.__bassnotion_act2PreloadProgress || 0;
+  }
+
+  /**
+   * Set the Act 2 samples ready flag
+   * When true, user can transition to Act 2 without seeing loading overlay
+   */
+  static setAct2SamplesReady(ready: boolean): void {
+    if (typeof window === 'undefined') return;
+
+    window.__bassnotion_act2SamplesReady = ready;
+
+    // Dispatch event for listeners
+    if (ready) {
+      window.dispatchEvent(new Event('act2SamplesReady'));
+    }
+  }
+
+  /**
+   * Get the Act 2 samples ready flag
+   */
+  static getAct2SamplesReady(): boolean {
+    if (typeof window === 'undefined') return false;
+
+    return window.__bassnotion_act2SamplesReady || false;
+  }
+
+  /**
+   * Reset Act 2 preload state (call when navigating away from tutorial)
+   */
+  static resetAct2PreloadState(): void {
+    if (typeof window === 'undefined') return;
+
+    window.__bassnotion_act2PreloadProgress = 0;
+    window.__bassnotion_act2SamplesReady = false;
+  }
+
+  // ============================================================================
   // CLEANUP
   // ============================================================================
 
@@ -402,34 +419,34 @@ export class WindowRegistry {
     // Clean up all BassNotion-prefixed keys
     Object.keys(window).forEach((key) => {
       if (key.startsWith(WindowRegistry.PREFIX)) {
-        delete (window as any)[key];
+        delete (window as { [key: string]: unknown })[key];
       }
     });
 
     // Clean up legacy keys
-    delete (window as any).__globalCoreServices;
-    delete (window as any).__coreServices;
-    delete (window as any).__serviceRegistry;
-    delete (window as any).__persistentAudioContext;
-    delete (window as any).__globalEventBus;
-    delete (window as any).__samplesReady;
-    delete (window as any).__essentialSamplesLoaded;
-    delete (window as any).__initializationFailed;
-    delete (window as any).__audioContextUnsubscribe;
+    delete window.__globalCoreServices;
+    delete window.__coreServices;
+    delete window.__serviceRegistry;
+    delete window.__persistentAudioContext;
+    delete window.__globalEventBus;
+    delete window.__samplesReady;
+    delete window.__essentialSamplesLoaded;
+    delete window.__initializationFailed;
+    delete window.__audioContextUnsubscribe;
   }
 
   /**
    * Get all active BassNotion globals (for debugging)
    * Returns key-value pairs of all __bassnotion_* variables
    */
-  static debugGetAll(): Record<string, any> {
+  static debugGetAll(): Record<string, unknown> {
     if (typeof window === 'undefined') return {};
 
-    const result: Record<string, any> = {};
+    const result: Record<string, unknown> = {};
 
     Object.keys(window).forEach((key) => {
       if (key.startsWith(WindowRegistry.PREFIX)) {
-        result[key] = (window as any)[key];
+        result[key] = (window as { [key: string]: unknown })[key];
       }
     });
 

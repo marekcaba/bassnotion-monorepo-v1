@@ -27,10 +27,13 @@ export interface BackendAuthResponse {
 }
 
 /**
- * Convert Supabase AuthError into user-friendly messages
+ * Convert Supabase AuthError into user-friendly messages.
+ *
+ * SECURITY: All credential-related messages are intentionally generic to prevent
+ * email enumeration attacks. We never reveal whether an email exists in the system.
  */
 function getAuthErrorMessage(error: AuthError): string {
-  // Handle specific error codes
+  // Handle rate limit errors (safe to be specific about these)
   if (error.message?.includes('over_email_send_rate_limit')) {
     return 'Too many emails sent. Please wait a few minutes before trying again.';
   }
@@ -39,27 +42,28 @@ function getAuthErrorMessage(error: AuthError): string {
     return 'Email rate limit exceeded. Please try again in a few minutes.';
   }
 
-  if (error.message?.includes('Invalid login credentials')) {
+  if (error.status === 429) {
+    return 'Too many requests. Please wait a moment and try again.';
+  }
+
+  // SECURITY: Generic message for all credential-related errors
+  // This prevents email enumeration by not revealing if email exists
+  if (
+    error.message?.includes('Invalid login credentials') ||
+    error.message?.includes('Invalid email or password') ||
+    error.message?.includes('User not found') ||
+    error.message?.includes('Email not confirmed')
+  ) {
     return 'Invalid email or password. Please check your credentials and try again.';
   }
 
-  if (error.message?.includes('Invalid email or password')) {
-    return 'Invalid email or password. Please check your credentials and try again.';
-  }
-
-  if (error.message?.includes('Email not confirmed')) {
-    return 'Please check your email and click the confirmation link before signing in.';
-  }
-
-  if (error.message?.includes('User not found')) {
-    return 'No account found with this email address. Please sign up first.';
-  }
-
+  // SECURITY: Generic message for registration-related errors
+  // Don't reveal if email already exists - use same message for both cases
   if (
     error.message?.includes('Email already registered') ||
     error.message?.includes('User already registered')
   ) {
-    return 'An account with this email already exists. Please sign in instead.';
+    return 'Unable to create account. Please try signing in instead.';
   }
 
   if (error.message?.includes('Password should be at least')) {
@@ -70,20 +74,16 @@ function getAuthErrorMessage(error: AuthError): string {
     return 'New account registration is currently disabled. Please contact support.';
   }
 
-  if (error.status === 429) {
-    return 'Too many requests. Please wait a moment and try again.';
-  }
-
   if (error.status === 422) {
     return 'Invalid input. Please check your email and password format.';
   }
 
   if (error.status === 400) {
-    return 'Bad request. Please check your input and try again.';
+    return 'Invalid request. Please check your input and try again.';
   }
 
-  // Return the original message for unknown errors
-  return error.message || 'An unexpected error occurred. Please try again.';
+  // Generic fallback - don't expose internal error details
+  return 'An unexpected error occurred. Please try again.';
 }
 
 export class AuthService {

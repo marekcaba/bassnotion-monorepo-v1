@@ -95,4 +95,8 @@ export class CreateTutorialDto {
   @IsNumber()
   @IsOptional()
   creator_subscriber_count?: number; // YouTube channel subscriber count
+
+  @IsArray()
+  @IsOptional()
+  blocks?: any[]; // Modular tutorial blocks (JSONB)
 }

@@ -12,40 +12,20 @@
 import { EventEmitter } from 'events';
 import { createStructuredLogger } from '@bassnotion/contracts';
 
+// Re-export shared types for backward compatibility
+export type {
+  WidgetSyncEvent,
+  WidgetSyncEventType,
+  WidgetSyncPriority,
+} from '@/shared/types/widget-sync.types';
+
+import type { WidgetSyncEvent } from '@/shared/types/widget-sync.types';
+
 const logger = createStructuredLogger('WidgetSyncService');
 
 // ============================================================================
 // SYNC EVENT INTERFACES
 // ============================================================================
-
-export interface WidgetSyncEvent {
-  type:
-    | 'PLAYBACK_STATE'
-    | 'TIMELINE_UPDATE'
-    | 'EXERCISE_CHANGE'
-    | 'TEMPO_CHANGE'
-    | 'VOLUME_CHANGE'
-    | 'CUSTOM_BASSLINE'
-    | 'CLEAR_CUSTOM_BASSLINE'
-    | 'AUDIO_SOURCE_REGISTERED'
-    | 'AUDIO_SOURCE_UNREGISTERED'
-    | 'MUTE_CHANGE'
-    | 'SOLO_CHANGE'
-    | 'WIDGET_RECONNECT'
-    | 'SYNC_RESTART'
-    | 'TIME_SIGNATURE_CHANGE'
-    | 'PLAY'
-    | 'PAUSE'
-    | 'STOP'
-    | 'SEEK'
-    | 'MUSICAL_TIME_UPDATE'
-    | 'HEARTBEAT'
-    | 'POSITION';
-  payload: any;
-  timestamp: number;
-  source: string;
-  priority: 'low' | 'normal' | 'high' | 'critical';
-}
 
 export interface SyncState {
   playback: {
@@ -706,8 +686,8 @@ export class WidgetSyncService {
         // Get current position from Tone.Transport if available
         let currentPosition = this.syncState.playback.currentTime;
 
-        if (typeof window !== 'undefined' && (window as any).Tone?.Transport) {
-          const transport = (window as any).Tone.Transport;
+        if (typeof window !== 'undefined' && window.Tone?.Transport) {
+          const transport = window.Tone.Transport;
           if (transport.state === 'started') {
             currentPosition = transport.seconds;
           }
@@ -774,8 +754,7 @@ export class WidgetSyncService {
       connectionAttempts++;
 
       // Check for both old and new global service locations
-      const coreServices =
-        (window as any).__coreServices || (window as any).__globalCoreServices;
+      const coreServices = (window.__coreServices || window.__globalCoreServices) as { getEventBus?: () => unknown } | undefined;
 
       if (!coreServices || typeof coreServices.getEventBus !== 'function') {
         if (connectionAttempts < maxConnectionAttempts) {
@@ -868,6 +847,46 @@ export class WidgetSyncService {
 
     // Start trying to connect immediately in case services are already ready
     connectToEventBusWhenReady();
+  }
+
+  /**
+   * Reset sync state to initial values
+   * Called when switching between tutorials to clear stale state
+   */
+  resetState(): void {
+    logger.info('🔄 WidgetSyncService: Resetting state');
+
+    // Reset to initial state
+    this.syncState = {
+      playback: {
+        isPlaying: false,
+        currentTime: 0,
+        tempo: 120,
+        volume: 0.8,
+      },
+      exercise: {},
+      ui: {
+        masterVolume: 0.8,
+      },
+    };
+
+    // Clear cached sync state
+    this.cachedSyncState = null;
+    this.lastSyncStateJSON = '';
+
+    // Reset metrics
+    this.resetMetrics();
+
+    // Emit state reset event so all widgets know to reset
+    this.emit({
+      type: 'SYNC_STATE_RESET',
+      payload: this.syncState,
+      timestamp: Date.now(),
+      source: 'WidgetSyncService',
+      priority: 'high',
+    });
+
+    logger.info('✅ WidgetSyncService: State reset complete');
   }
 
   /**

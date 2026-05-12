@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GlobalSampleCache } from '../modules/storage/cache/GlobalSampleCache.js';
 import { getSamplePreloader } from '../services/InitialSamplePreloader.bridge.js';
-import { wamPluginSingleton } from '@/domains/widgets/utils/wamPluginSingleton';
+import { wamPluginSingleton } from '../modules/instruments/wamPluginSingleton.js';
 import * as Tone from 'tone';
 
 // Mock environment variables before importing modules

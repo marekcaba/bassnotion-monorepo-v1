@@ -118,7 +118,7 @@ export class ProductionDebugger {
     if (typeof window === 'undefined') return;
 
     // Global debug access (production-safe)
-    (window as any).__bassnotionDebug = {
+    window.__bassnotionDebug = {
       start: (key: string) => this.startDebugSession(key),
       stop: () => this.stopDebugSession(),
       snapshot: () => this.captureSnapshot(),
@@ -224,10 +224,8 @@ export class ProductionDebugger {
         activeNodes: this.countActiveAudioNodes(),
       },
       performance: {
-        memory: (performance as any).memory?.usedJSHeapSize
-          ? Math.round(
-              (performance as any).memory.usedJSHeapSize / (1024 * 1024),
-            )
+        memory: window.performance.memory?.usedJSHeapSize
+          ? Math.round(window.performance.memory.usedJSHeapSize / (1024 * 1024))
           : undefined,
         audioDropouts:
           metricsSnapshot.counters['performance.audio.dropouts'] || 0,
@@ -458,8 +456,8 @@ export class ProductionDebugger {
       'audio.dropouts': snapshot?.counters?.['performance.audio.dropouts'] || 0,
       'audio.initialization.attempts':
         snapshot?.gauges?.['audio.initialization.attempts'] || 0,
-      'memory.usage': (performance as any).memory?.usedJSHeapSize
-        ? Math.round((performance as any).memory.usedJSHeapSize / (1024 * 1024))
+      'memory.usage': window.performance.memory?.usedJSHeapSize
+        ? Math.round(window.performance.memory.usedJSHeapSize / (1024 * 1024))
         : 0,
     };
   }

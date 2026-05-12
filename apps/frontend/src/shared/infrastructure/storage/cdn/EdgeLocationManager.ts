@@ -152,7 +152,7 @@ export class EdgeLocationManager {
       return;
     }
 
-    const connection = (navigator as any).connection;
+    const connection = navigator.connection;
     if (connection) {
       this.networkConditions = {
         type: connection.effectiveType || 'unknown',

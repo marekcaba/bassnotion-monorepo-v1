@@ -501,8 +501,8 @@ export class EnhancedPerformanceMonitor {
    * Get memory usage
    */
   private getMemoryUsage(): number {
-    if (typeof window !== 'undefined' && (window.performance as any).memory) {
-      return (window.performance as any).memory.usedJSHeapSize;
+    if (typeof window !== 'undefined' && window.performance.memory) {
+      return window.performance.memory.usedJSHeapSize;
     }
     return 0;
   }

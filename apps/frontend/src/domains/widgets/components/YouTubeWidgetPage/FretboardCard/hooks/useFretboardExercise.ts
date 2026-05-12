@@ -336,7 +336,7 @@ export const useFretboardExercise = (
 
   // FLICKER DEBUG v16: Log measure transitions at the useMemo level (not useEffect)
   // This shows us EXACTLY when React computes new values
-  const debugMemo = (window as any).__DEBUG_MEMO_TIMING__ === true;
+  const debugMemo = window.__DEBUG_MEMO_TIMING__ === true;
   if (debugMemo && syncProps.isPlaying) {
     const prevMeasure = prevUnifiedMeasureRef.current;
     if (prevMeasure !== currentMeasureFromNote) {
@@ -354,7 +354,7 @@ export const useFretboardExercise = (
   // PERF FIX: All logging gated behind debug flag. Enable with:
   // window.__DEBUG_UNIFIED_STATE__ = true
   // =============================================================================
-  const debugUnifiedState = (window as any).__DEBUG_UNIFIED_STATE__ === true;
+  const debugUnifiedState = window.__DEBUG_UNIFIED_STATE__ === true;
   const prevUnifiedStateRef = useRef<{
     measure: number;
     noteIndex: number | null;
@@ -391,7 +391,7 @@ export const useFretboardExercise = (
   // DIAGNOSTIC: Log measure transitions to debug flicker
   // PERF FIX: Gated behind debug flag
   useEffect(() => {
-    const debugMeasureTransition = (window as any).__DEBUG_MEASURE_TRANSITION__ === true;
+    const debugMeasureTransition = window.__DEBUG_MEASURE_TRANSITION__ === true;
     if (!debugMeasureTransition) return;
 
     if (

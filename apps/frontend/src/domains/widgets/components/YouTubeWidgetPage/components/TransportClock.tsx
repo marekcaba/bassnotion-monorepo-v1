@@ -182,7 +182,7 @@ export function TransportClock({
 
       checkCount++;
 
-      const coreServices = (window as any).__globalCoreServices;
+      const coreServices = window.__globalCoreServices;
       if (coreServices?.getAudioEngine) {
         try {
           const audioEngine = coreServices.getAudioEngine();

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { CreditCard, Calendar, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
+import { BillingErrorBoundary } from '@/shared/components/ErrorBoundary';
 import {
   useUserAccess,
   useCreatePortalSession,
@@ -51,7 +52,7 @@ function getStatusBadge(status: SubscriptionStatus) {
   }
 }
 
-export function SubscriptionManager() {
+function SubscriptionManagerContent() {
   const { toast } = useToast();
   const { data: access, isLoading } = useUserAccess();
   const createPortalSession = useCreatePortalSession();
@@ -242,5 +243,13 @@ export function SubscriptionManager() {
         </div>
       )}
     </div>
+  );
+}
+
+export function SubscriptionManager() {
+  return (
+    <BillingErrorBoundary>
+      <SubscriptionManagerContent />
+    </BillingErrorBoundary>
   );
 }

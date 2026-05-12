@@ -8,11 +8,22 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useTrack } from '@/domains/playback/hooks/useTrack';
 import type { Pattern } from '@/domains/playback/types/pattern';
+import type { InstrumentType } from '@/domains/playback/types/track';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+
+type WidgetType = 'drums' | 'metronome' | 'harmony' | 'bass';
+
+/** Maps widget types to instrument types */
+const widgetToInstrumentType: Record<WidgetType, InstrumentType> = {
+  drums: 'drums',
+  metronome: 'metronome',
+  harmony: 'chords',
+  bass: 'bass',
+};
 
 interface UsePatternRegistrationOptions {
   widgetId: string;
-  widgetType: 'drums' | 'metronome' | 'harmony' | 'bass';
+  widgetType: WidgetType;
 }
 
 interface UsePatternRegistrationReturn {
@@ -33,7 +44,7 @@ export function usePatternRegistration(
   const { track, migratePatternToRegion } = useTrack({
     trackId: widgetId,
     name: `${widgetType} Widget`,
-    type: widgetType as any,
+    type: widgetToInstrumentType[widgetType],
   });
 
   const currentRegionId = useRef<string | null>(null);

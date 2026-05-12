@@ -24,7 +24,7 @@ export async function loadGlobalTone(
   // If we have a preferred context and Tone is available, just return Tone
   // DON'T switch contexts - this causes buffer invalidation issues
   // Check both locations where Tone.js may be stored
-  const globalTone = (window as any).Tone || (window as any).__globalTone;
+  const globalTone = window.Tone || window.__globalTone;
   if (preferredContext && globalTone) {
     const Tone = globalTone;
     logger.info(
@@ -73,8 +73,7 @@ export async function loadGlobalTone(
   }
 
   // Use CoreServices if available (new approach)
-  const coreServices =
-    (window as any).__coreServices || (window as any).__globalCoreServices;
+  const coreServices = window.__coreServices || window.__globalCoreServices;
 
   if (coreServices?.getAudioEngine) {
     try {
@@ -101,7 +100,7 @@ export async function loadGlobalTone(
   }
 
   // Fallback: Try to get from window.Tone or window.__globalTone
-  const fallbackTone = (window as any).Tone || (window as any).__globalTone;
+  const fallbackTone = window.Tone || window.__globalTone;
   if (fallbackTone) {
     if (flags.ENABLE_MIGRATION_MONITORING) {
       logger.info('🎵 toneLoader: Using window.Tone/__globalTone as fallback', {
@@ -124,8 +123,7 @@ export async function loadGlobalTone(
  */
 export function getToneSync(): any {
   // Try CoreServices first
-  const coreServices =
-    (window as any).__coreServices || (window as any).__globalCoreServices;
+  const coreServices = window.__coreServices || window.__globalCoreServices;
 
   if (coreServices?.getAudioEngine) {
     try {
@@ -139,5 +137,5 @@ export function getToneSync(): any {
   }
 
   // Fallback to window.Tone
-  return (window as any).Tone || null;
+  return window.Tone || null;
 }

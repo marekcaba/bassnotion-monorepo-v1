@@ -12,7 +12,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';
 import { render, waitFor, act } from '@testing-library/react';
-import { HarmonyWidget } from '../HarmonyWidget';
+import { HarmonyWidget } from '../../HarmonyWidget/index.js';
 
 // ============================================================================
 // MOCKS
@@ -180,17 +180,20 @@ vi.mock(
   }),
 );
 
-// Mock useTransportContext
+// Mock useTransportControls
 vi.mock('@/domains/playback/contexts/TransportContext', () => ({
-  useTransportContext: () => ({
+  useTransportControls: () => ({
     isPlaying: false,
-    currentBpm: 120,
-    play: vi.fn(),
+    isPaused: false,
+    isStopped: true,
+    tempo: 120,
+    start: vi.fn(),
     stop: vi.fn(),
     pause: vi.fn(),
     seekTo: vi.fn(),
-    getCurrentPosition: vi.fn(() => 0),
-    subscribe: vi.fn(() => vi.fn()),
+    setTempo: vi.fn(),
+    timeSignature: { numerator: 4, denominator: 4 },
+    servicesReady: true,
   }),
 }));
 

@@ -7,7 +7,7 @@
 import { PreloadStrategy } from './PreloadStrategy.js';
 import { PreloadConfig, PreloadResult } from '../types/index.js';
 import { GlobalSampleCache } from '../../storage/cache/GlobalSampleCache.js';
-import { wamPluginSingleton } from '@/domains/widgets/utils/wamPluginSingleton.js';
+import { wamPluginSingleton } from '../../instruments/wamPluginSingleton.js';
 import { getLogger } from '@/utils/logger.js';
 import type { Exercise } from '@/domains/exercises/entities/exercise.entity.js';
 import grandPianoConfig from '@/domains/playback/data/instruments/piano/grand-piano.json';
@@ -55,21 +55,24 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
 
     try {
       // Check if CoreServices and AudioEngine are available
-      const coreServices =
-        (window as any).__globalCoreServices || (window as any).__coreServices;
+      const coreServices = window.__globalCoreServices || window.__coreServices;
+      // Type assertion for CoreServices interface
+      const typedCoreServices = coreServices as {
+        getAudioEngine?: () => { isReady?: () => boolean; getContext?: () => AudioContext | null } | null;
+      } | undefined;
 
-      if (!coreServices) {
+      if (!typedCoreServices) {
         // Use generic essential notes when no exercise data available
         return this.fallbackToGenericSamples();
       }
 
-      const audioEngine = coreServices.getAudioEngine?.();
-      if (!audioEngine || !audioEngine.isReady()) {
+      const audioEngine = typedCoreServices.getAudioEngine?.();
+      if (!audioEngine || !audioEngine.isReady?.()) {
         return this.fallbackToGenericSamples();
       }
 
       // Get AudioContext from AudioEngine
-      const context = audioEngine.getContext();
+      const context = audioEngine.getContext?.();
       if (!context || context.state !== 'running') {
         return this.fallbackToGenericSamples();
       }

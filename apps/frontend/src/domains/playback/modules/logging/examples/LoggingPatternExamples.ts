@@ -208,10 +208,9 @@ export class ErrorHandler {
   }
 
   private getMemoryUsage(): number | undefined {
-    if ('memory' in performance) {
-      return Math.round(
-        (performance as any).memory.usedJSHeapSize / (1024 * 1024),
-      );
+    const memInfo = window.performance.memory;
+    if (memInfo) {
+      return Math.round(memInfo.usedJSHeapSize / (1024 * 1024));
     }
     return undefined;
   }

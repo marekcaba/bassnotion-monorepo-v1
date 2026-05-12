@@ -4,6 +4,7 @@ import {
   TutorialLevel,
   TutorialLevelType,
 } from '../value-objects/tutorial-level.vo';
+import type { UnderstandQuestion, AnyBlock } from '@bassnotion/contracts';
 
 export interface TutorialSection {
   id: string;
@@ -49,6 +50,17 @@ export interface TutorialProps {
   creatorChannelUrl?: string;
   creatorAvatarUrl?: string;
   creatorSubscriberCount?: number;
+  exerciseCount?: number;
+  category?: string;
+  // Act 1: Understand fields
+  understandVideoUrl?: string;
+  understandVideoLibraryId?: string;
+  understandHeadline?: string;
+  understandQuestions?: UnderstandQuestion[];
+  titleHighlightWords?: string[];
+  sidebarTitle?: string;
+  // Modular block system
+  blocks?: AnyBlock[];
 }
 
 export class Tutorial {
@@ -224,6 +236,43 @@ export class Tutorial {
     return this._props.creatorSubscriberCount;
   }
 
+  get exerciseCount(): number {
+    return this._props.exerciseCount ?? 0;
+  }
+
+  get category(): string | undefined {
+    return this._props.category;
+  }
+
+  // Act 1: Understand getters
+  get understandVideoUrl(): string | undefined {
+    return this._props.understandVideoUrl;
+  }
+
+  get understandVideoLibraryId(): string | undefined {
+    return this._props.understandVideoLibraryId;
+  }
+
+  get understandHeadline(): string | undefined {
+    return this._props.understandHeadline;
+  }
+
+  get understandQuestions(): UnderstandQuestion[] {
+    return this._props.understandQuestions || [];
+  }
+
+  get titleHighlightWords(): string[] {
+    return this._props.titleHighlightWords || [];
+  }
+
+  get sidebarTitle(): string | undefined {
+    return this._props.sidebarTitle;
+  }
+
+  get blocks(): AnyBlock[] {
+    return this._props.blocks || [];
+  }
+
   isPublished(): boolean {
     return this.status === 'published';
   }
@@ -324,6 +373,17 @@ export class Tutorial {
       creatorChannelUrl: dto.creator_channel_url,
       creatorAvatarUrl: dto.creator_avatar_url,
       creatorSubscriberCount: dto.creator_subscriber_count,
+      exerciseCount: dto.exercise_count,
+      category: dto.category,
+      // Act 1: Understand fields
+      understandVideoUrl: dto.understand_video_url,
+      understandVideoLibraryId: dto.understand_video_library_id,
+      understandHeadline: dto.understand_headline,
+      understandQuestions: dto.understand_questions || [],
+      titleHighlightWords: dto.title_highlight_words || [],
+      sidebarTitle: dto.sidebar_title,
+      // Modular block system
+      blocks: dto.blocks || [],
     });
   }
 
@@ -362,6 +422,16 @@ export class Tutorial {
       creator_channel_url: this._props.creatorChannelUrl,
       creator_avatar_url: this._props.creatorAvatarUrl,
       creator_subscriber_count: this._props.creatorSubscriberCount,
+      category: this._props.category,
+      // Act 1: Understand fields
+      understand_video_url: this._props.understandVideoUrl,
+      understand_video_library_id: this._props.understandVideoLibraryId,
+      understand_headline: this._props.understandHeadline,
+      understand_questions: this._props.understandQuestions || [],
+      title_highlight_words: this._props.titleHighlightWords || [],
+      sidebar_title: this._props.sidebarTitle,
+      // Modular block system
+      blocks: this._props.blocks || [],
     };
   }
 }

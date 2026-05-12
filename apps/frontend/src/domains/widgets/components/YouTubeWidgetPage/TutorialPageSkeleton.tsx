@@ -5,13 +5,13 @@ import { TutorialVideoCardSkeleton } from './TutorialVideoCard';
 import { ExerciseControlPanelSkeleton } from './ExerciseControlPanel';
 import { TransportClockSkeleton } from './components/TransportClock';
 import { FretboardCardSkeleton } from './FretboardCard/FretboardCard';
-import { GlobalControlsCardSkeleton } from './components/GlobalControlsCard';
+import { ExerciseSelectorCardSkeleton } from './components/ExerciseSelectorCard';
 import { FourWidgetsCardSkeleton } from './components/FourWidgetsCard';
 
 /**
  * Skeleton for ExerciseSelector
  * Inlined here after removing the standalone ExerciseSelector component
- * (functionality merged into GlobalControlsCard)
+ * (functionality in ExerciseSelectorCard)
  */
 function ExerciseSelectorSkeleton() {
   return (
@@ -168,10 +168,6 @@ export function TutorialPageSkeleton() {
   return (
     <div
       className="min-h-screen"
-      style={{
-        background:
-          'radial-gradient(ellipse at 50% 0%, hsl(220 45% 20%) 0%, hsl(230 35% 10%) 40%, hsl(240 25% 5%) 100%)',
-      }}
     >
       {/* Header with Logo Skeleton - matches YouTubeWidgetPageContent header */}
       <header className="w-full pt-8 sm:pt-12 pb-5 flex justify-center">
@@ -208,8 +204,8 @@ export function TutorialPageSkeleton() {
           {/* 5. Interactive Fretboard Card */}
           <FretboardCardSkeleton />
 
-          {/* 6. Global Playback Controls Card */}
-          <GlobalControlsCardSkeleton />
+          {/* 6. Exercise Selector Card */}
+          <ExerciseSelectorCardSkeleton />
 
           {/* 7. Four Widgets Card */}
           <FourWidgetsCardSkeleton />

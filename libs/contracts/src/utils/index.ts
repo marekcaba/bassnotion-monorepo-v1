@@ -4,3 +4,5 @@ export * from './musicxml-parser.js';
 export * from './midifile-parser.js';
 export * from './correlation.js';
 export * from './structured-logger.js';
+export * from './type-conversions.js';
+export * from './overlay-event-migration.js';

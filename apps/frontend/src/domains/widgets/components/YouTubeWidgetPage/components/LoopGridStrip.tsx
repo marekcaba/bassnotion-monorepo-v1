@@ -4,7 +4,7 @@ import React, { useState, useRef, useCallback, useMemo } from 'react';
 import type { Exercise, TimeSignature } from '@bassnotion/contracts';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { useLoopStripSync } from '@/domains/widgets/hooks/useBeatGridSync';
-import { useTransportContext } from '@/domains/playback/contexts/TransportContext';
+import { useTransportControls } from '@/domains/playback/contexts/TransportContext';
 
 export interface LoopRegion {
   startMeasure: number;
@@ -57,8 +57,8 @@ export function LoopGridStrip({
   // Get beats per measure from exercise
   const beatsPerMeasure = exercise?.timeSignature?.numerator || 4;
 
-  // Get transport state for playback status
-  const transport = useTransportContext();
+  // Get transport controls (stable - no position re-renders)
+  const transport = useTransportControls();
   const isPlaying = transport.isPlaying;
 
   // Calculate total beats for the loop strip

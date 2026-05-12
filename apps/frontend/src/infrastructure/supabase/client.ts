@@ -22,11 +22,11 @@ const isWebkit =
 const isE2ETesting =
   typeof window !== 'undefined' &&
   (process.env.NODE_ENV === 'test' ||
-    (window as any).__playwright ||
-    (window as any).playwright ||
+    window.__playwright ||
+    window.playwright ||
     navigator.webdriver ||
-    (window as any).__webdriver ||
-    (window as any)._phantom);
+    window.__webdriver ||
+    window._phantom);
 
 // Use minimal configuration during E2E testing to prevent crashes
 const useMinimalConfig = isWebkit && isE2ETesting;

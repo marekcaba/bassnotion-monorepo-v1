@@ -76,5 +76,5 @@ export const initSeq = new InitSequenceLogger();
 
 // Make available on window for debugging
 if (typeof window !== 'undefined') {
-  (window as any).initSeq = initSeq;
+  window.initSeq = initSeq;
 }

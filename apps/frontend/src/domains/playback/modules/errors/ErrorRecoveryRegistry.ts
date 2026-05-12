@@ -26,6 +26,58 @@ import {
 
 const logger = createStructuredLogger('ErrorRecoveryRegistry');
 
+// =============================================================================
+// EXTENDED ERROR INTERFACES - For accessing recovery-specific context properties
+// =============================================================================
+
+/**
+ * Helper to safely extract context properties from errors
+ * Since PlaybackError.context is typed as ErrorContext, additional properties
+ * are stored in context and need to be accessed via type assertion.
+ */
+function getErrorContext<T>(error: Error): T | undefined {
+  if ('context' in error && error.context && typeof error.context === 'object') {
+    return error.context as T;
+  }
+  return undefined;
+}
+
+/** MidiError context with validation errors */
+interface MidiValidationContext {
+  validationErrors?: unknown[];
+}
+
+/** MidiError context with timing drift */
+interface MidiTimingContext {
+  drift?: number;
+}
+
+/** StorageError context with endpoint */
+interface StorageConnectionContext {
+  endpoint?: string;
+}
+
+/** StorageError context with requested size */
+interface CacheFullContext {
+  requestedSize?: number;
+}
+
+/** StorageError context with service name */
+interface CircuitBreakerContext {
+  serviceName?: string;
+}
+
+/** TransportError context with sample rate */
+interface ClockSyncContext {
+  sampleRate?: number;
+}
+
+/** TransportError context with latency info */
+interface LatencyContext {
+  measuredLatency?: number;
+  targetLatency?: number;
+}
+
 /**
  * Extended recovery strategy with priority and metrics
  */
@@ -394,8 +446,9 @@ export class ErrorRecoveryRegistry extends ErrorRecovery {
         logger.info('Attempting MIDI validation recovery');
 
         // Skip invalid events
+        const midiContext = getErrorContext<MidiValidationContext>(error);
         this.eventBus.emit('midi:skip-invalid-events', {
-          validationErrors: (error as any).validationErrors,
+          validationErrors: midiContext?.validationErrors,
         });
 
         return true;
@@ -412,8 +465,9 @@ export class ErrorRecoveryRegistry extends ErrorRecovery {
         logger.info('Attempting MIDI timing recovery');
 
         // Apply timing correction
+        const timingContext = getErrorContext<MidiTimingContext>(error);
         this.eventBus.emit('midi:apply-timing-correction', {
-          drift: (error as any).drift,
+          drift: timingContext?.drift,
         });
 
         return true;
@@ -438,8 +492,9 @@ export class ErrorRecoveryRegistry extends ErrorRecovery {
         // Wait and retry
         await this.delay(3000);
 
+        const storageContext = getErrorContext<StorageConnectionContext>(error);
         this.eventBus.emit('storage:retry-connection', {
-          endpoint: (error as any).endpoint,
+          endpoint: storageContext?.endpoint,
         });
 
         return true;
@@ -476,8 +531,9 @@ export class ErrorRecoveryRegistry extends ErrorRecovery {
         logger.info('Attempting cache full recovery');
 
         // Clear old entries
+        const cacheContext = getErrorContext<CacheFullContext>(error);
         this.eventBus.emit('cache:evict-old-entries', {
-          targetSize: (error as any).requestedSize,
+          targetSize: cacheContext?.requestedSize,
         });
 
         return true;
@@ -495,8 +551,9 @@ export class ErrorRecoveryRegistry extends ErrorRecovery {
         logger.info('Attempting circuit breaker recovery');
 
         // Use fallback service
+        const circuitContext = getErrorContext<CircuitBreakerContext>(error);
         this.eventBus.emit('storage:use-fallback-service', {
-          serviceName: (error as any).serviceName,
+          serviceName: circuitContext?.serviceName,
         });
 
         return true;
@@ -519,8 +576,9 @@ export class ErrorRecoveryRegistry extends ErrorRecovery {
         logger.info('Attempting clock sync recovery');
 
         // Reinitialize clock
+        const clockContext = getErrorContext<ClockSyncContext>(error);
         this.eventBus.emit('transport:reinitialize-clock', {
-          sampleRate: (error as any).sampleRate,
+          sampleRate: clockContext?.sampleRate,
         });
 
         await this.delay(1000);
@@ -578,9 +636,10 @@ export class ErrorRecoveryRegistry extends ErrorRecovery {
         logger.info('Attempting latency compensation recovery');
 
         // Increase buffer size
+        const latencyContext = getErrorContext<LatencyContext>(error);
         this.eventBus.emit('transport:increase-buffer-size', {
-          currentLatency: (error as any).measuredLatency,
-          targetLatency: (error as any).targetLatency,
+          currentLatency: latencyContext?.measuredLatency,
+          targetLatency: latencyContext?.targetLatency,
         });
 
         return true;

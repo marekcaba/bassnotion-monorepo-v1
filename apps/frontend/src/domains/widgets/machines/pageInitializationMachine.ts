@@ -295,7 +295,7 @@ export const pageInitializationMachine = setup({
 
       // Check if Tone.js is loaded
       if (typeof window !== 'undefined') {
-        const tone = (window as any).Tone || (window as any).__globalTone;
+        const tone = window.Tone || window.__globalTone;
         if (!tone) {
           console.log('[PageInit] Waiting for Tone.js to load...');
           // Wait for Tone.js (with timeout)
@@ -305,7 +305,7 @@ export const pageInitializationMachine = setup({
             }, 10000);
 
             const check = () => {
-              const t = (window as any).Tone || (window as any).__globalTone;
+              const t = window.Tone || window.__globalTone;
               if (t) {
                 clearTimeout(timeout);
                 resolve();
@@ -330,7 +330,7 @@ export const pageInitializationMachine = setup({
 
       // Check for samplesReady flag
       if (typeof window !== 'undefined') {
-        const samplesReady = (window as any).__samplesReady;
+        const samplesReady = window.__samplesReady;
         if (!samplesReady) {
           console.log('[PageInit] Waiting for samples to be ready...');
           // Wait for samples (with timeout)
@@ -341,7 +341,7 @@ export const pageInitializationMachine = setup({
             window.addEventListener('samplesReady', handler, { once: true });
 
             // Check if already ready
-            if ((window as any).__samplesReady) {
+            if (window.__samplesReady) {
               window.removeEventListener('samplesReady', handler);
               resolve();
             }
@@ -367,8 +367,10 @@ export const pageInitializationMachine = setup({
 
       // Check for audioServicesReady
       if (typeof window !== 'undefined') {
-        const coreServices = (window as any).__globalCoreServices;
-        if (!coreServices?.isInitialized()) {
+        const coreServices = window.__globalCoreServices as
+          | { isInitialized?: () => boolean }
+          | undefined;
+        if (!coreServices?.isInitialized?.()) {
           console.log('[PageInit] Waiting for CoreServices initialization...');
           await new Promise<void>((resolve) => {
             const handler = () => {
@@ -378,7 +380,10 @@ export const pageInitializationMachine = setup({
             window.addEventListener('core-services:initialized', handler, { once: true });
 
             // Check if already ready
-            if ((window as any).__globalCoreServices?.isInitialized()) {
+            const cs = window.__globalCoreServices as
+              | { isInitialized?: () => boolean }
+              | undefined;
+            if (cs?.isInitialized?.()) {
               window.removeEventListener('audioServicesReady', handler);
               window.removeEventListener('core-services:initialized', handler);
               resolve();

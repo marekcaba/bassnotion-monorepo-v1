@@ -242,12 +242,12 @@ export class HealthController {
         };
       }
 
-      // Check if we can reach Supabase with proper authentication
-      const response = await fetch(`${supabaseUrl}/rest/v1/`, {
-        method: 'HEAD',
+      // GoTrue health endpoint — accepts the anon key and confirms Supabase is reachable.
+      // /rest/v1/ rejects anon keys with 401 (service_role only), so it's unsuitable here.
+      const response = await fetch(`${supabaseUrl}/auth/v1/health`, {
+        method: 'GET',
         headers: {
           apikey: supabaseAnonKey,
-          Authorization: `Bearer ${supabaseAnonKey}`,
         },
       });
 

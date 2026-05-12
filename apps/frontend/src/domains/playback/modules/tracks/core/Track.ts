@@ -25,8 +25,8 @@ import {
 const serviceRegistry = {
   get<T>(name: string): T {
     // Try window globals
-    if (typeof window !== 'undefined' && (window as any).__serviceRegistry) {
-      return (window as any).__serviceRegistry.get(name);
+    if (typeof window !== 'undefined' && window.__serviceRegistry) {
+      return (window.__serviceRegistry as { get: <T>(name: string) => T }).get<T>(name);
     }
     throw new Error(`Service ${name} not found`);
   },
@@ -52,13 +52,52 @@ const ErrorSeverity = {
   CRITICAL: 'critical' as const,
 };
 
-class ErrorReporter {
+/**
+ * Error reporter interface with reportError method
+ */
+interface IErrorReporter {
+  reportError(error: PlaybackError): void;
+}
+
+class ErrorReporter implements IErrorReporter {
   static reportError(error: PlaybackError): void {
     logger.error('PlaybackError', error, {
       code: error.code,
       severity: error.severity,
     });
   }
+
+  reportError(error: PlaybackError): void {
+    ErrorReporter.reportError(error);
+  }
+}
+
+/**
+ * Extended plugin interface with optional id property
+ */
+interface PluginWithId extends AudioPlugin {
+  id?: string;
+  getMetrics?(): { cpuUsage?: number; memoryUsage?: number };
+}
+
+/**
+ * Extended pattern interface with optional type property
+ */
+interface PatternWithType extends Pattern {
+  type?: string;
+}
+
+/**
+ * Helper function to get EventBus instance ID for debugging
+ * EventBus may have internal tracking properties that we access for logging
+ */
+function getEventBusInstanceId(eventBus: EventBus): string {
+  // Access internal properties through any for debugging purposes only
+  const busWithId = eventBus as unknown as {
+    getInstanceId?: () => string;
+    _instanceId?: string;
+  };
+  return busWithId.getInstanceId?.() || busWithId._instanceId || 'no-id';
 }
 import {
   compareMusicalPositions,
@@ -159,7 +198,7 @@ export class Track implements ITrack, TrackLifecycle {
   // Internal state
   private _disposed = false;
   private _eventBus?: EventBus;
-  private _errorReporter?: ErrorReporter;
+  private _errorReporter?: IErrorReporter;
   private _initPromise?: Promise<void>;
 
   constructor(config: TrackConfig) {
@@ -223,23 +262,26 @@ export class Track implements ITrack, TrackLifecycle {
       // Try multiple fallback methods
       if (!this._eventBus && typeof window !== 'undefined') {
         // Try global EventBus singleton first
-        if ((window as any).__globalEventBus) {
-          this._eventBus = (window as any).__globalEventBus;
+        if (window.__globalEventBus) {
+          this._eventBus = window.__globalEventBus as EventBus;
           logger.info(
             `🎵 Track ${this.name}: Got EventBus from __globalEventBus`,
             { correlationId: 'system' },
           );
         }
         // Try global services
-        else if ((window as any).__globalCoreServices?.getEventBus) {
-          this._eventBus = (window as any).__globalCoreServices.getEventBus();
-          logger.info(
-            `🎵 Track ${this.name}: Got EventBus from __globalCoreServices`,
-            { correlationId: 'system' },
-          );
+        else if (window.__globalCoreServices) {
+          const services = window.__globalCoreServices as { getEventBus?: () => EventBus };
+          if (services.getEventBus) {
+            this._eventBus = services.getEventBus();
+            logger.info(
+              `🎵 Track ${this.name}: Got EventBus from __globalCoreServices`,
+              { correlationId: 'system' },
+            );
+          }
         }
         // Try creating global singleton as last resort
-        else {
+        if (!this._eventBus) {
           this._eventBus = EventBus.getGlobalInstance();
           logger.info(
             `🎵 Track ${this.name}: Created EventBus global singleton`,
@@ -250,7 +292,7 @@ export class Track implements ITrack, TrackLifecycle {
     }
 
     try {
-      this._errorReporter = serviceRegistry.get<ErrorReporter>('errorReporter');
+      this._errorReporter = serviceRegistry.get<IErrorReporter>('errorReporter');
     } catch {
       // ErrorReporter is optional - might not be registered in tests or during initialization
       // Silently continue without it
@@ -341,11 +383,8 @@ export class Track implements ITrack, TrackLifecycle {
         { trackId: this.id, instrumentType: this.instrumentType },
       );
 
-      if (
-        this._errorReporter &&
-        typeof (this._errorReporter as any).reportError === 'function'
-      ) {
-        (this._errorReporter as any).reportError(playbackError);
+      if (this._errorReporter) {
+        this._errorReporter.reportError(playbackError);
       } else {
         logger.error('Track error', playbackError, {
           code: playbackError.code,
@@ -394,11 +433,8 @@ export class Track implements ITrack, TrackLifecycle {
         { trackId: this.id },
       );
 
-      if (
-        this._errorReporter &&
-        typeof (this._errorReporter as any).reportError === 'function'
-      ) {
-        (this._errorReporter as any).reportError(playbackError);
+      if (this._errorReporter) {
+        this._errorReporter.reportError(playbackError);
       } else {
         logger.error('Track error', playbackError, {
           code: playbackError.code,
@@ -462,11 +498,8 @@ export class Track implements ITrack, TrackLifecycle {
 
       return true;
     } catch (error) {
-      if (
-        this._errorReporter &&
-        typeof (this._errorReporter as any).reportError === 'function'
-      ) {
-        (this._errorReporter as any).reportError(
+      if (this._errorReporter) {
+        this._errorReporter.reportError(
           new PlaybackError(
             'Track validation error',
             'TRACK_VALIDATION_ERROR',
@@ -540,12 +573,9 @@ export class Track implements ITrack, TrackLifecycle {
       index: this.index + 1,
     };
 
-    const cloned = new Track(config);
-
-    // Override ID if provided
-    if (newId) {
-      (cloned as any).id = newId;
-    }
+    // If newId is provided, include it in config to avoid post-construction mutation
+    const clonedConfig = newId ? { ...config, id: newId } : config;
+    const cloned = new Track(clonedConfig);
 
     // Clone musical properties
     cloned.musical = {
@@ -594,8 +624,9 @@ export class Track implements ITrack, TrackLifecycle {
     let totalMemory = 0;
 
     for (const plugin of this.plugins) {
-      if (typeof (plugin as any).getMetrics === 'function') {
-        const metrics = (plugin as any).getMetrics();
+      const pluginWithMetrics = plugin as PluginWithId;
+      if (pluginWithMetrics.getMetrics) {
+        const metrics = pluginWithMetrics.getMetrics();
         totalCpu += metrics.cpuUsage || 0;
         totalMemory += metrics.memoryUsage || 0;
       }
@@ -633,9 +664,10 @@ export class Track implements ITrack, TrackLifecycle {
     this.plugins.push(plugin);
     this.updateMetrics();
 
+    const pluginWithId = plugin as PluginWithId;
     this._eventBus?.emit('track:pluginAdded', {
       trackId: this.id,
-      pluginId: (plugin as any).id || 'unknown',
+      pluginId: pluginWithId.id || 'unknown',
       pluginType: plugin.metadata.category,
     });
   }
@@ -644,15 +676,16 @@ export class Track implements ITrack, TrackLifecycle {
    * Remove a plugin from the track
    */
   removePlugin(pluginId: string): void {
-    const index = this.plugins.findIndex((p) => (p as any).id === pluginId);
+    const index = this.plugins.findIndex((p) => (p as PluginWithId).id === pluginId);
     if (index !== -1) {
       const plugin = this.plugins[index];
       this.plugins.splice(index, 1);
       this.updateMetrics();
 
+      const pluginWithId = plugin as PluginWithId | undefined;
       this._eventBus?.emit('track:pluginRemoved', {
         trackId: this.id,
-        pluginId: plugin ? (plugin as any).id || 'unknown' : 'unknown',
+        pluginId: pluginWithId?.id || 'unknown',
         pluginType: plugin?.metadata?.category || 'unknown',
       });
     }
@@ -664,9 +697,10 @@ export class Track implements ITrack, TrackLifecycle {
   addPattern(pattern: Pattern): void {
     this.patterns.push(pattern);
 
+    const patternWithType = pattern as PatternWithType;
     this._eventBus?.emit('track:patternAdded', {
       trackId: this.id,
-      patternType: (pattern as any).type || 'unknown',
+      patternType: patternWithType.type || 'unknown',
     });
   }
 
@@ -678,9 +712,10 @@ export class Track implements ITrack, TrackLifecycle {
       const pattern = this.patterns[patternIndex];
       this.patterns.splice(patternIndex, 1);
 
+      const patternWithType = pattern as PatternWithType | undefined;
       this._eventBus?.emit('track:patternRemoved', {
         trackId: this.id,
-        patternType: pattern ? (pattern as any).type || 'unknown' : 'unknown',
+        patternType: patternWithType?.type || 'unknown',
       });
     }
   }
@@ -772,9 +807,7 @@ export class Track implements ITrack, TrackLifecycle {
 
     // Notify scheduler of region update
     const eventBusId = this._eventBus
-      ? (this._eventBus as any).getInstanceId?.() ||
-        (this._eventBus as any)._instanceId ||
-        'no-id'
+      ? getEventBusInstanceId(this._eventBus)
       : 'none';
     logger.info(`🎵 Track ${this.name}: Emitting track-regions-updated event`, {
       trackId: this.id,
@@ -792,14 +825,11 @@ export class Track implements ITrack, TrackLifecycle {
       });
     } else {
       // Try to get EventBus from global services if not available
-      const globalServices = (window as any).__globalCoreServices;
+      const globalServices = window.__globalCoreServices as { getEventBus?: () => EventBus } | undefined;
       if (globalServices && globalServices.getEventBus) {
         const eventBus = globalServices.getEventBus();
         if (eventBus) {
-          const globalEventBusId =
-            (eventBus as any).getInstanceId?.() ||
-            (eventBus as any)._instanceId ||
-            'no-id';
+          const globalEventBusId = getEventBusInstanceId(eventBus);
           logger.info(
             `🎵 Track ${this.name}: Using global EventBus as fallback`,
             {

@@ -28,6 +28,16 @@ export interface ClockConfig {
   driftCompensation?: 'off' | 'basic'; // 'adaptive' removed - AdaptiveDriftCompensator deprecated
 }
 
+/**
+ * Legacy config interface for backward compatibility
+ * Maps old property names to new ClockConfig properties
+ */
+interface LegacyClockConfig {
+  enableAudioWorklet?: boolean; // Maps to useAudioWorklet
+  enableWebWorker?: boolean; // Maps to useWebWorker
+  driftCompensation?: 'none' | 'off' | 'basic'; // 'none' maps to 'off'
+}
+
 export class Clock {
   private audioContext: AudioContext | null = null;
   private useHardwareClock = true;
@@ -67,12 +77,12 @@ export class Clock {
   private pendingStart = false;
 
   constructor(config: ClockConfig = {}) {
-    // Handle legacy config options
-    const legacyConfig = config as any;
-    if ('enableAudioWorklet' in legacyConfig) {
+    // Handle legacy config options with proper typing
+    const legacyConfig = config as ClockConfig & LegacyClockConfig;
+    if ('enableAudioWorklet' in legacyConfig && legacyConfig.enableAudioWorklet !== undefined) {
       config.useAudioWorklet = legacyConfig.enableAudioWorklet;
     }
-    if ('enableWebWorker' in legacyConfig) {
+    if ('enableWebWorker' in legacyConfig && legacyConfig.enableWebWorker !== undefined) {
       config.useWebWorker = legacyConfig.enableWebWorker;
     }
     if (legacyConfig.driftCompensation === 'none') {
@@ -778,9 +788,9 @@ export class Clock {
       return; // Already syncing
     }
 
-    this.clockSyncInterval = setInterval(() => {
+    this.clockSyncInterval = window.setInterval(() => {
       this.syncWithHardware();
-    }, this.syncIntervalMs) as any;
+    }, this.syncIntervalMs);
 
     logger.info('Started periodic clock sync', {
       intervalMs: this.syncIntervalMs,

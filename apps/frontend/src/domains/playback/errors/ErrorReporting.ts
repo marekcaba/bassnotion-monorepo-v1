@@ -49,6 +49,7 @@ export class ErrorReporter {
   private reportQueue: ErrorReport[] = [];
   private flushTimer?: NodeJS.Timeout;
   private sessionId: string;
+  private beforeUnloadHandler: (() => void) | null = null;
 
   constructor(eventBus: EventBus, config: ReportingConfig = {}) {
     this.eventBus = eventBus;
@@ -117,7 +118,7 @@ export class ErrorReporter {
 
     // Add AudioContext state if available
     try {
-      const audioContext = (window as any).audioContext;
+      const audioContext = window.audioContext;
       if (audioContext) {
         report.audioContextState = audioContext.state;
       }
@@ -314,7 +315,8 @@ export class ErrorReporter {
    * Setup unload handler
    */
   private setupUnloadHandler(): void {
-    window.addEventListener('beforeunload', () => {
+    // Store handler reference for cleanup in dispose()
+    this.beforeUnloadHandler = () => {
       // Try to send any remaining reports
       if (this.reportQueue.length > 0) {
         // Use sendBeacon for reliability
@@ -328,7 +330,9 @@ export class ErrorReporter {
           navigator.sendBeacon(this.config.endpoint, data);
         }
       }
-    });
+    };
+
+    window.addEventListener('beforeunload', this.beforeUnloadHandler);
   }
 
   /**
@@ -366,6 +370,12 @@ export class ErrorReporter {
   dispose(): void {
     if (this.flushTimer) {
       clearInterval(this.flushTimer);
+    }
+
+    // Remove beforeunload listener to prevent memory leaks
+    if (this.beforeUnloadHandler) {
+      window.removeEventListener('beforeunload', this.beforeUnloadHandler);
+      this.beforeUnloadHandler = null;
     }
 
     // Final flush

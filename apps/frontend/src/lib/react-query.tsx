@@ -19,9 +19,9 @@ export function ReactQueryProvider({
             staleTime: 60 * 1000, // 1 minute
             retry: (failureCount, error) => {
               // Don't retry on 4xx errors
-              if (error instanceof Error && 'status' in error) {
-                const status = (error as any).status;
-                if (status >= 400 && status < 500) {
+              if (error && typeof error === 'object' && 'status' in error) {
+                const status = (error as { status?: number }).status;
+                if (status && status >= 400 && status < 500) {
                   return false;
                 }
               }

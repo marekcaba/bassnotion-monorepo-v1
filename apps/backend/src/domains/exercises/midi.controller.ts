@@ -15,6 +15,11 @@ import { DrumMapperService } from './services/drum-mapper.service.js';
 import { HarmonyMapperService } from './services/harmony-mapper.service.js';
 import { AdminGuard } from '../user/auth/guards/admin.guard.js';
 import { CorrelationId } from '../../shared/decorators/correlation-id.decorator.js';
+import {
+  MidiProcessingRateLimit,
+  MidiConversionRateLimit,
+} from '../../shared/decorators/rate-limit.decorator.js';
+import { RateLimitGuard } from '../../shared/guards/rate-limit.guard.js';
 import type { StatelessParseMidiRequestDto } from './dto/parse-midi-request.dto.js';
 import { StatelessParseMidiRequestSchema } from './dto/parse-midi-request.dto.js';
 import type { ConvertDrumMidiRequestDto } from './dto/convert-drum-midi.dto.js';
@@ -32,7 +37,7 @@ import type { ConvertHarmonyResponseDto } from './dto/convert-harmony-response.d
  */
 @ApiTags('midi')
 @Controller('api/v1/midi')
-@UseGuards(AdminGuard)
+@UseGuards(AdminGuard, RateLimitGuard)
 export class MidiController {
   private readonly logger = new Logger(MidiController.name);
 
@@ -60,6 +65,7 @@ export class MidiController {
    */
   @Post('parse')
   @HttpCode(HttpStatus.OK)
+  @MidiProcessingRateLimit()
   @ApiOperation({
     summary: 'Parse MIDI file from URL (stateless)',
     description: `
@@ -312,6 +318,7 @@ This is the FAANG-level stateless approach that enables seamless workflows.
    */
   @Post('convert')
   @HttpCode(HttpStatus.OK)
+  @MidiConversionRateLimit()
   @ApiOperation({
     summary: 'Convert parsed MIDI to fretboard positions (stateless)',
     description: `
@@ -504,6 +511,7 @@ This completes the FAANG-level stateless workflow for MIDI conversion.
    */
   @Post('convert-drums')
   @HttpCode(HttpStatus.OK)
+  @MidiConversionRateLimit()
   @ApiOperation({
     summary: 'Convert drummer MIDI to drum pattern',
     description:
@@ -621,6 +629,7 @@ This completes the FAANG-level stateless workflow for MIDI conversion.
    */
   @Post('convert-harmony')
   @HttpCode(HttpStatus.OK)
+  @MidiConversionRateLimit()
   @ApiOperation({
     summary: 'Convert parsed MIDI to harmony note data (stateless)',
     description: `

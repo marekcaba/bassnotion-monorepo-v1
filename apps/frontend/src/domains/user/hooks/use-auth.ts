@@ -27,7 +27,7 @@ const isE2ETesting =
   typeof window !== 'undefined' &&
   (window.location.hostname === 'localhost' ||
     process.env.NODE_ENV === 'test' ||
-    (window as any).__playwright);
+    window.__playwright);
 
 // Disable devtools in webkit or E2E testing to prevent crashes
 const shouldUseDevtools =

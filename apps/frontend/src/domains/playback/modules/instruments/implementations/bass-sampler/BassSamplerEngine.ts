@@ -29,9 +29,9 @@ import { getBufferKey } from './BassSampleManifest.js';
 // Helper to get Tone from window (must be initialized before BassSamplerEngine is used)
 function getTone(): typeof import('tone') {
   if (typeof window !== 'undefined') {
-    const tone = (window as any).Tone || (window as any).__globalTone;
+    const tone = window.Tone || window.__globalTone;
     if (tone) {
-      return tone;
+      return tone as typeof import('tone');
     }
   }
   throw new Error(

@@ -574,18 +574,13 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
   useEffect(() => {
     if (debugMode && typeof window !== 'undefined') {
       // Add debug info to global window for debugging
-      (window as any).__syncProviderDebug = {
-        syncState,
-        performanceMetrics,
-        isConnected,
-        lastUpdateTime,
-        refreshState,
-        resetMetrics,
-        emitGlobalEvent,
+      window.__syncProviderDebug = {
+        widgetSyncService,
+        getState: () => syncState,
       };
 
       // Make widgetSyncService available globally for debugging
-      (window as any).widgetSyncService = widgetSyncService;
+      window.widgetSyncService = widgetSyncService;
     }
   }, [debugMode, syncState, performanceMetrics, isConnected, lastUpdateTime]);
 

@@ -96,10 +96,9 @@ export class BassInstrument extends Sampler {
     } else if (!this.audioEngine && typeof window !== 'undefined') {
       // Try to get from global DI if no audioEngine provided
       const globalServices =
-        (window as any)?.__coreServices ||
-        (window as any)?.__globalCoreServices;
-      if (globalServices && globalServices.getAudioEngine) {
-        this.audioEngine = globalServices.getAudioEngine();
+        window.__coreServices || window.__globalCoreServices;
+      if (globalServices && typeof globalServices === 'object' && 'getAudioEngine' in globalServices) {
+        this.audioEngine = (globalServices as { getAudioEngine: () => unknown }).getAudioEngine();
       }
     }
 

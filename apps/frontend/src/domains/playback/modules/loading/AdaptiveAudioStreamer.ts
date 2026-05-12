@@ -759,11 +759,11 @@ export class AdaptiveAudioStreamer implements IAdaptiveAudioStreamer {
   // Network monitoring
   private async detectNetworkConditions(): Promise<void> {
     try {
-      // Use Navigator Connection API if available
+      // Use Navigator Connection API if available (typed in window.d.ts)
       const connection =
-        (navigator as any).connection ||
-        (navigator as any).mozConnection ||
-        (navigator as any).webkitConnection;
+        navigator.connection ||
+        navigator.mozConnection ||
+        navigator.webkitConnection;
 
       if (connection) {
         this.networkConditions.bandwidth = connection.downlink * 1000 || 1000; // Convert to kbps

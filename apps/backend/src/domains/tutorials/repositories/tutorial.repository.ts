@@ -39,6 +39,17 @@ interface TutorialRecord {
   creator_channel_url?: string;
   creator_avatar_url?: string;
   creator_subscriber_count?: number;
+  // Category for product folder grouping
+  category?: string;
+  // Modular block system
+  blocks?: any[];
+  // Act 1: Understand fields
+  understand_video_url?: string;
+  understand_video_library_id?: string;
+  understand_headline?: string;
+  understand_questions?: any[];
+  title_highlight_words?: string[];
+  sidebar_title?: string;
 }
 
 @Injectable()
@@ -571,6 +582,16 @@ export class TutorialRepository implements ITutorialRepository {
       creatorChannelUrl: record.creator_channel_url,
       creatorAvatarUrl: record.creator_avatar_url,
       creatorSubscriberCount: record.creator_subscriber_count,
+      category: record.category,
+      // Modular block system
+      blocks: record.blocks || [],
+      // Act 1: Understand fields
+      understandVideoUrl: record.understand_video_url,
+      understandVideoLibraryId: record.understand_video_library_id,
+      understandHeadline: record.understand_headline,
+      understandQuestions: record.understand_questions || [],
+      titleHighlightWords: record.title_highlight_words || [],
+      sidebarTitle: record.sidebar_title,
     });
   }
 }

@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/marekcaba/Documents/Projekty\\\\ 2024/🟣\\\\ BassNotion/4.\\\\ Cursor\\\\ Project\\\\ Folder/bassnotion-monorepo-v1/**)",
+      "Bash(git ls-remote *)"
+    ]
+  }
+}

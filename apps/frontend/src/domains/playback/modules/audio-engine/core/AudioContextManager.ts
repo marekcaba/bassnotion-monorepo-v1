@@ -98,8 +98,7 @@ export class AudioContextManager {
 
     try {
       // Handle Safari's webkitAudioContext
-      const AudioContextClass =
-        (window as any).AudioContext || (window as any).webkitAudioContext;
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
 
       if (!AudioContextClass) {
         throw new Error('AudioContext not available');
@@ -461,7 +460,8 @@ export class AudioContextManager {
    */
   private isIOS(): boolean {
     return (
-      /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream
+      /iPad|iPhone|iPod/.test(navigator.userAgent) &&
+      !(window as { MSStream?: unknown }).MSStream
     );
   }
 
@@ -472,9 +472,11 @@ export class AudioContextManager {
     if (this.config.sampleRate) return this.config.sampleRate;
 
     // Use browser default for best compatibility
-    const tempContext = new (
-      (window as any).AudioContext || (window as any).webkitAudioContext
-    )();
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) {
+      return 48000; // Fallback if AudioContext is not available
+    }
+    const tempContext = new AudioContextClass();
     const sampleRate = tempContext.sampleRate;
     tempContext.close();
 

@@ -6,55 +6,11 @@ import { YouTubeWidgetPage } from '@/domains/widgets/components/YouTubeWidgetPag
 import { TutorialPageSkeleton } from '@/domains/widgets/components/YouTubeWidgetPage/TutorialPageSkeleton';
 import { useTutorialExercises } from '@/domains/widgets/hooks/useTutorialExercises';
 import { ScrollTriggerLoader } from '@/domains/playback/components/ScrollTriggerLoader';
+import { PageErrorBoundary } from '@/shared/components/ErrorBoundary';
 import { getLogger } from '@/utils/logger';
 import { logSkeletonDebug, getSkeletonDebugTime, resetSkeletonDebugBaseline } from '@/utils/skeletonDebug';
 
 const logger = getLogger('TutorialPage');
-
-// Error boundary component
-class ErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean; error: Error | null }
-> {
-  constructor(props: { children: React.ReactNode }) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    logger.error('🚨 TutorialPage Error:', error, { errorInfo });
-  }
-
-  render() {
-    if (this.state.hasError && this.state.error) {
-      // TEMPORARY: Don't show error screen for timeSignature rendering errors
-      // Just log and continue rendering to test if audio works
-      logger.error(
-        '🚨 Error boundary caught error but continuing to render:',
-        this.state.error,
-      );
-
-      // Still render children - the error might be in a non-critical component
-      // Uncomment below to show error screen again:
-      // return (
-      //   <div className="min-h-screen bg-red-900 text-white p-8">
-      //     <h1 className="text-2xl mb-4">Error Loading Tutorial</h1>
-      //     <pre className="bg-black p-4 rounded overflow-auto">
-      //       {this.state.error.toString()}
-      //       {'\n\n'}
-      //       {this.state.error.stack}
-      //     </pre>
-      //   </div>
-      // );
-    }
-
-    return this.props.children;
-  }
-}
 
 interface TutorialPageProps {
   params: Promise<{
@@ -147,7 +103,7 @@ export default function TutorialPage({ params }: TutorialPageProps) {
   // CRITICAL: Wrap in Fragment to prevent rendering boundary issues that cause click blocking
   return (
     <>
-      <ErrorBoundary>
+      <PageErrorBoundary pageName="Tutorial">
         {/* Phase 2: Progressive sample loading on first user interaction */}
         {/* Pass exercises to enable tutorial-level sample loading */}
         <ScrollTriggerLoader
@@ -160,7 +116,7 @@ export default function TutorialPage({ params }: TutorialPageProps) {
           exercises={memoizedExercises}
           initialExerciseId={initialExerciseId}
         />
-      </ErrorBoundary>
+      </PageErrorBoundary>
     </>
   );
 }

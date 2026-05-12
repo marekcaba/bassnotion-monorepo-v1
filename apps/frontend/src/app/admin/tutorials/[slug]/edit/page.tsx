@@ -3,14 +3,14 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
+import { PageErrorBoundary } from '@/shared/components/ErrorBoundary';
 
 // Import tutorial page components individually so we can wrap them
-import { YouTubeVideoSection } from '@/domains/widgets/components/YouTubeWidgetPage/YouTubeVideoSection';
 import { TutorialInfoCard } from '@/domains/widgets/components/YouTubeWidgetPage/TutorialInfoCard';
-// ExerciseSelector merged into GlobalControlsCard
+// Exercise selector card
 import { TransportClock } from '@/domains/widgets/components/YouTubeWidgetPage/components/TransportClock';
 import { FretboardCard } from '@/domains/widgets/components/YouTubeWidgetPage/FretboardCard/FretboardCard';
-import { GlobalControlsCard } from '@/domains/widgets/components/YouTubeWidgetPage/components/GlobalControlsCard';
+import { ExerciseSelectorCard } from '@/domains/widgets/components/YouTubeWidgetPage/components/ExerciseSelectorCard';
 import { FourWidgetsCard } from '@/domains/widgets/components/YouTubeWidgetPage/components/FourWidgetsCard';
 import { TeachingTakeawayCard } from '@/domains/widgets/components/YouTubeWidgetPage/TeachingTakeawayCard';
 import { TimingDebugWindow } from '@/domains/widgets/components/YouTubeWidgetPage/components/TimingDebugWindow';
@@ -36,7 +36,11 @@ import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { supabase } from '@/infrastructure/supabase/client';
 import { ExerciseFormModal } from '@/domains/admin/components/ExerciseFormModal';
 import { ExerciseListEdit } from '@/domains/admin/components/ExerciseListEdit';
+import { ThumbnailUpload } from '@/domains/admin/components/ThumbnailUpload';
 import { useToast } from '@/shared/hooks/use-toast';
+import type { AnyBlock, VideoBlockConfig } from '@bassnotion/contracts';
+import { resolveOverlayEvents } from '@bassnotion/contracts';
+import { BlockEditor } from '@/domains/admin/components/BlockEditor';
 
 interface AdminTutorialPageProps {
   params: Promise<{ slug: string }>;
@@ -127,7 +131,7 @@ function EditableSection({
   );
 }
 
-export default function AdminTutorialEditPage({
+function AdminTutorialEditPageContent({
   params,
 }: AdminTutorialPageProps) {
   const router = useRouter();
@@ -192,6 +196,11 @@ export default function AdminTutorialEditPage({
     practiceTipTitle: '',
     practiceTipDescription: '',
   });
+
+  // Modular block system state
+  const [blocks, setBlocks] = useState<AnyBlock[]>([]);
+  // All tutorials for "Next tutorial" CTA in celebration blocks
+  const [allTutorials, setAllTutorials] = useState<Array<{ slug: string; title: string }>>([]);
 
   // Bass configuration state (loaded from user profile)
   const [stringCount, setStringCount] = useState<4 | 5 | 6>(4);
@@ -305,9 +314,22 @@ export default function AdminTutorialEditPage({
           });
         }
 
+        // Load modular blocks
+        setBlocks(loadedTutorial.blocks || []);
+
         // Set exercises (already loaded in single batch call)
         setExercises(loadedExercisesList);
         setLoadedExercises(loadedExercisesList); // Keep track of originally loaded exercises
+
+        // Load all tutorials for "Next tutorial" CTA in celebration blocks
+        const allResult = await tutorialRepo.findAll({ page: 1, limit: 100 });
+        if (allResult.ok) {
+          setAllTutorials(
+            allResult.value.items
+              .filter((t) => t.slug.value !== tutorialSlug)
+              .map((t) => ({ slug: t.slug.value, title: t.title })),
+          );
+        }
       } else {
         logger.error('Failed to load tutorial', result.error);
         router.push('/admin/tutorials');
@@ -332,7 +354,7 @@ export default function AdminTutorialEditPage({
           setIsSaving(true);
         }
 
-        // Create updated tutorial with Core Concept and Teaching Takeaway data
+        // Create updated tutorial with Core Concept, Teaching Takeaway, and Understand data
         const updatedTutorial = Tutorial.reconstitute({
           id: tutorial.id,
           title: tutorial.title,
@@ -359,6 +381,34 @@ export default function AdminTutorialEditPage({
           creatorChannelUrl: tutorial.creatorChannelUrl,
           creatorAvatarUrl: tutorial.creatorAvatarUrl,
           creatorSubscriberCount: tutorial.creatorSubscriberCount,
+          // Category and sidebar title
+          category: tutorial.category,
+          sidebarTitle: tutorial.sidebarTitle,
+          titleHighlightWords: tutorial.titleHighlightWords,
+          // Derive legacy understand fields from blocks for backward compatibility
+          ...(() => {
+            const videoBlock = blocks.find((b) => b.type === 'video');
+            const videoConfig = videoBlock?.config as VideoBlockConfig | undefined;
+            // Extract quiz questions from overlay events for legacy field
+            const overlayEvents = videoConfig ? resolveOverlayEvents(videoConfig) : [];
+            const quizQuestions = overlayEvents
+              .filter((e) => e.type === 'QUIZ')
+              .map((e) => ({
+                id: e.id,
+                question: e.content.question,
+                options: e.content.options,
+                correct_option_id: e.content.correct_option_id,
+                timestamp: e.timestamp,
+              }));
+            return {
+              understandVideoUrl: videoConfig?.videoUrl || undefined,
+              understandVideoLibraryId: videoConfig?.videoLibraryId || undefined,
+              understandHeadline: videoConfig?.headline || undefined,
+              understandQuestions: quizQuestions,
+            };
+          })(),
+          // Modular block system
+          blocks,
         });
 
         // FAANG-level batch save - single API call for all changes
@@ -528,6 +578,7 @@ export default function AdminTutorialEditPage({
       hasChanges,
       coreConcept,
       teachingTakeaway,
+      blocks,
       loadedExercises,
       queryClient,
       tutorialSlug,
@@ -621,10 +672,8 @@ export default function AdminTutorialEditPage({
       : '',
     duration_seconds: tutorial.duration,
     author_name: tutorial.authorName,
-    // Always generate thumbnail URL from YouTube ID for consistency
-    thumbnail_url: tutorial.youtubeId
-      ? `https://img.youtube.com/vi/${tutorial.youtubeId}/maxresdefault.jpg`
-      : tutorial.thumbnailUrl,
+    // Custom thumbnail takes precedence over YouTube auto-generated
+    thumbnail_url: tutorial.thumbnailUrl || undefined,
     level: tutorial.level.value,
     tags: tutorial.tags,
     sections: tutorial.sections,
@@ -661,20 +710,25 @@ export default function AdminTutorialEditPage({
 
   return (
     <>
-      {/* Main Tutorial Page Layout - Full width background outside SyncProvider */}
-      <div className="min-h-screen" style={radialBlueBackground}>
-        <TransportProvider>
-          <SyncProvider>
-            {/* Edit Modal */}
-            {editMode && (
+      {/* Edit Modal - Using Dialog pattern for proper viewport centering */}
+      {editMode && (
+        <>
+          {/* Backdrop - covers viewport */}
+          <div
+            className="fixed inset-0 bg-black/50 z-[100]"
+            onClick={() => toggleEditMode(null)}
+            aria-hidden="true"
+          />
+          {/* Modal container - uses 100vh for viewport height */}
+          <div
+            className="fixed inset-0 z-[101] overflow-y-auto"
+            onClick={() => toggleEditMode(null)}
+          >
+            <div className="flex items-center justify-center p-4" style={{ minHeight: '100vh' }}>
               <div
-                className="fixed inset-0 bg-black/50 z-40"
-                onClick={() => toggleEditMode(null)}
+                className="relative bg-white rounded-lg p-6 max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-xl"
+                onClick={(e) => e.stopPropagation()}
               >
-                <div
-                  className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto"
-                  onClick={(e) => e.stopPropagation()}
-                >
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="text-xl font-bold">Edit {editMode}</h3>
                     <Button
@@ -1119,6 +1173,181 @@ export default function AdminTutorialEditPage({
                           <option value="advanced">Advanced</option>
                         </select>
                       </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Product Path
+                        </label>
+                        <select
+                          value={tutorial.category || ''}
+                          onChange={(e) => {
+                            const updated = Tutorial.reconstitute({
+                              id: tutorial.id,
+                              title: tutorial.title,
+                              slug: tutorial.slug,
+                              description: tutorial.description,
+                              youtubeId: tutorial.youtubeId,
+                              duration: tutorial.duration,
+                              authorName: tutorial.authorName,
+                              thumbnailUrl: tutorial.thumbnailUrl,
+                              level: tutorial.level,
+                              tags: tutorial.tags,
+                              isActive: tutorial.isActive,
+                              publishedAt: tutorial.publishedAt,
+                              createdAt: tutorial.createdAt,
+                              updatedAt: new Date(),
+                              sections: tutorial.sections,
+                              viewCount: tutorial.viewCount,
+                              category: e.target.value || undefined,
+                              sidebarTitle: tutorial.sidebarTitle,
+                            });
+                            setTutorial(updated);
+                            setHasChanges(true);
+                          }}
+                          className="w-full px-3 py-2 border rounded-md"
+                        >
+                          <option value="">-- Select Product --</option>
+                          <option value="starter-kit">Starter Kit</option>
+                          <option value="revisiting-basics">Revisiting Basics</option>
+                        </select>
+                      </div>
+
+                      {/* Sidebar Title */}
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Sidebar Title
+                        </label>
+                        <input
+                          type="text"
+                          value={tutorial.sidebarTitle || ''}
+                          onChange={(e) => {
+                            const updated = Tutorial.reconstitute({
+                              id: tutorial.id,
+                              title: tutorial.title,
+                              slug: tutorial.slug,
+                              description: tutorial.description,
+                              youtubeId: tutorial.youtubeId,
+                              duration: tutorial.duration,
+                              authorName: tutorial.authorName,
+                              thumbnailUrl: tutorial.thumbnailUrl,
+                              level: tutorial.level,
+                              tags: tutorial.tags,
+                              isActive: tutorial.isActive,
+                              publishedAt: tutorial.publishedAt,
+                              createdAt: tutorial.createdAt,
+                              updatedAt: new Date(),
+                              sections: tutorial.sections,
+                              viewCount: tutorial.viewCount,
+                              category: tutorial.category,
+                              sidebarTitle: e.target.value || undefined,
+                            });
+                            setTutorial(updated);
+                            setHasChanges(true);
+                          }}
+                          placeholder="e.g., Find Notes"
+                          className="w-full px-3 py-2 border rounded-md"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Short title for the sidebar navigation. Leave empty to use the full tutorial title.
+                        </p>
+                      </div>
+
+                      {/* Title Highlight Words */}
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Title Highlight Words (optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={tutorial.titleHighlightWords?.join(', ') || ''}
+                          onChange={(e) => {
+                            const words = e.target.value
+                              .split(',')
+                              .map((w) => w.trim())
+                              .filter((w) => w.length > 0);
+                            const updated = Tutorial.reconstitute({
+                              id: tutorial.id,
+                              title: tutorial.title,
+                              slug: tutorial.slug,
+                              description: tutorial.description,
+                              youtubeId: tutorial.youtubeId,
+                              duration: tutorial.duration,
+                              authorName: tutorial.authorName,
+                              thumbnailUrl: tutorial.thumbnailUrl,
+                              level: tutorial.level,
+                              tags: tutorial.tags,
+                              isActive: tutorial.isActive,
+                              publishedAt: tutorial.publishedAt,
+                              createdAt: tutorial.createdAt,
+                              updatedAt: new Date(),
+                              sections: tutorial.sections,
+                              viewCount: tutorial.viewCount,
+                              category: tutorial.category,
+                              sidebarTitle: tutorial.sidebarTitle,
+                              titleHighlightWords: words.length > 0 ? words : undefined,
+                            });
+                            setTutorial(updated);
+                            setHasChanges(true);
+                          }}
+                          className="w-full px-3 py-2 border rounded-md"
+                          placeholder="Notes, Fretboard"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Words to highlight with gradient in the title. Separate with commas.
+                        </p>
+                        {tutorial.titleHighlightWords && tutorial.titleHighlightWords.length > 0 && (
+                          <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
+                            <span className="text-gray-600">Preview: </span>
+                            {tutorial.title.split(' ').map((word, i) => {
+                              const isHighlighted = tutorial.titleHighlightWords?.some(
+                                (hw) => hw.toLowerCase() === word.toLowerCase().replace(/[^a-z]/gi, '')
+                              );
+                              return (
+                                <span
+                                  key={i}
+                                  className={isHighlighted ? 'text-orange-500 font-semibold' : ''}
+                                >
+                                  {word}{' '}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Custom Thumbnail Upload */}
+                      <div className="border-t pt-4 mt-4">
+                        <ThumbnailUpload
+                          currentThumbnailUrl={tutorial.thumbnailUrl}
+                          youtubeId={tutorial.youtubeId}
+                          tutorialId={tutorial.id.value}
+                          onThumbnailChange={(newUrl) => {
+                            const updated = Tutorial.reconstitute({
+                              id: tutorial.id,
+                              title: tutorial.title,
+                              slug: tutorial.slug,
+                              description: tutorial.description,
+                              youtubeId: tutorial.youtubeId,
+                              duration: tutorial.duration,
+                              authorName: tutorial.authorName,
+                              thumbnailUrl: newUrl || undefined,
+                              level: tutorial.level,
+                              tags: tutorial.tags,
+                              isActive: tutorial.isActive,
+                              publishedAt: tutorial.publishedAt,
+                              createdAt: tutorial.createdAt,
+                              updatedAt: new Date(),
+                              sections: tutorial.sections,
+                              viewCount: tutorial.viewCount,
+                              creatorName: tutorial.creatorName,
+                              creatorChannelUrl: tutorial.creatorChannelUrl,
+                              creatorAvatarUrl: tutorial.creatorAvatarUrl,
+                              creatorSubscriberCount: tutorial.creatorSubscriberCount,
+                            });
+                            setTutorial(updated);
+                            setHasChanges(true);
+                          }}
+                        />
+                      </div>
                     </div>
                   )}
 
@@ -1323,114 +1552,6 @@ export default function AdminTutorialEditPage({
                     </div>
                   )}
 
-                  {/* YouTube Video Edit Form */}
-                  {editMode === 'youtube-video' && (
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-1">
-                          YouTube Video
-                        </label>
-                        <input
-                          type="text"
-                          defaultValue={tutorial.youtubeId}
-                          onBlur={(e) => {
-                            // Parse YouTube URL or ID
-                            let videoId = e.target.value;
-
-                            // Check if it's a full YouTube URL
-                            const urlPatterns = [
-                              /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([^&]+)/,
-                              /(?:https?:\/\/)?(?:www\.)?youtu\.be\/([^?]+)/,
-                              /(?:https?:\/\/)?(?:www\.)?youtube\.com\/embed\/([^?]+)/,
-                            ];
-
-                            for (const pattern of urlPatterns) {
-                              const match = videoId.match(pattern);
-                              if (match) {
-                                videoId = match[1];
-                                break;
-                              }
-                            }
-
-                            // Update thumbnail URL based on new video ID
-                            const thumbnailUrl = videoId
-                              ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
-                              : tutorial.thumbnailUrl;
-
-                            const updated = Tutorial.reconstitute({
-                              id: tutorial.id,
-                              title: tutorial.title,
-                              slug: tutorial.slug,
-                              description: tutorial.description,
-                              youtubeId: videoId,
-                              duration: tutorial.duration,
-                              authorName: tutorial.authorName,
-                              thumbnailUrl: thumbnailUrl,
-                              level: tutorial.level,
-                              tags: tutorial.tags,
-                              isActive: tutorial.isActive,
-                              publishedAt: tutorial.publishedAt,
-                              createdAt: tutorial.createdAt,
-                              updatedAt: new Date(),
-                              sections: tutorial.sections,
-                              viewCount: tutorial.viewCount,
-                            });
-                            setTutorial(updated);
-                            setHasChanges(true);
-                          }}
-                          className="w-full px-3 py-2 border rounded-md"
-                          placeholder="Paste YouTube URL or video ID"
-                        />
-                        <p className="text-sm text-gray-500 mt-1">
-                          You can paste a full YouTube URL or just the video ID
-                        </p>
-                      </div>
-
-                      {/* Preview - only show if we have a valid YouTube ID (at least 11 characters) */}
-                      {tutorial.youtubeId &&
-                        tutorial.youtubeId.length >= 11 && (
-                          <div className="space-y-2">
-                            <p className="text-sm font-medium">Preview:</p>
-                            <div className="aspect-video w-full rounded-lg overflow-hidden bg-gray-100">
-                              <iframe
-                                src={`https://www.youtube.com/embed/${tutorial.youtubeId}`}
-                                className="w-full h-full"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowFullScreen
-                              />
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <img
-                                src={`https://img.youtube.com/vi/${tutorial.youtubeId}/default.jpg`}
-                                alt="Thumbnail"
-                                className="w-20 h-15 object-cover rounded"
-                                onError={(e) => {
-                                  // Fallback to a placeholder if thumbnail fails to load
-                                  (e.target as HTMLImageElement).style.display =
-                                    'none';
-                                }}
-                              />
-                              <div className="text-xs text-gray-600">
-                                <p>Video ID: {tutorial.youtubeId}</p>
-                                <p>
-                                  Thumbnail URL: https://img.youtube.com/vi/
-                                  {tutorial.youtubeId}/maxresdefault.jpg
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                      <Button
-                        onClick={() => toggleEditMode(null)}
-                        className="w-full"
-                      >
-                        <Check className="w-4 h-4 mr-2" />
-                        Done Editing
-                      </Button>
-                    </div>
-                  )}
-
                   {/* Exercises Edit Form */}
                   {editMode === 'exercises' && (
                     <div className="space-y-4">
@@ -1464,8 +1585,14 @@ export default function AdminTutorialEditPage({
                   )}
                 </div>
               </div>
-            )}
+            </div>
+        </>
+      )}
 
+      {/* Main Tutorial Page Layout */}
+      <div className="min-h-screen" style={radialBlueBackground}>
+        <TransportProvider>
+          <SyncProvider>
             {/* Mobile-first central container */}
             <div className="mx-auto px-4 py-6 max-w-[600px]">
               <div className="space-y-4">
@@ -1522,7 +1649,7 @@ export default function AdminTutorialEditPage({
                               'previewingFromEdit',
                               tutorial.slug.value,
                             );
-                            router.push(`/library/${tutorial.slug.value}`);
+                            router.push(`/app/tutorials/${tutorial.slug.value}`);
                           }}
                           size="sm"
                           variant="outline"
@@ -1547,8 +1674,8 @@ export default function AdminTutorialEditPage({
                                 setTimeout(resolve, 300),
                               );
 
-                              // Navigate to view mode
-                              router.push(`/library/${tutorial.slug.value}`);
+                              // Navigate to the bassment with the edited tutorial
+                              router.push(`/app/tutorials/${tutorial.slug.value}`);
                             } catch (error) {
                               logger.error('Failed to save on Done', error);
                               // Don't navigate - keep user in edit mode
@@ -1580,25 +1707,33 @@ export default function AdminTutorialEditPage({
                   </div>
                 </div>
 
-                {/* YouTube Video Section with edit button */}
-                <EditableSection
-                  title="YouTube Video"
-                  onEdit={() => toggleEditMode('youtube-video')}
-                >
-                  <YouTubeVideoSection tutorialData={tutorialData} />
-                  {/* Add Creator Info edit button */}
-                  <div className="mt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => toggleEditMode('creator-info')}
-                      className="w-full"
-                    >
-                      <Settings className="w-4 h-4 mr-2" />
-                      Edit Creator Info
-                    </Button>
-                  </div>
-                </EditableSection>
+                {/* Lesson Flow — Modular Block Editor */}
+                <Card className="bg-white/5 border-white/10">
+                  <CardContent className="p-4 space-y-4">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                        BLOCKS
+                      </span>
+                      <h3 className="text-white font-medium">Lesson Flow</h3>
+                      <span className="text-white/40 text-xs ml-auto">
+                        {blocks.length} block{blocks.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <BlockEditor
+                      blocks={blocks}
+                      exercises={exercises.map((ex) => ({
+                        id: ex.id?.value || '',
+                        title: ex.title,
+                        difficulty: ex.difficulty,
+                      }))}
+                      tutorials={allTutorials}
+                      onBlocksChange={(updated) => {
+                        setBlocks(updated);
+                        setHasChanges(true);
+                      }}
+                    />
+                  </CardContent>
+                </Card>
 
                 {/* Tutorial Info Card - contains both Tutorial Info AND Core Concept */}
                 <div className="relative">
@@ -1624,7 +1759,7 @@ export default function AdminTutorialEditPage({
                   </Button>
                 </div>
 
-                {/* Exercise Selector - Now integrated into GlobalControlsCard below */}
+                {/* Exercise Selector */}
 
                 {/* Transport Clock */}
                 <TransportClock
@@ -1655,12 +1790,12 @@ export default function AdminTutorialEditPage({
                   onExerciseSelect={setSelectedExerciseId}
                 />
 
-                {/* Global Controls with Exercise List */}
+                {/* Exercise Selector */}
                 <EditableSection
                   title="Exercises"
                   onEdit={() => toggleEditMode('exercises')}
                 >
-                  <GlobalControlsCard
+                  <ExerciseSelectorCard
                     selectedExercise={formattedExercises.find(
                       (e) => e.id === selectedExerciseId,
                     )}
@@ -1770,5 +1905,13 @@ export default function AdminTutorialEditPage({
         </TransportProvider>
       </div>
     </>
+  );
+}
+
+export default function AdminTutorialEditPage(props: AdminTutorialPageProps) {
+  return (
+    <PageErrorBoundary pageName="Tutorial Editor">
+      <AdminTutorialEditPageContent {...props} />
+    </PageErrorBoundary>
   );
 }

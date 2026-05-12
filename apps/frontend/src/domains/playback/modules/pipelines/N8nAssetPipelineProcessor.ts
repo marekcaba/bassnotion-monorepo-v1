@@ -1113,7 +1113,7 @@ export class N8nAssetPipelineProcessor {
   private detectDeviceCapabilities(): any {
     // Simplified device detection (in real implementation, use User Agent, etc.)
     const cores = navigator.hardwareConcurrency || 4;
-    const memory = (navigator as any).deviceMemory || 4; // GB
+    const memory = navigator.deviceMemory || 4; // GB
 
     return {
       lowEnd: cores <= 2 || memory <= 2,
@@ -1129,7 +1129,7 @@ export class N8nAssetPipelineProcessor {
    * Detect network quality for optimization
    */
   private detectNetworkQuality(): 'slow' | 'medium' | 'fast' {
-    const connection = (navigator as any).connection;
+    const connection = navigator.connection;
     // TODO: Review non-null assertion - consider null safety
     if (!connection) return 'medium';
 
