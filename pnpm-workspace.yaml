@@ -10,3 +10,8 @@ onlyBuiltDependencies:
 overrides:
   esbuild@<=0.24.2: '>=0.25.0'
   koa@<2.16.1: '>=2.16.1'
+  # Critical CVEs — fixed 2026-05-12 (Phase 1.2)
+  # @fastify/middie auth bypass: GHSA-72c6-fx6q-fr5w
+  '@fastify/middie@<9.3.2': '>=9.3.2'
+  # form-data unsafe random boundary: GHSA-fjxv-7rqg-78g4 (dev-only via Nx > axios)
+  form-data@<4.0.4: '>=4.0.4'

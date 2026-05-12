@@ -52,7 +52,7 @@
     "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
-    "fast-xml-parser": "^5.2.5",
+    "fast-xml-parser": "^5.3.5",
     "jsdom": "^25.0.1",
     "lucide-react": "^0.263.1",
     "musicxml-interfaces": "^0.0.21",

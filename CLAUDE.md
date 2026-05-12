@@ -54,7 +54,24 @@ At Week 34-42, Practice Bridge extracts into a standalone platform. If the servi
 | Layer | Technologies |
 |-------|-------------|
 | Frontend | Next.js 15.3 (App Router), React 19, TypeScript 5.7 |
-| Backend | NestJS 11 + Fastify (NOT Express), TypeScript 5.7 |
+| Backend | NestJS 11 + Fastify 4.x (NOT Express, NOT Fastify 5), TypeScript 5.7 |
+
+### ⚠️ Version constraints (do not auto-bump)
+
+Major-version bumps to these packages have known breakage. When `pnpm audit --fix`
+or Dependabot proposes one, evaluate manually instead of accepting.
+
+| Package | Pinned at | Why |
+|---|---|---|
+| `next` | `15.x` (currently `15.3.8`) | **Next 16** makes `--turbopack`/`--webpack` flag required and changes config schema. Stay on 15.x until we explicitly migrate. Next.js 15 minor bumps (e.g. 15.5.x) are safe. |
+| `react` / `react-dom` | `19.1.0` | Was downgraded to 18.3.1 in Dec 2025 for WebKit/Safari audio compatibility, then re-upgraded to 19. Don't downgrade without checking Safari audio playback in WAM/Tone.js. |
+| `fastify` (backend) | `4.x` | **Fastify 5** removes `request.routerPath` (use `request.routeOptions.url`) and changes the multipart `request.file` API. Multiple controllers use these. |
+| `vite` | `6.x` | Vite 8 introduces ESM-only resolution changes that break some `@nx/*` plugins. Stay on 6 until Nx 21 fully supports Vite 8. |
+
+For CVE patches that need overrides without breaking these constraints, add a
+narrow `overrides:` entry in `pnpm-workspace.yaml` (see existing entries for
+`@fastify/middie` and `form-data` as examples).
+
 | Database | Supabase (PostgreSQL + Auth) |
 | UI | shadcn/ui, Radix UI, Tailwind CSS 3.4 |
 | State | Zustand 5, TanStack Query 5, XState 5 |
