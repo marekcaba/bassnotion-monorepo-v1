@@ -56,7 +56,7 @@
     "jsdom": "^25.0.1",
     "lucide-react": "^0.263.1",
     "musicxml-interfaces": "^0.0.21",
-    "next": "15.3.8",
+    "next": "15.5.18",
     "opensheetmusicdisplay": "^1.9.2",
     "postprocessing": "^6.38.2",
     "react": "19.1.0",
