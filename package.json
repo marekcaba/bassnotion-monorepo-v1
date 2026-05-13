@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "license": "MIT",
   "type": "module",
+  "packageManager": "pnpm@10.11.0",
   "scripts": {
     "build": "NX_CLOUD_ACCESS_TOKEN= npx nx build @bassnotion/backend --prod --skip-nx-cache --verbose --force",
     "start": "node dist/apps/backend/main.js",
