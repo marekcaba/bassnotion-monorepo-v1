@@ -92,6 +92,30 @@ export class AuthService {
   }
 
   /**
+   * Check whether the email's domain accepts mail (has MX records).
+   * Returns true if valid OR if the check couldn't be performed (fail-open) —
+   * the goal is catching obvious typos like `user@gogle.com`, not blocking
+   * legitimate signups when our DNS check itself is broken.
+   */
+  async validateEmailDomain(email: string): Promise<boolean> {
+    try {
+      const response = await fetch(
+        `${this.backendUrl}/auth/validate-email-domain`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        },
+      );
+      if (!response.ok) return true; // fail-open on backend error
+      const result = (await response.json()) as { valid: boolean };
+      return result.valid;
+    } catch {
+      return true; // fail-open on network error
+    }
+  }
+
+  /**
    * Sign up using backend API (for E2E tests)
    */
   async signUpWithBackend(

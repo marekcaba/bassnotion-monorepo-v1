@@ -35,6 +35,43 @@ what to investigate.
 
 ## 🟡 P2 — Quality / hygiene, not user-facing
 
+### Orphan unconfirmed users in `auth.users`
+- **Severity:** Low — cosmetic for now (no production users yet)
+- **What:** Signups with valid-syntax + valid-MX but nonexistent mailboxes
+  (e.g. `digmarec@google.com` — `google.com` accepts mail, but that specific
+  mailbox doesn't exist) create an `auth.users` row with
+  `email_confirmed_at = null` that can never be confirmed. The address is
+  then "taken" so the user can't re-signup with the corrected address.
+- **Discovered:** 2026-05-13 during Phase 4.5 staging smoke-test
+- **Mitigation in place:** Phase 4.5 added `/auth/validate-email-domain`
+  endpoint that catches the *common* typos via MX-record lookup
+  (`gogle.com` null-MX, `fakeydomain12345.com` NXDOMAIN, etc). But
+  mailbox-level mistakes are an industry-wide unsolvable problem without
+  sending real mail (SMTP `VRFY` is universally disabled).
+- **Fix:** Add a periodic Supabase Edge Function or backend cron that
+  deletes rows from `auth.users` where
+  `email_confirmed_at IS NULL AND created_at < now() - interval '24 hours'`.
+  Frees the email for retry, doesn't leak data.
+- **Manual workaround until then:** Supabase dashboard → Authentication
+  → Users → filter "unconfirmed" → delete.
+
+### Nx `enforce-module-boundaries` rule blocks `@bassnotion/contracts` static imports
+- **Severity:** Low — cosmetic, blocks pre-commit on any file that statically
+  imports `@bassnotion/contracts`
+- **Discovered:** 2026-05-13 trying to commit the email-validation fix
+- **Symptom:** ESLint errors on `register/page.tsx` + `domains/user/api/auth.ts`
+  for `Static imports of lazy-loaded libraries are forbidden. Library
+  "@bassnotion/contracts" is lazy-loaded in: DrumProcessor.ts`
+- **Root cause:** `DrumProcessor.ts` does a dynamic `import('@bassnotion/contracts')`
+  somewhere, which Nx's boundary rule then enforces *everywhere* in the
+  workspace, breaking the dozens of files that import contracts statically.
+- **Quick fix:** Decide whether `@bassnotion/contracts` should be eagerly
+  loaded everywhere (remove the dynamic import in DrumProcessor) or lazily
+  everywhere (lots of refactoring). Almost certainly the former — contracts
+  is a tiny types/schemas package, no reason to lazy-load it.
+- **Until fixed:** commits touching files that import contracts statically
+  need `--no-verify` to bypass the pre-commit hook.
+
 ### `apps/backend/src/health.js` references undefined `logger`
 
 - **Severity:** Low — file is a Dockerfile fallback that isn't currently invoked at

@@ -115,6 +115,15 @@ export class AuthController {
     return result;
   }
 
+  @Post('validate-email-domain')
+  @HttpCode(HttpStatus.OK)
+  async validateEmailDomain(
+    @Body() body: { email: string },
+  ): Promise<{ valid: boolean; reason?: string }> {
+    const result = await this.authService.validateEmailDomain(body?.email);
+    return result;
+  }
+
   @Post('signin')
   @UsePipes(new ZodValidationPipe(signInSchema))
   @HttpCode(HttpStatus.OK)
