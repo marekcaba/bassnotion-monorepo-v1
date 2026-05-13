@@ -151,14 +151,24 @@ const nextConfig = {
       'https://vimeo.com',
       'https://*.vimeo.com',
       'https://*.vimeocdn.com',
+      // Vercel Live feedback widget on preview deploys (no-op in production)
+      'https://vercel.live',
+      'wss://ws-us3.pusher.com',
     ];
 
     // Add localhost URLs for development
     if (isDev) {
       connectSrc.push('http://localhost:3000', 'http://localhost:3001');
     } else {
-      // Add production backend URL
-      connectSrc.push('https://backend-production-612c.up.railway.app');
+      // Add the backend URL from env so production AND staging both work
+      // (NEXT_PUBLIC_API_URL is scoped per Vercel environment: production
+      // points at the production Railway service; preview at the staging one).
+      // Falls back to the historical hardcoded production URL if the env var
+      // is somehow missing at build time.
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL ||
+        'https://backend-production-612c.up.railway.app';
+      connectSrc.push(apiUrl);
     }
 
     return [
@@ -203,8 +213,9 @@ const nextConfig = {
               // Allow audio/video from self and Supabase storage
               "media-src 'self' https://*.supabase.co https://htuztkrbuewheehjspcz.supabase.co blob:",
               `connect-src ${connectSrc.join(' ')}`,
-              // Allow YouTube, Bunny Stream, and Vimeo iframes - sandboxed and secure
-              "frame-src 'self' https://www.youtube.com https://youtube.com https://iframe.mediadelivery.net https://player.mediadelivery.net https://player.vimeo.com https://vimeo.com",
+              // Allow YouTube, Bunny Stream, Vimeo iframes - sandboxed and secure.
+              // Also allow Vercel Live feedback widget on preview deploys (no-op in prod).
+              "frame-src 'self' https://www.youtube.com https://youtube.com https://iframe.mediadelivery.net https://player.mediadelivery.net https://player.vimeo.com https://vimeo.com https://vercel.live",
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",
