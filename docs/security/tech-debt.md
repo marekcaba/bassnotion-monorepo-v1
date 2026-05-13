@@ -11,31 +11,8 @@ what to investigate.
 
 ## 🔴 P1 — Affects users, must fix soon
 
-### Audio engine: infinite postMessage loop on page load
-- **Severity:** High — locks up the browser tab on first page load if you sit on the
-  homepage for >5 seconds without clicking
-- **Discovered:** 2026-05-13, while smoke-testing the new staging environment
-- **Where:** Webpack chunk `9959-...js` (contains React + Audio code) → Web Worker
-  posts message back to main thread → main thread re-posts to worker → loop
-- **Trace pattern:** repeating `x → postMessage → o → x → postMessage → ...` thousands
-  of times
-- **Affects:** Both staging AND production. Production has been serving a cached
-  build for ~19 days that masked this; first user to trigger a fresh build will see
-  this.
-- **Suspected root cause:** Audio engine initialization sequence (`[INIT-SEQ 12]
-  USER-GESTURE-DETECTED → [INIT-SEQ 13] RESUME-CALLED`) — the resume flow appears to
-  re-trigger something that posts back to the worker
-- **Related files (start here):**
-  - `apps/frontend/src/domains/playback/providers/AudioProvider.tsx`
-  - `apps/frontend/src/domains/playback/modules/transport/`
-  - `apps/frontend/src/domains/playback/modules/audio-engine/core/`
-- **What hasn't been tried yet:** Browser DevTools → Performance tab → record a load
-  → look at the call stack between postMessage hops to identify the cycle
-- **Existing docs that may help:** root-level `INFINITE_LOOP_FIX_SUMMARY.md` references
-  past loop fixes; `docs/developer-handbook/REACT-RENDERING-GOTCHAS.md`; CLAUDE.md
-  has a section "React Anti-Patterns (Cause Page Freezes)" with related patterns
-
 ### Test suite: 548 failures (~10%)
+
 - **Severity:** Medium — blocks pre-commit hook (we've been bypassing with `--no-verify`)
 - **Discovered:** 2026-05-12 first push attempt of safety tag
 - **Stats:** 153 test files failing, 548 individual tests failing out of 5133
@@ -59,6 +36,7 @@ what to investigate.
 ## 🟡 P2 — Quality / hygiene, not user-facing
 
 ### `apps/backend/src/health.js` references undefined `logger`
+
 - **Severity:** Low — file is a Dockerfile fallback that isn't currently invoked at
   runtime. NestJS `/api/health` handles the actual healthcheck.
 - **Discovered:** 2026-05-12 in Railway build logs
@@ -68,15 +46,17 @@ what to investigate.
   to it appears to be a debugging artifact)
 
 ### `Dockerfile.final` flagged for `ENV NX_CLOUD_AUTH=false`
+
 - **Severity:** None — false positive
 - **Discovered:** 2026-05-12 in Railway build logs
 - **Warning:** `SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for
-  sensitive data (ENV "NX_CLOUD_AUTH")`
+sensitive data (ENV "NX_CLOUD_AUTH")`
 - **Why ignorable:** the value is literally the string `false`, not a token. Docker's
   linter pattern-matches on the variable name. Either suppress with a comment or
   rename to `NX_CLOUD_DISABLED=true`.
 
 ### `apps/frontend/next.config.optimized.js` is dead code
+
 - **Severity:** Low
 - **What:** A duplicate `next.config.js` that's never invoked (no build script
   references it). Has its own copies of CSP rules etc. that drift from the live
@@ -84,12 +64,14 @@ what to investigate.
 - **Fix:** Delete it.
 
 ### `verify-deployment.sh` has hardcoded production Railway URL
+
 - **Severity:** Low (script is manually invoked, not in any pipeline)
 - **What:** `backend-production-612c.up.railway.app` baked in — same pattern as the
   CSP one we already fixed. Now also stale if the Railway URL ever changes.
 - **Fix:** Either delete the script, or read URL from `RAILWAY_BACKEND_URL` env var.
 
 ### Frontend `ignoreBuildErrors: true` in next.config.js
+
 - **Severity:** Medium — production builds skip TypeScript validation
 - **Where:** [apps/frontend/next.config.js](../../apps/frontend/next.config.js)
 - **Why it exists:** unknown number of frontend TS errors; flipping to `false` would
@@ -103,6 +85,7 @@ what to investigate.
 ## 🟢 P3 — Future cleanup
 
 ### Root directory clutter (~50 `.md` files + `.png` debug captures)
+
 - **Severity:** Cosmetic
 - **What:** `BASS_NOT_PLAYING_FIX.md`, `FRETBOARDCARD_*.md` (8 files),
   `INSTRUMENT_SWITCHING_*.md` (4), `MEASURE_SYNC_*.md` (5), `SCHEDULING_*.md` (6),
@@ -114,6 +97,7 @@ what to investigate.
   ones.
 
 ### Generated `.d.ts` and `.js` files committed to git
+
 - **Severity:** Low
 - **What:** `apps/frontend/public/worklets/timing-processor.js` is tracked despite
   being a build artifact regenerated on every `pnpm build:workers`. Same shape as
@@ -122,5 +106,6 @@ what to investigate.
   `git rm --cached`.
 
 ### Test pages in `_v*` folders (18 of them per CLAUDE.md)
+
 - **Severity:** Low (Phase 7.4 in the production-readiness plan handles this)
 - **Action:** Either delete, gate behind admin auth, or add `noindex` meta tag.

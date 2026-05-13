@@ -284,8 +284,12 @@ export class ToneWrapper {
   async initialize(audioContext: AudioContext): Promise<void> {
     const tone = this.getTone();
 
-    // Set the AudioContext for Tone.js to use
-    tone.setContext(audioContext);
+    if (tone.context?.rawContext !== audioContext) {
+      // Pass disposeOld=true so the prior Tone.Context (and its Ticker
+      // Web Worker) is terminated instead of leaking — Tone's index.js
+      // creates an auto-Context on first import.
+      tone.setContext(audioContext, true);
+    }
 
     logger.info('Tone.js initialized with AudioContext', {
       sampleRate: audioContext.sampleRate,
@@ -429,7 +433,9 @@ export class ToneWrapper {
   /**
    * Create an EQ3 node
    */
-  createEQ3(options?: Partial<{ low: number; mid: number; high: number }>): ToneEQ3 {
+  createEQ3(
+    options?: Partial<{ low: number; mid: number; high: number }>,
+  ): ToneEQ3 {
     const tone = this.getToneOrThrow();
     if (!tone.EQ3) {
       throw new Error('Tone.EQ3 not available');

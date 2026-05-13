@@ -235,8 +235,9 @@ export class BassProcessor extends BaseAudioPlugin {
       if (!isTestEnvironment) {
         // Ensure Tone.js is using the provided audio context in production
         if (context.audioContext) {
-          // Set Tone.js to use the provided AudioContext
-          this.Tone.setContext(context.audioContext);
+          if (this.Tone.context?.rawContext !== context.audioContext) {
+            this.Tone.setContext(context.audioContext, true);
+          }
 
           // Start Tone.js if needed
           if (context.audioContext.state === 'suspended') {
@@ -513,8 +514,7 @@ export class BassProcessor extends BaseAudioPlugin {
         // Just enough work to not be optimized away by V8
         const processingAccumulator =
           inputBuffer.length * 0.001 + Math.random() * 0.0001;
-        this.processingMetrics.lastProcessingValue =
-          processingAccumulator;
+        this.processingMetrics.lastProcessingValue = processingAccumulator;
 
         // Update metrics with minimal overhead
         this.processingMetrics.samplesProcessed += inputBuffer.length;
@@ -597,8 +597,7 @@ export class BassProcessor extends BaseAudioPlugin {
       }
 
       // Ensure the work isn't optimized away
-      this.processingMetrics.lastProcessingValue =
-        processingAccumulator;
+      this.processingMetrics.lastProcessingValue = processingAccumulator;
 
       // Audio processing is handled by Tone.js audio graph
       // This is primarily for metrics and monitoring

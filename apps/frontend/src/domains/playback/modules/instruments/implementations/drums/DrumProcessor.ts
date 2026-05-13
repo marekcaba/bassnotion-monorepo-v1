@@ -32,7 +32,9 @@ function getTone(): typeof import('tone') {
       return tone as typeof import('tone');
     }
   }
-  throw new Error('DrumProcessor: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+  throw new Error(
+    'DrumProcessor: Tone.js not loaded. Ensure AudioEngine is initialized first.',
+  );
 }
 
 // BaseAudioPlugin stub implementation
@@ -571,7 +573,10 @@ export class DrumProcessor extends BaseAudioPlugin {
           // Setting it here would overwrite the tempo set by the user or exercise.
           // Tone.Transport.bpm is managed by MusicalTruthAuthority.setBPM()
           // This parameter change is logged but not applied to Transport.
-          logger.info('metronomeBpm parameter changed (managed by MusicalTruthAuthority)', { value });
+          logger.info(
+            'metronomeBpm parameter changed (managed by MusicalTruthAuthority)',
+            { value },
+          );
           break;
 
         case 'metronomeVolume':
@@ -839,8 +844,11 @@ export class DrumProcessor extends BaseAudioPlugin {
       }
 
       // Set Tone.js to use the provided context if available
-      if (context.audioContext) {
-        Tone.setContext(context.audioContext);
+      if (
+        context.audioContext &&
+        Tone.context?.rawContext !== context.audioContext
+      ) {
+        Tone.setContext(context.audioContext, true);
       }
     } catch (error) {
       logger.warn(
@@ -1233,7 +1241,9 @@ export class DrumProcessor extends BaseAudioPlugin {
     // or musicalTruth.setBPM() when the user adjusts the tempo slider.
     // Just log the current tempo for debugging purposes.
     const currentBpm = Tone.Transport.bpm.value;
-    logger.info('startMetronome: using current Transport tempo', { currentBpm });
+    logger.info('startMetronome: using current Transport tempo', {
+      currentBpm,
+    });
 
     // Create metronome sequence
     const metronomeSequence = new Tone.Sequence(
