@@ -1,14 +1,22 @@
-# Exclude pnpm files to force npm usage
-pnpm-lock.yaml
-pnpm-workspace.yaml
+# Vercel deploy ignore list — only the frontend is built on Vercel.
+# pnpm needs the lockfile + workspace config + every workspace's package.json
+# at the repo root to resolve the workspace, so keep them included.
 
-# Exclude other apps and directories
-apps/backend/
-!apps/frontend/
+# Exclude backend SOURCE but keep its package.json (pnpm-workspace.yaml lists
+# apps/*, so pnpm fails the workspace install if backend/package.json is gone).
+apps/backend/*
+!apps/backend/package.json
+
+# Frontend e2e tests — not needed at runtime
+apps/frontend-e2e/
+
+# Tooling / agent / docs / tmp — not needed for the frontend build
 bmad-agent/
 deploy/
 .docs/
 tmp/
 .nx/
+
+# Standard junk
 *.log
 node_modules/ 
