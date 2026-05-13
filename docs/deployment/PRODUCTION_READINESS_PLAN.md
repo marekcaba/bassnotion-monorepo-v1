@@ -121,92 +121,163 @@ Still on the books — `apps/frontend/next.config.js` has
 
 ---
 
-## Phase 3: Git workflow cleanup (1 day)
+## Phase 3: Git workflow cleanup (mostly done — folded into Phase 1.1)
 
-> **"Don't break anything" principle:** This phase doesn't affect production yet (you don't have one). The goal is to get the repo into a state where `main` is deployable.
+Most of this was completed during the Phase 1.1 cleanup session. Remaining tasks:
 
-### 3.1 Branch inventory
-Currently:
-- `feature/drum-pattern-editor` (current, 83 commits ahead of `origin/main`)
-- `backup-before-cleanup-phase7`
-- `fix/downgrade-react-webkit-compatibility`
-- `refactor/region-processor-breakdown`
-- `main` (outdated)
+### 3.1 Branch inventory (DONE)
+- [x] All 5 obsolete branches archived as `archive/<name>-2026-05-12` tags and deleted from local + remote
+- [x] All 4 forgotten stashes archived as `archive/stash-*-2026-05-12` tags and dropped
+- [x] `feature/drum-pattern-editor` merged into `main` via the "pre-production baseline snapshot" commit (`fc754b9`)
+- [x] All work preserved at tags `pre-production-audit-snapshot` (a5626d2) and `archive/feature-drum-pattern-editor-2026-05-12`
 
-### 3.2 Decision for feature/drum-pattern-editor
-- [ ] Is the current branch (drum-pattern-editor) ready to merge into main?
-- [ ] If **yes**:
-  - [ ] Open a PR from `feature/drum-pattern-editor` to `main`
-  - [ ] Rebase/merge from main locally if needed (main is far behind)
-  - [ ] Self-review the diff (`git diff main...HEAD --stat`)
-  - [ ] Merge into main, delete the branch
-- [ ] If **no** (something is unfinished):
-  - [ ] Identify what's done vs WIP
-  - [ ] Cherry-pick the done parts into a new branch `feature/drum-pattern-editor-stable`
-  - [ ] Merge stable into main; drum-pattern-editor stays as WIP
+### 3.2 Create the `develop` branch (TODO — first step of Phase 4)
+- [ ] `git checkout main && git pull origin main`
+- [ ] `git checkout -b develop && git push -u origin develop`
+- [ ] This branch is the target for feature PRs going forward; auto-deploys to staging once Phase 4 is wired
 
-### 3.3 Clean up other branches
-- [ ] `backup-before-cleanup-phase7` — if obsolete, tag and delete: `git tag archive/backup-phase7 backup-before-cleanup-phase7 && git branch -D backup-before-cleanup-phase7`
-- [ ] `refactor/region-processor-breakdown` — merge or delete
-- [ ] `fix/downgrade-react-webkit-compatibility` — merge or delete
-
-### 3.4 Branch protection rules
+### 3.3 Branch protection rules (TODO — set after Phase 4 lands)
 In GitHub repo settings → Branches → Add rule for `main`:
 - [ ] Require pull request before merging
 - [ ] Require status checks: CI lint, typecheck, test, build, e2e
 - [ ] Require branches to be up to date before merging
 - [ ] Do not allow bypassing the above (even for yourself)
-- [ ] If you're a solo dev: approvals are optional, but still self-review in the PR
+- [ ] Solo dev: approvals optional, but still self-review the diff
 
-### 3.5 Create the `develop` branch
-- [ ] `git checkout main && git pull origin main`
-- [ ] `git checkout -b develop && git push -u origin develop`
-- [ ] Branch protection for `develop` (lighter — just require passing CI)
+For `develop`: lighter — just require CI passing. PRs into develop don't need approval.
+
+**Note:** Skipping branch protection until Phase 4 finishes is intentional. During Phase 4 we'll be merging staging setup PRs directly to `develop` without ceremony.
 
 **Acceptance criteria for Phase 3:**
-- `main` is current and deployable
-- `develop` exists and is the target for feature PRs
-- Branch protection blocks direct pushes to main
+- [x] `main` is current and deployable
+- [ ] `develop` exists as feature-PR target
+- [ ] Branch protection blocks direct pushes to `main`
 
 ---
 
-## Phase 4: Staging environment (2–3 days)
+## Phase 4: Staging environment (sized for 1-engineer team, not FAANG)
 
-> **This is your #1 priority for the future workflow.** Without staging you can't test a feature before LIVE.
+> **The biggest gap before safe future feature work.** Right now there's only `main` → production. No way to test changes against a real deploy before they hit users. After Phase 4, the flow becomes: feature branch → PR → preview deploy → staging → production.
+>
+> **Architecture chosen:** Industry-standard pattern for 1–10 engineer teams (Linear, Cal.com, Resend, PostHog-pre-scale). FAANG patterns (canary, blue-green, traffic shifting) are deferred until you have real load to justify them.
 
-### 4.1 Second Supabase project for staging
-- [ ] In Supabase dashboard: New project → `bassnotion-staging`
-- [ ] Apply migrations: `supabase link --project-ref <staging-ref>` → `supabase db push`
-- [ ] **Verify all tables exist** in staging just like production
-- [ ] Create a test user in staging Supabase for QA
-- [ ] Save staging credentials to your password manager
+### Target architecture
 
-### 4.2 Railway staging service
-- [ ] In Railway dashboard, duplicate the backend service → `bassnotion-backend-staging`
-- [ ] Set env vars to point at **staging** Supabase
-- [ ] Set `NODE_ENV=staging`
-- [ ] Wire it to the `develop` branch (auto-deploy from develop)
-- [ ] Test the health endpoint: `curl https://<staging-url>/api/health`
+```
+┌────────────────────────────────────────────────────────────────┐
+│                     One Railway project                         │
+│  ┌─────────────────────┐    ┌─────────────────────┐            │
+│  │  PRODUCTION env     │    │  STAGING env        │            │
+│  │  (deploys main)     │    │  (deploys develop)  │            │
+│  │  production vars    │    │  staging vars       │            │
+│  └─────────────────────┘    └─────────────────────┘            │
+└────────────────────────────────────────────────────────────────┘
+         │                              │
+         ▼                              ▼
+┌─────────────────────┐    ┌─────────────────────┐
+│  Production         │    │  Staging            │
+│  Supabase project   │    │  Supabase project   │
+│  (real users data)  │    │  (test data)        │
+└─────────────────────┘    └─────────────────────┘
 
-### 4.3 Vercel staging
-Vercel has built-in preview deploys for every PR — that may be enough.
-- [ ] In Vercel project settings → Environment Variables
-- [ ] Add **Preview** scope env vars pointing at staging Supabase + staging Railway URL
-- [ ] Vercel auto-deploys each PR as a preview
-- [ ] For the `develop` branch — configure it as a "staging" environment in Vercel (separate URL)
+┌────────────────────────────────────────────────────────────────┐
+│                          Vercel                                 │
+│ • main branch    → production URL    (production env vars)     │
+│ • develop branch → staging URL       (preview env vars)        │
+│ • every PR       → preview URL       (preview env vars)        │
+└────────────────────────────────────────────────────────────────┘
+```
 
-### 4.4 Test the end-to-end staging flow
-- [ ] Make a small change on a feature branch (e.g., update homepage text)
-- [ ] Push → PR against `develop` → verify the Vercel preview deploy works
-- [ ] Merge into `develop` → verify staging deploy (Vercel + Railway)
-- [ ] Open the staging URL → login → tutorial → audio
-- [ ] If everything works, delete the test change
+### 4.1 Create the `develop` branch (5 min)
+- [ ] `git checkout main && git pull origin main`
+- [ ] `git checkout -b develop && git push -u origin develop`
+- [ ] Verify it appears in GitHub branch list
+
+### 4.2 Create staging Supabase project (15 min)
+- [ ] Supabase dashboard → **New project** → name: `bassnotion-staging`
+- [ ] Choose the same region as production (`eu-west-1` based on the production pooler hostname)
+- [ ] Set a strong DB password — save it to password manager immediately (no recovery later)
+- [ ] Wait for provisioning to finish
+- [ ] Once ready, from the local repo: `supabase link --project-ref <staging-ref>` (staging-ref is in the project URL)
+- [ ] Apply all migrations: `supabase db push`
+- [ ] Verify all tables exist in staging (Supabase dashboard → Table Editor)
+- [ ] **Optional:** Create a test user in staging Auth → Users (for QA logins)
+- [ ] Save these 5 values to password manager:
+  - Staging `SUPABASE_URL`
+  - Staging `SUPABASE_ANON_KEY`
+  - Staging `SUPABASE_SERVICE_ROLE_KEY`
+  - Staging `DATABASE_URL` (Transaction pooler, port 6543)
+  - Staging DB password (raw)
+- [ ] **Re-link local repo back to production** so day-to-day `supabase` commands target prod: `supabase link --project-ref iuuplfrktnzsbzibpfjm`
+
+### 4.3 Create staging Railway environment (15 min)
+- [ ] Railway → project → top-nav environment dropdown ("production") → **+ New Environment**
+- [ ] Name: `staging`
+- [ ] When prompted "Duplicate from?" → choose **production** so service config carries over
+- [ ] Once created, switch to `staging` environment in the dropdown
+- [ ] Click into the backend service → **Settings** → **Source** → change branch from `main` → `develop`
+- [ ] Click **Variables** → for each of these, override with the staging value (rather than inheriting from production):
+  - `SUPABASE_URL` → staging value
+  - `SUPABASE_ANON_KEY` → staging value
+  - `SUPABASE_SERVICE_ROLE_KEY` → staging value
+  - `DATABASE_URL` → staging value
+  - `FRONTEND_URL` → will be set once Vercel staging URL is known (Step 4.4)
+  - `STRIPE_SECRET_KEY` → consider using **Stripe TEST mode** (`sk_test_...`) for staging — generate one in Stripe dashboard via test-mode toggle
+  - `STRIPE_WEBHOOK_SECRET` → create a new test-mode webhook in Stripe pointing at the staging Railway URL once known, paste its signing secret
+  - `NODE_ENV` → `staging`
+  - All other variables (`JWT_SECRET`, `ENABLE_SWAGGER`, `NX_REJECT_UNKNOWN_LOCAL_CACHE`) can inherit from production
+- [ ] Watch the first deploy succeed; grab the new staging URL from Settings → Networking → Public Networking
+- [ ] Verify: `curl https://<staging-railway-url>/api/health` returns healthy
+
+### 4.4 Wire Vercel staging (15 min)
+- [ ] Vercel dashboard → bassnotion frontend project → **Settings** → **Environment Variables**
+- [ ] For each existing var, you'll see it scoped to "Production" / "Preview" / "Development". Add **Preview**-scope copies pointing at staging:
+  - `NEXT_PUBLIC_SUPABASE_URL` → staging `SUPABASE_URL`
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY` → staging `SUPABASE_ANON_KEY`
+  - `NEXT_PUBLIC_API_URL` → staging Railway URL (from step 4.3)
+  - Any other `NEXT_PUBLIC_*` vars: mirror with staging values
+- [ ] **Settings** → **Git** → confirm `develop` branch is in the deploy list (Vercel deploys it automatically as a Preview)
+- [ ] Push a no-op commit to `develop` to trigger first staging build, or wait for next merge
+- [ ] Note the staging URL (something like `bassnotion-monorepo-v1-frontend-git-develop-<your-handle>.vercel.app`)
+- [ ] **Go back to Railway staging env** → set `FRONTEND_URL` to this Vercel staging URL
+- [ ] (Optional) Vercel → Domains → assign custom subdomain like `staging.bassnotion.com` for cleaner URL
+
+### 4.5 End-to-end staging smoke test (10 min)
+- [ ] Create test branch from `develop`: `git checkout -b test/staging-verification`
+- [ ] Make trivial change (e.g., edit `apps/frontend/src/app/page.tsx` header text)
+- [ ] Push → open PR against `develop`
+- [ ] Vercel auto-creates PR preview deploy → click the URL in PR comments
+- [ ] Verify preview page shows your change
+- [ ] Merge PR → `develop` branch deploys to:
+  - Vercel staging URL
+  - Railway staging backend (auto-deploy from `develop`)
+- [ ] Visit Vercel staging URL → confirm:
+  - [ ] Homepage loads
+  - [ ] Sign up new test user (in staging Supabase)
+  - [ ] Login flow works
+  - [ ] Load a tutorial
+  - [ ] Audio playback works
+  - [ ] 3D fretboard renders
+- [ ] If all green, revert the test change: `git revert <commit> && git push origin develop`
+
+### 4.6 Document the new workflow in CLAUDE.md (10 min)
+Add a section explaining:
+- [ ] Feature branches branch from `develop`, not `main`
+- [ ] PRs target `develop`; PR preview URLs hit staging Supabase
+- [ ] `develop` → staging on every merge
+- [ ] `develop` → `main` PR is the production release; merge triggers production deploy
+- [ ] Hot-fix path: PR directly to `main`, but still needs green CI
 
 **Acceptance criteria for Phase 4:**
-- Staging Supabase has the same schema as production
-- Staging Railway is up with a healthy `/api/health`
-- Staging Vercel deploy from `develop` works
-- You can open the staging URL and use the app as a user
+- [ ] `develop` branch exists and is the target for feature PRs
+- [ ] Staging Supabase project exists with same schema as production
+- [ ] Railway has `staging` environment deploying from `develop` with healthy `/api/health`
+- [ ] Vercel deploys `develop` to a staging URL with correct preview env vars
+- [ ] Every PR gets an automatic preview deploy
+- [ ] End-to-end smoke test passes on staging
+- [ ] Workflow documented in CLAUDE.md
+
+**Total estimated time:** ~70 minutes of active work + waiting on builds.
 
 ---
 
