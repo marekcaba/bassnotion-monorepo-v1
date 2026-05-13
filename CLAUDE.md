@@ -131,6 +131,89 @@ pnpm lint:fix                     # Lint with auto-fix
 cd apps/frontend && pnpm next build  # Build frontend (nx has issues)
 ```
 
+## Git & Deploy Workflow
+
+Set up May 2026 (production-readiness Phase 4). Pre-LIVE; one engineer + AI.
+
+### Branch model
+
+```
+feature/* ──► PR ──► develop ──► PR ──► main
+                       │                  │
+                       ▼                  ▼
+                    STAGING           PRODUCTION
+```
+
+- `main` = production. Protected (eventually). Direct pushes blocked.
+- `develop` = staging. Default target for feature PRs.
+- `feature/<short-name>` = your working branch, off `develop`.
+- `fix/*`, `chore/*`, `docs/*` = same flow as feature branches.
+- Hot-fixes: PR straight to `main`, must still pass CI.
+
+### Per-environment infrastructure
+
+| Layer | Production | Staging |
+|---|---|---|
+| Branch | `main` | `develop` |
+| Database | Supabase project `iuuplfrktnzsbzibpfjm` | Supabase project `vraxryaaznpkvtkindpn` |
+| Backend | Railway `production` env → `backend-production-612c.up.railway.app` | Railway `staging` env → `backend-staging-4d19.up.railway.app` |
+| Frontend | Vercel **Production** scope | Vercel **Preview** scope (auto on every PR; persistent URL for `develop`) |
+| Stripe | Live keys (`sk_live_...`) | Test mode keys (`sk_test_...`) |
+
+### Day-to-day flow
+
+```bash
+# 1. Start a feature
+git checkout develop && git pull
+git checkout -b feature/some-thing
+
+# 2. Make changes, commit
+git add . && git commit -m "feat(...): ..."
+
+# 3. Push and open PR against develop
+git push -u origin feature/some-thing
+gh pr create --base develop --title "..." --body "..."
+
+# Vercel auto-builds a Preview deploy → URL appears in PR comments
+# Preview hits staging Supabase + staging Railway
+
+# 4. Self-review the diff, then merge
+gh pr merge <pr#> --squash
+
+# 5. After merge to develop:
+#    - Railway redeploys staging backend
+#    - Vercel updates the develop staging URL
+# Test in browser. If happy:
+
+# 6. Ship to production
+gh pr create --base main --head develop --title "Release: ..."
+gh pr merge <pr#> --squash
+# This triggers production Vercel + Railway deploys.
+```
+
+### Local dev = production data
+
+Local PM2 backend/frontend hit **production** Supabase via `apps/backend/.env.local`
+and `apps/frontend/.env.local`. This is intentional — you develop against the
+real data you've been building features around. Staging Supabase is empty.
+
+If you ever need to point local at staging (destructive testing, etc.), override
+the relevant `SUPABASE_*` env vars in a `.env.local.staging` file. Don't change
+the committed defaults.
+
+### Things that broke earlier and could break again
+
+- **CSP hardcoded URLs**: [next.config.js](apps/frontend/next.config.js) reads
+  `NEXT_PUBLIC_API_URL` for connect-src. If you ever add another backend host
+  (analytics service, webhook receiver, etc.), add it to the CSP allowlist.
+- **`.vercelignore` excluding pnpm files**: don't add `pnpm-lock.yaml` or
+  `pnpm-workspace.yaml` to `.vercelignore` (was a pre-pnpm-migration hack).
+- **`apps/backend/.gitignore` blanket `*.d.ts`**: keeps hand-written types in
+  `src/types/` via a negation pattern — don't remove it.
+- **Apple Git HTTP/2 hangs**: from non-TTY shells, `git push` over HTTPS can stall
+  on the second multiplexed POST. Run `git config --global http.version HTTP/1.1`
+  if pushes hang.
+
 ## Critical Rules
 
 ### Import Rules (MUST FOLLOW)

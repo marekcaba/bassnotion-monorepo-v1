@@ -188,96 +188,66 @@ For `develop`: lighter — just require CI passing. PRs into develop don't need 
 └────────────────────────────────────────────────────────────────┘
 ```
 
-### 4.1 Create the `develop` branch (5 min)
-- [ ] `git checkout main && git pull origin main`
-- [ ] `git checkout -b develop && git push -u origin develop`
-- [ ] Verify it appears in GitHub branch list
+### 4.1 Create the `develop` branch — DONE
+- [x] `git checkout main && git pull origin main`
+- [x] `git checkout -b develop && git push -u origin develop`
+- [x] Verified in GitHub branch list
 
-### 4.2 Create staging Supabase project (15 min)
-- [ ] Supabase dashboard → **New project** → name: `bassnotion-staging`
-- [ ] Choose the same region as production (`eu-west-1` based on the production pooler hostname)
-- [ ] Set a strong DB password — save it to password manager immediately (no recovery later)
-- [ ] Wait for provisioning to finish
-- [ ] Once ready, from the local repo: `supabase link --project-ref <staging-ref>` (staging-ref is in the project URL)
-- [ ] Apply all migrations: `supabase db push`
-- [ ] Verify all tables exist in staging (Supabase dashboard → Table Editor)
-- [ ] **Optional:** Create a test user in staging Auth → Users (for QA logins)
-- [ ] Save these 5 values to password manager:
-  - Staging `SUPABASE_URL`
-  - Staging `SUPABASE_ANON_KEY`
-  - Staging `SUPABASE_SERVICE_ROLE_KEY`
-  - Staging `DATABASE_URL` (Transaction pooler, port 6543)
-  - Staging DB password (raw)
-- [ ] **Re-link local repo back to production** so day-to-day `supabase` commands target prod: `supabase link --project-ref iuuplfrktnzsbzibpfjm`
+### 4.2 Create staging Supabase project — DONE
+- [x] Created Supabase project `bassnotion-staging` (ref: `vraxryaaznpkvtkindpn`) in `eu-west-1`
+- [x] DB password set + saved
+- [x] `supabase link --project-ref vraxryaaznpkvtkindpn` + `supabase db push` → all 79 migrations applied successfully
+- [x] Verified tables exist (Authentication, Storage buckets, etc.)
+- [x] **Re-linked local repo back to production** (`iuuplfrktnzsbzibpfjm`)
+- [x] All 4 credentials saved (URL, anon, service_role, DATABASE_URL pooler)
 
-### 4.3 Create staging Railway environment (15 min)
-- [ ] Railway → project → top-nav environment dropdown ("production") → **+ New Environment**
-- [ ] Name: `staging`
-- [ ] When prompted "Duplicate from?" → choose **production** so service config carries over
-- [ ] Once created, switch to `staging` environment in the dropdown
-- [ ] Click into the backend service → **Settings** → **Source** → change branch from `main` → `develop`
-- [ ] Click **Variables** → for each of these, override with the staging value (rather than inheriting from production):
-  - `SUPABASE_URL` → staging value
-  - `SUPABASE_ANON_KEY` → staging value
-  - `SUPABASE_SERVICE_ROLE_KEY` → staging value
-  - `DATABASE_URL` → staging value
-  - `FRONTEND_URL` → will be set once Vercel staging URL is known (Step 4.4)
-  - `STRIPE_SECRET_KEY` → consider using **Stripe TEST mode** (`sk_test_...`) for staging — generate one in Stripe dashboard via test-mode toggle
-  - `STRIPE_WEBHOOK_SECRET` → create a new test-mode webhook in Stripe pointing at the staging Railway URL once known, paste its signing secret
-  - `NODE_ENV` → `staging`
-  - All other variables (`JWT_SECRET`, `ENABLE_SWAGGER`, `NX_REJECT_UNKNOWN_LOCAL_CACHE`) can inherit from production
-- [ ] Watch the first deploy succeed; grab the new staging URL from Settings → Networking → Public Networking
-- [ ] Verify: `curl https://<staging-railway-url>/api/health` returns healthy
+### 4.3 Create staging Railway environment — DONE
+- [x] Created Railway `staging` environment duplicated from `production`
+- [x] Reconnected GitHub source repo (after duplicate broke the connection); pointed at `develop` branch
+- [x] Set 11 staging environment variables (Supabase staging keys, Stripe live for now, JWT_SECRET, etc.)
+- [x] First deploy succeeded after fixing pre-existing backend prod-build issues (PR #56)
+- [x] Staging backend URL: `https://backend-staging-4d19.up.railway.app`
+- [x] `/api/health` returns healthy (DB 122ms, Supabase 119ms)
+- [ ] **Deferred:** Switch to Stripe TEST keys for staging — currently inherits live keys, harmless until anyone tests checkout on staging
 
-### 4.4 Wire Vercel staging (15 min)
-- [ ] Vercel dashboard → bassnotion frontend project → **Settings** → **Environment Variables**
-- [ ] For each existing var, you'll see it scoped to "Production" / "Preview" / "Development". Add **Preview**-scope copies pointing at staging:
-  - `NEXT_PUBLIC_SUPABASE_URL` → staging `SUPABASE_URL`
-  - `NEXT_PUBLIC_SUPABASE_ANON_KEY` → staging `SUPABASE_ANON_KEY`
-  - `NEXT_PUBLIC_API_URL` → staging Railway URL (from step 4.3)
-  - Any other `NEXT_PUBLIC_*` vars: mirror with staging values
-- [ ] **Settings** → **Git** → confirm `develop` branch is in the deploy list (Vercel deploys it automatically as a Preview)
-- [ ] Push a no-op commit to `develop` to trigger first staging build, or wait for next merge
-- [ ] Note the staging URL (something like `bassnotion-monorepo-v1-frontend-git-develop-<your-handle>.vercel.app`)
-- [ ] **Go back to Railway staging env** → set `FRONTEND_URL` to this Vercel staging URL
-- [ ] (Optional) Vercel → Domains → assign custom subdomain like `staging.bassnotion.com` for cleaner URL
+### 4.4 Wire Vercel staging — DONE
+- [x] Added Preview-scope env vars for `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_API_URL` pointing at staging
+- [x] `develop` branch confirmed in Vercel's auto-deploy list
+- [x] Triggered first build with empty commit to `develop`
+- [x] First build failed on legacy `setup-contracts.sh` npm hack — fixed in `fix(vercel): use pnpm for install...` (commit `0304233`)
+- [x] Second build failed on `.vercelignore` excluding pnpm files — fixed in `fix(vercel): un-exclude pnpm files...` (commit `54ab253`)
+- [x] Third build failed on `tsc` auto-loading broken `@types/*` for worklet/worker scripts — fixed in `fix(workers): add --skipLibCheck...` (commit `aed8a14`)
+- [x] Fourth build succeeded → staging URL: `https://bassnotion-monorepo-v1-front-git-014935-marcs-projects-dbb4ba80.vercel.app`
+- [x] Disabled Vercel Authentication globally (Hobby tier doesn't allow per-env granularity — production was already public)
+- [x] **Updated Railway staging `FRONTEND_URL`** with the Vercel staging URL
+- [x] Fixed CSP hardcoded production URL → reads `NEXT_PUBLIC_API_URL` now (commit `72d3f11`)
 
-### 4.5 End-to-end staging smoke test (10 min)
-- [ ] Create test branch from `develop`: `git checkout -b test/staging-verification`
-- [ ] Make trivial change (e.g., edit `apps/frontend/src/app/page.tsx` header text)
-- [ ] Push → open PR against `develop`
-- [ ] Vercel auto-creates PR preview deploy → click the URL in PR comments
-- [ ] Verify preview page shows your change
-- [ ] Merge PR → `develop` branch deploys to:
-  - Vercel staging URL
-  - Railway staging backend (auto-deploy from `develop`)
-- [ ] Visit Vercel staging URL → confirm:
-  - [ ] Homepage loads
-  - [ ] Sign up new test user (in staging Supabase)
-  - [ ] Login flow works
-  - [ ] Load a tutorial
-  - [ ] Audio playback works
-  - [ ] 3D fretboard renders
-- [ ] If all green, revert the test change: `git revert <commit> && git push origin develop`
+### 4.5 End-to-end staging smoke test — PARTIAL
+- [x] Verified curl returns HTTP 200 on staging frontend
+- [x] Verified browser console no longer has CSP errors blocking staging backend
+- [x] Verified network requests go to `backend-staging-4d19.up.railway.app` (NOT production)
+- [ ] **Deferred:** Sign up flow blocked by a separate, pre-existing app bug — an infinite postMessage loop in the audio engine that triggers on page load. Affects both staging AND production (production has been serving a 19-day-old cached build that masked it). Logged in [docs/security/tech-debt.md](../security/tech-debt.md#audio-engine-infinite-postmessage-loop-on-page-load). Smoke-testing user flows resumes once that bug is fixed.
 
-### 4.6 Document the new workflow in CLAUDE.md (10 min)
-Add a section explaining:
-- [ ] Feature branches branch from `develop`, not `main`
-- [ ] PRs target `develop`; PR preview URLs hit staging Supabase
-- [ ] `develop` → staging on every merge
-- [ ] `develop` → `main` PR is the production release; merge triggers production deploy
-- [ ] Hot-fix path: PR directly to `main`, but still needs green CI
+### 4.6 Document the new workflow in CLAUDE.md — DONE
+- [x] Added "Git & Deploy Workflow" section to CLAUDE.md with:
+  - Branch model diagram
+  - Per-environment infrastructure table
+  - Day-to-day flow with example commands
+  - Local-dev-points-at-prod note
+  - Things-that-broke-earlier reminders (CSP, .vercelignore, gitignore, git HTTP/2)
 
-**Acceptance criteria for Phase 4:**
-- [ ] `develop` branch exists and is the target for feature PRs
-- [ ] Staging Supabase project exists with same schema as production
-- [ ] Railway has `staging` environment deploying from `develop` with healthy `/api/health`
-- [ ] Vercel deploys `develop` to a staging URL with correct preview env vars
-- [ ] Every PR gets an automatic preview deploy
-- [ ] End-to-end smoke test passes on staging
-- [ ] Workflow documented in CLAUDE.md
+**Acceptance criteria for Phase 4 — STATUS:**
+- [x] `develop` branch exists and is the target for feature PRs
+- [x] Staging Supabase project exists with same schema as production
+- [x] Railway has `staging` environment deploying from `develop` with healthy `/api/health`
+- [x] Vercel deploys `develop` to a staging URL with correct preview env vars
+- [x] Every PR gets an automatic preview deploy (Vercel built-in)
+- [ ] End-to-end smoke test passes on staging — **blocked on audio engine loop bug** (separate tech debt item, affects prod too)
+- [x] Workflow documented in CLAUDE.md
 
-**Total estimated time:** ~70 minutes of active work + waiting on builds.
+**Outcome:** Staging infrastructure fully operational. The Phase 4 goal — "can we deploy and test against a real staging environment?" — is **YES** at the infrastructure level. User-flow testing is blocked by a separate pre-existing bug that needs its own investigation.
+
+**Total time spent:** ~3 hours active work over the session (vs the 70min estimate — extra time spent uncovering and fixing 4 pre-existing build-pipeline bugs that had been silently broken).
 
 ---
 
