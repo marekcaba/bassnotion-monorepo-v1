@@ -9,6 +9,24 @@ import { useAuthRedirect } from '@/domains/user/hooks/use-auth-redirect';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
+function isEmailConfirmation(
+  searchParams: URLSearchParams | ReturnType<typeof useSearchParams>,
+  user: { email_confirmed_at?: string | null } | null,
+): boolean {
+  // Supabase tags email-confirmation redirects with type=signup (or
+  // email_confirmation on newer flows).
+  const type = searchParams.get('type');
+  if (type === 'signup' || type === 'email_confirmation') return true;
+
+  // Fallback: if email was confirmed in the last 5 minutes, treat as
+  // first-time confirmation (catches Supabase flow versions that drop
+  // the type param).
+  const confirmedAt = user?.email_confirmed_at;
+  if (!confirmedAt) return false;
+  const ageMs = Date.now() - new Date(confirmedAt).getTime();
+  return ageMs >= 0 && ageMs < 5 * 60 * 1000;
+}
+
 function AuthCallbackContent() {
   const _router = useRouter();
   const { navigateWithTransition } = useViewTransitionRouter();
@@ -16,6 +34,7 @@ function AuthCallbackContent() {
   const { toast } = useToast();
   const { setUser, setSession } = useAuth();
   const { redirectAfterAuth } = useAuthRedirect();
+  const { logger } = useCorrelation('AuthCallback');
 
   useEffect(() => {
     const handleAuthCallback = async () => {
@@ -44,7 +63,14 @@ function AuthCallbackContent() {
           // We already have a session, use it
           setUser(session.user);
           setSession(session);
-          // Redirect without success toast - user will see they're logged in
+          // Show a welcome toast when arriving via the email-confirmation link
+          // so the user knows what just happened (vs silent auto-sign-in).
+          if (isEmailConfirmation(searchParams, session.user)) {
+            toast({
+              title: 'Welcome to BassNotion!',
+              description: 'Your email is confirmed.',
+            });
+          }
           redirectAfterAuth(session.user);
           return;
         }
@@ -97,7 +123,12 @@ function AuthCallbackContent() {
 
         setUser(data.user);
         setSession(data.session);
-        // Redirect without success toast - user will see they're logged in
+        if (isEmailConfirmation(searchParams, data.user)) {
+          toast({
+            title: 'Welcome to BassNotion!',
+            description: 'Your email is confirmed.',
+          });
+        }
         redirectAfterAuth(data.user);
       } catch (error) {
         logger.error('[Auth Debug] Callback handling error:', error);
@@ -119,6 +150,7 @@ function AuthCallbackContent() {
     setUser,
     setSession,
     redirectAfterAuth,
+    logger,
   ]);
 
   return (

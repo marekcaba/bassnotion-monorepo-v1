@@ -264,6 +264,16 @@ export class AuthService {
     const { data: authData, error } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
+      options: {
+        // Route the confirmation link through our callback page so it can
+        // detect the `type=signup` param and show the welcome toast.
+        // Without this, Supabase falls back to Site URL (`/`) and our
+        // callback never runs.
+        emailRedirectTo:
+          typeof window !== 'undefined'
+            ? `${window.location.origin}/auth/callback`
+            : undefined,
+      },
     });
 
     if (error) {
