@@ -82,22 +82,37 @@ Stayed on 15.x per CLAUDE.md constraint. Next 16 requires explicit `--turbopack`
 
 ## Phase 2: TypeScript and build integrity (1 day)
 
-### 2.1 Enable TypeScript checking in build
-Currently `apps/frontend/next.config.js`:
-```js
-typescript: { ignoreBuildErrors: true }
-eslint: { ignoreDuringBuilds: true }
-```
-- [ ] Run locally `cd apps/frontend && npx tsc --noEmit` — see how many errors there are
-- [ ] If > 50 errors → **leave `ignoreBuildErrors: true`**, but add a separate typecheck step in CI (`npx nx affected -t typecheck` is already there, verify it runs)
-- [ ] If < 50 errors → fix them, then set `ignoreBuildErrors: false`
-- [ ] Either update `next.config.js`, or document in `docs/security/tech-debt.md` why it stays
-- [ ] Commit
+### 2.1 Backend production build (DONE — discovered live)
+Triggered while setting up Railway env vars: `nx build @bassnotion/backend --prod`
+had been failing for some time (silently, since Railway was already offline).
+Eight blocking errors fixed in PR #56:
+
+- [x] `*.d.ts` blanket gitignore in `apps/backend/.gitignore` was excluding
+  the hand-written `src/types/cache-manager-ioredis.d.ts` ambient module
+  declaration from git → Railway cloned without it → "Could not find a
+  declaration file". Added negation `!src/types/**/*.d.ts`.
+- [x] `cache-manager-ioredis.d.ts` only declared named export; cache.module
+  imports it as default. Added default export shape.
+- [x] `fetch().json()` returns `unknown` now (modern @types/node), not `any`.
+  Three call sites cast explicitly:
+  `creators.service.ts:116`, `admin-tutorials.controller.ts:472` + `:507`.
+- [x] **Verified locally:** `pnpm nx build @bassnotion/backend --prod` succeeds.
+- [ ] **Verify on Railway (USER):** redeploy from PR #56 / merged main, build
+  reaches "Successfully ran target build", service comes online.
+
+### 2.1b Frontend `ignoreBuildErrors` flag (TODO — separate from 2.1)
+Still on the books — `apps/frontend/next.config.js` has
+`typescript: { ignoreBuildErrors: true }` and `eslint: { ignoreDuringBuilds: true }`.
+- [ ] Run `cd apps/frontend && npx tsc --noEmit` — count errors
+- [ ] If > 50 errors → leave the flag, ensure CI has a separate typecheck step
+- [ ] If < 50 errors → fix them, flip the flag to `false`
+- [ ] Document the decision in `docs/security/tech-debt.md`
 
 ### 2.2 Clean up Railway placeholder credentials (DONE — moved into PR #56)
 - [x] Removed `SUPABASE_URL` and `SUPABASE_KEY` placeholders from `railway.json`
 - [x] Removed stale `DEPLOYMENT_TRIGGER` marker
-- [ ] **Verify in Railway dashboard (USER):** confirm `SUPABASE_URL`, `SUPABASE_KEY`, `SUPABASE_SERVICE_ROLE_KEY` are set as env secrets in Backend service Variables
+- [x] **Verified in Railway dashboard:** `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`, `FRONTEND_URL`, `STRIPE_SECRET_KEY` (live restricted), `STRIPE_WEBHOOK_SECRET` (live) all set as Railway env secrets
+- [ ] Still missing: `JWT_SECRET`, `NODE_ENV=production`, `ENABLE_SWAGGER=false` (added in same session)
 - [x] Also deleted `scripts/fix-harmony5-exercise.sh` (one-off script that leaked the production Supabase project URL)
 
 **Acceptance criteria for Phase 2:**
