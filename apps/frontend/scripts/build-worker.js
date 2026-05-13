@@ -29,10 +29,13 @@ if (!fs.existsSync(OUTPUT_DIR)) {
 console.log('Building Web Worker...');
 
 try {
-  // Compile TypeScript to JavaScript using tsc
+  // Compile TypeScript to JavaScript using tsc.
+  // --skipLibCheck: Web Workers don't need ambient @types/* and tsc would
+  //                 otherwise eagerly type-check every @types package in
+  //                 node_modules (failing on missing peer types).
   console.log('Compiling TypeScript...');
   execSync(
-    `npx tsc ${SOURCE_FILE} --target ES2020 --module ES2020 --outDir ${OUTPUT_DIR} --removeComments false --lib ES2020,WebWorker,DOM`,
+    `npx tsc "${SOURCE_FILE}" --target ES2020 --module ES2020 --outDir "${OUTPUT_DIR}" --removeComments false --lib ES2020,WebWorker,DOM --skipLibCheck`,
     {
       stdio: 'inherit',
     },
