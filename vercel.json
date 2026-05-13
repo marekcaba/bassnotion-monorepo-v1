@@ -1,6 +1,6 @@
 {
-  "installCommand": "chmod +x setup-contracts.sh && ./setup-contracts.sh",
-  "buildCommand": "npm run build",
+  "installCommand": "cd ../.. && corepack enable && pnpm install --frozen-lockfile && pnpm nx build @bassnotion/contracts",
+  "buildCommand": "pnpm run build:workers && pnpm next build",
   "outputDirectory": ".next",
   "framework": "nextjs",
   "cleanUrls": true,
