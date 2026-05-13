@@ -30,47 +30,48 @@ A common source of confusion, so let's get it out of the way up front:
 ### 1.1 Snapshot before starting
 - [x] Commit current state or create a safety tag: `git tag pre-production-audit-snapshot` (points to `a5626d2`)
 - [x] Push tag: `git push origin pre-production-audit-snapshot` (used `-c http.version=HTTP/1.1` due to Apple Git 2.39.5 HTTP/2 multiplexing bug in non-TTY shells; workaround pinned globally)
-- [ ] Verify local dev works (PM2 backend + frontend running, main pages load)
+- [x] Verify local dev works — PM2 backend + frontend both online; `localhost:3001` returns HTTP 200; `localhost:3000/api/health` returns `{"status":"healthy"}` with database + Supabase healthy (had to `pm2 restart bassnotion-backend` first; the existing process wasn't listening on 3000)
 
-**Bonus fix discovered during 1.1:** CI was broken — lockfile v9 (pnpm 10) vs workflows pinned to pnpm 8. Fixed all 4 workflows + added `packageManager: pnpm@10.11.0` to root `package.json`. See PR `fix/ci-pnpm-version`.
+**Bonus fixes during 1.1 — repository cleanup completed:**
+- [x] CI lockfile-mismatch fixed → PR #55 (`fix/ci-pnpm-version`). Bumped all 4 workflows from pnpm 8 → 10; pinned `packageManager: pnpm@10.11.0` in root `package.json`.
+- [x] All 5 stale branches archived as `archive/<name>-2026-05-12` tags pushed to remote, then deleted locally (`feature/drum-pattern-editor`, `backup-before-cleanup-phase7`, `fix/downgrade-react-webkit-compatibility`, `refactor/region-processor-breakdown`, local stale `main`).
+- [x] All 4 stashes archived as `archive/stash-*-2026-05-12` tags pushed to remote, then dropped. Stash list empty.
+- [x] Repository hygiene: stopped tracking `.next/`, `logs/`, `tsconfig.tsbuildinfo`, `supabase/.temp/` (now properly gitignored); added `*.tsbuildinfo`, `supabase/.temp/`, `.claude/scheduled_tasks.lock` to `.gitignore`.
+- [x] **NEW BASELINE on `main` (origin/main = `fc754b9`):** "chore: pre-production baseline snapshot" — bundles ~5 months of feature/drum-pattern-editor work (543 files: drum pattern editor, billing, widget refactor, assessment domain, 22 Supabase migrations, etc.). Force-pushed with `--force-with-lease`. Pre-snapshot state preserved at tag `pre-production-audit-snapshot`.
 
 ### 1.2 Critical CVE audit
-- [ ] Run `pnpm audit --audit-level critical` and save the output to `docs/security/audit-baseline.md`
-- [ ] Try `pnpm audit --fix` (auto-fixes what it can without major bumps)
-- [ ] **Test locally:** PM2 restart all → open frontend → click into a tutorial → trigger audio playback
-- [ ] If anything breaks → `git reset --hard pre-production-audit-snapshot` and proceed manually, package by package
-- [ ] Commit: `chore(security): auto-fix non-breaking CVEs`
+- [x] Run `pnpm audit --audit-level critical` and save the output to `docs/security/audit-baseline.md`
+- [x] Try `pnpm audit --fix` — quietly bumped Next.js to 16, Vite to 8 (broke both apps). Rolled back. **Lesson learnt:** `--fix` writes blanket overrides without regard for major-version compatibility. Targeted upgrades only.
+- [x] **Test locally:** PM2 restart all → backend `/api/health` healthy (DB 212ms, Supabase 140ms); frontend HTTP 200
+- [x] Documented version constraints in CLAUDE.md (Next.js 15.x, React 19, Fastify 4, Vite 6) so future auto-fixes don't repeat the mistake
 
-### 1.3 Manual upgrade of critical CVEs
-Of the 4 criticals:
-- `form-data` — find via `pnpm why form-data`, often a transitive dependency
-- `fast-xml-parser` — same
-- `@fastify/middie` — backend dep, upgrade carefully (Fastify is core)
+### 1.3 Manual upgrade of critical CVEs (DONE — combined with 1.2)
+- [x] `form-data` <4.0.4 → ≥4.0.4 (dev-only transitive via Nx > axios; pnpm-workspace.yaml override)
+- [x] `fast-xml-parser` 5.3.3 → 5.8.0 (direct dep in 3 package.json files: root, apps/backend, apps/frontend; bumped range ^5.2.5 → ^5.3.5)
+- [x] `@fastify/middie` 9.0.3 → 9.3.2 (transitive via @nestjs/platform-fastify; pnpm-workspace.yaml override)
+- [x] **Test backend locally:** PM2 restart, `/api/health` returns healthy ✅
+- [x] Committed as single Phase 1.2 commit: "fix(security): patch all 3 critical CVEs"
 
-For each:
-- [ ] `pnpm why <package>` — figure out where it comes from
-- [ ] If direct dep → `pnpm update <package>`
-- [ ] If transitive → upgrade the parent, or add `overrides` to root `package.json`
-- [ ] **Test backend locally:** PM2 restart, hit `/api/health`, run login flow
-- [ ] Commit per package
+**Phase 1.2/1.3 results:**
+- Before: 188 vulns (20 low | 70 moderate | 94 high | **4 critical**)
+- After: 155 vulns (17 low | 58 moderate | 80 high | **0 critical**)
+- 80 remaining high CVEs are mostly minimatch/picomatch ReDoS in dev tools — to be addressed alongside Next.js 15.5 bump in Phase 1.4
 
-### 1.4 Next.js upgrade 15.3.8 → 15.5.16+
-**Risk:** Minor version bump, but Next.js sometimes changes App Router behavior.
-- [ ] Read the changelog: https://github.com/vercel/next.js/releases
-- [ ] `cd apps/frontend && pnpm update next@latest`
-- [ ] Build locally: `cd apps/frontend && pnpm next build`
-- [ ] If build fails → fix per the errors (often just typing)
-- [ ] PM2 restart frontend → test:
-  - [ ] Login flow
-  - [ ] Tutorial loads
-  - [ ] Audio playback works
-  - [ ] 3D fretboard renders
-  - [ ] Admin tutorial editor
-- [ ] Commit: `fix(security): upgrade Next.js to X.Y.Z for CVE-XXXX`
+### 1.4 Next.js upgrade 15.3.8 → 15.5.18 (DONE)
+- [x] Confirmed Next 15.5.18 is the latest stable 15.x and accepts React 19.1.0 as peer
+- [x] Bumped `next` exact pin in 2 package.json files (root + apps/frontend)
+- [x] `pnpm install` succeeded
+- [x] `pnpm next build` succeeded — all routes built (static + dynamic), no compile errors
+- [x] PM2 restart all → backend `/api/health` healthy, frontend HTTP 200
+- [x] Patched RSC cache poisoning CVE GHSA-wfc6-r584-vfw7 (was `>=14.2.0 <15.5.16`)
+- [ ] **Manual UI smoke check (USER):** open the frontend in a browser, test login → tutorial → audio playback → 3D fretboard → admin editor. PM2 says it's serving but only you can confirm the UX
 
-### 1.5 Re-audit
-- [ ] `pnpm audit --audit-level high` — target: 0 critical, ideally 0 high
-- [ ] If some highs remain → file an issue/note but don't block (highs aren't production blockers)
+Stayed on 15.x per CLAUDE.md constraint. Next 16 requires explicit `--turbopack`/`--webpack` flag and changes config schema — deferred to a separate explicit migration.
+
+### 1.5 Re-audit (DONE)
+- [x] `pnpm audit --audit-level critical` returns **0** (was 4)
+- [x] Total: 188 → 135 vulnerabilities
+- [ ] Remaining 72 highs are mostly transitive minimatch/picomatch ReDoS in build tooling — low real-world risk, but tracked. Address opportunistically (e.g. when Nx 21 lands a release that bumps them)
 
 **Acceptance criteria for Phase 1:**
 - `pnpm audit --audit-level critical` returns 0
@@ -81,23 +82,38 @@ For each:
 
 ## Phase 2: TypeScript and build integrity (1 day)
 
-### 2.1 Enable TypeScript checking in build
-Currently `apps/frontend/next.config.js`:
-```js
-typescript: { ignoreBuildErrors: true }
-eslint: { ignoreDuringBuilds: true }
-```
-- [ ] Run locally `cd apps/frontend && npx tsc --noEmit` — see how many errors there are
-- [ ] If > 50 errors → **leave `ignoreBuildErrors: true`**, but add a separate typecheck step in CI (`npx nx affected -t typecheck` is already there, verify it runs)
-- [ ] If < 50 errors → fix them, then set `ignoreBuildErrors: false`
-- [ ] Either update `next.config.js`, or document in `docs/security/tech-debt.md` why it stays
-- [ ] Commit
+### 2.1 Backend production build (DONE — discovered live)
+Triggered while setting up Railway env vars: `nx build @bassnotion/backend --prod`
+had been failing for some time (silently, since Railway was already offline).
+Eight blocking errors fixed in PR #56:
 
-### 2.2 Clean up Railway placeholder credentials
-- [ ] Open [railway.json](../../railway.json)
-- [ ] Remove `SUPABASE_URL` and `SUPABASE_KEY` from `environments.production.variables`
-- [ ] Verify in Railway dashboard that real values are in Railway env secrets (not in the repo)
-- [ ] Commit: `chore(security): remove placeholder Supabase credentials from railway.json`
+- [x] `*.d.ts` blanket gitignore in `apps/backend/.gitignore` was excluding
+  the hand-written `src/types/cache-manager-ioredis.d.ts` ambient module
+  declaration from git → Railway cloned without it → "Could not find a
+  declaration file". Added negation `!src/types/**/*.d.ts`.
+- [x] `cache-manager-ioredis.d.ts` only declared named export; cache.module
+  imports it as default. Added default export shape.
+- [x] `fetch().json()` returns `unknown` now (modern @types/node), not `any`.
+  Three call sites cast explicitly:
+  `creators.service.ts:116`, `admin-tutorials.controller.ts:472` + `:507`.
+- [x] **Verified locally:** `pnpm nx build @bassnotion/backend --prod` succeeds.
+- [ ] **Verify on Railway (USER):** redeploy from PR #56 / merged main, build
+  reaches "Successfully ran target build", service comes online.
+
+### 2.1b Frontend `ignoreBuildErrors` flag (TODO — separate from 2.1)
+Still on the books — `apps/frontend/next.config.js` has
+`typescript: { ignoreBuildErrors: true }` and `eslint: { ignoreDuringBuilds: true }`.
+- [ ] Run `cd apps/frontend && npx tsc --noEmit` — count errors
+- [ ] If > 50 errors → leave the flag, ensure CI has a separate typecheck step
+- [ ] If < 50 errors → fix them, flip the flag to `false`
+- [ ] Document the decision in `docs/security/tech-debt.md`
+
+### 2.2 Clean up Railway placeholder credentials (DONE — moved into PR #56)
+- [x] Removed `SUPABASE_URL` and `SUPABASE_KEY` placeholders from `railway.json`
+- [x] Removed stale `DEPLOYMENT_TRIGGER` marker
+- [x] **Verified in Railway dashboard:** `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`, `FRONTEND_URL`, `STRIPE_SECRET_KEY` (live restricted), `STRIPE_WEBHOOK_SECRET` (live) all set as Railway env secrets
+- [ ] Still missing: `JWT_SECRET`, `NODE_ENV=production`, `ENABLE_SWAGGER=false` (added in same session)
+- [x] Also deleted `scripts/fix-harmony5-exercise.sh` (one-off script that leaked the production Supabase project URL)
 
 **Acceptance criteria for Phase 2:**
 - CI typecheck step fails on real TS errors (not ignored)

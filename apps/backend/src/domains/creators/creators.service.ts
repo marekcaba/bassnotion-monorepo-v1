@@ -113,7 +113,7 @@ export class CreatorsService {
           throw new Error(`YouTube API error: ${response.statusText}`);
         }
 
-        const data: YouTubeChannelResponse = await response.json();
+        const data = (await response.json()) as YouTubeChannelResponse;
         if (data.items) {
           allItems.push(...data.items);
         }

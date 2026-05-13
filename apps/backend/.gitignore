@@ -9,6 +9,8 @@
 # TypeScript compilation artifacts
 *.d.ts
 *.d.ts.map
+# But keep hand-written ambient module declarations in src/types/
+!src/types/**/*.d.ts
 
 # Build outputs
 dist/

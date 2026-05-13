@@ -469,7 +469,9 @@ export class AdminTutorialsController {
             throw new BadRequestException('Failed to fetch video details');
           }
 
-          const videoData = await videoResponse.json();
+          const videoData = (await videoResponse.json()) as {
+            items?: Array<{ snippet: { channelId: string } }>;
+          };
           if (videoData.items && videoData.items[0]) {
             channelId = videoData.items[0].snippet.channelId;
           }
@@ -504,7 +506,9 @@ export class AdminTutorialsController {
               throw new BadRequestException('Failed to search for channel');
             }
 
-            const searchData = await searchResponse.json();
+            const searchData = (await searchResponse.json()) as {
+              items?: Array<{ snippet: { channelId: string } }>;
+            };
             if (searchData.items && searchData.items[0]) {
               channelId = searchData.items[0].snippet.channelId;
             }
