@@ -32,9 +32,16 @@ export function UserIndicator() {
       e.stopPropagation(); // Prevent triggering the parent click handler
       try {
         setIsSigningOut(true);
+        // Navigate to /login FIRST, before clearing auth state. This unmounts
+        // AuthGuard before isAuthenticated flips false, so it never fires its
+        // own competing redirect or flashes its fallback. /login also matches
+        // AuthGuard's safety-net redirect target, so the two can't disagree.
+        // Then clear the session — AuthProvider's onAuthStateChange listener
+        // also calls reset() on the SIGNED_OUT event, but by then we're
+        // already on a public route.
+        await navigateWithTransition('/login');
         await authService.signOut();
         reset();
-        navigateWithTransition('/');
       } catch (error) {
         console.error('Sign out error:', error);
       } finally {

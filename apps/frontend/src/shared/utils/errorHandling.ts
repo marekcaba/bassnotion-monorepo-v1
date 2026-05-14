@@ -34,12 +34,23 @@ export class GlobalErrorHandler {
     // Handle unhandled promise rejections
     if (typeof window !== 'undefined') {
       window.addEventListener('unhandledrejection', (event) => {
-        const correlationId = generateCorrelationId();
         const error =
           event.reason instanceof Error
             ? event.reason
             : new Error(String(event.reason));
 
+        // Filter out benign view-transition aborts: the View Transitions API
+        // rejects the previous transition's promise when a new navigation
+        // supersedes it. That's correct browser behavior, not an error.
+        if (
+          error.name === 'AbortError' &&
+          /Transition was skipped/i.test(error.message)
+        ) {
+          event.preventDefault();
+          return;
+        }
+
+        const correlationId = generateCorrelationId();
         this.handleError(error, correlationId, 'unhandledrejection');
 
         // Prevent default browser behavior

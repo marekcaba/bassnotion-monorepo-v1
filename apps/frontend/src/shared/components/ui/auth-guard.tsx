@@ -34,18 +34,20 @@ export function AuthGuard({
     return fallback || children;
   }
 
-  // If definitely not authenticated, show fallback
-  // TODO: Review non-null assertion - consider null safety
+  // Not authenticated → the useEffect above is already navigating away.
+  // Render a neutral spinner (not a scary "Access Denied" card) during that
+  // brief redirect window. The store reports isReady=true the instant auth
+  // state clears (signout, or a logged-out load of a protected route), so
+  // showing an error-looking screen here just flashes alarming UI at a user
+  // who is simply being redirected.
   if (!isAuthenticated) {
     return (
       fallback || (
         <div className="min-h-screen flex items-center justify-center p-4">
-          <div className="text-center">
-            <h2 className="text-lg font-semibold mb-2">Access Denied</h2>
-            <p className="text-muted-foreground">
-              Please log in to access this page.
-            </p>
-          </div>
+          <div
+            className="h-6 w-6 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground"
+            aria-label="Redirecting"
+          />
         </div>
       )
     );
