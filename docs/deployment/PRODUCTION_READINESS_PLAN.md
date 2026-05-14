@@ -329,53 +329,90 @@ the 19-day-old cached production build).
 
 ## Phase 5: Deploy pipeline (2 days)
 
-### 5.1 Activate backend deploy in the workflow
+> **Key design decision — gate, don't deploy.** Railway and Vercel each
+> auto-deploy on push via their own GitHub integrations (`develop` → staging,
+> `main` → production). If GitHub Actions _also_ ran a deploy command, the
+> frontend would build twice. So [deploy.yml](../../.github/workflows/deploy.yml)
+> was rewritten as an **orchestrator**: it runs migrations, waits for the
+> backend to report healthy, then runs `@smoke` Playwright specs against the
+> live URLs. It never triggers a deploy itself. Runs on both `develop` (→
+> staging, unattended) and `main` (→ production, migrate job gated by the
+> `production` environment's manual approval).
 
-Currently [.github/workflows/deploy.yml](../../.github/workflows/deploy.yml#L60-L66) has the backend step commented out.
+### 5.0 Prerequisites — GitHub secrets & variables (USER)
 
-- [ ] Uncomment the backend deploy step
-- [ ] Use Railway CLI or Railway GitHub integration (prefer integration — fewer secrets in GitHub)
-- [ ] **Order matters:** Backend must deploy BEFORE the frontend (frontend calls backend API)
-- [ ] Add a health check gate: after backend deploy, `curl /api/health` before frontend deploy proceeds
-- [ ] Test on the `develop` staging branch before merging into main
+The rewritten `deploy.yml` reads these. **Secrets** (Settings → Secrets and
+variables → Actions → Secrets):
 
-### 5.2 Migration step in deploy
+- [ ] `SUPABASE_ACCESS_TOKEN` — personal access token from supabase.com/dashboard/account/tokens
+- [ ] `SUPABASE_PROJECT_REF_PROD` = `iuuplfrktnzsbzibpfjm`
+- [ ] `SUPABASE_PROJECT_REF_STAGING` = `vraxryaaznpkvtkindpn`
+- [ ] `SUPABASE_DB_PASSWORD_PROD` — production DB password
+- [ ] `SUPABASE_DB_PASSWORD_STAGING` — staging DB password
 
-- [ ] Add a `supabase db push --linked` step in deploy.yml before backend deploy
-- [ ] Requires `SUPABASE_ACCESS_TOKEN` in GitHub secrets
-- [ ] **For production runs:** require manual approval (`environment: production` already does this)
-- [ ] **Important:** If you have destructive migrations (DROP COLUMN, ALTER TYPE), create a migration runbook in `docs/deployment/MIGRATION_RUNBOOK.md`
+**Variables** (same screen → Variables tab — these are URLs, not secret):
 
-### 5.3 Sentry release tracking
+- [ ] `BACKEND_URL_PROD` = `https://backend-production-612c.up.railway.app`
+- [ ] `BACKEND_URL_STAGING` = `https://backend-staging-4d19.up.railway.app`
+- [ ] `FRONTEND_URL_PROD` = production Vercel URL
+- [ ] `FRONTEND_URL_STAGING` = `https://bassnotion-monorepo-v1-front-git-014935-marcs-projects-dbb4ba80.vercel.app`
 
-- [ ] Add a step in deploy.yml to upload source maps to Sentry
-- [ ] Enable `productionBrowserSourceMaps: true` in next.config.js, but don't ship source maps as public assets (the Sentry plugin handles this)
-- [ ] You'll then get readable stack traces in Sentry
+**Environments** (Settings → Environments): create `staging` (no protection)
+and `production` (required reviewer = you) if they don't already exist.
 
-### 5.4 Smoke test after deploy
+### 5.1 Backend health gate — DONE
 
-Partially started: `apps/frontend-e2e/src/auth-flow.spec.ts` already covers the
-logged-out-redirect case and has a `fixme`'d signin→signout test. Build on that
-rather than starting a fresh `smoke.spec.ts`.
+- [x] `deploy.yml` `health-gate` job polls the matching Railway `/api/health`
+      (every 10s, up to 10 min) until `"status":"healthy"`
+- [x] Removed the dead commented-out backend deploy block and the conflicting
+      Vercel `--prod` step (Railway/Vercel integrations own the actual deploy)
+- [x] Job ordering: `migrate` → `health-gate` → `smoke`; any failure halts the rest
 
-- [ ] Tag the auth-flow specs `@smoke` and add: homepage 200, open a tutorial,
-      `/api/health` healthy
-- [ ] Un-`fixme` the signin→signout test — it's flaky only against the Next.js
-      **dev** server; a deploy-time smoke run hits a real `next build` deploy,
-      which should be deterministic. Verify that assumption when wiring this up.
-- [ ] Seed/confirm the smoke test user exists in **production** Supabase
-      (currently only seeded in the project used for local runs)
+### 5.2 Migration step — DONE
 
-In the deploy workflow:
+- [x] `migrate` job runs `supabase link` + `supabase db push --linked` against
+      the branch-matched project (staging for `develop`, prod for `main`)
+- [x] Production gated behind `environment: production` (manual approval)
+- [x] Added minimal [supabase/config.toml](../../supabase/config.toml) at repo
+      root (`project_id` + `[db] major_version = 17`) — the CLI needs it to run
+      `db push` from the repo root where `./migrations` lives
+- [ ] **If a destructive migration is ever queued** (DROP COLUMN, ALTER TYPE),
+      create `docs/deployment/MIGRATION_RUNBOOK.md` first
 
-- [ ] After deploy run: `npx playwright test --grep @smoke` against the production URL
-- [ ] If it fails → roll back
+### 5.3 Sentry release tracking — DEFERRED
+
+Investigated: `@sentry/nextjs` + `@sentry/node` are installed and helper
+utilities exist (`apps/frontend/src/shared/utils/sentry.ts`,
+`apps/backend/src/config/sentry.config.ts`), **but Sentry is not actually
+initialized** — `next.config.js` doesn't wrap with `withSentryConfig`, there's
+no `sentry.client.config.ts` / `instrumentation.ts`. Source-map upload is
+meaningless until the SDK is wired up. Split out as its own task — fold into
+Phase 6 (monitoring) or do as a standalone before it.
+
+### 5.4 Smoke test after deploy — DONE
+
+- [x] Tagged the credential-free `auth-flow.spec.ts` logged-out-redirect test
+      `@smoke` (the `fixme`'d signin→signout test stays out — still needs a
+      deterministic E2E build, see Phase 5.4 note below)
+- [x] Added [smoke.spec.ts](../../apps/frontend-e2e/src/smoke.spec.ts):
+      `@smoke` homepage-200 + `@smoke` backend `/api/health` healthy
+- [x] `deploy.yml` `smoke` job runs `playwright test --grep @smoke` (chromium
+      only) against the live `BASE_URL` / `API_URL` after the health gate passes
+- [ ] **Un-`fixme` the signin→signout test (USER/later):** it's flaky only
+      against the Next.js **dev** server; a deploy-time smoke run hits a real
+      `next build` deploy, which should be deterministic. Verify, then tag it
+      `@smoke` too. Needs the production smoke-test user seeded first.
+- [ ] **Seed the smoke test user in production Supabase (USER):** set
+      `E2E_TEST_EMAIL` / `E2E_TEST_PASSWORD` GitHub secrets once the
+      signin→signout test is included
 
 **Acceptance criteria for Phase 5:**
 
-- Push to `main` → DB migration → backend deploy → health check → frontend deploy → smoke test
-- Any failure halts the deploy
-- Sentry shows readable stack traces tagged with the release
+- [x] Push to `develop`/`main` → migration → health check → smoke test, all
+      sequenced in `deploy.yml`; any failure halts the rest
+- [x] No double-build — Actions gates, Railway/Vercel integrations deploy
+- [ ] GitHub secrets/variables + environments configured (5.0 — USER)
+- [ ] Sentry readable stack traces tagged with the release (5.3 — deferred)
 
 ---
 
