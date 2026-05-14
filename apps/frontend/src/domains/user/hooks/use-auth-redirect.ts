@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
+import { supabase } from '@/infrastructure/supabase/client';
 
 interface UseAuthRedirectOptions {
   defaultRedirect?: string;
@@ -18,10 +19,22 @@ interface UseAuthRedirectOptions {
  */
 async function checkAssessmentStatus(): Promise<boolean | null> {
   try {
+    // Backend AuthGuard reads Bearer tokens from Authorization header, not
+    // cookies — `credentials: 'include'` alone produces an unconditional 401.
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) {
+      // No session yet — skip the call. Caller falls through to default
+      // redirect, which is the same behavior as a returned null.
+      return null;
+    }
+
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/v1/assessment/status`,
       {
-        credentials: 'include',
+        headers: { Authorization: `Bearer ${token}` },
       },
     );
 
