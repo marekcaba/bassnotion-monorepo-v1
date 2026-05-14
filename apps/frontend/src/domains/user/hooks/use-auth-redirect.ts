@@ -57,7 +57,10 @@ export const useAuthRedirect = (options: UseAuthRedirectOptions = {}) => {
   const {
     defaultRedirect = '/app',
     requireEmailConfirmation = true,
-    checkAssessment = true,
+    // Assessment is a suggestion, not a gate: after login users land on
+    // the dashboard, which surfaces a prompt to take the assessment.
+    // Opt in (checkAssessment: true) only where a hard redirect is wanted.
+    checkAssessment = false,
   } = options;
 
   const pendingRedirectRef = useRef<{

@@ -245,7 +245,7 @@ For `develop`: lighter — just require CI passing. PRs into develop don't need 
 - [x] **Updated Railway staging `FRONTEND_URL`** with the Vercel staging URL
 - [x] Fixed CSP hardcoded production URL → reads `NEXT_PUBLIC_API_URL` now (commit `72d3f11`)
 
-### 4.5 End-to-end staging smoke test — PARTIAL
+### 4.5 End-to-end staging smoke test — MOSTLY DONE
 
 - [x] Verified curl returns HTTP 200 on staging frontend
 - [x] Verified browser console no longer has CSP errors blocking staging backend
@@ -260,10 +260,38 @@ For `develop`: lighter — just require CI passing. PRs into develop don't need 
       [BassProcessor.ts:239](../../apps/frontend/src/domains/playback/modules/instruments/implementations/bass/BassProcessor.ts#L239),
       [audioContext.ts:144](../../apps/frontend/src/domains/playback/utils/audioContext.ts#L144)).
       Verified: `SchedulePostMessage` count dropped 3,730 → ~100 in 10s trace
-      (40× reduction), idle page no longer freezes, full INIT-SEQ 1→16 flow
-      (incl. post-gesture resume + AudioWorklet init) runs cleanly.
-- [ ] **Still to do:** Walk a full user flow on staging — signup → tutorial load →
-      audio playback → 3D fretboard.
+      (40× reduction), idle page no longer freezes, full INIT-SEQ flow runs cleanly.
+- [x] **Auth flow fixed end-to-end (2026-05-13/14)** — signup smoke-testing surfaced
+      a chain of pre-existing bugs, all now fixed:
+  - **Email-domain validation** — `POST /auth/validate-email-domain` MX-record
+    check rejects typo domains (`gogle.com` null-MX, NXDOMAIN) before Supabase
+    creates an orphan unconfirmable user. Frontend calls it before `signUp`.
+  - **Resend SMTP** — Supabase default SMTP was bouncing test emails and
+    threatened to throttle the project. Switched production Supabase to custom
+    SMTP via Resend. (Still on `@resend.dev` test domain — see "Still to do".)
+  - **Profile-row migration** — `auth.users` rows from frontend-direct signup
+    had no `profiles` row, so the backend's `validateToken` 401'd every
+    authed request. Migration `20260513214005_ensure_profile_on_signup.sql`
+    re-creates the trigger + backfills; applied to production.
+  - **assessment/status 401** — `checkAssessmentStatus` used cookie auth but
+    the backend AuthGuard reads Bearer tokens; now sends the token.
+  - **Email-confirmation welcome toast** — `emailRedirectTo` routes the
+    confirmation link through `/auth/callback`, which shows a welcome toast.
+  - **Signout flashes** — `UserIndicator` + `UserAccountSection` cleared auth
+    state while still under `AuthGuard`, causing a competing redirect and an
+    "Access Denied" / dashboard flash. Now navigate to `/login` first.
+  - **`isE2ETesting` over-detection** — `hostname === 'localhost'` /
+    `navigator.webdriver` made the mock-auth fallback the default for ALL
+    local dev and broke real-auth E2E tests. Narrowed to opt-in
+    (`window.__playwright`); 56 legacy specs updated via a shared fixture.
+  - **Post-login redirect** — login now lands on `/app` (dashboard), not
+    `/assessment`. Assessment is a suggestion, not a gate.
+  - Regression guard: `apps/frontend-e2e/src/auth-flow.spec.ts` (test 1 passing;
+    signin→signout test `fixme`'d pending a deterministic E2E build).
+- [ ] **Still to do:** Walk the remaining user flow on staging — tutorial load →
+      audio playback → 3D fretboard → Bunny Stream video sync.
+- [ ] **Still to do:** Verify a real Resend sending domain (currently `@resend.dev`
+      test domain only delivers to the account owner — blocks real-user signup).
 
 ### 4.6 Document the new workflow in CLAUDE.md — DONE
 
@@ -281,13 +309,21 @@ For `develop`: lighter — just require CI passing. PRs into develop don't need 
 - [x] Railway has `staging` environment deploying from `develop` with healthy `/api/health`
 - [x] Vercel deploys `develop` to a staging URL with correct preview env vars
 - [x] Every PR gets an automatic preview deploy (Vercel built-in)
-- [ ] End-to-end smoke test passes on staging — audio engine loop bug fixed
-      (see 4.5); remaining: walk signup → tutorial → audio → fretboard flow
+- [ ] End-to-end smoke test passes on staging — audio loop + full auth chain
+      fixed (see 4.5); remaining: tutorial → audio → fretboard → video flow,
+      and a real Resend sending domain
 - [x] Workflow documented in CLAUDE.md
 
-**Outcome:** Staging infrastructure fully operational. The Phase 4 goal — "can we deploy and test against a real staging environment?" — is **YES** at the infrastructure level. User-flow testing is blocked by a separate pre-existing bug that needs its own investigation.
+**Outcome:** Staging infrastructure fully operational and the entire signup →
+confirm → login → signout auth chain works end-to-end. Remaining smoke-test
+items (content/audio/video flows, Resend domain) are not infrastructure
+blockers — they can be ticked off opportunistically or rolled into Phase 8 QA.
+Phase 4's goal — "can we deploy and test against a real staging environment?"
+— is **YES**.
 
-**Total time spent:** ~3 hours active work over the session (vs the 70min estimate — extra time spent uncovering and fixing 4 pre-existing build-pipeline bugs that had been silently broken).
+**Total time spent:** ~3 hours infra setup + ~2 sessions of auth-chain bug
+fixing that signup smoke-testing uncovered (each bug pre-existing, masked by
+the 19-day-old cached production build).
 
 ---
 
@@ -318,12 +354,17 @@ Currently [.github/workflows/deploy.yml](../../.github/workflows/deploy.yml#L60-
 
 ### 5.4 Smoke test after deploy
 
-Create `apps/frontend-e2e/src/smoke.spec.ts`:
+Partially started: `apps/frontend-e2e/src/auth-flow.spec.ts` already covers the
+logged-out-redirect case and has a `fixme`'d signin→signout test. Build on that
+rather than starting a fresh `smoke.spec.ts`.
 
-- [ ] Load the homepage — status 200
-- [ ] Login flow with a test user
-- [ ] Open a tutorial
-- [ ] Backend health check `/api/health` = healthy
+- [ ] Tag the auth-flow specs `@smoke` and add: homepage 200, open a tutorial,
+      `/api/health` healthy
+- [ ] Un-`fixme` the signin→signout test — it's flaky only against the Next.js
+      **dev** server; a deploy-time smoke run hits a real `next build` deploy,
+      which should be deterministic. Verify that assumption when wiring this up.
+- [ ] Seed/confirm the smoke test user exists in **production** Supabase
+      (currently only seeded in the project used for local runs)
 
 In the deploy workflow:
 
