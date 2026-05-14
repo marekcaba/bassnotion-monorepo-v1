@@ -70,9 +70,15 @@ export function UserAccountSection({ expanded: _expanded = false }: UserAccountS
   }, [navigateWithTransition]);
 
   const handleSignOut = useCallback(async () => {
+    // Navigate to /login FIRST, before clearing auth state. This unmounts
+    // AuthGuard before isAuthenticated flips false, so it never fires its
+    // own competing redirect or flashes its fallback. /login matches
+    // AuthGuard's safety-net redirect target so the two can't disagree.
+    // AuthProvider's onAuthStateChange listener also calls resetAuth() on
+    // the SIGNED_OUT event — by then we're already on a public route.
+    await navigateWithTransition('/login');
     await authService.signOut();
     resetAuth();
-    navigateWithTransition('/');
   }, [resetAuth, navigateWithTransition]);
 
   if (isLoading) {

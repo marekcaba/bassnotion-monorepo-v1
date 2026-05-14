@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Transport 1-Second Playback Issue', () => {
   test('diagnose why transport stops after 1 second', async ({ page }) => {

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Final Audio Fix Test', () => {
   test('verify widgets play audio after Transport state check fix', async ({

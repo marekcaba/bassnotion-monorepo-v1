@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Widget Schedule Recreation Bug', () => {
   test('widgets fail to recreate schedules after stop/play cycle', async ({

@@ -12,6 +12,7 @@ import { getLogger } from '@/utils/logger.js';
 import { AudioDebugPanel } from '@/shared/debug/AudioDebugger';
 import { HealthStatus } from '@/shared/components/HealthStatus';
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
+import { isMockTestEnv, isWebkitBrowser } from '@/shared/utils/testEnv';
 import { ThemedLayout } from './_components/ThemedLayout';
 // Phase 5: XState DevTools for visual state machine debugging
 import {
@@ -71,28 +72,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   );
 }
 
-// Wrapper to handle webkit E2E testing
+// Wrapper to handle webkit mock-test environments
 function AuthProviderWrapper({ children }: { children: React.ReactNode }) {
-  // Check for webkit browser in E2E testing environment
-  if (typeof window !== 'undefined') {
-    const isWebkit =
-      window.navigator.userAgent.includes('WebKit') ||
-      window.navigator.userAgent.includes('Safari');
-
-    const isE2ETesting =
-      window.location.hostname === 'localhost' ||
-      process.env.NODE_ENV === 'test' ||
-      window.__playwright ||
-      window.playwright ||
-      navigator.webdriver ||
-      window.__webdriver ||
-      window._phantom;
-
-    // For webkit E2E testing, bypass AuthProvider to prevent crashes
-    if (isWebkit && isE2ETesting) {
-      logger.info('Webkit E2E detected: Bypassing AuthProvider');
-      return <>{children}</>;
-    }
+  // In webkit under opt-in mock-test mode, bypass AuthProvider to prevent
+  // crashes in older specs. Real-auth E2E tests don't set the flag, so
+  // AuthProvider runs normally.
+  if (isWebkitBrowser() && isMockTestEnv()) {
+    logger.info('Webkit mock-test env detected: Bypassing AuthProvider');
+    return <>{children}</>;
   }
 
   return <AuthProvider>{children}</AuthProvider>;

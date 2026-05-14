@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Debug Schedule Creation', () => {
   test('check what happens when widgets create schedules', async ({ page }) => {

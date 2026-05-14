@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Test Drums Audio', () => {
   test('drums should load and play', async ({ page }) => {

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Basic Schedule Test', () => {
   test('verify basic Tone.js schedule works at all', async ({ page }) => {

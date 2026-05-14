@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Widget Schedule Bug Root Cause', () => {
   test('investigate why schedules do not fire', async ({ page }) => {

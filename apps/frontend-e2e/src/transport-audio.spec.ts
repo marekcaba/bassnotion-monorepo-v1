@@ -3,7 +3,7 @@
  * Tests the ACTUAL audio system, not mocks
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Real Transport Audio Tests', () => {
   test.beforeEach(async ({ page }) => {

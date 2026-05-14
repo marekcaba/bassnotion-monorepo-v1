@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Verify No Buffer Errors', () => {
   test('harmony widget plays without buffer errors', async ({ page }) => {

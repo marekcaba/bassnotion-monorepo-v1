@@ -35,6 +35,28 @@ what to investigate.
 
 ## 🟡 P2 — Quality / hygiene, not user-facing
 
+### Signout logic duplicated across 6 call sites
+- **Severity:** Low-Medium — inconsistent UX, latent race-condition bug class
+- **Discovered:** 2026-05-14 while fixing the signout "Access Denied" flash
+- **What:** There are 6 separate signout implementations, each repeating
+  the `signOut()` → `reset()` → `navigate()` sequence with subtle
+  variations (different destinations, an `isSigningOut` mounted-guard flag
+  in one, account-deletion variants in two):
+  - `UserIndicator.tsx` ✅ fixed (navigate `/login` first)
+  - `UserAccountSection.tsx` ✅ fixed (navigate `/login` first)
+  - `dashboard/page.tsx` ×2 (plain signout + account deletion) — still
+    old order, uses an `isSigningOut` flag as its own race workaround
+  - `app/settings/page.tsx` (account deletion) — still old order
+  - `use-idle-timeout.ts` — still old order
+  - `AuthProvider.tsx` ×2 (idle handlers) — navigate `/login?reason=idle`
+    but in the old signOut-then-navigate order
+- **Why it matters:** The "navigate before clearing auth state" fix
+  (prevents AuthGuard flashing "Access Denied" mid-signout) is only
+  applied to 2 of 6. The other 4 can still flash.
+- **Fix:** Consolidate into `authService.signOut(redirectTo?)` that owns
+  the navigate-then-clear ordering. All 6 callers become one-liners.
+  Account-deletion flows pass their own destination.
+
 ### Orphan unconfirmed users in `auth.users`
 - **Severity:** Low — cosmetic for now (no production users yet)
 - **What:** Signups with valid-syntax + valid-MX but nonexistent mailboxes

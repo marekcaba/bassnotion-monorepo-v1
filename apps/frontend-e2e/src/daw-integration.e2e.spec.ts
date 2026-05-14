@@ -5,7 +5,7 @@
  * Tests the complete DAW flow in a real browser environment
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('DAW Integration E2E Tests', () => {
   test.beforeEach(async ({ page }) => {

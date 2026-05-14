@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
+import { isMockTestEnv, isWebkitBrowser } from '@/shared/utils/testEnv';
+
 // Validate environment variables at module load time
 // This ensures the app fails fast if configuration is missing
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
@@ -12,24 +14,9 @@ if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
   );
 }
 
-// Detect webkit browsers and E2E testing for compatible configuration
-const isWebkit =
-  typeof window !== 'undefined' &&
-  (window.navigator.userAgent.includes('WebKit') ||
-    window.navigator.userAgent.includes('Safari'));
-
-// More comprehensive E2E testing detection
-const isE2ETesting =
-  typeof window !== 'undefined' &&
-  (process.env.NODE_ENV === 'test' ||
-    window.__playwright ||
-    window.playwright ||
-    navigator.webdriver ||
-    window.__webdriver ||
-    window._phantom);
-
-// Use minimal configuration during E2E testing to prevent crashes
-const useMinimalConfig = isWebkit && isE2ETesting;
+// Use minimal configuration in webkit under opt-in mock-test mode to
+// prevent crashes in older specs.
+const useMinimalConfig = isWebkitBrowser() && isMockTestEnv();
 
 // Create the Supabase client with appropriate configuration
 const createSupabaseClient = () => {
@@ -92,7 +79,7 @@ const createSupabaseClient = () => {
       flowType: 'pkce',
       debug: false,
       // Webkit-compatible storage configuration
-      storage: isWebkit
+      storage: isWebkitBrowser()
         ? {
             getItem: (key: string) => {
               try {

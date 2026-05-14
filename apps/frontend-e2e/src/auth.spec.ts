@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { AuthPage } from './pages/AuthPage.js';
 
 test.describe('Authentication Security', () => {

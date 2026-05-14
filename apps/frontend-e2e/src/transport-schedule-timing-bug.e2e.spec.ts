@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Transport Schedule Timing Bug', () => {
   test('schedules created at time 0 do not fire when transport starts at +0.1', async ({

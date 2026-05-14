@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Drum Pattern Debug', () => {
   test('check if drum pattern has events and why no sounds are triggered', async ({

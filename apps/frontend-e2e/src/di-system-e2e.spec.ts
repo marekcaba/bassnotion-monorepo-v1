@@ -5,7 +5,7 @@
  * environment with actual audio context and playback functionality.
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Dependency Injection E2E Tests', () => {
   test.beforeEach(async ({ page }) => {

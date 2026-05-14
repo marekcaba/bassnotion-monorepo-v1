@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Test Sampler Loading', () => {
   test('check sampler loading and fallback', async ({ page }) => {
