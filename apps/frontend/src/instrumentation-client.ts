@@ -10,7 +10,7 @@
  *
  * https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
  */
-import './sentry.client.config';
+import '../sentry.client.config';
 
 /**
  * Forward client-side navigation transitions to Sentry. Required so the
