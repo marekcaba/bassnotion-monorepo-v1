@@ -6,14 +6,16 @@ on:
   pull_request:
     branches: [main, develop]
 
+# Disable Nx Cloud — the workspace was never claimed at cloud.nx.app and
+# Nx refuses to run after the 3-day grace window. See ci.yml for context.
+env:
+  NX_CLOUD_ACCESS_TOKEN: ''
+  NX_NO_CLOUD: 'true'
+  NX_DAEMON: 'false'
+
 jobs:
   test-backend:
     runs-on: ubuntu-latest
-    # Tracked-broken — see "Test suite rehabilitation" follow-up.
-    # NestJS DI errors + mock/real interface drift + assertion drift from
-    # the drum-pattern-editor baseline merge that bypassed CI. Tests run
-    # and report but don't block PRs until the suite is rehabilitated.
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -25,7 +27,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Tracked-broken — see "Test suite rehabilitation" follow-up.
+      # NestJS DI errors + mock/real interface drift + assertion drift from
+      # the drum-pattern-editor baseline merge that bypassed CI. The step is
+      # marked continue-on-error so failures report but don't block PRs.
+      # (continue-on-error at the *job* level keeps the workflow running but
+      # still marks the job conclusion as failure — must be on the step.)
       - name: Run backend tests
+        continue-on-error: true
         run: pnpm run test:backend
         env:
           CI: true
@@ -33,11 +42,6 @@ jobs:
 
   test-frontend-playback:
     runs-on: ubuntu-latest
-    # Tracked-broken — see "Test suite rehabilitation" follow-up.
-    # 290 failures across 30 files, dominated by audio test infrastructure
-    # gaps (jsdom IndexedDB polyfill, incomplete Tone.js/AudioContext mocks,
-    # missing NEXT_PUBLIC_SUPABASE_URL in setup). Non-blocking until fixed.
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -49,7 +53,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Tracked-broken — see "Test suite rehabilitation" follow-up.
+      # 290 failures across 30 files, dominated by audio test infrastructure
+      # gaps (jsdom IndexedDB polyfill, incomplete Tone.js/AudioContext mocks,
+      # missing NEXT_PUBLIC_SUPABASE_URL in setup). Non-blocking until fixed.
       - name: Run playback domain tests
+        continue-on-error: true
         run: pnpm run test:frontend:playback
         env:
           CI: true
@@ -57,11 +66,6 @@ jobs:
 
   test-frontend-user:
     runs-on: ubuntu-latest
-    # Tracked-broken — see "Test suite rehabilitation" follow-up.
-    # ~30 failures across 4 files: missing QueryClientProvider wrapper in
-    # use-user-profile.test.ts; mockFetch interception not taking effect in
-    # profile.test.ts; minor module/log assertions. Non-blocking until fixed.
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -73,7 +77,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Tracked-broken — see "Test suite rehabilitation" follow-up.
+      # ~30 failures across 4 files: missing QueryClientProvider wrapper in
+      # use-user-profile.test.ts; mockFetch interception not taking effect in
+      # profile.test.ts; minor module/log assertions. Non-blocking until fixed.
       - name: Run user domain tests
+        continue-on-error: true
         run: pnpm run test:frontend:user
         env:
           CI: true
@@ -81,11 +90,6 @@ jobs:
 
   test-frontend-shared:
     runs-on: ubuntu-latest
-    # Tracked-broken — see "Test suite rehabilitation" follow-up.
-    # 3 failures in TechniqueRendererPlugin.test.ts: tests assert on
-    # console.error but the production code now routes errors through
-    # createStructuredLogger. Non-blocking until tests are updated.
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -97,7 +101,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Tracked-broken — see "Test suite rehabilitation" follow-up.
+      # 3 failures in TechniqueRendererPlugin.test.ts: tests assert on
+      # console.error but the production code now routes errors through
+      # createStructuredLogger. Non-blocking until tests are updated.
       - name: Run shared domain tests
+        continue-on-error: true
         run: pnpm run test:frontend:shared
         env:
           CI: true
