@@ -610,10 +610,20 @@ called from `main.ts`. None of it ran because the wiring was missing.
   - "Notify Suggested Assignees" — fires on new issues
   - "Send a notification for high priority issues" — fires on Sentry's
     ML-flagged high-priority issues
-- [ ] **Source-map upload** — deferred. Needs a `SENTRY_AUTH_TOKEN` GitHub
-      secret + Vercel env var, plus `productionBrowserSourceMaps: true` in
-      `next.config.js`. Worth doing before LIVE so production stack traces
-      are readable.
+- [x] **Source-map upload — DONE.** Three pieces of wiring:
+  - `SENTRY_AUTH_TOKEN` (Settings → Sentry → User Auth Tokens with
+    `project:read`, `project:releases`, `org:read`) added to GitHub
+    Secrets and Vercel env (Production + Preview, marked Sensitive)
+  - `SENTRY_ORG` and `SENTRY_PROJECT` slugs added to GitHub Variables
+    and Vercel env
+  - `productionBrowserSourceMaps: true` flipped in `next.config.js`
+  - **`widenClientFileUpload: true` added to `withSentryConfig`** — this
+    was the missing piece. Our `splitChunks` config renames chunks after
+    Sentry's debug-ID injection, so the auto-detected upload set didn't
+    match the served bundles. `widenClientFileUpload` makes Sentry upload
+    maps for everything in `.next/static`, regardless of chunk
+    references. After this, debug-ID lookup succeeds and Sentry stack
+    traces resolve to real source paths (verified end-to-end in browser).
 
 ### Gotchas captured during rollout
 
@@ -821,6 +831,6 @@ Sentry for "broken"). From here, two parallel tracks remaining:
   CI clean before launch).
 - Finally: Phase 8 pre-launch checklist → LIVE.
 
-**Two follow-ups carried over from Phase 6:**
-- Sentry source-map upload (`SENTRY_AUTH_TOKEN` + `productionBrowserSourceMaps: true`) — do before LIVE so stack traces are readable
-- Consider upgrading BetterStack monitor frequency from 3 min → 1 min if free tier allows
+**One follow-up carried over from Phase 6:**
+- BetterStack monitor frequency stays at 3 min (free tier doesn't allow
+  1 min). Upgrade-tier consideration for post-launch if needed.
