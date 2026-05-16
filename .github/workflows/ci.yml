@@ -10,16 +10,6 @@ permissions:
   actions: read
   contents: read
 
-# The nx.json `nxCloudId` was never claimed at cloud.nx.app, so Nx Cloud
-# refuses to authorize the workspace and aborts every `nx` invocation.
-# Setting these env vars makes Nx run locally without the Cloud round-trip,
-# matching the pattern already used in package.json build scripts and
-# Dockerfile.final. Revisit if/when we claim the workspace.
-env:
-  NX_CLOUD_ACCESS_TOKEN: ''
-  NX_NO_CLOUD: 'true'
-  NX_DAEMON: 'false'
-
 jobs:
   main:
     runs-on: ubuntu-latest

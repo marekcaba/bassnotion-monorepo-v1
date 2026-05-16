@@ -6,13 +6,6 @@ on:
   pull_request:
     branches: [main, develop]
 
-# Disable Nx Cloud — the workspace was never claimed at cloud.nx.app and
-# Nx refuses to run after the 3-day grace window. See ci.yml for context.
-env:
-  NX_CLOUD_ACCESS_TOKEN: ''
-  NX_NO_CLOUD: 'true'
-  NX_DAEMON: 'false'
-
 jobs:
   test-backend:
     runs-on: ubuntu-latest
