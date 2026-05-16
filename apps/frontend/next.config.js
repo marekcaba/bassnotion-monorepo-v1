@@ -283,6 +283,14 @@ module.exports = withSentryConfig(withBundleAnalyzer(nextConfig), {
   },
   // Hides the SDK initialization breadcrumbs and other dev-time noise.
   hideSourceMaps: true,
+  // Upload source maps for *all* JS chunks, not just the ones Sentry can
+  // auto-detect as source-map references. Required because our custom
+  // splitChunks config in `webpack:` above renames/splits chunks after
+  // Sentry's debug-id injection — leaving served chunks with debug IDs
+  // that don't match the uploaded maps. With widenClientFileUpload Sentry
+  // uploads everything in .next/static, so debug-id lookup hits regardless
+  // of which chunk the runtime ended up in.
+  widenClientFileUpload: true,
   // Disable the tunnel for now — it routes Sentry events through a
   // Next.js API route to bypass ad blockers. Easy to enable later if
   // we see lots of dropped events.
