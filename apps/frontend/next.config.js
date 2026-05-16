@@ -155,6 +155,12 @@ const nextConfig = {
       // Vercel Live feedback widget on preview deploys (no-op in production)
       'https://vercel.live',
       'wss://ws-us3.pusher.com',
+      // Sentry — the browser SDK posts events to *.ingest.<region>.sentry.io.
+      // The wildcard covers the EU/US/dedicated regions our org could be in.
+      'https://*.sentry.io',
+      'https://*.ingest.sentry.io',
+      'https://*.ingest.de.sentry.io',
+      'https://*.ingest.us.sentry.io',
     ];
 
     // Add localhost URLs for development
