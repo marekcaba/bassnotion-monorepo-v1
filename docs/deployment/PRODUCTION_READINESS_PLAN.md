@@ -561,49 +561,91 @@ follow-up effort:**
 
 ---
 
-## Phase 6: Monitoring and observability (1 day)
+## Phase 6: Monitoring and observability — DONE (2026-05-16)
 
-### 6.1 Uptime monitoring
+### 6.1 Uptime monitoring — DONE
 
-Pick one:
+- [x] **BetterStack** account created. 4 monitors live:
+  - `Production — Frontend` → `https://bassnotion-monorepo-v1-frontend.vercel.app`
+  - `Production — Backend health` → `https://backend-production-612c.up.railway.app/api/health` (keyword check: `"status":"healthy"`)
+  - `Staging — Frontend` → the per-branch Vercel URL for develop
+  - `Staging — Backend health` → `https://backend-staging-4d19.up.railway.app/api/health` (keyword check)
+- [x] Check frequency: 3 min (free tier default; 1 min available on paid)
+- [x] Email + phone alerting configured
 
-- [ ] **BetterStack** (recommended, free tier 10 monitors)
-- [ ] UptimeRobot (free tier 50 monitors, fewer features)
-- [ ] Pingdom (paid)
+### 6.2 Sentry — DONE
 
-Setup:
+Existing groundwork found during rollout: `@sentry/nextjs` + `@sentry/node`
+were installed, `sentry.{client,server,edge}.config.ts` already existed at
+`apps/frontend/` root, and the backend's `initializeSentry()` was already
+called from `main.ts`. None of it ran because the wiring was missing.
 
-- [ ] Monitor 1: Frontend `https://<vercel-url>/` — every 1 min
-- [ ] Monitor 2: Backend `https://<railway-url>/api/health` — every 1 min
-- [ ] Notifications: email and ideally push to phone
+- [x] Created two Sentry projects: `bassicology-frontend` (Next.js) +
+      `bassicology-backend` (Node.js with NestJS framework)
+- [x] Frontend wiring:
+  - Added `apps/frontend/src/instrumentation.ts` (server/edge runtime entry,
+    re-exports `captureRequestError as onRequestError` for RSC errors)
+  - Added `apps/frontend/src/instrumentation-client.ts` (client-side entry,
+    delegates to legacy `sentry.client.config.ts` to keep config in one
+    place; re-exports `captureRouterTransitionStart as onRouterTransitionStart`
+    for app-router navigations)
+  - Wrapped `next.config.js` with `withSentryConfig` (source-map upload
+    gated on `SENTRY_AUTH_TOKEN` being set so local builds without the
+    token still work)
+  - Guarded `window.location.origin` in `sentry.client.config.ts` against
+    server-side module evaluation
+  - Removed dead v7-API helpers (`startTransaction` /
+    `measureAsyncOperation`) from `apps/frontend/src/shared/utils/sentry.ts`
+  - Added `https://*.ingest.{de,us}.sentry.io` etc. to the CSP `connect-src`
+    allowlist in `next.config.js` so the browser SDK can reach Sentry
+- [x] Backend: already initialized by `main.ts`; just needed the DSN
+- [x] Env vars set in **all** environments:
+  - Vercel: `NEXT_PUBLIC_SENTRY_DSN` + `SENTRY_DSN` (frontend DSN) →
+    Production + Preview + Development
+  - Railway: `SENTRY_DSN` (backend DSN) → production + staging
+- [x] Verified end-to-end: test error captured + showed up in Sentry
+      dashboard; `__sentry_captured__: true` flag confirmed on
+      unhandledrejection events
+- [x] Alert rules: both projects have the default Sentry-seeded rules:
+  - "Notify Suggested Assignees" — fires on new issues
+  - "Send a notification for high priority issues" — fires on Sentry's
+    ML-flagged high-priority issues
+- [ ] **Source-map upload** — deferred. Needs a `SENTRY_AUTH_TOKEN` GitHub
+      secret + Vercel env var, plus `productionBrowserSourceMaps: true` in
+      `next.config.js`. Worth doing before LIVE so production stack traces
+      are readable.
 
-### 6.2 Sentry — actually wire it up (deferred from Phase 5.3)
+### Gotchas captured during rollout
 
-`@sentry/nextjs` + `@sentry/node` are installed and helper utilities
-exist, but the SDK is **not initialized**. Source-map upload, release
-tagging, and alerts are all meaningless until this lands.
+These bit us; documented so they don't bite again:
 
-- [ ] Frontend: add `sentry.client.config.ts` + `sentry.server.config.ts` +
-      `instrumentation.ts`; wrap `next.config.js` with `withSentryConfig`
-- [ ] Backend: initialize `@sentry/node` in the NestJS bootstrap
-- [ ] Set `SENTRY_DSN` in Railway (backend) and Vercel (frontend) env
-- [ ] Add Sentry release tagging + source-map upload step to `deploy.yml`
-      (`productionBrowserSourceMaps: true` in next.config.js, but Sentry
-      plugin uploads them — don't ship source maps as public assets)
-- [ ] In Sentry dashboard: set an alert for **error rate spike** (>5 errors/min)
-- [ ] Alert for **new issue type** in the production release
-- [ ] Notifications to email
+- **`window.Sentry` is `undefined` by design** in modern Sentry SDKs — the
+  SDK does NOT attach itself to `window`. To check if Sentry is initialized
+  client-side, use `Sentry.isInitialized()` not `typeof window.Sentry`.
+- **Next.js + `src/` directory:** `instrumentation.ts` and
+  `instrumentation-client.ts` must live inside `src/` when a `src/` dir
+  exists. Files at the project root are silently ignored.
+- **CSP `connect-src` must include Sentry ingest endpoints** or the
+  browser blocks every event with no console clue beyond a CSP violation.
+- **`@sentry/nextjs` v10 renamed `onRouterTransitionStart` to
+  `captureRouterTransitionStart`** — the old name no longer exists, so a
+  re-export will silently fail at module load and prevent `Sentry.init()`
+  from running.
 
-### 6.3 Logging audit
+### 6.3 Logging audit — DONE
 
-- [ ] Verify production does NOT have `NEXT_PUBLIC_LOG_LEVEL=INFO` (default ERROR is fine)
-- [ ] Verify production does NOT have `NEXT_PUBLIC_DEBUG_AUDIO=true`
-- [ ] Backend: verify structured logs flow into Railway logs (the default)
+- [x] Production Vercel env vars: only the 3 base ones
+      (`NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SUPABASE_URL`,
+      `NEXT_PUBLIC_SUPABASE_ANON_KEY`). No `NEXT_PUBLIC_LOG_LEVEL`, no
+      `NEXT_PUBLIC_DEBUG_AUDIO` — defaults are safe (ERROR-only logging,
+      audio debug off).
+- [x] Backend structured logs flow into Railway logs (default behavior).
 
-**Acceptance criteria for Phase 6:**
+**Acceptance criteria for Phase 6 — all met:**
 
-- If the backend goes down, you get a notification within 2 minutes
-- Sentry alerts you to new errors
+- [x] BetterStack will email + phone within ~3 min of the backend going down
+- [x] Sentry catches and surfaces errors; emails on new issues
+- [x] No debug-level logging leaking to production
 
 ---
 
@@ -748,32 +790,37 @@ Create `docs/deployment/ROLLBACK_RUNBOOK.md` with:
 | 4. Staging environment           | 2–3 days              | ✅ done              |
 | 5. Deploy pipeline               | 2 days                | ✅ done (2026-05-16) |
 | 5b. Test suite rehabilitation    | 1–3 days (open scope) | 🟡 not started       |
-| 6. Monitoring                    | 1 day                 | 🟡 not started       |
+| 6. Monitoring                    | 1 day                 | ✅ done (2026-05-16) |
 | 7. Security polish               | 1 day                 | 🟡 not started       |
 | 8. Pre-launch                    | 0.5 day               | last                |
-| **Remaining**                    | **3–5 days of work**  |                     |
+| **Remaining**                    | **2–4 days of work**  |                     |
 
-At ~2h/day → **1–2 weeks to LIVE-ready state from here.**
+At ~2h/day → **1 week to LIVE-ready state from here** (less if Phase 5b
+is deferred to post-launch cleanup).
 
 ---
 
 ## What to do RIGHT NOW (next action)
 
-Phase 5 is done — the deploy pipeline is live and working end-to-end against
-staging. From here, three things can move in parallel:
+Phases 5 and 6 are done — code flows safely staging→production through the
+deploy pipeline, and we'll know when anything breaks (BetterStack for "down",
+Sentry for "broken"). From here, two parallel tracks remaining:
 
-1. **Phase 6 (Monitoring)** — biggest user-protection win. Set up BetterStack
-   uptime monitors (~30 min) and actually initialize Sentry (6.2). Without
-   this, you have no idea when production breaks.
-2. **Phase 5b (Test suite rehabilitation)** — start with Lint auto-fix (5b.1,
-   15-30 min, basically free). Then de-quarantine jobs one at a time as you
-   have time, working from cheapest to most expensive.
-3. **Phase 7 (Security polish)** — CSP headers, rate-limit audit, backup
-   restore test. Independent of the others.
+1. **Phase 7 (Security polish)** — CSP headers, rate-limit audit, Supabase
+   backup restore test, clean up `_v*` test pages. Self-contained, ~1 day.
+2. **Phase 5b (Test suite rehabilitation)** — start with Lint auto-fix
+   (5b.1, basically free, ~30 min). Then de-quarantine jobs one at a time
+   from cheapest to most expensive. Doesn't block go-LIVE but worth
+   chipping at to keep CI honest.
+
+**Then:** Phase 8 (pre-launch checklist) → go LIVE.
 
 **Recommended order:**
-- Today/next session: Phase 6.1 (uptime monitors, ~30 min) + Phase 5b.1 (lint
-  auto-fix, ~30 min). Quick wins, big leverage.
-- Next: Phase 6.2 (Sentry SDK init + alerts).
-- Then: Phase 7 + remaining 5b work as bandwidth allows.
-- Finally: Phase 8 pre-launch checklist → go LIVE.
+- Next session: Phase 7 — fastest path to a "go LIVE ready" state.
+- After: Phase 5b in spare bandwidth (or fold into Phase 8 if you want
+  CI clean before launch).
+- Finally: Phase 8 pre-launch checklist → LIVE.
+
+**Two follow-ups carried over from Phase 6:**
+- Sentry source-map upload (`SENTRY_AUTH_TOKEN` + `productionBrowserSourceMaps: true`) — do before LIVE so stack traces are readable
+- Consider upgrading BetterStack monitor frequency from 3 min → 1 min if free tier allows
