@@ -64,7 +64,7 @@ test.describe('Auth state transitions', () => {
     await page.context().clearCookies();
   });
 
-  test('logged-out user hitting /app is redirected to /login without an "Access Denied" flash', async ({
+  test('@smoke logged-out user hitting /app is redirected to /login without an "Access Denied" flash', async ({
     page,
   }) => {
     const getErrors = collectErrors(page);
@@ -96,88 +96,84 @@ test.describe('Auth state transitions', () => {
   // wait handling, not the app. Needs a reliable "post-login settled"
   // signal — likely a deterministic build (next build + next start) for
   // E2E, or an explicit app-emitted ready event — before re-enabling.
-  test.fixme(
-    'signin -> signout returns to /login with no dashboard flash or errors',
-    async ({ page }) => {
-      const getErrors = collectErrors(page);
+  test.fixme('signin -> signout returns to /login with no dashboard flash or errors', async ({
+    page,
+  }) => {
+    const getErrors = collectErrors(page);
 
-      // --- Sign in ---
-      await page.goto('/login', { waitUntil: 'commit' });
+    // --- Sign in ---
+    await page.goto('/login', { waitUntil: 'commit' });
 
-      // Wait for the form to hydrate before interacting — with waitUntil
-      // 'commit' the DOM is present but React may not have wired the submit
-      // handler yet. The "Sign In" button being enabled is the ready signal.
-      const signInButton = page.getByRole('button', {
-        name: 'Sign In',
-        exact: true,
-      });
-      await expect(signInButton).toBeEnabled({ timeout: 15000 });
+    // Wait for the form to hydrate before interacting — with waitUntil
+    // 'commit' the DOM is present but React may not have wired the submit
+    // handler yet. The "Sign In" button being enabled is the ready signal.
+    const signInButton = page.getByRole('button', {
+      name: 'Sign In',
+      exact: true,
+    });
+    await expect(signInButton).toBeEnabled({ timeout: 15000 });
 
-      await page.fill('input[name="email"]', TEST_EMAIL!);
-      await page.fill('input[name="password"]', TEST_PASSWORD!);
-      await signInButton.click();
+    await page.fill('input[name="email"]', TEST_EMAIL!);
+    await page.fill('input[name="password"]', TEST_PASSWORD!);
+    await signInButton.click();
 
-      // Land on an authenticated route. After login, redirectAfterAuth sends
-      // the user to /assessment if they haven't completed it, otherwise to
-      // /dashboard or /app — accept any of them, just not /login.
-      await expect(page).toHaveURL(/\/(dashboard|app|assessment)/, {
-        timeout: 20000,
-      });
+    // Land on an authenticated route. After login, redirectAfterAuth sends
+    // the user to /assessment if they haven't completed it, otherwise to
+    // /dashboard or /app — accept any of them, just not /login.
+    await expect(page).toHaveURL(/\/(dashboard|app|assessment)/, {
+      timeout: 20000,
+    });
 
-      // Go to /app where UserAccountSection (with the signout control) is
-      // mounted. Use waitUntil: 'commit' — this is an audio app with
-      // long-lived connections, so the page rarely reaches a full 'load'
-      // state; waiting for navigation to commit is enough.
-      await page.goto('/app', { waitUntil: 'commit' });
+    // Go to /app where UserAccountSection (with the signout control) is
+    // mounted. Use waitUntil: 'commit' — this is an audio app with
+    // long-lived connections, so the page rarely reaches a full 'load'
+    // state; waiting for navigation to commit is enough.
+    await page.goto('/app', { waitUntil: 'commit' });
 
-      // On /app the signout lives inside a Radix dropdown: click the "User
-      // menu" trigger, then the "Sign Out" item. The trigger is a Radix
-      // DropdownMenuTrigger — its open handler is attached on hydration, so
-      // a click landing too early is a no-op. Retry the open until the menu
-      // item actually appears.
-      const userMenu = page.getByRole('button', { name: 'User menu' });
-      await expect(userMenu).toBeVisible({ timeout: 15000 });
-      const signOutItem = page.getByRole('menuitem', { name: 'Sign Out' });
-      await expect(async () => {
-        await userMenu.click();
-        await expect(signOutItem).toBeVisible({ timeout: 2000 });
-      }).toPass({ timeout: 15000 });
+    // On /app the signout lives inside a Radix dropdown: click the "User
+    // menu" trigger, then the "Sign Out" item. The trigger is a Radix
+    // DropdownMenuTrigger — its open handler is attached on hydration, so
+    // a click landing too early is a no-op. Retry the open until the menu
+    // item actually appears.
+    const userMenu = page.getByRole('button', { name: 'User menu' });
+    await expect(userMenu).toBeVisible({ timeout: 15000 });
+    const signOutItem = page.getByRole('menuitem', { name: 'Sign Out' });
+    await expect(async () => {
+      await userMenu.click();
+      await expect(signOutItem).toBeVisible({ timeout: 2000 });
+    }).toPass({ timeout: 15000 });
 
-      // --- Sign out ---
-      // Watch for the regression we just fixed: during signout the old code
-      // flashed the "Access Denied" card AND re-rendered the dashboard while
-      // two navigations raced. Poll the DOM rapidly during the transition.
-      let sawAccessDenied = false;
-      const pollHandle = setInterval(async () => {
-        try {
-          const denied = await page
-            .getByText('Access Denied')
-            .count()
-            .catch(() => 0);
-          if (denied > 0) sawAccessDenied = true;
-        } catch {
-          // page may be mid-navigation — ignore
-        }
-      }, 50);
+    // --- Sign out ---
+    // Watch for the regression we just fixed: during signout the old code
+    // flashed the "Access Denied" card AND re-rendered the dashboard while
+    // two navigations raced. Poll the DOM rapidly during the transition.
+    let sawAccessDenied = false;
+    const pollHandle = setInterval(async () => {
+      try {
+        const denied = await page
+          .getByText('Access Denied')
+          .count()
+          .catch(() => 0);
+        if (denied > 0) sawAccessDenied = true;
+      } catch {
+        // page may be mid-navigation — ignore
+      }
+    }, 50);
 
-      await signOutItem.click();
+    await signOutItem.click();
 
-      // Signout should land on /login (matches AuthGuard's redirect target).
-      await expect(page).toHaveURL(/\/login/, { timeout: 15000 });
-      clearInterval(pollHandle);
+    // Signout should land on /login (matches AuthGuard's redirect target).
+    await expect(page).toHaveURL(/\/login/, { timeout: 15000 });
+    clearInterval(pollHandle);
 
-      expect(sawAccessDenied, 'no "Access Denied" flash during signout').toBe(
-        false,
-      );
+    expect(sawAccessDenied, 'no "Access Denied" flash during signout').toBe(
+      false,
+    );
 
-      // Session is actually gone: hitting an authed route bounces to /login.
-      await page.goto('/app', { waitUntil: 'commit' });
-      await expect(page).toHaveURL(/\/login/, { timeout: 15000 });
+    // Session is actually gone: hitting an authed route bounces to /login.
+    await page.goto('/app', { waitUntil: 'commit' });
+    await expect(page).toHaveURL(/\/login/, { timeout: 15000 });
 
-      expect(
-        getErrors(),
-        'no console errors across signin->signout',
-      ).toEqual([]);
-    },
-  );
+    expect(getErrors(), 'no console errors across signin->signout').toEqual([]);
+  });
 });

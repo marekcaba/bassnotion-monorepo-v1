@@ -6,18 +6,21 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useUserProfile } from '../use-user-profile';
 
-// Mock the auth hook
-const mockUseAuth = vi.fn();
+// Mock the auth hook + Supabase client. vi.hoisted() so these are available
+// inside the vi.mock factories, which Vitest hoists above the rest of the
+// module.
+const { mockUseAuth, mockSupabase } = vi.hoisted(() => ({
+  mockUseAuth: vi.fn(),
+  mockSupabase: {
+    auth: {
+      getSession: vi.fn(),
+    },
+  },
+}));
+
 vi.mock('../use-auth', () => ({
   useAuth: mockUseAuth,
 }));
-
-// Mock the Supabase client
-const mockSupabase = {
-  auth: {
-    getSession: vi.fn(),
-  },
-};
 
 vi.mock('@/infrastructure/supabase/client', () => ({
   supabase: mockSupabase,

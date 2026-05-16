@@ -7,11 +7,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '../../test/test-utils';
 import { BassSettingsCard } from '../BassSettingsCard';
 
-// Mock the hooks and services
-const mockUseUserProfile = vi.fn();
-const mockProfileService = {
-  updateBassConfiguration: vi.fn(),
-};
+// Mock the hooks and services. vi.hoisted() so these are available inside
+// the vi.mock factories, which Vitest hoists above the rest of the module.
+const { mockUseUserProfile, mockProfileService } = vi.hoisted(() => ({
+  mockUseUserProfile: vi.fn(),
+  mockProfileService: {
+    updateBassConfiguration: vi.fn(),
+  },
+}));
 
 vi.mock('../hooks/use-user-profile', () => ({
   useUserProfile: mockUseUserProfile,

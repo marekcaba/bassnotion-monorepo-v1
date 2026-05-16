@@ -1,0 +1,13 @@
+# Minimal Supabase CLI config for the deploy pipeline.
+#
+# The deploy workflow runs `supabase db push --linked` from the repo root
+# against the migrations in ./migrations. Only `project_id` and the `[db]`
+# major version are needed for that — local-dev settings (api/studio/auth
+# ports etc.) live in apps/backend/supabase/config.toml and aren't used here.
+#
+# major_version must match the remote database. Production and staging both
+# run Postgres 17.
+project_id = "bassnotion"
+
+[db]
+major_version = 17

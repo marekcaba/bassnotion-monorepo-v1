@@ -1,28 +1,94 @@
 name: Deploy
 
+# Orchestrates a deploy — it does NOT trigger one.
+#
+# Railway and Vercel each auto-deploy on push via their own GitHub
+# integrations (develop -> staging, main -> production). Having Actions
+# *also* run a deploy command would double-build. So this workflow only
+# sequences and gates around those integrations:
+#
+#   1. migrate     — push Supabase migrations to the matching project
+#   2. health-gate — wait until the Railway backend reports healthy
+#   3. smoke       — run @smoke Playwright specs against the live URLs
+#
+# develop -> staging project/URLs. main -> production project/URLs, with
+# the migrate job gated behind the `production` environment's manual
+# approval. Any job failing halts the rest.
+
 on:
   push:
     branches:
       - main
-    tags:
-      - 'v*'
+      - develop
   workflow_dispatch:
 
 permissions:
   actions: read
   contents: read
-  deployments: write
 
 jobs:
-  deploy:
+  migrate:
     runs-on: ubuntu-latest
-    environment: production
+    # main -> `production` requires manual approval (configured on the
+    # GitHub environment). develop -> `staging` runs unattended.
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    outputs:
+      target: ${{ steps.target.outputs.target }}
+    steps:
+      - name: Resolve deploy target
+        id: target
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "target=production" >> "$GITHUB_OUTPUT"
+          else
+            echo "target=staging" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Push migrations to ${{ steps.target.outputs.target }} Supabase
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_REF: ${{ github.ref == 'refs/heads/main' && secrets.SUPABASE_PROJECT_REF_PROD || secrets.SUPABASE_PROJECT_REF_STAGING }}
+          DB_PASSWORD: ${{ github.ref == 'refs/heads/main' && secrets.SUPABASE_DB_PASSWORD_PROD || secrets.SUPABASE_DB_PASSWORD_STAGING }}
+        run: |
+          supabase link --project-ref "$PROJECT_REF" --password "$DB_PASSWORD"
+          supabase db push --linked --password "$DB_PASSWORD"
+
+  health-gate:
+    needs: migrate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for ${{ needs.migrate.outputs.target }} backend to report healthy
+        env:
+          BACKEND_URL: ${{ github.ref == 'refs/heads/main' && vars.BACKEND_URL_PROD || vars.BACKEND_URL_STAGING }}
+        run: |
+          echo "Polling $BACKEND_URL/api/health ..."
+          for i in $(seq 1 60); do
+            body=$(curl -fsS --max-time 10 "$BACKEND_URL/api/health" || true)
+            if echo "$body" | grep -q '"status":"healthy"'; then
+              echo "Backend healthy after $i attempt(s)."
+              echo "$body"
+              exit 0
+            fi
+            echo "Attempt $i: not healthy yet, retrying in 10s..."
+            sleep 10
+          done
+          echo "::error::Backend did not become healthy within 10 minutes."
+          exit 1
+
+  smoke:
+    needs: [migrate, health-gate]
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          filter: tree:0
-          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -32,13 +98,11 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 10
           run_install: false
 
       - name: Get pnpm store directory
         shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
       - name: Setup pnpm cache
         uses: actions/cache@v4
@@ -51,38 +115,33 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build all projects
-        run: npx nx run-many --target=build --all
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
 
-      - name: Run production tests
-        run: |
-          npx nx run-many --target=test --all
-          npx nx run-many --target=typecheck --all
+      - name: Run @smoke specs against ${{ needs.migrate.outputs.target }}
+        env:
+          BASE_URL: ${{ github.ref == 'refs/heads/main' && vars.FRONTEND_URL_PROD || vars.FRONTEND_URL_STAGING }}
+          API_URL: ${{ github.ref == 'refs/heads/main' && vars.BACKEND_URL_PROD || vars.BACKEND_URL_STAGING }}
+        run: npx playwright test --config apps/frontend-e2e/playwright.config.ts --project chromium --grep @smoke
 
-      # Frontend deployment (example for Vercel)
-      - name: Deploy Frontend to Vercel
-        if: github.ref == 'refs/heads/main'
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          working-directory: ./apps/frontend
-          vercel-args: '--prod'
-
-      # Backend deployment (example for Railway/Render/etc)
-      # Uncomment and configure based on your deployment platform
-      # - name: Deploy Backend
-      #   if: github.ref == 'refs/heads/main'
-      #   run: |
-      #     echo "Deploy backend to your platform"
-      #     # Add your backend deployment commands here
-
-      - name: Create deployment summary
+      - name: Upload smoke test report
+        uses: actions/upload-artifact@v4
         if: always()
+        with:
+          name: smoke-report
+          path: dist/apps/frontend-e2e/html-report/
+          retention-days: 14
+
+  summary:
+    needs: [migrate, health-gate, smoke]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Create deployment summary
         run: |
-          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- **Frontend**: Deployed to Vercel" >> $GITHUB_STEP_SUMMARY
-          echo "- **Backend**: Ready for deployment" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "## Deploy — ${{ needs.migrate.outputs.target }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Migrations**: ${{ needs.migrate.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Health gate**: ${{ needs.health-gate.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Smoke test**: ${{ needs.smoke.result }}" >> $GITHUB_STEP_SUMMARY
