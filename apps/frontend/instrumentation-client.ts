@@ -14,6 +14,9 @@ import './sentry.client.config';
 
 /**
  * Forward client-side navigation transitions to Sentry. Required so the
- * browser SDK reports route changes in Next.js's app router.
+ * browser SDK reports route changes in Next.js's app router. The actual
+ * export name varies by SDK version — @sentry/nextjs 10.x exports
+ * captureRouterTransitionStart and aliases it to onRouterTransitionStart
+ * via Next.js's instrumentation hook contract.
  */
-export { onRouterTransitionStart } from '@sentry/nextjs';
+export { captureRouterTransitionStart as onRouterTransitionStart } from '@sentry/nextjs';
