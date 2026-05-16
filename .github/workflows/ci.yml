@@ -94,20 +94,12 @@ jobs:
       - name: Build
         run: npx nx affected -t build
 
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps
-
-      # Tracked-broken — see "Test suite rehabilitation" follow-up.
-      # The Playwright suite has ~50+ broken specs (baseline-merge rot:
-      # stale Window typings, missing module declarations, AudioContext
-      # init issues) that hang on 30s timeouts each, making the step run
-      # for an hour+ before failing. Soft-fail until the suite is fixed.
-      # Bounded with timeout-minutes as a belt-and-braces guard against
-      # the per-spec timeouts compounding.
-      - name: E2E tests
-        continue-on-error: true
-        timeout-minutes: 25
-        run: npx nx affected -t e2e
+      # E2E coverage runs in test.yml's dedicated `test-e2e` job (which
+      # uses the same Playwright suite). Running it twice doubles runner
+      # time. Even with continue-on-error + timeout-minutes, this step
+      # was hanging for 35+ min instead of capping at 25 — leaving it in
+      # ci.yml just wedges the main job. The test-e2e job already gates
+      # PRs on Playwright outcome.
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
