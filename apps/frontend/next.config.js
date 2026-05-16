@@ -19,8 +19,13 @@ const nextConfig = {
   // Configure path mapping for the monorepo structure
   transpilePackages: [],
 
-  // Security: Disable source maps in production
-  productionBrowserSourceMaps: false,
+  // Source maps are generated for production builds so the Sentry plugin
+  // can upload them and translate minified stack traces back to readable
+  // file:line:col references. The Sentry plugin (configured in
+  // withSentryConfig below with `hideSourceMaps: true`) strips the
+  // .map files from the public output, so users never download them —
+  // only Sentry has them.
+  productionBrowserSourceMaps: true,
 
   // Ensure proper handling of ES modules
   eslint: {
