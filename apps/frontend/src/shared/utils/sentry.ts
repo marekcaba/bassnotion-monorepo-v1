@@ -87,45 +87,6 @@ export function addBreadcrumb(
 }
 
 /**
- * Start a performance transaction
- */
-export function startTransaction(
-  name: string,
-  op: string = 'navigation',
-): ReturnType<typeof Sentry.startTransaction> | null {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  return Sentry.startTransaction({
-    name,
-    op,
-  });
-}
-
-/**
- * Measure async operation performance
- */
-export async function measureAsyncOperation<T>(
-  name: string,
-  operation: () => Promise<T>,
-  op: string = 'async',
-): Promise<T> {
-  const transaction = startTransaction(name, op);
-
-  try {
-    const result = await operation();
-    transaction?.setStatus('ok');
-    return result;
-  } catch (error) {
-    transaction?.setStatus('internal_error');
-    throw error;
-  } finally {
-    transaction?.finish();
-  }
-}
-
-/**
  * Capture audio playback errors with context
  */
 export function captureAudioError(

@@ -1,6 +1,7 @@
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
 });
+const { withSentryConfig } = require('@sentry/nextjs');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -248,4 +249,31 @@ const nextConfig = {
   },
 };
 
-module.exports = withBundleAnalyzer(nextConfig);
+// Wrap with Sentry — required for sentry.client.config.ts and
+// instrumentation.ts (server/edge) to actually run. Without this the
+// Sentry SDK is imported but never initialized.
+//
+// silent: only log to stdout in CI/dev so local builds aren't noisy.
+// org/project are read from env so different teammates can point at
+// their own Sentry projects without editing this file.
+//
+// Source-map upload is enabled only when SENTRY_AUTH_TOKEN is set —
+// otherwise Sentry would 401 every build. Add the token as a
+// SENTRY_AUTH_TOKEN env var in Vercel (and locally if you want
+// source-map upload from your machine).
+module.exports = withSentryConfig(withBundleAnalyzer(nextConfig), {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  silent: !process.env.CI,
+  // Don't upload source maps if no auth token is configured — keeps
+  // builds working without the Sentry account being set up locally.
+  sourcemaps: {
+    disable: !process.env.SENTRY_AUTH_TOKEN,
+  },
+  // Hides the SDK initialization breadcrumbs and other dev-time noise.
+  hideSourceMaps: true,
+  // Disable the tunnel for now — it routes Sentry events through a
+  // Next.js API route to bypass ad blockers. Easy to enable later if
+  // we see lots of dropped events.
+  // tunnelRoute: '/monitoring',
+});
