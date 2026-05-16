@@ -70,6 +70,10 @@ export default defineConfig({
       '**/build/**',
       '**/.{idea,git,cache,output,temp}/**',
       '**/coverage/**',
+      // frontend-e2e holds Playwright specs — run via `nx e2e frontend-e2e`,
+      // not Vitest. Without this, Vitest collects them and every file fails
+      // with "Playwright Test did not expect test.describe() to be called".
+      'apps/frontend-e2e/**',
     ],
   },
   // Vite optimization for tests

@@ -7,10 +7,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '../../test/test-utils';
 import { UserIndicator } from '../UserIndicator';
 
-// Mock the hooks
-const mockUseAuth = vi.fn();
-const mockUseUserProfile = vi.fn();
-const mockNavigateWithTransition = vi.fn();
+// Mock the hooks. vi.hoisted() so these are available inside the
+// vi.mock factories, which Vitest hoists above the rest of the module.
+const { mockUseAuth, mockUseUserProfile, mockNavigateWithTransition } =
+  vi.hoisted(() => ({
+    mockUseAuth: vi.fn(),
+    mockUseUserProfile: vi.fn(),
+    mockNavigateWithTransition: vi.fn(),
+  }));
 
 vi.mock('../hooks/use-auth', () => ({
   useAuth: mockUseAuth,

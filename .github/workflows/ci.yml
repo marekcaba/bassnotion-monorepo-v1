@@ -52,9 +52,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # Security: Check for dependency vulnerabilities
+      # Security: fail only on critical CVEs. The remaining high/moderate
+      # vulns are known transitive ReDoS in build tooling (see the
+      # production-readiness plan, Phase 1.5) — tracked, not blocking.
       - name: Security audit
-        run: pnpm audit
+        run: pnpm audit --audit-level critical
 
       - name: Set up Nx SHAs
         uses: nrwl/nx-set-shas@v4

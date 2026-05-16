@@ -5,21 +5,24 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ProfileService, profileService } from '../profile';
 
-// Mock Supabase client
-const mockSupabase = {
-  auth: {
-    getSession: vi.fn(),
-    getUser: vi.fn(),
+// Mock Supabase client. vi.hoisted() so mockSupabase is available inside
+// the vi.mock factory, which Vitest hoists above the rest of the module.
+const { mockSupabase } = vi.hoisted(() => ({
+  mockSupabase: {
+    auth: {
+      getSession: vi.fn(),
+      getUser: vi.fn(),
+    },
+    from: vi.fn(() => ({
+      update: vi.fn().mockReturnThis(),
+      insert: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn(),
+      maybeSingle: vi.fn(),
+    })),
   },
-  from: vi.fn(() => ({
-    update: vi.fn().mockReturnThis(),
-    insert: vi.fn().mockReturnThis(),
-    select: vi.fn().mockReturnThis(),
-    eq: vi.fn().mockReturnThis(),
-    single: vi.fn(),
-    maybeSingle: vi.fn(),
-  })),
-};
+}));
 
 vi.mock('@/infrastructure/supabase/client', () => ({
   supabase: mockSupabase,

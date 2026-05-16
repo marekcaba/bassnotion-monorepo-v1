@@ -9,6 +9,8 @@ import * as THREE from 'three';
 import { TechniqueType, ExerciseNote } from '@bassnotion/contracts';
 import { createStructuredLogger } from '@bassnotion/contracts';
 
+const logger = createStructuredLogger('TechniqueRenderer');
+
 // Epic 4 Renderer Context
 export interface RenderContext {
   scene: THREE.Scene;
