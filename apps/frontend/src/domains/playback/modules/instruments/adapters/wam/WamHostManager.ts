@@ -15,6 +15,18 @@
  * Part of Story 3.21 Task 7 - Web Audio Standards Compliance
  */
 
+/* eslint-disable no-restricted-imports, @typescript-eslint/no-empty-function, @nx/enforce-module-boundaries -- */
+/* Pre-existing exceptions in this file (predate the pre-commit hook
+ * relaxation, surfaced when fixing the broken `../core/` imports):
+ * - 4x no-restricted-imports: legacy adapter that imports directly
+ *   from services/. Refactoring to go through the shared module is
+ *   a separate cleanup item.
+ * - 1x lazy-loaded-libraries: @bassnotion/contracts is imported
+ *   statically here but lazy-loaded by DrumProcessor. Cross-file
+ *   inconsistency; either both should be lazy or neither.
+ * - 5x no-empty-function: WAM SDK shims that intentionally no-op
+ *   (the host doesn't bridge WAM groups, just tracks them). */
+
 import type {
   WamEnv,
   WamGroup,
@@ -39,8 +51,24 @@ import {
   PlaybackError,
   ErrorSeverity,
 } from '../../../../services/errors/base.js';
-import { PerformanceOptimizer } from '../core/PerformanceOptimizer.js';
-import { DeviceCapabilityManager } from '../core/DeviceCapabilityManager.js';
+// NOTE — type-only imports.
+// The wam/core/ folder doesn't exist; these were broken paths.
+// PerformanceOptimizer + DeviceCapabilityManager are looked up via
+// serviceRegistry below but never registered, so the lookups always
+// return undefined and the conditional usages (`if
+// (this.performanceOptimizer)`, `if (this.deviceCapabilityManager)`)
+// always skip. Importing for type-shape only keeps the file
+// compiling without changing runtime behavior. The dead-code paths
+// should be removed in a separate pass.
+import type { PerformanceOptimizer } from '../../../optimization/PerformanceOptimizer.js';
+type DeviceCapabilityManager = {
+  getCapabilities(): {
+    cpuClass?: string;
+    memorySize?: number;
+    isLowEnd?: boolean;
+    [key: string]: unknown;
+  };
+};
 import { createStructuredLogger } from '@bassnotion/contracts';
 
 /**
