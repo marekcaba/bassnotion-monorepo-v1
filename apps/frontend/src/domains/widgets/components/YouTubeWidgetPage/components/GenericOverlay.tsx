@@ -3,7 +3,10 @@
 import React, { useCallback } from 'react';
 import { BookOpen, Mic, Headphones, Upload, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { AnyVideoOverlayEvent, VideoOverlayType } from '@bassnotion/contracts';
+import type {
+  AnyVideoOverlayEvent,
+  VideoOverlayType,
+} from '@bassnotion/contracts';
 
 // ---------------------------------------------------------------------------
 // Type configuration: color-coded badges and icons per overlay type

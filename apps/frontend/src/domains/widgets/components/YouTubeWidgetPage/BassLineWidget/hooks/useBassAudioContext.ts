@@ -22,7 +22,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
 import { getLogger } from '@/utils/logger.js';
-import type { UseBassAudioContextOptions, UseBassAudioContextReturn } from '../types.js';
+import type {
+  UseBassAudioContextOptions,
+  UseBassAudioContextReturn,
+} from '../types.js';
 
 const logger = getLogger('bassline-widget');
 
@@ -30,7 +33,7 @@ const logger = getLogger('bassline-widget');
  * Hook for managing AudioContext and gain node for bass widget
  */
 export function useBassAudioContext(
-  options: UseBassAudioContextOptions
+  options: UseBassAudioContextOptions,
 ): UseBassAudioContextReturn {
   const { isMuted, volume } = options;
 
@@ -50,7 +53,10 @@ export function useBassAudioContext(
    */
   const initializeBass = useCallback(async () => {
     // Skip if already initialized
-    if (audioInitializedRef.current && audioContextRef.current?.state === 'running') {
+    if (
+      audioInitializedRef.current &&
+      audioContextRef.current?.state === 'running'
+    ) {
       return;
     }
 
@@ -113,7 +119,10 @@ export function useBassAudioContext(
 
     return () => {
       window.removeEventListener('audioServicesReady', handleAudioReady);
-      window.removeEventListener('audioContextStarted', handleAudioContextStarted);
+      window.removeEventListener(
+        'audioContextStarted',
+        handleAudioContextStarted,
+      );
     };
   }, [initializeBass]);
 

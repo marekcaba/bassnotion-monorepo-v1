@@ -73,8 +73,11 @@ class TonePreloaderSingleton {
     this.metrics.state = 'warming';
     this.metrics.warmupStartTime = performance.now();
 
-    console.log('🔥 [TONE-PRELOAD] Phase 1: Warmup started at +' +
-      Math.round(this.metrics.warmupStartTime) + 'ms');
+    console.log(
+      '🔥 [TONE-PRELOAD] Phase 1: Warmup started at +' +
+        Math.round(this.metrics.warmupStartTime) +
+        'ms',
+    );
 
     // Use requestIdleCallback for non-blocking eager load
     // This runs when the browser is idle, before user interaction
@@ -82,7 +85,7 @@ class TonePreloaderSingleton {
     if ('requestIdleCallback' in window) {
       window.requestIdleCallback(
         () => this.eagerLoad(),
-        { timeout: 500 } // Max 500ms to wait for idle time - aggressive but not blocking
+        { timeout: 500 }, // Max 500ms to wait for idle time - aggressive but not blocking
       );
     } else {
       // Fallback for Safari: use setTimeout with minimal delay
@@ -103,8 +106,11 @@ class TonePreloaderSingleton {
     this.metrics.state = 'loading';
     this.metrics.loadStartTime = performance.now();
 
-    console.log('🎵 [TONE-PRELOAD] Phase 2: Eager load started at +' +
-      Math.round(this.metrics.loadStartTime) + 'ms');
+    console.log(
+      '🎵 [TONE-PRELOAD] Phase 2: Eager load started at +' +
+        Math.round(this.metrics.loadStartTime) +
+        'ms',
+    );
 
     try {
       // Start the actual import
@@ -112,12 +118,15 @@ class TonePreloaderSingleton {
       this.toneModule = await this.loadPromise;
 
       this.metrics.loadEndTime = performance.now();
-      this.metrics.loadDuration = this.metrics.loadEndTime - this.metrics.loadStartTime;
+      this.metrics.loadDuration =
+        this.metrics.loadEndTime - this.metrics.loadStartTime;
       this.metrics.state = 'ready';
 
       console.log('✅ [TONE-PRELOAD] Tone.js pre-loaded!', {
         durationMs: Math.round(this.metrics.loadDuration),
-        totalFromWarmup: Math.round(this.metrics.loadEndTime - (this.metrics.warmupStartTime || 0)),
+        totalFromWarmup: Math.round(
+          this.metrics.loadEndTime - (this.metrics.warmupStartTime || 0),
+        ),
       });
 
       // Cache in window for immediate access
@@ -126,10 +135,11 @@ class TonePreloaderSingleton {
       }
 
       // Emit event for any listeners
-      window.dispatchEvent(new CustomEvent('tone-preloaded', {
-        detail: { duration: this.metrics.loadDuration }
-      }));
-
+      window.dispatchEvent(
+        new CustomEvent('tone-preloaded', {
+          detail: { duration: this.metrics.loadDuration },
+        }),
+      );
     } catch (error) {
       this.metrics.state = 'error';
       this.metrics.error = error as Error;
@@ -161,7 +171,8 @@ class TonePreloaderSingleton {
     this.toneModule = await this.loadPromise;
 
     this.metrics.loadEndTime = performance.now();
-    this.metrics.loadDuration = this.metrics.loadEndTime - this.metrics.loadStartTime;
+    this.metrics.loadDuration =
+      this.metrics.loadEndTime - this.metrics.loadStartTime;
     this.metrics.state = 'ready';
 
     return this.toneModule;

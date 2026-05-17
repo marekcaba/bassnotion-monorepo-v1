@@ -1,6 +1,10 @@
 'use client';
 
-import { NodeMatrix, SessionCard, ProgressCard } from '@/domains/platform/components/NodeMatrix';
+import {
+  NodeMatrix,
+  SessionCard,
+  ProgressCard,
+} from '@/domains/platform/components/NodeMatrix';
 import { PageErrorBoundary } from '@/shared/components/ErrorBoundary';
 
 export default function AppHomePage() {

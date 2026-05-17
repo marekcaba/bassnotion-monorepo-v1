@@ -186,7 +186,4 @@ function Fretboard3DComponent({
  * - Uses React.memo with custom comparison to prevent unnecessary re-renders
  * - Parent should memoize onNoteSelect callback with useCallback
  */
-export const Fretboard3D = memo(
-  Fretboard3DComponent,
-  areFretboard3DPropsEqual,
-);
+export const Fretboard3D = memo(Fretboard3DComponent, areFretboard3DPropsEqual);

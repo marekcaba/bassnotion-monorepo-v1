@@ -82,8 +82,8 @@ function getMidiFromStringAndFret(stringNum: number, fret: number): number {
 interface SampleRequest {
   midiNote: number;
   sampleString: BassString; // Which string folder to load from
-  exerciseString: number;   // Original exercise string number (for logging)
-  fret: number;             // Fret position (for logging)
+  exerciseString: number; // Original exercise string number (for logging)
+  fret: number; // Fret position (for logging)
 }
 
 /**
@@ -97,7 +97,9 @@ interface SampleRequest {
  *
  * We MUST load the sample from the CORRECT string folder.
  */
-function extractSampleRequestsFromExerciseNotes(notes: ExerciseNote[]): SampleRequest[] {
+function extractSampleRequestsFromExerciseNotes(
+  notes: ExerciseNote[],
+): SampleRequest[] {
   const seen = new Set<string>(); // Track unique midi+string combos
   const requests: SampleRequest[] = [];
 
@@ -148,7 +150,8 @@ export class BassPreloadStrategy implements PreloadStrategy {
   private decodedBuffers: Record<string, AudioBuffer> | null = null;
   private loaded = 0;
   private total = 0;
-  private onProgressCallback: ((loaded: number, total: number) => void) | null = null;
+  private onProgressCallback: ((loaded: number, total: number) => void) | null =
+    null;
 
   /**
    * Set a callback to receive progress updates during loading
@@ -198,10 +201,13 @@ export class BassPreloadStrategy implements PreloadStrategy {
       // FAANG SOLUTION: Load ONLY samples needed for this exercise's bass notes
       // Bass notes are stored in exercise.notes (fretboard data from database)
       if (!exercise?.notes || exercise.notes.length === 0) {
-        logger.info('✅ No bass notes in exercise - skipping bass sample loading', {
-          exerciseId: exercise?.id,
-          reason: exercise ? 'no notes array' : 'no exercise provided',
-        });
+        logger.info(
+          '✅ No bass notes in exercise - skipping bass sample loading',
+          {
+            exerciseId: exercise?.id,
+            reason: exercise ? 'no notes array' : 'no exercise provided',
+          },
+        );
 
         return {
           success: true,
@@ -212,7 +218,9 @@ export class BassPreloadStrategy implements PreloadStrategy {
 
       // 1. Extract sample requests with STRING INFO from exercise.notes
       // This is CRITICAL for correct timbre - same MIDI note sounds different on different strings!
-      const sampleRequests = extractSampleRequestsFromExerciseNotes(exercise.notes);
+      const sampleRequests = extractSampleRequestsFromExerciseNotes(
+        exercise.notes,
+      );
 
       if (sampleRequests.length === 0) {
         logger.info(
@@ -231,23 +239,39 @@ export class BassPreloadStrategy implements PreloadStrategy {
       }
 
       // Get MIDI notes for compatibility (legacy code paths)
-      const midiNotes = sampleRequests.map(r => r.midiNote);
+      const midiNotes = sampleRequests.map((r) => r.midiNote);
 
       // Convert MIDI notes to note names for logging
-      const requiredNotes = sampleRequests.map(r => {
-        const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+      const requiredNotes = sampleRequests.map((r) => {
+        const noteNames = [
+          'C',
+          'C#',
+          'D',
+          'D#',
+          'E',
+          'F',
+          'F#',
+          'G',
+          'G#',
+          'A',
+          'A#',
+          'B',
+        ];
         const octave = Math.floor(r.midiNote / 12) - 1;
         const noteName = noteNames[r.midiNote % 12];
         return `${noteName}${octave}`;
       });
 
       // Log detailed sample mapping for debugging
-      console.log('🎸 [BASS-PRELOAD] Sample requests with STRING INFO:', sampleRequests.map(r => ({
-        midi: r.midiNote,
-        sampleString: r.sampleString,
-        exerciseString: r.exerciseString,
-        fret: r.fret,
-      })));
+      console.log(
+        '🎸 [BASS-PRELOAD] Sample requests with STRING INFO:',
+        sampleRequests.map((r) => ({
+          midi: r.midiNote,
+          sampleString: r.sampleString,
+          exerciseString: r.exerciseString,
+          fret: r.fret,
+        })),
+      );
 
       logger.info(
         '📊 Bass notes analysis complete - downloading STRING-SPECIFIC samples',
@@ -256,10 +280,13 @@ export class BassPreloadStrategy implements PreloadStrategy {
           noteRange: `${requiredNotes[0]} to ${requiredNotes[requiredNotes.length - 1]}`,
           midiRange: `${Math.min(...midiNotes)} to ${Math.max(...midiNotes)}`,
           totalSamplesToLoad: sampleRequests.length,
-          stringDistribution: sampleRequests.reduce((acc, r) => {
-            acc[r.sampleString] = (acc[r.sampleString] || 0) + 1;
-            return acc;
-          }, {} as Record<string, number>),
+          stringDistribution: sampleRequests.reduce(
+            (acc, r) => {
+              acc[r.sampleString] = (acc[r.sampleString] || 0) + 1;
+              return acc;
+            },
+            {} as Record<string, number>,
+          ),
           savedSamples: 110 - sampleRequests.length,
           savingsPercentage: `${Math.round((1 - sampleRequests.length / 110) * 100)}%`,
         },
@@ -267,22 +294,40 @@ export class BassPreloadStrategy implements PreloadStrategy {
 
       // 2. Download and cache raw ArrayBuffer data WITH STRING INFO
       // This ensures we load samples from the CORRECT string folder!
-      const loadResult = await this.downloadAndCacheBassSamplesWithStrings(sampleRequests, exercise.id);
+      const loadResult = await this.downloadAndCacheBassSamplesWithStrings(
+        sampleRequests,
+        exercise.id,
+      );
 
       this.total = sampleRequests.length;
       this.loaded = loadResult.loaded;
 
       // 3. Cache metadata for later use (include string info)
-      this.cacheMetadataForLater(exercise.id, requiredNotes, midiNotes, sampleRequests);
+      this.cacheMetadataForLater(
+        exercise.id,
+        requiredNotes,
+        midiNotes,
+        sampleRequests,
+      );
 
       // 4. Try to inject into PlaybackEngine if AudioContext is available
       // This is optional - if not available now, loadFromCachedMetadata() will do it later
       const coreServices = window.__globalCoreServices || window.__coreServices;
       // Type assertion for CoreServices interface
-      const typedCoreServices = coreServices as {
-        getAudioEngine?: () => { getContext?: () => AudioContext | null; isReady?: () => boolean } | null;
-        getPlaybackEngine?: () => { setBassBuffers: (buffers: Record<string, AudioBuffer>, destination: AudioNode) => void } | null;
-      } | undefined;
+      const typedCoreServices = coreServices as
+        | {
+            getAudioEngine?: () => {
+              getContext?: () => AudioContext | null;
+              isReady?: () => boolean;
+            } | null;
+            getPlaybackEngine?: () => {
+              setBassBuffers: (
+                buffers: Record<string, AudioBuffer>,
+                destination: AudioNode,
+              ) => void;
+            } | null;
+          }
+        | undefined;
 
       if (typedCoreServices) {
         const audioEngine = typedCoreServices.getAudioEngine?.();
@@ -290,23 +335,34 @@ export class BassPreloadStrategy implements PreloadStrategy {
 
         if (context && context.state === 'running') {
           // AudioContext is available - decode and inject buffers now
-          await this.decodeAndInjectBuffersWithStrings(sampleRequests, context, coreServices);
+          await this.decodeAndInjectBuffersWithStrings(
+            sampleRequests,
+            context,
+            coreServices,
+          );
         } else {
-          logger.info('🎸 Bass samples cached as ArrayBuffer - will decode when AudioContext starts');
+          logger.info(
+            '🎸 Bass samples cached as ArrayBuffer - will decode when AudioContext starts',
+          );
         }
       }
 
-      logger.info('✅ Exercise-specific bass samples downloaded and cached (STRING-SPECIFIC)', {
-        loaded: loadResult.loaded,
-        failed: loadResult.failed,
-        total: this.total,
-        savingsVsFullLoad: `${Math.round((1 - this.total / 110) * 100)}%`,
-      });
+      logger.info(
+        '✅ Exercise-specific bass samples downloaded and cached (STRING-SPECIFIC)',
+        {
+          loaded: loadResult.loaded,
+          failed: loadResult.failed,
+          total: this.total,
+          savingsVsFullLoad: `${Math.round((1 - this.total / 110) * 100)}%`,
+        },
+      );
 
       // CRITICAL: Dispatch bass-samples-loaded event to trigger BassLineWidget re-registration
       // This is the same pattern as harmony-samples-loaded for HarmonyWidget
       if (typeof window !== 'undefined') {
-        console.log('📢 [BASS-PRELOAD] Emitting bass-samples-loaded event for BassLineWidget');
+        console.log(
+          '📢 [BASS-PRELOAD] Emitting bass-samples-loaded event for BassLineWidget',
+        );
         const event = new CustomEvent('bass-samples-loaded', {
           detail: {
             exerciseId: exercise.id,
@@ -368,7 +424,9 @@ export class BassPreloadStrategy implements PreloadStrategy {
    * Uses cached ArrayBuffers from downloadAndCacheBassSamplesWithStrings()
    * NOW uses sampleRequests with STRING INFO for correct timbre
    */
-  async loadFromCachedMetadata(audioContext: AudioContext): Promise<PreloadResult> {
+  async loadFromCachedMetadata(
+    audioContext: AudioContext,
+  ): Promise<PreloadResult> {
     const cache = GlobalSampleCache.getInstance();
     const metadata = cache.getMetadata('bass-required-notes');
 
@@ -378,7 +436,9 @@ export class BassPreloadStrategy implements PreloadStrategy {
     }
 
     // Get sampleRequests with string info if available
-    const sampleRequests = metadata.sampleRequests as SampleRequest[] | undefined;
+    const sampleRequests = metadata.sampleRequests as
+      | SampleRequest[]
+      | undefined;
     const hasSampleRequests = sampleRequests && sampleRequests.length > 0;
 
     logger.info('🎸 Decoding bass samples from cached ArrayBuffers', {
@@ -405,7 +465,10 @@ export class BassPreloadStrategy implements PreloadStrategy {
           if (!rawBuffer) {
             // ArrayBuffer not cached yet - download using STRING-SPECIFIC URL
             const sampleUrl = buildSampleUrl(midiNote, sampleString);
-            console.log(`📥 [CACHE-MISS] Downloading bass sample from ${sampleString} string:`, sampleUrl);
+            console.log(
+              `📥 [CACHE-MISS] Downloading bass sample from ${sampleString} string:`,
+              sampleUrl,
+            );
 
             const response = await fetch(sampleUrl);
             if (response.ok) {
@@ -413,7 +476,8 @@ export class BassPreloadStrategy implements PreloadStrategy {
               await cache.cacheBuffer(cacheKey, arrayBuffer);
 
               const bufferCopy = arrayBuffer.slice(0);
-              const audioBuffer = await audioContext.decodeAudioData(bufferCopy);
+              const audioBuffer =
+                await audioContext.decodeAudioData(bufferCopy);
               buffers[String(midiNote)] = audioBuffer;
               decoded++;
             }
@@ -429,14 +493,18 @@ export class BassPreloadStrategy implements PreloadStrategy {
           this.loaded = decoded;
           this.total = sampleRequests.length;
           this.onProgressCallback?.(decoded, sampleRequests.length);
-
         } catch (error) {
-          logger.error(`Failed to decode bass sample ${midiNote} (${sampleString}):`, error);
+          logger.error(
+            `Failed to decode bass sample ${midiNote} (${sampleString}):`,
+            error,
+          );
         }
       }
     } else {
       // Fallback: no string info available (legacy path)
-      logger.warn('🎸 No string info in cached metadata - using legacy getSampleForMidiNote()');
+      logger.warn(
+        '🎸 No string info in cached metadata - using legacy getSampleForMidiNote()',
+      );
       for (const midiNote of midiNotes) {
         try {
           const cacheKey = `bass-${midiNote}`;
@@ -454,7 +522,8 @@ export class BassPreloadStrategy implements PreloadStrategy {
                 await cache.cacheBuffer(cacheKey, arrayBuffer);
 
                 const bufferCopy = arrayBuffer.slice(0);
-                const audioBuffer = await audioContext.decodeAudioData(bufferCopy);
+                const audioBuffer =
+                  await audioContext.decodeAudioData(bufferCopy);
                 buffers[String(midiNote)] = audioBuffer;
                 decoded++;
               }
@@ -471,7 +540,6 @@ export class BassPreloadStrategy implements PreloadStrategy {
           this.loaded = decoded;
           this.total = midiNotes.length;
           this.onProgressCallback?.(decoded, midiNotes.length);
-
         } catch (error) {
           logger.error(`Failed to decode bass sample ${midiNote}:`, error);
         }
@@ -504,15 +572,22 @@ export class BassPreloadStrategy implements PreloadStrategy {
       if (playbackEngine) {
         playbackEngine.setBassBuffers(buffers, audioContext.destination);
 
-        logger.info('✅ Bass AudioBuffers decoded and injected from cached metadata', {
-          bufferCount: decoded,
-          totalRequested: midiNotes.length,
-        });
+        logger.info(
+          '✅ Bass AudioBuffers decoded and injected from cached metadata',
+          {
+            bufferCount: decoded,
+            totalRequested: midiNotes.length,
+          },
+        );
       } else {
-        logger.warn('⚠️ No PlaybackEngine available - caller should inject buffers manually');
+        logger.warn(
+          '⚠️ No PlaybackEngine available - caller should inject buffers manually',
+        );
       }
     } else {
-      logger.info('ℹ️ CoreServices not available - caller should inject buffers using getLoadedBuffers()');
+      logger.info(
+        'ℹ️ CoreServices not available - caller should inject buffers using getLoadedBuffers()',
+      );
     }
 
     return {
@@ -568,7 +643,12 @@ export class BassPreloadStrategy implements PreloadStrategy {
   private async downloadAndCacheBassSamples(
     midiNotes: number[],
     exerciseId: string,
-  ): Promise<{ success: boolean; loaded: number; failed: number; errors: string[] }> {
+  ): Promise<{
+    success: boolean;
+    loaded: number;
+    failed: number;
+    errors: string[];
+  }> {
     const startTime = performance.now();
     const errors: string[] = [];
 
@@ -591,17 +671,24 @@ export class BassPreloadStrategy implements PreloadStrategy {
         const sampleConfig = getSampleForMidiNote(midiNote);
         if (!sampleConfig) {
           logger.warn(`No sample config for MIDI note ${midiNote}`);
-          return { midiNote, success: false, error: `No sample for MIDI ${midiNote}` };
+          return {
+            midiNote,
+            success: false,
+            error: `No sample for MIDI ${midiNote}`,
+          };
         }
 
         // Build cache key: bass-{midiNote}
         const cacheKey = `bass-${midiNote}`;
 
         // Check IndexedDB cache first (like Harmony does)
-        const cachedBuffer = await GlobalSampleCache.getInstance().getCachedRawBuffer(cacheKey);
+        const cachedBuffer =
+          await GlobalSampleCache.getInstance().getCachedRawBuffer(cacheKey);
 
         if (cachedBuffer) {
-          console.log(`💾 [SAMPLES][IndexedDB-HIT] Using cached bass sample: ${cacheKey}`);
+          console.log(
+            `💾 [SAMPLES][IndexedDB-HIT] Using cached bass sample: ${cacheKey}`,
+          );
           logger.info(`💾 IndexedDB cache HIT: ${cacheKey}`);
           return { midiNote, success: true, cached: true };
         }
@@ -611,21 +698,34 @@ export class BassPreloadStrategy implements PreloadStrategy {
 
         const response = await fetch(sampleConfig.url);
         if (!response.ok) {
-          logger.error(`❌ Failed to fetch bass sample ${midiNote}: ${response.status}`);
-          return { midiNote, success: false, error: `Failed to fetch: ${response.status}` };
+          logger.error(
+            `❌ Failed to fetch bass sample ${midiNote}: ${response.status}`,
+          );
+          return {
+            midiNote,
+            success: false,
+            error: `Failed to fetch: ${response.status}`,
+          };
         }
 
         const arrayBuffer = await response.arrayBuffer();
 
         // Cache raw ArrayBuffer to memory + IndexedDB
-        await GlobalSampleCache.getInstance().cacheBuffer(cacheKey, arrayBuffer);
+        await GlobalSampleCache.getInstance().cacheBuffer(
+          cacheKey,
+          arrayBuffer,
+        );
 
         console.log(`[SAMPLES] Bass sample cached: ${cacheKey}`, {
           bufferSizeKB: Math.round(arrayBuffer.byteLength / 1024),
         });
 
-        return { midiNote, success: true, cached: false, size: arrayBuffer.byteLength };
-
+        return {
+          midiNote,
+          success: true,
+          cached: false,
+          size: arrayBuffer.byteLength,
+        };
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         logger.error(`❌ Failed to cache bass sample ${midiNote}:`, error);
@@ -707,7 +807,8 @@ export class BassPreloadStrategy implements PreloadStrategy {
         const cacheKey = `bass-${midiNote}`;
 
         // Get raw ArrayBuffer from cache
-        const rawBuffer = await GlobalSampleCache.getInstance().getCachedRawBuffer(cacheKey);
+        const rawBuffer =
+          await GlobalSampleCache.getInstance().getCachedRawBuffer(cacheKey);
 
         if (!rawBuffer) {
           logger.warn(`No cached ArrayBuffer for bass sample ${midiNote}`);
@@ -722,7 +823,6 @@ export class BassPreloadStrategy implements PreloadStrategy {
         // Store with MIDI note as key (string)
         buffers[String(midiNote)] = audioBuffer;
         decoded++;
-
       } catch (error) {
         logger.error(`Failed to decode bass sample ${midiNote}:`, error);
       }
@@ -734,13 +834,18 @@ export class BassPreloadStrategy implements PreloadStrategy {
       if (playbackEngine) {
         playbackEngine.setBassBuffers(buffers, audioContext.destination);
 
-        logger.info('✅ Bass AudioBuffers decoded and injected into PlaybackEngine', {
-          decodedCount: decoded,
-          totalRequested: midiNotes.length,
-          bufferKeys: Object.keys(buffers),
-        });
+        logger.info(
+          '✅ Bass AudioBuffers decoded and injected into PlaybackEngine',
+          {
+            decodedCount: decoded,
+            totalRequested: midiNotes.length,
+            bufferKeys: Object.keys(buffers),
+          },
+        );
       } else {
-        logger.warn('PlaybackEngine not available - buffers decoded but not injected');
+        logger.warn(
+          'PlaybackEngine not available - buffers decoded but not injected',
+        );
       }
     }
   }
@@ -757,20 +862,28 @@ export class BassPreloadStrategy implements PreloadStrategy {
   private async downloadAndCacheBassSamplesWithStrings(
     sampleRequests: SampleRequest[],
     exerciseId: string,
-  ): Promise<{ success: boolean; loaded: number; failed: number; errors: string[] }> {
+  ): Promise<{
+    success: boolean;
+    loaded: number;
+    failed: number;
+    errors: string[];
+  }> {
     const startTime = performance.now();
     const errors: string[] = [];
 
-    console.log('🎸 [SAMPLES] Downloading bass samples with STRING INFO in PARALLEL', {
-      timestamp: new Date().toISOString(),
-      exerciseId,
-      totalSamplesToLoad: sampleRequests.length,
-      sampleRequests: sampleRequests.map(r => ({
-        midi: r.midiNote,
-        string: r.sampleString,
-        fret: r.fret,
-      })),
-    });
+    console.log(
+      '🎸 [SAMPLES] Downloading bass samples with STRING INFO in PARALLEL',
+      {
+        timestamp: new Date().toISOString(),
+        exerciseId,
+        totalSamplesToLoad: sampleRequests.length,
+        sampleRequests: sampleRequests.map((r) => ({
+          midi: r.midiNote,
+          string: r.sampleString,
+          fret: r.fret,
+        })),
+      },
+    );
 
     logger.info('🎸 Downloading bass samples with STRING INFO in PARALLEL', {
       exerciseId,
@@ -789,38 +902,65 @@ export class BassPreloadStrategy implements PreloadStrategy {
         const cacheKey = `bass-${midiNote}`;
 
         // Check IndexedDB cache first
-        const cachedBuffer = await GlobalSampleCache.getInstance().getCachedRawBuffer(cacheKey);
+        const cachedBuffer =
+          await GlobalSampleCache.getInstance().getCachedRawBuffer(cacheKey);
 
         if (cachedBuffer) {
-          console.log(`💾 [SAMPLES][IndexedDB-HIT] Using cached bass sample: ${cacheKey} (${sampleString} string)`);
+          console.log(
+            `💾 [SAMPLES][IndexedDB-HIT] Using cached bass sample: ${cacheKey} (${sampleString} string)`,
+          );
           logger.info(`💾 IndexedDB cache HIT: ${cacheKey}`);
           return { midiNote, sampleString, success: true, cached: true };
         }
 
         // Fetch from network using the STRING-SPECIFIC URL
-        console.log(`📥 [SAMPLES] Fetching bass sample from ${sampleString} string:`, sampleUrl);
+        console.log(
+          `📥 [SAMPLES] Fetching bass sample from ${sampleString} string:`,
+          sampleUrl,
+        );
         logger.info(`📥 Fetching bass sample: ${sampleUrl}`);
 
         const response = await fetch(sampleUrl);
         if (!response.ok) {
-          logger.error(`❌ Failed to fetch bass sample ${midiNote} from ${sampleString} string: ${response.status}`);
-          return { midiNote, sampleString, success: false, error: `Failed to fetch: ${response.status}` };
+          logger.error(
+            `❌ Failed to fetch bass sample ${midiNote} from ${sampleString} string: ${response.status}`,
+          );
+          return {
+            midiNote,
+            sampleString,
+            success: false,
+            error: `Failed to fetch: ${response.status}`,
+          };
         }
 
         const arrayBuffer = await response.arrayBuffer();
 
         // Cache raw ArrayBuffer to memory + IndexedDB
-        await GlobalSampleCache.getInstance().cacheBuffer(cacheKey, arrayBuffer);
+        await GlobalSampleCache.getInstance().cacheBuffer(
+          cacheKey,
+          arrayBuffer,
+        );
 
-        console.log(`✅ [SAMPLES] Bass sample cached: ${cacheKey} from ${sampleString} string, fret ${fret}`, {
-          bufferSizeKB: Math.round(arrayBuffer.byteLength / 1024),
-        });
+        console.log(
+          `✅ [SAMPLES] Bass sample cached: ${cacheKey} from ${sampleString} string, fret ${fret}`,
+          {
+            bufferSizeKB: Math.round(arrayBuffer.byteLength / 1024),
+          },
+        );
 
-        return { midiNote, sampleString, success: true, cached: false, size: arrayBuffer.byteLength };
-
+        return {
+          midiNote,
+          sampleString,
+          success: true,
+          cached: false,
+          size: arrayBuffer.byteLength,
+        };
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        logger.error(`❌ Failed to cache bass sample ${midiNote} from ${sampleString}:`, error);
+        logger.error(
+          `❌ Failed to cache bass sample ${midiNote} from ${sampleString}:`,
+          error,
+        );
         return { midiNote, sampleString, success: false, error: errorMsg };
       }
     });
@@ -851,14 +991,17 @@ export class BassPreloadStrategy implements PreloadStrategy {
 
     const duration = performance.now() - startTime;
 
-    console.log('✅ [SAMPLES] Bass samples downloaded with STRING INFO in PARALLEL', {
-      timestamp: new Date().toISOString(),
-      durationMs: duration.toFixed(2),
-      loaded,
-      failed,
-      total: sampleRequests.length,
-      successRate: `${Math.round((loaded / sampleRequests.length) * 100)}%`,
-    });
+    console.log(
+      '✅ [SAMPLES] Bass samples downloaded with STRING INFO in PARALLEL',
+      {
+        timestamp: new Date().toISOString(),
+        durationMs: duration.toFixed(2),
+        loaded,
+        failed,
+        total: sampleRequests.length,
+        successRate: `${Math.round((loaded / sampleRequests.length) * 100)}%`,
+      },
+    );
 
     logger.info('✅ Bass samples cached with STRING INFO (PARALLEL)', {
       duration: `${duration.toFixed(2)}ms`,
@@ -899,10 +1042,13 @@ export class BassPreloadStrategy implements PreloadStrategy {
         const cacheKey = `bass-${midiNote}`;
 
         // Get raw ArrayBuffer from cache
-        const rawBuffer = await GlobalSampleCache.getInstance().getCachedRawBuffer(cacheKey);
+        const rawBuffer =
+          await GlobalSampleCache.getInstance().getCachedRawBuffer(cacheKey);
 
         if (!rawBuffer) {
-          logger.warn(`No cached ArrayBuffer for bass sample ${midiNote} (${sampleString} string)`);
+          logger.warn(
+            `No cached ArrayBuffer for bass sample ${midiNote} (${sampleString} string)`,
+          );
           continue;
         }
 
@@ -914,10 +1060,14 @@ export class BassPreloadStrategy implements PreloadStrategy {
         buffers[String(midiNote)] = audioBuffer;
         decoded++;
 
-        console.log(`🎸 [DECODE] Decoded bass sample MIDI ${midiNote} from ${sampleString} string`);
-
+        console.log(
+          `🎸 [DECODE] Decoded bass sample MIDI ${midiNote} from ${sampleString} string`,
+        );
       } catch (error) {
-        logger.error(`Failed to decode bass sample ${midiNote} (${sampleString}):`, error);
+        logger.error(
+          `Failed to decode bass sample ${midiNote} (${sampleString}):`,
+          error,
+        );
       }
     }
 
@@ -927,13 +1077,18 @@ export class BassPreloadStrategy implements PreloadStrategy {
       if (playbackEngine) {
         playbackEngine.setBassBuffers(buffers, audioContext.destination);
 
-        logger.info('✅ Bass AudioBuffers decoded with STRING INFO and injected', {
-          decodedCount: decoded,
-          totalRequested: sampleRequests.length,
-          bufferKeys: Object.keys(buffers),
-        });
+        logger.info(
+          '✅ Bass AudioBuffers decoded with STRING INFO and injected',
+          {
+            decodedCount: decoded,
+            totalRequested: sampleRequests.length,
+            bufferKeys: Object.keys(buffers),
+          },
+        );
       } else {
-        logger.warn('PlaybackEngine not available - buffers decoded but not injected');
+        logger.warn(
+          'PlaybackEngine not available - buffers decoded but not injected',
+        );
       }
     }
   }

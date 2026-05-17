@@ -4,7 +4,11 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PricingCard } from './PricingCard';
 import { BillingErrorBoundary } from '@/shared/components/ErrorBoundary';
-import { useProducts, useCreateCheckoutSession, useUserAccess } from '../hooks/useBilling';
+import {
+  useProducts,
+  useCreateCheckoutSession,
+  useUserAccess,
+} from '../hooks/useBilling';
 import { useAuth } from '@/domains/user/hooks/use-auth';
 import { CourseType } from '../types/billing.types';
 import { useToast } from '@/shared/hooks/use-toast';
@@ -13,20 +17,29 @@ function PricingSectionContent() {
   const router = useRouter();
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
-  const { data: products, isLoading: productsLoading, error: productsError } = useProducts();
-  const { data: userAccess, isLoading: accessLoading } = useUserAccess(isAuthenticated);
+  const {
+    data: products,
+    isLoading: productsLoading,
+    error: productsError,
+  } = useProducts();
+  const { data: userAccess, isLoading: accessLoading } =
+    useUserAccess(isAuthenticated);
   const createCheckoutSession = useCreateCheckoutSession();
 
   const [loadingItem, setLoadingItem] = useState<string | null>(null);
 
-  const handlePurchase = async (type: 'subscription' | 'course', courseType?: CourseType) => {
+  const handlePurchase = async (
+    type: 'subscription' | 'course',
+    courseType?: CourseType,
+  ) => {
     if (!isAuthenticated) {
       // Redirect to login with return URL
       router.push(`/login?returnUrl=${encodeURIComponent('/pricing')}`);
       return;
     }
 
-    const itemId = type === 'subscription' ? 'subscription' : `course_${courseType}`;
+    const itemId =
+      type === 'subscription' ? 'subscription' : `course_${courseType}`;
     setLoadingItem(itemId);
 
     try {
@@ -40,7 +53,8 @@ function PricingSectionContent() {
     } catch (error) {
       toast({
         title: 'Checkout Error',
-        description: error instanceof Error ? error.message : 'Failed to start checkout',
+        description:
+          error instanceof Error ? error.message : 'Failed to start checkout',
         variant: 'destructive',
       });
     } finally {
@@ -59,7 +73,9 @@ function PricingSectionContent() {
   if (productsError || !products) {
     return (
       <div className="text-center py-12">
-        <p className="text-red-400">Failed to load pricing information. Please try again later.</p>
+        <p className="text-red-400">
+          Failed to load pricing information. Please try again later.
+        </p>
       </div>
     );
   }
@@ -72,7 +88,9 @@ function PricingSectionContent() {
       {/* Subscription Section */}
       <section>
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-white mb-2">Monthly Subscription</h2>
+          <h2 className="text-2xl font-bold text-white mb-2">
+            Monthly Subscription
+          </h2>
           <p className="text-gray-400">
             Get unlimited access to all tutorials and features
           </p>
@@ -98,7 +116,9 @@ function PricingSectionContent() {
       {/* Divider */}
       <div className="flex items-center gap-4">
         <div className="flex-1 h-px bg-zinc-700"></div>
-        <span className="text-gray-400 text-sm">or purchase individual courses</span>
+        <span className="text-gray-400 text-sm">
+          or purchase individual courses
+        </span>
         <div className="flex-1 h-px bg-zinc-700"></div>
       </div>
 

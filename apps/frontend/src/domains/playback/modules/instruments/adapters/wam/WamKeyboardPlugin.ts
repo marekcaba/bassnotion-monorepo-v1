@@ -344,7 +344,9 @@ export class WamKeyboardPlugin extends EventEmitter implements AudioPlugin {
       }
 
       // Reset sustain pedal state if the method exists
-      if (typeof (this.wamKeyboard.audioNode as any).resetSustain === 'function') {
+      if (
+        typeof (this.wamKeyboard.audioNode as any).resetSustain === 'function'
+      ) {
         (this.wamKeyboard.audioNode as any).resetSustain();
       }
     }

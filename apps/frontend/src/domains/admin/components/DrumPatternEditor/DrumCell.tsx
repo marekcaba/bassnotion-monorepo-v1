@@ -38,7 +38,7 @@ export const DrumCell = memo(function DrumCell({
       e.preventDefault();
       onClick();
     },
-    [onClick]
+    [onClick],
   );
 
   const handleContextMenu = useCallback(
@@ -46,7 +46,7 @@ export const DrumCell = memo(function DrumCell({
       e.preventDefault();
       onRightClick();
     },
-    [onRightClick]
+    [onRightClick],
   );
 
   // Calculate background color based on state
@@ -104,9 +104,7 @@ export const DrumCell = memo(function DrumCell({
 
       {/* Selection overlay */}
       {isSelected && !hit && (
-        <div
-          className="absolute inset-1 rounded-sm border-2 border-dashed border-white/50"
-        />
+        <div className="absolute inset-1 rounded-sm border-2 border-dashed border-white/50" />
       )}
     </div>
   );

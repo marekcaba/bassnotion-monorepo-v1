@@ -32,7 +32,9 @@ const BILLING_DEV_MODE = true;
 const MOCK_USER_ACCESS: UserAccessStatus = {
   hasActiveSubscription: true, // Pretend user has premium for dev/testing
   subscriptionStatus: 'active',
-  subscriptionPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+  subscriptionPeriodEnd: new Date(
+    Date.now() + 30 * 24 * 60 * 60 * 1000,
+  ).toISOString(), // 30 days from now
   purchasedCourses: [],
 };
 // ============================================================================
@@ -57,7 +59,9 @@ function getSupabaseClient(): SupabaseClient {
  */
 async function getAuthHeaders(): Promise<Record<string, string>> {
   const supabase = getSupabaseClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
   if (!session?.access_token) {
     throw new Error('Not authenticated');
@@ -65,7 +69,7 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
 
   return {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${session.access_token}`,
+    Authorization: `Bearer ${session.access_token}`,
   };
 }
 
@@ -86,7 +90,9 @@ export const billingApi = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: response.statusText }));
+      const error = await response
+        .json()
+        .catch(() => ({ message: response.statusText }));
       throw new Error(error.message || 'Failed to fetch products');
     }
 
@@ -97,7 +103,9 @@ export const billingApi = {
    * Create a checkout session for course purchase or subscription
    * Requires authentication
    */
-  async createCheckoutSession(dto: CreateCheckoutSessionDto): Promise<CheckoutSessionResponse> {
+  async createCheckoutSession(
+    dto: CreateCheckoutSessionDto,
+  ): Promise<CheckoutSessionResponse> {
     const headers = await getAuthHeaders();
 
     const response = await fetch(`${API_BASE_URL}/api/v1/billing/checkout`, {
@@ -107,7 +115,9 @@ export const billingApi = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: response.statusText }));
+      const error = await response
+        .json()
+        .catch(() => ({ message: response.statusText }));
       throw new Error(error.message || 'Failed to create checkout session');
     }
 
@@ -118,7 +128,9 @@ export const billingApi = {
    * Create a customer portal session for subscription management
    * Requires authentication
    */
-  async createPortalSession(returnUrl: string): Promise<CustomerPortalResponse> {
+  async createPortalSession(
+    returnUrl: string,
+  ): Promise<CustomerPortalResponse> {
     const headers = await getAuthHeaders();
 
     const response = await fetch(`${API_BASE_URL}/api/v1/billing/portal`, {
@@ -128,7 +140,9 @@ export const billingApi = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: response.statusText }));
+      const error = await response
+        .json()
+        .catch(() => ({ message: response.statusText }));
       throw new Error(error.message || 'Failed to create portal session');
     }
 
@@ -156,7 +170,9 @@ export const billingApi = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: response.statusText }));
+      const error = await response
+        .json()
+        .catch(() => ({ message: response.statusText }));
       throw new Error(error.message || 'Failed to fetch user access');
     }
 
@@ -170,13 +186,18 @@ export const billingApi = {
   async cancelSubscription(): Promise<{ message: string }> {
     const headers = await getAuthHeaders();
 
-    const response = await fetch(`${API_BASE_URL}/api/v1/billing/cancel-subscription`, {
-      method: 'POST',
-      headers,
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/billing/cancel-subscription`,
+      {
+        method: 'POST',
+        headers,
+      },
+    );
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: response.statusText }));
+      const error = await response
+        .json()
+        .catch(() => ({ message: response.statusText }));
       throw new Error(error.message || 'Failed to cancel subscription');
     }
 
@@ -190,13 +211,18 @@ export const billingApi = {
   async reactivateSubscription(): Promise<{ message: string }> {
     const headers = await getAuthHeaders();
 
-    const response = await fetch(`${API_BASE_URL}/api/v1/billing/reactivate-subscription`, {
-      method: 'POST',
-      headers,
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/billing/reactivate-subscription`,
+      {
+        method: 'POST',
+        headers,
+      },
+    );
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: response.statusText }));
+      const error = await response
+        .json()
+        .catch(() => ({ message: response.statusText }));
       throw new Error(error.message || 'Failed to reactivate subscription');
     }
 

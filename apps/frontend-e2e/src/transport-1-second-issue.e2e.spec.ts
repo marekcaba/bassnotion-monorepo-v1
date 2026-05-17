@@ -297,12 +297,12 @@ test.describe('Transport 1-Second Playback Issue', () => {
     console.log('Test Page:');
     console.log(`  Playback duration: ${testPageResults.duration}ms`);
     console.log(`  Final position: ${testPageResults.finalPosition}s`);
-    console.log(`  Stopped: ${testPageResults.stopped}`);
+    console.log(`  Stopped: ${testPageResults.wasStopped}`);
 
     console.log('\nWidget Page:');
     console.log(`  Playback duration: ${widgetPageResults.duration}ms`);
     console.log(`  Final position: ${widgetPageResults.finalPosition}s`);
-    console.log(`  Stopped: ${widgetPageResults.stopped}`);
+    console.log(`  Stopped: ${widgetPageResults.wasStopped}`);
 
     if (testPageResults.duration > 5000 && widgetPageResults.duration < 2000) {
       console.log(
@@ -387,12 +387,15 @@ async function testTransportOnPage(context: any, url: string, name: string) {
 
     return {
       started: started ? started - (window as any).__startTime : 0,
-      stopped: stopped ? stopped - (window as any).__startTime : 0,
+      // `stoppedAt` is the offset; `wasStopped` is the boolean. The
+      // earlier version of this object had both keyed as `stopped`,
+      // which is a syntax error in TS strict mode.
+      stoppedAt: stopped ? stopped - (window as any).__startTime : 0,
       duration: started && stopped ? stopped - started : started ? 5000 : 0,
       finalPosition: stopped
         ? stopPos
         : (window as any).Tone?.Transport?.seconds || 0,
-      stopped: !!stopped,
+      wasStopped: !!stopped,
     };
   });
 

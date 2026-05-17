@@ -73,7 +73,7 @@ export function RingOverlayGroup({
     (stringIndex: number, fret: number | 'open'): [number, number, number] => {
       return get3DPosition(stringIndex, fret);
     },
-    [get3DPosition]
+    [get3DPosition],
   );
 
   // Calculate countdown end time to exclude countdown notes
@@ -104,7 +104,13 @@ export function RingOverlayGroup({
         return true;
       })
       .slice(0, config.showUpcoming);
-  }, [timeline, currentTime, config.lookaheadMs, config.showUpcoming, countdownEndTime]);
+  }, [
+    timeline,
+    currentTime,
+    config.lookaheadMs,
+    config.showUpcoming,
+    countdownEndTime,
+  ]);
 
   return (
     <group name="ring-overlay-group">

@@ -149,7 +149,8 @@ export class AssessmentRepository {
       skillLevel: data.skill_level as SkillLevel,
       assessmentScore: data.assessment_score ?? 0,
       primaryGoal: data.primary_goal as PrimaryGoal,
-      preferredTechniques: (data.preferred_techniques ?? []) as AssessmentBassTechnique[],
+      preferredTechniques: (data.preferred_techniques ??
+        []) as AssessmentBassTechnique[],
       preferredGenres: (data.preferred_genres ?? []) as MusicGenre[],
     };
   }

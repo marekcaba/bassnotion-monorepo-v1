@@ -17,10 +17,7 @@ export function DashboardContent() {
   const { navigateWithTransition } = useViewTransitionRouter();
 
   const showTransitionStats = () => {
-    if (
-      typeof window !== 'undefined' &&
-      window.__bassnotionTransitionStats
-    ) {
+    if (typeof window !== 'undefined' && window.__bassnotionTransitionStats) {
       window.__bassnotionTransitionStats();
     } else {
       logger.info(

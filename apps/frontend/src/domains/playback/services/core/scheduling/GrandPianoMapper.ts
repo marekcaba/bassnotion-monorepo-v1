@@ -83,7 +83,9 @@ export class GrandPianoMapper {
     return GrandPianoMapper.getInstance().hasKeyboardMap();
   }
 
-  public static async loadKeyboardMap(cache?: GlobalSampleCache): Promise<void> {
+  public static async loadKeyboardMap(
+    cache?: GlobalSampleCache,
+  ): Promise<void> {
     return GrandPianoMapper.getInstance().loadKeyboardMapInstance(cache);
   }
 
@@ -111,7 +113,9 @@ export class GrandPianoMapper {
    *
    * @param cache - Optional GlobalSampleCache instance (for testing)
    */
-  public async loadKeyboardMapInstance(cache?: GlobalSampleCache): Promise<void> {
+  public async loadKeyboardMapInstance(
+    cache?: GlobalSampleCache,
+  ): Promise<void> {
     try {
       logger.info('Loading Grand Piano keyboard map...');
 

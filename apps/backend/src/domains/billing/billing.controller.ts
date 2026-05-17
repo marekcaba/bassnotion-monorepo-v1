@@ -80,7 +80,9 @@ export class BillingController {
     // Validate course type if purchasing a course
     if (dto.type === 'course') {
       if (!dto.courseType) {
-        throw new BadRequestException('Course type is required for course purchases');
+        throw new BadRequestException(
+          'Course type is required for course purchases',
+        );
       }
       if (!COURSE_PRODUCTS[dto.courseType]) {
         throw new BadRequestException('Invalid course type');
@@ -98,9 +100,12 @@ export class BillingController {
 
     // Check if user already has active subscription
     if (dto.type === 'subscription') {
-      const hasActiveSubscription = await this.subscriptionRepository.hasActiveSubscription(user.id);
+      const hasActiveSubscription =
+        await this.subscriptionRepository.hasActiveSubscription(user.id);
       if (hasActiveSubscription) {
-        throw new BadRequestException('You already have an active subscription');
+        throw new BadRequestException(
+          'You already have an active subscription',
+        );
       }
     }
 
@@ -117,7 +122,9 @@ export class BillingController {
     @CurrentUser() user: AuthUser,
     @Body() dto: { returnUrl: string },
   ): Promise<CustomerPortalResponse> {
-    const subscription = await this.subscriptionRepository.findByUserId(user.id);
+    const subscription = await this.subscriptionRepository.findByUserId(
+      user.id,
+    );
 
     if (!subscription) {
       throw new BadRequestException('No subscription found');
@@ -135,7 +142,9 @@ export class BillingController {
   @Get('access')
   @UseGuards(AuthGuard)
   @HttpCode(HttpStatus.OK)
-  async getUserAccess(@CurrentUser() user: AuthUser): Promise<UserAccessStatus> {
+  async getUserAccess(
+    @CurrentUser() user: AuthUser,
+  ): Promise<UserAccessStatus> {
     const [subscription, purchasedCourses] = await Promise.all([
       this.subscriptionRepository.findByUserId(user.id),
       this.purchaseRepository.getPurchasedCourses(user.id),
@@ -159,20 +168,31 @@ export class BillingController {
   @Post('cancel-subscription')
   @UseGuards(AuthGuard)
   @HttpCode(HttpStatus.OK)
-  async cancelSubscription(@CurrentUser() user: AuthUser): Promise<{ message: string }> {
-    const subscription = await this.subscriptionRepository.findByUserId(user.id);
+  async cancelSubscription(
+    @CurrentUser() user: AuthUser,
+  ): Promise<{ message: string }> {
+    const subscription = await this.subscriptionRepository.findByUserId(
+      user.id,
+    );
 
     if (!subscription) {
       throw new BadRequestException('No subscription found');
     }
 
-    if (subscription.status !== 'active' && subscription.status !== 'trialing') {
+    if (
+      subscription.status !== 'active' &&
+      subscription.status !== 'trialing'
+    ) {
       throw new BadRequestException('Subscription is not active');
     }
 
-    await this.stripeService.cancelSubscription(subscription.stripeSubscriptionId);
+    await this.stripeService.cancelSubscription(
+      subscription.stripeSubscriptionId,
+    );
 
-    return { message: 'Subscription will be canceled at the end of the billing period' };
+    return {
+      message: 'Subscription will be canceled at the end of the billing period',
+    };
   }
 
   /**
@@ -181,8 +201,12 @@ export class BillingController {
   @Post('reactivate-subscription')
   @UseGuards(AuthGuard)
   @HttpCode(HttpStatus.OK)
-  async reactivateSubscription(@CurrentUser() user: AuthUser): Promise<{ message: string }> {
-    const subscription = await this.subscriptionRepository.findByUserId(user.id);
+  async reactivateSubscription(
+    @CurrentUser() user: AuthUser,
+  ): Promise<{ message: string }> {
+    const subscription = await this.subscriptionRepository.findByUserId(
+      user.id,
+    );
 
     if (!subscription) {
       throw new BadRequestException('No subscription found');
@@ -192,7 +216,9 @@ export class BillingController {
       throw new BadRequestException('Subscription is not set to cancel');
     }
 
-    await this.stripeService.reactivateSubscription(subscription.stripeSubscriptionId);
+    await this.stripeService.reactivateSubscription(
+      subscription.stripeSubscriptionId,
+    );
 
     return { message: 'Subscription reactivated successfully' };
   }

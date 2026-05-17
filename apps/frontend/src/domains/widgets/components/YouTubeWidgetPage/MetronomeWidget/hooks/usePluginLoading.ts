@@ -49,7 +49,7 @@ export interface UsePluginLoadingReturn {
  * Hook for loading WAM plugin class and checking for preloaded metronome
  */
 export function usePluginLoading(
-  options: UsePluginLoadingOptions
+  options: UsePluginLoadingOptions,
 ): UsePluginLoadingReturn {
   const {
     pluginClassLoaded,
@@ -73,16 +73,15 @@ export function usePluginLoading(
 
     const checkPreloadedMetronome = async () => {
       try {
-        const { GlobalSampleCache } = await import(
-          '@/domains/playback/modules/storage/cache/GlobalSampleCache'
-        );
+        const { GlobalSampleCache } =
+          await import('@/domains/playback/modules/storage/cache/GlobalSampleCache');
         const preloadedMetronome = GlobalSampleCache.getCachedInstrument(
-          'metronome-preloaded'
+          'metronome-preloaded',
         );
 
         if (preloadedMetronome) {
           logger.debug(
-            'Metronome instrument found in GlobalSampleCache on mount!'
+            'Metronome instrument found in GlobalSampleCache on mount!',
           );
           metronomePluginRef.current = preloadedMetronome;
           await onPreloadedPluginFound(volume, isMuted);
@@ -107,9 +106,8 @@ export function usePluginLoading(
       lifecycle.checkpoint('METRONOME_PLUGIN_LOADING');
 
       try {
-        const { default: WamMetronome } = await import(
-          '@/domains/playback/modules/instruments/adapters/wam/WamMetronome'
-        );
+        const { default: WamMetronome } =
+          await import('@/domains/playback/modules/instruments/adapters/wam/WamMetronome');
         wamPluginClassRef.current = WamMetronome;
         onPluginClassLoaded();
         logger.debug('WAM Metronome plugin class loaded successfully');

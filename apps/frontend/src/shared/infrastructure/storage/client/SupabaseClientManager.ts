@@ -321,7 +321,7 @@ export class SupabaseClientManager {
     client: SupabaseClient,
   ): Promise<void> {
     const startTime = Date.now();
-    let health = this.healthStatus.get(url) || this.createDefaultHealth();
+    const health = this.healthStatus.get(url) || this.createDefaultHealth();
 
     try {
       // Simple health check - try to access storage

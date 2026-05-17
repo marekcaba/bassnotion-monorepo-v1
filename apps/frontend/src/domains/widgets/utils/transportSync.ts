@@ -14,7 +14,9 @@ function getTone(): typeof import('tone') {
       return tone as typeof import('tone');
     }
   }
-  throw new Error('transportSync: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+  throw new Error(
+    'transportSync: Tone.js not loaded. Ensure AudioEngine is initialized first.',
+  );
 }
 
 // Professional timing is now handled internally by UnifiedTransport

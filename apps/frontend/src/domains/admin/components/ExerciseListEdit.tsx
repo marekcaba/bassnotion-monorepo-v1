@@ -49,9 +49,14 @@ export function ExerciseListEdit({
                   <span className="text-xs text-gray-500">
                     Level: {exercise.difficulty?.value || 'intermediate'}
                   </span>
-                  {(exercise.drummerMidiUrl || (exercise.drumPattern && exercise.drumPattern.length > 0)) && (
+                  {(exercise.drummerMidiUrl ||
+                    (exercise.drumPattern &&
+                      exercise.drumPattern.length > 0)) && (
                     <span className="text-xs text-green-600">
-                      🥁 Drums{exercise.drumPattern && exercise.drumPattern.length > 0 ? ` (${exercise.drumPattern.length} hits)` : ''}
+                      🥁 Drums
+                      {exercise.drumPattern && exercise.drumPattern.length > 0
+                        ? ` (${exercise.drumPattern.length} hits)`
+                        : ''}
                     </span>
                   )}
                   {exercise.basslineMidiUrl && (

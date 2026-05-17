@@ -143,7 +143,10 @@ export interface SparkleAnimationProps {
   /** Array of sparkle particles to render */
   sparkles: SparkleParticle[];
   /** Icon component to use for sparkles */
-  Icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
+  Icon: React.ComponentType<{
+    className?: string;
+    style?: React.CSSProperties;
+  }>;
   /** Tailwind color class for the sparkles */
   colorClass: string;
 }

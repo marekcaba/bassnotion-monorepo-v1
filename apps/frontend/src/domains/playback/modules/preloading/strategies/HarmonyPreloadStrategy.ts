@@ -57,9 +57,14 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
       // Check if CoreServices and AudioEngine are available
       const coreServices = window.__globalCoreServices || window.__coreServices;
       // Type assertion for CoreServices interface
-      const typedCoreServices = coreServices as {
-        getAudioEngine?: () => { isReady?: () => boolean; getContext?: () => AudioContext | null } | null;
-      } | undefined;
+      const typedCoreServices = coreServices as
+        | {
+            getAudioEngine?: () => {
+              isReady?: () => boolean;
+              getContext?: () => AudioContext | null;
+            } | null;
+          }
+        | undefined;
 
       if (!typedCoreServices) {
         // Use generic essential notes when no exercise data available
@@ -181,7 +186,8 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
       // });
 
       // 2. Load instrument configuration to determine per-note velocity ranges
-      const instrument = exercise.harmonyInstrument || DEFAULT_HARMONY_INSTRUMENT;
+      const instrument =
+        exercise.harmonyInstrument || DEFAULT_HARMONY_INSTRUMENT;
 
       // console.log('[DEBUG][Checkpoint-8] Instrument resolved for preloading:', {
       //   instrument,
@@ -476,7 +482,9 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
           if (velocity >= range.min && velocity <= range.max) {
             // DIAGNOSTIC: Log per-note layer selection for first few notes
             if (this.diagnosticLogCount < 5) {
-              console.log(`[PRELOADER DIAGNOSTIC] Per-note layer: ${normalizedNoteName} velocity=${velocity} -> ${range.layer} (range: ${range.min}-${range.max})`);
+              console.log(
+                `[PRELOADER DIAGNOSTIC] Per-note layer: ${normalizedNoteName} velocity=${velocity} -> ${range.layer} (range: ${range.min}-${range.max})`,
+              );
               this.diagnosticLogCount++;
             }
             return range.layer;
@@ -490,10 +498,13 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
         });
       } else {
         // Note not found in per-note ranges - will use global fallback
-        logger.debug('Note not found in per-note ranges, using global fallback', {
-          noteName: normalizedNoteName,
-          velocity,
-        });
+        logger.debug(
+          'Note not found in per-note ranges, using global fallback',
+          {
+            noteName: normalizedNoteName,
+            velocity,
+          },
+        );
       }
     }
 
@@ -503,7 +514,9 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
         if (velocity >= range.min && velocity <= range.max) {
           // DIAGNOSTIC: Log global fallback layer selection
           if (this.diagnosticLogCount < 10) {
-            console.log(`[PRELOADER DIAGNOSTIC] Global fallback: ${noteName} velocity=${velocity} -> ${range.layer} (range: ${range.min}-${range.max})`);
+            console.log(
+              `[PRELOADER DIAGNOSTIC] Global fallback: ${noteName} velocity=${velocity} -> ${range.layer} (range: ${range.min}-${range.max})`,
+            );
             this.diagnosticLogCount++;
           }
           return range.layer;
@@ -828,7 +841,9 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
         }
       }
 
-      console.log(`🚀 [SAMPLES] Starting PARALLEL download of ${downloadTasks.length} samples for ${instrument}`);
+      console.log(
+        `🚀 [SAMPLES] Starting PARALLEL download of ${downloadTasks.length} samples for ${instrument}`,
+      );
 
       // Execute all downloads in parallel with Promise.allSettled
       const results = await Promise.allSettled(
@@ -838,7 +853,9 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
           try {
             // Check IndexedDB cache first
             const cachedBuffer =
-              await GlobalSampleCache.getInstance().getCachedRawBuffer(cacheKey);
+              await GlobalSampleCache.getInstance().getCachedRawBuffer(
+                cacheKey,
+              );
 
             let arrayBuffer: ArrayBuffer;
 
@@ -881,7 +898,9 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
                 arrayBuffer,
               );
 
-              console.log(`✅ [PARALLEL] Downloaded and cached: ${cacheKey} (${Math.round(arrayBuffer.byteLength / 1024)}KB)`);
+              console.log(
+                `✅ [PARALLEL] Downloaded and cached: ${cacheKey} (${Math.round(arrayBuffer.byteLength / 1024)}KB)`,
+              );
             }
 
             // For Grand Piano, create cache aliases
@@ -895,7 +914,10 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
                 for (const [requestedNote, mapping] of Object.entries(
                   keyboardMap,
                 )) {
-                  if ((mapping as any).sample === noteName && requestedNote !== noteName) {
+                  if (
+                    (mapping as any).sample === noteName &&
+                    requestedNote !== noteName
+                  ) {
                     await GlobalSampleCache.getInstance().cacheBuffer(
                       `${instrument}-${layer}-${requestedNote}`,
                       arrayBuffer,
@@ -911,7 +933,7 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
             logger.error(`❌ Failed to cache ${noteName}/${layer}:`, error);
             return { success: false, cacheKey, error };
           }
-        })
+        }),
       );
 
       // Count successes
@@ -922,7 +944,9 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
         }
       }
 
-      console.log(`✅ [PARALLEL] Completed: ${samplesLoaded}/${downloadTasks.length} samples loaded for ${instrument}`);
+      console.log(
+        `✅ [PARALLEL] Completed: ${samplesLoaded}/${downloadTasks.length} samples loaded for ${instrument}`,
+      );
 
       this.loaded = samplesLoaded;
       this.total = totalSamples;

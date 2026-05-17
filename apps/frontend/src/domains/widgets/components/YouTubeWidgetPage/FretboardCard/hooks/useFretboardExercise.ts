@@ -292,7 +292,10 @@ export const useFretboardExercise = (
         noteEndMs = noteStartMs + durationBeats * msPerBeat;
       }
 
-      if (quantizedExerciseTime >= noteStartMs && quantizedExerciseTime < noteEndMs) {
+      if (
+        quantizedExerciseTime >= noteStartMs &&
+        quantizedExerciseTime < noteEndMs
+      ) {
         // Found the current note - return BOTH measure and position together
         // This ensures they're always consistent!
         return {
@@ -814,7 +817,9 @@ export const useFretboardExercise = (
     // Detect if notes use 0-indexed or 1-indexed measures
     // This matches the logic in organizeNotesIntoMeasures from exerciseToMusicXML.ts
     // If any note has measure: 0, they're 0-indexed; otherwise 1-indexed
-    const isZeroIndexed = notes.some((n: ExerciseNote) => n.position?.measure === 0);
+    const isZeroIndexed = notes.some(
+      (n: ExerciseNote) => n.position?.measure === 0,
+    );
 
     // Create connections between consecutive notes in the exercise
     for (let i = 0; i < notes.length - 1; i++) {

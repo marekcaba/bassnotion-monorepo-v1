@@ -139,24 +139,27 @@ export function TransportProvider({
   playbackMachineRef.current = playbackMachine;
 
   // Map TransportState to XState-compatible state for comparison
-  const mapTransportStateToXState = useCallback((transportState: TransportState): string => {
-    switch (transportState) {
-      case 'playing':
-        return 'playing';
-      case 'paused':
-        return 'paused';
-      case 'stopped':
-        return 'stopped';
-      default:
-        return 'idle';
-    }
-  }, []);
+  const mapTransportStateToXState = useCallback(
+    (transportState: TransportState): string => {
+      switch (transportState) {
+        case 'playing':
+          return 'playing';
+        case 'paused':
+          return 'paused';
+        case 'stopped':
+          return 'stopped';
+        default:
+          return 'idle';
+      }
+    },
+    [],
+  );
 
   // Shadow comparison: Log when XState and real transport states diverge
   useShadowComparison(
     playbackMachine.state,
     mapTransportStateToXState(state),
-    XSTATE_SHADOW_MODE_ENABLED
+    XSTATE_SHADOW_MODE_ENABLED,
   );
 
   // Shadow mode state comparison logging
@@ -171,16 +174,21 @@ export function TransportProvider({
       // - 'stopping' is between playing->stopped (valid when real is 'stopped')
       // - 'loading' is between idle->ready (valid when initializing)
       // - 'ready' can occur briefly when machine just finished loading or when nothing was playing
-      const isMatch = mappedReal === xstateState ||
+      const isMatch =
+        mappedReal === xstateState ||
         // START: real='playing', xstate could be 'starting' (async scheduling) or 'ready' (just got event)
-        (mappedReal === 'playing' && (xstateState === 'starting' || xstateState === 'ready')) ||
+        (mappedReal === 'playing' &&
+          (xstateState === 'starting' || xstateState === 'ready')) ||
         // STOP: real='stopped', xstate could be 'stopping' (async cleanup), 'playing' (just got event),
         // or 'ready' (stop called before playback started - nothing was playing)
-        (mappedReal === 'stopped' && (xstateState === 'stopping' || xstateState === 'playing' || xstateState === 'ready')) ||
+        (mappedReal === 'stopped' &&
+          (xstateState === 'stopping' ||
+            xstateState === 'playing' ||
+            xstateState === 'ready')) ||
         // Machine still loading
-        (xstateState === 'loading') ||
+        xstateState === 'loading' ||
         // Machine in idle (not yet initialized)
-        (xstateState === 'idle');
+        xstateState === 'idle';
 
       console.log(`[XState Shadow] ${action}`, {
         realTransportState: realState,
@@ -196,7 +204,7 @@ export function TransportProvider({
         });
       }
     },
-    [mapTransportStateToXState]
+    [mapTransportStateToXState],
   );
 
   // Initialize transport and EventBus (runs once)
@@ -350,16 +358,22 @@ export function TransportProvider({
     // Force initial sync - use functional update to get current state
     setTempo((prevTempo) => {
       if (prevTempo !== currentTruthBpm) {
-        console.log(`🎵 [TEMPO-SYNC] TransportContext forcing sync: ${prevTempo} -> ${currentTruthBpm}`);
+        console.log(
+          `🎵 [TEMPO-SYNC] TransportContext forcing sync: ${prevTempo} -> ${currentTruthBpm}`,
+        );
         return currentTruthBpm;
       }
-      console.log(`🎵 [TEMPO-SYNC] TransportContext already in sync: ${prevTempo}`);
+      console.log(
+        `🎵 [TEMPO-SYNC] TransportContext already in sync: ${prevTempo}`,
+      );
       return prevTempo;
     });
 
     // Subscribe to future changes
     const unsubscribe = musicalTruth.subscribe((truth) => {
-      console.log(`🎵 [TEMPO-SYNC] musicalTruth subscription fired: ${truth.bpm}`);
+      console.log(
+        `🎵 [TEMPO-SYNC] musicalTruth subscription fired: ${truth.bpm}`,
+      );
       setTempo(truth.bpm);
     });
 
@@ -399,7 +413,9 @@ export function TransportProvider({
         audioContext = audioEngine.getContext();
       } catch (error) {
         // AudioEngine may not be fully initialized yet
-        console.log('[XState Shadow] getContext() failed, waiting for initialization');
+        console.log(
+          '[XState Shadow] getContext() failed, waiting for initialization',
+        );
         return;
       }
       const audioDestination = audioContext?.destination;
@@ -407,7 +423,9 @@ export function TransportProvider({
       // FLICKER FIX v10: Use ref to access machine
       const machine = playbackMachineRef.current;
       if (audioContext && audioDestination && machine) {
-        console.log('[XState Shadow] Initializing playback machine with AudioContext from CoreServices');
+        console.log(
+          '[XState Shadow] Initializing playback machine with AudioContext from CoreServices',
+        );
         machine.initialize(audioContext, audioDestination);
         machineInitializedRef.current = true;
 
@@ -416,7 +434,9 @@ export function TransportProvider({
         machine.setTempo(currentBpm);
         console.log('[XState Shadow] Initial tempo set to', currentBpm);
       } else {
-        console.log('[XState Shadow] AudioContext not ready yet (need user gesture)');
+        console.log(
+          '[XState Shadow] AudioContext not ready yet (need user gesture)',
+        );
       }
     };
 
@@ -427,7 +447,9 @@ export function TransportProvider({
 
     // Also listen for audioServicesReady event (fires after user gesture creates AudioContext)
     const handleAudioReady = () => {
-      console.log('[XState Shadow] audioServicesReady event received, trying to initialize machine');
+      console.log(
+        '[XState Shadow] audioServicesReady event received, trying to initialize machine',
+      );
       tryInitializeMachine();
     };
 
@@ -444,10 +466,13 @@ export function TransportProvider({
   // This resets position to 0:0:0 (displays as 1:1:0) SYNCHRONOUSLY before any render
   // Prevents fretboard from briefly showing stale position when hitting PLAY
   const handlePlaybackStarting = useCallback((data: { position?: number }) => {
-    console.log('[TransportContext] 🎯 FLICKER FIX: Received playback:starting event', {
-      position: data.position,
-      timestamp: Date.now(),
-    });
+    console.log(
+      '[TransportContext] 🎯 FLICKER FIX: Received playback:starting event',
+      {
+        position: data.position,
+        timestamp: Date.now(),
+      },
+    );
 
     // Reset position to 0:0:0 (displays as 1:1:0 in UI)
     // This is the position at the START of playback, before any time has elapsed
@@ -462,7 +487,9 @@ export function TransportProvider({
     // Also reset the lastPositionRef to prevent spurious "position jump" warnings
     lastPositionRef.current = null;
 
-    logger.info('[TransportContext] 🎯 FLICKER FIX: Position reset to 1:1:0 on playback:starting');
+    logger.info(
+      '[TransportContext] 🎯 FLICKER FIX: Position reset to 1:1:0 on playback:starting',
+    );
   }, []);
 
   const handleStart = useCallback(() => {
@@ -572,7 +599,11 @@ export function TransportProvider({
   const lastPositionRef = useRef<TransportPosition | null>(null);
 
   const handlePositionUpdate = useCallback(
-    (data: { position: TransportPosition; seconds?: number; timestamp?: number }) => {
+    (data: {
+      position: TransportPosition;
+      seconds?: number;
+      timestamp?: number;
+    }) => {
       // Position updates are already throttled at 60Hz by Transport
       // No additional throttling needed here
       // IMPORTANT: Merge seconds from event data into position object
@@ -730,7 +761,9 @@ export function TransportProvider({
     if (currentState === 'paused') {
       // XSTATE SHADOW: Send RESUME event before real transport action
       if (XSTATE_SHADOW_MODE_ENABLED && machine) {
-        console.log('[XState Shadow] Sending RESUME event (from start, was paused)');
+        console.log(
+          '[XState Shadow] Sending RESUME event (from start, was paused)',
+        );
         machine.resume();
       }
       await transportRef.current.resume();
@@ -1039,7 +1072,9 @@ export interface TransportControlsValue {
  * Separate context for stable controls (no position updates)
  * This prevents components from re-rendering on every position update (60Hz)
  */
-const TransportControlsContext = createContext<TransportControlsValue | undefined>(undefined);
+const TransportControlsContext = createContext<
+  TransportControlsValue | undefined
+>(undefined);
 
 /**
  * Hook to access transport controls WITHOUT position updates

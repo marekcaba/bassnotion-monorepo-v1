@@ -18,7 +18,9 @@ function getTone(): typeof import('tone') {
       return tone as typeof import('tone');
     }
   }
-  throw new Error('MetronomeCore: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+  throw new Error(
+    'MetronomeCore: Tone.js not loaded. Ensure AudioEngine is initialized first.',
+  );
 }
 
 const logger = createStructuredLogger('MetronomeCore');
@@ -56,7 +58,10 @@ export class MetronomeCore extends BaseInstrumentCore {
   private samplers: Map<string, ToneTypes.Sampler> = new Map();
   private synths: Map<
     string,
-    ToneTypes.Synth | ToneTypes.MembraneSynth | ToneTypes.MetalSynth | ToneTypes.NoiseSynth
+    | ToneTypes.Synth
+    | ToneTypes.MembraneSynth
+    | ToneTypes.MetalSynth
+    | ToneTypes.NoiseSynth
   > = new Map();
   private volume: ToneTypes.Volume | null = null;
   private panner: ToneTypes.Panner | null = null;
@@ -191,11 +196,26 @@ export class MetronomeCore extends BaseInstrumentCore {
       // Use synth - check by synth type string in config instead of instanceof
       const synthConfig = this.getSynthConfigForType(clickType);
       if (synthConfig?.synth === 'membrane') {
-        (synth as ToneTypes.MembraneSynth).triggerAttackRelease(note.pitch || 'C2', '8n', time, velocity);
-      } else if (synthConfig?.synth === 'metal' || synthConfig?.synth === 'noise') {
-        (synth as ToneTypes.MetalSynth | ToneTypes.NoiseSynth).triggerAttackRelease('8n', time, velocity);
+        (synth as ToneTypes.MembraneSynth).triggerAttackRelease(
+          note.pitch || 'C2',
+          '8n',
+          time,
+          velocity,
+        );
+      } else if (
+        synthConfig?.synth === 'metal' ||
+        synthConfig?.synth === 'noise'
+      ) {
+        (
+          synth as ToneTypes.MetalSynth | ToneTypes.NoiseSynth
+        ).triggerAttackRelease('8n', time, velocity);
       } else {
-        (synth as ToneTypes.Synth).triggerAttackRelease(note.pitch || 'C4', '8n', time, velocity);
+        (synth as ToneTypes.Synth).triggerAttackRelease(
+          note.pitch || 'C4',
+          '8n',
+          time,
+          velocity,
+        );
       }
     }
 
@@ -217,10 +237,14 @@ export class MetronomeCore extends BaseInstrumentCore {
 
   private getSynthConfigForType(type: string): ClickSound | null {
     switch (type) {
-      case 'accent': return this.config.accentClick;
-      case 'regular': return this.config.regularClick;
-      case 'subdivision': return this.config.subdivisionClick;
-      default: return null;
+      case 'accent':
+        return this.config.accentClick;
+      case 'regular':
+        return this.config.regularClick;
+      case 'subdivision':
+        return this.config.subdivisionClick;
+      default:
+        return null;
     }
   }
 

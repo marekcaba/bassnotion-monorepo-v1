@@ -111,10 +111,9 @@ export function useToggleFavorite(exerciseId: string | undefined) {
       });
 
       // Snapshot previous value
-      const previousStatus =
-        queryClient.getQueryData<FavoriteStatusResponse>(
-          favoriteKeys.status(exerciseId),
-        );
+      const previousStatus = queryClient.getQueryData<FavoriteStatusResponse>(
+        favoriteKeys.status(exerciseId),
+      );
 
       // Optimistically update
       queryClient.setQueryData<FavoriteStatusResponse>(
@@ -166,7 +165,7 @@ export function useToggleFavorite(exerciseId: string | undefined) {
 /**
  * Hook for user's favorites list (for profile page)
  */
-export function useUserFavorites(page: number = 1, limit: number = 20) {
+export function useUserFavorites(page = 1, limit = 20) {
   const { session, isAuthenticated } = useAuth();
   const { correlationId, logger } = useCorrelation('useUserFavorites');
 

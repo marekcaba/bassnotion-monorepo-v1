@@ -362,20 +362,26 @@ export class WamKeyboardNode implements WamNode {
     this.disconnectAllSamplers();
 
     if (this.samplers.has(instrument)) {
-      console.log(`🔄 [INSTRUMENT-SWITCH-DEBUG] Reusing cached sampler for ${instrument}`, {
-        requestedInstrument: instrument,
-        currentInstrument: this.currentInstrument,
-        cachedSamplerKeys: Array.from(this.samplers.keys()),
-        willSkipNewSamplerCreation: true,
-      });
+      console.log(
+        `🔄 [INSTRUMENT-SWITCH-DEBUG] Reusing cached sampler for ${instrument}`,
+        {
+          requestedInstrument: instrument,
+          currentInstrument: this.currentInstrument,
+          cachedSamplerKeys: Array.from(this.samplers.keys()),
+          willSkipNewSamplerCreation: true,
+        },
+      );
       this.switchToInstrument(instrument);
       return;
     }
-    console.log(`🆕 [INSTRUMENT-SWITCH-DEBUG] No cached sampler for ${instrument}, will create new one`, {
-      requestedInstrument: instrument,
-      currentInstrument: this.currentInstrument,
-      cachedSamplerKeys: Array.from(this.samplers.keys()),
-    });
+    console.log(
+      `🆕 [INSTRUMENT-SWITCH-DEBUG] No cached sampler for ${instrument}, will create new one`,
+      {
+        requestedInstrument: instrument,
+        currentInstrument: this.currentInstrument,
+        cachedSamplerKeys: Array.from(this.samplers.keys()),
+      },
+    );
 
     // NEW: Check if we can build sampler from GlobalSampleCache (instant, no network)
     const cachedSampler = await this.tryBuildFromCache(instrument);
@@ -694,10 +700,15 @@ export class WamKeyboardNode implements WamNode {
       velocity,
       time: time?.toFixed(3) || 'immediate',
       // CRITICAL: Check if activeSampler matches currentInstrument
-      samplerMismatch: this.activeSampler?.constructor?.name !==
-        (this.currentInstrument === 'grandpiano' ? 'GrandPianoVelocitySampler' :
-         this.currentInstrument === 'wurlitzer' ? 'WurlitzerVelocitySampler' :
-         this.currentInstrument === 'rhodes' ? 'RhodesVelocitySampler' : 'Unknown'),
+      samplerMismatch:
+        this.activeSampler?.constructor?.name !==
+        (this.currentInstrument === 'grandpiano'
+          ? 'GrandPianoVelocitySampler'
+          : this.currentInstrument === 'wurlitzer'
+            ? 'WurlitzerVelocitySampler'
+            : this.currentInstrument === 'rhodes'
+              ? 'RhodesVelocitySampler'
+              : 'Unknown'),
     });
 
     logger.info('🎹 triggerNote called:', {
@@ -1083,10 +1094,7 @@ export class WamKeyboardNode implements WamNode {
         // Without this, scheduled notes will play after reconnection
         // This clears the internal Tone.js Transport event queue
         try {
-          if (
-            typeof window !== 'undefined' &&
-            window.Tone?.Transport
-          ) {
+          if (typeof window !== 'undefined' && window.Tone?.Transport) {
             window.Tone.Transport.cancel(0); // Cancel all events from time 0 onwards
           }
         } catch (toneError) {

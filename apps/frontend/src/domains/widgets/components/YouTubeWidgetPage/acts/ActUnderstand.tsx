@@ -2,10 +2,7 @@
 
 import React, { useState, useCallback } from 'react';
 import type { Tutorial } from '@bassnotion/contracts';
-import {
-  LessonHeader,
-  UnderstandVideoPlayer,
-} from '../components';
+import { LessonHeader, UnderstandVideoPlayer } from '../components';
 import { ChevronRight } from 'lucide-react';
 
 interface ActUnderstandProps {
@@ -33,7 +30,9 @@ export const ActUnderstand = React.memo(function ActUnderstand({
   const [wasSkipped, setWasSkipped] = useState(false);
 
   const totalQuestions = tutorialData?.understand_questions?.length || 0;
-  const hasVideo = tutorialData?.understand_video_url && tutorialData?.understand_video_library_id;
+  const hasVideo =
+    tutorialData?.understand_video_url &&
+    tutorialData?.understand_video_library_id;
 
   // Handle question answered
   const handleQuestionAnswered = useCallback((isCorrect: boolean) => {

@@ -118,7 +118,7 @@ const generateSparkles = (rotationRange: number): SparkleParticle[] => {
  * Hook for managing social interactions on exercises
  */
 export function useSocialInteractions(
-  options: UseSocialInteractionsOptions
+  options: UseSocialInteractionsOptions,
 ): UseSocialInteractionsReturn {
   const { exerciseId, isAuthenticated, isAuthReady } = options;
   const router = useRouter();
@@ -137,7 +137,7 @@ export function useSocialInteractions(
   // Sparkle animation states
   const [likeSparkles, setLikeSparkles] = useState<SparkleParticle[]>([]);
   const [favoriteSparkles, setFavoriteSparkles] = useState<SparkleParticle[]>(
-    []
+    [],
   );
   const [loopSparkles, setLoopSparkles] = useState<SparkleParticle[]>([]);
   const [commentSparkles, setCommentSparkles] = useState<SparkleParticle[]>([]);
@@ -338,6 +338,6 @@ export function useSocialInteractions(
       handleCommentClick,
       handleLoopMouseLeave,
       handleCommentMouseLeave,
-    ]
+    ],
   );
 }

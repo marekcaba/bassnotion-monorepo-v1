@@ -309,7 +309,8 @@ function fillMeasureWithRests(
 
     if (index < notePositions.length - 1) {
       // There's a next note - duration is until that note starts
-      const nextNoteStart = notePositions[index + 1]?.startBeat ?? beatsPerMeasure;
+      const nextNoteStart =
+        notePositions[index + 1]?.startBeat ?? beatsPerMeasure;
       displayDuration = nextNoteStart - noteBeat;
     } else {
       // Last note in measure - duration extends to end of measure
@@ -777,7 +778,7 @@ function generateMeasureXML(
   _bpm: number,
   isFirstMeasure: boolean,
   isLastMeasure: boolean,
-  _maxMeasuresPerSystem: number = 2,
+  _maxMeasuresPerSystem = 2,
 ): string {
   const timeline = fillMeasureWithRests(measureNotes, timeSignature.numerator);
 

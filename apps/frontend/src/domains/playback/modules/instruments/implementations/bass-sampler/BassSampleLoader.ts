@@ -6,8 +6,16 @@
  */
 
 import { createStructuredLogger } from '@bassnotion/contracts';
-import type { BassSampleConfig, BassSampleStatus, BassSampleMap } from './types.js';
-import { getBufferKey, getSamplesForMidiNotes, getSampleForMidiNote } from './BassSampleManifest.js';
+import type {
+  BassSampleConfig,
+  BassSampleStatus,
+  BassSampleMap,
+} from './types.js';
+import {
+  getBufferKey,
+  getSamplesForMidiNotes,
+  getSampleForMidiNote,
+} from './BassSampleManifest.js';
 
 const logger = createStructuredLogger('BassSampleLoader');
 
@@ -184,7 +192,9 @@ export class BassSampleLoader {
   /**
    * Load a single sample
    */
-  private async loadSample(sample: BassSampleConfig): Promise<AudioBuffer | null> {
+  private async loadSample(
+    sample: BassSampleConfig,
+  ): Promise<AudioBuffer | null> {
     const { midiNote, url } = sample;
 
     // Check if already loading
@@ -236,7 +246,10 @@ export class BassSampleLoader {
           });
           return decoded;
         } catch (error) {
-          logger.warn('Failed to decode cached raw buffer', { midiNote, error });
+          logger.warn('Failed to decode cached raw buffer', {
+            midiNote,
+            error,
+          });
         }
       }
     }
@@ -295,7 +308,9 @@ export class BassSampleLoader {
   private getGlobalCache(): GlobalSampleCacheInterface | null {
     try {
       // Dynamic import to avoid circular dependencies
-      const { GlobalSampleCache } = require('../../../storage/cache/GlobalSampleCache.js');
+      const {
+        GlobalSampleCache,
+      } = require('../../../storage/cache/GlobalSampleCache.js');
       return GlobalSampleCache.getInstance();
     } catch (error) {
       logger.warn('GlobalSampleCache not available');

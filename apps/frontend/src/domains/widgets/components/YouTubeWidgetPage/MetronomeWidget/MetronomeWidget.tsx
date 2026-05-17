@@ -10,7 +10,13 @@
  * delegating complex logic to specialized hooks and rendering to sub-components.
  */
 
-import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import React, {
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+  useMemo,
+} from 'react';
 import { VolumeKnob } from '../components/VolumeKnob.js';
 import { useTrack } from '@/domains/playback/hooks/useTrack';
 import { useTransportControls } from '@/domains/playback/contexts/TransportContext';
@@ -53,7 +59,7 @@ const MetronomeWidgetComponent = ({
   // UI state
   const [isExpanded, setIsExpanded] = useState(false);
   const [currentSound, setCurrentSound] = useState<MetronomeSoundType>(
-    MetronomeSound.CLASSIC
+    MetronomeSound.CLASSIC,
   );
   const [subdivisions, setSubdivisions] = useState(1);
   const [pluginLoadAttempts, setPluginLoadAttempts] = useState(0);
@@ -91,15 +97,20 @@ const MetronomeWidgetComponent = ({
   });
 
   // Volume control hook
-  const { volume, isMuted, handleVolumeChange, handleMuteToggle, effectiveVolume } =
-    useVolumeControl({
-      controlledVolume,
-      controlledMuted,
-      onVolumeChange,
-      onMuteToggle,
-      metronomePluginRef,
-      defaultVolume: 80,
-    });
+  const {
+    volume,
+    isMuted,
+    handleVolumeChange,
+    handleMuteToggle,
+    effectiveVolume,
+  } = useVolumeControl({
+    controlledVolume,
+    controlledMuted,
+    onVolumeChange,
+    onMuteToggle,
+    metronomePluginRef,
+    defaultVolume: 80,
+  });
 
   // Callback for plugin class loaded
   const handlePluginClassLoaded = useCallback(() => {
@@ -119,7 +130,7 @@ const MetronomeWidgetComponent = ({
         });
       }
     },
-    []
+    [],
   );
 
   // Plugin loading hook (Phase 1)
@@ -178,7 +189,7 @@ const MetronomeWidgetComponent = ({
       setSubdivisions(subdiv);
       handleSubdivisionChange(subdiv);
     },
-    [handleSubdivisionChange]
+    [handleSubdivisionChange],
   );
 
   // Get isPlaying from TransportContext (same source as TransportClock which works)

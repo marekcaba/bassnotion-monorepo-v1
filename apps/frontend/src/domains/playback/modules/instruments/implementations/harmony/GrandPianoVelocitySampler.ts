@@ -243,7 +243,9 @@ export class GrandPianoVelocitySampler {
     });
 
     if (!this.audioContext) {
-      console.warn('[GRAND PIANO EQ] Cannot set up EQ: AudioContext not available');
+      console.warn(
+        '[GRAND PIANO EQ] Cannot set up EQ: AudioContext not available',
+      );
       logger.warn('Cannot set up EQ: AudioContext not available');
       return;
     }
@@ -278,7 +280,9 @@ export class GrandPianoVelocitySampler {
       if (this.destination) {
         // Get the native Web Audio node from Tone.js Gain
         const destinationNode =
-          this.destination._gainNode || this.destination.input || this.destination;
+          this.destination._gainNode ||
+          this.destination.input ||
+          this.destination;
 
         console.log('[GRAND PIANO EQ] Connecting EQ output to destination', {
           destinationType: destinationNode?.constructor?.name,
@@ -298,7 +302,10 @@ export class GrandPianoVelocitySampler {
         })),
       });
     } catch (error) {
-      console.error('[GRAND PIANO EQ] ❌ Failed to set up parametric EQ:', error);
+      console.error(
+        '[GRAND PIANO EQ] ❌ Failed to set up parametric EQ:',
+        error,
+      );
       logger.warn('Failed to set up parametric EQ', { error });
       this.eq = null;
     }
@@ -399,22 +406,33 @@ export class GrandPianoVelocitySampler {
           try {
             // Tone.js nodes have a .connect() that can accept Web Audio nodes
             sampler.connect(this.eq.input);
-            console.log(`[GRAND PIANO EQ] ✅ Sampler ${layer} connected to EQ input`);
+            console.log(
+              `[GRAND PIANO EQ] ✅ Sampler ${layer} connected to EQ input`,
+            );
           } catch (e) {
             // Fallback: try to get the native node
-            console.warn(`[GRAND PIANO EQ] Direct connect failed for ${layer}, trying native node`, e);
+            console.warn(
+              `[GRAND PIANO EQ] Direct connect failed for ${layer}, trying native node`,
+              e,
+            );
             logger.warn('Direct connect failed, trying native node connection');
             if (samplerOutput._gainNode) {
               samplerOutput._gainNode.connect(this.eq.input);
-              console.log(`[GRAND PIANO EQ] ✅ Sampler ${layer} connected via native node`);
+              console.log(
+                `[GRAND PIANO EQ] ✅ Sampler ${layer} connected via native node`,
+              );
             } else {
               sampler.connect(this.destination);
-              console.log(`[GRAND PIANO EQ] ⚠️ Sampler ${layer} bypassed EQ, connected to destination`);
+              console.log(
+                `[GRAND PIANO EQ] ⚠️ Sampler ${layer} bypassed EQ, connected to destination`,
+              );
             }
           }
         } else if (this.destination) {
           sampler.connect(this.destination);
-          console.log(`[GRAND PIANO EQ] ⚠️ No EQ available, sampler ${layer} connected directly to destination`);
+          console.log(
+            `[GRAND PIANO EQ] ⚠️ No EQ available, sampler ${layer} connected directly to destination`,
+          );
         }
 
         this.samplers.set(layer, sampler);
@@ -671,7 +689,12 @@ export class GrandPianoVelocitySampler {
    */
   updateEQBand(
     bandId: string,
-    params: { frequency?: number; gain?: number; q?: number; enabled?: boolean },
+    params: {
+      frequency?: number;
+      gain?: number;
+      q?: number;
+      enabled?: boolean;
+    },
   ): void {
     if (this.eq) {
       this.eq.updateBand(bandId, params);
@@ -803,7 +826,9 @@ export class GrandPianoVelocitySampler {
           try {
             sampler.connect(destination);
           } catch (directError) {
-            logger.error('❌ Failed to connect sampler', { error: directError });
+            logger.error('❌ Failed to connect sampler', {
+              error: directError,
+            });
           }
         }
       }

@@ -41,8 +41,10 @@ import {
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { useAuth } from '@/domains/user/hooks/use-auth';
 import { apiClient } from '@/lib/api-client';
-import type { AssessmentQuestion, AssessmentConfig } from '@bassnotion/contracts';
-
+import type {
+  AssessmentQuestion,
+  AssessmentConfig,
+} from '@bassnotion/contracts';
 
 // Question type labels
 const QUESTION_TYPE_LABELS: Record<string, string> = {
@@ -53,10 +55,7 @@ const QUESTION_TYPE_LABELS: Record<string, string> = {
 };
 
 // Category labels and colors
-const CATEGORY_CONFIG: Record<
-  string,
-  { label: string; color: string }
-> = {
+const CATEGORY_CONFIG: Record<string, { label: string; color: string }> = {
   knowledge: { label: 'Knowledge', color: 'bg-purple-500' },
   goal: { label: 'Goal', color: 'bg-green-500' },
   preference: { label: 'Preference', color: 'bg-orange-500' },
@@ -77,21 +76,24 @@ export default function AdminAssessmentPage() {
   // Dialog states
   const [isVideoDialogOpen, setIsVideoDialogOpen] = useState(false);
   const [isQuestionDialogOpen, setIsQuestionDialogOpen] = useState(false);
-  const [editingQuestion, setEditingQuestion] = useState<AssessmentQuestion | null>(null);
+  const [editingQuestion, setEditingQuestion] =
+    useState<AssessmentQuestion | null>(null);
 
   // Form states for Bunny Stream
   const [videoLibraryId, setVideoLibraryId] = useState('');
   const [videoId, setVideoId] = useState('');
-  const [questionForm, setQuestionForm] = useState<Partial<AssessmentQuestion>>({
-    type: 'multiple-choice',
-    category: 'knowledge',
-    timestamp: 0,
-    question: '',
-    description: '',
-    options: [],
-    points: 10,
-    difficulty: 'beginner',
-  });
+  const [questionForm, setQuestionForm] = useState<Partial<AssessmentQuestion>>(
+    {
+      type: 'multiple-choice',
+      category: 'knowledge',
+      timestamp: 0,
+      question: '',
+      description: '',
+      options: [],
+      points: 10,
+      difficulty: 'beginner',
+    },
+  );
 
   // Load config
   const loadConfig = useCallback(async () => {
@@ -130,7 +132,9 @@ export default function AdminAssessmentPage() {
   }, [isReady, isAuthenticated, loadConfig, router]);
 
   // Parse Bunny Stream URL to extract library ID and video ID
-  const parseBunnyUrl = (url: string): { libraryId: string; videoId: string } => {
+  const parseBunnyUrl = (
+    url: string,
+  ): { libraryId: string; videoId: string } => {
     // Handle various Bunny Stream URL formats:
     // https://iframe.mediadelivery.net/play/583585/032167b4-e074-4c76-ba39-f3ee9d16966d
     // https://iframe.mediadelivery.net/embed/583585/032167b4-e074-4c76-ba39-f3ee9d16966d
@@ -248,9 +252,12 @@ export default function AdminAssessmentPage() {
 
       if (editingQuestion) {
         logger.info('Updating question', { questionId: question.id });
-        await apiClient.put(`/api/v1/admin/assessment/questions/${question.id}`, {
-          question,
-        });
+        await apiClient.put(
+          `/api/v1/admin/assessment/questions/${question.id}`,
+          {
+            question,
+          },
+        );
       } else {
         logger.info('Adding question', { questionId: question.id });
         await apiClient.post('/api/v1/admin/assessment/questions', {
@@ -278,7 +285,9 @@ export default function AdminAssessmentPage() {
       setIsSaving(true);
       logger.info('Deleting question', { questionId });
 
-      await apiClient.delete(`/api/v1/admin/assessment/questions/${questionId}`);
+      await apiClient.delete(
+        `/api/v1/admin/assessment/questions/${questionId}`,
+      );
       await loadConfig();
     } catch (err) {
       logger.error('Failed to delete question', err);
@@ -301,7 +310,11 @@ export default function AdminAssessmentPage() {
   };
 
   // Update option
-  const handleUpdateOption = (index: number, field: string, value: string | boolean) => {
+  const handleUpdateOption = (
+    index: number,
+    field: string,
+    value: string | boolean,
+  ) => {
     const options = [...(questionForm.options || [])];
     options[index] = { ...options[index], [field]: value };
     setQuestionForm({ ...questionForm, options });
@@ -367,10 +380,7 @@ export default function AdminAssessmentPage() {
       {error && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
           {error}
-          <button
-            className="ml-2 underline"
-            onClick={() => setError(null)}
-          >
+          <button className="ml-2 underline" onClick={() => setError(null)}>
             Dismiss
           </button>
         </div>
@@ -397,11 +407,15 @@ export default function AdminAssessmentPage() {
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                     <div>
                       <span className="text-gray-500">Library ID:</span>
-                      <span className="ml-2 font-mono font-medium">{config.videoLibraryId}</span>
+                      <span className="ml-2 font-mono font-medium">
+                        {config.videoLibraryId}
+                      </span>
                     </div>
                     <div>
                       <span className="text-gray-500">Video ID:</span>
-                      <span className="ml-2 font-mono font-medium text-xs">{config.videoId}</span>
+                      <span className="ml-2 font-mono font-medium text-xs">
+                        {config.videoId}
+                      </span>
                     </div>
                   </div>
                   <div className="flex gap-3 pt-1">
@@ -426,12 +440,16 @@ export default function AdminAssessmentPage() {
               ) : (
                 <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
                   <p className="text-sm text-amber-700 dark:text-amber-400">
-                    No video configured. Click "Configure" to add your assessment video.
+                    No video configured. Click "Configure" to add your
+                    assessment video.
                   </p>
                 </div>
               )}
             </div>
-            <Button variant="outline" onClick={() => setIsVideoDialogOpen(true)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsVideoDialogOpen(true)}
+            >
               <Settings className="w-4 h-4 mr-2" />
               Configure
             </Button>
@@ -477,10 +495,12 @@ export default function AdminAssessmentPage() {
 
                     <Badge
                       className={
-                        CATEGORY_CONFIG[question.category]?.color || 'bg-gray-500'
+                        CATEGORY_CONFIG[question.category]?.color ||
+                        'bg-gray-500'
                       }
                     >
-                      {CATEGORY_CONFIG[question.category]?.label || question.category}
+                      {CATEGORY_CONFIG[question.category]?.label ||
+                        question.category}
                     </Badge>
 
                     <Badge variant="outline">
@@ -488,7 +508,9 @@ export default function AdminAssessmentPage() {
                     </Badge>
 
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{question.question}</p>
+                      <p className="font-medium truncate">
+                        {question.question}
+                      </p>
                       {question.description && (
                         <p className="text-sm text-gray-500 truncate">
                           {question.description}
@@ -545,12 +567,15 @@ export default function AdminAssessmentPage() {
                 className="mt-2"
               />
               <p className="text-sm text-gray-500 mt-1">
-                Paste the embed or play URL from Bunny Stream to auto-fill the fields below
+                Paste the embed or play URL from Bunny Stream to auto-fill the
+                fields below
               </p>
             </div>
 
             <div className="border-t pt-4">
-              <p className="text-xs text-gray-400 mb-3 uppercase tracking-wide">Or enter manually:</p>
+              <p className="text-xs text-gray-400 mb-3 uppercase tracking-wide">
+                Or enter manually:
+              </p>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="libraryId">Library ID</Label>
@@ -577,15 +602,25 @@ export default function AdminAssessmentPage() {
 
             {videoLibraryId && videoId && (
               <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800 space-y-2">
-                <p className="text-sm font-medium text-green-700 dark:text-green-400">Configuration detected:</p>
+                <p className="text-sm font-medium text-green-700 dark:text-green-400">
+                  Configuration detected:
+                </p>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
-                    <span className="text-gray-500 dark:text-gray-400">Library ID:</span>
-                    <span className="ml-2 font-mono text-green-700 dark:text-green-400">{videoLibraryId}</span>
+                    <span className="text-gray-500 dark:text-gray-400">
+                      Library ID:
+                    </span>
+                    <span className="ml-2 font-mono text-green-700 dark:text-green-400">
+                      {videoLibraryId}
+                    </span>
                   </div>
                   <div>
-                    <span className="text-gray-500 dark:text-gray-400">Video ID:</span>
-                    <span className="ml-2 font-mono text-green-700 dark:text-green-400 text-xs">{videoId}</span>
+                    <span className="text-gray-500 dark:text-gray-400">
+                      Video ID:
+                    </span>
+                    <span className="ml-2 font-mono text-green-700 dark:text-green-400 text-xs">
+                      {videoId}
+                    </span>
                   </div>
                 </div>
                 <a
@@ -600,7 +635,10 @@ export default function AdminAssessmentPage() {
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsVideoDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsVideoDialogOpen(false)}
+            >
               Cancel
             </Button>
             <Button
@@ -615,7 +653,10 @@ export default function AdminAssessmentPage() {
       </Dialog>
 
       {/* Question Editor Dialog */}
-      <Dialog open={isQuestionDialogOpen} onOpenChange={setIsQuestionDialogOpen}>
+      <Dialog
+        open={isQuestionDialogOpen}
+        onOpenChange={setIsQuestionDialogOpen}
+      >
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
@@ -631,14 +672,19 @@ export default function AdminAssessmentPage() {
                 <Select
                   value={questionForm.type}
                   onValueChange={(value) =>
-                    setQuestionForm({ ...questionForm, type: value as AssessmentQuestion['type'] })
+                    setQuestionForm({
+                      ...questionForm,
+                      type: value as AssessmentQuestion['type'],
+                    })
                   }
                 >
                   <SelectTrigger className="mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="multiple-choice">Multiple Choice</SelectItem>
+                    <SelectItem value="multiple-choice">
+                      Multiple Choice
+                    </SelectItem>
                     <SelectItem value="multi-select">Multi Select</SelectItem>
                     <SelectItem value="text-input">Text Input</SelectItem>
                     <SelectItem value="drag-drop">Drag & Drop</SelectItem>
@@ -651,14 +697,19 @@ export default function AdminAssessmentPage() {
                 <Select
                   value={questionForm.category}
                   onValueChange={(value) =>
-                    setQuestionForm({ ...questionForm, category: value as AssessmentQuestion['category'] })
+                    setQuestionForm({
+                      ...questionForm,
+                      category: value as AssessmentQuestion['category'],
+                    })
                   }
                 >
                   <SelectTrigger className="mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="knowledge">Knowledge (scored)</SelectItem>
+                    <SelectItem value="knowledge">
+                      Knowledge (scored)
+                    </SelectItem>
                     <SelectItem value="goal">Goal</SelectItem>
                     <SelectItem value="preference">Preference</SelectItem>
                   </SelectContent>
@@ -682,7 +733,9 @@ export default function AdminAssessmentPage() {
                 className="mt-1"
               />
               <p className="text-sm text-gray-500 mt-1">
-                Video will pause at {formatTimestamp(questionForm.timestamp || 0)} to show this question
+                Video will pause at{' '}
+                {formatTimestamp(questionForm.timestamp || 0)} to show this
+                question
               </p>
             </div>
 
@@ -705,7 +758,10 @@ export default function AdminAssessmentPage() {
               <Input
                 value={questionForm.description || ''}
                 onChange={(e) =>
-                  setQuestionForm({ ...questionForm, description: e.target.value })
+                  setQuestionForm({
+                    ...questionForm,
+                    description: e.target.value,
+                  })
                 }
                 placeholder="Additional context for the question"
                 className="mt-1"
@@ -734,7 +790,11 @@ export default function AdminAssessmentPage() {
                             type="checkbox"
                             checked={option.isCorrect || false}
                             onChange={(e) =>
-                              handleUpdateOption(index, 'isCorrect', e.target.checked)
+                              handleUpdateOption(
+                                index,
+                                'isCorrect',
+                                e.target.checked,
+                              )
                             }
                           />
                           Correct
@@ -783,7 +843,10 @@ export default function AdminAssessmentPage() {
                     onValueChange={(value) =>
                       setQuestionForm({
                         ...questionForm,
-                        difficulty: value as 'beginner' | 'intermediate' | 'advanced',
+                        difficulty: value as
+                          | 'beginner'
+                          | 'intermediate'
+                          | 'advanced',
                       })
                     }
                   >

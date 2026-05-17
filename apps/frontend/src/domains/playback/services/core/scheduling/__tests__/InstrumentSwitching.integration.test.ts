@@ -304,8 +304,12 @@ describe('Instrument Switching - Integration Tests', () => {
       );
 
       // No cross-contamination
-      expect(wurlitzerSamples.some((s) => s.includes('grandpiano'))).toBe(false);
-      expect(grandPianoSamples.some((s) => s.includes('wurlitzer'))).toBe(false);
+      expect(wurlitzerSamples.some((s) => s.includes('grandpiano'))).toBe(
+        false,
+      );
+      expect(grandPianoSamples.some((s) => s.includes('wurlitzer'))).toBe(
+        false,
+      );
     });
   });
 

@@ -17,8 +17,7 @@ export async function generateMetadata({
   const { tutorialId } = await params;
 
   // Base URL for production
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL || 'https://bassnotion.com';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bassnotion.com';
 
   return {
     title: `${tutorialId.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())} | Bassicology`,

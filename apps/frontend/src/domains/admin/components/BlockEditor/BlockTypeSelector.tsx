@@ -10,7 +10,15 @@
 import React, { useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import type { BlockType } from '@bassnotion/contracts';
-import { Video, Music, Sparkles, FileText, PartyPopper, BookOpen, X } from 'lucide-react';
+import {
+  Video,
+  Music,
+  Sparkles,
+  FileText,
+  PartyPopper,
+  BookOpen,
+  X,
+} from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // Block type option metadata
@@ -24,12 +32,42 @@ interface BlockTypeOption {
 }
 
 const BLOCK_TYPE_OPTIONS: BlockTypeOption[] = [
-  { type: 'video', label: 'Video', icon: Video, description: 'Bunny Stream video with quiz overlays' },
-  { type: 'exercise', label: 'Exercise', icon: Music, description: 'Interactive practice with fretboard' },
-  { type: 'groove', label: 'Groove', icon: Sparkles, description: 'Full performance with YouTube sync' },
-  { type: 'text', label: 'Text', icon: FileText, description: 'Rich text notes and explanations' },
-  { type: 'celebration', label: 'Celebration', icon: PartyPopper, description: 'Milestone celebration moment' },
-  { type: 'explain', label: 'Explain', icon: BookOpen, description: 'Rich multimedia explanation carousel' },
+  {
+    type: 'video',
+    label: 'Video',
+    icon: Video,
+    description: 'Bunny Stream video with quiz overlays',
+  },
+  {
+    type: 'exercise',
+    label: 'Exercise',
+    icon: Music,
+    description: 'Interactive practice with fretboard',
+  },
+  {
+    type: 'groove',
+    label: 'Groove',
+    icon: Sparkles,
+    description: 'Full performance with YouTube sync',
+  },
+  {
+    type: 'text',
+    label: 'Text',
+    icon: FileText,
+    description: 'Rich text notes and explanations',
+  },
+  {
+    type: 'celebration',
+    label: 'Celebration',
+    icon: PartyPopper,
+    description: 'Milestone celebration moment',
+  },
+  {
+    type: 'explain',
+    label: 'Explain',
+    icon: BookOpen,
+    description: 'Rich multimedia explanation carousel',
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -85,16 +123,18 @@ export const BlockTypeSelector = React.memo(function BlockTypeSelector({
 
         {/* Options */}
         <div className="space-y-2">
-          {BLOCK_TYPE_OPTIONS.map(({ type, label, icon: Icon, description }) => (
-            <BlockTypeOptionButton
-              key={type}
-              type={type}
-              label={label}
-              icon={Icon}
-              description={description}
-              onSelect={onSelect}
-            />
-          ))}
+          {BLOCK_TYPE_OPTIONS.map(
+            ({ type, label, icon: Icon, description }) => (
+              <BlockTypeOptionButton
+                key={type}
+                type={type}
+                label={label}
+                icon={Icon}
+                description={description}
+                onSelect={onSelect}
+              />
+            ),
+          )}
         </div>
       </div>
     </div>,

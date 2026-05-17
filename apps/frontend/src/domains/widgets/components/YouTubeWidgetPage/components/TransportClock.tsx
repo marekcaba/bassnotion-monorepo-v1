@@ -62,11 +62,12 @@ export function TransportClock({
   // This hook subscribes directly to AtomicPlaybackClock and updates the position text
   // via DOM manipulation, eliminating jitter from React's batched updates.
   const beatsPerMeasure = timeSignature?.numerator || 4;
-  const { registerPositionDisplay, registerPlayingIndicator } = useTransportClockSync({
-    isPlaying,
-    beatsPerMeasure,
-    isVisible: true,
-  });
+  const { registerPositionDisplay, registerPlayingIndicator } =
+    useTransportClockSync({
+      isPlaying,
+      beatsPerMeasure,
+      isVisible: true,
+    });
 
   // 🔧 FLICKER FIX: Validate position before using it
   // During AudioWorklet initialization, position calculations can be corrupted

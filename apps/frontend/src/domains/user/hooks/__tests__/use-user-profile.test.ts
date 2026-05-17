@@ -2,21 +2,53 @@
  * @vitest-environment jsdom
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import React from 'react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import {
+  renderHook as renderHookRTL,
+  waitFor,
+  type RenderHookOptions,
+} from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useUserProfile } from '../use-user-profile';
 
-// Mock the auth hook + Supabase client. vi.hoisted() so these are available
-// inside the vi.mock factories, which Vitest hoists above the rest of the
-// module.
-const { mockUseAuth, mockSupabase } = vi.hoisted(() => ({
-  mockUseAuth: vi.fn(),
-  mockSupabase: {
-    auth: {
-      getSession: vi.fn(),
+// Wrap renderHook so every call gets a fresh QueryClient + provider.
+// Disable retries so query errors surface immediately instead of waiting
+// out the default 3-retry backoff during tests.
+function renderHook<TProps, TResult>(
+  callback: (props: TProps) => TResult,
+  options?: Omit<RenderHookOptions<TProps>, 'wrapper'>,
+) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      // The hook overrides `retry` with its own function (see
+      // use-user-profile.ts), so setting retry: false here doesn't
+      // disable retries. retryDelay: 0 fires the retries immediately
+      // so error states surface before waitFor times out.
+      queries: { retry: false, retryDelay: 0, gcTime: 0, staleTime: 0 },
+      mutations: { retry: false },
     },
-  },
-}));
+  });
+  const wrapper = ({ children }: { children: React.ReactNode }) =>
+    React.createElement(QueryClientProvider, { client: queryClient }, children);
+  return renderHookRTL(callback, { ...options, wrapper });
+}
+
+// Mock the auth hook, Supabase client, and apiClient. vi.hoisted() so these
+// are available inside the vi.mock factories, which Vitest hoists above the
+// rest of the module.
+const { mockUseAuth, mockSupabase, mockApiGet, mockSetAuthToken } = vi.hoisted(
+  () => ({
+    mockUseAuth: vi.fn(),
+    mockSupabase: {
+      auth: {
+        getSession: vi.fn(),
+      },
+    },
+    mockApiGet: vi.fn(),
+    mockSetAuthToken: vi.fn(),
+  }),
+);
 
 vi.mock('../use-auth', () => ({
   useAuth: mockUseAuth,
@@ -26,9 +58,12 @@ vi.mock('@/infrastructure/supabase/client', () => ({
   supabase: mockSupabase,
 }));
 
-// Mock fetch globally
-const mockFetch = vi.fn();
-global.fetch = mockFetch;
+vi.mock('@/lib/api-client', () => ({
+  apiClient: {
+    get: mockApiGet,
+    setAuthToken: mockSetAuthToken,
+  },
+}));
 
 describe('useUserProfile', () => {
   const mockUser = {
@@ -63,19 +98,11 @@ describe('useUserProfile', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Set default environment variables
-    process.env.NEXT_PUBLIC_API_URL = 'http://localhost:3000';
-
     // Default successful session
     mockSupabase.auth.getSession.mockResolvedValue({
       data: { session: mockSession },
       error: null,
     });
-  });
-
-  afterEach(() => {
-    delete process.env.NEXT_PUBLIC_API_URL;
-    delete process.env.NEXT_PUBLIC_BACKEND_URL;
   });
 
   describe('Unauthenticated State', () => {
@@ -107,7 +134,7 @@ describe('useUserProfile', () => {
 
       // Assert
       expect(mockSupabase.auth.getSession).not.toHaveBeenCalled();
-      expect(mockFetch).not.toHaveBeenCalled();
+      expect(mockApiGet).not.toHaveBeenCalled();
     });
 
     it('should clear profile when user becomes unauthenticated', async () => {
@@ -117,13 +144,9 @@ describe('useUserProfile', () => {
         user: mockUser,
       });
 
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            success: true,
-            data: mockProfile,
-          }),
+      mockApiGet.mockResolvedValue({
+        success: true,
+        data: mockProfile,
       });
 
       // Act
@@ -156,13 +179,9 @@ describe('useUserProfile', () => {
         user: mockUser,
       });
 
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            success: true,
-            data: mockProfile,
-          }),
+      mockApiGet.mockResolvedValue({
+        success: true,
+        data: mockProfile,
       });
     });
 
@@ -184,57 +203,18 @@ describe('useUserProfile', () => {
       expect(result.current.error).toBeNull();
     });
 
-    it('should make correct API call with authentication headers', async () => {
+    it('should call apiClient.get with profile endpoint after setting auth token', async () => {
       // Act
       renderHook(() => useUserProfile());
 
-      // Assert
+      // Assert: the hook reads the supabase session, passes the access
+      // token to apiClient, then requests the profile endpoint. URL
+      // resolution and HTTP headers are apiClient's concern (covered by
+      // api-client tests), not this hook's.
       await waitFor(() => {
         expect(mockSupabase.auth.getSession).toHaveBeenCalled();
-        expect(mockFetch).toHaveBeenCalledWith(
-          'http://localhost:3000/api/user/profile',
-          {
-            credentials: 'include',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: 'Bearer mock-access-token',
-            },
-          },
-        );
-      });
-    });
-
-    it('should use fallback backend URL when NEXT_PUBLIC_API_URL not set', async () => {
-      // Arrange
-      delete process.env.NEXT_PUBLIC_API_URL;
-      process.env.NEXT_PUBLIC_BACKEND_URL = 'http://backend.example.com';
-
-      // Act
-      renderHook(() => useUserProfile());
-
-      // Assert
-      await waitFor(() => {
-        expect(mockFetch).toHaveBeenCalledWith(
-          'http://backend.example.com/api/user/profile',
-          expect.any(Object),
-        );
-      });
-    });
-
-    it('should use default localhost when no environment variables set', async () => {
-      // Arrange
-      delete process.env.NEXT_PUBLIC_API_URL;
-      delete process.env.NEXT_PUBLIC_BACKEND_URL;
-
-      // Act
-      renderHook(() => useUserProfile());
-
-      // Assert
-      await waitFor(() => {
-        expect(mockFetch).toHaveBeenCalledWith(
-          'http://localhost:3000/api/user/profile',
-          expect.any(Object),
-        );
+        expect(mockSetAuthToken).toHaveBeenCalledWith('mock-access-token');
+        expect(mockApiGet).toHaveBeenCalledWith('/api/user/profile');
       });
     });
   });
@@ -296,12 +276,11 @@ describe('useUserProfile', () => {
       consoleErrorSpy.mockRestore();
     });
 
-    it('should handle HTTP error responses', async () => {
-      // Arrange
-      mockFetch.mockResolvedValue({
-        ok: false,
-        status: 404,
-      });
+    it('should surface HTTP errors thrown by apiClient', async () => {
+      // Arrange: apiClient.get() throws an ApiError-shaped Error when the
+      // backend returns a non-2xx response. We don't reach for the real
+      // ApiError class here; the hook only cares about `error.message`.
+      mockApiGet.mockRejectedValue(new Error('HTTP 404: Not Found'));
 
       const consoleErrorSpy = vi
         .spyOn(console, 'error')
@@ -312,7 +291,7 @@ describe('useUserProfile', () => {
 
       // Assert
       await waitFor(() => {
-        expect(result.current.error).toBe('Failed to fetch profile: 404');
+        expect(result.current.error).toBe('HTTP 404: Not Found');
         expect(result.current.profile).toBeNull();
         expect(result.current.isLoading).toBe(false);
       });
@@ -320,15 +299,12 @@ describe('useUserProfile', () => {
       consoleErrorSpy.mockRestore();
     });
 
-    it('should handle API error responses', async () => {
-      // Arrange
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            success: false,
-            message: 'Profile not found',
-          }),
+    it('should surface API-level errors (success=false in response body)', async () => {
+      // Arrange: the backend returned 200 OK but with success=false; the
+      // hook itself throws a plain Error using the response's message.
+      mockApiGet.mockResolvedValue({
+        success: false,
+        message: 'Profile not found',
       });
 
       const consoleErrorSpy = vi
@@ -348,9 +324,9 @@ describe('useUserProfile', () => {
       consoleErrorSpy.mockRestore();
     });
 
-    it('should handle network errors', async () => {
+    it('should surface network errors', async () => {
       // Arrange
-      mockFetch.mockRejectedValue(new Error('Network error'));
+      mockApiGet.mockRejectedValue(new Error('Network error'));
 
       const consoleErrorSpy = vi
         .spyOn(console, 'error')
@@ -369,9 +345,11 @@ describe('useUserProfile', () => {
       consoleErrorSpy.mockRestore();
     });
 
-    it('should handle unknown errors', async () => {
-      // Arrange
-      mockFetch.mockRejectedValue('String error');
+    it('should surface non-Error rejections as a generic message', async () => {
+      // Arrange: apiClient rejects with a non-Error value (string, etc).
+      // The user still deserves to see SOMETHING in the error state rather
+      // than the hook silently swallowing the failure.
+      mockApiGet.mockRejectedValue('String error');
 
       const consoleErrorSpy = vi
         .spyOn(console, 'error')
@@ -401,13 +379,9 @@ describe('useUserProfile', () => {
 
     it('should provide refetch function', async () => {
       // Arrange
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            success: true,
-            data: mockProfile,
-          }),
+      mockApiGet.mockResolvedValue({
+        success: true,
+        data: mockProfile,
       });
 
       // Act
@@ -419,13 +393,9 @@ describe('useUserProfile', () => {
 
     it('should refetch profile when refetch is called', async () => {
       // Arrange
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            success: true,
-            data: mockProfile,
-          }),
+      mockApiGet.mockResolvedValue({
+        success: true,
+        data: mockProfile,
       });
 
       // Act
@@ -436,26 +406,23 @@ describe('useUserProfile', () => {
         expect(result.current.profile).not.toBeNull();
       });
 
-      // Clear mocks and call refetch
-      vi.clearAllMocks();
+      // Clear the call count and call refetch (we want to verify only the
+      // refetch call, not the initial fetch).
+      mockApiGet.mockClear();
       await result.current.refetch();
 
       // Assert
-      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(mockApiGet).toHaveBeenCalledTimes(1);
     });
 
     it('should handle refetch errors', async () => {
-      // Arrange
-      mockFetch
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              success: true,
-              data: mockProfile,
-            }),
-        })
-        .mockRejectedValueOnce(new Error('Refetch error'));
+      // Arrange: first call succeeds (initial mount), then every
+      // subsequent call rejects. We use mockRejectedValue (not Once)
+      // because the hook retries up to 2 more times on failure.
+      mockApiGet.mockResolvedValueOnce({
+        success: true,
+        data: mockProfile,
+      });
 
       const consoleErrorSpy = vi
         .spyOn(console, 'error')
@@ -469,14 +436,20 @@ describe('useUserProfile', () => {
         expect(result.current.profile).not.toBeNull();
       });
 
+      // Switch the mock to reject for all subsequent calls (refetch +
+      // hook-internal retries).
+      mockApiGet.mockReset();
+      mockApiGet.mockRejectedValue(new Error('Refetch error'));
+
       // Call refetch
       await result.current.refetch();
 
-      // Assert
+      // Assert: react-query keeps previously-cached data available on
+      // refetch failure and surfaces the new error alongside it.
       await waitFor(() => {
         expect(result.current.error).toBe('Refetch error');
-        expect(result.current.profile).toBeNull();
       });
+      expect(result.current.profile).toEqual(mockProfile);
 
       consoleErrorSpy.mockRestore();
     });
@@ -490,13 +463,9 @@ describe('useUserProfile', () => {
         user: mockUser,
       });
 
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            success: true,
-            data: mockProfile,
-          }),
+      mockApiGet.mockResolvedValue({
+        success: true,
+        data: mockProfile,
       });
 
       // Act
@@ -504,7 +473,7 @@ describe('useUserProfile', () => {
 
       // Wait for initial load
       await waitFor(() => {
-        expect(mockFetch).toHaveBeenCalledTimes(1);
+        expect(mockApiGet).toHaveBeenCalledTimes(1);
       });
 
       // Change user ID
@@ -517,7 +486,7 @@ describe('useUserProfile', () => {
 
       // Assert
       await waitFor(() => {
-        expect(mockFetch).toHaveBeenCalledTimes(2);
+        expect(mockApiGet).toHaveBeenCalledTimes(2);
       });
     });
   });
@@ -532,7 +501,7 @@ describe('useUserProfile', () => {
 
     it('should show loading state during fetch', () => {
       // Arrange
-      mockFetch.mockImplementation(() => new Promise(() => {})); // Never resolves
+      mockApiGet.mockImplementation(() => new Promise(() => {})); // Never resolves
 
       // Act
       const { result } = renderHook(() => useUserProfile());
@@ -545,13 +514,9 @@ describe('useUserProfile', () => {
 
     it('should clear loading state after successful fetch', async () => {
       // Arrange
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            success: true,
-            data: mockProfile,
-          }),
+      mockApiGet.mockResolvedValue({
+        success: true,
+        data: mockProfile,
       });
 
       // Act
@@ -567,7 +532,7 @@ describe('useUserProfile', () => {
 
     it('should clear loading state after error', async () => {
       // Arrange
-      mockFetch.mockRejectedValue(new Error('Test error'));
+      mockApiGet.mockRejectedValue(new Error('Test error'));
       const consoleErrorSpy = vi
         .spyOn(console, 'error')
         .mockImplementation(() => {});
@@ -596,13 +561,9 @@ describe('useUserProfile', () => {
 
     it('should return properly typed profile with role', async () => {
       // Arrange
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            success: true,
-            data: mockProfile,
-          }),
+      mockApiGet.mockResolvedValue({
+        success: true,
+        data: mockProfile,
       });
 
       // Act
@@ -620,13 +581,9 @@ describe('useUserProfile', () => {
     it('should handle admin role correctly', async () => {
       // Arrange
       const adminProfile = { ...mockProfile, role: 'admin' };
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            success: true,
-            data: adminProfile,
-          }),
+      mockApiGet.mockResolvedValue({
+        success: true,
+        data: adminProfile,
       });
 
       // Act

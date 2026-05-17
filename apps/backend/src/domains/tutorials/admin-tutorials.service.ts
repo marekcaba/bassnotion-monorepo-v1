@@ -51,8 +51,9 @@ export class AdminTutorialsService {
     }
 
     // Get exercise counts for all tutorials
-    const { data: exerciseCounts, error: countError } = await client
-      .rpc('get_tutorials_with_exercise_count');
+    const { data: exerciseCounts, error: countError } = await client.rpc(
+      'get_tutorials_with_exercise_count',
+    );
 
     let itemsWithCounts = data || [];
 
@@ -655,7 +656,9 @@ export class AdminTutorialsService {
               harmony_notes: ex.harmony_notes || [], // Pre-converted harmony notes from MIDI
               harmony_control_changes: ex.harmony_control_changes || [], // MIDI control changes (sustain pedal, etc.)
               harmony_instrument: ex.harmony_instrument || null, // Harmony instrument type
-              fretboard_view_config: ex.fretboard_view_config || { preset: 'default' }, // Fretboard view config
+              fretboard_view_config: ex.fretboard_view_config || {
+                preset: 'default',
+              }, // Fretboard view config
               bassline_midi_url: finalBasslineMidiUrl,
               drummer_midi_url: finalDrummerMidiUrl,
               harmony_midi_url: finalHarmonyMidiUrl,
@@ -759,7 +762,9 @@ export class AdminTutorialsService {
               harmony_notes: ex.harmony_notes || [], // Pre-converted harmony notes from MIDI
               harmony_control_changes: ex.harmony_control_changes || [], // MIDI control changes (sustain pedal, etc.)
               harmony_instrument: ex.harmony_instrument || null, // Harmony instrument type
-              fretboard_view_config: ex.fretboard_view_config || { preset: 'default' }, // Fretboard view config
+              fretboard_view_config: ex.fretboard_view_config || {
+                preset: 'default',
+              }, // Fretboard view config
               bassline_midi_url: finalBasslineMidiUrl,
               drummer_midi_url: finalDrummerMidiUrl,
               harmony_midi_url: finalHarmonyMidiUrl,

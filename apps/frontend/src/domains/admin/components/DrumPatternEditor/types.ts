@@ -5,7 +5,11 @@
  * Uses 18 drum lanes with 5 velocity layers.
  */
 
-import type { DrumHit, MidiDrumType, MusicalPosition } from '@bassnotion/contracts';
+import type {
+  DrumHit,
+  MidiDrumType,
+  MusicalPosition,
+} from '@bassnotion/contracts';
 
 // Re-export contract types for convenience
 export type { DrumHit, MidiDrumType, MusicalPosition };
@@ -150,7 +154,11 @@ export interface DrumEditorState {
  */
 export interface DrumEditorActions {
   // Hit Management
-  addHit: (drum: MidiDrumType, position: MusicalPosition, velocity?: number) => void;
+  addHit: (
+    drum: MidiDrumType,
+    position: MusicalPosition,
+    velocity?: number,
+  ) => void;
   removeHit: (hitId: string) => void;
   toggleHit: (drum: MidiDrumType, position: MusicalPosition) => void;
   updateHitVelocity: (hitId: string, velocity: number) => void;
@@ -182,7 +190,10 @@ export interface DrumEditorActions {
 
   // Pattern Operations
   clearPattern: () => void;
-  loadPattern: (pattern: DrumHit[], metadata?: Partial<PatternMetadata>) => void;
+  loadPattern: (
+    pattern: DrumHit[],
+    metadata?: Partial<PatternMetadata>,
+  ) => void;
   resetToInitial: () => void;
 
   // Lane Management

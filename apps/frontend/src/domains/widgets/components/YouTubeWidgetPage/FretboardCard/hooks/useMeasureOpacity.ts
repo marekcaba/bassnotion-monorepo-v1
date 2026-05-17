@@ -349,16 +349,22 @@ export function useMeasureOpacity(
 
     // Debug: Log measure indexing information
     // Enable with: window.__DEBUG_OPACITY__ = true
-    if (exerciseNotes.length > 0 && typeof window !== 'undefined' && window.__DEBUG_OPACITY__) {
+    if (
+      exerciseNotes.length > 0 &&
+      typeof window !== 'undefined' &&
+      window.__DEBUG_OPACITY__
+    ) {
       const sortedMeasures = Array.from(allMeasures).sort((a, b) => a - b);
-      const isZeroIndexedLocal = exerciseNotes.some((n) => n.position?.measure === 0);
+      const isZeroIndexedLocal = exerciseNotes.some(
+        (n) => n.position?.measure === 0,
+      );
       // eslint-disable-next-line no-console
       console.log(
         `📊 [OPACITY-MAP] Built notePositionToAllMeasures | ` +
-        `isZeroIndexed=${isZeroIndexedLocal} | ` +
-        `measures=[${sortedMeasures.join(',')}] | ` +
-        `notes=${exerciseNotes.length} | ` +
-        `positions=${measuresMap.size}`
+          `isZeroIndexed=${isZeroIndexedLocal} | ` +
+          `measures=[${sortedMeasures.join(',')}] | ` +
+          `notes=${exerciseNotes.length} | ` +
+          `positions=${measuresMap.size}`,
       );
       // Log first 5 position mappings
       let count = 0;
@@ -398,7 +404,11 @@ export function useMeasureOpacity(
    * @returns MeasureHighlightResult with shouldHighlight, state, and opacity
    */
   const getMeasureHighlight = useCallback(
-    (stringIndex: number, fret: Fret, measure: number): MeasureHighlightResult => {
+    (
+      stringIndex: number,
+      fret: Fret,
+      measure: number,
+    ): MeasureHighlightResult => {
       const positionKey = `${stringIndex},${fret}`;
       const noteMeasures = notePositionToAllMeasures.get(positionKey);
 
@@ -414,7 +424,8 @@ export function useMeasureOpacity(
 
       // DEBUG: Log opacity decisions
       // Enable with: window.__DEBUG_OPACITY__ = true
-      const debugOpacity = typeof window !== 'undefined' && window.__DEBUG_OPACITY__;
+      const debugOpacity =
+        typeof window !== 'undefined' && window.__DEBUG_OPACITY__;
 
       // Check if note appears in current measure - full highlight
       if (noteMeasures.includes(measure)) {
@@ -422,7 +433,7 @@ export function useMeasureOpacity(
           // eslint-disable-next-line no-console
           console.log(
             `🔍 [OPACITY] ${positionKey} | measure=${measure} | noteMeasures=[${noteMeasures.join(',')}] | ` +
-            `MATCH CURRENT → 100% opacity`
+              `MATCH CURRENT → 100% opacity`,
           );
         }
         return {
@@ -438,7 +449,7 @@ export function useMeasureOpacity(
           // eslint-disable-next-line no-console
           console.log(
             `🔍 [OPACITY] ${positionKey} | measure=${measure} | noteMeasures=[${noteMeasures.join(',')}] | ` +
-            `MATCH NEXT (${nextMeasure0Based}) → 30% opacity`
+              `MATCH NEXT (${nextMeasure0Based}) → 30% opacity`,
           );
         }
         return {
@@ -454,7 +465,7 @@ export function useMeasureOpacity(
         // eslint-disable-next-line no-console
         console.log(
           `🔍 [OPACITY] ${positionKey} | measure=${measure} | noteMeasures=[${noteMeasures.join(',')}] | ` +
-          `NO MATCH → HIDDEN (other)`
+            `NO MATCH → HIDDEN (other)`,
         );
       }
       return {

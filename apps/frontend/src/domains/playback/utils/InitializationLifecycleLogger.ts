@@ -114,7 +114,7 @@ interface CheckpointEntry {
 class InitializationLifecycleLogger {
   private entries: CheckpointEntry[] = [];
   private startTime: number | null = null;
-  private enabled: boolean = true;
+  private enabled = true;
 
   /**
    * Enable/disable lifecycle logging
@@ -127,7 +127,11 @@ class InitializationLifecycleLogger {
    * Get phase from checkpoint name
    */
   private getPhase(checkpoint: LifecycleCheckpoint): LifecyclePhase {
-    if (checkpoint.startsWith('PAGE_') || checkpoint.startsWith('TUTORIAL_DATA') || checkpoint.startsWith('SCROLL_TRIGGER')) {
+    if (
+      checkpoint.startsWith('PAGE_') ||
+      checkpoint.startsWith('TUTORIAL_DATA') ||
+      checkpoint.startsWith('SCROLL_TRIGGER')
+    ) {
       return 'PAGE_LOAD';
     }
     if (checkpoint.startsWith('USER_INTERACTION')) {
@@ -136,14 +140,27 @@ class InitializationLifecycleLogger {
     if (checkpoint.startsWith('CORESERVICES')) {
       return 'CORESERVICES';
     }
-    if (checkpoint.includes('SAMPLES') || checkpoint === 'SAMPLES_READY_EVENT' ||
-        checkpoint.startsWith('SAMPLE_') || checkpoint === 'SAMPLE_CACHE_HIT' || checkpoint === 'SAMPLE_CACHE_MISS') {
+    if (
+      checkpoint.includes('SAMPLES') ||
+      checkpoint === 'SAMPLES_READY_EVENT' ||
+      checkpoint.startsWith('SAMPLE_') ||
+      checkpoint === 'SAMPLE_CACHE_HIT' ||
+      checkpoint === 'SAMPLE_CACHE_MISS'
+    ) {
       return 'SAMPLE_LOADING';
     }
-    if (checkpoint.includes('WIDGET') || checkpoint.includes('PLUGIN') || checkpoint === 'GLOBALCONTROLS_MOUNTED') {
+    if (
+      checkpoint.includes('WIDGET') ||
+      checkpoint.includes('PLUGIN') ||
+      checkpoint === 'GLOBALCONTROLS_MOUNTED'
+    ) {
       return 'WIDGET_INIT';
     }
-    if (checkpoint.includes('BUFFER') || checkpoint === 'BUFFER_INJECTION_START' || checkpoint === 'BUFFER_INJECTION_FAILED') {
+    if (
+      checkpoint.includes('BUFFER') ||
+      checkpoint === 'BUFFER_INJECTION_START' ||
+      checkpoint === 'BUFFER_INJECTION_FAILED'
+    ) {
       return 'BUFFER_INJECTION';
     }
     if (checkpoint.includes('TRACK') || checkpoint.includes('REGION')) {
@@ -155,7 +172,10 @@ class InitializationLifecycleLogger {
   /**
    * Record a lifecycle checkpoint
    */
-  checkpoint(checkpoint: LifecycleCheckpoint, data?: Record<string, unknown>): void {
+  checkpoint(
+    checkpoint: LifecycleCheckpoint,
+    data?: Record<string, unknown>,
+  ): void {
     if (!this.enabled) return;
 
     const now = performance.now();
@@ -194,7 +214,7 @@ class InitializationLifecycleLogger {
       `color: ${color}; font-weight: bold;`,
       'color: inherit;',
       'color: #888;',
-      data ? data : ''
+      data ? data : '',
     );
   }
 
@@ -229,7 +249,7 @@ class InitializationLifecycleLogger {
 
       console.log(
         `${timeStr}${deltaStr}: ${entry.checkpoint}`,
-        entry.data || ''
+        entry.data || '',
       );
     });
 
@@ -254,7 +274,10 @@ class InitializationLifecycleLogger {
     this.entries.forEach((entry) => {
       const existing = phases.get(entry.phase);
       if (!existing) {
-        phases.set(entry.phase, { start: entry.relativeTime, end: entry.relativeTime });
+        phases.set(entry.phase, {
+          start: entry.relativeTime,
+          end: entry.relativeTime,
+        });
       } else {
         existing.end = entry.relativeTime;
       }
@@ -262,12 +285,15 @@ class InitializationLifecycleLogger {
 
     phases.forEach((timing, phase) => {
       const duration = timing.end - timing.start;
-      console.log(`${phase}: ${timing.start.toFixed(0)}ms - ${timing.end.toFixed(0)}ms (${duration.toFixed(0)}ms)`);
+      console.log(
+        `${phase}: ${timing.start.toFixed(0)}ms - ${timing.end.toFixed(0)}ms (${duration.toFixed(0)}ms)`,
+      );
     });
 
-    const totalTime = this.entries.length > 0
-      ? this.entries[this.entries.length - 1].relativeTime
-      : 0;
+    const totalTime =
+      this.entries.length > 0
+        ? this.entries[this.entries.length - 1].relativeTime
+        : 0;
     console.log(`Total initialization time: ${totalTime.toFixed(0)}ms`);
 
     console.groupEnd();
@@ -279,32 +305,43 @@ class InitializationLifecycleLogger {
   analyzeRaceConditions(): string[] {
     const issues: string[] = [];
 
-    const findCheckpoint = (name: LifecycleCheckpoint): CheckpointEntry | undefined =>
+    const findCheckpoint = (
+      name: LifecycleCheckpoint,
+    ): CheckpointEntry | undefined =>
       this.entries.find((e) => e.checkpoint === name);
 
     // Check 1: Harmony buffers should be injected before playback starts
     const harmonyBuffers = findCheckpoint('HARMONY_BUFFERS_INJECTED');
     const playbackStart = findCheckpoint('PLAYBACK_START_REQUESTED');
-    if (playbackStart && harmonyBuffers && harmonyBuffers.relativeTime > playbackStart.relativeTime) {
+    if (
+      playbackStart &&
+      harmonyBuffers &&
+      harmonyBuffers.relativeTime > playbackStart.relativeTime
+    ) {
       issues.push(
-        `⚠️ RACE: Harmony buffers injected ${(harmonyBuffers.relativeTime - playbackStart.relativeTime).toFixed(0)}ms AFTER playback started`
+        `⚠️ RACE: Harmony buffers injected ${(harmonyBuffers.relativeTime - playbackStart.relativeTime).toFixed(0)}ms AFTER playback started`,
       );
     }
 
     // Check 2: All tracks should be registered before scheduling
     const scheduleStart = findCheckpoint('SCHEDULE_ALL_REGIONS_START');
     const lateRegistrations = this.entries.filter(
-      (e) => e.checkpoint === 'TRACK_REGISTERED' && scheduleStart && e.relativeTime > scheduleStart.relativeTime
+      (e) =>
+        e.checkpoint === 'TRACK_REGISTERED' &&
+        scheduleStart &&
+        e.relativeTime > scheduleStart.relativeTime,
     );
     if (lateRegistrations.length > 0) {
       issues.push(
-        `⚠️ RACE: ${lateRegistrations.length} track(s) registered AFTER scheduling started`
+        `⚠️ RACE: ${lateRegistrations.length} track(s) registered AFTER scheduling started`,
       );
     }
 
     // Check 3: Samples should be ready before widget initialization completes
     const samplesReady = findCheckpoint('SAMPLES_READY_EVENT');
-    const pluginLoaded = this.entries.filter((e) => e.checkpoint.includes('PLUGIN_LOADED'));
+    const pluginLoaded = this.entries.filter((e) =>
+      e.checkpoint.includes('PLUGIN_LOADED'),
+    );
     pluginLoaded.forEach((plugin) => {
       if (samplesReady && plugin.relativeTime < samplesReady.relativeTime) {
         // This is actually OK - plugins can load before samples
@@ -313,9 +350,13 @@ class InitializationLifecycleLogger {
 
     // Check 4: AudioContext should be running before scheduling
     const audioContextRunning = findCheckpoint('AUDIOCONTEXT_RUNNING');
-    if (scheduleStart && audioContextRunning && scheduleStart.relativeTime < audioContextRunning.relativeTime) {
+    if (
+      scheduleStart &&
+      audioContextRunning &&
+      scheduleStart.relativeTime < audioContextRunning.relativeTime
+    ) {
       issues.push(
-        `⚠️ RACE: Scheduling started ${(audioContextRunning.relativeTime - scheduleStart.relativeTime).toFixed(0)}ms BEFORE AudioContext running`
+        `⚠️ RACE: Scheduling started ${(audioContextRunning.relativeTime - scheduleStart.relativeTime).toFixed(0)}ms BEFORE AudioContext running`,
       );
     }
 

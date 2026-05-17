@@ -370,7 +370,9 @@ export function SegmentAssessmentPlayer({
                           <button
                             onClick={goBack}
                             className="mb-4 flex items-center gap-2 text-neutral-400 hover:text-white transition-colors"
-                            style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+                            style={{
+                              fontFamily: 'var(--font-inter), sans-serif',
+                            }}
                           >
                             <svg
                               className="w-5 h-5"

@@ -130,7 +130,10 @@ function CustomYouTubeThumbnail({
 
   // Has YouTube video - show thumbnail with play button
   return (
-    <div className="absolute inset-0 cursor-pointer group rounded-2xl overflow-hidden" onClick={onPlay}>
+    <div
+      className="absolute inset-0 cursor-pointer group rounded-2xl overflow-hidden"
+      onClick={onPlay}
+    >
       <img
         src={thumbnailUrl}
         alt="Video thumbnail"
@@ -185,7 +188,7 @@ function CreatorInfo({
   const { subscriberCount: apiSubscriberCount, isLoading } =
     useYouTubeChannelData(
       hasSubscriberCount ? undefined : creator.channelUrl,
-      creator.name
+      creator.name,
     );
 
   const formatSubscriberCount = (count: number): string => {
@@ -240,7 +243,9 @@ function CreatorInfo({
           />
         </a>
       ) : (
-        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${avatarFallbackClass}`}>
+        <div
+          className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${avatarFallbackClass}`}
+        >
           {creator.name.charAt(0).toUpperCase()}
         </div>
       )}
@@ -277,9 +282,10 @@ function CreatorInfo({
         {creator.channelUrl ? (
           <Button
             size="sm"
-            className={isOverlay
-              ? 'bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-1.5 rounded-full transition-colors duration-200 text-sm shadow-lg'
-              : 'bg-white hover:bg-gray-100 text-black font-medium px-4 py-2 rounded-full transition-colors duration-200'
+            className={
+              isOverlay
+                ? 'bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-1.5 rounded-full transition-colors duration-200 text-sm shadow-lg'
+                : 'bg-white hover:bg-gray-100 text-black font-medium px-4 py-2 rounded-full transition-colors duration-200'
             }
             onClick={() =>
               window.open(creator.channelUrl, '_blank', 'noopener,noreferrer')
@@ -345,9 +351,13 @@ export function TutorialVideoCard({
     const totalRequired = unlocked.length * REQUIRED_COMPLETIONS;
     const totalCompleted = unlocked.reduce((sum, exercise) => {
       const exId = getExerciseId(exercise);
-      return sum + Math.min(practiceCompletions[exId]?.count || 0, REQUIRED_COMPLETIONS);
+      return (
+        sum +
+        Math.min(practiceCompletions[exId]?.count || 0, REQUIRED_COMPLETIONS)
+      );
     }, 0);
-    const progressPercent = totalRequired > 0 ? (totalCompleted / totalRequired) * 100 : 0;
+    const progressPercent =
+      totalRequired > 0 ? (totalCompleted / totalRequired) * 100 : 0;
     const completedExerciseCount = unlocked.filter((ex) => {
       const exId = getExerciseId(ex);
       return (practiceCompletions[exId]?.count || 0) >= REQUIRED_COMPLETIONS;
@@ -366,11 +376,17 @@ export function TutorialVideoCard({
   }, [exercises, practiceCompletions]);
 
   // Audio preview for the locked reward exercise
-  const { isPlaying: isPreviewPlaying, isLoading: isPreviewLoading, canPreview, togglePreview } =
-    useRewardPreview(progressData.rewardExercise);
+  const {
+    isPlaying: isPreviewPlaying,
+    isLoading: isPreviewLoading,
+    canPreview,
+    togglePreview,
+  } = useRewardPreview(progressData.rewardExercise);
 
   // Video URL logic - check if there's actually a YouTube video
-  const hasYouTubeVideo = !!(tutorialData?.youtube_url || tutorialData?.youtube_id);
+  const hasYouTubeVideo = !!(
+    tutorialData?.youtube_url || tutorialData?.youtube_id
+  );
   let videoUrl = tutorialData?.youtube_url || '';
   if (!videoUrl && tutorialData?.youtube_id) {
     videoUrl = `https://www.youtube.com/watch?v=${tutorialData.youtube_id}`;
@@ -416,7 +432,9 @@ export function TutorialVideoCard({
                 padding: `${gradientSettings.paddingTop * 4}px 16px ${gradientSettings.paddingBottom * 4}px 16px`,
               }}
             >
-              <div className={`pointer-events-auto ${playing ? 'pointer-events-none' : ''}`}>
+              <div
+                className={`pointer-events-auto ${playing ? 'pointer-events-none' : ''}`}
+              >
                 <CreatorInfo tutorialData={tutorialData} isOverlay />
               </div>
             </div>
@@ -448,7 +466,6 @@ export function TutorialVideoCard({
               </div>
             </div>
           )}
-
         </div>
 
         {/* Content Section: Title + Description + Core Concept */}
@@ -459,7 +476,9 @@ export function TutorialVideoCard({
           </h1>
 
           {/* Description */}
-          <p className="text-slate-400 text-[18px] leading-relaxed">{description}</p>
+          <p className="text-slate-400 text-[18px] leading-relaxed">
+            {description}
+          </p>
 
           {/* Exercise Chain Section — Always visible */}
           <div className="border-t border-slate-700/50 pt-4 space-y-4">
@@ -478,7 +497,8 @@ export function TutorialVideoCard({
                       Final Reward
                     </span>
                     <h3 className="text-lg font-semibold text-white leading-tight truncate">
-                      {safeString(progressData.rewardExercise.title) || 'Locked Groove'}
+                      {safeString(progressData.rewardExercise.title) ||
+                        'Locked Groove'}
                     </h3>
                   </div>
 
@@ -496,7 +516,9 @@ export function TutorialVideoCard({
                     onClick={togglePreview}
                     disabled={!canPreview || isPreviewLoading}
                     className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-shadow disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
-                    aria-label={isPreviewPlaying ? 'Stop preview' : 'Play preview'}
+                    aria-label={
+                      isPreviewPlaying ? 'Stop preview' : 'Play preview'
+                    }
                   >
                     {isPreviewPlaying ? (
                       <Pause className="w-4 h-4 text-white" />
@@ -538,7 +560,8 @@ export function TutorialVideoCard({
                     const exId = getExerciseId(exercise);
                     const diff = safeString(exercise.difficulty).toLowerCase();
                     const isLocked = LOCKED_DIFFICULTIES.includes(diff);
-                    const completedCount = practiceCompletions[exId]?.count || 0;
+                    const completedCount =
+                      practiceCompletions[exId]?.count || 0;
                     const isCompleted = completedCount >= REQUIRED_COMPLETIONS;
 
                     return (
@@ -546,14 +569,17 @@ export function TutorialVideoCard({
                         {/* Connecting line (between circles) */}
                         {index > 0 && (
                           <div
-                            className={`flex-1 h-[2px] ${
-                              (() => {
-                                const prevExercise = progressData.allExercises[index - 1];
-                                const prevId = getExerciseId(prevExercise);
-                                const prevCompleted = (practiceCompletions[prevId]?.count || 0) >= REQUIRED_COMPLETIONS;
-                                return prevCompleted ? 'bg-emerald-500/60' : 'bg-slate-700';
-                              })()
-                            }`}
+                            className={`flex-1 h-[2px] ${(() => {
+                              const prevExercise =
+                                progressData.allExercises[index - 1];
+                              const prevId = getExerciseId(prevExercise);
+                              const prevCompleted =
+                                (practiceCompletions[prevId]?.count || 0) >=
+                                REQUIRED_COMPLETIONS;
+                              return prevCompleted
+                                ? 'bg-emerald-500/60'
+                                : 'bg-slate-700';
+                            })()}`}
                           />
                         )}
 
@@ -692,7 +718,6 @@ export function TutorialVideoCard({
               </>
             )}
           </div>
-
         </div>
       </div>
     </div>
@@ -718,7 +743,8 @@ export function TutorialVideoCardSkeleton() {
           <div
             className="absolute bottom-0 left-0 right-0"
             style={{
-              background: 'linear-gradient(to top, rgba(0,0,0,1), rgba(0,0,0,0) 100%)',
+              background:
+                'linear-gradient(to top, rgba(0,0,0,1), rgba(0,0,0,0) 100%)',
               padding: '48px 16px 16px 16px',
             }}
           >
@@ -759,7 +785,10 @@ export function TutorialVideoCardSkeleton() {
               <div className="skeleton-shimmer w-10 h-10 rounded-full" />
               <div className="flex items-end gap-[3px] h-6">
                 {[1, 2, 3, 4, 5, 6, 7].map((i) => (
-                  <div key={i} className="skeleton-shimmer w-[3px] h-1 rounded-full" />
+                  <div
+                    key={i}
+                    className="skeleton-shimmer w-[3px] h-1 rounded-full"
+                  />
                 ))}
               </div>
               <div className="flex-1">

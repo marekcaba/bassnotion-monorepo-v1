@@ -44,7 +44,9 @@ interface UseRewardPreviewReturn {
  * Uses raw Web Audio API (AudioBufferSourceNode) — fully isolated from the
  * main PlaybackEngine singleton, following the proven useDrumEditorPlayback pattern.
  */
-export function useRewardPreview(lockedExercise: any | null): UseRewardPreviewReturn {
+export function useRewardPreview(
+  lockedExercise: any | null,
+): UseRewardPreviewReturn {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [canPreview, setCanPreview] = useState(false);
@@ -114,7 +116,7 @@ export function useRewardPreview(lockedExercise: any | null): UseRewardPreviewRe
   // Update canPreview when lockedExercise changes
   useEffect(() => {
     setCanPreview(
-      sampleBuffersRef.current.size > 0 && !!lockedExercise?.drum_pattern
+      sampleBuffersRef.current.size > 0 && !!lockedExercise?.drum_pattern,
     );
   }, [lockedExercise]);
 

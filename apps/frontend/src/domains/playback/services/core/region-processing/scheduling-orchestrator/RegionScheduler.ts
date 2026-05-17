@@ -34,7 +34,9 @@ function getTone(): NonNullable<typeof window.Tone> {
       return tone;
     }
   }
-  throw new Error('RegionScheduler: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+  throw new Error(
+    'RegionScheduler: Tone.js not loaded. Ensure AudioEngine is initialized first.',
+  );
 }
 
 // Types
@@ -61,7 +63,10 @@ interface MusicalPosition {
  * @param beatsPerBar - Number of beats per bar (default 4 for 4/4 time)
  * @returns Total number of beats
  */
-function durationToBeats(duration: number | MusicalPosition, beatsPerBar = 4): number {
+function durationToBeats(
+  duration: number | MusicalPosition,
+  beatsPerBar = 4,
+): number {
   // If it's already a number, return it
   if (typeof duration === 'number') {
     return duration;
@@ -74,11 +79,7 @@ function durationToBeats(duration: number | MusicalPosition, beatsPerBar = 4): n
   const sixteenths = duration.sixteenths ?? 0;
   const ticks = duration.ticks ?? 0;
 
-  const totalBeats =
-    bars * beatsPerBar +
-    beats +
-    sixteenths / 4 +
-    ticks / 480;
+  const totalBeats = bars * beatsPerBar + beats + sixteenths / 4 + ticks / 480;
 
   return totalBeats;
 }
@@ -112,7 +113,7 @@ interface CachedSchedule {
 
 export class RegionScheduler {
   private instanceId: string;
-  private lookAheadTime: number = 0.1; // 100ms lookahead (from BackupScheduler)
+  private lookAheadTime = 0.1; // 100ms lookahead (from BackupScheduler)
 
   constructor(instanceId: string) {
     this.instanceId = instanceId;
@@ -305,18 +306,35 @@ export class RegionScheduler {
                 : 0;
 
             // CRITICAL: Add loopOffset for pattern repetition
-            const absoluteTime = region.startTime + eventTime + offsetTime + loopOffset;
+            const absoluteTime =
+              region.startTime + eventTime + offsetTime + loopOffset;
 
             // RING-TIMING-DEBUG: Log first few bass notes to compare with ring calculation
             if (instrumentType === 'bass' && loopNum === 0 && eventIndex < 3) {
-              const eventMeasure = event.data?.measure ?? event.data?.position?.measure ?? 'unknown';
-              const eventBeat = event.data?.beat ?? event.data?.position?.beat ?? 'unknown';
-              console.log(`🔧 [REGION-SCHED-TIMING] === BASS NOTE ${eventIndex} ===`);
-              console.log(`🔧 [REGION-SCHED-TIMING] region.startTime=${region.startTime.toFixed(4)}s`);
-              console.log(`🔧 [REGION-SCHED-TIMING] eventTime=${eventTime.toFixed(4)}s`);
-              console.log(`🔧 [REGION-SCHED-TIMING] offsetTime=${offsetTime.toFixed(4)}s (countdownOffsetBeats=${countdownOffsetBeats})`);
-              console.log(`🔧 [REGION-SCHED-TIMING] absoluteTime=${absoluteTime.toFixed(4)}s = ${(absoluteTime * 1000).toFixed(0)}ms`);
-              console.log(`🔧 [REGION-SCHED-TIMING] Note: measure=${eventMeasure}, beat=${eventBeat}`);
+              const eventMeasure =
+                event.data?.measure ??
+                event.data?.position?.measure ??
+                'unknown';
+              const eventBeat =
+                event.data?.beat ?? event.data?.position?.beat ?? 'unknown';
+              console.log(
+                `🔧 [REGION-SCHED-TIMING] === BASS NOTE ${eventIndex} ===`,
+              );
+              console.log(
+                `🔧 [REGION-SCHED-TIMING] region.startTime=${region.startTime.toFixed(4)}s`,
+              );
+              console.log(
+                `🔧 [REGION-SCHED-TIMING] eventTime=${eventTime.toFixed(4)}s`,
+              );
+              console.log(
+                `🔧 [REGION-SCHED-TIMING] offsetTime=${offsetTime.toFixed(4)}s (countdownOffsetBeats=${countdownOffsetBeats})`,
+              );
+              console.log(
+                `🔧 [REGION-SCHED-TIMING] absoluteTime=${absoluteTime.toFixed(4)}s = ${(absoluteTime * 1000).toFixed(0)}ms`,
+              );
+              console.log(
+                `🔧 [REGION-SCHED-TIMING] Note: measure=${eventMeasure}, beat=${eventBeat}`,
+              );
             }
 
             // Round to 3 decimals to group events at same time
@@ -537,7 +555,9 @@ export class RegionScheduler {
             let hasMainKey = false;
             if (trackEvents) {
               for (let loopNum = 0; loopNum < 10; loopNum++) {
-                if (trackEvents.has(`${region.id}_${eventIndex}_loop${loopNum}`)) {
+                if (
+                  trackEvents.has(`${region.id}_${eventIndex}_loop${loopNum}`)
+                ) {
                   hasMainKey = true;
                   break;
                 }
@@ -559,7 +579,9 @@ export class RegionScheduler {
               if (!scheduledEvents.has(trackId)) {
                 scheduledEvents.set(trackId, new Set());
               }
-              scheduledEvents.get(trackId)!.add(`${region.id}_${eventIndex}_loop0`);
+              scheduledEvents
+                .get(trackId)!
+                .add(`${region.id}_${eventIndex}_loop0`);
               scheduledEvents.get(trackId)!.add(backupEventKey);
               scheduledIds.add(toneId);
             }

@@ -36,7 +36,11 @@ const logger = createStructuredLogger('ErrorRecoveryRegistry');
  * are stored in context and need to be accessed via type assertion.
  */
 function getErrorContext<T>(error: Error): T | undefined {
-  if ('context' in error && error.context && typeof error.context === 'object') {
+  if (
+    'context' in error &&
+    error.context &&
+    typeof error.context === 'object'
+  ) {
     return error.context as T;
   }
   return undefined;

@@ -15,7 +15,9 @@ function getTone(): typeof import('tone') {
       return tone as typeof import('tone');
     }
   }
-  throw new Error('IInstrumentEffects: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+  throw new Error(
+    'IInstrumentEffects: Tone.js not loaded. Ensure AudioEngine is initialized first.',
+  );
 }
 
 export interface AudioEffect {
@@ -130,7 +132,10 @@ export abstract class BaseInstrumentEffects implements IInstrumentEffects {
     this.input.connect(this.wetSignal);
   }
 
-  abstract createEffect(type: EffectType, params?: any): ToneTypes.ToneAudioNode;
+  abstract createEffect(
+    type: EffectType,
+    params?: any,
+  ): ToneTypes.ToneAudioNode;
 
   addEffect(effectOrType: AudioEffect | EffectType, params?: any): string {
     let effect: AudioEffect;

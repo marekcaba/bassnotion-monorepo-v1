@@ -96,8 +96,8 @@ export class FavoriteService {
    */
   async getUserFavorites(
     userId: string,
-    page: number = 1,
-    limit: number = 20,
+    page = 1,
+    limit = 20,
   ): Promise<{
     favorites: FavoriteWithExercise[];
     total: number;

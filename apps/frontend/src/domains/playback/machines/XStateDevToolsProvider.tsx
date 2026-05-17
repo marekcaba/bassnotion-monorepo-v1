@@ -25,7 +25,14 @@
 
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useRef, useMemo } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useRef,
+  useMemo,
+} from 'react';
 import {
   initXStateDevTools,
   getInspector,
@@ -67,7 +74,9 @@ export interface XStateDevToolsProviderProps {
 // Context
 // ============================================================================
 
-const XStateDevToolsContext = createContext<XStateDevToolsContextValue | null>(null);
+const XStateDevToolsContext = createContext<XStateDevToolsContextValue | null>(
+  null,
+);
 
 // ============================================================================
 // Provider Component
@@ -116,8 +125,10 @@ export function XStateDevToolsProvider({
 
       // Expose history trackers globally for console debugging
       if (typeof window !== 'undefined') {
-        (window as WindowWithXStateHistory).__xstatePlaybackHistory = playbackHistoryRef.current;
-        (window as WindowWithXStateHistory).__xstatePageInitHistory = pageInitHistoryRef.current;
+        (window as WindowWithXStateHistory).__xstatePlaybackHistory =
+          playbackHistoryRef.current;
+        (window as WindowWithXStateHistory).__xstatePageInitHistory =
+          pageInitHistoryRef.current;
       }
 
       setInitialized(true);
@@ -126,12 +137,20 @@ export function XStateDevToolsProvider({
         console.log(
           '%c[XState DevTools]%c Provider initialized. Available commands:',
           'color: #7c3aed; font-weight: bold',
-          'color: inherit'
+          'color: inherit',
         );
-        console.log('  window.__xstateInspect()              - Open visual inspector');
-        console.log('  window.__xstatePlaybackHistory.print() - Show playback history');
-        console.log('  window.__xstatePageInitHistory.print() - Show page init history');
-        console.log('  window.__xstateUtils.listActors()      - List registered actors');
+        console.log(
+          '  window.__xstateInspect()              - Open visual inspector',
+        );
+        console.log(
+          '  window.__xstatePlaybackHistory.print() - Show playback history',
+        );
+        console.log(
+          '  window.__xstatePageInitHistory.print() - Show page init history',
+        );
+        console.log(
+          '  window.__xstateUtils.listActors()      - List registered actors',
+        );
       }
     }
 
@@ -159,7 +178,7 @@ export function XStateDevToolsProvider({
         }
       },
     }),
-    [enabled, initialized]
+    [enabled, initialized],
   );
 
   return (
@@ -202,7 +221,7 @@ export function useXStateDevToolsRequired(): XStateDevToolsContextValue {
 
   if (!context) {
     throw new Error(
-      'useXStateDevToolsRequired must be used within XStateDevToolsProvider'
+      'useXStateDevToolsRequired must be used within XStateDevToolsProvider',
     );
   }
 

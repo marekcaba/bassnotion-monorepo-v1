@@ -112,7 +112,14 @@ export class ExerciseDto {
   is_active?: boolean;
 
   @IsOptional()
-  fretboard_view_config?: { preset: 'default' | 'octave'; scrollMode?: 'locked' | 'follow'; zoomLevel?: number; initialFret?: number; visibleFretRange?: { start: number; end: number }; sceneX?: number };
+  fretboard_view_config?: {
+    preset: 'default' | 'octave';
+    scrollMode?: 'locked' | 'follow';
+    zoomLevel?: number;
+    initialFret?: number;
+    visibleFretRange?: { start: number; end: number };
+    sceneX?: number;
+  };
 }
 
 export class SaveTutorialWithExercisesDto {

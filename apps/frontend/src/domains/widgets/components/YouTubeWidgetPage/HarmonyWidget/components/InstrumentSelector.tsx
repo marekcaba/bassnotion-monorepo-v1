@@ -7,7 +7,10 @@
  */
 
 import React from 'react';
-import type { InstrumentSelectorProps, KeyboardInstrumentType } from '../types.js';
+import type {
+  InstrumentSelectorProps,
+  KeyboardInstrumentType,
+} from '../types.js';
 import { KeyboardInstrument } from '../types.js';
 
 /**
@@ -43,7 +46,7 @@ export const InstrumentSelector: React.FC<InstrumentSelectorProps> = React.memo(
         </select>
       </div>
     );
-  }
+  },
 );
 
 InstrumentSelector.displayName = 'InstrumentSelector';

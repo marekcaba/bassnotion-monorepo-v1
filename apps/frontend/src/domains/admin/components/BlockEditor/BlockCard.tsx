@@ -27,7 +27,10 @@ import {
 // Icon registry
 // ---------------------------------------------------------------------------
 
-const BLOCK_ICONS: Record<BlockType, React.ComponentType<{ className?: string }>> = {
+const BLOCK_ICONS: Record<
+  BlockType,
+  React.ComponentType<{ className?: string }>
+> = {
   video: Video,
   exercise: Music,
   groove: Sparkles,

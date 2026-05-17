@@ -125,7 +125,7 @@ export function captureWidgetError(
 export function reportPerformanceMetric(
   name: string,
   value: number,
-  unit: string = 'ms',
+  unit = 'ms',
 ) {
   Sentry.addBreadcrumb({
     category: 'performance',

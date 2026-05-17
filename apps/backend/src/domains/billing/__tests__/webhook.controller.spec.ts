@@ -1,4 +1,12 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeEach,
+  afterEach,
+  type Mocked,
+} from 'vitest';
 import { BadRequestException } from '@nestjs/common';
 import { WebhookController } from '../webhook.controller.js';
 import { StripeService } from '../services/stripe.service.js';
@@ -8,9 +16,12 @@ import type Stripe from 'stripe';
 
 describe('WebhookController', () => {
   let controller: WebhookController;
-  let stripeService: jest.Mocked<StripeService>;
-  let subscriptionRepository: jest.Mocked<SubscriptionRepository>;
-  let purchaseRepository: jest.Mocked<PurchaseRepository>;
+  // Vitest provides its own Mocked<T> equivalent of jest.Mocked<T>.
+  // The earlier `jest.Mocked<...>` annotations referenced a global
+  // `jest` namespace that this project doesn't load.
+  let stripeService: Mocked<StripeService>;
+  let subscriptionRepository: Mocked<SubscriptionRepository>;
+  let purchaseRepository: Mocked<PurchaseRepository>;
 
   // Mock data
   const mockUserId = 'user-123';
@@ -83,7 +94,7 @@ describe('WebhookController', () => {
     });
 
     it('should return { received: true } for valid webhook', async () => {
-      const mockEvent: Stripe.Event = {
+      const mockEvent = {
         id: 'evt_test',
         type: 'checkout.session.completed',
         object: 'event',
@@ -103,15 +114,20 @@ describe('WebhookController', () => {
       };
 
       const request = createMockRequest(Buffer.from('payload'));
-      stripeService.constructWebhookEvent.mockReturnValue(mockEvent);
+      stripeService.constructWebhookEvent.mockReturnValue(
+        mockEvent as unknown as Stripe.Event,
+      );
 
-      const result = await controller.handleStripeWebhook('sig_test', request as any);
+      const result = await controller.handleStripeWebhook(
+        'sig_test',
+        request as any,
+      );
 
       expect(result).toEqual({ received: true });
     });
 
     it('should return { received: true } even if event handling fails', async () => {
-      const mockEvent: Stripe.Event = {
+      const mockEvent = {
         id: 'evt_test',
         type: 'checkout.session.completed',
         object: 'event',
@@ -134,18 +150,23 @@ describe('WebhookController', () => {
       };
 
       const request = createMockRequest(Buffer.from('payload'));
-      stripeService.constructWebhookEvent.mockReturnValue(mockEvent);
+      stripeService.constructWebhookEvent.mockReturnValue(
+        mockEvent as unknown as Stripe.Event,
+      );
       purchaseRepository.create.mockRejectedValue(new Error('DB error'));
 
       // Should not throw, should return received: true
-      const result = await controller.handleStripeWebhook('sig_test', request as any);
+      const result = await controller.handleStripeWebhook(
+        'sig_test',
+        request as any,
+      );
       expect(result).toEqual({ received: true });
     });
   });
 
   describe('handleCheckoutCompleted', () => {
     it('should create purchase record for course payment', async () => {
-      const mockSession: Stripe.Checkout.Session = {
+      const mockSession = {
         id: mockSessionId,
         object: 'checkout.session',
         mode: 'payment',
@@ -158,9 +179,9 @@ describe('WebhookController', () => {
         status: 'complete',
         created: Date.now() / 1000,
         livemode: false,
-      } as Stripe.Checkout.Session;
+      } as unknown as Stripe.Checkout.Session;
 
-      const mockEvent: Stripe.Event = {
+      const mockEvent = {
         id: 'evt_test',
         type: 'checkout.session.completed',
         object: 'event',
@@ -173,7 +194,9 @@ describe('WebhookController', () => {
       };
 
       const request = { rawBody: Buffer.from('payload') };
-      stripeService.constructWebhookEvent.mockReturnValue(mockEvent);
+      stripeService.constructWebhookEvent.mockReturnValue(
+        mockEvent as unknown as Stripe.Event,
+      );
       purchaseRepository.create.mockResolvedValue({} as any);
 
       await controller.handleStripeWebhook('sig_test', request as any);
@@ -191,7 +214,7 @@ describe('WebhookController', () => {
     });
 
     it('should not create purchase if user_id is missing', async () => {
-      const mockSession: Stripe.Checkout.Session = {
+      const mockSession = {
         id: mockSessionId,
         object: 'checkout.session',
         mode: 'payment',
@@ -204,9 +227,9 @@ describe('WebhookController', () => {
         status: 'complete',
         created: Date.now() / 1000,
         livemode: false,
-      } as Stripe.Checkout.Session;
+      } as unknown as Stripe.Checkout.Session;
 
-      const mockEvent: Stripe.Event = {
+      const mockEvent = {
         id: 'evt_test',
         type: 'checkout.session.completed',
         object: 'event',
@@ -219,7 +242,9 @@ describe('WebhookController', () => {
       };
 
       const request = { rawBody: Buffer.from('payload') };
-      stripeService.constructWebhookEvent.mockReturnValue(mockEvent);
+      stripeService.constructWebhookEvent.mockReturnValue(
+        mockEvent as unknown as Stripe.Event,
+      );
 
       await controller.handleStripeWebhook('sig_test', request as any);
 
@@ -227,7 +252,7 @@ describe('WebhookController', () => {
     });
 
     it('should log but not create for subscription checkout (handled by subscription event)', async () => {
-      const mockSession: Stripe.Checkout.Session = {
+      const mockSession = {
         id: mockSessionId,
         object: 'checkout.session',
         mode: 'subscription',
@@ -238,9 +263,9 @@ describe('WebhookController', () => {
         status: 'complete',
         created: Date.now() / 1000,
         livemode: false,
-      } as Stripe.Checkout.Session;
+      } as unknown as Stripe.Checkout.Session;
 
-      const mockEvent: Stripe.Event = {
+      const mockEvent = {
         id: 'evt_test',
         type: 'checkout.session.completed',
         object: 'event',
@@ -253,7 +278,9 @@ describe('WebhookController', () => {
       };
 
       const request = { rawBody: Buffer.from('payload') };
-      stripeService.constructWebhookEvent.mockReturnValue(mockEvent);
+      stripeService.constructWebhookEvent.mockReturnValue(
+        mockEvent as unknown as Stripe.Event,
+      );
 
       await controller.handleStripeWebhook('sig_test', request as any);
 
@@ -263,30 +290,31 @@ describe('WebhookController', () => {
   });
 
   describe('handleSubscriptionUpdated', () => {
-    const createMockSubscription = (overrides = {}): Stripe.Subscription => ({
-      id: mockSubscriptionId,
-      object: 'subscription',
-      customer: mockCustomerId,
-      status: 'active',
-      metadata: { user_id: mockUserId },
-      items: {
-        object: 'list',
-        data: [{ price: { id: 'price_123' } }],
-        has_more: false,
-        url: '/v1/subscription_items',
-      },
-      current_period_start: Math.floor(Date.now() / 1000),
-      current_period_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
-      cancel_at_period_end: false,
-      canceled_at: null,
-      created: Math.floor(Date.now() / 1000),
-      livemode: false,
-      ...overrides,
-    } as Stripe.Subscription);
+    const createMockSubscription = (overrides = {}): Stripe.Subscription =>
+      ({
+        id: mockSubscriptionId,
+        object: 'subscription',
+        customer: mockCustomerId,
+        status: 'active',
+        metadata: { user_id: mockUserId },
+        items: {
+          object: 'list',
+          data: [{ price: { id: 'price_123' } }],
+          has_more: false,
+          url: '/v1/subscription_items',
+        },
+        current_period_start: Math.floor(Date.now() / 1000),
+        current_period_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
+        cancel_at_period_end: false,
+        canceled_at: null,
+        created: Math.floor(Date.now() / 1000),
+        livemode: false,
+        ...overrides,
+      }) as unknown as Stripe.Subscription;
 
     it('should create new subscription if not exists', async () => {
       const mockSubscription = createMockSubscription();
-      const mockEvent: Stripe.Event = {
+      const mockEvent = {
         id: 'evt_test',
         type: 'customer.subscription.created',
         object: 'event',
@@ -299,7 +327,9 @@ describe('WebhookController', () => {
       };
 
       const request = { rawBody: Buffer.from('payload') };
-      stripeService.constructWebhookEvent.mockReturnValue(mockEvent);
+      stripeService.constructWebhookEvent.mockReturnValue(
+        mockEvent as unknown as Stripe.Event,
+      );
       subscriptionRepository.findByStripeSubscriptionId.mockResolvedValue(null);
       subscriptionRepository.create.mockResolvedValue({} as any);
 
@@ -321,7 +351,7 @@ describe('WebhookController', () => {
         canceled_at: Math.floor(Date.now() / 1000),
       });
 
-      const mockEvent: Stripe.Event = {
+      const mockEvent = {
         id: 'evt_test',
         type: 'customer.subscription.updated',
         object: 'event',
@@ -334,7 +364,9 @@ describe('WebhookController', () => {
       };
 
       const request = { rawBody: Buffer.from('payload') };
-      stripeService.constructWebhookEvent.mockReturnValue(mockEvent);
+      stripeService.constructWebhookEvent.mockReturnValue(
+        mockEvent as unknown as Stripe.Event,
+      );
       subscriptionRepository.findByStripeSubscriptionId.mockResolvedValue({
         id: 'existing-sub',
         userId: mockUserId,
@@ -356,7 +388,7 @@ describe('WebhookController', () => {
         metadata: {}, // No user_id in metadata
       });
 
-      const mockEvent: Stripe.Event = {
+      const mockEvent = {
         id: 'evt_test',
         type: 'customer.subscription.updated',
         object: 'event',
@@ -369,7 +401,9 @@ describe('WebhookController', () => {
       };
 
       const request = { rawBody: Buffer.from('payload') };
-      stripeService.constructWebhookEvent.mockReturnValue(mockEvent);
+      stripeService.constructWebhookEvent.mockReturnValue(
+        mockEvent as unknown as Stripe.Event,
+      );
       // First lookup returns the subscription with userId
       subscriptionRepository.findByStripeSubscriptionId.mockResolvedValue({
         id: 'existing-sub',
@@ -388,7 +422,7 @@ describe('WebhookController', () => {
         metadata: {}, // No user_id in metadata
       });
 
-      const mockEvent: Stripe.Event = {
+      const mockEvent = {
         id: 'evt_test',
         type: 'customer.subscription.updated',
         object: 'event',
@@ -401,21 +435,29 @@ describe('WebhookController', () => {
       };
 
       const request = { rawBody: Buffer.from('payload') };
-      stripeService.constructWebhookEvent.mockReturnValue(mockEvent);
+      stripeService.constructWebhookEvent.mockReturnValue(
+        mockEvent as unknown as Stripe.Event,
+      );
       // Subscription not found by ID
-      subscriptionRepository.findByStripeSubscriptionId.mockResolvedValueOnce(null);
+      subscriptionRepository.findByStripeSubscriptionId.mockResolvedValueOnce(
+        null,
+      );
       // Found by customer ID
       subscriptionRepository.findByStripeCustomerId.mockResolvedValue({
         id: 'existing-sub',
         userId: mockUserId,
       } as any);
       // Second call finds the subscription
-      subscriptionRepository.findByStripeSubscriptionId.mockResolvedValueOnce(null);
+      subscriptionRepository.findByStripeSubscriptionId.mockResolvedValueOnce(
+        null,
+      );
       subscriptionRepository.create.mockResolvedValue({} as any);
 
       await controller.handleStripeWebhook('sig_test', request as any);
 
-      expect(subscriptionRepository.findByStripeCustomerId).toHaveBeenCalledWith(mockCustomerId);
+      expect(
+        subscriptionRepository.findByStripeCustomerId,
+      ).toHaveBeenCalledWith(mockCustomerId);
     });
 
     it('should not process if user cannot be resolved', async () => {
@@ -423,7 +465,7 @@ describe('WebhookController', () => {
         metadata: {}, // No user_id
       });
 
-      const mockEvent: Stripe.Event = {
+      const mockEvent = {
         id: 'evt_test',
         type: 'customer.subscription.updated',
         object: 'event',
@@ -436,7 +478,9 @@ describe('WebhookController', () => {
       };
 
       const request = { rawBody: Buffer.from('payload') };
-      stripeService.constructWebhookEvent.mockReturnValue(mockEvent);
+      stripeService.constructWebhookEvent.mockReturnValue(
+        mockEvent as unknown as Stripe.Event,
+      );
       subscriptionRepository.findByStripeSubscriptionId.mockResolvedValue(null);
       subscriptionRepository.findByStripeCustomerId.mockResolvedValue(null);
 
@@ -449,7 +493,7 @@ describe('WebhookController', () => {
 
   describe('handleSubscriptionDeleted', () => {
     it('should mark subscription as canceled', async () => {
-      const mockSubscription: Stripe.Subscription = {
+      const mockSubscription = {
         id: mockSubscriptionId,
         object: 'subscription',
         customer: mockCustomerId,
@@ -465,9 +509,9 @@ describe('WebhookController', () => {
         cancel_at_period_end: false,
         created: Math.floor(Date.now() / 1000),
         livemode: false,
-      } as Stripe.Subscription;
+      } as unknown as Stripe.Subscription;
 
-      const mockEvent: Stripe.Event = {
+      const mockEvent = {
         id: 'evt_test',
         type: 'customer.subscription.deleted',
         object: 'event',
@@ -480,7 +524,9 @@ describe('WebhookController', () => {
       };
 
       const request = { rawBody: Buffer.from('payload') };
-      stripeService.constructWebhookEvent.mockReturnValue(mockEvent);
+      stripeService.constructWebhookEvent.mockReturnValue(
+        mockEvent as unknown as Stripe.Event,
+      );
       subscriptionRepository.update.mockResolvedValue({} as any);
 
       await controller.handleStripeWebhook('sig_test', request as any);
@@ -506,7 +552,7 @@ describe('WebhookController', () => {
         livemode: false,
       } as Stripe.Invoice;
 
-      const mockSubscription: Stripe.Subscription = {
+      const mockSubscription = {
         id: mockSubscriptionId,
         object: 'subscription',
         customer: mockCustomerId,
@@ -517,9 +563,9 @@ describe('WebhookController', () => {
         cancel_at_period_end: false,
         created: Math.floor(Date.now() / 1000),
         livemode: false,
-      } as Stripe.Subscription;
+      } as unknown as Stripe.Subscription;
 
-      const mockEvent: Stripe.Event = {
+      const mockEvent = {
         id: 'evt_test',
         type: 'invoice.payment_succeeded',
         object: 'event',
@@ -532,13 +578,17 @@ describe('WebhookController', () => {
       };
 
       const request = { rawBody: Buffer.from('payload') };
-      stripeService.constructWebhookEvent.mockReturnValue(mockEvent);
+      stripeService.constructWebhookEvent.mockReturnValue(
+        mockEvent as unknown as Stripe.Event,
+      );
       stripeService.getSubscription.mockResolvedValue(mockSubscription);
       subscriptionRepository.update.mockResolvedValue({} as any);
 
       await controller.handleStripeWebhook('sig_test', request as any);
 
-      expect(stripeService.getSubscription).toHaveBeenCalledWith(mockSubscriptionId);
+      expect(stripeService.getSubscription).toHaveBeenCalledWith(
+        mockSubscriptionId,
+      );
       expect(subscriptionRepository.update).toHaveBeenCalledWith(
         mockSubscriptionId,
         expect.objectContaining({
@@ -558,7 +608,7 @@ describe('WebhookController', () => {
         livemode: false,
       } as Stripe.Invoice;
 
-      const mockEvent: Stripe.Event = {
+      const mockEvent = {
         id: 'evt_test',
         type: 'invoice.payment_succeeded',
         object: 'event',
@@ -571,7 +621,9 @@ describe('WebhookController', () => {
       };
 
       const request = { rawBody: Buffer.from('payload') };
-      stripeService.constructWebhookEvent.mockReturnValue(mockEvent);
+      stripeService.constructWebhookEvent.mockReturnValue(
+        mockEvent as unknown as Stripe.Event,
+      );
 
       await controller.handleStripeWebhook('sig_test', request as any);
 
@@ -592,7 +644,7 @@ describe('WebhookController', () => {
         livemode: false,
       } as Stripe.Invoice;
 
-      const mockEvent: Stripe.Event = {
+      const mockEvent = {
         id: 'evt_test',
         type: 'invoice.payment_failed',
         object: 'event',
@@ -605,7 +657,9 @@ describe('WebhookController', () => {
       };
 
       const request = { rawBody: Buffer.from('payload') };
-      stripeService.constructWebhookEvent.mockReturnValue(mockEvent);
+      stripeService.constructWebhookEvent.mockReturnValue(
+        mockEvent as unknown as Stripe.Event,
+      );
       subscriptionRepository.update.mockResolvedValue({} as any);
 
       await controller.handleStripeWebhook('sig_test', request as any);
@@ -630,7 +684,7 @@ describe('WebhookController', () => {
         livemode: false,
       } as Stripe.PaymentIntent;
 
-      const mockEvent: Stripe.Event = {
+      const mockEvent = {
         id: 'evt_test',
         type: 'payment_intent.succeeded',
         object: 'event',
@@ -643,7 +697,9 @@ describe('WebhookController', () => {
       };
 
       const request = { rawBody: Buffer.from('payload') };
-      stripeService.constructWebhookEvent.mockReturnValue(mockEvent);
+      stripeService.constructWebhookEvent.mockReturnValue(
+        mockEvent as unknown as Stripe.Event,
+      );
       purchaseRepository.findByPaymentIntentId.mockResolvedValue({
         id: 'purchase-123',
         status: 'pending',
@@ -670,7 +726,7 @@ describe('WebhookController', () => {
         livemode: false,
       } as Stripe.PaymentIntent;
 
-      const mockEvent: Stripe.Event = {
+      const mockEvent = {
         id: 'evt_test',
         type: 'payment_intent.succeeded',
         object: 'event',
@@ -683,7 +739,9 @@ describe('WebhookController', () => {
       };
 
       const request = { rawBody: Buffer.from('payload') };
-      stripeService.constructWebhookEvent.mockReturnValue(mockEvent);
+      stripeService.constructWebhookEvent.mockReturnValue(
+        mockEvent as unknown as Stripe.Event,
+      );
       purchaseRepository.findByPaymentIntentId.mockResolvedValue({
         id: 'purchase-123',
         status: 'completed', // Already completed
@@ -706,7 +764,7 @@ describe('WebhookController', () => {
         livemode: false,
       } as Stripe.PaymentIntent;
 
-      const mockEvent: Stripe.Event = {
+      const mockEvent = {
         id: 'evt_test',
         type: 'payment_intent.succeeded',
         object: 'event',
@@ -719,7 +777,9 @@ describe('WebhookController', () => {
       };
 
       const request = { rawBody: Buffer.from('payload') };
-      stripeService.constructWebhookEvent.mockReturnValue(mockEvent);
+      stripeService.constructWebhookEvent.mockReturnValue(
+        mockEvent as unknown as Stripe.Event,
+      );
       purchaseRepository.findByPaymentIntentId.mockResolvedValue(null);
 
       await controller.handleStripeWebhook('sig_test', request as any);
@@ -741,7 +801,7 @@ describe('WebhookController', () => {
         livemode: false,
       } as Stripe.PaymentIntent;
 
-      const mockEvent: Stripe.Event = {
+      const mockEvent = {
         id: 'evt_test',
         type: 'payment_intent.payment_failed',
         object: 'event',
@@ -754,7 +814,9 @@ describe('WebhookController', () => {
       };
 
       const request = { rawBody: Buffer.from('payload') };
-      stripeService.constructWebhookEvent.mockReturnValue(mockEvent);
+      stripeService.constructWebhookEvent.mockReturnValue(
+        mockEvent as unknown as Stripe.Event,
+      );
       purchaseRepository.findByPaymentIntentId.mockResolvedValue({
         id: 'purchase-123',
         status: 'pending',
@@ -772,7 +834,7 @@ describe('WebhookController', () => {
 
   describe('Unhandled events', () => {
     it('should log and acknowledge unhandled event types', async () => {
-      const mockEvent: Stripe.Event = {
+      const mockEvent = {
         id: 'evt_test',
         type: 'customer.created', // Unhandled event type
         object: 'event',
@@ -785,9 +847,14 @@ describe('WebhookController', () => {
       };
 
       const request = { rawBody: Buffer.from('payload') };
-      stripeService.constructWebhookEvent.mockReturnValue(mockEvent);
+      stripeService.constructWebhookEvent.mockReturnValue(
+        mockEvent as unknown as Stripe.Event,
+      );
 
-      const result = await controller.handleStripeWebhook('sig_test', request as any);
+      const result = await controller.handleStripeWebhook(
+        'sig_test',
+        request as any,
+      );
 
       expect(result).toEqual({ received: true });
       // No repository calls for unhandled events
@@ -818,7 +885,9 @@ describe('WebhookController - Status Mapping', () => {
 
   it('should map all Stripe subscription statuses correctly', async () => {
     // Access private method through prototype
-    const mapStripeStatus = (controller as any).mapStripeStatus.bind(controller);
+    const mapStripeStatus = (controller as any).mapStripeStatus.bind(
+      controller,
+    );
 
     expect(mapStripeStatus('active')).toBe('active');
     expect(mapStripeStatus('canceled')).toBe('canceled');
@@ -860,7 +929,7 @@ describe('WebhookController - Edge Cases', () => {
   });
 
   it('should handle checkout session with zero amount', async () => {
-    const mockSession: Stripe.Checkout.Session = {
+    const mockSession = {
       id: 'cs_test',
       object: 'checkout.session',
       mode: 'payment',
@@ -873,9 +942,9 @@ describe('WebhookController - Edge Cases', () => {
       status: 'complete',
       created: Date.now() / 1000,
       livemode: false,
-    } as Stripe.Checkout.Session;
+    } as unknown as Stripe.Checkout.Session;
 
-    const mockEvent: Stripe.Event = {
+    const mockEvent = {
       id: 'evt_test',
       type: 'checkout.session.completed',
       object: 'event',
@@ -888,7 +957,9 @@ describe('WebhookController - Edge Cases', () => {
     };
 
     const request = { rawBody: Buffer.from('payload') };
-    stripeService.constructWebhookEvent.mockReturnValue(mockEvent);
+    stripeService.constructWebhookEvent.mockReturnValue(
+        mockEvent as unknown as Stripe.Event,
+      );
     purchaseRepository.create.mockResolvedValue({});
 
     await controller.handleStripeWebhook('sig_test', request as any);
@@ -901,7 +972,7 @@ describe('WebhookController - Edge Cases', () => {
   });
 
   it('should handle subscription with missing price data gracefully', async () => {
-    const mockSubscription: Stripe.Subscription = {
+    const mockSubscription = {
       id: 'sub_test',
       object: 'subscription',
       customer: 'cus_123',
@@ -919,9 +990,9 @@ describe('WebhookController - Edge Cases', () => {
       canceled_at: null,
       created: Math.floor(Date.now() / 1000),
       livemode: false,
-    } as Stripe.Subscription;
+    } as unknown as Stripe.Subscription;
 
-    const mockEvent: Stripe.Event = {
+    const mockEvent = {
       id: 'evt_test',
       type: 'customer.subscription.created',
       object: 'event',
@@ -934,7 +1005,9 @@ describe('WebhookController - Edge Cases', () => {
     };
 
     const request = { rawBody: Buffer.from('payload') };
-    stripeService.constructWebhookEvent.mockReturnValue(mockEvent);
+    stripeService.constructWebhookEvent.mockReturnValue(
+        mockEvent as unknown as Stripe.Event,
+      );
     subscriptionRepository.findByStripeSubscriptionId.mockResolvedValue(null);
     subscriptionRepository.create.mockResolvedValue({});
 

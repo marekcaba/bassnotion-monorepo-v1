@@ -118,7 +118,12 @@ export const useAuthRedirect = (options: UseAuthRedirectOptions = {}) => {
       // Redirect to dashboard or default route
       scheduleRedirect(defaultRedirect);
     },
-    [scheduleRedirect, defaultRedirect, requireEmailConfirmation, checkAssessment],
+    [
+      scheduleRedirect,
+      defaultRedirect,
+      requireEmailConfirmation,
+      checkAssessment,
+    ],
   );
 
   const redirectToLogin = useCallback(() => {

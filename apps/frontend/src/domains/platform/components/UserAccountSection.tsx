@@ -38,7 +38,9 @@ interface UserAccountSectionProps {
   expanded?: boolean;
 }
 
-export function UserAccountSection({ expanded: _expanded = false }: UserAccountSectionProps) {
+export function UserAccountSection({
+  expanded: _expanded = false,
+}: UserAccountSectionProps) {
   const { user } = useAuth();
   const { profile, isLoading } = useUserProfile();
   const resetAuth = useAuthStore((state) => state.reset);
@@ -64,10 +66,13 @@ export function UserAccountSection({ expanded: _expanded = false }: UserAccountS
     }
   }, [tutorialSlug, navigateWithTransition]);
 
-  const handleAdminClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    navigateWithTransition('/admin/tutorials');
-  }, [navigateWithTransition]);
+  const handleAdminClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      navigateWithTransition('/admin/tutorials');
+    },
+    [navigateWithTransition],
+  );
 
   const handleSignOut = useCallback(async () => {
     // Navigate to /login FIRST, before clearing auth state. This unmounts

@@ -22,8 +22,7 @@
  * Default: false (clean console)
  * Enable: Set NEXT_PUBLIC_VERBOSE_DEBUG=true in .env.local
  */
-export const VERBOSE_DEBUG =
-  process.env.NEXT_PUBLIC_VERBOSE_DEBUG === 'true';
+export const VERBOSE_DEBUG = process.env.NEXT_PUBLIC_VERBOSE_DEBUG === 'true';
 
 // Runtime toggle support for browser console debugging
 if (typeof window !== 'undefined') {
@@ -31,9 +30,11 @@ if (typeof window !== 'undefined') {
   window.__enableVerboseDebug = (enabled: boolean) => {
     window.__VERBOSE_DEBUG_OVERRIDE = enabled;
     console.log(
-      `🔧 Verbose debug ${enabled ? 'ENABLED' : 'DISABLED'} (runtime override)`
+      `🔧 Verbose debug ${enabled ? 'ENABLED' : 'DISABLED'} (runtime override)`,
     );
-    console.log('Note: This only affects code that uses isVerboseDebugEnabled()');
+    console.log(
+      'Note: This only affects code that uses isVerboseDebugEnabled()',
+    );
   };
 
   // Expose current state for debugging
@@ -46,7 +47,10 @@ if (typeof window !== 'undefined') {
  * For static checks at module load, use VERBOSE_DEBUG constant directly.
  */
 export function isVerboseDebugEnabled(): boolean {
-  if (typeof window !== 'undefined' && window.__VERBOSE_DEBUG_OVERRIDE !== undefined) {
+  if (
+    typeof window !== 'undefined' &&
+    window.__VERBOSE_DEBUG_OVERRIDE !== undefined
+  ) {
     return window.__VERBOSE_DEBUG_OVERRIDE;
   }
   return VERBOSE_DEBUG;

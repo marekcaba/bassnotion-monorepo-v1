@@ -3,11 +3,7 @@
 import { useState, useCallback } from 'react';
 import Image from 'next/image';
 import { Menu } from 'lucide-react';
-import {
-  Sheet,
-  SheetContent,
-  SheetTitle,
-} from '@/shared/components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle } from '@/shared/components/ui/sheet';
 import { MAIN_NAV_ITEMS, BOTTOM_NAV_ITEMS } from '../constants/navigation';
 import { SidebarNav } from './SidebarNav';
 import { UserAccountSection } from './UserAccountSection';
@@ -80,7 +76,10 @@ export function MobileHeader() {
           </div>
 
           {/* Main nav */}
-          <div className="flex-1 overflow-y-auto" onClick={() => setOpen(false)}>
+          <div
+            className="flex-1 overflow-y-auto"
+            onClick={() => setOpen(false)}
+          >
             <SidebarNav items={MAIN_NAV_ITEMS} expanded />
           </div>
 
@@ -88,7 +87,10 @@ export function MobileHeader() {
           <div className="mx-2 h-px bg-white/[0.06]" />
 
           {/* Bottom section */}
-          <div className="flex flex-col gap-1 pb-3" onClick={() => setOpen(false)}>
+          <div
+            className="flex flex-col gap-1 pb-3"
+            onClick={() => setOpen(false)}
+          >
             <SidebarNav items={BOTTOM_NAV_ITEMS} expanded />
             <UserAccountSection expanded />
           </div>

@@ -29,55 +29,67 @@ function WidgetSkeleton({ name }: { name: string }) {
 
 // Dynamic imports with loading states - reduces initial bundle by ~300KB per widget
 const MetronomeWidget = dynamic(
-  () => import('../MetronomeWidget/index.js').then((m) => {
-    if (isVerboseDebugEnabled()) {
-      console.log(`📦 [SKELETON-DEBUG] MetronomeWidget loaded at +${getSkeletonDebugTime()}ms`);
-    }
-    return m.MetronomeWidget;
-  }),
+  () =>
+    import('../MetronomeWidget/index.js').then((m) => {
+      if (isVerboseDebugEnabled()) {
+        console.log(
+          `📦 [SKELETON-DEBUG] MetronomeWidget loaded at +${getSkeletonDebugTime()}ms`,
+        );
+      }
+      return m.MetronomeWidget;
+    }),
   {
     ssr: false,
     loading: () => <WidgetSkeleton name="Metronome" />,
-  }
+  },
 );
 
 const DrummerWidget = dynamic(
-  () => import('../DrummerWidget/index.js').then((m) => {
-    if (isVerboseDebugEnabled()) {
-      console.log(`📦 [SKELETON-DEBUG] DrummerWidget loaded at +${getSkeletonDebugTime()}ms`);
-    }
-    return m.DrummerWidget;
-  }),
+  () =>
+    import('../DrummerWidget/index.js').then((m) => {
+      if (isVerboseDebugEnabled()) {
+        console.log(
+          `📦 [SKELETON-DEBUG] DrummerWidget loaded at +${getSkeletonDebugTime()}ms`,
+        );
+      }
+      return m.DrummerWidget;
+    }),
   {
     ssr: false,
     loading: () => <WidgetSkeleton name="Drummer" />,
-  }
+  },
 );
 
 const BassLineWidget = dynamic(
-  () => import('../BassLineWidget/index.js').then((m) => {
-    if (isVerboseDebugEnabled()) {
-      console.log(`📦 [SKELETON-DEBUG] BassLineWidget loaded at +${getSkeletonDebugTime()}ms`);
-    }
-    return m.BassLineWidget;
-  }),
+  () =>
+    import('../BassLineWidget/index.js').then((m) => {
+      if (isVerboseDebugEnabled()) {
+        console.log(
+          `📦 [SKELETON-DEBUG] BassLineWidget loaded at +${getSkeletonDebugTime()}ms`,
+        );
+      }
+      return m.BassLineWidget;
+    }),
   {
     ssr: false,
     loading: () => <WidgetSkeleton name="Bass Line" />,
-  }
+  },
 );
 
 const HarmonyWidget = dynamic(
-  () => import('../HarmonyWidget/index.js').then((m) => {
-    if (isVerboseDebugEnabled()) {
-      console.log(`📦 [SKELETON-DEBUG] HarmonyWidget loaded at +${getSkeletonDebugTime()}ms`);
-    }
-    return m.HarmonyWidget;
-  }),
+  () =>
+    import('../HarmonyWidget/index.js').then((m) => {
+      if (isVerboseDebugEnabled()) {
+        console.log(
+          `📦 [SKELETON-DEBUG] HarmonyWidget loaded at +${getSkeletonDebugTime()}ms`,
+        );
+      }
+      return m.HarmonyWidget;
+    }),
   {
     ssr: false,
     loading: () => <WidgetSkeleton name="Harmony" />,
-  }
+  },
 );
 
 interface FourWidgetsCardProps {
@@ -91,42 +103,49 @@ export function FourWidgetsCard({
   tutorialId,
   isAdminMode = false,
 }: FourWidgetsCardProps) {
-  const { state, selectedExercise, setState, harmonyInstrument, setVolume, toggleMuted } = widgetState;
+  const {
+    state,
+    selectedExercise,
+    setState,
+    harmonyInstrument,
+    setVolume,
+    toggleMuted,
+  } = widgetState;
 
   // Memoized volume change handlers to prevent re-renders
   const handleMetronomeVolumeChange = React.useCallback(
     (volume: number) => setVolume('metronome', volume),
-    [setVolume]
+    [setVolume],
   );
   const handleDrumsVolumeChange = React.useCallback(
     (volume: number) => setVolume('drums', volume),
-    [setVolume]
+    [setVolume],
   );
   const handleBassVolumeChange = React.useCallback(
     (volume: number) => setVolume('bass', volume),
-    [setVolume]
+    [setVolume],
   );
   const handleHarmonyVolumeChange = React.useCallback(
     (volume: number) => setVolume('harmony', volume),
-    [setVolume]
+    [setVolume],
   );
 
   // Memoized mute toggle handlers
   const handleMetronomeMuteToggle = React.useCallback(
     () => toggleMuted('metronome'),
-    [toggleMuted]
+    [toggleMuted],
   );
   const handleDrumsMuteToggle = React.useCallback(
     () => toggleMuted('drums'),
-    [toggleMuted]
+    [toggleMuted],
   );
   const handleBassMuteToggle = React.useCallback(
     () => toggleMuted('bass'),
-    [toggleMuted]
+    [toggleMuted],
   );
   const handleHarmonyMuteToggle = React.useCallback(
     () => toggleMuted('harmony'),
-    [toggleMuted]
+    [toggleMuted],
   );
 
   // CRITICAL DEBUG: Log every render
@@ -212,11 +231,11 @@ export function FourWidgetsCard({
   // These replace inline arrow functions that were creating new references on every render
   const handleDrummerPatternChange = React.useCallback(
     (pattern: string) => handlePatternChange('drummer', pattern),
-    [handlePatternChange]
+    [handlePatternChange],
   );
   const handleBassLinePatternChange = React.useCallback(
     (pattern: string) => handlePatternChange('bassLine', pattern),
-    [handlePatternChange]
+    [handlePatternChange],
   );
 
   return (

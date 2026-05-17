@@ -333,9 +333,11 @@ export class WamBassNode implements WamNode {
 
     const coreServices = window.__coreServices || window.__globalCoreServices;
     // Type assertion for CoreServices interface
-    const typedCoreServices = coreServices as {
-      getAudioEngine?: () => { getTone?: () => typeof window.Tone } | null;
-    } | undefined;
+    const typedCoreServices = coreServices as
+      | {
+          getAudioEngine?: () => { getTone?: () => typeof window.Tone } | null;
+        }
+      | undefined;
     if (typedCoreServices?.getAudioEngine) {
       const audioEngine = typedCoreServices.getAudioEngine();
       if (audioEngine?.getTone) {

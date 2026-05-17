@@ -54,7 +54,11 @@ const QUESTION_TYPES: { value: SegmentQuestionType; label: string }[] = [
   { value: 'skill-verification', label: 'Skill Verification' },
 ];
 
-const CATEGORIES: { value: SegmentQuestionCategory; label: string; color: string }[] = [
+const CATEGORIES: {
+  value: SegmentQuestionCategory;
+  label: string;
+  color: string;
+}[] = [
   { value: 'level', label: 'Level', color: 'bg-blue-500' },
   { value: 'verification', label: 'Verification', color: 'bg-purple-500' },
   { value: 'goal', label: 'Goal', color: 'bg-green-500' },
@@ -81,7 +85,8 @@ export default function AdminQuestionsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingQuestion, setEditingQuestion] = useState<SegmentQuestion | null>(null);
+  const [editingQuestion, setEditingQuestion] =
+    useState<SegmentQuestion | null>(null);
 
   const [form, setForm] = useState({
     questionKey: '',
@@ -89,7 +94,11 @@ export default function AdminQuestionsPage() {
     description: '',
     questionType: 'multiple-choice' as SegmentQuestionType,
     options: [] as SegmentQuestionOption[],
-    verificationConfig: null as { correctAnswer: string; wrongAnswerFeedback: string; audioUrl?: string } | null,
+    verificationConfig: null as {
+      correctAnswer: string;
+      wrongAnswerFeedback: string;
+      audioUrl?: string;
+    } | null,
     audioUrl: '',
     category: 'level' as SegmentQuestionCategory,
     points: 0,
@@ -215,7 +224,11 @@ export default function AdminQuestionsPage() {
     });
   };
 
-  const updateOption = (index: number, field: keyof SegmentQuestionOption, value: string | boolean | SkillBucket | undefined) => {
+  const updateOption = (
+    index: number,
+    field: keyof SegmentQuestionOption,
+    value: string | boolean | SkillBucket | undefined,
+  ) => {
     const options = [...form.options];
     options[index] = { ...options[index], [field]: value };
     setForm({ ...form, options });
@@ -281,7 +294,9 @@ export default function AdminQuestionsPage() {
               {questions
                 .sort((a, b) => a.sortOrder - b.sortOrder)
                 .map((question) => {
-                  const categoryConfig = CATEGORIES.find((c) => c.value === question.category);
+                  const categoryConfig = CATEGORIES.find(
+                    (c) => c.value === question.category,
+                  );
                   return (
                     <div
                       key={question.id}
@@ -296,8 +311,9 @@ export default function AdminQuestionsPage() {
                       </Badge>
 
                       <Badge variant="outline">
-                        {QUESTION_TYPES.find((t) => t.value === question.questionType)?.label ||
-                          question.questionType}
+                        {QUESTION_TYPES.find(
+                          (t) => t.value === question.questionType,
+                        )?.label || question.questionType}
                       </Badge>
 
                       {question.audioConfig && (
@@ -305,7 +321,9 @@ export default function AdminQuestionsPage() {
                       )}
 
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{question.questionText}</p>
+                        <p className="font-medium truncate">
+                          {question.questionText}
+                        </p>
                         <p className="text-sm text-gray-500 truncate font-mono">
                           {question.questionKey}
                         </p>
@@ -353,7 +371,9 @@ export default function AdminQuestionsPage() {
                 <Label>Question Key</Label>
                 <Input
                   value={form.questionKey}
-                  onChange={(e) => setForm({ ...form, questionKey: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, questionKey: e.target.value })
+                  }
                   placeholder="level_self_report"
                   className="mt-1 font-mono"
                 />
@@ -363,7 +383,10 @@ export default function AdminQuestionsPage() {
                 <Select
                   value={form.category}
                   onValueChange={(value) =>
-                    setForm({ ...form, category: value as SegmentQuestionCategory })
+                    setForm({
+                      ...form,
+                      category: value as SegmentQuestionCategory,
+                    })
                   }
                 >
                   <SelectTrigger className="mt-1">
@@ -385,7 +408,10 @@ export default function AdminQuestionsPage() {
               <Select
                 value={form.questionType}
                 onValueChange={(value) =>
-                  setForm({ ...form, questionType: value as SegmentQuestionType })
+                  setForm({
+                    ...form,
+                    questionType: value as SegmentQuestionType,
+                  })
                 }
               >
                 <SelectTrigger className="mt-1">
@@ -405,7 +431,9 @@ export default function AdminQuestionsPage() {
               <Label>Question Text</Label>
               <Textarea
                 value={form.questionText}
-                onChange={(e) => setForm({ ...form, questionText: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, questionText: e.target.value })
+                }
                 placeholder="How long have you been playing bass?"
                 className="mt-1"
               />
@@ -415,7 +443,9 @@ export default function AdminQuestionsPage() {
               <Label>Description (optional)</Label>
               <Input
                 value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, description: e.target.value })
+                }
                 placeholder="Additional context..."
                 className="mt-1"
               />
@@ -432,13 +462,17 @@ export default function AdminQuestionsPage() {
                     <div key={option.id} className="flex items-center gap-2">
                       <Input
                         value={option.text}
-                        onChange={(e) => updateOption(index, 'text', e.target.value)}
+                        onChange={(e) =>
+                          updateOption(index, 'text', e.target.value)
+                        }
                         placeholder="Option text"
                         className="flex-1"
                       />
                       <Input
                         value={option.value}
-                        onChange={(e) => updateOption(index, 'value', e.target.value)}
+                        onChange={(e) =>
+                          updateOption(index, 'value', e.target.value)
+                        }
                         placeholder="value"
                         className="w-32 font-mono"
                       />
@@ -446,7 +480,13 @@ export default function AdminQuestionsPage() {
                         <Select
                           value={option.nextBucket || 'none'}
                           onValueChange={(value) =>
-                            updateOption(index, 'nextBucket', value === 'none' ? undefined : value as SkillBucket)
+                            updateOption(
+                              index,
+                              'nextBucket',
+                              value === 'none'
+                                ? undefined
+                                : (value as SkillBucket),
+                            )
                           }
                         >
                           <SelectTrigger className="w-40">
@@ -467,7 +507,9 @@ export default function AdminQuestionsPage() {
                           <input
                             type="checkbox"
                             checked={option.isCorrect || false}
-                            onChange={(e) => updateOption(index, 'isCorrect', e.target.checked)}
+                            onChange={(e) =>
+                              updateOption(index, 'isCorrect', e.target.checked)
+                            }
                           />
                           Correct
                         </label>
@@ -493,7 +535,9 @@ export default function AdminQuestionsPage() {
             {/* Skill verification config */}
             {form.questionType === 'skill-verification' && (
               <div className="p-4 bg-purple-50 rounded-lg space-y-3">
-                <Label className="text-purple-700">Skill Verification Config</Label>
+                <Label className="text-purple-700">
+                  Skill Verification Config
+                </Label>
                 <div>
                   <Label className="text-sm">Correct Answer Value</Label>
                   <Input
@@ -503,7 +547,8 @@ export default function AdminQuestionsPage() {
                         ...form,
                         verificationConfig: {
                           correctAnswer: e.target.value,
-                          wrongAnswerFeedback: form.verificationConfig?.wrongAnswerFeedback || '',
+                          wrongAnswerFeedback:
+                            form.verificationConfig?.wrongAnswerFeedback || '',
                           audioUrl: form.verificationConfig?.audioUrl,
                         },
                       })
@@ -520,7 +565,8 @@ export default function AdminQuestionsPage() {
                       setForm({
                         ...form,
                         verificationConfig: {
-                          correctAnswer: form.verificationConfig?.correctAnswer || '',
+                          correctAnswer:
+                            form.verificationConfig?.correctAnswer || '',
                           wrongAnswerFeedback: e.target.value,
                           audioUrl: form.verificationConfig?.audioUrl,
                         },
@@ -563,7 +609,10 @@ export default function AdminQuestionsPage() {
                   type="number"
                   value={form.sortOrder}
                   onChange={(e) =>
-                    setForm({ ...form, sortOrder: parseInt(e.target.value) || 0 })
+                    setForm({
+                      ...form,
+                      sortOrder: parseInt(e.target.value) || 0,
+                    })
                   }
                   min={0}
                   className="mt-1"
@@ -576,7 +625,9 @@ export default function AdminQuestionsPage() {
                 type="checkbox"
                 id="isActive"
                 checked={form.isActive}
-                onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
+                onChange={(e) =>
+                  setForm({ ...form, isActive: e.target.checked })
+                }
               />
               <Label htmlFor="isActive">Active</Label>
             </div>

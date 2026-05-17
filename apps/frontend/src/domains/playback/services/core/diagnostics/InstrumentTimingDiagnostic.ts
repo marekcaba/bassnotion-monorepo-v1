@@ -52,7 +52,9 @@ class InstrumentTimingDiagnosticClass {
     this.events = [];
     this.enabled = true;
     this.startTime = performance.now();
-    console.log('🎯 [TIMING DIAGNOSTIC] Enabled - play the exercise to collect data');
+    console.log(
+      '🎯 [TIMING DIAGNOSTIC] Enabled - play the exercise to collect data',
+    );
   }
 
   /**
@@ -60,7 +62,9 @@ class InstrumentTimingDiagnosticClass {
    */
   disable(): void {
     this.enabled = false;
-    console.log(`🎯 [TIMING DIAGNOSTIC] Disabled - collected ${this.events.length} events`);
+    console.log(
+      `🎯 [TIMING DIAGNOSTIC] Disabled - collected ${this.events.length} events`,
+    );
   }
 
   /**
@@ -109,14 +113,16 @@ class InstrumentTimingDiagnosticClass {
       if (events.length < 2) continue; // Only compare when multiple instruments
 
       // Sort by JS execution time (when source.start was called)
-      const sorted = [...events].sort((a, b) => a.jsExecutionTime - b.jsExecutionTime);
+      const sorted = [...events].sort(
+        (a, b) => a.jsExecutionTime - b.jsExecutionTime,
+      );
       const firstTime = sorted[0].jsExecutionTime;
 
       comparisons.push({
         beat: sorted[0].beat,
         measure: sorted[0].measure,
         scheduledAudioTime: sorted[0].scheduledAudioTime,
-        instruments: sorted.map(e => ({
+        instruments: sorted.map((e) => ({
           instrument: e.instrument,
           eventType: e.eventType,
           jsExecutionTime: e.jsExecutionTime,
@@ -126,19 +132,27 @@ class InstrumentTimingDiagnosticClass {
       });
     }
 
-    return comparisons.sort((a, b) => a.scheduledAudioTime - b.scheduledAudioTime);
+    return comparisons.sort(
+      (a, b) => a.scheduledAudioTime - b.scheduledAudioTime,
+    );
   }
 
   /**
    * Generate a human-readable report
    */
   report(): void {
-    console.log('\n🎯 ═══════════════════════════════════════════════════════════');
+    console.log(
+      '\n🎯 ═══════════════════════════════════════════════════════════',
+    );
     console.log('🎯 CROSS-INSTRUMENT TIMING DIAGNOSTIC REPORT');
-    console.log('🎯 ═══════════════════════════════════════════════════════════\n');
+    console.log(
+      '🎯 ═══════════════════════════════════════════════════════════\n',
+    );
 
     if (this.events.length === 0) {
-      console.log('❌ No events recorded. Make sure to enable() before playing.');
+      console.log(
+        '❌ No events recorded. Make sure to enable() before playing.',
+      );
       return;
     }
 
@@ -154,15 +168,20 @@ class InstrumentTimingDiagnosticClass {
     console.log('📊 EVENTS BY INSTRUMENT:');
     console.log('────────────────────────');
     for (const [instrument, events] of byInstrument) {
-      const avgLookahead = events.reduce((sum, e) => sum + e.lookaheadMs, 0) / events.length;
-      console.log(`  ${instrument.padEnd(12)}: ${events.length} events, avg lookahead: ${avgLookahead.toFixed(1)}ms`);
+      const avgLookahead =
+        events.reduce((sum, e) => sum + e.lookaheadMs, 0) / events.length;
+      console.log(
+        `  ${instrument.padEnd(12)}: ${events.length} events, avg lookahead: ${avgLookahead.toFixed(1)}ms`,
+      );
     }
 
     // Beat-by-beat comparison
     const comparisons = this.analyzeByBeat();
 
     if (comparisons.length === 0) {
-      console.log('\n⚠️ No beats found with multiple instruments playing simultaneously.');
+      console.log(
+        '\n⚠️ No beats found with multiple instruments playing simultaneously.',
+      );
       return;
     }
 
@@ -173,24 +192,38 @@ class InstrumentTimingDiagnosticClass {
     const showCount = Math.min(10, comparisons.length);
     for (let i = 0; i < showCount; i++) {
       const comp = comparisons[i];
-      console.log(`\n  Beat ${comp.measure}:${comp.beat} (audioTime: ${comp.scheduledAudioTime.toFixed(3)}s)`);
+      console.log(
+        `\n  Beat ${comp.measure}:${comp.beat} (audioTime: ${comp.scheduledAudioTime.toFixed(3)}s)`,
+      );
 
       for (const inst of comp.instruments) {
-        const marker = inst.deltaFromFirst === 0 ? '🥇' :
-                       inst.deltaFromFirst < 1 ? '✅' :
-                       inst.deltaFromFirst < 5 ? '⚠️' : '❌';
-        console.log(`    ${marker} ${inst.instrument.padEnd(12)} ${inst.eventType.padEnd(8)} +${inst.deltaFromFirst.toFixed(3)}ms`);
+        const marker =
+          inst.deltaFromFirst === 0
+            ? '🥇'
+            : inst.deltaFromFirst < 1
+              ? '✅'
+              : inst.deltaFromFirst < 5
+                ? '⚠️'
+                : '❌';
+        console.log(
+          `    ${marker} ${inst.instrument.padEnd(12)} ${inst.eventType.padEnd(8)} +${inst.deltaFromFirst.toFixed(3)}ms`,
+        );
       }
 
       if (comp.maxDelta > 5) {
-        console.log(`    ⚠️ MAX DELTA: ${comp.maxDelta.toFixed(3)}ms (may be audible)`);
+        console.log(
+          `    ⚠️ MAX DELTA: ${comp.maxDelta.toFixed(3)}ms (may be audible)`,
+        );
       }
     }
 
     // Overall statistics
-    const allDeltas = comparisons.flatMap(c => c.instruments.map(i => i.deltaFromFirst));
-    const maxDeltaOverall = Math.max(...comparisons.map(c => c.maxDelta));
-    const avgMaxDelta = comparisons.reduce((sum, c) => sum + c.maxDelta, 0) / comparisons.length;
+    const allDeltas = comparisons.flatMap((c) =>
+      c.instruments.map((i) => i.deltaFromFirst),
+    );
+    const maxDeltaOverall = Math.max(...comparisons.map((c) => c.maxDelta));
+    const avgMaxDelta =
+      comparisons.reduce((sum, c) => sum + c.maxDelta, 0) / comparisons.length;
 
     console.log('\n📊 OVERALL STATISTICS:');
     console.log('──────────────────────');
@@ -202,13 +235,19 @@ class InstrumentTimingDiagnosticClass {
     console.log('\n📋 INTERPRETATION:');
     console.log('──────────────────');
     if (maxDeltaOverall < 1) {
-      console.log('  ✅ EXCELLENT: All instruments within 1ms - inaudible difference');
+      console.log(
+        '  ✅ EXCELLENT: All instruments within 1ms - inaudible difference',
+      );
     } else if (maxDeltaOverall < 5) {
       console.log('  ✅ GOOD: All instruments within 5ms - barely perceptible');
     } else if (maxDeltaOverall < 20) {
-      console.log('  ⚠️ ACCEPTABLE: Some instruments 5-20ms apart - may be noticeable');
+      console.log(
+        '  ⚠️ ACCEPTABLE: Some instruments 5-20ms apart - may be noticeable',
+      );
     } else {
-      console.log('  ❌ NEEDS ATTENTION: Instruments >20ms apart - likely audible');
+      console.log(
+        '  ❌ NEEDS ATTENTION: Instruments >20ms apart - likely audible',
+      );
     }
 
     // Which instrument is typically first/last
@@ -225,28 +264,38 @@ class InstrumentTimingDiagnosticClass {
     console.log('\n📋 INSTRUMENT ORDER ANALYSIS:');
     console.log('─────────────────────────────');
     console.log('  First to trigger:');
-    for (const [instrument, count] of [...firstCounts.entries()].sort((a, b) => b[1] - a[1])) {
+    for (const [instrument, count] of [...firstCounts.entries()].sort(
+      (a, b) => b[1] - a[1],
+    )) {
       const pct = ((count / comparisons.length) * 100).toFixed(0);
       console.log(`    ${instrument.padEnd(12)}: ${count} times (${pct}%)`);
     }
     console.log('  Last to trigger:');
-    for (const [instrument, count] of [...lastCounts.entries()].sort((a, b) => b[1] - a[1])) {
+    for (const [instrument, count] of [...lastCounts.entries()].sort(
+      (a, b) => b[1] - a[1],
+    )) {
       const pct = ((count / comparisons.length) * 100).toFixed(0);
       console.log(`    ${instrument.padEnd(12)}: ${count} times (${pct}%)`);
     }
 
-    console.log('\n🎯 ═══════════════════════════════════════════════════════════\n');
+    console.log(
+      '\n🎯 ═══════════════════════════════════════════════════════════\n',
+    );
   }
 
   /**
    * Export raw data as JSON
    */
   exportJSON(): string {
-    return JSON.stringify({
-      events: this.events,
-      analysis: this.analyzeByBeat(),
-      recorded: new Date().toISOString(),
-    }, null, 2);
+    return JSON.stringify(
+      {
+        events: this.events,
+        analysis: this.analyzeByBeat(),
+        recorded: new Date().toISOString(),
+      },
+      null,
+      2,
+    );
   }
 
   /**

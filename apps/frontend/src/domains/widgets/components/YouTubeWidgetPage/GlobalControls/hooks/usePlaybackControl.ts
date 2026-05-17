@@ -19,7 +19,10 @@ import type { MusicalExercise as Exercise } from '@bassnotion/contracts';
 import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
 import { musicalTruth } from '@/domains/playback/modules/tempo/MusicalTruthAuthority';
 import { getLogger } from '@/utils/logger.js';
-import { normalizeDrumTypeToBufferKey, getTone } from '../utils/drum-utilities.js';
+import {
+  normalizeDrumTypeToBufferKey,
+  getTone,
+} from '../utils/drum-utilities.js';
 
 const logger = getLogger('usePlaybackControl');
 
@@ -84,7 +87,7 @@ export interface UsePlaybackControlOptions {
   startCountdown: (
     bpm: number,
     audioContext: AudioContext,
-    transport: any
+    transport: any,
   ) => Promise<void>;
   /** Whether system is initialized */
   systemInitialized: boolean;
@@ -113,7 +116,7 @@ export interface UsePlaybackControlReturn {
 /**
  * Wait for samples to be ready with timeout
  */
-async function waitForSamplesReady(timeoutMs: number = 10000): Promise<void> {
+async function waitForSamplesReady(timeoutMs = 10000): Promise<void> {
   if (typeof window === 'undefined') return;
   if (window.__samplesReady) return;
 
@@ -144,7 +147,7 @@ async function waitForSamplesReady(timeoutMs: number = 10000): Promise<void> {
  */
 async function waitForBassBuffersReady(
   exerciseId: string | undefined,
-  timeoutMs: number = 10000
+  timeoutMs = 10000,
 ): Promise<void> {
   if (!exerciseId) return;
   if (WindowRegistry.getBassBuffersReady(exerciseId)) return;
@@ -180,7 +183,7 @@ async function waitForBassBuffersReady(
 async function showToast(
   title: string,
   description: string,
-  variant?: 'default' | 'destructive'
+  variant?: 'default' | 'destructive',
 ): Promise<void> {
   const { toast } = await import('@/shared/hooks/use-toast');
   toast({ title, description, variant });
@@ -189,10 +192,7 @@ async function showToast(
 /**
  * Create metronome region for an exercise
  */
-function createMetronomeRegion(
-  exercise: Exercise,
-  trackId: string
-): any {
+function createMetronomeRegion(exercise: Exercise, trackId: string): any {
   const beatsPerBar = exercise.timeSignature?.numerator || 4;
   const totalBars = exercise.total_bars || 4;
   const totalBeats = exercise.duration_beats || totalBars * beatsPerBar;
@@ -226,15 +226,15 @@ function createMetronomeRegion(
 /**
  * Create drum region for an exercise
  */
-function createDrumRegion(
-  exercise: Exercise,
-  trackId: string
-): any {
+function createDrumRegion(exercise: Exercise, trackId: string): any {
   if (!exercise.drumPattern || !Array.isArray(exercise.drumPattern)) {
     return null;
   }
 
-  const timeSignature = exercise.timeSignature || { numerator: 4, denominator: 4 };
+  const timeSignature = exercise.timeSignature || {
+    numerator: 4,
+    denominator: 4,
+  };
   const beatsPerBar = timeSignature.numerator;
 
   const drumEvents = exercise.drumPattern.map((hit: any) => {
@@ -242,7 +242,8 @@ function createDrumRegion(
       (hit.position.measure || 0) * beatsPerBar + (hit.position.beat || 0);
 
     const PPQ = 480;
-    const tick = hit.position.tick ?? (hit.position.subdivision || 0) * (PPQ / 4);
+    const tick =
+      hit.position.tick ?? (hit.position.subdivision || 0) * (PPQ / 4);
     const sixteenthSubdivision = Math.floor((tick / PPQ) * 4);
 
     const normalizedDrum = normalizeDrumTypeToBufferKey(hit.drum || 'kick');
@@ -257,7 +258,7 @@ function createDrumRegion(
 
   const maxMeasure = exercise.drumPattern.reduce(
     (max: number, hit: any) => Math.max(max, hit.position.measure || 0),
-    0
+    0,
   );
   const patternMeasureCount = maxMeasure + 1;
   const loopCount = exercise.total_bars
@@ -291,7 +292,7 @@ function createDrumRegion(
  * Hook for managing playback control
  */
 export function usePlaybackControl(
-  options: UsePlaybackControlOptions
+  options: UsePlaybackControlOptions,
 ): UsePlaybackControlReturn {
   const {
     selectedExercise,
@@ -318,7 +319,7 @@ export function usePlaybackControl(
       await showToast(
         'No Exercise Selected',
         'Please select an exercise from the list above before starting playback.',
-        'destructive'
+        'destructive',
       );
       return;
     }
@@ -326,7 +327,10 @@ export function usePlaybackControl(
     // CRITICAL: Wait for samples to be ready before starting playback
     if (typeof window !== 'undefined' && !window.__samplesReady) {
       logger.warn('⚠️ Samples not ready yet, waiting...');
-      await showToast('Loading Sounds...', 'Please wait while we prepare the audio samples.');
+      await showToast(
+        'Loading Sounds...',
+        'Please wait while we prepare the audio samples.',
+      );
 
       try {
         await waitForSamplesReady();
@@ -337,7 +341,7 @@ export function usePlaybackControl(
         await showToast(
           'Loading Error',
           'Failed to load audio samples. Please refresh the page.',
-          'destructive'
+          'destructive',
         );
         return;
       }
@@ -347,12 +351,18 @@ export function usePlaybackControl(
 
     // CRITICAL: Check if exercise has bass notes and wait for bass buffers
     const hasBassNotes = selectedExercise?.notes?.some(
-      (note: any) => note.string >= 1 && note.string <= 5
+      (note: any) => note.string >= 1 && note.string <= 5,
     );
 
-    if (hasBassNotes && !WindowRegistry.getBassBuffersReady(selectedExercise?.id)) {
+    if (
+      hasBassNotes &&
+      !WindowRegistry.getBassBuffersReady(selectedExercise?.id)
+    ) {
       logger.warn('⚠️ Bass buffers not ready yet, waiting...');
-      await showToast('Loading Bass Sounds...', 'Please wait while we prepare the bass samples.');
+      await showToast(
+        'Loading Bass Sounds...',
+        'Please wait while we prepare the bass samples.',
+      );
 
       try {
         await waitForBassBuffersReady(selectedExercise?.id);
@@ -363,7 +373,7 @@ export function usePlaybackControl(
         await showToast(
           'Bass Loading Error',
           'Bass samples may not play correctly. Continuing anyway.',
-          'destructive'
+          'destructive',
         );
         // Don't return - continue with playback even without bass
       }
@@ -462,7 +472,7 @@ export function usePlaybackControl(
       if (selectedExercise?.timeSignature) {
         transport.setTimeSignature(
           selectedExercise.timeSignature.numerator,
-          selectedExercise.timeSignature.denominator
+          selectedExercise.timeSignature.denominator,
         );
       } else {
         transport.setTimeSignature(4, 4);
@@ -477,13 +487,22 @@ export function usePlaybackControl(
 
       if (coreServicesForCountdown) {
         try {
-          const unifiedTransport = coreServicesForCountdown.getUnifiedTransport();
-          if (unifiedTransport && typeof unifiedTransport.setCountdownBeats === 'function') {
-            console.log('🎯 [COUNTDOWN FIX] Setting countdown BEFORE transport starts', {
-              beats: countdownTimeSignature.numerator,
-              timestamp: Date.now(),
-            });
-            unifiedTransport.setCountdownBeats(countdownTimeSignature.numerator);
+          const unifiedTransport =
+            coreServicesForCountdown.getUnifiedTransport();
+          if (
+            unifiedTransport &&
+            typeof unifiedTransport.setCountdownBeats === 'function'
+          ) {
+            console.log(
+              '🎯 [COUNTDOWN FIX] Setting countdown BEFORE transport starts',
+              {
+                beats: countdownTimeSignature.numerator,
+                timestamp: Date.now(),
+              },
+            );
+            unifiedTransport.setCountdownBeats(
+              countdownTimeSignature.numerator,
+            );
           }
         } catch (error) {
           logger.error('Failed to set countdown beats', error);
@@ -503,9 +522,8 @@ export function usePlaybackControl(
         logger.debug('🎵 Tone context already running:', Tone.context.state);
       }
 
-      const { ensureAudioContext } = await import(
-        '@/domains/playback/utils/ensureAudioContext'
-      );
+      const { ensureAudioContext } =
+        await import('@/domains/playback/utils/ensureAudioContext');
       await ensureAudioContext();
       logger.debug('✅ AudioContext resumed');
 
@@ -520,7 +538,9 @@ export function usePlaybackControl(
         });
 
         if (!isReady) {
-          logger.debug('🎵 CoreServices not ready, initializing and starting...');
+          logger.debug(
+            '🎵 CoreServices not ready, initializing and starting...',
+          );
           await globalCoreServices.initialize();
           await globalCoreServices.start();
           logger.debug('✅ CoreServices initialized and started');
@@ -537,10 +557,16 @@ export function usePlaybackControl(
 
       if (coreServicesRef && coreServicesRef.getPlaybackEngine) {
         playbackEngine = coreServicesRef.getPlaybackEngine();
-        logger.info('✅ Using PlaybackEngine from CoreServices (has FAANG buffers)');
+        logger.info(
+          '✅ Using PlaybackEngine from CoreServices (has FAANG buffers)',
+        );
       } else {
-        logger.error('❌ CRITICAL: CoreServices.getPlaybackEngine() not available!');
-        throw new Error('CoreServices PlaybackEngine required for FAANG solution');
+        logger.error(
+          '❌ CRITICAL: CoreServices.getPlaybackEngine() not available!',
+        );
+        throw new Error(
+          'CoreServices PlaybackEngine required for FAANG solution',
+        );
       }
 
       // CRITICAL FIX: If metronome regions are empty, create them NOW
@@ -553,13 +579,13 @@ export function usePlaybackControl(
       ) {
         logger.info(
           '🎵 Metronome regions empty, creating them now with correct tempo:',
-          selectedExercise.bpm
+          selectedExercise.bpm,
         );
 
         currentMetronomeTrack.clearRegions();
         const metronomeRegion = createMetronomeRegion(
           selectedExercise,
-          currentMetronomeTrack.track?.id || 'metronome'
+          currentMetronomeTrack.track?.id || 'metronome',
         );
         currentMetronomeTrack.addRegion(metronomeRegion);
         logger.info(
@@ -567,7 +593,7 @@ export function usePlaybackControl(
           metronomeRegion.pattern.events.length,
           'events at',
           selectedExercise.bpm,
-          'BPM'
+          'BPM',
         );
       }
 
@@ -579,14 +605,17 @@ export function usePlaybackControl(
         selectedExercise.drumPattern.length > 0 &&
         currentDrumTrack.isInitialized
       ) {
-        logger.info('🎵 Drum regions empty but pattern exists, creating them now:', {
-          hitCount: selectedExercise.drumPattern.length,
-        });
+        logger.info(
+          '🎵 Drum regions empty but pattern exists, creating them now:',
+          {
+            hitCount: selectedExercise.drumPattern.length,
+          },
+        );
 
         currentDrumTrack.clearRegions();
         const drumRegion = createDrumRegion(
           selectedExercise,
-          currentDrumTrack.track?.id || 'drums'
+          currentDrumTrack.track?.id || 'drums',
         );
         if (drumRegion) {
           currentDrumTrack.addRegion(drumRegion);
@@ -594,7 +623,7 @@ export function usePlaybackControl(
             '🎵 Created drum regions with',
             drumRegion.pattern.events.length,
             'events, loopCount:',
-            drumRegion.loopCount
+            drumRegion.loopCount,
           );
         }
       }
@@ -606,7 +635,9 @@ export function usePlaybackControl(
 
       if (
         playbackEngine &&
-        (metronomeRegions.length > 0 || drumRegions.length > 0 || bassRegions.length > 0)
+        (metronomeRegions.length > 0 ||
+          drumRegions.length > 0 ||
+          bassRegions.length > 0)
       ) {
         const tracksToRegister = [];
         if (metronomeRegions.length > 0) {
@@ -636,7 +667,9 @@ export function usePlaybackControl(
 
         if (tracksToRegister.length > 0) {
           playbackEngine.registerTracks(tracksToRegister);
-          logger.debug(`🎵 Registered ${tracksToRegister.length} tracks with PlaybackEngine`);
+          logger.debug(
+            `🎵 Registered ${tracksToRegister.length} tracks with PlaybackEngine`,
+          );
         }
       }
 
@@ -644,9 +677,12 @@ export function usePlaybackControl(
       if (selectedExercise?.timeSignature) {
         transport.setTimeSignature(
           selectedExercise.timeSignature.numerator,
-          selectedExercise.timeSignature.denominator
+          selectedExercise.timeSignature.denominator,
         );
-        logger.info('🎵 Set time signature from exercise:', selectedExercise.timeSignature);
+        logger.info(
+          '🎵 Set time signature from exercise:',
+          selectedExercise.timeSignature,
+        );
       }
 
       // STEP 4: FAANG COUNTDOWN SOLUTION - Enable countdown offset
@@ -662,36 +698,48 @@ export function usePlaybackControl(
       }
 
       // STEP 5: Set musical truth
-      console.log(`🎵 [TEMPO-EXERCISE] usePlaybackControl calling musicalTruth.setFromExercise()`, {
-        exerciseId: selectedExercise?.id,
-        exerciseTitle: selectedExercise?.title,
-        exerciseBpm: selectedExercise?.bpm,
-        musicalTruthHasUserModifiedTempo: musicalTruth.hasUserModifiedTempo(),
-        currentMusicalTruthBpm: musicalTruth.getBPM(),
-      });
+      console.log(
+        `🎵 [TEMPO-EXERCISE] usePlaybackControl calling musicalTruth.setFromExercise()`,
+        {
+          exerciseId: selectedExercise?.id,
+          exerciseTitle: selectedExercise?.title,
+          exerciseBpm: selectedExercise?.bpm,
+          musicalTruthHasUserModifiedTempo: musicalTruth.hasUserModifiedTempo(),
+          currentMusicalTruthBpm: musicalTruth.getBPM(),
+        },
+      );
 
       musicalTruth.setFromExercise(selectedExercise!);
 
-      console.log('✅ [MUSICAL TRUTH] Set from exercise - ALL systems synchronized:', {
-        bpm: musicalTruth.getBPM(),
-        timeSignature: musicalTruth.getTimeSignature(),
-        durationBars: musicalTruth.getDurationBars(),
-        countdownBars: musicalTruth.getCountdownBars(),
-        totalBars: musicalTruth.getTotalBars(),
-        totalBeats: musicalTruth.getTotalBeats(),
-      });
+      console.log(
+        '✅ [MUSICAL TRUTH] Set from exercise - ALL systems synchronized:',
+        {
+          bpm: musicalTruth.getBPM(),
+          timeSignature: musicalTruth.getTimeSignature(),
+          durationBars: musicalTruth.getDurationBars(),
+          countdownBars: musicalTruth.getCountdownBars(),
+          totalBars: musicalTruth.getTotalBars(),
+          totalBeats: musicalTruth.getTotalBeats(),
+        },
+      );
 
       // STEP 6: Start PlaybackEngine (only if in valid state)
       if (playbackEngine) {
         const engineState = playbackEngine.getState();
         if (engineState === 'ready' || engineState === 'stopped') {
-          console.log('[PLAYBACK-DIAGNOSTIC] Calling playbackEngine.start() now!');
+          console.log(
+            '[PLAYBACK-DIAGNOSTIC] Calling playbackEngine.start() now!',
+          );
           playbackEngine.start();
           logger.debug('Started PlaybackEngine');
         } else if (engineState === 'playing') {
-          logger.debug('PlaybackEngine already playing, skipping duplicate start()');
+          logger.debug(
+            'PlaybackEngine already playing, skipping duplicate start()',
+          );
         } else {
-          logger.warn(`PlaybackEngine in state "${engineState}", skipping start()`);
+          logger.warn(
+            `PlaybackEngine in state "${engineState}", skipping start()`,
+          );
         }
       }
 
@@ -706,7 +754,9 @@ export function usePlaybackControl(
 
       // STEP 9: Start transport
       logger.info('🎵 [FLOW] About to call transport.start()');
-      console.log('🎵 [FLOW] About to call transport.start()', { timestamp: Date.now() });
+      console.log('🎵 [FLOW] About to call transport.start()', {
+        timestamp: Date.now(),
+      });
 
       try {
         await transport.start();
@@ -714,7 +764,9 @@ export function usePlaybackControl(
 
         if (onPlayStateChange) {
           onPlayStateChange(true);
-          logger.info('🎵 Called onPlayStateChange(true) - widget state should update');
+          logger.info(
+            '🎵 Called onPlayStateChange(true) - widget state should update',
+          );
         }
       } catch (error) {
         logger.error('🎵 [FLOW] transport.start() threw error:', error);

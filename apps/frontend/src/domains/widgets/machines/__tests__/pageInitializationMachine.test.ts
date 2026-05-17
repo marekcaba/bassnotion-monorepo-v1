@@ -46,10 +46,22 @@ function createTestExercise(overrides?: Partial<ExerciseData>): ExerciseData {
  * in the test environment. Use direct actor manipulation for better control.
  */
 async function runMachineWithEvents(
-  events: Array<Parameters<ReturnType<typeof createActor<typeof pageInitializationMachine>>['send']>[0]>,
-  input?: Parameters<typeof createActor<typeof pageInitializationMachine>>[1]['input'],
-  waitTime = 500
-): Promise<ReturnType<ReturnType<typeof createActor<typeof pageInitializationMachine>>['getSnapshot']>> {
+  events: Array<
+    Parameters<
+      ReturnType<typeof createActor<typeof pageInitializationMachine>>['send']
+    >[0]
+  >,
+  input?: Parameters<
+    typeof createActor<typeof pageInitializationMachine>
+  >[1]['input'],
+  waitTime = 500,
+): Promise<
+  ReturnType<
+    ReturnType<
+      typeof createActor<typeof pageInitializationMachine>
+    >['getSnapshot']
+  >
+> {
   const actor = createActor(pageInitializationMachine, { input });
   actor.start();
 
@@ -143,9 +155,11 @@ describe('PageInitializationMachine', () => {
       await new Promise((resolve) => setTimeout(resolve, 50));
 
       const snapshot = actor.getSnapshot();
-      expect(['preInitializing', 'downloadingSamples', 'awaitingUserGesture']).toContain(
-        snapshot.value
-      );
+      expect([
+        'preInitializing',
+        'downloadingSamples',
+        'awaitingUserGesture',
+      ]).toContain(snapshot.value);
 
       actor.stop();
     });
@@ -174,9 +188,11 @@ describe('PageInitializationMachine', () => {
       await new Promise((resolve) => setTimeout(resolve, 50));
 
       const snapshot = actor.getSnapshot();
-      expect(['preInitializing', 'downloadingSamples', 'awaitingUserGesture']).toContain(
-        snapshot.value
-      );
+      expect([
+        'preInitializing',
+        'downloadingSamples',
+        'awaitingUserGesture',
+      ]).toContain(snapshot.value);
       expect(snapshot.context.userGestureReceived).toBe(true);
 
       actor.stop();
@@ -203,7 +219,10 @@ describe('PageInitializationMachine', () => {
   describe('Tutorial Data Updates', () => {
     it('should accept SET_TUTORIAL_DATA in idle state', async () => {
       const tutorial = createTestTutorial();
-      const exercises = [createTestExercise(), createTestExercise({ id: 'exercise-2' })];
+      const exercises = [
+        createTestExercise(),
+        createTestExercise({ id: 'exercise-2' }),
+      ];
 
       const actor = createActor(pageInitializationMachine);
       actor.start();
@@ -335,7 +354,10 @@ describe('PageInitializationMachine', () => {
       // to ready state depends on async actors that may not complete in tests
       const actor = createActor(pageInitializationMachine, {
         input: {
-          exercises: [createTestExercise({ id: 'ex-1' }), createTestExercise({ id: 'ex-2' })],
+          exercises: [
+            createTestExercise({ id: 'ex-1' }),
+            createTestExercise({ id: 'ex-2' }),
+          ],
         },
       });
       actor.start();

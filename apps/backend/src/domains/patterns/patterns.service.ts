@@ -34,7 +34,9 @@ export class PatternsService {
    * Get patterns from the library with optional filtering
    * Fetches from Supabase database
    */
-  async getPatterns(filter: PatternLibraryFilter): Promise<PatternLibraryResponse> {
+  async getPatterns(
+    filter: PatternLibraryFilter,
+  ): Promise<PatternLibraryResponse> {
     const correlationId = this.requestContext.getCorrelationId() || 'unknown';
 
     this.logger.info('Fetching patterns from library', {
@@ -202,7 +204,10 @@ export class PatternsService {
   async getPatternById(id: string): Promise<PatternLibraryItem> {
     const correlationId = this.requestContext.getCorrelationId() || 'unknown';
 
-    this.logger.info('Fetching pattern by ID', { correlationId, patternId: id });
+    this.logger.info('Fetching pattern by ID', {
+      correlationId,
+      patternId: id,
+    });
 
     const client = this.supabaseService.getClient();
 
@@ -342,7 +347,9 @@ export class PatternsService {
   /**
    * Map database record to PatternLibraryItem format
    */
-  private mapDbToPattern(dbRecord: Record<string, unknown>): PatternLibraryItem {
+  private mapDbToPattern(
+    dbRecord: Record<string, unknown>,
+  ): PatternLibraryItem {
     const timeSignatureParts = (dbRecord.time_signature as string).split('/');
     return {
       id: dbRecord.id as string,

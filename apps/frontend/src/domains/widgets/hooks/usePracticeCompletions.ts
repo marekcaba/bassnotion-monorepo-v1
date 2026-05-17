@@ -33,7 +33,11 @@ function readLocalStorage(tutorialId: string): PracticeCompletions {
     for (const [exId, value] of Object.entries(parsed)) {
       if (typeof value === 'number') {
         result[exId] = { count: value };
-      } else if (typeof value === 'object' && value !== null && 'count' in value) {
+      } else if (
+        typeof value === 'object' &&
+        value !== null &&
+        'count' in value
+      ) {
         result[exId] = value as ExerciseProgress;
       }
     }
@@ -43,7 +47,10 @@ function readLocalStorage(tutorialId: string): PracticeCompletions {
   }
 }
 
-function writeLocalStorage(tutorialId: string, data: PracticeCompletions): void {
+function writeLocalStorage(
+  tutorialId: string,
+  data: PracticeCompletions,
+): void {
   const key = `${STORAGE_KEY_PREFIX}${tutorialId}`;
   try {
     localStorage.setItem(key, JSON.stringify(data));
@@ -58,7 +65,9 @@ function writeLocalStorage(tutorialId: string, data: PracticeCompletions): void 
 
 async function getUserId(): Promise<string | null> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     return user?.id ?? null;
   } catch {
     return null;
@@ -156,9 +165,14 @@ function mergeProgress(
  * - Writes are localStorage-first (instant), with debounced server sync.
  */
 export function usePracticeCompletions(tutorialId?: string) {
-  const [practiceCompletions, setPracticeCompletions] = useState<PracticeCompletions>({});
-  const localWriteDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const serverSyncDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [practiceCompletions, setPracticeCompletions] =
+    useState<PracticeCompletions>({});
+  const localWriteDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const serverSyncDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const userIdRef = useRef<string | null>(null);
 
   // Read from localStorage + fetch from server on mount / tutorialId change
@@ -189,7 +203,9 @@ export function usePracticeCompletions(tutorialId?: string) {
       writeLocalStorage(tutorialId, merged);
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [tutorialId]);
 
   // Debounced write to localStorage on state change
@@ -222,7 +238,7 @@ export function usePracticeCompletions(tutorialId?: string) {
       }
 
       serverSyncDebounceRef.current = setTimeout(async () => {
-        const uid = userIdRef.current ?? await getUserId();
+        const uid = userIdRef.current ?? (await getUserId());
         if (!uid) return;
         userIdRef.current = uid;
         await upsertServerProgress(uid, tutorialId, exerciseId, progress);

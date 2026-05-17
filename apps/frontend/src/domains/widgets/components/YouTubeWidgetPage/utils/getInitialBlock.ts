@@ -9,12 +9,12 @@ import type { AnyBlock, BlockProgress } from '@bassnotion/contracts';
  */
 export function getInitialBlock(
   blocks: AnyBlock[],
-  blockProgress: Record<string, BlockProgress>
+  blockProgress: Record<string, BlockProgress>,
 ): string | null {
   if (blocks.length === 0) return null;
 
   const firstIncomplete = blocks.find(
-    (block) => !blockProgress[block.id]?.completed
+    (block) => !blockProgress[block.id]?.completed,
   );
 
   return firstIncomplete?.id ?? blocks[blocks.length - 1].id;

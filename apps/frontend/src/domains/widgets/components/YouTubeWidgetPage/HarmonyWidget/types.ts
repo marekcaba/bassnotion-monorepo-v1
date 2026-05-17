@@ -128,7 +128,7 @@ export interface WamKeyboardPlugin {
     chord: string,
     velocity: number,
     duration: number,
-    octave: number
+    octave: number,
   ) => void;
   /** Reset plugin state for tutorial/exercise switching (clears notes, sustain pedal, resets instrument) */
   resetState?: () => void;
@@ -148,7 +148,10 @@ export interface WamKeyboardAudioNode {
   };
   connect: (destination: AudioNode) => void;
   disconnect: () => void;
-  setParameterValues: (params: { volume?: number; instrument?: number }) => Promise<void>;
+  setParameterValues: (params: {
+    volume?: number;
+    instrument?: number;
+  }) => Promise<void>;
   loadInstrument: (instrument: KeyboardInstrumentType) => Promise<void>;
   clearEvents: () => void;
   triggerNote: (note: number, velocity: number, time: number) => void;
@@ -233,7 +236,10 @@ export interface HarmonyDisplayProps {
   /** Current volume (for styling) */
   volume: number;
   /** Ref callback for chord indicators (for direct DOM updates) */
-  registerChordIndicator: (index: number, element: HTMLDivElement | null) => void;
+  registerChordIndicator: (
+    index: number,
+    element: HTMLDivElement | null,
+  ) => void;
 }
 
 /**
@@ -277,7 +283,10 @@ export interface ChordProgressionViewProps {
   /** Callback when progression changes */
   onProgressionChange: (progression: string) => void;
   /** Ref callback for chord indicators */
-  registerChordIndicator: (index: number, element: HTMLDivElement | null) => void;
+  registerChordIndicator: (
+    index: number,
+    element: HTMLDivElement | null,
+  ) => void;
 }
 
 /**

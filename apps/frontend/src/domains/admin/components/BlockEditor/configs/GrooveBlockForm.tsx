@@ -22,7 +22,11 @@ interface NormalizedExercise {
 
 interface GrooveBlockFormProps {
   config: GrooveBlockConfig;
-  exercises: Array<{ id: string | { value: string }; title?: string; difficulty?: string }>;
+  exercises: Array<{
+    id: string | { value: string };
+    title?: string;
+    difficulty?: string;
+  }>;
   onChange: (config: GrooveBlockConfig) => void;
 }
 
@@ -92,7 +96,9 @@ export const GrooveBlockForm = React.memo(function GrooveBlockForm({
 
       {/* Groove exercise selector */}
       <div>
-        <label className="block text-xs text-white/40 mb-2">Groove Exercise</label>
+        <label className="block text-xs text-white/40 mb-2">
+          Groove Exercise
+        </label>
         <select
           value={config.grooveExerciseId ?? ''}
           onChange={handleExerciseChange}
@@ -116,7 +122,10 @@ export const GrooveBlockForm = React.memo(function GrooveBlockForm({
           onChange={handleRequiresPreviousChange}
           className="rounded"
         />
-        <label htmlFor="groove-requires-previous" className="text-sm text-white/60">
+        <label
+          htmlFor="groove-requires-previous"
+          className="text-sm text-white/60"
+        >
           Requires previous exercise blocks to be complete
         </label>
       </div>

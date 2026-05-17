@@ -97,7 +97,7 @@ test.describe('Real Transport Audio Tests', () => {
     await page.waitForSelector('text=Epic 3.18 Ready: ✅', { timeout: 10000 });
 
     const contextState = await page.evaluate(() => {
-      return window.Tone?.context?.state || 'unknown';
+      return (window as any).Tone?.context?.state || 'unknown';
     });
 
     // Click start - this is the user gesture
@@ -108,7 +108,7 @@ test.describe('Real Transport Audio Tests', () => {
 
     // Context should be running
     const runningState = await page.evaluate(() => {
-      return window.Tone?.context?.state || 'unknown';
+      return (window as any).Tone?.context?.state || 'unknown';
     });
 
     expect(runningState).toBe('running');

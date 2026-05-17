@@ -18,7 +18,10 @@ import type {
   MetadataAnalyzerConfig,
   AudioProcessingContext,
 } from './types.js';
-import { getOrCreatePersistentAudioContext, getPersistentAudioContext } from '../../utils/audioContext.js';
+import {
+  getOrCreatePersistentAudioContext,
+  getPersistentAudioContext,
+} from '../../utils/audioContext.js';
 import { TempoDetector } from './tempo/TempoDetector.js';
 import { KeyDetector } from './key/KeyDetector.js';
 import { SpectralAnalyzer } from './spectral/SpectralAnalyzer.js';
@@ -99,7 +102,9 @@ export class MetadataAnalyzer {
       typeof AudioContext === 'undefined' &&
       typeof (global as any).AudioContext === 'undefined'
     ) {
-      logger.warn('AudioContext API not available - MetadataAnalyzer will operate in limited mode');
+      logger.warn(
+        'AudioContext API not available - MetadataAnalyzer will operate in limited mode',
+      );
     } else {
       // Try to get existing persistent context (may be null if not yet created)
       this.audioContext = getPersistentAudioContext();

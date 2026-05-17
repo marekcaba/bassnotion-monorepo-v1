@@ -40,7 +40,7 @@ export function PricingCard({
         isPopular
           ? 'border-[#ffc700] bg-zinc-900/80 shadow-lg shadow-[#ffc700]/10'
           : 'border-zinc-700 bg-zinc-900/50',
-        isPurchased && 'border-green-500/50'
+        isPurchased && 'border-green-500/50',
       )}
     >
       {/* Popular Badge */}
@@ -102,7 +102,7 @@ export function PricingCard({
           isPopular
             ? 'bg-[#ffc700] text-black hover:bg-[#e6b300]'
             : 'bg-zinc-700 text-white hover:bg-zinc-600',
-          isPurchased && 'bg-green-600 hover:bg-green-600 cursor-default'
+          isPurchased && 'bg-green-600 hover:bg-green-600 cursor-default',
         )}
       >
         {isLoading ? (

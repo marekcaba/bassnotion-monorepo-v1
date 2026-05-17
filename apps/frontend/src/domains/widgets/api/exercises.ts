@@ -207,21 +207,27 @@ export async function getExercises(): Promise<GetExercisesResponse> {
           }
 
           // Transform snake_case to camelCase for backend API response
-          const transformedExercises = response.exercises.map((exercise: any) => {
-            if (exercise.drum_pattern && Array.isArray(exercise.drum_pattern)) {
-              exercise.drumPattern = exercise.drum_pattern;
-            }
-            if (exercise.harmony_notes) {
-              exercise.harmonyNotes = exercise.harmony_notes;
-            }
-            if (exercise.harmony_control_changes) {
-              exercise.harmonyControlChanges = exercise.harmony_control_changes;
-            }
-            if (exercise.harmony_instrument) {
-              exercise.harmonyInstrument = exercise.harmony_instrument;
-            }
-            return exercise;
-          });
+          const transformedExercises = response.exercises.map(
+            (exercise: any) => {
+              if (
+                exercise.drum_pattern &&
+                Array.isArray(exercise.drum_pattern)
+              ) {
+                exercise.drumPattern = exercise.drum_pattern;
+              }
+              if (exercise.harmony_notes) {
+                exercise.harmonyNotes = exercise.harmony_notes;
+              }
+              if (exercise.harmony_control_changes) {
+                exercise.harmonyControlChanges =
+                  exercise.harmony_control_changes;
+              }
+              if (exercise.harmony_instrument) {
+                exercise.harmonyInstrument = exercise.harmony_instrument;
+              }
+              return exercise;
+            },
+          );
 
           return {
             exercises: transformedExercises,
@@ -329,7 +335,9 @@ export async function getExercises(): Promise<GetExercisesResponse> {
           title: exercise.title,
           notesCount: exercise.notes?.length || 0,
           hasNotes: !!(exercise.notes && exercise.notes.length > 0),
-          hasDrumPattern: !!(exercise.drumPattern && exercise.drumPattern.length > 0),
+          hasDrumPattern: !!(
+            exercise.drumPattern && exercise.drumPattern.length > 0
+          ),
           drumPatternHits: exercise.drumPattern?.length || 0,
         });
 

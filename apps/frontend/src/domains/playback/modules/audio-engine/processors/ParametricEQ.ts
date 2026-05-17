@@ -236,9 +236,7 @@ export class ParametricEQ {
       }
 
       if (params.gain !== undefined) {
-        if (
-          ['peaking', 'lowshelf', 'highshelf'].includes(band.config.type)
-        ) {
+        if (['peaking', 'lowshelf', 'highshelf'].includes(band.config.type)) {
           filter.gain.value = params.gain;
           band.config.gain = params.gain;
         }

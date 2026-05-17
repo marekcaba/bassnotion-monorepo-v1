@@ -48,7 +48,10 @@ export default function AssessmentPage() {
           setConfig(data.config);
         } else {
           // Use fallback data if config invalid
-          console.warn('Invalid config from API, using fallback', data.config?.videoId);
+          console.warn(
+            'Invalid config from API, using fallback',
+            data.config?.videoId,
+          );
           setConfig({
             videoPlatform: 'bunny',
             videoLibraryId: BUNNY_LIBRARY_ID,
@@ -75,13 +78,10 @@ export default function AssessmentPage() {
     fetchConfig();
   }, []);
 
-  const handleComplete = useCallback(
-    (assignedJourneyId: string | null) => {
-      console.log('Assessment complete, journey assigned:', assignedJourneyId);
-      // The actual redirect happens when user clicks "Start Your Journey" on ResultsScreen
-    },
-    [],
-  );
+  const handleComplete = useCallback((assignedJourneyId: string | null) => {
+    console.log('Assessment complete, journey assigned:', assignedJourneyId);
+    // The actual redirect happens when user clicks "Start Your Journey" on ResultsScreen
+  }, []);
 
   const handleProgressChange = useCallback(
     (answered: number, total: number) => {
@@ -96,9 +96,8 @@ export default function AssessmentPage() {
 
   // Progress bar shows completed percentage
   // Before play: empty (0%), After answering: shows progress based on completed
-  const progressPercent = progress.total > 0
-    ? (completedCount / progress.total) * 100
-    : 0;
+  const progressPercent =
+    progress.total > 0 ? (completedCount / progress.total) * 100 : 0;
 
   // Loading state - warm, inviting
   if (isLoading) {
@@ -229,7 +228,8 @@ export default function AssessmentPage() {
                 className="mt-4 text-neutral-400 max-w-lg mx-auto leading-relaxed"
                 style={{ fontFamily: 'var(--font-inter), sans-serif' }}
               >
-                Answer 8 questions as they pop up and get your personalized path.
+                Answer 8 questions as they pop up and get your personalized
+                path.
               </p>
             </div>
 
@@ -254,12 +254,14 @@ export default function AssessmentPage() {
                     className="h-full rounded-full transition-all duration-500 ease-out"
                     style={{
                       width: `${progressPercent}%`,
-                      background: progressPercent > 0
-                        ? 'linear-gradient(90deg, #f59e0b, #f97316, #f59e0b)'
-                        : 'transparent',
-                      boxShadow: progressPercent > 0
-                        ? '0 0 20px rgba(245, 158, 11, 0.4)'
-                        : 'none',
+                      background:
+                        progressPercent > 0
+                          ? 'linear-gradient(90deg, #f59e0b, #f97316, #f59e0b)'
+                          : 'transparent',
+                      boxShadow:
+                        progressPercent > 0
+                          ? '0 0 20px rgba(245, 158, 11, 0.4)'
+                          : 'none',
                     }}
                   />
                 </div>
@@ -269,7 +271,9 @@ export default function AssessmentPage() {
                   className="flex items-center gap-2 text-sm"
                   style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
                 >
-                  <span className="text-amber-400 font-medium">{completedCount}</span>
+                  <span className="text-amber-400 font-medium">
+                    {completedCount}
+                  </span>
                   <span className="text-neutral-600">/</span>
                   <span className="text-neutral-500">{progress.total}</span>
                 </div>

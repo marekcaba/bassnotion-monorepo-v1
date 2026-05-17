@@ -135,7 +135,8 @@ export const STANDARD_KIT: DrumKitManifest = {
 
 // Export kit paths for easy access
 export const DEFAULT_KIT_PATH = STANDARD_KIT.basePath;
-export const FALLBACK_KIT_PATH = STANDARD_KIT.fallbackKit || 'drums/admin-samples/Default kit';
+export const FALLBACK_KIT_PATH =
+  STANDARD_KIT.fallbackKit || 'drums/admin-samples/Default kit';
 
 // New sample file mappings for the admin-uploaded default kit
 export const DEFAULT_KIT_SAMPLES = {

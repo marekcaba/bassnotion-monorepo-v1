@@ -43,7 +43,7 @@ export const HarmonyDisplay: React.FC<HarmonyDisplayProps> = React.memo(
         </span>
       </div>
     );
-  }
+  },
 );
 
 HarmonyDisplay.displayName = 'HarmonyDisplay';

@@ -21,7 +21,11 @@
 import { useEffect } from 'react';
 import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
 import { getLogger } from '@/utils/logger.js';
-import type { UseBassEventBusOptions, UseBassEventBusReturn, BassNote } from '../types.js';
+import type {
+  UseBassEventBusOptions,
+  UseBassEventBusReturn,
+  BassNote,
+} from '../types.js';
 
 const logger = getLogger('bassline-widget');
 
@@ -42,7 +46,9 @@ interface BassTriggerEvent {
 /**
  * Hook for handling EventBus bass trigger events
  */
-export function useBassEventBus(options: UseBassEventBusOptions): UseBassEventBusReturn {
+export function useBassEventBus(
+  options: UseBassEventBusOptions,
+): UseBassEventBusReturn {
   const {
     audioContextRef,
     samplerReady,
@@ -111,7 +117,13 @@ export function useBassEventBus(options: UseBassEventBusOptions): UseBassEventBu
       unsubscribe();
       logger.debug('Bass widget unsubscribed from trigger events');
     };
-  }, [samplerReady, trackIsPlaying, audioContextRef, onNoteTrigger, onSelectedNotesChange]);
+  }, [
+    samplerReady,
+    trackIsPlaying,
+    audioContextRef,
+    onNoteTrigger,
+    onSelectedNotesChange,
+  ]);
 
   // No return values - all state updates via callbacks
   return {};

@@ -27,17 +27,13 @@ const logger = getLogger('metronome-widget');
  * Hook for managing time signature state
  */
 export function useTimeSignature(
-  options: UseTimeSignatureOptions
+  options: UseTimeSignatureOptions,
 ): UseTimeSignatureReturn {
-  const {
-    timeSignature,
-    defaultBeats = 4,
-    defaultNoteValue = 4,
-  } = options;
+  const { timeSignature, defaultBeats = 4, defaultNoteValue = 4 } = options;
 
   const [beats, setBeats] = useState(timeSignature?.numerator || defaultBeats);
   const [noteValue, setNoteValue] = useState(
-    timeSignature?.denominator || defaultNoteValue
+    timeSignature?.denominator || defaultNoteValue,
   );
 
   // Update time signature when prop changes

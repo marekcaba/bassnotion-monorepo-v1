@@ -46,7 +46,9 @@ export interface UseDrumPatternGridReturn {
   /** Current grid pattern for display */
   currentPattern: GridPatternWithSixteenths;
   /** Update current pattern manually */
-  setCurrentPattern: React.Dispatch<React.SetStateAction<GridPatternWithSixteenths>>;
+  setCurrentPattern: React.Dispatch<
+    React.SetStateAction<GridPatternWithSixteenths>
+  >;
   /** Whether the pattern is from an exercise (vs preset) */
   isExercisePattern: boolean;
   /** Number of measures in the exercise pattern */
@@ -108,7 +110,11 @@ export function useDrumPatternGrid(
         totalMeasures: exercisePatternMeasureCount,
       });
 
-      const pattern = drumHitsToGridPattern(drumHits, beatsPerBar, measureToShow);
+      const pattern = drumHitsToGridPattern(
+        drumHits,
+        beatsPerBar,
+        measureToShow,
+      );
 
       // If the target measure has no hits, fallback to measure 0
       const hasHits =
@@ -117,9 +123,12 @@ export function useDrumPatternGrid(
         pattern.hihat.some((c) => c.main === 1 || c.sixteenth === 1);
 
       if (!hasHits && measureToShow !== 0) {
-        logger.debug('🥁 Target measure has no hits, falling back to measure 0', {
-          measureToShow,
-        });
+        logger.debug(
+          '🥁 Target measure has no hits, falling back to measure 0',
+          {
+            measureToShow,
+          },
+        );
         return drumHitsToGridPattern(drumHits, beatsPerBar, 0);
       }
 
@@ -156,7 +165,9 @@ export function useDrumPatternGrid(
             ? 'kick'
             : hit.type === 'snare'
               ? 'snare'
-              : hit.type === 'hihat' || hit.type === 'crash' || hit.type === 'ride'
+              : hit.type === 'hihat' ||
+                  hit.type === 'crash' ||
+                  hit.type === 'ride'
                 ? 'hihat'
                 : null;
 
@@ -208,7 +219,9 @@ export function useDrumPatternGrid(
       newPattern =
         DRUM_PATTERNS[presetPattern as keyof typeof DRUM_PATTERNS] ||
         DRUM_PATTERNS['Rock Steady'];
-      logger.debug('🥁 Using preset pattern for grid display', { presetPattern });
+      logger.debug('🥁 Using preset pattern for grid display', {
+        presetPattern,
+      });
     }
 
     setCurrentPattern(newPattern);

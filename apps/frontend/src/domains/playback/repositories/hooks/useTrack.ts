@@ -186,13 +186,14 @@ export function useTrackMuteSolo() {
  */
 export function useTrackMixing(trackId: string | TrackId) {
   // Use useShallow to prevent re-renders when unrelated store values change
-  const { findTrackById, setTrackVolume, setTrackPan } = useTrackRepositoryStore(
-    useShallow((state) => ({
-      findTrackById: state.findTrackById,
-      setTrackVolume: state.setTrackVolume,
-      setTrackPan: state.setTrackPan,
-    })),
-  );
+  const { findTrackById, setTrackVolume, setTrackPan } =
+    useTrackRepositoryStore(
+      useShallow((state) => ({
+        findTrackById: state.findTrackById,
+        setTrackVolume: state.setTrackVolume,
+        setTrackPan: state.setTrackPan,
+      })),
+    );
 
   const id = typeof trackId === 'string' ? TrackId.create(trackId) : trackId;
   const track = findTrackById(id);

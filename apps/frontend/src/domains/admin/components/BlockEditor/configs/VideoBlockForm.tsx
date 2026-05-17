@@ -8,7 +8,10 @@
  */
 
 import React, { useCallback, useMemo } from 'react';
-import type { VideoBlockConfig, AnyVideoOverlayEvent } from '@bassnotion/contracts';
+import type {
+  VideoBlockConfig,
+  AnyVideoOverlayEvent,
+} from '@bassnotion/contracts';
 import { resolveOverlayEvents } from '@bassnotion/contracts';
 import { OverlayTimelineEditor } from '../../OverlayTimelineEditor.js';
 
@@ -79,7 +82,9 @@ export const VideoBlockForm = React.memo(function VideoBlockForm({
           <input
             type="text"
             value={config.videoLibraryId ?? ''}
-            onChange={(e) => handleFieldChange('videoLibraryId', e.target.value)}
+            onChange={(e) =>
+              handleFieldChange('videoLibraryId', e.target.value)
+            }
             placeholder="e.g. 583585"
             className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm placeholder-white/20 font-mono"
           />

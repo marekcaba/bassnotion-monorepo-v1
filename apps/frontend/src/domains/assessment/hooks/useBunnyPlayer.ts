@@ -159,7 +159,8 @@ export function useBunnyPlayer(
         iframe.style.height = '100%';
         iframe.style.border = 'none';
         // IMPORTANT: 'autoplay' permission is required for programmatic play() to work
-        iframe.allow = 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture';
+        iframe.allow =
+          'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture';
         iframe.allowFullscreen = true;
 
         containerRef.current.appendChild(iframe);
@@ -179,7 +180,11 @@ export function useBunnyPlayer(
           player.getDuration((duration) => {
             if (!mounted) return;
             if (DEBUG_BUNNY) {
-              console.log('[useBunnyPlayer] Duration received:', duration, 'setting isReady=true');
+              console.log(
+                '[useBunnyPlayer] Duration received:',
+                duration,
+                'setting isReady=true',
+              );
             }
             setIsReady(true);
             callbacksRef.current.onReady?.(duration);
@@ -220,7 +225,9 @@ export function useBunnyPlayer(
       } catch (error) {
         if (!mounted) return;
         callbacksRef.current.onError?.(
-          error instanceof Error ? error : new Error('Failed to initialize player'),
+          error instanceof Error
+            ? error
+            : new Error('Failed to initialize player'),
         );
       }
     };
@@ -244,7 +251,12 @@ export function useBunnyPlayer(
   // Player controls
   const play = useCallback(() => {
     if (DEBUG_BUNNY) {
-      console.log('[useBunnyPlayer] play() called, playerRef.current:', !!playerRef.current, 'isReady:', isReady);
+      console.log(
+        '[useBunnyPlayer] play() called, playerRef.current:',
+        !!playerRef.current,
+        'isReady:',
+        isReady,
+      );
     }
     if (playerRef.current) {
       playerRef.current.play();
@@ -259,7 +271,7 @@ export function useBunnyPlayer(
   }, [isReady]);
 
   // Play with audio fade in for smoother resume after questions
-  const playWithFade = useCallback((duration: number = 2000): void => {
+  const playWithFade = useCallback((duration = 2000): void => {
     const player = playerRef.current;
     if (!player) return;
 
@@ -301,7 +313,7 @@ export function useBunnyPlayer(
   }, []);
 
   // Pause with audio fade out for smoother transitions
-  const pauseWithFade = useCallback((duration: number = 200): Promise<void> => {
+  const pauseWithFade = useCallback((duration = 200): Promise<void> => {
     return new Promise((resolve) => {
       const player = playerRef.current;
       if (!player) {
@@ -325,7 +337,10 @@ export function useBunnyPlayer(
 
         fadeIntervalRef.current = setInterval(() => {
           currentStep++;
-          const newVolume = Math.max(0, currentVolume - volumeStep * currentStep);
+          const newVolume = Math.max(
+            0,
+            currentVolume - volumeStep * currentStep,
+          );
           player.setVolume(newVolume);
 
           if (currentStep >= steps) {

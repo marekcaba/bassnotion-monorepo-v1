@@ -562,7 +562,9 @@ export function LoopGridStrip({
                     return (
                       <div
                         key={i}
-                        ref={(el) => registerBeatIndicator(measure.index, beatNumber, el)}
+                        ref={(el) =>
+                          registerBeatIndicator(measure.index, beatNumber, el)
+                        }
                         className={`w-1 h-1 rounded-full transition-colors duration-150 ${
                           isBeatSelected
                             ? 'bg-blue-400 shadow-[0_0_4px_rgba(59,130,246,0.9)]'

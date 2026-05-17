@@ -149,7 +149,9 @@ export function useCoreServices(
   // Use useShallow for object/array selectors to prevent unnecessary re-renders
   const config = usePlaybackStore(useShallow(selectConfig));
   const performanceMetrics = usePlaybackStore(selectPerformanceMetrics);
-  const performanceAlerts = usePlaybackStore(useShallow(selectPerformanceAlerts));
+  const performanceAlerts = usePlaybackStore(
+    useShallow(selectPerformanceAlerts),
+  );
 
   // Action selectors
   const setInitialized = usePlaybackStore(selectSetInitialized);

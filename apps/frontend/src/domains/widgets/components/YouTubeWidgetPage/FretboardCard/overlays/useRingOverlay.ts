@@ -72,7 +72,7 @@ const FREE_ANIMATED_RING_TUTORIALS = [
 function isFreeRingTutorial(tutorialSlug: string | undefined): boolean {
   if (!tutorialSlug) return false;
   return (FREE_ANIMATED_RING_TUTORIALS as readonly string[]).includes(
-    tutorialSlug
+    tutorialSlug,
   );
 }
 
@@ -95,7 +95,7 @@ function isFreeRingTutorial(tutorialSlug: string | undefined): boolean {
  * @returns Ring overlay state and controls
  */
 export function useRingOverlay(
-  options: UseRingOverlayOptions = {}
+  options: UseRingOverlayOptions = {},
 ): UseRingOverlayResult {
   const { tutorialSlug, userPreferences } = options;
 
@@ -158,7 +158,7 @@ export function useRingOverlay(
 
       return { success: true };
     },
-    [hasAccess, hasFreeAccess]
+    [hasAccess, hasFreeAccess],
   );
 
   // Update configuration (placeholder - actual persistence would be separate)
@@ -170,7 +170,7 @@ export function useRingOverlay(
         console.log('[useRingOverlay] Config update requested:', updates);
       }
     },
-    []
+    [],
   );
 
   return {

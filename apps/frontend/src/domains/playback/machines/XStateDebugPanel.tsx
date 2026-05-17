@@ -52,7 +52,8 @@ const styles = {
   container: {
     position: 'fixed' as const,
     zIndex: 99999,
-    fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace',
+    fontFamily:
+      'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace',
     fontSize: '12px',
   },
   toggleButton: {
@@ -210,12 +211,16 @@ export function XStateDebugPanel({
 }: XStateDebugPanelProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [isHovered, setIsHovered] = useState(false);
-  const [actors, setActors] = useState<Map<string, { id: string; state: string }>>(new Map());
-  const [historyEntries, setHistoryEntries] = useState<Array<{
-    time: string;
-    state: string;
-    duration?: string;
-  }>>([]);
+  const [actors, setActors] = useState<
+    Map<string, { id: string; state: string }>
+  >(new Map());
+  const [historyEntries, setHistoryEntries] = useState<
+    Array<{
+      time: string;
+      state: string;
+      duration?: string;
+    }>
+  >([]);
 
   const devtools = useXStateDevTools();
 
@@ -269,7 +274,10 @@ export function XStateDebugPanel({
           const snapshot = actor.getSnapshot();
           actorMap.set(id, {
             id,
-            state: typeof snapshot.value === 'string' ? snapshot.value : JSON.stringify(snapshot.value),
+            state:
+              typeof snapshot.value === 'string'
+                ? snapshot.value
+                : JSON.stringify(snapshot.value),
           });
         } catch {
           actorMap.set(id, { id, state: 'unknown' });
@@ -289,16 +297,26 @@ export function XStateDebugPanel({
     if (!isExpanded) return;
 
     const refreshHistory = () => {
-      const playbackHistory = (window as WindowWithHistory).__xstatePlaybackHistory;
-      const pageInitHistory = (window as WindowWithHistory).__xstatePageInitHistory;
+      const playbackHistory = (window as WindowWithHistory)
+        .__xstatePlaybackHistory;
+      const pageInitHistory = (window as WindowWithHistory)
+        .__xstatePageInitHistory;
 
-      const entries: Array<{ time: string; state: string; duration?: string; source: string }> = [];
+      const entries: Array<{
+        time: string;
+        state: string;
+        duration?: string;
+        source: string;
+      }> = [];
 
       if (playbackHistory) {
         const history = playbackHistory.getLastN(5);
         history.forEach((entry) => {
           entries.push({
-            time: new Date(entry.timestamp).toISOString().split('T')[1].slice(0, 12),
+            time: new Date(entry.timestamp)
+              .toISOString()
+              .split('T')[1]
+              .slice(0, 12),
             state: `[PB] ${entry.state}`,
             duration: entry.duration ? `${entry.duration}ms` : undefined,
             source: 'playback',
@@ -310,7 +328,10 @@ export function XStateDebugPanel({
         const history = pageInitHistory.getLastN(5);
         history.forEach((entry) => {
           entries.push({
-            time: new Date(entry.timestamp).toISOString().split('T')[1].slice(0, 12),
+            time: new Date(entry.timestamp)
+              .toISOString()
+              .split('T')[1]
+              .slice(0, 12),
             state: `[PI] ${entry.state}`,
             duration: entry.duration ? `${entry.duration}ms` : undefined,
             source: 'pageInit',
@@ -341,10 +362,15 @@ export function XStateDebugPanel({
 
   // Print history to console
   const handlePrintHistory = useCallback(() => {
-    const playbackHistory = (window as WindowWithHistory).__xstatePlaybackHistory;
-    const pageInitHistory = (window as WindowWithHistory).__xstatePageInitHistory;
+    const playbackHistory = (window as WindowWithHistory)
+      .__xstatePlaybackHistory;
+    const pageInitHistory = (window as WindowWithHistory)
+      .__xstatePageInitHistory;
 
-    console.log('%c=== XState History ===', 'color: #7c3aed; font-weight: bold; font-size: 14px');
+    console.log(
+      '%c=== XState History ===',
+      'color: #7c3aed; font-weight: bold; font-size: 14px',
+    );
 
     if (playbackHistory) {
       console.log('%cPlayback Machine:', 'color: #89b4fa; font-weight: bold');
@@ -359,8 +385,10 @@ export function XStateDebugPanel({
 
   // Clear history
   const handleClearHistory = useCallback(() => {
-    const playbackHistory = (window as WindowWithHistory).__xstatePlaybackHistory;
-    const pageInitHistory = (window as WindowWithHistory).__xstatePageInitHistory;
+    const playbackHistory = (window as WindowWithHistory)
+      .__xstatePlaybackHistory;
+    const pageInitHistory = (window as WindowWithHistory)
+      .__xstatePageInitHistory;
 
     playbackHistory?.clear();
     pageInitHistory?.clear();
@@ -381,7 +409,14 @@ export function XStateDebugPanel({
           onMouseLeave={() => setIsHovered(false)}
           title={`XState DevTools (${keyboardShortcut})`}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
             <circle cx="12" cy="12" r="3" />
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
           </svg>
@@ -408,7 +443,9 @@ export function XStateDebugPanel({
               <span
                 style={{
                   ...styles.badge,
-                  ...(isDevToolsInitialized() ? styles.badgeSuccess : styles.badgeWarning),
+                  ...(isDevToolsInitialized()
+                    ? styles.badgeSuccess
+                    : styles.badgeWarning),
                 }}
               >
                 {isDevToolsInitialized() ? 'Initialized' : 'Not Initialized'}

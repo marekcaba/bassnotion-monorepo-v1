@@ -12,7 +12,12 @@
  * 4. Test async actors with mocked implementations
  */
 
-import { createActor, type AnyStateMachine, type SnapshotFrom, type EventFromLogic } from 'xstate';
+import {
+  createActor,
+  type AnyStateMachine,
+  type SnapshotFrom,
+  type EventFromLogic,
+} from 'xstate';
 
 // ============================================================================
 // Types
@@ -65,8 +70,12 @@ export function createTestActor<TMachine extends AnyStateMachine>(
   machine: TMachine,
   options?: {
     context?: Partial<SnapshotFrom<TMachine>['context']>;
-    input?: Parameters<typeof createActor<TMachine>>[1] extends { input?: infer I } ? I : never;
-  }
+    input?: Parameters<typeof createActor<TMachine>>[1] extends {
+      input?: infer I;
+    }
+      ? I
+      : never;
+  },
 ) {
   // If context override is provided, we need to handle it carefully
   // XState v5 uses input for initial context, not direct context override
@@ -92,8 +101,12 @@ export async function runMachineWithEvents<TMachine extends AnyStateMachine>(
   machine: TMachine,
   events: EventFromLogic<TMachine>[],
   options?: StateAssertionOptions & {
-    input?: Parameters<typeof createActor<TMachine>>[1] extends { input?: infer I } ? I : never;
-  }
+    input?: Parameters<typeof createActor<TMachine>>[1] extends {
+      input?: infer I;
+    }
+      ? I
+      : never;
+  },
 ): Promise<SnapshotFrom<TMachine>> {
   const { logTransitions = false, timeout = 5000, input } = options ?? {};
 
@@ -130,10 +143,9 @@ export async function runMachineWithEvents<TMachine extends AnyStateMachine>(
 /**
  * Wait for the machine to reach a stable state (no pending async operations)
  */
-async function waitForStableState<TActor extends ReturnType<typeof createActor<AnyStateMachine>>>(
-  actor: TActor,
-  timeout: number
-): Promise<void> {
+async function waitForStableState<
+  TActor extends ReturnType<typeof createActor<AnyStateMachine>>,
+>(actor: TActor, timeout: number): Promise<void> {
   const startTime = Date.now();
 
   while (Date.now() - startTime < timeout) {
@@ -168,7 +180,7 @@ export async function assertTransition<TMachine extends AnyStateMachine>(
   fromState: SnapshotFrom<TMachine>['value'],
   event: EventFromLogic<TMachine>,
   expectedState: SnapshotFrom<TMachine>['value'],
-  options?: StateAssertionOptions
+  options?: StateAssertionOptions,
 ): Promise<void> {
   // For simple state comparison, we use the machine's transition function
   // This is a pure function that doesn't require an actor
@@ -182,7 +194,7 @@ export async function assertTransition<TMachine extends AnyStateMachine>(
         `  From: ${JSON.stringify(fromState)}\n` +
         `  Event: ${event.type}\n` +
         `  Expected: ${JSON.stringify(expectedState)}\n` +
-        `  Actual: ${JSON.stringify(actualState)}`
+        `  Actual: ${JSON.stringify(actualState)}`,
     );
   }
 }
@@ -193,7 +205,7 @@ export async function assertTransition<TMachine extends AnyStateMachine>(
 export function assertTransitionBlocked<TMachine extends AnyStateMachine>(
   machine: TMachine,
   fromState: SnapshotFrom<TMachine>['value'],
-  event: EventFromLogic<TMachine>
+  event: EventFromLogic<TMachine>,
 ): void {
   const nextSnapshot = machine.transition(fromState, event);
 
@@ -203,7 +215,7 @@ export function assertTransitionBlocked<TMachine extends AnyStateMachine>(
       `Expected transition to be blocked, but it wasn't:\n` +
         `  From: ${JSON.stringify(fromState)}\n` +
         `  Event: ${event.type}\n` +
-        `  Resulted in: ${JSON.stringify(nextSnapshot.value)}`
+        `  Resulted in: ${JSON.stringify(nextSnapshot.value)}`,
     );
   }
 }
@@ -216,7 +228,7 @@ export function assertTransitionBlocked<TMachine extends AnyStateMachine>(
  * expect(matcher(snapshot.context)).toBe(true);
  */
 export function createContextMatcher<TContext extends Record<string, unknown>>(
-  expectedPartial: Partial<TContext>
+  expectedPartial: Partial<TContext>,
 ): (context: TContext) => boolean {
   return (context: TContext) => {
     for (const [key, value] of Object.entries(expectedPartial)) {
@@ -249,7 +261,8 @@ export function createActionTracker(): ActionTracker {
       executed.length = 0;
     },
     wasExecuted: (actionName: string) => executed.includes(actionName),
-    getCount: (actionName: string) => executed.filter((a) => a === actionName).length,
+    getCount: (actionName: string) =>
+      executed.filter((a) => a === actionName).length,
   };
 }
 
@@ -339,7 +352,7 @@ export function createMockEventBus() {
 export function runTransitionTests<TMachine extends AnyStateMachine>(
   machine: TMachine,
   testCases: TransitionTestCase<TMachine>[],
-  runTest: (name: string, fn: () => void | Promise<void>) => void
+  runTest: (name: string, fn: () => void | Promise<void>) => void,
 ): void {
   for (const testCase of testCases) {
     runTest(testCase.description, async () => {
@@ -353,9 +366,11 @@ export function runTransitionTests<TMachine extends AnyStateMachine>(
       }
 
       // Check final state
-      if (JSON.stringify(currentState) !== JSON.stringify(testCase.expectedState)) {
+      if (
+        JSON.stringify(currentState) !== JSON.stringify(testCase.expectedState)
+      ) {
         throw new Error(
-          `Expected state ${JSON.stringify(testCase.expectedState)}, got ${JSON.stringify(currentState)}`
+          `Expected state ${JSON.stringify(testCase.expectedState)}, got ${JSON.stringify(currentState)}`,
         );
       }
     });
@@ -370,7 +385,7 @@ export function runTransitionTests<TMachine extends AnyStateMachine>(
  * Creates a simplified snapshot representation for debugging
  */
 export function simplifySnapshot<TMachine extends AnyStateMachine>(
-  snapshot: SnapshotFrom<TMachine>
+  snapshot: SnapshotFrom<TMachine>,
 ): Record<string, unknown> {
   return {
     value: snapshot.value,
@@ -384,11 +399,11 @@ export function simplifySnapshot<TMachine extends AnyStateMachine>(
  */
 export function printSnapshot<TMachine extends AnyStateMachine>(
   snapshot: SnapshotFrom<TMachine>,
-  label?: string
+  label?: string,
 ): void {
   console.log(
     `${label ? `[${label}] ` : ''}State Machine Snapshot:`,
-    JSON.stringify(simplifySnapshot(snapshot), null, 2)
+    JSON.stringify(simplifySnapshot(snapshot), null, 2),
   );
 }
 

@@ -81,7 +81,10 @@ describe('useDrumEditorPlayback', () => {
     mockAudioContext = createMockAudioContext();
 
     // Mock AudioContext constructor
-    vi.stubGlobal('AudioContext', vi.fn(() => mockAudioContext));
+    vi.stubGlobal(
+      'AudioContext',
+      vi.fn(() => mockAudioContext),
+    );
 
     // Mock fetch
     vi.stubGlobal('fetch', vi.fn(mockFetchResponse));
@@ -114,7 +117,7 @@ describe('useDrumEditorPlayback', () => {
         () => {
           expect(result.current.state.isLoading).toBe(false);
         },
-        { timeout: 3000 }
+        { timeout: 3000 },
       );
 
       // Should be ready with no error if fetch succeeded
@@ -130,8 +133,8 @@ describe('useDrumEditorPlayback', () => {
           Promise.resolve({
             ok: false,
             status: 404,
-          })
-        )
+          }),
+        ),
       );
 
       const { result } = renderHook(() => useDrumEditorPlayback());
@@ -140,7 +143,7 @@ describe('useDrumEditorPlayback', () => {
         () => {
           expect(result.current.state.isLoading).toBe(false);
         },
-        { timeout: 3000 }
+        { timeout: 3000 },
       );
 
       // Should not be ready when fetch fails
@@ -156,7 +159,7 @@ describe('useDrumEditorPlayback', () => {
         () => {
           expect(result.current.state.isReady).toBe(true);
         },
-        { timeout: 3000 }
+        { timeout: 3000 },
       );
 
       await act(async () => {
@@ -173,7 +176,7 @@ describe('useDrumEditorPlayback', () => {
         () => {
           expect(result.current.state.isReady).toBe(true);
         },
-        { timeout: 3000 }
+        { timeout: 3000 },
       );
 
       await act(async () => {
@@ -193,7 +196,7 @@ describe('useDrumEditorPlayback', () => {
         () => {
           expect(result.current.state.isReady).toBe(true);
         },
-        { timeout: 3000 }
+        { timeout: 3000 },
       );
 
       await act(async () => {
@@ -231,7 +234,7 @@ describe('useDrumEditorPlayback', () => {
         () => {
           expect(result.current.state.isReady).toBe(true);
         },
-        { timeout: 3000 }
+        { timeout: 3000 },
       );
 
       await act(async () => {
@@ -248,7 +251,7 @@ describe('useDrumEditorPlayback', () => {
         () => {
           expect(result.current.state.isReady).toBe(true);
         },
-        { timeout: 3000 }
+        { timeout: 3000 },
       );
 
       await act(async () => {
@@ -272,7 +275,7 @@ describe('useDrumEditorPlayback', () => {
         () => {
           expect(result.current.state.isReady).toBe(true);
         },
-        { timeout: 3000 }
+        { timeout: 3000 },
       );
 
       // Clear mocks to count only calls from empty pattern play
@@ -295,7 +298,7 @@ describe('useDrumEditorPlayback', () => {
         () => {
           expect(result.current.state.isLoading).toBe(false);
         },
-        { timeout: 3000 }
+        { timeout: 3000 },
       );
 
       unmount();
@@ -312,7 +315,7 @@ describe('useDrumEditorPlayback', () => {
         () => {
           expect(result.current.state.isReady).toBe(true);
         },
-        { timeout: 3000 }
+        { timeout: 3000 },
       );
 
       const drumTypes: MidiDrumType[] = ['kick', 'snare', 'hihat_closed'];

@@ -24,7 +24,11 @@ const preloadPromises = new Map<string, Promise<HTMLAudioElement>>();
  * Resolve audio URL - handles both full URLs and Supabase storage paths
  */
 function resolveAudioUrl(url: string): string {
-  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/')) {
+  if (
+    url.startsWith('http://') ||
+    url.startsWith('https://') ||
+    url.startsWith('/')
+  ) {
     return url;
   }
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -56,16 +60,24 @@ async function preloadAudio(url: string): Promise<HTMLAudioElement> {
     const audio = new Audio();
     audio.preload = 'auto';
 
-    audio.addEventListener('canplaythrough', () => {
-      audioCache.set(resolvedUrl, audio);
-      preloadPromises.delete(resolvedUrl);
-      resolve(audio);
-    }, { once: true });
+    audio.addEventListener(
+      'canplaythrough',
+      () => {
+        audioCache.set(resolvedUrl, audio);
+        preloadPromises.delete(resolvedUrl);
+        resolve(audio);
+      },
+      { once: true },
+    );
 
-    audio.addEventListener('error', (e) => {
-      preloadPromises.delete(resolvedUrl);
-      reject(new Error(`Failed to preload audio: ${resolvedUrl}`));
-    }, { once: true });
+    audio.addEventListener(
+      'error',
+      (e) => {
+        preloadPromises.delete(resolvedUrl);
+        reject(new Error(`Failed to preload audio: ${resolvedUrl}`));
+      },
+      { once: true },
+    );
 
     // Start loading
     audio.src = resolvedUrl;
@@ -156,7 +168,9 @@ export function useAssessmentAudioPreloader({
     loadedCountRef.current = 0;
     errorsRef.current = [];
 
-    console.log(`[AssessmentAudioPreloader] Starting preload of ${audioUrls.length} audio files`);
+    console.log(
+      `[AssessmentAudioPreloader] Starting preload of ${audioUrls.length} audio files`,
+    );
     const startTime = performance.now();
 
     // Load all in parallel with Promise.allSettled (FAANG pattern)
@@ -170,20 +184,21 @@ export function useAssessmentAudioPreloader({
           }
           return url;
         } catch (error) {
-          const errorMsg = error instanceof Error ? error.message : String(error);
+          const errorMsg =
+            error instanceof Error ? error.message : String(error);
           if (mountedRef.current) {
             errorsRef.current.push(errorMsg);
           }
           throw error;
         }
-      })
+      }),
     );
 
     const loadTime = performance.now() - startTime;
     const successCount = results.filter((r) => r.status === 'fulfilled').length;
 
     console.log(
-      `[AssessmentAudioPreloader] Preload complete: ${successCount}/${audioUrls.length} in ${loadTime.toFixed(0)}ms`
+      `[AssessmentAudioPreloader] Preload complete: ${successCount}/${audioUrls.length} in ${loadTime.toFixed(0)}ms`,
     );
   }, [audioUrls, forceUpdate]);
 

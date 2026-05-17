@@ -3,7 +3,10 @@
 import { useEffect, useCallback, useState, useRef, useMemo } from 'react';
 import { useMachine } from '@xstate/react';
 import { cn } from '@/lib/utils';
-import type { AnyVideoOverlayEvent, UnderstandQuestion } from '@bassnotion/contracts';
+import type {
+  AnyVideoOverlayEvent,
+  UnderstandQuestion,
+} from '@bassnotion/contracts';
 import { useBunnyPlayer } from '@/domains/assessment/hooks/useBunnyPlayer';
 import {
   understandMachine,
@@ -61,17 +64,19 @@ export function UnderstandVideoPlayer({
       return overlayEventsProp;
     }
     if (questions.length > 0) {
-      return questions.map((q): AnyVideoOverlayEvent => ({
-        id: q.id,
-        type: 'QUIZ' as const,
-        timestamp: q.timestamp ?? 0,
-        label: q.question.slice(0, 50),
-        content: {
-          question: q.question,
-          options: q.options,
-          correct_option_id: q.correct_option_id,
-        },
-      }));
+      return questions.map(
+        (q): AnyVideoOverlayEvent => ({
+          id: q.id,
+          type: 'QUIZ' as const,
+          timestamp: q.timestamp ?? 0,
+          label: q.question.slice(0, 50),
+          content: {
+            question: q.question,
+            options: q.options,
+            correct_option_id: q.correct_option_id,
+          },
+        }),
+      );
     }
     return [];
   }, [overlayEventsProp, questions]);
@@ -104,7 +109,8 @@ export function UnderstandVideoPlayer({
   const isComplete = state.matches('complete');
   const isSkipped = state.matches('skipped');
   const isError = state.matches('error');
-  const isPlaying = state.matches('playing') || state.matches('waitingForVideoEnd');
+  const isPlaying =
+    state.matches('playing') || state.matches('waitingForVideoEnd');
 
   // Initialize Bunny player
   const {
@@ -121,7 +127,10 @@ export function UnderstandVideoPlayer({
       send({ type: 'VIDEO_READY', duration });
       // Distribute overlay events across video duration
       if (normalizedEvents.length > 0) {
-        const distributed = distributeOverlayTimestamps(normalizedEvents, duration);
+        const distributed = distributeOverlayTimestamps(
+          normalizedEvents,
+          duration,
+        );
         send({ type: 'UPDATE_OVERLAY_EVENTS', overlayEvents: distributed });
       }
     },
@@ -139,7 +148,10 @@ export function UnderstandVideoPlayer({
   // Handle user clicking to start
   const handleStart = useCallback(() => {
     if (DEBUG_VIDEO) {
-      console.log('[UnderstandVideoPlayer] handleStart called, playerIsReady:', playerIsReady);
+      console.log(
+        '[UnderstandVideoPlayer] handleStart called, playerIsReady:',
+        playerIsReady,
+      );
     }
     setHasStarted(true);
     if (playerIsReady) {
@@ -147,7 +159,9 @@ export function UnderstandVideoPlayer({
     } else {
       pendingPlayRef.current = true;
       if (DEBUG_VIDEO) {
-        console.log('[UnderstandVideoPlayer] Player not ready, queuing play action');
+        console.log(
+          '[UnderstandVideoPlayer] Player not ready, queuing play action',
+        );
       }
     }
   }, [play, playerIsReady]);
@@ -156,7 +170,9 @@ export function UnderstandVideoPlayer({
   useEffect(() => {
     if (playerIsReady && pendingPlayRef.current) {
       if (DEBUG_VIDEO) {
-        console.log('[UnderstandVideoPlayer] Player now ready, executing queued play');
+        console.log(
+          '[UnderstandVideoPlayer] Player now ready, executing queued play',
+        );
       }
       pendingPlayRef.current = false;
       play();
@@ -204,7 +220,8 @@ export function UnderstandVideoPlayer({
   // Handle quiz answer submission
   const handleSubmitAnswer = useCallback(() => {
     if (currentEvent && currentEvent.type === 'QUIZ' && selectedOptionId) {
-      const isCorrect = selectedOptionId === currentEvent.content.correct_option_id;
+      const isCorrect =
+        selectedOptionId === currentEvent.content.correct_option_id;
       onQuestionAnswered?.(isCorrect);
     }
     send({ type: 'SUBMIT_ANSWER' });

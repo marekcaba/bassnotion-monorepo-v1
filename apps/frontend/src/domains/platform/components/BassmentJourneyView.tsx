@@ -2,13 +2,7 @@
 
 import { useCallback, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import {
-  CheckCircle2,
-  ChevronDown,
-  Library,
-  Lock,
-  Play,
-} from 'lucide-react';
+import { CheckCircle2, ChevronDown, Library, Lock, Play } from 'lucide-react';
 import { cn } from '@/shared/utils';
 import {
   Collapsible,
@@ -19,7 +13,10 @@ import { Skeleton } from '@/shared/components/ui/skeleton';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 import { ProgressPane, type BlockDot } from './ProgressPane';
 import { PRODUCT_FOLDERS } from '../constants/product-folders';
-import { useTutorialsByFolder, type TutorialItem } from '../hooks/useTutorialsByFolder';
+import {
+  useTutorialsByFolder,
+  type TutorialItem,
+} from '../hooks/useTutorialsByFolder';
 import type { FolderOpenState } from '../hooks/useFolderOpenState';
 
 /** Color mapping for difficulty levels — matching SessionCard's tag style */
@@ -43,7 +40,8 @@ function TutorialCard({
 }) {
   const isCompleted = tutorial.isComplete;
   const isActiveAndCompleted = isActive && isCompleted;
-  const diffColors = DIFFICULTY_COLORS[tutorial.difficulty?.toLowerCase() ?? ''];
+  const diffColors =
+    DIFFICULTY_COLORS[tutorial.difficulty?.toLowerCase() ?? ''];
   const displayTitle = tutorial.sidebarTitle || tutorial.title;
 
   // Block-based dots take precedence over legacy 3-stage progress
@@ -54,11 +52,13 @@ function TutorialCard({
   }));
 
   // Legacy fallback when no blocks
-  const progress = !blockDots ? (tutorial.progress ?? {
-    understood: isCompleted ?? false,
-    practiced: isCompleted ?? false,
-    applied: isCompleted ?? false,
-  }) : undefined;
+  const progress = !blockDots
+    ? (tutorial.progress ?? {
+        understood: isCompleted ?? false,
+        practiced: isCompleted ?? false,
+        applied: isCompleted ?? false,
+      })
+    : undefined;
 
   // Accent color: completed = emerald, active = gold, default = subtle
   const accentColor = isCompleted
@@ -104,7 +104,8 @@ function TutorialCard({
           <div
             className="absolute bottom-0 right-0 w-20 h-20 pointer-events-none"
             style={{
-              background: 'radial-gradient(circle at 100% 100%, rgba(232,164,74,0.08) 0%, transparent 70%)',
+              background:
+                'radial-gradient(circle at 100% 100%, rgba(232,164,74,0.08) 0%, transparent 70%)',
             }}
           />
         )}
@@ -207,14 +208,18 @@ function JourneyFolder({
 
     const container = containerRef.current;
     // Measure the actual rendered pane element, not the wrapper
-    const paneInners = container.querySelectorAll('.journey-pane .progress-pane-inner');
+    const paneInners = container.querySelectorAll(
+      '.journey-pane .progress-pane-inner',
+    );
     const connectors = container.querySelectorAll('.journey-connector');
 
     // Use first pane's horizontal center as the fixed X for all connectors
     const containerRect = container.getBoundingClientRect();
     const firstInner = paneInners[0] as HTMLElement | undefined;
     const fixedX = firstInner
-      ? firstInner.getBoundingClientRect().left - containerRect.left + firstInner.getBoundingClientRect().width / 2
+      ? firstInner.getBoundingClientRect().left -
+        containerRect.left +
+        firstInner.getBoundingClientRect().width / 2
       : 0;
 
     connectors.forEach((connector, idx) => {
@@ -248,7 +253,11 @@ function JourneyFolder({
   const totalCount = tutorials.length;
 
   return (
-    <Collapsible open={isOpen} onOpenChange={onOpenChange} defaultOpen={defaultOpen}>
+    <Collapsible
+      open={isOpen}
+      onOpenChange={onOpenChange}
+      defaultOpen={defaultOpen}
+    >
       <CollapsibleTrigger asChild>
         <button
           className={cn(
@@ -305,10 +314,15 @@ function JourneyFolder({
                           ? 'bg-emerald-500/50'
                           : 'bg-[#5A5660]/20',
                       )}
-                      style={!isFullyComplete ? {
-                        backgroundImage: 'linear-gradient(to bottom, rgba(90,86,96,0.35) 50%, transparent 50%)',
-                        backgroundSize: '4px 8px',
-                      } : undefined}
+                      style={
+                        !isFullyComplete
+                          ? {
+                              backgroundImage:
+                                'linear-gradient(to bottom, rgba(90,86,96,0.35) 50%, transparent 50%)',
+                              backgroundSize: '4px 8px',
+                            }
+                          : undefined
+                      }
                     />
                   );
                 })}
@@ -317,7 +331,8 @@ function JourneyFolder({
               {/* Tutorial cards */}
               <div className="space-y-3">
                 {tutorials.map((tutorial, index) => {
-                  const isActive = pathname === `/app/tutorials/${tutorial.slug}`;
+                  const isActive =
+                    pathname === `/app/tutorials/${tutorial.slug}`;
                   return (
                     <TutorialCard
                       key={tutorial.slug}
@@ -372,7 +387,9 @@ export function BassmentJourneyView({ folderState }: BassmentJourneyViewProps) {
             }
           }}
           defaultOpen={folder.isFree}
-          isLocked={!folder.isFree && (tutorialsByFolder[folder.id]?.length ?? 0) === 0}
+          isLocked={
+            !folder.isFree && (tutorialsByFolder[folder.id]?.length ?? 0) === 0
+          }
         />
       ))}
     </div>

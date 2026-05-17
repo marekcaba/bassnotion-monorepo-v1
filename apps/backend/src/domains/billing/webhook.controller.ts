@@ -71,32 +71,46 @@ export class WebhookController {
   private async handleEvent(event: Stripe.Event): Promise<void> {
     switch (event.type) {
       case 'checkout.session.completed':
-        await this.handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
+        await this.handleCheckoutCompleted(
+          event.data.object as Stripe.Checkout.Session,
+        );
         break;
 
       case 'customer.subscription.created':
       case 'customer.subscription.updated':
-        await this.handleSubscriptionUpdated(event.data.object as Stripe.Subscription);
+        await this.handleSubscriptionUpdated(
+          event.data.object as Stripe.Subscription,
+        );
         break;
 
       case 'customer.subscription.deleted':
-        await this.handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
+        await this.handleSubscriptionDeleted(
+          event.data.object as Stripe.Subscription,
+        );
         break;
 
       case 'invoice.payment_succeeded':
-        await this.handleInvoicePaymentSucceeded(event.data.object as Stripe.Invoice);
+        await this.handleInvoicePaymentSucceeded(
+          event.data.object as Stripe.Invoice,
+        );
         break;
 
       case 'invoice.payment_failed':
-        await this.handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
+        await this.handleInvoicePaymentFailed(
+          event.data.object as Stripe.Invoice,
+        );
         break;
 
       case 'payment_intent.succeeded':
-        await this.handlePaymentIntentSucceeded(event.data.object as Stripe.PaymentIntent);
+        await this.handlePaymentIntentSucceeded(
+          event.data.object as Stripe.PaymentIntent,
+        );
         break;
 
       case 'payment_intent.payment_failed':
-        await this.handlePaymentIntentFailed(event.data.object as Stripe.PaymentIntent);
+        await this.handlePaymentIntentFailed(
+          event.data.object as Stripe.PaymentIntent,
+        );
         break;
 
       default:
@@ -108,7 +122,9 @@ export class WebhookController {
    * Handle successful checkout session
    * This fires when a customer completes the checkout flow
    */
-  private async handleCheckoutCompleted(session: Stripe.Checkout.Session): Promise<void> {
+  private async handleCheckoutCompleted(
+    session: Stripe.Checkout.Session,
+  ): Promise<void> {
     const userId = session.metadata?.user_id;
     const courseType = session.metadata?.course_type as CourseType | undefined;
 
@@ -133,23 +149,28 @@ export class WebhookController {
         status: 'completed',
       });
 
-      this.logger.log(`Course purchase completed: ${courseType} for user ${userId}`);
+      this.logger.log(
+        `Course purchase completed: ${courseType} for user ${userId}`,
+      );
     }
   }
 
   /**
    * Handle subscription created or updated
    */
-  private async handleSubscriptionUpdated(subscription: Stripe.Subscription): Promise<void> {
+  private async handleSubscriptionUpdated(
+    subscription: Stripe.Subscription,
+  ): Promise<void> {
     const customerId = subscription.customer as string;
     const userId = subscription.metadata?.user_id;
 
     // Try to get user_id from metadata, or from existing subscription
     let resolvedUserId: string | undefined = userId;
     if (!resolvedUserId) {
-      const existingSubscription = await this.subscriptionRepository.findByStripeSubscriptionId(
-        subscription.id,
-      );
+      const existingSubscription =
+        await this.subscriptionRepository.findByStripeSubscriptionId(
+          subscription.id,
+        );
       if (existingSubscription) {
         resolvedUserId = existingSubscription.userId;
       }
@@ -157,7 +178,8 @@ export class WebhookController {
 
     if (!resolvedUserId) {
       // Try to get from customer metadata
-      const existingByCustomer = await this.subscriptionRepository.findByStripeCustomerId(customerId);
+      const existingByCustomer =
+        await this.subscriptionRepository.findByStripeCustomerId(customerId);
       if (existingByCustomer) {
         resolvedUserId = existingByCustomer.userId;
       }
@@ -176,9 +198,10 @@ export class WebhookController {
     const priceId = subscription.items.data[0]?.price.id ?? '';
     const status = this.mapStripeStatus(subscription.status) ?? 'incomplete';
 
-    const existingSubscription = await this.subscriptionRepository.findByStripeSubscriptionId(
-      subscription.id,
-    );
+    const existingSubscription =
+      await this.subscriptionRepository.findByStripeSubscriptionId(
+        subscription.id,
+      );
 
     if (existingSubscription) {
       await this.subscriptionRepository.update(subscription.id, {
@@ -192,7 +215,9 @@ export class WebhookController {
           : undefined,
       });
 
-      this.logger.log(`Subscription updated: ${subscription.id} for user ${finalUserId}`);
+      this.logger.log(
+        `Subscription updated: ${subscription.id} for user ${finalUserId}`,
+      );
     } else {
       await this.subscriptionRepository.create({
         userId: finalUserId,
@@ -208,14 +233,18 @@ export class WebhookController {
           : undefined,
       });
 
-      this.logger.log(`Subscription created: ${subscription.id} for user ${finalUserId}`);
+      this.logger.log(
+        `Subscription created: ${subscription.id} for user ${finalUserId}`,
+      );
     }
   }
 
   /**
    * Handle subscription deleted (canceled and expired)
    */
-  private async handleSubscriptionDeleted(subscription: Stripe.Subscription): Promise<void> {
+  private async handleSubscriptionDeleted(
+    subscription: Stripe.Subscription,
+  ): Promise<void> {
     await this.subscriptionRepository.update(subscription.id, {
       status: 'canceled',
       canceledAt: new Date(),
@@ -227,10 +256,13 @@ export class WebhookController {
   /**
    * Handle successful invoice payment (subscription renewal)
    */
-  private async handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<void> {
+  private async handleInvoicePaymentSucceeded(
+    invoice: Stripe.Invoice,
+  ): Promise<void> {
     if (invoice.subscription) {
       const subscriptionId = invoice.subscription as string;
-      const subscription = await this.stripeService.getSubscription(subscriptionId);
+      const subscription =
+        await this.stripeService.getSubscription(subscriptionId);
 
       await this.subscriptionRepository.update(subscriptionId, {
         status: 'active',
@@ -238,14 +270,18 @@ export class WebhookController {
         currentPeriodEnd: new Date(subscription.current_period_end * 1000),
       });
 
-      this.logger.log(`Invoice payment succeeded for subscription: ${subscriptionId}`);
+      this.logger.log(
+        `Invoice payment succeeded for subscription: ${subscriptionId}`,
+      );
     }
   }
 
   /**
    * Handle failed invoice payment
    */
-  private async handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<void> {
+  private async handleInvoicePaymentFailed(
+    invoice: Stripe.Invoice,
+  ): Promise<void> {
     if (invoice.subscription) {
       const subscriptionId = invoice.subscription as string;
 
@@ -253,7 +289,9 @@ export class WebhookController {
         status: 'past_due',
       });
 
-      this.logger.log(`Invoice payment failed for subscription: ${subscriptionId}`);
+      this.logger.log(
+        `Invoice payment failed for subscription: ${subscriptionId}`,
+      );
       // TODO: Send email notification to user
     }
   }
@@ -261,8 +299,11 @@ export class WebhookController {
   /**
    * Handle successful payment intent (for one-time purchases)
    */
-  private async handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent): Promise<void> {
-    const existingPurchase = await this.purchaseRepository.findByPaymentIntentId(paymentIntent.id);
+  private async handlePaymentIntentSucceeded(
+    paymentIntent: Stripe.PaymentIntent,
+  ): Promise<void> {
+    const existingPurchase =
+      await this.purchaseRepository.findByPaymentIntentId(paymentIntent.id);
 
     if (existingPurchase && existingPurchase.status !== 'completed') {
       await this.purchaseRepository.updateStatus(paymentIntent.id, 'completed');
@@ -273,8 +314,11 @@ export class WebhookController {
   /**
    * Handle failed payment intent
    */
-  private async handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent): Promise<void> {
-    const existingPurchase = await this.purchaseRepository.findByPaymentIntentId(paymentIntent.id);
+  private async handlePaymentIntentFailed(
+    paymentIntent: Stripe.PaymentIntent,
+  ): Promise<void> {
+    const existingPurchase =
+      await this.purchaseRepository.findByPaymentIntentId(paymentIntent.id);
 
     if (existingPurchase) {
       await this.purchaseRepository.updateStatus(paymentIntent.id, 'failed');
@@ -285,7 +329,9 @@ export class WebhookController {
   /**
    * Map Stripe subscription status to our status type
    */
-  private mapStripeStatus(stripeStatus: Stripe.Subscription.Status): SubscriptionStatus {
+  private mapStripeStatus(
+    stripeStatus: Stripe.Subscription.Status,
+  ): SubscriptionStatus {
     const statusMap: Record<Stripe.Subscription.Status, SubscriptionStatus> = {
       active: 'active',
       canceled: 'canceled',

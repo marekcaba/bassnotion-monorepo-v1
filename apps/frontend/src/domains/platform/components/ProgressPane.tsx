@@ -58,11 +58,20 @@ export function ProgressPane({
   className,
 }: ProgressPaneProps) {
   // Normalize to a common dot array
-  const dots: BlockDot[] = blockDots ??
+  const dots: BlockDot[] =
+    blockDots ??
     (progress
       ? [
-          { id: 'understood', title: 'Understood', completed: progress.understood },
-          { id: 'practiced', title: 'Practiced', completed: progress.practiced },
+          {
+            id: 'understood',
+            title: 'Understood',
+            completed: progress.understood,
+          },
+          {
+            id: 'practiced',
+            title: 'Practiced',
+            completed: progress.practiced,
+          },
           { id: 'applied', title: 'Applied', completed: progress.applied },
         ]
       : []);
@@ -94,22 +103,25 @@ export function ProgressPane({
   );
 
   // Dot base styling
-  const getDotClasses = (isComplete: boolean) => cn(
-    'rounded-full transition-all duration-200',
-    dotSize,
-    isComplete
-      ? isFullyComplete
-        ? 'bg-emerald-400' // All complete = green glow
-        : 'bg-[#ffc700]'   // Partial = yellow/gold
-      : 'bg-zinc-600/50',  // Incomplete = dim
-  );
+  const getDotClasses = (isComplete: boolean) =>
+    cn(
+      'rounded-full transition-all duration-200',
+      dotSize,
+      isComplete
+        ? isFullyComplete
+          ? 'bg-emerald-400' // All complete = green glow
+          : 'bg-[#ffc700]' // Partial = yellow/gold
+        : 'bg-zinc-600/50', // Incomplete = dim
+    );
 
   // Tooltip content
   const tooltipContent = (
     <div className="space-y-1">
       {dots.map((dot) => (
         <div key={dot.id} className="flex items-center gap-2">
-          <span className={dot.completed ? 'text-emerald-400' : 'text-zinc-500'}>
+          <span
+            className={dot.completed ? 'text-emerald-400' : 'text-zinc-500'}
+          >
             {dot.completed ? '✓' : '○'}
           </span>
           <span className={dot.completed ? 'text-white' : 'text-zinc-500'}>

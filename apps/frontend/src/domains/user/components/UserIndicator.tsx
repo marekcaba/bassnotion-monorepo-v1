@@ -10,13 +10,15 @@ import { authService } from '../api/auth';
 export function UserIndicator() {
   const { isAuthenticated, user, isInitialized } = useAuth();
   const reset = useAuthStore((state) => state.reset);
-  const { profile, isLoading, cachedRole, cachedDisplayName, isHydrated } = useUserProfile();
+  const { profile, isLoading, cachedRole, cachedDisplayName, isHydrated } =
+    useUserProfile();
   const { navigateWithTransition } = useViewTransitionRouter();
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   // We need BOTH cached role AND a display name source to show immediately
   // Otherwise we'd show "User" placeholder which looks bad
-  const hasDisplayNameSource = cachedDisplayName || profile?.displayName || user?.email;
+  const hasDisplayNameSource =
+    cachedDisplayName || profile?.displayName || user?.email;
   const canShowImmediately = !!cachedRole && !!hasDisplayNameSource;
 
   const handleClick = () => {
@@ -48,7 +50,7 @@ export function UserIndicator() {
         setIsSigningOut(false);
       }
     },
-    [reset, navigateWithTransition]
+    [reset, navigateWithTransition],
   );
 
   // IMPORTANT: Before hydration OR while auth is still initializing, show placeholder
@@ -140,7 +142,8 @@ export function UserIndicator() {
 
   // Fresh profile data loaded
   const isAdmin = profile?.role === 'admin';
-  const displayName = profile?.displayName || user.email?.split('@')[0] || 'User';
+  const displayName =
+    profile?.displayName || user.email?.split('@')[0] || 'User';
 
   return (
     <div className="flex items-center gap-2">

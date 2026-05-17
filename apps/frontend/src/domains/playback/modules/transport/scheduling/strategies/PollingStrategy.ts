@@ -18,7 +18,9 @@ function getTone(): NonNullable<typeof window.Tone> {
       return tone;
     }
   }
-  throw new Error('PollingStrategy: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+  throw new Error(
+    'PollingStrategy: Tone.js not loaded. Ensure AudioEngine is initialized first.',
+  );
 }
 import type { Clock } from '../../core/Clock.js';
 import type { Timeline } from '../../core/Timeline.js';

@@ -219,7 +219,10 @@ export const GlobalControlsDAW: React.FC<GlobalControlsDAWProps> = ({
         }
 
         // Create test drum pattern (same as test page)
-        const hasDrumPattern = !!(selectedExercise.drumPattern && selectedExercise.drumPattern.length > 0);
+        const hasDrumPattern = !!(
+          selectedExercise.drumPattern &&
+          selectedExercise.drumPattern.length > 0
+        );
         if (drumTrack.isInitialized && hasDrumPattern) {
           const drumRegion = {
             id: 'drum-test-region',

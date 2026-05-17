@@ -25,7 +25,11 @@ const dmSans = DM_Sans({
   display: 'swap',
 });
 
-export default function AssessmentLayout({ children }: { children: ReactNode }) {
+export default function AssessmentLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
   return (
     <div
       className={`${cormorant.variable} ${dmSans.variable} min-h-screen relative overflow-hidden bg-[#0f0f0f]`}

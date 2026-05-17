@@ -54,9 +54,17 @@ if (typeof window !== 'undefined') {
   window.RING_DEBUG = window.RING_DEBUG ?? false;
 }
 // Helper to check debug flag - returns false during SSR
-const isDebugEnabled = () => typeof window !== 'undefined' && window.RING_DEBUG === true;
+const isDebugEnabled = () =>
+  typeof window !== 'undefined' && window.RING_DEBUG === true;
 
-import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 // Note: drei's Text component removed - it caused rendering failures due to font loading issues
 // Using canvas-based texture approach instead for string labels
@@ -70,10 +78,14 @@ import * as THREE from 'three';
 // This achieves the same effect as CSS overflow:hidden but for WebGL content.
 // =============================================================================
 const globalClippingPlanes = [
-  new THREE.Plane(new THREE.Vector3(1, 0, 0), 0),  // Left plane (clips -X side)
+  new THREE.Plane(new THREE.Vector3(1, 0, 0), 0), // Left plane (clips -X side)
   new THREE.Plane(new THREE.Vector3(-1, 0, 0), 0), // Right plane (clips +X side)
 ];
-import { useFretboardNoteSync, findNoteAtTime, type NoteTimelineEntry } from '@/domains/widgets/hooks/useFretboardNoteSync';
+import {
+  useFretboardNoteSync,
+  findNoteAtTime,
+  type NoteTimelineEntry,
+} from '@/domains/widgets/hooks/useFretboardNoteSync';
 import { buildQuantizedTimeline } from '@/domains/widgets/utils/exerciseToMusicXML';
 import { getAtomicPlaybackClock } from '@/domains/playback/services/core/AtomicPlaybackClock';
 import { isVerboseDebugEnabled } from '@/config/debug';
@@ -161,11 +173,14 @@ function CSSMatchingCamera({
         startZ: cssPerspective * pullBackMultiplier,
         targetZ: cssPerspective,
       };
-      console.log('[CSSMatchingCamera] 🎬 Starting zoom animation on mount (triggerZoomOnMount):', {
-        startZ: cssPerspective * pullBackMultiplier,
-        targetZ: cssPerspective,
-        duration: zoomDuration,
-      });
+      console.log(
+        '[CSSMatchingCamera] 🎬 Starting zoom animation on mount (triggerZoomOnMount):',
+        {
+          startZ: cssPerspective * pullBackMultiplier,
+          targetZ: cssPerspective,
+          duration: zoomDuration,
+        },
+      );
     }
   }, [triggerZoomOnMount, cssPerspective, pullBackMultiplier, zoomDuration]);
 
@@ -177,7 +192,10 @@ function CSSMatchingCamera({
       return;
     }
 
-    if (prevPhaseRef.current !== 'fading-in' && transitionPhase === 'fading-in') {
+    if (
+      prevPhaseRef.current !== 'fading-in' &&
+      transitionPhase === 'fading-in'
+    ) {
       // Start zoom animation - camera zooms IN from pulled back position
       animationRef.current = {
         isAnimating: true,
@@ -185,14 +203,24 @@ function CSSMatchingCamera({
         startZ: cssPerspective * pullBackMultiplier,
         targetZ: cssPerspective,
       };
-      isDebugEnabled() && console.log('[CSSMatchingCamera] 🎬 Starting zoom animation (phase change):', {
-        startZ: cssPerspective * pullBackMultiplier,
-        targetZ: cssPerspective,
-        duration: zoomDuration,
-      });
+      isDebugEnabled() &&
+        console.log(
+          '[CSSMatchingCamera] 🎬 Starting zoom animation (phase change):',
+          {
+            startZ: cssPerspective * pullBackMultiplier,
+            targetZ: cssPerspective,
+            duration: zoomDuration,
+          },
+        );
     }
     prevPhaseRef.current = transitionPhase;
-  }, [transitionPhase, cssPerspective, pullBackMultiplier, zoomDuration, triggerZoomOnMount]);
+  }, [
+    transitionPhase,
+    cssPerspective,
+    pullBackMultiplier,
+    zoomDuration,
+    triggerZoomOnMount,
+  ]);
 
   // Smooth animation with useFrame (60fps)
   useFrame(() => {
@@ -214,7 +242,8 @@ function CSSMatchingCamera({
 
       if (progress >= 1) {
         anim.isAnimating = false;
-        isDebugEnabled() && console.log('[CSSMatchingCamera] 🎬 Zoom animation complete');
+        isDebugEnabled() &&
+          console.log('[CSSMatchingCamera] 🎬 Zoom animation complete');
       }
     }
   });
@@ -226,7 +255,8 @@ function CSSMatchingCamera({
 
       // If we're starting with zoom animation (fading-in phase or triggerZoomOnMount),
       // start camera pulled back so it can zoom in
-      const shouldStartPulledBack = transitionPhase === 'fading-in' || triggerZoomOnMount;
+      const shouldStartPulledBack =
+        transitionPhase === 'fading-in' || triggerZoomOnMount;
       const initialZ = shouldStartPulledBack
         ? cssPerspective * pullBackMultiplier
         : cssPerspective;
@@ -251,28 +281,33 @@ function CSSMatchingCamera({
       camera.updateProjectionMatrix();
       set({ camera });
 
-      isDebugEnabled() && console.log('[CSSMatchingCamera] 📷 CSS-MATCHING CAMERA:', {
-        cssPerspective,
-        canvasHeight,
-        cameraY,
-        calculatedFOV: calculatedFOV.toFixed(2) + '°',
-        fovOffset: fovOffset + '°',
-        finalFOV: fovDeg.toFixed(2) + '°',
-        position: { x: 0, y: cameraY, z: initialZ },
-        aspect: camera.aspect.toFixed(2),
-        transitionPhase,
-        note: 'Tilt is applied via scene rotation, not camera. cameraY affects top/bottom perspective ratio.',
-      });
+      isDebugEnabled() &&
+        console.log('[CSSMatchingCamera] 📷 CSS-MATCHING CAMERA:', {
+          cssPerspective,
+          canvasHeight,
+          cameraY,
+          calculatedFOV: calculatedFOV.toFixed(2) + '°',
+          fovOffset: fovOffset + '°',
+          finalFOV: fovDeg.toFixed(2) + '°',
+          position: { x: 0, y: cameraY, z: initialZ },
+          aspect: camera.aspect.toFixed(2),
+          transitionPhase,
+          note: 'Tilt is applied via scene rotation, not camera. cameraY affects top/bottom perspective ratio.',
+        });
     }
-  }, [canvasHeight, cssPerspective, fovOffset, cameraY, set, size, transitionPhase, pullBackMultiplier, triggerZoomOnMount]);
+  }, [
+    canvasHeight,
+    cssPerspective,
+    fovOffset,
+    cameraY,
+    set,
+    size,
+    transitionPhase,
+    pullBackMultiplier,
+    triggerZoomOnMount,
+  ]);
 
-  return (
-    <perspectiveCamera
-      ref={cameraRef}
-      near={1}
-      far={2400}
-    />
-  );
+  return <perspectiveCamera ref={cameraRef} near={1} far={2400} />;
 }
 
 // =============================================================================
@@ -295,20 +330,26 @@ interface ClippingPlanesManagerProps {
   enabled?: boolean;
 }
 
-function ClippingPlanesManager({ viewportWidth, contentScale, sceneX, enabled = true }: ClippingPlanesManagerProps) {
+function ClippingPlanesManager({
+  viewportWidth,
+  contentScale,
+  sceneX,
+  enabled = true,
+}: ClippingPlanesManagerProps) {
   const { gl } = useThree();
 
   useEffect(() => {
     // Enable local clipping on the renderer
     gl.localClippingEnabled = enabled;
 
-    isDebugEnabled() && console.log('[ClippingPlanesManager] 🔪 Clipping enabled:', {
-      enabled,
-      viewportWidth,
-      contentScale,
-      sceneX,
-      rendererLocalClipping: gl.localClippingEnabled,
-    });
+    isDebugEnabled() &&
+      console.log('[ClippingPlanesManager] 🔪 Clipping enabled:', {
+        enabled,
+        viewportWidth,
+        contentScale,
+        sceneX,
+        rendererLocalClipping: gl.localClippingEnabled,
+      });
 
     return () => {
       // Cleanup: disable clipping when unmounted
@@ -339,19 +380,20 @@ function ClippingPlanesManager({ viewportWidth, contentScale, sceneX, enabled = 
     // normal = (-1, 0, 0), constant = rightBound → -x + rightBound >= 0 → x <= rightBound
     globalClippingPlanes[1].constant = rightBound;
 
-    isDebugEnabled() && console.log('[ClippingPlanesManager] 📐 Updated clipping planes:', {
-      viewportWidth,
-      contentScale,
-      sceneX,
-      baseHalfWidth,
-      scaledHalfWidth,
-      margin,
-      halfWidth,
-      leftBound,
-      rightBound,
-      leftPlane: `x >= ${leftBound}`,
-      rightPlane: `x <= ${rightBound}`,
-    });
+    isDebugEnabled() &&
+      console.log('[ClippingPlanesManager] 📐 Updated clipping planes:', {
+        viewportWidth,
+        contentScale,
+        sceneX,
+        baseHalfWidth,
+        scaledHalfWidth,
+        margin,
+        halfWidth,
+        leftBound,
+        rightBound,
+        leftPlane: `x >= ${leftBound}`,
+        rightPlane: `x <= ${rightBound}`,
+      });
   }, [viewportWidth, contentScale, sceneX]);
 
   return null;
@@ -369,7 +411,10 @@ interface ScrollSyncManagerProps {
   scrollLeftRef: React.MutableRefObject<number>;
 }
 
-function ScrollSyncManager({ scrollContainerRef, scrollLeftRef }: ScrollSyncManagerProps) {
+function ScrollSyncManager({
+  scrollContainerRef,
+  scrollLeftRef,
+}: ScrollSyncManagerProps) {
   // Read scroll position every frame without React re-render
   useFrame(() => {
     if (scrollContainerRef?.current) {
@@ -437,10 +482,17 @@ const MIN_DELTA_TIME = 8; // ms - roughly half a frame at 60fps
 // Debug: Track frame timing to detect dropped frames
 // Toggle from browser console: window.SCROLL_DEBUG = true (logs only lag)
 // Toggle from browser console: window.SCROLL_DEBUG_ALL = true (logs every frame)
-const isScrollDebugEnabled = () => typeof window !== 'undefined' && window.SCROLL_DEBUG === true;
-const isScrollDebugAllEnabled = () => typeof window !== 'undefined' && window.SCROLL_DEBUG_ALL === true;
+const isScrollDebugEnabled = () =>
+  typeof window !== 'undefined' && window.SCROLL_DEBUG === true;
+const isScrollDebugAllEnabled = () =>
+  typeof window !== 'undefined' && window.SCROLL_DEBUG_ALL === true;
 
-function ScrollOffsetGroup({ scrollLeftRef, viewportWidth, fullContentWidth, children }: ScrollOffsetGroupProps) {
+function ScrollOffsetGroup({
+  scrollLeftRef,
+  viewportWidth,
+  fullContentWidth,
+  children,
+}: ScrollOffsetGroupProps) {
   const groupRef = useRef<THREE.Group>(null);
   // Track the current smoothed position to interpolate toward target
   const currentPositionRef = useRef<number | null>(null);
@@ -458,10 +510,12 @@ function ScrollOffsetGroup({ scrollLeftRef, viewportWidth, fullContentWidth, chi
       const scrollLeft = scrollLeftRef.current;
 
       // Calculate target scroll offset
-      const targetOffset = (viewportWidth / 2 - fullContentWidth / 2) - scrollLeft;
+      const targetOffset =
+        viewportWidth / 2 - fullContentWidth / 2 - scrollLeft;
 
       // Calculate delta time with minimum floor to handle burst frames
-      const rawDeltaTime = lastFrameTimeRef.current > 0 ? now - lastFrameTimeRef.current : 16.67;
+      const rawDeltaTime =
+        lastFrameTimeRef.current > 0 ? now - lastFrameTimeRef.current : 16.67;
       const deltaTime = Math.max(rawDeltaTime, MIN_DELTA_TIME);
       lastFrameTimeRef.current = now;
 
@@ -473,12 +527,17 @@ function ScrollOffsetGroup({ scrollLeftRef, viewportWidth, fullContentWidth, chi
 
         // Log if lag detected OR if SCROLL_DEBUG_ALL is enabled
         if (hasLag || isScrollDebugAllEnabled()) {
-          console.log(hasLag ? '[ScrollOffsetGroup] 🔴 LAG:' : '[ScrollOffsetGroup] 🟢 OK:', {
-            frame: frameCountRef.current,
-            frameDeltaMs: rawDeltaTime.toFixed(1),
-            scrollLeft,
-            scrollDelta: scrollDelta.toFixed(1),
-          });
+          console.log(
+            hasLag
+              ? '[ScrollOffsetGroup] 🔴 LAG:'
+              : '[ScrollOffsetGroup] 🟢 OK:',
+            {
+              frame: frameCountRef.current,
+              frameDeltaMs: rawDeltaTime.toFixed(1),
+              scrollLeft,
+              scrollDelta: scrollDelta.toFixed(1),
+            },
+          );
         }
 
         lastScrollLeftRef.current = scrollLeft;
@@ -525,11 +584,7 @@ function ScrollOffsetGroup({ scrollLeftRef, viewportWidth, fullContentWidth, chi
     }
   });
 
-  return (
-    <group ref={groupRef}>
-      {children}
-    </group>
-  );
+  return <group ref={groupRef}>{children}</group>;
 }
 
 /**
@@ -621,7 +676,7 @@ export interface Ring3DOverlayCanvasProps {
     // NEW: Tilt axis X offset - slides content left/right on the tilted plane
     tiltAxisOffsetX?: number;
     // Edge fade zone settings (percentage of viewport width)
-    leftFadeZone?: number;  // 0-20%, default 8% when scrolled
+    leftFadeZone?: number; // 0-20%, default 8% when scrolled
     rightFadeZone?: number; // 0-20%, default 8%
     // Tilt angle for the edge fade mask (independent of fretboard tilt for fine-tuning)
     fadeTiltAngle?: number; // Defaults to match fretboard tilt (DEPRECATED - use fadeEdgeAngle instead)
@@ -631,20 +686,20 @@ export interface Ring3DOverlayCanvasProps {
     // Range: 0-45 degrees
     fadeEdgeAngle?: number;
     // Yellow active ring controls
-    activeRingZOffset?: number;    // Z offset above the dot (default 1)
-    activeRingRadius?: number;     // Outer radius of ring (default 15)
+    activeRingZOffset?: number; // Z offset above the dot (default 1)
+    activeRingRadius?: number; // Outer radius of ring (default 15)
     activeRingTubeRadius?: number; // Thickness of the tube (default 1.5)
     // Active dot color (currently playing note)
-    activeDotColor?: string;       // Hex color string (default '#3b82f6')
+    activeDotColor?: string; // Hex color string (default '#3b82f6')
     // Active ring color (yellow ring indicator)
-    activeRingColor?: string;      // Hex color string (default '#facc15')
+    activeRingColor?: string; // Hex color string (default '#facc15')
     // Bloom post-processing controls
-    bloomEnabled?: boolean;        // Enable/disable bloom (default true)
-    bloomIntensity?: number;       // Bloom brightness 0-2 (default 0)
-    bloomThreshold?: number;       // Luminance threshold 0-1 (default 1)
+    bloomEnabled?: boolean; // Enable/disable bloom (default true)
+    bloomIntensity?: number; // Bloom brightness 0-2 (default 0)
+    bloomThreshold?: number; // Luminance threshold 0-1 (default 1)
     // Finger label positioning (for default view adjustment)
-    fingerLabelOffsetX?: number;   // X offset from dot center (default 0)
-    fingerLabelOffsetY?: number;   // Y offset from dot center (default 0)
+    fingerLabelOffsetX?: number; // X offset from dot center (default 0)
+    fingerLabelOffsetY?: number; // Y offset from dot center (default 0)
   };
   /** DEPRECATED: Use scrollContainerRef instead for better performance */
   scrollLeft?: number;
@@ -686,41 +741,45 @@ const DEFAULT_TIME_SIGNATURE = { numerator: 4, denominator: 4 } as const;
 interface DebugVisualizationProps {
   stringCount: 4 | 5 | 6;
   maxFrets: number;
-  contentWidth: number;     // FULL content width (all frets) - used for centering calculations
-  contentHeight: number;    // Content height (fixed 290px)
-  tiltAngle: number;        // CSS rotateX angle in degrees
-  cssPerspective: number;   // CSS perspective value in pixels
+  contentWidth: number; // FULL content width (all frets) - used for centering calculations
+  contentHeight: number; // Content height (fixed 290px)
+  tiltAngle: number; // CSS rotateX angle in degrees
+  cssPerspective: number; // CSS perspective value in pixels
   positioningMode: 'flat' | 'tilted-plane' | 'screen-space'; // Which approach to use
-  tiltAxisOffset: number;   // Slides content along the tilted plane Y axis (in pixels)
-  tiltAxisOffsetX: number;  // Slides content along the tilted plane X axis (in pixels)
+  tiltAxisOffset: number; // Slides content along the tilted plane Y axis (in pixels)
+  tiltAxisOffsetX: number; // Slides content along the tilted plane X axis (in pixels)
   perspectiveMultiplier: number; // Scales perspective effect - <1 = less perspective, >1 = more
-  topEdgeScale: number;    // Scales X width at top edge - <1 = narrower, >1 = wider
+  topEdgeScale: number; // Scales X width at top edge - <1 = narrower, >1 = wider
   bottomEdgeScale: number; // Scales X width at bottom edge - <1 = narrower, >1 = wider
   scrollLeftRef: React.MutableRefObject<number>; // PERFORMANCE: Ref to scroll position (no re-renders)
-  viewportWidth: number;   // Viewport width (568px) for edge fade calculation
+  viewportWidth: number; // Viewport width (568px) for edge fade calculation
   // NEW: Highlighted dots with time-based gradient lookahead
-  exerciseNotes: ExerciseNoteInput[];  // Exercise notes array for timeline building
-  tempo: number;                        // BPM for timing calculations
-  isPlaying: boolean;                   // Playback state for enabling updates
-  countdownBeats?: number;              // Countdown beats before exercise starts (default 4)
+  exerciseNotes: ExerciseNoteInput[]; // Exercise notes array for timeline building
+  tempo: number; // BPM for timing calculations
+  isPlaying: boolean; // Playback state for enabling updates
+  countdownBeats?: number; // Countdown beats before exercise starts (default 4)
   // Yellow active ring customization
-  activeRingZOffset?: number;    // Z offset above the dot (default 1)
-  activeRingRadius?: number;     // Outer radius of ring (default 15)
+  activeRingZOffset?: number; // Z offset above the dot (default 1)
+  activeRingRadius?: number; // Outer radius of ring (default 15)
   activeRingTubeRadius?: number; // Thickness of the tube (default 1.5)
   // Active dot color (currently playing note)
-  activeDotColor?: string;       // Hex color string (default '#3b82f6')
+  activeDotColor?: string; // Hex color string (default '#3b82f6')
   // Active ring color (yellow ring indicator)
-  activeRingColor?: string;      // Hex color string (default '#facc15')
+  activeRingColor?: string; // Hex color string (default '#facc15')
   // Finger label positioning (for default view adjustment)
-  fingerLabelOffsetX?: number;   // X offset from dot center (default 0)
-  fingerLabelOffsetY?: number;   // Y offset from dot center (default 0)
+  fingerLabelOffsetX?: number; // X offset from dot center (default 0)
+  fingerLabelOffsetY?: number; // Y offset from dot center (default 0)
 }
 
 /**
  * Creates a rounded rectangle shape for Three.js ShapeGeometry
  * Used for open string and fret 12 dots to match 2D rounded-md style
  */
-function createRoundedRectShape(width: number, height: number, radius: number): THREE.Shape {
+function createRoundedRectShape(
+  width: number,
+  height: number,
+  radius: number,
+): THREE.Shape {
   const shape = new THREE.Shape();
   const x = -width / 2;
   const y = -height / 2;
@@ -819,8 +878,8 @@ function DebugVisualization({
   // - Gradient lookahead DISABLED - only current + preview visible
   // =============================================================================
   const LOOKAHEAD_CONFIG = {
-    lookaheadTimeMs: 2000,        // 2 seconds ahead
-    maxVisibleNotes: 2,           // 2 upcoming notes (preview + one more)
+    lookaheadTimeMs: 2000, // 2 seconds ahead
+    maxVisibleNotes: 2, // 2 upcoming notes (preview + one more)
     opacityLevels: [1.0, 1.0, 0.8], // Active 100%, preview 100%, third note 80%
   };
 
@@ -829,9 +888,9 @@ function DebugVisualization({
   const activeRingColorHex = parseInt(activeRingColor.replace('#', ''), 16);
 
   const DOT_COLORS = {
-    BLUE: activeDotColorHex,  // Currently playing note (from prop, default blue)
-    GREEN: 0x16a34a,   // Preview/next note (green-600, darker)
-    GREY: 0x475569,   // Regular fret positions (slate-600)
+    BLUE: activeDotColorHex, // Currently playing note (from prop, default blue)
+    GREEN: 0x16a34a, // Preview/next note (green-600, darker)
+    GREY: 0x475569, // Regular fret positions (slate-600)
     GREY_LIGHT: 0x64748b, // Marker frets: open, 3, 5, 7, 9, 12, 15, 17, 19, 21 (slate-500)
     ACTIVE_RING: activeRingColorHex, // Ring color (from prop)
     PREVIEW_RING: 0xfacc15, // Yellow-400 for next note preview ring
@@ -861,11 +920,17 @@ function DebugVisualization({
     });
 
     // DEBUG: Log finger_index values from exercise notes
-    const notesWithFinger = exerciseNotes.filter(n => n.finger_index !== undefined);
+    const notesWithFinger = exerciseNotes.filter(
+      (n) => n.finger_index !== undefined,
+    );
     console.log('[FINGER-DEBUG] Exercise notes with finger_index:', {
       totalNotes: exerciseNotes.length,
       notesWithFinger: notesWithFinger.length,
-      fingerIndexValues: notesWithFinger.map(n => ({ string: n.string, fret: n.fret, finger: n.finger_index })),
+      fingerIndexValues: notesWithFinger.map((n) => ({
+        string: n.string,
+        fret: n.fret,
+        finger: n.finger_index,
+      })),
     });
 
     const quantizedEntries = buildQuantizedTimeline({
@@ -883,27 +948,34 @@ function DebugVisualization({
 
     // Convert QuantizedTimelineEntry to NoteTimelineEntry format
     // The buildQuantizedTimeline already returns entries with proper timing
-    return quantizedEntries.map((entry): NoteTimelineEntry => ({
-      type: entry.type,
-      startTime: entry.startTime,
-      endTime: entry.endTime,
-      position: {
-        // Convert 1-based string number to visual stringIndex (0=top G, 3=bottom E for 4-string)
-        stringIndex: noteStringToVisualIndex(entry.note?.string ?? 1, stringCount),
-        fret: entry.note?.fret ?? 0,
-      },
-      noteIndex: entry.noteIndex,
-      note: entry.note ? {
-        string: entry.note.string as 1 | 2 | 3 | 4 | 5 | 6,
-        fret: entry.note.fret,
-        duration: entry.note.duration,
-        durationTicks: entry.note.durationTicks,
-        position: entry.note.position,
-        finger_index: fingerIndexMap.get(entry.noteIndex), // Preserve finger_index
-      } : undefined,
-      measure: entry.measure,
-      durationBeats: entry.durationBeats,
-    }));
+    return quantizedEntries.map(
+      (entry): NoteTimelineEntry => ({
+        type: entry.type,
+        startTime: entry.startTime,
+        endTime: entry.endTime,
+        position: {
+          // Convert 1-based string number to visual stringIndex (0=top G, 3=bottom E for 4-string)
+          stringIndex: noteStringToVisualIndex(
+            entry.note?.string ?? 1,
+            stringCount,
+          ),
+          fret: entry.note?.fret ?? 0,
+        },
+        noteIndex: entry.noteIndex,
+        note: entry.note
+          ? {
+              string: entry.note.string as 1 | 2 | 3 | 4 | 5 | 6,
+              fret: entry.note.fret,
+              duration: entry.note.duration,
+              durationTicks: entry.note.durationTicks,
+              position: entry.note.position,
+              finger_index: fingerIndexMap.get(entry.noteIndex), // Preserve finger_index
+            }
+          : undefined,
+        measure: entry.measure,
+        durationBeats: entry.durationBeats,
+      }),
+    );
   }, [exerciseNotes, tempo, countdownBeats, stringCount]);
 
   // Create a mapping from position key (stringIndex,fret) to notes at that position
@@ -933,14 +1005,14 @@ function DebugVisualization({
   const dotMeshRefs = useRef<Map<string, THREE.Mesh>>(new Map());
 
   // Active ring refs - circular for regular frets, rounded rect for open/fret 12
-  const activeRingRef = useRef<THREE.Mesh>(null);  // Circular torus ring
-  const activeRingRectRef = useRef<THREE.Mesh>(null);  // Rounded rectangle ring (tube geometry)
+  const activeRingRef = useRef<THREE.Mesh>(null); // Circular torus ring
+  const activeRingRectRef = useRef<THREE.Mesh>(null); // Rounded rectangle ring (tube geometry)
   // Glow ring refs - soft outer glow behind main rings
-  const activeRingGlowRef = useRef<THREE.Mesh>(null);  // Circular glow ring
-  const activeRingRectGlowRef = useRef<THREE.Mesh>(null);  // Rounded rectangle glow ring
+  const activeRingGlowRef = useRef<THREE.Mesh>(null); // Circular glow ring
+  const activeRingRectGlowRef = useRef<THREE.Mesh>(null); // Rounded rectangle glow ring
   // Preview ring refs - shows the NEXT note (orange, pulsing)
-  const previewRingRef = useRef<THREE.Mesh>(null);  // Circular preview ring
-  const previewRingRectRef = useRef<THREE.Mesh>(null);  // Rounded rectangle preview ring
+  const previewRingRef = useRef<THREE.Mesh>(null); // Circular preview ring
+  const previewRingRectRef = useRef<THREE.Mesh>(null); // Rounded rectangle preview ring
   // Track pulse animation time
   const pulseTimeRef = useRef(0);
   // Dynamic note label refs - shows note name on current and next notes
@@ -964,49 +1036,72 @@ function DebugVisualization({
   // - Marker frets (open, 3, 5, 7, 9, 12, 15, 17, 19, 21): GREY_LIGHT at full opacity
   // - All other positions: GREY at full opacity
   // =============================================================================
-  const calculateDotState = useCallback((
-    positionKey: string,
-    activeNoteIndex: number,
-    upcomingNotes: NoteTimelineEntry[]
-  ): { color: number; opacity: number; isActive: boolean; isRoundedRect: boolean } => {
-    const notesAtPosition = positionToNotes.get(positionKey);
+  const calculateDotState = useCallback(
+    (
+      positionKey: string,
+      activeNoteIndex: number,
+      upcomingNotes: NoteTimelineEntry[],
+    ): {
+      color: number;
+      opacity: number;
+      isActive: boolean;
+      isRoundedRect: boolean;
+    } => {
+      const notesAtPosition = positionToNotes.get(positionKey);
 
-    // Parse fret from position key (format: "stringIndex,fret" where fret=0 means open string)
-    const [, fretStr] = positionKey.split(',');
-    const fretNum = parseInt(fretStr, 10);
-    // fret 0 = open string, which is a marker fret
-    const fret = fretNum === 0 ? 'open' : fretNum;
-    const isMarkerFret = MARKER_FRETS.has(fret);
-    const greyColor = isMarkerFret ? DOT_COLORS.GREY_LIGHT : DOT_COLORS.GREY;
-    // Open string (fret=0) and fret 12 use rounded rectangle shape
-    const isRoundedRect = fretNum === 0 || fretNum === 12;
+      // Parse fret from position key (format: "stringIndex,fret" where fret=0 means open string)
+      const [, fretStr] = positionKey.split(',');
+      const fretNum = parseInt(fretStr, 10);
+      // fret 0 = open string, which is a marker fret
+      const fret = fretNum === 0 ? 'open' : fretNum;
+      const isMarkerFret = MARKER_FRETS.has(fret);
+      const greyColor = isMarkerFret ? DOT_COLORS.GREY_LIGHT : DOT_COLORS.GREY;
+      // Open string (fret=0) and fret 12 use rounded rectangle shape
+      const isRoundedRect = fretNum === 0 || fretNum === 12;
 
-    // Not an exercise position - render as appropriate GREY
-    if (!notesAtPosition || notesAtPosition.length === 0) {
+      // Not an exercise position - render as appropriate GREY
+      if (!notesAtPosition || notesAtPosition.length === 0) {
+        return {
+          color: greyColor,
+          opacity: 1.0,
+          isActive: false,
+          isRoundedRect,
+        };
+      }
+
+      // Check if this position is the ACTIVE note - show as BLUE
+      const activeNote = notesAtPosition.find(
+        (n) => n.noteIndex === activeNoteIndex,
+      );
+      if (activeNote) {
+        return {
+          color: DOT_COLORS.BLUE,
+          opacity: LOOKAHEAD_CONFIG.opacityLevels[0],
+          isActive: true,
+          isRoundedRect,
+        };
+      }
+
+      // Check if this position is the NEXT note (first upcoming) - show as GREEN
+      const nextUpcoming = upcomingNotes[0];
+      if (
+        nextUpcoming &&
+        notesAtPosition.some((n) => n.noteIndex === nextUpcoming.noteIndex)
+      ) {
+        return {
+          color: DOT_COLORS.GREEN,
+          opacity: LOOKAHEAD_CONFIG.opacityLevels[1] ?? 1.0,
+          isActive: false,
+          isRoundedRect,
+        };
+      }
+
+      // Third note and beyond - keep default grey color (black ring will indicate it)
+      // Outside lookahead window - render as appropriate GREY
       return { color: greyColor, opacity: 1.0, isActive: false, isRoundedRect };
-    }
-
-    // Check if this position is the ACTIVE note - show as BLUE
-    const activeNote = notesAtPosition.find((n) => n.noteIndex === activeNoteIndex);
-    if (activeNote) {
-      return { color: DOT_COLORS.BLUE, opacity: LOOKAHEAD_CONFIG.opacityLevels[0], isActive: true, isRoundedRect };
-    }
-
-    // Check if this position is the NEXT note (first upcoming) - show as GREEN
-    const nextUpcoming = upcomingNotes[0];
-    if (nextUpcoming && notesAtPosition.some((n) => n.noteIndex === nextUpcoming.noteIndex)) {
-      return {
-        color: DOT_COLORS.GREEN,
-        opacity: LOOKAHEAD_CONFIG.opacityLevels[1] ?? 1.0,
-        isActive: false,
-        isRoundedRect,
-      };
-    }
-
-    // Third note and beyond - keep default grey color (black ring will indicate it)
-    // Outside lookahead window - render as appropriate GREY
-    return { color: greyColor, opacity: 1.0, isActive: false, isRoundedRect };
-  }, [positionToNotes, DOT_COLORS, MARKER_FRETS, LOOKAHEAD_CONFIG.opacityLevels]);
+    },
+    [positionToNotes, DOT_COLORS, MARKER_FRETS, LOOKAHEAD_CONFIG.opacityLevels],
+  );
 
   // =============================================================================
   // 2D Fretboard geometry constants - MUST MATCH FretboardGrid.tsx EXACTLY!
@@ -1024,11 +1119,11 @@ function DebugVisualization({
   // NOTE: fretboardGeometry.ts has DIFFERENT values (42px string spacing, etc.)
   // We use FretboardGrid.tsx values since that's what actually renders the 2D dots.
   // =============================================================================
-  const STRING_SPACING = 32;   // px between string centers (from FretboardGrid.tsx)
-  const CENTER_OFFSET = 15;    // px for open string X position
-  const FRET_OFFSET = 38;      // px from open string to first fret center
-  const FRET_SPACING = 36;     // px between fret centers
-  const DOT_RADIUS = 13;       // px radius of dots
+  const STRING_SPACING = 32; // px between string centers (from FretboardGrid.tsx)
+  const CENTER_OFFSET = 15; // px for open string X position
+  const FRET_OFFSET = 38; // px from open string to first fret center
+  const FRET_SPACING = 36; // px between fret centers
+  const DOT_RADIUS = 13; // px radius of dots
 
   // String names for bass guitar - storage order matching FretboardGrid.tsx fullStringConfig
   // Index 0 = B (lowest pitch), Index 1 = E, Index 2 = A, Index 3 = D, Index 4 = G, Index 5 = C
@@ -1055,7 +1150,8 @@ function DebugVisualization({
         ctx.clearRect(0, 0, 64, 64);
         // Draw text
         ctx.fillStyle = '#e2e8f0'; // slate-200
-        ctx.font = '600 48px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+        ctx.font =
+          '600 48px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(name, 32, 32);
@@ -1082,7 +1178,8 @@ function DebugVisualization({
         ctx.clearRect(0, 0, 64, 64);
         // Draw text in black for visibility on green/blue backgrounds
         ctx.fillStyle = '#000000'; // black
-        ctx.font = '600 48px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+        ctx.font =
+          '600 48px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(name, 32, 32);
@@ -1106,13 +1203,17 @@ function DebugVisualization({
   // - A string (index 2): fret 3 = C, fret 5 = D, fret 7 = E
   // These use a smaller font than the open string labels
   // =============================================================================
-  const FRET_NOTE_LABELS: Array<{ stringIndex: number; fret: number; label: string }> = [
-    { stringIndex: 1, fret: 3, label: 'G' },  // E string, fret 3 = G
-    { stringIndex: 1, fret: 5, label: 'A' },  // E string, fret 5 = A
-    { stringIndex: 1, fret: 7, label: 'B' },  // E string, fret 7 = B
-    { stringIndex: 2, fret: 3, label: 'C' },  // A string, fret 3 = C
-    { stringIndex: 2, fret: 5, label: 'D' },  // A string, fret 5 = D
-    { stringIndex: 2, fret: 7, label: 'E' },  // A string, fret 7 = E
+  const FRET_NOTE_LABELS: Array<{
+    stringIndex: number;
+    fret: number;
+    label: string;
+  }> = [
+    { stringIndex: 1, fret: 3, label: 'G' }, // E string, fret 3 = G
+    { stringIndex: 1, fret: 5, label: 'A' }, // E string, fret 5 = A
+    { stringIndex: 1, fret: 7, label: 'B' }, // E string, fret 7 = B
+    { stringIndex: 2, fret: 3, label: 'C' }, // A string, fret 3 = C
+    { stringIndex: 2, fret: 5, label: 'D' }, // A string, fret 5 = D
+    { stringIndex: 2, fret: 7, label: 'E' }, // A string, fret 7 = E
   ];
 
   const fretNoteLabelTextures = useMemo(() => {
@@ -1121,7 +1222,7 @@ function DebugVisualization({
 
     uniqueLabels.forEach((label) => {
       const canvas = document.createElement('canvas');
-      canvas.width = 48;  // Smaller canvas for smaller labels
+      canvas.width = 48; // Smaller canvas for smaller labels
       canvas.height = 48;
       const ctx = canvas.getContext('2d');
       if (ctx) {
@@ -1129,7 +1230,8 @@ function DebugVisualization({
         ctx.clearRect(0, 0, 48, 48);
         // Draw text - smaller font, black color
         ctx.fillStyle = '#000000'; // black
-        ctx.font = '600 38px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+        ctx.font =
+          '600 38px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(label, 24, 24);
@@ -1147,17 +1249,23 @@ function DebugVisualization({
   // =============================================================================
   // Check if a position already has a permanent anchor label (open strings or fret 3/5/7 on E/A)
   // Returns true if we should SKIP rendering a dynamic label at this position
-  const hasAnchorLabel = useCallback((stringIndex: number, fret: number): boolean => {
-    // Open strings (fret 0) and fret 12 have permanent string name labels
-    if (fret === 0 || fret === 12) return true;
+  const hasAnchorLabel = useCallback(
+    (stringIndex: number, fret: number): boolean => {
+      // Open strings (fret 0) and fret 12 have permanent string name labels
+      if (fret === 0 || fret === 12) return true;
 
-    // E string (index 1) and A string (index 2) have labels at frets 3, 5, 7
-    if ((stringIndex === 1 || stringIndex === 2) && (fret === 3 || fret === 5 || fret === 7)) {
-      return true;
-    }
+      // E string (index 1) and A string (index 2) have labels at frets 3, 5, 7
+      if (
+        (stringIndex === 1 || stringIndex === 2) &&
+        (fret === 3 || fret === 5 || fret === 7)
+      ) {
+        return true;
+      }
 
-    return false;
-  }, []);
+      return false;
+    },
+    [],
+  );
 
   // =============================================================================
   // FINGER NUMBER LABELS - Display finger numbers on notes (1-4, O for open string)
@@ -1223,7 +1331,7 @@ function DebugVisualization({
   // =============================================================================
 
   // Use CONTENT center (full fretboard width) for X, fixed height center for Y
-  const halfWidth = contentWidth / 2;   // Center of FULL content (all frets)
+  const halfWidth = contentWidth / 2; // Center of FULL content (all frets)
   const halfHeight = contentHeight / 2;
 
   // Convert 2D pixel position to 3D coordinate
@@ -1310,7 +1418,11 @@ function DebugVisualization({
   //     - new Y = centerY + dy * cos(θ)
   //     - new Z = -dy * sin(θ)  (negative because CSS rotateX tilts top away)
   // =============================================================================
-  const getTiltedPlanePosition = (x2d: number, y2d: number, heightAbovePlane: number = 0) => {
+  const getTiltedPlanePosition = (
+    x2d: number,
+    y2d: number,
+    heightAbovePlane = 0,
+  ) => {
     const tiltRad = (tiltAngle * Math.PI) / 180;
     // Use CONTENT center for rotation axis (matches CSS transform-origin: center center)
     const centerY2D = contentHeight / 2;
@@ -1326,14 +1438,15 @@ function DebugVisualization({
     // =============================================================================
 
     // Calculate fretboard Y bounds (string positions)
-    const firstStringY2D = DOT_RADIUS;  // String 0 Y center
-    const lastStringY2D = (stringCount - 1) * STRING_SPACING + DOT_RADIUS;  // Last string Y center
+    const firstStringY2D = DOT_RADIUS; // String 0 Y center
+    const lastStringY2D = (stringCount - 1) * STRING_SPACING + DOT_RADIUS; // Last string Y center
     const fretboardCenterY = (firstStringY2D + lastStringY2D) / 2;
     const fretboardHalfHeight = (lastStringY2D - firstStringY2D) / 2;
 
     // Normalize Y relative to fretboard content bounds
     const fretboardRelativeY = y2d - fretboardCenterY;
-    const normalizedY = fretboardHalfHeight > 0 ? fretboardRelativeY / fretboardHalfHeight : 0;
+    const normalizedY =
+      fretboardHalfHeight > 0 ? fretboardRelativeY / fretboardHalfHeight : 0;
 
     // Interpolate X scale based on vertical position within fretboard:
     // USER PERSPECTIVE (looking at tilted fretboard):
@@ -1363,8 +1476,8 @@ function DebugVisualization({
     const adjustedDy = dy * perspectiveMultiplier;
 
     // Convert to 3D coordinates with tilt applied
-    const cx = x2d - halfWidth;  // X distance from center
-    const scaledCx = cx * xScale;  // Apply edge scale to X position
+    const cx = x2d - halfWidth; // X distance from center
+    const scaledCx = cx * xScale; // Apply edge scale to X position
 
     // Y position on tilted plane (in 3D, Y is up, so we negate and apply cos)
     const y3dOnPlane = -adjustedDy * Math.cos(tiltRad);
@@ -1432,7 +1545,11 @@ function DebugVisualization({
   // Perspective scaling:
   // - scale = d / (d - rotatedZ)
   // =============================================================================
-  const getScreenSpacePosition = (x2d: number, y2d: number, heightAbovePlane: number = 0) => {
+  const getScreenSpacePosition = (
+    x2d: number,
+    y2d: number,
+    heightAbovePlane = 0,
+  ) => {
     const tiltRad = (tiltAngle * Math.PI) / 180;
 
     // Convert to center-relative coordinates
@@ -1460,15 +1577,16 @@ function DebugVisualization({
     // =============================================================================
 
     // Calculate fretboard Y bounds (string positions)
-    const firstStringY2D = DOT_RADIUS;  // String 0 Y center
-    const lastStringY2D = (stringCount - 1) * STRING_SPACING + DOT_RADIUS;  // Last string Y center
+    const firstStringY2D = DOT_RADIUS; // String 0 Y center
+    const lastStringY2D = (stringCount - 1) * STRING_SPACING + DOT_RADIUS; // Last string Y center
     const fretboardCenterY = (firstStringY2D + lastStringY2D) / 2;
     const fretboardHalfHeight = (lastStringY2D - firstStringY2D) / 2;
 
     // Normalize Y relative to fretboard content bounds (not canvas center)
     // This ensures normalizedY spans [-1, +1] across the actual fretboard content
     const fretboardRelativeY = y2d - fretboardCenterY;
-    const normalizedY = fretboardHalfHeight > 0 ? fretboardRelativeY / fretboardHalfHeight : 0;
+    const normalizedY =
+      fretboardHalfHeight > 0 ? fretboardRelativeY / fretboardHalfHeight : 0;
 
     // Interpolate X scale based on vertical position within fretboard:
     // - At top string (normalizedY ≈ -1): use topEdgeScale (far edge when tilted)
@@ -1525,8 +1643,8 @@ function DebugVisualization({
 
     // To match CSS screen position, we place our 3D dot at the SAME
     // 3D coordinates that CSS calculates after its rotation:
-    const x3d = perspectiveX;  // X with perspective scaling applied
-    const y3d = rotatedY * perspectiveScale;  // Y with perspective scaling
+    const x3d = perspectiveX; // X with perspective scaling applied
+    const y3d = rotatedY * perspectiveScale; // Y with perspective scaling
     const z3d = rotatedZ;
 
     // Add height above plane
@@ -1543,7 +1661,7 @@ function DebugVisualization({
   // tiltAxisOffsetX slides content left/right on the tilted plane (X axis)
   // All modes now apply these offsets directly to dot positions
   // =============================================================================
-  const get3DPosition = (x2d: number, y2d: number, heightAbovePlane: number = 0) => {
+  const get3DPosition = (x2d: number, y2d: number, heightAbovePlane = 0) => {
     switch (positioningMode) {
       case 'tilted-plane': {
         // Calculate tilt axis offset contribution for tilted modes
@@ -1551,7 +1669,11 @@ function DebugVisualization({
         const offsetY = tiltAxisOffset * Math.cos(tiltRad);
         const offsetZ = -tiltAxisOffset * Math.sin(tiltRad);
         const pos = getTiltedPlanePosition(x2d, y2d, heightAbovePlane);
-        return { x: pos.x + tiltAxisOffsetX, y: pos.y + offsetY, z: pos.z + offsetZ };
+        return {
+          x: pos.x + tiltAxisOffsetX,
+          y: pos.y + offsetY,
+          z: pos.z + offsetZ,
+        };
       }
       case 'screen-space': {
         // Calculate tilt axis offset contribution for tilted modes
@@ -1559,7 +1681,11 @@ function DebugVisualization({
         const offsetY = tiltAxisOffset * Math.cos(tiltRad);
         const offsetZ = -tiltAxisOffset * Math.sin(tiltRad);
         const pos = getScreenSpacePosition(x2d, y2d, heightAbovePlane);
-        return { x: pos.x + tiltAxisOffsetX, y: pos.y + offsetY, z: pos.z + offsetZ };
+        return {
+          x: pos.x + tiltAxisOffsetX,
+          y: pos.y + offsetY,
+          z: pos.z + offsetZ,
+        };
       }
       case 'flat':
       default: {
@@ -1595,9 +1721,10 @@ function DebugVisualization({
           const fretboardHalfHeight = (lastStringY2D - firstStringY2D) / 2;
 
           // Normalize Y: -1 at top string (far), +1 at bottom string (near)
-          const normalizedY = fretboardHalfHeight > 0
-            ? (y2d - fretboardCenterY) / fretboardHalfHeight
-            : 0;
+          const normalizedY =
+            fretboardHalfHeight > 0
+              ? (y2d - fretboardCenterY) / fretboardHalfHeight
+              : 0;
 
           // Scale factor: 1.0 at center, adjusted toward edges based on perspectiveMultiplier
           // For perspectiveMultiplier > 1: bottom (normalizedY=+1) gets wider, top gets narrower
@@ -1610,7 +1737,7 @@ function DebugVisualization({
         return {
           x: adjustedX + tiltAxisOffsetX,
           y: baseY + tiltAxisOffset,
-          z: heightAbovePlane
+          z: heightAbovePlane,
         };
       }
     }
@@ -1622,12 +1749,13 @@ function DebugVisualization({
   // Calculate fretboard bounds (dot centers, not edges)
   // CRITICAL: Use getDotPosition2D to get correct Y positions with visual transformation applied
   // String 0 is now at the BOTTOM visually (high Y), last string is at TOP (low Y)
-  const firstStringPos = getDotPosition2D(0, 'open');  // String 0 → visual position 5 (bottom)
-  const lastStringPos = getDotPosition2D(stringCount - 1, 'open');  // Last string → visual position at top
-  const firstStringY = lastStringPos.y;  // Top string Y (smaller Y value)
-  const lastStringY = firstStringPos.y;  // Bottom string Y (larger Y value)
-  const openStringX = CENTER_OFFSET + DOT_RADIUS;  // Open string X center
-  const lastFretX = CENTER_OFFSET + FRET_OFFSET + (maxFrets - 1) * FRET_SPACING + DOT_RADIUS;  // Last fret X center
+  const firstStringPos = getDotPosition2D(0, 'open'); // String 0 → visual position 5 (bottom)
+  const lastStringPos = getDotPosition2D(stringCount - 1, 'open'); // Last string → visual position at top
+  const firstStringY = lastStringPos.y; // Top string Y (smaller Y value)
+  const lastStringY = firstStringPos.y; // Bottom string Y (larger Y value)
+  const openStringX = CENTER_OFFSET + DOT_RADIUS; // Open string X center
+  const lastFretX =
+    CENTER_OFFSET + FRET_OFFSET + (maxFrets - 1) * FRET_SPACING + DOT_RADIUS; // Last fret X center
 
   // Sizes for grid elements
   const dotRadius = 13; // Match 2D dot radius exactly
@@ -1639,10 +1767,10 @@ function DebugVisualization({
     const dots: Array<{
       stringIndex: number;
       fret: number | 'open';
-      x2d: number;  // 2D X position for fade calculation
+      x2d: number; // 2D X position for fade calculation
       x3d: number;
       y3d: number;
-      z3d: number;  // Now includes Z for tilted/screen-space modes
+      z3d: number; // Now includes Z for tilted/screen-space modes
     }> = [];
 
     for (let s = 0; s < stringCount; s++) {
@@ -1673,7 +1801,20 @@ function DebugVisualization({
       }
     }
     return dots;
-  }, [stringCount, maxFrets, positioningMode, tiltAngle, cssPerspective, tiltAxisOffset, tiltAxisOffsetX, perspectiveMultiplier, topEdgeScale, bottomEdgeScale, contentWidth, contentHeight]);
+  }, [
+    stringCount,
+    maxFrets,
+    positioningMode,
+    tiltAngle,
+    cssPerspective,
+    tiltAxisOffset,
+    tiltAxisOffsetX,
+    perspectiveMultiplier,
+    topEdgeScale,
+    bottomEdgeScale,
+    contentWidth,
+    contentHeight,
+  ]);
 
   // Grid colors matching 2D fretboard slate palette
   const SLATE_700 = '#334155'; // Tailwind slate-700 (grid lines)
@@ -1708,12 +1849,15 @@ function DebugVisualization({
       if (activeRingRef.current) activeRingRef.current.visible = false;
       if (activeRingGlowRef.current) activeRingGlowRef.current.visible = false;
       if (activeRingRectRef.current) activeRingRectRef.current.visible = false;
-      if (activeRingRectGlowRef.current) activeRingRectGlowRef.current.visible = false;
+      if (activeRingRectGlowRef.current)
+        activeRingRectGlowRef.current.visible = false;
       if (previewRingRef.current) previewRingRef.current.visible = false;
-      if (previewRingRectRef.current) previewRingRectRef.current.visible = false;
+      if (previewRingRectRef.current)
+        previewRingRectRef.current.visible = false;
 
       // Hide finger/note labels
-      if (currentNoteLabelRef.current) currentNoteLabelRef.current.visible = false;
+      if (currentNoteLabelRef.current)
+        currentNoteLabelRef.current.visible = false;
       if (nextNoteLabelRef.current) nextNoteLabelRef.current.visible = false;
 
       // Reset all dot colors to their default grey state
@@ -1722,9 +1866,12 @@ function DebugVisualization({
         // Parse position key to determine if it's a marker fret
         const [, fretStr] = positionKey.split(',');
         const fret = fretStr === 'open' ? 'open' : parseInt(fretStr, 10);
-        const isMarkerFret = fret === 'open' || MARKER_FRETS.has(fret as number);
+        const isMarkerFret =
+          fret === 'open' || MARKER_FRETS.has(fret as number);
 
-        material.color.setHex(isMarkerFret ? DOT_COLORS.GREY_LIGHT : DOT_COLORS.GREY);
+        material.color.setHex(
+          isMarkerFret ? DOT_COLORS.GREY_LIGHT : DOT_COLORS.GREY,
+        );
         material.opacity = 1.0;
         material.transparent = true;
         material.needsUpdate = true;
@@ -1780,12 +1927,16 @@ function DebugVisualization({
 
     // Update each dot's material based on initial state
     dotMeshRefs.current.forEach((mesh, positionKey) => {
-      const dotState = calculateDotState(positionKey, initialActiveNoteIndex, upcomingNotes);
+      const dotState = calculateDotState(
+        positionKey,
+        initialActiveNoteIndex,
+        upcomingNotes,
+      );
       const material = mesh.material as THREE.MeshBasicMaterial;
 
       material.color.setHex(dotState.color);
       material.opacity = dotState.opacity;
-      material.transparent = true;  // Always transparent to support opacity changes
+      material.transparent = true; // Always transparent to support opacity changes
       material.needsUpdate = true;
 
       if (dotState.isActive) {
@@ -1819,11 +1970,12 @@ function DebugVisualization({
           activeRingRef.current.position.set(
             activePosition.x,
             activePosition.y,
-            activePosition.z + activeRingZOffset
+            activePosition.z + activeRingZOffset,
           );
           activeRingRef.current.visible = true;
           // Real-time color update for ring
-          const ringMaterial = activeRingRef.current.material as THREE.MeshStandardMaterial;
+          const ringMaterial = activeRingRef.current
+            .material as THREE.MeshStandardMaterial;
           ringMaterial.color.setHex(DOT_COLORS.ACTIVE_RING);
           ringMaterial.emissive.setHex(DOT_COLORS.ACTIVE_RING);
         }
@@ -1836,10 +1988,11 @@ function DebugVisualization({
           activeRingGlowRef.current.position.set(
             activePosition.x,
             activePosition.y,
-            activePosition.z + activeRingZOffset - 0.5
+            activePosition.z + activeRingZOffset - 0.5,
           );
           activeRingGlowRef.current.visible = true;
-          const glowMaterial = activeRingGlowRef.current.material as THREE.MeshStandardMaterial;
+          const glowMaterial = activeRingGlowRef.current
+            .material as THREE.MeshStandardMaterial;
           glowMaterial.color.setHex(DOT_COLORS.ACTIVE_RING);
           glowMaterial.emissive.setHex(DOT_COLORS.ACTIVE_RING);
         }
@@ -1850,11 +2003,12 @@ function DebugVisualization({
           activeRingRectRef.current.position.set(
             activePosition.x,
             activePosition.y,
-            activePosition.z + activeRingZOffset
+            activePosition.z + activeRingZOffset,
           );
           activeRingRectRef.current.visible = true;
           // Real-time color update for rounded rect ring
-          const rectRingMaterial = activeRingRectRef.current.material as THREE.MeshStandardMaterial;
+          const rectRingMaterial = activeRingRectRef.current
+            .material as THREE.MeshStandardMaterial;
           rectRingMaterial.color.setHex(DOT_COLORS.ACTIVE_RING);
           rectRingMaterial.emissive.setHex(DOT_COLORS.ACTIVE_RING);
         } else {
@@ -1867,10 +2021,11 @@ function DebugVisualization({
           activeRingRectGlowRef.current.position.set(
             activePosition.x,
             activePosition.y,
-            activePosition.z + activeRingZOffset - 0.5
+            activePosition.z + activeRingZOffset - 0.5,
           );
           activeRingRectGlowRef.current.visible = true;
-          const rectGlowMaterial = activeRingRectGlowRef.current.material as THREE.MeshStandardMaterial;
+          const rectGlowMaterial = activeRingRectGlowRef.current
+            .material as THREE.MeshStandardMaterial;
           rectGlowMaterial.color.setHex(DOT_COLORS.ACTIVE_RING);
           rectGlowMaterial.emissive.setHex(DOT_COLORS.ACTIVE_RING);
         } else {
@@ -1903,10 +2058,11 @@ function DebugVisualization({
           previewRingRef.current.position.set(
             nextNotePosition.x,
             nextNotePosition.y,
-            nextNotePosition.z + activeRingZOffset
+            nextNotePosition.z + activeRingZOffset,
           );
           previewRingRef.current.visible = true;
-          const previewMaterial = previewRingRef.current.material as THREE.MeshStandardMaterial;
+          const previewMaterial = previewRingRef.current
+            .material as THREE.MeshStandardMaterial;
           previewMaterial.color.setHex(DOT_COLORS.PREVIEW_RING);
           previewMaterial.emissive.setHex(DOT_COLORS.PREVIEW_RING);
         }
@@ -1917,10 +2073,11 @@ function DebugVisualization({
           previewRingRectRef.current.position.set(
             nextNotePosition.x,
             nextNotePosition.y,
-            nextNotePosition.z + activeRingZOffset
+            nextNotePosition.z + activeRingZOffset,
           );
           previewRingRectRef.current.visible = true;
-          const previewRectMaterial = previewRingRectRef.current.material as THREE.MeshStandardMaterial;
+          const previewRectMaterial = previewRingRectRef.current
+            .material as THREE.MeshStandardMaterial;
           previewRectMaterial.color.setHex(DOT_COLORS.PREVIEW_RING);
           previewRectMaterial.emissive.setHex(DOT_COLORS.PREVIEW_RING);
         } else {
@@ -1942,7 +2099,7 @@ function DebugVisualization({
     // =========================================================================
     // Find the active note entry (first note) for current label
     const activeNoteEntry = timeline.find(
-      (e) => e.type === 'note' && e.noteIndex === initialActiveNoteIndex
+      (e) => e.type === 'note' && e.noteIndex === initialActiveNoteIndex,
     );
 
     // Track positions with active finger labels for initial state
@@ -1965,21 +2122,29 @@ function DebugVisualization({
       noteIndex: activeNoteEntry?.noteIndex,
     });
 
-    if (currentNoteLabelRef.current && activePosition && activeNoteEntry && showCurrentFingerLabel) {
+    if (
+      currentNoteLabelRef.current &&
+      activePosition &&
+      activeNoteEntry &&
+      showCurrentFingerLabel
+    ) {
       const texture = fingerLabelTextures.get(currentFingerKey);
       if (texture) {
-        const material = currentNoteLabelRef.current.material as THREE.MeshBasicMaterial;
+        const material = currentNoteLabelRef.current
+          .material as THREE.MeshBasicMaterial;
         material.map = texture;
         material.needsUpdate = true;
         // Position with configurable X/Y offset, Z stays on mesh
         currentNoteLabelRef.current.position.set(
           activePosition.x + fingerLabelOffsetX,
           activePosition.y + fingerLabelOffsetY,
-          activePosition.z + 1
+          activePosition.z + 1,
         );
         currentNoteLabelRef.current.visible = true;
         // Track this position
-        initialFingerPositions.add(`${activeNoteEntry.position.stringIndex},${activeNoteEntry.position.fret}`);
+        initialFingerPositions.add(
+          `${activeNoteEntry.position.stringIndex},${activeNoteEntry.position.fret}`,
+        );
       }
     } else if (currentNoteLabelRef.current) {
       currentNoteLabelRef.current.visible = false;
@@ -1990,21 +2155,29 @@ function DebugVisualization({
     // Skip showing 'O' (open string) label - open string position is self-evident
     const nextFingerKey = nextNoteEntry?.note?.finger_index?.toString();
     const showNextFingerLabel = nextFingerKey && nextFingerKey !== 'O';
-    if (nextNoteLabelRef.current && nextNotePosition && nextNoteEntry && showNextFingerLabel) {
+    if (
+      nextNoteLabelRef.current &&
+      nextNotePosition &&
+      nextNoteEntry &&
+      showNextFingerLabel
+    ) {
       const texture = fingerLabelTextures.get(nextFingerKey);
       if (texture) {
-        const material = nextNoteLabelRef.current.material as THREE.MeshBasicMaterial;
+        const material = nextNoteLabelRef.current
+          .material as THREE.MeshBasicMaterial;
         material.map = texture;
         material.needsUpdate = true;
         // Position with configurable X/Y offset, Z stays on mesh
         nextNoteLabelRef.current.position.set(
           nextNotePosition.x + fingerLabelOffsetX,
           nextNotePosition.y + fingerLabelOffsetY,
-          nextNotePosition.z + 1
+          nextNotePosition.z + 1,
         );
         nextNoteLabelRef.current.visible = true;
         // Track this position
-        initialFingerPositions.add(`${nextNoteEntry.position.stringIndex},${nextNoteEntry.position.fret}`);
+        initialFingerPositions.add(
+          `${nextNoteEntry.position.stringIndex},${nextNoteEntry.position.fret}`,
+        );
       }
     } else if (nextNoteLabelRef.current) {
       nextNoteLabelRef.current.visible = false;
@@ -2060,7 +2233,21 @@ function DebugVisualization({
         }
       }
     });
-  }, [timeline, calculateDotState, activeRingZOffset, DOT_COLORS.ACTIVE_RING, DOT_COLORS.PREVIEW_RING, DOT_COLORS.GREY, DOT_COLORS.GREY_LIGHT, LOOKAHEAD_CONFIG.maxVisibleNotes, fingerLabelTextures, fingerLabelOffsetX, fingerLabelOffsetY, stringLabelTextures, stringLabelTexturesDark]);
+  }, [
+    timeline,
+    calculateDotState,
+    activeRingZOffset,
+    DOT_COLORS.ACTIVE_RING,
+    DOT_COLORS.PREVIEW_RING,
+    DOT_COLORS.GREY,
+    DOT_COLORS.GREY_LIGHT,
+    LOOKAHEAD_CONFIG.maxVisibleNotes,
+    fingerLabelTextures,
+    fingerLabelOffsetX,
+    fingerLabelOffsetY,
+    stringLabelTextures,
+    stringLabelTexturesDark,
+  ]);
 
   // Track if we've initialized to avoid re-running unnecessarily
   const hasInitializedRef = useRef(false);
@@ -2137,7 +2324,11 @@ function DebugVisualization({
 
     // Update each dot's material based on its state
     dotMeshRefs.current.forEach((mesh, positionKey) => {
-      const dotState = calculateDotState(positionKey, activeNoteIndex, upcomingNotes);
+      const dotState = calculateDotState(
+        positionKey,
+        activeNoteIndex,
+        upcomingNotes,
+      );
       const material = mesh.material as THREE.MeshBasicMaterial;
 
       // Update color
@@ -2145,7 +2336,7 @@ function DebugVisualization({
 
       // Update opacity
       material.opacity = dotState.opacity;
-      material.transparent = true;  // Always transparent to support opacity changes
+      material.transparent = true; // Always transparent to support opacity changes
       material.needsUpdate = true;
 
       // Track active position for the ring
@@ -2183,11 +2374,12 @@ function DebugVisualization({
           activeRingRef.current.position.set(
             activePosition.x,
             activePosition.y,
-            activePosition.z + activeRingZOffset  // Z offset controlled by prop
+            activePosition.z + activeRingZOffset, // Z offset controlled by prop
           );
           activeRingRef.current.visible = true;
           // Real-time color update for ring
-          const ringMaterial = activeRingRef.current.material as THREE.MeshStandardMaterial;
+          const ringMaterial = activeRingRef.current
+            .material as THREE.MeshStandardMaterial;
           ringMaterial.color.setHex(DOT_COLORS.ACTIVE_RING);
           ringMaterial.emissive.setHex(DOT_COLORS.ACTIVE_RING);
         }
@@ -2200,11 +2392,12 @@ function DebugVisualization({
           activeRingGlowRef.current.position.set(
             activePosition.x,
             activePosition.y,
-            activePosition.z + activeRingZOffset - 0.5  // Slightly behind main ring
+            activePosition.z + activeRingZOffset - 0.5, // Slightly behind main ring
           );
           activeRingGlowRef.current.visible = true;
           // Real-time color update for glow ring
-          const glowMaterial = activeRingGlowRef.current.material as THREE.MeshStandardMaterial;
+          const glowMaterial = activeRingGlowRef.current
+            .material as THREE.MeshStandardMaterial;
           glowMaterial.color.setHex(DOT_COLORS.ACTIVE_RING);
           glowMaterial.emissive.setHex(DOT_COLORS.ACTIVE_RING);
         }
@@ -2215,11 +2408,12 @@ function DebugVisualization({
           activeRingRectRef.current.position.set(
             activePosition.x,
             activePosition.y,
-            activePosition.z + activeRingZOffset
+            activePosition.z + activeRingZOffset,
           );
           activeRingRectRef.current.visible = true;
           // Real-time color update for rounded rect ring
-          const rectRingMaterial = activeRingRectRef.current.material as THREE.MeshStandardMaterial;
+          const rectRingMaterial = activeRingRectRef.current
+            .material as THREE.MeshStandardMaterial;
           rectRingMaterial.color.setHex(DOT_COLORS.ACTIVE_RING);
           rectRingMaterial.emissive.setHex(DOT_COLORS.ACTIVE_RING);
         } else {
@@ -2232,11 +2426,12 @@ function DebugVisualization({
           activeRingRectGlowRef.current.position.set(
             activePosition.x,
             activePosition.y,
-            activePosition.z + activeRingZOffset - 0.5  // Slightly behind main ring
+            activePosition.z + activeRingZOffset - 0.5, // Slightly behind main ring
           );
           activeRingRectGlowRef.current.visible = true;
           // Real-time color update for glow ring
-          const rectGlowMaterial = activeRingRectGlowRef.current.material as THREE.MeshStandardMaterial;
+          const rectGlowMaterial = activeRingRectGlowRef.current
+            .material as THREE.MeshStandardMaterial;
           rectGlowMaterial.color.setHex(DOT_COLORS.ACTIVE_RING);
           rectGlowMaterial.emissive.setHex(DOT_COLORS.ACTIVE_RING);
         } else {
@@ -2288,12 +2483,13 @@ function DebugVisualization({
           previewRingRef.current.position.set(
             nextNotePosition.x,
             nextNotePosition.y,
-            nextNotePosition.z + activeRingZOffset
+            nextNotePosition.z + activeRingZOffset,
           );
           previewRingRef.current.scale.setScalar(pulseScale);
           previewRingRef.current.visible = true;
           // Update color
-          const previewMaterial = previewRingRef.current.material as THREE.MeshStandardMaterial;
+          const previewMaterial = previewRingRef.current
+            .material as THREE.MeshStandardMaterial;
           previewMaterial.color.setHex(DOT_COLORS.PREVIEW_RING);
           previewMaterial.emissive.setHex(DOT_COLORS.PREVIEW_RING);
         }
@@ -2304,12 +2500,13 @@ function DebugVisualization({
           previewRingRectRef.current.position.set(
             nextNotePosition.x,
             nextNotePosition.y,
-            nextNotePosition.z + activeRingZOffset
+            nextNotePosition.z + activeRingZOffset,
           );
           previewRingRectRef.current.scale.setScalar(pulseScale);
           previewRingRectRef.current.visible = true;
           // Update color
-          const previewRectMaterial = previewRingRectRef.current.material as THREE.MeshStandardMaterial;
+          const previewRectMaterial = previewRingRectRef.current
+            .material as THREE.MeshStandardMaterial;
           previewRectMaterial.color.setHex(DOT_COLORS.PREVIEW_RING);
           previewRectMaterial.emissive.setHex(DOT_COLORS.PREVIEW_RING);
         } else {
@@ -2326,14 +2523,13 @@ function DebugVisualization({
       }
     }
 
-
     // =========================================================================
     // DYNAMIC NOTE LABELS - Show note name on current and next notes
     // Skip rendering if position already has a permanent anchor label
     // =========================================================================
     // Find the active note entry to get string/fret for note name calculation
     const activeNoteEntry = timeline.find(
-      (e) => e.type === 'note' && e.noteIndex === activeNoteIndex
+      (e) => e.type === 'note' && e.noteIndex === activeNoteIndex,
     );
 
     // Track positions with active finger labels to hide anchor labels
@@ -2344,21 +2540,29 @@ function DebugVisualization({
     // Skip showing 'O' (open string) label - open string position is self-evident
     const currentFingerKey = activeNoteEntry?.note?.finger_index?.toString();
     const showCurrentFingerLabel = currentFingerKey && currentFingerKey !== 'O';
-    if (currentNoteLabelRef.current && activePosition && activeNoteEntry && showCurrentFingerLabel) {
+    if (
+      currentNoteLabelRef.current &&
+      activePosition &&
+      activeNoteEntry &&
+      showCurrentFingerLabel
+    ) {
       const texture = fingerLabelTextures.get(currentFingerKey);
       if (texture) {
-        const material = currentNoteLabelRef.current.material as THREE.MeshBasicMaterial;
+        const material = currentNoteLabelRef.current
+          .material as THREE.MeshBasicMaterial;
         material.map = texture;
         material.needsUpdate = true;
         // Position with configurable X/Y offset, Z stays on mesh
         currentNoteLabelRef.current.position.set(
           activePosition.x + fingerLabelOffsetX,
           activePosition.y + fingerLabelOffsetY,
-          activePosition.z + 1
+          activePosition.z + 1,
         );
         currentNoteLabelRef.current.visible = true;
         // Track this position as having a finger label
-        newActiveFingerPositions.add(`${activeNoteEntry.position.stringIndex},${activeNoteEntry.position.fret}`);
+        newActiveFingerPositions.add(
+          `${activeNoteEntry.position.stringIndex},${activeNoteEntry.position.fret}`,
+        );
       }
     } else if (currentNoteLabelRef.current) {
       currentNoteLabelRef.current.visible = false;
@@ -2369,21 +2573,29 @@ function DebugVisualization({
     // Skip showing 'O' (open string) label - open string position is self-evident
     const nextFingerKey = nextNoteEntry?.note?.finger_index?.toString();
     const showNextFingerLabel = nextFingerKey && nextFingerKey !== 'O';
-    if (nextNoteLabelRef.current && nextNotePosition && nextNoteEntry && showNextFingerLabel) {
+    if (
+      nextNoteLabelRef.current &&
+      nextNotePosition &&
+      nextNoteEntry &&
+      showNextFingerLabel
+    ) {
       const texture = fingerLabelTextures.get(nextFingerKey);
       if (texture) {
-        const material = nextNoteLabelRef.current.material as THREE.MeshBasicMaterial;
+        const material = nextNoteLabelRef.current
+          .material as THREE.MeshBasicMaterial;
         material.map = texture;
         material.needsUpdate = true;
         // Position with configurable X/Y offset, Z stays on mesh
         nextNoteLabelRef.current.position.set(
           nextNotePosition.x + fingerLabelOffsetX,
           nextNotePosition.y + fingerLabelOffsetY,
-          nextNotePosition.z + 1
+          nextNotePosition.z + 1,
         );
         nextNoteLabelRef.current.visible = true;
         // Track this position as having a finger label
-        newActiveFingerPositions.add(`${nextNoteEntry.position.stringIndex},${nextNoteEntry.position.fret}`);
+        newActiveFingerPositions.add(
+          `${nextNoteEntry.position.stringIndex},${nextNoteEntry.position.fret}`,
+        );
       }
     } else if (nextNoteLabelRef.current) {
       nextNoteLabelRef.current.visible = false;
@@ -2473,8 +2685,13 @@ function DebugVisualization({
             rotation={[gridRotationX, 0, 0]}
             name={`string-${stringIndex}`}
           >
-            <boxGeometry args={[lineLength, gridLineThickness, gridLineThickness]} />
-            <meshBasicMaterial color={SLATE_700} clippingPlanes={globalClippingPlanes} />
+            <boxGeometry
+              args={[lineLength, gridLineThickness, gridLineThickness]}
+            />
+            <meshBasicMaterial
+              color={SLATE_700}
+              clippingPlanes={globalClippingPlanes}
+            />
           </mesh>
         );
       })}
@@ -2504,7 +2721,9 @@ function DebugVisualization({
             rotation={[gridRotationX, 0, 0]}
             name="fret-line-open"
           >
-            <boxGeometry args={[gridLineThickness, lineHeight, gridLineThickness]} />
+            <boxGeometry
+              args={[gridLineThickness, lineHeight, gridLineThickness]}
+            />
             <meshBasicMaterial
               color={SLATE_700}
               clippingPlanes={globalClippingPlanes}
@@ -2540,7 +2759,9 @@ function DebugVisualization({
             rotation={[gridRotationX, 0, 0]}
             name={`fret-${fret}`}
           >
-            <boxGeometry args={[gridLineThickness, lineHeight, gridLineThickness]} />
+            <boxGeometry
+              args={[gridLineThickness, lineHeight, gridLineThickness]}
+            />
             <meshBasicMaterial
               color={SLATE_700}
               clippingPlanes={globalClippingPlanes}
@@ -2568,7 +2789,9 @@ function DebugVisualization({
 
         // Determine if this is a marker fret (lighter grey)
         const isMarkerFret = MARKER_FRETS.has(dot.fret);
-        const initialColor = isMarkerFret ? DOT_COLORS.GREY_LIGHT : DOT_COLORS.GREY;
+        const initialColor = isMarkerFret
+          ? DOT_COLORS.GREY_LIGHT
+          : DOT_COLORS.GREY;
 
         // For rounded rectangles, create ShapeGeometry from rounded rect shape
         // Tailwind rounded-md = 6px border radius, scaled to match dot size
@@ -2675,7 +2898,9 @@ function DebugVisualization({
       {FRET_NOTE_LABELS.map((labelConfig) => {
         // Find the dot for this string/fret combination
         const dot = allDots.find(
-          (d) => d.stringIndex === labelConfig.stringIndex && d.fret === labelConfig.fret
+          (d) =>
+            d.stringIndex === labelConfig.stringIndex &&
+            d.fret === labelConfig.fret,
         );
         if (!dot) return null;
 
@@ -2722,10 +2947,12 @@ function DebugVisualization({
       <mesh
         ref={activeRingGlowRef}
         visible={false}
-        position={[0, 0, 4.5]}  // Slightly behind main ring
+        position={[0, 0, 4.5]} // Slightly behind main ring
         name="active-note-ring-circular-glow"
       >
-        <torusGeometry args={[activeRingRadius, activeRingTubeRadius * 2, 16, 32]} />
+        <torusGeometry
+          args={[activeRingRadius, activeRingTubeRadius * 2, 16, 32]}
+        />
         <meshStandardMaterial
           color={DOT_COLORS.ACTIVE_RING}
           emissive={DOT_COLORS.ACTIVE_RING}
@@ -2744,11 +2971,13 @@ function DebugVisualization({
           ============================================================ */}
       <mesh
         ref={activeRingRef}
-        visible={false}  // Initially hidden, shown when a note is active on regular fret
-        position={[0, 0, 5]}  // Default position, updated by useFrame
+        visible={false} // Initially hidden, shown when a note is active on regular fret
+        position={[0, 0, 5]} // Default position, updated by useFrame
         name="active-note-ring-circular"
       >
-        <torusGeometry args={[activeRingRadius, activeRingTubeRadius, 16, 32]} />
+        <torusGeometry
+          args={[activeRingRadius, activeRingTubeRadius, 16, 32]}
+        />
         <meshStandardMaterial
           color={DOT_COLORS.ACTIVE_RING}
           emissive={DOT_COLORS.ACTIVE_RING}
@@ -2767,11 +2996,11 @@ function DebugVisualization({
           ============================================================ */}
       {(() => {
         // Create the rounded rectangle path for the tube to follow
-        const rectWidth = dotRadius * 2 + 2;  // Slightly larger than dot
+        const rectWidth = dotRadius * 2 + 2; // Slightly larger than dot
         const rectHeight = dotRadius * 2 + 2;
-        const cornerRadius = 6;  // Match rounded-md
+        const cornerRadius = 6; // Match rounded-md
         const tubeRadius = activeRingTubeRadius;
-        const glowTubeRadius = activeRingTubeRadius * 2;  // Larger for glow effect
+        const glowTubeRadius = activeRingTubeRadius * 2; // Larger for glow effect
 
         // Create a curve path that traces the rounded rectangle
         const halfW = rectWidth / 2;
@@ -2785,38 +3014,46 @@ function DebugVisualization({
         // Bottom-left corner
         for (let i = 0; i <= segments; i++) {
           const angle = Math.PI + (i / segments) * (Math.PI / 2);
-          pathPoints.push(new THREE.Vector3(
-            -halfW + cr + cr * Math.cos(angle),
-            -halfH + cr + cr * Math.sin(angle),
-            0
-          ));
+          pathPoints.push(
+            new THREE.Vector3(
+              -halfW + cr + cr * Math.cos(angle),
+              -halfH + cr + cr * Math.sin(angle),
+              0,
+            ),
+          );
         }
         // Bottom-right corner
         for (let i = 0; i <= segments; i++) {
           const angle = Math.PI * 1.5 + (i / segments) * (Math.PI / 2);
-          pathPoints.push(new THREE.Vector3(
-            halfW - cr + cr * Math.cos(angle),
-            -halfH + cr + cr * Math.sin(angle),
-            0
-          ));
+          pathPoints.push(
+            new THREE.Vector3(
+              halfW - cr + cr * Math.cos(angle),
+              -halfH + cr + cr * Math.sin(angle),
+              0,
+            ),
+          );
         }
         // Top-right corner
         for (let i = 0; i <= segments; i++) {
           const angle = 0 + (i / segments) * (Math.PI / 2);
-          pathPoints.push(new THREE.Vector3(
-            halfW - cr + cr * Math.cos(angle),
-            halfH - cr + cr * Math.sin(angle),
-            0
-          ));
+          pathPoints.push(
+            new THREE.Vector3(
+              halfW - cr + cr * Math.cos(angle),
+              halfH - cr + cr * Math.sin(angle),
+              0,
+            ),
+          );
         }
         // Top-left corner
         for (let i = 0; i <= segments; i++) {
           const angle = Math.PI / 2 + (i / segments) * (Math.PI / 2);
-          pathPoints.push(new THREE.Vector3(
-            -halfW + cr + cr * Math.cos(angle),
-            halfH - cr + cr * Math.sin(angle),
-            0
-          ));
+          pathPoints.push(
+            new THREE.Vector3(
+              -halfW + cr + cr * Math.cos(angle),
+              halfH - cr + cr * Math.sin(angle),
+              0,
+            ),
+          );
         }
         // Close the loop back to start
         pathPoints.push(pathPoints[0].clone());
@@ -2829,7 +3066,7 @@ function DebugVisualization({
             <mesh
               ref={activeRingRectGlowRef}
               visible={false}
-              position={[0, 0, 4.5]}  // Slightly behind main ring
+              position={[0, 0, 4.5]} // Slightly behind main ring
               name="active-note-ring-rect-glow"
             >
               <tubeGeometry args={[curve, 64, glowTubeRadius, 8, true]} />
@@ -2846,8 +3083,8 @@ function DebugVisualization({
             {/* Main ring */}
             <mesh
               ref={activeRingRectRef}
-              visible={false}  // Initially hidden, shown when note is active on open/fret 12
-              position={[0, 0, 5]}  // Default position, updated by useFrame
+              visible={false} // Initially hidden, shown when note is active on open/fret 12
+              position={[0, 0, 5]} // Default position, updated by useFrame
               name="active-note-ring-rect"
             >
               <tubeGeometry args={[curve, 64, tubeRadius, 8, true]} />
@@ -2875,7 +3112,9 @@ function DebugVisualization({
         position={[0, 0, 5]}
         name="preview-note-ring-circular"
       >
-        <torusGeometry args={[activeRingRadius, activeRingTubeRadius, 16, 32]} />
+        <torusGeometry
+          args={[activeRingRadius, activeRingTubeRadius, 16, 32]}
+        />
         <meshStandardMaterial
           color={DOT_COLORS.PREVIEW_RING}
           emissive={DOT_COLORS.PREVIEW_RING}
@@ -2908,38 +3147,46 @@ function DebugVisualization({
         // Bottom-left corner
         for (let i = 0; i <= segments; i++) {
           const angle = Math.PI + (i / segments) * (Math.PI / 2);
-          pathPoints.push(new THREE.Vector3(
-            -halfW + cr + cr * Math.cos(angle),
-            -halfH + cr + cr * Math.sin(angle),
-            0
-          ));
+          pathPoints.push(
+            new THREE.Vector3(
+              -halfW + cr + cr * Math.cos(angle),
+              -halfH + cr + cr * Math.sin(angle),
+              0,
+            ),
+          );
         }
         // Bottom-right corner
         for (let i = 0; i <= segments; i++) {
           const angle = Math.PI * 1.5 + (i / segments) * (Math.PI / 2);
-          pathPoints.push(new THREE.Vector3(
-            halfW - cr + cr * Math.cos(angle),
-            -halfH + cr + cr * Math.sin(angle),
-            0
-          ));
+          pathPoints.push(
+            new THREE.Vector3(
+              halfW - cr + cr * Math.cos(angle),
+              -halfH + cr + cr * Math.sin(angle),
+              0,
+            ),
+          );
         }
         // Top-right corner
         for (let i = 0; i <= segments; i++) {
           const angle = 0 + (i / segments) * (Math.PI / 2);
-          pathPoints.push(new THREE.Vector3(
-            halfW - cr + cr * Math.cos(angle),
-            halfH - cr + cr * Math.sin(angle),
-            0
-          ));
+          pathPoints.push(
+            new THREE.Vector3(
+              halfW - cr + cr * Math.cos(angle),
+              halfH - cr + cr * Math.sin(angle),
+              0,
+            ),
+          );
         }
         // Top-left corner
         for (let i = 0; i <= segments; i++) {
           const angle = Math.PI / 2 + (i / segments) * (Math.PI / 2);
-          pathPoints.push(new THREE.Vector3(
-            -halfW + cr + cr * Math.cos(angle),
-            halfH - cr + cr * Math.sin(angle),
-            0
-          ));
+          pathPoints.push(
+            new THREE.Vector3(
+              -halfW + cr + cr * Math.cos(angle),
+              halfH - cr + cr * Math.sin(angle),
+              0,
+            ),
+          );
         }
         pathPoints.push(pathPoints[0].clone());
 
@@ -3058,11 +3305,18 @@ export function Ring3DOverlayCanvas({
   tiltAngle = 60, // CSS tilt angle - used to position 3D camera to match 2D perspective
   debugRotation = { x: 0, y: 0, z: 0 }, // DEBUG panel rotation - applies to both 2D CSS and 3D scene
   overlay3DConfig = {
-    rotationX: 0, rotationY: 0, rotationZ: 0,
-    offsetX: 0, offsetY: 0,
-    sceneX: 0, sceneY: 0, sceneZ: 0,
-    cameraDistance: 800, fovOffset: 0,
-    originX: 284, originY: 145,
+    rotationX: 0,
+    rotationY: 0,
+    rotationZ: 0,
+    offsetX: 0,
+    offsetY: 0,
+    sceneX: 0,
+    sceneY: 0,
+    sceneZ: 0,
+    cameraDistance: 800,
+    fovOffset: 0,
+    originX: 284,
+    originY: 145,
     contentScale: 1.0,
     contentScaleX: 1.0,
     contentScaleY: 1.0,
@@ -3070,7 +3324,7 @@ export function Ring3DOverlayCanvas({
     perspectiveMultiplier: 1.0,
     topEdgeScale: 1.0,
     bottomEdgeScale: 1.0,
-    positioningMode: 'flat' as 'flat' | 'tilted-plane' | 'screen-space'
+    positioningMode: 'flat' as 'flat' | 'tilted-plane' | 'screen-space',
   }, // DEBUG: 3D overlay controls
   scrollLeft: _scrollLeftProp = 0, // DEPRECATED: Use scrollContainerRef instead
   scrollContainerRef, // PERFORMANCE: Read scroll directly without React re-renders
@@ -3181,7 +3435,8 @@ export function Ring3DOverlayCanvas({
         const progress = Math.min(elapsed / FADE_ANIMATION_DURATION, 1);
         const easedProgress = easeInOutCubic(progress);
 
-        const currentValue = animationFromRef.current +
+        const currentValue =
+          animationFromRef.current +
           (animationToRef.current - animationFromRef.current) * easedProgress;
 
         // Update both ref (for animation continuity) and state (for React render)
@@ -3200,12 +3455,14 @@ export function Ring3DOverlayCanvas({
 
     const checkScrollAndAnimate = () => {
       const currentScroll = scrollContainer.scrollLeft;
-      const newScrollState: 'start' | 'scrolled' = currentScroll > SCROLL_THRESHOLD ? 'scrolled' : 'start';
+      const newScrollState: 'start' | 'scrolled' =
+        currentScroll > SCROLL_THRESHOLD ? 'scrolled' : 'start';
 
       // Only trigger animation if scroll state actually changed
       if (newScrollState !== lastScrollStateRef.current) {
         lastScrollStateRef.current = newScrollState;
-        const targetPercent = newScrollState === 'scrolled' ? leftFadeZoneTarget : 0;
+        const targetPercent =
+          newScrollState === 'scrolled' ? leftFadeZoneTarget : 0;
         animateToTarget(targetPercent);
       }
     };
@@ -3266,11 +3523,11 @@ export function Ring3DOverlayCanvas({
   //   getStringY(index) = index * STRING_SPACING
   //   getFretX(fret) = CENTER_OFFSET + FRET_OFFSET + (fret-1) * FRET_SPACING
   // =============================================================================
-  const STRING_SPACING = 32;   // px between string centers
-  const CENTER_OFFSET = 15;    // px for open string X position
-  const FRET_OFFSET = 38;      // px from open string to first fret center
-  const FRET_SPACING = 36;     // px between fret centers
-  const DOT_RADIUS = 13;       // px radius of dots
+  const STRING_SPACING = 32; // px between string centers
+  const CENTER_OFFSET = 15; // px for open string X position
+  const FRET_OFFSET = 38; // px from open string to first fret center
+  const FRET_SPACING = 36; // px between fret centers
+  const DOT_RADIUS = 13; // px radius of dots
 
   // Calculate actual fretboard content dimensions based on strings and frets
   const fretboardGeometry = useMemo(() => {
@@ -3281,34 +3538,40 @@ export function Ring3DOverlayCanvas({
 
     // Fret positions: X = CENTER_OFFSET + FRET_OFFSET + (fret-1) * FRET_SPACING (+ DOT_RADIUS for center)
     const openStringX = CENTER_OFFSET + DOT_RADIUS;
-    const lastFretX = CENTER_OFFSET + FRET_OFFSET + (maxFrets - 1) * FRET_SPACING + DOT_RADIUS;
+    const lastFretX =
+      CENTER_OFFSET + FRET_OFFSET + (maxFrets - 1) * FRET_SPACING + DOT_RADIUS;
     const pixelWidth = lastFretX - openStringX;
 
-    isDebugEnabled() && console.log('[Ring3DOverlayCanvas] 📏 FRETBOARD GEOMETRY:', {
-      stringCount,
-      maxFrets,
-      firstStringY,
-      lastStringY,
-      pixelWidth,
-      pixelHeight,
-      aspectRatio: (pixelWidth / pixelHeight).toFixed(3),
-    });
+    isDebugEnabled() &&
+      console.log('[Ring3DOverlayCanvas] 📏 FRETBOARD GEOMETRY:', {
+        stringCount,
+        maxFrets,
+        firstStringY,
+        lastStringY,
+        pixelWidth,
+        pixelHeight,
+        aspectRatio: (pixelWidth / pixelHeight).toFixed(3),
+      });
 
     return { pixelWidth, pixelHeight, firstStringY, lastStringY };
   }, [stringCount, maxFrets]);
 
   // Create fretboardRect for debug logging
-  const fretboardRect = useMemo<DOMRect>(() => ({
-    width: fretboardGeometry.pixelWidth,
-    height: fretboardGeometry.pixelHeight,
-    top: 0,
-    left: 0,
-    right: fretboardGeometry.pixelWidth,
-    bottom: fretboardGeometry.pixelHeight,
-    x: 0,
-    y: 0,
-    toJSON: () => ({}),
-  } as DOMRect), [fretboardGeometry]);
+  const fretboardRect = useMemo<DOMRect>(
+    () =>
+      ({
+        width: fretboardGeometry.pixelWidth,
+        height: fretboardGeometry.pixelHeight,
+        top: 0,
+        left: 0,
+        right: fretboardGeometry.pixelWidth,
+        bottom: fretboardGeometry.pixelHeight,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect,
+    [fretboardGeometry],
+  );
 
   // Build timeline using useFretboardNoteSync
   // This shares the same timing logic as FretboardGrid
@@ -3338,12 +3601,17 @@ export function Ring3DOverlayCanvas({
   // =============================================================================
   // CANVAS DIMENSIONS - Fixed viewport size, content offset by scroll position
   // =============================================================================
-  const VIEWPORT_WIDTH = 580;   // Slightly wider than 2D viewport (568) to show fret 12
-  const VIEWPORT_HEIGHT = 290;  // Fixed - matches 2D fretboard height
+  const VIEWPORT_WIDTH = 580; // Slightly wider than 2D viewport (568) to show fret 12
+  const VIEWPORT_HEIGHT = 290; // Fixed - matches 2D fretboard height
 
   // Calculate full content width for positioning calculations
   // This is the full fretboard width (all frets) - used for centering math
-  const FULL_CONTENT_WIDTH = CENTER_OFFSET + FRET_OFFSET + (maxFrets - 1) * FRET_SPACING + DOT_RADIUS * 2 + 20;
+  const FULL_CONTENT_WIDTH =
+    CENTER_OFFSET +
+    FRET_OFFSET +
+    (maxFrets - 1) * FRET_SPACING +
+    DOT_RADIUS * 2 +
+    20;
 
   // Canvas uses viewport size (not full content size)
   const FIXED_CANVAS_WIDTH = VIEWPORT_WIDTH;
@@ -3358,12 +3626,16 @@ export function Ring3DOverlayCanvas({
     const worldHeight = WORLD_DEPTH;
     const worldWidth = worldHeight * aspectRatio;
 
-    isDebugEnabled() && console.log('[Ring3DOverlayCanvas] 📷 WORLD DIMENSIONS:', {
-      worldWidth,
-      worldHeight,
-      aspectRatio,
-      fixedCanvasDimensions: { width: FIXED_CANVAS_WIDTH, height: FIXED_CANVAS_HEIGHT },
-    });
+    isDebugEnabled() &&
+      console.log('[Ring3DOverlayCanvas] 📷 WORLD DIMENSIONS:', {
+        worldWidth,
+        worldHeight,
+        aspectRatio,
+        fixedCanvasDimensions: {
+          width: FIXED_CANVAS_WIDTH,
+          height: FIXED_CANVAS_HEIGHT,
+        },
+      });
 
     return { worldWidth, worldHeight };
   }, [FIXED_CANVAS_WIDTH, FIXED_CANVAS_HEIGHT]);
@@ -3381,93 +3653,109 @@ export function Ring3DOverlayCanvas({
   //
   // FloatingTorusRing animates its own Y position and uses [0] for X and [2] for Z.
   // =============================================================================
-  const getNotePosition3D = useCallback((stringIndex: number, fret: number | 'open'): [number, number, number] => {
-    // Extract positioning settings from overlay3DConfig
-    const positioningMode = overlay3DConfig.positioningMode || 'flat';
-    const tiltAxisOffset = overlay3DConfig.tiltAxisOffset ?? 0;
-    const tiltAxisOffsetX = overlay3DConfig.tiltAxisOffsetX ?? 0;
-    const perspectiveMultiplier = overlay3DConfig.perspectiveMultiplier ?? 1.0;
-    const heightAbovePlane = overlay3DConfig.activeRingZOffset ?? 1;
+  const getNotePosition3D = useCallback(
+    (stringIndex: number, fret: number | 'open'): [number, number, number] => {
+      // Extract positioning settings from overlay3DConfig
+      const positioningMode = overlay3DConfig.positioningMode || 'flat';
+      const tiltAxisOffset = overlay3DConfig.tiltAxisOffset ?? 0;
+      const tiltAxisOffsetX = overlay3DConfig.tiltAxisOffsetX ?? 0;
+      const perspectiveMultiplier =
+        overlay3DConfig.perspectiveMultiplier ?? 1.0;
+      const heightAbovePlane = overlay3DConfig.activeRingZOffset ?? 1;
 
-    // CRITICAL: Apply the same visual position transformation as FretboardGrid.tsx
-    // FretboardGrid uses: absoluteVisualPosition = 5 - absoluteStringIndex
-    const absoluteVisualPosition = 5 - stringIndex;
+      // CRITICAL: Apply the same visual position transformation as FretboardGrid.tsx
+      // FretboardGrid uses: absoluteVisualPosition = 5 - absoluteStringIndex
+      const absoluteVisualPosition = 5 - stringIndex;
 
-    // Calculate 2D position matching the dot grid
-    const y2d = absoluteVisualPosition * STRING_SPACING + DOT_RADIUS;
-    let x2d;
-    if (fret === 'open') {
-      x2d = CENTER_OFFSET + DOT_RADIUS;
-    } else {
-      x2d = CENTER_OFFSET + FRET_OFFSET + (fret - 1) * FRET_SPACING + DOT_RADIUS;
-    }
-
-    // Calculate half dimensions for coordinate conversion
-    const halfWidth = FULL_CONTENT_WIDTH / 2;
-    const halfHeight = VIEWPORT_HEIGHT / 2;
-
-    // Base 3D coordinates (same as DebugVisualization's to3DX/to3DY)
-    // x2d → X (fret horizontal position)
-    // y2d → Z (string depth position, after negation and offset)
-    const baseX = x2d - halfWidth;
-    const baseZ = -(y2d - halfHeight); // This becomes Z (string position), negated because 3D Z is depth
-
-    // Apply positioning mode logic (matching DebugVisualization's get3DPosition)
-    if (positioningMode === 'flat') {
-      // Flat mode: Apply perspectiveMultiplier for X scaling based on string position
-      let adjustedX = baseX;
-      if (perspectiveMultiplier !== 1.0) {
-        // Calculate Y position relative to fretboard content center
-        const firstStringY2D = DOT_RADIUS;
-        const lastStringY2D = (stringCount - 1) * STRING_SPACING + DOT_RADIUS;
-        const fretboardCenterY = (firstStringY2D + lastStringY2D) / 2;
-        const fretboardHalfHeight = (lastStringY2D - firstStringY2D) / 2;
-
-        // Normalize Y: -1 at top string (far), +1 at bottom string (near)
-        const normalizedY = fretboardHalfHeight > 0
-          ? (y2d - fretboardCenterY) / fretboardHalfHeight
-          : 0;
-
-        // Scale factor: 1.0 at center, adjusted toward edges based on perspectiveMultiplier
-        const perspectiveAdjustment = (perspectiveMultiplier - 1.0) * 0.15;
-        const xScale = 1.0 + normalizedY * perspectiveAdjustment;
-        adjustedX = baseX * xScale;
+      // Calculate 2D position matching the dot grid
+      const y2d = absoluteVisualPosition * STRING_SPACING + DOT_RADIUS;
+      let x2d;
+      if (fret === 'open') {
+        x2d = CENTER_OFFSET + DOT_RADIUS;
+      } else {
+        x2d =
+          CENTER_OFFSET + FRET_OFFSET + (fret - 1) * FRET_SPACING + DOT_RADIUS;
       }
 
-      // Return [x, y, z] where y is height (unused), z is string position
-      return [
-        adjustedX + tiltAxisOffsetX,
-        heightAbovePlane,  // Y = height above plane (ring animates this separately)
-        baseZ + tiltAxisOffset  // Z = string position (depth)
-      ];
-    } else {
-      // tilted-plane or screen-space modes: Apply tilt axis offsets with rotation
-      const tiltRad = (tiltAngle * Math.PI) / 180;
-      const offsetZ = tiltAxisOffset * Math.cos(tiltRad);
-      const offsetY = -tiltAxisOffset * Math.sin(tiltRad);
+      // Calculate half dimensions for coordinate conversion
+      const halfWidth = FULL_CONTENT_WIDTH / 2;
+      const halfHeight = VIEWPORT_HEIGHT / 2;
 
-      return [
-        baseX + tiltAxisOffsetX,
-        heightAbovePlane + offsetY,  // Y = height with tilt offset
-        baseZ + offsetZ  // Z = string position with tilt offset
-      ];
-    }
-  }, [
-    STRING_SPACING, CENTER_OFFSET, FRET_OFFSET, FRET_SPACING, DOT_RADIUS,
-    FULL_CONTENT_WIDTH, VIEWPORT_HEIGHT, stringCount, tiltAngle,
-    overlay3DConfig.positioningMode, overlay3DConfig.tiltAxisOffset,
-    overlay3DConfig.tiltAxisOffsetX, overlay3DConfig.perspectiveMultiplier,
-    overlay3DConfig.activeRingZOffset
-  ]);
+      // Base 3D coordinates (same as DebugVisualization's to3DX/to3DY)
+      // x2d → X (fret horizontal position)
+      // y2d → Z (string depth position, after negation and offset)
+      const baseX = x2d - halfWidth;
+      const baseZ = -(y2d - halfHeight); // This becomes Z (string position), negated because 3D Z is depth
+
+      // Apply positioning mode logic (matching DebugVisualization's get3DPosition)
+      if (positioningMode === 'flat') {
+        // Flat mode: Apply perspectiveMultiplier for X scaling based on string position
+        let adjustedX = baseX;
+        if (perspectiveMultiplier !== 1.0) {
+          // Calculate Y position relative to fretboard content center
+          const firstStringY2D = DOT_RADIUS;
+          const lastStringY2D = (stringCount - 1) * STRING_SPACING + DOT_RADIUS;
+          const fretboardCenterY = (firstStringY2D + lastStringY2D) / 2;
+          const fretboardHalfHeight = (lastStringY2D - firstStringY2D) / 2;
+
+          // Normalize Y: -1 at top string (far), +1 at bottom string (near)
+          const normalizedY =
+            fretboardHalfHeight > 0
+              ? (y2d - fretboardCenterY) / fretboardHalfHeight
+              : 0;
+
+          // Scale factor: 1.0 at center, adjusted toward edges based on perspectiveMultiplier
+          const perspectiveAdjustment = (perspectiveMultiplier - 1.0) * 0.15;
+          const xScale = 1.0 + normalizedY * perspectiveAdjustment;
+          adjustedX = baseX * xScale;
+        }
+
+        // Return [x, y, z] where y is height (unused), z is string position
+        return [
+          adjustedX + tiltAxisOffsetX,
+          heightAbovePlane, // Y = height above plane (ring animates this separately)
+          baseZ + tiltAxisOffset, // Z = string position (depth)
+        ];
+      } else {
+        // tilted-plane or screen-space modes: Apply tilt axis offsets with rotation
+        const tiltRad = (tiltAngle * Math.PI) / 180;
+        const offsetZ = tiltAxisOffset * Math.cos(tiltRad);
+        const offsetY = -tiltAxisOffset * Math.sin(tiltRad);
+
+        return [
+          baseX + tiltAxisOffsetX,
+          heightAbovePlane + offsetY, // Y = height with tilt offset
+          baseZ + offsetZ, // Z = string position with tilt offset
+        ];
+      }
+    },
+    [
+      STRING_SPACING,
+      CENTER_OFFSET,
+      FRET_OFFSET,
+      FRET_SPACING,
+      DOT_RADIUS,
+      FULL_CONTENT_WIDTH,
+      VIEWPORT_HEIGHT,
+      stringCount,
+      tiltAngle,
+      overlay3DConfig.positioningMode,
+      overlay3DConfig.tiltAxisOffset,
+      overlay3DConfig.tiltAxisOffsetX,
+      overlay3DConfig.perspectiveMultiplier,
+      overlay3DConfig.activeRingZOffset,
+    ],
+  );
 
   // DEBUG: Log render state and dimension comparison
-  isDebugEnabled() && console.log('[Ring3DOverlayCanvas] Render check:', {
-    configEnabled: config.enabled,
-    timelineLength: timeline?.length ?? 0,
-    exerciseNotesLength: exerciseNotes?.length ?? 0,
-    worldDimensions,
-    fretboardRectSize: { w: fretboardRect.width, h: fretboardRect.height },
-  });
+  isDebugEnabled() &&
+    console.log('[Ring3DOverlayCanvas] Render check:', {
+      configEnabled: config.enabled,
+      timelineLength: timeline?.length ?? 0,
+      exerciseNotesLength: exerciseNotes?.length ?? 0,
+      worldDimensions,
+      fretboardRectSize: { w: fretboardRect.width, h: fretboardRect.height },
+    });
 
   // Don't render if config is disabled
   if (!config.enabled) {
@@ -3485,34 +3773,40 @@ export function Ring3DOverlayCanvas({
   // PERFORMANCE: Scroll sync is handled by ScrollOffsetGroup via useFrame for imperative updates
   // This eliminates React re-renders on scroll for better performance
 
-  isDebugEnabled() && console.log('[Ring3DOverlayCanvas] ✅ RENDERING 3D CANVAS (Architect Solution)', {
-    cssPerspective: CSS_PERSPECTIVE,
-    tiltAngle,
-    approach: 'CSS-matching camera + imperative scroll sync (no re-renders)',
-    maxFrets,
-    canvasDimensions: {
-      width: CANVAS_WIDTH,
-      height: CANVAS_HEIGHT,
-      fullContentWidth: FULL_CONTENT_WIDTH,
-      viewportWidth: VIEWPORT_WIDTH,
-    },
-    scrollSync: {
-      method: 'ScrollOffsetGroup updates position via useFrame',
-      note: 'No React re-renders on scroll',
-    },
-  });
+  isDebugEnabled() &&
+    console.log(
+      '[Ring3DOverlayCanvas] ✅ RENDERING 3D CANVAS (Architect Solution)',
+      {
+        cssPerspective: CSS_PERSPECTIVE,
+        tiltAngle,
+        approach:
+          'CSS-matching camera + imperative scroll sync (no re-renders)',
+        maxFrets,
+        canvasDimensions: {
+          width: CANVAS_WIDTH,
+          height: CANVAS_HEIGHT,
+          fullContentWidth: FULL_CONTENT_WIDTH,
+          viewportWidth: VIEWPORT_WIDTH,
+        },
+        scrollSync: {
+          method: 'ScrollOffsetGroup updates position via useFrame',
+          note: 'No React re-renders on scroll',
+        },
+      },
+    );
 
-  isDebugEnabled() && console.log('[Ring3DOverlayCanvas] 📐 CANVAS DIMENSIONS:', {
-    canvas: {
-      width: CANVAS_WIDTH,
-      height: CANVAS_HEIGHT,
-      aspectRatio: (CANVAS_WIDTH / CANVAS_HEIGHT).toFixed(2),
-    },
-    fretboardGeometry: {
-      pixelWidth: fretboardGeometry.pixelWidth,
-      pixelHeight: fretboardGeometry.pixelHeight,
-    },
-  });
+  isDebugEnabled() &&
+    console.log('[Ring3DOverlayCanvas] 📐 CANVAS DIMENSIONS:', {
+      canvas: {
+        width: CANVAS_WIDTH,
+        height: CANVAS_HEIGHT,
+        aspectRatio: (CANVAS_WIDTH / CANVAS_HEIGHT).toFixed(2),
+      },
+      fretboardGeometry: {
+        pixelWidth: fretboardGeometry.pixelWidth,
+        pixelHeight: fretboardGeometry.pixelHeight,
+      },
+    });
 
   // =============================================================================
   // ARCHITECT'S SOLUTION: CSS-Matching Camera
@@ -3566,24 +3860,27 @@ export function Ring3DOverlayCanvas({
 
   // Create separate masks for left and right edges with perspective angles
   // Left fade: transparent on left, fades to black
-  const leftFadeMask = effectiveLeftFade > 0.1
-    ? `linear-gradient(${leftGradientAngle}deg, transparent 0%, black ${effectiveLeftFade * 2}%)`
-    : 'none';
+  const leftFadeMask =
+    effectiveLeftFade > 0.1
+      ? `linear-gradient(${leftGradientAngle}deg, transparent 0%, black ${effectiveLeftFade * 2}%)`
+      : 'none';
 
   // Right fade: black fades to transparent on right
-  const rightFadeMask = rightFadeZone > 0.1
-    ? `linear-gradient(${rightGradientAngle}deg, black ${100 - rightFadeZone * 2}%, transparent 100%)`
-    : 'none';
+  const rightFadeMask =
+    rightFadeZone > 0.1
+      ? `linear-gradient(${rightGradientAngle}deg, black ${100 - rightFadeZone * 2}%, transparent 100%)`
+      : 'none';
 
   // Combine masks - need both edges to be visible
   // Using mask-composite: intersect means both masks must be black for content to show
-  const combinedMask = effectiveLeftFade > 0.1 && rightFadeZone > 0.1
-    ? `${leftFadeMask}, ${rightFadeMask}`
-    : effectiveLeftFade > 0.1
-      ? leftFadeMask
-      : rightFadeZone > 0.1
-        ? rightFadeMask
-        : 'none';
+  const combinedMask =
+    effectiveLeftFade > 0.1 && rightFadeZone > 0.1
+      ? `${leftFadeMask}, ${rightFadeMask}`
+      : effectiveLeftFade > 0.1
+        ? leftFadeMask
+        : rightFadeZone > 0.1
+          ? rightFadeMask
+          : 'none';
 
   // DEBUG: Log render values for fade debugging
   if (isVerboseDebugEnabled()) {
@@ -3624,8 +3921,10 @@ export function Ring3DOverlayCanvas({
     WebkitMaskImage: combinedMask !== 'none' ? combinedMask : undefined,
     // When using multiple masks, we need mask-composite to combine them correctly
     // 'intersect' means both masks must be opaque for content to show
-    maskComposite: effectiveLeftFade > 0.1 && rightFadeZone > 0.1 ? 'intersect' : undefined,
-    WebkitMaskComposite: effectiveLeftFade > 0.1 && rightFadeZone > 0.1 ? 'source-in' : undefined,
+    maskComposite:
+      effectiveLeftFade > 0.1 && rightFadeZone > 0.1 ? 'intersect' : undefined,
+    WebkitMaskComposite:
+      effectiveLeftFade > 0.1 && rightFadeZone > 0.1 ? 'source-in' : undefined,
   };
 
   // Canvas fills its container with explicit dimensions
@@ -3656,139 +3955,149 @@ export function Ring3DOverlayCanvas({
       // Find the canvas element inside
       const canvasEl = container.querySelector('canvas');
 
-      isDebugEnabled() && console.log('[Ring3DOverlayCanvas] 🔍 POST-RENDER CONTAINER CHECK:', {
-        containerRef: {
-          offsetWidth: container.offsetWidth,
-          offsetHeight: container.offsetHeight,
-          clientWidth: container.clientWidth,
-          clientHeight: container.clientHeight,
-        },
-        containerBoundingRect: {
-          width: containerRect.width,
-          height: containerRect.height,
-        },
-        containerComputedStyle: {
-          width: containerStyle.width,
-          height: containerStyle.height,
-          position: containerStyle.position,
-        },
-        canvasElement: canvasEl ? {
-          width: canvasEl.width,
-          height: canvasEl.height,
-          clientWidth: canvasEl.clientWidth,
-          clientHeight: canvasEl.clientHeight,
-          styleWidth: canvasEl.style.width,
-          styleHeight: canvasEl.style.height,
-        } : 'NOT FOUND',
-        expectedDimensions: { width: CANVAS_WIDTH, height: CANVAS_HEIGHT },
-      });
+      isDebugEnabled() &&
+        console.log('[Ring3DOverlayCanvas] 🔍 POST-RENDER CONTAINER CHECK:', {
+          containerRef: {
+            offsetWidth: container.offsetWidth,
+            offsetHeight: container.offsetHeight,
+            clientWidth: container.clientWidth,
+            clientHeight: container.clientHeight,
+          },
+          containerBoundingRect: {
+            width: containerRect.width,
+            height: containerRect.height,
+          },
+          containerComputedStyle: {
+            width: containerStyle.width,
+            height: containerStyle.height,
+            position: containerStyle.position,
+          },
+          canvasElement: canvasEl
+            ? {
+                width: canvasEl.width,
+                height: canvasEl.height,
+                clientWidth: canvasEl.clientWidth,
+                clientHeight: canvasEl.clientHeight,
+                styleWidth: canvasEl.style.width,
+                styleHeight: canvasEl.style.height,
+              }
+            : 'NOT FOUND',
+          expectedDimensions: { width: CANVAS_WIDTH, height: CANVAS_HEIGHT },
+        });
     }
   });
 
-  isDebugEnabled() && console.log('[Ring3DOverlayCanvas] 🎨 STYLE SETTINGS:', {
-    containerStyle: {
-      width: containerStyle.width,
-      height: containerStyle.height,
-      position: containerStyle.position,
-    },
-    canvasStyle: {
-      width: canvasStyle.width,
-      height: canvasStyle.height,
-    },
-    constants: { CANVAS_WIDTH, CANVAS_HEIGHT },
-  });
+  isDebugEnabled() &&
+    console.log('[Ring3DOverlayCanvas] 🎨 STYLE SETTINGS:', {
+      containerStyle: {
+        width: containerStyle.width,
+        height: containerStyle.height,
+        position: containerStyle.position,
+      },
+      canvasStyle: {
+        width: canvasStyle.width,
+        height: canvasStyle.height,
+      },
+      constants: { CANVAS_WIDTH, CANVAS_HEIGHT },
+    });
 
   return (
     <div ref={canvasContainerRef} style={containerStyle}>
       {/* Inner container - applies perspective-correct edge fade masks */}
       <div style={maskStyle}>
-      <Canvas
-        style={canvasStyle}
-        // CRITICAL: Use offsetSize to measure container's offset dimensions
-        // instead of getBoundingClientRect which is affected by CSS transforms.
-        // This tells react-use-measure to use offsetWidth/offsetHeight.
-        resize={{ scroll: false, offsetSize: true }}
-        // DPR (Device Pixel Ratio) controls rendering resolution
-        // Use actual device pixel ratio for crisp rendering on high-DPI displays (Retina)
-        // Capped at 3 to prevent excessive GPU load on 4K+ displays
-        dpr={Math.min(window.devicePixelRatio || 2, 3)}
-        gl={{
-          alpha: true, // Transparent background
-          // Enable antialiasing for smooth edges - essential for premium look
-          antialias: true,
-          powerPreference: 'high-performance',
-        }}
-        // NOTE: Don't use 'orthographic' prop - we provide our own CustomOrthoCamera
-        // which properly manages the frustum based on fretboard dimensions
-        onCreated={({ gl, size }) => {
-          gl.setClearColor(0x000000, 0); // Fully transparent
+        <Canvas
+          style={canvasStyle}
+          // CRITICAL: Use offsetSize to measure container's offset dimensions
+          // instead of getBoundingClientRect which is affected by CSS transforms.
+          // This tells react-use-measure to use offsetWidth/offsetHeight.
+          resize={{ scroll: false, offsetSize: true }}
+          // DPR (Device Pixel Ratio) controls rendering resolution
+          // Use actual device pixel ratio for crisp rendering on high-DPI displays (Retina)
+          // Capped at 3 to prevent excessive GPU load on 4K+ displays
+          dpr={Math.min(window.devicePixelRatio || 2, 3)}
+          gl={{
+            alpha: true, // Transparent background
+            // Enable antialiasing for smooth edges - essential for premium look
+            antialias: true,
+            powerPreference: 'high-performance',
+          }}
+          // NOTE: Don't use 'orthographic' prop - we provide our own CustomOrthoCamera
+          // which properly manages the frustum based on fretboard dimensions
+          onCreated={({ gl, size }) => {
+            gl.setClearColor(0x000000, 0); // Fully transparent
 
-          const canvasEl = gl.domElement;
-          isDebugEnabled() && console.log('[Ring3DOverlayCanvas] 🚀 CANVAS onCreated:', {
-            glDomElement: {
-              width: canvasEl.width,
-              height: canvasEl.height,
-              clientWidth: canvasEl.clientWidth,
-              clientHeight: canvasEl.clientHeight,
-              styleWidth: canvasEl.style.width,
-              styleHeight: canvasEl.style.height,
-            },
-            r3fSizeAtCreation: size,
-            parentElement: canvasEl.parentElement ? {
-              offsetWidth: canvasEl.parentElement.offsetWidth,
-              offsetHeight: canvasEl.parentElement.offsetHeight,
-              tagName: canvasEl.parentElement.tagName,
-            } : 'NO PARENT',
-          });
+            const canvasEl = gl.domElement;
+            isDebugEnabled() &&
+              console.log('[Ring3DOverlayCanvas] 🚀 CANVAS onCreated:', {
+                glDomElement: {
+                  width: canvasEl.width,
+                  height: canvasEl.height,
+                  clientWidth: canvasEl.clientWidth,
+                  clientHeight: canvasEl.clientHeight,
+                  styleWidth: canvasEl.style.width,
+                  styleHeight: canvasEl.style.height,
+                },
+                r3fSizeAtCreation: size,
+                parentElement: canvasEl.parentElement
+                  ? {
+                      offsetWidth: canvasEl.parentElement.offsetWidth,
+                      offsetHeight: canvasEl.parentElement.offsetHeight,
+                      tagName: canvasEl.parentElement.tagName,
+                    }
+                  : 'NO PARENT',
+              });
 
-          // FORCE correct size if R3F measured incorrectly
-          if (size.width !== CANVAS_WIDTH || size.height !== CANVAS_HEIGHT) {
-            isDebugEnabled() && console.log('[Ring3DOverlayCanvas] ⚠️ FORCING CORRECT SIZE:', {
-              r3fMeasured: { width: size.width, height: size.height },
-              forcing: { width: CANVAS_WIDTH, height: CANVAS_HEIGHT },
-            });
-            gl.setSize(CANVAS_WIDTH, CANVAS_HEIGHT);
-          }
-        }}
-      >
-      {/* CSS-Matching Perspective Camera (Architect's Solution)
+            // FORCE correct size if R3F measured incorrectly
+            if (size.width !== CANVAS_WIDTH || size.height !== CANVAS_HEIGHT) {
+              isDebugEnabled() &&
+                console.log('[Ring3DOverlayCanvas] ⚠️ FORCING CORRECT SIZE:', {
+                  r3fMeasured: { width: size.width, height: size.height },
+                  forcing: { width: CANVAS_WIDTH, height: CANVAS_HEIGHT },
+                });
+              gl.setSize(CANVAS_WIDTH, CANVAS_HEIGHT);
+            }
+          }}
+        >
+          {/* CSS-Matching Perspective Camera (Architect's Solution)
           FOV calculated to match CSS perspective
           Camera positioned at Z = cameraDistance, looking at origin
           cameraDistance default 800 matches CSS perspective: 800px */}
-      <CSSMatchingCamera
-        canvasHeight={CANVAS_HEIGHT}
-        cssPerspective={overlay3DConfig.cameraDistance}
-        fovOffset={overlay3DConfig.fovOffset}
-        cameraY={overlay3DConfig.cameraY}
-        transitionPhase={transitionPhase}
-        triggerZoomOnMount={triggerZoomOnMount}
-      />
+          <CSSMatchingCamera
+            canvasHeight={CANVAS_HEIGHT}
+            cssPerspective={overlay3DConfig.cameraDistance}
+            fovOffset={overlay3DConfig.fovOffset}
+            cameraY={overlay3DConfig.cameraY}
+            transitionPhase={transitionPhase}
+            triggerZoomOnMount={triggerZoomOnMount}
+          />
 
-      {/* Clipping Planes Manager - clips 3D content to viewport width
+          {/* Clipping Planes Manager - clips 3D content to viewport width
           This is the Three.js equivalent of CSS overflow: hidden
           TEMPORARILY DISABLED - clipping math needs to account for scroll offset and transforms */}
-      <ClippingPlanesManager
-        viewportWidth={VIEWPORT_WIDTH}
-        contentScale={overlay3DConfig.contentScale}
-        sceneX={overlay3DConfig.sceneX}
-        enabled={false}
-      />
+          <ClippingPlanesManager
+            viewportWidth={VIEWPORT_WIDTH}
+            contentScale={overlay3DConfig.contentScale}
+            sceneX={overlay3DConfig.sceneX}
+            enabled={false}
+          />
 
-      {/* Scroll Sync Manager - reads scroll position without React re-renders
+          {/* Scroll Sync Manager - reads scroll position without React re-renders
           Updates scrollLeftRef every frame for imperative material updates */}
-      <ScrollSyncManager
-        scrollContainerRef={scrollContainerRef}
-        scrollLeftRef={scrollLeftRef}
-      />
+          <ScrollSyncManager
+            scrollContainerRef={scrollContainerRef}
+            scrollLeftRef={scrollLeftRef}
+          />
 
-      {/* Lighting for 3D ring visibility */}
-      <ambientLight intensity={OVERLAY_LIGHTING_CONFIG.ambient.intensity} />
-      <pointLight
-        position={OVERLAY_LIGHTING_CONFIG.point.position as [number, number, number]}
-        intensity={OVERLAY_LIGHTING_CONFIG.point.intensity}
-      />
+          {/* Lighting for 3D ring visibility */}
+          <ambientLight intensity={OVERLAY_LIGHTING_CONFIG.ambient.intensity} />
+          <pointLight
+            position={
+              OVERLAY_LIGHTING_CONFIG.point.position as [number, number, number]
+            }
+            intensity={OVERLAY_LIGHTING_CONFIG.point.intensity}
+          />
 
-      {/* =============================================================================
+          {/* =============================================================================
           CSS TRANSFORM MATCHING - Single rotation group approach
           =============================================================================
           CSS with transform-origin: center center applies ALL rotations around a
@@ -3812,9 +4121,15 @@ export function Ring3DOverlayCanvas({
           happen around the same pivot point - the center of the viewport.
           ============================================================================= */}
 
-      {/* SCENE OFFSET GROUP: Applies sceneX/Y/Z for manual positioning adjustments */}
-      <group position={[overlay3DConfig.sceneX, overlay3DConfig.sceneY, overlay3DConfig.sceneZ]}>
-        {/* =============================================================================
+          {/* SCENE OFFSET GROUP: Applies sceneX/Y/Z for manual positioning adjustments */}
+          <group
+            position={[
+              overlay3DConfig.sceneX,
+              overlay3DConfig.sceneY,
+              overlay3DConfig.sceneZ,
+            ]}
+          >
+            {/* =============================================================================
             CSS TRANSFORM-ORIGIN SIMULATION
             =============================================================================
             CSS with transform-origin: center center works as follows:
@@ -3831,7 +4146,7 @@ export function Ring3DOverlayCanvas({
             When user adjusts: offset shifts the content before rotation
             ============================================================================= */}
 
-        {/* ROTATION GROUP: Apply rotation at origin (0,0,0)
+            {/* ROTATION GROUP: Apply rotation at origin (0,0,0)
             Content is already centered via to3DX/to3DY using CONTENT center (canvasWidth/2),
             so rotation happens around content center - matching CSS transform-origin: center center
 
@@ -3839,20 +4154,25 @@ export function Ring3DOverlayCanvas({
             - CSS rotateX(positive): top tilts AWAY → Three.js needs NEGATIVE X
             - CSS rotateY(positive): right side goes back → Three.js needs SAME sign
             - CSS rotateZ(positive): clockwise from front → Three.js needs NEGATIVE Z */}
-          <group
-            rotation={new THREE.Euler(
-              // X rotation: For flat mode, apply full tilt. For other modes, only fine-tune.
-              (overlay3DConfig.positioningMode === 'flat' || !overlay3DConfig.positioningMode
-                ? -(tiltAngle * Math.PI) / 180  // NEGATED to match CSS X direction
-                : 0
-              ) + (overlay3DConfig.rotationX * Math.PI) / 180,
-              // Y rotation: debugRotation.y + fine-tune (same sign as CSS)
-              (debugRotation.y * Math.PI) / 180 + (overlay3DConfig.rotationY * Math.PI) / 180,
-              // Z rotation: debugRotation.z + fine-tune (NEGATED to match CSS Z direction)
-              -(debugRotation.z * Math.PI) / 180 - (overlay3DConfig.rotationZ * Math.PI) / 180,
-              'ZYX' // Match CSS transform application order (Z first, then Y, then X)
-            )}
-          >
+            <group
+              rotation={
+                new THREE.Euler(
+                  // X rotation: For flat mode, apply full tilt. For other modes, only fine-tune.
+                  (overlay3DConfig.positioningMode === 'flat' ||
+                  !overlay3DConfig.positioningMode
+                    ? -(tiltAngle * Math.PI) / 180 // NEGATED to match CSS X direction
+                    : 0) +
+                    (overlay3DConfig.rotationX * Math.PI) / 180,
+                  // Y rotation: debugRotation.y + fine-tune (same sign as CSS)
+                  (debugRotation.y * Math.PI) / 180 +
+                    (overlay3DConfig.rotationY * Math.PI) / 180,
+                  // Z rotation: debugRotation.z + fine-tune (NEGATED to match CSS Z direction)
+                  -(debugRotation.z * Math.PI) / 180 -
+                    (overlay3DConfig.rotationZ * Math.PI) / 180,
+                  'ZYX', // Match CSS transform application order (Z first, then Y, then X)
+                )
+              }
+            >
               {/* SCROLL OFFSET GROUP: Aligns 3D content with 2D viewport scroll position
                   =============================================================================
                   The 3D content is positioned relative to FULL content center (FULL_CONTENT_WIDTH/2).
@@ -3880,11 +4200,15 @@ export function Ring3DOverlayCanvas({
                     contentScaleX: Independent X scale to correct horizontal stretch/compression
                     contentScaleY: Independent Y scale to correct vertical stretch/compression
                     Final scale = contentScale * contentScaleX/Y (so they compound) */}
-                <group scale={[
-                  overlay3DConfig.contentScale * (overlay3DConfig.contentScaleX ?? 1.0),
-                  overlay3DConfig.contentScale * (overlay3DConfig.contentScaleY ?? 1.0),
-                  overlay3DConfig.contentScale
-                ]}>
+                <group
+                  scale={[
+                    overlay3DConfig.contentScale *
+                      (overlay3DConfig.contentScaleX ?? 1.0),
+                    overlay3DConfig.contentScale *
+                      (overlay3DConfig.contentScaleY ?? 1.0),
+                    overlay3DConfig.contentScale,
+                  ]}
+                >
                   {/* Ring group with suspense for async loading */}
                   <Suspense fallback={null}>
                     <RingOverlayGroup
@@ -3906,10 +4230,14 @@ export function Ring3DOverlayCanvas({
                       contentHeight={VIEWPORT_HEIGHT}
                       tiltAngle={tiltAngle}
                       cssPerspective={overlay3DConfig.cameraDistance}
-                      positioningMode={overlay3DConfig.positioningMode || 'flat'}
+                      positioningMode={
+                        overlay3DConfig.positioningMode || 'flat'
+                      }
                       tiltAxisOffset={overlay3DConfig.tiltAxisOffset || 0}
                       tiltAxisOffsetX={overlay3DConfig.tiltAxisOffsetX || 0}
-                      perspectiveMultiplier={overlay3DConfig.perspectiveMultiplier ?? 1.0}
+                      perspectiveMultiplier={
+                        overlay3DConfig.perspectiveMultiplier ?? 1.0
+                      }
                       topEdgeScale={overlay3DConfig.topEdgeScale ?? 1.0}
                       bottomEdgeScale={overlay3DConfig.bottomEdgeScale ?? 1.0}
                       scrollLeftRef={scrollLeftRef}
@@ -3920,30 +4248,40 @@ export function Ring3DOverlayCanvas({
                       countdownBeats={countdownBeats}
                       activeRingZOffset={overlay3DConfig.activeRingZOffset ?? 1}
                       activeRingRadius={overlay3DConfig.activeRingRadius ?? 15}
-                      activeRingTubeRadius={overlay3DConfig.activeRingTubeRadius ?? 1.5}
-                      activeDotColor={overlay3DConfig.activeDotColor ?? '#3b82f6'}
-                      activeRingColor={overlay3DConfig.activeRingColor ?? '#facc15'}
-                      fingerLabelOffsetX={overlay3DConfig.fingerLabelOffsetX ?? 0}
-                      fingerLabelOffsetY={overlay3DConfig.fingerLabelOffsetY ?? 0}
+                      activeRingTubeRadius={
+                        overlay3DConfig.activeRingTubeRadius ?? 1.5
+                      }
+                      activeDotColor={
+                        overlay3DConfig.activeDotColor ?? '#3b82f6'
+                      }
+                      activeRingColor={
+                        overlay3DConfig.activeRingColor ?? '#facc15'
+                      }
+                      fingerLabelOffsetX={
+                        overlay3DConfig.fingerLabelOffsetX ?? 0
+                      }
+                      fingerLabelOffsetY={
+                        overlay3DConfig.fingerLabelOffsetY ?? 0
+                      }
                     />
                   )}
                 </group>
               </ScrollOffsetGroup>
             </group>
-      </group>
+          </group>
 
-      {/* Post-processing effects - controlled by bloom config (disabled by default) */}
-      {(overlay3DConfig.bloomEnabled ?? false) && (
-        <EffectComposer>
-          <Bloom
-            intensity={overlay3DConfig.bloomIntensity ?? 0.0}
-            luminanceThreshold={overlay3DConfig.bloomThreshold ?? 1.0}
-            luminanceSmoothing={0.9}
-            mipmapBlur
-          />
-        </EffectComposer>
-      )}
-      </Canvas>
+          {/* Post-processing effects - controlled by bloom config (disabled by default) */}
+          {(overlay3DConfig.bloomEnabled ?? false) && (
+            <EffectComposer>
+              <Bloom
+                intensity={overlay3DConfig.bloomIntensity ?? 0.0}
+                luminanceThreshold={overlay3DConfig.bloomThreshold ?? 1.0}
+                luminanceSmoothing={0.9}
+                mipmapBlur
+              />
+            </EffectComposer>
+          )}
+        </Canvas>
       </div>
     </div>
   );

@@ -46,9 +46,7 @@ export function JourneyProgressChart() {
               tick={false}
             />
             <RadialBar dataKey="value" background cornerRadius={6} />
-            <ChartTooltip
-              content={<ChartTooltipContent nameKey="label" />}
-            />
+            <ChartTooltip content={<ChartTooltipContent nameKey="label" />} />
           </RadialBarChart>
         </ChartContainer>
       </CardContent>

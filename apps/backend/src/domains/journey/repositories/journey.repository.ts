@@ -12,7 +12,9 @@ import { RequestContextService } from '../../../shared/services/request-context.
 
 @Injectable()
 export class JourneyRepository {
-  private readonly staticLogger = createStructuredLogger(JourneyRepository.name);
+  private readonly staticLogger = createStructuredLogger(
+    JourneyRepository.name,
+  );
 
   constructor(
     private readonly supabaseService: SupabaseService,
@@ -65,7 +67,10 @@ export class JourneyRepository {
       if (error.code === 'PGRST116') {
         return null; // Not found
       }
-      logger.error('Failed to fetch journey', error, { journeyId, correlationId });
+      logger.error('Failed to fetch journey', error, {
+        journeyId,
+        correlationId,
+      });
       throw error;
     }
 
@@ -97,7 +102,10 @@ export class JourneyRepository {
       if (error.code === 'PGRST116') {
         return null; // No journey assigned
       }
-      logger.error('Failed to fetch user journey', error, { userId, correlationId });
+      logger.error('Failed to fetch user journey', error, {
+        userId,
+        correlationId,
+      });
       throw error;
     }
 
@@ -114,9 +122,7 @@ export class JourneyRepository {
   /**
    * Calculate journey progress
    */
-  calculateProgress(
-    userJourney: UserJourneyWithDetails,
-  ): JourneyProgress {
+  calculateProgress(userJourney: UserJourneyWithDetails): JourneyProgress {
     const totalMilestones = userJourney.journey.milestones.length;
     const completedMilestones = userJourney.completedMilestones.length;
     const currentMilestoneIndex = userJourney.currentMilestoneIndex;
@@ -164,7 +170,11 @@ export class JourneyRepository {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
 
-    logger.info('Updating journey progress', { userId, updates, correlationId });
+    logger.info('Updating journey progress', {
+      userId,
+      updates,
+      correlationId,
+    });
 
     // Get current journey to update correctly
     const current = await this.getUserJourney(userId);

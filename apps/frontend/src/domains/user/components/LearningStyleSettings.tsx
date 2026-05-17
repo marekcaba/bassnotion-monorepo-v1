@@ -58,7 +58,7 @@ export function LearningStyleSettings({
   const [selected, setSelected] = useState<LearningStyle>(currentStyle);
   const [isUpdating, setIsUpdating] = useState(false);
   const [updatingStyle, setUpdatingStyle] = useState<LearningStyle | null>(
-    null
+    null,
   );
   const { toast } = useToast();
 
@@ -96,7 +96,7 @@ export function LearningStyleSettings({
         setUpdatingStyle(null);
       }
     },
-    [selected, isUpdating, onUpdate, toast]
+    [selected, isUpdating, onUpdate, toast],
   );
 
   return (
@@ -128,7 +128,7 @@ export function LearningStyleSettings({
                 isSelected
                   ? 'border-[#ffc700]/50 bg-gradient-to-br ' + style.accentColor
                   : 'border-zinc-700/50 bg-zinc-800/30',
-                isUpdating && !isLoading && 'opacity-50 cursor-not-allowed'
+                isUpdating && !isLoading && 'opacity-50 cursor-not-allowed',
               )}
             >
               {/* Selection Indicator */}
@@ -137,7 +137,7 @@ export function LearningStyleSettings({
                   'relative flex size-6 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-300 mt-0.5',
                   isSelected
                     ? 'border-[#ffc700] bg-[#ffc700]'
-                    : 'border-zinc-600 bg-transparent group-hover:border-zinc-500'
+                    : 'border-zinc-600 bg-transparent group-hover:border-zinc-500',
                 )}
               >
                 {isLoading ? (
@@ -158,7 +158,7 @@ export function LearningStyleSettings({
                   'flex size-10 shrink-0 items-center justify-center rounded-lg transition-all duration-300',
                   isSelected
                     ? 'bg-zinc-900/50 text-[#ffc700]'
-                    : 'bg-zinc-700/30 text-zinc-500 group-hover:text-zinc-400'
+                    : 'bg-zinc-700/30 text-zinc-500 group-hover:text-zinc-400',
                 )}
               >
                 <Icon className="size-5" />
@@ -170,7 +170,7 @@ export function LearningStyleSettings({
                   <p
                     className={cn(
                       'font-medium leading-none transition-colors duration-300',
-                      isSelected ? 'text-white' : 'text-zinc-300'
+                      isSelected ? 'text-white' : 'text-zinc-300',
                     )}
                   >
                     {style.title}
@@ -184,7 +184,7 @@ export function LearningStyleSettings({
                 <p
                   className={cn(
                     'text-sm leading-relaxed transition-colors duration-300',
-                    isSelected ? 'text-zinc-300' : 'text-zinc-500'
+                    isSelected ? 'text-zinc-300' : 'text-zinc-500',
                   )}
                 >
                   {style.description}
@@ -196,7 +196,7 @@ export function LearningStyleSettings({
                 className={cn(
                   'absolute inset-0 -z-10 rounded-xl opacity-0 blur-xl transition-opacity duration-500',
                   'group-hover:opacity-100',
-                  isSelected ? style.pulseColor + '/10' : 'bg-zinc-500/5'
+                  isSelected ? style.pulseColor + '/10' : 'bg-zinc-500/5',
                 )}
               />
             </button>

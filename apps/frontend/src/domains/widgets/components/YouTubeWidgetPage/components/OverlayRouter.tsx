@@ -40,7 +40,9 @@ interface OverlayRouterProps {
  * Converts a QUIZ overlay event's content into the UnderstandQuestion
  * shape expected by UnderstandQuestionOverlay.
  */
-function toUnderstandQuestion(event: VideoOverlayEvent<'QUIZ'>): UnderstandQuestion {
+function toUnderstandQuestion(
+  event: VideoOverlayEvent<'QUIZ'>,
+): UnderstandQuestion {
   return {
     id: event.id,
     question: event.content.question,

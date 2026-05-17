@@ -39,7 +39,9 @@ describe('useSnapshotTransition', () => {
   describe('Initialization', () => {
     it('should initialize with source data', () => {
       const { result } = renderHook(() =>
-        useSnapshotTransition(['note1', 'note2'], 'exercise-a', { fadeDuration: FADE_DURATION })
+        useSnapshotTransition(['note1', 'note2'], 'exercise-a', {
+          fadeDuration: FADE_DURATION,
+        }),
       );
 
       expect(result.current.displayData).toEqual(['note1', 'note2']);
@@ -50,7 +52,9 @@ describe('useSnapshotTransition', () => {
 
     it('should handle undefined key on init', () => {
       const { result } = renderHook(() =>
-        useSnapshotTransition(['note1'], undefined, { fadeDuration: FADE_DURATION })
+        useSnapshotTransition(['note1'], undefined, {
+          fadeDuration: FADE_DURATION,
+        }),
       );
 
       expect(result.current.displayData).toEqual(['note1']);
@@ -61,8 +65,9 @@ describe('useSnapshotTransition', () => {
   describe('Same Key Updates (Stable Phase)', () => {
     it('should update displayData immediately when stable and same key', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: ['note1'], key: 'exercise-a' } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: ['note1'], key: 'exercise-a' } },
       );
 
       expect(result.current.displayData).toEqual(['note1']);
@@ -78,8 +83,9 @@ describe('useSnapshotTransition', () => {
   describe('Key Change Transition', () => {
     it('should start fade-out when key changes', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: ['old-note'], key: 'exercise-a' } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: ['old-note'], key: 'exercise-a' } },
       );
 
       // Change key
@@ -98,8 +104,9 @@ describe('useSnapshotTransition', () => {
 
     it('should keep displayData FROZEN during entire fade-out', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: ['old-note'], key: 'exercise-a' } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: ['old-note'], key: 'exercise-a' } },
       );
 
       // Change key - this should trigger transition
@@ -137,8 +144,9 @@ describe('useSnapshotTransition', () => {
 
     it('should SWAP at exactly fade-out completion', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: ['old-note'], key: 'exercise-a' } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: ['old-note'], key: 'exercise-a' } },
       );
 
       // Change key
@@ -162,8 +170,9 @@ describe('useSnapshotTransition', () => {
 
     it('should complete full transition cycle', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: ['old'], key: 'a' } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: ['old'], key: 'a' } },
       );
 
       // Initial state
@@ -202,8 +211,9 @@ describe('useSnapshotTransition', () => {
   describe('Data Updates During Transition (No Bleed-Through)', () => {
     it('should NOT update displayData when source changes during fade-out', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: ['old-note'], key: 'exercise-a' } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: ['old-note'], key: 'exercise-a' } },
       );
 
       // Start transition to B
@@ -228,8 +238,9 @@ describe('useSnapshotTransition', () => {
 
     it('should allow same-key updates during fade-in (displayKeyRef matches)', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: ['old'], key: 'a' } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: ['old'], key: 'a' } },
       );
 
       // Complete fade-out, start fade-in
@@ -264,8 +275,9 @@ describe('useSnapshotTransition', () => {
   describe('Rapid Key Changes', () => {
     it('should handle A→B→C transition by using latest data at SWAP', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: ['a-data'], key: 'a' } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: ['a-data'], key: 'a' } },
       );
 
       // Start A→B
@@ -285,8 +297,9 @@ describe('useSnapshotTransition', () => {
 
     it('should handle clicking same exercise twice quickly', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: ['a-data'], key: 'a' } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: ['a-data'], key: 'a' } },
       );
 
       // Start A→B
@@ -308,8 +321,9 @@ describe('useSnapshotTransition', () => {
   describe('Edge Cases', () => {
     it('should handle empty arrays', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: ['note1'], key: 'a' } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: ['note1'], key: 'a' } },
       );
 
       // Transition to empty
@@ -321,8 +335,9 @@ describe('useSnapshotTransition', () => {
 
     it('should handle null key gracefully', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: ['note1'], key: 'a' as string | undefined } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: ['note1'], key: 'a' as string | undefined } },
       );
 
       // Change to undefined key
@@ -334,8 +349,9 @@ describe('useSnapshotTransition', () => {
 
     it('should handle very short fade duration', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: 50 }),
-        { initialProps: { data: ['old'], key: 'a' } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: 50 }),
+        { initialProps: { data: ['old'], key: 'a' } },
       );
 
       rerender({ data: ['new'], key: 'b' });
@@ -346,8 +362,9 @@ describe('useSnapshotTransition', () => {
 
     it('should clean up timeouts on unmount', async () => {
       const { result, rerender, unmount } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: ['old'], key: 'a' } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: ['old'], key: 'a' } },
       );
 
       // Start transition
@@ -364,8 +381,9 @@ describe('useSnapshotTransition', () => {
   describe('Timing Precision', () => {
     it('should have opacity 0 during SWAP moment', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: ['old'], key: 'a' } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: ['old'], key: 'a' } },
       );
 
       const opacityLog: { time: number; opacity: number; data: unknown }[] = [];
@@ -384,7 +402,9 @@ describe('useSnapshotTransition', () => {
 
       // Find SWAP moment (when data changes)
       const swapIndex = opacityLog.findIndex(
-        (log, i) => i > 0 && JSON.stringify(log.data) !== JSON.stringify(opacityLog[i - 1].data)
+        (log, i) =>
+          i > 0 &&
+          JSON.stringify(log.data) !== JSON.stringify(opacityLog[i - 1].data),
       );
 
       if (swapIndex > 0) {
@@ -401,8 +421,14 @@ describe('useSnapshotTransition', () => {
   describe('Advanced Scenarios', () => {
     it('should handle undefined→defined key transition (no exercise → first exercise)', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: [] as string[], key: undefined as string | undefined } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        {
+          initialProps: {
+            data: [] as string[],
+            key: undefined as string | undefined,
+          },
+        },
       );
 
       // Initial state with no exercise
@@ -423,8 +449,14 @@ describe('useSnapshotTransition', () => {
 
     it('should handle defined→undefined key transition (exercise → no exercise)', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: ['note1'], key: 'exercise-1' as string | undefined } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        {
+          initialProps: {
+            data: ['note1'],
+            key: 'exercise-1' as string | undefined,
+          },
+        },
       );
 
       // Initial state with exercise
@@ -444,8 +476,9 @@ describe('useSnapshotTransition', () => {
 
     it('should handle A→B→A return-to-original pattern', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: ['a-original'], key: 'a' } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: ['a-original'], key: 'a' } },
       );
 
       // Start A→B
@@ -467,8 +500,9 @@ describe('useSnapshotTransition', () => {
 
     it('should handle stress test with many rapid transitions', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: ['start'], key: 'start' } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: ['start'], key: 'start' } },
       );
 
       // Rapid fire transitions
@@ -494,8 +528,9 @@ describe('useSnapshotTransition', () => {
       const sharedData = ['same-notes'];
 
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: sharedData, key: 'exercise-1' } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: sharedData, key: 'exercise-1' } },
       );
 
       // Transition to different exercise with same data
@@ -514,8 +549,9 @@ describe('useSnapshotTransition', () => {
 
     it('should handle object data with reference changes', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: { notes: ['c', 'd'] }, key: 'a' } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: { notes: ['c', 'd'] }, key: 'a' } },
       );
 
       // Same logical data but new reference - should update when stable
@@ -541,8 +577,9 @@ describe('useSnapshotTransition', () => {
 
     it('should maintain correct state through complete cycle multiple times', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: ['exercise-1-notes'], key: 'ex1' } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: ['exercise-1-notes'], key: 'ex1' } },
       );
 
       // Run through 3 complete transition cycles

@@ -57,10 +57,26 @@ function getExerciseId(exercise: Exercise): string {
 
 // Difficulty colors with neumorphic style
 const difficultyStyles = {
-  beginner: { bg: 'bg-emerald-500/20', text: 'text-emerald-400', glow: 'shadow-emerald-500/20' },
-  intermediate: { bg: 'bg-amber-500/20', text: 'text-amber-400', glow: 'shadow-amber-500/20' },
-  advanced: { bg: 'bg-red-500/20', text: 'text-red-400', glow: 'shadow-red-500/20' },
-  expert: { bg: 'bg-red-500/20', text: 'text-red-400', glow: 'shadow-red-500/20' },
+  beginner: {
+    bg: 'bg-emerald-500/20',
+    text: 'text-emerald-400',
+    glow: 'shadow-emerald-500/20',
+  },
+  intermediate: {
+    bg: 'bg-amber-500/20',
+    text: 'text-amber-400',
+    glow: 'shadow-amber-500/20',
+  },
+  advanced: {
+    bg: 'bg-red-500/20',
+    text: 'text-red-400',
+    glow: 'shadow-red-500/20',
+  },
+  expert: {
+    bg: 'bg-red-500/20',
+    text: 'text-red-400',
+    glow: 'shadow-red-500/20',
+  },
 } as const;
 
 type DifficultyKey = keyof typeof difficultyStyles;
@@ -164,7 +180,11 @@ function ExerciseItem({
         <div className="flex-1 min-w-0">
           <h4
             className={`font-medium text-sm truncate transition-colors duration-200 ${
-              isLocked ? 'text-slate-400' : isSelected ? 'text-white' : 'text-slate-300'
+              isLocked
+                ? 'text-slate-400'
+                : isSelected
+                  ? 'text-white'
+                  : 'text-slate-300'
             }`}
           >
             {title}
@@ -190,7 +210,11 @@ function ExerciseItem({
 }
 
 // Selected exercise description box
-function ExerciseDescriptionBox({ exercise }: { exercise: Exercise | undefined }) {
+function ExerciseDescriptionBox({
+  exercise,
+}: {
+  exercise: Exercise | undefined;
+}) {
   if (!exercise) {
     return (
       <div className="p-4 bg-slate-700/20 rounded-xl border border-slate-700/30">
@@ -202,7 +226,8 @@ function ExerciseDescriptionBox({ exercise }: { exercise: Exercise | undefined }
   }
 
   const title = safeString(exercise.title) || 'Untitled Exercise';
-  const description = safeString(exercise.description) || 'No description available';
+  const description =
+    safeString(exercise.description) || 'No description available';
   const difficulty = safeString(exercise.difficulty) || 'beginner';
   const totalBars = exercise.total_bars || '?';
   const bpm = exercise.bpm || '?';
@@ -213,7 +238,9 @@ function ExerciseDescriptionBox({ exercise }: { exercise: Exercise | undefined }
     <div className="p-4 bg-gradient-to-br from-slate-700/30 to-slate-800/40 rounded-xl border border-slate-600/30 shadow-inner">
       {/* Header with title and difficulty */}
       <div className="flex items-start justify-between gap-3 mb-3">
-        <h3 className="text-base font-semibold text-white leading-tight">{title}</h3>
+        <h3 className="text-base font-semibold text-white leading-tight">
+          {title}
+        </h3>
         <span
           className={`flex-shrink-0 px-2.5 py-1 rounded-lg text-xs font-semibold ${diffStyle.bg} ${diffStyle.text} shadow-sm ${diffStyle.glow}`}
         >
@@ -339,8 +366,14 @@ export function ExerciseControlPanel({
         ) : (
           (() => {
             // Split exercises into unlocked and locked
-            const unlockedExercises: Array<{ exercise: Exercise; index: number }> = [];
-            const lockedExercises: Array<{ exercise: Exercise; index: number }> = [];
+            const unlockedExercises: Array<{
+              exercise: Exercise;
+              index: number;
+            }> = [];
+            const lockedExercises: Array<{
+              exercise: Exercise;
+              index: number;
+            }> = [];
 
             exercises.forEach((exercise, index) => {
               const difficulty = safeString(exercise.difficulty).toLowerCase();
@@ -354,9 +387,11 @@ export function ExerciseControlPanel({
 
             // Calculate progress for the progress bar
             // For now, hardcoded to 0 completions per exercise
-            const totalRequired = unlockedExercises.length * REQUIRED_COMPLETIONS;
+            const totalRequired =
+              unlockedExercises.length * REQUIRED_COMPLETIONS;
             const totalCompleted = 0; // TODO: Sum of all completed counts
-            const progressPercent = totalRequired > 0 ? (totalCompleted / totalRequired) * 100 : 0;
+            const progressPercent =
+              totalRequired > 0 ? (totalCompleted / totalRequired) * 100 : 0;
 
             return (
               <>
@@ -436,8 +471,12 @@ export function ExerciseControlPanel({
           <ControlButton
             icon={Heart}
             label="Like"
-            isActive={selectedExerciseId ? favorites.has(selectedExerciseId) : false}
-            onClick={() => selectedExerciseId && toggleFavorite(selectedExerciseId)}
+            isActive={
+              selectedExerciseId ? favorites.has(selectedExerciseId) : false
+            }
+            onClick={() =>
+              selectedExerciseId && toggleFavorite(selectedExerciseId)
+            }
             variant="favorite"
           />
 

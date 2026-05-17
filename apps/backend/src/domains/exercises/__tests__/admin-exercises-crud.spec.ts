@@ -28,7 +28,7 @@ describe('AdminExercisesService - Story 4.4 CRUD Enhancements', () => {
 
     mockSupabaseService = {
       getClient: vi.fn(() => mockSupabaseClient),
-      moveFile: vi.fn(),
+      moveToPermanent: vi.fn(),
     } as unknown as SupabaseService;
 
     service = new AdminExercisesService(mockSupabaseService);
@@ -131,7 +131,7 @@ describe('AdminExercisesService - Story 4.4 CRUD Enhancements', () => {
 
       const permanentUrl =
         'https://storage.supabase.co/exercise-midi-files/exercises/exercise-456/123456_bassline.mid';
-      mockSupabaseService.moveFile.mockResolvedValueOnce(permanentUrl);
+      mockSupabaseService.moveToPermanent.mockResolvedValueOnce(permanentUrl);
 
       const mockCreated = {
         id: 'exercise-456',
@@ -145,7 +145,7 @@ describe('AdminExercisesService - Story 4.4 CRUD Enhancements', () => {
 
       await service.create(exerciseWithTempMidi);
 
-      expect(mockSupabaseService.moveFile).toHaveBeenCalledWith(
+      expect(mockSupabaseService.moveToPermanent).toHaveBeenCalledWith(
         'exercise-midi-temp/abc123.mid',
         'exercise-midi-files',
         expect.stringContaining('exercises/'),
@@ -178,7 +178,7 @@ describe('AdminExercisesService - Story 4.4 CRUD Enhancements', () => {
 
       await service.create(exerciseWithExistingMidi);
 
-      expect(mockSupabaseService.moveFile).not.toHaveBeenCalled();
+      expect(mockSupabaseService.moveToPermanent).not.toHaveBeenCalled();
       expect(mockSupabaseClient.insert).toHaveBeenCalledWith(
         expect.objectContaining({
           bassline_midi_url: 'https://storage.supabase.co/existing.mid',
@@ -248,7 +248,7 @@ describe('AdminExercisesService - Story 4.4 CRUD Enhancements', () => {
 
       const permanentUrl =
         'https://storage.supabase.co/exercise-midi-files/exercises/exercise-123/789012_bassline.mid';
-      mockSupabaseService.moveFile.mockResolvedValueOnce(permanentUrl);
+      mockSupabaseService.moveToPermanent.mockResolvedValueOnce(permanentUrl);
 
       const mockUpdated = {
         id: 'exercise-123',
@@ -261,7 +261,7 @@ describe('AdminExercisesService - Story 4.4 CRUD Enhancements', () => {
 
       await service.update('exercise-123', updateWithTempMidi);
 
-      expect(mockSupabaseService.moveFile).toHaveBeenCalledWith(
+      expect(mockSupabaseService.moveToPermanent).toHaveBeenCalledWith(
         'exercise-midi-temp/xyz789.mid',
         'exercise-midi-files',
         expect.stringContaining('exercises/exercise-123/'),
@@ -448,7 +448,7 @@ describe('AdminExercisesService - Story 4.4 CRUD Enhancements', () => {
         created_by: 'user-123',
       };
 
-      mockSupabaseService.moveFile.mockRejectedValueOnce(
+      mockSupabaseService.moveToPermanent.mockRejectedValueOnce(
         new Error('File not found'),
       );
 

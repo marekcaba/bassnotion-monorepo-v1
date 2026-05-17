@@ -4,7 +4,10 @@
  * Integrates the repository pattern with the existing DI system
  */
 
-import { serviceRegistry, Service } from '../../services/core/ServiceRegistry.js';
+import {
+  serviceRegistry,
+  Service,
+} from '../../services/core/ServiceRegistry.js';
 import { RepositoryService } from './RepositoryService.js';
 import { createStructuredLogger } from '../../modules/shared/index.js';
 
@@ -42,17 +45,23 @@ export async function registerPlaybackRepositories(): Promise<void> {
 
     // Also register individual repository accessors for convenience
     // Type the accessor services properly
-    const trackAccessor: RepositoryAccessorService<ReturnType<typeof repositoryService.getTrackRepository>> = {
+    const trackAccessor: RepositoryAccessorService<
+      ReturnType<typeof repositoryService.getTrackRepository>
+    > = {
       getRepository: () => repositoryService.getTrackRepository(),
     };
     serviceRegistry.register('trackRepository', trackAccessor);
 
-    const pluginAccessor: RepositoryAccessorService<ReturnType<typeof repositoryService.getPluginPresetRepository>> = {
+    const pluginAccessor: RepositoryAccessorService<
+      ReturnType<typeof repositoryService.getPluginPresetRepository>
+    > = {
       getRepository: () => repositoryService.getPluginPresetRepository(),
     };
     serviceRegistry.register('pluginPresetRepository', pluginAccessor);
 
-    const transportAccessor: RepositoryAccessorService<ReturnType<typeof repositoryService.getTransportRepository>> = {
+    const transportAccessor: RepositoryAccessorService<
+      ReturnType<typeof repositoryService.getTransportRepository>
+    > = {
       getRepository: () => repositoryService.getTransportRepository(),
     };
     serviceRegistry.register('transportRepository', transportAccessor);

@@ -12,11 +12,7 @@ import type {
   BassString,
   BassStringConfig,
 } from './types.js';
-import {
-  BASS_TUNING,
-  midiNoteToName,
-  noteNameToMidi,
-} from './types.js';
+import { BASS_TUNING, midiNoteToName, noteNameToMidi } from './types.js';
 
 const logger = createStructuredLogger('BassSampleManifest');
 

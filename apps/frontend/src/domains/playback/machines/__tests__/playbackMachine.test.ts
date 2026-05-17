@@ -286,7 +286,10 @@ describe('PlaybackMachine', () => {
       const mockAudioContext = createMockAudioContext();
       const mockDestination = createMockAudioDestination();
 
-      const testTrack = createTestTrack({ id: 'bass-track-1', instrumentType: 'bass' });
+      const testTrack = createTestTrack({
+        id: 'bass-track-1',
+        instrumentType: 'bass',
+      });
 
       const actor = createActor(playbackMachine);
       actor.start();
@@ -303,7 +306,9 @@ describe('PlaybackMachine', () => {
       actor.send({ type: 'REGISTER_TRACK', track: testTrack });
 
       expect(actor.getSnapshot().context.tracks.size).toBe(1);
-      expect(actor.getSnapshot().context.tracks.get('bass-track-1')).toEqual(testTrack);
+      expect(actor.getSnapshot().context.tracks.get('bass-track-1')).toEqual(
+        testTrack,
+      );
       actor.stop();
     });
 
@@ -337,8 +342,14 @@ describe('PlaybackMachine', () => {
       const mockAudioContext = createMockAudioContext();
       const mockDestination = createMockAudioDestination();
 
-      const metronome1 = createTestTrack({ id: 'metronome-1', instrumentType: 'metronome' });
-      const metronome2 = createTestTrack({ id: 'metronome-2', instrumentType: 'metronome' });
+      const metronome1 = createTestTrack({
+        id: 'metronome-1',
+        instrumentType: 'metronome',
+      });
+      const metronome2 = createTestTrack({
+        id: 'metronome-2',
+        instrumentType: 'metronome',
+      });
 
       const actor = createActor(playbackMachine);
       actor.start();
@@ -623,7 +634,7 @@ describe('PlaybackMachine', () => {
           },
           { type: 'PAUSE' }, // Should be ignored in ready state
         ],
-        { timeout: 500 }
+        { timeout: 500 },
       );
 
       // Should still be in ready (PAUSE ignored)
@@ -636,7 +647,10 @@ describe('PlaybackMachine', () => {
       const mockAudioContext = createMockAudioContext();
       const mockDestination = createMockAudioDestination();
 
-      const harmonyTrack = createTestTrack({ id: 'harmony-1', instrumentType: 'harmony' });
+      const harmonyTrack = createTestTrack({
+        id: 'harmony-1',
+        instrumentType: 'harmony',
+      });
 
       const actor = createActor(playbackMachine);
       actor.start();
@@ -650,9 +664,15 @@ describe('PlaybackMachine', () => {
       await new Promise((resolve) => setTimeout(resolve, 150));
 
       // Update tracks with harmony instrument
-      actor.send({ type: 'UPDATE_TRACKS', tracks: [harmonyTrack], harmonyInstrument: 'wurlitzer' });
+      actor.send({
+        type: 'UPDATE_TRACKS',
+        tracks: [harmonyTrack],
+        harmonyInstrument: 'wurlitzer',
+      });
 
-      expect(actor.getSnapshot().context.currentHarmonyInstrument).toBe('wurlitzer');
+      expect(actor.getSnapshot().context.currentHarmonyInstrument).toBe(
+        'wurlitzer',
+      );
 
       actor.stop();
     });
@@ -669,7 +689,9 @@ describe('PlaybackMachine EventBus Integration', () => {
     const emittedEvents: string[] = [];
 
     // Listen to events
-    mockEventBus.on('playback:state-change', () => emittedEvents.push('state-change'));
+    mockEventBus.on('playback:state-change', () =>
+      emittedEvents.push('state-change'),
+    );
     mockEventBus.on('playback:starting', () => emittedEvents.push('starting'));
     mockEventBus.on('playback:start', () => emittedEvents.push('start'));
     mockEventBus.on('playback:stop', () => emittedEvents.push('stop'));

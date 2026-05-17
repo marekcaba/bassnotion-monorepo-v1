@@ -97,7 +97,7 @@ const ENHARMONIC_MAP: Record<string, string> = {
  * parseChord('Cmaj7') → ['C4', 'E4', 'G4', 'B4']
  * parseChord('Dm7', 3) → ['D3', 'F3', 'A3', 'C4']
  */
-export function parseChord(chordSymbol: string, octave: number = 4): string[] {
+export function parseChord(chordSymbol: string, octave = 4): string[] {
   // Parse root note and chord quality
   const { root, quality } = parseChordSymbol(chordSymbol);
 
@@ -236,10 +236,7 @@ export function mapVelocityToLayer(velocity: number): string {
  * parseDuration('8n', 120) → 0.25 (eighth note at 120 BPM)
  * parseDuration('2n', 120) → 1.0  (half note at 120 BPM)
  */
-export function parseDuration(
-  duration: string | undefined,
-  bpm: number = 120,
-): number {
+export function parseDuration(duration: string | undefined, bpm = 120): number {
   if (!duration) {
     return 0.5; // Default to quarter note
   }

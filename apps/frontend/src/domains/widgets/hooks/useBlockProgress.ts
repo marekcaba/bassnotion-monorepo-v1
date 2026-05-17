@@ -33,7 +33,9 @@ export function useBlockProgress({
   blocks,
   userId,
 }: UseBlockProgressParams): UseBlockProgressResult {
-  const [blockProgress, setBlockProgress] = useState<Record<string, BlockProgress>>({});
+  const [blockProgress, setBlockProgress] = useState<
+    Record<string, BlockProgress>
+  >({});
   const [isHydrated, setIsHydrated] = useState(false);
   const syncedRef = useRef(false);
 
@@ -67,7 +69,10 @@ export function useBlockProgress({
           .single();
 
         if (data?.block_progress && typeof data.block_progress === 'object') {
-          const dbProgress = data.block_progress as Record<string, BlockProgress>;
+          const dbProgress = data.block_progress as Record<
+            string,
+            BlockProgress
+          >;
           setBlockProgress((prev) => {
             // Merge: most complete wins (completed trumps not-completed)
             const merged = { ...prev };
@@ -131,13 +136,13 @@ export function useBlockProgress({
               block_progress: { [blockId]: progress },
               last_accessed_block_id: blockId,
             },
-            { onConflict: 'user_id,tutorial_id' }
+            { onConflict: 'user_id,tutorial_id' },
           )
           .then(() => {})
           .catch(() => {});
       }
     },
-    [tutorialId, userId]
+    [tutorialId, userId],
   );
 
   // Calculate overall progress as percentage of completed blocks
@@ -146,7 +151,7 @@ export function useBlockProgress({
       ? Math.round(
           (Object.values(blockProgress).filter((p) => p.completed).length /
             blocks.length) *
-            100
+            100,
         )
       : 0;
 

@@ -82,7 +82,7 @@ function verifyFile(filePath: string): { success: boolean; error?: string } {
     // Check 1: File has no static Tone import
     const content = require('fs').readFileSync(
       `apps/frontend/${filePath}`,
-      'utf-8'
+      'utf-8',
     );
 
     if (content.includes("import * as Tone from 'tone'")) {
@@ -175,7 +175,7 @@ function verifyAll(): void {
 
   console.log('\n' + '='.repeat(60));
   console.log(
-    `\n📊 TOTAL: ${totalPassed} passed, ${totalFailed} failed out of ${totalPassed + totalFailed} files\n`
+    `\n📊 TOTAL: ${totalPassed} passed, ${totalFailed} failed out of ${totalPassed + totalFailed} files\n`,
   );
 
   if (totalFailed > 0) {
@@ -191,6 +191,8 @@ if (!arg || arg === 'all') {
 } else if (arg in BATCHES) {
   verifyBatch(arg);
 } else {
-  console.log('Usage: verify-lazy-tone.ts [batch1|batch2|batch3|batch4|batch5|misc|all]');
+  console.log(
+    'Usage: verify-lazy-tone.ts [batch1|batch2|batch3|batch4|batch5|misc|all]',
+  );
   process.exit(1);
 }

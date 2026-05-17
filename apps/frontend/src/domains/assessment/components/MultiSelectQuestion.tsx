@@ -46,7 +46,9 @@ export function MultiSelectQuestion({
           {question.question}
         </h2>
         {question.description && (
-          <p className="mt-1.5 text-xs sm:text-sm text-white/40">{question.description}</p>
+          <p className="mt-1.5 text-xs sm:text-sm text-white/40">
+            {question.description}
+          </p>
         )}
         <p className="mt-1 text-xs text-white/50">Select all that apply</p>
       </div>
@@ -68,9 +70,7 @@ export function MultiSelectQuestion({
                 'rounded-lg',
                 'transition-colors duration-150',
                 'text-left focus:outline-none focus-visible:ring-1 focus-visible:ring-white/20',
-                isSelected
-                  ? 'bg-white/10'
-                  : 'hover:bg-white/[0.04]',
+                isSelected ? 'bg-white/10' : 'hover:bg-white/[0.04]',
               )}
               role="checkbox"
               aria-checked={isSelected}
@@ -79,9 +79,7 @@ export function MultiSelectQuestion({
               <span
                 className={cn(
                   'flex items-center justify-center w-3.5 h-3.5 rounded border transition-all duration-150 shrink-0',
-                  isSelected
-                    ? 'bg-white border-white'
-                    : 'border-white/30',
+                  isSelected ? 'bg-white border-white' : 'border-white/30',
                 )}
               >
                 {isSelected && (

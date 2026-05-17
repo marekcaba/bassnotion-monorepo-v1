@@ -55,7 +55,7 @@ export interface FloatingTorusRingProps {
 function calculateProgress(
   noteStartTime: number,
   currentTime: number,
-  lookaheadMs: number
+  lookaheadMs: number,
 ): number {
   const lookaheadSec = lookaheadMs / 1000;
   const entryTime = noteStartTime - lookaheadSec;
@@ -132,7 +132,7 @@ export function FloatingTorusRing({
     const progress = calculateProgress(
       note.startTime,
       currentTime,
-      config.lookaheadMs
+      config.lookaheadMs,
     );
 
     // Apply animation speed multiplier to delta for consistent feel
@@ -145,21 +145,21 @@ export function FloatingTorusRing({
     meshRef.current.position.y = THREE.MathUtils.lerp(
       meshRef.current.position.y,
       targetY,
-      Math.min(delta * 5 * speedMultiplier, 1)
+      Math.min(delta * 5 * speedMultiplier, 1),
     );
 
     // Animate X position toward target
     meshRef.current.position.x = THREE.MathUtils.lerp(
       meshRef.current.position.x,
       targetPosition[0],
-      Math.min(delta * 5 * speedMultiplier, 1)
+      Math.min(delta * 5 * speedMultiplier, 1),
     );
 
     // Animate Z position toward target
     meshRef.current.position.z = THREE.MathUtils.lerp(
       meshRef.current.position.z,
       targetPosition[2],
-      Math.min(delta * 5 * speedMultiplier, 1)
+      Math.min(delta * 5 * speedMultiplier, 1),
     );
 
     // Gentle rotation for visual interest

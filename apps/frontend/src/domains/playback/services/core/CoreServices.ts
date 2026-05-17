@@ -221,7 +221,10 @@ export class CoreServices {
         logger.info('CoreServices: Mixer initialized with master bus');
         console.log('[DEBUG-INIT] ✅ Mixer initialized with master bus');
       } catch (mixerError) {
-        logger.warn('CoreServices: Failed to initialize Mixer (will initialize on demand)', mixerError);
+        logger.warn(
+          'CoreServices: Failed to initialize Mixer (will initialize on demand)',
+          mixerError,
+        );
       }
 
       // Initialize RecoveryEventHandlers to wire up recovery strategies from ErrorRecoveryRegistry
@@ -330,7 +333,10 @@ export class CoreServices {
       //   T+3500ms: samplesReady fires → single injection succeeds
       const skipInitialBufferInjection = true;
 
-      if (!skipInitialBufferInjection && (this.regionProcessor || this.playbackEngine)) {
+      if (
+        !skipInitialBufferInjection &&
+        (this.regionProcessor || this.playbackEngine)
+      ) {
         console.log(
           '[CORESERVICES-BUFFER-INJECTION] Starting buffer injection...',
         );
@@ -385,8 +391,10 @@ export class CoreServices {
 
         if (accentBuffer && clickBuffer && this.playbackEngine) {
           // Use instrument gain node for volume control
-          const metronomeGainNode = this.playbackEngine.getOrCreateInstrumentGainNode('metronome');
-          const metronomeDestination = metronomeGainNode || audioContext.destination;
+          const metronomeGainNode =
+            this.playbackEngine.getOrCreateInstrumentGainNode('metronome');
+          const metronomeDestination =
+            metronomeGainNode || audioContext.destination;
 
           this.playbackEngine.setMetronomeBuffers(
             accentBuffer,
@@ -419,7 +427,8 @@ export class CoreServices {
 
         if (kickBuffer && snareBuffer && hihatBuffer) {
           // Use instrument gain node for volume control, fallback to destination
-          const drumsGainNode = this.playbackEngine?.getOrCreateInstrumentGainNode('drums');
+          const drumsGainNode =
+            this.playbackEngine?.getOrCreateInstrumentGainNode('drums');
           const drumsDestination = drumsGainNode || audioContext.destination;
 
           if (this.regionProcessor) {
@@ -437,10 +446,7 @@ export class CoreServices {
               snare: snareBuffer,
               hihat: hihatBuffer,
             };
-            this.playbackEngine.setDrumBuffers(
-              drumBuffers,
-              drumsDestination,
-            );
+            this.playbackEngine.setDrumBuffers(drumBuffers, drumsDestination);
           }
           logger.info(
             '✅ CoreServices: Drum buffers injected - direct audio scheduling enabled',
@@ -712,7 +718,9 @@ export class CoreServices {
 
     // Store handler reference for cleanup in dispose()
     this.samplesReadyHandler = async () => {
-      logger.info('CoreServices: samplesReady event received - re-injecting buffers...');
+      logger.info(
+        'CoreServices: samplesReady event received - re-injecting buffers...',
+      );
       lifecycle.checkpoint('BUFFER_REINJECTION_START', {
         reason: 'samplesReady event received',
       });
@@ -720,7 +728,9 @@ export class CoreServices {
       // ✅ FIX: Check if audioEngine is ready before attempting buffer injection
       // samplesReady often fires before user interaction (before AudioContext is available)
       if (!this.audioEngine.isReady()) {
-        logger.info('CoreServices: AudioEngine not ready yet - deferring buffer injection until initialization');
+        logger.info(
+          'CoreServices: AudioEngine not ready yet - deferring buffer injection until initialization',
+        );
 
         // Set up a one-time listener for when CoreServices is fully initialized
         let unsubscribe: (() => void) | null = null;
@@ -731,15 +741,22 @@ export class CoreServices {
             unsubscribe = null;
           }
 
-          logger.info('CoreServices: AudioEngine now ready - retrying buffer injection');
+          logger.info(
+            'CoreServices: AudioEngine now ready - retrying buffer injection',
+          );
           try {
             await this.reinjectAllBuffers();
             lifecycle.checkpoint('BUFFER_REINJECTION_COMPLETE', {
               success: true,
             });
-            logger.info('CoreServices: Deferred buffer injection completed successfully');
+            logger.info(
+              'CoreServices: Deferred buffer injection completed successfully',
+            );
           } catch (error) {
-            logger.error('CoreServices: Deferred buffer re-injection failed:', error);
+            logger.error(
+              'CoreServices: Deferred buffer re-injection failed:',
+              error,
+            );
             lifecycle.checkpoint('BUFFER_REINJECTION_COMPLETE', {
               success: false,
               error: error instanceof Error ? error.message : String(error),
@@ -749,7 +766,10 @@ export class CoreServices {
 
         // Listen for initialization event (using subscribe which returns unsubscribe function)
         // Store unsubscribe for cleanup
-        unsubscribe = this.eventBus.on('core-services:initialized', handleInitialized);
+        unsubscribe = this.eventBus.on(
+          'core-services:initialized',
+          handleInitialized,
+        );
         this.eventSubscriptions.push(unsubscribe);
         return;
       }
@@ -771,7 +791,9 @@ export class CoreServices {
     // ✅ SAFETY: Handle edge case where samples already ready before listener attached
     // This handles rare scenarios where preInitialize() runs after samplesReady fires
     if (WindowRegistry.getSamplesReady()) {
-      logger.info('CoreServices: Samples already ready - immediately re-injecting buffers');
+      logger.info(
+        'CoreServices: Samples already ready - immediately re-injecting buffers',
+      );
       this.hasSamplesReadyListener = true;
       this.samplesReadyHandler();
       return;
@@ -780,10 +802,16 @@ export class CoreServices {
     // Normal fast path: Add listener before samples finish loading
     // Note: Using { once: true } means the listener auto-removes after firing,
     // but we still need to track it for cleanup if dispose() is called before the event fires
-    window.addEventListener('samplesReady', this.samplesReadyHandler as EventListener, { once: true });
+    window.addEventListener(
+      'samplesReady',
+      this.samplesReadyHandler as EventListener,
+      { once: true },
+    );
     this.hasSamplesReadyListener = true;
 
-    logger.info('CoreServices: Set up deferred buffer injection listener for samplesReady event');
+    logger.info(
+      'CoreServices: Set up deferred buffer injection listener for samplesReady event',
+    );
   }
 
   /**
@@ -796,24 +824,27 @@ export class CoreServices {
    */
   private async reinjectAllBuffers(): Promise<void> {
     if (!this.playbackEngine) {
-      logger.warn('CoreServices: No PlaybackEngine available for buffer re-injection');
+      logger.warn(
+        'CoreServices: No PlaybackEngine available for buffer re-injection',
+      );
       return;
     }
 
     const audioContext = this.audioEngine.getContext();
     if (!audioContext) {
-      logger.warn('CoreServices: No AudioContext available for buffer re-injection');
+      logger.warn(
+        'CoreServices: No AudioContext available for buffer re-injection',
+      );
       return;
     }
 
-    const { GlobalSampleCache } = await import(
-      '../../modules/storage/cache/GlobalSampleCache.js'
-    );
+    const { GlobalSampleCache } =
+      await import('../../modules/storage/cache/GlobalSampleCache.js');
     const sampleCache = GlobalSampleCache.getInstance();
 
     // Helper: decode raw buffer if not already decoded (for parallel execution)
     const decodeIfNeeded = async (
-      key: string
+      key: string,
     ): Promise<AudioBuffer | undefined> => {
       // Check if already decoded
       let buffer = sampleCache.getCachedBuffer(key);
@@ -855,8 +886,10 @@ export class CoreServices {
     // Inject metronome buffers
     if (accentBuffer && clickBuffer) {
       // Use instrument gain node for volume control
-      const metronomeGainNode = this.playbackEngine.getOrCreateInstrumentGainNode('metronome');
-      const metronomeDestination = metronomeGainNode || audioContext.destination;
+      const metronomeGainNode =
+        this.playbackEngine.getOrCreateInstrumentGainNode('metronome');
+      const metronomeDestination =
+        metronomeGainNode || audioContext.destination;
 
       this.playbackEngine.setMetronomeBuffers(
         accentBuffer,
@@ -870,7 +903,8 @@ export class CoreServices {
     // Inject drum buffers
     if (kickBuffer && snareBuffer && hihatBuffer) {
       // Use instrument gain node for volume control
-      const drumsGainNode = this.playbackEngine.getOrCreateInstrumentGainNode('drums');
+      const drumsGainNode =
+        this.playbackEngine.getOrCreateInstrumentGainNode('drums');
       const drumsDestination = drumsGainNode || audioContext.destination;
 
       const drumBuffers: Record<string, AudioBuffer> = {
@@ -882,11 +916,14 @@ export class CoreServices {
       logger.info('✅ CoreServices: Drum buffers re-injected');
       lifecycle.checkpoint('DRUM_BUFFERS_INJECTED');
     } else {
-      logger.warn('⚠️ CoreServices: Drum buffers still not available for re-injection', {
-        hasKick: !!kickBuffer,
-        hasSnare: !!snareBuffer,
-        hasHihat: !!hihatBuffer,
-      });
+      logger.warn(
+        '⚠️ CoreServices: Drum buffers still not available for re-injection',
+        {
+          hasKick: !!kickBuffer,
+          hasSnare: !!snareBuffer,
+          hasHihat: !!hihatBuffer,
+        },
+      );
     }
 
     // Inject voice cue buffers
@@ -898,17 +935,35 @@ export class CoreServices {
 
     const voiceCuesFound = Object.keys(voiceCueBuffers).length;
     if (voiceCuesFound === 4) {
-      this.playbackEngine.setVoiceCueBuffers(voiceCueBuffers, audioContext.destination);
+      this.playbackEngine.setVoiceCueBuffers(
+        voiceCueBuffers,
+        audioContext.destination,
+      );
       logger.info('✅ CoreServices: Voice cue buffers re-injected');
       lifecycle.checkpoint('VOICECUE_BUFFERS_INJECTED');
     } else {
-      logger.warn(`⚠️ CoreServices: Only ${voiceCuesFound}/4 voice cue buffers available`);
+      logger.warn(
+        `⚠️ CoreServices: Only ${voiceCuesFound}/4 voice cue buffers available`,
+      );
     }
 
     // Re-inject harmony buffers
     const harmonyBuffers = new Map<string, AudioBuffer>();
     const layers = ['v2', 'v3', 'v4', 'v5', 'v6', 'v7'];
-    const notes = ['C', 'Cs', 'D', 'Ds', 'E', 'F', 'Fs', 'G', 'Gs', 'A', 'As', 'B'];
+    const notes = [
+      'C',
+      'Cs',
+      'D',
+      'Ds',
+      'E',
+      'F',
+      'Fs',
+      'G',
+      'Gs',
+      'A',
+      'As',
+      'B',
+    ];
     const octaves = [0, 1, 2, 3, 4, 5, 6];
     const instrumentPrefixes = ['wurlitzer', 'grandpiano', 'rhodes', 'harmony'];
     let harmonyBuffersFound = 0;
@@ -934,13 +989,20 @@ export class CoreServices {
     }
 
     if (harmonyBuffersFound > 0 && this.regionProcessor) {
-      this.regionProcessor.setHarmonyBuffers(harmonyBuffers, audioContext.destination);
-      logger.info(`✅ CoreServices: Harmony buffers re-injected (${harmonyBuffersFound} buffers)`);
+      this.regionProcessor.setHarmonyBuffers(
+        harmonyBuffers,
+        audioContext.destination,
+      );
+      logger.info(
+        `✅ CoreServices: Harmony buffers re-injected (${harmonyBuffersFound} buffers)`,
+      );
       lifecycle.checkpoint('HARMONY_BUFFERS_INJECTED', {
         buffersFound: harmonyBuffersFound,
       });
     } else if (harmonyBuffersFound === 0) {
-      logger.warn('⚠️ CoreServices: No harmony buffers available for re-injection');
+      logger.warn(
+        '⚠️ CoreServices: No harmony buffers available for re-injection',
+      );
     }
 
     logger.info('CoreServices: Buffer re-injection complete');
@@ -1149,27 +1211,30 @@ export class CoreServices {
 
     // Listen for transport start to restart other audio components
     // This ensures second/third/etc playback rounds work the same as first playback
-    const unsubTransportStart = this.eventBus.on('transport:start', async () => {
-      logger.info('Transport starting, restarting audio components');
+    const unsubTransportStart = this.eventBus.on(
+      'transport:start',
+      async () => {
+        logger.info('Transport starting, restarting audio components');
 
-      // Restart AudioEventRouter if it was stopped
-      // This allows drum/metronome/harmony triggers to flow through again
-      const routerStatus = this.audioEventRouter.getStatus();
-      if (!routerStatus.isRunning) {
-        await this.audioEventRouter.start();
-        logger.info('AudioEventRouter restarted');
-      } else {
-        logger.debug('AudioEventRouter already running, no restart needed');
-      }
+        // Restart AudioEventRouter if it was stopped
+        // This allows drum/metronome/harmony triggers to flow through again
+        const routerStatus = this.audioEventRouter.getStatus();
+        if (!routerStatus.isRunning) {
+          await this.audioEventRouter.start();
+          logger.info('AudioEventRouter restarted');
+        } else {
+          logger.debug('AudioEventRouter already running, no restart needed');
+        }
 
-      // Restart PluginManager to re-activate WAM plugins
-      try {
-        await this.pluginManager.start();
-        logger.info('PluginManager restarted - WAM plugins ready');
-      } catch (error) {
-        logger.error('Failed to restart PluginManager:', error);
-      }
-    });
+        // Restart PluginManager to re-activate WAM plugins
+        try {
+          await this.pluginManager.start();
+          logger.info('PluginManager restarted - WAM plugins ready');
+        } catch (error) {
+          logger.error('Failed to restart PluginManager:', error);
+        }
+      },
+    );
     this.eventSubscriptions.push(unsubTransportStart);
 
     // NOTE: RegionProcessor start is managed by GlobalControls, not by event listener

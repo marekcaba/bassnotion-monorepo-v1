@@ -18,7 +18,9 @@ function getTone(): NonNullable<typeof window.Tone> {
       return tone;
     }
   }
-  throw new Error('ScheduleCache: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+  throw new Error(
+    'ScheduleCache: Tone.js not loaded. Ensure AudioEngine is initialized first.',
+  );
 }
 
 const logger = getLogger('ScheduleCache');
@@ -26,7 +28,7 @@ const logger = getLogger('ScheduleCache');
 export class ScheduleCache {
   private exerciseScheduleCache = new Map<string, CachedSchedule>();
   private readonly MAX_CACHE_ENTRIES = 50; // LRU eviction threshold
-  private countdownOffsetBeats: number = 0; // Will be set by RegionProcessor
+  private countdownOffsetBeats = 0; // Will be set by RegionProcessor
 
   constructor() {
     // Empty constructor

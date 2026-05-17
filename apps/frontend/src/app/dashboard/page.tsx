@@ -453,28 +453,42 @@ function DashboardPageContent() {
                   >
                     <BookOpen className="h-5 w-5 text-amber-500 group-hover:text-amber-400" />
                     <div className="text-left">
-                      <div className="font-medium text-white text-sm">Tutorials</div>
-                      <div className="text-xs text-gray-500">Manage content</div>
+                      <div className="font-medium text-white text-sm">
+                        Tutorials
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Manage content
+                      </div>
                     </div>
                   </button>
                   <button
-                    onClick={() => navigateWithTransition('/admin/assessment/flow')}
+                    onClick={() =>
+                      navigateWithTransition('/admin/assessment/flow')
+                    }
                     className="flex items-center gap-3 p-4 bg-zinc-900/80 hover:bg-zinc-800 rounded-lg border border-zinc-700/50 hover:border-amber-600/50 transition-all group"
                   >
                     <ClipboardCheck className="h-5 w-5 text-amber-500 group-hover:text-amber-400" />
                     <div className="text-left">
-                      <div className="font-medium text-white text-sm">Assessment</div>
+                      <div className="font-medium text-white text-sm">
+                        Assessment
+                      </div>
                       <div className="text-xs text-gray-500">Flow editor</div>
                     </div>
                   </button>
                   <button
-                    onClick={() => navigateWithTransition('/admin/instruments/wurlitzer')}
+                    onClick={() =>
+                      navigateWithTransition('/admin/instruments/wurlitzer')
+                    }
                     className="flex items-center gap-3 p-4 bg-zinc-900/80 hover:bg-zinc-800 rounded-lg border border-zinc-700/50 hover:border-amber-600/50 transition-all group"
                   >
                     <Music className="h-5 w-5 text-amber-500 group-hover:text-amber-400" />
                     <div className="text-left">
-                      <div className="font-medium text-white text-sm">Wurlitzer</div>
-                      <div className="text-xs text-gray-500">Instrument test</div>
+                      <div className="font-medium text-white text-sm">
+                        Wurlitzer
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Instrument test
+                      </div>
                     </div>
                   </button>
                   <button
@@ -483,7 +497,9 @@ function DashboardPageContent() {
                   >
                     <Activity className="h-5 w-5 text-amber-500 group-hover:text-amber-400" />
                     <div className="text-left">
-                      <div className="font-medium text-white text-sm">Monitoring</div>
+                      <div className="font-medium text-white text-sm">
+                        Monitoring
+                      </div>
                       <div className="text-xs text-gray-500">System health</div>
                     </div>
                   </button>

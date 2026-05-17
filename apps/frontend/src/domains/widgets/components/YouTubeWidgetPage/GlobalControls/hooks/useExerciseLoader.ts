@@ -21,7 +21,10 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import type { MusicalExercise as Exercise, TimeSignature } from '@bassnotion/contracts';
+import type {
+  MusicalExercise as Exercise,
+  TimeSignature,
+} from '@bassnotion/contracts';
 import { ExerciseLoader } from '@/domains/playback/modules/exercises/core/ExerciseLoader.js';
 import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
 import { musicalTruth } from '@/domains/playback/modules/tempo/MusicalTruthAuthority';
@@ -122,12 +125,14 @@ export interface UseExerciseLoaderReturn {
 async function waitForTrackInit(
   trackRef: React.MutableRefObject<ExerciseLoaderTrack>,
   trackName: string,
-  maxWaitMs: number = 3000
+  maxWaitMs = 3000,
 ): Promise<boolean> {
   const startTime = Date.now();
   while (Date.now() - startTime < maxWaitMs) {
     if (trackRef.current.isInitialized && trackRef.current.track) {
-      logger.debug(`🎮 ${trackName} track ready after ${Date.now() - startTime}ms`);
+      logger.debug(
+        `🎮 ${trackName} track ready after ${Date.now() - startTime}ms`,
+      );
       return true;
     }
     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -140,7 +145,7 @@ async function waitForTrackInit(
  * Hook for managing exercise loading and MIDI data
  */
 export function useExerciseLoader(
-  options: UseExerciseLoaderOptions
+  options: UseExerciseLoaderOptions,
 ): UseExerciseLoaderReturn {
   const {
     selectedExercise,
@@ -217,7 +222,10 @@ export function useExerciseLoader(
     }
 
     // Skip if same exercise AND we already loaded it (prevent re-loading on other state changes)
-    if (!exerciseIdChanged && lastLoadedExerciseRef.current === selectedExerciseId) {
+    if (
+      !exerciseIdChanged &&
+      lastLoadedExerciseRef.current === selectedExerciseId
+    ) {
       logger.debug(
         '🎮 useExerciseLoader: Same exercise already loaded, skipping',
         {
@@ -270,16 +278,13 @@ export function useExerciseLoader(
           (selectedExercise.notes && selectedExercise.notes.length > 0);
 
         if (hasPerWidgetMidi) {
-          logger.info(
-            '🎮 useExerciseLoader: Loading per-widget MIDI files',
-            {
-              drummerMidiUrl: selectedExercise.drummerMidiUrl,
-              hasDrumPattern: !!selectedExercise.drumPattern,
-              harmonyMidiUrl: selectedExercise.harmonyMidiUrl,
-              metronomeMidiUrl: selectedExercise.metronomeMidiUrl,
-              bassNotesCount: selectedExercise.notes?.length || 0,
-            },
-          );
+          logger.info('🎮 useExerciseLoader: Loading per-widget MIDI files', {
+            drummerMidiUrl: selectedExercise.drummerMidiUrl,
+            hasDrumPattern: !!selectedExercise.drumPattern,
+            harmonyMidiUrl: selectedExercise.harmonyMidiUrl,
+            metronomeMidiUrl: selectedExercise.metronomeMidiUrl,
+            bassNotesCount: selectedExercise.notes?.length || 0,
+          });
 
           try {
             // Priority 1: Load drums from pre-converted drumPattern (DrumHit[]) - preferred!
@@ -344,15 +349,18 @@ export function useExerciseLoader(
               );
               try {
                 const drumMidiInfo = {
-                  id: typeof selectedExercise.id === 'object'
-                    ? selectedExercise.id.value
-                    : String(selectedExercise.id),
+                  id:
+                    typeof selectedExercise.id === 'object'
+                      ? selectedExercise.id.value
+                      : String(selectedExercise.id),
                   title: selectedExercise.title,
                   bpm: selectedExercise.bpm,
                   timeSignature: selectedExercise.timeSignature,
                   midiFileUrl: selectedExercise.drummerMidiUrl,
                 };
-                const drumResult = await exerciseLoader.loadMidiDirect(drumMidiInfo as Exercise & { midiFileUrl: string });
+                const drumResult = await exerciseLoader.loadMidiDirect(
+                  drumMidiInfo as Exercise & { midiFileUrl: string },
+                );
 
                 // Wait for drum track initialization, then add regions
                 const drumTrackReady = await waitForTrackInit(
@@ -414,13 +422,17 @@ export function useExerciseLoader(
                 // Wait for bass track initialization, then add regions
                 // FIX: On tutorial switch, track may remount - check if it's already in PlaybackEngine
                 const coreServicesForBass = WindowRegistry.getCoreServices();
-                const playbackEngineForBass = coreServicesForBass?.getPlaybackEngine?.();
-                const existingBassTrack = playbackEngineForBass?.getTrack?.('bass-widget-track');
+                const playbackEngineForBass =
+                  coreServicesForBass?.getPlaybackEngine?.();
+                const existingBassTrack =
+                  playbackEngineForBass?.getTrack?.('bass-widget-track');
 
                 let bassTrackReady = false;
                 if (existingBassTrack) {
                   // Track already exists in PlaybackEngine - use it directly
-                  logger.info('🎮 useExerciseLoader: Bass track exists in PlaybackEngine, using directly');
+                  logger.info(
+                    '🎮 useExerciseLoader: Bass track exists in PlaybackEngine, using directly',
+                  );
                   // Clear old regions and add new ones
                   if (existingBassTrack.clearRegions) {
                     existingBassTrack.clearRegions();
@@ -428,7 +440,9 @@ export function useExerciseLoader(
                   for (const region of bassResult.regions) {
                     existingBassTrack.addRegion(region as RegionData);
                     allRegions.push(region);
-                    logger.info('🎮 useExerciseLoader: Added bass region to existing track');
+                    logger.info(
+                      '🎮 useExerciseLoader: Added bass region to existing track',
+                    );
                   }
                   bassTrackReady = true;
                 } else {
@@ -474,16 +488,17 @@ export function useExerciseLoader(
               );
               try {
                 const metronomeMidiInfo = {
-                  id: typeof selectedExercise.id === 'object'
-                    ? selectedExercise.id.value
-                    : String(selectedExercise.id),
+                  id:
+                    typeof selectedExercise.id === 'object'
+                      ? selectedExercise.id.value
+                      : String(selectedExercise.id),
                   title: selectedExercise.title,
                   bpm: selectedExercise.bpm,
                   timeSignature: selectedExercise.timeSignature,
                   midiFileUrl: selectedExercise.metronomeMidiUrl,
                 };
                 const metronomeResult = await exerciseLoader.loadMidiDirect(
-                  metronomeMidiInfo as Exercise & { midiFileUrl: string }
+                  metronomeMidiInfo as Exercise & { midiFileUrl: string },
                 );
 
                 // Wait for metronome track initialization, then add regions

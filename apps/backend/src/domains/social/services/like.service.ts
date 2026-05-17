@@ -18,10 +18,7 @@ export class LikeService {
   /**
    * Like an exercise
    */
-  async likeExercise(
-    exerciseId: string,
-    userId: string,
-  ): Promise<LikeStatus> {
+  async likeExercise(exerciseId: string, userId: string): Promise<LikeStatus> {
     await this.likeRepository.like(exerciseId, userId);
     const likeCount = await this.likeRepository.getLikeCount(exerciseId);
 
@@ -44,11 +41,11 @@ export class LikeService {
   /**
    * Toggle like status (convenience method for frontend)
    */
-  async toggleLike(
-    exerciseId: string,
-    userId: string,
-  ): Promise<LikeStatus> {
-    const isCurrentlyLiked = await this.likeRepository.isLiked(exerciseId, userId);
+  async toggleLike(exerciseId: string, userId: string): Promise<LikeStatus> {
+    const isCurrentlyLiked = await this.likeRepository.isLiked(
+      exerciseId,
+      userId,
+    );
 
     if (isCurrentlyLiked) {
       return this.unlikeExercise(exerciseId, userId);

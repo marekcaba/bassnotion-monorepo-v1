@@ -166,11 +166,17 @@ export class LikeRepository {
       .in('id', exerciseIds);
 
     if (exerciseError) {
-      this.logger.error('Failed to get bulk like counts', exerciseError as Error, {
-        correlationId: this.correlationId,
-        exerciseIds,
-      });
-      throw new Error(`Failed to get bulk like counts: ${exerciseError.message}`);
+      this.logger.error(
+        'Failed to get bulk like counts',
+        exerciseError as Error,
+        {
+          correlationId: this.correlationId,
+          exerciseIds,
+        },
+      );
+      throw new Error(
+        `Failed to get bulk like counts: ${exerciseError.message}`,
+      );
     }
 
     // Fetch user's likes for these exercises

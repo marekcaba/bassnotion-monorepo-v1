@@ -141,8 +141,8 @@ export class CreatorRepository implements ICreatorRepository {
   }
 
   async findStale(
-    hoursThreshold: number = 24,
-    limit: number = 100,
+    hoursThreshold = 24,
+    limit = 100,
   ): Promise<Result<Creator[]>> {
     try {
       const response = await apiClient.get(
@@ -189,7 +189,7 @@ export class CreatorRepository implements ICreatorRepository {
 
   async findTop(
     sortBy: CreatorSortOptions,
-    limit: number = 10,
+    limit = 10,
   ): Promise<Result<Creator[]>> {
     try {
       const response = await apiClient.get(

@@ -35,7 +35,9 @@ function getTone(): any {
       return tone;
     }
   }
-  throw new Error('TransportController: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+  throw new Error(
+    'TransportController: Tone.js not loaded. Ensure AudioEngine is initialized first.',
+  );
 }
 
 const logger = createStructuredLogger('TransportController');
@@ -233,7 +235,9 @@ export class TransportController implements Service {
       lastUpdateTime: 0,
     };
 
-    logger.info('Position update mode', { mode: this.useClockOnTick ? 'EVENT-DRIVEN' : 'POLLING' });
+    logger.info('Position update mode', {
+      mode: this.useClockOnTick ? 'EVENT-DRIVEN' : 'POLLING',
+    });
 
     // FAANG FIX: ALWAYS reset Tone.Transport.position to 0 before starting playback
     // This prevents position accumulation bugs from previous stop() calls.
@@ -374,10 +378,17 @@ export class TransportController implements Service {
 
       // Calculate jitter (standard deviation of intervals)
       const intervals = this.perfMetrics.intervals;
-      const avgInterval = intervals.length > 0 ? intervals.reduce((a, b) => a + b, 0) / intervals.length : 0;
-      const variance = intervals.length > 0
-        ? intervals.reduce((sum, val) => sum + Math.pow(val - avgInterval, 2), 0) / intervals.length
-        : 0;
+      const avgInterval =
+        intervals.length > 0
+          ? intervals.reduce((a, b) => a + b, 0) / intervals.length
+          : 0;
+      const variance =
+        intervals.length > 0
+          ? intervals.reduce(
+              (sum, val) => sum + Math.pow(val - avgInterval, 2),
+              0,
+            ) / intervals.length
+          : 0;
       const jitter = Math.sqrt(variance);
 
       logger.info('Position update performance', {
@@ -390,7 +401,12 @@ export class TransportController implements Service {
     }
 
     // Reset clock tick counters for next session
-    this.clockTickCounters = { received: 0, throttled: 0, notPlaying: 0, emitted: 0 };
+    this.clockTickCounters = {
+      received: 0,
+      throttled: 0,
+      notPlaying: 0,
+      emitted: 0,
+    };
 
     // Stop transport
     this.transport.stop();
@@ -852,15 +868,24 @@ export class TransportController implements Service {
     // 🔧 TIMING SYNC FIX: Subscribe to PlaybackEngine's transportStartTime
     // This ensures Transport uses the SAME transportStartTime as PlaybackEngine,
     // eliminating visual-audio desync at playback start (rushed first 2 beats issue)
-    this.eventBus.on('playback:transportStartTime', (data: { transportStartTime: number }) => {
-      this.transport.setTransportStartTime(data.transportStartTime);
-      console.log('🎯 [TIMING SYNC] TransportController forwarded transportStartTime to Transport', {
-        transportStartTime: data.transportStartTime.toFixed(3) + 's',
-      });
-      logger.info('🎯 Synced Transport with PlaybackEngine transportStartTime', {
-        transportStartTime: data.transportStartTime,
-      });
-    });
+    this.eventBus.on(
+      'playback:transportStartTime',
+      (data: { transportStartTime: number }) => {
+        this.transport.setTransportStartTime(data.transportStartTime);
+        console.log(
+          '🎯 [TIMING SYNC] TransportController forwarded transportStartTime to Transport',
+          {
+            transportStartTime: data.transportStartTime.toFixed(3) + 's',
+          },
+        );
+        logger.info(
+          '🎯 Synced Transport with PlaybackEngine transportStartTime',
+          {
+            transportStartTime: data.transportStartTime,
+          },
+        );
+      },
+    );
   }
 
   /**
@@ -915,15 +940,21 @@ export class TransportController implements Service {
 
       // Log first few updates to verify callback is working
       if (this.perfMetrics.updateCount <= 3) {
-        console.log(`📊 [PERF] Clock.onTick callback #${this.perfMetrics.updateCount}`, {
-          time: time.toFixed(3),
-          throttleMs: this.positionUpdateInterval.toFixed(2),
-        });
+        console.log(
+          `📊 [PERF] Clock.onTick callback #${this.perfMetrics.updateCount}`,
+          {
+            time: time.toFixed(3),
+            throttleMs: this.positionUpdateInterval.toFixed(2),
+          },
+        );
       }
 
       // Apply startupLookahead compensation to sync visual with audio
       // Audio starts playing after startupLookahead (300ms), so delay visual position
-      const visualTime = Math.max(0, time - TRANSPORT_TIMING_CONFIG.startupLookahead);
+      const visualTime = Math.max(
+        0,
+        time - TRANSPORT_TIMING_CONFIG.startupLookahead,
+      );
 
       // Update position using lookahead-compensated time
       this.positionManager.updatePosition(visualTime);

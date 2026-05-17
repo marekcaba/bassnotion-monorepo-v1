@@ -18,8 +18,22 @@ import {
 } from '@/shared/components/ui/avatar';
 
 // ─── Skill domain types ──────────────────────────────────────────────
-type SkillId = 'time' | 'sound' | 'hands' | 'ear' | 'neck' | 'theory' | 'foundation';
-type SynthesisId = 'groove' | 'pocket' | 'voice' | 'intervals' | 'navigation' | 'flow' | 'transcription';
+type SkillId =
+  | 'time'
+  | 'sound'
+  | 'hands'
+  | 'ear'
+  | 'neck'
+  | 'theory'
+  | 'foundation';
+type SynthesisId =
+  | 'groove'
+  | 'pocket'
+  | 'voice'
+  | 'intervals'
+  | 'navigation'
+  | 'flow'
+  | 'transcription';
 
 interface SkillNode {
   id: SkillId;
@@ -48,15 +62,20 @@ interface SynthesisNode {
 // ─── Level-based color system ────────────────────────────────────────
 // All nodes of the same level share the same color
 const LEVEL_COLORS: Record<number, { base: string; glow: string }> = {
-  1: { base: '#E8A44A', glow: 'rgba(232,164,74,0.25)' },   // orange
-  2: { base: '#5B8DEF', glow: 'rgba(91,141,239,0.25)' },   // blue
-  3: { base: '#6BCF8E', glow: 'rgba(107,207,142,0.25)' },   // green
-  4: { base: '#C77DFF', glow: 'rgba(199,125,255,0.25)' },   // purple
-  5: { base: '#FF7EB3', glow: 'rgba(255,126,179,0.25)' },   // pink
+  1: { base: '#E8A44A', glow: 'rgba(232,164,74,0.25)' }, // orange
+  2: { base: '#5B8DEF', glow: 'rgba(91,141,239,0.25)' }, // blue
+  3: { base: '#6BCF8E', glow: 'rgba(107,207,142,0.25)' }, // green
+  4: { base: '#C77DFF', glow: 'rgba(199,125,255,0.25)' }, // purple
+  5: { base: '#FF7EB3', glow: 'rgba(255,126,179,0.25)' }, // pink
 };
 
 function colorForLevel(level: number): { base: string; glow: string } {
-  return LEVEL_COLORS[Math.min(level, 5)] ?? { base: '#E8A44A', glow: 'rgba(232,164,74,0.25)' };
+  return (
+    LEVEL_COLORS[Math.min(level, 5)] ?? {
+      base: '#E8A44A',
+      glow: 'rgba(232,164,74,0.25)',
+    }
+  );
 }
 
 // (Legacy per-ID maps removed — all color lookups now use colorForLevel)
@@ -68,37 +87,139 @@ function colorForLevel(level: number): { base: string; glow: string } {
 const STEP = 360 / 7;
 const START = 90 - STEP * 4; // ≈ -115.71° — so slot 4 lands exactly at 90°
 const MOCK_NODES: SkillNode[] = [
-  { id: 'time',       label: 'Time',       total: 8,  filled: 5, level: 2, angle: START },
-  { id: 'sound',      label: 'Sound',      total: 12, filled: 8, level: 3, angle: START + STEP },
-  { id: 'hands',      label: 'Hands',      total: 8,  filled: 4, level: 1, angle: START + STEP * 2 },
-  { id: 'ear',        label: 'Ear',        total: 8,  filled: 2, level: 1, angle: START + STEP * 3 },
-  { id: 'foundation', label: 'Foundation', total: 10, filled: 6, level: 2, angle: START + STEP * 4 },  // = 90° (bottom)
-  { id: 'neck',       label: 'Neck',       total: 8,  filled: 1, level: 1, angle: START + STEP * 5 },
-  { id: 'theory',     label: 'Theory',     total: 8,  filled: 3, level: 1, angle: START + STEP * 6 },
+  { id: 'time', label: 'Time', total: 8, filled: 5, level: 2, angle: START },
+  {
+    id: 'sound',
+    label: 'Sound',
+    total: 12,
+    filled: 8,
+    level: 3,
+    angle: START + STEP,
+  },
+  {
+    id: 'hands',
+    label: 'Hands',
+    total: 8,
+    filled: 4,
+    level: 1,
+    angle: START + STEP * 2,
+  },
+  {
+    id: 'ear',
+    label: 'Ear',
+    total: 8,
+    filled: 2,
+    level: 1,
+    angle: START + STEP * 3,
+  },
+  {
+    id: 'foundation',
+    label: 'Foundation',
+    total: 10,
+    filled: 6,
+    level: 2,
+    angle: START + STEP * 4,
+  }, // = 90° (bottom)
+  {
+    id: 'neck',
+    label: 'Neck',
+    total: 8,
+    filled: 1,
+    level: 1,
+    angle: START + STEP * 5,
+  },
+  {
+    id: 'theory',
+    label: 'Theory',
+    total: 8,
+    filled: 3,
+    level: 1,
+    angle: START + STEP * 6,
+  },
 ];
 
 // ─── Static mock data for synthesis nodes ────────────────────────────
 // Each placed at the midpoint between its neighboring primaries (half-slots)
 const MOCK_SYNTHESIS: SynthesisNode[] = [
-  { id: 'groove',        label: 'Groove',        parents: ['time', 'hands'],      angle: START + STEP * 0.5, level: 2 },  // between time & sound
-  { id: 'voice',         label: 'Voice',         parents: ['sound', 'hands'],     angle: START + STEP * 1.5, level: 1 },  // between sound & hands
-  { id: 'pocket',        label: 'Pocket',        parents: ['time', 'ear'],        angle: START + STEP * 2.5, level: 1 },  // between hands & ear
-  { id: 'transcription', label: 'Transcription', parents: ['ear', 'neck'],        angle: START + STEP * 3.5, level: 1 },  // between ear & foundation
-  { id: 'flow',          label: 'Flow',          parents: ['time', 'foundation'], angle: START + STEP * 4.5, level: 1 },  // between foundation & neck
-  { id: 'intervals',     label: 'Intervals',     parents: ['ear', 'theory'],      angle: START + STEP * 5.5, level: 1 },  // between neck & theory
-  { id: 'navigation',    label: 'Navigation',    parents: ['neck', 'theory'],     angle: START + STEP * 6.5, level: 1 },  // between theory & time (wraps)
+  {
+    id: 'groove',
+    label: 'Groove',
+    parents: ['time', 'hands'],
+    angle: START + STEP * 0.5,
+    level: 2,
+  }, // between time & sound
+  {
+    id: 'voice',
+    label: 'Voice',
+    parents: ['sound', 'hands'],
+    angle: START + STEP * 1.5,
+    level: 1,
+  }, // between sound & hands
+  {
+    id: 'pocket',
+    label: 'Pocket',
+    parents: ['time', 'ear'],
+    angle: START + STEP * 2.5,
+    level: 1,
+  }, // between hands & ear
+  {
+    id: 'transcription',
+    label: 'Transcription',
+    parents: ['ear', 'neck'],
+    angle: START + STEP * 3.5,
+    level: 1,
+  }, // between ear & foundation
+  {
+    id: 'flow',
+    label: 'Flow',
+    parents: ['time', 'foundation'],
+    angle: START + STEP * 4.5,
+    level: 1,
+  }, // between foundation & neck
+  {
+    id: 'intervals',
+    label: 'Intervals',
+    parents: ['ear', 'theory'],
+    angle: START + STEP * 5.5,
+    level: 1,
+  }, // between neck & theory
+  {
+    id: 'navigation',
+    label: 'Navigation',
+    parents: ['neck', 'theory'],
+    angle: START + STEP * 6.5,
+    level: 1,
+  }, // between theory & time (wraps)
 ];
 
 // ─── Sizing helpers (scale = 1 at 640px baseline) ───────────────────
 const DESIGN_BASELINE = 640;
 
 function coreSize(level: number, scale: number): number {
-  const base = level >= 5 ? 120 : level >= 4 ? 100 : level >= 3 ? 84 : level >= 2 ? 68 : 52;
+  const base =
+    level >= 5
+      ? 120
+      : level >= 4
+        ? 100
+        : level >= 3
+          ? 84
+          : level >= 2
+            ? 68
+            : 52;
   return Math.round(base * scale);
 }
 
 function orbitalSize(level: number, scale: number): number {
-  const base = level >= 5 ? 164 : level >= 4 ? 138 : level >= 3 ? 114 : level >= 2 ? 92 : 72;
+  const base =
+    level >= 5
+      ? 164
+      : level >= 4
+        ? 138
+        : level >= 3
+          ? 114
+          : level >= 2
+            ? 92
+            : 72;
   return Math.round(base * scale);
 }
 
@@ -132,23 +253,24 @@ function OrbitalDot({
   return (
     <span
       className="absolute rounded-full"
-      style={{
-        width: dotSize,
-        height: dotSize,
-        left: x,
-        top: y,
-        transform: 'translate(-50%, -50%)',
-        border: `${borderWidth}px solid ${isFilled || isActive ? color.base : color.base + '30'}`,
-        background: isFilled || isActive ? color.base : color.base + '10',
-        boxShadow:
-          isActive
+      style={
+        {
+          width: dotSize,
+          height: dotSize,
+          left: x,
+          top: y,
+          transform: 'translate(-50%, -50%)',
+          border: `${borderWidth}px solid ${isFilled || isActive ? color.base : color.base + '30'}`,
+          background: isFilled || isActive ? color.base : color.base + '10',
+          boxShadow: isActive
             ? `0 0 ${10 * scale * glow}px ${color.base}`
             : isFilled
               ? `0 0 ${6 * scale * glow}px ${color.glow}`
               : 'none',
-        animation: isActive ? 'dot-pulse 2.4s ease-in-out infinite' : 'none',
-        '--dot-color': color.base,
-      } as CSSProperties}
+          animation: isActive ? 'dot-pulse 2.4s ease-in-out infinite' : 'none',
+          '--dot-color': color.base,
+        } as CSSProperties
+      }
     />
   );
 }
@@ -266,75 +388,80 @@ function SkillNodeElement({
         transform: 'translate(-50%, -50%)',
       }}
     >
-    <div
-      className="flex cursor-pointer flex-col items-center transition-transform duration-400 ease-out hover:scale-[1.08]"
-      onClick={onSelect}
-    >
-      {/* Orbital system */}
       <div
-        className="relative"
-        style={{ width: orbital, height: orbital, marginBottom: Math.round(6 * scale) }}
+        className="flex cursor-pointer flex-col items-center transition-transform duration-400 ease-out hover:scale-[1.08]"
+        onClick={onSelect}
       >
-        {/* Arc connecting filled dots */}
-        <OrbitalArc
-          total={node.total}
-          filled={node.filled}
-          radius={dotRadius}
-          color={color.base}
-          scale={scale}
-          glow={glow}
-        />
-
-        {/* Core circle */}
+        {/* Orbital system */}
         <div
-          className="absolute left-1/2 top-1/2 z-[2] flex items-center justify-center rounded-full"
+          className="relative"
           style={{
-            width: core,
-            height: core,
-            transform: 'translate(-50%, -50%)',
-            background: `radial-gradient(circle at 40% 35%, ${color.glow}, rgba(12,11,15,0.9))`,
-            border: `${borderWidth}px solid rgba(255,255,255,0.12)`,
-            boxShadow: `0 0 ${Math.round(30 * scale * glow)}px ${color.glow}`,
+            width: orbital,
+            height: orbital,
+            marginBottom: Math.round(6 * scale),
           }}
         >
-          <span
-            className="font-mono font-medium"
-            style={{ color: color.base, fontSize: coreLabelSize }}
-          >
-            {node.filled}/{node.total}
-          </span>
-        </div>
-
-        {/* Orbital dots */}
-        {Array.from({ length: node.total }, (_, i) => (
-          <OrbitalDot
-            key={i}
-            index={i}
+          {/* Arc connecting filled dots */}
+          <OrbitalArc
             total={node.total}
             filled={node.filled}
             radius={dotRadius}
-            color={color}
+            color={color.base}
             scale={scale}
             glow={glow}
           />
-        ))}
-      </div>
 
-      {/* Label */}
-      <span
-        className="whitespace-nowrap text-center font-serif text-[#E8E4DD]"
-        style={{ fontSize: labelSize }}
-      >
-        {node.label}
-      </span>
-    </div>
+          {/* Core circle */}
+          <div
+            className="absolute left-1/2 top-1/2 z-[2] flex items-center justify-center rounded-full"
+            style={{
+              width: core,
+              height: core,
+              transform: 'translate(-50%, -50%)',
+              background: `radial-gradient(circle at 40% 35%, ${color.glow}, rgba(12,11,15,0.9))`,
+              border: `${borderWidth}px solid rgba(255,255,255,0.12)`,
+              boxShadow: `0 0 ${Math.round(30 * scale * glow)}px ${color.glow}`,
+            }}
+          >
+            <span
+              className="font-mono font-medium"
+              style={{ color: color.base, fontSize: coreLabelSize }}
+            >
+              {node.filled}/{node.total}
+            </span>
+          </div>
+
+          {/* Orbital dots */}
+          {Array.from({ length: node.total }, (_, i) => (
+            <OrbitalDot
+              key={i}
+              index={i}
+              total={node.total}
+              filled={node.filled}
+              radius={dotRadius}
+              color={color}
+              scale={scale}
+              glow={glow}
+            />
+          ))}
+        </div>
+
+        {/* Label */}
+        <span
+          className="whitespace-nowrap text-center font-serif text-[#E8E4DD]"
+          style={{ fontSize: labelSize }}
+        >
+          {node.label}
+        </span>
+      </div>
     </div>
   );
 }
 
 // ─── Synthesis sizing (smaller than primary nodes) ──────────────────
 function synthesisCoreSize(level: number, scale: number): number {
-  const base = level >= 5 ? 72 : level >= 4 ? 62 : level >= 3 ? 52 : level >= 2 ? 44 : 36;
+  const base =
+    level >= 5 ? 72 : level >= 4 ? 62 : level >= 3 ? 52 : level >= 2 ? 44 : 36;
   return Math.round(base * scale);
 }
 
@@ -369,7 +496,10 @@ function SynthesisNodeElement({
         transform: 'translate(-50%, -50%)',
       }}
     >
-      <div className="flex cursor-pointer flex-col items-center opacity-25 transition-all duration-400 ease-out hover:scale-[1.1] hover:opacity-100" onClick={onSelect}>
+      <div
+        className="flex cursor-pointer flex-col items-center opacity-25 transition-all duration-400 ease-out hover:scale-[1.1] hover:opacity-100"
+        onClick={onSelect}
+      >
         {/* Core circle */}
         <div
           className="flex items-center justify-center rounded-full"
@@ -392,7 +522,12 @@ function SynthesisNodeElement({
         {/* Label */}
         <span
           className="whitespace-nowrap text-center font-medium tracking-wide"
-          style={{ color: color.base, opacity: 0.7, fontSize: labelSize, marginTop: Math.round(6 * scale) }}
+          style={{
+            color: color.base,
+            opacity: 0.7,
+            fontSize: labelSize,
+            marginTop: Math.round(6 * scale),
+          }}
         >
           {node.label}
         </span>
@@ -500,7 +635,8 @@ function CenterNode({
         width: diameter,
         height: diameter,
         transform: 'translate(-50%, -50%)',
-        background: 'radial-gradient(circle at 40% 35%, rgba(232,164,74,0.18), rgba(20,19,24,0.95) 65%)',
+        background:
+          'radial-gradient(circle at 40% 35%, rgba(232,164,74,0.18), rgba(20,19,24,0.95) 65%)',
         border: `${borderWidth}px solid rgba(232,164,74,0.15)`,
         boxShadow: [
           `0 0 ${Math.round(50 * scale * glow)}px rgba(232,164,74,0.12)`,
@@ -539,7 +675,11 @@ function CenterNode({
       {/* Title / rank */}
       <div
         className="font-mono uppercase text-[#E8A44A]"
-        style={{ fontSize: titleSize, letterSpacing: '2px', marginBottom: Math.round(10 * scale) }}
+        style={{
+          fontSize: titleSize,
+          letterSpacing: '2px',
+          marginBottom: Math.round(10 * scale),
+        }}
       >
         Bass Player
       </div>
@@ -621,9 +761,22 @@ interface Recording {
 }
 
 const MOCK_RECORDINGS: Recording[] = [
-  { name: 'Duration Dial — Mixed', session: 'Session 2 · Yesterday', duration: '0:18' },
-  { name: 'The 50/50 — Final Take', session: 'Session 1 · 2 days ago', duration: '0:24' },
-  { name: 'Day 1 — Before Muting', session: 'Session 1 · 2 days ago', duration: '0:15', faded: true },
+  {
+    name: 'Duration Dial — Mixed',
+    session: 'Session 2 · Yesterday',
+    duration: '0:18',
+  },
+  {
+    name: 'The 50/50 — Final Take',
+    session: 'Session 1 · 2 days ago',
+    duration: '0:24',
+  },
+  {
+    name: 'Day 1 — Before Muting',
+    session: 'Session 1 · 2 days ago',
+    duration: '0:15',
+    faded: true,
+  },
 ];
 
 export function ProgressCard() {
@@ -726,10 +879,7 @@ function NodeInfoCircle({
   return (
     <>
       {/* Invisible backdrop to catch clicks outside */}
-      <div
-        className="absolute inset-0 z-[9]"
-        onClick={onDismiss}
-      />
+      <div className="absolute inset-0 z-[9]" onClick={onDismiss} />
 
       {/* Info circle */}
       <div
@@ -741,7 +891,8 @@ function NodeInfoCircle({
           background: `radial-gradient(circle at 45% 40%, ${color.glow}, rgba(12,11,15,0.96) 70%)`,
           border: `${borderWidth}px solid ${color.base}40`,
           boxShadow: `0 0 ${Math.round(60 * scale * glow)}px ${color.glow}, inset 0 0 ${Math.round(40 * scale)}px rgba(0,0,0,0.3)`,
-          animation: 'infoCircleIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both',
+          animation:
+            'infoCircleIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both',
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -749,7 +900,10 @@ function NodeInfoCircle({
         <button
           onClick={onDismiss}
           className="absolute left-1/2 flex -translate-x-1/2 items-center justify-center rounded-full text-[#5A5660] transition-colors hover:bg-white/[0.06] hover:text-[#E8E4DD]"
-          style={{ top: Math.round(16 * scale), padding: Math.round(4 * scale) }}
+          style={{
+            top: Math.round(16 * scale),
+            padding: Math.round(4 * scale),
+          }}
           aria-label="Close"
         >
           <X style={{ width: closeSize, height: closeSize }} />
@@ -775,7 +929,11 @@ function NodeInfoCircle({
         {/* Node name */}
         <div
           className="font-serif"
-          style={{ color: color.base, fontSize: nameSize, marginBottom: Math.round(4 * scale) }}
+          style={{
+            color: color.base,
+            fontSize: nameSize,
+            marginBottom: Math.round(4 * scale),
+          }}
         >
           {node.label}
         </div>
@@ -783,7 +941,11 @@ function NodeInfoCircle({
         {/* Kind label */}
         <div
           className="font-mono uppercase text-[#5A5660]"
-          style={{ fontSize: kindSize, letterSpacing: '2px', marginBottom: Math.round(12 * scale) }}
+          style={{
+            fontSize: kindSize,
+            letterSpacing: '2px',
+            marginBottom: Math.round(12 * scale),
+          }}
         >
           {isSkill ? 'Core Skill' : 'Synthesis'}
         </div>
@@ -791,7 +953,11 @@ function NodeInfoCircle({
         {/* Description */}
         <p
           className="text-center leading-[1.5] text-[#8A8690]"
-          style={{ fontSize: descSize, maxWidth: descMaxW, marginBottom: Math.round(16 * scale) }}
+          style={{
+            fontSize: descSize,
+            maxWidth: descMaxW,
+            marginBottom: Math.round(16 * scale),
+          }}
         >
           {description}
         </p>
@@ -802,7 +968,11 @@ function NodeInfoCircle({
             {/* Progress bar */}
             <div
               className="overflow-hidden rounded-full bg-white/[0.06]"
-              style={{ width: progressBarW, height: progressBarH, marginBottom: Math.round(6 * scale) }}
+              style={{
+                width: progressBarW,
+                height: progressBarH,
+                marginBottom: Math.round(6 * scale),
+              }}
             >
               <div
                 className="h-full rounded-full transition-all duration-500"
@@ -812,34 +982,42 @@ function NodeInfoCircle({
                 }}
               />
             </div>
-            <span className="font-mono text-[#5A5660]" style={{ fontSize: Math.max(10 * scale, 7) }}>
-              {(selected.node as SkillNode).filled} / {(selected.node as SkillNode).total} milestones
+            <span
+              className="font-mono text-[#5A5660]"
+              style={{ fontSize: Math.max(10 * scale, 7) }}
+            >
+              {(selected.node as SkillNode).filled} /{' '}
+              {(selected.node as SkillNode).total} milestones
             </span>
           </div>
         )}
 
         {/* Parents (for synthesis nodes) */}
         {!isSkill && (
-          <div className="flex items-center" style={{ gap: Math.round(8 * scale) }}>
+          <div
+            className="flex items-center"
+            style={{ gap: Math.round(8 * scale) }}
+          >
             {(selected.node as SynthesisNode).parents.map((parentId) => {
-              const parentLevel = MOCK_NODES.find((n) => n.id === parentId)?.level ?? 1;
+              const parentLevel =
+                MOCK_NODES.find((n) => n.id === parentId)?.level ?? 1;
               const pc = colorForLevel(parentLevel);
               return (
-              <span
-                key={parentId}
-                className="rounded-full font-mono uppercase"
-                style={{
-                  color: pc.base,
-                  border: `1px solid ${pc.base}40`,
-                  background: `${pc.base}08`,
-                  fontSize: Math.max(9 * scale, 7),
-                  letterSpacing: '0.5px',
-                  paddingInline: Math.round(8 * scale),
-                  paddingBlock: Math.round(2 * scale),
-                }}
-              >
-                {parentId}
-              </span>
+                <span
+                  key={parentId}
+                  className="rounded-full font-mono uppercase"
+                  style={{
+                    color: pc.base,
+                    border: `1px solid ${pc.base}40`,
+                    background: `${pc.base}08`,
+                    fontSize: Math.max(9 * scale, 7),
+                    letterSpacing: '0.5px',
+                    paddingInline: Math.round(8 * scale),
+                    paddingBlock: Math.round(2 * scale),
+                  }}
+                >
+                  {parentId}
+                </span>
               );
             })}
           </div>
@@ -883,12 +1061,15 @@ export function NodeMatrix() {
   const handleDismiss = useCallback(() => setSelectedNode(null), []);
 
   // Scale factor: 1.0 at 640px baseline, capped at 1 for large screens
-  const scale = useMemo(() => (size > 0 ? Math.min(size / DESIGN_BASELINE, 1) : 1), [size]);
+  const scale = useMemo(
+    () => (size > 0 ? Math.min(size / DESIGN_BASELINE, 1) : 1),
+    [size],
+  );
 
   // Compute positions
   const center = useMemo(() => ({ x: size / 2, y: size / 2 }), [size]);
-  const innerRadius = useMemo(() => size * 0.40, [size]);
-  const outerRadius = useMemo(() => size * 0.40, [size]);
+  const innerRadius = useMemo(() => size * 0.4, [size]);
+  const outerRadius = useMemo(() => size * 0.4, [size]);
 
   const positions = useMemo(() => {
     const map: Record<string, { x: number; y: number }> = {};
@@ -955,75 +1136,74 @@ export function NodeMatrix() {
         ref={wrapperRef}
         className="relative w-full max-w-[640px] aspect-square mx-auto overflow-visible"
       >
+        {size > 0 && (
+          <>
+            <RadialLines
+              nodes={MOCK_NODES}
+              positions={positions}
+              center={center}
+            />
 
-          {size > 0 && (
-            <>
-              <RadialLines
-                nodes={MOCK_NODES}
-                positions={positions}
-                center={center}
+            <SynthesisLines
+              synthNodes={MOCK_SYNTHESIS}
+              synthPositions={synthPositions}
+              primaryPositions={positions}
+            />
+
+            {selectedNode ? (
+              <NodeInfoCircle
+                selected={selectedNode}
+                radius={innerRadius}
+                scale={scale}
+                glow={glowIntensity}
+                onDismiss={handleDismiss}
               />
-
-              <SynthesisLines
-                synthNodes={MOCK_SYNTHESIS}
-                synthPositions={synthPositions}
-                primaryPositions={positions}
+            ) : (
+              <CenterNode
+                displayName={displayName ?? undefined}
+                avatarUrl={avatarUrl ?? undefined}
+                radius={innerRadius}
+                scale={scale}
+                glow={glowIntensity}
               />
+            )}
 
-              {selectedNode ? (
-                <NodeInfoCircle
-                  selected={selectedNode}
-                  radius={innerRadius}
+            {/* Inner ring: primary skill nodes */}
+            {MOCK_NODES.map((node) => {
+              const pos = positions[node.id];
+              if (!pos) return null;
+              return (
+                <SkillNodeElement
+                  key={node.id}
+                  node={node}
+                  x={pos.x}
+                  y={pos.y}
                   scale={scale}
                   glow={glowIntensity}
-                  onDismiss={handleDismiss}
+                  onSelect={() => setSelectedNode({ kind: 'skill', node })}
                 />
-              ) : (
-                <CenterNode
-                  displayName={displayName ?? undefined}
-                  avatarUrl={avatarUrl ?? undefined}
-                  radius={innerRadius}
+              );
+            })}
+
+            {/* Outer ring: synthesis nodes */}
+            {MOCK_SYNTHESIS.map((node) => {
+              const pos = synthPositions[node.id];
+              if (!pos) return null;
+              return (
+                <SynthesisNodeElement
+                  key={node.id}
+                  node={node}
+                  x={pos.x}
+                  y={pos.y}
                   scale={scale}
                   glow={glowIntensity}
+                  onSelect={() => setSelectedNode({ kind: 'synthesis', node })}
                 />
-              )}
-
-              {/* Inner ring: primary skill nodes */}
-              {MOCK_NODES.map((node) => {
-                const pos = positions[node.id];
-                if (!pos) return null;
-                return (
-                  <SkillNodeElement
-                    key={node.id}
-                    node={node}
-                    x={pos.x}
-                    y={pos.y}
-                    scale={scale}
-                    glow={glowIntensity}
-                    onSelect={() => setSelectedNode({ kind: 'skill', node })}
-                  />
-                );
-              })}
-
-              {/* Outer ring: synthesis nodes */}
-              {MOCK_SYNTHESIS.map((node) => {
-                const pos = synthPositions[node.id];
-                if (!pos) return null;
-                return (
-                  <SynthesisNodeElement
-                    key={node.id}
-                    node={node}
-                    x={pos.x}
-                    y={pos.y}
-                    scale={scale}
-                    glow={glowIntensity}
-                    onSelect={() => setSelectedNode({ kind: 'synthesis', node })}
-                  />
-                );
-              })}
-            </>
-          )}
-        </div>
+              );
+            })}
+          </>
+        )}
+      </div>
     </div>
   );
 }

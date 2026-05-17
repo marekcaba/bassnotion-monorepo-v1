@@ -51,7 +51,9 @@ function createMockAudioDestination(): AudioNode {
 }
 
 // Create mock AudioContext
-function createMockAudioContext(): AudioContext & { mockDestination: AudioNode } {
+function createMockAudioContext(): AudioContext & {
+  mockDestination: AudioNode;
+} {
   const mockGainNode = {
     gain: {
       value: 1,
@@ -132,12 +134,17 @@ describe('BassScheduler', () => {
         '38': createMockAudioBuffer(), // D2
       };
 
-      expect(() => scheduler.setBuffers(buffers, mockAudioContext.mockDestination)).not.toThrow();
+      expect(() =>
+        scheduler.setBuffers(buffers, mockAudioContext.mockDestination),
+      ).not.toThrow();
     });
 
     it('should clear previous buffers when setting new ones', () => {
       // First set
-      scheduler.setBuffers({ '28': createMockAudioBuffer() }, mockAudioContext.mockDestination);
+      scheduler.setBuffers(
+        { '28': createMockAudioBuffer() },
+        mockAudioContext.mockDestination,
+      );
 
       // Second set (should replace first)
       scheduler.setBuffers(
@@ -145,12 +152,15 @@ describe('BassScheduler', () => {
           '33': createMockAudioBuffer(),
           '38': createMockAudioBuffer(),
         },
-        mockAudioContext.mockDestination
+        mockAudioContext.mockDestination,
       );
 
       // Scheduler should work with new buffers
       expect(() =>
-        scheduler.setBuffers({ '28': createMockAudioBuffer() }, mockAudioContext.mockDestination)
+        scheduler.setBuffers(
+          { '28': createMockAudioBuffer() },
+          mockAudioContext.mockDestination,
+        ),
       ).not.toThrow();
     });
   });
@@ -248,11 +258,14 @@ describe('BassScheduler', () => {
       scheduler.schedule(event, audioTime, 0);
 
       // Source should be started at the scheduled time (with optional offset)
-      const source = (mockAudioContext.createBufferSource as any).mock.results[0]
-        ?.value;
+      const source = (mockAudioContext.createBufferSource as any).mock
+        .results[0]?.value;
       if (source) {
         // First argument should be the audio time, second is offset (0 for preserved attack)
-        expect(source.start).toHaveBeenCalledWith(audioTime, expect.any(Number));
+        expect(source.start).toHaveBeenCalledWith(
+          audioTime,
+          expect.any(Number),
+        );
       }
     });
   });
@@ -262,7 +275,7 @@ describe('BassScheduler', () => {
       scheduler.setAudioContext(mockAudioContext);
       scheduler.setBuffers(
         { '28': createMockAudioBuffer() },
-        mockAudioContext.mockDestination
+        mockAudioContext.mockDestination,
       );
     });
 
@@ -288,7 +301,7 @@ describe('BassScheduler', () => {
           '28': createMockAudioBuffer(),
           '33': createMockAudioBuffer(),
         },
-        mockAudioContext.mockDestination
+        mockAudioContext.mockDestination,
       );
     });
 
@@ -337,9 +350,7 @@ describe('BassScheduler with Multiple Buffers', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockAudioContext = createMockAudioContext();
-    const mockTracks = new Map([
-      ['bass-track', { instrumentType: 'bass' }],
-    ]);
+    const mockTracks = new Map([['bass-track', { instrumentType: 'bass' }]]);
     scheduler = new BassScheduler('multi-buffer-test', mockTracks);
     scheduler.setAudioContext(mockAudioContext);
   });
@@ -378,14 +389,14 @@ describe('BassScheduler with Multiple Buffers', () => {
         '33': bufferA1,
         '38': bufferD2,
       },
-      mockAudioContext.mockDestination
+      mockAudioContext.mockDestination,
     );
 
     // Schedule each note
     scheduler.schedule(
       { type: 'bass', position: '0:0:0', data: { midiNote: 28 } },
       0.1,
-      0
+      0,
     );
 
     // Verify buffer source was created
@@ -402,14 +413,12 @@ describe('BassScheduler Velocity Mapping', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockAudioContext = createMockAudioContext();
-    const mockTracks = new Map([
-      ['bass-track', { instrumentType: 'bass' }],
-    ]);
+    const mockTracks = new Map([['bass-track', { instrumentType: 'bass' }]]);
     scheduler = new BassScheduler('velocity-test', mockTracks);
     scheduler.setAudioContext(mockAudioContext);
     scheduler.setBuffers(
       { '28': createMockAudioBuffer() },
-      mockAudioContext.mockDestination
+      mockAudioContext.mockDestination,
     );
   });
 
@@ -423,7 +432,8 @@ describe('BassScheduler Velocity Mapping', () => {
 
     scheduler.schedule(lowVelocity, 0.1, 0);
 
-    const gainNode = (mockAudioContext.createGain as any).mock.results[0]?.value;
+    const gainNode = (mockAudioContext.createGain as any).mock.results[0]
+      ?.value;
     expect(gainNode).toBeDefined();
     // Gain should be set based on velocity
   });

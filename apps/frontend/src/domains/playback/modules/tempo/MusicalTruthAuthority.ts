@@ -137,7 +137,9 @@ export class MusicalTruthAuthority {
    */
   setUserModifiedTempo(value: boolean): void {
     this._userHasModifiedTempo = value;
-    console.log(`🎵 [TEMPO] MusicalTruthAuthority._userHasModifiedTempo set to ${value}`);
+    console.log(
+      `🎵 [TEMPO] MusicalTruthAuthority._userHasModifiedTempo set to ${value}`,
+    );
   }
 
   /**
@@ -172,7 +174,8 @@ export class MusicalTruthAuthority {
     // TEMPO FIX: Auto-detect if user has modified tempo
     // If options.preserveBPM is explicitly set, use that
     // Otherwise, use the internal _userHasModifiedTempo flag as the source of truth
-    const shouldPreserveBpm = options?.preserveBPM ?? this._userHasModifiedTempo;
+    const shouldPreserveBpm =
+      options?.preserveBPM ?? this._userHasModifiedTempo;
     const newBpm = shouldPreserveBpm ? currentBpm : exercise.bpm;
 
     // 🔍 TEMPO DIAGNOSTIC: Log exercise tempo loading
@@ -210,7 +213,9 @@ export class MusicalTruthAuthority {
       // Whether it's exercise BPM or user's preserved BPM, they should match
       Tone.Transport.bpm.value = this.truth.bpm;
       Tone.Transport.timeSignature = this.truth.timeSignature.numerator;
-      console.log(`🎵 [TEMPO] Tone.Transport synced - bpm: ${Tone.Transport.bpm.value}, timeSignature: ${Tone.Transport.timeSignature}`);
+      console.log(
+        `🎵 [TEMPO] Tone.Transport synced - bpm: ${Tone.Transport.bpm.value}, timeSignature: ${Tone.Transport.timeSignature}`,
+      );
     }
     // If Tone.js not loaded yet, Transport will sync when audio system initializes
 
@@ -239,10 +244,13 @@ export class MusicalTruthAuthority {
   setBPM(bpm: number): void {
     if (bpm < 20 || bpm > 300) {
       // 🔍 TEMPO DIAGNOSTIC: Log rejected BPM
-      console.log(`🎵 [TEMPO] MusicalTruthAuthority.setBPM() REJECTED - out of range`, {
-        requestedBpm: bpm,
-        validRange: '20-300',
-      });
+      console.log(
+        `🎵 [TEMPO] MusicalTruthAuthority.setBPM() REJECTED - out of range`,
+        {
+          requestedBpm: bpm,
+          validRange: '20-300',
+        },
+      );
       return;
     }
 
@@ -266,7 +274,9 @@ export class MusicalTruthAuthority {
     if (Tone) {
       Tone.Transport.bpm.value = bpm;
       // 🔍 TEMPO DIAGNOSTIC: Verify Tone.Transport sync
-      console.log(`🎵 [TEMPO] Tone.Transport.bpm.value set to ${Tone.Transport.bpm.value}`);
+      console.log(
+        `🎵 [TEMPO] Tone.Transport.bpm.value set to ${Tone.Transport.bpm.value}`,
+      );
     }
     // If Tone.js not loaded yet, Transport will sync when audio system initializes
 

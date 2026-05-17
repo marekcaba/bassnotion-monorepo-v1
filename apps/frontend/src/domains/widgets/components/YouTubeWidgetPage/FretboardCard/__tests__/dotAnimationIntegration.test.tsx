@@ -143,7 +143,9 @@ function PlaybackTestHarness({
   // Simulate FIX v6: Clear .line-played on measure change
   useEffect(() => {
     if (isPlaying && prevMeasureRef.current !== currentMeasure) {
-      const allPlayedLines = document.querySelectorAll('.connection-line.line-played');
+      const allPlayedLines = document.querySelectorAll(
+        '.connection-line.line-played',
+      );
 
       allPlayedLines.forEach((line) => {
         line.classList.remove('line-played');
@@ -157,13 +159,14 @@ function PlaybackTestHarness({
     }
   }, [isPlaying, currentMeasure, onMeasureChange]);
 
-  const registerNoteRef = (noteIndex: number) => (el: HTMLDivElement | null) => {
-    if (el) {
-      noteRefs.current.set(noteIndex, el);
-    } else {
-      noteRefs.current.delete(noteIndex);
-    }
-  };
+  const registerNoteRef =
+    (noteIndex: number) => (el: HTMLDivElement | null) => {
+      if (el) {
+        noteRefs.current.set(noteIndex, el);
+      } else {
+        noteRefs.current.delete(noteIndex);
+      }
+    };
 
   // Generate connections between consecutive notes
   const connections = notes.slice(0, -1).map((note, i) => ({
@@ -181,7 +184,11 @@ function PlaybackTestHarness({
     <div data-testid="playback-harness">
       <div data-testid="dots-container">
         {notes.map((_, index) => (
-          <TestDot key={index} noteIndex={index} registerRef={registerNoteRef} />
+          <TestDot
+            key={index}
+            noteIndex={index}
+            registerRef={registerNoteRef}
+          />
         ))}
       </div>
 
@@ -363,7 +370,13 @@ describe('Dot Animation Integration', () => {
         { string: 2, fret: 2, position: { measure: 0, beat: 1 } },
       ];
 
-      render(<PlaybackTestHarness notes={notes} currentMeasure={0} isPlaying={true} />);
+      render(
+        <PlaybackTestHarness
+          notes={notes}
+          currentMeasure={0}
+          isPlaying={true}
+        />,
+      );
 
       const line = screen.getByTestId('line-0');
 
@@ -384,11 +397,21 @@ describe('Dot Animation Integration', () => {
         { string: 1, fret: 3, position: { measure: 0, beat: 2 } },
       ];
 
-      render(<PlaybackTestHarness notes={notes} currentMeasure={0} isPlaying={true} />);
+      render(
+        <PlaybackTestHarness
+          notes={notes}
+          currentMeasure={0}
+          isPlaying={true}
+        />,
+      );
 
       // Find line by source note index
-      const lineForNote0 = document.querySelector('[data-source-note-index="0"]');
-      const lineForNote1 = document.querySelector('[data-source-note-index="1"]');
+      const lineForNote0 = document.querySelector(
+        '[data-source-note-index="0"]',
+      );
+      const lineForNote1 = document.querySelector(
+        '[data-source-note-index="1"]',
+      );
 
       expect(lineForNote0).toBeInTheDocument();
       expect(lineForNote1).toBeInTheDocument();
@@ -404,7 +427,11 @@ describe('Dot Animation Integration', () => {
       ];
 
       const { rerender } = render(
-        <PlaybackTestHarness notes={notes} currentMeasure={0} isPlaying={true} />
+        <PlaybackTestHarness
+          notes={notes}
+          currentMeasure={0}
+          isPlaying={true}
+        />,
       );
 
       // Add line-played to the visible line
@@ -417,7 +444,11 @@ describe('Dot Animation Integration', () => {
 
       // Change measure - this should trigger cleanup
       rerender(
-        <PlaybackTestHarness notes={notes} currentMeasure={1} isPlaying={true} />
+        <PlaybackTestHarness
+          notes={notes}
+          currentMeasure={1}
+          isPlaying={true}
+        />,
       );
 
       // The line-played class should be removed
@@ -440,7 +471,7 @@ describe('Dot Animation Integration', () => {
           currentMeasure={0}
           isPlaying={true}
           onMeasureChange={onMeasureChange}
-        />
+        />,
       );
 
       rerender(
@@ -449,7 +480,7 @@ describe('Dot Animation Integration', () => {
           currentMeasure={1}
           isPlaying={true}
           onMeasureChange={onMeasureChange}
-        />
+        />,
       );
 
       await waitFor(() => {
@@ -464,7 +495,11 @@ describe('Dot Animation Integration', () => {
       ];
 
       const { rerender } = render(
-        <PlaybackTestHarness notes={notes} currentMeasure={0} isPlaying={false} />
+        <PlaybackTestHarness
+          notes={notes}
+          currentMeasure={0}
+          isPlaying={false}
+        />,
       );
 
       const line = screen.getByTestId('line-0');
@@ -474,7 +509,11 @@ describe('Dot Animation Integration', () => {
 
       // Change measure while not playing
       rerender(
-        <PlaybackTestHarness notes={notes} currentMeasure={1} isPlaying={false} />
+        <PlaybackTestHarness
+          notes={notes}
+          currentMeasure={1}
+          isPlaying={false}
+        />,
       );
 
       // Line-played should still be there (no cleanup when not playing)
@@ -491,7 +530,13 @@ describe('Dot Animation Integration', () => {
         { string: 2, fret: 5, position: { measure: 0, beat: 3 } },
       ];
 
-      render(<PlaybackTestHarness notes={notes} currentMeasure={0} isPlaying={true} />);
+      render(
+        <PlaybackTestHarness
+          notes={notes}
+          currentMeasure={0}
+          isPlaying={true}
+        />,
+      );
 
       // All lines should be visible initially
       expect(screen.getByTestId('line-0')).toBeInTheDocument();
@@ -566,7 +611,13 @@ describe('Dot Animation Integration', () => {
         { string: 2, fret: 2, position: { measure: 0, beat: 1 } },
       ];
 
-      render(<PlaybackTestHarness notes={notes} currentMeasure={0} isPlaying={true} />);
+      render(
+        <PlaybackTestHarness
+          notes={notes}
+          currentMeasure={0}
+          isPlaying={true}
+        />,
+      );
 
       const dot0 = screen.getByTestId('dot-0');
       const dot1 = screen.getByTestId('dot-1');
@@ -601,7 +652,7 @@ describe('Performance Tests', () => {
     }));
 
     const { rerender } = render(
-      <PlaybackTestHarness notes={notes} currentMeasure={0} isPlaying={true} />
+      <PlaybackTestHarness notes={notes} currentMeasure={0} isPlaying={true} />,
     );
 
     const start = performance.now();
@@ -609,7 +660,11 @@ describe('Performance Tests', () => {
     // Rapidly change measures
     for (let measure = 1; measure <= 10; measure++) {
       rerender(
-        <PlaybackTestHarness notes={notes} currentMeasure={measure} isPlaying={true} />
+        <PlaybackTestHarness
+          notes={notes}
+          currentMeasure={measure}
+          isPlaying={true}
+        />,
       );
     }
 
@@ -630,7 +685,7 @@ describe('Performance Tests', () => {
     ];
 
     const { rerender } = render(
-      <PlaybackTestHarness notes={notes} currentMeasure={0} isPlaying={true} />
+      <PlaybackTestHarness notes={notes} currentMeasure={0} isPlaying={true} />,
     );
 
     // Add line-played to lines in measure 0
@@ -639,7 +694,7 @@ describe('Performance Tests', () => {
 
     // Change to measure 1
     rerender(
-      <PlaybackTestHarness notes={notes} currentMeasure={1} isPlaying={true} />
+      <PlaybackTestHarness notes={notes} currentMeasure={1} isPlaying={true} />,
     );
 
     await waitFor(() => {
@@ -649,7 +704,7 @@ describe('Performance Tests', () => {
 
     // Change to measure 2
     rerender(
-      <PlaybackTestHarness notes={notes} currentMeasure={2} isPlaying={true} />
+      <PlaybackTestHarness notes={notes} currentMeasure={2} isPlaying={true} />,
     );
 
     await waitFor(() => {

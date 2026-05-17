@@ -102,7 +102,9 @@ export class ProfileService {
   /**
    * Update learning style preference
    */
-  async updateLearningStyle(learningStyle: LearningStyle): Promise<UserProfile> {
+  async updateLearningStyle(
+    learningStyle: LearningStyle,
+  ): Promise<UserProfile> {
     try {
       const headers = await this.getAuthHeaders();
       const url = `${this.backendUrl}/api/user/preferences/learning-style`;

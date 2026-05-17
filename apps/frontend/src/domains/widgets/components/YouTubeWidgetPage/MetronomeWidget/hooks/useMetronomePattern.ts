@@ -29,7 +29,7 @@ import type {
  * Hook for creating metronome patterns
  */
 export function useMetronomePattern(
-  options: UseMetronomePatternOptions
+  options: UseMetronomePatternOptions,
 ): UseMetronomePatternReturn {
   const { beats, noteValue, subdivisions } = options;
 

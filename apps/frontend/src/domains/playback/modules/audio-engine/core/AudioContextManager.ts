@@ -98,7 +98,8 @@ export class AudioContextManager {
 
     try {
       // Handle Safari's webkitAudioContext
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      const AudioContextClass =
+        window.AudioContext || window.webkitAudioContext;
 
       if (!AudioContextClass) {
         throw new Error('AudioContext not available');

@@ -199,18 +199,12 @@ export class PerformanceBaseline {
 
     if (window.performance.memory) {
       const memory = window.performance.memory;
-      heapUsed =
-        Math.round((memory.usedJSHeapSize / 1024 / 1024) * 100) /
-        100;
+      heapUsed = Math.round((memory.usedJSHeapSize / 1024 / 1024) * 100) / 100;
       heapTotal =
-        Math.round((memory.totalJSHeapSize / 1024 / 1024) * 100) /
-        100;
+        Math.round((memory.totalJSHeapSize / 1024 / 1024) * 100) / 100;
       arrayBuffers =
         Math.round(
-          ((memory.totalJSHeapSize -
-            memory.usedJSHeapSize) /
-            1024 /
-            1024) *
+          ((memory.totalJSHeapSize - memory.usedJSHeapSize) / 1024 / 1024) *
             100,
         ) / 100;
     }

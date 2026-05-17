@@ -23,7 +23,15 @@ import {
 import { Exercise } from '@/domains/exercises/entities/exercise.entity';
 import { ExerciseId } from '@/domains/exercises/value-objects/exercise-id.vo';
 import { Difficulty } from '@/domains/exercises/value-objects/difficulty.vo';
-import { Upload, X, FileAudio, CheckCircle2, Wand2, LayoutGrid, Library } from 'lucide-react';
+import {
+  Upload,
+  X,
+  FileAudio,
+  CheckCircle2,
+  Wand2,
+  LayoutGrid,
+  Library,
+} from 'lucide-react';
 import { supabase } from '@/infrastructure/supabase/client';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { MidiConversionWizard } from './MidiConversionWizard';
@@ -489,7 +497,10 @@ function ExerciseFormModalContent({
   /**
    * Handle save from drum grid editor
    */
-  const handleGridEditorSave = (pattern: DrumHit[], _metadata: PatternMetadata) => {
+  const handleGridEditorSave = (
+    pattern: DrumHit[],
+    _metadata: PatternMetadata,
+  ) => {
     logger.info('Grid editor save', {
       hitCount: pattern.length,
       correlationId,
@@ -501,7 +512,10 @@ function ExerciseFormModalContent({
   /**
    * Handle pattern selection from the library
    */
-  const handlePatternLibrarySelect = (drumHits: DrumHit[], pattern: PatternLibraryItem) => {
+  const handlePatternLibrarySelect = (
+    drumHits: DrumHit[],
+    pattern: PatternLibraryItem,
+  ) => {
     logger.info('Pattern library selection', {
       patternId: pattern.id,
       patternName: pattern.name,
@@ -819,7 +833,11 @@ function ExerciseFormModalContent({
             confidence: 'high' as ConfidenceLevel,
             alternatives: [],
             warnings: note.techniques?.map((t) => ({
-              type: t as 'large_stretch' | 'difficult_shift' | 'string_crossing' | 'awkward_position',
+              type: t as
+                | 'large_stretch'
+                | 'difficult_shift'
+                | 'string_crossing'
+                | 'awkward_position',
               message: t,
               severity: 'info' as const,
             })),
@@ -873,7 +891,9 @@ function ExerciseFormModalContent({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="description">Description * (max 280 characters)</Label>
+            <Label htmlFor="description">
+              Description * (max 280 characters)
+            </Label>
             <Textarea
               id="description"
               value={formData.description}
@@ -887,7 +907,11 @@ function ExerciseFormModalContent({
               className={errors.description ? 'border-red-500' : ''}
             />
             <div className="flex justify-between text-xs text-gray-500">
-              <span>{errors.description && <span className="text-red-500">{errors.description}</span>}</span>
+              <span>
+                {errors.description && (
+                  <span className="text-red-500">{errors.description}</span>
+                )}
+              </span>
               <span>{formData.description.length}/280</span>
             </div>
           </div>
@@ -1173,31 +1197,34 @@ function ExerciseFormModalContent({
                         </Button>
                       </div>
                     )}
-                    {drumPattern.length === 0 && !isConvertingDrums && !midiFiles.drummer && !midiUrls.drummerMidiUrl && (
-                      <div className="flex items-center gap-2 mt-1">
-                        <Button
-                          type="button"
-                          variant="link"
-                          size="sm"
-                          className="h-auto p-0 text-xs text-blue-600"
-                          onClick={() => setShowDrumGridEditor(true)}
-                        >
-                          <LayoutGrid className="h-3 w-3 mr-1" />
-                          Create from Scratch
-                        </Button>
-                        <span className="text-xs text-gray-400">or</span>
-                        <Button
-                          type="button"
-                          variant="link"
-                          size="sm"
-                          className="h-auto p-0 text-xs text-purple-600"
-                          onClick={() => setShowPatternLibrary(true)}
-                        >
-                          <Library className="h-3 w-3 mr-1" />
-                          Choose from Library
-                        </Button>
-                      </div>
-                    )}
+                    {drumPattern.length === 0 &&
+                      !isConvertingDrums &&
+                      !midiFiles.drummer &&
+                      !midiUrls.drummerMidiUrl && (
+                        <div className="flex items-center gap-2 mt-1">
+                          <Button
+                            type="button"
+                            variant="link"
+                            size="sm"
+                            className="h-auto p-0 text-xs text-blue-600"
+                            onClick={() => setShowDrumGridEditor(true)}
+                          >
+                            <LayoutGrid className="h-3 w-3 mr-1" />
+                            Create from Scratch
+                          </Button>
+                          <span className="text-xs text-gray-400">or</span>
+                          <Button
+                            type="button"
+                            variant="link"
+                            size="sm"
+                            className="h-auto p-0 text-xs text-purple-600"
+                            onClick={() => setShowPatternLibrary(true)}
+                          >
+                            <Library className="h-3 w-3 mr-1" />
+                            Choose from Library
+                          </Button>
+                        </div>
+                      )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -1229,7 +1256,9 @@ function ExerciseFormModalContent({
                       </span>
                     </Button>
                   </Label>
-                  {(midiFiles.drummer || midiUrls.drummerMidiUrl || drumPattern.length > 0) && (
+                  {(midiFiles.drummer ||
+                    midiUrls.drummerMidiUrl ||
+                    drumPattern.length > 0) && (
                     <Button
                       type="button"
                       variant="ghost"
@@ -1306,7 +1335,9 @@ function ExerciseFormModalContent({
                       </span>
                     </Button>
                   </Label>
-                  {(midiFiles.bassline || midiUrls.basslineMidiUrl || generatedNotes.length > 0) && (
+                  {(midiFiles.bassline ||
+                    midiUrls.basslineMidiUrl ||
+                    generatedNotes.length > 0) && (
                     <Button
                       type="button"
                       variant="ghost"
@@ -1476,7 +1507,9 @@ function ExerciseFormModalContent({
                       </span>
                     </Button>
                   </Label>
-                  {(midiFiles.harmony || midiUrls.harmonyMidiUrl || harmonyNotes.length > 0) && (
+                  {(midiFiles.harmony ||
+                    midiUrls.harmonyMidiUrl ||
+                    harmonyNotes.length > 0) && (
                     <Button
                       type="button"
                       variant="ghost"
@@ -1494,7 +1527,12 @@ function ExerciseFormModalContent({
                         setHarmonyAnalysis(null);
                         setFormData((prev) => ({
                           ...prev,
-                          harmonyInstrument: '' as '' | 'grandpiano' | 'rhodes' | 'wurlitzer' | 'pad',
+                          harmonyInstrument: '' as
+                            | ''
+                            | 'grandpiano'
+                            | 'rhodes'
+                            | 'wurlitzer'
+                            | 'pad',
                         }));
                         setTempMidiPaths((prev) => {
                           const updated = { ...prev };

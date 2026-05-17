@@ -16,7 +16,11 @@ interface ExplainBlockViewProps {
 // Media item renderers
 // ---------------------------------------------------------------------------
 
-const TextItem = React.memo(function TextItem({ item }: { item: ExplainMediaItem }) {
+const TextItem = React.memo(function TextItem({
+  item,
+}: {
+  item: ExplainMediaItem;
+}) {
   return (
     <div className="prose prose-invert prose-sm max-w-none text-white/80 whitespace-pre-wrap">
       {item.content}
@@ -24,7 +28,11 @@ const TextItem = React.memo(function TextItem({ item }: { item: ExplainMediaItem
   );
 });
 
-const ImageItem = React.memo(function ImageItem({ item }: { item: ExplainMediaItem }) {
+const ImageItem = React.memo(function ImageItem({
+  item,
+}: {
+  item: ExplainMediaItem;
+}) {
   if (!item.imageUrl) return null;
   return (
     <figure className="space-y-2">
@@ -42,7 +50,11 @@ const ImageItem = React.memo(function ImageItem({ item }: { item: ExplainMediaIt
   );
 });
 
-const VideoItem = React.memo(function VideoItem({ item }: { item: ExplainMediaItem }) {
+const VideoItem = React.memo(function VideoItem({
+  item,
+}: {
+  item: ExplainMediaItem;
+}) {
   if (!item.videoUrl || !item.videoLibraryId) return null;
   return (
     <div className="aspect-video w-full rounded-xl overflow-hidden">
@@ -58,7 +70,11 @@ const VideoItem = React.memo(function VideoItem({ item }: { item: ExplainMediaIt
   );
 });
 
-const AudioItem = React.memo(function AudioItem({ item }: { item: ExplainMediaItem }) {
+const AudioItem = React.memo(function AudioItem({
+  item,
+}: {
+  item: ExplainMediaItem;
+}) {
   if (!item.audioUrl) return null;
   return (
     <div className="flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-xl">
@@ -67,7 +83,10 @@ const AudioItem = React.memo(function AudioItem({ item }: { item: ExplainMediaIt
         {item.audioLabel && (
           <p className="text-xs text-white/50 mb-1.5">{item.audioLabel}</p>
         )}
-        <audio controls className="w-full h-8 [&::-webkit-media-controls-panel]:bg-white/5">
+        <audio
+          controls
+          className="w-full h-8 [&::-webkit-media-controls-panel]:bg-white/5"
+        >
           <source src={item.audioUrl} />
         </audio>
       </div>
@@ -75,7 +94,10 @@ const AudioItem = React.memo(function AudioItem({ item }: { item: ExplainMediaIt
   );
 });
 
-const ITEM_RENDERERS: Record<string, React.ComponentType<{ item: ExplainMediaItem }>> = {
+const ITEM_RENDERERS: Record<
+  string,
+  React.ComponentType<{ item: ExplainMediaItem }>
+> = {
   text: TextItem,
   image: ImageItem,
   video: VideoItem,
@@ -127,7 +149,9 @@ export const ExplainBlockView = React.memo(function ExplainBlockView({
       <div className="mx-auto px-4 w-full max-w-2xl flex flex-col gap-4">
         {/* Heading */}
         {heading && (
-          <h2 className="text-2xl font-bold text-white text-center">{heading}</h2>
+          <h2 className="text-2xl font-bold text-white text-center">
+            {heading}
+          </h2>
         )}
 
         {/* Slide card */}

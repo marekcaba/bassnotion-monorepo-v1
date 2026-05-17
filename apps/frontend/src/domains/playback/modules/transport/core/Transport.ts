@@ -34,7 +34,9 @@ function getTone(): any {
       return tone;
     }
   }
-  throw new Error('Transport: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+  throw new Error(
+    'Transport: Tone.js not loaded. Ensure AudioEngine is initialized first.',
+  );
 }
 
 const logger = createStructuredLogger('Transport');
@@ -52,19 +54,19 @@ export class Transport {
 
   // ✅ DOUBLE COUNTDOWN FIX: Countdown offset for visual display
   // Set by TransportController before calling start() to adjust clock display
-  private countdownOffsetSeconds: number = 0;
+  private countdownOffsetSeconds = 0;
 
   // 🔧 COUNTDOWN TIME FIX: Track transport start time for elapsed time calculation
   // Captures audioContext.currentTime when transport starts to calculate relative elapsed time
   // This ensures position updates start from 0s (showing -1:4:0 countdown) instead of skipping ahead
-  private transportStartTime: number = 0;
+  private transportStartTime = 0;
   // Flag to indicate if transportStartTime was set externally (by PlaybackEngine)
   // If true, start() will NOT override it with its own calculation
-  private transportStartTimeSetExternally: boolean = false;
+  private transportStartTimeSetExternally = false;
 
   // Position update mode: true = EVENT-DRIVEN (Clock.onTick), false = POLLING (setInterval)
   // Stored on start() so resume() can preserve the same mode
-  private skipPositionUpdates: boolean = false;
+  private skipPositionUpdates = false;
 
   // Metrics tracking
   private metrics: TimingMetrics = {
@@ -173,14 +175,20 @@ export class Transport {
   setTransportStartTime(time: number): void {
     this.transportStartTime = time;
     this.transportStartTimeSetExternally = true;
-    console.log('🎯 [TIMING SYNC] Transport received transportStartTime from PlaybackEngine', {
-      transportStartTime: time.toFixed(3) + 's',
-      setExternally: true,
-    });
-    logger.info('🎯 [TIMING SYNC] Transport received transportStartTime from PlaybackEngine', {
-      transportStartTime: time,
-      setExternally: true,
-    });
+    console.log(
+      '🎯 [TIMING SYNC] Transport received transportStartTime from PlaybackEngine',
+      {
+        transportStartTime: time.toFixed(3) + 's',
+        setExternally: true,
+      },
+    );
+    logger.info(
+      '🎯 [TIMING SYNC] Transport received transportStartTime from PlaybackEngine',
+      {
+        transportStartTime: time,
+        setExternally: true,
+      },
+    );
   }
 
   /**
@@ -220,7 +228,10 @@ export class Transport {
         try {
           await sampleAccurateClock.waitForFirstUpdate(100);
         } catch (error) {
-          logger.warn('AudioWorklet first update timeout, using AudioContext time', error as Error);
+          logger.warn(
+            'AudioWorklet first update timeout, using AudioContext time',
+            error as Error,
+          );
         }
       }
     }
@@ -232,7 +243,9 @@ export class Transport {
     this.transportStartTime = this.clock.getAudioTime();
     logger.info('Transport captured Clock-based transportStartTime', {
       transportStartTime: this.transportStartTime,
-      clockSource: this.clock.isUsingAudioWorklet() ? 'AudioWorklet' : 'AudioContext',
+      clockSource: this.clock.isUsingAudioWorklet()
+        ? 'AudioWorklet'
+        : 'AudioContext',
     });
 
     // Update state
@@ -366,7 +379,9 @@ export class Transport {
       this.startPositionUpdates();
     }
 
-    logger.info('Transport resumed', { mode: this.skipPositionUpdates ? 'EVENT-DRIVEN' : 'POLLING' });
+    logger.info('Transport resumed', {
+      mode: this.skipPositionUpdates ? 'EVENT-DRIVEN' : 'POLLING',
+    });
   }
 
   /**
@@ -675,18 +690,29 @@ export class Transport {
       //
       // Without this fix: Visual is 300ms ahead of audio
       // With this fix: Visual syncs precisely with audio playback
-      const visualElapsedTime = Math.max(0, elapsedTime - TRANSPORT_TIMING_CONFIG.startupLookahead);
+      const visualElapsedTime = Math.max(
+        0,
+        elapsedTime - TRANSPORT_TIMING_CONFIG.startupLookahead,
+      );
 
       // Only log occasionally to reduce console spam (every ~500ms)
-      if (Math.floor(elapsedTime * 2) !== Math.floor((elapsedTime - 0.02) * 2)) {
-        console.log('🔄 [VISUAL SYNC] Position update with lookahead compensation', {
-          absoluteTime: absoluteTime.toFixed(3),
-          transportStartTime: this.transportStartTime.toFixed(3),
-          elapsedTime: elapsedTime.toFixed(3),
-          startupLookahead: (TRANSPORT_TIMING_CONFIG.startupLookahead * 1000).toFixed(0) + 'ms',
-          visualElapsedTime: visualElapsedTime.toFixed(3),
-          explanation: 'Visual delayed by startupLookahead to match when audio actually plays',
-        });
+      if (
+        Math.floor(elapsedTime * 2) !== Math.floor((elapsedTime - 0.02) * 2)
+      ) {
+        console.log(
+          '🔄 [VISUAL SYNC] Position update with lookahead compensation',
+          {
+            absoluteTime: absoluteTime.toFixed(3),
+            transportStartTime: this.transportStartTime.toFixed(3),
+            elapsedTime: elapsedTime.toFixed(3),
+            startupLookahead:
+              (TRANSPORT_TIMING_CONFIG.startupLookahead * 1000).toFixed(0) +
+              'ms',
+            visualElapsedTime: visualElapsedTime.toFixed(3),
+            explanation:
+              'Visual delayed by startupLookahead to match when audio actually plays',
+          },
+        );
       }
 
       // ✅ DOUBLE COUNTDOWN FIX: Pass elapsed time (not absolute time)

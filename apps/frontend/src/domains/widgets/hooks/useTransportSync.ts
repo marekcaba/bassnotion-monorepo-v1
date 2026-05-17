@@ -10,7 +10,9 @@ function getTone(): typeof import('tone') {
       return tone as typeof import('tone');
     }
   }
-  throw new Error('useTransportSync: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+  throw new Error(
+    'useTransportSync: Tone.js not loaded. Ensure AudioEngine is initialized first.',
+  );
 }
 
 // Helper function to format musical position

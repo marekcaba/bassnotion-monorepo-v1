@@ -17,7 +17,7 @@ interface UseDotSynchronizationProps {
 /**
  * Hook to handle dot synchronization between local and shared state
  * Manages dot state and string count synchronization
- * 
+ *
  * FAANG-STYLE FIX: Uses refs for unstable callbacks to prevent infinite loops
  * caused by callback recreation triggering useEffect dependencies.
  */

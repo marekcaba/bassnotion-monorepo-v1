@@ -36,7 +36,9 @@ export function TutorialDock({ folderState }: TutorialDockProps) {
                   }
                 }}
                 defaultOpen={folder.isFree}
-                isLocked={!folder.isFree && tutorialsByFolder[folder.id]?.length === 0}
+                isLocked={
+                  !folder.isFree && tutorialsByFolder[folder.id]?.length === 0
+                }
               />
             ))}
           </>

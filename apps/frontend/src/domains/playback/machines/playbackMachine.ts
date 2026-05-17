@@ -119,7 +119,11 @@ export interface PlaybackMachineContext {
  * All possible events the machine can receive
  */
 export type PlaybackMachineEvent =
-  | { type: 'INITIALIZE'; audioContext: AudioContext; audioDestination: AudioNode }
+  | {
+      type: 'INITIALIZE';
+      audioContext: AudioContext;
+      audioDestination: AudioNode;
+    }
   | { type: 'START' }
   | { type: 'PAUSE' }
   | { type: 'RESUME' }
@@ -127,7 +131,11 @@ export type PlaybackMachineEvent =
   | { type: 'DISPOSE' }
   | { type: 'REGISTER_TRACK'; track: MachineTrack }
   | { type: 'UNREGISTER_TRACK'; trackId: string }
-  | { type: 'UPDATE_TRACKS'; tracks: MachineTrack[]; harmonyInstrument?: string }
+  | {
+      type: 'UPDATE_TRACKS';
+      tracks: MachineTrack[];
+      harmonyInstrument?: string;
+    }
   | { type: 'SET_TEMPO'; bpm: number }
   | { type: 'SET_COUNTDOWN'; beats: number; enabled: boolean }
   | { type: 'ERROR'; error: Error; step?: string }
@@ -219,11 +227,17 @@ export const playbackMachine = setup({
 
         // Handle singleton instrument types
         const singletonTypes = ['metronome', 'voice-cue'];
-        if (track.instrumentType && singletonTypes.includes(track.instrumentType)) {
+        if (
+          track.instrumentType &&
+          singletonTypes.includes(track.instrumentType)
+        ) {
           // Remove existing track of same type
           const entries = Array.from(newTracks.entries());
           for (const [id, existingTrack] of entries) {
-            if (existingTrack.instrumentType === track.instrumentType && id !== track.id) {
+            if (
+              existingTrack.instrumentType === track.instrumentType &&
+              id !== track.id
+            ) {
               newTracks.delete(id);
               break;
             }
@@ -258,7 +272,8 @@ export const playbackMachine = setup({
         return newTracks;
       },
       currentHarmonyInstrument: ({ context, event }) => {
-        if (event.type !== 'UPDATE_TRACKS') return context.currentHarmonyInstrument;
+        if (event.type !== 'UPDATE_TRACKS')
+          return context.currentHarmonyInstrument;
         return event.harmonyInstrument ?? context.currentHarmonyInstrument;
       },
     }),
@@ -307,7 +322,10 @@ export const playbackMachine = setup({
     }),
 
     // Event emissions (via EventBus)
-    emitStateChange: ({ context }, params: { oldState: string; newState: string }) => {
+    emitStateChange: (
+      { context },
+      params: { oldState: string; newState: string },
+    ) => {
       if (context.eventBus) {
         context.eventBus.emit('playback:state-change', {
           oldState: params.oldState,
@@ -409,54 +427,62 @@ export const playbackMachine = setup({
   // -------------------------------------------------------------------------
   actors: {
     // Initialize audio infrastructure
-    initializeAudio: fromPromise<void, { context: PlaybackMachineContext }>(async ({ input }) => {
-      const { context } = input;
+    initializeAudio: fromPromise<void, { context: PlaybackMachineContext }>(
+      async ({ input }) => {
+        const { context } = input;
 
-      console.log('[PlaybackMachine] Initializing audio infrastructure...', {
-        instanceId: context.instanceId,
-        sampleRate: context.sampleRate,
-      });
+        console.log('[PlaybackMachine] Initializing audio infrastructure...', {
+          instanceId: context.instanceId,
+          sampleRate: context.sampleRate,
+        });
 
-      // In shadow mode, we don't actually initialize - the real PlaybackEngine does
-      // This is a placeholder for when we fully migrate
-      await new Promise((resolve) => setTimeout(resolve, 50));
+        // In shadow mode, we don't actually initialize - the real PlaybackEngine does
+        // This is a placeholder for when we fully migrate
+        await new Promise((resolve) => setTimeout(resolve, 50));
 
-      console.log('[PlaybackMachine] Audio infrastructure ready');
-    }),
+        console.log('[PlaybackMachine] Audio infrastructure ready');
+      },
+    ),
 
     // Schedule all regions
-    scheduleRegions: fromPromise<void, { context: PlaybackMachineContext }>(async ({ input }) => {
-      const { context } = input;
+    scheduleRegions: fromPromise<void, { context: PlaybackMachineContext }>(
+      async ({ input }) => {
+        const { context } = input;
 
-      console.log('[PlaybackMachine] Scheduling regions...', {
-        tracksCount: context.tracks.size,
-        transportStartTime: context.transportStartTime,
-      });
+        console.log('[PlaybackMachine] Scheduling regions...', {
+          tracksCount: context.tracks.size,
+          transportStartTime: context.transportStartTime,
+        });
 
-      // In shadow mode, we don't actually schedule - the real PlaybackEngine does
-      await new Promise((resolve) => setTimeout(resolve, 25));
+        // In shadow mode, we don't actually schedule - the real PlaybackEngine does
+        await new Promise((resolve) => setTimeout(resolve, 25));
 
-      console.log('[PlaybackMachine] Regions scheduled');
-    }),
+        console.log('[PlaybackMachine] Regions scheduled');
+      },
+    ),
 
     // Stop all audio
-    stopAudio: fromPromise<void, { context: PlaybackMachineContext }>(async () => {
-      console.log('[PlaybackMachine] Stopping audio...');
+    stopAudio: fromPromise<void, { context: PlaybackMachineContext }>(
+      async () => {
+        console.log('[PlaybackMachine] Stopping audio...');
 
-      // In shadow mode, we don't actually stop - the real PlaybackEngine does
-      await new Promise((resolve) => setTimeout(resolve, 10));
+        // In shadow mode, we don't actually stop - the real PlaybackEngine does
+        await new Promise((resolve) => setTimeout(resolve, 10));
 
-      console.log('[PlaybackMachine] Audio stopped');
-    }),
+        console.log('[PlaybackMachine] Audio stopped');
+      },
+    ),
 
     // Dispose resources
-    disposeResources: fromPromise<void, { context: PlaybackMachineContext }>(async () => {
-      console.log('[PlaybackMachine] Disposing resources...');
+    disposeResources: fromPromise<void, { context: PlaybackMachineContext }>(
+      async () => {
+        console.log('[PlaybackMachine] Disposing resources...');
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
 
-      console.log('[PlaybackMachine] Resources disposed');
-    }),
+        console.log('[PlaybackMachine] Resources disposed');
+      },
+    ),
   },
 }).createMachine({
   id: 'playback',
@@ -506,7 +532,12 @@ export const playbackMachine = setup({
     // LOADING - Initializing audio infrastructure
     // =========================================================================
     loading: {
-      entry: [{ type: 'emitStateChange', params: { oldState: 'idle', newState: 'loading' } }],
+      entry: [
+        {
+          type: 'emitStateChange',
+          params: { oldState: 'idle', newState: 'loading' },
+        },
+      ],
 
       invoke: {
         id: 'initializeAudio',
@@ -514,7 +545,9 @@ export const playbackMachine = setup({
         input: ({ context }) => ({ context }),
         onDone: {
           target: 'ready',
-          actions: [{ type: 'logTransition', params: { from: 'loading', to: 'ready' } }],
+          actions: [
+            { type: 'logTransition', params: { from: 'loading', to: 'ready' } },
+          ],
         },
         onError: {
           target: 'error',
@@ -544,7 +577,12 @@ export const playbackMachine = setup({
     // READY - Initialized and ready to play
     // =========================================================================
     ready: {
-      entry: [{ type: 'emitStateChange', params: { oldState: 'loading', newState: 'ready' } }],
+      entry: [
+        {
+          type: 'emitStateChange',
+          params: { oldState: 'loading', newState: 'ready' },
+        },
+      ],
 
       on: {
         START: {
@@ -555,7 +593,10 @@ export const playbackMachine = setup({
             'captureTransportStartTime',
             'emitTransportStartTime',
             'emitStarting',
-            { type: 'logTransition', params: { from: 'ready', to: 'starting' } },
+            {
+              type: 'logTransition',
+              params: { from: 'ready', to: 'starting' },
+            },
           ],
         },
         // FIX: Allow STOP in ready state to transition to stopped
@@ -600,7 +641,10 @@ export const playbackMachine = setup({
           target: 'playing',
           actions: [
             'emitStart',
-            { type: 'logTransition', params: { from: 'starting', to: 'playing' } },
+            {
+              type: 'logTransition',
+              params: { from: 'starting', to: 'playing' },
+            },
           ],
         },
         onError: {
@@ -613,7 +657,10 @@ export const playbackMachine = setup({
                 step: 'schedule',
               }),
             },
-            { type: 'logTransition', params: { from: 'starting', to: 'error' } },
+            {
+              type: 'logTransition',
+              params: { from: 'starting', to: 'error' },
+            },
           ],
         },
       },
@@ -621,7 +668,12 @@ export const playbackMachine = setup({
       on: {
         STOP: {
           target: 'stopping',
-          actions: [{ type: 'logTransition', params: { from: 'starting', to: 'stopping' } }],
+          actions: [
+            {
+              type: 'logTransition',
+              params: { from: 'starting', to: 'stopping' },
+            },
+          ],
         },
       },
     },
@@ -630,19 +682,32 @@ export const playbackMachine = setup({
     // PLAYING - Actively playing audio
     // =========================================================================
     playing: {
-      entry: [{ type: 'emitStateChange', params: { oldState: 'ready', newState: 'playing' } }],
+      entry: [
+        {
+          type: 'emitStateChange',
+          params: { oldState: 'ready', newState: 'playing' },
+        },
+      ],
 
       on: {
         PAUSE: {
           target: 'paused',
           actions: [
             'emitPause',
-            { type: 'logTransition', params: { from: 'playing', to: 'paused' } },
+            {
+              type: 'logTransition',
+              params: { from: 'playing', to: 'paused' },
+            },
           ],
         },
         STOP: {
           target: 'stopping',
-          actions: [{ type: 'logTransition', params: { from: 'playing', to: 'stopping' } }],
+          actions: [
+            {
+              type: 'logTransition',
+              params: { from: 'playing', to: 'stopping' },
+            },
+          ],
         },
         SET_TEMPO: {
           actions: ['setTempo', 'emitTempoChange'],
@@ -661,19 +726,32 @@ export const playbackMachine = setup({
     // PAUSED - Playback paused
     // =========================================================================
     paused: {
-      entry: [{ type: 'emitStateChange', params: { oldState: 'playing', newState: 'paused' } }],
+      entry: [
+        {
+          type: 'emitStateChange',
+          params: { oldState: 'playing', newState: 'paused' },
+        },
+      ],
 
       on: {
         RESUME: {
           target: 'playing',
           actions: [
             'emitResume',
-            { type: 'logTransition', params: { from: 'paused', to: 'playing' } },
+            {
+              type: 'logTransition',
+              params: { from: 'paused', to: 'playing' },
+            },
           ],
         },
         STOP: {
           target: 'stopping',
-          actions: [{ type: 'logTransition', params: { from: 'paused', to: 'stopping' } }],
+          actions: [
+            {
+              type: 'logTransition',
+              params: { from: 'paused', to: 'stopping' },
+            },
+          ],
         },
       },
     },
@@ -691,7 +769,10 @@ export const playbackMachine = setup({
           actions: [
             'clearScheduledState',
             'emitStop',
-            { type: 'logTransition', params: { from: 'stopping', to: 'stopped' } },
+            {
+              type: 'logTransition',
+              params: { from: 'stopping', to: 'stopped' },
+            },
           ],
         },
         onError: {
@@ -699,7 +780,10 @@ export const playbackMachine = setup({
           target: 'stopped',
           actions: [
             'clearScheduledState',
-            { type: 'logTransition', params: { from: 'stopping', to: 'stopped' } },
+            {
+              type: 'logTransition',
+              params: { from: 'stopping', to: 'stopped' },
+            },
           ],
         },
       },
@@ -709,7 +793,12 @@ export const playbackMachine = setup({
     // STOPPED - Playback stopped
     // =========================================================================
     stopped: {
-      entry: [{ type: 'emitStateChange', params: { oldState: 'playing', newState: 'stopped' } }],
+      entry: [
+        {
+          type: 'emitStateChange',
+          params: { oldState: 'playing', newState: 'stopped' },
+        },
+      ],
 
       on: {
         START: {
@@ -720,7 +809,10 @@ export const playbackMachine = setup({
             'captureTransportStartTime',
             'emitTransportStartTime',
             'emitStarting',
-            { type: 'logTransition', params: { from: 'stopped', to: 'starting' } },
+            {
+              type: 'logTransition',
+              params: { from: 'stopped', to: 'starting' },
+            },
           ],
         },
         REGISTER_TRACK: {
@@ -744,7 +836,9 @@ export const playbackMachine = setup({
         // Allow transitioning back to ready state
         FORCE_READY: {
           target: 'ready',
-          actions: [{ type: 'logTransition', params: { from: 'stopped', to: 'ready' } }],
+          actions: [
+            { type: 'logTransition', params: { from: 'stopped', to: 'ready' } },
+          ],
         },
       },
     },
@@ -753,7 +847,13 @@ export const playbackMachine = setup({
     // ERROR - Something went wrong
     // =========================================================================
     error: {
-      entry: ['logError', { type: 'emitStateChange', params: { oldState: '*', newState: 'error' } }],
+      entry: [
+        'logError',
+        {
+          type: 'emitStateChange',
+          params: { oldState: '*', newState: 'error' },
+        },
+      ],
 
       on: {
         RETRY: [
@@ -762,7 +862,10 @@ export const playbackMachine = setup({
             target: 'loading',
             actions: [
               'clearError',
-              { type: 'logTransition', params: { from: 'error', to: 'loading' } },
+              {
+                type: 'logTransition',
+                params: { from: 'error', to: 'loading' },
+              },
             ],
           },
           {
@@ -788,7 +891,10 @@ export const playbackMachine = setup({
           target: 'idle',
           actions: [
             'resetContext',
-            { type: 'logTransition', params: { from: 'disposing', to: 'idle' } },
+            {
+              type: 'logTransition',
+              params: { from: 'disposing', to: 'idle' },
+            },
           ],
         },
         onError: {
@@ -796,7 +902,10 @@ export const playbackMachine = setup({
           target: 'idle',
           actions: [
             'resetContext',
-            { type: 'logTransition', params: { from: 'disposing', to: 'idle' } },
+            {
+              type: 'logTransition',
+              params: { from: 'disposing', to: 'idle' },
+            },
           ],
         },
       },
@@ -809,4 +918,6 @@ export const playbackMachine = setup({
 // ============================================================================
 
 export type PlaybackMachine = typeof playbackMachine;
-export type PlaybackMachineState = ReturnType<typeof playbackMachine.transition>;
+export type PlaybackMachineState = ReturnType<
+  typeof playbackMachine.transition
+>;

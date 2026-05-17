@@ -70,7 +70,9 @@ const ExpandedControlsComponent = ({
               {Object.entries(BassArticulation).map(([key, value]) => (
                 <button
                   key={value}
-                  onClick={() => onArticulationChange(value as BassArticulationType)}
+                  onClick={() =>
+                    onArticulationChange(value as BassArticulationType)
+                  }
                   className={`px-2 py-1 text-xs rounded ${
                     currentArticulation === value
                       ? 'bg-purple-600 text-white'

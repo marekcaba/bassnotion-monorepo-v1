@@ -34,9 +34,7 @@ import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
 import { GlobalSampleCache } from '@/domains/playback/modules/storage';
 import { lifecycle } from '@/domains/playback/utils/InitializationLifecycleLogger.js';
 import { withAudioContext } from '@/domains/playback/utils/ensureAudioContext';
-import {
-  getPersistentAudioContext,
-} from '@/domains/playback/utils/audioContext';
+import { getPersistentAudioContext } from '@/domains/playback/utils/audioContext';
 import { isVerboseDebugEnabled } from '@/config/debug';
 import type {
   KeyboardInstrumentType,
@@ -93,7 +91,7 @@ const PLUGIN_RETRY_DELAY_MS = 100;
  * Hook for managing the WAM keyboard plugin lifecycle
  */
 export function useHarmonyPlugin(
-  options: UseHarmonyPluginOptions
+  options: UseHarmonyPluginOptions,
 ): UseHarmonyPluginReturn {
   const {
     trackIsReady,
@@ -215,7 +213,9 @@ export function useHarmonyPlugin(
       keyboardPluginRef.current ||
       wamPluginLoaded
     ) {
-      logger.debug('Skipping - plugin creation already in progress or completed');
+      logger.debug(
+        'Skipping - plugin creation already in progress or completed',
+      );
       return;
     }
 
@@ -237,7 +237,7 @@ export function useHarmonyPlugin(
     // Allow plugin creation with suspended AudioContext (browser autoplay policy)
     if (context && context.state === 'suspended') {
       logger.info(
-        'Audio context is suspended (autoplay policy), creating plugin anyway'
+        'Audio context is suspended (autoplay policy), creating plugin anyway',
       );
     }
 
@@ -255,7 +255,7 @@ export function useHarmonyPlugin(
         // Don't create plugin until we have a valid instrument
         if (!desiredInstrument) {
           logger.warn(
-            'No harmonyInstrument specified, waiting for exercise to load'
+            'No harmonyInstrument specified, waiting for exercise to load',
           );
           isCreatingPluginRef.current = false;
           return;
@@ -296,7 +296,7 @@ export function useHarmonyPlugin(
 
           if (currentRetries >= MAX_PLUGIN_RETRIES) {
             logger.error(
-              `Plugin not registered after ${MAX_PLUGIN_RETRIES} attempts - giving up`
+              `Plugin not registered after ${MAX_PLUGIN_RETRIES} attempts - giving up`,
             );
             isCreatingPluginRef.current = false;
             pluginCreationRetryCountRef.current = 0;
@@ -304,7 +304,7 @@ export function useHarmonyPlugin(
           }
 
           logger.info(
-            `Plugin not registered yet, retrying... (attempt ${currentRetries + 1}/${MAX_PLUGIN_RETRIES})`
+            `Plugin not registered yet, retrying... (attempt ${currentRetries + 1}/${MAX_PLUGIN_RETRIES})`,
           );
           isCreatingPluginRef.current = false;
           pluginCreationRetryCountRef.current++;
@@ -347,7 +347,9 @@ export function useHarmonyPlugin(
         // Get the underlying WamKeyboard instance
         const plugin = keyboardPlugin.getWamKeyboard();
         if (!plugin) {
-          logger.error('WamKeyboard instance not initialized in plugin wrapper');
+          logger.error(
+            'WamKeyboard instance not initialized in plugin wrapper',
+          );
           isCreatingPluginRef.current = false;
           return;
         }
@@ -358,9 +360,8 @@ export function useHarmonyPlugin(
         // Connect to master bus for proper mixing
         const audioNode = plugin.audioNode;
         try {
-          const { Mixer } = await import(
-            '@/domains/playback/modules/tracks/mixing/Mixer.js'
-          );
+          const { Mixer } =
+            await import('@/domains/playback/modules/tracks/mixing/Mixer.js');
           const mixer = Mixer.getInstance();
           const masterBusInput = mixer.getMasterBusInputAsAudioNode();
           if (masterBusInput) {
@@ -399,7 +400,9 @@ export function useHarmonyPlugin(
             setCurrentInstrument(desiredInstrument);
           }
 
-          logger.info('Desired instrument loaded!', { instrument: desiredInstrument });
+          logger.info('Desired instrument loaded!', {
+            instrument: desiredInstrument,
+          });
         } else {
           logger.info('Correct instrument already loaded', {
             instrument: loadedInstrument,
@@ -414,7 +417,9 @@ export function useHarmonyPlugin(
         lifecycle.checkpoint('HARMONY_PLUGIN_LOADED', {
           instrument: loadedInstrument || 'unknown',
         });
-        logger.info('WAM Keyboard plugin loaded and connected for HarmonyWidget');
+        logger.info(
+          'WAM Keyboard plugin loaded and connected for HarmonyWidget',
+        );
 
         // Set initial volume
         await audioNode.setParameterValues({
@@ -460,7 +465,12 @@ export function useHarmonyPlugin(
 
     // Check all conditions
     const samplesReady = WindowRegistry.getSamplesReady();
-    if (!pluginClassLoaded || !trackIsReady || wamPluginLoaded || !samplesReady) {
+    if (
+      !pluginClassLoaded ||
+      !trackIsReady ||
+      wamPluginLoaded ||
+      !samplesReady
+    ) {
       logger.debug('Plugin creation conditions not met', {
         pluginClassLoaded,
         trackIsReady,
@@ -546,7 +556,7 @@ export function useHarmonyPlugin(
       window.removeEventListener('audioServicesReady', handleAudioReady);
       window.removeEventListener(
         'audioContextStarted',
-        handleAudioContextStarted
+        handleAudioContextStarted,
       );
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current);
@@ -604,7 +614,7 @@ export function useHarmonyPlugin(
           if (typeof keyboardPluginRef.current.resetState === 'function') {
             keyboardPluginRef.current.resetState();
             logger.info(
-              'Plugin state reset on unmount (clears events, sustain, instrument)'
+              'Plugin state reset on unmount (clears events, sustain, instrument)',
             );
           } else if (keyboardPluginRef.current.audioNode) {
             // Fallback to clearEvents if resetState not available
@@ -613,7 +623,7 @@ export function useHarmonyPlugin(
           }
           keyboardPluginRef.current = null;
           logger.info(
-            'Local ref cleared (plugin kept in singleton cache for reuse)'
+            'Local ref cleared (plugin kept in singleton cache for reuse)',
           );
         } catch (error) {
           logger.error('Error cleaning up HarmonyWidget:', error);
@@ -647,7 +657,9 @@ export function useHarmonyPlugin(
         const preloadedInstrument =
           GlobalSampleCache.getCachedInstrument('harmony-preloaded');
         if (preloadedInstrument && preloadedInstrument.audioNode) {
-          logger.info('Found pre-loaded harmony instrument! Using it for TEST.');
+          logger.info(
+            'Found pre-loaded harmony instrument! Using it for TEST.',
+          );
           keyboardPluginRef.current = preloadedInstrument;
           setWamPluginLoaded(true);
           lifecycle.checkpoint('HARMONY_PLUGIN_LOADED', {
@@ -703,7 +715,7 @@ export function useHarmonyPlugin(
       isMuted,
       createAudioNodeAttempt,
       logger,
-    ]
+    ],
   );
 
   return {

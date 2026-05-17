@@ -37,16 +37,10 @@ export type {
 } from './types.js';
 
 export { useBassPlayback } from './hooks/useBassPlayback.js';
-export type {
-  UseBassPlaybackOptions,
-  UseBassPlaybackReturn,
-} from './types.js';
+export type { UseBassPlaybackOptions, UseBassPlaybackReturn } from './types.js';
 
 export { useBassEventBus } from './hooks/useBassEventBus.js';
-export type {
-  UseBassEventBusOptions,
-  UseBassEventBusReturn,
-} from './types.js';
+export type { UseBassEventBusOptions, UseBassEventBusReturn } from './types.js';
 
 // Components
 export { MiniFretboard } from './components/MiniFretboard.js';

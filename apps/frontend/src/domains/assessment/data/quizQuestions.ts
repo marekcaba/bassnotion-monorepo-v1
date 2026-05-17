@@ -5,7 +5,10 @@
  * In production, configure via admin panel with your Bunny Stream video.
  */
 
-import type { AssessmentQuestion, AssessmentConfig } from '@bassnotion/contracts';
+import type {
+  AssessmentQuestion,
+  AssessmentConfig,
+} from '@bassnotion/contracts';
 
 // Bunny Stream video configuration (fallback/default values)
 // These are used as fallback if database config is unavailable
@@ -73,10 +76,16 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     category: 'knowledge',
     timestamp: 55, // 55 seconds into video
     question: 'Name the open strings on a 4-string bass',
-    description: 'Drag the note names to the correct string positions (low to high).',
+    description:
+      'Drag the note names to the correct string positions (low to high).',
     dragDropConfig: {
       draggableItems: ['E', 'A', 'D', 'G', 'B', 'C'], // Extra items as distractors
-      dropZones: ['String 4 (lowest)', 'String 3', 'String 2', 'String 1 (highest)'],
+      dropZones: [
+        'String 4 (lowest)',
+        'String 3',
+        'String 2',
+        'String 1 (highest)',
+      ],
       correctMapping: {
         'String 4 (lowest)': 'E',
         'String 3': 'A',

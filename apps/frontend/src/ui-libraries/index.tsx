@@ -67,85 +67,92 @@ export function useZoneComponents() {
 /**
  * Zone-aware Card component
  */
-export const ZoneCard = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  (props, ref) => {
-    const components = useZoneComponents();
-    const Card = components.ZoneCard;
-    return <Card ref={ref} {...props} />;
-  }
-);
+export const ZoneCard = forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>((props, ref) => {
+  const components = useZoneComponents();
+  const Card = components.ZoneCard;
+  return <Card ref={ref} {...props} />;
+});
 ZoneCard.displayName = 'ZoneCard';
 
 /**
  * Zone-aware CardHeader component
  */
-export const ZoneCardHeader = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  (props, ref) => {
-    const components = useZoneComponents();
-    const CardHeader = components.ZoneCardHeader;
-    return <CardHeader ref={ref} {...props} />;
-  }
-);
+export const ZoneCardHeader = forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>((props, ref) => {
+  const components = useZoneComponents();
+  const CardHeader = components.ZoneCardHeader;
+  return <CardHeader ref={ref} {...props} />;
+});
 ZoneCardHeader.displayName = 'ZoneCardHeader';
 
 /**
  * Zone-aware CardTitle component
  */
-export const ZoneCardTitle = forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(
-  (props, ref) => {
-    const components = useZoneComponents();
-    const CardTitle = components.ZoneCardTitle;
-    return <CardTitle ref={ref} {...props} />;
-  }
-);
+export const ZoneCardTitle = forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLHeadingElement>
+>((props, ref) => {
+  const components = useZoneComponents();
+  const CardTitle = components.ZoneCardTitle;
+  return <CardTitle ref={ref} {...props} />;
+});
 ZoneCardTitle.displayName = 'ZoneCardTitle';
 
 /**
  * Zone-aware CardDescription component
  */
-export const ZoneCardDescription = forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
-  (props, ref) => {
-    const components = useZoneComponents();
-    const CardDescription = components.ZoneCardDescription;
-    return <CardDescription ref={ref} {...props} />;
-  }
-);
+export const ZoneCardDescription = forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLParagraphElement>
+>((props, ref) => {
+  const components = useZoneComponents();
+  const CardDescription = components.ZoneCardDescription;
+  return <CardDescription ref={ref} {...props} />;
+});
 ZoneCardDescription.displayName = 'ZoneCardDescription';
 
 /**
  * Zone-aware CardContent component
  */
-export const ZoneCardContent = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  (props, ref) => {
-    const components = useZoneComponents();
-    const CardContent = components.ZoneCardContent;
-    return <CardContent ref={ref} {...props} />;
-  }
-);
+export const ZoneCardContent = forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>((props, ref) => {
+  const components = useZoneComponents();
+  const CardContent = components.ZoneCardContent;
+  return <CardContent ref={ref} {...props} />;
+});
 ZoneCardContent.displayName = 'ZoneCardContent';
 
 /**
  * Zone-aware CardFooter component
  */
-export const ZoneCardFooter = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  (props, ref) => {
-    const components = useZoneComponents();
-    const CardFooter = components.ZoneCardFooter;
-    return <CardFooter ref={ref} {...props} />;
-  }
-);
+export const ZoneCardFooter = forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>((props, ref) => {
+  const components = useZoneComponents();
+  const CardFooter = components.ZoneCardFooter;
+  return <CardFooter ref={ref} {...props} />;
+});
 ZoneCardFooter.displayName = 'ZoneCardFooter';
 
 /**
  * Zone-aware Button component
  */
-export const ZoneButton = forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement>>(
-  (props, ref) => {
-    const components = useZoneComponents();
-    const Button = components.ZoneButton;
-    return <Button ref={ref} {...props} />;
-  }
-);
+export const ZoneButton = forwardRef<
+  HTMLButtonElement,
+  React.ButtonHTMLAttributes<HTMLButtonElement>
+>((props, ref) => {
+  const components = useZoneComponents();
+  const Button = components.ZoneButton;
+  return <Button ref={ref} {...props} />;
+});
 ZoneButton.displayName = 'ZoneButton';
 
 /**
@@ -166,20 +173,21 @@ export const ZoneSlider = forwardRef<HTMLDivElement, ZoneSliderProps>(
     const components = useZoneComponents();
     const Slider = components.ZoneSlider;
     return <Slider ref={ref} {...props} />;
-  }
+  },
 );
 ZoneSlider.displayName = 'ZoneSlider';
 
 /**
  * Zone-aware Badge component
  */
-export const ZoneBadge = forwardRef<HTMLSpanElement, React.HTMLAttributes<HTMLSpanElement>>(
-  (props, ref) => {
-    const components = useZoneComponents();
-    const Badge = components.ZoneBadge;
-    return <Badge ref={ref} {...props} />;
-  }
-);
+export const ZoneBadge = forwardRef<
+  HTMLSpanElement,
+  React.HTMLAttributes<HTMLSpanElement>
+>((props, ref) => {
+  const components = useZoneComponents();
+  const Badge = components.ZoneBadge;
+  return <Badge ref={ref} {...props} />;
+});
 ZoneBadge.displayName = 'ZoneBadge';
 
 /**
@@ -199,13 +207,14 @@ export const ZoneTabs = forwardRef<
 });
 ZoneTabs.displayName = 'ZoneTabs';
 
-export const ZoneTabsList = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  (props, ref) => {
-    const components = useZoneComponents();
-    const TabsList = components.ZoneTabsList;
-    return <TabsList ref={ref} {...props} />;
-  }
-);
+export const ZoneTabsList = forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>((props, ref) => {
+  const components = useZoneComponents();
+  const TabsList = components.ZoneTabsList;
+  return <TabsList ref={ref} {...props} />;
+});
 ZoneTabsList.displayName = 'ZoneTabsList';
 
 export const ZoneTabsTrigger = forwardRef<

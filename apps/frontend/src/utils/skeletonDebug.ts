@@ -45,12 +45,12 @@ export function logSkeletonDebug(
   emoji: string,
   component: string,
   renderCount: number,
-  data?: Record<string, any>
+  data?: Record<string, any>,
 ): void {
   if (isVerboseDebugEnabled() && renderCount <= 5) {
     console.log(
       `${emoji} [SKELETON-DEBUG] ${component} render #${renderCount} at +${getSkeletonDebugTime()}ms`,
-      data ?? {}
+      data ?? {},
     );
   }
 }

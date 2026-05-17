@@ -34,7 +34,7 @@ import type {
  * Hook for managing volume and mute state for the metronome widget
  */
 export function useVolumeControl(
-  options: UseMetronomeVolumeControlOptions
+  options: UseMetronomeVolumeControlOptions,
 ): UseMetronomeVolumeControlReturn {
   const {
     controlledVolume,
@@ -50,7 +50,8 @@ export function useVolumeControl(
   const [localMuted, setLocalMuted] = useState(false);
 
   // Use controlled values if provided, otherwise use local state
-  const volume = controlledVolume !== undefined ? controlledVolume : localVolume;
+  const volume =
+    controlledVolume !== undefined ? controlledVolume : localVolume;
   const isMuted = controlledMuted !== undefined ? controlledMuted : localMuted;
   const effectiveVolume = isMuted ? 0 : volume / 100;
 
@@ -65,7 +66,7 @@ export function useVolumeControl(
         setLocalVolume(newVolume);
       }
     },
-    [onVolumeChange]
+    [onVolumeChange],
   );
 
   /**

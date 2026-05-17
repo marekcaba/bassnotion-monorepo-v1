@@ -102,7 +102,9 @@ export class VelocityLayerSelector {
       if (layer) {
         // DIAGNOSTIC: Log per-note layer selection
         if (this.diagnosticLogCount < 5) {
-          console.log(`[SCHEDULER DIAGNOSTIC] Per-note layer: ${noteName} velocity=${velocity} -> ${layer}`);
+          console.log(
+            `[SCHEDULER DIAGNOSTIC] Per-note layer: ${noteName} velocity=${velocity} -> ${layer}`,
+          );
           this.diagnosticLogCount++;
         }
         return layer;
@@ -114,7 +116,9 @@ export class VelocityLayerSelector {
 
     // DIAGNOSTIC: Log fallback layer selection
     if (this.diagnosticLogCount < 10) {
-      console.log(`[SCHEDULER DIAGNOSTIC] Fallback layer: ${noteName} velocity=${velocity} -> ${fallbackLayer} (hasPerNoteRanges=${!!this.perNoteRanges})`);
+      console.log(
+        `[SCHEDULER DIAGNOSTIC] Fallback layer: ${noteName} velocity=${velocity} -> ${fallbackLayer} (hasPerNoteRanges=${!!this.perNoteRanges})`,
+      );
       this.diagnosticLogCount++;
     }
 
@@ -257,11 +261,15 @@ export class VelocityLayerSelector {
   public setPerNoteRanges(ranges: PerNoteVelocityRanges | undefined): void {
     const noteCount = ranges ? Object.keys(ranges).length : 0;
     // DIAGNOSTIC: Log when per-note ranges are set
-    console.log(`[SCHEDULER DIAGNOSTIC] setPerNoteRanges called: hasRanges=${!!ranges}, noteCount=${noteCount}`);
+    console.log(
+      `[SCHEDULER DIAGNOSTIC] setPerNoteRanges called: hasRanges=${!!ranges}, noteCount=${noteCount}`,
+    );
     if (ranges && noteCount > 0) {
       // Log a sample of the ranges to verify they're correct
       const sampleNotes = Object.keys(ranges).slice(0, 3);
-      console.log(`[SCHEDULER DIAGNOSTIC] Sample notes: ${sampleNotes.join(', ')}`);
+      console.log(
+        `[SCHEDULER DIAGNOSTIC] Sample notes: ${sampleNotes.join(', ')}`,
+      );
     }
     logger.info('Per-note velocity ranges updated', {
       hasRanges: !!ranges,

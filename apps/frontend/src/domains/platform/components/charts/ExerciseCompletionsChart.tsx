@@ -33,10 +33,7 @@ export function ExerciseCompletionsChart() {
           className="h-[220px] w-full"
         >
           <BarChart accessibilityLayer data={exerciseCompletionData}>
-            <CartesianGrid
-              vertical={false}
-              stroke="rgba(255,255,255,0.06)"
-            />
+            <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.06)" />
             <XAxis
               dataKey="exercise"
               tickLine={false}

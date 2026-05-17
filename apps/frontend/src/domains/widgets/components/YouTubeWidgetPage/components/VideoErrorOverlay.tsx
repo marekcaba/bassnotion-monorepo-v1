@@ -73,9 +73,7 @@ export function VideoErrorOverlay({
 
         {/* Retry count indicator */}
         {retryCount > 0 && retryCount < 3 && (
-          <p className="text-white/30 text-xs">
-            Attempt {retryCount + 1} of 3
-          </p>
+          <p className="text-white/30 text-xs">Attempt {retryCount + 1} of 3</p>
         )}
 
         {/* Skip option after 3 failures */}

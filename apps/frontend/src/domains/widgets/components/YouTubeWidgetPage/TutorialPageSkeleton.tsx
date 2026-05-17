@@ -166,9 +166,7 @@ function TeachingTakeawayCardSkeleton() {
  */
 export function TutorialPageSkeleton() {
   return (
-    <div
-      className="min-h-screen"
-    >
+    <div className="min-h-screen">
       {/* Header with Logo Skeleton - matches YouTubeWidgetPageContent header */}
       <header className="w-full pt-8 sm:pt-12 pb-5 flex justify-center">
         <div className="skeleton-shimmer w-[180px] sm:w-[260px] md:w-[320px] lg:w-[400px] xl:w-[480px] h-[45px] sm:h-[65px] md:h-[80px] lg:h-[100px] xl:h-[120px] rounded-lg" />

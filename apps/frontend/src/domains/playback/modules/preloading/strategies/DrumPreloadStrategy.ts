@@ -9,7 +9,10 @@ import { PreloadConfig, PreloadResult } from '../types/index.js';
 import { GlobalSampleCache } from '../../storage/cache/GlobalSampleCache.js';
 import { wamPluginSingleton } from '../../instruments/wamPluginSingleton.js';
 import { getLogger } from '@/utils/logger.js';
-import { DEFAULT_KIT_PATH, FALLBACK_KIT_PATH } from '@/domains/playback/data/drums/index.js';
+import {
+  DEFAULT_KIT_PATH,
+  FALLBACK_KIT_PATH,
+} from '@/domains/playback/data/drums/index.js';
 
 const logger = getLogger('DrumPreloadStrategy');
 
@@ -39,9 +42,14 @@ export class DrumPreloadStrategy implements PreloadStrategy {
       // Check if CoreServices and AudioEngine are available
       const coreServices = window.__globalCoreServices || window.__coreServices;
       // Type assertion for CoreServices interface
-      const typedCoreServices = coreServices as {
-        getAudioEngine?: () => { isReady?: () => boolean; getContext?: () => AudioContext | null } | null;
-      } | undefined;
+      const typedCoreServices = coreServices as
+        | {
+            getAudioEngine?: () => {
+              isReady?: () => boolean;
+              getContext?: () => AudioContext | null;
+            } | null;
+          }
+        | undefined;
 
       if (!typedCoreServices) {
         return this.fallbackToUrlCaching();
@@ -186,7 +194,9 @@ export class DrumPreloadStrategy implements PreloadStrategy {
 
           // Fallback to hydrogen kit structure if standard kit fails
           if (!response.ok && FALLBACK_KIT_PATH) {
-            logger.info(`Standard kit sample not found, trying fallback: ${drum.key}`);
+            logger.info(
+              `Standard kit sample not found, trying fallback: ${drum.key}`,
+            );
             url = `${supabaseUrl}/storage/v1/object/public/audio-samples/${FALLBACK_KIT_PATH}/${drum.file}`;
             response = await fetch(url);
           }

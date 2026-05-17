@@ -754,7 +754,10 @@ export class WidgetSyncService {
       connectionAttempts++;
 
       // Check for both old and new global service locations
-      const coreServices = (window.__coreServices || window.__globalCoreServices) as { getEventBus?: () => unknown } | undefined;
+      const coreServices = (window.__coreServices ||
+        window.__globalCoreServices) as
+        | { getEventBus?: () => unknown }
+        | undefined;
 
       if (!coreServices || typeof coreServices.getEventBus !== 'function') {
         if (connectionAttempts < maxConnectionAttempts) {

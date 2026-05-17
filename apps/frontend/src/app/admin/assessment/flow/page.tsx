@@ -70,13 +70,18 @@ const generateUUID = (): string => {
   });
 };
 
-const NODE_TYPES: { value: FlowNodeType; label: string; icon: typeof Video }[] = [
-  { value: 'segment', label: 'Video Segment', icon: Video },
-  { value: 'question', label: 'Question', icon: HelpCircle },
-  { value: 'skill_verification', label: 'Skill Verification', icon: CheckCircle },
-  { value: 'branch', label: 'Branch', icon: GitBranch },
-  { value: 'result', label: 'Result', icon: Award },
-];
+const NODE_TYPES: { value: FlowNodeType; label: string; icon: typeof Video }[] =
+  [
+    { value: 'segment', label: 'Video Segment', icon: Video },
+    { value: 'question', label: 'Question', icon: HelpCircle },
+    {
+      value: 'skill_verification',
+      label: 'Skill Verification',
+      icon: CheckCircle,
+    },
+    { value: 'branch', label: 'Branch', icon: GitBranch },
+    { value: 'result', label: 'Result', icon: Award },
+  ];
 
 const EDGE_CONDITIONS: { value: EdgeConditionType; label: string }[] = [
   { value: 'always', label: 'Always (default)' },
@@ -147,9 +152,15 @@ export default function AdminFlowEditorPage() {
       setIsLoading(true);
 
       const [flowResult, segmentsResult, questionsResult] = await Promise.all([
-        apiClient.get<{ flow: AssessmentFlowGraph }>('/api/v1/admin/assessment/v2/flow'),
-        apiClient.get<{ segments: VideoSegment[] }>('/api/v1/admin/assessment/v2/segments'),
-        apiClient.get<{ questions: SegmentQuestion[] }>('/api/v1/admin/assessment/v2/questions'),
+        apiClient.get<{ flow: AssessmentFlowGraph }>(
+          '/api/v1/admin/assessment/v2/flow',
+        ),
+        apiClient.get<{ segments: VideoSegment[] }>(
+          '/api/v1/admin/assessment/v2/segments',
+        ),
+        apiClient.get<{ questions: SegmentQuestion[] }>(
+          '/api/v1/admin/assessment/v2/questions',
+        ),
       ]);
 
       setFlowGraph(flowResult.flow);
@@ -314,7 +325,8 @@ export default function AdminFlowEditorPage() {
       fromNodeId: edgeForm.fromNodeId,
       toNodeId: edgeForm.toNodeId,
       conditionType: edgeForm.conditionType,
-      conditionValue: Object.keys(conditionValue).length > 0 ? conditionValue : undefined,
+      conditionValue:
+        Object.keys(conditionValue).length > 0 ? conditionValue : undefined,
       priority: edgeForm.priority,
       label: edgeForm.label || undefined,
     };
@@ -350,7 +362,9 @@ export default function AdminFlowEditorPage() {
       return segment?.name || node.segmentId;
     }
     if (node.questionKey) {
-      const question = questions.find((q) => q.questionKey === node.questionKey);
+      const question = questions.find(
+        (q) => q.questionKey === node.questionKey,
+      );
       return question?.questionText.slice(0, 30) || node.questionKey;
     }
     return node.nodeId;
@@ -377,12 +391,16 @@ export default function AdminFlowEditorPage() {
         <div>
           <h1 className="text-3xl font-bold">Flow Editor</h1>
           <p className="text-gray-500 mt-1">
-            Design the assessment flow by creating nodes and connecting them with edges
+            Design the assessment flow by creating nodes and connecting them
+            with edges
           </p>
         </div>
         <div className="flex items-center gap-3">
           {hasChanges && (
-            <Badge variant="outline" className="text-orange-500 border-orange-500">
+            <Badge
+              variant="outline"
+              className="text-orange-500 border-orange-500"
+            >
               Unsaved Changes
             </Badge>
           )}
@@ -489,8 +507,12 @@ export default function AdminFlowEditorPage() {
             ) : (
               <div className="space-y-2">
                 {flowGraph.edges.map((edge) => {
-                  const fromNode = flowGraph.nodes.find((n) => n.id === edge.fromNodeId);
-                  const toNode = flowGraph.nodes.find((n) => n.id === edge.toNodeId);
+                  const fromNode = flowGraph.nodes.find(
+                    (n) => n.id === edge.fromNodeId,
+                  );
+                  const toNode = flowGraph.nodes.find(
+                    (n) => n.id === edge.toNodeId,
+                  );
                   return (
                     <div
                       key={edge.id}
@@ -506,8 +528,15 @@ export default function AdminFlowEditorPage() {
                         {toNode ? getNodeLabel(toNode) : edge.toNodeId}
                       </span>
 
-                      <Badge variant="outline" className="text-xs flex-shrink-0">
-                        {EDGE_CONDITIONS.find((c) => c.value === edge.conditionType)?.label}
+                      <Badge
+                        variant="outline"
+                        className="text-xs flex-shrink-0"
+                      >
+                        {
+                          EDGE_CONDITIONS.find(
+                            (c) => c.value === edge.conditionType,
+                          )?.label
+                        }
                       </Badge>
 
                       {edge.label && (
@@ -540,9 +569,7 @@ export default function AdminFlowEditorPage() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{editingNode ? 'Edit Node' : 'Add Node'}</DialogTitle>
-            <DialogDescription>
-              Configure a flow node
-            </DialogDescription>
+            <DialogDescription>Configure a flow node</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
@@ -563,7 +590,10 @@ export default function AdminFlowEditorPage() {
                 <Select
                   value={nodeForm.nodeType}
                   onValueChange={(value) =>
-                    setNodeForm({ ...nodeForm, nodeType: value as FlowNodeType })
+                    setNodeForm({
+                      ...nodeForm,
+                      nodeType: value as FlowNodeType,
+                    })
                   }
                 >
                   <SelectTrigger className="mt-1">
@@ -631,7 +661,9 @@ export default function AdminFlowEditorPage() {
               <Label>Title (optional)</Label>
               <Input
                 value={nodeForm.title}
-                onChange={(e) => setNodeForm({ ...nodeForm, title: e.target.value })}
+                onChange={(e) =>
+                  setNodeForm({ ...nodeForm, title: e.target.value })
+                }
                 placeholder="Displayed in editor"
                 className="mt-1"
               />
@@ -662,7 +694,10 @@ export default function AdminFlowEditorPage() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsNodeDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsNodeDialogOpen(false)}
+            >
               Cancel
             </Button>
             <Button onClick={handleSaveNode}>
@@ -734,7 +769,10 @@ export default function AdminFlowEditorPage() {
               <Select
                 value={edgeForm.conditionType}
                 onValueChange={(value) =>
-                  setEdgeForm({ ...edgeForm, conditionType: value as EdgeConditionType })
+                  setEdgeForm({
+                    ...edgeForm,
+                    conditionType: value as EdgeConditionType,
+                  })
                 }
               >
                 <SelectTrigger className="mt-1">
@@ -777,7 +815,10 @@ export default function AdminFlowEditorPage() {
                   <Input
                     value={edgeForm.conditionValue}
                     onChange={(e) =>
-                      setEdgeForm({ ...edgeForm, conditionValue: e.target.value })
+                      setEdgeForm({
+                        ...edgeForm,
+                        conditionValue: e.target.value,
+                      })
                     }
                     placeholder="beginner"
                     className="mt-1"
@@ -792,7 +833,10 @@ export default function AdminFlowEditorPage() {
                 <Select
                   value={edgeForm.conditionBucket}
                   onValueChange={(value) =>
-                    setEdgeForm({ ...edgeForm, conditionBucket: value as SkillBucket })
+                    setEdgeForm({
+                      ...edgeForm,
+                      conditionBucket: value as SkillBucket,
+                    })
                   }
                 >
                   <SelectTrigger className="mt-1">
@@ -816,7 +860,10 @@ export default function AdminFlowEditorPage() {
                   type="number"
                   value={edgeForm.priority}
                   onChange={(e) =>
-                    setEdgeForm({ ...edgeForm, priority: parseInt(e.target.value) || 0 })
+                    setEdgeForm({
+                      ...edgeForm,
+                      priority: parseInt(e.target.value) || 0,
+                    })
                   }
                   min={0}
                   className="mt-1"
@@ -826,7 +873,9 @@ export default function AdminFlowEditorPage() {
                 <Label>Label (optional)</Label>
                 <Input
                   value={edgeForm.label}
-                  onChange={(e) => setEdgeForm({ ...edgeForm, label: e.target.value })}
+                  onChange={(e) =>
+                    setEdgeForm({ ...edgeForm, label: e.target.value })
+                  }
                   placeholder="e.g., 'Yes'"
                   className="mt-1"
                 />
@@ -835,7 +884,10 @@ export default function AdminFlowEditorPage() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEdgeDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsEdgeDialogOpen(false)}
+            >
               Cancel
             </Button>
             <Button onClick={handleSaveEdge}>

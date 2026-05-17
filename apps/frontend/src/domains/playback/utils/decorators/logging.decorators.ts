@@ -53,10 +53,12 @@ function getMetricsCollector(): MetricsCollector | null {
   try {
     // Get singleton instances if available (use window for typed access)
     const eventBus =
-      (typeof window !== 'undefined' && window.__playbackEventBus as EventBus | undefined) ||
+      (typeof window !== 'undefined' &&
+        (window.__playbackEventBus as EventBus | undefined)) ||
       EventBus.getInstance();
     const prodLogger =
-      (typeof window !== 'undefined' && window.__playbackLogger as ProductionLogger | undefined) ||
+      (typeof window !== 'undefined' &&
+        (window.__playbackLogger as ProductionLogger | undefined)) ||
       new ProductionLogger(eventBus, { enabled: true });
 
     return MetricsCollector.getInstance(eventBus, prodLogger);

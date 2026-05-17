@@ -177,14 +177,16 @@ export const PlaybackControlsBar: React.FC<PlaybackControlsBarProps> = ({
                   <Repeat
                     key={sparkle.id}
                     className="absolute w-2 h-2 text-green-400 pointer-events-none animate-sparkle-burst"
-                    style={{
-                      top: '50%',
-                      left: '50%',
-                      '--sparkle-x': `${sparkle.x}px`,
-                      '--sparkle-y': `${sparkle.y}px`,
-                      '--sparkle-scale': sparkle.scale,
-                      '--sparkle-rotation': `${sparkle.rotation}deg`,
-                    } as React.CSSProperties}
+                    style={
+                      {
+                        top: '50%',
+                        left: '50%',
+                        '--sparkle-x': `${sparkle.x}px`,
+                        '--sparkle-y': `${sparkle.y}px`,
+                        '--sparkle-scale': sparkle.scale,
+                        '--sparkle-rotation': `${sparkle.rotation}deg`,
+                      } as React.CSSProperties
+                    }
                   />
                 ))}
               </div>
@@ -195,7 +197,9 @@ export const PlaybackControlsBar: React.FC<PlaybackControlsBarProps> = ({
                   onClick={handleFavoriteClick}
                   disabled={isFavoritePending}
                   className={`p-3 rounded-full bg-slate-800 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200 ${isFavorited ? 'shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)]' : ''} ${isFavoritePending ? 'opacity-70' : ''}`}
-                  title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+                  title={
+                    isFavorited ? 'Remove from favorites' : 'Add to favorites'
+                  }
                 >
                   <Star
                     className={`w-5 h-5 transition-all duration-300 ease-out ${isFavorited ? 'text-amber-400 fill-amber-400 scale-110' : 'text-slate-400'}`}
@@ -206,14 +210,16 @@ export const PlaybackControlsBar: React.FC<PlaybackControlsBarProps> = ({
                   <Star
                     key={sparkle.id}
                     className="absolute w-2 h-2 text-amber-300 fill-amber-300 pointer-events-none animate-sparkle-burst"
-                    style={{
-                      top: '50%',
-                      left: '50%',
-                      '--sparkle-x': `${sparkle.x}px`,
-                      '--sparkle-y': `${sparkle.y}px`,
-                      '--sparkle-scale': sparkle.scale,
-                      '--sparkle-rotation': `${sparkle.rotation}deg`,
-                    } as React.CSSProperties}
+                    style={
+                      {
+                        top: '50%',
+                        left: '50%',
+                        '--sparkle-x': `${sparkle.x}px`,
+                        '--sparkle-y': `${sparkle.y}px`,
+                        '--sparkle-scale': sparkle.scale,
+                        '--sparkle-rotation': `${sparkle.rotation}deg`,
+                      } as React.CSSProperties
+                    }
                   />
                 ))}
               </div>
@@ -236,7 +242,10 @@ export const PlaybackControlsBar: React.FC<PlaybackControlsBarProps> = ({
               <button
                 onClick={handlePlayButtonClick}
                 className={`mx-2 rounded-full shadow-[4px_4px_8px_rgba(0,0,0,0.5),-4px_-4px_8px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200 flex items-center justify-center relative ${!selectedExercise ? 'bg-slate-600 opacity-50 cursor-not-allowed' : 'bg-blue-500'}`}
-                style={{ width: `${playButtonSize}px`, height: `${playButtonSize}px` }}
+                style={{
+                  width: `${playButtonSize}px`,
+                  height: `${playButtonSize}px`,
+                }}
                 title={
                   !selectedExercise
                     ? 'Please select an exercise first'
@@ -298,14 +307,16 @@ export const PlaybackControlsBar: React.FC<PlaybackControlsBarProps> = ({
                   <Heart
                     key={sparkle.id}
                     className="absolute w-2 h-2 text-red-400 fill-red-400 pointer-events-none animate-sparkle-burst"
-                    style={{
-                      top: '50%',
-                      left: '50%',
-                      '--sparkle-x': `${sparkle.x}px`,
-                      '--sparkle-y': `${sparkle.y}px`,
-                      '--sparkle-scale': sparkle.scale,
-                      '--sparkle-rotation': `${sparkle.rotation}deg`,
-                    } as React.CSSProperties}
+                    style={
+                      {
+                        top: '50%',
+                        left: '50%',
+                        '--sparkle-x': `${sparkle.x}px`,
+                        '--sparkle-y': `${sparkle.y}px`,
+                        '--sparkle-scale': sparkle.scale,
+                        '--sparkle-rotation': `${sparkle.rotation}deg`,
+                      } as React.CSSProperties
+                    }
                   />
                 ))}
               </div>
@@ -327,14 +338,16 @@ export const PlaybackControlsBar: React.FC<PlaybackControlsBarProps> = ({
                   <MessageCircle
                     key={sparkle.id}
                     className="absolute w-2 h-2 text-white fill-white pointer-events-none animate-sparkle-burst"
-                    style={{
-                      top: '50%',
-                      left: '50%',
-                      '--sparkle-x': `${sparkle.x}px`,
-                      '--sparkle-y': `${sparkle.y}px`,
-                      '--sparkle-scale': sparkle.scale,
-                      '--sparkle-rotation': `${sparkle.rotation}deg`,
-                    } as React.CSSProperties}
+                    style={
+                      {
+                        top: '50%',
+                        left: '50%',
+                        '--sparkle-x': `${sparkle.x}px`,
+                        '--sparkle-y': `${sparkle.y}px`,
+                        '--sparkle-scale': sparkle.scale,
+                        '--sparkle-rotation': `${sparkle.rotation}deg`,
+                      } as React.CSSProperties
+                    }
                   />
                 ))}
               </div>

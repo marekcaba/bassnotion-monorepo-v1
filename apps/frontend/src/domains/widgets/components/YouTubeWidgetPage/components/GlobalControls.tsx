@@ -10,9 +10,7 @@ import type {
   ExerciseNote,
 } from '@bassnotion/contracts';
 import { MIDIFileParser } from '@bassnotion/contracts';
-import {
-  useTransportControls,
-} from '@/domains/playback/contexts/TransportContext';
+import { useTransportControls } from '@/domains/playback/contexts/TransportContext';
 import { useTrack } from '@/domains/playback/hooks';
 import type { CoreServices } from '@/domains/playback/services/core/CoreServices.js';
 import { getLogger } from '@/utils/logger.js';
@@ -592,7 +590,6 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
   // happen in the isolated PositionAwareSheetMusic component.
   // The currentPosition state is no longer needed here as the sheet music component
   // handles its own position tracking via useTransportPosition().
-
 
   // NOTE: Tempo cleanup, drag handlers, and global event listeners are now in useTempoControl hook
 

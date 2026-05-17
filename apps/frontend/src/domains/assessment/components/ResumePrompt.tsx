@@ -17,7 +17,9 @@ export function ResumePrompt({
   onStartFresh,
 }: ResumePromptProps) {
   const answeredQuestions = savedProgress.answers.length;
-  const progressPercent = Math.round((answeredQuestions / totalQuestions) * 100);
+  const progressPercent = Math.round(
+    (answeredQuestions / totalQuestions) * 100,
+  );
   const lastUpdated = new Date(savedProgress.lastUpdatedAt);
   const timeAgo = getTimeAgo(lastUpdated);
 

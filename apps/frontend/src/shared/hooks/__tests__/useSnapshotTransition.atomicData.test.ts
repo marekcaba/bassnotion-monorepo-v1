@@ -48,14 +48,14 @@ const advanceTimersAndRAF = async (ms: number) => {
 // =============================================================================
 interface ExerciseNote {
   id: string;
-  pitch: number;           // MIDI pitch (0-127)
-  string: number;          // Bass string (0-3 for 4-string, 0-4 for 5-string)
-  fret: number;            // Fret position (0-24)
-  startTime: number;       // Start time in seconds
-  duration: number;        // Duration in seconds
-  velocity: number;        // MIDI velocity (0-127)
-  technique?: string;      // e.g., 'hammer-on', 'pull-off', 'slide', 'slap'
-  fingerNumber?: number;   // Suggested fingering
+  pitch: number; // MIDI pitch (0-127)
+  string: number; // Bass string (0-3 for 4-string, 0-4 for 5-string)
+  fret: number; // Fret position (0-24)
+  startTime: number; // Start time in seconds
+  duration: number; // Duration in seconds
+  velocity: number; // MIDI velocity (0-127)
+  technique?: string; // e.g., 'hammer-on', 'pull-off', 'slide', 'slap'
+  fingerNumber?: number; // Suggested fingering
 }
 
 // =============================================================================
@@ -93,10 +93,10 @@ interface ComprehensiveExerciseData {
   tutorialId: string;
 
   // Musical timing
-  tempo: number;                    // BPM
+  tempo: number; // BPM
   timeSignature: { numerator: number; denominator: number };
   totalBars: number;
-  totalDuration: number;            // seconds
+  totalDuration: number; // seconds
 
   // Notes and patterns
   notes: ExerciseNote[];
@@ -127,24 +127,43 @@ interface ComprehensiveExerciseData {
 function verifyAtomicConsistency(
   display: ComprehensiveExerciseData,
   expected: ComprehensiveExerciseData,
-  context: string
+  context: string,
 ): void {
   // ALL fields must be from the SAME exercise
-  expect(display.exerciseId, `${context}: exerciseId mismatch`).toBe(expected.exerciseId);
+  expect(display.exerciseId, `${context}: exerciseId mismatch`).toBe(
+    expected.exerciseId,
+  );
   expect(display.tempo, `${context}: tempo mismatch`).toBe(expected.tempo);
-  expect(display.timeSignature, `${context}: timeSignature mismatch`).toEqual(expected.timeSignature);
-  expect(display.notes.length, `${context}: noteCount mismatch`).toBe(expected.notes.length);
-  expect(display.stringCount, `${context}: stringCount mismatch`).toBe(expected.stringCount);
-  expect(display.tiltAngle, `${context}: tiltAngle mismatch`).toBe(expected.tiltAngle);
-  expect(display.widgetType, `${context}: widgetType mismatch`).toBe(expected.widgetType);
+  expect(display.timeSignature, `${context}: timeSignature mismatch`).toEqual(
+    expected.timeSignature,
+  );
+  expect(display.notes.length, `${context}: noteCount mismatch`).toBe(
+    expected.notes.length,
+  );
+  expect(display.stringCount, `${context}: stringCount mismatch`).toBe(
+    expected.stringCount,
+  );
+  expect(display.tiltAngle, `${context}: tiltAngle mismatch`).toBe(
+    expected.tiltAngle,
+  );
+  expect(display.widgetType, `${context}: widgetType mismatch`).toBe(
+    expected.widgetType,
+  );
 
   if (expected.overlay3DConfig === null) {
-    expect(display.overlay3DConfig, `${context}: overlay3D should be null`).toBeNull();
+    expect(
+      display.overlay3DConfig,
+      `${context}: overlay3D should be null`,
+    ).toBeNull();
   } else {
-    expect(display.overlay3DConfig?.cameraDistance, `${context}: cameraDistance mismatch`)
-      .toBe(expected.overlay3DConfig.cameraDistance);
-    expect(display.overlay3DConfig?.tiltAxisOffset, `${context}: tiltAxisOffset mismatch`)
-      .toBe(expected.overlay3DConfig.tiltAxisOffset);
+    expect(
+      display.overlay3DConfig?.cameraDistance,
+      `${context}: cameraDistance mismatch`,
+    ).toBe(expected.overlay3DConfig.cameraDistance);
+    expect(
+      display.overlay3DConfig?.tiltAxisOffset,
+      `${context}: tiltAxisOffset mismatch`,
+    ).toBe(expected.overlay3DConfig.tiltAxisOffset);
   }
 }
 
@@ -162,10 +181,45 @@ const slowBallad: ComprehensiveExerciseData = {
   totalBars: 8,
   totalDuration: 32, // 8 bars * 4 beats * (60/60) = 32 seconds
   notes: [
-    { id: 'sb-1', pitch: 40, string: 3, fret: 0, startTime: 0, duration: 2, velocity: 80, technique: 'sustain' },
-    { id: 'sb-2', pitch: 45, string: 2, fret: 0, startTime: 4, duration: 2, velocity: 75, fingerNumber: 1 },
-    { id: 'sb-3', pitch: 47, string: 2, fret: 2, startTime: 8, duration: 1.5, velocity: 70 },
-    { id: 'sb-4', pitch: 52, string: 1, fret: 2, startTime: 12, duration: 4, velocity: 85, technique: 'let-ring' },
+    {
+      id: 'sb-1',
+      pitch: 40,
+      string: 3,
+      fret: 0,
+      startTime: 0,
+      duration: 2,
+      velocity: 80,
+      technique: 'sustain',
+    },
+    {
+      id: 'sb-2',
+      pitch: 45,
+      string: 2,
+      fret: 0,
+      startTime: 4,
+      duration: 2,
+      velocity: 75,
+      fingerNumber: 1,
+    },
+    {
+      id: 'sb-3',
+      pitch: 47,
+      string: 2,
+      fret: 2,
+      startTime: 8,
+      duration: 1.5,
+      velocity: 70,
+    },
+    {
+      id: 'sb-4',
+      pitch: 52,
+      string: 1,
+      fret: 2,
+      startTime: 12,
+      duration: 4,
+      velocity: 85,
+      technique: 'let-ring',
+    },
   ],
   noteCount: 4,
   hasSustainPedal: true,
@@ -180,13 +234,20 @@ const slowBallad: ComprehensiveExerciseData = {
   tiltAngle: 35,
   zoomLevel: 1.0,
   overlay3DConfig: {
-    rotationX: 35, rotationY: 0, rotationZ: 0,
-    scaleX: 1.0, scaleY: 1.0,
-    offsetX: 0, offsetY: 50,
-    sceneX: 0, sceneY: 0, sceneZ: -100,
+    rotationX: 35,
+    rotationY: 0,
+    rotationZ: 0,
+    scaleX: 1.0,
+    scaleY: 1.0,
+    offsetX: 0,
+    offsetY: 50,
+    sceneX: 0,
+    sceneY: 0,
+    sceneZ: -100,
     cameraDistance: 500,
     fovOffset: 0,
-    originX: 50, originY: 50,
+    originX: 50,
+    originY: 50,
     contentScale: 1.0,
     positioningMode: 'tilted-plane',
     tiltAxisOffset: 20,
@@ -209,19 +270,125 @@ const fastFunk: ComprehensiveExerciseData = {
   totalDuration: 8, // 4 bars * 4 beats * (60/120) = 8 seconds
   notes: [
     // Dense 16th note pattern
-    { id: 'ff-1', pitch: 36, string: 3, fret: 1, startTime: 0, duration: 0.125, velocity: 110, technique: 'slap' },
-    { id: 'ff-2', pitch: 36, string: 3, fret: 1, startTime: 0.25, duration: 0.125, velocity: 100, technique: 'pop' },
-    { id: 'ff-3', pitch: 43, string: 2, fret: 3, startTime: 0.375, duration: 0.125, velocity: 90, technique: 'hammer-on' },
-    { id: 'ff-4', pitch: 36, string: 3, fret: 1, startTime: 0.5, duration: 0.125, velocity: 115, technique: 'slap' },
-    { id: 'ff-5', pitch: 48, string: 1, fret: 3, startTime: 0.625, duration: 0.125, velocity: 95, technique: 'pop' },
-    { id: 'ff-6', pitch: 43, string: 2, fret: 3, startTime: 0.75, duration: 0.125, velocity: 85 },
-    { id: 'ff-7', pitch: 41, string: 2, fret: 1, startTime: 0.875, duration: 0.125, velocity: 80, technique: 'pull-off' },
-    { id: 'ff-8', pitch: 36, string: 3, fret: 1, startTime: 1, duration: 0.25, velocity: 120, technique: 'slap' },
+    {
+      id: 'ff-1',
+      pitch: 36,
+      string: 3,
+      fret: 1,
+      startTime: 0,
+      duration: 0.125,
+      velocity: 110,
+      technique: 'slap',
+    },
+    {
+      id: 'ff-2',
+      pitch: 36,
+      string: 3,
+      fret: 1,
+      startTime: 0.25,
+      duration: 0.125,
+      velocity: 100,
+      technique: 'pop',
+    },
+    {
+      id: 'ff-3',
+      pitch: 43,
+      string: 2,
+      fret: 3,
+      startTime: 0.375,
+      duration: 0.125,
+      velocity: 90,
+      technique: 'hammer-on',
+    },
+    {
+      id: 'ff-4',
+      pitch: 36,
+      string: 3,
+      fret: 1,
+      startTime: 0.5,
+      duration: 0.125,
+      velocity: 115,
+      technique: 'slap',
+    },
+    {
+      id: 'ff-5',
+      pitch: 48,
+      string: 1,
+      fret: 3,
+      startTime: 0.625,
+      duration: 0.125,
+      velocity: 95,
+      technique: 'pop',
+    },
+    {
+      id: 'ff-6',
+      pitch: 43,
+      string: 2,
+      fret: 3,
+      startTime: 0.75,
+      duration: 0.125,
+      velocity: 85,
+    },
+    {
+      id: 'ff-7',
+      pitch: 41,
+      string: 2,
+      fret: 1,
+      startTime: 0.875,
+      duration: 0.125,
+      velocity: 80,
+      technique: 'pull-off',
+    },
+    {
+      id: 'ff-8',
+      pitch: 36,
+      string: 3,
+      fret: 1,
+      startTime: 1,
+      duration: 0.25,
+      velocity: 120,
+      technique: 'slap',
+    },
     // ... more notes for realism
-    { id: 'ff-9', pitch: 38, string: 3, fret: 3, startTime: 1.5, duration: 0.125, velocity: 105, technique: 'slap' },
-    { id: 'ff-10', pitch: 50, string: 1, fret: 5, startTime: 1.75, duration: 0.125, velocity: 100, technique: 'pop' },
-    { id: 'ff-11', pitch: 43, string: 2, fret: 3, startTime: 2, duration: 0.5, velocity: 90 },
-    { id: 'ff-12', pitch: 36, string: 3, fret: 1, startTime: 3, duration: 0.125, velocity: 115, technique: 'dead-note' },
+    {
+      id: 'ff-9',
+      pitch: 38,
+      string: 3,
+      fret: 3,
+      startTime: 1.5,
+      duration: 0.125,
+      velocity: 105,
+      technique: 'slap',
+    },
+    {
+      id: 'ff-10',
+      pitch: 50,
+      string: 1,
+      fret: 5,
+      startTime: 1.75,
+      duration: 0.125,
+      velocity: 100,
+      technique: 'pop',
+    },
+    {
+      id: 'ff-11',
+      pitch: 43,
+      string: 2,
+      fret: 3,
+      startTime: 2,
+      duration: 0.5,
+      velocity: 90,
+    },
+    {
+      id: 'ff-12',
+      pitch: 36,
+      string: 3,
+      fret: 1,
+      startTime: 3,
+      duration: 0.125,
+      velocity: 115,
+      technique: 'dead-note',
+    },
   ],
   noteCount: 12,
   hasSustainPedal: false,
@@ -231,13 +398,20 @@ const fastFunk: ComprehensiveExerciseData = {
   tiltAngle: 45,
   zoomLevel: 1.25,
   overlay3DConfig: {
-    rotationX: 45, rotationY: 5, rotationZ: 0,
-    scaleX: 1.1, scaleY: 1.0,
-    offsetX: -20, offsetY: 30,
-    sceneX: 10, sceneY: -15, sceneZ: -80,
+    rotationX: 45,
+    rotationY: 5,
+    rotationZ: 0,
+    scaleX: 1.1,
+    scaleY: 1.0,
+    offsetX: -20,
+    offsetY: 30,
+    sceneX: 10,
+    sceneY: -15,
+    sceneZ: -80,
     cameraDistance: 400,
     fovOffset: 5,
-    originX: 45, originY: 55,
+    originX: 45,
+    originY: 55,
     contentScale: 1.15,
     positioningMode: 'screen-space',
     tiltAxisOffset: 0,
@@ -260,14 +434,79 @@ const jazzWaltz: ComprehensiveExerciseData = {
   totalDuration: 16, // 16 bars * 3 beats * (60/180) = 16 seconds
   notes: [
     // Walking bass pattern
-    { id: 'jw-1', pitch: 36, string: 4, fret: 1, startTime: 0, duration: 0.333, velocity: 85 },
-    { id: 'jw-2', pitch: 38, string: 4, fret: 3, startTime: 0.333, duration: 0.333, velocity: 80 },
-    { id: 'jw-3', pitch: 40, string: 4, fret: 5, startTime: 0.666, duration: 0.333, velocity: 75 },
-    { id: 'jw-4', pitch: 41, string: 3, fret: 1, startTime: 1, duration: 0.333, velocity: 90 },
-    { id: 'jw-5', pitch: 43, string: 3, fret: 3, startTime: 1.333, duration: 0.333, velocity: 85, technique: 'slide' },
-    { id: 'jw-6', pitch: 45, string: 3, fret: 5, startTime: 1.666, duration: 0.333, velocity: 80 },
-    { id: 'jw-7', pitch: 47, string: 2, fret: 2, startTime: 2, duration: 0.5, velocity: 95 },
-    { id: 'jw-8', pitch: 48, string: 2, fret: 3, startTime: 2.5, duration: 0.5, velocity: 90 },
+    {
+      id: 'jw-1',
+      pitch: 36,
+      string: 4,
+      fret: 1,
+      startTime: 0,
+      duration: 0.333,
+      velocity: 85,
+    },
+    {
+      id: 'jw-2',
+      pitch: 38,
+      string: 4,
+      fret: 3,
+      startTime: 0.333,
+      duration: 0.333,
+      velocity: 80,
+    },
+    {
+      id: 'jw-3',
+      pitch: 40,
+      string: 4,
+      fret: 5,
+      startTime: 0.666,
+      duration: 0.333,
+      velocity: 75,
+    },
+    {
+      id: 'jw-4',
+      pitch: 41,
+      string: 3,
+      fret: 1,
+      startTime: 1,
+      duration: 0.333,
+      velocity: 90,
+    },
+    {
+      id: 'jw-5',
+      pitch: 43,
+      string: 3,
+      fret: 3,
+      startTime: 1.333,
+      duration: 0.333,
+      velocity: 85,
+      technique: 'slide',
+    },
+    {
+      id: 'jw-6',
+      pitch: 45,
+      string: 3,
+      fret: 5,
+      startTime: 1.666,
+      duration: 0.333,
+      velocity: 80,
+    },
+    {
+      id: 'jw-7',
+      pitch: 47,
+      string: 2,
+      fret: 2,
+      startTime: 2,
+      duration: 0.5,
+      velocity: 95,
+    },
+    {
+      id: 'jw-8',
+      pitch: 48,
+      string: 2,
+      fret: 3,
+      startTime: 2.5,
+      duration: 0.5,
+      velocity: 90,
+    },
   ],
   noteCount: 8,
   hasSustainPedal: false,
@@ -277,13 +516,20 @@ const jazzWaltz: ComprehensiveExerciseData = {
   tiltAngle: 30,
   zoomLevel: 0.9,
   overlay3DConfig: {
-    rotationX: 30, rotationY: -3, rotationZ: 2,
-    scaleX: 0.95, scaleY: 0.95,
-    offsetX: 10, offsetY: 60,
-    sceneX: -5, sceneY: 10, sceneZ: -120,
+    rotationX: 30,
+    rotationY: -3,
+    rotationZ: 2,
+    scaleX: 0.95,
+    scaleY: 0.95,
+    offsetX: 10,
+    offsetY: 60,
+    sceneX: -5,
+    sceneY: 10,
+    sceneZ: -120,
     cameraDistance: 600,
     fovOffset: -5,
-    originX: 52, originY: 48,
+    originX: 52,
+    originY: 48,
     contentScale: 0.9,
     positioningMode: 'flat',
     tiltAxisOffset: 35,
@@ -306,20 +552,116 @@ const harmonyChords: ComprehensiveExerciseData = {
   totalDuration: 10.67,
   notes: [
     // Dm7 chord
-    { id: 'hc-1', pitch: 62, string: 0, fret: 0, startTime: 0, duration: 2.67, velocity: 70 },
-    { id: 'hc-2', pitch: 65, string: 0, fret: 0, startTime: 0, duration: 2.67, velocity: 70 },
-    { id: 'hc-3', pitch: 69, string: 0, fret: 0, startTime: 0, duration: 2.67, velocity: 70 },
-    { id: 'hc-4', pitch: 72, string: 0, fret: 0, startTime: 0, duration: 2.67, velocity: 70 },
+    {
+      id: 'hc-1',
+      pitch: 62,
+      string: 0,
+      fret: 0,
+      startTime: 0,
+      duration: 2.67,
+      velocity: 70,
+    },
+    {
+      id: 'hc-2',
+      pitch: 65,
+      string: 0,
+      fret: 0,
+      startTime: 0,
+      duration: 2.67,
+      velocity: 70,
+    },
+    {
+      id: 'hc-3',
+      pitch: 69,
+      string: 0,
+      fret: 0,
+      startTime: 0,
+      duration: 2.67,
+      velocity: 70,
+    },
+    {
+      id: 'hc-4',
+      pitch: 72,
+      string: 0,
+      fret: 0,
+      startTime: 0,
+      duration: 2.67,
+      velocity: 70,
+    },
     // G7 chord
-    { id: 'hc-5', pitch: 67, string: 0, fret: 0, startTime: 2.67, duration: 2.67, velocity: 75 },
-    { id: 'hc-6', pitch: 71, string: 0, fret: 0, startTime: 2.67, duration: 2.67, velocity: 75 },
-    { id: 'hc-7', pitch: 74, string: 0, fret: 0, startTime: 2.67, duration: 2.67, velocity: 75 },
-    { id: 'hc-8', pitch: 77, string: 0, fret: 0, startTime: 2.67, duration: 2.67, velocity: 75 },
+    {
+      id: 'hc-5',
+      pitch: 67,
+      string: 0,
+      fret: 0,
+      startTime: 2.67,
+      duration: 2.67,
+      velocity: 75,
+    },
+    {
+      id: 'hc-6',
+      pitch: 71,
+      string: 0,
+      fret: 0,
+      startTime: 2.67,
+      duration: 2.67,
+      velocity: 75,
+    },
+    {
+      id: 'hc-7',
+      pitch: 74,
+      string: 0,
+      fret: 0,
+      startTime: 2.67,
+      duration: 2.67,
+      velocity: 75,
+    },
+    {
+      id: 'hc-8',
+      pitch: 77,
+      string: 0,
+      fret: 0,
+      startTime: 2.67,
+      duration: 2.67,
+      velocity: 75,
+    },
     // Cmaj7 chord
-    { id: 'hc-9', pitch: 60, string: 0, fret: 0, startTime: 5.33, duration: 5.33, velocity: 80 },
-    { id: 'hc-10', pitch: 64, string: 0, fret: 0, startTime: 5.33, duration: 5.33, velocity: 80 },
-    { id: 'hc-11', pitch: 67, string: 0, fret: 0, startTime: 5.33, duration: 5.33, velocity: 80 },
-    { id: 'hc-12', pitch: 71, string: 0, fret: 0, startTime: 5.33, duration: 5.33, velocity: 80 },
+    {
+      id: 'hc-9',
+      pitch: 60,
+      string: 0,
+      fret: 0,
+      startTime: 5.33,
+      duration: 5.33,
+      velocity: 80,
+    },
+    {
+      id: 'hc-10',
+      pitch: 64,
+      string: 0,
+      fret: 0,
+      startTime: 5.33,
+      duration: 5.33,
+      velocity: 80,
+    },
+    {
+      id: 'hc-11',
+      pitch: 67,
+      string: 0,
+      fret: 0,
+      startTime: 5.33,
+      duration: 5.33,
+      velocity: 80,
+    },
+    {
+      id: 'hc-12',
+      pitch: 71,
+      string: 0,
+      fret: 0,
+      startTime: 5.33,
+      duration: 5.33,
+      velocity: 80,
+    },
   ],
   noteCount: 12,
   hasSustainPedal: true,
@@ -391,13 +733,20 @@ const extremeMetal: ComprehensiveExerciseData = {
   tiltAngle: 50,
   zoomLevel: 1.5,
   overlay3DConfig: {
-    rotationX: 50, rotationY: 0, rotationZ: 0,
-    scaleX: 1.2, scaleY: 1.0,
-    offsetX: 0, offsetY: 20,
-    sceneX: 0, sceneY: -20, sceneZ: -60,
+    rotationX: 50,
+    rotationY: 0,
+    rotationZ: 0,
+    scaleX: 1.2,
+    scaleY: 1.0,
+    offsetX: 0,
+    offsetY: 20,
+    sceneX: 0,
+    sceneY: -20,
+    sceneZ: -60,
     cameraDistance: 350,
     fovOffset: 10,
-    originX: 50, originY: 60,
+    originX: 50,
+    originY: 60,
     contentScale: 1.3,
     positioningMode: 'screen-space',
     tiltAxisOffset: -10,
@@ -419,12 +768,60 @@ const compoundTime: ComprehensiveExerciseData = {
   totalBars: 8,
   totalDuration: 14.5,
   notes: [
-    { id: 'ct-1', pitch: 45, string: 2, fret: 0, startTime: 0, duration: 0.227, velocity: 90 },
-    { id: 'ct-2', pitch: 45, string: 2, fret: 0, startTime: 0.227, duration: 0.227, velocity: 70 },
-    { id: 'ct-3', pitch: 45, string: 2, fret: 0, startTime: 0.454, duration: 0.227, velocity: 70 },
-    { id: 'ct-4', pitch: 50, string: 1, fret: 0, startTime: 0.681, duration: 0.227, velocity: 85 },
-    { id: 'ct-5', pitch: 52, string: 1, fret: 2, startTime: 0.908, duration: 0.227, velocity: 75 },
-    { id: 'ct-6', pitch: 50, string: 1, fret: 0, startTime: 1.135, duration: 0.227, velocity: 70 },
+    {
+      id: 'ct-1',
+      pitch: 45,
+      string: 2,
+      fret: 0,
+      startTime: 0,
+      duration: 0.227,
+      velocity: 90,
+    },
+    {
+      id: 'ct-2',
+      pitch: 45,
+      string: 2,
+      fret: 0,
+      startTime: 0.227,
+      duration: 0.227,
+      velocity: 70,
+    },
+    {
+      id: 'ct-3',
+      pitch: 45,
+      string: 2,
+      fret: 0,
+      startTime: 0.454,
+      duration: 0.227,
+      velocity: 70,
+    },
+    {
+      id: 'ct-4',
+      pitch: 50,
+      string: 1,
+      fret: 0,
+      startTime: 0.681,
+      duration: 0.227,
+      velocity: 85,
+    },
+    {
+      id: 'ct-5',
+      pitch: 52,
+      string: 1,
+      fret: 2,
+      startTime: 0.908,
+      duration: 0.227,
+      velocity: 75,
+    },
+    {
+      id: 'ct-6',
+      pitch: 50,
+      string: 1,
+      fret: 0,
+      startTime: 1.135,
+      duration: 0.227,
+      velocity: 70,
+    },
   ],
   noteCount: 6,
   hasSustainPedal: false,
@@ -434,13 +831,20 @@ const compoundTime: ComprehensiveExerciseData = {
   tiltAngle: 40,
   zoomLevel: 1.1,
   overlay3DConfig: {
-    rotationX: 40, rotationY: 2, rotationZ: 0,
-    scaleX: 1.05, scaleY: 1.0,
-    offsetX: 5, offsetY: 40,
-    sceneX: 0, sceneY: 0, sceneZ: -90,
+    rotationX: 40,
+    rotationY: 2,
+    rotationZ: 0,
+    scaleX: 1.05,
+    scaleY: 1.0,
+    offsetX: 5,
+    offsetY: 40,
+    sceneX: 0,
+    sceneY: 0,
+    sceneZ: -90,
     cameraDistance: 450,
     fovOffset: 0,
-    originX: 50, originY: 50,
+    originX: 50,
+    originY: 50,
     contentScale: 1.05,
     positioningMode: 'tilted-plane',
     tiltAxisOffset: 15,
@@ -458,8 +862,9 @@ describe('useSnapshotTransition - Comprehensive Real-World Scenarios', () => {
   describe('Tempo Variation Transitions', () => {
     it('should maintain atomicity when switching from 60 BPM to 200 BPM', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: slowBallad, key: slowBallad.exerciseId } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: slowBallad, key: slowBallad.exerciseId } },
       );
 
       // Verify initial slow exercise
@@ -471,17 +876,26 @@ describe('useSnapshotTransition - Comprehensive Real-World Scenarios', () => {
 
       // During fade-out, should still show slow ballad data
       await advanceTimersAndRAF(200);
-      verifyAtomicConsistency(result.current.displayData, slowBallad, 'mid-fade-out');
+      verifyAtomicConsistency(
+        result.current.displayData,
+        slowBallad,
+        'mid-fade-out',
+      );
 
       // After SWAP, should show extreme metal atomically
       await advanceTimersAndRAF(FADE_DURATION);
-      verifyAtomicConsistency(result.current.displayData, extremeMetal, 'post-swap');
+      verifyAtomicConsistency(
+        result.current.displayData,
+        extremeMetal,
+        'post-swap',
+      );
     });
 
     it('should handle rapid tempo changes: 60→120→180→90 BPM', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: slowBallad, key: slowBallad.exerciseId } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: slowBallad, key: slowBallad.exerciseId } },
       );
 
       // Rapid sequence of tempo changes
@@ -501,40 +915,56 @@ describe('useSnapshotTransition - Comprehensive Real-World Scenarios', () => {
       // After transition completes, should show FINAL destination (harmonyChords)
       await advanceTimersAndRAF(FADE_DURATION);
       expect(result.current.displayData.tempo).toBe(90);
-      expect(result.current.displayData.exerciseId).toBe(harmonyChords.exerciseId);
+      expect(result.current.displayData.exerciseId).toBe(
+        harmonyChords.exerciseId,
+      );
     });
   });
 
   describe('Time Signature Transitions', () => {
     it('should handle 4/4 to 3/4 transition atomically', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: fastFunk, key: fastFunk.exerciseId } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: fastFunk, key: fastFunk.exerciseId } },
       );
 
-      expect(result.current.displayData.timeSignature).toEqual({ numerator: 4, denominator: 4 });
+      expect(result.current.displayData.timeSignature).toEqual({
+        numerator: 4,
+        denominator: 4,
+      });
 
       rerender({ data: jazzWaltz, key: jazzWaltz.exerciseId });
 
       // Mid-transition: still 4/4
       await advanceTimersAndRAF(200);
-      expect(result.current.displayData.timeSignature).toEqual({ numerator: 4, denominator: 4 });
+      expect(result.current.displayData.timeSignature).toEqual({
+        numerator: 4,
+        denominator: 4,
+      });
 
       // Post-SWAP: now 3/4
       await advanceTimersAndRAF(FADE_DURATION);
-      expect(result.current.displayData.timeSignature).toEqual({ numerator: 3, denominator: 4 });
+      expect(result.current.displayData.timeSignature).toEqual({
+        numerator: 3,
+        denominator: 4,
+      });
     });
 
     it('should handle compound time (6/8) transitions', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: fastFunk, key: fastFunk.exerciseId } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: fastFunk, key: fastFunk.exerciseId } },
       );
 
       rerender({ data: compoundTime, key: compoundTime.exerciseId });
       await advanceTimersAndRAF(FADE_DURATION + 50);
 
-      expect(result.current.displayData.timeSignature).toEqual({ numerator: 6, denominator: 8 });
+      expect(result.current.displayData.timeSignature).toEqual({
+        numerator: 6,
+        denominator: 8,
+      });
       expect(result.current.displayData.tempo).toBe(132);
     });
   });
@@ -542,8 +972,9 @@ describe('useSnapshotTransition - Comprehensive Real-World Scenarios', () => {
   describe('Widget Type Transitions', () => {
     it('should handle bass→harmony widget transition atomically', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: fastFunk, key: fastFunk.exerciseId } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: fastFunk, key: fastFunk.exerciseId } },
       );
 
       expect(result.current.displayData.widgetType).toBe('bass');
@@ -566,28 +997,36 @@ describe('useSnapshotTransition - Comprehensive Real-World Scenarios', () => {
   describe('3D Overlay Configuration Transitions', () => {
     it('should transition camera positions atomically', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: slowBallad, key: slowBallad.exerciseId } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: slowBallad, key: slowBallad.exerciseId } },
       );
 
       // Initial: camera at 500
-      expect(result.current.displayData.overlay3DConfig?.cameraDistance).toBe(500);
+      expect(result.current.displayData.overlay3DConfig?.cameraDistance).toBe(
+        500,
+      );
 
       rerender({ data: extremeMetal, key: extremeMetal.exerciseId });
 
       // Mid-transition: still original camera
       await advanceTimersAndRAF(200);
-      expect(result.current.displayData.overlay3DConfig?.cameraDistance).toBe(500);
+      expect(result.current.displayData.overlay3DConfig?.cameraDistance).toBe(
+        500,
+      );
 
       // Post-SWAP: new camera position
       await advanceTimersAndRAF(FADE_DURATION);
-      expect(result.current.displayData.overlay3DConfig?.cameraDistance).toBe(350);
+      expect(result.current.displayData.overlay3DConfig?.cameraDistance).toBe(
+        350,
+      );
     });
 
     it('should handle tiltAngle and zoomLevel changes atomically', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: slowBallad, key: slowBallad.exerciseId } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: slowBallad, key: slowBallad.exerciseId } },
       );
 
       // Initial: 35° tilt, 1.0 zoom
@@ -604,24 +1043,30 @@ describe('useSnapshotTransition - Comprehensive Real-World Scenarios', () => {
 
     it('should handle positioningMode transitions', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: slowBallad, key: slowBallad.exerciseId } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: slowBallad, key: slowBallad.exerciseId } },
       );
 
-      expect(result.current.displayData.overlay3DConfig?.positioningMode).toBe('tilted-plane');
+      expect(result.current.displayData.overlay3DConfig?.positioningMode).toBe(
+        'tilted-plane',
+      );
 
       rerender({ data: jazzWaltz, key: jazzWaltz.exerciseId });
       await advanceTimersAndRAF(FADE_DURATION + 50);
 
-      expect(result.current.displayData.overlay3DConfig?.positioningMode).toBe('flat');
+      expect(result.current.displayData.overlay3DConfig?.positioningMode).toBe(
+        'flat',
+      );
     });
   });
 
   describe('String Count and Fret Range Transitions', () => {
     it('should handle 4-string to 5-string to 6-string transitions', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: fastFunk, key: fastFunk.exerciseId } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: fastFunk, key: fastFunk.exerciseId } },
       );
 
       expect(result.current.displayData.stringCount).toBe(4);
@@ -643,8 +1088,9 @@ describe('useSnapshotTransition - Comprehensive Real-World Scenarios', () => {
   describe('Sustain Pedal Timeline Transitions', () => {
     it('should handle exercises with/without sustain pedal atomically', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: slowBallad, key: slowBallad.exerciseId } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: slowBallad, key: slowBallad.exerciseId } },
       );
 
       // Initial: has sustain pedal
@@ -667,8 +1113,9 @@ describe('useSnapshotTransition - Comprehensive Real-World Scenarios', () => {
   describe('Note Density Transitions', () => {
     it('should handle sparse (4 notes) to dense (64 notes) transitions', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: slowBallad, key: slowBallad.exerciseId } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: slowBallad, key: slowBallad.exerciseId } },
       );
 
       expect(result.current.displayData.noteCount).toBe(4);
@@ -688,8 +1135,9 @@ describe('useSnapshotTransition - Comprehensive Real-World Scenarios', () => {
   describe('Exercise Selection/Deselection', () => {
     it('should handle deselecting exercise (going to empty state)', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: fastFunk, key: fastFunk.exerciseId } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: fastFunk, key: fastFunk.exerciseId } },
       );
 
       expect(result.current.displayData.noteCount).toBe(12);
@@ -703,8 +1151,14 @@ describe('useSnapshotTransition - Comprehensive Real-World Scenarios', () => {
 
     it('should handle selecting first exercise from empty state', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: noExercise, key: noExercise.exerciseId || undefined } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        {
+          initialProps: {
+            data: noExercise,
+            key: noExercise.exerciseId || undefined,
+          },
+        },
       );
 
       expect(result.current.displayData.notes.length).toBe(0);
@@ -720,13 +1174,22 @@ describe('useSnapshotTransition - Comprehensive Real-World Scenarios', () => {
   describe('Stress Testing - Rapid Sequential Switching', () => {
     it('should handle 10 rapid switches maintaining consistency', async () => {
       const exercises = [
-        slowBallad, fastFunk, jazzWaltz, harmonyChords, extremeMetal,
-        compoundTime, slowBallad, fastFunk, jazzWaltz, harmonyChords,
+        slowBallad,
+        fastFunk,
+        jazzWaltz,
+        harmonyChords,
+        extremeMetal,
+        compoundTime,
+        slowBallad,
+        fastFunk,
+        jazzWaltz,
+        harmonyChords,
       ];
 
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: exercises[0], key: exercises[0].exerciseId } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: exercises[0], key: exercises[0].exerciseId } },
       );
 
       // Rapidly switch through all exercises using minimal time advancement
@@ -742,19 +1205,28 @@ describe('useSnapshotTransition - Comprehensive Real-World Scenarios', () => {
 
       // During all rapid switches, should still show ORIGINAL exercise
       // because we haven't exceeded FADE_DURATION total time
-      verifyAtomicConsistency(result.current.displayData, exercises[0], 'during-rapid-switches');
+      verifyAtomicConsistency(
+        result.current.displayData,
+        exercises[0],
+        'during-rapid-switches',
+      );
 
       // After transition completes, should show LAST exercise
       // Need full transition cycle: fade-out + fade-in
       await advanceTimersAndRAF(FADE_DURATION + 50); // fade-out
       await advanceTimersAndRAF(FADE_DURATION + 50); // fade-in + stable
-      verifyAtomicConsistency(result.current.displayData, exercises[exercises.length - 1], 'after-rapid-switches');
+      verifyAtomicConsistency(
+        result.current.displayData,
+        exercises[exercises.length - 1],
+        'after-rapid-switches',
+      );
     });
 
     it('should handle A→B→A return pattern with different exercises', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: slowBallad, key: slowBallad.exerciseId } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: slowBallad, key: slowBallad.exerciseId } },
       );
 
       // A→B
@@ -771,7 +1243,11 @@ describe('useSnapshotTransition - Comprehensive Real-World Scenarios', () => {
 
       // After SWAP, should show A (the final destination)
       await advanceTimersAndRAF(FADE_DURATION);
-      verifyAtomicConsistency(result.current.displayData, slowBallad, 'return-to-A');
+      verifyAtomicConsistency(
+        result.current.displayData,
+        slowBallad,
+        'return-to-A',
+      );
     });
   });
 
@@ -794,8 +1270,9 @@ describe('useSnapshotTransition - Comprehensive Real-World Scenarios', () => {
       };
 
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: exercise1, key: exercise1.exerciseId } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: exercise1, key: exercise1.exerciseId } },
       );
 
       rerender({ data: exercise2, key: exercise2.exerciseId });
@@ -814,8 +1291,9 @@ describe('useSnapshotTransition - Comprehensive Real-World Scenarios', () => {
       const SHORT_FADE = 100;
 
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: SHORT_FADE }),
-        { initialProps: { data: slowBallad, key: slowBallad.exerciseId } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: SHORT_FADE }),
+        { initialProps: { data: slowBallad, key: slowBallad.exerciseId } },
       );
 
       rerender({ data: fastFunk, key: fastFunk.exerciseId });
@@ -830,8 +1308,9 @@ describe('useSnapshotTransition - Comprehensive Real-World Scenarios', () => {
       const LONG_FADE = 2000;
 
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: LONG_FADE }),
-        { initialProps: { data: slowBallad, key: slowBallad.exerciseId } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: LONG_FADE }),
+        { initialProps: { data: slowBallad, key: slowBallad.exerciseId } },
       );
 
       rerender({ data: fastFunk, key: fastFunk.exerciseId });
@@ -849,28 +1328,38 @@ describe('useSnapshotTransition - Comprehensive Real-World Scenarios', () => {
   describe('Bloom Effect Transitions', () => {
     it('should handle bloom on/off transitions atomically', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: slowBallad, key: slowBallad.exerciseId } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: slowBallad, key: slowBallad.exerciseId } },
       );
 
       // Initial: bloom enabled
-      expect(result.current.displayData.overlay3DConfig?.bloomEnabled).toBe(true);
-      expect(result.current.displayData.overlay3DConfig?.bloomIntensity).toBe(0.3);
+      expect(result.current.displayData.overlay3DConfig?.bloomEnabled).toBe(
+        true,
+      );
+      expect(result.current.displayData.overlay3DConfig?.bloomIntensity).toBe(
+        0.3,
+      );
 
       rerender({ data: fastFunk, key: fastFunk.exerciseId });
       await advanceTimersAndRAF(FADE_DURATION + 50);
 
       // After: bloom disabled
-      expect(result.current.displayData.overlay3DConfig?.bloomEnabled).toBe(false);
-      expect(result.current.displayData.overlay3DConfig?.bloomIntensity).toBe(0);
+      expect(result.current.displayData.overlay3DConfig?.bloomEnabled).toBe(
+        false,
+      );
+      expect(result.current.displayData.overlay3DConfig?.bloomIntensity).toBe(
+        0,
+      );
     });
   });
 
   describe('Scroll Mode Transitions', () => {
     it('should handle follow→locked scroll mode transition', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: slowBallad, key: slowBallad.exerciseId } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: slowBallad, key: slowBallad.exerciseId } },
       );
 
       expect(result.current.displayData.scrollMode).toBe('follow');

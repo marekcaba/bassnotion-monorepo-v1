@@ -57,11 +57,7 @@ function SimpleYouTubePlayer({ videoUrl, playing }: SimpleYouTubePlayerProps) {
 }
 
 // Inline Creator Info for overlay
-function CreatorInfoOverlay({
-  tutorialData,
-}: {
-  tutorialData?: Tutorial;
-}) {
+function CreatorInfoOverlay({ tutorialData }: { tutorialData?: Tutorial }) {
   const defaultCreator = {
     name: 'Rick Astley',
     channelUrl: 'https://www.youtube.com/channel/UCuAXFkgsw1L7xaCfnd5JJOw',
@@ -83,7 +79,7 @@ function CreatorInfoOverlay({
   const { subscriberCount: apiSubscriberCount, isLoading } =
     useYouTubeChannelData(
       hasSubscriberCount ? undefined : creator.channelUrl,
-      creator.name
+      creator.name,
     );
 
   const formatSubscriberCount = (count: number): string => {

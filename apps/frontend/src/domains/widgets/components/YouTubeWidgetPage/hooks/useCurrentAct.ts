@@ -41,7 +41,9 @@ export function useCurrentAct({
       (entries) => {
         for (const entry of entries) {
           if (entry.isIntersecting) {
-            const match = refMap.find(([, ref]) => ref.current === entry.target);
+            const match = refMap.find(
+              ([, ref]) => ref.current === entry.target,
+            );
             if (match) {
               setCurrentAct(match[0]);
             }

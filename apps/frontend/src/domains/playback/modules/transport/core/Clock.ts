@@ -79,10 +79,16 @@ export class Clock {
   constructor(config: ClockConfig = {}) {
     // Handle legacy config options with proper typing
     const legacyConfig = config as ClockConfig & LegacyClockConfig;
-    if ('enableAudioWorklet' in legacyConfig && legacyConfig.enableAudioWorklet !== undefined) {
+    if (
+      'enableAudioWorklet' in legacyConfig &&
+      legacyConfig.enableAudioWorklet !== undefined
+    ) {
       config.useAudioWorklet = legacyConfig.enableAudioWorklet;
     }
-    if ('enableWebWorker' in legacyConfig && legacyConfig.enableWebWorker !== undefined) {
+    if (
+      'enableWebWorker' in legacyConfig &&
+      legacyConfig.enableWebWorker !== undefined
+    ) {
       config.useWebWorker = legacyConfig.enableWebWorker;
     }
     if (legacyConfig.driftCompensation === 'none') {
@@ -205,7 +211,9 @@ export class Clock {
           if (this.clockSyncInterval !== null) {
             clearInterval(this.clockSyncInterval);
             this.clockSyncInterval = null;
-            logger.info('Stopped clock sync interval after AudioWorklet upgrade');
+            logger.info(
+              'Stopped clock sync interval after AudioWorklet upgrade',
+            );
           }
 
           logger.info('✅ Successfully upgraded to AudioWorklet mode', {
@@ -215,7 +223,9 @@ export class Clock {
           // EVENT-DRIVEN FIX: If start() was called before AudioWorklet was ready,
           // start the SampleAccurateClock now that it's initialized
           if (this.pendingStart && this.sampleAccurateClock) {
-            console.log(`📊 [CLOCK DEBUG] Processing pendingStart - starting SampleAccurateClock now`);
+            console.log(
+              `📊 [CLOCK DEBUG] Processing pendingStart - starting SampleAccurateClock now`,
+            );
             this.sampleAccurateClock.start();
             this.pendingStart = false;
           }
@@ -389,7 +399,9 @@ export class Clock {
       // EVENT-DRIVEN FIX: AudioWorklet not ready yet, mark as pending
       // SampleAccurateClock will be started once AudioWorklet initializes
       this.pendingStart = true;
-      console.log(`📊 [CLOCK DEBUG] AudioWorklet not ready, marking pendingStart=true`);
+      console.log(
+        `📊 [CLOCK DEBUG] AudioWorklet not ready, marking pendingStart=true`,
+      );
     }
   }
 

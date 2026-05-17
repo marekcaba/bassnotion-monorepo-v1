@@ -44,7 +44,7 @@ const createMockEventBus = (): EventBus => ({
 });
 
 const createMockAudioContext = (): AudioContext => {
-  let currentTimeValue = 0;
+  const currentTimeValue = 0;
 
   const mockContext: any = {
     sampleRate: 48000,

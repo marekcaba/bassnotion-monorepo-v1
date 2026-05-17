@@ -7,7 +7,14 @@
 
 import React from 'react';
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+  act,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DrumPatternEditorModal } from '../DrumPatternEditorModal.js';
 import { useDrumEditorStore } from '../hooks/useDrumEditorStore.js';
@@ -133,7 +140,10 @@ describe('DrumPatternEditorModal', () => {
     mockAudioContext = createMockAudioContext();
 
     // Mock AudioContext constructor
-    vi.stubGlobal('AudioContext', vi.fn(() => mockAudioContext));
+    vi.stubGlobal(
+      'AudioContext',
+      vi.fn(() => mockAudioContext),
+    );
 
     // Mock fetch
     vi.stubGlobal('fetch', vi.fn(mockFetchResponse));
@@ -194,8 +204,12 @@ describe('DrumPatternEditorModal', () => {
     it('should display action buttons (Save, Cancel)', () => {
       render(<DrumPatternEditorModal {...defaultProps} />);
 
-      expect(screen.getByRole('button', { name: /save pattern/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /save pattern/i }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /cancel/i }),
+      ).toBeInTheDocument();
     });
 
     it('should display undo/redo buttons', () => {
@@ -214,7 +228,7 @@ describe('DrumPatternEditorModal', () => {
         // Use getAllByText since there may be multiple "100%" elements
         const zoomTexts = screen.getAllByText('100%');
         // Find the one with the zoom-specific class
-        const zoomText = zoomTexts.find(el => el.classList.contains('w-12'));
+        const zoomText = zoomTexts.find((el) => el.classList.contains('w-12'));
         expect(zoomText).toBeInTheDocument();
       });
     });
@@ -227,7 +241,7 @@ describe('DrumPatternEditorModal', () => {
           {...defaultProps}
           initialPattern={samplePattern}
           initialMetadata={sampleMetadata}
-        />
+        />,
       );
 
       await waitFor(() => {
@@ -242,7 +256,7 @@ describe('DrumPatternEditorModal', () => {
           {...defaultProps}
           initialPattern={samplePattern}
           initialMetadata={sampleMetadata}
-        />
+        />,
       );
 
       await waitFor(() => {
@@ -252,12 +266,7 @@ describe('DrumPatternEditorModal', () => {
     });
 
     it('should use context tempo when provided', async () => {
-      render(
-        <DrumPatternEditorModal
-          {...defaultProps}
-          contextTempo={140}
-        />
-      );
+      render(<DrumPatternEditorModal {...defaultProps} contextTempo={140} />);
 
       await waitFor(() => {
         const store = useDrumEditorStore.getState();
@@ -292,11 +301,13 @@ describe('DrumPatternEditorModal', () => {
 
       // Add a hit to the pattern so save button is enabled (after render)
       await act(async () => {
-        useDrumEditorStore.getState().addHit(
-          'kick',
-          { measure: 0, beat: 0, subdivision: 0, tick: 0 },
-          100
-        );
+        useDrumEditorStore
+          .getState()
+          .addHit(
+            'kick',
+            { measure: 0, beat: 0, subdivision: 0, tick: 0 },
+            100,
+          );
       });
 
       // Update pattern name
@@ -306,7 +317,9 @@ describe('DrumPatternEditorModal', () => {
 
       // Wait for save button to be enabled
       await waitFor(() => {
-        const saveButton = screen.getByRole('button', { name: /save pattern/i });
+        const saveButton = screen.getByRole('button', {
+          name: /save pattern/i,
+        });
         expect(saveButton).not.toBeDisabled();
       });
 
@@ -355,18 +368,20 @@ describe('DrumPatternEditorModal', () => {
 
       // Add a hit AFTER render to make the pattern dirty
       await act(async () => {
-        useDrumEditorStore.getState().addHit(
-          'kick',
-          { measure: 0, beat: 0, subdivision: 0, tick: 0 },
-          100
-        );
+        useDrumEditorStore
+          .getState()
+          .addHit(
+            'kick',
+            { measure: 0, beat: 0, subdivision: 0, tick: 0 },
+            100,
+          );
       });
 
       const cancelButton = screen.getByRole('button', { name: /cancel/i });
       await user.click(cancelButton);
 
       expect(window.confirm).toHaveBeenCalledWith(
-        'You have unsaved changes. Are you sure you want to close?'
+        'You have unsaved changes. Are you sure you want to close?',
       );
     });
 
@@ -383,11 +398,13 @@ describe('DrumPatternEditorModal', () => {
 
       // Add a hit AFTER render to make the pattern dirty
       await act(async () => {
-        useDrumEditorStore.getState().addHit(
-          'kick',
-          { measure: 0, beat: 0, subdivision: 0, tick: 0 },
-          100
-        );
+        useDrumEditorStore
+          .getState()
+          .addHit(
+            'kick',
+            { measure: 0, beat: 0, subdivision: 0, tick: 0 },
+            100,
+          );
       });
 
       const cancelButton = screen.getByRole('button', { name: /cancel/i });
@@ -421,16 +438,18 @@ describe('DrumPatternEditorModal', () => {
       });
 
       // Initially undo should be disabled
-      let undoButton = screen.getByTitle('Undo (Cmd+Z)');
+      const undoButton = screen.getByTitle('Undo (Cmd+Z)');
       expect(undoButton).toBeDisabled();
 
       // Add a hit AFTER render
       await act(async () => {
-        useDrumEditorStore.getState().addHit(
-          'kick',
-          { measure: 0, beat: 0, subdivision: 0, tick: 0 },
-          100
-        );
+        useDrumEditorStore
+          .getState()
+          .addHit(
+            'kick',
+            { measure: 0, beat: 0, subdivision: 0, tick: 0 },
+            100,
+          );
       });
 
       // Verify the store state updated
@@ -456,11 +475,13 @@ describe('DrumPatternEditorModal', () => {
 
       // Add a hit AFTER render
       await act(async () => {
-        useDrumEditorStore.getState().addHit(
-          'kick',
-          { measure: 0, beat: 0, subdivision: 0, tick: 0 },
-          100
-        );
+        useDrumEditorStore
+          .getState()
+          .addHit(
+            'kick',
+            { measure: 0, beat: 0, subdivision: 0, tick: 0 },
+            100,
+          );
       });
 
       // Wait for clear button to be enabled
@@ -473,7 +494,7 @@ describe('DrumPatternEditorModal', () => {
       await user.click(clearButton);
 
       expect(window.confirm).toHaveBeenCalledWith(
-        'Are you sure you want to clear all hits? This cannot be undone.'
+        'Are you sure you want to clear all hits? This cannot be undone.',
       );
     });
 
@@ -490,11 +511,13 @@ describe('DrumPatternEditorModal', () => {
 
       // Add a hit AFTER render
       await act(async () => {
-        useDrumEditorStore.getState().addHit(
-          'kick',
-          { measure: 0, beat: 0, subdivision: 0, tick: 0 },
-          100
-        );
+        useDrumEditorStore
+          .getState()
+          .addHit(
+            'kick',
+            { measure: 0, beat: 0, subdivision: 0, tick: 0 },
+            100,
+          );
       });
 
       // Wait for clear button to be enabled
@@ -534,7 +557,7 @@ describe('DrumPatternEditorModal', () => {
 
       // Find the zoom text "100%" - the one with w-12 class is in the toolbar
       const zoomTexts = screen.getAllByText('100%');
-      const zoomText = zoomTexts.find(el => el.classList.contains('w-12'));
+      const zoomText = zoomTexts.find((el) => el.classList.contains('w-12'));
       const zoomContainer = zoomText?.parentElement;
       const allButtons = zoomContainer?.querySelectorAll('button');
 
@@ -572,9 +595,12 @@ describe('DrumPatternEditorModal', () => {
       render(<DrumPatternEditorModal {...defaultProps} />);
 
       // Wait for audio to be ready
-      await waitFor(() => {
-        // Audio context should be created
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          // Audio context should be created
+        },
+        { timeout: 1000 },
+      );
 
       fireEvent.keyDown(window, { key: ' ' });
 
@@ -606,11 +632,9 @@ describe('DrumPatternEditorModal', () => {
       const undoSpy = vi.spyOn(useDrumEditorStore.getState(), 'undo');
 
       // Add a hit first to have something to undo
-      useDrumEditorStore.getState().addHit(
-        'kick',
-        { measure: 0, beat: 0, subdivision: 0, tick: 0 },
-        100
-      );
+      useDrumEditorStore
+        .getState()
+        .addHit('kick', { measure: 0, beat: 0, subdivision: 0, tick: 0 }, 100);
 
       render(<DrumPatternEditorModal {...defaultProps} />);
 
@@ -622,11 +646,9 @@ describe('DrumPatternEditorModal', () => {
 
     it('should trigger save on Cmd+S', async () => {
       // Add a hit first so save works
-      useDrumEditorStore.getState().addHit(
-        'kick',
-        { measure: 0, beat: 0, subdivision: 0, tick: 0 },
-        100
-      );
+      useDrumEditorStore
+        .getState()
+        .addHit('kick', { measure: 0, beat: 0, subdivision: 0, tick: 0 }, 100);
 
       render(<DrumPatternEditorModal {...defaultProps} />);
 
@@ -672,11 +694,9 @@ describe('DrumPatternEditorModal', () => {
       render(<DrumPatternEditorModal {...defaultProps} />);
 
       // Add a hit to make dirty
-      useDrumEditorStore.getState().addHit(
-        'kick',
-        { measure: 0, beat: 0, subdivision: 0, tick: 0 },
-        100
-      );
+      useDrumEditorStore
+        .getState()
+        .addHit('kick', { measure: 0, beat: 0, subdivision: 0, tick: 0 }, 100);
 
       await waitFor(() => {
         expect(screen.getByText('• Unsaved')).toBeInTheDocument();

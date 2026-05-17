@@ -103,7 +103,7 @@ const logger = createStateLogger(MACHINE_NAME, '#7c3aed');
 // ============================================================================
 
 export function usePlaybackMachine(
-  options: UsePlaybackMachineOptions = {}
+  options: UsePlaybackMachineOptions = {},
 ): UsePlaybackMachineReturn {
   const {
     eventBus,
@@ -123,11 +123,12 @@ export function usePlaybackMachine(
       eventBus: eventBus ?? undefined,
       instanceId,
     }),
-    [eventBus, instanceId]
+    [eventBus, instanceId],
   );
 
   // Get inspector for DevTools connection
-  const inspector = enableInspector && isDevToolsInitialized() ? getInspector() : null;
+  const inspector =
+    enableInspector && isDevToolsInitialized() ? getInspector() : null;
 
   // Create machine with input and optional inspector
   const [state, send, actorRef] = useMachine(playbackMachine, {
@@ -168,7 +169,10 @@ export function usePlaybackMachine(
       }
 
       // Also record in global window tracker if available
-      if (typeof window !== 'undefined' && (window as WindowWithHistory).__xstatePlaybackHistory) {
+      if (
+        typeof window !== 'undefined' &&
+        (window as WindowWithHistory).__xstatePlaybackHistory
+      ) {
         (window as WindowWithHistory).__xstatePlaybackHistory.record(
           currentState,
           undefined,
@@ -176,7 +180,7 @@ export function usePlaybackMachine(
             instanceId: state.context.instanceId,
             tracksCount: state.context.tracks.size,
             tempo: state.context.currentTempo,
-          }
+          },
         );
       }
     }
@@ -224,7 +228,7 @@ export function usePlaybackMachine(
       logger.logEvent('INITIALIZE', { hasAudioContext: !!audioContext });
       send({ type: 'INITIALIZE', audioContext, audioDestination });
     },
-    [send]
+    [send],
   );
 
   const start = useCallback(() => {
@@ -254,10 +258,13 @@ export function usePlaybackMachine(
 
   const registerTrack = useCallback(
     (track: MachineTrack) => {
-      logger.logEvent('REGISTER_TRACK', { trackId: track.id, type: track.type });
+      logger.logEvent('REGISTER_TRACK', {
+        trackId: track.id,
+        type: track.type,
+      });
       send({ type: 'REGISTER_TRACK', track });
     },
-    [send]
+    [send],
   );
 
   const unregisterTrack = useCallback(
@@ -265,15 +272,18 @@ export function usePlaybackMachine(
       logger.logEvent('UNREGISTER_TRACK', { trackId });
       send({ type: 'UNREGISTER_TRACK', trackId });
     },
-    [send]
+    [send],
   );
 
   const updateTracks = useCallback(
     (tracks: MachineTrack[], harmonyInstrument?: string) => {
-      logger.logEvent('UPDATE_TRACKS', { tracksCount: tracks.length, harmonyInstrument });
+      logger.logEvent('UPDATE_TRACKS', {
+        tracksCount: tracks.length,
+        harmonyInstrument,
+      });
       send({ type: 'UPDATE_TRACKS', tracks, harmonyInstrument });
     },
-    [send]
+    [send],
   );
 
   const setTempo = useCallback(
@@ -281,7 +291,7 @@ export function usePlaybackMachine(
       logger.logEvent('SET_TEMPO', { bpm });
       send({ type: 'SET_TEMPO', bpm });
     },
-    [send]
+    [send],
   );
 
   const setCountdown = useCallback(
@@ -289,7 +299,7 @@ export function usePlaybackMachine(
       logger.logEvent('SET_COUNTDOWN', { beats, enabled });
       send({ type: 'SET_COUNTDOWN', beats, enabled });
     },
-    [send]
+    [send],
   );
 
   const retry = useCallback(() => {
@@ -365,7 +375,7 @@ export function usePlaybackMachine(
 export function useShadowComparison(
   machineState: string,
   realEngineState: string | undefined,
-  enabled = true
+  enabled = true,
 ): void {
   useEffect(() => {
     if (!enabled || !realEngineState) return;
@@ -386,13 +396,19 @@ export function useShadowComparison(
 
       // XState 'starting' is an async transition state
       // Real engine might be 'ready' (just started) or 'playing' (already transitioned)
-      if (machineState === 'starting' && (realEngineState === 'ready' || realEngineState === 'playing')) {
+      if (
+        machineState === 'starting' &&
+        (realEngineState === 'ready' || realEngineState === 'playing')
+      ) {
         return true;
       }
 
       // XState 'stopping' is an async transition state
       // Real engine might be 'playing' (just stopped) or 'stopped' (already transitioned)
-      if (machineState === 'stopping' && (realEngineState === 'playing' || realEngineState === 'stopped')) {
+      if (
+        machineState === 'stopping' &&
+        (realEngineState === 'playing' || realEngineState === 'stopped')
+      ) {
         return true;
       }
 
@@ -441,7 +457,11 @@ export function useShadowComparison(
 
 interface WindowWithHistory extends Window {
   __xstatePlaybackHistory?: {
-    record: (state: string, event?: string, context?: Record<string, unknown>) => void;
+    record: (
+      state: string,
+      event?: string,
+      context?: Record<string, unknown>,
+    ) => void;
   };
 }
 

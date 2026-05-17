@@ -116,14 +116,19 @@ function AudioEnabledTutorialContent({
           coreServicesRef.current = services;
 
           try {
-            const unifiedTransport = (services as { getUnifiedTransport: () => unknown }).getUnifiedTransport();
+            const unifiedTransport = (
+              services as { getUnifiedTransport: () => unknown }
+            ).getUnifiedTransport();
             transportRef.current = unifiedTransport;
 
             addLog('✅ CoreServices detected and loaded');
 
             // Store references globally for debugging
-            (window as { __tutorialCoreServices?: unknown }).__tutorialCoreServices = services;
-            (window as { __tutorialTransport?: unknown }).__tutorialTransport = unifiedTransport;
+            (
+              window as { __tutorialCoreServices?: unknown }
+            ).__tutorialCoreServices = services;
+            (window as { __tutorialTransport?: unknown }).__tutorialTransport =
+              unifiedTransport;
 
             // Only update state once when ready
             if (mountedRef.current) {

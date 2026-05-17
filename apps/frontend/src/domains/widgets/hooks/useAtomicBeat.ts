@@ -85,9 +85,9 @@ const INITIAL_STATE: AtomicBeatResult = {
  * @param isVisible - Whether widget is visible (optimization)
  */
 export function useAtomicBeat(
-  beatsPerMeasure: number = 4,
-  isPlaying: boolean = false,
-  isVisible: boolean = true
+  beatsPerMeasure = 4,
+  isPlaying = false,
+  isVisible = true,
 ): AtomicBeatResult {
   const transport = useTransportContext();
 
@@ -186,9 +186,10 @@ export function useAtomicBeat(
     // Handle playback start
     if (isPlaying && !wasPlayingRef.current) {
       // Get countdown beats from transport position
-      const countdownBeats = transport.position?.bars < 0
-        ? Math.abs(transport.position.bars) * beatsPerMeasure
-        : musicalTruth.getCountdownBeats();
+      const countdownBeats =
+        transport.position?.bars < 0
+          ? Math.abs(transport.position.bars) * beatsPerMeasure
+          : musicalTruth.getCountdownBeats();
 
       // Configure the clock with musical parameters
       clock.configure(beatsPerMeasure, countdownBeats);
@@ -239,7 +240,7 @@ export function useAtomicBeat(
     // No need to reconfigure - clock reads musicalTruth.getBPM() on every tick
     // Just update local state's eighthNoteDurationMs for CSS timing
     const bpm = musicalTruth.getBPM();
-    const secondsPerEighth = (60 / bpm) / 2;
+    const secondsPerEighth = 60 / bpm / 2;
     const eighthNoteDurationMs = secondsPerEighth * 1000;
 
     setBeatState((prev) => ({
@@ -257,8 +258,8 @@ export function useAtomicBeat(
  * Useful for simple beat indicators that just need the column
  */
 export function useAtomicEighthNoteIndex(
-  isPlaying: boolean = false,
-  isVisible: boolean = true
+  isPlaying = false,
+  isVisible = true,
 ): number {
   const { eighthNoteIndex } = useAtomicBeat(4, isPlaying, isVisible);
   return eighthNoteIndex;
@@ -269,8 +270,8 @@ export function useAtomicEighthNoteIndex(
  * Useful for components tracking measure progression
  */
 export function useAtomicMeasureIndex(
-  isPlaying: boolean = false,
-  isVisible: boolean = true
+  isPlaying = false,
+  isVisible = true,
 ): { measureIndex: number; isCountdown: boolean } {
   const { measureIndex, isCountdown } = useAtomicBeat(4, isPlaying, isVisible);
   return { measureIndex, isCountdown };

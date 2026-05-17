@@ -6,7 +6,12 @@
  * organized into milestones.
  */
 
-import type { SkillLevel, PrimaryGoal, BassTechnique, MusicGenre } from './assessment.js';
+import type {
+  SkillLevel,
+  PrimaryGoal,
+  BassTechnique,
+  MusicGenre,
+} from './assessment.js';
 
 // =============================================================================
 // Journey Status

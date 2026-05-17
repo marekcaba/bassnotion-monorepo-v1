@@ -46,11 +46,36 @@ interface TestExerciseData {
 }
 
 // Test exercises
-const exerciseA: TestExerciseData = { id: 'ex-a', name: 'Exercise A', notes: ['a1', 'a2'], tempo: 60 };
-const exerciseB: TestExerciseData = { id: 'ex-b', name: 'Exercise B', notes: ['b1', 'b2', 'b3'], tempo: 120 };
-const exerciseC: TestExerciseData = { id: 'ex-c', name: 'Exercise C', notes: ['c1'], tempo: 180 };
-const exerciseD: TestExerciseData = { id: 'ex-d', name: 'Exercise D', notes: ['d1', 'd2', 'd3', 'd4'], tempo: 90 };
-const exerciseE: TestExerciseData = { id: 'ex-e', name: 'Exercise E', notes: ['e1', 'e2'], tempo: 100 };
+const exerciseA: TestExerciseData = {
+  id: 'ex-a',
+  name: 'Exercise A',
+  notes: ['a1', 'a2'],
+  tempo: 60,
+};
+const exerciseB: TestExerciseData = {
+  id: 'ex-b',
+  name: 'Exercise B',
+  notes: ['b1', 'b2', 'b3'],
+  tempo: 120,
+};
+const exerciseC: TestExerciseData = {
+  id: 'ex-c',
+  name: 'Exercise C',
+  notes: ['c1'],
+  tempo: 180,
+};
+const exerciseD: TestExerciseData = {
+  id: 'ex-d',
+  name: 'Exercise D',
+  notes: ['d1', 'd2', 'd3', 'd4'],
+  tempo: 90,
+};
+const exerciseE: TestExerciseData = {
+  id: 'ex-e',
+  name: 'Exercise E',
+  notes: ['e1', 'e2'],
+  tempo: 100,
+};
 
 describe('useSnapshotTransition - Mid-Transition Handling', () => {
   const FADE_DURATION = 500;
@@ -58,8 +83,9 @@ describe('useSnapshotTransition - Mid-Transition Handling', () => {
   describe('Key Change During Fading-Out Phase', () => {
     it('should redirect to new target when key changes during fade-out', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: exerciseA, key: exerciseA.id } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: exerciseA, key: exerciseA.id } },
       );
 
       // Start A→B transition
@@ -82,8 +108,9 @@ describe('useSnapshotTransition - Mid-Transition Handling', () => {
 
     it('should use latest data when same key is updated during fade-out', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: exerciseA, key: exerciseA.id } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: exerciseA, key: exerciseA.id } },
       );
 
       // Start A→B transition
@@ -99,15 +126,19 @@ describe('useSnapshotTransition - Mid-Transition Handling', () => {
 
       // At SWAP, should get the UPDATED B
       await advanceTimersAndRAF(FADE_DURATION);
-      expect(result.current.displayData.notes).toEqual(['b1-updated', 'b2-updated']);
+      expect(result.current.displayData.notes).toEqual([
+        'b1-updated',
+        'b2-updated',
+      ]);
     });
   });
 
   describe('Key Change During Fading-In Phase', () => {
     it('should restart transition when key changes during fade-in', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: exerciseA, key: exerciseA.id } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: exerciseA, key: exerciseA.id } },
       );
 
       // Start and complete A→B fade-out, now in fade-in with B visible
@@ -133,8 +164,9 @@ describe('useSnapshotTransition - Mid-Transition Handling', () => {
 
     it('should show correct exercise after fade-in key change', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: exerciseA, key: exerciseA.id } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: exerciseA, key: exerciseA.id } },
       );
 
       // Complete A→B transition to fade-in phase
@@ -157,19 +189,26 @@ describe('useSnapshotTransition - Mid-Transition Handling', () => {
   describe('Multiple Rapid Key Changes', () => {
     it('should handle A→B→C→D sequence with only A and D visible', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: exerciseA, key: exerciseA.id } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: exerciseA, key: exerciseA.id } },
       );
 
       // Rapid sequence: A→B→C→D with minimal time between
       rerender({ data: exerciseB, key: exerciseB.id });
-      await act(async () => { vi.advanceTimersByTime(30); });
+      await act(async () => {
+        vi.advanceTimersByTime(30);
+      });
 
       rerender({ data: exerciseC, key: exerciseC.id });
-      await act(async () => { vi.advanceTimersByTime(30); });
+      await act(async () => {
+        vi.advanceTimersByTime(30);
+      });
 
       rerender({ data: exerciseD, key: exerciseD.id });
-      await act(async () => { vi.advanceTimersByTime(30); });
+      await act(async () => {
+        vi.advanceTimersByTime(30);
+      });
 
       // Still showing A during all transitions
       expect(result.current.displayData.id).toBe('ex-a');
@@ -183,15 +222,18 @@ describe('useSnapshotTransition - Mid-Transition Handling', () => {
 
     it('should handle 5 rapid switches and land on correct exercise', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: exerciseA, key: exerciseA.id } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: exerciseA, key: exerciseA.id } },
       );
 
       const exercises = [exerciseB, exerciseC, exerciseD, exerciseE, exerciseA];
 
       for (const ex of exercises) {
         rerender({ data: ex, key: ex.id });
-        await act(async () => { vi.advanceTimersByTime(20); });
+        await act(async () => {
+          vi.advanceTimersByTime(20);
+        });
       }
 
       // Still showing original A
@@ -208,8 +250,9 @@ describe('useSnapshotTransition - Mid-Transition Handling', () => {
   describe('Return to Original Exercise Mid-Transition', () => {
     it('should handle A→B→A pattern correctly', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: exerciseA, key: exerciseA.id } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: exerciseA, key: exerciseA.id } },
       );
 
       // Start A→B
@@ -230,16 +273,21 @@ describe('useSnapshotTransition - Mid-Transition Handling', () => {
 
     it('should handle A→B→C→A pattern correctly', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: exerciseA, key: exerciseA.id } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: exerciseA, key: exerciseA.id } },
       );
 
       // Rapid A→B→C→A
       rerender({ data: exerciseB, key: exerciseB.id });
-      await act(async () => { vi.advanceTimersByTime(50); });
+      await act(async () => {
+        vi.advanceTimersByTime(50);
+      });
 
       rerender({ data: exerciseC, key: exerciseC.id });
-      await act(async () => { vi.advanceTimersByTime(50); });
+      await act(async () => {
+        vi.advanceTimersByTime(50);
+      });
 
       rerender({ data: exerciseA, key: exerciseA.id });
 
@@ -254,17 +302,26 @@ describe('useSnapshotTransition - Mid-Transition Handling', () => {
   describe('Stress Testing', () => {
     it('should survive 20 rapid exercise switches', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: exerciseA, key: exerciseA.id } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: exerciseA, key: exerciseA.id } },
       );
 
-      const allExercises = [exerciseA, exerciseB, exerciseC, exerciseD, exerciseE];
+      const allExercises = [
+        exerciseA,
+        exerciseB,
+        exerciseC,
+        exerciseD,
+        exerciseE,
+      ];
 
       // 20 rapid switches with random exercises
       for (let i = 0; i < 20; i++) {
         const ex = allExercises[i % allExercises.length];
         rerender({ data: ex, key: ex.id });
-        await act(async () => { vi.advanceTimersByTime(15); }); // Very fast - 15ms apart
+        await act(async () => {
+          vi.advanceTimersByTime(15);
+        }); // Very fast - 15ms apart
       }
 
       // Should still be showing original A (transition not complete)
@@ -282,15 +339,18 @@ describe('useSnapshotTransition - Mid-Transition Handling', () => {
 
     it('should handle alternating between two exercises rapidly', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: exerciseA, key: exerciseA.id } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: exerciseA, key: exerciseA.id } },
       );
 
       // Rapidly alternate A↔B 10 times
       for (let i = 0; i < 10; i++) {
         const ex = i % 2 === 0 ? exerciseB : exerciseA;
         rerender({ data: ex, key: ex.id });
-        await act(async () => { vi.advanceTimersByTime(25); });
+        await act(async () => {
+          vi.advanceTimersByTime(25);
+        });
       }
 
       // Complete transition
@@ -305,14 +365,17 @@ describe('useSnapshotTransition - Mid-Transition Handling', () => {
   describe('Atomic Data Consistency During Mid-Transition', () => {
     it('should never mix data from different exercises', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: exerciseA, key: exerciseA.id } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: exerciseA, key: exerciseA.id } },
       );
 
       // Track all displayed states
       const displayedStates: TestExerciseData[] = [];
       const captureState = () => {
-        displayedStates.push({ ...result.current.displayData as TestExerciseData });
+        displayedStates.push({
+          ...(result.current.displayData as TestExerciseData),
+        });
       };
 
       captureState(); // Initial
@@ -320,12 +383,16 @@ describe('useSnapshotTransition - Mid-Transition Handling', () => {
       // Rapid switches
       rerender({ data: exerciseB, key: exerciseB.id });
       captureState();
-      await act(async () => { vi.advanceTimersByTime(50); });
+      await act(async () => {
+        vi.advanceTimersByTime(50);
+      });
       captureState();
 
       rerender({ data: exerciseC, key: exerciseC.id });
       captureState();
-      await act(async () => { vi.advanceTimersByTime(50); });
+      await act(async () => {
+        vi.advanceTimersByTime(50);
+      });
       captureState();
 
       // Complete transition
@@ -352,8 +419,14 @@ describe('useSnapshotTransition - Mid-Transition Handling', () => {
   describe('Edge Cases', () => {
     it('should handle undefined key during transition', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: exerciseA, key: exerciseA.id as string | undefined } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        {
+          initialProps: {
+            data: exerciseA,
+            key: exerciseA.id as string | undefined,
+          },
+        },
       );
 
       // Start transition
@@ -361,7 +434,12 @@ describe('useSnapshotTransition - Mid-Transition Handling', () => {
       await advanceTimersAndRAF(100);
 
       // Set key to undefined (deselect)
-      const emptyData: TestExerciseData = { id: '', name: '', notes: [], tempo: 0 };
+      const emptyData: TestExerciseData = {
+        id: '',
+        name: '',
+        notes: [],
+        tempo: 0,
+      };
       rerender({ data: emptyData, key: undefined });
 
       // Complete transition
@@ -372,8 +450,9 @@ describe('useSnapshotTransition - Mid-Transition Handling', () => {
 
     it('should handle same exercise with updated data mid-transition to different exercise', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: exerciseA, key: exerciseA.id } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: exerciseA, key: exerciseA.id } },
       );
 
       // Start A→B
@@ -391,8 +470,9 @@ describe('useSnapshotTransition - Mid-Transition Handling', () => {
 
     it('should handle transition start exactly at end of previous transition', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: exerciseA, key: exerciseA.id } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: exerciseA, key: exerciseA.id } },
       );
 
       // Complete A→B transition
@@ -416,8 +496,9 @@ describe('useSnapshotTransition - Mid-Transition Handling', () => {
   describe('Phase State Consistency', () => {
     it('should have consistent phase through transition lifecycle', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: exerciseA, key: exerciseA.id } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: exerciseA, key: exerciseA.id } },
       );
 
       const phases: string[] = [];
@@ -439,8 +520,9 @@ describe('useSnapshotTransition - Mid-Transition Handling', () => {
 
     it('should correctly report isTransitioning', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: exerciseA, key: exerciseA.id } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: exerciseA, key: exerciseA.id } },
       );
 
       expect(result.current.isTransitioning).toBe(false);
@@ -460,8 +542,9 @@ describe('useSnapshotTransition - Mid-Transition Handling', () => {
   describe('Opacity Behavior During Mid-Transition', () => {
     it('should keep opacity at 1 before first RAF after key change', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: exerciseA, key: exerciseA.id } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: exerciseA, key: exerciseA.id } },
       );
 
       expect(result.current.opacity).toBe(1);
@@ -479,8 +562,9 @@ describe('useSnapshotTransition - Mid-Transition Handling', () => {
 
     it('should reset opacity to 1 when restarting from fading-in', async () => {
       const { result, rerender } = renderHook(
-        ({ data, key }) => useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
-        { initialProps: { data: exerciseA, key: exerciseA.id } }
+        ({ data, key }) =>
+          useSnapshotTransition(data, key, { fadeDuration: FADE_DURATION }),
+        { initialProps: { data: exerciseA, key: exerciseA.id } },
       );
 
       // Complete fade-out, now in fade-in

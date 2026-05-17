@@ -74,7 +74,10 @@ export const ExerciseBlockForm = React.memo(function ExerciseBlockForm({
   const handleCompletionsChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = parseInt(e.target.value, 10);
-      onChange({ ...config, requiredCompletions: Number.isNaN(value) ? 4 : value });
+      onChange({
+        ...config,
+        requiredCompletions: Number.isNaN(value) ? 4 : value,
+      });
     },
     [config, onChange],
   );
@@ -90,7 +93,9 @@ export const ExerciseBlockForm = React.memo(function ExerciseBlockForm({
         </label>
         <div className="space-y-1 max-h-48 overflow-y-auto">
           {exerciseList.length === 0 ? (
-            <p className="text-xs text-white/30 italic">No exercises created yet</p>
+            <p className="text-xs text-white/30 italic">
+              No exercises created yet
+            </p>
           ) : (
             exerciseList.map((ex) => (
               <ExerciseToggleRow
@@ -106,7 +111,9 @@ export const ExerciseBlockForm = React.memo(function ExerciseBlockForm({
 
       {/* Required completions */}
       <div>
-        <label className="block text-xs text-white/40 mb-1">Required Completions</label>
+        <label className="block text-xs text-white/40 mb-1">
+          Required Completions
+        </label>
         <input
           type="number"
           min={1}
@@ -158,7 +165,9 @@ const ExerciseToggleRow = React.memo(function ExerciseToggleRow({
       </div>
 
       <span className="text-sm text-white truncate">{exercise.title}</span>
-      <span className="text-xs text-white/30 ml-auto capitalize">{exercise.difficulty}</span>
+      <span className="text-xs text-white/30 ml-auto capitalize">
+        {exercise.difficulty}
+      </span>
     </button>
   );
 });

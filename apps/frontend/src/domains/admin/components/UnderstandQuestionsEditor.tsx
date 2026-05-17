@@ -4,7 +4,10 @@ import { useState, useCallback } from 'react';
 import { Button } from '@/shared/components/ui/button';
 import { Plus, Trash, GripVertical, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { UnderstandQuestion, UnderstandQuestionOption } from '@bassnotion/contracts';
+import type {
+  UnderstandQuestion,
+  UnderstandQuestionOption,
+} from '@bassnotion/contracts';
 
 interface UnderstandQuestionsEditorProps {
   questions: UnderstandQuestion[];
@@ -22,12 +25,14 @@ export function UnderstandQuestionsEditor({
   onClose,
 }: UnderstandQuestionsEditorProps) {
   const [localQuestions, setLocalQuestions] = useState<UnderstandQuestion[]>(
-    questions.length > 0 ? questions : []
+    questions.length > 0 ? questions : [],
   );
 
   // Generate unique ID
-  const generateId = () => `q_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  const generateOptionId = () => `opt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const generateId = () =>
+    `q_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const generateOptionId = () =>
+    `opt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
   // Add new question
   const addQuestion = useCallback(() => {
@@ -44,83 +49,109 @@ export function UnderstandQuestionsEditor({
   }, [localQuestions]);
 
   // Remove question
-  const removeQuestion = useCallback((questionId: string) => {
-    setLocalQuestions(localQuestions.filter((q) => q.id !== questionId));
-  }, [localQuestions]);
+  const removeQuestion = useCallback(
+    (questionId: string) => {
+      setLocalQuestions(localQuestions.filter((q) => q.id !== questionId));
+    },
+    [localQuestions],
+  );
 
   // Update question text
-  const updateQuestionText = useCallback((questionId: string, text: string) => {
-    setLocalQuestions(
-      localQuestions.map((q) =>
-        q.id === questionId ? { ...q, question: text } : q
-      )
-    );
-  }, [localQuestions]);
+  const updateQuestionText = useCallback(
+    (questionId: string, text: string) => {
+      setLocalQuestions(
+        localQuestions.map((q) =>
+          q.id === questionId ? { ...q, question: text } : q,
+        ),
+      );
+    },
+    [localQuestions],
+  );
 
   // Update question timestamp
-  const updateQuestionTimestamp = useCallback((questionId: string, timestamp: number | undefined) => {
-    setLocalQuestions(
-      localQuestions.map((q) =>
-        q.id === questionId ? { ...q, timestamp } : q
-      )
-    );
-  }, [localQuestions]);
+  const updateQuestionTimestamp = useCallback(
+    (questionId: string, timestamp: number | undefined) => {
+      setLocalQuestions(
+        localQuestions.map((q) =>
+          q.id === questionId ? { ...q, timestamp } : q,
+        ),
+      );
+    },
+    [localQuestions],
+  );
 
   // Add option to question
-  const addOption = useCallback((questionId: string) => {
-    setLocalQuestions(
-      localQuestions.map((q) => {
-        if (q.id === questionId && q.options.length < 4) {
-          return {
-            ...q,
-            options: [...q.options, { id: generateOptionId(), text: '' }],
-          };
-        }
-        return q;
-      })
-    );
-  }, [localQuestions]);
+  const addOption = useCallback(
+    (questionId: string) => {
+      setLocalQuestions(
+        localQuestions.map((q) => {
+          if (q.id === questionId && q.options.length < 4) {
+            return {
+              ...q,
+              options: [...q.options, { id: generateOptionId(), text: '' }],
+            };
+          }
+          return q;
+        }),
+      );
+    },
+    [localQuestions],
+  );
 
   // Remove option from question
-  const removeOption = useCallback((questionId: string, optionId: string) => {
-    setLocalQuestions(
-      localQuestions.map((q) => {
-        if (q.id === questionId && q.options.length > 2) {
-          const newOptions = q.options.filter((o) => o.id !== optionId);
-          // If removed option was correct, clear correct_option_id
-          const newCorrectId = q.correct_option_id === optionId ? '' : q.correct_option_id;
-          return { ...q, options: newOptions, correct_option_id: newCorrectId };
-        }
-        return q;
-      })
-    );
-  }, [localQuestions]);
+  const removeOption = useCallback(
+    (questionId: string, optionId: string) => {
+      setLocalQuestions(
+        localQuestions.map((q) => {
+          if (q.id === questionId && q.options.length > 2) {
+            const newOptions = q.options.filter((o) => o.id !== optionId);
+            // If removed option was correct, clear correct_option_id
+            const newCorrectId =
+              q.correct_option_id === optionId ? '' : q.correct_option_id;
+            return {
+              ...q,
+              options: newOptions,
+              correct_option_id: newCorrectId,
+            };
+          }
+          return q;
+        }),
+      );
+    },
+    [localQuestions],
+  );
 
   // Update option text
-  const updateOptionText = useCallback((questionId: string, optionId: string, text: string) => {
-    setLocalQuestions(
-      localQuestions.map((q) => {
-        if (q.id === questionId) {
-          return {
-            ...q,
-            options: q.options.map((o) =>
-              o.id === optionId ? { ...o, text } : o
-            ),
-          };
-        }
-        return q;
-      })
-    );
-  }, [localQuestions]);
+  const updateOptionText = useCallback(
+    (questionId: string, optionId: string, text: string) => {
+      setLocalQuestions(
+        localQuestions.map((q) => {
+          if (q.id === questionId) {
+            return {
+              ...q,
+              options: q.options.map((o) =>
+                o.id === optionId ? { ...o, text } : o,
+              ),
+            };
+          }
+          return q;
+        }),
+      );
+    },
+    [localQuestions],
+  );
 
   // Set correct option
-  const setCorrectOption = useCallback((questionId: string, optionId: string) => {
-    setLocalQuestions(
-      localQuestions.map((q) =>
-        q.id === questionId ? { ...q, correct_option_id: optionId } : q
-      )
-    );
-  }, [localQuestions]);
+  const setCorrectOption = useCallback(
+    (questionId: string, optionId: string) => {
+      setLocalQuestions(
+        localQuestions.map((q) =>
+          q.id === questionId ? { ...q, correct_option_id: optionId } : q,
+        ),
+      );
+    },
+    [localQuestions],
+  );
 
   // Validate questions
   const validateQuestions = (): boolean => {
@@ -147,8 +178,9 @@ export function UnderstandQuestionsEditor({
       <div>
         <h3 className="text-lg font-semibold">Understand Quiz Questions</h3>
         <p className="text-sm text-gray-500 mt-1">
-          Add questions that will appear during the video. Questions are auto-distributed
-          across the video (10s from start, 10s from end) unless you set specific timestamps.
+          Add questions that will appear during the video. Questions are
+          auto-distributed across the video (10s from start, 10s from end)
+          unless you set specific timestamps.
         </p>
       </div>
 
@@ -192,7 +224,9 @@ export function UnderstandQuestionsEditor({
                 <input
                   type="text"
                   value={question.question}
-                  onChange={(e) => updateQuestionText(question.id, e.target.value)}
+                  onChange={(e) =>
+                    updateQuestionText(question.id, e.target.value)
+                  }
                   placeholder="What note is on the 3rd fret of the A string?"
                   className="w-full px-3 py-2 border rounded-md"
                   maxLength={500}
@@ -209,7 +243,9 @@ export function UnderstandQuestionsEditor({
                     type="number"
                     value={question.timestamp ?? ''}
                     onChange={(e) => {
-                      const value = e.target.value ? parseInt(e.target.value, 10) : undefined;
+                      const value = e.target.value
+                        ? parseInt(e.target.value, 10)
+                        : undefined;
                       updateQuestionTimestamp(question.id, value);
                     }}
                     placeholder="Auto"
@@ -221,7 +257,9 @@ export function UnderstandQuestionsEditor({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => updateQuestionTimestamp(question.id, undefined)}
+                      onClick={() =>
+                        updateQuestionTimestamp(question.id, undefined)
+                      }
                       className="text-gray-500"
                     >
                       Clear
@@ -249,7 +287,7 @@ export function UnderstandQuestionsEditor({
                           'w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors',
                           question.correct_option_id === option.id
                             ? 'border-green-500 bg-green-500 text-white'
-                            : 'border-gray-300 hover:border-green-300'
+                            : 'border-gray-300 hover:border-green-300',
                         )}
                         title={
                           question.correct_option_id === option.id
@@ -267,7 +305,11 @@ export function UnderstandQuestionsEditor({
                         type="text"
                         value={option.text}
                         onChange={(e) =>
-                          updateOptionText(question.id, option.id, e.target.value)
+                          updateOptionText(
+                            question.id,
+                            option.id,
+                            e.target.value,
+                          )
                         }
                         placeholder={`Option ${oIndex + 1}`}
                         className="flex-1 px-3 py-2 border rounded-md"
@@ -304,11 +346,12 @@ export function UnderstandQuestionsEditor({
               </div>
 
               {/* Validation warning */}
-              {!question.correct_option_id && question.options.some((o) => o.text.trim()) && (
-                <p className="text-sm text-amber-600">
-                  ⚠️ Please select a correct answer
-                </p>
-              )}
+              {!question.correct_option_id &&
+                question.options.some((o) => o.text.trim()) && (
+                  <p className="text-sm text-amber-600">
+                    ⚠️ Please select a correct answer
+                  </p>
+                )}
             </div>
           ))
         )}
@@ -325,7 +368,8 @@ export function UnderstandQuestionsEditor({
       {/* Footer */}
       <div className="flex justify-between items-center pt-4 border-t">
         <span className="text-sm text-gray-500">
-          {localQuestions.length} question{localQuestions.length !== 1 ? 's' : ''}
+          {localQuestions.length} question
+          {localQuestions.length !== 1 ? 's' : ''}
         </span>
         <div className="flex gap-2">
           <Button variant="outline" onClick={onClose}>

@@ -132,7 +132,13 @@ describe('BassSampleLoader', () => {
 
     it('should return result object with correct structure', async () => {
       const samples = [
-        { midiNote: 28, note: 'E1', fret: 0, string: 'E' as const, url: 'http://test.com/E1.ogg' },
+        {
+          midiNote: 28,
+          note: 'E1',
+          fret: 0,
+          string: 'E' as const,
+          url: 'http://test.com/E1.ogg',
+        },
       ];
 
       const result = await loader.loadSamples(samples);
@@ -146,8 +152,20 @@ describe('BassSampleLoader', () => {
 
     it('should call progress callback during loading', async () => {
       const samples = [
-        { midiNote: 28, note: 'E1', fret: 0, string: 'E' as const, url: 'http://test.com/E1.ogg' },
-        { midiNote: 33, note: 'A1', fret: 0, string: 'A' as const, url: 'http://test.com/A1.ogg' },
+        {
+          midiNote: 28,
+          note: 'E1',
+          fret: 0,
+          string: 'E' as const,
+          url: 'http://test.com/E1.ogg',
+        },
+        {
+          midiNote: 33,
+          note: 'A1',
+          fret: 0,
+          string: 'A' as const,
+          url: 'http://test.com/A1.ogg',
+        },
       ];
 
       const progressCalls: Array<[number, number]> = [];
@@ -167,7 +185,13 @@ describe('BassSampleLoader', () => {
 
     it('should track loading status', async () => {
       const samples = [
-        { midiNote: 28, note: 'E1', fret: 0, string: 'E' as const, url: 'http://test.com/E1.ogg' },
+        {
+          midiNote: 28,
+          note: 'E1',
+          fret: 0,
+          string: 'E' as const,
+          url: 'http://test.com/E1.ogg',
+        },
       ];
 
       await loader.loadSamples(samples);
@@ -346,7 +370,13 @@ describe('BassSampleLoader', () => {
 
     it('should update status during loading', async () => {
       const samples = [
-        { midiNote: 28, note: 'E1', fret: 0, string: 'E' as const, url: 'http://test.com/E1.ogg' },
+        {
+          midiNote: 28,
+          note: 'E1',
+          fret: 0,
+          string: 'E' as const,
+          url: 'http://test.com/E1.ogg',
+        },
       ];
 
       await loader.loadSamples(samples);

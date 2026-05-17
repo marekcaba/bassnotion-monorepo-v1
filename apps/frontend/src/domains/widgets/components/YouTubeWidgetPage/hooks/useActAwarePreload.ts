@@ -53,7 +53,8 @@ export function useActAwarePreload({
   // Without this, samples only load once and never reload when switching tutorials
   // ALSO: We need to check if samples are actually ready - if not, allow reload
   useEffect(() => {
-    const samplesCurrentlyReady = typeof window !== 'undefined' ? window.__samplesReady : false;
+    const samplesCurrentlyReady =
+      typeof window !== 'undefined' ? window.__samplesReady : false;
     console.log('🔍 [DEBUG] Tutorial/mount check', {
       prev: prevTutorialIdRef.current,
       current: tutorialId,
@@ -65,7 +66,10 @@ export function useActAwarePreload({
     // Reset if tutorial changed OR if samples aren't ready yet
     if (prevTutorialIdRef.current !== tutorialId || !samplesCurrentlyReady) {
       console.log('🔍 [DEBUG] Resetting hasStartedRef and loadingState', {
-        reason: prevTutorialIdRef.current !== tutorialId ? 'tutorial-change' : 'samples-not-ready',
+        reason:
+          prevTutorialIdRef.current !== tutorialId
+            ? 'tutorial-change'
+            : 'samples-not-ready',
       });
       logger.info('Resetting sample preload state', {
         from: prevTutorialIdRef.current,
@@ -146,7 +150,10 @@ export function useActAwarePreload({
 
       // Dispatch events for backward compatibility
       if (typeof window !== 'undefined') {
-        console.log('🔍 [DEBUG] Dispatching samplesReady event, window.__samplesReady =', window.__samplesReady);
+        console.log(
+          '🔍 [DEBUG] Dispatching samplesReady event, window.__samplesReady =',
+          window.__samplesReady,
+        );
         window.dispatchEvent(new Event('samplesReady'));
         window.dispatchEvent(new Event('essentialSamplesLoaded'));
       }
@@ -170,7 +177,8 @@ export function useActAwarePreload({
       loadingState,
       currentAct,
       tutorialId,
-      windowSamplesReady: typeof window !== 'undefined' ? window.__samplesReady : 'N/A',
+      windowSamplesReady:
+        typeof window !== 'undefined' ? window.__samplesReady : 'N/A',
     });
 
     // Only start if:
@@ -196,7 +204,9 @@ export function useActAwarePreload({
 
     // ✅ FIX: Call loadSamples directly - requestIdleCallback was being canceled by re-renders
     // We want samples to load immediately, not on idle
-    console.log('🔍 [DEBUG] Calling loadSamples() directly (no requestIdleCallback)');
+    console.log(
+      '🔍 [DEBUG] Calling loadSamples() directly (no requestIdleCallback)',
+    );
     loadSamples();
 
     return () => {

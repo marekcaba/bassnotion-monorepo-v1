@@ -39,7 +39,11 @@ export function useLikeStatus(exerciseId: string | undefined) {
 
       // If not authenticated, we can still get like count from the API
       // The backend will return is_liked: false for unauthenticated users
-      logger.debug('Fetching like status', { exerciseId, isAuthenticated, correlationId });
+      logger.debug('Fetching like status', {
+        exerciseId,
+        isAuthenticated,
+        correlationId,
+      });
       return likesApi.getLikeStatus(
         exerciseId,
         session?.access_token || '',
@@ -111,9 +115,10 @@ export function useToggleLike(exerciseId: string | undefined) {
       });
 
       // Snapshot previous value
-      const previousStatus = queryClient.getQueryData<ExerciseLikeStatusResponse>(
-        likeKeys.status(exerciseId),
-      );
+      const previousStatus =
+        queryClient.getQueryData<ExerciseLikeStatusResponse>(
+          likeKeys.status(exerciseId),
+        );
 
       // Optimistically update
       queryClient.setQueryData<ExerciseLikeStatusResponse>(

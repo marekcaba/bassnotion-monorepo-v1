@@ -56,7 +56,7 @@ export const BulkLikeStatusResponseSchema = z.object({
     z.object({
       is_liked: z.boolean(),
       like_count: z.number().int().min(0),
-    })
+    }),
   ),
 });
 
@@ -127,7 +127,7 @@ export const UserFavoritesResponseSchema = z.object({
           tutorial_slug: z.string().optional(),
         })
         .optional(),
-    })
+    }),
   ),
   total: z.number().int().min(0),
   page: z.number().int().min(1),

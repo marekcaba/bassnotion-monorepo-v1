@@ -122,9 +122,7 @@ export function usePlaybackState(widgetId?: string): UsePlaybackStateReturn {
   );
   // Use useShallow for object selectors to prevent unnecessary re-renders
   // These objects change reference on any store update without shallow comparison
-  const syncEvents = usePlaybackStore(
-    useShallow((state) => state.syncEvents),
-  );
+  const syncEvents = usePlaybackStore(useShallow((state) => state.syncEvents));
   const config = usePlaybackStore(useShallow((state) => state.config));
 
   // Action selectors

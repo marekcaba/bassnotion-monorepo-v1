@@ -15,7 +15,7 @@ export class ApiClient {
   private baseUrl: string;
   private defaultHeaders: Record<string, string>;
 
-  constructor(baseUrl: string = '') {
+  constructor(baseUrl = '') {
     this.baseUrl =
       baseUrl || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
     this.defaultHeaders = {

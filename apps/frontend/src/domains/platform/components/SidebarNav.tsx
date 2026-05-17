@@ -32,7 +32,9 @@ export function SidebarNav({ items, expanded = false }: SidebarNavProps) {
     <div className="flex flex-col gap-1 py-2 px-2">
       {items.map((item) => {
         const isActive = item.activePatterns
-          ? item.activePatterns.some(p => pathname === p || pathname.startsWith(p + '/'))
+          ? item.activePatterns.some(
+              (p) => pathname === p || pathname.startsWith(p + '/'),
+            )
           : pathname === item.url;
         const Icon = item.icon;
 

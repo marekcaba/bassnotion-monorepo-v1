@@ -12,7 +12,11 @@ import { useShallow } from 'zustand/react/shallow';
 import { Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { DrumCell } from './DrumCell.js';
-import type { DrumLaneRowProps, GridCellData, MusicalPosition } from './types.js';
+import type {
+  DrumLaneRowProps,
+  GridCellData,
+  MusicalPosition,
+} from './types.js';
 import {
   gridToMusicalPosition,
   musicalToGridColumn,
@@ -39,18 +43,21 @@ export const DrumLaneRow = memo(function DrumLaneRow({
 }: DrumLaneRowProps) {
   // Use useShallow for object selectors to prevent infinite loops
   const timeSignature = useDrumEditorStore(
-    useShallow((state) => state.timeSignature)
+    useShallow((state) => state.timeSignature),
   );
 
   // Calculate cell width based on zoom
   const cellWidth = Math.max(
     CELL_DIMENSIONS.minWidth,
-    Math.min(CELL_DIMENSIONS.maxWidth, CELL_DIMENSIONS.minWidth * zoomLevel * 1.5)
+    Math.min(
+      CELL_DIMENSIONS.maxWidth,
+      CELL_DIMENSIONS.minWidth * zoomLevel * 1.5,
+    ),
   );
 
   // Pre-compute hits by column for O(1) lookup
   const hitsByColumn = useMemo(() => {
-    const map = new Map<number, typeof hits[0]>();
+    const map = new Map<number, (typeof hits)[0]>();
     hits.forEach((hit) => {
       const col = musicalToGridColumn(hit.position, resolution, timeSignature);
       map.set(col, hit);
@@ -65,7 +72,7 @@ export const DrumLaneRow = memo(function DrumLaneRow({
       const musicalPosition = gridToMusicalPosition(
         { row: 0, col },
         resolution,
-        timeSignature
+        timeSignature,
       );
       const hit = hitsByColumn.get(col) || null;
 
@@ -78,7 +85,14 @@ export const DrumLaneRow = memo(function DrumLaneRow({
       });
     }
     return result;
-  }, [totalColumns, resolution, timeSignature, hitsByColumn, selectedHitIds, playheadColumn]);
+  }, [
+    totalColumns,
+    resolution,
+    timeSignature,
+    hitsByColumn,
+    selectedHitIds,
+    playheadColumn,
+  ]);
 
   // Handle cell click - also triggers preview sound
   const handleCellClick = useCallback(
@@ -89,7 +103,7 @@ export const DrumLaneRow = memo(function DrumLaneRow({
         onPreviewHit();
       }
     },
-    [onCellClick, onPreviewHit]
+    [onCellClick, onPreviewHit],
   );
 
   // Handle cell right-click
@@ -97,7 +111,7 @@ export const DrumLaneRow = memo(function DrumLaneRow({
     (hitId: string | null, position: MusicalPosition) => {
       onCellRightClick(hitId, position);
     },
-    [onCellRightClick]
+    [onCellRightClick],
   );
 
   // Handle mute toggle - use getState() for stable reference
@@ -109,7 +123,9 @@ export const DrumLaneRow = memo(function DrumLaneRow({
     return (
       <div
         className="flex items-center h-4 bg-zinc-900 border-b border-zinc-700"
-        style={{ minWidth: `${CELL_DIMENSIONS.laneHeaderWidth + totalColumns * cellWidth}px` }}
+        style={{
+          minWidth: `${CELL_DIMENSIONS.laneHeaderWidth + totalColumns * cellWidth}px`,
+        }}
       >
         <div
           className="flex items-center px-2 text-xs text-zinc-500 truncate bg-zinc-950 sticky left-0 z-10"
@@ -124,7 +140,9 @@ export const DrumLaneRow = memo(function DrumLaneRow({
   return (
     <div
       className="flex items-center bg-zinc-900 border-b border-zinc-800"
-      style={{ minWidth: `${CELL_DIMENSIONS.laneHeaderWidth + totalColumns * cellWidth}px` }}
+      style={{
+        minWidth: `${CELL_DIMENSIONS.laneHeaderWidth + totalColumns * cellWidth}px`,
+      }}
     >
       {/* Lane Header - sticky left so it stays visible during horizontal scroll */}
       <div
@@ -173,10 +191,19 @@ export const DrumLaneRow = memo(function DrumLaneRow({
             width={cellWidth}
             height={CELL_DIMENSIONS.height}
             isBeatBoundary={isBeatBoundary(index, resolution)}
-            isMeasureBoundary={isMeasureBoundary(index, resolution, timeSignature)}
-            onClick={() => handleCellClick(cellData.musicalPosition, !!cellData.hit)}
+            isMeasureBoundary={isMeasureBoundary(
+              index,
+              resolution,
+              timeSignature,
+            )}
+            onClick={() =>
+              handleCellClick(cellData.musicalPosition, !!cellData.hit)
+            }
             onRightClick={() =>
-              handleCellRightClick(cellData.hit?.id || null, cellData.musicalPosition)
+              handleCellRightClick(
+                cellData.hit?.id || null,
+                cellData.musicalPosition,
+              )
             }
           />
         ))}

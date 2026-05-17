@@ -104,7 +104,9 @@ export abstract class CachedRepository<
   ) {
     const mergedConfig = { ...DEFAULT_CONFIG, ...config };
     this.ttl = mergedConfig.ttl;
-    this.listTtl = Math.floor(mergedConfig.ttl * mergedConfig.listTtlMultiplier);
+    this.listTtl = Math.floor(
+      mergedConfig.ttl * mergedConfig.listTtlMultiplier,
+    );
     this.preFetchOnDelete = mergedConfig.preFetchOnDelete;
   }
 
@@ -207,7 +209,9 @@ export abstract class CachedRepository<
       )
       .then((result) => ({
         ...result,
-        items: (result.items as unknown[]).map((data) => this.reconstitute(data)),
+        items: (result.items as unknown[]).map((data) =>
+          this.reconstitute(data),
+        ),
       }));
   }
 
@@ -270,7 +274,9 @@ export abstract class CachedRepository<
     if (ids.length === 0) return [];
 
     const results = await Promise.all(ids.map((id) => this.findById(id)));
-    return results.filter((entity): entity is NonNullable<typeof entity> => entity !== null) as TEntity[];
+    return results.filter(
+      (entity): entity is NonNullable<typeof entity> => entity !== null,
+    ) as TEntity[];
   }
 
   /**
@@ -391,7 +397,9 @@ export abstract class CachedRepository<
       )
       .then((result) => ({
         ...result,
-        items: (result.items as unknown[]).map((data) => this.reconstitute(data)),
+        items: (result.items as unknown[]).map((data) =>
+          this.reconstitute(data),
+        ),
       }));
   }
 

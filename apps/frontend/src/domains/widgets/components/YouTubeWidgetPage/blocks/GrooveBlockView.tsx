@@ -87,14 +87,19 @@ export const GrooveBlockView = React.memo(function GrooveBlockView({
             <Sparkles className="w-10 h-10 text-slate-400" />
           </div>
           <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-white">The Groove is Coming</h2>
+            <h2 className="text-2xl font-bold text-white">
+              The Groove is Coming
+            </h2>
             <p className="text-slate-400 text-base max-w-sm mx-auto">
               Practice exercises are being prepared for this tutorial
             </p>
           </div>
           <div className="flex items-center justify-center gap-2">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="w-3 h-3 rounded-full border-2 border-dashed border-slate-600/50 bg-slate-800/30" />
+              <div
+                key={i}
+                className="w-3 h-3 rounded-full border-2 border-dashed border-slate-600/50 bg-slate-800/30"
+              />
             ))}
             <div className="w-3 h-3 rounded-full border-2 border-dashed border-purple-500/30 bg-purple-900/20" />
           </div>
@@ -129,7 +134,9 @@ export const GrooveBlockView = React.memo(function GrooveBlockView({
                 />
               ))}
             </div>
-            <span className="text-sm text-white/40 tabular-nums">{completedCount}/{totalUnlocked}</span>
+            <span className="text-sm text-white/40 tabular-nums">
+              {completedCount}/{totalUnlocked}
+            </span>
           </div>
         </div>
       </div>
@@ -137,13 +144,17 @@ export const GrooveBlockView = React.memo(function GrooveBlockView({
   }
 
   const videoSource = youtubeUrl || tutorialData?.youtube_url || '';
-  const youtubeId = getYouTubeVideoId(videoSource) || tutorialData?.youtube_id || null;
+  const youtubeId =
+    getYouTubeVideoId(videoSource) || tutorialData?.youtube_id || null;
   const grooveTitle = rewardExercise?.title || 'The Groove';
 
   return (
     <div className="h-full flex flex-col">
       {/* YouTube embed — full width */}
-      <div className="flex-shrink-0 relative mx-auto w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-[800px]" style={{ height: '40%' }}>
+      <div
+        className="flex-shrink-0 relative mx-auto w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-[800px]"
+        style={{ height: '40%' }}
+      >
         {youtubeId ? (
           <iframe
             src={`https://www.youtube.com/embed/${youtubeId}?rel=0&modestbranding=1`}
@@ -161,7 +172,10 @@ export const GrooveBlockView = React.memo(function GrooveBlockView({
       </div>
 
       {/* Content — centered to match exercise block */}
-      <div className="flex-1 overflow-y-auto flex flex-col" style={{ overscrollBehavior: 'contain' }}>
+      <div
+        className="flex-1 overflow-y-auto flex flex-col"
+        style={{ overscrollBehavior: 'contain' }}
+      >
         <div className="mx-auto w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-[800px] px-4 flex flex-col flex-1">
           <div className="flex-1 py-2">{fretboardContent}</div>
           <div className="flex-shrink-0 py-2">{widgetsContent}</div>
@@ -169,9 +183,12 @@ export const GrooveBlockView = React.memo(function GrooveBlockView({
           <div className="flex-shrink-0 py-2">{transportContent}</div>
           <div className="flex-shrink-0 text-center py-3">
             <p className="text-sm text-slate-400 italic">
-              &ldquo;See what I&apos;m playing. See where it is. Now you do it.&rdquo;
+              &ldquo;See what I&apos;m playing. See where it is. Now you do
+              it.&rdquo;
             </p>
-            <p className="text-xs text-white/60 font-medium mt-1">{grooveTitle}</p>
+            <p className="text-xs text-white/60 font-medium mt-1">
+              {grooveTitle}
+            </p>
           </div>
 
           {/* Finish button — shown when there's a next block */}

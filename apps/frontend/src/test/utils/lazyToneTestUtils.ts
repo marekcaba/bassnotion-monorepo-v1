@@ -22,7 +22,7 @@ import { getTone } from '@/domains/playback/utils/tone';
 export async function verifyLazyToneModule<T>(
   modulePath: string,
   importFn: () => Promise<T>,
-  verifyFn: (module: T, Tone: any) => Promise<void>
+  verifyFn: (module: T, Tone: any) => Promise<void>,
 ): Promise<{ success: boolean; error?: Error; timings: ModuleTimings }> {
   const timings: ModuleTimings = {
     importStart: 0,
@@ -115,7 +115,7 @@ export function createLazyToneTestSuite(
   tests: Array<{
     name: string;
     test: () => Promise<void>;
-  }>
+  }>,
 ) {
   describe(`Lazy Tone.js: ${suiteName}`, () => {
     let Tone: any;
@@ -143,7 +143,7 @@ export function createLazyToneTestSuite(
  */
 export async function quickVerifyExports(
   modulePath: string,
-  expectedExports: string[]
+  expectedExports: string[],
 ): Promise<{ valid: boolean; missing: string[]; found: string[] }> {
   const module = await import(modulePath);
   const found: string[] = [];
@@ -172,7 +172,7 @@ export async function batchVerifyLazyToneFiles(
     path: string;
     expectedExports: string[];
     customVerify?: (module: any, Tone: any) => Promise<void>;
-  }>
+  }>,
 ): Promise<BatchVerificationResult> {
   const results: FileVerificationResult[] = [];
   let passCount = 0;
@@ -184,7 +184,7 @@ export async function batchVerifyLazyToneFiles(
       // Verify exports
       const exportResult = await quickVerifyExports(
         file.path,
-        file.expectedExports
+        file.expectedExports,
       );
 
       if (!exportResult.valid) {
@@ -269,7 +269,7 @@ export function reportBatchVerification(result: BatchVerificationResult): void {
   console.log(
     `Total: ${result.summary.total} | ` +
       `Passed: ${result.summary.passed} | ` +
-      `Failed: ${result.summary.failed}`
+      `Failed: ${result.summary.failed}`,
   );
   console.log('========================================\n');
 }

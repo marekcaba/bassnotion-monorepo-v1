@@ -21,7 +21,9 @@ function getTone(): any {
       return tone;
     }
   }
-  throw new Error('ensureAudioContext: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+  throw new Error(
+    'ensureAudioContext: Tone.js not loaded. Ensure AudioEngine is initialized first.',
+  );
 }
 
 const logger = createStructuredLogger('ensureAudioContext');
@@ -101,7 +103,9 @@ export async function ensureAudioContext(): Promise<void> {
 
     // Only initialize services if explicitly needed (not for simple audio tests)
     // This was causing ALL instruments to load when just testing metronome
-    const shouldFullyInitialize = (window as { __ensureAudioContextFullInit?: boolean }).__ensureAudioContextFullInit;
+    const shouldFullyInitialize = (
+      window as { __ensureAudioContextFullInit?: boolean }
+    ).__ensureAudioContextFullInit;
 
     if (shouldFullyInitialize && !globalServices.isReady()) {
       logger.info(

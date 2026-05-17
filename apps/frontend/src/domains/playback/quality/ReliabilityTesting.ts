@@ -514,9 +514,7 @@ export class ReliabilityTesting {
       browserInfo: {
         userAgent: navigator.userAgent,
         platform:
-          navigator.userAgentData?.platform ||
-          navigator.platform ||
-          'unknown',
+          navigator.userAgentData?.platform || navigator.platform || 'unknown',
         language: navigator.language,
       },
     };

@@ -356,7 +356,10 @@ export class MidiTimeStretchProcessor {
 
     for (const event of track.events) {
       if (event.type === 'setTempo' && 'microsecondsPerQuarterNote' in event) {
-        const currentTempo = event as { microsecondsPerQuarterNote: number; bpm?: number };
+        const currentTempo = event as {
+          microsecondsPerQuarterNote: number;
+          bpm?: number;
+        };
         // Inverse relationship - slower playback needs faster tempo
         currentTempo.microsecondsPerQuarterNote = Math.round(
           currentTempo.microsecondsPerQuarterNote / factor,

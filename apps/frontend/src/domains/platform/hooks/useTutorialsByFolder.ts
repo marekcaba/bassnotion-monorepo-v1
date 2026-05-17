@@ -2,7 +2,10 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { useTutorials } from '@/domains/widgets/hooks/useTutorials';
-import { useTutorialProgress, type TutorialProgress } from './useTutorialProgress';
+import {
+  useTutorialProgress,
+  type TutorialProgress,
+} from './useTutorialProgress';
 import { PRODUCT_FOLDERS } from '../constants/product-folders';
 
 /** Block visible in the sidebar progress dots */
@@ -29,9 +32,13 @@ export interface TutorialItem {
 const BLOCK_PROGRESS_STORAGE_PREFIX = 'bassnotion-block-progress-';
 
 /** Read block progress from localStorage for a given tutorial */
-function readBlockProgressFromStorage(tutorialId: string): Record<string, { completed: boolean }> | undefined {
+function readBlockProgressFromStorage(
+  tutorialId: string,
+): Record<string, { completed: boolean }> | undefined {
   try {
-    const raw = localStorage.getItem(`${BLOCK_PROGRESS_STORAGE_PREFIX}${tutorialId}`);
+    const raw = localStorage.getItem(
+      `${BLOCK_PROGRESS_STORAGE_PREFIX}${tutorialId}`,
+    );
     if (!raw) return undefined;
     const parsed = JSON.parse(raw) as Record<string, { completed: boolean }>;
     return parsed;
@@ -74,8 +81,14 @@ export function useTutorialsByFolder() {
     window.addEventListener('tutorial-progress-updated', handleProgressUpdate);
     window.addEventListener('block-progress-updated', handleProgressUpdate);
     return () => {
-      window.removeEventListener('tutorial-progress-updated', handleProgressUpdate);
-      window.removeEventListener('block-progress-updated', handleProgressUpdate);
+      window.removeEventListener(
+        'tutorial-progress-updated',
+        handleProgressUpdate,
+      );
+      window.removeEventListener(
+        'block-progress-updated',
+        handleProgressUpdate,
+      );
     };
   }, []);
 
@@ -107,12 +120,15 @@ export function useTutorialsByFolder() {
             : undefined;
 
         // Read per-block completion from localStorage
-        const blockProgress = islandBlocks ? readBlockProgressFromStorage(t.id) : undefined;
+        const blockProgress = islandBlocks
+          ? readBlockProgressFromStorage(t.id)
+          : undefined;
 
         // isComplete: prefer block-based when blocks exist
-        const isComplete = islandBlocks && islandBlocks.length > 0
-          ? islandBlocks.every((b) => blockProgress?.[b.id]?.completed)
-          : progress.understood && progress.practiced && progress.applied;
+        const isComplete =
+          islandBlocks && islandBlocks.length > 0
+            ? islandBlocks.every((b) => blockProgress?.[b.id]?.completed)
+            : progress.understood && progress.practiced && progress.applied;
 
         grouped[folderId].push({
           slug: t.slug,
@@ -128,7 +144,7 @@ export function useTutorialsByFolder() {
     });
 
     return grouped;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tutorials, progressMap, updateTrigger]);
 
   return {

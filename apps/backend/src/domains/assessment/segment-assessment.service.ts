@@ -1,4 +1,9 @@
-import { Injectable, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { createStructuredLogger } from '@bassnotion/contracts';
 import type {
   SkillBucket,
@@ -52,7 +57,9 @@ export class SegmentAssessmentService {
    * Get the complete assessment flow graph
    */
   async getFlowGraph(): Promise<AssessmentFlowGraph> {
-    this.logger.debug('Getting flow graph', { correlationId: this.correlationId });
+    this.logger.debug('Getting flow graph', {
+      correlationId: this.correlationId,
+    });
     return this.segmentRepository.getFlowGraph();
   }
 
@@ -99,9 +106,18 @@ export class SegmentAssessmentService {
 
     // Find first matching edge
     for (const edge of sortedEdges) {
-      if (this.evaluateEdgeCondition(edge, answers, determinedBucket, skillCheckPassed)) {
+      if (
+        this.evaluateEdgeCondition(
+          edge,
+          answers,
+          determinedBucket,
+          skillCheckPassed,
+        )
+      ) {
         // Get the target node
-        const targetNode = await this.segmentRepository.getFlowNodeById(edge.toNodeId);
+        const targetNode = await this.segmentRepository.getFlowNodeById(
+          edge.toNodeId,
+        );
         if (targetNode) {
           return targetNode;
         }
@@ -194,15 +210,24 @@ export class SegmentAssessmentService {
   async createSegment(
     segment: Omit<VideoSegment, 'id' | 'createdAt' | 'updatedAt'>,
   ): Promise<VideoSegment> {
-    this.logger.info('Creating segment', { name: segment.name, correlationId: this.correlationId });
+    this.logger.info('Creating segment', {
+      name: segment.name,
+      correlationId: this.correlationId,
+    });
     return this.segmentRepository.createSegment(segment);
   }
 
   /**
    * Update a segment (admin)
    */
-  async updateSegment(id: string, updates: Partial<VideoSegment>): Promise<VideoSegment> {
-    this.logger.info('Updating segment', { id, correlationId: this.correlationId });
+  async updateSegment(
+    id: string,
+    updates: Partial<VideoSegment>,
+  ): Promise<VideoSegment> {
+    this.logger.info('Updating segment', {
+      id,
+      correlationId: this.correlationId,
+    });
     return this.segmentRepository.updateSegment(id, updates);
   }
 
@@ -210,7 +235,10 @@ export class SegmentAssessmentService {
    * Delete a segment (admin)
    */
   async deleteSegment(id: string): Promise<void> {
-    this.logger.info('Deleting segment', { id, correlationId: this.correlationId });
+    this.logger.info('Deleting segment', {
+      id,
+      correlationId: this.correlationId,
+    });
     await this.segmentRepository.deleteSegment(id);
   }
 
@@ -246,7 +274,9 @@ export class SegmentAssessmentService {
     const question = await this.getQuestionByKey(questionKey);
 
     if (question.questionType !== 'skill-verification') {
-      throw new BadRequestException('Question is not a skill verification type');
+      throw new BadRequestException(
+        'Question is not a skill verification type',
+      );
     }
 
     const config = question.verificationConfig;
@@ -264,16 +294,27 @@ export class SegmentAssessmentService {
   /**
    * Create a question (admin)
    */
-  async createQuestion(question: Omit<SegmentQuestion, 'id'>): Promise<SegmentQuestion> {
-    this.logger.info('Creating question', { questionKey: question.questionKey, correlationId: this.correlationId });
+  async createQuestion(
+    question: Omit<SegmentQuestion, 'id'>,
+  ): Promise<SegmentQuestion> {
+    this.logger.info('Creating question', {
+      questionKey: question.questionKey,
+      correlationId: this.correlationId,
+    });
     return this.segmentRepository.createQuestion(question);
   }
 
   /**
    * Update a question (admin)
    */
-  async updateQuestion(id: string, updates: Partial<SegmentQuestion>): Promise<SegmentQuestion> {
-    this.logger.info('Updating question', { id, correlationId: this.correlationId });
+  async updateQuestion(
+    id: string,
+    updates: Partial<SegmentQuestion>,
+  ): Promise<SegmentQuestion> {
+    this.logger.info('Updating question', {
+      id,
+      correlationId: this.correlationId,
+    });
     return this.segmentRepository.updateQuestion(id, updates);
   }
 
@@ -281,7 +322,10 @@ export class SegmentAssessmentService {
    * Delete a question (admin)
    */
   async deleteQuestion(id: string): Promise<void> {
-    this.logger.info('Deleting question', { id, correlationId: this.correlationId });
+    this.logger.info('Deleting question', {
+      id,
+      correlationId: this.correlationId,
+    });
     await this.segmentRepository.deleteQuestion(id);
   }
 
@@ -377,7 +421,9 @@ export class SegmentAssessmentService {
     );
 
     if (!insight) {
-      throw new NotFoundException(`No coach insight found for bucket: ${bucket}`);
+      throw new NotFoundException(
+        `No coach insight found for bucket: ${bucket}`,
+      );
     }
 
     return insight;
@@ -403,7 +449,10 @@ export class SegmentAssessmentService {
     id: string,
     updates: Partial<CoachInsightTemplate>,
   ): Promise<CoachInsightTemplate> {
-    this.logger.info('Updating insight template', { id, correlationId: this.correlationId });
+    this.logger.info('Updating insight template', {
+      id,
+      correlationId: this.correlationId,
+    });
     return this.segmentRepository.updateInsightTemplate(id, updates);
   }
 
@@ -411,7 +460,10 @@ export class SegmentAssessmentService {
    * Delete an insight template (admin)
    */
   async deleteInsightTemplate(id: string): Promise<void> {
-    this.logger.info('Deleting insight template', { id, correlationId: this.correlationId });
+    this.logger.info('Deleting insight template', {
+      id,
+      correlationId: this.correlationId,
+    });
     await this.segmentRepository.deleteInsightTemplate(id);
   }
 
@@ -423,7 +475,10 @@ export class SegmentAssessmentService {
    * Create a new assessment session
    */
   async createSession(userId?: string): Promise<AssessmentSession> {
-    this.logger.info('Creating assessment session', { userId, correlationId: this.correlationId });
+    this.logger.info('Creating assessment session', {
+      userId,
+      correlationId: this.correlationId,
+    });
     return this.segmentRepository.createSession(userId);
   }
 
@@ -460,7 +515,10 @@ export class SegmentAssessmentService {
       skillCheckScore?: number;
     },
   ): Promise<AssessmentSession> {
-    this.logger.debug('Updating session', { sessionId, correlationId: this.correlationId });
+    this.logger.debug('Updating session', {
+      sessionId,
+      correlationId: this.correlationId,
+    });
     return this.segmentRepository.updateSession(sessionId, updates);
   }
 
@@ -491,7 +549,12 @@ export class SegmentAssessmentService {
     const practiceTime = answers.practice_time as string | undefined;
 
     // Find matching coach insight
-    const coachInsight = await this.findMatchingInsight(bucket, goal, struggle, practiceTime);
+    const coachInsight = await this.findMatchingInsight(
+      bucket,
+      goal,
+      struggle,
+      practiceTime,
+    );
 
     // Mark session as complete
     await this.segmentRepository.completeSession(sessionId);
@@ -533,7 +596,9 @@ export class SegmentAssessmentService {
   /**
    * Convert bucket to legacy skill level
    */
-  private bucketToSkillLevel(bucket: SkillBucket): 'beginner' | 'intermediate' | 'advanced' {
+  private bucketToSkillLevel(
+    bucket: SkillBucket,
+  ): 'beginner' | 'intermediate' | 'advanced' {
     switch (bucket) {
       case 'true_beginner':
       case 'solid_beginner':
@@ -555,18 +620,26 @@ export class SegmentAssessmentService {
     bucket: SkillBucket,
     goal?: string,
   ): Promise<string | null> {
-    this.logger.debug('Assigning journey', { userId, bucket, goal, correlationId: this.correlationId });
+    this.logger.debug('Assigning journey', {
+      userId,
+      bucket,
+      goal,
+      correlationId: this.correlationId,
+    });
 
     try {
       // Get all active journeys
-      const { data: journeys, error: journeysError } = await this.supabaseService
-        .getClient()
-        .from('learning_journeys')
-        .select('*')
-        .eq('is_active', true);
+      const { data: journeys, error: journeysError } =
+        await this.supabaseService
+          .getClient()
+          .from('learning_journeys')
+          .select('*')
+          .eq('is_active', true);
 
       if (journeysError || !journeys || journeys.length === 0) {
-        this.logger.warn('No active journeys found', { correlationId: this.correlationId });
+        this.logger.warn('No active journeys found', {
+          correlationId: this.correlationId,
+        });
         return null;
       }
 
@@ -582,8 +655,10 @@ export class SegmentAssessmentService {
         if (journey.target_skill_level === skillLevel) {
           score += 40;
         } else if (
-          (journey.target_skill_level === 'beginner' && skillLevel === 'intermediate') ||
-          (journey.target_skill_level === 'intermediate' && skillLevel === 'beginner')
+          (journey.target_skill_level === 'beginner' &&
+            skillLevel === 'intermediate') ||
+          (journey.target_skill_level === 'intermediate' &&
+            skillLevel === 'beginner')
         ) {
           score += 20; // Adjacent level
         }
@@ -622,20 +697,21 @@ export class SegmentAssessmentService {
           .eq('user_id', userId);
       } else {
         // Insert new
-        await this.supabaseService
-          .getClient()
-          .from('user_journeys')
-          .insert({
-            user_id: userId,
-            journey_id: bestJourney.id,
-            status: 'active',
-            current_milestone_index: 0,
-          });
+        await this.supabaseService.getClient().from('user_journeys').insert({
+          user_id: userId,
+          journey_id: bestJourney.id,
+          status: 'active',
+          current_milestone_index: 0,
+        });
       }
 
       return bestJourney.id;
     } catch (error) {
-      this.logger.error('Failed to assign journey', error instanceof Error ? error : undefined, { userId, correlationId: this.correlationId });
+      this.logger.error(
+        'Failed to assign journey',
+        error instanceof Error ? error : undefined,
+        { userId, correlationId: this.correlationId },
+      );
       return null;
     }
   }
@@ -648,15 +724,24 @@ export class SegmentAssessmentService {
    * Create a flow node (admin)
    */
   async createFlowNode(node: Omit<FlowNode, 'id'>): Promise<FlowNode> {
-    this.logger.info('Creating flow node', { nodeId: node.nodeId, correlationId: this.correlationId });
+    this.logger.info('Creating flow node', {
+      nodeId: node.nodeId,
+      correlationId: this.correlationId,
+    });
     return this.segmentRepository.createFlowNode(node);
   }
 
   /**
    * Update a flow node (admin)
    */
-  async updateFlowNode(id: string, updates: Partial<FlowNode>): Promise<FlowNode> {
-    this.logger.info('Updating flow node', { id, correlationId: this.correlationId });
+  async updateFlowNode(
+    id: string,
+    updates: Partial<FlowNode>,
+  ): Promise<FlowNode> {
+    this.logger.info('Updating flow node', {
+      id,
+      correlationId: this.correlationId,
+    });
     return this.segmentRepository.updateFlowNode(id, updates);
   }
 
@@ -664,7 +749,10 @@ export class SegmentAssessmentService {
    * Delete a flow node (admin)
    */
   async deleteFlowNode(id: string): Promise<void> {
-    this.logger.info('Deleting flow node', { id, correlationId: this.correlationId });
+    this.logger.info('Deleting flow node', {
+      id,
+      correlationId: this.correlationId,
+    });
     await this.segmentRepository.deleteFlowNode(id);
   }
 
@@ -684,14 +772,20 @@ export class SegmentAssessmentService {
    * Delete a flow edge (admin)
    */
   async deleteFlowEdge(id: string): Promise<void> {
-    this.logger.info('Deleting flow edge', { id, correlationId: this.correlationId });
+    this.logger.info('Deleting flow edge', {
+      id,
+      correlationId: this.correlationId,
+    });
     await this.segmentRepository.deleteFlowEdge(id);
   }
 
   /**
    * Bulk save flow graph (admin) - used by flow editor
    */
-  async saveFlowGraph(nodes: FlowNode[], edges: FlowEdge[]): Promise<AssessmentFlowGraph> {
+  async saveFlowGraph(
+    nodes: FlowNode[],
+    edges: FlowEdge[],
+  ): Promise<AssessmentFlowGraph> {
     this.logger.info('Saving flow graph', {
       nodeCount: nodes.length,
       edgeCount: edges.length,
@@ -701,14 +795,18 @@ export class SegmentAssessmentService {
     // Validate graph has exactly one entry point
     const entryNodes = nodes.filter((n) => n.isEntryPoint);
     if (entryNodes.length !== 1) {
-      throw new BadRequestException('Flow graph must have exactly one entry point');
+      throw new BadRequestException(
+        'Flow graph must have exactly one entry point',
+      );
     }
 
     // Validate all edge references exist
     const nodeIds = new Set(nodes.map((n) => n.id));
     for (const edge of edges) {
       if (!nodeIds.has(edge.fromNodeId) || !nodeIds.has(edge.toNodeId)) {
-        throw new BadRequestException(`Edge references non-existent node: ${edge.fromNodeId} -> ${edge.toNodeId}`);
+        throw new BadRequestException(
+          `Edge references non-existent node: ${edge.fromNodeId} -> ${edge.toNodeId}`,
+        );
       }
     }
 
@@ -718,11 +816,16 @@ export class SegmentAssessmentService {
     const incomingNodeIds = new Set(nodes.map((n) => n.id));
 
     // Find nodes to delete (exist in DB but not in incoming list)
-    const nodesToDelete = [...existingNodeIds].filter((id) => !incomingNodeIds.has(id));
+    const nodesToDelete = [...existingNodeIds].filter(
+      (id) => !incomingNodeIds.has(id),
+    );
 
     // Delete removed nodes (this will cascade delete their edges too)
     for (const nodeId of nodesToDelete) {
-      this.logger.info('Deleting removed flow node', { nodeId, correlationId: this.correlationId });
+      this.logger.info('Deleting removed flow node', {
+        nodeId,
+        correlationId: this.correlationId,
+      });
       await this.segmentRepository.deleteFlowNode(nodeId);
     }
 

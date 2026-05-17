@@ -16,9 +16,7 @@ import type { Exercise } from '@bassnotion/contracts';
 import { getLogger } from '@/utils/logger.js';
 import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
 import { lifecycle } from '@/domains/playback/utils/InitializationLifecycleLogger.js';
-import {
-  withAudioContext,
-} from '@/domains/playback/utils/ensureAudioContext';
+import { withAudioContext } from '@/domains/playback/utils/ensureAudioContext';
 import type { WamPluginInstance } from '../types.js';
 
 const logger = getLogger('useDrumPlugin');
@@ -83,9 +81,8 @@ export function useDrumPlugin(
       lifecycle.checkpoint('DRUMMER_PLUGIN_LOADING');
 
       try {
-        const { default: WamDrummer } = await import(
-          '@/domains/playback/modules/instruments/adapters/wam/WamDrummer'
-        );
+        const { default: WamDrummer } =
+          await import('@/domains/playback/modules/instruments/adapters/wam/WamDrummer');
         wamPluginClassRef.current = WamDrummer;
         setPluginClassLoaded(true);
         logger.debug('WAM Drummer plugin class loaded successfully');
@@ -151,7 +148,9 @@ export function useDrumPlugin(
           });
 
           if (context.state === 'suspended') {
-            logger.debug('AudioContext is suspended, waiting for user gesture...');
+            logger.debug(
+              'AudioContext is suspended, waiting for user gesture...',
+            );
             lifecycle.checkpoint('PLUGIN_CREATION_BLOCKED', {
               widget: 'drummer',
               reason: 'AudioContext suspended',
@@ -172,9 +171,8 @@ export function useDrumPlugin(
 
           // Connect to master bus for proper mixing
           try {
-            const { Mixer } = await import(
-              '@/domains/playback/modules/tracks/mixing/Mixer.js'
-            );
+            const { Mixer } =
+              await import('@/domains/playback/modules/tracks/mixing/Mixer.js');
             const mixer = Mixer.getInstance();
             const masterBusInput = mixer.getMasterBusInputAsAudioNode();
             if (masterBusInput) {
@@ -275,7 +273,10 @@ export function useDrumPlugin(
 
     return () => {
       window.removeEventListener('audioServicesReady', handleAudioReady);
-      window.removeEventListener('audioContextStarted', handleAudioContextStarted);
+      window.removeEventListener(
+        'audioContextStarted',
+        handleAudioContextStarted,
+      );
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current);
       }
@@ -295,12 +296,17 @@ export function useDrumPlugin(
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      const globalServices = window.__globalCoreServices || window.__coreServices;
+      const globalServices =
+        window.__globalCoreServices || window.__coreServices;
       if (globalServices && globalServices.getInstrumentRegistry) {
         const instrumentRegistry = globalServices.getInstrumentRegistry();
-        if (instrumentRegistry.getActive('drums') === drummerPluginRef.current) {
+        if (
+          instrumentRegistry.getActive('drums') === drummerPluginRef.current
+        ) {
           instrumentRegistry.removeActive('drums');
-          logger.debug('Removed WAM Drummer from InstrumentRegistry on unmount');
+          logger.debug(
+            'Removed WAM Drummer from InstrumentRegistry on unmount',
+          );
         }
       }
     };
@@ -327,7 +333,9 @@ export function useDrumPlugin(
           logger.debug('Triggering pad:', padNum);
           audioNode.triggerPad(padNum, 0.8);
         } else {
-          logger.warn('Cannot trigger pad - audio node has no triggerPad method');
+          logger.warn(
+            'Cannot trigger pad - audio node has no triggerPad method',
+          );
         }
       } else {
         logger.warn('Cannot trigger pad - plugin not ready', {

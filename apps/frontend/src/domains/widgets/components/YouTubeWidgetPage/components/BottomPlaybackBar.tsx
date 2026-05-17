@@ -59,18 +59,23 @@ export const BottomPlaybackBar = React.memo(function BottomPlaybackBar({
   }, [selectedExercise]);
 
   // Calculate duration from exercise data
-  const duration = useMemo(() => calculateDuration(selectedExercise), [selectedExercise]);
+  const duration = useMemo(
+    () => calculateDuration(selectedExercise),
+    [selectedExercise],
+  );
 
   // Wrapped play state change handler that tracks practice completions
   const handlePlayStateChangeWithTracking = useCallback(
     (isPlaying: boolean) => {
       if (isPlaying && selectedExerciseId) {
-        logger.info(`Practice completion tracked for exercise ${selectedExerciseId}`);
+        logger.info(
+          `Practice completion tracked for exercise ${selectedExerciseId}`,
+        );
         onPracticeCompletion?.(selectedExerciseId);
       }
       onPlayStateChange?.(isPlaying);
     },
-    [selectedExerciseId, onPlayStateChange, onPracticeCompletion]
+    [selectedExerciseId, onPlayStateChange, onPracticeCompletion],
   );
 
   return (

@@ -282,7 +282,11 @@ describe('HarmonyWidget Exercise Switching', () => {
 
     it('should use current exercise from ref, not stale closure value', async () => {
       const wurlitzerExercise = createMockExercise('ex1', 'JOO', 'wurlitzer');
-      const grandpianoExercise = createMockExercise('ex2', 'NEEE', 'grandpiano');
+      const grandpianoExercise = createMockExercise(
+        'ex2',
+        'NEEE',
+        'grandpiano',
+      );
 
       const { rerender } = render(
         <HarmonyWidget {...defaultProps} exercise={wurlitzerExercise} />,
@@ -293,14 +297,18 @@ describe('HarmonyWidget Exercise Switching', () => {
       });
 
       // Switch to grandpiano exercise
-      rerender(<HarmonyWidget {...defaultProps} exercise={grandpianoExercise} />);
+      rerender(
+        <HarmonyWidget {...defaultProps} exercise={grandpianoExercise} />,
+      );
 
       await act(async () => {
         vi.advanceTimersByTime(500);
       });
 
       // Switch BACK to wurlitzer exercise
-      rerender(<HarmonyWidget {...defaultProps} exercise={wurlitzerExercise} />);
+      rerender(
+        <HarmonyWidget {...defaultProps} exercise={wurlitzerExercise} />,
+      );
 
       await act(async () => {
         vi.advanceTimersByTime(500);
@@ -411,8 +419,16 @@ describe('HarmonyWidget Exercise Switching', () => {
   // ==========================================================================
   describe('Exercise Change Detection', () => {
     it('should detect exercise change by ID', async () => {
-      const ex1 = createMockExercise('exercise-id-1', 'Exercise 1', 'wurlitzer');
-      const ex2 = createMockExercise('exercise-id-2', 'Exercise 2', 'grandpiano');
+      const ex1 = createMockExercise(
+        'exercise-id-1',
+        'Exercise 1',
+        'wurlitzer',
+      );
+      const ex2 = createMockExercise(
+        'exercise-id-2',
+        'Exercise 2',
+        'grandpiano',
+      );
 
       const { rerender } = render(
         <HarmonyWidget {...defaultProps} exercise={ex1} />,
@@ -576,7 +592,7 @@ describe('HarmonyWidget Registration Race Condition', () => {
 
   it('should verify exerciseRef pattern prevents stale closure', () => {
     // Simulate the ref pattern
-    let exerciseRef = { current: { harmonyInstrument: 'wurlitzer' } };
+    const exerciseRef = { current: { harmonyInstrument: 'wurlitzer' } };
 
     // Create a callback that captures the ref (not the value)
     const callback = () => {
@@ -728,8 +744,18 @@ describe('HarmonyWidget Exercise Switching Cleanup', () => {
     it('should verify CC64 events are included in track registration', () => {
       // Simulate the control change mapping
       const harmonyControlChanges = [
-        { cc: 64, value: 127, ticks: 0, position: { measure: 0, beat: 0, subdivision: 0, tick: 0 } },
-        { cc: 64, value: 0, ticks: 960, position: { measure: 0, beat: 2, subdivision: 0, tick: 0 } },
+        {
+          cc: 64,
+          value: 127,
+          ticks: 0,
+          position: { measure: 0, beat: 0, subdivision: 0, tick: 0 },
+        },
+        {
+          cc: 64,
+          value: 0,
+          ticks: 960,
+          position: { measure: 0, beat: 2, subdivision: 0, tick: 0 },
+        },
       ];
 
       const controlChangeEvents = harmonyControlChanges.map((cc) => ({
@@ -787,15 +813,27 @@ describe('HarmonyWidget Exercise Switching Cleanup', () => {
         },
       ],
       harmonyControlChanges: [
-        { cc: 64, value: 127, ticks: 0, position: { measure: 0, beat: 0, subdivision: 0, tick: 0 } },
+        {
+          cc: 64,
+          value: 127,
+          ticks: 0,
+          position: { measure: 0, beat: 0, subdivision: 0, tick: 0 },
+        },
       ],
       bpm: 120,
       durationBeats: 8,
     });
 
     it('should correctly identify exercise without harmony notes', () => {
-      const exerciseWithHarmony = createExerciseWithHarmony('ex1', 'Has Harmony', 'grandpiano');
-      const exerciseWithoutHarmony = createExerciseWithoutHarmony('ex2', 'No Harmony');
+      const exerciseWithHarmony = createExerciseWithHarmony(
+        'ex1',
+        'Has Harmony',
+        'grandpiano',
+      );
+      const exerciseWithoutHarmony = createExerciseWithoutHarmony(
+        'ex2',
+        'No Harmony',
+      );
 
       expect(exerciseWithHarmony.harmonyNotes.length).toBeGreaterThan(0);
       expect(exerciseWithoutHarmony.harmonyNotes.length).toBe(0);
@@ -803,16 +841,29 @@ describe('HarmonyWidget Exercise Switching Cleanup', () => {
 
     it('should trigger cleanup when harmonyNoteCount becomes 0', () => {
       // Simulate the useEffect condition
-      const shouldClearHarmony = (harmonyNoteCount: number, exerciseId: string | undefined) => {
+      const shouldClearHarmony = (
+        harmonyNoteCount: number,
+        exerciseId: string | undefined,
+      ) => {
         return harmonyNoteCount === 0 && !!exerciseId;
       };
 
-      const exerciseWithHarmony = createExerciseWithHarmony('ex1', 'Has Harmony', 'grandpiano');
-      const exerciseWithoutHarmony = createExerciseWithoutHarmony('ex2', 'No Harmony');
+      const exerciseWithHarmony = createExerciseWithHarmony(
+        'ex1',
+        'Has Harmony',
+        'grandpiano',
+      );
+      const exerciseWithoutHarmony = createExerciseWithoutHarmony(
+        'ex2',
+        'No Harmony',
+      );
 
       // Exercise with harmony: should NOT clear
       expect(
-        shouldClearHarmony(exerciseWithHarmony.harmonyNotes.length, exerciseWithHarmony.id.value),
+        shouldClearHarmony(
+          exerciseWithHarmony.harmonyNotes.length,
+          exerciseWithHarmony.id.value,
+        ),
       ).toBe(false);
 
       // Exercise without harmony: SHOULD clear
@@ -825,15 +876,26 @@ describe('HarmonyWidget Exercise Switching Cleanup', () => {
     });
 
     it('should handle rapid switching between exercises with and without harmony', () => {
-      const ex1 = createExerciseWithHarmony('ex1', 'Gospel Groove', 'grandpiano');
+      const ex1 = createExerciseWithHarmony(
+        'ex1',
+        'Gospel Groove',
+        'grandpiano',
+      );
       const ex2 = createExerciseWithoutHarmony('ex2', 'Pentatonic Drums Only');
-      const ex3 = createExerciseWithHarmony('ex3', 'Jazz Standard', 'wurlitzer');
+      const ex3 = createExerciseWithHarmony(
+        'ex3',
+        'Jazz Standard',
+        'wurlitzer',
+      );
 
       // Track registration state resets
       let registrationResetCount = 0;
       let previousId: string | null = null;
 
-      const simulateSwitch = (exercise: { id: { value: string }; harmonyNotes: any[] }) => {
+      const simulateSwitch = (exercise: {
+        id: { value: string };
+        harmonyNotes: any[];
+      }) => {
         if (previousId !== null && previousId !== exercise.id.value) {
           registrationResetCount++;
         }
@@ -859,7 +921,10 @@ describe('HarmonyWidget Exercise Switching Cleanup', () => {
   describe('Registration State Management', () => {
     it('should verify registration key pattern includes samplesLoadedTrigger', () => {
       // The registration key format
-      const buildRegistrationKey = (exerciseId: string | undefined, samplesLoadedTrigger: number) => {
+      const buildRegistrationKey = (
+        exerciseId: string | undefined,
+        samplesLoadedTrigger: number,
+      ) => {
         return `${exerciseId}-${samplesLoadedTrigger}`;
       };
 
@@ -985,7 +1050,9 @@ describe('HarmonyWidget Exercise Switching Cleanup', () => {
 
       // Verify structure
       expect(controlChangeEvents).toHaveLength(4);
-      expect(controlChangeEvents.every((e) => e.type === 'harmony-control-change')).toBe(true);
+      expect(
+        controlChangeEvents.every((e) => e.type === 'harmony-control-change'),
+      ).toBe(true);
       expect(controlChangeEvents.every((e) => e.data.cc === 64)).toBe(true);
 
       // Verify sustain state transitions
@@ -998,7 +1065,10 @@ describe('HarmonyWidget Exercise Switching Cleanup', () => {
     it('should verify CC64 timeline is built from control change events', () => {
       // Simulate buildCC64Timeline behavior
       const buildCC64Timeline = (
-        events: Array<{ type: string; data: { cc: number; value: number; ticks: number } }>,
+        events: Array<{
+          type: string;
+          data: { cc: number; value: number; ticks: number };
+        }>,
         bpm: number,
         ppq: number = 480,
       ): Map<number, boolean> => {
@@ -1079,7 +1149,10 @@ describe('HarmonyWidget Exercise Switching Cleanup', () => {
 
       // Step 1: Register Exercise 1 (with CC64)
       registrationState = 'exercise-1-1';
-      timeline = new Map([[0, true], [1, false]]);
+      timeline = new Map([
+        [0, true],
+        [1, false],
+      ]);
       expect(timeline.size).toBe(2);
 
       // Step 2: Switch to Exercise 2 (drums only)
@@ -1099,7 +1172,10 @@ describe('HarmonyWidget Exercise Switching Cleanup', () => {
 
       // After registration
       registrationState = newRegistrationKey;
-      timeline = new Map([[0, true], [1, false]]); // Rebuilt timeline
+      timeline = new Map([
+        [0, true],
+        [1, false],
+      ]); // Rebuilt timeline
 
       expect(timeline.size).toBe(2);
       expect(timeline.get(0)).toBe(true);
@@ -1203,7 +1279,8 @@ describe('HarmonyWidget Exercise Switching Cleanup', () => {
         return { switchToExercise2, switchBackToExercise1 };
       };
 
-      const { switchToExercise2, switchBackToExercise1 } = simulateExerciseSwitch();
+      const { switchToExercise2, switchBackToExercise1 } =
+        simulateExerciseSwitch();
 
       // Step 2
       const result2 = switchToExercise2();

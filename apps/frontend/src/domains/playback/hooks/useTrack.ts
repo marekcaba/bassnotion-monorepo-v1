@@ -274,7 +274,10 @@ export function useTrack(options: UseTrackOptions): UseTrackReturn {
               'transport:tempo-change',
               (data: { tempo?: number; bpm?: number } | number) => {
                 // Handle both formats: { tempo: number } or just a number
-                const newTempo = typeof data === 'number' ? data : (data.tempo ?? data.bpm ?? 120);
+                const newTempo =
+                  typeof data === 'number'
+                    ? data
+                    : (data.tempo ?? data.bpm ?? 120);
                 setTempo(newTempo);
               },
             ),
@@ -284,7 +287,8 @@ export function useTrack(options: UseTrackOptions): UseTrackReturn {
               'transport:position-updated',
               (data: { position: any; seconds?: number }) => {
                 // Convert seconds to milliseconds for currentTime
-                const timeMs = (data.seconds ?? data.position?.seconds ?? 0) * 1000;
+                const timeMs =
+                  (data.seconds ?? data.position?.seconds ?? 0) * 1000;
                 // DEBUG: Disabled - was causing 416+ log entries per session
                 // if (Math.random() < 0.05) { // 5% sampling
                 //   console.log(`[USETRACK-TIME-DEBUG] trackId=${trackId}, seconds=${data.seconds?.toFixed(3)}, timeMs=${timeMs.toFixed(0)}`);
@@ -463,7 +467,9 @@ export function useTrack(options: UseTrackOptions): UseTrackReturn {
         trackId: track.id,
         name: config?.name || `${pattern.id} Region`,
         startPosition: config?.startPosition || '0:0:0',
-        duration: config?.duration || `${'loopLength' in pattern ? pattern.loopLength : 1}:0:0`,
+        duration:
+          config?.duration ||
+          `${'loopLength' in pattern ? pattern.loopLength : 1}:0:0`,
         pattern,
         loopCount: config?.loopCount ?? 0,
         muted: config?.muted || false,

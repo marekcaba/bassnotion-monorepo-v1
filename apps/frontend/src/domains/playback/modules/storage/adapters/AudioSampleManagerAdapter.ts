@@ -164,7 +164,8 @@ export class AudioSampleManagerAdapter {
     try {
       // Initialize AudioContext
       if (typeof window !== 'undefined' && !this.audioContext) {
-        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        const AudioContextClass =
+          window.AudioContext || window.webkitAudioContext;
         if (AudioContextClass) {
           this.audioContext = new AudioContextClass();
         }

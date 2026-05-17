@@ -25,7 +25,10 @@ import { lifecycle } from '@/domains/playback/utils/InitializationLifecycleLogge
 import type { HarmonyWidgetProps, HarmonyExercise } from './types.js';
 import { useVolumeControl } from './hooks/useVolumeControl.js';
 import { useHarmonyInstrument } from './hooks/useHarmonyInstrument.js';
-import { useChordProgression, CHORD_PROGRESSIONS } from './hooks/useChordProgression.js';
+import {
+  useChordProgression,
+  CHORD_PROGRESSIONS,
+} from './hooks/useChordProgression.js';
 import { useHarmonyPlugin } from './hooks/useHarmonyPlugin.js';
 import { useSampleLoadingSync } from './hooks/useSampleLoadingSync.js';
 import { useHarmonyRegistration } from './hooks/useHarmonyRegistration.js';
@@ -101,7 +104,7 @@ const HarmonyWidgetComponent = ({
   const { beatIndex, measureIndex, isCountdown } = useVisualBeat(
     4,
     isPlaying,
-    isVisible
+    isVisible,
   );
 
   // Direct DOM chord synchronization
@@ -119,12 +122,13 @@ const HarmonyWidgetComponent = ({
   });
 
   // Volume control hook
-  const { volume, isMuted, handleVolumeChange, handleMuteToggle } = useVolumeControl({
-    controlledVolume,
-    controlledMuted,
-    onVolumeChange,
-    onMuteToggle,
-  });
+  const { volume, isMuted, handleVolumeChange, handleMuteToggle } =
+    useVolumeControl({
+      controlledVolume,
+      controlledMuted,
+      onVolumeChange,
+      onMuteToggle,
+    });
 
   // Instrument hook
   const {
@@ -174,23 +178,24 @@ const HarmonyWidgetComponent = ({
   });
 
   // Registration hook
-  const { registerHarmonyWithPlaybackEngine, scheduleProgression } = useHarmonyRegistration({
-    exercise: exercise as HarmonyExercise,
-    exerciseRef: exerciseRef as React.RefObject<HarmonyExercise | undefined>,
-    keyboardPluginRef,
-    currentInstrument,
-    setCurrentInstrument,
-    trackIsReady,
-    wamPluginLoaded,
-    samplesLoadedTrigger,
-    isPlaying,
-    isPlayingRef,
-    harmonyNoteCount,
-    volume,
-    isMuted,
-    selectedProgression,
-    onNextChord,
-  });
+  const { registerHarmonyWithPlaybackEngine, scheduleProgression } =
+    useHarmonyRegistration({
+      exercise: exercise as HarmonyExercise,
+      exerciseRef: exerciseRef as React.RefObject<HarmonyExercise | undefined>,
+      keyboardPluginRef,
+      currentInstrument,
+      setCurrentInstrument,
+      trackIsReady,
+      wamPluginLoaded,
+      samplesLoadedTrigger,
+      isPlaying,
+      isPlayingRef,
+      harmonyNoteCount,
+      volume,
+      isMuted,
+      selectedProgression,
+      onNextChord,
+    });
 
   // Pattern selector for library
   const patternSelector = tutorialId
@@ -288,10 +293,16 @@ const HarmonyWidgetComponent = ({
                       {tutorialId && (
                         <PatternLibraryButton
                           isOpen={showPatternLibrary}
-                          onToggle={() => setShowPatternLibrary(!showPatternLibrary)}
+                          onToggle={() =>
+                            setShowPatternLibrary(!showPatternLibrary)
+                          }
                           isLoading={patternSelector?.isLoading ?? false}
-                          patterns={patternSelector?.availableHarmonyPatterns ?? []}
-                          selectedPattern={patternSelector?.selectedHarmonyPattern}
+                          patterns={
+                            patternSelector?.availableHarmonyPatterns ?? []
+                          }
+                          selectedPattern={
+                            patternSelector?.selectedHarmonyPattern
+                          }
                           onPatternSelect={(p) => {
                             patternSelector?.selectHarmonyPattern(p);
                             handlePatternLibraryChange(p);

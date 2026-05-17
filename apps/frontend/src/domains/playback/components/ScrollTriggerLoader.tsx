@@ -93,9 +93,13 @@ export function ScrollTriggerLoader({
           logger.info(
             `[2/3] Loading samples for all ${exercises.length} exercises in tutorial...`,
           );
-          lifecycle.checkpoint('TUTORIAL_SAMPLES_START', { exerciseCount: exercises.length });
+          lifecycle.checkpoint('TUTORIAL_SAMPLES_START', {
+            exerciseCount: exercises.length,
+          });
           await preloader.loadTutorialSamples(exercises, tutorialId);
-          lifecycle.checkpoint('TUTORIAL_SAMPLES_COMPLETE', { exerciseCount: exercises.length });
+          lifecycle.checkpoint('TUTORIAL_SAMPLES_COMPLETE', {
+            exerciseCount: exercises.length,
+          });
           logger.info('✅ All tutorial samples loaded');
         } else {
           // Fallback: Load only essential samples
@@ -132,7 +136,9 @@ export function ScrollTriggerLoader({
         //
         // This gives near-instant playback on first click.
 
-        logger.info('✅ Initialization sequence complete (AudioContext deferred to play click)');
+        logger.info(
+          '✅ Initialization sequence complete (AudioContext deferred to play click)',
+        );
       } catch (error) {
         logger.error('❌ Failed to initialize:', error);
         // ✅ BUG #8 FIX: Mark initialization as failed using WindowRegistry

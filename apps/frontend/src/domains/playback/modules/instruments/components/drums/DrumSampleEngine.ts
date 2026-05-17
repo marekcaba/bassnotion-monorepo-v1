@@ -21,7 +21,9 @@ function getTone(): typeof import('tone') {
       return tone as typeof import('tone');
     }
   }
-  throw new Error('DrumSampleEngine: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+  throw new Error(
+    'DrumSampleEngine: Tone.js not loaded. Ensure AudioEngine is initialized first.',
+  );
 }
 
 const logger = createStructuredLogger('DrumSampleEngine');

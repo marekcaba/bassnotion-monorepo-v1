@@ -18,10 +18,14 @@ export async function likeExercise(
   token: string,
   correlationId?: string,
 ): Promise<ExerciseLikeStatusResponse> {
-  return apiClient.post(`/api/exercises/${exerciseId}/like`, {}, {
-    correlationId,
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  return apiClient.post(
+    `/api/exercises/${exerciseId}/like`,
+    {},
+    {
+      correlationId,
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
 }
 
 /**
@@ -46,10 +50,14 @@ export async function toggleLike(
   token: string,
   correlationId?: string,
 ): Promise<ExerciseLikeStatusResponse> {
-  return apiClient.post(`/api/exercises/${exerciseId}/like/toggle`, {}, {
-    correlationId,
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  return apiClient.post(
+    `/api/exercises/${exerciseId}/like/toggle`,
+    {},
+    {
+      correlationId,
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
 }
 
 /**

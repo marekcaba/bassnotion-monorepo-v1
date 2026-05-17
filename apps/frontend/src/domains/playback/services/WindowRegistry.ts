@@ -78,9 +78,7 @@ export class WindowRegistry {
   static getServiceRegistry(): any {
     if (typeof window === 'undefined') return null;
 
-    return (
-      window.__bassnotion_serviceRegistry || window.__serviceRegistry
-    );
+    return window.__bassnotion_serviceRegistry || window.__serviceRegistry;
   }
 
   // ============================================================================
@@ -237,11 +235,7 @@ export class WindowRegistry {
   static getSamplesReady(): boolean {
     if (typeof window === 'undefined') return false;
 
-    return (
-      window.__bassnotion_samplesReady ||
-      window.__samplesReady ||
-      false
-    );
+    return window.__bassnotion_samplesReady || window.__samplesReady || false;
   }
 
   /**
@@ -312,7 +306,7 @@ export class WindowRegistry {
     // Dispatch event for listeners
     if (ready && exerciseId) {
       window.dispatchEvent(
-        new CustomEvent('bassBuffersReady', { detail: { exerciseId } })
+        new CustomEvent('bassBuffersReady', { detail: { exerciseId } }),
       );
       console.log('🎸 [BASS-REGISTRY] Bass buffers ready event dispatched', {
         exerciseId,
@@ -359,7 +353,10 @@ export class WindowRegistry {
   static setAct2PreloadProgress(progress: number): void {
     if (typeof window === 'undefined') return;
 
-    window.__bassnotion_act2PreloadProgress = Math.min(100, Math.max(0, progress));
+    window.__bassnotion_act2PreloadProgress = Math.min(
+      100,
+      Math.max(0, progress),
+    );
   }
 
   /**

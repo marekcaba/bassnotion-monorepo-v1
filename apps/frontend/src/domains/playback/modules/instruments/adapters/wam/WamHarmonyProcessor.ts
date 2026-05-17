@@ -57,7 +57,8 @@ export class WamHarmonyProcessor {
         // Connect to master bus for proper mixing (with fallback to destination)
         try {
           // Dynamic import to avoid circular dependencies
-          const { Mixer } = await import('@/domains/playback/modules/tracks/mixing/Mixer.js');
+          const { Mixer } =
+            await import('@/domains/playback/modules/tracks/mixing/Mixer.js');
           const mixer = Mixer.getInstance();
           const masterBusInput = mixer.getMasterBusInputAsAudioNode();
           if (masterBusInput) {

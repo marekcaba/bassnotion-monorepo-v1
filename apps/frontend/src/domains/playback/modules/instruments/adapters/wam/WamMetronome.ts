@@ -136,7 +136,7 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
   private clickSynth: any = null;
   private accentSynth: any = null;
   private logger = createStructuredLogger('WamMetronomeNode');
-  private _isActive: boolean = true; // Start active by default
+  private _isActive = true; // Start active by default
   private _activeSources: Set<AudioBufferSourceNode> = new Set();
 
   get gain(): AudioParam {
@@ -353,9 +353,11 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
     // Try to get from CoreServices
     const coreServices = window.__coreServices || window.__globalCoreServices;
     // Type assertion for CoreServices interface
-    const typedCoreServices = coreServices as {
-      getAudioEngine?: () => { getTone?: () => typeof window.Tone } | null;
-    } | undefined;
+    const typedCoreServices = coreServices as
+      | {
+          getAudioEngine?: () => { getTone?: () => typeof window.Tone } | null;
+        }
+      | undefined;
     if (typedCoreServices?.getAudioEngine) {
       const audioEngine = typedCoreServices.getAudioEngine();
       if (audioEngine?.getTone) {

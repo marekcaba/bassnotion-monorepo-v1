@@ -119,7 +119,9 @@ export class BassEffectsChain extends BaseInstrumentEffects {
   /**
    * Setup bass frequency enhancer
    */
-  private async setupBassEnhancer(params: BassEffectParams['enhancer']): Promise<void> {
+  private async setupBassEnhancer(
+    params: BassEffectParams['enhancer'],
+  ): Promise<void> {
     if (!params) return;
 
     const Tone = await getTone();
@@ -146,7 +148,9 @@ export class BassEffectsChain extends BaseInstrumentEffects {
   /**
    * Setup octaver effect
    */
-  private async setupOctaver(params: BassEffectParams['octaver']): Promise<void> {
+  private async setupOctaver(
+    params: BassEffectParams['octaver'],
+  ): Promise<void> {
     if (!params) return;
 
     const Tone = await getTone();
@@ -165,7 +169,9 @@ export class BassEffectsChain extends BaseInstrumentEffects {
   /**
    * Setup envelope-based effects
    */
-  private async setupEnvelopeEffects(params: BassEffectParams['envelope']): Promise<void> {
+  private async setupEnvelopeEffects(
+    params: BassEffectParams['envelope'],
+  ): Promise<void> {
     if (!params) return;
 
     const Tone = await getTone();
@@ -195,7 +201,9 @@ export class BassEffectsChain extends BaseInstrumentEffects {
   /**
    * Setup amp simulation
    */
-  private async setupAmpSimulation(config: BassEffectsConfig['ampSimulation']): Promise<void> {
+  private async setupAmpSimulation(
+    config: BassEffectsConfig['ampSimulation'],
+  ): Promise<void> {
     if (!config) return;
 
     const Tone = await getTone();
@@ -224,7 +232,9 @@ export class BassEffectsChain extends BaseInstrumentEffects {
   /**
    * Setup sidechain compression
    */
-  private async setupSidechain(config: BassEffectsConfig['sidechain']): Promise<void> {
+  private async setupSidechain(
+    config: BassEffectsConfig['sidechain'],
+  ): Promise<void> {
     if (!config) return;
 
     const Tone = await getTone();

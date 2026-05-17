@@ -336,9 +336,8 @@ describe('HarmonyWidget - Audio Connection Tests', () => {
     (window as any).__samplesReady = true;
 
     // Mock WindowRegistry static methods
-    const WindowRegistry = await import(
-      '@/domains/playback/services/WindowRegistry.js'
-    );
+    const WindowRegistry =
+      await import('@/domains/playback/services/WindowRegistry.js');
     vi.spyOn(WindowRegistry.WindowRegistry, 'getCoreServices').mockReturnValue(
       mockCoreServices,
     );
@@ -347,9 +346,8 @@ describe('HarmonyWidget - Audio Connection Tests', () => {
     );
 
     // Set up GlobalSampleCache mock
-    const { GlobalSampleCache } = await import(
-      '@/domains/playback/modules/storage/cache/GlobalSampleCache'
-    );
+    const { GlobalSampleCache } =
+      await import('@/domains/playback/modules/storage/cache/GlobalSampleCache');
     vi.mocked(GlobalSampleCache.getCachedInstrument).mockImplementation(() => {
       return null;
     });
@@ -459,9 +457,8 @@ describe('HarmonyWidget - Audio Connection Tests', () => {
 
   describe('PluginManager Integration', () => {
     it('should use pre-loaded harmony instrument when available', async () => {
-      const { GlobalSampleCache } = await import(
-        '@/domains/playback/modules/storage/cache/GlobalSampleCache'
-      );
+      const { GlobalSampleCache } =
+        await import('@/domains/playback/modules/storage/cache/GlobalSampleCache');
 
       const preloadedInstrument = {
         audioNode: mockWamKeyboardNode,
@@ -493,9 +490,8 @@ describe('HarmonyWidget - Audio Connection Tests', () => {
     });
 
     it('should get plugin from PluginManager when no pre-loaded instrument exists', async () => {
-      const { GlobalSampleCache } = await import(
-        '@/domains/playback/modules/storage/cache/GlobalSampleCache'
-      );
+      const { GlobalSampleCache } =
+        await import('@/domains/playback/modules/storage/cache/GlobalSampleCache');
       vi.mocked(GlobalSampleCache.getCachedInstrument).mockReturnValue(null);
 
       const props = {
@@ -574,9 +570,8 @@ describe('HarmonyWidget - Audio Connection Tests', () => {
       // Remove audio engine
       (window as any).__globalCoreServices = null;
 
-      const WindowRegistry = await import(
-        '@/domains/playback/services/WindowRegistry.js'
-      );
+      const WindowRegistry =
+        await import('@/domains/playback/services/WindowRegistry.js');
       vi.spyOn(
         WindowRegistry.WindowRegistry,
         'getCoreServices',
@@ -611,9 +606,8 @@ describe('HarmonyWidget - Audio Connection Tests', () => {
         getPluginManager: () => null,
       };
 
-      const WindowRegistry = await import(
-        '@/domains/playback/services/WindowRegistry.js'
-      );
+      const WindowRegistry =
+        await import('@/domains/playback/services/WindowRegistry.js');
       vi.spyOn(
         WindowRegistry.WindowRegistry,
         'getCoreServices',

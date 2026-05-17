@@ -521,10 +521,13 @@ export class MetronomeInstrumentProcessor {
     // This ensures ALL tempo changes go through the single source of truth
     // Note: transitionTime is ignored since musicalTruth sets immediate values
     if (transitionTime > 0) {
-      logger.info('🎵 MetronomeInstrumentProcessor: Smooth tempo transition requested but using immediate change via musicalTruth', {
-        requestedTempo: tempo,
-        transitionTime,
-      });
+      logger.info(
+        '🎵 MetronomeInstrumentProcessor: Smooth tempo transition requested but using immediate change via musicalTruth',
+        {
+          requestedTempo: tempo,
+          transitionTime,
+        },
+      );
     }
 
     musicalTruth.setBPM(tempo);

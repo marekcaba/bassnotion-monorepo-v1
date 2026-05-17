@@ -65,8 +65,8 @@ export function SkillVerificationFeedback({
               className="text-neutral-400 mb-8"
               style={{ fontFamily: 'var(--font-inter), sans-serif' }}
             >
-              Don&apos;t worry - this helps us understand where you are so we can
-              create the perfect learning path for you.
+              Don&apos;t worry - this helps us understand where you are so we
+              can create the perfect learning path for you.
             </p>
 
             {/* Continue button - matches V1 warm gradient */}

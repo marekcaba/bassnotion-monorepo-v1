@@ -279,9 +279,12 @@ export class UserService {
       throw new NotFoundException(`Profile not found for user: ${userId}`);
     }
 
-    logger.info(`Learning style updated to ${learningStyle} for user: ${userId}`, {
-      correlationId,
-    });
+    logger.info(
+      `Learning style updated to ${learningStyle} for user: ${userId}`,
+      {
+        correlationId,
+      },
+    );
 
     return this.mapProfileToUserProfile(updatedProfile);
   }

@@ -429,7 +429,7 @@ export class LogAggregatorService implements OnModuleInit, OnModuleDestroy {
   /**
    * Get recent logs
    */
-  async getRecentLogs(limit: number = 100): Promise<BufferedLog[]> {
+  async getRecentLogs(limit = 100): Promise<BufferedLog[]> {
     const results: BufferedLog[] = [];
 
     // Add from buffer

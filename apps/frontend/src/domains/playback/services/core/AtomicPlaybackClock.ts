@@ -127,28 +127,28 @@ export class AtomicPlaybackClock {
 
   // Core timing state
   private audioContext: AudioContext | null = null;
-  private transportStartTime: number = 0;
-  private isRunning: boolean = false;
+  private transportStartTime = 0;
+  private isRunning = false;
   private rafId: number | null = null;
 
   // Musical configuration
-  private beatsPerMeasure: number = 4;
-  private countdownBeats: number = 4; // Default 1 bar countdown
+  private beatsPerMeasure = 4;
+  private countdownBeats = 4; // Default 1 bar countdown
 
   // Subscribers
   private subscribers = new Set<AtomicBeatSubscriber>();
   private currentState: AtomicBeatState | null = null;
 
   // Performance tracking
-  private lastEighthNoteIndex: number = -1;
-  private lastMeasureIndex: number = -1;
-  private frameCount: number = 0;
+  private lastEighthNoteIndex = -1;
+  private lastMeasureIndex = -1;
+  private frameCount = 0;
 
   // Pre-calculated beat schedule for jitter-free detection
   // Key insight: Instead of detecting when Math.floor() changes (frame-dependent),
   // we pre-calculate exact beat times and check if we've crossed them.
-  private nextBeatTime: number = 0; // audioContext.currentTime when next beat should occur
-  private currentBeatStartTime: number = 0; // When current beat started (for interval measurement)
+  private nextBeatTime = 0; // audioContext.currentTime when next beat should occur
+  private currentBeatStartTime = 0; // When current beat started (for interval measurement)
 
   private constructor() {
     logger.info('AtomicPlaybackClock singleton created');
@@ -213,7 +213,7 @@ export class AtomicPlaybackClock {
    * @param beatsPerMeasure - Time signature numerator (e.g., 4 for 4/4)
    * @param countdownBeats - Number of countdown beats before exercise
    */
-  configure(beatsPerMeasure: number = 4, countdownBeats: number = 4): void {
+  configure(beatsPerMeasure = 4, countdownBeats = 4): void {
     this.beatsPerMeasure = beatsPerMeasure;
     this.countdownBeats = countdownBeats;
 
@@ -239,7 +239,9 @@ export class AtomicPlaybackClock {
     }
 
     if (this.transportStartTime === 0) {
-      logger.warn('Starting without transportStartTime set - visual sync may be off');
+      logger.warn(
+        'Starting without transportStartTime set - visual sync may be off',
+      );
     }
 
     this.isRunning = true;
@@ -461,7 +463,9 @@ export class AtomicPlaybackClock {
         measure: measureIndex,
         scheduledAt: this.currentBeatStartTime.toFixed(6),
         detectedAt: currentAudioTime.toFixed(6),
-        detectionDelay: ((currentAudioTime - this.currentBeatStartTime) * 1000).toFixed(1) + 'ms',
+        detectionDelay:
+          ((currentAudioTime - this.currentBeatStartTime) * 1000).toFixed(1) +
+          'ms',
         visualSec: visualSeconds.toFixed(3),
         bpm: currentBpm,
         durationMs: eighthNoteDurationMs.toFixed(1),

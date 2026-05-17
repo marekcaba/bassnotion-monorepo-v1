@@ -24,7 +24,10 @@ export type {
   UseHarmonyInstrumentReturn,
 } from './hooks/useHarmonyInstrument.js';
 
-export { useChordProgression, CHORD_PROGRESSIONS } from './hooks/useChordProgression.js';
+export {
+  useChordProgression,
+  CHORD_PROGRESSIONS,
+} from './hooks/useChordProgression.js';
 export type {
   UseChordProgressionOptions,
   UseChordProgressionReturn,

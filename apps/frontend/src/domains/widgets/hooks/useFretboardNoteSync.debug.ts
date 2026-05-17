@@ -130,14 +130,12 @@ export function isLineLifecycleDebugEnabled(): boolean {
  */
 export function logLineStateChange(
   action: 'HIDE' | 'RESTORE' | 'QUERY',
-  context: LineStateChangeContext
+  context: LineStateChangeContext,
 ): void {
   if (!isLineLifecycleDebugEnabled()) return;
 
-  const emoji =
-    action === 'HIDE' ? '🔴' : action === 'RESTORE' ? '🟢' : '🔍';
-  const t =
-    context.time !== undefined ? `t=${context.time.toFixed(3)}s` : '';
+  const emoji = action === 'HIDE' ? '🔴' : action === 'RESTORE' ? '🟢' : '🔍';
+  const t = context.time !== undefined ? `t=${context.time.toFixed(3)}s` : '';
   const m = context.measure !== undefined ? `m=${context.measure}` : '';
   const n = context.noteIndex !== undefined ? `note#${context.noteIndex}` : '';
 
@@ -146,7 +144,7 @@ export function logLineStateChange(
     `${emoji} [LINE-LIFECYCLE] ${action} | ${[m, n, t].filter(Boolean).join(' | ')} | ` +
       `${context.reason || ''} | ` +
       `selector="${context.lineSelector || 'N/A'}" found=${context.lineFound ?? 'N/A'} ` +
-      `affected=${context.linesAffected ?? 1} ${context.lineDetails || ''}`
+      `affected=${context.linesAffected ?? 1} ${context.lineDetails || ''}`,
   );
 }
 
@@ -187,7 +185,7 @@ function setupWindowDebugUtilities(): void {
               `🔬 [MUTATION] Dot class changed externally!\n` +
                 `   Old: ${mutation.oldValue}\n` +
                 `   New: ${el.className}\n` +
-                `   Title: ${el.title || 'N/A'}`
+                `   Title: ${el.title || 'N/A'}`,
             );
           }
         }
@@ -202,7 +200,7 @@ function setupWindowDebugUtilities(): void {
               `🔬 [MUTATION] Dot style changed!\n` +
                 `   Style: ${el.getAttribute('style')}\n` +
                 `   Computed opacity: ${window.getComputedStyle(el).opacity}\n` +
-                `   Title: ${el.title || 'N/A'}`
+                `   Title: ${el.title || 'N/A'}`,
             );
           }
         }
@@ -222,7 +220,7 @@ function setupWindowDebugUtilities(): void {
 
     // eslint-disable-next-line no-console
     console.log(
-      `🔬 [MUTATION WATCH] Started watching ${dots.length} dots for external changes`
+      `🔬 [MUTATION WATCH] Started watching ${dots.length} dots for external changes`,
     );
   };
 
@@ -237,7 +235,7 @@ function setupWindowDebugUtilities(): void {
 
   // eslint-disable-next-line no-console
   console.log(
-    '🔬 Mutation watch available: __START_MUTATION_WATCH__() and __STOP_MUTATION_WATCH__()'
+    '🔬 Mutation watch available: __START_MUTATION_WATCH__() and __STOP_MUTATION_WATCH__()',
   );
 
   // -------------------------------------------------------------------------
@@ -247,7 +245,9 @@ function setupWindowDebugUtilities(): void {
   let inspectorInterval: ReturnType<typeof setInterval> | null = null;
   let watchInterval: ReturnType<typeof setInterval> | null = null;
 
-  debugWindow.__INSPECT_DOTS__ = (continuous?: boolean): DotInspectorSummary => {
+  debugWindow.__INSPECT_DOTS__ = (
+    continuous?: boolean,
+  ): DotInspectorSummary => {
     // Stop existing interval if any
     if (inspectorInterval) {
       clearInterval(inspectorInterval);
@@ -286,11 +286,13 @@ function setupWindowDebugUtilities(): void {
           'unknown';
 
         // Count states
-        if (classes.includes(CSS_CLASSES.DOT_CURRENT_MEASURE)) summary.current++;
+        if (classes.includes(CSS_CLASSES.DOT_CURRENT_MEASURE))
+          summary.current++;
         else if (classes.includes(CSS_CLASSES.DOT_NEXT_MEASURE_FIRST))
           summary.nextFirst++;
         else if (classes.includes(CSS_CLASSES.DOT_NEXT_MEASURE)) summary.next++;
-        else if (classes.includes(CSS_CLASSES.DOT_OTHER_MEASURE)) summary.other++;
+        else if (classes.includes(CSS_CLASSES.DOT_OTHER_MEASURE))
+          summary.other++;
         else if (classes.includes('note-')) summary.noMeasureClass++; // Has note- class but no measure class
 
         if (classes.includes(CSS_CLASSES.DOT_ACTIVE)) summary.active++;
@@ -333,7 +335,7 @@ function setupWindowDebugUtilities(): void {
         ];
         const classesArray = classes.split(' ');
         const activeMeasureClasses = measureClasses.filter((c) =>
-          classesArray.includes(c)
+          classesArray.includes(c),
         );
         if (activeMeasureClasses.length > 1) {
           issue = `CONFLICTING CLASSES: ${activeMeasureClasses.join(', ')}`;
@@ -356,15 +358,15 @@ function setupWindowDebugUtilities(): void {
       // eslint-disable-next-line no-console
       console.log(
         '%c📊 DOT STATE SNAPSHOT',
-        'font-size: 14px; font-weight: bold; color: #4CAF50'
+        'font-size: 14px; font-weight: bold; color: #4CAF50',
       );
       // eslint-disable-next-line no-console
       console.log(
-        `   Total: ${summary.total} | Current: ${summary.current} | NextFirst: ${summary.nextFirst} | Next: ${summary.next} | Other: ${summary.other}`
+        `   Total: ${summary.total} | Current: ${summary.current} | NextFirst: ${summary.nextFirst} | Next: ${summary.next} | Other: ${summary.other}`,
       );
       // eslint-disable-next-line no-console
       console.log(
-        `   Active: ${summary.active} | Played: ${summary.played} | No measure class: ${summary.noMeasureClass}`
+        `   Active: ${summary.active} | Played: ${summary.played} | No measure class: ${summary.noMeasureClass}`,
       );
 
       if (summary.issues.length > 0) {
@@ -385,7 +387,7 @@ function setupWindowDebugUtilities(): void {
     if (continuous === true) {
       // eslint-disable-next-line no-console
       console.log(
-        '🔄 Starting continuous dot inspection (every 500ms). Call __INSPECT_DOTS__(false) to stop.'
+        '🔄 Starting continuous dot inspection (every 500ms). Call __INSPECT_DOTS__(false) to stop.',
       );
       inspectorInterval = setInterval(inspect, 500);
     } else if (continuous === false) {
@@ -411,7 +413,7 @@ function setupWindowDebugUtilities(): void {
 
     // eslint-disable-next-line no-console
     console.log(
-      `👁️ Watching dot at position "${positionKey}" - logs will appear when state changes`
+      `👁️ Watching dot at position "${positionKey}" - logs will appear when state changes`,
     );
 
     let lastState = '';
@@ -449,7 +451,7 @@ function setupWindowDebugUtilities(): void {
         lastState = currentState;
         // eslint-disable-next-line no-console
         console.log(
-          `👁️ [${positionKey}] CHANGED: classes=[${classes}] --measure-opacity=${measureOpacity} computed=${computedOpacity}`
+          `👁️ [${positionKey}] CHANGED: classes=[${classes}] --measure-opacity=${measureOpacity} computed=${computedOpacity}`,
         );
       }
     }, 100);
@@ -457,7 +459,7 @@ function setupWindowDebugUtilities(): void {
 
   // eslint-disable-next-line no-console
   console.log(
-    '🔧 Visual inspectors loaded: __INSPECT_DOTS__() and __WATCH_DOT__(position)'
+    '🔧 Visual inspectors loaded: __INSPECT_DOTS__() and __WATCH_DOT__(position)',
   );
 }
 

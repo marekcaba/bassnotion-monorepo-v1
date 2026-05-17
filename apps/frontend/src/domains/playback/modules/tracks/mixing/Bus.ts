@@ -599,7 +599,9 @@ export class Bus {
         return tone;
       }
     }
-    throw new Error('Bus: No Tone.js instance available. Ensure AudioEngine is initialized.');
+    throw new Error(
+      'Bus: No Tone.js instance available. Ensure AudioEngine is initialized.',
+    );
   }
 
   private createGain(gain?: number): any {

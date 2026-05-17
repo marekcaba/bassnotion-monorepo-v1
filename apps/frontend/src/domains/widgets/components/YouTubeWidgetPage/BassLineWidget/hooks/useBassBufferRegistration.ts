@@ -31,13 +31,16 @@ import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
 import { GlobalSampleCache } from '@/domains/playback/modules/storage/cache/GlobalSampleCache';
 import { isVerboseDebugEnabled } from '@/config/debug';
 import { STRING_TO_BASE_MIDI } from '../types.js';
-import type { UseBassBufferRegistrationOptions, UseBassBufferRegistrationReturn } from '../types.js';
+import type {
+  UseBassBufferRegistrationOptions,
+  UseBassBufferRegistrationReturn,
+} from '../types.js';
 
 /**
  * Hook for registering bass buffers with PlaybackEngine
  */
 export function useBassBufferRegistration(
-  options: UseBassBufferRegistrationOptions
+  options: UseBassBufferRegistrationOptions,
 ): UseBassBufferRegistrationReturn {
   const {
     exercise,
@@ -84,7 +87,9 @@ export function useBassBufferRegistration(
   useEffect(() => {
     const handleExerciseSwitched = () => {
       if (isVerboseDebugEnabled()) {
-        console.log('[BASS-WIDGET] exercise:switched event received, resetting registration state');
+        console.log(
+          '[BASS-WIDGET] exercise:switched event received, resetting registration state',
+        );
       }
       // Reset registration refs to allow fresh registration for new exercise
       lastRegisteredExerciseIdRef.current = null;
@@ -131,9 +136,12 @@ export function useBassBufferRegistration(
     const registrationKey = exercise?.id;
     if (lastRegisteredExerciseIdRef.current === registrationKey) {
       if (isVerboseDebugEnabled()) {
-        console.log('[BASS-WIDGET] Already registered for this exercise, skipping', {
-          registrationKey,
-        });
+        console.log(
+          '[BASS-WIDGET] Already registered for this exercise, skipping',
+          {
+            registrationKey,
+          },
+        );
       }
       return;
     }
@@ -164,7 +172,9 @@ export function useBassBufferRegistration(
     }
 
     if (isVerboseDebugEnabled()) {
-      console.log('[BASS-WIDGET] PlaybackEngine available, starting buffer injection...');
+      console.log(
+        '[BASS-WIDGET] PlaybackEngine available, starting buffer injection...',
+      );
     }
 
     try {
@@ -174,19 +184,26 @@ export function useBassBufferRegistration(
       // Determine which MIDI notes to load
       let midiNotesToLoad: number[] = [];
 
-      if (metadata && metadata.exerciseId === exercise?.id && metadata.midiNotes?.length > 0) {
+      if (
+        metadata &&
+        metadata.exerciseId === exercise?.id &&
+        metadata.midiNotes?.length > 0
+      ) {
         // Metadata matches current exercise - use it
         midiNotesToLoad = metadata.midiNotes;
         if (isVerboseDebugEnabled()) {
-          console.log('[BASS-WIDGET] Using cached metadata for current exercise:', {
-            exerciseId: exercise?.id,
-            noteCount: midiNotesToLoad.length,
-          });
+          console.log(
+            '[BASS-WIDGET] Using cached metadata for current exercise:',
+            {
+              exerciseId: exercise?.id,
+              noteCount: midiNotesToLoad.length,
+            },
+          );
         }
       } else if (exercise?.notes && exercise.notes.length > 0) {
         // Derive from exercise.notes
         const bassNotes = exercise.notes.filter(
-          (note: { string: number }) => note.string >= 1 && note.string <= 5
+          (note: { string: number }) => note.string >= 1 && note.string <= 5,
         );
 
         const midiNoteSet = new Set<number>();
@@ -208,7 +225,9 @@ export function useBassBufferRegistration(
       }
 
       if (midiNotesToLoad.length === 0) {
-        console.warn('[BASS-WIDGET] No bass notes to load, skipping buffer injection');
+        console.warn(
+          '[BASS-WIDGET] No bass notes to load, skipping buffer injection',
+        );
         isRegisteringRef.current = false;
         return;
       }
@@ -218,7 +237,9 @@ export function useBassBufferRegistration(
 
       if (!audioEngine?.isInitialized) {
         if (isVerboseDebugEnabled()) {
-          console.log('[BASS-WIDGET] AudioEngine not initialized yet, will retry when user interacts');
+          console.log(
+            '[BASS-WIDGET] AudioEngine not initialized yet, will retry when user interacts',
+          );
         }
         isRegisteringRef.current = false;
         return;
@@ -242,7 +263,9 @@ export function useBassBufferRegistration(
 
         if (rawBuffer) {
           try {
-            const buffer = await audioContext.decodeAudioData(rawBuffer.slice(0));
+            const buffer = await audioContext.decodeAudioData(
+              rawBuffer.slice(0),
+            );
 
             if (isVerboseDebugEnabled()) {
               // Analyze decoded buffer for diagnostics
@@ -261,10 +284,15 @@ export function useBassBufferRegistration(
             bassBuffers[String(midiNote)] = buffer;
             buffersDecoded++;
           } catch (decodeError) {
-            console.error(`[BASS-WIDGET] Failed to decode ${cacheKey}:`, decodeError);
+            console.error(
+              `[BASS-WIDGET] Failed to decode ${cacheKey}:`,
+              decodeError,
+            );
           }
         } else {
-          console.warn(`[BASS-WIDGET] No cached buffer for ${cacheKey} - sample may not have been preloaded`);
+          console.warn(
+            `[BASS-WIDGET] No cached buffer for ${cacheKey} - sample may not have been preloaded`,
+          );
         }
       }
 
@@ -278,7 +306,8 @@ export function useBassBufferRegistration(
 
       if (buffersDecoded > 0) {
         // Get or create instrument gain node for volume control
-        const bassGainNode = playbackEngine.getOrCreateInstrumentGainNode('bass');
+        const bassGainNode =
+          playbackEngine.getOrCreateInstrumentGainNode('bass');
         const destination = bassGainNode || audioContext.destination;
 
         // Inject bass buffers into PlaybackEngine
@@ -293,11 +322,14 @@ export function useBassBufferRegistration(
         bassBuffersRef.current = bassBuffers;
 
         if (isVerboseDebugEnabled()) {
-          console.log('[BASS-WIDGET] Bass buffers injected into PlaybackEngine', {
-            exerciseId: exercise?.id,
-            buffersInjected: buffersDecoded,
-            midiNoteRange: `${Math.min(...midiNotesToLoad)}-${Math.max(...midiNotesToLoad)}`,
-          });
+          console.log(
+            '[BASS-WIDGET] Bass buffers injected into PlaybackEngine',
+            {
+              exerciseId: exercise?.id,
+              buffersInjected: buffersDecoded,
+              midiNoteRange: `${Math.min(...midiNotesToLoad)}-${Math.max(...midiNotesToLoad)}`,
+            },
+          );
         }
 
         // Set the bass buffers ready flag
@@ -309,20 +341,25 @@ export function useBassBufferRegistration(
       } else if (midiNotesToLoad.length > 0) {
         // No buffers decoded - trigger the preload strategy
         if (isVerboseDebugEnabled()) {
-          console.log('[BASS-WIDGET] No cached buffers - triggering BassPreloadStrategy...');
+          console.log(
+            '[BASS-WIDGET] No cached buffers - triggering BassPreloadStrategy...',
+          );
         }
 
         try {
-          const { BassPreloadStrategy } = await import(
-            '@/domains/playback/modules/preloading/strategies/BassPreloadStrategy.js'
-          );
+          const { BassPreloadStrategy } =
+            await import('@/domains/playback/modules/preloading/strategies/BassPreloadStrategy.js');
           const bassStrategy = new BassPreloadStrategy();
 
-          const result = await bassStrategy.loadFullSamples(undefined, exercise);
+          const result = await bassStrategy.loadFullSamples(
+            undefined,
+            exercise,
+          );
 
           if (result.success && result.loaded > 0) {
             // Samples are now cached - decode and inject
-            const loadResult = await bassStrategy.loadFromCachedMetadata(audioContext);
+            const loadResult =
+              await bassStrategy.loadFromCachedMetadata(audioContext);
 
             if (loadResult.success && loadResult.loaded > 0) {
               const loadedBuffers = bassStrategy.getLoadedBuffers();
@@ -333,18 +370,26 @@ export function useBassBufferRegistration(
                 WindowRegistry.setBassBuffersReady(true, exercise?.id);
 
                 if (isVerboseDebugEnabled()) {
-                  console.log('[BASS-WIDGET] Bass buffers loaded via preload strategy', {
-                    exerciseId: exercise?.id,
-                    buffersLoaded: Object.keys(loadedBuffers).length,
-                  });
+                  console.log(
+                    '[BASS-WIDGET] Bass buffers loaded via preload strategy',
+                    {
+                      exerciseId: exercise?.id,
+                      buffersLoaded: Object.keys(loadedBuffers).length,
+                    },
+                  );
                 }
               }
             }
           } else {
-            console.warn('[BASS-WIDGET] BassPreloadStrategy failed to load samples');
+            console.warn(
+              '[BASS-WIDGET] BassPreloadStrategy failed to load samples',
+            );
           }
         } catch (preloadError) {
-          console.error('[BASS-WIDGET] Failed to trigger BassPreloadStrategy:', preloadError);
+          console.error(
+            '[BASS-WIDGET] Failed to trigger BassPreloadStrategy:',
+            preloadError,
+          );
         }
       } else {
         console.warn('[BASS-WIDGET] No bass buffers decoded');
@@ -379,14 +424,23 @@ export function useBassBufferRegistration(
 
     if (shouldRegister) {
       if (isVerboseDebugEnabled()) {
-        console.log('[BASS-WIDGET] ALL CONDITIONS MET - Registering bass buffers!', {
-          exerciseId: exercise?.id,
-          bassNoteCount,
-        });
+        console.log(
+          '[BASS-WIDGET] ALL CONDITIONS MET - Registering bass buffers!',
+          {
+            exerciseId: exercise?.id,
+            bassNoteCount,
+          },
+        );
       }
       registerBassWithPlaybackEngine();
     }
-  }, [trackIsReady, bassNoteCount, exercise?.id, samplesLoadedTrigger, registerBassWithPlaybackEngine]);
+  }, [
+    trackIsReady,
+    bassNoteCount,
+    exercise?.id,
+    samplesLoadedTrigger,
+    registerBassWithPlaybackEngine,
+  ]);
 
   return {
     registerBassWithPlaybackEngine,

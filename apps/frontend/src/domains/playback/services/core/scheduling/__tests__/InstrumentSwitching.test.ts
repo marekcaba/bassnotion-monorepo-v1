@@ -27,11 +27,8 @@ describe('Instrument Switching - Unit Tests', () => {
   describe('Cache Key Separation', () => {
     it('should generate unique cache keys per instrument', () => {
       // Simulate cache key generation pattern: {instrument}-{layer}-{note}
-      const buildCacheKey = (
-        instrument: string,
-        layer: string,
-        note: string,
-      ) => `${instrument}-${layer}-${note}`;
+      const buildCacheKey = (instrument: string, layer: string, note: string) =>
+        `${instrument}-${layer}-${note}`;
 
       const grandPianoKey = buildCacheKey('grandpiano', 'v7', 'C4');
       const wurlitzerKey = buildCacheKey('wurlitzer', 'v3', 'C4');
@@ -59,9 +56,9 @@ describe('Instrument Switching - Unit Tests', () => {
       const wurlitzerFallbacks = buildFallbackKeys('wurlitzer', 'D4');
 
       // All fallbacks should stay within the same instrument
-      expect(grandPianoFallbacks.every((k) => k.startsWith('grandpiano-'))).toBe(
-        true,
-      );
+      expect(
+        grandPianoFallbacks.every((k) => k.startsWith('grandpiano-')),
+      ).toBe(true);
       expect(wurlitzerFallbacks.every((k) => k.startsWith('wurlitzer-'))).toBe(
         true,
       );

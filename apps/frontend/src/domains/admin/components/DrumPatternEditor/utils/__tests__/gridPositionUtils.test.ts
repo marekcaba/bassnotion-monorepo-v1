@@ -34,7 +34,7 @@ describe('gridPositionUtils', () => {
       const result = gridToMusicalPosition(
         { row: 0, col: 0 },
         '1/16',
-        timeSignature4_4
+        timeSignature4_4,
       );
       expect(result).toEqual({
         measure: 0,
@@ -48,7 +48,7 @@ describe('gridPositionUtils', () => {
       const result = gridToMusicalPosition(
         { row: 0, col: 4 },
         '1/16',
-        timeSignature4_4
+        timeSignature4_4,
       );
       expect(result).toEqual({
         measure: 0,
@@ -62,7 +62,7 @@ describe('gridPositionUtils', () => {
       const result = gridToMusicalPosition(
         { row: 0, col: 16 },
         '1/16',
-        timeSignature4_4
+        timeSignature4_4,
       );
       expect(result).toEqual({
         measure: 1,
@@ -77,7 +77,7 @@ describe('gridPositionUtils', () => {
       const result = gridToMusicalPosition(
         { row: 0, col: 1 },
         '1/16',
-        timeSignature4_4
+        timeSignature4_4,
       );
       expect(result.tick).toBe(120);
     });
@@ -87,7 +87,7 @@ describe('gridPositionUtils', () => {
       const result = gridToMusicalPosition(
         { row: 0, col: 2 },
         '1/8',
-        timeSignature4_4
+        timeSignature4_4,
       );
       expect(result.beat).toBe(1);
       expect(result.subdivision).toBe(0);
@@ -98,7 +98,7 @@ describe('gridPositionUtils', () => {
       const result = gridToMusicalPosition(
         { row: 0, col: 12 },
         '1/16',
-        timeSignature3_4
+        timeSignature3_4,
       );
       expect(result.measure).toBe(1);
       expect(result.beat).toBe(0);
@@ -125,14 +125,24 @@ describe('gridPositionUtils', () => {
     });
 
     it('should handle tick precision', () => {
-      const position: MusicalPosition = { measure: 0, beat: 0, subdivision: 0, tick: 120 };
+      const position: MusicalPosition = {
+        measure: 0,
+        beat: 0,
+        subdivision: 0,
+        tick: 120,
+      };
       const result = musicalToGridColumn(position, '1/16', timeSignature4_4);
       expect(result).toBe(1); // 120 ticks = 1 cell in 1/16
     });
 
     it('should round tick values to nearest cell', () => {
       // 180 ticks is between cell 1 (120) and cell 2 (240), closer to cell 2
-      const position: MusicalPosition = { measure: 0, beat: 0, subdivision: 0, tick: 180 };
+      const position: MusicalPosition = {
+        measure: 0,
+        beat: 0,
+        subdivision: 0,
+        tick: 180,
+      };
       const result = musicalToGridColumn(position, '1/16', timeSignature4_4);
       expect(result).toBe(2); // Rounded to nearest
     });
@@ -158,7 +168,12 @@ describe('gridPositionUtils', () => {
     });
 
     it('should use tick when provided', () => {
-      const position: MusicalPosition = { measure: 0, beat: 0, subdivision: 0, tick: 100 };
+      const position: MusicalPosition = {
+        measure: 0,
+        beat: 0,
+        subdivision: 0,
+        tick: 100,
+      };
       const result = musicalToTicks(position, timeSignature4_4);
       expect(result).toBe(100);
     });
@@ -349,8 +364,18 @@ describe('gridPositionUtils', () => {
     });
 
     it('should compare using tick when available', () => {
-      const a: MusicalPosition = { measure: 0, beat: 0, subdivision: 0, tick: 50 };
-      const b: MusicalPosition = { measure: 0, beat: 0, subdivision: 0, tick: 100 };
+      const a: MusicalPosition = {
+        measure: 0,
+        beat: 0,
+        subdivision: 0,
+        tick: 50,
+      };
+      const b: MusicalPosition = {
+        measure: 0,
+        beat: 0,
+        subdivision: 0,
+        tick: 100,
+      };
       expect(comparePositions(a, b)).toBeLessThan(0);
     });
   });
@@ -369,14 +394,34 @@ describe('gridPositionUtils', () => {
     });
 
     it('should allow tolerance for tick comparison', () => {
-      const a: MusicalPosition = { measure: 0, beat: 0, subdivision: 0, tick: 100 };
-      const b: MusicalPosition = { measure: 0, beat: 0, subdivision: 0, tick: 105 };
+      const a: MusicalPosition = {
+        measure: 0,
+        beat: 0,
+        subdivision: 0,
+        tick: 100,
+      };
+      const b: MusicalPosition = {
+        measure: 0,
+        beat: 0,
+        subdivision: 0,
+        tick: 105,
+      };
       expect(positionsEqual(a, b, 10)).toBe(true);
     });
 
     it('should fail if tick difference exceeds tolerance', () => {
-      const a: MusicalPosition = { measure: 0, beat: 0, subdivision: 0, tick: 100 };
-      const b: MusicalPosition = { measure: 0, beat: 0, subdivision: 0, tick: 150 };
+      const a: MusicalPosition = {
+        measure: 0,
+        beat: 0,
+        subdivision: 0,
+        tick: 100,
+      };
+      const b: MusicalPosition = {
+        measure: 0,
+        beat: 0,
+        subdivision: 0,
+        tick: 150,
+      };
       expect(positionsEqual(a, b, 10)).toBe(false);
     });
   });

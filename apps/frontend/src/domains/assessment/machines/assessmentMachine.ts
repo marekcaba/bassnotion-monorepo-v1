@@ -163,8 +163,9 @@ const extractGoalAndPreferences = (
     (o) => o.id === goalAnswer?.selectedOptionId,
   );
   const primaryGoal =
-    (selectedGoalOption?.text?.toLowerCase().replace(/\s+/g, '_') as PrimaryGoal) ||
-    'jam_for_fun';
+    (selectedGoalOption?.text
+      ?.toLowerCase()
+      .replace(/\s+/g, '_') as PrimaryGoal) || 'jam_for_fun';
 
   // Extract techniques and genres from multi-select preference answers
   const preferredTechniques: BassTechnique[] = [];
@@ -175,7 +176,8 @@ const extractGoalAndPreferences = (
     if (!q?.options) return;
 
     // Check if this is a technique or genre question based on options
-    const selectedIds = a.selectedOptionIds || [a.selectedOptionId].filter(Boolean);
+    const selectedIds =
+      a.selectedOptionIds || [a.selectedOptionId].filter(Boolean);
     selectedIds.forEach((optId) => {
       const opt = q.options?.find((o) => o.id === optId);
       if (!opt) return;
@@ -319,7 +321,8 @@ export const assessmentMachine = setup({
               : undefined,
           textAnswer: context.textAnswer || undefined,
           dragDropMapping:
-            context.dragDropMapping && Object.keys(context.dragDropMapping).length > 0
+            context.dragDropMapping &&
+            Object.keys(context.dragDropMapping).length > 0
               ? context.dragDropMapping
               : undefined,
           isCorrect,
@@ -469,7 +472,9 @@ export const assessmentMachine = setup({
       if (!response.ok) {
         // If user is not authenticated, still show results locally
         if (response.status === 401) {
-          console.warn('User not authenticated - assessment results not saved to server');
+          console.warn(
+            'User not authenticated - assessment results not saved to server',
+          );
           return {
             skillLevel: input.result.skillLevel,
             assignedJourneyId: null,

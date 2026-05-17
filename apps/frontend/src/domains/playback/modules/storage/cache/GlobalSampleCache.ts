@@ -108,7 +108,7 @@ export class GlobalSampleCacheImpl {
   private localStorage: LocalProvider | null = null;
 
   // Offline mode flag - when true, only use cached samples (no network)
-  private offlineMode: boolean = false;
+  private offlineMode = false;
 
   // Performance tracking state
   private layerMetrics = {
@@ -1119,7 +1119,7 @@ export class GlobalSampleCacheImpl {
    * Called by RecoveryEventHandlers on 'cache:evict-old-entries' event
    * Uses smart scoring based on access patterns and priority
    */
-  evictOldest(percentage: number = 0.25): void {
+  evictOldest(percentage = 0.25): void {
     const entries = this.getEvictableEntries();
     const toEvictCount = Math.ceil(entries.length * percentage);
 

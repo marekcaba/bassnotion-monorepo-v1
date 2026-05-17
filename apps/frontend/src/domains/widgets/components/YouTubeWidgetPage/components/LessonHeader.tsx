@@ -35,7 +35,7 @@ function TitleWithHighlights({
     // Match whole words only
     const pattern = new RegExp(
       `\\b(${highlightWords.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`,
-      'gi'
+      'gi',
     );
 
     const parts: { text: string; highlight: boolean }[] = [];
@@ -45,7 +45,10 @@ function TitleWithHighlights({
     while ((match = pattern.exec(title)) !== null) {
       // Add text before the match
       if (match.index > lastIndex) {
-        parts.push({ text: title.slice(lastIndex, match.index), highlight: false });
+        parts.push({
+          text: title.slice(lastIndex, match.index),
+          highlight: false,
+        });
       }
       // Add the matched word
       parts.push({ text: match[0], highlight: true });
@@ -67,7 +70,7 @@ function TitleWithHighlights({
         </span>
       ) : (
         <span key={i}>{part.text}</span>
-      )
+      ),
     );
   }, [title, highlightWords]);
 
@@ -86,14 +89,19 @@ export function LessonHeader({
   className,
 }: LessonHeaderProps) {
   return (
-    <div className={cn('text-center max-w-[64rem] mx-auto relative z-10', className)}>
+    <div
+      className={cn(
+        'text-center max-w-[64rem] mx-auto relative z-10',
+        className,
+      )}
+    >
       {/* Category badge with lesson number */}
       {category && (
         <span
           className={cn(
             'inline-block px-4 py-1.5 rounded-full text-sm font-medium',
             'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
-            'mb-4'
+            'mb-4',
           )}
         >
           {category.toUpperCase()}
@@ -108,7 +116,6 @@ export function LessonHeader({
       >
         <TitleWithHighlights title={title} highlightWords={highlightWords} />
       </h1>
-
     </div>
   );
 }

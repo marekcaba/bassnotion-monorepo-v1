@@ -1,4 +1,10 @@
-import { Inter, Courier_Prime, Bebas_Neue, DM_Sans, DM_Mono } from 'next/font/google';
+import {
+  Inter,
+  Courier_Prime,
+  Bebas_Neue,
+  DM_Sans,
+  DM_Mono,
+} from 'next/font/google';
 import localFont from 'next/font/local';
 
 export const inter = Inter({

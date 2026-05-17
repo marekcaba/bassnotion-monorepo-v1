@@ -24,21 +24,23 @@ function getTone(): NonNullable<typeof window.Tone> {
       return tone;
     }
   }
-  throw new Error('SustainPedalManager: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+  throw new Error(
+    'SustainPedalManager: Tone.js not loaded. Ensure AudioEngine is initialized first.',
+  );
 }
 
 export class SustainPedalManager {
   // Timeline builder state
   private audioContext: AudioContext | null = null;
-  private sampleRate: number = 48000;
-  private transportStartTime: number = 0;
-  private countdownOffsetBeats: number = 0;
-  private countdownEnabled: boolean = true;
+  private sampleRate = 48000;
+  private transportStartTime = 0;
+  private countdownOffsetBeats = 0;
+  private countdownEnabled = true;
   private timeConverter: any; // TimePositionConverter - will be injected
 
   // Analyzer state
-  private exerciseEndTime: number = 0;
-  private lastBeatThreshold: number = 0;
+  private exerciseEndTime = 0;
+  private lastBeatThreshold = 0;
 
   constructor() {
     // Empty constructor
@@ -151,7 +153,7 @@ export class SustainPedalManager {
               ) || 0
             : 0;
 
-        let absoluteTime = region.startTime + eventTime + offsetTime;
+        const absoluteTime = region.startTime + eventTime + offsetTime;
 
         // 🚨 CRITICAL FIX: Add transportStartTime to match note scheduling
         // Notes use: audioTime = transportStartTime + absoluteTime

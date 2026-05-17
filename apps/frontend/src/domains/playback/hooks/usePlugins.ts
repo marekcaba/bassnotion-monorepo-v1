@@ -48,7 +48,9 @@ export function usePlugins(
   // Get PluginManager and EventBus from ServiceRegistry
   useEffect(() => {
     try {
-      const registry = serviceRegistry || window.__serviceRegistry as ServiceRegistry | undefined;
+      const registry =
+        serviceRegistry ||
+        (window.__serviceRegistry as ServiceRegistry | undefined);
       if (!registry) {
         throw new Error(
           'ServiceRegistry not found. Ensure AudioProvider is properly configured.',

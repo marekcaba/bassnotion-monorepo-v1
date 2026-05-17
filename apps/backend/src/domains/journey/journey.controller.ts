@@ -70,7 +70,9 @@ export class JourneyController {
     // Check user has a journey
     const { journey } = await this.journeyService.getUserJourney(user.id);
     if (!journey) {
-      throw new NotFoundException('No journey assigned. Complete the assessment first.');
+      throw new NotFoundException(
+        'No journey assigned. Complete the assessment first.',
+      );
     }
 
     const progress = await this.journeyService.updateProgress(user.id, {

@@ -104,7 +104,10 @@ export class SustainPedalHandler {
     logger.info('CC64 timeline set', {
       eventCount: timeline.size,
       firstEvent: this.sortedTimelineKeys[0]?.toFixed(3) || 'none',
-      lastEvent: this.sortedTimelineKeys[this.sortedTimelineKeys.length - 1]?.toFixed(3) || 'none',
+      lastEvent:
+        this.sortedTimelineKeys[this.sortedTimelineKeys.length - 1]?.toFixed(
+          3,
+        ) || 'none',
     });
   }
 

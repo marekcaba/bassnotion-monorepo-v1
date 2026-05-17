@@ -16,9 +16,24 @@ const resetStore = () => {
 };
 
 // Common test positions
-const position0: MusicalPosition = { measure: 0, beat: 0, subdivision: 0, tick: 0 };
-const position1: MusicalPosition = { measure: 0, beat: 1, subdivision: 0, tick: 0 };
-const position2: MusicalPosition = { measure: 0, beat: 2, subdivision: 0, tick: 0 };
+const position0: MusicalPosition = {
+  measure: 0,
+  beat: 0,
+  subdivision: 0,
+  tick: 0,
+};
+const position1: MusicalPosition = {
+  measure: 0,
+  beat: 1,
+  subdivision: 0,
+  tick: 0,
+};
+const position2: MusicalPosition = {
+  measure: 0,
+  beat: 2,
+  subdivision: 0,
+  tick: 0,
+};
 
 describe('useDrumEditorStore', () => {
   beforeEach(() => {
@@ -391,7 +406,9 @@ describe('useDrumEditorStore', () => {
       store.pasteClipboard(position2);
 
       const state = useDrumEditorStore.getState();
-      const pastedHit = state.pattern.find(h => h.id !== originalId && h.drum === 'kick');
+      const pastedHit = state.pattern.find(
+        (h) => h.id !== originalId && h.drum === 'kick',
+      );
       expect(pastedHit).toBeDefined();
       expect(pastedHit!.id).not.toBe(originalId);
     });
@@ -432,7 +449,7 @@ describe('useDrumEditorStore', () => {
       store.toggleLaneMute('kick');
 
       const state = useDrumEditorStore.getState();
-      const kickLane = state.lanes.find(l => l.drum === 'kick');
+      const kickLane = state.lanes.find((l) => l.drum === 'kick');
       expect(kickLane?.muted).toBe(!initialMuted);
     });
 
@@ -443,7 +460,7 @@ describe('useDrumEditorStore', () => {
       store.toggleLaneCollapse('kick');
 
       const state = useDrumEditorStore.getState();
-      const kickLane = state.lanes.find(l => l.drum === 'kick');
+      const kickLane = state.lanes.find((l) => l.drum === 'kick');
       expect(kickLane?.collapsed).toBe(!initialCollapsed);
     });
 
@@ -452,7 +469,7 @@ describe('useDrumEditorStore', () => {
       store.setLaneVolume('kick', 0.5);
 
       const state = useDrumEditorStore.getState();
-      const kickLane = state.lanes.find(l => l.drum === 'kick');
+      const kickLane = state.lanes.find((l) => l.drum === 'kick');
       expect(kickLane?.volume).toBe(0.5);
     });
 

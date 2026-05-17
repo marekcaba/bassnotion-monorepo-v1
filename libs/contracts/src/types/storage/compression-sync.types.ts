@@ -7,7 +7,10 @@
  * @module storage/compression-sync
  */
 
-import type { CacheLayer, CacheConflictResolution } from './cache-management.types.js';
+import type {
+  CacheLayer,
+  CacheConflictResolution,
+} from './cache-management.types.js';
 import type { SyncPriority } from './base.types.js';
 import type { AssetType } from './predictive-loading.types.js';
 
@@ -414,7 +417,11 @@ export interface MergeStrategy {
   name: string;
   description: string;
   applicableConflictTypes: ConflictType[];
-  mergeFunction: (sourceValue: unknown, targetValue: unknown, metadata: unknown) => unknown;
+  mergeFunction: (
+    sourceValue: unknown,
+    targetValue: unknown,
+    metadata: unknown,
+  ) => unknown;
   priority: number;
   enabled: boolean;
 }

@@ -83,7 +83,9 @@ function getTone(): any {
       return tone;
     }
   }
-  throw new Error('MusicalPositionManager: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+  throw new Error(
+    'MusicalPositionManager: Tone.js not loaded. Ensure AudioEngine is initialized first.',
+  );
 }
 
 const logger = createStructuredLogger('MusicalPositionManager');

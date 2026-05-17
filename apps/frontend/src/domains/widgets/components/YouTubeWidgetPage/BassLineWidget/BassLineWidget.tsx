@@ -10,7 +10,13 @@
  * delegating complex logic to specialized hooks and rendering to sub-components.
  */
 
-import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+import React, {
+  useEffect,
+  useState,
+  useMemo,
+  useRef,
+  useCallback,
+} from 'react';
 import { VolumeKnob } from '../components/VolumeKnob.js';
 import { useTrack } from '@/domains/playback/hooks/useTrack';
 import { useTransportControls } from '@/domains/playback/contexts/TransportContext';
@@ -92,14 +98,15 @@ const BassLineWidgetComponent = ({
   });
 
   // Volume control hook
-  const { volume, isMuted, handleVolumeChange, handleMuteToggle } = useVolumeControl({
-    controlledVolume,
-    controlledMuted,
-    onVolumeChange,
-    onMuteToggle,
-    gainNodeRef,
-    audioContextRef,
-  });
+  const { volume, isMuted, handleVolumeChange, handleMuteToggle } =
+    useVolumeControl({
+      controlledVolume,
+      controlledMuted,
+      onVolumeChange,
+      onMuteToggle,
+      gainNodeRef,
+      audioContextRef,
+    });
 
   // Sample loading sync hook
   const { samplesLoadedTrigger } = useSampleLoadingSync();
@@ -108,20 +115,26 @@ const BassLineWidgetComponent = ({
   const bassNoteCount = useMemo(() => {
     return (
       exercise?.notes?.filter(
-        (note: { string: number }) => note.string >= 1 && note.string <= 5
+        (note: { string: number }) => note.string >= 1 && note.string <= 5,
       )?.length || 0
     );
   }, [exercise?.notes]);
 
   // Callbacks for buffer registration
-  const handleSamplesLoaded = useCallback((loaded: number, total: number) => {
-    setSamplesLoaded(loaded);
-    setTotalSamples(total);
-  }, [setSamplesLoaded, setTotalSamples]);
+  const handleSamplesLoaded = useCallback(
+    (loaded: number, total: number) => {
+      setSamplesLoaded(loaded);
+      setTotalSamples(total);
+    },
+    [setSamplesLoaded, setTotalSamples],
+  );
 
-  const handleSamplerReady = useCallback((ready: boolean) => {
-    setSamplerReady(ready);
-  }, [setSamplerReady]);
+  const handleSamplerReady = useCallback(
+    (ready: boolean) => {
+      setSamplerReady(ready);
+    },
+    [setSamplerReady],
+  );
 
   // Buffer registration hook
   useBassBufferRegistration({
@@ -137,17 +150,18 @@ const BassLineWidgetComponent = ({
   });
 
   // Playback hook
-  const { playBassNote, stopAllNotes, patternNotes, testNote } = useBassPlayback({
-    audioContextRef,
-    gainNodeRef,
-    bassBuffersRef,
-    tempo,
-    isPlaying,
-    trackIsReady,
-    samplerReady,
-    exercise,
-    pattern,
-  });
+  const { playBassNote, stopAllNotes, patternNotes, testNote } =
+    useBassPlayback({
+      audioContextRef,
+      gainNodeRef,
+      bassBuffersRef,
+      tempo,
+      isPlaying,
+      trackIsReady,
+      samplerReady,
+      exercise,
+      pattern,
+    });
 
   // Callbacks for event bus
   const handleNoteTrigger = useCallback(
@@ -161,7 +175,7 @@ const BassLineWidgetComponent = ({
         }
       }, duration * 1000);
     },
-    [isPlaying]
+    [isPlaying],
   );
 
   const handleSelectedNotesChange = useCallback((notes: BassNote[]) => {
@@ -217,15 +231,20 @@ const BassLineWidgetComponent = ({
       // Clear local buffer cache
       bassBuffersRef.current = {};
     } else {
-      logger.debug('[BASS-WIDGET] First mount with exercise, skipping buffer clear', {
-        exerciseId,
-      });
+      logger.debug(
+        '[BASS-WIDGET] First mount with exercise, skipping buffer clear',
+        {
+          exerciseId,
+        },
+      );
     }
 
     prevExerciseIdRef.current = exerciseId;
 
     // Check for new bass metadata (always do this, even on first mount)
-    const metadata = GlobalSampleCache.getInstance().getMetadata('bass-required-notes');
+    const metadata = GlobalSampleCache.getInstance().getMetadata(
+      'bass-required-notes',
+    );
     if (metadata && metadata.exerciseId === exerciseId) {
       logger.info('Bass metadata available for exercise', {
         noteCount: metadata.midiNotes?.length || 0,
@@ -235,9 +254,12 @@ const BassLineWidgetComponent = ({
   }, [exercise?.id, stopAllNotes, setTotalSamples]);
 
   // Handle articulation changes
-  const handleArticulationChange = useCallback((articulation: BassArticulationType) => {
-    setCurrentArticulation(articulation);
-  }, []);
+  const handleArticulationChange = useCallback(
+    (articulation: BassArticulationType) => {
+      setCurrentArticulation(articulation);
+    },
+    [],
+  );
 
   // Handle test note with visual feedback
   const handleTestNote = useCallback(() => {

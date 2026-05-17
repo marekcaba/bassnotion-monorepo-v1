@@ -231,7 +231,8 @@ export function useBeatGridSync(
           metrics.intervals.push(detectionInterval);
 
           // Scheduled interval (audio clock based - should be near-perfect)
-          const scheduledInterval = (scheduledBeatTime - metrics.lastScheduledBeatTime) * 1000;
+          const scheduledInterval =
+            (scheduledBeatTime - metrics.lastScheduledBeatTime) * 1000;
           metrics.scheduledIntervals.push(scheduledInterval);
 
           // Keep last 16 intervals for analysis
@@ -265,7 +266,8 @@ export function useBeatGridSync(
             const jitterDetected = maxDetected - minDetected;
 
             const avgScheduled =
-              recentScheduled.reduce((a, b) => a + b, 0) / recentScheduled.length;
+              recentScheduled.reduce((a, b) => a + b, 0) /
+              recentScheduled.length;
             const minScheduled = Math.min(...recentScheduled);
             const maxScheduled = Math.max(...recentScheduled);
             const jitterScheduled = maxScheduled - minScheduled;
@@ -496,10 +498,10 @@ export function useQuarterNoteBeatSync(
           const isActive = currentlyPlaying && col === beatIndex;
 
           // Split classes for proper toggle
-          activeClass.split(' ').forEach(cls => {
+          activeClass.split(' ').forEach((cls) => {
             if (cls) element.classList.toggle(cls, isActive);
           });
-          inactiveClass.split(' ').forEach(cls => {
+          inactiveClass.split(' ').forEach((cls) => {
             if (cls) element.classList.toggle(cls, !isActive);
           });
         }
@@ -517,10 +519,10 @@ export function useQuarterNoteBeatSync(
       const element = indicatorRefs.current.get(key);
 
       if (element) {
-        activeClass.split(' ').forEach(cls => {
+        activeClass.split(' ').forEach((cls) => {
           if (cls) element.classList.remove(cls);
         });
-        inactiveClass.split(' ').forEach(cls => {
+        inactiveClass.split(' ').forEach((cls) => {
           if (cls) element.classList.add(cls);
         });
       }
@@ -785,7 +787,9 @@ export interface LoopStripSyncResult {
  * have been played. Uses AtomicPlaybackClock for consistent timing
  * with all other widgets.
  */
-export function useLoopStripSync(config: LoopStripSyncConfig): LoopStripSyncResult {
+export function useLoopStripSync(
+  config: LoopStripSyncConfig,
+): LoopStripSyncResult {
   const {
     totalBeats,
     beatsPerMeasure,
@@ -816,7 +820,11 @@ export function useLoopStripSync(config: LoopStripSyncConfig): LoopStripSyncResu
    * Register a beat indicator element
    */
   const registerBeatIndicator = useCallback(
-    (measureIndex: number, beatIndex: number, element: HTMLDivElement | null) => {
+    (
+      measureIndex: number,
+      beatIndex: number,
+      element: HTMLDivElement | null,
+    ) => {
       const key = `${measureIndex}-${beatIndex}`;
       if (element) {
         indicatorRefs.current.set(key, element);
@@ -827,7 +835,10 @@ export function useLoopStripSync(config: LoopStripSyncConfig): LoopStripSyncResu
     [],
   );
 
-  const getCurrentBeatPosition = useCallback(() => currentBeatPositionRef.current, []);
+  const getCurrentBeatPosition = useCallback(
+    () => currentBeatPositionRef.current,
+    [],
+  );
 
   /**
    * Direct DOM update function - updates beat trail based on playback position
@@ -857,10 +868,12 @@ export function useLoopStripSync(config: LoopStripSyncConfig): LoopStripSyncResu
         const beatIdx = parseInt(beatStr, 10);
 
         // Calculate absolute beat position for this indicator (1-based)
-        const indicatorBeatPosition = (measureIdx - 1) * beatsPerMeasure + beatIdx;
+        const indicatorBeatPosition =
+          (measureIdx - 1) * beatsPerMeasure + beatIdx;
 
         // Has this beat been played?
-        const hasBeenPlayed = currentlyPlaying && indicatorBeatPosition <= currentBeatPosition;
+        const hasBeenPlayed =
+          currentlyPlaying && indicatorBeatPosition <= currentBeatPosition;
 
         // Split classes for proper toggle
         playedClass.split(' ').forEach((cls) => {
@@ -960,12 +973,10 @@ export interface TransportClockSyncResult {
  * Updates the master clock position display directly via DOM manipulation
  * for jitter-free updates. Uses AtomicPlaybackClock for consistent timing.
  */
-export function useTransportClockSync(config: TransportClockSyncConfig): TransportClockSyncResult {
-  const {
-    isPlaying,
-    beatsPerMeasure = 4,
-    isVisible = true,
-  } = config;
+export function useTransportClockSync(
+  config: TransportClockSyncConfig,
+): TransportClockSyncResult {
+  const { isPlaying, beatsPerMeasure = 4, isVisible = true } = config;
 
   // Store refs to display elements
   const positionDisplayRef = useRef<HTMLDivElement | null>(null);
@@ -1004,36 +1015,36 @@ export function useTransportClockSync(config: TransportClockSyncConfig): Transpo
     [],
   );
 
-  const getFormattedPosition = useCallback(() => formattedPositionRef.current, []);
+  const getFormattedPosition = useCallback(
+    () => formattedPositionRef.current,
+    [],
+  );
 
   /**
    * Format position for display
    * Converts AtomicBeatState to DAW-style "bar:beat:sixteenths" format
    */
-  const formatPosition = useCallback(
-    (state: AtomicBeatState): string => {
-      const { measureIndex, beatIndex, isCountdown, continuousBeat } = state;
+  const formatPosition = useCallback((state: AtomicBeatState): string => {
+    const { measureIndex, beatIndex, isCountdown, continuousBeat } = state;
 
-      if (isCountdown) {
-        // During countdown, show negative bar with beat position
-        // measureIndex is -1 during countdown, beatIndex is 0
-        const countdownBar = Math.abs(measureIndex);
-        const displayBeat = beatIndex + 1;
-        // Calculate sixteenths from continuousBeat fractional part
-        const sixteenths = Math.floor((continuousBeat % 1) * 4);
-        return `-${countdownBar}:${displayBeat}:${sixteenths.toString().padStart(2, '0')}`;
-      }
-
-      // Normal playback - convert 0-based to 1-based display
-      const displayBar = measureIndex + 1;
+    if (isCountdown) {
+      // During countdown, show negative bar with beat position
+      // measureIndex is -1 during countdown, beatIndex is 0
+      const countdownBar = Math.abs(measureIndex);
       const displayBeat = beatIndex + 1;
       // Calculate sixteenths from continuousBeat fractional part
       const sixteenths = Math.floor((continuousBeat % 1) * 4);
+      return `-${countdownBar}:${displayBeat}:${sixteenths.toString().padStart(2, '0')}`;
+    }
 
-      return `${displayBar}:${displayBeat}:${sixteenths.toString().padStart(2, '0')}`;
-    },
-    [],
-  );
+    // Normal playback - convert 0-based to 1-based display
+    const displayBar = measureIndex + 1;
+    const displayBeat = beatIndex + 1;
+    // Calculate sixteenths from continuousBeat fractional part
+    const sixteenths = Math.floor((continuousBeat % 1) * 4);
+
+    return `${displayBar}:${displayBeat}:${sixteenths.toString().padStart(2, '0')}`;
+  }, []);
 
   /**
    * Direct DOM update function - updates position display text
@@ -1055,8 +1066,14 @@ export function useTransportClockSync(config: TransportClockSyncConfig): Transpo
       // Update playing indicator
       if (playingIndicatorRef.current) {
         const currentlyPlaying = isPlayingRef.current;
-        playingIndicatorRef.current.classList.toggle('bg-green-500', currentlyPlaying);
-        playingIndicatorRef.current.classList.toggle('bg-slate-600', !currentlyPlaying);
+        playingIndicatorRef.current.classList.toggle(
+          'bg-green-500',
+          currentlyPlaying,
+        );
+        playingIndicatorRef.current.classList.toggle(
+          'bg-slate-600',
+          !currentlyPlaying,
+        );
       }
     },
     [formatPosition],
@@ -1209,7 +1226,9 @@ export function useFretboardAtomicSync(
   });
 
   // State to trigger React updates on significant changes (measure transitions)
-  const [reactState, setReactState] = useState<Omit<FretboardAtomicSyncResult, 'stateRef'>>({
+  const [reactState, setReactState] = useState<
+    Omit<FretboardAtomicSyncResult, 'stateRef'>
+  >({
     ...FRETBOARD_INITIAL_STATE,
   });
 

@@ -63,13 +63,13 @@ export interface UseTempoControlReturn {
  * Hook for managing tempo control state and synchronization
  */
 export function useTempoControl(
-  options: UseTempoControlOptions
+  options: UseTempoControlOptions,
 ): UseTempoControlReturn {
   const { transport, initialTempo } = options;
 
   // Local tempo state for responsive UI
   const [localTempo, setLocalTempo] = useState(
-    initialTempo ?? transport.tempo ?? 120
+    initialTempo ?? transport.tempo ?? 120,
   );
   const [isDragging, setIsDragging] = useState(false);
 
@@ -95,8 +95,9 @@ export function useTempoControl(
         {
           newTempo,
           previousLocalTempo: localTempo,
-          musicalTruthUserModifiedTempoBefore: musicalTruth.hasUserModifiedTempo(),
-        }
+          musicalTruthUserModifiedTempoBefore:
+            musicalTruth.hasUserModifiedTempo(),
+        },
       );
 
       try {
@@ -124,7 +125,7 @@ export function useTempoControl(
         logger.error('Error setting tempo:', error);
       }
     },
-    [transport, localTempo]
+    [transport, localTempo],
   );
 
   /**
@@ -151,10 +152,11 @@ export function useTempoControl(
         // Skip sync if user recently modified tempo and values differ
         if (userModifiedTempo && lastUserTempoRef.current !== null) {
           if (
-            Math.abs(transport.tempo - lastUserTempoRef.current) > tempoThreshold
+            Math.abs(transport.tempo - lastUserTempoRef.current) >
+            tempoThreshold
           ) {
             console.log(
-              `🎵 [TEMPO-SYNC] Skipping sync - user tempo ${lastUserTempoRef.current} differs from transport ${transport.tempo}`
+              `🎵 [TEMPO-SYNC] Skipping sync - user tempo ${lastUserTempoRef.current} differs from transport ${transport.tempo}`,
             );
             return;
           }

@@ -78,7 +78,9 @@ export const TextBlockForm = React.memo(function TextBlockForm({
 
       {/* Content */}
       <div>
-        <label className="block text-xs text-white/40 mb-1">Content (Markdown)</label>
+        <label className="block text-xs text-white/40 mb-1">
+          Content (Markdown)
+        </label>
         <textarea
           value={config.content}
           onChange={handleContentChange}

@@ -193,7 +193,10 @@ export default function AdminTutorialsPage() {
       const result = await tutorialRepo.update(updated);
 
       if (result.isSuccess()) {
-        logger.info('Tutorial category updated successfully', { tutorialId, category });
+        logger.info('Tutorial category updated successfully', {
+          tutorialId,
+          category,
+        });
         // Update local state
         setTutorials((prev) =>
           prev.map((t) => (t.id.value === tutorialId ? result.value : t)),
@@ -340,8 +343,12 @@ export default function AdminTutorialsPage() {
                           <SelectValue placeholder="Select..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="starter-kit">Starter Kit</SelectItem>
-                          <SelectItem value="revisiting-basics">Revisiting Basics</SelectItem>
+                          <SelectItem value="starter-kit">
+                            Starter Kit
+                          </SelectItem>
+                          <SelectItem value="revisiting-basics">
+                            Revisiting Basics
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </TableCell>

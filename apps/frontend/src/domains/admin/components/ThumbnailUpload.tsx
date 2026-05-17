@@ -25,7 +25,7 @@ export function ThumbnailUpload({
   const { correlationId, logger } = useCorrelation('ThumbnailUpload');
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(
-    currentThumbnailUrl || null
+    currentThumbnailUrl || null,
   );
   const [imageError, setImageError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -43,7 +43,7 @@ export function ThumbnailUpload({
   }, [currentThumbnailUrl]);
 
   const handleFileSelect = async (
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -74,7 +74,10 @@ export function ThumbnailUpload({
 
     try {
       // Get auth session for the API call
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
 
       if (sessionError || !session) {
         toast({
@@ -98,18 +101,22 @@ export function ThumbnailUpload({
 
       // Upload via backend API (uses service role key, bypasses RLS)
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-      const response = await fetch(`${apiUrl}/api/v1/tutorials/${tutorialId}/upload-thumbnail`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'x-correlation-id': correlationId,
+      const response = await fetch(
+        `${apiUrl}/api/v1/tutorials/${tutorialId}/upload-thumbnail`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            'x-correlation-id': correlationId,
+          },
+          body: formData,
         },
-        body: formData,
-      });
+      );
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.message || `Upload failed with status ${response.status}`;
+        const errorMessage =
+          errorData.message || `Upload failed with status ${response.status}`;
 
         logger.error('Upload API error:', {
           status: response.status,
@@ -120,7 +127,8 @@ export function ThumbnailUpload({
         if (response.status === 401 || response.status === 403) {
           toast({
             title: 'Permission denied',
-            description: 'You do not have permission to upload thumbnails. Admin role required.',
+            description:
+              'You do not have permission to upload thumbnails. Admin role required.',
             variant: 'destructive',
           });
           throw new Error('Permission denied: Admin role required');
@@ -198,7 +206,9 @@ export function ThumbnailUpload({
 
   return (
     <div className="space-y-3">
-      <label className="block text-sm font-medium mb-1">Tutorial Thumbnail</label>
+      <label className="block text-sm font-medium mb-1">
+        Tutorial Thumbnail
+      </label>
 
       {/* Thumbnail Preview */}
       <div className="relative aspect-video w-full max-w-md rounded-lg overflow-hidden border-2 border-dashed border-gray-300 bg-gray-100">

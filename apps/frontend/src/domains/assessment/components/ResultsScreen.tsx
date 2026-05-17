@@ -17,10 +17,7 @@ interface ResultsScreenProps {
 }
 
 // Skill level configuration - minimal style (no emojis, subtle colors)
-const SKILL_CONFIG: Record<
-  SkillLevel,
-  { label: string; message: string }
-> = {
+const SKILL_CONFIG: Record<SkillLevel, { label: string; message: string }> = {
   beginner: {
     label: 'Beginner',
     message:
@@ -217,9 +214,7 @@ export function ResultsScreen({
             >
               {/* Content positioned absolutely to respect aspect ratio */}
               <div className="absolute inset-0 flex items-center justify-center p-5 sm:p-6 md:p-8 overflow-y-auto">
-                <div className="w-full max-w-xl">
-                  {resultsContent}
-                </div>
+                <div className="w-full max-w-xl">{resultsContent}</div>
               </div>
             </div>
           </div>

@@ -36,7 +36,9 @@ function getTone(): any {
       return tone;
     }
   }
-  throw new Error('PlaybackSession: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+  throw new Error(
+    'PlaybackSession: Tone.js not loaded. Ensure AudioEngine is initialized first.',
+  );
 }
 import { EventBus } from './EventBus.js';
 import {

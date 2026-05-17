@@ -60,7 +60,7 @@ export class SimpleInstrumentScheduler {
   private buffers: Map<string, AudioBuffer> = new Map();
   private audioContext: AudioContext | null = null;
   private audioDestination: AudioNode | null = null;
-  private sampleRate: number = 48000;
+  private sampleRate = 48000;
   private scheduledSources = new Map<
     AudioBufferSourceNode,
     { type: 'one-shot'; hasStopScheduled: boolean; gain: GainNode }
@@ -128,7 +128,8 @@ export class SimpleInstrumentScheduler {
   clearBuffers(): void {
     const count = this.buffers.size;
     // DEBUG: Log stack trace to find who is clearing buffers
-    const stack = new Error().stack?.split('\n').slice(1, 6).join('\n') || 'no stack';
+    const stack =
+      new Error().stack?.split('\n').slice(1, 6).join('\n') || 'no stack';
     this.buffers.clear();
     this.logger.info(`🗑️ ${this.config.loggerName} buffers cleared`, {
       previousCount: count,
@@ -165,12 +166,15 @@ export class SimpleInstrumentScheduler {
         }
         // DEBUG: Log buffer lookup failure for bass
         if (this.config.instrumentType === 'bass') {
-          console.warn(`🔍 [BASS-BUFFER-LOOKUP] MISS for midiNote=${event.data.midiNote} (key="${midiKey}")`, {
-            bufferCount: this.buffers.size,
-            availableKeys: Array.from(this.buffers.keys()).slice(0, 10),
-            eventType: event.type,
-            eventData: event.data,
-          });
+          console.warn(
+            `🔍 [BASS-BUFFER-LOOKUP] MISS for midiNote=${event.data.midiNote} (key="${midiKey}")`,
+            {
+              bufferCount: this.buffers.size,
+              availableKeys: Array.from(this.buffers.keys()).slice(0, 10),
+              eventType: event.type,
+              eventData: event.data,
+            },
+          );
         }
       }
     }
@@ -216,14 +220,17 @@ export class SimpleInstrumentScheduler {
 
     // DEBUG: Log bass event details BEFORE buffer lookup
     if (this.config.instrumentType === 'bass') {
-      console.log(`🔍 [BASS-SCHEDULER-DEBUG] About to look up buffer for event:`, {
-        eventType: event.type,
-        hasMidiNote: event.data?.midiNote !== undefined,
-        midiNote: event.data?.midiNote,
-        eventData: event.data,
-        bufferCount: this.buffers.size,
-        bufferKeys: Array.from(this.buffers.keys()),
-      });
+      console.log(
+        `🔍 [BASS-SCHEDULER-DEBUG] About to look up buffer for event:`,
+        {
+          eventType: event.type,
+          hasMidiNote: event.data?.midiNote !== undefined,
+          midiNote: event.data?.midiNote,
+          eventData: event.data,
+          bufferCount: this.buffers.size,
+          bufferKeys: Array.from(this.buffers.keys()),
+        },
+      );
     }
 
     // Get buffer for this event
@@ -249,14 +256,24 @@ export class SimpleInstrumentScheduler {
       // We add 1 to display as human-readable 1-indexed values
       const parsedPos = parsePositionToObject(event.position);
       const eventMeasure = parsedPos.bars + 1; // 1-indexed for display
-      const eventBeat = parsedPos.beats + 1;   // 1-indexed for display
+      const eventBeat = parsedPos.beats + 1; // 1-indexed for display
 
       console.log(`🎸 [BASS-AUDIO-TIMING] === BASS NOTE SCHEDULING ===`);
-      console.log(`🎸 [BASS-AUDIO-TIMING] audioTime=${audioTime.toFixed(4)}s = ${(audioTime * 1000).toFixed(0)}ms`);
-      console.log(`🎸 [BASS-AUDIO-TIMING] Note position: measure=${eventMeasure}, beat=${eventBeat} (raw: ${event.position})`);
-      console.log(`🎸 [BASS-AUDIO-TIMING] midiNote=${event.data?.midiNote}, velocity=${velocity.toFixed(3)}`);
-      console.log(`🎸 [BASS-AUDIO-TIMING] audioContext.currentTime=${this.audioContext?.currentTime?.toFixed(4)}s`);
-      console.log(`🎸 [BASS-AUDIO-TIMING] scheduling ${(audioTime - (this.audioContext?.currentTime || 0)).toFixed(4)}s in advance`);
+      console.log(
+        `🎸 [BASS-AUDIO-TIMING] audioTime=${audioTime.toFixed(4)}s = ${(audioTime * 1000).toFixed(0)}ms`,
+      );
+      console.log(
+        `🎸 [BASS-AUDIO-TIMING] Note position: measure=${eventMeasure}, beat=${eventBeat} (raw: ${event.position})`,
+      );
+      console.log(
+        `🎸 [BASS-AUDIO-TIMING] midiNote=${event.data?.midiNote}, velocity=${velocity.toFixed(3)}`,
+      );
+      console.log(
+        `🎸 [BASS-AUDIO-TIMING] audioContext.currentTime=${this.audioContext?.currentTime?.toFixed(4)}s`,
+      );
+      console.log(
+        `🎸 [BASS-AUDIO-TIMING] scheduling ${(audioTime - (this.audioContext?.currentTime || 0)).toFixed(4)}s in advance`,
+      );
     }
 
     try {
@@ -300,7 +317,10 @@ export class SimpleInstrumentScheduler {
         // OTHER INSTRUMENTS: Use 10ms exponential fade-in to prevent audio spike on playback start
         const FADE_IN_DURATION = 0.01; // 10ms - imperceptible but eliminates clicks
         velocityGain.gain.setValueAtTime(0.001, audioTime); // Start near-zero (not 0 for exponential ramp)
-        velocityGain.gain.exponentialRampToValueAtTime(targetGain, audioTime + FADE_IN_DURATION);
+        velocityGain.gain.exponentialRampToValueAtTime(
+          targetGain,
+          audioTime + FADE_IN_DURATION,
+        );
       }
 
       // Connect: source → gain → destination
@@ -312,8 +332,11 @@ export class SimpleInstrumentScheduler {
         console.log(`🎸 [BASS AUDIO] Gain applied`, {
           gainValue: velocityGain.gain.value,
           targetGain,
-          fadeIn: this.config.preserveAttackEnvelope ? 'NONE (attack preserved)' : '10ms exponential',
-          destinationType: this.audioDestination?.constructor?.name || 'unknown',
+          fadeIn: this.config.preserveAttackEnvelope
+            ? 'NONE (attack preserved)'
+            : '10ms exponential',
+          destinationType:
+            this.audioDestination?.constructor?.name || 'unknown',
           audioTime: audioTime.toFixed(4),
         });
       }
@@ -347,7 +370,11 @@ export class SimpleInstrumentScheduler {
         // TEMPO FIX: Recalculate bass duration using live tempo
         // The event.data may contain durationInBeats and originalBpm from ExerciseLoader
         // If available, use these to calculate the correct duration at the current tempo
-        if (this.config.instrumentType === 'bass' && event.data && noteDuration) {
+        if (
+          this.config.instrumentType === 'bass' &&
+          event.data &&
+          noteDuration
+        ) {
           const durationInBeats = event.data.durationInBeats;
           const originalBpm = event.data.originalBpm;
 
@@ -377,7 +404,10 @@ export class SimpleInstrumentScheduler {
       }
 
       // Schedule stop for bass notes (instruments that need duration control)
-      const needsDurationControl = this.config.instrumentType === 'bass' && noteDuration && noteDuration > 0;
+      const needsDurationControl =
+        this.config.instrumentType === 'bass' &&
+        noteDuration &&
+        noteDuration > 0;
       if (needsDurationControl && noteDuration) {
         // Apply a quick 15ms fadeout before stop to prevent click (user requested 15ms)
         const FADEOUT_DURATION = 0.015;
@@ -410,11 +440,15 @@ export class SimpleInstrumentScheduler {
         // Parse position string to extract beat/measure accurately
         // event.position is the canonical source ("bar:beat:sixteenth" format)
         const diagPos = parsePositionToObject(event.position);
-        const beat = diagPos.beats + 1;   // 1-indexed for display
+        const beat = diagPos.beats + 1; // 1-indexed for display
         const measure = diagPos.bars + 1; // 1-indexed for display
 
         InstrumentTimingDiagnostic.record({
-          instrument: this.config.instrumentType as 'drums' | 'metronome' | 'bass' | 'voice-cue',
+          instrument: this.config.instrumentType as
+            | 'drums'
+            | 'metronome'
+            | 'bass'
+            | 'voice-cue',
           eventType: event.data?.drum || event.data?.cue || event.type,
           scheduledAudioTime: audioTime,
           jsExecutionTime: sourceStartCallEnd,
@@ -436,7 +470,9 @@ export class SimpleInstrumentScheduler {
           lookAhead: `${timeDelta.toFixed(2)}ms (${frameDelta} frames)`,
           sourceStartCallDuration: `${(sourceStartCallEnd - sourceStartCallTime).toFixed(3)}ms`,
           jsExecutionTime: performance.now(),
-          noteDuration: noteDuration ? `${(noteDuration * 1000).toFixed(0)}ms` : 'full sample',
+          noteDuration: noteDuration
+            ? `${(noteDuration * 1000).toFixed(0)}ms`
+            : 'full sample',
           hasStopScheduled: needsDurationControl,
           bufferAnalysis: {
             silentSamplesAtStart,
@@ -485,7 +521,9 @@ export class SimpleInstrumentScheduler {
     // GRACEFUL STOP: Let one-shot samples finish naturally
     // One-shot drum/metronome samples are short (< 1 second) and should ring out
     if (graceful) {
-      console.log(`[${this.config.loggerName} STOP] Graceful stop - letting ${this.scheduledSources.size} samples ring out naturally`);
+      console.log(
+        `[${this.config.loggerName} STOP] Graceful stop - letting ${this.scheduledSources.size} samples ring out naturally`,
+      );
       // Just clear the tracking map - samples will finish on their own
       // The onended callbacks will handle cleanup
       this.scheduledSources.clear();
@@ -502,7 +540,10 @@ export class SimpleInstrumentScheduler {
     let errorCount = 0;
 
     // Collect sources to disconnect after fadeout
-    const sourcesToDisconnect: Array<{ source: AudioBufferSourceNode; gain: GainNode }> = [];
+    const sourcesToDisconnect: Array<{
+      source: AudioBufferSourceNode;
+      gain: GainNode;
+    }> = [];
 
     this.scheduledSources.forEach((metadata, source) => {
       try {
@@ -538,24 +579,30 @@ export class SimpleInstrumentScheduler {
 
     // Disconnect sources AFTER fadeout completes (async cleanup)
     if (sourcesToDisconnect.length > 0) {
-      setTimeout(() => {
-        sourcesToDisconnect.forEach(({ source, gain }) => {
-          try {
-            source.disconnect();
-            gain.disconnect();
-          } catch {
-            // Already disconnected
-          }
-        });
-      }, FADEOUT_TIME * 1000 + 10); // 10ms buffer after fadeout
+      setTimeout(
+        () => {
+          sourcesToDisconnect.forEach(({ source, gain }) => {
+            try {
+              source.disconnect();
+              gain.disconnect();
+            } catch {
+              // Already disconnected
+            }
+          });
+        },
+        FADEOUT_TIME * 1000 + 10,
+      ); // 10ms buffer after fadeout
     }
 
-    console.log(`[${this.config.loggerName} STOP] Sources stopped with fadeout`, {
-      fadedCount,
-      stoppedCount,
-      errorCount,
-      fadeoutMs: FADEOUT_TIME * 1000,
-    });
+    console.log(
+      `[${this.config.loggerName} STOP] Sources stopped with fadeout`,
+      {
+        fadedCount,
+        stoppedCount,
+        errorCount,
+        fadeoutMs: FADEOUT_TIME * 1000,
+      },
+    );
   }
 
   /**

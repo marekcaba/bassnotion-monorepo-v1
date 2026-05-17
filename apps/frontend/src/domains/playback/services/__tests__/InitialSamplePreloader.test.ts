@@ -67,13 +67,15 @@ describe('InitialSamplePreloader - Background Preload Race Condition', () => {
 
     // Mock PlaybackEngine - track calls to setHarmonyBuffers
     mockPlaybackEngine = {
-      setHarmonyBuffers: vi.fn().mockImplementation((buffers, dest, ranges, instrument) => {
-        setHarmonyBuffersCalls.push({
-          bufferCount: buffers.size,
-          instrument,
-          timestamp: Date.now(),
-        });
-      }),
+      setHarmonyBuffers: vi
+        .fn()
+        .mockImplementation((buffers, dest, ranges, instrument) => {
+          setHarmonyBuffersCalls.push({
+            bufferCount: buffers.size,
+            instrument,
+            timestamp: Date.now(),
+          });
+        }),
     };
 
     // Mock CoreServices
@@ -119,7 +121,12 @@ describe('InitialSamplePreloader - Background Preload Race Condition', () => {
         // No buffer injection - just verify the skip logic
         expect(skipBufferInjection).toBe(true);
       } else {
-        mockPlaybackEngine.setHarmonyBuffers(new Map(), {}, undefined, exercise.harmonyInstrument);
+        mockPlaybackEngine.setHarmonyBuffers(
+          new Map(),
+          {},
+          undefined,
+          exercise.harmonyInstrument,
+        );
       }
 
       // Verify setHarmonyBuffers was NOT called
@@ -223,7 +230,9 @@ describe('InitialSamplePreloader - Background Preload Race Condition', () => {
       // Simulate sequential preloading
       for (const exercise of exercises) {
         const exerciseIdValue =
-          typeof exercise.id === 'object' ? (exercise.id as any).value : exercise.id;
+          typeof exercise.id === 'object'
+            ? (exercise.id as any).value
+            : exercise.id;
         const isCurrentlySelected = exerciseIdValue === selectedExerciseId;
         const skipBufferInjection = !isCurrentlySelected;
 
@@ -377,7 +386,9 @@ describe('InitialSamplePreloader - Background Preload Race Condition', () => {
       const selectedExerciseId = null;
 
       const exerciseIdValue =
-        typeof exercise.id === 'object' ? (exercise.id as any).value : exercise.id;
+        typeof exercise.id === 'object'
+          ? (exercise.id as any).value
+          : exercise.id;
       const isCurrentlySelected = exerciseIdValue === selectedExerciseId;
 
       // When no exercise is selected, all preloads should skip injection
