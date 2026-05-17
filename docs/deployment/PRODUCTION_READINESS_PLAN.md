@@ -579,7 +579,7 @@ follow-up effort:**
 - [x] **`midi-parser.service.spec.ts`** — three layered fixes: (a) the
       `@tonejs/midi` mock needed BOTH a `Midi` named export AND a
       `default.Midi` because the contracts library does `pkg.Midi ||
-  pkg.default || pkg`; (b) mocks needed `header: { ppq: 480 }` for
+pkg.default || pkg`; (b) mocks needed `header: { ppq: 480 }` for
       the PPQ-correction path production added; (c) rewrote 5 timing
       tests with proper `ticks` / `durationTicks` at PPQ=480 (1 measure
       = 1920 ticks in 4/4) because production migrated from time-in-
@@ -594,7 +594,7 @@ follow-up effort:**
 
 - [x] **Backend billing tests (34 errors)** — Stripe SDK type-bumps now
       require many more fields than the mocks provide. Switched `as
-  Stripe.X` → `as unknown as Stripe.X` for cast sites, dropped the
+Stripe.X` → `as unknown as Stripe.X` for cast sites, dropped the
       preceding `: Stripe.X` annotations so the cast actually applies,
       and replaced `jest.Mocked<T>` (vitest has no global jest
       namespace) with vitest's own `Mocked<T>`.
@@ -739,6 +739,131 @@ deletes + sub-suite skips. Two commits on `develop`:
 explicit user approval) because the pre-commit hook would otherwise
 block on the ~6.7k pre-existing legacy lint errors. Hook stays strict
 for all future commits.
+
+---
+
+## Phase 5c: Pre-launch grand audit — DONE (2026-05-17)
+
+A multi-agent audit (failing tests, stubs/TODOs, duplicates/disconnects,
+production hygiene) was run on the develop branch. Outcome: 5 raw
+ship-blockers identified, 2 turned out to be false positives, 3
+fixed.
+
+### Pre-commit hook relaxed (commit 757f6bb)
+
+Before the audit: every commit needed `--no-verify` because the
+hook ran full ESLint against ~6.7k legacy errors (no-console
+2131, no-restricted-syntax 2052, no-unused-vars 1187,
+no-unused-expressions 806 — all style/cleanliness, not bugs).
+
+The `.lintstagedrc.json` was updated to disable those 4 noisy
+rules at pre-commit while ALL bug-shaped rules stay strict
+(react-hooks/rules-of-hooks, no-undef, etc). Verified by
+attempting a deliberate react-hooks violation — hook correctly
+blocks with exit code 1.
+
+### Ship-blockers fixed (commit ae3474d)
+
+- [x] **POST /auth/signin had NO rate-limit decorator**
+      Added `@UseGuards(RateLimitGuard) @AuthRateLimit()` matching the
+      signup pattern. DB-backed lockouts already existed for defense
+      in depth; this adds per-IP+route throttling at the edge.
+
+- [x] **apps/backend/src/domains/audio-samples/ — DELETED**
+      3 upload endpoints with NO frontend caller. Frontend uploads
+      directly to Supabase storage via JS SDK. The unused endpoints
+      were authenticated-only (any user) and accepted arbitrary
+      base64 buffers up to 10MB into a PUBLIC bucket — an open spam
+      vector. 279 lines of dead code gone.
+
+- [x] **WamHostManager.ts two broken `../core/` imports** (commit ecfd01e)
+      Files didn't exist; runtime impact was nil (the related
+      serviceRegistry lookups never had matching registrations) but
+      the file had been compiling on `ignoreBuildErrors`. Re-pointed
+      PerformanceOptimizer as a type-only import to the canonical
+      location; replaced DeviceCapabilityManager with an inline
+      type stub. Same runtime behavior, file now compiles cleanly.
+
+- [x] **Backend log aggregation — re-classified, not a blocker**
+      Audit agent flagged "logging disabled in production" but the
+      backend logs flow to Railway stdout + errors go to Sentry,
+      which meets Phase 6 acceptance criteria. The commented-out
+      `LogTransportService` is a custom batched shipper that's
+      genuinely optional. Updated main.ts comments to explain the
+      architecture clearly instead of leaving the misleading
+      "temporarily disabled" comment that implied logs were broken.
+
+- [x] **Env hygiene — verified safe**
+      Audit agent flagged "live Supabase + Stripe keys committed".
+      Verified: `.env` files are gitignored AND have never been
+      committed to git history. Local-only. Production deploys use
+      Railway + Vercel env vars. No leak.
+
+### Pre-launch fixes shipped (commits ae3474d + bf654db)
+
+- [x] **3 placeholder pages hidden from nav**
+      `/app/studio`, `/app/gigs`, `/app/backstage` just render
+      "coming soon" text. Marked `disabled: true` in
+      MAIN_NAV_ITEMS (the navigation system already has a
+      `disabled` pattern). Underlying pages still exist for when
+      the features are built.
+
+- [x] **Feature flags in indefinite rollout — disabled for prod**
+      `DEBUG_PLAYBACK_ENGINE_MIGRATION: true → false` (was logging
+      noise every prod session). `COMPARE_PLAYBACK_ENGINE_PERFORMANCE:
+    true → false` (the old engine was deleted at Phase 3.2, so
+      the comparison path was dead code). Both still env-var
+      overridable for local investigation.
+
+### Pre-launch fixes intentionally deferred (backlog)
+
+- **Triple CircuitBreaker** — patterns/CircuitBreaker.ts
+  legitimately extends modules/storage/resilience/CircuitBreaker.ts
+  (real inheritance, not a duplicate). services/errors/CircuitBreaker.ts
+  is a @deprecated re-export wrapper that 7 callers still import.
+  Mechanical cleanup of 7 import paths; deferred to avoid pre-launch
+  risk.
+
+- **Triple PerformanceOptimizer** — three substantially different
+  implementations, different APIs, different consumers ("modularization
+  in progress"). Real refactor, not cleanup.
+
+- **35 undocumented env vars** in code but not in .env.example —
+  all have hardcoded defaults; documentation polish item.
+
+- **Segment-level error.tsx** — current root error.tsx catches
+  everything. Per-segment boundaries are nice-to-have for graceful
+  recovery.
+
+- **16 untested domains** (7 frontend, 9 backend) — pre-existing
+  coverage gap. Pre-LIVE; E2E + manual QA cover what unit tests
+  don't.
+
+- **WamHostManager has 11 pre-existing lint violations** — wrapped
+  in a file-level eslint-disable with documented rationale per
+  rule. Separate cleanup pass.
+
+- **Sentry deeper verification** — wiring appears complete; will
+  fully verify on next staging deploy.
+
+- **~6.7k legacy lint errors + ~56 playback test long-tail** —
+  documented in Phases 5b.1 and 5b.5 above.
+
+### Things that the audit confirmed are FINE (false positives or working as intended)
+
+- Sentry initialization (wiring complete, instrumentation files exist)
+- Security headers (CSP enforced, HSTS preload, Permissions-Policy)
+- DB migrations (all sequenced, applied to prod, last destructive
+  one was intentional refactor on already-shipped state)
+- Backend controller error handling (try/catch + structured logger
+  in all writes)
+- Rate-limit coverage for everything OTHER than the one signin gap
+- Public routes are correctly public (Stripe webhook signature-only,
+  OAuth callbacks)
+
+**Outcome:** Ship-blockers cleared. Backlog items documented. The
+codebase is in a publishable state pending Phase 8 (rollback
+runbook + manual QA + env audit).
 
 ---
 
