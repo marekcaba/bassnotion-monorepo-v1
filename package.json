@@ -73,6 +73,7 @@
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-prettier": "^5.4.1",
+    "fake-indexeddb": "^6.2.5",
     "glob": "^11.0.3",
     "husky": "^9.1.7",
     "jsdom": "^25.0.1",

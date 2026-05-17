@@ -28,19 +28,22 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import * as Tone from 'tone';
 
-// Mock Tone.js
-vi.mock('tone', () => ({
-  Transport: {
-    bpm: { value: 120 },
-    timeSignature: 4,
+// NOTE: MusicalTruthAuthority reads Tone via `window.Tone` (NOT via
+// `import * as Tone from 'tone'`). The shared test setup
+// (apps/frontend/src/test/setup.ts) installs a window.Tone mock per
+// test. We therefore read/write `(window as any).Tone.Transport.bpm`
+// instead of mocking the 'tone' module — otherwise the two references
+// diverge and the test sees its local mock at 120 while production
+// has already updated the window.Tone mock to the new BPM.
+const Tone = {
+  get Transport() {
+    return (window as any).Tone.Transport as {
+      bpm: { value: number };
+      timeSignature: number;
+    };
   },
-  getTransport: () => ({
-    bpm: { value: 120 },
-    timeSignature: 4,
-  }),
-}));
+};
 
 // Import after mocks
 import { musicalTruth } from '../MusicalTruthAuthority';

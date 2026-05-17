@@ -97,9 +97,15 @@ describe('Unified Loading Flow - End to End Integration', () => {
       }),
     }));
 
-    // Setup window with proper mocks
+    // Setup window with proper mocks.
+    // Note: the spread doesn't pick up non-enumerable props (like the
+    // fake-indexeddb polyfill installed via Object.defineProperty), so
+    // we re-attach `indexedDB` explicitly from the global. Without
+    // this, the LocalProvider's `'indexedDB' in window` check fails
+    // and the IndexedDB-backed cache path throws on every test run.
     global.window = {
       ...originalWindow,
+      indexedDB: (global as any).indexedDB,
       AudioContext: vi.fn(() => mockAudioContext),
       OfflineAudioContext: global.OfflineAudioContext,
       navigator: {

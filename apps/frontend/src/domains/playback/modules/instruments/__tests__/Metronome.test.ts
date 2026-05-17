@@ -7,8 +7,11 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 // Import mock utilities
 import { createMockAudioEngine, mockTone } from './mocks/mockAudioEngine.js';
 
-// Mock toneLoader to return our mockTone
-vi.mock('../../../services/plugins/toneLoader.js', () => ({
+// Mock toneLoader to return our mockTone. The earlier path
+// '../../../services/plugins/toneLoader.js' didn't exist (vitest mocks
+// at non-existent paths silently no-op) — the actual loader lives at
+// '../../shared/loaders/toneLoader.js' relative to this test file.
+vi.mock('../../shared/loaders/toneLoader.js', () => ({
   loadGlobalTone: vi.fn(() => Promise.resolve(mockTone)),
 }));
 

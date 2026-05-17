@@ -312,6 +312,11 @@ describe('CoreServices Integration', () => {
       close: vi.fn().mockResolvedValue(undefined),
       suspend: vi.fn().mockResolvedValue(undefined),
       resume: vi.fn().mockResolvedValue(undefined),
+      // Clock subscribes to AudioContext 'statechange' events via
+      // addEventListener; without these stubs initialization throws.
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
     }));
   });
 

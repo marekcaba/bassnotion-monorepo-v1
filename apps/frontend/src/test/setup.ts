@@ -1,6 +1,12 @@
 import { vi, beforeEach, afterEach } from 'vitest';
 import '@testing-library/jest-dom';
 
+// IndexedDB polyfill for jsdom — required for the playback domain's
+// LocalProvider (sample cache, storage). Without this, every test that
+// imports the cache/storage stack throws "IndexedDB not supported" at
+// import time. The /auto entry installs the polyfill on globalThis.
+import 'fake-indexeddb/auto';
+
 // Add ResizeObserver polyfill for react-three-fiber and other components
 // Manual polyfill since the package import doesn't work in this test environment
 if (!global.ResizeObserver) {
@@ -278,6 +284,34 @@ afterEach(() => {
 
 // Additional protection: Force restoration if globals are corrupted
 beforeEach(() => {
+  // Mirror fake-indexeddb onto `window`. The /auto entry only sets
+  // globalThis/global at module-load time, before jsdom has created
+  // its `window`. Code under test (LocalProvider) checks
+  // `'indexedDB' in window`, so we copy the polyfill across each test.
+  if (global.window && !('indexedDB' in global.window)) {
+    const idbProps = [
+      'indexedDB',
+      'IDBCursor',
+      'IDBCursorWithValue',
+      'IDBDatabase',
+      'IDBFactory',
+      'IDBIndex',
+      'IDBKeyRange',
+      'IDBObjectStore',
+      'IDBOpenDBRequest',
+      'IDBRecord',
+      'IDBRequest',
+      'IDBTransaction',
+      'IDBVersionChangeEvent',
+    ];
+    for (const prop of idbProps) {
+      const value = (global as any)[prop];
+      if (value !== undefined) {
+        (global.window as any)[prop] = value;
+      }
+    }
+  }
+
   // Setup window.Tone mock for lazy-loaded Tone.js access
   // This is required for getTone() helpers used throughout the codebase
   if (global.window && !(global.window as any).Tone) {
@@ -298,6 +332,11 @@ beforeEach(() => {
       scheduleRepeat: vi.fn(() => 0),
       scheduleOnce: vi.fn(() => 0),
       clear: vi.fn(),
+      // Position conversion helpers used by TrackMixingEngine etc.
+      toSeconds: vi.fn((time: any) =>
+        typeof time === 'number' ? time : 0,
+      ),
+      toTicks: vi.fn(() => 0),
     };
 
     const mockContext = {
@@ -319,6 +358,14 @@ beforeEach(() => {
       getContext: vi.fn(() => mockContext),
       setContext: vi.fn(),
       start: vi.fn().mockResolvedValue(undefined),
+      // Destination — production code uses Tone.getDestination()
+      // when connecting to the master bus. A stub Gain-like node is
+      // sufficient because the tests don't render audio.
+      getDestination: vi.fn(() => ({
+        connect: vi.fn().mockReturnThis(),
+        disconnect: vi.fn(),
+        chain: vi.fn().mockReturnThis(),
+      })),
 
       // Time utilities
       Time: vi.fn((val: any) => ({
@@ -431,6 +478,25 @@ beforeEach(() => {
         dispose: vi.fn(),
         distortion: 0.5,
         wet: { value: 1 },
+      })),
+      FeedbackDelay: vi.fn(() => ({
+        connect: vi.fn().mockReturnThis(),
+        disconnect: vi.fn(),
+        dispose: vi.fn(),
+        delayTime: { value: 0.25 },
+        feedback: { value: 0.5 },
+        wet: { value: 0.5 },
+      })),
+
+      // Scheduling primitives
+      Timeline: vi.fn(() => ({
+        add: vi.fn(),
+        remove: vi.fn(),
+        cancel: vi.fn(),
+        clear: vi.fn(),
+        getValueAt: vi.fn(),
+        forEach: vi.fn(),
+        length: 0,
       })),
 
       // Instruments/Sources

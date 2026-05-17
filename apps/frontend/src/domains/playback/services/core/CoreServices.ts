@@ -55,8 +55,11 @@ export class CoreServices {
   private pluginManager: PluginManager;
   private audioEventRouter: AudioEventRouter;
   private instrumentRegistry: InstrumentRegistry;
-  // Phase 3.2: regionProcessor property removed - RegionProcessor deleted
-  private playbackEngine: PlaybackEngine | null = null; // Phase 1 Task 1.4: New PlaybackEngine (feature flag)
+  // Phase 3.2: RegionProcessor deleted. Phase 5b.5 (2026-05-17):
+  // last zombie `this.regionProcessor` references in this file were
+  // removed; harmony/drum/voice-cue buffer injection now routes only
+  // to PlaybackEngine.
+  private playbackEngine: PlaybackEngine | null = null;
   private recoveryHandlers: RecoveryEventHandlers | null = null; // Handles recovery events from ErrorRecoveryRegistry
   private beatEmitter: BeatEmitter | null = null; // Audio-synchronized beat events via Tone.Draw
   private isInitialized = false;
@@ -305,19 +308,6 @@ export class CoreServices {
         this.beatEmitter = getBeatEmitter();
         this.beatEmitter.initialize(this.eventBus);
         logger.info('CoreServices: BeatEmitter initialized');
-      } else if (this.regionProcessor) {
-        // Legacy path: Initialize RegionProcessor if PlaybackEngine is disabled
-        logger.info('CoreServices: Setting AudioContext on RegionProcessor...');
-        this.regionProcessor.setAudioContext(audioContext);
-        logger.info(
-          'CoreServices: RegionProcessor configured with AudioContext for sample-accurate timing',
-        );
-
-        // Inject PluginManager for accessing WamKeyboard (sustain pedal routing)
-        this.regionProcessor.setPluginManager(this.pluginManager);
-        logger.info(
-          'CoreServices: PluginManager injected into RegionProcessor for CC event routing',
-        );
       }
 
       // ✅ OPTIMIZATION: Skip initial buffer injection - let setupDeferredBufferInjection() handle it
@@ -333,10 +323,7 @@ export class CoreServices {
       //   T+3500ms: samplesReady fires → single injection succeeds
       const skipInitialBufferInjection = true;
 
-      if (
-        !skipInitialBufferInjection &&
-        (this.regionProcessor || this.playbackEngine)
-      ) {
+      if (!skipInitialBufferInjection && this.playbackEngine) {
         console.log(
           '[CORESERVICES-BUFFER-INJECTION] Starting buffer injection...',
         );
@@ -431,14 +418,6 @@ export class CoreServices {
             this.playbackEngine?.getOrCreateInstrumentGainNode('drums');
           const drumsDestination = drumsGainNode || audioContext.destination;
 
-          if (this.regionProcessor) {
-            this.regionProcessor.setDrumBuffers(
-              kickBuffer,
-              snareBuffer,
-              hihatBuffer,
-              drumsDestination,
-            );
-          }
           // Inject drum buffers into PlaybackEngine for DrumScheduler
           if (this.playbackEngine) {
             const drumBuffers: Record<string, AudioBuffer> = {
@@ -489,12 +468,6 @@ export class CoreServices {
         });
 
         if (voiceCuesFound === cues.length) {
-          if (this.regionProcessor) {
-            this.regionProcessor.setVoiceCueBuffers(
-              voiceCueBuffers,
-              audioContext.destination,
-            );
-          }
           if (this.playbackEngine) {
             const voiceCueRecord: Record<string, AudioBuffer> = {};
             voiceCueBuffers.forEach((buffer, key) => {
@@ -588,10 +561,12 @@ export class CoreServices {
         });
 
         if (harmonyBuffersFound > 0) {
-          this.regionProcessor.setHarmonyBuffers(
-            harmonyBuffers,
-            audioContext.destination,
-          );
+          if (this.playbackEngine) {
+            this.playbackEngine.setHarmonyBuffers(
+              harmonyBuffers,
+              audioContext.destination,
+            );
+          }
           logger.info(
             '✅ CoreServices: Harmony buffers injected - direct harmony scheduling enabled',
             {
@@ -614,9 +589,9 @@ export class CoreServices {
           });
         }
 
-        // Note: RegionProcessor will be started when transport starts (via event listener)
+        // Note: PlaybackEngine will be started when transport starts (via event listener)
         logger.info(
-          'CoreServices: RegionProcessor initialized (will start with transport)',
+          'CoreServices: PlaybackEngine initialized (will start with transport)',
         );
         AudioDebugger.getInstance().log(
           'CoreServices',
@@ -638,7 +613,7 @@ export class CoreServices {
           'transportSyncManager',
           'pluginManager',
           'audioEventRouter',
-          'regionProcessor',
+          'playbackEngine',
         ],
       });
     } catch (error) {
@@ -674,10 +649,7 @@ export class CoreServices {
    */
   async stop(): Promise<void> {
     try {
-      // Stop RegionProcessor or PlaybackEngine first (they're generating events)
-      if (this.regionProcessor) {
-        this.regionProcessor.stop();
-      }
+      // Stop PlaybackEngine first (it's generating events)
       if (this.playbackEngine) {
         this.playbackEngine.stop();
       }
@@ -988,8 +960,8 @@ export class CoreServices {
       }
     }
 
-    if (harmonyBuffersFound > 0 && this.regionProcessor) {
-      this.regionProcessor.setHarmonyBuffers(
+    if (harmonyBuffersFound > 0 && this.playbackEngine) {
+      this.playbackEngine.setHarmonyBuffers(
         harmonyBuffers,
         audioContext.destination,
       );
@@ -1162,12 +1134,9 @@ export class CoreServices {
           graceful,
         });
 
-        // Stop RegionProcessor or PlaybackEngine with graceful flag
+        // Stop PlaybackEngine with graceful flag
         // graceful=true (auto-stop): Let one-shot drums/metronome finish naturally
         // graceful=false (manual stop): Force-stop all audio immediately
-        if (this.regionProcessor) {
-          this.regionProcessor.stop(graceful);
-        }
         if (this.playbackEngine) {
           this.playbackEngine.stop(graceful);
         }

@@ -173,7 +173,7 @@ describe('Backward Compatibility Tests', () => {
 
     it('should use window.__coreServices when no audioEngine provided', async () => {
       const { loadGlobalTone } =
-        await import('../../services/plugins/toneLoader.js');
+        await import('../shared/loaders/toneLoader.js');
 
       // Should use window.__coreServices
       const tone = await loadGlobalTone();
@@ -197,7 +197,7 @@ describe('Backward Compatibility Tests', () => {
       };
 
       const { loadGlobalTone } =
-        await import('../../services/plugins/toneLoader.js');
+        await import('../shared/loaders/toneLoader.js');
 
       // Should not throw when audioEngine is provided
       await expect(loadGlobalTone(mockAudioEngine)).resolves.toBeDefined();

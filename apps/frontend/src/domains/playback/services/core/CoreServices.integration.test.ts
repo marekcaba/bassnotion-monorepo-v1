@@ -147,6 +147,9 @@ describe('CoreServices Integration with InstrumentRegistry', () => {
             resume: vi.fn(() => Promise.resolve()),
             suspend: vi.fn(() => Promise.resolve()),
             close: vi.fn(() => Promise.resolve()),
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+            dispatchEvent: vi.fn(),
           }) as any,
       );
 
@@ -186,6 +189,9 @@ describe('CoreServices Integration with InstrumentRegistry', () => {
             resume: vi.fn(() => Promise.resolve()),
             suspend: vi.fn(() => Promise.resolve()),
             close: vi.fn(() => Promise.resolve()),
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+            dispatchEvent: vi.fn(),
           }) as any,
       );
 
@@ -227,6 +233,9 @@ describe('CoreServices Integration with InstrumentRegistry', () => {
             resume: vi.fn(() => Promise.resolve()),
             suspend: vi.fn(() => Promise.resolve()),
             close: vi.fn(() => Promise.resolve()),
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+            dispatchEvent: vi.fn(),
           }) as any,
       );
 
@@ -262,6 +271,9 @@ describe('CoreServices Integration with InstrumentRegistry', () => {
             resume: vi.fn(() => Promise.resolve()),
             suspend: vi.fn(() => Promise.resolve()),
             close: vi.fn(() => Promise.resolve()),
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+            dispatchEvent: vi.fn(),
           }) as any,
       );
 
