@@ -1,4 +1,4 @@
-# BETA Launch Plan — BassNotion
+# BETA Launch Plan — Bassicology
 
 > **Purpose:** Plan what we ship in BETA, what we polish first, what we defer to post-launch.
 >
@@ -10,7 +10,7 @@
 
 ## What we're shipping (the BETA product, in one paragraph)
 
-BassNotion BETA is a **paid tutorial library for bass players** with three sellable products:
+Bassicology BETA is a **paid tutorial library for bass players** with three sellable products:
 
 1. **Economy Picking module** — 22 tutorials drip-fed over 30 days from purchase date (~1 tutorial every 1.4 days).
 2. **Play Along pack** — two themed packs (12 grooves each). Each groove has layers (intro → practice exercises → unlockable "special groove"). The unlock mechanics (exercises turn green when played enough, special groove unlocks when all green) **already exist in the UI** — backend wiring will be verified, not built.
