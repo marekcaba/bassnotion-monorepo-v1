@@ -119,7 +119,9 @@ export class LocalProvider {
       };
 
       request.onupgradeneeded = (event) => {
-        const db = (event.target as IDBOpenDBRequest).result;
+        const target = event.target as IDBOpenDBRequest;
+        const db = target.result;
+        const oldVersion = event.oldVersion;
 
         // Create object store if it doesn't exist
         if (!db.objectStoreNames.contains(this.config.objectStoreName)) {
@@ -132,6 +134,28 @@ export class LocalProvider {
           store.createIndex('createdAt', 'createdAt', { unique: false });
           store.createIndex('updatedAt', 'updatedAt', { unique: false });
           store.createIndex('size', 'size', { unique: false });
+        }
+
+        // v1 → v2: bass cache keys changed from `bass-${midi}` to
+        // `bass-${midi}-${string}` so the same MIDI on different strings
+        // doesn't collide. Old single-key entries are now ambiguous —
+        // delete them; the new format will refetch on demand.
+        if (oldVersion > 0 && oldVersion < 2) {
+          const upgradeTxn = target.transaction;
+          if (upgradeTxn) {
+            const store = upgradeTxn.objectStore(this.config.objectStoreName);
+            const cursorReq = store.openKeyCursor();
+            cursorReq.onsuccess = () => {
+              const cursor = cursorReq.result;
+              if (!cursor) return;
+              const key = String(cursor.primaryKey);
+              // Old format: bass-<number> only. New format: bass-<number>-<letter>
+              if (/^bass-\d+$/.test(key)) {
+                cursor.delete();
+              }
+              cursor.continue();
+            };
+          }
         }
       };
     } catch (error) {

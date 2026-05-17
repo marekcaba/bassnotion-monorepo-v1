@@ -46,6 +46,22 @@ const EXERCISE_STRING_TO_SAMPLE_STRING: Record<number, BassString> = {
 const logger = getLogger('BassPreloadStrategy');
 
 /**
+ * Build the canonical IndexedDB/memory cache key for a bass sample.
+ *
+ * Bass samples are recorded per string — the same MIDI note can come from
+ * different strings (e.g., MIDI 60 on the D string vs. G string) and they
+ * sound different. Without the string in the cache key, an exercise that
+ * uses the D-string sample would silently get back the G-string sample
+ * cached by an earlier exercise (same pitch, wrong timbre).
+ */
+function buildBassCacheKey(
+  midiNote: number,
+  sampleString: BassString,
+): string {
+  return `bass-${midiNote}-${sampleString}`;
+}
+
+/**
  * Calculate MIDI note number from bass string and fret position
  *
  * IMPORTANT: Exercise data uses "guitar-style" string numbering where:
@@ -457,7 +473,7 @@ export class BassPreloadStrategy implements PreloadStrategy {
       for (const request of sampleRequests!) {
         const { midiNote, sampleString } = request;
         try {
-          const cacheKey = `bass-${midiNote}`;
+          const cacheKey = buildBassCacheKey(midiNote, sampleString);
 
           // Get raw ArrayBuffer from cache
           const rawBuffer = await cache.getCachedRawBuffer(cacheKey);
@@ -507,14 +523,28 @@ export class BassPreloadStrategy implements PreloadStrategy {
       );
       for (const midiNote of midiNotes) {
         try {
-          const cacheKey = `bass-${midiNote}`;
+          // Legacy path: no exercise-supplied string info, so derive the
+          // sample-string from getSampleForMidiNote() (returns the first
+          // valid string position). Key by it so we never collide with
+          // a different-string sample for the same MIDI note.
+          const fallbackConfig = getSampleForMidiNote(midiNote);
+          if (!fallbackConfig) {
+            logger.warn(
+              `No sample config for MIDI ${midiNote} in legacy decode path`,
+            );
+            continue;
+          }
+          const cacheKey = buildBassCacheKey(
+            midiNote,
+            fallbackConfig.string as BassString,
+          );
 
           // Get raw ArrayBuffer from cache
           const rawBuffer = await cache.getCachedRawBuffer(cacheKey);
 
           if (!rawBuffer) {
             // ArrayBuffer not cached yet - try to download it now (legacy: no string info)
-            const sampleConfig = getSampleForMidiNote(midiNote);
+            const sampleConfig = fallbackConfig;
             if (sampleConfig) {
               const response = await fetch(sampleConfig.url);
               if (response.ok) {
@@ -667,7 +697,7 @@ export class BassPreloadStrategy implements PreloadStrategy {
     // Create download tasks for all MIDI notes
     const downloadTasks = midiNotes.map(async (midiNote) => {
       try {
-        // Get sample config (includes URL)
+        // Get sample config (includes URL + string position)
         const sampleConfig = getSampleForMidiNote(midiNote);
         if (!sampleConfig) {
           logger.warn(`No sample config for MIDI note ${midiNote}`);
@@ -678,8 +708,11 @@ export class BassPreloadStrategy implements PreloadStrategy {
           };
         }
 
-        // Build cache key: bass-{midiNote}
-        const cacheKey = `bass-${midiNote}`;
+        // Key by midi+string so same pitch on different strings doesn't collide
+        const cacheKey = buildBassCacheKey(
+          midiNote,
+          sampleConfig.string as BassString,
+        );
 
         // Check IndexedDB cache first (like Harmony does)
         const cachedBuffer =
@@ -804,7 +837,17 @@ export class BassPreloadStrategy implements PreloadStrategy {
 
     for (const midiNote of midiNotes) {
       try {
-        const cacheKey = `bass-${midiNote}`;
+        // Legacy decode path (no exercise string info available) — derive the
+        // string from the sample manifest so we read the same key we wrote.
+        const fallbackConfig = getSampleForMidiNote(midiNote);
+        if (!fallbackConfig) {
+          logger.warn(`No sample config for MIDI ${midiNote}`);
+          continue;
+        }
+        const cacheKey = buildBassCacheKey(
+          midiNote,
+          fallbackConfig.string as BassString,
+        );
 
         // Get raw ArrayBuffer from cache
         const rawBuffer =
@@ -898,8 +941,9 @@ export class BassPreloadStrategy implements PreloadStrategy {
         // This is the KEY FIX - we use the exercise's string, not the first available
         const sampleUrl = buildSampleUrl(midiNote, sampleString);
 
-        // Build cache key: bass-{midiNote} (same as before for compatibility)
-        const cacheKey = `bass-${midiNote}`;
+        // Key by midi+string so two exercises that use the same MIDI on
+        // different strings don't collide on the same cache entry.
+        const cacheKey = buildBassCacheKey(midiNote, sampleString);
 
         // Check IndexedDB cache first
         const cachedBuffer =
@@ -1039,7 +1083,7 @@ export class BassPreloadStrategy implements PreloadStrategy {
     for (const request of sampleRequests) {
       const { midiNote, sampleString } = request;
       try {
-        const cacheKey = `bass-${midiNote}`;
+        const cacheKey = buildBassCacheKey(midiNote, sampleString);
 
         // Get raw ArrayBuffer from cache
         const rawBuffer =

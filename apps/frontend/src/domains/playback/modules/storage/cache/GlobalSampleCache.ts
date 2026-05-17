@@ -144,7 +144,11 @@ export class GlobalSampleCacheImpl {
       console.log('[INDEXEDDB-DEBUG] Initializing LocalProvider...');
       const localConfig: LocalProviderConfig = {
         dbName: 'BassNotionAudioSamples',
-        dbVersion: 1,
+        // v2 added on 2026-05-17: bass cache keys now include the sample
+        // string (bass-${midi}-${string}). The upgrade handler in
+        // LocalProvider deletes old single-key bass entries so the new
+        // format reuses storage cleanly.
+        dbVersion: 2,
         objectStoreName: 'samples',
         maxStorageSize: 500 * 1024 * 1024, // 500MB
         enableCompression: false, // Audio files are already compressed (OGG)

@@ -30,6 +30,10 @@ import { useCallback, useEffect, useRef } from 'react';
 import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
 import { GlobalSampleCache } from '@/domains/playback/modules/storage/cache/GlobalSampleCache';
 import { isVerboseDebugEnabled } from '@/config/debug';
+import {
+  getSampleForMidiNote,
+  type BassString,
+} from '@/domains/playback/modules/instruments/implementations/bass-sampler/index.js';
 import { STRING_TO_BASE_MIDI } from '../types.js';
 import type {
   UseBassBufferRegistrationOptions,
@@ -258,7 +262,13 @@ export function useBassBufferRegistration(
       let buffersDecoded = 0;
 
       for (const midiNote of midiNotesToLoad) {
-        const cacheKey = `bass-${midiNote}`;
+        // Cache key must include the sample-string (e.g. "bass-60-D" vs
+        // "bass-60-G") — same MIDI note on different strings sounds
+        // different. Derive the string here from the sample manifest so we
+        // read the same key BassPreloadStrategy wrote.
+        const sampleConfig = getSampleForMidiNote(midiNote);
+        if (!sampleConfig) continue;
+        const cacheKey = `bass-${midiNote}-${sampleConfig.string as BassString}`;
         const rawBuffer = await sampleCache.getCachedRawBuffer(cacheKey);
 
         if (rawBuffer) {

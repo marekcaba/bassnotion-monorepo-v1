@@ -328,6 +328,21 @@ export function useCoreServices(
       unsubscribeRefs.current.forEach((unsubscribe) => unsubscribe());
       unsubscribeRefs.current = [];
 
+      // Tell WidgetSyncService to drop its EventBus subscriptions so it can
+      // reconnect cleanly if CoreServices is recreated later. Done via dynamic
+      // import to avoid a hard cross-domain coupling at module init time.
+      try {
+        const { widgetSyncService } = await import(
+          '../../widgets/services/WidgetSyncService.js'
+        );
+        widgetSyncService.disconnectFromEventBus();
+      } catch (err) {
+        logger.warn(
+          'Could not notify WidgetSyncService of CoreServices dispose',
+          err as any,
+        );
+      }
+
       // Dispose services
       await coreServicesRef.current.dispose();
 
@@ -529,12 +544,23 @@ export function useCoreServices(
   //
   // Note: initialize() is still available for manual calls
 
-  // Cleanup on unmount
+  // Cleanup on unmount — only unsubscribe THIS hook instance's event listeners.
+  //
+  // CoreServices is a process-lifetime singleton stored in window.__globalCoreServices.
+  // Multiple consumer hooks share it. Calling dispose() here would tear down the global
+  // singleton on every page navigation, breaking other consumers (notably
+  // WidgetSyncService, whose isConnected flag never resets, leaving the EventBus link
+  // permanently broken on subsequent tutorial visits — audio plays but playhead and
+  // fretboard freeze).
+  //
+  // Explicit `dispose()` calls (returned from the hook) still tear everything down
+  // when the caller genuinely wants that.
   useEffect(() => {
     return () => {
-      dispose().catch(console.error);
+      unsubscribeRefs.current.forEach((unsubscribe) => unsubscribe());
+      unsubscribeRefs.current = [];
     };
-  }, [dispose]);
+  }, []);
 
   // Assembled state
   const state: CoreServicesState = {
