@@ -27,6 +27,8 @@ import { ApiResponse } from '../../../shared/types/api.types.js';
 import { ChangePasswordDto } from './dto/change-password.dto.js';
 import { PasswordSecurityService } from './services/password-security.service.js';
 import { ZodValidationPipe } from '../../../shared/pipes/zod-validation.pipe.js';
+import { AuthRateLimit } from '../../../shared/decorators/rate-limit.decorator.js';
+import { RateLimitGuard } from '../../../shared/guards/rate-limit.guard.js';
 import {
   signUpSchema,
   signInSchema,
@@ -76,6 +78,8 @@ export class AuthController {
   }
 
   @Post('signup')
+  @UseGuards(RateLimitGuard)
+  @AuthRateLimit()
   @UsePipes(new ZodValidationPipe(signUpSchema))
   @HttpCode(HttpStatus.CREATED)
   async signup(@Body() signUpDto: SignUpDto): Promise<AuthResponse> {
@@ -116,6 +120,8 @@ export class AuthController {
   }
 
   @Post('validate-email-domain')
+  @UseGuards(RateLimitGuard)
+  @AuthRateLimit()
   @HttpCode(HttpStatus.OK)
   async validateEmailDomain(
     @Body() body: { email: string },
@@ -304,6 +310,8 @@ export class AuthController {
   }
 
   @Post('magic-link')
+  @UseGuards(RateLimitGuard)
+  @AuthRateLimit()
   @HttpCode(HttpStatus.OK)
   async sendMagicLink(
     @Body() body: { email: string },
@@ -352,6 +360,8 @@ export class AuthController {
   }
 
   @Post('reset-password')
+  @UseGuards(RateLimitGuard)
+  @AuthRateLimit()
   @HttpCode(HttpStatus.OK)
   async resetPassword(
     @Body() body: { email: string },

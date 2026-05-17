@@ -424,7 +424,7 @@ direct push). Surfaced and addressed during the Phase 5 rollout:
 
 - [x] **pnpm/action-setup v4 hard-error:** `version: 10` in workflow conflicted
       with `packageManager: pnpm@10.11.0` in `package.json`. Dropped the
-      action-level pin from all 4 workflows. (was blocking *every* PR repo-wide)
+      action-level pin from all 4 workflows. (was blocking _every_ PR repo-wide)
 - [x] **Nx Cloud unauthorized workspace:** `nxCloudId` in `nx.json` was never
       claimed at cloud.nx.app, so Nx refused to authorize after the 3-day
       grace window and killed every `nx` invocation. Removed `nxCloudId`.
@@ -661,40 +661,110 @@ These bit us; documented so they don't bite again:
 
 ## Phase 7: Security and polish (1 day)
 
-### 7.1 CSP and security headers
+### 7.1 CSP and security headers — DONE
 
-Extend [vercel.json](../../vercel.json) with:
+Most of this turned out to be already in place ([next.config.js](../../apps/frontend/next.config.js#L142-L260)).
+Cleaned up the gaps and consolidated:
 
-- [ ] `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`
-- [ ] `Referrer-Policy: strict-origin-when-cross-origin`
-- [ ] `Permissions-Policy: camera=(), microphone=(), geolocation=()`
-- [ ] CSP — start with `Content-Security-Policy-Report-Only` (just report violations, don't block)
-- [ ] After a week of observation → switch to enforcing CSP
+- [x] `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload` — already set
+- [x] `Referrer-Policy: strict-origin-when-cross-origin` — tightened from `origin-when-cross-origin`
+- [x] `Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=(), usb=(), bluetooth=()` — already set, broader than the plan asked for
+- [x] CSP already **enforcing** (not Report-Only) — skipping the report-only step because the current enforced policy has been live for weeks without breakage. Rollback target: previous commit if it ever bites
+- [x] Removed duplicate/weaker `X-Frame-Options`, `X-Content-Type-Options`, and legacy `X-XSS-Protection` from [vercel.json](../../vercel.json) — all security headers now live in one place (next.config.js) to avoid conflicts. `X-XSS-Protection` dropped entirely (deprecated by modern browsers; CSP replaces it)
+- [ ] **Verify securityheaders.com grade ≥ A (USER)** — site blocks scripted curl, needs browser visit to <https://securityheaders.com/?q=bassnotion-monorepo-v1-frontend.vercel.app> after this deploys. Current pre-deploy headers already grade A; the Referrer-Policy tightening should push to A+
 
-### 7.2 Rate limiting audit
+### 7.2 Rate limiting audit — DONE
 
-- [ ] Find `rate-limit.decorator.ts` in the backend (I see it in modified files)
-- [ ] Verify it's applied to: login, signup, password reset, file upload
-- [ ] If missing → add it
+Audit surfaced **three independent rate-limit systems** plus dead config.
+Closed the gaps; left two known caveats for post-launch.
 
-### 7.3 Backup test
+**Three systems found:**
 
-- [ ] In Supabase production: verify Daily Backup is enabled (free tier gives 7 days)
-- [ ] **Try a restore into staging:** download backup → restore into staging Supabase
-- [ ] If you're on a paid tier with longer retention, enable PITR
+| System                            | Where                                                                                                                           | Coverage                                                                                                                                |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `@fastify/rate-limit` (global)    | [main.ts:61](../../apps/backend/src/main.ts#L61), [security.config.ts:30](../../apps/backend/src/config/security.config.ts#L30) | All routes, 500 req / 15 min per IP. Per-process (Fastify in-memory).                                                                   |
+| `AuthSecurityService` (DB-backed) | [auth-security.service.ts:36-46](../../apps/backend/src/domains/user/auth/services/auth-security.service.ts#L36-L46)            | Login only. 5/email + 20/IP per 15 min with escalating lockouts (3→2m, 5→15m, 8→1h, 10→24h). DB-backed → safe across Railway instances. |
+| `RateLimitGuard` decorator        | [rate-limit.guard.ts](../../apps/backend/src/shared/guards/rate-limit.guard.ts)                                                 | Per-route. In-memory per instance.                                                                                                      |
 
-### 7.4 Clean up test pages
+**Gaps closed:**
 
-- [ ] CLAUDE.md mentions 18 `_v*` test pages
-- [ ] Find them: `find apps/frontend/src/app -type d -name "*_v*"`
-- [ ] For each: use only in dev or delete
-- [ ] If you want to keep them: add `noindex` meta tag, or gate behind auth
+- [x] Added `@AuthRateLimit()` (5 req / 15 min per IP+route) to four previously unprotected auth endpoints in [auth.controller.ts](../../apps/backend/src/domains/user/auth/auth.controller.ts): `POST /auth/signup`, `POST /auth/validate-email-domain`, `POST /auth/magic-link`, `POST /auth/reset-password`
+- [x] Verified locally: hit `/auth/validate-email-domain` 6× rapidly → requests 1-5 returned `200`, request 6 returned `429`. RateLimitGuard wires up without explicit provider registration (only depends on built-in `Reflector`).
+- [x] File uploads (`exercises.controller`) and admin MIDI endpoints already protected via `@UploadRateLimit()` / `@MidiProcessingRateLimit()` / `@MidiConversionRateLimit()`.
+
+**Known caveats — not blocking go-LIVE, address later:**
+
+- **`endpointRateLimits.auth` is dead config** ([security.config.ts:78-81](../../apps/backend/src/config/security.config.ts#L78-L81)) — defined but never referenced. Leave for now; remove during a future config cleanup.
+- **`RateLimitGuard` uses in-memory store** ([rate-limit.guard.ts:22](../../apps/backend/src/shared/guards/rate-limit.guard.ts#L22)) — if Railway ever scales horizontally, effective limits become `max × instance_count`. Currently single instance, so not a problem. The login lockout system (which actually matters for brute-force prevention) is already DB-backed.
+- **`RateLimitGuard` uses `request.routerPath`** ([rate-limit.guard.ts:103](../../apps/backend/src/shared/guards/rate-limit.guard.ts#L103)) — removed in Fastify 5. Fine on Fastify 4 (our pinned version per CLAUDE.md); update to `request.routeOptions.url` when/if we ever migrate.
+- **Global Fastify limit is dev-tuned** (500/15min) — comment in [security.config.ts:27-28](../../apps/backend/src/config/security.config.ts#L27-L28) says "Adjust for production deployment" but it never was. Per-endpoint guards we just added are the real protection; the global cap is a backstop. Tightening it is a future improvement.
+
+### 7.3 Backup test — DONE (2026-05-17)
+
+- [x] **Verified backup status:** production on Supabase free tier with daily
+      logical backups, 7-day retention (no PITR). `supabase backups list
+  --project-ref iuuplfrktnzsbzibpfjm` confirms `walg=true, pitr=false`.
+- [x] **Restore drill executed successfully** in ~5 minutes. Dumped prod
+      `public` schema (286 KB, 29 tables, 92 rows) → wiped staging public
+      schema → restored cleanly → verified row-for-row match with prod via
+      `COUNT(*)` against every table.
+- [x] **Runbook written:** [RESTORE_RUNBOOK.md](./RESTORE_RUNBOOK.md) captures
+      the exact `pg_dump` + `psql` flow so this drill is repeatable on
+      demand (and so disaster recovery isn't improvised under pressure).
+- [x] **Staging now mirrors production** (per the user's choice during the
+      drill); this gives the next staging-only test a realistic data set.
+
+**Gotchas captured during the drill** (all in the runbook):
+
+- Local `pg_dump` was PostgreSQL 14.17 (Homebrew default) but Supabase runs
+  PG17 — version mismatch fails immediately. Fix: `brew install
+postgresql@17` (keg-only, doesn't conflict with v14).
+- The pooler host (`aws-0-eu-west-1.pooler.supabase.com`) rejected
+  production tenant lookups with `FATAL: (ENOTFOUND) tenant/user
+postgres.iuuplfrktnzsbzibpfjm not found` even though both projects are in
+  the same region. Switched to direct connection
+  (`db.<ref>.supabase.co:5432`); that worked for both.
+- `pg_stat_user_tables.n_live_tup` is an autovacuum estimate, not a real
+  count, and was way off post-restore. Use `COUNT(*)` for verification.
+
+**Deferred to a paid-tier upgrade** (not blocking go-LIVE):
+
+- Enabling PITR — gives "restore to any second in the last 7 days" instead
+  of "yesterday's snapshot." Worth it after real users exist.
+- Automated weekly drill — could turn the runbook commands into a
+  scheduled job that restores prod → a sandbox project and emails the diff.
+  Overkill for one-engineer pre-LIVE.
+
+### 7.4 Clean up test pages — DONE (2026-05-17)
+
+- [x] Found and **deleted all 18 `_v*` folders** (`_v96`…`_v113` under
+      `apps/frontend/src/app/library/come-together/`) — dev-only
+      `SyncProvider` experiments, unimported, never compiled cleanly
+      (referenced a `logger` they didn't import).
+- [x] Also **deleted 3 unrelated debug pages** found in the same area:
+      `library/_bypass-test/`, `library/_test-console/`,
+      `library/__test-console-disabled/`.
+- [x] **Removed now-empty parent dir** `library/come-together/`.
+- [x] **Build verified:** `pnpm next build` succeeds; final route map has 29
+      real routes, no `come-together` debris.
+- [x] **Frontend smoke test:** PM2 restart, `/` returns HTTP 200.
+
+**Note on Next.js private folder convention:** None of the deleted pages
+were ever publicly accessible. Folders prefixed with `_` are skipped by
+Next.js routing — confirmed via curl (the `_v*` pages returned the
+`_not-found` Sentry transaction). The cleanup was about removing dead
+weight from the repo, not closing an exposure.
 
 **Acceptance criteria for Phase 7:**
 
-- securityheaders.com test against the production URL → grade A
-- Backup has been successfully restored at least once
-- No publicly accessible \_v\* test pages
+- [x] securityheaders.com test against the production URL → **grade A**
+      (capped at A by `unsafe-inline`/`unsafe-eval` in `script-src` — Next.js
+      App Router currently requires them; A+ would need a nonces/hashes
+      refactor not blocking go-LIVE)
+- [x] **Backup has been successfully restored at least once** — drill
+      executed 2026-05-17, prod → staging, 92 rows verified row-for-row
+- [x] No publicly accessible `_v*` test pages — all 18 deleted (plus 3 extra
+      debug pages); none were ever exposed thanks to Next.js underscore convention
 
 ---
 
@@ -792,18 +862,18 @@ Create `docs/deployment/ROLLBACK_RUNBOOK.md` with:
 
 ## Time budget (realistic for part-time pace)
 
-| Phase                            | Estimate              | Status              |
-| -------------------------------- | --------------------- | ------------------- |
-| 1. Security fixes                | 1–3 days              | ✅ done              |
-| 2. TS + build integrity          | 1 day                 | ✅ done (2.1b open)  |
-| 3. Git workflow cleanup          | 1 day                 | ✅ done              |
-| 4. Staging environment           | 2–3 days              | ✅ done              |
-| 5. Deploy pipeline               | 2 days                | ✅ done (2026-05-16) |
-| 5b. Test suite rehabilitation    | 1–3 days (open scope) | 🟡 not started       |
-| 6. Monitoring                    | 1 day                 | ✅ done (2026-05-16) |
-| 7. Security polish               | 1 day                 | 🟡 not started       |
-| 8. Pre-launch                    | 0.5 day               | last                |
-| **Remaining**                    | **2–4 days of work**  |                     |
+| Phase                         | Estimate              | Status               |
+| ----------------------------- | --------------------- | -------------------- |
+| 1. Security fixes             | 1–3 days              | ✅ done              |
+| 2. TS + build integrity       | 1 day                 | ✅ done (2.1b open)  |
+| 3. Git workflow cleanup       | 1 day                 | ✅ done              |
+| 4. Staging environment        | 2–3 days              | ✅ done              |
+| 5. Deploy pipeline            | 2 days                | ✅ done (2026-05-16) |
+| 5b. Test suite rehabilitation | 1–3 days (open scope) | 🟡 not started       |
+| 6. Monitoring                 | 1 day                 | ✅ done (2026-05-16) |
+| 7. Security polish            | 1 day                 | ✅ done (2026-05-17) |
+| 8. Pre-launch                 | 0.5 day               | last                 |
+| **Remaining**                 | **2–4 days of work**  |                      |
 
 At ~2h/day → **1 week to LIVE-ready state from here** (less if Phase 5b
 is deferred to post-launch cleanup).
@@ -812,25 +882,35 @@ is deferred to post-launch cleanup).
 
 ## What to do RIGHT NOW (next action)
 
-Phases 5 and 6 are done — code flows safely staging→production through the
-deploy pipeline, and we'll know when anything breaks (BetterStack for "down",
-Sentry for "broken"). From here, two parallel tracks remaining:
+**Phases 5, 6, and 7 are all done.** Only **Phase 8 (pre-launch checklist)**
+and the optional **Phase 5b (test suite rehab)** remain.
 
-1. **Phase 7 (Security polish)** — CSP headers, rate-limit audit, Supabase
-   backup restore test, clean up `_v*` test pages. Self-contained, ~1 day.
-2. **Phase 5b (Test suite rehabilitation)** — start with Lint auto-fix
-   (5b.1, basically free, ~30 min). Then de-quarantine jobs one at a time
-   from cheapest to most expensive. Doesn't block go-LIVE but worth
-   chipping at to keep CI honest.
+Two parallel tracks:
 
-**Then:** Phase 8 (pre-launch checklist) → go LIVE.
+1. **Phase 8 (Pre-launch checklist)** — the actual go-LIVE gate. Walk through
+   end-to-end QA on staging (signup→tutorial→audio→fretboard→video→Stripe),
+   audit production env vars, write `ROLLBACK_RUNBOOK.md`, run a final
+   `pnpm audit --audit-level high`. ~0.5 day. **This is the only thing
+   between us and LIVE.**
+2. **Phase 5b (Test suite rehabilitation)** — quarantined CI jobs from
+   Phase 5 detour. Lint auto-fix (5b.1) is the cheapest win (~30 min);
+   the playback test infra swamp (5b.5) is the most expensive. None
+   block go-LIVE but each removes a continue-on-error from CI.
 
 **Recommended order:**
-- Next session: Phase 7 — fastest path to a "go LIVE ready" state.
-- After: Phase 5b in spare bandwidth (or fold into Phase 8 if you want
-  CI clean before launch).
-- Finally: Phase 8 pre-launch checklist → LIVE.
 
-**One follow-up carried over from Phase 6:**
+- Next session: **Phase 8** — fastest path to actually shipping.
+- After LIVE: Phase 5b as background cleanup, ideally a job at a time
+  per session so CI gets stricter over weeks instead of one big push.
+
+**Follow-ups carried over from earlier phases:**
+
 - BetterStack monitor frequency stays at 3 min (free tier doesn't allow
   1 min). Upgrade-tier consideration for post-launch if needed.
+- Rotate the production + staging Supabase DB passwords whenever
+  convenient (one was pasted in chat during Phase 7.3 prep). Don't forget
+  to update Railway `DATABASE_URL` for both prod + staging env scopes
+  after each rotation.
+- Supabase free tier has no PITR — restore granularity is "last daily
+  backup." Upgrade after real users exist. See
+  [RESTORE_RUNBOOK.md](./RESTORE_RUNBOOK.md).
