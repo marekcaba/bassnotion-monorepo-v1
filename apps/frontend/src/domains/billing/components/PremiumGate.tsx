@@ -88,7 +88,7 @@ export function PremiumGate({
     return (
       <DefaultAccessDenied
         title="Premium Content"
-        description="This content requires an active BassNotion Pro subscription."
+        description="This content requires an active Bassicology Pro subscription."
         buttonText="View Pricing"
         onAction={() => router.push('/pricing')}
       />

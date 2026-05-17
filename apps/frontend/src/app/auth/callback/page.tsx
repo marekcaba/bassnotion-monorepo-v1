@@ -67,7 +67,7 @@ function AuthCallbackContent() {
           // so the user knows what just happened (vs silent auto-sign-in).
           if (isEmailConfirmation(searchParams, session.user)) {
             toast({
-              title: 'Welcome to BassNotion!',
+              title: 'Welcome to Bassicology!',
               description: 'Your email is confirmed.',
             });
           }
@@ -125,7 +125,7 @@ function AuthCallbackContent() {
         setSession(data.session);
         if (isEmailConfirmation(searchParams, data.user)) {
           toast({
-            title: 'Welcome to BassNotion!',
+            title: 'Welcome to Bassicology!',
             description: 'Your email is confirmed.',
           });
         }

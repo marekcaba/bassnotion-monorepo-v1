@@ -770,8 +770,8 @@ export class WamMetronome extends WebAudioModuleBase {
   readonly descriptor: WamDescriptor;
 
   static descriptor: WamDescriptor = {
-    name: 'BassNotion Metronome',
-    vendor: 'BassNotion',
+    name: 'Bassicology Metronome',
+    vendor: 'Bassicology',
     version: '1.0.0',
     sdkVersion: '2.0.0',
     thumbnail: '',

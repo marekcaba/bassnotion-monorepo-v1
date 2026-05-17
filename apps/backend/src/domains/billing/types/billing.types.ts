@@ -77,7 +77,7 @@ export const COURSE_PRODUCTS: Record<CourseType, CourseProduct> = {
 
 export const SUBSCRIPTION_PRODUCT: SubscriptionProduct = {
   plan: 'monthly',
-  name: 'BassNotion Pro',
+  name: 'Bassicology Pro',
   description: 'Full access to 10+ tutorial pages with unlimited practice',
   priceInCents: 1400, // $14
   interval: 'month',

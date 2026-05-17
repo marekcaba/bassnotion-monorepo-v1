@@ -649,8 +649,8 @@ export class WamDrummerNode extends BaseNode implements WamNode {
 export default class WamDrummer implements Partial<WebAudioModule> {
   readonly isWebAudioModuleConstructor = true;
   readonly descriptor: WamDescriptor = {
-    name: 'BassNotion Drummer',
-    vendor: 'BassNotion',
+    name: 'Bassicology Drummer',
+    vendor: 'Bassicology',
     version: '1.0.0',
     sdkVersion: '2.0.0',
     thumbnail: '',

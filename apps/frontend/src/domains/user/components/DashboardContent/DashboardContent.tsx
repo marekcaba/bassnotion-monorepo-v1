@@ -52,7 +52,7 @@ export function DashboardContent() {
   return (
     <div className="space-y-6">
       <div className="rounded-lg border bg-card p-6">
-        <h2 className="text-xl font-semibold mb-4">Welcome to BassNotion!</h2>
+        <h2 className="text-xl font-semibold mb-4">Welcome to Bassicology!</h2>
         <p className="text-muted-foreground">Your music learning dashboard.</p>
       </div>
 

@@ -320,7 +320,7 @@ function DashboardPageContent() {
                   Welcome back!
                 </h2>
                 <p className="text-gray-400 text-sm sm:text-base">
-                  You're successfully signed in to BassNotion.
+                  You're successfully signed in to Bassicology.
                 </p>
               </div>
               {!showProfileDialog && (
@@ -426,7 +426,7 @@ function DashboardPageContent() {
             </h2>
             <div className="bg-zinc-900 rounded-lg border border-zinc-800 p-4 sm:p-6">
               <p className="text-sm text-gray-400 mb-4">
-                Interactive BassNotion features with smooth layout animations
+                Interactive Bassicology features with smooth layout animations
                 powered by AutoAnimate
               </p>
               <DashboardContent />

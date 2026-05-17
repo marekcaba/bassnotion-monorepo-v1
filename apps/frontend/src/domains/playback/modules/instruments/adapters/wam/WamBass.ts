@@ -714,8 +714,8 @@ export class WamBass extends WebAudioModuleBase {
   descriptor: WamDescriptor;
 
   static descriptor: WamDescriptor = {
-    name: 'BassNotion Bass',
-    vendor: 'BassNotion',
+    name: 'Bassicology Bass',
+    vendor: 'Bassicology',
     version: '1.0.0',
     sdkVersion: '2.0.0',
     thumbnail: '',

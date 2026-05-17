@@ -38,7 +38,7 @@ export class WamKeyboardPlugin extends EventEmitter implements AudioPlugin {
     id: 'wam-keyboard',
     name: 'WAM Keyboard',
     version: '1.0.0',
-    author: 'BassNotion',
+    author: 'Bassicology',
     description:
       'Multi-instrument keyboard sampler (Grand Piano, Rhodes, Wurlitzer)',
     license: 'MIT',

@@ -1,7 +1,7 @@
 /**
  * Billing Domain Exports
  *
- * This module provides Stripe payment integration for BassNotion:
+ * This module provides Stripe payment integration for Bassicology:
  * - One-time course purchases ($39, $49, $99)
  * - Monthly subscription ($14/month)
  */

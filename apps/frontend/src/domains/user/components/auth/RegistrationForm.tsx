@@ -87,7 +87,7 @@ export function RegistrationForm({
         <p className="text-gray-400 text-center mt-2">
           {initialValues?.email
             ? `Create account for ${initialValues.email}`
-            : 'Join BassNotion to start your bass learning journey'}
+            : 'Join Bassicology to start your bass learning journey'}
         </p>
       </div>
 

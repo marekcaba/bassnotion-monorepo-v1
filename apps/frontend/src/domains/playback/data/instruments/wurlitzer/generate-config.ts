@@ -197,7 +197,7 @@ allNotes.forEach((note) => {
 const config = {
   name: 'Wurlitzer Electric Piano',
   version: '2.0.0',
-  author: 'BassNotion Team',
+  author: 'Bassicology Team',
   description:
     'Classic Wurlitzer 200A electric piano with per-note velocity layers (OGG format)',
 

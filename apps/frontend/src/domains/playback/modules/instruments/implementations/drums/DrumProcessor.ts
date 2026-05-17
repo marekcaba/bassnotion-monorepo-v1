@@ -55,7 +55,7 @@ abstract class BaseAudioPlugin implements AudioPlugin {
       id,
       name: id,
       version: '1.0.0',
-      author: 'BassNotion',
+      author: 'Bassicology',
       description: 'Audio plugin',
       category: 'effect' as PluginCategory,
       license: 'MIT',
@@ -278,7 +278,7 @@ export class DrumProcessor extends BaseAudioPlugin {
     version: '1.0.0',
     description:
       'Professional drum and rhythm processing with beat detection, rhythm analysis, and pattern generation',
-    author: 'BassNotion Team',
+    author: 'Bassicology Team',
     homepage: 'https://bassnotion.com',
     license: 'MIT',
     category: PluginCategory.ANALYZER,

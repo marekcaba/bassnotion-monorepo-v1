@@ -70,7 +70,7 @@ class BaseAudioPlugin {
       id: id,
       name: id,
       version: '1.0.0',
-      author: 'BassNotion',
+      author: 'Bassicology',
       description: 'Audio plugin',
       license: 'MIT',
       category: PluginCategory.PROCESSOR,

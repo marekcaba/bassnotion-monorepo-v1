@@ -1310,8 +1310,8 @@ export class WamKeyboard extends WebAudioModuleBase {
   readonly instanceId: string;
 
   descriptor: WamDescriptor = {
-    name: 'BassNotion Keyboard',
-    vendor: 'BassNotion',
+    name: 'Bassicology Keyboard',
+    vendor: 'Bassicology',
     version: '1.0.0',
     sdkVersion: '2.0.0',
     thumbnail: '',
@@ -1326,8 +1326,8 @@ export class WamKeyboard extends WebAudioModuleBase {
   };
 
   static descriptor: WamDescriptor = {
-    name: 'BassNotion Keyboard',
-    vendor: 'BassNotion',
+    name: 'Bassicology Keyboard',
+    vendor: 'Bassicology',
     version: '1.0.0',
     sdkVersion: '2.0.0',
     thumbnail: '',

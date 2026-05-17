@@ -191,7 +191,7 @@ function SubscriptionManagerContent() {
               <p className="text-sm text-gray-400 mb-1">Current Plan</p>
               <div className="flex items-center gap-2">
                 <span className="text-lg font-semibold text-white">
-                  BassNotion Pro
+                  Bassicology Pro
                 </span>
                 {getStatusBadge(access.subscriptionStatus)}
               </div>

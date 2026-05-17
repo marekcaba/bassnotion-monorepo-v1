@@ -305,7 +305,7 @@ function SettingsPageContent() {
           Features & Animation Demo
         </h2>
         <p className="text-sm text-gray-400 mb-4">
-          Interactive BassNotion features with smooth layout animations powered
+          Interactive Bassicology features with smooth layout animations powered
           by AutoAnimate
         </p>
         <DashboardContent />

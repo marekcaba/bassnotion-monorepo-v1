@@ -105,7 +105,7 @@ export class BassProcessor extends BaseAudioPlugin {
     version: '1.0.0',
     description:
       'Professional bass guitar audio processing with EQ, compression, and distortion',
-    author: 'BassNotion Team',
+    author: 'Bassicology Team',
     homepage: 'https://bassnotion.com',
     license: 'MIT',
     category: 'effect' as PluginCategory,
