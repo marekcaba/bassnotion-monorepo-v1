@@ -6,6 +6,9 @@
 >
 > **Last drilled:** 2026-05-17 — restored production into staging successfully
 > in ~5 minutes (92 rows across 29 tables, schema + data + RLS policies).
+> Initial run used `--no-acl` and broke staging GRANTs; runbook updated
+> immediately after to drop that flag (see Step 4) and to document the
+> manual GRANT-reapply recovery in Step 7b.
 
 ---
 
@@ -71,9 +74,11 @@ Verify (does not print the values):
 
 ### Step 2 — Test both connections
 
-Both projects use **direct connections** (`db.<project-ref>.supabase.co:5432`)
-because the pooler hosts (`aws-0-eu-west-1.pooler.supabase.com`) don't always
-route correctly across regions for `pg_dump`:
+Pick connection format based on whether your environment has IPv6:
+
+**Direct connection** (`db.<project-ref>.supabase.co:5432`) — works from
+most local shells, but the host is **IPv6-only** in DNS. Use this if your
+machine has IPv6 connectivity:
 
 ```bash
 . /tmp/restore-drill.env
@@ -81,8 +86,24 @@ PROD_DB_PWD_ENC=$(printf '%s' "$PROD_DB_PWD" | jq -rR @uri)
 STAGING_DB_PWD_ENC=$(printf '%s' "$STAGING_DB_PWD" | jq -rR @uri)
 PROD_URL="postgresql://postgres:${PROD_DB_PWD_ENC}@db.iuuplfrktnzsbzibpfjm.supabase.co:5432/postgres"
 STAGING_URL="postgresql://postgres:${STAGING_DB_PWD_ENC}@db.vraxryaaznpkvtkindpn.supabase.co:5432/postgres"
+```
 
-# Quick smoke test
+**Pooler connection** (IPv4) — fallback when the direct hosts can't be
+reached (sandboxed shells, CI runners without IPv6, etc.). Note the
+tenant-qualified username `postgres.<project-ref>`:
+
+```bash
+PROD_URL="postgresql://postgres.iuuplfrktnzsbzibpfjm:${PROD_DB_PWD_ENC}@aws-0-eu-west-1.pooler.supabase.com:5432/postgres"
+STAGING_URL="postgresql://postgres.vraxryaaznpkvtkindpn:${STAGING_DB_PWD_ENC}@aws-0-eu-west-1.pooler.supabase.com:5432/postgres"
+```
+
+Both projects are in `eu-west-1` despite the legacy `us-east-1`
+placeholder in `apps/backend/.env`. Port 5432 is session-mode (use for
+admin work like dump/restore); port 6543 is transaction-mode (don't use
+for restores — it breaks on multi-statement scripts).
+
+```bash
+# Quick smoke test (works for either URL form):
 /opt/homebrew/opt/postgresql@17/bin/psql "$PROD_URL" -c "SELECT current_database();"
 /opt/homebrew/opt/postgresql@17/bin/psql "$STAGING_URL" -c "SELECT current_database();"
 ```
@@ -119,7 +140,6 @@ by autovacuum. Use `COUNT(*)` for verification.
 /opt/homebrew/opt/postgresql@17/bin/pg_dump "$PROD_URL" \
   --schema=public \
   --no-owner \
-  --no-acl \
   --no-publications \
   --no-subscriptions \
   --file=/tmp/source-public-dump.sql
@@ -134,9 +154,14 @@ Expected size for our current data: ~280-300 KB.
 - `--schema=public` — only application data, not Supabase-managed `auth`,
   `storage`, etc.
 - `--no-owner` — don't reapply prod owner roles to target.
-- `--no-acl` — don't reapply prod GRANTs (the target's RLS will be regenerated).
 - `--no-publications` / `--no-subscriptions` — don't carry over logical
   replication setup.
+- **NOT `--no-acl`** — earlier versions of this runbook included it; that
+  broke staging's backend by stripping the GRANTs Supabase's `service_role`
+  needs to read `public` tables (see Step 7b). Including the ACL block
+  carries over prod's GRANTs verbatim, and since both projects use the
+  same canonical role names (`anon`, `authenticated`, `service_role`),
+  they apply cleanly to the target.
 
 ### Step 5 — Wipe target schema
 
@@ -176,28 +201,45 @@ diff /tmp/source-rowcounts.txt /tmp/target-rowcounts.txt && echo "✅ MATCH"
 # No output from diff + "✅ MATCH" line = perfect.
 ```
 
-### Step 7b — Reapply GRANTs / RLS (CRITICAL — won't work without this)
+### Step 7b — Only if you used `--no-acl` (see Step 4)
 
-`pg_dump --no-acl` drops the original GRANTs. The Supabase backend connects
-as `service_role` which then loses SELECT on every table in `public`,
-causing `/api/health` to fail with `permission denied for table exercises`.
+If you used the older `--no-acl` form of `pg_dump`, the Supabase backend
+will lose SELECT on every `public` table and `/api/health` will fail with
+`permission denied for table exercises`. The newer Step 4 (without
+`--no-acl`) makes this step unnecessary, but it's documented here in case
+you need to recover an existing target.
 
-Reapply migrations to recreate the GRANTs:
+**Don't try `supabase db push` for this** — Supabase's migration history
+table still has all the entries, so the CLI reports "Remote database is up
+to date" and applies nothing. Migrations are also not fully idempotent
+(some `CREATE POLICY` statements have no `IF NOT EXISTS`), so forcing a
+replay by truncating `schema_migrations` errors out mid-way.
+
+**Working recovery — apply the GRANTs directly:**
 
 ```bash
-supabase link --project-ref vraxryaaznpkvtkindpn   # staging
-supabase db push --linked
+/opt/homebrew/opt/postgresql@17/bin/psql "$STAGING_URL" <<'SQL'
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role, authenticated;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO anon;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role, authenticated;
+GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO anon;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO service_role, authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO anon;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO service_role, authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE ON SEQUENCES TO anon;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO anon, authenticated, service_role;
+SQL
 ```
 
-Verify staging backend health recovers:
+Verify staging backend health recovers (Railway re-tries the DB on each
+request; no restart needed):
 
 ```bash
-curl -s https://backend-staging-4d19.up.railway.app/api/health | jq .status
+curl -s https://backend-staging-4d19.up.railway.app/api/health | jq -r '.status'
 # Expected: "healthy"
 ```
-
-**Don't forget to re-link back to production** afterwards if your local
-workflow expects it (`supabase link --project-ref iuuplfrktnzsbzibpfjm`).
 
 ### Step 8 — Cleanup
 

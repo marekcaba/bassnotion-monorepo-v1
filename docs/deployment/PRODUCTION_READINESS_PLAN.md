@@ -726,19 +726,54 @@ postgres.iuuplfrktnzsbzibpfjm not found` even though both projects are in
   (`db.<ref>.supabase.co:5432`); that worked for both.
 - `pg_stat_user_tables.n_live_tup` is an autovacuum estimate, not a real
   count, and was way off post-restore. Use `COUNT(*)` for verification.
-- **`--no-acl` dropped GRANTs and broke staging's backend** when the next
-  deploy.yml run found `/api/health` reporting `permission denied for
-  table exercises`. Recovery: `supabase link --project-ref
-  vraxryaaznpkvtkindpn` → `supabase db push --linked` to reapply migrations
-  (which re-grant `service_role` access). Update needed in
-  [RESTORE_RUNBOOK.md](./RESTORE_RUNBOOK.md) to make this an explicit
-  post-step, or drop `--no-acl` from the dump command so GRANTs carry over.
-- **Smoke test in [deploy.yml](../../.github/workflows/deploy.yml) had a
-  false-positive bug:** it grepped for `"status":"healthy"` in the response
-  body, but the nested `"api":{"status":"healthy"}` matched even when the
-  top-level status was `"unhealthy"`. Fixed in the same Phase 7 commit
-  range by switching to `jq -r '.status'`. Found when the deploy run for
-  commit `f532511` reported all-green despite staging being broken.
+- **`--no-acl` dropped GRANTs and broke staging's backend** —
+  `/api/health` reported `permission denied for table exercises` because
+  the Supabase `service_role` lost SELECT on every `public` table. The
+  initial recovery attempt (`supabase db push --linked`) **did not work**
+  — `supabase_migrations.schema_migrations` still had all 80 rows so the
+  CLI reported "Remote database is up to date" and applied nothing.
+  Working recovery (commit `3cb8bd0` documented this in
+  [RESTORE_RUNBOOK.md](./RESTORE_RUNBOOK.md)):
+
+  ```sql
+  -- Reapply the GRANTs that --no-acl dropped, matching Supabase defaults:
+  GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+  GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role, authenticated;
+  GRANT SELECT ON ALL TABLES IN SCHEMA public TO anon;
+  GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role, authenticated;
+  GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO anon;
+  GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_role;
+  ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO service_role, authenticated;
+  ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO anon;
+  ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO service_role, authenticated;
+  ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE ON SEQUENCES TO anon;
+  ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO anon, authenticated, service_role;
+  ```
+
+  Better: **drop `--no-acl` from the dump command** so GRANTs carry over
+  in the first place. The runbook now omits it.
+- **Don't `DELETE FROM supabase_migrations.schema_migrations`** as a
+  recovery shortcut — Supabase migrations are NOT fully idempotent (some
+  `CREATE POLICY` statements have no `IF NOT EXISTS`), so a forced replay
+  errors mid-way. If you do clear the history table by mistake, rebuild
+  it from local files: `ls supabase/migrations/*.sql | sed -E 's|.*/||;
+  s|_.*||' | sort -u | xargs -I{} psql "$DB_URL" -c "INSERT INTO
+  supabase_migrations.schema_migrations (version) VALUES ('{}') ON
+  CONFLICT DO NOTHING;"`
+- **Pooler connection from non-IPv6 environments:** harness shells without
+  IPv6 routing can't reach `db.<ref>.supabase.co:5432` (IPv6-only DNS).
+  Use the IPv4-only pooler instead with the tenant-qualified username:
+  `postgres://postgres.<ref>:<pwd>@aws-0-eu-west-1.pooler.supabase.com:5432/postgres`.
+  Both projects are in `eu-west-1` regardless of what the legacy
+  `us-east-1` placeholder in `apps/backend/.env` suggests.
+- **Smoke test + health-gate in
+  [deploy.yml](../../.github/workflows/deploy.yml) had a false-positive
+  bug:** both grepped for `"status":"healthy"` in the response body, but
+  the nested `"api":{"status":"healthy"}` matched even when the top-level
+  status was `"unhealthy"`. Fixed in commit `3cb8bd0` by switching to
+  `jq -r '.status'` for top-level-only matching. Found when the deploy
+  run for commit `f532511` reported all-green despite staging actually
+  being broken — the bug had been masking real failures since Phase 5.
 
 **Deferred to a paid-tier upgrade** (not blocking go-LIVE):
 
