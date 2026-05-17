@@ -131,6 +131,8 @@ export class AuthController {
   }
 
   @Post('signin')
+  @UseGuards(RateLimitGuard)
+  @AuthRateLimit()
   @UsePipes(new ZodValidationPipe(signInSchema))
   @HttpCode(HttpStatus.OK)
   async signin(
