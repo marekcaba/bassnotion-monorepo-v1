@@ -111,6 +111,18 @@ export interface UsePlaybackControlReturn {
   handlePlayButtonClick: () => Promise<void>;
   /** Whether playback toggle is in progress */
   isTogglingPlayback: boolean;
+  /**
+   * Whether the play handler is currently waiting for samples (or bass
+   * buffers) to finish loading. Used by the play button to show a single
+   * spinner state instead of a stream of toasts.
+   */
+  isLoadingSamples: boolean;
+  /**
+   * If true, the last attempt to load bass buffers failed. Consumers
+   * (e.g. BassLineWidget) can surface a non-blocking "bass unavailable"
+   * indicator instead of relying on a transient toast.
+   */
+  bassFailedToLoad: boolean;
 }
 
 /**
@@ -309,6 +321,13 @@ export function usePlaybackControl(
   } = options;
 
   const [isTogglingPlayback, setIsTogglingPlayback] = useState(false);
+  // Visible to consumers so the play button can show a spinner instead of a
+  // toast cascade while we wait for samples + bass buffers.
+  const [isLoadingSamples, setIsLoadingSamples] = useState(false);
+  // Sticky flag — bass loading failures used to fire a single toast that
+  // disappeared in 5 seconds. Now the failure persists so BassLineWidget can
+  // render a "bass unavailable" badge with a retry affordance.
+  const [bassFailedToLoad, setBassFailedToLoad] = useState(false);
 
   const handlePlayButtonClick = useCallback(async () => {
     logger.debug('🎵 PLAY BUTTON CLICKED - usePlaybackControl handler');
@@ -324,20 +343,32 @@ export function usePlaybackControl(
       return;
     }
 
-    // CRITICAL: Wait for samples to be ready before starting playback
-    if (typeof window !== 'undefined' && !window.__samplesReady) {
-      logger.warn('⚠️ Samples not ready yet, waiting...');
-      await showToast(
-        'Loading Sounds...',
-        'Please wait while we prepare the audio samples.',
-      );
+    // Wait for samples + bass buffers if needed. The play button is now
+    // visibly busy via isLoadingSamples (used by PlaybackControlsBar to
+    // disable + spin the button), so we don't need progress toasts.
+    const samplesNotReady =
+      typeof window !== 'undefined' && !window.__samplesReady;
+    const hasBassNotes = selectedExercise?.notes?.some(
+      (note: any) => note.string >= 1 && note.string <= 5,
+    );
+    const bassNotReady =
+      hasBassNotes &&
+      !WindowRegistry.getBassBuffersReady(selectedExercise?.id);
 
+    if (samplesNotReady || bassNotReady) {
+      setIsLoadingSamples(true);
+    }
+
+    if (samplesNotReady) {
+      logger.warn('⚠️ Samples not ready yet, waiting...');
       try {
         await waitForSamplesReady();
         logger.info('✅ Samples ready, continuing with playback');
-        await showToast('Ready!', 'Audio samples loaded successfully.');
       } catch (error) {
         logger.error('❌ Failed to wait for samples:', error);
+        setIsLoadingSamples(false);
+        // Error toasts still matter — the user needs to know what failed
+        // and that refresh is the recovery action.
         await showToast(
           'Loading Error',
           'Failed to load audio samples. Please refresh the page.',
@@ -349,37 +380,38 @@ export function usePlaybackControl(
       logger.debug('✅ Samples already ready, proceeding with playback');
     }
 
-    // CRITICAL: Check if exercise has bass notes and wait for bass buffers
-    const hasBassNotes = selectedExercise?.notes?.some(
-      (note: any) => note.string >= 1 && note.string <= 5,
-    );
-
-    if (
-      hasBassNotes &&
-      !WindowRegistry.getBassBuffersReady(selectedExercise?.id)
-    ) {
+    if (bassNotReady) {
       logger.warn('⚠️ Bass buffers not ready yet, waiting...');
-      await showToast(
-        'Loading Bass Sounds...',
-        'Please wait while we prepare the bass samples.',
-      );
-
       try {
         await waitForBassBuffersReady(selectedExercise?.id);
         logger.info('✅ Bass buffers ready, continuing with playback');
-        await showToast('Ready!', 'Bass samples loaded successfully.');
+        setBassFailedToLoad(false);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('bassicology:bass-recovered', {
+              detail: { exerciseId: selectedExercise?.id },
+            }),
+          );
+        }
       } catch (error) {
         logger.error('❌ Failed to wait for bass buffers:', error);
-        await showToast(
-          'Bass Loading Error',
-          'Bass samples may not play correctly. Continuing anyway.',
-          'destructive',
-        );
+        // Mark sticky — the BassLineWidget surfaces this with an inline
+        // retry instead of a transient toast that disappears in 5s.
+        setBassFailedToLoad(true);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('bassicology:bass-failed', {
+              detail: { exerciseId: selectedExercise?.id },
+            }),
+          );
+        }
         // Don't return - continue with playback even without bass
       }
     } else if (hasBassNotes) {
       logger.debug('✅ Bass buffers already ready, proceeding with playback');
     }
+
+    setIsLoadingSamples(false);
 
     logger.debug('🎵 Transport state:', {
       isPlaying: transport.isPlaying,
@@ -793,5 +825,7 @@ export function usePlaybackControl(
   return {
     handlePlayButtonClick,
     isTogglingPlayback,
+    isLoadingSamples,
+    bassFailedToLoad,
   };
 }

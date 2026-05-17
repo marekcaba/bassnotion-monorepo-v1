@@ -244,7 +244,9 @@ export function useSocialInteractions(
     isFavorited,
   ]);
 
-  // Handle loop button click (coming soon)
+  // Handle loop button click. Loop is real (wired via onToggleLoop in
+  // PlaybackControlsBar) — we just render the sparkle/bump feedback here.
+  // The actual toggle is performed by the consumer.
   const handleLoopClick = useCallback(() => {
     if (!isLooped) {
       const sparkles = generateSparkles(90);
@@ -255,10 +257,6 @@ export function useSocialInteractions(
       setLoopBump(true);
     }
     setIsLooped(!isLooped);
-    toast({
-      title: 'Loop mode coming soon!',
-      description: "You'll be able to loop exercises for focused practice.",
-    });
   }, [isLooped]);
 
   // Handle comment button click (coming soon)

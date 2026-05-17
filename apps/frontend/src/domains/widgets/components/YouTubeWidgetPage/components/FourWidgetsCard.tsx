@@ -310,25 +310,6 @@ export function FourWidgetsCard({
           </WidgetErrorBoundary>
         </div>
 
-        {/* Widget Synchronization Status */}
-        <div className="mt-4 text-center">
-          <p className="text-xs text-slate-400">
-            All widgets synchronized with fretboard visualizer (Track System)
-          </p>
-          <div className="flex justify-center gap-2 mt-2">
-            {['metronome', 'drummer', 'bassLine', 'harmony'].map((widget) => (
-              <div
-                key={widget}
-                className={`w-2 h-2 rounded-full ${
-                  state.widgets[widget as keyof typeof state.widgets].isVisible
-                    ? 'bg-green-400'
-                    : 'bg-slate-600'
-                }`}
-                title={`${widget} ${state.widgets[widget as keyof typeof state.widgets].isVisible ? 'visible' : 'hidden'}`}
-              />
-            ))}
-          </div>
-        </div>
       </ZoneCardContent>
     </ZoneCard>
   );

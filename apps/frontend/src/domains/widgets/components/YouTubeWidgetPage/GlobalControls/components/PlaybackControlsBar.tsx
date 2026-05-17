@@ -16,10 +16,10 @@ import {
   Play,
   Square,
   Heart,
+  Loader2,
   SkipBack,
   SkipForward,
   Star,
-  MessageCircle,
   Repeat,
 } from 'lucide-react';
 import type { MusicalExercise as Exercise } from '@bassnotion/contracts';
@@ -80,6 +80,13 @@ export interface PlaybackControlsBarProps {
   showCountdownDots?: boolean;
   /** Compact mode for bottom bar (smaller play button, reduced padding) */
   compact?: boolean;
+  /**
+   * True while play handler is waiting for samples to load, an exercise is
+   * loading, or a play/stop toggle is in flight. Renders a spinner inside
+   * the play button and disables clicks to prevent double-taps that
+   * triggered race conditions in the old toast-cascade flow.
+   */
+  isPlayButtonBusy?: boolean;
 }
 
 /**
@@ -115,8 +122,13 @@ export const PlaybackControlsBar: React.FC<PlaybackControlsBarProps> = ({
   onToggleLoop,
   showCountdownDots = false, // Default to false - dots now rendered externally
   compact = false,
+  isPlayButtonBusy = false,
 }) => {
   const playButtonSize = compact ? 60 : 78;
+  // Disable the play button while loading/toggling, but never block STOP —
+  // when transport is playing the user must always be able to stop it.
+  const playButtonDisabled =
+    isPlayButtonBusy && !isPlaying && !countdownState.isCountingDown;
 
   return (
     <div className={`bg-transparent rounded-2xl ${compact ? 'p-2' : 'p-4'}`}>
@@ -241,7 +253,25 @@ export const PlaybackControlsBar: React.FC<PlaybackControlsBarProps> = ({
               {/* Play button */}
               <button
                 onClick={handlePlayButtonClick}
-                className={`mx-2 rounded-full shadow-[4px_4px_8px_rgba(0,0,0,0.5),-4px_-4px_8px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200 flex items-center justify-center relative ${!selectedExercise ? 'bg-slate-600 opacity-50 cursor-not-allowed' : 'bg-blue-500'}`}
+                disabled={!selectedExercise || playButtonDisabled}
+                aria-busy={isPlayButtonBusy}
+                aria-label={
+                  !selectedExercise
+                    ? 'Select an exercise to play'
+                    : isPlayButtonBusy && !isPlaying
+                      ? 'Loading samples'
+                      : isPlaying
+                        ? 'Stop'
+                        : 'Play'
+                }
+                aria-keyshortcuts="Space"
+                className={`mx-2 rounded-full shadow-[4px_4px_8px_rgba(0,0,0,0.5),-4px_-4px_8px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200 flex items-center justify-center relative ${
+                  !selectedExercise
+                    ? 'bg-slate-600 opacity-50 cursor-not-allowed'
+                    : playButtonDisabled
+                      ? 'bg-blue-500 opacity-70 cursor-wait'
+                      : 'bg-blue-500'
+                }`}
                 style={{
                   width: `${playButtonSize}px`,
                   height: `${playButtonSize}px`,
@@ -249,13 +279,21 @@ export const PlaybackControlsBar: React.FC<PlaybackControlsBarProps> = ({
                 title={
                   !selectedExercise
                     ? 'Please select an exercise first'
-                    : countdownState.isCountingDown
-                      ? 'Counting down...'
-                      : ''
+                    : isPlayButtonBusy && !isPlaying
+                      ? 'Loading samples…'
+                      : countdownState.isCountingDown
+                        ? 'Counting down...'
+                        : ''
                 }
               >
-                {countdownState.isCountingDown &&
-                countdownState.currentBeat > 0 ? (
+                {/* While loading samples (and not already playing), show a
+                    spinner inside the button — this replaces the old 4-toast
+                    cascade ("Loading Sounds…" → "Ready!" → "Loading Bass
+                    Sounds…" → "Ready!") with a single visible signal. */}
+                {isPlayButtonBusy && !isPlaying ? (
+                  <Loader2 className="w-5 h-5 text-white animate-spin" />
+                ) : countdownState.isCountingDown &&
+                  countdownState.currentBeat > 0 ? (
                   <div className="text-3xl font-bold text-white">
                     {countdownState.currentBeat}
                   </div>
@@ -321,36 +359,9 @@ export const PlaybackControlsBar: React.FC<PlaybackControlsBarProps> = ({
                 ))}
               </div>
 
-              {/* Comment button */}
-              <div className="relative ml-8">
-                <button
-                  onClick={handleCommentClick}
-                  onMouseLeave={handleCommentMouseLeave}
-                  className={`p-3 rounded-full bg-slate-800 transition-all duration-200 ${isCommented ? 'shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)]' : commentBump ? 'shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)]' : 'shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)]'}`}
-                  title="Comments (coming soon)"
-                >
-                  <MessageCircle
-                    className={`w-5 h-5 transition-all duration-300 ease-out ${isCommented ? 'text-white fill-white scale-110' : 'text-slate-400'}`}
-                  />
-                </button>
-                {/* Sparkle comment animation */}
-                {commentSparkles.map((sparkle) => (
-                  <MessageCircle
-                    key={sparkle.id}
-                    className="absolute w-2 h-2 text-white fill-white pointer-events-none animate-sparkle-burst"
-                    style={
-                      {
-                        top: '50%',
-                        left: '50%',
-                        '--sparkle-x': `${sparkle.x}px`,
-                        '--sparkle-y': `${sparkle.y}px`,
-                        '--sparkle-scale': sparkle.scale,
-                        '--sparkle-rotation': `${sparkle.rotation}deg`,
-                      } as React.CSSProperties
-                    }
-                  />
-                ))}
-              </div>
+              {/* Comment button hidden until comments ship — clicking it
+                  previously fired a "coming soon" toast on every tap even
+                  after the bump animation, which was noisy and dishonest. */}
             </div>
 
             {/* Show message when no exercise selected */}

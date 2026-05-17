@@ -70,6 +70,33 @@ const BassLineWidgetComponent = ({
   const [currentlyPlayingNote, setCurrentlyPlayingNote] =
     useState<CurrentlyPlayingNote | null>(null);
 
+  // Bass-loading failure state. Toggled by global events emitted by the play
+  // handler (usePlaybackControl). Renders an inline "Bass unavailable" badge
+  // with a retry affordance, replacing the old transient toast that vanished
+  // after 5 seconds and left users wondering why bass was silent.
+  const [bassFailed, setBassFailed] = useState(false);
+  const [retryingBass, setRetryingBass] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onFailed = () => setBassFailed(true);
+    const onRecovered = () => {
+      setBassFailed(false);
+      setRetryingBass(false);
+    };
+    window.addEventListener('bassicology:bass-failed', onFailed);
+    window.addEventListener('bassicology:bass-recovered', onRecovered);
+    return () => {
+      window.removeEventListener('bassicology:bass-failed', onFailed);
+      window.removeEventListener('bassicology:bass-recovered', onRecovered);
+    };
+  }, []);
+  // Clear failure when the user switches exercises — the new exercise's
+  // buffers haven't been attempted yet.
+  useEffect(() => {
+    setBassFailed(false);
+    setRetryingBass(false);
+  }, [exercise?.id]);
+
   // Bass buffers ref (shared across hooks)
   const bassBuffersRef = useRef<Record<string, AudioBuffer>>({});
 
@@ -137,7 +164,7 @@ const BassLineWidgetComponent = ({
   );
 
   // Buffer registration hook
-  useBassBufferRegistration({
+  const { registerBassWithPlaybackEngine } = useBassBufferRegistration({
     exercise,
     samplesLoadedTrigger,
     trackIsReady,
@@ -148,6 +175,20 @@ const BassLineWidgetComponent = ({
     onSamplesLoaded: handleSamplesLoaded,
     onSamplerReady: handleSamplerReady,
   });
+
+  // User-triggered retry for the "Bass unavailable" badge.
+  const handleRetryBass = useCallback(async () => {
+    setRetryingBass(true);
+    try {
+      await registerBassWithPlaybackEngine();
+      // Success is reported via the bass-recovered event from the play
+      // handler the next time the user clicks play. We don't optimistically
+      // clear here — the underlying buffers may still need to be fetched.
+    } catch (err) {
+      logger.warn('Bass retry failed', err as any);
+      setRetryingBass(false);
+    }
+  }, [registerBassWithPlaybackEngine]);
 
   // Playback hook
   const { playBassNote, stopAllNotes, patternNotes, testNote } =
@@ -347,13 +388,29 @@ const BassLineWidgetComponent = ({
                   >
                     Bass Track
                   </h3>
-                  <p
-                    className={`text-xs ${
-                      isMutedOrZero ? 'text-slate-600' : 'text-slate-400'
-                    }`}
-                  >
-                    {pattern} | {currentArticulation}
-                  </p>
+                  {bassFailed ? (
+                    <p className="text-xs text-amber-400 flex items-center gap-2">
+                      <span>Bass unavailable</span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void handleRetryBass();
+                        }}
+                        disabled={retryingBass}
+                        className="text-amber-300 underline hover:text-amber-200 disabled:opacity-50"
+                      >
+                        {retryingBass ? 'Retrying…' : 'Retry'}
+                      </button>
+                    </p>
+                  ) : (
+                    <p
+                      className={`text-xs ${
+                        isMutedOrZero ? 'text-slate-600' : 'text-slate-400'
+                      }`}
+                    >
+                      {pattern} | {currentArticulation}
+                    </p>
+                  )}
                 </div>
 
                 <MiniFretboard

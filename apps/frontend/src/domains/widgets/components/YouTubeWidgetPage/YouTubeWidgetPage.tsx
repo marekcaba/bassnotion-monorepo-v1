@@ -45,6 +45,7 @@ import { usePracticeCompletions } from '@/domains/widgets/hooks/usePracticeCompl
 import { useActCompletion } from './hooks/useActCompletion';
 import { useActAwarePreload } from './hooks/useActAwarePreload';
 import { SampleLoadingOverlay } from './components/SampleLoadingOverlay';
+import { IOSSafariBanner } from './components/IOSSafariBanner';
 import { GlobalControls } from './components/GlobalControls';
 import { CountdownIndicator } from './GlobalControls/components/CountdownIndicator.js';
 import { calculateDuration, getExerciseId } from './utils';
@@ -1331,6 +1332,8 @@ function YouTubeWidgetPageContent({
 
   return (
     <div className="h-dvh flex flex-col">
+      {/* iOS Safari warning — non-blocking, dismissible per session */}
+      <IOSSafariBanner />
       {!hideChrome && (
         <>
           {/* Header with Logo - Same as home/library pages */}
