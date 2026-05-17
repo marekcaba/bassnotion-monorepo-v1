@@ -49,32 +49,36 @@ describe('Bug #1: Race Condition Fix Verification', () => {
 
   describe('Test 1: coreServicesReady Prevents Premature Access', () => {
     it('should handle getPlaybackEngine() call before initialization gracefully', async () => {
-      // Create CoreServices but don't initialize
+      // Bug-fix invariant preserved: the method exists and is safe to
+      // call without initialize() having run. The architecture later
+      // changed so PlaybackEngine is created EAGERLY in the constructor
+      // (Phase 3.2: 100% rollout, no feature flag); we test that this
+      // is still callable + returns an instance (not undefined as the
+      // old behavior did, but the bug being protected against was
+      // "method missing entirely").
       const coreServices = new CoreServices();
 
-      // Attempt to get PlaybackEngine before initialization
-      // Should not throw "getPlaybackEngine is not a function"
       expect(() => {
         const engine = coreServices.getPlaybackEngine?.();
-        // Engine should be undefined or handle gracefully
-        expect(engine).toBeUndefined();
+        // Engine is now eagerly created — defined, no throw.
+        expect(engine).toBeDefined();
       }).not.toThrow();
 
       await coreServices.dispose();
     });
 
-    it('should throw descriptive error when accessing PlaybackEngine before initialization', async () => {
+    it('should not produce "is not a function" errors when accessing PlaybackEngine before initialization', async () => {
       const coreServices = new CoreServices();
 
-      // Verify we get a helpful error, not "function is not defined"
+      // The original race-condition bug presented as "getPlaybackEngine
+      // is not a function" before CoreServices was ready. Today the
+      // method always exists. If it ever throws, it must NOT be the
+      // old "is not a function" shape.
       try {
         const engine = coreServices.getPlaybackEngine();
-        // If it doesn't throw, it should return undefined
-        expect(engine).toBeUndefined();
+        expect(engine).toBeDefined();
       } catch (error: any) {
-        // If it throws, should be descriptive
         expect(error.message).not.toContain('is not a function');
-        expect(error.message).toContain('initialized');
       }
 
       await coreServices.dispose();
@@ -99,6 +103,9 @@ describe('Bug #1: Race Condition Fix Verification', () => {
             resume: vi.fn(() => Promise.resolve()),
             suspend: vi.fn(() => Promise.resolve()),
             close: vi.fn(() => Promise.resolve()),
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+            dispatchEvent: vi.fn(),
           }) as any,
       );
 
@@ -330,6 +337,9 @@ describe('Bug #1: Race Condition Fix Verification', () => {
             resume: vi.fn(() => Promise.resolve()),
             suspend: vi.fn(() => Promise.resolve()),
             close: vi.fn(() => Promise.resolve()),
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+            dispatchEvent: vi.fn(),
           }) as any,
       );
 
@@ -367,6 +377,9 @@ describe('Bug #1: Race Condition Fix Verification', () => {
             resume: vi.fn(() => Promise.resolve()),
             suspend: vi.fn(() => Promise.resolve()),
             close: vi.fn(() => Promise.resolve()),
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+            dispatchEvent: vi.fn(),
           }) as any,
       );
 

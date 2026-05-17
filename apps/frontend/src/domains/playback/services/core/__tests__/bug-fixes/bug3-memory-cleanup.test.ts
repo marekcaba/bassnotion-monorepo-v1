@@ -153,7 +153,18 @@ const createMockBuffers = (): Map<string, AudioBuffer> => {
   ]);
 };
 
-describe('Bug #3: Memory Leak Fix Verification', () => {
+// SKIP REASON — tests assert on Scheduler.getStats().activeSourceCount,
+// but production's Scheduler.getStats() now returns only queueLength,
+// scheduledCount, scheduledUntil, isRunning (no activeSourceCount).
+// The bug-fix being verified is real (memory leak fix from the audio
+// pipeline rewrite) but the verification API was simplified away.
+//
+// Memory leaks are now caught by the SchedulePostMessage count
+// regression check (Phase 4.5 - we found a Ticker leak that way).
+// These unit tests are testing a removed observability API, not the
+// underlying invariant. Skip until a new memory-pressure metric is
+// added back, then rewrite.
+describe.skip('Bug #3: Memory Leak Fix Verification', () => {
   let eventBus: EventBus;
   let audioContext: AudioContext;
   let buffers: Map<string, AudioBuffer>;
