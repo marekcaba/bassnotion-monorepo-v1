@@ -726,6 +726,19 @@ postgres.iuuplfrktnzsbzibpfjm not found` even though both projects are in
   (`db.<ref>.supabase.co:5432`); that worked for both.
 - `pg_stat_user_tables.n_live_tup` is an autovacuum estimate, not a real
   count, and was way off post-restore. Use `COUNT(*)` for verification.
+- **`--no-acl` dropped GRANTs and broke staging's backend** when the next
+  deploy.yml run found `/api/health` reporting `permission denied for
+  table exercises`. Recovery: `supabase link --project-ref
+  vraxryaaznpkvtkindpn` → `supabase db push --linked` to reapply migrations
+  (which re-grant `service_role` access). Update needed in
+  [RESTORE_RUNBOOK.md](./RESTORE_RUNBOOK.md) to make this an explicit
+  post-step, or drop `--no-acl` from the dump command so GRANTs carry over.
+- **Smoke test in [deploy.yml](../../.github/workflows/deploy.yml) had a
+  false-positive bug:** it grepped for `"status":"healthy"` in the response
+  body, but the nested `"api":{"status":"healthy"}` matched even when the
+  top-level status was `"unhealthy"`. Fixed in the same Phase 7 commit
+  range by switching to `jq -r '.status'`. Found when the deploy run for
+  commit `f532511` reported all-green despite staging being broken.
 
 **Deferred to a paid-tier upgrade** (not blocking go-LIVE):
 

@@ -72,12 +72,17 @@ jobs:
           echo "Polling $BACKEND_URL/api/health ..."
           for i in $(seq 1 60); do
             body=$(curl -fsS --max-time 10 "$BACKEND_URL/api/health" || true)
-            if echo "$body" | grep -q '"status":"healthy"'; then
+            # Top-level "status":"healthy" only — nested checks have their own
+            # "status" fields, so a substring match would false-positive even
+            # when the overall status is "unhealthy". jq is preinstalled on
+            # ubuntu-latest runners.
+            top_status=$(echo "$body" | jq -r '.status // empty' 2>/dev/null || true)
+            if [ "$top_status" = "healthy" ]; then
               echo "Backend healthy after $i attempt(s)."
               echo "$body"
               exit 0
             fi
-            echo "Attempt $i: not healthy yet, retrying in 10s..."
+            echo "Attempt $i: not healthy yet (top-level status: ${top_status:-unknown}), retrying in 10s..."
             sleep 10
           done
           echo "::error::Backend did not become healthy within 10 minutes."
@@ -114,8 +119,10 @@ jobs:
           echo "GET $API_URL/api/health"
           body=$(curl -fsS --retry 3 --retry-delay 5 --max-time 30 "$API_URL/api/health")
           echo "Response: $body"
-          if ! echo "$body" | grep -q '"status":"healthy"'; then
-            echo "::error::Backend /api/health did not report healthy"
+          # Top-level "status":"healthy" only — see comment in health-gate.
+          top_status=$(echo "$body" | jq -r '.status // empty' 2>/dev/null || true)
+          if [ "$top_status" != "healthy" ]; then
+            echo "::error::Backend /api/health did not report healthy (top-level status: ${top_status:-unknown})"
             exit 1
           fi
           echo "Backend healthy"

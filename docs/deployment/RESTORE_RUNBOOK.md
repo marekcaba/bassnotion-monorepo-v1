@@ -176,6 +176,29 @@ diff /tmp/source-rowcounts.txt /tmp/target-rowcounts.txt && echo "✅ MATCH"
 # No output from diff + "✅ MATCH" line = perfect.
 ```
 
+### Step 7b — Reapply GRANTs / RLS (CRITICAL — won't work without this)
+
+`pg_dump --no-acl` drops the original GRANTs. The Supabase backend connects
+as `service_role` which then loses SELECT on every table in `public`,
+causing `/api/health` to fail with `permission denied for table exercises`.
+
+Reapply migrations to recreate the GRANTs:
+
+```bash
+supabase link --project-ref vraxryaaznpkvtkindpn   # staging
+supabase db push --linked
+```
+
+Verify staging backend health recovers:
+
+```bash
+curl -s https://backend-staging-4d19.up.railway.app/api/health | jq .status
+# Expected: "healthy"
+```
+
+**Don't forget to re-link back to production** afterwards if your local
+workflow expects it (`supabase link --project-ref iuuplfrktnzsbzibpfjm`).
+
 ### Step 8 — Cleanup
 
 ```bash
