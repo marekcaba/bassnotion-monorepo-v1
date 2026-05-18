@@ -32,6 +32,38 @@ if (!global.ResizeObserver) {
   };
 }
 
+// IntersectionObserver polyfill — jsdom does not implement it but many
+// libraries (lucide-react Dialogs, infinite-scroll hooks, lazy-load wrappers)
+// reach for it at component-mount time. Without this, any test that renders
+// such a component throws "ReferenceError: IntersectionObserver is not defined".
+if (!global.IntersectionObserver) {
+  global.IntersectionObserver = class IntersectionObserver {
+    readonly root: Element | Document | null = null;
+    readonly rootMargin: string = '';
+    readonly thresholds: ReadonlyArray<number> = [];
+
+    constructor(
+      _callback: IntersectionObserverCallback,
+      options?: IntersectionObserverInit,
+    ) {
+      if (options?.root) this.root = options.root;
+      if (options?.rootMargin) this.rootMargin = options.rootMargin;
+      if (options?.threshold !== undefined) {
+        this.thresholds = Array.isArray(options.threshold)
+          ? options.threshold
+          : [options.threshold];
+      }
+    }
+
+    observe(_target: Element): void {}
+    unobserve(_target: Element): void {}
+    disconnect(): void {}
+    takeRecords(): IntersectionObserverEntry[] {
+      return [];
+    }
+  } as any;
+}
+
 // Store original global objects to prevent corruption
 const originalGlobals = {
   document: global.document,

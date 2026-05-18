@@ -8,13 +8,13 @@
 import React from 'react';
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import {
-  render,
+  renderWithProviders as render,
   screen,
   fireEvent,
   waitFor,
   within,
   act,
-} from '@testing-library/react';
+} from '@/test/utils/renderWithProviders';
 import userEvent from '@testing-library/user-event';
 import { DrumPatternEditorModal } from '../DrumPatternEditorModal.js';
 import { useDrumEditorStore } from '../hooks/useDrumEditorStore.js';
