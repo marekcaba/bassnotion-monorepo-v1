@@ -9,10 +9,14 @@ import userEvent from '@testing-library/user-event';
 import LibraryPage from '../page';
 import type { TutorialSummary } from '@bassnotion/contracts';
 
-// Mock the hooks and router
-const mockNavigateWithTransition = vi.fn();
-const mockUseTutorials = vi.fn();
-const mockRefetch = vi.fn();
+// Mock the hooks and router — wrap in vi.hoisted so the references survive
+// vi.mock's hoisting (otherwise the factory closes over an undeclared binding).
+const { mockNavigateWithTransition, mockUseTutorials, mockRefetch } =
+  vi.hoisted(() => ({
+    mockNavigateWithTransition: vi.fn(),
+    mockUseTutorials: vi.fn(),
+    mockRefetch: vi.fn(),
+  }));
 
 vi.mock('@/lib/hooks/use-view-transition-router', () => ({
   useViewTransitionRouter: () => ({
@@ -24,8 +28,13 @@ vi.mock('@/domains/widgets/hooks/useTutorials', () => ({
   useTutorials: mockUseTutorials,
 }));
 
-// Mock all the UI components
-vi.mock('@/shared/components/ui/button', () => ({
+// Mock all the UI components.
+// Each factory imports React lazily because vi.mock is hoisted above the
+// top-level `import React`; without lazy import, React.forwardRef inside a
+// factory throws "React is not defined".
+vi.mock('@/shared/components/ui/button', async () => {
+  const React = await import('react');
+  return {
   Button: React.forwardRef<HTMLButtonElement, any>(
     ({ className, variant, size, children, onClick, ...props }, ref) => (
       <button
@@ -41,9 +50,12 @@ vi.mock('@/shared/components/ui/button', () => ({
       </button>
     ),
   ),
-}));
+};
+});
 
-vi.mock('@/shared/components/ui/card', () => ({
+vi.mock('@/shared/components/ui/card', async () => {
+  const React = await import('react');
+  return {
   Card: React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
     ({ className, children, onClick, ...props }, ref) => (
       <div
@@ -81,7 +93,8 @@ vi.mock('@/shared/components/ui/card', () => ({
       {children}
     </div>
   )),
-}));
+};
+});
 
 // Mock Lucide React icons
 vi.mock('lucide-react', () => ({

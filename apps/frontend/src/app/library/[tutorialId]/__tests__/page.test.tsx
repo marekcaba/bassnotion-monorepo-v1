@@ -8,11 +8,14 @@ import { render, screen, waitFor } from '@testing-library/react';
 import TutorialPage from '../page';
 import type { Tutorial } from '@bassnotion/contracts';
 
-// Mock the hooks and components
-const mockUseTutorialExercises = vi.fn();
-const mockYouTubeWidgetPage = vi.fn(() => (
-  <div data-testid="youtube-widget-page">YouTube Widget Page</div>
-));
+// Mock the hooks and components — wrap refs in vi.hoisted so they survive
+// vi.mock's hoisting (the factory closes over these bindings).
+const { mockUseTutorialExercises, mockYouTubeWidgetPage, mockReactUse } =
+  vi.hoisted(() => ({
+    mockUseTutorialExercises: vi.fn(),
+    mockYouTubeWidgetPage: vi.fn(() => null),
+    mockReactUse: vi.fn(),
+  }));
 
 vi.mock('@/domains/widgets/hooks/useTutorialExercises', () => ({
   useTutorialExercises: mockUseTutorialExercises,
@@ -26,9 +29,8 @@ vi.mock(
 );
 
 // Mock React.use for Next.js 13+ params
-const mockReactUse = vi.fn();
 vi.mock('react', async () => {
-  const actual = await vi.importActual('react');
+  const actual = await vi.importActual<typeof import('react')>('react');
   return {
     ...actual,
     use: mockReactUse,

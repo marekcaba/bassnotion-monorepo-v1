@@ -59,23 +59,12 @@ vi.mock('@/shared/components/ui/button', () => ({
   ),
 }));
 
-// Use a Proxy so any icon import resolves to a generic span — the production
-// component lazy-uses many icons (Play, Pause, Volume2, AlertCircle, etc.) and
-// listing them explicitly causes "No XYZ export is defined" failures whenever
-// a new icon is added.
-vi.mock('lucide-react', () => {
-  const handler: ProxyHandler<Record<string, unknown>> = {
-    get(_target, prop) {
-      const name = String(prop);
-      const Icon = (props: any) => (
-        <span data-testid={`icon-${name}`} {...props} />
-      );
-      Icon.displayName = name;
-      return Icon;
-    },
-  };
-  return new Proxy({}, handler);
-});
+// Don't mock lucide-react here — the production component tree pulls in
+// many icons (Play, Pause, Volume2, AlertCircle, ChevronRight, Lock, etc.)
+// and listing them explicitly is brittle. Lucide icons render to <svg> in
+// tests without needing a mock; we lose the data-testid hooks the old
+// inline mocks provided, but those weren't asserted on in this file
+// (assertions look for text labels, not icon test IDs).
 
 vi.mock('@/shared/utils', () => ({
   cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
