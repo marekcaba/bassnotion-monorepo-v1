@@ -296,7 +296,20 @@ describe('DI Integration Tests - Core Functionality', () => {
     });
 
     it('should handle missing factory methods gracefully', () => {
-      // Create audioEngine with only some methods
+      // Create audioEngine with only some methods. Channel falls back to
+      // calling audioEngine.getTone() when a factory method (createPanner,
+      // createEQ3, etc.) is missing, so the partial engine still needs a
+      // getTone() returning a usable mock for the fallback path.
+      const fallbackToneInstance = {
+        Panner: vi.fn(() => ({ pan: { value: 0 }, connect: vi.fn(), disconnect: vi.fn(), dispose: vi.fn() })),
+        EQ3: vi.fn(() => ({ connect: vi.fn(), disconnect: vi.fn(), dispose: vi.fn() })),
+        Filter: vi.fn(() => ({ frequency: { value: 1000 }, type: 'lowpass', connect: vi.fn(), disconnect: vi.fn(), dispose: vi.fn() })),
+        Compressor: vi.fn(() => ({ connect: vi.fn(), disconnect: vi.fn(), dispose: vi.fn() })),
+        Limiter: vi.fn(() => ({ connect: vi.fn(), disconnect: vi.fn(), dispose: vi.fn() })),
+        Meter: vi.fn(() => ({ getValue: vi.fn(() => -60), connect: vi.fn(), disconnect: vi.fn(), dispose: vi.fn() })),
+        Analyser: vi.fn(() => ({ getValue: vi.fn(() => new Float32Array(1024)), connect: vi.fn(), disconnect: vi.fn(), dispose: vi.fn() })),
+        Gate: vi.fn(() => ({ threshold: { value: -40 }, connect: vi.fn(), disconnect: vi.fn(), dispose: vi.fn() })),
+      };
       const partialAudioEngine = {
         createGain: vi.fn(() => ({
           gain: { value: 1, rampTo: vi.fn() },
@@ -304,7 +317,8 @@ describe('DI Integration Tests - Core Functionality', () => {
           disconnect: vi.fn(),
           dispose: vi.fn(),
         })),
-        // Missing other methods - should fall back to Tone.js
+        // Missing factory methods — Channel falls back to Tone via getTone().
+        getTone: vi.fn(() => fallbackToneInstance),
       };
 
       // Mock Tone.js for fallback
