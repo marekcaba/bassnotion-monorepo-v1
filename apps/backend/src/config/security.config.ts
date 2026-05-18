@@ -132,12 +132,31 @@ async function resolveCorsOrigin(
     return true;
   }
 
-  if (process.env.NODE_ENV !== 'production') {
+  // Distinguish staging from production: Railway sets RAILWAY_ENVIRONMENT_NAME
+  // ("staging" / "production"); fall back to NODE_ENV for local dev. Production
+  // backend never relaxes CORS.
+  const railwayEnv = process.env.RAILWAY_ENVIRONMENT_NAME;
+  const isProdBackend =
+    railwayEnv === 'production' ||
+    (!railwayEnv && process.env.NODE_ENV === 'production');
+
+  if (!isProdBackend) {
     try {
       const u = new URL(origin);
       const localHost =
         u.hostname === 'localhost' || u.hostname === '127.0.0.1';
       if (localHost && (u.protocol === 'http:' || u.protocol === 'https:')) {
+        return true;
+      }
+      // Vercel preview deploys produce a new hostname per commit
+      // (e.g. bassnotion-monorepo-v1-frontend-<hash>.vercel.app). Project-scoped
+      // and only created by trusted CI, so allow them on non-prod backends.
+      if (
+        u.protocol === 'https:' &&
+        /^bassnotion-monorepo-v1-frontend[-a-z0-9]*\.vercel\.app$/.test(
+          u.hostname,
+        )
+      ) {
         return true;
       }
     } catch {
