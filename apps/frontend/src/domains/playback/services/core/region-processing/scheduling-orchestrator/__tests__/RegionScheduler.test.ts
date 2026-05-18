@@ -8,13 +8,17 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { RegionScheduler } from '../RegionScheduler.js';
 
 // Mock Tone.js
-vi.mock('tone', () => ({
-  Transport: {
+vi.mock('tone', () => {
+  const Transport = {
     bpm: {
       value: 120,
     },
-  },
-}));
+  };
+  return {
+    Transport,
+    getTransport: () => Transport,
+  };
+});
 
 describe('RegionScheduler', () => {
   let scheduler: RegionScheduler;

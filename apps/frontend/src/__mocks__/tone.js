@@ -76,6 +76,17 @@ const mockTone = {
     bpm: {
       value: 120,
     },
+    state: 'stopped',
+    position: 0,
+    seconds: 0,
+    start: vi.fn(),
+    stop: vi.fn(),
+    pause: vi.fn(),
+    cancel: vi.fn(),
+    schedule: vi.fn(),
+    scheduleRepeat: vi.fn(),
+    scheduleOnce: vi.fn(),
+    clear: vi.fn(),
     toSeconds: vi.fn((position) => {
       // Simple conversion for tests: "0:0:0" -> 0, "1:0:0" -> 1, etc.
       if (typeof position === 'number') return position;
@@ -87,6 +98,21 @@ const mockTone = {
     }),
   },
 };
+
+// Tone v15 factory accessor — returns the same Transport instance the
+// legacy singleton exposes so prod code sees one source of truth.
+mockTone.getTransport = vi.fn(() => mockTone.Transport);
+mockTone.getDestination = vi.fn(() => mockTone.Destination);
+mockTone.getContext = vi.fn(() => ({
+  state: 'running',
+  sampleRate: 44100,
+  currentTime: 0,
+  resume: vi.fn().mockResolvedValue(undefined),
+}));
+mockTone.setContext = vi.fn();
+mockTone.now = vi.fn(() => 0);
+mockTone.immediate = vi.fn(() => 0);
+mockTone.start = vi.fn().mockResolvedValue(undefined);
 
 // Export both default and named exports
 module.exports = mockTone;

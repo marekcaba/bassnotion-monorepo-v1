@@ -350,8 +350,11 @@ beforeEach(() => {
     };
 
     (global.window as any).Tone = {
-      // Transport
+      // Transport (legacy singleton)
       Transport: mockTransport,
+      // Tone v15 factory accessor — returns the same instance so prod code
+      // that calls Tone.getTransport() sees the same mock as Tone.Transport.
+      getTransport: vi.fn(() => mockTransport),
 
       // Context
       context: mockContext,

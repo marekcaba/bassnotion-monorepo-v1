@@ -18,8 +18,8 @@ import { Transport } from '../../core/Transport.js';
 import { Clock } from '../../core/Clock.js';
 
 // Mock Tone.js FIRST (before other imports)
-vi.mock('tone', () => ({
-  Transport: {
+vi.mock('tone', () => {
+  const Transport = {
     state: 'stopped',
     position: 0,
     seconds: 0,
@@ -38,8 +38,9 @@ vi.mock('tone', () => ({
       this.state = 'paused';
     }),
     cancel: vi.fn(),
-  },
-}));
+  };
+  return { Transport, getTransport: () => Transport };
+});
 
 // Mock AudioContext
 class IntegrationMockAudioContext {

@@ -7,25 +7,40 @@ import { AudioEngine } from '../core/AudioEngine.js';
 import { AudioContextManager } from '../core/AudioContextManager.js';
 import { ToneWrapper } from '../core/ToneWrapper.js';
 
-// Mock Tone.js
-vi.mock('tone', () => ({
-  default: {
+// Mock Tone.js — expose getTransport() (Tone v15) returning the same
+// Transport object used by the legacy singleton, so prod code using either
+// API path observes a single source of truth.
+vi.mock('tone', () => {
+  const Transport: Record<string, unknown> = {};
+  const sampler = {
+    triggerAttack: vi.fn(),
+    triggerRelease: vi.fn(),
+    triggerAttackRelease: vi.fn(),
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    dispose: vi.fn(),
+  };
+  return {
+    default: {
+      start: vi.fn().mockResolvedValue(undefined),
+      now: vi.fn().mockReturnValue(0),
+      setContext: vi.fn(),
+      getContext: vi.fn().mockReturnValue({}),
+      getTransport: vi.fn().mockReturnValue(Transport),
+      context: {},
+      Transport,
+      Sampler: vi.fn().mockImplementation(() => sampler),
+    },
     start: vi.fn().mockResolvedValue(undefined),
     now: vi.fn().mockReturnValue(0),
     setContext: vi.fn(),
     getContext: vi.fn().mockReturnValue({}),
+    getTransport: vi.fn().mockReturnValue(Transport),
     context: {},
-    Transport: {},
-    Sampler: vi.fn().mockImplementation(() => ({
-      triggerAttack: vi.fn(),
-      triggerRelease: vi.fn(),
-      triggerAttackRelease: vi.fn(),
-      connect: vi.fn(),
-      disconnect: vi.fn(),
-      dispose: vi.fn(),
-    })),
-  },
-}));
+    Transport,
+    Sampler: vi.fn().mockImplementation(() => sampler),
+  };
+});
 
 // Mock AudioContext
 const mockAudioContext = {

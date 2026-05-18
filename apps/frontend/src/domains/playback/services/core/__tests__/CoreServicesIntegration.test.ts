@@ -23,20 +23,22 @@ const PluginStateEnum = {
 
 // Mock Tone.js
 vi.mock('tone', () => {
+  const Transport = {
+    start: vi.fn(),
+    stop: vi.fn(),
+    pause: vi.fn(),
+    position: '0:0:0',
+    seconds: 0,
+    bpm: { value: 120 },
+    timeSignature: [4, 4],
+    schedule: vi.fn(),
+    clear: vi.fn(),
+    cancel: vi.fn(),
+    state: 'stopped',
+  };
   const mockTone = {
-    Transport: {
-      start: vi.fn(),
-      stop: vi.fn(),
-      pause: vi.fn(),
-      position: '0:0:0',
-      seconds: 0,
-      bpm: { value: 120 },
-      timeSignature: [4, 4],
-      schedule: vi.fn(),
-      clear: vi.fn(),
-      cancel: vi.fn(),
-      state: 'stopped',
-    },
+    Transport,
+    getTransport: vi.fn(() => Transport),
     Sampler: vi.fn(() => ({
       toDestination: vi.fn(),
       dispose: vi.fn(),

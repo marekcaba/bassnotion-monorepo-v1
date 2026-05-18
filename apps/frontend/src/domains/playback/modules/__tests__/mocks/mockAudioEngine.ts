@@ -39,29 +39,61 @@ export const createMockSynth = () => ({
 });
 
 // Create mock Tone module
-export const mockTone = {
+// Defined as a function so getTransport()/getContext()/getDestination() can
+// close over the same Transport/context/destination instances that are
+// exposed via the deprecated singleton properties. Production code reads
+// from both APIs (legacy `Tone.Transport.*` and v15 `Tone.getTransport()`),
+// so tests must observe a single source of truth.
+const mockTransport = {
+  bpm: {
+    value: 120,
+    rampTo: vi.fn(),
+  },
+  position: '0:0:0',
+  state: 'stopped',
+  start: vi.fn(),
+  stop: vi.fn(),
+  pause: vi.fn(),
+  cancel: vi.fn(),
+  scheduleOnce: vi.fn(),
+  schedule: vi.fn(),
+  scheduleRepeat: vi.fn(),
+  clear: vi.fn(),
+  seconds: 0,
+  loop: false,
+  loopStart: 0,
+  loopEnd: '4m',
+  timeSignature: 4,
+};
+
+const mockContext = {
+  currentTime: 0,
+  state: 'running',
+  _context: {},
+  sampleRate: 44100,
+  resume: vi.fn().mockResolvedValue(undefined),
+  suspend: vi.fn().mockResolvedValue(undefined),
+};
+
+const mockDestination = {
+  connect: vi.fn(),
+  disconnect: vi.fn(),
+  volume: { value: 0, rampTo: vi.fn() },
+};
+
+export const mockTone: any = {
   start: vi.fn().mockResolvedValue(undefined),
   now: vi.fn().mockReturnValue(0),
   loaded: vi.fn().mockResolvedValue(undefined),
-  context: {
-    currentTime: 0,
-    state: 'running',
-    _context: {},
-  },
-  Transport: {
-    bpm: {
-      value: 120,
-      rampTo: vi.fn(),
-    },
-    position: '0:0:0',
-    state: 'stopped',
-    start: vi.fn(),
-    stop: vi.fn(),
-    pause: vi.fn(),
-    cancel: vi.fn(),
-    scheduleOnce: vi.fn(),
-    seconds: 0,
-  },
+  context: mockContext,
+  Transport: mockTransport,
+
+  // Tone v15 factory accessors (production code uses these now).
+  // Return the SAME instances as the legacy singletons.
+  getTransport: vi.fn(() => mockTransport),
+  getContext: vi.fn(() => mockContext),
+  setContext: vi.fn(),
+  getDestination: vi.fn(() => mockDestination),
   // Factory functions
   Sampler: vi.fn((urls?: any, options?: any) =>
     createMockSampler(urls, options),

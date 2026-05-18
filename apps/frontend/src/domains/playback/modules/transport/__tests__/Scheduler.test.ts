@@ -17,44 +17,44 @@ vi.mock('tone', () => {
   let transportState = 'stopped';
   let currentTime = 0;
 
-  return {
-    Transport: {
-      schedule: vi.fn((callback: Function, time: number) => {
+  const Transport = {
+    schedule: vi.fn((callback: Function, time: number) => {
+      const id = ++scheduleIdCounter;
+      scheduledCallbacks.set(id, { callback, time });
+      return id;
+    }),
+    scheduleRepeat: vi.fn(
+      (callback: Function, interval: string | number, startTime?: number) => {
         const id = ++scheduleIdCounter;
-        scheduledCallbacks.set(id, { callback, time });
+        scheduledCallbacks.set(id, { callback, time: startTime || 0 });
         return id;
-      }),
-      scheduleRepeat: vi.fn(
-        (callback: Function, interval: string | number, startTime?: number) => {
-          const id = ++scheduleIdCounter;
-          scheduledCallbacks.set(id, { callback, time: startTime || 0 });
-          return id;
-        },
-      ),
-      clear: vi.fn((id: number) => {
-        scheduledCallbacks.delete(id);
-      }),
-      get state() {
-        return transportState;
       },
-      set state(value: string) {
-        transportState = value;
-      },
-      get seconds() {
-        return currentTime;
-      },
-      set seconds(value: number) {
-        currentTime = value;
-      },
-      _reset: () => {
-        scheduledCallbacks.clear();
-        scheduleIdCounter = 0;
-        transportState = 'stopped';
-        currentTime = 0;
-      },
-      _getScheduled: () => scheduledCallbacks,
+    ),
+    clear: vi.fn((id: number) => {
+      scheduledCallbacks.delete(id);
+    }),
+    get state() {
+      return transportState;
     },
+    set state(value: string) {
+      transportState = value;
+    },
+    get seconds() {
+      return currentTime;
+    },
+    set seconds(value: number) {
+      currentTime = value;
+    },
+    _reset: () => {
+      scheduledCallbacks.clear();
+      scheduleIdCounter = 0;
+      transportState = 'stopped';
+      currentTime = 0;
+    },
+    _getScheduled: () => scheduledCallbacks,
   };
+
+  return { Transport, getTransport: () => Transport };
 });
 
 describe('Scheduler', () => {

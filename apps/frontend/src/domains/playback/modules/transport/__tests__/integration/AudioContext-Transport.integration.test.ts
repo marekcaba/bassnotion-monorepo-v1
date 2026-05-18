@@ -19,8 +19,8 @@ import { TransportController } from '../../core/TransportController.js';
 import type { EventBus } from '../../../../services/core/EventBus.js';
 
 // Mock Tone.js
-vi.mock('tone', () => ({
-  Transport: {
+vi.mock('tone', () => {
+  const Transport = {
     state: 'stopped',
     position: 0,
     seconds: 0,
@@ -30,8 +30,9 @@ vi.mock('tone', () => ({
     stop: vi.fn(),
     pause: vi.fn(),
     cancel: vi.fn(),
-  },
-}));
+  };
+  return { Transport, getTransport: () => Transport };
+});
 
 // Mock Transport
 vi.mock('../../core/Transport.js', () => {
