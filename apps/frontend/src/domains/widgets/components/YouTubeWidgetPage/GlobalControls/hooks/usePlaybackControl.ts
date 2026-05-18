@@ -190,6 +190,38 @@ async function waitForBassBuffersReady(
 }
 
 /**
+ * Wait for the harmony track to be registered with PlaybackEngine.
+ *
+ * Harmony has its own slow async load chain (WamKeyboardPlugin →
+ * WurlitzerVelocitySampler / GrandPianoVelocitySampler → useHarmonyRegistration
+ * effect → playbackEngine.registerTrack). On a cold tutorial open it can lag
+ * the bass/drums init by 1-3s. If the user clicks play before
+ * `harmony-widget-track` exists in PlaybackEngine.getTracks(), the harmony
+ * notes never get scheduled — playback silently runs without harmony.
+ *
+ * We poll the engine's track map every 50ms because there's no single
+ * "harmony ready" event (registration happens deep in a widget hook). If
+ * the exercise has no harmony notes, the caller should skip this entirely.
+ */
+async function waitForHarmonyTrackReady(timeoutMs = 10000): Promise<void> {
+  if (typeof window === 'undefined') return;
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const coreServices = WindowRegistry.getCoreServices();
+    const playbackEngine = coreServices?.getPlaybackEngine?.();
+    if (playbackEngine) {
+      const tracks = playbackEngine.getTracks?.();
+      // Track key used by useHarmonyRegistration when calling registerTrack
+      if (tracks?.has?.('harmony-widget-track')) {
+        return;
+      }
+    }
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  throw new Error('Timeout waiting for harmony track to register');
+}
+
+/**
  * Show toast notification (dynamically imported)
  */
 async function showToast(
@@ -355,7 +387,20 @@ export function usePlaybackControl(
       hasBassNotes &&
       !WindowRegistry.getBassBuffersReady(selectedExercise?.id);
 
-    if (samplesNotReady || bassNotReady) {
+    // Harmony track readiness: the exercise has harmony content but the
+    // widget hasn't yet registered the harmony track with PlaybackEngine
+    // (slow Wurlitzer/GrandPiano sampler init can take 2-3s after
+    // tutorial-mount). Without waiting, scheduleAllRegions() runs before
+    // harmony track exists → no harmony notes get scheduled → silent harmony.
+    const hasHarmonyNotes =
+      (selectedExercise as any)?.harmonyNotes?.length > 0;
+    let harmonyTrackNotReady = false;
+    if (hasHarmonyNotes && typeof window !== 'undefined') {
+      const playbackEngine = WindowRegistry.getCoreServices()?.getPlaybackEngine?.();
+      harmonyTrackNotReady = !playbackEngine?.getTracks?.()?.has?.('harmony-widget-track');
+    }
+
+    if (samplesNotReady || bassNotReady || harmonyTrackNotReady) {
       setIsLoadingSamples(true);
     }
 
@@ -409,6 +454,20 @@ export function usePlaybackControl(
       }
     } else if (hasBassNotes) {
       logger.debug('✅ Bass buffers already ready, proceeding with playback');
+    }
+
+    if (harmonyTrackNotReady) {
+      logger.warn('⚠️ Harmony track not yet registered with PlaybackEngine, waiting...');
+      try {
+        await waitForHarmonyTrackReady();
+        logger.info('✅ Harmony track ready, continuing with playback');
+      } catch (error) {
+        logger.error('❌ Harmony track not registered within timeout:', error);
+        // Don't return — playback continues without harmony rather than
+        // blocking the user. Same approach as bass-fail recovery.
+      }
+    } else if (hasHarmonyNotes) {
+      logger.debug('✅ Harmony track already registered, proceeding with playback');
     }
 
     setIsLoadingSamples(false);
@@ -779,7 +838,14 @@ export function usePlaybackControl(
       logger.info('🎵 Starting visual countdown');
       const ToneRef = getTone();
       const audioContext = ToneRef.context;
-      const currentBpm = transport?.getTempo?.() || ToneRef.Transport.bpm.value;
+      // Read BPM directly from Tone.getTransport().bpm.value — the
+      // authoritative source for live tempo (MusicalTruthAuthority writes
+      // here). `transport.getTempo()` was returning a normalized 0..1 slider
+      // value (0.3125 instead of 69), which made the visual countdown's
+      // setInterval delay 60/0.3125 = 192s — so beats 2/3/4 never fired
+      // within the user's playback window. getTransport() (instead of the
+      // deprecated Tone.Transport const) is safe across setContext swaps.
+      const currentBpm = ToneRef.getTransport().bpm.value;
       startCountdown(currentBpm, audioContext, null as any).catch((error) => {
         logger.error('❌ Visual countdown failed:', error);
       });
