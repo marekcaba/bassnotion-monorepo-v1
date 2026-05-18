@@ -52,28 +52,11 @@ vi.mock('@/shared/components/ui/button', () => ({
   ),
 }));
 
-// Mock Lucide React icons
-vi.mock('lucide-react', () => ({
-  Play: () => <span data-testid="play-icon">▶️</span>,
-  Pause: () => <span data-testid="pause-icon">⏸️</span>,
-  Volume2: () => <span data-testid="volume-icon">🔊</span>,
-  Settings: () => <span data-testid="settings-icon">⚙️</span>,
-  Eye: () => <span data-testid="eye-icon">👁️</span>,
-  EyeOff: () => <span data-testid="eye-off-icon">🙈</span>,
-  SkipForward: () => <span data-testid="skip-forward-icon">⏭️</span>,
-  Target: () => <span data-testid="target-icon">🎯</span>,
-  TrendingUp: () => <span data-testid="trending-up-icon">📈</span>,
-  CheckCircle: () => <span data-testid="check-circle-icon">✅</span>,
-  Lightbulb: () => <span data-testid="lightbulb-icon">💡</span>,
-  RotateCcw: () => <span data-testid="rotate-ccw-icon">↺</span>,
-  Clock: () => <span data-testid="clock-icon">🕐</span>,
-  Music: () => <span data-testid="music-icon">🎵</span>,
-  Loader2: () => <span data-testid="loader-icon">⏳</span>,
-  RotateCw: () => <span data-testid="rotate-cw-icon">↻</span>,
-  ArrowLeft: () => <span data-testid="arrow-left-icon">←</span>,
-  SkipBack: () => <span data-testid="skip-back-icon">⏮️</span>,
-  Maximize: () => <span data-testid="maximize-icon">⛶</span>,
-}));
+// Don't mock lucide-react globally — production tree pulls in many icons
+// (the hard-coded list missed AlertCircle, Mic, BookOpen, etc. and broke any
+// time a new icon was added to a transitive child). Lucide icons render as
+// inert <svg> in jsdom which is sufficient for our assertions (they target
+// text labels and roles, not icon test-ids).
 
 // Mock shared utilities
 vi.mock('@/shared/utils', () => ({

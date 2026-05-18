@@ -5,6 +5,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { useTutorialExercises, useTutorial } from '../useTutorialExercises';
 import * as tutorialsApi from '../../api/tutorials';
 import { TutorialsApiError } from '../../api/tutorials';
+import { Exercise } from '@/domains/exercises/entities/exercise.entity';
 import type {
   TutorialExercisesResponse,
   Tutorial,
@@ -101,7 +102,11 @@ describe('useTutorialExercises', () => {
     });
 
     expect(result.current.tutorial).toEqual(mockTutorial);
-    expect(result.current.exercises).toEqual(mockExercises);
+    // The hook wraps each exercise DTO in an Exercise entity, so compare
+    // against the entity shape rather than the raw mock objects.
+    expect(result.current.exercises).toEqual(
+      mockExercises.map((dto) => Exercise.fromDTO(dto)),
+    );
     expect(result.current.error).toBe(null);
     expect(result.current.isError).toBe(false);
     expect(mockedFetchTutorialExercises).toHaveBeenCalledWith('billie-jean');
