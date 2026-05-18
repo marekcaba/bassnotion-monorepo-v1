@@ -19,7 +19,7 @@ import {
 
 // Mock AudioContext for Node environment
 beforeAll(() => {
-  // @ts-ignore
+  // @ts-expect-error - mock AudioContext shape doesn't match the real type
   global.AudioContext = vi.fn().mockImplementation(() => ({
     state: 'running',
     sampleRate: 44100,
@@ -85,8 +85,7 @@ describe('Lazy Tone.js Migration', () => {
       },
     ];
 
-    it.skip('should import all Batch 1 files without errors', async () => {
-      // This test will be enabled after converting Batch 1 files
+    it('should import all Batch 1 files without errors', async () => {
       const result = await batchVerifyLazyToneFiles(batch1Files);
       reportBatchVerification(result);
       expect(result.summary.failed).toBe(0);
@@ -112,7 +111,7 @@ describe('Lazy Tone.js Migration', () => {
       },
     ];
 
-    it.skip('should import all Batch 2 files without errors', async () => {
+    it('should import all Batch 2 files without errors', async () => {
       const result = await batchVerifyLazyToneFiles(batch2Files);
       reportBatchVerification(result);
       expect(result.summary.failed).toBe(0);
@@ -130,7 +129,7 @@ describe('Lazy Tone.js Migration', () => {
       },
       {
         path: '@/domains/playback/modules/transport/core/Transport',
-        expectedExports: ['default'], // or the actual export name
+        expectedExports: ['Transport'],
       },
       {
         path: '@/domains/playback/modules/transport/core/TransportController',
@@ -150,7 +149,7 @@ describe('Lazy Tone.js Migration', () => {
       },
     ];
 
-    it.skip('should import all Batch 3 files without errors', async () => {
+    it('should import all Batch 3 files without errors', async () => {
       const result = await batchVerifyLazyToneFiles(batch3Files);
       reportBatchVerification(result);
       expect(result.summary.failed).toBe(0);
@@ -188,7 +187,7 @@ describe('Lazy Tone.js Migration', () => {
       },
     ];
 
-    it.skip('should import all Batch 4 files without errors', async () => {
+    it('should import all Batch 4 files without errors', async () => {
       const result = await batchVerifyLazyToneFiles(batch4Files);
       reportBatchVerification(result);
       expect(result.summary.failed).toBe(0);
@@ -210,7 +209,7 @@ describe('Lazy Tone.js Migration', () => {
       },
       {
         path: '@/domains/widgets/utils/transportSync',
-        expectedExports: ['syncWithTransport'], // or actual export name
+        expectedExports: ['scheduleTransportSync'],
       },
       {
         path: '@/domains/playback/hooks/useTrackMixing',
@@ -218,7 +217,7 @@ describe('Lazy Tone.js Migration', () => {
       },
     ];
 
-    it.skip('should import all Batch 5 files without errors', async () => {
+    it('should import all Batch 5 files without errors', async () => {
       const result = await batchVerifyLazyToneFiles(batch5Files);
       reportBatchVerification(result);
       expect(result.summary.failed).toBe(0);
@@ -228,13 +227,23 @@ describe('Lazy Tone.js Migration', () => {
   /**
    * Integration: Verify Tone.js core operations work after lazy loading
    */
-  describe('Core Tone.js Operations', () => {
-    it.skip('should perform Transport operations after lazy loading', async () => {
+  // SKIP REASON — these two tests construct real Tone.Transport /
+  // Tone.Gain / Tone.Panner instances. Those internally instantiate a
+  // standardized-audio-context AudioContext, which in jsdom throws
+  // "Cannot read properties of null (reading 'hasOwnProperty')" from
+  // standardized-audio-context/.../bundle.js (well-known jsdom incompat
+  // — see vitest.config.ts exclude list for other tests hitting the
+  // same wall). The lazy-import VERIFICATION (which is the real point
+  // of this file) is already covered by Batches 1-5 above. Real
+  // Tone runtime behavior is covered by Playwright tests against a
+  // real browser context.
+  describe.skip('Core Tone.js Operations', () => {
+    it('should perform Transport operations after lazy loading', async () => {
       const result = await verifyTransportOperations();
       expect(result).toBe(true);
     });
 
-    it.skip('should create audio nodes after lazy loading', async () => {
+    it('should create audio nodes after lazy loading', async () => {
       const result = await verifyAudioNodeCreation();
       expect(result).toBe(true);
     });

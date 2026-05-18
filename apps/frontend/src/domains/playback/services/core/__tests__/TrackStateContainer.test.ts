@@ -444,7 +444,7 @@ describe('TrackStateContainer', () => {
       expect(container.history).toHaveLength(3);
     });
 
-    it.skip('should clone arrays properly - SKIP: Deep cloning not implemented', () => {
+    it('should clone arrays properly', () => {
       const container = new TrackStateContainer(mockTrack);
 
       const send = {

@@ -153,17 +153,20 @@ const createMockBuffers = (): Map<string, AudioBuffer> => {
   ]);
 };
 
-// SKIP REASON — tests assert on Scheduler.getStats().activeSourceCount,
-// but production's Scheduler.getStats() now returns only queueLength,
-// scheduledCount, scheduledUntil, isRunning (no activeSourceCount).
-// The bug-fix being verified is real (memory leak fix from the audio
-// pipeline rewrite) but the verification API was simplified away.
+// SKIP REASON — Scheduler API was refactored:
+//   Old: new Scheduler(eventBus, INSTRUMENT_CONFIGS.metronome, audioContext, buffers, destination)
+//   Old: scheduler.schedule(event, tempo, x, audioTime)
+//   New: new Scheduler(instanceId, tracks)
+//        scheduler.setAudioContext(ctx); scheduler.setBuffers(...);
+//        scheduler.schedule(instrumentType, event, audioTime, options)
 //
-// Memory leaks are now caught by the SchedulePostMessage count
-// regression check (Phase 4.5 - we found a Ticker leak that way).
-// These unit tests are testing a removed observability API, not the
-// underlying invariant. Skip until a new memory-pressure metric is
-// added back, then rewrite.
+// The memory-leak invariant being verified is real and preserved in
+// production (activeSources still tracked, onended still wired —
+// see Scheduler.ts:335-349 and the cleanup-5000-sources perf test
+// in memory-leak-integration.test.ts which covers the same ground).
+// Rewriting this 500-line file against the new track-based API is a
+// separate effort; the same invariant is covered by the integration
+// suite.
 describe.skip('Bug #3: Memory Leak Fix Verification', () => {
   let eventBus: EventBus;
   let audioContext: AudioContext;
@@ -214,7 +217,7 @@ describe.skip('Bug #3: Memory Leak Fix Verification', () => {
 
       // Get active source count during playback
       const stats = scheduler.getStats();
-      const activeDuringPlayback = stats.activeSourceCount;
+      const activeDuringPlayback = stats.activeSourcesCount;
 
       // Active sources should be > 0 during playback
       expect(activeDuringPlayback).toBeGreaterThan(0);
@@ -225,12 +228,12 @@ describe.skip('Bug #3: Memory Leak Fix Verification', () => {
       // Wait for all onended callbacks to fire
       await vi.waitFor(() => {
         const finalStats = scheduler.getStats();
-        return finalStats.activeSourceCount === 0;
+        return finalStats.activeSourcesCount === 0;
       });
 
       // BASELINE: activeSources.size === 0 after playback
       const finalStats = scheduler.getStats();
-      expect(finalStats.activeSourceCount).toBe(0);
+      expect(finalStats.activeSourcesCount).toBe(0);
 
       scheduler.dispose();
     });
@@ -275,19 +278,19 @@ describe.skip('Bug #3: Memory Leak Fix Verification', () => {
 
       // Should have 3 active sources (chord)
       const duringStats = scheduler.getStats();
-      expect(duringStats.activeSourceCount).toBeGreaterThan(0);
+      expect(duringStats.activeSourcesCount).toBeGreaterThan(0);
 
       // Fast-forward
       vi.advanceTimersByTime(5000);
 
       await vi.waitFor(() => {
         const stats = scheduler.getStats();
-        return stats.activeSourceCount === 0;
+        return stats.activeSourcesCount === 0;
       });
 
       // All nested structures should be cleaned
       const finalStats = scheduler.getStats();
-      expect(finalStats.activeSourceCount).toBe(0);
+      expect(finalStats.activeSourcesCount).toBe(0);
 
       scheduler.dispose();
     });
@@ -319,12 +322,12 @@ describe.skip('Bug #3: Memory Leak Fix Verification', () => {
 
         await vi.waitFor(() => {
           const stats = scheduler.getStats();
-          return stats.activeSourceCount === 0;
+          return stats.activeSourcesCount === 0;
         });
 
         // Should be clean before next cycle
         const stats = scheduler.getStats();
-        expect(stats.activeSourceCount).toBe(0);
+        expect(stats.activeSourcesCount).toBe(0);
       }
 
       scheduler.dispose();
@@ -362,7 +365,7 @@ describe.skip('Bug #3: Memory Leak Fix Verification', () => {
         }
 
         // Track peak during playback
-        peakCounts.push(scheduler.getStats().activeSourceCount);
+        peakCounts.push(scheduler.getStats().activeSourcesCount);
 
         // Cancel all (simulate stop)
         scheduler.cancelAllScheduled();
@@ -371,7 +374,7 @@ describe.skip('Bug #3: Memory Leak Fix Verification', () => {
         vi.advanceTimersByTime(100);
 
         await vi.waitFor(() => {
-          return scheduler.getStats().activeSourceCount === 0;
+          return scheduler.getStats().activeSourcesCount === 0;
         });
       }
 
@@ -438,7 +441,7 @@ describe.skip('Bug #3: Memory Leak Fix Verification', () => {
 
       // BASELINE: Peak sources <50 during playback
       const stats = scheduler.getStats();
-      expect(stats.activeSourceCount).toBeLessThan(50);
+      expect(stats.activeSourcesCount).toBeLessThan(50);
 
       scheduler.dispose();
     });
@@ -479,7 +482,7 @@ describe.skip('Bug #3: Memory Leak Fix Verification', () => {
 
       // Wait for all sources to clean up
       await vi.waitFor(() => {
-        return scheduler.getStats().activeSourceCount === 0;
+        return scheduler.getStats().activeSourcesCount === 0;
       });
 
       const cleanupTime = performance.now() - startTime;
@@ -534,7 +537,7 @@ describe.skip('Bug #3: Memory Leak Fix Verification', () => {
       for (const scheduler of schedulers) {
         const stats = scheduler.getStats();
         // After disposal, should have 0 active sources
-        expect(stats.activeSourceCount).toBe(0);
+        expect(stats.activeSourcesCount).toBe(0);
       }
     });
 
@@ -565,7 +568,7 @@ describe.skip('Bug #3: Memory Leak Fix Verification', () => {
 
       // Should have zero active sources
       const stats = scheduler.getStats();
-      expect(stats.activeSourceCount).toBe(0);
+      expect(stats.activeSourcesCount).toBe(0);
 
       // Attempting to schedule after disposal should be safe
       expect(async () => {
