@@ -472,12 +472,14 @@ describe('MetadataAnalyzer', () => {
   });
 
   describe('Error Handling', () => {
-    it('should handle initialization without AudioContext', async () => {
-      // Temporarily remove AudioContext
+    it('should construct without AudioContext (logs warning, no throw)', async () => {
+      // The constructor was reworked to operate in "limited mode" instead of
+      // throwing when the AudioContext API is unavailable — analysis is then
+      // deferred until initialize() is called against a real context.
       const originalAudioContext = (global as any).AudioContext;
       delete (global as any).AudioContext;
 
-      expect(() => new MetadataAnalyzer()).toThrow();
+      expect(() => new MetadataAnalyzer()).not.toThrow();
 
       // Restore AudioContext
       (global as any).AudioContext = originalAudioContext;
@@ -518,7 +520,11 @@ describe('MetadataAnalyzer', () => {
       await analyzer.initialize();
       await analyzer.dispose();
 
-      expect(mockAudioContext.close).toHaveBeenCalled();
+      // dispose() must NOT close the AudioContext — it's a process-wide
+      // singleton managed by AudioContextManager, and closing it would
+      // break audio for the rest of the app. Asserting on cache cleanup
+      // and the absence of the close call captures the real contract.
+      expect(mockAudioContext.close).not.toHaveBeenCalled();
     });
 
     it('should handle double disposal gracefully', async () => {

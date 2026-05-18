@@ -255,13 +255,14 @@ describe('WindowRegistry - BUG #8: Window Object Pollution Prevention', () => {
   // ============================================================================
 
   describe('Playback Engines Management', () => {
-    it('should set and get RegionProcessor', () => {
+    // RegionProcessor was removed in Phase 3.3 (PlaybackEngine reached 100%
+    // rollout). The setRegionProcessor/getRegionProcessor methods are kept
+    // as deprecated no-ops for backward compatibility — set is a no-op and
+    // get always returns null. These tests verify that contract.
+    it('should treat setRegionProcessor as a no-op (deprecated)', () => {
       const mockProcessor = { start: () => {}, stop: () => {} };
-
       WindowRegistry.setRegionProcessor(mockProcessor);
-
-      const retrieved = WindowRegistry.getRegionProcessor();
-      expect(retrieved).toBe(mockProcessor);
+      expect(WindowRegistry.getRegionProcessor()).toBeNull();
     });
 
     it('should set and get PlaybackEngine', () => {
@@ -277,50 +278,46 @@ describe('WindowRegistry - BUG #8: Window Object Pollution Prevention', () => {
       expect(retrieved).toBe(mockEngine);
     });
 
-    it('should track both RegionProcessor and PlaybackEngine simultaneously', () => {
+    it('should always return null for RegionProcessor regardless of set calls', () => {
       const mockProcessor = { type: 'region' };
       const mockEngine = { type: 'playback' };
 
       WindowRegistry.setRegionProcessor(mockProcessor);
       WindowRegistry.setPlaybackEngine(mockEngine);
 
-      expect(WindowRegistry.getRegionProcessor()).toBe(mockProcessor);
+      // RegionProcessor was deleted in Phase 3.3 — get always returns null.
+      expect(WindowRegistry.getRegionProcessor()).toBeNull();
       expect(WindowRegistry.getPlaybackEngine()).toBe(mockEngine);
-      expect(WindowRegistry.getRegionProcessor()).not.toBe(mockEngine);
     });
 
-    it('should allow cleanup of both engines', () => {
-      const mockProcessor = { type: 'region' };
+    it('should allow cleanup of PlaybackEngine', () => {
       const mockEngine = { type: 'playback' };
 
-      WindowRegistry.setRegionProcessor(mockProcessor);
       WindowRegistry.setPlaybackEngine(mockEngine);
-
-      // Cleanup both
       WindowRegistry.cleanup();
+
+      expect(WindowRegistry.getPlaybackEngine()).toBeNull();
+    });
+
+    it('should return null for both RegionProcessor and unset PlaybackEngine', () => {
+      const mockProcessor = { type: 'region' };
+
+      WindowRegistry.setRegionProcessor(mockProcessor); // no-op
+      // Don't set PlaybackEngine
 
       expect(WindowRegistry.getRegionProcessor()).toBeNull();
       expect(WindowRegistry.getPlaybackEngine()).toBeNull();
     });
 
-    it('should handle null PlaybackEngine (feature flag disabled)', () => {
-      const mockProcessor = { type: 'region' };
-
-      WindowRegistry.setRegionProcessor(mockProcessor);
-      // Don't set PlaybackEngine (simulating feature flag disabled)
-
-      expect(WindowRegistry.getRegionProcessor()).toBe(mockProcessor);
-      expect(WindowRegistry.getPlaybackEngine()).toBeNull();
-    });
-
-    it('should replace existing RegionProcessor', () => {
+    it('should silently accept repeated setRegionProcessor calls (deprecated)', () => {
       const oldProcessor = { version: 'old' };
       const newProcessor = { version: 'new' };
 
       WindowRegistry.setRegionProcessor(oldProcessor);
       WindowRegistry.setRegionProcessor(newProcessor);
 
-      expect(WindowRegistry.getRegionProcessor()).toBe(newProcessor);
+      // Still null — RegionProcessor was deleted.
+      expect(WindowRegistry.getRegionProcessor()).toBeNull();
     });
 
     it('should replace existing PlaybackEngine', () => {
