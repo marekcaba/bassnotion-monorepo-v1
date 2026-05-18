@@ -619,6 +619,13 @@ function YouTubeWidgetPageContent({
   const widgetStateRef = useRef(widgetState);
   widgetStateRef.current = widgetState;
 
+  // Track the currently-selected exerciseId in a ref so handleExerciseSelect
+  // can detect actual switches without depending on the state value (which
+  // would force the callback identity to change every render and re-trigger
+  // all consumers).
+  const selectedExerciseIdRef = useRef<string | null>(selectedExerciseId);
+  selectedExerciseIdRef.current = selectedExerciseId;
+
   // Ref for handleExerciseSelect to avoid stale closure in auto-selection effect
   const handleExerciseSelectRef = useRef<(exerciseId: string) => void>(
     () => {},
@@ -694,6 +701,34 @@ function YouTubeWidgetPageContent({
           drumPatternHits: exercise.drumPattern?.length || 0,
           harmonyInstrument: exercise.harmonyInstrument,
         });
+
+        // CRITICAL: Call PlaybackEngine.switchExercise() BEFORE updating state.
+        //
+        // Previously this only ran on tutorial UNMOUNT, so switching between
+        // exercises WITHIN a tutorial (Ex.1 → Ex.2 → Ex.3) left the old
+        // exercise's MIDI regions registered with their schedulers — the next
+        // play() would re-schedule the OLD exercise's audio (bass, drums,
+        // harmony from Ex.1) while the UI showed Ex.2 selected.
+        //
+        // switchExercise() clears bass/harmony/voice-cue schedulers, stops
+        // drums/metronome (preserving their reusable buffers), empties all
+        // track regions, clears scheduled Tone.Transport events, and emits
+        // 'exercise:switched' so each widget hook resets its registration
+        // state and re-registers fresh regions for the new exercise.
+        //
+        // Skip when selecting the same exercise (no-op) and on first selection
+        // (when there's no prior exercise to clean up).
+        // Read from ref so we don't need selectedExerciseId in the dep array.
+        const prevExerciseId = selectedExerciseIdRef.current;
+        const isActualSwitch =
+          prevExerciseId !== null && prevExerciseId !== exerciseId;
+        if (isActualSwitch) {
+          const coreServices = WindowRegistry.getCoreServices();
+          const playbackEngine = coreServices?.getPlaybackEngine?.();
+          if (playbackEngine?.switchExercise) {
+            playbackEngine.switchExercise(exerciseId);
+          }
+        }
 
         // Update parent state (single source of truth)
         setSelectedExerciseId(exerciseId);
