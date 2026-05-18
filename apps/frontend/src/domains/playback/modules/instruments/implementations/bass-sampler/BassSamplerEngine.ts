@@ -321,7 +321,7 @@ export class BassSamplerEngine
 
     // Auto-release after duration (if specified)
     if (bassNote.duration && bassNote.duration > 0) {
-      Tone.Transport.schedule(() => {
+      Tone.getTransport().schedule(() => {
         this.release(bassNote);
       }, time + bassNote.duration);
     }

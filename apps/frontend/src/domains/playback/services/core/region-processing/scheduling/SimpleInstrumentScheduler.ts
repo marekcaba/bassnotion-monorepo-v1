@@ -15,6 +15,7 @@
  */
 
 import { getLogger } from '@/utils/logger.js';
+import { verboseLog } from '@/config/debug';
 import type { PatternEvent } from '../types/region.types.js';
 import { InstrumentTimingDiagnostic } from '../../diagnostics/InstrumentTimingDiagnostic.js';
 import { parsePositionToObject } from '../../timeUtils.js';
@@ -220,7 +221,7 @@ export class SimpleInstrumentScheduler {
 
     // DEBUG: Log bass event details BEFORE buffer lookup
     if (this.config.instrumentType === 'bass') {
-      console.log(
+      verboseLog(
         `🔍 [BASS-SCHEDULER-DEBUG] About to look up buffer for event:`,
         {
           eventType: event.type,
@@ -258,20 +259,20 @@ export class SimpleInstrumentScheduler {
       const eventMeasure = parsedPos.bars + 1; // 1-indexed for display
       const eventBeat = parsedPos.beats + 1; // 1-indexed for display
 
-      console.log(`🎸 [BASS-AUDIO-TIMING] === BASS NOTE SCHEDULING ===`);
-      console.log(
+      verboseLog(`🎸 [BASS-AUDIO-TIMING] === BASS NOTE SCHEDULING ===`);
+      verboseLog(
         `🎸 [BASS-AUDIO-TIMING] audioTime=${audioTime.toFixed(4)}s = ${(audioTime * 1000).toFixed(0)}ms`,
       );
-      console.log(
+      verboseLog(
         `🎸 [BASS-AUDIO-TIMING] Note position: measure=${eventMeasure}, beat=${eventBeat} (raw: ${event.position})`,
       );
-      console.log(
+      verboseLog(
         `🎸 [BASS-AUDIO-TIMING] midiNote=${event.data?.midiNote}, velocity=${velocity.toFixed(3)}`,
       );
-      console.log(
+      verboseLog(
         `🎸 [BASS-AUDIO-TIMING] audioContext.currentTime=${this.audioContext?.currentTime?.toFixed(4)}s`,
       );
-      console.log(
+      verboseLog(
         `🎸 [BASS-AUDIO-TIMING] scheduling ${(audioTime - (this.audioContext?.currentTime || 0)).toFixed(4)}s in advance`,
       );
     }
@@ -329,7 +330,7 @@ export class SimpleInstrumentScheduler {
 
       // 🔊 AUDIO DIAGNOSTIC: Confirm gain node state for bass
       if (this.config.instrumentType === 'bass') {
-        console.log(`🎸 [BASS AUDIO] Gain applied`, {
+        verboseLog(`🎸 [BASS AUDIO] Gain applied`, {
           gainValue: velocityGain.gain.value,
           targetGain,
           fadeIn: this.config.preserveAttackEnvelope
@@ -379,9 +380,14 @@ export class SimpleInstrumentScheduler {
           const originalBpm = event.data.originalBpm;
 
           if (durationInBeats !== undefined && originalBpm !== undefined) {
-            // Get live BPM from Tone.Transport (source of truth for tempo)
+            // Get live BPM from Tone.Transport (source of truth for tempo).
+            // Use getTransport() (not the deprecated Tone.Transport const)
+            // so we re-resolve against the current Context — safe across
+            // setContext swaps.
             const Tone = getTone();
-            const liveBpm = Tone?.Transport?.bpm?.value;
+            const liveBpm = Tone?.getTransport
+              ? Tone.getTransport().bpm.value
+              : Tone?.Transport?.bpm?.value;
 
             if (liveBpm && liveBpm !== originalBpm) {
               // Recalculate: duration = beats * (60 / liveBpm)
@@ -513,7 +519,7 @@ export class SimpleInstrumentScheduler {
    * - Exercise End (graceful=true): Let samples ring out - no intervention, just clear tracking
    */
   stopAll(graceful = false): void {
-    console.log(`[${this.config.loggerName} STOP] Stopping sources`, {
+    verboseLog(`[${this.config.loggerName} STOP] Stopping sources`, {
       scheduledCount: this.scheduledSources.size,
       graceful,
     });
@@ -521,7 +527,7 @@ export class SimpleInstrumentScheduler {
     // GRACEFUL STOP: Let one-shot samples finish naturally
     // One-shot drum/metronome samples are short (< 1 second) and should ring out
     if (graceful) {
-      console.log(
+      verboseLog(
         `[${this.config.loggerName} STOP] Graceful stop - letting ${this.scheduledSources.size} samples ring out naturally`,
       );
       // Just clear the tracking map - samples will finish on their own
@@ -594,7 +600,7 @@ export class SimpleInstrumentScheduler {
       ); // 10ms buffer after fadeout
     }
 
-    console.log(
+    verboseLog(
       `[${this.config.loggerName} STOP] Sources stopped with fadeout`,
       {
         fadedCount,

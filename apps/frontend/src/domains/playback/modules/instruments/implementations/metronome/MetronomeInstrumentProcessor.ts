@@ -449,8 +449,8 @@ export class MetronomeInstrumentProcessor {
 
     try {
       // Start Tone.js transport if not already started
-      if (Tone.Transport.state !== 'started') {
-        Tone.Transport.start();
+      if (Tone.getTransport().state !== 'started') {
+        Tone.getTransport().start();
       }
 
       // TEMPO FIX: Do NOT set Tone.Transport.bpm here!
@@ -748,7 +748,7 @@ export class MetronomeInstrumentProcessor {
     duration: number,
   ): Promise<void> {
     if (!this.Tone) return;
-    this.Tone.Transport.bpm.rampTo(toBPM, duration / 1000);
+    this.Tone.getTransport().bpm.rampTo(toBPM, duration / 1000);
   }
 
   public setTimingPrecision(precision: TimingPrecision): void {
@@ -1211,9 +1211,9 @@ export class MetronomeInstrumentProcessor {
     // Schedule events for the next measure
     for (let i = 0; i < 16; i++) {
       // Schedule up to 16 events ahead
-      const eventTime = Tone.Transport.seconds + i * subdivisionInterval;
+      const eventTime = Tone.getTransport().seconds + i * subdivisionInterval;
 
-      if (eventTime > Tone.Transport.seconds + lookaheadTime) {
+      if (eventTime > Tone.getTransport().seconds + lookaheadTime) {
         break;
       }
 
@@ -1224,7 +1224,7 @@ export class MetronomeInstrumentProcessor {
     }
 
     // Schedule next batch of events
-    Tone.Transport.scheduleOnce(() => {
+    Tone.getTransport().scheduleOnce(() => {
       this.scheduleNextEvents();
     }, `+${lookaheadTime}`);
   }
@@ -1232,7 +1232,7 @@ export class MetronomeInstrumentProcessor {
   private calculateNextEvent(time: number): MetronomeEvent | null {
     const subdivisionInterval = this.getSubdivisionInterval();
     const eventPosition = Math.floor(
-      (time - Tone.Transport.seconds) / subdivisionInterval,
+      (time - Tone.getTransport().seconds) / subdivisionInterval,
     );
 
     const beatsPerMeasure = this.config.timeSignature.numerator;
@@ -1297,7 +1297,7 @@ export class MetronomeInstrumentProcessor {
     const eventId = Date.now() + Math.random();
     this.scheduledEvents.set(eventId, event);
 
-    Tone.Transport.scheduleOnce((time) => {
+    Tone.getTransport().scheduleOnce((time) => {
       this.playClickEvent(event, time);
       this.scheduledEvents.delete(eventId);
 
@@ -1449,7 +1449,7 @@ export class MetronomeInstrumentProcessor {
     this.state.currentSubdivision = event.subdivision;
     this.state.nextEventTime = event.time + this.getSubdivisionInterval();
     this.state.totalBeats++;
-    this.state.elapsedTime = Tone.Transport.seconds;
+    this.state.elapsedTime = Tone.getTransport().seconds;
 
     if (event.beat === 0 && event.subdivision === 0) {
       this.state.currentMeasure++;
@@ -1543,7 +1543,7 @@ export class MetronomeInstrumentProcessor {
     this.scheduledEvents.clear();
 
     // Cancel all scheduled events in Tone.js
-    Tone.Transport.cancel();
+    Tone.getTransport().cancel();
   }
 
   private notifyEvent(event: MetronomeEvent): void {

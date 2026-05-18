@@ -292,7 +292,7 @@ export class DrumSampleEngine
 
     // Auto-release after a reasonable time
     const duration = drumNote.duration || 1;
-    Tone.Transport.schedule(() => {
+    Tone.getTransport().schedule(() => {
       this.release(drumNote);
     }, time + duration);
   }

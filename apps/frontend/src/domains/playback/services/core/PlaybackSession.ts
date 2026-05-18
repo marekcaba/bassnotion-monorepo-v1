@@ -166,7 +166,7 @@ export class PlaybackSession {
     const Tone = getTone();
     for (const id of this.scheduledIds) {
       try {
-        Tone.Transport.clear(id);
+        Tone.getTransport().clear(id);
       } catch (e) {
         // Already cleared
       }
@@ -271,9 +271,12 @@ export class PlaybackSession {
 
     // Clear old scheduled events
     const ToneInTempo = getTone();
+    const toneTransport = ToneInTempo.getTransport
+      ? ToneInTempo.getTransport()
+      : ToneInTempo.Transport;
     for (const id of this.scheduledIds) {
       try {
-        ToneInTempo.Transport.clear(id);
+        toneTransport.clear(id);
       } catch (e) {
         // Already cleared
       }

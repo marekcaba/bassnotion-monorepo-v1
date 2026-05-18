@@ -41,10 +41,10 @@ export async function initializeToneWithoutAudioContext() {
     // Setting a hardcoded 120 BPM here would overwrite the exercise tempo
     // when the exercise is loaded and cause tempo bugs.
     // Tone.Transport.bpm.value = 120; // ❌ REMOVED - bypasses MusicalTruthAuthority
-    Tone.Transport.swing = 0;
-    Tone.Transport.swingSubdivision = '8n';
+    Tone.getTransport().swing = 0;
+    Tone.getTransport().swingSubdivision = '8n';
 
-    return { Tone, Transport: Tone.Transport };
+    return { Tone, Transport: Tone.getTransport() };
   } catch (error) {
     logger.error('Failed to initialize Tone.js:', error);
     throw error;

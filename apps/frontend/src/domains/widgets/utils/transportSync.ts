@@ -45,7 +45,7 @@ export function scheduleTransportSync(options: TransportSyncOptions): number {
   // Complex alignment calculations add unnecessary overhead
 
   // Simply use Tone's built-in scheduling which already handles alignment
-  return Tone.Transport.scheduleRepeat(callback, interval, startOffset);
+  return Tone.getTransport().scheduleRepeat(callback, interval, startOffset);
 }
 
 /**
@@ -59,14 +59,14 @@ export function getCurrentTransportPosition(): {
   position: string;
 } {
   const Tone = getTone();
-  const position = Tone.Transport.position as string;
+  const position = Tone.getTransport().position as string;
   const [bars, beats, sixteenths] = position.split(':').map(Number);
 
   return {
     bars,
     beats,
     sixteenths,
-    seconds: Tone.Transport.seconds,
+    seconds: Tone.getTransport().seconds,
     position,
   };
 }
@@ -77,18 +77,18 @@ export function getCurrentTransportPosition(): {
 export function getTransportSyncOffset(): number {
   const Tone = getTone();
 
-  if (Tone.Transport.state === 'stopped') {
+  if (Tone.getTransport().state === 'stopped') {
     return 0;
   }
 
   // Get current position in seconds
-  const currentSeconds = Tone.Transport.seconds;
+  const currentSeconds = Tone.getTransport().seconds;
 
   // Calculate how far we are into the current measure
-  const bpm = Tone.Transport.bpm.value;
-  const beatsPerMeasure = Array.isArray(Tone.Transport.timeSignature)
-    ? Tone.Transport.timeSignature[0]
-    : Tone.Transport.timeSignature;
+  const bpm = Tone.getTransport().bpm.value;
+  const beatsPerMeasure = Array.isArray(Tone.getTransport().timeSignature)
+    ? Tone.getTransport().timeSignature[0]
+    : Tone.getTransport().timeSignature;
   const secondsPerBeat = 60 / bpm;
   const secondsPerMeasure = secondsPerBeat * beatsPerMeasure;
 
@@ -109,8 +109,8 @@ export function shouldRescheduleEvents(
   lastTransportState: string,
 ): boolean {
   const Tone = getTone();
-  const currentState = Tone.Transport.state;
-  const currentTime = Tone.Transport.seconds;
+  const currentState = Tone.getTransport().state;
+  const currentTime = Tone.getTransport().seconds;
 
   // Reschedule if transport was stopped and started again
   if (lastTransportState === 'stopped' && currentState === 'started') {

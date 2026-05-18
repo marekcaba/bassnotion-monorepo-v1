@@ -157,8 +157,10 @@ export class BeatEmitter {
       return;
     }
 
-    // Verify Tone.Draw exists
-    if (!Tone.Draw) {
+    // Verify Tone.Draw is available (use getDraw() to resolve against the
+    // current Context — safe across setContext swaps).
+    const draw = (Tone as any).getDraw ? (Tone as any).getDraw() : Tone.Draw;
+    if (!draw) {
       logger.error('Tone.Draw not available - using fallback');
       this.startFallback();
       return;
@@ -175,7 +177,7 @@ export class BeatEmitter {
 
     // Calculate countdown duration in Transport time (seconds)
     // This is used to offset beat calculations during countdown
-    const bpm = Tone.Transport.bpm.value;
+    const bpm = Tone.getTransport().bpm.value;
     const eighthNoteDuration = 60 / bpm / 2; // Duration of one 8th note in seconds
     const countdownDuration = this.countdownBeats * 2 * eighthNoteDuration; // Total countdown in seconds
 
@@ -189,10 +191,10 @@ export class BeatEmitter {
     // Schedule repeating callback every 8th note starting at Transport time 0
     // The beat position is calculated from Transport.seconds, not from an incrementing counter
     // This eliminates jitter because even if Tone.Draw fires late, we calculate correct beat
-    this.scheduledEventId = Tone.Transport.scheduleRepeat(
+    this.scheduledEventId = Tone.getTransport().scheduleRepeat(
       (audioTime: number) => {
         // Use Tone.Draw to schedule visual update at exact audio time
-        Tone.Draw.schedule(() => {
+        draw.schedule(() => {
           // TIMING DIAGNOSTIC
           const currentAudioContextTime = Tone.getContext().currentTime;
           const drawFiredAt = performance.now();
@@ -202,7 +204,7 @@ export class BeatEmitter {
           // Calculate beat position from Transport.seconds (authoritative source)
           // This is the key fix: instead of incrementing a counter, we calculate
           // the beat from the current transport position, which is always accurate
-          const transportSeconds = Tone.Transport.seconds;
+          const transportSeconds = Tone.getTransport().seconds;
 
           // Adjust for countdown: transportSeconds starts at 0, but we have countdown beats
           // During countdown (negative adjusted time), we emit beat 0
@@ -298,7 +300,7 @@ export class BeatEmitter {
     let totalEighthNotes = -this.countdownBeats * 2;
     const eighthNotesPerMeasure = this.beatsPerMeasure * 2;
 
-    this.scheduledEventId = Tone.Transport.scheduleRepeat(
+    this.scheduledEventId = Tone.getTransport().scheduleRepeat(
       (audioTime: number) => {
         const isCountdown = totalEighthNotes < 0;
 
@@ -354,7 +356,7 @@ export class BeatEmitter {
     if (this.scheduledEventId !== null) {
       try {
         const Tone = getTone();
-        Tone.Transport.clear(this.scheduledEventId);
+        Tone.getTransport().clear(this.scheduledEventId);
       } catch {
         // Tone not available, ignore
       }

@@ -61,7 +61,7 @@ export class ScheduleCache {
    */
   get(exerciseId: string): CachedSchedule | null {
     const Tone = getTone();
-    const currentBpm = Tone.Transport.bpm.value;
+    const currentBpm = Tone.getTransport().bpm.value;
     const cacheKey = this.generateCacheKey(
       exerciseId,
       currentBpm,

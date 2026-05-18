@@ -114,7 +114,7 @@ export class SustainPedalManager {
 
         // DIAGNOSTIC: Show tick calculation for first 3 events
         if (eventIndex < 3) {
-          const currentBpm = Tone.Transport.bpm.value;
+          const currentBpm = Tone.getTransport().bpm.value;
           const secondsPerBeat = 60 / currentBpm;
           const ticksPerBeat = 480; // PPQ standard
           const beatsFromTicks = absoluteTicks / ticksPerBeat;
@@ -140,7 +140,7 @@ export class SustainPedalManager {
         // The eventData.originalBpm is stale - cached at MIDI load time
         // When user changes tempo via UI, Tone.Transport.bpm.value is updated
         // and CC64 timing must match note scheduling (which also uses live BPM)
-        const currentBpm = Tone.Transport.bpm.value;
+        const currentBpm = Tone.getTransport().bpm.value;
         const secondsPerBeat = 60 / currentBpm;
         const ticksPerBeat = 480; // PPQ standard
         const eventTime = (absoluteTicks / ticksPerBeat) * secondsPerBeat;

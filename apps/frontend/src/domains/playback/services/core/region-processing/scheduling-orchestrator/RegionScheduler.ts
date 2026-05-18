@@ -247,7 +247,7 @@ export class RegionScheduler {
 
         // Get BPM for duration calculations (used for looping)
         const Tone = getTone();
-        const currentBpm = Tone.Transport.bpm.value;
+        const currentBpm = Tone.getTransport().bpm.value;
         const secondsPerBeat = 60 / currentBpm;
 
         // SCHEDULING-TIME LOOPING: Calculate loop count and region duration
@@ -395,11 +395,14 @@ export class RegionScheduler {
     // Cache timeline for future use
     if (exerciseId && !cachedSchedule && currentCC64Timeline.size > 0) {
       const ToneForCache = getTone();
+      const cacheTransport = ToneForCache.getTransport
+        ? ToneForCache.getTransport()
+        : ToneForCache.Transport;
       const schedule: CachedSchedule = {
         cc64Timeline: new Map(currentCC64Timeline),
         calculatedEvents: [],
         cachedAt: Date.now(),
-        bpm: ToneForCache.Transport.bpm.value,
+        bpm: cacheTransport.bpm.value,
         countdownBeats: countdownOffsetBeats,
       };
 
@@ -429,7 +432,7 @@ export class RegionScheduler {
     countdownOffsetBeats: number,
   ): { exerciseEndTime: number; lastBeatThreshold: number } {
     const Tone = getTone();
-    const currentBpm = Tone.Transport.bpm.value;
+    const currentBpm = Tone.getTransport().bpm.value;
     const secondsPerBeat = 60 / currentBpm;
     let maxEndTime = 0;
 
@@ -499,7 +502,7 @@ export class RegionScheduler {
     }
 
     const Tone = getTone();
-    const currentTime = Tone.Transport.seconds;
+    const currentTime = Tone.getTransport().seconds;
 
     // Process events within lookahead window
     const lookAheadEnd = currentTime + this.lookAheadTime;
@@ -515,7 +518,7 @@ export class RegionScheduler {
 
         // Check if we're within this region's time range
         // FAANG FIX: region.duration is in BEATS, must convert to seconds using current BPM!
-        const currentBpmForRegion = Tone.Transport.bpm.value;
+        const currentBpmForRegion = Tone.getTransport().bpm.value;
         const secondsPerBeat = 60 / currentBpmForRegion;
         // 🔧 FIX: Handle all duration formats (number in beats OR MusicalPosition object)
         const durationInBeats = durationToBeats(region.duration);
@@ -567,7 +570,7 @@ export class RegionScheduler {
 
             if (!hasMainKey && !hasBackupKey) {
               // Schedule it immediately - absoluteTime is in seconds
-              const toneId = Tone.Transport.schedule((backupTime: number) => {
+              const toneId = Tone.getTransport().schedule((backupTime: number) => {
                 if (!isRunning) return;
                 // CRITICAL FIX: Use absoluteTime (intended time in seconds) not backupTime (Tone's lookahead time)
                 // Must match the main scheduling method to avoid timing drift

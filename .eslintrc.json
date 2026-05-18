@@ -153,6 +153,42 @@
       }
     },
     {
+      "files": [
+        "apps/frontend/src/**/*.ts",
+        "apps/frontend/src/**/*.tsx"
+      ],
+      "excludedFiles": [
+        "apps/frontend/src/domains/playback/utils/tone.ts",
+        "apps/frontend/src/domains/playback/utils/toneInitializer.ts",
+        "apps/frontend/src/domains/playback/utils/TonePreloader.ts",
+        "apps/frontend/src/domains/playback/modules/audio-engine/core/ToneWrapper.ts",
+        "apps/frontend/src/domains/playback/services/InstrumentDependencyManager.ts",
+        "apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/GlobalControls/hooks/usePlaybackControl.ts",
+        "apps/frontend/src/domains/playback/utils/ensureAudioContext.ts",
+        "apps/frontend/src/domains/playback/modules/instruments/implementations/**/*.ts",
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "**/*.spec.ts",
+        "**/*.spec.tsx",
+        "**/__tests__/**/*",
+        "**/test/**/*",
+        "**/test-utils/**/*"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "tone",
+                "message": "Do NOT statically import 'tone' — it runs index.js side effects at module load (creates AudioContext, Transport, Destination) BEFORE any user gesture, causing Chrome autoplay-policy errors and the 'Cannot read properties of undefined (reading time)' bug. Use `import type * as Tone from 'tone'` for types, then access the runtime instance via `getTone()` (window.Tone || window.__globalTone) inside a function called AFTER the first user gesture."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "files": ["*.js", "*.jsx"],
       "extends": ["eslint:recommended", "plugin:@nx/javascript", "prettier"],
       "rules": {

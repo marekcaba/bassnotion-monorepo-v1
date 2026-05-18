@@ -132,7 +132,7 @@ export class DiagnosticLogger {
           // Use absolute ticks if available (new method)
           // 🚨 CRITICAL FIX: Use original MIDI file BPM, not current transport BPM
           const originalBpm =
-            event.data?.originalBpm || Tone.Transport.bpm.value;
+            event.data?.originalBpm || Tone.getTransport().bpm.value;
           const secondsPerBeat = 60 / originalBpm;
           const ticksPerBeat = 480; // PPQ standard
           eventTime = (event.data.ticks / ticksPerBeat) * secondsPerBeat;
@@ -143,7 +143,7 @@ export class DiagnosticLogger {
 
         const offsetTime =
           this.countdownEnabled && !region.skipCountdownOffset
-            ? this.countdownOffsetBeats * (60 / Tone.Transport.bpm.value)
+            ? this.countdownOffsetBeats * (60 / Tone.getTransport().bpm.value)
             : 0;
         const absoluteTime = region.startTime + eventTime + offsetTime;
         const audioTime = this.transportStartTime + absoluteTime;

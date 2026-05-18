@@ -155,7 +155,7 @@ export class MusicalPositionManager extends EventEmitter {
   secondsToPosition(seconds: number): MusicalPosition {
     // FAANG FIX: Always use current Tone.Transport BPM (single source of truth)
     const Tone = getTone();
-    const currentBpm = Tone.Transport.bpm.value;
+    const currentBpm = Tone.getTransport().bpm.value;
     const beatsPerSecond = currentBpm / 60;
     const sixteenthsPerSecond = beatsPerSecond * 4;
     const totalSixteenths = Math.floor(seconds * sixteenthsPerSecond);
@@ -195,7 +195,7 @@ export class MusicalPositionManager extends EventEmitter {
     // FAANG FIX: Always use current Tone.Transport BPM (single source of truth)
     // this.tempo might be stale if tempo changed via transport without calling setTempo()
     const Tone = getTone();
-    const currentBpm = Tone.Transport.bpm.value;
+    const currentBpm = Tone.getTransport().bpm.value;
     const beatsPerSecond = currentBpm / 60;
     const sixteenthsPerSecond = beatsPerSecond * 4;
     const seconds =
