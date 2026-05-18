@@ -17,7 +17,10 @@ import {
   protectedSampleFetch,
   isSampleLoadingAvailable,
 } from './core/SampleLoadingCircuitBreaker.js';
-import { FALLBACK_KIT_PATH as FALLBACK_DRUM_KIT_PATH, DEFAULT_KIT_SAMPLES } from '@/domains/playback/data/drums/index.js';
+import {
+  FALLBACK_KIT_PATH as FALLBACK_DRUM_KIT_PATH,
+  DEFAULT_KIT_SAMPLES,
+} from '@/domains/playback/data/drums/index.js';
 import { lifecycle } from '@/domains/playback/utils/InitializationLifecycleLogger';
 import { DEFAULT_HARMONY_INSTRUMENT } from '@/domains/playback/constants';
 
@@ -201,7 +204,8 @@ export class InitialSamplePreloader {
     });
 
     // 🆕 DEDUPLICATION: Check if already loading this instrument
-    const instrument = exercise?.harmonyInstrument || DEFAULT_HARMONY_INSTRUMENT;
+    const instrument =
+      exercise?.harmonyInstrument || DEFAULT_HARMONY_INSTRUMENT;
     const loadingKey = `harmony-${instrument}`;
 
     if (this.loadingPromises.has(loadingKey)) {
@@ -308,7 +312,9 @@ export class InitialSamplePreloader {
       // Bass samples come from exercise.notes (fretboard data stored in database)
       for (const exercise of requiredSamples.bassExercises) {
         loadingTasks.push(
-          this.loadBassSamplesForExercise(exercise).then(() => reportProgress()),
+          this.loadBassSamplesForExercise(exercise).then(() =>
+            reportProgress(),
+          ),
         );
       }
 
@@ -359,7 +365,8 @@ export class InitialSamplePreloader {
     for (const exercise of exercises) {
       // Extract harmony notes WITH velocities
       if (exercise.harmonyNotes && exercise.harmonyNotes.length > 0) {
-        const instrument = exercise.harmonyInstrument || DEFAULT_HARMONY_INSTRUMENT;
+        const instrument =
+          exercise.harmonyInstrument || DEFAULT_HARMONY_INSTRUMENT;
 
         if (!manifest.harmony[instrument]) {
           manifest.harmony[instrument] = new Map();
@@ -385,7 +392,7 @@ export class InitialSamplePreloader {
       if (exercise.notes && exercise.notes.length > 0) {
         // Check if any notes are on bass strings (1-5 for 5-string bass)
         const hasBassNotes = exercise.notes.some(
-          (note: any) => note.string >= 1 && note.string <= 5
+          (note: any) => note.string >= 1 && note.string <= 5,
         );
         if (hasBassNotes) {
           manifest.bassExercises.push(exercise);
@@ -423,7 +430,7 @@ export class InitialSamplePreloader {
   private async loadHarmonyForInstrument(
     instrument: string,
     notes: { pitch: number; velocity: number }[],
-    skipBufferInjection: boolean = false,
+    skipBufferInjection = false,
   ): Promise<void> {
     logger.info(`Loading harmony samples for ${instrument}`, {
       noteCount: notes.length,
@@ -465,12 +472,14 @@ export class InitialSamplePreloader {
     });
 
     try {
-      const { BassPreloadStrategy } = await import(
-        '../modules/preloading/strategies/BassPreloadStrategy.js'
-      );
+      const { BassPreloadStrategy } =
+        await import('../modules/preloading/strategies/BassPreloadStrategy.js');
       const bassStrategy = new BassPreloadStrategy();
 
-      const bassResult = await bassStrategy.loadFullSamples(undefined, exercise);
+      const bassResult = await bassStrategy.loadFullSamples(
+        undefined,
+        exercise,
+      );
 
       if (bassResult.success) {
         logger.info('✅ Bass FAANG smart loading complete', {
@@ -501,7 +510,7 @@ export class InitialSamplePreloader {
     exercise: any,
     _instrument: string,
     _loadingKey: string,
-    skipBufferInjection: boolean = false,
+    skipBufferInjection = false,
   ): Promise<void> {
     try {
       // FAANG SOLUTION: Use HarmonyPreloadStrategy with exercise data
@@ -535,7 +544,8 @@ export class InitialSamplePreloader {
           logger.info(
             '⏭️ Skipping buffer injection (background preload mode)',
             {
-              instrument: exercise?.harmonyInstrument || DEFAULT_HARMONY_INSTRUMENT,
+              instrument:
+                exercise?.harmonyInstrument || DEFAULT_HARMONY_INSTRUMENT,
               exerciseId: exercise?.id,
             },
           );
@@ -546,8 +556,7 @@ export class InitialSamplePreloader {
         try {
           // ✅ FIX: Use WindowRegistry key instead of legacy __globalCoreServices
           const coreServices =
-            window.__bassnotion_coreServices ||
-            window.__globalCoreServices;
+            window.__bassnotion_coreServices || window.__globalCoreServices;
 
           if (!coreServices) {
             logger.warn(
@@ -566,7 +575,8 @@ export class InitialSamplePreloader {
 
             // Get the instrument that was just preloaded
             // FIX: Use shared constant to ensure consistency with HarmonyPreloadStrategy
-            const instrument = exercise?.harmonyInstrument || DEFAULT_HARMONY_INSTRUMENT;
+            const instrument =
+              exercise?.harmonyInstrument || DEFAULT_HARMONY_INSTRUMENT;
 
             const harmonyBuffers = new Map<string, AudioBuffer>();
 
@@ -604,7 +614,10 @@ export class InitialSamplePreloader {
                       isContextCompatible: true,
                     });
                   } catch (error) {
-                    logger.error(`Failed to decode buffer ${cacheKey}`, error as Error);
+                    logger.error(
+                      `Failed to decode buffer ${cacheKey}`,
+                      error as Error,
+                    );
                   }
                 }
               }
@@ -627,7 +640,8 @@ export class InitialSamplePreloader {
                 grandpiano: grandPianoConfig,
                 rhodes: rhodesConfig,
               };
-              const perNoteVelocityRanges = instrumentConfigs[instrument]?.perNoteVelocityRanges;
+              const perNoteVelocityRanges =
+                instrumentConfigs[instrument]?.perNoteVelocityRanges;
 
               playbackEngine.setHarmonyBuffers(
                 harmonyBuffers,
@@ -659,8 +673,7 @@ export class InitialSamplePreloader {
         // Voice cue samples are preloaded (lines 1518-1533) but were never injected
         try {
           const coreServices =
-            window.__bassnotion_coreServices ||
-            window.__globalCoreServices;
+            window.__bassnotion_coreServices || window.__globalCoreServices;
 
           if (coreServices) {
             // Phase 3.1: Use PlaybackEngine instead of RegionProcessor
@@ -693,7 +706,10 @@ export class InitialSamplePreloader {
                         isContextCompatible: true,
                       });
                     } catch (error) {
-                      logger.error(`Failed to decode voice cue ${cacheKey}`, error as Error);
+                      logger.error(
+                        `Failed to decode voice cue ${cacheKey}`,
+                        error as Error,
+                      );
                     }
                   }
                 }

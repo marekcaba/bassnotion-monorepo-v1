@@ -69,6 +69,21 @@ describe('Scheduler', () => {
     scheduler = new Scheduler(config);
     vi.useFakeTimers();
     (Tone.Transport as any)._reset();
+    // Production Scheduler reads Tone from `window.Tone` (via the
+    // internal getTone() helper). The vi.mock('tone') sets up the
+    // mocked Transport for the imported `Tone` here, but production
+    // never imports the npm module — so spies on Tone.Transport.*
+    // never fire. Mirror our test-mocked Transport onto window.Tone
+    // so production accesses the SAME Transport instance we're
+    // spying on. The setup.ts default window.Tone is preserved for
+    // anything else (Gain, Volume, etc).
+    if (typeof window !== 'undefined') {
+      const existingWindowTone = (window as any).Tone || {};
+      (window as any).Tone = {
+        ...existingWindowTone,
+        Transport: (Tone as any).Transport,
+      };
+    }
   });
 
   afterEach(() => {

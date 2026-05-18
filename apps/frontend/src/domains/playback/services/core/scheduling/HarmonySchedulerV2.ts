@@ -151,10 +151,13 @@ export class HarmonySchedulerV2 {
     this.sustainPedalHandler = new SustainPedalHandler();
 
     // 🔍 DIAGNOSTIC: Log sustainPedalHandler instance for debugging
-    console.log(`[CC64 DIAGNOSTIC] HarmonySchedulerV2 created sustainPedalHandler`, {
-      instanceId,
-      sustainPedalHandler: this.sustainPedalHandler,
-    });
+    console.log(
+      `[CC64 DIAGNOSTIC] HarmonySchedulerV2 created sustainPedalHandler`,
+      {
+        instanceId,
+        sustainPedalHandler: this.sustainPedalHandler,
+      },
+    );
   }
 
   /**
@@ -188,20 +191,16 @@ export class HarmonySchedulerV2 {
       instrument !== this.currentHarmonyInstrument &&
       this.currentHarmonyInstrument !== null;
     const hasActiveSources =
-      this.scheduledAudioSources.size > 0 ||
-      this.activeHarmonySources.size > 0;
+      this.scheduledAudioSources.size > 0 || this.activeHarmonySources.size > 0;
 
     if (isInstrumentChanging) {
-      console.log(
-        '[HARMONY-SCHEDULER-V2] 🔄 Instrument changed',
-        {
-          oldInstrument: this.currentHarmonyInstrument,
-          newInstrument: instrument,
-          scheduledCount: this.scheduledAudioSources.size,
-          activeCount: this.activeHarmonySources.size,
-          willStopSources: hasActiveSources,
-        },
-      );
+      console.log('[HARMONY-SCHEDULER-V2] 🔄 Instrument changed', {
+        oldInstrument: this.currentHarmonyInstrument,
+        newInstrument: instrument,
+        scheduledCount: this.scheduledAudioSources.size,
+        activeCount: this.activeHarmonySources.size,
+        willStopSources: hasActiveSources,
+      });
 
       // Only call stopAll if there are sources to stop
       // This avoids the "Map is EMPTY" error when switching before any notes played
@@ -273,7 +272,9 @@ export class HarmonySchedulerV2 {
     // Only create EQ for Grand Piano
     if (instrument !== 'grandpiano') {
       this.eqOutputNode = destination;
-      console.log(`[HARMONY-EQ] No EQ for instrument: ${instrument}, connecting directly to destination`);
+      console.log(
+        `[HARMONY-EQ] No EQ for instrument: ${instrument}, connecting directly to destination`,
+      );
       return;
     }
 
@@ -418,7 +419,8 @@ export class HarmonySchedulerV2 {
     const noteName = midiToNoteName(midiNote);
 
     // Get measure number for diagnostics (used below if diagnostic enabled)
-    const measureNum = eventData.position?.measure || eventData.measureNumber || '?';
+    const measureNum =
+      eventData.position?.measure || eventData.measureNumber || '?';
 
     // STEP 3: Select velocity layer using VelocityLayerSelector
     const layer = this.velocityLayerSelector.selectLayer(velocity, noteName);
@@ -536,9 +538,17 @@ export class HarmonySchedulerV2 {
 
       // 🎯 TIMING DIAGNOSTIC: Record for cross-instrument comparison
       if (InstrumentTimingDiagnostic.isEnabled()) {
-        const scheduleFrame = Math.round((this.audioContext?.currentTime || 0) * (this.audioContext?.sampleRate || 48000));
-        const targetFrame = Math.round(audioTime * (this.audioContext?.sampleRate || 48000));
-        const lookaheadMs = (targetFrame - scheduleFrame) / (this.audioContext?.sampleRate || 48000) * 1000;
+        const scheduleFrame = Math.round(
+          (this.audioContext?.currentTime || 0) *
+            (this.audioContext?.sampleRate || 48000),
+        );
+        const targetFrame = Math.round(
+          audioTime * (this.audioContext?.sampleRate || 48000),
+        );
+        const lookaheadMs =
+          ((targetFrame - scheduleFrame) /
+            (this.audioContext?.sampleRate || 48000)) *
+          1000;
 
         InstrumentTimingDiagnostic.record({
           instrument: 'harmony',
@@ -548,7 +558,7 @@ export class HarmonySchedulerV2 {
           scheduleFrame,
           targetFrame,
           lookaheadMs,
-          beat: ((measureNum - 1) * 4 + 1) % 4 + 1, // Approximate beat from measure
+          beat: (((measureNum - 1) * 4 + 1) % 4) + 1, // Approximate beat from measure
           measure: measureNum,
         });
       }
@@ -629,14 +639,20 @@ export class HarmonySchedulerV2 {
 
     // If map is empty but we have active sources, that's a real problem (instance mismatch)
     // If both are empty, it's normal - playback ended naturally or was never started
-    if (this.scheduledAudioSources.size === 0 && this.activeHarmonySources.size > 0) {
-      console.error('[🚨 STOP PROBLEM 🚨] scheduledAudioSources is EMPTY but activeHarmonySources has content!', {
-        instanceId: this.instanceId,
-        activeHarmonySources: this.activeHarmonySources.size,
-        message: 'Sources were removed from Map before stopAll() was called!',
-        possibleCause:
-          'Wrong instance being called for stop! Check if there are multiple instances.',
-      });
+    if (
+      this.scheduledAudioSources.size === 0 &&
+      this.activeHarmonySources.size > 0
+    ) {
+      console.error(
+        '[🚨 STOP PROBLEM 🚨] scheduledAudioSources is EMPTY but activeHarmonySources has content!',
+        {
+          instanceId: this.instanceId,
+          activeHarmonySources: this.activeHarmonySources.size,
+          message: 'Sources were removed from Map before stopAll() was called!',
+          possibleCause:
+            'Wrong instance being called for stop! Check if there are multiple instances.',
+        },
+      );
     }
 
     // Ring-out timing constants
@@ -733,15 +749,18 @@ export class HarmonySchedulerV2 {
 
     // Disconnect sources AFTER fadeout completes (async cleanup)
     if (sourcesToDisconnect.length > 0 && !graceful) {
-      setTimeout(() => {
-        sourcesToDisconnect.forEach((source) => {
-          try {
-            source.disconnect();
-          } catch {
-            // Already disconnected
-          }
-        });
-      }, MANUAL_FADEOUT_TIME * 1000 + 10); // 10ms buffer after fadeout
+      setTimeout(
+        () => {
+          sourcesToDisconnect.forEach((source) => {
+            try {
+              source.disconnect();
+            } catch {
+              // Already disconnected
+            }
+          });
+        },
+        MANUAL_FADEOUT_TIME * 1000 + 10,
+      ); // 10ms buffer after fadeout
     }
 
     console.log('[HARMONY-SCHEDULER-V2 STOP] Sources stopped', {
@@ -758,7 +777,9 @@ export class HarmonySchedulerV2 {
    */
   clearCC64Timeline(): void {
     this.sustainPedalHandler.clear();
-    console.log('[HARMONY-SCHEDULER-V2] CC64 timeline cleared for exercise switch');
+    console.log(
+      '[HARMONY-SCHEDULER-V2] CC64 timeline cleared for exercise switch',
+    );
   }
 
   // Phase 4.1: midiToNoteName() extracted to shared utils/midiUtils.ts

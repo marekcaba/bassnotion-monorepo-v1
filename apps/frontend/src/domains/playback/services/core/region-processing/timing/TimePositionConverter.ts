@@ -32,7 +32,9 @@ function getTone(): NonNullable<typeof window.Tone> {
       return tone;
     }
   }
-  throw new Error('TimePositionConverter: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+  throw new Error(
+    'TimePositionConverter: Tone.js not loaded. Ensure AudioEngine is initialized first.',
+  );
 }
 
 const logger = getLogger('TimePositionConverter');

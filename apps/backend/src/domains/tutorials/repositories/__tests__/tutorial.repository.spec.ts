@@ -4,19 +4,24 @@ import { Tutorial } from '../../entities/tutorial.entity.js';
 import { TutorialId } from '../../value-objects/tutorial-id.vo.js';
 import { TutorialSlug } from '../../value-objects/tutorial-slug.vo.js';
 
-const mockSupabase = {
-  from: vi.fn().mockReturnThis(),
-  select: vi.fn().mockReturnThis(),
-  insert: vi.fn().mockReturnThis(),
-  update: vi.fn().mockReturnThis(),
-  eq: vi.fn().mockReturnThis(),
-  in: vi.fn().mockReturnThis(),
-  single: vi.fn().mockReturnThis(),
-  or: vi.fn().mockReturnThis(),
-  not: vi.fn().mockReturnThis(),
-  order: vi.fn().mockReturnThis(),
-  range: vi.fn().mockReturnThis(),
-};
+// NOTE: We can't use `mockReturnThis()` here because the repository
+// caches the client via `getClient()` and dereferences it, breaking
+// the `this` binding the chain methods rely on. Returning `mockSupabase`
+// explicitly keeps the fluent-builder chain working.
+const mockSupabase: any = {};
+Object.assign(mockSupabase, {
+  from: vi.fn(() => mockSupabase),
+  select: vi.fn(() => mockSupabase),
+  insert: vi.fn(() => mockSupabase),
+  update: vi.fn(() => mockSupabase),
+  eq: vi.fn(() => mockSupabase),
+  in: vi.fn(() => mockSupabase),
+  single: vi.fn(() => mockSupabase),
+  or: vi.fn(() => mockSupabase),
+  not: vi.fn(() => mockSupabase),
+  order: vi.fn(() => mockSupabase),
+  range: vi.fn(() => mockSupabase),
+});
 
 describe('TutorialRepository', () => {
   let repository: TutorialRepository;
@@ -34,8 +39,15 @@ describe('TutorialRepository', () => {
       getCorrelationId: vi.fn().mockReturnValue('test-correlation-id'),
     };
 
+    // Production TutorialRepository takes a SupabaseService and calls
+    // .getClient() internally to get the actual Supabase client.
+    // Wrap our mock client so the service-shape matches.
+    const mockSupabaseService = {
+      getClient: vi.fn().mockReturnValue(mockSupabase),
+    };
+
     repository = new TutorialRepository(
-      mockSupabase as any,
+      mockSupabaseService as any,
       mockRequestContextService as any,
     );
   });

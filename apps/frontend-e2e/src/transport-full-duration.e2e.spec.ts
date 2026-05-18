@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Transport Full Duration Playback', () => {
   test('transport plays for full exercise duration (8 seconds)', async ({

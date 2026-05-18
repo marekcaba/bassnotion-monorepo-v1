@@ -103,7 +103,11 @@ export type PageInitEvent =
   | { type: 'BUFFERS_INJECTED' }
   | { type: 'TRANSPORT_READY' }
   | { type: 'EXERCISE_SELECTED'; exerciseId: string }
-  | { type: 'SET_TUTORIAL_DATA'; tutorial: TutorialData; exercises: ExerciseData[] }
+  | {
+      type: 'SET_TUTORIAL_DATA';
+      tutorial: TutorialData;
+      exercises: ExerciseData[];
+    }
   | { type: 'ERROR'; step: string; message: string; recoverable: boolean }
   | { type: 'RETRY' }
   | { type: 'DISPOSE' };
@@ -244,7 +248,7 @@ export const pageInitializationMachine = setup({
         window.dispatchEvent(
           new CustomEvent('pageInitReady', {
             detail: { awaitingGesture: true },
-          })
+          }),
         );
       }
     },
@@ -254,7 +258,7 @@ export const pageInitializationMachine = setup({
         window.dispatchEvent(
           new CustomEvent('pageInitComplete', {
             detail: { ready: true, timestamp: Date.now() },
-          })
+          }),
         );
       }
     },
@@ -265,7 +269,7 @@ export const pageInitializationMachine = setup({
         window.dispatchEvent(
           new CustomEvent('pageInitError', {
             detail: { error: lastError, canRetry: lastError?.recoverable },
-          })
+          }),
         );
       }
     },
@@ -274,8 +278,10 @@ export const pageInitializationMachine = setup({
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
           new CustomEvent('pageInitFailed', {
-            detail: { message: 'Audio initialization failed after maximum retries' },
-          })
+            detail: {
+              message: 'Audio initialization failed after maximum retries',
+            },
+          }),
         );
       }
     },
@@ -286,121 +292,139 @@ export const pageInitializationMachine = setup({
   // -------------------------------------------------------------------------
   actors: {
     // Pre-initialize CoreServices (loads Tone.js, registers plugins)
-    preInitializeCoreServices: fromPromise<void, { context: PageInitContext }>(async () => {
-      console.log('[PageInit] Pre-initializing CoreServices...');
+    preInitializeCoreServices: fromPromise<void, { context: PageInitContext }>(
+      async () => {
+        console.log('[PageInit] Pre-initializing CoreServices...');
 
-      // In shadow mode, we check if the real initialization happened
-      // The actual initialization is done by existing code
-      await new Promise((resolve) => setTimeout(resolve, 100));
+        // In shadow mode, we check if the real initialization happened
+        // The actual initialization is done by existing code
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // Check if Tone.js is loaded
-      if (typeof window !== 'undefined') {
-        const tone = window.Tone || window.__globalTone;
-        if (!tone) {
-          console.log('[PageInit] Waiting for Tone.js to load...');
-          // Wait for Tone.js (with timeout)
-          await new Promise<void>((resolve, reject) => {
-            const timeout = setTimeout(() => {
-              reject(new Error('Tone.js load timeout'));
-            }, 10000);
+        // Check if Tone.js is loaded
+        if (typeof window !== 'undefined') {
+          const tone = window.Tone || window.__globalTone;
+          if (!tone) {
+            console.log('[PageInit] Waiting for Tone.js to load...');
+            // Wait for Tone.js (with timeout)
+            await new Promise<void>((resolve, reject) => {
+              const timeout = setTimeout(() => {
+                reject(new Error('Tone.js load timeout'));
+              }, 10000);
 
-            const check = () => {
-              const t = window.Tone || window.__globalTone;
-              if (t) {
-                clearTimeout(timeout);
-                resolve();
-              } else {
-                setTimeout(check, 100);
-              }
-            };
-            check();
-          });
+              const check = () => {
+                const t = window.Tone || window.__globalTone;
+                if (t) {
+                  clearTimeout(timeout);
+                  resolve();
+                } else {
+                  setTimeout(check, 100);
+                }
+              };
+              check();
+            });
+          }
         }
-      }
 
-      console.log('[PageInit] CoreServices pre-initialized');
-    }),
+        console.log('[PageInit] CoreServices pre-initialized');
+      },
+    ),
 
     // Download and cache samples
-    downloadSamples: fromPromise<void, { context: PageInitContext }>(async () => {
-      console.log('[PageInit] Downloading samples...');
+    downloadSamples: fromPromise<void, { context: PageInitContext }>(
+      async () => {
+        console.log('[PageInit] Downloading samples...');
 
-      // In shadow mode, check if samples are ready
-      await new Promise((resolve) => setTimeout(resolve, 100));
+        // In shadow mode, check if samples are ready
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // Check for samplesReady flag
-      if (typeof window !== 'undefined') {
-        const samplesReady = window.__samplesReady;
-        if (!samplesReady) {
-          console.log('[PageInit] Waiting for samples to be ready...');
-          // Wait for samples (with timeout)
-          await new Promise<void>((resolve) => {
-            const handler = () => {
-              resolve();
-            };
-            window.addEventListener('samplesReady', handler, { once: true });
+        // Check for samplesReady flag
+        if (typeof window !== 'undefined') {
+          const samplesReady = window.__samplesReady;
+          if (!samplesReady) {
+            console.log('[PageInit] Waiting for samples to be ready...');
+            // Wait for samples (with timeout)
+            await new Promise<void>((resolve) => {
+              const handler = () => {
+                resolve();
+              };
+              window.addEventListener('samplesReady', handler, { once: true });
 
-            // Check if already ready
-            if (window.__samplesReady) {
-              window.removeEventListener('samplesReady', handler);
-              resolve();
-            }
+              // Check if already ready
+              if (window.__samplesReady) {
+                window.removeEventListener('samplesReady', handler);
+                resolve();
+              }
 
-            // Timeout fallback
-            setTimeout(() => {
-              window.removeEventListener('samplesReady', handler);
-              resolve(); // Continue anyway
-            }, 30000);
-          });
+              // Timeout fallback
+              setTimeout(() => {
+                window.removeEventListener('samplesReady', handler);
+                resolve(); // Continue anyway
+              }, 30000);
+            });
+          }
         }
-      }
 
-      console.log('[PageInit] Samples downloaded');
-    }),
+        console.log('[PageInit] Samples downloaded');
+      },
+    ),
 
     // Initialize CoreServices (creates AudioContext - requires user gesture)
-    initializeCoreServices: fromPromise<void, { context: PageInitContext }>(async () => {
-      console.log('[PageInit] Initializing CoreServices (AudioContext)...');
+    initializeCoreServices: fromPromise<void, { context: PageInitContext }>(
+      async () => {
+        console.log('[PageInit] Initializing CoreServices (AudioContext)...');
 
-      // In shadow mode, check if CoreServices is initialized
-      await new Promise((resolve) => setTimeout(resolve, 100));
+        // In shadow mode, check if CoreServices is initialized
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // Check for audioServicesReady
-      if (typeof window !== 'undefined') {
-        const coreServices = window.__globalCoreServices as
-          | { isInitialized?: () => boolean }
-          | undefined;
-        if (!coreServices?.isInitialized?.()) {
-          console.log('[PageInit] Waiting for CoreServices initialization...');
-          await new Promise<void>((resolve) => {
-            const handler = () => {
-              resolve();
-            };
-            window.addEventListener('audioServicesReady', handler, { once: true });
-            window.addEventListener('core-services:initialized', handler, { once: true });
+        // Check for audioServicesReady
+        if (typeof window !== 'undefined') {
+          const coreServices = window.__globalCoreServices as
+            | { isInitialized?: () => boolean }
+            | undefined;
+          if (!coreServices?.isInitialized?.()) {
+            console.log(
+              '[PageInit] Waiting for CoreServices initialization...',
+            );
+            await new Promise<void>((resolve) => {
+              const handler = () => {
+                resolve();
+              };
+              window.addEventListener('audioServicesReady', handler, {
+                once: true,
+              });
+              window.addEventListener('core-services:initialized', handler, {
+                once: true,
+              });
 
-            // Check if already ready
-            const cs = window.__globalCoreServices as
-              | { isInitialized?: () => boolean }
-              | undefined;
-            if (cs?.isInitialized?.()) {
-              window.removeEventListener('audioServicesReady', handler);
-              window.removeEventListener('core-services:initialized', handler);
-              resolve();
-            }
+              // Check if already ready
+              const cs = window.__globalCoreServices as
+                | { isInitialized?: () => boolean }
+                | undefined;
+              if (cs?.isInitialized?.()) {
+                window.removeEventListener('audioServicesReady', handler);
+                window.removeEventListener(
+                  'core-services:initialized',
+                  handler,
+                );
+                resolve();
+              }
 
-            // Timeout fallback
-            setTimeout(() => {
-              window.removeEventListener('audioServicesReady', handler);
-              window.removeEventListener('core-services:initialized', handler);
-              resolve(); // Continue anyway
-            }, 10000);
-          });
+              // Timeout fallback
+              setTimeout(() => {
+                window.removeEventListener('audioServicesReady', handler);
+                window.removeEventListener(
+                  'core-services:initialized',
+                  handler,
+                );
+                resolve(); // Continue anyway
+              }, 10000);
+            });
+          }
         }
-      }
 
-      console.log('[PageInit] CoreServices initialized');
-    }),
+        console.log('[PageInit] CoreServices initialized');
+      },
+    ),
 
     // Inject buffers into PlaybackEngine
     injectBuffers: fromPromise<void, { context: PageInitContext }>(async () => {
@@ -413,26 +437,32 @@ export const pageInitializationMachine = setup({
     }),
 
     // Load exercise-specific samples
-    loadExerciseSamples: fromPromise<void, { exercise: ExerciseData | null }>(async ({ input }) => {
-      if (!input.exercise) {
-        console.log('[PageInit] No exercise to load samples for');
-        return;
-      }
+    loadExerciseSamples: fromPromise<void, { exercise: ExerciseData | null }>(
+      async ({ input }) => {
+        if (!input.exercise) {
+          console.log('[PageInit] No exercise to load samples for');
+          return;
+        }
 
-      console.log('[PageInit] Loading exercise samples...', { exerciseId: input.exercise.id });
+        console.log('[PageInit] Loading exercise samples...', {
+          exerciseId: input.exercise.id,
+        });
 
-      // In shadow mode, this is handled by existing code
-      await new Promise((resolve) => setTimeout(resolve, 100));
+        // In shadow mode, this is handled by existing code
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
-      console.log('[PageInit] Exercise samples loaded');
-    }),
+        console.log('[PageInit] Exercise samples loaded');
+      },
+    ),
 
     // Dispose resources
-    disposeResources: fromPromise<void, { context: PageInitContext }>(async () => {
-      console.log('[PageInit] Disposing resources...');
-      await new Promise((resolve) => setTimeout(resolve, 50));
-      console.log('[PageInit] Resources disposed');
-    }),
+    disposeResources: fromPromise<void, { context: PageInitContext }>(
+      async () => {
+        console.log('[PageInit] Disposing resources...');
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        console.log('[PageInit] Resources disposed');
+      },
+    ),
   },
 }).createMachine({
   id: 'pageInitialization',
@@ -468,13 +498,21 @@ export const pageInitializationMachine = setup({
       on: {
         SCROLL_DETECTED: {
           target: 'preInitializing',
-          actions: [{ type: 'logTransition', params: { from: 'idle', to: 'preInitializing' } }],
+          actions: [
+            {
+              type: 'logTransition',
+              params: { from: 'idle', to: 'preInitializing' },
+            },
+          ],
         },
         USER_GESTURE: {
           target: 'preInitializing',
           actions: [
             'markUserGesture',
-            { type: 'logTransition', params: { from: 'idle', to: 'preInitializing' } },
+            {
+              type: 'logTransition',
+              params: { from: 'idle', to: 'preInitializing' },
+            },
           ],
         },
         SET_TUTORIAL_DATA: {
@@ -497,7 +535,10 @@ export const pageInitializationMachine = setup({
           actions: [
             'markToneLoaded',
             'markCoreServicesPreInit',
-            { type: 'logTransition', params: { from: 'preInitializing', to: 'downloadingSamples' } },
+            {
+              type: 'logTransition',
+              params: { from: 'preInitializing', to: 'downloadingSamples' },
+            },
           ],
         },
         onError: {
@@ -505,9 +546,16 @@ export const pageInitializationMachine = setup({
           actions: [
             {
               type: 'recordError',
-              params: { step: 'preInitialize', message: 'Failed to load audio engine', recoverable: true },
+              params: {
+                step: 'preInitialize',
+                message: 'Failed to load audio engine',
+                recoverable: true,
+              },
             },
-            { type: 'logTransition', params: { from: 'preInitializing', to: 'error' } },
+            {
+              type: 'logTransition',
+              params: { from: 'preInitializing', to: 'error' },
+            },
           ],
         },
       },
@@ -535,7 +583,10 @@ export const pageInitializationMachine = setup({
           target: 'awaitingUserGesture',
           actions: [
             'markSamplesDownloaded',
-            { type: 'logTransition', params: { from: 'downloadingSamples', to: 'awaitingUserGesture' } },
+            {
+              type: 'logTransition',
+              params: { from: 'downloadingSamples', to: 'awaitingUserGesture' },
+            },
           ],
         },
         onError: {
@@ -543,9 +594,16 @@ export const pageInitializationMachine = setup({
           actions: [
             {
               type: 'recordError',
-              params: { step: 'downloadSamples', message: 'Failed to download samples', recoverable: true },
+              params: {
+                step: 'downloadSamples',
+                message: 'Failed to download samples',
+                recoverable: true,
+              },
             },
-            { type: 'logTransition', params: { from: 'downloadingSamples', to: 'error' } },
+            {
+              type: 'logTransition',
+              params: { from: 'downloadingSamples', to: 'error' },
+            },
           ],
         },
       },
@@ -571,7 +629,10 @@ export const pageInitializationMachine = setup({
           target: 'initializingAudio',
           actions: [
             'markUserGesture',
-            { type: 'logTransition', params: { from: 'awaitingUserGesture', to: 'initializingAudio' } },
+            {
+              type: 'logTransition',
+              params: { from: 'awaitingUserGesture', to: 'initializingAudio' },
+            },
           ],
         },
         SET_TUTORIAL_DATA: {
@@ -600,7 +661,10 @@ export const pageInitializationMachine = setup({
           actions: [
             'markAudioContextReady',
             'markCoreServicesInit',
-            { type: 'logTransition', params: { from: 'initializingAudio', to: 'injectingBuffers' } },
+            {
+              type: 'logTransition',
+              params: { from: 'initializingAudio', to: 'injectingBuffers' },
+            },
           ],
         },
         onError: {
@@ -608,9 +672,16 @@ export const pageInitializationMachine = setup({
           actions: [
             {
               type: 'recordError',
-              params: { step: 'initializeAudio', message: 'Failed to create AudioContext', recoverable: false },
+              params: {
+                step: 'initializeAudio',
+                message: 'Failed to create AudioContext',
+                recoverable: false,
+              },
             },
-            { type: 'logTransition', params: { from: 'initializingAudio', to: 'error' } },
+            {
+              type: 'logTransition',
+              params: { from: 'initializingAudio', to: 'error' },
+            },
           ],
         },
       },
@@ -630,7 +701,10 @@ export const pageInitializationMachine = setup({
           actions: [
             'markBuffersInjected',
             'markTransportReady',
-            { type: 'logTransition', params: { from: 'injectingBuffers', to: 'ready' } },
+            {
+              type: 'logTransition',
+              params: { from: 'injectingBuffers', to: 'ready' },
+            },
           ],
         },
         onError: {
@@ -638,9 +712,16 @@ export const pageInitializationMachine = setup({
           actions: [
             {
               type: 'recordError',
-              params: { step: 'injectBuffers', message: 'Failed to prepare instruments', recoverable: true },
+              params: {
+                step: 'injectBuffers',
+                message: 'Failed to prepare instruments',
+                recoverable: true,
+              },
             },
-            { type: 'logTransition', params: { from: 'injectingBuffers', to: 'error' } },
+            {
+              type: 'logTransition',
+              params: { from: 'injectingBuffers', to: 'error' },
+            },
           ],
         },
       },
@@ -675,19 +756,30 @@ export const pageInitializationMachine = setup({
       invoke: {
         src: 'loadExerciseSamples',
         input: ({ context }) => {
-          const exercise = context.exercises?.find((e) => e.id === context.selectedExerciseId);
+          const exercise = context.exercises?.find(
+            (e) => e.id === context.selectedExerciseId,
+          );
           return { exercise: exercise ?? null };
         },
         onDone: {
           target: 'ready',
-          actions: [{ type: 'logTransition', params: { from: 'loadingExercise', to: 'ready' } }],
+          actions: [
+            {
+              type: 'logTransition',
+              params: { from: 'loadingExercise', to: 'ready' },
+            },
+          ],
         },
         onError: {
           target: 'ready', // Don't fail completely, just log warning
           actions: [
             {
               type: 'recordError',
-              params: { step: 'loadExerciseSamples', message: 'Failed to load exercise samples', recoverable: true },
+              params: {
+                step: 'loadExerciseSamples',
+                message: 'Failed to load exercise samples',
+                recoverable: true,
+              },
             },
           ],
         },
@@ -755,4 +847,6 @@ export const pageInitializationMachine = setup({
 // ============================================================================
 
 export type PageInitMachine = typeof pageInitializationMachine;
-export type PageInitMachineState = ReturnType<typeof pageInitializationMachine.transition>;
+export type PageInitMachineState = ReturnType<
+  typeof pageInitializationMachine.transition
+>;

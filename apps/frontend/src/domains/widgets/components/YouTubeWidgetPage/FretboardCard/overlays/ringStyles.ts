@@ -61,7 +61,7 @@ export const EXTENDED_TECHNIQUE_COLORS = {
  * @returns Hex color string for the ring
  */
 export function getTechniqueColor(
-  technique: BassArticulationType | undefined
+  technique: BassArticulationType | undefined,
 ): string {
   if (!technique) {
     return TECHNIQUE_COLORS.normal;
@@ -77,7 +77,7 @@ export function getTechniqueColor(
  * @returns Hex color string for emissive glow
  */
 export function getTechniqueEmissive(
-  technique: BassArticulationType | undefined
+  technique: BassArticulationType | undefined,
 ): string {
   // For now, emissive matches the base color
   // Future enhancement: could return a brighter/lighter version

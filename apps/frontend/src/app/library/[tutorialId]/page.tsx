@@ -8,7 +8,11 @@ import { useTutorialExercises } from '@/domains/widgets/hooks/useTutorialExercis
 import { ScrollTriggerLoader } from '@/domains/playback/components/ScrollTriggerLoader';
 import { PageErrorBoundary } from '@/shared/components/ErrorBoundary';
 import { getLogger } from '@/utils/logger';
-import { logSkeletonDebug, getSkeletonDebugTime, resetSkeletonDebugBaseline } from '@/utils/skeletonDebug';
+import {
+  logSkeletonDebug,
+  getSkeletonDebugTime,
+  resetSkeletonDebugBaseline,
+} from '@/utils/skeletonDebug';
 
 const logger = getLogger('TutorialPage');
 
@@ -71,18 +75,23 @@ export default function TutorialPage({ params }: TutorialPageProps) {
   // Using FAANG-style skeleton loading for better perceived performance
   if (isLoading) {
     if (tutorialPageRenderCount <= 5) {
-      console.log(`⏳ [SKELETON-DEBUG] Showing skeleton at +${getSkeletonDebugTime()}ms`);
+      console.log(
+        `⏳ [SKELETON-DEBUG] Showing skeleton at +${getSkeletonDebugTime()}ms`,
+      );
     }
     return <TutorialPageSkeleton />;
   }
 
   // SKELETON-DEBUG: Log when we switch from skeleton to content
   if (tutorialPageRenderCount <= 5) {
-    console.log(`✅ [SKELETON-DEBUG] Loading complete! Rendering content at +${getSkeletonDebugTime()}ms`, {
-      hasExercises: !!exercises,
-      exerciseCount: exercises?.length ?? 0,
-      tutorialTitle: tutorial?.title,
-    });
+    console.log(
+      `✅ [SKELETON-DEBUG] Loading complete! Rendering content at +${getSkeletonDebugTime()}ms`,
+      {
+        hasExercises: !!exercises,
+        exerciseCount: exercises?.length ?? 0,
+        tutorialTitle: tutorial?.title,
+      },
+    );
   }
 
   // Handle error state - AFTER all hooks

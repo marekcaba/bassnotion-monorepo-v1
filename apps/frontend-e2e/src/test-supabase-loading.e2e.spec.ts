@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Test Supabase Sample Loading', () => {
   test('verify Supabase samples can be loaded', async ({ page }) => {

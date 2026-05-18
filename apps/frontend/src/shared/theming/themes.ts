@@ -66,7 +66,7 @@ export function getThemeCSSVariables(variant: ThemeVariant): string {
 export function getThemeColor(
   variant: ThemeVariant,
   colorType: 'primary' | 'secondary' | 'accent',
-  opacity: number = 1
+  opacity = 1,
 ): string {
   const color = themeVariants[variant][colorType];
   return `hsl(${color.h} ${color.s}% ${color.l}% / ${opacity})`;

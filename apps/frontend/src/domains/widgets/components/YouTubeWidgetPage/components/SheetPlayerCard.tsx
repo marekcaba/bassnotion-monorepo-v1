@@ -3,7 +3,10 @@
 import React, { useMemo, useCallback, useRef } from 'react';
 import { Music } from 'lucide-react';
 import type { ExerciseNote } from '@bassnotion/contracts';
-import { useTransportControls, useTransportPosition } from '@/domains/playback/contexts/TransportContext';
+import {
+  useTransportControls,
+  useTransportPosition,
+} from '@/domains/playback/contexts/TransportContext';
 import { SheetMusicDisplay } from '../../SheetMusic/index.js';
 import { logSkeletonDebug } from '@/utils/skeletonDebug';
 
@@ -141,7 +144,8 @@ export function SheetPlayerCard({ selectedExercise }: SheetPlayerCardProps) {
               top: 0,
               bottom: 0,
               width: '40px',
-              background: 'linear-gradient(to right, #c8c8c8 0%, transparent 100%)',
+              background:
+                'linear-gradient(to right, #c8c8c8 0%, transparent 100%)',
               zIndex: 10,
               pointerEvents: 'none',
               borderRadius: '20px 0 0 20px',
@@ -155,7 +159,8 @@ export function SheetPlayerCard({ selectedExercise }: SheetPlayerCardProps) {
               top: 0,
               bottom: 0,
               width: '40px',
-              background: 'linear-gradient(to left, #c8c8c8 0%, transparent 100%)',
+              background:
+                'linear-gradient(to left, #c8c8c8 0%, transparent 100%)',
               zIndex: 10,
               pointerEvents: 'none',
               borderRadius: '0 20px 20px 0',
@@ -168,7 +173,8 @@ export function SheetPlayerCard({ selectedExercise }: SheetPlayerCardProps) {
               height: '140px',
               borderRadius: '20px',
               background: 'linear-gradient(135deg, #bfbfbf 0%, #d1d1d1 100%)',
-              boxShadow: 'inset 5px 5px 10px #b3b3b3, inset -5px -5px 10px #dfdfdf',
+              boxShadow:
+                'inset 5px 5px 10px #b3b3b3, inset -5px -5px 10px #dfdfdf',
               position: 'relative',
               zIndex: 1,
               isolation: 'isolate',
@@ -209,7 +215,8 @@ export function SheetPlayerCard({ selectedExercise }: SheetPlayerCardProps) {
             height: '140px',
             borderRadius: '20px',
             background: 'linear-gradient(135deg, #bfbfbf 0%, #d1d1d1 100%)',
-            boxShadow: 'inset 5px 5px 10px #b3b3b3, inset -5px -5px 10px #dfdfdf',
+            boxShadow:
+              'inset 5px 5px 10px #b3b3b3, inset -5px -5px 10px #dfdfdf',
           }}
         >
           <Music className="w-10 h-10 text-slate-500/60" />

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Debug Schedule Creation', () => {
   test('check what happens when widgets create schedules', async ({ page }) => {
@@ -20,7 +20,10 @@ test.describe('Debug Schedule Creation', () => {
       const originalScheduleRepeat = Tone.Transport.scheduleRepeat;
       Tone.Transport.scheduleRepeat = function (...args: any[]) {
         const [callback, interval, startTime] = args;
-        const creation = {
+        // Typed as any so we can attach result/success/error post-call.
+        // (TS would otherwise narrow the literal type and reject the
+        // post-hoc property assignments below.)
+        const creation: any = {
           method: 'scheduleRepeat',
           interval,
           startTime: startTime === undefined ? 'undefined' : startTime,

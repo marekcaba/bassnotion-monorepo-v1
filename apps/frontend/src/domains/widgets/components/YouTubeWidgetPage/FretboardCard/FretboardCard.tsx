@@ -3,7 +3,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ZoneCard, ZoneCardContent } from '@/ui-libraries';
 import { Target } from 'lucide-react';
-import { createStructuredLogger, type FretboardViewConfig, type FretboardScrollMode } from '@bassnotion/contracts';
+import {
+  createStructuredLogger,
+  type FretboardViewConfig,
+  type FretboardScrollMode,
+} from '@bassnotion/contracts';
 import { isVerboseDebugEnabled } from '@/config/debug';
 
 const logger = createStructuredLogger('FretboardCard');
@@ -16,7 +20,10 @@ const logger = createStructuredLogger('FretboardCard');
 // where the animation might not be defined when the element mounts.
 const FADE_IN_KEYFRAMES_ID = 'fretboard-fade-in-keyframes';
 
-if (typeof document !== 'undefined' && !document.getElementById(FADE_IN_KEYFRAMES_ID)) {
+if (
+  typeof document !== 'undefined' &&
+  !document.getElementById(FADE_IN_KEYFRAMES_ID)
+) {
   const style = document.createElement('style');
   style.id = FADE_IN_KEYFRAMES_ID;
   style.textContent = `
@@ -61,7 +68,7 @@ export const FRETBOARD_VIEW_PRESETS = {
   },
   octave: {
     scrollMode: 'locked' as FretboardScrollMode,
-    zoomLevel: 1.30, // Wider zoom for octave patterns
+    zoomLevel: 1.3, // Wider zoom for octave patterns
     initialFret: 0, // Start at fret 0 for octave view
     visibleFretRange: { start: 0, end: 13 },
     // 3D overlay settings from user's calibrated values
@@ -69,7 +76,7 @@ export const FRETBOARD_VIEW_PRESETS = {
       sceneX: 3,
       sceneY: 0,
       sceneZ: -151,
-      scale: 1.30,
+      scale: 1.3,
       scaleX: 0.959,
       scaleY: 0.949,
       rotX: 3,
@@ -108,7 +115,11 @@ import { FretboardControls } from './components/FretboardControls';
 import { FretboardModeControls } from './components/FretboardModeControls';
 import { FretboardGrid } from './components/FretboardGrid';
 import { convertTo3DFormat } from './utils/formatConversion';
-import { Ring3DOverlayCanvas, useRingOverlay, DEFAULT_RING_CONFIG } from './overlays';
+import {
+  Ring3DOverlayCanvas,
+  useRingOverlay,
+  DEFAULT_RING_CONFIG,
+} from './overlays';
 
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { useSnapshotTransition } from '@/shared/hooks/useSnapshotTransition';
@@ -238,13 +249,21 @@ export const FretboardCard = React.memo(
     onExerciseSelect,
     debugRotation = { x: 51, y: 0, z: 0 }, // DEBUG: XYZ rotation for calibration (51° tilt default)
     overlay3DConfig = {
-      rotationX: 0, rotationY: 0, rotationZ: 0,
-      scaleX: 0.959, scaleY: 0.949,
-      offsetX: 25, offsetY: 3,
-      sceneX: 3, sceneY: 0, sceneZ: 193,
-      cameraDistance: 740, fovOffset: 0,
-      originX: 284, originY: 136,
-      contentScale: 1.30,
+      rotationX: 0,
+      rotationY: 0,
+      rotationZ: 0,
+      scaleX: 0.959,
+      scaleY: 0.949,
+      offsetX: 25,
+      offsetY: 3,
+      sceneX: 3,
+      sceneY: 0,
+      sceneZ: 193,
+      cameraDistance: 740,
+      fovOffset: 0,
+      originX: 284,
+      originY: 136,
+      contentScale: 1.3,
       positioningMode: 'flat',
       tiltAxisOffset: -23,
       tiltAxisOffsetX: 448,
@@ -366,13 +385,21 @@ const FretboardCardContent = React.memo(
     onExerciseSelect,
     debugRotation = { x: 51, y: 0, z: 0 }, // DEBUG: XYZ rotation for calibration (51° tilt default)
     overlay3DConfig = {
-      rotationX: 0, rotationY: 0, rotationZ: 0,
-      scaleX: 0.959, scaleY: 0.949,
-      offsetX: 25, offsetY: 3,
-      sceneX: 3, sceneY: 0, sceneZ: 193,
-      cameraDistance: 740, fovOffset: 0,
-      originX: 284, originY: 136,
-      contentScale: 1.30,
+      rotationX: 0,
+      rotationY: 0,
+      rotationZ: 0,
+      scaleX: 0.959,
+      scaleY: 0.949,
+      offsetX: 25,
+      offsetY: 3,
+      sceneX: 3,
+      sceneY: 0,
+      sceneZ: 193,
+      cameraDistance: 740,
+      fovOffset: 0,
+      originX: 284,
+      originY: 136,
+      contentScale: 1.3,
       positioningMode: 'flat',
       tiltAxisOffset: -23,
       tiltAxisOffsetX: 448,
@@ -397,12 +424,20 @@ const FretboardCardContent = React.memo(
     onExerciseSelect?: (exerciseId: string) => void;
     debugRotation?: { x: number; y: number; z: number }; // DEBUG: XYZ rotation for calibration
     overlay3DConfig?: {
-      rotationX: number; rotationY: number; rotationZ: number;
-      scaleX: number; scaleY: number;
-      offsetX: number; offsetY: number;
-      sceneX: number; sceneY: number; sceneZ: number;
-      cameraDistance: number; fovOffset: number;
-      originX: number; originY: number;
+      rotationX: number;
+      rotationY: number;
+      rotationZ: number;
+      scaleX: number;
+      scaleY: number;
+      offsetX: number;
+      offsetY: number;
+      sceneX: number;
+      sceneY: number;
+      sceneZ: number;
+      cameraDistance: number;
+      fovOffset: number;
+      originX: number;
+      originY: number;
       contentScale: number;
       positioningMode?: 'flat' | 'tilted-plane' | 'screen-space';
       tiltAxisOffset?: number;
@@ -503,7 +538,8 @@ const FretboardCardContent = React.memo(
 
     // Effective overlay3D config - merges preset settings with per-exercise overrides
     // When octave preset is used, this will use the preset's 3D settings
-    const [effectiveOverlay3DConfig, setEffectiveOverlay3DConfig] = useState(overlay3DConfig);
+    const [effectiveOverlay3DConfig, setEffectiveOverlay3DConfig] =
+      useState(overlay3DConfig);
 
     // Sync effectiveOverlay3DConfig when overlay3DConfig prop changes (e.g., from debug controls)
     React.useEffect(() => {
@@ -555,7 +591,8 @@ const FretboardCardContent = React.memo(
     // The fretboard content is hidden until the user scrolls to the sentinel.
     // When revealed, it fades in with a zoom animation for a polished effect.
     // Subsequent exercise changes animate normally.
-    const [isInitialRevealComplete, setIsInitialRevealComplete] = useState(false);
+    const [isInitialRevealComplete, setIsInitialRevealComplete] =
+      useState(false);
     const [showFretboardContent, setShowFretboardContent] = useState(false);
     const animationTriggerSentinelRef = useRef<HTMLDivElement>(null);
 
@@ -569,26 +606,38 @@ const FretboardCardContent = React.memo(
     useEffect(() => {
       // Skip if initial reveal is already complete
       if (isInitialRevealComplete) {
-        if (isVerboseDebugEnabled()) console.log('[ZOOM-DEBUG] Initial reveal already complete, skipping observer');
+        if (isVerboseDebugEnabled())
+          console.log(
+            '[ZOOM-DEBUG] Initial reveal already complete, skipping observer',
+          );
         return;
       }
 
       const sentinel = animationTriggerSentinelRef.current;
-      if (isVerboseDebugEnabled()) console.log('[ZOOM-DEBUG] IntersectionObserver setup - sentinel:', sentinel);
+      if (isVerboseDebugEnabled())
+        console.log(
+          '[ZOOM-DEBUG] IntersectionObserver setup - sentinel:',
+          sentinel,
+        );
       if (!sentinel) {
-        if (isVerboseDebugEnabled()) console.log('[ZOOM-DEBUG] ❌ No sentinel element found!');
+        if (isVerboseDebugEnabled())
+          console.log('[ZOOM-DEBUG] ❌ No sentinel element found!');
         return;
       }
 
       const observer = new IntersectionObserver(
         (entries) => {
           const entry = entries[0];
-          if (isVerboseDebugEnabled()) console.log('[ZOOM-DEBUG] IntersectionObserver callback:', {
-            isIntersecting: entry.isIntersecting,
-            intersectionRatio: entry.intersectionRatio,
-          });
+          if (isVerboseDebugEnabled())
+            console.log('[ZOOM-DEBUG] IntersectionObserver callback:', {
+              isIntersecting: entry.isIntersecting,
+              intersectionRatio: entry.intersectionRatio,
+            });
           if (entry.isIntersecting) {
-            if (isVerboseDebugEnabled()) console.log('[ZOOM-DEBUG] 🎯 Sentinel in view! Revealing fretboard content');
+            if (isVerboseDebugEnabled())
+              console.log(
+                '[ZOOM-DEBUG] 🎯 Sentinel in view! Revealing fretboard content',
+              );
             setShowFretboardContent(true);
             setIsInitialRevealComplete(true);
           }
@@ -597,14 +646,16 @@ const FretboardCardContent = React.memo(
           // Trigger as soon as the sentinel enters the viewport
           threshold: 0,
           rootMargin: '0px',
-        }
+        },
       );
 
       observer.observe(sentinel);
-      if (isVerboseDebugEnabled()) console.log('[ZOOM-DEBUG] Observer started watching sentinel');
+      if (isVerboseDebugEnabled())
+        console.log('[ZOOM-DEBUG] Observer started watching sentinel');
 
       return () => {
-        if (isVerboseDebugEnabled()) console.log('[ZOOM-DEBUG] Observer disconnected');
+        if (isVerboseDebugEnabled())
+          console.log('[ZOOM-DEBUG] Observer disconnected');
         observer.disconnect();
       };
     }, [isInitialRevealComplete]);
@@ -615,12 +666,14 @@ const FretboardCardContent = React.memo(
     const INITIAL_FADE_DURATION = 1000;
     useEffect(() => {
       if (showFretboardContent && !initialFadeComplete) {
-        if (isVerboseDebugEnabled()) console.log('[ZOOM-DEBUG] 🌟 CSS fade-in animation started');
+        if (isVerboseDebugEnabled())
+          console.log('[ZOOM-DEBUG] 🌟 CSS fade-in animation started');
 
         // Mark the initial fade as complete after the CSS animation finishes
         // This allows subsequent exercise changes to use the snapshot transition opacity
         const timer = setTimeout(() => {
-          if (isVerboseDebugEnabled()) console.log('[ZOOM-DEBUG] ✅ Initial fade animation complete');
+          if (isVerboseDebugEnabled())
+            console.log('[ZOOM-DEBUG] ✅ Initial fade animation complete');
           setInitialFadeComplete(true);
         }, INITIAL_FADE_DURATION);
 
@@ -927,17 +980,20 @@ const FretboardCardContent = React.memo(
 
     // Create atomic source data object - all related data combined
     // useMemo ensures we only create a new object when constituent parts actually change
-    const atomicSourceData = React.useMemo<AtomicExerciseDisplayData>(() => ({
-      notes: fretboard.exerciseData.exerciseNotes,
-      tempo: fretboard.exercise.tempo,
-      overlay3DConfig: effectiveOverlay3DConfig ?? null,
-      exerciseId: fretboard.exerciseData.selectedExercise?.id,
-    }), [
-      fretboard.exerciseData.exerciseNotes,
-      fretboard.exercise.tempo,
-      effectiveOverlay3DConfig,
-      fretboard.exerciseData.selectedExercise?.id,
-    ]);
+    const atomicSourceData = React.useMemo<AtomicExerciseDisplayData>(
+      () => ({
+        notes: fretboard.exerciseData.exerciseNotes,
+        tempo: fretboard.exercise.tempo,
+        overlay3DConfig: effectiveOverlay3DConfig ?? null,
+        exerciseId: fretboard.exerciseData.selectedExercise?.id,
+      }),
+      [
+        fretboard.exerciseData.exerciseNotes,
+        fretboard.exercise.tempo,
+        effectiveOverlay3DConfig,
+        fretboard.exerciseData.selectedExercise?.id,
+      ],
+    );
 
     // SINGLE atomic transition for ALL exercise-related display data
     // This guarantees notes, tempo, and overlay3D config swap together atomically
@@ -951,7 +1007,7 @@ const FretboardCardContent = React.memo(
       // CRITICAL: Use .value to get the string ID, not the ExerciseId object
       // Object references would always be different, breaking key comparison
       fretboard.exerciseData.selectedExercise?.id?.value,
-      { fadeDuration: FADE_DURATION_MS, debug: false }
+      { fadeDuration: FADE_DURATION_MS, debug: false },
     );
 
     // Destructure for backward compatibility with existing code
@@ -993,13 +1049,17 @@ const FretboardCardContent = React.memo(
       if (showFretboardContent && !initialRevealDoneRef.current) {
         initialRevealDoneRef.current = true;
         if (isVerboseDebugEnabled()) {
-          console.log('[ZOOM-DEBUG] 🎬 Initial reveal - forceInitialZoom is now true');
+          console.log(
+            '[ZOOM-DEBUG] 🎬 Initial reveal - forceInitialZoom is now true',
+          );
         }
 
         // Mark zoom animation as done after it completes (1500ms + buffer)
         const endTimer = setTimeout(() => {
           if (isVerboseDebugEnabled()) {
-            console.log('[ZOOM-DEBUG] ✅ Zoom animation complete - setting initialZoomDone');
+            console.log(
+              '[ZOOM-DEBUG] ✅ Zoom animation complete - setting initialZoomDone',
+            );
           }
           setInitialZoomDone(true);
         }, 1700);
@@ -1015,13 +1075,18 @@ const FretboardCardContent = React.memo(
       // During initial reveal, force 'fading-in' to trigger zoom animation
       if (forceInitialZoom) {
         if (isVerboseDebugEnabled()) {
-          console.log('[ZOOM-DEBUG] effectiveTransitionPhase: FORCING fading-in for initial reveal');
+          console.log(
+            '[ZOOM-DEBUG] effectiveTransitionPhase: FORCING fading-in for initial reveal',
+          );
         }
         return 'fading-in' as const;
       }
 
       if (isVerboseDebugEnabled()) {
-        console.log('[ZOOM-DEBUG] effectiveTransitionPhase: passing through', transitionPhase);
+        console.log(
+          '[ZOOM-DEBUG] effectiveTransitionPhase: passing through',
+          transitionPhase,
+        );
       }
       return transitionPhase;
     }, [forceInitialZoom, transitionPhase]);
@@ -1168,13 +1233,21 @@ const FretboardCardContent = React.memo(
         // Log all keys on the exercise object
         allKeys: Object.keys(exercise),
         // Check if it has the getter
-        hasGetter: typeof Object.getOwnPropertyDescriptor(Object.getPrototypeOf(exercise), 'fretboardViewConfig')?.get === 'function',
+        hasGetter:
+          typeof Object.getOwnPropertyDescriptor(
+            Object.getPrototypeOf(exercise),
+            'fretboardViewConfig',
+          )?.get === 'function',
       });
 
       // Get fretboard view config from exercise (handle both entity and raw DTO)
-      const config = (exercise as any).fretboardViewConfig || (exercise as any).fretboard_view_config;
+      const config =
+        (exercise as any).fretboardViewConfig ||
+        (exercise as any).fretboard_view_config;
       const preset = config?.preset || 'default';
-      const presetConfig = FRETBOARD_VIEW_PRESETS[preset as keyof typeof FRETBOARD_VIEW_PRESETS] || FRETBOARD_VIEW_PRESETS.default;
+      const presetConfig =
+        FRETBOARD_VIEW_PRESETS[preset as keyof typeof FRETBOARD_VIEW_PRESETS] ||
+        FRETBOARD_VIEW_PRESETS.default;
 
       console.log(`🎸 [FRETBOARD-CONFIG-DEBUG] Config detection:`, {
         configFound: !!config,
@@ -1205,7 +1278,7 @@ const FretboardCardContent = React.memo(
         // overriding the specific position/scale/rotation values from the preset
         const presetOverlay = presetConfig.overlay3D;
         setEffectiveOverlay3DConfig((prev) => ({
-          ...prev,  // Keep all existing properties (colors, bloom, fade zones, etc.)
+          ...prev, // Keep all existing properties (colors, bloom, fade zones, etc.)
           rotationX: presetOverlay.rotX,
           rotationY: presetOverlay.rotY,
           rotationZ: presetOverlay.rotZ,
@@ -1228,7 +1301,10 @@ const FretboardCardContent = React.memo(
           tiltAxisOffsetX: presetOverlay.tiltXOffset,
           perspectiveMultiplier: presetOverlay.persp,
         }));
-        logger.info(`🎸 Applied octave preset 3D overlay settings:`, presetOverlay);
+        logger.info(
+          `🎸 Applied octave preset 3D overlay settings:`,
+          presetOverlay,
+        );
       } else {
         // Use default overlay config passed via props
         setEffectiveOverlay3DConfig(overlay3DConfig);
@@ -1386,7 +1462,11 @@ const FretboardCardContent = React.memo(
     );
 
     const handleGridDrop = React.useCallback(
-      (e: React.DragEvent, targetStringIndex: number, targetFret: number | 'open') => {
+      (
+        e: React.DragEvent,
+        targetStringIndex: number,
+        targetFret: number | 'open',
+      ) => {
         dotSelectionHandlers.handleDragDrop(targetStringIndex, targetFret);
       },
       [dotSelectionHandlers.handleDragDrop],
@@ -1404,191 +1484,225 @@ const FretboardCardContent = React.memo(
               overflow: 'visible',
             }}
           >
-          {/* Transparent Fretboard Container - scaled from 568px base to fill available width */}
-          <div
-            className="relative"
-            style={{
-              overflow: 'visible',
-              transform: `scale(${responsiveScale})`,
-              transformOrigin: 'top center',
-            }}
-          >
-            {/* 2D Mode Fretboard - With zoom and horizontal scroll */}
-            {/* Initially hidden until user scrolls to sentinel, then fades in with zoom animation */}
+            {/* Transparent Fretboard Container - scaled from 568px base to fill available width */}
             <div
-              ref={fretboardContainerRef}
-              className="relative mx-auto"
+              className="relative"
               style={{
-                width: 568,
-                height: 290,
                 overflow: 'visible',
-                perspective: '800px',
-                // Visibility logic:
-                // - Before sentinel: completely hidden (visibility:hidden preserves layout)
-                // - After sentinel triggers showFretboardContent: visible with fade animation
-                visibility: showFretboardContent ? 'visible' : 'hidden',
-                // Opacity logic:
-                // - During initial reveal: CSS animation fades from 0 to 1
-                // - After initial fade complete: use fadeOpacity for subsequent exercise transitions
-                opacity: showFretboardContent ? (initialFadeComplete ? fadeOpacity : 0) : 0,
-                // Use CSS animation for initial reveal, then CSS transition for exercise changes
-                animation: showFretboardContent && !initialFadeComplete ? `fretboardFadeIn ${INITIAL_FADE_DURATION}ms ease-out forwards` : undefined,
-                transition: initialFadeComplete ? `opacity ${fadeDuration}ms ease-out` : undefined,
+                transform: `scale(${responsiveScale})`,
+                transformOrigin: 'top center',
               }}
             >
+              {/* 2D Mode Fretboard - With zoom and horizontal scroll */}
+              {/* Initially hidden until user scrolls to sentinel, then fades in with zoom animation */}
               <div
-                ref={(el) => {
-                  scrollContainerRef.current = el;
-                  if (el && !hasUserScrolled) {
-                    // Only set to 0 if user hasn't manually scrolled
-                    el.scrollLeft = 0;
-                  }
-                }}
-                className="overflow-x-auto overflow-y-hidden h-full flex items-center"
+                ref={fretboardContainerRef}
+                className="relative mx-auto"
                 style={{
-                  cursor: isDragging ? 'grabbing' : 'grab',
-                  scrollbarWidth: 'none', // Firefox
-                  msOverflowStyle: 'none', // IE/Edge
-                  // DEBUG: Full XYZ rotation for 3D overlay calibration
-                  transform: `rotateX(${debugRotation.x}deg) rotateY(${debugRotation.y}deg) rotateZ(${debugRotation.z}deg)`,
-                  transformStyle: 'preserve-3d',
-                  transformOrigin: 'center center',
-                }}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseLeave}
-                onScroll={() => {
-                  // Mark that user has scrolled when any scroll event occurs
-                  // PERFORMANCE: Only track hasUserScrolled flag, no state updates for scroll position
-                  if (scrollContainerRef.current && scrollContainerRef.current.scrollLeft > 0) {
-                    setHasUserScrolled(true);
-                  }
+                  width: 568,
+                  height: 290,
+                  overflow: 'visible',
+                  perspective: '800px',
+                  // Visibility logic:
+                  // - Before sentinel: completely hidden (visibility:hidden preserves layout)
+                  // - After sentinel triggers showFretboardContent: visible with fade animation
+                  visibility: showFretboardContent ? 'visible' : 'hidden',
+                  // Opacity logic:
+                  // - During initial reveal: CSS animation fades from 0 to 1
+                  // - After initial fade complete: use fadeOpacity for subsequent exercise transitions
+                  opacity: showFretboardContent
+                    ? initialFadeComplete
+                      ? fadeOpacity
+                      : 0
+                    : 0,
+                  // Use CSS animation for initial reveal, then CSS transition for exercise changes
+                  animation:
+                    showFretboardContent && !initialFadeComplete
+                      ? `fretboardFadeIn ${INITIAL_FADE_DURATION}ms ease-out forwards`
+                      : undefined,
+                  transition: initialFadeComplete
+                    ? `opacity ${fadeDuration}ms ease-out`
+                    : undefined,
                 }}
               >
-                <style jsx>{`
-                  div::-webkit-scrollbar {
-                    display: none; /* Chrome/Safari/Webkit */
-                  }
-                `}</style>
-                {/* 2D Fretboard - CONDITIONALLY RENDERED when not hidden */}
-                {/* When hide2DFretboard is true, we don't render the FretboardGrid at all (not just hide with CSS) */}
-                {/* This prevents 2D elements from appearing in DOM inspector and improves performance */}
-                {!hide2DFretboard && (
-                  <div
-                    style={{
-                      position: 'relative', // For absolute positioning of 3D overlay
-                      width: 568 + 600, // Extra 600px allows scrolling to see all frets up to 24
-                      height: 290, // Match fretboard container height for proper canvas sizing
-                      transform: `scale(${zoomLevel})`,
-                      transformOrigin: '0 0', // Start zoom from top-left (open strings position)
-                      transition: 'transform 0.2s ease-out',
-                    }}
-                  >
-                    <FretboardGrid
-                      stringCount={sharedStringCount}
-                      frets={fretboard.frets}
-                      selectedDots={fretboard.selectedDots}
-                      draggedDot={fretboard.state.draggedDot}
-                      dragOverTarget={fretboard.state.dragOverTarget}
-                      isExerciseNote={fretboard.isExerciseNote}
-                      isCurrentNote={fretboard.isCurrentNote}
-                      zoomLevel={zoomLevel}
-                      onDragStart={handleGridDragStart}
-                      onDragOver={handleDragOver}
-                      onDragEnter={fretboard.handleDragEnter}
-                      onDragLeave={fretboard.handleDragLeave}
-                      onDrop={handleGridDrop}
-                      onDragEnd={fretboard.handleDragEnd}
-                      onDotClick={fretboard.handleDotClickWithAudio}
-                      onDotSecondSelection={
-                        dotSelectionHandlers.handleDotSecondSelection2D
-                      }
-                      onDotRemoval={dotSelectionHandlers.handleDotRemoval2D}
-                      segmentFunctions={fretboard.segmentFunctions}
-                      highlightingFunctions={fretboard.highlightingFunctions}
-                      getMeasureOpacity={fretboard.measureOpacity.getNoteOpacity}
-                      getMeasureHighlight={fretboard.measureOpacity.getMeasureHighlight}
-                      measureOpacityTransition={fretboard.measureOpacity.transitionDuration}
-                      measureAwareConnections={fretboard.exercise.measureAwareConnections}
-                      currentMeasure0Based={fretboard.exercise.currentMeasure0Based}
-                      nextNoteToPlay={fretboard.nextNoteToPlay}
-                      exerciseNotes={displayNotes}
-                      currentMeasureFromNote={fretboard.exercise.currentMeasureFromNote}
-                      // Props for useFretboardNoteSync - direct DOM note synchronization
-                      isPlaying={syncProps.isPlaying}
-                      tempo={displayTempo}
-                      maxFrets={maxFrets}
-                    />
-                  </div>
-                )}
+                <div
+                  ref={(el) => {
+                    scrollContainerRef.current = el;
+                    if (el && !hasUserScrolled) {
+                      // Only set to 0 if user hasn't manually scrolled
+                      el.scrollLeft = 0;
+                    }
+                  }}
+                  className="overflow-x-auto overflow-y-hidden h-full flex items-center"
+                  style={{
+                    cursor: isDragging ? 'grabbing' : 'grab',
+                    scrollbarWidth: 'none', // Firefox
+                    msOverflowStyle: 'none', // IE/Edge
+                    // DEBUG: Full XYZ rotation for 3D overlay calibration
+                    transform: `rotateX(${debugRotation.x}deg) rotateY(${debugRotation.y}deg) rotateZ(${debugRotation.z}deg)`,
+                    transformStyle: 'preserve-3d',
+                    transformOrigin: 'center center',
+                  }}
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseLeave}
+                  onScroll={() => {
+                    // Mark that user has scrolled when any scroll event occurs
+                    // PERFORMANCE: Only track hasUserScrolled flag, no state updates for scroll position
+                    if (
+                      scrollContainerRef.current &&
+                      scrollContainerRef.current.scrollLeft > 0
+                    ) {
+                      setHasUserScrolled(true);
+                    }
+                  }}
+                >
+                  <style jsx>{`
+                    div::-webkit-scrollbar {
+                      display: none; /* Chrome/Safari/Webkit */
+                    }
+                  `}</style>
+                  {/* 2D Fretboard - CONDITIONALLY RENDERED when not hidden */}
+                  {/* When hide2DFretboard is true, we don't render the FretboardGrid at all (not just hide with CSS) */}
+                  {/* This prevents 2D elements from appearing in DOM inspector and improves performance */}
+                  {!hide2DFretboard && (
+                    <div
+                      style={{
+                        position: 'relative', // For absolute positioning of 3D overlay
+                        width: 568 + 600, // Extra 600px allows scrolling to see all frets up to 24
+                        height: 290, // Match fretboard container height for proper canvas sizing
+                        transform: `scale(${zoomLevel})`,
+                        transformOrigin: '0 0', // Start zoom from top-left (open strings position)
+                        transition: 'transform 0.2s ease-out',
+                      }}
+                    >
+                      <FretboardGrid
+                        stringCount={sharedStringCount}
+                        frets={fretboard.frets}
+                        selectedDots={fretboard.selectedDots}
+                        draggedDot={fretboard.state.draggedDot}
+                        dragOverTarget={fretboard.state.dragOverTarget}
+                        isExerciseNote={fretboard.isExerciseNote}
+                        isCurrentNote={fretboard.isCurrentNote}
+                        zoomLevel={zoomLevel}
+                        onDragStart={handleGridDragStart}
+                        onDragOver={handleDragOver}
+                        onDragEnter={fretboard.handleDragEnter}
+                        onDragLeave={fretboard.handleDragLeave}
+                        onDrop={handleGridDrop}
+                        onDragEnd={fretboard.handleDragEnd}
+                        onDotClick={fretboard.handleDotClickWithAudio}
+                        onDotSecondSelection={
+                          dotSelectionHandlers.handleDotSecondSelection2D
+                        }
+                        onDotRemoval={dotSelectionHandlers.handleDotRemoval2D}
+                        segmentFunctions={fretboard.segmentFunctions}
+                        highlightingFunctions={fretboard.highlightingFunctions}
+                        getMeasureOpacity={
+                          fretboard.measureOpacity.getNoteOpacity
+                        }
+                        getMeasureHighlight={
+                          fretboard.measureOpacity.getMeasureHighlight
+                        }
+                        measureOpacityTransition={
+                          fretboard.measureOpacity.transitionDuration
+                        }
+                        measureAwareConnections={
+                          fretboard.exercise.measureAwareConnections
+                        }
+                        currentMeasure0Based={
+                          fretboard.exercise.currentMeasure0Based
+                        }
+                        nextNoteToPlay={fretboard.nextNoteToPlay}
+                        exerciseNotes={displayNotes}
+                        currentMeasureFromNote={
+                          fretboard.exercise.currentMeasureFromNote
+                        }
+                        // Props for useFretboardNoteSync - direct DOM note synchronization
+                        isPlaying={syncProps.isPlaying}
+                        tempo={displayTempo}
+                        maxFrets={maxFrets}
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Guitar Hero-style 3D Ring Overlay - COMPLETELY OUTSIDE fretboard container
+              {/* Guitar Hero-style 3D Ring Overlay - COMPLETELY OUTSIDE fretboard container
                 to prevent clipping when rotated. Uses absolute positioning relative to parent.
                 Has overflow:visible and no clipping boundaries.
                 NOTE: Only render after showFretboardContent is true (sentinel reached) */}
-            {showFretboardContent && !hide3DFretboard && ringOverlay.config.enabled && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: 568,
-                  height: 290,
-                  pointerEvents: 'none',
-                  overflow: 'visible',
-                  // NO clipping - allow 3D to extend in all directions
-                  // Apply same opacity/animation as fretboard container for initial reveal fade
-                  // CRITICAL: Set opacity to 0 during CSS animation, not undefined!
-                  opacity: initialFadeComplete ? fadeOpacity : 0,  // Start at 0 for CSS animation
-                  animation: !initialFadeComplete ? `fretboardFadeIn ${INITIAL_FADE_DURATION}ms ease-out forwards` : undefined,
-                  transition: initialFadeComplete ? `opacity ${fadeDuration}ms ease-out` : undefined,
-                }}
-              >
-                <Ring3DOverlayCanvas
-                  fretboardRef={fretboardContainerRef}
-                  exerciseNotes={displayNotes}
-                  currentTime={syncProps.currentTime}
-                  isPlaying={syncProps.isPlaying}
-                  config={ringOverlay.config}
-                  stringCount={sharedStringCount}
-                  maxFrets={maxFrets}
-                  countdownBeats={4}
-                  tempo={displayTempo}
-                  tiltAngle={debugRotation.x} // Use DEBUG panel X (Tilt) so 3D matches 2D CSS rotateX
-                  overlay3DConfig={displayOverlay3D}
-                  debugRotation={debugRotation}
-                  // PERFORMANCE: Pass ref to scroll container instead of scroll value
-                  // This allows Three.js to read scroll in useFrame without React re-renders
-                  scrollContainerRef={scrollContainerRef}
-                  // Exercise ID for detecting exercise changes (fade transitions)
-                  exerciseId={selectedExerciseId}
-                  // Exercise transition fade - controlled by snapshot transition
-                  fadeOpacity={fadeOpacity}
-                  fadeDuration={fadeDuration}
-                  // Transition phase for camera zoom animation
-                  transitionPhase={effectiveTransitionPhase}
-                  // Initial reveal: trigger zoom animation immediately on mount
-                  // This bypasses phase change detection to solve the race condition
-                  triggerZoomOnMount={forceInitialZoom}
-                />
-              </div>
-            )}
+              {showFretboardContent &&
+                !hide3DFretboard &&
+                ringOverlay.config.enabled && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: 568,
+                      height: 290,
+                      pointerEvents: 'none',
+                      overflow: 'visible',
+                      // NO clipping - allow 3D to extend in all directions
+                      // Apply same opacity/animation as fretboard container for initial reveal fade
+                      // CRITICAL: Set opacity to 0 during CSS animation, not undefined!
+                      opacity: initialFadeComplete ? fadeOpacity : 0, // Start at 0 for CSS animation
+                      animation: !initialFadeComplete
+                        ? `fretboardFadeIn ${INITIAL_FADE_DURATION}ms ease-out forwards`
+                        : undefined,
+                      transition: initialFadeComplete
+                        ? `opacity ${fadeDuration}ms ease-out`
+                        : undefined,
+                    }}
+                  >
+                    <Ring3DOverlayCanvas
+                      fretboardRef={fretboardContainerRef}
+                      exerciseNotes={displayNotes}
+                      currentTime={syncProps.currentTime}
+                      isPlaying={syncProps.isPlaying}
+                      config={ringOverlay.config}
+                      stringCount={sharedStringCount}
+                      maxFrets={maxFrets}
+                      countdownBeats={4}
+                      tempo={displayTempo}
+                      tiltAngle={debugRotation.x} // Use DEBUG panel X (Tilt) so 3D matches 2D CSS rotateX
+                      overlay3DConfig={displayOverlay3D}
+                      debugRotation={debugRotation}
+                      // PERFORMANCE: Pass ref to scroll container instead of scroll value
+                      // This allows Three.js to read scroll in useFrame without React re-renders
+                      scrollContainerRef={scrollContainerRef}
+                      // Exercise ID for detecting exercise changes (fade transitions)
+                      exerciseId={selectedExerciseId}
+                      // Exercise transition fade - controlled by snapshot transition
+                      fadeOpacity={fadeOpacity}
+                      fadeDuration={fadeDuration}
+                      // Transition phase for camera zoom animation
+                      transitionPhase={effectiveTransitionPhase}
+                      // Initial reveal: trigger zoom animation immediately on mount
+                      // This bypasses phase change detection to solve the race condition
+                      triggerZoomOnMount={forceInitialZoom}
+                    />
+                  </div>
+                )}
 
-            {/* Audio status display */}
-            {fretboard.exercise.audioIntegration.audioError && (
-              <div className="mt-4 p-2 bg-destructive/10 text-destructive text-sm rounded">
-                Audio Error:
-                {String(fretboard.exercise.audioIntegration.audioError)}
-              </div>
-            )}
-          </div>
+              {/* Audio status display */}
+              {fretboard.exercise.audioIntegration.audioError && (
+                <div className="mt-4 p-2 bg-destructive/10 text-destructive text-sm rounded">
+                  Audio Error:
+                  {String(fretboard.exercise.audioIntegration.audioError)}
+                </div>
+              )}
+            </div>
           </div>
         </ZoneCardContent>
         {/* Sentinel element for triggering initial zoom animation when user scrolls to GlobalControls area */}
-        <div ref={animationTriggerSentinelRef} aria-hidden="true" style={{ height: 1 }} />
+        <div
+          ref={animationTriggerSentinelRef}
+          aria-hidden="true"
+          style={{ height: 1 }}
+        />
       </ZoneCard>
     );
   },

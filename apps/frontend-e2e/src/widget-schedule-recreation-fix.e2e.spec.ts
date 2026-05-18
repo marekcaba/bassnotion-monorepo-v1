@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Widget Schedule Recreation Fix', () => {
   test('verify the !loopRef.current bug prevents audio after stop/play', async ({

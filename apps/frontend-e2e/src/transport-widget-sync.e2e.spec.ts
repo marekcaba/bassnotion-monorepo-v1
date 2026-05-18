@@ -1,4 +1,5 @@
-import { test, expect, Page, ConsoleMessage } from '@playwright/test';
+import type { Page, ConsoleMessage } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Transport and Widget Synchronization', () => {
   let logs: ConsoleMessage[] = [];

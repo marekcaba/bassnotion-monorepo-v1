@@ -278,7 +278,7 @@ export class MidiPipelinePresets {
             {
               type: 'text',
               deltaTime: 0,
-              text: 'Processed with BassNotion MIDI Pipeline',
+              text: 'Processed with Bassicology MIDI Pipeline',
               data: [],
             },
             {

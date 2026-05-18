@@ -301,7 +301,7 @@ describe('Bass Sampler Types', () => {
     describe('notes outside bass range', () => {
       it('should return null for notes below B0', () => {
         expect(getPositionForMidiNote(22)).toBeNull(); // A#0
-        expect(getPositionForMidiNote(0)).toBeNull();  // C-1
+        expect(getPositionForMidiNote(0)).toBeNull(); // C-1
       });
 
       it('should return null for notes above bass range', () => {

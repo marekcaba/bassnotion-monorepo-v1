@@ -6,6 +6,7 @@
  * audio architecture and provide safe rollback capabilities.
  */
 
+// eslint-disable-next-line @nx/enforce-module-boundaries -- featureFlags is loaded at module init; lazy-loading defeats the purpose
 import { createStructuredLogger } from '@bassnotion/contracts';
 
 const logger = createStructuredLogger('FeatureFlags');
@@ -64,9 +65,9 @@ const defaultFlags: AudioArchitectureFlags = {
   COMPARE_TRANSPORT_PERFORMANCE: false, // No longer needed
   USE_MODULAR_INSTRUMENTS: true, // Modular instruments are now the default
   DEBUG_INSTRUMENTS_MIGRATION: false, // Migration complete
-  ENABLE_NEW_PLAYBACK_ENGINE: true, // Phase 0.4 - PlaybackEngine migration ACTIVATED 🚀
-  DEBUG_PLAYBACK_ENGINE_MIGRATION: true, // Enable for debugging during rollout
-  COMPARE_PLAYBACK_ENGINE_PERFORMANCE: true, // Enable to compare old vs new performance
+  ENABLE_NEW_PLAYBACK_ENGINE: true, // Phase 3.2 — 100% rollout, RegionProcessor deleted
+  DEBUG_PLAYBACK_ENGINE_MIGRATION: false, // Migration complete — disabled for prod (re-enable via NEXT_PUBLIC_DEBUG_PLAYBACK_ENGINE_MIGRATION if needed)
+  COMPARE_PLAYBACK_ENGINE_PERFORMANCE: false, // Migration complete — old engine no longer in tree
 };
 
 /**

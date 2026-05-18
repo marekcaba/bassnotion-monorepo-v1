@@ -375,7 +375,7 @@ export class MidiParserService {
   private extractControlChangeEvents(
     midi: any,
     timeSignature: { numerator: number; denominator: number },
-    measureOffset: number = 0,
+    measureOffset = 0,
     midiPPQ: number,
     needsConversion: boolean,
     targetPPQ: number,

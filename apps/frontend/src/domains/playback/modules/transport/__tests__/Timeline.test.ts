@@ -14,13 +14,23 @@ describe('Timeline', () => {
     timeline = new Timeline();
   });
 
+  // SKIP REASON for the 4 tests in this block — Timeline.setTempo /
+  // setTimeSignature are explicitly @deprecated no-ops; production
+  // code is annotated `// This method is kept for backward
+  // compatibility but does nothing - The actual tempo is managed by
+  // MusicalTruthAuthority`. Validation was moved into
+  // musicalTruth.setFromExercise(); calling setTempo(-1) won't throw
+  // because the method doesn't do anything.
+  //
+  // These tests should be removed when the deprecated methods are
+  // deleted. Skipping for now keeps them as a marker.
   describe('tempo management', () => {
-    it('should set and get tempo', () => {
+    it.skip('should set and get tempo', () => {
       timeline.setTempo(140);
       expect(timeline.getTempo()).toBe(140);
     });
 
-    it('should throw error for invalid tempo', () => {
+    it.skip('should throw error for invalid tempo', () => {
       expect(() => timeline.setTempo(0)).toThrow(TimelineError);
       expect(() => timeline.setTempo(-1)).toThrow(TimelineError);
       expect(() => timeline.setTempo(1000)).toThrow(TimelineError);
@@ -32,13 +42,13 @@ describe('Timeline', () => {
   });
 
   describe('time signature management', () => {
-    it('should set and get time signature', () => {
+    it.skip('should set and get time signature', () => {
       const sig: TimeSignature = { numerator: 3, denominator: 4 };
       timeline.setTimeSignature(sig);
       expect(timeline.getTimeSignature()).toEqual(sig);
     });
 
-    it('should throw error for invalid time signature', () => {
+    it.skip('should throw error for invalid time signature', () => {
       expect(() =>
         timeline.setTimeSignature({ numerator: 0, denominator: 4 }),
       ).toThrow(TimelineError);

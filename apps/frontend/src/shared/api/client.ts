@@ -15,9 +15,10 @@ export class ApiClient {
   private baseUrl: string;
   private defaultHeaders: Record<string, string>;
 
-  constructor(baseUrl: string = '') {
-    this.baseUrl =
+  constructor(baseUrl = '') {
+    const raw =
       baseUrl || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    this.baseUrl = raw.replace(/\/+$/, '');
     this.defaultHeaders = {
       'Content-Type': 'application/json',
     };

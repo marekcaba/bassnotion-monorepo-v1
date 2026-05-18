@@ -27,10 +27,13 @@ export class ExerciseRepository implements IExerciseRepository {
     try {
       const response = await apiClient.get(`${this.baseUrl}/${id.value}`);
       // Backend wraps response in { exercise: {...} }, so unwrap it
-      const exercise = Exercise.fromDTO((response as { exercise: ExerciseDTO }).exercise);
+      const exercise = Exercise.fromDTO(
+        (response as { exercise: ExerciseDTO }).exercise,
+      );
       return Result.ok(exercise);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch exercise';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to fetch exercise';
       return Result.fail(errorMessage);
     }
   }
@@ -48,7 +51,12 @@ export class ExerciseRepository implements IExerciseRepository {
       const response = await apiClient.get(
         `${this.baseUrl}?${params.toString()}`,
       );
-      const { items, total, page, limit } = response as { items: ExerciseDTO[]; total: number; page: number; limit: number };
+      const { items, total, page, limit } = response as {
+        items: ExerciseDTO[];
+        total: number;
+        page: number;
+        limit: number;
+      };
 
       const exercises = items.map((dto: ExerciseDTO) => Exercise.fromDTO(dto));
       const totalPages = Math.ceil(total / limit);
@@ -63,7 +71,8 @@ export class ExerciseRepository implements IExerciseRepository {
         hasPrevious: page > 1,
       });
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch exercises';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to fetch exercises';
       return Result.fail(errorMessage);
     }
   }
@@ -73,10 +82,15 @@ export class ExerciseRepository implements IExerciseRepository {
       const response = await apiClient.get(
         `${this.baseUrl}/difficulty/${difficulty.value}`,
       );
-      const exercises = (response as ExerciseDTO[]).map((dto: ExerciseDTO) => Exercise.fromDTO(dto));
+      const exercises = (response as ExerciseDTO[]).map((dto: ExerciseDTO) =>
+        Exercise.fromDTO(dto),
+      );
       return Result.ok(exercises);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch exercises by difficulty';
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch exercises by difficulty';
       return Result.fail(errorMessage);
     }
   }
@@ -86,10 +100,15 @@ export class ExerciseRepository implements IExerciseRepository {
       const response = await apiClient.get(
         `${this.baseUrl}/tag/${encodeURIComponent(tag)}`,
       );
-      const exercises = (response as ExerciseDTO[]).map((dto: ExerciseDTO) => Exercise.fromDTO(dto));
+      const exercises = (response as ExerciseDTO[]).map((dto: ExerciseDTO) =>
+        Exercise.fromDTO(dto),
+      );
       return Result.ok(exercises);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch exercises by tag';
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch exercises by tag';
       return Result.fail(errorMessage);
     }
   }
@@ -119,10 +138,13 @@ export class ExerciseRepository implements IExerciseRepository {
       const response = await apiClient.get(
         `${this.baseUrl}/search?${params.toString()}`,
       );
-      const exercises = (response as ExerciseDTO[]).map((dto: ExerciseDTO) => Exercise.fromDTO(dto));
+      const exercises = (response as ExerciseDTO[]).map((dto: ExerciseDTO) =>
+        Exercise.fromDTO(dto),
+      );
       return Result.ok(exercises);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to search exercises';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to search exercises';
       return Result.fail(errorMessage);
     }
   }
@@ -132,10 +154,15 @@ export class ExerciseRepository implements IExerciseRepository {
       const response = await apiClient.post(`${this.baseUrl}/batch`, {
         ids: ids.map((id) => id.value),
       });
-      const exercises = (response as ExerciseDTO[]).map((dto: ExerciseDTO) => Exercise.fromDTO(dto));
+      const exercises = (response as ExerciseDTO[]).map((dto: ExerciseDTO) =>
+        Exercise.fromDTO(dto),
+      );
       return Result.ok(exercises);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch exercises by ids';
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch exercises by ids';
       return Result.fail(errorMessage);
     }
   }
@@ -143,10 +170,15 @@ export class ExerciseRepository implements IExerciseRepository {
   async findActive(): Promise<Result<Exercise[]>> {
     try {
       const response = await apiClient.get(`${this.baseUrl}/active`);
-      const exercises = (response as ExerciseDTO[]).map((dto: ExerciseDTO) => Exercise.fromDTO(dto));
+      const exercises = (response as ExerciseDTO[]).map((dto: ExerciseDTO) =>
+        Exercise.fromDTO(dto),
+      );
       return Result.ok(exercises);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch active exercises';
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch active exercises';
       return Result.fail(errorMessage);
     }
   }
@@ -159,7 +191,8 @@ export class ExerciseRepository implements IExerciseRepository {
       const savedExercise = Exercise.fromDTO(response as ExerciseDTO);
       return Result.ok(savedExercise);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to save exercise';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to save exercise';
       return Result.fail(errorMessage);
     }
   }
@@ -175,10 +208,15 @@ export class ExerciseRepository implements IExerciseRepository {
       const response = await apiClient.get(
         `${this.baseUrl}/tutorial/${tutorialId}`,
       );
-      const exercises = (response as ExerciseDTO[]).map((dto: ExerciseDTO) => Exercise.fromDTO(dto));
+      const exercises = (response as ExerciseDTO[]).map((dto: ExerciseDTO) =>
+        Exercise.fromDTO(dto),
+      );
       return Result.ok(exercises);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch exercises by tutorial ID';
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch exercises by tutorial ID';
       return Result.fail(errorMessage);
     }
   }
@@ -197,7 +235,8 @@ export class ExerciseRepository implements IExerciseRepository {
       const updatedExercise = Exercise.fromDTO(response as ExerciseDTO);
       return Result.ok(updatedExercise);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to update exercise';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to update exercise';
       return Result.fail(errorMessage);
     }
   }
@@ -207,7 +246,8 @@ export class ExerciseRepository implements IExerciseRepository {
       await apiClient.delete(`${this.baseUrl}/${id.value}`);
       return Result.ok(undefined);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to delete exercise';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to delete exercise';
       return Result.fail(errorMessage);
     }
   }
@@ -217,10 +257,13 @@ export class ExerciseRepository implements IExerciseRepository {
       const response = await apiClient.post(`${this.baseUrl}/batch/create`, {
         exercises: exercises.map((e) => e.toDTO()),
       });
-      const savedExercises = (response as ExerciseDTO[]).map((dto: ExerciseDTO) => Exercise.fromDTO(dto));
+      const savedExercises = (response as ExerciseDTO[]).map(
+        (dto: ExerciseDTO) => Exercise.fromDTO(dto),
+      );
       return Result.ok(savedExercises);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to save exercises';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to save exercises';
       return Result.fail(errorMessage);
     }
   }
@@ -232,7 +275,8 @@ export class ExerciseRepository implements IExerciseRepository {
       });
       return Result.ok(undefined);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to delete exercises';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to delete exercises';
       return Result.fail(errorMessage);
     }
   }
@@ -245,7 +289,10 @@ export class ExerciseRepository implements IExerciseRepository {
       if (getErrorStatus(error) === 404) {
         return Result.ok(false);
       }
-      const errorMessage = error instanceof Error ? error.message : 'Failed to check if exercise exists';
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Failed to check if exercise exists';
       return Result.fail(errorMessage);
     }
   }
@@ -255,7 +302,8 @@ export class ExerciseRepository implements IExerciseRepository {
       const response = await apiClient.get(`${this.baseUrl}/count`);
       return Result.ok((response as { count: number }).count);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to count exercises';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to count exercises';
       return Result.fail(errorMessage);
     }
   }
@@ -267,7 +315,10 @@ export class ExerciseRepository implements IExerciseRepository {
       );
       return Result.ok((response as { count: number }).count);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to count exercises by difficulty';
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Failed to count exercises by difficulty';
       return Result.fail(errorMessage);
     }
   }

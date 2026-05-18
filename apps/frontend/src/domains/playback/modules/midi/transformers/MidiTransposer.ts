@@ -228,7 +228,10 @@ export class MidiTransposer {
         if (event.type === 'keySignature' && targetKey) {
           const targetKeyInfo = this.KEY_SIGNATURES[targetKey];
           if (targetKeyInfo) {
-            const keyEvent = event as { sharpsOrFlats?: number; scale?: string };
+            const keyEvent = event as {
+              sharpsOrFlats?: number;
+              scale?: string;
+            };
             keyEvent.sharpsOrFlats = targetKeyInfo.sharpsOrFlats;
             keyEvent.scale = targetKeyInfo.mode;
             keyChanges++;

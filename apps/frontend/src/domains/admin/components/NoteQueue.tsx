@@ -12,7 +12,10 @@ interface NoteQueueProps {
   /** All notes in the current measure */
   notes: MidiNoteEvent[];
   /** Map of note index -> placement {string, fret, finger_index?} */
-  placements: Map<number, { string: number; fret: number; finger_index?: FingerIndex }>;
+  placements: Map<
+    number,
+    { string: number; fret: number; finger_index?: FingerIndex }
+  >;
   /** Index of current note being placed */
   currentNoteIndex: number;
   /** Currently selected finger for next placement */
@@ -30,7 +33,10 @@ interface NoteQueueProps {
 /**
  * Get string name from string number based on bass type
  */
-function getStringName(stringNumber: number, bassType: '4' | '5' | '6'): string {
+function getStringName(
+  stringNumber: number,
+  bassType: '4' | '5' | '6',
+): string {
   const stringNames = {
     '4': ['G', 'D', 'A', 'E'],
     '5': ['G', 'D', 'A', 'E', 'B'],
@@ -43,11 +49,26 @@ function getStringName(stringNumber: number, bassType: '4' | '5' | '6'): string 
 // Get color for finger button
 function getFingerColor(finger: FingerIndex, isSelected: boolean): string {
   const colors: Record<FingerIndex, { base: string; selected: string }> = {
-    1: { base: 'bg-blue-100 text-blue-700 hover:bg-blue-200', selected: 'bg-blue-500 text-white ring-2 ring-blue-300' },
-    2: { base: 'bg-green-100 text-green-700 hover:bg-green-200', selected: 'bg-green-500 text-white ring-2 ring-green-300' },
-    3: { base: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200', selected: 'bg-yellow-500 text-white ring-2 ring-yellow-300' },
-    4: { base: 'bg-red-100 text-red-700 hover:bg-red-200', selected: 'bg-red-500 text-white ring-2 ring-red-300' },
-    'O': { base: 'bg-purple-100 text-purple-700 hover:bg-purple-200', selected: 'bg-purple-500 text-white ring-2 ring-purple-300' },
+    1: {
+      base: 'bg-blue-100 text-blue-700 hover:bg-blue-200',
+      selected: 'bg-blue-500 text-white ring-2 ring-blue-300',
+    },
+    2: {
+      base: 'bg-green-100 text-green-700 hover:bg-green-200',
+      selected: 'bg-green-500 text-white ring-2 ring-green-300',
+    },
+    3: {
+      base: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200',
+      selected: 'bg-yellow-500 text-white ring-2 ring-yellow-300',
+    },
+    4: {
+      base: 'bg-red-100 text-red-700 hover:bg-red-200',
+      selected: 'bg-red-500 text-white ring-2 ring-red-300',
+    },
+    O: {
+      base: 'bg-purple-100 text-purple-700 hover:bg-purple-200',
+      selected: 'bg-purple-500 text-white ring-2 ring-purple-300',
+    },
   };
   return isSelected ? colors[finger].selected : colors[finger].base;
 }
@@ -59,7 +80,7 @@ function getFingerLabel(finger: FingerIndex): string {
     2: '2',
     3: '3',
     4: '4',
-    'O': 'O',
+    O: 'O',
   };
   return labels[finger];
 }
@@ -104,7 +125,9 @@ export function NoteQueue({
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-medium text-gray-600">Finger:</span>
           <span className="text-xs text-gray-400">
-            {selectedFinger ? `${selectedFinger === 'O' ? 'Open' : ['Index', 'Middle', 'Ring', 'Pinky'][Number(selectedFinger) - 1]}` : 'None'}
+            {selectedFinger
+              ? `${selectedFinger === 'O' ? 'Open' : ['Index', 'Middle', 'Ring', 'Pinky'][Number(selectedFinger) - 1]}`
+              : 'None'}
           </span>
         </div>
         <div className="flex gap-1.5">
@@ -114,14 +137,20 @@ export function NoteQueue({
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                onFingerSelect?.(selectedFinger === finger ? undefined : finger);
+                onFingerSelect?.(
+                  selectedFinger === finger ? undefined : finger,
+                );
               }}
               className={`
                 w-9 h-9 rounded-full flex items-center justify-center
                 text-sm font-bold transition-all
                 ${getFingerColor(finger, selectedFinger === finger)}
               `}
-              title={finger === 'O' ? 'Open' : ['Index', 'Middle', 'Ring', 'Pinky'][Number(finger) - 1]}
+              title={
+                finger === 'O'
+                  ? 'Open'
+                  : ['Index', 'Middle', 'Ring', 'Pinky'][Number(finger) - 1]
+              }
             >
               {getFingerLabel(finger)}
             </button>
@@ -182,22 +211,32 @@ export function NoteQueue({
                       </div>
                     )}
                     {/* Fretted note with finger: show finger number in colored circle */}
-                    {isPlaced && placement?.fret !== 0 && placement?.finger_index && placement.finger_index !== 'O' && (
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold ${
-                        placement.finger_index === 1 ? 'bg-blue-500' :
-                        placement.finger_index === 2 ? 'bg-green-500' :
-                        placement.finger_index === 3 ? 'bg-yellow-500' :
-                        'bg-red-500'
-                      }`}>
-                        {placement.finger_index}
-                      </div>
-                    )}
+                    {isPlaced &&
+                      placement?.fret !== 0 &&
+                      placement?.finger_index &&
+                      placement.finger_index !== 'O' && (
+                        <div
+                          className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold ${
+                            placement.finger_index === 1
+                              ? 'bg-blue-500'
+                              : placement.finger_index === 2
+                                ? 'bg-green-500'
+                                : placement.finger_index === 3
+                                  ? 'bg-yellow-500'
+                                  : 'bg-red-500'
+                          }`}
+                        >
+                          {placement.finger_index}
+                        </div>
+                      )}
                     {/* Fretted note without finger: show checkmark */}
-                    {isPlaced && placement?.fret !== 0 && !placement?.finger_index && (
-                      <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                        ✓
-                      </div>
-                    )}
+                    {isPlaced &&
+                      placement?.fret !== 0 &&
+                      !placement?.finger_index && (
+                        <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                          ✓
+                        </div>
+                      )}
                     {isCurrent && (
                       <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
                         👉
@@ -242,16 +281,19 @@ export function NoteQueue({
                       <div className="text-xs text-green-700 mt-1">
                         {placement.fret === 0 ? (
                           <span className="font-medium text-gray-900">
-                            Open {getStringName(placement.string, bassType)} string
+                            Open {getStringName(placement.string, bassType)}{' '}
+                            string
                           </span>
                         ) : (
                           <>
-                            String {getStringName(placement.string, bassType)}, Fret {placement.fret}
-                            {placement.finger_index && placement.finger_index !== 'O' && (
-                              <span className="ml-2 font-medium">
-                                • Finger {placement.finger_index}
-                              </span>
-                            )}
+                            String {getStringName(placement.string, bassType)},
+                            Fret {placement.fret}
+                            {placement.finger_index &&
+                              placement.finger_index !== 'O' && (
+                                <span className="ml-2 font-medium">
+                                  • Finger {placement.finger_index}
+                                </span>
+                              )}
                           </>
                         )}
                       </div>
@@ -262,7 +304,10 @@ export function NoteQueue({
                 {/* Right: Helper text */}
                 <div className="text-xs text-gray-500">
                   {isPlaced && 'Click to review'}
-                  {isCurrent && (selectedFinger ? `F${selectedFinger} →` : 'Click fretboard →')}
+                  {isCurrent &&
+                    (selectedFinger
+                      ? `F${selectedFinger} →`
+                      : 'Click fretboard →')}
                   {isPending && 'Waiting...'}
                 </div>
               </div>
@@ -271,7 +316,11 @@ export function NoteQueue({
               {isCurrent && (
                 <div className="mt-2 pt-2 border-t border-blue-200">
                   <p className="text-xs text-blue-700 font-medium">
-                    ▶ {selectedFinger ? `Finger ${selectedFinger} selected - ` : ''}Click on the fretboard to place this note
+                    ▶{' '}
+                    {selectedFinger
+                      ? `Finger ${selectedFinger} selected - `
+                      : ''}
+                    Click on the fretboard to place this note
                   </p>
                 </div>
               )}

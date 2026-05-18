@@ -73,7 +73,11 @@ export function VolumeKnob({
     onChange(defaultValue);
   }, [defaultValue, onChange, logger]);
 
-  const handleStart = (clientX: number, clientY: number, e?: React.MouseEvent) => {
+  const handleStart = (
+    clientX: number,
+    clientY: number,
+    e?: React.MouseEvent,
+  ) => {
     // Check for Option/Alt + Click to reset (Pro Tools / Logic Pro style)
     if (e?.altKey) {
       e.preventDefault();

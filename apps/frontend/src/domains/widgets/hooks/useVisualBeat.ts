@@ -85,9 +85,9 @@ const INITIAL_STATE: VisualBeatResult = {
  * @param isVisible - Whether the widget is visible (optimization - pauses updates when hidden)
  */
 export function useVisualBeat(
-  beatsPerMeasure: number = 4,
-  isPlaying: boolean = false,
-  isVisible: boolean = true,
+  beatsPerMeasure = 4,
+  isPlaying = false,
+  isVisible = true,
 ): VisualBeatResult {
   const transport = useTransportContext();
 
@@ -202,9 +202,10 @@ export function useVisualBeat(
 
       // Get countdown beats from transport position
       // During countdown, position.bars is negative
-      const countdownBeats = transport.position?.bars < 0
-        ? Math.abs(transport.position.bars) * beatsPerMeasure
-        : 0;
+      const countdownBeats =
+        transport.position?.bars < 0
+          ? Math.abs(transport.position.bars) * beatsPerMeasure
+          : 0;
 
       // Configure with current tempo and time signature
       scheduler.configure({
@@ -273,8 +274,8 @@ export function useVisualBeat(
  * Useful for simple beat indicators that just need the column
  */
 export function useEighthNoteIndex(
-  isPlaying: boolean = false,
-  isVisible: boolean = true,
+  isPlaying = false,
+  isVisible = true,
 ): number {
   const { eighthNoteIndex } = useVisualBeat(4, isPlaying, isVisible);
   return eighthNoteIndex;
@@ -285,8 +286,8 @@ export function useEighthNoteIndex(
  * Useful for components tracking measure progression
  */
 export function useMeasureIndex(
-  isPlaying: boolean = false,
-  isVisible: boolean = true,
+  isPlaying = false,
+  isVisible = true,
 ): { measureIndex: number; isCountdown: boolean } {
   const { measureIndex, isCountdown } = useVisualBeat(4, isPlaying, isVisible);
   return { measureIndex, isCountdown };

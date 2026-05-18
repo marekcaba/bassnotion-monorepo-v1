@@ -21,7 +21,7 @@ import type { ExerciseNote, NoteDuration } from '@bassnotion/contracts';
  * convertNoteDurationToVexFlow('dotted-half') // Returns 'hd'
  */
 export function convertNoteDurationToVexFlow(
-  duration: NoteDuration | undefined
+  duration: NoteDuration | undefined,
 ): string {
   // Validate and provide default
   if (!duration) {

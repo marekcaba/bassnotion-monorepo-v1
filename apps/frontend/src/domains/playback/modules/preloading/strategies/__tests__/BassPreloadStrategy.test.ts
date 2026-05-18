@@ -26,7 +26,9 @@ vi.mock('../../../storage/cache/GlobalSampleCache.js', () => ({
       clearMetadata: vi.fn((key: string) => {
         metadataStore.delete(key);
       }),
-      getCachedRawBuffer: vi.fn(async (key: string) => bufferStore.get(key) || null),
+      getCachedRawBuffer: vi.fn(
+        async (key: string) => bufferStore.get(key) || null,
+      ),
       cacheBuffer: vi.fn(async (key: string, buffer: ArrayBuffer) => {
         bufferStore.set(key, buffer);
       }),
@@ -46,10 +48,13 @@ vi.mock('@/utils/logger.js', () => ({
 
 // Mock fetch for sample downloading - MUST be before imports
 const mockArrayBuffer = new ArrayBuffer(1024);
-vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-  ok: true,
-  arrayBuffer: () => Promise.resolve(mockArrayBuffer.slice(0)), // Return a copy each time
-}));
+vi.stubGlobal(
+  'fetch',
+  vi.fn().mockResolvedValue({
+    ok: true,
+    arrayBuffer: () => Promise.resolve(mockArrayBuffer.slice(0)), // Return a copy each time
+  }),
+);
 
 // Mock BassSampleLoader class constructor
 const mockBuffers = {
@@ -71,7 +76,9 @@ class MockBassSampleLoader {
 
 // Mock bass-sampler module with getSampleForMidiNote
 vi.mock('../../../instruments/implementations/bass-sampler/index.js', () => ({
-  BassSampleLoader: vi.fn().mockImplementation(() => new MockBassSampleLoader()),
+  BassSampleLoader: vi
+    .fn()
+    .mockImplementation(() => new MockBassSampleLoader()),
   BASS_TUNING: { B: 23, E: 28, A: 33, D: 38, G: 43 },
   STRING_NUMBER_TO_NAME: { 1: 'B', 2: 'E', 3: 'A', 4: 'D', 5: 'G' },
   getSampleForMidiNote: vi.fn().mockImplementation((midiNote: number) => ({

@@ -41,7 +41,11 @@ interface LegacyMusicalPosition {
  * Extract bars/beats/sixteenths from a MusicalPosition
  * Handles both string format and object formats (standard and legacy)
  */
-function extractPositionComponents(position: MusicalPosition): { bars: number; beats: number; sixteenths: number } {
+function extractPositionComponents(position: MusicalPosition): {
+  bars: number;
+  beats: number;
+  sixteenths: number;
+} {
   if (typeof position === 'string') {
     const parts = position.split(':').map(Number);
     return {
@@ -490,8 +494,10 @@ export class AutomationLane implements TrackAutomation {
     const nextPos = extractPositionComponents(next.position);
     const curPos = extractPositionComponents(position);
 
-    const prevTotal = prevPos.bars * 16 + prevPos.beats * 4 + prevPos.sixteenths;
-    const nextTotal = nextPos.bars * 16 + nextPos.beats * 4 + nextPos.sixteenths;
+    const prevTotal =
+      prevPos.bars * 16 + prevPos.beats * 4 + prevPos.sixteenths;
+    const nextTotal =
+      nextPos.bars * 16 + nextPos.beats * 4 + nextPos.sixteenths;
     const posTotal = curPos.bars * 16 + curPos.beats * 4 + curPos.sixteenths;
 
     const ratio = (posTotal - prevTotal) / (nextTotal - prevTotal);

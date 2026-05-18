@@ -15,7 +15,10 @@ import {
 import { AdminGuard } from '../user/auth/guards/admin.guard.js';
 import { CurrentUser } from '../user/auth/decorators/current-user.decorator.js';
 import { AssessmentService } from './assessment.service.js';
-import type { AssessmentQuestion, AssessmentConfig } from '@bassnotion/contracts';
+import type {
+  AssessmentQuestion,
+  AssessmentConfig,
+} from '@bassnotion/contracts';
 
 interface AuthUser {
   id: string;

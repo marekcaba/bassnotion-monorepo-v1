@@ -16,7 +16,8 @@
  * - That's the tempo for playback - simple!
  */
 
-import { test, expect, Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 // Helper to get Tone.Transport BPM via browser evaluate
 async function getToneTransportBPM(page: Page): Promise<number | null> {

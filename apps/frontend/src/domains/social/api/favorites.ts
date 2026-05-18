@@ -19,10 +19,14 @@ export async function favoriteExercise(
   token: string,
   correlationId?: string,
 ): Promise<FavoriteStatusResponse> {
-  return apiClient.post(`/api/exercises/${exerciseId}/favorite`, {}, {
-    correlationId,
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  return apiClient.post(
+    `/api/exercises/${exerciseId}/favorite`,
+    {},
+    {
+      correlationId,
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
 }
 
 /**
@@ -94,8 +98,8 @@ export async function getBulkFavoriteStatus(
  */
 export async function getUserFavorites(
   token: string,
-  page: number = 1,
-  limit: number = 20,
+  page = 1,
+  limit = 20,
   correlationId?: string,
 ): Promise<UserFavoritesResponse> {
   return apiClient.get(`/api/user/favorites?page=${page}&limit=${limit}`, {

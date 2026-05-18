@@ -33,8 +33,7 @@ export function DetailPanel({ isOpen, onToggle, className }: DetailPanelProps) {
   const showHome = pathname === '/app';
 
   const showJourneyView =
-    pathname === '/app/bassment' ||
-    pathname.startsWith('/app/tutorials');
+    pathname === '/app/bassment' || pathname.startsWith('/app/tutorials');
 
   return (
     <div
@@ -45,7 +44,11 @@ export function DetailPanel({ isOpen, onToggle, className }: DetailPanelProps) {
             ? 'border-r-0'
             : 'bg-[#141318] border-r border-white/[0.06]'
           : 'border-r-0',
-        !hasContent ? 'w-0 min-w-0' : isOpen ? 'w-80' : 'w-[3.25rem] min-w-[3.25rem]',
+        !hasContent
+          ? 'w-0 min-w-0'
+          : isOpen
+            ? 'w-80'
+            : 'w-[3.25rem] min-w-[3.25rem]',
         className,
       )}
     >
@@ -55,7 +58,9 @@ export function DetailPanel({ isOpen, onToggle, className }: DetailPanelProps) {
           <div
             className={cn(
               'flex items-center shrink-0',
-              showHome ? 'h-0 overflow-hidden' : 'h-12 border-b border-white/[0.06]',
+              showHome
+                ? 'h-0 overflow-hidden'
+                : 'h-12 border-b border-white/[0.06]',
               isOpen ? 'justify-between px-3' : 'justify-center',
             )}
           >
@@ -65,12 +70,16 @@ export function DetailPanel({ isOpen, onToggle, className }: DetailPanelProps) {
                   {showHome ? (
                     <>
                       <Home className="size-4 text-[#E8A44A]" />
-                      <span className="text-sm font-medium text-[#E8E4DD]">Dashboard</span>
+                      <span className="text-sm font-medium text-[#E8E4DD]">
+                        Dashboard
+                      </span>
                     </>
                   ) : (
                     <>
                       <GraduationCap className="size-4 text-[#E8A44A]" />
-                      <span className="text-sm font-medium text-[#E8E4DD]">Bassment</span>
+                      <span className="text-sm font-medium text-[#E8E4DD]">
+                        Bassment
+                      </span>
                     </>
                   )}
                 </div>
@@ -108,12 +117,18 @@ export function DetailPanel({ isOpen, onToggle, className }: DetailPanelProps) {
                   <div style={{ animation: 'panelSlideUp 0.5s ease-out both' }}>
                     <SessionCard />
                   </div>
-                  <div style={{ animation: 'panelSlideUp 0.5s ease-out 0.2s both' }}>
+                  <div
+                    style={{
+                      animation: 'panelSlideUp 0.5s ease-out 0.2s both',
+                    }}
+                  >
                     <ProgressCard />
                   </div>
                 </div>
               )}
-              {showJourneyView && <BassmentJourneyView folderState={folderState} />}
+              {showJourneyView && (
+                <BassmentJourneyView folderState={folderState} />
+              )}
             </ScrollArea>
           ) : (
             /* Collapsed view - show journey dots for navigation */

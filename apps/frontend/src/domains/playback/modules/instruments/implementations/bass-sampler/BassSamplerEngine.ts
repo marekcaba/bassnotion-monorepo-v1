@@ -264,7 +264,8 @@ export class BassSamplerEngine
   trigger(note: Note): void {
     const Tone = getTone();
     const bassNote = note as BassNote;
-    const midiNote = bassNote.midiNote ?? (typeof note.pitch === 'number' ? note.pitch : 0);
+    const midiNote =
+      bassNote.midiNote ?? (typeof note.pitch === 'number' ? note.pitch : 0);
 
     if (!this.isValidNote(midiNote)) {
       logger.warn('Invalid bass MIDI note', { midiNote });
@@ -339,7 +340,8 @@ export class BassSamplerEngine
    */
   release(note: Note): void {
     const bassNote = note as BassNote;
-    const midiNote = bassNote.midiNote ?? (typeof note.pitch === 'number' ? note.pitch : 0);
+    const midiNote =
+      bassNote.midiNote ?? (typeof note.pitch === 'number' ? note.pitch : 0);
     const bufferKey = getBufferKey(midiNote);
 
     this.stopNote(bufferKey);
@@ -513,7 +515,12 @@ export class BassSamplerEngine
   /**
    * Set ADSR envelope parameters
    */
-  setEnvelope(params: { attack?: number; decay?: number; sustain?: number; release?: number }): void {
+  setEnvelope(params: {
+    attack?: number;
+    decay?: number;
+    sustain?: number;
+    release?: number;
+  }): void {
     if (params.attack !== undefined) this.options.attack = params.attack;
     if (params.decay !== undefined) this.options.decay = params.decay;
     if (params.sustain !== undefined) this.options.sustain = params.sustain;
@@ -592,7 +599,7 @@ export class BassSamplerEngine
       estimatedBytes: this.estimatedMemoryUsage,
       estimatedMB: this.estimatedMemoryUsage / (1024 * 1024),
       samplesPerNote,
-      lruNotes: [...this.noteAccessOrder].map(k => parseInt(k, 10)),
+      lruNotes: [...this.noteAccessOrder].map((k) => parseInt(k, 10)),
     };
   }
 
@@ -630,9 +637,12 @@ export class BassSamplerEngine
     }
 
     this.roundRobinState.delete(bufferKey);
-    this.noteAccessOrder = this.noteAccessOrder.filter(k => k !== bufferKey);
+    this.noteAccessOrder = this.noteAccessOrder.filter((k) => k !== bufferKey);
 
-    logger.info('Note unloaded', { midiNote, noteName: midiNoteToName(midiNote) });
+    logger.info('Note unloaded', {
+      midiNote,
+      noteName: midiNoteToName(midiNote),
+    });
   }
 
   // Helper methods
@@ -706,7 +716,9 @@ export class BassSamplerEngine
     if (evicted.length > 0) {
       logger.info('LRU eviction', {
         evictedCount: evicted.length,
-        evictedNotes: evicted.map(k => `${k}:${midiNoteToName(parseInt(k, 10))}`),
+        evictedNotes: evicted.map(
+          (k) => `${k}:${midiNoteToName(parseInt(k, 10))}`,
+        ),
         bytesFreed,
         bytesFreedMB: (bytesFreed / (1024 * 1024)).toFixed(2),
       });
@@ -727,7 +739,10 @@ export class BassSamplerEngine
     const timeSinceLastTrigger = now - state.lastTriggerTime;
 
     // If retriggered too fast, use next sample in round-robin
-    if (timeSinceLastTrigger < this.minRetriggerTime && state.indices.length > 1) {
+    if (
+      timeSinceLastTrigger < this.minRetriggerTime &&
+      state.indices.length > 1
+    ) {
       state.currentIndex = (state.currentIndex + 1) % state.indices.length;
     }
 

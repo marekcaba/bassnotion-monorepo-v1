@@ -5,11 +5,7 @@
  * @module storage/authentication
  */
 
-import type {
-  StorageError,
-  DeviceInfo,
-  LocationInfo,
-} from './base.types.js';
+import type { StorageError, DeviceInfo, LocationInfo } from './base.types.js';
 
 // ============================================================================
 // Configuration Interfaces

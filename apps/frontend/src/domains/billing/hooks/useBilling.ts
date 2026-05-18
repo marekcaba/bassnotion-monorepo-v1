@@ -30,7 +30,7 @@ export function useProducts() {
  * Hook to fetch current user's access status
  * Requires authentication
  */
-export function useUserAccess(enabled: boolean = true) {
+export function useUserAccess(enabled = true) {
   return useQuery({
     queryKey: billingKeys.access(),
     queryFn: billingApi.getUserAccess,
@@ -44,7 +44,8 @@ export function useUserAccess(enabled: boolean = true) {
  */
 export function useCreateCheckoutSession() {
   return useMutation({
-    mutationFn: (dto: CreateCheckoutSessionDto) => billingApi.createCheckoutSession(dto),
+    mutationFn: (dto: CreateCheckoutSessionDto) =>
+      billingApi.createCheckoutSession(dto),
     onSuccess: (data) => {
       // Redirect to Stripe Checkout
       if (data.url) {
@@ -59,7 +60,8 @@ export function useCreateCheckoutSession() {
  */
 export function useCreatePortalSession() {
   return useMutation({
-    mutationFn: (returnUrl: string) => billingApi.createPortalSession(returnUrl),
+    mutationFn: (returnUrl: string) =>
+      billingApi.createPortalSession(returnUrl),
     onSuccess: (data) => {
       // Redirect to Stripe Customer Portal
       if (data.url) {
@@ -108,7 +110,9 @@ export function useHasCourseAccess(courseType: CourseType) {
   if (!access) return false;
 
   // User has access if they have an active subscription OR purchased the course
-  return access.hasActiveSubscription || access.purchasedCourses.includes(courseType);
+  return (
+    access.hasActiveSubscription || access.purchasedCourses.includes(courseType)
+  );
 }
 
 /**

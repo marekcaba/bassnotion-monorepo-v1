@@ -35,7 +35,7 @@ const DRUM_TYPE_TO_GRID: Record<
  * Grid cell data structure that tracks main 8th note hits and 16th note subdivisions
  */
 interface GridCell {
-  main: number;      // Hit on the main 8th note position
+  main: number; // Hit on the main 8th note position
   sixteenth: number; // Hit on the 16th note subdivision after this position
 }
 
@@ -63,7 +63,10 @@ const toGridCells = (arr: number[]): GridCell[] =>
   arr.map((v) => ({ main: v, sixteenth: 0 }));
 
 // Helper to create GridCell array with 16th note subdivisions
-const toGridCellsWith16ths = (mains: number[], sixteenths: number[]): GridCell[] =>
+const toGridCellsWith16ths = (
+  mains: number[],
+  sixteenths: number[],
+): GridCell[] =>
   mains.map((m, i) => ({ main: m, sixteenth: sixteenths[i] || 0 }));
 
 /**
@@ -133,7 +136,8 @@ function drumHitsToGridPattern(
     // sixteenthInBeat 1 -> column beat*2, sixteenth tick (the "e")
     // sixteenthInBeat 2 -> column beat*2+1, main hit (the "and")
     // sixteenthInBeat 3 -> column beat*2+1, sixteenth tick (the "a")
-    const gridColumn = beat * EIGHTH_NOTES_PER_BEAT + Math.floor(sixteenthInBeat / 2);
+    const gridColumn =
+      beat * EIGHTH_NOTES_PER_BEAT + Math.floor(sixteenthInBeat / 2);
     const isSixteenthSubdivision = sixteenthInBeat % 2 === 1;
 
     if (gridColumn >= 0 && gridColumn < GRID_COLUMNS) {
@@ -186,7 +190,9 @@ describe('drumHitsToGridPattern', () => {
       const result = drumHitsToGridPattern(hits);
 
       expect(result.kick[0].main).toBe(1);
-      expect(result.kick.slice(1).every(c => c.main === 0 && c.sixteenth === 0)).toBe(true);
+      expect(
+        result.kick.slice(1).every((c) => c.main === 0 && c.sixteenth === 0),
+      ).toBe(true);
       expect(result.snare).toEqual(toGridCells([0, 0, 0, 0, 0, 0, 0, 0]));
       expect(result.hihat).toEqual(toGridCells([0, 0, 0, 0, 0, 0, 0, 0]));
     });
@@ -308,10 +314,10 @@ describe('drumHitsToGridPattern', () => {
       // 480 PPQ: tick 0-119 = main downbeat, tick 120-239 = 16th (the "e")
       //          tick 240-359 = main upbeat (the "and"), tick 360-479 = 16th (the "a")
       const hits = [
-        createDrumHit('kick', 0, 0, 0),    // Column 0, main (tick 0-119)
+        createDrumHit('kick', 0, 0, 0), // Column 0, main (tick 0-119)
         createDrumHit('snare', 0, 0, 120), // Column 0, sixteenth (tick 120-239 = "e")
         createDrumHit('hihat', 0, 0, 240), // Column 1, main (tick 240-359 = "and")
-        createDrumHit('kick', 0, 0, 360),  // Column 1, sixteenth (tick 360-479 = "a")
+        createDrumHit('kick', 0, 0, 360), // Column 1, sixteenth (tick 360-479 = "a")
       ];
       const result = drumHitsToGridPattern(hits);
 
@@ -380,10 +386,10 @@ describe('drumHitsToGridPattern', () => {
       // Disco pattern: Hi-hat on all 16th notes (main 8ths + 16th subdivisions)
       const hits: DrumHit[] = [
         // Beat 0: all four 16ths
-        createDrumHit('hihat', 0, 0, 0),    // Column 0 main
-        createDrumHit('hihat', 0, 0, 120),  // Column 0 sixteenth
-        createDrumHit('hihat', 0, 0, 240),  // Column 1 main
-        createDrumHit('hihat', 0, 0, 360),  // Column 1 sixteenth
+        createDrumHit('hihat', 0, 0, 0), // Column 0 main
+        createDrumHit('hihat', 0, 0, 120), // Column 0 sixteenth
+        createDrumHit('hihat', 0, 0, 240), // Column 1 main
+        createDrumHit('hihat', 0, 0, 360), // Column 1 sixteenth
         // Beat 1: all four 16ths
         createDrumHit('hihat', 0, 1, 0),
         createDrumHit('hihat', 0, 1, 120),

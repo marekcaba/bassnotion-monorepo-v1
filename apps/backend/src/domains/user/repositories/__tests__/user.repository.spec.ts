@@ -81,7 +81,7 @@ describe('UserRepository', () => {
       expect(result).toBeDefined();
       expect(result?.id).toBe('123e4567-e89b-12d3-a456-426614174000');
       expect(result?.email).toBe('test@example.com');
-      expect(mockSupabaseClient.from).toHaveBeenCalledWith('users');
+      expect(mockSupabaseClient.from).toHaveBeenCalledWith('profiles');
       expect(mockSupabaseClient.eq).toHaveBeenCalledWith(
         'id',
         '123e4567-e89b-12d3-a456-426614174000',
@@ -134,7 +134,7 @@ describe('UserRepository', () => {
 
       await expect(repository.save(mockUser)).resolves.not.toThrow();
 
-      expect(mockSupabaseClient.from).toHaveBeenCalledWith('users');
+      expect(mockSupabaseClient.from).toHaveBeenCalledWith('profiles');
       expect(mockSupabaseClient.insert).toHaveBeenCalledWith(
         expect.objectContaining({
           id: '123e4567-e89b-12d3-a456-426614174000',

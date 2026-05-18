@@ -1,7 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { CreditCard, Calendar, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import {
+  CreditCard,
+  Calendar,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+} from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { BillingErrorBoundary } from '@/shared/components/ErrorBoundary';
 import {
@@ -68,7 +74,10 @@ function SubscriptionManagerContent() {
     } catch (error) {
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to open subscription manager',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Failed to open subscription manager',
         variant: 'destructive',
       });
     } finally {
@@ -77,7 +86,11 @@ function SubscriptionManagerContent() {
   };
 
   const handleCancelSubscription = async () => {
-    if (!confirm('Are you sure you want to cancel your subscription? You will still have access until the end of your billing period.')) {
+    if (
+      !confirm(
+        'Are you sure you want to cancel your subscription? You will still have access until the end of your billing period.',
+      )
+    ) {
       return;
     }
 
@@ -86,13 +99,17 @@ function SubscriptionManagerContent() {
       await cancelSubscription.mutateAsync();
       toast({
         title: 'Subscription Canceled',
-        description: 'Your subscription will end at the end of your billing period.',
+        description:
+          'Your subscription will end at the end of your billing period.',
         variant: 'default',
       });
     } catch (error) {
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to cancel subscription',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Failed to cancel subscription',
         variant: 'destructive',
       });
     } finally {
@@ -112,7 +129,10 @@ function SubscriptionManagerContent() {
     } catch (error) {
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to reactivate subscription',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Failed to reactivate subscription',
         variant: 'destructive',
       });
     } finally {
@@ -136,13 +156,15 @@ function SubscriptionManagerContent() {
       <div className="bg-zinc-900 rounded-lg border border-zinc-800 p-6">
         <div className="flex items-center gap-3 mb-4">
           <CreditCard className="h-5 w-5 text-gray-400" />
-          <h3 className="text-lg font-semibold text-white">Subscription & Purchases</h3>
+          <h3 className="text-lg font-semibold text-white">
+            Subscription & Purchases
+          </h3>
         </div>
         <p className="text-gray-400 mb-4">
           You don't have any active subscriptions or purchases.
         </p>
         <Button
-          onClick={() => window.location.href = '/pricing'}
+          onClick={() => (window.location.href = '/pricing')}
           className="bg-[#ffc700] text-black hover:bg-[#e6b300]"
         >
           View Pricing
@@ -156,7 +178,9 @@ function SubscriptionManagerContent() {
       {/* Header */}
       <div className="flex items-center gap-3">
         <CreditCard className="h-5 w-5 text-[#ffc700]" />
-        <h3 className="text-lg font-semibold text-white">Subscription & Purchases</h3>
+        <h3 className="text-lg font-semibold text-white">
+          Subscription & Purchases
+        </h3>
       </div>
 
       {/* Subscription Status */}
@@ -166,7 +190,9 @@ function SubscriptionManagerContent() {
             <div>
               <p className="text-sm text-gray-400 mb-1">Current Plan</p>
               <div className="flex items-center gap-2">
-                <span className="text-lg font-semibold text-white">BassNotion Pro</span>
+                <span className="text-lg font-semibold text-white">
+                  Bassicology Pro
+                </span>
                 {getStatusBadge(access.subscriptionStatus)}
               </div>
             </div>
@@ -181,8 +207,7 @@ function SubscriptionManagerContent() {
               <span>
                 {access.subscriptionStatus === 'active'
                   ? `Renews on ${new Date(access.subscriptionEndDate).toLocaleDateString()}`
-                  : `Access until ${new Date(access.subscriptionEndDate).toLocaleDateString()}`
-                }
+                  : `Access until ${new Date(access.subscriptionEndDate).toLocaleDateString()}`}
               </span>
             </div>
           )}
@@ -205,15 +230,17 @@ function SubscriptionManagerContent() {
                 Cancel Subscription
               </Button>
             )}
-            {access.subscriptionStatus === 'canceled' && access.subscriptionEndDate && new Date(access.subscriptionEndDate) > new Date() && (
-              <Button
-                onClick={handleReactivateSubscription}
-                disabled={isProcessing}
-                className="bg-green-600 text-white hover:bg-green-500"
-              >
-                Reactivate Subscription
-              </Button>
-            )}
+            {access.subscriptionStatus === 'canceled' &&
+              access.subscriptionEndDate &&
+              new Date(access.subscriptionEndDate) > new Date() && (
+                <Button
+                  onClick={handleReactivateSubscription}
+                  disabled={isProcessing}
+                  className="bg-green-600 text-white hover:bg-green-500"
+                >
+                  Reactivate Subscription
+                </Button>
+              )}
           </div>
         </div>
       )}

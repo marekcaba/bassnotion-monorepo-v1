@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('All Widgets Audio Working', () => {
   test('verify all widgets produce audio without errors', async ({ page }) => {

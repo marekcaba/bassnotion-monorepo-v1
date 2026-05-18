@@ -144,7 +144,8 @@ export function QuestionOverlay({
               getCategoryColor(question.category),
             )}
           >
-            {question.category.charAt(0).toUpperCase() + question.category.slice(1)}
+            {question.category.charAt(0).toUpperCase() +
+              question.category.slice(1)}
           </span>
         </div>
 
@@ -169,9 +170,7 @@ export function QuestionOverlay({
           >
             {/* Content positioned absolutely to respect aspect ratio */}
             <div className="absolute inset-0 flex items-center justify-center p-5 sm:p-6 md:p-8 overflow-y-auto">
-              <div className="w-full max-w-xl">
-                {renderQuestion()}
-              </div>
+              <div className="w-full max-w-xl">{renderQuestion()}</div>
             </div>
           </div>
         </div>

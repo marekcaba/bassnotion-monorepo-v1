@@ -118,7 +118,12 @@ describe('Animation Collision Prevention', () => {
         isNextNote: false,
       });
 
-      const tailwindAnimations = ['animate-pulse', 'animate-bounce', 'animate-spin', 'animate-ping'];
+      const tailwindAnimations = [
+        'animate-pulse',
+        'animate-bounce',
+        'animate-spin',
+        'animate-ping',
+      ];
       tailwindAnimations.forEach((animation) => {
         expect(className).not.toContain(animation);
       });
@@ -328,13 +333,17 @@ describe('Measure Change Cleanup - Single Source of Truth', () => {
 
     // Atomic cleanup
     const startState = simulator.getState();
-    expect(startState.notesWithPlayed.length + startState.linesWithPlayed.length).toBe(4);
+    expect(
+      startState.notesWithPlayed.length + startState.linesWithPlayed.length,
+    ).toBe(4);
 
     simulator.measureChangeCleanup(1);
 
     // After cleanup, NO played states should remain
     const endState = simulator.getState();
-    expect(endState.notesWithPlayed.length + endState.linesWithPlayed.length).toBe(0);
+    expect(
+      endState.notesWithPlayed.length + endState.linesWithPlayed.length,
+    ).toBe(0);
 
     // No intermediate state possible (atomic)
   });
@@ -385,7 +394,8 @@ describe('CSS Animation Cleanup', () => {
     const PRESERVED_CSS = {
       noteActive: '.note-active { box-shadow: ... }',
       noteActiveOpacity: '.note-active { opacity: 1 !important }',
-      notePlayedTransition: '.note-played { transition: background-color 100ms }',
+      notePlayedTransition:
+        '.note-played { transition: background-color 100ms }',
       linePlayedTransition: '.line-played { transition: none !important }',
     };
 
@@ -438,17 +448,31 @@ describe('Full Animation Flow (Integration)', () => {
     /**
      * Simulates clock tick from AtomicPlaybackClock
      */
-    onClockTick(visualSeconds: number, timeline: Array<{ noteIndex: number; measure: number; startTime: number; endTime: number }>): void {
+    onClockTick(
+      visualSeconds: number,
+      timeline: Array<{
+        noteIndex: number;
+        measure: number;
+        startTime: number;
+        endTime: number;
+      }>,
+    ): void {
       // Find active and next note
-      const activeEntry = timeline.find((e) => e.startTime <= visualSeconds && e.endTime > visualSeconds);
+      const activeEntry = timeline.find(
+        (e) => e.startTime <= visualSeconds && e.endTime > visualSeconds,
+      );
       const nextEntry = timeline.find((e) => e.startTime > visualSeconds);
 
       this.state.activeNoteIndex = activeEntry?.noteIndex ?? -1;
       this.state.nextNoteIndex = nextEntry?.noteIndex ?? -1;
-      this.state.currentMeasure = activeEntry?.measure ?? this.state.currentMeasure;
+      this.state.currentMeasure =
+        activeEntry?.measure ?? this.state.currentMeasure;
 
       // Detect measure change
-      if (this.state.currentMeasure >= 0 && this.state.currentMeasure !== this.previousMeasure) {
+      if (
+        this.state.currentMeasure >= 0 &&
+        this.state.currentMeasure !== this.previousMeasure
+      ) {
         this.onMeasureChange();
       }
 
@@ -484,7 +508,9 @@ describe('Full Animation Flow (Integration)', () => {
         }
 
         // Hide line from previous note
-        const prevLineClasses = this.state.lineClasses.get(this.previousNoteIndex);
+        const prevLineClasses = this.state.lineClasses.get(
+          this.previousNoteIndex,
+        );
         if (prevLineClasses) {
           prevLineClasses.add('line-played');
         }
@@ -492,7 +518,9 @@ describe('Full Animation Flow (Integration)', () => {
 
       // Add active to current note
       if (this.state.activeNoteIndex >= 0) {
-        const currClasses = this.state.noteClasses.get(this.state.activeNoteIndex);
+        const currClasses = this.state.noteClasses.get(
+          this.state.activeNoteIndex,
+        );
         if (currClasses) {
           currClasses.add('note-active');
         }
@@ -512,7 +540,9 @@ describe('Full Animation Flow (Integration)', () => {
     }
 
     getActiveNoteClasses(): string[] {
-      const activeClasses = this.state.noteClasses.get(this.state.activeNoteIndex);
+      const activeClasses = this.state.noteClasses.get(
+        this.state.activeNoteIndex,
+      );
       return activeClasses ? Array.from(activeClasses) : [];
     }
   }

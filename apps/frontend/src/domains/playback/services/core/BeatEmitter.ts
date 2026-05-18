@@ -196,7 +196,8 @@ export class BeatEmitter {
           // TIMING DIAGNOSTIC
           const currentAudioContextTime = Tone.getContext().currentTime;
           const drawFiredAt = performance.now();
-          const timeSinceLastDraw = lastDrawTime > 0 ? drawFiredAt - lastDrawTime : 0;
+          const timeSinceLastDraw =
+            lastDrawTime > 0 ? drawFiredAt - lastDrawTime : 0;
 
           // Calculate beat position from Transport.seconds (authoritative source)
           // This is the key fix: instead of incrementing a counter, we calculate
@@ -209,7 +210,9 @@ export class BeatEmitter {
 
           // Calculate total eighth notes from adjusted time
           // Floor to get discrete beat positions
-          const totalEighthNotes = Math.floor(adjustedSeconds / eighthNoteDuration);
+          const totalEighthNotes = Math.floor(
+            adjustedSeconds / eighthNoteDuration,
+          );
 
           const isCountdown = adjustedSeconds < 0;
 
@@ -218,16 +221,18 @@ export class BeatEmitter {
           const eighthNoteIndex = isCountdown
             ? 0
             : totalEighthNotes % eighthNotesPerMeasure;
-          const beatIndex = isCountdown
-            ? 0
-            : Math.floor(eighthNoteIndex / 2);
+          const beatIndex = isCountdown ? 0 : Math.floor(eighthNoteIndex / 2);
           const measureIndex = isCountdown
             ? -1
             : Math.floor(totalEighthNotes / eighthNotesPerMeasure);
 
           // Log timing for debugging (only when beat changes to reduce spam)
           const DEBUG_BEAT_TIMING = false;
-          if (DEBUG_BEAT_TIMING && eighthNoteIndex !== lastEighthNote && !isCountdown) {
+          if (
+            DEBUG_BEAT_TIMING &&
+            eighthNoteIndex !== lastEighthNote &&
+            !isCountdown
+          ) {
             logger.info('TIMING_SYNC', {
               eighth: eighthNoteIndex,
               measure: measureIndex,
@@ -302,9 +307,7 @@ export class BeatEmitter {
         const eighthNoteIndex = isCountdown
           ? 0
           : totalEighthNotes % eighthNotesPerMeasure;
-        const beatIndex = isCountdown
-          ? 0
-          : Math.floor(eighthNoteIndex / 2);
+        const beatIndex = isCountdown ? 0 : Math.floor(eighthNoteIndex / 2);
         const measureIndex = isCountdown
           ? -1
           : Math.floor(totalEighthNotes / eighthNotesPerMeasure);

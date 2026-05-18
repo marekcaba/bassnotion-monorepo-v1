@@ -50,7 +50,7 @@ describe('Ring3DOverlayCanvas Exercise Cleanup', () => {
 
     it('should verify pulse time reset prevents stale animation phase', () => {
       // Simulate the reset logic
-      let pulseTimeRef = { current: 15.5 }; // Accumulated from previous exercise
+      const pulseTimeRef = { current: 15.5 }; // Accumulated from previous exercise
 
       // Reset on exercise switch
       const resetOnExerciseSwitch = () => {
@@ -64,8 +64,8 @@ describe('Ring3DOverlayCanvas Exercise Cleanup', () => {
 
     it('should verify texture cache reset allows fresh label loading', () => {
       // Simulate the texture cache refs
-      let currentNoteLabelTextureRef = { current: 'finger-2' };
-      let nextNoteLabelTextureRef = { current: 'finger-4' };
+      const currentNoteLabelTextureRef = { current: 'finger-2' };
+      const nextNoteLabelTextureRef = { current: 'finger-4' };
 
       // Reset on exercise switch
       const resetOnExerciseSwitch = () => {
@@ -86,7 +86,7 @@ describe('Ring3DOverlayCanvas Exercise Cleanup', () => {
   describe('Fade Animation Cleanup', () => {
     it('should cancel ongoing RAF animation on exercise switch', () => {
       const mockCancelAnimationFrame = vi.fn();
-      let animationRef = { current: 123 as number | null };
+      const animationRef = { current: 123 as number | null };
 
       // Simulate cleanup
       const cleanupFadeAnimation = () => {
@@ -104,11 +104,13 @@ describe('Ring3DOverlayCanvas Exercise Cleanup', () => {
 
     it('should reset all fade animation refs to initial values', () => {
       // Simulate refs with stale values from previous exercise
-      let animationStartRef = { current: 1500 };
-      let animationFromRef = { current: 0.5 };
-      let animationToRef = { current: 0.8 };
-      let currentFadePercentRef = { current: 0.65 };
-      let lastScrollStateRef = { current: 'scrolled' as 'start' | 'scrolled' };
+      const animationStartRef = { current: 1500 };
+      const animationFromRef = { current: 0.5 };
+      const animationToRef = { current: 0.8 };
+      const currentFadePercentRef = { current: 0.65 };
+      const lastScrollStateRef = {
+        current: 'scrolled' as 'start' | 'scrolled',
+      };
 
       // Reset on exercise switch
       const resetFadeAnimationRefs = () => {
@@ -129,7 +131,7 @@ describe('Ring3DOverlayCanvas Exercise Cleanup', () => {
     });
 
     it('should reset scroll position ref', () => {
-      let scrollLeftRef = { current: 450 }; // User had scrolled on previous exercise
+      const scrollLeftRef = { current: 450 }; // User had scrolled on previous exercise
 
       // Reset on exercise switch
       scrollLeftRef.current = 0;
@@ -186,7 +188,8 @@ describe('Ring3DOverlayCanvas Exercise Cleanup', () => {
       // Reset visibility
       const resetRingVisibility = () => {
         if (activeRingRef.current) activeRingRef.current.visible = false;
-        if (activeRingGlowRef.current) activeRingGlowRef.current.visible = false;
+        if (activeRingGlowRef.current)
+          activeRingGlowRef.current.visible = false;
         if (previewRingRef.current) previewRingRef.current.visible = false;
       };
 
@@ -227,9 +230,12 @@ describe('Ring3DOverlayCanvas Exercise Cleanup', () => {
           const material = mesh.material;
           const [, fretStr] = positionKey.split(',');
           const fret = fretStr === 'open' ? 'open' : parseInt(fretStr, 10);
-          const isMarkerFret = fret === 'open' || MARKER_FRETS.has(fret as number);
+          const isMarkerFret =
+            fret === 'open' || MARKER_FRETS.has(fret as number);
 
-          const targetColor = isMarkerFret ? DOT_COLORS.GREY_LIGHT : DOT_COLORS.GREY;
+          const targetColor = isMarkerFret
+            ? DOT_COLORS.GREY_LIGHT
+            : DOT_COLORS.GREY;
           material.color.setHex(targetColor);
           material.opacity = 1.0;
           material.transparent = true;
@@ -241,20 +247,28 @@ describe('Ring3DOverlayCanvas Exercise Cleanup', () => {
 
       // Verify each dot was reset
       const openStringDot = dotMeshRefs.get('0,open');
-      expect(openStringDot?.material.color.setHex).toHaveBeenCalledWith(DOT_COLORS.GREY_LIGHT);
+      expect(openStringDot?.material.color.setHex).toHaveBeenCalledWith(
+        DOT_COLORS.GREY_LIGHT,
+      );
       expect(openStringDot?.material.opacity).toBe(1.0);
       expect(openStringDot?.material.needsUpdate).toBe(true);
 
       // Regular fret (not marker)
       const regularFretDot = dotMeshRefs.get('1,2');
-      expect(regularFretDot?.material.color.setHex).toHaveBeenCalledWith(DOT_COLORS.GREY);
+      expect(regularFretDot?.material.color.setHex).toHaveBeenCalledWith(
+        DOT_COLORS.GREY,
+      );
 
       // Marker frets (3, 5)
       const markerFret3 = dotMeshRefs.get('0,3');
-      expect(markerFret3?.material.color.setHex).toHaveBeenCalledWith(DOT_COLORS.GREY_LIGHT);
+      expect(markerFret3?.material.color.setHex).toHaveBeenCalledWith(
+        DOT_COLORS.GREY_LIGHT,
+      );
 
       const markerFret5 = dotMeshRefs.get('0,5');
-      expect(markerFret5?.material.color.setHex).toHaveBeenCalledWith(DOT_COLORS.GREY_LIGHT);
+      expect(markerFret5?.material.color.setHex).toHaveBeenCalledWith(
+        DOT_COLORS.GREY_LIGHT,
+      );
     });
 
     it('should verify string labels reset to light texture', () => {
@@ -278,8 +292,14 @@ describe('Ring3DOverlayCanvas Exercise Cleanup', () => {
       });
 
       const stringLabelMeshRefs = new Map([
-        ['3,open', { material: createMockLabelMaterial(darkTextures.get('D')) }], // String 3 = D
-        ['4,open', { material: createMockLabelMaterial(darkTextures.get('G')) }], // String 4 = G
+        [
+          '3,open',
+          { material: createMockLabelMaterial(darkTextures.get('D')) },
+        ], // String 3 = D
+        [
+          '4,open',
+          { material: createMockLabelMaterial(darkTextures.get('G')) },
+        ], // String 4 = G
       ]);
 
       // Reset string labels to light texture

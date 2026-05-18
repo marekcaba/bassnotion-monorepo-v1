@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Session ID Synchronization', () => {
   test('should maintain session ID sync after pause/resume cycle', async ({

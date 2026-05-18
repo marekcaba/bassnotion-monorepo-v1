@@ -17,7 +17,8 @@
  * 10. Mobile Device Compatibility
  */
 
-import { test, expect, Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 // Test configuration
 const TEST_TIMEOUT = 120000; // 2 minutes per test (some tests run 35+ seconds)

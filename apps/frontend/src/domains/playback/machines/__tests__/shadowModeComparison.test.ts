@@ -11,7 +11,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createActor } from 'xstate';
 import { playbackMachine } from '../playbackMachine.js';
-import { createMockAudioContext, createMockAudioDestination } from './testUtils.js';
+import {
+  createMockAudioContext,
+  createMockAudioDestination,
+} from './testUtils.js';
 
 // ============================================================================
 // Types for Shadow Mode Testing
@@ -73,13 +76,19 @@ function statesMatch(realState: string, xstateState: string): boolean {
 
   // XState 'starting' is an async transition state
   // Real engine might be 'ready' (just started) or 'playing' (already transitioned)
-  if (xstateState === 'starting' && (realState === 'ready' || realState === 'playing')) {
+  if (
+    xstateState === 'starting' &&
+    (realState === 'ready' || realState === 'playing')
+  ) {
     return true;
   }
 
   // XState 'stopping' is an async transition state
   // Real engine might be 'playing' (just stopped) or 'stopped' (already transitioned)
-  if (xstateState === 'stopping' && (realState === 'playing' || realState === 'stopped')) {
+  if (
+    xstateState === 'stopping' &&
+    (realState === 'playing' || realState === 'stopped')
+  ) {
     return true;
   }
 
@@ -145,7 +154,9 @@ class ShadowModeSimulator {
    * Simulates a transport event happening in the real implementation
    * and sends the corresponding event to the XState machine
    */
-  async simulateTransportEvent(event: SimulatedTransportEvent): Promise<StateComparisonResult> {
+  async simulateTransportEvent(
+    event: SimulatedTransportEvent,
+  ): Promise<StateComparisonResult> {
     // First, update real state (simulating what the real transport would do)
     switch (event.type) {
       case 'start':
@@ -309,13 +320,18 @@ describe('Shadow Mode State Comparison', () => {
       console.log('[Shadow Test] Full cycle:', {
         steps: results.length,
         allMatch,
-        sequence: results.map((r) => `${r.action}(${r.match ? 'OK' : 'MISMATCH'})`).join(' -> '),
+        sequence: results
+          .map((r) => `${r.action}(${r.match ? 'OK' : 'MISMATCH'})`)
+          .join(' -> '),
       });
     });
 
     it('should track tempo changes during playback', async () => {
       await simulator.simulateTransportEvent({ type: 'start' });
-      await simulator.simulateTransportEvent({ type: 'tempo-change', data: 140 });
+      await simulator.simulateTransportEvent({
+        type: 'tempo-change',
+        data: 140,
+      });
 
       const context = simulator.getXStateContext();
       expect(context.currentTempo).toBe(140);
@@ -394,16 +410,23 @@ describe('Shadow Mode Comparison History', () => {
     const history = simulator.getComparisons();
 
     expect(history.length).toBe(4);
-    expect(history.map((h) => h.action)).toEqual(['start', 'pause', 'resume', 'stop']);
+    expect(history.map((h) => h.action)).toEqual([
+      'start',
+      'pause',
+      'resume',
+      'stop',
+    ]);
 
     // Print history for debugging
     console.log('[Shadow Test] Comparison History:');
-    console.table(history.map((h) => ({
-      action: h.action,
-      real: h.realState,
-      xstate: h.xstateState,
-      match: h.match ? 'YES' : 'NO',
-    })));
+    console.table(
+      history.map((h) => ({
+        action: h.action,
+        real: h.realState,
+        xstate: h.xstateState,
+        match: h.match ? 'YES' : 'NO',
+      })),
+    );
 
     simulator.stop();
   });

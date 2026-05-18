@@ -1,4 +1,5 @@
-import { test, expect, Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Widget Audio Initialization', () => {
   test.beforeEach(async ({ page }) => {

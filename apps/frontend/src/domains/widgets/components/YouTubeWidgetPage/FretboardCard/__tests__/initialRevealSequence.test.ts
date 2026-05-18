@@ -62,7 +62,7 @@ const TOTAL_REVEAL_TIME = MOUNT_DELAY + ZOOM_DURATION + ZOOM_END_BUFFER;
 function shouldStartZoomAnimation(
   prevPhase: 'stable' | 'fading-out' | 'fading-in',
   currentPhase: 'stable' | 'fading-out' | 'fading-in',
-  triggerZoomOnMount: boolean = false
+  triggerZoomOnMount: boolean = false,
 ): boolean {
   // NEW: If triggerZoomOnMount is true, always start animation
   if (triggerZoomOnMount) {
@@ -81,7 +81,7 @@ function simulateRevealSequence(
     zoomDuration?: number;
     initialPhase?: 'stable' | 'fading-in';
     triggerZoomOnMount?: boolean;
-  } = {}
+  } = {},
 ): RevealSequenceState[] {
   const {
     mountDelay = MOUNT_DELAY,
@@ -194,7 +194,11 @@ describe('Initial Fretboard Reveal Sequence', () => {
       const prevPhase = 'fading-in' as const;
       const currentPhase = 'fading-in' as const;
 
-      const shouldAnimate = shouldStartZoomAnimation(prevPhase, currentPhase, false);
+      const shouldAnimate = shouldStartZoomAnimation(
+        prevPhase,
+        currentPhase,
+        false,
+      );
       expect(shouldAnimate).toBe(false); // BUG: Animation doesn't start!
     });
 
@@ -203,7 +207,11 @@ describe('Initial Fretboard Reveal Sequence', () => {
       const prevPhase = 'fading-in' as const;
       const currentPhase = 'fading-in' as const;
 
-      const shouldAnimate = shouldStartZoomAnimation(prevPhase, currentPhase, true);
+      const shouldAnimate = shouldStartZoomAnimation(
+        prevPhase,
+        currentPhase,
+        true,
+      );
       expect(shouldAnimate).toBe(true); // FIX: Animation starts!
     });
 
@@ -212,14 +220,18 @@ describe('Initial Fretboard Reveal Sequence', () => {
       const currentPhase = 'fading-in' as const;
 
       // Without triggerZoomOnMount (normal case)
-      const shouldAnimate = shouldStartZoomAnimation(prevPhase, currentPhase, false);
+      const shouldAnimate = shouldStartZoomAnimation(
+        prevPhase,
+        currentPhase,
+        false,
+      );
       expect(shouldAnimate).toBe(true);
 
       // With triggerZoomOnMount (also works)
       const shouldAnimateWithTrigger = shouldStartZoomAnimation(
         prevPhase,
         currentPhase,
-        true
+        true,
       );
       expect(shouldAnimateWithTrigger).toBe(true);
     });
@@ -241,7 +253,7 @@ describe('Initial Fretboard Reveal Sequence', () => {
           const shouldAnimate = shouldStartZoomAnimation(
             prevPhase,
             currentPhase,
-            true
+            true,
           );
           expect(shouldAnimate).toBe(true);
         }
@@ -253,10 +265,14 @@ describe('Initial Fretboard Reveal Sequence', () => {
       expect(shouldStartZoomAnimation('stable', 'fading-in', false)).toBe(true);
 
       // fading-out → fading-in = true
-      expect(shouldStartZoomAnimation('fading-out', 'fading-in', false)).toBe(true);
+      expect(shouldStartZoomAnimation('fading-out', 'fading-in', false)).toBe(
+        true,
+      );
 
       // fading-in → fading-in = false (no change)
-      expect(shouldStartZoomAnimation('fading-in', 'fading-in', false)).toBe(false);
+      expect(shouldStartZoomAnimation('fading-in', 'fading-in', false)).toBe(
+        false,
+      );
 
       // stable → stable = false
       expect(shouldStartZoomAnimation('stable', 'stable', false)).toBe(false);
@@ -357,7 +373,7 @@ describe('Initial Fretboard Reveal Sequence', () => {
 
       function computeEffectivePhase(
         forceInitialZoom: boolean,
-        transitionPhase: 'stable' | 'fading-out' | 'fading-in'
+        transitionPhase: 'stable' | 'fading-out' | 'fading-in',
       ): 'stable' | 'fading-out' | 'fading-in' {
         if (forceInitialZoom) {
           return 'fading-in';
@@ -434,8 +450,8 @@ describe('Initial Mount Scenarios', () => {
       // 2. Component mounts, prevPhaseRef = 'fading-in' (current value)
       // 3. useEffect runs, but prevPhase === currentPhase, no animation
 
-      let currentPhase: 'stable' | 'fading-in' = 'fading-in'; // Already fading-in!
-      let prevPhase: 'stable' | 'fading-in' = currentPhase; // Initialized to current
+      const currentPhase: 'stable' | 'fading-in' = 'fading-in'; // Already fading-in!
+      const prevPhase: 'stable' | 'fading-in' = currentPhase; // Initialized to current
       let animationStarted = false;
 
       // useEffect runs (no change detected)
@@ -452,9 +468,9 @@ describe('Initial Mount Scenarios', () => {
       // 2. useEffect runs, sees triggerZoomOnMount, starts animation
       // 3. Animation starts regardless of phase state
 
-      let currentPhase: 'stable' | 'fading-in' = 'fading-in';
-      let prevPhase: 'stable' | 'fading-in' = currentPhase;
-      let triggerZoomOnMount = true;
+      const currentPhase: 'stable' | 'fading-in' = 'fading-in';
+      const prevPhase: 'stable' | 'fading-in' = currentPhase;
+      const triggerZoomOnMount = true;
       let animationStarted = false;
 
       // useEffect runs
@@ -473,9 +489,9 @@ describe('Initial Mount Scenarios', () => {
       // After initial reveal, triggerZoomOnMount should be false
       // Exercise changes trigger animations via normal phase transitions
 
-      let triggerZoomOnMount = false; // Initial reveal complete
-      let prevPhase: 'stable' | 'fading-in' = 'stable';
-      let currentPhase: 'stable' | 'fading-in' = 'fading-in'; // Exercise change
+      const triggerZoomOnMount = false; // Initial reveal complete
+      const prevPhase: 'stable' | 'fading-in' = 'stable';
+      const currentPhase: 'stable' | 'fading-in' = 'fading-in'; // Exercise change
       let animationStarted = false;
 
       // useEffect runs
@@ -548,7 +564,9 @@ describe('IntersectionObserver Integration', () => {
     let showFretboardContent = false;
     let isInitialRevealComplete = false;
 
-    const handleIntersection = (entries: Array<{ isIntersecting: boolean }>) => {
+    const handleIntersection = (
+      entries: Array<{ isIntersecting: boolean }>,
+    ) => {
       const entry = entries[0];
       if (entry.isIntersecting) {
         showFretboardContent = true;
@@ -566,10 +584,12 @@ describe('IntersectionObserver Integration', () => {
 
   it('should not trigger reveal if already complete', () => {
     let showFretboardContent = true;
-    let isInitialRevealComplete = true;
+    const isInitialRevealComplete = true;
     let triggerCount = 0;
 
-    const handleIntersection = (entries: Array<{ isIntersecting: boolean }>) => {
+    const handleIntersection = (
+      entries: Array<{ isIntersecting: boolean }>,
+    ) => {
       if (isInitialRevealComplete) return; // Early exit
 
       const entry = entries[0];

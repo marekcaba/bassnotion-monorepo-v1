@@ -66,10 +66,8 @@ const DrummerWidgetComponent = ({
   }, [transport]);
 
   // Atomic beat tracking for jitter-free visuals
-  const {
-    eighthNoteIndex: currentBeat,
-    measureIndex: hookMeasure,
-  } = useAtomicBeat(4, transport.isPlaying, isVisible);
+  const { eighthNoteIndex: currentBeat, measureIndex: hookMeasure } =
+    useAtomicBeat(4, transport.isPlaying, isVisible);
 
   // Direct DOM beat synchronization
   const { registerIndicator, getEighthNoteDurationMs } = useBeatGridSync({
@@ -88,7 +86,8 @@ const DrummerWidgetComponent = ({
   const [localMuted, setLocalMuted] = useState(false);
 
   // Controlled/uncontrolled volume handling
-  const volume = controlledVolume !== undefined ? controlledVolume : localVolume;
+  const volume =
+    controlledVolume !== undefined ? controlledVolume : localVolume;
   const isMuted = controlledMuted !== undefined ? controlledMuted : localMuted;
 
   const handleVolumeChange = useCallback(
@@ -133,7 +132,9 @@ const DrummerWidgetComponent = ({
   // We just need to reset our local region reference here
   useEffect(() => {
     const handleExerciseSwitched = () => {
-      logger.debug('[DRUMMER-WIDGET] exercise:switched event received, resetting local state');
+      logger.debug(
+        '[DRUMMER-WIDGET] exercise:switched event received, resetting local state',
+      );
       currentRegionRef.current = null;
     };
 
@@ -186,11 +187,7 @@ const DrummerWidgetComponent = ({
   });
 
   // Drum plugin hook
-  const {
-    wamPluginLoaded,
-    drummerPluginRef,
-    testDrumSound,
-  } = useDrumPlugin({
+  const { wamPluginLoaded, drummerPluginRef, testDrumSound } = useDrumPlugin({
     trackIsReady,
     exercise,
     volume,
@@ -242,11 +239,13 @@ const DrummerWidgetComponent = ({
 
   // Toggle drum with sound feedback
   const toggleDrum = useCallback(
-    withAudioContext(async (drum: 'kick' | 'snare' | 'hihat', index: number) => {
-      baseToggleDrum(drum, index);
-      const padMap = { kick: 1, snare: 3, hihat: 5 };
-      await testDrumSound(padMap[drum]);
-    }),
+    withAudioContext(
+      async (drum: 'kick' | 'snare' | 'hihat', index: number) => {
+        baseToggleDrum(drum, index);
+        const padMap = { kick: 1, snare: 3, hihat: 5 };
+        await testDrumSound(padMap[drum]);
+      },
+    ),
     [baseToggleDrum, testDrumSound],
   );
 
@@ -261,9 +260,8 @@ const DrummerWidgetComponent = ({
             correlationId,
           });
 
-          const { useMidiParsing } = await import(
-            '@/domains/admin/hooks/useMidiParsing'
-          );
+          const { useMidiParsing } =
+            await import('@/domains/admin/hooks/useMidiParsing');
           const midiParsing = useMidiParsing();
 
           const parsedData = await midiParsing.parseMidi('drums-midi', {
@@ -409,7 +407,9 @@ const DrummerWidgetComponent = ({
                 tutorialId={tutorialId}
                 showPatternLibrary={showPatternLibrary}
                 isPatternLibraryLoading={patternSelector?.isLoading ?? false}
-                availableDrumPatterns={patternSelector?.availableDrumPatterns ?? []}
+                availableDrumPatterns={
+                  patternSelector?.availableDrumPatterns ?? []
+                }
                 selectedDrumPattern={patternSelector?.selectedDrumPattern}
                 onPatternChange={onPatternChange}
                 onTogglePatternLibrary={() =>

@@ -6,13 +6,19 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Clock } from '../core/Clock.js';
 import { ClockSyncError } from '../types/errors.js';
 
-// Mock AudioContext
+// Mock AudioContext.
+// Clock subscribes to AudioContext 'statechange' events via
+// addEventListener; without these stubs the constructor throws.
 class MockAudioContext {
   private _currentTime = 0;
   sampleRate = 48000;
   baseLatency = 0.01;
   outputLatency = 0.02;
   private startTime = Date.now() / 1000;
+  addEventListener = vi.fn();
+  removeEventListener = vi.fn();
+  dispatchEvent = vi.fn();
+  state: AudioContextState = 'running';
 
   constructor() {
     // Simulate time progression based on Date.now() which works with fake timers

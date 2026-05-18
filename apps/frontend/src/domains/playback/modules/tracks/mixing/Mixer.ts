@@ -30,7 +30,9 @@ type TimelineAutomationPoint = AutomationPoint & { time: number };
 const serviceRegistry = {
   get<T>(name: string): T {
     if (typeof window !== 'undefined' && window.__serviceRegistry) {
-      return (window.__serviceRegistry as { get: <T>(name: string) => T }).get<T>(name);
+      return (
+        window.__serviceRegistry as { get: <T>(name: string) => T }
+      ).get<T>(name);
     }
     throw new Error(`Service ${name} not found`);
   },
@@ -45,7 +47,9 @@ function getToneFromWindow(): any {
       return tone;
     }
   }
-  throw new Error('Mixer: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+  throw new Error(
+    'Mixer: Tone.js not loaded. Ensure AudioEngine is initialized first.',
+  );
 }
 
 class AudioEngine {
@@ -611,7 +615,10 @@ export class Mixer {
   /**
    * Add effect to track
    */
-  public addTrackEffect(trackId: string, effect: ToneTypes.ToneAudioNode): void {
+  public addTrackEffect(
+    trackId: string,
+    effect: ToneTypes.ToneAudioNode,
+  ): void {
     const channel = this.trackChannels.get(trackId);
     if (!channel) return;
 
@@ -1017,7 +1024,9 @@ export class Mixer {
     // Most Tone nodes expose this as .input or can be used directly in connect()
     type ToneNodeInternal = { input?: AudioNode; _gainNode?: AudioNode };
     const toneInput = input as ToneNodeInternal;
-    return toneInput.input || toneInput._gainNode || (input as unknown as AudioNode);
+    return (
+      toneInput.input || toneInput._gainNode || (input as unknown as AudioNode)
+    );
   }
 
   /**
@@ -1057,7 +1066,10 @@ export class Mixer {
     // CRITICAL: Use exponential ramp from near-zero to prevent audio spike
     // Start at 0.001 (not 0, as exponential ramp requires non-zero start)
     masterGain.gain.setValueAtTime(0.001, startTime);
-    masterGain.gain.exponentialRampToValueAtTime(targetGain, startTime + fadeDuration);
+    masterGain.gain.exponentialRampToValueAtTime(
+      targetGain,
+      startTime + fadeDuration,
+    );
   }
 
   /**
@@ -1092,7 +1104,10 @@ export class Mixer {
 
     // Set current value and ramp to near-zero
     masterGain.gain.setValueAtTime(currentGain, currentTime);
-    masterGain.gain.exponentialRampToValueAtTime(0.001, currentTime + fadeDuration);
+    masterGain.gain.exponentialRampToValueAtTime(
+      0.001,
+      currentTime + fadeDuration,
+    );
 
     // NOTE: Don't reset gain here - let applyMasterFadeIn handle it on next play
     // This avoids race conditions where reset happens after next play starts

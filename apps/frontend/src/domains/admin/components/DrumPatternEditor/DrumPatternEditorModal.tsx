@@ -29,13 +29,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
-import { Save, X, Trash2, Undo, Redo, ZoomIn, ZoomOut, Library, Loader2 } from 'lucide-react';
+import {
+  Save,
+  X,
+  Trash2,
+  Undo,
+  Redo,
+  ZoomIn,
+  ZoomOut,
+  Library,
+  Loader2,
+} from 'lucide-react';
 import { useCreatePattern } from '../../hooks/usePatternLibrary.js';
 import { GENRE_DISPLAY_NAMES } from '@bassnotion/contracts';
 import type { PatternGenre, PatternDifficulty } from '@bassnotion/contracts';
 import { DrumGrid } from './DrumGrid.js';
 import { DrumEditorTransport } from './DrumEditorTransport.js';
-import type { DrumPatternEditorModalProps, PatternMetadata, GridResolution } from './types.js';
+import type {
+  DrumPatternEditorModalProps,
+  PatternMetadata,
+  GridResolution,
+} from './types.js';
 import { useDrumEditorStore } from './hooks/useDrumEditorStore.js';
 import {
   DEFAULT_EDITOR_SETTINGS,
@@ -88,12 +102,12 @@ export function DrumPatternEditorModal({
       historyIndex: state.historyIndex,
       historyLength: state.history.length,
       patternLength: state.pattern.length,
-    }))
+    })),
   );
 
   // Use useShallow for the timeSignature object
   const timeSignature = useDrumEditorStore(
-    useShallow((state) => state.timeSignature)
+    useShallow((state) => state.timeSignature),
   );
 
   // Compute derived values from primitives (no selector needed)
@@ -117,7 +131,8 @@ export function DrumPatternEditorModal({
   const [showSaveToLibrary, setShowSaveToLibrary] = useState(false);
   const [libraryDescription, setLibraryDescription] = useState('');
   const [libraryGenre, setLibraryGenre] = useState<PatternGenre>('rock');
-  const [libraryDifficulty, setLibraryDifficulty] = useState<PatternDifficulty>('intermediate');
+  const [libraryDifficulty, setLibraryDifficulty] =
+    useState<PatternDifficulty>('intermediate');
   const [libraryBpmMin, setLibraryBpmMin] = useState(80);
   const [libraryBpmMax, setLibraryBpmMax] = useState(140);
   const [libraryTags, setLibraryTags] = useState('');
@@ -131,8 +146,14 @@ export function DrumPatternEditorModal({
       if (initialPattern && initialPattern.length > 0) {
         store.loadPattern(initialPattern, {
           ...initialMetadata,
-          tempo: contextTempo || initialMetadata?.tempo || DEFAULT_EDITOR_SETTINGS.tempo,
-          timeSignature: contextTimeSignature || initialMetadata?.timeSignature || DEFAULT_EDITOR_SETTINGS.timeSignature,
+          tempo:
+            contextTempo ||
+            initialMetadata?.tempo ||
+            DEFAULT_EDITOR_SETTINGS.tempo,
+          timeSignature:
+            contextTimeSignature ||
+            initialMetadata?.timeSignature ||
+            DEFAULT_EDITOR_SETTINGS.timeSignature,
         });
         setLocalPatternName(initialMetadata?.name || 'Untitled Pattern');
       } else {
@@ -140,9 +161,17 @@ export function DrumPatternEditorModal({
         if (contextTempo) store.setTempo(contextTempo);
         setLocalPatternName('Untitled Pattern');
       }
-      useDrumEditorStore.getState().setZoomLevel(DEFAULT_EDITOR_SETTINGS.zoomLevel);
+      useDrumEditorStore
+        .getState()
+        .setZoomLevel(DEFAULT_EDITOR_SETTINGS.zoomLevel);
     }
-  }, [isOpen, initialPattern, initialMetadata, contextTempo, contextTimeSignature]);
+  }, [
+    isOpen,
+    initialPattern,
+    initialMetadata,
+    contextTempo,
+    contextTimeSignature,
+  ]);
 
   // Handle save
   const handleSave = useCallback(() => {
@@ -166,7 +195,7 @@ export function DrumPatternEditorModal({
     const store = useDrumEditorStore.getState();
     if (store.isDirty) {
       const confirmed = window.confirm(
-        'You have unsaved changes. Are you sure you want to close?'
+        'You have unsaved changes. Are you sure you want to close?',
       );
       if (!confirmed) return;
     }
@@ -202,7 +231,7 @@ export function DrumPatternEditorModal({
       alert('Pattern saved to library successfully!');
     } catch (error) {
       alert(
-        `Failed to save pattern: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Failed to save pattern: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
     }
   }, [
@@ -219,7 +248,7 @@ export function DrumPatternEditorModal({
   // Handle clear pattern
   const handleClear = useCallback(() => {
     const confirmed = window.confirm(
-      'Are you sure you want to clear all hits? This cannot be undone.'
+      'Are you sure you want to clear all hits? This cannot be undone.',
     );
     if (confirmed) {
       useDrumEditorStore.getState().clearPattern();
@@ -242,24 +271,36 @@ export function DrumPatternEditorModal({
     useDrumEditorStore.getState().stop(); // Update UI state
     stopAudio(); // Stop audio playback
   }, [stopAudio]);
-  const handleToggleLoop = useCallback(() => useDrumEditorStore.getState().toggleLoop(), []);
-  const handleTempoChange = useCallback((tempo: number) => useDrumEditorStore.getState().setTempo(tempo), []);
-  const handleUndo = useCallback(() => useDrumEditorStore.getState().undo(), []);
-  const handleRedo = useCallback(() => useDrumEditorStore.getState().redo(), []);
+  const handleToggleLoop = useCallback(
+    () => useDrumEditorStore.getState().toggleLoop(),
+    [],
+  );
+  const handleTempoChange = useCallback(
+    (tempo: number) => useDrumEditorStore.getState().setTempo(tempo),
+    [],
+  );
+  const handleUndo = useCallback(
+    () => useDrumEditorStore.getState().undo(),
+    [],
+  );
+  const handleRedo = useCallback(
+    () => useDrumEditorStore.getState().redo(),
+    [],
+  );
 
   // Handle zoom - update store directly so pinch gestures and buttons stay in sync
   const handleZoomIn = useCallback(() => {
     const currentZoom = useDrumEditorStore.getState().zoomLevel;
-    useDrumEditorStore.getState().setZoomLevel(
-      Math.min(ZOOM_LIMITS.max, currentZoom + ZOOM_LIMITS.step)
-    );
+    useDrumEditorStore
+      .getState()
+      .setZoomLevel(Math.min(ZOOM_LIMITS.max, currentZoom + ZOOM_LIMITS.step));
   }, []);
 
   const handleZoomOut = useCallback(() => {
     const currentZoom = useDrumEditorStore.getState().zoomLevel;
-    useDrumEditorStore.getState().setZoomLevel(
-      Math.max(ZOOM_LIMITS.min, currentZoom - ZOOM_LIMITS.step)
-    );
+    useDrumEditorStore
+      .getState()
+      .setZoomLevel(Math.max(ZOOM_LIMITS.min, currentZoom - ZOOM_LIMITS.step));
   }, []);
 
   // Handle bars change
@@ -285,7 +326,10 @@ export function DrumPatternEditorModal({
 
     const handleKeyDown = (e: KeyboardEvent) => {
       // Prevent shortcuts when typing in input
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
         return;
       }
 
@@ -322,9 +366,7 @@ export function DrumPatternEditorModal({
       {/* Custom portal with higher z-index for nested modal */}
       <DialogPortal>
         <DialogOverlay className="z-[55] bg-black/80" />
-        <DialogPrimitive.Content
-          className="fixed left-[50%] top-[50%] z-[60] w-full max-w-6xl max-h-[90vh] translate-x-[-50%] translate-y-[-50%] flex flex-col gap-0 border border-zinc-700 bg-zinc-950 p-6 shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-xl"
-        >
+        <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-[60] w-full max-w-6xl max-h-[90vh] translate-x-[-50%] translate-y-[-50%] flex flex-col gap-0 border border-zinc-700 bg-zinc-950 p-6 shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-xl">
           {/* Close button */}
           <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-zinc-950 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 disabled:pointer-events-none text-zinc-400 hover:text-zinc-100">
             <X className="h-4 w-4" />
@@ -341,7 +383,9 @@ export function DrumPatternEditorModal({
                 className="max-w-xs h-8 bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 focus:border-zinc-500 focus:ring-zinc-500"
               />
               {isDirty && (
-                <span className="text-xs text-amber-400 font-medium">• Unsaved</span>
+                <span className="text-xs text-amber-400 font-medium">
+                  • Unsaved
+                </span>
               )}
             </DialogTitle>
           </DialogHeader>
@@ -366,14 +410,20 @@ export function DrumPatternEditorModal({
             <div className="flex items-center gap-3">
               {/* Bars */}
               <div className="flex items-center gap-2">
-                <Label className="text-xs text-zinc-400 font-medium">Bars</Label>
+                <Label className="text-xs text-zinc-400 font-medium">
+                  Bars
+                </Label>
                 <Select value={String(bars)} onValueChange={handleBarsChange}>
                   <SelectTrigger className="w-16 h-8 bg-zinc-800 border-zinc-700 text-zinc-100 focus:border-zinc-500 focus:ring-zinc-500">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-zinc-900 border-zinc-700">
                     {BAR_OPTIONS.map((b) => (
-                      <SelectItem key={b} value={String(b)} className="text-zinc-100 focus:bg-zinc-800">
+                      <SelectItem
+                        key={b}
+                        value={String(b)}
+                        className="text-zinc-100 focus:bg-zinc-800"
+                      >
                         {b}
                       </SelectItem>
                     ))}
@@ -383,14 +433,23 @@ export function DrumPatternEditorModal({
 
               {/* Resolution */}
               <div className="flex items-center gap-2">
-                <Label className="text-xs text-zinc-400 font-medium">Grid</Label>
-                <Select value={gridResolution} onValueChange={handleResolutionChange}>
+                <Label className="text-xs text-zinc-400 font-medium">
+                  Grid
+                </Label>
+                <Select
+                  value={gridResolution}
+                  onValueChange={handleResolutionChange}
+                >
                   <SelectTrigger className="w-28 h-8 bg-zinc-800 border-zinc-700 text-zinc-100 focus:border-zinc-500 focus:ring-zinc-500">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-zinc-900 border-zinc-700">
                     {GRID_RESOLUTION_OPTIONS.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value} className="text-zinc-100 focus:bg-zinc-800">
+                      <SelectItem
+                        key={opt.value}
+                        value={opt.value}
+                        className="text-zinc-100 focus:bg-zinc-800"
+                      >
                         {opt.label}
                       </SelectItem>
                     ))}
@@ -518,9 +577,7 @@ export function DrumPatternEditorModal({
         <Dialog open={showSaveToLibrary} onOpenChange={setShowSaveToLibrary}>
           <DialogPortal>
             <DialogOverlay className="z-[70] bg-black/80" />
-            <DialogPrimitive.Content
-              className="fixed left-[50%] top-[50%] z-[75] w-full max-w-md translate-x-[-50%] translate-y-[-50%] flex flex-col gap-4 border border-zinc-700 bg-zinc-950 p-6 shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-xl"
-            >
+            <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-[75] w-full max-w-md translate-x-[-50%] translate-y-[-50%] flex flex-col gap-4 border border-zinc-700 bg-zinc-950 p-6 shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-xl">
               <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-zinc-950 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 disabled:pointer-events-none text-zinc-400 hover:text-zinc-100">
                 <X className="h-4 w-4" />
                 <span className="sr-only">Close</span>
@@ -559,30 +616,59 @@ export function DrumPatternEditorModal({
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-zinc-300">Genre</Label>
-                    <Select value={libraryGenre} onValueChange={(v) => setLibraryGenre(v as PatternGenre)}>
+                    <Select
+                      value={libraryGenre}
+                      onValueChange={(v) => setLibraryGenre(v as PatternGenre)}
+                    >
                       <SelectTrigger className="bg-zinc-900 border-zinc-700 text-zinc-100">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-zinc-900 border-zinc-700">
-                        {Object.entries(GENRE_DISPLAY_NAMES).map(([key, label]) => (
-                          <SelectItem key={key} value={key} className="text-zinc-100 focus:bg-zinc-800">
-                            {label}
-                          </SelectItem>
-                        ))}
+                        {Object.entries(GENRE_DISPLAY_NAMES).map(
+                          ([key, label]) => (
+                            <SelectItem
+                              key={key}
+                              value={key}
+                              className="text-zinc-100 focus:bg-zinc-800"
+                            >
+                              {label}
+                            </SelectItem>
+                          ),
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div className="space-y-2">
                     <Label className="text-zinc-300">Difficulty</Label>
-                    <Select value={libraryDifficulty} onValueChange={(v) => setLibraryDifficulty(v as PatternDifficulty)}>
+                    <Select
+                      value={libraryDifficulty}
+                      onValueChange={(v) =>
+                        setLibraryDifficulty(v as PatternDifficulty)
+                      }
+                    >
                       <SelectTrigger className="bg-zinc-900 border-zinc-700 text-zinc-100">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-zinc-900 border-zinc-700">
-                        <SelectItem value="beginner" className="text-zinc-100 focus:bg-zinc-800">Beginner</SelectItem>
-                        <SelectItem value="intermediate" className="text-zinc-100 focus:bg-zinc-800">Intermediate</SelectItem>
-                        <SelectItem value="advanced" className="text-zinc-100 focus:bg-zinc-800">Advanced</SelectItem>
+                        <SelectItem
+                          value="beginner"
+                          className="text-zinc-100 focus:bg-zinc-800"
+                        >
+                          Beginner
+                        </SelectItem>
+                        <SelectItem
+                          value="intermediate"
+                          className="text-zinc-100 focus:bg-zinc-800"
+                        >
+                          Intermediate
+                        </SelectItem>
+                        <SelectItem
+                          value="advanced"
+                          className="text-zinc-100 focus:bg-zinc-800"
+                        >
+                          Advanced
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -595,7 +681,9 @@ export function DrumPatternEditorModal({
                     <Input
                       type="number"
                       value={libraryBpmMin}
-                      onChange={(e) => setLibraryBpmMin(parseInt(e.target.value) || 60)}
+                      onChange={(e) =>
+                        setLibraryBpmMin(parseInt(e.target.value) || 60)
+                      }
                       min={20}
                       max={300}
                       className="bg-zinc-900 border-zinc-700 text-zinc-100"
@@ -606,7 +694,9 @@ export function DrumPatternEditorModal({
                     <Input
                       type="number"
                       value={libraryBpmMax}
-                      onChange={(e) => setLibraryBpmMax(parseInt(e.target.value) || 140)}
+                      onChange={(e) =>
+                        setLibraryBpmMax(parseInt(e.target.value) || 140)
+                      }
                       min={20}
                       max={300}
                       className="bg-zinc-900 border-zinc-700 text-zinc-100"
@@ -616,7 +706,9 @@ export function DrumPatternEditorModal({
 
                 {/* Tags */}
                 <div className="space-y-2">
-                  <Label className="text-zinc-300">Tags (comma-separated)</Label>
+                  <Label className="text-zinc-300">
+                    Tags (comma-separated)
+                  </Label>
                   <Input
                     value={libraryTags}
                     onChange={(e) => setLibraryTags(e.target.value)}
@@ -637,7 +729,9 @@ export function DrumPatternEditorModal({
                 </Button>
                 <Button
                   onClick={handleSaveToLibrary}
-                  disabled={createPattern.isPending || !libraryDescription.trim()}
+                  disabled={
+                    createPattern.isPending || !libraryDescription.trim()
+                  }
                   className="bg-blue-600 hover:bg-blue-500 text-white disabled:bg-zinc-700 disabled:text-zinc-500"
                 >
                   {createPattern.isPending ? (

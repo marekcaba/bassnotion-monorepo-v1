@@ -77,11 +77,13 @@ export class ResourceError extends PlaybackError {
     this.resourceType = this.extractResourceType(code);
 
     // Extract resource metrics from context
-    const metrics = context.performanceMetrics as {
-      requestedSize?: number;
-      availableSize?: number;
-      utilizationPercentage?: number;
-    } | undefined;
+    const metrics = context.performanceMetrics as
+      | {
+          requestedSize?: number;
+          availableSize?: number;
+          utilizationPercentage?: number;
+        }
+      | undefined;
 
     if (metrics) {
       this.requestedSize = metrics.requestedSize;

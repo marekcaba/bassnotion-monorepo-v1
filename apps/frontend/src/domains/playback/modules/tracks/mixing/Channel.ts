@@ -660,7 +660,9 @@ export class Channel {
         return tone;
       }
     }
-    throw new Error('Channel: No Tone.js instance available. Ensure AudioEngine is initialized.');
+    throw new Error(
+      'Channel: No Tone.js instance available. Ensure AudioEngine is initialized.',
+    );
   }
 
   private createGain(gain?: number): any {

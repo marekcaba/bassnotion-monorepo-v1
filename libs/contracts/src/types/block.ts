@@ -5,7 +5,10 @@
  * `type` field and type-specific `config` data.
  */
 
-import type { UnderstandQuestion, UnderstandQuestionOption } from './tutorial.js';
+import type {
+  UnderstandQuestion,
+  UnderstandQuestionOption,
+} from './tutorial.js';
 
 // =====================================================
 // Block Type Discriminator
@@ -80,7 +83,9 @@ export interface OverlayContentMap {
 }
 
 /** A single timed overlay event on the video timeline */
-export interface VideoOverlayEvent<T extends VideoOverlayType = VideoOverlayType> {
+export interface VideoOverlayEvent<
+  T extends VideoOverlayType = VideoOverlayType,
+> {
   /** Unique event ID */
   id: string;
   /** Overlay type discriminator */

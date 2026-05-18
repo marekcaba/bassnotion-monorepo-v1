@@ -528,16 +528,24 @@ describe('UserController', () => {
     });
 
     it('should handle requests with malformed user object', async () => {
-      // Arrange
+      // NOTE: This test verifies the controller's error-handling path:
+      // when the underlying service rejects (as UserService.findProfileById
+      // does for invalid IDs via UserId.isValid), the controller returns
+      // success:false instead of crashing.
+      //
+      // TODO (hardening): The controller itself does not currently
+      // validate request.user.id before calling the service. Defense-in-
+      // depth would add an explicit check here so a misbehaving auth
+      // upstream can't smuggle a null/non-string id into the service
+      // layer at all. Tracked as a separate follow-up; not in scope for
+      // 5b.3 test-suite rehab.
       const malformedRequest = {
-        user: { id: null }, // Invalid user ID
+        user: { id: null },
       } as FastifyRequest & { user: any };
 
-      mockSupabaseClient.from.mockImplementation(() => ({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: null, error: null }),
-      }));
+      mockUserService.findProfileById.mockRejectedValueOnce(
+        new Error('Invalid user ID format'),
+      );
 
       // Act
       const result = await controller.getProfile(malformedRequest);
@@ -547,16 +555,14 @@ describe('UserController', () => {
     });
 
     it('should handle requests with non-string user ID', async () => {
-      // Arrange
+      // See note above — same defensive-depth observation applies.
       const invalidRequest = {
-        user: { id: 123, email: 'test@example.com' }, // Non-string ID
+        user: { id: 123, email: 'test@example.com' },
       } as any;
 
-      mockSupabaseClient.from.mockImplementation(() => ({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: null, error: null }),
-      }));
+      mockUserService.findProfileById.mockRejectedValueOnce(
+        new Error('Invalid user ID format'),
+      );
 
       // Act
       const result = await controller.getProfile(invalidRequest);

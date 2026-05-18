@@ -68,7 +68,7 @@ const getInitialState = (): DrumEditorState => ({
   currentPlayheadTick: 0,
 
   // Lane Configuration
-  lanes: DEFAULT_DRUM_LANES.map(lane => ({ ...lane })),
+  lanes: DEFAULT_DRUM_LANES.map((lane) => ({ ...lane })),
   visibleLanes: [...DEFAULT_VISIBLE_LANES],
 
   // History (Undo/Redo)
@@ -87,11 +87,15 @@ export const useDrumEditorStore = create<DrumEditorStore>()((set, get) => ({
 
   // ==================== Hit Management ====================
 
-  addHit: (drum: MidiDrumType, position: MusicalPosition, velocity = DEFAULT_VELOCITY) => {
+  addHit: (
+    drum: MidiDrumType,
+    position: MusicalPosition,
+    velocity = DEFAULT_VELOCITY,
+  ) => {
     const state = get();
     // Check if hit already exists at this position
     const existing = state.pattern.find(
-      (h) => h.drum === drum && positionsEqual(h.position, position)
+      (h) => h.drum === drum && positionsEqual(h.position, position),
     );
     if (existing) return; // Don't add duplicate
 
@@ -127,7 +131,7 @@ export const useDrumEditorStore = create<DrumEditorStore>()((set, get) => ({
   toggleHit: (drum: MidiDrumType, position: MusicalPosition) => {
     const state = get();
     const existing = state.pattern.find(
-      (h) => h.drum === drum && positionsEqual(h.position, position)
+      (h) => h.drum === drum && positionsEqual(h.position, position),
     );
 
     if (existing) {
@@ -142,7 +146,7 @@ export const useDrumEditorStore = create<DrumEditorStore>()((set, get) => ({
     const clampedVelocity = Math.max(1, Math.min(127, velocity));
     set({
       pattern: state.pattern.map((h) =>
-        h.id === hitId ? { ...h, velocity: clampedVelocity } : h
+        h.id === hitId ? { ...h, velocity: clampedVelocity } : h,
       ),
       isDirty: true,
     });
@@ -153,7 +157,7 @@ export const useDrumEditorStore = create<DrumEditorStore>()((set, get) => ({
     const state = get();
     set({
       pattern: state.pattern.map((h) =>
-        h.id === hitId ? { ...h, position: { ...newPosition } } : h
+        h.id === hitId ? { ...h, position: { ...newPosition } } : h,
       ),
       isDirty: true,
     });
@@ -222,7 +226,7 @@ export const useDrumEditorStore = create<DrumEditorStore>()((set, get) => ({
       const col = musicalToGridColumn(
         hit.position,
         state.gridResolution,
-        state.timeSignature
+        state.timeSignature,
       );
       const row = state.lanes.findIndex((lane) => lane.drum === hit.drum);
 
@@ -246,7 +250,9 @@ export const useDrumEditorStore = create<DrumEditorStore>()((set, get) => ({
   deleteSelected: () => {
     const state = get();
     set({
-      pattern: state.pattern.filter((h) => !state.selectedHitIds.includes(h.id)),
+      pattern: state.pattern.filter(
+        (h) => !state.selectedHitIds.includes(h.id),
+      ),
       selectedHitIds: [],
       isDirty: true,
     });
@@ -258,7 +264,7 @@ export const useDrumEditorStore = create<DrumEditorStore>()((set, get) => ({
   copySelection: () => {
     const state = get();
     const selected = state.pattern.filter((h) =>
-      state.selectedHitIds.includes(h.id)
+      state.selectedHitIds.includes(h.id),
     );
     set({
       clipboard: selected.map((h) => ({ ...h, position: { ...h.position } })),
@@ -272,13 +278,17 @@ export const useDrumEditorStore = create<DrumEditorStore>()((set, get) => ({
     // Find the earliest position in clipboard to use as reference
     const minCol = Math.min(
       ...state.clipboard.map((h) =>
-        musicalToGridColumn(h.position, state.gridResolution, state.timeSignature)
-      )
+        musicalToGridColumn(
+          h.position,
+          state.gridResolution,
+          state.timeSignature,
+        ),
+      ),
     );
     const targetCol = musicalToGridColumn(
       position,
       state.gridResolution,
-      state.timeSignature
+      state.timeSignature,
     );
     const offset = targetCol - minCol;
 
@@ -286,13 +296,13 @@ export const useDrumEditorStore = create<DrumEditorStore>()((set, get) => ({
       const originalCol = musicalToGridColumn(
         h.position,
         state.gridResolution,
-        state.timeSignature
+        state.timeSignature,
       );
       const newCol = originalCol + offset;
       const newPosition = gridToMusicalPosition(
         { row: 0, col: newCol },
         state.gridResolution,
-        state.timeSignature
+        state.timeSignature,
       );
 
       return {
@@ -413,7 +423,7 @@ export const useDrumEditorStore = create<DrumEditorStore>()((set, get) => ({
     const state = get();
     set({
       lanes: state.lanes.map((lane) =>
-        lane.drum === drum ? { ...lane, muted: !lane.muted } : lane
+        lane.drum === drum ? { ...lane, muted: !lane.muted } : lane,
       ),
     });
   },
@@ -422,7 +432,7 @@ export const useDrumEditorStore = create<DrumEditorStore>()((set, get) => ({
     const state = get();
     set({
       lanes: state.lanes.map((lane) =>
-        lane.drum === drum ? { ...lane, collapsed: !lane.collapsed } : lane
+        lane.drum === drum ? { ...lane, collapsed: !lane.collapsed } : lane,
       ),
     });
   },
@@ -432,7 +442,7 @@ export const useDrumEditorStore = create<DrumEditorStore>()((set, get) => ({
     const clampedVolume = Math.max(0, Math.min(1, volume));
     set({
       lanes: state.lanes.map((lane) =>
-        lane.drum === drum ? { ...lane, volume: clampedVolume } : lane
+        lane.drum === drum ? { ...lane, volume: clampedVolume } : lane,
       ),
     });
   },

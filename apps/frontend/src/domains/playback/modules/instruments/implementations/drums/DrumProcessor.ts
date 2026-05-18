@@ -9,6 +9,7 @@
  */
 
 import type * as ToneTypes from 'tone';
+import { ProfessionalDrumProcessor } from '@bassnotion/contracts';
 import {
   createStructuredLogger,
   PluginMetadata,
@@ -32,7 +33,9 @@ function getTone(): typeof import('tone') {
       return tone as typeof import('tone');
     }
   }
-  throw new Error('DrumProcessor: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+  throw new Error(
+    'DrumProcessor: Tone.js not loaded. Ensure AudioEngine is initialized first.',
+  );
 }
 
 // BaseAudioPlugin stub implementation
@@ -53,7 +56,7 @@ abstract class BaseAudioPlugin implements AudioPlugin {
       id,
       name: id,
       version: '1.0.0',
-      author: 'BassNotion',
+      author: 'Bassicology',
       description: 'Audio plugin',
       category: 'effect' as PluginCategory,
       license: 'MIT',
@@ -276,7 +279,7 @@ export class DrumProcessor extends BaseAudioPlugin {
     version: '1.0.0',
     description:
       'Professional drum and rhythm processing with beat detection, rhythm analysis, and pattern generation',
-    author: 'BassNotion Team',
+    author: 'Bassicology Team',
     homepage: 'https://bassnotion.com',
     license: 'MIT',
     category: PluginCategory.ANALYZER,
@@ -389,11 +392,6 @@ export class DrumProcessor extends BaseAudioPlugin {
 
   // Initialize professional patterns
   private initializeProfessionalPatterns() {
-    // Import the professional drum processor
-    const {
-      ProfessionalDrumProcessor,
-    } = require('@bassnotion/contracts/services/ProfessionalDrumProcessor');
-
     // Generate professional patterns for each style
     const styles = ['rock', 'jazz', 'funk'] as const;
 
@@ -571,7 +569,10 @@ export class DrumProcessor extends BaseAudioPlugin {
           // Setting it here would overwrite the tempo set by the user or exercise.
           // Tone.Transport.bpm is managed by MusicalTruthAuthority.setBPM()
           // This parameter change is logged but not applied to Transport.
-          logger.info('metronomeBpm parameter changed (managed by MusicalTruthAuthority)', { value });
+          logger.info(
+            'metronomeBpm parameter changed (managed by MusicalTruthAuthority)',
+            { value },
+          );
           break;
 
         case 'metronomeVolume':
@@ -839,8 +840,11 @@ export class DrumProcessor extends BaseAudioPlugin {
       }
 
       // Set Tone.js to use the provided context if available
-      if (context.audioContext) {
-        Tone.setContext(context.audioContext);
+      if (
+        context.audioContext &&
+        Tone.context?.rawContext !== context.audioContext
+      ) {
+        Tone.setContext(context.audioContext, true);
       }
     } catch (error) {
       logger.warn(
@@ -1233,7 +1237,9 @@ export class DrumProcessor extends BaseAudioPlugin {
     // or musicalTruth.setBPM() when the user adjusts the tempo slider.
     // Just log the current tempo for debugging purposes.
     const currentBpm = Tone.Transport.bpm.value;
-    logger.info('startMetronome: using current Transport tempo', { currentBpm });
+    logger.info('startMetronome: using current Transport tempo', {
+      currentBpm,
+    });
 
     // Create metronome sequence
     const metronomeSequence = new Tone.Sequence(

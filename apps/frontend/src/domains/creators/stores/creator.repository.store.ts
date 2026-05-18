@@ -460,7 +460,7 @@ export const useCreatorRepositoryStore = create<CreatorRepositoryState>()(
         );
       },
 
-      getStaleCreators: (hoursThreshold: number = 24) => {
+      getStaleCreators: (hoursThreshold = 24) => {
         return Array.from(get().creators.values()).filter((creator) =>
           creator.isStale(hoursThreshold),
         );

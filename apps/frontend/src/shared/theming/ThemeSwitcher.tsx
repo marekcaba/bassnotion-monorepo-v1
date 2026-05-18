@@ -27,9 +27,18 @@ export function ThemeSwitcher() {
   const isAdmin = profile?.role === 'admin';
 
   const [isOpen, setIsOpen] = useState(false);
-  const [backgroundTab, setBackgroundTab] = useState<'solid' | 'gradient' | 'mesh' | 'animated' | 'ambient'>('solid');
-  const { config, setConfig, availableLibraries, availableVariants, availableEffects, availableNeuroColors, availableNeuroIntensities } =
-    useUIZone();
+  const [backgroundTab, setBackgroundTab] = useState<
+    'solid' | 'gradient' | 'mesh' | 'animated' | 'ambient'
+  >('solid');
+  const {
+    config,
+    setConfig,
+    availableLibraries,
+    availableVariants,
+    availableEffects,
+    availableNeuroColors,
+    availableNeuroIntensities,
+  } = useUIZone();
 
   // Neumorphic color previews
   const neuroColorInfo: Record<string, { label: string; hue: number }> = {
@@ -46,47 +55,127 @@ export function ThemeSwitcher() {
     solid: {
       label: 'Solid',
       items: {
-        dark: { label: 'Dark', preview: 'linear-gradient(180deg, hsl(220 15% 10%) 0%, hsl(220 20% 8%) 100%)' },
-        darker: { label: 'Darker', preview: 'linear-gradient(180deg, hsl(220 18% 7%) 0%, hsl(220 22% 5%) 100%)' },
-        darkest: { label: 'Darkest', preview: 'linear-gradient(180deg, hsl(220 20% 4%) 0%, hsl(220 25% 2%) 100%)' },
-        transparent: { label: 'None', preview: 'repeating-conic-gradient(#333 0% 25%, #222 0% 50%) 50% / 8px 8px' },
+        dark: {
+          label: 'Dark',
+          preview:
+            'linear-gradient(180deg, hsl(220 15% 10%) 0%, hsl(220 20% 8%) 100%)',
+        },
+        darker: {
+          label: 'Darker',
+          preview:
+            'linear-gradient(180deg, hsl(220 18% 7%) 0%, hsl(220 22% 5%) 100%)',
+        },
+        darkest: {
+          label: 'Darkest',
+          preview:
+            'linear-gradient(180deg, hsl(220 20% 4%) 0%, hsl(220 25% 2%) 100%)',
+        },
+        transparent: {
+          label: 'None',
+          preview:
+            'repeating-conic-gradient(#333 0% 25%, #222 0% 50%) 50% / 8px 8px',
+        },
       },
     },
     gradient: {
       label: 'Gradients',
       items: {
-        'gradient-dark': { label: 'Dark', preview: 'linear-gradient(135deg, hsl(220 20% 8%) 0%, hsl(260 18% 8%) 100%)' },
-        'gradient-purple': { label: 'Purple', preview: 'linear-gradient(135deg, hsl(270 30% 12%) 0%, hsl(260 20% 10%) 100%)' },
-        'gradient-blue': { label: 'Blue', preview: 'linear-gradient(135deg, hsl(220 35% 10%) 0%, hsl(230 25% 12%) 100%)' },
-        'gradient-emerald': { label: 'Emerald', preview: 'linear-gradient(135deg, hsl(160 30% 8%) 0%, hsl(150 20% 10%) 100%)' },
-        'gradient-amber': { label: 'Amber', preview: 'linear-gradient(135deg, hsl(30 30% 10%) 0%, hsl(35 20% 8%) 100%)' },
-        'gradient-radial-purple': { label: 'Radial Purple', preview: 'radial-gradient(ellipse at 50% 0%, hsl(280 40% 20%) 0%, hsl(260 25% 5%) 100%)' },
-        'gradient-radial-blue': { label: 'Radial Blue', preview: 'radial-gradient(ellipse at 50% 0%, hsl(220 45% 20%) 0%, hsl(240 25% 5%) 100%)' },
-        'gradient-radial-center': { label: 'Radial Center', preview: 'radial-gradient(circle at 50% 50%, hsl(260 30% 15%) 0%, hsl(240 20% 4%) 100%)' },
+        'gradient-dark': {
+          label: 'Dark',
+          preview:
+            'linear-gradient(135deg, hsl(220 20% 8%) 0%, hsl(260 18% 8%) 100%)',
+        },
+        'gradient-purple': {
+          label: 'Purple',
+          preview:
+            'linear-gradient(135deg, hsl(270 30% 12%) 0%, hsl(260 20% 10%) 100%)',
+        },
+        'gradient-blue': {
+          label: 'Blue',
+          preview:
+            'linear-gradient(135deg, hsl(220 35% 10%) 0%, hsl(230 25% 12%) 100%)',
+        },
+        'gradient-emerald': {
+          label: 'Emerald',
+          preview:
+            'linear-gradient(135deg, hsl(160 30% 8%) 0%, hsl(150 20% 10%) 100%)',
+        },
+        'gradient-amber': {
+          label: 'Amber',
+          preview:
+            'linear-gradient(135deg, hsl(30 30% 10%) 0%, hsl(35 20% 8%) 100%)',
+        },
+        'gradient-radial-purple': {
+          label: 'Radial Purple',
+          preview:
+            'radial-gradient(ellipse at 50% 0%, hsl(280 40% 20%) 0%, hsl(260 25% 5%) 100%)',
+        },
+        'gradient-radial-blue': {
+          label: 'Radial Blue',
+          preview:
+            'radial-gradient(ellipse at 50% 0%, hsl(220 45% 20%) 0%, hsl(240 25% 5%) 100%)',
+        },
+        'gradient-radial-center': {
+          label: 'Radial Center',
+          preview:
+            'radial-gradient(circle at 50% 50%, hsl(260 30% 15%) 0%, hsl(240 20% 4%) 100%)',
+        },
       },
     },
     mesh: {
       label: 'Mesh',
       items: {
-        'mesh-purple-blue': { label: 'Purple Blue', preview: 'linear-gradient(135deg, hsl(280 50% 15%) 0%, hsl(220 50% 15%) 50%, hsl(250 25% 6%) 100%)' },
-        'mesh-sunset': { label: 'Sunset', preview: 'linear-gradient(135deg, hsl(330 50% 18%) 0%, hsl(30 50% 15%) 50%, hsl(350 30% 6%) 100%)' },
-        'mesh-aurora': { label: 'Aurora', preview: 'linear-gradient(135deg, hsl(160 60% 15%) 0%, hsl(280 50% 15%) 50%, hsl(220 25% 5%) 100%)' },
-        'mesh-ocean': { label: 'Ocean', preview: 'linear-gradient(135deg, hsl(200 60% 15%) 0%, hsl(180 50% 12%) 50%, hsl(210 30% 5%) 100%)' },
+        'mesh-purple-blue': {
+          label: 'Purple Blue',
+          preview:
+            'linear-gradient(135deg, hsl(280 50% 15%) 0%, hsl(220 50% 15%) 50%, hsl(250 25% 6%) 100%)',
+        },
+        'mesh-sunset': {
+          label: 'Sunset',
+          preview:
+            'linear-gradient(135deg, hsl(330 50% 18%) 0%, hsl(30 50% 15%) 50%, hsl(350 30% 6%) 100%)',
+        },
+        'mesh-aurora': {
+          label: 'Aurora',
+          preview:
+            'linear-gradient(135deg, hsl(160 60% 15%) 0%, hsl(280 50% 15%) 50%, hsl(220 25% 5%) 100%)',
+        },
+        'mesh-ocean': {
+          label: 'Ocean',
+          preview:
+            'linear-gradient(135deg, hsl(200 60% 15%) 0%, hsl(180 50% 12%) 50%, hsl(210 30% 5%) 100%)',
+        },
       },
     },
     animated: {
       label: 'Animated',
       items: {
-        'animated-gradient': { label: 'Shifting', preview: 'linear-gradient(-45deg, hsl(260 30% 10%), hsl(280 35% 12%), hsl(220 30% 10%), hsl(240 35% 12%))' },
-        'animated-pulse': { label: 'Pulse', preview: 'radial-gradient(circle at 50% 50%, hsl(270 40% 20%) 0%, hsl(250 25% 6%) 100%)' },
-        'animated-aurora': { label: 'Aurora Flow', preview: 'linear-gradient(135deg, hsl(160 50% 10%), hsl(280 40% 12%), hsl(320 35% 10%))' },
+        'animated-gradient': {
+          label: 'Shifting',
+          preview:
+            'linear-gradient(-45deg, hsl(260 30% 10%), hsl(280 35% 12%), hsl(220 30% 10%), hsl(240 35% 12%))',
+        },
+        'animated-pulse': {
+          label: 'Pulse',
+          preview:
+            'radial-gradient(circle at 50% 50%, hsl(270 40% 20%) 0%, hsl(250 25% 6%) 100%)',
+        },
+        'animated-aurora': {
+          label: 'Aurora Flow',
+          preview:
+            'linear-gradient(135deg, hsl(160 50% 10%), hsl(280 40% 12%), hsl(320 35% 10%))',
+        },
       },
     },
     ambient: {
       label: 'Ambient',
       items: {
         'ambient-stars': { label: 'Stars', preview: 'hsl(240 20% 4%)' },
-        'ambient-glow': { label: 'Glow', preview: 'radial-gradient(ellipse 80% 50% at 50% 100%, hsl(270 50% 15%) 0%, hsl(250 25% 5%) 100%)' },
+        'ambient-glow': {
+          label: 'Glow',
+          preview:
+            'radial-gradient(ellipse 80% 50% at 50% 100%, hsl(270 50% 15%) 0%, hsl(250 25% 5%) 100%)',
+        },
         'ambient-fog': { label: 'Fog', preview: 'hsl(220 20% 6%)' },
       },
     },
@@ -116,7 +205,7 @@ export function ThemeSwitcher() {
           'bg-purple-600 hover:bg-purple-500 text-white',
           'shadow-lg hover:shadow-xl transition-all duration-200',
           'border-2 border-purple-400/30',
-          isOpen && 'rotate-45'
+          isOpen && 'rotate-45',
         )}
         title="Theme Settings"
       >
@@ -145,7 +234,7 @@ export function ThemeSwitcher() {
             'border border-slate-700/50 shadow-2xl',
             'p-4 space-y-4',
             'max-h-[80vh] overflow-y-auto',
-            'animate-in fade-in slide-in-from-bottom-2 duration-200'
+            'animate-in fade-in slide-in-from-bottom-2 duration-200',
           )}
         >
           <div className="flex items-center justify-between">
@@ -169,7 +258,7 @@ export function ThemeSwitcher() {
                     'flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all',
                     config.library === lib
                       ? 'bg-purple-600 text-white'
-                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-300'
+                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-300',
                   )}
                 >
                   {lib}
@@ -195,7 +284,7 @@ export function ThemeSwitcher() {
                       'flex items-center justify-center',
                       config.variant === variant
                         ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-110'
-                        : 'hover:scale-105'
+                        : 'hover:scale-105',
                     )}
                     style={{
                       background: `linear-gradient(135deg,
@@ -225,7 +314,7 @@ export function ThemeSwitcher() {
                     'capitalize',
                     config.effect === effect
                       ? 'bg-purple-600 text-white'
-                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-300'
+                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-300',
                   )}
                 >
                   {effect}
@@ -250,13 +339,15 @@ export function ThemeSwitcher() {
                     return (
                       <button
                         key={color}
-                        onClick={() => setConfig({ neuro: { ...config.neuro, color } })}
+                        onClick={() =>
+                          setConfig({ neuro: { ...config.neuro, color } })
+                        }
                         className={cn(
                           'w-8 h-8 rounded-full transition-all duration-200',
                           'flex items-center justify-center',
                           config.neuro.color === color
                             ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-110'
-                            : 'hover:scale-105'
+                            : 'hover:scale-105',
                         )}
                         style={{
                           background: `radial-gradient(circle at 30% 30%,
@@ -281,13 +372,15 @@ export function ThemeSwitcher() {
                   {availableNeuroIntensities.map((intensity) => (
                     <button
                       key={intensity}
-                      onClick={() => setConfig({ neuro: { ...config.neuro, intensity } })}
+                      onClick={() =>
+                        setConfig({ neuro: { ...config.neuro, intensity } })
+                      }
                       className={cn(
                         'flex-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-all',
                         'capitalize',
                         config.neuro.intensity === intensity
                           ? 'bg-purple-600 text-white'
-                          : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-300'
+                          : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-300',
                       )}
                     >
                       {intensity}
@@ -305,7 +398,11 @@ export function ThemeSwitcher() {
             </label>
             {/* Category Tabs */}
             <div className="flex gap-1 p-1 bg-slate-800/50 rounded-lg">
-              {(Object.keys(backgroundCategories) as Array<keyof typeof backgroundCategories>).map((cat) => (
+              {(
+                Object.keys(backgroundCategories) as Array<
+                  keyof typeof backgroundCategories
+                >
+              ).map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setBackgroundTab(cat)}
@@ -313,7 +410,7 @@ export function ThemeSwitcher() {
                     'flex-1 px-2 py-1.5 text-[10px] font-medium rounded-md transition-all',
                     backgroundTab === cat
                       ? 'bg-purple-600 text-white'
-                      : 'text-slate-400 hover:text-slate-300 hover:bg-slate-700/50'
+                      : 'text-slate-400 hover:text-slate-300 hover:bg-slate-700/50',
                   )}
                 >
                   {backgroundCategories[cat].label}
@@ -325,23 +422,27 @@ export function ThemeSwitcher() {
               {Object.entries(currentCategoryItems).map(([key, info]) => (
                 <button
                   key={key}
-                  onClick={() => setConfig({ background: key as typeof config.background })}
+                  onClick={() =>
+                    setConfig({ background: key as typeof config.background })
+                  }
                   className={cn(
                     'flex flex-col items-center gap-0.5 p-1.5 rounded-lg transition-all',
                     config.background === key
                       ? 'ring-2 ring-purple-500 ring-offset-1 ring-offset-slate-900 bg-slate-800/50'
-                      : 'hover:bg-slate-800/50'
+                      : 'hover:bg-slate-800/50',
                   )}
                   title={info.label}
                 >
                   <div
                     className={cn(
                       'w-7 h-7 rounded-md border border-slate-600',
-                      backgroundTab === 'animated' && 'animate-pulse'
+                      backgroundTab === 'animated' && 'animate-pulse',
                     )}
                     style={{ background: info.preview }}
                   />
-                  <span className="text-[8px] text-slate-400 truncate w-full text-center">{info.label}</span>
+                  <span className="text-[8px] text-slate-400 truncate w-full text-center">
+                    {info.label}
+                  </span>
                 </button>
               ))}
             </div>
@@ -350,16 +451,22 @@ export function ThemeSwitcher() {
           {/* Current Config Display */}
           <div className="pt-2 border-t border-slate-700/50">
             <div className="text-xs text-slate-500">
-              Current: <span className="text-slate-300">{config.library}</span> /{' '}
-              <span className="text-slate-300">{config.variant}</span> /{' '}
+              Current: <span className="text-slate-300">{config.library}</span>{' '}
+              / <span className="text-slate-300">{config.variant}</span> /{' '}
               <span className="text-slate-300">{config.effect}</span>
               {config.effect === 'neumorphic' && (
                 <>
-                  {' '}(<span className="text-slate-300">{config.neuro.color}</span>,{' '}
-                  <span className="text-slate-300">{config.neuro.intensity}</span>)
+                  {' '}
+                  (<span className="text-slate-300">
+                    {config.neuro.color}
+                  </span>,{' '}
+                  <span className="text-slate-300">
+                    {config.neuro.intensity}
+                  </span>
+                  )
                 </>
-              )} /{' '}
-              <span className="text-slate-300">{config.background}</span>
+              )}{' '}
+              / <span className="text-slate-300">{config.background}</span>
             </div>
           </div>
         </div>

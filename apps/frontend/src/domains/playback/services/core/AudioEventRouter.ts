@@ -848,8 +848,7 @@ export class AudioEventRouter {
     if (!this.instrumentRegistry) {
       try {
         const globalServices =
-          window.__coreServices ||
-          window.__globalCoreServices;
+          window.__coreServices || window.__globalCoreServices;
         if (globalServices?.getInstrumentRegistry) {
           this.instrumentRegistry = globalServices.getInstrumentRegistry();
           this.logger.info('Got InstrumentRegistry from CoreServices on start');

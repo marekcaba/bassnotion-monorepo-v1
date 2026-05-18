@@ -45,11 +45,15 @@ import { usePracticeCompletions } from '@/domains/widgets/hooks/usePracticeCompl
 import { useActCompletion } from './hooks/useActCompletion';
 import { useActAwarePreload } from './hooks/useActAwarePreload';
 import { SampleLoadingOverlay } from './components/SampleLoadingOverlay';
+import { IOSSafariBanner } from './components/IOSSafariBanner';
 import { GlobalControls } from './components/GlobalControls';
 import { CountdownIndicator } from './GlobalControls/components/CountdownIndicator.js';
 import { calculateDuration, getExerciseId } from './utils';
 import { ensureAudioContextLightweight } from '@/domains/playback/utils/ensureAudioContext.js';
-import { useTutorialProgressActions, useSingleTutorialProgress } from '@/domains/platform/hooks/useTutorialProgress';
+import {
+  useTutorialProgressActions,
+  useSingleTutorialProgress,
+} from '@/domains/platform/hooks/useTutorialProgress';
 // Block system imports
 import type { AnyBlock } from '@bassnotion/contracts';
 import { BlockRenderer } from './blocks';
@@ -79,12 +83,14 @@ function YouTubeWidgetPageContent({
 }: YouTubeWidgetPageProps) {
   // XState Phase 2: Page initialization state machine
   const pageInit = usePageInitialization({
-    tutorial: tutorialData ? {
-      id: tutorialData.id,
-      title: tutorialData.title,
-      slug: tutorialSlug || '',
-    } : undefined,
-    exercises: exercises?.map(e => ({
+    tutorial: tutorialData
+      ? {
+          id: tutorialData.id,
+          title: tutorialData.title,
+          slug: tutorialSlug || '',
+        }
+      : undefined,
+    exercises: exercises?.map((e) => ({
       id: e.id,
       name: e.name || e.title || 'Untitled',
       tutorialId: tutorialData?.id || '',
@@ -101,10 +107,13 @@ function YouTubeWidgetPageContent({
   const isAdmin = profile?.role === 'admin';
 
   // Practice completions — shared between ExerciseSelectorCard and BottomPlaybackBar
-  const { practiceCompletions, incrementCompletion, updateTempo } = usePracticeCompletions(tutorialData?.id);
+  const { practiceCompletions, incrementCompletion, updateTempo } =
+    usePracticeCompletions(tutorialData?.id);
 
   // Tutorial progress actions for three-stage tracking (understand, practice, apply)
-  const { markUnderstood, markApplied } = useTutorialProgressActions(tutorialData?.id);
+  const { markUnderstood, markApplied } = useTutorialProgressActions(
+    tutorialData?.id,
+  );
 
   // FAANG Solution: Clear state management for preview mode
   // Only check sessionStorage, don't rely on referrer (unreliable)
@@ -129,7 +138,10 @@ function YouTubeWidgetPageContent({
     const currentTutorialId = tutorialData?.id;
 
     // Skip on initial mount (prevTutorialIdRef is undefined)
-    if (prevTutorialIdRef.current !== undefined && prevTutorialIdRef.current !== currentTutorialId) {
+    if (
+      prevTutorialIdRef.current !== undefined &&
+      prevTutorialIdRef.current !== currentTutorialId
+    ) {
       logger.info('Tutorial changed, resetting state', {
         from: prevTutorialIdRef.current,
         to: currentTutorialId,
@@ -166,13 +178,18 @@ function YouTubeWidgetPageContent({
         if (playbackEngine?.switchExercise) {
           // Use empty string to indicate "clearing for new tutorial" rather than specific exercise
           playbackEngine.switchExercise(currentTutorialId || '');
-          logger.info('Tutorial switch: PlaybackEngine.switchExercise() called');
+          logger.info(
+            'Tutorial switch: PlaybackEngine.switchExercise() called',
+          );
         }
 
         // 7. Reset WamKeyboardPlugin state (release all notes, reset instrument selection)
         // This ensures harmony doesn't carry over notes/state from previous tutorial
         const pluginManager = coreServices.getPluginManager?.();
-        if (pluginManager && typeof pluginManager.resetPluginState === 'function') {
+        if (
+          pluginManager &&
+          typeof pluginManager.resetPluginState === 'function'
+        ) {
           pluginManager.resetPluginState('wam-keyboard');
         }
       }
@@ -201,7 +218,9 @@ function YouTubeWidgetPageContent({
     // Next.js App Router fully remounts components on navigation, so we must
     // clean up tracks/buffers here to prevent old audio bleeding into new tutorial.
     return () => {
-      logger.info('[UNMOUNT-CLEANUP] YouTubeWidgetPage unmounting, clearing all tracks');
+      logger.info(
+        '[UNMOUNT-CLEANUP] YouTubeWidgetPage unmounting, clearing all tracks',
+      );
 
       const coreServices = WindowRegistry.getCoreServices();
       const playbackEngine = coreServices?.getPlaybackEngine?.();
@@ -211,7 +230,9 @@ function YouTubeWidgetPageContent({
         // This replaces the previous distributed cleanup (clearDrumTracks, clearHarmonyTracks, etc.)
         if (playbackEngine.switchExercise) {
           playbackEngine.switchExercise('unmount-cleanup');
-          logger.info('[UNMOUNT-CLEANUP] PlaybackEngine.switchExercise() called');
+          logger.info(
+            '[UNMOUNT-CLEANUP] PlaybackEngine.switchExercise() called',
+          );
         } else {
           // Fallback for backward compatibility
           playbackEngine.stop?.();
@@ -253,9 +274,12 @@ function YouTubeWidgetPageContent({
   });
 
   // Memoized handler for countdown state changes
-  const handleCountdownStateChange = React.useCallback((state: CountdownState) => {
-    setCountdownState(state);
-  }, []);
+  const handleCountdownStateChange = React.useCallback(
+    (state: CountdownState) => {
+      setCountdownState(state);
+    },
+    [],
+  );
 
   // Wrapped setStringCount to log every change
   const setStringCount = React.useCallback(
@@ -344,7 +368,7 @@ function YouTubeWidgetPageContent({
     originX: 284, // Center of 568px canvas
     originY: 136, // Calibrated Y origin
     // Content scale for fine-tuning 3D/2D size match
-    contentScale: 1.30, // Scales the 3D content area uniformly (calibrated)
+    contentScale: 1.3, // Scales the 3D content area uniformly (calibrated)
     // Independent X scale for fixing horizontal stretch (perspective distortion)
     contentScaleX: 0.959, // Scales only X axis (calibrated)
     // Independent Y scale for fixing vertical stretch (perspective distortion)
@@ -411,7 +435,8 @@ function YouTubeWidgetPageContent({
   useEffect(() => {
     const exercise = widgetState.selectedExercise;
     const presetName = exercise?.fretboardViewConfig?.preset || 'default';
-    const preset = FRETBOARD_VIEW_PRESETS[presetName as keyof typeof FRETBOARD_VIEW_PRESETS];
+    const preset =
+      FRETBOARD_VIEW_PRESETS[presetName as keyof typeof FRETBOARD_VIEW_PRESETS];
 
     console.log('[YOUTUBE-WIDGET] Preset change detected:', {
       exerciseId: exercise?.id,
@@ -451,7 +476,7 @@ function YouTubeWidgetPageContent({
         sceneX: stringCount === 4 ? 20 : 3,
         sceneY: 0,
         sceneZ: 174,
-        contentScale: 1.30,
+        contentScale: 1.3,
         contentScaleX: 0.959,
         contentScaleY: 0.949,
         rotationX: 0,
@@ -469,7 +494,11 @@ function YouTubeWidgetPageContent({
         tiltAxisOffsetX: 448,
       }));
     }
-  }, [widgetState.selectedExercise?.id, widgetState.selectedExercise?.fretboardViewConfig?.preset, stringCount]);
+  }, [
+    widgetState.selectedExercise?.id,
+    widgetState.selectedExercise?.fretboardViewConfig?.preset,
+    stringCount,
+  ]);
 
   // FAANG Solution: Lift selected exercise state to parent
   // Initialize with initialExerciseId if provided (e.g., from favorites navigation)
@@ -497,8 +526,11 @@ function YouTubeWidgetPageContent({
   // Only recompute when exercise IDs actually change (not on every parent render)
   // CRITICAL: Use JSON.stringify for stable comparison - .map().join() recreates string every render
   const exerciseKey = React.useMemo(
-    () => exercises?.map(e => typeof e.id === 'object' ? e.id.value : e.id).join(',') ?? '',
-    [exercises]
+    () =>
+      exercises
+        ?.map((e) => (typeof e.id === 'object' ? e.id.value : e.id))
+        .join(',') ?? '',
+    [exercises],
   );
 
   const memoizedExercises = React.useMemo(() => {
@@ -529,7 +561,7 @@ function YouTubeWidgetPageContent({
     // If we have an initialExerciseId and haven't handled it yet, select that exercise
     if (initialExerciseId && !initialExerciseHandledRef.current) {
       const targetExercise = exercises.find(
-        (ex) => getExerciseIdStr(ex) === initialExerciseId
+        (ex) => getExerciseIdStr(ex) === initialExerciseId,
       );
 
       if (targetExercise) {
@@ -601,16 +633,19 @@ function YouTubeWidgetPageContent({
     [setStringCount],
   );
 
-  const handleSetSelectedDots3D = useCallback((dots: Set<string> | Map<string, number[]>) => {
-    // BUGFIX: Type mismatch - dots can be Set but selectedDots is Map
-    // Convert Set to Map if needed (pre-existing bug exposed by progress-based navigation)
-    if (dots instanceof Set) {
-      // For now, ignore Set updates to prevent infinite loop
-      // TODO: Proper Set → Map conversion if 3D fretboard feature is re-enabled
-      return;
-    }
-    setSelectedDots(dots);
-  }, [setSelectedDots]);  // ✅ Fixed: Added setSelectedDots dependency (Zustand setter is stable)
+  const handleSetSelectedDots3D = useCallback(
+    (dots: Set<string> | Map<string, number[]>) => {
+      // BUGFIX: Type mismatch - dots can be Set but selectedDots is Map
+      // Convert Set to Map if needed (pre-existing bug exposed by progress-based navigation)
+      if (dots instanceof Set) {
+        // For now, ignore Set updates to prevent infinite loop
+        // TODO: Proper Set → Map conversion if 3D fretboard feature is re-enabled
+        return;
+      }
+      setSelectedDots(dots);
+    },
+    [setSelectedDots],
+  ); // ✅ Fixed: Added setSelectedDots dependency (Zustand setter is stable)
 
   const handleExerciseSelect = useCallback(
     async (exerciseId: string) => {
@@ -652,7 +687,9 @@ function YouTubeWidgetPageContent({
           duration: exercise.duration,
           duration_beats: exercise.duration_beats,
           timeSignature: exercise.timeSignature,
-          hasDrumPattern: !!(exercise.drumPattern && exercise.drumPattern.length > 0),
+          hasDrumPattern: !!(
+            exercise.drumPattern && exercise.drumPattern.length > 0
+          ),
           drumPatternHits: exercise.drumPattern?.length || 0,
           harmonyInstrument: exercise.harmonyInstrument,
         });
@@ -976,14 +1013,23 @@ function YouTubeWidgetPageContent({
     return [];
   }, [tutorialData, memoizedExercises]);
 
-  const { currentBlockId, currentBlockIndex, scrollToBlock, setCurrentBlockId } = useCurrentBlock({
+  const {
+    currentBlockId,
+    currentBlockIndex,
+    scrollToBlock,
+    setCurrentBlockId,
+  } = useCurrentBlock({
     containerRef: snapContainerRef,
     blockRefs: blockRefsRef,
     blocks,
   });
 
   // Block progress tracking (localStorage + Supabase sync)
-  const { blockProgress, markBlockComplete, isHydrated: isProgressHydrated } = useBlockProgress({
+  const {
+    blockProgress,
+    markBlockComplete,
+    isHydrated: isProgressHydrated,
+  } = useBlockProgress({
     tutorialId: tutorialData?.id,
     blocks,
     userId: profile?.id,
@@ -1000,11 +1046,14 @@ function YouTubeWidgetPageContent({
     ) {
       const initialBlockId = getInitialBlock(blocks, blockProgress);
 
-      logger.info('[INITIAL-BLOCK] Scrolling to initial block based on progress', {
-        tutorialId: tutorialData.id,
-        initialBlockId,
-        blockCount: blocks.length,
-      });
+      logger.info(
+        '[INITIAL-BLOCK] Scrolling to initial block based on progress',
+        {
+          tutorialId: tutorialData.id,
+          initialBlockId,
+          blockCount: blocks.length,
+        },
+      );
 
       // If starting past the first block, enable scrolling
       if (initialBlockId && initialBlockId !== blocks[0]?.id) {
@@ -1030,9 +1079,12 @@ function YouTubeWidgetPageContent({
 
   // Derive a legacy act name from the current block type (for preloading hook compatibility)
   const currentBlock = blocks.find((b) => b.id === currentBlockId);
-  const currentActCompat = currentBlock?.type === 'video' ? 'understand' as const
-    : currentBlock?.type === 'groove' ? 'apply' as const
-    : 'practice' as const;
+  const currentActCompat =
+    currentBlock?.type === 'video'
+      ? ('understand' as const)
+      : currentBlock?.type === 'groove'
+        ? ('apply' as const)
+        : ('practice' as const);
 
   // Act-aware preloading: starts loading samples immediately
   const { samplesReady, progress, forceLoad } = useActAwarePreload({
@@ -1058,7 +1110,13 @@ function YouTubeWidgetPageContent({
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [samplesReady, showLoadingOverlay, scrollToBlock, currentBlockIndex, blocks]);
+  }, [
+    samplesReady,
+    showLoadingOverlay,
+    scrollToBlock,
+    currentBlockIndex,
+    blocks,
+  ]);
 
   // Scroll to next block (used by video block "I Got It" button and block completion)
   const scrollToNextBlock = useCallback(() => {
@@ -1095,7 +1153,9 @@ function YouTubeWidgetPageContent({
 
   const handleGotIt = useCallback(async () => {
     // CRITICAL: Resume AudioContext on this user gesture!
-    logger.info('[HANDLE-GOT-IT] User clicked "I Got It" - resuming AudioContext');
+    logger.info(
+      '[HANDLE-GOT-IT] User clicked "I Got It" - resuming AudioContext',
+    );
     try {
       await ensureAudioContextLightweight();
       logger.info('[HANDLE-GOT-IT] AudioContext resumed successfully');
@@ -1121,7 +1181,14 @@ function YouTubeWidgetPageContent({
       setShowLoadingOverlay(true);
       forceLoad();
     }
-  }, [samplesReady, scrollToNextBlock, forceLoad, markUnderstood, currentBlockId, markBlockComplete]);
+  }, [
+    samplesReady,
+    scrollToNextBlock,
+    forceLoad,
+    markUnderstood,
+    currentBlockId,
+    markBlockComplete,
+  ]);
 
   const actCompletion = useActCompletion({
     exercises: memoizedExercises || [],
@@ -1141,15 +1208,26 @@ function YouTubeWidgetPageContent({
 
   // Auto-select groove exercise when entering a groove block
   useEffect(() => {
-    if (currentBlock?.type === 'groove' && actCompletion.isComplete && actCompletion.rewardExercise) {
-      const rewardId = typeof actCompletion.rewardExercise.id === 'object'
-        ? actCompletion.rewardExercise.id.value
-        : actCompletion.rewardExercise.id;
+    if (
+      currentBlock?.type === 'groove' &&
+      actCompletion.isComplete &&
+      actCompletion.rewardExercise
+    ) {
+      const rewardId =
+        typeof actCompletion.rewardExercise.id === 'object'
+          ? actCompletion.rewardExercise.id.value
+          : actCompletion.rewardExercise.id;
       if (rewardId && rewardId !== selectedExerciseId) {
         handleExerciseSelect(rewardId);
       }
     }
-  }, [currentBlock?.type, actCompletion.isComplete, actCompletion.rewardExercise, selectedExerciseId, handleExerciseSelect]);
+  }, [
+    currentBlock?.type,
+    actCompletion.isComplete,
+    actCompletion.rewardExercise,
+    selectedExerciseId,
+    handleExerciseSelect,
+  ]);
 
   // Inline playback controls — duration and practice-tracking handler for Act 2
   const exerciseDuration = React.useMemo(
@@ -1174,60 +1252,88 @@ function YouTubeWidgetPageContent({
       }
       handlePlayStateChange(isPlaying);
     },
-    [selectedExIdForTracking, handlePlayStateChange, incrementCompletion, updateTempo],
+    [
+      selectedExIdForTracking,
+      handlePlayStateChange,
+      incrementCompletion,
+      updateTempo,
+    ],
   );
 
   // Shared BottomPlaybackBar props — used by GrooveBlockView
-  const bottomBarProps = React.useMemo(() => ({
-    selectedExercise: widgetState.selectedExercise,
-    exercises: memoizedExercises,
-    onExerciseSelect: handleExerciseSelect,
-    hasSelectedDots: selectedDots.size > 0,
-    loopRegion: widgetState.loopRegion,
-    isLoopEnabled: widgetState.isLoopEnabled,
-    onToggleLoop: widgetState.toggleLoopEnabled,
-    onPlayStateChange: handlePlayStateChange,
-    countdownState,
-    onCountdownStateChange: handleCountdownStateChange,
-    practiceCompletions,
-    onPracticeCompletion: incrementCompletion,
-  }), [
-    widgetState.selectedExercise,
-    memoizedExercises,
-    handleExerciseSelect,
-    selectedDots.size,
-    widgetState.loopRegion,
-    widgetState.isLoopEnabled,
-    widgetState.toggleLoopEnabled,
-    handlePlayStateChange,
-    countdownState,
-    handleCountdownStateChange,
-    practiceCompletions,
-    incrementCompletion,
-  ]);
+  const bottomBarProps = React.useMemo(
+    () => ({
+      selectedExercise: widgetState.selectedExercise,
+      exercises: memoizedExercises,
+      onExerciseSelect: handleExerciseSelect,
+      hasSelectedDots: selectedDots.size > 0,
+      loopRegion: widgetState.loopRegion,
+      isLoopEnabled: widgetState.isLoopEnabled,
+      onToggleLoop: widgetState.toggleLoopEnabled,
+      onPlayStateChange: handlePlayStateChange,
+      countdownState,
+      onCountdownStateChange: handleCountdownStateChange,
+      practiceCompletions,
+      onPracticeCompletion: incrementCompletion,
+    }),
+    [
+      widgetState.selectedExercise,
+      memoizedExercises,
+      handleExerciseSelect,
+      selectedDots.size,
+      widgetState.loopRegion,
+      widgetState.isLoopEnabled,
+      widgetState.toggleLoopEnabled,
+      handlePlayStateChange,
+      countdownState,
+      handleCountdownStateChange,
+      practiceCompletions,
+      incrementCompletion,
+    ],
+  );
 
   // Shared fretboard props — used by both exercise and groove blocks
-  const fretboardElement = React.useMemo(() => (
-    <FretboardCard
-      selectedDots3D={selectedDots}
-      setSelectedDots3D={handleSetSelectedDots3D}
-      stringCount3D={stringCount}
-      setStringCount3D={handleSetStringCount3D}
-      maxFrets={maxFrets}
-      tutorialData={tutorialData}
-      tutorialSlug={tutorialSlug}
-      exercises={memoizedExercises}
-      selectedExerciseId={selectedExerciseId}
-      onExerciseSelect={handleExerciseSelect}
-      debugRotation={debugRotation}
-      overlay3DConfig={overlay3DConfig}
-      hide2DFretboard={hide2DFretboard}
-      hide3DFretboard={hide3DFretboard}
-    />
-  ), [selectedDots, handleSetSelectedDots3D, stringCount, handleSetStringCount3D, maxFrets, tutorialData, tutorialSlug, memoizedExercises, selectedExerciseId, handleExerciseSelect, debugRotation, overlay3DConfig, hide2DFretboard, hide3DFretboard]);
+  const fretboardElement = React.useMemo(
+    () => (
+      <FretboardCard
+        selectedDots3D={selectedDots}
+        setSelectedDots3D={handleSetSelectedDots3D}
+        stringCount3D={stringCount}
+        setStringCount3D={handleSetStringCount3D}
+        maxFrets={maxFrets}
+        tutorialData={tutorialData}
+        tutorialSlug={tutorialSlug}
+        exercises={memoizedExercises}
+        selectedExerciseId={selectedExerciseId}
+        onExerciseSelect={handleExerciseSelect}
+        debugRotation={debugRotation}
+        overlay3DConfig={overlay3DConfig}
+        hide2DFretboard={hide2DFretboard}
+        hide3DFretboard={hide3DFretboard}
+      />
+    ),
+    [
+      selectedDots,
+      handleSetSelectedDots3D,
+      stringCount,
+      handleSetStringCount3D,
+      maxFrets,
+      tutorialData,
+      tutorialSlug,
+      memoizedExercises,
+      selectedExerciseId,
+      handleExerciseSelect,
+      debugRotation,
+      overlay3DConfig,
+      hide2DFretboard,
+      hide3DFretboard,
+    ],
+  );
 
   return (
     <div className="h-dvh flex flex-col">
+      {/* iOS Safari warning — non-blocking, dismissible per session */}
+      <IOSSafariBanner />
       {!hideChrome && (
         <>
           {/* Header with Logo - Same as home/library pages */}
@@ -1361,16 +1467,19 @@ function YouTubeWidgetPageContent({
                   onComplete={markBlockComplete}
                   onNext={scrollToNextBlock}
                 >
-                  {(!memoizedExercises || memoizedExercises.length === 0) ? (
+                  {!memoizedExercises || memoizedExercises.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center px-6">
                       <div className="text-center space-y-6">
                         <div className="w-20 h-20 rounded-full bg-slate-700/50 border-2 border-slate-600/50 flex items-center justify-center mx-auto">
                           <Sparkles className="w-10 h-10 text-slate-400" />
                         </div>
                         <div className="space-y-2">
-                          <h2 className="text-2xl font-bold text-white">Practice Exercises Coming Soon</h2>
+                          <h2 className="text-2xl font-bold text-white">
+                            Practice Exercises Coming Soon
+                          </h2>
                           <p className="text-slate-400 text-base max-w-sm mx-auto">
-                            Interactive exercises are being prepared for this tutorial. Check back soon!
+                            Interactive exercises are being prepared for this
+                            tutorial. Check back soon!
                           </p>
                         </div>
                       </div>
@@ -1406,7 +1515,9 @@ function YouTubeWidgetPageContent({
                           // Mark the exercise block as completed
                           markBlockComplete(block.id);
                           // Find the groove block and scroll to it
-                          const grooveBlock = blocks.find((b) => b.type === 'groove');
+                          const grooveBlock = blocks.find(
+                            (b) => b.type === 'groove',
+                          );
                           if (grooveBlock) {
                             scrollToBlock(grooveBlock.id);
                           } else {
@@ -1423,7 +1534,9 @@ function YouTubeWidgetPageContent({
                             loopRegion={widgetState.loopRegion}
                             isLoopEnabled={widgetState.isLoopEnabled}
                             onToggleLoop={widgetState.toggleLoopEnabled}
-                            onPlayStateChange={handlePlayStateChangeWithTracking}
+                            onPlayStateChange={
+                              handlePlayStateChangeWithTracking
+                            }
                             onCountdownStateChange={handleCountdownStateChange}
                           />
                         }
@@ -1470,9 +1583,7 @@ function YouTubeWidgetPageContent({
                       onSeek={(position) => {
                         if (transport && transport.seekTo) {
                           transport.seekTo(position);
-                          logger.info(
-                            `Seeking to position: ${position}s`,
-                          );
+                          logger.info(`Seeking to position: ${position}s`);
                         }
                       }}
                     />
@@ -1482,7 +1593,9 @@ function YouTubeWidgetPageContent({
               )}
 
               {/* ---- Text, Celebration & Explain Blocks ---- */}
-              {(block.type === 'text' || block.type === 'celebration' || block.type === 'explain') && (
+              {(block.type === 'text' ||
+                block.type === 'celebration' ||
+                block.type === 'explain') && (
                 <BlockRenderer
                   block={block}
                   isActive={isBlockActive}
@@ -1525,7 +1638,11 @@ export function YouTubeWidgetPage({
 
   // Pre-seed SYNCHRONOUSLY at render time, BEFORE returning JSX
   // This must happen before TransportProvider's useState initializer runs
-  if (exercises && exercises.length > 0 && exercises !== lastExercisesRef.current) {
+  if (
+    exercises &&
+    exercises.length > 0 &&
+    exercises !== lastExercisesRef.current
+  ) {
     lastExercisesRef.current = exercises;
     const firstExercise = exercises[0];
 
@@ -1537,27 +1654,36 @@ export function YouTubeWidgetPage({
       const userModified = musicalTruth.hasUserModifiedTempo();
 
       if (!userModified && currentBpm !== firstExercise.bpm) {
-        console.log(`🎵 [TEMPO-PRESEED v2] Pre-seeding musicalTruth BEFORE TransportProvider mount`, {
-          exerciseBpm: firstExercise.bpm,
-          exerciseTitle: firstExercise.title,
-          previousBpm: currentBpm,
-          reason: 'exercises prop changed',
-        });
+        console.log(
+          `🎵 [TEMPO-PRESEED v2] Pre-seeding musicalTruth BEFORE TransportProvider mount`,
+          {
+            exerciseBpm: firstExercise.bpm,
+            exerciseTitle: firstExercise.title,
+            previousBpm: currentBpm,
+            reason: 'exercises prop changed',
+          },
+        );
 
         // Pre-seed musicalTruth with exercise BPM
         musicalTruth.setFromExercise({
           bpm: firstExercise.bpm,
-          timeSignature: firstExercise.timeSignature || { numerator: 4, denominator: 4 },
+          timeSignature: firstExercise.timeSignature || {
+            numerator: 4,
+            denominator: 4,
+          },
           total_bars: firstExercise.total_bars,
           duration_beats: firstExercise.duration_beats,
         });
 
         hasPreseededRef.current = true;
       } else if (userModified) {
-        console.log(`🎵 [TEMPO-PRESEED v2] Skipping - user has modified tempo`, {
-          currentBpm,
-          exerciseBpm: firstExercise.bpm,
-        });
+        console.log(
+          `🎵 [TEMPO-PRESEED v2] Skipping - user has modified tempo`,
+          {
+            currentBpm,
+            exerciseBpm: firstExercise.bpm,
+          },
+        );
       }
     }
   }

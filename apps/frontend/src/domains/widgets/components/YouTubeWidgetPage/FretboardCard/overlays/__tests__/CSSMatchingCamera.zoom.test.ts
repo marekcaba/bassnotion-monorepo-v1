@@ -40,7 +40,11 @@ function easeOutCubic(t: number): number {
 /**
  * Interpolates Z position based on animation progress
  */
-function interpolateZ(startZ: number, targetZ: number, progress: number): number {
+function interpolateZ(
+  startZ: number,
+  targetZ: number,
+  progress: number,
+): number {
   const eased = easeOutCubic(progress);
   return startZ + (targetZ - startZ) * eased;
 }
@@ -58,7 +62,7 @@ interface CameraAnimationState {
 function createAnimationState(
   cssPerspective: number,
   pullBackMultiplier: number = 1.15,
-  startTime: number = 0
+  startTime: number = 0,
 ): CameraAnimationState {
   return {
     isAnimating: true,
@@ -74,7 +78,7 @@ function createAnimationState(
 function updateCameraPosition(
   anim: CameraAnimationState,
   currentTime: number,
-  zoomDuration: number = 1500
+  zoomDuration: number = 1500,
 ): { position: number; isComplete: boolean } {
   if (!anim.isAnimating) {
     return { position: anim.targetZ, isComplete: true };
@@ -229,7 +233,11 @@ describe('CSSMatchingCamera Zoom Animation', () => {
 
     it('should be animating at 750ms (50% time)', () => {
       const state = createAnimationState(perspective, 1.15, START_TIME);
-      const result = updateCameraPosition(state, START_TIME + 750, ZOOM_DURATION);
+      const result = updateCameraPosition(
+        state,
+        START_TIME + 750,
+        ZOOM_DURATION,
+      );
 
       // At 50% time with ease-out: position ~815
       expect(result.position).toBeCloseTo(815, 0);
@@ -238,7 +246,11 @@ describe('CSSMatchingCamera Zoom Animation', () => {
 
     it('should be nearly at target at 1200ms (80% time)', () => {
       const state = createAnimationState(perspective, 1.15, START_TIME);
-      const result = updateCameraPosition(state, START_TIME + 1200, ZOOM_DURATION);
+      const result = updateCameraPosition(
+        state,
+        START_TIME + 1200,
+        ZOOM_DURATION,
+      );
 
       // At 80% time with ease-out: nearly at target
       expect(result.position).toBeCloseTo(801, 0);
@@ -247,7 +259,11 @@ describe('CSSMatchingCamera Zoom Animation', () => {
 
     it('should be complete at 1500ms (100% time)', () => {
       const state = createAnimationState(perspective, 1.15, START_TIME);
-      const result = updateCameraPosition(state, START_TIME + 1500, ZOOM_DURATION);
+      const result = updateCameraPosition(
+        state,
+        START_TIME + 1500,
+        ZOOM_DURATION,
+      );
 
       expect(result.position).toBe(800);
       expect(result.isComplete).toBe(true);
@@ -255,7 +271,11 @@ describe('CSSMatchingCamera Zoom Animation', () => {
 
     it('should clamp progress at 1 when time exceeds duration', () => {
       const state = createAnimationState(perspective, 1.15, START_TIME);
-      const result = updateCameraPosition(state, START_TIME + 3000, ZOOM_DURATION);
+      const result = updateCameraPosition(
+        state,
+        START_TIME + 3000,
+        ZOOM_DURATION,
+      );
 
       expect(result.position).toBe(800); // At target, not beyond
       expect(result.isComplete).toBe(true);
@@ -286,7 +306,7 @@ describe('CSSMatchingCamera Zoom Animation', () => {
      */
     function shouldStartAnimation(
       prevPhase: 'stable' | 'fading-out' | 'fading-in',
-      currentPhase: 'stable' | 'fading-out' | 'fading-in'
+      currentPhase: 'stable' | 'fading-out' | 'fading-in',
     ): boolean {
       return prevPhase !== 'fading-in' && currentPhase === 'fading-in';
     }
@@ -349,7 +369,8 @@ describe('CSSMatchingCamera Zoom Animation', () => {
       const prevPhase = 'fading-out' as const;
       const currentPhase = 'fading-in' as const;
 
-      const shouldStart = prevPhase !== 'fading-in' && currentPhase === 'fading-in';
+      const shouldStart =
+        prevPhase !== 'fading-in' && currentPhase === 'fading-in';
       expect(shouldStart).toBe(true);
     });
 
@@ -381,7 +402,11 @@ describe('CSSMatchingCamera Zoom Animation', () => {
       const state1 = createAnimationState(perspective, 1.15, FIRST_SWAP_TIME);
 
       // At t=1200, first animation is interrupted
-      const result1 = updateCameraPosition(state1, SECOND_SWAP_TIME, ZOOM_DURATION);
+      const result1 = updateCameraPosition(
+        state1,
+        SECOND_SWAP_TIME,
+        ZOOM_DURATION,
+      );
       // First animation was at ~46% progress, position ~865
       expect(result1.isComplete).toBe(false);
 
@@ -600,22 +625,31 @@ describe('Full Camera Zoom Integration Scenario', () => {
       { time: 250, phase: 'fading-out', description: 'Mid fade-out' },
       { time: 500, phase: 'fading-in', description: 'SWAP - fade-in starts' },
       { time: 750, phase: 'fading-in', description: 'Mid fade-in + mid zoom' },
-      { time: 1000, phase: 'stable', description: 'Fade complete, zoom continues' },
+      {
+        time: 1000,
+        phase: 'stable',
+        description: 'Fade complete, zoom continues',
+      },
       { time: 1500, phase: 'stable', description: 'Zoom at 66%' },
       { time: 2000, phase: 'stable', description: 'Zoom complete' },
     ] as const;
 
     let cameraState: CameraAnimationState | null = null;
     let cameraZoomStartTime: number | null = null;
-    let prevPhase: typeof events[number]['phase'] = 'stable';
+    let prevPhase: (typeof events)[number]['phase'] = 'stable';
 
-    const cameraPositions: { time: number; position: number; phase: string }[] = [];
+    const cameraPositions: { time: number; position: number; phase: string }[] =
+      [];
 
     for (const event of events) {
       // Check for phase transition to fading-in
       if (prevPhase !== 'fading-in' && event.phase === 'fading-in') {
         cameraZoomStartTime = event.time;
-        cameraState = createAnimationState(perspective, 1.15, cameraZoomStartTime);
+        cameraState = createAnimationState(
+          perspective,
+          1.15,
+          cameraZoomStartTime,
+        );
       }
 
       // Update camera position if animating
@@ -624,7 +658,7 @@ describe('Full Camera Zoom Integration Scenario', () => {
         const result = updateCameraPosition(
           cameraState,
           event.time,
-          ZOOM_DURATION
+          ZOOM_DURATION,
         );
         position = result.position;
 

@@ -450,11 +450,7 @@ interface MediaItemEditorProps {
     itemId: string,
     updates: Partial<ExplainMediaItem>,
   ) => void;
-  onMove: (
-    slideId: string,
-    itemId: string,
-    direction: 'up' | 'down',
-  ) => void;
+  onMove: (slideId: string, itemId: string, direction: 'up' | 'down') => void;
 }
 
 const MediaItemEditor = React.memo(function MediaItemEditor({

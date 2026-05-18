@@ -35,14 +35,21 @@ import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
 import { getLogger } from '@/utils/logger.js';
 import { isVerboseDebugEnabled } from '@/config/debug';
 import { BASS_PATTERNS } from '../types.js';
-import type { UseBassPlaybackOptions, UseBassPlaybackReturn, BassNote, ActiveSource } from '../types.js';
+import type {
+  UseBassPlaybackOptions,
+  UseBassPlaybackReturn,
+  BassNote,
+  ActiveSource,
+} from '../types.js';
 
 const logger = getLogger('bassline-widget');
 
 /**
  * Hook for managing bass playback
  */
-export function useBassPlayback(options: UseBassPlaybackOptions): UseBassPlaybackReturn {
+export function useBassPlayback(
+  options: UseBassPlaybackOptions,
+): UseBassPlaybackReturn {
   const {
     audioContextRef,
     gainNodeRef,
@@ -67,19 +74,27 @@ export function useBassPlayback(options: UseBassPlaybackOptions): UseBassPlaybac
     // If we have exercise notes, use those (filter for bass strings)
     if (exercise?.notes && exercise.notes.length > 0) {
       return exercise.notes.filter(
-        (note: { string: number }) => note.string >= 1 && note.string <= 4
+        (note: { string: number }) => note.string >= 1 && note.string <= 4,
       ) as BassNote[];
     }
 
     // Otherwise use predefined patterns
-    return BASS_PATTERNS[pattern as keyof typeof BASS_PATTERNS] || BASS_PATTERNS['Root-Fifth'];
+    return (
+      BASS_PATTERNS[pattern as keyof typeof BASS_PATTERNS] ||
+      BASS_PATTERNS['Root-Fifth']
+    );
   }, [pattern, exercise]);
 
   /**
    * Play a bass note using the sampler
    */
   const playBassNote = useCallback(
-    (midiNote: number, velocity: number = 0.7, duration: number = 0.5, scheduledTime?: number) => {
+    (
+      midiNote: number,
+      velocity = 0.7,
+      duration = 0.5,
+      scheduledTime?: number,
+    ) => {
       const context = audioContextRef.current;
       if (!context || !gainNodeRef.current) {
         logger.warn('Cannot play bass note: audio context not ready');
@@ -95,7 +110,11 @@ export function useBassPlayback(options: UseBassPlaybackOptions): UseBassPlaybac
         const coreServices = WindowRegistry.getCoreServices();
         const playbackEngine = coreServices?.getPlaybackEngine?.();
         if (playbackEngine?.bassScheduler) {
-          const buffers = (playbackEngine.bassScheduler as { buffers?: Map<string, AudioBuffer> }).buffers;
+          const buffers = (
+            playbackEngine.bassScheduler as {
+              buffers?: Map<string, AudioBuffer>;
+            }
+          ).buffers;
           if (buffers instanceof Map) {
             buffer = buffers.get(bufferKey);
           }
@@ -136,9 +155,14 @@ export function useBassPlayback(options: UseBassPlaybackOptions): UseBassPlaybac
         activeSources.current.delete(sourceKey);
       };
 
-      logger.debug('Playing bass note', { midiNote, velocity, duration, startTime });
+      logger.debug('Playing bass note', {
+        midiNote,
+        velocity,
+        duration,
+        startTime,
+      });
     },
-    [audioContextRef, gainNodeRef, bassBuffersRef]
+    [audioContextRef, gainNodeRef, bassBuffersRef],
   );
 
   /**
@@ -166,7 +190,7 @@ export function useBassPlayback(options: UseBassPlaybackOptions): UseBassPlaybac
         activeSources.current.clear();
       }
     },
-    [audioContextRef]
+    [audioContextRef],
   );
 
   /**
@@ -240,7 +264,9 @@ export function useBassPlayback(options: UseBassPlaybackOptions): UseBassPlaybac
       const coreServices = WindowRegistry.getCoreServices();
       const playbackEngine = coreServices?.getPlaybackEngine?.();
       if (playbackEngine?.bassScheduler) {
-        const buffers = (playbackEngine.bassScheduler as { buffers?: Map<string, AudioBuffer> }).buffers;
+        const buffers = (
+          playbackEngine.bassScheduler as { buffers?: Map<string, AudioBuffer> }
+        ).buffers;
         if (buffers instanceof Map) {
           buffer = buffers.get(bufferKey);
         }
@@ -275,13 +301,23 @@ export function useBassPlayback(options: UseBassPlaybackOptions): UseBassPlaybac
     source.start(context.currentTime);
 
     if (isVerboseDebugEnabled()) {
-      console.log('[BASS TEST] Playing raw buffer directly to destination (no processing)');
+      console.log(
+        '[BASS TEST] Playing raw buffer directly to destination (no processing)',
+      );
 
       // Expose to window for manual testing
-      (window as Window & { __testBassBuffer?: AudioBuffer; __testBassContext?: AudioContext })
-        .__testBassBuffer = buffer;
-      (window as Window & { __testBassBuffer?: AudioBuffer; __testBassContext?: AudioContext })
-        .__testBassContext = context;
+      (
+        window as Window & {
+          __testBassBuffer?: AudioBuffer;
+          __testBassContext?: AudioContext;
+        }
+      ).__testBassBuffer = buffer;
+      (
+        window as Window & {
+          __testBassBuffer?: AudioBuffer;
+          __testBassContext?: AudioContext;
+        }
+      ).__testBassContext = context;
     }
   }, [audioContextRef, bassBuffersRef]);
 
@@ -289,11 +325,14 @@ export function useBassPlayback(options: UseBassPlaybackOptions): UseBassPlaybac
    * Expose test function to window for console access
    */
   useEffect(() => {
-    (window as Window & { __testBassDirectPlayback?: () => Promise<void> }).__testBassDirectPlayback =
-      testDirectPlayback;
+    (
+      window as Window & { __testBassDirectPlayback?: () => Promise<void> }
+    ).__testBassDirectPlayback = testDirectPlayback;
 
     if (isVerboseDebugEnabled()) {
-      console.log('[BASS-WIDGET] Direct test function exposed as window.__testBassDirectPlayback()');
+      console.log(
+        '[BASS-WIDGET] Direct test function exposed as window.__testBassDirectPlayback()',
+      );
     }
   }, [testDirectPlayback]);
 
@@ -308,11 +347,14 @@ export function useBassPlayback(options: UseBassPlaybackOptions): UseBassPlaybac
 
         // Set up interval to schedule next measures
         const measureDuration = (60 / tempo) * 4; // 4/4 time
-        const interval = setInterval(() => {
-          if (isPlaying) {
-            schedulePattern();
-          }
-        }, measureDuration * 1000 * 0.9); // Schedule slightly early
+        const interval = setInterval(
+          () => {
+            if (isPlaying) {
+              schedulePattern();
+            }
+          },
+          measureDuration * 1000 * 0.9,
+        ); // Schedule slightly early
 
         return () => clearInterval(interval);
       }
@@ -320,7 +362,15 @@ export function useBassPlayback(options: UseBassPlaybackOptions): UseBassPlaybac
       // Stop all notes gracefully
       stopAllNotes(true);
     }
-  }, [isPlaying, trackIsReady, samplerReady, exercise, schedulePattern, stopAllNotes, tempo]);
+  }, [
+    isPlaying,
+    trackIsReady,
+    samplerReady,
+    exercise,
+    schedulePattern,
+    stopAllNotes,
+    tempo,
+  ]);
 
   return {
     playBassNote,

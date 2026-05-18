@@ -44,7 +44,7 @@ const MiniFretboardComponent = ({
             {Array.from({ length: 8 }, (_, fretIndex) => {
               const fret = fretWindow.start + fretIndex;
               const hasNote = selectedNotes.some(
-                (note) => note.string === string && note.fret === fret
+                (note) => note.string === string && note.fret === fret,
               );
               const isPlaying =
                 currentlyPlayingNote?.string === string &&

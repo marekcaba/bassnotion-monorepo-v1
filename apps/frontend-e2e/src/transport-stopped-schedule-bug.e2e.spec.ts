@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Transport Stopped Schedule Bug', () => {
   test('verify schedules created when Transport is stopped dont work', async ({

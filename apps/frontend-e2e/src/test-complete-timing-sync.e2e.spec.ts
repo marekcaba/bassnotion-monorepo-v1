@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Complete Timing Synchronization', () => {
   test('should handle all timing scenarios without drift or session ID issues', async ({

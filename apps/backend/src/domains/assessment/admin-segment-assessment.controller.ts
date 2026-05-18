@@ -201,7 +201,9 @@ export class AdminSegmentAssessmentController {
    * Get a segment by ID.
    */
   @Get('segments/:id')
-  async getSegment(@Param('id') id: string): Promise<{ segment: VideoSegment }> {
+  async getSegment(
+    @Param('id') id: string,
+  ): Promise<{ segment: VideoSegment }> {
     const segment = await this.service.getSegmentById(id);
     return { segment };
   }
@@ -210,7 +212,9 @@ export class AdminSegmentAssessmentController {
    * Create a new segment.
    */
   @Post('segments')
-  async createSegment(@Body() body: CreateSegmentDto): Promise<{ segment: VideoSegment }> {
+  async createSegment(
+    @Body() body: CreateSegmentDto,
+  ): Promise<{ segment: VideoSegment }> {
     const segment = await this.service.createSegment({
       videoLibraryId: body.videoLibraryId,
       videoId: body.videoId,
@@ -264,7 +268,9 @@ export class AdminSegmentAssessmentController {
    * Save the complete flow graph (bulk update).
    */
   @Put('flow')
-  async saveFlowGraph(@Body() body: SaveFlowGraphDto): Promise<{ flow: AssessmentFlowGraph }> {
+  async saveFlowGraph(
+    @Body() body: SaveFlowGraphDto,
+  ): Promise<{ flow: AssessmentFlowGraph }> {
     const flow = await this.service.saveFlowGraph(body.nodes, body.edges);
     return { flow };
   }
@@ -352,7 +358,9 @@ export class AdminSegmentAssessmentController {
    * Get a question by key.
    */
   @Get('questions/:key')
-  async getQuestion(@Param('key') key: string): Promise<{ question: SegmentQuestion }> {
+  async getQuestion(
+    @Param('key') key: string,
+  ): Promise<{ question: SegmentQuestion }> {
     const question = await this.service.getQuestionByKey(key);
     return { question };
   }
@@ -361,7 +369,9 @@ export class AdminSegmentAssessmentController {
    * Create a question.
    */
   @Post('questions')
-  async createQuestion(@Body() body: CreateQuestionDto): Promise<{ question: SegmentQuestion }> {
+  async createQuestion(
+    @Body() body: CreateQuestionDto,
+  ): Promise<{ question: SegmentQuestion }> {
     const question = await this.service.createQuestion({
       questionKey: body.questionKey,
       questionText: body.questionText,
@@ -416,7 +426,9 @@ export class AdminSegmentAssessmentController {
    * Create an insight template.
    */
   @Post('insights')
-  async createInsight(@Body() body: CreateInsightDto): Promise<{ insight: CoachInsightTemplate }> {
+  async createInsight(
+    @Body() body: CreateInsightDto,
+  ): Promise<{ insight: CoachInsightTemplate }> {
     const insight = await this.service.createInsightTemplate({
       targetBucket: body.targetBucket,
       targetGoal: body.targetGoal,

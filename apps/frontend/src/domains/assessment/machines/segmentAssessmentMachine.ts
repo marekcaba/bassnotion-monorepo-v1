@@ -178,9 +178,7 @@ const evaluateEdgeCondition = (
 /**
  * Find the next node based on current node and context.
  */
-const findNextNode = (
-  context: SegmentAssessmentContext,
-): FlowNode | null => {
+const findNextNode = (context: SegmentAssessmentContext): FlowNode | null => {
   if (!context.flowGraph || !context.currentNode) return null;
 
   const { edges, nodes } = context.flowGraph;
@@ -255,7 +253,8 @@ const determineBucket = (
 // API Helpers
 // =============================================================================
 
-const getApiUrl = () => process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const getApiUrl = () =>
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 const fetchFlowGraph = async (): Promise<AssessmentFlowGraph> => {
   const response = await fetch(`${getApiUrl()}/api/v1/assessment/v2/flow`, {
@@ -383,7 +382,8 @@ export const segmentAssessmentMachine = setup({
       context.currentNode?.nodeType === 'skill_verification',
     isAnswerCorrect: ({ context }) => {
       if (!context.currentQuestion?.verificationConfig) return true;
-      const correctAnswer = context.currentQuestion.verificationConfig.correctAnswer;
+      const correctAnswer =
+        context.currentQuestion.verificationConfig.correctAnswer;
       return context.currentAnswer === correctAnswer;
     },
     canGoBack: ({ context }) => context.visitedNodeIds.length > 1,
@@ -488,7 +488,10 @@ export const segmentAssessmentMachine = setup({
       }
 
       // Determine bucket if we have enough info
-      const determinedBucket = determineBucket(selfReportedLevel, skillCheckPassed);
+      const determinedBucket = determineBucket(
+        selfReportedLevel,
+        skillCheckPassed,
+      );
 
       return {
         answers: newAnswers,
@@ -502,7 +505,8 @@ export const segmentAssessmentMachine = setup({
     showWrongFeedback: assign({
       showingWrongFeedback: () => true,
       wrongFeedbackText: ({ context }) =>
-        context.currentQuestion?.verificationConfig?.wrongAnswerFeedback || null,
+        context.currentQuestion?.verificationConfig?.wrongAnswerFeedback ||
+        null,
     }),
 
     hideWrongFeedback: assign({

@@ -19,7 +19,14 @@ export const CelebrationBlockView = React.memo(function CelebrationBlockView({
   onComplete,
   onNext,
 }: CelebrationBlockViewProps) {
-  const { title, subtitle, ctaText, ctaAction = 'next', ctaUrl, nextTutorialSlug } = block.config;
+  const {
+    title,
+    subtitle,
+    ctaText,
+    ctaAction = 'next',
+    ctaUrl,
+    nextTutorialSlug,
+  } = block.config;
   const [showContent, setShowContent] = useState(false);
   const { navigateWithTransition } = useViewTransitionRouter();
 
@@ -51,7 +58,14 @@ export const CelebrationBlockView = React.memo(function CelebrationBlockView({
         }
         break;
     }
-  }, [onComplete, onNext, ctaAction, ctaUrl, nextTutorialSlug, navigateWithTransition]);
+  }, [
+    onComplete,
+    onNext,
+    ctaAction,
+    ctaUrl,
+    nextTutorialSlug,
+    navigateWithTransition,
+  ]);
 
   return (
     <div className="h-full flex flex-col items-center justify-center px-6">

@@ -28,7 +28,10 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
-import type { ChordProgressionItem, HarmonyPatternLibraryItem } from '../types.js';
+import type {
+  ChordProgressionItem,
+  HarmonyPatternLibraryItem,
+} from '../types.js';
 
 /**
  * Predefined chord progressions with musical timing
@@ -104,7 +107,9 @@ export interface UseChordProgressionReturn {
   /** Handler for progression selection change */
   handleProgressionChange: (newProgression: string) => void;
   /** Handler for pattern library pattern selection */
-  handlePatternLibraryChange: (pattern: HarmonyPatternLibraryItem) => Promise<void>;
+  handlePatternLibraryChange: (
+    pattern: HarmonyPatternLibraryItem,
+  ) => Promise<void>;
   /** Whether pattern library is visible */
   showPatternLibrary: boolean;
   /** Set pattern library visibility */
@@ -117,20 +122,16 @@ export interface UseChordProgressionReturn {
  * Hook for managing chord progression state and UI
  */
 export function useChordProgression(
-  options: UseChordProgressionOptions
+  options: UseChordProgressionOptions,
 ): UseChordProgressionReturn {
-  const {
-    progression,
-    measureIndex,
-    isPlaying,
-    onProgressionChange,
-    tempo,
-  } = options;
+  const { progression, measureIndex, isPlaying, onProgressionChange, tempo } =
+    options;
 
   const { correlationId, logger } = useCorrelation('useChordProgression');
 
   // UI state
-  const [selectedProgression, setSelectedProgression] = useState('Jazz Standard');
+  const [selectedProgression, setSelectedProgression] =
+    useState('Jazz Standard');
   const [showPatternLibrary, setShowPatternLibrary] = useState(false);
 
   // Calculate current chord index from measure
@@ -142,7 +143,7 @@ export function useChordProgression(
   // Available progression names
   const availableProgressions = useMemo(
     () => Object.keys(CHORD_PROGRESSIONS),
-    []
+    [],
   );
 
   /**
@@ -156,7 +157,7 @@ export function useChordProgression(
         onProgressionChange(prog.map((item) => item.chord));
       }
     },
-    [onProgressionChange]
+    [onProgressionChange],
   );
 
   /**
@@ -197,7 +198,7 @@ export function useChordProgression(
         }
       }
     },
-    [onProgressionChange, logger, correlationId]
+    [onProgressionChange, logger, correlationId],
   );
 
   return {

@@ -119,13 +119,16 @@ describe('UserService', () => {
       // Act
       const result = await service.findProfileById(mockUserId);
 
-      // Assert
+      // Assert: the production profile DTO now also carries a top-level
+      // `role` (security-relevant — drives admin/user gating) and a
+      // `preferences.learningStyle` (drives default playback mode).
       expect(result).toEqual({
         id: mockUserId,
         email: 'test@example.com',
         displayName: 'Test User',
         bio: 'Test bio',
         avatarUrl: 'https://example.com/avatar.jpg',
+        role: 'user',
         createdAt: '2024-01-01T00:00:00Z',
         updatedAt: '2024-01-01T00:00:00Z',
         preferences: {
@@ -143,6 +146,7 @@ describe('UserService', () => {
             stringCount: 4,
             maxFrets: 24,
           },
+          learningStyle: 'free_flow',
         },
       });
       expect(mockRepository.findById).toHaveBeenCalledWith(expect.any(UserId));

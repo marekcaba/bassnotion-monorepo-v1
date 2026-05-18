@@ -457,7 +457,8 @@ class WamPluginSingletonManager {
     logger.debug('🔨 Creating new WamDrummer plugin instance');
 
     try {
-      const { default: WamDrummer } = await import('./adapters/wam/WamDrummer.js');
+      const { default: WamDrummer } =
+        await import('./adapters/wam/WamDrummer.js');
 
       const plugin = await WamDrummer.createInstance(context);
 

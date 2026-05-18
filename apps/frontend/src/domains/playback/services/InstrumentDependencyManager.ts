@@ -288,8 +288,7 @@ export class InstrumentDependencyManager {
   static isAudioContextReady(): boolean {
     return (
       this.audioContextInstance !== null ||
-      (typeof window !== 'undefined' &&
-        !!window.__persistentAudioContext)
+      (typeof window !== 'undefined' && !!window.__persistentAudioContext)
     );
   }
 

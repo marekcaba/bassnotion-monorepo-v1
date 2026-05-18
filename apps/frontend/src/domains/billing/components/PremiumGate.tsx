@@ -72,7 +72,11 @@ export function PremiumGate({
         title="Sign in Required"
         description="Please sign in to access this content."
         buttonText="Sign In"
-        onAction={() => router.push(`/login?returnUrl=${encodeURIComponent(window.location.pathname)}`)}
+        onAction={() =>
+          router.push(
+            `/login?returnUrl=${encodeURIComponent(window.location.pathname)}`,
+          )
+        }
       />
     );
   }
@@ -84,7 +88,7 @@ export function PremiumGate({
     return (
       <DefaultAccessDenied
         title="Premium Content"
-        description="This content requires an active BassNotion Pro subscription."
+        description="This content requires an active Bassicology Pro subscription."
         buttonText="View Pricing"
         onAction={() => router.push('/pricing')}
       />
@@ -167,7 +171,10 @@ export function usePremiumAccess() {
     purchasedCourses: access?.purchasedCourses ?? [],
     hasCourseAccess: (courseType: CourseType) => {
       if (!access) return false;
-      return access.hasActiveSubscription || access.purchasedCourses.includes(courseType);
+      return (
+        access.hasActiveSubscription ||
+        access.purchasedCourses.includes(courseType)
+      );
     },
   };
 }

@@ -38,7 +38,13 @@ export function useManualPlacement(
   // Initialize placements from existing notes if provided
   const initialPlacements = useMemo(() => {
     if (!existingNotes || existingNotes.length === 0) {
-      return new Map<number, Map<number, { string: number; fret: number; finger_index?: FingerIndex }>>();
+      return new Map<
+        number,
+        Map<
+          number,
+          { string: number; fret: number; finger_index?: FingerIndex }
+        >
+      >();
     }
 
     // Convert existing notes back to placements structure
@@ -79,9 +85,15 @@ export function useManualPlacement(
 
   // Map of measureNumber -> Map of noteIndex -> {string, fret, finger_index?}
   const [placements, setPlacements] =
-    useState<Map<number, Map<number, { string: number; fret: number; finger_index?: FingerIndex }>>>(
-      initialPlacements,
-    );
+    useState<
+      Map<
+        number,
+        Map<
+          number,
+          { string: number; fret: number; finger_index?: FingerIndex }
+        >
+      >
+    >(initialPlacements);
 
   // Current measure being edited (1-indexed)
   const [currentMeasureNumber, setCurrentMeasureNumber] = useState(1);

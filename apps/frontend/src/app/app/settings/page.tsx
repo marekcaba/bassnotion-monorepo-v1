@@ -226,9 +226,7 @@ function SettingsPageContent() {
                 <p className="mt-1 break-all text-white">{user.email}</p>
               </div>
               <div>
-                <span className="font-medium text-gray-400">
-                  Email Status:
-                </span>
+                <span className="font-medium text-gray-400">Email Status:</span>
                 <p className="mt-1">
                   {user.email_confirmed_at ? (
                     <span className="text-green-500">Confirmed</span>
@@ -238,9 +236,7 @@ function SettingsPageContent() {
                 </p>
               </div>
               <div>
-                <span className="font-medium text-gray-400">
-                  Member Since:
-                </span>
+                <span className="font-medium text-gray-400">Member Since:</span>
                 <p className="mt-1 text-white">
                   {new Date(user.created_at).toLocaleDateString()}
                 </p>
@@ -264,9 +260,7 @@ function SettingsPageContent() {
                     <span className="font-medium text-gray-400">
                       Display Name:
                     </span>
-                    <p className="mt-1 text-white">
-                      {profileData.displayName}
-                    </p>
+                    <p className="mt-1 text-white">{profileData.displayName}</p>
                   </div>
 
                   <div>
@@ -311,8 +305,8 @@ function SettingsPageContent() {
           Features & Animation Demo
         </h2>
         <p className="text-sm text-gray-400 mb-4">
-          Interactive BassNotion features with smooth layout animations
-          powered by AutoAnimate
+          Interactive Bassicology features with smooth layout animations powered
+          by AutoAnimate
         </p>
         <DashboardContent />
       </div>
@@ -322,9 +316,7 @@ function SettingsPageContent() {
         <div>
           <div className="flex items-center gap-2 mb-4">
             <Shield className="h-5 w-5 text-amber-500" />
-            <h2 className="text-lg font-semibold text-white">
-              Admin Tools
-            </h2>
+            <h2 className="text-lg font-semibold text-white">Admin Tools</h2>
           </div>
           <div className="rounded-lg border border-amber-800/30 bg-gradient-to-br from-amber-900/20 to-orange-900/10 p-4 sm:p-6">
             <p className="text-sm text-amber-200/70 mb-4">
@@ -337,7 +329,9 @@ function SettingsPageContent() {
               >
                 <BookOpen className="h-5 w-5 text-amber-500 group-hover:text-amber-400" />
                 <div className="text-left">
-                  <div className="font-medium text-white text-sm">Tutorials</div>
+                  <div className="font-medium text-white text-sm">
+                    Tutorials
+                  </div>
                   <div className="text-xs text-gray-500">Manage content</div>
                 </div>
               </button>
@@ -347,17 +341,23 @@ function SettingsPageContent() {
               >
                 <ClipboardCheck className="h-5 w-5 text-amber-500 group-hover:text-amber-400" />
                 <div className="text-left">
-                  <div className="font-medium text-white text-sm">Assessment</div>
+                  <div className="font-medium text-white text-sm">
+                    Assessment
+                  </div>
                   <div className="text-xs text-gray-500">Flow editor</div>
                 </div>
               </button>
               <button
-                onClick={() => navigateWithTransition('/admin/instruments/wurlitzer')}
+                onClick={() =>
+                  navigateWithTransition('/admin/instruments/wurlitzer')
+                }
                 className="flex items-center gap-3 p-4 bg-zinc-900/80 hover:bg-zinc-800 rounded-lg border border-zinc-700/50 hover:border-amber-600/50 transition-all group"
               >
                 <Music className="h-5 w-5 text-amber-500 group-hover:text-amber-400" />
                 <div className="text-left">
-                  <div className="font-medium text-white text-sm">Wurlitzer</div>
+                  <div className="font-medium text-white text-sm">
+                    Wurlitzer
+                  </div>
                   <div className="text-xs text-gray-500">Instrument test</div>
                 </div>
               </button>
@@ -367,7 +367,9 @@ function SettingsPageContent() {
               >
                 <Activity className="h-5 w-5 text-amber-500 group-hover:text-amber-400" />
                 <div className="text-left">
-                  <div className="font-medium text-white text-sm">Monitoring</div>
+                  <div className="font-medium text-white text-sm">
+                    Monitoring
+                  </div>
                   <div className="text-xs text-gray-500">System health</div>
                 </div>
               </button>
@@ -384,9 +386,7 @@ function SettingsPageContent() {
 
         {/* Password Section */}
         <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4 sm:p-6 mb-4">
-          <h3 className="font-semibold mb-4 text-white">
-            Password & Security
-          </h3>
+          <h3 className="font-semibold mb-4 text-white">Password & Security</h3>
           <Button
             onClick={() => setShowPasswordDialog(true)}
             className="w-full sm:w-auto bg-[#ffc700] text-black hover:bg-[#e6b300]"

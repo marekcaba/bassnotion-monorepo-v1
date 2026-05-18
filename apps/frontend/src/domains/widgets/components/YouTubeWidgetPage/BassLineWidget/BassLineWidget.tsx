@@ -10,7 +10,13 @@
  * delegating complex logic to specialized hooks and rendering to sub-components.
  */
 
-import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+import React, {
+  useEffect,
+  useState,
+  useMemo,
+  useRef,
+  useCallback,
+} from 'react';
 import { VolumeKnob } from '../components/VolumeKnob.js';
 import { useTrack } from '@/domains/playback/hooks/useTrack';
 import { useTransportControls } from '@/domains/playback/contexts/TransportContext';
@@ -64,6 +70,33 @@ const BassLineWidgetComponent = ({
   const [currentlyPlayingNote, setCurrentlyPlayingNote] =
     useState<CurrentlyPlayingNote | null>(null);
 
+  // Bass-loading failure state. Toggled by global events emitted by the play
+  // handler (usePlaybackControl). Renders an inline "Bass unavailable" badge
+  // with a retry affordance, replacing the old transient toast that vanished
+  // after 5 seconds and left users wondering why bass was silent.
+  const [bassFailed, setBassFailed] = useState(false);
+  const [retryingBass, setRetryingBass] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onFailed = () => setBassFailed(true);
+    const onRecovered = () => {
+      setBassFailed(false);
+      setRetryingBass(false);
+    };
+    window.addEventListener('bassicology:bass-failed', onFailed);
+    window.addEventListener('bassicology:bass-recovered', onRecovered);
+    return () => {
+      window.removeEventListener('bassicology:bass-failed', onFailed);
+      window.removeEventListener('bassicology:bass-recovered', onRecovered);
+    };
+  }, []);
+  // Clear failure when the user switches exercises — the new exercise's
+  // buffers haven't been attempted yet.
+  useEffect(() => {
+    setBassFailed(false);
+    setRetryingBass(false);
+  }, [exercise?.id]);
+
   // Bass buffers ref (shared across hooks)
   const bassBuffersRef = useRef<Record<string, AudioBuffer>>({});
 
@@ -92,14 +125,15 @@ const BassLineWidgetComponent = ({
   });
 
   // Volume control hook
-  const { volume, isMuted, handleVolumeChange, handleMuteToggle } = useVolumeControl({
-    controlledVolume,
-    controlledMuted,
-    onVolumeChange,
-    onMuteToggle,
-    gainNodeRef,
-    audioContextRef,
-  });
+  const { volume, isMuted, handleVolumeChange, handleMuteToggle } =
+    useVolumeControl({
+      controlledVolume,
+      controlledMuted,
+      onVolumeChange,
+      onMuteToggle,
+      gainNodeRef,
+      audioContextRef,
+    });
 
   // Sample loading sync hook
   const { samplesLoadedTrigger } = useSampleLoadingSync();
@@ -108,23 +142,29 @@ const BassLineWidgetComponent = ({
   const bassNoteCount = useMemo(() => {
     return (
       exercise?.notes?.filter(
-        (note: { string: number }) => note.string >= 1 && note.string <= 5
+        (note: { string: number }) => note.string >= 1 && note.string <= 5,
       )?.length || 0
     );
   }, [exercise?.notes]);
 
   // Callbacks for buffer registration
-  const handleSamplesLoaded = useCallback((loaded: number, total: number) => {
-    setSamplesLoaded(loaded);
-    setTotalSamples(total);
-  }, [setSamplesLoaded, setTotalSamples]);
+  const handleSamplesLoaded = useCallback(
+    (loaded: number, total: number) => {
+      setSamplesLoaded(loaded);
+      setTotalSamples(total);
+    },
+    [setSamplesLoaded, setTotalSamples],
+  );
 
-  const handleSamplerReady = useCallback((ready: boolean) => {
-    setSamplerReady(ready);
-  }, [setSamplerReady]);
+  const handleSamplerReady = useCallback(
+    (ready: boolean) => {
+      setSamplerReady(ready);
+    },
+    [setSamplerReady],
+  );
 
   // Buffer registration hook
-  useBassBufferRegistration({
+  const { registerBassWithPlaybackEngine } = useBassBufferRegistration({
     exercise,
     samplesLoadedTrigger,
     trackIsReady,
@@ -136,18 +176,33 @@ const BassLineWidgetComponent = ({
     onSamplerReady: handleSamplerReady,
   });
 
+  // User-triggered retry for the "Bass unavailable" badge.
+  const handleRetryBass = useCallback(async () => {
+    setRetryingBass(true);
+    try {
+      await registerBassWithPlaybackEngine();
+      // Success is reported via the bass-recovered event from the play
+      // handler the next time the user clicks play. We don't optimistically
+      // clear here — the underlying buffers may still need to be fetched.
+    } catch (err) {
+      logger.warn('Bass retry failed', err as any);
+      setRetryingBass(false);
+    }
+  }, [registerBassWithPlaybackEngine]);
+
   // Playback hook
-  const { playBassNote, stopAllNotes, patternNotes, testNote } = useBassPlayback({
-    audioContextRef,
-    gainNodeRef,
-    bassBuffersRef,
-    tempo,
-    isPlaying,
-    trackIsReady,
-    samplerReady,
-    exercise,
-    pattern,
-  });
+  const { playBassNote, stopAllNotes, patternNotes, testNote } =
+    useBassPlayback({
+      audioContextRef,
+      gainNodeRef,
+      bassBuffersRef,
+      tempo,
+      isPlaying,
+      trackIsReady,
+      samplerReady,
+      exercise,
+      pattern,
+    });
 
   // Callbacks for event bus
   const handleNoteTrigger = useCallback(
@@ -161,7 +216,7 @@ const BassLineWidgetComponent = ({
         }
       }, duration * 1000);
     },
-    [isPlaying]
+    [isPlaying],
   );
 
   const handleSelectedNotesChange = useCallback((notes: BassNote[]) => {
@@ -217,15 +272,20 @@ const BassLineWidgetComponent = ({
       // Clear local buffer cache
       bassBuffersRef.current = {};
     } else {
-      logger.debug('[BASS-WIDGET] First mount with exercise, skipping buffer clear', {
-        exerciseId,
-      });
+      logger.debug(
+        '[BASS-WIDGET] First mount with exercise, skipping buffer clear',
+        {
+          exerciseId,
+        },
+      );
     }
 
     prevExerciseIdRef.current = exerciseId;
 
     // Check for new bass metadata (always do this, even on first mount)
-    const metadata = GlobalSampleCache.getInstance().getMetadata('bass-required-notes');
+    const metadata = GlobalSampleCache.getInstance().getMetadata(
+      'bass-required-notes',
+    );
     if (metadata && metadata.exerciseId === exerciseId) {
       logger.info('Bass metadata available for exercise', {
         noteCount: metadata.midiNotes?.length || 0,
@@ -235,9 +295,12 @@ const BassLineWidgetComponent = ({
   }, [exercise?.id, stopAllNotes, setTotalSamples]);
 
   // Handle articulation changes
-  const handleArticulationChange = useCallback((articulation: BassArticulationType) => {
-    setCurrentArticulation(articulation);
-  }, []);
+  const handleArticulationChange = useCallback(
+    (articulation: BassArticulationType) => {
+      setCurrentArticulation(articulation);
+    },
+    [],
+  );
 
   // Handle test note with visual feedback
   const handleTestNote = useCallback(() => {
@@ -325,13 +388,29 @@ const BassLineWidgetComponent = ({
                   >
                     Bass Track
                   </h3>
-                  <p
-                    className={`text-xs ${
-                      isMutedOrZero ? 'text-slate-600' : 'text-slate-400'
-                    }`}
-                  >
-                    {pattern} | {currentArticulation}
-                  </p>
+                  {bassFailed ? (
+                    <p className="text-xs text-amber-400 flex items-center gap-2">
+                      <span>Bass unavailable</span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void handleRetryBass();
+                        }}
+                        disabled={retryingBass}
+                        className="text-amber-300 underline hover:text-amber-200 disabled:opacity-50"
+                      >
+                        {retryingBass ? 'Retrying…' : 'Retry'}
+                      </button>
+                    </p>
+                  ) : (
+                    <p
+                      className={`text-xs ${
+                        isMutedOrZero ? 'text-slate-600' : 'text-slate-400'
+                      }`}
+                    >
+                      {pattern} | {currentArticulation}
+                    </p>
+                  )}
                 </div>
 
                 <MiniFretboard

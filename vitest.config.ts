@@ -19,6 +19,15 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./apps/frontend/src/test/setup.ts'],
+    // Mirror the env vars set in apps/frontend/vitest.config.ts so tests
+    // run identically from the monorepo root and from inside the frontend
+    // workspace. supabase/client.ts validates these at module-load time
+    // and throws if either is missing.
+    env: {
+      NEXT_PUBLIC_SUPABASE_URL: 'https://test.supabase.co',
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: 'test-anon-key-for-testing',
+      NODE_ENV: 'test',
+    },
     // Advanced memory management
     pool: 'threads',
     poolOptions: {
@@ -70,6 +79,10 @@ export default defineConfig({
       '**/build/**',
       '**/.{idea,git,cache,output,temp}/**',
       '**/coverage/**',
+      // frontend-e2e holds Playwright specs — run via `nx e2e frontend-e2e`,
+      // not Vitest. Without this, Vitest collects them and every file fails
+      // with "Playwright Test did not expect test.describe() to be called".
+      'apps/frontend-e2e/**',
     ],
   },
   // Vite optimization for tests

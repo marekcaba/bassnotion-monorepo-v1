@@ -108,7 +108,7 @@ export class GlobalSampleCacheImpl {
   private localStorage: LocalProvider | null = null;
 
   // Offline mode flag - when true, only use cached samples (no network)
-  private offlineMode: boolean = false;
+  private offlineMode = false;
 
   // Performance tracking state
   private layerMetrics = {
@@ -144,7 +144,11 @@ export class GlobalSampleCacheImpl {
       console.log('[INDEXEDDB-DEBUG] Initializing LocalProvider...');
       const localConfig: LocalProviderConfig = {
         dbName: 'BassNotionAudioSamples',
-        dbVersion: 1,
+        // v2 added on 2026-05-17: bass cache keys now include the sample
+        // string (bass-${midi}-${string}). The upgrade handler in
+        // LocalProvider deletes old single-key bass entries so the new
+        // format reuses storage cleanly.
+        dbVersion: 2,
         objectStoreName: 'samples',
         maxStorageSize: 500 * 1024 * 1024, // 500MB
         enableCompression: false, // Audio files are already compressed (OGG)
@@ -1119,7 +1123,7 @@ export class GlobalSampleCacheImpl {
    * Called by RecoveryEventHandlers on 'cache:evict-old-entries' event
    * Uses smart scoring based on access patterns and priority
    */
-  evictOldest(percentage: number = 0.25): void {
+  evictOldest(percentage = 0.25): void {
     const entries = this.getEvictableEntries();
     const toEvictCount = Math.ceil(entries.length * percentage);
 

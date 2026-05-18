@@ -94,7 +94,10 @@ export class FavoriteController {
     const userId = req.user.id;
     this.logger.info('Toggle favorite request', { exerciseId, userId });
 
-    const result = await this.favoriteService.toggleFavorite(exerciseId, userId);
+    const result = await this.favoriteService.toggleFavorite(
+      exerciseId,
+      userId,
+    );
 
     return {
       exercise_id: result.exerciseId,

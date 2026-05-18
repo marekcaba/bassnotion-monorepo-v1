@@ -25,7 +25,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  * Simulates the DOM state management from FretboardGrid and useFretboardNoteSync
  */
 class DOMSimulator {
-  private elements: Map<string, { classList: Set<string>; attributes: Map<string, string> }>;
+  private elements: Map<
+    string,
+    { classList: Set<string>; attributes: Map<string, string> }
+  >;
   private lineElements: string[] = [];
   private dotElements: string[] = [];
   private currentMeasure = 0;
@@ -97,13 +100,18 @@ class DOMSimulator {
     const requiredClasses = classMatch.map((c) => c.slice(1)); // Remove leading dot
 
     return Array.from(this.elements.entries())
-      .filter(([_, el]) => requiredClasses.every((cls) => el.classList.has(cls)))
+      .filter(([_, el]) =>
+        requiredClasses.every((cls) => el.classList.has(cls)),
+      )
       .map(([id]) => id);
   }
 
   // CONSOLIDATED FIX: Clear BOTH notes and lines on measure change
   // This was previously split between FretboardGrid and useFretboardNoteSync
-  measureChangeCleanup(newMeasure: number): { clearedLines: number; clearedNotes: number } {
+  measureChangeCleanup(newMeasure: number): {
+    clearedLines: number;
+    clearedNotes: number;
+  } {
     if (!this.isPlaying || this.currentMeasure === newMeasure) {
       return { clearedLines: 0, clearedNotes: 0 };
     }
@@ -117,7 +125,10 @@ class DOMSimulator {
     playedLines.forEach((id) => this.removeClass(id, 'line-played'));
 
     this.currentMeasure = newMeasure;
-    return { clearedLines: playedLines.length, clearedNotes: playedDots.length };
+    return {
+      clearedLines: playedLines.length,
+      clearedNotes: playedDots.length,
+    };
   }
 
   // Simulate useFretboardNoteSync: Clear .note-played and .note-active on measure change
@@ -213,7 +224,12 @@ describe('Measure Transition Cleanup (FIX v6)', () => {
 
       // Lines 0, 1, 2, 3 should be played (hidden)
       let state = dom.getState();
-      expect(state.playedLines).toEqual(['line-0', 'line-1', 'line-2', 'line-3']);
+      expect(state.playedLines).toEqual([
+        'line-0',
+        'line-1',
+        'line-2',
+        'line-3',
+      ]);
 
       // Transition to measure 1
       const result = dom.measureChangeCleanup(1);

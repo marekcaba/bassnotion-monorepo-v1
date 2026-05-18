@@ -96,7 +96,9 @@ function createMockAudioBuffer(duration = 1.0): AudioBuffer {
     duration,
     sampleRate: 44100,
     numberOfChannels: 2,
-    getChannelData: vi.fn().mockReturnValue(new Float32Array(Math.floor(44100 * duration))),
+    getChannelData: vi
+      .fn()
+      .mockReturnValue(new Float32Array(Math.floor(44100 * duration))),
     copyFromChannel: vi.fn(),
     copyToChannel: vi.fn(),
   } as unknown as AudioBuffer;
@@ -388,7 +390,7 @@ describe('BassSamplerEngine', () => {
           decay: 0.2,
           sustain: 0.7,
           release: 0.5,
-        })
+        }),
       ).not.toThrow();
     });
 
@@ -396,7 +398,7 @@ describe('BassSamplerEngine', () => {
       expect(() => engine.setEnvelope({ attack: 0.02 })).not.toThrow();
       expect(() => engine.setEnvelope({ release: 0.8 })).not.toThrow();
       expect(() =>
-        engine.setEnvelope({ decay: 0.1, sustain: 0.9 })
+        engine.setEnvelope({ decay: 0.1, sustain: 0.9 }),
       ).not.toThrow();
     });
   });

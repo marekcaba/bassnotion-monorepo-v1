@@ -34,7 +34,12 @@ import type {
 
 const TYPE_CONFIG: Record<
   VideoOverlayType,
-  { label: string; color: string; selectedColor: string; icon: React.ElementType }
+  {
+    label: string;
+    color: string;
+    selectedColor: string;
+    icon: React.ElementType;
+  }
 > = {
   QUIZ: {
     label: 'Quiz',
@@ -93,7 +98,9 @@ function getPreviewText(event: AnyVideoOverlayEvent): string {
     case 'REFLECT':
       return event.content.prompt || 'Untitled prompt';
     default:
-      return (event.content as { instruction?: string }).instruction || 'Untitled';
+      return (
+        (event.content as { instruction?: string }).instruction || 'Untitled'
+      );
   }
 }
 
@@ -164,7 +171,7 @@ export const OverlayTimelineEditor = React.memo(function OverlayTimelineEditor({
   );
 
   const editingEvent = useMemo(
-    () => (editingId ? events.find((e) => e.id === editingId) ?? null : null),
+    () => (editingId ? (events.find((e) => e.id === editingId) ?? null) : null),
     [events, editingId],
   );
 
@@ -283,7 +290,10 @@ const EventRow = React.memo(function EventRow({
   const Icon = cfg.icon;
 
   const handleEdit = useCallback(() => onEdit(event.id), [onEdit, event.id]);
-  const handleDelete = useCallback(() => onDelete(event.id), [onDelete, event.id]);
+  const handleDelete = useCallback(
+    () => onDelete(event.id),
+    [onDelete, event.id],
+  );
 
   return (
     <div
@@ -341,7 +351,10 @@ interface TypePickerProps {
   onClose: () => void;
 }
 
-const TypePicker = React.memo(function TypePicker({ onSelect, onClose }: TypePickerProps) {
+const TypePicker = React.memo(function TypePicker({
+  onSelect,
+  onClose,
+}: TypePickerProps) {
   return (
     <div className="p-3 rounded-lg bg-white/5 border border-white/10 space-y-2">
       <div className="flex items-center justify-between">
@@ -415,9 +428,7 @@ const EventEditPanel = React.memo(function EventEditPanel({
       </div>
 
       <div>
-        <label className={LABEL_CLASSES}>
-          Timestamp (seconds)
-        </label>
+        <label className={LABEL_CLASSES}>Timestamp (seconds)</label>
         <div className="flex items-center gap-2">
           <input
             type="number"
@@ -483,13 +494,16 @@ const QuizContentEditor = React.memo(function QuizContentEditor({
 
   const updateContent = useCallback(
     (patch: Partial<QuizOverlayContent>) => {
-      onUpdate(event.id, { content: { ...event.content, ...patch } } as Partial<VideoOverlayEvent<'QUIZ'>>);
+      onUpdate(event.id, { content: { ...event.content, ...patch } } as Partial<
+        VideoOverlayEvent<'QUIZ'>
+      >);
     },
     [event.id, event.content, onUpdate],
   );
 
   const handleQuestionChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => updateContent({ question: e.target.value }),
+    (e: React.ChangeEvent<HTMLInputElement>) =>
+      updateContent({ question: e.target.value }),
     [updateContent],
   );
 
@@ -509,7 +523,10 @@ const QuizContentEditor = React.memo(function QuizContentEditor({
 
   const handleAddOption = useCallback(() => {
     if (options.length >= 6) return;
-    const newOption: UnderstandQuestionOption = { id: crypto.randomUUID(), text: '' };
+    const newOption: UnderstandQuestionOption = {
+      id: crypto.randomUUID(),
+      text: '',
+    };
     updateContent({ options: [...options, newOption] });
   }, [options, updateContent]);
 
@@ -539,7 +556,9 @@ const QuizContentEditor = React.memo(function QuizContentEditor({
       </div>
 
       <div>
-        <label className={LABEL_CLASSES}>Options (click circle to mark correct)</label>
+        <label className={LABEL_CLASSES}>
+          Options (click circle to mark correct)
+        </label>
         <div className="space-y-2">
           {options.map((option, idx) => (
             <div key={option.id} className="flex items-center gap-2">
@@ -553,12 +572,16 @@ const QuizContentEditor = React.memo(function QuizContentEditor({
                     : 'border-white/20 hover:border-green-400/50',
                 )}
               >
-                {correct_option_id === option.id && <Check className="w-3 h-3" />}
+                {correct_option_id === option.id && (
+                  <Check className="w-3 h-3" />
+                )}
               </button>
               <input
                 type="text"
                 value={option.text}
-                onChange={(e) => handleOptionTextChange(option.id, e.target.value)}
+                onChange={(e) =>
+                  handleOptionTextChange(option.id, e.target.value)
+                }
                 placeholder={`Option ${idx + 1}`}
                 className={cn(INPUT_CLASSES, 'flex-1')}
                 maxLength={200}
@@ -598,7 +621,9 @@ const PrepContentEditor = React.memo(function PrepContentEditor({
 }: TypedEditorProps<'PREP'>) {
   const updateContent = useCallback(
     (patch: Partial<PrepOverlayContent>) => {
-      onUpdate(event.id, { content: { ...event.content, ...patch } } as Partial<VideoOverlayEvent<'PREP'>>);
+      onUpdate(event.id, { content: { ...event.content, ...patch } } as Partial<
+        VideoOverlayEvent<'PREP'>
+      >);
     },
     [event.id, event.content, onUpdate],
   );
@@ -618,7 +643,9 @@ const PrepContentEditor = React.memo(function PrepContentEditor({
         <label className={LABEL_CLASSES}>Detail (optional)</label>
         <textarea
           value={event.content.detail ?? ''}
-          onChange={(e) => updateContent({ detail: e.target.value || undefined })}
+          onChange={(e) =>
+            updateContent({ detail: e.target.value || undefined })
+          }
           placeholder="Additional detail or context..."
           className={TEXTAREA_CLASSES}
         />
@@ -637,7 +664,9 @@ const RecordContentEditor = React.memo(function RecordContentEditor({
 }: TypedEditorProps<'RECORD'>) {
   const updateContent = useCallback(
     (patch: Partial<RecordOverlayContent>) => {
-      onUpdate(event.id, { content: { ...event.content, ...patch } } as Partial<VideoOverlayEvent<'RECORD'>>);
+      onUpdate(event.id, { content: { ...event.content, ...patch } } as Partial<
+        VideoOverlayEvent<'RECORD'>
+      >);
     },
     [event.id, event.content, onUpdate],
   );
@@ -654,7 +683,9 @@ const RecordContentEditor = React.memo(function RecordContentEditor({
         />
       </div>
       <div>
-        <label className={LABEL_CLASSES}>Duration hint in seconds (optional)</label>
+        <label className={LABEL_CLASSES}>
+          Duration hint in seconds (optional)
+        </label>
         <input
           type="number"
           value={event.content.durationHint ?? ''}
@@ -681,7 +712,9 @@ const ListenContentEditor = React.memo(function ListenContentEditor({
 }: TypedEditorProps<'LISTEN'>) {
   const updateContent = useCallback(
     (patch: Partial<ListenOverlayContent>) => {
-      onUpdate(event.id, { content: { ...event.content, ...patch } } as Partial<VideoOverlayEvent<'LISTEN'>>);
+      onUpdate(event.id, { content: { ...event.content, ...patch } } as Partial<
+        VideoOverlayEvent<'LISTEN'>
+      >);
     },
     [event.id, event.content, onUpdate],
   );
@@ -702,7 +735,9 @@ const ListenContentEditor = React.memo(function ListenContentEditor({
         <input
           type="text"
           value={event.content.listenFor ?? ''}
-          onChange={(e) => updateContent({ listenFor: e.target.value || undefined })}
+          onChange={(e) =>
+            updateContent({ listenFor: e.target.value || undefined })
+          }
           placeholder="e.g. the ghost notes on beat 2 and 4"
           className={INPUT_CLASSES}
         />
@@ -721,7 +756,9 @@ const UploadContentEditor = React.memo(function UploadContentEditor({
 }: TypedEditorProps<'UPLOAD'>) {
   const updateContent = useCallback(
     (patch: Partial<UploadOverlayContent>) => {
-      onUpdate(event.id, { content: { ...event.content, ...patch } } as Partial<VideoOverlayEvent<'UPLOAD'>>);
+      onUpdate(event.id, { content: { ...event.content, ...patch } } as Partial<
+        VideoOverlayEvent<'UPLOAD'>
+      >);
     },
     [event.id, event.content, onUpdate],
   );
@@ -749,7 +786,9 @@ const ReflectContentEditor = React.memo(function ReflectContentEditor({
 }: TypedEditorProps<'REFLECT'>) {
   const updateContent = useCallback(
     (patch: Partial<ReflectOverlayContent>) => {
-      onUpdate(event.id, { content: { ...event.content, ...patch } } as Partial<VideoOverlayEvent<'REFLECT'>>);
+      onUpdate(event.id, { content: { ...event.content, ...patch } } as Partial<
+        VideoOverlayEvent<'REFLECT'>
+      >);
     },
     [event.id, event.content, onUpdate],
   );
@@ -770,7 +809,9 @@ const ReflectContentEditor = React.memo(function ReflectContentEditor({
         <input
           type="text"
           value={event.content.placeholder ?? ''}
-          onChange={(e) => updateContent({ placeholder: e.target.value || undefined })}
+          onChange={(e) =>
+            updateContent({ placeholder: e.target.value || undefined })
+          }
           placeholder="e.g. Type your thoughts here..."
           className={INPUT_CLASSES}
         />

@@ -98,6 +98,13 @@ export class WidgetSyncService {
 
   private isConnecting = false;
   private isConnected = false;
+  // Unsubscribe handles from the EventBus subscriptions in connectToEventBus().
+  // Stored so disconnectFromEventBus() can detach cleanly when CoreServices is
+  // recreated (e.g. after an explicit dispose during dev hot-reload or a future
+  // explicit teardown). Without these, isConnected could only be flipped once
+  // per JS context and re-subscription would orphan stale listeners on a dead
+  // EventBus while the new bus never gets wired up.
+  private eventBusUnsubscribers: Array<() => void> = [];
 
   constructor() {
     this.eventBus = new EventEmitter();
@@ -754,7 +761,10 @@ export class WidgetSyncService {
       connectionAttempts++;
 
       // Check for both old and new global service locations
-      const coreServices = (window.__coreServices || window.__globalCoreServices) as { getEventBus?: () => unknown } | undefined;
+      const coreServices = (window.__coreServices ||
+        window.__globalCoreServices) as
+        | { getEventBus?: () => unknown }
+        | undefined;
 
       if (!coreServices || typeof coreServices.getEventBus !== 'function') {
         if (connectionAttempts < maxConnectionAttempts) {
@@ -783,56 +793,60 @@ export class WidgetSyncService {
         '🔌 WidgetSyncService: Connecting to EventBus from CoreServices',
       );
 
-      // Subscribe to transport events from UnifiedTransport
-      eventBus.on('PLAY', (event: any) => {
-        logger.info('🔄 WidgetSyncService: Received PLAY from EventBus', event);
-        this.emit({
-          type: 'PLAY',
-          payload: event,
-          timestamp: Date.now(),
-          source: event.source || 'UnifiedTransport',
-          priority: 'high',
-        });
-      });
+      // Subscribe to transport events from UnifiedTransport.
+      // Capture every unsubscribe handle so disconnectFromEventBus() can detach
+      // cleanly if CoreServices is ever recreated.
+      const typedBus = eventBus as {
+        on: (event: string, handler: (e: any) => void) => () => void;
+      };
 
-      eventBus.on('STOP', (event: any) => {
-        logger.info('🔄 WidgetSyncService: Received STOP from EventBus', event);
-        this.emit({
-          type: 'STOP',
-          payload: event,
-          timestamp: Date.now(),
-          source: event.source || 'UnifiedTransport',
-          priority: 'high',
-        });
-      });
+      this.eventBusUnsubscribers.push(
+        typedBus.on('PLAY', (event: any) => {
+          this.emit({
+            type: 'PLAY',
+            payload: event,
+            timestamp: Date.now(),
+            source: event.source || 'UnifiedTransport',
+            priority: 'high',
+          });
+        }),
+      );
 
-      eventBus.on('PAUSE', (event: any) => {
-        logger.info(
-          '🔄 WidgetSyncService: Received PAUSE from EventBus',
-          event,
-        );
-        this.emit({
-          type: 'PAUSE',
-          payload: event,
-          timestamp: Date.now(),
-          source: event.source || 'UnifiedTransport',
-          priority: 'high',
-        });
-      });
+      this.eventBusUnsubscribers.push(
+        typedBus.on('STOP', (event: any) => {
+          this.emit({
+            type: 'STOP',
+            payload: event,
+            timestamp: Date.now(),
+            source: event.source || 'UnifiedTransport',
+            priority: 'high',
+          });
+        }),
+      );
 
-      eventBus.on('transport:tempo-change', (event: any) => {
-        logger.info(
-          '🔄 WidgetSyncService: Received tempo change from EventBus',
-          event,
-        );
-        this.emit({
-          type: 'TEMPO_CHANGE',
-          payload: { tempo: event.tempo },
-          timestamp: Date.now(),
-          source: 'UnifiedTransport',
-          priority: 'high',
-        });
-      });
+      this.eventBusUnsubscribers.push(
+        typedBus.on('PAUSE', (event: any) => {
+          this.emit({
+            type: 'PAUSE',
+            payload: event,
+            timestamp: Date.now(),
+            source: event.source || 'UnifiedTransport',
+            priority: 'high',
+          });
+        }),
+      );
+
+      this.eventBusUnsubscribers.push(
+        typedBus.on('transport:tempo-change', (event: any) => {
+          this.emit({
+            type: 'TEMPO_CHANGE',
+            payload: { tempo: event.tempo },
+            timestamp: Date.now(),
+            source: 'UnifiedTransport',
+            priority: 'high',
+          });
+        }),
+      );
 
       logger.info('✅ WidgetSyncService: Successfully connected to EventBus');
       this.isConnecting = false;
@@ -890,12 +904,38 @@ export class WidgetSyncService {
   }
 
   /**
+   * Detach all EventBus subscriptions and allow a future reconnection.
+   *
+   * Call this when CoreServices is destroyed so the singleton can re-wire to a
+   * fresh EventBus next time CoreServices comes back. Without it, isConnected
+   * stays true forever and connectToEventBus() early-exits — silently breaking
+   * playhead/fretboard sync on every subsequent tutorial visit.
+   */
+  disconnectFromEventBus(): void {
+    this.eventBusUnsubscribers.forEach((unsub) => {
+      try {
+        unsub();
+      } catch (err) {
+        logger.warn('WidgetSyncService: error unsubscribing from EventBus', {
+          error: err,
+        });
+      }
+    });
+    this.eventBusUnsubscribers = [];
+    this.isConnected = false;
+    this.isConnecting = false;
+  }
+
+  /**
    * Clean up resources
    */
   dispose(): void {
     // Stop heartbeat and position updates
     this.stopHeartbeat();
     this.stopPositionUpdates();
+
+    // Detach from EventBus so a future CoreServices can reconnect
+    this.disconnectFromEventBus();
 
     // Clear all throttled event timers
     this.throttledEvents.forEach((throttleData) => {

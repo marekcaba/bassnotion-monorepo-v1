@@ -18,7 +18,7 @@ function createExerciseNote(
   beat: number,
   stringIndex: number,
   fret: number | 'open',
-  noteIndex: number
+  noteIndex: number,
 ): ExerciseNote {
   return {
     id: `note-${noteIndex}`,
@@ -34,7 +34,9 @@ function createExerciseNote(
 }
 
 // Build position to note indices map (same logic as FretboardGrid)
-function buildPositionToNoteIndices(exerciseNotes: ExerciseNote[]): Map<string, number[]> {
+function buildPositionToNoteIndices(
+  exerciseNotes: ExerciseNote[],
+): Map<string, number[]> {
   const map = new Map<string, number[]>();
 
   exerciseNotes.forEach((note, index) => {
@@ -59,7 +61,7 @@ function isDotPlayedInCurrentMeasure(
   measure: number,
   nextNoteToPlay: { noteIndex: number } | null,
   positionToNoteIndices: Map<string, number[]>,
-  exerciseNotes: ExerciseNote[]
+  exerciseNotes: ExerciseNote[],
 ): boolean {
   if (!nextNoteToPlay) {
     return false;
@@ -92,7 +94,7 @@ function isDotInNextMeasure(
   fret: Fret,
   measure: number,
   positionToNoteIndices: Map<string, number[]>,
-  exerciseNotes: ExerciseNote[]
+  exerciseNotes: ExerciseNote[],
 ): boolean {
   const positionKey = `${stringIndex},${fret}`;
   const noteIndices = positionToNoteIndices.get(positionKey);
@@ -133,27 +135,33 @@ describe('isDotPlayedInCurrentMeasure', () => {
 
   describe('when nextNoteToPlay is null', () => {
     it('should return false for any position', () => {
-      expect(isDotPlayedInCurrentMeasure(0, 3, 0, null, positionMap, exerciseNotes)).toBe(false);
+      expect(
+        isDotPlayedInCurrentMeasure(0, 3, 0, null, positionMap, exerciseNotes),
+      ).toBe(false);
     });
   });
 
   describe('in measure 0', () => {
     it('should return false when on note 0 (nothing played yet)', () => {
       const result = isDotPlayedInCurrentMeasure(
-        0, 3, 0,
+        0,
+        3,
+        0,
         { noteIndex: 0 },
         positionMap,
-        exerciseNotes
+        exerciseNotes,
       );
       expect(result).toBe(false);
     });
 
     it('should return true for note 0 position when on note 1', () => {
       const result = isDotPlayedInCurrentMeasure(
-        0, 3, 0,
+        0,
+        3,
+        0,
         { noteIndex: 1 },
         positionMap,
-        exerciseNotes
+        exerciseNotes,
       );
       expect(result).toBe(true);
     });
@@ -161,16 +169,20 @@ describe('isDotPlayedInCurrentMeasure', () => {
     it('should return true for both notes when moving to measure 1', () => {
       // When nextNoteToPlay is note 2 (first of measure 1)
       const note0Played = isDotPlayedInCurrentMeasure(
-        0, 3, 0,
+        0,
+        3,
+        0,
         { noteIndex: 2 },
         positionMap,
-        exerciseNotes
+        exerciseNotes,
       );
       const note1Played = isDotPlayedInCurrentMeasure(
-        1, 3, 0,
+        1,
+        3,
+        0,
         { noteIndex: 2 },
         positionMap,
-        exerciseNotes
+        exerciseNotes,
       );
       expect(note0Played).toBe(true);
       expect(note1Played).toBe(true);
@@ -180,30 +192,36 @@ describe('isDotPlayedInCurrentMeasure', () => {
   describe('in measure 1', () => {
     it('should return false for measure 0 notes (different measure)', () => {
       const result = isDotPlayedInCurrentMeasure(
-        0, 3, 1, // Checking measure 0 note but currentMeasure is 1
+        0,
+        3,
+        1, // Checking measure 0 note but currentMeasure is 1
         { noteIndex: 2 },
         positionMap,
-        exerciseNotes
+        exerciseNotes,
       );
       expect(result).toBe(false);
     });
 
     it('should return false when on first note of measure 1', () => {
       const result = isDotPlayedInCurrentMeasure(
-        2, 1, 1,
+        2,
+        1,
+        1,
         { noteIndex: 2 },
         positionMap,
-        exerciseNotes
+        exerciseNotes,
       );
       expect(result).toBe(false);
     });
 
     it('should return true for first note when on second note', () => {
       const result = isDotPlayedInCurrentMeasure(
-        2, 1, 1,
+        2,
+        1,
+        1,
         { noteIndex: 3 },
         positionMap,
-        exerciseNotes
+        exerciseNotes,
       );
       expect(result).toBe(true);
     });
@@ -215,28 +233,34 @@ describe('isDotPlayedInCurrentMeasure', () => {
 
       // In measure 0, when past note 1
       const playedInMeasure0 = isDotPlayedInCurrentMeasure(
-        1, 3, 0,
+        1,
+        3,
+        0,
         { noteIndex: 2 }, // Past note 1
         positionMap,
-        exerciseNotes
+        exerciseNotes,
       );
       expect(playedInMeasure0).toBe(true);
 
       // In measure 2, when on note 4 (same position but different measure)
       const playedInMeasure2 = isDotPlayedInCurrentMeasure(
-        1, 3, 2,
+        1,
+        3,
+        2,
         { noteIndex: 4 }, // On note 4
         positionMap,
-        exerciseNotes
+        exerciseNotes,
       );
       expect(playedInMeasure2).toBe(false); // Not played yet in measure 2
 
       // In measure 2, when past note 4
       const playedInMeasure2After = isDotPlayedInCurrentMeasure(
-        1, 3, 2,
+        1,
+        3,
+        2,
         { noteIndex: 5 }, // Past note 4
         positionMap,
-        exerciseNotes
+        exerciseNotes,
       );
       expect(playedInMeasure2After).toBe(true);
     });
@@ -257,31 +281,47 @@ describe('isDotInNextMeasure', () => {
 
   describe('in measure 0', () => {
     it('should return true for measure 1 notes', () => {
-      expect(isDotInNextMeasure(2, 1, 0, positionMap, exerciseNotes)).toBe(true);
-      expect(isDotInNextMeasure(2, 2, 0, positionMap, exerciseNotes)).toBe(true);
+      expect(isDotInNextMeasure(2, 1, 0, positionMap, exerciseNotes)).toBe(
+        true,
+      );
+      expect(isDotInNextMeasure(2, 2, 0, positionMap, exerciseNotes)).toBe(
+        true,
+      );
     });
 
     it('should return false for measure 0 notes', () => {
-      expect(isDotInNextMeasure(0, 3, 0, positionMap, exerciseNotes)).toBe(false);
+      expect(isDotInNextMeasure(0, 3, 0, positionMap, exerciseNotes)).toBe(
+        false,
+      );
     });
 
     it('should return false for measure 2 notes (too far ahead)', () => {
-      expect(isDotInNextMeasure(3, 3, 0, positionMap, exerciseNotes)).toBe(false);
+      expect(isDotInNextMeasure(3, 3, 0, positionMap, exerciseNotes)).toBe(
+        false,
+      );
     });
   });
 
   describe('in measure 1', () => {
     it('should return true for measure 2 notes', () => {
-      expect(isDotInNextMeasure(1, 3, 1, positionMap, exerciseNotes)).toBe(true); // Note 4
-      expect(isDotInNextMeasure(3, 3, 1, positionMap, exerciseNotes)).toBe(true); // Note 5
+      expect(isDotInNextMeasure(1, 3, 1, positionMap, exerciseNotes)).toBe(
+        true,
+      ); // Note 4
+      expect(isDotInNextMeasure(3, 3, 1, positionMap, exerciseNotes)).toBe(
+        true,
+      ); // Note 5
     });
 
     it('should return false for measure 1 notes (current measure)', () => {
-      expect(isDotInNextMeasure(2, 1, 1, positionMap, exerciseNotes)).toBe(false);
+      expect(isDotInNextMeasure(2, 1, 1, positionMap, exerciseNotes)).toBe(
+        false,
+      );
     });
 
     it('should return false for measure 0 notes (past)', () => {
-      expect(isDotInNextMeasure(0, 3, 1, positionMap, exerciseNotes)).toBe(false);
+      expect(isDotInNextMeasure(0, 3, 1, positionMap, exerciseNotes)).toBe(
+        false,
+      );
     });
   });
 
@@ -289,12 +329,16 @@ describe('isDotInNextMeasure', () => {
     it('should return true for (1,3) in measure 1 since it exists in measure 2', () => {
       // Position (1,3) has notes in measure 0 and 2
       // When in measure 1, next measure is 2, so it should return true
-      expect(isDotInNextMeasure(1, 3, 1, positionMap, exerciseNotes)).toBe(true);
+      expect(isDotInNextMeasure(1, 3, 1, positionMap, exerciseNotes)).toBe(
+        true,
+      );
     });
 
     it('should return false for (1,3) in measure 0 since next is measure 1', () => {
       // Position (1,3) has notes in measure 0 and 2 (NOT measure 1)
-      expect(isDotInNextMeasure(1, 3, 0, positionMap, exerciseNotes)).toBe(false);
+      expect(isDotInNextMeasure(1, 3, 0, positionMap, exerciseNotes)).toBe(
+        false,
+      );
     });
   });
 });
@@ -317,10 +361,13 @@ describe('shouldShowAsHighlighted logic', () => {
     isSelected: boolean,
     measureHighlightShouldHighlight: boolean,
     hasBeenPlayedInCurrentMeasure: boolean,
-    positionExistsInNextMeasure: boolean
+    positionExistsInNextMeasure: boolean,
   ): boolean {
-    return isSelected && measureHighlightShouldHighlight &&
-      (!hasBeenPlayedInCurrentMeasure || positionExistsInNextMeasure);
+    return (
+      isSelected &&
+      measureHighlightShouldHighlight &&
+      (!hasBeenPlayedInCurrentMeasure || positionExistsInNextMeasure)
+    );
   }
 
   describe('basic cases', () => {
@@ -377,15 +424,30 @@ describe('shouldShowAsHighlighted logic', () => {
 
       // With correct implementation, inNext should always be calculated from same measure:
       const measure = 0;
-      const hasBeenPlayed = isDotPlayedInCurrentMeasure(1, 3, measure, { noteIndex: 2 }, positionMap, exerciseNotes);
-      const inNext = isDotInNextMeasure(1, 3, measure, positionMap, exerciseNotes);
+      const hasBeenPlayed = isDotPlayedInCurrentMeasure(
+        1,
+        3,
+        measure,
+        { noteIndex: 2 },
+        positionMap,
+        exerciseNotes,
+      );
+      const inNext = isDotInNextMeasure(
+        1,
+        3,
+        measure,
+        positionMap,
+        exerciseNotes,
+      );
 
       // Note 1 is played (index 1 < 2), and note 2 is in measure 1 (next)
       expect(hasBeenPlayed).toBe(true);
       expect(inNext).toBe(true);
 
       // So it should still be highlighted
-      expect(shouldShowAsHighlighted(true, true, hasBeenPlayed, inNext)).toBe(true);
+      expect(shouldShowAsHighlighted(true, true, hasBeenPlayed, inNext)).toBe(
+        true,
+      );
     });
   });
 });
@@ -408,8 +470,21 @@ describe('Measure Consistency Tests', () => {
     const nextNoteToPlay = { noteIndex: 1 };
 
     // All calculations should use measure 0
-    const played = isDotPlayedInCurrentMeasure(0, 3, currentMeasure, nextNoteToPlay, positionMap, exerciseNotes);
-    const inNext = isDotInNextMeasure(0, 3, currentMeasure, positionMap, exerciseNotes);
+    const played = isDotPlayedInCurrentMeasure(
+      0,
+      3,
+      currentMeasure,
+      nextNoteToPlay,
+      positionMap,
+      exerciseNotes,
+    );
+    const inNext = isDotInNextMeasure(
+      0,
+      3,
+      currentMeasure,
+      positionMap,
+      exerciseNotes,
+    );
 
     // Note 0 at (0,3) is in measure 0, and we're on note 1
     expect(played).toBe(true); // Note 0 has been played
@@ -435,8 +510,21 @@ describe('Measure Consistency Tests', () => {
     ];
 
     positions.forEach(({ s, f }) => {
-      const played = isDotPlayedInCurrentMeasure(s, f, currentMeasure, nextNoteToPlay, positionMap, exerciseNotes);
-      const inNext = isDotInNextMeasure(s, f, currentMeasure, positionMap, exerciseNotes);
+      const played = isDotPlayedInCurrentMeasure(
+        s,
+        f,
+        currentMeasure,
+        nextNoteToPlay,
+        positionMap,
+        exerciseNotes,
+      );
+      const inNext = isDotInNextMeasure(
+        s,
+        f,
+        currentMeasure,
+        positionMap,
+        exerciseNotes,
+      );
 
       // In measure 1:
       // - Measure 0 notes should NOT be marked as "played in current measure" (they're in measure 0)

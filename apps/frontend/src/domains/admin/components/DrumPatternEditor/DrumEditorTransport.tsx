@@ -32,10 +32,12 @@ export function DrumEditorTransport({
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = parseInt(e.target.value, 10);
       if (!isNaN(value)) {
-        onTempoChange(Math.max(TEMPO_LIMITS.min, Math.min(TEMPO_LIMITS.max, value)));
+        onTempoChange(
+          Math.max(TEMPO_LIMITS.min, Math.min(TEMPO_LIMITS.max, value)),
+        );
       }
     },
-    [onTempoChange]
+    [onTempoChange],
   );
 
   // Handle play/stop toggle
@@ -92,7 +94,10 @@ export function DrumEditorTransport({
 
       {/* Tempo Control */}
       <div className="flex items-center gap-2">
-        <Label htmlFor="tempo" className="text-xs text-zinc-400 whitespace-nowrap font-medium">
+        <Label
+          htmlFor="tempo"
+          className="text-xs text-zinc-400 whitespace-nowrap font-medium"
+        >
           BPM
         </Label>
         <Input

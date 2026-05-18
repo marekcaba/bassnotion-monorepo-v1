@@ -7,8 +7,8 @@ const logger = createStructuredLogger('SwaggerConfig');
 
 export function setupSwagger(app: INestApplication): void {
   const config = new DocumentBuilder()
-    .setTitle('BassNotion API')
-    .setDescription('The BassNotion API documentation for learning bass guitar')
+    .setTitle('Bassicology API')
+    .setDescription('The Bassicology API documentation for learning bass guitar')
     .setVersion('1.0')
     .addTag('auth', 'Authentication endpoints')
     .addTag('exercises', 'Exercise management')
@@ -39,7 +39,7 @@ export function setupSwagger(app: INestApplication): void {
         tagsSorter: 'alpha',
         operationsSorter: 'alpha',
       },
-      customSiteTitle: 'BassNotion API Documentation',
+      customSiteTitle: 'Bassicology API Documentation',
     });
     logger.info(
       '✅ Swagger documentation available at: http://localhost:3000/api/docs',

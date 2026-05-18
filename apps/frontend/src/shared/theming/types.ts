@@ -15,7 +15,13 @@ export type ThemeVariant = 'default' | 'purple' | 'blue' | 'green' | 'orange';
 export type StyleEffect = 'flat' | 'glass' | 'neumorphic' | 'gradient';
 
 /** Neumorphic color schemes */
-export type NeuroColor = 'neutral' | 'purple' | 'blue' | 'emerald' | 'amber' | 'rose';
+export type NeuroColor =
+  | 'neutral'
+  | 'purple'
+  | 'blue'
+  | 'emerald'
+  | 'amber'
+  | 'rose';
 
 /** Neumorphic intensity levels */
 export type NeuroIntensity = 'subtle' | 'medium' | 'strong';
@@ -29,17 +35,32 @@ export interface NeuroStyle {
 /** Background theme options */
 export type BackgroundTheme =
   // Solid darks
-  | 'dark' | 'darker' | 'darkest'
+  | 'dark'
+  | 'darker'
+  | 'darkest'
   // Subtle gradients
-  | 'gradient-dark' | 'gradient-purple' | 'gradient-blue' | 'gradient-emerald' | 'gradient-amber'
+  | 'gradient-dark'
+  | 'gradient-purple'
+  | 'gradient-blue'
+  | 'gradient-emerald'
+  | 'gradient-amber'
   // Directional gradients
-  | 'gradient-radial-purple' | 'gradient-radial-blue' | 'gradient-radial-center'
+  | 'gradient-radial-purple'
+  | 'gradient-radial-blue'
+  | 'gradient-radial-center'
   // Mesh/Multi-color gradients
-  | 'mesh-purple-blue' | 'mesh-sunset' | 'mesh-aurora' | 'mesh-ocean'
+  | 'mesh-purple-blue'
+  | 'mesh-sunset'
+  | 'mesh-aurora'
+  | 'mesh-ocean'
   // Animated backgrounds
-  | 'animated-gradient' | 'animated-pulse' | 'animated-aurora'
+  | 'animated-gradient'
+  | 'animated-pulse'
+  | 'animated-aurora'
   // Ambient/Atmospheric
-  | 'ambient-stars' | 'ambient-glow' | 'ambient-fog'
+  | 'ambient-stars'
+  | 'ambient-glow'
+  | 'ambient-fog'
   // Special
   | 'transparent';
 

@@ -25,7 +25,12 @@ import {
   type ParsedMidiFile,
   type MidiEvent as MidiFileEvent,
 } from '../../midi/parser/MidiFileParser.js';
-import type { MidiEvent, BassMidiEvent, DrumMidiEvent, ExerciseNoteWithDuration } from '../../midi/types.js';
+import type {
+  MidiEvent,
+  BassMidiEvent,
+  DrumMidiEvent,
+  ExerciseNoteWithDuration,
+} from '../../midi/types.js';
 import type { Track } from '../../tracks/core/Track.js';
 
 export interface ExerciseLoaderConfig {
@@ -458,7 +463,8 @@ export class ExerciseLoader {
         // Drum event - use drumType for proper scheduling
         // Cast to DrumMidiEvent for type-safe access to drumType
         const drumEvent = e as DrumMidiEvent;
-        const drumType = drumEvent.drumType || this.getMidiNoteDrumType(e.note || 36);
+        const drumType =
+          drumEvent.drumType || this.getMidiNoteDrumType(e.note || 36);
         const normalizedDrumType = this.normalizeDrumType(drumType);
 
         return {
@@ -477,7 +483,12 @@ export class ExerciseLoader {
     let patternMeasureCount = 1; // Track pattern length for duration calculation
     const beatsPerBar = exercise.timeSignature?.numerator || 4;
 
-    if (trackId === 'drums' && exercise.total_bars && exercise.total_bars > 0 && events.length > 0) {
+    if (
+      trackId === 'drums' &&
+      exercise.total_bars &&
+      exercise.total_bars > 0 &&
+      events.length > 0
+    ) {
       // Calculate pattern measure span from event times
       // Find the highest measure number to determine pattern length
       const maxMeasure = events.reduce((max, e) => {
@@ -493,7 +504,9 @@ export class ExerciseLoader {
       if (patternMeasureCount > 0) {
         loopCount = Math.ceil(exercise.total_bars / patternMeasureCount);
         // eslint-disable-next-line no-console
-        console.log(`[DRUM LOOPING] 🔄 loopCount=${loopCount} (total_bars=${exercise.total_bars}, patternMeasures=${patternMeasureCount})`);
+        console.log(
+          `[DRUM LOOPING] 🔄 loopCount=${loopCount} (total_bars=${exercise.total_bars}, patternMeasures=${patternMeasureCount})`,
+        );
         logger.info('🔄 Calculated drum pattern loopCount', {
           exerciseTitle: exercise.title,
           exerciseTotalBars: exercise.total_bars,
@@ -517,7 +530,9 @@ export class ExerciseLoader {
         ticks: 0,
       };
       // eslint-disable-next-line no-console
-      console.log(`[DRUM LOOPING] 🔄 Region duration fixed: ${durationInBeats} beats (${patternMeasureCount} bars × ${beatsPerBar} beats/bar)`);
+      console.log(
+        `[DRUM LOOPING] 🔄 Region duration fixed: ${durationInBeats} beats (${patternMeasureCount} bars × ${beatsPerBar} beats/bar)`,
+      );
     }
 
     return {
@@ -797,7 +812,8 @@ export class ExerciseLoader {
 
         // Use tick-based calculation for precision when available
         // tick: 0-479 represents position within the beat at 480 PPQ
-        const tickWithinBeat = hit.position.tick ?? (hit.position.subdivision * (PPQ / 4));
+        const tickWithinBeat =
+          hit.position.tick ?? hit.position.subdivision * (PPQ / 4);
         const fractionalBeat = tickWithinBeat / PPQ;
 
         // Total beats from start (0-based measure and beat)
@@ -927,7 +943,8 @@ export class ExerciseLoader {
 
         // Use tick for precision (0-479 represents position within the beat at 480 PPQ)
         // If tick is not available, fall back to subdivision (0-3 represents 16th note position)
-        const tickWithinBeat = note.position?.tick ?? ((note.position?.subdivision || 0) * (PPQ / 4));
+        const tickWithinBeat =
+          note.position?.tick ?? (note.position?.subdivision || 0) * (PPQ / 4);
         const fractionalBeat = tickWithinBeat / PPQ;
 
         // Total beats from start
@@ -964,7 +981,8 @@ export class ExerciseLoader {
           // durationTicks at 480 PPQ: 480 = quarter note, 960 = half, etc.
           durationInBeats = extendedNote.durationTicks / PPQ;
         } else {
-          durationInBeats = durationMap[extendedNote.noteDuration || note.duration] || 1;
+          durationInBeats =
+            durationMap[extendedNote.noteDuration || note.duration] || 1;
         }
         const durationInSeconds = durationInBeats * (60 / exercise.bpm);
 

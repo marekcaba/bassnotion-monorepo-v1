@@ -9,7 +9,10 @@ import { assessmentMachine } from '../machines/assessmentMachine';
 import { QuestionOverlay } from './QuestionOverlay';
 import { ResultsScreen } from './ResultsScreen';
 import { ResumePrompt } from './ResumePrompt';
-import type { AssessmentQuestion, AssessmentProgress } from '@bassnotion/contracts';
+import type {
+  AssessmentQuestion,
+  AssessmentProgress,
+} from '@bassnotion/contracts';
 
 /**
  * Distributes questions evenly throughout the video duration.
@@ -133,9 +136,22 @@ export function BunnyQuizPlayer({
     onReady: (duration) => {
       // CRITICAL: Update questions with distributed timestamps BEFORE transitioning to playing state
       // This prevents the race condition where TIME_UPDATE events arrive with old timestamps
-      const distributed = distributeQuestionsOverVideo(originalQuestionsRef.current, duration, 15, 12);
-      console.log('[Assessment] Distributing questions for video duration:', duration);
-      console.log('[Assessment] Distributed timestamps:', JSON.stringify(distributed.map(q => ({ id: q.id, timestamp: q.timestamp }))));
+      const distributed = distributeQuestionsOverVideo(
+        originalQuestionsRef.current,
+        duration,
+        15,
+        12,
+      );
+      console.log(
+        '[Assessment] Distributing questions for video duration:',
+        duration,
+      );
+      console.log(
+        '[Assessment] Distributed timestamps:',
+        JSON.stringify(
+          distributed.map((q) => ({ id: q.id, timestamp: q.timestamp })),
+        ),
+      );
 
       // Send UPDATE_QUESTIONS first, then VIDEO_READY to transition to playing
       send({ type: 'UPDATE_QUESTIONS', questions: distributed });
@@ -234,8 +250,10 @@ export function BunnyQuizPlayer({
           break;
         case 'drag-drop':
           // Count as tentative if all drop zones are filled
-          const requiredZones = currentQuestion.dragDropConfig?.dropZones.length || 0;
-          hasTentativeAnswer = Object.keys(dragDropMapping).length >= requiredZones;
+          const requiredZones =
+            currentQuestion.dragDropConfig?.dropZones.length || 0;
+          hasTentativeAnswer =
+            Object.keys(dragDropMapping).length >= requiredZones;
           break;
       }
     }
@@ -276,7 +294,12 @@ export function BunnyQuizPlayer({
   // Handle pending seek and start playing when ready (only after user has started)
   // Also resume video when waiting for video to end after last question
   useEffect(() => {
-    const shouldPlay = isReady && hasUserStarted && !isResumePrompt && !isShowingQuestion && !isComplete;
+    const shouldPlay =
+      isReady &&
+      hasUserStarted &&
+      !isResumePrompt &&
+      !isShowingQuestion &&
+      !isComplete;
 
     if (shouldPlay) {
       // Check if there's a pending seek
@@ -298,7 +321,19 @@ export function BunnyQuizPlayer({
     if (isComplete && isPlaying) {
       pause();
     }
-  }, [isReady, hasUserStarted, isResumePrompt, isShowingQuestion, isComplete, isWaitingForVideoEnd, isPlaying, play, playWithFade, pause, seekTo]);
+  }, [
+    isReady,
+    hasUserStarted,
+    isResumePrompt,
+    isShowingQuestion,
+    isComplete,
+    isWaitingForVideoEnd,
+    isPlaying,
+    play,
+    playWithFade,
+    pause,
+    seekTo,
+  ]);
 
   // Handle user clicking to start the assessment
   const handleStartAssessment = useCallback(() => {
@@ -383,16 +418,19 @@ export function BunnyQuizPlayer({
         )}
 
         {/* Loading overlay - shown when video is loading */}
-        {(isLoading || isSubmitting) && !isReady && !isResumePrompt && hasUserStarted && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
-              <p className="text-gray-400">
-                {isSubmitting ? 'Saving your results...' : 'Loading video...'}
-              </p>
+        {(isLoading || isSubmitting) &&
+          !isReady &&
+          !isResumePrompt &&
+          hasUserStarted && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+                <p className="text-gray-400">
+                  {isSubmitting ? 'Saving your results...' : 'Loading video...'}
+                </p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {/* Resume prompt overlay - styled like a question overlay */}
         {isResumePrompt && savedProgress && (
@@ -476,7 +514,9 @@ export function BunnyQuizPlayer({
           <ResultsScreen
             skillLevel={skillLevel!}
             percentageScore={percentageScore}
-            totalQuestions={questions.filter((q) => q.category === 'knowledge').length}
+            totalQuestions={
+              questions.filter((q) => q.category === 'knowledge').length
+            }
             correctAnswers={answers.filter((a) => a.isCorrect).length}
             assignedJourneyId={assignedJourneyId}
             asOverlay

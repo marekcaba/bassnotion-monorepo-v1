@@ -10,13 +10,18 @@ import type {
   AssessmentQuestion,
   AssessmentConfig,
 } from '@bassnotion/contracts';
-import { AssessmentRepository, AssessmentData } from './repositories/assessment.repository.js';
+import {
+  AssessmentRepository,
+  AssessmentData,
+} from './repositories/assessment.repository.js';
 import { RequestContextService } from '../../shared/services/request-context.service.js';
 import { SupabaseService } from '../../infrastructure/supabase/supabase.service.js';
 
 @Injectable()
 export class AssessmentService {
-  private readonly staticLogger = createStructuredLogger(AssessmentService.name);
+  private readonly staticLogger = createStructuredLogger(
+    AssessmentService.name,
+  );
 
   constructor(
     private readonly assessmentRepository: AssessmentRepository,
@@ -346,7 +351,11 @@ export class AssessmentService {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
 
-    logger.info('Updating assessment config', { userId, updates, correlationId });
+    logger.info('Updating assessment config', {
+      userId,
+      updates,
+      correlationId,
+    });
 
     // Get current config
     const current = await this.getActiveConfig();
@@ -362,11 +371,15 @@ export class AssessmentService {
     };
 
     if (updates.videoId !== undefined) updateData.video_id = updates.videoId;
-    if (updates.videoPlatform !== undefined) updateData.video_platform = updates.videoPlatform;
-    if (updates.videoLibraryId !== undefined) updateData.video_library_id = updates.videoLibraryId;
+    if (updates.videoPlatform !== undefined)
+      updateData.video_platform = updates.videoPlatform;
+    if (updates.videoLibraryId !== undefined)
+      updateData.video_library_id = updates.videoLibraryId;
     if (updates.name !== undefined) updateData.name = updates.name;
-    if (updates.description !== undefined) updateData.description = updates.description;
-    if (updates.skillThresholds !== undefined) updateData.skill_thresholds = updates.skillThresholds;
+    if (updates.description !== undefined)
+      updateData.description = updates.description;
+    if (updates.skillThresholds !== undefined)
+      updateData.skill_thresholds = updates.skillThresholds;
 
     const { data, error } = await this.supabaseService
       .getClient()
@@ -377,7 +390,9 @@ export class AssessmentService {
       .single();
 
     if (error) {
-      logger.error('Failed to update assessment config', error, { correlationId });
+      logger.error('Failed to update assessment config', error, {
+        correlationId,
+      });
       throw error;
     }
 
@@ -456,7 +471,9 @@ export class AssessmentService {
       throw new NotFoundException('No active assessment config found');
     }
 
-    const questionIndex = config.questions.findIndex((q) => q.id === questionId);
+    const questionIndex = config.questions.findIndex(
+      (q) => q.id === questionId,
+    );
     if (questionIndex === -1) {
       throw new NotFoundException(`Question with id ${questionId} not found`);
     }

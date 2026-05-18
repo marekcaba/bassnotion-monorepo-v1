@@ -25,33 +25,67 @@ import type {
   NeuroColor,
   NeuroIntensity,
 } from './types';
-import {
-  DEFAULT_UI_ZONE_CONFIG,
-  UI_ZONE_STORAGE_KEY,
-} from './types';
+import { DEFAULT_UI_ZONE_CONFIG, UI_ZONE_STORAGE_KEY } from './types';
 
 // Available options for each setting
 const AVAILABLE_LIBRARIES: UILibrary[] = ['shadcn'];
-const AVAILABLE_VARIANTS: ThemeVariant[] = ['default', 'purple', 'blue', 'green', 'orange'];
-const AVAILABLE_EFFECTS: StyleEffect[] = ['flat', 'glass', 'neumorphic', 'gradient'];
+const AVAILABLE_VARIANTS: ThemeVariant[] = [
+  'default',
+  'purple',
+  'blue',
+  'green',
+  'orange',
+];
+const AVAILABLE_EFFECTS: StyleEffect[] = [
+  'flat',
+  'glass',
+  'neumorphic',
+  'gradient',
+];
 const AVAILABLE_BACKGROUNDS: BackgroundTheme[] = [
   // Solid darks
-  'dark', 'darker', 'darkest',
+  'dark',
+  'darker',
+  'darkest',
   // Subtle gradients
-  'gradient-dark', 'gradient-purple', 'gradient-blue', 'gradient-emerald', 'gradient-amber',
+  'gradient-dark',
+  'gradient-purple',
+  'gradient-blue',
+  'gradient-emerald',
+  'gradient-amber',
   // Directional gradients
-  'gradient-radial-purple', 'gradient-radial-blue', 'gradient-radial-center',
+  'gradient-radial-purple',
+  'gradient-radial-blue',
+  'gradient-radial-center',
   // Mesh/Multi-color gradients
-  'mesh-purple-blue', 'mesh-sunset', 'mesh-aurora', 'mesh-ocean',
+  'mesh-purple-blue',
+  'mesh-sunset',
+  'mesh-aurora',
+  'mesh-ocean',
   // Animated backgrounds
-  'animated-gradient', 'animated-pulse', 'animated-aurora',
+  'animated-gradient',
+  'animated-pulse',
+  'animated-aurora',
   // Ambient/Atmospheric
-  'ambient-stars', 'ambient-glow', 'ambient-fog',
+  'ambient-stars',
+  'ambient-glow',
+  'ambient-fog',
   // Special
   'transparent',
 ];
-const AVAILABLE_NEURO_COLORS: NeuroColor[] = ['neutral', 'purple', 'blue', 'emerald', 'amber', 'rose'];
-const AVAILABLE_NEURO_INTENSITIES: NeuroIntensity[] = ['subtle', 'medium', 'strong'];
+const AVAILABLE_NEURO_COLORS: NeuroColor[] = [
+  'neutral',
+  'purple',
+  'blue',
+  'emerald',
+  'amber',
+  'rose',
+];
+const AVAILABLE_NEURO_INTENSITIES: NeuroIntensity[] = [
+  'subtle',
+  'medium',
+  'strong',
+];
 
 // Create context with null default (must be used within provider)
 const UIZoneContext = createContext<UIZoneContextValue | null>(null);
@@ -83,7 +117,8 @@ function loadPersistedConfig(): Partial<UIZoneConfig> | null {
         AVAILABLE_LIBRARIES.includes(parsed.library) &&
         AVAILABLE_VARIANTS.includes(parsed.variant) &&
         AVAILABLE_EFFECTS.includes(parsed.effect) &&
-        (!parsed.background || AVAILABLE_BACKGROUNDS.includes(parsed.background))
+        (!parsed.background ||
+          AVAILABLE_BACKGROUNDS.includes(parsed.background))
       ) {
         return parsed;
       }
@@ -162,7 +197,7 @@ export function UIZoneProvider({
       availableNeuroColors: AVAILABLE_NEURO_COLORS,
       availableNeuroIntensities: AVAILABLE_NEURO_INTENSITIES,
     }),
-    [config, setConfig]
+    [config, setConfig],
   );
 
   return (

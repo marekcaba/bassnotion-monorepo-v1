@@ -38,35 +38,43 @@ vi.mock('@/domains/playback/services/core/AtomicPlaybackClock', () => ({
 
 // Mock buildQuantizedTimeline - receives an object { notes, bpm, timeSignature, countdownBeats }
 vi.mock('../../utils/exerciseToMusicXML.js', () => ({
-  buildQuantizedTimeline: vi.fn((params: { notes: any[]; bpm: number; timeSignature?: any; countdownBeats?: number }) => {
-    const { notes, bpm, countdownBeats = 0 } = params;
+  buildQuantizedTimeline: vi.fn(
+    (params: {
+      notes: any[];
+      bpm: number;
+      timeSignature?: any;
+      countdownBeats?: number;
+    }) => {
+      const { notes, bpm, countdownBeats = 0 } = params;
 
-    // Handle empty or invalid input
-    if (!notes || !Array.isArray(notes) || notes.length === 0) {
-      return [];
-    }
+      // Handle empty or invalid input
+      if (!notes || !Array.isArray(notes) || notes.length === 0) {
+        return [];
+      }
 
-    // Generate a simple timeline for testing
-    const msPerBeat = 60000 / bpm;
-    const countdownMs = (countdownBeats || 0) * msPerBeat;
+      // Generate a simple timeline for testing
+      const msPerBeat = 60000 / bpm;
+      const countdownMs = (countdownBeats || 0) * msPerBeat;
 
-    return notes.map((note: any, index: number) => {
-      const measure = note?.position?.measure ?? 0;
-      const beat = note?.position?.beat ?? 0;
-      const startMs = countdownMs + (measure * 4 * msPerBeat) + (beat * msPerBeat);
-      const durationMs = msPerBeat; // quarter note duration
+      return notes.map((note: any, index: number) => {
+        const measure = note?.position?.measure ?? 0;
+        const beat = note?.position?.beat ?? 0;
+        const startMs =
+          countdownMs + measure * 4 * msPerBeat + beat * msPerBeat;
+        const durationMs = msPerBeat; // quarter note duration
 
-      return {
-        type: 'note' as const,
-        startTime: startMs / 1000,
-        endTime: (startMs + durationMs) / 1000,
-        noteIndex: index,
-        measure,
-        durationBeats: 1,
-        note,
-      };
-    });
-  }),
+        return {
+          type: 'note' as const,
+          startTime: startMs / 1000,
+          endTime: (startMs + durationMs) / 1000,
+          noteIndex: index,
+          measure,
+          durationBeats: 1,
+          note,
+        };
+      });
+    },
+  ),
 }));
 
 // Test data factory
@@ -85,11 +93,11 @@ function createTestNotes(count: number, measuresPerNote = 1): any[] {
     createTestNote({
       position: {
         measure: Math.floor(i / measuresPerNote),
-        beat: (i % 4),
+        beat: i % 4,
         subdivision: 0,
-        tick: 0
+        tick: 0,
       },
-    })
+    }),
   );
 }
 
@@ -118,7 +126,7 @@ describe('useFretboardNoteSync', () => {
           maxFrets: 24,
           isPlaying: false,
           isVisible: true,
-        })
+        }),
       );
 
       expect(result.current.timeline).toHaveLength(4);
@@ -135,7 +143,7 @@ describe('useFretboardNoteSync', () => {
           maxFrets: 24,
           isPlaying: false,
           isVisible: true,
-        })
+        }),
       );
 
       expect(result.current.timeline).toHaveLength(0);
@@ -153,7 +161,7 @@ describe('useFretboardNoteSync', () => {
           isPlaying: false,
           isVisible: true,
           countdownBeats: 4,
-        })
+        }),
       );
 
       // At 120 BPM, 4 countdown beats = 2 seconds
@@ -173,7 +181,7 @@ describe('useFretboardNoteSync', () => {
           maxFrets: 24,
           isPlaying: false,
           isVisible: true,
-        })
+        }),
       );
 
       expect(typeof result.current.registerNoteRef).toBe('function');
@@ -194,7 +202,7 @@ describe('useFretboardNoteSync', () => {
           maxFrets: 24,
           isPlaying: false,
           isVisible: true,
-        })
+        }),
       );
 
       const mockElement = document.createElement('div');
@@ -217,7 +225,7 @@ describe('useFretboardNoteSync', () => {
           maxFrets: 24,
           isPlaying: true,
           isVisible: true,
-        })
+        }),
       );
 
       expect(mockSubscribe).toHaveBeenCalled();
@@ -234,7 +242,7 @@ describe('useFretboardNoteSync', () => {
           maxFrets: 24,
           isPlaying: false,
           isVisible: true,
-        })
+        }),
       );
 
       // May or may not subscribe based on implementation
@@ -252,7 +260,7 @@ describe('useFretboardNoteSync', () => {
           maxFrets: 24,
           isPlaying: true,
           isVisible: true,
-        })
+        }),
       );
 
       unmount();
@@ -273,7 +281,7 @@ describe('useFretboardNoteSync', () => {
           maxFrets: 24,
           isPlaying: false,
           isVisible: true,
-        })
+        }),
       );
 
       expect(result.current.getCurrentNoteIndex()).toBe(-1);
@@ -292,7 +300,7 @@ describe('useFretboardNoteSync', () => {
           maxFrets: 24,
           isPlaying: false,
           isVisible: true,
-        })
+        }),
       );
 
       expect(result.current.getNextNoteIndex()).toBe(-1);
@@ -303,14 +311,16 @@ describe('useFretboardNoteSync', () => {
 describe('findNoteAtTime (binary search)', () => {
   // Test the binary search algorithm with mock timelines
 
-  function createMockTimeline(entries: Array<{
-    type: 'note' | 'rest';
-    startTime: number;
-    endTime: number;
-    noteIndex: number;
-    measure: number;
-  }>): NoteTimelineEntry[] {
-    return entries.map(e => ({
+  function createMockTimeline(
+    entries: Array<{
+      type: 'note' | 'rest';
+      startTime: number;
+      endTime: number;
+      noteIndex: number;
+      measure: number;
+    }>,
+  ): NoteTimelineEntry[] {
+    return entries.map((e) => ({
       ...e,
       position: { stringIndex: 0, fret: 0 as const },
       durationBeats: 0.25,
@@ -334,7 +344,13 @@ describe('findNoteAtTime (binary search)', () => {
   it('should return -1 for rest entries', () => {
     const timeline = createMockTimeline([
       { type: 'note', startTime: 0, endTime: 0.25, noteIndex: 0, measure: 0 },
-      { type: 'rest', startTime: 0.25, endTime: 0.5, noteIndex: -1, measure: 0 },
+      {
+        type: 'rest',
+        startTime: 0.25,
+        endTime: 0.5,
+        noteIndex: -1,
+        measure: 0,
+      },
       { type: 'note', startTime: 0.5, endTime: 0.75, noteIndex: 1, measure: 0 },
     ]);
 
@@ -388,8 +404,12 @@ describe('Measure Transition Handling', () => {
 
   it('should detect measure changes', () => {
     const notes = [
-      createTestNote({ position: { measure: 0, beat: 0, subdivision: 0, tick: 0 } }),
-      createTestNote({ position: { measure: 1, beat: 0, subdivision: 0, tick: 0 } }),
+      createTestNote({
+        position: { measure: 0, beat: 0, subdivision: 0, tick: 0 },
+      }),
+      createTestNote({
+        position: { measure: 1, beat: 0, subdivision: 0, tick: 0 },
+      }),
     ];
 
     const { result } = renderHook(() =>
@@ -400,11 +420,11 @@ describe('Measure Transition Handling', () => {
         maxFrets: 24,
         isPlaying: true,
         isVisible: true,
-      })
+      }),
     );
 
     // Timeline should have entries for different measures
-    const measures = new Set(result.current.timeline.map(e => e.measure));
+    const measures = new Set(result.current.timeline.map((e) => e.measure));
     expect(measures.size).toBe(2);
   });
 
@@ -420,7 +440,9 @@ describe('Measure Transition Handling', () => {
       length: 0,
     };
 
-    vi.spyOn(document, 'querySelectorAll').mockReturnValue(mockQueryResult as any);
+    vi.spyOn(document, 'querySelectorAll').mockReturnValue(
+      mockQueryResult as any,
+    );
 
     const notes = createTestNotes(4);
 
@@ -432,7 +454,7 @@ describe('Measure Transition Handling', () => {
         maxFrets: 24,
         isPlaying: true,
         isVisible: true,
-      })
+      }),
     );
 
     // Simulate clock tick that triggers measure change
@@ -472,7 +494,7 @@ describe('String Index Conversion', () => {
         maxFrets: 24,
         isPlaying: false,
         isVisible: true,
-      })
+      }),
     );
 
     // Timeline should be generated for all notes
@@ -493,7 +515,7 @@ describe('String Index Conversion', () => {
         maxFrets: 24,
         isPlaying: false,
         isVisible: true,
-      })
+      }),
     );
 
     expect(result.current.timeline).toHaveLength(2);
@@ -512,7 +534,7 @@ describe('Fret Conversion', () => {
         maxFrets: 24,
         isPlaying: false,
         isVisible: true,
-      })
+      }),
     );
 
     // The timeline entry should have fret as 'open' or 0
@@ -531,7 +553,7 @@ describe('Fret Conversion', () => {
         maxFrets: 24,
         isPlaying: false,
         isVisible: true,
-      })
+      }),
     );
 
     expect(result.current.timeline[0]).toBeDefined();
@@ -552,7 +574,7 @@ describe('Performance Considerations', () => {
           isPlaying,
           isVisible: true,
         }),
-      { initialProps: { isPlaying: false } }
+      { initialProps: { isPlaying: false } },
     );
 
     const timeline1 = result.current.timeline;
@@ -582,7 +604,7 @@ describe('Performance Considerations', () => {
         maxFrets: 24,
         isPlaying: false,
         isVisible: true,
-      })
+      }),
     );
 
     const duration = performance.now() - start;
@@ -607,7 +629,7 @@ describe('Edge Cases', () => {
         maxFrets: 24,
         isPlaying: false,
         isVisible: true,
-      })
+      }),
     );
 
     // Should not throw, should generate timeline with default values
@@ -627,7 +649,7 @@ describe('Edge Cases', () => {
           maxFrets: 24,
           isPlaying: false,
           isVisible: true,
-        })
+        }),
       );
     }).not.toThrow();
   });
@@ -644,7 +666,7 @@ describe('Edge Cases', () => {
           maxFrets: 24,
           isPlaying: false,
           isVisible: true,
-        })
+        }),
       );
     }).not.toThrow();
   });
@@ -660,7 +682,7 @@ describe('Edge Cases', () => {
         maxFrets: 24,
         isPlaying: true,
         isVisible: false, // Hidden
-      })
+      }),
     );
 
     // Should still work, but may skip DOM updates

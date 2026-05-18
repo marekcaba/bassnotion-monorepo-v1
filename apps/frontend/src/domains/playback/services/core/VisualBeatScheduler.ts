@@ -327,7 +327,9 @@ export class VisualBeatScheduler {
 
     // Calculate continuous beat position (for smooth animations)
     // This represents the exact position within the beat (e.g., 2.7 = 70% through beat 2)
-    const continuousBeat = isCountdown ? 0 : adjustedTime / this.eighthNoteDuration;
+    const continuousBeat = isCountdown
+      ? 0
+      : adjustedTime / this.eighthNoteDuration;
 
     if (beatChanged) {
       // Create new state
@@ -347,14 +349,17 @@ export class VisualBeatScheduler {
       // Set to true to see jitter-free timing diagnostics in console
       const DEBUG_BEAT_TIMING = false;
       if (DEBUG_BEAT_TIMING && !isCountdown) {
-        const expectedTime = this.config.startTime + this.countdownDuration +
+        const expectedTime =
+          this.config.startTime +
+          this.countdownDuration +
           totalEighthNotes * this.eighthNoteDuration;
         const visualLag = (audioTime - expectedTime) * 1000;
 
         // Track interval between visual beat transitions
-        const interval = this.lastBeatTransitionTime > 0
-          ? now - this.lastBeatTransitionTime
-          : 0;
+        const interval =
+          this.lastBeatTransitionTime > 0
+            ? now - this.lastBeatTransitionTime
+            : 0;
         this.lastBeatTransitionTime = now;
 
         // Keep last 16 intervals for analysis
@@ -367,11 +372,14 @@ export class VisualBeatScheduler {
 
         // Calculate interval statistics
         const expectedIntervalMs = this.eighthNoteDuration * 1000;
-        const intervalDeviation = interval > 0 ? interval - expectedIntervalMs : 0;
+        const intervalDeviation =
+          interval > 0 ? interval - expectedIntervalMs : 0;
 
         // Log every 8th beat (once per measure) with interval stats
         if (eighthNoteIndex === 0 && this.intervalHistory.length >= 4) {
-          const avgInterval = this.intervalHistory.reduce((a, b) => a + b, 0) / this.intervalHistory.length;
+          const avgInterval =
+            this.intervalHistory.reduce((a, b) => a + b, 0) /
+            this.intervalHistory.length;
           const minInterval = Math.min(...this.intervalHistory);
           const maxInterval = Math.max(...this.intervalHistory);
           const jitter = maxInterval - minInterval;

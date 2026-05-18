@@ -306,9 +306,7 @@ export class BrowserCompatibility {
         version: this.browserInfo?.version || 'unknown',
         userAgent: navigator.userAgent,
         platform:
-          navigator.userAgentData?.platform ||
-          navigator.platform ||
-          'unknown',
+          navigator.userAgentData?.platform || navigator.platform || 'unknown',
       },
       capabilities: this.capabilities,
       overallSupport,
@@ -404,7 +402,8 @@ export class BrowserCompatibility {
    */
   private getAudioContext(): AudioContext | null {
     try {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      const AudioContextClass =
+        window.AudioContext || window.webkitAudioContext;
       return AudioContextClass ? new AudioContextClass() : null;
     } catch {
       return null;
@@ -425,8 +424,7 @@ export class BrowserCompatibility {
    */
   private isIOS(): boolean {
     return (
-      /iPad|iPhone|iPod/.test(navigator.userAgent) &&
-      !('MSStream' in window)
+      /iPad|iPhone|iPod/.test(navigator.userAgent) && !('MSStream' in window)
     );
   }
 

@@ -26,9 +26,12 @@ export const MAIN_NAV_ITEMS: NavItem[] = [
     icon: GraduationCap,
     activePatterns: ['/app/bassment', '/app/tutorials'],
   },
-  { title: 'Studio', url: '/app/studio', icon: Headphones },
-  { title: 'Gigs', url: '/app/gigs', icon: Play },
-  { title: 'Backstage', url: '/app/backstage', icon: Martini },
+  // The 3 items below are MVP placeholders (the underlying pages
+  // just render "coming soon"). Marked disabled until they're
+  // built so users don't navigate to dead routes pre-launch.
+  { title: 'Studio', url: '/app/studio', icon: Headphones, disabled: true },
+  { title: 'Gigs', url: '/app/gigs', icon: Play, disabled: true },
+  { title: 'Backstage', url: '/app/backstage', icon: Martini, disabled: true },
 ];
 
 export const BOTTOM_NAV_ITEMS: NavItem[] = [

@@ -407,7 +407,9 @@ export interface ToneModule {
 
   // Audio node constructors (optional, loaded dynamically)
   Gain?: new (gain?: number) => ToneGain;
-  EQ3?: new (options?: Partial<{ low: number; mid: number; high: number }>) => ToneEQ3;
+  EQ3?: new (
+    options?: Partial<{ low: number; mid: number; high: number }>,
+  ) => ToneEQ3;
   Compressor?: new (
     options?: Partial<{
       threshold: number;
@@ -435,10 +437,7 @@ export interface ToneModule {
   NoiseSynth?: new (options?: Record<string, unknown>) => ToneNoiseSynth;
   MembraneSynth?: new (options?: Record<string, unknown>) => ToneMembraneSynth;
   Player?: new (url?: string | AudioBuffer) => TonePlayer;
-  Oscillator?: new (
-    frequency?: number,
-    type?: string,
-  ) => ToneOscillator;
+  Oscillator?: new (frequency?: number, type?: string) => ToneOscillator;
   AmplitudeEnvelope?: new (
     options?: Partial<{
       attack: number;

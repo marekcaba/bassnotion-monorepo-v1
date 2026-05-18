@@ -31,13 +31,18 @@ vi.mock('tone', () => ({
   context: {},
 }));
 
-// Mock AudioContext
+// Mock AudioContext.
+// Clock subscribes to AudioContext 'statechange' events via
+// addEventListener; without these stubs the constructor throws.
 class MockAudioContext {
   currentTime = 0;
   sampleRate = 48000;
   baseLatency = 0.01;
   outputLatency = 0.02;
   state: 'suspended' | 'running' | 'closed' = 'running';
+  addEventListener = vi.fn();
+  removeEventListener = vi.fn();
+  dispatchEvent = vi.fn();
 
   constructor() {
     // Simulate time progression

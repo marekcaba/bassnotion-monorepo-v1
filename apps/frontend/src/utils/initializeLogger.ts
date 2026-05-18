@@ -63,7 +63,7 @@ export function initializeLogger() {
   // Log initialization - Single line only!
   if (isDevelopment) {
     logger.info(
-      '🎵 BassNotion initialized (quiet mode) - Use logger.setLevel(LogLevel.INFO) for more logs',
+      '🎵 Bassicology initialized (quiet mode) - Use logger.setLevel(LogLevel.INFO) for more logs',
     );
   }
 }

@@ -85,8 +85,14 @@ export class Metronome extends BaseInstrument {
     if (!this.audioEngine && typeof window !== 'undefined') {
       const globalServices =
         window.__coreServices || window.__globalCoreServices;
-      if (globalServices && typeof globalServices === 'object' && 'getAudioEngine' in globalServices) {
-        this.audioEngine = (globalServices as { getAudioEngine: () => unknown }).getAudioEngine();
+      if (
+        globalServices &&
+        typeof globalServices === 'object' &&
+        'getAudioEngine' in globalServices
+      ) {
+        this.audioEngine = (
+          globalServices as { getAudioEngine: () => unknown }
+        ).getAudioEngine();
       }
     }
 

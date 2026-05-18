@@ -73,7 +73,7 @@ export interface UsePluginCreationReturn {
  * Hook for creating the metronome audio node when AudioContext is available
  */
 export function usePluginCreation(
-  options: UsePluginCreationOptions
+  options: UsePluginCreationOptions,
 ): UsePluginCreationReturn {
   const {
     pluginClassLoaded,
@@ -121,16 +121,15 @@ export function usePluginCreation(
 
       // Check GlobalSampleCache first for preloaded metronome
       try {
-        const { GlobalSampleCache } = await import(
-          '@/domains/playback/modules/storage/cache/GlobalSampleCache'
-        );
+        const { GlobalSampleCache } =
+          await import('@/domains/playback/modules/storage/cache/GlobalSampleCache');
         const preloadedMetronome = GlobalSampleCache.getCachedInstrument(
-          'metronome-preloaded'
+          'metronome-preloaded',
         );
 
         if (preloadedMetronome && preloadedMetronome.audioNode) {
           logger.debug(
-            'Found pre-loaded metronome instrument in GlobalSampleCache!'
+            'Found pre-loaded metronome instrument in GlobalSampleCache!',
           );
           metronomePluginRef.current = preloadedMetronome;
           onPluginLoaded();
@@ -145,7 +144,7 @@ export function usePluginCreation(
         }
       } catch (error) {
         logger.debug(
-          'GlobalSampleCache check failed, proceeding with normal loading'
+          'GlobalSampleCache check failed, proceeding with normal loading',
         );
       }
 
@@ -184,7 +183,7 @@ export function usePluginCreation(
           // Check if context is running or needs to be resumed
           if (context.state === 'suspended') {
             logger.debug(
-              'AudioContext is suspended, waiting for user gesture...'
+              'AudioContext is suspended, waiting for user gesture...',
             );
             lifecycle.checkpoint('PLUGIN_CREATION_BLOCKED', {
               widget: 'metronome',
@@ -208,9 +207,8 @@ export function usePluginCreation(
 
           // Connect to master bus for proper mixing (with fallback to destination)
           try {
-            const { Mixer } = await import(
-              '@/domains/playback/modules/tracks/mixing/Mixer.js'
-            );
+            const { Mixer } =
+              await import('@/domains/playback/modules/tracks/mixing/Mixer.js');
             const mixer = Mixer.getInstance();
             const masterBusInput = mixer.getMasterBusInputAsAudioNode();
             if (masterBusInput) {
@@ -252,7 +250,7 @@ export function usePluginCreation(
             }
           } else {
             logger.warn(
-              'loadDefaultSamples method not available on metronome plugin'
+              'loadDefaultSamples method not available on metronome plugin',
             );
           }
 

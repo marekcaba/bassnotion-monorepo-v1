@@ -28,14 +28,16 @@ export function SparkleAnimation({
         <Icon
           key={sparkle.id}
           className={`absolute w-2 h-2 ${colorClass} pointer-events-none animate-sparkle-burst`}
-          style={{
-            top: '50%',
-            left: '50%',
-            '--sparkle-x': `${sparkle.x}px`,
-            '--sparkle-y': `${sparkle.y}px`,
-            '--sparkle-scale': sparkle.scale,
-            '--sparkle-rotation': `${sparkle.rotation}deg`,
-          } as React.CSSProperties}
+          style={
+            {
+              top: '50%',
+              left: '50%',
+              '--sparkle-x': `${sparkle.x}px`,
+              '--sparkle-y': `${sparkle.y}px`,
+              '--sparkle-scale': sparkle.scale,
+              '--sparkle-rotation': `${sparkle.rotation}deg`,
+            } as React.CSSProperties
+          }
         />
       ))}
     </>

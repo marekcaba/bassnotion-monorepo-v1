@@ -32,11 +32,7 @@ export default {
           'BlinkMacSystemFont',
           'sans-serif',
         ],
-        mono: [
-          'var(--font-dm-mono)',
-          'ui-monospace',
-          'monospace',
-        ],
+        mono: ['var(--font-dm-mono)', 'ui-monospace', 'monospace'],
       },
       // Enhanced breakpoint system for better responsive design
       screens: {

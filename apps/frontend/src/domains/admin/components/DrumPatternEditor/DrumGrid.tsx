@@ -10,9 +10,18 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { DrumLaneRow } from './DrumLaneRow.js';
-import type { DrumGridProps, MusicalPosition, MidiDrumType, DrumLaneConfig } from './types.js';
+import type {
+  DrumGridProps,
+  MusicalPosition,
+  MidiDrumType,
+  DrumLaneConfig,
+} from './types.js';
 import { useDrumEditorStore } from './hooks/useDrumEditorStore.js';
-import { CELL_DIMENSIONS, RESOLUTION_TO_CELLS_PER_BEAT, ZOOM_LIMITS } from './constants.js';
+import {
+  CELL_DIMENSIONS,
+  RESOLUTION_TO_CELLS_PER_BEAT,
+  ZOOM_LIMITS,
+} from './constants.js';
 import { tickToColumn, getTotalColumns } from './utils/gridPositionUtils.js';
 
 /**
@@ -52,7 +61,10 @@ function TimeMarkers({
 
   const cellWidth = Math.max(
     CELL_DIMENSIONS.minWidth,
-    Math.min(CELL_DIMENSIONS.maxWidth, CELL_DIMENSIONS.minWidth * zoomLevel * 1.5)
+    Math.min(
+      CELL_DIMENSIONS.maxWidth,
+      CELL_DIMENSIONS.minWidth * zoomLevel * 1.5,
+    ),
   );
 
   const markers = useMemo(() => {
@@ -66,7 +78,8 @@ function TimeMarkers({
         const measureNum = Math.floor(col / cellsPerMeasure) + 1;
         result.push({ col, label: `${measureNum}`, isMeasure: true });
       } else if (isBeatStart) {
-        const beatInMeasure = Math.floor((col % cellsPerMeasure) / cellsPerBeat) + 1;
+        const beatInMeasure =
+          Math.floor((col % cellsPerMeasure) / cellsPerBeat) + 1;
         result.push({ col, label: `.${beatInMeasure}`, isMeasure: false });
       }
     }
@@ -77,7 +90,9 @@ function TimeMarkers({
   return (
     <div
       className="flex bg-zinc-950 border-b border-zinc-700 sticky top-0 z-10"
-      style={{ minWidth: `${CELL_DIMENSIONS.laneHeaderWidth + totalColumns * cellWidth}px` }}
+      style={{
+        minWidth: `${CELL_DIMENSIONS.laneHeaderWidth + totalColumns * cellWidth}px`,
+      }}
     >
       {/* Sticky lane header spacer - stays fixed during horizontal scroll */}
       <div
@@ -88,7 +103,10 @@ function TimeMarkers({
         }}
       />
       {/* Time markers - scroll horizontally with the grid */}
-      <div className="flex relative" style={{ width: `${totalColumns * cellWidth}px` }}>
+      <div
+        className="flex relative"
+        style={{ width: `${totalColumns * cellWidth}px` }}
+      >
         {markers.map((marker) => (
           <div
             key={marker.col}
@@ -131,27 +149,34 @@ export function DrumGrid({
   // Store selectors - only select data, not actions
   // Use useShallow for array/object comparisons to prevent infinite loops
   const pattern = useDrumEditorStore(useShallow((state) => state.pattern));
-  const selectedHitIds = useDrumEditorStore(useShallow((state) => state.selectedHitIds));
+  const selectedHitIds = useDrumEditorStore(
+    useShallow((state) => state.selectedHitIds),
+  );
   // Get lanes and visibleLanes separately to avoid filter() creating new refs
   const lanes = useDrumEditorStore(useShallow((state) => state.lanes));
-  const visibleLaneIds = useDrumEditorStore(useShallow((state) => state.visibleLanes));
+  const visibleLaneIds = useDrumEditorStore(
+    useShallow((state) => state.visibleLanes),
+  );
 
   // Compute visible lane configs in useMemo to avoid re-filtering on every render
   const visibleLanes = useMemo<DrumLaneConfig[]>(
-    () => lanes.filter((lane: DrumLaneConfig) => visibleLaneIds.includes(lane.drum)),
-    [lanes, visibleLaneIds]
+    () =>
+      lanes.filter((lane: DrumLaneConfig) =>
+        visibleLaneIds.includes(lane.drum),
+      ),
+    [lanes, visibleLaneIds],
   );
 
   // Calculate total columns
   const totalColumns = useMemo(
     () => getTotalColumns(bars, resolution, timeSignature),
-    [bars, resolution, timeSignature]
+    [bars, resolution, timeSignature],
   );
 
   // Calculate playhead column from tick
   const playheadColumn = useMemo(
     () => tickToColumn(playheadTick, resolution, timeSignature),
-    [playheadTick, resolution, timeSignature]
+    [playheadTick, resolution, timeSignature],
   );
 
   // Group hits by drum type for efficient lookup
@@ -170,7 +195,7 @@ export function DrumGrid({
     (drum: MidiDrumType, position: MusicalPosition) => {
       useDrumEditorStore.getState().toggleHit(drum, position);
     },
-    []
+    [],
   );
 
   // Handle cell right-click - select or delete (use getState() for stable reference)
@@ -186,7 +211,7 @@ export function DrumGrid({
         }
       }
     },
-    [selectedHitIds]
+    [selectedHitIds],
   );
 
   // Pinch-to-zoom gesture handling
@@ -207,7 +232,7 @@ export function DrumGrid({
       const currentZoom = useDrumEditorStore.getState().zoomLevel;
       const newZoom = Math.max(
         ZOOM_LIMITS.min,
-        Math.min(ZOOM_LIMITS.max, currentZoom * (1 + delta))
+        Math.min(ZOOM_LIMITS.max, currentZoom * (1 + delta)),
       );
 
       useDrumEditorStore.getState().setZoomLevel(newZoom);
@@ -224,7 +249,7 @@ export function DrumGrid({
       const gestureEvent = e as GestureEvent;
       const newZoom = Math.max(
         ZOOM_LIMITS.min,
-        Math.min(ZOOM_LIMITS.max, initialZoomRef.current * gestureEvent.scale)
+        Math.min(ZOOM_LIMITS.max, initialZoomRef.current * gestureEvent.scale),
       );
       useDrumEditorStore.getState().setZoomLevel(newZoom);
     };
@@ -236,19 +261,27 @@ export function DrumGrid({
     // Touch screen pinch (mobile devices)
     const handleTouchStart = (e: TouchEvent) => {
       if (e.touches.length === 2 && e.touches[0] && e.touches[1]) {
-        initialPinchDistanceRef.current = getTouchDistance(e.touches[0], e.touches[1]);
+        initialPinchDistanceRef.current = getTouchDistance(
+          e.touches[0],
+          e.touches[1],
+        );
         initialZoomRef.current = useDrumEditorStore.getState().zoomLevel;
         e.preventDefault();
       }
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (e.touches.length === 2 && e.touches[0] && e.touches[1] && initialPinchDistanceRef.current !== null) {
+      if (
+        e.touches.length === 2 &&
+        e.touches[0] &&
+        e.touches[1] &&
+        initialPinchDistanceRef.current !== null
+      ) {
         const currentDistance = getTouchDistance(e.touches[0], e.touches[1]);
         const scale = currentDistance / initialPinchDistanceRef.current;
         const newZoom = Math.max(
           ZOOM_LIMITS.min,
-          Math.min(ZOOM_LIMITS.max, initialZoomRef.current * scale)
+          Math.min(ZOOM_LIMITS.max, initialZoomRef.current * scale),
         );
         useDrumEditorStore.getState().setZoomLevel(newZoom);
         e.preventDefault();
@@ -266,8 +299,12 @@ export function DrumGrid({
     container.addEventListener('gesturestart', handleGestureStart);
     container.addEventListener('gesturechange', handleGestureChange);
     container.addEventListener('gestureend', handleGestureEnd);
-    container.addEventListener('touchstart', handleTouchStart, { passive: false });
-    container.addEventListener('touchmove', handleTouchMove, { passive: false });
+    container.addEventListener('touchstart', handleTouchStart, {
+      passive: false,
+    });
+    container.addEventListener('touchmove', handleTouchMove, {
+      passive: false,
+    });
     container.addEventListener('touchend', handleTouchEnd);
     container.addEventListener('touchcancel', handleTouchEnd);
 
@@ -313,9 +350,15 @@ export function DrumGrid({
             resolution={resolution}
             zoomLevel={zoomLevel}
             onCellClick={(position) => handleCellClick(lane.drum, position)}
-            onCellRightClick={(hitId, position) => handleCellRightClick(hitId, position)}
+            onCellRightClick={(hitId, position) =>
+              handleCellRightClick(hitId, position)
+            }
             playheadColumn={playheadColumn}
-            onPreviewHit={onPreviewHit ? (velocity) => onPreviewHit(lane.drum, velocity) : undefined}
+            onPreviewHit={
+              onPreviewHit
+                ? (velocity) => onPreviewHit(lane.drum, velocity)
+                : undefined
+            }
           />
         ))}
       </div>
@@ -323,15 +366,15 @@ export function DrumGrid({
       {/* Grid info footer */}
       <div className="flex items-center justify-between px-3 py-1.5 bg-zinc-950 border-t border-zinc-700 text-xs text-zinc-400">
         <span>
-          {bars} {bars === 1 ? 'bar' : 'bars'} • {timeSignature.numerator}/{timeSignature.denominator} • {resolution} grid
+          {bars} {bars === 1 ? 'bar' : 'bars'} • {timeSignature.numerator}/
+          {timeSignature.denominator} • {resolution} grid
         </span>
         <span className="flex items-center gap-3">
-          <span className="text-zinc-500">
-            {Math.round(zoomLevel * 100)}%
-          </span>
+          <span className="text-zinc-500">{Math.round(zoomLevel * 100)}%</span>
           <span>
             {pattern.length} {pattern.length === 1 ? 'hit' : 'hits'}
-            {selectedHitIds.length > 0 && ` • ${selectedHitIds.length} selected`}
+            {selectedHitIds.length > 0 &&
+              ` • ${selectedHitIds.length} selected`}
           </span>
         </span>
       </div>

@@ -85,7 +85,9 @@ export const FretboardDot: React.FC<FretboardDotProps> = ({
   // 2. isBeingDragged reduces opacity to 0.5 during drag operations
   // 3. If measureOpacity is 0, dot should be completely hidden
   const baseOpacity = measureOpacity ?? 1;
-  const finalOpacity = isBeingDragged ? Math.min(baseOpacity, 0.5) : baseOpacity;
+  const finalOpacity = isBeingDragged
+    ? Math.min(baseOpacity, 0.5)
+    : baseOpacity;
 
   // Build transition property - NO opacity transition to avoid collision with CSS classes
   // CSS classes (.note-active, .note-played, etc.) handle all playback-related animations

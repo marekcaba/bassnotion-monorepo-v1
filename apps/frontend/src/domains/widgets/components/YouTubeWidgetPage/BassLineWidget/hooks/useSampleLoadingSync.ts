@@ -23,7 +23,7 @@ import type {
  * Hook for listening to bass sample loading events
  */
 export function useSampleLoadingSync(
-  options: UseSampleLoadingSyncOptions = {}
+  options: UseSampleLoadingSyncOptions = {},
 ): UseSampleLoadingSyncReturn {
   const { subscribeToEvent } = options;
 
@@ -40,7 +40,7 @@ export function useSampleLoadingSync(
       if (isVerboseDebugEnabled()) {
         console.log(
           '[BASS-WIDGET] Received bass-samples-loaded event:',
-          customEvent.detail
+          customEvent.detail,
         );
       }
       setSamplesLoadedTrigger((prev) => prev + 1);
@@ -50,7 +50,7 @@ export function useSampleLoadingSync(
     const handleSamplesReady = () => {
       if (isVerboseDebugEnabled()) {
         console.log(
-          '[BASS-WIDGET] Received samplesReady event from ScrollTriggerLoader'
+          '[BASS-WIDGET] Received samplesReady event from ScrollTriggerLoader',
         );
       }
       setSamplesLoadedTrigger((prev) => prev + 1);
@@ -69,16 +69,19 @@ export function useSampleLoadingSync(
           if (isVerboseDebugEnabled()) {
             console.log(
               '[BASS-WIDGET] Received bass-samples-loaded event (sync):',
-              payload
+              payload,
             );
           }
           setSamplesLoadedTrigger((prev) => prev + 1);
-        }
+        },
       );
     }
 
     return () => {
-      window.removeEventListener('bass-samples-loaded', handleBassSamplesLoaded);
+      window.removeEventListener(
+        'bass-samples-loaded',
+        handleBassSamplesLoaded,
+      );
       window.removeEventListener('samplesReady', handleSamplesReady);
       if (unsubscribe) unsubscribe();
     };

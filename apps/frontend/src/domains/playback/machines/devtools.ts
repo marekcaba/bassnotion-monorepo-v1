@@ -76,7 +76,9 @@ const registeredActors = new Map<string, AnyActorRef>();
  * @param config - DevTools configuration options
  * @returns The inspector instance (or null if disabled/SSR)
  */
-export function initXStateDevTools(config?: DevToolsConfig): Inspector<unknown> | null {
+export function initXStateDevTools(
+  config?: DevToolsConfig,
+): Inspector<unknown> | null {
   currentConfig = { ...DEFAULT_CONFIG, ...config };
 
   if (!currentConfig.enabled || isInitialized) {
@@ -115,12 +117,12 @@ export function initXStateDevTools(config?: DevToolsConfig): Inspector<unknown> 
     console.log(
       '%c[XState DevTools]%c Initialized successfully',
       'color: #7c3aed; font-weight: bold',
-      'color: inherit'
+      'color: inherit',
     );
     console.log(
       '%c[XState DevTools]%c Run window.__xstateInspect() to open the visual inspector',
       'color: #7c3aed; font-weight: bold',
-      'color: #6b7280'
+      'color: #6b7280',
     );
 
     return inspector;
@@ -177,7 +179,7 @@ export function registerActor(id: string, actor: AnyActorRef): void {
     console.log(
       `%c[XState DevTools]%c Actor registered: ${id}`,
       'color: #7c3aed; font-weight: bold',
-      'color: inherit'
+      'color: inherit',
     );
   }
 }
@@ -225,7 +227,7 @@ export function createStateLogger(machineName: string, color = '#7c3aed') {
       console.log(
         `%c${prefix}%c ${from} → ${to}${eventPart}`,
         prefixStyle,
-        normalStyle
+        normalStyle,
       );
     },
 
@@ -247,7 +249,7 @@ export function createStateLogger(machineName: string, color = '#7c3aed') {
       console.error(
         `%c${prefix}%c Error${stepPart}: ${errorMessage}`,
         'color: #dc2626; font-weight: bold',
-        normalStyle
+        normalStyle,
       );
     },
 
@@ -261,17 +263,26 @@ export function createStateLogger(machineName: string, color = '#7c3aed') {
         `%c${prefix}%c Event: ${event}`,
         'color: #2563eb; font-weight: bold',
         normalStyle,
-        data ?? ''
+        data ?? '',
       );
     },
 
     /**
      * Log with custom severity
      */
-    log: (message: string, data?: unknown, severity: 'info' | 'warn' | 'debug' = 'info') => {
+    log: (
+      message: string,
+      data?: unknown,
+      severity: 'info' | 'warn' | 'debug' = 'info',
+    ) => {
       if (!currentConfig.logTransitions) return;
 
-      const method = severity === 'warn' ? console.warn : severity === 'debug' ? console.debug : console.log;
+      const method =
+        severity === 'warn'
+          ? console.warn
+          : severity === 'debug'
+            ? console.debug
+            : console.log;
       method(`%c${prefix}%c ${message}`, prefixStyle, normalStyle, data ?? '');
     },
   };
@@ -290,14 +301,21 @@ export interface StateHistoryEntry {
 }
 
 export interface StateHistoryTracker {
-  record: (state: string, event?: string, context?: Record<string, unknown>) => void;
+  record: (
+    state: string,
+    event?: string,
+    context?: Record<string, unknown>,
+  ) => void;
   getHistory: () => StateHistoryEntry[];
   getLastN: (n: number) => StateHistoryEntry[];
   clear: () => void;
   print: () => void;
   printFormatted: () => void;
   findState: (stateName: string) => StateHistoryEntry[];
-  getStateTimings: () => Record<string, { totalTime: number; count: number; avgTime: number }>;
+  getStateTimings: () => Record<
+    string,
+    { totalTime: number; count: number; avgTime: number }
+  >;
   getTransitionCount: () => number;
   exportJSON: () => string;
 }
@@ -310,7 +328,7 @@ export interface StateHistoryTracker {
  * @param maxEntries - Maximum history entries to keep (default: 100)
  */
 export function createStateHistoryTracker(
-  maxEntries = currentConfig.maxHistoryEntries
+  maxEntries = currentConfig.maxHistoryEntries,
 ): StateHistoryTracker {
   const history: StateHistoryEntry[] = [];
 
@@ -318,7 +336,11 @@ export function createStateHistoryTracker(
     /**
      * Record a state transition
      */
-    record: (state: string, event?: string, context?: Record<string, unknown>) => {
+    record: (
+      state: string,
+      event?: string,
+      context?: Record<string, unknown>,
+    ) => {
       if (!currentConfig.trackHistory) return;
 
       const now = Date.now();
@@ -366,22 +388,30 @@ export function createStateHistoryTracker(
      * Print history as table
      */
     print: () => {
-      console.table(history.map((e) => ({
-        time: new Date(e.timestamp).toISOString().split('T')[1],
-        state: e.state,
-        event: e.event || '-',
-        duration: e.duration ? `${e.duration}ms` : '-',
-      })));
+      console.table(
+        history.map((e) => ({
+          time: new Date(e.timestamp).toISOString().split('T')[1],
+          state: e.state,
+          event: e.event || '-',
+          duration: e.duration ? `${e.duration}ms` : '-',
+        })),
+      );
     },
 
     /**
      * Print formatted history with visual timeline
      */
     printFormatted: () => {
-      console.log('%c=== State History ===', 'color: #7c3aed; font-weight: bold; font-size: 14px');
+      console.log(
+        '%c=== State History ===',
+        'color: #7c3aed; font-weight: bold; font-size: 14px',
+      );
 
       history.forEach((entry, i) => {
-        const time = new Date(entry.timestamp).toISOString().split('T')[1].slice(0, 12);
+        const time = new Date(entry.timestamp)
+          .toISOString()
+          .split('T')[1]
+          .slice(0, 12);
         const eventStr = entry.event ? ` (${entry.event})` : '';
         const durationStr = entry.duration ? ` [${entry.duration}ms]` : '';
         const arrow = i < history.length - 1 ? '↓' : '●';
@@ -391,11 +421,14 @@ export function createStateHistoryTracker(
           'color: #6b7280',
           'color: #7c3aed',
           'color: #2563eb; font-weight: bold',
-          'color: inherit'
+          'color: inherit',
         );
       });
 
-      console.log('%c=====================', 'color: #7c3aed; font-weight: bold');
+      console.log(
+        '%c=====================',
+        'color: #7c3aed; font-weight: bold',
+      );
     },
 
     /**
@@ -409,7 +442,10 @@ export function createStateHistoryTracker(
      * Get timing statistics per state
      */
     getStateTimings: () => {
-      const timings: Record<string, { totalTime: number; count: number; avgTime: number }> = {};
+      const timings: Record<
+        string,
+        { totalTime: number; count: number; avgTime: number }
+      > = {};
 
       for (const entry of history) {
         if (!entry.duration) continue;
@@ -420,7 +456,8 @@ export function createStateHistoryTracker(
 
         timings[entry.state].totalTime += entry.duration;
         timings[entry.state].count += 1;
-        timings[entry.state].avgTime = timings[entry.state].totalTime / timings[entry.state].count;
+        timings[entry.state].avgTime =
+          timings[entry.state].totalTime / timings[entry.state].count;
       }
 
       return timings;
@@ -458,7 +495,11 @@ export interface TransitionMetric {
  */
 export function createTransitionTimer(machineName: string) {
   const metrics: TransitionMetric[] = [];
-  let pendingTransition: { from: string; event: string; startTime: number } | null = null;
+  let pendingTransition: {
+    from: string;
+    event: string;
+    startTime: number;
+  } | null = null;
 
   return {
     /**
@@ -495,7 +536,7 @@ export function createTransitionTimer(machineName: string) {
         console.warn(
           `%c[${machineName}]%c Slow transition: ${metric.from} → ${metric.to} took ${duration.toFixed(2)}ms`,
           'color: #f59e0b; font-weight: bold',
-          'color: inherit'
+          'color: inherit',
         );
       }
     },
@@ -531,7 +572,10 @@ export function createTransitionTimer(machineName: string) {
      * Print performance summary
      */
     printSummary: () => {
-      console.log(`%c[${machineName}] Performance Summary`, 'color: #7c3aed; font-weight: bold; font-size: 14px');
+      console.log(
+        `%c[${machineName}] Performance Summary`,
+        'color: #7c3aed; font-weight: bold; font-size: 14px',
+      );
 
       const byEvent: Record<string, number[]> = {};
       for (const metric of metrics) {
@@ -548,7 +592,7 @@ export function createTransitionTimer(machineName: string) {
           min: `${Math.min(...durations).toFixed(2)}ms`,
           max: `${Math.max(...durations).toFixed(2)}ms`,
           avg: `${(durations.reduce((a, b) => a + b, 0) / durations.length).toFixed(2)}ms`,
-        }))
+        })),
       );
     },
 
@@ -615,7 +659,10 @@ if (typeof window !== 'undefined') {
         console.log('No actors registered');
         return;
       }
-      console.log(`%cRegistered Actors (${actors.size}):`, 'color: #7c3aed; font-weight: bold');
+      console.log(
+        `%cRegistered Actors (${actors.size}):`,
+        'color: #7c3aed; font-weight: bold',
+      );
       actors.forEach((actor, id) => {
         const snapshot = actor.getSnapshot();
         console.log(`  ${id}: ${JSON.stringify(snapshot.value)}`);
@@ -628,7 +675,4 @@ if (typeof window !== 'undefined') {
 // Exports
 // ============================================================================
 
-export {
-  createBrowserInspector,
-  type Inspector,
-};
+export { createBrowserInspector, type Inspector };

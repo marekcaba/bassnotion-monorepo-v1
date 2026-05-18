@@ -1,17 +1,20 @@
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+
 import { defineConfig, devices } from '@playwright/test';
 import { nxE2EPreset } from '@nx/playwright/preset';
+import dotenv from 'dotenv';
 // import { workspaceRoot } from '@nx/devkit';
-import { fileURLToPath } from 'url';
+
+// Load apps/frontend-e2e/.env (gitignored) — holds the seeded test-user
+// credentials used by auth-flow.spec.ts. See .env.example for the keys.
+dotenv.config({
+  path: resolve(dirname(fileURLToPath(import.meta.url)), '.env'),
+});
 
 // For CI, you may want to set BASE_URL to the deployed app URL
 // For local testing, use the dev server
 const baseURL = process.env['BASE_URL'] || 'http://localhost:3001';
-
-/**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
- */
-// require('dotenv').config();
 
 /**
  * See https://playwright.dev/docs/test-configuration.

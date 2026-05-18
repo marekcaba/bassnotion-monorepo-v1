@@ -111,7 +111,10 @@ export function useDrumEditorPlayback(): UseDrumEditorPlaybackReturn {
         const essentialSamples = [
           { key: 'kick', path: 'drums/admin-samples/Default kit/Kick1.wav' },
           { key: 'snare', path: 'drums/admin-samples/Default kit/Snare1.wav' },
-          { key: 'hihat', path: 'drums/admin-samples/Default kit/Hihat1_closed.wav' },
+          {
+            key: 'hihat',
+            path: 'drums/admin-samples/Default kit/Hihat1_closed.wav',
+          },
         ];
 
         // Load samples in parallel
@@ -120,7 +123,9 @@ export function useDrumEditorPlayback(): UseDrumEditorPlaybackReturn {
             const url = `${supabaseUrl}/storage/v1/object/public/audio-samples/${path}`;
             const response = await fetch(url);
             if (!response.ok) {
-              console.warn(`[DrumEditorPlayback] Failed to load ${key}: ${response.status}`);
+              console.warn(
+                `[DrumEditorPlayback] Failed to load ${key}: ${response.status}`,
+              );
               return;
             }
             const arrayBuffer = await response.arrayBuffer();
@@ -134,7 +139,9 @@ export function useDrumEditorPlayback(): UseDrumEditorPlaybackReturn {
         await Promise.all(loadPromises);
 
         const loadedCount = sampleBuffersRef.current.size;
-        console.log(`[DrumEditorPlayback] Loaded ${loadedCount}/${essentialSamples.length} samples`);
+        console.log(
+          `[DrumEditorPlayback] Loaded ${loadedCount}/${essentialSamples.length} samples`,
+        );
 
         setState({
           isReady: loadedCount > 0,
@@ -188,7 +195,7 @@ export function useDrumEditorPlayback(): UseDrumEditorPlaybackReturn {
    * Play a single drum sample (one-shot preview)
    */
   const previewHit = useCallback(
-    async (drum: MidiDrumType, velocity: number = 100) => {
+    async (drum: MidiDrumType, velocity = 100) => {
       const ctx = await ensureAudioContextRunning();
       if (!ctx) return;
 
@@ -222,7 +229,7 @@ export function useDrumEditorPlayback(): UseDrumEditorPlaybackReturn {
       gain.connect(ctx.destination);
       source.start(0);
     },
-    [ensureAudioContextRunning]
+    [ensureAudioContextRunning],
   );
 
   /**
@@ -256,15 +263,25 @@ export function useDrumEditorPlayback(): UseDrumEditorPlaybackReturn {
    * Schedule pattern playback
    */
   const schedulePattern = useCallback(
-    (ctx: AudioContext, pattern: DrumHit[], tempo: number, startTime: number) => {
+    (
+      ctx: AudioContext,
+      pattern: DrumHit[],
+      tempo: number,
+      startTime: number,
+    ) => {
       pattern.forEach((hit) => {
         const sampleKey = DRUM_TO_SAMPLE_KEY[hit.drum] || 'kick';
-        const buffer = sampleBuffersRef.current.get(sampleKey) || sampleBuffersRef.current.get('kick');
+        const buffer =
+          sampleBuffersRef.current.get(sampleKey) ||
+          sampleBuffersRef.current.get('kick');
 
         if (!buffer) return;
 
         // Calculate hit time in seconds
-        const hitSeconds = musicalToSeconds(hit.position, tempo, { numerator: 4, denominator: 4 });
+        const hitSeconds = musicalToSeconds(hit.position, tempo, {
+          numerator: 4,
+          denominator: 4,
+        });
         const hitTime = startTime + hitSeconds;
 
         // Skip hits that are in the past
@@ -282,14 +299,14 @@ export function useDrumEditorPlayback(): UseDrumEditorPlaybackReturn {
         scheduledSourcesRef.current.push(source);
       });
     },
-    []
+    [],
   );
 
   /**
    * Start pattern playback
    */
   const play = useCallback(
-    async (pattern: DrumHit[], tempo: number, loop: boolean = false) => {
+    async (pattern: DrumHit[], tempo: number, loop = false) => {
       const ctx = await ensureAudioContextRunning();
       if (!ctx || pattern.length === 0) return;
 
@@ -317,13 +334,19 @@ export function useDrumEditorPlayback(): UseDrumEditorPlaybackReturn {
       const updatePlayhead = () => {
         if (!audioContextRef.current) return;
 
-        const elapsed = audioContextRef.current.currentTime - playbackStartTimeRef.current;
+        const elapsed =
+          audioContextRef.current.currentTime - playbackStartTimeRef.current;
 
         if (elapsed >= patternDurationRef.current) {
           if (isLoopingRef.current) {
             // Loop: reschedule pattern and reset playhead
             playbackStartTimeRef.current = audioContextRef.current.currentTime;
-            schedulePattern(audioContextRef.current, pattern, tempo, playbackStartTimeRef.current);
+            schedulePattern(
+              audioContextRef.current,
+              pattern,
+              tempo,
+              playbackStartTimeRef.current,
+            );
             setPlayheadTick(0);
           } else {
             // Stop playback
@@ -343,7 +366,7 @@ export function useDrumEditorPlayback(): UseDrumEditorPlaybackReturn {
 
       playbackIntervalRef.current = requestAnimationFrame(updatePlayhead);
     },
-    [ensureAudioContextRunning, schedulePattern, stop]
+    [ensureAudioContextRunning, schedulePattern, stop],
   );
 
   return {

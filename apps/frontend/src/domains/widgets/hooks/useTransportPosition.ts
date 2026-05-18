@@ -44,7 +44,9 @@ export function useTransportPosition({
     if (!coreServices || typeof coreServices.getEventBus !== 'function') {
       // CoreServices not ready yet - set up listener for when they become available
       const handleServicesReady = () => {
-        console.log('[useTransportPosition] Services ready event received, retrying...');
+        console.log(
+          '[useTransportPosition] Services ready event received, retrying...',
+        );
         setRetryCount((c) => c + 1);
       };
 
@@ -56,7 +58,9 @@ export function useTransportPosition({
       const retryTimer = setTimeout(() => {
         const services = WindowRegistry.getCoreServices();
         if (services && typeof services.getEventBus === 'function') {
-          console.log('[useTransportPosition] Services found on retry, connecting...');
+          console.log(
+            '[useTransportPosition] Services found on retry, connecting...',
+          );
           setRetryCount((c) => c + 1);
         }
       }, 500);
@@ -73,7 +77,9 @@ export function useTransportPosition({
       return;
     }
 
-    console.log('[useTransportPosition] Connected to EventBus, subscribing to position updates');
+    console.log(
+      '[useTransportPosition] Connected to EventBus, subscribing to position updates',
+    );
 
     // Subscribe directly to transport position updates
     const handlePositionUpdate = (data: any) => {

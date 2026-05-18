@@ -23,7 +23,9 @@ function getTone(): any {
       return tone;
     }
   }
-  throw new Error('Scheduler: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+  throw new Error(
+    'Scheduler: Tone.js not loaded. Ensure AudioEngine is initialized first.',
+  );
 }
 
 export interface SchedulerConfig {

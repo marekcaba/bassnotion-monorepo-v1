@@ -21,7 +21,7 @@ function safeDifficulty(value: unknown): string {
  */
 export function deriveBlocksFromLegacy(
   tutorial: Tutorial,
-  exercises: any[]
+  exercises: any[],
 ): AnyBlock[] {
   const blocks: AnyBlock[] = [];
   let order = 0;
@@ -47,7 +47,7 @@ export function deriveBlocksFromLegacy(
   // Exercise block (unlocked difficulties only)
   const LOCKED_DIFFICULTIES = ['advanced', 'hard', 'expert'];
   const unlockedExercises = exercises.filter(
-    (ex) => !LOCKED_DIFFICULTIES.includes(safeDifficulty(ex.difficulty))
+    (ex) => !LOCKED_DIFFICULTIES.includes(safeDifficulty(ex.difficulty)),
   );
 
   if (unlockedExercises.length > 0) {
@@ -59,7 +59,7 @@ export function deriveBlocksFromLegacy(
       showInIsland: true,
       config: {
         exerciseIds: unlockedExercises.map((ex) =>
-          typeof ex.id === 'object' ? ex.id.value : String(ex.id)
+          typeof ex.id === 'object' ? ex.id.value : String(ex.id),
         ),
         requiredCompletions: 4,
         lockedDifficulties: LOCKED_DIFFICULTIES,
@@ -69,7 +69,7 @@ export function deriveBlocksFromLegacy(
 
   // Groove block (always present — the "Apply" act)
   const grooveExercise = exercises.find((ex) =>
-    LOCKED_DIFFICULTIES.includes(safeDifficulty(ex.difficulty))
+    LOCKED_DIFFICULTIES.includes(safeDifficulty(ex.difficulty)),
   );
 
   blocks.push({

@@ -28,7 +28,7 @@ export function useCurrentBlock({
   blocks,
 }: UseCurrentBlockParams): UseCurrentBlockResult {
   const [currentBlockId, setCurrentBlockId] = useState<string | null>(
-    blocks[0]?.id ?? null
+    blocks[0]?.id ?? null,
   );
 
   useEffect(() => {
@@ -41,13 +41,13 @@ export function useCurrentBlock({
         for (const entry of entries) {
           if (entry.isIntersecting) {
             const blockId = Array.from(refs.entries()).find(
-              ([, el]) => el === entry.target
+              ([, el]) => el === entry.target,
             )?.[0];
             if (blockId) setCurrentBlockId(blockId);
           }
         }
       },
-      { root: container, threshold: 0.5 }
+      { root: container, threshold: 0.5 },
     );
 
     refs.forEach((el) => observer.observe(el));
@@ -61,7 +61,7 @@ export function useCurrentBlock({
       const el = blockRefs.current?.get(blockId);
       el?.scrollIntoView({ behavior: options?.instant ? 'auto' : 'smooth' });
     },
-    [blockRefs]
+    [blockRefs],
   );
 
   const scrollToIndex = useCallback(
@@ -69,7 +69,7 @@ export function useCurrentBlock({
       const block = blocks[index];
       if (block) scrollToBlock(block.id, options);
     },
-    [blocks, scrollToBlock]
+    [blocks, scrollToBlock],
   );
 
   return {

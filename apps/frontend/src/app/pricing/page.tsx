@@ -108,7 +108,7 @@ export default function PricingPage() {
                 Choose Your Plan
               </h1>
               <p className="text-lg text-gray-400 max-w-2xl mx-auto">
-                Start your bass guitar journey with BassNotion. Get access to
+                Start your bass guitar journey with Bassicology. Get access to
                 professional tutorials, interactive exercises, and a 3D
                 fretboard visualization.
               </p>

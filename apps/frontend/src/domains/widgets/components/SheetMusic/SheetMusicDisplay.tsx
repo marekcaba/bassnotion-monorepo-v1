@@ -212,19 +212,25 @@ export function SheetMusicDisplay({
         osmd.EngravingRules.StretchLastSystemLine = false;
 
         // DEBUG: Log ALL EngravingRules to see what's available
-        console.log('[SheetMusicDisplay] ALL EngravingRules keys:', Object.keys(osmd.EngravingRules));
+        console.log(
+          '[SheetMusicDisplay] ALL EngravingRules keys:',
+          Object.keys(osmd.EngravingRules),
+        );
 
         // DEBUG: Log OSMD configuration BEFORE render
         console.log('[SheetMusicDisplay] OSMD EngravingRules APPLIED:', {
           // Measure width settings
           FixedMeasureWidth: osmd.EngravingRules.FixedMeasureWidth,
-          FixedMeasureWidthFixedValue: osmd.EngravingRules.FixedMeasureWidthFixedValue,
+          FixedMeasureWidthFixedValue:
+            osmd.EngravingRules.FixedMeasureWidthFixedValue,
           // Measure margins (space from barline to notes)
           MeasureLeftMargin: osmd.EngravingRules.MeasureLeftMargin,
           MeasureRightMargin: osmd.EngravingRules.MeasureRightMargin,
           // Voice/note spacing
-          VoiceSpacingMultiplierVexflow: osmd.EngravingRules.VoiceSpacingMultiplierVexflow,
-          VoiceSpacingAddendVexflow: osmd.EngravingRules.VoiceSpacingAddendVexflow,
+          VoiceSpacingMultiplierVexflow:
+            osmd.EngravingRules.VoiceSpacingMultiplierVexflow,
+          VoiceSpacingAddendVexflow:
+            osmd.EngravingRules.VoiceSpacingAddendVexflow,
           MinNoteDistance: osmd.EngravingRules.MinNoteDistance,
           // Softmax factor for proportional spacing
           SoftmaxFactorVexFlow: osmd.EngravingRules.SoftmaxFactorVexFlow,
@@ -251,72 +257,89 @@ export function SheetMusicDisplay({
         // Access the graphic sheet to inspect actual measure positions
         if (osmd.GraphicSheet && osmd.GraphicSheet.MeasureList) {
           const measureList = osmd.GraphicSheet.MeasureList;
-          console.log('[SheetMusicDisplay] Total measures:', measureList.length);
+          console.log(
+            '[SheetMusicDisplay] Total measures:',
+            measureList.length,
+          );
 
-          measureList.forEach((measureArray: unknown[], measureIndex: number) => {
-            if (measureArray && measureArray.length > 0) {
-              const measure = measureArray[0] as {
-                PositionAndShape?: {
-                  AbsolutePosition?: { x: number; y: number };
-                  Size?: { width: number; height: number };
-                  BorderLeft?: number;
-                  BorderRight?: number;
-                };
-                staffEntries?: Array<{
+          measureList.forEach(
+            (measureArray: unknown[], measureIndex: number) => {
+              if (measureArray && measureArray.length > 0) {
+                const measure = measureArray[0] as {
                   PositionAndShape?: {
-                    AbsolutePosition?: { x: number };
+                    AbsolutePosition?: { x: number; y: number };
+                    Size?: { width: number; height: number };
+                    BorderLeft?: number;
+                    BorderRight?: number;
                   };
-                }>;
-              };
-              if (measure && measure.PositionAndShape) {
-                const pos = measure.PositionAndShape;
-                console.log(`[SheetMusicDisplay] Measure ${measureIndex}:`, {
-                  absoluteX: pos.AbsolutePosition?.x,
-                  absoluteY: pos.AbsolutePosition?.y,
-                  width: pos.Size?.width,
-                  height: pos.Size?.height,
-                  borderLeft: pos.BorderLeft,
-                  borderRight: pos.BorderRight,
-                });
-
-                // Log first and last staff entry positions within measure
-                if (measure.staffEntries && measure.staffEntries.length > 0) {
-                  const firstEntry = measure.staffEntries[0];
-                  const lastEntry = measure.staffEntries[measure.staffEntries.length - 1];
-                  const firstX = firstEntry?.PositionAndShape?.AbsolutePosition?.x || 0;
-                  const lastX = lastEntry?.PositionAndShape?.AbsolutePosition?.x || 0;
-                  const measureStart = pos.AbsolutePosition?.x || 0;
-                  const measureEnd = measureStart + (pos.Size?.width || 0);
-
-                  // Calculate ACTUAL margins (distance from barline to notes)
-                  const actualLeftMargin = firstX - measureStart;
-                  const actualRightMargin = measureEnd - lastX;
-
-                  console.log(`[SheetMusicDisplay] Measure ${measureIndex} MARGINS:`, {
-                    entryCount: measure.staffEntries.length,
-                    measureStart: measureStart.toFixed(2),
-                    measureEnd: measureEnd.toFixed(2),
-                    firstNoteX: firstX.toFixed(2),
-                    lastNoteX: lastX.toFixed(2),
-                    LEFT_MARGIN: actualLeftMargin.toFixed(2),
-                    RIGHT_MARGIN: actualRightMargin.toFixed(2),
-                    DIFFERENCE: (actualRightMargin - actualLeftMargin).toFixed(2),
+                  staffEntries?: Array<{
+                    PositionAndShape?: {
+                      AbsolutePosition?: { x: number };
+                    };
+                  }>;
+                };
+                if (measure && measure.PositionAndShape) {
+                  const pos = measure.PositionAndShape;
+                  console.log(`[SheetMusicDisplay] Measure ${measureIndex}:`, {
+                    absoluteX: pos.AbsolutePosition?.x,
+                    absoluteY: pos.AbsolutePosition?.y,
+                    width: pos.Size?.width,
+                    height: pos.Size?.height,
+                    borderLeft: pos.BorderLeft,
+                    borderRight: pos.BorderRight,
                   });
+
+                  // Log first and last staff entry positions within measure
+                  if (measure.staffEntries && measure.staffEntries.length > 0) {
+                    const firstEntry = measure.staffEntries[0];
+                    const lastEntry =
+                      measure.staffEntries[measure.staffEntries.length - 1];
+                    const firstX =
+                      firstEntry?.PositionAndShape?.AbsolutePosition?.x || 0;
+                    const lastX =
+                      lastEntry?.PositionAndShape?.AbsolutePosition?.x || 0;
+                    const measureStart = pos.AbsolutePosition?.x || 0;
+                    const measureEnd = measureStart + (pos.Size?.width || 0);
+
+                    // Calculate ACTUAL margins (distance from barline to notes)
+                    const actualLeftMargin = firstX - measureStart;
+                    const actualRightMargin = measureEnd - lastX;
+
+                    console.log(
+                      `[SheetMusicDisplay] Measure ${measureIndex} MARGINS:`,
+                      {
+                        entryCount: measure.staffEntries.length,
+                        measureStart: measureStart.toFixed(2),
+                        measureEnd: measureEnd.toFixed(2),
+                        firstNoteX: firstX.toFixed(2),
+                        lastNoteX: lastX.toFixed(2),
+                        LEFT_MARGIN: actualLeftMargin.toFixed(2),
+                        RIGHT_MARGIN: actualRightMargin.toFixed(2),
+                        DIFFERENCE: (
+                          actualRightMargin - actualLeftMargin
+                        ).toFixed(2),
+                      },
+                    );
+                  }
                 }
               }
-            }
-          });
+            },
+          );
         }
 
         // Also log the ACTUAL EngravingRules after render to verify they were used
         console.log('[SheetMusicDisplay] EngravingRules AFTER render:', {
           FixedMeasureWidth: osmd.EngravingRules.FixedMeasureWidth,
-          FixedMeasureWidthFixedValue: osmd.EngravingRules.FixedMeasureWidthFixedValue,
+          FixedMeasureWidthFixedValue:
+            osmd.EngravingRules.FixedMeasureWidthFixedValue,
           MeasureLeftMargin: osmd.EngravingRules.MeasureLeftMargin,
           MeasureRightMargin: osmd.EngravingRules.MeasureRightMargin,
           // Check if there are additional margin settings
-          DistanceBetweenLastInstructionAndRepetitionBarline: osmd.EngravingRules.DistanceBetweenLastInstructionAndRepetitionBarline,
-          RepetitionEndInstructionXShift: osmd.EngravingRules.RepetitionEndInstructionXShift,
+          DistanceBetweenLastInstructionAndRepetitionBarline:
+            osmd.EngravingRules
+              .DistanceBetweenLastInstructionAndRepetitionBarline,
+          RepetitionEndInstructionXShift:
+            osmd.EngravingRules.RepetitionEndInstructionXShift,
         });
 
         // Check if effect is still active after async render
@@ -614,7 +637,7 @@ export function SheetMusicDisplay({
     const scrollContainer = parentRef.current;
     if (!scrollContainer) return;
 
-    let isUserScrolling = false;
+    const isUserScrolling = false;
     let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
 
     const handleScroll = () => {
@@ -810,7 +833,7 @@ export function SheetMusicDisplay({
           alignItems: 'center',
           paddingLeft: '30px',
           paddingRight: '30px',
-                  }}
+        }}
       />
     </div>
   );

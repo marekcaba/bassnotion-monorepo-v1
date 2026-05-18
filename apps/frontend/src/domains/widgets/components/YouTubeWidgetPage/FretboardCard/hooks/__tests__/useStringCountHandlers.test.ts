@@ -59,13 +59,17 @@ describe('useStringCountHandlers', () => {
         result.current.handleStringCountChangeWithValidation(5);
       });
 
-      expect(result.current.warningMessage).toBe('Cannot hide strings with dots');
+      expect(result.current.warningMessage).toBe(
+        'Cannot hide strings with dots',
+      );
       expect(mockSetStringCount).not.toHaveBeenCalled();
     });
 
     it('should auto-hide warning after 5 seconds', () => {
       vi.mocked(hasDotsOnHiddenStrings).mockReturnValue(true);
-      vi.mocked(getStringCountWarningMessage).mockReturnValue('Warning message');
+      vi.mocked(getStringCountWarningMessage).mockReturnValue(
+        'Warning message',
+      );
 
       const { result } = renderHook(() => useStringCountHandlers(defaultProps));
 
@@ -132,7 +136,9 @@ describe('useStringCountHandlers', () => {
   describe('Cleanup on Unmount', () => {
     it('should cancel timeout when component unmounts', () => {
       vi.mocked(hasDotsOnHiddenStrings).mockReturnValue(true);
-      vi.mocked(getStringCountWarningMessage).mockReturnValue('Warning message');
+      vi.mocked(getStringCountWarningMessage).mockReturnValue(
+        'Warning message',
+      );
 
       const { result, unmount } = renderHook(() =>
         useStringCountHandlers(defaultProps),
@@ -198,7 +204,9 @@ describe('useStringCountHandlers', () => {
   describe('Manual Warning Clearing', () => {
     it('should clear warning and cancel timeout when clearWarningMessage is called', () => {
       vi.mocked(hasDotsOnHiddenStrings).mockReturnValue(true);
-      vi.mocked(getStringCountWarningMessage).mockReturnValue('Warning message');
+      vi.mocked(getStringCountWarningMessage).mockReturnValue(
+        'Warning message',
+      );
 
       const { result } = renderHook(() => useStringCountHandlers(defaultProps));
 

@@ -81,7 +81,9 @@ export class SegmentAssessmentController {
    * Get the entry node for the assessment.
    */
   @Get('flow/entry')
-  async getEntryNode(): Promise<{ node: import('@bassnotion/contracts').FlowNode }> {
+  async getEntryNode(): Promise<{
+    node: import('@bassnotion/contracts').FlowNode;
+  }> {
     const node = await this.service.getEntryNode();
     return { node };
   }
@@ -94,7 +96,9 @@ export class SegmentAssessmentController {
    * Get a video segment by ID.
    */
   @Get('segments/:id')
-  async getSegment(@Param('id') id: string): Promise<{ segment: VideoSegment }> {
+  async getSegment(
+    @Param('id') id: string,
+  ): Promise<{ segment: VideoSegment }> {
     const segment = await this.service.getSegmentById(id);
     return { segment };
   }
@@ -107,7 +111,9 @@ export class SegmentAssessmentController {
    * Get a question by key.
    */
   @Get('questions/:key')
-  async getQuestion(@Param('key') key: string): Promise<{ question: SegmentQuestion }> {
+  async getQuestion(
+    @Param('key') key: string,
+  ): Promise<{ question: SegmentQuestion }> {
     const question = await this.service.getQuestionByKey(key);
     return { question };
   }

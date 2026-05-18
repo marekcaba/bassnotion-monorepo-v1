@@ -56,19 +56,23 @@ class WidgetPreloaderSingleton {
   private readonly widgetImports = [
     {
       name: 'MetronomeWidget',
-      import: () => import('../components/YouTubeWidgetPage/MetronomeWidget/index.js'),
+      import: () =>
+        import('../components/YouTubeWidgetPage/MetronomeWidget/index.js'),
     },
     {
       name: 'DrummerWidget',
-      import: () => import('../components/YouTubeWidgetPage/DrummerWidget/index.js'),
+      import: () =>
+        import('../components/YouTubeWidgetPage/DrummerWidget/index.js'),
     },
     {
       name: 'BassLineWidget',
-      import: () => import('../components/YouTubeWidgetPage/BassLineWidget/index.js'),
+      import: () =>
+        import('../components/YouTubeWidgetPage/BassLineWidget/index.js'),
     },
     {
       name: 'HarmonyWidget',
-      import: () => import('../components/YouTubeWidgetPage/HarmonyWidget/index.js'),
+      import: () =>
+        import('../components/YouTubeWidgetPage/HarmonyWidget/index.js'),
     },
   ];
 
@@ -100,12 +104,19 @@ class WidgetPreloaderSingleton {
     console.log(
       '🔥 [WIDGET-PRELOAD] Phase 1: Warmup started at +' +
         Math.round(this.metrics.warmupStartTime) +
-        'ms'
+        'ms',
     );
 
     // Use requestIdleCallback for non-blocking parallel load
     if ('requestIdleCallback' in window) {
-      (window as { requestIdleCallback: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number }).requestIdleCallback(() => this.loadAllWidgets(), {
+      (
+        window as {
+          requestIdleCallback: (
+            callback: IdleRequestCallback,
+            options?: IdleRequestOptions,
+          ) => number;
+        }
+      ).requestIdleCallback(() => this.loadAllWidgets(), {
         timeout: 300, // Aggressive timeout - we want these loaded fast
       });
     } else {
@@ -129,34 +140,36 @@ class WidgetPreloaderSingleton {
     console.log(
       '📦 [WIDGET-PRELOAD] Phase 2: Parallel loading started at +' +
         Math.round(this.metrics.loadStartTime) +
-        'ms'
+        'ms',
     );
 
     // Load ALL widgets in parallel using Promise.allSettled
     // This ensures one failure doesn't block others
-    const loadPromises = this.widgetImports.map(async ({ name, import: importFn }) => {
-      const startTime = performance.now();
-      try {
-        const module = await importFn();
-        const loadTime = performance.now() - startTime;
+    const loadPromises = this.widgetImports.map(
+      async ({ name, import: importFn }) => {
+        const startTime = performance.now();
+        try {
+          const module = await importFn();
+          const loadTime = performance.now() - startTime;
 
-        this.metrics.widgets.set(name, {
-          name,
-          module,
-          loadTime,
-        });
+          this.metrics.widgets.set(name, {
+            name,
+            module,
+            loadTime,
+          });
 
-        console.log(
-          `✅ [WIDGET-PRELOAD] ${name} loaded in ${Math.round(loadTime)}ms`
-        );
+          console.log(
+            `✅ [WIDGET-PRELOAD] ${name} loaded in ${Math.round(loadTime)}ms`,
+          );
 
-        return { name, success: true, loadTime };
-      } catch (error) {
-        console.error(`❌ [WIDGET-PRELOAD] Failed to load ${name}:`, error);
-        this.metrics.errors.push(error as Error);
-        return { name, success: false, error };
-      }
-    });
+          return { name, success: true, loadTime };
+        } catch (error) {
+          console.error(`❌ [WIDGET-PRELOAD] Failed to load ${name}:`, error);
+          this.metrics.errors.push(error as Error);
+          return { name, success: false, error };
+        }
+      },
+    );
 
     // Wait for all widgets to load (or fail)
     this.loadPromise = Promise.allSettled(loadPromises).then((results) => {
@@ -165,10 +178,11 @@ class WidgetPreloaderSingleton {
         this.metrics.loadEndTime - (this.metrics.warmupStartTime || 0);
 
       const successCount = results.filter(
-        (r) => r.status === 'fulfilled' && (r.value as any).success
+        (r) => r.status === 'fulfilled' && (r.value as any).success,
       ).length;
 
-      this.metrics.state = successCount === this.widgetImports.length ? 'ready' : 'error';
+      this.metrics.state =
+        successCount === this.widgetImports.length ? 'ready' : 'error';
 
       console.log('🎯 [WIDGET-PRELOAD] All widgets processed!', {
         successCount,
@@ -187,7 +201,7 @@ class WidgetPreloaderSingleton {
             duration: this.metrics.totalDuration,
             widgets: Array.from(this.metrics.widgets.keys()),
           },
-        })
+        }),
       );
     });
 

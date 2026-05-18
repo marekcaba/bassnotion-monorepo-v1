@@ -40,7 +40,8 @@ export class PlaybackMonitoringService extends MonitoringService {
         try {
           if (typeof window === 'undefined') return true; // Skip in SSR
 
-          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          const AudioContextClass =
+            window.AudioContext || window.webkitAudioContext;
           if (!AudioContextClass) return false;
 
           const audioContext = new AudioContextClass();

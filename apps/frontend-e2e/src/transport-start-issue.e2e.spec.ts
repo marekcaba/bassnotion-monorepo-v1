@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Transport Start Issue', () => {
   test('investigate why Transport.start doesnt actually start', async ({
@@ -15,7 +15,9 @@ test.describe('Transport Start Issue', () => {
       const Tone = (window as any).Tone;
       if (!Tone) throw new Error('Tone.js not available');
 
-      const results = {
+      // Each entry is reassigned to a fully-populated state snapshot
+      // below; the inferred {} type otherwise rejects property access.
+      const results: Record<string, any> = {
         beforeStart: {},
         afterStart: {},
         afterWait: {},
@@ -91,7 +93,9 @@ test.describe('Transport Start Issue', () => {
       ['start', 'stop', 'pause', 'cancel'].forEach((method) => {
         const original = Tone.Transport[method];
         Tone.Transport[method] = function (...args: any[]) {
-          const debug = {
+          // Typed as any so we can attach stateAfter/secondsAfter
+          // after the wrapped call below.
+          const debug: any = {
             method,
             args,
             stateBefore: this.state,

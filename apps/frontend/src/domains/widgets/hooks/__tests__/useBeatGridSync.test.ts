@@ -53,7 +53,7 @@ describe('useBeatGridSync', () => {
           rows: 3,
           columns: 8,
           isPlaying: false,
-        })
+        }),
       );
 
       expect(result.current.registerIndicator).toBeDefined();
@@ -66,7 +66,7 @@ describe('useBeatGridSync', () => {
           rows: 3,
           columns: 8,
           isPlaying: false,
-        })
+        }),
       );
 
       expect(result.current.getCurrentBeat).toBeDefined();
@@ -79,7 +79,7 @@ describe('useBeatGridSync', () => {
           rows: 3,
           columns: 8,
           isPlaying: false,
-        })
+        }),
       );
 
       expect(result.current.getEighthNoteDurationMs).toBeDefined();
@@ -92,7 +92,7 @@ describe('useBeatGridSync', () => {
           rows: 3,
           columns: 8,
           isPlaying: false,
-        })
+        }),
       );
 
       expect(mockSubscribe).not.toHaveBeenCalled();
@@ -104,7 +104,7 @@ describe('useBeatGridSync', () => {
           rows: 3,
           columns: 8,
           isPlaying: true,
-        })
+        }),
       );
 
       expect(mockSubscribe).toHaveBeenCalledTimes(1);
@@ -119,7 +119,7 @@ describe('useBeatGridSync', () => {
           rows: 3,
           columns: 8,
           isPlaying: false,
-        })
+        }),
       );
 
       const mockElement = document.createElement('div');
@@ -139,7 +139,7 @@ describe('useBeatGridSync', () => {
           rows: 3,
           columns: 8,
           isPlaying: false,
-        })
+        }),
       );
 
       const mockElement = document.createElement('div');
@@ -164,7 +164,7 @@ describe('useBeatGridSync', () => {
           isPlaying: true,
           activeClass: 'opacity-100',
           inactiveClass: 'opacity-0',
-        })
+        }),
       );
 
       // Create and register mock elements
@@ -217,7 +217,7 @@ describe('useBeatGridSync', () => {
           isPlaying: true,
           activeClass: 'opacity-100',
           inactiveClass: 'opacity-0',
-        })
+        }),
       );
 
       // Create elements for 3 rows x 8 columns
@@ -272,7 +272,7 @@ describe('useBeatGridSync', () => {
           rows: 1,
           columns: 8,
           isPlaying: true,
-        })
+        }),
       );
 
       // Create elements
@@ -326,7 +326,7 @@ describe('useBeatGridSync', () => {
           columns: 8,
           isPlaying: true,
           isVisible: false,
-        })
+        }),
       );
 
       // Create and register element
@@ -370,7 +370,7 @@ describe('useBeatGridSync', () => {
             columns: 8,
             isPlaying,
           }),
-        { initialProps: { isPlaying: true } }
+        { initialProps: { isPlaying: true } },
       );
 
       expect(mockSubscribe).toHaveBeenCalledTimes(1);
@@ -391,7 +391,7 @@ describe('useBeatGridSync', () => {
             activeClass: 'opacity-100',
             inactiveClass: 'opacity-0',
           }),
-        { initialProps: { isPlaying: true } }
+        { initialProps: { isPlaying: true } },
       );
 
       // Create elements and set one as active
@@ -445,7 +445,7 @@ describe('useBeatGridSync', () => {
           rows: 1,
           columns: 8,
           isPlaying: true,
-        })
+        }),
       );
 
       // Create element
@@ -485,7 +485,7 @@ describe('useBeatGridSync', () => {
           rows: 1,
           columns: 8,
           isPlaying: true,
-        })
+        }),
       );
 
       // Create element
@@ -526,7 +526,7 @@ describe('useBeatGridSync', () => {
           isPlaying: true,
           activeClass: 'beat-active',
           inactiveClass: 'beat-inactive',
-        })
+        }),
       );
 
       // Create elements
@@ -589,7 +589,7 @@ describe('useBeatGridSync', () => {
           rows: 1,
           columns: 8,
           isPlaying: true,
-        })
+        }),
       );
 
       // Create elements after hook initialization
@@ -629,7 +629,7 @@ describe('useSingleRowBeatSync', () => {
       useSingleRowBeatSync({
         columns: 8,
         isPlaying: false,
-      })
+      }),
     );
 
     expect(result.current.registerIndicator).toBeDefined();
@@ -670,7 +670,7 @@ describe('useFretboardAtomicSync', () => {
       const { result } = renderHook(() =>
         useFretboardAtomicSync({
           isPlaying: false,
-        })
+        }),
       );
 
       expect(result.current.exerciseTimeMs).toBe(0);
@@ -688,7 +688,7 @@ describe('useFretboardAtomicSync', () => {
       const { result } = renderHook(() =>
         useFretboardAtomicSync({
           isPlaying: false,
-        })
+        }),
       );
 
       expect(result.current.stateRef).toBeDefined();
@@ -702,7 +702,7 @@ describe('useFretboardAtomicSync', () => {
       renderHook(() =>
         useFretboardAtomicSync({
           isPlaying: false,
-        })
+        }),
       );
 
       expect(mockSubscribe).not.toHaveBeenCalled();
@@ -714,7 +714,7 @@ describe('useFretboardAtomicSync', () => {
       renderHook(() =>
         useFretboardAtomicSync({
           isPlaying: true,
-        })
+        }),
       );
 
       expect(mockSubscribe).toHaveBeenCalledTimes(1);
@@ -731,7 +731,7 @@ describe('useFretboardAtomicSync', () => {
           isPlaying: true,
           countdownBeats: 4, // 4 beats at 120 BPM = 2 seconds
           beatsPerMeasure: 4,
-        })
+        }),
       );
 
       // Simulate clock state at 3 seconds visual time (1 second after countdown)
@@ -768,7 +768,7 @@ describe('useFretboardAtomicSync', () => {
           isPlaying: true,
           countdownBeats: 4, // 4 beats at 120 BPM = 2 seconds
           beatsPerMeasure: 4,
-        })
+        }),
       );
 
       // Simulate clock state at 1 second (still in countdown)
@@ -800,7 +800,7 @@ describe('useFretboardAtomicSync', () => {
       const { result } = renderHook(() =>
         useFretboardAtomicSync({
           isPlaying: true,
-        })
+        }),
       );
 
       const beatState: AtomicBeatState = {
@@ -830,7 +830,7 @@ describe('useFretboardAtomicSync', () => {
       const { result } = renderHook(() =>
         useFretboardAtomicSync({
           isPlaying: true,
-        })
+        }),
       );
 
       const beatState: AtomicBeatState = {
@@ -860,7 +860,7 @@ describe('useFretboardAtomicSync', () => {
       const { result } = renderHook(() =>
         useFretboardAtomicSync({
           isPlaying: true,
-        })
+        }),
       );
 
       const beatState: AtomicBeatState = {
@@ -893,7 +893,7 @@ describe('useFretboardAtomicSync', () => {
         useFretboardAtomicSync({
           isPlaying: true,
           isVisible: false,
-        })
+        }),
       );
 
       const beatState: AtomicBeatState = {
@@ -929,7 +929,7 @@ describe('useFretboardAtomicSync', () => {
           useFretboardAtomicSync({
             isPlaying,
           }),
-        { initialProps: { isPlaying: true } }
+        { initialProps: { isPlaying: true } },
       );
 
       expect(mockSubscribe).toHaveBeenCalledTimes(1);
@@ -948,7 +948,7 @@ describe('useFretboardAtomicSync', () => {
           useFretboardAtomicSync({
             isPlaying,
           }),
-        { initialProps: { isPlaying: true } }
+        { initialProps: { isPlaying: true } },
       );
 
       // Simulate some playback progress
@@ -989,7 +989,7 @@ describe('useFretboardAtomicSync', () => {
       const { result } = renderHook(() =>
         useFretboardAtomicSync({
           isPlaying: true,
-        })
+        }),
       );
 
       // First beat
@@ -1038,7 +1038,7 @@ describe('useFretboardAtomicSync', () => {
       const { result } = renderHook(() =>
         useFretboardAtomicSync({
           isPlaying: true,
-        })
+        }),
       );
 
       // Measure 0
@@ -1089,7 +1089,7 @@ describe('useFretboardAtomicSync', () => {
       const { result } = renderHook(() =>
         useFretboardAtomicSync({
           isPlaying: true,
-        })
+        }),
       );
 
       // During countdown
@@ -1155,7 +1155,7 @@ describe('useFretboardAtomicSync', () => {
       const { result } = renderHook(() =>
         useFretboardAtomicSync({
           isPlaying: true,
-        })
+        }),
       );
 
       // Should have applied initial state
@@ -1201,9 +1201,8 @@ describe('Integration: Timing Synchronization Across Widgets', () => {
 
   describe('all widgets receive same clock state simultaneously', () => {
     it('should synchronize DrummerWidget (useBeatGridSync) and MetronomeWidget (useQuarterNoteBeatSync)', async () => {
-      const { useBeatGridSync, useQuarterNoteBeatSync } = await import(
-        '../useBeatGridSync'
-      );
+      const { useBeatGridSync, useQuarterNoteBeatSync } =
+        await import('../useBeatGridSync');
 
       // Render both hooks (simulating DrummerWidget and MetronomeWidget)
       const { result: drummerResult } = renderHook(() =>
@@ -1213,7 +1212,7 @@ describe('Integration: Timing Synchronization Across Widgets', () => {
           isPlaying: true,
           activeClass: 'drum-active',
           inactiveClass: 'drum-inactive',
-        })
+        }),
       );
 
       const { result: metronomeResult } = renderHook(() =>
@@ -1222,7 +1221,7 @@ describe('Integration: Timing Synchronization Across Widgets', () => {
           isPlaying: true,
           activeClass: 'met-active',
           inactiveClass: 'met-inactive',
-        })
+        }),
       );
 
       // Register DOM elements for drummer (3 rows x 8 columns)
@@ -1297,9 +1296,8 @@ describe('Integration: Timing Synchronization Across Widgets', () => {
     });
 
     it('should synchronize FretboardCard (useFretboardAtomicSync) with DrummerWidget (useBeatGridSync)', async () => {
-      const { useBeatGridSync, useFretboardAtomicSync } = await import(
-        '../useBeatGridSync'
-      );
+      const { useBeatGridSync, useFretboardAtomicSync } =
+        await import('../useBeatGridSync');
 
       // Render both hooks
       const { result: drummerResult } = renderHook(() =>
@@ -1307,7 +1305,7 @@ describe('Integration: Timing Synchronization Across Widgets', () => {
           rows: 1,
           columns: 8,
           isPlaying: true,
-        })
+        }),
       );
 
       const { result: fretboardResult } = renderHook(() =>
@@ -1315,7 +1313,7 @@ describe('Integration: Timing Synchronization Across Widgets', () => {
           isPlaying: true,
           countdownBeats: 4,
           beatsPerMeasure: 4,
-        })
+        }),
       );
 
       // Register drummer elements
@@ -1362,9 +1360,8 @@ describe('Integration: Timing Synchronization Across Widgets', () => {
     });
 
     it('should synchronize HarmonyWidget (useMeasureSync) with TransportClock (useTransportClockSync)', async () => {
-      const { useMeasureSync, useTransportClockSync } = await import(
-        '../useBeatGridSync'
-      );
+      const { useMeasureSync, useTransportClockSync } =
+        await import('../useBeatGridSync');
 
       // Render both hooks
       const { result: harmonyResult } = renderHook(() =>
@@ -1373,13 +1370,13 @@ describe('Integration: Timing Synchronization Across Widgets', () => {
           isPlaying: true,
           activeClass: 'chord-active',
           inactiveClass: 'chord-inactive',
-        })
+        }),
       );
 
       const { result: transportResult } = renderHook(() =>
         useTransportClockSync({
           isPlaying: true,
-        })
+        }),
       );
 
       // Register harmony chord indicators (4 measures)
@@ -1435,9 +1432,8 @@ describe('Integration: Timing Synchronization Across Widgets', () => {
     });
 
     it('should synchronize LoopGridStrip (useLoopStripSync) with other widgets', async () => {
-      const { useBeatGridSync, useLoopStripSync } = await import(
-        '../useBeatGridSync'
-      );
+      const { useBeatGridSync, useLoopStripSync } =
+        await import('../useBeatGridSync');
 
       // Render both hooks
       const { result: drummerResult } = renderHook(() =>
@@ -1445,7 +1441,7 @@ describe('Integration: Timing Synchronization Across Widgets', () => {
           rows: 1,
           columns: 8,
           isPlaying: true,
-        })
+        }),
       );
 
       const { result: loopStripResult } = renderHook(() =>
@@ -1455,7 +1451,7 @@ describe('Integration: Timing Synchronization Across Widgets', () => {
           isPlaying: true,
           playedClass: 'loop-active',
           unplayedClass: 'loop-inactive',
-        })
+        }),
       );
 
       // Register drummer elements
@@ -1532,8 +1528,11 @@ describe('Integration: Timing Synchronization Across Widgets', () => {
 
   describe('countdown synchronization', () => {
     it('should show beat 0 on all widgets during countdown', async () => {
-      const { useBeatGridSync, useQuarterNoteBeatSync, useFretboardAtomicSync } =
-        await import('../useBeatGridSync');
+      const {
+        useBeatGridSync,
+        useQuarterNoteBeatSync,
+        useFretboardAtomicSync,
+      } = await import('../useBeatGridSync');
 
       // Render hooks
       const { result: drummerResult } = renderHook(() =>
@@ -1541,7 +1540,7 @@ describe('Integration: Timing Synchronization Across Widgets', () => {
           rows: 1,
           columns: 8,
           isPlaying: true,
-        })
+        }),
       );
 
       // Use explicit classes for metronome to avoid default class issues
@@ -1551,14 +1550,14 @@ describe('Integration: Timing Synchronization Across Widgets', () => {
           isPlaying: true,
           activeClass: 'beat-active',
           inactiveClass: 'beat-inactive',
-        })
+        }),
       );
 
       const { result: fretboardResult } = renderHook(() =>
         useFretboardAtomicSync({
           isPlaying: true,
           countdownBeats: 4,
-        })
+        }),
       );
 
       // Register elements
@@ -1616,9 +1615,8 @@ describe('Integration: Timing Synchronization Across Widgets', () => {
 
   describe('tempo change synchronization', () => {
     it('should update all widgets when tempo changes', async () => {
-      const { useBeatGridSync, useFretboardAtomicSync } = await import(
-        '../useBeatGridSync'
-      );
+      const { useBeatGridSync, useFretboardAtomicSync } =
+        await import('../useBeatGridSync');
 
       // Render hooks
       const { result: drummerResult } = renderHook(() =>
@@ -1626,13 +1624,13 @@ describe('Integration: Timing Synchronization Across Widgets', () => {
           rows: 1,
           columns: 8,
           isPlaying: true,
-        })
+        }),
       );
 
       const { result: fretboardResult } = renderHook(() =>
         useFretboardAtomicSync({
           isPlaying: true,
-        })
+        }),
       );
 
       // Register drummer elements
@@ -1693,8 +1691,11 @@ describe('Integration: Timing Synchronization Across Widgets', () => {
 
   describe('playback start/stop synchronization', () => {
     it('should reset all widgets when playback stops', async () => {
-      const { useBeatGridSync, useQuarterNoteBeatSync, useFretboardAtomicSync } =
-        await import('../useBeatGridSync');
+      const {
+        useBeatGridSync,
+        useQuarterNoteBeatSync,
+        useFretboardAtomicSync,
+      } = await import('../useBeatGridSync');
 
       // Render hooks with isPlaying=true
       const { result: drummerResult, rerender: rerenderDrummer } = renderHook(
@@ -1704,28 +1705,30 @@ describe('Integration: Timing Synchronization Across Widgets', () => {
             columns: 8,
             isPlaying,
           }),
-        { initialProps: { isPlaying: true } }
+        { initialProps: { isPlaying: true } },
       );
 
       // Use explicit classes for metronome
-      const { result: metronomeResult, rerender: rerenderMetronome } = renderHook(
-        ({ isPlaying }) =>
-          useQuarterNoteBeatSync({
-            beats: 4,
-            isPlaying,
-            activeClass: 'beat-active',
-            inactiveClass: 'beat-inactive',
-          }),
-        { initialProps: { isPlaying: true } }
-      );
+      const { result: metronomeResult, rerender: rerenderMetronome } =
+        renderHook(
+          ({ isPlaying }) =>
+            useQuarterNoteBeatSync({
+              beats: 4,
+              isPlaying,
+              activeClass: 'beat-active',
+              inactiveClass: 'beat-inactive',
+            }),
+          { initialProps: { isPlaying: true } },
+        );
 
-      const { result: fretboardResult, rerender: rerenderFretboard } = renderHook(
-        ({ isPlaying }) =>
-          useFretboardAtomicSync({
-            isPlaying,
-          }),
-        { initialProps: { isPlaying: true } }
-      );
+      const { result: fretboardResult, rerender: rerenderFretboard } =
+        renderHook(
+          ({ isPlaying }) =>
+            useFretboardAtomicSync({
+              isPlaying,
+            }),
+          { initialProps: { isPlaying: true } },
+        );
 
       // Register elements
       const drummerElements: HTMLDivElement[] = [];
@@ -1795,9 +1798,8 @@ describe('Integration: Timing Synchronization Across Widgets', () => {
 
   describe('visibility optimization consistency', () => {
     it('should skip updates consistently across all hidden widgets', async () => {
-      const { useBeatGridSync, useFretboardAtomicSync } = await import(
-        '../useBeatGridSync'
-      );
+      const { useBeatGridSync, useFretboardAtomicSync } =
+        await import('../useBeatGridSync');
 
       // Render hooks with isVisible=false
       const { result: drummerResult } = renderHook(() =>
@@ -1806,14 +1808,14 @@ describe('Integration: Timing Synchronization Across Widgets', () => {
           columns: 8,
           isPlaying: true,
           isVisible: false,
-        })
+        }),
       );
 
       const { result: fretboardResult } = renderHook(() =>
         useFretboardAtomicSync({
           isPlaying: true,
           isVisible: false,
-        })
+        }),
       );
 
       // Register elements
@@ -1859,14 +1861,10 @@ describe('Integration: Timing Synchronization Across Widgets', () => {
 
       // Render multiple hooks
       renderHook(() =>
-        useBeatGridSync({ rows: 1, columns: 8, isPlaying: true })
+        useBeatGridSync({ rows: 1, columns: 8, isPlaying: true }),
       );
-      renderHook(() =>
-        useQuarterNoteBeatSync({ beats: 4, isPlaying: true })
-      );
-      renderHook(() =>
-        useMeasureSync({ chordCount: 4, isPlaying: true })
-      );
+      renderHook(() => useQuarterNoteBeatSync({ beats: 4, isPlaying: true }));
+      renderHook(() => useMeasureSync({ chordCount: 4, isPlaying: true }));
 
       // All three should have subscribed
       expect(mockSubscribe).toHaveBeenCalledTimes(3);
@@ -1874,8 +1872,11 @@ describe('Integration: Timing Synchronization Across Widgets', () => {
     });
 
     it('should all widgets receive same broadcast', async () => {
-      const { useBeatGridSync, useQuarterNoteBeatSync, useFretboardAtomicSync } =
-        await import('../useBeatGridSync');
+      const {
+        useBeatGridSync,
+        useQuarterNoteBeatSync,
+        useFretboardAtomicSync,
+      } = await import('../useBeatGridSync');
 
       const { result: drummerResult } = renderHook(() => {
         const result = useBeatGridSync({
@@ -1886,12 +1887,10 @@ describe('Integration: Timing Synchronization Across Widgets', () => {
         return result;
       });
 
-      renderHook(() =>
-        useQuarterNoteBeatSync({ beats: 4, isPlaying: true })
-      );
+      renderHook(() => useQuarterNoteBeatSync({ beats: 4, isPlaying: true }));
 
       const { result: fretboardResult } = renderHook(() =>
-        useFretboardAtomicSync({ isPlaying: true })
+        useFretboardAtomicSync({ isPlaying: true }),
       );
 
       // Register an element for drummer

@@ -11,11 +11,7 @@ import { SupabaseModule } from '../../infrastructure/supabase/supabase.module.js
 @Module({
   imports: [ConfigModule, SupabaseModule],
   controllers: [BillingController, WebhookController],
-  providers: [
-    StripeService,
-    SubscriptionRepository,
-    PurchaseRepository,
-  ],
+  providers: [StripeService, SubscriptionRepository, PurchaseRepository],
   exports: [StripeService, SubscriptionRepository, PurchaseRepository],
 })
 export class BillingModule {}

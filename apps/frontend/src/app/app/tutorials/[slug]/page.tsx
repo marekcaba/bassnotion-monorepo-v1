@@ -24,11 +24,11 @@ export default function PlatformTutorialPage({
 
   const memoizedTutorial = React.useMemo(
     () => tutorial,
-    [tutorial, tutorial?.id]
+    [tutorial, tutorial?.id],
   );
   const memoizedExercises = React.useMemo(
     () => exercises,
-    [exercises, exercises?.length, exercises?.[0]?.id]
+    [exercises, exercises?.length, exercises?.[0]?.id],
   );
 
   if (isLoading) {

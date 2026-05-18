@@ -25,7 +25,7 @@ function createExerciseNote(
   beat: number,
   string: number, // 1-based string number
   fret: number,
-  noteIndex: number
+  noteIndex: number,
 ): ExerciseNote {
   return {
     id: `note-${noteIndex}`,
@@ -138,7 +138,7 @@ describe('useMeasureOpacity', () => {
             isPlaying: true,
             currentTime: 500, // 500ms into measure 0
             currentMeasure: 0, // Explicitly in measure 0
-          })
+          }),
         );
 
         // Measure 0: string 1 (G), fret 3 → stringIndex = 5 - 1 = 4
@@ -155,7 +155,7 @@ describe('useMeasureOpacity', () => {
             isPlaying: true,
             currentTime: 500,
             currentMeasure: 0, // Explicitly in measure 0
-          })
+          }),
         );
 
         // Measure 1: string 3 (A), fret 1 → stringIndex = 5 - 3 = 2
@@ -174,7 +174,7 @@ describe('useMeasureOpacity', () => {
             isPlaying: true,
             currentTime: 2500, // 500ms into measure 1 (measure 0 = 0-2000ms)
             currentMeasure: 1, // Explicitly in measure 1 (0-based)
-          })
+          }),
         );
 
         // Measure 1: string 3 (A), fret 1 → stringIndex = 5 - 3 = 2
@@ -190,7 +190,7 @@ describe('useMeasureOpacity', () => {
             isPlaying: true,
             currentTime: 2500,
             currentMeasure: 1, // Explicitly in measure 1 (0-based)
-          })
+          }),
         );
 
         // Measure 2: string 2 (D), fret 3 → stringIndex = 5 - 2 = 3
@@ -206,7 +206,7 @@ describe('useMeasureOpacity', () => {
             isPlaying: true,
             currentTime: 2500,
             currentMeasure: 1, // Explicitly in measure 1 (0-based)
-          })
+          }),
         );
 
         // Measure 0: string 1 (G), fret 3 → stringIndex = 5 - 1 = 4
@@ -223,7 +223,7 @@ describe('useMeasureOpacity', () => {
             ...defaultProps,
             isPlaying: true,
             currentTime: 500, // Would normally be measure 0
-          })
+          }),
         );
 
         // Pass measureOverride=1 to force measure 1 as current
@@ -243,7 +243,7 @@ describe('useMeasureOpacity', () => {
             ...defaultProps,
             isPlaying: true,
             currentTime: 500,
-          })
+          }),
         );
 
         // Measure 2: string 2 (D), fret 3 → stringIndex = 5 - 2 = 3
@@ -260,7 +260,7 @@ describe('useMeasureOpacity', () => {
             isPlaying: true,
             currentTime: 500, // Measure 0
             currentMeasure: 0, // Explicitly in measure 0
-          })
+          }),
         );
 
         // String 2 (D), fret 3 → stringIndex = 5 - 2 = 3
@@ -277,7 +277,7 @@ describe('useMeasureOpacity', () => {
             isPlaying: true,
             currentTime: 2500, // Time for beat calculation
             currentMeasure: 1, // Explicitly in measure 1 (0-based)
-          })
+          }),
         );
 
         // String 2 (D), fret 3 → stringIndex = 5 - 2 = 3
@@ -307,7 +307,7 @@ describe('useMeasureOpacity', () => {
           isPlaying: true,
           currentTime: 2500, // Time is now only used for beat calculation
           currentMeasure: 1, // Measure 1 (0-based) - provided by caller
-        })
+        }),
       );
       expect(result.current.currentMeasure).toBe(1); // Returns what was passed in (0-based)
     });
@@ -319,7 +319,7 @@ describe('useMeasureOpacity', () => {
           isPlaying: true,
           currentTime: 500,
           currentMeasure: 2, // Measure 2 (0-based)
-        })
+        }),
       );
       expect(result.current.currentMeasure).toBe(2); // Returns what was passed in (0-based)
     });
@@ -342,7 +342,7 @@ describe('Measure Transition Edge Cases', () => {
           timeSignature: { numerator: 4, denominator: 4 },
           stringCount: 4,
           currentMeasure: 0, // In measure 0 (0-based)
-        })
+        }),
       );
 
       // Just after transition (measure 1)
@@ -355,20 +355,28 @@ describe('Measure Transition Edge Cases', () => {
           timeSignature: { numerator: 4, denominator: 4 },
           stringCount: 4,
           currentMeasure: 1, // In measure 1 (0-based)
-        })
+        }),
       );
 
       // Measure 0: string 1 (G), fret 3 → stringIndex = 5 - 1 = 4
       // Before: measure 0 note should be current
-      expect(beforeResult.current.getMeasureHighlight(4, 3, 0).state).toBe('current');
+      expect(beforeResult.current.getMeasureHighlight(4, 3, 0).state).toBe(
+        'current',
+      );
       // Measure 1: string 3 (A), fret 1 → stringIndex = 5 - 3 = 2
       // Before: measure 1 note should be next
-      expect(beforeResult.current.getMeasureHighlight(2, 1, 0).state).toBe('next');
+      expect(beforeResult.current.getMeasureHighlight(2, 1, 0).state).toBe(
+        'next',
+      );
 
       // After: measure 0 note should be other (past)
-      expect(afterResult.current.getMeasureHighlight(4, 3, 1).state).toBe('other');
+      expect(afterResult.current.getMeasureHighlight(4, 3, 1).state).toBe(
+        'other',
+      );
       // After: measure 1 note should be current
-      expect(afterResult.current.getMeasureHighlight(2, 1, 1).state).toBe('current');
+      expect(afterResult.current.getMeasureHighlight(2, 1, 1).state).toBe(
+        'current',
+      );
     });
 
     it('should never show notes from measure N-1 as highlighted when in measure N', () => {
@@ -385,7 +393,7 @@ describe('Measure Transition Edge Cases', () => {
             timeSignature: { numerator: 4, denominator: 4 },
             stringCount: 4,
             currentMeasure: 2, // In measure 2 (0-based)
-          })
+          }),
         );
 
         // Measure 0: string 1 (G), fret 3 → stringIndex = 5 - 1 = 4
@@ -417,7 +425,7 @@ describe('Measure Transition Edge Cases', () => {
           timeSignature: { numerator: 4, denominator: 4 },
           stringCount: 4,
           currentMeasure: 1, // Explicitly set to measure 1 (0-based)
-        })
+        }),
       );
 
       // currentMeasure should be exactly what we passed

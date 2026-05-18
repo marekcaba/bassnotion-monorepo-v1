@@ -44,9 +44,21 @@ import type { CoachInsightTemplate, SkillBucket } from '@bassnotion/contracts';
 const SKILL_BUCKETS: { value: SkillBucket; label: string; color: string }[] = [
   { value: 'true_beginner', label: 'True Beginner', color: 'bg-green-500' },
   { value: 'solid_beginner', label: 'Solid Beginner', color: 'bg-blue-500' },
-  { value: 'beginner_with_gaps', label: 'Beginner with Gaps', color: 'bg-yellow-500' },
-  { value: 'intermediate_theory_gaps', label: 'Intermediate (Theory)', color: 'bg-purple-500' },
-  { value: 'solid_intermediate', label: 'Solid Intermediate', color: 'bg-pink-500' },
+  {
+    value: 'beginner_with_gaps',
+    label: 'Beginner with Gaps',
+    color: 'bg-yellow-500',
+  },
+  {
+    value: 'intermediate_theory_gaps',
+    label: 'Intermediate (Theory)',
+    color: 'bg-purple-500',
+  },
+  {
+    value: 'solid_intermediate',
+    label: 'Solid Intermediate',
+    color: 'bg-pink-500',
+  },
 ];
 
 export default function AdminInsightsPage() {
@@ -59,7 +71,8 @@ export default function AdminInsightsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingInsight, setEditingInsight] = useState<CoachInsightTemplate | null>(null);
+  const [editingInsight, setEditingInsight] =
+    useState<CoachInsightTemplate | null>(null);
 
   const [form, setForm] = useState({
     targetBucket: 'true_beginner' as SkillBucket,
@@ -242,7 +255,8 @@ export default function AdminInsightsPage() {
         <CardHeader>
           <CardTitle>Insights ({insights.length})</CardTitle>
           <CardDescription>
-            Templates are matched based on bucket, goal, struggle, and practice time
+            Templates are matched based on bucket, goal, struggle, and practice
+            time
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -283,7 +297,9 @@ export default function AdminInsightsPage() {
                             {insight.coachName}
                           </span>
                         </div>
-                        <p className="font-medium truncate">{insight.insightTitle}</p>
+                        <p className="font-medium truncate">
+                          {insight.insightTitle}
+                        </p>
                         <div className="flex flex-wrap gap-2 mt-1">
                           {insight.targetGoal && (
                             <Badge variant="outline" className="text-xs">
@@ -303,7 +319,9 @@ export default function AdminInsightsPage() {
                         </div>
                       </div>
 
-                      <Badge variant={insight.isActive ? 'default' : 'secondary'}>
+                      <Badge
+                        variant={insight.isActive ? 'default' : 'secondary'}
+                      >
                         {insight.isActive ? 'Active' : 'Inactive'}
                       </Badge>
 
@@ -346,7 +364,9 @@ export default function AdminInsightsPage() {
           <div className="space-y-6 py-4">
             {/* Targeting Section */}
             <div className="p-4 bg-blue-50 rounded-lg space-y-4">
-              <h3 className="font-semibold text-blue-800">Targeting Criteria</h3>
+              <h3 className="font-semibold text-blue-800">
+                Targeting Criteria
+              </h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Target Bucket (required)</Label>
@@ -372,7 +392,9 @@ export default function AdminInsightsPage() {
                   <Label>Target Goal (optional)</Label>
                   <Input
                     value={form.targetGoal}
-                    onChange={(e) => setForm({ ...form, targetGoal: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, targetGoal: e.target.value })
+                    }
                     placeholder="play_in_band"
                     className="mt-1"
                   />
@@ -381,7 +403,9 @@ export default function AdminInsightsPage() {
                   <Label>Target Struggle (optional)</Label>
                   <Input
                     value={form.targetStruggle}
-                    onChange={(e) => setForm({ ...form, targetStruggle: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, targetStruggle: e.target.value })
+                    }
                     placeholder="timing"
                     className="mt-1"
                   />
@@ -406,7 +430,9 @@ export default function AdminInsightsPage() {
                 <Label>Coach Name</Label>
                 <Input
                   value={form.coachName}
-                  onChange={(e) => setForm({ ...form, coachName: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, coachName: e.target.value })
+                  }
                   placeholder="Coach Marcus"
                   className="mt-1"
                 />
@@ -415,7 +441,9 @@ export default function AdminInsightsPage() {
                 <Label>Coach Avatar URL (optional)</Label>
                 <Input
                   value={form.coachAvatarUrl}
-                  onChange={(e) => setForm({ ...form, coachAvatarUrl: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, coachAvatarUrl: e.target.value })
+                  }
                   placeholder="https://..."
                   className="mt-1"
                 />
@@ -427,7 +455,9 @@ export default function AdminInsightsPage() {
               <Label>Insight Title</Label>
               <Input
                 value={form.insightTitle}
-                onChange={(e) => setForm({ ...form, insightTitle: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, insightTitle: e.target.value })
+                }
                 placeholder="Welcome to Your Bass Journey!"
                 className="mt-1"
               />
@@ -437,7 +467,9 @@ export default function AdminInsightsPage() {
               <Label>Insight Body</Label>
               <Textarea
                 value={form.insightBody}
-                onChange={(e) => setForm({ ...form, insightBody: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, insightBody: e.target.value })
+                }
                 placeholder="Your personalized message to the user..."
                 className="mt-1"
                 rows={4}
@@ -465,7 +497,9 @@ export default function AdminInsightsPage() {
                   <Label>Day 1 Title</Label>
                   <Input
                     value={form.day1Title}
-                    onChange={(e) => setForm({ ...form, day1Title: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, day1Title: e.target.value })
+                    }
                     className="mt-1"
                   />
                 </div>
@@ -483,7 +517,9 @@ export default function AdminInsightsPage() {
                   <Label>Day 2 Title</Label>
                   <Input
                     value={form.day2Title}
-                    onChange={(e) => setForm({ ...form, day2Title: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, day2Title: e.target.value })
+                    }
                     className="mt-1"
                   />
                 </div>
@@ -501,7 +537,9 @@ export default function AdminInsightsPage() {
                   <Label>Day 3 Title</Label>
                   <Input
                     value={form.day3Title}
-                    onChange={(e) => setForm({ ...form, day3Title: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, day3Title: e.target.value })
+                    }
                     className="mt-1"
                   />
                 </div>
@@ -524,7 +562,9 @@ export default function AdminInsightsPage() {
                 <Label>CTA Text</Label>
                 <Input
                   value={form.ctaText}
-                  onChange={(e) => setForm({ ...form, ctaText: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, ctaText: e.target.value })
+                  }
                   placeholder="Start Your Journey"
                   className="mt-1"
                 />
@@ -533,7 +573,9 @@ export default function AdminInsightsPage() {
                 <Label>CTA Link (optional)</Label>
                 <Input
                   value={form.ctaLink}
-                  onChange={(e) => setForm({ ...form, ctaLink: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, ctaLink: e.target.value })
+                  }
                   placeholder="/dashboard"
                   className="mt-1"
                 />
@@ -548,7 +590,10 @@ export default function AdminInsightsPage() {
                   type="number"
                   value={form.priority}
                   onChange={(e) =>
-                    setForm({ ...form, priority: parseInt(e.target.value) || 0 })
+                    setForm({
+                      ...form,
+                      priority: parseInt(e.target.value) || 0,
+                    })
                   }
                   min={0}
                   className="mt-1"
@@ -559,7 +604,9 @@ export default function AdminInsightsPage() {
                   type="checkbox"
                   id="isActive"
                   checked={form.isActive}
-                  onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
+                  onChange={(e) =>
+                    setForm({ ...form, isActive: e.target.checked })
+                  }
                 />
                 <Label htmlFor="isActive">Active</Label>
               </div>

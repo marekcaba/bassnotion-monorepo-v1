@@ -88,6 +88,6 @@ export function getTone(): typeof import('tone') {
     }
   }
   throw new Error(
-    'GlobalControls: Tone.js not loaded. Ensure AudioEngine is initialized first.'
+    'GlobalControls: Tone.js not loaded. Ensure AudioEngine is initialized first.',
   );
 }

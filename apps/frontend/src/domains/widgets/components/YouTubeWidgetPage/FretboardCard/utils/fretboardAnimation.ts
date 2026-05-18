@@ -166,9 +166,9 @@ export interface AnimationContext {
 // Current/next measure notes are HIGHLIGHTED (green/orange).
 // This creates the visual effect of a static fretboard with exercise notes highlighted.
 export const OPACITY = {
-  CURRENT_MEASURE: 1,      // Highlighted green/orange - fully visible
-  NEXT_MEASURE: 0.3,       // Preview highlight at 30%
-  OTHER_MEASURE: 1,        // GREY (visible) - same as non-exercise dots
+  CURRENT_MEASURE: 1, // Highlighted green/orange - fully visible
+  NEXT_MEASURE: 0.3, // Preview highlight at 30%
+  OTHER_MEASURE: 1, // GREY (visible) - same as non-exercise dots
 } as const;
 
 export const CSS_CLASSES = {
@@ -183,10 +183,10 @@ export const CSS_CLASSES = {
   // Measure-based opacity classes (SINGLE SOURCE OF TRUTH for opacity)
   // Applied by useFretboardNoteSync at 60fps to control measure-based visibility
   // SINGLE-LAYER: All dots visible, current/next highlighted, others grey
-  DOT_CURRENT_MEASURE: 'note-current-measure',      // 100% opacity, highlighted (green/orange)
-  DOT_NEXT_MEASURE: 'note-next-measure',            // 30% opacity, highlighted (preview)
+  DOT_CURRENT_MEASURE: 'note-current-measure', // 100% opacity, highlighted (green/orange)
+  DOT_NEXT_MEASURE: 'note-next-measure', // 30% opacity, highlighted (preview)
   DOT_NEXT_MEASURE_FIRST: 'note-next-measure-first', // 100% opacity, highlighted (transition target)
-  DOT_OTHER_MEASURE: 'note-other-measure',          // 100% opacity, GREY (visible as non-exercise dots)
+  DOT_OTHER_MEASURE: 'note-other-measure', // 100% opacity, GREY (visible as non-exercise dots)
 
   // Line states
   LINE_PLAYED: 'line-played',
@@ -251,16 +251,28 @@ export function getDotVisibility(
 
   if (dotMeasure === currentMeasure) {
     // Current measure - highlighted at 100%
-    return { shouldShow: true, opacity: OPACITY.CURRENT_MEASURE, isHighlighted: true };
+    return {
+      shouldShow: true,
+      opacity: OPACITY.CURRENT_MEASURE,
+      isHighlighted: true,
+    };
   }
 
   if (dotMeasure === nextMeasure) {
     // Next measure - highlighted at 30% (preview)
-    return { shouldShow: true, opacity: OPACITY.NEXT_MEASURE, isHighlighted: true };
+    return {
+      shouldShow: true,
+      opacity: OPACITY.NEXT_MEASURE,
+      isHighlighted: true,
+    };
   }
 
   // Other measures - GREY (visible, not highlighted)
-  return { shouldShow: true, opacity: OPACITY.OTHER_MEASURE, isHighlighted: false };
+  return {
+    shouldShow: true,
+    opacity: OPACITY.OTHER_MEASURE,
+    isHighlighted: false,
+  };
 }
 
 /**
@@ -276,7 +288,10 @@ export function getDotAnimationState(
   noteMeasure: number,
   context: AnimationContext,
 ): DotAnimationState {
-  const { shouldShow, opacity, isHighlighted } = getDotVisibility(noteMeasure, context.currentMeasure);
+  const { shouldShow, opacity, isHighlighted } = getDotVisibility(
+    noteMeasure,
+    context.currentMeasure,
+  );
 
   return {
     shouldShow,
@@ -365,9 +380,10 @@ export function getLineVisibility(
   const sourceInCurrent = pos1InCurrent;
   const targetInCurrent = pos2InCurrent;
 
-  const opacity = (sourceInCurrent || targetInCurrent)
-    ? OPACITY.CURRENT_MEASURE
-    : OPACITY.NEXT_MEASURE;
+  const opacity =
+    sourceInCurrent || targetInCurrent
+      ? OPACITY.CURRENT_MEASURE
+      : OPACITY.NEXT_MEASURE;
 
   return { shouldShow: true, opacity };
 }
@@ -385,9 +401,13 @@ export function getLineFinalOpacity(
   measure1: number,
   measure2: number,
   currentMeasure: number,
-  scrollFadeOpacity: number = 1,
+  scrollFadeOpacity = 1,
 ): number | null {
-  const { shouldShow, opacity } = getLineVisibility(measure1, measure2, currentMeasure);
+  const { shouldShow, opacity } = getLineVisibility(
+    measure1,
+    measure2,
+    currentMeasure,
+  );
 
   if (!shouldShow) {
     return null; // Don't render
@@ -438,8 +458,7 @@ export function clearDotAnimationState(element: HTMLElement): void {
  */
 const isUltraDebugEnabled = () =>
   typeof window !== 'undefined' &&
-  (window as unknown as { __ULTRA_DEBUG__?: boolean })
-    .__ULTRA_DEBUG__;
+  (window as unknown as { __ULTRA_DEBUG__?: boolean }).__ULTRA_DEBUG__;
 
 /**
  * Set dot to ACTIVE state (currently playing note)
@@ -450,22 +469,28 @@ const isUltraDebugEnabled = () =>
 export function setDotActive(element: HTMLElement): void {
   // ULTRA DEBUG: Log before/after state
   if (isUltraDebugEnabled()) {
-    const beforeClasses = element.className.split(' ').filter(c => c.startsWith('note-')).join(',');
+    const beforeClasses = element.className
+      .split(' ')
+      .filter((c) => c.startsWith('note-'))
+      .join(',');
     const beforeOpacity = element.style.getPropertyValue('--measure-opacity');
     const beforeComputed = window.getComputedStyle(element).opacity;
 
     clearDotAnimationState(element);
     element.classList.add(CSS_CLASSES.DOT_ACTIVE);
 
-    const afterClasses = element.className.split(' ').filter(c => c.startsWith('note-')).join(',');
+    const afterClasses = element.className
+      .split(' ')
+      .filter((c) => c.startsWith('note-'))
+      .join(',');
     const afterOpacity = element.style.getPropertyValue('--measure-opacity');
     const afterComputed = window.getComputedStyle(element).opacity;
 
     // eslint-disable-next-line no-console
     console.log(
       `⚡ [setDotActive] ${element.title || 'dot'}\n` +
-      `   BEFORE: classes=[${beforeClasses}] --measure-opacity=${beforeOpacity} computed=${beforeComputed}\n` +
-      `   AFTER:  classes=[${afterClasses}] --measure-opacity=${afterOpacity} computed=${afterComputed}`
+        `   BEFORE: classes=[${beforeClasses}] --measure-opacity=${beforeOpacity} computed=${beforeComputed}\n` +
+        `   AFTER:  classes=[${afterClasses}] --measure-opacity=${afterOpacity} computed=${afterComputed}`,
     );
   } else {
     clearDotAnimationState(element);
@@ -488,7 +513,10 @@ export function setDotActive(element: HTMLElement): void {
 export function setDotPlayed(element: HTMLElement): void {
   // ULTRA DEBUG: Log before state
   const beforeClasses = isUltraDebugEnabled()
-    ? element.className.split(' ').filter(c => c.startsWith('note-')).join(',')
+    ? element.className
+        .split(' ')
+        .filter((c) => c.startsWith('note-'))
+        .join(',')
     : '';
   const beforeOpacity = isUltraDebugEnabled()
     ? element.style.getPropertyValue('--measure-opacity')
@@ -515,14 +543,17 @@ export function setDotPlayed(element: HTMLElement): void {
 
   // ULTRA DEBUG: Log after state
   if (isUltraDebugEnabled()) {
-    const afterClasses = element.className.split(' ').filter(c => c.startsWith('note-')).join(',');
+    const afterClasses = element.className
+      .split(' ')
+      .filter((c) => c.startsWith('note-'))
+      .join(',');
     const afterOpacity = element.style.getPropertyValue('--measure-opacity');
     const afterComputed = window.getComputedStyle(element).opacity;
     // eslint-disable-next-line no-console
     console.log(
       `🔴 [setDotPlayed] ${element.title || 'dot'}\n` +
-      `   BEFORE: classes=[${beforeClasses}] --measure-opacity=${beforeOpacity}\n` +
-      `   AFTER:  classes=[${afterClasses}] --measure-opacity=${afterOpacity} computed=${afterComputed}`
+        `   BEFORE: classes=[${beforeClasses}] --measure-opacity=${beforeOpacity}\n` +
+        `   AFTER:  classes=[${afterClasses}] --measure-opacity=${afterOpacity} computed=${afterComputed}`,
     );
   }
 }
@@ -534,10 +565,16 @@ export function setDotPlayed(element: HTMLElement): void {
  * @param element - The DOM element
  * @param nextMeasure - The next measure number (0-based) to determine color
  */
-export function setDotPlayedNextMeasure(element: HTMLElement, nextMeasure: number): void {
+export function setDotPlayedNextMeasure(
+  element: HTMLElement,
+  nextMeasure: number,
+): void {
   // ULTRA DEBUG: Log before state
   const beforeClasses = isUltraDebugEnabled()
-    ? element.className.split(' ').filter(c => c.startsWith('note-')).join(',')
+    ? element.className
+        .split(' ')
+        .filter((c) => c.startsWith('note-'))
+        .join(',')
     : '';
 
   element.classList.remove(CSS_CLASSES.DOT_ACTIVE);
@@ -568,14 +605,17 @@ export function setDotPlayedNextMeasure(element: HTMLElement, nextMeasure: numbe
 
   // ULTRA DEBUG: Log after state
   if (isUltraDebugEnabled()) {
-    const afterClasses = element.className.split(' ').filter(c => c.startsWith('note-')).join(',');
+    const afterClasses = element.className
+      .split(' ')
+      .filter((c) => c.startsWith('note-'))
+      .join(',');
     const afterOpacity = element.style.getPropertyValue('--measure-opacity');
     const afterComputed = window.getComputedStyle(element).opacity;
     // eslint-disable-next-line no-console
     console.log(
       `🟠 [setDotPlayedNextMeasure] nextMeasure=${nextMeasure} ${element.title || 'dot'}\n` +
-      `   BEFORE: classes=[${beforeClasses}]\n` +
-      `   AFTER:  classes=[${afterClasses}] --measure-opacity=${afterOpacity} computed=${afterComputed}`
+        `   BEFORE: classes=[${beforeClasses}]\n` +
+        `   AFTER:  classes=[${afterClasses}] --measure-opacity=${afterOpacity} computed=${afterComputed}`,
     );
   }
 }
@@ -645,7 +685,10 @@ export function clearLinePlayed(element: HTMLElement): void {
  *        would hide them again. Lines from previous measures should stay hidden because
  *        those notes have already been played.
  */
-export function clearAllPlayedStates(preservePreviousMeasure?: number): { clearedDots: number; clearedLines: number } {
+export function clearAllPlayedStates(preservePreviousMeasure?: number): {
+  clearedDots: number;
+  clearedLines: number;
+} {
   // CRITICAL FIX: Query ALL fretboard dots, not just those with "played" classes
   // This ensures we clear DOT_OTHER_MEASURE from dots that were styled grey by
   // updateMeasureOpacityClasses() (not just by setDotPlayed())
@@ -658,22 +701,45 @@ export function clearAllPlayedStates(preservePreviousMeasure?: number): { cleare
   allDots.forEach((dot) => {
     // Check if this dot has ANY of the classes we need to clear
     const hasPlayedClass = dot.classList.contains(CSS_CLASSES.DOT_PLAYED);
-    const hasPlayedNextGreen = dot.classList.contains(CSS_CLASSES.DOT_PLAYED_NEXT_MEASURE_GREEN);
-    const hasPlayedNextOrange = dot.classList.contains(CSS_CLASSES.DOT_PLAYED_NEXT_MEASURE_ORANGE);
-    const hasCurrentMeasure = dot.classList.contains(CSS_CLASSES.DOT_CURRENT_MEASURE);
+    const hasPlayedNextGreen = dot.classList.contains(
+      CSS_CLASSES.DOT_PLAYED_NEXT_MEASURE_GREEN,
+    );
+    const hasPlayedNextOrange = dot.classList.contains(
+      CSS_CLASSES.DOT_PLAYED_NEXT_MEASURE_ORANGE,
+    );
+    const hasCurrentMeasure = dot.classList.contains(
+      CSS_CLASSES.DOT_CURRENT_MEASURE,
+    );
     const hasNextMeasure = dot.classList.contains(CSS_CLASSES.DOT_NEXT_MEASURE);
-    const hasNextMeasureFirst = dot.classList.contains(CSS_CLASSES.DOT_NEXT_MEASURE_FIRST);
-    const hasOtherMeasure = dot.classList.contains(CSS_CLASSES.DOT_OTHER_MEASURE);
+    const hasNextMeasureFirst = dot.classList.contains(
+      CSS_CLASSES.DOT_NEXT_MEASURE_FIRST,
+    );
+    const hasOtherMeasure = dot.classList.contains(
+      CSS_CLASSES.DOT_OTHER_MEASURE,
+    );
 
-    const needsClearing = hasPlayedClass || hasPlayedNextGreen || hasPlayedNextOrange ||
-                          hasCurrentMeasure || hasNextMeasure || hasNextMeasureFirst || hasOtherMeasure;
+    const needsClearing =
+      hasPlayedClass ||
+      hasPlayedNextGreen ||
+      hasPlayedNextOrange ||
+      hasCurrentMeasure ||
+      hasNextMeasure ||
+      hasNextMeasureFirst ||
+      hasOtherMeasure;
 
     if (needsClearing) {
       // ULTRA DEBUG: Record what we're clearing
       if (ultraDebug) {
-        const beforeClasses = (dot as HTMLElement).className.split(' ').filter(c => c.startsWith('note-')).join(',');
-        const beforeOpacity = (dot as HTMLElement).style.getPropertyValue('--measure-opacity');
-        clearedDetails.push(`${(dot as HTMLElement).title || 'dot'}: [${beforeClasses}] opacity=${beforeOpacity}`);
+        const beforeClasses = (dot as HTMLElement).className
+          .split(' ')
+          .filter((c) => c.startsWith('note-'))
+          .join(',');
+        const beforeOpacity = (dot as HTMLElement).style.getPropertyValue(
+          '--measure-opacity',
+        );
+        clearedDetails.push(
+          `${(dot as HTMLElement).title || 'dot'}: [${beforeClasses}] opacity=${beforeOpacity}`,
+        );
       }
 
       // Remove ALL state classes for complete reset
@@ -695,13 +761,17 @@ export function clearAllPlayedStates(preservePreviousMeasure?: number): { cleare
   // Clear line played states
   // FLICKER FIX: If preservePreviousMeasure is set, only clear lines from CURRENT and FUTURE measures.
   // Lines from PREVIOUS measures should stay hidden - they connect already-played notes.
-  const playedLines = document.querySelectorAll(`.${CSS_CLASSES.CONNECTION_LINE}.${CSS_CLASSES.LINE_PLAYED}`);
+  const playedLines = document.querySelectorAll(
+    `.${CSS_CLASSES.CONNECTION_LINE}.${CSS_CLASSES.LINE_PLAYED}`,
+  );
   let clearedLineCount = 0;
   playedLines.forEach((line) => {
     // Check if we should preserve this line
     if (preservePreviousMeasure !== undefined) {
       const sourceMeasureAttr = line.getAttribute('data-source-measure');
-      const sourceMeasure = sourceMeasureAttr ? parseInt(sourceMeasureAttr, 10) : -1;
+      const sourceMeasure = sourceMeasureAttr
+        ? parseInt(sourceMeasureAttr, 10)
+        : -1;
 
       // Keep lines hidden if their source note is from a PREVIOUS measure
       // (measures 0 to preservePreviousMeasure-1)
@@ -721,7 +791,7 @@ export function clearAllPlayedStates(preservePreviousMeasure?: number): { cleare
     // eslint-disable-next-line no-console
     console.log(
       `🧹 [clearAllPlayedStates] Cleared ${clearedCount} dots:\n` +
-      clearedDetails.map(d => `   ${d}`).join('\n')
+        clearedDetails.map((d) => `   ${d}`).join('\n'),
     );
   }
 
@@ -736,13 +806,17 @@ export function clearAllPlayedStates(preservePreviousMeasure?: number): { cleare
  */
 export function resetAllAnimationStates(): void {
   // Clear active states
-  const activeDots = document.querySelectorAll(`.${CSS_CLASSES.FRETBOARD_DOT}.${CSS_CLASSES.DOT_ACTIVE}`);
+  const activeDots = document.querySelectorAll(
+    `.${CSS_CLASSES.FRETBOARD_DOT}.${CSS_CLASSES.DOT_ACTIVE}`,
+  );
   activeDots.forEach((dot) => {
     dot.classList.remove(CSS_CLASSES.DOT_ACTIVE);
   });
 
   // Clear preview states
-  const previewDots = document.querySelectorAll(`.${CSS_CLASSES.FRETBOARD_DOT}.${CSS_CLASSES.DOT_PREVIEW}`);
+  const previewDots = document.querySelectorAll(
+    `.${CSS_CLASSES.FRETBOARD_DOT}.${CSS_CLASSES.DOT_PREVIEW}`,
+  );
   previewDots.forEach((dot) => {
     dot.classList.remove(CSS_CLASSES.DOT_PREVIEW);
   });

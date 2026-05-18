@@ -55,7 +55,7 @@ export type Position3D = [x: number, y: number, z: number];
  */
 export function fretToX(
   fret: Fret,
-  config: CoordMappingConfig = DEFAULT_COORD_CONFIG
+  config: CoordMappingConfig = DEFAULT_COORD_CONFIG,
 ): number {
   const fretNum = fret === 'open' ? 0 : fret;
   const halfWidth = config.worldWidth / 2;
@@ -74,7 +74,7 @@ export function fretToX(
  */
 export function stringToZ(
   stringIndex: number,
-  config: CoordMappingConfig = DEFAULT_COORD_CONFIG
+  config: CoordMappingConfig = DEFAULT_COORD_CONFIG,
 ): number {
   const halfDepth = config.worldDepth / 2;
   const maxStringIndex = config.stringCount - 1;
@@ -95,7 +95,7 @@ export function stringToZ(
 export function fretboardTo3DPosition(
   stringIndex: number,
   fret: Fret,
-  config: CoordMappingConfig = DEFAULT_COORD_CONFIG
+  config: CoordMappingConfig = DEFAULT_COORD_CONFIG,
 ): Position3D {
   return [fretToX(fret, config), 0, stringToZ(stringIndex, config)];
 }
@@ -108,7 +108,7 @@ export function fretboardTo3DPosition(
  * @returns Function that converts string/fret to 3D position
  */
 export function createPositionCalculator(
-  config: CoordMappingConfig
+  config: CoordMappingConfig,
 ): (stringIndex: number, fret: Fret) => Position3D {
   return (stringIndex: number, fret: Fret): Position3D => {
     return fretboardTo3DPosition(stringIndex, fret, config);
@@ -125,11 +125,11 @@ export function createPositionCalculator(
  */
 export function calculateCameraHeight(
   config: CoordMappingConfig = DEFAULT_COORD_CONFIG,
-  fov: number = 50
+  fov = 50,
 ): number {
   // Calculate the diagonal of the fretboard area
   const diagonal = Math.sqrt(
-    Math.pow(config.worldWidth, 2) + Math.pow(config.worldDepth, 2)
+    Math.pow(config.worldWidth, 2) + Math.pow(config.worldDepth, 2),
   );
 
   // Calculate height needed to see the diagonal at given FOV

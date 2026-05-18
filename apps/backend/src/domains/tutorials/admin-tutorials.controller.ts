@@ -372,7 +372,12 @@ export class AdminTutorialsController {
     }
 
     // Validation: file type (must be an image)
-    const validMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    const validMimeTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+      'image/gif',
+    ];
     if (!validMimeTypes.includes(mimetype)) {
       throw new BadRequestException(
         `Invalid file type: ${mimetype} (must be JPEG, PNG, WebP, or GIF)`,
@@ -423,7 +428,9 @@ export class AdminTutorialsController {
         filename,
         correlationId,
       });
-      throw new BadRequestException('Failed to upload thumbnail: ' + error.message);
+      throw new BadRequestException(
+        'Failed to upload thumbnail: ' + error.message,
+      );
     }
   }
 

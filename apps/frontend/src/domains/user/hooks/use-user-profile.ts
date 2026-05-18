@@ -34,7 +34,10 @@ function getCachedUserData(): CachedUserData {
     const role = localStorage.getItem(USER_ROLE_STORAGE_KEY);
     const displayName = localStorage.getItem(USER_DISPLAY_NAME_STORAGE_KEY);
     return {
-      role: role === 'admin' || role === 'user' || role === 'moderator' ? role : null,
+      role:
+        role === 'admin' || role === 'user' || role === 'moderator'
+          ? role
+          : null,
       displayName,
     };
   } catch {
@@ -144,8 +147,12 @@ export function useUserProfile(): UseUserProfileReturn {
   const [isHydrated, setIsHydrated] = useState(false);
 
   // Initialize with null for SSR, then load from localStorage after hydration
-  const [cachedRole, setCachedRole] = useState<'user' | 'admin' | 'moderator' | null>(null);
-  const [cachedDisplayName, setCachedDisplayName] = useState<string | null>(null);
+  const [cachedRole, setCachedRole] = useState<
+    'user' | 'admin' | 'moderator' | null
+  >(null);
+  const [cachedDisplayName, setCachedDisplayName] = useState<string | null>(
+    null,
+  );
 
   // Load cached data AFTER hydration to avoid SSR mismatch
   useEffect(() => {
@@ -214,7 +221,11 @@ export function useUserProfile(): UseUserProfileReturn {
     cachedDisplayName,
     isLoading,
     isHydrated,
-    error: error instanceof Error ? error.message : null,
+    error: error
+      ? error instanceof Error
+        ? error.message
+        : 'Unknown error'
+      : null,
     refetch: () => {
       refetch();
     },

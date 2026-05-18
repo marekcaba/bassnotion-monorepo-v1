@@ -57,7 +57,11 @@ describe('MusicalTruthAuthority', () => {
   });
 
   // Helper alias for cleaner test assertions
-  const Tone = { get Transport() { return getToneTransport(); } };
+  const Tone = {
+    get Transport() {
+      return getToneTransport();
+    },
+  };
 
   // ============================================================================
   // Initialization Tests

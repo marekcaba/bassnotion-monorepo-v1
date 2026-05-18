@@ -39,7 +39,11 @@ import { Plus, Edit, Trash, Video, ExternalLink, Save } from 'lucide-react';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { useAuth } from '@/domains/user/hooks/use-auth';
 import { apiClient } from '@/lib/api-client';
-import type { VideoSegment, SegmentTopic, SkillBucket } from '@bassnotion/contracts';
+import type {
+  VideoSegment,
+  SegmentTopic,
+  SkillBucket,
+} from '@bassnotion/contracts';
 
 const SEGMENT_TOPICS: { value: SegmentTopic; label: string }[] = [
   { value: 'level_intro', label: 'Level Intro' },
@@ -48,9 +52,18 @@ const SEGMENT_TOPICS: { value: SegmentTopic; label: string }[] = [
   { value: 'goals_intermediate', label: 'Goals (Intermediate)' },
   { value: 'struggle_true_beginner', label: 'Struggle: True Beginner' },
   { value: 'struggle_solid_beginner', label: 'Struggle: Solid Beginner' },
-  { value: 'struggle_beginner_with_gaps', label: 'Struggle: Beginner with Gaps' },
-  { value: 'struggle_intermediate_theory_gaps', label: 'Struggle: Intermediate Theory' },
-  { value: 'struggle_solid_intermediate', label: 'Struggle: Solid Intermediate' },
+  {
+    value: 'struggle_beginner_with_gaps',
+    label: 'Struggle: Beginner with Gaps',
+  },
+  {
+    value: 'struggle_intermediate_theory_gaps',
+    label: 'Struggle: Intermediate Theory',
+  },
+  {
+    value: 'struggle_solid_intermediate',
+    label: 'Struggle: Solid Intermediate',
+  },
   { value: 'learning_style', label: 'Learning Style' },
   { value: 'practice_time', label: 'Practice Time' },
   { value: 'genre', label: 'Genre' },
@@ -78,7 +91,9 @@ export default function AdminSegmentsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingSegment, setEditingSegment] = useState<VideoSegment | null>(null);
+  const [editingSegment, setEditingSegment] = useState<VideoSegment | null>(
+    null,
+  );
 
   const [form, setForm] = useState({
     videoLibraryId: '',
@@ -154,7 +169,10 @@ export default function AdminSegmentsPage() {
     try {
       setIsSaving(true);
       if (editingSegment) {
-        await apiClient.put(`/api/v1/admin/assessment/v2/segments/${editingSegment.id}`, form);
+        await apiClient.put(
+          `/api/v1/admin/assessment/v2/segments/${editingSegment.id}`,
+          form,
+        );
       } else {
         await apiClient.post('/api/v1/admin/assessment/v2/segments', form);
       }
@@ -255,8 +273,8 @@ export default function AdminSegmentsPage() {
                     </Badge>
 
                     <Badge variant="outline">
-                      {SEGMENT_TOPICS.find((t) => t.value === segment.topic)?.label ||
-                        segment.topic}
+                      {SEGMENT_TOPICS.find((t) => t.value === segment.topic)
+                        ?.label || segment.topic}
                     </Badge>
 
                     <div className="flex-1 min-w-0">
@@ -268,8 +286,13 @@ export default function AdminSegmentsPage() {
 
                     <div className="flex flex-wrap gap-1 max-w-[200px]">
                       {segment.targetBuckets.map((bucket) => (
-                        <Badge key={bucket} variant="outline" className="text-xs">
-                          {SKILL_BUCKETS.find((b) => b.value === bucket)?.label || bucket}
+                        <Badge
+                          key={bucket}
+                          variant="outline"
+                          className="text-xs"
+                        >
+                          {SKILL_BUCKETS.find((b) => b.value === bucket)
+                            ?.label || bucket}
                         </Badge>
                       ))}
                     </div>
@@ -355,7 +378,9 @@ export default function AdminSegmentsPage() {
                 <Label>Video ID (GUID)</Label>
                 <Input
                   value={form.videoId}
-                  onChange={(e) => setForm({ ...form, videoId: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, videoId: e.target.value })
+                  }
                   placeholder="032167b4-e074-..."
                   className="mt-1"
                 />
@@ -366,7 +391,9 @@ export default function AdminSegmentsPage() {
               <Label>Description</Label>
               <Textarea
                 value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, description: e.target.value })
+                }
                 placeholder="Brief description of this segment..."
                 className="mt-1"
               />
@@ -399,7 +426,10 @@ export default function AdminSegmentsPage() {
                   type="number"
                   value={form.durationSeconds}
                   onChange={(e) =>
-                    setForm({ ...form, durationSeconds: parseInt(e.target.value) || 0 })
+                    setForm({
+                      ...form,
+                      durationSeconds: parseInt(e.target.value) || 0,
+                    })
                   }
                   min={0}
                   className="mt-1"
@@ -411,7 +441,10 @@ export default function AdminSegmentsPage() {
                   type="number"
                   value={form.sortOrder}
                   onChange={(e) =>
-                    setForm({ ...form, sortOrder: parseInt(e.target.value) || 0 })
+                    setForm({
+                      ...form,
+                      sortOrder: parseInt(e.target.value) || 0,
+                    })
                   }
                   min={0}
                   className="mt-1"
@@ -444,7 +477,9 @@ export default function AdminSegmentsPage() {
                 type="checkbox"
                 id="isActive"
                 checked={form.isActive}
-                onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
+                onChange={(e) =>
+                  setForm({ ...form, isActive: e.target.checked })
+                }
               />
               <Label htmlFor="isActive">Active</Label>
             </div>

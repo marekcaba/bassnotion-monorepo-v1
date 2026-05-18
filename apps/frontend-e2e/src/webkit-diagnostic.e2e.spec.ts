@@ -10,7 +10,7 @@
  * Run with: pnpm playwright test webkit-diagnostic --browser=webkit
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3001';
 

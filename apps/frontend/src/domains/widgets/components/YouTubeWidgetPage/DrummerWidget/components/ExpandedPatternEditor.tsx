@@ -12,7 +12,11 @@
 
 import React from 'react';
 import { Music2 } from 'lucide-react';
-import type { GridPatternWithSixteenths, GridCell, PatternLibraryItem } from '../types.js';
+import type {
+  GridPatternWithSixteenths,
+  GridCell,
+  PatternLibraryItem,
+} from '../types.js';
 import { DRUM_PATTERNS } from '../types.js';
 
 /**
@@ -116,7 +120,9 @@ export const ExpandedPatternEditor: React.FC<ExpandedPatternEditorProps> = ({
                 </button>
               </div>
               {isPatternLibraryLoading ? (
-                <div className="text-xs text-slate-500">Loading patterns...</div>
+                <div className="text-xs text-slate-500">
+                  Loading patterns...
+                </div>
               ) : (
                 <div className="space-y-1 max-h-32 overflow-y-auto">
                   {availableDrumPatterns.map((p) => (
@@ -132,7 +138,9 @@ export const ExpandedPatternEditor: React.FC<ExpandedPatternEditorProps> = ({
                       <div className="flex items-center justify-between">
                         <span>{p.name}</span>
                         {p.genre && (
-                          <span className="text-xs text-slate-500">{p.genre}</span>
+                          <span className="text-xs text-slate-500">
+                            {p.genre}
+                          </span>
                         )}
                       </div>
                     </button>

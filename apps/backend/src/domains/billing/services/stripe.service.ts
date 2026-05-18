@@ -183,7 +183,7 @@ export class StripeService implements OnModuleInit {
 
     let priceId: string;
     let mode: 'payment' | 'subscription';
-    let metadata: Record<string, string> = { user_id: userId };
+    const metadata: Record<string, string> = { user_id: userId };
 
     if (dto.type === 'subscription') {
       priceId = this.priceIds.get('subscription_monthly')!;
@@ -239,7 +239,9 @@ export class StripeService implements OnModuleInit {
   /**
    * Cancel a subscription at period end
    */
-  async cancelSubscription(subscriptionId: string): Promise<Stripe.Subscription> {
+  async cancelSubscription(
+    subscriptionId: string,
+  ): Promise<Stripe.Subscription> {
     return await this.stripe.subscriptions.update(subscriptionId, {
       cancel_at_period_end: true,
     });
@@ -248,7 +250,9 @@ export class StripeService implements OnModuleInit {
   /**
    * Reactivate a canceled subscription
    */
-  async reactivateSubscription(subscriptionId: string): Promise<Stripe.Subscription> {
+  async reactivateSubscription(
+    subscriptionId: string,
+  ): Promise<Stripe.Subscription> {
     return await this.stripe.subscriptions.update(subscriptionId, {
       cancel_at_period_end: false,
     });
@@ -268,18 +272,26 @@ export class StripeService implements OnModuleInit {
     payload: string | Buffer,
     signature: string,
   ): Stripe.Event {
-    const webhookSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET');
+    const webhookSecret = this.configService.get<string>(
+      'STRIPE_WEBHOOK_SECRET',
+    );
     if (!webhookSecret) {
       throw new Error('STRIPE_WEBHOOK_SECRET is required');
     }
 
-    return this.stripe.webhooks.constructEvent(payload, signature, webhookSecret);
+    return this.stripe.webhooks.constructEvent(
+      payload,
+      signature,
+      webhookSecret,
+    );
   }
 
   /**
    * Retrieve checkout session details
    */
-  async getCheckoutSession(sessionId: string): Promise<Stripe.Checkout.Session> {
+  async getCheckoutSession(
+    sessionId: string,
+  ): Promise<Stripe.Checkout.Session> {
     return await this.stripe.checkout.sessions.retrieve(sessionId, {
       expand: ['subscription', 'payment_intent'],
     });

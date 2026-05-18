@@ -105,7 +105,10 @@ describe('Bug #7: Event Listener Cleanup Verification', () => {
       engine.dispose();
 
       // Listener should be removed
-      const finalTempoListenerCount = getListenerCount(eventBus, 'tempo:change');
+      const finalTempoListenerCount = getListenerCount(
+        eventBus,
+        'tempo:change',
+      );
       expect(finalTempoListenerCount).toBeLessThanOrEqual(
         initialTempoListenerCount,
       );

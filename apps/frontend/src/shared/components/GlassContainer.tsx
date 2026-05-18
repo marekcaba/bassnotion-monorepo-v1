@@ -41,7 +41,7 @@ export function GlassContainer({
         'shadow-[0_8px_32px_rgba(0,0,0,0.3)]',
         'transition-all duration-300',
         themed && 'glass-container--themed',
-        className
+        className,
       )}
     >
       {children}

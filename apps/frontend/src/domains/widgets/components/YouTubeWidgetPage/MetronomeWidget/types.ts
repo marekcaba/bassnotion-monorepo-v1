@@ -70,11 +70,14 @@ export interface MetronomeDot {
 /**
  * Initial state for metronome dots (default 4/4 time)
  */
-export const initialDots: MetronomeDot[] = Array.from({ length: 8 }, (_, i) => ({
-  id: i,
-  isActive: i < 4,
-  isCurrent: i === 0,
-}));
+export const initialDots: MetronomeDot[] = Array.from(
+  { length: 8 },
+  (_, i) => ({
+    id: i,
+    isActive: i < 4,
+    isCurrent: i === 0,
+  }),
+);
 
 // Re-export pattern types from playback domain
 export type { MetronomePattern, MetronomePatternEvent };

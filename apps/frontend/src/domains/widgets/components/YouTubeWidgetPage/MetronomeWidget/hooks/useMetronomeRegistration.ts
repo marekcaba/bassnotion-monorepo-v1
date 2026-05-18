@@ -77,7 +77,7 @@ export interface UseMetronomeRegistrationReturn {
  * Hook for managing metronome registration with track and PlaybackEngine
  */
 export function useMetronomeRegistration(
-  options: UseMetronomeRegistrationOptions
+  options: UseMetronomeRegistrationOptions,
 ): UseMetronomeRegistrationReturn {
   const {
     metronomePluginRef,
@@ -106,7 +106,9 @@ export function useMetronomeRegistration(
     if (typeof window === 'undefined') return;
 
     const handleExerciseSwitched = () => {
-      logger.debug('[METRONOME-WIDGET] exercise:switched event received, resetting local state');
+      logger.debug(
+        '[METRONOME-WIDGET] exercise:switched event received, resetting local state',
+      );
       // Reset current region ref to allow fresh region creation for new exercise
       currentRegionRef.current = null;
     };
@@ -150,11 +152,7 @@ export function useMetronomeRegistration(
    */
   const updatePatternRegistration = useCallback(() => {
     const trackMethods = trackMethodsRef.current;
-    if (
-      !trackMethods ||
-      !wamPluginLoaded ||
-      !currentRegionRef.current
-    ) {
+    if (!trackMethods || !wamPluginLoaded || !currentRegionRef.current) {
       return;
     }
 
@@ -253,7 +251,7 @@ export function useMetronomeRegistration(
         });
       }
     }),
-    [setCurrentSound, metronomePluginRef, MetronomeSound]
+    [setCurrentSound, metronomePluginRef, MetronomeSound],
   );
 
   /**
@@ -280,7 +278,7 @@ export function useMetronomeRegistration(
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- updatePatternRegistration uses refs internally
-    [metronomePluginRef]
+    [metronomePluginRef],
   );
 
   /**
@@ -300,9 +298,9 @@ export function useMetronomeRegistration(
           logger.warn('Cannot trigger click - plugin not ready');
         }
       },
-      { lightweight: true }
+      { lightweight: true },
     ),
-    [metronomePluginRef]
+    [metronomePluginRef],
   );
 
   /**
@@ -326,7 +324,7 @@ export function useMetronomeRegistration(
       window.removeEventListener('audioServicesReady', handleAudioReady);
       window.removeEventListener(
         'audioContextStarted',
-        handleAudioContextStarted
+        handleAudioContextStarted,
       );
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current);
@@ -349,7 +347,7 @@ export function useMetronomeRegistration(
           ) {
             instrumentRegistry.removeActive('metronome');
             logger.debug(
-              'Removed WAM Metronome from InstrumentRegistry on unmount'
+              'Removed WAM Metronome from InstrumentRegistry on unmount',
             );
           }
         }

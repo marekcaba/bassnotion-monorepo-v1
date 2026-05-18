@@ -62,7 +62,10 @@ function readLocalProgress(tutorialId: string): StoredProgress | null {
 /**
  * Writes tutorial progress to localStorage
  */
-function writeLocalProgress(tutorialId: string, progress: StoredProgress): void {
+function writeLocalProgress(
+  tutorialId: string,
+  progress: StoredProgress,
+): void {
   const key = `${STORAGE_KEY_PREFIX}${tutorialId}`;
   try {
     localStorage.setItem(key, JSON.stringify(progress));
@@ -74,7 +77,9 @@ function writeLocalProgress(tutorialId: string, progress: StoredProgress): void 
 /**
  * Reads practice completions from localStorage (from usePracticeCompletions)
  */
-function readPracticeCompletions(tutorialId: string): Record<string, { count: number }> {
+function readPracticeCompletions(
+  tutorialId: string,
+): Record<string, { count: number }> {
   const key = `bassnotion-practice-${tutorialId}`;
   try {
     const stored = localStorage.getItem(key);
@@ -86,7 +91,11 @@ function readPracticeCompletions(tutorialId: string): Record<string, { count: nu
     for (const [exId, value] of Object.entries(parsed)) {
       if (typeof value === 'number') {
         result[exId] = { count: value };
-      } else if (typeof value === 'object' && value !== null && 'count' in value) {
+      } else if (
+        typeof value === 'object' &&
+        value !== null &&
+        'count' in value
+      ) {
         result[exId] = value as { count: number };
       }
     }
@@ -200,7 +209,9 @@ interface TutorialInfo {
  *
  * Returns a map of tutorialId → TutorialProgress
  */
-export function useTutorialProgress(tutorials: TutorialInfo[]): TutorialProgressMap {
+export function useTutorialProgress(
+  tutorials: TutorialInfo[],
+): TutorialProgressMap {
   const [progressMap, setProgressMap] = useState<TutorialProgressMap>({});
 
   // Function to recalculate progress from localStorage (instant)
@@ -215,7 +226,10 @@ export function useTutorialProgress(tutorials: TutorialInfo[]): TutorialProgress
 
       map[tutorial.id] = {
         understood: storedProgress?.understood ?? false,
-        practiced: isPracticeComplete(practiceCompletions, tutorial.exerciseCount),
+        practiced: isPracticeComplete(
+          practiceCompletions,
+          tutorial.exerciseCount,
+        ),
         applied: storedProgress?.applied ?? false,
       };
     }
@@ -236,7 +250,9 @@ export function useTutorialProgress(tutorials: TutorialInfo[]): TutorialProgress
 
     (async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (!user || cancelled) return;
 
         const tutorialIds = tutorials.map((t) => t.id);
@@ -259,7 +275,10 @@ export function useTutorialProgress(tutorials: TutorialInfo[]): TutorialProgress
           const practiceCompletions = readPracticeCompletions(tutorial.id);
           mergedMap[tutorial.id] = {
             understood: merged.understood,
-            practiced: isPracticeComplete(practiceCompletions, tutorial.exerciseCount),
+            practiced: isPracticeComplete(
+              practiceCompletions,
+              tutorial.exerciseCount,
+            ),
             applied: merged.applied,
           };
         }
@@ -283,7 +302,10 @@ export function useTutorialProgress(tutorials: TutorialInfo[]): TutorialProgress
 
     window.addEventListener('tutorial-progress-updated', handleProgressUpdate);
     return () => {
-      window.removeEventListener('tutorial-progress-updated', handleProgressUpdate);
+      window.removeEventListener(
+        'tutorial-progress-updated',
+        handleProgressUpdate,
+      );
     };
   }, [recalculateProgress]);
 
@@ -314,7 +336,9 @@ export function useTutorialProgressActions(tutorialId: string | undefined) {
       // Debounced server sync
       serverSyncRef.current = setTimeout(async () => {
         try {
-          const { data: { user } } = await supabase.auth.getUser();
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
           if (user) {
             await upsertServerProgress(user.id, tutorialId, progress);
           }
@@ -433,7 +457,10 @@ export function useSingleTutorialProgress(
     if (!tutorialId) return;
 
     const handleProgressUpdate = (event: Event) => {
-      const customEvent = event as CustomEvent<{ tutorialId: string; stage: string }>;
+      const customEvent = event as CustomEvent<{
+        tutorialId: string;
+        stage: string;
+      }>;
       if (customEvent.detail.tutorialId === tutorialId) {
         // Re-read progress from localStorage
         const storedProgress = readLocalProgress(tutorialId);
@@ -449,7 +476,10 @@ export function useSingleTutorialProgress(
 
     window.addEventListener('tutorial-progress-updated', handleProgressUpdate);
     return () => {
-      window.removeEventListener('tutorial-progress-updated', handleProgressUpdate);
+      window.removeEventListener(
+        'tutorial-progress-updated',
+        handleProgressUpdate,
+      );
     };
   }, [tutorialId, exerciseCount]);
 

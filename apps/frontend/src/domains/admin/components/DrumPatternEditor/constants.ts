@@ -14,36 +14,166 @@ import type { DrumLaneConfig, GridResolution } from './types.js';
  */
 export const DEFAULT_DRUM_LANES: DrumLaneConfig[] = [
   // Core kit - top section
-  { drum: 'kick', displayName: 'Kick', color: '#EF4444', midiNote: 36, volume: 1, muted: false, collapsed: false },
-  { drum: 'snare', displayName: 'Snare', color: '#F97316', midiNote: 38, volume: 1, muted: false, collapsed: false },
-  { drum: 'snare_rimshot', displayName: 'Rimshot', color: '#FB923C', midiNote: 37, volume: 1, muted: false, collapsed: false },
-  { drum: 'clap', displayName: 'Clap', color: '#FBBF24', midiNote: 39, volume: 1, muted: false, collapsed: false },
+  {
+    drum: 'kick',
+    displayName: 'Kick',
+    color: '#EF4444',
+    midiNote: 36,
+    volume: 1,
+    muted: false,
+    collapsed: false,
+  },
+  {
+    drum: 'snare',
+    displayName: 'Snare',
+    color: '#F97316',
+    midiNote: 38,
+    volume: 1,
+    muted: false,
+    collapsed: false,
+  },
+  {
+    drum: 'snare_rimshot',
+    displayName: 'Rimshot',
+    color: '#FB923C',
+    midiNote: 37,
+    volume: 1,
+    muted: false,
+    collapsed: false,
+  },
+  {
+    drum: 'clap',
+    displayName: 'Clap',
+    color: '#FBBF24',
+    midiNote: 39,
+    volume: 1,
+    muted: false,
+    collapsed: false,
+  },
 
   // Hi-hats section
-  { drum: 'hihat_closed', displayName: 'Hi-Hat Closed', color: '#EAB308', midiNote: 42, volume: 1, muted: false, collapsed: false },
-  { drum: 'hihat_open', displayName: 'Hi-Hat Open', color: '#84CC16', midiNote: 46, volume: 1, muted: false, collapsed: false },
-  { drum: 'hihat_pedal', displayName: 'Hi-Hat Pedal', color: '#A3E635', midiNote: 44, volume: 1, muted: false, collapsed: false },
+  {
+    drum: 'hihat_closed',
+    displayName: 'Hi-Hat Closed',
+    color: '#EAB308',
+    midiNote: 42,
+    volume: 1,
+    muted: false,
+    collapsed: false,
+  },
+  {
+    drum: 'hihat_open',
+    displayName: 'Hi-Hat Open',
+    color: '#84CC16',
+    midiNote: 46,
+    volume: 1,
+    muted: false,
+    collapsed: false,
+  },
+  {
+    drum: 'hihat_pedal',
+    displayName: 'Hi-Hat Pedal',
+    color: '#A3E635',
+    midiNote: 44,
+    volume: 1,
+    muted: false,
+    collapsed: false,
+  },
 
   // Toms section
-  { drum: 'tom_high', displayName: 'High Tom', color: '#22C55E', midiNote: 50, volume: 1, muted: false, collapsed: false },
-  { drum: 'tom_mid', displayName: 'Mid Tom', color: '#14B8A6', midiNote: 48, volume: 1, muted: false, collapsed: false },
-  { drum: 'tom_low', displayName: 'Low Tom', color: '#0EA5E9', midiNote: 47, volume: 1, muted: false, collapsed: false },
-  { drum: 'floor_tom', displayName: 'Floor Tom', color: '#06B6D4', midiNote: 45, volume: 1, muted: false, collapsed: false },
+  {
+    drum: 'tom_high',
+    displayName: 'High Tom',
+    color: '#22C55E',
+    midiNote: 50,
+    volume: 1,
+    muted: false,
+    collapsed: false,
+  },
+  {
+    drum: 'tom_mid',
+    displayName: 'Mid Tom',
+    color: '#14B8A6',
+    midiNote: 48,
+    volume: 1,
+    muted: false,
+    collapsed: false,
+  },
+  {
+    drum: 'tom_low',
+    displayName: 'Low Tom',
+    color: '#0EA5E9',
+    midiNote: 47,
+    volume: 1,
+    muted: false,
+    collapsed: false,
+  },
+  {
+    drum: 'floor_tom',
+    displayName: 'Floor Tom',
+    color: '#06B6D4',
+    midiNote: 45,
+    volume: 1,
+    muted: false,
+    collapsed: false,
+  },
 
   // Cymbals section
-  { drum: 'crash', displayName: 'Crash', color: '#A855F7', midiNote: 49, volume: 1, muted: false, collapsed: false },
-  { drum: 'ride', displayName: 'Ride', color: '#EC4899', midiNote: 51, volume: 1, muted: false, collapsed: false },
-  { drum: 'ride_bell', displayName: 'Ride Bell', color: '#F472B6', midiNote: 53, volume: 1, muted: false, collapsed: false },
+  {
+    drum: 'crash',
+    displayName: 'Crash',
+    color: '#A855F7',
+    midiNote: 49,
+    volume: 1,
+    muted: false,
+    collapsed: false,
+  },
+  {
+    drum: 'ride',
+    displayName: 'Ride',
+    color: '#EC4899',
+    midiNote: 51,
+    volume: 1,
+    muted: false,
+    collapsed: false,
+  },
+  {
+    drum: 'ride_bell',
+    displayName: 'Ride Bell',
+    color: '#F472B6',
+    midiNote: 53,
+    volume: 1,
+    muted: false,
+    collapsed: false,
+  },
 
   // Percussion section
-  { drum: 'cowbell', displayName: 'Cowbell', color: '#78716C', midiNote: 56, volume: 1, muted: false, collapsed: false },
-  { drum: 'tambourine', displayName: 'Tambourine', color: '#A8A29E', midiNote: 54, volume: 1, muted: false, collapsed: false },
+  {
+    drum: 'cowbell',
+    displayName: 'Cowbell',
+    color: '#78716C',
+    midiNote: 56,
+    volume: 1,
+    muted: false,
+    collapsed: false,
+  },
+  {
+    drum: 'tambourine',
+    displayName: 'Tambourine',
+    color: '#A8A29E',
+    midiNote: 54,
+    volume: 1,
+    muted: false,
+    collapsed: false,
+  },
 ];
 
 /**
  * All visible lanes by default (all 16 lanes)
  */
-export const DEFAULT_VISIBLE_LANES: MidiDrumType[] = DEFAULT_DRUM_LANES.map(lane => lane.drum);
+export const DEFAULT_VISIBLE_LANES: MidiDrumType[] = DEFAULT_DRUM_LANES.map(
+  (lane) => lane.drum,
+);
 
 /**
  * Essential lanes for minimal view
@@ -59,45 +189,46 @@ export const ESSENTIAL_LANES: MidiDrumType[] = [
  * MIDI note to drum type mapping
  */
 export const MIDI_NOTE_TO_DRUM: Record<number, MidiDrumType> = {
-  35: 'kick',       // Acoustic Bass Drum
-  36: 'kick',       // Bass Drum 1
+  35: 'kick', // Acoustic Bass Drum
+  36: 'kick', // Bass Drum 1
   37: 'snare_rimshot', // Side Stick
-  38: 'snare',      // Acoustic Snare
-  39: 'clap',       // Hand Clap
-  40: 'snare',      // Electric Snare
+  38: 'snare', // Acoustic Snare
+  39: 'clap', // Hand Clap
+  40: 'snare', // Electric Snare
   42: 'hihat_closed', // Closed Hi-Hat
   44: 'hihat_pedal', // Pedal Hi-Hat
   46: 'hihat_open', // Open Hi-Hat
-  45: 'floor_tom',  // Low Tom
-  47: 'tom_low',    // Low-Mid Tom
-  48: 'tom_mid',    // Hi-Mid Tom
-  50: 'tom_high',   // High Tom
-  49: 'crash',      // Crash Cymbal 1
-  51: 'ride',       // Ride Cymbal 1
-  52: 'crash',      // Chinese Cymbal
-  53: 'ride_bell',  // Ride Bell
+  45: 'floor_tom', // Low Tom
+  47: 'tom_low', // Low-Mid Tom
+  48: 'tom_mid', // Hi-Mid Tom
+  50: 'tom_high', // High Tom
+  49: 'crash', // Crash Cymbal 1
+  51: 'ride', // Ride Cymbal 1
+  52: 'crash', // Chinese Cymbal
+  53: 'ride_bell', // Ride Bell
   54: 'tambourine', // Tambourine
-  55: 'crash',      // Splash Cymbal
-  56: 'cowbell',    // Cowbell
-  57: 'crash',      // Crash Cymbal 2
-  59: 'ride',       // Ride Cymbal 2
+  55: 'crash', // Splash Cymbal
+  56: 'cowbell', // Cowbell
+  57: 'crash', // Crash Cymbal 2
+  59: 'ride', // Ride Cymbal 2
 };
 
 /**
  * Drum type to MIDI note mapping (inverse)
  */
-export const DRUM_TO_MIDI_NOTE: Record<MidiDrumType, number> = Object.fromEntries(
-  DEFAULT_DRUM_LANES.map(lane => [lane.drum, lane.midiNote])
-) as Record<MidiDrumType, number>;
+export const DRUM_TO_MIDI_NOTE: Record<MidiDrumType, number> =
+  Object.fromEntries(
+    DEFAULT_DRUM_LANES.map((lane) => [lane.drum, lane.midiNote]),
+  ) as Record<MidiDrumType, number>;
 
 /**
  * Grid resolution to ticks per cell (at 480 PPQ)
  */
 export const RESOLUTION_TO_TICKS: Record<GridResolution, number> = {
-  '1/4': 480,   // Quarter notes
-  '1/8': 240,   // 8th notes
-  '1/16': 120,  // 16th notes
-  '1/32': 60,   // 32nd notes
+  '1/4': 480, // Quarter notes
+  '1/8': 240, // 8th notes
+  '1/16': 120, // 16th notes
+  '1/32': 60, // 32nd notes
 };
 
 /**
@@ -175,7 +306,10 @@ export const BAR_OPTIONS = [1, 2, 4, 8] as const;
 /**
  * Grid resolution options for UI
  */
-export const GRID_RESOLUTION_OPTIONS: { value: GridResolution; label: string }[] = [
+export const GRID_RESOLUTION_OPTIONS: {
+  value: GridResolution;
+  label: string;
+}[] = [
   { value: '1/4', label: '1/4 Notes' },
   { value: '1/8', label: '1/8 Notes' },
   { value: '1/16', label: '1/16 Notes' },

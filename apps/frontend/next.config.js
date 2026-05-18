@@ -1,6 +1,7 @@
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
 });
+const { withSentryConfig } = require('@sentry/nextjs');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -18,8 +19,13 @@ const nextConfig = {
   // Configure path mapping for the monorepo structure
   transpilePackages: [],
 
-  // Security: Disable source maps in production
-  productionBrowserSourceMaps: false,
+  // Source maps are generated for production builds so the Sentry plugin
+  // can upload them and translate minified stack traces back to readable
+  // file:line:col references. The Sentry plugin (configured in
+  // withSentryConfig below with `hideSourceMaps: true`) strips the
+  // .map files from the public output, so users never download them —
+  // only Sentry has them.
+  productionBrowserSourceMaps: true,
 
   // Ensure proper handling of ES modules
   eslint: {
@@ -151,14 +157,30 @@ const nextConfig = {
       'https://vimeo.com',
       'https://*.vimeo.com',
       'https://*.vimeocdn.com',
+      // Vercel Live feedback widget on preview deploys (no-op in production)
+      'https://vercel.live',
+      'wss://ws-us3.pusher.com',
+      // Sentry — the browser SDK posts events to *.ingest.<region>.sentry.io.
+      // The wildcard covers the EU/US/dedicated regions our org could be in.
+      'https://*.sentry.io',
+      'https://*.ingest.sentry.io',
+      'https://*.ingest.de.sentry.io',
+      'https://*.ingest.us.sentry.io',
     ];
 
     // Add localhost URLs for development
     if (isDev) {
       connectSrc.push('http://localhost:3000', 'http://localhost:3001');
     } else {
-      // Add production backend URL
-      connectSrc.push('https://backend-production-612c.up.railway.app');
+      // Add the backend URL from env so production AND staging both work
+      // (NEXT_PUBLIC_API_URL is scoped per Vercel environment: production
+      // points at the production Railway service; preview at the staging one).
+      // Falls back to the historical hardcoded production URL if the env var
+      // is somehow missing at build time.
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL ||
+        'https://backend-production-612c.up.railway.app';
+      connectSrc.push(apiUrl);
     }
 
     return [
@@ -175,7 +197,7 @@ const nextConfig = {
           },
           {
             key: 'Referrer-Policy',
-            value: 'origin-when-cross-origin',
+            value: 'strict-origin-when-cross-origin',
           },
           // Prevent clickjacking attacks
           {
@@ -203,8 +225,9 @@ const nextConfig = {
               // Allow audio/video from self and Supabase storage
               "media-src 'self' https://*.supabase.co https://htuztkrbuewheehjspcz.supabase.co blob:",
               `connect-src ${connectSrc.join(' ')}`,
-              // Allow YouTube, Bunny Stream, and Vimeo iframes - sandboxed and secure
-              "frame-src 'self' https://www.youtube.com https://youtube.com https://iframe.mediadelivery.net https://player.mediadelivery.net https://player.vimeo.com https://vimeo.com",
+              // Allow YouTube, Bunny Stream, Vimeo iframes - sandboxed and secure.
+              // Also allow Vercel Live feedback widget on preview deploys (no-op in prod).
+              "frame-src 'self' https://www.youtube.com https://youtube.com https://iframe.mediadelivery.net https://player.mediadelivery.net https://player.vimeo.com https://vimeo.com https://vercel.live",
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",
@@ -237,4 +260,39 @@ const nextConfig = {
   },
 };
 
-module.exports = withBundleAnalyzer(nextConfig);
+// Wrap with Sentry — required for sentry.client.config.ts and
+// instrumentation.ts (server/edge) to actually run. Without this the
+// Sentry SDK is imported but never initialized.
+//
+// silent: only log to stdout in CI/dev so local builds aren't noisy.
+// org/project are read from env so different teammates can point at
+// their own Sentry projects without editing this file.
+//
+// Source-map upload is enabled only when SENTRY_AUTH_TOKEN is set —
+// otherwise Sentry would 401 every build. Add the token as a
+// SENTRY_AUTH_TOKEN env var in Vercel (and locally if you want
+// source-map upload from your machine).
+module.exports = withSentryConfig(withBundleAnalyzer(nextConfig), {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  silent: !process.env.CI,
+  // Don't upload source maps if no auth token is configured — keeps
+  // builds working without the Sentry account being set up locally.
+  sourcemaps: {
+    disable: !process.env.SENTRY_AUTH_TOKEN,
+  },
+  // Hides the SDK initialization breadcrumbs and other dev-time noise.
+  hideSourceMaps: true,
+  // Upload source maps for *all* JS chunks, not just the ones Sentry can
+  // auto-detect as source-map references. Required because our custom
+  // splitChunks config in `webpack:` above renames/splits chunks after
+  // Sentry's debug-id injection — leaving served chunks with debug IDs
+  // that don't match the uploaded maps. With widenClientFileUpload Sentry
+  // uploads everything in .next/static, so debug-id lookup hits regardless
+  // of which chunk the runtime ended up in.
+  widenClientFileUpload: true,
+  // Disable the tunnel for now — it routes Sentry events through a
+  // Next.js API route to bypass ad blockers. Easy to enable later if
+  // we see lots of dropped events.
+  // tunnelRoute: '/monitoring',
+});

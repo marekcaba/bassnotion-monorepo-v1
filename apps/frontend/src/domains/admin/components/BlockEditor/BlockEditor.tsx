@@ -43,7 +43,11 @@ interface BlockEditorProps {
   /** Current ordered list of blocks in the tutorial */
   blocks: AnyBlock[];
   /** Available exercises for Exercise / Groove block selection */
-  exercises: Array<{ id: string | { value: string }; title?: string; difficulty?: string }>;
+  exercises: Array<{
+    id: string | { value: string };
+    title?: string;
+    difficulty?: string;
+  }>;
   /** Callback fired whenever the block list changes */
   onBlocksChange: (blocks: AnyBlock[]) => void;
   /** Available tutorials for "Next tutorial" CTA in celebration blocks */
@@ -70,7 +74,11 @@ function createDefaultBlock(type: BlockType, order: number): AnyBlock {
       title: 'Understand',
       order,
       showInIsland: true,
-      config: { videoUrl: '', videoLibraryId: '', overlayTypes: ['QUIZ' as const] },
+      config: {
+        videoUrl: '',
+        videoLibraryId: '',
+        overlayTypes: ['QUIZ' as const],
+      },
     }),
     exercise: () => ({
       id,
@@ -130,14 +138,21 @@ function reindexBlocks(blocks: AnyBlock[]): AnyBlock[] {
 // Component
 // ---------------------------------------------------------------------------
 
-export function BlockEditor({ blocks, exercises, onBlocksChange, tutorials }: BlockEditorProps) {
+export function BlockEditor({
+  blocks,
+  exercises,
+  onBlocksChange,
+  tutorials,
+}: BlockEditorProps) {
   const [showTypeSelector, setShowTypeSelector] = useState(false);
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
 
   // Keyboard + pointer sensors for accessibility
   const sensors = useSensors(
     useSensor(PointerSensor),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   );
 
   // --------------------------------------------------
@@ -183,18 +198,17 @@ export function BlockEditor({ blocks, exercises, onBlocksChange, tutorials }: Bl
   const handleUpdateBlock = useCallback(
     (blockId: string, updates: Partial<AnyBlock>) => {
       onBlocksChange(
-        blocks.map((b) => (b.id === blockId ? ({ ...b, ...updates } as AnyBlock) : b)),
+        blocks.map((b) =>
+          b.id === blockId ? ({ ...b, ...updates } as AnyBlock) : b,
+        ),
       );
     },
     [blocks, onBlocksChange],
   );
 
-  const handleToggleEdit = useCallback(
-    (blockId: string) => {
-      setEditingBlockId((prev) => (prev === blockId ? null : blockId));
-    },
-    [],
-  );
+  const handleToggleEdit = useCallback((blockId: string) => {
+    setEditingBlockId((prev) => (prev === blockId ? null : blockId));
+  }, []);
 
   const handleCloseEdit = useCallback(() => {
     setEditingBlockId(null);
@@ -237,7 +251,10 @@ export function BlockEditor({ blocks, exercises, onBlocksChange, tutorials }: Bl
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
       >
-        <SortableContext items={blockIds} strategy={verticalListSortingStrategy}>
+        <SortableContext
+          items={blockIds}
+          strategy={verticalListSortingStrategy}
+        >
           <div className="space-y-2">
             {blocks.map((block) => (
               <BlockCard
@@ -263,7 +280,10 @@ export function BlockEditor({ blocks, exercises, onBlocksChange, tutorials }: Bl
 
       {/* Block type selector modal */}
       {showTypeSelector && (
-        <BlockTypeSelector onSelect={handleAddBlock} onClose={handleCloseTypeSelector} />
+        <BlockTypeSelector
+          onSelect={handleAddBlock}
+          onClose={handleCloseTypeSelector}
+        />
       )}
 
       {/* Inline editing form for the selected block */}
@@ -307,7 +327,9 @@ const EditingPanel = React.memo(function EditingPanel({
   );
 
   const handleShowInIslandToggle = useCallback(() => {
-    onUpdate(block.id, { showInIsland: !block.showInIsland } as Partial<AnyBlock>);
+    onUpdate(block.id, {
+      showInIsland: !block.showInIsland,
+    } as Partial<AnyBlock>);
   }, [block.id, block.showInIsland, onUpdate]);
 
   const handleConfigChange = useCallback(
@@ -335,7 +357,9 @@ const EditingPanel = React.memo(function EditingPanel({
       {/* Block title + show in island */}
       <div className="mb-4 flex items-end gap-4">
         <div className="flex-1">
-          <label className="block text-xs text-white/40 mb-1">Block Title</label>
+          <label className="block text-xs text-white/40 mb-1">
+            Block Title
+          </label>
           <input
             type="text"
             value={block.title}
@@ -377,7 +401,11 @@ const EditingPanel = React.memo(function EditingPanel({
         <TextBlockForm config={block.config} onChange={handleConfigChange} />
       )}
       {block.type === 'celebration' && (
-        <CelebrationBlockForm config={block.config} onChange={handleConfigChange} tutorials={tutorials} />
+        <CelebrationBlockForm
+          config={block.config}
+          onChange={handleConfigChange}
+          tutorials={tutorials}
+        />
       )}
       {block.type === 'explain' && (
         <ExplainBlockForm config={block.config} onChange={handleConfigChange} />

@@ -28,7 +28,9 @@ export interface FavoriteWithExercise {
 
 @Injectable()
 export class FavoriteRepository {
-  private readonly staticLogger = createStructuredLogger(FavoriteRepository.name);
+  private readonly staticLogger = createStructuredLogger(
+    FavoriteRepository.name,
+  );
 
   constructor(
     private readonly supabase: SupabaseClient,
@@ -47,7 +49,10 @@ export class FavoriteRepository {
   /**
    * Add exercise to favorites (upsert to handle duplicates)
    */
-  async favorite(exerciseId: string, userId: string): Promise<ExerciseFavorite> {
+  async favorite(
+    exerciseId: string,
+    userId: string,
+  ): Promise<ExerciseFavorite> {
     const favorite = ExerciseFavorite.create(exerciseId, userId);
 
     const { data, error } = await this.supabase
@@ -166,8 +171,8 @@ export class FavoriteRepository {
    */
   async getUserFavorites(
     userId: string,
-    page: number = 1,
-    limit: number = 20,
+    page = 1,
+    limit = 20,
   ): Promise<{ favorites: FavoriteWithExercise[]; total: number }> {
     const offset = (page - 1) * limit;
 

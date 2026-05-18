@@ -29,7 +29,10 @@ export const VideoBlockView = React.memo(function VideoBlockView({
   const [wasSkipped, setWasSkipped] = useState(false);
 
   const { videoUrl, videoLibraryId } = block.config;
-  const overlayEvents = useMemo(() => resolveOverlayEvents(block.config), [block.config]);
+  const overlayEvents = useMemo(
+    () => resolveOverlayEvents(block.config),
+    [block.config],
+  );
   const totalQuizEvents = overlayEvents.filter((e) => e.type === 'QUIZ').length;
   const hasVideo = videoUrl && videoLibraryId;
 

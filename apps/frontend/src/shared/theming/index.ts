@@ -47,7 +47,4 @@ export type {
 } from './types';
 
 // Constants
-export {
-  DEFAULT_UI_ZONE_CONFIG,
-  UI_ZONE_STORAGE_KEY,
-} from './types';
+export { DEFAULT_UI_ZONE_CONFIG, UI_ZONE_STORAGE_KEY } from './types';

@@ -5,7 +5,7 @@
  * environment with actual audio context and playback functionality.
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Dependency Injection E2E Tests', () => {
   test.beforeEach(async ({ page }) => {
@@ -17,7 +17,8 @@ test.describe('Dependency Injection E2E Tests', () => {
 
     // Ensure audio context is available
     await page.evaluate(() => {
-      if (!window.AudioContext && !window.webkitAudioContext) {
+      // webkitAudioContext is Safari's legacy alias; not in lib.dom.
+      if (!window.AudioContext && !(window as any).webkitAudioContext) {
         throw new Error('AudioContext not available');
       }
     });
@@ -55,9 +56,13 @@ test.describe('Dependency Injection E2E Tests', () => {
           return { success: false, error: 'No AudioEngine available' };
         }
 
-        // Import instrument dynamically
-        const { BassInstrument } =
-          await import('/src/domains/playback/modules/instruments/implementations/bass/BassInstrument.js');
+        // Import instrument dynamically. The "/src/..." path is a
+        // browser-runtime URL served by Next/Vite; TypeScript can't
+        // statically resolve it, so we treat the import as `any`.
+        const { BassInstrument } = (await import(
+          /* @vite-ignore */
+          '/src/domains/playback/modules/instruments/implementations/bass/BassInstrument.js' as any
+        )) as any;
 
         // Create instrument with DI
         const bass = new (BassInstrument as any)(
@@ -103,11 +108,16 @@ test.describe('Dependency Injection E2E Tests', () => {
           (window as any).__globalCoreServices;
         const audioEngine = services?.getAudioEngine?.();
 
-        // Import mixing components
-        const { Channel } =
-          await import('/src/domains/playback/modules/tracks/mixing/Channel.js');
-        const { Bus } =
-          await import('/src/domains/playback/modules/tracks/mixing/Bus.js');
+        // Import mixing components — browser-runtime URLs, treated
+        // as `any` (see note in the other dynamic-import block).
+        const { Channel } = (await import(
+          /* @vite-ignore */
+          '/src/domains/playback/modules/tracks/mixing/Channel.js' as any
+        )) as any;
+        const { Bus } = (await import(
+          /* @vite-ignore */
+          '/src/domains/playback/modules/tracks/mixing/Bus.js' as any
+        )) as any;
 
         // Create components with DI
         const channel = new (Channel as any)({
@@ -209,8 +219,10 @@ test.describe('Dependency Injection E2E Tests', () => {
     const result = await page.evaluate(async () => {
       try {
         // Import instrument
-        const { BassInstrument } =
-          await import('/src/domains/playback/modules/instruments/implementations/bass/BassInstrument.js');
+        const { BassInstrument } = (await import(
+          /* @vite-ignore */
+          '/src/domains/playback/modules/instruments/implementations/bass/BassInstrument.js' as any
+        )) as any;
 
         // Create instrument WITHOUT audioEngine (backward compatibility)
         const bassNoAuth = new (BassInstrument as any)({
@@ -258,8 +270,10 @@ test.describe('Dependency Injection E2E Tests', () => {
         }
 
         // Import and create a bass instrument
-        const { BassInstrument } =
-          await import('/src/domains/playback/modules/instruments/implementations/bass/BassInstrument.js');
+        const { BassInstrument } = (await import(
+          /* @vite-ignore */
+          '/src/domains/playback/modules/instruments/implementations/bass/BassInstrument.js' as any
+        )) as any;
 
         const bass = new (BassInstrument as any)(
           {

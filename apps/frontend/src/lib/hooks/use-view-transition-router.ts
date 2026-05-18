@@ -469,28 +469,41 @@ export function useViewTransitionRouter() {
           await delay(50);
         });
 
-        // Clean up transition state when finished
-        currentTransition.finished.finally(() => {
-          isTransitioning = false;
-          currentTransition = null;
-          // Don't cleanup styles immediately if pre-heated (keep them for next transition)
-          // TODO: Review non-null assertion - consider null safety
-          if (!isPreHeated) {
-            cleanupTransitionStyles();
-          }
-          performance.mark('bassnotion-vt-end');
-          performance.measure(
-            'bassnotion-view-transition',
-            'bassnotion-vt-start',
-            'bassnotion-vt-end',
-          );
+        // Clean up transition state when finished. Catch AbortError ("Transition
+        // was skipped") so a superseded transition doesn't surface as an
+        // unhandled rejection — that's the View Transitions API's correct
+        // behavior, not an error.
+        currentTransition.finished
+          .catch((err) => {
+            if (!(err?.name === 'AbortError')) throw err;
+          })
+          .finally(() => {
+            isTransitioning = false;
+            currentTransition = null;
+            // Don't cleanup styles immediately if pre-heated (keep them for next transition)
+            // TODO: Review non-null assertion - consider null safety
+            if (!isPreHeated) {
+              cleanupTransitionStyles();
+            }
+            performance.mark('bassnotion-vt-end');
+            performance.measure(
+              'bassnotion-view-transition',
+              'bassnotion-vt-start',
+              'bassnotion-vt-end',
+            );
 
-          // Record performance stats
-          recordTransitionStats();
-        });
+            // Record performance stats
+            recordTransitionStats();
+          });
 
         await currentTransition.finished;
       } catch (error) {
+        // AbortError = transition was skipped because a newer navigation
+        // superseded it. The newer navigation is already in flight, so
+        // there's nothing to recover and no fallback router.push needed.
+        if ((error as Error | undefined)?.name === 'AbortError') {
+          return;
+        }
         logger.error('View transition failed:', error);
         isTransitioning = false;
         currentTransition = null;

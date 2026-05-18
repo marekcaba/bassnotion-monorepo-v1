@@ -35,7 +35,10 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import { usePatternLibrary, useRecordPatternUsage } from '../hooks/usePatternLibrary.js';
+import {
+  usePatternLibrary,
+  useRecordPatternUsage,
+} from '../hooks/usePatternLibrary.js';
 import {
   convertLibraryPatternToDrumHits,
   getPatternSummary,
@@ -131,7 +134,8 @@ function PatternCard({
         <div className="flex items-center gap-1">
           <Music className="h-3 w-3" />
           <span>
-            {pattern.timeSignature.numerator}/{pattern.timeSignature.denominator}
+            {pattern.timeSignature.numerator}/
+            {pattern.timeSignature.denominator}
           </span>
         </div>
         <div className="flex items-center gap-1">
@@ -194,9 +198,13 @@ export function PatternLibrarySelector({
   // Filter state
   const [search, setSearch] = useState('');
   const [genre, setGenre] = useState<PatternGenre | 'all'>('all');
-  const [difficulty, setDifficulty] = useState<PatternDifficulty | 'all'>('all');
+  const [difficulty, setDifficulty] = useState<PatternDifficulty | 'all'>(
+    'all',
+  );
   const [page, setPage] = useState(1);
-  const [selectedPatternId, setSelectedPatternId] = useState<string | null>(null);
+  const [selectedPatternId, setSelectedPatternId] = useState<string | null>(
+    null,
+  );
 
   const ITEMS_PER_PAGE = 12;
 
@@ -244,7 +252,15 @@ export function PatternLibrarySelector({
       onSelect(drumHits, pattern);
       onClose();
     },
-    [logger, correlationId, targetBars, targetBpm, recordUsage, onSelect, onClose],
+    [
+      logger,
+      correlationId,
+      targetBars,
+      targetBpm,
+      recordUsage,
+      onSelect,
+      onClose,
+    ],
   );
 
   // Handle pattern hover (for preview)
@@ -267,176 +283,172 @@ export function PatternLibrarySelector({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogPortal>
         <DialogOverlay className="z-[100]" />
-        <DialogPrimitive.Content
-          className="fixed left-[50%] top-[50%] z-[100] w-full translate-x-[-50%] translate-y-[-50%] gap-4 border bg-white dark:bg-gray-900 p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-lg sm:max-w-[900px] max-h-[85vh] overflow-hidden flex flex-col"
-        >
+        <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-[100] w-full translate-x-[-50%] translate-y-[-50%] gap-4 border bg-white dark:bg-gray-900 p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-lg sm:max-w-[900px] max-h-[85vh] overflow-hidden flex flex-col">
           <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground z-10">
             <span className="h-4 w-4">✕</span>
             <span className="sr-only">Close</span>
           </DialogPrimitive.Close>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Music className="h-5 w-5 text-blue-600" />
-            Pattern Library
-          </DialogTitle>
-        </DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Music className="h-5 w-5 text-blue-600" />
+              Pattern Library
+            </DialogTitle>
+          </DialogHeader>
 
-        {/* Filters */}
-        <div className="flex flex-wrap gap-3 p-4 bg-gray-50 rounded-lg">
-          {/* Search */}
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search patterns..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
+          {/* Filters */}
+          <div className="flex flex-wrap gap-3 p-4 bg-gray-50 rounded-lg">
+            {/* Search */}
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search patterns..."
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+                className="pl-9"
+              />
+            </div>
+
+            {/* Genre filter */}
+            <Select
+              value={genre}
+              onValueChange={(value) => {
+                setGenre(value as PatternGenre | 'all');
                 setPage(1);
               }}
-              className="pl-9"
-            />
+            >
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Genre" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Genres</SelectItem>
+                {Object.entries(GENRE_DISPLAY_NAMES).map(([key, label]) => (
+                  <SelectItem key={key} value={key}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Difficulty filter */}
+            <Select
+              value={difficulty}
+              onValueChange={(value) => {
+                setDifficulty(value as PatternDifficulty | 'all');
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Difficulty" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Levels</SelectItem>
+                <SelectItem value="beginner">Beginner</SelectItem>
+                <SelectItem value="intermediate">Intermediate</SelectItem>
+                <SelectItem value="advanced">Advanced</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Reset button */}
+            <Button variant="ghost" size="sm" onClick={handleResetFilters}>
+              Reset
+            </Button>
           </div>
 
-          {/* Genre filter */}
-          <Select
-            value={genre}
-            onValueChange={(value) => {
-              setGenre(value as PatternGenre | 'all');
-              setPage(1);
-            }}
-          >
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Genre" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Genres</SelectItem>
-              {Object.entries(GENRE_DISPLAY_NAMES).map(([key, label]) => (
-                <SelectItem key={key} value={key}>
-                  {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Difficulty filter */}
-          <Select
-            value={difficulty}
-            onValueChange={(value) => {
-              setDifficulty(value as PatternDifficulty | 'all');
-              setPage(1);
-            }}
-          >
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Difficulty" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Levels</SelectItem>
-              <SelectItem value="beginner">Beginner</SelectItem>
-              <SelectItem value="intermediate">Intermediate</SelectItem>
-              <SelectItem value="advanced">Advanced</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {/* Reset button */}
-          <Button variant="ghost" size="sm" onClick={handleResetFilters}>
-            Reset
-          </Button>
-        </div>
-
-        {/* Context info */}
-        {(targetBars || targetBpm || timeSignature) && (
-          <div className="flex items-center gap-2 text-sm text-gray-600 px-1">
-            <span>Showing patterns compatible with:</span>
-            {targetBars && (
-              <Badge variant="secondary">{targetBars} bars</Badge>
-            )}
-            {targetBpm && (
-              <Badge variant="secondary">{targetBpm} BPM</Badge>
-            )}
-            {timeSignature && (
-              <Badge variant="secondary">
-                {timeSignature.numerator}/{timeSignature.denominator}
-              </Badge>
-            )}
-          </div>
-        )}
-
-        {/* Pattern grid */}
-        <div className="flex-1 overflow-y-auto min-h-[300px]">
-          {isLoading ? (
-            <div className="flex items-center justify-center h-full">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-              <span className="ml-2 text-gray-600">Loading patterns...</span>
-            </div>
-          ) : isError ? (
-            <div className="flex flex-col items-center justify-center h-full text-red-600">
-              <AlertCircle className="h-8 w-8 mb-2" />
-              <p>Failed to load patterns</p>
-              <p className="text-sm text-gray-500">
-                {error instanceof Error ? error.message : 'Unknown error'}
-              </p>
-            </div>
-          ) : data?.patterns.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-gray-500">
-              <Music className="h-12 w-12 mb-3 opacity-30" />
-              <p className="font-medium">No patterns found</p>
-              <p className="text-sm">Try adjusting your filters</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-1">
-              {data?.patterns.map((pattern) => (
-                <PatternCard
-                  key={pattern.id}
-                  pattern={pattern}
-                  isSelected={selectedPatternId === pattern.id}
-                  onSelect={() => handleSelectPattern(pattern)}
-                  onHover={() => handlePatternHover(pattern.id)}
-                />
-              ))}
+          {/* Context info */}
+          {(targetBars || targetBpm || timeSignature) && (
+            <div className="flex items-center gap-2 text-sm text-gray-600 px-1">
+              <span>Showing patterns compatible with:</span>
+              {targetBars && (
+                <Badge variant="secondary">{targetBars} bars</Badge>
+              )}
+              {targetBpm && <Badge variant="secondary">{targetBpm} BPM</Badge>}
+              {timeSignature && (
+                <Badge variant="secondary">
+                  {timeSignature.numerator}/{timeSignature.denominator}
+                </Badge>
+              )}
             </div>
           )}
-        </div>
 
-        {/* Pagination */}
-        {data && data.total > ITEMS_PER_PAGE && (
-          <div className="flex items-center justify-between pt-4 border-t">
-            <span className="text-sm text-gray-500">
-              Showing {(page - 1) * ITEMS_PER_PAGE + 1}-
-              {Math.min(page * ITEMS_PER_PAGE, data.total)} of {data.total}{' '}
-              patterns
-            </span>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Previous
-              </Button>
-              <span className="text-sm text-gray-600 px-2">
-                Page {page} of {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages}
-              >
-                Next
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
+          {/* Pattern grid */}
+          <div className="flex-1 overflow-y-auto min-h-[300px]">
+            {isLoading ? (
+              <div className="flex items-center justify-center h-full">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                <span className="ml-2 text-gray-600">Loading patterns...</span>
+              </div>
+            ) : isError ? (
+              <div className="flex flex-col items-center justify-center h-full text-red-600">
+                <AlertCircle className="h-8 w-8 mb-2" />
+                <p>Failed to load patterns</p>
+                <p className="text-sm text-gray-500">
+                  {error instanceof Error ? error.message : 'Unknown error'}
+                </p>
+              </div>
+            ) : data?.patterns.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                <Music className="h-12 w-12 mb-3 opacity-30" />
+                <p className="font-medium">No patterns found</p>
+                <p className="text-sm">Try adjusting your filters</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-1">
+                {data?.patterns.map((pattern) => (
+                  <PatternCard
+                    key={pattern.id}
+                    pattern={pattern}
+                    isSelected={selectedPatternId === pattern.id}
+                    onSelect={() => handleSelectPattern(pattern)}
+                    onHover={() => handlePatternHover(pattern.id)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
-        )}
 
-        {/* Footer */}
-        <div className="flex justify-end pt-4 border-t">
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-        </div>
+          {/* Pagination */}
+          {data && data.total > ITEMS_PER_PAGE && (
+            <div className="flex items-center justify-between pt-4 border-t">
+              <span className="text-sm text-gray-500">
+                Showing {(page - 1) * ITEMS_PER_PAGE + 1}-
+                {Math.min(page * ITEMS_PER_PAGE, data.total)} of {data.total}{' '}
+                patterns
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+                <span className="text-sm text-gray-600 px-2">
+                  Page {page} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Footer */}
+          <div className="flex justify-end pt-4 border-t">
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+          </div>
         </DialogPrimitive.Content>
       </DialogPortal>
     </Dialog>

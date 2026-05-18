@@ -224,18 +224,15 @@ export function useWidgetPageState() {
   );
 
   // Mute toggle for different audio sources
-  const toggleMuted = useCallback(
-    (source: keyof WidgetPageState['muted']) => {
-      setState((prev) => ({
-        ...prev,
-        muted: {
-          ...prev.muted,
-          [source]: !prev.muted[source],
-        },
-      }));
-    },
-    [],
-  );
+  const toggleMuted = useCallback((source: keyof WidgetPageState['muted']) => {
+    setState((prev) => ({
+      ...prev,
+      muted: {
+        ...prev.muted,
+        [source]: !prev.muted[source],
+      },
+    }));
+  }, []);
 
   // Exercise selection with data integration
   const setSelectedExercise = useCallback(
@@ -310,7 +307,10 @@ export function useWidgetPageState() {
           userTempo: exercise.bpm,
         });
       } catch (error) {
-        logger.error('Failed to load exercise into timeline:', error instanceof Error ? error : undefined);
+        logger.error(
+          'Failed to load exercise into timeline:',
+          error instanceof Error ? error : undefined,
+        );
       }
 
       // Extract harmonyInstrument - use Exercise entity's camelCase getter

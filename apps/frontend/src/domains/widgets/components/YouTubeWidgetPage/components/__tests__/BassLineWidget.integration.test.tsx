@@ -181,7 +181,7 @@ describe('BassLineWidget + EventBus Integration', () => {
       await waitFor(() => {
         expect(mockEventBus.on).toHaveBeenCalledWith(
           'bass-trigger',
-          expect.any(Function)
+          expect.any(Function),
         );
       });
     });
@@ -274,18 +274,16 @@ describe('BassLineWidget + EventBus Integration', () => {
       const mockExercise2 = {
         id: 'exercise-2',
         name: 'Exercise 2',
-        notes: [
-          { note: 38, string: 2, fret: 5, beat: 0 },
-        ],
+        notes: [{ note: 38, string: 2, fret: 5, beat: 0 }],
       };
 
       const { rerender } = render(
-        <BassLineWidget {...defaultProps} exercise={mockExercise1 as any} />
+        <BassLineWidget {...defaultProps} exercise={mockExercise1 as any} />,
       );
 
       // Change exercise
       rerender(
-        <BassLineWidget {...defaultProps} exercise={mockExercise2 as any} />
+        <BassLineWidget {...defaultProps} exercise={mockExercise2 as any} />,
       );
 
       // Component should handle exercise change without errors
@@ -304,7 +302,7 @@ describe('BassLineWidget + EventBus Integration', () => {
       };
 
       render(
-        <BassLineWidget {...defaultProps} exercise={mockExercise as any} />
+        <BassLineWidget {...defaultProps} exercise={mockExercise as any} />,
       );
 
       // Component should render with exercise
@@ -340,7 +338,7 @@ describe('BassLineWidget + EventBus Integration', () => {
   describe('Play State Management', () => {
     it('should stop notes when playback stops', async () => {
       const { rerender } = render(
-        <BassLineWidget {...defaultProps} isPlaying={true} />
+        <BassLineWidget {...defaultProps} isPlaying={true} />,
       );
 
       // Stop playback
@@ -362,7 +360,7 @@ describe('BassLineWidget + EventBus Integration', () => {
           {...defaultProps}
           isPlaying={true}
           exercise={mockExercise as any}
-        />
+        />,
       );
 
       // With exercise, pattern scheduling should be skipped
@@ -373,7 +371,7 @@ describe('BassLineWidget + EventBus Integration', () => {
   describe('Visibility', () => {
     it('should not render when not visible', () => {
       const { container } = render(
-        <BassLineWidget {...defaultProps} isVisible={false} />
+        <BassLineWidget {...defaultProps} isVisible={false} />,
       );
 
       // Component returns null when not visible
@@ -443,7 +441,7 @@ describe('BassLineWidget Pattern Playback', () => {
   it('should handle pattern change', async () => {
     const onPatternChange = vi.fn();
     const { rerender } = render(
-      <BassLineWidget {...defaultProps} onPatternChange={onPatternChange} />
+      <BassLineWidget {...defaultProps} onPatternChange={onPatternChange} />,
     );
 
     // Rerender with new pattern
@@ -452,7 +450,7 @@ describe('BassLineWidget Pattern Playback', () => {
         {...defaultProps}
         pattern="Walking Bass"
         onPatternChange={onPatternChange}
-      />
+      />,
     );
 
     expect(screen.getByTestId('volume-knob')).toBeInTheDocument();

@@ -22,7 +22,11 @@
  */
 
 import React, { memo, useCallback } from 'react';
-import { MetronomeSound, type MetronomeSoundType, type ExpandedControlsProps } from '../types.js';
+import {
+  MetronomeSound,
+  type MetronomeSoundType,
+  type ExpandedControlsProps,
+} from '../types.js';
 
 /**
  * Expanded controls component for metronome settings
@@ -41,7 +45,7 @@ const ExpandedControlsComponent = ({
     (e: React.ChangeEvent<HTMLSelectElement>) => {
       onSoundChange(e.target.value as MetronomeSoundType);
     },
-    [onSoundChange]
+    [onSoundChange],
   );
 
   const handleSubdivQuarter = useCallback(() => {

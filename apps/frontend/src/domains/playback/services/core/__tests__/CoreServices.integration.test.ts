@@ -1,24 +1,29 @@
 /**
  * CoreServices Integration Tests
- * Phase 1, Task 1.4 Day 3: Dual-Engine Coexistence Testing
  *
- * Tests:
- * - PlaybackEngine integration with CoreServices
- * - Feature flag behavior
- * - Dual-engine coexistence (RegionProcessor + PlaybackEngine)
- * - Lifecycle management
+ * History:
+ *   Originally tested a dual-engine architecture: RegionProcessor +
+ *   PlaybackEngine, gated by a feature flag (NEW_PLAYBACK_ENGINE).
+ *
+ *   Phase 3.2 of the playback rollout deleted RegionProcessor entirely
+ *   and made PlaybackEngine the sole engine at 100% rollout. Phase 3.3
+ *   deleted RegionProcessorAdapter. The dual-engine and feature-flag
+ *   tests no longer describe how the system works, so they were
+ *   removed. What remains: lifecycle and disposal of PlaybackEngine
+ *   itself.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { CoreServices } from '../CoreServices.js';
 import * as featureFlags from '../../../config/featureFlags.js';
 
-// Mock feature flags module
+// Mock feature flags module. The flag is still queried in production
+// even though the dual-engine path is gone, so the mock has to exist.
 vi.mock('../../../config/featureFlags.js', () => ({
-  isNewPlaybackEngineEnabled: vi.fn(() => false),
+  isNewPlaybackEngineEnabled: vi.fn(() => true),
   logPlaybackEngineMigrationEvent: vi.fn(),
   getAudioArchitectureFlags: vi.fn(() => ({
-    ENABLE_NEW_PLAYBACK_ENGINE: false,
+    ENABLE_NEW_PLAYBACK_ENGINE: true,
   })),
 }));
 
@@ -27,6 +32,7 @@ describe('CoreServices - PlaybackEngine Integration', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(featureFlags.isNewPlaybackEngineEnabled).mockReturnValue(true);
   });
 
   afterEach(() => {
@@ -35,50 +41,8 @@ describe('CoreServices - PlaybackEngine Integration', () => {
     }
   });
 
-  describe('Feature Flag Disabled (Default)', () => {
-    beforeEach(() => {
-      vi.mocked(featureFlags.isNewPlaybackEngineEnabled).mockReturnValue(false);
-    });
-
-    it('should NOT create PlaybackEngine when feature flag is disabled', () => {
-      coreServices = new CoreServices();
-
-      const playbackEngine = coreServices.getPlaybackEngine();
-      expect(playbackEngine).toBeNull();
-    });
-
-    it('should create RegionProcessor regardless of feature flag', () => {
-      coreServices = new CoreServices();
-
-      const regionProcessor = coreServices.getRegionProcessor();
-      expect(regionProcessor).toBeDefined();
-      expect(regionProcessor).not.toBeNull();
-    });
-
-    it('should not affect CoreServices creation when feature flag is disabled', () => {
-      coreServices = new CoreServices();
-
-      // CoreServices should be created successfully
-      expect(coreServices).toBeDefined();
-      expect(coreServices.getPlaybackEngine()).toBeNull();
-      expect(coreServices.getRegionProcessor()).toBeDefined();
-    });
-
-    it('should NOT log PlaybackEngine migration events when disabled', () => {
-      coreServices = new CoreServices();
-
-      expect(
-        featureFlags.logPlaybackEngineMigrationEvent,
-      ).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('Feature Flag Enabled', () => {
-    beforeEach(() => {
-      vi.mocked(featureFlags.isNewPlaybackEngineEnabled).mockReturnValue(true);
-    });
-
-    it('should create PlaybackEngine when feature flag is enabled', () => {
+  describe('PlaybackEngine lifecycle', () => {
+    it('should create PlaybackEngine on construction', () => {
       coreServices = new CoreServices();
 
       const playbackEngine = coreServices.getPlaybackEngine();
@@ -86,19 +50,7 @@ describe('CoreServices - PlaybackEngine Integration', () => {
       expect(playbackEngine).toBeDefined();
     });
 
-    it('should create BOTH RegionProcessor and PlaybackEngine (dual-engine)', () => {
-      coreServices = new CoreServices();
-
-      const regionProcessor = coreServices.getRegionProcessor();
-      const playbackEngine = coreServices.getPlaybackEngine();
-
-      expect(regionProcessor).toBeDefined();
-      expect(regionProcessor).not.toBeNull();
-      expect(playbackEngine).not.toBeNull();
-      expect(playbackEngine).toBeDefined();
-    });
-
-    it('should log PlaybackEngine creation event', () => {
+    it('should log a migration event when PlaybackEngine is created', () => {
       coreServices = new CoreServices();
 
       expect(featureFlags.logPlaybackEngineMigrationEvent).toHaveBeenCalledWith(
@@ -107,24 +59,22 @@ describe('CoreServices - PlaybackEngine Integration', () => {
       );
     });
 
-    it('should create PlaybackEngine in ready state', () => {
+    it('should start PlaybackEngine in idle or ready state', () => {
       coreServices = new CoreServices();
 
       const playbackEngine = coreServices.getPlaybackEngine();
       expect(playbackEngine).not.toBeNull();
 
-      // PlaybackEngine should be in initial state (idle or ready)
       const state = playbackEngine!.getState();
       expect(['idle', 'ready']).toContain(state);
     });
 
-    it('should dispose PlaybackEngine during CoreServices disposal', async () => {
+    it('should dispose PlaybackEngine when CoreServices is disposed', async () => {
       coreServices = new CoreServices();
 
       const playbackEngine = coreServices.getPlaybackEngine();
       expect(playbackEngine).not.toBeNull();
 
-      // Spy on PlaybackEngine dispose
       const disposeSpy = vi.spyOn(playbackEngine!, 'dispose');
 
       await coreServices.dispose();
@@ -133,7 +83,7 @@ describe('CoreServices - PlaybackEngine Integration', () => {
       expect(coreServices.getPlaybackEngine()).toBeNull();
     });
 
-    it('should log PlaybackEngine disposal event', async () => {
+    it('should log a migration event when PlaybackEngine is disposed', async () => {
       coreServices = new CoreServices();
 
       await coreServices.dispose();
@@ -144,83 +94,15 @@ describe('CoreServices - PlaybackEngine Integration', () => {
     });
   });
 
-  describe('Dual-Engine Coexistence', () => {
-    beforeEach(() => {
-      vi.mocked(featureFlags.isNewPlaybackEngineEnabled).mockReturnValue(true);
-    });
-
-    it('should maintain separate state for RegionProcessor and PlaybackEngine', () => {
+  describe('Service surface', () => {
+    it('should expose all required services', () => {
       coreServices = new CoreServices();
 
-      const regionProcessor = coreServices.getRegionProcessor();
-      const playbackEngine = coreServices.getPlaybackEngine();
-
-      expect(regionProcessor).toBeDefined();
-      expect(playbackEngine).not.toBeNull();
-
-      // They should be different instances
-      expect(regionProcessor).not.toBe(playbackEngine);
-    });
-
-    it('should provide access to both engines via getters', () => {
-      coreServices = new CoreServices();
-
-      const regionProcessor = coreServices.getRegionProcessor();
-      const playbackEngine = coreServices.getPlaybackEngine();
-
-      // Both should be accessible
-      expect(regionProcessor).toBeDefined();
-      expect(playbackEngine).not.toBeNull();
-
-      // Should have access to same EventBus
-      const eventBus = coreServices.getEventBus();
-      expect(eventBus).toBeDefined();
-    });
-  });
-
-  describe('Feature Flag Consistency', () => {
-    it('should respect feature flag at construction time', () => {
-      // Flag off
-      vi.mocked(featureFlags.isNewPlaybackEngineEnabled).mockReturnValue(false);
-      const services1 = new CoreServices();
-      expect(services1.getPlaybackEngine()).toBeNull();
-      services1.dispose();
-
-      // Flag on
-      vi.mocked(featureFlags.isNewPlaybackEngineEnabled).mockReturnValue(true);
-      const services2 = new CoreServices();
-      expect(services2.getPlaybackEngine()).not.toBeNull();
-      services2.dispose();
-    });
-  });
-
-  describe('Backward Compatibility', () => {
-    it('should maintain RegionProcessor as primary engine when flag is off', () => {
-      vi.mocked(featureFlags.isNewPlaybackEngineEnabled).mockReturnValue(false);
-
-      coreServices = new CoreServices();
-
-      const regionProcessor = coreServices.getRegionProcessor();
-      const playbackEngine = coreServices.getPlaybackEngine();
-
-      expect(regionProcessor).toBeDefined();
-      expect(playbackEngine).toBeNull();
-    });
-
-    it('should provide all required services when flag is off', () => {
-      vi.mocked(featureFlags.isNewPlaybackEngineEnabled).mockReturnValue(false);
-
-      coreServices = new CoreServices();
-
-      // All services should be accessible
-      expect(coreServices.getRegionProcessor()).toBeDefined();
       expect(coreServices.getEventBus()).toBeDefined();
       expect(coreServices.getPluginManager()).toBeDefined();
       expect(coreServices.getAudioEngine()).toBeDefined();
       expect(coreServices.getUnifiedTransport()).toBeDefined();
-
-      // PlaybackEngine should be null
-      expect(coreServices.getPlaybackEngine()).toBeNull();
+      expect(coreServices.getPlaybackEngine()).not.toBeNull();
     });
   });
 });

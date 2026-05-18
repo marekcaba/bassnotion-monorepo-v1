@@ -403,8 +403,7 @@ function SheetPlayerCardContent({ syncProps }: SheetPlayerCardContentProps) {
 
         // Get EventBus and emit seek event
         const coreServices =
-          window.__coreServices ||
-          window.__globalCoreServices;
+          window.__coreServices || window.__globalCoreServices;
         if (coreServices && coreServices.getEventBus) {
           const eventBus = coreServices.getEventBus();
           if (eventBus) {
@@ -691,7 +690,10 @@ function SheetPlayerCardContent({ syncProps }: SheetPlayerCardContentProps) {
 
       // Calculate dynamic measure widths based on note content
       const svgHeight = 120; // Optimal height for staff display
-      const measureWidths = calculateAllMeasureWidths(measures, beatsPerMeasure);
+      const measureWidths = calculateAllMeasureWidths(
+        measures,
+        beatsPerMeasure,
+      );
       const totalStaffWidth = measureWidths.reduce((sum, w) => sum + w, 0);
       const svgWidth = Math.max(containerWidth, totalStaffWidth + 40); // Ensure scrollability
 

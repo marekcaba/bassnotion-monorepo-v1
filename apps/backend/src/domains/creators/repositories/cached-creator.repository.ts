@@ -107,8 +107,9 @@ export class CachedCreatorRepository
    * Check if a creator exists by channel URL with caching.
    */
   async existsByChannelUrl(channelUrl: ChannelUrl): Promise<boolean> {
-    return this.existsByAlternateKey(this.getChannelUrlExistsKey(channelUrl), () =>
-      this.repository.existsByChannelUrl(channelUrl),
+    return this.existsByAlternateKey(
+      this.getChannelUrlExistsKey(channelUrl),
+      () => this.repository.existsByChannelUrl(channelUrl),
     );
   }
 
@@ -122,9 +123,7 @@ export class CachedCreatorRepository
       urls.map((url) => this.findByChannelUrl(url)),
     );
 
-    return results.filter(
-      (creator): creator is Creator => creator !== null,
-    );
+    return results.filter((creator): creator is Creator => creator !== null);
   }
 
   /**
@@ -144,9 +143,8 @@ export class CachedCreatorRepository
    * Count creators by subscriber range with caching.
    */
   async countBySubscriberRange(min: number, max: number): Promise<number> {
-    return this.cacheValue(
-      this.getSubscriberRangeKey(min, max),
-      () => this.repository.countBySubscriberRange(min, max),
+    return this.cacheValue(this.getSubscriberRangeKey(min, max), () =>
+      this.repository.countBySubscriberRange(min, max),
     );
   }
 

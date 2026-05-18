@@ -65,7 +65,7 @@ export interface UseVolumeControlReturn {
  * Hook for managing volume and mute state
  */
 export function useVolumeControl(
-  options: UseVolumeControlOptions
+  options: UseVolumeControlOptions,
 ): UseVolumeControlReturn {
   const {
     controlledVolume,
@@ -81,7 +81,8 @@ export function useVolumeControl(
   const [localMuted, setLocalMuted] = useState(false);
 
   // Use controlled values if provided, otherwise use local state
-  const volume = controlledVolume !== undefined ? controlledVolume : localVolume;
+  const volume =
+    controlledVolume !== undefined ? controlledVolume : localVolume;
   const isMuted = controlledMuted !== undefined ? controlledMuted : localMuted;
   const effectiveVolume = isMuted ? 0 : volume / 100;
 
@@ -96,7 +97,7 @@ export function useVolumeControl(
         setLocalVolume(newVolume);
       }
     },
-    [onVolumeChange]
+    [onVolumeChange],
   );
 
   /**

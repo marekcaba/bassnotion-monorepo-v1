@@ -30,13 +30,7 @@ function useScrollReveal() {
 }
 
 // ─── FAQ Item ────────────────────────────────────────────────────────────────
-function FaqItem({
-  question,
-  answer,
-}: {
-  question: string;
-  answer: string;
-}) {
+function FaqItem({ question, answer }: { question: string; answer: string }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="border-b border-[#252525] py-7">
@@ -44,9 +38,7 @@ function FaqItem({
         onClick={() => setOpen((v) => !v)}
         className="w-full flex justify-between items-center gap-5 text-left cursor-pointer"
       >
-        <span className="text-base font-medium text-[#E8E8E8]">
-          {question}
-        </span>
+        <span className="text-base font-medium text-[#E8E8E8]">{question}</span>
         <span
           className={`text-xl text-[#E8650A] font-light flex-shrink-0 transition-transform duration-200 ${open ? 'rotate-45' : ''}`}
         >
@@ -500,7 +492,9 @@ export default function HomePage() {
         .landing-reveal {
           opacity: 0;
           transform: translateY(28px);
-          transition: opacity 0.65s ease, transform 0.65s ease;
+          transition:
+            opacity 0.65s ease,
+            transform 0.65s ease;
         }
         .landing-visible,
         .landing-visible.landing-reveal {
@@ -512,10 +506,12 @@ export default function HomePage() {
         .landing-cursor::after {
           content: '\u2588';
           animation: landing-blink 1.1s step-end infinite;
-          color: #E8650A;
+          color: #e8650a;
         }
         @keyframes landing-blink {
-          50% { opacity: 0; }
+          50% {
+            opacity: 0;
+          }
         }
       `}</style>
 
@@ -704,7 +700,8 @@ export default function HomePage() {
           <div data-reveal className="landing-reveal mb-[70px]">
             <SectionLabel>The Ecosystem</SectionLabel>
             <h2 className="font-heading uppercase text-[clamp(44px,6vw,72px)] leading-[0.95] text-[#E8E8E8] mb-5">
-              A <span className="text-[#E8650A]">bass world</span> that unlocks as you <span className="text-[#E8650A]">grow</span>
+              A <span className="text-[#E8650A]">bass world</span> that unlocks
+              as you <span className="text-[#E8650A]">grow</span>
             </h2>
             <p className="text-[#999] text-xl max-w-[580px] leading-[1.7] font-dm-body">
               Every musician lives in four modes — Learn, Practice, Create,
@@ -807,8 +804,8 @@ export default function HomePage() {
             </div>
             <p className="text-[#999] text-[15px] leading-[1.8] mb-4 font-dm-body">
               Bass playing breaks down into 17 trainable domains. Each one is an
-              iceberg — you don&apos;t need to own the whole thing. Get the tip of
-              the right ones and they synthesise together into something that
+              iceberg — you don&apos;t need to own the whole thing. Get the tip
+              of the right ones and they synthesise together into something that
               sounds completely different.
             </p>
             <p className="text-[#999] text-[15px] leading-[1.8] mb-4 font-dm-body">
@@ -860,7 +857,8 @@ export default function HomePage() {
             </p>
             <p className="text-[#999] text-[15px] leading-[1.8] mb-4 font-dm-body">
               Every session is named. Timed. Focused on one thing. Small enough
-              to fit inside a real day. Big enough to move the needle every time.
+              to fit inside a real day. Big enough to move the needle every
+              time.
             </p>
             <div className="py-5 px-6 border-l-[3px] border-l-[#E8650A] bg-[#1A1008] text-[15px] italic text-[#999] my-7 leading-[1.7] font-dm-body">
               This is the closest thing to having a great teacher — without
@@ -1046,7 +1044,7 @@ function Divider() {
 // ─── Static Data ─────────────────────────────────────────────────────────────
 const QUOTES = [
   {
-    text: "I practiced for 3 years and something was always off. First session on Bassicology I found out it was my muting. One thing. Three years.",
+    text: 'I practiced for 3 years and something was always off. First session on Bassicology I found out it was my muting. One thing. Three years.',
     who: 'Marcus, 34 — Playing 4 years',
   },
   {
@@ -1076,7 +1074,7 @@ const ROOMS = [
     icon: '🤘',
     name: 'Gigs',
     mode: 'Perform',
-    body: "Constraint-based challenges. Pressure situations. Feel changes, drop-ins, live adaptation. The thing every bassist fears — freezing on a real gig — trained safely here, before it matters.",
+    body: 'Constraint-based challenges. Pressure situations. Feel changes, drop-ins, live adaptation. The thing every bassist fears — freezing on a real gig — trained safely here, before it matters.',
   },
   {
     icon: '🪪',
@@ -1116,7 +1114,7 @@ const FAQ_DATA = [
   },
   {
     q: 'Do I need to know music theory?',
-    a: "No. You learn through playing, not reading about playing. Every session starts with you picking up the bass before anyone explains anything. The theory, if it comes up at all, arrives as the answer to a question you just experienced — not as a lesson delivered upfront.",
+    a: 'No. You learn through playing, not reading about playing. Every session starts with you picking up the bass before anyone explains anything. The theory, if it comes up at all, arrives as the answer to a question you just experienced — not as a lesson delivered upfront.',
   },
   {
     q: 'What happens after the first 3 sessions?',
@@ -1128,7 +1126,7 @@ const FAQ_DATA = [
   },
   {
     q: 'Is this for beginners or advanced players?',
-    a: "Both. The domains work at every level. A beginner builds foundations from scratch. An advanced player finds the specific ones they skipped and goes back to own them properly. The platform meets you where you are.",
+    a: 'Both. The domains work at every level. A beginner builds foundations from scratch. An advanced player finds the specific ones they skipped and goes back to own them properly. The platform meets you where you are.',
   },
   {
     q: 'Can this help me get ready to play with other musicians?',

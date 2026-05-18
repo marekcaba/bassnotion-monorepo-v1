@@ -35,10 +35,7 @@ export function WeeklyActivityChart() {
           className="h-[220px] w-full"
         >
           <AreaChart accessibilityLayer data={weeklyActivityData}>
-            <CartesianGrid
-              vertical={false}
-              stroke="rgba(255,255,255,0.06)"
-            />
+            <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.06)" />
             <XAxis
               dataKey="day"
               tickLine={false}

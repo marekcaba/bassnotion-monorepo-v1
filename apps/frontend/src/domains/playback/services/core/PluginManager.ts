@@ -11,7 +11,11 @@ import { Service } from './ServiceRegistry.js';
 import { EventBus } from './EventBus.js';
 import { AudioEngine } from '../../modules/audio-engine/core/AudioEngine.js';
 import { getLogger } from '@/utils/logger.js';
-import { PluginState, PluginCategory, ProcessingResultStatus } from '../../types/plugin.js';
+import {
+  PluginState,
+  PluginCategory,
+  ProcessingResultStatus,
+} from '../../types/plugin.js';
 import type {
   AudioPlugin,
   PluginMetadata,
@@ -66,7 +70,7 @@ class BaseAudioPlugin {
       id: id,
       name: id,
       version: '1.0.0',
-      author: 'BassNotion',
+      author: 'Bassicology',
       description: 'Audio plugin',
       license: 'MIT',
       category: PluginCategory.PROCESSOR,
@@ -391,7 +395,8 @@ export class PluginManager implements Service {
 
     for (const registration of this.plugins.values()) {
       if (registration.plugin.capabilities) {
-        const capabilities = registration.plugin.capabilities as PluginCapabilitiesWithFeatures;
+        const capabilities = registration.plugin
+          .capabilities as PluginCapabilitiesWithFeatures;
         if (capabilities.features?.includes(capability)) {
           result.push(registration.plugin);
         }
@@ -597,8 +602,10 @@ export class PluginManager implements Service {
         const registration = this.plugins.get(pluginId);
         if (registration) {
           // Emit event to plugin if it has a handler
-          const pluginWithHandlers = registration.plugin as PluginWithEventHandlers;
-          const handlerName = `on${event.charAt(0).toUpperCase() + event.slice(1)}` as keyof PluginWithEventHandlers;
+          const pluginWithHandlers =
+            registration.plugin as PluginWithEventHandlers;
+          const handlerName =
+            `on${event.charAt(0).toUpperCase() + event.slice(1)}` as keyof PluginWithEventHandlers;
           const handler = pluginWithHandlers[handlerName];
           if (typeof handler === 'function') {
             try {

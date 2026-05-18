@@ -633,8 +633,7 @@ export function useAudioFretboard(
   // Audio state management
   const isAudioEnabled = useMemo(() => {
     return (
-      autoPlayOnClick &&
-      playbackIntegration?.state?.isInitialized === true
+      autoPlayOnClick && playbackIntegration?.state?.isInitialized === true
     );
   }, [autoPlayOnClick, playbackIntegration]);
 

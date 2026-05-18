@@ -43,7 +43,8 @@ export const DynamicIsland = React.memo(function DynamicIsland({
   const progress = useMemo(() => {
     const filtered = exercises.filter((ex) => ex?.id && ex?.title);
     const unlocked = filtered.filter(
-      (ex) => !LOCKED_DIFFICULTIES.includes(safeString(ex.difficulty).toLowerCase()),
+      (ex) =>
+        !LOCKED_DIFFICULTIES.includes(safeString(ex.difficulty).toLowerCase()),
     );
 
     const exerciseStatuses = unlocked.map((ex) => {
@@ -113,13 +114,14 @@ export const DynamicIsland = React.memo(function DynamicIsland({
                 className={`
                   relative px-3.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider
                   transition-all duration-200
-                  ${!isUnlocked
-                    ? 'text-white/20 cursor-not-allowed'
-                    : isActive
-                      ? 'bg-white/15 text-white shadow-[0_0_8px_rgba(255,255,255,0.08)] cursor-pointer'
-                      : isBlockCompleted
-                        ? 'text-emerald-400/60 hover:text-emerald-400/80 hover:bg-white/5 cursor-pointer'
-                        : 'text-white/40 hover:text-white/60 hover:bg-white/5 cursor-pointer'
+                  ${
+                    !isUnlocked
+                      ? 'text-white/20 cursor-not-allowed'
+                      : isActive
+                        ? 'bg-white/15 text-white shadow-[0_0_8px_rgba(255,255,255,0.08)] cursor-pointer'
+                        : isBlockCompleted
+                          ? 'text-emerald-400/60 hover:text-emerald-400/80 hover:bg-white/5 cursor-pointer'
+                          : 'text-white/40 hover:text-white/60 hover:bg-white/5 cursor-pointer'
                   }
                 `}
               >
@@ -128,26 +130,28 @@ export const DynamicIsland = React.memo(function DynamicIsland({
                   {block.title}
 
                   {/* Exercise block progress dots when active */}
-                  {isExerciseBlock && isActive && progress.totalUnlocked > 0 && (
-                    <>
-                      <span className="w-px h-2.5 bg-white/15" />
-                      <span className="flex items-center gap-1">
-                        {progress.exerciseStatuses.map((isCompleted, i) => (
-                          <span
-                            key={i}
-                            className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${
-                              isCompleted
-                                ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.5)]'
-                                : 'bg-white/20'
-                            }`}
-                          />
-                        ))}
-                      </span>
-                      <span className="text-[10px] font-medium text-white/40 tabular-nums normal-case">
-                        {progress.completedCount}/{progress.totalUnlocked}
-                      </span>
-                    </>
-                  )}
+                  {isExerciseBlock &&
+                    isActive &&
+                    progress.totalUnlocked > 0 && (
+                      <>
+                        <span className="w-px h-2.5 bg-white/15" />
+                        <span className="flex items-center gap-1">
+                          {progress.exerciseStatuses.map((isCompleted, i) => (
+                            <span
+                              key={i}
+                              className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${
+                                isCompleted
+                                  ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.5)]'
+                                  : 'bg-white/20'
+                              }`}
+                            />
+                          ))}
+                        </span>
+                        <span className="text-[10px] font-medium text-white/40 tabular-nums normal-case">
+                          {progress.completedCount}/{progress.totalUnlocked}
+                        </span>
+                      </>
+                    )}
                 </span>
               </button>
             );
@@ -172,9 +176,10 @@ export const DynamicIsland = React.memo(function DynamicIsland({
               className={`
                 relative px-3.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider
                 transition-all duration-200 cursor-pointer
-                ${isActive
-                  ? 'bg-white/15 text-white shadow-[0_0_8px_rgba(255,255,255,0.08)]'
-                  : 'text-white/40 hover:text-white/60 hover:bg-white/5'
+                ${
+                  isActive
+                    ? 'bg-white/15 text-white shadow-[0_0_8px_rgba(255,255,255,0.08)]'
+                    : 'text-white/40 hover:text-white/60 hover:bg-white/5'
                 }
               `}
             >

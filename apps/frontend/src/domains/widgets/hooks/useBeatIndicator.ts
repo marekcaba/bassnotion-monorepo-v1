@@ -75,15 +75,16 @@ const INITIAL_STATE: BeatIndicatorResult = {
  * @param isVisible - Whether the widget is visible (optimization - pauses updates when hidden)
  */
 export function useBeatIndicator(
-  beatsPerMeasure: number = 4,
-  isPlaying: boolean = false,
-  isVisible: boolean = true,
+  beatsPerMeasure = 4,
+  isPlaying = false,
+  isVisible = true,
 ): BeatIndicatorResult {
   const transport = useTransportContext();
   const position = transport?.position;
 
   // State for beat indicator values
-  const [beatState, setBeatState] = useState<BeatIndicatorResult>(INITIAL_STATE);
+  const [beatState, setBeatState] =
+    useState<BeatIndicatorResult>(INITIAL_STATE);
 
   // Refs for tracking subscriptions
   const unsubEighthNoteRef = useRef<(() => void) | null>(null);
@@ -157,7 +158,9 @@ export function useBeatIndicator(
         logTiming('transport:stop - state reset');
       });
 
-      logTiming('EventBus subscribed (beat:eighth-note)', { attempts: attemptCount });
+      logTiming('EventBus subscribed (beat:eighth-note)', {
+        attempts: attemptCount,
+      });
     };
 
     const attemptSubscription = (): void => {
@@ -172,7 +175,9 @@ export function useBeatIndicator(
       }
 
       if (attemptCount >= RETRY_CONFIG.maxAttempts) {
-        logTiming('EventBus not available after max attempts', { attempts: attemptCount });
+        logTiming('EventBus not available after max attempts', {
+          attempts: attemptCount,
+        });
         return;
       }
 

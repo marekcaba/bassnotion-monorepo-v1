@@ -208,7 +208,13 @@ describe('Tutorial Entity', () => {
     });
 
     describe('isPublished', () => {
-      it('should return true for active and published tutorials', () => {
+      // NOTE: The Tutorial entity migrated from "publishedAt alone
+      // means published" to an explicit status enum ('draft' |
+      // 'published' | 'archived'). isPublished() now checks the
+      // status field, not the presence of publishedAt. Tutorials
+      // created via .create() default to status='draft', so a test
+      // that wants a published tutorial must say so explicitly.
+      it('should return true for tutorials with published status', () => {
         const tutorial = Tutorial.create({
           title: 'Published Tutorial',
           slug: TutorialSlug.create('published-tutorial'),
@@ -217,13 +223,14 @@ describe('Tutorial Entity', () => {
           duration: 300,
           authorName: 'Author',
           level: 'intermediate',
+          status: 'published',
           publishedAt: new Date('2024-01-01'),
         });
 
         expect(tutorial.isPublished()).toBe(true);
       });
 
-      it('should return false for unpublished tutorials', () => {
+      it('should return false for tutorials without an explicit status (default: draft)', () => {
         const tutorial = Tutorial.create({
           title: 'Unpublished Tutorial',
           slug: TutorialSlug.create('unpublished-tutorial'),
@@ -237,7 +244,7 @@ describe('Tutorial Entity', () => {
         expect(tutorial.isPublished()).toBe(false);
       });
 
-      it('should return false for inactive published tutorials', () => {
+      it('should return false when status is draft even if publishedAt is set', () => {
         const tutorial = Tutorial.create({
           title: 'Inactive Tutorial',
           slug: TutorialSlug.create('inactive-tutorial'),
@@ -247,6 +254,7 @@ describe('Tutorial Entity', () => {
           authorName: 'Author',
           level: 'intermediate',
           isActive: false,
+          status: 'draft',
           publishedAt: new Date('2024-01-01'),
         });
 
@@ -444,7 +452,13 @@ describe('Tutorial Entity', () => {
   });
 
   describe('toPersistence', () => {
-    it('should convert entity to persistence format', () => {
+    it('should convert core entity fields to persistence format', () => {
+      // NOTE: toPersistence() also emits ~19 additional fields for
+      // draft/MIDI/creator/blocks/understand subsystems added after
+      // this test was first written. We assert on the core
+      // mapping here (with objectContaining) so the test stays
+      // resilient to future additive fields. A separate test below
+      // covers the defaults that get emitted for those subsystems.
       const tutorial = Tutorial.create({
         title: 'Test Tutorial',
         slug: TutorialSlug.create('test-tutorial'),
@@ -460,7 +474,7 @@ describe('Tutorial Entity', () => {
 
       const persistence = tutorial.toPersistence();
 
-      expect(persistence).toEqual({
+      expect(persistence).toMatchObject({
         id: tutorial.id.value,
         title: 'Test Tutorial',
         slug: 'test-tutorial',
@@ -476,6 +490,29 @@ describe('Tutorial Entity', () => {
         created_at: tutorial.createdAt.toISOString(),
         updated_at: tutorial.updatedAt.toISOString(),
       });
+    });
+
+    it('should emit sensible defaults for draft / MIDI / blocks subsystems', () => {
+      // Tutorials default to draft status with no MIDI assets, no
+      // creator metadata, and an empty blocks array.
+      const tutorial = Tutorial.create({
+        title: 'Defaults Tutorial',
+        slug: TutorialSlug.create('defaults-tutorial'),
+        description: 'A tutorial with no subsystem fields set',
+        youtubeId: 'defaults123',
+        duration: 60,
+        authorName: 'Author',
+        level: 'beginner',
+      });
+
+      const persistence = tutorial.toPersistence();
+
+      expect(persistence.status).toBe('draft');
+      expect(persistence.auto_save_version).toBe(0);
+      expect(persistence.blocks).toEqual([]);
+      expect(persistence.drummer_midi_url).toBeUndefined();
+      expect(persistence.bassline_midi_url).toBeUndefined();
+      expect(persistence.harmony_midi_url).toBeUndefined();
     });
   });
 });

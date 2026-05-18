@@ -72,8 +72,13 @@ Sentry.init({
       // Ignore specific elements
       ignoreSelector: '[data-sentry-ignore]',
 
-      // Sample rate for network requests/responses
-      networkDetailAllowUrls: [window.location.origin],
+      // Sample rate for network requests/responses. Guard against
+      // module being evaluated server-side (e.g. during Next.js's
+      // chunk-resolution pass) where `window` doesn't exist — a bare
+      // `window.location.origin` here would throw at module load and
+      // silently prevent the whole Sentry.init() call from running.
+      networkDetailAllowUrls:
+        typeof window !== 'undefined' ? [window.location.origin] : [],
     }),
   ],
 

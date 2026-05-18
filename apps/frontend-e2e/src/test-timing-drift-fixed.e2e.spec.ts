@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Timing Drift Fix Verification', () => {
   test('should NOT have any major sync adjustments', async ({ page }) => {

@@ -260,11 +260,32 @@ export class ToneBufferLoader {
     let networkCount = 0;
 
     try {
-      // Fetch the audio data
-      const response = await fetch(url, { mode: 'cors' });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
+      // Fetch the audio data with a single retry on transient failure.
+      // Sample fetches can fail under flaky network, brief CORS blips, or
+      // momentary Supabase 5xx — without retry, one bad request mutes the
+      // instrument for the whole session. One backoff retry is enough to
+      // recover the vast majority of these without inviting infinite loops.
+      const fetchWithRetry = async (): Promise<Response> => {
+        try {
+          const resp = await fetch(url, { mode: 'cors' });
+          if (!resp.ok) {
+            throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+          }
+          return resp;
+        } catch (firstErr) {
+          logger.warn(
+            `⚠️ First fetch failed for ${note}, retrying after 500ms: ${(firstErr as Error).message}`,
+          );
+          await new Promise((r) => setTimeout(r, 500));
+          const resp = await fetch(url, { mode: 'cors' });
+          if (!resp.ok) {
+            throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+          }
+          return resp;
+        }
+      };
+
+      const response = await fetchWithRetry();
 
       const arrayBuffer = await response.arrayBuffer();
       logger.debug(`✓ Fetched ${note}: ${arrayBuffer.byteLength} bytes`);
@@ -294,8 +315,9 @@ export class ToneBufferLoader {
           logger.info(`🔄 Attempting Safari MP3 workaround for ${note}...`);
 
           try {
-            // Try with a fresh copy of the array buffer
-            const freshResponse = await fetch(url, { mode: 'cors' });
+            // Try with a fresh copy of the array buffer (uses the same
+            // single-retry helper as the primary fetch path above).
+            const freshResponse = await fetchWithRetry();
             const freshArrayBuffer = await freshResponse.arrayBuffer();
             audioBuffer = await audioContext.decodeAudioData(freshArrayBuffer);
             logger.info(`✅ Safari workaround succeeded for ${note}`);

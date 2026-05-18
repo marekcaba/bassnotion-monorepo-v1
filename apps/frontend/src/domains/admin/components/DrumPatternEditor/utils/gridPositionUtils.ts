@@ -5,7 +5,11 @@
  * Uses 480 PPQ (Pulses Per Quarter note) for MIDI-compatible precision.
  */
 
-import type { MusicalPosition, GridResolution, GridPosition } from '../types.js';
+import type {
+  MusicalPosition,
+  GridResolution,
+  GridPosition,
+} from '../types.js';
 import {
   PPQ,
   RESOLUTION_TO_TICKS,
@@ -18,7 +22,7 @@ import {
 export function gridToMusicalPosition(
   gridPos: GridPosition,
   resolution: GridResolution,
-  timeSignature: { numerator: number; denominator: number }
+  timeSignature: { numerator: number; denominator: number },
 ): MusicalPosition {
   const cellsPerBeat = RESOLUTION_TO_CELLS_PER_BEAT[resolution];
   const beatsPerMeasure = timeSignature.numerator;
@@ -47,7 +51,7 @@ export function gridToMusicalPosition(
 export function musicalToGridColumn(
   position: MusicalPosition,
   resolution: GridResolution,
-  timeSignature: { numerator: number; denominator: number }
+  timeSignature: { numerator: number; denominator: number },
 ): number {
   const cellsPerBeat = RESOLUTION_TO_CELLS_PER_BEAT[resolution];
   const beatsPerMeasure = timeSignature.numerator;
@@ -77,7 +81,7 @@ export function musicalToGridColumn(
  */
 export function musicalToTicks(
   position: MusicalPosition,
-  timeSignature: { numerator: number; denominator: number }
+  timeSignature: { numerator: number; denominator: number },
 ): number {
   const ticksPerBeat = PPQ;
   const beatsPerMeasure = timeSignature.numerator;
@@ -94,7 +98,7 @@ export function musicalToTicks(
  */
 export function ticksToMusical(
   ticks: number,
-  timeSignature: { numerator: number; denominator: number }
+  timeSignature: { numerator: number; denominator: number },
 ): MusicalPosition {
   const ticksPerBeat = PPQ;
   const beatsPerMeasure = timeSignature.numerator;
@@ -120,7 +124,7 @@ export function ticksToMusical(
 export function musicalToSeconds(
   position: MusicalPosition,
   tempo: number,
-  timeSignature: { numerator: number; denominator: number }
+  timeSignature: { numerator: number; denominator: number },
 ): number {
   const ticks = musicalToTicks(position, timeSignature);
   const ticksPerSecond = (PPQ * tempo) / 60;
@@ -141,7 +145,7 @@ export function secondsToTicks(seconds: number, tempo: number): number {
 export function getTotalColumns(
   bars: number,
   resolution: GridResolution,
-  timeSignature: { numerator: number; denominator: number }
+  timeSignature: { numerator: number; denominator: number },
 ): number {
   const cellsPerBeat = RESOLUTION_TO_CELLS_PER_BEAT[resolution];
   const beatsPerMeasure = timeSignature.numerator;
@@ -153,7 +157,7 @@ export function getTotalColumns(
  */
 export function getTotalTicks(
   bars: number,
-  timeSignature: { numerator: number; denominator: number }
+  timeSignature: { numerator: number; denominator: number },
 ): number {
   const beatsPerMeasure = timeSignature.numerator;
   return bars * beatsPerMeasure * PPQ;
@@ -170,7 +174,10 @@ export function snapToGrid(tick: number, resolution: GridResolution): number {
 /**
  * Check if a position is on a beat boundary
  */
-export function isBeatBoundary(col: number, resolution: GridResolution): boolean {
+export function isBeatBoundary(
+  col: number,
+  resolution: GridResolution,
+): boolean {
   const cellsPerBeat = RESOLUTION_TO_CELLS_PER_BEAT[resolution];
   return col % cellsPerBeat === 0;
 }
@@ -181,7 +188,7 @@ export function isBeatBoundary(col: number, resolution: GridResolution): boolean
 export function isMeasureBoundary(
   col: number,
   resolution: GridResolution,
-  timeSignature: { numerator: number; denominator: number }
+  timeSignature: { numerator: number; denominator: number },
 ): boolean {
   const cellsPerBeat = RESOLUTION_TO_CELLS_PER_BEAT[resolution];
   const beatsPerMeasure = timeSignature.numerator;
@@ -196,7 +203,7 @@ export function isMeasureBoundary(
 export function applySwing(
   tick: number,
   swingAmount: number, // 0-100
-  resolution: GridResolution
+  resolution: GridResolution,
 ): number {
   if (swingAmount === 0) return tick;
 
@@ -220,7 +227,7 @@ export function applySwing(
  */
 export function comparePositions(
   a: MusicalPosition,
-  b: MusicalPosition
+  b: MusicalPosition,
 ): number {
   if (a.measure !== b.measure) return a.measure - b.measure;
   if (a.beat !== b.beat) return a.beat - b.beat;
@@ -238,7 +245,7 @@ export function comparePositions(
 export function positionsEqual(
   a: MusicalPosition,
   b: MusicalPosition,
-  tolerance: number = 0
+  tolerance = 0,
 ): boolean {
   if (a.measure !== b.measure || a.beat !== b.beat) return false;
 
@@ -254,7 +261,7 @@ export function positionsEqual(
 export function tickToColumn(
   tick: number,
   resolution: GridResolution,
-  timeSignature: { numerator: number; denominator: number }
+  timeSignature: { numerator: number; denominator: number },
 ): number {
   const position = ticksToMusical(tick, timeSignature);
   return musicalToGridColumn(position, resolution, timeSignature);

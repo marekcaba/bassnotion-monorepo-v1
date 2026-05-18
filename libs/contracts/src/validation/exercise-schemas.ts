@@ -38,13 +38,15 @@ export const ExerciseNoteSchema = z.object({
 
   is_harmonic: z.boolean().optional(),
   pluck_position: z.enum(['neck', 'middle', 'bridge']).optional(),
-  finger_index: z.union([
-    z.literal(1),
-    z.literal(2),
-    z.literal(3),
-    z.literal(4),
-    z.literal('T'),
-  ]).optional(), // 1=index, 2=middle, 3=ring, 4=pinky, T=thumb
+  finger_index: z
+    .union([
+      z.literal(1),
+      z.literal(2),
+      z.literal(3),
+      z.literal(4),
+      z.literal('T'),
+    ])
+    .optional(), // 1=index, 2=middle, 3=ring, 4=pinky, T=thumb
 
   display_symbol: z.string().optional(),
 });
@@ -254,7 +256,9 @@ export const ValidatedExerciseSchema = ExerciseSchema.extend({
 export type ExerciseNoteInput = z.infer<typeof ExerciseNoteSchema>;
 export type ExerciseInput = z.infer<typeof ExerciseSchema>;
 export type CustomBasslineInput = z.infer<typeof CustomBasslineSchema>;
-export type FretboardViewConfigInput = z.infer<typeof FretboardViewConfigSchema>;
+export type FretboardViewConfigInput = z.infer<
+  typeof FretboardViewConfigSchema
+>;
 export type CreateExerciseRequestInput = z.infer<
   typeof CreateExerciseRequestSchema
 >;

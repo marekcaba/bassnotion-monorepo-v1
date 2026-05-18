@@ -23,7 +23,8 @@ export function MilestoneCard({
       className={cn(
         'p-6 rounded-2xl border transition-all duration-200',
         isCompleted && 'bg-green-500/5 border-green-500/30',
-        isCurrent && 'bg-blue-500/10 border-blue-500/30 ring-1 ring-blue-500/50',
+        isCurrent &&
+          'bg-blue-500/10 border-blue-500/30 ring-1 ring-blue-500/50',
         isLocked && 'bg-gray-800/30 border-gray-700/30 opacity-60',
       )}
     >
@@ -137,7 +138,9 @@ export function MilestoneCard({
                 <div
                   className={cn(
                     'w-8 h-8 rounded-lg flex items-center justify-center text-sm font-medium',
-                    isLocked ? 'bg-gray-700 text-gray-500' : 'bg-gray-700 text-gray-300',
+                    isLocked
+                      ? 'bg-gray-700 text-gray-500'
+                      : 'bg-gray-700 text-gray-300',
                   )}
                 >
                   {index + 1}
@@ -177,18 +180,20 @@ export function MilestoneCard({
       )}
 
       {/* Action button for current milestone */}
-      {isCurrent && milestone.tutorialIds && milestone.tutorialIds.length > 0 && (
-        <button
-          onClick={() => onStartTutorial?.(milestone.tutorialIds![0])}
-          className={cn(
-            'mt-4 w-full py-3 rounded-xl font-semibold',
-            'bg-blue-600 hover:bg-blue-500 text-white',
-            'transition-colors duration-200',
-          )}
-        >
-          Continue Learning
-        </button>
-      )}
+      {isCurrent &&
+        milestone.tutorialIds &&
+        milestone.tutorialIds.length > 0 && (
+          <button
+            onClick={() => onStartTutorial?.(milestone.tutorialIds![0])}
+            className={cn(
+              'mt-4 w-full py-3 rounded-xl font-semibold',
+              'bg-blue-600 hover:bg-blue-500 text-white',
+              'transition-colors duration-200',
+            )}
+          >
+            Continue Learning
+          </button>
+        )}
     </div>
   );
 }

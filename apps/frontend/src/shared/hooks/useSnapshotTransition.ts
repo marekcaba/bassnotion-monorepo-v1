@@ -34,7 +34,7 @@ export interface SnapshotTransitionResult<T> {
 export function useSnapshotTransition<T>(
   sourceData: T,
   dataKey: string | undefined,
-  options: SnapshotTransitionOptions = {}
+  options: SnapshotTransitionOptions = {},
 ): SnapshotTransitionResult<T> {
   const { fadeDuration = 500, debug = false } = options;
 
@@ -45,7 +45,9 @@ export function useSnapshotTransition<T>(
   // Using lazy initializer to capture first sourceData
   const [displayData, setDisplayData] = useState<T>(() => sourceData);
   const [opacity, setOpacity] = useState(1);
-  const [phase, setPhase] = useState<'stable' | 'fading-out' | 'fading-in'>('stable');
+  const [phase, setPhase] = useState<'stable' | 'fading-out' | 'fading-in'>(
+    'stable',
+  );
 
   // Refs for tracking - these don't cause re-renders
   const previousKeyRef = useRef<string | undefined>(dataKey);
@@ -91,7 +93,7 @@ export function useSnapshotTransition<T>(
     (msg: string, data?: Record<string, unknown>) => {
       if (debug) console.log(`[Snapshot] ${msg}`, data ?? '');
     },
-    [debug]
+    [debug],
   );
 
   // =========================================================================
@@ -120,7 +122,11 @@ export function useSnapshotTransition<T>(
   // If key changed but we're NOT stable (already transitioning), handle it here
   // rather than waiting for the effect. This ensures fast response to rapid switching.
   if (keyChanged && !isStable && !isFirstRenderRef.current) {
-    log('Mid-transition redirect (sync)', { from: previousKeyRef.current, to: dataKey, phase: phaseRef.current });
+    log('Mid-transition redirect (sync)', {
+      from: previousKeyRef.current,
+      to: dataKey,
+      phase: phaseRef.current,
+    });
 
     // Always update target and pending data
     targetKeyRef.current = dataKey;
@@ -130,7 +136,10 @@ export function useSnapshotTransition<T>(
     // We need to restart the transition. DON'T update previousKeyRef so the
     // next stable-phase render will detect the key change and start fresh.
     if (phaseRef.current === 'fading-in') {
-      log('Restarting from fading-in (sync)', { previousKeyRef: previousKeyRef.current, newDataKey: dataKey });
+      log('Restarting from fading-in (sync)', {
+        previousKeyRef: previousKeyRef.current,
+        newDataKey: dataKey,
+      });
       // Cancel any pending timeouts will happen in effect
       phaseRef.current = 'stable';
       // Note: State update will happen in effect to avoid calling setPhase during render
@@ -160,7 +169,11 @@ export function useSnapshotTransition<T>(
     // =========================================================================
     // When displayKeyRef is undefined but dataKey is set, this is the first exercise
     // selection. We need to update both displayData and displayKeyRef.
-    if (displayKeyRef.current === undefined && dataKey !== undefined && phaseRef.current === 'stable') {
+    if (
+      displayKeyRef.current === undefined &&
+      dataKey !== undefined &&
+      phaseRef.current === 'stable'
+    ) {
       log('First key set', { dataKey });
       setDisplayData(sourceData);
       displayKeyRef.current = dataKey;
@@ -173,7 +186,10 @@ export function useSnapshotTransition<T>(
     // If phaseRef was reset to 'stable' during synchronous mid-transition handling
     // but state is still fading-in, sync them and clear timeouts
     if (phaseRef.current === 'stable' && phase === 'fading-in') {
-      log('Syncing state after mid-transition restart', { previousKeyRef: previousKeyRef.current, dataKey });
+      log('Syncing state after mid-transition restart', {
+        previousKeyRef: previousKeyRef.current,
+        dataKey,
+      });
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
@@ -210,7 +226,11 @@ export function useSnapshotTransition<T>(
     // =========================================================================
     // CRITICAL: Only enter here if phaseRef was set to 'fading-out' during synchronous
     // key change detection AND state hasn't caught up yet
-    if (targetKeyRef.current === dataKey && phaseRef.current === 'fading-out' && phase === 'stable') {
+    if (
+      targetKeyRef.current === dataKey &&
+      phaseRef.current === 'fading-out' &&
+      phase === 'stable'
+    ) {
       // Clear any existing timeout
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
@@ -259,7 +279,9 @@ export function useSnapshotTransition<T>(
               requestAnimationFrame(() => {
                 const fadeInRafDelay = performance.now() - fadeInRafStart;
                 setOpacity(1);
-                log('Opacity → 1', { fadeInRafDelay: Math.round(fadeInRafDelay) });
+                log('Opacity → 1', {
+                  fadeInRafDelay: Math.round(fadeInRafDelay),
+                });
 
                 // Return to stable after fade-in CSS transition completes
                 timeoutRef.current = setTimeout(() => {
@@ -282,7 +304,11 @@ export function useSnapshotTransition<T>(
     // This is a safety net - synchronous handling above should catch most cases.
     // This handles edge cases where the effect runs before the sync code.
     if (phaseRef.current !== 'stable' && targetKeyRef.current !== dataKey) {
-      log('Mid-transition key change (effect)', { currentTarget: targetKeyRef.current, newTarget: dataKey, phase: phaseRef.current });
+      log('Mid-transition key change (effect)', {
+        currentTarget: targetKeyRef.current,
+        newTarget: dataKey,
+        phase: phaseRef.current,
+      });
 
       // Update target ref to new destination
       targetKeyRef.current = dataKey;
@@ -305,7 +331,6 @@ export function useSnapshotTransition<T>(
         previousKeyRef.current = dataKey;
       }
     }
-
   }, [dataKey, sourceData, fadeDuration, phase, log]);
 
   // Cleanup on unmount

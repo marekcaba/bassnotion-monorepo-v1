@@ -181,11 +181,26 @@ describe('Measure Window Visibility', () => {
     const prev = currentMeasure - 1;
 
     return {
-      currentLines: shouldShowConnectionLine(currentMeasure, currentMeasure, currentMeasure).visible,
+      currentLines: shouldShowConnectionLine(
+        currentMeasure,
+        currentMeasure,
+        currentMeasure,
+      ).visible,
       nextLines: shouldShowConnectionLine(next, next, currentMeasure).visible,
-      transitionToNext: shouldShowConnectionLine(currentMeasure, next, currentMeasure).visible,
-      transitionFromNext: shouldShowConnectionLine(next, next + 1, currentMeasure).visible,
-      previousLines: prev >= 0 ? shouldShowConnectionLine(prev, prev, currentMeasure).visible : false,
+      transitionToNext: shouldShowConnectionLine(
+        currentMeasure,
+        next,
+        currentMeasure,
+      ).visible,
+      transitionFromNext: shouldShowConnectionLine(
+        next,
+        next + 1,
+        currentMeasure,
+      ).visible,
+      previousLines:
+        prev >= 0
+          ? shouldShowConnectionLine(prev, prev, currentMeasure).visible
+          : false,
     };
   }
 
@@ -230,10 +245,13 @@ describe('Line Cleanup on Measure Change (FIX v6)', () => {
 
     const mockElements = [createMockLine(), createMockLine(), createMockLine()];
 
-    mockQuerySelectorAll = vi.spyOn(document, 'querySelectorAll').mockReturnValue({
-      forEach: (callback: (el: any) => void) => mockElements.forEach(callback),
-      length: mockElements.length,
-    } as any);
+    mockQuerySelectorAll = vi
+      .spyOn(document, 'querySelectorAll')
+      .mockReturnValue({
+        forEach: (callback: (el: any) => void) =>
+          mockElements.forEach(callback),
+        length: mockElements.length,
+      } as any);
   });
 
   afterEach(() => {
@@ -242,14 +260,20 @@ describe('Line Cleanup on Measure Change (FIX v6)', () => {
 
   it('should query for .connection-line.line-played elements', () => {
     // Simulate the cleanup logic from FretboardGrid
-    const allPlayedLines = document.querySelectorAll('.connection-line.line-played');
+    const allPlayedLines = document.querySelectorAll(
+      '.connection-line.line-played',
+    );
 
-    expect(mockQuerySelectorAll).toHaveBeenCalledWith('.connection-line.line-played');
+    expect(mockQuerySelectorAll).toHaveBeenCalledWith(
+      '.connection-line.line-played',
+    );
     expect(allPlayedLines.length).toBe(3);
   });
 
   it('should remove line-played class from all matched elements', () => {
-    const allPlayedLines = document.querySelectorAll('.connection-line.line-played');
+    const allPlayedLines = document.querySelectorAll(
+      '.connection-line.line-played',
+    );
 
     allPlayedLines.forEach((line: any) => {
       line.classList.remove('line-played');
@@ -266,7 +290,10 @@ describe('Dot-to-Dot Line Dismissal', () => {
    */
   function hideLineForPlayedNote(
     noteIndex: number,
-    connections: Array<{ sourceNoteIndex: number; element: { classList: { add: (cls: string) => void } } }>,
+    connections: Array<{
+      sourceNoteIndex: number;
+      element: { classList: { add: (cls: string) => void } };
+    }>,
   ): number {
     let hiddenCount = 0;
 

@@ -32,13 +32,16 @@ export function MultipleChoiceQuestion({
   }, [onSubmit]);
 
   // Toggle selection - clicking same option deselects it
-  const handleSelect = useCallback((optionId: string) => {
-    if (selectedOptionId === optionId) {
-      onSelect(null); // Deselect
-    } else {
-      onSelect(optionId); // Select
-    }
-  }, [selectedOptionId, onSelect]);
+  const handleSelect = useCallback(
+    (optionId: string) => {
+      if (selectedOptionId === optionId) {
+        onSelect(null); // Deselect
+      } else {
+        onSelect(optionId); // Select
+      }
+    },
+    [selectedOptionId, onSelect],
+  );
 
   const handleKeyDown = (e: React.KeyboardEvent, optionId: string) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -89,9 +92,7 @@ export function MultipleChoiceQuestion({
                 'rounded-lg',
                 'transition-colors duration-150',
                 'text-left focus:outline-none focus-visible:ring-1 focus-visible:ring-white/20',
-                isSelected
-                  ? 'bg-white/10'
-                  : 'hover:bg-white/[0.04]',
+                isSelected ? 'bg-white/10' : 'hover:bg-white/[0.04]',
               )}
               role="radio"
               aria-checked={isSelected}
@@ -100,9 +101,7 @@ export function MultipleChoiceQuestion({
               <span
                 className={cn(
                   'shrink-0 w-3.5 h-3.5 rounded-full border transition-all duration-150',
-                  isSelected
-                    ? 'border-white bg-white'
-                    : 'border-white/30',
+                  isSelected ? 'border-white bg-white' : 'border-white/30',
                 )}
               />
 

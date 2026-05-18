@@ -12,7 +12,9 @@ export function safeString(value: unknown): string {
 }
 
 /** Extract exercise ID as a plain string, handling value-object wrappers */
-export function getExerciseId(exercise: { id: string | { value: string } }): string {
+export function getExerciseId(exercise: {
+  id: string | { value: string };
+}): string {
   return typeof exercise.id === 'object' && exercise.id !== null
     ? exercise.id.value
     : exercise.id;
@@ -49,8 +51,7 @@ export function calculateDuration(exercise: any): number {
   }, 0);
 
   // Convert to seconds if the value is in milliseconds (> 1000 suggests milliseconds)
-  const result =
-    maxEndTime > 1000 ? Math.floor(maxEndTime / 1000) : maxEndTime;
+  const result = maxEndTime > 1000 ? Math.floor(maxEndTime / 1000) : maxEndTime;
 
   // Ensure we never return NaN
   return isFinite(result) ? result : 0;

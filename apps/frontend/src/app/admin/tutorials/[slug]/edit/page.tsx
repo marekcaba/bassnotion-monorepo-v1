@@ -131,9 +131,7 @@ function EditableSection({
   );
 }
 
-function AdminTutorialEditPageContent({
-  params,
-}: AdminTutorialPageProps) {
+function AdminTutorialEditPageContent({ params }: AdminTutorialPageProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { correlationId, logger } = useCorrelation('AdminTutorialEditPage');
@@ -200,7 +198,9 @@ function AdminTutorialEditPageContent({
   // Modular block system state
   const [blocks, setBlocks] = useState<AnyBlock[]>([]);
   // All tutorials for "Next tutorial" CTA in celebration blocks
-  const [allTutorials, setAllTutorials] = useState<Array<{ slug: string; title: string }>>([]);
+  const [allTutorials, setAllTutorials] = useState<
+    Array<{ slug: string; title: string }>
+  >([]);
 
   // Bass configuration state (loaded from user profile)
   const [stringCount, setStringCount] = useState<4 | 5 | 6>(4);
@@ -388,9 +388,13 @@ function AdminTutorialEditPageContent({
           // Derive legacy understand fields from blocks for backward compatibility
           ...(() => {
             const videoBlock = blocks.find((b) => b.type === 'video');
-            const videoConfig = videoBlock?.config as VideoBlockConfig | undefined;
+            const videoConfig = videoBlock?.config as
+              | VideoBlockConfig
+              | undefined;
             // Extract quiz questions from overlay events for legacy field
-            const overlayEvents = videoConfig ? resolveOverlayEvents(videoConfig) : [];
+            const overlayEvents = videoConfig
+              ? resolveOverlayEvents(videoConfig)
+              : [];
             const quizQuestions = overlayEvents
               .filter((e) => e.type === 'QUIZ')
               .map((e) => ({
@@ -402,7 +406,8 @@ function AdminTutorialEditPageContent({
               }));
             return {
               understandVideoUrl: videoConfig?.videoUrl || undefined,
-              understandVideoLibraryId: videoConfig?.videoLibraryId || undefined,
+              understandVideoLibraryId:
+                videoConfig?.videoLibraryId || undefined,
               understandHeadline: videoConfig?.headline || undefined,
               understandQuestions: quizQuestions,
             };
@@ -624,7 +629,10 @@ function AdminTutorialEditPageContent({
   // Check auth state
   if (!isReady) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={radialBlueBackground}>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={radialBlueBackground}
+      >
         <div className="text-center text-white">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
           <p>Checking authentication...</p>
@@ -635,7 +643,10 @@ function AdminTutorialEditPageContent({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={radialBlueBackground}>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={radialBlueBackground}
+      >
         <div className="text-center text-white">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
           <p>Loading tutorial...</p>
@@ -646,7 +657,10 @@ function AdminTutorialEditPageContent({
 
   if (!tutorial) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={radialBlueBackground}>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={radialBlueBackground}
+      >
         <div className="text-center text-white">
           <h1 className="text-2xl font-bold mb-4">Tutorial Not Found</h1>
           <Button
@@ -724,383 +738,196 @@ function AdminTutorialEditPageContent({
             className="fixed inset-0 z-[101] overflow-y-auto"
             onClick={() => toggleEditMode(null)}
           >
-            <div className="flex items-center justify-center p-4" style={{ minHeight: '100vh' }}>
+            <div
+              className="flex items-center justify-center p-4"
+              style={{ minHeight: '100vh' }}
+            >
               <div
                 className="relative bg-white rounded-lg p-6 max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-xl"
                 onClick={(e) => e.stopPropagation()}
               >
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold">Edit {editMode}</h3>
-                    <Button
-                      onClick={() => toggleEditMode(null)}
-                      variant="ghost"
-                      size="sm"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-bold">Edit {editMode}</h3>
+                  <Button
+                    onClick={() => toggleEditMode(null)}
+                    variant="ghost"
+                    size="sm"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
 
-                  {/* Core Concept Edit Form */}
-                  {editMode === 'core-concept' && (
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-1">
-                          Core Concept Description
-                        </label>
-                        <textarea
-                          value={coreConcept.description}
-                          onChange={(e) => {
-                            setCoreConcept({
-                              ...coreConcept,
-                              description: e.target.value,
-                            });
-                            setHasChanges(true);
-                          }}
-                          rows={3}
-                          className="w-full px-3 py-2 border rounded-md"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">
-                          Bullet Points
-                        </label>
-                        {coreConcept.bulletPoints.map((point, index) => (
-                          <div key={index} className="flex gap-2 mb-2">
-                            <input
-                              type="text"
-                              value={point}
-                              onChange={(e) => {
-                                const newPoints = [...coreConcept.bulletPoints];
-                                newPoints[index] = e.target.value;
-                                setCoreConcept({
-                                  ...coreConcept,
-                                  bulletPoints: newPoints,
-                                });
-                                setHasChanges(true);
-                              }}
-                              className="flex-1 px-3 py-2 border rounded-md"
-                            />
-                            <Button
-                              onClick={() => {
-                                const newPoints =
-                                  coreConcept.bulletPoints.filter(
-                                    (_, i) => i !== index,
-                                  );
-                                setCoreConcept({
-                                  ...coreConcept,
-                                  bulletPoints: newPoints,
-                                });
-                                setHasChanges(true);
-                              }}
-                              size="sm"
-                              variant="ghost"
-                              className="text-red-500"
-                            >
-                              <Trash className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        ))}
-                        <Button
-                          onClick={() => {
-                            setCoreConcept({
-                              ...coreConcept,
-                              bulletPoints: [
-                                ...coreConcept.bulletPoints,
-                                'New point',
-                              ],
-                            });
-                            setHasChanges(true);
-                          }}
-                          size="sm"
-                          variant="outline"
-                        >
-                          <Plus className="w-4 h-4 mr-1" />
-                          Add Point
-                        </Button>
-                      </div>
-                      <Button
-                        onClick={() => toggleEditMode(null)}
-                        className="w-full"
-                      >
-                        <Check className="w-4 h-4 mr-2" />
-                        Done Editing
-                      </Button>
+                {/* Core Concept Edit Form */}
+                {editMode === 'core-concept' && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Core Concept Description
+                      </label>
+                      <textarea
+                        value={coreConcept.description}
+                        onChange={(e) => {
+                          setCoreConcept({
+                            ...coreConcept,
+                            description: e.target.value,
+                          });
+                          setHasChanges(true);
+                        }}
+                        rows={3}
+                        className="w-full px-3 py-2 border rounded-md"
+                      />
                     </div>
-                  )}
-
-                  {/* Teaching Takeaway Edit Form */}
-                  {editMode === 'teaching-takeaway' && (
-                    <div className="space-y-4 max-h-[70vh] overflow-y-auto">
-                      <div>
-                        <label className="block text-sm font-medium mb-1">
-                          Main Title
-                        </label>
-                        <input
-                          type="text"
-                          value={teachingTakeaway.title}
-                          onChange={(e) => {
-                            setTeachingTakeaway({
-                              ...teachingTakeaway,
-                              title: e.target.value,
-                            });
-                            setHasChanges(true);
-                          }}
-                          className="w-full px-3 py-2 border rounded-md"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">
-                          Subtitle
-                        </label>
-                        <input
-                          type="text"
-                          value={teachingTakeaway.subtitle}
-                          onChange={(e) => {
-                            setTeachingTakeaway({
-                              ...teachingTakeaway,
-                              subtitle: e.target.value,
-                            });
-                            setHasChanges(true);
-                          }}
-                          className="w-full px-3 py-2 border rounded-md"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">
-                          Core Learning Section Title
-                        </label>
-                        <input
-                          type="text"
-                          value={teachingTakeaway.coreLearningTitle}
-                          onChange={(e) => {
-                            setTeachingTakeaway({
-                              ...teachingTakeaway,
-                              coreLearningTitle: e.target.value,
-                            });
-                            setHasChanges(true);
-                          }}
-                          className="w-full px-3 py-2 border rounded-md"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">
-                          Core Learning Description
-                        </label>
-                        <textarea
-                          value={teachingTakeaway.coreLearningDescription}
-                          onChange={(e) => {
-                            setTeachingTakeaway({
-                              ...teachingTakeaway,
-                              coreLearningDescription: e.target.value,
-                            });
-                            setHasChanges(true);
-                          }}
-                          className="w-full px-3 py-2 border rounded-md"
-                          rows={3}
-                        />
-                      </div>
-                      <div className="grid grid-cols-3 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium mb-1">
-                            Key Concepts Count
-                          </label>
-                          <input
-                            type="number"
-                            value={teachingTakeaway.keyConceptsCount}
-                            onChange={(e) => {
-                              setTeachingTakeaway({
-                                ...teachingTakeaway,
-                                keyConceptsCount: parseInt(e.target.value) || 0,
-                              });
-                              setHasChanges(true);
-                            }}
-                            className="w-full px-3 py-2 border rounded-md"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-1">
-                            Duration (minutes)
-                          </label>
-                          <input
-                            type="number"
-                            value={teachingTakeaway.duration}
-                            onChange={(e) => {
-                              setTeachingTakeaway({
-                                ...teachingTakeaway,
-                                duration: parseInt(e.target.value) || 0,
-                              });
-                              setHasChanges(true);
-                            }}
-                            className="w-full px-3 py-2 border rounded-md"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-1">
-                            Level
-                          </label>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Bullet Points
+                      </label>
+                      {coreConcept.bulletPoints.map((point, index) => (
+                        <div key={index} className="flex gap-2 mb-2">
                           <input
                             type="text"
-                            value={teachingTakeaway.level}
+                            value={point}
                             onChange={(e) => {
-                              setTeachingTakeaway({
-                                ...teachingTakeaway,
-                                level: e.target.value,
+                              const newPoints = [...coreConcept.bulletPoints];
+                              newPoints[index] = e.target.value;
+                              setCoreConcept({
+                                ...coreConcept,
+                                bulletPoints: newPoints,
                               });
                               setHasChanges(true);
                             }}
-                            className="w-full px-3 py-2 border rounded-md"
+                            className="flex-1 px-3 py-2 border rounded-md"
                           />
+                          <Button
+                            onClick={() => {
+                              const newPoints = coreConcept.bulletPoints.filter(
+                                (_, i) => i !== index,
+                              );
+                              setCoreConcept({
+                                ...coreConcept,
+                                bulletPoints: newPoints,
+                              });
+                              setHasChanges(true);
+                            }}
+                            size="sm"
+                            variant="ghost"
+                            className="text-red-500"
+                          >
+                            <Trash className="w-4 h-4" />
+                          </Button>
                         </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">
-                          Mastery Section Title
-                        </label>
-                        <input
-                          type="text"
-                          value={teachingTakeaway.masterySectionTitle}
-                          onChange={(e) => {
-                            setTeachingTakeaway({
-                              ...teachingTakeaway,
-                              masterySectionTitle: e.target.value,
-                            });
-                            setHasChanges(true);
-                          }}
-                          className="w-full px-3 py-2 border rounded-md"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">
-                          Learning Points
-                        </label>
-                        {teachingTakeaway.points.map((point, index) => (
-                          <div key={index} className="flex gap-2 mb-2">
-                            <input
-                              type="text"
-                              value={point}
-                              onChange={(e) => {
-                                const newPoints = [...teachingTakeaway.points];
-                                newPoints[index] = e.target.value;
-                                setTeachingTakeaway({
-                                  ...teachingTakeaway,
-                                  points: newPoints,
-                                });
-                                setHasChanges(true);
-                              }}
-                              className="flex-1 px-3 py-2 border rounded-md"
-                            />
-                            <Button
-                              onClick={() => {
-                                const newPoints =
-                                  teachingTakeaway.points.filter(
-                                    (_, i) => i !== index,
-                                  );
-                                setTeachingTakeaway({
-                                  ...teachingTakeaway,
-                                  points: newPoints,
-                                });
-                                setHasChanges(true);
-                              }}
-                              size="sm"
-                              variant="ghost"
-                              className="text-red-500"
-                            >
-                              <Trash className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        ))}
-                        <Button
-                          onClick={() => {
-                            setTeachingTakeaway({
-                              ...teachingTakeaway,
-                              points: [
-                                ...teachingTakeaway.points,
-                                'New learning point',
-                              ],
-                            });
-                            setHasChanges(true);
-                          }}
-                          size="sm"
-                          variant="outline"
-                        >
-                          <Plus className="w-4 h-4 mr-1" />
-                          Add Point
-                        </Button>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">
-                          Practice Tip Title
-                        </label>
-                        <input
-                          type="text"
-                          value={teachingTakeaway.practiceTipTitle}
-                          onChange={(e) => {
-                            setTeachingTakeaway({
-                              ...teachingTakeaway,
-                              practiceTipTitle: e.target.value,
-                            });
-                            setHasChanges(true);
-                          }}
-                          className="w-full px-3 py-2 border rounded-md"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">
-                          Practice Tip Description
-                        </label>
-                        <textarea
-                          value={teachingTakeaway.practiceTipDescription}
-                          onChange={(e) => {
-                            setTeachingTakeaway({
-                              ...teachingTakeaway,
-                              practiceTipDescription: e.target.value,
-                            });
-                            setHasChanges(true);
-                          }}
-                          className="w-full px-3 py-2 border rounded-md"
-                          rows={3}
-                        />
-                      </div>
+                      ))}
                       <Button
-                        onClick={() => toggleEditMode(null)}
-                        className="w-full"
+                        onClick={() => {
+                          setCoreConcept({
+                            ...coreConcept,
+                            bulletPoints: [
+                              ...coreConcept.bulletPoints,
+                              'New point',
+                            ],
+                          });
+                          setHasChanges(true);
+                        }}
+                        size="sm"
+                        variant="outline"
                       >
-                        <Check className="w-4 h-4 mr-2" />
-                        Done Editing
+                        <Plus className="w-4 h-4 mr-1" />
+                        Add Point
                       </Button>
                     </div>
-                  )}
+                    <Button
+                      onClick={() => toggleEditMode(null)}
+                      className="w-full"
+                    >
+                      <Check className="w-4 h-4 mr-2" />
+                      Done Editing
+                    </Button>
+                  </div>
+                )}
 
-                  {/* Tutorial Info Edit Form */}
-                  {editMode === 'tutorial-info' && (
-                    <div className="space-y-4">
+                {/* Teaching Takeaway Edit Form */}
+                {editMode === 'teaching-takeaway' && (
+                  <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Main Title
+                      </label>
+                      <input
+                        type="text"
+                        value={teachingTakeaway.title}
+                        onChange={(e) => {
+                          setTeachingTakeaway({
+                            ...teachingTakeaway,
+                            title: e.target.value,
+                          });
+                          setHasChanges(true);
+                        }}
+                        className="w-full px-3 py-2 border rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Subtitle
+                      </label>
+                      <input
+                        type="text"
+                        value={teachingTakeaway.subtitle}
+                        onChange={(e) => {
+                          setTeachingTakeaway({
+                            ...teachingTakeaway,
+                            subtitle: e.target.value,
+                          });
+                          setHasChanges(true);
+                        }}
+                        className="w-full px-3 py-2 border rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Core Learning Section Title
+                      </label>
+                      <input
+                        type="text"
+                        value={teachingTakeaway.coreLearningTitle}
+                        onChange={(e) => {
+                          setTeachingTakeaway({
+                            ...teachingTakeaway,
+                            coreLearningTitle: e.target.value,
+                          });
+                          setHasChanges(true);
+                        }}
+                        className="w-full px-3 py-2 border rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Core Learning Description
+                      </label>
+                      <textarea
+                        value={teachingTakeaway.coreLearningDescription}
+                        onChange={(e) => {
+                          setTeachingTakeaway({
+                            ...teachingTakeaway,
+                            coreLearningDescription: e.target.value,
+                          });
+                          setHasChanges(true);
+                        }}
+                        className="w-full px-3 py-2 border rounded-md"
+                        rows={3}
+                      />
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
                       <div>
                         <label className="block text-sm font-medium mb-1">
-                          Title
+                          Key Concepts Count
                         </label>
                         <input
-                          type="text"
-                          value={tutorial.title}
+                          type="number"
+                          value={teachingTakeaway.keyConceptsCount}
                           onChange={(e) => {
-                            const updated = Tutorial.reconstitute({
-                              id: tutorial.id,
-                              title: e.target.value,
-                              slug: tutorial.slug,
-                              description: tutorial.description,
-                              youtubeId: tutorial.youtubeId,
-                              duration: tutorial.duration,
-                              authorName: tutorial.authorName,
-                              thumbnailUrl: tutorial.thumbnailUrl,
-                              level: tutorial.level,
-                              tags: tutorial.tags,
-                              isActive: tutorial.isActive,
-                              publishedAt: tutorial.publishedAt,
-                              createdAt: tutorial.createdAt,
-                              updatedAt: new Date(),
-                              sections: tutorial.sections,
-                              viewCount: tutorial.viewCount,
+                            setTeachingTakeaway({
+                              ...teachingTakeaway,
+                              keyConceptsCount: parseInt(e.target.value) || 0,
                             });
-                            setTutorial(updated);
                             setHasChanges(true);
                           }}
                           className="w-full px-3 py-2 border rounded-md"
@@ -1108,33 +935,18 @@ function AdminTutorialEditPageContent({
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">
-                          Description
+                          Duration (minutes)
                         </label>
-                        <textarea
-                          value={tutorial.description}
+                        <input
+                          type="number"
+                          value={teachingTakeaway.duration}
                           onChange={(e) => {
-                            const updated = Tutorial.reconstitute({
-                              id: tutorial.id,
-                              title: tutorial.title,
-                              slug: tutorial.slug,
-                              description: e.target.value,
-                              youtubeId: tutorial.youtubeId,
-                              duration: tutorial.duration,
-                              authorName: tutorial.authorName,
-                              thumbnailUrl: tutorial.thumbnailUrl,
-                              level: tutorial.level,
-                              tags: tutorial.tags,
-                              isActive: tutorial.isActive,
-                              publishedAt: tutorial.publishedAt,
-                              createdAt: tutorial.createdAt,
-                              updatedAt: new Date(),
-                              sections: tutorial.sections,
-                              viewCount: tutorial.viewCount,
+                            setTeachingTakeaway({
+                              ...teachingTakeaway,
+                              duration: parseInt(e.target.value) || 0,
                             });
-                            setTutorial(updated);
                             setHasChanges(true);
                           }}
-                          rows={4}
                           className="w-full px-3 py-2 border rounded-md"
                         />
                       </div>
@@ -1142,169 +954,385 @@ function AdminTutorialEditPageContent({
                         <label className="block text-sm font-medium mb-1">
                           Level
                         </label>
-                        <select
-                          value={tutorial.level.value}
-                          onChange={(e) => {
-                            const updated = Tutorial.reconstitute({
-                              id: tutorial.id,
-                              title: tutorial.title,
-                              slug: tutorial.slug,
-                              description: tutorial.description,
-                              youtubeId: tutorial.youtubeId,
-                              duration: tutorial.duration,
-                              authorName: tutorial.authorName,
-                              thumbnailUrl: tutorial.thumbnailUrl,
-                              level: TutorialLevel.create(e.target.value),
-                              tags: tutorial.tags,
-                              isActive: tutorial.isActive,
-                              publishedAt: tutorial.publishedAt,
-                              createdAt: tutorial.createdAt,
-                              updatedAt: new Date(),
-                              sections: tutorial.sections,
-                              viewCount: tutorial.viewCount,
-                            });
-                            setTutorial(updated);
-                            setHasChanges(true);
-                          }}
-                          className="w-full px-3 py-2 border rounded-md"
-                        >
-                          <option value="beginner">Beginner</option>
-                          <option value="intermediate">Intermediate</option>
-                          <option value="advanced">Advanced</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">
-                          Product Path
-                        </label>
-                        <select
-                          value={tutorial.category || ''}
-                          onChange={(e) => {
-                            const updated = Tutorial.reconstitute({
-                              id: tutorial.id,
-                              title: tutorial.title,
-                              slug: tutorial.slug,
-                              description: tutorial.description,
-                              youtubeId: tutorial.youtubeId,
-                              duration: tutorial.duration,
-                              authorName: tutorial.authorName,
-                              thumbnailUrl: tutorial.thumbnailUrl,
-                              level: tutorial.level,
-                              tags: tutorial.tags,
-                              isActive: tutorial.isActive,
-                              publishedAt: tutorial.publishedAt,
-                              createdAt: tutorial.createdAt,
-                              updatedAt: new Date(),
-                              sections: tutorial.sections,
-                              viewCount: tutorial.viewCount,
-                              category: e.target.value || undefined,
-                              sidebarTitle: tutorial.sidebarTitle,
-                            });
-                            setTutorial(updated);
-                            setHasChanges(true);
-                          }}
-                          className="w-full px-3 py-2 border rounded-md"
-                        >
-                          <option value="">-- Select Product --</option>
-                          <option value="starter-kit">Starter Kit</option>
-                          <option value="revisiting-basics">Revisiting Basics</option>
-                        </select>
-                      </div>
-
-                      {/* Sidebar Title */}
-                      <div>
-                        <label className="block text-sm font-medium mb-1">
-                          Sidebar Title
-                        </label>
                         <input
                           type="text"
-                          value={tutorial.sidebarTitle || ''}
+                          value={teachingTakeaway.level}
                           onChange={(e) => {
-                            const updated = Tutorial.reconstitute({
-                              id: tutorial.id,
-                              title: tutorial.title,
-                              slug: tutorial.slug,
-                              description: tutorial.description,
-                              youtubeId: tutorial.youtubeId,
-                              duration: tutorial.duration,
-                              authorName: tutorial.authorName,
-                              thumbnailUrl: tutorial.thumbnailUrl,
-                              level: tutorial.level,
-                              tags: tutorial.tags,
-                              isActive: tutorial.isActive,
-                              publishedAt: tutorial.publishedAt,
-                              createdAt: tutorial.createdAt,
-                              updatedAt: new Date(),
-                              sections: tutorial.sections,
-                              viewCount: tutorial.viewCount,
-                              category: tutorial.category,
-                              sidebarTitle: e.target.value || undefined,
+                            setTeachingTakeaway({
+                              ...teachingTakeaway,
+                              level: e.target.value,
                             });
-                            setTutorial(updated);
                             setHasChanges(true);
                           }}
-                          placeholder="e.g., Find Notes"
                           className="w-full px-3 py-2 border rounded-md"
                         />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Short title for the sidebar navigation. Leave empty to use the full tutorial title.
-                        </p>
                       </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Mastery Section Title
+                      </label>
+                      <input
+                        type="text"
+                        value={teachingTakeaway.masterySectionTitle}
+                        onChange={(e) => {
+                          setTeachingTakeaway({
+                            ...teachingTakeaway,
+                            masterySectionTitle: e.target.value,
+                          });
+                          setHasChanges(true);
+                        }}
+                        className="w-full px-3 py-2 border rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Learning Points
+                      </label>
+                      {teachingTakeaway.points.map((point, index) => (
+                        <div key={index} className="flex gap-2 mb-2">
+                          <input
+                            type="text"
+                            value={point}
+                            onChange={(e) => {
+                              const newPoints = [...teachingTakeaway.points];
+                              newPoints[index] = e.target.value;
+                              setTeachingTakeaway({
+                                ...teachingTakeaway,
+                                points: newPoints,
+                              });
+                              setHasChanges(true);
+                            }}
+                            className="flex-1 px-3 py-2 border rounded-md"
+                          />
+                          <Button
+                            onClick={() => {
+                              const newPoints = teachingTakeaway.points.filter(
+                                (_, i) => i !== index,
+                              );
+                              setTeachingTakeaway({
+                                ...teachingTakeaway,
+                                points: newPoints,
+                              });
+                              setHasChanges(true);
+                            }}
+                            size="sm"
+                            variant="ghost"
+                            className="text-red-500"
+                          >
+                            <Trash className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        onClick={() => {
+                          setTeachingTakeaway({
+                            ...teachingTakeaway,
+                            points: [
+                              ...teachingTakeaway.points,
+                              'New learning point',
+                            ],
+                          });
+                          setHasChanges(true);
+                        }}
+                        size="sm"
+                        variant="outline"
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Add Point
+                      </Button>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Practice Tip Title
+                      </label>
+                      <input
+                        type="text"
+                        value={teachingTakeaway.practiceTipTitle}
+                        onChange={(e) => {
+                          setTeachingTakeaway({
+                            ...teachingTakeaway,
+                            practiceTipTitle: e.target.value,
+                          });
+                          setHasChanges(true);
+                        }}
+                        className="w-full px-3 py-2 border rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Practice Tip Description
+                      </label>
+                      <textarea
+                        value={teachingTakeaway.practiceTipDescription}
+                        onChange={(e) => {
+                          setTeachingTakeaway({
+                            ...teachingTakeaway,
+                            practiceTipDescription: e.target.value,
+                          });
+                          setHasChanges(true);
+                        }}
+                        className="w-full px-3 py-2 border rounded-md"
+                        rows={3}
+                      />
+                    </div>
+                    <Button
+                      onClick={() => toggleEditMode(null)}
+                      className="w-full"
+                    >
+                      <Check className="w-4 h-4 mr-2" />
+                      Done Editing
+                    </Button>
+                  </div>
+                )}
 
-                      {/* Title Highlight Words */}
-                      <div>
-                        <label className="block text-sm font-medium mb-1">
-                          Title Highlight Words (optional)
-                        </label>
-                        <input
-                          type="text"
-                          value={tutorial.titleHighlightWords?.join(', ') || ''}
-                          onChange={(e) => {
-                            const words = e.target.value
-                              .split(',')
-                              .map((w) => w.trim())
-                              .filter((w) => w.length > 0);
-                            const updated = Tutorial.reconstitute({
-                              id: tutorial.id,
-                              title: tutorial.title,
-                              slug: tutorial.slug,
-                              description: tutorial.description,
-                              youtubeId: tutorial.youtubeId,
-                              duration: tutorial.duration,
-                              authorName: tutorial.authorName,
-                              thumbnailUrl: tutorial.thumbnailUrl,
-                              level: tutorial.level,
-                              tags: tutorial.tags,
-                              isActive: tutorial.isActive,
-                              publishedAt: tutorial.publishedAt,
-                              createdAt: tutorial.createdAt,
-                              updatedAt: new Date(),
-                              sections: tutorial.sections,
-                              viewCount: tutorial.viewCount,
-                              category: tutorial.category,
-                              sidebarTitle: tutorial.sidebarTitle,
-                              titleHighlightWords: words.length > 0 ? words : undefined,
-                            });
-                            setTutorial(updated);
-                            setHasChanges(true);
-                          }}
-                          className="w-full px-3 py-2 border rounded-md"
-                          placeholder="Notes, Fretboard"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Words to highlight with gradient in the title. Separate with commas.
-                        </p>
-                        {tutorial.titleHighlightWords && tutorial.titleHighlightWords.length > 0 && (
+                {/* Tutorial Info Edit Form */}
+                {editMode === 'tutorial-info' && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Title
+                      </label>
+                      <input
+                        type="text"
+                        value={tutorial.title}
+                        onChange={(e) => {
+                          const updated = Tutorial.reconstitute({
+                            id: tutorial.id,
+                            title: e.target.value,
+                            slug: tutorial.slug,
+                            description: tutorial.description,
+                            youtubeId: tutorial.youtubeId,
+                            duration: tutorial.duration,
+                            authorName: tutorial.authorName,
+                            thumbnailUrl: tutorial.thumbnailUrl,
+                            level: tutorial.level,
+                            tags: tutorial.tags,
+                            isActive: tutorial.isActive,
+                            publishedAt: tutorial.publishedAt,
+                            createdAt: tutorial.createdAt,
+                            updatedAt: new Date(),
+                            sections: tutorial.sections,
+                            viewCount: tutorial.viewCount,
+                          });
+                          setTutorial(updated);
+                          setHasChanges(true);
+                        }}
+                        className="w-full px-3 py-2 border rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Description
+                      </label>
+                      <textarea
+                        value={tutorial.description}
+                        onChange={(e) => {
+                          const updated = Tutorial.reconstitute({
+                            id: tutorial.id,
+                            title: tutorial.title,
+                            slug: tutorial.slug,
+                            description: e.target.value,
+                            youtubeId: tutorial.youtubeId,
+                            duration: tutorial.duration,
+                            authorName: tutorial.authorName,
+                            thumbnailUrl: tutorial.thumbnailUrl,
+                            level: tutorial.level,
+                            tags: tutorial.tags,
+                            isActive: tutorial.isActive,
+                            publishedAt: tutorial.publishedAt,
+                            createdAt: tutorial.createdAt,
+                            updatedAt: new Date(),
+                            sections: tutorial.sections,
+                            viewCount: tutorial.viewCount,
+                          });
+                          setTutorial(updated);
+                          setHasChanges(true);
+                        }}
+                        rows={4}
+                        className="w-full px-3 py-2 border rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Level
+                      </label>
+                      <select
+                        value={tutorial.level.value}
+                        onChange={(e) => {
+                          const updated = Tutorial.reconstitute({
+                            id: tutorial.id,
+                            title: tutorial.title,
+                            slug: tutorial.slug,
+                            description: tutorial.description,
+                            youtubeId: tutorial.youtubeId,
+                            duration: tutorial.duration,
+                            authorName: tutorial.authorName,
+                            thumbnailUrl: tutorial.thumbnailUrl,
+                            level: TutorialLevel.create(e.target.value),
+                            tags: tutorial.tags,
+                            isActive: tutorial.isActive,
+                            publishedAt: tutorial.publishedAt,
+                            createdAt: tutorial.createdAt,
+                            updatedAt: new Date(),
+                            sections: tutorial.sections,
+                            viewCount: tutorial.viewCount,
+                          });
+                          setTutorial(updated);
+                          setHasChanges(true);
+                        }}
+                        className="w-full px-3 py-2 border rounded-md"
+                      >
+                        <option value="beginner">Beginner</option>
+                        <option value="intermediate">Intermediate</option>
+                        <option value="advanced">Advanced</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Product Path
+                      </label>
+                      <select
+                        value={tutorial.category || ''}
+                        onChange={(e) => {
+                          const updated = Tutorial.reconstitute({
+                            id: tutorial.id,
+                            title: tutorial.title,
+                            slug: tutorial.slug,
+                            description: tutorial.description,
+                            youtubeId: tutorial.youtubeId,
+                            duration: tutorial.duration,
+                            authorName: tutorial.authorName,
+                            thumbnailUrl: tutorial.thumbnailUrl,
+                            level: tutorial.level,
+                            tags: tutorial.tags,
+                            isActive: tutorial.isActive,
+                            publishedAt: tutorial.publishedAt,
+                            createdAt: tutorial.createdAt,
+                            updatedAt: new Date(),
+                            sections: tutorial.sections,
+                            viewCount: tutorial.viewCount,
+                            category: e.target.value || undefined,
+                            sidebarTitle: tutorial.sidebarTitle,
+                          });
+                          setTutorial(updated);
+                          setHasChanges(true);
+                        }}
+                        className="w-full px-3 py-2 border rounded-md"
+                      >
+                        <option value="">-- Select Product --</option>
+                        <option value="starter-kit">Starter Kit</option>
+                        <option value="revisiting-basics">
+                          Revisiting Basics
+                        </option>
+                      </select>
+                    </div>
+
+                    {/* Sidebar Title */}
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Sidebar Title
+                      </label>
+                      <input
+                        type="text"
+                        value={tutorial.sidebarTitle || ''}
+                        onChange={(e) => {
+                          const updated = Tutorial.reconstitute({
+                            id: tutorial.id,
+                            title: tutorial.title,
+                            slug: tutorial.slug,
+                            description: tutorial.description,
+                            youtubeId: tutorial.youtubeId,
+                            duration: tutorial.duration,
+                            authorName: tutorial.authorName,
+                            thumbnailUrl: tutorial.thumbnailUrl,
+                            level: tutorial.level,
+                            tags: tutorial.tags,
+                            isActive: tutorial.isActive,
+                            publishedAt: tutorial.publishedAt,
+                            createdAt: tutorial.createdAt,
+                            updatedAt: new Date(),
+                            sections: tutorial.sections,
+                            viewCount: tutorial.viewCount,
+                            category: tutorial.category,
+                            sidebarTitle: e.target.value || undefined,
+                          });
+                          setTutorial(updated);
+                          setHasChanges(true);
+                        }}
+                        placeholder="e.g., Find Notes"
+                        className="w-full px-3 py-2 border rounded-md"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Short title for the sidebar navigation. Leave empty to
+                        use the full tutorial title.
+                      </p>
+                    </div>
+
+                    {/* Title Highlight Words */}
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Title Highlight Words (optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={tutorial.titleHighlightWords?.join(', ') || ''}
+                        onChange={(e) => {
+                          const words = e.target.value
+                            .split(',')
+                            .map((w) => w.trim())
+                            .filter((w) => w.length > 0);
+                          const updated = Tutorial.reconstitute({
+                            id: tutorial.id,
+                            title: tutorial.title,
+                            slug: tutorial.slug,
+                            description: tutorial.description,
+                            youtubeId: tutorial.youtubeId,
+                            duration: tutorial.duration,
+                            authorName: tutorial.authorName,
+                            thumbnailUrl: tutorial.thumbnailUrl,
+                            level: tutorial.level,
+                            tags: tutorial.tags,
+                            isActive: tutorial.isActive,
+                            publishedAt: tutorial.publishedAt,
+                            createdAt: tutorial.createdAt,
+                            updatedAt: new Date(),
+                            sections: tutorial.sections,
+                            viewCount: tutorial.viewCount,
+                            category: tutorial.category,
+                            sidebarTitle: tutorial.sidebarTitle,
+                            titleHighlightWords:
+                              words.length > 0 ? words : undefined,
+                          });
+                          setTutorial(updated);
+                          setHasChanges(true);
+                        }}
+                        className="w-full px-3 py-2 border rounded-md"
+                        placeholder="Notes, Fretboard"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Words to highlight with gradient in the title. Separate
+                        with commas.
+                      </p>
+                      {tutorial.titleHighlightWords &&
+                        tutorial.titleHighlightWords.length > 0 && (
                           <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
                             <span className="text-gray-600">Preview: </span>
                             {tutorial.title.split(' ').map((word, i) => {
-                              const isHighlighted = tutorial.titleHighlightWords?.some(
-                                (hw) => hw.toLowerCase() === word.toLowerCase().replace(/[^a-z]/gi, '')
-                              );
+                              const isHighlighted =
+                                tutorial.titleHighlightWords?.some(
+                                  (hw) =>
+                                    hw.toLowerCase() ===
+                                    word.toLowerCase().replace(/[^a-z]/gi, ''),
+                                );
                               return (
                                 <span
                                   key={i}
-                                  className={isHighlighted ? 'text-orange-500 font-semibold' : ''}
+                                  className={
+                                    isHighlighted
+                                      ? 'text-orange-500 font-semibold'
+                                      : ''
+                                  }
                                 >
                                   {word}{' '}
                                 </span>
@@ -1312,280 +1340,278 @@ function AdminTutorialEditPageContent({
                             })}
                           </div>
                         )}
-                      </div>
-
-                      {/* Custom Thumbnail Upload */}
-                      <div className="border-t pt-4 mt-4">
-                        <ThumbnailUpload
-                          currentThumbnailUrl={tutorial.thumbnailUrl}
-                          youtubeId={tutorial.youtubeId}
-                          tutorialId={tutorial.id.value}
-                          onThumbnailChange={(newUrl) => {
-                            const updated = Tutorial.reconstitute({
-                              id: tutorial.id,
-                              title: tutorial.title,
-                              slug: tutorial.slug,
-                              description: tutorial.description,
-                              youtubeId: tutorial.youtubeId,
-                              duration: tutorial.duration,
-                              authorName: tutorial.authorName,
-                              thumbnailUrl: newUrl || undefined,
-                              level: tutorial.level,
-                              tags: tutorial.tags,
-                              isActive: tutorial.isActive,
-                              publishedAt: tutorial.publishedAt,
-                              createdAt: tutorial.createdAt,
-                              updatedAt: new Date(),
-                              sections: tutorial.sections,
-                              viewCount: tutorial.viewCount,
-                              creatorName: tutorial.creatorName,
-                              creatorChannelUrl: tutorial.creatorChannelUrl,
-                              creatorAvatarUrl: tutorial.creatorAvatarUrl,
-                              creatorSubscriberCount: tutorial.creatorSubscriberCount,
-                            });
-                            setTutorial(updated);
-                            setHasChanges(true);
-                          }}
-                        />
-                      </div>
                     </div>
-                  )}
 
-                  {/* Creator Info Edit Form */}
-                  {editMode === 'creator-info' && (
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-1">
-                          Creator Name
-                        </label>
-                        <input
-                          type="text"
-                          value={tutorial.creatorName || ''}
-                          onChange={(e) => {
-                            const updated = Tutorial.reconstitute({
-                              id: tutorial.id,
-                              title: tutorial.title,
-                              slug: tutorial.slug,
-                              description: tutorial.description,
-                              youtubeId: tutorial.youtubeId,
-                              duration: tutorial.duration,
-                              authorName: tutorial.authorName,
-                              thumbnailUrl: tutorial.thumbnailUrl,
-                              level: tutorial.level,
-                              tags: tutorial.tags,
-                              isActive: tutorial.isActive,
-                              publishedAt: tutorial.publishedAt,
-                              createdAt: tutorial.createdAt,
-                              updatedAt: new Date(),
-                              sections: tutorial.sections,
-                              viewCount: tutorial.viewCount,
-                              creatorName: e.target.value || undefined,
-                              creatorChannelUrl: tutorial.creatorChannelUrl,
-                              creatorAvatarUrl: tutorial.creatorAvatarUrl,
-                            });
-                            setTutorial(updated);
-                            setHasChanges(true);
-                          }}
-                          placeholder="e.g. Queen Official"
-                          className="w-full px-3 py-2 border rounded-md"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          YouTube channel name
-                        </p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">
-                          Channel URL
-                        </label>
-                        <input
-                          type="text"
-                          value={tutorial.creatorChannelUrl || ''}
-                          onChange={(e) => {
-                            const updated = Tutorial.reconstitute({
-                              id: tutorial.id,
-                              title: tutorial.title,
-                              slug: tutorial.slug,
-                              description: tutorial.description,
-                              youtubeId: tutorial.youtubeId,
-                              duration: tutorial.duration,
-                              authorName: tutorial.authorName,
-                              thumbnailUrl: tutorial.thumbnailUrl,
-                              level: tutorial.level,
-                              tags: tutorial.tags,
-                              isActive: tutorial.isActive,
-                              publishedAt: tutorial.publishedAt,
-                              createdAt: tutorial.createdAt,
-                              updatedAt: new Date(),
-                              sections: tutorial.sections,
-                              viewCount: tutorial.viewCount,
-                              creatorName: tutorial.creatorName,
-                              creatorChannelUrl: e.target.value || undefined,
-                              creatorAvatarUrl: tutorial.creatorAvatarUrl,
-                            });
-                            setTutorial(updated);
-                            setHasChanges(true);
-                          }}
-                          placeholder="https://www.youtube.com/channel/..."
-                          className="w-full px-3 py-2 border rounded-md"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">
-                          Avatar URL
-                        </label>
-                        <input
-                          type="text"
-                          value={tutorial.creatorAvatarUrl || ''}
-                          onChange={(e) => {
-                            const updated = Tutorial.reconstitute({
-                              id: tutorial.id,
-                              title: tutorial.title,
-                              slug: tutorial.slug,
-                              description: tutorial.description,
-                              youtubeId: tutorial.youtubeId,
-                              duration: tutorial.duration,
-                              authorName: tutorial.authorName,
-                              thumbnailUrl: tutorial.thumbnailUrl,
-                              level: tutorial.level,
-                              tags: tutorial.tags,
-                              isActive: tutorial.isActive,
-                              publishedAt: tutorial.publishedAt,
-                              createdAt: tutorial.createdAt,
-                              updatedAt: new Date(),
-                              sections: tutorial.sections,
-                              viewCount: tutorial.viewCount,
-                              creatorName: tutorial.creatorName,
-                              creatorChannelUrl: tutorial.creatorChannelUrl,
-                              creatorAvatarUrl: e.target.value || undefined,
-                            });
-                            setTutorial(updated);
-                            setHasChanges(true);
-                          }}
-                          placeholder="https://yt3.ggpht.com/..."
-                          className="w-full px-3 py-2 border rounded-md"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Leave empty to auto-fetch from YouTube
-                        </p>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={async () => {
-                          try {
-                            // Check if we have a YouTube ID
-                            if (!tutorial.youtubeId) {
-                              alert('Please set a YouTube video ID first');
-                              return;
-                            }
-
-                            // Call the API to fetch YouTube channel info
-                            const response = await fetch(
-                              '/api/v1/tutorials/fetch-youtube-channel-info',
-                              {
-                                method: 'POST',
-                                headers: {
-                                  'Content-Type': 'application/json',
-                                  Authorization: `Bearer ${await supabase.auth.getSession().then((s) => s.data.session?.access_token)}`,
-                                },
-                                body: JSON.stringify({
-                                  youtubeUrl: `https://www.youtube.com/watch?v=${tutorial.youtubeId}`,
-                                }),
-                              },
-                            );
-
-                            if (!response.ok) {
-                              const error = await response.json();
-                              throw new Error(
-                                error.message || 'Failed to fetch channel info',
-                              );
-                            }
-
-                            const channelData = await response.json();
-
-                            // Update the tutorial with the fetched data
-                            const updated = Tutorial.reconstitute({
-                              id: tutorial.id,
-                              title: tutorial.title,
-                              slug: tutorial.slug,
-                              description: tutorial.description,
-                              youtubeId: tutorial.youtubeId,
-                              duration: tutorial.duration,
-                              authorName: tutorial.authorName,
-                              thumbnailUrl: tutorial.thumbnailUrl,
-                              level: tutorial.level,
-                              tags: tutorial.tags,
-                              isActive: tutorial.isActive,
-                              publishedAt: tutorial.publishedAt,
-                              createdAt: tutorial.createdAt,
-                              updatedAt: new Date(),
-                              sections: tutorial.sections,
-                              viewCount: tutorial.viewCount,
-                              creatorName: channelData.creatorName,
-                              creatorChannelUrl: channelData.creatorChannelUrl,
-                              creatorAvatarUrl: channelData.creatorAvatarUrl,
-                              creatorSubscriberCount:
-                                channelData.subscriberCount,
-                            });
-
-                            setTutorial(updated);
-                            setHasChanges(true);
-
-                            // Show success message
-                            alert(
-                              `Successfully fetched channel info for: ${channelData.creatorName}`,
-                            );
-                          } catch (error) {
-                            logger.error(
-                              'Error fetching YouTube channel info',
-                              error,
-                            );
-                            alert(
-                              `Failed to fetch channel info: ${error.message}`,
-                            );
-                          }
-                        }}
-                        className="w-full"
-                      >
-                        Auto-fetch from YouTube
-                      </Button>
-                    </div>
-                  )}
-
-                  {/* Exercises Edit Form */}
-                  {editMode === 'exercises' && (
-                    <div className="space-y-4">
-                      <ExerciseListEdit
-                        exercises={exercises}
-                        onAddExercise={() => {
-                          setEditingExercise(null);
-                          setShowExerciseModal(true);
-                        }}
-                        onEditExercise={(exercise) => {
-                          setEditingExercise(exercise);
-                          setShowExerciseModal(true);
-                        }}
-                        onDeleteExercise={(index) => {
-                          const updated = exercises.filter(
-                            (_, i) => i !== index,
-                          );
-                          setExercises(updated);
+                    {/* Custom Thumbnail Upload */}
+                    <div className="border-t pt-4 mt-4">
+                      <ThumbnailUpload
+                        currentThumbnailUrl={tutorial.thumbnailUrl}
+                        youtubeId={tutorial.youtubeId}
+                        tutorialId={tutorial.id.value}
+                        onThumbnailChange={(newUrl) => {
+                          const updated = Tutorial.reconstitute({
+                            id: tutorial.id,
+                            title: tutorial.title,
+                            slug: tutorial.slug,
+                            description: tutorial.description,
+                            youtubeId: tutorial.youtubeId,
+                            duration: tutorial.duration,
+                            authorName: tutorial.authorName,
+                            thumbnailUrl: newUrl || undefined,
+                            level: tutorial.level,
+                            tags: tutorial.tags,
+                            isActive: tutorial.isActive,
+                            publishedAt: tutorial.publishedAt,
+                            createdAt: tutorial.createdAt,
+                            updatedAt: new Date(),
+                            sections: tutorial.sections,
+                            viewCount: tutorial.viewCount,
+                            creatorName: tutorial.creatorName,
+                            creatorChannelUrl: tutorial.creatorChannelUrl,
+                            creatorAvatarUrl: tutorial.creatorAvatarUrl,
+                            creatorSubscriberCount:
+                              tutorial.creatorSubscriberCount,
+                          });
+                          setTutorial(updated);
                           setHasChanges(true);
                         }}
                       />
-                      {/* Old inline exercise editing code removed - using ExerciseListEdit component above */}
-                      <Button
-                        onClick={() => toggleEditMode(null)}
-                        className="w-full"
-                      >
-                        <Check className="w-4 h-4 mr-2" />
-                        Done Editing
-                      </Button>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
+
+                {/* Creator Info Edit Form */}
+                {editMode === 'creator-info' && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Creator Name
+                      </label>
+                      <input
+                        type="text"
+                        value={tutorial.creatorName || ''}
+                        onChange={(e) => {
+                          const updated = Tutorial.reconstitute({
+                            id: tutorial.id,
+                            title: tutorial.title,
+                            slug: tutorial.slug,
+                            description: tutorial.description,
+                            youtubeId: tutorial.youtubeId,
+                            duration: tutorial.duration,
+                            authorName: tutorial.authorName,
+                            thumbnailUrl: tutorial.thumbnailUrl,
+                            level: tutorial.level,
+                            tags: tutorial.tags,
+                            isActive: tutorial.isActive,
+                            publishedAt: tutorial.publishedAt,
+                            createdAt: tutorial.createdAt,
+                            updatedAt: new Date(),
+                            sections: tutorial.sections,
+                            viewCount: tutorial.viewCount,
+                            creatorName: e.target.value || undefined,
+                            creatorChannelUrl: tutorial.creatorChannelUrl,
+                            creatorAvatarUrl: tutorial.creatorAvatarUrl,
+                          });
+                          setTutorial(updated);
+                          setHasChanges(true);
+                        }}
+                        placeholder="e.g. Queen Official"
+                        className="w-full px-3 py-2 border rounded-md"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        YouTube channel name
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Channel URL
+                      </label>
+                      <input
+                        type="text"
+                        value={tutorial.creatorChannelUrl || ''}
+                        onChange={(e) => {
+                          const updated = Tutorial.reconstitute({
+                            id: tutorial.id,
+                            title: tutorial.title,
+                            slug: tutorial.slug,
+                            description: tutorial.description,
+                            youtubeId: tutorial.youtubeId,
+                            duration: tutorial.duration,
+                            authorName: tutorial.authorName,
+                            thumbnailUrl: tutorial.thumbnailUrl,
+                            level: tutorial.level,
+                            tags: tutorial.tags,
+                            isActive: tutorial.isActive,
+                            publishedAt: tutorial.publishedAt,
+                            createdAt: tutorial.createdAt,
+                            updatedAt: new Date(),
+                            sections: tutorial.sections,
+                            viewCount: tutorial.viewCount,
+                            creatorName: tutorial.creatorName,
+                            creatorChannelUrl: e.target.value || undefined,
+                            creatorAvatarUrl: tutorial.creatorAvatarUrl,
+                          });
+                          setTutorial(updated);
+                          setHasChanges(true);
+                        }}
+                        placeholder="https://www.youtube.com/channel/..."
+                        className="w-full px-3 py-2 border rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Avatar URL
+                      </label>
+                      <input
+                        type="text"
+                        value={tutorial.creatorAvatarUrl || ''}
+                        onChange={(e) => {
+                          const updated = Tutorial.reconstitute({
+                            id: tutorial.id,
+                            title: tutorial.title,
+                            slug: tutorial.slug,
+                            description: tutorial.description,
+                            youtubeId: tutorial.youtubeId,
+                            duration: tutorial.duration,
+                            authorName: tutorial.authorName,
+                            thumbnailUrl: tutorial.thumbnailUrl,
+                            level: tutorial.level,
+                            tags: tutorial.tags,
+                            isActive: tutorial.isActive,
+                            publishedAt: tutorial.publishedAt,
+                            createdAt: tutorial.createdAt,
+                            updatedAt: new Date(),
+                            sections: tutorial.sections,
+                            viewCount: tutorial.viewCount,
+                            creatorName: tutorial.creatorName,
+                            creatorChannelUrl: tutorial.creatorChannelUrl,
+                            creatorAvatarUrl: e.target.value || undefined,
+                          });
+                          setTutorial(updated);
+                          setHasChanges(true);
+                        }}
+                        placeholder="https://yt3.ggpht.com/..."
+                        className="w-full px-3 py-2 border rounded-md"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Leave empty to auto-fetch from YouTube
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          // Check if we have a YouTube ID
+                          if (!tutorial.youtubeId) {
+                            alert('Please set a YouTube video ID first');
+                            return;
+                          }
+
+                          // Call the API to fetch YouTube channel info
+                          const response = await fetch(
+                            '/api/v1/tutorials/fetch-youtube-channel-info',
+                            {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${await supabase.auth.getSession().then((s) => s.data.session?.access_token)}`,
+                              },
+                              body: JSON.stringify({
+                                youtubeUrl: `https://www.youtube.com/watch?v=${tutorial.youtubeId}`,
+                              }),
+                            },
+                          );
+
+                          if (!response.ok) {
+                            const error = await response.json();
+                            throw new Error(
+                              error.message || 'Failed to fetch channel info',
+                            );
+                          }
+
+                          const channelData = await response.json();
+
+                          // Update the tutorial with the fetched data
+                          const updated = Tutorial.reconstitute({
+                            id: tutorial.id,
+                            title: tutorial.title,
+                            slug: tutorial.slug,
+                            description: tutorial.description,
+                            youtubeId: tutorial.youtubeId,
+                            duration: tutorial.duration,
+                            authorName: tutorial.authorName,
+                            thumbnailUrl: tutorial.thumbnailUrl,
+                            level: tutorial.level,
+                            tags: tutorial.tags,
+                            isActive: tutorial.isActive,
+                            publishedAt: tutorial.publishedAt,
+                            createdAt: tutorial.createdAt,
+                            updatedAt: new Date(),
+                            sections: tutorial.sections,
+                            viewCount: tutorial.viewCount,
+                            creatorName: channelData.creatorName,
+                            creatorChannelUrl: channelData.creatorChannelUrl,
+                            creatorAvatarUrl: channelData.creatorAvatarUrl,
+                            creatorSubscriberCount: channelData.subscriberCount,
+                          });
+
+                          setTutorial(updated);
+                          setHasChanges(true);
+
+                          // Show success message
+                          alert(
+                            `Successfully fetched channel info for: ${channelData.creatorName}`,
+                          );
+                        } catch (error) {
+                          logger.error(
+                            'Error fetching YouTube channel info',
+                            error,
+                          );
+                          alert(
+                            `Failed to fetch channel info: ${error.message}`,
+                          );
+                        }
+                      }}
+                      className="w-full"
+                    >
+                      Auto-fetch from YouTube
+                    </Button>
+                  </div>
+                )}
+
+                {/* Exercises Edit Form */}
+                {editMode === 'exercises' && (
+                  <div className="space-y-4">
+                    <ExerciseListEdit
+                      exercises={exercises}
+                      onAddExercise={() => {
+                        setEditingExercise(null);
+                        setShowExerciseModal(true);
+                      }}
+                      onEditExercise={(exercise) => {
+                        setEditingExercise(exercise);
+                        setShowExerciseModal(true);
+                      }}
+                      onDeleteExercise={(index) => {
+                        const updated = exercises.filter((_, i) => i !== index);
+                        setExercises(updated);
+                        setHasChanges(true);
+                      }}
+                    />
+                    {/* Old inline exercise editing code removed - using ExerciseListEdit component above */}
+                    <Button
+                      onClick={() => toggleEditMode(null)}
+                      className="w-full"
+                    >
+                      <Check className="w-4 h-4 mr-2" />
+                      Done Editing
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
+          </div>
         </>
       )}
 
@@ -1649,7 +1675,9 @@ function AdminTutorialEditPageContent({
                               'previewingFromEdit',
                               tutorial.slug.value,
                             );
-                            router.push(`/app/tutorials/${tutorial.slug.value}`);
+                            router.push(
+                              `/app/tutorials/${tutorial.slug.value}`,
+                            );
                           }}
                           size="sm"
                           variant="outline"
@@ -1675,7 +1703,9 @@ function AdminTutorialEditPageContent({
                               );
 
                               // Navigate to the bassment with the edited tutorial
-                              router.push(`/app/tutorials/${tutorial.slug.value}`);
+                              router.push(
+                                `/app/tutorials/${tutorial.slug.value}`,
+                              );
                             } catch (error) {
                               logger.error('Failed to save on Done', error);
                               // Don't navigate - keep user in edit mode

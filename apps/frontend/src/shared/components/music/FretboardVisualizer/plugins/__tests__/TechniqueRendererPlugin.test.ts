@@ -495,7 +495,6 @@ describe('Epic 4 Technique Renderer Plugin System', () => {
       expect(objects).toHaveLength(0);
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('Error rendering hammer_on'),
-        expect.any(Error),
       );
 
       consoleSpy.mockRestore();
@@ -713,7 +712,6 @@ describe('Epic 4 Technique Renderer Plugin System', () => {
 
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('Animation error for hammer_on'),
-        expect.any(Error),
       );
 
       consoleSpy.mockRestore();
@@ -742,7 +740,6 @@ describe('Epic 4 Technique Renderer Plugin System', () => {
 
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('Cleanup error for hammer_on'),
-        expect.any(Error),
       );
 
       consoleSpy.mockRestore();

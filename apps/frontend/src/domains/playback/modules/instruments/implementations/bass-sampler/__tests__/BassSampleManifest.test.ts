@@ -99,7 +99,7 @@ describe('BassSampleManifest', () => {
 
     it('should have correct Supabase base URL', () => {
       expect(DEFAULT_BASS_MANIFEST.baseUrl).toBe(
-        'https://iuuplfrktnzsbzibpfjm.supabase.co/storage/v1/object/public/audio-samples'
+        'https://iuuplfrktnzsbzibpfjm.supabase.co/storage/v1/object/public/audio-samples',
       );
     });
   });
@@ -109,35 +109,35 @@ describe('BassSampleManifest', () => {
       it('should build correct URL for B string open (B0)', () => {
         const url = buildSampleUrl(23, 'B');
         expect(url).toBe(
-          'https://iuuplfrktnzsbzibpfjm.supabase.co/storage/v1/object/public/audio-samples/Bass/BassMods/Fingers-f/B%20string/B0_f_finger_Bstring.ogg'
+          'https://iuuplfrktnzsbzibpfjm.supabase.co/storage/v1/object/public/audio-samples/Bass/BassMods/Fingers-f/B%20string/B0_f_finger_Bstring.ogg',
         );
       });
 
       it('should build correct URL for E string open (E1)', () => {
         const url = buildSampleUrl(28, 'E');
         expect(url).toBe(
-          'https://iuuplfrktnzsbzibpfjm.supabase.co/storage/v1/object/public/audio-samples/Bass/BassMods/Fingers-f/E%20string/E1_f_finger_Estring.ogg'
+          'https://iuuplfrktnzsbzibpfjm.supabase.co/storage/v1/object/public/audio-samples/Bass/BassMods/Fingers-f/E%20string/E1_f_finger_Estring.ogg',
         );
       });
 
       it('should build correct URL for A string open (A1)', () => {
         const url = buildSampleUrl(33, 'A');
         expect(url).toBe(
-          'https://iuuplfrktnzsbzibpfjm.supabase.co/storage/v1/object/public/audio-samples/Bass/BassMods/Fingers-f/A%20string/A1_f_finger_Astring.ogg'
+          'https://iuuplfrktnzsbzibpfjm.supabase.co/storage/v1/object/public/audio-samples/Bass/BassMods/Fingers-f/A%20string/A1_f_finger_Astring.ogg',
         );
       });
 
       it('should build correct URL for D string open (D2)', () => {
         const url = buildSampleUrl(38, 'D');
         expect(url).toBe(
-          'https://iuuplfrktnzsbzibpfjm.supabase.co/storage/v1/object/public/audio-samples/Bass/BassMods/Fingers-f/D%20string/D2_f_finger_Dstring.ogg'
+          'https://iuuplfrktnzsbzibpfjm.supabase.co/storage/v1/object/public/audio-samples/Bass/BassMods/Fingers-f/D%20string/D2_f_finger_Dstring.ogg',
         );
       });
 
       it('should build correct URL for G string open (G2)', () => {
         const url = buildSampleUrl(43, 'G');
         expect(url).toBe(
-          'https://iuuplfrktnzsbzibpfjm.supabase.co/storage/v1/object/public/audio-samples/Bass/BassMods/Fingers-f/G%20string/G2_f_finger_Gstring.ogg'
+          'https://iuuplfrktnzsbzibpfjm.supabase.co/storage/v1/object/public/audio-samples/Bass/BassMods/Fingers-f/G%20string/G2_f_finger_Gstring.ogg',
         );
       });
     });
@@ -217,7 +217,7 @@ describe('BassSampleManifest', () => {
       const eStringConfig = DEFAULT_BASS_MANIFEST.strings[1];
       const samples = getSamplesForString(eStringConfig);
 
-      samples.forEach(sample => {
+      samples.forEach((sample) => {
         expect(sample.string).toBe('E');
       });
     });
@@ -226,7 +226,7 @@ describe('BassSampleManifest', () => {
       const aStringConfig = DEFAULT_BASS_MANIFEST.strings[2];
       const samples = getSamplesForString(aStringConfig);
 
-      samples.forEach(sample => {
+      samples.forEach((sample) => {
         expect(sample.url).toContain('https://');
         expect(sample.url).toContain('.ogg');
         expect(sample.url).toContain('A%20string');
@@ -243,11 +243,11 @@ describe('BassSampleManifest', () => {
     it('should have 22 samples per string', () => {
       const samples = getAllSamples();
 
-      const bStringSamples = samples.filter(s => s.string === 'B');
-      const eStringSamples = samples.filter(s => s.string === 'E');
-      const aStringSamples = samples.filter(s => s.string === 'A');
-      const dStringSamples = samples.filter(s => s.string === 'D');
-      const gStringSamples = samples.filter(s => s.string === 'G');
+      const bStringSamples = samples.filter((s) => s.string === 'B');
+      const eStringSamples = samples.filter((s) => s.string === 'E');
+      const aStringSamples = samples.filter((s) => s.string === 'A');
+      const dStringSamples = samples.filter((s) => s.string === 'D');
+      const gStringSamples = samples.filter((s) => s.string === 'G');
 
       expect(bStringSamples).toHaveLength(22);
       expect(eStringSamples).toHaveLength(22);
@@ -258,7 +258,7 @@ describe('BassSampleManifest', () => {
 
     it('should have unique URLs for all samples', () => {
       const samples = getAllSamples();
-      const urls = samples.map(s => s.url);
+      const urls = samples.map((s) => s.url);
       const uniqueUrls = [...new Set(urls)];
 
       expect(uniqueUrls).toHaveLength(110);
@@ -266,7 +266,7 @@ describe('BassSampleManifest', () => {
 
     it('should cover MIDI range from 23 to 64', () => {
       const samples = getAllSamples();
-      const midiNotes = samples.map(s => s.midiNote);
+      const midiNotes = samples.map((s) => s.midiNote);
 
       expect(Math.min(...midiNotes)).toBe(23); // B0
       expect(Math.max(...midiNotes)).toBe(64); // E4 (G string fret 21)

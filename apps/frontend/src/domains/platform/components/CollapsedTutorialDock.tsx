@@ -3,7 +3,10 @@
 import { useMemo } from 'react';
 import { Skeleton } from '@/shared/components/ui/skeleton';
 import { PRODUCT_FOLDERS } from '../constants/product-folders';
-import { useTutorialsByFolder, type IslandBlock } from '../hooks/useTutorialsByFolder';
+import {
+  useTutorialsByFolder,
+  type IslandBlock,
+} from '../hooks/useTutorialsByFolder';
 import type { FolderOpenState } from '../hooks/useFolderOpenState';
 import { CollapsedJourneyPath } from './CollapsedJourneyPath';
 import type { TutorialProgress } from './ProgressPane';
@@ -17,7 +20,9 @@ interface CollapsedTutorialDockProps {
  * Respects the folder open/closed state to show only tutorials
  * that would be visible in the expanded view.
  */
-export function CollapsedTutorialDock({ folderState }: CollapsedTutorialDockProps) {
+export function CollapsedTutorialDock({
+  folderState,
+}: CollapsedTutorialDockProps) {
   const { tutorialsByFolder, isLoading } = useTutorialsByFolder();
 
   // Get only tutorials from open folders

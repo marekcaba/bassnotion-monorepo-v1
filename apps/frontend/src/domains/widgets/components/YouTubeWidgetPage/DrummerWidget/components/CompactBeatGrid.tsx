@@ -20,7 +20,11 @@ export interface CompactBeatGridProps {
   /** Current grid pattern to display */
   pattern: GridPatternWithSixteenths;
   /** Register indicator ref for direct DOM updates */
-  registerIndicator: (row: number, col: number, el: HTMLDivElement | null) => void;
+  registerIndicator: (
+    row: number,
+    col: number,
+    el: HTMLDivElement | null,
+  ) => void;
   /** Get eighth note duration for CSS transitions */
   getEighthNoteDurationMs: () => number;
 }
@@ -44,7 +48,10 @@ export const CompactBeatGrid: React.FC<CompactBeatGridProps> = ({
     >
       {/* Hi-hat row (row index 0) */}
       {pattern.hihat.map((cell, idx) => (
-        <div key={`hh-${idx}`} className="relative flex items-center justify-center">
+        <div
+          key={`hh-${idx}`}
+          className="relative flex items-center justify-center"
+        >
           {/* Main 8th note dot */}
           <div
             className={`w-2 h-2 rounded-full ${
@@ -70,7 +77,10 @@ export const CompactBeatGrid: React.FC<CompactBeatGridProps> = ({
 
       {/* Snare row (row index 1) */}
       {pattern.snare.map((cell, idx) => (
-        <div key={`sn-${idx}`} className="relative flex items-center justify-center">
+        <div
+          key={`sn-${idx}`}
+          className="relative flex items-center justify-center"
+        >
           {/* Main 8th note dot */}
           <div
             className={`w-2 h-2 rounded-full ${
@@ -96,7 +106,10 @@ export const CompactBeatGrid: React.FC<CompactBeatGridProps> = ({
 
       {/* Kick row (row index 2) */}
       {pattern.kick.map((cell, idx) => (
-        <div key={`k-${idx}`} className="relative flex items-center justify-center">
+        <div
+          key={`k-${idx}`}
+          className="relative flex items-center justify-center"
+        >
           {/* Main 8th note dot */}
           <div
             className={`w-2 h-2 rounded-full ${

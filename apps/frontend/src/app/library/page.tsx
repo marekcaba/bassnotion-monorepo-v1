@@ -42,7 +42,10 @@ function TutorialThumbnail({
 
   // If custom thumbnail exists, use it (takes priority)
   if (customThumbnailUrl) {
-    console.log('[TutorialThumbnail] Using custom thumbnail:', { title, customThumbnailUrl });
+    console.log('[TutorialThumbnail] Using custom thumbnail:', {
+      title,
+      customThumbnailUrl,
+    });
     return (
       <div className={`overflow-hidden ${className}`}>
         <img
@@ -50,14 +53,23 @@ function TutorialThumbnail({
           alt={`${title} thumbnail`}
           className="w-full h-full object-cover"
           onError={(e) => {
-            console.error('[TutorialThumbnail] Failed to load custom thumbnail - URL:', customThumbnailUrl, '- Title:', title);
+            console.error(
+              '[TutorialThumbnail] Failed to load custom thumbnail - URL:',
+              customThumbnailUrl,
+              '- Title:',
+              title,
+            );
           }}
         />
       </div>
     );
   }
 
-  console.log('[TutorialThumbnail] No custom thumbnail:', { title, customThumbnailUrl, videoId });
+  console.log('[TutorialThumbnail] No custom thumbnail:', {
+    title,
+    customThumbnailUrl,
+    videoId,
+  });
 
   // No custom thumbnail and no YouTube video - show placeholder
   if (!videoId) {
@@ -195,7 +207,9 @@ function LibraryPageContent() {
                 </p>
                 {isAdmin && (
                   <Button
-                    onClick={() => navigateWithTransition('/admin/tutorials/new')}
+                    onClick={() =>
+                      navigateWithTransition('/admin/tutorials/new')
+                    }
                     className="mt-4 bg-[#ffc700] text-black hover:bg-[#e6b300]"
                     size="sm"
                   >
@@ -274,7 +288,9 @@ function LibraryPageContent() {
                 </p>
                 {isAdmin && (
                   <Button
-                    onClick={() => navigateWithTransition('/admin/tutorials/new')}
+                    onClick={() =>
+                      navigateWithTransition('/admin/tutorials/new')
+                    }
                     className="mt-4 bg-[#ffc700] text-black hover:bg-[#e6b300]"
                     size="sm"
                   >
@@ -411,7 +427,11 @@ function LibraryPageContent() {
                 <div className="absolute inset-0 rounded-3xl border border-zinc-800 group-hover:border-[#ffc700]/50 transition-all duration-500" />
 
                 {/* Container with no padding - full bleed layout - Fixed height 157.5px */}
-                {console.log('[Library] Tutorial data:', { title: tutorial.title, thumbnail_url: tutorial.thumbnail_url, youtube_id: tutorial.youtube_id })}
+                {console.log('[Library] Tutorial data:', {
+                  title: tutorial.title,
+                  thumbnail_url: tutorial.thumbnail_url,
+                  youtube_id: tutorial.youtube_id,
+                })}
                 <div className="relative flex items-stretch h-[157.5px]">
                   {/* Left Side: Fixed 16:9 thumbnail with no padding */}
                   <div className="relative flex-shrink-0 w-[280px] overflow-hidden rounded-l-3xl">

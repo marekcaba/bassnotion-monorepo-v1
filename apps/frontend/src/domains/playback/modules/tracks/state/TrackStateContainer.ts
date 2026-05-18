@@ -83,7 +83,11 @@ export class TrackStateContainer implements ITrackStateContainer {
     try {
       // Try global window first
       if (typeof window !== 'undefined' && window.__serviceRegistry) {
-        this.eventBus = (window.__serviceRegistry as { get: (key: string) => EventBus | undefined }).get('eventBus');
+        this.eventBus = (
+          window.__serviceRegistry as {
+            get: (key: string) => EventBus | undefined;
+          }
+        ).get('eventBus');
       }
     } catch (error) {
       // EventBus is optional - continue without it

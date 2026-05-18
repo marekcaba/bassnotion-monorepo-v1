@@ -333,9 +333,11 @@ export class WamBassNode implements WamNode {
 
     const coreServices = window.__coreServices || window.__globalCoreServices;
     // Type assertion for CoreServices interface
-    const typedCoreServices = coreServices as {
-      getAudioEngine?: () => { getTone?: () => typeof window.Tone } | null;
-    } | undefined;
+    const typedCoreServices = coreServices as
+      | {
+          getAudioEngine?: () => { getTone?: () => typeof window.Tone } | null;
+        }
+      | undefined;
     if (typedCoreServices?.getAudioEngine) {
       const audioEngine = typedCoreServices.getAudioEngine();
       if (audioEngine?.getTone) {
@@ -712,8 +714,8 @@ export class WamBass extends WebAudioModuleBase {
   descriptor: WamDescriptor;
 
   static descriptor: WamDescriptor = {
-    name: 'BassNotion Bass',
-    vendor: 'BassNotion',
+    name: 'Bassicology Bass',
+    vendor: 'Bassicology',
     version: '1.0.0',
     sdkVersion: '2.0.0',
     thumbnail: '',

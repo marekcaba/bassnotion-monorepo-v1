@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Final Widget Audio Test', () => {
   test('verify widgets now play audio with +0.1 start time fix', async ({

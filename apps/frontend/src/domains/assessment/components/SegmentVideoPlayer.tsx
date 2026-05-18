@@ -79,7 +79,8 @@ export function SegmentVideoPlayer({
 
   // Initialize player
   useEffect(() => {
-    if (!containerRef.current || !segment.videoId || !segment.videoLibraryId) return;
+    if (!containerRef.current || !segment.videoId || !segment.videoLibraryId)
+      return;
 
     let mounted = true;
 
@@ -100,7 +101,8 @@ export function SegmentVideoPlayer({
         iframe.style.width = '100%';
         iframe.style.height = '100%';
         iframe.style.border = 'none';
-        iframe.allow = 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture';
+        iframe.allow =
+          'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture';
         iframe.allowFullscreen = true;
 
         containerRef.current.appendChild(iframe);
@@ -115,7 +117,9 @@ export function SegmentVideoPlayer({
 
           player.getDuration((duration) => {
             if (!mounted) return;
-            callbacksRef.current.onReady(duration || segment.durationSeconds || 0);
+            callbacksRef.current.onReady(
+              duration || segment.durationSeconds || 0,
+            );
           });
         });
 

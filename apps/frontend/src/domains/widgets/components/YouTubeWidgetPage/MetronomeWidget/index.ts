@@ -19,10 +19,16 @@ export type {
 } from './types.js';
 
 export { usePluginLoading } from './hooks/usePluginLoading.js';
-export type { UsePluginLoadingOptions, UsePluginLoadingReturn } from './hooks/usePluginLoading.js';
+export type {
+  UsePluginLoadingOptions,
+  UsePluginLoadingReturn,
+} from './hooks/usePluginLoading.js';
 
 export { usePluginCreation } from './hooks/usePluginCreation.js';
-export type { UsePluginCreationOptions, UsePluginCreationReturn } from './hooks/usePluginCreation.js';
+export type {
+  UsePluginCreationOptions,
+  UsePluginCreationReturn,
+} from './hooks/usePluginCreation.js';
 
 export { useMetronomePattern } from './hooks/useMetronomePattern.js';
 export type {

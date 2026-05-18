@@ -59,15 +59,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             {/* Desktop: sidebar + detail panel (hidden below lg) */}
             <div className="hidden lg:contents">
               <AppSidebar expanded={sidebarExpanded} />
-              <DetailPanel
-                isOpen={isPanelOpen}
-                onToggle={handleTogglePanel}
-              />
+              <DetailPanel isOpen={isPanelOpen} onToggle={handleTogglePanel} />
             </div>
 
-            <main className="flex-1 overflow-auto">
-              {children}
-            </main>
+            <main className="flex-1 overflow-auto">{children}</main>
           </div>
         </TooltipProvider>
       </AuthGuard>

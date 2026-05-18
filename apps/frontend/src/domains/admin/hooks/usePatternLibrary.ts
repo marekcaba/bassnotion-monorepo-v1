@@ -5,7 +5,10 @@
 
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { patternLibraryApi } from '../api/pattern-library.api.js';
-import type { PatternLibraryFilter, CreatePatternInput } from '@bassnotion/contracts';
+import type {
+  PatternLibraryFilter,
+  CreatePatternInput,
+} from '@bassnotion/contracts';
 
 /**
  * Query keys for pattern library
@@ -25,7 +28,7 @@ export const patternLibraryKeys = {
  */
 export function usePatternLibrary(
   filter: PatternLibraryFilter = {},
-  enabled: boolean = true,
+  enabled = true,
 ) {
   return useQuery({
     queryKey: patternLibraryKeys.list(filter),
@@ -38,7 +41,7 @@ export function usePatternLibrary(
 /**
  * Hook to fetch a single pattern by ID
  */
-export function usePattern(id: string, enabled: boolean = true) {
+export function usePattern(id: string, enabled = true) {
   return useQuery({
     queryKey: patternLibraryKeys.detail(id),
     queryFn: () => patternLibraryApi.getPattern(id),

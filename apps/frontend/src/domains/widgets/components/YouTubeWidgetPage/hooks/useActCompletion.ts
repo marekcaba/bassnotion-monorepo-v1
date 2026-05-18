@@ -31,7 +31,8 @@ export function useActCompletion({
     const filtered = exercises.filter((ex) => ex?.id && ex?.title);
 
     const unlocked = filtered.filter(
-      (ex) => !LOCKED_DIFFICULTIES.includes(safeString(ex.difficulty).toLowerCase()),
+      (ex) =>
+        !LOCKED_DIFFICULTIES.includes(safeString(ex.difficulty).toLowerCase()),
     );
 
     const locked = filtered.filter((ex) =>

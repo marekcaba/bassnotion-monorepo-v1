@@ -283,7 +283,11 @@ export class DeviceCapabilityDetector {
       if (connection?.type) {
         // Type narrowing: connection.type is optional, return as correct union type
         const connType = connection.type;
-        if (connType === 'wifi' || connType === 'cellular' || connType === 'ethernet') {
+        if (
+          connType === 'wifi' ||
+          connType === 'cellular' ||
+          connType === 'ethernet'
+        ) {
           return connType;
         }
         // Map other connection types to unknown

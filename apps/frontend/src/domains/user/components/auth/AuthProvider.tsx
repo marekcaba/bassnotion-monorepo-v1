@@ -13,6 +13,7 @@ import { supabase } from '@/infrastructure/supabase/client';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { apiClient } from '@/lib/api-client';
+import { isMockTestEnv } from '@/shared/utils/testEnv';
 
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -98,15 +99,9 @@ function AuthProviderContent({ children }: AuthProviderProps) {
     let mounted = true;
     let initTimeoutId: NodeJS.Timeout;
 
-    // Detect E2E testing for special handling
-    const isE2ETesting =
-      typeof window !== 'undefined' &&
-      (process.env.NODE_ENV === 'test' ||
-        window.__playwright ||
-        window.playwright ||
-        navigator.webdriver ||
-        window.__webdriver ||
-        window._phantom);
+    // Opt-in mock-test mode (older specs that stub the whole backend).
+    // Real-auth E2E tests do NOT set this, so they exercise the real flow.
+    const isE2ETesting = isMockTestEnv();
 
     // Get initial session
     const initializeAuth = async () => {

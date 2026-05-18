@@ -212,11 +212,7 @@ export function convertLibraryPatternToDrumHits(
 
   // Adjust velocities for tempo if specified
   if (targetBpm) {
-    drumHits = adjustVelocitiesForTempo(
-      drumHits,
-      pattern.bpmRange,
-      targetBpm,
-    );
+    drumHits = adjustVelocitiesForTempo(drumHits, pattern.bpmRange, targetBpm);
   }
 
   return drumHits;

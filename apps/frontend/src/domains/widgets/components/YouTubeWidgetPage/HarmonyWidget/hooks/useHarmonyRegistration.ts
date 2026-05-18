@@ -91,8 +91,18 @@ export interface UseHarmonyRegistrationReturn {
  */
 function midiToNoteName(midi: number): string {
   const noteNames = [
-    'C', 'Cs', 'D', 'Ds', 'E', 'F',
-    'Fs', 'G', 'Gs', 'A', 'As', 'B',
+    'C',
+    'Cs',
+    'D',
+    'Ds',
+    'E',
+    'F',
+    'Fs',
+    'G',
+    'Gs',
+    'A',
+    'As',
+    'B',
   ];
   const octave = Math.floor(midi / 12) - 1;
   const noteName = noteNames[midi % 12];
@@ -103,7 +113,7 @@ function midiToNoteName(midi: number): string {
  * Hook for managing harmony registration with PlaybackEngine
  */
 export function useHarmonyRegistration(
-  options: UseHarmonyRegistrationOptions
+  options: UseHarmonyRegistrationOptions,
 ): UseHarmonyRegistrationReturn {
   const {
     exercise,
@@ -129,7 +139,9 @@ export function useHarmonyRegistration(
   const lastRegisteredExerciseIdRef = useRef<string | null>(null);
   const isRegisteringRef = useRef(false);
   const lastScheduledTimeRef = useRef<number>(0);
-  const currentPatternRef = useRef<Array<{ chord: string; time: number; duration: number }>>([]);
+  const currentPatternRef = useRef<
+    Array<{ chord: string; time: number; duration: number }>
+  >([]);
   const previousExerciseIdRef = useRef<string | null>(null);
 
   /**
@@ -141,7 +153,9 @@ export function useHarmonyRegistration(
     // Prevent multiple simultaneous registrations
     if (isRegisteringRef.current) {
       if (isVerboseDebugEnabled()) {
-        console.log('[HARMONY-WIDGET] Registration already in progress, skipping');
+        console.log(
+          '[HARMONY-WIDGET] Registration already in progress, skipping',
+        );
       }
       return;
     }
@@ -150,7 +164,9 @@ export function useHarmonyRegistration(
     const registrationKey = `${currentExercise?.id?.value || currentExercise?.id}-${samplesLoadedTrigger}`;
     if (lastRegisteredExerciseIdRef.current === registrationKey) {
       if (isVerboseDebugEnabled()) {
-        console.log('[HARMONY-WIDGET] Already registered for this exercise+trigger, skipping');
+        console.log(
+          '[HARMONY-WIDGET] Already registered for this exercise+trigger, skipping',
+        );
       }
       return;
     }
@@ -160,7 +176,9 @@ export function useHarmonyRegistration(
     // Read BPM from MusicalTruthAuthority (the ONE source of truth)
     const currentBpm = musicalTruth.getBPM();
     if (isVerboseDebugEnabled()) {
-      console.log(`[TEMPO] HarmonyWidget using BPM from musicalTruth: ${currentBpm}`);
+      console.log(
+        `[TEMPO] HarmonyWidget using BPM from musicalTruth: ${currentBpm}`,
+      );
     }
 
     const plugin = keyboardPluginRef.current;
@@ -168,11 +186,14 @@ export function useHarmonyRegistration(
     // Plugin is optional - Scheduler handles harmony directly
     if (!plugin || !plugin.audioNode) {
       console.warn(
-        '[HARMONY-WIDGET] No WAM plugin available - using Scheduler-only mode'
+        '[HARMONY-WIDGET] No WAM plugin available - using Scheduler-only mode',
       );
     }
 
-    if (!currentExercise?.harmonyNotes || currentExercise.harmonyNotes.length === 0) {
+    if (
+      !currentExercise?.harmonyNotes ||
+      currentExercise.harmonyNotes.length === 0
+    ) {
       console.error('[HARMONY-WIDGET] No harmony notes to register');
       isRegisteringRef.current = false;
       return;
@@ -195,26 +216,33 @@ export function useHarmonyRegistration(
 
     try {
       // Import and check GlobalSampleCache
-      const { GlobalSampleCache } = await import(
-        '@/domains/playback/modules/storage/cache/GlobalSampleCache.js'
-      );
+      const { GlobalSampleCache } =
+        await import('@/domains/playback/modules/storage/cache/GlobalSampleCache.js');
 
       // Re-check if exercise has changed after async import
       const exerciseAfterImport = exerciseRef.current;
-      const originalExerciseId = currentExercise?.id?.value || currentExercise?.id;
-      const latestExerciseId = exerciseAfterImport?.id?.value || exerciseAfterImport?.id;
+      const originalExerciseId =
+        currentExercise?.id?.value || currentExercise?.id;
+      const latestExerciseId =
+        exerciseAfterImport?.id?.value || exerciseAfterImport?.id;
 
       if (originalExerciseId !== latestExerciseId) {
         if (isVerboseDebugEnabled()) {
-          console.log('[HARMONY-WIDGET] Exercise changed during import, aborting');
+          console.log(
+            '[HARMONY-WIDGET] Exercise changed during import, aborting',
+          );
         }
         isRegisteringRef.current = false;
 
         // Schedule new registration for the latest exercise
         setTimeout(() => {
           const stillCurrentExercise = exerciseRef.current;
-          const stillCurrentId = stillCurrentExercise?.id?.value || stillCurrentExercise?.id;
-          if (stillCurrentId === latestExerciseId && !isRegisteringRef.current) {
+          const stillCurrentId =
+            stillCurrentExercise?.id?.value || stillCurrentExercise?.id;
+          if (
+            stillCurrentId === latestExerciseId &&
+            !isRegisteringRef.current
+          ) {
             registerHarmonyWithPlaybackEngine();
           }
         }, 0);
@@ -225,33 +253,39 @@ export function useHarmonyRegistration(
       const sampleCache = GlobalSampleCache.getInstance();
 
       // Get instrument name
-      const instrument = latestExercise?.harmonyInstrument || DEFAULT_HARMONY_INSTRUMENT;
+      const instrument =
+        latestExercise?.harmonyInstrument || DEFAULT_HARMONY_INSTRUMENT;
 
       // Get cached keys for this instrument
       const allCachedKeys = sampleCache.getAllSampleKeys();
       const harmonyCachedKeys = allCachedKeys.filter((key: string) =>
-        key.startsWith(`${instrument}-`)
+        key.startsWith(`${instrument}-`),
       );
 
       // Check sample coverage
       const octaveShift = instrument === 'wurlitzer' ? 12 : 0;
-      const requiredNotes = (latestExercise?.harmonyNotes || []).map((note: any) =>
-        midiToNoteName(note.pitch - octaveShift)
+      const requiredNotes = (latestExercise?.harmonyNotes || []).map(
+        (note: any) => midiToNoteName(note.pitch - octaveShift),
       );
       const uniqueRequiredNotes = [...new Set(requiredNotes)];
 
       const cachedNoteNames = new Set(
-        harmonyCachedKeys.map((key: string) => key.split('-').pop()).filter(Boolean)
+        harmonyCachedKeys
+          .map((key: string) => key.split('-').pop())
+          .filter(Boolean),
       );
 
       const cachedCount = uniqueRequiredNotes.filter((noteName) =>
-        cachedNoteNames.has(noteName)
+        cachedNoteNames.has(noteName),
       ).length;
-      const coveragePercentage = (cachedCount / uniqueRequiredNotes.length) * 100;
+      const coveragePercentage =
+        (cachedCount / uniqueRequiredNotes.length) * 100;
       const minCoverageRequired = 50;
 
       if (coveragePercentage < minCoverageRequired) {
-        console.warn('[HARMONY-WIDGET] Insufficient samples - waiting for preload');
+        console.warn(
+          '[HARMONY-WIDGET] Insufficient samples - waiting for preload',
+        );
         isRegisteringRef.current = false;
         return;
       }
@@ -277,7 +311,10 @@ export function useHarmonyRegistration(
                 isContextCompatible: true,
               });
             } catch (decodeError) {
-              console.error(`[HARMONY-WIDGET] Failed to decode ${cacheKey}:`, decodeError);
+              console.error(
+                `[HARMONY-WIDGET] Failed to decode ${cacheKey}:`,
+                decodeError,
+              );
             }
           }
         }
@@ -294,34 +331,35 @@ export function useHarmonyRegistration(
         let perNoteVelocityRanges: PerNoteVelocityRanges | undefined;
         try {
           if (instrument === 'wurlitzer') {
-            const config = await import(
-              '@/domains/playback/data/instruments/wurlitzer/wurlitzer-piano.json'
-            );
+            const config =
+              await import('@/domains/playback/data/instruments/wurlitzer/wurlitzer-piano.json');
             perNoteVelocityRanges = config.default.perNoteVelocityRanges;
           } else if (instrument === 'grandpiano') {
-            const config = await import(
-              '@/domains/playback/data/instruments/piano/grand-piano.json'
-            );
+            const config =
+              await import('@/domains/playback/data/instruments/piano/grand-piano.json');
             perNoteVelocityRanges = config.default.perNoteVelocityRanges;
           } else if (instrument === 'rhodes') {
-            const config = await import(
-              '@/domains/playback/data/instruments/rhodes/rhodes-piano.json'
-            );
+            const config =
+              await import('@/domains/playback/data/instruments/rhodes/rhodes-piano.json');
             perNoteVelocityRanges = config.default.perNoteVelocityRanges;
           }
         } catch (error) {
-          console.error('[HARMONY-WIDGET] Failed to load instrument config', error);
+          console.error(
+            '[HARMONY-WIDGET] Failed to load instrument config',
+            error,
+          );
         }
 
         // Get or create instrument gain node
-        const harmonyGainNode = playbackEngine.getOrCreateInstrumentGainNode('harmony');
+        const harmonyGainNode =
+          playbackEngine.getOrCreateInstrumentGainNode('harmony');
         const destination = harmonyGainNode || audioContext.destination;
 
         playbackEngine.setHarmonyBuffers(
           harmonyBuffers,
           destination,
           perNoteVelocityRanges,
-          instrument
+          instrument,
         );
 
         // Apply volume/mute state
@@ -329,10 +367,13 @@ export function useHarmonyRegistration(
         playbackEngine.setInstrumentVolume('harmony', effectiveVolume);
         playbackEngine.setInstrumentMuted('harmony', isMuted);
 
-        console.log('[HARMONY-WIDGET] Harmony buffers injected into PlaybackEngine', {
-          instrument,
-          buffersInjected: buffersFound,
-        });
+        console.log(
+          '[HARMONY-WIDGET] Harmony buffers injected into PlaybackEngine',
+          {
+            instrument,
+            buffersInjected: buffersFound,
+          },
+        );
 
         // Switch WAM plugin instrument if needed
         if (
@@ -341,13 +382,18 @@ export function useHarmonyRegistration(
         ) {
           try {
             if (keyboardPluginRef.current.audioNode.loadInstrument) {
-              await keyboardPluginRef.current.audioNode.loadInstrument(instrument);
+              await keyboardPluginRef.current.audioNode.loadInstrument(
+                instrument,
+              );
               if (setCurrentInstrument) {
                 setCurrentInstrument(instrument);
               }
             }
           } catch (error) {
-            console.error('[HARMONY-WIDGET] Failed to switch WAM plugin instrument:', error);
+            console.error(
+              '[HARMONY-WIDGET] Failed to switch WAM plugin instrument:',
+              error,
+            );
           }
         }
       } else if (audioContext?.destination) {
@@ -356,9 +402,11 @@ export function useHarmonyRegistration(
           new Map(),
           audioContext.destination,
           undefined,
-          instrument
+          instrument,
         );
-        console.warn('[HARMONY-WIDGET] No harmony buffers found - cleared old buffers');
+        console.warn(
+          '[HARMONY-WIDGET] No harmony buffers found - cleared old buffers',
+        );
       }
 
       // Convert harmony notes to events
@@ -386,7 +434,10 @@ export function useHarmonyRegistration(
 
       // Convert notes to events
       const harmonyEvents: HarmonyEvent[] = (latestExercise?.harmonyNotes || [])
-        .filter((note: any) => note.position && typeof note.position.measure === 'number')
+        .filter(
+          (note: any) =>
+            note.position && typeof note.position.measure === 'number',
+        )
         .map((note: any) => ({
           position: {
             measure: note.position.measure - measureOffset,
@@ -409,32 +460,33 @@ export function useHarmonyRegistration(
         }));
 
       // Add control change events
-      const controlChangeEvents: HarmonyEvent[] = (latestExercise?.harmonyControlChanges || [])
-        .map((cc: any) => {
-          const rawPosition = {
-            measure: cc.position.measure - measureOffset,
-            beat: cc.position.beat - beatOffset,
-            subdivision: (cc.position.subdivision || 0) - subdivisionOffset,
-            tick: (cc.position.tick || 0) - tickOffset,
-          };
+      const controlChangeEvents: HarmonyEvent[] = (
+        latestExercise?.harmonyControlChanges || []
+      ).map((cc: any) => {
+        const rawPosition = {
+          measure: cc.position.measure - measureOffset,
+          beat: cc.position.beat - beatOffset,
+          subdivision: (cc.position.subdivision || 0) - subdivisionOffset,
+          tick: (cc.position.tick || 0) - tickOffset,
+        };
 
-          return {
-            position: {
-              measure: Math.max(0, rawPosition.measure),
-              beat: Math.max(0, rawPosition.beat),
-              subdivision: Math.max(0, rawPosition.subdivision),
-              tick: Math.max(0, rawPosition.tick),
-            },
-            type: 'harmony-control-change' as const,
-            velocity: 0,
-            data: {
-              cc: cc.cc,
-              value: cc.value,
-              ticks: cc.ticks,
-              originalBpm: latestExercise?.bpm,
-            },
-          };
-        });
+        return {
+          position: {
+            measure: Math.max(0, rawPosition.measure),
+            beat: Math.max(0, rawPosition.beat),
+            subdivision: Math.max(0, rawPosition.subdivision),
+            tick: Math.max(0, rawPosition.tick),
+          },
+          type: 'harmony-control-change' as const,
+          velocity: 0,
+          data: {
+            cc: cc.cc,
+            value: cc.value,
+            ticks: cc.ticks,
+            originalBpm: latestExercise?.bpm,
+          },
+        };
+      });
 
       const allHarmonyEvents = [...harmonyEvents, ...controlChangeEvents];
 
@@ -466,14 +518,16 @@ export function useHarmonyRegistration(
 
       const isRunning = (playbackEngine as any).isRunning;
       const exerciseMetadata = {
-        harmonyInstrument: latestExercise?.harmonyInstrument || DEFAULT_HARMONY_INSTRUMENT,
+        harmonyInstrument:
+          latestExercise?.harmonyInstrument || DEFAULT_HARMONY_INSTRUMENT,
       };
 
       if (isRunning) {
         playbackEngine.updateTracks(trackData, exerciseMetadata);
       } else {
         playbackEngine.registerTracks(trackData);
-        (playbackEngine as any).currentHarmonyInstrument = exerciseMetadata.harmonyInstrument;
+        (playbackEngine as any).currentHarmonyInstrument =
+          exerciseMetadata.harmonyInstrument;
       }
 
       console.log('[HARMONY-WIDGET] Harmony registered with PlaybackEngine', {
@@ -491,7 +545,10 @@ export function useHarmonyRegistration(
       lastRegisteredExerciseIdRef.current = registrationKey;
     } catch (error) {
       console.error('[HARMONY-WIDGET] Failed to register harmony:', error);
-      logger.error('Failed to register harmony with PlaybackEngine', error as Error);
+      logger.error(
+        'Failed to register harmony with PlaybackEngine',
+        error as Error,
+      );
     } finally {
       isRegisteringRef.current = false;
     }
@@ -546,7 +603,7 @@ export function useHarmonyRegistration(
             onNextChord();
           }
         },
-        (scheduleTime - currentTime) * 1000
+        (scheduleTime - currentTime) * 1000,
       );
 
       scheduleTime += chordDuration;
@@ -567,7 +624,9 @@ export function useHarmonyRegistration(
    */
   useEffect(() => {
     const handleExerciseSwitched = () => {
-      console.log('[HARMONY-WIDGET] exercise:switched event received, resetting state');
+      console.log(
+        '[HARMONY-WIDGET] exercise:switched event received, resetting state',
+      );
 
       // Reset WAM plugin state (scheduled events, sustain pedal, active notes)
       if (keyboardPluginRef.current?.resetState) {
@@ -642,10 +701,13 @@ export function useHarmonyRegistration(
     if (shouldRegister) {
       // Only log in verbose mode to reduce console noise
       if (isVerboseDebugEnabled()) {
-        console.log('[HARMONY-WIDGET] Conditions met - attempting harmony registration', {
-          exerciseId: currentExercise?.id,
-          harmonyNotesCount: harmonyNoteCount,
-        });
+        console.log(
+          '[HARMONY-WIDGET] Conditions met - attempting harmony registration',
+          {
+            exerciseId: currentExercise?.id,
+            harmonyNotesCount: harmonyNoteCount,
+          },
+        );
       }
       registerHarmonyWithPlaybackEngine();
     }

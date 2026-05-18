@@ -1,9 +1,20 @@
 'use client';
 
 import { useCallback } from 'react';
-import { BookOpen, Library, ClipboardCheck, ArrowRight, Loader2 } from 'lucide-react';
+import {
+  BookOpen,
+  Library,
+  ClipboardCheck,
+  ArrowRight,
+  Loader2,
+} from 'lucide-react';
 import { cn } from '@/shared/utils';
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
 import { useUserProfile } from '@/domains/user/hooks/use-user-profile';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
@@ -50,7 +61,8 @@ const QUICK_START_CARDS: QuickStartCard[] = [
   },
   {
     title: 'Take Assessment',
-    description: 'Discover your skill level and get personalized recommendations',
+    description:
+      'Discover your skill level and get personalized recommendations',
     icon: ClipboardCheck,
     action: '/assessment/v2',
   },
@@ -177,8 +189,8 @@ export function WelcomeScreen() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-zinc-400">
-              Answer a few questions to get personalized tutorial recommendations
-              based on your skill level and goals.
+              Answer a few questions to get personalized tutorial
+              recommendations based on your skill level and goals.
             </p>
             <div className="mt-3 flex items-center gap-1 text-sm font-medium text-[#ffc700]">
               Get started

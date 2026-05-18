@@ -21,18 +21,25 @@ export interface ScrollTriggerLoaderProps {
  * CRITICAL: This component controls the initialization sequence to prevent
  * race conditions between useCoreServices and sample loading.
  *
- * Initialization sequence on first user interaction (scroll/touch/click):
+ * Initialization sequence — kicked off on mount:
  * 1. Create and pre-initialize CoreServices (loads Tone.js, NO AudioContext)
  * 2. Load all tutorial samples (if exercises provided)
  * 3. Emit 'samples-ready' event → triggers buffer injection listener
  *
- * NOTE: AudioContext creation is deferred to play button click because:
- * - Browser policy requires a trusted user gesture (click/touch) for AudioContext
- * - Scroll may not be accepted as a trusted gesture in all browsers
- * - By deferring, we ensure samples are ready, making play click nearly instant
+ * Why on mount and not on first user gesture:
+ * - Sample fetching does NOT need a user gesture — only AudioContext
+ *   creation does, and that's deferred to the play button.
+ * - Starting the fetch on mount gives the user a 2-3 second head start so
+ *   pressing play after reading the tutorial copy is near-instant.
  *
- * This prevents Bug #1 (Race Condition) by ensuring CoreServices always exists
- * before any sample loading occurs.
+ * Gesture listeners remain as a defensive fallback in case the mount path
+ * ever no-ops (e.g. CoreServices was already created elsewhere and we want
+ * to confirm samples are loading).
+ *
+ * NOTE: AudioContext creation is NOT done here. Browser policy requires a
+ * "trusted" user gesture (click/touch) for AudioContext. When the user
+ * clicks play, samples are already loaded — only AudioContext + buffer
+ * injection remain (~100-200ms).
  */
 export function ScrollTriggerLoader({
   exercises,
@@ -93,9 +100,13 @@ export function ScrollTriggerLoader({
           logger.info(
             `[2/3] Loading samples for all ${exercises.length} exercises in tutorial...`,
           );
-          lifecycle.checkpoint('TUTORIAL_SAMPLES_START', { exerciseCount: exercises.length });
+          lifecycle.checkpoint('TUTORIAL_SAMPLES_START', {
+            exerciseCount: exercises.length,
+          });
           await preloader.loadTutorialSamples(exercises, tutorialId);
-          lifecycle.checkpoint('TUTORIAL_SAMPLES_COMPLETE', { exerciseCount: exercises.length });
+          lifecycle.checkpoint('TUTORIAL_SAMPLES_COMPLETE', {
+            exerciseCount: exercises.length,
+          });
           logger.info('✅ All tutorial samples loaded');
         } else {
           // Fallback: Load only essential samples
@@ -132,7 +143,9 @@ export function ScrollTriggerLoader({
         //
         // This gives near-instant playback on first click.
 
-        logger.info('✅ Initialization sequence complete (AudioContext deferred to play click)');
+        logger.info(
+          '✅ Initialization sequence complete (AudioContext deferred to play click)',
+        );
       } catch (error) {
         logger.error('❌ Failed to initialize:', error);
         // ✅ BUG #8 FIX: Mark initialization as failed using WindowRegistry
@@ -158,19 +171,18 @@ export function ScrollTriggerLoader({
       window.removeEventListener('click', triggerInitialization);
     };
 
-    // Add passive listeners for various user interactions
+    // Kick off the load immediately on mount — sample fetching doesn't
+    // require a user gesture, and the previous gesture-gated path left the
+    // user staring at a "Loading…" toast on first play.
+    triggerInitialization();
+
+    // Defensive fallback: if mount-path init no-ops or races, the first
+    // user gesture will still kick it off. These listeners are passive +
+    // once, so they cost nothing if init has already fired.
     const options = { passive: true, once: true };
-
-    // Scroll is most common first interaction
     window.addEventListener('scroll', triggerInitialization, options);
-
-    // Touch for mobile users
     window.addEventListener('touchstart', triggerInitialization, options);
-
-    // Mouse movement for desktop users
     window.addEventListener('mouseenter', triggerInitialization, options);
-
-    // Click as fallback
     window.addEventListener('click', triggerInitialization, options);
 
     // Cleanup on unmount

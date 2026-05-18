@@ -26,7 +26,9 @@ const serviceRegistry = {
   get<T>(name: string): T {
     // Try window globals
     if (typeof window !== 'undefined' && window.__serviceRegistry) {
-      return (window.__serviceRegistry as { get: <T>(name: string) => T }).get<T>(name);
+      return (
+        window.__serviceRegistry as { get: <T>(name: string) => T }
+      ).get<T>(name);
     }
     throw new Error(`Service ${name} not found`);
   },
@@ -271,7 +273,9 @@ export class Track implements ITrack, TrackLifecycle {
         }
         // Try global services
         else if (window.__globalCoreServices) {
-          const services = window.__globalCoreServices as { getEventBus?: () => EventBus };
+          const services = window.__globalCoreServices as {
+            getEventBus?: () => EventBus;
+          };
           if (services.getEventBus) {
             this._eventBus = services.getEventBus();
             logger.info(
@@ -292,7 +296,8 @@ export class Track implements ITrack, TrackLifecycle {
     }
 
     try {
-      this._errorReporter = serviceRegistry.get<IErrorReporter>('errorReporter');
+      this._errorReporter =
+        serviceRegistry.get<IErrorReporter>('errorReporter');
     } catch {
       // ErrorReporter is optional - might not be registered in tests or during initialization
       // Silently continue without it
@@ -676,7 +681,9 @@ export class Track implements ITrack, TrackLifecycle {
    * Remove a plugin from the track
    */
   removePlugin(pluginId: string): void {
-    const index = this.plugins.findIndex((p) => (p as PluginWithId).id === pluginId);
+    const index = this.plugins.findIndex(
+      (p) => (p as PluginWithId).id === pluginId,
+    );
     if (index !== -1) {
       const plugin = this.plugins[index];
       this.plugins.splice(index, 1);
@@ -825,7 +832,9 @@ export class Track implements ITrack, TrackLifecycle {
       });
     } else {
       // Try to get EventBus from global services if not available
-      const globalServices = window.__globalCoreServices as { getEventBus?: () => EventBus } | undefined;
+      const globalServices = window.__globalCoreServices as
+        | { getEventBus?: () => EventBus }
+        | undefined;
       if (globalServices && globalServices.getEventBus) {
         const eventBus = globalServices.getEventBus();
         if (eventBus) {

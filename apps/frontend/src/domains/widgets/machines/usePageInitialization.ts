@@ -104,7 +104,7 @@ const logger = createStateLogger(MACHINE_NAME, '#2563eb');
 // ============================================================================
 
 export function usePageInitialization(
-  options: UsePageInitializationOptions = {}
+  options: UsePageInitializationOptions = {},
 ): UsePageInitializationReturn {
   const {
     tutorial,
@@ -130,11 +130,12 @@ export function usePageInitialization(
       exercises,
       maxRetries,
     }),
-    [tutorial, exercises, maxRetries]
+    [tutorial, exercises, maxRetries],
   );
 
   // Get inspector for DevTools connection
-  const inspector = enableInspector && isDevToolsInitialized() ? getInspector() : null;
+  const inspector =
+    enableInspector && isDevToolsInitialized() ? getInspector() : null;
 
   // Create machine with input and optional inspector
   const [state, send, actorRef] = useMachine(pageInitializationMachine, {
@@ -175,7 +176,10 @@ export function usePageInitialization(
       }
 
       // Also record in global window tracker if available
-      if (typeof window !== 'undefined' && (window as WindowWithHistory).__xstatePageInitHistory) {
+      if (
+        typeof window !== 'undefined' &&
+        (window as WindowWithHistory).__xstatePageInitHistory
+      ) {
         (window as WindowWithHistory).__xstatePageInitHistory.record(
           currentState,
           undefined,
@@ -183,7 +187,7 @@ export function usePageInitialization(
             progress: state.context.progress,
             step: state.context.currentStep,
             userGesture: state.context.userGestureReceived,
-          }
+          },
         );
       }
     }
@@ -206,7 +210,11 @@ export function usePageInitialization(
 
   // Auto-detect scroll
   useEffect(() => {
-    if (!autoDetectScroll || !state.matches('idle') || scrollTriggeredRef.current) {
+    if (
+      !autoDetectScroll ||
+      !state.matches('idle') ||
+      scrollTriggeredRef.current
+    ) {
       return;
     }
 
@@ -226,7 +234,7 @@ export function usePageInitialization(
           observer.disconnect();
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
 
     // Observe the trigger element
@@ -239,7 +247,10 @@ export function usePageInitialization(
     const scrollHandler = () => {
       handleScroll();
     };
-    window.addEventListener('scroll', scrollHandler, { once: true, passive: true });
+    window.addEventListener('scroll', scrollHandler, {
+      once: true,
+      passive: true,
+    });
 
     return () => {
       observer.disconnect();
@@ -290,7 +301,7 @@ export function usePageInitialization(
       logger.logEvent('EXERCISE_SELECTED', { exerciseId });
       send({ type: 'EXERCISE_SELECTED', exerciseId });
     },
-    [send]
+    [send],
   );
 
   const handleRetry = useCallback(() => {
@@ -305,10 +316,17 @@ export function usePageInitialization(
 
   const setTutorialData = useCallback(
     (tutorialData: TutorialData, exercisesData: ExerciseData[]) => {
-      logger.logEvent('SET_TUTORIAL_DATA', { tutorialId: tutorialData?.id, exerciseCount: exercisesData?.length });
-      send({ type: 'SET_TUTORIAL_DATA', tutorial: tutorialData, exercises: exercisesData });
+      logger.logEvent('SET_TUTORIAL_DATA', {
+        tutorialId: tutorialData?.id,
+        exerciseCount: exercisesData?.length,
+      });
+      send({
+        type: 'SET_TUTORIAL_DATA',
+        tutorial: tutorialData,
+        exercises: exercisesData,
+      });
     },
-    [send]
+    [send],
   );
 
   return {
@@ -367,9 +385,10 @@ export interface LoadingProgressProps {
  * Helper function to get loading progress props from the hook
  */
 export function getLoadingProgressProps(
-  hookReturn: UsePageInitializationReturn
+  hookReturn: UsePageInitializationReturn,
 ): LoadingProgressProps {
-  const lastError = hookReturn.context.errors[hookReturn.context.errors.length - 1];
+  const lastError =
+    hookReturn.context.errors[hookReturn.context.errors.length - 1];
 
   return {
     progress: hookReturn.loadingProgress,
@@ -396,7 +415,7 @@ export function useShadowInitComparison(
     samplesReady?: boolean;
     transportReady?: boolean;
   },
-  enabled = true
+  enabled = true,
 ): void {
   useEffect(() => {
     if (!enabled) return;
@@ -423,7 +442,11 @@ export function useShadowInitComparison(
 
 interface WindowWithHistory extends Window {
   __xstatePageInitHistory?: {
-    record: (state: string, event?: string, context?: Record<string, unknown>) => void;
+    record: (
+      state: string,
+      event?: string,
+      context?: Record<string, unknown>,
+    ) => void;
   };
 }
 

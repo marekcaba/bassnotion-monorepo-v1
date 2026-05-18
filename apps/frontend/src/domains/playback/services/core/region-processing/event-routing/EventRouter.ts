@@ -36,8 +36,8 @@ export interface Scheduler {
 export class EventRouter {
   private instanceId: string;
   private audioContext: AudioContext | null = null;
-  private sampleRate: number = 48000;
-  private transportStartTime: number = 0;
+  private sampleRate = 48000;
+  private transportStartTime = 0;
   private eventBus!: EventBus;
 
   // Instrument schedulers (Phase 4)

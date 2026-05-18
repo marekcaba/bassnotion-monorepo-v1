@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Widget Schedule Execution Test', () => {
   test('test if widget schedules execute after proper setup', async ({

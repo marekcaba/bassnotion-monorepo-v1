@@ -10,9 +10,7 @@ import type {
   ExerciseNote,
 } from '@bassnotion/contracts';
 import { MIDIFileParser } from '@bassnotion/contracts';
-import {
-  useTransportControls,
-} from '@/domains/playback/contexts/TransportContext';
+import { useTransportControls } from '@/domains/playback/contexts/TransportContext';
 import { useTrack } from '@/domains/playback/hooks';
 import type { CoreServices } from '@/domains/playback/services/core/CoreServices.js';
 import { getLogger } from '@/utils/logger.js';
@@ -20,6 +18,7 @@ import { useAudioServices } from '@/domains/playback/providers/AudioProvider';
 import { logSkeletonDebug } from '@/utils/skeletonDebug';
 import { useCountdown } from '@/domains/widgets/hooks/useCountdown';
 import { useAuth } from '@/domains/user/hooks/use-auth';
+import { useToast } from '@/shared/hooks/use-toast';
 
 // Extracted hooks from GlobalControls folder
 import { useSocialInteractions } from '../GlobalControls/hooks/useSocialInteractions.js';
@@ -62,6 +61,8 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
     eventBus: contextEventBus,
     coreServicesReady,
   } = useAudioServices();
+
+  const { toast } = useToast();
 
   // Render counter logging disabled - was causing 176+ log entries during playback
   // Enable for debugging by uncommenting:
@@ -514,7 +515,12 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
   }, [metronomeTrack, drumTrack, bassTrack]);
 
   // Playback control hook - handles play/stop button logic
-  const { handlePlayButtonClick, isTogglingPlayback } = usePlaybackControl({
+  const {
+    handlePlayButtonClick,
+    isTogglingPlayback,
+    isLoadingSamples,
+    bassFailedToLoad: _bassFailedToLoad,
+  } = usePlaybackControl({
     selectedExercise,
     transport,
     countdownState,
@@ -593,7 +599,6 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
   // The currentPosition state is no longer needed here as the sheet music component
   // handles its own position tracking via useTransportPosition().
 
-
   // NOTE: Tempo cleanup, drag handlers, and global event listeners are now in useTempoControl hook
 
   // Sheet music ready callback - memoized to prevent PositionAwareSheetMusic re-renders
@@ -613,12 +618,17 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
       // TODO: Implement save to backend/library functionality
       logger.debug('Saving exercise:', activeExercise.title);
       // This would call an API to save the exercise to the database
-      alert(
-        'Save functionality will be implemented - exercise would be saved to library',
-      );
+      toast({
+        title: 'Save coming soon',
+        description: 'Saving to your library is not yet available.',
+      });
     } catch (error) {
       logger.error('Error saving exercise:', error);
-      alert('Failed to save exercise');
+      toast({
+        title: 'Save failed',
+        description: 'Could not save the exercise. Please try again.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -629,14 +639,22 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
       // Get the SVG element from VexFlow
       const svgElement = containerRef.current.querySelector('svg');
       if (!svgElement) {
-        alert('No sheet music to export');
+        toast({
+          title: 'No sheet music to export',
+          description: 'Open an exercise with notation first.',
+          variant: 'destructive',
+        });
         return;
       }
 
       // Create a new window for printing
       const printWindow = window.open('', '_blank');
       if (!printWindow) {
-        alert('Please allow popups for PDF export');
+        toast({
+          title: 'Allow popups to export',
+          description: 'Please allow popups for this site, then try again.',
+          variant: 'destructive',
+        });
         return;
       }
 
@@ -680,9 +698,37 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
       }, 250);
     } catch (error) {
       logger.error('Error exporting PDF:', error);
-      alert('Failed to export PDF');
+      toast({
+        title: 'PDF export failed',
+        description: 'Could not export the sheet music. Please try again.',
+        variant: 'destructive',
+      });
     }
   };
+
+  // Spacebar play/pause shortcut. Bound at document level so the user can
+  // tap space anywhere on the tutorial page. Skipped when focus is in an
+  // input/textarea/contenteditable so we don't hijack typing.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.code !== 'Space' && e.key !== ' ') return;
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      const tag = target.tagName;
+      if (
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        tag === 'SELECT' ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+      e.preventDefault();
+      void handlePlayButtonClick();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [handlePlayButtonClick]);
 
   return (
     <PlaybackControlsBar
@@ -715,6 +761,9 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
       handleCommentMouseLeave={handleCommentMouseLeave}
       onToggleLoop={onToggleLoop}
       compact={compact}
+      isPlayButtonBusy={
+        isTogglingPlayback || isLoadingSamples || isLoadingExercise
+      }
     />
   );
 };

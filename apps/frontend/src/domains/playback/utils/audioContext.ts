@@ -24,7 +24,9 @@ export function getPersistentAudioContext(): AudioContext | null {
   }
 
   // Fallback: Check AudioEngine's global context
-  const AudioEngine = window.__AudioEngine as { globalContext?: AudioContext } | undefined;
+  const AudioEngine = window.__AudioEngine as
+    | { globalContext?: AudioContext }
+    | undefined;
   if (
     AudioEngine &&
     AudioEngine.globalContext &&
@@ -141,6 +143,6 @@ export function ensureToneUsesPersistentContext(): void {
   // Only set context if they're different
   if (toneContext !== persistentContext) {
     logger.info('🎵 Setting Tone.js to use persistent AudioContext');
-    Tone.setContext(persistentContext);
+    Tone.setContext(persistentContext, true);
   }
 }

@@ -1,10 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { SupabaseService } from '../../../infrastructure/supabase/supabase.service.js';
-import {
-  Subscription,
-  SubscriptionStatus,
-} from '../types/billing.types.js';
+import { Subscription, SubscriptionStatus } from '../types/billing.types.js';
 
 interface SubscriptionRow {
   id: string;
@@ -114,7 +111,9 @@ export class SubscriptionRepository {
     return this.mapRowToSubscription(data as SubscriptionRow);
   }
 
-  async create(subscription: Omit<Subscription, 'id' | 'createdAt' | 'updatedAt'>): Promise<Subscription> {
+  async create(
+    subscription: Omit<Subscription, 'id' | 'createdAt' | 'updatedAt'>,
+  ): Promise<Subscription> {
     const client = this.supabaseService.getClient();
 
     const { data, error } = await client
@@ -143,7 +142,16 @@ export class SubscriptionRepository {
 
   async update(
     stripeSubscriptionId: string,
-    updates: Partial<Omit<Subscription, 'id' | 'userId' | 'stripeCustomerId' | 'stripeSubscriptionId' | 'createdAt'>>,
+    updates: Partial<
+      Omit<
+        Subscription,
+        | 'id'
+        | 'userId'
+        | 'stripeCustomerId'
+        | 'stripeSubscriptionId'
+        | 'createdAt'
+      >
+    >,
   ): Promise<Subscription> {
     const client = this.supabaseService.getClient();
 
@@ -158,7 +166,8 @@ export class SubscriptionRepository {
       updateData.stripe_price_id = updates.stripePriceId;
     }
     if (updates.currentPeriodStart !== undefined) {
-      updateData.current_period_start = updates.currentPeriodStart.toISOString();
+      updateData.current_period_start =
+        updates.currentPeriodStart.toISOString();
     }
     if (updates.currentPeriodEnd !== undefined) {
       updateData.current_period_end = updates.currentPeriodEnd.toISOString();

@@ -178,7 +178,7 @@ export interface UseSampleLoadingSyncOptions {
   /** Subscribe function from SyncContext (optional) */
   subscribeToEvent?: (
     eventName: string,
-    callback: (payload: unknown) => void
+    callback: (payload: unknown) => void,
   ) => () => void;
 }
 
@@ -255,7 +255,7 @@ export interface UseBassPlaybackReturn {
     midiNote: number,
     velocity?: number,
     duration?: number,
-    scheduledTime?: number
+    scheduledTime?: number,
   ) => void;
   /** Stop all active notes */
   stopAllNotes: (graceful?: boolean) => void;

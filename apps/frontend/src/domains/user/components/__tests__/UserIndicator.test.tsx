@@ -7,16 +7,32 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '../../test/test-utils';
 import { UserIndicator } from '../UserIndicator';
 
-// Mock the hooks
-const mockUseAuth = vi.fn();
-const mockUseUserProfile = vi.fn();
-const mockNavigateWithTransition = vi.fn();
+// Mock the hooks. vi.hoisted() so these are available inside the
+// vi.mock factories, which Vitest hoists above the rest of the module.
+const { mockUseAuth, mockUseUserProfile, mockNavigateWithTransition } =
+  vi.hoisted(() => ({
+    mockUseAuth: vi.fn(),
+    mockUseUserProfile: vi.fn(),
+    mockNavigateWithTransition: vi.fn(),
+  }));
 
-vi.mock('../hooks/use-auth', () => ({
+// Test file lives in components/__tests__/, so paths to user/hooks/ need
+// to climb two levels, not one. Previously these resolved to
+// components/hooks/use-auth (a path that doesn't exist), so vi.mock
+// silently failed and the real Zustand-backed hooks ran instead — that's
+// why every test rendered the "Loading..." skeleton instead of real
+// content.
+vi.mock('../../hooks/use-auth', () => ({
   useAuth: mockUseAuth,
+  useAuthStore: vi.fn((selector?: (state: any) => any) => {
+    // The component calls useAuthStore((state) => state.reset).
+    // Return the selected value (or the whole stub if no selector).
+    const stub = { reset: vi.fn() };
+    return selector ? selector(stub) : stub;
+  }),
 }));
 
-vi.mock('../hooks/use-user-profile', () => ({
+vi.mock('../../hooks/use-user-profile', () => ({
   useUserProfile: mockUseUserProfile,
 }));
 
@@ -37,18 +53,27 @@ describe('UserIndicator', () => {
       mockUseAuth.mockReturnValue({
         isAuthenticated: false,
         user: null,
+        isInitialized: true,
       });
       mockUseUserProfile.mockReturnValue({
         profile: null,
         isLoading: false,
+        isHydrated: true,
+        cachedRole: null,
+        cachedDisplayName: null,
       });
 
       // Act
       render(<UserIndicator />);
 
-      // Assert
+      // Assert: the container around the "Not logged in" text carries
+      // the styled background. getByRole('generic') would match both
+      // the testing-library wrapper and the component div, so we target
+      // the parent of our known text node instead.
       expect(screen.getByText('Not logged in')).toBeInTheDocument();
-      expect(screen.getByRole('generic')).toHaveClass('bg-slate-800/50');
+      expect(screen.getByText('Not logged in').parentElement).toHaveClass(
+        'bg-slate-800/50',
+      );
     });
 
     it('should display login icon when not authenticated', () => {
@@ -56,10 +81,14 @@ describe('UserIndicator', () => {
       mockUseAuth.mockReturnValue({
         isAuthenticated: false,
         user: null,
+        isInitialized: true,
       });
       mockUseUserProfile.mockReturnValue({
         profile: null,
         isLoading: false,
+        isHydrated: true,
+        cachedRole: null,
+        cachedDisplayName: null,
       });
 
       // Act
@@ -71,15 +100,22 @@ describe('UserIndicator', () => {
       // Note: We can't easily test Lucide icons directly, but we can verify the structure
     });
 
-    it('should not be clickable when not authenticated', async () => {
-      // Arrange
+    it('should navigate to /login when clicked while unauthenticated', async () => {
+      // NOTE: The earlier version of this test asserted the click did
+      // NOTHING. Product changed: unauthenticated click now routes the
+      // user straight to the login page (better UX than a dead click).
+      // Updating the assertion to match the new behavior.
       mockUseAuth.mockReturnValue({
         isAuthenticated: false,
         user: null,
+        isInitialized: true,
       });
       mockUseUserProfile.mockReturnValue({
         profile: null,
         isLoading: false,
+        isHydrated: true,
+        cachedRole: null,
+        cachedDisplayName: null,
       });
 
       const { user } = render(<UserIndicator />);
@@ -89,7 +125,7 @@ describe('UserIndicator', () => {
       await user.click(indicator!);
 
       // Assert
-      expect(mockNavigateWithTransition).not.toHaveBeenCalled();
+      expect(mockNavigateWithTransition).toHaveBeenCalledWith('/login');
     });
   });
 
@@ -99,10 +135,14 @@ describe('UserIndicator', () => {
       mockUseAuth.mockReturnValue({
         isAuthenticated: true,
         user: { id: '123', email: 'test@example.com' },
+        isInitialized: true,
       });
       mockUseUserProfile.mockReturnValue({
         profile: null,
         isLoading: true,
+        isHydrated: true,
+        cachedRole: null,
+        cachedDisplayName: null,
       });
 
       // Act
@@ -119,10 +159,14 @@ describe('UserIndicator', () => {
       mockUseAuth.mockReturnValue({
         isAuthenticated: true,
         user: { id: '123', email: 'test@example.com' },
+        isInitialized: true,
       });
       mockUseUserProfile.mockReturnValue({
         profile: null,
         isLoading: true,
+        isHydrated: true,
+        cachedRole: null,
+        cachedDisplayName: null,
       });
 
       // Act
@@ -140,6 +184,7 @@ describe('UserIndicator', () => {
       mockUseAuth.mockReturnValue({
         isAuthenticated: true,
         user: { id: '123', email: 'test@example.com' },
+        isInitialized: true,
       });
       mockUseUserProfile.mockReturnValue({
         profile: {
@@ -148,6 +193,9 @@ describe('UserIndicator', () => {
           role: 'user',
         },
         isLoading: false,
+        isHydrated: true,
+        cachedRole: null,
+        cachedDisplayName: null,
       });
 
       // Act
@@ -163,6 +211,7 @@ describe('UserIndicator', () => {
       mockUseAuth.mockReturnValue({
         isAuthenticated: true,
         user: { id: '123', email: 'john.doe@example.com' },
+        isInitialized: true,
       });
       mockUseUserProfile.mockReturnValue({
         profile: {
@@ -171,6 +220,9 @@ describe('UserIndicator', () => {
           role: 'user',
         },
         isLoading: false,
+        isHydrated: true,
+        cachedRole: null,
+        cachedDisplayName: null,
       });
 
       // Act
@@ -185,6 +237,7 @@ describe('UserIndicator', () => {
       mockUseAuth.mockReturnValue({
         isAuthenticated: true,
         user: { id: '123', email: null },
+        isInitialized: true,
       });
       mockUseUserProfile.mockReturnValue({
         profile: {
@@ -193,13 +246,21 @@ describe('UserIndicator', () => {
           role: 'user',
         },
         isLoading: false,
+        isHydrated: true,
+        cachedRole: null,
+        cachedDisplayName: null,
       });
 
       // Act
       render(<UserIndicator />);
 
-      // Assert
-      expect(screen.getByText('User')).toBeInTheDocument();
+      // Assert: when displayName, cachedDisplayName, and user.email are
+      // all nullish the component falls back to the literal "User"
+      // string. The role badge ALSO reads "User" for non-admin roles,
+      // so there are exactly two "User" texts in the DOM (display name +
+      // role badge).
+      const userTexts = screen.getAllByText('User');
+      expect(userTexts).toHaveLength(2);
     });
 
     it('should navigate to dashboard when clicked', async () => {
@@ -207,6 +268,7 @@ describe('UserIndicator', () => {
       mockUseAuth.mockReturnValue({
         isAuthenticated: true,
         user: { id: '123', email: 'test@example.com' },
+        isInitialized: true,
       });
       mockUseUserProfile.mockReturnValue({
         profile: {
@@ -215,6 +277,9 @@ describe('UserIndicator', () => {
           role: 'user',
         },
         isLoading: false,
+        isHydrated: true,
+        cachedRole: null,
+        cachedDisplayName: null,
       });
 
       const { user } = render(<UserIndicator />);
@@ -232,6 +297,7 @@ describe('UserIndicator', () => {
       mockUseAuth.mockReturnValue({
         isAuthenticated: true,
         user: { id: '123', email: 'test@example.com' },
+        isInitialized: true,
       });
       mockUseUserProfile.mockReturnValue({
         profile: {
@@ -240,6 +306,9 @@ describe('UserIndicator', () => {
           role: 'user',
         },
         isLoading: false,
+        isHydrated: true,
+        cachedRole: null,
+        cachedDisplayName: null,
       });
 
       // Act
@@ -259,6 +328,7 @@ describe('UserIndicator', () => {
       mockUseAuth.mockReturnValue({
         isAuthenticated: true,
         user: { id: '123', email: 'test@example.com' },
+        isInitialized: true,
       });
       mockUseUserProfile.mockReturnValue({
         profile: {
@@ -267,6 +337,9 @@ describe('UserIndicator', () => {
           role: 'user',
         },
         isLoading: false,
+        isHydrated: true,
+        cachedRole: null,
+        cachedDisplayName: null,
       });
 
       // Act
@@ -284,6 +357,7 @@ describe('UserIndicator', () => {
       mockUseAuth.mockReturnValue({
         isAuthenticated: true,
         user: { id: '123', email: 'admin@example.com' },
+        isInitialized: true,
       });
       mockUseUserProfile.mockReturnValue({
         profile: {
@@ -292,6 +366,9 @@ describe('UserIndicator', () => {
           role: 'admin',
         },
         isLoading: false,
+        isHydrated: true,
+        cachedRole: null,
+        cachedDisplayName: null,
       });
 
       // Act
@@ -312,6 +389,7 @@ describe('UserIndicator', () => {
       mockUseAuth.mockReturnValue({
         isAuthenticated: true,
         user: { id: '123', email: 'admin@example.com' },
+        isInitialized: true,
       });
       mockUseUserProfile.mockReturnValue({
         profile: {
@@ -320,6 +398,9 @@ describe('UserIndicator', () => {
           role: 'admin',
         },
         isLoading: false,
+        isHydrated: true,
+        cachedRole: null,
+        cachedDisplayName: null,
       });
 
       // Act
@@ -338,6 +419,7 @@ describe('UserIndicator', () => {
       mockUseAuth.mockReturnValue({
         isAuthenticated: true,
         user: { id: '123', email: 'user@example.com' },
+        isInitialized: true,
       });
       mockUseUserProfile.mockReturnValue({
         profile: {
@@ -346,6 +428,9 @@ describe('UserIndicator', () => {
           role: 'user',
         },
         isLoading: false,
+        isHydrated: true,
+        cachedRole: null,
+        cachedDisplayName: null,
       });
 
       // Act
@@ -368,10 +453,14 @@ describe('UserIndicator', () => {
       mockUseAuth.mockReturnValue({
         isAuthenticated: true,
         user: { id: '123', email: 'test@example.com' },
+        isInitialized: true,
       });
       mockUseUserProfile.mockReturnValue({
         profile: null,
         isLoading: false,
+        isHydrated: true,
+        cachedRole: null,
+        cachedDisplayName: null,
       });
 
       // Act
@@ -387,6 +476,7 @@ describe('UserIndicator', () => {
       mockUseAuth.mockReturnValue({
         isAuthenticated: true,
         user: { id: '123', email: 'test@example.com' },
+        isInitialized: true,
       });
       mockUseUserProfile.mockReturnValue({
         profile: {
@@ -395,6 +485,9 @@ describe('UserIndicator', () => {
           role: undefined,
         },
         isLoading: false,
+        isHydrated: true,
+        cachedRole: null,
+        cachedDisplayName: null,
       });
 
       // Act
@@ -410,6 +503,7 @@ describe('UserIndicator', () => {
       mockUseAuth.mockReturnValue({
         isAuthenticated: true,
         user: { id: '123', email: 'test@example.com' },
+        isInitialized: true,
       });
       mockUseUserProfile.mockReturnValue({
         profile: {
@@ -418,6 +512,9 @@ describe('UserIndicator', () => {
           role: 'unknown-role',
         },
         isLoading: false,
+        isHydrated: true,
+        cachedRole: null,
+        cachedDisplayName: null,
       });
 
       // Act
@@ -435,6 +532,7 @@ describe('UserIndicator', () => {
       const authData = {
         isAuthenticated: true,
         user: { id: '123', email: 'test@example.com' },
+        isInitialized: true,
       };
       const profileData = {
         profile: {
@@ -443,6 +541,9 @@ describe('UserIndicator', () => {
           role: 'user',
         },
         isLoading: false,
+        isHydrated: true,
+        cachedRole: null,
+        cachedDisplayName: null,
       };
 
       mockUseAuth.mockReturnValue(authData);

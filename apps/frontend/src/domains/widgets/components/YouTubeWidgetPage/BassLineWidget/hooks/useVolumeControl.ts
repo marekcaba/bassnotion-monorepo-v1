@@ -35,7 +35,7 @@ import type {
  * Hook for managing volume and mute state for the bass widget
  */
 export function useVolumeControl(
-  options: UseBassVolumeControlOptions
+  options: UseBassVolumeControlOptions,
 ): UseBassVolumeControlReturn {
   const {
     controlledVolume,
@@ -52,7 +52,8 @@ export function useVolumeControl(
   const [localMuted, setLocalMuted] = useState(false);
 
   // Use controlled values if provided, otherwise use local state
-  const volume = controlledVolume !== undefined ? controlledVolume : localVolume;
+  const volume =
+    controlledVolume !== undefined ? controlledVolume : localVolume;
   const isMuted = controlledMuted !== undefined ? controlledMuted : localMuted;
   const effectiveVolume = isMuted ? 0 : volume / 100;
 
@@ -67,7 +68,7 @@ export function useVolumeControl(
         setLocalVolume(newVolume);
       }
     },
-    [onVolumeChange]
+    [onVolumeChange],
   );
 
   /**
@@ -90,7 +91,7 @@ export function useVolumeControl(
       gainNodeRef.current.gain.setTargetAtTime(
         effectiveVolume,
         audioContextRef.current.currentTime,
-        0.05 // 50ms transition
+        0.05, // 50ms transition
       );
     }
 

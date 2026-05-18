@@ -122,7 +122,7 @@ describe('Widget Performance Tests', () => {
         },
       );
 
-      let readyCount = 0;
+      const readyCount = 0;
 
       const MockWidgetPage = () => {
         const [widgetsReady, setWidgetsReady] = React.useState(0);

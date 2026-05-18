@@ -44,6 +44,16 @@ function RegisterPageContent() {
     setIsLoading(true);
 
     try {
+      // Validate the email domain has MX records before hitting Supabase.
+      // Catches typos like `user@gogle.com` that would otherwise create
+      // an orphan unconfirmable user.
+      const mxOk = await authService.validateEmailDomain(data.email);
+      if (!mxOk) {
+        throw new Error(
+          'Please check your email address — that domain does not accept mail.',
+        );
+      }
+
       if (useBackendAuth) {
         // Use backend API for E2E testing
         logger.info('[Register Debug] Using backend registration');

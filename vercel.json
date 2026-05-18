@@ -1,30 +1,11 @@
 {
-  "installCommand": "chmod +x setup-contracts.sh && ./setup-contracts.sh",
-  "buildCommand": "npm run build",
+  "installCommand": "cd ../.. && corepack enable && pnpm install --frozen-lockfile && pnpm nx build @bassnotion/contracts",
+  "buildCommand": "pnpm run build:workers && pnpm next build",
   "outputDirectory": ".next",
   "framework": "nextjs",
   "cleanUrls": true,
   "trailingSlash": false,
   "github": {
     "silent": true
-  },
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key": "X-XSS-Protection",
-          "value": "1; mode=block"
-        }
-      ]
-    }
-  ]
+  }
 }

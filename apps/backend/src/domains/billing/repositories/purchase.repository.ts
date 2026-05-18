@@ -81,7 +81,9 @@ export class PurchaseRepository {
     return this.mapRowToPurchase(data as PurchaseRow);
   }
 
-  async findByPaymentIntentId(paymentIntentId: string): Promise<Purchase | null> {
+  async findByPaymentIntentId(
+    paymentIntentId: string,
+  ): Promise<Purchase | null> {
     const client = this.supabaseService.getClient();
 
     const { data, error } = await client
@@ -101,7 +103,9 @@ export class PurchaseRepository {
     return this.mapRowToPurchase(data as PurchaseRow);
   }
 
-  async create(purchase: Omit<Purchase, 'id' | 'createdAt' | 'updatedAt'>): Promise<Purchase> {
+  async create(
+    purchase: Omit<Purchase, 'id' | 'createdAt' | 'updatedAt'>,
+  ): Promise<Purchase> {
     const client = this.supabaseService.getClient();
 
     const { data, error } = await client
@@ -165,10 +169,15 @@ export class PurchaseRepository {
       throw error;
     }
 
-    return (data as { course_type: CourseType }[]).map((row) => row.course_type);
+    return (data as { course_type: CourseType }[]).map(
+      (row) => row.course_type,
+    );
   }
 
-  async hasPurchasedCourse(userId: string, courseType: CourseType): Promise<boolean> {
+  async hasPurchasedCourse(
+    userId: string,
+    courseType: CourseType,
+  ): Promise<boolean> {
     const purchasedCourses = await this.getPurchasedCourses(userId);
     return purchasedCourses.includes(courseType);
   }

@@ -1,3 +1,5 @@
+import { promises as dns } from 'node:dns';
+
 import {
   Injectable,
   UnauthorizedException,
@@ -72,6 +74,59 @@ export class AuthService implements OnModuleInit {
       message: 'An unknown error occurred',
       code: 'UNKNOWN_ERROR',
     };
+  }
+
+  /**
+   * Check whether an email address's domain accepts mail.
+   * Fail-open on transient DNS errors so a flaky resolver doesn't block
+   * legitimate signups. Returns `{ valid: false }` only on definitive
+   * "domain does not exist / has no MX records" errors.
+   */
+  async validateEmailDomain(
+    email: string | undefined,
+  ): Promise<{ valid: boolean; reason?: string }> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+    const domain = email?.split('@')[1];
+    if (!domain) {
+      return { valid: false, reason: 'Email is missing a domain' };
+    }
+    try {
+      const mx = await dns.resolveMx(domain);
+      if (mx.length === 0) {
+        return { valid: false, reason: `Domain "${domain}" has no MX records` };
+      }
+      // RFC 7505 null MX: priority 0 + exchange "." means "this domain
+      // explicitly does not accept mail" (used by typo-squat domains like
+      // gogle.com that Google parks). Treat as invalid.
+      const nullMx =
+        mx.length === 1 &&
+        mx[0].priority === 0 &&
+        (mx[0].exchange === '' || mx[0].exchange === '.');
+      if (nullMx) {
+        return {
+          valid: false,
+          reason: `Domain "${domain}" does not accept mail (null MX)`,
+        };
+      }
+      return { valid: true };
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code === 'ENOTFOUND' || code === 'ENODATA') {
+        logger.debug(`MX lookup rejected: ${domain} (${code})`, {
+          correlationId,
+        });
+        return {
+          valid: false,
+          reason: `Domain "${domain}" does not exist or does not accept mail`,
+        };
+      }
+      logger.warn(
+        `MX lookup for ${domain} failed transiently (${code}); allowing signup`,
+        { correlationId },
+      );
+      return { valid: true };
+    }
   }
 
   async registerUser(signUpDto: SignUpDto): Promise<AuthResponse> {

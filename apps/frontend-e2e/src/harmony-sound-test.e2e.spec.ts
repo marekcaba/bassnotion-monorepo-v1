@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Harmony Sound Test', () => {
   test('test if harmony widget produces sound after fix', async ({ page }) => {

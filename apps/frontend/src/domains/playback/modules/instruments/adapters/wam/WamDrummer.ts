@@ -122,12 +122,12 @@ export class WamDrummerNode extends BaseNode implements WamNode {
   private padGains: Map<number, GainNode> = new Map();
   private padPanners: Map<number, StereoPannerNode> = new Map();
   private _eventQueue: WamEvent[] = [];
-  private _isActive: boolean = true; // Start active by default
+  private _isActive = true; // Start active by default
   private _activeSources: Set<AudioBufferSourceNode> = new Set();
 
   // Master volume control
-  private _masterVolume: number = 0.8;
-  private _isMuted: boolean = false;
+  private _masterVolume = 0.8;
+  private _isMuted = false;
 
   module: WebAudioModule;
 
@@ -190,10 +190,12 @@ export class WamDrummerNode extends BaseNode implements WamNode {
       // WamDrummerNode extends GainNode, so 'this' has a gain property
       (this as unknown as GainNode).gain.setValueAtTime(
         this._masterVolume,
-        this.module.audioContext.currentTime
+        this.module.audioContext.currentTime,
       );
     }
-    logger.debug('🥁 WamDrummer: Master volume set', { volume: this._masterVolume });
+    logger.debug('🥁 WamDrummer: Master volume set', {
+      volume: this._masterVolume,
+    });
   }
 
   /**
@@ -206,7 +208,7 @@ export class WamDrummerNode extends BaseNode implements WamNode {
       const targetGain = muted ? 0 : this._masterVolume;
       (this as unknown as GainNode).gain.setValueAtTime(
         targetGain,
-        this.module.audioContext.currentTime
+        this.module.audioContext.currentTime,
       );
     }
     logger.debug('🥁 WamDrummer: Mute state set', { muted: this._isMuted });
@@ -647,8 +649,8 @@ export class WamDrummerNode extends BaseNode implements WamNode {
 export default class WamDrummer implements Partial<WebAudioModule> {
   readonly isWebAudioModuleConstructor = true;
   readonly descriptor: WamDescriptor = {
-    name: 'BassNotion Drummer',
-    vendor: 'BassNotion',
+    name: 'Bassicology Drummer',
+    vendor: 'Bassicology',
     version: '1.0.0',
     sdkVersion: '2.0.0',
     thumbnail: '',
@@ -799,7 +801,9 @@ export default class WamDrummer implements Partial<WebAudioModule> {
         // Use direct URL to admin-uploaded samples
         url = `${DEFAULT_KIT_BASE}/${sample.file}`;
       } else {
-        logger.info(`♻️ Using cached URL for pad ${sample.pad} (${sample.name})`);
+        logger.info(
+          `♻️ Using cached URL for pad ${sample.pad} (${sample.name})`,
+        );
       }
 
       if (url) {

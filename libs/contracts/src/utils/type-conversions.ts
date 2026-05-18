@@ -47,7 +47,10 @@ export function isDrumType(value: string): value is DrumType {
  * @param fallback - Fallback drum type if value is invalid (default: 'kick')
  * @returns Valid DrumType
  */
-export function toDrumType(value: string, fallback: DrumType = 'kick'): DrumType {
+export function toDrumType(
+  value: string,
+  fallback: DrumType = 'kick',
+): DrumType {
   return isDrumType(value) ? value : fallback;
 }
 
@@ -60,7 +63,7 @@ export function toDrumType(value: string, fallback: DrumType = 'kick'): DrumType
 export function toDrumTypeStrict(value: string): DrumType {
   if (!isDrumType(value)) {
     throw new Error(
-      `Invalid drum type: '${value}'. Valid types are: ${VALID_DRUM_TYPES.join(', ')}`
+      `Invalid drum type: '${value}'. Valid types are: ${VALID_DRUM_TYPES.join(', ')}`,
     );
   }
   return value;
@@ -129,7 +132,10 @@ export function isDrumStyle(value: string): value is DrumStyle {
  * @param fallback - Fallback style if value is invalid (default: 'rock')
  * @returns Valid DrumStyle
  */
-export function toDrumStyle(value: string, fallback: DrumStyle = 'rock'): DrumStyle {
+export function toDrumStyle(
+  value: string,
+  fallback: DrumStyle = 'rock',
+): DrumStyle {
   return isDrumStyle(value) ? value : fallback;
 }
 
@@ -155,7 +161,10 @@ export const STYLE_ALIASES: Record<string, DrumStyle> = {
  * @param fallback - Fallback style if not recognized
  * @returns Valid DrumStyle
  */
-export function resolveStyleAlias(value: string, fallback: DrumStyle = 'rock'): DrumStyle {
+export function resolveStyleAlias(
+  value: string,
+  fallback: DrumStyle = 'rock',
+): DrumStyle {
   const normalized = value.toLowerCase().trim();
 
   // Check direct match first

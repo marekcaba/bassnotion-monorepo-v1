@@ -25,7 +25,7 @@ export interface UseSampleLoadingSyncOptions {
   /** Subscribe function from SyncContext (optional) */
   subscribeToEvent?: (
     eventName: string,
-    callback: (payload: unknown) => void
+    callback: (payload: unknown) => void,
   ) => () => void;
 }
 
@@ -41,7 +41,7 @@ export interface UseSampleLoadingSyncReturn {
  * Hook for listening to sample loading events
  */
 export function useSampleLoadingSync(
-  options: UseSampleLoadingSyncOptions
+  options: UseSampleLoadingSyncOptions,
 ): UseSampleLoadingSyncReturn {
   const { subscribeToEvent } = options;
 
@@ -57,7 +57,7 @@ export function useSampleLoadingSync(
       const customEvent = event as CustomEvent;
       console.log(
         '[HARMONY-WIDGET] Received harmony-samples-loaded event (window):',
-        customEvent.detail
+        customEvent.detail,
       );
       setSamplesLoadedTrigger((prev) => prev + 1);
     };
@@ -65,7 +65,7 @@ export function useSampleLoadingSync(
     // samplesReady from ScrollTriggerLoader (handles initial load after scroll)
     const handleSamplesReady = () => {
       console.log(
-        '[HARMONY-WIDGET] Received samplesReady event from ScrollTriggerLoader'
+        '[HARMONY-WIDGET] Received samplesReady event from ScrollTriggerLoader',
       );
       setSamplesLoadedTrigger((prev) => prev + 1);
     };
@@ -73,7 +73,7 @@ export function useSampleLoadingSync(
     // samplesPreloaded from InitialSamplePreloader (full exercise-specific samples)
     const handleSamplesPreloaded = () => {
       console.log(
-        '[HARMONY-WIDGET] Received samplesPreloaded event - full samples loaded!'
+        '[HARMONY-WIDGET] Received samplesPreloaded event - full samples loaded!',
       );
       setSamplesLoadedTrigger((prev) => prev + 1);
     };
@@ -91,10 +91,10 @@ export function useSampleLoadingSync(
         (payload: unknown) => {
           console.log(
             '[HARMONY-WIDGET] Received harmony-samples-loaded event (sync):',
-            payload
+            payload,
           );
           setSamplesLoadedTrigger((prev) => prev + 1);
-        }
+        },
       );
     }
 

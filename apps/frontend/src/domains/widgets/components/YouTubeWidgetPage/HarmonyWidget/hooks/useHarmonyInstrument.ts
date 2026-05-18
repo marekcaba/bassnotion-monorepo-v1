@@ -59,7 +59,9 @@ export interface UseHarmonyInstrumentReturn {
   /** Currently selected instrument */
   currentInstrument: KeyboardInstrumentType | undefined;
   /** Ref to current instrument (avoids stale closures) */
-  currentInstrumentRef: React.MutableRefObject<KeyboardInstrumentType | undefined>;
+  currentInstrumentRef: React.MutableRefObject<
+    KeyboardInstrumentType | undefined
+  >;
   /** Set the current instrument */
   setCurrentInstrument: React.Dispatch<
     React.SetStateAction<KeyboardInstrumentType | undefined>
@@ -79,7 +81,7 @@ const KeyboardInstrumentValues: KeyboardInstrumentType[] = [
  * Hook for managing harmony instrument state and switching
  */
 export function useHarmonyInstrument(
-  options: UseHarmonyInstrumentOptions
+  options: UseHarmonyInstrumentOptions,
 ): UseHarmonyInstrumentReturn {
   const {
     harmonyInstrumentProp,
@@ -98,12 +100,12 @@ export function useHarmonyInstrument(
 
   // Ref to always have the latest instrument value (avoids stale closure issues)
   const currentInstrumentRef = useRef<KeyboardInstrumentType | undefined>(
-    currentInstrument
+    currentInstrument,
   );
 
   // Track previous instrument for change detection
   const previousInstrumentRef = useRef<KeyboardInstrumentType | undefined>(
-    undefined
+    undefined,
   );
 
   // Keep ref in sync with state
@@ -133,7 +135,7 @@ export function useHarmonyInstrument(
         });
       }
     }),
-    [keyboardPluginRef]
+    [keyboardPluginRef],
   );
 
   /**
@@ -150,7 +152,7 @@ export function useHarmonyInstrument(
           trackIsReady,
           wamPluginLoaded,
           audioServicesReady,
-        }
+        },
       );
     }
 
@@ -159,7 +161,7 @@ export function useHarmonyInstrument(
       if (!currentInstrument) {
         if (isVerboseDebugEnabled()) {
           console.log(
-            '[INSTRUMENT-SWITCH-DEBUG] No currentInstrument, skipping reload'
+            '[INSTRUMENT-SWITCH-DEBUG] No currentInstrument, skipping reload',
           );
         }
         return;
@@ -172,7 +174,7 @@ export function useHarmonyInstrument(
       ) {
         if (isVerboseDebugEnabled()) {
           console.log(
-            '[INSTRUMENT-SWITCH-DEBUG] Initial load detected - instrument already loaded'
+            '[INSTRUMENT-SWITCH-DEBUG] Initial load detected - instrument already loaded',
           );
         }
         previousInstrumentRef.current = currentInstrument;
@@ -183,7 +185,7 @@ export function useHarmonyInstrument(
       if (previousInstrumentRef.current === currentInstrument) {
         if (isVerboseDebugEnabled()) {
           console.log(
-            '[INSTRUMENT-SWITCH-DEBUG] Instrument unchanged, skipping reload'
+            '[INSTRUMENT-SWITCH-DEBUG] Instrument unchanged, skipping reload',
           );
         }
         return;
@@ -197,7 +199,7 @@ export function useHarmonyInstrument(
             {
               from: previousInstrumentRef.current,
               to: currentInstrument,
-            }
+            },
           );
         }
 
@@ -214,14 +216,14 @@ export function useHarmonyInstrument(
             if (isVerboseDebugEnabled()) {
               console.log(
                 '[INSTRUMENT-SWITCH-DEBUG] Calling audioNode.loadInstrument():',
-                currentInstrument
+                currentInstrument,
               );
             }
             await audioNode.loadInstrument(currentInstrument);
             if (isVerboseDebugEnabled()) {
               console.log(
                 '[INSTRUMENT-SWITCH-DEBUG] Successfully loaded instrument:',
-                currentInstrument
+                currentInstrument,
               );
             }
             previousInstrumentRef.current = currentInstrument;
@@ -229,7 +231,7 @@ export function useHarmonyInstrument(
         } catch (error) {
           console.error(
             '[INSTRUMENT-SWITCH-DEBUG] Failed to reload instrument:',
-            error
+            error,
           );
         }
       } else if (
@@ -242,7 +244,7 @@ export function useHarmonyInstrument(
         if (isVerboseDebugEnabled()) {
           console.log(
             '[INSTRUMENT-SWITCH-DEBUG] Creating plugin for new instrument:',
-            currentInstrument
+            currentInstrument,
           );
         }
         createAudioNodeAttempt();
@@ -256,7 +258,7 @@ export function useHarmonyInstrument(
               trackIsReady,
               wamPluginLoaded,
               audioServicesReady,
-            }
+            },
           );
         }
       }

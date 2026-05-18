@@ -32,7 +32,11 @@ function readLocalStorage(tutorialId: string): PracticeCompletions {
     for (const [exId, value] of Object.entries(parsed)) {
       if (typeof value === 'number') {
         result[exId] = { count: value };
-      } else if (typeof value === 'object' && value !== null && 'count' in value) {
+      } else if (
+        typeof value === 'object' &&
+        value !== null &&
+        'count' in value
+      ) {
         result[exId] = value as ExerciseProgress;
       }
     }
@@ -99,7 +103,9 @@ export function useTutorialCompletionStatus(
     // Background: fetch from Supabase and merge
     (async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (!user) return;
 
         const tutorialIds = tutorials.map((t) => t.id);
@@ -137,7 +143,10 @@ export function useTutorialCompletionStatus(
             }
           }
 
-          mergedMap[tutorial.id] = isTutorialComplete(merged, tutorial.exerciseCount);
+          mergedMap[tutorial.id] = isTutorialComplete(
+            merged,
+            tutorial.exerciseCount,
+          );
         }
 
         setCompletionMap(mergedMap);

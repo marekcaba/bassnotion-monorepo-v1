@@ -5,6 +5,8 @@ import { devtools } from 'zustand/middleware';
 import { useShallow } from 'zustand/react/shallow';
 import type { User, Session } from '@supabase/supabase-js';
 
+import { isMockTestEnv, isWebkitBrowser } from '@/shared/utils/testEnv';
+
 interface AuthState {
   user: User | null;
   session: Session | null;
@@ -17,22 +19,11 @@ interface AuthState {
   reset: () => void;
 }
 
-// Detect webkit browsers and E2E testing environment
-const isWebkit =
-  typeof window !== 'undefined' &&
-  (window.navigator.userAgent.includes('WebKit') ||
-    window.navigator.userAgent.includes('Safari'));
-
-const isE2ETesting =
-  typeof window !== 'undefined' &&
-  (window.location.hostname === 'localhost' ||
-    process.env.NODE_ENV === 'test' ||
-    window.__playwright);
-
-// Disable devtools in webkit or E2E testing to prevent crashes
+// Disable devtools in webkit or mock-test env to prevent crashes
 const shouldUseDevtools =
-  // TODO: Review non-null assertion - consider null safety
-  !isWebkit && !isE2ETesting && process.env.NODE_ENV === 'development';
+  !isWebkitBrowser() &&
+  !isMockTestEnv() &&
+  process.env.NODE_ENV === 'development';
 
 export const useAuthStore = create<AuthState>()(
   shouldUseDevtools

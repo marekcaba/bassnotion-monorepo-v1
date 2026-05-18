@@ -116,17 +116,25 @@ export function CountdownIndicator({
           // Build inline style for animations
           let dotStyle: React.CSSProperties = {};
           if (isCurrentBeat) {
-            dotStyle = { animation: 'currentBeatPulse 0.15s ease-out forwards' };
+            dotStyle = {
+              animation: 'currentBeatPulse 0.15s ease-out forwards',
+            };
           } else if (isPastBeat) {
-            dotStyle = { animation: 'pastBeatTransition 0.3s ease-out forwards' };
+            dotStyle = {
+              animation: 'pastBeatTransition 0.3s ease-out forwards',
+            };
           } else if (fadeOutState.active) {
             // Use different animation for the last current beat vs past beats
             if (beatNumber === fadeOutState.lastBeat) {
               // Last beat was current - animate from 100%/1.25x → 60%/1x → 10%/1x
-              dotStyle = { animation: 'fadeOutFromCurrent 0.45s ease-out forwards' };
+              dotStyle = {
+                animation: 'fadeOutFromCurrent 0.45s ease-out forwards',
+              };
             } else {
               // Other beats were past - animate from 60%/1x → 10%/1x
-              dotStyle = { animation: 'fadeOutFromPast 0.3s ease-out forwards' };
+              dotStyle = {
+                animation: 'fadeOutFromPast 0.3s ease-out forwards',
+              };
             }
           }
 

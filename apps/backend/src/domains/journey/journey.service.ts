@@ -29,9 +29,10 @@ export class JourneyService {
   /**
    * Get user's current journey with progress
    */
-  async getUserJourney(
-    userId: string,
-  ): Promise<{ journey: UserJourneyWithDetails | null; progress: JourneyProgress | null }> {
+  async getUserJourney(userId: string): Promise<{
+    journey: UserJourneyWithDetails | null;
+    progress: JourneyProgress | null;
+  }> {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
 
@@ -62,7 +63,11 @@ export class JourneyService {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
 
-    logger.info('Updating journey progress', { userId, updates, correlationId });
+    logger.info('Updating journey progress', {
+      userId,
+      updates,
+      correlationId,
+    });
 
     await this.journeyRepository.updateProgress(userId, updates);
 

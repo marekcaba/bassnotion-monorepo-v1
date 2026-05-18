@@ -80,7 +80,9 @@ export function TextInputQuestion({
           value={textAnswer}
           onChange={(e) => onTextChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={question.textInputConfig?.placeholder || 'Type your answer...'}
+          placeholder={
+            question.textInputConfig?.placeholder || 'Type your answer...'
+          }
           className={cn(
             'w-full px-4 py-2.5 text-sm rounded-lg',
             'bg-white/[0.04] border border-white/10',

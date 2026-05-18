@@ -194,7 +194,7 @@ export function buildPositionMapFromOSMD(
 export function getXForPosition(
   map: NotePositionMap,
   position: TransportPosition,
-  beatsPerMeasure: number = 4,
+  beatsPerMeasure = 4,
 ): number | null {
   if (!map.isValid || map.measures.length === 0) {
     return null;

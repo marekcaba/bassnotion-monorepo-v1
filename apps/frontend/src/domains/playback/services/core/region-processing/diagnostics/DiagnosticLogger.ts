@@ -16,14 +16,16 @@ function getTone(): NonNullable<typeof window.Tone> {
       return tone;
     }
   }
-  throw new Error('DiagnosticLogger: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+  throw new Error(
+    'DiagnosticLogger: Tone.js not loaded. Ensure AudioEngine is initialized first.',
+  );
 }
 
 export class DiagnosticLogger {
   private instanceId: string;
-  private transportStartTime: number = 0;
-  private countdownEnabled: boolean = false;
-  private countdownOffsetBeats: number = 0;
+  private transportStartTime = 0;
+  private countdownEnabled = false;
+  private countdownOffsetBeats = 0;
   private currentCC64Timeline: Map<number, boolean>;
   private parsePosition: (position: string) => number;
   private findCC64DownDuringNote: (

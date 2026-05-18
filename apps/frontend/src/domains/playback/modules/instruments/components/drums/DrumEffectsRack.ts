@@ -15,7 +15,9 @@ function getTone(): typeof import('tone') {
       return tone as typeof import('tone');
     }
   }
-  throw new Error('DrumEffectsRack: Tone.js not loaded. Ensure AudioEngine is initialized first.');
+  throw new Error(
+    'DrumEffectsRack: Tone.js not loaded. Ensure AudioEngine is initialized first.',
+  );
 }
 import { BaseInstrumentEffects } from '../../architecture/IInstrumentEffects.js';
 import type {
@@ -427,7 +429,9 @@ export class DrumEffectsRack extends BaseInstrumentEffects {
   setPunch(attack: number, sustain: number): void {
     // This would require a more sophisticated transient shaper
     // For now, we can approximate with compressor settings
-    const compressor = this.effectNodes.get('compressor') as ToneTypes.Compressor;
+    const compressor = this.effectNodes.get(
+      'compressor',
+    ) as ToneTypes.Compressor;
     if (compressor) {
       compressor.attack.value = Math.max(0.001, 0.01 - attack * 0.009);
       compressor.release.value = Math.max(0.01, 0.1 * sustain);

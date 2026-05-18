@@ -74,14 +74,22 @@ export const CelebrationBlockForm = React.memo(function CelebrationBlockForm({
 
   const handleAnimationChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
-      onChange({ ...config, animationType: (e.target.value || undefined) as AnimationType | undefined });
+      onChange({
+        ...config,
+        animationType: (e.target.value || undefined) as
+          | AnimationType
+          | undefined,
+      });
     },
     [config, onChange],
   );
 
   const handleSoundChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
-      onChange({ ...config, soundEffect: (e.target.value || undefined) as SoundEffect | undefined });
+      onChange({
+        ...config,
+        soundEffect: (e.target.value || undefined) as SoundEffect | undefined,
+      });
     },
     [config, onChange],
   );
@@ -95,7 +103,10 @@ export const CelebrationBlockForm = React.memo(function CelebrationBlockForm({
 
   const handleCtaActionChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
-      onChange({ ...config, ctaAction: (e.target.value || undefined) as CtaAction | undefined });
+      onChange({
+        ...config,
+        ctaAction: (e.target.value || undefined) as CtaAction | undefined,
+      });
     },
     [config, onChange],
   );
@@ -118,7 +129,9 @@ export const CelebrationBlockForm = React.memo(function CelebrationBlockForm({
     <div className="space-y-4">
       {/* Celebration title */}
       <div>
-        <label className="block text-xs text-white/40 mb-1">Celebration Title</label>
+        <label className="block text-xs text-white/40 mb-1">
+          Celebration Title
+        </label>
         <input
           type="text"
           value={config.title}
@@ -159,7 +172,9 @@ export const CelebrationBlockForm = React.memo(function CelebrationBlockForm({
         </div>
 
         <div>
-          <label className="block text-xs text-white/40 mb-1">Sound Effect</label>
+          <label className="block text-xs text-white/40 mb-1">
+            Sound Effect
+          </label>
           <select
             value={config.soundEffect ?? ''}
             onChange={handleSoundChange}
@@ -177,7 +192,9 @@ export const CelebrationBlockForm = React.memo(function CelebrationBlockForm({
 
       {/* CTA configuration */}
       <div>
-        <label className="block text-xs text-white/40 mb-1">CTA Button Text</label>
+        <label className="block text-xs text-white/40 mb-1">
+          CTA Button Text
+        </label>
         <input
           type="text"
           value={config.ctaText ?? ''}
@@ -219,7 +236,9 @@ export const CelebrationBlockForm = React.memo(function CelebrationBlockForm({
 
         {config.ctaAction === 'next-tutorial' && (
           <div>
-            <label className="block text-xs text-white/40 mb-1">Next Tutorial</label>
+            <label className="block text-xs text-white/40 mb-1">
+              Next Tutorial
+            </label>
             <select
               value={config.nextTutorialSlug ?? ''}
               onChange={handleNextTutorialSlugChange}

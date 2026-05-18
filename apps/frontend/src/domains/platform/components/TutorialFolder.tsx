@@ -2,13 +2,7 @@
 
 import { useCallback, useState, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import {
-  CheckCircle2,
-  ChevronDown,
-  Library,
-  Lock,
-  Play,
-} from 'lucide-react';
+import { CheckCircle2, ChevronDown, Library, Lock, Play } from 'lucide-react';
 import { cn } from '@/shared/utils';
 import {
   Collapsible,
@@ -19,7 +13,10 @@ import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router'
 import { ProgressPane, type TutorialProgress } from './ProgressPane';
 
 /** Color mapping for difficulty levels */
-const DIFFICULTY_COLORS: Record<string, { bg: string; text: string; glow: string }> = {
+const DIFFICULTY_COLORS: Record<
+  string,
+  { bg: string; text: string; glow: string }
+> = {
   beginner: {
     bg: 'bg-emerald-500/15',
     text: 'text-emerald-400',
@@ -97,7 +94,8 @@ export function TutorialFolder({
         const toY = toRect.top - containerRect.top;
 
         // Get horizontal center of the panes
-        const fromCenterX = fromRect.left - containerRect.left + fromRect.width / 2;
+        const fromCenterX =
+          fromRect.left - containerRect.left + fromRect.width / 2;
 
         const connectorEl = connector as HTMLElement;
         connectorEl.style.top = `${fromY}px`;
@@ -114,13 +112,16 @@ export function TutorialFolder({
     [navigateWithTransition],
   );
 
-  const handleToggle = useCallback((open: boolean) => {
-    if (isControlled) {
-      onOpenChange?.(open);
-    } else {
-      setUncontrolledIsOpen(open);
-    }
-  }, [isControlled, onOpenChange]);
+  const handleToggle = useCallback(
+    (open: boolean) => {
+      if (isControlled) {
+        onOpenChange?.(open);
+      } else {
+        setUncontrolledIsOpen(open);
+      }
+    },
+    [isControlled, onOpenChange],
+  );
 
   // Calculate completion progress
   const completedCount = tutorials.filter((t) => t.isComplete).length;
@@ -184,9 +185,14 @@ export function TutorialFolder({
                           ? 'bg-emerald-500/50' // Solid for fully complete
                           : 'bg-zinc-700 bg-[length:4px_8px] bg-repeat-y',
                       )}
-                      style={!isFullyComplete ? {
-                        backgroundImage: 'linear-gradient(to bottom, rgb(63 63 70) 50%, transparent 50%)',
-                      } : undefined}
+                      style={
+                        !isFullyComplete
+                          ? {
+                              backgroundImage:
+                                'linear-gradient(to bottom, rgb(63 63 70) 50%, transparent 50%)',
+                            }
+                          : undefined
+                      }
                       data-from={index}
                       data-to={index + 1}
                       data-completed={tutorial.isComplete}
@@ -198,9 +204,11 @@ export function TutorialFolder({
               {/* Tutorial cards with progress panes */}
               <div className="space-y-2">
                 {tutorials.map((tutorial) => {
-                  const isActive = pathname === `/app/tutorials/${tutorial.slug}`;
+                  const isActive =
+                    pathname === `/app/tutorials/${tutorial.slug}`;
                   const isCompleted = tutorial.isComplete;
-                  const difficultyColors = DIFFICULTY_COLORS[tutorial.difficulty?.toLowerCase() ?? ''];
+                  const difficultyColors =
+                    DIFFICULTY_COLORS[tutorial.difficulty?.toLowerCase() ?? ''];
                   const displayTitle = tutorial.sidebarTitle || tutorial.title;
 
                   // Use actual three-stage progress if available, fallback to legacy
@@ -214,7 +222,10 @@ export function TutorialFolder({
                   const isActiveAndCompleted = isActive && isCompleted;
 
                   return (
-                    <div key={tutorial.slug} className="flex gap-2 tutorial-card-row">
+                    <div
+                      key={tutorial.slug}
+                      className="flex gap-2 tutorial-card-row"
+                    >
                       {/* Journey path column - the progress pane */}
                       <div className="relative flex items-center justify-center shrink-0">
                         <div className="journey-pane">

@@ -10,13 +10,15 @@ import { authService } from '../api/auth';
 export function UserIndicator() {
   const { isAuthenticated, user, isInitialized } = useAuth();
   const reset = useAuthStore((state) => state.reset);
-  const { profile, isLoading, cachedRole, cachedDisplayName, isHydrated } = useUserProfile();
+  const { profile, isLoading, cachedRole, cachedDisplayName, isHydrated } =
+    useUserProfile();
   const { navigateWithTransition } = useViewTransitionRouter();
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   // We need BOTH cached role AND a display name source to show immediately
   // Otherwise we'd show "User" placeholder which looks bad
-  const hasDisplayNameSource = cachedDisplayName || profile?.displayName || user?.email;
+  const hasDisplayNameSource =
+    cachedDisplayName || profile?.displayName || user?.email;
   const canShowImmediately = !!cachedRole && !!hasDisplayNameSource;
 
   const handleClick = () => {
@@ -32,16 +34,23 @@ export function UserIndicator() {
       e.stopPropagation(); // Prevent triggering the parent click handler
       try {
         setIsSigningOut(true);
+        // Navigate to /login FIRST, before clearing auth state. This unmounts
+        // AuthGuard before isAuthenticated flips false, so it never fires its
+        // own competing redirect or flashes its fallback. /login also matches
+        // AuthGuard's safety-net redirect target, so the two can't disagree.
+        // Then clear the session — AuthProvider's onAuthStateChange listener
+        // also calls reset() on the SIGNED_OUT event, but by then we're
+        // already on a public route.
+        await navigateWithTransition('/login');
         await authService.signOut();
         reset();
-        navigateWithTransition('/');
       } catch (error) {
         console.error('Sign out error:', error);
       } finally {
         setIsSigningOut(false);
       }
     },
-    [reset, navigateWithTransition]
+    [reset, navigateWithTransition],
   );
 
   // IMPORTANT: Before hydration OR while auth is still initializing, show placeholder
@@ -133,7 +142,8 @@ export function UserIndicator() {
 
   // Fresh profile data loaded
   const isAdmin = profile?.role === 'admin';
-  const displayName = profile?.displayName || user.email?.split('@')[0] || 'User';
+  const displayName =
+    profile?.displayName || user.email?.split('@')[0] || 'User';
 
   return (
     <div className="flex items-center gap-2">
