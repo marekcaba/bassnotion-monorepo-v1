@@ -2,13 +2,15 @@
 
 import { useEffect, useRef } from 'react';
 import { getSamplePreloader } from '../services/InitialSamplePreloader.bridge';
-import { CoreServices } from '../services/core/CoreServices.js';
 import { getLogger } from '@/utils/logger.js';
 import type { Exercise } from '@bassnotion/contracts';
 import { WindowRegistry } from '../services/WindowRegistry.js';
 import { lifecycle } from '../utils/InitializationLifecycleLogger.js';
 
-const logger = getLogger('scroll-trigger-loader');
+// Use the 'info' category (which is enabled by default in dev) so these
+// logs actually appear. Custom category names like 'scroll-trigger-loader'
+// get filtered out by the dev logger's enabledCategories allow-list.
+const logger = getLogger('info');
 
 export interface ScrollTriggerLoaderProps {
   exercises?: Exercise[];
@@ -61,36 +63,36 @@ export function ScrollTriggerLoader({
       lifecycle.checkpoint('USER_INTERACTION_DETECTED');
 
       try {
-        // STEP 1: Ensure CoreServices exists (preInitialize only, no AudioContext)
-        logger.info('[1/3] Ensuring CoreServices is pre-initialized...');
-        // ✅ BUG #8 FIX: Get CoreServices using WindowRegistry
+        // STEP 1: CoreServices is OWNED by AudioProvider (singleton mounted at
+        // app root). We just wait for it. Previously this code created a
+        // duplicate instance if WindowRegistry was empty — racing AudioProvider
+        // and producing two CoreServices each with their own samplesReady
+        // listener, which decoded the same ArrayBuffer in parallel and
+        // detached it mid-flight (resulting in silent drums/metronome).
+        //
+        // If you see "CoreServices not yet ready" warnings here in dev, it
+        // means AudioProvider is mounted too late in the tree or this
+        // component is mounted outside its scope.
+        logger.info('[1/3] Waiting for CoreServices (owned by AudioProvider)…');
         let coreServices = WindowRegistry.getCoreServices();
-
         if (!coreServices) {
-          logger.info('CoreServices not found, creating new instance...');
-          lifecycle.checkpoint('CORESERVICES_CREATING');
-          coreServices = new CoreServices({
-            enableHighPrecisionTiming: true,
-            enablePerformanceMonitoring: true,
-            autoLoadPlugins: true,
-            audioLatencyHint: 'interactive',
-            sampleRate: 48000,
-          });
-
-          // Pre-initialize (loads Tone.js, NO AudioContext)
-          lifecycle.checkpoint('CORESERVICES_PREINIT_START');
-          await coreServices.preInitialize();
-          lifecycle.checkpoint('CORESERVICES_PREINIT_COMPLETE');
-
-          // ✅ BUG #8 FIX: Store globally using WindowRegistry
-          WindowRegistry.setCoreServices(coreServices);
-          WindowRegistry.setServiceRegistry(coreServices.getServiceRegistry());
-          lifecycle.checkpoint('CORESERVICES_CREATED');
-          logger.info('✅ CoreServices pre-initialized and stored globally');
-        } else {
-          logger.info('✅ CoreServices already exists');
-          lifecycle.checkpoint('CORESERVICES_CREATED', { reused: true });
+          // Brief wait — AudioProvider's mount effect should populate this
+          // within a tick or two of our own mount.
+          const startedAt = Date.now();
+          while (!coreServices && Date.now() - startedAt < 2000) {
+            await new Promise((r) => setTimeout(r, 50));
+            coreServices = WindowRegistry.getCoreServices();
+          }
         }
+        if (!coreServices) {
+          logger.warn(
+            'CoreServices still not ready after 2s — sample preload will retry on user gesture',
+          );
+          lifecycle.checkpoint('CORESERVICES_CREATED', { reused: false });
+          return;
+        }
+        logger.info('✅ CoreServices available (from AudioProvider)');
+        lifecycle.checkpoint('CORESERVICES_CREATED', { reused: true });
 
         // STEP 2: Load samples (essential or tutorial-level)
         const preloader = getSamplePreloader();
@@ -119,18 +121,15 @@ export function ScrollTriggerLoader({
           logger.info('✅ Essential samples loaded');
         }
 
-        // STEP 3: Mark samples as ready
-        logger.info('[3/3] Emitting samples-ready event...');
-        // ✅ BUG #8 FIX: Use WindowRegistry for initialization flags
+        // STEP 3: Mark samples as ready (flags only).
+        // The `samplesReady` event is dispatched by useActAwarePreload (the
+        // single dispatcher). ScrollTriggerLoader only sets the registry
+        // flags so that consumers polling WindowRegistry.getSamplesReady()
+        // see the ready state.
+        logger.info('[3/3] Sample load complete — flags set');
         WindowRegistry.setSamplesReady(true);
         WindowRegistry.setEssentialSamplesLoaded(true);
-
-        if (typeof window !== 'undefined') {
-          // Emit both events
-          window.dispatchEvent(new Event('samplesReady'));
-          window.dispatchEvent(new Event('essentialSamplesLoaded')); // Backward compatibility
-          lifecycle.checkpoint('SAMPLES_READY_EVENT');
-        }
+        lifecycle.checkpoint('SAMPLES_READY_EVENT');
 
         // NOTE: AudioContext initialization is NOT done here.
         // Browser policy requires a "trusted" user gesture (click/touch) for AudioContext.

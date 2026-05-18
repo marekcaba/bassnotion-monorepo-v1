@@ -277,10 +277,14 @@ export class ServiceRegistry implements Service {
         continue;
       }
 
-      // Ensure service is initialized first
+      // Ensure service is initialized first. Also allow 'failed' so a user
+      // can retry after a transient start failure (e.g. pre-gesture audio
+      // init race) without having to reload the page — the underlying
+      // service is still constructed, just wasn't successfully started.
       if (
         serviceInstance.status !== 'initialized' &&
-        serviceInstance.status !== 'stopped'
+        serviceInstance.status !== 'stopped' &&
+        serviceInstance.status !== 'failed'
       ) {
         throw new ServiceError(
           `Cannot start service ${serviceName}: not initialized (status: ${serviceInstance.status})`,

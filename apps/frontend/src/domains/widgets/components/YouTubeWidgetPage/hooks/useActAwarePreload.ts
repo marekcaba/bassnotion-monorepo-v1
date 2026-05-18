@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { verboseLog } from '@/config/debug';
 import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
 import { getSamplePreloader } from '@/domains/playback/services/InitialSamplePreloader.js';
-import { CoreServices } from '@/domains/playback/services/core/CoreServices.js';
+// CoreServices import removed — this hook no longer creates instances.
+// AudioProvider is the sole owner; see comment in loadSamples().
 import { getLogger } from '@/utils/logger.js';
 import type { ActName } from './useCurrentAct.js';
 
@@ -55,7 +57,7 @@ export function useActAwarePreload({
   useEffect(() => {
     const samplesCurrentlyReady =
       typeof window !== 'undefined' ? window.__samplesReady : false;
-    console.log('🔍 [DEBUG] Tutorial/mount check', {
+    verboseLog('🔍 [DEBUG] Tutorial/mount check', {
       prev: prevTutorialIdRef.current,
       current: tutorialId,
       changed: prevTutorialIdRef.current !== tutorialId,
@@ -65,7 +67,7 @@ export function useActAwarePreload({
 
     // Reset if tutorial changed OR if samples aren't ready yet
     if (prevTutorialIdRef.current !== tutorialId || !samplesCurrentlyReady) {
-      console.log('🔍 [DEBUG] Resetting hasStartedRef and loadingState', {
+      verboseLog('🔍 [DEBUG] Resetting hasStartedRef and loadingState', {
         reason:
           prevTutorialIdRef.current !== tutorialId
             ? 'tutorial-change'
@@ -96,13 +98,13 @@ export function useActAwarePreload({
 
   // Core loading function
   const loadSamples = useCallback(async () => {
-    console.log('🔍 [DEBUG] loadSamples called', { loadingState });
+    verboseLog('🔍 [DEBUG] loadSamples called', { loadingState });
     if (loadingState === 'loading' || loadingState === 'ready') {
-      console.log('🔍 [DEBUG] Skipping loadSamples - already loading or ready');
+      verboseLog('🔍 [DEBUG] Skipping loadSamples - already loading or ready');
       return;
     }
 
-    console.log('🔍 [DEBUG] Setting loadingState to "loading"');
+    verboseLog('🔍 [DEBUG] Setting loadingState to "loading"');
     setLoadingState('loading');
     logger.info('Starting Act 2 sample preload', {
       exerciseCount: exercisesRef.current?.length,
@@ -110,22 +112,25 @@ export function useActAwarePreload({
     });
 
     try {
-      // Step 1: Ensure CoreServices exists (preInitialize only, no AudioContext)
+      // Step 1: CoreServices is OWNED by AudioProvider — just wait for it.
+      // Previously this hook created a duplicate CoreServices, racing
+      // AudioProvider AND ScrollTriggerLoader; each instance had its own
+      // samplesReady listener, and three concurrent decodes of the same
+      // shared ArrayBuffer detached it mid-flight (silent drums/metronome).
       let coreServices = WindowRegistry.getCoreServices();
-
       if (!coreServices) {
-        logger.info('CoreServices not found, creating new instance...');
-        coreServices = new CoreServices({
-          enableHighPrecisionTiming: true,
-          enablePerformanceMonitoring: true,
-          autoLoadPlugins: true,
-          audioLatencyHint: 'interactive',
-          sampleRate: 48000,
-        });
-        await coreServices.preInitialize();
-        WindowRegistry.setCoreServices(coreServices);
-        WindowRegistry.setServiceRegistry(coreServices.getServiceRegistry());
-        logger.info('CoreServices pre-initialized and stored globally');
+        const startedAt = Date.now();
+        while (!coreServices && Date.now() - startedAt < 2000) {
+          await new Promise((r) => setTimeout(r, 50));
+          coreServices = WindowRegistry.getCoreServices();
+        }
+      }
+      if (!coreServices) {
+        logger.warn(
+          'CoreServices still not ready after 2s — Act 2 preload aborted, will retry on user gesture',
+        );
+        setLoadingState('idle');
+        return;
       }
 
       // Step 2: Load samples with progress tracking
@@ -142,18 +147,17 @@ export function useActAwarePreload({
         handleProgress(100);
       }
 
-      console.log('🔍 [DEBUG] Samples loaded successfully, setting flags');
+      verboseLog('🔍 [DEBUG] Samples loaded successfully, setting flags');
       setLoadingState('ready');
       WindowRegistry.setSamplesReady(true);
       WindowRegistry.setAct2SamplesReady(true);
       WindowRegistry.setEssentialSamplesLoaded(true);
 
-      // Dispatch events for backward compatibility
+      // SINGLE DISPATCHER: useActAwarePreload (mounted inside YouTubeWidgetPage)
+      // is the one place that dispatches `samplesReady`. The singleflight
+      // guard in CoreServices.reinjectAllBuffers prevents parallel decodes
+      // even if this fires twice during Strict Mode mount-unmount-mount.
       if (typeof window !== 'undefined') {
-        console.log(
-          '🔍 [DEBUG] Dispatching samplesReady event, window.__samplesReady =',
-          window.__samplesReady,
-        );
         window.dispatchEvent(new Event('samplesReady'));
         window.dispatchEvent(new Event('essentialSamplesLoaded'));
       }
@@ -171,7 +175,7 @@ export function useActAwarePreload({
   // ✅ FIX: Load samples on ANY act, not just 'understand'
   // This fixes the timeout issue when progress-based navigation lands on Act 2 or Act 3
   useEffect(() => {
-    console.log('🔍 [DEBUG] useActAwarePreload effect running', {
+    verboseLog('🔍 [DEBUG] useActAwarePreload effect running', {
       exercisesLength: exercises?.length,
       hasStarted: hasStartedRef.current,
       loadingState,
@@ -189,7 +193,7 @@ export function useActAwarePreload({
       hasStartedRef.current ||
       loadingState !== 'idle'
     ) {
-      console.log('🔍 [DEBUG] Skipping preload:', {
+      verboseLog('🔍 [DEBUG] Skipping preload:', {
         noExercises: !exercises?.length,
         alreadyStarted: hasStartedRef.current,
         notIdle: loadingState !== 'idle',
@@ -199,12 +203,12 @@ export function useActAwarePreload({
 
     hasStartedRef.current = true;
 
-    console.log('🔍 [DEBUG] Starting sample preload', { currentAct });
+    verboseLog('🔍 [DEBUG] Starting sample preload', { currentAct });
     logger.info('Scheduling sample preload', { currentAct });
 
     // ✅ FIX: Call loadSamples directly - requestIdleCallback was being canceled by re-renders
     // We want samples to load immediately, not on idle
-    console.log(
+    verboseLog(
       '🔍 [DEBUG] Calling loadSamples() directly (no requestIdleCallback)',
     );
     loadSamples();

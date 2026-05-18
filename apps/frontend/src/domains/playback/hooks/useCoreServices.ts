@@ -184,23 +184,32 @@ export function useCoreServices(
       setLoading(true);
       setError(null);
 
-      // Check if services already exist globally
+      // Check if services already exist globally.
+      // CoreServices is OWNED by AudioProvider — this hook only consumes.
+      // Previously, if services were absent, this hook created a duplicate
+      // CoreServices, which:
+      //  - raced AudioProvider's mount,
+      //  - registered a second samplesReady listener,
+      //  - and caused parallel ArrayBuffer decodes that detached the
+      //    shared raw buffers (silent drums/metronome).
+      //
+      // Now we wait briefly for AudioProvider to populate the singleton
+      // and fail loudly if it never arrives — that signals a missing
+      // <AudioProvider> in the tree above the consumer.
       let services = window.__globalCoreServices as CoreServices | undefined;
-
       if (!services) {
-        logger.info('Creating new CoreServices instance...');
-        services = new CoreServices({
-          enableHighPrecisionTiming: true,
-          enablePerformanceMonitoring,
-          autoLoadPlugins: true,
-          audioLatencyHint: mobileOptimized ? 'balanced' : 'interactive',
-        });
-
-        // Pre-initialize first (loads Tone.js)
-        await services.preInitialize();
-
-        // Store globally
-        window.__globalCoreServices = services;
+        const startedAt = Date.now();
+        while (!services && Date.now() - startedAt < 2000) {
+          await new Promise((r) => setTimeout(r, 50));
+          services = window.__globalCoreServices as CoreServices | undefined;
+        }
+      }
+      if (!services) {
+        const error = new Error(
+          'useCoreServices: CoreServices not available after 2s. Ensure <AudioProvider> is mounted above this consumer.',
+        );
+        logger.error(error.message);
+        throw error;
       }
 
       coreServicesRef.current = services;
