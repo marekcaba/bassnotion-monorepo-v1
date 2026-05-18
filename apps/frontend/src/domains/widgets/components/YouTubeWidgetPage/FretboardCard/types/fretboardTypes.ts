@@ -217,17 +217,6 @@ export interface PlaybackPosition {
   currentNoteIndex: number;
 }
 
-export interface AudioFretboardIntegration {
-  createNoteEvent: (stringIndex: number, fret: Fret) => any;
-  triggerNote: (stringIndex: number, fret: Fret) => void;
-  playbackIntegration: any;
-  isAudioEnabled: boolean;
-  audioError: string | null;
-  stringConfigs: Record<StringCount, string[]>;
-  playbackPosition: PlaybackPosition;
-  isCurrentNote: IsCurrentNoteFunction;
-}
-
 // Bassline Data Types
 export interface BasslineData {
   stringIndex: number;

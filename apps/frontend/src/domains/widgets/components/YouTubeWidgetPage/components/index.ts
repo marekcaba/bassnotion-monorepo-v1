@@ -4,7 +4,6 @@ export { DrummerWidget } from '../DrummerWidget/index.js';
 export { BassLineWidget } from '../BassLineWidget/index.js';
 export { HarmonyWidget } from '../HarmonyWidget/index.js';
 export { FourWidgetsCard } from './FourWidgetsCard';
-export { PlaybackControls } from './PlaybackControls';
 export { VolumeKnob } from './VolumeKnob';
 export { TempoKnob } from './TempoKnob';
 // GlobalControls refactored to use new DAW system

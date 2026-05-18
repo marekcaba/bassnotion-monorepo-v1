@@ -5,9 +5,9 @@
  * either with MCP server or direct Supabase connection.
  */
 
-import {
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { createStructuredLogger } from '@bassnotion/contracts';
+import {
   getExercises,
   getExerciseWithNotes,
   getExercisesByDifficulty,

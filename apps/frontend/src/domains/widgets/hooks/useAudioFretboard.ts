@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useMemo, useState, useEffect } from 'react';
-import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import {
   NoteDuration,
   MusicalPosition,
@@ -11,9 +10,6 @@ import {
   type DatabaseExercise,
   type ExerciseNote,
 } from '@bassnotion/contracts';
-// TODO: Re-enable when playback domain build issues are resolved
-// import { usePlaybackIntegration } from './usePlaybackIntegration';
-// import type { UsePlaybackIntegrationReturn, NoteEvent } from './usePlaybackIntegration';
 
 /**
  * Audio Fretboard Hook - Unified Audio Logic for Bass Fretboard Components
@@ -87,7 +83,6 @@ export interface PlaybackPosition {
  */
 export interface UseAudioFretboardConfig {
   stringCount: 4 | 5 | 6;
-  autoPlayOnClick?: boolean;
   defaultDuration?: number; // Legacy - milliseconds
   defaultVelocity?: number;
   defaultNoteDuration?: NoteDuration; // New - musical duration
@@ -96,37 +91,13 @@ export interface UseAudioFretboardConfig {
 }
 
 /**
- * Playback integration shape for audio fretboard
- * Narrowly typed for the specific properties accessed
- */
-interface PlaybackIntegrationShape {
-  engine?: {
-    processNoteEvent?: (event: BassNoteEvent) => void;
-  };
-  state?: {
-    isInitialized?: boolean;
-    error?: Error | null;
-  };
-}
-
-/**
  * Hook return interface
+ *
+ * Note: click-to-play (triggerNote/createNoteEvent) was removed when the legacy
+ * playback integration layer was retired. Live exercise playback uses the WAM
+ * bass track directly via the transport pipeline.
  */
 export interface UseAudioFretboardReturn {
-  // Core audio functions
-  createNoteEvent: (
-    stringIndex: number,
-    fret: number | 'open',
-  ) => BassNoteEvent | null;
-  triggerNote: (stringIndex: number, fret: number | 'open') => void;
-
-  // Playback integration (temporarily null due to build issues)
-  playbackIntegration: PlaybackIntegrationShape | null;
-
-  // Audio state
-  isAudioEnabled: boolean;
-  audioError: Error | null;
-
   // Playback position tracking
   playbackPosition: PlaybackPosition;
   isCurrentNote: (stringIndex: number, fret: number | 'open') => boolean;
@@ -354,10 +325,9 @@ export function useAudioFretboard(
 ): UseAudioFretboardReturn {
   const {
     stringCount,
-    autoPlayOnClick = true,
     defaultDuration = 500,
     defaultVelocity = 100,
-    defaultNoteDuration = 'quarter',
+    defaultNoteDuration: _defaultNoteDuration = 'quarter',
     exercise,
     syncProps,
   } = config;
@@ -378,19 +348,6 @@ export function useAudioFretboard(
     musicalPosition: undefined,
     isMusicalTiming: false, // Will be updated by useEffect
   });
-
-  // TODO: Re-enable when playback domain build issues are resolved
-  // Playback integration for actual audio triggering
-  // const playbackIntegration = usePlaybackIntegration({
-  //   exercise,
-  //   onNoteEvent: useCallback((note) => {
-  //     logger.info('🎵 Note event from engine:', note);
-  //   }, []),
-  //   onBeatEvent: useCallback((beat) => {
-  //     logger.info('🥁 Beat event from engine:', beat);
-  //   }, []),
-  // });
-  const playbackIntegration = null; // Temporary placeholder
 
   // Memoized configurations to prevent unnecessary re-renders
   const stringConfigs = useMemo(() => BASS_STRING_CONFIGS, []);
@@ -541,107 +498,6 @@ export function useAudioFretboard(
   ]);
 
   /**
-   * Creates a note event from fretboard position
-   *
-   * @param stringIndex - Zero-based string index (0 = lowest string)
-   * @param fret - Fret number or 'open' for open string
-   * @returns Note event object or null if invalid position
-   */
-  const createNoteEvent = useCallback(
-    (stringIndex: number, fret: number | 'open'): BassNoteEvent | null => {
-      const fretNum = fret === 'open' ? 0 : fret;
-      const notes = noteMapping[stringCount];
-      const octaves = octaveMapping[stringCount];
-
-      // Validate inputs
-      if (!notes[fretNum as keyof typeof notes] || !octaves[stringIndex]) {
-        logger.warn(
-          `⚠️ Invalid fretboard position: string ${stringIndex}, fret ${fret}`,
-        );
-        return null;
-      }
-
-      // Calculate note and octave
-      const noteName = notes[fretNum as keyof typeof notes][stringIndex] || 'A';
-      const baseOctave = octaves[stringIndex];
-      const octaveOffset = Math.floor(fretNum / 12);
-      const finalOctave = baseOctave + octaveOffset;
-
-      // Create note event with both timing systems
-      const noteEvent: BassNoteEvent = {
-        id: `note-${Date.now()}-${stringIndex}-${fretNum}`,
-        string: stringIndex,
-        fret: fretNum,
-        note: noteName,
-        octave: finalOctave,
-        velocity: defaultVelocity,
-
-        // New musical timing system
-        duration: defaultNoteDuration,
-        // Position will be calculated in real-time based on playback context
-
-        // Legacy timing for backwards compatibility
-        timestamp: Date.now(),
-        duration_ms: defaultDuration,
-      };
-
-      return noteEvent;
-    },
-    [
-      stringCount,
-      noteMapping,
-      octaveMapping,
-      defaultDuration,
-      defaultVelocity,
-      defaultNoteDuration,
-    ],
-  );
-
-  /**
-   * Triggers audio playback for a fretboard position
-   *
-   * @param stringIndex - Zero-based string index
-   * @param fret - Fret number or 'open' for open string
-   */
-  const triggerNote = useCallback(
-    (stringIndex: number, fret: number | 'open'): void => {
-      if (!autoPlayOnClick) return;
-
-      const noteEvent = createNoteEvent(stringIndex, fret);
-      if (!noteEvent) return;
-
-      // TODO: Re-enable when playback domain build issues are resolved
-      // Attempt to trigger actual audio if playback integration is available
-      if (playbackIntegration?.engine) {
-        try {
-          // Trigger note
-          // Note triggered: { note, octave, string, fret }
-
-          // Trigger audio with BassInstrumentProcessor
-          playbackIntegration.engine.processNoteEvent?.(noteEvent);
-        } catch (error) {
-          logger.warn('⚠️ Audio trigger failed:', error);
-        }
-      } else {
-        // Fallback: Note would be triggered
-        // Note would be triggered: { note, octave, string, fret, mode: 'fallback' }
-      }
-    },
-    [autoPlayOnClick, createNoteEvent, playbackIntegration],
-  );
-
-  // Audio state management
-  const isAudioEnabled = useMemo(() => {
-    return (
-      autoPlayOnClick && playbackIntegration?.state?.isInitialized === true
-    );
-  }, [autoPlayOnClick, playbackIntegration]);
-
-  const audioError = useMemo(() => {
-    return playbackIntegration?.state?.error || null;
-  }, [playbackIntegration]);
-
-  /**
    * Checks if a specific fretboard position is the currently playing note
    *
    * @param stringIndex - Zero-based string index
@@ -666,17 +522,6 @@ export function useAudioFretboard(
   );
 
   return {
-    // Core audio functions
-    createNoteEvent,
-    triggerNote,
-
-    // Playback integration
-    playbackIntegration,
-
-    // Audio state
-    isAudioEnabled,
-    audioError,
-
     // Playback position tracking
     playbackPosition,
     isCurrentNote,

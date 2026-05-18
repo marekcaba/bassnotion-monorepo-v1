@@ -1,6 +1,6 @@
 import { UserBasslinesAPI } from '../api/user-basslines';
-import type {
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import type {
   ExerciseNote,
   BasslineMetadata,
   AutoSaveConfig,

@@ -13,12 +13,10 @@ import { SheetPlayerCard } from './components/SheetPlayerCard';
 import type { CountdownState } from './GlobalControls/types.js';
 import { TransportClock } from './components/TransportClock';
 import { useWidgetPageState } from '@/domains/widgets/hooks/useWidgetPageState';
-import { useAudioFretboard } from '@/domains/widgets/hooks/useAudioFretboard';
 import {
   TransportProvider,
   useTransportControls,
 } from '@/domains/playback/contexts/TransportContext';
-// REMOVED: useExerciseSelection import - not needed for tutorial pages
 import { Button } from '@/shared/components/ui/button';
 import { Edit2, ArrowLeft, Sparkles } from 'lucide-react';
 import { SyncProvider, useSyncContext } from '../base/SyncProvider';
@@ -512,13 +510,6 @@ function YouTubeWidgetPageContent({
   const prevTempoRef = useRef<number>(120);
   const prevVolumeRef = useRef<number>(80);
 
-  // Audio fretboard integration for 3D mode
-  const { triggerNote } = useAudioFretboard({
-    stringCount,
-    autoPlayOnClick: true,
-    exercise: widgetState.selectedExercise,
-  });
-
   // FIX: Store exercises in a ref to prevent callback recreation on data changes
   const exercisesRef = useRef(exercises);
   exercisesRef.current = exercises;
@@ -878,9 +869,6 @@ function YouTubeWidgetPageContent({
 
   const handleDotClick = useCallback(
     (stringIndex: number, fret: number | 'open') => {
-      // Trigger audio using the shared hook (for 3D mode)
-      triggerNote(stringIndex, fret);
-
       const key = `${stringIndex}-${fret}`;
       setSelectedDots((prev) => {
         const newMap = new Map(prev);
@@ -892,7 +880,7 @@ function YouTubeWidgetPageContent({
         return newMap;
       });
     },
-    [triggerNote],
+    [],
   );
 
   const handleResetSelection = useCallback(() => {

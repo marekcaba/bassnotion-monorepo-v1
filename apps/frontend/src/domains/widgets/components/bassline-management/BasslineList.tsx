@@ -18,8 +18,8 @@ import {
 } from '@/shared/components/ui/dropdown-menu';
 import { useToast } from '@/shared/hooks/use-toast';
 import { UserBasslinesAPI } from '../../api/user-basslines';
-import type {
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import type {
   SavedBassline,
   BasslineListFilters,
   ExerciseDifficulty,

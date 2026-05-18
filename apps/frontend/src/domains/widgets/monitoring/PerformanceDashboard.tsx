@@ -4,8 +4,8 @@
  */
 
 import React, { useEffect, useState, useRef } from 'react';
-import {
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import {
   MetricsCollector,
   CentralPerformanceMetrics,
   MetricsAlert,

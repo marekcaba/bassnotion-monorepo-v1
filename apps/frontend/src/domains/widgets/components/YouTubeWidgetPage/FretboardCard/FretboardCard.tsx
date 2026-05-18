@@ -95,7 +95,6 @@ export const FRETBOARD_VIEW_PRESETS = {
     },
   },
 };
-// Removed useExerciseSelection - parent manages exercise selection now
 import { SyncedWidget } from '../../base';
 import type { SyncedWidgetRenderProps } from '../../base';
 import type {
@@ -108,8 +107,6 @@ import { useExerciseLoader } from './hooks/useExerciseLoader';
 import { useDotSynchronization } from './hooks/useDotSynchronization';
 import { useDotSelectionHandlers } from './hooks/useDotSelectionHandlers';
 import { useStringCountHandlers } from './hooks/useStringCountHandlers';
-// import { useWidgetAudioRegistration } from '@/domains/widgets/hooks/useWidgetAudioRegistration'; // TODO: Fix - depends on deleted useWidgetSync
-import { FretboardHeader } from './components/FretboardHeader';
 import { ExerciseProgressBar } from './components/ExerciseProgressBar';
 import { FretboardControls } from './components/FretboardControls';
 import { FretboardModeControls } from './components/FretboardModeControls';
@@ -928,40 +925,6 @@ const FretboardCardContent = React.memo(
     );
     const manualSelectionTracking = useManualSelectionTracking();
 
-    // TODO: Fix audio registration - depends on deleted useWidgetSync
-    // const audioRegistrationConfig = React.useMemo(
-    //   () => ({
-    //     widgetId: 'interactive-fretboard',
-    //     widgetType: 'fretboard' as const,
-    //     displayName: 'Interactive Fretboard Visualization',
-    //     audioConfig: {
-    //       id: 'interactive-fretboard',
-    //       type: 'bass' as const,
-    //       volume: 0.8, // Fretboard is primarily visual, lower volume
-    //       pan: 0, // Center panning
-    //       muted: false,
-    //       solo: false,
-    //     },
-    //     requiresPreciseSync: true, // Fretboard needs precise sync for visual timing
-    //     latencyTolerance: 16, // 16ms for 60fps smooth animations
-    //     tempoSensitive: true,
-    //     volumeSensitive: false, // Fretboard volume is not critical
-    //     priority: 3, // Medium priority - visual feedback
-    //     canBeSoloed: false, // Fretboard doesn't produce audio directly
-    //     canBeMuted: false, // Always show fretboard
-    //     autoRegister: false, // Disable auto-register to prevent re-registration loops
-    //   }),
-    //   [],
-    // );
-
-    // Audio registration for global playback synchronization (Story 3.14)
-    // const { state: audioState, controls: audioControls } =
-    //   useWidgetAudioRegistration(audioRegistrationConfig);
-
-    // Temporary placeholders
-    const audioState = { isRegistered: false, hasError: false };
-    const audioControls = { register: () => {}, unregister: () => {} };
-
     // =============================================================================
     // EXERCISE TRANSITION - FAANG Atomic Snapshot Pattern (Double Buffer)
     // =============================================================================
@@ -1142,7 +1105,6 @@ const FretboardCardContent = React.memo(
         exerciseLoader.markReset();
       },
       markManualSelection: manualSelectionTracking.markManualSelection,
-      triggerNote: fretboard.exercise.triggerNote,
       emitBasslineEvent: fretboard.exercise.emitBasslineEvent,
       clearExerciseTracking: exerciseLoader.clearExerciseTracking,
       handleDragEnd: fretboard.handleDragEnd,
@@ -1687,13 +1649,6 @@ const FretboardCardContent = React.memo(
                   </div>
                 )}
 
-              {/* Audio status display */}
-              {fretboard.exercise.audioIntegration.audioError && (
-                <div className="mt-4 p-2 bg-destructive/10 text-destructive text-sm rounded">
-                  Audio Error:
-                  {String(fretboard.exercise.audioIntegration.audioError)}
-                </div>
-              )}
             </div>
           </div>
         </ZoneCardContent>
