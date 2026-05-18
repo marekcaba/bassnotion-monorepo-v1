@@ -114,7 +114,13 @@ interface CheckpointEntry {
 class InitializationLifecycleLogger {
   private entries: CheckpointEntry[] = [];
   private startTime: number | null = null;
-  private enabled = true;
+  // Off by default. Enable via NEXT_PUBLIC_VERBOSE_DEBUG=true in .env.local
+  // or at runtime via window.__lifecycle.setEnabled(true). These checkpoint
+  // logs are useful for tracing init order during debugging but emit ~200
+  // lines per page load — too noisy for default dev sessions.
+  private enabled =
+    typeof process !== 'undefined' &&
+    process.env?.NEXT_PUBLIC_VERBOSE_DEBUG === 'true';
 
   /**
    * Enable/disable lifecycle logging

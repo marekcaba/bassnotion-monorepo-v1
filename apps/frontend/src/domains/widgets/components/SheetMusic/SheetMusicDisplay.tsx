@@ -7,6 +7,7 @@ import React, {
   useMemo,
   useCallback,
 } from 'react';
+import { verboseLog } from '@/config/debug';
 import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay';
 import type { ExerciseNote, TimeSignature } from '@bassnotion/contracts';
 import { exerciseToMusicXML } from '../../utils/exerciseToMusicXML.js';
@@ -212,13 +213,13 @@ export function SheetMusicDisplay({
         osmd.EngravingRules.StretchLastSystemLine = false;
 
         // DEBUG: Log ALL EngravingRules to see what's available
-        console.log(
+        verboseLog(
           '[SheetMusicDisplay] ALL EngravingRules keys:',
           Object.keys(osmd.EngravingRules),
         );
 
         // DEBUG: Log OSMD configuration BEFORE render
-        console.log('[SheetMusicDisplay] OSMD EngravingRules APPLIED:', {
+        verboseLog('[SheetMusicDisplay] OSMD EngravingRules APPLIED:', {
           // Measure width settings
           FixedMeasureWidth: osmd.EngravingRules.FixedMeasureWidth,
           FixedMeasureWidthFixedValue:
@@ -252,12 +253,12 @@ export function SheetMusicDisplay({
         osmd.render();
 
         // DEBUG: Inspect rendered measure positions AFTER render
-        console.log('[SheetMusicDisplay] POST-RENDER inspection:');
+        verboseLog('[SheetMusicDisplay] POST-RENDER inspection:');
 
         // Access the graphic sheet to inspect actual measure positions
         if (osmd.GraphicSheet && osmd.GraphicSheet.MeasureList) {
           const measureList = osmd.GraphicSheet.MeasureList;
-          console.log(
+          verboseLog(
             '[SheetMusicDisplay] Total measures:',
             measureList.length,
           );
@@ -280,7 +281,7 @@ export function SheetMusicDisplay({
                 };
                 if (measure && measure.PositionAndShape) {
                   const pos = measure.PositionAndShape;
-                  console.log(`[SheetMusicDisplay] Measure ${measureIndex}:`, {
+                  verboseLog(`[SheetMusicDisplay] Measure ${measureIndex}:`, {
                     absoluteX: pos.AbsolutePosition?.x,
                     absoluteY: pos.AbsolutePosition?.y,
                     width: pos.Size?.width,
@@ -305,7 +306,7 @@ export function SheetMusicDisplay({
                     const actualLeftMargin = firstX - measureStart;
                     const actualRightMargin = measureEnd - lastX;
 
-                    console.log(
+                    verboseLog(
                       `[SheetMusicDisplay] Measure ${measureIndex} MARGINS:`,
                       {
                         entryCount: measure.staffEntries.length,
@@ -328,7 +329,7 @@ export function SheetMusicDisplay({
         }
 
         // Also log the ACTUAL EngravingRules after render to verify they were used
-        console.log('[SheetMusicDisplay] EngravingRules AFTER render:', {
+        verboseLog('[SheetMusicDisplay] EngravingRules AFTER render:', {
           FixedMeasureWidth: osmd.EngravingRules.FixedMeasureWidth,
           FixedMeasureWidthFixedValue:
             osmd.EngravingRules.FixedMeasureWidthFixedValue,
@@ -560,7 +561,7 @@ export function SheetMusicDisplay({
 
         // Check if animation complete
         if (progress >= 1) {
-          console.log('[PAGE-FLIP] Animation complete', {
+          verboseLog('[PAGE-FLIP] Animation complete', {
             finalScroll: currentScrollRef.current.toFixed(2),
             target: pageFlipTargetScrollRef.current.toFixed(2),
           });
@@ -589,7 +590,7 @@ export function SheetMusicDisplay({
             ),
           );
 
-          console.log('[PAGE-FLIP] Triggered!', {
+          verboseLog('[PAGE-FLIP] Triggered!', {
             playheadXInViewport: playheadXInViewport.toFixed(2),
             threshold: scrollThreshold.toFixed(2),
             currentScroll: currentScrollRef.current.toFixed(2),

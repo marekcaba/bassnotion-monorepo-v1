@@ -8,7 +8,7 @@ import {
   type FretboardViewConfig,
   type FretboardScrollMode,
 } from '@bassnotion/contracts';
-import { isVerboseDebugEnabled } from '@/config/debug';
+import { isVerboseDebugEnabled, verboseLog } from '@/config/debug';
 
 const logger = createStructuredLogger('FretboardCard');
 
@@ -607,7 +607,7 @@ const FretboardCardContent = React.memo(
       // Skip if initial reveal is already complete
       if (isInitialRevealComplete) {
         if (isVerboseDebugEnabled())
-          console.log(
+          verboseLog(
             '[ZOOM-DEBUG] Initial reveal already complete, skipping observer',
           );
         return;
@@ -615,13 +615,13 @@ const FretboardCardContent = React.memo(
 
       const sentinel = animationTriggerSentinelRef.current;
       if (isVerboseDebugEnabled())
-        console.log(
+        verboseLog(
           '[ZOOM-DEBUG] IntersectionObserver setup - sentinel:',
           sentinel,
         );
       if (!sentinel) {
         if (isVerboseDebugEnabled())
-          console.log('[ZOOM-DEBUG] ❌ No sentinel element found!');
+          verboseLog('[ZOOM-DEBUG] ❌ No sentinel element found!');
         return;
       }
 
@@ -629,13 +629,13 @@ const FretboardCardContent = React.memo(
         (entries) => {
           const entry = entries[0];
           if (isVerboseDebugEnabled())
-            console.log('[ZOOM-DEBUG] IntersectionObserver callback:', {
+            verboseLog('[ZOOM-DEBUG] IntersectionObserver callback:', {
               isIntersecting: entry.isIntersecting,
               intersectionRatio: entry.intersectionRatio,
             });
           if (entry.isIntersecting) {
             if (isVerboseDebugEnabled())
-              console.log(
+              verboseLog(
                 '[ZOOM-DEBUG] 🎯 Sentinel in view! Revealing fretboard content',
               );
             setShowFretboardContent(true);
@@ -651,11 +651,11 @@ const FretboardCardContent = React.memo(
 
       observer.observe(sentinel);
       if (isVerboseDebugEnabled())
-        console.log('[ZOOM-DEBUG] Observer started watching sentinel');
+        verboseLog('[ZOOM-DEBUG] Observer started watching sentinel');
 
       return () => {
         if (isVerboseDebugEnabled())
-          console.log('[ZOOM-DEBUG] Observer disconnected');
+          verboseLog('[ZOOM-DEBUG] Observer disconnected');
         observer.disconnect();
       };
     }, [isInitialRevealComplete]);
@@ -667,13 +667,13 @@ const FretboardCardContent = React.memo(
     useEffect(() => {
       if (showFretboardContent && !initialFadeComplete) {
         if (isVerboseDebugEnabled())
-          console.log('[ZOOM-DEBUG] 🌟 CSS fade-in animation started');
+          verboseLog('[ZOOM-DEBUG] 🌟 CSS fade-in animation started');
 
         // Mark the initial fade as complete after the CSS animation finishes
         // This allows subsequent exercise changes to use the snapshot transition opacity
         const timer = setTimeout(() => {
           if (isVerboseDebugEnabled())
-            console.log('[ZOOM-DEBUG] ✅ Initial fade animation complete');
+            verboseLog('[ZOOM-DEBUG] ✅ Initial fade animation complete');
           setInitialFadeComplete(true);
         }, INITIAL_FADE_DURATION);
 
@@ -1020,7 +1020,7 @@ const FretboardCardContent = React.memo(
     // EFFECTIVE TRANSITION PHASE FOR ZOOM ANIMATION
     // DEBUG: Log state on every render (after fadeOpacity is defined)
     if (isVerboseDebugEnabled()) {
-      console.log('[ZOOM-DEBUG] Render state:', {
+      verboseLog('[ZOOM-DEBUG] Render state:', {
         isInitialRevealComplete,
         showFretboardContent,
         initialFadeComplete,
@@ -1049,7 +1049,7 @@ const FretboardCardContent = React.memo(
       if (showFretboardContent && !initialRevealDoneRef.current) {
         initialRevealDoneRef.current = true;
         if (isVerboseDebugEnabled()) {
-          console.log(
+          verboseLog(
             '[ZOOM-DEBUG] 🎬 Initial reveal - forceInitialZoom is now true',
           );
         }
@@ -1057,7 +1057,7 @@ const FretboardCardContent = React.memo(
         // Mark zoom animation as done after it completes (1500ms + buffer)
         const endTimer = setTimeout(() => {
           if (isVerboseDebugEnabled()) {
-            console.log(
+            verboseLog(
               '[ZOOM-DEBUG] ✅ Zoom animation complete - setting initialZoomDone',
             );
           }
@@ -1075,7 +1075,7 @@ const FretboardCardContent = React.memo(
       // During initial reveal, force 'fading-in' to trigger zoom animation
       if (forceInitialZoom) {
         if (isVerboseDebugEnabled()) {
-          console.log(
+          verboseLog(
             '[ZOOM-DEBUG] effectiveTransitionPhase: FORCING fading-in for initial reveal',
           );
         }
@@ -1083,7 +1083,7 @@ const FretboardCardContent = React.memo(
       }
 
       if (isVerboseDebugEnabled()) {
-        console.log(
+        verboseLog(
           '[ZOOM-DEBUG] effectiveTransitionPhase: passing through',
           transitionPhase,
         );
@@ -1223,7 +1223,7 @@ const FretboardCardContent = React.memo(
       if (!exercise) return;
 
       // DIAGNOSTIC: Log the exercise object structure to debug config retrieval
-      console.log('🎸 [FRETBOARD-CONFIG-DEBUG] Exercise object:', {
+      verboseLog('🎸 [FRETBOARD-CONFIG-DEBUG] Exercise object:', {
         id: exercise.id,
         title: (exercise as any).title,
         // Check all possible property names
@@ -1249,7 +1249,7 @@ const FretboardCardContent = React.memo(
         FRETBOARD_VIEW_PRESETS[preset as keyof typeof FRETBOARD_VIEW_PRESETS] ||
         FRETBOARD_VIEW_PRESETS.default;
 
-      console.log(`🎸 [FRETBOARD-CONFIG-DEBUG] Config detection:`, {
+      verboseLog(`🎸 [FRETBOARD-CONFIG-DEBUG] Config detection:`, {
         configFound: !!config,
         configValue: config,
         detectedPreset: preset,

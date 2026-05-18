@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { verboseLog } from '@/config/debug';
 import Image from 'next/image';
 import { FretboardCard, FRETBOARD_VIEW_PRESETS } from './FretboardCard';
 
@@ -438,7 +439,7 @@ function YouTubeWidgetPageContent({
     const preset =
       FRETBOARD_VIEW_PRESETS[presetName as keyof typeof FRETBOARD_VIEW_PRESETS];
 
-    console.log('[YOUTUBE-WIDGET] Preset change detected:', {
+    verboseLog('[YOUTUBE-WIDGET] Preset change detected:', {
       exerciseId: exercise?.id,
       presetName,
       hasOverlay3D: !!preset?.overlay3D,
@@ -544,7 +545,7 @@ function YouTubeWidgetPageContent({
   // Priority: initialExerciseId (from favorites) > first exercise
   // FIX: Removed 150ms setTimeout - FretboardCard handles selectedExerciseId changes reactively
   useEffect(() => {
-    console.log('🔍 [YOUTUBE-WIDGET] Auto-selection effect triggered:', {
+    verboseLog('🔍 [YOUTUBE-WIDGET] Auto-selection effect triggered:', {
       hasExercises: !!exercises,
       exerciseCount: exercises?.length || 0,
       selectedExerciseId,
@@ -565,7 +566,7 @@ function YouTubeWidgetPageContent({
       );
 
       if (targetExercise) {
-        console.log(
+        verboseLog(
           '🎯 [YOUTUBE-WIDGET] Selecting initial exercise from favorites:',
           {
             exerciseId: initialExerciseId,
@@ -589,7 +590,7 @@ function YouTubeWidgetPageContent({
     if (!selectedExerciseId) {
       const firstExercise = exercises[0];
       if (firstExercise?.id) {
-        console.log(
+        verboseLog(
           '🎯 [YOUTUBE-WIDGET] Auto-selecting first exercise IMMEDIATELY:',
           {
             exerciseId: firstExercise.id,
@@ -659,7 +660,7 @@ function YouTubeWidgetPageContent({
         return exIdStr === exerciseId;
       });
 
-      console.log('🔍🔍🔍 [EXERCISE-SELECT-DEBUG] Raw exercise data:', {
+      verboseLog('🔍🔍🔍 [EXERCISE-SELECT-DEBUG] Raw exercise data:', {
         exerciseId,
         foundExercise: !!exercise,
         exerciseTitle: exercise?.title,
@@ -717,7 +718,7 @@ function YouTubeWidgetPageContent({
           exercise.harmonyNotes &&
           exercise.harmonyNotes.length > 0
         ) {
-          console.log(
+          verboseLog(
             '🔍 [EXERCISE-SELECT] Checking if samples need loading:',
             {
               exerciseId: exercise.id,
@@ -729,7 +730,7 @@ function YouTubeWidgetPageContent({
 
           // If scroll hasn't happened yet, skip loading - ScrollTriggerLoader handles it
           if (!scrollHasTriggered) {
-            console.log(
+            verboseLog(
               '⏳ [EXERCISE-SELECT] Scroll not triggered yet, deferring sample load to ScrollTriggerLoader',
             );
             // Don't load samples yet - ScrollTriggerLoader will handle it on scroll
@@ -743,7 +744,7 @@ function YouTubeWidgetPageContent({
           const alreadyCached = sampleCache.getCachedBuffer(testCacheKey);
 
           if (!alreadyCached) {
-            console.log(
+            verboseLog(
               '📥 [EXERCISE-SELECT] Samples not cached, loading:',
               exercise.harmonyInstrument,
             );
@@ -756,7 +757,7 @@ function YouTubeWidgetPageContent({
             getSamplePreloader()
               .loadFullSamples(exercise)
               .then((result) => {
-                console.log('✅ [EXERCISE-SELECT] Samples loaded:', {
+                verboseLog('✅ [EXERCISE-SELECT] Samples loaded:', {
                   instrument: exercise.harmonyInstrument,
                   loaded: result?.loaded ?? 'N/A',
                   total: result?.total ?? 'N/A',
@@ -769,7 +770,7 @@ function YouTubeWidgetPageContent({
 
                 // CRITICAL FIX: Emit event to trigger HarmonyWidget re-registration
                 // This ensures harmony track gets registered after samples finish loading
-                console.log(
+                verboseLog(
                   '📢 [EXERCISE-SELECT] Emitting samples-loaded event for HarmonyWidget',
                 );
                 // Emit via window for HarmonyWidget's window listener
@@ -798,7 +799,7 @@ function YouTubeWidgetPageContent({
                 logger.error('Failed to load samples for exercise:', error);
               });
           } else {
-            console.log(
+            verboseLog(
               '✅ [EXERCISE-SELECT] Samples already cached for:',
               exercise.harmonyInstrument,
             );
@@ -808,7 +809,7 @@ function YouTubeWidgetPageContent({
 
             // CRITICAL FIX: Still emit the event so HarmonyWidget switches to correct instrument
             // Even when cached, we need to trigger re-registration with the new instrument's buffers
-            console.log(
+            verboseLog(
               '📢 [EXERCISE-SELECT] Emitting samples-loaded event (cached) for HarmonyWidget',
             );
             // Emit via window for HarmonyWidget's window listener
@@ -865,7 +866,7 @@ function YouTubeWidgetPageContent({
 
   // Handle play state changes from GlobalControls
   const handlePlayStateChange = useCallback((isPlaying: boolean) => {
-    console.log('🎵 [YOUTUBE-WIDGET] handlePlayStateChange called:', {
+    verboseLog('🎵 [YOUTUBE-WIDGET] handlePlayStateChange called:', {
       isPlaying,
     });
 
@@ -874,7 +875,7 @@ function YouTubeWidgetPageContent({
       // Only toggle if currently not playing
       if (!widgetStateRef.current.state.isPlaying) {
         widgetStateRef.current.togglePlayback();
-        console.log(
+        verboseLog(
           '🎵 [YOUTUBE-WIDGET] Called widgetState.togglePlayback() to set isPlaying=true',
         );
       }
@@ -882,7 +883,7 @@ function YouTubeWidgetPageContent({
       // Only toggle if currently playing
       if (widgetStateRef.current.state.isPlaying) {
         widgetStateRef.current.togglePlayback();
-        console.log(
+        verboseLog(
           '🎵 [YOUTUBE-WIDGET] Called widgetState.togglePlayback() to set isPlaying=false',
         );
       }
@@ -1654,7 +1655,7 @@ export function YouTubeWidgetPage({
       const userModified = musicalTruth.hasUserModifiedTempo();
 
       if (!userModified && currentBpm !== firstExercise.bpm) {
-        console.log(
+        verboseLog(
           `🎵 [TEMPO-PRESEED v2] Pre-seeding musicalTruth BEFORE TransportProvider mount`,
           {
             exerciseBpm: firstExercise.bpm,
@@ -1677,7 +1678,7 @@ export function YouTubeWidgetPage({
 
         hasPreseededRef.current = true;
       } else if (userModified) {
-        console.log(
+        verboseLog(
           `🎵 [TEMPO-PRESEED v2] Skipping - user has modified tempo`,
           {
             currentBpm,

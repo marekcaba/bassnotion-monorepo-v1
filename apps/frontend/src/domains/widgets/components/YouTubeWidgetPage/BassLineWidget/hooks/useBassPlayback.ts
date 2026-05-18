@@ -33,7 +33,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
 import { getLogger } from '@/utils/logger.js';
-import { isVerboseDebugEnabled } from '@/config/debug';
+import { isVerboseDebugEnabled, verboseLog } from '@/config/debug';
 import { BASS_PATTERNS } from '../types.js';
 import type {
   UseBassPlaybackOptions,
@@ -253,7 +253,7 @@ export function useBassPlayback(
     // Get first available buffer from cache
     const availableKeys = Object.keys(bassBuffersRef.current);
     if (isVerboseDebugEnabled()) {
-      console.log('[BASS TEST] Available buffers:', availableKeys);
+      verboseLog('[BASS TEST] Available buffers:', availableKeys);
     }
 
     const bufferKey = availableKeys[0] || '34';
@@ -286,7 +286,7 @@ export function useBassPlayback(
         maxAmp = Math.max(maxAmp, Math.abs(channelData[i]));
       }
 
-      console.log('[BASS TEST] Direct Playback Test', {
+      verboseLog('[BASS TEST] Direct Playback Test', {
         bufferDuration: buffer.duration.toFixed(2) + 's',
         sampleRate: buffer.sampleRate,
         first100msMaxAmplitude: maxAmp.toFixed(4),
@@ -301,7 +301,7 @@ export function useBassPlayback(
     source.start(context.currentTime);
 
     if (isVerboseDebugEnabled()) {
-      console.log(
+      verboseLog(
         '[BASS TEST] Playing raw buffer directly to destination (no processing)',
       );
 
@@ -330,7 +330,7 @@ export function useBassPlayback(
     ).__testBassDirectPlayback = testDirectPlayback;
 
     if (isVerboseDebugEnabled()) {
-      console.log(
+      verboseLog(
         '[BASS-WIDGET] Direct test function exposed as window.__testBassDirectPlayback()',
       );
     }

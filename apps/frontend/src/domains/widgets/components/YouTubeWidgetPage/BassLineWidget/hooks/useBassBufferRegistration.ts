@@ -29,7 +29,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
 import { GlobalSampleCache } from '@/domains/playback/modules/storage/cache/GlobalSampleCache';
-import { isVerboseDebugEnabled } from '@/config/debug';
+import { isVerboseDebugEnabled, verboseLog } from '@/config/debug';
 import {
   getSampleForMidiNote,
   type BassString,
@@ -91,7 +91,7 @@ export function useBassBufferRegistration(
   useEffect(() => {
     const handleExerciseSwitched = () => {
       if (isVerboseDebugEnabled()) {
-        console.log(
+        verboseLog(
           '[BASS-WIDGET] exercise:switched event received, resetting registration state',
         );
       }
@@ -112,7 +112,7 @@ export function useBassBufferRegistration(
   useEffect(() => {
     if (exercise?.id !== prevExerciseIdRef.current) {
       if (isVerboseDebugEnabled()) {
-        console.log('[BASS-WIDGET] Exercise ID changed', {
+        verboseLog('[BASS-WIDGET] Exercise ID changed', {
           prevExerciseId: prevExerciseIdRef.current,
           newExerciseId: exercise?.id,
         });
@@ -129,7 +129,7 @@ export function useBassBufferRegistration(
     // Prevent multiple simultaneous registrations
     if (isRegisteringRef.current) {
       if (isVerboseDebugEnabled()) {
-        console.log('[BASS-WIDGET] Registration already in progress, skipping');
+        verboseLog('[BASS-WIDGET] Registration already in progress, skipping');
       }
       return;
     }
@@ -140,7 +140,7 @@ export function useBassBufferRegistration(
     const registrationKey = exercise?.id;
     if (lastRegisteredExerciseIdRef.current === registrationKey) {
       if (isVerboseDebugEnabled()) {
-        console.log(
+        verboseLog(
           '[BASS-WIDGET] Already registered for this exercise, skipping',
           {
             registrationKey,
@@ -153,7 +153,7 @@ export function useBassBufferRegistration(
     isRegisteringRef.current = true;
 
     if (isVerboseDebugEnabled()) {
-      console.log('[BASS-WIDGET] registerBassWithPlaybackEngine CALLED', {
+      verboseLog('[BASS-WIDGET] registerBassWithPlaybackEngine CALLED', {
         timestamp: new Date().toISOString(),
         exerciseId: exercise?.id,
         hasNotes: !!exercise?.notes?.length,
@@ -176,7 +176,7 @@ export function useBassBufferRegistration(
     }
 
     if (isVerboseDebugEnabled()) {
-      console.log(
+      verboseLog(
         '[BASS-WIDGET] PlaybackEngine available, starting buffer injection...',
       );
     }
@@ -196,7 +196,7 @@ export function useBassBufferRegistration(
         // Metadata matches current exercise - use it
         midiNotesToLoad = metadata.midiNotes;
         if (isVerboseDebugEnabled()) {
-          console.log(
+          verboseLog(
             '[BASS-WIDGET] Using cached metadata for current exercise:',
             {
               exerciseId: exercise?.id,
@@ -221,7 +221,7 @@ export function useBassBufferRegistration(
 
         midiNotesToLoad = Array.from(midiNoteSet).sort((a, b) => a - b);
         if (isVerboseDebugEnabled()) {
-          console.log('[BASS-WIDGET] Derived MIDI notes from exercise.notes:', {
+          verboseLog('[BASS-WIDGET] Derived MIDI notes from exercise.notes:', {
             exerciseId: exercise?.id,
             uniqueMidiNotes: midiNotesToLoad.length,
           });
@@ -241,7 +241,7 @@ export function useBassBufferRegistration(
 
       if (!audioEngine?.isInitialized) {
         if (isVerboseDebugEnabled()) {
-          console.log(
+          verboseLog(
             '[BASS-WIDGET] AudioEngine not initialized yet, will retry when user interacts',
           );
         }
@@ -284,7 +284,7 @@ export function useBassBufferRegistration(
               for (let i = 0; i < Math.min(4800, channelData.length); i++) {
                 maxAmplitude = Math.max(maxAmplitude, Math.abs(channelData[i]));
               }
-              console.log(`[BASS DECODE] Decoded ${cacheKey}`, {
+              verboseLog(`[BASS DECODE] Decoded ${cacheKey}`, {
                 midiNote,
                 duration: buffer.duration.toFixed(2) + 's',
                 hasStrongAttack: maxAmplitude > 0.1 ? 'YES' : 'WEAK/MISSING',
@@ -307,7 +307,7 @@ export function useBassBufferRegistration(
       }
 
       if (isVerboseDebugEnabled()) {
-        console.log('[BASS-WIDGET] Buffer decoding complete:', {
+        verboseLog('[BASS-WIDGET] Buffer decoding complete:', {
           exerciseId: exercise?.id,
           totalNotes: midiNotesToLoad.length,
           buffersDecoded,
@@ -332,7 +332,7 @@ export function useBassBufferRegistration(
         bassBuffersRef.current = bassBuffers;
 
         if (isVerboseDebugEnabled()) {
-          console.log(
+          verboseLog(
             '[BASS-WIDGET] Bass buffers injected into PlaybackEngine',
             {
               exerciseId: exercise?.id,
@@ -351,7 +351,7 @@ export function useBassBufferRegistration(
       } else if (midiNotesToLoad.length > 0) {
         // No buffers decoded - trigger the preload strategy
         if (isVerboseDebugEnabled()) {
-          console.log(
+          verboseLog(
             '[BASS-WIDGET] No cached buffers - triggering BassPreloadStrategy...',
           );
         }
@@ -380,7 +380,7 @@ export function useBassBufferRegistration(
                 WindowRegistry.setBassBuffersReady(true, exercise?.id);
 
                 if (isVerboseDebugEnabled()) {
-                  console.log(
+                  verboseLog(
                     '[BASS-WIDGET] Bass buffers loaded via preload strategy',
                     {
                       exerciseId: exercise?.id,
@@ -424,7 +424,7 @@ export function useBassBufferRegistration(
     const shouldRegister = trackIsReady && bassNoteCount > 0;
 
     if (isVerboseDebugEnabled()) {
-      console.log('[BASS-CHECKPOINT] Should register bass:', {
+      verboseLog('[BASS-CHECKPOINT] Should register bass:', {
         shouldRegister,
         trackIsReady,
         bassNoteCount,
@@ -434,7 +434,7 @@ export function useBassBufferRegistration(
 
     if (shouldRegister) {
       if (isVerboseDebugEnabled()) {
-        console.log(
+        verboseLog(
           '[BASS-WIDGET] ALL CONDITIONS MET - Registering bass buffers!',
           {
             exerciseId: exercise?.id,
