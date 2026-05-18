@@ -9,6 +9,7 @@
  */
 
 import type * as ToneTypes from 'tone';
+import { ProfessionalDrumProcessor } from '@bassnotion/contracts';
 import {
   createStructuredLogger,
   PluginMetadata,
@@ -391,11 +392,6 @@ export class DrumProcessor extends BaseAudioPlugin {
 
   // Initialize professional patterns
   private initializeProfessionalPatterns() {
-    // Import the professional drum processor
-    const {
-      ProfessionalDrumProcessor,
-    } = require('@bassnotion/contracts/services/ProfessionalDrumProcessor');
-
     // Generate professional patterns for each style
     const styles = ['rock', 'jazz', 'funk'] as const;
 
