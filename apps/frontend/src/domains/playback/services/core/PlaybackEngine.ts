@@ -1501,8 +1501,9 @@ export class PlaybackEngine {
         this.musicalTimeConverter.parsePosition.bind(this.musicalTimeConverter),
         // Dependency 10: buildCC64Timeline
         this.sustainPedalManager.buildTimeline.bind(this.sustainPedalManager),
-        // Dependency 11: logCC64DiagnosticTable (no-op for now, RegionScheduler handles it)
-        () => {}, // CC64 diagnostic logging handled by RegionScheduler internally
+        // Dependency 11: logCC64DiagnosticTable (RegionScheduler logs internally)
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
+        () => {},
         // Dependency 12: getCachedSchedule
         this.scheduleCache.get.bind(this.scheduleCache),
         // Dependency 13: setCachedSchedule
@@ -1705,8 +1706,22 @@ export class PlaybackEngine {
     // Reset scheduling flag (prevent edge case if stopped during initial scheduling)
     this.isInitialScheduling = false;
 
-    // Update state
-    this.state = 'stopped';
+    // Update state via setState so 'playback:state-change' is emitted
+    // consistently with start/pause/resume. setState validates: 'ready'
+    // → 'stopped' is NOT in the transitions table, so calling stop()
+    // from the ready state correctly emits neither 'state-change' nor
+    // 'playback:stop'. Only emit 'playback:stop' when setState
+    // successfully transitioned us.
+    const wasPlayingOrPaused =
+      this.state === 'playing' || this.state === 'paused';
+    if (wasPlayingOrPaused) {
+      this.setState('stopped');
+      this.eventBus.emit('playback:stop', {
+        instanceId: this.instanceId,
+        graceful,
+      });
+    }
+
     lifecycle.checkpoint('PLAYBACK_STOPPED', {
       instanceId: this.instanceId,
     });
