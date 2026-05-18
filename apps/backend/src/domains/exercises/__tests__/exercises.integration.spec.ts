@@ -24,6 +24,8 @@ import { AuthModule } from '../../user/auth/auth.module.js';
 import { DatabaseModule } from '../../../infrastructure/database/database.module.js';
 import { SupabaseModule } from '../../../infrastructure/supabase/supabase.module.js';
 import { CacheModule } from '../../../infrastructure/cache/cache.module.js';
+import { SharedModule } from '../../../shared/shared.module.js';
+import { RequestContextService } from '../../../shared/services/request-context.service.js';
 import { DatabaseService } from '../../../infrastructure/database/database.service.js';
 import { SupabaseService } from '../../../infrastructure/supabase/supabase.service.js';
 import { AuthSecurityService } from '../../user/auth/services/auth-security.service.js';
@@ -315,6 +317,14 @@ describe('INCREMENTAL Dependency Injection Debug', () => {
   it('should work with DatabaseModule + SupabaseModule', async () => {
     console.log('🔧 INCREMENTAL TEST: DatabaseModule + SupabaseModule...');
 
+    // RequestContextService is @Injectable({ scope: Scope.REQUEST }) and
+    // wraps the live Fastify REQUEST. It can't initialize outside an
+    // HTTP context — its constructor receives undefined and any later
+    // getLogger() / getCorrelationId() crashes on `this.request.x`.
+    // DatabaseService optionally injects it, so scope propagates UP and
+    // DatabaseService becomes request-scoped too. To keep this test
+    // hermetic, override RequestContextService with a no-op stub that
+    // returns sensible defaults instead of touching `this.request`.
     moduleFixture = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({
@@ -322,12 +332,24 @@ describe('INCREMENTAL Dependency Injection Debug', () => {
           envFilePath: ['.env.test', '.env.local', '.env'],
           cache: true,
         }),
+        SharedModule,
         DatabaseModule,
         SupabaseModule,
       ],
-    }).compile();
+    })
+      .overrideProvider(RequestContextService)
+      .useValue({
+        getCorrelationId: () => 'test-correlation-id',
+        getLogger: () => console,
+        getContext: () => ({
+          correlationId: 'test-correlation-id',
+          logger: console,
+        }),
+      })
+      .compile();
 
-    const databaseService = moduleFixture.get(DatabaseService);
+    // Scoped providers still require .resolve() (not .get()).
+    const databaseService = await moduleFixture.resolve(DatabaseService);
     const supabaseService = moduleFixture.get(SupabaseService);
 
     expect(databaseService).toBeDefined();
@@ -341,23 +363,49 @@ describe('INCREMENTAL Dependency Injection Debug', () => {
       '🔧 INCREMENTAL TEST: Testing AuthModule services individually...',
     );
 
-    // Test PasswordSecurityService alone (no dependencies)
-    const passwordOnlyModule = await Test.createTestingModule({
-      imports: [ConfigModule.forRoot({ isGlobal: true })],
-      providers: [PasswordSecurityService],
-    }).compile();
+    // PasswordSecurityService and AuthSecurityService now @Inject
+    // RequestContextService (was optional, became required), which is
+    // request-scoped. Same approach as above: import SharedModule for
+    // the provider, override it with a hermetic stub so it doesn't
+    // try to touch a non-existent Fastify request, and use .resolve()
+    // because scope propagates through the dependency chain.
+    const requestContextStub = {
+      getCorrelationId: () => 'test-correlation-id',
+      getLogger: () => console,
+      getContext: () => ({
+        correlationId: 'test-correlation-id',
+        logger: console,
+      }),
+    };
 
-    const passwordService = passwordOnlyModule.get(PasswordSecurityService);
+    const passwordOnlyModule = await Test.createTestingModule({
+      imports: [ConfigModule.forRoot({ isGlobal: true }), SharedModule],
+      providers: [PasswordSecurityService],
+    })
+      .overrideProvider(RequestContextService)
+      .useValue(requestContextStub)
+      .compile();
+
+    const passwordService = await passwordOnlyModule.resolve(
+      PasswordSecurityService,
+    );
     expect(passwordService).toBeDefined();
     console.log('✅ PasswordSecurityService works alone');
 
-    // Test AuthSecurityService with DatabaseService
     const authSecurityModule = await Test.createTestingModule({
-      imports: [ConfigModule.forRoot({ isGlobal: true }), DatabaseModule],
+      imports: [
+        ConfigModule.forRoot({ isGlobal: true }),
+        SharedModule,
+        DatabaseModule,
+      ],
       providers: [AuthSecurityService],
-    }).compile();
+    })
+      .overrideProvider(RequestContextService)
+      .useValue(requestContextStub)
+      .compile();
 
-    const authSecurityService = authSecurityModule.get(AuthSecurityService);
+    const authSecurityService =
+      await authSecurityModule.resolve(AuthSecurityService);
     expect(authSecurityService).toBeDefined();
     console.log('✅ AuthSecurityService works with DatabaseModule');
   });
