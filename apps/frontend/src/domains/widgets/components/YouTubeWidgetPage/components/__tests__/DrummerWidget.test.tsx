@@ -37,8 +37,8 @@ vi.mock('@/domains/widgets/hooks/useTransportPosition', () => ({
 }));
 
 // Mock TransportContext
-vi.mock('@/domains/playback/contexts/TransportContext', () => ({
-  useTransportControls: vi.fn(() => ({
+vi.mock('@/domains/playback/contexts/TransportContext', () => {
+  const transportState = {
     tempo: 120,
     isPlaying: false,
     isPaused: false,
@@ -54,9 +54,16 @@ vi.mock('@/domains/playback/contexts/TransportContext', () => ({
     timeSignature: { numerator: 4, denominator: 4 },
     isLoopEnabled: false,
     servicesReady: true,
-  })),
-  TransportProvider: ({ children }: { children: React.ReactNode }) => children,
-}));
+    position: { bar: 0, beat: 0, sixteenth: 0, seconds: 0 },
+  };
+  return {
+    useTransportControls: vi.fn(() => transportState),
+    useTransportContext: vi.fn(() => transportState),
+    useTransport: vi.fn(() => transportState),
+    useTransportPosition: vi.fn(() => transportState.position),
+    TransportProvider: ({ children }: { children: React.ReactNode }) => children,
+  };
+});
 
 // Mock audio context utils
 vi.mock('@/domains/playback/utils/ensureAudioContext', () => ({

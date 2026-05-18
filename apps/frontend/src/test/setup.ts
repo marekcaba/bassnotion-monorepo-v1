@@ -476,6 +476,31 @@ beforeEach(() => {
         Q: { value: 1 },
         type: 'lowpass',
       })),
+      Analyser: vi.fn(() => ({
+        connect: vi.fn().mockReturnThis(),
+        disconnect: vi.fn(),
+        dispose: vi.fn(),
+        fftSize: 2048,
+        smoothingTimeConstant: 0.8,
+        getValue: vi.fn(() => new Float32Array(1024)),
+        type: 'fft',
+      })),
+      // EQ is a generic equalizer in Tone v15; tests typically only need
+      // chainable connect/disconnect and the eq-band setters.
+      EQ: vi.fn(() => ({
+        connect: vi.fn().mockReturnThis(),
+        disconnect: vi.fn(),
+        dispose: vi.fn(),
+        low: { value: 0 },
+        mid: { value: 0 },
+        high: { value: 0 },
+      })),
+      Limiter: vi.fn(() => ({
+        connect: vi.fn().mockReturnThis(),
+        disconnect: vi.fn(),
+        dispose: vi.fn(),
+        threshold: { value: -3 },
+      })),
       Reverb: vi.fn(() => ({
         connect: vi.fn().mockReturnThis(),
         disconnect: vi.fn(),

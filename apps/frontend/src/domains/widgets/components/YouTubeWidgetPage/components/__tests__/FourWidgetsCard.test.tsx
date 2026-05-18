@@ -59,14 +59,23 @@ vi.mock('@/shared/components/ui/button', () => ({
   ),
 }));
 
-vi.mock('lucide-react', () => ({
-  Play: () => <span data-testid="play-icon">▶️</span>,
-  Pause: () => <span data-testid="pause-icon">⏸️</span>,
-  Volume2: () => <span data-testid="volume-icon">🔊</span>,
-  Settings: () => <span data-testid="settings-icon">⚙️</span>,
-  Eye: () => <span data-testid="eye-icon">👁️</span>,
-  EyeOff: () => <span data-testid="eye-off-icon">🙈</span>,
-}));
+// Use a Proxy so any icon import resolves to a generic span — the production
+// component lazy-uses many icons (Play, Pause, Volume2, AlertCircle, etc.) and
+// listing them explicitly causes "No XYZ export is defined" failures whenever
+// a new icon is added.
+vi.mock('lucide-react', () => {
+  const handler: ProxyHandler<Record<string, unknown>> = {
+    get(_target, prop) {
+      const name = String(prop);
+      const Icon = (props: any) => (
+        <span data-testid={`icon-${name}`} {...props} />
+      );
+      Icon.displayName = name;
+      return Icon;
+    },
+  };
+  return new Proxy({}, handler);
+});
 
 vi.mock('@/shared/utils', () => ({
   cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
@@ -160,7 +169,14 @@ describe('FourWidgetsCard', () => {
       isPlaying: false,
       currentTime: 0,
       tempo: 100,
-      volume: { master: 80, metronome: 70, drums: 60, bass: 75 },
+      volume: { master: 80, metronome: 70, drums: 60, bass: 75, harmony: 70 },
+      muted: {
+        master: false,
+        metronome: false,
+        drums: false,
+        bass: false,
+        harmony: false,
+      },
       selectedExercise: undefined,
       playbackMode: 'practice' as const,
       widgets: {

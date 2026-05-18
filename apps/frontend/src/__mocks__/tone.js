@@ -113,6 +113,17 @@ mockTone.setContext = vi.fn();
 mockTone.now = vi.fn(() => 0);
 mockTone.immediate = vi.fn(() => 0);
 mockTone.start = vi.fn().mockResolvedValue(undefined);
+// Tone.loaded() returns a promise resolved when all Player/Sampler buffers finish loading
+mockTone.loaded = vi.fn().mockResolvedValue(undefined);
+// Tone.Analyser is a constructor in production; tests that exercise the
+// analyzer path need it shaped like a Tone node.
+mockTone.Analyser = vi.fn().mockImplementation(() => ({
+  ...createMockToneNode(),
+  fftSize: 2048,
+  smoothingTimeConstant: 0.8,
+  getValue: vi.fn(() => new Float32Array(1024)),
+  type: 'fft',
+}));
 
 // Export both default and named exports
 module.exports = mockTone;
