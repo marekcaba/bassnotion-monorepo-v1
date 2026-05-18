@@ -138,12 +138,13 @@ describe('DrummerWidget', () => {
     expect(screen.getByTestId('volume-knob')).toBeInTheDocument();
   });
 
-  it('should not render when not visible', () => {
+  it('should not render visible content when isVisible is false', () => {
     render(<DrummerWidget {...defaultProps} isVisible={false} />);
 
-    // The component should still mount but be hidden
-    const container = document.querySelector('[data-visible="false"]');
-    expect(container).toBeInTheDocument();
+    // The component keeps the React tree mounted (effects run) but renders
+    // a single <div style={{display: 'none'}} />. The visible drum-pad UI
+    // (volume knob etc.) should NOT be in the DOM.
+    expect(screen.queryByTestId('volume-knob')).not.toBeInTheDocument();
   });
 
   it('should handle pattern changes', () => {
@@ -191,8 +192,8 @@ describe('DrummerWidget', () => {
       />,
     );
 
-    // Component should be visible
-    expect(document.querySelector('[data-visible="true"]')).toBeTruthy();
+    // Component should be visible (volume knob is rendered)
+    expect(screen.queryByTestId('volume-knob')).toBeInTheDocument();
 
     // Change visibility
     rerender(
@@ -203,8 +204,8 @@ describe('DrummerWidget', () => {
       />,
     );
 
-    // Component should be hidden
-    expect(document.querySelector('[data-visible="false"]')).toBeTruthy();
+    // Component should be hidden — visible UI removed from DOM
+    expect(screen.queryByTestId('volume-knob')).not.toBeInTheDocument();
   });
 
   it('should handle exercise prop', () => {
