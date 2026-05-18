@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as Tone from 'tone';
 import { WidgetSyncService } from '../WidgetSyncService';
-import { UnifiedTransport } from '../../../playback/services/core/index.js';
-import { AudioEngine } from '../../../playback/services/core/AudioEngine';
+import {
+  UnifiedTransport,
+  AudioEngine,
+} from '../../../playback/services/core/index.js';
 
 describe('Widget Loop Synchronization Integration Tests', () => {
   let syncService: WidgetSyncService;

@@ -7,10 +7,11 @@ import { AuthGuard } from './guards/auth.guard.js';
 import { AuthSecurityService } from './services/auth-security.service.js';
 import { PasswordSecurityService } from './services/password-security.service.js';
 import { DatabaseModule } from '../../../infrastructure/database/database.module.js';
+import { SharedModule } from '../../../shared/shared.module.js';
 
 @Global()
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, SharedModule],
   controllers: [AuthController],
   providers: [
     PasswordSecurityService,

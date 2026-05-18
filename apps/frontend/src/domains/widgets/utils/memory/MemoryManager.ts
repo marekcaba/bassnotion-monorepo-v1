@@ -13,9 +13,13 @@
  *
  * @author BassNotion Team
  * @version 1.0.0
+ *
  */
 
+import { createStructuredLogger } from '@bassnotion/contracts';
 import React from 'react';
+
+const logger = createStructuredLogger('MemoryManager');
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 export interface MemoryUsageMetrics {

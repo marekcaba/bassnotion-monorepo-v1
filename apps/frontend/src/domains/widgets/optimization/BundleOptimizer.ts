@@ -9,6 +9,10 @@
  * - Dynamic import management
  */
 
+import { createStructuredLogger } from '@bassnotion/contracts';
+
+const logger = createStructuredLogger('BundleOptimizer');
+
 export interface BundleMetrics {
   totalBundleSize: number; // bytes
   chunkSizes: Map<string, number>;

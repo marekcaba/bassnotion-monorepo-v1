@@ -15,6 +15,10 @@
  * @version 1.0.0
  */
 
+import { createStructuredLogger } from '@bassnotion/contracts';
+
+const logger = createStructuredLogger('LatencyOptimizer');
+
 export interface LatencyMeasurement {
   inputLatency: number;
   outputLatency: number;
