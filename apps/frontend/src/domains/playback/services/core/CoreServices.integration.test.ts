@@ -197,6 +197,10 @@ describe('CoreServices Integration with InstrumentRegistry', () => {
 
       await coreServices.initialize();
 
+      // EventBus invokes handlers with (data, metadata) — the metadata
+      // arg was added when the bus grew correlation-ID tracking. Use
+      // expect.anything() for the second arg so we assert on data shape
+      // only.
       expect(listener).toHaveBeenCalledWith(
         expect.objectContaining({
           services: expect.arrayContaining([
@@ -208,6 +212,7 @@ describe('CoreServices Integration with InstrumentRegistry', () => {
             'audioEventRouter',
           ]),
         }),
+        expect.anything(),
       );
     });
   });
