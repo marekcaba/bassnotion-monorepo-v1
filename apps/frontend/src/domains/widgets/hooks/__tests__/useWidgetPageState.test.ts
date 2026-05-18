@@ -122,7 +122,7 @@ describe('useWidgetPageState', () => {
     expect(result.current.state.syncEnabled).toBe(false);
   });
 
-  it('should set selected exercise', () => {
+  it('should set selected exercise', async () => {
     const { result } = renderHook(() => useWidgetPageState());
     const mockExercise = {
       id: 'test-1',
@@ -138,14 +138,17 @@ describe('useWidgetPageState', () => {
       updated_at: '2024-01-01T00:00:00Z',
     };
 
-    act(() => {
-      result.current.setSelectedExercise(mockExercise);
+    // setSelectedExercise is async (it integrates exercise data into the
+    // timeline before committing the state update). Await act so React
+    // flushes the setState after the integration resolves.
+    await act(async () => {
+      await result.current.setSelectedExercise(mockExercise);
     });
 
     expect(result.current.state.selectedExercise).toEqual(mockExercise);
   });
 
-  it('should update tempo when exercise with BPM is selected', () => {
+  it('should update tempo when exercise with BPM is selected', async () => {
     const { result } = renderHook(() => useWidgetPageState());
     const mockExercise = {
       id: 'test-1',
@@ -161,15 +164,15 @@ describe('useWidgetPageState', () => {
       updated_at: '2024-01-01T00:00:00Z',
     };
 
-    act(() => {
-      result.current.setSelectedExercise(mockExercise);
+    await act(async () => {
+      await result.current.setSelectedExercise(mockExercise);
     });
 
     expect(result.current.state.tempo).toBe(140);
     expect(result.current.state.widgets.metronome.bpm).toBe(140);
   });
 
-  it('should update harmony progression from exercise chord_progression', () => {
+  it('should update harmony progression from exercise chord_progression', async () => {
     const { result } = renderHook(() => useWidgetPageState());
     const mockExercise = {
       id: 'test-1',
@@ -186,8 +189,8 @@ describe('useWidgetPageState', () => {
       updated_at: '2024-01-01T00:00:00Z',
     };
 
-    act(() => {
-      result.current.setSelectedExercise(mockExercise);
+    await act(async () => {
+      await result.current.setSelectedExercise(mockExercise);
     });
 
     expect(result.current.state.widgets.harmony.progression).toEqual([
@@ -199,7 +202,7 @@ describe('useWidgetPageState', () => {
     expect(result.current.state.widgets.harmony.currentChord).toBe(0);
   });
 
-  it('should generate harmony progression from key when no chord_progression', () => {
+  it('should generate harmony progression from key when no chord_progression', async () => {
     const { result } = renderHook(() => useWidgetPageState());
     const mockExercise = {
       id: 'test-1',
@@ -215,8 +218,8 @@ describe('useWidgetPageState', () => {
       updated_at: '2024-01-01T00:00:00Z',
     };
 
-    act(() => {
-      result.current.setSelectedExercise(mockExercise);
+    await act(async () => {
+      await result.current.setSelectedExercise(mockExercise);
     });
 
     expect(result.current.state.widgets.harmony.progression).toEqual([

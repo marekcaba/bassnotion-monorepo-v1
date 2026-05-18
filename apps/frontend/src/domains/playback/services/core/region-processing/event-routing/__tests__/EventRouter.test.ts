@@ -398,13 +398,11 @@ describe('EventRouter', () => {
         data: { cc: 64, value: 127 },
       };
 
-      // Should log and attempt to schedule
-      const consoleSpy = vi.spyOn(console, 'log');
+      // The earlier verbose '[EMIT EVENT]' console.log was removed in the
+      // logging cleanup. The real contract is that the harmony scheduler
+      // receives the event — that's the only thing worth asserting here.
       router.emitEvent('harmony', event, 1.0);
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[EMIT EVENT]'),
-      );
       expect(mockHarmonyScheduler.schedule).toHaveBeenCalled();
     });
   });
