@@ -75,8 +75,8 @@ class IntegrationMockAudioContext {
     return Promise.resolve();
   }
 
-  addEventListener(event: string, listener: Function) {}
-  removeEventListener(event: string, listener: Function) {}
+  addEventListener(_event: string, _listener: Function) {}
+  removeEventListener(_event: string, _listener: Function) {}
 
   // Simulate time progression
   _advanceTime(deltaSeconds: number) {
@@ -103,9 +103,9 @@ class IntegrationMockAudioWorkletNode {
 
 // Mock global AudioWorkletNode
 (global as any).AudioWorkletNode = function (
-  context: any,
-  name: string,
-  options: any,
+  _context: any,
+  _name: string,
+  _options: any,
 ) {
   return new IntegrationMockAudioWorkletNode();
 };
@@ -122,9 +122,9 @@ vi.mock('../../sync/SampleAccurateClock.js', () => {
       private _onTickCallback: Function | null = null;
       private _lastUpdateTime = 0;
 
-      constructor(config: any) {}
+      constructor(_config: any) {}
 
-      async initialize(audioContext: any) {
+      async initialize(_audioContext: any) {
         this._isActive = true;
       }
 
@@ -185,9 +185,9 @@ vi.mock('../../sync/SampleAccurateClock.js', () => {
         this._onTickCallback = callback;
       }
 
-      setOnDrift(callback: Function) {}
+      setOnDrift(_callback: Function) {}
 
-      async waitForFirstUpdate(timeoutMs = 50): Promise<void> {
+      async waitForFirstUpdate(_timeoutMs = 50): Promise<void> {
         // Simulate first update arriving after ~3ms
         return new Promise((resolve) => {
           setTimeout(() => {

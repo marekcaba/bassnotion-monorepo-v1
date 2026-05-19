@@ -7,12 +7,6 @@
 
 import { vi } from 'vitest';
 
-interface MockTransportPosition {
-  bars: number;
-  beats: number;
-  sixteenths: number;
-}
-
 class MockTransport {
   state: 'started' | 'stopped' | 'paused' = 'stopped';
   position = 0;
@@ -73,7 +67,7 @@ class MockTransport {
     return this;
   }
 
-  stop(time?: number | string) {
+  stop(_time?: number | string) {
     this.state = 'stopped';
     this.position = 0;
     this.seconds = 0;
@@ -84,7 +78,7 @@ class MockTransport {
     return this;
   }
 
-  pause(time?: number | string) {
+  pause(_time?: number | string) {
     this.state = 'paused';
     if (this.intervalId) {
       clearInterval(this.intervalId);
@@ -162,7 +156,7 @@ class MockTransport {
     return this;
   }
 
-  off(event: string, callback?: Function) {
+  off(_event: string, _callback?: Function) {
     // Mock event unsubscription
     return this;
   }
@@ -280,7 +274,7 @@ class MockSampler {
   disconnect = vi.fn();
   toDestination = vi.fn().mockReturnThis();
 
-  get(note?: string) {
+  get(_note?: string) {
     return {
       loaded: true,
       buffer: {
@@ -451,7 +445,7 @@ export function installToneMock() {
 // Helper to simulate timing updates for UnifiedTransport
 export function simulateTransportTiming(
   eventBus: any,
-  duration = 2000,
+  _duration = 2000,
   transport?: any,
 ) {
   const startTime = performance.now(); // Use performance.now() for higher precision
@@ -462,7 +456,6 @@ export function simulateTransportTiming(
     callback: Function;
     executed: boolean;
   }> = [];
-  let lastEventExecutionTime = 0;
 
   // Subscribe to scheduleEvent calls to capture scheduled events
   const transportInstance = transport || (eventBus as any).transport;
@@ -586,7 +579,6 @@ export function simulateTransportTiming(
         }
         event.callback(event.time); // Pass the scheduled time, not current time
         event.executed = true;
-        lastEventExecutionTime = now;
       }
     });
 

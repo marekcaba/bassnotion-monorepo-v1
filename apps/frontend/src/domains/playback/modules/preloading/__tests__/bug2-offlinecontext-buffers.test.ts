@@ -50,23 +50,23 @@ describe('BUG #2: OfflineAudioContext Buffer Compatibility Prevention', () => {
       numberOfChannels = 2;
       length = 44100;
 
-      getChannelData(channel: number): Float32Array {
+      getChannelData(_channel: number): Float32Array {
         // Return a Float32Array of the correct length
         return new Float32Array(this.length);
       }
 
       copyFromChannel(
-        destination: Float32Array,
-        channelNumber: number,
-        startInChannel?: number,
+        _destination: Float32Array,
+        _channelNumber: number,
+        _startInChannel?: number,
       ): void {
         // Mock implementation
       }
 
       copyToChannel(
-        source: Float32Array,
-        channelNumber: number,
-        startInChannel?: number,
+        _source: Float32Array,
+        _channelNumber: number,
+        _startInChannel?: number,
       ): void {
         // Mock implementation
       }
@@ -189,7 +189,6 @@ describe('BUG #2: OfflineAudioContext Buffer Compatibility Prevention', () => {
 
     it('should NOT use OfflineAudioContext for buffer decoding', async () => {
       const strategy = new DrumPreloadStrategy();
-      const offlineContextSpy = vi.spyOn(global, 'OfflineAudioContext' as any);
 
       await strategy.loadEssentialSamples();
 
@@ -272,25 +271,13 @@ describe('BUG #2: OfflineAudioContext Buffer Compatibility Prevention', () => {
       expect(decodedBuffer.duration).toBeGreaterThan(0);
     });
 
-    it('should prevent caching of AudioBuffers with wrong sampleRate', () => {
-      // OfflineAudioContext and real AudioContext might have different sample rates
-      // This causes playback issues (pitch shift, speed change)
-
-      const offlineBuffer = {
-        duration: 1.0,
-        sampleRate: 44100, // OfflineContext sample rate
-        numberOfChannels: 2,
-        length: 44100,
-      };
-
-      const realContext = new AudioContext();
-      // Real context might be 48000 Hz on some devices
-
-      // If we cache offlineBuffer directly and play it on realContext,
-      // the sample rate mismatch causes pitch/speed issues
-
-      // Solution: Cache raw ArrayBuffer, let real context decode it at its sample rate
-    });
+    it.todo(
+      'should prevent caching of AudioBuffers with wrong sampleRate ' +
+        '(OfflineAudioContext at 44100 vs real AudioContext potentially ' +
+        'at 48000 — sample-rate mismatch causes pitch/speed issues). ' +
+        'The fix is to cache raw ArrayBuffer and let the real context ' +
+        'decode at its own rate; need to write the actual assertion.',
+    );
   });
 
   // ============================================================================

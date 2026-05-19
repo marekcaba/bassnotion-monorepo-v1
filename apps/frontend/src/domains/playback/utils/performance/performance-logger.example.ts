@@ -54,11 +54,11 @@ export class PerformanceAwareDrumEngine {
     }
   }
 
-  private validateKit(kit: DrumKit): void {
+  private validateKit(_kit: DrumKit): void {
     // Validation logic
   }
 
-  private async loadSamples(kit: DrumKit): Promise<void> {
+  private async loadSamples(_kit: DrumKit): Promise<void> {
     // Simulate loading
     await new Promise((resolve) => setTimeout(resolve, 200));
   }
@@ -110,16 +110,16 @@ export class PerformanceAwareMidiProcessor {
     }
   }
 
-  private async parse(file: File): Promise<any> {
+  private async parse(_file: File): Promise<any> {
     await new Promise((resolve) => setTimeout(resolve, 30));
     return {};
   }
 
-  private validate(data: any): void {
+  private validate(_data: any): void {
     // Validation
   }
 
-  private async transform(data: any): Promise<MidiFile> {
+  private async transform(_data: any): Promise<MidiFile> {
     await new Promise((resolve) => setTimeout(resolve, 20));
     return { tracks: [], duration: 100 } as any;
   }
@@ -228,11 +228,11 @@ export class InstrumentLoader {
     return { id: Math.random().toString(36).substr(2, 9) };
   }
 
-  private async loadResources(instance: any, config: any): Promise<void> {
+  private async loadResources(_instance: any, _config: any): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 150));
   }
 
-  private async applyEffects(instance: any): Promise<void> {
+  private async applyEffects(_instance: any): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 5));
   }
 }
