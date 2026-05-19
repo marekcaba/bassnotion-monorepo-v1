@@ -341,7 +341,7 @@ export class ErrorRecoveryRegistry extends ErrorRecovery {
       canHandle: (error) =>
         error instanceof InstrumentError &&
         error.code === InstrumentErrorCode.INSTRUMENT_INIT_FAILED,
-      recover: async (error, context) => {
+      recover: async (error, _context) => {
         logger.info('Attempting instrument initialization recovery');
 
         // Emit event for instrument to reinitialize
@@ -364,7 +364,7 @@ export class ErrorRecoveryRegistry extends ErrorRecovery {
       canHandle: (error) =>
         error instanceof InstrumentError &&
         error.code === InstrumentErrorCode.SAMPLE_MAPPING_FAILED,
-      recover: async (error, context) => {
+      recover: async (error, _context) => {
         logger.info('Attempting sample loading recovery');
 
         // Try fallback samples
@@ -383,7 +383,7 @@ export class ErrorRecoveryRegistry extends ErrorRecovery {
       canHandle: (error) =>
         error instanceof InstrumentError &&
         error.code === InstrumentErrorCode.VOICE_LIMIT_EXCEEDED,
-      recover: async (error, context) => {
+      recover: async (error, _context) => {
         logger.info('Attempting voice limit recovery');
 
         // Request voice stealing
@@ -402,7 +402,7 @@ export class ErrorRecoveryRegistry extends ErrorRecovery {
       canHandle: (error) =>
         error instanceof InstrumentError &&
         error.code === InstrumentErrorCode.CPU_OVERLOAD,
-      recover: async (error, context) => {
+      recover: async (_error, _context) => {
         logger.info('Attempting CPU overload recovery');
 
         // Reduce quality settings
@@ -446,7 +446,7 @@ export class ErrorRecoveryRegistry extends ErrorRecovery {
       canHandle: (error) =>
         error instanceof MidiError &&
         error.code === MidiErrorCode.INVALID_EVENT,
-      recover: async (error, context) => {
+      recover: async (error, _context) => {
         logger.info('Attempting MIDI validation recovery');
 
         // Skip invalid events
@@ -465,7 +465,7 @@ export class ErrorRecoveryRegistry extends ErrorRecovery {
       priority: 7,
       canHandle: (error) =>
         error instanceof MidiError && error.code === MidiErrorCode.TIMING_ERROR,
-      recover: async (error, context) => {
+      recover: async (error, _context) => {
         logger.info('Attempting MIDI timing recovery');
 
         // Apply timing correction
@@ -490,7 +490,7 @@ export class ErrorRecoveryRegistry extends ErrorRecovery {
       canHandle: (error) =>
         error instanceof StorageError &&
         error.code === StorageErrorCode.STORAGE_CONNECTION_FAILED,
-      recover: async (error, context) => {
+      recover: async (error, _context) => {
         logger.info('Attempting storage connection recovery');
 
         // Wait and retry
@@ -512,7 +512,7 @@ export class ErrorRecoveryRegistry extends ErrorRecovery {
       canHandle: (error) =>
         error instanceof StorageError &&
         error.code === StorageErrorCode.CDN_UNREACHABLE,
-      recover: async (error, context) => {
+      recover: async (_error, _context) => {
         logger.info('Attempting CDN fallback recovery');
 
         // Use direct storage
@@ -531,7 +531,7 @@ export class ErrorRecoveryRegistry extends ErrorRecovery {
       canHandle: (error) =>
         error instanceof StorageError &&
         error.code === StorageErrorCode.CACHE_FULL,
-      recover: async (error, context) => {
+      recover: async (error, _context) => {
         logger.info('Attempting cache full recovery');
 
         // Clear old entries
@@ -551,7 +551,7 @@ export class ErrorRecoveryRegistry extends ErrorRecovery {
       canHandle: (error) =>
         error instanceof StorageError &&
         error.code === StorageErrorCode.CIRCUIT_BREAKER_OPEN,
-      recover: async (error, context) => {
+      recover: async (error, _context) => {
         logger.info('Attempting circuit breaker recovery');
 
         // Use fallback service
@@ -576,7 +576,7 @@ export class ErrorRecoveryRegistry extends ErrorRecovery {
       canHandle: (error) =>
         error instanceof TransportError &&
         error.code === TransportErrorCode.CLOCK_SYNC_FAILED,
-      recover: async (error, context) => {
+      recover: async (error, _context) => {
         logger.info('Attempting clock sync recovery');
 
         // Reinitialize clock
@@ -598,7 +598,7 @@ export class ErrorRecoveryRegistry extends ErrorRecovery {
       canHandle: (error) =>
         error instanceof TransportError &&
         error.code === TransportErrorCode.SCHEDULE_OVERFLOW,
-      recover: async (error, context) => {
+      recover: async (_error, _context) => {
         logger.info('Attempting schedule overflow recovery');
 
         // Drop non-critical events
@@ -617,7 +617,7 @@ export class ErrorRecoveryRegistry extends ErrorRecovery {
       canHandle: (error) =>
         error instanceof TransportError &&
         error.code === TransportErrorCode.WORKLET_INIT_FAILED,
-      recover: async (error, context) => {
+      recover: async (_error, _context) => {
         logger.info('Attempting worklet fallback recovery');
 
         // Use ScriptProcessor fallback
@@ -636,7 +636,7 @@ export class ErrorRecoveryRegistry extends ErrorRecovery {
       canHandle: (error) =>
         error instanceof TransportError &&
         error.code === TransportErrorCode.LATENCY_THRESHOLD_EXCEEDED,
-      recover: async (error, context) => {
+      recover: async (error, _context) => {
         logger.info('Attempting latency compensation recovery');
 
         // Increase buffer size
