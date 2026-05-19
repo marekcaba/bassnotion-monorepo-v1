@@ -14,27 +14,27 @@ class MockAudioParam {
   minValue = 0;
   maxValue = 1;
 
-  setValueAtTime(value: number, time: number) {
+  setValueAtTime(value: number, _time: number) {
     this.value = value;
     return this;
   }
 
-  linearRampToValueAtTime(value: number, time: number) {
+  linearRampToValueAtTime(value: number, _time: number) {
     this.value = value;
     return this;
   }
 
-  exponentialRampToValueAtTime(value: number, time: number) {
+  exponentialRampToValueAtTime(value: number, _time: number) {
     this.value = value;
     return this;
   }
 
-  setTargetAtTime(value: number, time: number, timeConstant: number) {
+  setTargetAtTime(value: number, _time: number, _timeConstant: number) {
     this.value = value;
     return this;
   }
 
-  cancelScheduledValues(time: number) {
+  cancelScheduledValues(_time: number) {
     return this;
   }
 }
@@ -64,8 +64,8 @@ class MockOscillatorNode extends MockAudioNode {
   detune = new MockAudioParam();
   type: OscillatorType = 'sine';
 
-  start(when?: number) {}
-  stop(when?: number) {}
+  start(_when?: number) {}
+  stop(_when?: number) {}
 }
 
 // Mock AudioBuffer
@@ -78,19 +78,19 @@ class MockAudioBuffer {
 
   duration = this.length / this.sampleRate;
 
-  getChannelData(channel: number): Float32Array {
+  getChannelData(_channel: number): Float32Array {
     return new Float32Array(this.length);
   }
 
   copyFromChannel(
-    destination: Float32Array,
-    channelNumber: number,
-    startInChannel?: number,
+    _destination: Float32Array,
+    _channelNumber: number,
+    _startInChannel?: number,
   ) {}
   copyToChannel(
-    source: Float32Array,
-    channelNumber: number,
-    startInChannel?: number,
+    _source: Float32Array,
+    _channelNumber: number,
+    _startInChannel?: number,
   ) {}
 }
 
@@ -161,7 +161,7 @@ export class MockAudioContext {
     return new MockAudioBuffer(sampleRate, length, numberOfChannels);
   }
 
-  decodeAudioData(audioData: ArrayBuffer): Promise<AudioBuffer> {
+  decodeAudioData(_audioData: ArrayBuffer): Promise<AudioBuffer> {
     return Promise.resolve(
       new MockAudioBuffer(this.sampleRate, 44100, 2) as any,
     );
