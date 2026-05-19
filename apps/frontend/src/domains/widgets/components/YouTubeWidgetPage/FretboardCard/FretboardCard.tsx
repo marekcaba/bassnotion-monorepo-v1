@@ -1,11 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ZoneCard, ZoneCardContent } from '@/ui-libraries';
-import { Target } from 'lucide-react';
 import {
   createStructuredLogger,
-  type FretboardViewConfig,
   type FretboardScrollMode,
 } from '@bassnotion/contracts';
 import { isVerboseDebugEnabled, verboseLog } from '@/config/debug';
@@ -107,18 +105,9 @@ import { useExerciseLoader } from './hooks/useExerciseLoader';
 import { useDotSynchronization } from './hooks/useDotSynchronization';
 import { useDotSelectionHandlers } from './hooks/useDotSelectionHandlers';
 import { useStringCountHandlers } from './hooks/useStringCountHandlers';
-import { ExerciseProgressBar } from './components/ExerciseProgressBar';
-import { FretboardControls } from './components/FretboardControls';
-import { FretboardModeControls } from './components/FretboardModeControls';
 import { FretboardGrid } from './components/FretboardGrid';
-import { convertTo3DFormat } from './utils/formatConversion';
-import {
-  Ring3DOverlayCanvas,
-  useRingOverlay,
-  DEFAULT_RING_CONFIG,
-} from './overlays';
+import { Ring3DOverlayCanvas, useRingOverlay } from './overlays';
 
-import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { useSnapshotTransition } from '@/shared/hooks/useSnapshotTransition';
 import { logSkeletonDebug } from '@/utils/skeletonDebug';
 import type { ExerciseNote } from '@bassnotion/contracts';
@@ -272,7 +261,6 @@ export const FretboardCard = React.memo(
     hide2DFretboard = true, // Hide 2D fretboard by default - use 3D overlay only
     hide3DFretboard = false, // DEBUG: Hide 3D overlay
   }: FretboardCardProps) {
-    const { correlationId, logger } = useCorrelation('FretboardCard');
     // Find the selected exercise object from the exercises list
     // Note: ex.id is an ExerciseId value object, so we compare with its .value property
     const selectedExercise =
@@ -374,8 +362,8 @@ const FretboardCardContent = React.memo(
     stringCount3D,
     setStringCount3D,
     maxFrets = 25,
-    onMaxFretsChange,
-    tutorialData,
+    onMaxFretsChange: _onMaxFretsChange,
+    tutorialData: _tutorialData,
     tutorialSlug,
     exercises,
     selectedExerciseId,
@@ -543,10 +531,10 @@ const FretboardCardContent = React.memo(
       setEffectiveOverlay3DConfig(overlay3DConfig);
     }, [overlay3DConfig]);
 
-    // Ring overlay state for Guitar Hero-style animated rings
-    // This state controls whether the 3D ring overlay is shown in 2D mode
-    // NOTE: Set to true for debugging/calibration of 3D canvas alignment
-    const [showRingOverlay, setShowRingOverlay] = useState(true);
+    // Ring overlay flag for Guitar Hero-style animated rings.
+    // Hardcoded to true currently (used for debugging/calibration of 3D
+    // canvas alignment) — was state but nothing ever toggled it.
+    const showRingOverlay = true;
     const fretboardContainerRef = useRef<HTMLDivElement>(null);
 
     // =============================================================================
@@ -694,8 +682,6 @@ const FretboardCardContent = React.memo(
 
     // Use prop exercises only (no global exercise selection hook)
     const exercisesList = exercises || [];
-    const exerciseLoading = false; // No loading state needed from parent-managed selection
-    const exerciseError = null; // No error state needed from parent-managed selection
 
     // Use prop value from parent instead of local state
     const effectiveSelectedExerciseId = selectedExerciseId || '';
@@ -724,101 +710,11 @@ const FretboardCardContent = React.memo(
       selectedExerciseIdRef.current = selectedExerciseIdFromSync;
     }, [selectedExerciseIdFromSync]);
 
-    // Track callback recreation - should now be stable
-    const callbackRecreationCount = useRef(0);
-
-    const handleExerciseSelect = React.useCallback(
-      (exerciseId: string) => {
-        // Track callback stability
-        callbackRecreationCount.current++;
-        logger.info(
-          `🔥 handleExerciseSelect call #${callbackRecreationCount.current}, exerciseId: ${exerciseId}`,
-        );
-
-        const exercise = exercisesListRef.current.find(
-          (ex) => ex.id.value === exerciseId,
-        );
-        if (exercise) {
-          // Check if this exercise is already selected by comparing with sync state
-          const wasAlreadySelected =
-            selectedExerciseIdRef.current === exerciseId;
-
-          // Add a unique selection timestamp to track user clicks
-          const timestamp = Date.now();
-          const exerciseWithTimestamp = {
-            ...exercise,
-            _selectionTimestamp: timestamp,
-          };
-
-          // Parent manages selectedExerciseId, we just notify via callback
-          onExerciseSelectRef.current?.(exerciseId);
-
-          // Emit comprehensive sync events to configure all widgets
-          const syncActions = syncActionsRef.current;
-          if (syncActions?.emitEvent) {
-            syncActions.emitEvent(
-              'EXERCISE_CHANGE',
-              {
-                exercise,
-                forceReload: wasAlreadySelected,
-                clickTimestamp: timestamp,
-              },
-              'high',
-            );
-          } else {
-            logger.warn(
-              '🔸 Sync actions not available yet for EXERCISE_CHANGE',
-            );
-          }
-
-          // Update tempo for metronome and global controls
-          if (exercise.bpm && exercise.bpm > 0 && syncActions?.emitEvent) {
-            syncActions.emitEvent(
-              'TEMPO_CHANGE',
-              {
-                tempo: exercise.bpm,
-                source: 'exercise-selector',
-                reason: 'exercise-template',
-              },
-              'high',
-            );
-          }
-
-          // Custom bassline pattern if available
-          if (
-            exercise.chord_progression &&
-            Array.isArray(exercise.chord_progression) &&
-            syncActions?.emitEvent
-          ) {
-            syncActions.emitEvent(
-              'CUSTOM_BASSLINE',
-              {
-                chordProgression: exercise.chord_progression,
-                key: exercise.key,
-                source: 'exercise-selector',
-                reason: 'exercise-template',
-              },
-              'normal',
-            );
-          }
-
-          // Volume configuration for optimal practice
-          if (syncActions?.emitEvent) {
-            syncActions.emitEvent(
-              'VOLUME_CHANGE',
-              {
-                masterVolume: 0.8,
-                metronomeVolume: 0.7,
-                source: 'exercise-selector',
-                reason: 'exercise-template',
-              },
-              'low',
-            );
-          }
-        }
-      },
-      [], // PERFORMANCE FIX: No dependencies - use refs instead
-    );
+    // REMOVED: handleExerciseSelect callback used to live here but is
+    // no longer wired up (exercise selection is handled upstream in
+    // YouTubeWidgetPage). The EXERCISE_CHANGE / TEMPO_CHANGE /
+    // CUSTOM_BASSLINE / VOLUME_CHANGE sync emits it owned are now
+    // dispatched from the parent's onExerciseSelect handler.
 
     // REMOVED: Auto-selection logic moved to parent (YouTubeWidgetPage)
     // The parent component manages selectedExerciseId as the single source of truth
@@ -1054,9 +950,6 @@ const FretboardCardContent = React.memo(
       return transitionPhase;
     }, [forceInitialZoom, transitionPhase]);
 
-    // Get selected exercise from sync props for GlobalControls
-    const activeExercise = syncProps.selectedExercise;
-
     // Exercise loading hook
     logger.info(
       `🎯 FretboardCard: calling useExerciseLoader for render #${globalRenderCount}`,
@@ -1110,8 +1003,10 @@ const FretboardCardContent = React.memo(
       handleDragEnd: fretboard.handleDragEnd,
     });
 
-    // String count handlers hook for 3D mode
-    const stringCountHandlers = useStringCountHandlers({
+    // String count handlers hook for 3D mode — kept calling for the
+    // cleanup-on-unmount effect inside the hook even though the
+    // returned handler is no longer consumed from this file.
+    useStringCountHandlers({
       currentStringCount: sharedStringCount,
       selectedDots: sharedSelectedDots,
       setStringCount: sharedSetStringCount,
@@ -1355,9 +1250,6 @@ const FretboardCardContent = React.memo(
       fretboard.exercise.audioIntegration.playbackPosition?.currentNote,
       scrollToFret,
     ]);
-
-    // Determine sync status
-    const syncStatus = syncProps.isConnected ? 'Synced' : 'Disconnected';
 
     // Horizontal scroll drag handlers
     const handleMouseDown = (e: React.MouseEvent) => {
