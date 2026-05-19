@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { TonePreloadTrigger } from '@/domains/playback/components/TonePreloadTrigger';
 import { WidgetPreloadTrigger } from '@/domains/widgets/components/WidgetPreloadTrigger';
 import { ScrollToTop } from '@/shared/components/ScrollToTop';
+import { AudioProvider } from '@/domains/playback/providers/AudioProvider';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -52,13 +53,13 @@ export async function generateMetadata({
  */
 export default async function TutorialLayout({ children }: LayoutProps) {
   return (
-    <>
+    <AudioProvider>
       {/* Reset scroll position on navigation to ensure initialization triggers fire */}
       <ScrollToTop />
       {/* FAANG Pattern: Parallel resource preloading */}
       <TonePreloadTrigger />
       <WidgetPreloadTrigger />
       {children}
-    </>
+    </AudioProvider>
   );
 }

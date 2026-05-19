@@ -237,10 +237,11 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
   ]);
 
   // Tempo control hook — installs global drag listeners + tempo-sync
-  // side effects (see useTempoControl.ts). Its return value is no
-  // longer consumed here (tempo handling moved to the toolbar
-  // subcomponent), but the hook is still called for its side effects.
-  useTempoControl({ transport });
+  // side effects (see useTempoControl.ts). Tempo UI handling lives in
+  // the toolbar subcomponent now; we still need lastUserTempoRef here
+  // because useExerciseLoader uses it to avoid syncing over a
+  // user-modified tempo on exercise change.
+  const { lastUserTempoRef } = useTempoControl({ transport });
 
   // Sheet music state. setCurrentPosition's callers moved to the
   // file-upload handler chain that's been extracted to the toolbar
@@ -397,7 +398,7 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
     metronomeTrackRef,
     drumTrackRef,
     bassTrackRef,
-    lastUserTempoRef: lastUserTempo,
+    lastUserTempoRef,
   });
 
   // Exercise navigation handlers

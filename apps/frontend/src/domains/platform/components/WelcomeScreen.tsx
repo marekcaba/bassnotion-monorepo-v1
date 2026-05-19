@@ -64,7 +64,7 @@ const QUICK_START_CARDS: QuickStartCard[] = [
     description:
       'Discover your skill level and get personalized recommendations',
     icon: ClipboardCheck,
-    action: '/assessment/v2',
+    action: '/assessment',
   },
 ];
 
@@ -179,7 +179,7 @@ export function WelcomeScreen() {
       ) : (
         <Card
           className="group cursor-pointer border-[#ffc700]/30 bg-zinc-900 transition-colors hover:border-[#ffc700]/50"
-          onClick={() => handleNavigate('/assessment/v2')}
+          onClick={() => handleNavigate('/assessment')}
         >
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg text-[#ffc700]">
@@ -214,7 +214,9 @@ export function WelcomeScreen() {
                 isClickable && 'cursor-pointer hover:border-zinc-700',
               )}
               onClick={
-                isClickable ? () => handleNavigate(card.action!) : undefined
+                card.action
+                  ? () => handleNavigate(card.action as string)
+                  : undefined
               }
             >
               <CardHeader className="pb-3">
