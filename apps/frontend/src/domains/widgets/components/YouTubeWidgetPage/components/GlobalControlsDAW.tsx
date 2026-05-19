@@ -12,26 +12,12 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import {
-  Play,
-  Pause,
-  Volume2,
-  Heart,
-  SkipBack,
-  SkipForward,
-  Star,
-  Music,
-  RotateCw,
-  FileText,
-} from 'lucide-react';
+import { Play, Pause, Volume2, Music, RotateCw } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { useTransportContext } from '@/domains/playback/contexts/TransportContext';
 import { useTrack } from '@/domains/playback/hooks';
-import { serviceRegistry } from '@/domains/playback/services/core/ServiceRegistry.js';
 import type { MusicalExercise as Exercise } from '@bassnotion/contracts';
 import type { CoreServices } from '@/domains/playback/services/core/CoreServices.js';
-import type { ExerciseLoader } from '@/domains/playback/services/core/ExerciseLoader.js';
-import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 interface GlobalControlsDAWProps {
   selectedExercise?: Exercise;
@@ -52,8 +38,8 @@ interface GlobalControlsDAWProps {
 
 export const GlobalControlsDAW: React.FC<GlobalControlsDAWProps> = ({
   selectedExercise,
-  exercises = [],
-  duration,
+  exercises: _exercises = [],
+  duration: _duration,
   hasSelectedDots = false,
   onResetFretboard,
   loopRegion,
@@ -90,8 +76,9 @@ export const GlobalControlsDAW: React.FC<GlobalControlsDAWProps> = ({
   // Local state for UI
   const [localTempo, setLocalTempo] = useState(transport.tempo || 120);
   const [localVolume, setLocalVolume] = useState(1.0);
-  const [isDraggingTempo, setIsDraggingTempo] = useState(false);
-  const [currentPosition, setCurrentPosition] = useState(2);
+  // isDraggingTempo: setter is called from drag handlers below for the
+  // re-render side effect, but no consumer reads the value here.
+  const [_isDraggingTempo, setIsDraggingTempo] = useState(false);
   const [isLooping, setIsLooping] = useState(isLoopEnabled);
 
   // Refs for tracking state changes

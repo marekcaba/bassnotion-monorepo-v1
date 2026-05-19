@@ -25,10 +25,7 @@ import { lifecycle } from '@/domains/playback/utils/InitializationLifecycleLogge
 import type { HarmonyWidgetProps, HarmonyExercise } from './types.js';
 import { useVolumeControl } from './hooks/useVolumeControl.js';
 import { useHarmonyInstrument } from './hooks/useHarmonyInstrument.js';
-import {
-  useChordProgression,
-  CHORD_PROGRESSIONS,
-} from './hooks/useChordProgression.js';
+import { useChordProgression } from './hooks/useChordProgression.js';
 import { useHarmonyPlugin } from './hooks/useHarmonyPlugin.js';
 import { useSampleLoadingSync } from './hooks/useSampleLoadingSync.js';
 import { useHarmonyRegistration } from './hooks/useHarmonyRegistration.js';
@@ -41,7 +38,7 @@ import {
 
 const HarmonyWidgetComponent = ({
   progression = ['CMaj7', 'Am7', 'Dm7', 'G7'],
-  currentChord = 0,
+  currentChord: _currentChord = 0,
   isPlaying,
   isVisible,
   tutorialId,
@@ -49,15 +46,17 @@ const HarmonyWidgetComponent = ({
   exercise,
   onNextChord = () => {},
   onProgressionChange,
-  onToggleVisibility,
+  onToggleVisibility: _onToggleVisibility,
   onTogglePlay,
-  isAdminMode = false,
+  isAdminMode: _isAdminMode = false,
   volume: controlledVolume,
   isMuted: controlledMuted,
   onVolumeChange,
   onMuteToggle,
 }: HarmonyWidgetProps) => {
-  const { correlationId, logger } = useCorrelation('HarmonyWidget');
+  // useCorrelation was called for the side effect of generating a
+  // correlation ID and binding it to logs; the value isn't read here.
+  useCorrelation('HarmonyWidget');
 
   // Lifecycle checkpoint
   useEffect(() => {
@@ -100,12 +99,9 @@ const HarmonyWidgetComponent = ({
   // Get sync context
   const syncContext = useSyncContext();
 
-  // Visual beat tracking for jitter-free UI
-  const { beatIndex, measureIndex, isCountdown } = useVisualBeat(
-    4,
-    isPlaying,
-    isVisible,
-  );
+  // Visual beat tracking for jitter-free UI — only measureIndex is
+  // currently consumed (the indicator updates per measure, not per beat).
+  const { measureIndex } = useVisualBeat(4, isPlaying, isVisible);
 
   // Direct DOM chord synchronization
   const { registerChordIndicator } = useMeasureSync({
@@ -158,13 +154,17 @@ const HarmonyWidgetComponent = ({
     tempo,
   });
 
-  // Plugin hook
+  // Plugin hook — pluginClassLoaded / audioServicesReady /
+  // createAudioNodeAttempt are exposed for debugging/observability but
+  // not consumed by the widget itself; underscore-prefix to silence
+  // no-unused-vars while keeping the destructure intact for clarity
+  // about what the hook returns.
   const {
     wamPluginLoaded,
-    pluginClassLoaded,
-    audioServicesReady,
+    pluginClassLoaded: _pluginClassLoaded,
+    audioServicesReady: _audioServicesReady,
     keyboardPluginRef,
-    createAudioNodeAttempt,
+    createAudioNodeAttempt: _createAudioNodeAttempt,
     testChord,
   } = useHarmonyPlugin({
     trackIsReady,
@@ -177,25 +177,31 @@ const HarmonyWidgetComponent = ({
     samplesLoadedTrigger,
   });
 
-  // Registration hook
-  const { registerHarmonyWithPlaybackEngine, scheduleProgression } =
-    useHarmonyRegistration({
-      exercise: exercise as HarmonyExercise,
-      exerciseRef: exerciseRef as React.RefObject<HarmonyExercise | undefined>,
-      keyboardPluginRef,
-      currentInstrument,
-      setCurrentInstrument,
-      trackIsReady,
-      wamPluginLoaded,
-      samplesLoadedTrigger,
-      isPlaying,
-      isPlayingRef,
-      harmonyNoteCount,
-      volume,
-      isMuted,
-      selectedProgression,
-      onNextChord,
-    });
+  // Registration hook — kept calling for the side effects inside it
+  // (registers the harmony track with PlaybackEngine + schedules the
+  // chord progression on Transport). The returned imperative APIs
+  // (registerHarmonyWithPlaybackEngine, scheduleProgression) are not
+  // invoked from this file.
+  const {
+    registerHarmonyWithPlaybackEngine: _registerHarmonyWithPlaybackEngine,
+    scheduleProgression: _scheduleProgression,
+  } = useHarmonyRegistration({
+    exercise: exercise as HarmonyExercise,
+    exerciseRef: exerciseRef as React.RefObject<HarmonyExercise | undefined>,
+    keyboardPluginRef,
+    currentInstrument,
+    setCurrentInstrument,
+    trackIsReady,
+    wamPluginLoaded,
+    samplesLoadedTrigger,
+    isPlaying,
+    isPlayingRef,
+    harmonyNoteCount,
+    volume,
+    isMuted,
+    selectedProgression,
+    onNextChord,
+  });
 
   // Pattern selector for library
   const patternSelector = tutorialId
