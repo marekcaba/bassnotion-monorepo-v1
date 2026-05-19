@@ -8,9 +8,7 @@ const logger = createStructuredLogger('SwaggerConfig');
 export function setupSwagger(app: INestApplication): void {
   const config = new DocumentBuilder()
     .setTitle('Bassicology API')
-    .setDescription(
-      'The Bassicology API documentation for learning bass guitar',
-    )
+    .setDescription('The Bassicology API documentation for learning bass guitar')
     .setVersion('1.0')
     .addTag('auth', 'Authentication endpoints')
     .addTag('exercises', 'Exercise management')
