@@ -52,9 +52,15 @@
           "error",
           {
             "argsIgnorePattern": "^_",
-            "varsIgnorePattern": "^_"
+            "varsIgnorePattern": "^_",
+            "caughtErrors": "all",
+            "caughtErrorsIgnorePattern": "^(_|e$|err$|error$|ex$)"
           }
-        ]
+        ],
+        "@typescript-eslint/no-non-null-assertion": "warn",
+        "@typescript-eslint/no-unsafe-function-type": "warn",
+        "@typescript-eslint/no-empty-function": "warn",
+        "@typescript-eslint/ban-ts-comment": "warn"
       }
     },
     {
@@ -113,9 +119,15 @@
           "error",
           {
             "argsIgnorePattern": "^_",
-            "varsIgnorePattern": "^_"
+            "varsIgnorePattern": "^_",
+            "caughtErrors": "all",
+            "caughtErrorsIgnorePattern": "^(_|e$|err$|error$|ex$)"
           }
         ],
+        "@typescript-eslint/no-non-null-assertion": "warn",
+        "@typescript-eslint/no-unsafe-function-type": "warn",
+        "@typescript-eslint/no-empty-function": "warn",
+        "@typescript-eslint/ban-ts-comment": "warn",
         "react-hooks/rules-of-hooks": "error",
         "react-hooks/exhaustive-deps": [
           "warn",
