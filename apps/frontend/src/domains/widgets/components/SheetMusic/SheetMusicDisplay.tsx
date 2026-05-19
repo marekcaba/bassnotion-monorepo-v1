@@ -258,10 +258,7 @@ export function SheetMusicDisplay({
         // Access the graphic sheet to inspect actual measure positions
         if (osmd.GraphicSheet && osmd.GraphicSheet.MeasureList) {
           const measureList = osmd.GraphicSheet.MeasureList;
-          verboseLog(
-            '[SheetMusicDisplay] Total measures:',
-            measureList.length,
-          );
+          verboseLog('[SheetMusicDisplay] Total measures:', measureList.length);
 
           measureList.forEach(
             (measureArray: unknown[], measureIndex: number) => {

@@ -619,6 +619,7 @@ function YouTubeWidgetPageContent({
 
   // Ref for handleExerciseSelect to avoid stale closure in auto-selection effect
   const handleExerciseSelectRef = useRef<(exerciseId: string) => void>(
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
     () => {},
   );
 
@@ -744,15 +745,12 @@ function YouTubeWidgetPageContent({
           exercise.harmonyNotes &&
           exercise.harmonyNotes.length > 0
         ) {
-          verboseLog(
-            '🔍 [EXERCISE-SELECT] Checking if samples need loading:',
-            {
-              exerciseId: exercise.id,
-              instrument: exercise.harmonyInstrument,
-              harmonyNotesCount: exercise.harmonyNotes.length,
-              scrollHasTriggered,
-            },
-          );
+          verboseLog('🔍 [EXERCISE-SELECT] Checking if samples need loading:', {
+            exerciseId: exercise.id,
+            instrument: exercise.harmonyInstrument,
+            harmonyNotesCount: exercise.harmonyNotes.length,
+            scrollHasTriggered,
+          });
 
           // If scroll hasn't happened yet, skip loading - ScrollTriggerLoader handles it
           if (!scrollHasTriggered) {
@@ -1701,13 +1699,10 @@ export function YouTubeWidgetPage({
 
         hasPreseededRef.current = true;
       } else if (userModified) {
-        verboseLog(
-          `🎵 [TEMPO-PRESEED v2] Skipping - user has modified tempo`,
-          {
-            currentBpm,
-            exerciseBpm: firstExercise.bpm,
-          },
-        );
+        verboseLog(`🎵 [TEMPO-PRESEED v2] Skipping - user has modified tempo`, {
+          currentBpm,
+          exerciseBpm: firstExercise.bpm,
+        });
       }
     }
   }

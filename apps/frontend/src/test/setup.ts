@@ -55,8 +55,12 @@ if (!global.IntersectionObserver) {
       }
     }
 
+    // IntersectionObserver stub methods — empty by design for jsdom tests.
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
     observe(_target: Element): void {}
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
     unobserve(_target: Element): void {}
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
     disconnect(): void {}
     takeRecords(): IntersectionObserverEntry[] {
       return [];
@@ -365,9 +369,7 @@ beforeEach(() => {
       scheduleOnce: vi.fn(() => 0),
       clear: vi.fn(),
       // Position conversion helpers used by TrackMixingEngine etc.
-      toSeconds: vi.fn((time: any) =>
-        typeof time === 'number' ? time : 0,
-      ),
+      toSeconds: vi.fn((time: any) => (typeof time === 'number' ? time : 0)),
       toTicks: vi.fn(() => 0),
     };
 

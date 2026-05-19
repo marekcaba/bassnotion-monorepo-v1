@@ -570,12 +570,15 @@ export class RegionScheduler {
 
             if (!hasMainKey && !hasBackupKey) {
               // Schedule it immediately - absoluteTime is in seconds
-              const toneId = Tone.getTransport().schedule((backupTime: number) => {
-                if (!isRunning) return;
-                // CRITICAL FIX: Use absoluteTime (intended time in seconds) not backupTime (Tone's lookahead time)
-                // Must match the main scheduling method to avoid timing drift
-                emitEvent(instrumentType, event, absoluteTime);
-              }, absoluteTime);
+              const toneId = Tone.getTransport().schedule(
+                (backupTime: number) => {
+                  if (!isRunning) return;
+                  // CRITICAL FIX: Use absoluteTime (intended time in seconds) not backupTime (Tone's lookahead time)
+                  // Must match the main scheduling method to avoid timing drift
+                  emitEvent(instrumentType, event, absoluteTime);
+                },
+                absoluteTime,
+              );
 
               // Mark as scheduled to prevent duplicate scheduling
               // Use loop0 as the main event key (backup scheduler assumes loop 0)

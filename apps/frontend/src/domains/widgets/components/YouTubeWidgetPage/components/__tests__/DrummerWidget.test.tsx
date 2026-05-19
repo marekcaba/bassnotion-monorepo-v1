@@ -61,7 +61,8 @@ vi.mock('@/domains/playback/contexts/TransportContext', () => {
     useTransportContext: vi.fn(() => transportState),
     useTransport: vi.fn(() => transportState),
     useTransportPosition: vi.fn(() => transportState.position),
-    TransportProvider: ({ children }: { children: React.ReactNode }) => children,
+    TransportProvider: ({ children }: { children: React.ReactNode }) =>
+      children,
   };
 });
 

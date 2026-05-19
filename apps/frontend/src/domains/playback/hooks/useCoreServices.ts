@@ -341,9 +341,8 @@ export function useCoreServices(
       // reconnect cleanly if CoreServices is recreated later. Done via dynamic
       // import to avoid a hard cross-domain coupling at module init time.
       try {
-        const { widgetSyncService } = await import(
-          '../../widgets/services/WidgetSyncService.js'
-        );
+        const { widgetSyncService } =
+          await import('../../widgets/services/WidgetSyncService.js');
         widgetSyncService.disconnectFromEventBus();
       } catch (err) {
         logger.warn(

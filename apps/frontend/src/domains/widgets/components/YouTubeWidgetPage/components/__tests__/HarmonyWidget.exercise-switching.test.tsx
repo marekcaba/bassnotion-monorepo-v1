@@ -91,7 +91,7 @@ vi.mock('@/domains/playback/hooks/useTrack', () => ({
 // Mock ensureAudioContext
 vi.mock('@/domains/playback/utils/ensureAudioContext', () => ({
   ensureAudioContext: vi.fn(),
-  withAudioContext: (fn: Function) => fn,
+  withAudioContext: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
 }));
 
 // Mock GlobalSampleCache - track what instrument is requested
@@ -205,7 +205,8 @@ vi.mock('@/domains/playback/contexts/TransportContext', () => {
     useTransportContext: () => transportState,
     useTransport: () => transportState,
     useTransportPosition: () => transportState.position,
-    TransportProvider: ({ children }: { children: React.ReactNode }) => children,
+    TransportProvider: ({ children }: { children: React.ReactNode }) =>
+      children,
   };
 });
 

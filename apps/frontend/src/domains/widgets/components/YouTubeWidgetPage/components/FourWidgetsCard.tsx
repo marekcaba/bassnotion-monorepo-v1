@@ -309,7 +309,6 @@ export function FourWidgetsCard({
             />
           </WidgetErrorBoundary>
         </div>
-
       </ZoneCardContent>
     </ZoneCard>
   );

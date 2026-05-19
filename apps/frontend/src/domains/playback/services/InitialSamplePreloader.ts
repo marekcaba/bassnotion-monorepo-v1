@@ -172,7 +172,9 @@ export class InitialSamplePreloader {
         // internal lifecycle marker that nothing user-facing listens to,
         // and other tests may depend on it.
         window.dispatchEvent(new Event('essentialSamplesReady'));
-        logger.info('✅ Essential samples ready (samplesReady will be dispatched by orchestrator)');
+        logger.info(
+          '✅ Essential samples ready (samplesReady will be dispatched by orchestrator)',
+        );
       }
     } catch (error) {
       logger.error('❌ Failed to register instrument configs:', error);

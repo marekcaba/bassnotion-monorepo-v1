@@ -301,14 +301,52 @@ describe('DI Integration Tests - Core Functionality', () => {
       // createEQ3, etc.) is missing, so the partial engine still needs a
       // getTone() returning a usable mock for the fallback path.
       const fallbackToneInstance = {
-        Panner: vi.fn(() => ({ pan: { value: 0 }, connect: vi.fn(), disconnect: vi.fn(), dispose: vi.fn() })),
-        EQ3: vi.fn(() => ({ connect: vi.fn(), disconnect: vi.fn(), dispose: vi.fn() })),
-        Filter: vi.fn(() => ({ frequency: { value: 1000 }, type: 'lowpass', connect: vi.fn(), disconnect: vi.fn(), dispose: vi.fn() })),
-        Compressor: vi.fn(() => ({ connect: vi.fn(), disconnect: vi.fn(), dispose: vi.fn() })),
-        Limiter: vi.fn(() => ({ connect: vi.fn(), disconnect: vi.fn(), dispose: vi.fn() })),
-        Meter: vi.fn(() => ({ getValue: vi.fn(() => -60), connect: vi.fn(), disconnect: vi.fn(), dispose: vi.fn() })),
-        Analyser: vi.fn(() => ({ getValue: vi.fn(() => new Float32Array(1024)), connect: vi.fn(), disconnect: vi.fn(), dispose: vi.fn() })),
-        Gate: vi.fn(() => ({ threshold: { value: -40 }, connect: vi.fn(), disconnect: vi.fn(), dispose: vi.fn() })),
+        Panner: vi.fn(() => ({
+          pan: { value: 0 },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          dispose: vi.fn(),
+        })),
+        EQ3: vi.fn(() => ({
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          dispose: vi.fn(),
+        })),
+        Filter: vi.fn(() => ({
+          frequency: { value: 1000 },
+          type: 'lowpass',
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          dispose: vi.fn(),
+        })),
+        Compressor: vi.fn(() => ({
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          dispose: vi.fn(),
+        })),
+        Limiter: vi.fn(() => ({
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          dispose: vi.fn(),
+        })),
+        Meter: vi.fn(() => ({
+          getValue: vi.fn(() => -60),
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          dispose: vi.fn(),
+        })),
+        Analyser: vi.fn(() => ({
+          getValue: vi.fn(() => new Float32Array(1024)),
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          dispose: vi.fn(),
+        })),
+        Gate: vi.fn(() => ({
+          threshold: { value: -40 },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          dispose: vi.fn(),
+        })),
       };
       const partialAudioEngine = {
         createGain: vi.fn(() => ({

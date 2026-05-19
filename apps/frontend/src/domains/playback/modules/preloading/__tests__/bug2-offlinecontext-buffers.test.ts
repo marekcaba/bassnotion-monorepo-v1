@@ -255,7 +255,9 @@ describe('BUG #2: OfflineAudioContext Buffer Compatibility Prevention', () => {
       // ✅ BUG #2 FIX: Use getCachedRawBuffer() to get ArrayBuffer (not getCachedBuffer which returns AudioBuffer)
       // getCachedRawBuffer is async (it walks the IndexedDB cache), so await it.
       const cachedBuffer =
-        await GlobalSampleCache.getInstance().getCachedRawBuffer('grandpiano-v10-C4');
+        await GlobalSampleCache.getInstance().getCachedRawBuffer(
+          'grandpiano-v10-C4',
+        );
 
       // Should be ArrayBuffer
       expect(cachedBuffer).toBeInstanceOf(ArrayBuffer);

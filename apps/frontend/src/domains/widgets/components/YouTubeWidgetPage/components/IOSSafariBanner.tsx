@@ -27,8 +27,7 @@ function isIOSSafari(): boolean {
   // 'FxiOS', 'EdgiOS', 'OPiOS' (all of which use WebKit on iOS but identify
   // separately and may have their own audio quirks worth detecting later).
   const isSafari =
-    /Safari/.test(ua) &&
-    !/Chrome|CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
+    /Safari/.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
   return isIOS && isSafari;
 }
 

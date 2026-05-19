@@ -253,7 +253,9 @@ export class TransportController implements Service {
     if (this.config.enableLegacyCompatibility) {
       const Tone = getTone();
       Tone.getTransport().position = 0;
-      logger.info('Reset Tone.Transport.position to 0 for clean playback start');
+      logger.info(
+        'Reset Tone.Transport.position to 0 for clean playback start',
+      );
     }
 
     // FAANG FIX: Reset position to timeline start (0:0:0) before starting

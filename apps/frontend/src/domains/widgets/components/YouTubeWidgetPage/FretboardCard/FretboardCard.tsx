@@ -1648,7 +1648,6 @@ const FretboardCardContent = React.memo(
                     />
                   </div>
                 )}
-
             </div>
           </div>
         </ZoneCardContent>

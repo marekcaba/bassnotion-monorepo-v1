@@ -348,7 +348,11 @@ describe('MusicalTimeConverter - Story 3.15 Behavior Tests', () => {
 
   describe('Integration with Story 3.15 Components', () => {
     it('should provide tick values for drum pattern scheduling', () => {
-      const kickPosition: MusicalPosition = { measure: 1, beat: 1, subdivision: 0 };
+      const kickPosition: MusicalPosition = {
+        measure: 1,
+        beat: 1,
+        subdivision: 0,
+      };
       const snarePosition: MusicalPosition = {
         measure: 1,
         beat: 2,
@@ -370,8 +374,16 @@ describe('MusicalTimeConverter - Story 3.15 Behavior Tests', () => {
     });
 
     it('should support bass note timing with techniques', () => {
-      const noteStart: MusicalPosition = { measure: 1, beat: 1, subdivision: 0 };
-      const slideTarget: MusicalPosition = { measure: 1, beat: 1, subdivision: 1 };
+      const noteStart: MusicalPosition = {
+        measure: 1,
+        beat: 1,
+        subdivision: 0,
+      };
+      const slideTarget: MusicalPosition = {
+        measure: 1,
+        beat: 1,
+        subdivision: 1,
+      };
 
       const startTick = MusicalTimeConverter.musicalPositionToTick(
         noteStart,

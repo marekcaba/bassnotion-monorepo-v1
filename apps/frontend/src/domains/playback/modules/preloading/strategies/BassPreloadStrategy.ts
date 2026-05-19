@@ -55,10 +55,7 @@ const logger = getLogger('BassPreloadStrategy');
  * uses the D-string sample would silently get back the G-string sample
  * cached by an earlier exercise (same pitch, wrong timbre).
  */
-function buildBassCacheKey(
-  midiNote: number,
-  sampleString: BassString,
-): string {
+function buildBassCacheKey(midiNote: number, sampleString: BassString): string {
   return `bass-${midiNote}-${sampleString}`;
 }
 

@@ -384,20 +384,21 @@ export function usePlaybackControl(
       (note: any) => note.string >= 1 && note.string <= 5,
     );
     const bassNotReady =
-      hasBassNotes &&
-      !WindowRegistry.getBassBuffersReady(selectedExercise?.id);
+      hasBassNotes && !WindowRegistry.getBassBuffersReady(selectedExercise?.id);
 
     // Harmony track readiness: the exercise has harmony content but the
     // widget hasn't yet registered the harmony track with PlaybackEngine
     // (slow Wurlitzer/GrandPiano sampler init can take 2-3s after
     // tutorial-mount). Without waiting, scheduleAllRegions() runs before
     // harmony track exists → no harmony notes get scheduled → silent harmony.
-    const hasHarmonyNotes =
-      (selectedExercise as any)?.harmonyNotes?.length > 0;
+    const hasHarmonyNotes = (selectedExercise as any)?.harmonyNotes?.length > 0;
     let harmonyTrackNotReady = false;
     if (hasHarmonyNotes && typeof window !== 'undefined') {
-      const playbackEngine = WindowRegistry.getCoreServices()?.getPlaybackEngine?.();
-      harmonyTrackNotReady = !playbackEngine?.getTracks?.()?.has?.('harmony-widget-track');
+      const playbackEngine =
+        WindowRegistry.getCoreServices()?.getPlaybackEngine?.();
+      harmonyTrackNotReady = !playbackEngine
+        ?.getTracks?.()
+        ?.has?.('harmony-widget-track');
     }
 
     if (samplesNotReady || bassNotReady || harmonyTrackNotReady) {
@@ -457,7 +458,9 @@ export function usePlaybackControl(
     }
 
     if (harmonyTrackNotReady) {
-      logger.warn('⚠️ Harmony track not yet registered with PlaybackEngine, waiting...');
+      logger.warn(
+        '⚠️ Harmony track not yet registered with PlaybackEngine, waiting...',
+      );
       try {
         await waitForHarmonyTrackReady();
         logger.info('✅ Harmony track ready, continuing with playback');
@@ -467,7 +470,9 @@ export function usePlaybackControl(
         // blocking the user. Same approach as bass-fail recovery.
       }
     } else if (hasHarmonyNotes) {
-      logger.debug('✅ Harmony track already registered, proceeding with playback');
+      logger.debug(
+        '✅ Harmony track already registered, proceeding with playback',
+      );
     }
 
     setIsLoadingSamples(false);
