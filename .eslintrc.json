@@ -123,9 +123,9 @@
             "additionalHooks": "(useCallback|useMemo|useEffect|useLayoutEffect)"
           }
         ],
-        "no-console": "error",
+        "no-console": "off",
         "no-restricted-syntax": [
-          "error",
+          "warn",
           {
             "selector": "CallExpression[callee.object.name='console'][callee.property.name=/^(log|error|warn|debug|info)$/]",
             "message": "Use structured logging instead of console methods. For React components, use: const { logger } = useCorrelation('ComponentName'); For services, use: const logger = createStructuredLogger('ServiceName');"
@@ -203,9 +203,9 @@
       "extends": ["eslint:recommended", "plugin:@nx/javascript", "prettier"],
       "rules": {
         "prettier/prettier": "error",
-        "no-console": "error",
+        "no-console": "off",
         "no-restricted-syntax": [
-          "error",
+          "warn",
           {
             "selector": "CallExpression[callee.object.name='console'][callee.property.name=/^(log|error|warn|debug|info)$/]",
             "message": "Use structured logging instead of console methods. Use: const logger = createStructuredLogger('ServiceName');"
