@@ -214,7 +214,9 @@ export function WelcomeScreen() {
                 isClickable && 'cursor-pointer hover:border-zinc-700',
               )}
               onClick={
-                isClickable ? () => handleNavigate(card.action!) : undefined
+                card.action
+                  ? () => handleNavigate(card.action as string)
+                  : undefined
               }
             >
               <CardHeader className="pb-3">

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { BunnyQuizPlayer } from '@/domains/assessment/components';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import type { AssessmentConfig } from '@bassnotion/contracts';
 
 // Fallback data in case API fails
@@ -15,6 +16,7 @@ import {
 
 export default function AssessmentPage() {
   const router = useRouter();
+  const { logger } = useCorrelation('AssessmentPage');
   const [config, setConfig] = useState<AssessmentConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [progress, setProgress] = useState({ answered: 0, total: 0 });
@@ -53,10 +55,9 @@ export default function AssessmentPage() {
           setConfig(data.config);
         } else {
           // Use fallback data if config invalid
-          console.warn(
-            'Invalid config from API, using fallback',
-            data.config?.videoId,
-          );
+          logger.warn('Invalid config from API, using fallback', {
+            videoId: data.config?.videoId,
+          });
           setConfig({
             videoPlatform: 'bunny',
             videoLibraryId: BUNNY_LIBRARY_ID,
@@ -66,7 +67,10 @@ export default function AssessmentPage() {
           });
         }
       } catch (err) {
-        console.error('Failed to fetch assessment config:', err);
+        logger.error(
+          'Failed to fetch assessment config',
+          err instanceof Error ? err : undefined,
+        );
         // Use fallback data on error
         setConfig({
           videoPlatform: 'bunny',
@@ -81,12 +85,17 @@ export default function AssessmentPage() {
     };
 
     fetchConfig();
-  }, []);
+  }, [logger]);
 
-  const handleComplete = useCallback((assignedJourneyId: string | null) => {
-    console.log('Assessment complete, journey assigned:', assignedJourneyId);
-    // The actual redirect happens when user clicks "Start Your Journey" on ResultsScreen
-  }, []);
+  const handleComplete = useCallback(
+    (assignedJourneyId: string | null) => {
+      logger.info('Assessment complete, journey assigned', {
+        assignedJourneyId,
+      });
+      // The actual redirect happens when user clicks "Start Your Journey" on ResultsScreen
+    },
+    [logger],
+  );
 
   const handleProgressChange = useCallback(
     (answered: number, total: number) => {
