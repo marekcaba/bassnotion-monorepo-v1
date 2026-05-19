@@ -1,7 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { TransportController } from '../TransportController.js';
-import type { EventBus } from '../../../../services/core/EventBus.js';
-import type { AudioEngine } from '../../../../services/core/AudioEngine.js';
 import * as Tone from 'tone';
 
 // Mock Tone.js FIRST (before other mocks that reference it)
@@ -59,11 +57,11 @@ vi.mock('../Transport.js', () => {
       };
       private _tickCallback: Function | null = null;
 
-      constructor(config: any) {}
+      constructor(_config: any) {}
 
-      async initialize(audioContext: any) {}
+      async initialize(_audioContext: any) {}
 
-      start(options?: any) {
+      start(_options?: any) {
         this._isRunning = true;
       }
 
@@ -84,11 +82,11 @@ vi.mock('../Transport.js', () => {
         this._currentTime = seconds;
       }
 
-      setTransportStartTime(time: number) {}
+      setTransportStartTime(_time: number) {}
 
-      setCountdownOffset(duration: number) {}
+      setCountdownOffset(_duration: number) {}
 
-      updateConfig(config: any) {}
+      updateConfig(_config: any) {}
 
       getCurrentTime() {
         return this._currentTime;
@@ -216,9 +214,9 @@ vi.mock('../../../position/MusicalPositionManager.js', () => {
         this.timeSignature = ts;
       }
 
-      setLoop(start: any, end: any, enabled: boolean) {}
+      setLoop(_start: any, _end: any, _enabled: boolean) {}
 
-      setLoopEnabled(enabled: boolean) {}
+      setLoopEnabled(_enabled: boolean) {}
 
       getLoop() {
         return {
@@ -242,7 +240,7 @@ vi.mock('../../../position/MusicalPositionManager.js', () => {
         return (totalBeats / this.tempo) * 60;
       }
 
-      getQuantumDuration(quantum: string) {
+      getQuantumDuration(_quantum: string) {
         return 1.0; // Simplified for testing
       }
 

@@ -49,10 +49,7 @@ import { GlobalControls } from './components/GlobalControls';
 import { CountdownIndicator } from './GlobalControls/components/CountdownIndicator.js';
 import { calculateDuration, getExerciseId } from './utils';
 import { ensureAudioContextLightweight } from '@/domains/playback/utils/ensureAudioContext.js';
-import {
-  useTutorialProgressActions,
-  useSingleTutorialProgress,
-} from '@/domains/platform/hooks/useTutorialProgress';
+import { useTutorialProgressActions } from '@/domains/platform/hooks/useTutorialProgress';
 // Block system imports
 import type { AnyBlock } from '@bassnotion/contracts';
 import { BlockRenderer } from './blocks';
@@ -80,8 +77,10 @@ function YouTubeWidgetPageContent({
   initialExerciseId,
   hideChrome = false,
 }: YouTubeWidgetPageProps) {
-  // XState Phase 2: Page initialization state machine
-  const pageInit = usePageInitialization({
+  // XState Phase 2: Page initialization state machine — called for
+  // its side effects (state transitions + lifecycle telemetry). The
+  // returned machine handle isn't read here.
+  usePageInitialization({
     tutorial: tutorialData
       ? {
           id: tutorialData.id,
@@ -101,7 +100,9 @@ function YouTubeWidgetPageContent({
   const widgetState = useWidgetPageState();
   const { emitGlobalEvent, syncState } = useSyncContext();
   const { profile, isLoading: isProfileLoading } = useUserProfile();
-  const { isAuthenticated } = useAuth();
+  // useAuth() is called for the side effect of subscribing to auth
+  // changes — the isAuthenticated value isn't consumed in this file.
+  useAuth();
   const { navigateWithTransition } = useViewTransitionRouter();
   const isAdmin = profile?.role === 'admin';
 
@@ -110,9 +111,7 @@ function YouTubeWidgetPageContent({
     usePracticeCompletions(tutorialData?.id);
 
   // Tutorial progress actions for three-stage tracking (understand, practice, apply)
-  const { markUnderstood, markApplied } = useTutorialProgressActions(
-    tutorialData?.id,
-  );
+  const { markUnderstood } = useTutorialProgressActions(tutorialData?.id);
 
   // FAANG Solution: Clear state management for preview mode
   // Only check sessionStorage, don't rely on referrer (unreliable)
@@ -332,20 +331,18 @@ function YouTubeWidgetPageContent({
     };
   }, []); // FIXED: Empty dependency array - listener should only be set up once
 
-  // DEBUG: XYZ rotation controls for 2D fretboard CSS transform
-  // These rotate the 2D fretboard (and affect where 3D overlay appears)
-  // CALIBRATED DEFAULT: 51° tilt provides optimal Guitar Hero-style view
-  const [debugRotation, setDebugRotation] = React.useState({
+  // DEBUG: XYZ rotation / visibility controls. State setters are
+  // intentionally not wired into the UI (was a developer-tools panel
+  // that's been removed). The values stay because they're read by
+  // the fretboard rendering path; underscore-prefix the setters to
+  // make the "tracked but no public toggle" status explicit.
+  const [debugRotation, _setDebugRotation] = React.useState({
     x: 51, // Calibrated tilt angle (was 39°)
     y: 0,
     z: 0,
   });
-
-  // DEBUG: Hide 2D fretboard to see only the 3D overlay
-  const [hide2DFretboard, setHide2DFretboard] = React.useState(true); // Default to hidden - use 3D overlay only
-
-  // DEBUG: Hide 3D fretboard overlay
-  const [hide3DFretboard, setHide3DFretboard] = React.useState(false);
+  const [hide2DFretboard, _setHide2DFretboard] = React.useState(true);
+  const [hide3DFretboard, _setHide3DFretboard] = React.useState(false);
 
   // DEBUG: 3D Overlay-specific controls for calibrating the Three.js scene
   // These control the 3D camera/scene independently from the 2D CSS transform
@@ -865,25 +862,10 @@ function YouTubeWidgetPageContent({
   // Keep ref in sync with latest handleExerciseSelect
   handleExerciseSelectRef.current = handleExerciseSelect;
 
-  const handleDotClick = useCallback(
-    (stringIndex: number, fret: number | 'open') => {
-      const key = `${stringIndex}-${fret}`;
-      setSelectedDots((prev) => {
-        const newMap = new Map(prev);
-        if (newMap.has(key)) {
-          newMap.delete(key);
-        } else {
-          newMap.set(key, [newMap.size + 1]);
-        }
-        return newMap;
-      });
-    },
-    [],
-  );
-
-  const handleResetSelection = useCallback(() => {
-    setSelectedDots(new Map());
-  }, []);
+  // NOTE: handleDotClick and handleResetSelection used to live here for
+  // the inline fretboard. The fretboard now owns its own selection
+  // state through FretboardCard / useDotSelectionHandlers, so these
+  // page-level handlers are no longer wired up.
 
   // Handle play state changes from GlobalControls
   const handlePlayStateChange = useCallback((isPlaying: boolean) => {
@@ -1173,7 +1155,11 @@ function YouTubeWidgetPageContent({
     [blocks, blockProgress, scrollToBlock],
   );
 
-  const handleGotIt = useCallback(async () => {
+  // handleGotIt is currently unused — wired up via a different
+  // handler chain after the "I Got It" button moved into a
+  // subcomponent. Kept for the eventual rewire; prefix with _ to
+  // silence no-unused-vars until then.
+  const _handleGotIt = useCallback(async () => {
     // CRITICAL: Resume AudioContext on this user gesture!
     logger.info(
       '[HANDLE-GOT-IT] User clicked "I Got It" - resuming AudioContext',
@@ -1642,7 +1628,11 @@ export function YouTubeWidgetPage({
   initialExerciseId,
   hideChrome,
 }: YouTubeWidgetPageProps) {
-  const { correlationId, logger } = useCorrelation('YouTubeWidgetPage');
+  // useCorrelation is called for the side effect of generating a
+  // correlation ID and binding it to logs from this scope; the
+  // returned values aren't consumed here (the inner component runs
+  // its own correlation).
+  useCorrelation('YouTubeWidgetPage');
 
   // ============================================================================
   // TEMPO INITIALIZATION FIX v2: Pre-seed MusicalTruthAuthority BEFORE render

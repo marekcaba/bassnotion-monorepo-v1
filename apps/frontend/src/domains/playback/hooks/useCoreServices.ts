@@ -5,9 +5,9 @@
  * This replaces the legacy useCorePlaybackEngine hook.
  */
 
-import { useEffect, useCallback, useRef, useMemo, useState } from 'react';
+import { useEffect, useCallback, useRef, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { usePlaybackStore, playbackSelectors } from '../store/playbackStore';
+import { usePlaybackStore } from '../store/playbackStore';
 import {
   CoreServices,
   AudioEngine,
@@ -133,7 +133,7 @@ export function useCoreServices(
   options: UseCoreServicesOptions = {},
 ): UseCoreServicesReturn {
   const {
-    autoInitialize = true,
+    autoInitialize: _autoInitialize = true,
     enablePerformanceMonitoring = true,
     mobileOptimized = true,
     onError,
@@ -220,7 +220,6 @@ export function useCoreServices(
       // Get services
       const eventBus = services.getEventBus();
       const audioEngine = services.getAudioEngine();
-      const transport = services.getUnifiedTransport();
 
       // Set up event listeners
       const unsubscribeStateChange = eventBus.on(
@@ -467,7 +466,7 @@ export function useCoreServices(
     [getServices],
   );
 
-  const setPitch = useCallback((semitones: number) => {
+  const setPitch = useCallback((_semitones: number) => {
     // Not implemented in current system
     logger.warn('setPitch not implemented');
   }, []);
@@ -482,7 +481,7 @@ export function useCoreServices(
 
   // Audio source management (plugin-based in new system)
   const registerAudioSource = useCallback(
-    async (sourceConfig: AudioSourceConfig) => {
+    async (_sourceConfig: AudioSourceConfig) => {
       const { pluginManager } = getServices();
       if (!pluginManager || !stateRef.current.isInitialized) return;
 
@@ -492,19 +491,19 @@ export function useCoreServices(
     [getServices],
   );
 
-  const unregisterAudioSource = useCallback((sourceId: string) => {
+  const unregisterAudioSource = useCallback((_sourceId: string) => {
     logger.warn('unregisterAudioSource needs plugin implementation');
   }, []);
 
-  const setSourceVolume = useCallback((sourceId: string, volume: number) => {
+  const setSourceVolume = useCallback((_sourceId: string, _volume: number) => {
     logger.warn('setSourceVolume needs plugin implementation');
   }, []);
 
-  const setSourceMute = useCallback((sourceId: string, muted: boolean) => {
+  const setSourceMute = useCallback((_sourceId: string, _muted: boolean) => {
     logger.warn('setSourceMute needs plugin implementation');
   }, []);
 
-  const setSourceSolo = useCallback((sourceId: string, solo: boolean) => {
+  const setSourceSolo = useCallback((_sourceId: string, _solo: boolean) => {
     logger.warn('setSourceSolo needs plugin implementation');
   }, []);
 
