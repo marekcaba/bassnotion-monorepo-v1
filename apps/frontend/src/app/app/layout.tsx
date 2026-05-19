@@ -7,6 +7,13 @@ import { AppSidebar } from '@/domains/platform/components/AppSidebar';
 import { DetailPanel } from '@/domains/platform/components/DetailPanel';
 import { MobileHeader } from '@/domains/platform/components/MobileHeader';
 import { AuthGuard } from '@/shared/components/ui/auth-guard';
+import { AudioProvider } from '@/domains/playback/providers/AudioProvider';
+import { AudioDebugPanel } from '@/shared/debug/AudioDebugger';
+import { HealthStatus } from '@/shared/components/HealthStatus';
+import {
+  XStateDevToolsProvider,
+  XStateDebugPanel,
+} from '@/domains/playback/machines';
 
 /**
  * Sidebar is expanded on top-level /app routes (e.g. /app, /app/settings)
@@ -45,26 +52,36 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <>
       <AuthGuard redirectTo="/login">
-        <TooltipProvider delayDuration={0}>
-          <div
-            className="flex h-svh w-full flex-col lg:flex-row overflow-hidden"
-            style={{
-              background:
-                'radial-gradient(ellipse at 50% 0%, hsl(240 6% 10%) 0%, hsl(240 4% 6%) 50%, hsl(0 0% 3%) 100%)',
-            }}
-          >
-            {/* Mobile: top header + hamburger drawer */}
-            <MobileHeader />
+        <XStateDevToolsProvider showStatus={true}>
+          <AudioProvider>
+            <TooltipProvider delayDuration={0}>
+              <div
+                className="flex h-svh w-full flex-col lg:flex-row overflow-hidden"
+                style={{
+                  background:
+                    'radial-gradient(ellipse at 50% 0%, hsl(240 6% 10%) 0%, hsl(240 4% 6%) 50%, hsl(0 0% 3%) 100%)',
+                }}
+              >
+                {/* Mobile: top header + hamburger drawer */}
+                <MobileHeader />
 
-            {/* Desktop: sidebar + detail panel (hidden below lg) */}
-            <div className="hidden lg:contents">
-              <AppSidebar expanded={sidebarExpanded} />
-              <DetailPanel isOpen={isPanelOpen} onToggle={handleTogglePanel} />
-            </div>
+                {/* Desktop: sidebar + detail panel (hidden below lg) */}
+                <div className="hidden lg:contents">
+                  <AppSidebar expanded={sidebarExpanded} />
+                  <DetailPanel
+                    isOpen={isPanelOpen}
+                    onToggle={handleTogglePanel}
+                  />
+                </div>
 
-            <main className="flex-1 overflow-auto">{children}</main>
-          </div>
-        </TooltipProvider>
+                <main className="flex-1 overflow-auto">{children}</main>
+              </div>
+            </TooltipProvider>
+            <AudioDebugPanel />
+            <HealthStatus />
+            <XStateDebugPanel position="bottom-left" keyboardShortcut="alt+x" />
+          </AudioProvider>
+        </XStateDevToolsProvider>
       </AuthGuard>
     </>
   );

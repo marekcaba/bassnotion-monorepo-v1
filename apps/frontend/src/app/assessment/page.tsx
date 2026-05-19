@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { BunnyQuizPlayer } from '@/domains/assessment/components';
 import type { AssessmentConfig } from '@bassnotion/contracts';
 
@@ -17,6 +18,10 @@ export default function AssessmentPage() {
   const [config, setConfig] = useState<AssessmentConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [progress, setProgress] = useState({ answered: 0, total: 0 });
+
+  const handleBack = useCallback(() => {
+    router.back();
+  }, [router]);
 
   // Validate that a video ID is valid (non-empty string)
   const isValidVideoId = (id: string | undefined): boolean => {
@@ -99,82 +104,67 @@ export default function AssessmentPage() {
   const progressPercent =
     progress.total > 0 ? (completedCount / progress.total) * 100 : 0;
 
-  // Loading state - warm, inviting
+  // Loading state
   if (isLoading) {
     return (
-      <>
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            {/* Pulsing bass clef icon */}
-            <div className="relative w-16 h-16 mx-auto mb-6">
-              <div className="absolute inset-0 rounded-full bg-amber-500/20 animate-ping" />
-              <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-amber-500/30 to-orange-600/20 flex items-center justify-center backdrop-blur-sm border border-amber-500/20">
-                <svg
-                  className="w-8 h-8 text-amber-400"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
-                </svg>
-              </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          {/* Pulsing bass clef icon */}
+          <div className="relative w-16 h-16 mx-auto mb-6">
+            <div className="absolute inset-0 rounded-full bg-[#E8650A]/20 animate-ping" />
+            <div className="relative w-16 h-16 rounded-sm bg-[#0F0F0F] border border-[#E8650A]/30 flex items-center justify-center">
+              <svg
+                className="w-8 h-8 text-[#E8650A]"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+              </svg>
             </div>
-            <p
-              className="text-neutral-400 text-sm tracking-wide"
-              style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
-            >
-              Preparing your session...
-            </p>
           </div>
+          <p className="text-[11px] font-semibold tracking-[0.22em] uppercase text-[#E8650A]">
+            Preparing your session…
+          </p>
         </div>
-      </>
+      </div>
     );
   }
 
   // No config available
   if (!config) {
     return (
-      <>
-        <div className="min-h-screen flex items-center justify-center px-4">
-          <div className="text-center max-w-md mx-auto">
-            {/* Warning icon with warm styling */}
-            <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
-              <svg
-                className="w-8 h-8 text-amber-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
-              </svg>
-            </div>
-            <h2
-              className="text-3xl font-medium text-white mb-3 tracking-tight"
-              style={{ fontFamily: 'var(--font-cormorant), serif' }}
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="text-center max-w-md mx-auto">
+          {/* Warning icon */}
+          <div className="w-16 h-16 mx-auto mb-6 rounded-sm bg-[#0F0F0F] border border-[#E8650A]/30 flex items-center justify-center">
+            <svg
+              className="w-8 h-8 text-[#E8650A]"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
             >
-              Assessment Unavailable
-            </h2>
-            <p
-              className="text-neutral-400 mb-8 leading-relaxed"
-              style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
-            >
-              We're still setting up your assessment. Please check back soon.
-            </p>
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="group relative px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-medium transition-all duration-300 hover:shadow-lg hover:shadow-amber-500/25 hover:-translate-y-0.5"
-              style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
-            >
-              <span className="relative z-10">Go to Dashboard</span>
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-amber-400 to-orange-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            </button>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
           </div>
+          <h2 className="font-heading uppercase text-[clamp(28px,4vw,40px)] leading-[0.95] tracking-[0.02em] text-[#E8E8E8] mb-4">
+            Assessment Unavailable
+          </h2>
+          <p className="text-[#999] mb-8 leading-relaxed">
+            We&apos;re still setting up your assessment. Please check back soon.
+          </p>
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="inline-flex items-center gap-2.5 bg-[#E8650A] text-white px-8 py-4 text-[15px] font-semibold tracking-[0.04em] rounded-sm hover:bg-[#B84E08] hover:-translate-y-px transition-all cursor-pointer border-none uppercase"
+          >
+            Go to Dashboard
+          </button>
         </div>
-      </>
+      </div>
     );
   }
 
@@ -193,6 +183,38 @@ export default function AssessmentPage() {
 
   return (
     <>
+      <button
+        onClick={handleBack}
+        aria-label="Go back"
+        title="Back"
+        style={{
+          position: 'fixed',
+          top: '64px',
+          left: '64px',
+          zIndex: 110,
+          width: '44px',
+          height: '44px',
+          background: '#0F0F0F',
+          border: '1px solid #252525',
+          color: '#E8650A',
+          borderRadius: '4px',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'background 0.2s, border-color 0.2s',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = '#161616';
+          e.currentTarget.style.borderColor = 'rgba(232, 101, 10, 0.4)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = '#0F0F0F';
+          e.currentTarget.style.borderColor = '#252525';
+        }}
+      >
+        <ArrowLeft style={{ width: '16px', height: '16px' }} />
+      </button>
       <div className="min-h-screen flex flex-col">
         {/* Main content */}
         <main className="flex-1 flex flex-col items-center justify-center px-4 py-6 sm:py-8 md:py-12">
@@ -200,82 +222,60 @@ export default function AssessmentPage() {
           <div className="w-full max-w-[95%] sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl">
             {/* Welcome header */}
             <div className="text-center mb-8 sm:mb-10">
-              {/* Subtle decorative element */}
-              <div className="flex items-center justify-center gap-3 mb-4">
-                <div className="h-px w-8 bg-gradient-to-r from-transparent to-amber-500/50" />
-                <span
-                  className="text-xs uppercase tracking-[0.2em] text-amber-500/70"
-                  style={{ fontFamily: 'var(--font-inter), sans-serif' }}
-                >
+              {/* Decorative eyebrow */}
+              <div className="flex items-center justify-center gap-3 mb-5">
+                <div className="h-px w-8 bg-gradient-to-r from-transparent to-[#E8650A]/50" />
+                <span className="text-[11px] font-semibold tracking-[0.22em] uppercase text-[#E8650A]">
                   Takes 2 Minutes
                 </span>
-                <div className="h-px w-8 bg-gradient-to-l from-transparent to-amber-500/50" />
+                <div className="h-px w-8 bg-gradient-to-l from-transparent to-[#E8650A]/50" />
               </div>
 
-              {/* Main headline */}
-              <h1
-                className="text-3xl sm:text-4xl md:text-5xl font-semibold text-white tracking-tight leading-tight"
-                style={{ fontFamily: 'var(--font-inter), sans-serif' }}
-              >
-                Let's Build{' '}
-                <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 bg-clip-text text-transparent">
-                  Your Plan
-                </span>
+              {/* Main headline — sales-page wordmark style */}
+              <h1 className="font-heading uppercase text-[clamp(36px,5vw,56px)] leading-[0.95] tracking-[0.02em] text-[#E8E8E8]">
+                Let&apos;s build{' '}
+                <span className="text-[#E8650A]">your plan</span>
               </h1>
 
               {/* Subtitle */}
-              <p
-                className="mt-4 text-neutral-400 max-w-lg mx-auto leading-relaxed"
-                style={{ fontFamily: 'var(--font-inter), sans-serif' }}
-              >
+              <p className="mt-5 text-[#999] max-w-lg mx-auto leading-relaxed">
                 Answer 8 questions as they pop up and get your personalized
                 path.
               </p>
             </div>
 
-            {/* Video player with warm border glow */}
+            {/* Video player with subtle orange glow */}
             <div className="relative">
-              {/* Subtle glow behind video */}
-              <div className="absolute -inset-1 bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-amber-500/10 rounded-2xl blur-xl opacity-50" />
-
-              {/* Video container */}
-              <div className="relative rounded-xl overflow-hidden ring-1 ring-white/10">
+              <div className="absolute -inset-1 bg-gradient-to-r from-[#E8650A]/10 via-[#E8650A]/5 to-[#E8650A]/10 rounded-sm blur-xl opacity-50" />
+              <div className="relative rounded-sm overflow-hidden ring-1 ring-[#252525]">
                 {renderVideoPlayer()}
               </div>
             </div>
 
             {/* Progress section */}
             <div className="mt-8">
-              {/* Progress bar container */}
               <div className="flex items-center gap-4">
-                {/* Progress bar */}
-                <div className="flex-1 h-2 bg-neutral-800/50 rounded-full overflow-hidden backdrop-blur-sm">
+                <div className="flex-1 h-1.5 bg-[#161616] rounded-full overflow-hidden border border-[#252525]">
                   <div
                     className="h-full rounded-full transition-all duration-500 ease-out"
                     style={{
                       width: `${progressPercent}%`,
                       background:
-                        progressPercent > 0
-                          ? 'linear-gradient(90deg, #f59e0b, #f97316, #f59e0b)'
-                          : 'transparent',
+                        progressPercent > 0 ? '#E8650A' : 'transparent',
                       boxShadow:
                         progressPercent > 0
-                          ? '0 0 20px rgba(245, 158, 11, 0.4)'
+                          ? '0 0 16px rgba(232, 101, 10, 0.4)'
                           : 'none',
                     }}
                   />
                 </div>
 
-                {/* Question counter - shows current position (1-based) */}
-                <div
-                  className="flex items-center gap-2 text-sm"
-                  style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
-                >
-                  <span className="text-amber-400 font-medium">
+                <div className="flex items-center gap-1.5 text-[13px] font-mono">
+                  <span className="text-[#E8650A] font-medium">
                     {completedCount}
                   </span>
-                  <span className="text-neutral-600">/</span>
-                  <span className="text-neutral-500">{progress.total}</span>
+                  <span className="text-[#555]">/</span>
+                  <span className="text-[#666]">{progress.total}</span>
                 </div>
               </div>
             </div>
