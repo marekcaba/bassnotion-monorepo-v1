@@ -36,6 +36,28 @@ const createMockAudioContext = () => ({
 });
 
 // Mock Tone.js
+const mockTransportInstance = {
+  start: vi.fn(),
+  stop: vi.fn(),
+  pause: vi.fn(),
+  cancel: vi.fn(),
+  schedule: vi.fn(),
+  scheduleOnce: vi.fn(),
+  scheduleRepeat: vi.fn(),
+  clear: vi.fn(),
+  state: 'stopped',
+  position: 0,
+  seconds: 0,
+  bpm: {
+    value: 120,
+    rampTo: vi.fn(),
+  },
+  timeSignature: 4,
+  loop: false,
+  loopStart: 0,
+  loopEnd: '4m',
+};
+
 export const mockTone = {
   context: {
     _context: createMockAudioContext(),
@@ -44,23 +66,9 @@ export const mockTone = {
     suspend: vi.fn().mockResolvedValue(undefined),
   },
   start: vi.fn().mockResolvedValue(undefined),
-  Transport: {
-    start: vi.fn(),
-    stop: vi.fn(),
-    pause: vi.fn(),
-    cancel: vi.fn(),
-    schedule: vi.fn(),
-    scheduleOnce: vi.fn(),
-    scheduleRepeat: vi.fn(),
-    clear: vi.fn(),
-    state: 'stopped',
-    position: 0,
-    seconds: 0,
-    bpm: {
-      value: 120,
-      rampTo: vi.fn(),
-    },
-  },
+  // Legacy singleton + Tone v15 factory accessor returning the same instance.
+  Transport: mockTransportInstance,
+  getTransport: vi.fn(() => mockTransportInstance),
   Sampler: vi.fn().mockImplementation(() => ({
     triggerAttackRelease: vi.fn(),
     releaseAll: vi.fn(),

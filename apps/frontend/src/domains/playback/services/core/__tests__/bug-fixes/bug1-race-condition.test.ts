@@ -30,6 +30,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { CoreServices, GlobalAudioSystem } from '../../CoreServices.js';
 import type { PlaybackEngine } from '../../PlaybackEngine.js';
 
+// Use the project's tone mock — without this, ToneWrapper.load() does
+// `import('tone')` which loads standardized-audio-context and crashes in
+// jsdom with "Cannot read properties of null (reading 'hasOwnProperty')"
+// from the audio context bundle. The mock satisfies the same API surface
+// with no real AudioContext instantiation.
+vi.mock('tone');
+
 describe('Bug #1: Race Condition Fix Verification', () => {
   beforeEach(() => {
     // Reset global state
@@ -135,36 +142,30 @@ describe('Bug #1: Race Condition Fix Verification', () => {
 
       // Simulate React StrictMode behavior (double-mount)
       const initRef = { current: false };
-      const cleanupRef = { current: false };
 
       // First mount
       const init1 = async () => {
-        if (initRef.current) return;
+        if (initRef.current) {
+          // Already initialized — return the cached singleton
+          return GlobalAudioSystem.getPreInitializedInstance();
+        }
         initRef.current = true;
         initCount++;
-
-        const instance = await GlobalAudioSystem.getPreInitializedInstance();
-        return instance;
+        return GlobalAudioSystem.getPreInitializedInstance();
       };
 
       // Second mount (React StrictMode)
-      const init2 = async () => {
-        if (initRef.current) return;
-        initRef.current = true;
-        initCount++;
-
-        const instance = await GlobalAudioSystem.getPreInitializedInstance();
-        return instance;
-      };
+      const init2 = init1;
 
       const instance1 = await init1();
       const instance2 = await init2();
 
-      // Should only initialize once
+      // Should only initialize once (the second call should short-circuit)
       expect(initCount).toBe(1);
 
-      // Should return same instance
+      // Should return same singleton instance both times
       expect(instance1).toBe(instance2);
+      expect(instance1).toBeDefined();
 
       if (instance1) {
         await instance1.dispose();
@@ -305,23 +306,16 @@ describe('Bug #1: Race Condition Fix Verification', () => {
   });
 
   // ============================================================================
-  // Test 5: audioServicesReady Event Dispatch
+  // Test 5: core-services:initialized Event Dispatch
+  //
+  // Original event name was `audioServicesReady` (CustomEvent on window).
+  // Production was refactored to emit `core-services:initialized` on the
+  // internal EventBus instead — that's the actual contract today
+  // (CoreServices.ts line ~614).
   // ============================================================================
 
-  describe('Test 5: audioServicesReady Event Dispatch', () => {
-    it('should dispatch audioServicesReady after initialization', async () => {
-      let eventFired = false;
-      let eventDetail: any = null;
-
-      // Listen for the event
-      const listener = (event: Event) => {
-        eventFired = true;
-        eventDetail = (event as CustomEvent).detail;
-      };
-
-      window.addEventListener('audioServicesReady', listener);
-
-      // Mock AudioContext
+  describe('Test 5: core-services:initialized Event Dispatch', () => {
+    const mockAudioContext = () => {
       vi.spyOn(window, 'AudioContext').mockImplementation(
         () =>
           ({
@@ -342,81 +336,55 @@ describe('Bug #1: Race Condition Fix Verification', () => {
             dispatchEvent: vi.fn(),
           }) as any,
       );
+    };
+
+    it('should emit core-services:initialized after initialization', async () => {
+      mockAudioContext();
 
       const instance = await GlobalAudioSystem.getPreInitializedInstance();
+      const listener = vi.fn();
+      instance.getEventBus().on('core-services:initialized', listener);
+
       await instance.initialize();
 
-      // Event should have fired
-      expect(eventFired).toBe(true);
+      expect(listener).toHaveBeenCalled();
 
-      window.removeEventListener('audioServicesReady', listener);
       await instance.dispose();
     });
 
-    it('should dispatch event exactly once per initialization', async () => {
-      let eventCount = 0;
-
-      const listener = () => {
-        eventCount++;
-      };
-
-      window.addEventListener('audioServicesReady', listener);
-
-      vi.spyOn(window, 'AudioContext').mockImplementation(
-        () =>
-          ({
-            state: 'running',
-            currentTime: 0,
-            sampleRate: 48000,
-            createGain: vi.fn(() => ({
-              gain: { value: 1 },
-              connect: vi.fn(),
-              disconnect: vi.fn(),
-            })),
-            destination: {},
-            resume: vi.fn(() => Promise.resolve()),
-            suspend: vi.fn(() => Promise.resolve()),
-            close: vi.fn(() => Promise.resolve()),
-            addEventListener: vi.fn(),
-            removeEventListener: vi.fn(),
-            dispatchEvent: vi.fn(),
-          }) as any,
-      );
+    it('should emit core-services:initialized exactly once per initialization', async () => {
+      mockAudioContext();
 
       const instance = await GlobalAudioSystem.getPreInitializedInstance();
+      const listener = vi.fn();
+      instance.getEventBus().on('core-services:initialized', listener);
+
+      await instance.initialize();
+      // initialize() is idempotent — calling it again should NOT emit
+      // the event a second time.
       await instance.initialize();
 
-      // Should fire exactly once
-      expect(eventCount).toBe(1);
+      expect(listener).toHaveBeenCalledTimes(1);
 
-      window.removeEventListener('audioServicesReady', listener);
       await instance.dispose();
     });
 
-    it('should not dispatch event if initialization fails', async () => {
-      let eventFired = false;
-
-      const listener = () => {
-        eventFired = true;
-      };
-
-      window.addEventListener('audioServicesReady', listener);
-
+    it('should NOT emit core-services:initialized if initialization fails', async () => {
       // Force initialization failure
       (window as any).AudioContext = undefined;
 
       const instance = await GlobalAudioSystem.getPreInitializedInstance();
+      const listener = vi.fn();
+      instance.getEventBus().on('core-services:initialized', listener);
 
       try {
         await instance.initialize();
-      } catch (error) {
+      } catch {
         // Expected to fail
       }
 
-      // Event should NOT have fired
-      expect(eventFired).toBe(false);
+      expect(listener).not.toHaveBeenCalled();
 
-      window.removeEventListener('audioServicesReady', listener);
       await instance.dispose();
     });
   });

@@ -37,8 +37,8 @@ vi.mock('@/domains/widgets/hooks/useTransportPosition', () => ({
 }));
 
 // Mock TransportContext
-vi.mock('@/domains/playback/contexts/TransportContext', () => ({
-  useTransportControls: vi.fn(() => ({
+vi.mock('@/domains/playback/contexts/TransportContext', () => {
+  const transportState = {
     tempo: 120,
     isPlaying: false,
     isPaused: false,
@@ -54,9 +54,17 @@ vi.mock('@/domains/playback/contexts/TransportContext', () => ({
     timeSignature: { numerator: 4, denominator: 4 },
     isLoopEnabled: false,
     servicesReady: true,
-  })),
-  TransportProvider: ({ children }: { children: React.ReactNode }) => children,
-}));
+    position: { bar: 0, beat: 0, sixteenth: 0, seconds: 0 },
+  };
+  return {
+    useTransportControls: vi.fn(() => transportState),
+    useTransportContext: vi.fn(() => transportState),
+    useTransport: vi.fn(() => transportState),
+    useTransportPosition: vi.fn(() => transportState.position),
+    TransportProvider: ({ children }: { children: React.ReactNode }) =>
+      children,
+  };
+});
 
 // Mock audio context utils
 vi.mock('@/domains/playback/utils/ensureAudioContext', () => ({
@@ -131,12 +139,13 @@ describe('DrummerWidget', () => {
     expect(screen.getByTestId('volume-knob')).toBeInTheDocument();
   });
 
-  it('should not render when not visible', () => {
+  it('should not render visible content when isVisible is false', () => {
     render(<DrummerWidget {...defaultProps} isVisible={false} />);
 
-    // The component should still mount but be hidden
-    const container = document.querySelector('[data-visible="false"]');
-    expect(container).toBeInTheDocument();
+    // The component keeps the React tree mounted (effects run) but renders
+    // a single <div style={{display: 'none'}} />. The visible drum-pad UI
+    // (volume knob etc.) should NOT be in the DOM.
+    expect(screen.queryByTestId('volume-knob')).not.toBeInTheDocument();
   });
 
   it('should handle pattern changes', () => {
@@ -184,8 +193,8 @@ describe('DrummerWidget', () => {
       />,
     );
 
-    // Component should be visible
-    expect(document.querySelector('[data-visible="true"]')).toBeTruthy();
+    // Component should be visible (volume knob is rendered)
+    expect(screen.queryByTestId('volume-knob')).toBeInTheDocument();
 
     // Change visibility
     rerender(
@@ -196,8 +205,8 @@ describe('DrummerWidget', () => {
       />,
     );
 
-    // Component should be hidden
-    expect(document.querySelector('[data-visible="false"]')).toBeTruthy();
+    // Component should be hidden — visible UI removed from DOM
+    expect(screen.queryByTestId('volume-knob')).not.toBeInTheDocument();
   });
 
   it('should handle exercise prop', () => {

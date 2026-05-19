@@ -70,6 +70,16 @@ const mockFetchResponse = () =>
     arrayBuffer: () => Promise.resolve(new ArrayBuffer(1024)),
   });
 
+// The hook uses getOrCreatePersistentAudioContext() (a process-wide singleton)
+// rather than `new AudioContext()`. Mock that helper so the hook receives our
+// mock context — otherwise audioContextRef.current is the real persistent
+// context and assertions on mockAudioContext.createBufferSource never fire.
+vi.mock('@/domains/playback/utils/audioContext', () => ({
+  getOrCreatePersistentAudioContext: vi.fn(async () => mockAudioContext),
+  getPersistentAudioContext: vi.fn(() => mockAudioContext),
+  ensureAudioContextRunning: vi.fn(async () => mockAudioContext),
+}));
+
 // Now import the hook
 import { useDrumEditorPlayback } from '../useDrumEditorPlayback.js';
 
@@ -291,7 +301,11 @@ describe('useDrumEditorPlayback', () => {
   });
 
   describe('Cleanup', () => {
-    it('should close AudioContext on unmount', async () => {
+    it('should NOT close the persistent AudioContext on unmount', async () => {
+      // The hook uses getOrCreatePersistentAudioContext() — a process-wide
+      // singleton. Closing it on every unmount would break audio across the
+      // entire app (the next mount would need a brand-new context, which
+      // requires another user gesture on most browsers).
       const { result, unmount } = renderHook(() => useDrumEditorPlayback());
 
       await waitFor(
@@ -303,7 +317,7 @@ describe('useDrumEditorPlayback', () => {
 
       unmount();
 
-      expect(mockAudioContext.close).toHaveBeenCalled();
+      expect(mockAudioContext.close).not.toHaveBeenCalled();
     });
   });
 

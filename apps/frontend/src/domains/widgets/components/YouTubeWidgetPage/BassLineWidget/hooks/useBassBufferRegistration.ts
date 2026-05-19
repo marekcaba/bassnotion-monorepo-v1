@@ -29,7 +29,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
 import { GlobalSampleCache } from '@/domains/playback/modules/storage/cache/GlobalSampleCache';
-import { isVerboseDebugEnabled } from '@/config/debug';
+import { isVerboseDebugEnabled, verboseLog } from '@/config/debug';
 import {
   getSampleForMidiNote,
   type BassString,
@@ -39,6 +39,27 @@ import type {
   UseBassBufferRegistrationOptions,
   UseBassBufferRegistrationReturn,
 } from '../types.js';
+
+/**
+ * Convert exercise's string number (guitar-style: 1=G highest, 5=B lowest)
+ * to the sample manifest's string name. Mirrors the constant of the same
+ * name in BassPreloadStrategy — both consumer and preloader MUST use this
+ * to keep cache keys aligned (`bass-${midi}-${string}`).
+ *
+ * Without this, the consumer was using `getSampleForMidiNote(midi)` which
+ * picks the first valid string in manifest order (B → E → A → D → G) —
+ * for any MIDI in the B-string's range that mismatched the exercise's
+ * actual string, the consumer would compute e.g. `bass-31-B` while the
+ * preload had written `bass-31-E`, producing
+ * "No cached buffer for bass-31-B" warnings + silent bass on that note.
+ */
+const EXERCISE_STRING_TO_SAMPLE_STRING: Record<number, BassString> = {
+  1: 'G',
+  2: 'D',
+  3: 'A',
+  4: 'E',
+  5: 'B',
+};
 
 /**
  * Hook for registering bass buffers with PlaybackEngine
@@ -91,7 +112,7 @@ export function useBassBufferRegistration(
   useEffect(() => {
     const handleExerciseSwitched = () => {
       if (isVerboseDebugEnabled()) {
-        console.log(
+        verboseLog(
           '[BASS-WIDGET] exercise:switched event received, resetting registration state',
         );
       }
@@ -112,7 +133,7 @@ export function useBassBufferRegistration(
   useEffect(() => {
     if (exercise?.id !== prevExerciseIdRef.current) {
       if (isVerboseDebugEnabled()) {
-        console.log('[BASS-WIDGET] Exercise ID changed', {
+        verboseLog('[BASS-WIDGET] Exercise ID changed', {
           prevExerciseId: prevExerciseIdRef.current,
           newExerciseId: exercise?.id,
         });
@@ -129,7 +150,7 @@ export function useBassBufferRegistration(
     // Prevent multiple simultaneous registrations
     if (isRegisteringRef.current) {
       if (isVerboseDebugEnabled()) {
-        console.log('[BASS-WIDGET] Registration already in progress, skipping');
+        verboseLog('[BASS-WIDGET] Registration already in progress, skipping');
       }
       return;
     }
@@ -140,7 +161,7 @@ export function useBassBufferRegistration(
     const registrationKey = exercise?.id;
     if (lastRegisteredExerciseIdRef.current === registrationKey) {
       if (isVerboseDebugEnabled()) {
-        console.log(
+        verboseLog(
           '[BASS-WIDGET] Already registered for this exercise, skipping',
           {
             registrationKey,
@@ -153,7 +174,7 @@ export function useBassBufferRegistration(
     isRegisteringRef.current = true;
 
     if (isVerboseDebugEnabled()) {
-      console.log('[BASS-WIDGET] registerBassWithPlaybackEngine CALLED', {
+      verboseLog('[BASS-WIDGET] registerBassWithPlaybackEngine CALLED', {
         timestamp: new Date().toISOString(),
         exerciseId: exercise?.id,
         hasNotes: !!exercise?.notes?.length,
@@ -176,7 +197,7 @@ export function useBassBufferRegistration(
     }
 
     if (isVerboseDebugEnabled()) {
-      console.log(
+      verboseLog(
         '[BASS-WIDGET] PlaybackEngine available, starting buffer injection...',
       );
     }
@@ -187,6 +208,15 @@ export function useBassBufferRegistration(
 
       // Determine which MIDI notes to load
       let midiNotesToLoad: number[] = [];
+      // Map of midi → exercise-chosen sample string. The preloader writes
+      // cache keys as `bass-${midi}-${string}` using THIS string (derived
+      // from the exercise's note.string), not from getSampleForMidiNote().
+      // The consumer must read with the same string to find the buffer.
+      // If a metadata-only path doesn't supply per-note string info, the
+      // consumer falls back to getSampleForMidiNote() — which works when
+      // it happens to match what the preloader picked, but mismatches for
+      // notes in the B-string overlap range.
+      const midiToSampleString = new Map<number, BassString>();
 
       if (
         metadata &&
@@ -195,12 +225,28 @@ export function useBassBufferRegistration(
       ) {
         // Metadata matches current exercise - use it
         midiNotesToLoad = metadata.midiNotes;
+        // If metadata also carries sampleRequests (midi+string pairs),
+        // prefer those so the cache key derivation is exact. Otherwise
+        // we'll fall back to getSampleForMidiNote() below.
+        const metaWithRequests = metadata as unknown as {
+          sampleRequests?: Array<{
+            midiNote: number;
+            sampleString: BassString;
+          }>;
+        };
+        if (metaWithRequests.sampleRequests?.length) {
+          for (const req of metaWithRequests.sampleRequests) {
+            midiToSampleString.set(req.midiNote, req.sampleString);
+          }
+        }
         if (isVerboseDebugEnabled()) {
-          console.log(
+          verboseLog(
             '[BASS-WIDGET] Using cached metadata for current exercise:',
             {
               exerciseId: exercise?.id,
               noteCount: midiNotesToLoad.length,
+              hasSampleRequests:
+                (metaWithRequests.sampleRequests?.length ?? 0) > 0,
             },
           );
         }
@@ -216,12 +262,20 @@ export function useBassBufferRegistration(
           if (baseMidi !== undefined) {
             const midiNote = baseMidi + (note.fret || 0);
             midiNoteSet.add(midiNote);
+            // Remember which sample-string the exercise picked for this
+            // MIDI note. Same pitch can sit on multiple strings (e.g.
+            // MIDI 31 = B-fret-8 OR E-fret-3) and the preloader wrote
+            // the buffer under the exercise's chosen string only.
+            const sampleString = EXERCISE_STRING_TO_SAMPLE_STRING[note.string];
+            if (sampleString) {
+              midiToSampleString.set(midiNote, sampleString);
+            }
           }
         });
 
         midiNotesToLoad = Array.from(midiNoteSet).sort((a, b) => a - b);
         if (isVerboseDebugEnabled()) {
-          console.log('[BASS-WIDGET] Derived MIDI notes from exercise.notes:', {
+          verboseLog('[BASS-WIDGET] Derived MIDI notes from exercise.notes:', {
             exerciseId: exercise?.id,
             uniqueMidiNotes: midiNotesToLoad.length,
           });
@@ -241,7 +295,7 @@ export function useBassBufferRegistration(
 
       if (!audioEngine?.isInitialized) {
         if (isVerboseDebugEnabled()) {
-          console.log(
+          verboseLog(
             '[BASS-WIDGET] AudioEngine not initialized yet, will retry when user interacts',
           );
         }
@@ -264,11 +318,20 @@ export function useBassBufferRegistration(
       for (const midiNote of midiNotesToLoad) {
         // Cache key must include the sample-string (e.g. "bass-60-D" vs
         // "bass-60-G") — same MIDI note on different strings sounds
-        // different. Derive the string here from the sample manifest so we
-        // read the same key BassPreloadStrategy wrote.
-        const sampleConfig = getSampleForMidiNote(midiNote);
-        if (!sampleConfig) continue;
-        const cacheKey = `bass-${midiNote}-${sampleConfig.string as BassString}`;
+        // different. Prefer the exercise's chosen string (from
+        // midiToSampleString, populated above from exercise.notes or
+        // sampleRequests metadata) so we read the SAME key
+        // BassPreloadStrategy wrote. Fall back to getSampleForMidiNote()
+        // only when we have no exercise context — that picks the first
+        // valid string in manifest order (B → E → A → D → G) which
+        // mismatches the preloader for any MIDI in the B-string overlap.
+        let sampleString = midiToSampleString.get(midiNote);
+        if (!sampleString) {
+          const sampleConfig = getSampleForMidiNote(midiNote);
+          if (!sampleConfig) continue;
+          sampleString = sampleConfig.string as BassString;
+        }
+        const cacheKey = `bass-${midiNote}-${sampleString}`;
         const rawBuffer = await sampleCache.getCachedRawBuffer(cacheKey);
 
         if (rawBuffer) {
@@ -284,7 +347,7 @@ export function useBassBufferRegistration(
               for (let i = 0; i < Math.min(4800, channelData.length); i++) {
                 maxAmplitude = Math.max(maxAmplitude, Math.abs(channelData[i]));
               }
-              console.log(`[BASS DECODE] Decoded ${cacheKey}`, {
+              verboseLog(`[BASS DECODE] Decoded ${cacheKey}`, {
                 midiNote,
                 duration: buffer.duration.toFixed(2) + 's',
                 hasStrongAttack: maxAmplitude > 0.1 ? 'YES' : 'WEAK/MISSING',
@@ -307,7 +370,7 @@ export function useBassBufferRegistration(
       }
 
       if (isVerboseDebugEnabled()) {
-        console.log('[BASS-WIDGET] Buffer decoding complete:', {
+        verboseLog('[BASS-WIDGET] Buffer decoding complete:', {
           exerciseId: exercise?.id,
           totalNotes: midiNotesToLoad.length,
           buffersDecoded,
@@ -332,7 +395,7 @@ export function useBassBufferRegistration(
         bassBuffersRef.current = bassBuffers;
 
         if (isVerboseDebugEnabled()) {
-          console.log(
+          verboseLog(
             '[BASS-WIDGET] Bass buffers injected into PlaybackEngine',
             {
               exerciseId: exercise?.id,
@@ -351,7 +414,7 @@ export function useBassBufferRegistration(
       } else if (midiNotesToLoad.length > 0) {
         // No buffers decoded - trigger the preload strategy
         if (isVerboseDebugEnabled()) {
-          console.log(
+          verboseLog(
             '[BASS-WIDGET] No cached buffers - triggering BassPreloadStrategy...',
           );
         }
@@ -380,7 +443,7 @@ export function useBassBufferRegistration(
                 WindowRegistry.setBassBuffersReady(true, exercise?.id);
 
                 if (isVerboseDebugEnabled()) {
-                  console.log(
+                  verboseLog(
                     '[BASS-WIDGET] Bass buffers loaded via preload strategy',
                     {
                       exerciseId: exercise?.id,
@@ -424,7 +487,7 @@ export function useBassBufferRegistration(
     const shouldRegister = trackIsReady && bassNoteCount > 0;
 
     if (isVerboseDebugEnabled()) {
-      console.log('[BASS-CHECKPOINT] Should register bass:', {
+      verboseLog('[BASS-CHECKPOINT] Should register bass:', {
         shouldRegister,
         trackIsReady,
         bassNoteCount,
@@ -434,7 +497,7 @@ export function useBassBufferRegistration(
 
     if (shouldRegister) {
       if (isVerboseDebugEnabled()) {
-        console.log(
+        verboseLog(
           '[BASS-WIDGET] ALL CONDITIONS MET - Registering bass buffers!',
           {
             exerciseId: exercise?.id,

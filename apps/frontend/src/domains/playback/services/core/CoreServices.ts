@@ -68,6 +68,12 @@ export class CoreServices {
   private config: Required<CoreServicesConfig>;
   private eventSubscriptions: Array<() => void> = []; // Store unsubscribe functions to prevent event listener leaks
   private samplesReadyHandler: (() => void) | null = null; // Store samplesReady handler for cleanup
+  // De-dupe concurrent reinjectAllBuffers calls. samplesReady is dispatched
+  // by 3 different places (ScrollTriggerLoader, InitialSamplePreloader,
+  // useActAwarePreload) and used to fire reinjection in parallel — three
+  // decodes racing on the same shared ArrayBuffer would detach it. Now the
+  // second + third callers await the first promise instead.
+  private reinjectionPromise: Promise<void> | null = null;
 
   constructor(config: CoreServicesConfig = {}) {
     this.config = {
@@ -795,6 +801,24 @@ export class CoreServices {
    * calls benefit from concurrent decoding (~100ms vs ~500ms for 9 buffers)
    */
   private async reinjectAllBuffers(): Promise<void> {
+    // Singleflight: if a reinjection is already in flight, just await it.
+    // samplesReady fires 3x (ScrollTriggerLoader + InitialSamplePreloader +
+    // useActAwarePreload), and three parallel decodes racing on the same
+    // shared ArrayBuffer would detach it mid-flight.
+    if (this.reinjectionPromise) {
+      logger.debug(
+        'CoreServices: reinjection already in flight — awaiting existing promise',
+      );
+      return this.reinjectionPromise;
+    }
+
+    this.reinjectionPromise = this.doReinjectAllBuffers().finally(() => {
+      this.reinjectionPromise = null;
+    });
+    return this.reinjectionPromise;
+  }
+
+  private async doReinjectAllBuffers(): Promise<void> {
     if (!this.playbackEngine) {
       logger.warn(
         'CoreServices: No PlaybackEngine available for buffer re-injection',
@@ -815,6 +839,22 @@ export class CoreServices {
     const sampleCache = GlobalSampleCache.getInstance();
 
     // Helper: decode raw buffer if not already decoded (for parallel execution)
+    //
+    // Detached-buffer guard: `audioContext.decodeAudioData(rawBuffer.slice(0))`
+    // in Chrome can detach the ORIGINAL backing ArrayBuffer even when we pass
+    // a copy (`.slice(0)`) — and other callers (HarmonyPreloadStrategy,
+    // BassPreloadStrategy, etc.) may decode the same key concurrently. When
+    // samplesReady fires multiple times (ScrollTriggerLoader +
+    // InitialSamplePreloader + useActAwarePreload all dispatch it), this
+    // function runs three times concurrently per key. The second invocation
+    // sees `getCachedBuffer(key)` still null (the first decode hasn't
+    // resolved yet) and tries to slice an already-detached buffer →
+    // `Cannot perform ArrayBuffer.prototype.slice on a detached ArrayBuffer`
+    // → the whole re-injection batch aborts and drums/metronome stay silent.
+    //
+    // Fix: detect the detached state (byteLength === 0) and re-fetch from
+    // IndexedDB on the spot. Also wrap the decode in try/catch so one bad
+    // key doesn't take out the whole batch.
     const decodeIfNeeded = async (
       key: string,
     ): Promise<AudioBuffer | undefined> => {
@@ -823,12 +863,45 @@ export class CoreServices {
       if (buffer) return buffer;
 
       // Get raw buffer and decode
-      const rawBuffer = await sampleCache.getCachedRawBuffer(key);
+      let rawBuffer = await sampleCache.getCachedRawBuffer(key);
       if (!rawBuffer) return undefined;
 
-      buffer = await audioContext.decodeAudioData(rawBuffer.slice(0));
-      await sampleCache.cacheBuffer(key, buffer, { isContextCompatible: true });
-      return buffer;
+      // If a concurrent decode already detached this buffer, re-fetch from
+      // IndexedDB. The re-fetch returns a fresh ArrayBuffer that hasn't
+      // been transferred yet.
+      if (rawBuffer.byteLength === 0) {
+        logger.warn(
+          `decodeIfNeeded: raw buffer for "${key}" is detached — refetching from IndexedDB`,
+        );
+        // Force a memory-cache eviction so getCachedRawBuffer re-reads from IDB.
+        (sampleCache as any).samples?.delete?.(key);
+        rawBuffer = await sampleCache.getCachedRawBuffer(key);
+        if (!rawBuffer || rawBuffer.byteLength === 0) {
+          logger.error(
+            `decodeIfNeeded: re-fetched buffer for "${key}" is also empty/detached — giving up`,
+          );
+          return undefined;
+        }
+      }
+
+      try {
+        // Re-check the decoded cache in case a parallel decode just resolved
+        // while we were awaiting getCachedRawBuffer above.
+        buffer = sampleCache.getCachedBuffer(key);
+        if (buffer) return buffer;
+
+        buffer = await audioContext.decodeAudioData(rawBuffer.slice(0));
+        await sampleCache.cacheBuffer(key, buffer, {
+          isContextCompatible: true,
+        });
+        return buffer;
+      } catch (err) {
+        logger.error(
+          `decodeIfNeeded: decode failed for "${key}" — returning undefined`,
+          err as Error,
+        );
+        return undefined;
+      }
     };
 
     // ✅ PARALLEL: Decode all essential buffers at once (FAANG optimization)

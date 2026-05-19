@@ -47,8 +47,27 @@ import { BufferFallbackStrategy } from './BufferFallbackStrategy.js';
 // FAANG FIX: Import MusicalTimeConverter for tick-to-seconds conversion
 import { MusicalTimeConverter } from '@bassnotion/contracts';
 
-// FAANG FIX: Import Tone for live BPM access
-import * as Tone from 'tone';
+// Tone is intentionally accessed via the lazy window helper below, NOT via
+// a top-level `import * as Tone from 'tone'`. A static value import would
+// pull `tone/index.js` into the eager bundle, and Tone's `index.js`
+// immediately accesses `getContext().transport` at module-evaluation time
+// — creating a `new AudioContext()` BEFORE any user gesture. Chrome leaves
+// that context suspended; later `Tone.Transport.position = 0` writes throw
+// `Cannot read properties of undefined (reading 'time')` (the bug we hit
+// May 2026). Pulling Tone lazily via the window-stashed singleton (set up
+// by AudioEngine/ToneWrapper.initialize after the first gesture) keeps the
+// bundle clean and the init order correct.
+import type * as ToneTypes from 'tone';
+type ToneModule = typeof ToneTypes;
+function getTone(): ToneModule {
+  if (typeof window !== 'undefined') {
+    const tone = (window as any).Tone || (window as any).__globalTone;
+    if (tone) return tone as ToneModule;
+  }
+  throw new Error(
+    'HarmonySchedulerV2: Tone.js not loaded. Ensure AudioEngine is initialized first.',
+  );
+}
 
 // EQ for Grand Piano
 import {
@@ -399,7 +418,13 @@ export class HarmonySchedulerV2 {
     let duration: number;
     const durationTicks = event.durationTicks ?? eventData.durationTicks;
     if (durationTicks !== undefined && durationTicks > 0) {
-      const liveBpm = Tone.Transport.bpm.value;
+      const Tone = getTone();
+      // Use getTransport() (not the deprecated Tone.Transport const) so we
+      // re-resolve against the current Context — safe after a setContext swap.
+      const transport = (Tone as any).getTransport
+        ? (Tone as any).getTransport()
+        : (Tone as any).Transport;
+      const liveBpm = transport.bpm.value;
       duration = MusicalTimeConverter.ticksToSeconds(durationTicks, liveBpm);
       // Only log if in development mode and significant duration
       if (process.env.NODE_ENV === 'development' && duration > 4) {

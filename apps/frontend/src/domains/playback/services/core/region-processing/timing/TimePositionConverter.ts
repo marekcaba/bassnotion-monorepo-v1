@@ -72,7 +72,7 @@ export class TimePositionConverter {
     try {
       // Get current BPM from Tone.Transport (single source of truth)
       const Tone = getTone();
-      const currentBpm = Tone.Transport.bpm.value;
+      const currentBpm = Tone.getTransport().bpm.value;
       const secondsPerBeat = 60 / currentBpm;
 
       let bars: number,
@@ -162,7 +162,7 @@ export class TimePositionConverter {
    */
   getCurrentBPM(): number {
     const Tone = getTone();
-    return Tone.Transport.bpm.value;
+    return Tone.getTransport().bpm.value;
   }
 
   /**
@@ -174,7 +174,7 @@ export class TimePositionConverter {
   parseDuration(duration: string): number {
     try {
       const Tone = getTone();
-      const currentBpm = Tone.Transport.bpm.value;
+      const currentBpm = Tone.getTransport().bpm.value;
       const secondsPerBeat = 60 / currentBpm;
 
       // Parse note duration (4n = quarter note, 8n = eighth note, etc.)

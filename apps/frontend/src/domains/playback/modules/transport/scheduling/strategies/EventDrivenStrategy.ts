@@ -124,7 +124,7 @@ export class EventDrivenStrategy implements PositionUpdateStrategy {
     this.accumulatedBeats = 0;
     this.lastTempoChangeTime = this.transportStartTime;
     const Tone = getTone();
-    this.currentBPM = Tone.Transport.bpm.value;
+    this.currentBPM = Tone.getTransport().bpm.value;
 
     // Subscribe to Clock.onTick
     this.clock.setOnTick((time: number, frame?: number) => {

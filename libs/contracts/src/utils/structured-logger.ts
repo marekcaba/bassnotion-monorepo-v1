@@ -212,6 +212,27 @@ export function createStructuredLogger(
       }),
     };
 
+    // Safe JSON.stringify replacer — strips circular references and node
+    // internals (setTimeout handles, sockets, etc.) that callers sometimes
+    // include in log payloads and would otherwise throw
+    // "Converting circular structure to JSON".
+    const seen = new WeakSet<object>();
+    const safeReplacer = (_key: string, value: unknown): unknown => {
+      if (typeof value === 'object' && value !== null) {
+        if (seen.has(value as object)) return '[Circular]';
+        seen.add(value as object);
+      }
+      return value;
+    };
+    const safeStringify = (data: unknown): string => {
+      try {
+        return JSON.stringify(data, safeReplacer);
+      } catch {
+        // Last-resort fallback for values WeakSet still can't handle.
+        return '[Unserializable]';
+      }
+    };
+
     // In production, use structured JSON logging
     // In development, use simpler format for readability
     const isDev = process.env.NODE_ENV === 'development';
@@ -242,19 +263,19 @@ export function createStructuredLogger(
       // Structured JSON for production/test
       switch (level) {
         case 'error':
-          console.error(JSON.stringify(logData));
+          console.error(safeStringify(logData));
           break;
         case 'warn':
-          console.warn(JSON.stringify(logData));
+          console.warn(safeStringify(logData));
           break;
         case 'info':
-          console.info(JSON.stringify(logData));
+          console.info(safeStringify(logData));
           break;
         case 'debug':
-          console.debug(JSON.stringify(logData));
+          console.debug(safeStringify(logData));
           break;
         case 'trace':
-          console.log(JSON.stringify(logData));
+          console.log(safeStringify(logData));
           break;
       }
     }

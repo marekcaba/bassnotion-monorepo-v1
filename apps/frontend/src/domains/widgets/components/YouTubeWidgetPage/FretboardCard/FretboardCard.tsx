@@ -1,14 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ZoneCard, ZoneCardContent } from '@/ui-libraries';
-import { Target } from 'lucide-react';
 import {
   createStructuredLogger,
-  type FretboardViewConfig,
   type FretboardScrollMode,
 } from '@bassnotion/contracts';
-import { isVerboseDebugEnabled } from '@/config/debug';
+import { isVerboseDebugEnabled, verboseLog } from '@/config/debug';
 
 const logger = createStructuredLogger('FretboardCard');
 
@@ -95,7 +93,6 @@ export const FRETBOARD_VIEW_PRESETS = {
     },
   },
 };
-// Removed useExerciseSelection - parent manages exercise selection now
 import { SyncedWidget } from '../../base';
 import type { SyncedWidgetRenderProps } from '../../base';
 import type {
@@ -108,20 +105,9 @@ import { useExerciseLoader } from './hooks/useExerciseLoader';
 import { useDotSynchronization } from './hooks/useDotSynchronization';
 import { useDotSelectionHandlers } from './hooks/useDotSelectionHandlers';
 import { useStringCountHandlers } from './hooks/useStringCountHandlers';
-// import { useWidgetAudioRegistration } from '@/domains/widgets/hooks/useWidgetAudioRegistration'; // TODO: Fix - depends on deleted useWidgetSync
-import { FretboardHeader } from './components/FretboardHeader';
-import { ExerciseProgressBar } from './components/ExerciseProgressBar';
-import { FretboardControls } from './components/FretboardControls';
-import { FretboardModeControls } from './components/FretboardModeControls';
 import { FretboardGrid } from './components/FretboardGrid';
-import { convertTo3DFormat } from './utils/formatConversion';
-import {
-  Ring3DOverlayCanvas,
-  useRingOverlay,
-  DEFAULT_RING_CONFIG,
-} from './overlays';
+import { Ring3DOverlayCanvas, useRingOverlay } from './overlays';
 
-import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { useSnapshotTransition } from '@/shared/hooks/useSnapshotTransition';
 import { logSkeletonDebug } from '@/utils/skeletonDebug';
 import type { ExerciseNote } from '@bassnotion/contracts';
@@ -275,7 +261,6 @@ export const FretboardCard = React.memo(
     hide2DFretboard = true, // Hide 2D fretboard by default - use 3D overlay only
     hide3DFretboard = false, // DEBUG: Hide 3D overlay
   }: FretboardCardProps) {
-    const { correlationId, logger } = useCorrelation('FretboardCard');
     // Find the selected exercise object from the exercises list
     // Note: ex.id is an ExerciseId value object, so we compare with its .value property
     const selectedExercise =
@@ -377,8 +362,8 @@ const FretboardCardContent = React.memo(
     stringCount3D,
     setStringCount3D,
     maxFrets = 25,
-    onMaxFretsChange,
-    tutorialData,
+    onMaxFretsChange: _onMaxFretsChange,
+    tutorialData: _tutorialData,
     tutorialSlug,
     exercises,
     selectedExerciseId,
@@ -546,10 +531,10 @@ const FretboardCardContent = React.memo(
       setEffectiveOverlay3DConfig(overlay3DConfig);
     }, [overlay3DConfig]);
 
-    // Ring overlay state for Guitar Hero-style animated rings
-    // This state controls whether the 3D ring overlay is shown in 2D mode
-    // NOTE: Set to true for debugging/calibration of 3D canvas alignment
-    const [showRingOverlay, setShowRingOverlay] = useState(true);
+    // Ring overlay flag for Guitar Hero-style animated rings.
+    // Hardcoded to true currently (used for debugging/calibration of 3D
+    // canvas alignment) — was state but nothing ever toggled it.
+    const showRingOverlay = true;
     const fretboardContainerRef = useRef<HTMLDivElement>(null);
 
     // =============================================================================
@@ -607,7 +592,7 @@ const FretboardCardContent = React.memo(
       // Skip if initial reveal is already complete
       if (isInitialRevealComplete) {
         if (isVerboseDebugEnabled())
-          console.log(
+          verboseLog(
             '[ZOOM-DEBUG] Initial reveal already complete, skipping observer',
           );
         return;
@@ -615,13 +600,13 @@ const FretboardCardContent = React.memo(
 
       const sentinel = animationTriggerSentinelRef.current;
       if (isVerboseDebugEnabled())
-        console.log(
+        verboseLog(
           '[ZOOM-DEBUG] IntersectionObserver setup - sentinel:',
           sentinel,
         );
       if (!sentinel) {
         if (isVerboseDebugEnabled())
-          console.log('[ZOOM-DEBUG] ❌ No sentinel element found!');
+          verboseLog('[ZOOM-DEBUG] ❌ No sentinel element found!');
         return;
       }
 
@@ -629,13 +614,13 @@ const FretboardCardContent = React.memo(
         (entries) => {
           const entry = entries[0];
           if (isVerboseDebugEnabled())
-            console.log('[ZOOM-DEBUG] IntersectionObserver callback:', {
+            verboseLog('[ZOOM-DEBUG] IntersectionObserver callback:', {
               isIntersecting: entry.isIntersecting,
               intersectionRatio: entry.intersectionRatio,
             });
           if (entry.isIntersecting) {
             if (isVerboseDebugEnabled())
-              console.log(
+              verboseLog(
                 '[ZOOM-DEBUG] 🎯 Sentinel in view! Revealing fretboard content',
               );
             setShowFretboardContent(true);
@@ -651,11 +636,11 @@ const FretboardCardContent = React.memo(
 
       observer.observe(sentinel);
       if (isVerboseDebugEnabled())
-        console.log('[ZOOM-DEBUG] Observer started watching sentinel');
+        verboseLog('[ZOOM-DEBUG] Observer started watching sentinel');
 
       return () => {
         if (isVerboseDebugEnabled())
-          console.log('[ZOOM-DEBUG] Observer disconnected');
+          verboseLog('[ZOOM-DEBUG] Observer disconnected');
         observer.disconnect();
       };
     }, [isInitialRevealComplete]);
@@ -667,13 +652,13 @@ const FretboardCardContent = React.memo(
     useEffect(() => {
       if (showFretboardContent && !initialFadeComplete) {
         if (isVerboseDebugEnabled())
-          console.log('[ZOOM-DEBUG] 🌟 CSS fade-in animation started');
+          verboseLog('[ZOOM-DEBUG] 🌟 CSS fade-in animation started');
 
         // Mark the initial fade as complete after the CSS animation finishes
         // This allows subsequent exercise changes to use the snapshot transition opacity
         const timer = setTimeout(() => {
           if (isVerboseDebugEnabled())
-            console.log('[ZOOM-DEBUG] ✅ Initial fade animation complete');
+            verboseLog('[ZOOM-DEBUG] ✅ Initial fade animation complete');
           setInitialFadeComplete(true);
         }, INITIAL_FADE_DURATION);
 
@@ -697,8 +682,6 @@ const FretboardCardContent = React.memo(
 
     // Use prop exercises only (no global exercise selection hook)
     const exercisesList = exercises || [];
-    const exerciseLoading = false; // No loading state needed from parent-managed selection
-    const exerciseError = null; // No error state needed from parent-managed selection
 
     // Use prop value from parent instead of local state
     const effectiveSelectedExerciseId = selectedExerciseId || '';
@@ -727,101 +710,11 @@ const FretboardCardContent = React.memo(
       selectedExerciseIdRef.current = selectedExerciseIdFromSync;
     }, [selectedExerciseIdFromSync]);
 
-    // Track callback recreation - should now be stable
-    const callbackRecreationCount = useRef(0);
-
-    const handleExerciseSelect = React.useCallback(
-      (exerciseId: string) => {
-        // Track callback stability
-        callbackRecreationCount.current++;
-        logger.info(
-          `🔥 handleExerciseSelect call #${callbackRecreationCount.current}, exerciseId: ${exerciseId}`,
-        );
-
-        const exercise = exercisesListRef.current.find(
-          (ex) => ex.id.value === exerciseId,
-        );
-        if (exercise) {
-          // Check if this exercise is already selected by comparing with sync state
-          const wasAlreadySelected =
-            selectedExerciseIdRef.current === exerciseId;
-
-          // Add a unique selection timestamp to track user clicks
-          const timestamp = Date.now();
-          const exerciseWithTimestamp = {
-            ...exercise,
-            _selectionTimestamp: timestamp,
-          };
-
-          // Parent manages selectedExerciseId, we just notify via callback
-          onExerciseSelectRef.current?.(exerciseId);
-
-          // Emit comprehensive sync events to configure all widgets
-          const syncActions = syncActionsRef.current;
-          if (syncActions?.emitEvent) {
-            syncActions.emitEvent(
-              'EXERCISE_CHANGE',
-              {
-                exercise,
-                forceReload: wasAlreadySelected,
-                clickTimestamp: timestamp,
-              },
-              'high',
-            );
-          } else {
-            logger.warn(
-              '🔸 Sync actions not available yet for EXERCISE_CHANGE',
-            );
-          }
-
-          // Update tempo for metronome and global controls
-          if (exercise.bpm && exercise.bpm > 0 && syncActions?.emitEvent) {
-            syncActions.emitEvent(
-              'TEMPO_CHANGE',
-              {
-                tempo: exercise.bpm,
-                source: 'exercise-selector',
-                reason: 'exercise-template',
-              },
-              'high',
-            );
-          }
-
-          // Custom bassline pattern if available
-          if (
-            exercise.chord_progression &&
-            Array.isArray(exercise.chord_progression) &&
-            syncActions?.emitEvent
-          ) {
-            syncActions.emitEvent(
-              'CUSTOM_BASSLINE',
-              {
-                chordProgression: exercise.chord_progression,
-                key: exercise.key,
-                source: 'exercise-selector',
-                reason: 'exercise-template',
-              },
-              'normal',
-            );
-          }
-
-          // Volume configuration for optimal practice
-          if (syncActions?.emitEvent) {
-            syncActions.emitEvent(
-              'VOLUME_CHANGE',
-              {
-                masterVolume: 0.8,
-                metronomeVolume: 0.7,
-                source: 'exercise-selector',
-                reason: 'exercise-template',
-              },
-              'low',
-            );
-          }
-        }
-      },
-      [], // PERFORMANCE FIX: No dependencies - use refs instead
-    );
+    // REMOVED: handleExerciseSelect callback used to live here but is
+    // no longer wired up (exercise selection is handled upstream in
+    // YouTubeWidgetPage). The EXERCISE_CHANGE / TEMPO_CHANGE /
+    // CUSTOM_BASSLINE / VOLUME_CHANGE sync emits it owned are now
+    // dispatched from the parent's onExerciseSelect handler.
 
     // REMOVED: Auto-selection logic moved to parent (YouTubeWidgetPage)
     // The parent component manages selectedExerciseId as the single source of truth
@@ -928,40 +821,6 @@ const FretboardCardContent = React.memo(
     );
     const manualSelectionTracking = useManualSelectionTracking();
 
-    // TODO: Fix audio registration - depends on deleted useWidgetSync
-    // const audioRegistrationConfig = React.useMemo(
-    //   () => ({
-    //     widgetId: 'interactive-fretboard',
-    //     widgetType: 'fretboard' as const,
-    //     displayName: 'Interactive Fretboard Visualization',
-    //     audioConfig: {
-    //       id: 'interactive-fretboard',
-    //       type: 'bass' as const,
-    //       volume: 0.8, // Fretboard is primarily visual, lower volume
-    //       pan: 0, // Center panning
-    //       muted: false,
-    //       solo: false,
-    //     },
-    //     requiresPreciseSync: true, // Fretboard needs precise sync for visual timing
-    //     latencyTolerance: 16, // 16ms for 60fps smooth animations
-    //     tempoSensitive: true,
-    //     volumeSensitive: false, // Fretboard volume is not critical
-    //     priority: 3, // Medium priority - visual feedback
-    //     canBeSoloed: false, // Fretboard doesn't produce audio directly
-    //     canBeMuted: false, // Always show fretboard
-    //     autoRegister: false, // Disable auto-register to prevent re-registration loops
-    //   }),
-    //   [],
-    // );
-
-    // Audio registration for global playback synchronization (Story 3.14)
-    // const { state: audioState, controls: audioControls } =
-    //   useWidgetAudioRegistration(audioRegistrationConfig);
-
-    // Temporary placeholders
-    const audioState = { isRegistered: false, hasError: false };
-    const audioControls = { register: () => {}, unregister: () => {} };
-
     // =============================================================================
     // EXERCISE TRANSITION - FAANG Atomic Snapshot Pattern (Double Buffer)
     // =============================================================================
@@ -1020,7 +879,7 @@ const FretboardCardContent = React.memo(
     // EFFECTIVE TRANSITION PHASE FOR ZOOM ANIMATION
     // DEBUG: Log state on every render (after fadeOpacity is defined)
     if (isVerboseDebugEnabled()) {
-      console.log('[ZOOM-DEBUG] Render state:', {
+      verboseLog('[ZOOM-DEBUG] Render state:', {
         isInitialRevealComplete,
         showFretboardContent,
         initialFadeComplete,
@@ -1049,7 +908,7 @@ const FretboardCardContent = React.memo(
       if (showFretboardContent && !initialRevealDoneRef.current) {
         initialRevealDoneRef.current = true;
         if (isVerboseDebugEnabled()) {
-          console.log(
+          verboseLog(
             '[ZOOM-DEBUG] 🎬 Initial reveal - forceInitialZoom is now true',
           );
         }
@@ -1057,7 +916,7 @@ const FretboardCardContent = React.memo(
         // Mark zoom animation as done after it completes (1500ms + buffer)
         const endTimer = setTimeout(() => {
           if (isVerboseDebugEnabled()) {
-            console.log(
+            verboseLog(
               '[ZOOM-DEBUG] ✅ Zoom animation complete - setting initialZoomDone',
             );
           }
@@ -1075,7 +934,7 @@ const FretboardCardContent = React.memo(
       // During initial reveal, force 'fading-in' to trigger zoom animation
       if (forceInitialZoom) {
         if (isVerboseDebugEnabled()) {
-          console.log(
+          verboseLog(
             '[ZOOM-DEBUG] effectiveTransitionPhase: FORCING fading-in for initial reveal',
           );
         }
@@ -1083,16 +942,13 @@ const FretboardCardContent = React.memo(
       }
 
       if (isVerboseDebugEnabled()) {
-        console.log(
+        verboseLog(
           '[ZOOM-DEBUG] effectiveTransitionPhase: passing through',
           transitionPhase,
         );
       }
       return transitionPhase;
     }, [forceInitialZoom, transitionPhase]);
-
-    // Get selected exercise from sync props for GlobalControls
-    const activeExercise = syncProps.selectedExercise;
 
     // Exercise loading hook
     logger.info(
@@ -1142,14 +998,15 @@ const FretboardCardContent = React.memo(
         exerciseLoader.markReset();
       },
       markManualSelection: manualSelectionTracking.markManualSelection,
-      triggerNote: fretboard.exercise.triggerNote,
       emitBasslineEvent: fretboard.exercise.emitBasslineEvent,
       clearExerciseTracking: exerciseLoader.clearExerciseTracking,
       handleDragEnd: fretboard.handleDragEnd,
     });
 
-    // String count handlers hook for 3D mode
-    const stringCountHandlers = useStringCountHandlers({
+    // String count handlers hook for 3D mode — kept calling for the
+    // cleanup-on-unmount effect inside the hook even though the
+    // returned handler is no longer consumed from this file.
+    useStringCountHandlers({
       currentStringCount: sharedStringCount,
       selectedDots: sharedSelectedDots,
       setStringCount: sharedSetStringCount,
@@ -1223,7 +1080,7 @@ const FretboardCardContent = React.memo(
       if (!exercise) return;
 
       // DIAGNOSTIC: Log the exercise object structure to debug config retrieval
-      console.log('🎸 [FRETBOARD-CONFIG-DEBUG] Exercise object:', {
+      verboseLog('🎸 [FRETBOARD-CONFIG-DEBUG] Exercise object:', {
         id: exercise.id,
         title: (exercise as any).title,
         // Check all possible property names
@@ -1249,7 +1106,7 @@ const FretboardCardContent = React.memo(
         FRETBOARD_VIEW_PRESETS[preset as keyof typeof FRETBOARD_VIEW_PRESETS] ||
         FRETBOARD_VIEW_PRESETS.default;
 
-      console.log(`🎸 [FRETBOARD-CONFIG-DEBUG] Config detection:`, {
+      verboseLog(`🎸 [FRETBOARD-CONFIG-DEBUG] Config detection:`, {
         configFound: !!config,
         configValue: config,
         detectedPreset: preset,
@@ -1393,9 +1250,6 @@ const FretboardCardContent = React.memo(
       fretboard.exercise.audioIntegration.playbackPosition?.currentNote,
       scrollToFret,
     ]);
-
-    // Determine sync status
-    const syncStatus = syncProps.isConnected ? 'Synced' : 'Disconnected';
 
     // Horizontal scroll drag handlers
     const handleMouseDown = (e: React.MouseEvent) => {
@@ -1686,14 +1540,6 @@ const FretboardCardContent = React.memo(
                     />
                   </div>
                 )}
-
-              {/* Audio status display */}
-              {fretboard.exercise.audioIntegration.audioError && (
-                <div className="mt-4 p-2 bg-destructive/10 text-destructive text-sm rounded">
-                  Audio Error:
-                  {String(fretboard.exercise.audioIntegration.audioError)}
-                </div>
-              )}
             </div>
           </div>
         </ZoneCardContent>

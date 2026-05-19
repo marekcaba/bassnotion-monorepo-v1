@@ -39,8 +39,8 @@ export class EnhancedDrumSampleEngine {
   @WithCorrelation()
   @LogPerformance({ threshold: 50 })
   async loadSample(
-    url: string,
-    options?: { correlationId?: string },
+    _url: string,
+    _options?: { correlationId?: string },
   ): Promise<AudioBuffer> {
     // The correlation ID will be automatically tracked
     await new Promise((resolve) => setTimeout(resolve, 75));
@@ -57,12 +57,12 @@ export class EnhancedMidiParser {
 
   @LogPerformance({ threshold: 200, metricName: 'midi.parse.file' })
   @LogErrors({ sanitize: true })
-  async parseFile(file: File): Promise<MidiFile> {
+  async parseFile(_file: File): Promise<MidiFile> {
     // Parsing logic
     return {} as MidiFile;
   }
 
-  validateFormat(data: Uint8Array): boolean {
+  validateFormat(_data: Uint8Array): boolean {
     // Automatically logged by @LogClass
     return true;
   }
@@ -81,13 +81,13 @@ export class EnhancedBassSynthEngine {
       );
     },
   })
-  processSynthesis(buffer: AudioBuffer, params: any): void {
+  processSynthesis(_buffer: AudioBuffer, _params: any): void {
     // Process audio
   }
 
   @LogPerformance({ includeInMetrics: true })
   @LogErrors({ rethrow: false, recoveryStrategies: ['useDefault'] })
-  async loadPreset(presetName: string): Promise<void> {
+  async loadPreset(_presetName: string): Promise<void> {
     // If this fails, error is logged but not rethrown
     throw new Error('Preset not found');
   }
@@ -127,7 +127,7 @@ export async function processAudioBatch(files: File[]) {
   );
 }
 
-async function processFile(file: File): Promise<any> {
+async function processFile(_file: File): Promise<any> {
   // Simulate processing
   await new Promise((resolve) => setTimeout(resolve, Math.random() * 200));
   return { processed: true };
@@ -157,7 +157,7 @@ export class AudioProcessingPipeline {
     recoveryStrategies: ['retry', 'skip', 'useDefault'],
     sanitize: true,
   })
-  private async runStage(stage: string, input: any): Promise<any> {
+  private async runStage(stage: string, _input: any): Promise<any> {
     // Simulate stage processing
     if (Math.random() > 0.9) {
       throw new Error(`Stage ${stage} failed`);
@@ -180,7 +180,10 @@ export class ComponentWithCustomLogger {
     // Use custom result sanitizer
     sanitizeResult: (result) => {
       if (result && typeof result === 'object' && 'secret' in result) {
-        const { secret, ...safeResult } = result;
+        // Strip the `secret` field from the result. The destructure is
+        // a documented JS idiom for "remove key X" — the unused `_secret`
+        // binding is intentional.
+        const { secret: _secret, ...safeResult } = result;
         return safeResult;
       }
       return result;

@@ -4,7 +4,9 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 
 export default defineConfig({
-  plugins: [react()],
+  // Use the automatic JSX runtime so tests don't require `import React` in
+  // every component file (matches Next.js's build behavior).
+  plugins: [react({ jsxRuntime: 'automatic' })],
   resolve: {
     alias: [
       {

@@ -130,6 +130,27 @@ export const PlaybackControlsBar: React.FC<PlaybackControlsBarProps> = ({
   const playButtonDisabled =
     isPlayButtonBusy && !isPlaying && !countdownState.isCountingDown;
 
+  // Has actual playable content. A play button that just runs a countdown
+  // and click track over an empty exercise is misleading — the user clicks
+  // play expecting something to happen. Empty/placeholder exercises (the
+  // 'Ex.1/Ex.2/Ex.3' stubs in tutorials like how-to-find-notes-on-the-
+  // bass-fretboard) have no bass notes, no drum pattern, no harmony.
+  // For metronome-only exercises we'd need an explicit flag — none exists
+  // today, so anything without notes/drums/harmony is treated as empty.
+  const ex = selectedExercise as
+    | (Exercise & {
+        notes?: unknown[];
+        drumPattern?: unknown[];
+        harmonyNotes?: unknown[];
+      })
+    | null
+    | undefined;
+  const hasPlayableContent = !!(
+    (ex?.notes && ex.notes.length > 0) ||
+    (ex?.drumPattern && ex.drumPattern.length > 0) ||
+    (ex?.harmonyNotes && ex.harmonyNotes.length > 0)
+  );
+
   return (
     <div className={`bg-transparent rounded-2xl ${compact ? 'p-2' : 'p-4'}`}>
       {/* Two-Row Player Layout */}
@@ -253,20 +274,26 @@ export const PlaybackControlsBar: React.FC<PlaybackControlsBarProps> = ({
               {/* Play button */}
               <button
                 onClick={handlePlayButtonClick}
-                disabled={!selectedExercise || playButtonDisabled}
+                disabled={
+                  !selectedExercise ||
+                  playButtonDisabled ||
+                  (!hasPlayableContent && !isPlaying)
+                }
                 aria-busy={isPlayButtonBusy}
                 aria-label={
                   !selectedExercise
                     ? 'Select an exercise to play'
-                    : isPlayButtonBusy && !isPlaying
-                      ? 'Loading samples'
-                      : isPlaying
-                        ? 'Stop'
-                        : 'Play'
+                    : !hasPlayableContent && !isPlaying
+                      ? 'Exercise has no audio content'
+                      : isPlayButtonBusy && !isPlaying
+                        ? 'Loading samples'
+                        : isPlaying
+                          ? 'Stop'
+                          : 'Play'
                 }
                 aria-keyshortcuts="Space"
                 className={`mx-2 rounded-full shadow-[4px_4px_8px_rgba(0,0,0,0.5),-4px_-4px_8px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200 flex items-center justify-center relative ${
-                  !selectedExercise
+                  !selectedExercise || (!hasPlayableContent && !isPlaying)
                     ? 'bg-slate-600 opacity-50 cursor-not-allowed'
                     : playButtonDisabled
                       ? 'bg-blue-500 opacity-70 cursor-wait'
@@ -279,11 +306,13 @@ export const PlaybackControlsBar: React.FC<PlaybackControlsBarProps> = ({
                 title={
                   !selectedExercise
                     ? 'Please select an exercise first'
-                    : isPlayButtonBusy && !isPlaying
-                      ? 'Loading samples…'
-                      : countdownState.isCountingDown
-                        ? 'Counting down...'
-                        : ''
+                    : !hasPlayableContent && !isPlaying
+                      ? 'This exercise has no audio content yet'
+                      : isPlayButtonBusy && !isPlaying
+                        ? 'Loading samples…'
+                        : countdownState.isCountingDown
+                          ? 'Counting down...'
+                          : ''
                 }
               >
                 {/* While loading samples (and not already playing), show a

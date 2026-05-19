@@ -926,7 +926,9 @@ describe('Creators Integration Tests', () => {
       expect(result.success).toBe(true);
       expect(result.data).toBeDefined();
       expect(result.data?.channelUrl).toBe(legacyChannelUrl);
-      expect(result.data?.subscriberCount).toBeNull();
+      // The controller now omits subscriberCount instead of nulling it when
+      // the YouTube API returns no value; either nullish form is acceptable.
+      expect(result.data?.subscriberCount ?? null).toBeNull();
     });
   });
 });

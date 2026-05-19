@@ -7,12 +7,6 @@
 
 import { vi } from 'vitest';
 
-interface MockTransportPosition {
-  bars: number;
-  beats: number;
-  sixteenths: number;
-}
-
 class MockTransport {
   state: 'started' | 'stopped' | 'paused' = 'stopped';
   position = 0;
@@ -73,7 +67,7 @@ class MockTransport {
     return this;
   }
 
-  stop(time?: number | string) {
+  stop(_time?: number | string) {
     this.state = 'stopped';
     this.position = 0;
     this.seconds = 0;
@@ -84,7 +78,7 @@ class MockTransport {
     return this;
   }
 
-  pause(time?: number | string) {
+  pause(_time?: number | string) {
     this.state = 'paused';
     if (this.intervalId) {
       clearInterval(this.intervalId);
@@ -162,7 +156,7 @@ class MockTransport {
     return this;
   }
 
-  off(event: string, callback?: Function) {
+  off(_event: string, _callback?: Function) {
     // Mock event unsubscription
     return this;
   }
@@ -280,7 +274,7 @@ class MockSampler {
   disconnect = vi.fn();
   toDestination = vi.fn().mockReturnThis();
 
-  get(note?: string) {
+  get(_note?: string) {
     return {
       loaded: true,
       buffer: {
@@ -360,15 +354,43 @@ class MockCompressor {
 export const createToneMock = () => {
   const Transport = new MockTransport();
   const context = new MockContext();
+  const destination = new MockGainNode();
+  const listener = {
+    forwardX: { value: 0, setValueAtTime: vi.fn() },
+    forwardY: { value: 0, setValueAtTime: vi.fn() },
+    forwardZ: { value: -1, setValueAtTime: vi.fn() },
+    upX: { value: 0, setValueAtTime: vi.fn() },
+    upY: { value: 1, setValueAtTime: vi.fn() },
+    upZ: { value: 0, setValueAtTime: vi.fn() },
+    positionX: { value: 0, setValueAtTime: vi.fn() },
+    positionY: { value: 0, setValueAtTime: vi.fn() },
+    positionZ: { value: 0, setValueAtTime: vi.fn() },
+  };
 
   return {
+    // Legacy singleton (kept for tests that still read Tone.Transport directly)
     Transport,
     context,
+
+    // Tone v15 factory accessors — the production codebase uses these now.
+    // They return the SAME instances as the legacy singletons so tests that
+    // mix old `Tone.Transport.*` reads with new `Tone.getTransport().*` calls
+    // observe a single source of truth.
+    getTransport: () => Transport,
+    getContext: () => context,
+    setContext: vi.fn(),
+    getDestination: () => destination,
+    getListener: () => listener,
+    getDraw: () => ({
+      schedule: vi.fn(),
+      cancel: vi.fn(),
+    }),
 
     // Core functions
     start: vi.fn().mockResolvedValue(undefined),
     now: () => context.currentTime,
     immediate: () => context.currentTime,
+    loaded: vi.fn().mockResolvedValue(undefined),
 
     // Audio nodes
     Gain: vi.fn(() => new MockGainNode()),
@@ -382,17 +404,22 @@ export const createToneMock = () => {
       toFrequency: () => (typeof freq === 'string' ? 440 : freq),
       toMidi: () => 69,
       toNote: () => 'A4',
+      valueOf: () => 440,
     })),
 
     Time: vi.fn((time: any) => ({
       toSeconds: () =>
         typeof time === 'string' ? Transport.getSecondsAtTime(time) : time,
       toTicks: () => 960,
+      toBarsBeatsSixteenths: () => '0:0:0',
+      valueOf: () => 0,
     })),
 
-    // Get context
-    getContext: () => context,
-    setContext: vi.fn(),
+    Ticks: vi.fn((val: any) => ({
+      toTicks: () => val,
+      toSeconds: () => 0,
+      toBarsBeatsSixteenths: () => '0:0:0',
+    })),
 
     // Constants
     version: '15.1.22',
@@ -418,7 +445,7 @@ export function installToneMock() {
 // Helper to simulate timing updates for UnifiedTransport
 export function simulateTransportTiming(
   eventBus: any,
-  duration = 2000,
+  _duration = 2000,
   transport?: any,
 ) {
   const startTime = performance.now(); // Use performance.now() for higher precision
@@ -429,7 +456,6 @@ export function simulateTransportTiming(
     callback: Function;
     executed: boolean;
   }> = [];
-  let lastEventExecutionTime = 0;
 
   // Subscribe to scheduleEvent calls to capture scheduled events
   const transportInstance = transport || (eventBus as any).transport;
@@ -553,7 +579,6 @@ export function simulateTransportTiming(
         }
         event.callback(event.time); // Pass the scheduled time, not current time
         event.executed = true;
-        lastEventExecutionTime = now;
       }
     });
 

@@ -143,6 +143,21 @@ export function ensureToneUsesPersistentContext(): void {
   // Only set context if they're different
   if (toneContext !== persistentContext) {
     logger.info('🎵 Setting Tone.js to use persistent AudioContext');
-    Tone.setContext(persistentContext, true);
+    // CRITICAL: Do NOT pass `disposeOld = true`. The dispose cascade
+    // calls `transport.dispose()` → `Clock.dispose()` → `TickSource.dispose()`
+    // which empties the StateTimeline. After that, ANY write to the
+    // deprecated `Tone.Transport` const (which was captured at module-load
+    // time and is used 200+ times in this codebase) throws
+    // "Cannot read properties of undefined (reading 'time')" because
+    // `TickSource.getTicksAtTime()` reads `lastState.time` and `lastState`
+    // is undefined on an empty timeline.
+    //
+    // The orphaned old Context is GC-collected once nothing references it
+    // — a tiny one-time leak, harmless.
+    //
+    // Long-term: migrate all `Tone.Transport.*` reads to
+    // `Tone.getTransport().*` (which re-resolves the current context on
+    // every call and is safe across swaps).
+    Tone.setContext(persistentContext);
   }
 }

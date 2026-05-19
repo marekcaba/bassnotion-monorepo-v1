@@ -271,17 +271,81 @@ describe('MidiParserService', () => {
           {
             notes: [
               // Measure 0
-              { midi: 40, velocity: 0.8, name: 'E1', time: 0, duration: 0.5, ticks: 0, durationTicks: 240 },
-              { midi: 45, velocity: 0.9, name: 'A1', time: 1, duration: 0.5, ticks: 480, durationTicks: 240 },
+              {
+                midi: 40,
+                velocity: 0.8,
+                name: 'E1',
+                time: 0,
+                duration: 0.5,
+                ticks: 0,
+                durationTicks: 240,
+              },
+              {
+                midi: 45,
+                velocity: 0.9,
+                name: 'A1',
+                time: 1,
+                duration: 0.5,
+                ticks: 480,
+                durationTicks: 240,
+              },
               // Measure 1
-              { midi: 50, velocity: 0.85, name: 'D2', time: 2, duration: 0.5, ticks: 1920, durationTicks: 240 },
-              { midi: 55, velocity: 0.7, name: 'G2', time: 3, duration: 0.5, ticks: 2400, durationTicks: 240 },
+              {
+                midi: 50,
+                velocity: 0.85,
+                name: 'D2',
+                time: 2,
+                duration: 0.5,
+                ticks: 1920,
+                durationTicks: 240,
+              },
+              {
+                midi: 55,
+                velocity: 0.7,
+                name: 'G2',
+                time: 3,
+                duration: 0.5,
+                ticks: 2400,
+                durationTicks: 240,
+              },
               // Measure 2
-              { midi: 40, velocity: 0.8, name: 'E1', time: 4, duration: 0.5, ticks: 3840, durationTicks: 240 },
-              { midi: 45, velocity: 0.9, name: 'A1', time: 5, duration: 0.5, ticks: 4320, durationTicks: 240 },
+              {
+                midi: 40,
+                velocity: 0.8,
+                name: 'E1',
+                time: 4,
+                duration: 0.5,
+                ticks: 3840,
+                durationTicks: 240,
+              },
+              {
+                midi: 45,
+                velocity: 0.9,
+                name: 'A1',
+                time: 5,
+                duration: 0.5,
+                ticks: 4320,
+                durationTicks: 240,
+              },
               // Measure 3
-              { midi: 50, velocity: 0.85, name: 'D2', time: 6, duration: 0.5, ticks: 5760, durationTicks: 240 },
-              { midi: 55, velocity: 0.7, name: 'G2', time: 7, duration: 0.5, ticks: 6240, durationTicks: 240 },
+              {
+                midi: 50,
+                velocity: 0.85,
+                name: 'D2',
+                time: 6,
+                duration: 0.5,
+                ticks: 5760,
+                durationTicks: 240,
+              },
+              {
+                midi: 55,
+                velocity: 0.7,
+                name: 'G2',
+                time: 7,
+                duration: 0.5,
+                ticks: 6240,
+                durationTicks: 240,
+              },
             ],
             controlChanges: {},
           },
@@ -326,9 +390,33 @@ describe('MidiParserService', () => {
         tracks: [
           {
             notes: [
-              { midi: 40, velocity: 0.8, name: 'E1', time: 0, duration: 0.5, ticks: 0, durationTicks: 240 },
-              { midi: 45, velocity: 0.9, name: 'A1', time: 2, duration: 0.5, ticks: 1440, durationTicks: 240 },
-              { midi: 50, velocity: 0.85, name: 'D2', time: 4, duration: 0.5, ticks: 2880, durationTicks: 240 },
+              {
+                midi: 40,
+                velocity: 0.8,
+                name: 'E1',
+                time: 0,
+                duration: 0.5,
+                ticks: 0,
+                durationTicks: 240,
+              },
+              {
+                midi: 45,
+                velocity: 0.9,
+                name: 'A1',
+                time: 2,
+                duration: 0.5,
+                ticks: 1440,
+                durationTicks: 240,
+              },
+              {
+                midi: 50,
+                velocity: 0.85,
+                name: 'D2',
+                time: 4,
+                duration: 0.5,
+                ticks: 2880,
+                durationTicks: 240,
+              },
             ],
             controlChanges: {},
           },
@@ -366,8 +454,24 @@ describe('MidiParserService', () => {
         tracks: [
           {
             notes: [
-              { midi: 40, velocity: 1.0, name: 'E1', time: 0, duration: 0.5, ticks: 0, durationTicks: 240 }, // Should be 127
-              { midi: 45, velocity: 0.5, name: 'A1', time: 1, duration: 0.5, ticks: 480, durationTicks: 240 }, // Should be ~64
+              {
+                midi: 40,
+                velocity: 1.0,
+                name: 'E1',
+                time: 0,
+                duration: 0.5,
+                ticks: 0,
+                durationTicks: 240,
+              }, // Should be 127
+              {
+                midi: 45,
+                velocity: 0.5,
+                name: 'A1',
+                time: 1,
+                duration: 0.5,
+                ticks: 480,
+                durationTicks: 240,
+              }, // Should be ~64
             ],
             controlChanges: {},
           },

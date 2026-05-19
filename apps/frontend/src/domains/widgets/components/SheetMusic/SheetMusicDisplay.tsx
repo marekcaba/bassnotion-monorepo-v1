@@ -7,6 +7,7 @@ import React, {
   useMemo,
   useCallback,
 } from 'react';
+import { verboseLog } from '@/config/debug';
 import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay';
 import type { ExerciseNote, TimeSignature } from '@bassnotion/contracts';
 import { exerciseToMusicXML } from '../../utils/exerciseToMusicXML.js';
@@ -47,7 +48,7 @@ export function SheetMusicDisplay({
   title,
   currentNoteIndex,
   isPlaying = false,
-  currentBar,
+  currentBar: _currentBar,
   currentPosition,
   onReady,
   width,
@@ -60,7 +61,10 @@ export function SheetMusicDisplay({
   const osmdRef = useRef<OpenSheetMusicDisplay | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [actualWidth, setActualWidth] = useState(width || 700);
+  // actualWidth setter is called in the parent-resize effect to trigger
+  // a re-render after measuring; the value isn't read here (OSMD reads
+  // its own container width directly).
+  const [_actualWidth, setActualWidth] = useState(width || 700);
 
   // Memoize notes key for position map rebuild detection
   const notesKey = useMemo(() => JSON.stringify(notes), [notes]);
@@ -68,29 +72,23 @@ export function SheetMusicDisplay({
   // State for continuous scroll (teleprompter style)
   const [isAutoScrollDisabled, setIsAutoScrollDisabled] = useState(false);
   const animationFrameRef = useRef<number | null>(null);
-  const lastManualScrollTime = useRef<number>(0);
 
   // Enable auto-scroll (called when user clicks resume button or playback restarts)
   const enableAutoScroll = useCallback(() => {
     setIsAutoScrollDisabled(false);
   }, []);
 
-  // Position map hook for accurate note-level scrolling
-  const { getX, isMapReady, positionMap } = useNotePositionMap({
+  // Position map hook for accurate note-level scrolling — only the
+  // map metadata (isMapReady, positionMap) is consumed here; the
+  // pixel-offset accessor (getX) is read by downstream hooks that
+  // call useNotePositionMap directly.
+  const { isMapReady, positionMap } = useNotePositionMap({
     osmdRef,
     isReady: !isLoading,
     notesKey,
     beatsPerMeasure: timeSignature.numerator,
   });
 
-  // Calculate number of measures from notes
-  const calculateMeasures = () => {
-    if (notes.length === 0) return 1;
-    const maxMeasure = Math.max(...notes.map((n) => n.position?.measure || 1));
-    return maxMeasure;
-  };
-
-  const totalMeasures = calculateMeasures();
   // Single system - all measures on one horizontal line
   const calculatedHeight = height;
 
@@ -212,13 +210,13 @@ export function SheetMusicDisplay({
         osmd.EngravingRules.StretchLastSystemLine = false;
 
         // DEBUG: Log ALL EngravingRules to see what's available
-        console.log(
+        verboseLog(
           '[SheetMusicDisplay] ALL EngravingRules keys:',
           Object.keys(osmd.EngravingRules),
         );
 
         // DEBUG: Log OSMD configuration BEFORE render
-        console.log('[SheetMusicDisplay] OSMD EngravingRules APPLIED:', {
+        verboseLog('[SheetMusicDisplay] OSMD EngravingRules APPLIED:', {
           // Measure width settings
           FixedMeasureWidth: osmd.EngravingRules.FixedMeasureWidth,
           FixedMeasureWidthFixedValue:
@@ -252,15 +250,12 @@ export function SheetMusicDisplay({
         osmd.render();
 
         // DEBUG: Inspect rendered measure positions AFTER render
-        console.log('[SheetMusicDisplay] POST-RENDER inspection:');
+        verboseLog('[SheetMusicDisplay] POST-RENDER inspection:');
 
         // Access the graphic sheet to inspect actual measure positions
         if (osmd.GraphicSheet && osmd.GraphicSheet.MeasureList) {
           const measureList = osmd.GraphicSheet.MeasureList;
-          console.log(
-            '[SheetMusicDisplay] Total measures:',
-            measureList.length,
-          );
+          verboseLog('[SheetMusicDisplay] Total measures:', measureList.length);
 
           measureList.forEach(
             (measureArray: unknown[], measureIndex: number) => {
@@ -280,7 +275,7 @@ export function SheetMusicDisplay({
                 };
                 if (measure && measure.PositionAndShape) {
                   const pos = measure.PositionAndShape;
-                  console.log(`[SheetMusicDisplay] Measure ${measureIndex}:`, {
+                  verboseLog(`[SheetMusicDisplay] Measure ${measureIndex}:`, {
                     absoluteX: pos.AbsolutePosition?.x,
                     absoluteY: pos.AbsolutePosition?.y,
                     width: pos.Size?.width,
@@ -305,7 +300,7 @@ export function SheetMusicDisplay({
                     const actualLeftMargin = firstX - measureStart;
                     const actualRightMargin = measureEnd - lastX;
 
-                    console.log(
+                    verboseLog(
                       `[SheetMusicDisplay] Measure ${measureIndex} MARGINS:`,
                       {
                         entryCount: measure.staffEntries.length,
@@ -328,7 +323,7 @@ export function SheetMusicDisplay({
         }
 
         // Also log the ACTUAL EngravingRules after render to verify they were used
-        console.log('[SheetMusicDisplay] EngravingRules AFTER render:', {
+        verboseLog('[SheetMusicDisplay] EngravingRules AFTER render:', {
           FixedMeasureWidth: osmd.EngravingRules.FixedMeasureWidth,
           FixedMeasureWidthFixedValue:
             osmd.EngravingRules.FixedMeasureWidthFixedValue,
@@ -384,7 +379,6 @@ export function SheetMusicDisplay({
   // of the viewport, then quickly scrolls to move that position to the left edge.
   // Animation uses cubic ease-in-out for smooth acceleration and deceleration.
   const currentScrollRef = useRef<number>(0);
-  const targetScrollRef = useRef<number>(0);
   const scrollParamsRef = useRef<{
     containerCenter: number;
     maxScroll: number;
@@ -481,32 +475,9 @@ export function SheetMusicDisplay({
     // Page flip animation duration (ms) - slower for more noticeable, elegant flip
     const PAGE_FLIP_DURATION = 1000; // 1000ms for smooth, visible page flip
 
-    // Performance monitoring (logs every 300 frames)
-    let frameCount = 0;
-    let totalDeltaTime = 0;
-    let minDeltaTime = Infinity;
-    let maxDeltaTime = 0;
-    let lastFrameTime = performance.now();
-
     // Animation loop - handles both idle monitoring and page-flip animation
     const animate = () => {
       const now = performance.now();
-      const deltaTime = now - lastFrameTime;
-      lastFrameTime = now;
-
-      // Track performance stats
-      frameCount++;
-      totalDeltaTime += deltaTime;
-      minDeltaTime = Math.min(minDeltaTime, deltaTime);
-      maxDeltaTime = Math.max(maxDeltaTime, deltaTime);
-
-      // Reset performance stats every 300 frames to keep tracking fresh
-      if (frameCount >= 300) {
-        frameCount = 0;
-        totalDeltaTime = 0;
-        minDeltaTime = Infinity;
-        maxDeltaTime = 0;
-      }
 
       const params = scrollParamsRef.current;
       const pos = currentPositionRef.current;
@@ -560,7 +531,7 @@ export function SheetMusicDisplay({
 
         // Check if animation complete
         if (progress >= 1) {
-          console.log('[PAGE-FLIP] Animation complete', {
+          verboseLog('[PAGE-FLIP] Animation complete', {
             finalScroll: currentScrollRef.current.toFixed(2),
             target: pageFlipTargetScrollRef.current.toFixed(2),
           });
@@ -589,7 +560,7 @@ export function SheetMusicDisplay({
             ),
           );
 
-          console.log('[PAGE-FLIP] Triggered!', {
+          verboseLog('[PAGE-FLIP] Triggered!', {
             playheadXInViewport: playheadXInViewport.toFixed(2),
             threshold: scrollThreshold.toFixed(2),
             currentScroll: currentScrollRef.current.toFixed(2),
@@ -632,37 +603,13 @@ export function SheetMusicDisplay({
     };
   }, [isPlaying, isAutoScrollDisabled, easeInOutCubic]); // NO currentPosition dependency!
 
-  // Detect manual scroll (user touching/dragging the sheet)
+  // Detect manual scroll (user touching/dragging the sheet) — only the
+  // wheel + touchstart paths are wired. A more elaborate scroll-event
+  // debounce was prototyped but never connected; wheel/touchstart
+  // proved sufficient.
   useEffect(() => {
     const scrollContainer = parentRef.current;
     if (!scrollContainer) return;
-
-    const isUserScrolling = false;
-    let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
-
-    const handleScroll = () => {
-      // If we're playing and the scroll wasn't initiated by us, it's a manual scroll
-      if (isPlaying && animationFrameRef.current !== null) {
-        // Debounce to detect end of manual scroll gesture
-        if (scrollTimeout) {
-          clearTimeout(scrollTimeout);
-        }
-
-        // Check if this looks like a user scroll (significant deviation from expected position)
-        // We use a small threshold to avoid false positives from rounding errors
-        scrollTimeout = setTimeout(() => {
-          // If user scrolled while we were animating, disable auto-scroll
-          const timeSinceLastManualScroll =
-            performance.now() - lastManualScrollTime.current;
-          if (timeSinceLastManualScroll < 200) {
-            // Recent manual scroll detected
-            setIsAutoScrollDisabled(true);
-          }
-        }, 100);
-
-        lastManualScrollTime.current = performance.now();
-      }
-    };
 
     // Use wheel event for more reliable manual scroll detection
     const handleWheel = () => {
@@ -686,9 +633,6 @@ export function SheetMusicDisplay({
     return () => {
       scrollContainer.removeEventListener('wheel', handleWheel);
       scrollContainer.removeEventListener('touchstart', handleTouchStart);
-      if (scrollTimeout) {
-        clearTimeout(scrollTimeout);
-      }
     };
   }, [isPlaying]);
 

@@ -218,11 +218,45 @@ export class ExerciseLoader {
         await this.midiParser.parseMidiFile(midiData);
 
       // Convert MidiFileParser events to MidiEvent format
+      // IMPORTANT: each MIDI track has its OWN deltaTime sequence — we must
+      // reset currentTime to 0 at the start of every track. The previous
+      // code accumulated currentTime across tracks, which was harmless when
+      // there was only one track but would put downstream tracks at wildly
+      // wrong absolute times.
       const midiEvents: MidiEvent[] = [];
-      let currentTime = 0;
       const ticksPerQuarterNote = parsedMidiFile.header.ticksPerQuarterNote;
 
+      // Track open notes per channel+note so we can compute per-note
+      // durations by pairing noteOn → noteOff (or noteOn-with-velocity-0).
+      // Without this, every note's `duration` stays undefined and the
+      // bass scheduler defaults to 0.5s for every note — making slow
+      // passages ring over each other and fast passages overlap.
+      type OpenNote = {
+        time: number;
+        velocity: number;
+        eventIndex: number; // index into midiEvents so we can backfill duration
+      };
+
       for (const track of parsedMidiFile.tracks) {
+        let currentTime = 0;
+        const openNotes = new Map<string, OpenNote>();
+        const keyOf = (channel: number, note: number) => `${channel}:${note}`;
+
+        const closeNote = (channel: number, note: number, time: number) => {
+          const key = keyOf(channel, note);
+          const open = openNotes.get(key);
+          if (!open) return;
+          const duration = Math.max(0, time - open.time);
+          // Backfill duration on the original noteOn event so downstream
+          // consumers (ExerciseLoader's region/event mapping, BassScheduler)
+          // can read it without a second pass.
+          const onEvent = midiEvents[open.eventIndex];
+          if (onEvent && onEvent.type === 'noteOn') {
+            onEvent.duration = duration;
+          }
+          openNotes.delete(key);
+        };
+
         for (const event of track.events) {
           // Update current time based on delta time
           currentTime += event.deltaTime / ticksPerQuarterNote;
@@ -230,44 +264,78 @@ export class ExerciseLoader {
           // Convert to MidiEvent format
           // MidiFileParser uses 'channelNoteOn' and 'channelNoteOff' event types
           if (event.type === 'channelNoteOn' && event.channel !== undefined) {
+            const note = event.data?.[0] || 0;
             const velocity = event.data?.[1] || 127;
             // Note On with velocity 0 is actually Note Off
             if (velocity === 0) {
+              closeNote(event.channel, note, currentTime);
               midiEvents.push({
                 type: 'noteOff',
                 time: currentTime,
                 channel: event.channel,
-                note: event.data?.[0] || 0,
+                note,
                 velocity: 0,
               } as MidiEvent);
             } else {
+              const eventIndex = midiEvents.length;
               midiEvents.push({
                 type: 'noteOn',
                 time: currentTime,
                 channel: event.channel,
-                note: event.data?.[0] || 0,
+                note,
                 velocity,
               } as MidiEvent);
+              openNotes.set(keyOf(event.channel, note), {
+                time: currentTime,
+                velocity,
+                eventIndex,
+              });
             }
           } else if (
             event.type === 'channelNoteOff' &&
             event.channel !== undefined
           ) {
+            const note = event.data?.[0] || 0;
+            closeNote(event.channel, note, currentTime);
             midiEvents.push({
               type: 'noteOff',
               time: currentTime,
               channel: event.channel,
-              note: event.data?.[0] || 0,
+              note,
               velocity: event.data?.[1] || 0,
             } as MidiEvent);
           }
         }
+
+        // Any notes still open at end-of-track: assume they sustain to
+        // the last event time. Better than leaving them undefined and
+        // falling back to the 0.5s default.
+        if (openNotes.size > 0) {
+          logger.warn(
+            `MIDI track has ${openNotes.size} unterminated notes — assuming sustain to track end`,
+          );
+          for (const [, open] of openNotes) {
+            const onEvent = midiEvents[open.eventIndex];
+            if (onEvent && onEvent.type === 'noteOn') {
+              onEvent.duration = Math.max(0, currentTime - open.time);
+            }
+          }
+        }
       }
+
+      const notesWithDuration = midiEvents.filter(
+        (e) => e.type === 'noteOn' && e.duration !== undefined,
+      ).length;
+      const notesWithoutDuration = midiEvents.filter(
+        (e) => e.type === 'noteOn' && e.duration === undefined,
+      ).length;
 
       logger.info('MIDI file parsed', {
         trackCount: parsedMidiFile.tracks.length,
         ticksPerQuarterNote: parsedMidiFile.header.ticksPerQuarterNote,
         eventCount: midiEvents.length,
+        notesWithDuration,
+        notesWithoutDuration,
       });
 
       return midiEvents;

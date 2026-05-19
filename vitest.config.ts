@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 import { cpus } from 'os';
 
@@ -9,6 +10,9 @@ const aliasPath = resolve(__dirname, 'apps/frontend/src/$1');
 console.log('VITEST CONFIG: @/ alias replacement =', aliasPath);
 
 export default defineConfig({
+  // Use the automatic JSX runtime so tests don't require `import React` in
+  // every component file (matches Next.js's build behavior).
+  plugins: [react({ jsxRuntime: 'automatic' })],
   resolve: {
     alias: {
       '@': resolve(__dirname, 'apps/frontend/src'),

@@ -9,6 +9,7 @@
  */
 
 import { PreloadStrategy } from './PreloadStrategy.js';
+import { verboseLog } from '@/config/debug';
 import { PreloadConfig, PreloadResult } from '../types/index.js';
 import { GlobalSampleCache } from '../../storage/cache/GlobalSampleCache.js';
 import { getLogger } from '@/utils/logger.js';
@@ -54,10 +55,7 @@ const logger = getLogger('BassPreloadStrategy');
  * uses the D-string sample would silently get back the G-string sample
  * cached by an earlier exercise (same pitch, wrong timbre).
  */
-function buildBassCacheKey(
-  midiNote: number,
-  sampleString: BassString,
-): string {
+function buildBassCacheKey(midiNote: number, sampleString: BassString): string {
   return `bass-${midiNote}-${sampleString}`;
 }
 
@@ -279,7 +277,7 @@ export class BassPreloadStrategy implements PreloadStrategy {
       });
 
       // Log detailed sample mapping for debugging
-      console.log(
+      verboseLog(
         '🎸 [BASS-PRELOAD] Sample requests with STRING INFO:',
         sampleRequests.map((r) => ({
           midi: r.midiNote,
@@ -376,7 +374,7 @@ export class BassPreloadStrategy implements PreloadStrategy {
       // CRITICAL: Dispatch bass-samples-loaded event to trigger BassLineWidget re-registration
       // This is the same pattern as harmony-samples-loaded for HarmonyWidget
       if (typeof window !== 'undefined') {
-        console.log(
+        verboseLog(
           '📢 [BASS-PRELOAD] Emitting bass-samples-loaded event for BassLineWidget',
         );
         const event = new CustomEvent('bass-samples-loaded', {
@@ -481,7 +479,7 @@ export class BassPreloadStrategy implements PreloadStrategy {
           if (!rawBuffer) {
             // ArrayBuffer not cached yet - download using STRING-SPECIFIC URL
             const sampleUrl = buildSampleUrl(midiNote, sampleString);
-            console.log(
+            verboseLog(
               `📥 [CACHE-MISS] Downloading bass sample from ${sampleString} string:`,
               sampleUrl,
             );
@@ -682,7 +680,7 @@ export class BassPreloadStrategy implements PreloadStrategy {
     const startTime = performance.now();
     const errors: string[] = [];
 
-    console.log('🎸 [SAMPLES] Downloading bass samples in PARALLEL', {
+    verboseLog('🎸 [SAMPLES] Downloading bass samples in PARALLEL', {
       timestamp: new Date().toISOString(),
       exerciseId,
       totalSamplesToLoad: midiNotes.length,
@@ -719,7 +717,7 @@ export class BassPreloadStrategy implements PreloadStrategy {
           await GlobalSampleCache.getInstance().getCachedRawBuffer(cacheKey);
 
         if (cachedBuffer) {
-          console.log(
+          verboseLog(
             `💾 [SAMPLES][IndexedDB-HIT] Using cached bass sample: ${cacheKey}`,
           );
           logger.info(`💾 IndexedDB cache HIT: ${cacheKey}`);
@@ -749,7 +747,7 @@ export class BassPreloadStrategy implements PreloadStrategy {
           arrayBuffer,
         );
 
-        console.log(`[SAMPLES] Bass sample cached: ${cacheKey}`, {
+        verboseLog(`[SAMPLES] Bass sample cached: ${cacheKey}`, {
           bufferSizeKB: Math.round(arrayBuffer.byteLength / 1024),
         });
 
@@ -793,7 +791,7 @@ export class BassPreloadStrategy implements PreloadStrategy {
 
     const duration = performance.now() - startTime;
 
-    console.log('✅ [SAMPLES] Bass samples downloaded in PARALLEL', {
+    verboseLog('✅ [SAMPLES] Bass samples downloaded in PARALLEL', {
       timestamp: new Date().toISOString(),
       durationMs: duration.toFixed(2),
       loaded,
@@ -914,7 +912,7 @@ export class BassPreloadStrategy implements PreloadStrategy {
     const startTime = performance.now();
     const errors: string[] = [];
 
-    console.log(
+    verboseLog(
       '🎸 [SAMPLES] Downloading bass samples with STRING INFO in PARALLEL',
       {
         timestamp: new Date().toISOString(),
@@ -950,7 +948,7 @@ export class BassPreloadStrategy implements PreloadStrategy {
           await GlobalSampleCache.getInstance().getCachedRawBuffer(cacheKey);
 
         if (cachedBuffer) {
-          console.log(
+          verboseLog(
             `💾 [SAMPLES][IndexedDB-HIT] Using cached bass sample: ${cacheKey} (${sampleString} string)`,
           );
           logger.info(`💾 IndexedDB cache HIT: ${cacheKey}`);
@@ -958,7 +956,7 @@ export class BassPreloadStrategy implements PreloadStrategy {
         }
 
         // Fetch from network using the STRING-SPECIFIC URL
-        console.log(
+        verboseLog(
           `📥 [SAMPLES] Fetching bass sample from ${sampleString} string:`,
           sampleUrl,
         );
@@ -985,7 +983,7 @@ export class BassPreloadStrategy implements PreloadStrategy {
           arrayBuffer,
         );
 
-        console.log(
+        verboseLog(
           `✅ [SAMPLES] Bass sample cached: ${cacheKey} from ${sampleString} string, fret ${fret}`,
           {
             bufferSizeKB: Math.round(arrayBuffer.byteLength / 1024),
@@ -1035,7 +1033,7 @@ export class BassPreloadStrategy implements PreloadStrategy {
 
     const duration = performance.now() - startTime;
 
-    console.log(
+    verboseLog(
       '✅ [SAMPLES] Bass samples downloaded with STRING INFO in PARALLEL',
       {
         timestamp: new Date().toISOString(),
@@ -1104,7 +1102,7 @@ export class BassPreloadStrategy implements PreloadStrategy {
         buffers[String(midiNote)] = audioBuffer;
         decoded++;
 
-        console.log(
+        verboseLog(
           `🎸 [DECODE] Decoded bass sample MIDI ${midiNote} from ${sampleString} string`,
         );
       } catch (error) {

@@ -22,7 +22,13 @@ const setupWindowTone = () => {
     bpm: { value: 120 },
     timeSignature: 4,
   };
-  (window as any).Tone = { Transport: transport };
+  // Expose via both the legacy singleton and the Tone v15 factory accessor
+  // so prod code observes a single source of truth regardless of which API
+  // path it uses.
+  (window as any).Tone = {
+    Transport: transport,
+    getTransport: () => transport,
+  };
   return transport;
 };
 

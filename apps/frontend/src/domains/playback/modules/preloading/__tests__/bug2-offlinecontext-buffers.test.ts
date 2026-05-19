@@ -50,23 +50,23 @@ describe('BUG #2: OfflineAudioContext Buffer Compatibility Prevention', () => {
       numberOfChannels = 2;
       length = 44100;
 
-      getChannelData(channel: number): Float32Array {
+      getChannelData(_channel: number): Float32Array {
         // Return a Float32Array of the correct length
         return new Float32Array(this.length);
       }
 
       copyFromChannel(
-        destination: Float32Array,
-        channelNumber: number,
-        startInChannel?: number,
+        _destination: Float32Array,
+        _channelNumber: number,
+        _startInChannel?: number,
       ): void {
         // Mock implementation
       }
 
       copyToChannel(
-        source: Float32Array,
-        channelNumber: number,
-        startInChannel?: number,
+        _source: Float32Array,
+        _channelNumber: number,
+        _startInChannel?: number,
       ): void {
         // Mock implementation
       }
@@ -189,7 +189,6 @@ describe('BUG #2: OfflineAudioContext Buffer Compatibility Prevention', () => {
 
     it('should NOT use OfflineAudioContext for buffer decoding', async () => {
       const strategy = new DrumPreloadStrategy();
-      const offlineContextSpy = vi.spyOn(global, 'OfflineAudioContext' as any);
 
       await strategy.loadEssentialSamples();
 
@@ -253,8 +252,11 @@ describe('BUG #2: OfflineAudioContext Buffer Compatibility Prevention', () => {
       });
 
       // ✅ BUG #2 FIX: Use getCachedRawBuffer() to get ArrayBuffer (not getCachedBuffer which returns AudioBuffer)
+      // getCachedRawBuffer is async (it walks the IndexedDB cache), so await it.
       const cachedBuffer =
-        GlobalSampleCache.getInstance().getCachedRawBuffer('grandpiano-v10-C4');
+        await GlobalSampleCache.getInstance().getCachedRawBuffer(
+          'grandpiano-v10-C4',
+        );
 
       // Should be ArrayBuffer
       expect(cachedBuffer).toBeInstanceOf(ArrayBuffer);
@@ -269,25 +271,13 @@ describe('BUG #2: OfflineAudioContext Buffer Compatibility Prevention', () => {
       expect(decodedBuffer.duration).toBeGreaterThan(0);
     });
 
-    it('should prevent caching of AudioBuffers with wrong sampleRate', () => {
-      // OfflineAudioContext and real AudioContext might have different sample rates
-      // This causes playback issues (pitch shift, speed change)
-
-      const offlineBuffer = {
-        duration: 1.0,
-        sampleRate: 44100, // OfflineContext sample rate
-        numberOfChannels: 2,
-        length: 44100,
-      };
-
-      const realContext = new AudioContext();
-      // Real context might be 48000 Hz on some devices
-
-      // If we cache offlineBuffer directly and play it on realContext,
-      // the sample rate mismatch causes pitch/speed issues
-
-      // Solution: Cache raw ArrayBuffer, let real context decode it at its sample rate
-    });
+    it.todo(
+      'should prevent caching of AudioBuffers with wrong sampleRate ' +
+        '(OfflineAudioContext at 44100 vs real AudioContext potentially ' +
+        'at 48000 — sample-rate mismatch causes pitch/speed issues). ' +
+        'The fix is to cache raw ArrayBuffer and let the real context ' +
+        'decode at its own rate; need to write the actual assertion.',
+    );
   });
 
   // ============================================================================
@@ -296,6 +286,19 @@ describe('BUG #2: OfflineAudioContext Buffer Compatibility Prevention', () => {
 
   describe('Edge Cases', () => {
     it('should handle missing samples gracefully without caching invalid data', async () => {
+      // Reset spy state and force every cache lookup to miss, so this test
+      // observes only the "fresh fetch" branch in production (other tests
+      // in the suite pre-populate the cache via prior fetches, which would
+      // otherwise route through the keyboard-map alias path).
+      cacheBufferSpy.mockClear();
+      const cache = GlobalSampleCache.getInstance() as any;
+      const originalGetRaw = cache.getCachedRawBuffer.bind(cache);
+      cache.getCachedRawBuffer = vi.fn(async () => undefined);
+      const originalGetMeta = cache.getCachedMetadata?.bind(cache);
+      if (cache.getCachedMetadata) {
+        cache.getCachedMetadata = vi.fn(() => null);
+      }
+
       global.fetch = vi.fn().mockResolvedValue({
         ok: false,
         status: 404,
@@ -303,14 +306,21 @@ describe('BUG #2: OfflineAudioContext Buffer Compatibility Prevention', () => {
 
       const strategy = new HarmonyPreloadStrategy();
 
-      await strategy.loadEssentialSamples({
-        instrument: 'grandpiano',
-        notes: ['C4'],
-        layers: ['v10'],
-      });
+      try {
+        await strategy.loadEssentialSamples({
+          instrument: 'grandpiano',
+          notes: ['C4'],
+          layers: ['v10'],
+        });
 
-      // Should not cache anything for failed fetches
-      expect(cacheBufferSpy).not.toHaveBeenCalled();
+        // Failed fetches must never reach the cacheBuffer write path.
+        expect(cacheBufferSpy).not.toHaveBeenCalled();
+      } finally {
+        cache.getCachedRawBuffer = originalGetRaw;
+        if (originalGetMeta) {
+          cache.getCachedMetadata = originalGetMeta;
+        }
+      }
     });
 
     it('should handle decode errors without caching partial data', async () => {

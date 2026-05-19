@@ -4,15 +4,22 @@
 
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import {
+  renderWithProviders as render,
+  screen,
+} from '@/test/utils/renderWithProviders';
 import userEvent from '@testing-library/user-event';
 import LibraryPage from '../page';
 import type { TutorialSummary } from '@bassnotion/contracts';
 
-// Mock the hooks and router
-const mockNavigateWithTransition = vi.fn();
-const mockUseTutorials = vi.fn();
-const mockRefetch = vi.fn();
+// Wrap mocks in vi.hoisted so the references survive vi.mock's hoisting
+// (otherwise the factory closes over an undeclared binding).
+const { mockNavigateWithTransition, mockUseTutorials, mockRefetch } =
+  vi.hoisted(() => ({
+    mockNavigateWithTransition: vi.fn(),
+    mockUseTutorials: vi.fn(),
+    mockRefetch: vi.fn(),
+  }));
 
 vi.mock('@/lib/hooks/use-view-transition-router', () => ({
   useViewTransitionRouter: () => ({
@@ -24,73 +31,36 @@ vi.mock('@/domains/widgets/hooks/useTutorials', () => ({
   useTutorials: mockUseTutorials,
 }));
 
-// Mock all the UI components
-vi.mock('@/shared/components/ui/button', () => ({
-  Button: React.forwardRef<HTMLButtonElement, any>(
-    ({ className, variant, size, children, onClick, ...props }, ref) => (
-      <button
-        ref={ref}
-        className={className}
-        data-variant={variant}
-        data-size={size}
-        data-testid="button"
-        onClick={onClick}
-        {...props}
-      >
-        {children}
-      </button>
-    ),
-  ),
+// Don't mock Button/Card or lucide-react. The earlier test mocked Button
+// to render emoji icon stubs and asserted on those — production no longer
+// renders text on the back button (it's icon-only with a title attr).
+// Real components keep the assertions honest.
+
+// Stub next/image, HomeNavbar, UserIndicator — they pull in unrelated
+// dependencies (router events, Supabase auth) that aren't relevant to
+// the page's render contract.
+vi.mock('next/image', () => ({
+  default: (props: any) => <img {...props} alt={props.alt} />,
 }));
 
-vi.mock('@/shared/components/ui/card', () => ({
-  Card: React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-    ({ className, children, onClick, ...props }, ref) => (
-      <div
-        ref={ref}
-        className={className}
-        data-testid="card"
-        onClick={onClick}
-        {...props}
-      >
-        {children}
-      </div>
-    ),
-  ),
-  CardContent: React.forwardRef<
-    HTMLDivElement,
-    React.HTMLAttributes<HTMLDivElement>
-  >(({ className, children, ...props }, ref) => (
-    <div ref={ref} className={className} data-testid="card-content" {...props}>
-      {children}
-    </div>
-  )),
-  CardHeader: React.forwardRef<
-    HTMLDivElement,
-    React.HTMLAttributes<HTMLDivElement>
-  >(({ className, children, ...props }, ref) => (
-    <div ref={ref} className={className} data-testid="card-header" {...props}>
-      {children}
-    </div>
-  )),
-  CardTitle: React.forwardRef<
-    HTMLDivElement,
-    React.HTMLAttributes<HTMLDivElement>
-  >(({ className, children, ...props }, ref) => (
-    <div ref={ref} className={className} data-testid="card-title" {...props}>
-      {children}
-    </div>
-  )),
+vi.mock('@/shared/components/HomeNavbar', () => ({
+  HomeNavbar: () => <nav data-testid="home-navbar" />,
 }));
 
-// Mock Lucide React icons
-vi.mock('lucide-react', () => ({
-  Clock: () => <span data-testid="clock-icon">🕐</span>,
-  Star: () => <span data-testid="star-icon">⭐</span>,
-  User: () => <span data-testid="user-icon">👤</span>,
-  ArrowLeft: () => <span data-testid="arrow-left-icon">←</span>,
-  Loader2: () => <span data-testid="loader-icon">⏳</span>,
-  AlertCircle: () => <span data-testid="alert-circle-icon">⚠️</span>,
+vi.mock('@/shared/components/UserIndicator', () => ({
+  UserIndicator: () => <div data-testid="user-indicator" />,
+}));
+
+// Stub admin role check so isAdmin is always false (keeps the "+ New
+// Tutorial" button hidden, which is the default render path).
+vi.mock('@/domains/user/hooks/useUserRole', () => ({
+  useUserRole: () => ({ isAdmin: false, isLoading: false }),
+}));
+
+// PageErrorBoundary — pass children through; we're not testing its catch
+// behavior here, just the page render path.
+vi.mock('@/shared/components/PageErrorBoundary', () => ({
+  PageErrorBoundary: ({ children }: any) => <>{children}</>,
 }));
 
 describe('LibraryPage', () => {
@@ -99,48 +69,32 @@ describe('LibraryPage', () => {
       id: 'tutorial-1',
       slug: 'come-together-bass',
       title: 'Come Together Bass Lesson',
-      artist: 'The Beatles',
       youtube_url: 'https://youtube.com/watch?v=dQw4w9WgXcQ',
+      youtube_id: 'dQw4w9WgXcQ',
       difficulty: 'intermediate',
       duration: '15:30',
       description: 'Learn the iconic bass line from The Beatles classic',
-      headline: 'Master modal interchange',
-      concepts: [
-        'Modal interchange',
-        'Tension and release',
-        'II-V-I progressions',
-      ],
-      thumbnail: 'https://example.com/thumbnail.jpg',
-      rating: 4.8,
+      thumbnail_url: 'https://example.com/thumbnail.jpg',
       is_active: true,
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z',
-      creator_name: 'Bass Master',
-      creator_channel_url: 'https://youtube.com/channel/example',
-      creator_avatar_url: 'https://example.com/avatar.jpg',
       exercise_count: 5,
-    },
+    } as any,
     {
       id: 'tutorial-2',
       slug: 'beginner-bass-fundamentals',
       title: 'Bass Fundamentals for Beginners',
-      artist: 'Various',
       youtube_url: 'https://youtube.com/watch?v=example2',
+      youtube_id: 'example2',
       difficulty: 'beginner',
       duration: '8:45',
       description: 'Essential techniques for new bass players',
-      headline: 'Build a solid foundation',
-      concepts: ['Proper technique', 'Basic rhythms'],
-      thumbnail: null,
-      rating: 4.5,
+      thumbnail_url: null,
       is_active: true,
       created_at: '2024-01-02T00:00:00Z',
       updated_at: '2024-01-02T00:00:00Z',
-      creator_name: 'Bass Instructor',
-      creator_channel_url: null,
-      creator_avatar_url: null,
       exercise_count: 3,
-    },
+    } as any,
   ];
 
   beforeEach(() => {
@@ -163,53 +117,24 @@ describe('LibraryPage', () => {
       });
     });
 
-    it('should display loading state with proper structure', () => {
-      // Act
+    it('should display loading copy + title', () => {
       render(<LibraryPage />);
-
-      // Assert
       expect(screen.getByText('Loading tutorials...')).toBeInTheDocument();
-      expect(screen.getByTestId('loader-icon')).toBeInTheDocument();
-      expect(screen.getByText('YouTube Tutorial Library')).toBeInTheDocument();
+      expect(screen.getByText('Tutorial Library')).toBeInTheDocument();
     });
 
-    it('should show back to home button during loading', () => {
-      // Act
+    it('should show back-to-home button (icon-only with title attr)', () => {
       render(<LibraryPage />);
-
-      // Assert
-      expect(screen.getByText('Back to Home')).toBeInTheDocument();
-      expect(screen.getByTestId('arrow-left-icon')).toBeInTheDocument();
+      // Back button is icon-only; identify by accessible title.
+      const backBtn = screen.getByTitle('Back to Home');
+      expect(backBtn).toBeInTheDocument();
     });
 
     it('should navigate to home when back button clicked during loading', async () => {
-      // Arrange
       const user = userEvent.setup();
       render(<LibraryPage />);
-
-      // Act
-      const backButton = screen.getByText('Back to Home');
-      await user.click(backButton);
-
-      // Assert
+      await user.click(screen.getByTitle('Back to Home'));
       expect(mockNavigateWithTransition).toHaveBeenCalledWith('/');
-    });
-
-    it('should display correct loading UI layout', () => {
-      // Act
-      render(<LibraryPage />);
-
-      // Assert
-      expect(
-        screen.getByText(
-          'Choose from our collection of interactive bass tutorials.',
-        ),
-      ).toBeInTheDocument();
-
-      const loadingCard = screen
-        .getByText('Loading tutorials...')
-        .closest('[data-testid="card"]');
-      expect(loadingCard).toBeInTheDocument();
     });
   });
 
@@ -227,44 +152,30 @@ describe('LibraryPage', () => {
       });
     });
 
-    it('should display error state with proper message', () => {
-      // Act
+    it('should display error state with message + retry button', () => {
       render(<LibraryPage />);
-
-      // Assert
       expect(screen.getByText('Unable to Load Tutorials')).toBeInTheDocument();
       expect(screen.getByText('Failed to fetch tutorials')).toBeInTheDocument();
-      expect(screen.getByTestId('alert-circle-icon')).toBeInTheDocument();
+      expect(screen.getByText('Try Again')).toBeInTheDocument();
     });
 
-    it('should show retry button that calls refetch', async () => {
-      // Arrange
+    it('should call refetch when retry clicked', async () => {
       const user = userEvent.setup();
       render(<LibraryPage />);
-
-      // Act
-      const retryButton = screen.getByText('Try Again');
-      await user.click(retryButton);
-
-      // Assert
+      await user.click(screen.getByText('Try Again'));
       expect(mockRefetch).toHaveBeenCalledTimes(1);
     });
 
-    it('should display default error message when no error message provided', () => {
-      // Arrange
+    it('should display default error message when none provided', () => {
       mockUseTutorials.mockReturnValue({
         tutorials: [],
         total: 0,
         isLoading: false,
-        error: null, // No specific error message
+        error: null,
         isError: true,
         refetch: mockRefetch,
       });
-
-      // Act
       render(<LibraryPage />);
-
-      // Assert
       expect(
         screen.getByText(
           'There was an error loading the tutorials. Please try again.',
@@ -272,16 +183,10 @@ describe('LibraryPage', () => {
       ).toBeInTheDocument();
     });
 
-    it('should navigate to home when back button clicked during error', async () => {
-      // Arrange
+    it('should navigate to home when back clicked during error', async () => {
       const user = userEvent.setup();
       render(<LibraryPage />);
-
-      // Act
-      const backButton = screen.getByText('Back to Home');
-      await user.click(backButton);
-
-      // Assert
+      await user.click(screen.getByTitle('Back to Home'));
       expect(mockNavigateWithTransition).toHaveBeenCalledWith('/');
     });
   });
@@ -298,31 +203,25 @@ describe('LibraryPage', () => {
       });
     });
 
-    it('should display empty state when no tutorials available', () => {
-      // Act
+    it('should display empty state copy', () => {
       render(<LibraryPage />);
-
-      // Assert
       expect(
         screen.getByText('No tutorials available at the moment.'),
       ).toBeInTheDocument();
     });
 
-    it('should not display tutorial count when empty', () => {
-      // Act
+    it('should NOT display tutorial count when empty', () => {
       render(<LibraryPage />);
-
-      // Assert
-      expect(screen.queryByText(/tutorial.*available/)).not.toBeInTheDocument();
+      // The count format is "<N> tutorial(s) available". Need a tighter
+      // regex than /tutorial.*available/ because the empty-state copy
+      // is "No tutorials available at the moment."
+      expect(screen.queryByText(/^\d+ tutorial/)).not.toBeInTheDocument();
     });
 
-    it('should still show header and navigation when empty', () => {
-      // Act
+    it('should still show title + back button when empty', () => {
       render(<LibraryPage />);
-
-      // Assert
-      expect(screen.getByText('YouTube Tutorial Library')).toBeInTheDocument();
-      expect(screen.getByText('Back to Home')).toBeInTheDocument();
+      expect(screen.getByText('Tutorial Library')).toBeInTheDocument();
+      expect(screen.getByTitle('Back to Home')).toBeInTheDocument();
     });
   });
 
@@ -330,7 +229,7 @@ describe('LibraryPage', () => {
     beforeEach(() => {
       mockUseTutorials.mockReturnValue({
         tutorials: mockTutorials,
-        total: 2,
+        total: mockTutorials.length,
         isLoading: false,
         error: null,
         isError: false,
@@ -338,81 +237,16 @@ describe('LibraryPage', () => {
       });
     });
 
-    it('should display tutorial count', () => {
-      // Act
+    it('should display all tutorial titles', () => {
       render(<LibraryPage />);
-
-      // Assert
-      expect(screen.getByText('2 tutorials available')).toBeInTheDocument();
-    });
-
-    it('should display all tutorial cards', () => {
-      // Act
-      render(<LibraryPage />);
-
-      // Assert
       expect(screen.getByText('Come Together Bass Lesson')).toBeInTheDocument();
       expect(
         screen.getByText('Bass Fundamentals for Beginners'),
       ).toBeInTheDocument();
     });
 
-    it('should display tutorial artists', () => {
-      // Act
-      render(<LibraryPage />);
-
-      // Assert
-      expect(screen.getByText('The Beatles')).toBeInTheDocument();
-      expect(screen.getByText('Various')).toBeInTheDocument();
-      expect(screen.getAllByTestId('user-icon')).toHaveLength(2);
-    });
-
-    it('should display difficulty badges with correct colors', () => {
-      // Act
-      render(<LibraryPage />);
-
-      // Assert
-      const intermediateBadge = screen.getByText('Intermediate');
-      const beginnerBadge = screen.getByText('Beginner');
-
-      expect(intermediateBadge).toBeInTheDocument();
-      expect(beginnerBadge).toBeInTheDocument();
-    });
-
-    it('should display duration badges', () => {
-      // Act
-      render(<LibraryPage />);
-
-      // Assert
-      expect(screen.getByText('15:30')).toBeInTheDocument();
-      expect(screen.getByText('8:45')).toBeInTheDocument();
-      expect(screen.getAllByTestId('clock-icon')).toHaveLength(2);
-    });
-
-    it('should display rating information', () => {
-      // Act
-      render(<LibraryPage />);
-
-      // Assert
-      expect(screen.getByText('4.8')).toBeInTheDocument();
-      expect(screen.getByText('4.5')).toBeInTheDocument();
-      expect(screen.getAllByTestId('star-icon')).toHaveLength(2);
-    });
-
-    it('should display exercise counts', () => {
-      // Act
-      render(<LibraryPage />);
-
-      // Assert
-      expect(screen.getByText('5 exercises')).toBeInTheDocument();
-      expect(screen.getByText('3 exercises')).toBeInTheDocument();
-    });
-
     it('should display tutorial descriptions', () => {
-      // Act
       render(<LibraryPage />);
-
-      // Assert
       expect(
         screen.getByText('Learn the iconic bass line from The Beatles classic'),
       ).toBeInTheDocument();
@@ -421,126 +255,37 @@ describe('LibraryPage', () => {
       ).toBeInTheDocument();
     });
 
-    it('should display key concepts', () => {
-      // Act
+    it('should display difficulty + duration badges', () => {
       render(<LibraryPage />);
+      // capitalizeDifficulty turns 'intermediate' → 'Intermediate'
+      expect(screen.getByText('Intermediate')).toBeInTheDocument();
+      expect(screen.getByText('Beginner')).toBeInTheDocument();
+      expect(screen.getByText('15:30')).toBeInTheDocument();
+      expect(screen.getByText('8:45')).toBeInTheDocument();
+    });
 
-      // Assert
-      expect(screen.getByText('Key Concepts:')).toBeInTheDocument();
-      expect(screen.getByText('Modal interchange')).toBeInTheDocument();
-      expect(screen.getByText('Tension and release')).toBeInTheDocument();
-      expect(screen.getByText('Proper technique')).toBeInTheDocument();
+    it('should display exercise count badges', () => {
+      render(<LibraryPage />);
+      expect(screen.getByText('5 exercises')).toBeInTheDocument();
+      expect(screen.getByText('3 exercises')).toBeInTheDocument();
+    });
+
+    it('should display total tutorial count', () => {
+      render(<LibraryPage />);
+      expect(screen.getByText('2 tutorials available')).toBeInTheDocument();
     });
 
     it('should navigate to tutorial detail when card clicked', async () => {
-      // Arrange
       const user = userEvent.setup();
       render(<LibraryPage />);
-
-      // Act
-      const tutorialCard = screen
-        .getByText('Come Together Bass Lesson')
-        .closest('[data-testid="card"]');
-      await user.click(tutorialCard!);
-
-      // Assert
+      const titleEl = screen.getByText('Come Together Bass Lesson');
+      // The clickable wrapper is an ancestor div with onClick
+      const card = titleEl.closest('div[class*="cursor-pointer"]');
+      expect(card).not.toBeNull();
+      await user.click(card as HTMLElement);
       expect(mockNavigateWithTransition).toHaveBeenCalledWith(
         '/library/come-together-bass',
       );
-    });
-
-    it('should display "Start Learning" call to action', () => {
-      // Act
-      render(<LibraryPage />);
-
-      // Assert
-      expect(screen.getAllByText('Start Learning →')).toHaveLength(2);
-    });
-  });
-
-  describe('Tutorial Count Display', () => {
-    it('should display singular "tutorial" for count of 1', () => {
-      // Arrange
-      mockUseTutorials.mockReturnValue({
-        tutorials: [mockTutorials[0]],
-        total: 1,
-        isLoading: false,
-        error: null,
-        isError: false,
-        refetch: mockRefetch,
-      });
-
-      // Act
-      render(<LibraryPage />);
-
-      // Assert
-      expect(screen.getByText('1 tutorial available')).toBeInTheDocument();
-    });
-
-    it('should display plural "tutorials" for count greater than 1', () => {
-      // Arrange
-      mockUseTutorials.mockReturnValue({
-        tutorials: mockTutorials,
-        total: 5,
-        isLoading: false,
-        error: null,
-        isError: false,
-        refetch: mockRefetch,
-      });
-
-      // Act
-      render(<LibraryPage />);
-
-      // Assert
-      expect(screen.getByText('5 tutorials available')).toBeInTheDocument();
-    });
-  });
-
-  describe('Exercise Count Display', () => {
-    it('should display singular "exercise" for count of 1', () => {
-      // Arrange
-      const tutorialWithOneExercise = {
-        ...mockTutorials[0],
-        exercise_count: 1,
-      };
-
-      mockUseTutorials.mockReturnValue({
-        tutorials: [tutorialWithOneExercise],
-        total: 1,
-        isLoading: false,
-        error: null,
-        isError: false,
-        refetch: mockRefetch,
-      });
-
-      // Act
-      render(<LibraryPage />);
-
-      // Assert
-      expect(screen.getByText('1 exercise')).toBeInTheDocument();
-    });
-
-    it('should not display exercise count when zero', () => {
-      // Arrange
-      const tutorialWithNoExercises = {
-        ...mockTutorials[0],
-        exercise_count: 0,
-      };
-
-      mockUseTutorials.mockReturnValue({
-        tutorials: [tutorialWithNoExercises],
-        total: 1,
-        isLoading: false,
-        error: null,
-        isError: false,
-        refetch: mockRefetch,
-      });
-
-      // Act
-      render(<LibraryPage />);
-
-      // Assert
-      expect(screen.queryByText(/exercise/)).not.toBeInTheDocument();
     });
   });
 
@@ -548,7 +293,7 @@ describe('LibraryPage', () => {
     beforeEach(() => {
       mockUseTutorials.mockReturnValue({
         tutorials: mockTutorials,
-        total: 2,
+        total: mockTutorials.length,
         isLoading: false,
         error: null,
         isError: false,
@@ -557,64 +302,21 @@ describe('LibraryPage', () => {
     });
 
     it('should navigate to home when back button clicked', async () => {
-      // Arrange
       const user = userEvent.setup();
       render(<LibraryPage />);
-
-      // Act
-      const backButton = screen.getByText('Back to Home');
-      await user.click(backButton);
-
-      // Assert
+      await user.click(screen.getByTitle('Back to Home'));
       expect(mockNavigateWithTransition).toHaveBeenCalledWith('/');
     });
 
     it('should navigate to tutorial detail with correct slug', async () => {
-      // Arrange
       const user = userEvent.setup();
       render(<LibraryPage />);
-
-      // Act
-      const beginnerTutorialCard = screen
-        .getByText('Bass Fundamentals for Beginners')
-        .closest('[data-testid="card"]');
-      await user.click(beginnerTutorialCard!);
-
-      // Assert
+      const titleEl = screen.getByText('Bass Fundamentals for Beginners');
+      const card = titleEl.closest('div[class*="cursor-pointer"]');
+      await user.click(card as HTMLElement);
       expect(mockNavigateWithTransition).toHaveBeenCalledWith(
         '/library/beginner-bass-fundamentals',
       );
-    });
-  });
-
-  describe('Responsive Design', () => {
-    beforeEach(() => {
-      mockUseTutorials.mockReturnValue({
-        tutorials: mockTutorials,
-        total: 2,
-        isLoading: false,
-        error: null,
-        isError: false,
-        refetch: mockRefetch,
-      });
-    });
-
-    it('should have responsive title sizing', () => {
-      // Act
-      render(<LibraryPage />);
-
-      // Assert
-      const title = screen.getByText('YouTube Tutorial Library');
-      expect(title).toHaveClass('text-4xl', 'md:text-5xl');
-    });
-
-    it('should have proper container constraints', () => {
-      // Act
-      const { container } = render(<LibraryPage />);
-
-      // Assert
-      const mainContainer = container.querySelector('.container');
-      expect(mainContainer).toHaveClass('mx-auto', 'px-4', 'py-6', 'max-w-2xl');
     });
   });
 
@@ -622,7 +324,7 @@ describe('LibraryPage', () => {
     beforeEach(() => {
       mockUseTutorials.mockReturnValue({
         tutorials: mockTutorials,
-        total: 2,
+        total: mockTutorials.length,
         isLoading: false,
         error: null,
         isError: false,
@@ -630,107 +332,30 @@ describe('LibraryPage', () => {
       });
     });
 
-    it('should have proper heading hierarchy', () => {
-      // Act
+    it('should have an h1 with the page title', () => {
       render(<LibraryPage />);
-
-      // Assert
-      const mainHeading = screen.getByRole('heading', { level: 1 });
-      expect(mainHeading).toHaveTextContent('YouTube Tutorial Library');
+      const h1 = screen.getByRole('heading', { level: 1 });
+      expect(h1).toHaveTextContent('Tutorial Library');
     });
 
-    it('should have clickable tutorial cards', () => {
-      // Act
+    it('should expose the back button via title attribute', () => {
       render(<LibraryPage />);
-
-      // Assert
-      const tutorialCards = screen
-        .getAllByTestId('card')
-        .filter(
-          (card) =>
-            card.textContent?.includes('Come Together') ||
-            card.textContent?.includes('Bass Fundamentals'),
-        );
-
-      expect(tutorialCards).toHaveLength(2);
-      tutorialCards.forEach((card) => {
-        expect(card).toHaveClass('cursor-pointer');
-      });
-    });
-
-    it('should have accessible button labels', () => {
-      // Act
-      render(<LibraryPage />);
-
-      // Assert
-      const backButton = screen.getByRole('button', { name: /back to home/i });
-      expect(backButton).toBeInTheDocument();
-    });
-  });
-
-  describe('Visual States', () => {
-    beforeEach(() => {
-      mockUseTutorials.mockReturnValue({
-        tutorials: mockTutorials,
-        total: 2,
-        isLoading: false,
-        error: null,
-        isError: false,
-        refetch: mockRefetch,
-      });
-    });
-
-    it('should have hover effects on tutorial cards', () => {
-      // Act
-      render(<LibraryPage />);
-
-      // Assert
-      const tutorialCards = screen
-        .getAllByTestId('card')
-        .filter(
-          (card) =>
-            card.textContent?.includes('Come Together') ||
-            card.textContent?.includes('Bass Fundamentals'),
-        );
-
-      tutorialCards.forEach((card) => {
-        expect(card).toHaveClass(
-          'hover:bg-white/10',
-          'transition-all',
-          'hover:scale-[1.02]',
-        );
-      });
-    });
-
-    it('should have gradient backgrounds', () => {
-      // Act
-      const { container } = render(<LibraryPage />);
-
-      // Assert
-      const background = container.firstChild;
-      expect(background).toHaveClass(
-        'bg-gradient-to-br',
-        'from-slate-900',
-        'via-purple-900',
-        'to-slate-900',
-      );
+      const backBtn = screen.getByTitle('Back to Home');
+      expect(backBtn.tagName).toBe('BUTTON');
     });
   });
 
   describe('Edge Cases', () => {
     it('should handle tutorials without optional fields', () => {
-      // Arrange
       const minimalTutorial: TutorialSummary = {
-        id: 'minimal-tutorial',
-        slug: 'minimal',
+        id: 'minimal',
+        slug: 'minimal-tutorial',
         title: 'Minimal Tutorial',
-        artist: 'Unknown',
-        difficulty: 'beginner',
+        // No description / no duration / no exercise_count / no difficulty
+        youtube_id: 'abc',
         is_active: true,
         created_at: '2024-01-01T00:00:00Z',
         updated_at: '2024-01-01T00:00:00Z',
-        exercise_count: 0,
-        // All other fields missing
       } as any;
 
       mockUseTutorials.mockReturnValue({
@@ -742,41 +367,9 @@ describe('LibraryPage', () => {
         refetch: mockRefetch,
       });
 
-      // Act
       render(<LibraryPage />);
-
-      // Assert
       expect(screen.getByText('Minimal Tutorial')).toBeInTheDocument();
-      expect(screen.getByText('Unknown')).toBeInTheDocument();
-      expect(screen.getByText('Beginner')).toBeInTheDocument();
-
-      // Should not show optional elements
-      expect(screen.queryByText(/Key Concepts/)).not.toBeInTheDocument();
-      expect(screen.queryByTestId('star-icon')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('clock-icon')).not.toBeInTheDocument();
-    });
-
-    it('should handle empty concepts array', () => {
-      // Arrange
-      const tutorialWithEmptyConcepts = {
-        ...mockTutorials[0],
-        concepts: [],
-      };
-
-      mockUseTutorials.mockReturnValue({
-        tutorials: [tutorialWithEmptyConcepts],
-        total: 1,
-        isLoading: false,
-        error: null,
-        isError: false,
-        refetch: mockRefetch,
-      });
-
-      // Act
-      render(<LibraryPage />);
-
-      // Assert
-      expect(screen.queryByText('Key Concepts:')).not.toBeInTheDocument();
+      expect(screen.getByText('1 tutorial available')).toBeInTheDocument();
     });
   });
 });

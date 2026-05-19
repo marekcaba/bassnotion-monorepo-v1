@@ -23,20 +23,22 @@ const PluginStateEnum = {
 
 // Mock Tone.js
 vi.mock('tone', () => {
+  const Transport = {
+    start: vi.fn(),
+    stop: vi.fn(),
+    pause: vi.fn(),
+    position: '0:0:0',
+    seconds: 0,
+    bpm: { value: 120 },
+    timeSignature: [4, 4],
+    schedule: vi.fn(),
+    clear: vi.fn(),
+    cancel: vi.fn(),
+    state: 'stopped',
+  };
   const mockTone = {
-    Transport: {
-      start: vi.fn(),
-      stop: vi.fn(),
-      pause: vi.fn(),
-      position: '0:0:0',
-      seconds: 0,
-      bpm: { value: 120 },
-      timeSignature: [4, 4],
-      schedule: vi.fn(),
-      clear: vi.fn(),
-      cancel: vi.fn(),
-      state: 'stopped',
-    },
+    Transport,
+    getTransport: vi.fn(() => Transport),
     Sampler: vi.fn(() => ({
       toDestination: vi.fn(),
       dispose: vi.fn(),
@@ -373,15 +375,19 @@ describe('CoreServices Integration', () => {
 
       await coreServices.initialize();
 
+      // Production emits additional service names (`audioEventRouter`,
+      // `playbackEngine`) added over time. Use arrayContaining to assert
+      // the bus *includes* the original core services without breaking
+      // every time a new service is registered.
       expect(eventHandler).toHaveBeenCalledWith(
         expect.objectContaining({
-          services: [
+          services: expect.arrayContaining([
             'eventBus',
             'audioEngine',
             'unifiedTransport',
             'transportSyncManager',
             'pluginManager',
-          ],
+          ]),
         }),
         expect.any(Object),
       );
@@ -483,7 +489,12 @@ describe('CoreServices Integration', () => {
 
       await transport.start();
 
-      expect((global as any).mockTone.Transport.start).toHaveBeenCalled();
+      // Production reads Tone via getTone() (which uses window.Tone), not via
+      // the npm module mock at the top of this file. The window.Tone mock
+      // set up by apps/frontend/src/test/setup.ts is what actually receives
+      // the .start() call.
+      const windowToneStart = (window as any).Tone?.getTransport?.()?.start;
+      expect(windowToneStart).toHaveBeenCalled();
       expect(eventHandler).toHaveBeenCalled();
     });
 

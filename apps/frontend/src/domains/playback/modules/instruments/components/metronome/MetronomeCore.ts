@@ -230,7 +230,7 @@ export class MetronomeCore extends BaseInstrumentCore {
     this.state.activeNotes.set(noteEvent.id, noteEvent);
 
     // Auto-release after duration
-    Tone.Transport.schedule(() => {
+    Tone.getTransport().schedule(() => {
       this.state.activeNotes.delete(noteEvent.id);
     }, time + 0.1);
   }

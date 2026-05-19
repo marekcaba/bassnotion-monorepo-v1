@@ -108,7 +108,7 @@ describe('MusicalTimeConverter - Story 3.15 Behavior Tests', () => {
 
   describe('Musical Position to Tick Conversion', () => {
     it('should convert bar 1 beat 1 to tick 0', () => {
-      const position: MusicalPosition = { bar: 1, beat: 1, subdivision: 0 };
+      const position: MusicalPosition = { measure: 1, beat: 1, subdivision: 0 };
       const result = MusicalTimeConverter.musicalPositionToTick(
         position,
         defaultTimeSignature,
@@ -118,7 +118,7 @@ describe('MusicalTimeConverter - Story 3.15 Behavior Tests', () => {
     });
 
     it('should convert bar 2 beat 1 to tick 1920 (4 beats * 480)', () => {
-      const position: MusicalPosition = { bar: 2, beat: 1, subdivision: 0 };
+      const position: MusicalPosition = { measure: 2, beat: 1, subdivision: 0 };
       const result = MusicalTimeConverter.musicalPositionToTick(
         position,
         defaultTimeSignature,
@@ -128,7 +128,7 @@ describe('MusicalTimeConverter - Story 3.15 Behavior Tests', () => {
     });
 
     it('should handle subdivisions correctly', () => {
-      const position: MusicalPosition = { bar: 1, beat: 1, subdivision: 2 };
+      const position: MusicalPosition = { measure: 1, beat: 1, subdivision: 2 };
       const result = MusicalTimeConverter.musicalPositionToTick(
         position,
         defaultTimeSignature,
@@ -140,7 +140,7 @@ describe('MusicalTimeConverter - Story 3.15 Behavior Tests', () => {
 
     it('should work with different time signatures', () => {
       const threeFourTime: TimeSignature = { numerator: 3, denominator: 4 };
-      const position: MusicalPosition = { bar: 2, beat: 1, subdivision: 0 };
+      const position: MusicalPosition = { measure: 2, beat: 1, subdivision: 0 };
       const result = MusicalTimeConverter.musicalPositionToTick(
         position,
         threeFourTime,
@@ -158,7 +158,7 @@ describe('MusicalTimeConverter - Story 3.15 Behavior Tests', () => {
         defaultTimeSignature,
       );
 
-      expect(result).toEqual({ bar: 1, beat: 1, subdivision: 0 });
+      expect(result).toEqual({ measure: 1, beat: 1, subdivision: 0 });
     });
 
     it('should convert tick 1920 to bar 2 beat 1', () => {
@@ -167,7 +167,7 @@ describe('MusicalTimeConverter - Story 3.15 Behavior Tests', () => {
         defaultTimeSignature,
       );
 
-      expect(result).toEqual({ bar: 2, beat: 1, subdivision: 0 });
+      expect(result).toEqual({ measure: 2, beat: 1, subdivision: 0 });
     });
 
     it('should handle subdivisions correctly', () => {
@@ -176,7 +176,7 @@ describe('MusicalTimeConverter - Story 3.15 Behavior Tests', () => {
         defaultTimeSignature,
       );
 
-      expect(result).toEqual({ bar: 1, beat: 1, subdivision: 2 });
+      expect(result).toEqual({ measure: 1, beat: 1, subdivision: 2 });
     });
 
     it('should handle mid-beat positions', () => {
@@ -186,7 +186,7 @@ describe('MusicalTimeConverter - Story 3.15 Behavior Tests', () => {
       );
 
       // 720 ticks = 1 beat + 240 ticks = bar 1, beat 2, subdivision 2
-      expect(result).toEqual({ bar: 1, beat: 2, subdivision: 2 });
+      expect(result).toEqual({ measure: 1, beat: 2, subdivision: 2 });
     });
   });
 
@@ -234,7 +234,7 @@ describe('MusicalTimeConverter - Story 3.15 Behavior Tests', () => {
 
   describe('Tempo Independence', () => {
     it('should maintain musical relationships at different tempos', () => {
-      const position: MusicalPosition = { bar: 1, beat: 2, subdivision: 1 };
+      const position: MusicalPosition = { measure: 1, beat: 2, subdivision: 1 };
       const tick = MusicalTimeConverter.musicalPositionToTick(
         position,
         defaultTimeSignature,
@@ -309,7 +309,7 @@ describe('MusicalTimeConverter - Story 3.15 Behavior Tests', () => {
         defaultTimeSignature,
       );
 
-      expect(result.bar).toBe(1);
+      expect(result.measure).toBe(1);
       expect(result.beat).toBe(1);
       expect(result.subdivision).toBe(0);
     });
@@ -322,7 +322,7 @@ describe('MusicalTimeConverter - Story 3.15 Behavior Tests', () => {
 
       expect(() => {
         MusicalTimeConverter.musicalPositionToTick(
-          { bar: 1, beat: 1, subdivision: 0 },
+          { measure: 1, beat: 1, subdivision: 0 },
           invalidTimeSignature,
         );
       }).toThrow('Invalid time signature');
@@ -348,9 +348,13 @@ describe('MusicalTimeConverter - Story 3.15 Behavior Tests', () => {
 
   describe('Integration with Story 3.15 Components', () => {
     it('should provide tick values for drum pattern scheduling', () => {
-      const kickPosition: MusicalPosition = { bar: 1, beat: 1, subdivision: 0 };
+      const kickPosition: MusicalPosition = {
+        measure: 1,
+        beat: 1,
+        subdivision: 0,
+      };
       const snarePosition: MusicalPosition = {
-        bar: 1,
+        measure: 1,
         beat: 2,
         subdivision: 0,
       };
@@ -370,8 +374,16 @@ describe('MusicalTimeConverter - Story 3.15 Behavior Tests', () => {
     });
 
     it('should support bass note timing with techniques', () => {
-      const noteStart: MusicalPosition = { bar: 1, beat: 1, subdivision: 0 };
-      const slideTarget: MusicalPosition = { bar: 1, beat: 1, subdivision: 1 };
+      const noteStart: MusicalPosition = {
+        measure: 1,
+        beat: 1,
+        subdivision: 0,
+      };
+      const slideTarget: MusicalPosition = {
+        measure: 1,
+        beat: 1,
+        subdivision: 1,
+      };
 
       const startTick = MusicalTimeConverter.musicalPositionToTick(
         noteStart,
@@ -387,10 +399,10 @@ describe('MusicalTimeConverter - Story 3.15 Behavior Tests', () => {
 
     it('should handle harmony chord changes at bar boundaries', () => {
       const chordChanges = [
-        { bar: 1, beat: 1, subdivision: 0 },
-        { bar: 2, beat: 1, subdivision: 0 },
-        { bar: 3, beat: 1, subdivision: 0 },
-        { bar: 4, beat: 1, subdivision: 0 },
+        { measure: 1, beat: 1, subdivision: 0 },
+        { measure: 2, beat: 1, subdivision: 0 },
+        { measure: 3, beat: 1, subdivision: 0 },
+        { measure: 4, beat: 1, subdivision: 0 },
       ];
 
       const ticks = chordChanges.map((pos) =>

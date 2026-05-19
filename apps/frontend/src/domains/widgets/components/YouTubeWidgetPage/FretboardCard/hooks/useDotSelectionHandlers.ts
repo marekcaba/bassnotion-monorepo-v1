@@ -17,7 +17,6 @@ interface UseDotSelectionHandlersProps {
   // Callbacks
   markManualReset: () => void;
   markManualSelection: () => void;
-  triggerNote: (stringIndex: number, fret: number | 'open') => void;
   emitBasslineEvent: (dots: SelectedDotsMap) => void;
   clearExerciseTracking: () => void;
   handleDragEnd: () => void;
@@ -36,7 +35,6 @@ export function useDotSelectionHandlers({
   setSelectionOrder,
   markManualReset,
   markManualSelection,
-  triggerNote,
   emitBasslineEvent,
   clearExerciseTracking,
   handleDragEnd,
@@ -186,11 +184,8 @@ export function useDotSelectionHandlers({
 
         return newDots;
       });
-
-      // Trigger audio
-      triggerNote(stringIndex, fret);
     },
-    [setSelectedDots, setSelectionOrder, triggerNote, markManualSelection],
+    [setSelectedDots, setSelectionOrder, markManualSelection],
   );
 
   /**
@@ -245,16 +240,12 @@ export function useDotSelectionHandlers({
         return newDots;
       });
 
-      // Trigger audio for the target position
-      triggerNote(targetStringIndex, targetFret);
-
       // Clear drag state
       handleDragEnd();
     },
     [
       draggedDot,
       setSelectedDots,
-      triggerNote,
       handleDragEnd,
       markManualSelection,
       emitBasslineEvent,
@@ -295,14 +286,10 @@ export function useDotSelectionHandlers({
 
         return newDots;
       });
-
-      // Trigger audio
-      triggerNote(stringIndex, fret);
     },
     [
       setSelectedDots,
       setSelectionOrder,
-      triggerNote,
       markManualSelection,
       emitBasslineEvent,
     ],

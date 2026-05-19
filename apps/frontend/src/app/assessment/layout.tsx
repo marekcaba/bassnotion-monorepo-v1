@@ -1,29 +1,10 @@
 /**
  * Assessment Layout
  *
- * A warm, focused layout for the assessment/onboarding quiz.
- * No navbar, no footer - just the quiz content to keep users focused.
- * "Intimate Studio Session" aesthetic - late-night recording studio vibes.
+ * Sales-page palette: deep radial gradient, no navbar/footer to keep focus on the quiz.
  */
 
 import { ReactNode } from 'react';
-import { Cormorant_Garamond, DM_Sans } from 'next/font/google';
-
-// Elegant serif for headlines - musical, refined
-const cormorant = Cormorant_Garamond({
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  variable: '--font-cormorant',
-  display: 'swap',
-});
-
-// Clean sans for body - modern, readable
-const dmSans = DM_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  variable: '--font-dm-sans',
-  display: 'swap',
-});
 
 export default function AssessmentLayout({
   children,
@@ -32,7 +13,11 @@ export default function AssessmentLayout({
 }) {
   return (
     <div
-      className={`${cormorant.variable} ${dmSans.variable} min-h-screen relative overflow-hidden bg-[#0f0f0f]`}
+      className="min-h-screen relative overflow-hidden text-[#E8E8E8] font-dm-body"
+      style={{
+        background:
+          'radial-gradient(ellipse at 50% 0%, hsl(240 6% 10%) 0%, hsl(240 4% 6%) 50%, hsl(0 0% 3%) 100%)',
+      }}
     >
       {/* Subtle noise texture overlay */}
       <div

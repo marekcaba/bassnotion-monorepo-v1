@@ -20,19 +20,13 @@ import {
   Activity,
   AlertCircle,
   CheckCircle2,
-  Clock,
-  Database,
-  Globe,
-  HardDrive,
   Loader2,
   Server,
-  Users,
   Zap,
 } from 'lucide-react';
 import { Badge } from '@/shared/components/ui/badge';
 import { cn } from '@/shared/utils/cn';
 import { MetricsChart } from './components/MetricsChart';
-import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 interface HealthStatus {
   status: 'healthy' | 'degraded' | 'unhealthy';
@@ -232,20 +226,8 @@ export default function MonitoringDashboard() {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'healthy':
-      case 'up':
-        return 'text-green-500';
-      case 'degraded':
-        return 'text-yellow-500';
-      case 'unhealthy':
-      case 'down':
-        return 'text-red-500';
-      default:
-        return 'text-gray-500';
-    }
-  };
+  // NOTE: getStatusColor helper used to live here — replaced by inline
+  // Tailwind classes on the Badge components.
 
   const formatUptime = (seconds: number) => {
     const days = Math.floor(seconds / 86400);

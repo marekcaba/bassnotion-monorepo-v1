@@ -100,8 +100,8 @@ export class Scheduler {
 
     // If running and event is within lookahead, schedule immediately
     const Tone = getTone();
-    if (this.isRunning && Tone.Transport.state === 'started') {
-      const currentTime = Tone.Transport.seconds;
+    if (this.isRunning && Tone.getTransport().state === 'started') {
+      const currentTime = Tone.getTransport().seconds;
       if (event.time <= currentTime + this.config.lookAheadTime) {
         this.processScheduleQueue(currentTime);
       }
@@ -128,7 +128,7 @@ export class Scheduler {
 
     try {
       const Tone = getTone();
-      const scheduleId = Tone.Transport.scheduleRepeat(
+      const scheduleId = Tone.getTransport().scheduleRepeat(
         (time: number) => {
           try {
             callback(time);
@@ -159,7 +159,7 @@ export class Scheduler {
     const scheduleId = this.scheduledEvents.get(eventId);
     if (scheduleId !== undefined) {
       const Tone = getTone();
-      Tone.Transport.clear(scheduleId);
+      Tone.getTransport().clear(scheduleId);
       this.scheduledEvents.delete(eventId);
       logger.debug('Event cancelled', { eventId });
     }
@@ -172,7 +172,7 @@ export class Scheduler {
     // Clear Tone.js scheduled events
     const Tone = getTone();
     for (const [_eventId, scheduleId] of this.scheduledEvents) {
-      Tone.Transport.clear(scheduleId);
+      Tone.getTransport().clear(scheduleId);
     }
     this.scheduledEvents.clear();
 
@@ -224,7 +224,7 @@ export class Scheduler {
     const Tone = getTone();
     for (const event of eventsToSchedule) {
       try {
-        const scheduleId = Tone.Transport.schedule((time: number) => {
+        const scheduleId = Tone.getTransport().schedule((time: number) => {
           try {
             event.callback(time);
 
@@ -270,11 +270,11 @@ export class Scheduler {
 
     const update = () => {
       const Tone = getTone();
-      if (!this.isRunning || Tone.Transport.state !== 'started') {
+      if (!this.isRunning || Tone.getTransport().state !== 'started') {
         return;
       }
 
-      const currentTime = Tone.Transport.seconds;
+      const currentTime = Tone.getTransport().seconds;
       this.processScheduleQueue(currentTime);
     };
 
@@ -347,7 +347,7 @@ export class Scheduler {
    */
   scheduleImmediate(callback: (time: number) => void): string {
     const Tone = getTone();
-    const time = Tone.Transport.seconds + 0.001; // 1ms in future
+    const time = Tone.getTransport().seconds + 0.001; // 1ms in future
     return this.scheduleOnce(callback, time);
   }
 

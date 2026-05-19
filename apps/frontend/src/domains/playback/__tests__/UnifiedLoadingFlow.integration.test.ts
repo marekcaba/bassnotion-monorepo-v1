@@ -56,7 +56,7 @@ describe('Unified Loading Flow - End to End Integration', () => {
   let originalWindow: any;
   let mockAudioContext: AudioContext;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Save original window
     originalWindow = global.window;
 
@@ -138,6 +138,16 @@ describe('Unified Loading Flow - End to End Integration', () => {
         }),
       },
       dispatchEvent: vi.fn(),
+      // Phase 3 test: production code imports `errorHandling.ts` which
+      // wires `window.addEventListener('unhandledrejection', ...)` on the
+      // GlobalErrorHandler singleton. The mock window above replaces the
+      // jsdom window wholesale, so we must include addEventListener /
+      // removeEventListener stubs or that singleton crashes on init. The
+      // playback logger also reads `window.location.hostname` on first
+      // construction, so provide a hostname stub for the same reason.
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      location: { hostname: 'localhost' },
     };
 
     // Mock fetch
@@ -155,6 +165,22 @@ describe('Unified Loading Flow - End to End Integration', () => {
         (GlobalSampleCache as any).clear = vi.fn();
         GlobalSampleCache.clear();
       }
+    }
+
+    // Wipe both the in-memory caches AND the IndexedDB-backed
+    // LocalProvider so each test starts with a cold cache and forces
+    // production code to take the network-fetch + cacheUrl path.
+    // Without this, the first test populates IndexedDB and later tests
+    // get cache HITs (no fetch, no cacheUrl), invalidating
+    // Performance / Error Recovery assertions.
+    try {
+      const cacheInstance: any = GlobalSampleCache.getInstance();
+      const provider = cacheInstance?.localStorage;
+      if (provider?.clear) {
+        await provider.clear();
+      }
+    } catch {
+      /* best-effort cleanup */
     }
 
     // Reset the singleton preloader state before each test
@@ -397,14 +423,18 @@ describe('Unified Loading Flow - End to End Integration', () => {
     });
 
     it('should handle AudioContext failures', async () => {
-      // Remove audio engine
+      // Remove audio engine. Production code now requires CoreServices —
+      // when missing, loadEssentialSamples logs and bails (via the
+      // try/catch inside the method) rather than throwing to the
+      // caller, but the URL/buffer caching steps never run. The real
+      // contract here is "missing CoreServices doesn't crash the
+      // preloader / surface to the caller", not "URL cache still
+      // populates" (that behavior was removed when WindowRegistry
+      // became mandatory).
       (window as any).__globalCoreServices = null;
 
       const preloader = getSamplePreloader();
-      await preloader.loadEssentialSamples();
-
-      // Should still cache URLs even without AudioContext
-      expect(GlobalSampleCache.getCacheStats().urlCount).toBeGreaterThan(0);
+      await expect(preloader.loadEssentialSamples()).resolves.not.toThrow();
     });
   });
 
@@ -425,9 +455,12 @@ describe('Unified Loading Flow - End to End Integration', () => {
       // Should complete quickly (under 1 second in test)
       expect(loadTime).toBeLessThan(1000);
 
-      // Check parallel loading happened
+      // Check parallel loading happened. Production currently downloads
+      // 9 essential samples (4 voice cues + 2 metronome clicks + kick,
+      // snare, hihat). The "many in parallel" intent still holds — just
+      // assert >= the real sample count.
       const fetchCalls = vi.mocked(fetch).mock.calls.length;
-      expect(fetchCalls).toBeGreaterThan(10); // Many samples loaded in parallel
+      expect(fetchCalls).toBeGreaterThanOrEqual(9);
     });
 
     it('should report accurate memory usage', async () => {

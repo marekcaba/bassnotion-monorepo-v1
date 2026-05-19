@@ -211,7 +211,7 @@ export class Transport {
 
     // Start Tone.js transport
     const Tone = getTone();
-    Tone.Transport.start();
+    Tone.getTransport().start();
 
     // Start scheduler
     this.scheduler.start();
@@ -284,13 +284,13 @@ export class Transport {
 
     // Stop Tone.js transport
     const Tone = getTone();
-    Tone.Transport.stop();
+    Tone.getTransport().stop();
 
     // CRITICAL FIX: Cancel all scheduled events on Tone.Transport
     // Tone.Transport.stop() only pauses time advancement but does NOT cancel scheduled events
     // Without cancel(), events scheduled on the timeline will continue to fire
     try {
-      Tone.Transport.cancel(0); // Cancel all events from time 0 onwards
+      Tone.getTransport().cancel(0); // Cancel all events from time 0 onwards
       logger.info('🎵 Cancelled all Tone.Transport scheduled events');
     } catch (e) {
       logger.error('🎵 Failed to cancel Tone.Transport events', e);
@@ -341,7 +341,7 @@ export class Transport {
 
     // Pause Tone.js transport
     const Tone = getTone();
-    Tone.Transport.pause();
+    Tone.getTransport().pause();
 
     // Pause clock timing (for AudioWorklet mode)
     this.clock.pause();
@@ -366,7 +366,7 @@ export class Transport {
 
     // Resume Tone.js transport
     const Tone = getTone();
-    Tone.Transport.start();
+    Tone.getTransport().start();
 
     // Resume clock timing (for AudioWorklet mode)
     this.clock.resume();
@@ -394,7 +394,7 @@ export class Transport {
     // Update Tone.js position
     const Tone = getTone();
     const tonePosition = this.timeline.positionToToneFormat(position);
-    Tone.Transport.position = tonePosition;
+    Tone.getTransport().position = tonePosition;
 
     // Update clock position (for AudioWorklet mode)
     const seconds = this.timeline.positionToSeconds(position);
@@ -452,7 +452,7 @@ export class Transport {
     if (this.config.enableLegacyCompatibility) {
       try {
         const Tone = getTone();
-        return Tone.Transport.seconds;
+        return Tone.getTransport().seconds;
       } catch {
         // Tone not loaded yet, use clock
       }
@@ -553,7 +553,7 @@ export class Transport {
   setLoopEnabled(enabled: boolean): void {
     this.timeline.setLoopEnabled(enabled);
     const Tone = getTone();
-    Tone.Transport.loop = enabled;
+    Tone.getTransport().loop = enabled;
   }
 
   /**
@@ -567,8 +567,8 @@ export class Transport {
     const startStr = this.timeline.positionToToneFormat(start);
     const endStr = this.timeline.positionToToneFormat(end);
 
-    Tone.Transport.loopStart = startStr;
-    Tone.Transport.loopEnd = endStr;
+    Tone.getTransport().loopStart = startStr;
+    Tone.getTransport().loopEnd = endStr;
   }
 
   /**

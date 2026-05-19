@@ -67,6 +67,9 @@ export class TransportController implements Service {
   private state: TransportState = 'stopped';
   private config: TransportControllerConfig;
   private autoStopTimerId: ReturnType<typeof setTimeout> | null = null;
+  // Bidirectional Tone.Transport sync interval. Cleared on dispose so it
+  // doesn't keep firing forever and flooding the console after teardown.
+  private toneSyncIntervalId: ReturnType<typeof setInterval> | null = null;
 
   // Phase 2: Event-driven position updates
   private lastPositionEmitTime = 0;
@@ -244,9 +247,12 @@ export class TransportController implements Service {
     // The position manager handles countdown offset display, so transport should
     // always start from absolute zero. Do NOT set to exercise start position here
     // as it creates a mismatch with the internal position manager.
+    //
+    // Uses getTransport() (not the deprecated Tone.Transport const) to re-resolve
+    // against the current Context — safe even after a setContext() swap.
     if (this.config.enableLegacyCompatibility) {
       const Tone = getTone();
-      Tone.Transport.position = 0;
+      Tone.getTransport().position = 0;
       logger.info(
         'Reset Tone.Transport.position to 0 for clean playback start',
       );
@@ -273,7 +279,7 @@ export class TransportController implements Service {
       // 🚨 BPM BUG FIX: Use Tone.Transport.bpm.value (source of truth) instead of this.transport.getTempo()
       // getTempo() returns stale config.tempo (defaults to 120), but Musical Truth sets Tone.Transport.bpm
       const Tone = getTone();
-      const bpm = Tone.Transport.bpm.value;
+      const bpm = Tone.getTransport().bpm.value;
       const countdownDurationSeconds = (countdownBeats / bpm) * 60;
 
       // Set countdown offset - Transport will apply it at the right moment
@@ -302,9 +308,9 @@ export class TransportController implements Service {
     // Start Tone.Transport for legacy compatibility
     if (this.config.enableLegacyCompatibility) {
       const Tone = getTone();
-      if (Tone.Transport.state !== 'started') {
+      if (Tone.getTransport().state !== 'started') {
         logger.info('Starting Tone.Transport for legacy compatibility');
-        Tone.Transport.start();
+        Tone.getTransport().start();
       }
     }
 
@@ -419,9 +425,9 @@ export class TransportController implements Service {
     // Stop Tone.Transport for legacy compatibility
     if (this.config.enableLegacyCompatibility) {
       const Tone = getTone();
-      if (Tone.Transport.state !== 'stopped') {
+      if (Tone.getTransport().state !== 'stopped') {
         logger.info('Stopping Tone.Transport for legacy compatibility');
-        Tone.Transport.stop();
+        Tone.getTransport().stop();
         // FAANG FIX: Reset to start of EXERCISE (after countdown), not start of countdown
         // This ensures the clock shows 1:0:00 (exercise start) instead of -1:4:00 (countdown start)
         const countdownBeats = this.positionManager.getCountdownBeats();
@@ -429,14 +435,14 @@ export class TransportController implements Service {
           // Get time signature to format the position correctly
           const _beatsPerBar = this.config.timeSignature?.numerator || 4;
           const position = `0:${countdownBeats}:0`; // e.g., "0:4:0" for 4/4 time with 4-beat countdown
-          Tone.Transport.position = position;
+          Tone.getTransport().position = position;
           logger.info('Reset Tone.Transport to exercise start', {
             position,
             countdownBeats,
           });
         } else {
           // No countdown - reset to absolute zero
-          Tone.Transport.position = 0;
+          Tone.getTransport().position = 0;
         }
       }
     }
@@ -480,9 +486,9 @@ export class TransportController implements Service {
     // Pause Tone.Transport for legacy compatibility
     if (this.config.enableLegacyCompatibility) {
       const Tone = getTone();
-      if (Tone.Transport.state === 'started') {
+      if (Tone.getTransport().state === 'started') {
         logger.info('Pausing Tone.Transport for legacy compatibility');
-        Tone.Transport.pause();
+        Tone.getTransport().pause();
       }
     }
 
@@ -561,7 +567,7 @@ export class TransportController implements Service {
     }
 
     const Tone = getTone();
-    const previousBpm = Tone.Transport.bpm.value;
+    const previousBpm = Tone.getTransport().bpm.value;
 
     logger.info('🎵 TransportController.setTempo START', {
       requestedBpm: bpm,
@@ -577,14 +583,14 @@ export class TransportController implements Service {
       '🎵 TransportController.setTempo: musicalTruth.setBPM() called',
       {
         newBpm: bpm,
-        toneBpmAfter: Tone.Transport.bpm.value,
+        toneBpmAfter: Tone.getTransport().bpm.value,
         musicalTruthBpm: musicalTruth.getBPM(),
       },
     );
 
     // FAANG FIX: Recalculate loop end if loop is enabled
     // When tempo changes, the loop end time in seconds changes even though musical position stays same
-    if (this.config.enableLegacyCompatibility && Tone.Transport.loop) {
+    if (this.config.enableLegacyCompatibility && Tone.getTransport().loop) {
       const loopRegion = this.positionManager.getLoop();
       if (loopRegion.enabled) {
         const startSeconds = this.positionManager.positionToSeconds(
@@ -593,8 +599,8 @@ export class TransportController implements Service {
         const endSeconds = this.positionManager.positionToSeconds(
           loopRegion.end,
         );
-        Tone.Transport.loopStart = startSeconds;
-        Tone.Transport.loopEnd = endSeconds;
+        Tone.getTransport().loopStart = startSeconds;
+        Tone.getTransport().loopEnd = endSeconds;
         logger.info(
           '🔁 TransportController: Recalculated loop points for new tempo',
           {
@@ -613,7 +619,7 @@ export class TransportController implements Service {
     logger.info('🎵 TransportController.setTempo COMPLETE', {
       bpm,
       previousBpm,
-      toneBpmVerify: Tone.Transport.bpm.value,
+      toneBpmVerify: Tone.getTransport().bpm.value,
     });
   }
 
@@ -633,7 +639,7 @@ export class TransportController implements Service {
     // Sync with Tone.js
     if (this.config.enableLegacyCompatibility) {
       const Tone = getTone();
-      Tone.Transport.timeSignature = [
+      Tone.getTransport().timeSignature = [
         timeSignature.numerator,
         timeSignature.denominator,
       ];
@@ -672,9 +678,9 @@ export class TransportController implements Service {
       const Tone = getTone();
       const startSeconds = this.positionManager.positionToSeconds(start);
       const endSeconds = this.positionManager.positionToSeconds(end);
-      Tone.Transport.loop = true;
-      Tone.Transport.loopStart = startSeconds;
-      Tone.Transport.loopEnd = endSeconds;
+      Tone.getTransport().loop = true;
+      Tone.getTransport().loopStart = startSeconds;
+      Tone.getTransport().loopEnd = endSeconds;
     }
 
     // Emit event
@@ -693,7 +699,7 @@ export class TransportController implements Service {
     // Sync with Tone.js
     if (this.config.enableLegacyCompatibility) {
       const Tone = getTone();
-      Tone.Transport.loop = false;
+      Tone.getTransport().loop = false;
     }
 
     // Emit event
@@ -756,6 +762,13 @@ export class TransportController implements Service {
 
     // Stop everything
     await this.stop();
+
+    // Stop the Tone.Transport drift-sync interval so it doesn't keep firing
+    // after teardown and flooding the console with stale-context errors.
+    if (this.toneSyncIntervalId !== null) {
+      clearInterval(this.toneSyncIntervalId);
+      this.toneSyncIntervalId = null;
+    }
 
     // Dispose modules
     this.transport.destroy();
@@ -988,7 +1001,7 @@ export class TransportController implements Service {
     // Previously this read from positionManager.getTempo() which could be stale
     // and overwrite the correct tempo set by musicalTruth.setFromExercise().
     // Instead, we log the current state for debugging and only sync time signature.
-    const currentBpm = Tone.Transport.bpm.value;
+    const currentBpm = Tone.getTransport().bpm.value;
     const positionManagerBpm = this.positionManager.getTempo();
     logger.info('syncWithTone: tempo sync (read-only)', {
       toneTransportBpm: currentBpm,
@@ -999,29 +1012,51 @@ export class TransportController implements Service {
 
     // Time signature sync is still safe to do
     const timeSignature = this.positionManager.getTimeSignature();
-    Tone.Transport.timeSignature = [
+    Tone.getTransport().timeSignature = [
       timeSignature.numerator,
       timeSignature.denominator,
     ];
 
-    // Setup bidirectional sync
+    // Setup bidirectional sync. Use getTransport() (not the deprecated
+    // Tone.Transport const) so we re-resolve against the current Context
+    // on every tick — safe even after a setContext() swap.
+    //
+    // Errors are swallowed: a stale Transport (e.g. after dispose) used to
+    // throw `Cannot read properties of undefined (reading 'time')` 10 times
+    // per second forever. The sync is best-effort; if Tone is in a bad
+    // state the user-facing transport keeps working without it.
     const toneSync = () => {
-      const Tone = getTone();
-      if (this.state === 'playing' && Tone.Transport.state === 'started') {
-        const toneSeconds = Tone.Transport.seconds;
-        const ourSeconds = this.transport.getCurrentTime();
-        const drift = Math.abs(toneSeconds - ourSeconds);
+      try {
+        const Tone = getTone();
+        const transport = Tone.getTransport
+          ? Tone.getTransport()
+          : Tone.Transport;
+        if (this.state === 'playing' && transport.state === 'started') {
+          const toneSeconds = transport.seconds;
+          const ourSeconds = this.transport.getCurrentTime();
+          const drift = Math.abs(toneSeconds - ourSeconds);
 
-        // Sync if drift is significant
-        if (drift > 0.01) {
-          logger.debug('Syncing with Tone.js', { drift });
-          Tone.Transport.seconds = ourSeconds;
+          // Sync if drift is significant
+          if (drift > 0.01) {
+            logger.debug('Syncing with Tone.js', { drift });
+            transport.seconds = ourSeconds;
+          }
+        }
+      } catch {
+        // Tone in an inconsistent state (likely a stale Context reference).
+        // Stop syncing — user-facing transport keeps working.
+        if (this.toneSyncIntervalId !== null) {
+          clearInterval(this.toneSyncIntervalId);
+          this.toneSyncIntervalId = null;
         }
       }
     };
 
-    // Sync periodically
-    setInterval(toneSync, 100);
+    // Sync periodically; store id so dispose() can stop it
+    if (this.toneSyncIntervalId !== null) {
+      clearInterval(this.toneSyncIntervalId);
+    }
+    this.toneSyncIntervalId = setInterval(toneSync, 100);
 
     logger.info('Tone.js sync enabled');
   }

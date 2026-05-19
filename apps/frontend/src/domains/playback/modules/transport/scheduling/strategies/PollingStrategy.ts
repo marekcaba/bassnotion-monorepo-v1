@@ -134,7 +134,7 @@ export class PollingStrategy implements PositionUpdateStrategy {
     this.accumulatedBeats = 0;
     this.lastTempoChangeTime = this.transportStartTime;
     const Tone = getTone();
-    this.currentBPM = Tone.Transport.bpm.value;
+    this.currentBPM = Tone.getTransport().bpm.value;
 
     // [TEMPO-DEBUG] Step 7 log commented out after fix verification
     // console.log('[TEMPO-DEBUG] Step 7: PollingStrategy.start() - Initializing', {...});

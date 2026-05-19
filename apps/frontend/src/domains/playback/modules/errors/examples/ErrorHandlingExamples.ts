@@ -7,27 +7,20 @@ import { EventBus } from '../../../services/core/EventBus.js';
 import { createStructuredLogger } from '@bassnotion/contracts';
 import { CircuitBreaker } from '../../../patterns/CircuitBreaker.js';
 import {
-  // Error classes
+  // Error classes used in the examples below
   InstrumentError,
-  SamplerError,
-  DrumKitError,
   VoiceLimitError,
   MidiParseError,
   MidiValidationError,
-  StorageConnectionError,
   UploadError,
   CacheFullError,
   CircuitBreakerOpenError,
   ClockSyncError,
-  ScheduleOverflowError,
 
-  // Error codes
+  // Error codes used in the examples below
   InstrumentErrorCode,
-  MidiErrorCode,
-  StorageErrorCode,
-  TransportErrorCode,
 
-  // Utilities
+  // Utilities used in the examples below
   getErrorMessage,
   getErrorSeverity,
   isRecoverableError,
@@ -60,7 +53,7 @@ export class InstrumentLoader {
     }
   }
 
-  private async performLoad(type: string, id: string): Promise<void> {
+  private async performLoad(_type: string, _id: string): Promise<void> {
     // Simulate failure
     throw new Error('Network timeout');
   }
@@ -110,7 +103,10 @@ export class AudioService {
     }
   }
 
-  private async performPlayNote(note: number, velocity: number): Promise<void> {
+  private async performPlayNote(
+    _note: number,
+    _velocity: number,
+  ): Promise<void> {
     // Simulate voice limit error
     throw new VoiceLimitError(32, 32, 'sampler');
   }
@@ -157,7 +153,7 @@ export class StorageServiceWithCircuitBreaker {
     }
   }
 
-  private async performUpload(fileName: string, data: Buffer): Promise<void> {
+  private async performUpload(_fileName: string, _data: Buffer): Promise<void> {
     // Simulate network failure
     throw new Error('Connection refused');
   }
@@ -200,7 +196,7 @@ export class MidiProcessor {
     }
   }
 
-  private async parseMidi(data: ArrayBuffer): Promise<any> {
+  private async parseMidi(_data: ArrayBuffer): Promise<any> {
     // Simulate parse error
     throw new MidiParseError(
       'Invalid MIDI header',
@@ -210,7 +206,7 @@ export class MidiProcessor {
     );
   }
 
-  private async validateMidi(data: any): Promise<void> {
+  private async validateMidi(_data: any): Promise<void> {
     // Simulate validation error
     throw new MidiValidationError(
       'MIDI file contains invalid events',
@@ -222,7 +218,7 @@ export class MidiProcessor {
     );
   }
 
-  private async processMidiEvents(data: any): Promise<void> {
+  private async processMidiEvents(_data: any): Promise<void> {
     // Process events
   }
 }
@@ -335,7 +331,7 @@ export class PlaybackEngine {
     logger.info('Recovery strategy statistics', { stats });
   }
 
-  private analyzeErrorPattern(data: any): void {
+  private analyzeErrorPattern(_data: any): void {
     // Implement error pattern analysis
     // Could trigger proactive measures based on patterns
   }
@@ -426,7 +422,7 @@ export class BatchProcessor {
     }
   }
 
-  private async processItem(item: any): Promise<void> {
+  private async processItem(_item: any): Promise<void> {
     // Process individual item
     if (Math.random() > 0.8) {
       throw new Error('Random processing error');

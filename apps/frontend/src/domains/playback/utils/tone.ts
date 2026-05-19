@@ -64,12 +64,19 @@ export { ToneProxy as Tone };
 
 // Re-export commonly used Tone.js types/classes
 // These will be populated once Tone is loaded
+// Re-resolve via getTransport() each access so we always read against the
+// CURRENT Tone Context (safe across setContext swaps). The deprecated
+// `cachedTone.Transport` const captures whichever Context existed at
+// module-load time and breaks after a setContext().
 export const Transport = new Proxy(
   {},
   {
     get(target, prop) {
-      if (cachedTone?.Transport) {
-        return cachedTone.Transport[prop];
+      const t = cachedTone?.getTransport
+        ? cachedTone.getTransport()
+        : cachedTone?.Transport;
+      if (t) {
+        return t[prop];
       }
       return undefined;
     },

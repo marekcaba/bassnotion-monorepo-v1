@@ -10,22 +10,15 @@
  * delegating complex logic to specialized hooks and rendering to sub-components.
  */
 
-import React, {
-  useEffect,
-  useState,
-  useCallback,
-  useRef,
-  useMemo,
-} from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { VolumeKnob } from '../components/VolumeKnob.js';
 import { useTrack } from '@/domains/playback/hooks/useTrack';
 import { useTransportControls } from '@/domains/playback/contexts/TransportContext';
-import { getLogger } from '@/utils/logger.js';
 import { lifecycle } from '@/domains/playback/utils/InitializationLifecycleLogger.js';
 
 // Local module imports
 import type { MetronomeWidgetProps, MetronomeSoundType } from './types.js';
-import { MetronomeSound, initialDots } from './types.js';
+import { MetronomeSound } from './types.js';
 import { useVolumeControl } from './hooks/useVolumeControl.js';
 import { usePluginLoading } from './hooks/usePluginLoading.js';
 import { usePluginCreation } from './hooks/usePluginCreation.js';
@@ -34,12 +27,10 @@ import { useTimeSignature } from './hooks/useTimeSignature.js';
 import { useMetronomeRegistration } from './hooks/useMetronomeRegistration.js';
 import { BeatIndicators, ExpandedControls } from './components/index.js';
 
-const logger = getLogger('metronome-widget');
-
 const MetronomeWidgetComponent = ({
   isVisible,
-  isPlaying: isPlayingProp,
-  onToggleVisibility,
+  isPlaying: _isPlayingProp,
+  onToggleVisibility: _onToggleVisibility,
   onTogglePlay,
   timeSignature,
   volume: controlledVolume,
@@ -62,7 +53,10 @@ const MetronomeWidgetComponent = ({
     MetronomeSound.CLASSIC,
   );
   const [subdivisions, setSubdivisions] = useState(1);
-  const [pluginLoadAttempts, setPluginLoadAttempts] = useState(0);
+  // pluginLoadAttempts is read for retry-cap logic; the setter is no
+  // longer called from this file (retry/increment moved into the
+  // usePluginLoading hook).
+  const [pluginLoadAttempts, _setPluginLoadAttempts] = useState(0);
 
   // Plugin loading state
   const [wamPluginLoaded, setWamPluginLoaded] = useState(false);
@@ -83,7 +77,9 @@ const MetronomeWidgetComponent = ({
   const trackIsReady = track.isReady;
 
   // Time signature hook
-  const { beats, noteValue, setBeats, setNoteValue } = useTimeSignature({
+  // useTimeSignature exposes setters for tests / external control;
+  // this widget only reads the current values.
+  const { beats, noteValue } = useTimeSignature({
     timeSignature,
     defaultBeats: 4,
     defaultNoteValue: 4,
@@ -96,21 +92,19 @@ const MetronomeWidgetComponent = ({
     subdivisions,
   });
 
-  // Volume control hook
-  const {
-    volume,
-    isMuted,
-    handleVolumeChange,
-    handleMuteToggle,
-    effectiveVolume,
-  } = useVolumeControl({
-    controlledVolume,
-    controlledMuted,
-    onVolumeChange,
-    onMuteToggle,
-    metronomePluginRef,
-    defaultVolume: 80,
-  });
+  // Volume control hook — effectiveVolume is exposed for consumers
+  // that need the mute-aware value; this widget uses volume + isMuted
+  // separately for rendering and lets the audio path handle the
+  // multiplication.
+  const { volume, isMuted, handleVolumeChange, handleMuteToggle } =
+    useVolumeControl({
+      controlledVolume,
+      controlledMuted,
+      onVolumeChange,
+      onMuteToggle,
+      metronomePluginRef,
+      defaultVolume: 80,
+    });
 
   // Callback for plugin class loaded
   const handlePluginClassLoaded = useCallback(() => {

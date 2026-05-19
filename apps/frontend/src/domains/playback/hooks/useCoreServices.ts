@@ -5,9 +5,9 @@
  * This replaces the legacy useCorePlaybackEngine hook.
  */
 
-import { useEffect, useCallback, useRef, useMemo, useState } from 'react';
+import { useEffect, useCallback, useRef, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { usePlaybackStore, playbackSelectors } from '../store/playbackStore';
+import { usePlaybackStore } from '../store/playbackStore';
 import {
   CoreServices,
   AudioEngine,
@@ -133,7 +133,7 @@ export function useCoreServices(
   options: UseCoreServicesOptions = {},
 ): UseCoreServicesReturn {
   const {
-    autoInitialize = true,
+    autoInitialize: _autoInitialize = true,
     enablePerformanceMonitoring = true,
     mobileOptimized = true,
     onError,
@@ -184,23 +184,32 @@ export function useCoreServices(
       setLoading(true);
       setError(null);
 
-      // Check if services already exist globally
+      // Check if services already exist globally.
+      // CoreServices is OWNED by AudioProvider — this hook only consumes.
+      // Previously, if services were absent, this hook created a duplicate
+      // CoreServices, which:
+      //  - raced AudioProvider's mount,
+      //  - registered a second samplesReady listener,
+      //  - and caused parallel ArrayBuffer decodes that detached the
+      //    shared raw buffers (silent drums/metronome).
+      //
+      // Now we wait briefly for AudioProvider to populate the singleton
+      // and fail loudly if it never arrives — that signals a missing
+      // <AudioProvider> in the tree above the consumer.
       let services = window.__globalCoreServices as CoreServices | undefined;
-
       if (!services) {
-        logger.info('Creating new CoreServices instance...');
-        services = new CoreServices({
-          enableHighPrecisionTiming: true,
-          enablePerformanceMonitoring,
-          autoLoadPlugins: true,
-          audioLatencyHint: mobileOptimized ? 'balanced' : 'interactive',
-        });
-
-        // Pre-initialize first (loads Tone.js)
-        await services.preInitialize();
-
-        // Store globally
-        window.__globalCoreServices = services;
+        const startedAt = Date.now();
+        while (!services && Date.now() - startedAt < 2000) {
+          await new Promise((r) => setTimeout(r, 50));
+          services = window.__globalCoreServices as CoreServices | undefined;
+        }
+      }
+      if (!services) {
+        const error = new Error(
+          'useCoreServices: CoreServices not available after 2s. Ensure <AudioProvider> is mounted above this consumer.',
+        );
+        logger.error(error.message);
+        throw error;
       }
 
       coreServicesRef.current = services;
@@ -211,7 +220,6 @@ export function useCoreServices(
       // Get services
       const eventBus = services.getEventBus();
       const audioEngine = services.getAudioEngine();
-      const transport = services.getUnifiedTransport();
 
       // Set up event listeners
       const unsubscribeStateChange = eventBus.on(
@@ -332,9 +340,8 @@ export function useCoreServices(
       // reconnect cleanly if CoreServices is recreated later. Done via dynamic
       // import to avoid a hard cross-domain coupling at module init time.
       try {
-        const { widgetSyncService } = await import(
-          '../../widgets/services/WidgetSyncService.js'
-        );
+        const { widgetSyncService } =
+          await import('../../widgets/services/WidgetSyncService.js');
         widgetSyncService.disconnectFromEventBus();
       } catch (err) {
         logger.warn(
@@ -459,7 +466,7 @@ export function useCoreServices(
     [getServices],
   );
 
-  const setPitch = useCallback((semitones: number) => {
+  const setPitch = useCallback((_semitones: number) => {
     // Not implemented in current system
     logger.warn('setPitch not implemented');
   }, []);
@@ -474,7 +481,7 @@ export function useCoreServices(
 
   // Audio source management (plugin-based in new system)
   const registerAudioSource = useCallback(
-    async (sourceConfig: AudioSourceConfig) => {
+    async (_sourceConfig: AudioSourceConfig) => {
       const { pluginManager } = getServices();
       if (!pluginManager || !stateRef.current.isInitialized) return;
 
@@ -484,19 +491,19 @@ export function useCoreServices(
     [getServices],
   );
 
-  const unregisterAudioSource = useCallback((sourceId: string) => {
+  const unregisterAudioSource = useCallback((_sourceId: string) => {
     logger.warn('unregisterAudioSource needs plugin implementation');
   }, []);
 
-  const setSourceVolume = useCallback((sourceId: string, volume: number) => {
+  const setSourceVolume = useCallback((_sourceId: string, _volume: number) => {
     logger.warn('setSourceVolume needs plugin implementation');
   }, []);
 
-  const setSourceMute = useCallback((sourceId: string, muted: boolean) => {
+  const setSourceMute = useCallback((_sourceId: string, _muted: boolean) => {
     logger.warn('setSourceMute needs plugin implementation');
   }, []);
 
-  const setSourceSolo = useCallback((sourceId: string, solo: boolean) => {
+  const setSourceSolo = useCallback((_sourceId: string, _solo: boolean) => {
     logger.warn('setSourceSolo needs plugin implementation');
   }, []);
 

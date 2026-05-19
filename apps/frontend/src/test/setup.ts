@@ -32,6 +32,42 @@ if (!global.ResizeObserver) {
   };
 }
 
+// IntersectionObserver polyfill — jsdom does not implement it but many
+// libraries (lucide-react Dialogs, infinite-scroll hooks, lazy-load wrappers)
+// reach for it at component-mount time. Without this, any test that renders
+// such a component throws "ReferenceError: IntersectionObserver is not defined".
+if (!global.IntersectionObserver) {
+  global.IntersectionObserver = class IntersectionObserver {
+    readonly root: Element | Document | null = null;
+    readonly rootMargin: string = '';
+    readonly thresholds: ReadonlyArray<number> = [];
+
+    constructor(
+      _callback: IntersectionObserverCallback,
+      options?: IntersectionObserverInit,
+    ) {
+      if (options?.root) this.root = options.root;
+      if (options?.rootMargin) this.rootMargin = options.rootMargin;
+      if (options?.threshold !== undefined) {
+        this.thresholds = Array.isArray(options.threshold)
+          ? options.threshold
+          : [options.threshold];
+      }
+    }
+
+    // IntersectionObserver stub methods — empty by design for jsdom tests.
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    observe(_target: Element): void {}
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    unobserve(_target: Element): void {}
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    disconnect(): void {}
+    takeRecords(): IntersectionObserverEntry[] {
+      return [];
+    }
+  } as any;
+}
+
 // Store original global objects to prevent corruption
 const originalGlobals = {
   document: global.document,
@@ -333,9 +369,7 @@ beforeEach(() => {
       scheduleOnce: vi.fn(() => 0),
       clear: vi.fn(),
       // Position conversion helpers used by TrackMixingEngine etc.
-      toSeconds: vi.fn((time: any) =>
-        typeof time === 'number' ? time : 0,
-      ),
+      toSeconds: vi.fn((time: any) => (typeof time === 'number' ? time : 0)),
       toTicks: vi.fn(() => 0),
     };
 
@@ -350,8 +384,11 @@ beforeEach(() => {
     };
 
     (global.window as any).Tone = {
-      // Transport
+      // Transport (legacy singleton)
       Transport: mockTransport,
+      // Tone v15 factory accessor — returns the same instance so prod code
+      // that calls Tone.getTransport() sees the same mock as Tone.Transport.
+      getTransport: vi.fn(() => mockTransport),
 
       // Context
       context: mockContext,
@@ -440,6 +477,31 @@ beforeEach(() => {
         frequency: { value: 1000 },
         Q: { value: 1 },
         type: 'lowpass',
+      })),
+      Analyser: vi.fn(() => ({
+        connect: vi.fn().mockReturnThis(),
+        disconnect: vi.fn(),
+        dispose: vi.fn(),
+        fftSize: 2048,
+        smoothingTimeConstant: 0.8,
+        getValue: vi.fn(() => new Float32Array(1024)),
+        type: 'fft',
+      })),
+      // EQ is a generic equalizer in Tone v15; tests typically only need
+      // chainable connect/disconnect and the eq-band setters.
+      EQ: vi.fn(() => ({
+        connect: vi.fn().mockReturnThis(),
+        disconnect: vi.fn(),
+        dispose: vi.fn(),
+        low: { value: 0 },
+        mid: { value: 0 },
+        high: { value: 0 },
+      })),
+      Limiter: vi.fn(() => ({
+        connect: vi.fn().mockReturnThis(),
+        disconnect: vi.fn(),
+        dispose: vi.fn(),
+        threshold: { value: -3 },
       })),
       Reverb: vi.fn(() => ({
         connect: vi.fn().mockReturnThis(),

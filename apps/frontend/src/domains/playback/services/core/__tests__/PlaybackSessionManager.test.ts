@@ -17,11 +17,8 @@ vi.mock('../errors/CircuitBreaker.js', () => ({
 }));
 
 // Mock Tone.js
-vi.mock('tone', () => ({
-  context: {
-    currentTime: 0,
-  },
-  Transport: {
+vi.mock('tone', () => {
+  const Transport = {
     bpm: { value: 120 },
     timeSignature: 4,
     clear: vi.fn(),
@@ -29,8 +26,15 @@ vi.mock('tone', () => ({
     stop: vi.fn(),
     start: vi.fn(),
     pause: vi.fn(),
-  },
-}));
+  };
+  return {
+    context: {
+      currentTime: 0,
+    },
+    Transport,
+    getTransport: () => Transport,
+  };
+});
 
 describe('PlaybackSessionManager', () => {
   let eventBus: EventBus;

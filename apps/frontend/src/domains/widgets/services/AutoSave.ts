@@ -1,11 +1,13 @@
 import { UserBasslinesAPI } from '../api/user-basslines';
-import type {
-import { useCorrelation } from '@/shared/hooks/useCorrelation';
-  ExerciseNote,
-  BasslineMetadata,
-  AutoSaveConfig,
-  AutoSaveRequest,
+import {
+  createStructuredLogger,
+  type ExerciseNote,
+  type BasslineMetadata,
+  type AutoSaveConfig,
+  type AutoSaveRequest,
 } from '@bassnotion/contracts';
+
+const logger = createStructuredLogger('AutoSave');
 
 export interface AutoSaveState {
   isDirty: boolean;

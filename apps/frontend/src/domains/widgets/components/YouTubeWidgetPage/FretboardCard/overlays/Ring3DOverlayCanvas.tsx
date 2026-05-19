@@ -88,7 +88,7 @@ import {
 } from '@/domains/widgets/hooks/useFretboardNoteSync';
 import { buildQuantizedTimeline } from '@/domains/widgets/utils/exerciseToMusicXML';
 import { getAtomicPlaybackClock } from '@/domains/playback/services/core/AtomicPlaybackClock';
-import { isVerboseDebugEnabled } from '@/config/debug';
+import { isVerboseDebugEnabled, verboseLog } from '@/config/debug';
 import type { RingOverlayConfig } from './RingOverlayConfig.js';
 import { OVERLAY_LIGHTING_CONFIG } from './RingOverlayConfig.js';
 import { RingOverlayGroup } from './RingOverlayGroup.js';
@@ -173,7 +173,7 @@ function CSSMatchingCamera({
         startZ: cssPerspective * pullBackMultiplier,
         targetZ: cssPerspective,
       };
-      console.log(
+      verboseLog(
         '[CSSMatchingCamera] 🎬 Starting zoom animation on mount (triggerZoomOnMount):',
         {
           startZ: cssPerspective * pullBackMultiplier,
@@ -204,7 +204,7 @@ function CSSMatchingCamera({
         targetZ: cssPerspective,
       };
       isDebugEnabled() &&
-        console.log(
+        verboseLog(
           '[CSSMatchingCamera] 🎬 Starting zoom animation (phase change):',
           {
             startZ: cssPerspective * pullBackMultiplier,
@@ -243,7 +243,7 @@ function CSSMatchingCamera({
       if (progress >= 1) {
         anim.isAnimating = false;
         isDebugEnabled() &&
-          console.log('[CSSMatchingCamera] 🎬 Zoom animation complete');
+          verboseLog('[CSSMatchingCamera] 🎬 Zoom animation complete');
       }
     }
   });
@@ -282,7 +282,7 @@ function CSSMatchingCamera({
       set({ camera });
 
       isDebugEnabled() &&
-        console.log('[CSSMatchingCamera] 📷 CSS-MATCHING CAMERA:', {
+        verboseLog('[CSSMatchingCamera] 📷 CSS-MATCHING CAMERA:', {
           cssPerspective,
           canvasHeight,
           cameraY,
@@ -343,7 +343,7 @@ function ClippingPlanesManager({
     gl.localClippingEnabled = enabled;
 
     isDebugEnabled() &&
-      console.log('[ClippingPlanesManager] 🔪 Clipping enabled:', {
+      verboseLog('[ClippingPlanesManager] 🔪 Clipping enabled:', {
         enabled,
         viewportWidth,
         contentScale,
@@ -381,7 +381,7 @@ function ClippingPlanesManager({
     globalClippingPlanes[1].constant = rightBound;
 
     isDebugEnabled() &&
-      console.log('[ClippingPlanesManager] 📐 Updated clipping planes:', {
+      verboseLog('[ClippingPlanesManager] 📐 Updated clipping planes:', {
         viewportWidth,
         contentScale,
         sceneX,
@@ -527,7 +527,7 @@ function ScrollOffsetGroup({
 
         // Log if lag detected OR if SCROLL_DEBUG_ALL is enabled
         if (hasLag || isScrollDebugAllEnabled()) {
-          console.log(
+          verboseLog(
             hasLag
               ? '[ScrollOffsetGroup] 🔴 LAG:'
               : '[ScrollOffsetGroup] 🟢 OK:',
@@ -923,7 +923,7 @@ function DebugVisualization({
     const notesWithFinger = exerciseNotes.filter(
       (n) => n.finger_index !== undefined,
     );
-    console.log('[FINGER-DEBUG] Exercise notes with finger_index:', {
+    verboseLog('[FINGER-DEBUG] Exercise notes with finger_index:', {
       totalNotes: exerciseNotes.length,
       notesWithFinger: notesWithFinger.length,
       fingerIndexValues: notesWithFinger.map((n) => ({
@@ -2112,7 +2112,7 @@ function DebugVisualization({
     const showCurrentFingerLabel = currentFingerKey && currentFingerKey !== 'O';
 
     // DEBUG: Log finger label visibility conditions
-    console.log('[FINGER-LABEL-DEBUG] Initial note label check:', {
+    verboseLog('[FINGER-LABEL-DEBUG] Initial note label check:', {
       hasCurrentNoteLabelRef: !!currentNoteLabelRef.current,
       hasActivePosition: !!activePosition,
       hasActiveNoteEntry: !!activeNoteEntry,
@@ -3543,7 +3543,7 @@ export function Ring3DOverlayCanvas({
     const pixelWidth = lastFretX - openStringX;
 
     isDebugEnabled() &&
-      console.log('[Ring3DOverlayCanvas] 📏 FRETBOARD GEOMETRY:', {
+      verboseLog('[Ring3DOverlayCanvas] 📏 FRETBOARD GEOMETRY:', {
         stringCount,
         maxFrets,
         firstStringY,
@@ -3627,7 +3627,7 @@ export function Ring3DOverlayCanvas({
     const worldWidth = worldHeight * aspectRatio;
 
     isDebugEnabled() &&
-      console.log('[Ring3DOverlayCanvas] 📷 WORLD DIMENSIONS:', {
+      verboseLog('[Ring3DOverlayCanvas] 📷 WORLD DIMENSIONS:', {
         worldWidth,
         worldHeight,
         aspectRatio,
@@ -3749,7 +3749,7 @@ export function Ring3DOverlayCanvas({
 
   // DEBUG: Log render state and dimension comparison
   isDebugEnabled() &&
-    console.log('[Ring3DOverlayCanvas] Render check:', {
+    verboseLog('[Ring3DOverlayCanvas] Render check:', {
       configEnabled: config.enabled,
       timelineLength: timeline?.length ?? 0,
       exerciseNotesLength: exerciseNotes?.length ?? 0,
@@ -3774,7 +3774,7 @@ export function Ring3DOverlayCanvas({
   // This eliminates React re-renders on scroll for better performance
 
   isDebugEnabled() &&
-    console.log(
+    verboseLog(
       '[Ring3DOverlayCanvas] ✅ RENDERING 3D CANVAS (Architect Solution)',
       {
         cssPerspective: CSS_PERSPECTIVE,
@@ -3796,7 +3796,7 @@ export function Ring3DOverlayCanvas({
     );
 
   isDebugEnabled() &&
-    console.log('[Ring3DOverlayCanvas] 📐 CANVAS DIMENSIONS:', {
+    verboseLog('[Ring3DOverlayCanvas] 📐 CANVAS DIMENSIONS:', {
       canvas: {
         width: CANVAS_WIDTH,
         height: CANVAS_HEIGHT,
@@ -3884,7 +3884,7 @@ export function Ring3DOverlayCanvas({
 
   // DEBUG: Log render values for fade debugging
   if (isVerboseDebugEnabled()) {
-    console.log('[FADE-DEBUG] RENDER:', {
+    verboseLog('[FADE-DEBUG] RENDER:', {
       exerciseId,
       fadeOpacity,
       notesCount: exerciseNotes?.length ?? 0,
@@ -3956,7 +3956,7 @@ export function Ring3DOverlayCanvas({
       const canvasEl = container.querySelector('canvas');
 
       isDebugEnabled() &&
-        console.log('[Ring3DOverlayCanvas] 🔍 POST-RENDER CONTAINER CHECK:', {
+        verboseLog('[Ring3DOverlayCanvas] 🔍 POST-RENDER CONTAINER CHECK:', {
           containerRef: {
             offsetWidth: container.offsetWidth,
             offsetHeight: container.offsetHeight,
@@ -3988,7 +3988,7 @@ export function Ring3DOverlayCanvas({
   });
 
   isDebugEnabled() &&
-    console.log('[Ring3DOverlayCanvas] 🎨 STYLE SETTINGS:', {
+    verboseLog('[Ring3DOverlayCanvas] 🎨 STYLE SETTINGS:', {
       containerStyle: {
         width: containerStyle.width,
         height: containerStyle.height,
@@ -4028,7 +4028,7 @@ export function Ring3DOverlayCanvas({
 
             const canvasEl = gl.domElement;
             isDebugEnabled() &&
-              console.log('[Ring3DOverlayCanvas] 🚀 CANVAS onCreated:', {
+              verboseLog('[Ring3DOverlayCanvas] 🚀 CANVAS onCreated:', {
                 glDomElement: {
                   width: canvasEl.width,
                   height: canvasEl.height,
@@ -4050,7 +4050,7 @@ export function Ring3DOverlayCanvas({
             // FORCE correct size if R3F measured incorrectly
             if (size.width !== CANVAS_WIDTH || size.height !== CANVAS_HEIGHT) {
               isDebugEnabled() &&
-                console.log('[Ring3DOverlayCanvas] ⚠️ FORCING CORRECT SIZE:', {
+                verboseLog('[Ring3DOverlayCanvas] ⚠️ FORCING CORRECT SIZE:', {
                   r3fMeasured: { width: size.width, height: size.height },
                   forcing: { width: CANVAS_WIDTH, height: CANVAS_HEIGHT },
                 });

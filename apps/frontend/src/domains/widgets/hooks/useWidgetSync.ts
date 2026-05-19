@@ -5,11 +5,11 @@
  *
  * @deprecated Use useTrack hook instead
  */
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { createStructuredLogger } from '@bassnotion/contracts';
 import { useTrackMigration } from '@/domains/playback/hooks/useTrackMigration';
-import { useCorrelation } from '@/shared/hooks/useCorrelation';
-// REMOVED: useExerciseSelection import - causes circular updates
+
+const logger = createStructuredLogger('useWidgetSync');
 
 export interface UseWidgetSyncOptions {
   widgetId: string;
@@ -41,8 +41,6 @@ export function useWidgetSync(options: UseWidgetSyncOptions) {
 
   // Get global playback state using migration hook
   const playbackState = useTrackMigration({ widgetId, debug: debugMode });
-  // REMOVED: useExerciseSelection - causes circular updates
-  // Exercise selection should come from parent props, not global state
 
   // Local state
   const [state] = useState<WidgetSyncState>({

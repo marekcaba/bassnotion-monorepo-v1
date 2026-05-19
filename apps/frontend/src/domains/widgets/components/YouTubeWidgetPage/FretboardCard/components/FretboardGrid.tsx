@@ -27,16 +27,9 @@ import {
   getDotOrder,
   findAllConnections,
 } from '../utils/connectionDetection';
-import { getDotPosition } from '../utils/fretboardGeometry';
 import { getLineFinalOpacity } from '../utils/fretboardAnimation';
-import { HorizontalLines } from './GridLines/HorizontalLines';
-import { VerticalLines } from './GridLines/VerticalLines';
-import { DiagonalLines } from './GridLines/DiagonalLines';
 import { DotDropdownMenu } from './DotDropdownMenu';
 import { useFretboardNoteSync } from '@/domains/widgets/hooks/useFretboardNoteSync';
-
-// Feature flag for connection line color system - set to false to disable
-const ENABLE_CROSSING_LINE_COLORS = true;
 
 // PERFORMANCE FIX: Stable reference for default time signature
 // Inline objects like { numerator: 4, denominator: 4 } create new references on every render,
@@ -169,11 +162,11 @@ export const FretboardGrid: React.FC<FretboardGridProps> = React.memo(
     onDotSecondSelection,
     onDotRemoval,
     zoomLevel = 1.0,
-    segmentFunctions,
-    highlightingFunctions,
-    getMeasureOpacity,
+    segmentFunctions: _segmentFunctions,
+    highlightingFunctions: _highlightingFunctions,
+    getMeasureOpacity: _getMeasureOpacity,
     getMeasureHighlight,
-    measureOpacityTransition = '0ms', // TEMPORARY: Immediate transitions for debugging (was '250ms')
+    measureOpacityTransition: _measureOpacityTransition = '0ms', // TEMPORARY: Immediate transitions for debugging (was '250ms')
     measureAwareConnections,
     currentMeasure0Based = 0,
     nextNoteToPlay,
@@ -619,68 +612,15 @@ export const FretboardGrid: React.FC<FretboardGridProps> = React.memo(
       exerciseNotes,
     ]);
 
-    // Compute the "transition target dot" - first note of next measure connected by transition line
-    // This dot should be highlighted in orange with 100% opacity as anticipation
-    const transitionTargetDot = useMemo(() => {
-      if (!measureAwareConnections || measureAwareConnections.length === 0) {
-        return null;
-      }
+    // (transitionTargetDot useMemo used to live here — it identified
+    // the first note of the next measure connected by a transition
+    // line for orange highlighting. The styling is now driven by
+    // measureAwareConnections directly in the JSX below.)
 
-      const nextMeasure = currentMeasureFromNote + 1;
-
-      // Find the first transition line (crosses measure boundary from current to next)
-      for (const conn of measureAwareConnections) {
-        const { pos2, measure1, measure2 } = conn;
-        // Check if this is a transition from current measure to next measure
-        if (measure1 === currentMeasureFromNote && measure2 === nextMeasure) {
-          // pos2 is the first note of the next measure (transition target)
-          return { stringIndex: pos2.stringIndex, fret: pos2.fret };
-        }
-      }
-
-      return null;
-    }, [measureAwareConnections, currentMeasureFromNote]);
-
-    // Build a map of fretboard positions to their note indices in the current measure
-    // This is used to determine if a note has been "played" (comes before nextNoteToPlay)
-    // and should return to grey/default styling (unhighlighted, full opacity)
-    const positionToNoteIndices = useMemo(() => {
-      const map = new Map<string, number[]>();
-
-      if (!exerciseNotes || exerciseNotes.length === 0) {
-        return map;
-      }
-
-      // Determine the string count of the exercise by finding the max string number
-      const maxString = Math.max(...exerciseNotes.map((n) => n.string));
-
-      exerciseNotes.forEach((note, noteIndex) => {
-        // Map exercise strings to fretboard string indices (same logic as useFretboardExercise)
-        let stringIndex: number;
-
-        if (maxString <= 4) {
-          // 4-string bass: strings 1-4 map to G(4), D(3), A(2), E(1)
-          stringIndex = 5 - note.string;
-        } else if (maxString <= 5) {
-          // 5-string bass: strings 1-5 map to G(4), D(3), A(2), E(1), B(0)
-          stringIndex = 5 - note.string;
-        } else {
-          // 6-string bass: strings 1-6 map to C(5), G(4), D(3), A(2), E(1), B(0)
-          stringIndex = 6 - note.string;
-        }
-
-        const fret: Fret = note.fret === 0 ? 'open' : note.fret;
-        const positionKey = `${stringIndex},${fret}`;
-
-        // Store note index for each position
-        // Multiple notes at the same position have different indices
-        const existing = map.get(positionKey) || [];
-        existing.push(noteIndex);
-        map.set(positionKey, existing);
-      });
-
-      return map;
-    }, [exerciseNotes]);
+    // (positionToNoteIndices map used to live here — it built a
+    // lookup from fretboard position to exercise-note indices. Was
+    // never consumed; downstream rendering uses a different path for
+    // played-note styling now.)
 
     // =============================================================================
     // MEMOIZED CONNECTION LINE ELEMENTS
@@ -830,7 +770,6 @@ export const FretboardGrid: React.FC<FretboardGridProps> = React.memo(
     // - .note-next-measure: 30% opacity for next measure preview
     // =============================================================================
 
-    const containerRef = useRef<HTMLDivElement>(null);
     // Dropdown menu state for each dot
     const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
@@ -904,7 +843,7 @@ export const FretboardGrid: React.FC<FretboardGridProps> = React.memo(
 
     // Handle enhanced dot click (with dropdown logic)
     const handleEnhancedDotClick = useCallback(
-      (stringIndex: number, fret: Fret, event: React.MouseEvent) => {
+      (stringIndex: number, fret: Fret, _event: React.MouseEvent) => {
         const isSelected = isDotSelected(stringIndex, fret, selectedDots);
 
         if (isSelected) {
@@ -994,7 +933,6 @@ export const FretboardGrid: React.FC<FretboardGridProps> = React.memo(
       (maxFretNumber - 1) * FRET_SPACING +
       DOT_RADIUS +
       40; // Extra 40px padding beyond last fret
-    const visibleStringHeight = (stringCount - 1) * STRING_SPACING + DOT_SIZE; // Height for visible strings only
     const gridHeight = 5 * STRING_SPACING + DOT_SIZE + 10; // Extra 10px bottom padding for shadows
 
     // Helper functions
@@ -1131,12 +1069,10 @@ export const FretboardGrid: React.FC<FretboardGridProps> = React.memo(
       // Or: window.__DEBUG_MEASURE_TRANSITIONS__ = true (logs only during measure changes)
       // =============================================================================
 
-      // Check if this dot is the transition target (first note of next measure connected by transition line)
-      // This dot should be highlighted with 100% opacity as anticipation
-      const isTransitionTarget =
-        transitionTargetDot &&
-        transitionTargetDot.stringIndex === stringIndex &&
-        transitionTargetDot.fret === fret;
+      // (isTransitionTarget check used to live here — it would have
+      // brightened the first note of the next measure that's connected
+      // by a transition line. The styling now flows through the
+      // measureAware connections + next-note pipeline instead.)
 
       // Check if this dot is the NEXT NOTE TO PLAY (gets yellow ring indicator)
       // This moves through ALL notes during playback, not just transition targets

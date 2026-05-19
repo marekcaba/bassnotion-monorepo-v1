@@ -8,13 +8,17 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { RegionScheduler } from '../RegionScheduler.js';
 
 // Mock Tone.js
-vi.mock('tone', () => ({
-  Transport: {
+vi.mock('tone', () => {
+  const Transport = {
     bpm: {
       value: 120,
     },
-  },
-}));
+  };
+  return {
+    Transport,
+    getTransport: () => Transport,
+  };
+});
 
 describe('RegionScheduler', () => {
   let scheduler: RegionScheduler;
@@ -753,8 +757,11 @@ describe('RegionScheduler', () => {
       };
       mockTracks.set('track-1', track);
 
-      // Mark event as already scheduled
-      mockScheduledEvents.set('track-1', new Set(['region-1_0']));
+      // Mark event as already scheduled. Production's event-key format is
+      // `${region.id}_${eventIndex}_loop${loopNum}` (added when looping
+      // support landed), so the dedup key for the first event in region-1
+      // on loop 0 is `region-1_0_loop0`.
+      mockScheduledEvents.set('track-1', new Set(['region-1_0_loop0']));
 
       const result = scheduler.scheduleAll(
         mockTracks,
@@ -822,7 +829,8 @@ describe('RegionScheduler', () => {
 
       const trackEvents = mockScheduledEvents.get('track-1');
       expect(trackEvents).toBeDefined();
-      expect(trackEvents!.has('region-1_0')).toBe(true);
+      // Production event-key format: `${region.id}_${eventIndex}_loop${loopNum}`
+      expect(trackEvents!.has('region-1_0_loop0')).toBe(true);
     });
   });
 

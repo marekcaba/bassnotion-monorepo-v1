@@ -1236,7 +1236,7 @@ export class DrumProcessor extends BaseAudioPlugin {
     // Tone.Transport.bpm is already set correctly by musicalTruth.setFromExercise()
     // or musicalTruth.setBPM() when the user adjusts the tempo slider.
     // Just log the current tempo for debugging purposes.
-    const currentBpm = Tone.Transport.bpm.value;
+    const currentBpm = Tone.getTransport().bpm.value;
     logger.info('startMetronome: using current Transport tempo', {
       currentBpm,
     });
@@ -1255,15 +1255,15 @@ export class DrumProcessor extends BaseAudioPlugin {
     // TEMPO FIX: Removed direct Tone.Transport.bpm.value write
     metronomeSequence.start(0);
 
-    if (Tone.Transport.state !== 'started') {
-      Tone.Transport.start();
+    if (Tone.getTransport().state !== 'started') {
+      Tone.getTransport().start();
     }
   }
 
   private stopMetronome(): void {
     const Tone = getTone();
     // Stop metronome sequences
-    Tone.Transport.cancel();
+    Tone.getTransport().cancel();
   }
 
   private async updateDrumPattern(style: string): Promise<void> {
@@ -1305,8 +1305,8 @@ export class DrumProcessor extends BaseAudioPlugin {
     if (this.drumSequencer) {
       this.drumSequencer.start(0);
 
-      if (Tone.Transport.state !== 'started') {
-        Tone.Transport.start();
+      if (Tone.getTransport().state !== 'started') {
+        Tone.getTransport().start();
       }
     }
   }

@@ -77,6 +77,7 @@ const mockCrossFadeInstance = {
 };
 
 // Set up the mock Tone on window
+const mockTransport = { schedule: vi.fn() };
 const mockTone = {
   Player: vi.fn().mockImplementation(() => ({ ...mockPlayerInstance })),
   Volume: vi.fn().mockImplementation(() => ({ ...mockVolumeInstance })),
@@ -86,7 +87,8 @@ const mockTone = {
   CrossFade: vi.fn().mockImplementation(() => ({ ...mockCrossFadeInstance })),
   ToneAudioBuffer: vi.fn(),
   now: vi.fn().mockReturnValue(0),
-  Transport: { schedule: vi.fn() },
+  Transport: mockTransport,
+  getTransport: vi.fn(() => mockTransport),
 };
 
 // Create mock AudioBuffer

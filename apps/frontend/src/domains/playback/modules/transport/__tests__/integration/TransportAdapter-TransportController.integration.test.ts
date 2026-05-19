@@ -20,9 +20,10 @@ import { TransportController } from '../../core/TransportController.js';
 import type { EventBus } from '../../../../services/core/EventBus.js';
 import type { AudioEngine } from '../../../audio-engine/core/AudioEngine.js';
 
-// Mock Tone.js
-vi.mock('tone', () => ({
-  Transport: {
+// Mock Tone.js — expose getTransport() (Tone v15) returning the same Transport
+// object as the legacy singleton so prod code sees one source of truth.
+vi.mock('tone', () => {
+  const Transport = {
     state: 'stopped',
     position: 0,
     seconds: 0,
@@ -32,8 +33,9 @@ vi.mock('tone', () => ({
     stop: vi.fn(),
     pause: vi.fn(),
     cancel: vi.fn(),
-  },
-}));
+  };
+  return { Transport, getTransport: () => Transport };
+});
 
 // Mock Transport
 vi.mock('../../core/Transport.js', () => {

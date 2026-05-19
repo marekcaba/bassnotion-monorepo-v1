@@ -96,6 +96,7 @@ export function EditModeProvider({
   userRole = 'user',
   onModeChange,
 }: EditModeProviderProps) {
+  const { logger } = useCorrelation('EditModeManager');
   const [mode, setModeState] = useState<EditMode>(initialMode);
   const [isLocked, setIsLocked] = useState(false);
   const [lockReason, setLockReason] = useState<string>();

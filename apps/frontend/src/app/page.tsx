@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 
 // ─── Scroll Reveal Hook ──────────────────────────────────────────────────────
@@ -468,6 +469,12 @@ export default function HomePage() {
   const quoteBannerRef = useScrollReveal();
   const startRef = useScrollReveal();
   const faqRef = useScrollReveal();
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Trigger hero reveal immediately on mount
   useEffect(() => {
@@ -480,14 +487,59 @@ export default function HomePage() {
     return () => clearTimeout(timer);
   }, []);
 
+  // Show "back to top" button after any scroll
+  useEffect(() => {
+    const onScroll = () => {
+      const scrolled =
+        window.scrollY ||
+        document.documentElement.scrollTop ||
+        document.body.scrollTop ||
+        0;
+      setShowBackToTop(scrolled > 100);
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    document.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      document.removeEventListener('scroll', onScroll);
+    };
+  }, []);
+
   const goToAssessment = useCallback(() => {
-    navigateWithTransition('/assessment/v2');
+    // MVP routes to V1 (single linear video + popup questions). V2 (segment-based
+    // branching flow) is preserved at /assessment/v2 for future development.
+    navigateWithTransition('/assessment');
   }, [navigateWithTransition]);
+
+  const scrollToTop = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Clear the #section hash from the URL without triggering a navigation
+    if (window.location.hash) {
+      window.history.replaceState(
+        null,
+        '',
+        window.location.pathname + window.location.search,
+      );
+    }
+  }, []);
 
   return (
     <>
       {/* ── Scoped Landing Styles ─────────────────────────────────────── */}
       <style jsx global>{`
+        /* Smooth in-page anchor scrolling (Platform / Method / FAQ).
+           scroll-padding-top offsets sections so they clear the fixed nav. */
+        html {
+          scroll-behavior: smooth;
+          scroll-padding-top: 80px;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          html {
+            scroll-behavior: auto;
+          }
+        }
+
         /* scroll reveal */
         .landing-reveal {
           opacity: 0;
@@ -523,10 +575,19 @@ export default function HomePage() {
         }}
       >
         {/* ── NAV ────────────────────────────────────────────────────── */}
-        <nav className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-6 md:px-[60px] py-5 bg-gradient-to-b from-[rgba(8,8,8,0.98)] to-transparent backdrop-blur-[8px]">
-          <div className="font-heading uppercase text-[22px] tracking-[0.12em] text-[#E8650A]">
-            BASSICOLOGY
-          </div>
+        <nav className="fixed top-0 left-0 right-0 z-[100] h-[72px] flex items-center justify-between px-6 md:px-[60px] bg-gradient-to-b from-[rgba(8,8,8,0.98)] to-transparent backdrop-blur-[8px]">
+          <a
+            href="/"
+            aria-label="Bassicology home"
+            className="flex items-start gap-1.5 no-underline cursor-pointer"
+          >
+            <div className="font-heading uppercase text-[22px] tracking-[0.12em] text-[#E8650A] leading-none">
+              BASSICOLOGY
+            </div>
+            <span className="text-[9px] font-semibold tracking-[0.18em] uppercase text-[#666] border border-[#333] px-1.5 py-0.5 rounded-sm leading-none -translate-y-0.5">
+              Beta
+            </span>
+          </a>
           {/* Desktop links */}
           <ul className="hidden md:flex items-center gap-9 list-none">
             <li>
@@ -553,12 +614,21 @@ export default function HomePage() {
                 FAQ
               </a>
             </li>
+            <li aria-hidden="true" className="h-5 w-px bg-[#252525] mx-2" />
+            <li>
+              <a
+                href="/login"
+                className="text-[#999] no-underline text-[13px] font-medium tracking-[0.06em] uppercase hover:text-[#E8E8E8] transition-colors"
+              >
+                Log In
+              </a>
+            </li>
             <li>
               <button
                 onClick={goToAssessment}
                 className="bg-[#E8650A] text-white px-[22px] py-2.5 rounded-sm text-[13px] font-semibold tracking-[0.06em] uppercase hover:bg-[#B84E08] transition-colors cursor-pointer border-none"
               >
-                Free Assessment
+                Get Started
               </button>
             </li>
           </ul>
@@ -567,7 +637,7 @@ export default function HomePage() {
             onClick={goToAssessment}
             className="md:hidden bg-[#E8650A] text-white px-4 py-2 rounded-sm text-xs font-semibold tracking-[0.06em] uppercase cursor-pointer border-none"
           >
-            Free Assessment
+            Get Started
           </button>
         </nav>
 
@@ -1014,14 +1084,59 @@ export default function HomePage() {
 
         {/* ── FOOTER ──────────────────────────────────────────────────── */}
         <footer className="py-10 px-6 md:px-[60px] max-w-[1200px] mx-auto flex items-center justify-between">
-          <div className="font-heading uppercase text-xl tracking-[0.12em] text-[#E8650A]">
-            BASSICOLOGY
-          </div>
+          <a
+            href="/"
+            aria-label="Bassicology home"
+            className="flex items-start gap-1.5 no-underline cursor-pointer"
+          >
+            <div className="font-heading uppercase text-xl tracking-[0.12em] text-[#E8650A] leading-none">
+              BASSICOLOGY
+            </div>
+            <span className="text-[9px] font-semibold tracking-[0.18em] uppercase text-[#666] border border-[#333] px-1.5 py-0.5 rounded-sm leading-none -translate-y-0.5">
+              Beta
+            </span>
+          </a>
           <div className="text-[13px] text-[#555]">
             Premium bass education. Built from first principles.
           </div>
         </footer>
       </div>
+
+      {/* ── Back to top ─────────────────────────────────────────────────
+          Portaled to <body> to escape the .ui-zone CSS containment
+          (which would otherwise scope position: fixed to that container). */}
+      {mounted &&
+        createPortal(
+          <button
+            onClick={scrollToTop}
+            aria-label="Back to top"
+            title="Back to top"
+            style={{
+              position: 'fixed',
+              bottom: '64px',
+              right: '64px',
+              zIndex: 110,
+              width: '44px',
+              height: '44px',
+              background: '#0F0F0F',
+              border: '1px solid #252525',
+              color: '#E8650A',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: showBackToTop ? 1 : 0,
+              transform: showBackToTop ? 'translateY(0)' : 'translateY(8px)',
+              pointerEvents: showBackToTop ? 'auto' : 'none',
+              transition:
+                'opacity 0.2s, transform 0.2s, background 0.2s, border-color 0.2s',
+            }}
+          >
+            <span style={{ fontSize: '16px', lineHeight: 1 }}>↑</span>
+          </button>,
+          document.body,
+        )}
     </>
   );
 }

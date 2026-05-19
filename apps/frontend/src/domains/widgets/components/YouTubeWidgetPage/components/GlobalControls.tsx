@@ -9,7 +9,6 @@ import type {
   MusicalExercise as Exercise,
   ExerciseNote,
 } from '@bassnotion/contracts';
-import { MIDIFileParser } from '@bassnotion/contracts';
 import { useTransportControls } from '@/domains/playback/contexts/TransportContext';
 import { useTrack } from '@/domains/playback/hooks';
 import type { CoreServices } from '@/domains/playback/services/core/CoreServices.js';
@@ -18,7 +17,6 @@ import { useAudioServices } from '@/domains/playback/providers/AudioProvider';
 import { logSkeletonDebug } from '@/utils/skeletonDebug';
 import { useCountdown } from '@/domains/widgets/hooks/useCountdown';
 import { useAuth } from '@/domains/user/hooks/use-auth';
-import { useToast } from '@/shared/hooks/use-toast';
 
 // Extracted hooks from GlobalControls folder
 import { useSocialInteractions } from '../GlobalControls/hooks/useSocialInteractions.js';
@@ -59,10 +57,7 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
     coreServices: contextCoreServices,
     audioEngine: contextAudioEngine,
     eventBus: contextEventBus,
-    coreServicesReady,
   } = useAudioServices();
-
-  const { toast } = useToast();
 
   // Render counter logging disabled - was causing 176+ log entries during playback
   // Enable for debugging by uncommenting:
@@ -132,10 +127,15 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
       isLoopEnabled,
     };
   }, [selectedExercise, duration, hasSelectedDots, loopRegion, isLoopEnabled]);
-  // Core DAW state
-  const [coreServices, setCoreServices] = useState<CoreServices | null>(null);
+  // Core DAW state. The `coreServices` and `audioInitialized` state
+  // values are intentionally only written, never read — the setters
+  // trigger re-renders that wake up downstream effects (track
+  // initialization, transport binding) that read directly from the
+  // context. Underscore-prefixed to silence no-unused-vars while
+  // preserving the re-render side effect.
+  const [_coreServices, setCoreServices] = useState<CoreServices | null>(null);
   const [systemInitialized, setSystemInitialized] = useState(false);
-  const [audioInitialized, setAudioInitialized] = useState(false);
+  const [_audioInitialized, setAudioInitialized] = useState(false);
   // NOTE: isLoadingExercise and loadingRef are now in useExerciseLoader hook
 
   // PERFORMANCE FIX: Use useTransportControls for stable controls (prevents 60Hz re-renders)
@@ -164,21 +164,20 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
   });
 
   // Countdown hook for metronome countdown before playback
-  const { countdownState, startCountdown, cancelCountdown, resetCountdown } =
-    useCountdown({
-      timeSignature: selectedExercise?.timeSignature || {
-        numerator: 4,
-        denominator: 4,
-      },
-      onCountdownComplete: useCallback(async () => {
-        logger.info('✅ Countdown complete, starting playback');
-        // This will be called after countdown finishes
-        // The actual transport.play() will be handled in the play button handler
-      }, []),
-      onBeatTick: useCallback((beat: number, isAccented: boolean) => {
-        logger.debug(`🎵 Countdown beat ${beat + 1} (accented: ${isAccented})`);
-      }, []),
-    });
+  const { countdownState, startCountdown, cancelCountdown } = useCountdown({
+    timeSignature: selectedExercise?.timeSignature || {
+      numerator: 4,
+      denominator: 4,
+    },
+    onCountdownComplete: useCallback(async () => {
+      logger.info('✅ Countdown complete, starting playback');
+      // This will be called after countdown finishes
+      // The actual transport.play() will be handled in the play button handler
+    }, []),
+    onBeatTick: useCallback((beat: number, isAccented: boolean) => {
+      logger.debug(`🎵 Countdown beat ${beat + 1} (accented: ${isAccented})`);
+    }, []),
+  });
 
   // Notify parent of countdown state changes (for external rendering of countdown dots)
   useEffect(() => {
@@ -237,41 +236,31 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
     drumTrack.isReady,
   ]);
 
-  // Tempo control hook - manages localTempo, drag state, and sync logic
-  const {
-    localTempo,
-    isDragging: isDraggingTempo,
-    handleTempoChange,
-    handleDragStart: handleTempoMouseDown,
-    handleDragEnd: handleTempoMouseUp,
-    lastUserTempoRef: lastUserTempo,
-  } = useTempoControl({ transport });
+  // Tempo control hook — installs global drag listeners + tempo-sync
+  // side effects (see useTempoControl.ts). Tempo UI handling lives in
+  // the toolbar subcomponent now; we still need lastUserTempoRef here
+  // because useExerciseLoader uses it to avoid syncing over a
+  // user-modified tempo on exercise change.
+  const { lastUserTempoRef } = useTempoControl({ transport });
 
-  // Volume state - independent of tempo control
-  const [localVolume, setLocalVolume] = useState(1.0); // Set default to 100%
-  const lastUserVolume = useRef(1.0); // Set default to 100%
-
-  // TEMPO FIX: Removed local hasUserModifiedTempo ref - now using musicalTruth.hasUserModifiedTempo()
-  // as the SINGLE source of truth for user tempo modifications
-  const currentExerciseId = useRef<string | null>(null);
-  // Sheet music state
-  const [currentPosition, setCurrentPosition] = useState(2);
+  // Sheet music state. setCurrentPosition's callers moved to the
+  // file-upload handler chain that's been extracted to the toolbar
+  // subcomponent; only the read path remains.
+  const [currentPosition] = useState(2);
   const currentPositionRef = useRef(currentPosition);
-  const [isLooping, setIsLooping] = useState(true);
-  const [importedExercise, setImportedExercise] = useState<Exercise | null>(
-    null,
-  );
-  const [importSource, setImportSource] = useState<'musicxml' | 'midi' | null>(
-    null,
-  );
+  // importedExercise is still read below (activeExercise fallback);
+  // its setter is no longer called from this file (file-upload chain
+  // moved to toolbar subcomponent). Imported-exercise state is now
+  // owned upstream and passed via props.
+  const [importedExercise] = useState<Exercise | null>(null);
 
   // Keep ref in sync with state
   useEffect(() => {
     currentPositionRef.current = currentPosition;
   }, [currentPosition]);
 
-  const containerRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // (containerRef + fileInputRef were used only by the now-deleted
+  // toolbar handlers — see comment below.)
 
   // Get exercise data from imported exercise or selected exercise
   const activeExercise = importedExercise || selectedExercise;
@@ -301,47 +290,9 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
     }));
   }, [activeExerciseId, rawNotesLength]);
 
-  const exerciseBpm = activeExercise?.bpm || 120;
-  const exerciseKey = activeExercise?.key || 'C';
-  const exerciseTitle = activeExercise?.title || 'No Exercise Selected';
-  // Memoize timeSignature to prevent SheetMusicDisplay re-renders
-  const timeSignature = useMemo(() => {
-    return (
-      activeExercise?.timeSignature || {
-        numerator: 4,
-        denominator: 4,
-      }
-    );
-  }, [activeExercise?.timeSignature]);
-
-  // Calculate totalBars - single source of truth for measure count
-  // Priority: total_bars from exercise > calculated from duration_beats > inferred from notes
-  const exerciseTotalBars = useMemo(() => {
-    // 1. Use total_bars if explicitly set
-    if (activeExercise?.total_bars) {
-      return activeExercise.total_bars;
-    }
-    // 2. Calculate from duration_beats if available
-    if (activeExercise?.duration_beats) {
-      const beatsPerBar = timeSignature.numerator;
-      return Math.ceil(activeExercise.duration_beats / beatsPerBar);
-    }
-    // 3. Infer from notes - find the highest measure number
-    if (exerciseNotes.length > 0) {
-      return Math.max(...exerciseNotes.map((n) => n.position?.measure || 1));
-    }
-    // 4. Default fallback
-    return 4;
-  }, [
-    activeExercise?.total_bars,
-    activeExercise?.duration_beats,
-    activeExercise?.id,
-    timeSignature.numerator,
-    timeSignature.denominator,
-    exerciseNotes,
-  ]);
-
-  const isImported = !!importedExercise;
+  // (exerciseTotalBars + isImported + timeSignature derived values
+  // were removed — they're recomputed downstream where actually
+  // consumed)
 
   // Track if exerciseNotes reference is changing
   const prevExerciseNotesRef = useRef(exerciseNotes);
@@ -359,105 +310,11 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
     }
   }, [exerciseNotes]);
 
-  // Handle MusicXML upload - memoized to prevent re-renders
-  const handleMusicXMLUpload = useCallback((exercise: Exercise) => {
-    setImportedExercise(exercise);
-    setImportSource('musicxml');
-    setCurrentPosition(1);
-  }, []);
-
-  // Handle MIDI upload - memoized to prevent re-renders
-  const handleMIDIUpload = useCallback((exercise: Exercise) => {
-    setImportedExercise(exercise);
-    setImportSource('midi');
-    setCurrentPosition(1);
-  }, []);
-
-  // Handle upload error - memoized to prevent re-renders
-  const handleUploadError = useCallback((error: string) => {
-    logger.error('File upload error:', error);
-  }, []);
-
-  // Handle clear imported - memoized to prevent re-renders
-  const handleClearImported = useCallback(() => {
-    setImportedExercise(null);
-    setImportSource(null);
-    setCurrentPosition(2);
-  }, []);
-
-  // Handle file input change - memoized to prevent re-renders
-  const handleFileSelect = useCallback(
-    async (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-      if (!file) return;
-
-      const fileExtension = file.name.split('.').pop()?.toLowerCase();
-
-      if (fileExtension === 'xml' || fileExtension === 'musicxml') {
-        // Process MusicXML file
-        try {
-          const text = await file.text();
-          const parser = new DOMParser();
-          const xmlDoc = parser.parseFromString(text, 'text/xml');
-
-          // Create a mock exercise from the MusicXML (simplified version)
-          const exercise: Exercise = {
-            id: `imported-${Date.now()}`,
-            title: file.name.replace(/\.(xml|musicxml)$/i, ''),
-            notes: [], // This would need proper MusicXML parsing
-            bpm: 120,
-            timeSignature: { numerator: 4, denominator: 4 },
-            key: 'C',
-            difficulty: 'intermediate',
-            duration: 0,
-            duration_beats: 16, // Default to 4 bars
-            is_active: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          };
-
-          handleMusicXMLUpload(exercise);
-        } catch (error) {
-          handleUploadError('Failed to parse MusicXML file');
-        }
-      } else if (fileExtension === 'mid' || fileExtension === 'midi') {
-        // Process MIDI file using the actual MIDI parser
-        try {
-          const arrayBuffer = await file.arrayBuffer();
-          const parser = new MIDIFileParser();
-
-          const parsingResult = await parser.parseFile(arrayBuffer, file.name);
-
-          if (!parsingResult.success) {
-            throw new Error(
-              `MIDI parsing failed: ${parsingResult.errors.join(', ')}`,
-            );
-          }
-
-          if (!parsingResult.exercise) {
-            throw new Error(
-              'No bass track found in MIDI file. Try a MIDI file with bass content.',
-            );
-          }
-
-          handleMIDIUpload(parsingResult.exercise);
-        } catch (error) {
-          const errorMessage =
-            error instanceof Error
-              ? error.message
-              : 'Failed to parse MIDI file';
-          handleUploadError(errorMessage);
-        }
-      } else {
-        handleUploadError(`Unsupported file format: ${fileExtension}`);
-      }
-
-      // Clear the input value so the same file can be selected again
-      event.target.value = '';
-    },
-    [handleMusicXMLUpload, handleMIDIUpload, handleUploadError],
-  );
-
+  // NOTE: The MusicXML/MIDI file-upload handler chain
+  // (handleMusicXMLUpload, handleMIDIUpload, handleUploadError,
+  // handleClearImported, handleFileSelect) used to live here. It's
+  // been moved to the toolbar subcomponent and is no longer
+  // referenced from this file.
   // NOTE: tempoTimeoutRef moved to useTempoControl hook
   // NOTE: isTogglingPlayback moved to usePlaybackControl hook
 
@@ -541,7 +398,7 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
     metronomeTrackRef,
     drumTrackRef,
     bassTrackRef,
-    lastUserTempoRef: lastUserTempo,
+    lastUserTempoRef,
   });
 
   // Exercise navigation handlers
@@ -601,110 +458,11 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
 
   // NOTE: Tempo cleanup, drag handlers, and global event listeners are now in useTempoControl hook
 
-  // Sheet music ready callback - memoized to prevent PositionAwareSheetMusic re-renders
-  const handleSheetMusicReady = useCallback(() => {
-    logger.debug('Sheet music rendered successfully');
-  }, []);
-
-  // Sheet Player Toolbar Handlers
-  const handleToolbarImport = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleToolbarSave = async () => {
-    if (!activeExercise) return;
-
-    try {
-      // TODO: Implement save to backend/library functionality
-      logger.debug('Saving exercise:', activeExercise.title);
-      // This would call an API to save the exercise to the database
-      toast({
-        title: 'Save coming soon',
-        description: 'Saving to your library is not yet available.',
-      });
-    } catch (error) {
-      logger.error('Error saving exercise:', error);
-      toast({
-        title: 'Save failed',
-        description: 'Could not save the exercise. Please try again.',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleToolbarExportPDF = () => {
-    if (!containerRef.current || !activeExercise) return;
-
-    try {
-      // Get the SVG element from VexFlow
-      const svgElement = containerRef.current.querySelector('svg');
-      if (!svgElement) {
-        toast({
-          title: 'No sheet music to export',
-          description: 'Open an exercise with notation first.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      // Create a new window for printing
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) {
-        toast({
-          title: 'Allow popups to export',
-          description: 'Please allow popups for this site, then try again.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      // Create a print-friendly HTML document
-      const svgData = new XMLSerializer().serializeToString(svgElement);
-      const htmlContent = `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>${activeExercise.title} - Sheet Music</title>
-            <style>
-              body { margin: 0; padding: 20px; background: white; }
-              .header { text-align: center; margin-bottom: 20px; }
-              .sheet-music { text-align: center; }
-              svg { max-width: 100%; height: auto; }
-              @media print {
-                body { margin: 0; }
-                .header { margin-bottom: 10px; }
-              }
-            </style>
-          </head>
-          <body>
-            <div class="header">
-              <h1>${activeExercise.title}</h1>
-              <p>Tempo: ${activeExercise.bpm} BPM | Key: ${activeExercise.key} | Time: ${activeExercise.timeSignature?.numerator}/${activeExercise.timeSignature?.denominator}</p>
-            </div>
-            <div class="sheet-music">
-              ${svgData}
-            </div>
-          </body>
-        </html>
-      `;
-
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
-
-      // Trigger print dialog
-      printWindow.focus();
-      setTimeout(() => {
-        printWindow.print();
-      }, 250);
-    } catch (error) {
-      logger.error('Error exporting PDF:', error);
-      toast({
-        title: 'PDF export failed',
-        description: 'Could not export the sheet music. Please try again.',
-        variant: 'destructive',
-      });
-    }
-  };
+  // NOTE: handleSheetMusicReady + the Sheet Player Toolbar handlers
+  // (handleToolbarImport, handleToolbarSave, handleToolbarExportPDF)
+  // used to live here. They've been extracted into the toolbar
+  // subcomponent and the containerRef / fileInputRef they depended on
+  // were also removed. The toolbar wires its own refs and handlers.
 
   // Spacebar play/pause shortcut. Bound at document level so the user can
   // tap space anywhere on the tutorial page. Skipped when focus is in an

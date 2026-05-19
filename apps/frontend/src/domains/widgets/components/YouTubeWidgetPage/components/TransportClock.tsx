@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { useTransportContext } from '@/domains/playback/contexts/TransportContext';
-import { Clock, Activity } from 'lucide-react';
 import { LoopGridStrip } from './LoopGridStrip';
 import type { LoopRegion } from './LoopGridStrip';
 import type { Exercise } from '@bassnotion/contracts';
@@ -32,7 +31,9 @@ export function TransportClock({
   currentTime = 0,
   onSeek,
 }: TransportClockProps) {
-  const { correlationId, logger } = useCorrelation('TransportClock');
+  // useCorrelation called for the side effect of binding a correlation
+  // ID to logs in this scope; the returned values aren't read here.
+  const { logger } = useCorrelation('TransportClock');
   transportClockRenderCount++;
 
   // SKELETON-DEBUG: Log first 5 renders with timing (using shared baseline)
@@ -69,32 +70,10 @@ export function TransportClock({
       isVisible: true,
     });
 
-  // 🔧 FLICKER FIX: Validate position before using it
-  // During AudioWorklet initialization, position calculations can be corrupted
-  // resulting in invalid beat numbers (e.g., beat 10 in 4/4 time)
-  const isValidPosition = React.useMemo(() => {
-    const beatsPerBar = timeSignature?.upper ?? 4;
-    // Beat numbers should be 0-4 in 4/4 time (0-based, with display as 1-based)
-    // If beat > beatsPerBar, position calculation is corrupted
-    if (position.beats > beatsPerBar || position.beats < 0) {
-      console.warn(
-        '⚠️ [FLICKER FIX] Invalid position detected, skipping display update',
-        {
-          position: `${position.bars}:${position.beats}:${position.sixteenths}`,
-          beats: position.beats,
-          beatsPerBar,
-          reason: 'Beat number out of range - likely AudioWorklet not ready',
-        },
-      );
-      return false;
-    }
-    return true;
-  }, [
-    position.bars,
-    position.beats,
-    position.sixteenths,
-    timeSignature?.upper,
-  ]);
+  // NOTE: isValidPosition useMemo lived here — used by the deleted
+  // formatPosition helper to skip rendering corrupted positions during
+  // AudioWorklet init. The clock display flow has moved to
+  // useTransportClockSync which handles its own validation.
 
   // POSITION CHANGE DETECTION for double countdown bug
   // TEMPORARILY DISABLED - too noisy in console
@@ -138,7 +117,9 @@ export function TransportClock({
   });
 
   const [audioContextState, setAudioContextState] = useState<string>('unknown');
-  const [updateCount, setUpdateCount] = useState(0);
+  // updateCount: setter is incremented to force a re-render after
+  // direct DOM updates; the value itself isn't read anywhere.
+  const [_updateCount, setUpdateCount] = useState(0);
   const [isEditingTempo, setIsEditingTempo] = useState(false);
   const [editedTempo, setEditedTempo] = useState<string>('');
   const [userTempo, setUserTempo] = useState<number | null>(null);
@@ -289,75 +270,10 @@ export function TransportClock({
     setUpdateCount((prev) => prev + 1);
   }, [position.bars, position.beats, position.sixteenths]);
 
-  // Format position for display
-  const formatPosition = () => {
-    if (!position) return '1:1:00';
-
-    // 🔧 FLICKER FIX: Don't display invalid positions
-    // Return idle state if position is corrupted (e.g., beat 10 in 4/4 time)
-    if (!isValidPosition) {
-      return '1:1:00'; // Return idle/default position instead of corrupted value
-    }
-
-    // Defensive checks - ensure all position properties are numbers
-    const bars = typeof position.bars === 'number' ? position.bars : 0;
-    const beats = typeof position.beats === 'number' ? position.beats : 0;
-    const sixteenths =
-      typeof position.sixteenths === 'number' ? position.sixteenths : 0;
-
-    // COUNTDOWN FIX: Handle negative bars (countdown/pre-roll)
-    // Negative bars indicate countdown before the exercise starts
-    // Beats are 0-indexed (0, 1, 2, 3 for 4/4 time)
-    // We want to display them as 1-indexed (1, 2, 3, 4)
-    // So we just add 1 to convert from 0-indexed to 1-indexed
-
-    let displayBar: number;
-    let displayBeat: number;
-    let displaySixteenth: number;
-    let isNegative = false;
-
-    if (bars < 0) {
-      // Negative bars: In countdown mode
-      isNegative = true;
-      displayBar = Math.abs(bars);
-      // Beats are already 1-based from getDisplayPosition(), no conversion needed
-      displayBeat = beats;
-      displaySixteenth = sixteenths;
-    } else {
-      // ✅ FIX: Position is already 1-based from getDisplayPosition() - no conversion needed
-      // Previously was doing double conversion: getDisplayPosition() (0→1) + here (1→2) = wrong!
-      displayBar = bars;
-      displayBeat = beats;
-      displaySixteenth = sixteenths;
-    }
-
-    // Format with single negative sign at the start if in countdown
-    const timeString = `${displayBar}:${displayBeat}:${displaySixteenth.toString().padStart(2, '0')}`;
-    return isNegative ? `-${timeString}` : timeString;
-  };
-
-  // Format seconds
-  const formatSeconds = () => {
-    if (!position?.seconds || typeof position.seconds !== 'number')
-      return '0.000s';
-    return `${position.seconds.toFixed(3)}s`;
-  };
-
-  // Get transport state string
-  const getTransportState = () => {
-    if (isPlaying && !isPaused) return 'PLAYING';
-    if (isPaused) return 'PAUSED';
-    if (isStopped) return 'STOPPED';
-    return 'UNKNOWN';
-  };
-
-  // Get state color
-  const getStateColor = () => {
-    if (audioContextState !== 'running') return 'text-yellow-500';
-    if (isPlaying && !isPaused) return 'text-green-500';
-    if (isPaused) return 'text-yellow-500';
-    return 'text-gray-500';
-  };
+  // NOTE: formatPosition / formatSeconds / getTransportState /
+  // getStateColor used to live here. The clock display now reads
+  // directly from useTransportClockSync via LoopGridStrip — these
+  // helpers are no longer called.
 
   // Handle tempo editing
   const handleTempoClick = React.useCallback(() => {

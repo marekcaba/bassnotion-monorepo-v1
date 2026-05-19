@@ -7,10 +7,7 @@ import { LoopGridStrip } from './LoopGridStrip';
 import { SyncedWidget } from '../../base';
 import type { SyncedWidgetRenderProps } from '../../base';
 import type { LoopRegion } from './LoopGridStrip';
-import type { MusicalExercise as Exercise } from '@bassnotion/contracts';
-import { useWidgetPageState } from '@/domains/widgets/hooks/useWidgetPageState';
 import { useTransportControls } from '@/domains/playback/contexts/TransportContext';
-import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 interface LooperCardProps {
   isLoopEnabled?: boolean;
@@ -25,7 +22,6 @@ export function LooperCard({
   onLoopRegionChange,
   onToggleLoop,
 }: LooperCardProps) {
-  const { correlationId, logger } = useCorrelation('LooperCard');
   return (
     <SyncedWidget
       widgetId="looper-controls"
@@ -55,10 +51,10 @@ export function LooperCard({
 
 function LooperCardContent({
   syncProps,
-  isLoopEnabled,
+  isLoopEnabled: _isLoopEnabled,
   loopRegion,
   onLoopRegionChange,
-  onToggleLoop,
+  onToggleLoop: _onToggleLoop,
 }: {
   syncProps: SyncedWidgetRenderProps;
   isLoopEnabled?: boolean;
@@ -66,7 +62,6 @@ function LooperCardContent({
   onLoopRegionChange?: (region: LoopRegion | null) => void;
   onToggleLoop?: () => void;
 }) {
-  const widgetState = useWidgetPageState();
   const transport = useTransportControls();
 
   // Looper knob state

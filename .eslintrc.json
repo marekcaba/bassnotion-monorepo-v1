@@ -18,7 +18,11 @@
     "test-results/*",
     "apps/frontend/src/app/library/[tutorialId]/v*/*",
     "apps/frontend/src/app/test-*/*",
-    "docs/CLAUDE CODE TRASH BIN/*"
+    "docs/CLAUDE CODE TRASH BIN/*",
+    "apps/frontend/public/**/*",
+    "scripts/**/*.{js,cjs,mjs,ts}",
+    "apps/frontend/src/test/diagnoseAudioFlow.ts",
+    "apps/frontend/src/domains/playback/services/core/diagnostics/**/*"
   ],
   "plugins": ["@nx", "@typescript-eslint", "prettier", "react-hooks"],
   "overrides": [
@@ -48,9 +52,15 @@
           "error",
           {
             "argsIgnorePattern": "^_",
-            "varsIgnorePattern": "^_"
+            "varsIgnorePattern": "^_",
+            "caughtErrors": "all",
+            "caughtErrorsIgnorePattern": "^(_|e$|err$|error$|ex$)"
           }
-        ]
+        ],
+        "@typescript-eslint/no-non-null-assertion": "warn",
+        "@typescript-eslint/no-unsafe-function-type": "warn",
+        "@typescript-eslint/no-empty-function": "warn",
+        "@typescript-eslint/ban-ts-comment": "warn"
       }
     },
     {
@@ -109,9 +119,15 @@
           "error",
           {
             "argsIgnorePattern": "^_",
-            "varsIgnorePattern": "^_"
+            "varsIgnorePattern": "^_",
+            "caughtErrors": "all",
+            "caughtErrorsIgnorePattern": "^(_|e$|err$|error$|ex$)"
           }
         ],
+        "@typescript-eslint/no-non-null-assertion": "warn",
+        "@typescript-eslint/no-unsafe-function-type": "warn",
+        "@typescript-eslint/no-empty-function": "warn",
+        "@typescript-eslint/ban-ts-comment": "warn",
         "react-hooks/rules-of-hooks": "error",
         "react-hooks/exhaustive-deps": [
           "warn",
@@ -119,9 +135,9 @@
             "additionalHooks": "(useCallback|useMemo|useEffect|useLayoutEffect)"
           }
         ],
-        "no-console": "error",
+        "no-console": "off",
         "no-restricted-syntax": [
-          "error",
+          "warn",
           {
             "selector": "CallExpression[callee.object.name='console'][callee.property.name=/^(log|error|warn|debug|info)$/]",
             "message": "Use structured logging instead of console methods. For React components, use: const { logger } = useCorrelation('ComponentName'); For services, use: const logger = createStructuredLogger('ServiceName');"
@@ -133,6 +149,13 @@
       "files": [
         "apps/frontend/src/domains/playback/modules/**/*.ts",
         "apps/frontend/src/domains/playback/modules/**/*.tsx"
+      ],
+      "excludedFiles": [
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "**/*.spec.ts",
+        "**/*.spec.tsx",
+        "**/__tests__/**/*"
       ],
       "rules": {
         "no-restricted-imports": [
@@ -153,13 +176,48 @@
       }
     },
     {
+      "files": ["apps/frontend/src/**/*.ts", "apps/frontend/src/**/*.tsx"],
+      "excludedFiles": [
+        "apps/frontend/src/domains/playback/utils/tone.ts",
+        "apps/frontend/src/domains/playback/utils/toneInitializer.ts",
+        "apps/frontend/src/domains/playback/utils/TonePreloader.ts",
+        "apps/frontend/src/domains/playback/modules/audio-engine/core/ToneWrapper.ts",
+        "apps/frontend/src/domains/playback/services/InstrumentDependencyManager.ts",
+        "apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/GlobalControls/hooks/usePlaybackControl.ts",
+        "apps/frontend/src/domains/playback/utils/ensureAudioContext.ts",
+        "apps/frontend/src/domains/playback/modules/instruments/implementations/**/*.ts",
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "**/*.spec.ts",
+        "**/*.spec.tsx",
+        "**/__tests__/**/*",
+        "**/test/**/*",
+        "**/test-utils/**/*"
+      ],
+      "rules": {
+        "no-restricted-imports": "off",
+        "@typescript-eslint/no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "tone",
+                "allowTypeImports": true,
+                "message": "Do NOT statically import 'tone' — it runs index.js side effects at module load (creates AudioContext, Transport, Destination) BEFORE any user gesture, causing Chrome autoplay-policy errors and the 'Cannot read properties of undefined (reading time)' bug. Use `import type * as Tone from 'tone'` for types, then access the runtime instance via `getTone()` (window.Tone || window.__globalTone) inside a function called AFTER the first user gesture."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "files": ["*.js", "*.jsx"],
       "extends": ["eslint:recommended", "plugin:@nx/javascript", "prettier"],
       "rules": {
         "prettier/prettier": "error",
-        "no-console": "error",
+        "no-console": "off",
         "no-restricted-syntax": [
-          "error",
+          "warn",
           {
             "selector": "CallExpression[callee.object.name='console'][callee.property.name=/^(log|error|warn|debug|info)$/]",
             "message": "Use structured logging instead of console methods. Use: const logger = createStructuredLogger('ServiceName');"

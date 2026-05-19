@@ -17,44 +17,44 @@ vi.mock('tone', () => {
   let transportState = 'stopped';
   let currentTime = 0;
 
-  return {
-    Transport: {
-      schedule: vi.fn((callback: Function, time: number) => {
+  const Transport = {
+    schedule: vi.fn((callback: Function, time: number) => {
+      const id = ++scheduleIdCounter;
+      scheduledCallbacks.set(id, { callback, time });
+      return id;
+    }),
+    scheduleRepeat: vi.fn(
+      (callback: Function, interval: string | number, startTime?: number) => {
         const id = ++scheduleIdCounter;
-        scheduledCallbacks.set(id, { callback, time });
+        scheduledCallbacks.set(id, { callback, time: startTime || 0 });
         return id;
-      }),
-      scheduleRepeat: vi.fn(
-        (callback: Function, interval: string | number, startTime?: number) => {
-          const id = ++scheduleIdCounter;
-          scheduledCallbacks.set(id, { callback, time: startTime || 0 });
-          return id;
-        },
-      ),
-      clear: vi.fn((id: number) => {
-        scheduledCallbacks.delete(id);
-      }),
-      get state() {
-        return transportState;
       },
-      set state(value: string) {
-        transportState = value;
-      },
-      get seconds() {
-        return currentTime;
-      },
-      set seconds(value: number) {
-        currentTime = value;
-      },
-      _reset: () => {
-        scheduledCallbacks.clear();
-        scheduleIdCounter = 0;
-        transportState = 'stopped';
-        currentTime = 0;
-      },
-      _getScheduled: () => scheduledCallbacks,
+    ),
+    clear: vi.fn((id: number) => {
+      scheduledCallbacks.delete(id);
+    }),
+    get state() {
+      return transportState;
     },
+    set state(value: string) {
+      transportState = value;
+    },
+    get seconds() {
+      return currentTime;
+    },
+    set seconds(value: number) {
+      currentTime = value;
+    },
+    _reset: () => {
+      scheduledCallbacks.clear();
+      scheduleIdCounter = 0;
+      transportState = 'stopped';
+      currentTime = 0;
+    },
+    _getScheduled: () => scheduledCallbacks,
   };
+
+  return { Transport, getTransport: () => Transport };
 });
 
 describe('Scheduler', () => {
@@ -74,14 +74,17 @@ describe('Scheduler', () => {
     // mocked Transport for the imported `Tone` here, but production
     // never imports the npm module — so spies on Tone.Transport.*
     // never fire. Mirror our test-mocked Transport onto window.Tone
-    // so production accesses the SAME Transport instance we're
-    // spying on. The setup.ts default window.Tone is preserved for
-    // anything else (Gain, Volume, etc).
+    // under BOTH the legacy `Transport` singleton AND the v15
+    // `getTransport()` factory accessor so spies fire regardless of
+    // which API production walks. setup.ts's default window.Tone is
+    // preserved for anything else (Gain, Volume, etc).
     if (typeof window !== 'undefined') {
       const existingWindowTone = (window as any).Tone || {};
+      const mockedTransport = (Tone as any).Transport;
       (window as any).Tone = {
         ...existingWindowTone,
-        Transport: (Tone as any).Transport,
+        Transport: mockedTransport,
+        getTransport: () => mockedTransport,
       };
     }
   });

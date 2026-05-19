@@ -470,12 +470,16 @@ export function useViewTransitionRouter() {
         });
 
         // Clean up transition state when finished. Catch AbortError ("Transition
-        // was skipped") so a superseded transition doesn't surface as an
-        // unhandled rejection — that's the View Transitions API's correct
-        // behavior, not an error.
+        // was skipped") and InvalidStateError ("Transition was aborted because
+        // of invalid state") so superseded or document-state-aborted transitions
+        // don't surface as unhandled rejections — both are the View Transitions
+        // API's correct behavior when a newer navigation supersedes the current
+        // one, not errors.
         currentTransition.finished
           .catch((err) => {
-            if (!(err?.name === 'AbortError')) throw err;
+            const name = err?.name;
+            if (name !== 'AbortError' && name !== 'InvalidStateError')
+              throw err;
           })
           .finally(() => {
             isTransitioning = false;
@@ -498,10 +502,13 @@ export function useViewTransitionRouter() {
 
         await currentTransition.finished;
       } catch (error) {
-        // AbortError = transition was skipped because a newer navigation
-        // superseded it. The newer navigation is already in flight, so
-        // there's nothing to recover and no fallback router.push needed.
-        if ((error as Error | undefined)?.name === 'AbortError') {
+        // AbortError = transition skipped by a newer navigation.
+        // InvalidStateError = transition aborted because document state changed
+        // (also typically a supersede). In both cases the newer navigation is
+        // already in flight, so there's nothing to recover and no fallback
+        // router.push needed.
+        const name = (error as Error | undefined)?.name;
+        if (name === 'AbortError' || name === 'InvalidStateError') {
           return;
         }
         logger.error('View transition failed:', error);

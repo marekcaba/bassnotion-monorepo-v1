@@ -12,38 +12,23 @@ import {
   NoteMessageEvent,
   ControlChangeMessageEvent,
   MessageEvent,
-  InputChannel,
 } from 'webmidi';
 import { MidiCCLoader } from './loaders/MidiCCLoader.js';
 import type { MidiCCConfig, CCMapping } from './types/midi-cc.types.js';
 
 const logger = createStructuredLogger('MidiParserProcessor');
 
-// Import existing types (unchanged)
+// Import only the types this file uses directly. The rest are
+// re-exported below via `export * from './types/midi-parser.types.js'`
+// so downstream consumers can still access them.
 import type {
   ParsedMidiData,
   MusicTheoryAnalysis,
-  KeySignature,
-  DetectedChord,
-  ScaleAnalysis,
-  HarmonicProgression,
-  ChordQuality,
   MetaEvent,
   SysExEvent,
-  MetaEventType,
-  ParsedTrackCollection,
-  ParsedTrack,
   ParsedNote,
-  TrackConfidence,
   ControllerEvent,
-  ArticulationEvent,
-  TrackType,
-  ArticulationType,
   ControllerType,
-  ExpressionType,
-  MidiMetadata,
-  ExpressionData,
-  PerformanceMetrics,
 } from './types/midi-parser.types.js';
 
 // Re-export types for compatibility
@@ -289,31 +274,34 @@ export class MidiParserProcessor {
   }
 
   // Placeholder methods for other MIDI events (would need full implementation)
-  private handleNoteOn(e: NoteMessageEvent): void {
+  private handleNoteOn(_e: NoteMessageEvent): void {
     // Implementation needed
   }
 
-  private handleNoteOff(e: NoteMessageEvent): void {
+  // Stub handlers — kept for API parity with the WebMIDI event surface
+  // but body is not yet implemented. Prefix params with `_` so the
+  // no-unused-vars rule doesn't flag them.
+  private handleNoteOff(_e: NoteMessageEvent): void {
     // Implementation needed
   }
 
-  private handlePitchBend(e: MessageEvent): void {
+  private handlePitchBend(_e: MessageEvent): void {
     // Implementation needed
   }
 
-  private handleProgramChange(e: MessageEvent): void {
+  private handleProgramChange(_e: MessageEvent): void {
     // Implementation needed
   }
 
-  private handleAftertouch(e: MessageEvent): void {
+  private handleAftertouch(_e: MessageEvent): void {
     // Implementation needed
   }
 
-  private handlePolyAftertouch(e: MessageEvent): void {
+  private handlePolyAftertouch(_e: MessageEvent): void {
     // Implementation needed
   }
 
-  private handleSysEx(e: MessageEvent): void {
+  private handleSysEx(_e: MessageEvent): void {
     // Implementation needed
   }
 
@@ -456,7 +444,7 @@ export class MidiParserProcessor {
   /**
    * Perform music theory analysis (backward compatibility)
    */
-  performMusicTheoryAnalysis(notes?: ParsedNote[]): MusicTheoryAnalysis {
+  performMusicTheoryAnalysis(_notes?: ParsedNote[]): MusicTheoryAnalysis {
     // Simple implementation for backward compatibility
     return {
       keySignature: {

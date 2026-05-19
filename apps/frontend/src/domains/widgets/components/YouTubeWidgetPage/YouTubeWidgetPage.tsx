@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { verboseLog } from '@/config/debug';
 import Image from 'next/image';
 import { FretboardCard, FRETBOARD_VIEW_PRESETS } from './FretboardCard';
 
@@ -12,12 +13,10 @@ import { SheetPlayerCard } from './components/SheetPlayerCard';
 import type { CountdownState } from './GlobalControls/types.js';
 import { TransportClock } from './components/TransportClock';
 import { useWidgetPageState } from '@/domains/widgets/hooks/useWidgetPageState';
-import { useAudioFretboard } from '@/domains/widgets/hooks/useAudioFretboard';
 import {
   TransportProvider,
   useTransportControls,
 } from '@/domains/playback/contexts/TransportContext';
-// REMOVED: useExerciseSelection import - not needed for tutorial pages
 import { Button } from '@/shared/components/ui/button';
 import { Edit2, ArrowLeft, Sparkles } from 'lucide-react';
 import { SyncProvider, useSyncContext } from '../base/SyncProvider';
@@ -50,10 +49,7 @@ import { GlobalControls } from './components/GlobalControls';
 import { CountdownIndicator } from './GlobalControls/components/CountdownIndicator.js';
 import { calculateDuration, getExerciseId } from './utils';
 import { ensureAudioContextLightweight } from '@/domains/playback/utils/ensureAudioContext.js';
-import {
-  useTutorialProgressActions,
-  useSingleTutorialProgress,
-} from '@/domains/platform/hooks/useTutorialProgress';
+import { useTutorialProgressActions } from '@/domains/platform/hooks/useTutorialProgress';
 // Block system imports
 import type { AnyBlock } from '@bassnotion/contracts';
 import { BlockRenderer } from './blocks';
@@ -81,8 +77,10 @@ function YouTubeWidgetPageContent({
   initialExerciseId,
   hideChrome = false,
 }: YouTubeWidgetPageProps) {
-  // XState Phase 2: Page initialization state machine
-  const pageInit = usePageInitialization({
+  // XState Phase 2: Page initialization state machine — called for
+  // its side effects (state transitions + lifecycle telemetry). The
+  // returned machine handle isn't read here.
+  usePageInitialization({
     tutorial: tutorialData
       ? {
           id: tutorialData.id,
@@ -102,7 +100,9 @@ function YouTubeWidgetPageContent({
   const widgetState = useWidgetPageState();
   const { emitGlobalEvent, syncState } = useSyncContext();
   const { profile, isLoading: isProfileLoading } = useUserProfile();
-  const { isAuthenticated } = useAuth();
+  // useAuth() is called for the side effect of subscribing to auth
+  // changes — the isAuthenticated value isn't consumed in this file.
+  useAuth();
   const { navigateWithTransition } = useViewTransitionRouter();
   const isAdmin = profile?.role === 'admin';
 
@@ -111,9 +111,7 @@ function YouTubeWidgetPageContent({
     usePracticeCompletions(tutorialData?.id);
 
   // Tutorial progress actions for three-stage tracking (understand, practice, apply)
-  const { markUnderstood, markApplied } = useTutorialProgressActions(
-    tutorialData?.id,
-  );
+  const { markUnderstood } = useTutorialProgressActions(tutorialData?.id);
 
   // FAANG Solution: Clear state management for preview mode
   // Only check sessionStorage, don't rely on referrer (unreliable)
@@ -333,20 +331,18 @@ function YouTubeWidgetPageContent({
     };
   }, []); // FIXED: Empty dependency array - listener should only be set up once
 
-  // DEBUG: XYZ rotation controls for 2D fretboard CSS transform
-  // These rotate the 2D fretboard (and affect where 3D overlay appears)
-  // CALIBRATED DEFAULT: 51° tilt provides optimal Guitar Hero-style view
-  const [debugRotation, setDebugRotation] = React.useState({
+  // DEBUG: XYZ rotation / visibility controls. State setters are
+  // intentionally not wired into the UI (was a developer-tools panel
+  // that's been removed). The values stay because they're read by
+  // the fretboard rendering path; underscore-prefix the setters to
+  // make the "tracked but no public toggle" status explicit.
+  const [debugRotation, _setDebugRotation] = React.useState({
     x: 51, // Calibrated tilt angle (was 39°)
     y: 0,
     z: 0,
   });
-
-  // DEBUG: Hide 2D fretboard to see only the 3D overlay
-  const [hide2DFretboard, setHide2DFretboard] = React.useState(true); // Default to hidden - use 3D overlay only
-
-  // DEBUG: Hide 3D fretboard overlay
-  const [hide3DFretboard, setHide3DFretboard] = React.useState(false);
+  const [hide2DFretboard, _setHide2DFretboard] = React.useState(true);
+  const [hide3DFretboard, _setHide3DFretboard] = React.useState(false);
 
   // DEBUG: 3D Overlay-specific controls for calibrating the Three.js scene
   // These control the 3D camera/scene independently from the 2D CSS transform
@@ -438,7 +434,7 @@ function YouTubeWidgetPageContent({
     const preset =
       FRETBOARD_VIEW_PRESETS[presetName as keyof typeof FRETBOARD_VIEW_PRESETS];
 
-    console.log('[YOUTUBE-WIDGET] Preset change detected:', {
+    verboseLog('[YOUTUBE-WIDGET] Preset change detected:', {
       exerciseId: exercise?.id,
       presetName,
       hasOverlay3D: !!preset?.overlay3D,
@@ -511,13 +507,6 @@ function YouTubeWidgetPageContent({
   const prevTempoRef = useRef<number>(120);
   const prevVolumeRef = useRef<number>(80);
 
-  // Audio fretboard integration for 3D mode
-  const { triggerNote } = useAudioFretboard({
-    stringCount,
-    autoPlayOnClick: true,
-    exercise: widgetState.selectedExercise,
-  });
-
   // FIX: Store exercises in a ref to prevent callback recreation on data changes
   const exercisesRef = useRef(exercises);
   exercisesRef.current = exercises;
@@ -544,7 +533,7 @@ function YouTubeWidgetPageContent({
   // Priority: initialExerciseId (from favorites) > first exercise
   // FIX: Removed 150ms setTimeout - FretboardCard handles selectedExerciseId changes reactively
   useEffect(() => {
-    console.log('🔍 [YOUTUBE-WIDGET] Auto-selection effect triggered:', {
+    verboseLog('🔍 [YOUTUBE-WIDGET] Auto-selection effect triggered:', {
       hasExercises: !!exercises,
       exerciseCount: exercises?.length || 0,
       selectedExerciseId,
@@ -565,7 +554,7 @@ function YouTubeWidgetPageContent({
       );
 
       if (targetExercise) {
-        console.log(
+        verboseLog(
           '🎯 [YOUTUBE-WIDGET] Selecting initial exercise from favorites:',
           {
             exerciseId: initialExerciseId,
@@ -589,7 +578,7 @@ function YouTubeWidgetPageContent({
     if (!selectedExerciseId) {
       const firstExercise = exercises[0];
       if (firstExercise?.id) {
-        console.log(
+        verboseLog(
           '🎯 [YOUTUBE-WIDGET] Auto-selecting first exercise IMMEDIATELY:',
           {
             exerciseId: firstExercise.id,
@@ -618,8 +607,16 @@ function YouTubeWidgetPageContent({
   const widgetStateRef = useRef(widgetState);
   widgetStateRef.current = widgetState;
 
+  // Track the currently-selected exerciseId in a ref so handleExerciseSelect
+  // can detect actual switches without depending on the state value (which
+  // would force the callback identity to change every render and re-trigger
+  // all consumers).
+  const selectedExerciseIdRef = useRef<string | null>(selectedExerciseId);
+  selectedExerciseIdRef.current = selectedExerciseId;
+
   // Ref for handleExerciseSelect to avoid stale closure in auto-selection effect
   const handleExerciseSelectRef = useRef<(exerciseId: string) => void>(
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
     () => {},
   );
 
@@ -659,7 +656,7 @@ function YouTubeWidgetPageContent({
         return exIdStr === exerciseId;
       });
 
-      console.log('🔍🔍🔍 [EXERCISE-SELECT-DEBUG] Raw exercise data:', {
+      verboseLog('🔍🔍🔍 [EXERCISE-SELECT-DEBUG] Raw exercise data:', {
         exerciseId,
         foundExercise: !!exercise,
         exerciseTitle: exercise?.title,
@@ -694,6 +691,34 @@ function YouTubeWidgetPageContent({
           harmonyInstrument: exercise.harmonyInstrument,
         });
 
+        // CRITICAL: Call PlaybackEngine.switchExercise() BEFORE updating state.
+        //
+        // Previously this only ran on tutorial UNMOUNT, so switching between
+        // exercises WITHIN a tutorial (Ex.1 → Ex.2 → Ex.3) left the old
+        // exercise's MIDI regions registered with their schedulers — the next
+        // play() would re-schedule the OLD exercise's audio (bass, drums,
+        // harmony from Ex.1) while the UI showed Ex.2 selected.
+        //
+        // switchExercise() clears bass/harmony/voice-cue schedulers, stops
+        // drums/metronome (preserving their reusable buffers), empties all
+        // track regions, clears scheduled Tone.Transport events, and emits
+        // 'exercise:switched' so each widget hook resets its registration
+        // state and re-registers fresh regions for the new exercise.
+        //
+        // Skip when selecting the same exercise (no-op) and on first selection
+        // (when there's no prior exercise to clean up).
+        // Read from ref so we don't need selectedExerciseId in the dep array.
+        const prevExerciseId = selectedExerciseIdRef.current;
+        const isActualSwitch =
+          prevExerciseId !== null && prevExerciseId !== exerciseId;
+        if (isActualSwitch) {
+          const coreServices = WindowRegistry.getCoreServices();
+          const playbackEngine = coreServices?.getPlaybackEngine?.();
+          if (playbackEngine?.switchExercise) {
+            playbackEngine.switchExercise(exerciseId);
+          }
+        }
+
         // Update parent state (single source of truth)
         setSelectedExerciseId(exerciseId);
 
@@ -717,19 +742,16 @@ function YouTubeWidgetPageContent({
           exercise.harmonyNotes &&
           exercise.harmonyNotes.length > 0
         ) {
-          console.log(
-            '🔍 [EXERCISE-SELECT] Checking if samples need loading:',
-            {
-              exerciseId: exercise.id,
-              instrument: exercise.harmonyInstrument,
-              harmonyNotesCount: exercise.harmonyNotes.length,
-              scrollHasTriggered,
-            },
-          );
+          verboseLog('🔍 [EXERCISE-SELECT] Checking if samples need loading:', {
+            exerciseId: exercise.id,
+            instrument: exercise.harmonyInstrument,
+            harmonyNotesCount: exercise.harmonyNotes.length,
+            scrollHasTriggered,
+          });
 
           // If scroll hasn't happened yet, skip loading - ScrollTriggerLoader handles it
           if (!scrollHasTriggered) {
-            console.log(
+            verboseLog(
               '⏳ [EXERCISE-SELECT] Scroll not triggered yet, deferring sample load to ScrollTriggerLoader',
             );
             // Don't load samples yet - ScrollTriggerLoader will handle it on scroll
@@ -743,7 +765,7 @@ function YouTubeWidgetPageContent({
           const alreadyCached = sampleCache.getCachedBuffer(testCacheKey);
 
           if (!alreadyCached) {
-            console.log(
+            verboseLog(
               '📥 [EXERCISE-SELECT] Samples not cached, loading:',
               exercise.harmonyInstrument,
             );
@@ -756,7 +778,7 @@ function YouTubeWidgetPageContent({
             getSamplePreloader()
               .loadFullSamples(exercise)
               .then((result) => {
-                console.log('✅ [EXERCISE-SELECT] Samples loaded:', {
+                verboseLog('✅ [EXERCISE-SELECT] Samples loaded:', {
                   instrument: exercise.harmonyInstrument,
                   loaded: result?.loaded ?? 'N/A',
                   total: result?.total ?? 'N/A',
@@ -769,7 +791,7 @@ function YouTubeWidgetPageContent({
 
                 // CRITICAL FIX: Emit event to trigger HarmonyWidget re-registration
                 // This ensures harmony track gets registered after samples finish loading
-                console.log(
+                verboseLog(
                   '📢 [EXERCISE-SELECT] Emitting samples-loaded event for HarmonyWidget',
                 );
                 // Emit via window for HarmonyWidget's window listener
@@ -798,7 +820,7 @@ function YouTubeWidgetPageContent({
                 logger.error('Failed to load samples for exercise:', error);
               });
           } else {
-            console.log(
+            verboseLog(
               '✅ [EXERCISE-SELECT] Samples already cached for:',
               exercise.harmonyInstrument,
             );
@@ -808,7 +830,7 @@ function YouTubeWidgetPageContent({
 
             // CRITICAL FIX: Still emit the event so HarmonyWidget switches to correct instrument
             // Even when cached, we need to trigger re-registration with the new instrument's buffers
-            console.log(
+            verboseLog(
               '📢 [EXERCISE-SELECT] Emitting samples-loaded event (cached) for HarmonyWidget',
             );
             // Emit via window for HarmonyWidget's window listener
@@ -840,32 +862,14 @@ function YouTubeWidgetPageContent({
   // Keep ref in sync with latest handleExerciseSelect
   handleExerciseSelectRef.current = handleExerciseSelect;
 
-  const handleDotClick = useCallback(
-    (stringIndex: number, fret: number | 'open') => {
-      // Trigger audio using the shared hook (for 3D mode)
-      triggerNote(stringIndex, fret);
-
-      const key = `${stringIndex}-${fret}`;
-      setSelectedDots((prev) => {
-        const newMap = new Map(prev);
-        if (newMap.has(key)) {
-          newMap.delete(key);
-        } else {
-          newMap.set(key, [newMap.size + 1]);
-        }
-        return newMap;
-      });
-    },
-    [triggerNote],
-  );
-
-  const handleResetSelection = useCallback(() => {
-    setSelectedDots(new Map());
-  }, []);
+  // NOTE: handleDotClick and handleResetSelection used to live here for
+  // the inline fretboard. The fretboard now owns its own selection
+  // state through FretboardCard / useDotSelectionHandlers, so these
+  // page-level handlers are no longer wired up.
 
   // Handle play state changes from GlobalControls
   const handlePlayStateChange = useCallback((isPlaying: boolean) => {
-    console.log('🎵 [YOUTUBE-WIDGET] handlePlayStateChange called:', {
+    verboseLog('🎵 [YOUTUBE-WIDGET] handlePlayStateChange called:', {
       isPlaying,
     });
 
@@ -874,7 +878,7 @@ function YouTubeWidgetPageContent({
       // Only toggle if currently not playing
       if (!widgetStateRef.current.state.isPlaying) {
         widgetStateRef.current.togglePlayback();
-        console.log(
+        verboseLog(
           '🎵 [YOUTUBE-WIDGET] Called widgetState.togglePlayback() to set isPlaying=true',
         );
       }
@@ -882,7 +886,7 @@ function YouTubeWidgetPageContent({
       // Only toggle if currently playing
       if (widgetStateRef.current.state.isPlaying) {
         widgetStateRef.current.togglePlayback();
-        console.log(
+        verboseLog(
           '🎵 [YOUTUBE-WIDGET] Called widgetState.togglePlayback() to set isPlaying=false',
         );
       }
@@ -1151,7 +1155,11 @@ function YouTubeWidgetPageContent({
     [blocks, blockProgress, scrollToBlock],
   );
 
-  const handleGotIt = useCallback(async () => {
+  // handleGotIt is currently unused — wired up via a different
+  // handler chain after the "I Got It" button moved into a
+  // subcomponent. Kept for the eventual rewire; prefix with _ to
+  // silence no-unused-vars until then.
+  const _handleGotIt = useCallback(async () => {
     // CRITICAL: Resume AudioContext on this user gesture!
     logger.info(
       '[HANDLE-GOT-IT] User clicked "I Got It" - resuming AudioContext',
@@ -1620,7 +1628,11 @@ export function YouTubeWidgetPage({
   initialExerciseId,
   hideChrome,
 }: YouTubeWidgetPageProps) {
-  const { correlationId, logger } = useCorrelation('YouTubeWidgetPage');
+  // useCorrelation is called for the side effect of generating a
+  // correlation ID and binding it to logs from this scope; the
+  // returned values aren't consumed here (the inner component runs
+  // its own correlation).
+  useCorrelation('YouTubeWidgetPage');
 
   // ============================================================================
   // TEMPO INITIALIZATION FIX v2: Pre-seed MusicalTruthAuthority BEFORE render
@@ -1654,7 +1666,7 @@ export function YouTubeWidgetPage({
       const userModified = musicalTruth.hasUserModifiedTempo();
 
       if (!userModified && currentBpm !== firstExercise.bpm) {
-        console.log(
+        verboseLog(
           `🎵 [TEMPO-PRESEED v2] Pre-seeding musicalTruth BEFORE TransportProvider mount`,
           {
             exerciseBpm: firstExercise.bpm,
@@ -1677,13 +1689,10 @@ export function YouTubeWidgetPage({
 
         hasPreseededRef.current = true;
       } else if (userModified) {
-        console.log(
-          `🎵 [TEMPO-PRESEED v2] Skipping - user has modified tempo`,
-          {
-            currentBpm,
-            exerciseBpm: firstExercise.bpm,
-          },
-        );
+        verboseLog(`🎵 [TEMPO-PRESEED v2] Skipping - user has modified tempo`, {
+          currentBpm,
+          exerciseBpm: firstExercise.bpm,
+        });
       }
     }
   }

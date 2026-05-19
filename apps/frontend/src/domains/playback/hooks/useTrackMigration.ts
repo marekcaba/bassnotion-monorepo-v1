@@ -62,6 +62,7 @@ export interface UseTrackMigrationReturn {
 
   // Configuration access
   tempo: number;
+  currentTime: number;
   masterVolume: number;
   pitch: number;
   swingFactor: number;

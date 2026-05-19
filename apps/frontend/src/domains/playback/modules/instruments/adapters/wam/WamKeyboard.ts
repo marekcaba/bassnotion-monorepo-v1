@@ -345,7 +345,7 @@ export class WamKeyboardNode implements WamNode {
     // This prevents stale events from previous instrument playing alongside new instrument
     if (typeof window !== 'undefined' && window.Tone?.Transport) {
       try {
-        window.Tone.Transport.cancel(0);
+        window.Tone.getTransport().cancel(0);
         console.log(
           '[INSTRUMENT-SWITCH] Cleared Tone.Transport events for instrument switch',
         );
@@ -1095,7 +1095,7 @@ export class WamKeyboardNode implements WamNode {
         // This clears the internal Tone.js Transport event queue
         try {
           if (typeof window !== 'undefined' && window.Tone?.Transport) {
-            window.Tone.Transport.cancel(0); // Cancel all events from time 0 onwards
+            window.Tone.getTransport().cancel(0); // Cancel all events from time 0 onwards
           }
         } catch (toneError) {
           console.error('Failed to cancel Tone.Transport events:', toneError);

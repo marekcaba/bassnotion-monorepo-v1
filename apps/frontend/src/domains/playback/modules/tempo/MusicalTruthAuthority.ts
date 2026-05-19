@@ -211,10 +211,10 @@ export class MusicalTruthAuthority {
     if (Tone) {
       // Always sync Tone.Transport.bpm with our truth
       // Whether it's exercise BPM or user's preserved BPM, they should match
-      Tone.Transport.bpm.value = this.truth.bpm;
-      Tone.Transport.timeSignature = this.truth.timeSignature.numerator;
+      Tone.getTransport().bpm.value = this.truth.bpm;
+      Tone.getTransport().timeSignature = this.truth.timeSignature.numerator;
       console.log(
-        `🎵 [TEMPO] Tone.Transport synced - bpm: ${Tone.Transport.bpm.value}, timeSignature: ${Tone.Transport.timeSignature}`,
+        `🎵 [TEMPO] Tone.Transport synced - bpm: ${Tone.getTransport().bpm.value}, timeSignature: ${Tone.getTransport().timeSignature}`,
       );
     }
     // If Tone.js not loaded yet, Transport will sync when audio system initializes
@@ -272,10 +272,10 @@ export class MusicalTruthAuthority {
     // Synchronize Tone.Transport immediately if available
     const Tone = getTone();
     if (Tone) {
-      Tone.Transport.bpm.value = bpm;
+      Tone.getTransport().bpm.value = bpm;
       // 🔍 TEMPO DIAGNOSTIC: Verify Tone.Transport sync
       console.log(
-        `🎵 [TEMPO] Tone.Transport.bpm.value set to ${Tone.Transport.bpm.value}`,
+        `🎵 [TEMPO] Tone.Transport.bpm.value set to ${Tone.getTransport().bpm.value}`,
       );
     }
     // If Tone.js not loaded yet, Transport will sync when audio system initializes

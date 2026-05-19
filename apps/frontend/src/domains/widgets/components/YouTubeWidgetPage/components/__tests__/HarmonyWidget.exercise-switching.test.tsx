@@ -91,7 +91,7 @@ vi.mock('@/domains/playback/hooks/useTrack', () => ({
 // Mock ensureAudioContext
 vi.mock('@/domains/playback/utils/ensureAudioContext', () => ({
   ensureAudioContext: vi.fn(),
-  withAudioContext: (fn: Function) => fn,
+  withAudioContext: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
 }));
 
 // Mock GlobalSampleCache - track what instrument is requested
@@ -180,9 +180,9 @@ vi.mock(
   }),
 );
 
-// Mock useTransportControls
-vi.mock('@/domains/playback/contexts/TransportContext', () => ({
-  useTransportControls: () => ({
+// Mock useTransportControls and the related hooks the harmony widget tree uses
+vi.mock('@/domains/playback/contexts/TransportContext', () => {
+  const transportState = {
     isPlaying: false,
     isPaused: false,
     isStopped: true,
@@ -192,10 +192,23 @@ vi.mock('@/domains/playback/contexts/TransportContext', () => ({
     pause: vi.fn(),
     seekTo: vi.fn(),
     setTempo: vi.fn(),
+    setLoop: vi.fn(),
+    setExerciseDuration: vi.fn(),
+    setTimeSignature: vi.fn(),
     timeSignature: { numerator: 4, denominator: 4 },
+    isLoopEnabled: false,
     servicesReady: true,
-  }),
-}));
+    position: { bar: 0, beat: 0, sixteenth: 0, seconds: 0 },
+  };
+  return {
+    useTransportControls: () => transportState,
+    useTransportContext: () => transportState,
+    useTransport: () => transportState,
+    useTransportPosition: () => transportState.position,
+    TransportProvider: ({ children }: { children: React.ReactNode }) =>
+      children,
+  };
+});
 
 // Mock useSyncContext
 vi.mock('@/domains/widgets/components/base/SyncProvider', () => ({

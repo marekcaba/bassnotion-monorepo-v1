@@ -21,7 +21,6 @@ import { MIDIUpload } from '../shared/MIDIUpload';
 
 // VexFlow imports
 import * as VF from 'vexflow';
-import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 // VexFlow utility functions
 const convertNoteDurationToVexFlow = (
@@ -273,7 +272,6 @@ const convertDurationToRests = (duration: number): string[] => {
 };
 
 export function SheetPlayerCard() {
-  const { correlationId, logger } = useCorrelation('SheetPlayerCard');
   return (
     <SyncedWidget
       widgetId="sheet-player"
@@ -326,7 +324,6 @@ function SheetPlayerCardContent({ syncProps }: SheetPlayerCardContentProps) {
     null,
   );
   const containerRef = useRef<HTMLDivElement>(null);
-  const rendererRef = useRef<any>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const savedScrollPosition = useRef<number>(0);
   const lastRenderedPosition = useRef<number>(-1);
@@ -397,9 +394,11 @@ function SheetPlayerCardContent({ syncProps }: SheetPlayerCardContentProps) {
       if (noteInfo.unifiedIndex >= 0) {
         setUnifiedPosition(noteInfo.unifiedIndex);
 
-        // Calculate time position for transport
-        const beatPosition = noteInfo.unifiedIndex; // Each unified position represents a beat subdivision
-        const timeInSeconds = (beatPosition * 60) / tempo / 4; // Convert to seconds based on tempo
+        // Calculate musical position from unified beat index. The
+        // tempo-based time-in-seconds conversion that used to live
+        // here is no longer needed — Transport.seek() now accepts the
+        // bar/beat/sixteenth tuple directly.
+        const beatPosition = noteInfo.unifiedIndex;
 
         // Get EventBus and emit seek event
         const coreServices =
@@ -599,11 +598,15 @@ function SheetPlayerCardContent({ syncProps }: SheetPlayerCardContentProps) {
   // Calculate beats per measure for processing
   const beatsPerMeasure = timeSignature.numerator;
 
-  // Industry standard: Separate data processing from rendering - Proper MIDI timing approach
+  // Industry standard: Separate data processing from rendering — proper
+  // MIDI timing approach. timeSignature + beatsPerMeasure are kept in
+  // the signature for callers that pass them, but the current
+  // validation/quantize body doesn't depend on them; the meter is
+  // applied later when VexFlow renders the staves.
   const processNotesForDisplay = (
     notes: ExerciseNote[],
-    timeSignature: any,
-    beatsPerMeasure: number,
+    _timeSignature: any,
+    _beatsPerMeasure: number,
   ) => {
     // Quantize and validate notes first (industry best practice)
     const validatedNotes = notes.filter((note) => {

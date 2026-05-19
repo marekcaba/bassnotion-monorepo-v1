@@ -23,6 +23,13 @@ class MockAudioEngine {
     this._context = new AudioContext();
   }
 
+  // Production code (useAudio hook + CoreServices) calls audioEngine.isReady()
+  // before issuing further calls. Mirror that contract so the mock satisfies
+  // both the engine path and the CoreServices path the hook walks.
+  isReady() {
+    return this.isInitialized;
+  }
+
   async createSampler(config: any) {
     if (!this.isInitialized) {
       throw new Error('AudioEngine not initialized');

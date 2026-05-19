@@ -153,27 +153,28 @@ describe('BassPreloadStrategy', () => {
     });
 
     it('should extract correct number of MIDI notes from exercise.notes', async () => {
+      // Exercise data uses guitar-style string numbering (string 1 = highest
+      // pitch = G2 = MIDI 43; string 4 = lowest = E1 = MIDI 28). See
+      // getMidiFromStringAndFret() doc-comment in BassPreloadStrategy.ts.
       const exercise = {
         id: 'test-exercise',
         title: 'Test Exercise',
         notes: [
-          { string: 2, fret: 0, duration: 0.5, startTime: 0 }, // E1 = MIDI 28
-          { string: 2, fret: 5, duration: 0.5, startTime: 0.5 }, // A1 = MIDI 33
-          { string: 3, fret: 0, duration: 0.5, startTime: 1.0 }, // A1 = MIDI 33 (duplicate)
-          { string: 4, fret: 0, duration: 0.5, startTime: 1.5 }, // D2 = MIDI 38
+          { string: 2, fret: 0, duration: 0.5, startTime: 0 }, // D2 = MIDI 38
+          { string: 2, fret: 5, duration: 0.5, startTime: 0.5 }, // G2 = MIDI 43
+          { string: 3, fret: 0, duration: 0.5, startTime: 1.0 }, // A1 = MIDI 33
+          { string: 4, fret: 0, duration: 0.5, startTime: 1.5 }, // E1 = MIDI 28
         ],
       };
 
       const result = await strategy.loadFullSamples(undefined, exercise as any);
 
-      // Should extract 3 unique MIDI notes: 28, 33, 38
-      // Total should be 3 (the unique MIDI notes to load)
-      expect(result.total).toBe(3);
-      // Result may have some failures due to mocking, but structure should be correct
+      // Should extract 4 unique MIDI notes: 28, 33, 38, 43 (no duplicates here).
+      expect(result.total).toBe(4);
       expect(result).toHaveProperty('success');
       expect(result).toHaveProperty('loaded');
       expect(result).toHaveProperty('metadata');
-      expect((result.metadata as any)?.midiNotes).toEqual([28, 33, 38]);
+      expect((result.metadata as any)?.midiNotes).toEqual([28, 33, 38, 43]);
     });
 
     it('should skip non-bass string notes', async () => {
@@ -181,17 +182,17 @@ describe('BassPreloadStrategy', () => {
         id: 'test-exercise',
         title: 'Test Exercise',
         notes: [
-          { string: 2, fret: 0, duration: 0.5, startTime: 0 }, // E1 = MIDI 28 (valid bass)
-          { string: 6, fret: 0, duration: 0.5, startTime: 0.5 }, // Invalid string (guitar?)
+          { string: 2, fret: 0, duration: 0.5, startTime: 0 }, // D2 = MIDI 38 (valid bass)
+          { string: 6, fret: 0, duration: 0.5, startTime: 0.5 }, // Invalid string (only 1-5 valid)
           { string: 0, fret: 0, duration: 0.5, startTime: 1.0 }, // Invalid string
         ],
       };
 
       const result = await strategy.loadFullSamples(undefined, exercise as any);
 
-      // Should only include 1 note (the valid bass note on string 2)
+      // Should only include 1 note (the valid bass note on string 2).
       expect(result.total).toBe(1);
-      expect((result.metadata as any)?.midiNotes).toEqual([28]);
+      expect((result.metadata as any)?.midiNotes).toEqual([38]);
     });
   });
 
@@ -268,9 +269,12 @@ describe('BassPreloadStrategy', () => {
         noteCount: 2,
       });
 
-      // Setup cached ArrayBuffers
-      bufferStore.set('bass-28', new ArrayBuffer(512));
-      bufferStore.set('bass-33', new ArrayBuffer(512));
+      // Cache key format: `bass-{midiNote}-{string}` (see buildBassCacheKey
+      // in BassPreloadStrategy.ts). The mocked getSampleForMidiNote() at the
+      // top of this file always returns `string: 'E'` regardless of MIDI
+      // note, so the legacy path here builds bass-28-E and bass-33-E.
+      bufferStore.set('bass-28-E', new ArrayBuffer(512));
+      bufferStore.set('bass-33-E', new ArrayBuffer(512));
 
       const mockContext = {
         state: 'running',
@@ -327,20 +331,21 @@ describe('BassPreloadStrategy with CoreServices', () => {
   });
 
   it('should attempt to download samples when exercise has notes', async () => {
+    // Guitar-style string numbering: 1=G2(43), 2=D2(38), 3=A1(33), 4=E1(28), 5=B0(23)
     const exercise = {
       id: 'test-exercise',
       title: 'Test Exercise',
       notes: [
-        { string: 2, fret: 0, duration: 0.5, startTime: 0 }, // E1 = MIDI 28
+        { string: 2, fret: 0, duration: 0.5, startTime: 0 }, // D2 = MIDI 38
         { string: 3, fret: 0, duration: 0.5, startTime: 0.5 }, // A1 = MIDI 33
       ],
     };
 
     const result = await strategy.loadFullSamples(undefined, exercise as any);
 
-    // Should identify 2 unique notes
+    // Should identify 2 unique notes (sorted ascending)
     expect(result.total).toBe(2);
-    expect((result.metadata as any)?.midiNotes).toEqual([28, 33]);
+    expect((result.metadata as any)?.midiNotes).toEqual([33, 38]);
   });
 
   it('should cache metadata for deferred loading', async () => {
@@ -348,7 +353,7 @@ describe('BassPreloadStrategy with CoreServices', () => {
       id: 'test-exercise',
       title: 'Test Exercise',
       notes: [
-        { string: 2, fret: 0, duration: 0.5, startTime: 0 }, // E1 = MIDI 28
+        { string: 2, fret: 0, duration: 0.5, startTime: 0 }, // D2 = MIDI 38
       ],
     };
 
@@ -358,6 +363,6 @@ describe('BassPreloadStrategy with CoreServices', () => {
     const cached = metadataStore.get('bass-required-notes');
     expect(cached).toBeDefined();
     expect(cached.exerciseId).toBe('test-exercise');
-    expect(cached.midiNotes).toEqual([28]);
+    expect(cached.midiNotes).toEqual([38]);
   });
 });

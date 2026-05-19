@@ -958,8 +958,8 @@ describe('WebhookController - Edge Cases', () => {
 
     const request = { rawBody: Buffer.from('payload') };
     stripeService.constructWebhookEvent.mockReturnValue(
-        mockEvent as unknown as Stripe.Event,
-      );
+      mockEvent as unknown as Stripe.Event,
+    );
     purchaseRepository.create.mockResolvedValue({});
 
     await controller.handleStripeWebhook('sig_test', request as any);
@@ -1006,8 +1006,8 @@ describe('WebhookController - Edge Cases', () => {
 
     const request = { rawBody: Buffer.from('payload') };
     stripeService.constructWebhookEvent.mockReturnValue(
-        mockEvent as unknown as Stripe.Event,
-      );
+      mockEvent as unknown as Stripe.Event,
+    );
     subscriptionRepository.findByStripeSubscriptionId.mockResolvedValue(null);
     subscriptionRepository.create.mockResolvedValue({});
 

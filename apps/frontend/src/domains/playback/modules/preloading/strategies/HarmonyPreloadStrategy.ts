@@ -5,6 +5,7 @@
  */
 
 import { PreloadStrategy } from './PreloadStrategy.js';
+import { verboseLog } from '@/config/debug';
 import { PreloadConfig, PreloadResult } from '../types/index.js';
 import { GlobalSampleCache } from '../../storage/cache/GlobalSampleCache.js';
 import { wamPluginSingleton } from '../../instruments/wamPluginSingleton.js';
@@ -176,7 +177,7 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
       }
 
       // CHECKPOINT 8: Preload strategy - verify instrument resolution
-      // console.log('[DEBUG][Checkpoint-8] HarmonyPreloadStrategy.loadFullSamples:', {
+      // verboseLog('[DEBUG][Checkpoint-8] HarmonyPreloadStrategy.loadFullSamples:', {
       //   exerciseId: exercise.id,
       //   exerciseTitle: exercise.title,
       //   exerciseHarmonyInstrument: exercise.harmonyInstrument,
@@ -189,7 +190,7 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
       const instrument =
         exercise.harmonyInstrument || DEFAULT_HARMONY_INSTRUMENT;
 
-      // console.log('[DEBUG][Checkpoint-8] Instrument resolved for preloading:', {
+      // verboseLog('[DEBUG][Checkpoint-8] Instrument resolved for preloading:', {
       //   instrument,
       //   fromExercise: exercise.harmonyInstrument,
       //   wasDefaulted: !exercise.harmonyInstrument,
@@ -482,7 +483,7 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
           if (velocity >= range.min && velocity <= range.max) {
             // DIAGNOSTIC: Log per-note layer selection for first few notes
             if (this.diagnosticLogCount < 5) {
-              console.log(
+              verboseLog(
                 `[PRELOADER DIAGNOSTIC] Per-note layer: ${normalizedNoteName} velocity=${velocity} -> ${range.layer} (range: ${range.min}-${range.max})`,
               );
               this.diagnosticLogCount++;
@@ -514,7 +515,7 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
         if (velocity >= range.min && velocity <= range.max) {
           // DIAGNOSTIC: Log global fallback layer selection
           if (this.diagnosticLogCount < 10) {
-            console.log(
+            verboseLog(
               `[PRELOADER DIAGNOSTIC] Global fallback: ${noteName} velocity=${velocity} -> ${range.layer} (range: ${range.min}-${range.max})`,
             );
             this.diagnosticLogCount++;
@@ -705,12 +706,12 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
     // This ensures keyboard map is available BEFORE playback starts
     // RegionProcessor needs it to map requested notes (e.g., Gs3) to physical samples (e.g., A3)
     if (instrument === 'grandpiano') {
-      console.log(
+      verboseLog(
         '[SAMPLES][Keyboard-Map] Loading keyboard map for Grand Piano...',
       );
       const keyboardMap = await this.loadGrandPianoKeyboardMap();
       if (keyboardMap) {
-        console.log(
+        verboseLog(
           '[SAMPLES][Keyboard-Map] Loaded, caching in GlobalSampleCache...',
           {
             totalKeys: Object.keys(keyboardMap).length,
@@ -740,7 +741,7 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
     );
 
     // EVIDENCE: Start of preloading
-    console.log('🎹 [SAMPLES] Downloading harmony samples as AudioBuffers', {
+    verboseLog('🎹 [SAMPLES] Downloading harmony samples as AudioBuffers', {
       timestamp: new Date().toISOString(),
       uniqueNotes: sampleMap.size,
       instrument,
@@ -841,7 +842,7 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
         }
       }
 
-      console.log(
+      verboseLog(
         `🚀 [SAMPLES] Starting PARALLEL download of ${downloadTasks.length} samples for ${instrument}`,
       );
 
@@ -898,7 +899,7 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
                 arrayBuffer,
               );
 
-              console.log(
+              verboseLog(
                 `✅ [PARALLEL] Downloaded and cached: ${cacheKey} (${Math.round(arrayBuffer.byteLength / 1024)}KB)`,
               );
             }
@@ -944,7 +945,7 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
         }
       }
 
-      console.log(
+      verboseLog(
         `✅ [PARALLEL] Completed: ${samplesLoaded}/${downloadTasks.length} samples loaded for ${instrument}`,
       );
 
@@ -954,7 +955,7 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
       const duration = performance.now() - startTime;
 
       // EVIDENCE: End of preloading
-      console.log('✅ [SAMPLES] Harmony samples preloaded', {
+      verboseLog('✅ [SAMPLES] Harmony samples preloaded', {
         timestamp: new Date().toISOString(),
         durationMs: duration.toFixed(2),
         samplesLoaded,

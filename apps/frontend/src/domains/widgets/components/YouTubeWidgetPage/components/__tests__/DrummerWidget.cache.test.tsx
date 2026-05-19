@@ -7,7 +7,28 @@ import * as Tone from 'tone';
 
 // Mock dependencies
 vi.mock('@/domains/playback/modules/storage/cache/GlobalSampleCache');
-vi.mock('tone');
+// vi.mock('tone') auto-mock doesn't include Tone.loaded() (not a function on
+// the npm module's default export — provided by Tone.js as a top-level helper
+// only at runtime). Provide an explicit factory exposing the helpers this
+// test asserts on.
+vi.mock('tone', () => ({
+  start: vi.fn(),
+  loaded: vi.fn(),
+  Transport: { bpm: { value: 120 } },
+  getTransport: vi.fn(() => ({ bpm: { value: 120 } })),
+  context: { state: 'running', currentTime: 0 },
+  Player: vi.fn(() => ({
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    dispose: vi.fn(),
+  })),
+  Sampler: vi.fn(() => ({
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    dispose: vi.fn(),
+    triggerAttackRelease: vi.fn(),
+  })),
+}));
 
 describe('DrummerWidget - Cache Integration Tests', () => {
   const mockDrumPads = {

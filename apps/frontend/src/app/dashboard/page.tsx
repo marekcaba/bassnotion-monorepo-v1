@@ -4,11 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import {
-  Home,
   Edit,
   Trash2,
-  Library,
-  Settings,
   Shield,
   BookOpen,
   ClipboardCheck,
@@ -40,7 +37,7 @@ function DashboardPageContent() {
   const _router = useRouter();
   const { toast } = useToast();
   const { navigateWithTransition } = useViewTransitionRouter();
-  const { redirectToLogin, redirectToHome } = useAuthRedirect();
+  const { redirectToLogin } = useAuthRedirect();
   const { logger } = useCorrelation('DashboardPage');
   const { profile } = useUserProfile();
 
@@ -53,7 +50,9 @@ function DashboardPageContent() {
     bio?: string;
     avatarUrl?: string;
   } | null>(null);
-  const [isSigningOut, setIsSigningOut] = useState(false);
+  // isSigningOut is read in the auth-redirect effect + the loading
+  // gate; the setter has no caller since handleSignOut was removed.
+  const [isSigningOut, _setIsSigningOut] = useState(false);
 
   useEffect(() => {
     // Don't redirect during sign out process - let the sign out handler control navigation
@@ -111,41 +110,10 @@ function DashboardPageContent() {
     }
   };
 
-  const handleSignOut = async () => {
-    try {
-      setIsSigningOut(true); // Prevent redirect during sign out AND keep component mounted
-      await authService.signOut();
-      reset();
-
-      // Use scheduled redirect to allow auth state to settle
-      redirectToHome(); // This will wait for auth state to settle before navigating
-
-      // Reset signing out state after transition completes
-      setTimeout(() => {
-        setIsSigningOut(false);
-      }, 200); // Slightly longer than redirect delay to ensure transition completes
-    } catch (error) {
-      logger.error('Sign out error:', error);
-      setIsSigningOut(false); // Reset state on error
-      toast({
-        title: 'Sign out failed',
-        description: 'There was an error signing you out. Please try again.',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleGoHome = () => {
-    navigateWithTransition('/');
-  };
-
-  const handleGoToLibrary = () => {
-    navigateWithTransition('/library');
-  };
-
-  const handleGoToWurlitzerAdmin = () => {
-    navigateWithTransition('/admin/instruments/wurlitzer');
-  };
+  // NOTE: handleSignOut / handleGoHome / handleGoToLibrary /
+  // handleGoToWurlitzerAdmin used to live here. Navigation moved to
+  // the side-nav component; sign-out is on the avatar menu. None of
+  // these handlers were wired up anywhere in the JSX.
 
   const handleProfileUpdate = async (data: UserProfileData) => {
     try {

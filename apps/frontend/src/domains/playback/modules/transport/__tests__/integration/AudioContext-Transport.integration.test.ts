@@ -19,8 +19,8 @@ import { TransportController } from '../../core/TransportController.js';
 import type { EventBus } from '../../../../services/core/EventBus.js';
 
 // Mock Tone.js
-vi.mock('tone', () => ({
-  Transport: {
+vi.mock('tone', () => {
+  const Transport = {
     state: 'stopped',
     position: 0,
     seconds: 0,
@@ -30,8 +30,9 @@ vi.mock('tone', () => ({
     stop: vi.fn(),
     pause: vi.fn(),
     cancel: vi.fn(),
-  },
-}));
+  };
+  return { Transport, getTransport: () => Transport };
+});
 
 // Mock Transport
 vi.mock('../../core/Transport.js', () => {
@@ -41,7 +42,7 @@ vi.mock('../../core/Transport.js', () => {
       private _isRunning = false;
       private _currentTime = 0;
 
-      constructor(config: any) {}
+      constructor(_config: any) {}
 
       async initialize(audioContext: any) {
         this._audioContext = audioContext;
@@ -88,9 +89,9 @@ vi.mock('../../core/Transport.js', () => {
         return { getExerciseDurationSeconds: () => 0 };
       }
 
-      onPositionUpdate(callback: Function) {}
+      onPositionUpdate(_callback: Function) {}
 
-      updateConfig(config: any) {}
+      updateConfig(_config: any) {}
 
       isUsingAudioWorklet() {
         return true;
@@ -163,8 +164,8 @@ class IntegrationMockAudioContext {
     return Promise.resolve();
   }
 
-  addEventListener(event: string, listener: Function) {}
-  removeEventListener(event: string, listener: Function) {}
+  addEventListener(_event: string, _listener: Function) {}
+  removeEventListener(_event: string, _listener: Function) {}
 
   // Test helper
   _setState(state: 'suspended' | 'running' | 'closed') {

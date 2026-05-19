@@ -69,21 +69,17 @@ class UnifiedTransportController {
     }
   }
 
-  register(adapter: any, priority?: number): void {
-    // UnifiedTransport doesn't have register method - this is a no-op
-  }
+  // The adapter and observer registration methods are no-ops in this
+  // facade — UnifiedTransport doesn't expose those hooks. Kept for
+  // interface parity with the older Transport API; underscore the
+  // unused args.
+  register(_adapter: any, _priority?: number): void {}
 
-  unregister(adapter: any): void {
-    // UnifiedTransport doesn't have unregister method - this is a no-op
-  }
+  unregister(_adapter: any): void {}
 
-  subscribe(observer: TransportObserver): void {
-    // UnifiedTransport doesn't have subscribe method - this is a no-op
-  }
+  subscribe(_observer: TransportObserver): void {}
 
-  unsubscribe(observer: TransportObserver): void {
-    // UnifiedTransport doesn't have unsubscribe method - this is a no-op
-  }
+  unsubscribe(_observer: TransportObserver): void {}
 
   getTransportState(): TransportState {
     return this.unifiedTransport?.getState() ?? 'stopped';
@@ -141,8 +137,6 @@ class UnifiedTransportController {
 }
 import { widgetSyncService } from './WidgetSyncService';
 import { logDebug, logError } from '@/domains/playback/utils/logger';
-import { useCorrelation } from '@/shared/hooks/useCorrelation';
-
 // ============================================================================
 // INTERFACES
 // ============================================================================

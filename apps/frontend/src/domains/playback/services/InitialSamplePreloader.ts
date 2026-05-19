@@ -160,17 +160,20 @@ export class InitialSamplePreloader {
         registry.getStatus(),
       );
 
-      // Dispatch events to notify that essential samples are ready
+      // Set window flag for backward compatibility, but do NOT dispatch
+      // `samplesReady` here. The orchestrator (ScrollTriggerLoader, mounted
+      // at tutorial page scope) is the single source of truth for that
+      // event. Dispatching from multiple places caused 3x parallel
+      // reinjection batches that detached shared ArrayBuffers and made
+      // drums/metronome silent.
       if (typeof window !== 'undefined') {
-        // Set window flag for backward compatibility
         window.__samplesReady = true;
-
-        // Dispatch both events
+        // essentialSamplesReady is still emitted here because it's an
+        // internal lifecycle marker that nothing user-facing listens to,
+        // and other tests may depend on it.
         window.dispatchEvent(new Event('essentialSamplesReady'));
-        window.dispatchEvent(new Event('samplesReady')); // GlobalControls waits for this
-
         logger.info(
-          '✅ Dispatched samplesReady and essentialSamplesReady events',
+          '✅ Essential samples ready (samplesReady will be dispatched by orchestrator)',
         );
       }
     } catch (error) {

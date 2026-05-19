@@ -9,8 +9,8 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useTrack } from '@/domains/playback/hooks/useTrack';
 import { nanoid } from 'nanoid';
-import type {
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import type {
   DrumPattern,
   DrumPatternEvent,
 } from '@/domains/playback/types/pattern';

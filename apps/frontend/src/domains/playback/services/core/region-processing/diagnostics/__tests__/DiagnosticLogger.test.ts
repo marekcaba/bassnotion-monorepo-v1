@@ -8,13 +8,17 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { DiagnosticLogger } from '../DiagnosticLogger.js';
 
 // Mock Tone.js
-vi.mock('tone', () => ({
-  Transport: {
+vi.mock('tone', () => {
+  const Transport = {
     bpm: {
       value: 120,
     },
-  },
-}));
+  };
+  return {
+    Transport,
+    getTransport: () => Transport,
+  };
+});
 
 describe('DiagnosticLogger', () => {
   let diagnosticLogger: DiagnosticLogger;

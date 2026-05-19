@@ -1033,22 +1033,22 @@ export class PlaybackEngine {
     this.startMetricsReporting();
 
     // Check BPM before scheduling
-    const currentToneBpm = Tone.Transport.bpm.value;
+    const currentToneBpm = Tone.getTransport().bpm.value;
     this.logger.info('🎵 Checking Tone.Transport BPM before scheduling', {
       toneBpm: currentToneBpm,
       instanceId: this.instanceId,
     });
 
     // Disable Tone.Transport.loop to prevent double playback
-    if (Tone.Transport.loop) {
+    if (Tone.getTransport().loop) {
       this.logger.warn(
         '⚠️ Tone.Transport.loop was enabled - disabling to prevent double playback',
         {
-          loopStart: Tone.Transport.loopStart,
-          loopEnd: Tone.Transport.loopEnd,
+          loopStart: Tone.getTransport().loopStart,
+          loopEnd: Tone.getTransport().loopEnd,
         },
       );
-      Tone.Transport.loop = false;
+      Tone.getTransport().loop = false;
     }
 
     // PHASE 2: Capture transportStartTime BEFORE scheduling (for audio timing)
@@ -1189,7 +1189,7 @@ export class PlaybackEngine {
     const positionUpdateHandler = () => {
       if (
         this.isRunning &&
-        Tone.Transport.state === 'started' &&
+        Tone.getTransport().state === 'started' &&
         !this.isInitialScheduling
       ) {
         this.processCurrentPosition();
@@ -1351,10 +1351,10 @@ export class PlaybackEngine {
     // This ensures all Tone.Transport.schedule() calls use the correct time reference
     const Tone = getTone();
     if (this.audioContext) {
-      Tone.Transport.seconds = 0;
+      Tone.getTransport().seconds = 0;
       this.logger.debug('Synced transport start time', {
         transportStartTime: time.toFixed(3),
-        transportSeconds: Tone.Transport.seconds,
+        transportSeconds: Tone.getTransport().seconds,
       });
     }
 
@@ -1413,7 +1413,7 @@ export class PlaybackEngine {
     const Tone = getTone();
     this.scheduledIds.forEach((toneId) => {
       try {
-        Tone.Transport.clear(toneId);
+        Tone.getTransport().clear(toneId);
       } catch (e) {
         // Ignore errors when clearing
       }
@@ -1501,8 +1501,9 @@ export class PlaybackEngine {
         this.musicalTimeConverter.parsePosition.bind(this.musicalTimeConverter),
         // Dependency 10: buildCC64Timeline
         this.sustainPedalManager.buildTimeline.bind(this.sustainPedalManager),
-        // Dependency 11: logCC64DiagnosticTable (no-op for now, RegionScheduler handles it)
-        () => {}, // CC64 diagnostic logging handled by RegionScheduler internally
+        // Dependency 11: logCC64DiagnosticTable (RegionScheduler logs internally)
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
+        () => {},
         // Dependency 12: getCachedSchedule
         this.scheduleCache.get.bind(this.scheduleCache),
         // Dependency 13: setCachedSchedule
@@ -1662,14 +1663,14 @@ export class PlaybackEngine {
       let clearedCount = 0;
       this.scheduledIds.forEach((toneId) => {
         try {
-          Tone.Transport.clear(toneId);
+          Tone.getTransport().clear(toneId);
           clearedCount++;
         } catch (e) {
           // Ignore errors when clearing (event may have already fired)
         }
       });
       // Method 2: Cancel ALL events as nuclear option (catches any untracked events)
-      Tone.Transport.cancel(0);
+      Tone.getTransport().cancel(0);
       debugLog('[PLAYBACK-ENGINE STOP] 🧹 Cleared ALL Tone.Transport events', {
         trackedIdsCancelled: clearedCount,
         nuclearCancelCalled: true,
@@ -1705,8 +1706,22 @@ export class PlaybackEngine {
     // Reset scheduling flag (prevent edge case if stopped during initial scheduling)
     this.isInitialScheduling = false;
 
-    // Update state
-    this.state = 'stopped';
+    // Update state via setState so 'playback:state-change' is emitted
+    // consistently with start/pause/resume. setState validates: 'ready'
+    // → 'stopped' is NOT in the transitions table, so calling stop()
+    // from the ready state correctly emits neither 'state-change' nor
+    // 'playback:stop'. Only emit 'playback:stop' when setState
+    // successfully transitioned us.
+    const wasPlayingOrPaused =
+      this.state === 'playing' || this.state === 'paused';
+    if (wasPlayingOrPaused) {
+      this.setState('stopped');
+      this.eventBus.emit('playback:stop', {
+        instanceId: this.instanceId,
+        graceful,
+      });
+    }
+
     lifecycle.checkpoint('PLAYBACK_STOPPED', {
       instanceId: this.instanceId,
     });

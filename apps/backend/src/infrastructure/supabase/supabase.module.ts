@@ -2,10 +2,11 @@ import { Module, Global } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { createStructuredLogger } from '@bassnotion/contracts';
 import { SupabaseService } from './supabase.service.js';
+import { SharedModule } from '../../shared/shared.module.js';
 
 @Global()
 @Module({
-  imports: [ConfigModule],
+  imports: [ConfigModule, SharedModule],
   providers: [SupabaseService],
   exports: [SupabaseService],
 })

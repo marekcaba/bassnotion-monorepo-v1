@@ -55,7 +55,6 @@ export const useFretboardExercise = (
   // Audio fretboard integration with dynamic string count
   const audioIntegration = useAudioFretboard({
     stringCount: stringCount === 6 ? 5 : stringCount === 5 ? 5 : 4, // Ensure audio system gets correct string count
-    autoPlayOnClick: true,
   });
 
   // Track if user has manually reset to prevent auto-population
@@ -558,64 +557,6 @@ export const useFretboardExercise = (
     [createBasslineData, syncProps.sync],
   );
 
-  // Audio playback functions
-  const triggerNote = useCallback(
-    (stringIndex: number, fret: Fret) => {
-      // Convert absolute string index to relative index for audio system
-      // FretboardCard uses absolute indices: B(0), E(1), A(2), D(3), G(4), C(5)
-      // Audio system expects relative indices: 0-based for current string count
-
-      let relativeStringIndex = stringIndex;
-
-      if (stringCount === 4) {
-        // 4-string bass: audio expects [0,1,2,3] for [G,D,A,E]
-        // FretboardCard passes [4,3,2,1] for [G,D,A,E] (absolute indices)
-        if (stringIndex >= 1 && stringIndex <= 4) {
-          // Map absolute indices [1,2,3,4] to relative indices [3,2,1,0]
-          // E(1) -> index 3, A(2) -> index 2, D(3) -> index 1, G(4) -> index 0
-          relativeStringIndex = 4 - stringIndex;
-        } else {
-          // Invalid string index for 4-string bass - skip audio
-          return;
-        }
-      } else if (stringCount >= 5) {
-        // 5+ string bass: audio expects [0,1,2,3,4] for [G,D,A,E,B]
-        // FretboardCard passes [0,1,2,3,4] for [B,E,A,D,G] (absolute indices)
-        if (stringIndex >= 0 && stringIndex <= 4) {
-          // Map absolute indices [0,1,2,3,4] to relative indices [4,3,2,1,0]
-          // B(0) -> index 4, E(1) -> index 3, A(2) -> index 2, D(3) -> index 1, G(4) -> index 0
-          relativeStringIndex = 4 - stringIndex;
-        } else {
-          // Invalid string index for 5+ string bass - skip audio
-          return;
-        }
-      }
-
-      audioIntegration.triggerNote(relativeStringIndex, fret);
-    },
-    [audioIntegration, stringCount],
-  );
-
-  const createNoteEvent = useCallback(
-    (stringIndex: number, fret: Fret) => {
-      // Convert absolute string index to relative index for audio system
-      let relativeStringIndex = stringIndex;
-
-      if (stringCount === 4) {
-        if (stringIndex >= 1 && stringIndex <= 4) {
-          relativeStringIndex = 4 - stringIndex;
-        }
-      } else if (stringCount >= 5) {
-        if (stringIndex >= 0 && stringIndex <= 4) {
-          relativeStringIndex = 4 - stringIndex;
-        }
-      }
-
-      return audioIntegration.createNoteEvent(relativeStringIndex, fret);
-    },
-    [audioIntegration, stringCount],
-  );
-
   // Convert exercise notes to fretboard selected dots format
   const convertExerciseNotesToSelectedDots = useCallback(
     (exerciseNotes: ExerciseNote[]): Map<string, number[]> => {
@@ -790,11 +731,6 @@ export const useFretboardExercise = (
     emitBasslineEvent,
   ]);
 
-  // Exercise playback integration
-  const playbackIntegration = useMemo(() => {
-    return audioIntegration.playbackIntegration;
-  }, [audioIntegration.playbackIntegration]);
-
   // Generate measure-aware connections from exercise notes
   // Each connection knows which measure its endpoints belong to
   // This allows FretboardGrid to show connections only for notes in current/next measure
@@ -898,9 +834,6 @@ export const useFretboardExercise = (
     emitBasslineEvent,
 
     // Audio integration
-    triggerNote,
-    createNoteEvent,
-    playbackIntegration,
     audioIntegration,
 
     // Measure-based opacity for playback animation
