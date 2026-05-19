@@ -18,7 +18,11 @@
     "test-results/*",
     "apps/frontend/src/app/library/[tutorialId]/v*/*",
     "apps/frontend/src/app/test-*/*",
-    "docs/CLAUDE CODE TRASH BIN/*"
+    "docs/CLAUDE CODE TRASH BIN/*",
+    "apps/frontend/public/**/*",
+    "scripts/**/*.{js,cjs,mjs,ts}",
+    "apps/frontend/src/test/diagnoseAudioFlow.ts",
+    "apps/frontend/src/domains/playback/services/core/diagnostics/**/*"
   ],
   "plugins": ["@nx", "@typescript-eslint", "prettier", "react-hooks"],
   "overrides": [
