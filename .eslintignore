@@ -1,0 +1,61 @@
+# Mirror the contents of .gitignore (kept implicit via --ignore-path
+# default) PLUS the project-specific ignore patterns that .gitignore
+# can't express (vendored bundles, dev diagnostics, one-off scripts).
+#
+# The `pnpm lint` script used to pass --ignore-path .gitignore, which
+# overrode .eslintrc.json's ignorePatterns. When this file exists
+# ESLint picks it up automatically and the .eslintrc patterns work
+# alongside it.
+
+# Build / dependency output
+node_modules
+dist
+coverage
+.nx
+.next
+build
+logs
+temp
+temp-downloads
+test-results
+
+# Tooling configs / setup files (intentionally not linted)
+**/vite.config.ts
+**/vitest.config.ts
+**/vitest.config.e2e.ts
+scripts/migrate-exercises-to-musical-timing.ts
+src/test/setup.ts
+
+# Versioned tutorial drafts and one-off test pages
+apps/frontend/src/app/library/[tutorialId]/v*/*
+apps/frontend/src/app/test-*/*
+
+# Archived documentation + standalone docs code samples
+docs/CLAUDE CODE TRASH BIN/*
+docs/**/*.tsx
+docs/**/*.ts
+docs/**/*.jsx
+docs/**/*.js
+
+# Vendored third-party JS bundle (apps/frontend/public/Tone.js etc.)
+apps/frontend/public/**/*
+
+# One-off scripts written in node-style with console.log everywhere
+scripts/**/*.js
+scripts/**/*.cjs
+scripts/**/*.mjs
+scripts/**/*.ts
+
+# Dev-only diagnostic utilities (window-attached debugging tools)
+apps/frontend/src/test/diagnoseAudioFlow.ts
+apps/frontend/src/domains/playback/services/core/diagnostics/**/*
+
+# In-source "examples" folders — teaching code with intentional stub
+# methods. Linting them mostly produces noise about stub args, since
+# they exist to demo type shapes rather than implement behavior.
+apps/frontend/src/**/examples/**/*
+apps/frontend/src/**/*.example.ts
+apps/frontend/src/**/*.example.tsx
+apps/frontend/src/**/*Example.ts
+apps/frontend/src/**/*Example.tsx
+apps/frontend/src/**/*Migration.tsx

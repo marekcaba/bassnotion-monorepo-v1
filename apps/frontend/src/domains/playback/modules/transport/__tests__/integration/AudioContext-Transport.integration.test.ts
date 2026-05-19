@@ -42,7 +42,7 @@ vi.mock('../../core/Transport.js', () => {
       private _isRunning = false;
       private _currentTime = 0;
 
-      constructor(config: any) {}
+      constructor(_config: any) {}
 
       async initialize(audioContext: any) {
         this._audioContext = audioContext;
@@ -89,9 +89,9 @@ vi.mock('../../core/Transport.js', () => {
         return { getExerciseDurationSeconds: () => 0 };
       }
 
-      onPositionUpdate(callback: Function) {}
+      onPositionUpdate(_callback: Function) {}
 
-      updateConfig(config: any) {}
+      updateConfig(_config: any) {}
 
       isUsingAudioWorklet() {
         return true;
@@ -164,8 +164,8 @@ class IntegrationMockAudioContext {
     return Promise.resolve();
   }
 
-  addEventListener(event: string, listener: Function) {}
-  removeEventListener(event: string, listener: Function) {}
+  addEventListener(_event: string, _listener: Function) {}
+  removeEventListener(_event: string, _listener: Function) {}
 
   // Test helper
   _setState(state: 'suspended' | 'running' | 'closed') {
