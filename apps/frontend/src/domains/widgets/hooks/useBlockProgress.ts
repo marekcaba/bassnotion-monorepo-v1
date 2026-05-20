@@ -66,7 +66,7 @@ export function useBlockProgress({
           .select('block_progress')
           .eq('user_id', userId)
           .eq('tutorial_id', tutorialId)
-          .single();
+          .maybeSingle();
 
         if (data?.block_progress && typeof data.block_progress === 'object') {
           const dbProgress = data.block_progress as Record<
