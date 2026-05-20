@@ -57,7 +57,6 @@ import { BlockRenderer } from './blocks';
 import { useCurrentBlock } from './hooks/useCurrentBlock';
 import { useBlockProgress } from '@/domains/widgets/hooks/useBlockProgress';
 import { deriveBlocksFromLegacy } from './utils/deriveBlocksFromLegacy';
-import { getInitialBlock } from './utils/getInitialBlock';
 
 const logger = getLogger('youtube-widget');
 
@@ -1040,8 +1039,17 @@ function YouTubeWidgetPageContent({
     userId: profile?.id,
   });
 
-  // Block-based initial navigation: scroll to first incomplete block on mount
-  // Waits for isProgressHydrated so blockProgress reflects localStorage data.
+  // Block-based initial navigation: always land on the FIRST block on mount.
+  //
+  // Previously we used getInitialBlock(blocks, blockProgress) to jump to the
+  // first incomplete block (i.e. resume where the user left off). That made
+  // entries feel inconsistent — returning users landed mid-tutorial without
+  // context. The new contract: every tutorial entry starts at blocks[0]
+  // regardless of progress. The user can still freely scroll to any block
+  // they've previously unlocked (see hasPassedUnderstand handling below).
+  //
+  // Waits for isProgressHydrated so we know whether the user has any prior
+  // progress in this tutorial (drives the scroll-gate decision).
   useEffect(() => {
     if (
       !hasInitializedActRef.current &&
@@ -1049,19 +1057,25 @@ function YouTubeWidgetPageContent({
       tutorialData?.id &&
       blocks.length > 0
     ) {
-      const initialBlockId = getInitialBlock(blocks, blockProgress);
+      const initialBlockId = blocks[0]?.id;
 
-      logger.info(
-        '[INITIAL-BLOCK] Scrolling to initial block based on progress',
-        {
-          tutorialId: tutorialData.id,
-          initialBlockId,
-          blockCount: blocks.length,
-        },
+      // If the user has previously completed ANY block in this tutorial,
+      // they've unlocked the snap-scroll container. Don't re-gate them at
+      // Understand — let them freely move between sections they've already
+      // opened. New users (no progress) stay gated until they finish the
+      // first block, same as before.
+      const hasAnyProgress = blocks.some(
+        (b) => blockProgress[b.id]?.completed,
       );
 
-      // If starting past the first block, enable scrolling
-      if (initialBlockId && initialBlockId !== blocks[0]?.id) {
+      logger.info('[INITIAL-BLOCK] Landing on first block', {
+        tutorialId: tutorialData.id,
+        initialBlockId,
+        blockCount: blocks.length,
+        hasAnyProgress,
+      });
+
+      if (hasAnyProgress) {
         setHasPassedUnderstand(true);
       }
 
@@ -1070,7 +1084,7 @@ function YouTubeWidgetPageContent({
         hasSetCurrentActRef.current = true;
       }
 
-      // Instant scroll on initial mount (no animation)
+      // Instant scroll on initial mount (no animation). Lands at top.
       if (initialBlockId) {
         requestAnimationFrame(() => {
           scrollToBlock(initialBlockId, { instant: true });
