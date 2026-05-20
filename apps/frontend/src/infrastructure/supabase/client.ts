@@ -110,9 +110,27 @@ const createSupabaseClient = () => {
         'x-client-info': '@supabase/auth-ui-react@latest',
       },
       fetch: (input: RequestInfo | URL, init?: RequestInit) => {
+        // Per-request timeout for Supabase fetches.
+        //
+        // History: previously 3s, which routinely tripped on cold queries
+        // (PostgREST + RLS can legitimately take 1.5–2.5s) and surfaced as
+        // `AbortError: signal is aborted without reason` in the console
+        // because abort() was called without a reason.
+        //
+        // 15s is generous enough that genuinely-stuck requests still get
+        // aborted, but normal slow queries (and slow-connection users) no
+        // longer fail. Passing an explicit Error to abort() so the rejection
+        // is identifiable in stack traces (vs the generic AbortError).
+        const FETCH_TIMEOUT_MS = 15_000;
         const controller = new AbortController();
-        // Reduce timeout globally to 3 seconds for faster UX
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        const timeoutId = setTimeout(() => {
+          controller.abort(
+            new DOMException(
+              `Supabase request timed out after ${FETCH_TIMEOUT_MS}ms`,
+              'TimeoutError',
+            ),
+          );
+        }, FETCH_TIMEOUT_MS);
 
         return globalThis
           .fetch(input, {
