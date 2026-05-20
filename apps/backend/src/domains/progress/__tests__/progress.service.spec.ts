@@ -58,6 +58,24 @@ describe('ProgressService', () => {
     mockRepo = {
       getBlockCompletions: vi.fn().mockResolvedValue([]),
       getPracticeProgress: vi.fn().mockResolvedValue([]),
+      insertBlockCompletion: vi.fn().mockImplementation(
+        async (userId, tutorialId, blockId) => ({
+          user_id: userId,
+          tutorial_id: tutorialId,
+          block_id: blockId,
+          completed_at: '2026-05-20T12:00:00Z',
+          data: null,
+        }),
+      ),
+      incrementPracticeCompletion: vi.fn().mockImplementation(
+        async (userId, tutorialId, exerciseId, tempoBpm) => ({
+          user_id: userId,
+          tutorial_id: tutorialId,
+          exercise_id: exerciseId,
+          completion_count: 1,
+          last_tempo_bpm: tempoBpm ?? null,
+        }),
+      ),
     } as any;
 
     mockTutorials = {
@@ -290,5 +308,183 @@ describe('ProgressService', () => {
     await expect(
       service.getTutorialProgress(USER_ID, 'missing'),
     ).rejects.toThrow(NotFoundException);
+  });
+
+  describe('completeBlock', () => {
+    it('inserts a block_completions row and returns updated progress', async () => {
+      (mockTutorials.findBySlug as any).mockResolvedValue(
+        makeTutorial([videoBlock('b0', 0), videoBlock('b1', 1)]),
+      );
+      // No prior completions → b0 is the first block, allowed to complete.
+      (mockRepo.getBlockCompletions as any)
+        .mockResolvedValueOnce([]) // unlock-check read
+        .mockResolvedValueOnce([
+          // post-write read inside getTutorialProgress
+          {
+            user_id: USER_ID,
+            tutorial_id: TUTORIAL_ID,
+            block_id: 'b0',
+            completed_at: '2026-05-20T12:00:00Z',
+            data: null,
+          },
+        ]);
+
+      const result = await service.completeBlock(USER_ID, 'slug', 'b0');
+
+      expect(mockRepo.insertBlockCompletion).toHaveBeenCalledWith(
+        USER_ID,
+        TUTORIAL_ID,
+        'b0',
+        undefined,
+      );
+      expect(result.blocks[0]).toMatchObject({
+        blockId: 'b0',
+        completed: true,
+      });
+    });
+
+    it('rejects completing a block whose prerequisites are not done', async () => {
+      (mockTutorials.findBySlug as any).mockResolvedValue(
+        makeTutorial([videoBlock('b0', 0), videoBlock('b1', 1)]),
+      );
+      // No completions at all → trying to complete b1 (order 1) when b0
+      // isn't done should 404.
+      (mockRepo.getBlockCompletions as any).mockResolvedValue([]);
+
+      await expect(
+        service.completeBlock(USER_ID, 'slug', 'b1'),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(mockRepo.insertBlockCompletion).not.toHaveBeenCalled();
+    });
+
+    it('rejects completing a block that does not exist in the tutorial', async () => {
+      (mockTutorials.findBySlug as any).mockResolvedValue(
+        makeTutorial([videoBlock('b0', 0)]),
+      );
+
+      await expect(
+        service.completeBlock(USER_ID, 'slug', 'phantom'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('forwards the optional data payload to the repository', async () => {
+      (mockTutorials.findBySlug as any).mockResolvedValue(
+        makeTutorial([videoBlock('b0', 0)]),
+      );
+      (mockRepo.getBlockCompletions as any)
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+
+      await service.completeBlock(USER_ID, 'slug', 'b0', { quizScore: 4 });
+
+      expect(mockRepo.insertBlockCompletion).toHaveBeenCalledWith(
+        USER_ID,
+        TUTORIAL_ID,
+        'b0',
+        { quizScore: 4 },
+      );
+    });
+  });
+
+  describe('recordPractice', () => {
+    it('increments practice count and returns updated progress', async () => {
+      (mockTutorials.findBySlug as any).mockResolvedValue(
+        makeTutorial([exerciseBlock('practice', 0, ['ex1', 'ex2'])]),
+      );
+      // After increment: ex1 has 1 rep, ex2 still 0 → block NOT auto-complete.
+      (mockRepo.getPracticeProgress as any).mockResolvedValue([
+        {
+          user_id: USER_ID,
+          tutorial_id: TUTORIAL_ID,
+          exercise_id: 'ex1',
+          completion_count: 1,
+          last_tempo_bpm: 100,
+        },
+      ]);
+
+      await service.recordPractice(USER_ID, 'slug', 'ex1', 100);
+
+      expect(mockRepo.incrementPracticeCompletion).toHaveBeenCalledWith(
+        USER_ID,
+        TUTORIAL_ID,
+        'ex1',
+        100,
+      );
+      // Block should NOT be auto-completed (only 1 rep, threshold is 4)
+      expect(mockRepo.insertBlockCompletion).not.toHaveBeenCalled();
+    });
+
+    it('auto-completes the parent exercise block when ALL exercises hit threshold', async () => {
+      (mockTutorials.findBySlug as any).mockResolvedValue(
+        makeTutorial([exerciseBlock('practice', 0, ['ex1', 'ex2'])]),
+      );
+      // After the increment we're simulating, both exercises are at 4.
+      (mockRepo.getPracticeProgress as any).mockResolvedValue([
+        {
+          user_id: USER_ID,
+          tutorial_id: TUTORIAL_ID,
+          exercise_id: 'ex1',
+          completion_count: 4,
+          last_tempo_bpm: null,
+        },
+        {
+          user_id: USER_ID,
+          tutorial_id: TUTORIAL_ID,
+          exercise_id: 'ex2',
+          completion_count: 4,
+          last_tempo_bpm: null,
+        },
+      ]);
+      (mockRepo.getBlockCompletions as any).mockResolvedValue([]);
+
+      await service.recordPractice(USER_ID, 'slug', 'ex2');
+
+      // The rep increment AND the block auto-completion should both fire.
+      expect(mockRepo.incrementPracticeCompletion).toHaveBeenCalledTimes(1);
+      expect(mockRepo.insertBlockCompletion).toHaveBeenCalledWith(
+        USER_ID,
+        TUTORIAL_ID,
+        'practice',
+      );
+    });
+
+    it('does NOT auto-complete when only some exercises hit threshold', async () => {
+      (mockTutorials.findBySlug as any).mockResolvedValue(
+        makeTutorial([exerciseBlock('practice', 0, ['ex1', 'ex2'])]),
+      );
+      (mockRepo.getPracticeProgress as any).mockResolvedValue([
+        {
+          user_id: USER_ID,
+          tutorial_id: TUTORIAL_ID,
+          exercise_id: 'ex1',
+          completion_count: 4,
+          last_tempo_bpm: null,
+        },
+        {
+          user_id: USER_ID,
+          tutorial_id: TUTORIAL_ID,
+          exercise_id: 'ex2',
+          completion_count: 3,
+          last_tempo_bpm: null,
+        },
+      ]);
+
+      await service.recordPractice(USER_ID, 'slug', 'ex1');
+
+      expect(mockRepo.insertBlockCompletion).not.toHaveBeenCalled();
+    });
+
+    it('rejects practicing an exercise that does not belong to the tutorial', async () => {
+      (mockTutorials.findBySlug as any).mockResolvedValue(
+        makeTutorial([exerciseBlock('practice', 0, ['ex1'])]),
+      );
+
+      await expect(
+        service.recordPractice(USER_ID, 'slug', 'phantom'),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(mockRepo.incrementPracticeCompletion).not.toHaveBeenCalled();
+    });
   });
 });
