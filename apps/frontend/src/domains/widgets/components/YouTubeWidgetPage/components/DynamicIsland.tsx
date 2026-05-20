@@ -6,7 +6,7 @@ import { safeString, getExerciseId } from '../utils';
 import { LOCKED_DIFFICULTIES, REQUIRED_COMPLETIONS } from '../constants';
 import type { ActName } from '../hooks/useCurrentAct';
 import type { AnyBlock, BlockProgress } from '@bassnotion/contracts';
-import type { PracticeCompletions } from '@/domains/widgets/hooks/usePracticeCompletions';
+import type { LegacyPracticeCompletions as PracticeCompletions } from '@/domains/progress';
 
 // Legacy hardcoded acts (used when blocks are not available)
 const ACTS: { name: ActName; label: string }[] = [

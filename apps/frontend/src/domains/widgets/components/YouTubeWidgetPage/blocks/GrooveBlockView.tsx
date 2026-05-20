@@ -5,7 +5,7 @@ import type { TutorialBlock } from '@bassnotion/contracts';
 import { ChevronRight, Lock, Music, Sparkles } from 'lucide-react';
 import { BottomPlaybackBar } from '../components/BottomPlaybackBar.js';
 import type { CountdownState } from '../GlobalControls/types.js';
-import type { PracticeCompletions } from '@/domains/widgets/hooks/usePracticeCompletions';
+import type { LegacyPracticeCompletions as PracticeCompletions } from '@/domains/progress';
 
 interface BottomBarProps {
   selectedExercise?: any;

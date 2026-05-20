@@ -22,3 +22,11 @@ export {
   recordPractice,
   fetchUserTutorialCompletions,
 } from './api/progress.api';
+
+export {
+  toLegacyBlockProgress,
+  toLegacyPracticeCompletions,
+  findBlockEntry,
+  type LegacyBlockProgress,
+  type LegacyPracticeCompletions,
+} from './utils/derive';

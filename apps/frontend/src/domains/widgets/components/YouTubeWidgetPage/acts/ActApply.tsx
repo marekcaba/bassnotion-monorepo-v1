@@ -4,7 +4,7 @@ import React, { type ReactNode } from 'react';
 import { Lock, Music, Sparkles } from 'lucide-react';
 import { BottomPlaybackBar } from '../components/BottomPlaybackBar';
 import type { CountdownState } from '../GlobalControls/types.js';
-import type { PracticeCompletions } from '@/domains/widgets/hooks/usePracticeCompletions';
+import type { LegacyPracticeCompletions as PracticeCompletions } from '@/domains/progress';
 
 interface BottomBarProps {
   selectedExercise?: any;

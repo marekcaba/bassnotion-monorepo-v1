@@ -5,7 +5,7 @@ import { GlobalControls } from './GlobalControls';
 import { CountdownIndicator } from '../GlobalControls/components/CountdownIndicator.js';
 import { getExerciseId, calculateDuration } from '../utils';
 import { getLogger } from '@/utils/logger.js';
-import type { PracticeCompletions } from '@/domains/widgets/hooks/usePracticeCompletions';
+import type { LegacyPracticeCompletions as PracticeCompletions } from '@/domains/progress';
 
 const logger = getLogger('bottom-playback-bar');
 
