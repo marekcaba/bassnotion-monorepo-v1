@@ -200,7 +200,13 @@ export class WurlitzerVelocitySampler {
           await Tone.start();
         }
       } catch (error) {
-        logger.error('Failed to start Tone.js context', { error });
+        // Expected when called before any user gesture — browser autoplay
+        // policy blocks AudioContext.resume(). Tone.start() will succeed on
+        // the next user-gesture-triggered init attempt. Code below tolerates
+        // a not-yet-running context (no destination connections made here).
+        logger.debug('Tone.js context start deferred until user gesture', {
+          error,
+        });
       }
 
       // Create destination node
