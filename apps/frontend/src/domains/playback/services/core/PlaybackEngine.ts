@@ -2254,9 +2254,14 @@ export class PlaybackEngine {
       );
     }
     if (this.voiceCueScheduler) {
-      this.voiceCueScheduler.clearBuffers();
+      // DON'T clear voice-cue buffers - same 1-2-3-4 count-in samples for
+      // all tutorials. Clearing them leaves the next play with no buffers
+      // (the widget only injects once at page load via InitialSamplePreloader,
+      // there's no re-registration mechanism). Only stop scheduled events.
       this.voiceCueScheduler.stopAll(false);
-      debugLog('[PLAYBACK-ENGINE] switchExercise: Cleared voice cue scheduler');
+      debugLog(
+        '[PLAYBACK-ENGINE] switchExercise: Stopped voice cue (buffers preserved)',
+      );
     }
 
     // 3. Clear ALL track regions (keeps track structure, removes MIDI events)
