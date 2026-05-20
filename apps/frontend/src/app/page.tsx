@@ -468,6 +468,7 @@ export default function HomePage() {
   const domainsRef = useScrollReveal();
   const quoteBannerRef = useScrollReveal();
   const startRef = useScrollReveal();
+  const inviteRef = useScrollReveal();
   const faqRef = useScrollReveal();
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -1078,6 +1079,51 @@ export default function HomePage() {
               <FaqItem question={item.q} answer={item.a} />
             </div>
           ))}
+        </section>
+
+        <Divider />
+
+        {/* ── INVITATION ─────────────────────────────────────────────── */}
+        <section
+          ref={inviteRef}
+          id="invite"
+          className="py-[140px] px-6 md:px-[60px] max-w-[900px] mx-auto text-center"
+        >
+          <h2
+            data-reveal
+            className="landing-reveal font-heading uppercase text-[clamp(48px,7vw,88px)] leading-[0.95] tracking-[0.02em] text-[#E8E8E8] mb-9"
+          >
+            Pick up your bass.
+            <br />
+            The room&apos;s <span className="text-[#E8650A]">open</span>.
+          </h2>
+          <p
+            data-reveal
+            style={{ transitionDelay: '0.1s' }}
+            className="landing-reveal text-[#999] text-xl leading-[1.7] max-w-[560px] mx-auto mb-12 font-dm-body"
+          >
+            This is how we think bass should be learned. The fastest way to find
+            out if we&apos;re right is to play.
+          </p>
+          <div
+            data-reveal
+            style={{ transitionDelay: '0.2s' }}
+            className="landing-reveal"
+          >
+            <button
+              onClick={goToAssessment}
+              className="inline-flex items-center gap-2.5 bg-[#E8650A] text-white px-9 py-4 text-[15px] font-semibold tracking-[0.04em] rounded-sm hover:bg-[#B84E08] hover:-translate-y-px transition-all cursor-pointer border-none font-mono"
+            >
+              Get Started →
+            </button>
+          </div>
+          <p
+            data-reveal
+            style={{ transitionDelay: '0.3s' }}
+            className="landing-reveal text-sm text-[#666] mt-10 font-mono tracking-[0.08em]"
+          >
+            Practice, don&apos;t watch.
+          </p>
         </section>
 
         <Divider />
