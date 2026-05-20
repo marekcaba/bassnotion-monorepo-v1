@@ -11,6 +11,8 @@ export {
   useProgress,
   useCompleteBlock,
   useRecordPractice,
+  useUserTutorialCompletions,
+  useTutorialCompletionSummary,
   progressKeys,
 } from './hooks/useProgress';
 
@@ -18,4 +20,5 @@ export {
   fetchTutorialProgress,
   completeBlock,
   recordPractice,
+  fetchUserTutorialCompletions,
 } from './api/progress.api';

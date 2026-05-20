@@ -9,7 +9,10 @@
  * before login will 401.
  */
 
-import type { GetTutorialProgressResponse } from '@bassnotion/contracts';
+import type {
+  GetTutorialProgressResponse,
+  GetUserTutorialCompletionsResponse,
+} from '@bassnotion/contracts';
 import { apiClient } from '@/lib/api-client';
 
 /** GET /api/v1/tutorials/:slug/progress */
@@ -57,5 +60,17 @@ export function recordPractice(
       exerciseId,
     )}/practice`,
     { tempoBpm },
+  );
+}
+
+/**
+ * GET /api/v1/users/me/tutorial-completions
+ *
+ * Per-tutorial completion rollup for the library / sidebar. Returns one
+ * summary entry per active tutorial.
+ */
+export function fetchUserTutorialCompletions(): Promise<GetUserTutorialCompletionsResponse> {
+  return apiClient.get<GetUserTutorialCompletionsResponse>(
+    `/api/v1/users/me/tutorial-completions`,
   );
 }

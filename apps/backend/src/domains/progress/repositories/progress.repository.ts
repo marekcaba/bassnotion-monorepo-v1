@@ -41,6 +41,34 @@ export class ProgressRepository {
     private readonly requestContext: RequestContextService,
   ) {}
 
+  /**
+   * Fetch every block completion for this user across ALL tutorials. Used
+   * by the summary endpoint to compute per-tutorial completion rollups
+   * without N+1 queries.
+   */
+  async getAllBlockCompletionsForUser(
+    userId: string,
+  ): Promise<BlockCompletionRow[]> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('block_completions')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (error) {
+      logger.error('Failed to fetch all block completions for user', error, {
+        userId,
+        correlationId,
+      });
+      throw error;
+    }
+
+    return (data ?? []) as BlockCompletionRow[];
+  }
+
   /** Fetch every completed block for (user, tutorial). Empty array on no rows. */
   async getBlockCompletions(
     userId: string,
