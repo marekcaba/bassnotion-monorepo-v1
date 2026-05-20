@@ -437,6 +437,19 @@ export function useBassBufferRegistration(
             if (loadResult.success && loadResult.loaded > 0) {
               const loadedBuffers = bassStrategy.getLoadedBuffers();
               if (loadedBuffers) {
+                // CRITICAL: Inject buffers into PlaybackEngine's bass
+                // scheduler. Without this, the scheduler stays empty and
+                // every bass note lookup MISSes — silent playback on
+                // tutorial-to-tutorial navigation when the cache misses.
+                const bassGainNode =
+                  playbackEngine.getOrCreateInstrumentGainNode('bass');
+                const destination = bassGainNode || audioContext.destination;
+                playbackEngine.setBassBuffers(loadedBuffers, destination);
+
+                const effectiveVolume = isMuted ? 0 : volume / 100;
+                playbackEngine.setInstrumentVolume('bass', effectiveVolume);
+                playbackEngine.setInstrumentMuted('bass', isMuted);
+
                 bassBuffersRef.current = loadedBuffers;
                 onSamplesLoadedRef.current(loadResult.loaded, loadResult.total);
                 onSamplerReadyRef.current(true);
