@@ -1467,6 +1467,33 @@ function YouTubeWidgetPageContent({
           const isBlockActive = currentBlockId === block.id;
           const isBlockCompleted = !!blockProgress[block.id]?.completed;
           const hasNextBlock = blockIndex < blocks.length - 1;
+          // A block is unlocked iff every block before it is completed
+          // (block 0 is always unlocked). Same rule DynamicIsland uses for
+          // greying out future tabs in the sidebar.
+          const isBlockUnlocked = blocks
+            .slice(0, blockIndex)
+            .every((b) => !!blockProgress[b.id]?.completed);
+
+          // Locked blocks render an empty zero-height section. The DOM node
+          // stays present (so refs/IntersectionObserver stay stable) but the
+          // section has no scroll surface and isn't a snap-stop — the user
+          // can't scroll into a locked section, only into ones they've
+          // unlocked. When the previous block completes, the section
+          // expands to h-full snap-start during the smooth scrollToNextBlock
+          // animation, so the layout change is masked by the scroll.
+          if (!isBlockUnlocked) {
+            return (
+              <section
+                key={block.id}
+                ref={(el) => {
+                  if (el) blockRefsRef.current.set(block.id, el);
+                  else blockRefsRef.current.delete(block.id);
+                }}
+                className="h-0 overflow-hidden"
+                aria-hidden="true"
+              />
+            );
+          }
 
           return (
             <section
