@@ -129,7 +129,15 @@ export function useBassBufferRegistration(
     };
   }, []);
 
-  // Track exercise ID changes for logging (not for triggering cleanup)
+  // Track exercise ID changes for logging AND reset registration tracking
+  //
+  // Belt-and-suspenders: PlaybackEngine.switchExercise() also dispatches
+  // 'exercise:switched' which resets lastRegisteredExerciseIdRef (see effect
+  // above). But the `exercise` prop can also change via paths that don't go
+  // through switchExercise (e.g. host-level prop change before the engine's
+  // switch propagates). Without resetting the ref here, the trigger effect
+  // would see `lastRegisteredExerciseIdRef.current === exercise?.id` and skip
+  // registration, leaving the scheduler with the OLD exercise's buffers.
   useEffect(() => {
     if (exercise?.id !== prevExerciseIdRef.current) {
       if (isVerboseDebugEnabled()) {
@@ -139,6 +147,11 @@ export function useBassBufferRegistration(
         });
       }
       prevExerciseIdRef.current = exercise?.id;
+      // Reset so the next registration attempt isn't deduped against the
+      // old exercise's id. The trigger effect re-runs because exercise?.id
+      // is in its deps.
+      lastRegisteredExerciseIdRef.current = null;
+      isRegisteringRef.current = false;
     }
   }, [exercise?.id]);
 

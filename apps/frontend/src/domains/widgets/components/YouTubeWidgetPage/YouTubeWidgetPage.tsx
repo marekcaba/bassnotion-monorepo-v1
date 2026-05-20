@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { FretboardCard, FRETBOARD_VIEW_PRESETS } from './FretboardCard';
 
 import { FourWidgetsCard } from './components/FourWidgetsCard';
+import { BassRegistrationHost } from './BassRegistrationHost';
 import { ExerciseSelectorCard } from './components/ExerciseSelectorCard';
 import { ExerciseDescriptionCard } from './components/ExerciseDescriptionCard';
 import { DynamicIsland } from './components/DynamicIsland';
@@ -1342,6 +1343,14 @@ function YouTubeWidgetPageContent({
     <div className="h-dvh flex flex-col">
       {/* iOS Safari warning — non-blocking, dismissible per session */}
       <IOSSafariBanner />
+      {/* Hidden: keeps bass buffers registered against the current exercise
+          even when the groove block isn't mounted (e.g. understand/practice
+          acts). Renders nothing. See BassRegistrationHost.tsx. */}
+      <BassRegistrationHost
+        exercise={widgetState.selectedExercise}
+        volume={widgetState.state.volume.bass}
+        isMuted={widgetState.state.muted.bass}
+      />
       {!hideChrome && (
         <>
           {/* Header with Logo - Same as home/library pages */}
