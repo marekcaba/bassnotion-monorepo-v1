@@ -1,10 +1,12 @@
 import {
+  Body,
   Controller,
   Get,
-  Param,
-  UseGuards,
   HttpCode,
   HttpStatus,
+  Param,
+  Post,
+  UseGuards,
 } from '@nestjs/common';
 import type { GetTutorialProgressResponse } from '@bassnotion/contracts';
 
@@ -16,6 +18,18 @@ interface AuthUser {
   id: string;
   email: string;
   displayName?: string;
+}
+
+/** POST .../blocks/:blockId/complete body */
+interface CompleteBlockBody {
+  /** Optional per-block payload (e.g. quiz score) */
+  data?: Record<string, unknown>;
+}
+
+/** POST .../exercises/:exerciseId/practice body */
+interface RecordPracticeBody {
+  /** Tempo the user was practicing at, in BPM. Optional. */
+  tempoBpm?: number;
 }
 
 @Controller('api/v1/tutorials')
@@ -37,5 +51,59 @@ export class ProgressController {
     @Param('slug') slug: string,
   ): Promise<GetTutorialProgressResponse> {
     return this.progressService.getTutorialProgress(user.id, slug);
+  }
+
+  /**
+   * POST /api/v1/tutorials/:slug/blocks/:blockId/complete
+   *
+   * Mark a block complete for the current user. Idempotent. Server enforces
+   * the unlock rule — completing a block whose prerequisites aren't yet
+   * complete throws NotFound (avoids leaking gating details).
+   *
+   * Returns the freshly computed full progress so the frontend can replace
+   * its cache without a follow-up GET.
+   */
+  @Post(':slug/blocks/:blockId/complete')
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async completeBlock(
+    @CurrentUser() user: AuthUser,
+    @Param('slug') slug: string,
+    @Param('blockId') blockId: string,
+    @Body() body: CompleteBlockBody,
+  ): Promise<GetTutorialProgressResponse> {
+    return this.progressService.completeBlock(
+      user.id,
+      slug,
+      blockId,
+      body?.data,
+    );
+  }
+
+  /**
+   * POST /api/v1/tutorials/:slug/exercises/:exerciseId/practice
+   *
+   * Record one practice rep for an exercise. Increments completion_count
+   * (capped at 10) and updates last_tempo_bpm. If this rep causes the
+   * parent exercise block to hit the all-exercises-meet-threshold rule,
+   * the block is auto-completed.
+   *
+   * Returns the freshly computed full progress.
+   */
+  @Post(':slug/exercises/:exerciseId/practice')
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async recordPractice(
+    @CurrentUser() user: AuthUser,
+    @Param('slug') slug: string,
+    @Param('exerciseId') exerciseId: string,
+    @Body() body: RecordPracticeBody,
+  ): Promise<GetTutorialProgressResponse> {
+    return this.progressService.recordPractice(
+      user.id,
+      slug,
+      exerciseId,
+      body?.tempoBpm,
+    );
   }
 }
