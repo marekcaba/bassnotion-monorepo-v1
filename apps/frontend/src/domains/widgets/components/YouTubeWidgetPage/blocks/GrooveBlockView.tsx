@@ -5,7 +5,7 @@ import type { TutorialBlock } from '@bassnotion/contracts';
 import { ChevronRight, Lock, Music, Sparkles } from 'lucide-react';
 import { BottomPlaybackBar } from '../components/BottomPlaybackBar.js';
 import type { CountdownState } from '../GlobalControls/types.js';
-import type { PracticeCompletions } from '@/domains/widgets/hooks/usePracticeCompletions';
+import type { LegacyPracticeCompletions as PracticeCompletions } from '@/domains/progress';
 
 interface BottomBarProps {
   selectedExercise?: any;
@@ -174,7 +174,7 @@ export const GrooveBlockView = React.memo(function GrooveBlockView({
       {/* Content — centered to match exercise block */}
       <div
         className="flex-1 overflow-y-auto flex flex-col"
-        style={{ overscrollBehavior: 'contain' }}
+        style={{ overscrollBehaviorX: 'contain', overscrollBehaviorY: 'auto' }}
       >
         <div className="mx-auto w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-[800px] px-4 flex flex-col flex-1">
           <div className="flex-1 py-2">{fretboardContent}</div>

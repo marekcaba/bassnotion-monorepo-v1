@@ -456,6 +456,15 @@ export type {
   JourneyMatchResult,
 } from './journey.js';
 
+// Progress system types — block + exercise progress responses
+export type {
+  BlockProgressEntry,
+  ExerciseProgressEntry,
+  GetTutorialProgressResponse,
+  TutorialCompletionSummary,
+  GetUserTutorialCompletionsResponse,
+} from './progress.js';
+
 // Block-based tutorial system types
 export type {
   BlockType,

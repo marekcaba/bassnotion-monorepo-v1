@@ -6,7 +6,7 @@ import { safeString, getExerciseId } from '../utils';
 import { LOCKED_DIFFICULTIES, REQUIRED_COMPLETIONS } from '../constants';
 import type { ActName } from '../hooks/useCurrentAct';
 import type { AnyBlock, BlockProgress } from '@bassnotion/contracts';
-import type { PracticeCompletions } from '@/domains/widgets/hooks/usePracticeCompletions';
+import type { LegacyPracticeCompletions as PracticeCompletions } from '@/domains/progress';
 
 // Legacy hardcoded acts (used when blocks are not available)
 const ACTS: { name: ActName; label: string }[] = [
@@ -103,7 +103,6 @@ export const DynamicIsland = React.memo(function DynamicIsland({
           {islandBlocks.map((block) => {
             const isActive = currentBlockId === block.id;
             const isExerciseBlock = block.type === 'exercise';
-            const isBlockCompleted = blockProgress[block.id]?.completed;
             const isUnlocked = blockUnlockMap[block.id] ?? false;
 
             return (
@@ -116,12 +115,13 @@ export const DynamicIsland = React.memo(function DynamicIsland({
                   transition-all duration-200
                   ${
                     !isUnlocked
-                      ? 'text-white/20 cursor-not-allowed'
+                      ? // Locked: greyed out, Lock icon, no hover affordance.
+                        'text-white/20 cursor-not-allowed'
                       : isActive
-                        ? 'bg-white/15 text-white shadow-[0_0_8px_rgba(255,255,255,0.08)] cursor-pointer'
-                        : isBlockCompleted
-                          ? 'text-emerald-400/60 hover:text-emerald-400/80 hover:bg-white/5 cursor-pointer'
-                          : 'text-white/40 hover:text-white/60 hover:bg-white/5 cursor-pointer'
+                        ? // Active + unlocked: saturated green with subtle bg + glow.
+                          'bg-emerald-500/15 text-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.15)] cursor-pointer'
+                        : // Unlocked (but not active): faded green, brightens on hover.
+                          'text-emerald-400/70 hover:text-emerald-400 hover:bg-emerald-500/5 cursor-pointer'
                   }
                 `}
               >

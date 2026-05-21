@@ -1,11 +1,10 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import { useTutorials } from '@/domains/widgets/hooks/useTutorials';
-import {
-  useTutorialProgress,
-  type TutorialProgress,
-} from './useTutorialProgress';
+import { useUserTutorialCompletions } from '@/domains/progress';
+import type { TutorialCompletionSummary } from '@bassnotion/contracts';
+import { useAuth } from '@/domains/user/hooks/use-auth';
 import { PRODUCT_FOLDERS } from '../constants/product-folders';
 
 /** Block visible in the sidebar progress dots */
@@ -14,141 +13,132 @@ export interface IslandBlock {
   title: string;
 }
 
+/**
+ * Legacy three-stage progress shape, kept for backward compatibility with
+ * components that still display understood/practiced/applied indicators.
+ * Derived from block completion in the new model.
+ */
+export interface TutorialProgress {
+  understood: boolean;
+  practiced: boolean;
+  applied: boolean;
+}
+
 export interface TutorialItem {
   slug: string;
   title: string;
   sidebarTitle?: string;
   difficulty: string;
-  /** Legacy field - kept for backward compatibility */
+  /** True iff every block in tutorial.blocks is completed */
   isComplete: boolean;
-  /** Three-stage progress tracking */
+  /** Three-stage progress tracking (derived from blocks). */
   progress: TutorialProgress;
   /** Blocks visible in the Dynamic Island (showInIsland !== false) */
   islandBlocks?: IslandBlock[];
-  /** Per-block completion status read from localStorage */
+  /** Per-block completion status keyed by block id */
   blockProgress?: Record<string, { completed: boolean }>;
-}
-
-const BLOCK_PROGRESS_STORAGE_PREFIX = 'bassnotion-block-progress-';
-
-/** Read block progress from localStorage for a given tutorial */
-function readBlockProgressFromStorage(
-  tutorialId: string,
-): Record<string, { completed: boolean }> | undefined {
-  try {
-    const raw = localStorage.getItem(
-      `${BLOCK_PROGRESS_STORAGE_PREFIX}${tutorialId}`,
-    );
-    if (!raw) return undefined;
-    const parsed = JSON.parse(raw) as Record<string, { completed: boolean }>;
-    return parsed;
-  } catch {
-    return undefined;
-  }
 }
 
 export type TutorialsByFolder = Record<string, TutorialItem[]>;
 
 /**
- * Hook to fetch tutorials and group them by folder.
- * Shared between TutorialDock and CollapsedTutorialDock.
+ * Hook to fetch tutorials and group them by folder, decorated with the
+ * current user's progress. Single chokepoint for TutorialDock,
+ * CollapsedTutorialDock, BassmentJourneyView, CollapsedJourneyPath.
  *
- * Now includes three-stage progress tracking (understood, practiced, applied).
+ * Replaces the legacy implementation that read localStorage directly per
+ * tutorial id. Now sources from the backend summary endpoint
+ * (`/api/v1/users/me/tutorial-completions`) via TanStack Query, which
+ * handles cache invalidation centrally — no more event-driven re-renders.
  */
 export function useTutorialsByFolder() {
-  const { tutorials, isLoading } = useTutorials();
-  const [updateTrigger, setUpdateTrigger] = useState(0);
+  const { tutorials, isLoading: tutorialsLoading } = useTutorials();
+  const { isAuthenticated } = useAuth();
 
-  // Prepare tutorial info for progress check
-  const tutorialInfos = useMemo(
-    () =>
-      tutorials.map((t) => ({
-        id: t.id,
-        exerciseCount: t.exercise_count,
-      })),
-    [tutorials],
-  );
+  // The completions query is gated on authentication — the endpoint is
+  // AuthGuard-protected and would 401 for anonymous users.
+  const { data: completionsData, isLoading: progressLoading } =
+    useUserTutorialCompletions({ enabled: isAuthenticated });
 
-  // Get three-stage progress for all tutorials
-  const progressMap = useTutorialProgress(tutorialInfos);
+  // Index completion summaries by tutorial id for O(1) lookup below.
+  const summaryByTutorialId = useMemo(() => {
+    const map = new Map<string, TutorialCompletionSummary>();
+    if (!completionsData) return map;
+    for (const summary of completionsData.tutorials) {
+      map.set(summary.tutorialId, summary);
+    }
+    return map;
+  }, [completionsData]);
 
-  // Listen for progress update events to trigger re-render
-  useEffect(() => {
-    const handleProgressUpdate = () => {
-      setUpdateTrigger((prev) => prev + 1);
-    };
-
-    window.addEventListener('tutorial-progress-updated', handleProgressUpdate);
-    window.addEventListener('block-progress-updated', handleProgressUpdate);
-    return () => {
-      window.removeEventListener(
-        'tutorial-progress-updated',
-        handleProgressUpdate,
-      );
-      window.removeEventListener(
-        'block-progress-updated',
-        handleProgressUpdate,
-      );
-    };
-  }, []);
-
-  // Group tutorials by category (folder)
   const tutorialsByFolder = useMemo(() => {
     const grouped: TutorialsByFolder = {};
-
-    // Initialize folders
     PRODUCT_FOLDERS.forEach((folder) => {
       grouped[folder.id] = [];
     });
 
-    // Group tutorials by their category
     tutorials.forEach((t) => {
-      const folderId = t.category || 'starter-kit'; // Default to starter-kit if no category
-      if (grouped[folderId]) {
-        const progress = progressMap[t.id] ?? {
-          understood: false,
-          practiced: false,
-          applied: false,
-        };
+      const folderId = t.category || 'starter-kit';
+      if (!grouped[folderId]) return;
 
-        // Compute island-visible blocks (same filter as DynamicIsland)
-        const islandBlocks: IslandBlock[] | undefined =
-          t.blocks && t.blocks.length > 0
-            ? t.blocks
-                .filter((b) => b.showInIsland !== false)
-                .map((b) => ({ id: b.id, title: b.title }))
-            : undefined;
+      const summary = summaryByTutorialId.get(t.id);
 
-        // Read per-block completion from localStorage
-        const blockProgress = islandBlocks
-          ? readBlockProgressFromStorage(t.id)
+      // Island-visible blocks — same filter the DynamicIsland uses, kept
+      // here so the sidebar progress dots can render the right ones.
+      const islandBlocks: IslandBlock[] | undefined =
+        t.blocks && t.blocks.length > 0
+          ? t.blocks
+              .filter((b) => b.showInIsland !== false)
+              .map((b) => ({ id: b.id, title: b.title }))
           : undefined;
 
-        // isComplete: prefer block-based when blocks exist
-        const isComplete =
-          islandBlocks && islandBlocks.length > 0
-            ? islandBlocks.every((b) => blockProgress?.[b.id]?.completed)
-            : progress.understood && progress.practiced && progress.applied;
+      // Per-block completion map. Convert the summary's record into the
+      // legacy {completed: boolean} shape that consumers expect. Falls
+      // back to undefined when the tutorial has no blocks (legacy tutorials).
+      const blockProgress = islandBlocks
+        ? islandBlocks.reduce<Record<string, { completed: boolean }>>(
+            (acc, b) => {
+              acc[b.id] = {
+                completed: summary?.blockCompletions[b.id] ?? false,
+              };
+              return acc;
+            },
+            {},
+          )
+        : undefined;
 
-        grouped[folderId].push({
-          slug: t.slug,
-          title: t.title,
-          sidebarTitle: t.sidebar_title,
-          difficulty: t.difficulty,
-          isComplete,
-          progress,
-          islandBlocks,
-          blockProgress,
-        });
-      }
+      const isComplete = summary?.isComplete ?? false;
+
+      // Derived three-stage progress for legacy UI bits. We can't infer
+      // a precise mapping from the new block-based model — the closest
+      // approximation is "have we touched ANY block" → understood, "is
+      // half the tutorial done" → practiced, "is everything done" →
+      // applied. Better than dropping the field outright; consumers using
+      // this should migrate to isComplete or blockCompletions over time.
+      const completedCount = summary?.completedBlockCount ?? 0;
+      const totalCount = summary?.totalBlockCount ?? 0;
+      const progress: TutorialProgress = {
+        understood: completedCount > 0,
+        practiced: totalCount > 0 && completedCount >= totalCount / 2,
+        applied: isComplete,
+      };
+
+      grouped[folderId].push({
+        slug: t.slug,
+        title: t.title,
+        sidebarTitle: t.sidebar_title,
+        difficulty: t.difficulty,
+        isComplete,
+        progress,
+        islandBlocks,
+        blockProgress,
+      });
     });
 
     return grouped;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tutorials, progressMap, updateTrigger]);
+  }, [tutorials, summaryByTutorialId]);
 
   return {
     tutorialsByFolder,
-    isLoading,
+    isLoading: tutorialsLoading || progressLoading,
   };
 }
