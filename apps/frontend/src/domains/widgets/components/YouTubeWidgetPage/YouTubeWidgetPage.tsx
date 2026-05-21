@@ -53,7 +53,6 @@ import type { AnyBlock } from '@bassnotion/contracts';
 import { BlockRenderer } from './blocks';
 import { useCurrentBlock } from './hooks/useCurrentBlock';
 import { deriveBlocksFromLegacy } from './utils/deriveBlocksFromLegacy';
-import { getInitialBlock } from './utils/getInitialBlock';
 // New progress system (PR 5 of 6 — replaces useBlockProgress, useActCompletion,
 // usePracticeCompletions, useTutorialProgressActions).
 import {
@@ -136,28 +135,43 @@ function YouTubeWidgetPageContent({
   // signatures used throughout this component. Each kicks off a fire-and-
   // forget mutation; the server returns the new full state and TanStack
   // Query patches the cache in onSuccess.
+  //
+  // IMPORTANT: TanStack Query returns a NEW mutation result object on every
+  // render. If we include the result object in a useCallback dep array, the
+  // wrapper identity changes every render — which breaks downstream hooks
+  // that depend on a stable callback (e.g. UnderstandVideoPlayer's
+  // useEffect that calls onComplete). The mutate function itself is stable
+  // per mutation instance, but accessing it via .mutate creates the same
+  // problem. Solution: stash `mutate` in a ref that we update each render,
+  // and have the wrappers read from the ref. This keeps the wrappers'
+  // identity stable across renders.
+  const completeBlockMutateRef = useRef(completeBlockMutation.mutate);
+  completeBlockMutateRef.current = completeBlockMutation.mutate;
+  const recordPracticeMutateRef = useRef(recordPracticeMutation.mutate);
+  recordPracticeMutateRef.current = recordPracticeMutation.mutate;
+
   const markBlockComplete = useCallback(
     (blockId: string, data?: Record<string, unknown>) => {
       if (!tutorialSlug) return;
-      completeBlockMutation.mutate({ blockId, data });
+      completeBlockMutateRef.current({ blockId, data });
     },
-    [tutorialSlug, completeBlockMutation],
+    [tutorialSlug],
   );
 
   const incrementCompletion = useCallback(
     (exerciseId: string) => {
       if (!tutorialSlug) return;
-      recordPracticeMutation.mutate({ exerciseId });
+      recordPracticeMutateRef.current({ exerciseId });
     },
-    [tutorialSlug, recordPracticeMutation],
+    [tutorialSlug],
   );
 
   const updateTempo = useCallback(
     (exerciseId: string, tempoBpm: number) => {
       if (!tutorialSlug) return;
-      recordPracticeMutation.mutate({ exerciseId, tempoBpm });
+      recordPracticeMutateRef.current({ exerciseId, tempoBpm });
     },
-    [tutorialSlug, recordPracticeMutation],
+    [tutorialSlug],
   );
 
   // markUnderstood: the legacy 3-stage flag has no equivalent in the new
@@ -1092,8 +1106,16 @@ function YouTubeWidgetPageContent({
   // earlier in this component via the new useProgress hook. The old
   // useBlockProgress call has been removed.
 
-  // Block-based initial navigation: scroll to first incomplete block on mount
-  // Waits for isProgressHydrated so blockProgress reflects localStorage data.
+  // Block-based initial navigation: always land on the FIRST block on mount.
+  //
+  // Previously we used getInitialBlock(blocks, blockProgress) to resume at
+  // the first incomplete block. Returning users landed mid-tutorial without
+  // context, which made every entry feel inconsistent. The new contract:
+  // every tutorial entry starts at blocks[0] regardless of progress. The
+  // user can still freely move to any block they've previously unlocked.
+  //
+  // Waits for isProgressHydrated so we know whether the user has any prior
+  // progress in this tutorial (drives the scroll-gate decision).
   useEffect(() => {
     if (
       !hasInitializedActRef.current &&
@@ -1101,19 +1123,25 @@ function YouTubeWidgetPageContent({
       tutorialData?.id &&
       blocks.length > 0
     ) {
-      const initialBlockId = getInitialBlock(blocks, blockProgress);
+      const initialBlockId = blocks[0]?.id;
 
-      logger.info(
-        '[INITIAL-BLOCK] Scrolling to initial block based on progress',
-        {
-          tutorialId: tutorialData.id,
-          initialBlockId,
-          blockCount: blocks.length,
-        },
+      // If the user has previously completed ANY block in this tutorial,
+      // they've unlocked the snap-scroll container. Don't re-gate them at
+      // Understand — let them freely move between sections they've already
+      // opened. New users (no progress) stay gated until they finish the
+      // first block, same as before.
+      const hasAnyProgress = blocks.some(
+        (b) => blockProgress[b.id]?.completed,
       );
 
-      // If starting past the first block, enable scrolling
-      if (initialBlockId && initialBlockId !== blocks[0]?.id) {
+      logger.info('[INITIAL-BLOCK] Landing on first block', {
+        tutorialId: tutorialData.id,
+        initialBlockId,
+        blockCount: blocks.length,
+        hasAnyProgress,
+      });
+
+      if (hasAnyProgress) {
         setHasPassedUnderstand(true);
       }
 
@@ -1122,7 +1150,7 @@ function YouTubeWidgetPageContent({
         hasSetCurrentActRef.current = true;
       }
 
-      // Instant scroll on initial mount (no animation)
+      // Instant scroll on initial mount (no animation). Lands at top.
       if (initialBlockId) {
         requestAnimationFrame(() => {
           scrollToBlock(initialBlockId, { instant: true });
@@ -1535,6 +1563,35 @@ function YouTubeWidgetPageContent({
           const isBlockActive = currentBlockId === block.id;
           const isBlockCompleted = !!blockProgress[block.id]?.completed;
           const hasNextBlock = blockIndex < blocks.length - 1;
+          // A block is unlocked iff every block before it is completed
+          // (block 0 is always unlocked). Same rule DynamicIsland uses
+          // for greying out future tabs in the sidebar — and same rule
+          // the backend enforces when validating block-complete writes.
+          const isBlockUnlocked = blocks
+            .slice(0, blockIndex)
+            .every((b) => !!blockProgress[b.id]?.completed);
+
+          // Locked blocks render an empty zero-height section. The DOM
+          // node stays present (so refs/IntersectionObserver stay stable)
+          // but the section has no scroll surface and isn't a snap-stop —
+          // the user physically cannot scroll into a locked section. When
+          // the previous block completes and this block transitions to
+          // unlocked, the section expands to h-full snap-start during the
+          // smooth scrollToNextBlock animation, so the layout change is
+          // masked by the scroll.
+          if (!isBlockUnlocked) {
+            return (
+              <section
+                key={block.id}
+                ref={(el) => {
+                  if (el) blockRefsRef.current.set(block.id, el);
+                  else blockRefsRef.current.delete(block.id);
+                }}
+                className="h-0 overflow-hidden"
+                aria-hidden="true"
+              />
+            );
+          }
 
           return (
             <section
