@@ -1,5 +1,3 @@
-export { getInitialAct } from './utils/getInitialAct.js';
-
 /** Safely convert any value to a string */
 export function safeString(value: unknown): string {
   if (value === null || value === undefined) return '';

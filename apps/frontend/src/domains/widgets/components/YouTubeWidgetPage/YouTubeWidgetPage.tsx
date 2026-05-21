@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { verboseLog } from '@/config/debug';
 import Image from 'next/image';
 import { FretboardCard, FRETBOARD_VIEW_PRESETS } from './FretboardCard';
@@ -41,8 +41,6 @@ import { usePageInitialization } from '@/domains/widgets/machines/index.js';
 // UIZoneProvider and ThemeSwitcher are now applied at root layout level
 // NextUI was removed - all components now use shadcn/ui
 import { HomeNavbar } from '@/app/_components/HomeNavbar';
-import { usePracticeCompletions } from '@/domains/widgets/hooks/usePracticeCompletions';
-import { useActCompletion } from './hooks/useActCompletion';
 import { useActAwarePreload } from './hooks/useActAwarePreload';
 import { SampleLoadingOverlay } from './components/SampleLoadingOverlay';
 import { IOSSafariBanner } from './components/IOSSafariBanner';
@@ -50,14 +48,20 @@ import { GlobalControls } from './components/GlobalControls';
 import { CountdownIndicator } from './GlobalControls/components/CountdownIndicator.js';
 import { calculateDuration, getExerciseId } from './utils';
 import { ensureAudioContextLightweight } from '@/domains/playback/utils/ensureAudioContext.js';
-import { useTutorialProgressActions } from '@/domains/platform/hooks/useTutorialProgress';
 // Block system imports
 import type { AnyBlock } from '@bassnotion/contracts';
 import { BlockRenderer } from './blocks';
 import { useCurrentBlock } from './hooks/useCurrentBlock';
-import { useBlockProgress } from '@/domains/widgets/hooks/useBlockProgress';
 import { deriveBlocksFromLegacy } from './utils/deriveBlocksFromLegacy';
-import { getInitialBlock } from './utils/getInitialBlock';
+// New progress system (PR 5 of 6 — replaces useBlockProgress, useActCompletion,
+// usePracticeCompletions, useTutorialProgressActions).
+import {
+  useProgress,
+  useCompleteBlock,
+  useRecordPractice,
+  toLegacyBlockProgress,
+  toLegacyPracticeCompletions,
+} from '@/domains/progress';
 
 const logger = getLogger('youtube-widget');
 
@@ -107,12 +111,81 @@ function YouTubeWidgetPageContent({
   const { navigateWithTransition } = useViewTransitionRouter();
   const isAdmin = profile?.role === 'admin';
 
-  // Practice completions — shared between ExerciseSelectorCard and BottomPlaybackBar
-  const { practiceCompletions, incrementCompletion, updateTempo } =
-    usePracticeCompletions(tutorialData?.id);
+  // Unified progress hook — single source of truth for block + exercise
+  // completion state. The backend computes unlock state and auto-cascades
+  // exercise-block completion when all exercises hit the threshold.
+  const { data: progressData } = useProgress(tutorialSlug, {
+    enabled: !!profile?.id,
+  });
+  const completeBlockMutation = useCompleteBlock(tutorialSlug ?? '');
+  const recordPracticeMutation = useRecordPractice(tutorialSlug ?? '');
 
-  // Tutorial progress actions for three-stage tracking (understand, practice, apply)
-  const { markUnderstood } = useTutorialProgressActions(tutorialData?.id);
+  // Legacy-shape adapters so child components and existing prop interfaces
+  // continue to work unchanged. Will be flattened in a future cleanup.
+  const blockProgress = useMemo(
+    () => toLegacyBlockProgress(progressData),
+    [progressData],
+  );
+  const practiceCompletions = useMemo(
+    () => toLegacyPracticeCompletions(progressData),
+    [progressData],
+  );
+
+  // Imperative wrappers around the mutations to match the legacy call
+  // signatures used throughout this component. Each kicks off a fire-and-
+  // forget mutation; the server returns the new full state and TanStack
+  // Query patches the cache in onSuccess.
+  //
+  // IMPORTANT: TanStack Query returns a NEW mutation result object on every
+  // render. If we include the result object in a useCallback dep array, the
+  // wrapper identity changes every render — which breaks downstream hooks
+  // that depend on a stable callback (e.g. UnderstandVideoPlayer's
+  // useEffect that calls onComplete). The mutate function itself is stable
+  // per mutation instance, but accessing it via .mutate creates the same
+  // problem. Solution: stash `mutate` in a ref that we update each render,
+  // and have the wrappers read from the ref. This keeps the wrappers'
+  // identity stable across renders.
+  const completeBlockMutateRef = useRef(completeBlockMutation.mutate);
+  completeBlockMutateRef.current = completeBlockMutation.mutate;
+  const recordPracticeMutateRef = useRef(recordPracticeMutation.mutate);
+  recordPracticeMutateRef.current = recordPracticeMutation.mutate;
+
+  const markBlockComplete = useCallback(
+    (blockId: string, data?: Record<string, unknown>) => {
+      if (!tutorialSlug) return;
+      completeBlockMutateRef.current({ blockId, data });
+    },
+    [tutorialSlug],
+  );
+
+  const incrementCompletion = useCallback(
+    (exerciseId: string) => {
+      if (!tutorialSlug) return;
+      recordPracticeMutateRef.current({ exerciseId });
+    },
+    [tutorialSlug],
+  );
+
+  const updateTempo = useCallback(
+    (exerciseId: string, tempoBpm: number) => {
+      if (!tutorialSlug) return;
+      recordPracticeMutateRef.current({ exerciseId, tempoBpm });
+    },
+    [tutorialSlug],
+  );
+
+  // markUnderstood: the legacy 3-stage flag has no equivalent in the new
+  // block-based model. Block completion takes its place. Keep a no-op so
+  // call sites compile until the call site itself is removed in a
+  // follow-up cleanup. The "understand" block's own onComplete →
+  // markBlockComplete handles the actual signal now.
+  const markUnderstood = useCallback(() => {
+    // intentionally empty — superseded by block-based completion
+  }, []);
+
+  // The progress query indicates hydration via TanStack Query's isPending.
+  // Some legacy flows checked `isProgressHydrated` for "data ready" gating.
+  const isProgressHydrated = progressData !== undefined;
 
   // FAANG Solution: Clear state management for preview mode
   // Only check sessionStorage, don't rely on referrer (unreliable)
@@ -1029,19 +1102,20 @@ function YouTubeWidgetPageContent({
     blocks,
   });
 
-  // Block progress tracking (localStorage + Supabase sync)
-  const {
-    blockProgress,
-    markBlockComplete,
-    isHydrated: isProgressHydrated,
-  } = useBlockProgress({
-    tutorialId: tutorialData?.id,
-    blocks,
-    userId: profile?.id,
-  });
+  // blockProgress, markBlockComplete, isProgressHydrated are now defined
+  // earlier in this component via the new useProgress hook. The old
+  // useBlockProgress call has been removed.
 
-  // Block-based initial navigation: scroll to first incomplete block on mount
-  // Waits for isProgressHydrated so blockProgress reflects localStorage data.
+  // Block-based initial navigation: always land on the FIRST block on mount.
+  //
+  // Previously we used getInitialBlock(blocks, blockProgress) to resume at
+  // the first incomplete block. Returning users landed mid-tutorial without
+  // context, which made every entry feel inconsistent. The new contract:
+  // every tutorial entry starts at blocks[0] regardless of progress. The
+  // user can still freely move to any block they've previously unlocked.
+  //
+  // Waits for isProgressHydrated so we know whether the user has any prior
+  // progress in this tutorial (drives the scroll-gate decision).
   useEffect(() => {
     if (
       !hasInitializedActRef.current &&
@@ -1049,19 +1123,25 @@ function YouTubeWidgetPageContent({
       tutorialData?.id &&
       blocks.length > 0
     ) {
-      const initialBlockId = getInitialBlock(blocks, blockProgress);
+      const initialBlockId = blocks[0]?.id;
 
-      logger.info(
-        '[INITIAL-BLOCK] Scrolling to initial block based on progress',
-        {
-          tutorialId: tutorialData.id,
-          initialBlockId,
-          blockCount: blocks.length,
-        },
+      // If the user has previously completed ANY block in this tutorial,
+      // they've unlocked the snap-scroll container. Don't re-gate them at
+      // Understand — let them freely move between sections they've already
+      // opened. New users (no progress) stay gated until they finish the
+      // first block, same as before.
+      const hasAnyProgress = blocks.some(
+        (b) => blockProgress[b.id]?.completed,
       );
 
-      // If starting past the first block, enable scrolling
-      if (initialBlockId && initialBlockId !== blocks[0]?.id) {
+      logger.info('[INITIAL-BLOCK] Landing on first block', {
+        tutorialId: tutorialData.id,
+        initialBlockId,
+        blockCount: blocks.length,
+        hasAnyProgress,
+      });
+
+      if (hasAnyProgress) {
         setHasPassedUnderstand(true);
       }
 
@@ -1070,7 +1150,7 @@ function YouTubeWidgetPageContent({
         hasSetCurrentActRef.current = true;
       }
 
-      // Instant scroll on initial mount (no animation)
+      // Instant scroll on initial mount (no animation). Lands at top.
       if (initialBlockId) {
         requestAnimationFrame(() => {
           scrollToBlock(initialBlockId, { instant: true });
@@ -1199,41 +1279,71 @@ function YouTubeWidgetPageContent({
     markBlockComplete,
   ]);
 
-  const actCompletion = useActCompletion({
-    exercises: memoizedExercises || [],
-    practiceCompletions,
-  });
+  // Practice block completion state — derived from the server response.
+  // The backend cascade-completes the exercise block when all exercises hit
+  // the rep threshold (4), so we no longer need a client-side derivation
+  // loop or an auto-markBlockComplete effect. The server already did it.
+  const exerciseBlock = useMemo(
+    () => blocks.find((b) => b.type === 'exercise'),
+    [blocks],
+  );
+  const practiceComplete = !!(
+    exerciseBlock && blockProgress[exerciseBlock.id]?.completed
+  );
 
-  // Auto-mark the exercise block as completed when all exercises are done.
-  // This keeps blockProgress in sync with practiceCompletions so the island
-  // unlocks the next block reactively (without needing a specific button click).
-  useEffect(() => {
-    if (!actCompletion.isComplete) return;
-    const exerciseBlock = blocks.find((b) => b.type === 'exercise');
-    if (exerciseBlock && !blockProgress[exerciseBlock.id]?.completed) {
-      markBlockComplete(exerciseBlock.id);
-    }
-  }, [actCompletion.isComplete, blocks, blockProgress, markBlockComplete]);
+  // Practice progress counters — used by the Groove block UI to show
+  // "completed X of Y exercises" before unlock.
+  const practiceCounters = useMemo(() => {
+    const exercises = memoizedExercises || [];
+    const LOCKED = new Set(['advanced', 'hard', 'expert']);
+    const REQUIRED = 4;
+    const unlocked = exercises.filter((ex: any) => {
+      const difficulty =
+        typeof ex?.difficulty === 'string' ? ex.difficulty.toLowerCase() : '';
+      return !LOCKED.has(difficulty);
+    });
+    const totalUnlocked = unlocked.length;
+    const completedCount = unlocked.filter((ex: any) => {
+      const exId =
+        typeof ex.id === 'object' && ex.id !== null && 'value' in ex.id
+          ? ex.id.value
+          : ex.id;
+      return (practiceCompletions[exId]?.count ?? 0) >= REQUIRED;
+    }).length;
+    return { totalUnlocked, completedCount };
+  }, [memoizedExercises, practiceCompletions]);
 
-  // Auto-select groove exercise when entering a groove block
+  // Reward exercise lookup — the first "locked-difficulty" exercise, used
+  // as the auto-select when the user enters the groove block. Pure
+  // derivation from the exercises list; no progress data involved.
+  const rewardExercise = useMemo(() => {
+    const exercises = memoizedExercises || [];
+    const LOCKED = new Set(['advanced', 'hard', 'expert']);
+    return (
+      exercises.find((ex: any) => {
+        const difficulty =
+          typeof ex?.difficulty === 'string' ? ex.difficulty.toLowerCase() : '';
+        return LOCKED.has(difficulty);
+      }) ?? null
+    );
+  }, [memoizedExercises]);
+
+  // Auto-select groove exercise when entering a groove block after the
+  // practice section is complete.
   useEffect(() => {
-    if (
-      currentBlock?.type === 'groove' &&
-      actCompletion.isComplete &&
-      actCompletion.rewardExercise
-    ) {
+    if (currentBlock?.type === 'groove' && practiceComplete && rewardExercise) {
       const rewardId =
-        typeof actCompletion.rewardExercise.id === 'object'
-          ? actCompletion.rewardExercise.id.value
-          : actCompletion.rewardExercise.id;
+        typeof rewardExercise.id === 'object'
+          ? rewardExercise.id.value
+          : rewardExercise.id;
       if (rewardId && rewardId !== selectedExerciseId) {
         handleExerciseSelect(rewardId);
       }
     }
   }, [
     currentBlock?.type,
-    actCompletion.isComplete,
-    actCompletion.rewardExercise,
+    practiceComplete,
+    rewardExercise,
     selectedExerciseId,
     handleExerciseSelect,
   ]);
@@ -1453,6 +1563,35 @@ function YouTubeWidgetPageContent({
           const isBlockActive = currentBlockId === block.id;
           const isBlockCompleted = !!blockProgress[block.id]?.completed;
           const hasNextBlock = blockIndex < blocks.length - 1;
+          // A block is unlocked iff every block before it is completed
+          // (block 0 is always unlocked). Same rule DynamicIsland uses
+          // for greying out future tabs in the sidebar — and same rule
+          // the backend enforces when validating block-complete writes.
+          const isBlockUnlocked = blocks
+            .slice(0, blockIndex)
+            .every((b) => !!blockProgress[b.id]?.completed);
+
+          // Locked blocks render an empty zero-height section. The DOM
+          // node stays present (so refs/IntersectionObserver stay stable)
+          // but the section has no scroll surface and isn't a snap-stop —
+          // the user physically cannot scroll into a locked section. When
+          // the previous block completes and this block transitions to
+          // unlocked, the section expands to h-full snap-start during the
+          // smooth scrollToNextBlock animation, so the layout change is
+          // masked by the scroll.
+          if (!isBlockUnlocked) {
+            return (
+              <section
+                key={block.id}
+                ref={(el) => {
+                  if (el) blockRefsRef.current.set(block.id, el);
+                  else blockRefsRef.current.delete(block.id);
+                }}
+                className="h-0 overflow-hidden"
+                aria-hidden="true"
+              />
+            );
+          }
 
           return (
             <section
@@ -1572,11 +1711,11 @@ function YouTubeWidgetPageContent({
                   onComplete={markBlockComplete}
                   onNext={scrollToNextBlock}
                   hasNextBlock={hasNextBlock}
-                  isUnlocked={actCompletion.isComplete}
-                  completedCount={actCompletion.completedCount}
-                  totalUnlocked={actCompletion.totalUnlocked}
+                  isUnlocked={practiceComplete}
+                  completedCount={practiceCounters.completedCount}
+                  totalUnlocked={practiceCounters.totalUnlocked}
                   tutorialData={tutorialData}
-                  rewardExercise={actCompletion.rewardExercise}
+                  rewardExercise={rewardExercise}
                   fretboardContent={fretboardElement}
                   widgetsContent={
                     <FourWidgetsCard

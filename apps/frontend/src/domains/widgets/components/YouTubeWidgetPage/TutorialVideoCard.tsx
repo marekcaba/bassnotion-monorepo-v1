@@ -8,7 +8,7 @@ import { useRewardPreview } from '../../hooks/useRewardPreview';
 import { safeString, getExerciseId } from './utils';
 import { LOCKED_DIFFICULTIES, REQUIRED_COMPLETIONS } from './constants';
 import type { Tutorial } from '@bassnotion/contracts';
-import type { PracticeCompletions } from '@/domains/widgets/hooks/usePracticeCompletions';
+import type { LegacyPracticeCompletions as PracticeCompletions } from '@/domains/progress';
 
 // Gradient settings type for the creator overlay
 interface GradientSettings {

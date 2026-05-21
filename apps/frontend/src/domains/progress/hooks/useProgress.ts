@@ -23,11 +23,15 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { GetTutorialProgressResponse } from '@bassnotion/contracts';
+import type {
+  GetTutorialProgressResponse,
+  GetUserTutorialCompletionsResponse,
+} from '@bassnotion/contracts';
 
 import {
   completeBlock,
   fetchTutorialProgress,
+  fetchUserTutorialCompletions,
   recordPractice,
 } from '../api/progress.api';
 
@@ -35,6 +39,8 @@ import {
 export const progressKeys = {
   /** Per-tutorial progress for the current user */
   tutorial: (slug: string) => ['progress', 'tutorial', slug] as const,
+  /** Library rollup — one summary entry per tutorial */
+  summary: () => ['progress', 'summary'] as const,
 } as const;
 
 /**
@@ -82,6 +88,12 @@ export function useCompleteBlock(slug: string) {
         progressKeys.tutorial(slug),
         newProgress,
       );
+      // The library summary rolls up completion across tutorials — invalidate
+      // so it refetches the next time something subscribes. We don't try to
+      // patch it in place because the summary endpoint has its own
+      // exercise-block auto-complete derivation; an explicit re-fetch keeps
+      // the truth on the server.
+      queryClient.invalidateQueries({ queryKey: progressKeys.summary() });
     },
   });
 }
@@ -108,6 +120,45 @@ export function useRecordPractice(slug: string) {
         progressKeys.tutorial(slug),
         newProgress,
       );
+      // The library summary rolls up completion across tutorials — invalidate
+      // so it refetches the next time something subscribes. We don't try to
+      // patch it in place because the summary endpoint has its own
+      // exercise-block auto-complete derivation; an explicit re-fetch keeps
+      // the truth on the server.
+      queryClient.invalidateQueries({ queryKey: progressKeys.summary() });
     },
   });
+}
+
+/**
+ * Library / sidebar rollup. Returns per-tutorial completion summaries for
+ * the current user. Disabled until the caller signals the user is signed
+ * in (otherwise we'd 401 on every logged-out page mount).
+ */
+export function useUserTutorialCompletions(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: progressKeys.summary(),
+    queryFn: fetchUserTutorialCompletions,
+    enabled: options?.enabled ?? true,
+    // The summary is cheap to compute but called from many places (sidebar,
+    // dock, library). A 30s staleTime prevents thrashing the endpoint on
+    // every component mount while still feeling fresh after a block-complete
+    // invalidates this key.
+    staleTime: 30_000,
+  });
+}
+
+/**
+ * Convenience: look up one tutorial's summary from the library rollup.
+ * Returns undefined while loading or if no entry exists.
+ */
+export function useTutorialCompletionSummary(slug: string) {
+  const query = useUserTutorialCompletions();
+  return {
+    ...query,
+    data: query.data?.tutorials.find(
+      (t): t is GetUserTutorialCompletionsResponse['tutorials'][number] =>
+        t.slug === slug,
+    ),
+  };
 }

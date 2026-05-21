@@ -5,8 +5,10 @@ import {
   type ExerciseBlock,
   type ExerciseBlockConfig,
   type GetTutorialProgressResponse,
+  type GetUserTutorialCompletionsResponse,
   type BlockProgressEntry,
   type ExerciseProgressEntry,
+  type TutorialCompletionSummary,
   type Tutorial as TutorialContract,
 } from '@bassnotion/contracts';
 import { ProgressRepository } from './repositories/progress.repository.js';
@@ -324,5 +326,119 @@ export class ProgressService {
     }
 
     return this.getTutorialProgress(userId, slug);
+  }
+
+  /**
+   * Per-tutorial completion rollup for the library / sidebar.
+   *
+   * Returns one summary entry per *active* tutorial, with isComplete
+   * computed against the user's block_completions rows. Exercise-block
+   * auto-completion (via the all-exercises-meet-threshold rule) is honoured
+   * even when the row hasn't been materialised yet — the same logic the
+   * detail endpoint uses. This means the library shows "complete" the
+   * moment the user crosses the threshold on the last exercise.
+   *
+   * Cost: one tutorials read + one block_completions read + one
+   * practice_progress read. All scoped to the user via RLS. No N+1.
+   */
+  async getUserTutorialCompletions(
+    userId: string,
+  ): Promise<GetUserTutorialCompletionsResponse> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+
+    logger.debug('Getting user tutorial completions', { userId, correlationId });
+
+    const [{ tutorials: tutorialSummaries }, allCompletions] = await Promise.all([
+      this.tutorialsService.findAll(),
+      this.progressRepository.getAllBlockCompletionsForUser(userId),
+    ]);
+
+    // Group completions by tutorial_id for O(1) lookup.
+    const completionsByTutorial = new Map<string, Set<string>>();
+    for (const row of allCompletions) {
+      let set = completionsByTutorial.get(row.tutorial_id);
+      if (!set) {
+        set = new Set();
+        completionsByTutorial.set(row.tutorial_id, set);
+      }
+      set.add(row.block_id);
+    }
+
+    // Pre-fetch practice progress per tutorial that has exercise blocks.
+    // We only do this for tutorials that actually have exercise blocks AND
+    // the user has *some* block_completions or practice_progress in. Most
+    // library views skip this entirely because no completions exist yet.
+    const tutorialsNeedingPractice = tutorialSummaries.filter(
+      (t) =>
+        t.blocks &&
+        t.blocks.some(
+          (b: AnyBlock) =>
+            b.type === 'exercise' &&
+            ((b as ExerciseBlock).config?.exerciseIds?.length ?? 0) > 0,
+        ),
+    );
+
+    const practiceByTutorial = new Map<
+      string,
+      Map<string, number>
+    >();
+    await Promise.all(
+      tutorialsNeedingPractice.map(async (t) => {
+        const rows = await this.progressRepository.getPracticeProgress(
+          userId,
+          t.id,
+        );
+        if (rows.length === 0) return;
+        const map = new Map<string, number>();
+        for (const row of rows) {
+          map.set(row.exercise_id, row.completion_count);
+        }
+        practiceByTutorial.set(t.id, map);
+      }),
+    );
+
+    const summaries: TutorialCompletionSummary[] = tutorialSummaries.map((t) => {
+      const blocks = (t.blocks ?? []) as AnyBlock[];
+      const completedSet =
+        completionsByTutorial.get(t.id) ?? new Set<string>();
+      const practiceMap = practiceByTutorial.get(t.id);
+
+      const blockCompletions: Record<string, boolean> = {};
+      let completedBlockCount = 0;
+
+      for (const block of blocks) {
+        let completed = completedSet.has(block.id);
+        // Mirror the auto-complete rule used by getTutorialProgress.
+        if (!completed && block.type === 'exercise' && practiceMap) {
+          const config = (block as ExerciseBlock).config;
+          const required =
+            config.requiredCompletions ?? DEFAULT_REQUIRED_COMPLETIONS;
+          const exerciseIds = config.exerciseIds ?? [];
+          completed =
+            exerciseIds.length > 0 &&
+            exerciseIds.every(
+              (id) => (practiceMap.get(id) ?? 0) >= required,
+            );
+        }
+        blockCompletions[block.id] = completed;
+        if (completed) completedBlockCount++;
+      }
+
+      const totalBlockCount = blocks.length;
+      const isComplete =
+        totalBlockCount > 0 && completedBlockCount === totalBlockCount;
+
+      return {
+        tutorialId: t.id,
+        slug: t.slug,
+        isComplete,
+        completedBlockCount,
+        totalBlockCount,
+        blockCompletions,
+      };
+    });
+
+    return { tutorials: summaries };
   }
 }

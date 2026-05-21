@@ -461,6 +461,8 @@ export type {
   BlockProgressEntry,
   ExerciseProgressEntry,
   GetTutorialProgressResponse,
+  TutorialCompletionSummary,
+  GetUserTutorialCompletionsResponse,
 } from './progress.js';
 
 // Block-based tutorial system types

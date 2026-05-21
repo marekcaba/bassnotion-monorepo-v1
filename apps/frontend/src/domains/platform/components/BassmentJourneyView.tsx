@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useEffect } from 'react';
+import { useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { CheckCircle2, ChevronDown, Library, Lock, Play } from 'lucide-react';
 import { cn } from '@/shared/utils';
@@ -11,7 +11,9 @@ import {
 } from '@/shared/components/ui/collapsible';
 import { Skeleton } from '@/shared/components/ui/skeleton';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
-import { ProgressPane, type BlockDot } from './ProgressPane';
+// ProgressPane (the dot column next to each card) was removed in favour of
+// a thin progress bar inside the card. The dot pane lives in
+// CollapsedJourneyPath where it doubles as the nav handle.
 import { PRODUCT_FOLDERS } from '../constants/product-folders';
 import {
   useTutorialsByFolder,
@@ -44,21 +46,21 @@ function TutorialCard({
     DIFFICULTY_COLORS[tutorial.difficulty?.toLowerCase() ?? ''];
   const displayTitle = tutorial.sidebarTitle || tutorial.title;
 
-  // Block-based dots take precedence over legacy 3-stage progress
-  const blockDots: BlockDot[] | undefined = tutorial.islandBlocks?.map((b) => ({
-    id: b.id,
-    title: b.title,
-    completed: tutorial.blockProgress?.[b.id]?.completed ?? false,
-  }));
-
-  // Legacy fallback when no blocks
-  const progress = !blockDots
-    ? (tutorial.progress ?? {
-        understood: isCompleted ?? false,
-        practiced: isCompleted ?? false,
-        applied: isCompleted ?? false,
-      })
-    : undefined;
+  // Progress ratio for the thin bar at the bottom of the card. Computed from
+  // the per-block completion map populated by useTutorialsByFolder from the
+  // server's tutorial-completions summary. Falls back to 0/100% based on the
+  // legacy isComplete flag when a tutorial has no blocks at all.
+  const islandBlocks = tutorial.islandBlocks ?? [];
+  const completedBlocks = islandBlocks.filter(
+    (b) => tutorial.blockProgress?.[b.id]?.completed,
+  ).length;
+  const totalBlocks = islandBlocks.length;
+  const progressPercent =
+    totalBlocks > 0
+      ? Math.round((completedBlocks / totalBlocks) * 100)
+      : isCompleted
+        ? 100
+        : 0;
 
   // Accent color: completed = emerald, active = gold, default = subtle
   const accentColor = isCompleted
@@ -69,27 +71,14 @@ function TutorialCard({
 
   return (
     <div
-      className="flex gap-3 tutorial-journey-row"
+      className="tutorial-journey-row"
       style={{ animation: `panelSlideUp 0.5s ease-out ${index * 0.12}s both` }}
     >
-      {/* Journey path column — progress pane */}
-      <div className="relative flex flex-col items-center justify-start shrink-0 pt-[22px]">
-        <div className="journey-pane">
-          <ProgressPane
-            blockDots={blockDots}
-            progress={progress}
-            isActive={isActive}
-            onClick={onClick}
-            ariaLabel={`Go to ${displayTitle}`}
-          />
-        </div>
-      </div>
-
       {/* Card — styled like SessionCard */}
       <button
         onClick={onClick}
         className={cn(
-          'group relative flex-1 overflow-hidden rounded-[14px] border px-[18px] py-3 text-left transition-all duration-200',
+          'group relative w-full overflow-hidden rounded-[14px] border px-[18px] py-3 text-left transition-all duration-200',
           isActiveAndCompleted
             ? 'border-emerald-500/10 bg-[#141318]'
             : isActive
@@ -177,6 +166,28 @@ function TutorialCard({
             </span>
           </div>
         )}
+
+        {/* Thin progress bar — replaces the per-block dot indicators. Shows
+            completedBlocks / totalBlocks as a single horizontal fill. Emerald
+            when fully complete, gold when in progress, dim when untouched.
+            Only rendered when the tutorial has a known block count; legacy
+            tutorials without blocks skip this. */}
+        {totalBlocks > 0 && (
+          <div className="mt-3 h-[3px] w-full overflow-hidden rounded-full bg-white/[0.04]">
+            <div
+              className="h-full rounded-full transition-all duration-300"
+              style={{
+                width: `${progressPercent}%`,
+                background: isCompleted
+                  ? '#6BCF8E'
+                  : isActive
+                    ? '#E8A44A'
+                    : 'rgba(232,164,74,0.5)',
+              }}
+              aria-label={`${progressPercent}% complete`}
+            />
+          </div>
+        )}
       </button>
     </div>
   );
@@ -200,47 +211,10 @@ function JourneyFolder({
 }) {
   const pathname = usePathname();
   const { navigateWithTransition } = useViewTransitionRouter();
-  const containerRef = useRef<HTMLDivElement>(null);
 
-  // Position connector lines between panes after render
-  useEffect(() => {
-    if (!isOpen || !containerRef.current) return;
-
-    const container = containerRef.current;
-    // Measure the actual rendered pane element, not the wrapper
-    const paneInners = container.querySelectorAll(
-      '.journey-pane .progress-pane-inner',
-    );
-    const connectors = container.querySelectorAll('.journey-connector');
-
-    // Use first pane's horizontal center as the fixed X for all connectors
-    const containerRect = container.getBoundingClientRect();
-    const firstInner = paneInners[0] as HTMLElement | undefined;
-    const fixedX = firstInner
-      ? firstInner.getBoundingClientRect().left -
-        containerRect.left +
-        firstInner.getBoundingClientRect().width / 2
-      : 0;
-
-    connectors.forEach((connector, idx) => {
-      const fromInner = paneInners[idx] as HTMLElement;
-      const toInner = paneInners[idx + 1] as HTMLElement;
-
-      if (fromInner && toInner) {
-        const fromRect = fromInner.getBoundingClientRect();
-        const toRect = toInner.getBoundingClientRect();
-
-        // Connect between pane edges, inset by 1px to avoid overlapping the ring border
-        const fromY = fromRect.bottom - containerRect.top + 1;
-        const toY = toRect.top - containerRect.top - 1;
-
-        const connectorEl = connector as HTMLElement;
-        connectorEl.style.top = `${fromY}px`;
-        connectorEl.style.height = `${Math.max(0, toY - fromY)}px`;
-        connectorEl.style.left = `${fixedX}px`;
-      }
-    });
-  }, [isOpen, tutorials]);
+  // The connector-line positioning useEffect (and its containerRef) was
+  // removed when the per-card ProgressPane went away. Connectors visually
+  // joined the dot panes; without panes there's nothing to connect.
 
   const handleTutorialClick = useCallback(
     (slug: string) => {
@@ -300,50 +274,20 @@ function JourneyFolder({
               <span>Upgrade to unlock</span>
             </div>
           ) : (
-            <div ref={containerRef} className="relative">
-              {/* Connector lines between journey panes */}
-              <div className="absolute top-0 bottom-0 pointer-events-none z-0">
-                {tutorials.slice(0, -1).map((tutorial) => {
-                  const isFullyComplete = tutorial.isComplete;
-                  return (
-                    <div
-                      key={`connector-${tutorial.slug}`}
-                      className={cn(
-                        'journey-connector absolute left-0 w-0.5 -translate-x-1/2',
-                        isFullyComplete
-                          ? 'bg-emerald-500/50'
-                          : 'bg-[#5A5660]/20',
-                      )}
-                      style={
-                        !isFullyComplete
-                          ? {
-                              backgroundImage:
-                                'linear-gradient(to bottom, rgba(90,86,96,0.35) 50%, transparent 50%)',
-                              backgroundSize: '4px 8px',
-                            }
-                          : undefined
-                      }
-                    />
-                  );
-                })}
-              </div>
-
-              {/* Tutorial cards */}
-              <div className="space-y-3">
-                {tutorials.map((tutorial, index) => {
-                  const isActive =
-                    pathname === `/app/tutorials/${tutorial.slug}`;
-                  return (
-                    <TutorialCard
-                      key={tutorial.slug}
-                      tutorial={tutorial}
-                      isActive={isActive}
-                      index={index}
-                      onClick={() => handleTutorialClick(tutorial.slug)}
-                    />
-                  );
-                })}
-              </div>
+            <div className="space-y-3">
+              {tutorials.map((tutorial, index) => {
+                const isActive =
+                  pathname === `/app/tutorials/${tutorial.slug}`;
+                return (
+                  <TutorialCard
+                    key={tutorial.slug}
+                    tutorial={tutorial}
+                    isActive={isActive}
+                    index={index}
+                    onClick={() => handleTutorialClick(tutorial.slug)}
+                  />
+                );
+              })}
             </div>
           )}
         </div>

@@ -14,7 +14,7 @@ import { getSamplePreloader } from '@/domains/playback/services/InitialSamplePre
 import { getLogger } from '@/utils/logger.js';
 import { safeString, getExerciseId } from '../utils';
 import { LOCKED_DIFFICULTIES, REQUIRED_COMPLETIONS } from '../constants';
-import type { PracticeCompletions } from '@/domains/widgets/hooks/usePracticeCompletions';
+import type { LegacyPracticeCompletions as PracticeCompletions } from '@/domains/progress';
 
 const logger = getLogger('exercise-selector-card');
 

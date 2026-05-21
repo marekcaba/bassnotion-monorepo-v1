@@ -18,10 +18,13 @@ export const ActPractice = React.memo(function ActPractice({
 }: ActPracticeProps) {
   return (
     <div className="h-full flex flex-col">
-      {/* Internally scrollable content — overscroll-behavior prevents snap leak */}
+      {/* Internally scrollable content. overscroll-behavior-x: contain
+          stops horizontal swipes from triggering browser back-nav; vertical
+          intentionally chains to the parent snap container so the user can
+          scroll up out of this block into the one above. */}
       <div
         className="flex-1 overflow-y-auto"
-        style={{ overscrollBehavior: 'contain' }}
+        style={{ overscrollBehaviorX: 'contain', overscrollBehaviorY: 'auto' }}
       >
         <div className="min-h-full flex items-center justify-center">
           <div className="mx-auto px-4 py-6 w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-[800px]">

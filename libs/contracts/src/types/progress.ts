@@ -37,3 +37,25 @@ export interface GetTutorialProgressResponse {
   /** Per-exercise practice progress for exercises referenced by exercise blocks */
   exercises: ExerciseProgressEntry[];
 }
+
+/** Per-tutorial rollup summary entry for library / sidebar views */
+export interface TutorialCompletionSummary {
+  /** Tutorial id (the underlying UUID) */
+  tutorialId: string;
+  /** Tutorial slug — handy for callers that key by slug */
+  slug: string;
+  /** True if every block in tutorial.blocks is completed */
+  isComplete: boolean;
+  /** How many of the tutorial's blocks are completed */
+  completedBlockCount: number;
+  /** Total blocks in the tutorial */
+  totalBlockCount: number;
+  /** Per-block completion map keyed by blockId — drives sidebar dots */
+  blockCompletions: Record<string, boolean>;
+}
+
+/** GET /api/v1/users/me/tutorial-completions response */
+export interface GetUserTutorialCompletionsResponse {
+  /** Summary entry per tutorial. Missing entry == no progress. */
+  tutorials: TutorialCompletionSummary[];
+}

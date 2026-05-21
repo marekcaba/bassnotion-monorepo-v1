@@ -58,6 +58,7 @@ describe('ProgressService', () => {
     mockRepo = {
       getBlockCompletions: vi.fn().mockResolvedValue([]),
       getPracticeProgress: vi.fn().mockResolvedValue([]),
+      getAllBlockCompletionsForUser: vi.fn().mockResolvedValue([]),
       insertBlockCompletion: vi.fn().mockImplementation(
         async (userId, tutorialId, blockId) => ({
           user_id: userId,
@@ -80,6 +81,7 @@ describe('ProgressService', () => {
 
     mockTutorials = {
       findBySlug: vi.fn(),
+      findAll: vi.fn().mockResolvedValue({ tutorials: [], total: 0 }),
     } as any;
 
     mockRequestContext = {
@@ -485,6 +487,147 @@ describe('ProgressService', () => {
       ).rejects.toThrow(NotFoundException);
 
       expect(mockRepo.incrementPracticeCompletion).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getUserTutorialCompletions', () => {
+    it('returns empty list when no tutorials exist', async () => {
+      (mockTutorials.findAll as any).mockResolvedValue({
+        tutorials: [],
+        total: 0,
+      });
+
+      const result = await service.getUserTutorialCompletions(USER_ID);
+
+      expect(result).toEqual({ tutorials: [] });
+    });
+
+    it('reports isComplete=false for a tutorial with no completions', async () => {
+      (mockTutorials.findAll as any).mockResolvedValue({
+        tutorials: [
+          {
+            id: 't1',
+            slug: 't-one',
+            blocks: [videoBlock('b0', 0), videoBlock('b1', 1)],
+          },
+        ],
+        total: 1,
+      });
+
+      const result = await service.getUserTutorialCompletions(USER_ID);
+
+      expect(result.tutorials[0]).toMatchObject({
+        tutorialId: 't1',
+        slug: 't-one',
+        isComplete: false,
+        completedBlockCount: 0,
+        totalBlockCount: 2,
+        blockCompletions: { b0: false, b1: false },
+      });
+    });
+
+    it('reports isComplete=true when every block is in block_completions', async () => {
+      (mockTutorials.findAll as any).mockResolvedValue({
+        tutorials: [
+          {
+            id: 't1',
+            slug: 't-one',
+            blocks: [videoBlock('b0', 0), videoBlock('b1', 1)],
+          },
+        ],
+        total: 1,
+      });
+      (mockRepo.getAllBlockCompletionsForUser as any).mockResolvedValue([
+        {
+          user_id: USER_ID,
+          tutorial_id: 't1',
+          block_id: 'b0',
+          completed_at: 'x',
+          data: null,
+        },
+        {
+          user_id: USER_ID,
+          tutorial_id: 't1',
+          block_id: 'b1',
+          completed_at: 'x',
+          data: null,
+        },
+      ]);
+
+      const result = await service.getUserTutorialCompletions(USER_ID);
+
+      expect(result.tutorials[0]).toMatchObject({
+        isComplete: true,
+        completedBlockCount: 2,
+        totalBlockCount: 2,
+      });
+    });
+
+    it('treats exercise blocks as complete when all exercises hit threshold (even without block_completions row)', async () => {
+      (mockTutorials.findAll as any).mockResolvedValue({
+        tutorials: [
+          {
+            id: 't1',
+            slug: 't-one',
+            blocks: [exerciseBlock('practice', 0, ['ex1', 'ex2'])],
+          },
+        ],
+        total: 1,
+      });
+      (mockRepo.getPracticeProgress as any).mockResolvedValue([
+        {
+          user_id: USER_ID,
+          tutorial_id: 't1',
+          exercise_id: 'ex1',
+          completion_count: 4,
+          last_tempo_bpm: null,
+        },
+        {
+          user_id: USER_ID,
+          tutorial_id: 't1',
+          exercise_id: 'ex2',
+          completion_count: 4,
+          last_tempo_bpm: null,
+        },
+      ]);
+
+      const result = await service.getUserTutorialCompletions(USER_ID);
+
+      expect(result.tutorials[0]).toMatchObject({
+        isComplete: true,
+        blockCompletions: { practice: true },
+      });
+    });
+
+    it('handles multiple tutorials independently', async () => {
+      (mockTutorials.findAll as any).mockResolvedValue({
+        tutorials: [
+          { id: 't1', slug: 't-one', blocks: [videoBlock('b0', 0)] },
+          {
+            id: 't2',
+            slug: 't-two',
+            blocks: [videoBlock('b0', 0), videoBlock('b1', 1)],
+          },
+        ],
+        total: 2,
+      });
+      (mockRepo.getAllBlockCompletionsForUser as any).mockResolvedValue([
+        {
+          user_id: USER_ID,
+          tutorial_id: 't1',
+          block_id: 'b0',
+          completed_at: 'x',
+          data: null,
+        },
+      ]);
+
+      const result = await service.getUserTutorialCompletions(USER_ID);
+
+      const t1 = result.tutorials.find((t) => t.tutorialId === 't1');
+      const t2 = result.tutorials.find((t) => t.tutorialId === 't2');
+      expect(t1?.isComplete).toBe(true);
+      expect(t2?.isComplete).toBe(false);
+      expect(t2?.completedBlockCount).toBe(0);
     });
   });
 });

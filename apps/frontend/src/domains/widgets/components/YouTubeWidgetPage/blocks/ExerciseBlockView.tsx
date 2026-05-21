@@ -19,7 +19,7 @@ export const ExerciseBlockView = React.memo(function ExerciseBlockView({
     <div className="h-full flex flex-col">
       <div
         className="flex-1 overflow-y-auto"
-        style={{ overscrollBehavior: 'contain' }}
+        style={{ overscrollBehaviorX: 'contain', overscrollBehaviorY: 'auto' }}
       >
         <div className="min-h-full flex items-center justify-center">
           <div className="mx-auto px-4 py-6 w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-[800px]">
