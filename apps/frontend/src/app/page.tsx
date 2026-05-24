@@ -30,12 +30,17 @@ if (
 
 type FormStatus = 'idle' | 'submitting' | 'upsell' | 'done' | 'error';
 
-// === FOUNDER PAYMENT LINK ===
-// Paste your Stripe Payment Link URL here once it's created.
-// Until then, the button shows a "coming soon" toast and records interest.
-const FOUNDER_PAYMENT_LINK = 'https://buy.stripe.com/fZu3cv5Tp2zj2g0ci83sI01';
+// Stripe Payment Link comes from env so staging gets the test link and
+// production gets the live link automatically. NEXT_PUBLIC_* values are
+// inlined into the client bundle at build time.
+const FOUNDER_PAYMENT_LINK =
+  process.env.NEXT_PUBLIC_STRIPE_FOUNDER_LINK ?? '';
+
 const FOUNDER_SPOTS_TOTAL = 100;
-const FOUNDER_SPOTS_CLAIMED = 62; // hardcoded until we have real founders
+
+// Soft fallback shown when the live count endpoint hasn't responded yet.
+// Stays small so first paint isn't an obviously-fake number.
+const FOUNDER_SPOTS_INITIAL = 0;
 type GrooveControl = 'play' | 'tempo' | 'key' | 'mute';
 const TEMPO_OPTIONS = [72, 88, 104, 120];
 const KEY_OPTIONS = ['E', 'F#', 'G', 'A', 'C'];
@@ -64,6 +69,63 @@ type GrooveState = {
   muted: boolean;
 };
 
+/**
+ * Scroll-triggered fade+rise wrapper. Honors prefers-reduced-motion
+ * (renders immediately, no transition). Fires once per element.
+ */
+function Reveal({
+  children,
+  delayMs = 0,
+}: {
+  children: React.ReactNode;
+  delayMs?: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [shown, setShown] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) {
+      setShown(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setShown(true);
+            io.disconnect();
+            break;
+          }
+        }
+      },
+      { threshold: 0.12, rootMargin: '0px 0px -8% 0px' },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      style={{
+        opacity: shown ? 1 : 0,
+        transform: shown ? 'translateY(0)' : 'translateY(16px)',
+        transition:
+          'opacity 800ms cubic-bezier(0.16, 1, 0.3, 1), transform 800ms cubic-bezier(0.16, 1, 0.3, 1)',
+        transitionDelay: `${delayMs}ms`,
+        willChange: shown ? 'auto' : 'opacity, transform',
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 export default function WaitlistPage() {
   const [email, setEmail] = useState('');
   const [level, setLevel] = useState<WaitlistLevel | ''>('');
@@ -71,6 +133,48 @@ export default function WaitlistPage() {
   const [status, setStatus] = useState<FormStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [alreadyOnList, setAlreadyOnList] = useState(false);
+  const [founderClaimed, setFounderClaimed] = useState<number>(
+    FOUNDER_SPOTS_INITIAL,
+  );
+
+  // Force the page to the top on every load / reload. Browsers default to
+  // 'auto' scroll restoration, which puts the visitor wherever they were
+  // last — on a long landing page that almost always means waking up at
+  // the form, missing the hero entirely.
+  useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+    window.scrollTo(0, 0);
+  }, []);
+
+  // Fetch the real founder count once on page mount. The number is ready by
+  // the time visitors reach the upsell step. On any failure we keep the
+  // initial fallback so the bar never disappears.
+  useEffect(() => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (!apiUrl) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${apiUrl}/api/v1/founders/count`, {
+          cache: 'no-store',
+        });
+        if (!res.ok) return;
+        const data: { claimed?: number; total?: number; error?: false | string } =
+          await res.json();
+        if (cancelled) return;
+        if (typeof data.claimed === 'number' && !data.error) {
+          setFounderClaimed(data.claimed);
+        }
+      } catch {
+        // best-effort — fallback value remains
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,7 +230,7 @@ export default function WaitlistPage() {
 
       <div className="relative z-10 max-w-[1120px] w-full mx-auto px-6 flex-1 flex flex-col">
         {/* ── NAV ───────────────────────────────────────────── */}
-        <nav className="flex items-center justify-between pt-7">
+        <nav className="flex items-center justify-between gap-3 pt-7">
           <a
             href="/"
             aria-label="Bassicology home"
@@ -135,78 +239,115 @@ export default function WaitlistPage() {
             <span className="font-heading uppercase text-2xl tracking-[0.06em] text-[#F26B1D] leading-none">
               Bassicology
             </span>
-            <span className="text-[10px] font-bold tracking-[0.18em] uppercase text-[#9A948C] border border-[#26221E] rounded-full px-2.5 py-1 leading-none">
-              BETA
+            <span className="text-[10px] font-bold tracking-[0.18em] uppercase text-[#9A948C] border border-[#26221E] rounded-full px-2.5 py-1 leading-none whitespace-nowrap">
+              Pre-launch
             </span>
+          </a>
+
+          <a
+            href="#waitlist-form"
+            className="inline-flex items-center text-[12px] sm:text-[13px] font-bold tracking-[0.04em] text-[#F26B1D] border border-[rgba(242,107,29,0.4)] hover:border-[#F26B1D] hover:bg-[rgba(242,107,29,0.07)] rounded-full px-3.5 sm:px-4 py-2 transition-colors no-underline whitespace-nowrap"
+          >
+            Get notified
           </a>
         </nav>
 
-        {/* ── HERO ──────────────────────────────────────────── */}
-        <section className="text-center max-w-[780px] mx-auto pt-16 pb-7">
-          <div className="inline-flex items-center gap-2.5 text-xs font-bold tracking-[0.14em] uppercase text-[#F26B1D] mb-5">
-            <span
-              aria-hidden="true"
-              className="w-6 h-px bg-[#F26B1D] opacity-60"
-            />
-            Opening soon · 2026
-            <span
-              aria-hidden="true"
-              className="w-6 h-px bg-[#F26B1D] opacity-60"
-            />
-          </div>
-          <h1 className="font-heading uppercase text-[clamp(38px,6.4vw,72px)] leading-[0.95] tracking-[0.005em]">
-            Stop watching bass.
-            <br />
-            <span className="text-[#F26B1D]">Start playing it.</span>
-          </h1>
-          <p className="mt-6 mx-auto text-[#9A948C] text-[18px] leading-[1.6] max-w-[34em]">
-            Every other platform hands you a video to watch. Bassicology hands
-            you a band. Real groove, real drummer —{' '}
-            <b className="text-[#F5F1EB] font-semibold">
-              slow it down, change the key, mute the bass, and take the seat
-              yourself.
-            </b>{' '}
-            Right here. No account.
-          </p>
-        </section>
-
-        {/* ── GROOVE CARD (visual mockup, no real audio yet) ── */}
-        <GrooveCardMockup />
-
-        {/* ── MICRO TAGS ────────────────────────────────────── */}
-        <div className="flex flex-wrap gap-6 justify-center mt-7">
-          {["Play, don't watch", 'Your tempo, your key', 'Original grooves, weekly'].map(
-            (t) => (
+        {/* All page sections share a single vertical rhythm.
+            To change the gap between every section, change SECTION_GAP_PX. */}
+        <div
+          className="flex flex-col"
+          style={{ gap: '150px', paddingTop: '64px', paddingBottom: '40px' }}
+        >
+        {/* ── HERO + GROOVE CARD merged into one sibling, so the 196px gap
+              only applies between this block and the next section, not
+              between the headline and the demo. ──────────────────── */}
+        <Reveal>
+          <div className="text-center max-w-[780px] mx-auto">
+            <div className="inline-flex items-center gap-2.5 text-xs font-bold tracking-[0.14em] uppercase text-[#F26B1D] mb-5 animate-[hero-eyebrow-pulse_3s_ease-in-out_infinite] motion-reduce:animate-none">
               <span
-                key={t}
-                className="text-[13px] text-[#6B655E] flex items-center gap-2 before:content-[''] before:w-[5px] before:h-[5px] before:rounded-full before:bg-[#F26B1D] before:opacity-85"
-              >
-                {t}
-              </span>
-            ),
-          )}
-        </div>
+                aria-hidden="true"
+                className="w-6 h-px bg-[#F26B1D] opacity-60"
+              />
+              Opening soon · 2026
+              <span
+                aria-hidden="true"
+                className="w-6 h-px bg-[#F26B1D] opacity-60"
+              />
+            </div>
+            <style jsx global>{`
+              @keyframes hero-eyebrow-pulse {
+                0%,
+                100% {
+                  opacity: 0.6;
+                }
+                50% {
+                  opacity: 1;
+                }
+              }
+            `}</style>
+            <h1 className="font-heading uppercase text-[clamp(38px,6.4vw,72px)] leading-[0.95] tracking-[0.005em]">
+              Stop watching bass.
+              <br />
+              <span className="text-[#F26B1D]">Start playing it.</span>
+            </h1>
+            <p className="mt-6 mx-auto text-[#9A948C] text-[18px] leading-[1.6] max-w-[34em]">
+              Every other platform hands you a video to watch. Bassicology hands
+              you a band. Real groove, real drummer —{' '}
+              <b className="text-[#F5F1EB] font-semibold">
+                slow it down, change the key, mute the bass, and take the seat
+                yourself.
+              </b>{' '}
+              Right here. No account.
+            </p>
+          </div>
+
+          <div className="mt-10">
+            <GrooveCardMockup />
+          </div>
+        </Reveal>
 
         {/* ── WHY IT WORKS ──────────────────────────────────── */}
-        <WhyItWorks />
+        <Reveal>
+          <WhyItWorks />
+        </Reveal>
+
+        {/* ── FOUNDER QUOTE — standalone banner ─────────────── */}
+        <Reveal>
+          <FounderQuote />
+        </Reveal>
 
         {/* ── FORM ──────────────────────────────────────────── */}
-        <section className="max-w-[520px] w-full mx-auto pt-20 md:pt-28 pb-8">
+        <Reveal>
+        <section
+          id="waitlist-form"
+          className="max-w-[520px] w-full mx-auto scroll-mt-24"
+        >
           {status === 'upsell' ? (
             <FounderUpsell
               email={email}
               alreadyOnList={alreadyOnList}
+              claimed={founderClaimed}
               onDone={() => setStatus('done')}
             />
           ) : status === 'done' ? (
             <SuccessView alreadyOnList={alreadyOnList} />
           ) : (
             <>
-              <div className="text-center text-xs font-bold tracking-[0.16em] uppercase text-[#F26B1D] mb-3.5">
-                Be first in when we open
+              <div className="text-center mb-5">
+                <div className="inline-flex items-center gap-2.5 text-xs font-bold tracking-[0.14em] uppercase text-[#F26B1D] animate-[hero-eyebrow-pulse_3s_ease-in-out_infinite] motion-reduce:animate-none">
+                  <span
+                    aria-hidden="true"
+                    className="w-6 h-px bg-[#F26B1D] opacity-60"
+                  />
+                  Opening soon · 2026
+                  <span
+                    aria-hidden="true"
+                    className="w-6 h-px bg-[#F26B1D] opacity-60"
+                  />
+                </div>
               </div>
               <h2 className="font-heading uppercase text-center text-[clamp(38px,6.4vw,72px)] leading-[0.95] tracking-[0.005em]">
-                Want in when
+                Want <span className="text-[#F26B1D]">in</span> when
                 <br />
                 it goes <span className="text-[#F26B1D]">live?</span>
               </h2>
@@ -247,7 +388,6 @@ export default function WaitlistPage() {
                   <input
                     type="email"
                     required
-                    autoFocus
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={status === 'submitting'}
@@ -359,6 +499,8 @@ export default function WaitlistPage() {
             </>
           )}
         </section>
+        </Reveal>
+        </div>
       </div>
 
       {/* ── FOOTER ─────────────────────────────────────────── */}
@@ -373,20 +515,38 @@ export default function WaitlistPage() {
 }
 
 /* ════════════════════════════════════════════════════════════
+   FOUNDER QUOTE — standalone banner, mirrors /preview quote-banner.
+   ════════════════════════════════════════════════════════════ */
+function FounderQuote() {
+  return (
+    <div className="text-center">
+      <p className="max-w-[720px] mx-auto text-xl md:text-2xl leading-relaxed text-[#C8C8C8] font-dm-body italic">
+        &ldquo;The day I stopped watching bass lessons online and started
+        actually playing along to the real music, everything changed.
+        That&rsquo;s the whole reason I&rsquo;m building Bassicology.&rdquo;
+      </p>
+      <div className="mt-5 text-[13px] text-[#9A948C] font-semibold tracking-[0.02em]">
+        <b className="text-[#F5F1EB] font-bold">mar.c</b>{' '}
+        <span className="text-[#6B655E] font-medium">
+          &middot; founder of Bassicology
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════
    WHY IT WORKS — three "dial" cards that rhyme the Groove Card controls.
    Each dial has a subtle micro-animation tied to its concept.
    ════════════════════════════════════════════════════════════ */
 function WhyItWorks() {
   return (
-    <section
-      className="mt-14 max-w-[1000px] mx-auto rounded-[22px] border border-[#26221E] px-5 py-10 md:px-[30px] md:py-[50px]"
-      style={{
-        background: 'linear-gradient(165deg, #0E0D0C, #0A0908)',
-      }}
-    >
-      <div className="text-center text-xs font-bold tracking-[0.16em] uppercase text-[#F26B1D] mb-[18px]">
-        Why it actually works
-      </div>
+    <section className="max-w-[780px] mx-auto">
+      <h2 className="font-heading uppercase text-center text-[clamp(30px,5vw,56px)] leading-[0.95] tracking-[0.005em]">
+        You&apos;ve watched enough.
+        <br />
+        Now <span className="text-[#F26B1D]">let&apos;s play.</span>
+      </h2>
 
       <div className="mt-10 md:mt-11 grid grid-cols-1 md:grid-cols-3 gap-3.5 md:gap-4">
         <TempoDial />
@@ -666,7 +826,7 @@ function GrooveCardMockup() {
 
   return (
     <section
-      className="mt-10 mx-auto max-w-[780px] w-full rounded-[20px] p-5 border border-[#26221E] shadow-[0_40px_90px_-40px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.03)]"
+      className="mx-auto max-w-[780px] w-full rounded-[20px] p-5 border border-[#26221E] shadow-[0_40px_90px_-40px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.03)]"
       style={{
         background: 'linear-gradient(165deg, #161412, #0C0B0A)',
       }}
@@ -905,16 +1065,18 @@ function GrooveWaveform({
 function FounderUpsell({
   email,
   alreadyOnList,
+  claimed,
   onDone,
 }: {
   email: string;
   alreadyOnList: boolean;
+  claimed: number;
   onDone: () => void;
 }) {
   const [recordingInterest, setRecordingInterest] = useState(false);
   const spotsPct = Math.min(
     100,
-    Math.round((FOUNDER_SPOTS_CLAIMED / FOUNDER_SPOTS_TOTAL) * 100),
+    Math.round((claimed / FOUNDER_SPOTS_TOTAL) * 100),
   );
 
   const recordInterest = async () => {
@@ -980,7 +1142,7 @@ function FounderUpsell({
           </svg>
         </div>
         <h2 className="font-heading uppercase text-[26px] tracking-[0.02em]">
-          {alreadyOnList ? "You're already in." : "You're on the list."}
+          You&apos;re on the list.
         </h2>
         <p className="text-[#9A948C] mt-2.5 text-[15px]">
           We&apos;ll email you the moment your wave opens. But there&apos;s one
@@ -1075,7 +1237,7 @@ function FounderUpsell({
             <div className="flex justify-between items-baseline text-[12.5px]">
               <span className="text-[#9A948C] font-medium">
                 <b className="text-[#F5F1EB] font-extrabold">
-                  {FOUNDER_SPOTS_CLAIMED}
+                  {claimed}
                 </b>{' '}
                 of {FOUNDER_SPOTS_TOTAL} spots claimed
               </span>
@@ -1155,7 +1317,7 @@ function SuccessView({ alreadyOnList }: { alreadyOnList: boolean }) {
       </div>
 
       <h2 className="font-heading uppercase text-[26px] tracking-[0.02em]">
-        {alreadyOnList ? "You're already in." : "You're on the list."}
+        You&apos;re on the list.
       </h2>
 
       <p className="text-[#9A948C] mt-2.5 text-[15px] max-w-[30em] mx-auto">

@@ -40,6 +40,8 @@
     "ioredis": "^5.7.0",
     "node-fetch": "2.7.0",
     "reflect-metadata": "^0.1.13",
+    "resend": "^6.12.3",
+    "stripe": "^17.4.0",
     "tsconfig-paths-webpack-plugin": "^4.2.0",
     "tslib": "^2.3.0",
     "unplugin-swc": "^1.5.3",
@@ -47,8 +49,7 @@
     "vite": "^6.3.5",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.1.4",
-    "zod": "^3.25.32",
-    "stripe": "^17.4.0"
+    "zod": "^3.25.32"
   },
   "devDependencies": {
     "@faker-js/faker": "^8.4.1",
