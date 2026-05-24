@@ -1,19 +1,61 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { waitlistLevels, type WaitlistLevel } from '@bassnotion/contracts';
 
-const LEVEL_LABELS: Record<WaitlistLevel, { title: string; hint: string }> = {
-  starting: { title: 'Just starting', hint: 'Picked it up recently' },
-  returning: { title: 'Returning', hint: 'Played years ago, coming back' },
-  intermediate: {
-    title: 'Intermediate',
-    hint: 'Comfortable, hitting a ceiling',
+const LEVEL_OPTIONS: { value: WaitlistLevel; label: string; hint: string }[] = [
+  { value: 'starting', label: 'Just starting out', hint: '0–1 yr' },
+  {
+    value: 'returning',
+    label: 'Returning after time away',
+    hint: 'picking it back up',
   },
-  advanced: { title: 'Advanced', hint: 'Years in, polishing the craft' },
-};
+  {
+    value: 'intermediate',
+    label: 'Stuck at intermediate',
+    hint: "know it, can't deploy it",
+  },
+  { value: 'advanced', label: 'Advanced', hint: 'sharpening edges' },
+];
+
+// Sanity-check the order matches the schema's `waitlistLevels`.
+if (
+  process.env.NODE_ENV !== 'production' &&
+  LEVEL_OPTIONS.map((o) => o.value).join(',') !== waitlistLevels.join(',')
+) {
+  console.warn(
+    '[waitlist] LEVEL_OPTIONS order does not match waitlistLevels — UI may not render every level',
+  );
+}
 
 type FormStatus = 'idle' | 'submitting' | 'success' | 'error';
+type GrooveControl = 'play' | 'tempo' | 'key' | 'mute';
+const TEMPO_OPTIONS = [72, 88, 104, 120];
+const KEY_OPTIONS = ['E', 'F#', 'G', 'A', 'C'];
+
+const CAPTION_DEFAULT =
+  'Press play. Then touch a control below — hear the band bend to you.';
+
+const CAPTIONS: Record<GrooveControl, (state: GrooveState) => string> = {
+  play: (s) =>
+    s.playing
+      ? "Band's playing. Now slow it down, change the key, or mute the bass."
+      : CAPTION_DEFAULT,
+  tempo: () =>
+    'Tempo changed. The whole band followed you — not a recording.',
+  key: () => 'New key. Every instrument transposed instantly.',
+  mute: (s) =>
+    s.muted
+      ? "Bass muted. That's your seat now. Play the line."
+      : 'Bass back in. Hear how it locks with the drums.',
+};
+
+type GrooveState = {
+  playing: boolean;
+  tempo: number;
+  keyIndex: number;
+  muted: boolean;
+};
 
 export default function WaitlistPage() {
   const [email, setEmail] = useState('');
@@ -57,235 +99,553 @@ export default function WaitlistPage() {
   };
 
   return (
-    <>
-      <style jsx global>{`
-        @keyframes waitlist-blink {
-          50% {
-            opacity: 0;
-          }
-        }
-        .waitlist-cursor::after {
-          content: '█';
-          margin-left: 4px;
-          animation: waitlist-blink 1.1s step-end infinite;
-          color: #e8650a;
-        }
-      `}</style>
-
+    <div className="min-h-screen text-[#F5F1EB] font-dm-body text-base leading-[1.55] overflow-x-hidden flex flex-col relative bg-[#0A0908]">
+      {/* Two-radial accent + noise overlay (mockup tokens) */}
       <div
-        className="min-h-screen text-[#E8E8E8] font-dm-body text-base leading-relaxed overflow-x-hidden flex flex-col"
+        aria-hidden="true"
+        className="fixed inset-0 pointer-events-none z-0"
         style={{
           background:
-            'radial-gradient(ellipse at 50% 0%, hsl(240 6% 10%) 0%, hsl(240 4% 6%) 50%, hsl(0 0% 3%) 100%)',
+            'radial-gradient(900px 600px at 78% 4%, rgba(242,107,29,0.11), transparent 60%), radial-gradient(700px 520px at 5% 95%, rgba(242,107,29,0.05), transparent 55%)',
         }}
-      >
-        {/* ── NAV ────────────────────────────────────────────────────── */}
-        <nav className="h-[72px] flex items-center px-6 md:px-[60px]">
+      />
+      <div
+        aria-hidden="true"
+        className="fixed inset-0 pointer-events-none z-0 opacity-[0.04]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+        }}
+      />
+
+      <div className="relative z-10 max-w-[1120px] w-full mx-auto px-6 flex-1 flex flex-col">
+        {/* ── NAV ───────────────────────────────────────────── */}
+        <nav className="flex items-center justify-between pt-7">
           <a
             href="/"
             aria-label="Bassicology home"
-            className="flex items-start gap-1.5 no-underline cursor-pointer"
+            className="flex items-center gap-2.5 no-underline"
           >
-            <div className="font-heading uppercase text-[22px] tracking-[0.12em] text-[#E8650A] leading-none">
-              BASSICOLOGY
-            </div>
-            <span className="text-[9px] font-semibold tracking-[0.18em] uppercase text-[#666] border border-[#333] px-1.5 py-0.5 rounded-sm leading-none -translate-y-0.5">
-              Beta
+            <span className="font-heading uppercase text-2xl tracking-[0.06em] text-[#F26B1D] leading-none">
+              Bassicology
+            </span>
+            <span className="text-[10px] font-bold tracking-[0.18em] uppercase text-[#9A948C] border border-[#26221E] rounded-full px-2.5 py-1 leading-none">
+              BETA
             </span>
           </a>
         </nav>
 
-        {/* ── MAIN ───────────────────────────────────────────────────── */}
-        <main className="flex-1 flex items-center justify-center px-6 md:px-[60px] py-12">
-          <div className="w-full max-w-[640px]">
-            {/* eyebrow */}
-            <div className="text-[11px] font-semibold tracking-[0.22em] uppercase text-[#E8650A] mb-7">
-              Pre-launch · Invite Only
-            </div>
+        {/* ── HERO ──────────────────────────────────────────── */}
+        <section className="text-center max-w-[780px] mx-auto pt-16 pb-7">
+          <div className="inline-flex items-center gap-2.5 text-xs font-bold tracking-[0.14em] uppercase text-[#F26B1D] mb-5">
+            <span
+              aria-hidden="true"
+              className="w-6 h-px bg-[#F26B1D] opacity-60"
+            />
+            Opening soon · 2026
+            <span
+              aria-hidden="true"
+              className="w-6 h-px bg-[#F26B1D] opacity-60"
+            />
+          </div>
+          <h1 className="font-heading uppercase text-[clamp(38px,6.4vw,72px)] leading-[0.95] tracking-[0.005em]">
+            Stop watching bass.
+            <br />
+            <span className="text-[#F26B1D]">Start playing it.</span>
+          </h1>
+          <p className="mt-6 mx-auto text-[#9A948C] text-[18px] leading-[1.6] max-w-[34em]">
+            Every other platform hands you a video to watch. Bassicology hands
+            you a band. Real groove, real drummer —{' '}
+            <b className="text-[#F5F1EB] font-semibold">
+              slow it down, change the key, mute the bass, and take the seat
+              yourself.
+            </b>{' '}
+            Right here. No account.
+          </p>
+        </section>
 
-            {/* headline */}
-            <h1 className="font-heading uppercase text-[clamp(48px,7vw,80px)] leading-[0.93] tracking-[0.02em] text-[#E8E8E8] mb-7">
-              Join the
-              <br />
-              <span className="text-[#E8650A]">waitlist</span>
-              <span className="waitlist-cursor" aria-hidden="true" />
-            </h1>
+        {/* ── GROOVE CARD (visual mockup, no real audio yet) ── */}
+        <GrooveCardMockup />
 
-            {/* sub */}
-            <p className="text-[#999] text-lg leading-[1.7] mb-10 max-w-[480px] font-dm-body">
-              Bassicology opens in waves. Drop your email and we&apos;ll let you
-              in when your spot comes up.
-            </p>
+        {/* ── MICRO TAGS ────────────────────────────────────── */}
+        <div className="flex flex-wrap gap-6 justify-center mt-7">
+          {["Play, don't watch", 'Your tempo, your key', 'Original grooves, weekly'].map(
+            (t) => (
+              <span
+                key={t}
+                className="text-[13px] text-[#6B655E] flex items-center gap-2 before:content-[''] before:w-[5px] before:h-[5px] before:rounded-full before:bg-[#F26B1D] before:opacity-85"
+              >
+                {t}
+              </span>
+            ),
+          )}
+        </div>
 
-            {/* terminal card */}
-            <div className="bg-[#0A0A0A] border border-[#252525] rounded-md overflow-hidden shadow-[0_40px_80px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.03)]">
-              <div className="bg-[#161616] px-4 py-2.5 flex items-center gap-2 border-b border-[#252525]">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#FF5F56]" />
-                <span className="w-2.5 h-2.5 rounded-full bg-[#FFBD2E]" />
-                <span className="w-2.5 h-2.5 rounded-full bg-[#27C93F]" />
-                <span className="text-[11px] text-[#555] tracking-[0.08em] ml-2 font-mono">
-                  register_player.sh
-                </span>
+        {/* ── FORM ──────────────────────────────────────────── */}
+        <section className="max-w-[520px] w-full mx-auto pt-14 pb-8">
+          {status === 'success' ? (
+            <SuccessView alreadyOnList={alreadyOnList} />
+          ) : (
+            <>
+              <div className="text-center text-xs font-bold tracking-[0.16em] uppercase text-[#F26B1D] mb-3.5">
+                Be first in when we open
               </div>
+              <h2 className="font-heading uppercase text-center text-[clamp(30px,4.6vw,46px)] leading-[0.98]">
+                Want in when
+                <br />
+                it goes <span className="text-[#F26B1D]">live?</span>
+              </h2>
+              <p className="text-center text-[#9A948C] text-[16px] mt-4 max-w-[30em] mx-auto">
+                Bassicology opens in waves. Drop your email and we&apos;ll let
+                you know the moment your spot comes up.
+              </p>
 
-              {status === 'success' ? (
-                <SuccessBody alreadyOnList={alreadyOnList} />
-              ) : (
-                <form onSubmit={submit} className="p-7 md:p-9" noValidate>
-                  {/* honeypot — hidden from real users */}
-                  <div
-                    aria-hidden="true"
-                    style={{
-                      position: 'absolute',
-                      left: '-9999px',
-                      width: '1px',
-                      height: '1px',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <label>
-                      Website
-                      <input
-                        type="text"
-                        tabIndex={-1}
-                        autoComplete="off"
-                        value={website}
-                        onChange={(e) => setWebsite(e.target.value)}
-                      />
-                    </label>
-                  </div>
-
-                  {/* EMAIL */}
-                  <label className="block">
-                    <span className="block text-[10px] font-semibold tracking-[0.18em] uppercase text-[#666] mb-2.5 font-mono">
-                      ▸ Email
-                    </span>
+              <form onSubmit={submit} className="mt-6 space-y-6" noValidate>
+                {/* honeypot */}
+                <div
+                  aria-hidden="true"
+                  style={{
+                    position: 'absolute',
+                    left: '-9999px',
+                    width: '1px',
+                    height: '1px',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <label>
+                    Website
                     <input
-                      type="email"
-                      required
-                      autoFocus
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      disabled={status === 'submitting'}
-                      placeholder="you@email.com"
-                      className="w-full bg-[#161616] border border-[#252525] rounded-sm px-4 py-3 text-[15px] text-[#E8E8E8] placeholder:text-[#444] font-mono outline-none focus:border-[#E8650A] focus:ring-1 focus:ring-[#E8650A]/30 transition-colors disabled:opacity-50"
+                      type="text"
+                      tabIndex={-1}
+                      autoComplete="off"
+                      value={website}
+                      onChange={(e) => setWebsite(e.target.value)}
                     />
                   </label>
+                </div>
 
-                  {/* LEVEL */}
-                  <fieldset className="mt-7">
-                    <legend className="block text-[10px] font-semibold tracking-[0.18em] uppercase text-[#666] mb-3 font-mono">
-                      ▸ How long have you played?
-                    </legend>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {waitlistLevels.map((value) => {
-                        const { title, hint } = LEVEL_LABELS[value];
-                        const active = level === value;
-                        return (
-                          <label
-                            key={value}
-                            className={`cursor-pointer border rounded-sm px-4 py-3 transition-colors ${
-                              active
-                                ? 'border-[#E8650A] bg-[rgba(232,101,10,0.06)]'
-                                : 'border-[#252525] bg-[#161616] hover:border-[#333]'
+                {/* EMAIL */}
+                <label className="block">
+                  <span className="block text-[13px] font-semibold mb-2.5">
+                    Email address
+                  </span>
+                  <input
+                    type="email"
+                    required
+                    autoFocus
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={status === 'submitting'}
+                    placeholder="you@email.com"
+                    autoComplete="email"
+                    className="w-full bg-[#100E0D] border-[1.5px] border-[#26221E] rounded-xl px-[18px] py-4 text-[16px] text-[#F5F1EB] placeholder:text-[#6B655E] outline-none focus:border-[#F26B1D] focus:shadow-[0_0_0_4px_rgba(242,107,29,0.12)] transition-[border-color,box-shadow] duration-200 disabled:opacity-50"
+                  />
+                </label>
+
+                {/* LEVEL */}
+                <fieldset>
+                  <legend className="block text-[13px] font-semibold mb-2.5">
+                    How long have you been playing?
+                  </legend>
+                  <div className="space-y-2.5">
+                    {LEVEL_OPTIONS.map(({ value, label, hint }) => {
+                      const active = level === value;
+                      return (
+                        <label
+                          key={value}
+                          className={`flex items-center gap-3.5 cursor-pointer border-[1.5px] rounded-xl px-[18px] py-3.5 transition-all duration-150 ${
+                            active
+                              ? 'border-[#F26B1D] bg-[rgba(242,107,29,0.07)]'
+                              : 'border-[#26221E] bg-[#100E0D] hover:border-[#3D3630] hover:bg-[#141210]'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="level"
+                            value={value}
+                            checked={active}
+                            onChange={() => setLevel(value)}
+                            disabled={status === 'submitting'}
+                            className="sr-only"
+                          />
+                          <span
+                            aria-hidden="true"
+                            className={`relative w-[18px] h-[18px] rounded-full border-2 flex-none transition-colors ${
+                              active ? 'border-[#F26B1D]' : 'border-[#3A332C]'
                             }`}
                           >
-                            <input
-                              type="radio"
-                              name="level"
-                              value={value}
-                              checked={active}
-                              onChange={() => setLevel(value)}
-                              disabled={status === 'submitting'}
-                              className="sr-only"
-                            />
                             <span
-                              className={`block text-[13px] font-semibold tracking-[0.02em] mb-0.5 ${
-                                active ? 'text-[#E8E8E8]' : 'text-[#C8C8C8]'
+                              className={`absolute inset-[3px] rounded-full bg-[#F26B1D] transition-transform ${
+                                active ? 'scale-100' : 'scale-0'
                               }`}
-                            >
-                              {title}
-                            </span>
-                            <span className="block text-[11px] text-[#666] font-dm-body">
-                              {hint}
-                            </span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </fieldset>
+                            />
+                          </span>
+                          <span className="text-[15px] font-medium">
+                            {label}
+                          </span>
+                          <span className="text-[12px] text-[#6B655E] font-medium ml-auto">
+                            {hint}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </fieldset>
 
-                  {/* ERROR */}
-                  {status === 'error' && errorMessage && (
-                    <div
-                      role="alert"
-                      className="mt-6 px-4 py-3 border border-[rgba(255,95,86,0.3)] bg-[rgba(255,95,86,0.06)] text-[#FF8A82] text-[13px] font-mono"
-                    >
-                      ! {errorMessage}
-                    </div>
+                {/* ERROR */}
+                {status === 'error' && errorMessage && (
+                  <div role="alert" className="text-[14px] text-[#E0533A]">
+                    {errorMessage}
+                  </div>
+                )}
+
+                {/* SUBMIT */}
+                <button
+                  type="submit"
+                  disabled={status === 'submitting'}
+                  className="w-full mt-2 bg-gradient-to-b from-[#FF7A22] to-[#C4530F] text-[#1A0D04] font-extrabold text-[17px] px-6 py-[18px] rounded-[13px] cursor-pointer border-none shadow-[0_14px_34px_-12px_rgba(242,107,29,0.6)] hover:-translate-y-0.5 hover:shadow-[0_20px_44px_-12px_rgba(242,107,29,0.7)] active:translate-y-0 transition-[transform,box-shadow] duration-200 disabled:opacity-70 disabled:cursor-wait disabled:translate-y-0 leading-tight"
+                >
+                  {status === 'submitting'
+                    ? 'Reserving your spot…'
+                    : 'Notify me when it opens'}
+                  <span className="block text-xs font-semibold text-[rgba(26,13,4,0.7)] mt-1">
+                    No spam. One email when your wave is live.
+                  </span>
+                </button>
+
+                {/* TRUST */}
+                <div className="flex flex-wrap justify-center gap-4 pt-1">
+                  {['No spam, ever', 'Free to join', 'Leave anytime'].map(
+                    (t) => (
+                      <span
+                        key={t}
+                        className="text-[12px] text-[#6B655E] flex items-center gap-1.5"
+                      >
+                        <svg
+                          width="13"
+                          height="13"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="#F26B1D"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                          style={{ opacity: 0.85 }}
+                        >
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        {t}
+                      </span>
+                    ),
                   )}
-
-                  {/* SUBMIT */}
-                  <button
-                    type="submit"
-                    disabled={status === 'submitting'}
-                    className="mt-8 w-full inline-flex items-center justify-center gap-2.5 bg-[#E8650A] text-white px-8 py-4 text-[15px] font-semibold tracking-[0.04em] rounded-sm hover:bg-[#B84E08] hover:-translate-y-px transition-all cursor-pointer border-none disabled:opacity-60 disabled:cursor-wait disabled:translate-y-0"
-                  >
-                    {status === 'submitting' ? (
-                      <>
-                        <span className="font-mono">…</span> Reserving your spot
-                      </>
-                    ) : (
-                      <>
-                        <span>▸</span> Reserve my spot
-                      </>
-                    )}
-                  </button>
-
-                  <p className="text-[11px] text-[#555] mt-4 font-mono tracking-[0.04em] text-center">
-                    // no spam · early access · founder pricing
-                  </p>
-                </form>
-              )}
-            </div>
-          </div>
-        </main>
-
-        {/* ── FOOTER ──────────────────────────────────────────────────── */}
-        <footer className="py-8 px-6 md:px-[60px] text-center">
-          <p className="text-xs text-[#555] font-mono tracking-[0.08em]">
-            Practice, don&apos;t watch.
-          </p>
-        </footer>
+                </div>
+              </form>
+            </>
+          )}
+        </section>
       </div>
-    </>
+
+      {/* ── FOOTER ─────────────────────────────────────────── */}
+      <footer className="relative z-10 text-center py-10 px-6 text-[12px] text-[#6B655E] border-t border-[#26221E] mt-8">
+        <div className="italic text-[#9A948C] text-[14px] mb-3">
+          &ldquo;They describe practice. We are practice.&rdquo;
+        </div>
+        Bassicology · Play, don&apos;t watch · 2026
+      </footer>
+    </div>
   );
 }
 
-function SuccessBody({ alreadyOnList }: { alreadyOnList: boolean }) {
+/* ════════════════════════════════════════════════════════════
+   GROOVE CARD — visual mockup only (no real audio yet)
+   ════════════════════════════════════════════════════════════ */
+function GrooveCardMockup() {
+  const [groove, setGroove] = useState<GrooveState>({
+    playing: false,
+    tempo: 104,
+    keyIndex: 0,
+    muted: false,
+  });
+  const [caption, setCaption] = useState(CAPTION_DEFAULT);
+
+  const handleControl = (control: GrooveControl) => {
+    let next: GrooveState = groove;
+    if (control === 'play') next = { ...groove, playing: !groove.playing };
+    else if (control === 'tempo') {
+      const i = TEMPO_OPTIONS.indexOf(groove.tempo);
+      next = {
+        ...groove,
+        tempo: TEMPO_OPTIONS[(i + 1) % TEMPO_OPTIONS.length] ?? 104,
+      };
+    } else if (control === 'key') {
+      next = { ...groove, keyIndex: (groove.keyIndex + 1) % KEY_OPTIONS.length };
+    } else if (control === 'mute') next = { ...groove, muted: !groove.muted };
+    setGroove(next);
+    setCaption(CAPTIONS[control](next));
+  };
+
+  const handlePlayButton = () => {
+    const next = { ...groove, playing: true };
+    setGroove(next);
+    setCaption(CAPTIONS.play(next));
+  };
+
   return (
-    <div className="p-7 md:p-9 font-mono text-[13px] leading-[1.9]">
-      <div className="text-[#3DBA6F] mb-2">
-        <span aria-hidden="true">▶</span>{' '}
-        {alreadyOnList ? 'already on the list' : 'spot secured'}
-      </div>
-      <div className="text-[#666] mb-7">
-        // we&apos;ll be in touch when your wave opens
+    <section
+      className="mt-10 mx-auto max-w-[780px] w-full rounded-[20px] p-5 border border-[#26221E] shadow-[0_40px_90px_-40px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.03)]"
+      style={{
+        background: 'linear-gradient(165deg, #161412, #0C0B0A)',
+      }}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between px-1.5 pb-3.5">
+        <span className="text-xs font-bold tracking-[0.1em] uppercase text-[#6B655E]">
+          Now playing ·{' '}
+          <b className="text-[#F5F1EB]">
+            &ldquo;Greasy Pocket&rdquo; — Funk in {KEY_OPTIONS[groove.keyIndex]}
+          </b>
+        </span>
+        <span className="text-[11px] font-bold tracking-[0.06em] text-[#F26B1D] border border-[rgba(242,107,29,0.3)] bg-[rgba(242,107,29,0.07)] rounded-full px-3 py-1 whitespace-nowrap">
+          ▶ Try the controls
+        </span>
       </div>
 
-      <div className="text-[#444] border-t border-[#252525] pt-5 mb-5">
-        ──────────────────────────────────
+      {/* Stage */}
+      <div
+        className="relative bg-[#0C0B0A] border border-[#211D19] rounded-[13px] overflow-hidden"
+        style={{ aspectRatio: '16 / 8' }}
+      >
+        <div className="absolute inset-0 grid place-items-center text-center p-5">
+          <GrooveWaveform
+            playing={groove.playing}
+            tempo={groove.tempo}
+            muted={groove.muted}
+          />
+        </div>
+
+        {!groove.playing && (
+          <button
+            type="button"
+            onClick={handlePlayButton}
+            aria-label="Play"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[58px] h-[58px] rounded-full bg-[rgba(242,107,29,0.92)] grid place-items-center cursor-pointer border-none shadow-[0_8px_30px_-6px_rgba(242,107,29,0.7)] hover:scale-[1.07] transition-transform z-10"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="22"
+              height="22"
+              fill="#1A0D04"
+              style={{ marginLeft: 3 }}
+              aria-hidden="true"
+            >
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </button>
+        )}
+
+        {/* Caption */}
+        <div
+          className="absolute left-0 right-0 bottom-0 px-[18px] py-3.5 text-[13px] text-[#9A948C] text-left"
+          style={{
+            background:
+              'linear-gradient(0deg, rgba(8,7,6,0.92), transparent)',
+          }}
+          dangerouslySetInnerHTML={{
+            __html: caption.replace(
+              /<b>(.*?)<\/b>/g,
+              '<b class="text-[#F5F1EB] font-semibold">$1</b>',
+            ),
+          }}
+        />
       </div>
 
-      <div className="text-[#999] font-dm-body text-[14px] leading-[1.75] mb-6">
+      {/* Controls */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mt-3.5">
+        <ControlButton
+          label="Play"
+          value={groove.playing ? '■' : '●'}
+          active={groove.playing}
+          onClick={() => handleControl('play')}
+        />
+        <ControlButton
+          label="Tempo"
+          value={groove.tempo}
+          suffix="bpm"
+          active
+          onClick={() => handleControl('tempo')}
+        />
+        <ControlButton
+          label="Key"
+          value={KEY_OPTIONS[groove.keyIndex] ?? 'E'}
+          active
+          onClick={() => handleControl('key')}
+        />
+        <ControlButton
+          label="Mute Bass"
+          value={groove.muted ? 'On' : 'Off'}
+          active={groove.muted}
+          onClick={() => handleControl('mute')}
+        />
+      </div>
+
+      <div className="text-center text-[12.5px] text-[#6B655E] mt-4">
+        <b className="text-[#9A948C] font-semibold">
+          This is the actual instrument
+        </b>{' '}
+        — every lever here works in the platform, on any song you bring.
+      </div>
+    </section>
+  );
+}
+
+function ControlButton({
+  label,
+  value,
+  suffix,
+  active,
+  onClick,
+}: {
+  label: string;
+  value: string | number;
+  suffix?: string;
+  active?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`text-center rounded-xl px-3 py-3.5 cursor-pointer transition-all duration-150 border bg-[#100E0D] select-none ${
+        active
+          ? 'border-[#F26B1D] bg-[rgba(242,107,29,0.08)]'
+          : 'border-[#211D19] hover:border-[#3D3630] hover:bg-[#161311]'
+      }`}
+    >
+      <div
+        className={`font-heading uppercase text-[13px] tracking-[0.04em] transition-colors ${
+          active ? 'text-[#F26B1D]' : 'text-[#6B655E]'
+        }`}
+      >
+        {label}
+      </div>
+      <div className="font-heading text-[21px] mt-1.5 leading-none text-[#F5F1EB]">
+        {value}
+        {suffix && (
+          <small className="ml-1 text-xs text-[#9A948C] font-dm-body font-bold">
+            {suffix}
+          </small>
+        )}
+      </div>
+    </button>
+  );
+}
+
+/* Animated waveform — purely visual; pseudo-random heights driven by tempo */
+function GrooveWaveform({
+  playing,
+  tempo,
+  muted,
+}: {
+  playing: boolean;
+  tempo: number;
+  muted: boolean;
+}) {
+  const BARS = 42;
+  const ref = useRef<HTMLDivElement>(null);
+  const stateRef = useRef({ playing, tempo, muted });
+  stateRef.current = { playing, tempo, muted };
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const bars = Array.from(el.children) as HTMLElement[];
+    let frameId: number;
+
+    const tick = () => {
+      const { playing: p, tempo: t, muted: m } = stateRef.current;
+      if (p) {
+        const base = m ? 6 : 16;
+        const amp = m ? 8 : 60;
+        const now = Date.now();
+        for (let i = 0; i < bars.length; i++) {
+          const h =
+            base +
+            Math.abs(Math.sin(now / (420 - t * 1.6) + i * 0.5)) *
+              amp *
+              Math.random();
+          const bar = bars[i];
+          if (!bar) continue;
+          bar.style.height = `${h}px`;
+          bar.style.opacity = m ? '0.35' : '0.85';
+        }
+      } else {
+        for (const bar of bars) {
+          bar.style.height = '10px';
+          bar.style.opacity = '0.4';
+        }
+      }
+      frameId = requestAnimationFrame(tick);
+    };
+
+    frameId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frameId);
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      className="flex items-center gap-1 h-[90px]"
+      aria-hidden="true"
+    >
+      {Array.from({ length: BARS }).map((_, i) => (
+        <span
+          key={i}
+          className="block w-[5px] rounded transition-[height] duration-150 ease-linear"
+          style={{
+            background:
+              'linear-gradient(180deg, #FF7A22, #C4530F)',
+            opacity: 0.85,
+            height: '10px',
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════
+   SUCCESS VIEW
+   ════════════════════════════════════════════════════════════ */
+function SuccessView({ alreadyOnList }: { alreadyOnList: boolean }) {
+  return (
+    <div className="text-center">
+      <div
+        aria-hidden="true"
+        className="inline-flex items-center justify-center w-[54px] h-[54px] rounded-full bg-[rgba(78,199,127,0.12)] border-2 border-[#4EC77F] mb-4"
+      >
+        <svg
+          width="26"
+          height="26"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#4EC77F"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      </div>
+
+      <h2 className="font-heading uppercase text-[26px] tracking-[0.02em]">
+        {alreadyOnList ? "You're already in." : "You're on the list."}
+      </h2>
+
+      <p className="text-[#9A948C] mt-2.5 text-[15px] max-w-[30em] mx-auto">
         {alreadyOnList
-          ? "You're already in. We'll send the invite to the email you signed up with — keep an eye on your inbox."
-          : 'Look out for an email confirming your spot. Bassicology opens in waves — early signups get founder pricing.'}
-      </div>
-
-      <div className="text-[#555] text-[11px] tracking-[0.08em] uppercase">
-        Until then — pick up your bass.
-      </div>
+          ? "We'll send the invite to the email you signed up with — keep an eye on your inbox."
+          : "We'll email you the moment your wave opens. First groove's already on its way to your inbox. Grab your bass."}
+      </p>
     </div>
   );
 }
