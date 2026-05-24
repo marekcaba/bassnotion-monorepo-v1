@@ -63,23 +63,14 @@ export async function POST(request: Request) {
   // which emails are registered — and the user gets the same UX either way.
   const isDuplicate = insertError?.code === '23505';
   if (insertError && !isDuplicate) {
-    // Log the full error to Vercel function logs and echo the PG code in the
-    // response so preview-deploy debugging doesn't need server-log access.
-    // PG codes are not sensitive; the message can include schema hints, so we
-    // only return the code (e.g. '42P01' = relation does not exist).
     console.error('[waitlist] insert failed', {
       code: insertError.code,
       message: insertError.message,
       details: insertError.details,
       hint: insertError.hint,
-      supabaseUrlHost: new URL(SUPABASE_URL).host,
     });
     return NextResponse.json(
-      {
-        ok: false,
-        error: 'Could not save your spot — try again in a moment',
-        debug: { code: insertError.code ?? null },
-      },
+      { ok: false, error: 'Could not save your spot — try again in a moment' },
       { status: 500 },
     );
   }
