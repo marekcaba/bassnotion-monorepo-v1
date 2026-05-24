@@ -1,7 +1,26 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { waitlistLevels, type WaitlistLevel } from '@bassnotion/contracts';
+
+// Lazy-load Three.js so it doesn't ship in the initial HTML. The chunk gets
+// warm-cached for users who sign up and land in /app afterwards.
+const MarketingFretboard3D = dynamic(
+  () =>
+    import('@/shared/components/marketing/MarketingFretboard3D').then(
+      (m) => m.default,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        className="w-full h-full bg-[#0F172A] rounded-[13px]"
+        aria-hidden="true"
+      />
+    ),
+  },
+);
 
 const LEVEL_OPTIONS: { value: WaitlistLevel; label: string; hint: string }[] = [
   { value: 'starting', label: 'Just starting out', hint: '0–1 yr' },
@@ -187,8 +206,11 @@ export default function WaitlistPage() {
           )}
         </div>
 
+        {/* ── WHY IT WORKS ──────────────────────────────────── */}
+        <WhyItWorks />
+
         {/* ── FORM ──────────────────────────────────────────── */}
-        <section className="max-w-[520px] w-full mx-auto pt-14 pb-8">
+        <section className="max-w-[520px] w-full mx-auto pt-20 md:pt-28 pb-8">
           {status === 'upsell' ? (
             <FounderUpsell
               email={email}
@@ -202,7 +224,7 @@ export default function WaitlistPage() {
               <div className="text-center text-xs font-bold tracking-[0.16em] uppercase text-[#F26B1D] mb-3.5">
                 Be first in when we open
               </div>
-              <h2 className="font-heading uppercase text-center text-[clamp(30px,4.6vw,46px)] leading-[0.98]">
+              <h2 className="font-heading uppercase text-center text-[clamp(38px,6.4vw,72px)] leading-[0.95] tracking-[0.005em]">
                 Want in when
                 <br />
                 it goes <span className="text-[#F26B1D]">live?</span>
@@ -366,6 +388,120 @@ export default function WaitlistPage() {
         Bassicology · Play, don&apos;t watch · 2026
       </footer>
     </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════
+   WHY IT WORKS — founder quote + lazy fretboard + 3 numbered points
+   ════════════════════════════════════════════════════════════ */
+function WhyItWorks() {
+  const points: { title: string; body: React.ReactNode }[] = [
+    {
+      title: '3D Fretboard',
+      body: (
+        <>
+          See every note in space. Finally understand{' '}
+          <b className="text-[#F5F1EB] font-semibold">why the shapes work</b> —
+          not just where your fingers go.
+        </>
+      ),
+    },
+    {
+      title: 'Deconstructed Grooves',
+      body: (
+        <>
+          Every groove pulled apart into its techniques, drilled one layer at a
+          time — so they end up in{' '}
+          <b className="text-[#F5F1EB] font-semibold">your fingers</b>, not just
+          your favorites playlist.
+        </>
+      ),
+    },
+    {
+      title: '4-Week Accelerator',
+      body: (
+        <>
+          A prescribed path from stuck to fluent.{' '}
+          <b className="text-[#F5F1EB] font-semibold">
+            Open it, press play, finish in a month.
+          </b>{' '}
+          No more guessing what to practice.
+        </>
+      ),
+    },
+  ];
+
+  return (
+    <section
+      className="mt-14 max-w-[1000px] mx-auto rounded-[22px] border border-[#26221E] px-5 py-10 md:px-[30px] md:py-[50px]"
+      style={{
+        background: 'linear-gradient(165deg, #0E0D0C, #0A0908)',
+      }}
+    >
+      <div className="text-center text-xs font-bold tracking-[0.16em] uppercase text-[#F26B1D] mb-[18px]">
+        Why it actually works
+      </div>
+
+      {/* Founder quote */}
+      <div className="max-w-[30em] mx-auto text-center">
+        <p className="font-heading uppercase font-normal text-[clamp(20px,2.7vw,27px)] leading-[1.25] tracking-[0.005em]">
+          &ldquo;The thing that took me from 20 to 120 wasn&apos;t more lessons.
+          It was <span className="text-[#F26B1D]">grooves</span> — pitch them up,
+          slow them down, and really feel how the line sits in the music.
+          That&apos;s the whole platform.&rdquo;
+        </p>
+        <div className="mt-4 text-[13px] text-[#9A948C] font-semibold tracking-[0.02em]">
+          <b className="text-[#F5F1EB] font-bold">mar.c</b>{' '}
+          <span className="text-[#6B655E] font-medium">
+            · founder of Bassicology
+          </span>
+        </div>
+      </div>
+
+      {/* Grid: fretboard left, points right */}
+      <div className="mt-11 grid grid-cols-1 md:grid-cols-[1.15fr_1fr] gap-6 md:gap-[30px] items-center">
+        {/* 3D fretboard — lazy-loaded plain Three.js */}
+        <div
+          className="relative bg-[#0B0A09] border border-[#211D19] rounded-[16px] p-[18px] overflow-hidden flex items-center justify-center"
+          style={{ minHeight: 300 }}
+        >
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background:
+                'radial-gradient(380px 240px at 50% 40%, rgba(242,107,29,0.12), transparent 70%)',
+            }}
+          />
+          <span className="absolute top-3.5 left-4 text-[10.5px] font-bold tracking-[0.12em] uppercase text-[#6B655E] z-10">
+            3D Fretboard
+          </span>
+          <div className="absolute inset-[18px] rounded-[10px] overflow-hidden">
+            <MarketingFretboard3D />
+          </div>
+        </div>
+
+        {/* Three points */}
+        <div className="grid gap-4">
+          {points.map((p, i) => (
+            <div
+              key={p.title}
+              className="bg-[#100E0D] border border-[#26221E] rounded-[14px] px-5 py-[18px] hover:border-[#3D3630] transition-colors"
+            >
+              <div className="flex items-center gap-2.5 font-heading text-[17px] uppercase tracking-[0.01em] text-[#F5F1EB]">
+                <span className="w-6 h-6 rounded-[7px] bg-[rgba(242,107,29,0.13)] border border-[rgba(242,107,29,0.3)] text-[#F26B1D] text-[13px] grid place-items-center flex-none">
+                  {i + 1}
+                </span>
+                {p.title}
+              </div>
+              <p className="text-[13.5px] text-[#9A948C] mt-2 leading-[1.5]">
+                {p.body}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 
