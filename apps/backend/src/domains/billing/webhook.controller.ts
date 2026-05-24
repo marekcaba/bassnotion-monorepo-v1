@@ -9,12 +9,15 @@ import {
   Logger,
 } from '@nestjs/common';
 import type { RawBodyRequest } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import type { FastifyRequest } from 'fastify';
 import Stripe from 'stripe';
 
 import { StripeService } from './services/stripe.service.js';
+import { ResendService } from './services/resend.service.js';
 import { SubscriptionRepository } from './repositories/subscription.repository.js';
 import { PurchaseRepository } from './repositories/purchase.repository.js';
+import { FounderMemberRepository } from './repositories/founder-member.repository.js';
 import type { CourseType, SubscriptionStatus } from './types/billing.types.js';
 
 @Controller('api/v1/webhooks')
@@ -25,6 +28,9 @@ export class WebhookController {
     private readonly stripeService: StripeService,
     private readonly subscriptionRepository: SubscriptionRepository,
     private readonly purchaseRepository: PurchaseRepository,
+    private readonly founderMemberRepository: FounderMemberRepository,
+    private readonly resendService: ResendService,
+    private readonly configService: ConfigService,
   ) {}
 
   /**
@@ -125,6 +131,14 @@ export class WebhookController {
   private async handleCheckoutCompleted(
     session: Stripe.Checkout.Session,
   ): Promise<void> {
+    // Founder-membership purchases come from anonymous visitors on the
+    // marketing waitlist (no user_id, no course_type — yet). Route them
+    // BEFORE the auth'd-purchase logic that requires user_id.
+    if (this.isFounderCheckout(session)) {
+      await this.handleFounderCheckoutCompleted(session);
+      return;
+    }
+
     const userId = session.metadata?.user_id;
     const courseType = session.metadata?.course_type as CourseType | undefined;
 
@@ -323,6 +337,118 @@ export class WebhookController {
     if (existingPurchase) {
       await this.purchaseRepository.updateStatus(paymentIntent.id, 'failed');
       this.logger.log(`Payment intent failed: ${paymentIntent.id}`);
+    }
+  }
+
+  /**
+   * Detects a founder-membership checkout. Primary signal: the configured
+   * STRIPE_FOUNDER_PRICE_ID appears on a line item. Secondary signal: the
+   * `purchase_type=founder_membership` metadata tag we attach to the
+   * Payment Link. Either one is sufficient.
+   */
+  private isFounderCheckout(session: Stripe.Checkout.Session): boolean {
+    const metadataMatch =
+      session.metadata?.purchase_type === 'founder_membership';
+
+    const configuredPriceId = this.configService.get<string>(
+      'STRIPE_FOUNDER_PRICE_ID',
+    );
+
+    // Try the line items if Stripe expanded them on the event. Stripe doesn't
+    // always include line_items on the session payload (depends on how the
+    // event was generated), so we fall back to a retrieve() call if needed.
+    let priceIdMatch = false;
+    const expandedItems = session.line_items?.data;
+    if (expandedItems && expandedItems.length > 0) {
+      priceIdMatch = expandedItems.some(
+        (item) => item.price?.id === configuredPriceId,
+      );
+    }
+
+    return metadataMatch || priceIdMatch;
+  }
+
+  /**
+   * Founder-membership branch — anonymous one-time purchase from the
+   * marketing waitlist. Idempotent on stripe_checkout_session_id.
+   *
+   * Side effects, in order:
+   *   1. Insert founder_members row (or no-op if Stripe replayed).
+   *   2. On fresh insert, send the welcome email and mark it sent.
+   *
+   * Replay (already-inserted) skips the email so we don't double-send when
+   * Stripe retries the webhook.
+   */
+  private async handleFounderCheckoutCompleted(
+    session: Stripe.Checkout.Session,
+  ): Promise<void> {
+    // Pull line items if not already expanded — we need the price id for
+    // the canonical record and the amount/currency for the row.
+    let lineItems = session.line_items?.data;
+    if (!lineItems || lineItems.length === 0) {
+      const expanded = await this.stripeService.getCheckoutSession(session.id);
+      lineItems = expanded.line_items?.data ?? [];
+    }
+
+    const firstItem = lineItems[0];
+    const priceId = firstItem?.price?.id;
+    if (!priceId) {
+      this.logger.error('Founder checkout missing price id', {
+        sessionId: session.id,
+      });
+      return;
+    }
+
+    const email =
+      session.customer_details?.email ?? session.customer_email ?? null;
+    if (!email) {
+      this.logger.error('Founder checkout missing customer email', {
+        sessionId: session.id,
+      });
+      return;
+    }
+
+    const fullName = session.customer_details?.name ?? null;
+    const firstName = fullName?.split(/\s+/)[0] ?? null;
+
+    const amount =
+      session.amount_total ?? firstItem?.amount_total ?? firstItem?.amount_subtotal ?? 0;
+    const currency = (
+      session.currency ?? firstItem?.currency ?? 'usd'
+    ).toLowerCase();
+    const mode: 'test' | 'live' = session.livemode ? 'live' : 'test';
+
+    const { row, created } = await this.founderMemberRepository.createIfMissing({
+      email,
+      fullName,
+      stripeCustomerId: (session.customer as string) ?? '',
+      stripeCheckoutSessionId: session.id,
+      stripePaymentIntentId: (session.payment_intent as string) ?? null,
+      stripePriceId: priceId,
+      amount,
+      currency,
+      mode,
+      metadata: session.metadata ?? null,
+    });
+
+    if (!created) {
+      this.logger.log(
+        `Founder checkout replay — already recorded (${session.id}); skipping welcome email`,
+      );
+      return;
+    }
+
+    this.logger.log(
+      `New founder member: ${email} (mode=${mode}, session=${session.id})`,
+    );
+
+    const messageId = await this.resendService.sendFounderWelcome({
+      toEmail: email,
+      firstName,
+    });
+
+    if (messageId) {
+      await this.founderMemberRepository.markWelcomeEmailSent(row.id);
     }
   }
 

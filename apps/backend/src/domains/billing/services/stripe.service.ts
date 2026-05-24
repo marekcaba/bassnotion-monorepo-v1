@@ -293,7 +293,7 @@ export class StripeService implements OnModuleInit {
     sessionId: string,
   ): Promise<Stripe.Checkout.Session> {
     return await this.stripe.checkout.sessions.retrieve(sessionId, {
-      expand: ['subscription', 'payment_intent'],
+      expand: ['subscription', 'payment_intent', 'line_items'],
     });
   }
 
