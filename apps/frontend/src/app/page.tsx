@@ -1,26 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import dynamic from 'next/dynamic';
 import { waitlistLevels, type WaitlistLevel } from '@bassnotion/contracts';
-
-// Lazy-load Three.js so it doesn't ship in the initial HTML. The chunk gets
-// warm-cached for users who sign up and land in /app afterwards.
-const MarketingFretboard3D = dynamic(
-  () =>
-    import('@/shared/components/marketing/MarketingFretboard3D').then(
-      (m) => m.default,
-    ),
-  {
-    ssr: false,
-    loading: () => (
-      <div
-        className="w-full h-full bg-[#0F172A] rounded-[13px]"
-        aria-hidden="true"
-      />
-    ),
-  },
-);
 
 const LEVEL_OPTIONS: { value: WaitlistLevel; label: string; hint: string }[] = [
   { value: 'starting', label: 'Just starting out', hint: '0–1 yr' },
@@ -205,6 +186,9 @@ export default function WaitlistPage() {
             ),
           )}
         </div>
+
+        {/* ── FOUNDER QUOTE — standalone banner ─────────────── */}
+        <FounderQuote />
 
         {/* ── WHY IT WORKS ──────────────────────────────────── */}
         <WhyItWorks />
@@ -392,45 +376,33 @@ export default function WaitlistPage() {
 }
 
 /* ════════════════════════════════════════════════════════════
-   WHY IT WORKS — founder quote + lazy fretboard + 3 numbered points
+   FOUNDER QUOTE — standalone banner, no card chrome
+   (mirrors the /preview quote-banner styling)
+   ════════════════════════════════════════════════════════════ */
+function FounderQuote() {
+  return (
+    <div className="py-16 md:py-24 text-center">
+      <p className="max-w-[720px] mx-auto text-xl md:text-2xl leading-relaxed text-[#C8C8C8] font-dm-body italic">
+        &ldquo;My bass lines went from 0 to 100 when I started muting the bass
+        track and playing with the actual music&nbsp;&mdash; pitch it up, slow
+        it down, and feel how the line sits in the music. That&rsquo;s the
+        whole platform.&rdquo;
+      </p>
+      <div className="mt-5 text-[13px] text-[#9A948C] font-semibold tracking-[0.02em]">
+        <b className="text-[#F5F1EB] font-bold">mar.c</b>{' '}
+        <span className="text-[#6B655E] font-medium">
+          &middot; founder of Bassicology
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════
+   WHY IT WORKS — three "dial" cards that rhyme the Groove Card controls.
+   Each dial has a subtle micro-animation tied to its concept.
    ════════════════════════════════════════════════════════════ */
 function WhyItWorks() {
-  const points: { title: string; body: React.ReactNode }[] = [
-    {
-      title: '3D Fretboard',
-      body: (
-        <>
-          See every note in space. Finally understand{' '}
-          <b className="text-[#F5F1EB] font-semibold">why the shapes work</b> —
-          not just where your fingers go.
-        </>
-      ),
-    },
-    {
-      title: 'Deconstructed Grooves',
-      body: (
-        <>
-          Every groove pulled apart into its techniques, drilled one layer at a
-          time — so they end up in{' '}
-          <b className="text-[#F5F1EB] font-semibold">your fingers</b>, not just
-          your favorites playlist.
-        </>
-      ),
-    },
-    {
-      title: '4-Week Accelerator',
-      body: (
-        <>
-          A prescribed path from stuck to fluent.{' '}
-          <b className="text-[#F5F1EB] font-semibold">
-            Open it, press play, finish in a month.
-          </b>{' '}
-          No more guessing what to practice.
-        </>
-      ),
-    },
-  ];
-
   return (
     <section
       className="mt-14 max-w-[1000px] mx-auto rounded-[22px] border border-[#26221E] px-5 py-10 md:px-[30px] md:py-[50px]"
@@ -442,66 +414,245 @@ function WhyItWorks() {
         Why it actually works
       </div>
 
-      {/* Founder quote */}
-      <div className="max-w-[30em] mx-auto text-center">
-        <p className="font-heading uppercase font-normal text-[clamp(20px,2.7vw,27px)] leading-[1.25] tracking-[0.005em]">
-          &ldquo;The thing that took me from 20 to 120 wasn&apos;t more lessons.
-          It was <span className="text-[#F26B1D]">grooves</span> — pitch them up,
-          slow them down, and really feel how the line sits in the music.
-          That&apos;s the whole platform.&rdquo;
-        </p>
-        <div className="mt-4 text-[13px] text-[#9A948C] font-semibold tracking-[0.02em]">
-          <b className="text-[#F5F1EB] font-bold">mar.c</b>{' '}
-          <span className="text-[#6B655E] font-medium">
-            · founder of Bassicology
-          </span>
-        </div>
-      </div>
-
-      {/* Grid: fretboard left, points right */}
-      <div className="mt-11 grid grid-cols-1 md:grid-cols-[1.15fr_1fr] gap-6 md:gap-[30px] items-center">
-        {/* 3D fretboard — lazy-loaded plain Three.js */}
-        <div
-          className="relative bg-[#0B0A09] border border-[#211D19] rounded-[16px] p-[18px] overflow-hidden flex items-center justify-center"
-          style={{ minHeight: 300 }}
-        >
-          <div
-            aria-hidden="true"
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background:
-                'radial-gradient(380px 240px at 50% 40%, rgba(242,107,29,0.12), transparent 70%)',
-            }}
-          />
-          <span className="absolute top-3.5 left-4 text-[10.5px] font-bold tracking-[0.12em] uppercase text-[#6B655E] z-10">
-            3D Fretboard
-          </span>
-          <div className="absolute inset-[18px] rounded-[10px] overflow-hidden">
-            <MarketingFretboard3D />
-          </div>
-        </div>
-
-        {/* Three points */}
-        <div className="grid gap-4">
-          {points.map((p, i) => (
-            <div
-              key={p.title}
-              className="bg-[#100E0D] border border-[#26221E] rounded-[14px] px-5 py-[18px] hover:border-[#3D3630] transition-colors"
-            >
-              <div className="flex items-center gap-2.5 font-heading text-[17px] uppercase tracking-[0.01em] text-[#F5F1EB]">
-                <span className="w-6 h-6 rounded-[7px] bg-[rgba(242,107,29,0.13)] border border-[rgba(242,107,29,0.3)] text-[#F26B1D] text-[13px] grid place-items-center flex-none">
-                  {i + 1}
-                </span>
-                {p.title}
-              </div>
-              <p className="text-[13.5px] text-[#9A948C] mt-2 leading-[1.5]">
-                {p.body}
-              </p>
-            </div>
-          ))}
-        </div>
+      <div className="mt-10 md:mt-11 grid grid-cols-1 md:grid-cols-3 gap-3.5 md:gap-4">
+        <TempoDial />
+        <KeyDial />
+        <MuteDial />
       </div>
     </section>
+  );
+}
+
+/* ── Shared dial chrome ─────────────────────────────────────── */
+function Dial({
+  caption,
+  visual,
+  title,
+  body,
+}: {
+  caption: string;
+  visual: React.ReactNode;
+  title: string;
+  body: React.ReactNode;
+}) {
+  return (
+    <div className="group relative overflow-hidden bg-[#100E0D] border border-[#26221E] rounded-[16px] px-5 pt-[22px] pb-6 transition-[border-color,transform] duration-150 hover:border-[rgba(242,107,29,0.35)] hover:-translate-y-[3px]">
+      {/* Top-right radial glow */}
+      <div
+        aria-hidden="true"
+        className="absolute -top-[30%] -right-[20%] w-[140px] h-[140px] rounded-full pointer-events-none"
+        style={{
+          background:
+            'radial-gradient(circle, rgba(242,107,29,0.10), transparent 70%)',
+        }}
+      />
+      <div className="relative">
+        <div className="font-heading text-[11px] tracking-[0.12em] uppercase text-[#6B655E]">
+          {caption}
+        </div>
+        {visual}
+        <h4 className="font-heading text-[18px] uppercase tracking-[0.01em] text-[#F5F1EB] leading-[1.05]">
+          {title}
+        </h4>
+        <p className="text-[13.5px] text-[#9A948C] mt-2.5 leading-[1.55]">
+          {body}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ── Tempo dial ─────────────────────────────────────────────── */
+function TempoDial() {
+  const TEMPO_STEPS = [
+    { pct: 8, bpm: 68 },
+    { pct: 42, bpm: 96 },
+    { pct: 78, bpm: 124 },
+    { pct: 30, bpm: 84 },
+  ];
+  const [stepIndex, setStepIndex] = useState(0);
+  const [bpm, setBpm] = useState(TEMPO_STEPS[0]?.bpm ?? 68);
+  const rafRef = useRef<number | null>(null);
+
+  // Cycle to the next preset every 2.2s; ease the BPM number between values.
+  useEffect(() => {
+    const advance = () => {
+      setStepIndex((i) => (i + 1) % TEMPO_STEPS.length);
+    };
+    const id = window.setInterval(advance, 2200);
+    return () => window.clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    const target = TEMPO_STEPS[stepIndex]?.bpm ?? 68;
+    const start = bpm;
+    const t0 = performance.now();
+    const dur = 650;
+    const tick = (now: number) => {
+      const k = Math.min((now - t0) / dur, 1);
+      const eased = 1 - Math.pow(1 - k, 3);
+      setBpm(Math.round(start + (target - start) * eased));
+      if (k < 1) rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+    // bpm intentionally omitted — we want each new stepIndex to start from
+    // whatever bpm is "now," not retrigger on every interpolation tick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stepIndex]);
+
+  const pct = TEMPO_STEPS[stepIndex]?.pct ?? 8;
+
+  return (
+    <Dial
+      caption="Tempo"
+      title="Slow it to your speed"
+      visual={
+        <>
+          <div className="flex items-baseline gap-2 mt-2.5 h-10">
+            <span className="font-heading text-[38px] leading-none text-[#F26B1D]">
+              {bpm}
+            </span>
+            <span className="text-[13px] text-[#9A948C] font-bold">bpm</span>
+          </div>
+          <div className="relative h-[5px] rounded-[5px] bg-[#221D18] my-[14px] mb-[18px]">
+            <span
+              aria-hidden="true"
+              className="absolute left-0 top-0 bottom-0 rounded-[5px] transition-[width] duration-[900ms] ease-[cubic-bezier(.4,0,.2,1)]"
+              style={{
+                width: `${pct}%`,
+                background:
+                  'linear-gradient(90deg, #C4530F, #FF7A22)',
+              }}
+            />
+            <span
+              aria-hidden="true"
+              className="absolute top-1/2 -translate-y-1/2 w-[15px] h-[15px] rounded-full bg-[#F26B1D] transition-[left] duration-[900ms] ease-[cubic-bezier(.4,0,.2,1)]"
+              style={{
+                left: `calc(${pct}% - 7.5px)`,
+                boxShadow: '0 0 12px 2px rgba(242,107,29,0.5)',
+              }}
+            />
+          </div>
+        </>
+      }
+      body={
+        <>
+          Take any groove down to where you can actually nail it, then climb
+          back bar by bar. Every other platform plays at one speed — theirs.{' '}
+          <b className="text-[#F5F1EB] font-semibold">
+            Here the music moves at yours.
+          </b>
+        </>
+      }
+    />
+  );
+}
+
+/* ── Key dial ───────────────────────────────────────────────── */
+function KeyDial() {
+  const KEYS = ['E', 'G', 'A', 'C', 'D'];
+  const [activeIndex, setActiveIndex] = useState(1);
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setActiveIndex((i) => (i + 1) % KEYS.length);
+    }, 1600);
+    return () => window.clearInterval(id);
+  }, [KEYS.length]);
+
+  return (
+    <Dial
+      caption="Key"
+      title="Any key, instantly"
+      visual={
+        <div className="flex gap-1.5 h-10 items-center mt-2.5">
+          {KEYS.map((k, i) => {
+            const active = i === activeIndex;
+            return (
+              <span
+                key={k}
+                aria-hidden="true"
+                className={`font-heading text-[16px] transition-[color,transform] duration-[400ms] ${
+                  active
+                    ? 'text-[#F26B1D] scale-125'
+                    : 'text-[#3A332C] scale-100'
+                }`}
+              >
+                {k}
+              </span>
+            );
+          })}
+        </div>
+      }
+      body={
+        <>
+          Shift the whole song to any key with one dial. You stop memorizing one
+          shape and start{' '}
+          <b className="text-[#F5F1EB] font-semibold">understanding the line</b>{' '}
+          — so it transfers to every song you&apos;ll ever play.
+        </>
+      }
+    />
+  );
+}
+
+/* ── Mute Bass dial ─────────────────────────────────────────── */
+function MuteDial() {
+  const BAR_COUNT = 9;
+  const [muted, setMuted] = useState(true);
+  const [heights, setHeights] = useState<number[]>(() =>
+    Array.from({ length: BAR_COUNT }, () => 6),
+  );
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setMuted((wasMuted) => {
+        const nowMuted = !wasMuted;
+        setHeights(
+          Array.from({ length: BAR_COUNT }, () =>
+            nowMuted ? 6 : 10 + Math.random() * 26,
+          ),
+        );
+        return nowMuted;
+      });
+    }, 1400);
+    return () => window.clearInterval(id);
+  }, []);
+
+  return (
+    <Dial
+      caption="Mute Bass"
+      title="Mute it — that's your seat"
+      visual={
+        <div className="flex gap-[5px] items-center h-10 mt-2.5">
+          {heights.map((h, i) => (
+            <span
+              key={i}
+              aria-hidden="true"
+              className="w-1 rounded-[3px] transition-[height,background-color,opacity] duration-[250ms] ease-in-out"
+              style={{
+                height: `${h}px`,
+                backgroundColor: muted ? '#3A332C' : '#F26B1D',
+                opacity: muted ? 0.5 : 0.85,
+              }}
+            />
+          ))}
+        </div>
+      }
+      body={
+        <>
+          Drop the bass track and the band plays on without you. Now you&apos;re
+          not following a line,{' '}
+          <b className="text-[#F5F1EB] font-semibold">
+            you&apos;re being the bassist.
+          </b>{' '}
+          That&apos;s the rep nothing else gives you.
+        </>
+      }
+    />
   );
 }
 
