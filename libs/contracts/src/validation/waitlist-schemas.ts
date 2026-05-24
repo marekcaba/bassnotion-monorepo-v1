@@ -26,3 +26,14 @@ export const waitlistResponseSchema = z.object({
 });
 
 export type WaitlistResponse = z.infer<typeof waitlistResponseSchema>;
+
+/**
+ * Founder-interest click signal — recorded when someone clicks "Become a
+ * founder" on the post-signup upsell. Stored separately from `waitlist` so
+ * one row = one click (repeat clicks signal stronger intent).
+ */
+export const founderInterestSchema = z.object({
+  email: emailSchema,
+});
+
+export type FounderInterest = z.infer<typeof founderInterestSchema>;

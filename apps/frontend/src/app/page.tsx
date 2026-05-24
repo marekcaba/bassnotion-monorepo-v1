@@ -28,7 +28,14 @@ if (
   );
 }
 
-type FormStatus = 'idle' | 'submitting' | 'success' | 'error';
+type FormStatus = 'idle' | 'submitting' | 'upsell' | 'done' | 'error';
+
+// === FOUNDER PAYMENT LINK ===
+// Paste your Stripe Payment Link URL here once it's created.
+// Until then, the button shows a "coming soon" toast and records interest.
+const FOUNDER_PAYMENT_LINK = '';
+const FOUNDER_SPOTS_TOTAL = 100;
+const FOUNDER_SPOTS_CLAIMED = 62; // hardcoded until we have real founders
 type GrooveControl = 'play' | 'tempo' | 'key' | 'mute';
 const TEMPO_OPTIONS = [72, 88, 104, 120];
 const KEY_OPTIONS = ['E', 'F#', 'G', 'A', 'C'];
@@ -91,7 +98,7 @@ export default function WaitlistPage() {
         return;
       }
       setAlreadyOnList(Boolean(data.alreadyOnList));
-      setStatus('success');
+      setStatus('upsell');
     } catch {
       setErrorMessage('Network error — check your connection and try again');
       setStatus('error');
@@ -182,7 +189,13 @@ export default function WaitlistPage() {
 
         {/* ── FORM ──────────────────────────────────────────── */}
         <section className="max-w-[520px] w-full mx-auto pt-14 pb-8">
-          {status === 'success' ? (
+          {status === 'upsell' ? (
+            <FounderUpsell
+              email={email}
+              alreadyOnList={alreadyOnList}
+              onDone={() => setStatus('done')}
+            />
+          ) : status === 'done' ? (
             <SuccessView alreadyOnList={alreadyOnList} />
           ) : (
             <>
@@ -609,6 +622,237 @@ function GrooveWaveform({
           }}
         />
       ))}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════
+   FOUNDER UPSELL — shown after signup, before final confirmation
+   ════════════════════════════════════════════════════════════ */
+function FounderUpsell({
+  email,
+  alreadyOnList,
+  onDone,
+}: {
+  email: string;
+  alreadyOnList: boolean;
+  onDone: () => void;
+}) {
+  const [recordingInterest, setRecordingInterest] = useState(false);
+  const spotsPct = Math.min(
+    100,
+    Math.round((FOUNDER_SPOTS_CLAIMED / FOUNDER_SPOTS_TOTAL) * 100),
+  );
+
+  const recordInterest = async () => {
+    // Fire-and-forget — we don't block the user on it.
+    try {
+      await fetch('/api/waitlist/founder-interest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+    } catch {
+      // Interest tracking is best-effort; never block the user on a network blip.
+    }
+  };
+
+  const handleFounderClick = async () => {
+    if (recordingInterest) return;
+    setRecordingInterest(true);
+    await recordInterest();
+    setRecordingInterest(false);
+    if (FOUNDER_PAYMENT_LINK) {
+      window.open(FOUNDER_PAYMENT_LINK, '_blank', 'noopener,noreferrer');
+    } else {
+      // No payment link configured yet — show the soft landing.
+      alert(
+        "Founder seats open soon — we've noted your interest and you'll be first to hear when checkout is live.",
+      );
+    }
+  };
+
+  return (
+    <div className="animate-[upsell-fade_0.4s_ease]">
+      <style jsx global>{`
+        @keyframes upsell-fade {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: none;
+          }
+        }
+      `}</style>
+
+      {/* Confirmation header */}
+      <div className="text-center">
+        <div
+          aria-hidden="true"
+          className="inline-flex items-center justify-center w-[54px] h-[54px] rounded-full bg-[rgba(78,199,127,0.12)] border-2 border-[#4EC77F] mb-4"
+        >
+          <svg
+            width="26"
+            height="26"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#4EC77F"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
+        <h2 className="font-heading uppercase text-[26px] tracking-[0.02em]">
+          {alreadyOnList ? "You're already in." : "You're on the list."}
+        </h2>
+        <p className="text-[#9A948C] mt-2.5 text-[15px]">
+          We&apos;ll email you the moment your wave opens. But there&apos;s one
+          way to skip the line entirely…
+        </p>
+      </div>
+
+      {/* Founder card */}
+      <div
+        className="relative mt-7 rounded-[18px] border-[1.5px] border-[rgba(242,107,29,0.35)] p-6 text-center overflow-hidden"
+        style={{
+          background:
+            'linear-gradient(160deg, rgba(242,107,29,0.09), rgba(242,107,29,0.02))',
+        }}
+      >
+        {/* corner glow */}
+        <div
+          aria-hidden="true"
+          className="absolute -top-[40%] -right-[10%] w-[200px] h-[200px] rounded-full pointer-events-none"
+          style={{
+            background:
+              'radial-gradient(circle, rgba(242,107,29,0.18), transparent 70%)',
+          }}
+        />
+
+        <div className="relative">
+          <span className="inline-block text-[11px] font-extrabold tracking-[0.14em] uppercase text-[#F26B1D] bg-[rgba(242,107,29,0.12)] border border-[rgba(242,107,29,0.3)] rounded-full px-3 py-1.5 mb-4">
+            Founding 100 · only at launch
+          </span>
+
+          <h3 className="font-heading uppercase text-[28px] leading-none">
+            Become a <span className="text-[#F26B1D]">founding member</span>
+          </h3>
+
+          <div className="mt-4 flex items-baseline justify-center gap-2.5">
+            <span className="font-heading text-[46px] text-[#F5F1EB] leading-none">
+              $397
+            </span>
+            <span className="text-[13px] text-[#9A948C] font-semibold">
+              once · lifetime access
+            </span>
+          </div>
+
+          <p className="text-[#9A948C] text-[14.5px] max-w-[30em] mt-2 mx-auto leading-[1.55]">
+            The first 100 people get{' '}
+            <b className="text-[#F5F1EB] font-semibold">lifetime membership</b>{' '}
+            — every tempo, every key, the full library, and every tool we ever
+            ship — for one payment, forever. Plus you fund the build and get in
+            on day one, ahead of every wave.
+          </p>
+
+          <ul className="list-none text-left max-w-[330px] mx-auto mt-5 space-y-2.5">
+            {[
+              <>
+                <b className="font-bold">Lifetime keys.</b> Never pay the
+                $24/mo. Locked for life.
+              </>,
+              <>
+                <b className="font-bold">First through the door</b> — skip every
+                wait-list wave.
+              </>,
+              <>
+                <b className="font-bold">Founder&apos;s ear</b> — shape what we
+                build next.
+              </>,
+            ].map((node, i) => (
+              <li
+                key={i}
+                className="text-[14px] text-[#F5F1EB] flex gap-2.5 items-start"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#F26B1D"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="flex-none mt-0.5"
+                  aria-hidden="true"
+                >
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                <span>{node}</span>
+              </li>
+            ))}
+          </ul>
+
+          {/* Spots progress */}
+          <div className="mt-5 bg-black/25 border border-[rgba(242,107,29,0.18)] rounded-xl px-4 py-3.5">
+            <div className="flex justify-between items-baseline text-[12.5px]">
+              <span className="text-[#9A948C] font-medium">
+                <b className="text-[#F5F1EB] font-extrabold">
+                  {FOUNDER_SPOTS_CLAIMED}
+                </b>{' '}
+                of {FOUNDER_SPOTS_TOTAL} spots claimed
+              </span>
+              <span className="text-[#F26B1D] font-extrabold">
+                closes at {FOUNDER_SPOTS_TOTAL}
+              </span>
+            </div>
+            <div className="h-[7px] bg-[#221D18] rounded-md mt-2.5 overflow-hidden">
+              <div
+                className="h-full rounded-md transition-[width] duration-[1400ms] ease-[cubic-bezier(.2,.8,.2,1)]"
+                style={{
+                  width: `${spotsPct}%`,
+                  background:
+                    'linear-gradient(90deg, #C4530F, #FF7A22)',
+                }}
+              />
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleFounderClick}
+            disabled={recordingInterest}
+            className="w-full mt-5 bg-gradient-to-b from-[#FF7A22] to-[#C4530F] text-[#1A0D04] font-extrabold text-[17px] px-6 py-[18px] rounded-[13px] cursor-pointer border-none shadow-[0_14px_34px_-12px_rgba(242,107,29,0.6)] hover:-translate-y-0.5 hover:shadow-[0_20px_44px_-12px_rgba(242,107,29,0.7)] active:translate-y-0 transition-[transform,box-shadow] duration-200 disabled:opacity-70 leading-tight"
+          >
+            Become a founder — $397
+            <span className="block text-xs font-semibold text-[rgba(26,13,4,0.7)] mt-1">
+              Secure checkout · 30-day money-back guarantee
+            </span>
+          </button>
+
+          <p className="text-[11.5px] text-[#6B655E] mt-3.5 max-w-[32em] mx-auto leading-[1.55]">
+            <b className="text-[#9A948C] font-semibold">
+              Heads up — the platform isn&apos;t live yet.
+            </b>{' '}
+            Bassicology opens in 2026. You&apos;re paying today to lock lifetime
+            founding access at $397; you get in the day we open, before every
+            wave. Not happy before launch? Full refund, no questions.
+          </p>
+        </div>
+      </div>
+
+      {/* Skip button */}
+      <button
+        type="button"
+        onClick={onDone}
+        className="block w-full mt-3.5 bg-transparent border-[1.5px] border-[#26221E] text-[#9A948C] font-bold text-[15px] py-[15px] rounded-[13px] cursor-pointer hover:border-[#3D3630] hover:text-[#F5F1EB] transition-colors"
+      >
+        No thanks — just notify me when it&apos;s live
+      </button>
     </div>
   );
 }
