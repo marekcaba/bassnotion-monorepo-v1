@@ -187,9 +187,6 @@ export default function WaitlistPage() {
           )}
         </div>
 
-        {/* ── FOUNDER QUOTE — standalone banner ─────────────── */}
-        <FounderQuote />
-
         {/* ── WHY IT WORKS ──────────────────────────────────── */}
         <WhyItWorks />
 
@@ -371,29 +368,6 @@ export default function WaitlistPage() {
         </div>
         Bassicology · Play, don&apos;t watch · 2026
       </footer>
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════
-   FOUNDER QUOTE — standalone banner, no card chrome
-   (mirrors the /preview quote-banner styling)
-   ════════════════════════════════════════════════════════════ */
-function FounderQuote() {
-  return (
-    <div className="py-16 md:py-24 text-center">
-      <p className="max-w-[720px] mx-auto text-xl md:text-2xl leading-relaxed text-[#C8C8C8] font-dm-body italic">
-        &ldquo;My bass lines went from 0 to 100 when I started muting the bass
-        track and playing with the actual music&nbsp;&mdash; pitch it up, slow
-        it down, and feel how the line sits in the music. That&rsquo;s the
-        whole platform.&rdquo;
-      </p>
-      <div className="mt-5 text-[13px] text-[#9A948C] font-semibold tracking-[0.02em]">
-        <b className="text-[#F5F1EB] font-bold">mar.c</b>{' '}
-        <span className="text-[#6B655E] font-medium">
-          &middot; founder of Bassicology
-        </span>
-      </div>
     </div>
   );
 }
@@ -698,16 +672,28 @@ function GrooveCardMockup() {
       }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-1.5 pb-3.5">
+      <div className="flex items-center justify-between gap-2 px-1.5 pb-3.5">
         <span className="text-xs font-bold tracking-[0.1em] uppercase text-[#6B655E]">
           Now playing ·{' '}
           <b className="text-[#F5F1EB]">
             &ldquo;Greasy Pocket&rdquo; — Funk in {KEY_OPTIONS[groove.keyIndex]}
           </b>
         </span>
-        <span className="text-[11px] font-bold tracking-[0.06em] text-[#F26B1D] border border-[rgba(242,107,29,0.3)] bg-[rgba(242,107,29,0.07)] rounded-full px-3 py-1 whitespace-nowrap">
-          ▶ Try the controls
-        </span>
+        <div className="flex items-center gap-2">
+          {/* Dev-only guardrail. Auto-hides on Vercel production.
+              Reminds us to swap in the real Groove Card before launch. */}
+          {process.env.NEXT_PUBLIC_VERCEL_ENV !== 'production' && (
+            <span
+              title="This Groove Card is a visual mockup; the real interactive component will replace it before launch."
+              className="text-[10px] font-bold tracking-[0.12em] uppercase text-[#FFBD2E] border border-[rgba(255,189,46,0.35)] bg-[rgba(255,189,46,0.06)] rounded-full px-2 py-1 whitespace-nowrap"
+            >
+              Preview
+            </span>
+          )}
+          <span className="text-[11px] font-bold tracking-[0.06em] text-[#F26B1D] border border-[rgba(242,107,29,0.3)] bg-[rgba(242,107,29,0.07)] rounded-full px-3 py-1 whitespace-nowrap">
+            ▶ Try the controls
+          </span>
+        </div>
       </div>
 
       {/* Stage */}
