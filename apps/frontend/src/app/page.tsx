@@ -33,7 +33,7 @@ type FormStatus = 'idle' | 'submitting' | 'upsell' | 'done' | 'error';
 // === FOUNDER PAYMENT LINK ===
 // Paste your Stripe Payment Link URL here once it's created.
 // Until then, the button shows a "coming soon" toast and records interest.
-const FOUNDER_PAYMENT_LINK = '';
+const FOUNDER_PAYMENT_LINK = 'https://buy.stripe.com/fZu3cv5Tp2zj2g0ci83sI01';
 const FOUNDER_SPOTS_TOTAL = 100;
 const FOUNDER_SPOTS_CLAIMED = 62; // hardcoded until we have real founders
 type GrooveControl = 'play' | 'tempo' | 'key' | 'mute';
