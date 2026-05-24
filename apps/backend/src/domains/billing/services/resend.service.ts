@@ -129,7 +129,6 @@ P.S. Your Stripe receipt is in a separate email. If anything looks off, reply he
 
 function buildHtml(greeting: string): string {
   // Brand palette — kept in sync with apps/frontend/src/app/page.tsx
-  const BG = '#0A0908';
   const PANEL = '#100E0D';
   const BORDER = '#26221E';
   const ORANGE = '#F26B1D';
@@ -169,31 +168,30 @@ function buildHtml(greeting: string): string {
     <meta name="supported-color-schemes" content="dark" />
     <title>You're a Bassicology founder.</title>
   </head>
-  <body style="margin: 0; padding: 0; background-color: ${BG}; color: ${TEXT}; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%;">
+  <body style="margin: 0; padding: 0; color: ${TEXT}; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%;">
     <!-- Hidden preheader (preview text shown in inbox lists) -->
-    <div style="display: none; max-height: 0; overflow: hidden; opacity: 0; font-size: 1px; line-height: 1px; color: ${BG};">
+    <div style="display: none; max-height: 0; overflow: hidden; opacity: 0; font-size: 1px; line-height: 1px; color: transparent;">
       Thank you. You just put $397 into something that doesn't exist yet — on the promise of what it could be.
     </div>
 
-    <!-- Outer wrapper paints the full email area dark -->
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: ${BG};">
+    <!-- Transparent outer wrapper: let the client's mail background show
+         around the centered card so it pops in both light and dark modes. -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr>
         <td align="center" style="padding: 32px 16px;">
 
           <!-- Inner 600px column -->
           <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width: 100%; max-width: 600px;">
 
-            <!-- Header: wordmark + chip, centered with breathing room -->
+            <!-- Card (contains everything — header through footer) -->
             <tr>
-              <td style="padding: 16px 8px 40px; text-align: center;">
-                <span style="font-family: ${HEADING_STACK}; text-transform: uppercase; font-size: 20px; letter-spacing: 0.14em; color: ${ORANGE}; vertical-align: middle;">BASSICOLOGY</span>
-                <span style="display: inline-block; margin-left: 12px; padding: 4px 12px; border: 1px solid ${BORDER}; border-radius: 999px; font-family: ${BODY_STACK}; font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: ${DIM}; vertical-align: middle;">FOUNDER</span>
-              </td>
-            </tr>
+              <td style="background-color: ${PANEL}; border: 1px solid ${BORDER}; border-radius: 16px; padding: 32px 32px 36px;">
 
-            <!-- Card -->
-            <tr>
-              <td style="background-color: ${PANEL}; border: 1px solid ${BORDER}; border-radius: 16px; padding: 36px 32px;">
+                <!-- Header: wordmark + chip, centered -->
+                <p style="margin: 0 0 32px; text-align: center;">
+                  <span style="font-family: ${HEADING_STACK}; text-transform: uppercase; font-size: 20px; letter-spacing: 0.14em; color: ${ORANGE}; vertical-align: middle;">BASSICOLOGY</span>
+                  <span style="display: inline-block; margin-left: 12px; padding: 4px 12px; border: 1px solid ${BORDER}; border-radius: 999px; font-family: ${BODY_STACK}; font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: ${DIM}; vertical-align: middle;">FOUNDER</span>
+                </p>
 
                 <!-- Headline -->
                 <h1 style="margin: 0 0 28px; font-family: ${HEADING_STACK}; text-transform: uppercase; font-weight: 400; font-size: 30px; line-height: 1.0; letter-spacing: 0.01em; color: ${TEXT}; text-align: center; white-space: nowrap;">
@@ -268,9 +266,10 @@ function buildHtml(greeting: string): string {
               </td>
             </tr>
 
-            <!-- Footer -->
+            <!-- Footer (sits outside the card, so the color must be readable
+                 against both light and dark client backgrounds). -->
             <tr>
-              <td style="padding: 24px 8px 8px; text-align: center; font-family: ${BODY_STACK}; font-size: 11px; letter-spacing: 0.08em; color: ${FAINT};">
+              <td style="padding: 24px 8px 8px; text-align: center; font-family: ${BODY_STACK}; font-size: 11px; letter-spacing: 0.08em; color: #8a847c;">
                 Bassicology · Play, don't watch · 2026
               </td>
             </tr>
