@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 interface WelcomeContext {
@@ -19,8 +19,21 @@ interface WelcomeContext {
  *
  * Brand-matched to the waitlist page so the founder doesn't feel like
  * they were dropped onto a different product after paying.
+ *
+ * Next 15 requires useSearchParams() to be wrapped in a <Suspense>
+ * boundary so static prerendering can bail out cleanly to client-side
+ * rendering when search params are present. The default export is the
+ * Suspense wrapper; the real content lives in FoundersWelcomeContent.
  */
 export default function FoundersWelcomePage() {
+  return (
+    <Suspense fallback={<WelcomeFallback />}>
+      <FoundersWelcomeContent />
+    </Suspense>
+  );
+}
+
+function FoundersWelcomeContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('session_id');
 
@@ -224,5 +237,20 @@ function Perk({
         {children}
       </span>
     </li>
+  );
+}
+
+/**
+ * Brand-matched skeleton shown while the Suspense boundary resolves
+ * useSearchParams() on the client. Visible for ~100ms; just enough to
+ * avoid a white flash on page entry.
+ */
+function WelcomeFallback() {
+  return (
+    <div className="min-h-screen bg-[#0A0908] flex items-center justify-center">
+      <div className="text-[#6B655E] font-dm-body text-sm tracking-[0.08em] uppercase">
+        Loading…
+      </div>
+    </div>
   );
 }
