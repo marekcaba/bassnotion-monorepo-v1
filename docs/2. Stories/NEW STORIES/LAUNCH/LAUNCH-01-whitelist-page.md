@@ -185,6 +185,20 @@ A single-page dashboard at `/admin/funnels` (inside the existing `/admin` layout
 - [ ] **Decide if `POST /api/waitlist` should route through the NestJS backend** instead of being a Next route handler. Current choice (Next route): simpler, no DI/auth needed for an anon insert; uses Supabase anon key + RLS. Backend choice: matches the rest of the platform's API surface, easier to add rate-limiting/auth later. Document the decision either way; current shipped reality is the Next route.
 - [ ] **Admin view of founder_members table.** Read directly from Supabase Studio for now.
 
+**Migrate off Stripe Payment Links (defer to LAUNCH-03 membership)**
+
+The founder $397 product currently runs on a Stripe Payment Link. This works fine for a single fixed-price product, but Stripe Payment Links have real limitations that will bite once we add the monthly membership and other paid products:
+
+- **No locale override.** Payment Links auto-detect from the browser language; we can't force English. Czech-browser visitors see "Celkem dlužná částka" (literally "total amount owed") instead of "Amount due" — technically correct, but tonally off-brand. **Cannot be fixed without leaving Payment Links.**
+- **No programmatic pricing** (e.g. region-specific pricing, dynamic discounts beyond a coupon code).
+- **Awkward subscription↔user-account linking.** When the real Bassicology Membership ships, we'll need each subscription tied to a Supabase user account; Payment Links make this work but it's friction.
+- **Customer email isn't pre-filled** when a logged-in user starts checkout.
+- **Per-user success URLs aren't easy** (the redirect URL is configured per-link, not per-checkout).
+
+**Plan**: when LAUNCH-03 (membership) work starts, build a `createCheckoutSession()` backend endpoint that uses Stripe's Checkout Sessions API instead. Same hosted Stripe page (trust intact), but full programmatic control: `locale: 'en'`, pre-filled customer email, per-user `success_url`, metadata, subscription routing. Use the new pattern for membership AND any future paid products. Optionally migrate the founder Payment Link to the same pattern later (no urgency — it works).
+
+Until LAUNCH-03, the Czech phrasing on the founder checkout is documented but accepted.
+
 ## Out of Scope (deferred)
 
 - ❌ Embedding the YouTube video — page is fast enough; no need.
