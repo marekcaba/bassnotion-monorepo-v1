@@ -418,6 +418,17 @@ export class WebhookController {
     ).toLowerCase();
     const mode: 'test' | 'live' = session.livemode ? 'live' : 'test';
 
+    // Attribution shipped through the Stripe checkout via client_reference_id
+    // (frontend packs slim UTMs into a base64url JSON blob). Parse back into
+    // the wider attribution shape and merge with the existing session.metadata.
+    const attribution = parseAttributionFromClientReferenceId(
+      session.client_reference_id ?? null,
+    );
+    const mergedMetadata = {
+      ...(session.metadata ?? {}),
+      ...(attribution ? { attribution } : {}),
+    };
+
     const { row, created } = await this.founderMemberRepository.createIfMissing({
       email,
       fullName,
@@ -428,7 +439,8 @@ export class WebhookController {
       amount,
       currency,
       mode,
-      metadata: session.metadata ?? null,
+      metadata:
+        Object.keys(mergedMetadata).length > 0 ? mergedMetadata : null,
     });
 
     if (!created) {
@@ -470,5 +482,51 @@ export class WebhookController {
     };
 
     return statusMap[stripeStatus] || 'incomplete';
+  }
+}
+
+/**
+ * Decode the slim attribution blob the frontend packed into Stripe's
+ * client_reference_id. Format: `attr:<base64url(JSON)>`. The JSON keys
+ * are single-letter shorthand to fit Stripe's 200-char limit:
+ *   s = utmSource, m = utmMedium, c = utmCampaign,
+ *   n = utmContent, t = utmTerm, a = capturedAt
+ *
+ * Returns `null` when the field is missing, malformed, or carries a
+ * non-attribution value (the existing platform may use client_reference_id
+ * for other purposes in the future). Never throws.
+ */
+function parseAttributionFromClientReferenceId(
+  raw: string | null,
+): Record<string, string> | null {
+  if (!raw || !raw.startsWith('attr:')) return null;
+  const b64url = raw.slice('attr:'.length);
+  if (b64url.length === 0) return null;
+
+  try {
+    // base64url → base64 + restore padding
+    const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
+    const json = Buffer.from(padded, 'base64').toString('utf8');
+    const slim = JSON.parse(json) as Record<string, unknown>;
+
+    const longForm: Record<string, string> = {};
+    const mapping: Record<string, string> = {
+      s: 'utmSource',
+      m: 'utmMedium',
+      c: 'utmCampaign',
+      n: 'utmContent',
+      t: 'utmTerm',
+      a: 'capturedAt',
+    };
+    for (const [shortKey, longKey] of Object.entries(mapping)) {
+      const v = slim[shortKey];
+      if (typeof v === 'string' && v.length > 0 && v.length <= 200) {
+        longForm[longKey] = v;
+      }
+    }
+    return Object.keys(longForm).length > 0 ? longForm : null;
+  } catch {
+    return null;
   }
 }

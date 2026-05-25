@@ -29,6 +29,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 </div>
                 <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                   <a
+                    href="/admin/funnels"
+                    className="inline-flex items-center border-b-2 border-transparent hover:border-gray-300 px-1 pt-1 text-sm font-medium text-gray-900"
+                  >
+                    Funnels
+                  </a>
+                  <a
                     href="/admin/monitoring"
                     className="inline-flex items-center border-b-2 border-transparent hover:border-gray-300 px-1 pt-1 text-sm font-medium text-gray-900"
                   >
