@@ -1,6 +1,8 @@
-import { Controller, Get, Logger } from '@nestjs/common';
+import { Controller, Get, Logger, UseGuards } from '@nestjs/common';
 
 import { FounderMemberRepository } from './repositories/founder-member.repository.js';
+import { AdminFunnelsService, FunnelStats } from './services/admin-funnels.service.js';
+import { AdminGuard } from '../user/auth/guards/admin.guard.js';
 
 const FOUNDER_TOTAL_SPOTS = 100;
 
@@ -10,6 +12,7 @@ export class FoundersController {
 
   constructor(
     private readonly founderMemberRepository: FounderMemberRepository,
+    private readonly adminFunnelsService: AdminFunnelsService,
   ) {}
 
   /**
@@ -45,5 +48,16 @@ export class FoundersController {
         error: 'count_unavailable',
       };
     }
+  }
+
+  /**
+   * Admin-only funnel stats for /admin/funnels. Aggregate counts + top
+   * UTM sources/campaigns. Returns no PII — just totals and top-N lists.
+   * Gated by the existing AdminGuard (Bearer token → profiles.role='admin').
+   */
+  @Get('admin/funnels')
+  @UseGuards(AdminGuard)
+  async getFunnelStats(): Promise<FunnelStats> {
+    return this.adminFunnelsService.getStats();
   }
 }

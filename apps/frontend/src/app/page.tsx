@@ -45,6 +45,48 @@ const FOUNDER_SPOTS_TOTAL = 100;
 // Soft fallback shown when the live count endpoint hasn't responded yet.
 // Stays small so first paint isn't an obviously-fake number.
 const FOUNDER_SPOTS_INITIAL = 0;
+
+// Stripe client_reference_id constraints: max 200 chars, alphanumeric + . _ -.
+// We pack the high-signal attribution fields (UTMs only) into a base64url
+// JSON blob to survive the round-trip through Stripe Checkout into the
+// webhook payload. The wider attribution (referrer, timezone, landingPath)
+// already lives on the waitlist row keyed by email — we can cross-reference
+// later if needed without spending the 200-char budget here.
+const STRIPE_CLIENT_REF_PREFIX = 'attr:';
+const STRIPE_CLIENT_REF_MAX = 200;
+
+function packAttributionForStripe(
+  attribution: ReturnType<typeof getStoredAttribution>,
+): string | undefined {
+  const slim = {
+    s: attribution.utmSource ?? undefined,
+    m: attribution.utmMedium ?? undefined,
+    c: attribution.utmCampaign ?? undefined,
+    n: attribution.utmContent ?? undefined,
+    t: attribution.utmTerm ?? undefined,
+    a: attribution.capturedAt ?? undefined,
+  };
+  // Drop empties so we don't waste budget on null markers.
+  const filtered = Object.fromEntries(
+    Object.entries(slim).filter(([, v]) => v != null && v !== ''),
+  );
+  if (Object.keys(filtered).length === 0) return undefined;
+
+  try {
+    const json = JSON.stringify(filtered);
+    // base64url: standard base64 with + -> -, / -> _, = stripped.
+    const b64 =
+      typeof btoa === 'function'
+        ? btoa(unescape(encodeURIComponent(json)))
+        : Buffer.from(json, 'utf8').toString('base64');
+    const b64url = b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const candidate = `${STRIPE_CLIENT_REF_PREFIX}${b64url}`;
+    if (candidate.length > STRIPE_CLIENT_REF_MAX) return undefined;
+    return candidate;
+  } catch {
+    return undefined;
+  }
+}
 type GrooveControl = 'play' | 'tempo' | 'key' | 'mute';
 const TEMPO_OPTIONS = [72, 88, 104, 120];
 const KEY_OPTIONS = ['E', 'F#', 'G', 'A', 'C'];
@@ -1112,7 +1154,16 @@ function FounderUpsell({
     await recordInterest();
     setRecordingInterest(false);
     if (FOUNDER_PAYMENT_LINK) {
-      window.open(FOUNDER_PAYMENT_LINK, '_blank', 'noopener,noreferrer');
+      // Pass first-touch attribution through Stripe via client_reference_id
+      // so the webhook can record which marketing source actually converted.
+      const attribution = getStoredAttribution();
+      const clientRef = packAttributionForStripe(attribution);
+      const url = clientRef
+        ? `${FOUNDER_PAYMENT_LINK}?client_reference_id=${encodeURIComponent(
+            clientRef,
+          )}`
+        : FOUNDER_PAYMENT_LINK;
+      window.open(url, '_blank', 'noopener,noreferrer');
     } else {
       // No payment link configured yet — show the soft landing.
       alert(
