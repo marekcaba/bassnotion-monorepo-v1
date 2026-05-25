@@ -54,7 +54,7 @@ The visual scope expanded beyond the original "doorbell only" framing because th
 - **CTA:** "Notify me when it opens".
 - **Submit flow:** signup → founder upsell step → final confirmation. No redirects.
 - **Founder upsell:**
-  - "Become a founder — $397" button records intent (POST `/api/waitlist/founder-interest`) then opens the Stripe Payment Link in a new tab. The link URL is environment-driven via `NEXT_PUBLIC_STRIPE_FOUNDER_LINK` so staging gets the test link and production gets the live one.
+  - "Become a founder — $397" button records intent (POST `/api/waitlist/founder-interest`) then navigates the **current tab** to the Stripe Payment Link (`window.location.href = url`). This is the industry-standard pattern (Linear, Vercel, GitHub, Notion, Substack) — new-tab handoff was rejected because `window.close()` can't reliably close the Stripe tab, so the user would be stranded on Stripe's generic thank-you. The link URL is environment-driven via `NEXT_PUBLIC_STRIPE_FOUNDER_LINK` so staging gets the test link and production gets the live one.
   - "No thanks — just notify me" ghost button advances to final confirmation.
   - Progress bar shows the **real** founder count, fetched from the backend's `/api/v1/founders/count` endpoint on page mount. Soft-fallback to 0 if the endpoint is briefly unavailable, so the bar never flickers.
 - **Honeypot:** hidden `website` field; bots filling it get a fake-success response, nothing is written.
@@ -93,6 +93,20 @@ Stripe completes checkout → POST /api/v1/webhooks/stripe (NestJS backend)
 
 The founder branch sits BEFORE the existing auth-required code path because founder buyers are anonymous (no `user_id`) — the old "missing user_id" early-return would have silently dropped them.
 
+### Functional — Post-payment welcome page
+
+After paying, Stripe redirects the same tab to `https://bassicology.com/founders/welcome?session_id=cs_xxx`. This page replaces Stripe's generic thank-you so the founder lands back inside the Bassicology brand with a real celebration.
+
+- **Route:** `/founders/welcome` ([apps/frontend/src/app/founders/welcome/page.tsx](apps/frontend/src/app/founders/welcome/page.tsx)). Public — anyone with a `session_id` can land here, which is fine because the page only renders the first name + a celebration (no PII beyond what they already paid with).
+- **Success overlay (~2.6s total):** on arrival, a full-screen dark overlay covers the page with a pop-in animated green check + "PAYMENT SUCCESSFUL" label, holds for 2s, then dissolves over 600ms to reveal the welcome page. Fills the visual gap from same-tab handoff (Stripe tab disappears mid-payment so the user has no confirmation the charge landed). Overlay is gated by `?session_id=...` presence — bookmarked/direct visits skip it so the celebration doesn't feel fake.
+- **Personalization:** on mount, the page calls `GET /api/v1/founders/welcome-context?session_id=cs_xxx`. The backend looks up the session via the Stripe SDK server-side (the Stripe secret key never reaches the browser), and returns `{ firstName, paid }` — `firstName` parsed from `session.customer_details.name` (first whitespace-separated token, 80-char max). Headline renders as "Welcome, [FirstName]." if resolved, otherwise just "Welcome." Sessions that aren't `payment_status === 'paid'` return `paid: false` and no name, covering bookmarked/stale/fishing requests.
+- **Suspense boundary:** Next 15 requires `useSearchParams()` to be wrapped in `<Suspense>` for static prerender bailout. The default export is the Suspense wrapper; real content lives in `FoundersWelcomeContent`. Skeleton fallback is a brand-matched dark "Loading…" panel.
+- **Brand match:** identical dark palette + dual-radial atmospherics + noise texture as the waitlist page so the post-payment moment doesn't feel like a different product.
+
+### Known limitation — Czech-browser checkout phrasing
+
+Stripe Payment Links auto-detect locale from the browser and don't accept a `locale` override (verified against Stripe docs). Czech-browser visitors see "Celkem dlužná částka" ("total amount owed") instead of "Amount due" — technically correct but tonally off-brand. Cannot be fixed without leaving Payment Links; documented as accepted until LAUNCH-03 migrates to Stripe Checkout Sessions API (see "Migrate off Stripe Payment Links" under Remaining).
+
 ### Functional — Admin funnels dashboard
 
 A single-page dashboard at `/admin/funnels` (inside the existing `/admin` layout, gated by the existing `AdminGuard` — Bearer token → `profiles.role='admin'`) showing how the page is performing without leaving Supabase.
@@ -118,6 +132,7 @@ A single-page dashboard at `/admin/funnels` (inside the existing `/admin` layout
   - `POST /api/v1/webhooks/stripe` (NestJS, in `apps/backend/src/domains/billing/webhook.controller.ts`) — verifies Stripe signature, routes founder checkouts through the new founder branch, falls through to existing platform billing flows otherwise.
   - `GET /api/v1/founders/count` (NestJS, in `apps/backend/src/domains/billing/founders.controller.ts`) — returns `{ claimed, total, error }`. Counts `mode='live'` only so test rows never inflate the public number. Bounded by `FOUNDER_TOTAL_SPOTS` (100). Soft-fails to `{ claimed: 0, error: 'count_unavailable' }` on Supabase issues so the page never crashes.
   - `GET /api/v1/founders/admin/funnels` (NestJS, same controller, `@UseGuards(AdminGuard)`) — returns the `FunnelStats` payload powering the `/admin/funnels` dashboard. Counts + conversion rates + top-N UTM sources/campaigns. Requires Bearer token belonging to a user with `profiles.role='admin'`.
+  - `GET /api/v1/founders/welcome-context?session_id=cs_xxx` (NestJS, same controller, **public**) — server-side Stripe lookup powering the personalized "Welcome, [FirstName]." headline on `/founders/welcome`. Returns `{ firstName, paid }`; defends against bookmarked/stale/fishing requests by returning `{ firstName: null, paid: false }` for any session that isn't `payment_status === 'paid'` or doesn't start with `cs_`. Public-but-safe: the only PII exposed is the founder's own first name when they hand the endpoint their own session ID.
 - **Server logs** the Supabase error code/details on insert failure (PG codes never leak to the client response).
 
 ### Non-functional
@@ -156,6 +171,11 @@ A single-page dashboard at `/admin/funnels` (inside the existing `/admin` layout
 - [x] Live Stripe Payment Link tagged with `purchase_type=founder_membership` metadata (matched by both the price ID and the metadata flag in the webhook)
 - [x] `rawBody: true` on FastifyAdapter (without this, Stripe signature verification fails silently in ~6ms — see memory)
 - [x] Founder-interest click persists a row in `founder_interest` before Stripe redirect
+- [x] Same-tab Stripe handoff (`window.location.href`) — industry-standard pattern (no orphaned tabs, no failed `window.close()`)
+- [x] Post-payment `/founders/welcome` page renders brand-matched dark celebration with personalized headline ("Welcome, [FirstName].") via server-side Stripe session lookup
+- [x] Success overlay (animated check + "PAYMENT SUCCESSFUL", ~2.6s total) covers the welcome page on arrival to confirm the charge before the Stripe tab disappears
+- [x] Overlay skipped on bookmarked/direct visits (no `session_id` param)
+- [x] `useSearchParams()` wrapped in `<Suspense>` for Next 15 prerender bailout
 
 **Email infrastructure**
 - [x] `bassicology.com` verified on Resend (DKIM + SPF + DMARC on Vercel DNS)
@@ -214,6 +234,7 @@ Until LAUNCH-03, the Czech phrasing on the founder checkout is documented but ac
 **Frontend**
 - [apps/frontend/src/app/page.tsx](apps/frontend/src/app/page.tsx) — the entire waitlist page (single client component; sections inlined to keep one source of truth during early iteration).
 - [apps/frontend/src/app/preview/page.tsx](apps/frontend/src/app/preview/page.tsx) — old marketing landing, preserved.
+- [apps/frontend/src/app/founders/welcome/page.tsx](apps/frontend/src/app/founders/welcome/page.tsx) — post-payment landing page. Suspense-wrapped, brand-matched dark celebration with success overlay and personalized greeting fetched from the backend.
 - [apps/frontend/src/app/api/waitlist/route.ts](apps/frontend/src/app/api/waitlist/route.ts) — signup POST handler (Next route).
 - [apps/frontend/src/app/api/waitlist/founder-interest/route.ts](apps/frontend/src/app/api/waitlist/founder-interest/route.ts) — founder-interest POST handler (Next route).
 - [apps/frontend/src/shared/attribution/index.ts](apps/frontend/src/shared/attribution/index.ts) — first-touch attribution capture (UTM, referrer, landing path, timezone) with 30-day localStorage TTL. Called once on page mount; `getStoredAttribution()` is read before each form submit.
@@ -225,7 +246,7 @@ Until LAUNCH-03, the Czech phrasing on the founder checkout is documented but ac
 - [apps/backend/src/domains/billing/webhook.controller.ts](apps/backend/src/domains/billing/webhook.controller.ts) — Stripe webhook handler; extended with `handleFounderCheckoutCompleted` and `isFounderCheckout` branch.
 - [apps/backend/src/domains/billing/services/resend.service.ts](apps/backend/src/domains/billing/services/resend.service.ts) — Resend wrapper with `sendFounderWelcome` (HTML + plain-text builders).
 - [apps/backend/src/domains/billing/repositories/founder-member.repository.ts](apps/backend/src/domains/billing/repositories/founder-member.repository.ts) — `createIfMissing`, `markWelcomeEmailSent`, `countByMode`.
-- [apps/backend/src/domains/billing/founders.controller.ts](apps/backend/src/domains/billing/founders.controller.ts) — public `GET /api/v1/founders/count` endpoint AND admin-gated `GET /api/v1/founders/admin/funnels` endpoint (latter protected by `@UseGuards(AdminGuard)`).
+- [apps/backend/src/domains/billing/founders.controller.ts](apps/backend/src/domains/billing/founders.controller.ts) — public `GET /api/v1/founders/count`, public `GET /api/v1/founders/welcome-context` (powers `/founders/welcome` personalization via server-side Stripe session lookup), AND admin-gated `GET /api/v1/founders/admin/funnels` endpoint (latter protected by `@UseGuards(AdminGuard)`).
 - [apps/backend/src/domains/billing/services/admin-funnels.service.ts](apps/backend/src/domains/billing/services/admin-funnels.service.ts) — server-side aggregator powering `/admin/funnels`. Pulls counts from `waitlist`, `founder_interest`, and `founder_members` (live + test), plus top-N UTM source/campaign aggregation from `waitlist.metadata`.
 - [apps/frontend/src/app/admin/funnels/page.tsx](apps/frontend/src/app/admin/funnels/page.tsx) — the admin dashboard page. Fetches via Bearer token from the current Supabase session.
 - [apps/frontend/src/app/admin/layout.tsx](apps/frontend/src/app/admin/layout.tsx) — extended with the "Funnels" nav link.
@@ -259,5 +280,5 @@ Until LAUNCH-03, the Czech phrasing on the founder checkout is documented but ac
 
 - Once LAUNCH-09 (open day) ships, this page becomes a "between marketing pushes" catcher or gets repurposed. Decide closer to open.
 - The `waitlist`, `founder_interest`, and `founder_members` tables are the source of truth for the launch email sequence (LAUNCH-14) and any pre-launch outreach. Founders specifically should get higher-touch treatment.
-- PRs shipped: [#82](https://github.com/marekcaba/bassnotion-monorepo-v1/pull/82) (waitlist + initial founder upsell, develop), [#83](https://github.com/marekcaba/bassnotion-monorepo-v1/pull/83) (release to main with full founder payment pipeline + Resend integration).
+- PRs shipped: [#82](https://github.com/marekcaba/bassnotion-monorepo-v1/pull/82) (waitlist + initial founder upsell, develop), [#83](https://github.com/marekcaba/bassnotion-monorepo-v1/pull/83) (release to main with full founder payment pipeline + Resend integration), [#86](https://github.com/marekcaba/bassnotion-monorepo-v1/pull/86) (release: `/founders/welcome` page + same-tab Stripe handoff to main), [#87](https://github.com/marekcaba/bassnotion-monorepo-v1/pull/87) + [#88](https://github.com/marekcaba/bassnotion-monorepo-v1/pull/88) (success overlay + timing tweak on develop, pending release).
 </content>
