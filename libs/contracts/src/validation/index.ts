@@ -25,3 +25,6 @@ export * from './musical-time-schemas.js';
 
 // Social features validation - Likes and Favorites
 export * from './social-schemas.js';
+
+// Waitlist (pre-launch landing page)
+export * from './waitlist-schemas.js';

@@ -48,6 +48,14 @@ async function bootstrap() {
       logger: true,
       bodyLimit: 10 * 1024 * 1024, // 10MB limit
     }),
+    {
+      // Preserve the raw request body for routes that need to verify
+      // signatures over the exact bytes received (e.g. POST
+      // /api/v1/webhooks/stripe — Stripe signs the precise byte sequence,
+      // and signature verification fails if Nest's body parser
+      // re-stringifies the payload first).
+      rawBody: true,
+    },
   );
 
   // Set allowed origins in environment for security config
