@@ -130,7 +130,7 @@ A single-page dashboard at `/admin/funnels` (inside the existing `/admin` layout
   - `POST /api/waitlist` (Next.js route handler) — Zod-validates body, honeypot-checks, inserts via anon Supabase key.
   - `POST /api/waitlist/founder-interest` (Next.js route handler) — Zod-validates, inserts founder_interest row via anon key.
   - `POST /api/v1/webhooks/stripe` (NestJS, in `apps/backend/src/domains/billing/webhook.controller.ts`) — verifies Stripe signature, routes founder checkouts through the new founder branch, falls through to existing platform billing flows otherwise.
-  - `GET /api/v1/founders/count` (NestJS, in `apps/backend/src/domains/billing/founders.controller.ts`) — returns `{ claimed, total, error }`. Counts `mode='live'` only so test rows never inflate the public number. Bounded by `FOUNDER_TOTAL_SPOTS` (100). Soft-fails to `{ claimed: 0, error: 'count_unavailable' }` on Supabase issues so the page never crashes.
+  - `GET /api/v1/founders/count` (NestJS, in `apps/backend/src/domains/billing/founders.controller.ts`) — returns `{ claimed, total, error }`. Counts `mode='live'` only so test rows never inflate the public number, then adds a fixed reserved-spots floor (`FOUNDER_RESERVED_SPOTS` env var, default 13) for private-funding allocations that don't exist as `founder_members` rows. Bar starts at 13/100 today and ticks up as real public sales land — 13 private + 87 public = 100 total. Bounded by `FOUNDER_TOTAL_SPOTS` (100). Soft-fails to `{ claimed: reserved, error: 'count_unavailable' }` on Supabase issues so the page never crashes and never appears to roll back below the floor. **Admin funnels dashboard reads real counts from the table directly and is unaffected by the reserved floor — admins see truth, marketing sees floor.**
   - `GET /api/v1/founders/admin/funnels` (NestJS, same controller, `@UseGuards(AdminGuard)`) — returns the `FunnelStats` payload powering the `/admin/funnels` dashboard. Counts + conversion rates + top-N UTM sources/campaigns. Requires Bearer token belonging to a user with `profiles.role='admin'`.
   - `GET /api/v1/founders/welcome-context?session_id=cs_xxx` (NestJS, same controller, **public**) — server-side Stripe lookup powering the personalized "Welcome, [FirstName]." headline on `/founders/welcome`. Returns `{ firstName, paid }`; defends against bookmarked/stale/fishing requests by returning `{ firstName: null, paid: false }` for any session that isn't `payment_status === 'paid'` or doesn't start with `cs_`. Public-but-safe: the only PII exposed is the founder's own first name when they hand the endpoint their own session ID.
 - **Server logs** the Supabase error code/details on insert failure (PG codes never leak to the client response).
@@ -148,6 +148,7 @@ A single-page dashboard at `/admin/funnels` (inside the existing `/admin` layout
 ### Shipped ✅
 
 **Page**
+
 - [x] Homepage at `/` (https://bassicology.com) renders the waitlist page; old landing preserved at `/preview`
 - [x] Email field validates format client-side and server-side (Zod) before submit
 - [x] Level radio required; submit blocked without selection
@@ -164,6 +165,7 @@ A single-page dashboard at `/admin/funnels` (inside the existing `/admin` layout
 - [x] `/admin/funnels` dashboard live under existing `/admin` layout, gated by existing `AdminGuard`; shows aggregate counts, conversion rates, and top-5 UTM sources/campaigns; verified rendering real production data
 
 **Founder payment pipeline**
+
 - [x] `founder_members` table on both staging and production Supabase
 - [x] Production Railway env vars: `RESEND_API_KEY`, `STRIPE_FOUNDER_PRICE_ID` (live), `STRIPE_FOUNDER_EMAIL_FROM`, `STRIPE_FOUNDER_EMAIL_REPLY_TO`, plus existing `STRIPE_SECRET_KEY` (live) and `STRIPE_WEBHOOK_SECRET` (matches Stripe Live mode endpoint signing secret)
 - [x] Production Vercel env: `NEXT_PUBLIC_STRIPE_FOUNDER_LINK` set to live Payment Link URL
@@ -178,6 +180,7 @@ A single-page dashboard at `/admin/funnels` (inside the existing `/admin` layout
 - [x] `useSearchParams()` wrapped in `<Suspense>` for Next 15 prerender bailout
 
 **Email infrastructure**
+
 - [x] `bassicology.com` verified on Resend (DKIM + SPF + DMARC on Vercel DNS)
 - [x] `mar.c@bassicology.com` mailbox on Google Workspace (Workspace MX + SPF on Vercel DNS)
 - [x] All DNS records live on Vercel nameservers — `bassicology.com` is single-source-of-truth at Vercel for both website AND email
@@ -185,6 +188,7 @@ A single-page dashboard at `/admin/funnels` (inside the existing `/admin` layout
 - [x] Reply-To routes to `mar.c@bassicology.com` Workspace inbox
 
 **End-to-end verification**
+
 - [x] Staging: webhook → row insert → welcome email arrives in Gmail (verified May 24)
 - [x] Production: real $1 Apple Pay charge via Stripe coupon → webhook fired → `founder_members` row inserted with `mode='live'` → welcome email arrived at digmarec@gmail.com → public counter went 0 → 1 (verified May 25)
 - [x] Test row deleted from production `founder_members` after verification; public counter back to 0 for real founders
@@ -193,14 +197,17 @@ A single-page dashboard at `/admin/funnels` (inside the existing `/admin` layout
 ### Remaining 🚧
 
 **Stop-ship before public traffic**
+
 - [ ] **Replace Groove Card mockup with real interactive component.** The current card is a visual placeholder; the real Groove Card is the platform's atomic unit (per the product vision doc). The dev-only `Preview` chip is the only safety net during development and auto-hides on production — there's no visible reminder in prod that this is placeholder content. Treat as hard stop-ship signal before pointing YouTube CTAs at the page.
 
 **Pre-launch hardening (nice-to-have, won't block first launch)**
+
 - [ ] **Warm up the Resend sending domain.** New domains start with zero sender reputation; smaller European ISPs (seznam.cz, gmx, mail.ru) defer/quarantine the first ~50–100 emails. Send 5–10 test emails per day for 2 weeks before any high-volume broadcast to build reputation. (Verified failure mode against seznam.cz in early testing — Resend status stays "Sent" indefinitely. See memory note.)
 - [ ] **Rate limit:** 5 signups per IP per hour on `POST /api/waitlist`. Use Next middleware or `@vercel/kv`-backed limiter.
 - [ ] **Logged-in redirect:** if a visitor is authenticated, redirect off `/` to the platform home (or show a "you're already in" state). Currently the form accepts a signup from a logged-in user with their existing email and returns the duplicate-success state — gentlest failure mode but still wrong.
 
 **Lower priority**
+
 - [ ] **Founder-purchase failure alerting.** If Resend status doesn't reach "Delivered" within 5 min for a founder welcome, fire a Slack/email alert so we can manually reach out. Currently we'd only notice via dashboard inspection.
 - [ ] **Decide if `POST /api/waitlist` should route through the NestJS backend** instead of being a Next route handler. Current choice (Next route): simpler, no DI/auth needed for an anon insert; uses Supabase anon key + RLS. Backend choice: matches the rest of the platform's API surface, easier to add rate-limiting/auth later. Document the decision either way; current shipped reality is the Next route.
 - [ ] **Admin view of founder_members table.** Read directly from Supabase Studio for now.
@@ -223,7 +230,7 @@ Until LAUNCH-03, the Czech phrasing on the founder checkout is documented but ac
 
 - ❌ Embedding the YouTube video — page is fast enough; no need.
 - ❌ Email confirmation / double opt-in — wait until we know whether spam is an issue.
-- ❌ Automated email *sequence* — single welcome email is shipped; ongoing nurture sequence handled by LAUNCH-14.
+- ❌ Automated email _sequence_ — single welcome email is shipped; ongoing nurture sequence handled by LAUNCH-14.
 - ❌ Real audio playback in the Groove Card — that's the real Groove Card component, separate work.
 - ❌ Real 3D fretboard on the marketing page — prototyped and rejected (visual + bundle cost).
 
@@ -232,6 +239,7 @@ Until LAUNCH-03, the Czech phrasing on the founder checkout is documented but ac
 ### Files (shipped)
 
 **Frontend**
+
 - [apps/frontend/src/app/page.tsx](apps/frontend/src/app/page.tsx) — the entire waitlist page (single client component; sections inlined to keep one source of truth during early iteration).
 - [apps/frontend/src/app/preview/page.tsx](apps/frontend/src/app/preview/page.tsx) — old marketing landing, preserved.
 - [apps/frontend/src/app/founders/welcome/page.tsx](apps/frontend/src/app/founders/welcome/page.tsx) — post-payment landing page. Suspense-wrapped, brand-matched dark celebration with success overlay and personalized greeting fetched from the backend.
@@ -240,9 +248,11 @@ Until LAUNCH-03, the Czech phrasing on the founder checkout is documented but ac
 - [apps/frontend/src/shared/attribution/index.ts](apps/frontend/src/shared/attribution/index.ts) — first-touch attribution capture (UTM, referrer, landing path, timezone) with 30-day localStorage TTL. Called once on page mount; `getStoredAttribution()` is read before each form submit.
 
 **Shared types**
+
 - [libs/contracts/src/validation/waitlist-schemas.ts](libs/contracts/src/validation/waitlist-schemas.ts) — Zod schemas + `WaitlistLevel` type, shared across server + client.
 
 **Backend (NestJS billing domain)**
+
 - [apps/backend/src/domains/billing/webhook.controller.ts](apps/backend/src/domains/billing/webhook.controller.ts) — Stripe webhook handler; extended with `handleFounderCheckoutCompleted` and `isFounderCheckout` branch.
 - [apps/backend/src/domains/billing/services/resend.service.ts](apps/backend/src/domains/billing/services/resend.service.ts) — Resend wrapper with `sendFounderWelcome` (HTML + plain-text builders).
 - [apps/backend/src/domains/billing/repositories/founder-member.repository.ts](apps/backend/src/domains/billing/repositories/founder-member.repository.ts) — `createIfMissing`, `markWelcomeEmailSent`, `countByMode`.
@@ -254,6 +264,7 @@ Until LAUNCH-03, the Czech phrasing on the founder checkout is documented but ac
 - [apps/backend/src/main.ts](apps/backend/src/main.ts) — adds `{ rawBody: true }` to NestFactory.create. **Critical** for Stripe signature verification.
 
 **Migrations**
+
 - [supabase/migrations/20260522000001_create_waitlist.sql](supabase/migrations/20260522000001_create_waitlist.sql) — waitlist table + RLS.
 - [supabase/migrations/20260522000002_grant_waitlist_insert.sql](supabase/migrations/20260522000002_grant_waitlist_insert.sql) — anon INSERT grant for waitlist.
 - [supabase/migrations/20260524000001_create_founder_interest.sql](supabase/migrations/20260524000001_create_founder_interest.sql) — founder_interest table + RLS + GRANT (paired in one migration after the previous lesson).
@@ -281,4 +292,4 @@ Until LAUNCH-03, the Czech phrasing on the founder checkout is documented but ac
 - Once LAUNCH-09 (open day) ships, this page becomes a "between marketing pushes" catcher or gets repurposed. Decide closer to open.
 - The `waitlist`, `founder_interest`, and `founder_members` tables are the source of truth for the launch email sequence (LAUNCH-14) and any pre-launch outreach. Founders specifically should get higher-touch treatment.
 - PRs shipped: [#82](https://github.com/marekcaba/bassnotion-monorepo-v1/pull/82) (waitlist + initial founder upsell, develop), [#83](https://github.com/marekcaba/bassnotion-monorepo-v1/pull/83) (release to main with full founder payment pipeline + Resend integration), [#86](https://github.com/marekcaba/bassnotion-monorepo-v1/pull/86) (release: `/founders/welcome` page + same-tab Stripe handoff to main), [#87](https://github.com/marekcaba/bassnotion-monorepo-v1/pull/87) + [#88](https://github.com/marekcaba/bassnotion-monorepo-v1/pull/88) (success overlay + timing tweak on develop, pending release).
-</content>
+  </content>

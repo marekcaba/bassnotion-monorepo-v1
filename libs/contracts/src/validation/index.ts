@@ -28,3 +28,6 @@ export * from './social-schemas.js';
 
 // Waitlist (pre-launch landing page)
 export * from './waitlist-schemas.js';
+
+// Founder upsell card (admin-editable copy + sizes)
+export * from './founder-card-schemas.js';
