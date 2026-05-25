@@ -10,11 +10,37 @@ export const waitlistLevels = [
 
 export type WaitlistLevel = (typeof waitlistLevels)[number];
 
+/**
+ * First-touch attribution context captured on the visitor's FIRST page load
+ * and persisted in their localStorage for up to 30 days. Sent with both the
+ * waitlist signup and the founder-interest click so we can answer "which
+ * YouTube video / source brought this person."
+ *
+ * Every field is optional — visitors who land via direct traffic or
+ * decline storage end up with mostly-empty attribution, which is fine.
+ */
+export const attributionSchema = z
+  .object({
+    utmSource: z.string().max(120).optional(),
+    utmMedium: z.string().max(120).optional(),
+    utmCampaign: z.string().max(120).optional(),
+    utmContent: z.string().max(120).optional(),
+    utmTerm: z.string().max(120).optional(),
+    referrer: z.string().max(2048).optional(),
+    landingPath: z.string().max(2048).optional(),
+    timezone: z.string().max(80).optional(),
+    capturedAt: z.string().max(40).optional(),
+  })
+  .strict();
+
+export type Attribution = z.infer<typeof attributionSchema>;
+
 export const waitlistEntrySchema = z.object({
   email: emailSchema,
   level: z.enum(waitlistLevels, {
     errorMap: () => ({ message: 'Pick where you are with bass' }),
   }),
+  attribution: attributionSchema.optional(),
 });
 
 export type WaitlistEntry = z.infer<typeof waitlistEntrySchema>;
@@ -34,6 +60,7 @@ export type WaitlistResponse = z.infer<typeof waitlistResponseSchema>;
  */
 export const founderInterestSchema = z.object({
   email: emailSchema,
+  attribution: attributionSchema.optional(),
 });
 
 export type FounderInterest = z.infer<typeof founderInterestSchema>;
