@@ -1,10 +1,22 @@
-import { Controller, Get, Logger, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Logger,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 
 import { FounderMemberRepository } from './repositories/founder-member.repository.js';
 import { AdminFunnelsService, FunnelStats } from './services/admin-funnels.service.js';
+import { StripeService } from './services/stripe.service.js';
 import { AdminGuard } from '../user/auth/guards/admin.guard.js';
 
 const FOUNDER_TOTAL_SPOTS = 100;
+
+export interface WelcomeContext {
+  firstName: string | null;
+  paid: boolean;
+}
 
 @Controller('api/v1/founders')
 export class FoundersController {
@@ -13,6 +25,7 @@ export class FoundersController {
   constructor(
     private readonly founderMemberRepository: FounderMemberRepository,
     private readonly adminFunnelsService: AdminFunnelsService,
+    private readonly stripeService: StripeService,
   ) {}
 
   /**
@@ -59,5 +72,40 @@ export class FoundersController {
   @UseGuards(AdminGuard)
   async getFunnelStats(): Promise<FunnelStats> {
     return this.adminFunnelsService.getStats();
+  }
+
+  /**
+   * Light personalization context for the /founders/welcome page. The page
+   * is reached via Stripe's post-payment redirect, which appends
+   * ?session_id=cs_xxx to the URL. We fetch the session server-side (the
+   * Stripe secret key never reaches the browser) and return ONLY the
+   * first name + a paid boolean.
+   *
+   * Returns paid=false (and no name) for any session that isn't a
+   * completed founder payment — covers the bookmarked-page case, stale
+   * URLs, or anyone fishing.
+   */
+  @Get('welcome-context')
+  async getWelcomeContext(
+    @Query('session_id') sessionId?: string,
+  ): Promise<WelcomeContext> {
+    if (!sessionId || !sessionId.startsWith('cs_')) {
+      return { firstName: null, paid: false };
+    }
+    try {
+      const session = await this.stripeService.getCheckoutSession(sessionId);
+      if (session.payment_status !== 'paid') {
+        return { firstName: null, paid: false };
+      }
+      const fullName = session.customer_details?.name ?? null;
+      const firstName = fullName?.split(/\s+/)[0]?.slice(0, 80) ?? null;
+      return { firstName, paid: true };
+    } catch (err) {
+      this.logger.warn('Failed to load welcome context', {
+        sessionId,
+        err: err instanceof Error ? err.message : String(err),
+      });
+      return { firstName: null, paid: false };
+    }
   }
 }

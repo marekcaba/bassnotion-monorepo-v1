@@ -69,7 +69,8 @@ came from. This answers "which YouTube video / source drove this signup."
 - **Capture moment**: page mount, in [`apps/frontend/src/shared/attribution/index.ts`](apps/frontend/src/shared/attribution/index.ts). Runs in a `useEffect` next to the scroll-restoration hook on the waitlist page.
 - **What's recorded**: `utm_source / utm_medium / utm_campaign / utm_content / utm_term` from the URL, `document.referrer` (the actual upstream page — youtube.com, twitter.com, etc.), `landingPath` (which page they entered on), `Intl.DateTimeFormat().resolvedOptions().timeZone` for low-precision geo, `capturedAt` ISO timestamp.
 - **Storage**: `localStorage` key `bn_attribution_v1`, 30-day TTL. First-touch model — if a record already exists within TTL, it is NOT overwritten on subsequent visits. Best-effort: storage failures (private mode, security settings) never crash the page.
-- **Wire-up**: both `POST /api/waitlist` and `POST /api/waitlist/founder-interest` now accept an optional `attribution` field validated by `attributionSchema` in `@bassnotion/contracts`. Server merges it into the row's `metadata` JSONB alongside `userAgent` and the request-time `referer` header.
+- **Wire-up (waitlist + founder_interest)**: both `POST /api/waitlist` and `POST /api/waitlist/founder-interest` accept an optional `attribution` field validated by `attributionSchema` in `@bassnotion/contracts`. Server merges it into the row's `metadata` JSONB alongside `userAgent` and the request-time `referer` header.
+- **Wire-up (founder_members)**: founder Stripe purchases also record attribution. The frontend packs the slim UTM context (`utm_source/medium/campaign/content/term + capturedAt`) into a base64url-encoded JSON blob and appends `?client_reference_id=attr:<encoded>` when opening the Payment Link. The webhook handler (`parseAttributionFromClientReferenceId` in `webhook.controller.ts`) decodes it back into the long-form attribution shape and merges into `founder_members.metadata.attribution`. Single-letter JSON keys + base64url keep typical payloads well under Stripe's 200-char `client_reference_id` limit; oversized blobs are silently skipped. Wider attribution (referrer, timezone, landingPath, userAgent) stays on the `waitlist`/`founder_interest` rows keyed by email — cross-reference later without spending the 200-char budget on every founder click.
 - **GDPR posture (pragmatic pre-launch)**: no cookie banner. `localStorage` stays first-party, no third-party sharing, no advertising profile, no cross-site tracking. EU ePrivacy law technically applies to `localStorage` the same way as cookies, but for first-party measurement of a service the user is voluntarily engaging with, the "legitimate interest" position is defensible. **Revisit before public launch when real EU traffic arrives.**
 
 ### Functional — Founder payment pipeline
@@ -81,13 +82,26 @@ Stripe completes checkout → POST /api/v1/webhooks/stripe (NestJS backend)
   → signature verified (rawBody preserved)
   → handleFounderCheckoutCompleted branch
   → matches by STRIPE_FOUNDER_PRICE_ID OR purchase_type=founder_membership metadata
-  → INSERT into founder_members (idempotent on stripe_checkout_session_id)
+  → parseAttributionFromClientReferenceId decodes the slim UTMs the frontend
+    packed into session.client_reference_id (attr:<base64url JSON>)
+  → INSERT into founder_members (idempotent on stripe_checkout_session_id);
+    metadata.attribution = the decoded UTM blob if present
   → ResendService.sendFounderWelcome → HTML email to customer_details.email
   → markWelcomeEmailSent updates the row
   → returns 200 to Stripe
 ```
 
 The founder branch sits BEFORE the existing auth-required code path because founder buyers are anonymous (no `user_id`) — the old "missing user_id" early-return would have silently dropped them.
+
+### Functional — Admin funnels dashboard
+
+A single-page dashboard at `/admin/funnels` (inside the existing `/admin` layout, gated by the existing `AdminGuard` — Bearer token → `profiles.role='admin'`) showing how the page is performing without leaving Supabase.
+
+- **What's shown**: aggregate counts (waitlist signups, founder-button clicks, founders live, founders test), three conversion rates (waitlist→click, click→founder, waitlist→founder), top-5 UTM sources, top-5 UTM campaigns. Counts only — no PII.
+- **API surface**: `GET /api/v1/founders/admin/funnels` returns the full `FunnelStats` object. Authed via the existing platform Bearer-token flow; rejects with 401 for missing/invalid tokens, 403 for valid non-admin users.
+- **Implementation**: `AdminFunnelsService` runs four `count` queries in parallel against `waitlist`/`founder_interest`/`founder_members` (test + live), then pulls the `waitlist.metadata` column once and aggregates top-N UTM sources/campaigns in-process. Row counts are small (<10k expected pre-launch), so in-process grouping is simpler than the equivalent JSONB GROUP BY in SQL.
+- **Nav surface**: link added at the front of the existing `/admin` top nav (Funnels • Monitoring • Tutorials • …) so it's discoverable next to the platform's other admin surfaces.
+- **Scope intentionally minimal**: no charts, no date filters, no drill-down. v2 (recent-signups table) and v3 (real dashboard with time-series + filters) deferred until volume justifies them.
 
 ### Backend / Data
 
@@ -103,6 +117,7 @@ The founder branch sits BEFORE the existing auth-required code path because foun
   - `POST /api/waitlist/founder-interest` (Next.js route handler) — Zod-validates, inserts founder_interest row via anon key.
   - `POST /api/v1/webhooks/stripe` (NestJS, in `apps/backend/src/domains/billing/webhook.controller.ts`) — verifies Stripe signature, routes founder checkouts through the new founder branch, falls through to existing platform billing flows otherwise.
   - `GET /api/v1/founders/count` (NestJS, in `apps/backend/src/domains/billing/founders.controller.ts`) — returns `{ claimed, total, error }`. Counts `mode='live'` only so test rows never inflate the public number. Bounded by `FOUNDER_TOTAL_SPOTS` (100). Soft-fails to `{ claimed: 0, error: 'count_unavailable' }` on Supabase issues so the page never crashes.
+  - `GET /api/v1/founders/admin/funnels` (NestJS, same controller, `@UseGuards(AdminGuard)`) — returns the `FunnelStats` payload powering the `/admin/funnels` dashboard. Counts + conversion rates + top-N UTM sources/campaigns. Requires Bearer token belonging to a user with `profiles.role='admin'`.
 - **Server logs** the Supabase error code/details on insert failure (PG codes never leak to the client response).
 
 ### Non-functional
@@ -130,6 +145,8 @@ The founder branch sits BEFORE the existing auth-required code path because foun
 - [x] All sections animate in via IntersectionObserver, honoring `prefers-reduced-motion`
 - [x] Dev-only `Preview` chip on Groove Card, auto-hides in production (verified `NEXT_PUBLIC_VERCEL_ENV !== 'production'` gate works)
 - [x] First-touch attribution captured on mount (UTM source/medium/campaign/content/term, document.referrer, landingPath, timezone) and persisted in localStorage with 30-day TTL; sent with both `/api/waitlist` and `/api/waitlist/founder-interest` submits and merged into the row's `metadata` JSONB
+- [x] Founder purchases also record attribution via Stripe `client_reference_id` round-trip (`attr:<base64url JSON>`); webhook decodes and merges into `founder_members.metadata.attribution`
+- [x] `/admin/funnels` dashboard live under existing `/admin` layout, gated by existing `AdminGuard`; shows aggregate counts, conversion rates, and top-5 UTM sources/campaigns; verified rendering real production data
 
 **Founder payment pipeline**
 - [x] `founder_members` table on both staging and production Supabase
@@ -168,6 +185,20 @@ The founder branch sits BEFORE the existing auth-required code path because foun
 - [ ] **Decide if `POST /api/waitlist` should route through the NestJS backend** instead of being a Next route handler. Current choice (Next route): simpler, no DI/auth needed for an anon insert; uses Supabase anon key + RLS. Backend choice: matches the rest of the platform's API surface, easier to add rate-limiting/auth later. Document the decision either way; current shipped reality is the Next route.
 - [ ] **Admin view of founder_members table.** Read directly from Supabase Studio for now.
 
+**Migrate off Stripe Payment Links (defer to LAUNCH-03 membership)**
+
+The founder $397 product currently runs on a Stripe Payment Link. This works fine for a single fixed-price product, but Stripe Payment Links have real limitations that will bite once we add the monthly membership and other paid products:
+
+- **No locale override.** Payment Links auto-detect from the browser language; we can't force English. Czech-browser visitors see "Celkem dlužná částka" (literally "total amount owed") instead of "Amount due" — technically correct, but tonally off-brand. **Cannot be fixed without leaving Payment Links.**
+- **No programmatic pricing** (e.g. region-specific pricing, dynamic discounts beyond a coupon code).
+- **Awkward subscription↔user-account linking.** When the real Bassicology Membership ships, we'll need each subscription tied to a Supabase user account; Payment Links make this work but it's friction.
+- **Customer email isn't pre-filled** when a logged-in user starts checkout.
+- **Per-user success URLs aren't easy** (the redirect URL is configured per-link, not per-checkout).
+
+**Plan**: when LAUNCH-03 (membership) work starts, build a `createCheckoutSession()` backend endpoint that uses Stripe's Checkout Sessions API instead. Same hosted Stripe page (trust intact), but full programmatic control: `locale: 'en'`, pre-filled customer email, per-user `success_url`, metadata, subscription routing. Use the new pattern for membership AND any future paid products. Optionally migrate the founder Payment Link to the same pattern later (no urgency — it works).
+
+Until LAUNCH-03, the Czech phrasing on the founder checkout is documented but accepted.
+
 ## Out of Scope (deferred)
 
 - ❌ Embedding the YouTube video — page is fast enough; no need.
@@ -194,7 +225,10 @@ The founder branch sits BEFORE the existing auth-required code path because foun
 - [apps/backend/src/domains/billing/webhook.controller.ts](apps/backend/src/domains/billing/webhook.controller.ts) — Stripe webhook handler; extended with `handleFounderCheckoutCompleted` and `isFounderCheckout` branch.
 - [apps/backend/src/domains/billing/services/resend.service.ts](apps/backend/src/domains/billing/services/resend.service.ts) — Resend wrapper with `sendFounderWelcome` (HTML + plain-text builders).
 - [apps/backend/src/domains/billing/repositories/founder-member.repository.ts](apps/backend/src/domains/billing/repositories/founder-member.repository.ts) — `createIfMissing`, `markWelcomeEmailSent`, `countByMode`.
-- [apps/backend/src/domains/billing/founders.controller.ts](apps/backend/src/domains/billing/founders.controller.ts) — public `GET /api/v1/founders/count` endpoint.
+- [apps/backend/src/domains/billing/founders.controller.ts](apps/backend/src/domains/billing/founders.controller.ts) — public `GET /api/v1/founders/count` endpoint AND admin-gated `GET /api/v1/founders/admin/funnels` endpoint (latter protected by `@UseGuards(AdminGuard)`).
+- [apps/backend/src/domains/billing/services/admin-funnels.service.ts](apps/backend/src/domains/billing/services/admin-funnels.service.ts) — server-side aggregator powering `/admin/funnels`. Pulls counts from `waitlist`, `founder_interest`, and `founder_members` (live + test), plus top-N UTM source/campaign aggregation from `waitlist.metadata`.
+- [apps/frontend/src/app/admin/funnels/page.tsx](apps/frontend/src/app/admin/funnels/page.tsx) — the admin dashboard page. Fetches via Bearer token from the current Supabase session.
+- [apps/frontend/src/app/admin/layout.tsx](apps/frontend/src/app/admin/layout.tsx) — extended with the "Funnels" nav link.
 - [apps/backend/src/domains/billing/billing.module.ts](apps/backend/src/domains/billing/billing.module.ts) — wires new providers + controller.
 - [apps/backend/src/main.ts](apps/backend/src/main.ts) — adds `{ rawBody: true }` to NestFactory.create. **Critical** for Stripe signature verification.
 
