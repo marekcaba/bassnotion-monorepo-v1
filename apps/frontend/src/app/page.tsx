@@ -1163,7 +1163,11 @@ function FounderUpsell({
             clientRef,
           )}`
         : FOUNDER_PAYMENT_LINK;
-      window.open(url, '_blank', 'noopener,noreferrer');
+      // Same-tab handoff: industry-standard pattern (Linear, Vercel, Notion,
+      // GitHub, Substack all do it this way). Stripe Payment Link is
+      // configured with an "After payment" redirect to /founders/welcome,
+      // so the user finishes the journey in the same tab they started in.
+      window.location.href = url;
     } else {
       // No payment link configured yet — show the soft landing.
       alert(
