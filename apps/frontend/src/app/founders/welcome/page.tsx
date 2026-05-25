@@ -54,9 +54,9 @@ function FoundersWelcomeContent() {
 
   useEffect(() => {
     if (overlayPhase === 'gone') return;
-    // Hold the checkmark for ~1.6s, then fade out over 600ms.
-    const fadeTimer = setTimeout(() => setOverlayPhase('out'), 1600);
-    const removeTimer = setTimeout(() => setOverlayPhase('gone'), 2200);
+    // Hold the checkmark for ~2s, then fade out over 600ms.
+    const fadeTimer = setTimeout(() => setOverlayPhase('out'), 2000);
+    const removeTimer = setTimeout(() => setOverlayPhase('gone'), 2600);
     return () => {
       clearTimeout(fadeTimer);
       clearTimeout(removeTimer);
