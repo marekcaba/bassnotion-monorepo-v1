@@ -2,6 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { waitlistLevels, type WaitlistLevel } from '@bassnotion/contracts';
+import {
+  ensureFirstTouchAttribution,
+  getStoredAttribution,
+} from '@/shared/attribution';
 
 const LEVEL_OPTIONS: { value: WaitlistLevel; label: string; hint: string }[] = [
   { value: 'starting', label: 'Just starting out', hint: '0–1 yr' },
@@ -148,6 +152,14 @@ export default function WaitlistPage() {
     window.scrollTo(0, 0);
   }, []);
 
+  // Capture first-touch attribution (UTMs, referrer, landing path, timezone)
+  // on first page load. Persists in localStorage for 30 days so the first
+  // marketing source that brought a visitor wins, even if they come back via
+  // a different link later. Best-effort — never throws.
+  useEffect(() => {
+    ensureFirstTouchAttribution();
+  }, []);
+
   // Fetch the real founder count once on page mount. The number is ready by
   // the time visitors reach the upsell step. On any failure we keep the
   // initial fallback so the bar never disappears.
@@ -190,10 +202,11 @@ export default function WaitlistPage() {
     setErrorMessage(null);
 
     try {
+      const attribution = getStoredAttribution();
       const res = await fetch('/api/waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, level, website }),
+        body: JSON.stringify({ email, level, website, attribution }),
       });
       const data = await res.json();
       if (!res.ok || !data.ok) {
@@ -1082,10 +1095,11 @@ function FounderUpsell({
   const recordInterest = async () => {
     // Fire-and-forget — we don't block the user on it.
     try {
+      const attribution = getStoredAttribution();
       await fetch('/api/waitlist/founder-interest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, attribution }),
       });
     } catch {
       // Interest tracking is best-effort; never block the user on a network blip.

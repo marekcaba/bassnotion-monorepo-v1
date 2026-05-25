@@ -39,11 +39,18 @@ export async function POST(request: Request) {
   });
 
   const userAgent = request.headers.get('user-agent') ?? null;
-  const referrer = request.headers.get('referer') ?? null;
+  // request-time referrer = the page the click happened on (the
+  // bassicology.com page itself). Distinct from the visitor's FIRST-touch
+  // referrer in `attribution.referrer`, captured client-side on mount.
+  const requestReferrer = request.headers.get('referer') ?? null;
 
   const { error: insertError } = await supabase.from('founder_interest').insert({
     email: parsed.data.email,
-    metadata: { userAgent, referrer },
+    metadata: {
+      userAgent,
+      requestReferrer,
+      attribution: parsed.data.attribution ?? null,
+    },
   });
 
   if (insertError) {

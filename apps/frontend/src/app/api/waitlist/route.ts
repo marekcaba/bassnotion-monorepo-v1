@@ -51,12 +51,20 @@ export async function POST(request: Request) {
   });
 
   const userAgent = request.headers.get('user-agent') ?? null;
-  const referrer = request.headers.get('referer') ?? null;
+  // request-time referrer = the page the form was submitted from (the
+  // bassicology.com page itself, almost always). Distinct from the
+  // visitor's FIRST-touch referrer in `attribution.referrer`, which is
+  // captured client-side on initial page load.
+  const requestReferrer = request.headers.get('referer') ?? null;
 
   const { error: insertError } = await supabase.from('waitlist').insert({
     email: parsed.data.email,
     level: parsed.data.level,
-    metadata: { userAgent, referrer },
+    metadata: {
+      userAgent,
+      requestReferrer,
+      attribution: parsed.data.attribution ?? null,
+    },
   });
 
   // 23505 = unique_violation. Treat duplicate as success so we don't leak
