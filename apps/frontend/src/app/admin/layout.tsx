@@ -2,23 +2,26 @@
 
 import { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
+import { AdminGuard } from '@/shared/components/ui/admin-guard';
 
-// Simple admin layout with basic protection
+// Admin layout: role-gated by AdminGuard. Every page under /admin/* is
+// protected; non-admins are redirected to / and unauthenticated visitors
+// to /login. Backend endpoints have their own NestJS AdminGuard — this
+// is the UI layer.
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
-  // Check if we're on a tutorial edit page
+  // Tutorial edit pages render full-bleed (no admin chrome) but still
+  // need the role check, so wrap them in AdminGuard without the nav.
   const isTutorialEditPage =
     pathname?.includes('/admin/tutorials/') && pathname?.includes('/edit');
 
-  // For tutorial edit pages, render without admin wrapper
   if (isTutorialEditPage) {
-    return <>{children}</>;
+    return <AdminGuard>{children}</AdminGuard>;
   }
 
-  // For other admin pages, use the standard admin layout
   return (
-    <>
+    <AdminGuard>
       <div className="min-h-screen bg-gray-50">
         <nav className="bg-white shadow-sm border-b">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -33,6 +36,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                     className="inline-flex items-center border-b-2 border-transparent hover:border-gray-300 px-1 pt-1 text-sm font-medium text-gray-900"
                   >
                     Funnels
+                  </a>
+                  <a
+                    href="/admin/founder-card"
+                    className="inline-flex items-center border-b-2 border-transparent hover:border-gray-300 px-1 pt-1 text-sm font-medium text-gray-900"
+                  >
+                    Founder Card
                   </a>
                   <a
                     href="/admin/monitoring"
@@ -89,6 +98,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         </nav>
         <main className="mx-auto max-w-7xl">{children}</main>
       </div>
-    </>
+    </AdminGuard>
   );
 }

@@ -38,6 +38,11 @@ function FoundersWelcomeContent() {
   const sessionId = searchParams.get('session_id');
 
   const [context, setContext] = useState<WelcomeContext | null>(null);
+  // Overlay only runs when arriving fresh from Stripe (sessionId present).
+  // Bookmarked/direct visits skip the celebration so it doesn't feel fake.
+  const [overlayPhase, setOverlayPhase] = useState<'in' | 'out' | 'gone'>(
+    sessionId ? 'in' : 'gone',
+  );
 
   useEffect(() => {
     // Force scroll-to-top in case the user arrived via a hash-laden URL.
@@ -46,6 +51,17 @@ function FoundersWelcomeContent() {
     }
     window.scrollTo(0, 0);
   }, []);
+
+  useEffect(() => {
+    if (overlayPhase === 'gone') return;
+    // Hold the checkmark for ~2s, then fade out over 600ms.
+    const fadeTimer = setTimeout(() => setOverlayPhase('out'), 2000);
+    const removeTimer = setTimeout(() => setOverlayPhase('gone'), 2600);
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(removeTimer);
+    };
+  }, [overlayPhase]);
 
   useEffect(() => {
     let cancelled = false;
@@ -80,9 +96,9 @@ function FoundersWelcomeContent() {
     : 'Welcome.';
 
   return (
-    <div
-      className="min-h-screen text-[#F5F1EB] font-dm-body text-base leading-[1.55] overflow-x-hidden flex flex-col relative bg-[#0A0908]"
-    >
+    <div className="min-h-screen text-[#F5F1EB] font-dm-body text-base leading-[1.55] overflow-x-hidden flex flex-col relative bg-[#0A0908]">
+      {overlayPhase !== 'gone' && <SuccessOverlay phase={overlayPhase} />}
+
       {/* Brand atmospherics — same dual-radial as the waitlist page */}
       <div
         aria-hidden="true"
@@ -140,9 +156,15 @@ function FoundersWelcomeContent() {
 
             {/* Eyebrow */}
             <div className="inline-flex items-center gap-2.5 text-xs font-bold tracking-[0.14em] uppercase text-[#F26B1D] mb-5">
-              <span aria-hidden="true" className="w-6 h-px bg-[#F26B1D] opacity-60" />
+              <span
+                aria-hidden="true"
+                className="w-6 h-px bg-[#F26B1D] opacity-60"
+              />
               You&apos;re in the Founding 100
-              <span aria-hidden="true" className="w-6 h-px bg-[#F26B1D] opacity-60" />
+              <span
+                aria-hidden="true"
+                className="w-6 h-px bg-[#F26B1D] opacity-60"
+              />
             </div>
 
             {/* Headline */}
@@ -156,8 +178,8 @@ function FoundersWelcomeContent() {
             <p className="text-[#9A948C] text-lg leading-[1.7] max-w-[36em] mx-auto mb-10">
               You&apos;re locked in. A note from{' '}
               <b className="text-[#F5F1EB] font-semibold">mar.c</b> is already
-              on its way — keep an eye on your inbox. Read it. Reply if you
-              feel like it. Then go grab your bass.
+              on its way — keep an eye on your inbox. Read it. Reply if you feel
+              like it. Then go grab your bass.
             </p>
 
             {/* Benefits recap card */}
@@ -209,13 +231,7 @@ function FoundersWelcomeContent() {
   );
 }
 
-function Perk({
-  bold,
-  children,
-}: {
-  bold: string;
-  children: React.ReactNode;
-}) {
+function Perk({ bold, children }: { bold: string; children: React.ReactNode }) {
   return (
     <li className="flex gap-3 items-start">
       <svg
@@ -237,6 +253,91 @@ function Perk({
         {children}
       </span>
     </li>
+  );
+}
+
+/**
+ * Centered success animation that confirms the payment landed safely
+ * before the welcome content is revealed. Shown once on arrival from
+ * Stripe (when ?session_id=... is present), then dissolves.
+ */
+function SuccessOverlay({ phase }: { phase: 'in' | 'out' }) {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      aria-label="Payment successful"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A0908]"
+      style={{
+        opacity: phase === 'out' ? 0 : 1,
+        transition: 'opacity 600ms ease-out',
+        pointerEvents: phase === 'out' ? 'none' : 'auto',
+      }}
+    >
+      <div className="flex flex-col items-center gap-6">
+        <div
+          className="relative flex items-center justify-center w-24 h-24 rounded-full"
+          style={{
+            background: 'rgba(78,199,127,0.10)',
+            border: '2px solid #4EC77F',
+            animation:
+              'overlay-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both',
+          }}
+        >
+          <svg
+            width="44"
+            height="44"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#4EC77F"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline
+              points="20 6 9 17 4 12"
+              style={{
+                strokeDasharray: 30,
+                strokeDashoffset: 30,
+                animation: 'overlay-check 480ms ease-out 260ms forwards',
+              }}
+            />
+          </svg>
+        </div>
+        <div
+          className="text-[11px] font-extrabold tracking-[0.18em] uppercase text-[#4EC77F]"
+          style={{
+            opacity: 0,
+            animation: 'overlay-fade-in 360ms ease-out 600ms forwards',
+          }}
+        >
+          Payment successful
+        </div>
+      </div>
+
+      <style jsx>{`
+        @keyframes overlay-pop {
+          0% {
+            opacity: 0;
+            transform: scale(0.6);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        @keyframes overlay-check {
+          to {
+            stroke-dashoffset: 0;
+          }
+        }
+        @keyframes overlay-fade-in {
+          to {
+            opacity: 1;
+          }
+        }
+      `}</style>
+    </div>
   );
 }
 

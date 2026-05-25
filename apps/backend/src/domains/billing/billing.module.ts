@@ -10,6 +10,7 @@ import { FoundersController } from './founders.controller.js';
 import { SubscriptionRepository } from './repositories/subscription.repository.js';
 import { PurchaseRepository } from './repositories/purchase.repository.js';
 import { FounderMemberRepository } from './repositories/founder-member.repository.js';
+import { FounderCardConfigRepository } from './repositories/founder-card-config.repository.js';
 import { SupabaseModule } from '../../infrastructure/supabase/supabase.module.js';
 import { AuthModule } from '../user/auth/auth.module.js';
 
@@ -23,6 +24,7 @@ import { AuthModule } from '../user/auth/auth.module.js';
     SubscriptionRepository,
     PurchaseRepository,
     FounderMemberRepository,
+    FounderCardConfigRepository,
   ],
   exports: [
     StripeService,
@@ -31,6 +33,7 @@ import { AuthModule } from '../user/auth/auth.module.js';
     SubscriptionRepository,
     PurchaseRepository,
     FounderMemberRepository,
+    FounderCardConfigRepository,
   ],
 })
 export class BillingModule {}
