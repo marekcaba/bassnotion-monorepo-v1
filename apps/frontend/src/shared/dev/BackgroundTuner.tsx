@@ -31,7 +31,7 @@ export interface BackgroundConfig {
 }
 
 export const DEFAULT_BACKGROUND: BackgroundConfig = {
-  baseColor: '#080808',
+  baseColor: '#0a0a0a',
   radial1: {
     color: '#121212',
     opacity: 0.22,
@@ -90,7 +90,12 @@ export function BackgroundTuner({ config, onChange }: Props) {
   // survives page refreshes — useful when you're tweaking + refreshing
   // to see the page in a clean state.
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
-  const dragRef = useRef<{ startX: number; startY: number; baseX: number; baseY: number } | null>(null);
+  const dragRef = useRef<{
+    startX: number;
+    startY: number;
+    baseX: number;
+    baseY: number;
+  } | null>(null);
 
   useEffect(() => {
     try {

@@ -206,8 +206,7 @@ export function WaitlistClient({
 
   // Dev-only background tuner state. The gating below ensures the panel
   // and the lifted state literally do not run on production builds.
-  const isDevBuild =
-    process.env.NEXT_PUBLIC_VERCEL_ENV !== 'production';
+  const isDevBuild = process.env.NEXT_PUBLIC_VERCEL_ENV !== 'production';
   const [bgConfig, setBgConfig] = useState(DEFAULT_BACKGROUND);
 
   // One-time background fade-in. The page loads on the solid base color
@@ -335,7 +334,7 @@ export function WaitlistClient({
   return (
     <div
       className="min-h-screen text-[#F5F1EB] font-dm-body text-base leading-[1.55] overflow-x-hidden flex flex-col relative"
-      style={{ backgroundColor: isDevBuild ? bgConfig.baseColor : '#080808' }}
+      style={{ backgroundColor: isDevBuild ? bgConfig.baseColor : '#0a0a0a' }}
     >
       {/*
         Two-radial accent + noise overlay. Both fade in together on
@@ -361,8 +360,7 @@ export function WaitlistClient({
         className="fixed inset-0 pointer-events-none z-0"
         style={{
           opacity:
-            (isDevBuild ? bgConfig.noiseOpacity : 0.02) *
-            (bgVisible ? 1 : 0),
+            (isDevBuild ? bgConfig.noiseOpacity : 0.02) * (bgVisible ? 1 : 0),
           backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
           transition: 'opacity 1200ms cubic-bezier(0.16, 1, 0.3, 1)',
         }}
@@ -448,17 +446,18 @@ export function WaitlistClient({
                 }
               `}</style>
               <h1 className="font-heading uppercase text-[clamp(38px,6.4vw,72px)] leading-[0.95] tracking-[0.005em]">
-                Stop watching bass.
+                Stop <span className="text-[#F26B1D]">watching</span> bass
                 <br />
-                <span className="text-[#F26B1D]">Start playing it.</span>
+                <span className="text-[#F26B1D]">Start</span> playing{' '}
+                <span className="text-[#F26B1D]">it</span>
               </h1>
               <p className="mt-6 mx-auto text-[#9A948C] text-[18px] leading-[1.6] max-w-[34em]">
                 Every other platform hands you a video to watch.{' '}
                 <b className="text-[#F5F1EB] font-semibold">
                   Bassicology hands you a band.
                 </b>{' '}
-                Real groove, real drummer — slow it down, change the key,
-                mute the bass and play it yourself.{' '}
+                Real groove, real drummer — slow it down, change the key, mute
+                the bass and play it yourself.{' '}
                 <b className="text-[#F5F1EB] font-semibold">
                   Here&apos;s a taste. Try it.
                 </b>
@@ -500,7 +499,7 @@ export function WaitlistClient({
                         aria-hidden="true"
                         className="w-6 h-px bg-[#F26B1D] opacity-60"
                       />
-                      Opening soon · 2026
+                      Early access · 2026
                       <span
                         aria-hidden="true"
                         className="w-6 h-px bg-[#F26B1D] opacity-60"
@@ -508,8 +507,7 @@ export function WaitlistClient({
                     </div>
                   </div>
                   <h2 className="font-heading uppercase text-center text-[clamp(38px,6.4vw,72px)] leading-[0.95] tracking-[0.005em]">
-                    First to{' '}
-                    <span className="text-[#F26B1D]">plug in.</span>
+                    First to <span className="text-[#F26B1D]">plug in</span>
                   </h2>
                   <p className="text-center text-[#9A948C] text-[16px] mt-4 max-w-[30em] mx-auto">
                     Private builds, early access, and a real say in what we
@@ -729,10 +727,9 @@ function WhyItWorks() {
   return (
     <section className="max-w-[780px] mx-auto">
       <h2 className="font-heading uppercase text-center text-[clamp(30px,5vw,56px)] leading-[0.95] tracking-[0.005em]">
-        That&apos;s one groove.
+        That&apos;s <span className="text-[#F26B1D]">one</span> groove
         <br />
-        Imagine the{' '}
-        <span className="text-[#F26B1D]">whole library.</span>
+        Imagine <span className="text-[#F26B1D]">the whole library</span>
       </h2>
 
       <div className="mt-10 md:mt-11 grid grid-cols-1 md:grid-cols-3 gap-3.5 md:gap-4">
@@ -753,7 +750,7 @@ function Dial({
 }: {
   caption: string;
   visual: React.ReactNode;
-  title: string;
+  title: React.ReactNode;
   body: React.ReactNode;
 }) {
   return (
@@ -952,7 +949,11 @@ function MuteDial() {
   return (
     <Dial
       caption="Mute"
-      title="Play your bass line"
+      title={
+        <>
+          Play <span className="text-[#F26B1D]">your</span> bass line
+        </>
+      }
       visual={
         <div className="flex gap-[5px] items-center h-10 mt-2.5">
           {heights.map((h, i) => (
@@ -1362,9 +1363,8 @@ function FounderUpsell({
               You&apos;re in.
             </h2>
             <p className="text-[#9A948C] mt-2.5 text-[15px] max-w-[32em] mx-auto leading-[1.5]">
-              Beta builds go out a few at a time — yours is coming. Keep an
-              eye on your inbox. And there&apos;s one more way to be part of
-              this…
+              Beta builds go out a few at a time — yours is coming. Keep an eye
+              on your inbox. And there&apos;s one more way to be part of this…
             </p>
           </>
         ) : (
@@ -1378,13 +1378,12 @@ function FounderUpsell({
                 <>
                   For the record —{' '}
                   <b className="text-[#F5F1EB] font-semibold">{claimed}</b>{' '}
-                  people didn&apos;t wait. There&apos;s a founding offer
-                  below.
+                  people didn&apos;t wait. There&apos;s a founding offer below.
                 </>
               ) : (
                 <>
-                  Some people didn&apos;t wait — there&apos;s a founding
-                  offer below.
+                  Some people didn&apos;t wait — there&apos;s a founding offer
+                  below.
                 </>
               )}
             </p>
