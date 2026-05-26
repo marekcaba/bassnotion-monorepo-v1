@@ -164,14 +164,15 @@ feature/* ──► PR ──► develop ──► PR ──► main
 
 ```bash
 # 1. Start a feature
-git checkout develop && git pull
+git checkout develop && git pull --ff-only origin develop
 git checkout -b feature/some-thing
 
 # 2. Make changes, commit
-git add . && git commit -m "feat(...): ..."
+git add <specific files>
+git commit -m "feat(...): ..."   # lint-staged runs prettier/eslint here
 
 # 3. Push and open PR against develop
-git push -u origin feature/some-thing
+git push -u origin feature/some-thing --no-verify   # see note below
 gh pr create --base develop --title "..." --body "..."
 
 # Vercel auto-builds a Preview deploy → URL appears in PR comments
@@ -180,16 +181,94 @@ gh pr create --base develop --title "..." --body "..."
 # 4. Self-review the diff, then merge
 gh pr merge <pr#> --squash
 
-# 5. After merge to develop:
+# 5. After merge to develop, .github/workflows/deploy.yml runs unattended:
+#    - Applies any new Supabase migrations to STAGING Supabase
 #    - Railway redeploys staging backend
 #    - Vercel updates the develop staging URL
+#    - Waits for backend /api/health to return healthy
+#    - Smoke-tests staging frontend + backend
 # Test in browser. If happy:
 
 # 6. Ship to production
 gh pr create --base main --head develop --title "Release: ..."
+# If gh reports "not mergeable" (conflicts vs. main): see "Release conflicts" below.
+
 gh pr merge <pr#> --squash
-# This triggers production Vercel + Railway deploys.
+# Triggers .github/workflows/deploy.yml against main:
+#  → migrate job PAUSES at the `production` GitHub environment for
+#    manual approval (open Actions tab, click "Review deployments")
+#  → on approval: production Supabase migration runs
+#  → Railway + Vercel production redeploys
+#  → health-gate + smoke test
 ```
+
+### The deploy workflow ([.github/workflows/deploy.yml](.github/workflows/deploy.yml))
+
+**Migrations run automatically — do not `supabase db push --linked` by hand
+for staging or production.** Doing so races the workflow and double-applies
+(idempotent migrations make this a no-op, but non-idempotent ones won't).
+
+The workflow has three jobs that run on every push to `main` or `develop`:
+
+1. **`migrate`** — `supabase db push --linked` against the matching project
+   (`SUPABASE_PROJECT_REF_STAGING` for develop, `SUPABASE_PROJECT_REF_PROD`
+   for main). Reads creds from GitHub secrets. **Production-side is gated
+   by the `production` GitHub environment's manual approval**; staging
+   runs unattended.
+2. **`health-gate`** — polls `$BACKEND_URL/api/health` every 10s for up to
+   10 minutes waiting for top-level `"status":"healthy"`. Blocks the
+   smoke job until the backend has finished redeploying.
+3. **`smoke`** — `curl` of the homepage (expect 200) + backend `/api/health`
+   (expect healthy). Replaces an older Playwright `@smoke` suite that
+   was 30+ min on cold runners.
+
+When you need to apply a migration manually (e.g. local backend pointing at
+production needs the schema before the workflow has run), use
+`supabase db push --linked` — but only after confirming via
+`cat supabase/.temp/project-ref` which project is linked. The CLI shows an
+interactive Y/n confirmation; approve via the IDE permission prompt.
+
+### Release conflicts (develop → main)
+
+Squash-merging features into `develop` produces commit hashes that don't
+exist on `main`, so a release PR routinely shows merge conflicts even
+when nothing semantically conflicts. Resolution recipe:
+
+```bash
+git checkout develop && git pull --ff-only origin develop
+git fetch origin main
+git merge origin/main --no-edit
+# Conflicts will surface in files both branches touched (commonly the
+# entry-point files: apps/frontend/src/app/page.tsx, the launch docs,
+# whichever controller you extended).
+# For the typical case where develop is strictly newer, prefer "ours":
+git checkout --ours <path>
+# Then dedupe any duplicate interface/import blocks the merge produced.
+# Type-check both apps before committing the merge.
+git add <files>
+git commit --no-verify -m "chore: merge main into develop for PR #<release> release"
+git push origin develop --no-verify
+```
+
+The release PR auto-updates with the merge commit and becomes mergeable.
+
+### Known footguns
+
+- **`git push` hangs from non-TTY shells (Apple Git HTTP/2 issue).** Pass
+  `--no-verify` to skip the pre-push hook that triggers this stall, AND
+  ensure `git config --global http.version HTTP/1.1` is set.
+- **`develop` shows "1 ahead of origin" after a squash-merge.** Your local
+  feature-branch commit is still on `develop` HEAD; the squashed version
+  on origin has a different hash. If the local commit is content you don't
+  need to preserve (e.g. docs that were folded into the squash),
+  `git reset --hard origin/develop` is safe. Verify with
+  `git show <local hash>` first.
+- **Don't `git add .` blindly.** `docs/console.md` (runtime log capture),
+  `.env.local*`, and untracked unrelated docs sneak in. Stage by name.
+- **lint-staged rewrites files during `git commit`.** This is fine, but
+  means `git diff --cached` before commit and the final committed content
+  can differ in whitespace/formatting. Re-read with `git show HEAD` if
+  you need the exact landed content.
 
 ### Local dev = production data
 

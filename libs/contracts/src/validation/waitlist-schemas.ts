@@ -35,11 +35,21 @@ export const attributionSchema = z
 
 export type Attribution = z.infer<typeof attributionSchema>;
 
+/**
+ * What the visitor actually opted into. Both intents create a waitlist
+ * row; the difference is downstream — `beta` testers get earlier outreach
+ * (private builds, pre-launch surveys), `notify_only` people only get the
+ * single "we're live" email at open day.
+ */
+export const signupIntents = ['beta', 'notify_only'] as const;
+export type SignupIntent = (typeof signupIntents)[number];
+
 export const waitlistEntrySchema = z.object({
   email: emailSchema,
   level: z.enum(waitlistLevels, {
     errorMap: () => ({ message: 'Pick where you are with bass' }),
   }),
+  signupIntent: z.enum(signupIntents).optional(),
   attribution: attributionSchema.optional(),
 });
 

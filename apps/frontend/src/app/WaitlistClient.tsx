@@ -11,6 +11,11 @@ import {
   getStoredAttribution,
 } from '@/shared/attribution';
 import { FounderCard } from '@/shared/founder-card/FounderCard';
+import {
+  BackgroundTuner,
+  DEFAULT_BACKGROUND,
+  backgroundToCss,
+} from '@/shared/dev/BackgroundTuner';
 
 const LEVEL_OPTIONS: { value: WaitlistLevel; label: string; hint: string }[] = [
   { value: 'starting', label: 'Just starting out', hint: '0–1 yr' },
@@ -189,9 +194,45 @@ export function WaitlistClient({
   const [status, setStatus] = useState<FormStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [alreadyOnList, setAlreadyOnList] = useState(false);
+  // Remembered so the upsell screen can render different bridge copy
+  // depending on which button the visitor pressed. Beta = "you're in",
+  // notify = "got it, here's what others did."
+  const [signupIntent, setSignupIntent] = useState<'beta' | 'notify_only'>(
+    'beta',
+  );
   const [founderClaimed, setFounderClaimed] = useState<number>(
     FOUNDER_SPOTS_INITIAL,
   );
+
+  // Dev-only background tuner state. The gating below ensures the panel
+  // and the lifted state literally do not run on production builds.
+  const isDevBuild =
+    process.env.NEXT_PUBLIC_VERCEL_ENV !== 'production';
+  const [bgConfig, setBgConfig] = useState(DEFAULT_BACKGROUND);
+
+  // One-time background fade-in. The page loads on the solid base color
+  // (so there's no flash of white), then the two radial glows + the
+  // noise overlay breathe in together over ~1.2s. Lands during the
+  // hero's IntersectionObserver reveal so the whole first viewport
+  // feels like one coherent entrance.
+  //
+  // Reduced-motion users skip the fade — the same posture as the rest
+  // of the page (Reveal honors prefers-reduced-motion too).
+  const [bgVisible, setBgVisible] = useState(false);
+  useEffect(() => {
+    if (
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) {
+      setBgVisible(true);
+      return;
+    }
+    // A 60ms delay gives the browser one frame on the initial opacity:0
+    // state before flipping the class, so the transition actually runs
+    // instead of landing on the final state.
+    const t = window.setTimeout(() => setBgVisible(true), 60);
+    return () => window.clearTimeout(t);
+  }, []);
 
   // Force the page to the top on every load / reload. Browsers default to
   // 'auto' scroll restoration, which puts the visitor wherever they were
@@ -243,8 +284,7 @@ export function WaitlistClient({
     };
   }, []);
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const submitWithIntent = async (signupIntent: 'beta' | 'notify_only') => {
     if (status === 'submitting') return;
 
     if (!level) {
@@ -261,7 +301,13 @@ export function WaitlistClient({
       const res = await fetch('/api/waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, level, website, attribution }),
+        body: JSON.stringify({
+          email,
+          level,
+          signupIntent,
+          website,
+          attribution,
+        }),
       });
       const data = await res.json();
       if (!res.ok || !data.ok) {
@@ -270,6 +316,7 @@ export function WaitlistClient({
         return;
       }
       setAlreadyOnList(Boolean(data.alreadyOnList));
+      setSignupIntent(signupIntent);
       setStatus('upsell');
     } catch {
       setErrorMessage('Network error — check your connection and try again');
@@ -277,24 +324,57 @@ export function WaitlistClient({
     }
   };
 
+  // The form's native submit (Enter key in the email field, or the primary
+  // bright button) is treated as "beta tester" intent. The ghost button
+  // bypasses this and submits with 'notify_only'.
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await submitWithIntent('beta');
+  };
+
   return (
-    <div className="min-h-screen text-[#F5F1EB] font-dm-body text-base leading-[1.55] overflow-x-hidden flex flex-col relative bg-[#0A0908]">
-      {/* Two-radial accent + noise overlay (mockup tokens) */}
+    <div
+      className="min-h-screen text-[#F5F1EB] font-dm-body text-base leading-[1.55] overflow-x-hidden flex flex-col relative"
+      style={{ backgroundColor: isDevBuild ? bgConfig.baseColor : '#080808' }}
+    >
+      {/*
+        Two-radial accent + noise overlay. Both fade in together on
+        first page load (~1.2s, ease-out) so the page settles into its
+        final atmosphere alongside the hero's IntersectionObserver
+        reveal. The base color (#030303) is solid from the first paint,
+        so the page never flashes a lighter color while the radials
+        animate in.
+      */}
       <div
         aria-hidden="true"
         className="fixed inset-0 pointer-events-none z-0"
         style={{
-          background:
-            'radial-gradient(900px 600px at 78% 4%, rgba(242,107,29,0.11), transparent 60%), radial-gradient(700px 520px at 5% 95%, rgba(242,107,29,0.05), transparent 55%)',
+          background: isDevBuild
+            ? backgroundToCss(bgConfig)
+            : 'radial-gradient(480px 420px at 50% 11%, rgba(18,18,18,0.22), transparent 68%), radial-gradient(720px 320px at 50% 66%, rgba(18,18,18,0.49), transparent 52%)',
+          opacity: bgVisible ? 1 : 0,
+          transition: 'opacity 1200ms cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       />
       <div
         aria-hidden="true"
-        className="fixed inset-0 pointer-events-none z-0 opacity-[0.04]"
+        className="fixed inset-0 pointer-events-none z-0"
         style={{
+          opacity:
+            (isDevBuild ? bgConfig.noiseOpacity : 0.02) *
+            (bgVisible ? 1 : 0),
           backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+          transition: 'opacity 1200ms cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       />
+
+      {/* Dev-only background tuner — gated by NEXT_PUBLIC_VERCEL_ENV
+          Temporarily disabled to view the page without the panel. To
+          re-enable, restore the conditional below.
+      {isDevBuild ? (
+        <BackgroundTuner config={bgConfig} onChange={setBgConfig} />
+      ) : null}
+      */}
 
       <div className="relative z-10 max-w-[1120px] w-full mx-auto px-6 flex-1 flex flex-col">
         {/* ── NAV ───────────────────────────────────────────── */}
@@ -314,9 +394,23 @@ export function WaitlistClient({
 
           <a
             href="#waitlist-form"
+            onClick={(e) => {
+              e.preventDefault();
+              const target = document.getElementById('waitlist-form');
+              if (!target) return;
+              const reduce =
+                typeof window !== 'undefined' &&
+                window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+              target.scrollIntoView({
+                behavior: reduce ? 'auto' : 'smooth',
+                block: 'start',
+              });
+              // Keep the URL in sync so a copy/paste of the link still works.
+              history.replaceState(null, '', '#waitlist-form');
+            }}
             className="inline-flex items-center text-[12px] sm:text-[13px] font-bold tracking-[0.04em] text-[#F26B1D] border border-[rgba(242,107,29,0.4)] hover:border-[#F26B1D] hover:bg-[rgba(242,107,29,0.07)] rounded-full px-3.5 sm:px-4 py-2 transition-colors no-underline whitespace-nowrap"
           >
-            Get notified
+            Get early access
           </a>
         </nav>
 
@@ -359,13 +453,15 @@ export function WaitlistClient({
                 <span className="text-[#F26B1D]">Start playing it.</span>
               </h1>
               <p className="mt-6 mx-auto text-[#9A948C] text-[18px] leading-[1.6] max-w-[34em]">
-                Every other platform hands you a video to watch. Bassicology
-                hands you a band. Real groove, real drummer —{' '}
+                Every other platform hands you a video to watch.{' '}
                 <b className="text-[#F5F1EB] font-semibold">
-                  slow it down, change the key, mute the bass, and take the seat
-                  yourself.
+                  Bassicology hands you a band.
                 </b>{' '}
-                Right here. No account.
+                Real groove, real drummer — slow it down, change the key,
+                mute the bass and play it yourself.{' '}
+                <b className="text-[#F5F1EB] font-semibold">
+                  Here&apos;s a taste. Try it.
+                </b>
               </p>
             </div>
 
@@ -379,11 +475,6 @@ export function WaitlistClient({
             <WhyItWorks />
           </Reveal>
 
-          {/* ── FOUNDER QUOTE — standalone banner ─────────────── */}
-          <Reveal>
-            <FounderQuote />
-          </Reveal>
-
           {/* ── FORM ──────────────────────────────────────────── */}
           <Reveal>
             <section
@@ -394,6 +485,7 @@ export function WaitlistClient({
                 <FounderUpsell
                   email={email}
                   alreadyOnList={alreadyOnList}
+                  signupIntent={signupIntent}
                   claimed={founderClaimed}
                   cardConfig={cardConfig}
                   onDone={() => setStatus('done')}
@@ -416,13 +508,14 @@ export function WaitlistClient({
                     </div>
                   </div>
                   <h2 className="font-heading uppercase text-center text-[clamp(38px,6.4vw,72px)] leading-[0.95] tracking-[0.005em]">
-                    Want <span className="text-[#F26B1D]">in</span> when
-                    <br />
-                    it goes <span className="text-[#F26B1D]">live?</span>
+                    First to{' '}
+                    <span className="text-[#F26B1D]">plug in.</span>
                   </h2>
                   <p className="text-center text-[#9A948C] text-[16px] mt-4 max-w-[30em] mx-auto">
-                    Bassicology opens in waves. Drop your email and we&apos;ll
-                    let you know the moment your spot comes up.
+                    Private builds, early access, and a real say in what we
+                    ship.
+                    <br />
+                    Before anyone else gets in.
                   </p>
 
                   <form onSubmit={submit} className="mt-6 space-y-6" noValidate>
@@ -525,18 +618,28 @@ export function WaitlistClient({
                       </div>
                     )}
 
-                    {/* SUBMIT */}
+                    {/* SUBMIT — primary (beta tester) */}
                     <button
                       type="submit"
                       disabled={status === 'submitting'}
-                      className="w-full mt-2 bg-gradient-to-b from-[#FF7A22] to-[#C4530F] text-[#1A0D04] font-extrabold text-[17px] px-6 py-[18px] rounded-[13px] cursor-pointer border-none shadow-[0_14px_34px_-12px_rgba(242,107,29,0.6)] hover:-translate-y-0.5 hover:shadow-[0_20px_44px_-12px_rgba(242,107,29,0.7)] active:translate-y-0 transition-[transform,box-shadow] duration-200 disabled:opacity-70 disabled:cursor-wait disabled:translate-y-0 leading-tight"
+                      className="w-full mt-2 bg-gradient-to-b from-[#FF7A22] to-[#C4530F] text-[#1A0D04] font-extrabold text-[17px] px-6 py-[18px] rounded-[13px] cursor-pointer border-none shadow-[0_14px_30px_-10px_rgba(242,107,29,0.5)] hover:-translate-y-0.5 hover:shadow-[0_20px_38px_-10px_rgba(242,107,29,0.5)] active:translate-y-0 transition-[transform,box-shadow] duration-200 disabled:opacity-70 disabled:cursor-wait disabled:translate-y-0 leading-tight"
                     >
                       {status === 'submitting'
                         ? 'Reserving your spot…'
-                        : 'Notify me when it opens'}
+                        : 'Sign me up as a beta tester'}
                       <span className="block text-xs font-semibold text-[rgba(26,13,4,0.7)] mt-1">
-                        No spam. One email when your wave is live.
+                        Private builds, early access
                       </span>
+                    </button>
+
+                    {/* SUBMIT — ghost (notify only) */}
+                    <button
+                      type="button"
+                      disabled={status === 'submitting'}
+                      onClick={() => submitWithIntent('notify_only')}
+                      className="block w-full mt-3 bg-transparent border-[1.5px] border-[#26221E] text-[#9A948C] font-bold text-[15px] py-[15px] rounded-[13px] cursor-pointer hover:border-[#3D3630] hover:text-[#F5F1EB] transition-colors disabled:opacity-50 disabled:cursor-wait"
+                    >
+                      Just notify me at launch
                     </button>
 
                     {/* TRUST */}
@@ -571,11 +674,23 @@ export function WaitlistClient({
               )}
             </section>
           </Reveal>
+
+          {/* ── FOUNDER QUOTE — moved below the form ────────────
+          <Reveal>
+            <FounderQuote />
+          </Reveal>
+          ──────────────────────────────────────────────────────── */}
         </div>
       </div>
 
       {/* ── FOOTER ─────────────────────────────────────────── */}
-      <footer className="relative z-10 text-center py-10 px-6 text-[12px] text-[#6B655E] border-t border-[#26221E] mt-8">
+      <footer className="relative z-10 text-center py-10 px-6 text-[12px] text-[#6B655E] mt-8">
+        {/* Half-width divider, centered. Replaces the previous full-width
+            border-t on the <footer> element. */}
+        <div
+          aria-hidden="true"
+          className="w-1/2 max-w-[420px] h-px bg-[#26221E] mx-auto mb-8"
+        />
         <div className="italic text-[#9A948C] text-[14px] mb-3">
           &ldquo;They describe practice. We are practice.&rdquo;
         </div>
@@ -614,9 +729,10 @@ function WhyItWorks() {
   return (
     <section className="max-w-[780px] mx-auto">
       <h2 className="font-heading uppercase text-center text-[clamp(30px,5vw,56px)] leading-[0.95] tracking-[0.005em]">
-        You&apos;ve watched enough.
+        That&apos;s one groove.
         <br />
-        Now <span className="text-[#F26B1D]">let&apos;s play.</span>
+        Imagine the{' '}
+        <span className="text-[#F26B1D]">whole library.</span>
       </h2>
 
       <div className="mt-10 md:mt-11 grid grid-cols-1 md:grid-cols-3 gap-3.5 md:gap-4">
@@ -648,14 +764,21 @@ function Dial({
         className="absolute -top-[30%] -right-[20%] w-[140px] h-[140px] rounded-full pointer-events-none"
         style={{
           background:
-            'radial-gradient(circle, rgba(242,107,29,0.10), transparent 70%)',
+            'radial-gradient(circle, rgba(242,107,29,0.05), transparent 70%)',
         }}
       />
       <div className="relative">
         <div className="font-heading text-[11px] tracking-[0.12em] uppercase text-[#6B655E]">
           {caption}
         </div>
-        {visual}
+        {/*
+          Fixed-height visual slot so the title + body line up across all
+          three cards regardless of how tall each individual animation is.
+          Tempo (bpm + progress bar) is the tallest; Key/Mute (single row)
+          previously sat shorter and pushed their titles up. Top-aligned so
+          taller visuals fill from the top down.
+        */}
+        <div className="h-[90px] flex flex-col justify-center">{visual}</div>
         <h4 className="font-heading text-[18px] uppercase tracking-[0.01em] text-[#F5F1EB] leading-[1.05]">
           {title}
         </h4>
@@ -772,14 +895,14 @@ function KeyDial() {
       caption="Key"
       title="Any key, instantly"
       visual={
-        <div className="flex gap-1.5 h-10 items-center mt-2.5">
+        <div className="flex gap-3 items-center">
           {KEYS.map((k, i) => {
             const active = i === activeIndex;
             return (
               <span
                 key={k}
                 aria-hidden="true"
-                className={`font-heading text-[16px] transition-[color,transform] duration-[400ms] ${
+                className={`font-heading text-[32px] leading-none transition-[color,transform] duration-[400ms] ${
                   active
                     ? 'text-[#F26B1D] scale-125'
                     : 'text-[#3A332C] scale-100'
@@ -828,8 +951,8 @@ function MuteDial() {
 
   return (
     <Dial
-      caption="Mute Bass"
-      title="Mute it — that's your seat"
+      caption="Mute"
+      title="Play your bass line"
       visual={
         <div className="flex gap-[5px] items-center h-10 mt-2.5">
           {heights.map((h, i) => (
@@ -848,7 +971,7 @@ function MuteDial() {
       }
       body={
         <>
-          Drop the bass track and the band plays on without you. Now you&apos;re
+          Mute the bass track and the band plays on without you. Now you&apos;re
           not following a line,{' '}
           <b className="text-[#F5F1EB] font-semibold">
             you&apos;re being the bassist.
@@ -1136,12 +1259,14 @@ function GrooveWaveform({
 function FounderUpsell({
   email,
   alreadyOnList,
+  signupIntent,
   claimed,
   cardConfig,
   onDone,
 }: {
   email: string;
   alreadyOnList: boolean;
+  signupIntent: 'beta' | 'notify_only';
   claimed: number;
   cardConfig: FounderCardConfig;
   onDone: () => void;
@@ -1225,13 +1350,46 @@ function FounderUpsell({
             <polyline points="20 6 9 17 4 12" />
           </svg>
         </div>
-        <h2 className="font-heading uppercase text-[26px] tracking-[0.02em]">
-          You&apos;re on the list.
-        </h2>
-        <p className="text-[#9A948C] mt-2.5 text-[15px]">
-          We&apos;ll email you the moment your wave opens. But there&apos;s one
-          way to skip the line entirely…
-        </p>
+        {/*
+          Branch the header by which button was pressed. Beta testers
+          self-selected as engaged — get the celebration tone. Notify-only
+          people self-selected as low-engagement — get the cool, respectful
+          tone with a softer founder pitch hook.
+        */}
+        {signupIntent === 'beta' ? (
+          <>
+            <h2 className="font-heading uppercase text-[26px] tracking-[0.02em]">
+              You&apos;re in.
+            </h2>
+            <p className="text-[#9A948C] mt-2.5 text-[15px] max-w-[32em] mx-auto leading-[1.5]">
+              Beta builds go out a few at a time — yours is coming. Keep an
+              eye on your inbox. And there&apos;s one more way to be part of
+              this…
+            </p>
+          </>
+        ) : (
+          <>
+            <h2 className="font-heading uppercase text-[26px] tracking-[0.02em]">
+              Got it. We&apos;ll let you know.
+            </h2>
+            <p className="text-[#9A948C] mt-2.5 text-[15px] max-w-[32em] mx-auto leading-[1.5]">
+              One email when we open the doors. No spam in between.{' '}
+              {claimed >= 3 ? (
+                <>
+                  For the record —{' '}
+                  <b className="text-[#F5F1EB] font-semibold">{claimed}</b>{' '}
+                  people didn&apos;t wait. There&apos;s a founding offer
+                  below.
+                </>
+              ) : (
+                <>
+                  Some people didn&apos;t wait — there&apos;s a founding
+                  offer below.
+                </>
+              )}
+            </p>
+          </>
+        )}
       </div>
 
       {/* Founder card */}

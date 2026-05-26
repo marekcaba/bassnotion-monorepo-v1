@@ -63,6 +63,10 @@ export async function POST(request: Request) {
     metadata: {
       userAgent,
       requestReferrer,
+      // Default 'beta' for callers that omit the field — current frontend
+      // sends it explicitly, this just makes the schema change non-breaking
+      // for any older client still in cache when we ship.
+      signupIntent: parsed.data.signupIntent ?? 'beta',
       attribution: parsed.data.attribution ?? null,
     },
   });
