@@ -39,27 +39,36 @@ The visual scope expanded beyond the original "doorbell only" framing because th
 ### Functional — Page
 
 - **Route:** `/` (the homepage). Old marketing landing moved to `/preview`.
-- **Page sections, in order**:
-  1. **Nav** — logo + "Pre-launch" chip + "Get notified" CTA that scroll-jumps to the form.
-  2. **Hero block** (single visual unit): pulsing "Opening soon · 2026" eyebrow → headline ("Stop watching bass. Start playing it.") → sub-paragraph → Groove Card mockup.
-  3. **WHY section** — headline ("You've watched enough. Now let's play.") + three animated dial cards (Tempo / Key / Mute Bass) that visually rhyme the Groove Card's controls.
-  4. **Founder quote** — standalone italic banner attributed to mar.c.
-  5. **Form** — eyebrow + headline ("Want in when it goes live?") + email field + 4-option level radio + submit + trust row.
+- **Page sections, in order** (founder quote was moved below the form during the May 2026 copy pass — it now closes the page as a sign-off voice rather than sitting mid-page):
+  1. **Nav** — logo + "Pre-launch" chip + "Get early access" CTA that smooth-scrolls (`scrollIntoView({ behavior: 'smooth' })`) to the form. Smooth-scroll respects `prefers-reduced-motion` and falls back to instant scroll there.
+  2. **Hero block** (single visual unit): pulsing "Opening soon · 2026" eyebrow → headline ("Stop watching bass. Start playing it.") → sub-paragraph ("Every other platform hands you a video to watch. **Bassicology hands you a band.** Real groove, real drummer — slow it down, change the key, mute the bass and play it yourself. **Here's a taste. Try it.**") → Groove Card mockup.
+  3. **WHY section** — headline ("That's one groove. Imagine the whole library.") + three animated dial cards (TEMPO / KEY / MUTE) that visually rhyme the Groove Card's controls. Card 3 title is "Play your bass line" (the *means* is muting; the *point* is playing). All three cards have a fixed-height visual slot (90px, `justify-center`) so titles + bodies align horizontally across the row regardless of how tall each animation is. Key letters render at 32px (scale-125 = ~40px when active) to match Tempo's 38px bpm number proportionally.
+  4. **Form** — eyebrow + headline ("First to plug in.") + subhead ("Private builds, early access, and a real say in what we ship. Before anyone else gets in.") + email field + 4-option level radio + two stacked submit buttons (see "Functional — Form" below for the intent-aware two-button pattern) + trust row.
+  5. **Founder quote** — standalone italic banner attributed to mar.c, sign-off voice closing the page. **Currently commented out** in `WaitlistClient.tsx` (May 2026) so the page ends Form → Footer; restore by uncommenting the `<Reveal><FounderQuote /></Reveal>` block when ready.
 - **All sections animate in** via `IntersectionObserver` (fade + 16px rise, ~800ms, `cubic-bezier(0.16, 1, 0.3, 1)`). Honors `prefers-reduced-motion`.
 - **Spacing system:** single `gap: 150px` on the page-flex container; no per-section margins.
+- **Background:** dark base (`#0A0908`) + two neutral-gray radial-gradient glows (`rgba(222,222,222,0.02)` top-left, `rgba(166,166,166,0.05)` bottom-right) + a subtle SVG-noise overlay at `opacity: 0.045`. Tuned away from the previous orange-tinted radials (`rgba(242,107,29,...)`) so the orange accent only appears where it's deliberate (eyebrow, headline accent words, primary CTAs) rather than tinting the whole atmosphere. **A dev-only floating "🎨 BG TUNER" panel** (in `apps/frontend/src/shared/dev/BackgroundTuner.tsx`) is mounted at the page root, gated by `NEXT_PUBLIC_VERCEL_ENV !== 'production'`, portaled to `document.body` so `position: fixed` works regardless of ancestor containing blocks. It exposes live sliders for both radials + the noise overlay + a "Copy CSS" button so future background tweaks can be vibed locally and the values copied back into the source. The widget is currently commented out in `WaitlistClient.tsx`; restore by uncommenting the `{isDevBuild ? <BackgroundTuner .../> : null}` block.
 
 ### Functional — Form
 
-- **Fields:** `email` (required, format-validated) + `level` (required, 4 options: `starting | returning | intermediate | advanced`).
-- **CTA:** "Notify me when it opens".
-- **Submit flow:** signup → founder upsell step → final confirmation. No redirects.
-- **Founder upsell:**
+- **Fields:** `email` (required, format-validated) + `level` (required, 4 options: `starting | returning | intermediate | advanced`) + `signupIntent` (set by the button the visitor clicks — see below).
+- **Two-button submit (primary + ghost):** the form has two stacked submit buttons that both record a `waitlist` row with the visitor's email + level, but tag the row's `metadata.signupIntent` differently so we can segment the list for downstream outreach.
+  - **Bright primary CTA: "Sign me up as a beta tester"** (caption: "Private builds, early access") — submits with `signupIntent: 'beta'`. Visitors who chose this self-selected as engaged: willing to receive private builds, give feedback, shape the product.
+  - **Ghost button below: "Just notify me at launch"** — submits with `signupIntent: 'notify_only'`. Visitors who chose this self-selected as low-engagement: don't oversell, just tell me when it's live.
+  - Both buttons advance to the founder-upsell step on success. Same destination, different bridge copy on the confirmation header above the founder card (see "Confirmation header (intent-aware)" below).
+- **Submit flow:** signup → founder upsell step → final confirmation. No redirects. (Two-button choice happens at the first step; both feed into the same upsell + final-confirmation states.)
+- **Confirmation header (intent-aware):** the message above the founder card on the upsell step branches by `signupIntent`. Both keep the green-check celebration icon (deliberate — both visitors crossed a real friction barrier by giving us their email; both deserve acknowledgement).
+  - **Beta tester sees:** `"You're in."` + `"Beta builds go out a few at a time — yours is coming. Keep an eye on your inbox. And there's one more way to be part of this…"`
+  - **Notify-only sees:** `"Got it. We'll let you know."` + `"One email when we open the doors. No spam in between. For the record — {N} people didn't wait. There's a founding offer below."` where `{N}` is the live founder count from `/api/v1/founders/count` (same value powering the progress bar — pulls from props, no extra fetch). **Floor:** if the count is under 3, falls back to `"Some people didn't wait — there's a founding offer below."` so we never render "0 people didn't wait." The seeded reserved 13 keeps us clear of this floor today, but the fallback is in place for future scenarios (e.g. if the reserved count is ever dropped).
+  - **Rationale:** the two visitors made meaningfully different choices on the prior screen. Showing them identical "you're on the list, here's how to skip the line" copy is both a copy bug and a marketing bug — the notify-only person explicitly said "don't oversell me," so a hard founder pitch right after that breaks trust. The intent-aware split respects each visitor's commitment level while still bridging to the same founder offer below. Beta gets "one more way to be part of this" (deeper involvement framing); notify-only gets "{N} people didn't wait" (informational framing, low pressure).
+- **Founder upsell (the card below the confirmation header):**
   - "Become a founder — $397" button records intent (POST `/api/waitlist/founder-interest`) then navigates the **current tab** to the Stripe Payment Link (`window.location.href = url`). This is the industry-standard pattern (Linear, Vercel, GitHub, Notion, Substack) — new-tab handoff was rejected because `window.close()` can't reliably close the Stripe tab, so the user would be stranded on Stripe's generic thank-you. The link URL is environment-driven via `NEXT_PUBLIC_STRIPE_FOUNDER_LINK` so staging gets the test link and production gets the live one.
-  - "No thanks — just notify me" ghost button advances to final confirmation.
+  - "No thanks — just notify me when it's live" ghost button advances to final confirmation.
   - Progress bar shows the **real** founder count, fetched from the backend's `/api/v1/founders/count` endpoint on page mount. Soft-fallback to 0 if the endpoint is briefly unavailable, so the bar never flickers.
 - **Honeypot:** hidden `website` field; bots filling it get a fake-success response, nothing is written.
-- **Duplicate email:** returns success without leaking that the email already exists. Body copy on the confirmation branches based on the duplicate flag.
+- **Duplicate email:** returns success without leaking that the email already exists. Body copy on the confirmation branches based on the duplicate flag. (Note: the intent-aware confirmation header is *not* re-branched for duplicates — a returning visitor who already exists still sees their chosen intent's header. Mildly off, accepted.)
 - **Validation errors:** rendered inline below the field. No alert dialogs.
+- **`signupIntent` validation:** the value is validated by an enum at the API edge (`waitlistEntrySchema` in `@bassnotion/contracts`, allowed values: `'beta' | 'notify_only'`). The field is **optional in the schema** so older clients (or curl/bots calling the endpoint) that don't send it still succeed — the backend defaults to `'beta'`. This is intentionally non-breaking: the field landed in production without a coordinated client/server release.
 
 ### Functional — First-touch attribution
 
@@ -240,35 +249,44 @@ Until LAUNCH-03, the Czech phrasing on the founder checkout is documented but ac
 
 **Frontend**
 
-- [apps/frontend/src/app/page.tsx](apps/frontend/src/app/page.tsx) — the entire waitlist page (single client component; sections inlined to keep one source of truth during early iteration).
+- [apps/frontend/src/app/page.tsx](apps/frontend/src/app/page.tsx) — thin Next 15 server component that SSR-fetches the founder-card config from `/api/v1/founders/card-config` and renders `<WaitlistClient cardConfig={...} />`. Marked `export const dynamic = 'force-dynamic'` so every request gets the live config — admin edits go live on the next page load with no flash of default text. Falls back to `FOUNDER_CARD_CONFIG_DEFAULTS` if the backend is briefly unreachable.
+- [apps/frontend/src/app/WaitlistClient.tsx](apps/frontend/src/app/WaitlistClient.tsx) — the entire waitlist page (single client component; sections inlined to keep one source of truth during early iteration). Used to be `page.tsx`; renamed in May 2026 when the page was split into RSC + client shell. Houses the form, the dial cards, the founder upsell, and the `FounderUpsell` confirmation header that branches on `signupIntent`.
 - [apps/frontend/src/app/preview/page.tsx](apps/frontend/src/app/preview/page.tsx) — old marketing landing, preserved.
 - [apps/frontend/src/app/founders/welcome/page.tsx](apps/frontend/src/app/founders/welcome/page.tsx) — post-payment landing page. Suspense-wrapped, brand-matched dark celebration with success overlay and personalized greeting fetched from the backend.
-- [apps/frontend/src/app/api/waitlist/route.ts](apps/frontend/src/app/api/waitlist/route.ts) — signup POST handler (Next route).
+- [apps/frontend/src/app/admin/founder-card/page.tsx](apps/frontend/src/app/admin/founder-card/page.tsx) — admin editor for every string + per-block font size on the founder upsell card. Form on the left, live `<FounderCard>` preview on the right (renders the exact same component that ships on `/`). Persists via `PUT /api/v1/founders/card-config` (admin-gated). Tagged `*SizePx` keys render as numeric inputs with min/max from the shared Zod schema.
+- [apps/frontend/src/shared/founder-card/FounderCard.tsx](apps/frontend/src/shared/founder-card/FounderCard.tsx) — pure presentational founder upsell card, shared by the homepage and the admin live preview. Single source of truth for the card visuals.
+- [apps/frontend/src/shared/founder-card/markdown-bold.tsx](apps/frontend/src/shared/founder-card/markdown-bold.tsx) — inline `**bold**` renderer. The only formatting affordance admins get on the card's text fields (used for the vision paragraph + objection body).
+- [apps/frontend/src/shared/components/ui/admin-guard.tsx](apps/frontend/src/shared/components/ui/admin-guard.tsx) — **client-side admin guard** wrapping the whole `/admin` layout. Reads role from `useUserProfile()` (with localStorage cache fallback for instant render). Non-admins redirect to `/`, unauthenticated to `/login`. Defense in depth — backend AdminGuard remains the security boundary.
+- [apps/frontend/src/shared/dev/BackgroundTuner.tsx](apps/frontend/src/shared/dev/BackgroundTuner.tsx) — localhost-only draggable floating panel for vibing with the page's background (color + 2 radial gradients + noise overlay). Portals to `document.body` so `position: fixed` survives ancestor containing blocks. Drag position persists to localStorage. Gated by `NEXT_PUBLIC_VERCEL_ENV !== 'production'` in the parent. Currently commented out in `WaitlistClient.tsx`; uncomment to bring back.
+- [apps/frontend/src/app/api/waitlist/route.ts](apps/frontend/src/app/api/waitlist/route.ts) — signup POST handler (Next route). Accepts the optional `signupIntent` field, persists into `waitlist.metadata.signupIntent`, defaults to `'beta'` for older callers.
 - [apps/frontend/src/app/api/waitlist/founder-interest/route.ts](apps/frontend/src/app/api/waitlist/founder-interest/route.ts) — founder-interest POST handler (Next route).
 - [apps/frontend/src/shared/attribution/index.ts](apps/frontend/src/shared/attribution/index.ts) — first-touch attribution capture (UTM, referrer, landing path, timezone) with 30-day localStorage TTL. Called once on page mount; `getStoredAttribution()` is read before each form submit.
 
 **Shared types**
 
-- [libs/contracts/src/validation/waitlist-schemas.ts](libs/contracts/src/validation/waitlist-schemas.ts) — Zod schemas + `WaitlistLevel` type, shared across server + client.
+- [libs/contracts/src/validation/waitlist-schemas.ts](libs/contracts/src/validation/waitlist-schemas.ts) — Zod schemas + `WaitlistLevel` type + `signupIntents` enum (`'beta' | 'notify_only'`), shared across server + client.
+- [libs/contracts/src/validation/founder-card-schemas.ts](libs/contracts/src/validation/founder-card-schemas.ts) — `FounderCardConfig` Zod schema with per-field min/max ranges + `FOUNDER_CARD_CONFIG_DEFAULTS` (mirrors the seeded DB row so the in-code fallback matches the seeded state).
 
 **Backend (NestJS billing domain)**
 
 - [apps/backend/src/domains/billing/webhook.controller.ts](apps/backend/src/domains/billing/webhook.controller.ts) — Stripe webhook handler; extended with `handleFounderCheckoutCompleted` and `isFounderCheckout` branch.
 - [apps/backend/src/domains/billing/services/resend.service.ts](apps/backend/src/domains/billing/services/resend.service.ts) — Resend wrapper with `sendFounderWelcome` (HTML + plain-text builders).
 - [apps/backend/src/domains/billing/repositories/founder-member.repository.ts](apps/backend/src/domains/billing/repositories/founder-member.repository.ts) — `createIfMissing`, `markWelcomeEmailSent`, `countByMode`.
-- [apps/backend/src/domains/billing/founders.controller.ts](apps/backend/src/domains/billing/founders.controller.ts) — public `GET /api/v1/founders/count`, public `GET /api/v1/founders/welcome-context` (powers `/founders/welcome` personalization via server-side Stripe session lookup), AND admin-gated `GET /api/v1/founders/admin/funnels` endpoint (latter protected by `@UseGuards(AdminGuard)`).
+- [apps/backend/src/domains/billing/founders.controller.ts](apps/backend/src/domains/billing/founders.controller.ts) — public `GET /api/v1/founders/count` (real founders + reserved 13 floor), public `GET /api/v1/founders/welcome-context` (powers `/founders/welcome` personalization via server-side Stripe session lookup), public `GET /api/v1/founders/card-config` (serves the admin-editable founder upsell card config to homepage SSR), admin-gated `PUT /api/v1/founders/card-config` (records `updated_by` from `auth.uid()`), AND admin-gated `GET /api/v1/founders/admin/funnels` endpoint. Admin endpoints protected by `@UseGuards(AdminGuard)`.
+- [apps/backend/src/domains/billing/repositories/founder-card-config.repository.ts](apps/backend/src/domains/billing/repositories/founder-card-config.repository.ts) — load + save the singleton config row. Both paths re-validate the JSON against the FounderCardConfig Zod schema before returning/persisting. Falls back to `FOUNDER_CARD_CONFIG_DEFAULTS` on any read failure (missing row, schema-validation failure) so the homepage never breaks.
 - [apps/backend/src/domains/billing/services/admin-funnels.service.ts](apps/backend/src/domains/billing/services/admin-funnels.service.ts) — server-side aggregator powering `/admin/funnels`. Pulls counts from `waitlist`, `founder_interest`, and `founder_members` (live + test), plus top-N UTM source/campaign aggregation from `waitlist.metadata`.
 - [apps/frontend/src/app/admin/funnels/page.tsx](apps/frontend/src/app/admin/funnels/page.tsx) — the admin dashboard page. Fetches via Bearer token from the current Supabase session.
-- [apps/frontend/src/app/admin/layout.tsx](apps/frontend/src/app/admin/layout.tsx) — extended with the "Funnels" nav link.
-- [apps/backend/src/domains/billing/billing.module.ts](apps/backend/src/domains/billing/billing.module.ts) — wires new providers + controller.
+- [apps/frontend/src/app/admin/layout.tsx](apps/frontend/src/app/admin/layout.tsx) — extended with "Funnels" + "Founder Card" nav links, and now wraps the whole tree in `<AdminGuard>` so every `/admin/*` route is client-side gated by `profiles.role='admin'`. Previously the layout was reachable by anyone who knew the URL (backend endpoints were gated, but the UI shell still rendered).
+- [apps/backend/src/domains/billing/billing.module.ts](apps/backend/src/domains/billing/billing.module.ts) — wires new providers + controller. Adds `FounderCardConfigRepository`.
 - [apps/backend/src/main.ts](apps/backend/src/main.ts) — adds `{ rawBody: true }` to NestFactory.create. **Critical** for Stripe signature verification.
 
 **Migrations**
 
-- [supabase/migrations/20260522000001_create_waitlist.sql](supabase/migrations/20260522000001_create_waitlist.sql) — waitlist table + RLS.
-- [supabase/migrations/20260522000002_grant_waitlist_insert.sql](supabase/migrations/20260522000002_grant_waitlist_insert.sql) — anon INSERT grant for waitlist.
-- [supabase/migrations/20260524000001_create_founder_interest.sql](supabase/migrations/20260524000001_create_founder_interest.sql) — founder_interest table + RLS + GRANT (paired in one migration after the previous lesson).
-- [supabase/migrations/20260524000002_create_founder_members.sql](supabase/migrations/20260524000002_create_founder_members.sql) — founder_members table + indexes + RLS (NO anon policies — backend mediates via service role).
+- [supabase/migrations/20260522000001_create_waitlist.sql](../../../../supabase/migrations/20260522000001_create_waitlist.sql) — waitlist table + RLS.
+- [supabase/migrations/20260522000002_grant_waitlist_insert.sql](../../../../supabase/migrations/20260522000002_grant_waitlist_insert.sql) — anon INSERT grant for waitlist.
+- [supabase/migrations/20260524000001_create_founder_interest.sql](../../../../supabase/migrations/20260524000001_create_founder_interest.sql) — founder_interest table + RLS + GRANT (paired in one migration after the previous lesson).
+- [supabase/migrations/20260524000002_create_founder_members.sql](../../../../supabase/migrations/20260524000002_create_founder_members.sql) — founder_members table + indexes + RLS (NO anon policies — backend mediates via service role).
+- [supabase/migrations/20260525000001_create_founder_card_config.sql](../../../../supabase/migrations/20260525000001_create_founder_card_config.sql) — singleton `founder_card_config` table (id text PK, data JSONB, updated_at, updated_by uuid). No anon policies. Seeded with current shipped copy + sizes so the first homepage SSR after migration matches the in-code defaults exactly.
 
 ### Anti-patterns to avoid
 
