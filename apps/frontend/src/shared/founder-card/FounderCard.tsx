@@ -96,7 +96,7 @@ export function FounderCard({
           ].map((bullet, i) => (
             <li
               key={i}
-              className="text-[#F5F1EB] flex gap-2.5 items-start"
+              className="text-[#9A948C] flex gap-2.5 items-start"
               style={{ fontSize: `${config.bulletsSizePx}px` }}
             >
               <svg
@@ -114,7 +114,8 @@ export function FounderCard({
                 <polyline points="20 6 9 17 4 12" />
               </svg>
               <span>
-                <b className="font-bold">{bullet.lead}</b> {bullet.body}
+                <b className="font-bold text-[#F5F1EB]">{bullet.lead}</b>{' '}
+                {bullet.body}
               </span>
             </li>
           ))}

@@ -5,6 +5,13 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
+  # Nightly run so e2e still catches regressions even when it doesn't
+  # gate PRs. 03:00 UTC = ~04:00 CEST (off-hours for the team).
+  schedule:
+    - cron: '0 3 * * *'
+  # Manual trigger so a risky PR can opt back into e2e on demand.
+  # From the GitHub UI: Actions → Test Suite → Run workflow → pick branch.
+  workflow_dispatch:
 
 jobs:
   test-backend:
@@ -105,7 +112,23 @@ jobs:
           CI: true
           NODE_OPTIONS: '--max-old-space-size=2048'
 
+  # E2E does NOT run on pull_request — it's the bottleneck that drags
+  # every PR to 20+ minutes (Playwright install + ~50 specs with
+  # baseline-merge timeout rot). Instead:
+  #
+  #   - Runs on push to main/develop, so post-merge regressions are
+  #     caught on the same commit that introduced them.
+  #   - Runs nightly via cron so we still get coverage on slow drift
+  #     between merges.
+  #   - Can be triggered manually for a PR via workflow_dispatch if
+  #     a change is risky enough to warrant pre-merge e2e.
+  #
+  # The Deploy workflow's separate health-gate + smoke jobs still gate
+  # production deploys (curl-based, fast). E2E is purely a regression
+  # net here, not a release gate. Revisit when the test suite is
+  # rehabilitated and worth running pre-merge.
   test-e2e:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
