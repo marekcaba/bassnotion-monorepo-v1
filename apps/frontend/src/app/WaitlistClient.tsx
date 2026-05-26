@@ -210,6 +210,30 @@ export function WaitlistClient({
     process.env.NEXT_PUBLIC_VERCEL_ENV !== 'production';
   const [bgConfig, setBgConfig] = useState(DEFAULT_BACKGROUND);
 
+  // One-time background fade-in. The page loads on the solid base color
+  // (so there's no flash of white), then the two radial glows + the
+  // noise overlay breathe in together over ~1.2s. Lands during the
+  // hero's IntersectionObserver reveal so the whole first viewport
+  // feels like one coherent entrance.
+  //
+  // Reduced-motion users skip the fade — the same posture as the rest
+  // of the page (Reveal honors prefers-reduced-motion too).
+  const [bgVisible, setBgVisible] = useState(false);
+  useEffect(() => {
+    if (
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) {
+      setBgVisible(true);
+      return;
+    }
+    // A 60ms delay gives the browser one frame on the initial opacity:0
+    // state before flipping the class, so the transition actually runs
+    // instead of landing on the final state.
+    const t = window.setTimeout(() => setBgVisible(true), 60);
+    return () => window.clearTimeout(t);
+  }, []);
+
   // Force the page to the top on every load / reload. Browsers default to
   // 'auto' scroll restoration, which puts the visitor wherever they were
   // last — on a long landing page that almost always means waking up at
@@ -311,24 +335,36 @@ export function WaitlistClient({
   return (
     <div
       className="min-h-screen text-[#F5F1EB] font-dm-body text-base leading-[1.55] overflow-x-hidden flex flex-col relative"
-      style={{ backgroundColor: isDevBuild ? bgConfig.baseColor : '#0A0908' }}
+      style={{ backgroundColor: isDevBuild ? bgConfig.baseColor : '#080808' }}
     >
-      {/* Two-radial accent + noise overlay (mockup tokens) */}
+      {/*
+        Two-radial accent + noise overlay. Both fade in together on
+        first page load (~1.2s, ease-out) so the page settles into its
+        final atmosphere alongside the hero's IntersectionObserver
+        reveal. The base color (#030303) is solid from the first paint,
+        so the page never flashes a lighter color while the radials
+        animate in.
+      */}
       <div
         aria-hidden="true"
         className="fixed inset-0 pointer-events-none z-0"
         style={{
           background: isDevBuild
             ? backgroundToCss(bgConfig)
-            : 'radial-gradient(600px 440px at 29% 9%, rgba(222,222,222,0.02), transparent 93%), radial-gradient(720px 640px at 91% 95%, rgba(166,166,166,0.05), transparent 55%)',
+            : 'radial-gradient(480px 420px at 50% 11%, rgba(18,18,18,0.22), transparent 68%), radial-gradient(720px 320px at 50% 66%, rgba(18,18,18,0.49), transparent 52%)',
+          opacity: bgVisible ? 1 : 0,
+          transition: 'opacity 1200ms cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       />
       <div
         aria-hidden="true"
         className="fixed inset-0 pointer-events-none z-0"
         style={{
-          opacity: isDevBuild ? bgConfig.noiseOpacity : 0.045,
+          opacity:
+            (isDevBuild ? bgConfig.noiseOpacity : 0.02) *
+            (bgVisible ? 1 : 0),
           backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+          transition: 'opacity 1200ms cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       />
 
@@ -648,7 +684,13 @@ export function WaitlistClient({
       </div>
 
       {/* ── FOOTER ─────────────────────────────────────────── */}
-      <footer className="relative z-10 text-center py-10 px-6 text-[12px] text-[#6B655E] border-t border-[#26221E] mt-8">
+      <footer className="relative z-10 text-center py-10 px-6 text-[12px] text-[#6B655E] mt-8">
+        {/* Half-width divider, centered. Replaces the previous full-width
+            border-t on the <footer> element. */}
+        <div
+          aria-hidden="true"
+          className="w-1/2 max-w-[420px] h-px bg-[#26221E] mx-auto mb-8"
+        />
         <div className="italic text-[#9A948C] text-[14px] mb-3">
           &ldquo;They describe practice. We are practice.&rdquo;
         </div>
@@ -722,7 +764,7 @@ function Dial({
         className="absolute -top-[30%] -right-[20%] w-[140px] h-[140px] rounded-full pointer-events-none"
         style={{
           background:
-            'radial-gradient(circle, rgba(242,107,29,0.10), transparent 70%)',
+            'radial-gradient(circle, rgba(242,107,29,0.05), transparent 70%)',
         }}
       />
       <div className="relative">

@@ -31,26 +31,26 @@ export interface BackgroundConfig {
 }
 
 export const DEFAULT_BACKGROUND: BackgroundConfig = {
-  baseColor: '#0A0908',
+  baseColor: '#080808',
   radial1: {
-    color: '#DEDEDE',
-    opacity: 0.02,
-    width: 600,
-    height: 440,
-    x: 29,
-    y: 9,
-    fadeEnd: 93,
+    color: '#121212',
+    opacity: 0.22,
+    width: 480,
+    height: 420,
+    x: 50,
+    y: 11,
+    fadeEnd: 68,
   },
   radial2: {
-    color: '#A6A6A6',
-    opacity: 0.05,
+    color: '#121212',
+    opacity: 0.49,
     width: 720,
-    height: 640,
-    x: 91,
-    y: 95,
-    fadeEnd: 55,
+    height: 320,
+    x: 50,
+    y: 66,
+    fadeEnd: 52,
   },
-  noiseOpacity: 0.045,
+  noiseOpacity: 0.02,
 };
 
 /** Turns a {color, opacity, w, h, x, y, fadeEnd} block into a CSS radial-gradient(...). */
