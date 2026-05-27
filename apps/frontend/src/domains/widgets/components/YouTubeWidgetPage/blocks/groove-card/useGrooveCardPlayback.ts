@@ -35,7 +35,7 @@ import type {
 import type { AudioInstrumentType } from '@/domains/playback/modules/tracks/management/TrackManagerProcessor';
 import { audioInstrumentTypeToStemKey } from '@/domains/playback/modules/tracks/management/TrackManagerProcessor';
 import { musicalTruth } from '@/domains/playback/modules/tempo/MusicalTruthAuthority';
-import { useTransportControls } from '@/domains/playback/contexts/TransportContext';
+import { useTransportControlsSafe } from '@/domains/playback/contexts/TransportContext';
 import { WindowRegistry } from '@/domains/playback/services/WindowRegistry';
 import { useActiveGrooveCardStore } from '@/domains/playback/store/active-groove-card.store';
 import { pickKeySet, type KeySetIndex } from './pickKeySet';
@@ -126,6 +126,45 @@ function findDefaultKeySetIndex(
   return idx as KeySetIndex;
 }
 
+/**
+ * Lightweight Tone.Transport handle used as a fallback when there is no
+ * <TransportProvider> on the tree (LAUNCH-02.5d's waitlist surface).
+ * Returns `null` when Tone.js is not loaded yet — the hook silently
+ * no-ops in that window.
+ */
+function getToneTransportFallback(): {
+  start: () => Promise<void>;
+  pause: () => Promise<void>;
+  stop: () => Promise<void>;
+  isPlaying: boolean;
+} | null {
+  if (typeof window === 'undefined') return null;
+  const Tone =
+    (window as typeof window & { Tone?: any; __globalTone?: any }).Tone ??
+    (window as typeof window & { Tone?: any; __globalTone?: any }).__globalTone;
+  if (!Tone?.getTransport) return null;
+  const transport = Tone.getTransport();
+  return {
+    start: async () => {
+      // Tone requires the global audio context to be started before
+      // Transport can start. Tone.start() is idempotent.
+      try {
+        await Tone.start?.();
+      } catch {
+        // already started — ignore
+      }
+      transport.start();
+    },
+    pause: async () => {
+      transport.pause();
+    },
+    stop: async () => {
+      transport.stop();
+    },
+    isPlaying: transport.state === 'started',
+  };
+}
+
 export function useGrooveCardPlayback({
   block,
   cardId,
@@ -134,7 +173,21 @@ export function useGrooveCardPlayback({
 }: UseGrooveCardPlaybackOptions): UseGrooveCardPlaybackReturn {
   void _countdownClickUrl; // consumed by 02.5d's WaitlistAudioBootstrap
 
-  const transport = useTransportControls();
+  // LAUNCH-02.5d: the waitlist surface does not mount <TransportProvider>.
+  // useTransportControlsSafe returns undefined there; fall back to driving
+  // Tone.getTransport() directly.
+  const transportFromContext = useTransportControlsSafe();
+  const transport = useMemo(() => {
+    if (transportFromContext) return transportFromContext;
+    return (
+      getToneTransportFallback() ?? {
+        start: async () => undefined,
+        pause: async () => undefined,
+        stop: async () => undefined,
+        isPlaying: false,
+      }
+    );
+  }, [transportFromContext]);
   const activeStore = useActiveGrooveCardStore();
   const trackPrefix = `${cardId}#`;
 

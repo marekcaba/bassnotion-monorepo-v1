@@ -55,6 +55,7 @@ const mockTransport = {
 
 vi.mock('@/domains/playback/contexts/TransportContext', () => ({
   useTransportControls: () => mockTransport,
+  useTransportControlsSafe: () => mockTransport,
   useTransport: () => mockTransport,
   useTransportContext: () => mockTransport,
 }));

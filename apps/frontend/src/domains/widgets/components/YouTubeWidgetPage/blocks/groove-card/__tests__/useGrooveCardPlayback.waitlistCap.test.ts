@@ -19,13 +19,15 @@ import { renderHook, act } from '@testing-library/react';
 import type { GrooveCardBlockConfig } from '@bassnotion/contracts';
 
 // Mock the heavy collaborators so we can drive the hook standalone.
+const mockTransport = {
+  isPlaying: false,
+  start: vi.fn(async () => undefined),
+  stop: vi.fn(async () => undefined),
+  pause: vi.fn(async () => undefined),
+};
 vi.mock('@/domains/playback/contexts/TransportContext', () => ({
-  useTransportControls: () => ({
-    isPlaying: false,
-    start: vi.fn(async () => undefined),
-    stop: vi.fn(async () => undefined),
-    pause: vi.fn(async () => undefined),
-  }),
+  useTransportControls: () => mockTransport,
+  useTransportControlsSafe: () => mockTransport,
 }));
 
 vi.mock('@/domains/playback/services/WindowRegistry', () => ({

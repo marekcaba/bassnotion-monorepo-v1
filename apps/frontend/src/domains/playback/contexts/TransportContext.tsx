@@ -1105,6 +1105,18 @@ export function useTransportControls(): TransportControlsValue {
 }
 
 /**
+ * Soft variant of useTransportControls: returns `undefined` when no
+ * TransportProvider is mounted, instead of throwing. Use this in
+ * components that must render on surfaces that don't ship the full
+ * TransportProvider (e.g. the LAUNCH-02.5d waitlist, which spins up a
+ * minimal audio-only bootstrap via WaitlistAudioBootstrap and drives
+ * Tone.Transport directly without the React provider stack).
+ */
+export function useTransportControlsSafe(): TransportControlsValue | undefined {
+  return useContext(TransportControlsContext);
+}
+
+/**
  * Hook to access only transport position updates
  * Use this in components that need position tracking, combined with useTransportControls
  * for other operations.
