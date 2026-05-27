@@ -1,6 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from 'react';
 import { verboseLog } from '@/config/debug';
 import Image from 'next/image';
 import { FretboardCard, FRETBOARD_VIEW_PRESETS } from './FretboardCard';
@@ -1130,9 +1136,7 @@ function YouTubeWidgetPageContent({
       // Understand — let them freely move between sections they've already
       // opened. New users (no progress) stay gated until they finish the
       // first block, same as before.
-      const hasAnyProgress = blocks.some(
-        (b) => blockProgress[b.id]?.completed,
-      );
+      const hasAnyProgress = blocks.some((b) => blockProgress[b.id]?.completed);
 
       logger.info('[INITIAL-BLOCK] Landing on first block', {
         tutorialId: tutorialData.id,
@@ -1759,6 +1763,21 @@ function YouTubeWidgetPageContent({
                   onComplete={markBlockComplete}
                   onNext={scrollToNextBlock}
                 />
+              )}
+
+              {/* ---- Groove Card Block (LAUNCH-02.5c) ---- */}
+              {block.type === 'groove-card' && (
+                <div className="flex h-full w-full items-center justify-center px-4 py-8">
+                  <div className="w-full max-w-3xl">
+                    <BlockRenderer
+                      block={block}
+                      isActive={isBlockActive}
+                      isCompleted={isBlockCompleted}
+                      onComplete={markBlockComplete}
+                      onNext={scrollToNextBlock}
+                    />
+                  </div>
+                </div>
               )}
             </section>
           );
