@@ -3,39 +3,37 @@
 /**
  * useStemUpload — LAUNCH-02.5c follow-up.
  *
- * Direct browser → Supabase Storage upload for the Groove Card admin
- * form. Replaces the URL text-input pattern with a file picker that
- * uploads, returns a public URL, and stores it in the block config.
+ * Uploads a Groove Card stem for the admin form, returning a public URL
+ * the form stores in the block config.
  *
- * Architecture:
- *   - Frontend client (`@/infrastructure/supabase/client`) carries the
- *     admin's session JWT. The `audio-samples` bucket's RLS policy
- *     allows insert/update/delete when `auth.uid()`'s profile row has
- *     role = 'admin', so no backend proxy is needed.
- *   - Files land at `audio-samples/grooves/{tutorialSlug}/{keyLabel}/{stem}.ogg`.
- *     Path is stable across re-uploads (`upsert: true`) so the saved
- *     block config's URL keeps working when the admin replaces a stem.
+ * Architecture (backend proxy):
+ *   - The upload POSTs multipart FormData to the backend endpoint
+ *     `POST /api/v1/tutorials/groove-stem/upload`, authenticated with
+ *     the admin's session bearer token.
+ *   - The backend (NestJS AdminGuard) uploads with the service-role key,
+ *     bypassing storage RLS. This mirrors the existing ThumbnailUpload
+ *     flow.
+ *   - Why not direct browser → Supabase Storage? The direct path's
+ *     storage POST wasn't reliably authenticated as the admin in the
+ *     browser (the JWT didn't reach the storage request), so Supabase
+ *     rejected it with a row-level-security violation. The backend proxy
+ *     sidesteps that entirely and matches how every other admin upload
+ *     in this codebase works.
+ *   - Files land at
+ *     `audio-samples/grooves/{tutorialSlug}/{keyFolder}/{stem}.ogg`.
+ *     Path is stable across re-uploads (server uses `upsert: true`) so
+ *     the saved block config's URL keeps working when a stem is replaced.
  *
- * Validation:
+ * Validation (client-side pre-check; the backend re-validates):
  *   - File MIME / extension must be OGG Vorbis (`audio/ogg` or `.ogg`).
- *   - Hard 8 MB cap per stem (sane upper bound; the bundled countdown
- *     click is ~5 KB; a full groove loop is ~1-2 MB at OGG q5).
+ *   - Hard 8 MB cap per stem.
  *
- * Returns the public URL on success. The form pastes that URL into
- * the corresponding `stems[i].{bass|drums|harmony|click}` cell.
+ * Returns the public URL on success. The form pastes it into the
+ * corresponding `stems[i].{bass|drums|harmony}` cell.
  */
 
 import { useCallback, useState } from 'react';
-import { supabase as supabaseClient } from '@/infrastructure/supabase/client';
-
-// `supabase` is typed as a union with a webkit-E2E mock that lacks
-// .storage. In production it's always the real SupabaseClient. Narrow
-// once at the module boundary so callers below can use .storage freely.
-// (Same pattern AvatarUpload / ThumbnailUpload use implicitly.)
-const supabase = supabaseClient as Extract<
-  typeof supabaseClient,
-  { storage: unknown }
->;
+import { supabase } from '@/infrastructure/supabase/client';
 
 export interface UploadStemOptions {
   /** Tutorial slug for the storage path. e.g. "economy-groove-1". */
@@ -59,7 +57,6 @@ export interface UseStemUploadReturn {
   clearError: () => void;
 }
 
-const BUCKET = 'audio-samples';
 const MAX_FILE_BYTES = 8 * 1024 * 1024; // 8 MB
 const ACCEPTED_EXTENSIONS = ['ogg', 'oga'] as const;
 const ACCEPTED_MIME_PREFIXES = ['audio/ogg', 'application/ogg'] as const;
@@ -124,44 +121,55 @@ export function useStemUpload(): UseStemUploadReturn {
       setError(null);
 
       try {
-        const path = buildStemPath(opts);
-
-        const { error: uploadError } = await supabase.storage
-          .from(BUCKET)
-          .upload(path, file, {
-            cacheControl: '3600',
-            upsert: true,
-            contentType: 'audio/ogg',
-          });
-
-        if (uploadError) {
-          // RLS denial surfaces as a 400 with a message containing
-          // "new row violates row-level security policy". Surface a
-          // friendlier hint.
-          const isRlsDenial = uploadError.message
-            .toLowerCase()
-            .includes('row-level security');
-          setError(
-            isRlsDenial
-              ? 'Upload denied. Are you signed in as an admin?'
-              : uploadError.message,
-          );
+        // Need the admin's session token to authenticate to the backend.
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session) {
+          setError('Session expired. Please refresh and sign in again.');
           return null;
         }
 
-        // Compose the public URL. We don't store the Supabase host in
-        // the saved block config — the bucket-path pattern Zod accepts
-        // is host-agnostic (per CLAUDE.md, staging and production
-        // project refs differ).
-        const { data: urlData } = supabase.storage
-          .from(BUCKET)
-          .getPublicUrl(path);
-        const publicUrl = urlData?.publicUrl;
-        if (!publicUrl) {
-          setError('Upload succeeded but no public URL could be resolved.');
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('slug', opts.tutorialSlug);
+        formData.append('keyFolder', opts.keyFolder);
+        formData.append('stem', opts.stem);
+
+        const apiUrl =
+          process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+        const response = await fetch(
+          `${apiUrl}/api/v1/tutorials/groove-stem/upload`,
+          {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${session.access_token}` },
+            body: formData,
+          },
+        );
+
+        if (!response.ok) {
+          const body = (await response.json().catch(() => ({}))) as {
+            message?: string;
+          };
+          if (response.status === 401 || response.status === 403) {
+            setError('Upload denied. Are you signed in as an admin?');
+          } else {
+            setError(
+              body.message ?? `Upload failed (HTTP ${response.status}).`,
+            );
+          }
           return null;
         }
-        return publicUrl;
+
+        const result = (await response.json()) as {
+          publicUrl?: string;
+          path?: string;
+        };
+        if (!result.publicUrl) {
+          setError('Upload succeeded but no public URL was returned.');
+          return null;
+        }
+        return result.publicUrl;
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Upload failed');
         return null;

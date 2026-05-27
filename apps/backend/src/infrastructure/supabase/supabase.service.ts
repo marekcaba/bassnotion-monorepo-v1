@@ -100,6 +100,7 @@ export class SupabaseService {
     path: string,
     file: Buffer,
     contentType: string,
+    options?: { upsert?: boolean },
   ): Promise<string> {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
@@ -109,6 +110,7 @@ export class SupabaseService {
       path,
       contentType,
       fileSize: file.length,
+      upsert: options?.upsert ?? false,
       correlationId,
     });
 
@@ -116,7 +118,7 @@ export class SupabaseService {
       .from(bucket)
       .upload(path, file, {
         contentType,
-        upsert: false,
+        upsert: options?.upsert ?? false,
       });
 
     if (error) {

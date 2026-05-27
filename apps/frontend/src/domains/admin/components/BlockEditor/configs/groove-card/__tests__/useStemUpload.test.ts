@@ -14,19 +14,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
-// Hoisted mock storage for the Supabase factory.
-const { uploadMock, getPublicUrlMock } = vi.hoisted(() => ({
-  uploadMock: vi.fn(),
-  getPublicUrlMock: vi.fn(),
+// The hook now POSTs to the backend with the admin's session token.
+// Mock supabase.auth.getSession() to provide a token, and stub global
+// fetch to stand in for the backend endpoint.
+const { getSessionMock } = vi.hoisted(() => ({
+  getSessionMock: vi.fn(),
 }));
 
 vi.mock('@/infrastructure/supabase/client', () => ({
   supabase: {
-    storage: {
-      from: vi.fn(() => ({
-        upload: uploadMock,
-        getPublicUrl: getPublicUrlMock,
-      })),
+    auth: {
+      getSession: getSessionMock,
     },
   },
 }));
@@ -41,12 +39,36 @@ function fakeOggFile(name = 'bass.ogg', size = 1024): File {
   return new File([new ArrayBuffer(size)], name, { type: 'audio/ogg' });
 }
 
+/** Default: a valid admin session. */
+function stubSession() {
+  getSessionMock.mockResolvedValue({
+    data: { session: { access_token: 'admin-jwt' } },
+  });
+}
+
+/** Stub global fetch with a JSON response. */
+function stubFetch(
+  ok: boolean,
+  status: number,
+  body: Record<string, unknown>,
+) {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => ({
+      ok,
+      status,
+      json: async () => body,
+    })),
+  );
+}
+
 beforeEach(() => {
-  uploadMock.mockReset();
-  getPublicUrlMock.mockReset();
+  getSessionMock.mockReset();
+  stubSession();
 });
 
 afterEach(() => {
+  vi.unstubAllGlobals();
   vi.clearAllMocks();
 });
 
@@ -133,11 +155,10 @@ describe('validateFile', () => {
   });
 });
 
-describe('useStemUpload — happy path', () => {
-  it('uploads and returns the resolved public URL', async () => {
-    uploadMock.mockResolvedValueOnce({ error: null });
+describe('useStemUpload — happy path (backend proxy)', () => {
+  it('POSTs FormData to the backend with the bearer token and returns the public URL', async () => {
     const publicUrl = `${PUBLIC_URL_BASE}/grooves/foo/e/bass.ogg`;
-    getPublicUrlMock.mockReturnValueOnce({ data: { publicUrl } });
+    stubFetch(true, 200, { publicUrl, path: 'grooves/foo/e/bass.ogg' });
 
     const { result } = renderHook(() => useStemUpload());
 
@@ -153,19 +174,25 @@ describe('useStemUpload — happy path', () => {
     expect(returned).toBe(publicUrl);
     expect(result.current.isUploading).toBe(false);
     expect(result.current.error).toBeNull();
-    expect(uploadMock).toHaveBeenCalledWith(
-      'grooves/foo/e/bass.ogg',
-      expect.any(File),
-      expect.objectContaining({ upsert: true, contentType: 'audio/ogg' }),
-    );
+
+    const fetchMock = global.fetch as ReturnType<typeof vi.fn>;
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0]!;
+    expect(String(url)).toMatch(/\/api\/v1\/tutorials\/groove-stem\/upload$/);
+    expect(init.method).toBe('POST');
+    expect(init.headers.Authorization).toBe('Bearer admin-jwt');
+    // Body is FormData carrying file + path fields.
+    const body = init.body as FormData;
+    expect(body.get('slug')).toBe('foo');
+    expect(body.get('keyFolder')).toBe('E');
+    expect(body.get('stem')).toBe('bass');
+    expect(body.get('file')).toBeInstanceOf(File);
   });
 });
 
 describe('useStemUpload — error surfaces', () => {
-  it('renders a friendly hint when Supabase returns an RLS denial', async () => {
-    uploadMock.mockResolvedValueOnce({
-      error: { message: 'new row violates row-level security policy' },
-    });
+  it('renders a friendly hint on a 403 (not signed in as admin)', async () => {
+    stubFetch(false, 403, { message: 'Forbidden' });
 
     const { result } = renderHook(() => useStemUpload());
     let returned: string | null = 'sentinel';
@@ -181,9 +208,9 @@ describe('useStemUpload — error surfaces', () => {
     expect(result.current.error).toMatch(/admin/i);
   });
 
-  it('surfaces unrelated Supabase errors verbatim', async () => {
-    uploadMock.mockResolvedValueOnce({
-      error: { message: 'bucket "audio-samples" not found' },
+  it('surfaces the backend error message on other failures', async () => {
+    stubFetch(false, 400, {
+      message: 'Invalid file type: audio/mpeg (must be OGG Vorbis .ogg)',
     });
 
     const { result } = renderHook(() => useStemUpload());
@@ -197,10 +224,30 @@ describe('useStemUpload — error surfaces', () => {
     });
 
     expect(returned).toBeNull();
-    expect(result.current.error).toMatch(/bucket/);
+    expect(result.current.error).toMatch(/OGG Vorbis/);
   });
 
-  it('returns null without calling upload when file validation fails', async () => {
+  it('errors when there is no active session', async () => {
+    getSessionMock.mockResolvedValueOnce({ data: { session: null } });
+    stubFetch(true, 200, {}); // fetch should never be called
+
+    const { result } = renderHook(() => useStemUpload());
+    let returned: string | null = 'sentinel';
+    await act(async () => {
+      returned = await result.current.upload(fakeOggFile(), {
+        tutorialSlug: 'foo',
+        keyFolder: 'E',
+        stem: 'bass',
+      });
+    });
+
+    expect(returned).toBeNull();
+    expect(result.current.error).toMatch(/session/i);
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('returns null without hitting the backend when file validation fails', async () => {
+    stubFetch(true, 200, {});
     const { result } = renderHook(() => useStemUpload());
     const tooBig = fakeOggFile('huge.ogg', _internal.MAX_FILE_BYTES + 1);
 
@@ -215,11 +262,11 @@ describe('useStemUpload — error surfaces', () => {
 
     expect(returned).toBeNull();
     expect(result.current.error).toMatch(/too large/i);
-    expect(uploadMock).not.toHaveBeenCalled();
+    expect(global.fetch).not.toHaveBeenCalled();
   });
 
   it('clearError() resets the error state', async () => {
-    uploadMock.mockResolvedValueOnce({ error: { message: 'boom' } });
+    stubFetch(false, 400, { message: 'boom' });
     const { result } = renderHook(() => useStemUpload());
 
     await act(async () => {
