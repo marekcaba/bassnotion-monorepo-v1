@@ -155,24 +155,26 @@ export const INSTRUMENT_CONFIGS: Record<InstrumentType, InstrumentConfig> = {
     baseVolume: 0.8,
   },
   // Audio stems — playback handled by AudioPlayerScheduler (LAUNCH-02.5b),
-  // not this scheduler. Entries exist so Record<InstrumentType, …> is exhaustive.
+  // not this scheduler. Entries exist so Record<InstrumentType, …> is
+  // exhaustive. Logger names omit the "(stub — wire in 02.5b)" marker that
+  // 02.5a installed: as of 02.5b the path is fully wired.
   'audio-bass': {
-    loggerName: 'AudioBassScheduler (stub — wire in 02.5b)',
+    loggerName: 'AudioBass',
     type: 'audio-bass',
     baseVolume: 1.0,
   },
   'audio-drums': {
-    loggerName: 'AudioDrumsScheduler (stub — wire in 02.5b)',
+    loggerName: 'AudioDrums',
     type: 'audio-drums',
     baseVolume: 1.0,
   },
   'audio-harmony': {
-    loggerName: 'AudioHarmonyScheduler (stub — wire in 02.5b)',
+    loggerName: 'AudioHarmony',
     type: 'audio-harmony',
     baseVolume: 1.0,
   },
   'audio-click': {
-    loggerName: 'AudioClickScheduler (stub — wire in 02.5b)',
+    loggerName: 'AudioClick',
     type: 'audio-click',
     baseVolume: 1.0,
   },

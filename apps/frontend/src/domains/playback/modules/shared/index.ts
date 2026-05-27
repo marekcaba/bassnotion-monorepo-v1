@@ -33,6 +33,12 @@ export type {
   InstrumentType,
   MidiInstrumentType,
   AudioInstrumentType,
+  AudioStemKey,
+} from '../tracks/management/TrackManagerProcessor.js';
+export {
+  AUDIO_STEM_KEYS,
+  audioInstrumentTypeToStemKey,
+  stemKeyToAudioInstrumentType,
 } from '../tracks/management/TrackManagerProcessor.js';
 
 // Musical position types (used by multiple modules)

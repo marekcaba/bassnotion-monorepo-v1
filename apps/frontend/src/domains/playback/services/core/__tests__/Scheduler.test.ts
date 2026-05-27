@@ -166,11 +166,14 @@ describe('Scheduler - Unified Audio Scheduling', () => {
       });
 
       it.each(expectedAudioKeys)(
-        'audio-stem config "%s" carries the (stub — wire in 02.5b) marker',
+        'audio-stem config "%s" no longer carries the 02.5a stub marker (wired in 02.5b)',
         (key) => {
-          // Required by LAUNCH-02.5a so grepping logs between 02.5a and 02.5b
-          // surfaces any accidental audio-* event hitting Scheduler today.
-          expect(INSTRUMENT_CONFIGS[key].loggerName).toContain(
+          // 02.5a installed "(stub — wire in 02.5b)" markers in the
+          // loggerName so any accidental audio-* event hitting Scheduler
+          // between 02.5a and 02.5b would be grep-visible. 02.5b wires the
+          // real audio-stem path (PlaybackEngine → AudioPlayerScheduler →
+          // EventRouter), so the markers are removed.
+          expect(INSTRUMENT_CONFIGS[key].loggerName).not.toContain(
             '(stub — wire in 02.5b)',
           );
         },

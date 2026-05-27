@@ -20,6 +20,9 @@ describe('EventRouter', () => {
   let mockHarmonyScheduler: Scheduler;
   let mockBassScheduler: Scheduler;
   let mockVoiceCueScheduler: Scheduler;
+  // LAUNCH-02.5b: optional audio-stem scheduler routed via the
+  // `instrumentType.startsWith('audio-')` branch in scheduleAudioDirect().
+  let mockAudioPlayerScheduler: Scheduler;
   let mockTrackTimingAccuracy: ReturnType<typeof vi.fn>;
   let mockAudioContext: AudioContext;
 
@@ -47,6 +50,9 @@ describe('EventRouter', () => {
     mockVoiceCueScheduler = {
       schedule: vi.fn(() => true),
     };
+    mockAudioPlayerScheduler = {
+      schedule: vi.fn(() => true),
+    };
 
     // Mock timing callback
     mockTrackTimingAccuracy = vi.fn();
@@ -67,6 +73,7 @@ describe('EventRouter', () => {
       mockBassScheduler,
       mockVoiceCueScheduler,
       mockTrackTimingAccuracy,
+      mockAudioPlayerScheduler,
     );
   });
 
@@ -203,6 +210,79 @@ describe('EventRouter', () => {
         48000,
       );
       expect(mockEventBus.emit).not.toHaveBeenCalled();
+    });
+
+    // LAUNCH-02.5b — audio-stem routing
+    it.each([
+      'audio-bass',
+      'audio-drums',
+      'audio-harmony',
+      'audio-click',
+    ] as const)(
+      'should route %s through the audio player scheduler',
+      (instrumentType) => {
+        router.setTransportStartTime(0);
+        const event: PatternEvent = {
+          type: 'audio-stem',
+          position: '0:0:0',
+          data: { stemKey: instrumentType.slice('audio-'.length) },
+        };
+        router.emitEvent(instrumentType, event, 1.0);
+
+        expect(mockAudioPlayerScheduler.schedule).toHaveBeenCalledWith(
+          event,
+          1.0,
+          48000,
+        );
+        // None of the MIDI schedulers should see this event.
+        expect(mockDrumScheduler.schedule).not.toHaveBeenCalled();
+        expect(mockBassScheduler.schedule).not.toHaveBeenCalled();
+        expect(mockHarmonyScheduler.schedule).not.toHaveBeenCalled();
+        expect(mockMetronomeScheduler.schedule).not.toHaveBeenCalled();
+        expect(mockVoiceCueScheduler.schedule).not.toHaveBeenCalled();
+        expect(mockEventBus.emit).not.toHaveBeenCalled();
+      },
+    );
+
+    it('should NOT route MIDI "drums" through the audio player scheduler', () => {
+      router.setTransportStartTime(0);
+      const event: PatternEvent = { type: 'drum-hit', position: '0:0:0' };
+      router.emitEvent('drums', event, 1.0);
+
+      expect(mockDrumScheduler.schedule).toHaveBeenCalledTimes(1);
+      expect(mockAudioPlayerScheduler.schedule).not.toHaveBeenCalled();
+    });
+
+    it('does NOT call audioPlayerScheduler.schedule when no audio scheduler was provided', () => {
+      // Re-initialize WITHOUT the audio scheduler (omit 10th arg).
+      const bareRouter = new EventRouter('test-bare');
+      bareRouter.initialize(
+        mockAudioContext,
+        48000,
+        mockEventBus,
+        mockMetronomeScheduler,
+        mockDrumScheduler,
+        mockHarmonyScheduler,
+        mockBassScheduler,
+        mockVoiceCueScheduler,
+        mockTrackTimingAccuracy,
+        // no audioPlayerScheduler
+      );
+      bareRouter.setTransportStartTime(0);
+
+      const event: PatternEvent = {
+        type: 'audio-stem',
+        position: '0:0:0',
+        data: { stemKey: 'bass' },
+      };
+      bareRouter.emitEvent('audio-bass', event, 1.0);
+
+      // The mock audio scheduler we set up for the parent describe must not
+      // see this event (we passed undefined as the 10th arg).
+      expect(mockAudioPlayerScheduler.schedule).not.toHaveBeenCalled();
+      // No MIDI scheduler should be tricked into handling it either.
+      expect(mockDrumScheduler.schedule).not.toHaveBeenCalled();
+      expect(mockBassScheduler.schedule).not.toHaveBeenCalled();
     });
   });
 

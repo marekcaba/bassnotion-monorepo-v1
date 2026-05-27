@@ -64,7 +64,11 @@ import { getAtomicPlaybackClock } from './AtomicPlaybackClock.js';
 import type {
   MidiInstrumentType,
   AudioInstrumentType,
+  AudioStemKey,
 } from '../../modules/tracks/management/TrackManagerProcessor.js';
+import { audioInstrumentTypeToStemKey } from '../../modules/tracks/management/TrackManagerProcessor.js';
+import type { IAudioStemEngine } from './IAudioStemEngine.js';
+import { AudioPlayerScheduler } from './region-processing/scheduling/AudioPlayerScheduler.js';
 
 // Debug flag - enable in browser console: window.__DEBUG_PLAYBACK_ENGINE = true
 const isPlaybackDebugEnabled = (): boolean => {
@@ -151,7 +155,7 @@ export interface PlaybackEngineConfig {
 /**
  * PlaybackEngine - Central coordinator for audio playback
  */
-export class PlaybackEngine {
+export class PlaybackEngine implements IAudioStemEngine {
   // State
   private state: PlaybackState = 'idle';
   private isInitialized = false;
@@ -225,6 +229,16 @@ export class PlaybackEngine {
 
   // Current tempo tracking (for metrics collector sync)
   private currentTempo = 120; // Default tempo in BPM
+
+  // LAUNCH-02.5b: audio-stem state. Buffers are populated by
+  // setAudioStemBuffers(); the scheduler fires AudioBufferSources from them
+  // when RegionScheduler tells EventRouter to play an 'audio-*' event.
+  private audioPlayerScheduler: AudioPlayerScheduler | null = null;
+  private audioStemBuffers = new Map<AudioInstrumentType, AudioBuffer>();
+  private activeAudioStemSources = new Map<
+    AudioInstrumentType,
+    AudioBufferSourceNode
+  >();
 
   constructor(eventBus: EventBus, config: PlaybackEngineConfig = {}) {
     this.instanceId = Math.random().toString(36).substring(2, 11);
@@ -406,6 +420,10 @@ export class PlaybackEngine {
       this.metricsCollector = new TimingMetricsCollector();
       this.eventRouter = new EventRouter(this.instanceId);
 
+      // LAUNCH-02.5b: audio-stem scheduler (single instance for all 4 stems)
+      this.audioPlayerScheduler = new AudioPlayerScheduler(this.instanceId);
+      this.audioPlayerScheduler.setAudioContext(audioContext);
+
       // CRITICAL FIX: Initialize TimingMetricsCollector with actual sample rate
       // Without this, the collector uses hardcoded 48000 Hz causing jitter miscalculation
       this.metricsCollector.setSampleRate(this.sampleRate);
@@ -435,6 +453,7 @@ export class PlaybackEngine {
             this.metricsCollector.track(frame, time);
           }
         },
+        this.audioPlayerScheduler,
       );
 
       this.isInitialized = true;
@@ -1550,6 +1569,11 @@ export class PlaybackEngine {
             );
           }
         },
+        // Dependency 17 (LAUNCH-02.5b): resolvePendingBuffer — left undefined.
+        // The Groove Card hook (02.5c) will inject this for key-set swapping.
+        undefined,
+        // Dependency 18 (LAUNCH-02.5b): audioStemAccess for infinite-audio.
+        this.audioPlayerScheduler ?? undefined,
       );
 
       this.logger.info('✅ All regions scheduled via RegionScheduler', {
@@ -2457,5 +2481,188 @@ export class PlaybackEngine {
     instrumentType: MidiInstrumentType | AudioInstrumentType,
   ): number {
     return this.instrumentVolumeLevels.get(instrumentType) ?? 0.8;
+  }
+
+  // ==========================================
+  // LAUNCH-02.5b: IAudioStemEngine implementation
+  // ==========================================
+
+  /**
+   * Load decoded AudioBuffers for each audio stem. Idempotent — replacing
+   * previous buffers stops any in-flight source for that stem, then
+   * registers the new buffer + gain with AudioPlayerScheduler.
+   *
+   * Mirrors the wrapper shape of setDrumBuffers (validate context, store
+   * buffer, allocate gain, register with scheduler), but does NOT delegate
+   * per-event playback — audio stems are long pre-rendered loops driven by
+   * RegionScheduler's infinite-loop branch.
+   */
+  setAudioStemBuffers(
+    stems: Partial<Record<AudioInstrumentType, AudioBuffer>>,
+  ): void {
+    if (!this.audioContext) {
+      this.logger.warn(
+        'Cannot set audio-stem buffers: audio context not ready',
+      );
+      return;
+    }
+    if (!this.audioPlayerScheduler) {
+      this.logger.warn(
+        'Cannot set audio-stem buffers: audioPlayerScheduler not initialized',
+      );
+      return;
+    }
+
+    let registered = 0;
+    for (const [key, buffer] of Object.entries(stems)) {
+      if (!buffer) continue;
+      const instrumentType = key as AudioInstrumentType;
+      const stemKey: AudioStemKey =
+        audioInstrumentTypeToStemKey(instrumentType);
+
+      // Stop any in-flight source for this stem before swapping the buffer.
+      const existing = this.activeAudioStemSources.get(instrumentType);
+      if (existing) {
+        try {
+          existing.stop(this.audioContext.currentTime + 0.001);
+        } catch {
+          // already stopped — ignore
+        }
+        this.activeAudioStemSources.delete(instrumentType);
+      }
+
+      const gain = this.getOrCreateInstrumentGainNode(instrumentType);
+      if (!gain) {
+        this.logger.warn(
+          `setAudioStemBuffers: gain node unavailable for ${instrumentType}`,
+        );
+        continue;
+      }
+
+      this.audioStemBuffers.set(instrumentType, buffer);
+      this.audioPlayerScheduler.setStem(stemKey, buffer, gain);
+      registered++;
+    }
+
+    this.logger.info('Audio-stem buffers registered', {
+      registered,
+      stemsTotal: this.audioStemBuffers.size,
+      instanceId: this.instanceId,
+    });
+  }
+
+  /**
+   * Start every registered audio stem against the master transport time
+   * (this.transportStartTime). Each stem plays from offset 0 of its
+   * buffer; looping is owned by RegionScheduler when a region declares
+   * loopCount: 0 — this method is the one-shot start used when callers
+   * want a stem to begin immediately without a region wrapper.
+   */
+  startAudioStems(): void {
+    if (!this.audioContext || !this.audioPlayerScheduler) {
+      this.logger.warn(
+        'Cannot start audio stems: audio context or scheduler not ready',
+      );
+      return;
+    }
+    const startAt = Math.max(
+      this.audioContext.currentTime,
+      this.transportStartTime,
+    );
+
+    for (const [instrumentType, buffer] of this.audioStemBuffers) {
+      const gain = this.instrumentGainNodes.get(instrumentType);
+      if (!gain) continue;
+      const source = this.audioContext.createBufferSource();
+      source.buffer = buffer;
+      source.connect(gain);
+      source.onended = () => {
+        this.activeAudioStemSources.delete(instrumentType);
+      };
+      try {
+        source.start(startAt, 0);
+        this.activeAudioStemSources.set(instrumentType, source);
+      } catch (err) {
+        this.logger.warn(`startAudioStems: ${instrumentType} start failed`, {
+          err,
+        });
+      }
+    }
+
+    this.logger.info('Audio stems started', {
+      startAt,
+      count: this.activeAudioStemSources.size,
+      instanceId: this.instanceId,
+    });
+  }
+
+  /**
+   * Stop every active audio stem with a 5ms gain ramp-down (avoids the
+   * click that a hard `source.stop()` produces). Also tells the scheduler
+   * to drop any sources it spawned through schedule().
+   */
+  stopAudioStems(): void {
+    if (!this.audioContext) {
+      this.activeAudioStemSources.clear();
+      return;
+    }
+
+    const now = this.audioContext.currentTime;
+    const rampSeconds = 0.005;
+    const stopAt = now + rampSeconds + 0.001;
+
+    for (const [instrumentType, source] of this.activeAudioStemSources) {
+      const gain = this.instrumentGainNodes.get(instrumentType);
+      if (gain) {
+        try {
+          gain.gain.setValueAtTime(gain.gain.value, now);
+          gain.gain.linearRampToValueAtTime(0, now + rampSeconds);
+        } catch (err) {
+          this.logger.debug(`stopAudioStems: gain ramp failed`, {
+            instrumentType,
+            err,
+          });
+        }
+      }
+      try {
+        source.stop(stopAt);
+      } catch {
+        // already stopped — ignore
+      }
+    }
+    this.activeAudioStemSources.clear();
+
+    // Also stop anything the AudioPlayerScheduler is tracking from
+    // RegionScheduler-driven schedule() calls.
+    this.audioPlayerScheduler?.stopAll();
+
+    // LAUNCH-02.5b: tear down any infinite-loop iterations the
+    // RegionScheduler armed via Tone.Transport.schedule().
+    this.regionScheduler?.stopAllInfiniteAudio(this.audioContext);
+
+    this.logger.info('Audio stems stopped', { instanceId: this.instanceId });
+  }
+
+  /**
+   * Remove every track whose ID begins with the given prefix. Used by the
+   * Groove Card (LAUNCH-02.5c) so two cards on one page can register tracks
+   * under separate prefixes (e.g. "card-abc-") and clean themselves up
+   * without disturbing siblings.
+   */
+  unregisterTracksByPrefix(prefix: string): void {
+    const trackIds: string[] = [];
+    for (const id of this.tracks.keys()) {
+      if (id.startsWith(prefix)) {
+        trackIds.push(id);
+      }
+    }
+    for (const id of trackIds) {
+      this.unregisterTrack(id);
+    }
+    this.logger.info('Tracks unregistered by prefix', {
+      prefix,
+      removed: trackIds.length,
+      instanceId: this.instanceId,
+    });
   }
 }

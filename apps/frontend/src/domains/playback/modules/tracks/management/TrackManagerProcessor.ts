@@ -94,6 +94,31 @@ export type AudioInstrumentType =
   | 'audio-harmony'
   | 'audio-click';
 
+// Short key carried inside PatternEvent.data.stemKey so AudioPlayerScheduler
+// (LAUNCH-02.5b) can identify which stem an event targets without re-parsing
+// the instrumentType string. Always equals AudioInstrumentType minus the
+// 'audio-' prefix.
+export type AudioStemKey = 'bass' | 'drums' | 'harmony' | 'click';
+
+export const AUDIO_STEM_KEYS: readonly AudioStemKey[] = [
+  'bass',
+  'drums',
+  'harmony',
+  'click',
+] as const;
+
+export function audioInstrumentTypeToStemKey(
+  t: AudioInstrumentType,
+): AudioStemKey {
+  return t.slice('audio-'.length) as AudioStemKey;
+}
+
+export function stemKeyToAudioInstrumentType(
+  k: AudioStemKey,
+): AudioInstrumentType {
+  return `audio-${k}` as AudioInstrumentType;
+}
+
 export type InstrumentType =
   | MidiInstrumentType
   | AudioInstrumentType
