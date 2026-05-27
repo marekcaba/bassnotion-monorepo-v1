@@ -24,13 +24,23 @@ import { z } from 'zod';
 const STEM_PATH_REGEX =
   /\/storage\/v1\/object\/public\/audio-samples\/[A-Za-z0-9_./-]+/;
 
-export const grooveCardStemUrlSchema = z
-  .string()
-  .min(1, 'stem URL is required')
-  .refine(
-    (url) => STEM_PATH_REGEX.test(url),
-    'stem URL must point at /storage/v1/object/public/audio-samples/…',
-  );
+/**
+ * Stem URL is optional during draft auto-save (admin fills the 20 cells
+ * over multiple keystrokes; each keystroke triggers a save). An empty
+ * string passes; any non-empty string MUST match the audio-samples
+ * bucket path pattern (host-agnostic across staging / production per
+ * CLAUDE.md). Publish-time enforcement (all 20 stems required) belongs
+ * to the UI, not this auto-save validator.
+ */
+export const grooveCardStemUrlSchema = z.union([
+  z.literal(''),
+  z
+    .string()
+    .refine(
+      (url) => STEM_PATH_REGEX.test(url),
+      'stem URL must point at /storage/v1/object/public/audio-samples/…',
+    ),
+]);
 
 export const grooveCardStemSetSchema = z.object({
   bass: grooveCardStemUrlSchema,
@@ -40,7 +50,10 @@ export const grooveCardStemSetSchema = z.object({
 });
 
 export const grooveCardKeySetSchema = z.object({
-  label: z.string().min(1, 'key label is required'),
+  // Label is admin-visible display copy (e.g. "E", "G♯"). Empty during
+  // initial creation; the admin form's placeholder shows the offset hint.
+  // Publish-time enforcement lives in the UI.
+  label: z.string(),
   semitoneOffset: z.union([
     z.literal(-8),
     z.literal(-4),

@@ -82,9 +82,12 @@ describe('grooveCardStemUrlSchema — bucket path pattern', () => {
     expect(result.success).toBe(false);
   });
 
-  it('rejects an empty string', () => {
+  it('accepts an empty string (draft state — admin has not pasted the URL yet)', () => {
+    // Stem URLs are filled in over multiple admin edits. An empty
+    // string passes the auto-save validator; publish-time "all 20
+    // stems required" enforcement belongs to the UI, not this schema.
     const result = grooveCardStemUrlSchema.safeParse('');
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 });
 

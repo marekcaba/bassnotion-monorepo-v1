@@ -590,30 +590,28 @@ function AdminTutorialEditPageContent({ params }: AdminTutorialPageProps) {
     ],
   );
 
-  // Auto-save functionality with debouncing
-  // OPTIMIZATION: Increased debounce from 3s to 10s to reduce API calls
-  // Simplified dependencies to only trigger on hasChanges flag
+  // Auto-save DISABLED — saves now happen only on explicit user action
+  // (the "Done" button at the bottom of the page, or any other Save
+  // affordance that calls handleSave(false)).
+  //
+  // Why: every keystroke flipped `hasChanges` and rearmed the 10s timer.
+  // Even with debouncing, an admin filling in a form ran into validator
+  // 400s mid-edit (e.g. the groove-card block's "key label is required"
+  // rule firing on a still-empty default-row label). Saves on a draft
+  // should be intentional, not ambient.
+  //
+  // The handleSave(false) call is still wired into the "Done" button
+  // (search this file for `await handleSave(false)`), so explicit saves
+  // continue to work. The autoSaveTimerRef is left in place so the
+  // cleanup-on-unmount effect below is a no-op when the timer is never
+  // armed — keeps the React lifecycle clean.
   useEffect(() => {
-    if (hasChanges && tutorial) {
-      // Clear existing timer
-      if (autoSaveTimerRef.current) {
-        clearTimeout(autoSaveTimerRef.current);
-      }
-
-      // Set new timer for auto-save (10 seconds debounce - optimized from 3s)
-      autoSaveTimerRef.current = setTimeout(() => {
-        handleSave(true);
-      }, 10000);
-    }
-
-    // Cleanup on unmount
     return () => {
       if (autoSaveTimerRef.current) {
         clearTimeout(autoSaveTimerRef.current);
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasChanges]);
+  }, []);
 
   // Handle edit mode toggle
   const toggleEditMode = (componentName: string | null) => {
