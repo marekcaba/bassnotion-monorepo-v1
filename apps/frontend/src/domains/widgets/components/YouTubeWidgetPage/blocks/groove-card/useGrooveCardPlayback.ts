@@ -40,6 +40,7 @@ import { WindowRegistry } from '@/domains/playback/services/WindowRegistry';
 import { useActiveGrooveCardStore } from '@/domains/playback/store/active-groove-card.store';
 import { pickKeySet, type KeySetIndex } from './pickKeySet';
 import { useGrooveCardStemPreload } from './useGrooveCardStemPreload';
+import { trackWaitlistKeyCapHit } from './telemetry';
 
 export type GrooveCardMode = 'block' | 'waitlist';
 
@@ -97,14 +98,20 @@ export interface UseGrooveCardPlaybackReturn {
 
 const TEMPO_MIN = 50;
 const TEMPO_MAX = 180;
-const KEY_RANGE = 12;
+
+// LAUNCH-02.5c: full range inside /app. LAUNCH-02.5d caps the waitlist
+// surface at ±4 because (a) waitlist loads only the default key set so
+// the residual PitchShift past ±4 is the full delivered range, and (b)
+// the cap acts as a CTA — "full range in app".
+export const KEY_RANGE_BLOCK = 12;
+export const KEY_RANGE_WAITLIST = 4;
 
 function clampTempo(bpm: number): number {
   return Math.max(TEMPO_MIN, Math.min(TEMPO_MAX, Math.round(bpm)));
 }
 
-function clampKey(semitones: number): number {
-  return Math.max(-KEY_RANGE, Math.min(KEY_RANGE, Math.round(semitones)));
+function clampKey(semitones: number, maxRange: number): number {
+  return Math.max(-maxRange, Math.min(maxRange, Math.round(semitones)));
 }
 
 function findDefaultKeySetIndex(
@@ -125,12 +132,16 @@ export function useGrooveCardPlayback({
   mode = 'block',
   countdownClickUrl: _countdownClickUrl,
 }: UseGrooveCardPlaybackOptions): UseGrooveCardPlaybackReturn {
-  void _countdownClickUrl; // consumed by 02.5d when mode === 'waitlist'
-  void mode; // currently informational; 02.5d swaps the audio bootstrap
+  void _countdownClickUrl; // consumed by 02.5d's WaitlistAudioBootstrap
 
   const transport = useTransportControls();
   const activeStore = useActiveGrooveCardStore();
   const trackPrefix = `${cardId}#`;
+
+  // LAUNCH-02.5d: tighter key cap on the waitlist surface — the marketing
+  // page loads only the default key set so a residual past ±4 is the cost
+  // of the lever; ±4 also reads cleanly as a CTA ("full range in app").
+  const keyRange = mode === 'waitlist' ? KEY_RANGE_WAITLIST : KEY_RANGE_BLOCK;
 
   // ── state -----------------------------------------------------------------
   const [isPlaying, setIsPlaying] = useState(false);
@@ -193,7 +204,23 @@ export function useGrooveCardPlayback({
   // ── key: queue swap for the next loop boundary ---------------------------
   const setKey = useCallback(
     (semitonesFromOriginal: number) => {
-      const desired = clampKey(semitonesFromOriginal);
+      const rounded = Math.round(semitonesFromOriginal);
+      const desired = clampKey(rounded, keyRange);
+
+      // LAUNCH-02.5d: cap-as-CTA. When a waitlist visitor's request
+      // exceeds the ±4 cap, swallow the input AND emit the telemetry
+      // event the funnel team needs to measure conversion from "tap
+      // the cap" → signup. In 'block' mode the range is ±12 so this
+      // branch only fires past the natural musical range — no event.
+      const exceededCap = rounded !== desired;
+      if (exceededCap && mode === 'waitlist') {
+        trackWaitlistKeyCapHit({
+          blockId: cardId,
+          valueAttempted: rounded,
+        });
+        return;
+      }
+
       if (desired === currentSemitones && pendingKeyShift === null) return;
       // V1 behaviour: settle currentSemitones immediately for the UI
       // (the visible stepper value matches the user's intent right
@@ -208,13 +235,18 @@ export function useGrooveCardPlayback({
 
       // Decide which key set the desired offset will land on and lazily
       // expand the preload set so the buffer is ready by boundary time.
-      const { keySetIndex } = pickKeySet(desired);
-      setKeySetIndicesToLoad((prev) => {
-        if (prev.includes(keySetIndex)) return prev;
-        return [...prev, keySetIndex];
-      });
+      // In waitlist mode we only ever serve the default key set; skip
+      // the lazy expansion so the marketing page never fetches the
+      // outer (±8) keys.
+      if (mode !== 'waitlist') {
+        const { keySetIndex } = pickKeySet(desired);
+        setKeySetIndicesToLoad((prev) => {
+          if (prev.includes(keySetIndex)) return prev;
+          return [...prev, keySetIndex];
+        });
+      }
     },
-    [currentSemitones, pendingKeyShift],
+    [cardId, currentSemitones, keyRange, mode, pendingKeyShift],
   );
 
   // ── stem mute / solo via sibling-muting (story line 302) -----------------
