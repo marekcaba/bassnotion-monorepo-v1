@@ -18,6 +18,10 @@ import { useGrooveCardPlayback } from './groove-card/useGrooveCardPlayback';
 import { GrooveCardShell } from './groove-card/GrooveCardShell';
 import { GrooveCardWaveform } from './groove-card/GrooveCardWaveform';
 import { GrooveCardControls } from './groove-card/GrooveCardControls';
+import {
+  DEFAULT_PREVIEW_CAPTION,
+  DEFAULT_STATE_CAPTIONS,
+} from './groove-card/captions';
 
 interface GrooveCardBlockViewProps {
   block: TutorialBlock<'groove-card'>;
@@ -60,14 +64,18 @@ export function GrooveCardBlockView({
   // Reactive caption: pick the appropriate state caption when a control
   // last changed; otherwise fall back to previewCaption, then empty.
   const caption = useMemo(() => {
+    // Captions are card-wide UX copy. The block config's own values
+    // win when an admin authored them; otherwise fall back to the
+    // baked-in DEFAULT_STATE_CAPTIONS / DEFAULT_PREVIEW_CAPTION.
     const sc = config.stateCaptions ?? {};
-    if (isSoloDrums && sc['solo-drums']) return sc['solo-drums'];
-    if (isBassMuted && sc['mute-bass']) return sc['mute-bass'];
-    if (playback.pendingKeyShift !== null && sc['key-change'])
-      return sc['key-change'];
-    if (playback.currentBpm !== config.originalBpm && sc['tempo-change'])
-      return sc['tempo-change'];
-    return config.previewCaption ?? '';
+    const pick = (key: keyof typeof DEFAULT_STATE_CAPTIONS): string =>
+      sc[key] ?? DEFAULT_STATE_CAPTIONS[key];
+
+    if (isSoloDrums) return pick('solo-drums');
+    if (isBassMuted) return pick('mute-bass');
+    if (playback.pendingKeyShift !== null) return pick('key-change');
+    if (playback.currentBpm !== config.originalBpm) return pick('tempo-change');
+    return config.previewCaption ?? DEFAULT_PREVIEW_CAPTION;
   }, [
     config,
     isBassMuted,

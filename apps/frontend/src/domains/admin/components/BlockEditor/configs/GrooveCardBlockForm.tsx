@@ -19,7 +19,6 @@ import { useCallback } from 'react';
 import type {
   GrooveCardBlockConfig,
   GrooveCardKeySet,
-  GrooveCardStateCaptions,
 } from '@bassnotion/contracts';
 
 interface GrooveCardBlockFormProps {
@@ -71,16 +70,6 @@ export function GrooveCardBlockForm({
         isDefault: i === keyIndex,
       })) as GrooveCardBlockConfig['keys'];
       onChange({ ...config, keys: nextKeys });
-    },
-    [config, onChange],
-  );
-
-  const updateCaption = useCallback(
-    (key: keyof GrooveCardStateCaptions, value: string) => {
-      onChange({
-        ...config,
-        stateCaptions: { ...config.stateCaptions, [key]: value },
-      });
     },
     [config, onChange],
   );
@@ -202,59 +191,13 @@ export function GrooveCardBlockForm({
         ))}
       </fieldset>
 
-      {/* Captions */}
-      <fieldset className="space-y-2">
-        <legend className="text-xs uppercase tracking-wider text-white/40 mb-1">
-          Captions
-        </legend>
-        <textarea
-          value={config.previewCaption ?? ''}
-          onChange={(e) => updateField('previewCaption', e.target.value)}
-          placeholder="Preview caption (shown when nothing is happening)"
-          rows={2}
-          className="w-full px-3 py-2 rounded-md bg-white/5 border border-white/10 text-white placeholder:text-white/30 text-xs"
-        />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-          <textarea
-            value={config.stateCaptions?.['mute-bass'] ?? ''}
-            onChange={(e) => updateCaption('mute-bass', e.target.value)}
-            placeholder="Mute Bass caption"
-            rows={2}
-            className="px-2 py-1.5 rounded-md bg-white/5 border border-white/10 text-white text-xs"
-          />
-          <textarea
-            value={config.stateCaptions?.['solo-drums'] ?? ''}
-            onChange={(e) => updateCaption('solo-drums', e.target.value)}
-            placeholder="Solo Drums caption"
-            rows={2}
-            className="px-2 py-1.5 rounded-md bg-white/5 border border-white/10 text-white text-xs"
-          />
-          <textarea
-            value={config.stateCaptions?.['key-change'] ?? ''}
-            onChange={(e) => updateCaption('key-change', e.target.value)}
-            placeholder="Key Change caption"
-            rows={2}
-            className="px-2 py-1.5 rounded-md bg-white/5 border border-white/10 text-white text-xs"
-          />
-          <textarea
-            value={config.stateCaptions?.['tempo-change'] ?? ''}
-            onChange={(e) => updateCaption('tempo-change', e.target.value)}
-            placeholder="Tempo Change caption"
-            rows={2}
-            className="px-2 py-1.5 rounded-md bg-white/5 border border-white/10 text-white text-xs"
-          />
-        </div>
-      </fieldset>
+      {/* Captions: card-wide UX copy lives in
+          apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/blocks/groove-card/captions.ts
+          (DEFAULT_PREVIEW_CAPTION + DEFAULT_STATE_CAPTIONS). Edit that
+          file to change the copy site-wide — no admin form needed.
 
-      {/* Allow bookmark — contract-only for v1 */}
-      <label className="flex items-center gap-2 text-xs text-white/60">
-        <input
-          type="checkbox"
-          checked={config.allowBookmark ?? false}
-          onChange={(e) => updateField('allowBookmark', e.target.checked)}
-        />
-        Allow bookmark (UI ships later)
-      </label>
+          Allow bookmark: contract-only field, no UI surface in v1.
+          When the bookmark feature lands, re-expose here. */}
     </div>
   );
 }

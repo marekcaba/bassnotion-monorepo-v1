@@ -145,9 +145,11 @@ function createDefaultBlock(type: BlockType, order: number): AnyBlock {
             stems: { bass: '', drums: '', harmony: '', click: '' },
           },
         ],
-        previewCaption: '',
-        stateCaptions: {},
-        allowBookmark: false,
+        // Caption copy is baked in (groove-card/captions.ts); no
+        // per-block override needed. The contract still allows
+        // previewCaption / stateCaptions so a future story can opt
+        // back into per-card overrides if a specific groove wants
+        // bespoke voice.
       },
     }),
     text: () => ({
