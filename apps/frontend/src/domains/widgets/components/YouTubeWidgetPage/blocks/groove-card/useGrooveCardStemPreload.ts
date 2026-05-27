@@ -109,12 +109,15 @@ export interface UseGrooveCardStemPreloadReturn {
   ) => AudioBuffer | undefined;
 }
 
-const STEM_NAMES: readonly AudioStemKey[] = [
+// Per-key-set musical stems the preloader fetches. The metronome click
+// is NOT a per-key upload (shared MIDI metronome in /app, single bundled
+// sample on the waitlist), so it's not preloaded from the key set here.
+// AudioStemKey still includes 'click' at the engine-channel level.
+const STEM_NAMES = [
   'bass',
   'drums',
   'harmony',
-  'click',
-];
+] as const satisfies readonly Exclude<AudioStemKey, 'click'>[];
 
 export function useGrooveCardStemPreload({
   audioContext,

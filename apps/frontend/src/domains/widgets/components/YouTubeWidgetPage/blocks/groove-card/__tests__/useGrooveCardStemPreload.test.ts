@@ -54,7 +54,6 @@ function makeKeySet(
       bass: `https://stub/${label}/bass.ogg`,
       drums: `https://stub/${label}/drums.ogg`,
       harmony: `https://stub/${label}/harmony.ogg`,
-      click: `https://stub/${label}/click.ogg`,
     },
   };
 }
@@ -99,14 +98,17 @@ describe('useGrooveCardStemPreload — LAUNCH-02.5c', () => {
     );
 
     await waitFor(() => expect(result.current.isPreloaded).toBe(true));
-    expect(result.current.loadedCount).toBe(4);
-    expect(result.current.totalCount).toBe(4);
+    // 3 musical stems per key set (bass / drums / harmony). The
+    // metronome click is not a per-key upload, so it isn't preloaded.
+    expect(result.current.loadedCount).toBe(3);
+    expect(result.current.totalCount).toBe(3);
     expect(result.current.errors).toEqual([]);
-    expect(_peekStemCache().size).toBe(4);
+    expect(_peekStemCache().size).toBe(3);
     expect(result.current.getBuffer(2, 'bass')).toBeDefined();
     expect(result.current.getBuffer(2, 'drums')).toBeDefined();
     expect(result.current.getBuffer(2, 'harmony')).toBeDefined();
-    expect(result.current.getBuffer(2, 'click')).toBeDefined();
+    // Click is never preloaded from the key set.
+    expect(result.current.getBuffer(2, 'click')).toBeUndefined();
   });
 
   it('returns isPreloaded=false until the preload completes', () => {
@@ -122,7 +124,7 @@ describe('useGrooveCardStemPreload — LAUNCH-02.5c', () => {
     );
     expect(result.current.isPreloaded).toBe(false);
     expect(result.current.loadedCount).toBe(0);
-    expect(result.current.totalCount).toBe(4);
+    expect(result.current.totalCount).toBe(3);
   });
 
   it('manual preload() fills the cache when preloadOnMount=false', async () => {
@@ -138,7 +140,7 @@ describe('useGrooveCardStemPreload — LAUNCH-02.5c', () => {
     await act(async () => {
       await result.current.preload();
     });
-    expect(result.current.loadedCount).toBe(4);
+    expect(result.current.loadedCount).toBe(3);
     expect(result.current.isPreloaded).toBe(true);
   });
 
@@ -168,8 +170,9 @@ describe('useGrooveCardStemPreload — LAUNCH-02.5c', () => {
       expect(b.current.isPreloaded).toBe(true);
     });
 
-    // Only 4 fetches total (one per stem URL) despite two hook instances.
-    expect(fetchMock).toHaveBeenCalledTimes(4);
+    // Only 3 fetches total (one per musical stem URL) despite two hook
+    // instances.
+    expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
   it('per-item failure does not block other items (Promise.allSettled)', async () => {
@@ -204,9 +207,9 @@ describe('useGrooveCardStemPreload — LAUNCH-02.5c', () => {
       }),
     );
 
-    await waitFor(() => expect(result.current.loadedCount).toBe(3));
-    // 3 of 4 succeed; the one failure populates errors.
-    expect(result.current.loadedCount).toBe(3);
+    await waitFor(() => expect(result.current.loadedCount).toBe(2));
+    // 2 of 3 succeed; the one failure (drums) populates errors.
+    expect(result.current.loadedCount).toBe(2);
     expect(result.current.isPreloaded).toBe(false);
     expect(result.current.errors).toHaveLength(1);
     expect(result.current.errors[0]).toMatch(/drums/);
@@ -222,7 +225,7 @@ describe('useGrooveCardStemPreload — LAUNCH-02.5c', () => {
         preloadOnMount: false,
       }),
     );
-    expect(result.current.totalCount).toBe(12); // 3 sets × 4 stems
+    expect(result.current.totalCount).toBe(9); // 3 sets × 3 musical stems
   });
 
   it('no audioContext → no preload, no errors', () => {

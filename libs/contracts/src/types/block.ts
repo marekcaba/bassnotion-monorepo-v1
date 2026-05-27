@@ -231,12 +231,19 @@ export interface CelebrationBlockConfig {
  * One stem set per audio instrument. Each URL points at a file in the
  * `audio-samples` Supabase storage bucket (admin-only write per
  * `20250720000000_create_audio_samples_bucket.sql`).
+ *
+ * Only the musical stems are uploaded per key set: `bass`, `drums`,
+ * `harmony`. The metronome **click is NOT a per-groove stem** — it's a
+ * fixed two-sample metronome shared by every groove. In `/app` the
+ * click toggle / countdown reuses the existing MIDI metronome track; on
+ * the waitlist it uses a single bundled `countdown-click.ogg`. The
+ * engine still has an `audio-click` channel (see `AudioInstrumentType`)
+ * for the waitlist's bundled sample, but admins never upload it.
  */
 export interface GrooveCardStemSet {
   bass: string;
   drums: string;
   harmony: string;
-  click: string;
 }
 
 /**
@@ -251,7 +258,8 @@ export interface GrooveCardKeySet {
   semitoneOffset: -8 | -4 | 0 | 4 | 8;
   /** Exactly one key set in the tuple has `isDefault: true`. */
   isDefault: boolean;
-  /** The 4 stem URLs (bass / drums / harmony / click). */
+  /** The 3 musical stem URLs (bass / drums / harmony). The metronome
+   * click is not a per-key stem — see GrooveCardStemSet. */
   stems: GrooveCardStemSet;
 }
 

@@ -160,7 +160,6 @@ function makeBlock(): TutorialBlock<'groove-card'> {
             bass: `${stemBase}/c/bass.ogg`,
             drums: `${stemBase}/c/drums.ogg`,
             harmony: `${stemBase}/c/harmony.ogg`,
-            click: `${stemBase}/c/click.ogg`,
           },
         },
         {
@@ -171,7 +170,6 @@ function makeBlock(): TutorialBlock<'groove-card'> {
             bass: `${stemBase}/d/bass.ogg`,
             drums: `${stemBase}/d/drums.ogg`,
             harmony: `${stemBase}/d/harmony.ogg`,
-            click: `${stemBase}/d/click.ogg`,
           },
         },
         {
@@ -182,7 +180,6 @@ function makeBlock(): TutorialBlock<'groove-card'> {
             bass: `${stemBase}/e/bass.ogg`,
             drums: `${stemBase}/e/drums.ogg`,
             harmony: `${stemBase}/e/harmony.ogg`,
-            click: `${stemBase}/e/click.ogg`,
           },
         },
         {
@@ -193,7 +190,6 @@ function makeBlock(): TutorialBlock<'groove-card'> {
             bass: `${stemBase}/g/bass.ogg`,
             drums: `${stemBase}/g/drums.ogg`,
             harmony: `${stemBase}/g/harmony.ogg`,
-            click: `${stemBase}/g/click.ogg`,
           },
         },
         {
@@ -204,7 +200,6 @@ function makeBlock(): TutorialBlock<'groove-card'> {
             bass: `${stemBase}/a/bass.ogg`,
             drums: `${stemBase}/a/drums.ogg`,
             harmony: `${stemBase}/a/harmony.ogg`,
-            click: `${stemBase}/a/click.ogg`,
           },
         },
       ],

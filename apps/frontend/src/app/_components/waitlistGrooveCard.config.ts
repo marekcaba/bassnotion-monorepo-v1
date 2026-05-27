@@ -23,19 +23,19 @@ import type { GrooveCardBlockConfig } from '@bassnotion/contracts';
 
 const BUCKET_BASE = '/storage/v1/object/public/audio-samples';
 const DEMO_KEY = 'waitlist/greasy-pocket/E';
-const stemUrl = (stem: 'bass' | 'drums' | 'harmony' | 'click'): string =>
+const stemUrl = (stem: 'bass' | 'drums' | 'harmony'): string =>
   `${BUCKET_BASE}/${DEMO_KEY}/${stem}.ogg`;
 
 // Placeholder URLs for the four non-default key slots. The waitlist
 // preloader is told to only load index 2 (the default), so these URLs
 // are never fetched. They satisfy GrooveCardBlockConfig's "exactly 5
-// key sets" shape requirement.
+// key sets" shape requirement. (The metronome click is not a stem —
+// the countdown uses WAITLIST_COUNTDOWN_CLICK_URL below.)
 const PLACEHOLDER = `${BUCKET_BASE}/waitlist/placeholder/silence.ogg`;
 const placeholderStems = {
   bass: PLACEHOLDER,
   drums: PLACEHOLDER,
   harmony: PLACEHOLDER,
-  click: PLACEHOLDER,
 };
 
 export const WAITLIST_DEMO_BLOCK_ID = 'waitlist-demo-groove';
@@ -67,7 +67,6 @@ export const WAITLIST_DEMO_CONFIG: GrooveCardBlockConfig = {
         bass: stemUrl('bass'),
         drums: stemUrl('drums'),
         harmony: stemUrl('harmony'),
-        click: stemUrl('click'),
       },
     },
     {

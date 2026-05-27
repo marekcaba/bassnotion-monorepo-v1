@@ -66,7 +66,6 @@ function makeConfig(): GrooveCardBlockConfig {
     bass: '/audio-samples/silence.ogg',
     drums: '/audio-samples/silence.ogg',
     harmony: '/audio-samples/silence.ogg',
-    click: '/audio-samples/silence.ogg',
   };
   return {
     title: 'Test',

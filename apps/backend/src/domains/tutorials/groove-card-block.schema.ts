@@ -46,7 +46,6 @@ export const grooveCardStemSetSchema = z.object({
   bass: grooveCardStemUrlSchema,
   drums: grooveCardStemUrlSchema,
   harmony: grooveCardStemUrlSchema,
-  click: grooveCardStemUrlSchema,
 });
 
 export const grooveCardKeySetSchema = z.object({

@@ -33,7 +33,10 @@ interface GrooveCardBlockFormProps {
   tutorialSlug?: string;
 }
 
-const STEM_SLOTS = ['bass', 'drums', 'harmony', 'click'] as const;
+// Per-key musical stems the admin uploads. The metronome click is NOT
+// here — it's a fixed shared metronome (MIDI in /app, one bundled
+// sample on the waitlist), never uploaded per groove.
+const STEM_SLOTS = ['bass', 'drums', 'harmony'] as const;
 
 export function GrooveCardBlockForm({
   config,

@@ -44,11 +44,14 @@ import { trackWaitlistKeyCapHit } from './telemetry';
 
 export type GrooveCardMode = 'block' | 'waitlist';
 
-const ALL_STEMS = [
+// Musical stems uploaded + preloaded + registered per key set. The
+// metronome click is NOT here: it's a fixed shared metronome (MIDI
+// track in /app, single bundled sample on the waitlist) injected into
+// the engine's `audio-click` channel separately — never per key set.
+const MUSICAL_STEMS = [
   'audio-bass',
   'audio-drums',
   'audio-harmony',
-  'audio-click',
 ] as const satisfies readonly AudioInstrumentType[];
 
 export interface UseGrooveCardPlaybackOptions {
@@ -359,10 +362,13 @@ export function useGrooveCardPlayback({
     const engine = WindowRegistry.getPlaybackEngine();
     if (!engine) return;
 
-    // Build the 5-tuple of stems for the default key set and push the
-    // decoded buffers into the engine so AudioPlayerScheduler can fire.
+    // Push the default key set's 3 musical stems into the engine so
+    // AudioPlayerScheduler can fire them. The audio-click channel is
+    // not sourced here — it's the shared metronome (MIDI in /app, a
+    // bundled sample on the waitlist injected via setAudioStemBuffers
+    // by WaitlistGrooveCard).
     const buffers: Partial<Record<AudioInstrumentType, AudioBuffer>> = {};
-    for (const instrumentType of ALL_STEMS) {
+    for (const instrumentType of MUSICAL_STEMS) {
       const stemKey = audioInstrumentTypeToStemKey(instrumentType);
       const buf = preload.getBuffer(defaultKeySetIndex, stemKey);
       if (buf) buffers[instrumentType] = buf;
@@ -370,11 +376,11 @@ export function useGrooveCardPlayback({
     if (Object.keys(buffers).length === 0) return;
     engine.setAudioStemBuffers?.(buffers);
 
-    // Register one Track per stem, each with one infinite-loop region.
-    // Region.startTime = 0 (relative to transportStartTime); duration is
-    // in beats per the existing RegionScheduler convention.
+    // Register one Track per musical stem, each with one infinite-loop
+    // region. Region.startTime = 0 (relative to transportStartTime);
+    // duration is in beats per the existing RegionScheduler convention.
     const durationBeats = block.lengthBars * 4; // 4/4 default
-    const tracks = ALL_STEMS.map((instrumentType) => ({
+    const tracks = MUSICAL_STEMS.map((instrumentType) => ({
       id: `${trackPrefix}${instrumentType}`,
       name: `Groove Card ${cardId} ${instrumentType}`,
       instrumentType,

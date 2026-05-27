@@ -33,7 +33,6 @@ function validConfig(
       bass: `${stemBase}/funk/${offset}/bass.ogg`,
       drums: `${stemBase}/funk/${offset}/drums.ogg`,
       harmony: `${stemBase}/funk/${offset}/harmony.ogg`,
-      click: `${stemBase}/funk/${offset}/click.ogg`,
     },
   }));
   return {

@@ -44,8 +44,9 @@ export interface UploadStemOptions {
    * to the semitoneOffset (e.g. "+4", "-8") when the admin hasn't
    * named the key yet — keeps paths predictable. */
   keyFolder: string;
-  /** Which stem this is. */
-  stem: 'bass' | 'drums' | 'harmony' | 'click';
+  /** Which musical stem this is. Click is never uploaded (it's the
+   * shared metronome), so it's not in this union. */
+  stem: 'bass' | 'drums' | 'harmony';
 }
 
 export interface UseStemUploadReturn {
