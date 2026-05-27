@@ -116,6 +116,12 @@ export interface Region {
   startTime: number;
   duration: number;
   skipCountdownOffset?: boolean;
+  /**
+   * Number of times to repeat the pattern. Defaults to 1 (play once);
+   * 2+ repeats finitely; 0 means infinite (only supported for audio-stem
+   * tracks via LAUNCH-02.5b's `scheduleInfiniteAudioRegion`).
+   */
+  loopCount?: number;
   pattern?: {
     id?: string;
     name?: string;

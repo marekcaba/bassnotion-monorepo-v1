@@ -14,6 +14,7 @@ import {
   Video,
   Music,
   Sparkles,
+  Disc3,
   FileText,
   PartyPopper,
   BookOpen,
@@ -49,6 +50,12 @@ const BLOCK_TYPE_OPTIONS: BlockTypeOption[] = [
     label: 'Groove',
     icon: Sparkles,
     description: 'Full performance with YouTube sync',
+  },
+  {
+    type: 'groove-card',
+    label: 'Groove Card',
+    icon: Disc3,
+    description: 'Interactive 4-stem groove with key + tempo levers',
   },
   {
     type: 'text',

@@ -1,8 +1,14 @@
-import { Injectable, Logger, ConflictException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  ConflictException,
+} from '@nestjs/common';
 import { SupabaseService } from '../../infrastructure/supabase/supabase.service.js';
 import { CreateTutorialDto } from './dto/create-tutorial.dto.js';
 import { UpdateTutorialDto } from './dto/update-tutorial.dto.js';
 import { SaveTutorialWithExercisesDto } from './dto/save-tutorial-with-exercises.dto.js';
+import { validateGrooveCardBlocks } from './groove-card-block.schema.js';
 
 interface PaginationOptions {
   page: number;
@@ -289,7 +295,17 @@ export class AdminTutorialsService {
     }
 
     if ((updateTutorialDto as any).blocks !== undefined) {
-      updateData.blocks = (updateTutorialDto as any).blocks;
+      // LAUNCH-02.5c: Zod-validate groove-card blocks only; other block
+      // types pass through unvalidated (pre-existing behaviour).
+      try {
+        updateData.blocks = validateGrooveCardBlocks(
+          (updateTutorialDto as any).blocks,
+        );
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : 'invalid blocks payload';
+        throw new BadRequestException(message);
+      }
     }
 
     const { data, error } = await this.supabaseService
@@ -534,8 +550,16 @@ export class AdminTutorialsService {
         creator_channel_url: dto.creator_channel_url,
         creator_avatar_url: dto.creator_avatar_url,
         creator_subscriber_count: dto.creator_subscriber_count,
-        // Modular block system
-        blocks: dto.blocks || [],
+        // Modular block system — Zod-validate groove-card blocks here.
+        blocks: (() => {
+          try {
+            return validateGrooveCardBlocks(dto.blocks || []);
+          } catch (err) {
+            const message =
+              err instanceof Error ? err.message : 'invalid blocks payload';
+            throw new BadRequestException(message);
+          }
+        })(),
         // Act 1: Understand fields (legacy)
         understand_video_url: dto.understand_video_url,
         understand_video_library_id: dto.understand_video_library_id,

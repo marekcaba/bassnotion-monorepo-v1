@@ -1,0 +1,245 @@
+/**
+ * groove-card-block.schema — LAUNCH-02.5c tests.
+ *
+ * Covers the validator's contract:
+ *   - Valid config passes
+ *   - Non-groove-card blocks pass through untouched
+ *   - All 4 stem URLs must match the audio-samples bucket path pattern,
+ *     host-agnostic (staging URL and prod URL both pass)
+ *   - Exactly 5 key sets at offsets [-8, -4, 0, +4, +8]
+ *   - Exactly one isDefault
+ *   - BPM bounds [50, 180]
+ *   - lengthBars must be a positive integer
+ */
+
+import { describe, it, expect } from 'vitest';
+import {
+  grooveCardBlockConfigSchema,
+  grooveCardStemUrlSchema,
+  validateGrooveCardBlocks,
+} from '../groove-card-block.schema.js';
+import type { GrooveCardBlockConfig } from '@bassnotion/contracts';
+
+function validConfig(
+  overrides: Partial<GrooveCardBlockConfig> = {},
+): GrooveCardBlockConfig {
+  const stemBase =
+    'https://example.supabase.co/storage/v1/object/public/audio-samples';
+  const keys = ([-8, -4, 0, 4, 8] as const).map((offset) => ({
+    label: `K${offset}`,
+    semitoneOffset: offset,
+    isDefault: offset === 0,
+    stems: {
+      bass: `${stemBase}/funk/${offset}/bass.ogg`,
+      drums: `${stemBase}/funk/${offset}/drums.ogg`,
+      harmony: `${stemBase}/funk/${offset}/harmony.ogg`,
+      click: `${stemBase}/funk/${offset}/click.ogg`,
+    },
+  }));
+  return {
+    title: 'Greasy Pocket',
+    subtitle: 'Funk in E',
+    originalBpm: 104,
+    originalKey: 'E',
+    lengthBars: 4,
+    keys: keys as GrooveCardBlockConfig['keys'],
+    previewCaption: '',
+    stateCaptions: {},
+    allowBookmark: false,
+    ...overrides,
+  };
+}
+
+describe('grooveCardStemUrlSchema — bucket path pattern', () => {
+  it('accepts the staging Supabase URL host', () => {
+    const url =
+      'https://vraxryaaznpkvtkindpn.supabase.co/storage/v1/object/public/audio-samples/funk/bass.ogg';
+    expect(grooveCardStemUrlSchema.safeParse(url).success).toBe(true);
+  });
+
+  it('accepts the production Supabase URL host', () => {
+    const url =
+      'https://iuuplfrktnzsbzibpfjm.supabase.co/storage/v1/object/public/audio-samples/funk/bass.ogg';
+    expect(grooveCardStemUrlSchema.safeParse(url).success).toBe(true);
+  });
+
+  it('accepts a relative path that still matches the bucket pattern', () => {
+    const url = '/storage/v1/object/public/audio-samples/funk/bass.ogg';
+    expect(grooveCardStemUrlSchema.safeParse(url).success).toBe(true);
+  });
+
+  it('rejects a URL pointing at a different bucket', () => {
+    const url =
+      'https://example.supabase.co/storage/v1/object/public/wrong-bucket/funk/bass.ogg';
+    const result = grooveCardStemUrlSchema.safeParse(url);
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects an arbitrary external URL', () => {
+    const result = grooveCardStemUrlSchema.safeParse(
+      'https://random.example.com/song.mp3',
+    );
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects an empty string', () => {
+    const result = grooveCardStemUrlSchema.safeParse('');
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('grooveCardBlockConfigSchema', () => {
+  it('accepts a fully-valid config', () => {
+    const result = grooveCardBlockConfigSchema.safeParse(validConfig());
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects BPM below 50', () => {
+    const result = grooveCardBlockConfigSchema.safeParse(
+      validConfig({ originalBpm: 30 }),
+    );
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects BPM above 180', () => {
+    const result = grooveCardBlockConfigSchema.safeParse(
+      validConfig({ originalBpm: 300 }),
+    );
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects non-integer BPM', () => {
+    const result = grooveCardBlockConfigSchema.safeParse(
+      validConfig({ originalBpm: 104.5 }),
+    );
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects zero or negative lengthBars', () => {
+    expect(
+      grooveCardBlockConfigSchema.safeParse(validConfig({ lengthBars: 0 }))
+        .success,
+    ).toBe(false);
+    expect(
+      grooveCardBlockConfigSchema.safeParse(validConfig({ lengthBars: -1 }))
+        .success,
+    ).toBe(false);
+  });
+
+  it('rejects missing key set (only 4 supplied)', () => {
+    const base = validConfig();
+    const result = grooveCardBlockConfigSchema.safeParse({
+      ...base,
+      keys: base.keys.slice(0, 4) as any,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects two default key sets', () => {
+    const base = validConfig();
+    const keys = base.keys.map((k, i) => ({
+      ...k,
+      isDefault: i === 1 || i === 2, // 2 defaults
+    }));
+    const result = grooveCardBlockConfigSchema.safeParse({
+      ...base,
+      keys: keys as any,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects zero default key sets', () => {
+    const base = validConfig();
+    const keys = base.keys.map((k) => ({ ...k, isDefault: false }));
+    const result = grooveCardBlockConfigSchema.safeParse({
+      ...base,
+      keys: keys as any,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects wrong offset spacing (e.g. -10 instead of -8)', () => {
+    const base = validConfig();
+    const keys = base.keys.map((k, i) =>
+      i === 0 ? { ...k, semitoneOffset: -10 as any } : k,
+    );
+    const result = grooveCardBlockConfigSchema.safeParse({
+      ...base,
+      keys: keys as any,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects stem URLs from outside the audio-samples bucket', () => {
+    const base = validConfig();
+    const keys = base.keys.map((k, i) => {
+      if (i !== 0) return k;
+      return {
+        ...k,
+        stems: { ...k.stems, bass: 'https://random.example.com/bass.ogg' },
+      };
+    });
+    const result = grooveCardBlockConfigSchema.safeParse({
+      ...base,
+      keys: keys as any,
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('validateGrooveCardBlocks — top-level validator', () => {
+  it('passes through non-groove-card blocks untouched', () => {
+    const blocks = [
+      { id: 'a', type: 'video', title: 'Video', config: {}, order: 0 },
+      {
+        id: 'b',
+        type: 'text',
+        title: 'Text',
+        config: { content: 'hi' },
+        order: 1,
+      },
+    ];
+    expect(validateGrooveCardBlocks(blocks)).toBe(blocks);
+  });
+
+  it('accepts a valid groove-card block alongside other types', () => {
+    const grooveCard = {
+      id: 'gc-1',
+      type: 'groove-card',
+      title: 'Greasy Pocket',
+      config: validConfig(),
+      order: 1,
+    };
+    const blocks = [
+      { id: 'v-1', type: 'video', title: 'Video', config: {}, order: 0 },
+      grooveCard,
+    ];
+    expect(() => validateGrooveCardBlocks(blocks)).not.toThrow();
+  });
+
+  it('throws with a helpful message on invalid groove-card block', () => {
+    const grooveCard = {
+      id: 'gc-1',
+      type: 'groove-card',
+      title: 'Bad',
+      config: validConfig({ originalBpm: 9999 }),
+      order: 0,
+    };
+    expect(() => validateGrooveCardBlocks([grooveCard])).toThrow(
+      /index 0.*BPM/,
+    );
+  });
+
+  it('throws when blocks is not an array', () => {
+    expect(() => validateGrooveCardBlocks({} as unknown)).toThrow(
+      'blocks must be an array',
+    );
+  });
+
+  it('returns the same array reference when valid', () => {
+    const blocks = [
+      { id: 'a', type: 'video', title: 'V', config: {}, order: 0 },
+    ];
+    expect(validateGrooveCardBlocks(blocks)).toBe(blocks);
+  });
+});

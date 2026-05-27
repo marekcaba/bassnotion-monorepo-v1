@@ -5,6 +5,7 @@ import type { AnyBlock, BlockType } from '@bassnotion/contracts';
 import { VideoBlockView } from './VideoBlockView.js';
 import { ExerciseBlockView } from './ExerciseBlockView.js';
 import { GrooveBlockView } from './GrooveBlockView.js';
+import { GrooveCardBlockView } from './GrooveCardBlockView.js';
 import { TextBlockView } from './TextBlockView.js';
 import { CelebrationBlockView } from './CelebrationBlockView.js';
 import { ExplainBlockView } from './ExplainBlockView.js';
@@ -13,6 +14,7 @@ const BLOCK_COMPONENTS: Record<BlockType, React.ComponentType<any>> = {
   video: VideoBlockView,
   exercise: ExerciseBlockView,
   groove: GrooveBlockView,
+  'groove-card': GrooveCardBlockView,
   text: TextBlockView,
   celebration: CelebrationBlockView,
   explain: ExplainBlockView,

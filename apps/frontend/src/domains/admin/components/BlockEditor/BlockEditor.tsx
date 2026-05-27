@@ -31,6 +31,7 @@ import { BlockTypeSelector } from './BlockTypeSelector.js';
 import { VideoBlockForm } from './configs/VideoBlockForm.js';
 import { ExerciseBlockForm } from './configs/ExerciseBlockForm.js';
 import { GrooveBlockForm } from './configs/GrooveBlockForm.js';
+import { GrooveCardBlockForm } from './configs/GrooveCardBlockForm.js';
 import { TextBlockForm } from './configs/TextBlockForm.js';
 import { CelebrationBlockForm } from './configs/CelebrationBlockForm.js';
 import { ExplainBlockForm } from './configs/ExplainBlockForm.js';
@@ -99,6 +100,55 @@ function createDefaultBlock(type: BlockType, order: number): AnyBlock {
       order,
       showInIsland: true,
       config: { requiresPreviousCompletion: true },
+    }),
+    'groove-card': () => ({
+      id,
+      type: 'groove-card' as const,
+      title: 'Groove Card',
+      order,
+      showInIsland: true,
+      config: {
+        title: 'New Groove',
+        subtitle: '',
+        originalBpm: 100,
+        originalKey: 'E',
+        lengthBars: 4,
+        keys: [
+          {
+            label: '',
+            semitoneOffset: -8 as const,
+            isDefault: false,
+            stems: { bass: '', drums: '', harmony: '', click: '' },
+          },
+          {
+            label: '',
+            semitoneOffset: -4 as const,
+            isDefault: false,
+            stems: { bass: '', drums: '', harmony: '', click: '' },
+          },
+          {
+            label: 'E',
+            semitoneOffset: 0 as const,
+            isDefault: true,
+            stems: { bass: '', drums: '', harmony: '', click: '' },
+          },
+          {
+            label: '',
+            semitoneOffset: 4 as const,
+            isDefault: false,
+            stems: { bass: '', drums: '', harmony: '', click: '' },
+          },
+          {
+            label: '',
+            semitoneOffset: 8 as const,
+            isDefault: false,
+            stems: { bass: '', drums: '', harmony: '', click: '' },
+          },
+        ],
+        previewCaption: '',
+        stateCaptions: {},
+        allowBookmark: false,
+      },
     }),
     text: () => ({
       id,
@@ -394,6 +444,12 @@ const EditingPanel = React.memo(function EditingPanel({
         <GrooveBlockForm
           config={block.config}
           exercises={exercises}
+          onChange={handleConfigChange}
+        />
+      )}
+      {block.type === 'groove-card' && (
+        <GrooveCardBlockForm
+          config={block.config}
           onChange={handleConfigChange}
         />
       )}

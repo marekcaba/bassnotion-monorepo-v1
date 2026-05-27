@@ -494,12 +494,25 @@ export type {
   VideoBlock,
   ExerciseBlock,
   GrooveBlock,
+  GrooveCardBlock,
+  GrooveCardBlockConfig,
+  GrooveCardKeySet,
+  GrooveCardStemSet,
+  GrooveCardStateCaptions,
   TextBlock,
   CelebrationBlock,
   ExplainBlock,
   AnyBlock,
   BlockProgress,
 } from './block.js';
+
+// Billing / entitlement types (LAUNCH-02.5c stub; LAUNCH-02 populates caps)
+export type {
+  EntitlementTier,
+  LeverCap,
+  LeverCaps,
+  EntitlementResponse,
+} from './billing.js';
 
 // Pattern Library types (drum pattern library feature)
 export type {
