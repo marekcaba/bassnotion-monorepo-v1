@@ -98,7 +98,7 @@ export interface UseTrackMigrationReturn {
 export function useTrackMigration(
   options: UseTrackMigrationOptions,
 ): UseTrackMigrationReturn {
-  const { widgetId, trackType = 'instrument', debug = false } = options;
+  const { widgetId, trackType = 'unknown', debug = false } = options;
 
   // Use the modern useTrack hook
   const trackData = useTrack({

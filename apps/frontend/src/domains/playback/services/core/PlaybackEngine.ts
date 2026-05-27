@@ -61,6 +61,10 @@ import { lifecycle } from '../../utils/InitializationLifecycleLogger.js';
 import { Mixer } from '../../modules/tracks/mixing/Mixer.js';
 import { musicalTruth } from '../../modules/tempo/MusicalTruthAuthority.js';
 import { getAtomicPlaybackClock } from './AtomicPlaybackClock.js';
+import type {
+  MidiInstrumentType,
+  AudioInstrumentType,
+} from '../../modules/tracks/management/TrackManagerProcessor.js';
 
 // Debug flag - enable in browser console: window.__DEBUG_PLAYBACK_ENGINE = true
 const isPlaybackDebugEnabled = (): boolean => {
@@ -2321,7 +2325,7 @@ export class PlaybackEngine {
    * When creating a new node, any previously stored volume/mute state is applied.
    */
   getOrCreateInstrumentGainNode(
-    instrumentType: 'metronome' | 'drums' | 'bass' | 'harmony',
+    instrumentType: MidiInstrumentType | AudioInstrumentType,
   ): GainNode | null {
     if (!this.audioContext) {
       this.logger.debug('Cannot create instrument gain node: no audio context');
@@ -2370,7 +2374,7 @@ export class PlaybackEngine {
    * The volume will be applied when the gain node is created.
    */
   setInstrumentVolume(
-    instrumentType: 'metronome' | 'drums' | 'bass' | 'harmony',
+    instrumentType: MidiInstrumentType | AudioInstrumentType,
     volume: number,
   ): void {
     // Always store the intended volume level first (before mute consideration)
@@ -2407,7 +2411,7 @@ export class PlaybackEngine {
    * The mute state will be applied when the gain node is created.
    */
   setInstrumentMuted(
-    instrumentType: 'metronome' | 'drums' | 'bass' | 'harmony',
+    instrumentType: MidiInstrumentType | AudioInstrumentType,
     muted: boolean,
   ): void {
     // Always store the mute state first
@@ -2441,7 +2445,7 @@ export class PlaybackEngine {
    * Get the current mute state for an instrument
    */
   isInstrumentMuted(
-    instrumentType: 'metronome' | 'drums' | 'bass' | 'harmony',
+    instrumentType: MidiInstrumentType | AudioInstrumentType,
   ): boolean {
     return this.instrumentMuteStates.get(instrumentType) ?? false;
   }
@@ -2450,7 +2454,7 @@ export class PlaybackEngine {
    * Get the current volume level for an instrument (0-1 range)
    */
   getInstrumentVolume(
-    instrumentType: 'metronome' | 'drums' | 'bass' | 'harmony',
+    instrumentType: MidiInstrumentType | AudioInstrumentType,
   ): number {
     return this.instrumentVolumeLevels.get(instrumentType) ?? 0.8;
   }

@@ -9,7 +9,7 @@ import { devtools } from 'zustand/middleware';
 import { TrackId } from '../value-objects/index.js';
 import { TrackEntity } from '../entities/index.js';
 import { createTrackRepository } from './index.js';
-import type { InstrumentType } from '../../services/plugins/TrackManagerProcessor.js';
+import type { InstrumentType } from '../../modules/tracks/management/TrackManagerProcessor.js';
 
 export interface TrackRepositoryState {
   // State

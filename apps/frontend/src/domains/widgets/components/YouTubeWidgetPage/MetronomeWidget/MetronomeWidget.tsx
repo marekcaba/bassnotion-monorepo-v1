@@ -71,7 +71,7 @@ const MetronomeWidgetComponent = ({
   const track = useTrack({
     trackId: 'metronome-widget-track',
     name: 'Metronome',
-    type: 'utility',
+    type: 'metronome',
     debugMode: false,
   });
   const trackIsReady = track.isReady;

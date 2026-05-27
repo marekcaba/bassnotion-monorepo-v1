@@ -182,13 +182,22 @@ export function createInstrumentAdapter(
     ...config,
   };
 
-  // Map instrument types to their trigger methods
+  // Map instrument types to their trigger methods.
+  // Audio stems don't go through MIDI trigger methods (they're buffer playback
+  // via AudioPlayerScheduler in 02.5b), but the map must be exhaustive over
+  // the canonical InstrumentType union.
   const triggerMethodMap: Record<InstrumentType, string> = {
     bass: 'triggerNote',
     drums: 'triggerDrum',
     metronome: 'triggerClick',
     chords: 'triggerChord',
+    harmony: 'triggerNote',
     melody: 'triggerNote',
+    'voice-cue': 'trigger',
+    'audio-bass': 'triggerAudioStem',
+    'audio-drums': 'triggerAudioStem',
+    'audio-harmony': 'triggerAudioStem',
+    'audio-click': 'triggerAudioStem',
     unknown: 'trigger',
   };
 

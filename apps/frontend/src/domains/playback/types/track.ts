@@ -1,4 +1,6 @@
 import type { InstrumentType } from '../modules/tracks/management/TrackManagerProcessor.js';
+
+export type { InstrumentType };
 import type { AudioPlugin, PluginConfig } from './plugin.js';
 import type { Pattern } from './pattern.js';
 import type { TimeSignature, MusicalPosition } from './timing.js';

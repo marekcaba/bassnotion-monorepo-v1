@@ -20,16 +20,9 @@ import {
   type PerNoteVelocityRanges,
 } from './scheduling/VelocityLayerSelector.js';
 import { midiToNoteName } from '../../utils/midiUtils.js';
+import type { InstrumentType } from '../../modules/tracks/management/TrackManagerProcessor.js';
 
-/**
- * Instrument types supported by the scheduler
- */
-export type InstrumentType =
-  | 'metronome'
-  | 'drums'
-  | 'harmony'
-  | 'bass'
-  | 'voiceCue';
+export type { InstrumentType };
 
 /**
  * Audio source tracking type
@@ -130,9 +123,9 @@ export const INSTRUMENT_CONFIGS: Record<InstrumentType, InstrumentConfig> = {
     preserveAttackEnvelope: true,
     baseVolume: 0.8,
   },
-  voiceCue: {
+  'voice-cue': {
     loggerName: 'VoiceCueScheduler',
-    type: 'voiceCue',
+    type: 'voice-cue',
     eventTypeToBufferKey: {
       one: 'one',
       two: 'two',
@@ -141,6 +134,47 @@ export const INSTRUMENT_CONFIGS: Record<InstrumentType, InstrumentConfig> = {
       and: 'and',
     },
     baseVolume: 0.8,
+  },
+  // The remaining MIDI instrument types are listed for exhaustiveness over the
+  // canonical InstrumentType union. They aren't wired to scheduling paths yet —
+  // 'chords' and 'melody' are MIDI labels detected by track classification but
+  // not routed to a dedicated scheduler today; they fall back to harmony/bass.
+  chords: {
+    loggerName: 'ChordsScheduler (stub — unused)',
+    type: 'chords',
+    baseVolume: 0.8,
+  },
+  melody: {
+    loggerName: 'MelodyScheduler (stub — unused)',
+    type: 'melody',
+    baseVolume: 0.8,
+  },
+  unknown: {
+    loggerName: 'UnknownScheduler (stub — unused)',
+    type: 'unknown',
+    baseVolume: 0.8,
+  },
+  // Audio stems — playback handled by AudioPlayerScheduler (LAUNCH-02.5b),
+  // not this scheduler. Entries exist so Record<InstrumentType, …> is exhaustive.
+  'audio-bass': {
+    loggerName: 'AudioBassScheduler (stub — wire in 02.5b)',
+    type: 'audio-bass',
+    baseVolume: 1.0,
+  },
+  'audio-drums': {
+    loggerName: 'AudioDrumsScheduler (stub — wire in 02.5b)',
+    type: 'audio-drums',
+    baseVolume: 1.0,
+  },
+  'audio-harmony': {
+    loggerName: 'AudioHarmonyScheduler (stub — wire in 02.5b)',
+    type: 'audio-harmony',
+    baseVolume: 1.0,
+  },
+  'audio-click': {
+    loggerName: 'AudioClickScheduler (stub — wire in 02.5b)',
+    type: 'audio-click',
+    baseVolume: 1.0,
   },
 };
 
@@ -372,7 +406,8 @@ export class Scheduler {
       return false;
     }
 
-    let { duration = 0.5, velocity = 64, midiNote, noteName } = options ?? {};
+    const { duration = 0.5, velocity = 64, midiNote } = options ?? {};
+    let { noteName } = options ?? {};
 
     // Apply octave shift for non-Grand Piano instruments
     const harmonyConfig = INSTRUMENT_CONFIGS.harmony;

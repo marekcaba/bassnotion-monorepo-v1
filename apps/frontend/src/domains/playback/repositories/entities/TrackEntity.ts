@@ -6,7 +6,7 @@
  */
 
 import { TrackId, Volume, Pan } from '../value-objects/index.js';
-import type { InstrumentType } from '../../services/plugins/TrackManagerProcessor.js';
+import type { InstrumentType } from '../../modules/tracks/management/TrackManagerProcessor.js';
 import { TrackState } from '../../types/track.js';
 
 export interface TrackEntityProps {

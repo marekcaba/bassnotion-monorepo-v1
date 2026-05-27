@@ -76,14 +76,29 @@ export interface TrackAutomation {
   effects: Map<string, AutomationCurve[]>;
 }
 
-export type InstrumentType =
+// Canonical instrument type union for the playback engine.
+// MIDI side: existing trigger-based instruments.
+// Audio side: audio-stem players added in LAUNCH-02.5 (Groove Card).
+export type MidiInstrumentType =
   | 'metronome'
   | 'drums'
   | 'bass'
   | 'chords'
+  | 'harmony'
   | 'melody'
-  | 'voice-cue'
+  | 'voice-cue';
+
+export type AudioInstrumentType =
+  | 'audio-bass'
+  | 'audio-drums'
+  | 'audio-harmony'
+  | 'audio-click';
+
+export type InstrumentType =
+  | MidiInstrumentType
+  | AudioInstrumentType
   | 'unknown';
+
 export type RawMidiTrack = any; // From MidiParserProcessor
 export type InstrumentProcessor = any; // Base processor interface
 
@@ -289,6 +304,7 @@ export class TrackNameAnalysisAlgorithm implements TrackIdentificationAlgorithm 
       /organ/i,
       /synth/i,
     ],
+    harmony: [],
     melody: [
       /melody/i,
       /lead/i,
@@ -300,6 +316,14 @@ export class TrackNameAnalysisAlgorithm implements TrackIdentificationAlgorithm 
       /theme/i,
     ],
     metronome: [/metro/i, /click/i, /count/i, /tempo/i],
+    'voice-cue': [],
+    // Audio stems are registered by ID, never name-classified from MIDI text.
+    // Empty arrays (not regexes) prevent MIDI tracks named "bass" from being
+    // misrouted into audio-bass.
+    'audio-bass': [],
+    'audio-drums': [],
+    'audio-harmony': [],
+    'audio-click': [],
     unknown: [],
   };
 
