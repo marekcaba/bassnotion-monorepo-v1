@@ -160,48 +160,83 @@ export class AdminTutorialsService {
   }
 
   async create(createTutorialDto: CreateTutorialDto & { created_by: string }) {
-    // Generate slug from title
-    const slug = createTutorialDto.title
+    // Generate slug from title, then retry with a numeric suffix on
+    // unique-constraint collisions. PG 23505 is the canonical "duplicate
+    // key" error code from Supabase / Postgres.
+    const baseSlug = createTutorialDto.title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
+    const safeBaseSlug = baseSlug.length > 0 ? baseSlug : 'untitled-tutorial';
 
     const now = new Date().toISOString();
+    const maxAttempts = 8;
 
-    const { data, error } = await this.supabaseService
-      .getClient()
-      .from('tutorials')
-      .insert({
-        title: createTutorialDto.title,
-        slug: slug,
-        description: createTutorialDto.description,
-        youtube_id: createTutorialDto.youtube_id || '',
-        youtube_url: createTutorialDto.youtube_id
-          ? `https://www.youtube.com/watch?v=${createTutorialDto.youtube_id}`
-          : null,
-        duration: createTutorialDto.duration || 0,
-        author_name: createTutorialDto.author_name,
-        // Note: thumbnail_url column doesn't exist - thumbnails are generated from YouTube ID
-        level: createTutorialDto.difficulty, // Map difficulty to level
-        category: createTutorialDto.category,
-        tags: createTutorialDto.tags || [],
-        is_active: createTutorialDto.is_active ?? true,
-        created_by: createTutorialDto.created_by,
-        status: 'draft', // Default status for new tutorials
-        created_at: now,
-        updated_at: now,
-        last_modified: now,
-        auto_save_version: 0,
-      })
-      .select()
-      .single();
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      // First attempt uses the bare slug; subsequent attempts append a
+      // -2, -3, … suffix until the insert succeeds.
+      const slug =
+        attempt === 0 ? safeBaseSlug : `${safeBaseSlug}-${attempt + 1}`;
 
-    if (error) {
-      this.logger.error('Failed to create tutorial', error);
-      throw new Error('Failed to create tutorial');
+      const { data, error } = await this.supabaseService
+        .getClient()
+        .from('tutorials')
+        .insert({
+          title: createTutorialDto.title,
+          slug,
+          description: createTutorialDto.description,
+          youtube_id: createTutorialDto.youtube_id || '',
+          youtube_url: createTutorialDto.youtube_id
+            ? `https://www.youtube.com/watch?v=${createTutorialDto.youtube_id}`
+            : null,
+          duration: createTutorialDto.duration || 0,
+          author_name: createTutorialDto.author_name,
+          // Note: thumbnail_url column doesn't exist - thumbnails are generated from YouTube ID
+          level: createTutorialDto.difficulty, // Map difficulty to level
+          category: createTutorialDto.category,
+          tags: createTutorialDto.tags || [],
+          is_active: createTutorialDto.is_active ?? true,
+          created_by: createTutorialDto.created_by,
+          status: 'draft', // Default status for new tutorials
+          created_at: now,
+          updated_at: now,
+          last_modified: now,
+          auto_save_version: 0,
+        })
+        .select()
+        .single();
+
+      if (!error) {
+        return data;
+      }
+
+      // PG 23505 = unique_violation. Only retry on slug collisions;
+      // anything else is a real failure.
+      const isUniqueSlugViolation =
+        (error as { code?: string }).code === '23505' &&
+        typeof (error as { details?: string }).details === 'string' &&
+        (error as { details?: string }).details!.includes('slug');
+
+      if (!isUniqueSlugViolation) {
+        this.logger.error('Failed to create tutorial', error);
+        throw new Error('Failed to create tutorial');
+      }
+
+      this.logger.warn(
+        `Tutorial slug "${slug}" already exists; retrying with suffix`,
+        { attempt: attempt + 1 },
+      );
     }
 
-    return data;
+    // Exhausted all retries. Surface the original error type so the
+    // controller's exception filter can translate to a 409.
+    this.logger.error(
+      `Failed to create tutorial: slug collision unresolved after ${maxAttempts} attempts`,
+      { baseSlug: safeBaseSlug },
+    );
+    throw new ConflictException(
+      `Tutorial slug "${safeBaseSlug}" already exists; please pick a different title.`,
+    );
   }
 
   async update(id: string, updateTutorialDto: UpdateTutorialDto) {
