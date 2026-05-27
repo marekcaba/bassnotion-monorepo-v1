@@ -53,6 +53,10 @@ interface BlockEditorProps {
   onBlocksChange: (blocks: AnyBlock[]) => void;
   /** Available tutorials for "Next tutorial" CTA in celebration blocks */
   tutorials?: Array<{ slug: string; title: string }>;
+  /** Current tutorial's slug. Used by groove-card stem uploads to
+   * compose the bucket storage path:
+   *   audio-samples/grooves/{tutorialSlug}/{keyFolder}/{stem}.ogg */
+  tutorialSlug?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -195,6 +199,7 @@ export function BlockEditor({
   exercises,
   onBlocksChange,
   tutorials,
+  tutorialSlug,
 }: BlockEditorProps) {
   const [showTypeSelector, setShowTypeSelector] = useState(false);
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
@@ -344,6 +349,7 @@ export function BlockEditor({
           block={editingBlock}
           exercises={exercises}
           tutorials={tutorials}
+          tutorialSlug={tutorialSlug}
           onUpdate={handleUpdateBlock}
           onClose={handleCloseEdit}
         />
@@ -360,6 +366,7 @@ interface EditingPanelProps {
   block: AnyBlock;
   exercises: BlockEditorProps['exercises'];
   tutorials?: BlockEditorProps['tutorials'];
+  tutorialSlug?: BlockEditorProps['tutorialSlug'];
   onUpdate: (blockId: string, updates: Partial<AnyBlock>) => void;
   onClose: () => void;
 }
@@ -368,6 +375,7 @@ const EditingPanel = React.memo(function EditingPanel({
   block,
   exercises,
   tutorials,
+  tutorialSlug,
   onUpdate,
   onClose,
 }: EditingPanelProps) {
@@ -453,6 +461,7 @@ const EditingPanel = React.memo(function EditingPanel({
         <GrooveCardBlockForm
           config={block.config}
           onChange={handleConfigChange}
+          tutorialSlug={tutorialSlug}
         />
       )}
       {block.type === 'text' && (

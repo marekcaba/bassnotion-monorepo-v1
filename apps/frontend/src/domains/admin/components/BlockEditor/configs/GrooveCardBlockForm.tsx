@@ -20,10 +20,17 @@ import type {
   GrooveCardBlockConfig,
   GrooveCardKeySet,
 } from '@bassnotion/contracts';
+import { StemUploadButton } from './groove-card/StemUploadButton';
 
 interface GrooveCardBlockFormProps {
   config: GrooveCardBlockConfig;
   onChange: (config: GrooveCardBlockConfig) => void;
+  /** Current tutorial's slug; used to build storage paths for stem
+   * uploads (`audio-samples/grooves/{tutorialSlug}/{keyFolder}/{stem}.ogg`).
+   * If absent (e.g. on a brand-new unsaved tutorial that hasn't
+   * received its slug yet), the upload button degrades to a `disabled`
+   * state with a hint. */
+  tutorialSlug?: string;
 }
 
 const STEM_SLOTS = ['bass', 'drums', 'harmony', 'click'] as const;
@@ -31,6 +38,7 @@ const STEM_SLOTS = ['bass', 'drums', 'harmony', 'click'] as const;
 export function GrooveCardBlockForm({
   config,
   onChange,
+  tutorialSlug,
 }: GrooveCardBlockFormProps) {
   const updateField = useCallback(
     <K extends keyof GrooveCardBlockConfig>(
@@ -177,13 +185,24 @@ export function GrooveCardBlockForm({
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
               {STEM_SLOTS.map((stem) => (
-                <input
+                <StemUploadButton
                   key={stem}
-                  type="text"
                   value={keySet.stems[stem]}
-                  onChange={(e) => updateStem(keyIndex, stem, e.target.value)}
-                  placeholder={`${stem} URL`}
-                  className="px-2 py-1.5 rounded-md bg-white/5 border border-white/10 text-white text-xs"
+                  onChange={(url) => updateStem(keyIndex, stem, url)}
+                  stemLabel={stem}
+                  uploadContext={{
+                    tutorialSlug: tutorialSlug ?? 'unsaved',
+                    // Prefer the label the admin typed; fall back to
+                    // the signed offset so paths remain predictable
+                    // even before the row has a key letter.
+                    keyFolder:
+                      keySet.label.trim().length > 0
+                        ? keySet.label
+                        : keySet.semitoneOffset >= 0
+                          ? `+${keySet.semitoneOffset}`
+                          : `${keySet.semitoneOffset}`,
+                    stem,
+                  }}
                 />
               ))}
             </div>

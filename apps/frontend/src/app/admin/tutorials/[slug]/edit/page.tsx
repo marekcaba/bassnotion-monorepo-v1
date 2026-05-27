@@ -1755,6 +1755,7 @@ function AdminTutorialEditPageContent({ params }: AdminTutorialPageProps) {
                         difficulty: ex.difficulty,
                       }))}
                       tutorials={allTutorials}
+                      tutorialSlug={tutorialSlug}
                       onBlocksChange={(updated) => {
                         setBlocks(updated);
                         setHasChanges(true);
