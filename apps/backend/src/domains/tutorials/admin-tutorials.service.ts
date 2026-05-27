@@ -557,15 +557,31 @@ export class AdminTutorialsService {
       // Step 1: Update tutorial (tutorial ID always exists from frontend)
       const now = new Date().toISOString();
 
-      // Generate slug from title to keep them in sync
-      const slug = dto.title
+      // Generate slug from title to keep them in sync. Same slug
+      // collision strategy as create(): retry with -2, -3, … suffix
+      // when another row already holds the bare slug. The tutorial we
+      // are updating is keyed by `id`, so the collision is ALWAYS with
+      // a different row.
+      const baseSlugRaw = dto.title
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '');
+      const baseSlug =
+        baseSlugRaw.length > 0 ? baseSlugRaw : 'untitled-tutorial';
 
-      const tutorialUpdateData: any = {
+      // Pre-validate the blocks once outside the retry loop — block
+      // shape doesn't change between attempts.
+      let validatedBlocks: unknown[];
+      try {
+        validatedBlocks = validateGrooveCardBlocks(dto.blocks || []);
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : 'invalid blocks payload';
+        throw new BadRequestException(message);
+      }
+
+      const baseUpdate: any = {
         title: dto.title,
-        slug: slug,
         description: dto.description,
         youtube_id: dto.youtube_id,
         youtube_url: dto.youtube_id
@@ -585,16 +601,9 @@ export class AdminTutorialsService {
         creator_channel_url: dto.creator_channel_url,
         creator_avatar_url: dto.creator_avatar_url,
         creator_subscriber_count: dto.creator_subscriber_count,
-        // Modular block system — Zod-validate groove-card blocks here.
-        blocks: (() => {
-          try {
-            return validateGrooveCardBlocks(dto.blocks || []);
-          } catch (err) {
-            const message =
-              err instanceof Error ? err.message : 'invalid blocks payload';
-            throw new BadRequestException(message);
-          }
-        })(),
+        // Modular block system — pre-validated above so each retry
+        // attempt re-uses the same already-validated payload.
+        blocks: validatedBlocks,
         // Act 1: Understand fields (legacy)
         understand_video_url: dto.understand_video_url,
         understand_video_library_id: dto.understand_video_library_id,
@@ -606,31 +615,58 @@ export class AdminTutorialsService {
         last_modified: now,
       };
 
-      const { data: tutorialData, error: tutorialError } = await client
-        .from('tutorials')
-        .update(tutorialUpdateData)
-        .eq('id', dto.id)
-        .select()
-        .single();
+      const maxSlugAttempts = 8;
+      let tutorialData: unknown = null;
+      let lastTutorialError: {
+        code?: string;
+        message?: string;
+        details?: string;
+      } | null = null;
 
-      if (tutorialError) {
-        this.logger.error(
-          'Failed to update tutorial in batch save',
-          tutorialError,
-        );
+      for (let attempt = 0; attempt < maxSlugAttempts; attempt++) {
+        const slug = attempt === 0 ? baseSlug : `${baseSlug}-${attempt + 1}`;
 
-        // Check for duplicate slug constraint violation (PostgreSQL error code 23505)
-        if (
-          tutorialError.code === '23505' &&
-          tutorialError.message?.includes('tutorials_slug_key')
-        ) {
-          throw new ConflictException(
-            `A tutorial with the slug "${slug}" already exists. Please use a different title or slug.`,
-          );
+        const { data, error } = await client
+          .from('tutorials')
+          .update({ ...baseUpdate, slug })
+          .eq('id', dto.id)
+          .select()
+          .single();
+
+        if (!error) {
+          tutorialData = data;
+          lastTutorialError = null;
+          break;
         }
 
-        // Generic database error
-        throw new Error(`Failed to update tutorial: ${tutorialError.message}`);
+        const isSlugCollision =
+          error.code === '23505' &&
+          (error.message?.includes('tutorials_slug_key') ||
+            (typeof (error as { details?: string }).details === 'string' &&
+              (error as { details?: string }).details!.includes('slug')));
+
+        if (!isSlugCollision) {
+          // Non-slug failure: bail immediately, like the original code.
+          this.logger.error('Failed to update tutorial in batch save', error);
+          throw new Error(`Failed to update tutorial: ${error.message}`);
+        }
+
+        this.logger.warn(
+          `Tutorial slug "${slug}" collides on update; retrying with suffix`,
+          { attempt: attempt + 1, tutorialId: dto.id },
+        );
+        lastTutorialError = error as { code?: string; message?: string };
+      }
+
+      if (!tutorialData) {
+        // Exhausted retries.
+        this.logger.error(
+          'Failed to update tutorial in batch save: slug collision unresolved',
+          { baseSlug, lastTutorialError },
+        );
+        throw new ConflictException(
+          `A tutorial with the slug "${baseSlug}" already exists. Please use a different title or slug.`,
+        );
       }
 
       // Step 2: Process exercises - separate creates and updates
