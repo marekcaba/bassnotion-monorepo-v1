@@ -329,6 +329,25 @@ export function WaitlistClient({
           transition: 'opacity 1200ms cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       />
+      {/* Texture overlay (leather). Sits above the radials and below the
+          noise so the grain still reads on top. Values come from
+          DEFAULT_BACKGROUND; tuner overrides them in dev. */}
+      <div
+        aria-hidden="true"
+        className="fixed inset-0 pointer-events-none z-0"
+        style={{
+          backgroundImage: `url("${bgConfig.texture.url}")`,
+          backgroundSize:
+            bgConfig.texture.tileSize === 0
+              ? 'cover'
+              : `${bgConfig.texture.tileSize}px`,
+          backgroundRepeat:
+            bgConfig.texture.tileSize === 0 ? 'no-repeat' : 'repeat',
+          mixBlendMode: bgConfig.texture.blendMode,
+          opacity: bgConfig.texture.opacity * (bgVisible ? 1 : 0),
+          transition: 'opacity 1200ms cubic-bezier(0.16, 1, 0.3, 1)',
+        }}
+      />
       <div
         aria-hidden="true"
         className="fixed inset-0 pointer-events-none z-0"
@@ -340,9 +359,9 @@ export function WaitlistClient({
         }}
       />
 
-      {/* Dev-only background tuner — gated by NEXT_PUBLIC_VERCEL_ENV
-          Temporarily disabled to view the page without the panel. To
-          re-enable, restore the conditional below.
+      {/* Dev-only background tuner — commented out now that the leather
+          texture values are baked into DEFAULT_BACKGROUND. Restore the
+          conditional below to tweak the bg again.
       {isDevBuild ? (
         <BackgroundTuner config={bgConfig} onChange={setBgConfig} />
       ) : null}

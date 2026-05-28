@@ -23,11 +23,26 @@ export interface RadialLayer {
   fadeEnd: number; // % of the radial where it fades to transparent
 }
 
+export type TextureBlendMode =
+  | 'normal'
+  | 'overlay'
+  | 'soft-light'
+  | 'multiply'
+  | 'screen';
+
+export interface TextureLayer {
+  url: string; // public path, e.g. /textures/leather.jpg
+  opacity: number; // 0–1
+  blendMode: TextureBlendMode;
+  tileSize: number; // px — width of one repeat (0 = no tiling, cover)
+}
+
 export interface BackgroundConfig {
   baseColor: string;
   radial1: RadialLayer;
   radial2: RadialLayer;
   noiseOpacity: number; // 0–0.2
+  texture: TextureLayer;
 }
 
 export const DEFAULT_BACKGROUND: BackgroundConfig = {
@@ -51,6 +66,12 @@ export const DEFAULT_BACKGROUND: BackgroundConfig = {
     fadeEnd: 52,
   },
   noiseOpacity: 0.02,
+  texture: {
+    url: '/textures/leather2.webp',
+    opacity: 0.09,
+    blendMode: 'screen',
+    tileSize: 1776,
+  },
 };
 
 /** Turns a {color, opacity, w, h, x, y, fadeEnd} block into a CSS radial-gradient(...). */
@@ -270,6 +291,78 @@ export function BackgroundTuner({ config, onChange }: Props) {
           />
         </Section>
 
+        {/* Texture */}
+        <Section title="Texture overlay">
+          <div className="flex items-center gap-2">
+            <label className="w-20 text-white/60">image</label>
+            <input
+              type="text"
+              value={config.texture.url}
+              onChange={(e) =>
+                onChange({
+                  ...config,
+                  texture: { ...config.texture, url: e.target.value },
+                })
+              }
+              className="flex-1 bg-white/5 border border-white/10 rounded px-1.5 py-0.5 text-white font-mono"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="w-20 text-white/60">blend</label>
+            <select
+              value={config.texture.blendMode}
+              onChange={(e) =>
+                onChange({
+                  ...config,
+                  texture: {
+                    ...config.texture,
+                    blendMode: e.target.value as TextureBlendMode,
+                  },
+                })
+              }
+              className="flex-1 bg-white/5 border border-white/10 rounded px-1.5 py-0.5 text-white font-mono"
+            >
+              <option value="normal">normal</option>
+              <option value="overlay">overlay</option>
+              <option value="soft-light">soft-light</option>
+              <option value="multiply">multiply</option>
+              <option value="screen">screen</option>
+            </select>
+          </div>
+          <SliderRow
+            label="opacity"
+            min={0}
+            max={1}
+            step={0.01}
+            value={config.texture.opacity}
+            onChange={(v) =>
+              onChange({
+                ...config,
+                texture: { ...config.texture, opacity: v },
+              })
+            }
+            display={config.texture.opacity.toFixed(2)}
+          />
+          <SliderRow
+            label="tile"
+            min={0}
+            max={2048}
+            step={16}
+            value={config.texture.tileSize}
+            onChange={(v) =>
+              onChange({
+                ...config,
+                texture: { ...config.texture, tileSize: v },
+              })
+            }
+            display={
+              config.texture.tileSize === 0
+                ? 'cover'
+                : `${config.texture.tileSize}px`
+            }
+          />
+        </Section>
+
         {/* Noise */}
         <Section title="Noise overlay">
           <SliderRow
@@ -450,7 +543,9 @@ function RadialControls({
 }
 
 function buildSnippet(c: BackgroundConfig): string {
-  return `// In WaitlistClient.tsx, replace the bg-[#...] class + the radial style + the noise opacity.
+  const tileCss =
+    c.texture.tileSize === 0 ? 'cover' : `${c.texture.tileSize}px`;
+  return `// In WaitlistClient.tsx, replace the bg-[#...] class + the radial style + the noise opacity + the texture layer.
 
 // Base color (className):
 bg-[${c.baseColor}]
@@ -459,7 +554,14 @@ bg-[${c.baseColor}]
 background:
   '${backgroundToCss(c)}',
 
-// Noise overlay opacity (className):
-opacity-[${c.noiseOpacity.toFixed(3)}]
+// Noise overlay opacity:
+opacity: ${c.noiseOpacity.toFixed(3)}
+
+// Texture overlay (style on the texture <div>):
+backgroundImage: 'url("${c.texture.url}")',
+backgroundSize: '${tileCss}',
+backgroundRepeat: '${c.texture.tileSize === 0 ? 'no-repeat' : 'repeat'}',
+mixBlendMode: '${c.texture.blendMode}',
+opacity: ${c.texture.opacity.toFixed(2)},
 `;
 }
