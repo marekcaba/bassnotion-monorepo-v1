@@ -448,8 +448,15 @@ export function GrooveCardWaveform({
       if (bar == null) return;
       e.preventDefault();
       e.currentTarget.setPointerCapture?.(e.pointerId);
+      // Record the anchor but do NOT set dragSelection yet. The bracket
+      // continues to render the existing committed loopSelection. Only when
+      // the pointer actually moves to a DIFFERENT bar do we promote the
+      // gesture from "click" to "drag" and show a preview rectangle.
+      // Without this lazy promotion, a single click on an already-looped
+      // region would flash a one-bar preview at the click point before
+      // pointerup's toggle-off fires — the "extra middle step" the user
+      // reported.
       dragAnchorRef.current = bar;
-      setDragSelection({ startBar: bar, endBar: bar });
     },
     [selectionEnabled, barFromClientX, onLoopSelectionChange],
   );
@@ -460,6 +467,11 @@ export function GrooveCardWaveform({
       const bar = barFromClientX(e.clientX);
       if (bar == null) return;
       const anchor = dragAnchorRef.current;
+      // First-move promotion: if the pointer moved to a different bar we
+      // commit to a drag gesture and start rendering the preview. If we're
+      // still on the anchor bar (just sub-pixel jitter), keep dragSelection
+      // null so the bracket stays on the existing committed loopSelection.
+      if (bar === anchor && dragSelection == null) return;
       const startBar = Math.min(anchor, bar);
       const endBar = Math.max(anchor, bar);
       setDragSelection((prev) =>
@@ -468,12 +480,13 @@ export function GrooveCardWaveform({
           : { startBar, endBar },
       );
     },
-    [barFromClientX],
+    [barFromClientX, dragSelection],
   );
 
   const handlePointerUp = useCallback(
     (e: ReactPointerEvent<HTMLCanvasElement>) => {
-      if (dragAnchorRef.current == null) return;
+      const anchor = dragAnchorRef.current;
+      if (anchor == null) return;
       try {
         e.currentTarget.releasePointerCapture?.(e.pointerId);
       } catch {
@@ -482,20 +495,26 @@ export function GrooveCardWaveform({
       const finalSelection = dragSelection;
       dragAnchorRef.current = null;
       setDragSelection(null);
-      if (finalSelection) {
-        // If the user clicked-without-dragging the exact same selection,
-        // treat it as a toggle: clear the existing selection. Otherwise
-        // commit the new range.
-        if (
-          loopSelection &&
-          finalSelection.startBar === loopSelection.startBar &&
-          finalSelection.endBar === loopSelection.endBar
-        ) {
+
+      if (finalSelection == null) {
+        // Click without drag — dragSelection was never set because the
+        // pointer never left the anchor bar. Decide based on the anchor:
+        //   - inside the existing committed loop → toggle off
+        //   - outside it (or no committed loop) → commit single-bar select
+        const isInsideExistingRange =
+          loopSelection != null &&
+          anchor >= loopSelection.startBar &&
+          anchor <= loopSelection.endBar;
+        if (isInsideExistingRange) {
           onLoopSelectionChange?.(null);
         } else {
-          onLoopSelectionChange?.(finalSelection);
+          onLoopSelectionChange?.({ startBar: anchor, endBar: anchor });
         }
+        return;
       }
+
+      // Drag committed a range — apply it.
+      onLoopSelectionChange?.(finalSelection);
     },
     [dragSelection, loopSelection, onLoopSelectionChange],
   );
