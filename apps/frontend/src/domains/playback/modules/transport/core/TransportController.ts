@@ -67,6 +67,10 @@ export class TransportController implements Service {
   private state: TransportState = 'stopped';
   private config: TransportControllerConfig;
   private autoStopTimerId: ReturnType<typeof setTimeout> | null = null;
+  // Auto-stop fires at MusicalTruth.totalBeats and is the right behavior for
+  // finite exercises (drills, etc.). Infinite-loop content (Groove Card)
+  // sets this to false so the transport plays until the user hits stop.
+  private autoStopEnabled = true;
   // Bidirectional Tone.Transport sync interval. Cleared on dispose so it
   // doesn't keep firing forever and flooding the console after teardown.
   private toneSyncIntervalId: ReturnType<typeof setInterval> | null = null;
@@ -320,10 +324,12 @@ export class TransportController implements Service {
       timestamp: Date.now(),
     });
 
-    // Schedule auto-stop at exercise end (if exercise duration is set)
+    // Schedule auto-stop at exercise end (if exercise duration is set and
+    // auto-stop hasn't been disabled by the caller — Groove Card opts out
+    // because its content loops indefinitely).
     const timeline = this.transport.getTimeline();
     const exerciseDurationSeconds = timeline.getExerciseDurationSeconds();
-    if (exerciseDurationSeconds > 0) {
+    if (this.autoStopEnabled && exerciseDurationSeconds > 0) {
       const durationMs = exerciseDurationSeconds * 1000;
 
       logger.info('Scheduling auto-stop', {
@@ -662,6 +668,23 @@ export class TransportController implements Service {
       beatsPerBar,
       totalBeats: totalBars * beatsPerBar,
     });
+  }
+
+  /**
+   * Enable or disable the exercise-end auto-stop. Default: true (finite
+   * exercises auto-stop at their end). Set to false for infinite-loop
+   * content like the Groove Card so playback continues until the user
+   * manually stops. Also clears any pending auto-stop timer when disabling.
+   */
+  setAutoStopEnabled(enabled: boolean): void {
+    this.autoStopEnabled = enabled;
+    if (!enabled && this.autoStopTimerId !== null) {
+      clearTimeout(this.autoStopTimerId);
+      this.autoStopTimerId = null;
+      logger.info('Auto-stop disabled and pending timer cleared');
+    } else {
+      logger.info('Auto-stop setting changed', { enabled });
+    }
   }
 
   /**

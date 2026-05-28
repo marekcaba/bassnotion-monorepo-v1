@@ -69,6 +69,7 @@ import type {
 import { audioInstrumentTypeToStemKey } from '../../modules/tracks/management/TrackManagerProcessor.js';
 import type { IAudioStemEngine } from './IAudioStemEngine.js';
 import { AudioPlayerScheduler } from './region-processing/scheduling/AudioPlayerScheduler.js';
+import { applyClickFreeStop } from './region-processing/utils/applyClickFreeStop.js';
 
 // Debug flag - enable in browser console: window.__DEBUG_PLAYBACK_ENGINE = true
 const isPlaybackDebugEnabled = (): boolean => {
@@ -241,10 +242,6 @@ export class PlaybackEngine implements IAudioStemEngine {
   // when RegionScheduler tells EventRouter to play an 'audio-*' event.
   private audioPlayerScheduler: AudioPlayerScheduler | null = null;
   private audioStemBuffers = new Map<AudioInstrumentType, AudioBuffer>();
-  private activeAudioStemSources = new Map<
-    AudioInstrumentType,
-    AudioBufferSourceNode
-  >();
 
   constructor(eventBus: EventBus, config: PlaybackEngineConfig = {}) {
     this.instanceId = Math.random().toString(36).substring(2, 11);
@@ -889,6 +886,12 @@ export class PlaybackEngine implements IAudioStemEngine {
       debugLog('[COUNTDOWN DIAGNOSTIC] Created new metronome track');
     }
 
+    // Idempotent: drop any prior count-in before re-adding. Callers that
+    // re-arm on every play (e.g. the Groove Card, which doesn't go through
+    // switchExercise()) would otherwise stack duplicate countdown regions.
+    metronomeTrack.regions = metronomeTrack.regions.filter(
+      (r) => r.id !== countdownRegion.id,
+    );
     metronomeTrack.regions.unshift(countdownRegion);
     // eslint-disable-next-line no-console
     debugLog('[COUNTDOWN DIAGNOSTIC] Metronome countdown region added', {
@@ -2526,16 +2529,10 @@ export class PlaybackEngine implements IAudioStemEngine {
       const stemKey: AudioStemKey =
         audioInstrumentTypeToStemKey(instrumentType);
 
-      // Stop any in-flight source for this stem before swapping the buffer.
-      const existing = this.activeAudioStemSources.get(instrumentType);
-      if (existing) {
-        try {
-          existing.stop(this.audioContext.currentTime + 0.001);
-        } catch {
-          // already stopped — ignore
-        }
-        this.activeAudioStemSources.delete(instrumentType);
-      }
+      // Any in-flight sources are stopped by AudioPlayerScheduler.setStem
+      // (which calls stopStem internally for a click-free swap) and by
+      // regionScheduler.stopAllInfiniteAudio (called by stopAudioStems
+      // before any re-register). No additional bookkeeping needed here.
 
       const gain = this.getOrCreateInstrumentGainNode(instrumentType);
       if (!gain) {
@@ -2558,94 +2555,16 @@ export class PlaybackEngine implements IAudioStemEngine {
   }
 
   /**
-   * Start every registered audio stem against the master transport time
-   * (this.transportStartTime). Each stem plays from offset 0 of its
-   * buffer; looping is owned by RegionScheduler when a region declares
-   * loopCount: 0 — this method is the one-shot start used when callers
-   * want a stem to begin immediately without a region wrapper.
-   */
-  startAudioStems(): void {
-    if (!this.audioContext || !this.audioPlayerScheduler) {
-      this.logger.warn(
-        'Cannot start audio stems: audio context or scheduler not ready',
-      );
-      return;
-    }
-    const startAt = Math.max(
-      this.audioContext.currentTime,
-      this.transportStartTime,
-    );
-
-    for (const [instrumentType, buffer] of this.audioStemBuffers) {
-      const gain = this.instrumentGainNodes.get(instrumentType);
-      if (!gain) continue;
-      const source = this.audioContext.createBufferSource();
-      source.buffer = buffer;
-      source.connect(gain);
-      source.onended = () => {
-        this.activeAudioStemSources.delete(instrumentType);
-      };
-      try {
-        source.start(startAt, 0);
-        this.activeAudioStemSources.set(instrumentType, source);
-      } catch (err) {
-        this.logger.warn(`startAudioStems: ${instrumentType} start failed`, {
-          err,
-        });
-      }
-    }
-
-    this.logger.info('Audio stems started', {
-      startAt,
-      count: this.activeAudioStemSources.size,
-      instanceId: this.instanceId,
-    });
-  }
-
-  /**
-   * Stop every active audio stem with a 5ms gain ramp-down (avoids the
-   * click that a hard `source.stop()` produces). Also tells the scheduler
-   * to drop any sources it spawned through schedule().
+   * Stop every active audio stem. Delegates to the two schedulers that
+   * actually own stem sources — AudioPlayerScheduler for per-event audio
+   * (one-shot stems) and RegionScheduler for infinite-loop iterations
+   * (Groove Card). Both apply a click-free gain ramp via the shared
+   * applyClickFreeStop helper so the cached gain nodes remain reusable for
+   * the next playback.
    */
   stopAudioStems(): void {
-    if (!this.audioContext) {
-      this.activeAudioStemSources.clear();
-      return;
-    }
-
-    const now = this.audioContext.currentTime;
-    const rampSeconds = 0.005;
-    const stopAt = now + rampSeconds + 0.001;
-
-    for (const [instrumentType, source] of this.activeAudioStemSources) {
-      const gain = this.instrumentGainNodes.get(instrumentType);
-      if (gain) {
-        try {
-          gain.gain.setValueAtTime(gain.gain.value, now);
-          gain.gain.linearRampToValueAtTime(0, now + rampSeconds);
-        } catch (err) {
-          this.logger.debug(`stopAudioStems: gain ramp failed`, {
-            instrumentType,
-            err,
-          });
-        }
-      }
-      try {
-        source.stop(stopAt);
-      } catch {
-        // already stopped — ignore
-      }
-    }
-    this.activeAudioStemSources.clear();
-
-    // Also stop anything the AudioPlayerScheduler is tracking from
-    // RegionScheduler-driven schedule() calls.
     this.audioPlayerScheduler?.stopAll();
-
-    // LAUNCH-02.5b: tear down any infinite-loop iterations the
-    // RegionScheduler armed via Tone.Transport.schedule().
     this.regionScheduler?.stopAllInfiniteAudio(this.audioContext);
-
     this.logger.info('Audio stems stopped', { instanceId: this.instanceId });
   }
 

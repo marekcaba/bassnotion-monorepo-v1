@@ -34,7 +34,6 @@ vi.mock('@/domains/playback/services/WindowRegistry', () => ({
     getAudioContext: () => null,
     getPlaybackEngine: () => ({
       setAudioStemBuffers: vi.fn(),
-      startAudioStems: vi.fn(),
       stopAudioStems: vi.fn(),
       unregisterTracksByPrefix: vi.fn(),
       registerTracks: vi.fn(),
@@ -177,11 +176,17 @@ describe('useGrooveCardPlayback — LAUNCH-02.5d no-provider fallback', () => {
     // getPlaybackEngine return — the hook's isReady is derived from
     // preload state which we can't easily flip here, so we'll just
     // verify the pause + stop path which has no isReady gate).
+    //
+    // NOTE: Both pause() AND stop() call transport.stop() (the groove card
+    // uses pause-as-reset so the next play restarts from the top with a
+    // clean count-in; transport.pause() would leave the transport in
+    // 'paused' state and resume from a stale position). So both calls
+    // should bump transportStop, and transportPause stays untouched.
     await act(async () => {
       await result.current.pause();
       await result.current.stop();
     });
-    expect(transportPause).toHaveBeenCalledTimes(1);
-    expect(transportStop).toHaveBeenCalledTimes(1);
+    expect(transportPause).not.toHaveBeenCalled();
+    expect(transportStop).toHaveBeenCalledTimes(2);
   });
 });

@@ -1,95 +1,45 @@
 /**
- * RegionScheduler — LAUNCH-02.5b infinite-loop audio region tests.
+ * RegionScheduler — infinite-loop audio region tests.
  *
- * Verifies the new audio-stem branch added in 02.5b:
- *   - First iteration scheduled at transportStartTime + region.startTime
- *   - Tone.getTransport().schedule is invoked for the next boundary with
- *     a callback at T0 + D - 50ms
- *   - Self-rescheduling fires the next iteration with D derived from the
- *     LIVE BPM (not the stale BPM at first-iteration scheduling time)
- *   - Generation-counter cleanup: stopAllInfiniteAudio() called between
- *     scheduling and callback firing produces NO new sources
- *   - Timer drift: when callback fires past the boundary, incoming source
- *     starts at currentTime instead of a negative pre-roll
+ * Verifies the audio-stem branch (LAUNCH-02.5b infinite-loop, rewritten in
+ * the LOOP-GAP fix to pre-arm a sliding window of Web Audio sources rather
+ * than scheduling a JS callback at each boundary):
+ *   - Pre-arm: WINDOW sources are created up-front and started at
+ *     T0 + i*D via source.start(when, 0).
+ *   - Refill: when iter N's onended fires, iter N+WINDOW is armed anchored
+ *     to iter N+WINDOW-1's startAt + D, so an already-armed iteration's
+ *     start time never changes.
+ *   - Live BPM at refill: a tempo bump applied mid-loop affects iterations
+ *     strictly past the current window (same documented seam as the MIDI
+ *     scheduling path).
+ *   - Stop: stopAllInfiniteAudio() drops the map first (so any racing
+ *     onended skips refill) and calls source.stop(stopAt) on every entry —
+ *     no Tone.Transport.schedule clearing needed.
  *
  * Test design notes:
- *   - Production code accesses Tone via the getTone() helper which reads
- *     window.Tone, so beforeEach installs a Tone-like object there.
- *   - Tone.Transport.schedule is implemented as a queue that captures the
- *     callback + scheduled time so the test can fire callbacks manually,
- *     simulating the Tone.Transport advancing past the scheduled instant.
+ *   - Production code accesses Tone via getTone() reading window.Tone. We
+ *     only need bpm.value (no schedule/clear anymore).
  */
 
-import {
-  describe,
-  it,
-  expect,
-  beforeEach,
-  afterEach,
-  vi,
-  type MockedFunction,
-} from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { RegionScheduler } from '../RegionScheduler.js';
 
-// ----------------------------------------------------------------------------
-// Tone mock — installed onto window.Tone (not via vi.mock('tone')) because
-// the production code path uses getTone() to read from window/__globalTone.
-// ----------------------------------------------------------------------------
+const WINDOW = 3; // mirrors INFINITE_AUDIO_WINDOW in RegionScheduler.ts
 
-interface QueuedCallback {
-  callback: (time: number) => void;
-  time: number;
-  id: number;
-  cleared: boolean;
-}
+// ----------------------------------------------------------------------------
+// Tone mock — only bpm.value is read by computeIterationDuration.
+// ----------------------------------------------------------------------------
 
 interface MockTransport {
   bpm: { value: number };
   seconds: number;
-  schedule: MockedFunction<(cb: (t: number) => void, t: number) => number>;
-  clear: MockedFunction<(id: number) => void>;
-  __queue: QueuedCallback[];
-  __nextId: number;
-  __reset(): void;
-  __fireNext(): QueuedCallback | undefined;
 }
 
 function createMockTransport(): MockTransport {
-  const t: MockTransport = {
+  return {
     bpm: { value: 120 },
     seconds: 0,
-    schedule: vi.fn(),
-    clear: vi.fn(),
-    __queue: [],
-    __nextId: 1,
-    __reset() {
-      this.__queue.length = 0;
-      this.__nextId = 1;
-      this.bpm.value = 120;
-      this.seconds = 0;
-    },
-    __fireNext() {
-      // pop the earliest-scheduled non-cleared callback and invoke it
-      const pending = this.__queue
-        .filter((q) => !q.cleared)
-        .sort((a, b) => a.time - b.time);
-      const next = pending[0];
-      if (!next) return undefined;
-      next.cleared = true;
-      next.callback(next.time);
-      return next;
-    },
   };
-  t.schedule.mockImplementation((cb, time) => {
-    const id = t.__nextId++;
-    t.__queue.push({ callback: cb, time, id, cleared: false });
-    return id;
-  });
-  t.clear.mockImplementation((id) => {
-    const entry = t.__queue.find((q) => q.id === id);
-    if (entry) entry.cleared = true;
-  });
-  return t;
 }
 
 // ----------------------------------------------------------------------------
@@ -125,7 +75,6 @@ interface MockSource {
   connect: ReturnType<typeof vi.fn>;
   start: ReturnType<typeof vi.fn>;
   stop: ReturnType<typeof vi.fn>;
-  addEventListener: ReturnType<typeof vi.fn>;
   onended: (() => void) | null;
 }
 
@@ -135,7 +84,6 @@ function createMockSource(): MockSource {
     connect: vi.fn(),
     start: vi.fn(),
     stop: vi.fn(),
-    addEventListener: vi.fn(),
     onended: null,
   };
 }
@@ -161,7 +109,7 @@ function createMockAudioContext(): {
 }
 
 // ----------------------------------------------------------------------------
-// Helpers to build the scheduleAll dependency bag
+// scheduleAll dependency bag
 // ----------------------------------------------------------------------------
 
 interface ScheduleAllDeps {
@@ -243,12 +191,11 @@ function callScheduleAll(deps: ScheduleAllDeps, transportStartTime = 0): void {
 // Tests
 // ----------------------------------------------------------------------------
 
-describe('RegionScheduler — LAUNCH-02.5b infinite audio regions', () => {
+describe('RegionScheduler — infinite audio regions (pre-arm)', () => {
   let transport: MockTransport;
 
   beforeEach(() => {
     transport = createMockTransport();
-    // Install on window.Tone (getTone() reads from there).
     (globalThis as any).window = (globalThis as any).window ?? {};
     (globalThis as any).window.Tone = {
       getTransport: () => transport,
@@ -260,7 +207,7 @@ describe('RegionScheduler — LAUNCH-02.5b infinite audio regions', () => {
   });
 
   // --------------------------------------------------------------------------
-  it('schedules iteration 0 at transportStartTime + region.startTime', () => {
+  it('pre-arms a WINDOW of upcoming iterations at T0 + i*D', () => {
     const deps = setupDeps();
     deps.tracks.set('card-1-bass', {
       instrumentType: 'audio-bass',
@@ -269,28 +216,30 @@ describe('RegionScheduler — LAUNCH-02.5b infinite audio regions', () => {
           id: 'region-bass',
           startTime: 0,
           duration: 8, // 8 beats = 4 seconds at 120 BPM
-          loopCount: 0, // infinite
+          loopCount: 0,
         },
       ],
     });
 
     callScheduleAll(deps, /* transportStartTime */ 2.0);
 
-    // Iteration 0 source must have been created and started at 2.0 (T0).
-    expect(deps.sources.length).toBe(1);
-    expect(deps.sources[0]!.buffer).toBe(deps.stemBuffer);
-    expect(deps.sources[0]!.connect).toHaveBeenCalledWith(deps.stemGain);
-    expect(deps.sources[0]!.start).toHaveBeenCalledWith(2.0, 0);
-
-    // External source tracking handed off to AudioPlayerScheduler.
-    expect(deps.audioStemAccess.trackExternalSource).toHaveBeenCalledWith(
-      'bass',
-      deps.sources[0],
+    // WINDOW sources created and started at T0, T0+D, T0+2D.
+    expect(deps.sources.length).toBe(WINDOW);
+    const D = 4.0; // 8 beats * 60/120
+    for (let i = 0; i < WINDOW; i++) {
+      const src = deps.sources[i]!;
+      expect(src.buffer).toBe(deps.stemBuffer);
+      expect(src.connect).toHaveBeenCalledWith(deps.stemGain);
+      expect(src.start).toHaveBeenCalledWith(2.0 + i * D, 0);
+    }
+    // Each source registered with the stem access for centralised stop.
+    expect(deps.audioStemAccess.trackExternalSource).toHaveBeenCalledTimes(
+      WINDOW,
     );
   });
 
   // --------------------------------------------------------------------------
-  it('arms Tone.Transport.schedule for the next boundary at T0 + D - 50ms', () => {
+  it('refills the window when iter N ends: iter N+WINDOW armed at anchor+D', () => {
     const deps = setupDeps();
     deps.tracks.set('card-1-bass', {
       instrumentType: 'audio-bass',
@@ -298,24 +247,27 @@ describe('RegionScheduler — LAUNCH-02.5b infinite audio regions', () => {
         {
           id: 'region-bass',
           startTime: 0,
-          duration: 8, // 8 beats = 4s at 120 BPM
+          duration: 8, // D = 4s at 120 BPM
           loopCount: 0,
         },
       ],
     });
 
-    callScheduleAll(deps, /* transportStartTime */ 1.0);
+    callScheduleAll(deps, /* transportStartTime */ 0);
+    // Initial 3 sources at 0, 4, 8.
+    expect(deps.sources.length).toBe(WINDOW);
 
-    // D = 8 beats * (60/120) = 4s; boundary = T0 + D = 5.0; lookahead = 50ms.
-    // Expected scheduled-at time = 5.0 - 0.05 = 4.95s
-    expect(transport.schedule).toHaveBeenCalledTimes(1);
-    const [callback, time] = transport.schedule.mock.calls[0]!;
-    expect(typeof callback).toBe('function');
-    expect(time).toBeCloseTo(4.95, 5);
+    // Fire iter 0's onended (the source naturally ended). Refill should
+    // create source for iter 3 anchored on iter 2.startAt + D = 8 + 4 = 12.
+    const iter0 = deps.sources[0]!;
+    iter0.onended?.();
+
+    expect(deps.sources.length).toBe(WINDOW + 1);
+    expect(deps.sources[WINDOW]!.start).toHaveBeenCalledWith(12.0, 0);
   });
 
   // --------------------------------------------------------------------------
-  it('fires iteration 1 with D recomputed from LIVE BPM (mid-loop tempo change)', () => {
+  it('applies LIVE BPM at refill (mid-loop tempo change affects iter past window)', () => {
     const deps = setupDeps();
     deps.tracks.set('card-1-bass', {
       instrumentType: 'audio-bass',
@@ -330,33 +282,25 @@ describe('RegionScheduler — LAUNCH-02.5b infinite audio regions', () => {
     });
 
     callScheduleAll(deps, 0);
-    // After scheduleAll: 1 source created (iter 0), 1 schedule armed.
-    expect(deps.sources.length).toBe(1);
+    // Initial sources at 0, 4, 8 (D=4s at 120 BPM).
+    expect(deps.sources[0]!.start).toHaveBeenCalledWith(0, 0);
+    expect(deps.sources[1]!.start).toHaveBeenCalledWith(4, 0);
+    expect(deps.sources[2]!.start).toHaveBeenCalledWith(8, 0);
 
-    // Simulate the user pushing tempo to 180 BPM mid-loop. (60/180)*8 = 2.667s.
-    transport.bpm.value = 180;
-    // Move the audio clock forward so currentTime is plausibly near the
-    // scheduled callback time. boundary == 4.0, callback armed at 3.95.
-    (deps.audioContext as any).currentTime = 3.95;
+    // User bumps tempo to 240 BPM (D becomes 2s).
+    transport.bpm.value = 240;
 
-    // Fire the scheduled callback as if Tone.Transport reached its time.
-    const fired = transport.__fireNext();
-    expect(fired).toBeDefined();
+    // Iter 0 ends → refill iter 3 anchored to iter 2.startAt(8) + new D(2) = 10.
+    deps.sources[0]!.onended?.();
+    expect(deps.sources[WINDOW]!.start).toHaveBeenCalledWith(10, 0);
 
-    // The callback should have created the incoming source (iter 1).
-    expect(deps.sources.length).toBe(2);
-    expect(deps.sources[1]!.buffer).toBe(deps.stemBuffer);
-
-    // It should have armed the NEXT boundary using the new BPM:
-    // next D = 8 beats * (60/180) = ~2.667s; new boundary = 4.0 + 2.667 = 6.667s;
-    // callback at 6.667 - 0.05 = 6.617s.
-    expect(transport.schedule).toHaveBeenCalledTimes(2);
-    const [, secondTime] = transport.schedule.mock.calls[1]!;
-    expect(secondTime).toBeCloseTo(6.617, 2);
+    // Iter 1 ends → refill iter 4 anchored to iter 3.startAt(10) + new D(2) = 12.
+    deps.sources[1]!.onended?.();
+    expect(deps.sources[WINDOW + 1]!.start).toHaveBeenCalledWith(12, 0);
   });
 
   // --------------------------------------------------------------------------
-  it('generation-counter cleanup: stopAllInfiniteAudio before a callback fires creates NO new sources', () => {
+  it('stopAllInfiniteAudio stops every active source', () => {
     const deps = setupDeps();
     deps.tracks.set('card-1-bass', {
       instrumentType: 'audio-bass',
@@ -371,29 +315,19 @@ describe('RegionScheduler — LAUNCH-02.5b infinite audio regions', () => {
     });
 
     callScheduleAll(deps, 0);
-    const sourceCountBeforeStop = deps.sources.length;
-    expect(sourceCountBeforeStop).toBe(1);
-    expect(transport.schedule).toHaveBeenCalledTimes(1);
+    expect(deps.sources.length).toBe(WINDOW);
 
-    // Stop BEFORE the boundary callback fires.
     deps.scheduler.stopAllInfiniteAudio(deps.audioContext);
 
-    // Cleanup must clear the pending schedule.
-    expect(transport.clear).toHaveBeenCalledTimes(1);
-    // Iteration 0's source must be stopped.
-    expect(deps.sources[0]!.stop).toHaveBeenCalled();
-
-    // Simulate the boundary callback firing anyway (timer races stop).
-    // Because the queued entry's `cleared` flag is true, __fireNext skips it.
-    const fired = transport.__fireNext();
-    expect(fired).toBeUndefined();
-
-    // No incoming source was created.
-    expect(deps.sources.length).toBe(sourceCountBeforeStop);
+    // Every pre-armed source received .stop(). Web Audio cancels both
+    // already-playing and pending-start sources via the same call.
+    for (const src of deps.sources) {
+      expect(src.stop).toHaveBeenCalledTimes(1);
+    }
   });
 
   // --------------------------------------------------------------------------
-  it('generation-counter bail: a late-firing callback whose generation has been bumped creates NO source', () => {
+  it('after stopAllInfiniteAudio, a stale onended does NOT refill the window', () => {
     const deps = setupDeps();
     deps.tracks.set('card-1-bass', {
       instrumentType: 'audio-bass',
@@ -408,115 +342,83 @@ describe('RegionScheduler — LAUNCH-02.5b infinite audio regions', () => {
     });
 
     callScheduleAll(deps, 0);
-    expect(deps.sources.length).toBe(1);
+    expect(deps.sources.length).toBe(WINDOW);
 
-    // Grab the callback so we can fire it AFTER calling stopAll, simulating
-    // the case where clear() failed (e.g. Tone fires before clear lands).
-    const queued = transport.__queue[0]!;
-    expect(queued).toBeDefined();
-
-    // Bump generation by calling stop, but defeat the "cleared" guard so the
-    // callback still runs. This isolates the generation-counter check.
     deps.scheduler.stopAllInfiniteAudio(deps.audioContext);
-    queued.cleared = false; // pretend Tone's clear() did NOT land
 
+    // onended fires AFTER stop (e.g. natural buffer end racing with stop).
+    // The entry is gone from the map, so no new source should be created.
     const sourcesBefore = deps.sources.length;
-    queued.callback(queued.time);
-    // Generation mismatch → bail → no new source.
+    deps.sources[0]!.onended?.();
     expect(deps.sources.length).toBe(sourcesBefore);
-  });
-
-  // --------------------------------------------------------------------------
-  it('timer drift: when the callback fires past the boundary, incoming starts at currentTime (no negative pre-roll)', () => {
-    const deps = setupDeps();
-    deps.tracks.set('card-1-bass', {
-      instrumentType: 'audio-bass',
-      regions: [
-        {
-          id: 'region-bass',
-          startTime: 0,
-          duration: 8,
-          loopCount: 0,
-        },
-      ],
-    });
-
-    callScheduleAll(deps, 0);
-    // boundary B = 4.0s. Crossfade window = B - 10ms = 3.99s. Simulate the
-    // callback firing 100ms past the boundary.
-    (deps.audioContext as any).currentTime = 4.1;
-    transport.__fireNext();
-
-    expect(deps.sources.length).toBe(2);
-    const incoming = deps.sources[1]!;
-    // The incoming source must start at currentTime + 0.001 (not negative).
-    const [startAt, offset] = incoming.start.mock.calls[0]!;
-    expect(startAt).toBeGreaterThanOrEqual(4.1);
-    expect(offset).toBe(0);
   });
 
   // --------------------------------------------------------------------------
   it('does NOT touch the finite-loop path: regions with loopCount: 2 still go through the existing eventsByTime expansion', () => {
     const deps = setupDeps();
-    deps.tracks.set('finite-bass', {
+    deps.tracks.set('card-1-bass', {
       instrumentType: 'audio-bass',
       regions: [
         {
           id: 'finite-region',
           startTime: 0,
           duration: 8,
-          loopCount: 2,
-          // No pattern.events → existing early-return skips this region,
-          // confirming the audio path is the only one engaged for audio-*
-          // tracks. (The infinite branch fires only when loopCount === 0.)
+          loopCount: 2, // finite, NOT infinite
+          pattern: { events: [] }, // empty so eventsByTime branch no-ops
         },
       ],
     });
 
     callScheduleAll(deps, 0);
 
-    // No infinite-loop scheduling → no source, no schedule armed.
+    // No infinite-audio pre-arm took place.
     expect(deps.sources.length).toBe(0);
-    expect(transport.schedule).not.toHaveBeenCalled();
+    expect(deps.audioStemAccess.trackExternalSource).not.toHaveBeenCalled();
   });
 
   // --------------------------------------------------------------------------
   it('silently no-ops when audioStemAccess is not provided', () => {
-    const scheduler = new RegionScheduler('test-no-access');
-    const { ctx } = createMockAudioContext();
-    const emitEvent = vi.fn();
+    const scheduler = new RegionScheduler('test-instance');
+    const { ctx, sources } = createMockAudioContext();
+    const tracks = new Map<string, any>();
+    tracks.set('card-1-bass', {
+      instrumentType: 'audio-bass',
+      regions: [
+        {
+          id: 'region-bass',
+          startTime: 0,
+          duration: 8,
+          loopCount: 0,
+        },
+      ],
+    });
 
-    scheduler.scheduleAll(
-      new Map([
-        [
-          'card-1-bass',
-          {
-            instrumentType: 'audio-bass',
-            regions: [{ id: 'r', startTime: 0, duration: 8, loopCount: 0 }],
-          },
-        ],
-      ]),
-      new Map(),
-      false,
-      0,
-      0,
-      ctx,
-      (track: any) => track.instrumentType ?? 'unknown',
-      (_pos: any) => ({ measure: 0, beat: 0, subdivision: 0, tick: 0 }),
-      (_pos: string) => 0,
-      () => new Map(),
-      vi.fn(),
-      () => null,
-      vi.fn(),
-      emitEvent,
-      vi.fn(),
-      vi.fn(),
-      // resolvePendingBuffer undefined
-      // audioStemAccess undefined
-    );
+    expect(() => {
+      scheduler.scheduleAll(
+        tracks,
+        new Map(),
+        false,
+        0,
+        0,
+        ctx,
+        (track: any) => track.instrumentType ?? 'unknown',
+        (pos: any) => (typeof pos === 'object' ? pos : { measure: 0, beat: 0 }),
+        (pos: string) => {
+          const parts = pos.split(':').map(Number);
+          return (parts[0] ?? 0) * 2 + (parts[1] ?? 0) * 0.5;
+        },
+        () => new Map(),
+        vi.fn(),
+        () => null,
+        vi.fn(),
+        vi.fn(),
+        vi.fn(),
+        vi.fn(),
+        undefined,
+        undefined, // audioStemAccess missing
+      );
+    }).not.toThrow();
 
-    // No schedule armed, no errors thrown.
-    expect(transport.schedule).not.toHaveBeenCalled();
-    expect(emitEvent).not.toHaveBeenCalled();
+    expect(sources.length).toBe(0);
   });
 });

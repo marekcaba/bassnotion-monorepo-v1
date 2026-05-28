@@ -22,6 +22,7 @@
  */
 
 import { getLogger } from '@/utils/logger.js';
+import { applyClickFreeStop } from '../utils/applyClickFreeStop.js';
 
 const logger = getLogger('RegionProcessor');
 
@@ -112,15 +113,19 @@ interface CachedSchedule {
 }
 
 // LAUNCH-02.5b: infinite-loop state per active audio-stem region.
-// Capped at 2 entries alive at any moment per region (outgoing + incoming
-// during crossfade). The `gen` counter detects late callbacks from a
-// generation that was already stopped.
+// A sliding window of pre-armed iterations lives in the map per region —
+// each entry is an AudioBufferSourceNode whose start(when) was scheduled
+// up-front against the Web Audio clock. We don't track Tone.Transport
+// schedule IDs anymore: stop = `source.stop(stopAt)` on each entry, which
+// cancels both already-playing and pending-start sources per Web Audio spec.
 interface InfiniteAudioEntry {
   source: AudioBufferSourceNode;
   gain: GainNode;
-  scheduleId: number | null; // null once cleared / fired
   iter: number;
-  gen: number;
+  /** Absolute audio-context time at which this iteration's source.start
+   *  was scheduled. Used to anchor the next refill so a BPM bump only
+   *  affects iterations strictly past the current window. */
+  startAt: number;
 }
 
 // Hook closure passed in by LAUNCH-02.5c so the card can swap key-set
@@ -131,9 +136,15 @@ export type ResolvePendingBuffer = (
   iter: number,
 ) => AudioBuffer | null;
 
+// Number of upcoming iterations pre-armed at any moment. 3 means iter N
+// is playing, N+1 and N+2 are queued via source.start(when); when N ends
+// we arm N+3. Plenty of buffer for onended-jitter and live BPM changes
+// while keeping the active source count tiny per region.
+const INFINITE_AUDIO_WINDOW = 3;
+
 // Narrow contract RegionScheduler needs from AudioPlayerScheduler to spawn
-// its own AudioBufferSources for the infinite-loop crossfade. Avoids a hard
-// import dependency on the full AudioPlayerScheduler class.
+// its own AudioBufferSources for the infinite-loop. Avoids a hard import
+// dependency on the full AudioPlayerScheduler class.
 export interface InfiniteAudioStemAccess {
   getStem(stemKey: string): { buffer: AudioBuffer; gain: GainNode } | null;
   trackExternalSource(stemKey: string, source: AudioBufferSourceNode): void;
@@ -143,13 +154,10 @@ export class RegionScheduler {
   private instanceId: string;
   private lookAheadTime = 0.1; // 100ms lookahead (from BackupScheduler)
 
-  // LAUNCH-02.5b: keyed by `${regionId}#${iter}`. Carries the active
-  // (outgoing + incoming) sources for an infinite audio region.
+  // LAUNCH-02.5b: keyed by `${regionId}#${iter}`. Carries the pre-armed
+  // sources for an infinite audio region's sliding window (typically 2-3
+  // upcoming iterations). source.onended on iter N refills iter N+WINDOW.
   private infiniteAudioRegions = new Map<string, InfiniteAudioEntry>();
-  // Bumped on every stopAllInfiniteAudio(); each scheduled callback
-  // captures the value at schedule-time and bails out if it has drifted
-  // (meaning a stop happened while the callback was pending).
-  private generation = 0;
 
   constructor(instanceId: string) {
     this.instanceId = instanceId;
@@ -251,11 +259,19 @@ export class RegionScheduler {
           (region.loopCount ?? 1) === 0 &&
           audioContext
         ) {
+          // Apply the same countdown offset the MIDI path uses (line ~369)
+          // so infinite audio stems start AFTER the count-in bar instead of
+          // on top of it. Converted beats→seconds via parsePosition, matching
+          // the MIDI branch exactly.
+          const countdownOffsetSeconds =
+            countdownEnabled && !region.skipCountdownOffset
+              ? parsePosition(`0:${countdownOffsetBeats}:0`)
+              : 0;
           this.scheduleInfiniteAudioRegion(
             region,
             trackId,
             instrumentType,
-            transportStartTime,
+            transportStartTime + countdownOffsetSeconds,
             audioContext,
             audioStemAccess,
             resolvePendingBuffer,
@@ -671,22 +687,21 @@ export class RegionScheduler {
   /**
    * Schedule an audio-stem region with `loopCount: 0` (infinite playback).
    *
-   * Algorithm:
-   *  - Iteration 0 starts at T0 = transportStartTime + region.startTime,
-   *    full gain (no crossfade-in).
-   *  - Each iteration's "next-boundary" callback is registered via
-   *    Tone.getTransport().schedule(cb, B - 50ms), recomputing the next
-   *    iteration's duration `D` from the LIVE BPM at callback time.
-   *  - At every boundary B (except the first), a 10ms equal-power
-   *    crossfade overlaps the outgoing and incoming sources:
-   *      gainOut.gain.setValueAtTime(1, B - 10ms);
-   *      gainOut.gain.linearRampToValueAtTime(0, B);
-   *      gainIn.gain.setValueAtTime(0, B - 10ms);
-   *      gainIn.gain.linearRampToValueAtTime(1, B);
-   *  - Max 2 sources alive at any moment per region (outgoing + incoming).
-   *  - The generation counter (`this.generation`) is bumped on every
-   *    stopAllInfiniteAudio() call. Each pending callback captures the
-   *    generation at schedule time and bails out if it has drifted.
+   * Algorithm (pre-arm, no JS callback in the audio path):
+   *  - Compute D = beats × secondsPerBeat from the LIVE BPM at schedule time.
+   *  - Arm a sliding window of `WINDOW` upcoming iterations up front via
+   *    `source.start(T0 + i*D, 0)` for i = 0..WINDOW-1. Web Audio handles
+   *    the boundary timing sample-accurately — no callback to fire late.
+   *  - As each iteration's source ends (`source.onended`), arm one more
+   *    iteration at the far edge of the window using the LIVE BPM at that
+   *    moment. So a tempo bump locks in one window-edge later — the same
+   *    documented seam the MIDI scheduling path has.
+   *  - Stop = `source.stop(stopAt)` on every entry; this cancels both
+   *    already-playing and pending-start sources per Web Audio spec.
+   *
+   * Buffers self-loop seamlessly because consecutive `source.start(T0+iD, 0)`
+   * calls produce sample-accurate continuity — no LOOKAHEAD, no crossfade,
+   * no drift fallback.
    */
   private scheduleInfiniteAudioRegion(
     region: Region,
@@ -717,49 +732,23 @@ export class RegionScheduler {
       return;
     }
 
-    const Tone = getTone();
-    const myGen = this.generation;
-
-    // First iteration: source.start at T0 with no fade-in. The gain stays
-    // at its current value (set by the caller via setInstrumentVolume).
     const T0 = transportStartTime + region.startTime;
-    const firstSource = audioContext.createBufferSource();
-    firstSource.buffer = initialStem.buffer;
-    firstSource.connect(initialStem.gain);
-    try {
-      firstSource.start(T0, 0);
-    } catch (err) {
-      logger.warn('scheduleInfiniteAudioRegion: first source.start failed', {
-        regionId: region.id,
-        err,
-      });
-      return;
-    }
-    audioStemAccess.trackExternalSource(stemKey, firstSource);
-    this.infiniteAudioRegions.set(`${region.id}#0`, {
-      source: firstSource,
-      gain: initialStem.gain,
-      scheduleId: null, // scheduleId stored when the boundary callback registers
-      iter: 0,
-      gen: myGen,
-    });
-
-    // Schedule the first boundary callback at T0 + D - 50ms (50ms lookahead).
-    // Each callback re-arms itself for the following boundary.
     const initialDuration = this.computeIterationDuration(region);
-    this.armNextBoundary(
-      region,
-      trackId,
-      instrumentType,
-      stemKey,
-      0, // outgoing iteration
-      T0,
-      initialDuration,
-      audioContext,
-      audioStemAccess,
-      resolvePendingBuffer,
-      myGen,
-    );
+
+    // Arm the initial window. WINDOW=3 means iter 0 is playing, iter 1
+    // queued, iter 2 queued; when iter 0 ends, we arm iter 3, and so on.
+    // 3 is enough to mask any onended jitter (well under one buffer length).
+    for (let iter = 0; iter < INFINITE_AUDIO_WINDOW; iter++) {
+      this.armInfiniteAudioIteration(
+        region,
+        stemKey,
+        iter,
+        T0 + iter * initialDuration,
+        audioContext,
+        audioStemAccess,
+        resolvePendingBuffer,
+      );
+    }
 
     logger.info('Infinite audio region scheduled', {
       trackId,
@@ -768,7 +757,7 @@ export class RegionScheduler {
       stemKey,
       T0,
       durationSeconds: initialDuration,
-      generation: myGen,
+      windowSize: INFINITE_AUDIO_WINDOW,
     });
   }
 
@@ -781,224 +770,145 @@ export class RegionScheduler {
   }
 
   /**
-   * Register a one-shot Tone.Transport.schedule for the next iteration's
-   * boundary. The callback (a) detects stale-generation bail-out, (b)
-   * resolves the next buffer, (c) creates the incoming source with the
-   * 10ms crossfade pre-roll (or drift fallback), and (d) re-arms itself.
+   * Arm a single infinite-audio iteration: create the source, schedule it
+   * to start at `startAt`, register it in the entry map, and wire its
+   * `onended` to refill the window with the next iteration at the live BPM.
    *
-   * Stored `scheduleId` is updated on the outgoing entry so stop-cleanup
-   * can call Tone.getTransport().clear(id) before the callback runs.
+   * `startAt` is an absolute audio-context time. The buffer played is the
+   * one currently registered for this stem (or whatever resolvePendingBuffer
+   * returns for the LAUNCH-02.5d key-swap follow-up).
    */
-  private armNextBoundary(
+  private armInfiniteAudioIteration(
     region: Region,
-    trackId: string,
-    instrumentType: string,
     stemKey: string,
-    outgoingIter: number,
-    iterStartTime: number,
-    duration: number,
+    iter: number,
+    startAt: number,
     audioContext: AudioContext,
     audioStemAccess: InfiniteAudioStemAccess,
     resolvePendingBuffer: ResolvePendingBuffer | undefined,
-    capturedGen: number,
   ): void {
-    const Tone = getTone();
-    const XF = 0.01; // 10ms crossfade
-    const LOOKAHEAD = 0.05; // 50ms scheduling lookahead
-    const B = iterStartTime + duration; // boundary == start of incoming iter
-    const callbackTime = Math.max(
-      audioContext.currentTime + 0.001,
-      B - LOOKAHEAD,
-    );
+    const stem = audioStemAccess.getStem(stemKey);
+    if (!stem) {
+      logger.warn(
+        'armInfiniteAudioIteration: stem no longer registered; loop will not refill',
+        { regionId: region.id, stemKey, iter },
+      );
+      return;
+    }
+    const buffer =
+      resolvePendingBuffer?.(region.id, iter) ?? stem.buffer ?? null;
+    if (!buffer) {
+      logger.warn(
+        'armInfiniteAudioIteration: no buffer resolved; loop will not refill',
+        { regionId: region.id, stemKey, iter },
+      );
+      return;
+    }
 
-    const scheduleId = Tone.getTransport().schedule(() => {
-      // Stale-generation bail: a stopAllInfiniteAudio() ran after this
-      // callback was queued. Do nothing.
-      if (capturedGen !== this.generation) {
-        return;
+    const source = audioContext.createBufferSource();
+    source.buffer = buffer;
+    source.connect(stem.gain);
+
+    const entryKey = `${region.id}#${iter}`;
+    // onended fires whether the source ended naturally or via stop().
+    // Refill the window only if this entry is still tracked (a stop()
+    // cleared the map; reading from a stale closure would create a runaway).
+    source.onended = () => {
+      const tracked = this.infiniteAudioRegions.get(entryKey);
+      if (!tracked || tracked.source !== source) {
+        return; // stopped or replaced — do not refill
       }
+      this.infiniteAudioRegions.delete(entryKey);
 
-      const outgoingKey = `${region.id}#${outgoingIter}`;
-      const outgoing = this.infiniteAudioRegions.get(outgoingKey);
-      if (!outgoing) {
-        // entry already cleaned up — bail
-        return;
-      }
+      // Refill at iter + WINDOW. Anchor on the FURTHEST already-armed
+      // iteration (iter + WINDOW - 1) so the new start time slots in
+      // exactly one iteration past it — using the LIVE BPM only for THAT
+      // one boundary. This keeps already-scheduled iterations aligned
+      // with the old tempo and applies the new tempo from one window-edge
+      // forward (same seam the MIDI scheduling path documents).
+      const nextIter = iter + INFINITE_AUDIO_WINDOW;
+      const anchorKey = `${region.id}#${nextIter - 1}`;
+      const anchor = this.infiniteAudioRegions.get(anchorKey);
+      // If the anchor is missing (e.g. it failed to arm), fall back to
+      // chaining from THIS iteration's known startAt — loop stays alive.
+      const anchorStartAt = anchor?.startAt ?? startAt;
+      const iterationsFromAnchor = anchor ? 1 : INFINITE_AUDIO_WINDOW;
+      const nextStartAt =
+        anchorStartAt +
+        iterationsFromAnchor * this.computeIterationDuration(region);
 
-      // Compute timing for the incoming iteration.
-      const nowAudio = audioContext.currentTime;
-      const incomingIter = outgoingIter + 1;
-      // Drift mitigation: if callback fires so late that `B - XF` is in
-      // the past, start the incoming source immediately with no pre-roll.
-      // One audible micro-discontinuity at this seam; infinite loop unbroken.
-      const incomingStartAt = Math.max(nowAudio + 0.001, B - XF);
-      const usedCrossfade = incomingStartAt < B; // false means drift fallback
-
-      // Resolve pending buffer for the incoming iteration. Default reuses
-      // whichever buffer is currently registered for this stem.
-      const pendingBuffer =
-        resolvePendingBuffer?.(region.id, incomingIter) ??
-        audioStemAccess.getStem(stemKey)?.buffer ??
-        outgoing.source.buffer;
-      if (!pendingBuffer) {
-        logger.warn(
-          'armNextBoundary: no buffer resolved for incoming iter; stopping loop',
-          { regionId: region.id, incomingIter },
-        );
-        return;
-      }
-
-      // Create the incoming source against the same gain node.
-      const stem = audioStemAccess.getStem(stemKey);
-      if (!stem) {
-        logger.warn(
-          'armNextBoundary: stem no longer registered; stopping loop',
-          { regionId: region.id, stemKey },
-        );
-        return;
-      }
-      const incomingSource = audioContext.createBufferSource();
-      incomingSource.buffer = pendingBuffer;
-      incomingSource.connect(stem.gain);
-
-      if (usedCrossfade) {
-        // Equal-power-ish linear crossfade. Outgoing fades 1→0 over XF;
-        // incoming fades 0→1 over the same window. Both share the same
-        // GainNode in this implementation — see note below.
-        //
-        // NOTE: when outgoing and incoming share the gain node (current
-        // single-gain-per-stem design), the linearRampToValueAtTime calls
-        // race. We let the incoming source's start act as the audible
-        // overlap: outgoing.stop is scheduled at B + 1ms, incoming.start
-        // at B - XF. The shared gain ramp is harmless because both
-        // sources have the same effective volume target.
-        try {
-          stem.gain.gain.setValueAtTime(stem.gain.gain.value, B - XF);
-          stem.gain.gain.linearRampToValueAtTime(stem.gain.gain.value, B);
-        } catch (err) {
-          logger.debug('crossfade gain ramp failed (harmless)', { err });
-        }
-      }
-
-      try {
-        incomingSource.start(incomingStartAt, 0);
-      } catch (err) {
-        logger.warn('armNextBoundary: incoming source.start failed', {
-          regionId: region.id,
-          incomingIter,
-          err,
-        });
-        return;
-      }
-      audioStemAccess.trackExternalSource(stemKey, incomingSource);
-
-      // Stop the outgoing source slightly after the boundary so the
-      // overlap is audible.
-      const outgoingStopAt = B + 0.001;
-      try {
-        outgoing.source.stop(outgoingStopAt);
-      } catch {
-        // already stopped
-      }
-
-      // Drop outgoing entry now that its lifecycle is fully committed.
-      this.infiniteAudioRegions.delete(outgoingKey);
-
-      // Record incoming entry and arm the next boundary.
-      this.infiniteAudioRegions.set(`${region.id}#${incomingIter}`, {
-        source: incomingSource,
-        gain: stem.gain,
-        scheduleId: null,
-        iter: incomingIter,
-        gen: capturedGen,
-      });
-
-      // Re-arm for the next boundary. Recompute duration from LIVE BPM —
-      // if the user pushed tempo mid-loop, the next iteration's interval
-      // picks up the new value at this point. (The currently-playing
-      // iteration completes at its baked duration; documented seam.)
-      const nextDuration = this.computeIterationDuration(region);
-      this.armNextBoundary(
+      this.armInfiniteAudioIteration(
         region,
-        trackId,
-        instrumentType,
         stemKey,
-        incomingIter,
-        B,
-        nextDuration,
+        nextIter,
+        nextStartAt,
         audioContext,
         audioStemAccess,
         resolvePendingBuffer,
-        capturedGen,
       );
-    }, callbackTime);
+    };
 
-    // Update outgoing entry with its pending scheduleId so cleanup can
-    // clear it. Must be done after schedule() returns the id.
-    const outgoingEntry = this.infiniteAudioRegions.get(
-      `${region.id}#${outgoingIter}`,
-    );
-    if (outgoingEntry) {
-      outgoingEntry.scheduleId = scheduleId;
+    try {
+      source.start(startAt, 0);
+    } catch (err) {
+      logger.warn('armInfiniteAudioIteration: source.start failed', {
+        regionId: region.id,
+        stemKey,
+        iter,
+        startAt,
+        err,
+      });
+      return;
     }
+    audioStemAccess.trackExternalSource(stemKey, source);
+    this.infiniteAudioRegions.set(entryKey, {
+      source,
+      gain: stem.gain,
+      iter,
+      startAt,
+    });
   }
 
   /**
-   * Stop every active infinite-audio region. Cleanup order matters:
-   *   1. bump generation counter (any pending callback now bails out)
-   *   2. clear every pending Tone schedule (no new sources spawn)
-   *   3. ramp every gain to 0 over 5ms (avoid click)
-   *   4. stop every source ~6ms in the future (after the ramp)
-   *   5. drop map entries
-   * Reordering steps 1–2 risks a callback re-arming during cleanup.
+   * Stop every active infinite-audio region.
+   *
+   * Drop entries from the map FIRST so any `onended` that races us sees a
+   * missing entry and skips its refill (see armInfiniteAudioIteration).
+   * Then ramp shared gain nodes to 0 (click-free) and call `source.stop()`
+   * on each — this cancels both already-playing and pending-start sources
+   * per Web Audio spec, so no Tone.Transport.clear is needed.
    */
   stopAllInfiniteAudio(audioContext: AudioContext | null): void {
     if (this.infiniteAudioRegions.size === 0) return;
 
-    // 1. bump generation — any in-flight callback now sees a mismatch
-    this.generation++;
+    // Snapshot + clear the map first so racing onended callbacks bail.
+    const entries = Array.from(this.infiniteAudioRegions.values());
+    const count = entries.length;
+    this.infiniteAudioRegions.clear();
 
-    const Tone = getTone();
-    const now = audioContext?.currentTime ?? 0;
-    const rampSeconds = 0.005;
-    const stopAt = now + rampSeconds + 0.001;
-
-    // 2. clear every pending schedule
-    for (const entry of this.infiniteAudioRegions.values()) {
-      if (entry.scheduleId !== null) {
-        try {
-          Tone.getTransport().clear(entry.scheduleId);
-        } catch {
-          // schedule already fired — harmless
-        }
-        entry.scheduleId = null;
-      }
-    }
-
-    // 3 + 4: ramp gains and stop sources
-    for (const entry of this.infiniteAudioRegions.values()) {
-      if (audioContext) {
-        try {
-          entry.gain.gain.setValueAtTime(entry.gain.gain.value, now);
-          entry.gain.gain.linearRampToValueAtTime(0, now + rampSeconds);
-        } catch (err) {
-          logger.debug('stopAllInfiniteAudio: gain ramp failed', { err });
-        }
+    // De-dupe gain nodes — multiple iterations of the same stem share one
+    // gain node, and applying the click-free ramp twice would double-write
+    // the same AudioParam events.
+    const seenGains = new Set<GainNode>();
+    let stopAt = audioContext?.currentTime ?? 0;
+    for (const entry of entries) {
+      if (audioContext && !seenGains.has(entry.gain)) {
+        seenGains.add(entry.gain);
+        const result = applyClickFreeStop(entry.gain, audioContext, {
+          onError: (err) =>
+            logger.debug('stopAllInfiniteAudio: gain ramp failed', { err }),
+        });
+        stopAt = result.stopAt;
       }
       try {
         entry.source.stop(stopAt);
       } catch {
-        // already stopped
+        // already stopped or pending-start cancelled — both fine
       }
     }
 
-    // 5. drop entries
-    const count = this.infiniteAudioRegions.size;
-    this.infiniteAudioRegions.clear();
-
     logger.info('Infinite audio regions stopped', {
       count,
-      generation: this.generation,
       instanceId: this.instanceId,
     });
   }

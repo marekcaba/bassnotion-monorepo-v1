@@ -62,7 +62,6 @@ vi.mock('@/domains/playback/contexts/TransportContext', () => ({
 
 const mockEngine = {
   setAudioStemBuffers: vi.fn(),
-  startAudioStems: vi.fn(),
   stopAudioStems: vi.fn(),
   unregisterTracksByPrefix: vi.fn(),
   registerTracks: vi.fn(),

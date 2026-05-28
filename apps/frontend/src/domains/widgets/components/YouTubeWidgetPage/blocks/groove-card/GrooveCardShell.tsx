@@ -23,6 +23,9 @@ interface GrooveCardShellProps {
   waveform: ReactNode;
   /** Slot for the controls bar. */
   controls: ReactNode;
+  /** Read-only metadata line under the title (e.g. "E · 4 bars").
+   * Composed by the view; omitted when empty. */
+  meta?: string;
 }
 
 export function GrooveCardShell({
@@ -34,6 +37,7 @@ export function GrooveCardShell({
   onToggleClick,
   waveform,
   controls,
+  meta,
 }: GrooveCardShellProps) {
   return (
     <section
@@ -52,6 +56,9 @@ export function GrooveCardShell({
               <span className="text-white/50 font-normal"> — {subtitle}</span>
             )}
           </h3>
+          {meta && (
+            <p className="mt-0.5 text-xs text-white/40 truncate">{meta}</p>
+          )}
         </div>
         <button
           type="button"

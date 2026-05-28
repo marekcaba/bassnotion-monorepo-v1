@@ -130,11 +130,15 @@ export function useStemUpload(): UseStemUploadReturn {
           return null;
         }
 
+        // Append the text fields BEFORE the file. Fastify's req.file()
+        // resolves at the file part and only exposes text fields that were
+        // already streamed; fields after the file would arrive too late and
+        // read back as empty on the server.
         const formData = new FormData();
-        formData.append('file', file);
         formData.append('slug', opts.tutorialSlug);
         formData.append('keyFolder', opts.keyFolder);
         formData.append('stem', opts.stem);
+        formData.append('file', file);
 
         const apiUrl =
           process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';

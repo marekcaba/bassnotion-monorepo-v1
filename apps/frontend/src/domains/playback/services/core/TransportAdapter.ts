@@ -274,6 +274,15 @@ export class TransportAdapter {
   }
 
   /**
+   * Enable or disable the exercise-end auto-stop. Default true. Set false
+   * for infinite-loop content (Groove Card) so the transport keeps running
+   * until the user explicitly stops it.
+   */
+  setAutoStopEnabled(enabled: boolean): void {
+    this.controller.setAutoStopEnabled(enabled);
+  }
+
+  /**
    * Get display position (adjusted for countdown offset)
    * This is what should be shown in the UI
    */
@@ -425,14 +434,6 @@ export class TransportAdapter {
     // Default to 16 beats (4 bars in 4/4)
     const beatsPerSecond = this.getTempo() / 60;
     return 16 / beatsPerSecond;
-  }
-
-  /**
-   * Check if loop is enabled (backward compatibility)
-   */
-  isLoopEnabled(): boolean {
-    // TODO: Track loop state when setLoop is called
-    return false;
   }
 
   /**

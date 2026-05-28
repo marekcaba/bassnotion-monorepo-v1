@@ -97,6 +97,22 @@ export interface UseGrooveCardPlaybackReturn {
   // ── lifecycle (used by active-card store coordination)
   becomeActive: () => void;
   becomeInactive: () => void;
+
+  // ── waveform display data --------------------------------------------------
+  /** The currently active bass AudioBuffer — the source the card visualises
+   *  in the waveform window. Null until preload completes. */
+  bassBuffer: AudioBuffer | null;
+  /** The AudioContext used for playback; the waveform reads currentTime
+   *  off this to position the playhead. */
+  audioContext: AudioContext | null;
+  /** Audio-context time (seconds) when the current loop iteration started.
+   *  null when not playing. Used by the waveform to compute playhead
+   *  position via (audioContext.currentTime - loopStartAudioTime) %
+   *  loopDurationSeconds / loopDurationSeconds. */
+  loopStartAudioTime: number | null;
+  /** Duration of one loop iteration in seconds (computed from lengthBars
+   *  and current BPM). */
+  loopDurationSeconds: number;
 }
 
 const TEMPO_MIN = 50;
@@ -210,6 +226,12 @@ export function useGrooveCardPlayback({
   });
   const [soloedStem, setSoloedStem] = useState<'audio-drums' | null>(null);
   const [clickEnabled, setClickEnabledState] = useState(false);
+  // Audio-context time at which the first stem-loop iteration started. Used
+  // by the waveform to sweep a playhead across one loop length and wrap at
+  // the boundary. null when stopped (the waveform draws static peaks only).
+  const [loopStartAudioTime, setLoopStartAudioTime] = useState<number | null>(
+    null,
+  );
 
   // Track which key sets we want preloaded. Story spec:
   //   default on mount → adjacent (±4) on first play → outer (±8) on
@@ -223,9 +245,22 @@ export function useGrooveCardPlayback({
   >([defaultKeySetIndex]);
 
   // ── audio context + preload ----------------------------------------------
+  // Read the live context from WindowRegistry each render rather than
+  // snapshotting at mount. During dev Fast Refresh (and the AudioProvider
+  // double-mount) the first AudioContext can be closed and replaced; a
+  // snapshot would leave us decoding/playing against a dead context. We
+  // keep the last known-good ref but refresh it whenever the registry hands
+  // back a different, non-closed context.
   const audioContextRef = useRef<AudioContext | null>(null);
-  if (!audioContextRef.current && typeof window !== 'undefined') {
-    audioContextRef.current = WindowRegistry.getAudioContext();
+  if (typeof window !== 'undefined') {
+    const live = WindowRegistry.getAudioContext();
+    const current = audioContextRef.current;
+    const currentClosed = current?.state === 'closed';
+    if (live && live !== current && (currentClosed || !current)) {
+      audioContextRef.current = live;
+    } else if (!current && live) {
+      audioContextRef.current = live;
+    }
   }
 
   const preload = useGrooveCardStemPreload({
@@ -238,19 +273,24 @@ export function useGrooveCardPlayback({
   const isReady = preload.isPreloaded;
   const isLoading = !isReady && preload.totalCount > 0;
 
-  // ── tempo: subscribe to musical-truth so external BPM changes propagate -
+  // ── tempo: the groove card OWNS its tempo. ------------------------------
+  // The block was authored at block.originalBpm (e.g. 133); the global
+  // musicalTruth defaults to 120. Push the groove's tempo into musicalTruth
+  // on mount so the transport runs at the groove's BPM rather than the
+  // default — then subscribe so the stepper / any external change keeps
+  // local state honest. We do NOT pull the global default into currentBpm
+  // (that's what made the UI read 120 instead of the saved tempo).
   useEffect(() => {
-    // Seed local state from the live truth (it may differ from the
-    // block's originalBpm if another widget on the page changed it).
-    const initial = musicalTruth.getBPM?.();
-    if (typeof initial === 'number') setCurrentBpm(initial);
+    musicalTruth.setBPM?.(clampTempo(block.originalBpm));
+    setCurrentBpm(block.originalBpm);
     const unsub = musicalTruth.subscribe?.((truth) => {
       setCurrentBpm(truth.bpm);
     });
     return () => {
       if (typeof unsub === 'function') unsub();
     };
-  }, []);
+    // block.originalBpm is stable per card; re-running on change is correct.
+  }, [block.originalBpm]);
 
   const setTempo = useCallback((bpm: number) => {
     const clamped = clampTempo(bpm);
@@ -419,25 +459,173 @@ export function useGrooveCardPlayback({
   }, [activeStore, cardId, unregisterStemTracks]);
 
   // ── play / pause / stop --------------------------------------------------
+  // The transport clock alone produces no sound: only PlaybackEngine.start()
+  // runs scheduleAllRegions() → scheduleInfiniteAudioRegion(), which creates
+  // and fires the stem AudioBufferSourceNodes. So we drive the engine
+  // lifecycle in lockstep with the transport (the in-app YouTube path does
+  // the same via usePlaybackControl). registerTracks() only reschedules when
+  // the engine is already 'playing', hence start() must come AFTER
+  // becomeActive() registers this card's tracks, and BEFORE transport.start()
+  // so the regions are armed when the clock begins ticking.
   const play = useCallback(async () => {
     if (!isReady) return;
-    // If another card is currently active, becomeActive() will displace it.
-    if (!activeStore.isActiveCard(cardId)) {
-      becomeActive();
+
+    // The play button IS the user gesture browsers require to start audio.
+    // Resume / (re)attach the persistent AudioContext and start Tone here,
+    // exactly like the in-app YouTube path (usePlaybackControl). Without
+    // this the engine schedules its buffer sources against a suspended or
+    // closed context and nothing is audible ("Construction of
+    // AudioBufferSourceNode is not useful when context is closed").
+    try {
+      const { ensureAudioContext } =
+        await import('@/domains/playback/utils/ensureAudioContext');
+      await ensureAudioContext();
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn('[GrooveCard] ensureAudioContext failed', err);
     }
+
+    // Arm the MIDI metronome count-in path. The count-in region (added
+    // below) emits metronome-trigger events that AudioEventRouter routes to
+    // the WAM metronome instrument — but only when the router isRunning AND
+    // the metronome instrument exists. In /app the ScrollTriggerLoader +
+    // CoreServices.initialize() usually arm both already; this makes the
+    // Groove Card self-sufficient (a real DAW: MIDI + audio tracks coexist).
+    //  - getAudioEventRouter().start() is idempotent — flips isRunning and
+    //    re-binds the instrument registry.
+    //  - loadEssentialSamples() registers the metronome config so the router
+    //    can lazily create the instrument on first trigger. Idempotent +
+    //    dedupes; requires CoreServices initialized first.
+    try {
+      const cs = WindowRegistry.getCoreServices();
+      if (cs) {
+        if (cs.isReady?.() === false) await cs.initialize?.();
+        await cs.getAudioEventRouter?.()?.start?.();
+
+        // The metronome instrument is bound to the AudioEngine's OWN context,
+        // which is separate from the persistent context the stems play
+        // through. ensureAudioContext() resumed the latter; the engine's
+        // context can still be 'suspended', which is exactly why the lazy
+        // metronome create bailed ("AudioContext state is suspended"). Resume
+        // it explicitly, THEN eagerly create the metronome so it exists with a
+        // running context before the count-in triggers fire.
+        const engineCtx = cs.getAudioEngine?.()?.getContext?.();
+        if (engineCtx && engineCtx.state === 'suspended') {
+          await engineCtx.resume();
+        }
+
+        const { getSamplePreloader } =
+          await import('@/domains/playback/services/InitialSamplePreloader.bridge.js');
+        await getSamplePreloader()?.loadEssentialSamples?.();
+
+        // Force the instrument into existence now (idempotent) rather than
+        // waiting for the first trigger — by then the count-in window may have
+        // already passed while the async create resolves. Once created we
+        // register it active so AudioEventRouter's trigger handler finds it
+        // synchronously on the first count-in beat.
+        const { getPreloadableRegistry } =
+          await import('@/domains/playback/services/core/PreloadableInstrumentRegistry');
+        const reg = getPreloadableRegistry();
+        if (reg?.hasType?.('metronome')) {
+          const metronome = await reg.getOrCreateByType('metronome');
+          const instrumentRegistry = cs.getInstrumentRegistry?.();
+          if (
+            metronome &&
+            instrumentRegistry?.hasActive?.('metronome') === false
+          ) {
+            instrumentRegistry.setActive('metronome', metronome);
+          }
+        }
+      }
+    } catch (err) {
+      // Count-in is non-fatal: if metronome arming fails the stems still
+      // play, just without the audible click.
+      // eslint-disable-next-line no-console
+      console.warn('[GrooveCard] metronome count-in arming failed', err);
+    }
+
+    // Always (re)register this card's tracks + buffers before starting.
+    // Stem AudioBufferSourceNodes are single-use: once stopped (on pause /
+    // stop) they can't restart, so every play() re-arms from the cached
+    // buffers. becomeActive() also displaces any other active card.
+    becomeActive();
+
+    const engine = WindowRegistry.getPlaybackEngine();
+
+    // The Groove Card loops forever — never auto-stop at MusicalTruth's
+    // "exercise end" (the global default is 4 bars + 1 countdown, which
+    // killed playback mid-groove regardless of block.lengthBars). The
+    // transport will now only stop on explicit user action.
+    type WithAutoStop = { setAutoStopEnabled?: (enabled: boolean) => void };
+    (transport as WithAutoStop).setAutoStopEnabled?.(false);
+
+    // Count-in (1-2-3-4): reuse the engine's existing countdown system —
+    // the same calls the in-app player makes (usePlaybackControl). This
+    // injects a metronome count-in region (audible click via the engine's
+    // metronome instrument) and offsets the stem regions by one bar so they
+    // land on the downbeat after the count. Must run BEFORE start() so the
+    // countdown region is present when scheduleAllRegions() fires.
+    const timeSignature = { numerator: 4, denominator: 4 };
+    engine?.enableCountdown?.(timeSignature);
+    engine?.addCountdownRegion?.(timeSignature);
+
+    const engineState = engine?.getState?.();
+    // Only 'ready'/'stopped' are startable (PlaybackEngine.start()). pause()
+    // and stop() below always leave the engine in 'stopped', so a fresh
+    // start() re-runs scheduleAllRegions() and the stems are audible again.
+    if (engineState === 'ready' || engineState === 'stopped') {
+      engine.start?.();
+    }
+
     await transport.start?.();
+
+    // Anchor the waveform playhead. Stems begin at engine.transportStartTime
+    // (≈ now + small lookahead) PLUS one countdown bar. We approximate via
+    // audioContext.currentTime + countdownDuration in the live BPM — a few
+    // ms of drift is invisible on a sweeping line and frees us from coupling
+    // to the engine's private transportStartTime.
+    const ctx = audioContextRef.current;
+    if (ctx) {
+      const secondsPerBeat = 60 / Math.max(1, currentBpm);
+      const countdownSeconds = 4 * secondsPerBeat; // one bar of 4/4 count-in
+      setLoopStartAudioTime(ctx.currentTime + countdownSeconds);
+    } else {
+      setLoopStartAudioTime(null);
+    }
+
     setIsPlaying(true);
-  }, [isReady, activeStore, cardId, becomeActive, transport]);
+  }, [isReady, becomeActive, transport, currentBpm]);
 
+  // Pause and stop are the same for the Groove Card: the stem sources can't
+  // be resumed mid-buffer, so we silence them and reset the engine to
+  // 'stopped'. The next play() re-arms from scratch. stopAudioStems() is the
+  // ONLY thing that actually kills the live infinite-loop buffer sources —
+  // engine.pause()/engine.stop() alone leave them ringing until the buffer
+  // ends (the bug this fixes: UI paused but audio kept playing).
+  const silenceEngine = useCallback(() => {
+    const engine = WindowRegistry.getPlaybackEngine();
+    engine?.stopAudioStems?.();
+    engine?.stop?.();
+  }, []);
+
+  // Both pause and stop call transport.stop() (NOT pause()). transport.start()
+  // RESUMEs from the paused position when the transport state is 'paused',
+  // which would replay from a stale offset and never re-align with the
+  // freshly re-scheduled stems (their T0 anchors at transportStartTime+0).
+  // Resetting to 'stopped' makes the next play() a clean start from the top.
   const pause = useCallback(async () => {
-    await transport.pause?.();
-    setIsPlaying(false);
-  }, [transport]);
-
-  const stop = useCallback(async () => {
+    silenceEngine();
     await transport.stop?.();
     setIsPlaying(false);
-  }, [transport]);
+    setLoopStartAudioTime(null);
+  }, [silenceEngine, transport]);
+
+  const stop = useCallback(async () => {
+    silenceEngine();
+    await transport.stop?.();
+    setIsPlaying(false);
+    setLoopStartAudioTime(null);
+  }, [silenceEngine, transport]);
 
   // Mirror the transport's isPlaying so external start/stop calls keep
   // local state honest.
@@ -456,6 +644,15 @@ export function useGrooveCardPlayback({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // run only on unmount; capture trackPrefix + cardId at mount
 
+  // ── waveform data ----------------------------------------------------------
+  // Bass buffer for the current key set + loop duration at the live BPM.
+  // The waveform reads these and renders peaks + a sweeping playhead.
+  const bassBuffer = preload.getBuffer(defaultKeySetIndex, 'bass') ?? null;
+  const loopDurationSeconds = useMemo(() => {
+    const secondsPerBeat = 60 / Math.max(1, currentBpm);
+    return block.lengthBars * 4 * secondsPerBeat;
+  }, [block.lengthBars, currentBpm]);
+
   return {
     isLoading,
     isReady,
@@ -466,6 +663,10 @@ export function useGrooveCardPlayback({
     soloedStem,
     clickEnabled,
     pendingKeyShift,
+    bassBuffer,
+    audioContext: audioContextRef.current,
+    loopStartAudioTime,
+    loopDurationSeconds,
     play,
     pause,
     stop,

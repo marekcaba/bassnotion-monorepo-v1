@@ -125,18 +125,19 @@ describe('LAUNCH-02.5a — NAME_PATTERNS no-misclassify guarantee', () => {
 });
 
 describe('LAUNCH-02.5a — IAudioStemEngine contract pin for 02.5b', () => {
-  it('declares the 4 methods 02.5b will implement on PlaybackEngine', () => {
+  it('declares the methods PlaybackEngine implements for stem audio', () => {
     // Construct a structural mock to verify the interface shape at compile
-    // time. If 02.5b drifts from this shape, this file fails type-check.
+    // time. If PlaybackEngine drifts from this shape, this file fails
+    // type-check. NOTE: startAudioStems was removed — audio stems start
+    // via the same region/event pipeline as MIDI (PlaybackEngine.start →
+    // scheduleAllRegions); only stopAudioStems remains as a kill-switch.
     const mock: IAudioStemEngine = {
       setAudioStemBuffers: (_stems) => undefined,
-      startAudioStems: () => undefined,
       stopAudioStems: () => undefined,
       unregisterTracksByPrefix: (_prefix: string) => undefined,
     };
 
     expect(typeof mock.setAudioStemBuffers).toBe('function');
-    expect(typeof mock.startAudioStems).toBe('function');
     expect(typeof mock.stopAudioStems).toBe('function');
     expect(typeof mock.unregisterTracksByPrefix).toBe('function');
   });
@@ -147,7 +148,6 @@ describe('LAUNCH-02.5a — IAudioStemEngine contract pin for 02.5b', () => {
       setAudioStemBuffers: (stems) => {
         calls.push(stems);
       },
-      startAudioStems: () => undefined,
       stopAudioStems: () => undefined,
       unregisterTracksByPrefix: () => undefined,
     };

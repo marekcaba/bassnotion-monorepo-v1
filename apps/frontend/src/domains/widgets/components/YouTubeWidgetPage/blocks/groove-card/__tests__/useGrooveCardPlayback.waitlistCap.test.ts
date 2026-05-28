@@ -35,7 +35,6 @@ vi.mock('@/domains/playback/services/WindowRegistry', () => ({
     getAudioContext: () => null,
     getPlaybackEngine: () => ({
       setAudioStemBuffers: vi.fn(),
-      startAudioStems: vi.fn(),
       stopAudioStems: vi.fn(),
       unregisterTracksByPrefix: vi.fn(),
       registerTracks: vi.fn(),

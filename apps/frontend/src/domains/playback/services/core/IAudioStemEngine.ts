@@ -18,13 +18,13 @@ export interface IAudioStemEngine {
   ): void;
 
   /**
-   * Start audio stems against the master transport time.
-   * Caller must have called registerTracks first.
-   */
-  startAudioStems(): void;
-
-  /**
-   * Stop all audio stems with a 5ms gain ramp-down to avoid clicks.
+   * Stop all audio stems with a click-free gain ramp. Sources are owned
+   * by AudioPlayerScheduler (per-event) and RegionScheduler (infinite-loop
+   * iterations) — engine.stopAudioStems() delegates to both. There is no
+   * matching `startAudioStems()`: audio stems start via the same region/
+   * event pipeline as MIDI, i.e. PlaybackEngine.start() →
+   * scheduleAllRegions() → RegionScheduler.scheduleInfiniteAudioRegion()
+   * (Groove Card) or AudioPlayerScheduler.schedule() (one-shots).
    */
   stopAudioStems(): void;
 

@@ -84,15 +84,32 @@ export function GrooveCardBlockView({
     playback.pendingKeyShift,
   ]);
 
+  // Read-only metadata line under the title — just the length in bars.
+  // The original key is already surfaced by the live key stepper in the
+  // controls row, so duplicating it here adds noise.
+  const meta = useMemo(() => {
+    if (config.lengthBars <= 0) return '';
+    return `${config.lengthBars} ${config.lengthBars === 1 ? 'bar' : 'bars'}`;
+  }, [config.lengthBars]);
+
   return (
     <GrooveCardShell
       title={config.title}
       subtitle={config.subtitle}
+      meta={meta}
       isPlaying={playback.isPlaying}
       caption={caption}
       clickEnabled={playback.clickEnabled}
       onToggleClick={() => playback.setClickEnabled(!playback.clickEnabled)}
-      waveform={<GrooveCardWaveform isPlaying={playback.isPlaying} />}
+      waveform={
+        <GrooveCardWaveform
+          isPlaying={playback.isPlaying}
+          bassBuffer={playback.bassBuffer}
+          audioContext={playback.audioContext}
+          loopStartAudioTime={playback.loopStartAudioTime}
+          loopDurationSeconds={playback.loopDurationSeconds}
+        />
+      }
       controls={
         <GrooveCardControls
           isPlaying={playback.isPlaying}

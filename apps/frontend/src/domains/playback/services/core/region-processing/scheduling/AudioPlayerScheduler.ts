@@ -20,6 +20,7 @@
 import { getLogger } from '@/utils/logger.js';
 import type { PatternEvent, Scheduler } from '../event-routing/EventRouter.js';
 import type { AudioStemKey } from '../../../../modules/tracks/management/TrackManagerProcessor.js';
+import { applyClickFreeStop } from '../utils/applyClickFreeStop.js';
 
 const logger = getLogger('AudioPlayerScheduler');
 
@@ -152,26 +153,21 @@ export class AudioPlayerScheduler implements Scheduler {
     const sources = this.activeSources.get(stemKey);
     if (!sources || sources.size === 0) return;
     const entry = this.stems.get(stemKey);
-    const now = this.audioContext?.currentTime ?? 0;
-    const rampSeconds = 0.005;
-    const stopAt = now + rampSeconds + 0.001;
 
-    if (entry) {
-      // Snap to current value before ramping so the ramp starts from "now".
-      try {
-        entry.gain.gain.setValueAtTime(entry.gain.gain.value, now);
-        entry.gain.gain.linearRampToValueAtTime(0, now + rampSeconds);
-      } catch (err) {
-        logger.debug(`stopStem(${stemKey}): gain ramp failed`, { err });
-      }
-    }
+    // Click-free ramp + restore resting volume so the cached gain node
+    // stays usable for the next playback. (Without the restore — the
+    // pre-helper implementation — the gain stayed at 0 and replays were
+    // silent.)
+    const { stopAt } = applyClickFreeStop(entry?.gain, this.audioContext, {
+      onError: (err) =>
+        logger.debug(`stopStem(${stemKey}): gain ramp failed`, { err }),
+    });
 
     sources.forEach((source) => {
       try {
         source.stop(stopAt);
-      } catch (err) {
+      } catch {
         // source already stopped — silently ignore
-        void err;
       }
     });
     sources.clear();
