@@ -573,8 +573,19 @@ export class PlaybackEngine implements IAudioStemEngine {
       );
 
       // Skip ONLY if both region count AND event count are the same
-      // This prevents redundant updates while still allowing content changes
+      // This prevents redundant updates while still allowing content changes.
+      //
+      // Audio-stem tracks (audio-bass / audio-drums / audio-harmony / audio-
+      // click) are exempt: they never carry pattern.events (their content is
+      // pre-rendered AudioBuffers, not per-note MIDI), so eventCount is
+      // always 0 and the skip-update branch can NEVER detect a meaningful
+      // change. That includes the Groove Card's loopSlice flips — the bar-
+      // range selection lives on Region, not on pattern.events, so the
+      // optimization would silently drop legitimate updates. For these
+      // tracks we always apply the new track regardless of count parity.
+      const isAudioStem = track.instrumentType?.startsWith('audio-') ?? false;
       if (
+        !isAudioStem &&
         existingById.regions.length === track.regions.length &&
         existingEventCount === newEventCount
       ) {

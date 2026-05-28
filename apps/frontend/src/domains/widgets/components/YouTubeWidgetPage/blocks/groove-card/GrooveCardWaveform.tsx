@@ -15,7 +15,19 @@
  * IntersectionObserver pauses the loop when the card scrolls offscreen.
  */
 
-import { useEffect, useRef } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
+
+/** 1-indexed inclusive bar range. */
+export interface WaveformLoopSelection {
+  startBar: number;
+  endBar: number;
+}
 
 interface GrooveCardWaveformProps {
   isPlaying: boolean;
@@ -35,11 +47,18 @@ interface GrooveCardWaveformProps {
    *  thin bar-line ruler under the waveform (one tick + number per bar).
    *  Omit / set 0 to hide the ruler. */
   lengthBars?: number;
+  /** Currently committed bar selection (looped). null = no selection. */
+  loopSelection?: WaveformLoopSelection | null;
+  /** Called when the user commits a new selection via drag (mouseup /
+   *  touchend) or clears it (click outside / right-click). Pass null to
+   *  clear. Pointer events are only wired when this prop is provided. */
+  onLoopSelectionChange?: (next: WaveformLoopSelection | null) => void;
   /** Orange brand colour used for the bar lines. */
   color?: string;
 }
 
 const DEFAULT_BAR_COLOR = '#F97316'; // tailwind orange-500
+const SELECTION_COLOR = '#3B82F6'; // tailwind blue-500 — loop-range bracket
 const PULSE_BAR_COUNT = 32;
 
 /**
@@ -91,11 +110,20 @@ export function GrooveCardWaveform({
   loopStartAudioTime,
   loopDurationSeconds = 0,
   lengthBars = 0,
+  loopSelection,
+  onLoopSelectionChange,
   color = DEFAULT_BAR_COLOR,
 }: GrooveCardWaveformProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rafRef = useRef<number | null>(null);
   const visibleRef = useRef(true);
+
+  // In-progress selection while the user is dragging (committed via prop on
+  // mouse/touch up). null when not dragging.
+  const [dragSelection, setDragSelection] =
+    useState<WaveformLoopSelection | null>(null);
+  // Drag anchor bar (1-indexed) — null when no drag is in progress.
+  const dragAnchorRef = useRef<number | null>(null);
 
   // Latest props in refs so the RAF loop reads fresh values without
   // tearing down on every prop change.
@@ -106,6 +134,8 @@ export function GrooveCardWaveform({
     loopStartAudioTime: loopStartAudioTime ?? null,
     loopDurationSeconds,
     lengthBars,
+    loopSelection: loopSelection ?? null,
+    dragSelection,
     color,
   });
   stateRef.current = {
@@ -115,6 +145,8 @@ export function GrooveCardWaveform({
     loopStartAudioTime: loopStartAudioTime ?? null,
     loopDurationSeconds,
     lengthBars,
+    loopSelection: loopSelection ?? null,
+    dragSelection,
     color,
   };
 
@@ -230,6 +262,60 @@ export function GrooveCardWaveform({
       c.fillRect(x, 0, 2, height);
     };
 
+    /** 2-px rectangle frame around the selected bar range. When the
+     *  selection touches the left or right canvas edge, the bracket's
+     *  outer corners are rounded (8px radius matching the parent canvas's
+     *  `rounded-lg`); inner corners stay square — that's how DAWs draw
+     *  selection rectangles. `pending` (drag-in-progress) renders at lower
+     *  alpha so the user can tell preview vs. committed apart. */
+    const drawSelectionBracket = (
+      c: CanvasRenderingContext2D,
+      width: number,
+      height: number,
+      bars: number,
+      startBar: number,
+      endBar: number,
+      pending: boolean,
+      strokeColor: string,
+    ) => {
+      if (bars <= 0) return;
+      const thickness = 2;
+      // 8px to match Tailwind's rounded-lg on the canvas wrapper. Skip
+      // rounding on the side that's NOT at the canvas edge.
+      const cornerRadius = 8;
+      const r = thickness / 2;
+      const x = Math.round(((startBar - 1) / bars) * width);
+      const right = Math.round((endBar / bars) * width);
+      // Inset by half the stroke so the stroke sits INSIDE the bar-x range
+      // (no overflow past the rounded canvas border).
+      const left = x + r;
+      const top = r;
+      const rightInner = right - r;
+      const bottom = height - r;
+      const roundLeft = startBar === 1;
+      const roundRight = endBar === bars;
+      const rl = roundLeft ? cornerRadius : 0;
+      const rr = roundRight ? cornerRadius : 0;
+
+      c.strokeStyle = strokeColor;
+      c.lineWidth = thickness;
+      c.globalAlpha = pending ? 0.55 : 0.9;
+      c.beginPath();
+      // Start at top-left + radius, go clockwise.
+      c.moveTo(left + rl, top);
+      c.lineTo(rightInner - rr, top);
+      if (rr > 0) c.arcTo(rightInner, top, rightInner, top + rr, rr);
+      c.lineTo(rightInner, bottom - rr);
+      if (rr > 0) c.arcTo(rightInner, bottom, rightInner - rr, bottom, rr);
+      c.lineTo(left + rl, bottom);
+      if (rl > 0) c.arcTo(left, bottom, left, bottom - rl, rl);
+      c.lineTo(left, top + rl);
+      if (rl > 0) c.arcTo(left, top, left + rl, top, rl);
+      c.closePath();
+      c.stroke();
+      c.globalAlpha = 1;
+    };
+
     const draw = (now: number) => {
       rafRef.current = requestAnimationFrame(draw);
       if (!visibleRef.current) return;
@@ -246,21 +332,68 @@ export function GrooveCardWaveform({
         drawBarLines(ctx, width, height, s.lengthBars);
         drawPeaks(ctx, width, height, s.bassBuffer, s.color);
 
-        // Playhead: only when actively playing and we know when the loop
-        // started. Wraps via modulo at the loop boundary.
+        // Selection bracket: drag-in-progress (pending=true) is drawn at
+        // 55% alpha so the user sees their drag is being tracked; once
+        // committed (loopSelection from props) it solidifies to 90%.
+        // Always drawn in blue so the loop range is visually distinct from
+        // the orange waveform peaks and playhead.
+        const active = s.dragSelection ?? s.loopSelection;
+        if (active && s.lengthBars > 0) {
+          drawSelectionBracket(
+            ctx,
+            width,
+            height,
+            s.lengthBars,
+            active.startBar,
+            active.endBar,
+            s.dragSelection !== null,
+            SELECTION_COLOR,
+          );
+        }
+
+        // Playhead. Two modes:
+        //   - No selection: sweep across the FULL waveform width, wrapping
+        //     at the full loop duration.
+        //   - Selection active: confine the sweep to the selected bar range,
+        //     wrapping at the selection's duration (matches what the audio
+        //     actually does via source.loopStart/loopEnd). Without this the
+        //     visual playhead keeps marching past the selected bars while
+        //     the audio loops bars 1-4 — misleadingly suggests "loop ignored".
         if (
           s.isPlaying &&
           s.audioContext &&
           s.loopStartAudioTime !== null &&
-          s.loopDurationSeconds > 0
+          s.loopDurationSeconds > 0 &&
+          s.lengthBars > 0
         ) {
           const elapsed = s.audioContext.currentTime - s.loopStartAudioTime;
           if (elapsed >= 0) {
-            const phase =
-              ((elapsed % s.loopDurationSeconds) + s.loopDurationSeconds) %
-              s.loopDurationSeconds;
-            const x = (phase / s.loopDurationSeconds) * width;
-            drawPlayhead(ctx, width, height, x);
+            const sel = s.loopSelection;
+            if (sel) {
+              // Map the bar selection onto the canvas: x range and the
+              // duration the playhead wraps in. Both bracket and playhead
+              // share the same bar-grid math, so they stay aligned.
+              const barW = width / s.lengthBars;
+              const xStart = Math.round((sel.startBar - 1) * barW);
+              const xEnd = Math.round(sel.endBar * barW);
+              const selectionWidth = Math.max(1, xEnd - xStart);
+              const selectionSeconds =
+                ((sel.endBar - sel.startBar + 1) / s.lengthBars) *
+                s.loopDurationSeconds;
+              if (selectionSeconds > 0) {
+                const phase =
+                  ((elapsed % selectionSeconds) + selectionSeconds) %
+                  selectionSeconds;
+                const x = xStart + (phase / selectionSeconds) * selectionWidth;
+                drawPlayhead(ctx, width, height, x);
+              }
+            } else {
+              const phase =
+                ((elapsed % s.loopDurationSeconds) + s.loopDurationSeconds) %
+                s.loopDurationSeconds;
+              const x = (phase / s.loopDurationSeconds) * width;
+              drawPlayhead(ctx, width, height, x);
+            }
           }
         }
       } else {
@@ -278,6 +411,100 @@ export function GrooveCardWaveform({
     };
   }, []); // RAF loop is mounted once; reads live state via stateRef.
 
+  // Pointer event handlers for drag-to-select. Pointer Events unify
+  // mouse / touch / pen — same handler works for desktop + mobile. Only
+  // wired when onLoopSelectionChange + lengthBars are both present.
+  const selectionEnabled = !!onLoopSelectionChange && lengthBars > 0;
+
+  /** Convert clientX on the canvas to a 1-indexed bar number (clamped to
+   *  [1..lengthBars]). Returns null when bar math is impossible. */
+  const barFromClientX = useCallback(
+    (clientX: number): number | null => {
+      const canvas = canvasRef.current;
+      if (!canvas || lengthBars <= 0) return null;
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width <= 0) return null;
+      const x = clientX - rect.left;
+      const ratio = Math.max(0, Math.min(1, x / rect.width));
+      // Math.floor + 1 maps [0..1/N) → bar 1, [1/N..2/N) → bar 2, etc.
+      const bar = Math.floor(ratio * lengthBars) + 1;
+      return Math.max(1, Math.min(lengthBars, bar));
+    },
+    [lengthBars],
+  );
+
+  const handlePointerDown = useCallback(
+    (e: ReactPointerEvent<HTMLCanvasElement>) => {
+      if (!selectionEnabled) return;
+      // Right click clears any current selection.
+      if (e.button === 2) {
+        e.preventDefault();
+        onLoopSelectionChange?.(null);
+        return;
+      }
+      // Only the primary button starts a drag.
+      if (e.button !== 0 && e.pointerType !== 'touch') return;
+      const bar = barFromClientX(e.clientX);
+      if (bar == null) return;
+      e.preventDefault();
+      e.currentTarget.setPointerCapture?.(e.pointerId);
+      dragAnchorRef.current = bar;
+      setDragSelection({ startBar: bar, endBar: bar });
+    },
+    [selectionEnabled, barFromClientX, onLoopSelectionChange],
+  );
+
+  const handlePointerMove = useCallback(
+    (e: ReactPointerEvent<HTMLCanvasElement>) => {
+      if (dragAnchorRef.current == null) return;
+      const bar = barFromClientX(e.clientX);
+      if (bar == null) return;
+      const anchor = dragAnchorRef.current;
+      const startBar = Math.min(anchor, bar);
+      const endBar = Math.max(anchor, bar);
+      setDragSelection((prev) =>
+        prev && prev.startBar === startBar && prev.endBar === endBar
+          ? prev
+          : { startBar, endBar },
+      );
+    },
+    [barFromClientX],
+  );
+
+  const handlePointerUp = useCallback(
+    (e: ReactPointerEvent<HTMLCanvasElement>) => {
+      if (dragAnchorRef.current == null) return;
+      try {
+        e.currentTarget.releasePointerCapture?.(e.pointerId);
+      } catch {
+        // pointer already released — ignore
+      }
+      const finalSelection = dragSelection;
+      dragAnchorRef.current = null;
+      setDragSelection(null);
+      if (finalSelection) {
+        // If the user clicked-without-dragging the exact same selection,
+        // treat it as a toggle: clear the existing selection. Otherwise
+        // commit the new range.
+        if (
+          loopSelection &&
+          finalSelection.startBar === loopSelection.startBar &&
+          finalSelection.endBar === loopSelection.endBar
+        ) {
+          onLoopSelectionChange?.(null);
+        } else {
+          onLoopSelectionChange?.(finalSelection);
+        }
+      }
+    },
+    [dragSelection, loopSelection, onLoopSelectionChange],
+  );
+
+  const handlePointerCancel = useCallback(() => {
+    dragAnchorRef.current = null;
+    setDragSelection(null);
+  }, []);
+
   // Ruler beneath the canvas. Aligned column-for-column with the in-canvas
   // bar lines (which sit at `i/lengthBars` for i = 1..lengthBars-1, skipping
   // the canvas edges), so each number appears directly under the bar line
@@ -291,8 +518,20 @@ export function GrooveCardWaveform({
         ref={canvasRef}
         width={640}
         height={128}
-        className="w-full h-32 rounded-lg bg-black/30"
-        aria-hidden="true"
+        className={`w-full h-32 rounded-lg bg-black/30 ${
+          selectionEnabled ? 'cursor-crosshair touch-none' : ''
+        }`}
+        aria-hidden={selectionEnabled ? undefined : 'true'}
+        aria-label={
+          selectionEnabled
+            ? 'Drag to loop a bar range. Right-click to clear.'
+            : undefined
+        }
+        onPointerDown={selectionEnabled ? handlePointerDown : undefined}
+        onPointerMove={selectionEnabled ? handlePointerMove : undefined}
+        onPointerUp={selectionEnabled ? handlePointerUp : undefined}
+        onPointerCancel={selectionEnabled ? handlePointerCancel : undefined}
+        onContextMenu={selectionEnabled ? (e) => e.preventDefault() : undefined}
       />
       {showRuler && (
         <div className="relative h-3 select-none" aria-hidden="true">

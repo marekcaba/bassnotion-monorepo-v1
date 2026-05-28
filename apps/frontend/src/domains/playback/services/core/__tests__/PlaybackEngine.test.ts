@@ -449,6 +449,101 @@ describe('PlaybackEngine', () => {
       expect(updatedStats.countdownBeats).toBe(2);
       expect(updatedStats.countdownEnabled).toBe(false);
     });
+
+    // Regression: the "redundant-update" optimization in registerTrack
+    // compares region.length and pattern.events.length. Audio-stem tracks
+    // have no pattern.events (their content is pre-rendered AudioBuffers),
+    // so the comparison can NEVER detect a Region.loopSlice change, and the
+    // optimization would silently drop legitimate updates. This caused a
+    // Groove Card bug where toggling the bar-range loop OFF kept replaying
+    // the old slice. registerTrack must always apply the new track for
+    // instrumentType.startsWith('audio-').
+    it('audio-stem tracks: registerTrack applies updates even when region/event counts match (loopSlice can change)', () => {
+      const trackWithSlice: Track = {
+        id: 'card#audio-bass',
+        name: 'Bass',
+        instrumentType: 'audio-bass',
+        regions: [
+          {
+            id: 'card#audio-bass-region',
+            trackId: 'card#audio-bass',
+            startTime: 0,
+            duration: 32,
+            loopCount: 0,
+            loopSlice: { startSeconds: 0, endSeconds: 7.2 },
+          } as any,
+        ],
+      };
+      const trackWithoutSlice: Track = {
+        id: 'card#audio-bass',
+        name: 'Bass',
+        instrumentType: 'audio-bass',
+        regions: [
+          {
+            id: 'card#audio-bass-region',
+            trackId: 'card#audio-bass',
+            startTime: 0,
+            duration: 32,
+            loopCount: 0,
+            // no loopSlice — the toggle-off case
+          } as any,
+        ],
+      };
+
+      engine.registerTrack(trackWithSlice);
+      expect(
+        (engine.getTracks().get('card#audio-bass')!.regions[0] as any)
+          .loopSlice,
+      ).toEqual({ startSeconds: 0, endSeconds: 7.2 });
+
+      // Re-register with the SAME region count (1) and event count (0) but
+      // a different loopSlice. The optimization MUST NOT skip this; the
+      // engine's Map must reflect the new region.
+      engine.registerTrack(trackWithoutSlice);
+      expect(
+        (engine.getTracks().get('card#audio-bass')!.regions[0] as any)
+          .loopSlice,
+      ).toBeUndefined();
+    });
+
+    it('MIDI tracks: registerTrack still skips updates when region/event counts match (optimization preserved)', () => {
+      // The optimization remains intact for non-audio-stem tracks where
+      // pattern.events count meaningfully distinguishes track content.
+      const harmonyTrack: Track = {
+        id: 'harmony',
+        name: 'Harmony',
+        instrumentType: 'harmony',
+        regions: [
+          {
+            id: 'harmony-region',
+            trackId: 'harmony',
+            startTime: 0,
+            duration: 32,
+            pattern: { events: [] },
+          } as any,
+        ],
+      };
+
+      engine.registerTrack(harmonyTrack);
+      const firstRegion = engine.getTracks().get('harmony')!.regions[0];
+
+      // Re-register with a NEW region object but same counts (1 region, 0
+      // events). The MIDI optimization should still skip — the Map keeps
+      // the original region reference.
+      engine.registerTrack({
+        ...harmonyTrack,
+        regions: [
+          {
+            id: 'harmony-region',
+            trackId: 'harmony',
+            startTime: 0,
+            duration: 32,
+            pattern: { events: [] },
+          } as any,
+        ],
+      });
+      expect(engine.getTracks().get('harmony')!.regions[0]).toBe(firstRegion);
+    });
   });
 
   // ============================================================================

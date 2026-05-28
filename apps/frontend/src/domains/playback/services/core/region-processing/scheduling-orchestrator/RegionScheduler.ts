@@ -94,6 +94,15 @@ interface Region {
   pattern?: {
     events: PatternEvent[];
   };
+  /** Optional bar-range loop (LAUNCH polish). When present, the infinite-
+   *  audio path uses AudioBufferSourceNode.loop = true + native loopStart /
+   *  loopEnd so the chosen buffer slice loops sample-accurately. Times are
+   *  in seconds within the buffer. Only honored when `loopCount === 0` (the
+   *  infinite-audio branch). */
+  loopSlice?: {
+    startSeconds: number;
+    endSeconds: number;
+  };
 }
 
 interface Track {
@@ -732,12 +741,45 @@ export class RegionScheduler {
       return;
     }
 
-    const T0 = transportStartTime + region.startTime;
+    const requestedT0 = transportStartTime + region.startTime;
     const initialDuration = this.computeIterationDuration(region);
 
-    // Arm the initial window. WINDOW=3 means iter 0 is playing, iter 1
-    // queued, iter 2 queued; when iter 0 ends, we arm iter 3, and so on.
-    // 3 is enough to mask any onended jitter (well under one buffer length).
+    // Shift T0 to the future BEFORE spreading WINDOW iterations. When the
+    // engine re-schedules mid-playback (Groove Card loop-selection swap),
+    // its stored transportStartTime is from the original play() and is now
+    // in the past. Without this shift, the per-iteration clamp downstream
+    // collapses iter 0/1/2 onto the same time, producing a 14s gap until
+    // onended refills. Shifting once here preserves the WINDOW spread.
+    const T0 = Math.max(requestedT0, audioContext.currentTime);
+
+    // Bar-range loop branch: ONE source with AudioBufferSourceNode.loop =
+    // true + native loopStart/loopEnd. No window, no onended refill —
+    // native loop runs forever until source.stop() in stopAllInfiniteAudio.
+    if (region.loopSlice) {
+      this.armInfiniteAudioIteration(
+        region,
+        stemKey,
+        0,
+        T0,
+        audioContext,
+        audioStemAccess,
+        resolvePendingBuffer,
+      );
+      logger.info('Infinite audio region scheduled (loop slice)', {
+        trackId,
+        regionId: region.id,
+        instrumentType,
+        stemKey,
+        T0,
+        loopSlice: region.loopSlice,
+      });
+      return;
+    }
+
+    // Full-buffer infinite loop: arm the initial window. WINDOW=3 means
+    // iter 0 is playing, iter 1 queued, iter 2 queued; when iter 0 ends,
+    // we arm iter 3, and so on. 3 is enough to mask any onended jitter
+    // (well under one buffer length).
     for (let iter = 0; iter < INFINITE_AUDIO_WINDOW; iter++) {
       this.armInfiniteAudioIteration(
         region,
@@ -806,50 +848,65 @@ export class RegionScheduler {
     }
 
     const source = audioContext.createBufferSource();
+    const entryKey = `${region.id}#${iter}`;
+    const slice = region.loopSlice;
+
+    // Configure loop properties BEFORE assigning the buffer + connecting +
+    // calling start(). Chrome/Safari have historical bugs where setting
+    // loop/loopStart/loopEnd after buffer assignment is ignored. Order:
+    //   1. loop flags
+    //   2. buffer assignment
+    //   3. connect
+    //   4. start
+    if (slice) {
+      source.loop = true;
+      source.loopStart = slice.startSeconds;
+      source.loopEnd = slice.endSeconds;
+    }
+
     source.buffer = buffer;
     source.connect(stem.gain);
 
-    const entryKey = `${region.id}#${iter}`;
-    // onended fires whether the source ended naturally or via stop().
-    // Refill the window only if this entry is still tracked (a stop()
-    // cleared the map; reading from a stale closure would create a runaway).
-    source.onended = () => {
-      const tracked = this.infiniteAudioRegions.get(entryKey);
-      if (!tracked || tracked.source !== source) {
-        return; // stopped or replaced — do not refill
-      }
-      this.infiniteAudioRegions.delete(entryKey);
+    if (!slice) {
+      // Full-buffer window branch: one buffer = one iteration. onended
+      // refills iter + WINDOW from the live BPM. See refill rationale in
+      // the LOOP-GAP fix commit.
+      source.onended = () => {
+        const tracked = this.infiniteAudioRegions.get(entryKey);
+        if (!tracked || tracked.source !== source) {
+          return; // stopped or replaced — do not refill
+        }
+        this.infiniteAudioRegions.delete(entryKey);
 
-      // Refill at iter + WINDOW. Anchor on the FURTHEST already-armed
-      // iteration (iter + WINDOW - 1) so the new start time slots in
-      // exactly one iteration past it — using the LIVE BPM only for THAT
-      // one boundary. This keeps already-scheduled iterations aligned
-      // with the old tempo and applies the new tempo from one window-edge
-      // forward (same seam the MIDI scheduling path documents).
-      const nextIter = iter + INFINITE_AUDIO_WINDOW;
-      const anchorKey = `${region.id}#${nextIter - 1}`;
-      const anchor = this.infiniteAudioRegions.get(anchorKey);
-      // If the anchor is missing (e.g. it failed to arm), fall back to
-      // chaining from THIS iteration's known startAt — loop stays alive.
-      const anchorStartAt = anchor?.startAt ?? startAt;
-      const iterationsFromAnchor = anchor ? 1 : INFINITE_AUDIO_WINDOW;
-      const nextStartAt =
-        anchorStartAt +
-        iterationsFromAnchor * this.computeIterationDuration(region);
+        const nextIter = iter + INFINITE_AUDIO_WINDOW;
+        const anchorKey = `${region.id}#${nextIter - 1}`;
+        const anchor = this.infiniteAudioRegions.get(anchorKey);
+        const anchorStartAt = anchor?.startAt ?? startAt;
+        const iterationsFromAnchor = anchor ? 1 : INFINITE_AUDIO_WINDOW;
+        const nextStartAt =
+          anchorStartAt +
+          iterationsFromAnchor * this.computeIterationDuration(region);
 
-      this.armInfiniteAudioIteration(
-        region,
-        stemKey,
-        nextIter,
-        nextStartAt,
-        audioContext,
-        audioStemAccess,
-        resolvePendingBuffer,
-      );
-    };
+        this.armInfiniteAudioIteration(
+          region,
+          stemKey,
+          nextIter,
+          nextStartAt,
+          audioContext,
+          audioStemAccess,
+          resolvePendingBuffer,
+        );
+      };
+    }
 
     try {
-      source.start(startAt, 0);
+      // No per-iteration clamp: scheduleInfiniteAudioRegion shifts T0 to
+      // the future BEFORE spreading WINDOW iterations, so every startAt
+      // passed here is already >= audioContext.currentTime. Clamping per-
+      // iteration would collapse the WINDOW spread on mid-play re-schedules
+      // and produce a multi-second silent gap (regression in the toggle-off
+      // path; covered by the "toggle OFF mid-play" test).
+      source.start(startAt, slice ? slice.startSeconds : 0);
     } catch (err) {
       logger.warn('armInfiniteAudioIteration: source.start failed', {
         regionId: region.id,

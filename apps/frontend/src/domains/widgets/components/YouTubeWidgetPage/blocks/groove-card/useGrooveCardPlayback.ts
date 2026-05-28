@@ -48,6 +48,15 @@ import { trackWaitlistKeyCapHit } from './telemetry';
 
 export type GrooveCardMode = 'block' | 'waitlist';
 
+/** A 1-indexed inclusive bar range, e.g. {startBar: 2, endBar: 5} loops
+ *  bars 2-3-4-5 of the groove. The hook validates and clamps to the
+ *  groove's lengthBars; an "invalid" selection (start > end, etc.) is
+ *  coerced to null (= no selection, loop the whole groove). */
+export interface LoopSelection {
+  startBar: number;
+  endBar: number;
+}
+
 // Musical stems uploaded + preloaded + registered per key set. The
 // metronome click is NOT here: it's a fixed shared metronome (MIDI
 // track in /app, single bundled sample on the waitlist) injected into
@@ -97,6 +106,11 @@ export interface UseGrooveCardPlaybackReturn {
   setStemMuted: (stem: AudioInstrumentType, muted: boolean) => void;
   setStemSolo: (stem: 'audio-drums' | null) => void;
   setClickEnabled: (enabled: boolean) => void;
+  /** Constrain playback to bars [startBar..endBar] (1-indexed, inclusive).
+   *  Pass null to clear and resume looping the entire groove. While playing,
+   *  the change takes effect at the next bar boundary so the swap is
+   *  musical. */
+  setLoopSelection: (selection: LoopSelection | null) => void;
 
   // ── lifecycle (used by active-card store coordination)
   becomeActive: () => void;
@@ -123,6 +137,13 @@ export interface UseGrooveCardPlaybackReturn {
    *  renders countdownState.currentBeat as a number while
    *  countdownState.isCountingDown is true (and currentBeat > 0). */
   countdownState: CountdownState;
+
+  // ── loop selection ---------------------------------------------------------
+  /** Current bar selection or null when looping the entire groove. The
+   *  waveform draws a bracket around the selected bars; the scheduler
+   *  uses native AudioBufferSourceNode.loopStart/loopEnd so the chosen
+   *  slice loops indefinitely. */
+  loopSelection: LoopSelection | null;
 }
 
 const TEMPO_MIN = 50;
@@ -241,6 +262,32 @@ export function useGrooveCardPlayback({
   // the boundary. null when stopped (the waveform draws static peaks only).
   const [loopStartAudioTime, setLoopStartAudioTime] = useState<number | null>(
     null,
+  );
+
+  // Bar-range selection (drag-to-loop in the waveform). null = loop the
+  // full groove. Validated on write to clamp into [1..lengthBars] and to
+  // enforce startBar ≤ endBar; invalid input is coerced to null.
+  const [loopSelection, setLoopSelectionState] = useState<LoopSelection | null>(
+    null,
+  );
+  const setLoopSelection = useCallback(
+    (next: LoopSelection | null) => {
+      if (next == null) {
+        setLoopSelectionState(null);
+        return;
+      }
+      const total = Math.max(1, block.lengthBars);
+      const start = Math.max(1, Math.min(total, Math.round(next.startBar)));
+      const end = Math.max(start, Math.min(total, Math.round(next.endBar)));
+      // No-op selection (whole groove) collapses to null so the scheduler
+      // can take its simpler full-buffer path.
+      if (start === 1 && end === total) {
+        setLoopSelectionState(null);
+        return;
+      }
+      setLoopSelectionState({ startBar: start, endBar: end });
+    },
+    [block.lengthBars],
   );
 
   // Visual count-in (1-2-3-4 inside the play button). Mirrors the YouTube
@@ -435,9 +482,28 @@ export function useGrooveCardPlayback({
     if (Object.keys(buffers).length === 0) return;
     engine.setAudioStemBuffers?.(buffers);
 
+    // If a bar-range selection is active, convert it into a buffer-time
+    // loopSlice. The buffer's natural duration represents `block.lengthBars`
+    // bars, so each bar = bufDuration / lengthBars seconds. (We use the
+    // buffer's actual duration rather than BPM-derived seconds because the
+    // recording is authored at originalBpm; the loop pins to the recording.)
+    const bassBuf = buffers['audio-bass'];
+    const loopSlice =
+      loopSelection && bassBuf && block.lengthBars > 0
+        ? (() => {
+            const secsPerBar = bassBuf.duration / block.lengthBars;
+            return {
+              startSeconds: (loopSelection.startBar - 1) * secsPerBar,
+              endSeconds: loopSelection.endBar * secsPerBar,
+            };
+          })()
+        : undefined;
+
     // Register one Track per musical stem, each with one infinite-loop
     // region. Region.startTime = 0 (relative to transportStartTime);
     // duration is in beats per the existing RegionScheduler convention.
+    // loopSlice (when present) makes RegionScheduler pre-arm a single
+    // source with native AudioBufferSourceNode.loop = true + loopStart/End.
     const durationBeats = block.lengthBars * 4; // 4/4 default
     const tracks = MUSICAL_STEMS.map((instrumentType) => ({
       id: `${trackPrefix}${instrumentType}`,
@@ -450,11 +516,29 @@ export function useGrooveCardPlayback({
           startTime: 0,
           duration: durationBeats,
           loopCount: 0, // infinite
+          ...(loopSlice ? { loopSlice } : {}),
         },
       ],
     }));
+    // Unregister BEFORE re-registering. PlaybackEngine.registerTrack has a
+    // "redundant-update" optimization that skips when region/event counts
+    // match — for audio stems regions.length is always 1 and pattern.events
+    // doesn't exist (eventCount always 0), so any loopSlice change would be
+    // silently dropped. Unregistering first means the next registerTrack
+    // cannot hit the skip-update branch, and the fresh region (with or
+    // without loopSlice) takes effect immediately. The engine-side guard at
+    // PlaybackEngine.registerTrack handles this too; keeping it here is
+    // defense in depth.
+    engine.unregisterTracksByPrefix?.(trackPrefix);
     engine.registerTracks?.(tracks);
-  }, [block.lengthBars, cardId, defaultKeySetIndex, preload, trackPrefix]);
+  }, [
+    block.lengthBars,
+    cardId,
+    defaultKeySetIndex,
+    preload,
+    trackPrefix,
+    loopSelection,
+  ]);
 
   const unregisterStemTracks = useCallback(() => {
     const engine = WindowRegistry.getPlaybackEngine();
@@ -476,6 +560,65 @@ export function useGrooveCardPlayback({
     unregisterStemTracks();
     activeStore.clearActiveCard(cardId);
   }, [activeStore, cardId, unregisterStemTracks]);
+
+  // Boundary-aligned loop-selection swap.
+  //   - At play start the current selection is baked into registerStemTracks
+  //     directly via the play() path — NO swap fires for the initial play.
+  //   - While playing, only when the user actually CHANGES selection mid-
+  //     loop (compared to a ref tracking the previous value), we wait until
+  //     the next bar boundary and then:
+  //       1. stopAudioStems() to silence the currently-armed sources
+  //          (click-free via the shared ramp helper).
+  //       2. re-register tracks; the engine's updateTracks reschedules
+  //          while in 'playing' state so the new loopSlice takes effect.
+  //     The transport / metronome / count-in continue uninterrupted; only
+  //     the per-stem AudioBufferSourceNodes get replaced.
+  //
+  // Gating on a ref (not just deps) is critical: without it, the effect
+  // fires when isPlaying transitions false→true at play start, re-arming
+  // a fresh source on top of the one play() just configured. That double-
+  // arm caused "loop slice ignored, plays full buffer" symptoms.
+  const prevLoopSelectionRef = useRef<LoopSelection | null>(null);
+  useEffect(() => {
+    const prev = prevLoopSelectionRef.current;
+    prevLoopSelectionRef.current = loopSelection;
+    // Compare by value, not reference. Same-range selection (e.g. user
+    // dragged into the same range) is a no-op.
+    const same =
+      (prev == null && loopSelection == null) ||
+      (prev != null &&
+        loopSelection != null &&
+        prev.startBar === loopSelection.startBar &&
+        prev.endBar === loopSelection.endBar);
+    if (same) return;
+    if (!isPlaying) return;
+    const ctx = audioContextRef.current;
+    if (!ctx || loopStartAudioTime == null) return;
+    const bpm = Math.max(1, currentBpm);
+    const barDuration = (60 / bpm) * 4; // seconds per bar in 4/4
+    const elapsed = ctx.currentTime - loopStartAudioTime;
+    const boundaryBars = elapsed < 0 ? 0 : Math.ceil(elapsed / barDuration);
+    const nextBoundary =
+      loopStartAudioTime + Math.max(0, boundaryBars) * barDuration;
+    const delayMs = Math.max(0, (nextBoundary - ctx.currentTime) * 1000);
+
+    const id = setTimeout(() => {
+      const engine = WindowRegistry.getPlaybackEngine();
+      if (!engine) return;
+      // registerStemTracks now always unregisters before registering, so
+      // we just need to silence the current sources here. Click-free ramp
+      // happens inside engine.stopAudioStems.
+      engine.stopAudioStems?.();
+      registerStemTracks();
+    }, delayMs);
+
+    return () => clearTimeout(id);
+    // Intentionally limited deps: registerStemTracks + trackPrefix close over
+    // the latest loopSelection via their own useCallback memoization. Watching
+    // currentBpm / loopStartAudioTime here would re-trigger the swap on every
+    // beat tick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loopSelection, isPlaying]);
 
   // ── play / pause / stop --------------------------------------------------
   // The transport clock alone produces no sound: only PlaybackEngine.start()
@@ -710,6 +853,7 @@ export function useGrooveCardPlayback({
     loopStartAudioTime,
     loopDurationSeconds,
     countdownState,
+    loopSelection,
     play,
     pause,
     stop,
@@ -718,6 +862,7 @@ export function useGrooveCardPlayback({
     setStemMuted,
     setStemSolo,
     setClickEnabled,
+    setLoopSelection,
     becomeActive,
     becomeInactive,
   };
