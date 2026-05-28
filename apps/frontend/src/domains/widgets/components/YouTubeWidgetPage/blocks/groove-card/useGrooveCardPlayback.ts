@@ -38,6 +38,10 @@ import { musicalTruth } from '@/domains/playback/modules/tempo/MusicalTruthAutho
 import { useTransportControlsSafe } from '@/domains/playback/contexts/TransportContext';
 import { WindowRegistry } from '@/domains/playback/services/WindowRegistry';
 import { useActiveGrooveCardStore } from '@/domains/playback/store/active-groove-card.store';
+import {
+  useCountdown,
+  type CountdownState,
+} from '@/domains/widgets/hooks/useCountdown';
 import { pickKeySet, type KeySetIndex } from './pickKeySet';
 import { useGrooveCardStemPreload } from './useGrooveCardStemPreload';
 import { trackWaitlistKeyCapHit } from './telemetry';
@@ -113,6 +117,12 @@ export interface UseGrooveCardPlaybackReturn {
   /** Duration of one loop iteration in seconds (computed from lengthBars
    *  and current BPM). */
   loopDurationSeconds: number;
+
+  // ── visual count-in --------------------------------------------------------
+  /** Counts 1-2-3-4 during the metronome count-in bar. The play button
+   *  renders countdownState.currentBeat as a number while
+   *  countdownState.isCountingDown is true (and currentBeat > 0). */
+  countdownState: CountdownState;
 }
 
 const TEMPO_MIN = 50;
@@ -232,6 +242,15 @@ export function useGrooveCardPlayback({
   const [loopStartAudioTime, setLoopStartAudioTime] = useState<number | null>(
     null,
   );
+
+  // Visual count-in (1-2-3-4 inside the play button). Mirrors the YouTube
+  // tutorial player pattern (usePlaybackControl + PlaybackControlsBar): the
+  // audible click is owned by the engine (engine.addCountdownRegion), and
+  // useCountdown runs an independent setInterval anchored to the same BPM +
+  // AudioContext for the visual ticker. Both kick off in play() below.
+  const { countdownState, startCountdown, cancelCountdown } = useCountdown({
+    timeSignature: { numerator: 4, denominator: 4 },
+  });
 
   // Track which key sets we want preloaded. Story spec:
   //   default on mount → adjacent (±4) on first play → outer (±8) on
@@ -579,22 +598,43 @@ export function useGrooveCardPlayback({
 
     await transport.start?.();
 
-    // Anchor the waveform playhead. Stems begin at engine.transportStartTime
-    // (≈ now + small lookahead) PLUS one countdown bar. We approximate via
-    // audioContext.currentTime + countdownDuration in the live BPM — a few
-    // ms of drift is invisible on a sweeping line and frees us from coupling
-    // to the engine's private transportStartTime.
+    // Anchor every UI timer to the SAME audio-context time the engine will
+    // play the first beat at: engine.transportStartTime ≈ audioContext.now +
+    // startupLookahead (~300ms by default). Reading it from the engine
+    // (instead of estimating "now + a bit") is what keeps the countdown
+    // numbers and the waveform playhead in lockstep with the audible click.
     const ctx = audioContextRef.current;
+    const audibleStart =
+      typeof engine?.getTransportStartTime === 'function'
+        ? engine.getTransportStartTime()
+        : null;
+
     if (ctx) {
       const secondsPerBeat = 60 / Math.max(1, currentBpm);
       const countdownSeconds = 4 * secondsPerBeat; // one bar of 4/4 count-in
-      setLoopStartAudioTime(ctx.currentTime + countdownSeconds);
+
+      // Waveform playhead: stems begin one count-in bar AFTER the first
+      // metronome click, which itself fires at audibleStart.
+      const anchor = audibleStart ?? ctx.currentTime;
+      setLoopStartAudioTime(anchor + countdownSeconds);
+
+      // Visual count-in (1-2-3-4 inside the play button). Pass the engine's
+      // anchor as the first-beat audio time so the visual ticker waits the
+      // same startupLookahead the audible click is waiting — eliminates the
+      // ~300ms "UI ahead of audio" drift.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      void startCountdown(
+        currentBpm,
+        ctx,
+        null as any,
+        audibleStart ?? undefined,
+      ).catch(() => undefined);
     } else {
       setLoopStartAudioTime(null);
     }
 
     setIsPlaying(true);
-  }, [isReady, becomeActive, transport, currentBpm]);
+  }, [isReady, becomeActive, transport, currentBpm, startCountdown]);
 
   // Pause and stop are the same for the Groove Card: the stem sources can't
   // be resumed mid-buffer, so we silence them and reset the engine to
@@ -615,17 +655,19 @@ export function useGrooveCardPlayback({
   // Resetting to 'stopped' makes the next play() a clean start from the top.
   const pause = useCallback(async () => {
     silenceEngine();
+    cancelCountdown();
     await transport.stop?.();
     setIsPlaying(false);
     setLoopStartAudioTime(null);
-  }, [silenceEngine, transport]);
+  }, [silenceEngine, cancelCountdown, transport]);
 
   const stop = useCallback(async () => {
     silenceEngine();
+    cancelCountdown();
     await transport.stop?.();
     setIsPlaying(false);
     setLoopStartAudioTime(null);
-  }, [silenceEngine, transport]);
+  }, [silenceEngine, cancelCountdown, transport]);
 
   // Mirror the transport's isPlaying so external start/stop calls keep
   // local state honest.
@@ -667,6 +709,7 @@ export function useGrooveCardPlayback({
     audioContext: audioContextRef.current,
     loopStartAudioTime,
     loopDurationSeconds,
+    countdownState,
     play,
     pause,
     stop,

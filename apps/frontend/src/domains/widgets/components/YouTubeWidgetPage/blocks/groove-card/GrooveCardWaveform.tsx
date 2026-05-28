@@ -31,6 +31,10 @@ interface GrooveCardWaveformProps {
   /** Duration of one loop iteration in seconds. Used as the playhead
    *  modulus so it wraps at lengthBars. */
   loopDurationSeconds?: number;
+  /** Number of musical bars one loop iteration spans. Used to render the
+   *  thin bar-line ruler under the waveform (one tick + number per bar).
+   *  Omit / set 0 to hide the ruler. */
+  lengthBars?: number;
   /** Orange brand colour used for the bar lines. */
   color?: string;
 }
@@ -86,6 +90,7 @@ export function GrooveCardWaveform({
   audioContext,
   loopStartAudioTime,
   loopDurationSeconds = 0,
+  lengthBars = 0,
   color = DEFAULT_BAR_COLOR,
 }: GrooveCardWaveformProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -100,6 +105,7 @@ export function GrooveCardWaveform({
     audioContext: audioContext ?? null,
     loopStartAudioTime: loopStartAudioTime ?? null,
     loopDurationSeconds,
+    lengthBars,
     color,
   });
   stateRef.current = {
@@ -108,6 +114,7 @@ export function GrooveCardWaveform({
     audioContext: audioContext ?? null,
     loopStartAudioTime: loopStartAudioTime ?? null,
     loopDurationSeconds,
+    lengthBars,
     color,
   };
 
@@ -136,18 +143,40 @@ export function GrooveCardWaveform({
     let lastDrawTime = 0;
     const targetFrameInterval = 1000 / 30; // ~30 FPS
 
+    const drawBarLines = (
+      c: CanvasRenderingContext2D,
+      width: number,
+      height: number,
+      bars: number,
+    ) => {
+      // Thin vertical lines at every bar boundary, drawn underneath the
+      // peaks so they show through quiet sections and get masked where the
+      // waveform is loud (reads as DAW grid). Skip i=0 and i=bars (left and
+      // right canvas edges respectively) — drawing those just overlaps the
+      // rounded-rect border.
+      if (bars <= 1) return;
+      c.fillStyle = 'rgba(255, 255, 255, 0.18)';
+      for (let i = 1; i < bars; i++) {
+        const x = Math.round((i / bars) * width);
+        c.fillRect(x, 0, 1, height);
+      }
+    };
+
     const drawPeaks = (
       c: CanvasRenderingContext2D,
       width: number,
       height: number,
       buffer: AudioBuffer,
       fillColor: string,
-      isActive: boolean,
     ) => {
+      // Single 80%-opacity state — the playhead (full white) alone signals
+      // "playing vs. stopped". Dimming the peaks when stopped made the
+      // waveform feel like a disabled control; uniform 80% reads as a
+      // calmer reference layer and lets the bar lines + playhead pop.
       const peaks = getOrComputePeaks(buffer, width);
       const midY = height / 2;
       c.fillStyle = fillColor;
-      c.globalAlpha = isActive ? 0.85 : 0.4;
+      c.globalAlpha = 0.8;
       for (let col = 0; col < width; col++) {
         const min = peaks[col * 2] ?? 0;
         const max = peaks[col * 2 + 1] ?? 0;
@@ -156,7 +185,7 @@ export function GrooveCardWaveform({
         const h = Math.max(1, yBot - yTop);
         c.fillRect(col, yTop, 1, h);
       }
-      c.globalAlpha = 1;
+      c.globalAlpha = 1; // restore for subsequent paints in this frame
     };
 
     const drawPulseFallback = (
@@ -212,7 +241,10 @@ export function GrooveCardWaveform({
       ctx.clearRect(0, 0, width, height);
 
       if (s.bassBuffer) {
-        drawPeaks(ctx, width, height, s.bassBuffer, s.color, s.isPlaying);
+        // Bar grid first — peaks paint on top so the lines show only in
+        // the quieter portions of the waveform.
+        drawBarLines(ctx, width, height, s.lengthBars);
+        drawPeaks(ctx, width, height, s.bassBuffer, s.color);
 
         // Playhead: only when actively playing and we know when the loop
         // started. Wraps via modulo at the loop boundary.
@@ -246,13 +278,39 @@ export function GrooveCardWaveform({
     };
   }, []); // RAF loop is mounted once; reads live state via stateRef.
 
+  // Ruler beneath the canvas. Aligned column-for-column with the in-canvas
+  // bar lines (which sit at `i/lengthBars` for i = 1..lengthBars-1, skipping
+  // the canvas edges), so each number appears directly under the bar line
+  // that marks the START of that bar. Numbering starts at "2" because bar 1
+  // begins at the left edge of the canvas where no bar line is drawn.
+  const showRuler = lengthBars > 1;
+
   return (
-    <canvas
-      ref={canvasRef}
-      width={640}
-      height={64}
-      className="w-full h-16 rounded-lg bg-black/30"
-      aria-hidden="true"
-    />
+    <div className="flex flex-col gap-1">
+      <canvas
+        ref={canvasRef}
+        width={640}
+        height={128}
+        className="w-full h-32 rounded-lg bg-black/30"
+        aria-hidden="true"
+      />
+      {showRuler && (
+        <div className="relative h-3 select-none" aria-hidden="true">
+          {Array.from({ length: lengthBars - 1 }, (_, i) => {
+            const barNumber = i + 2; // bar 2..lengthBars
+            const leftPct = ((i + 1) / lengthBars) * 100;
+            return (
+              <span
+                key={barNumber}
+                className="absolute top-0 -translate-x-1/2 text-[9px] leading-none text-white/40 tabular-nums"
+                style={{ left: `${leftPct}%` }}
+              >
+                {barNumber}
+              </span>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }

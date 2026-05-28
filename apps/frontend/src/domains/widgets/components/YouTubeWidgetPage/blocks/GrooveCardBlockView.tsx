@@ -108,6 +108,7 @@ export function GrooveCardBlockView({
           audioContext={playback.audioContext}
           loopStartAudioTime={playback.loopStartAudioTime}
           loopDurationSeconds={playback.loopDurationSeconds}
+          lengthBars={config.lengthBars}
         />
       }
       controls={
@@ -115,6 +116,7 @@ export function GrooveCardBlockView({
           isPlaying={playback.isPlaying}
           isReady={playback.isReady}
           isLoading={playback.isLoading}
+          countdownState={playback.countdownState}
           currentBpm={playback.currentBpm}
           currentSemitones={playback.currentSemitones}
           pendingKeyShift={playback.pendingKeyShift}

@@ -17,6 +17,7 @@
 
 import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
 import { useEntitlement } from '@/domains/billing/hooks/useEntitlement';
+import type { CountdownState } from '@/domains/widgets/hooks/useCountdown';
 
 const SEMITONE_LABELS = [
   'C',
@@ -59,6 +60,10 @@ interface GrooveCardControlsProps {
   isPlaying: boolean;
   isReady: boolean;
   isLoading: boolean;
+  /** Visual count-in driver. While `isCountingDown` is true and
+   *  `currentBeat > 0`, the play button shows the beat number instead of
+   *  the Play/Pause icon. */
+  countdownState: CountdownState;
   currentBpm: number;
   currentSemitones: number;
   pendingKeyShift: number | null;
@@ -76,6 +81,7 @@ export function GrooveCardControls({
   isPlaying,
   isReady,
   isLoading,
+  countdownState,
   currentBpm,
   currentSemitones,
   pendingKeyShift,
@@ -131,11 +137,23 @@ export function GrooveCardControls({
         type="button"
         onClick={onPlayPause}
         disabled={!isReady}
-        aria-label={isPlaying ? 'Pause' : 'Play'}
+        aria-label={
+          countdownState.isCountingDown && countdownState.currentBeat > 0
+            ? `Countdown beat ${countdownState.currentBeat}`
+            : isPlaying
+              ? 'Pause'
+              : 'Play'
+        }
         className="w-14 h-14 rounded-full bg-orange-500 text-white flex items-center justify-center hover:bg-orange-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       >
         {isLoading ? (
           <span className="text-[10px] uppercase tracking-wider">Loading</span>
+        ) : countdownState.isCountingDown && countdownState.currentBeat > 0 ? (
+          // Count-in: show "1", "2", "3", "4" inside the button. Same UX
+          // pattern as the YouTube tutorial player (PlaybackControlsBar).
+          <span className="text-2xl font-bold leading-none" aria-hidden>
+            {countdownState.currentBeat}
+          </span>
         ) : isPlaying ? (
           <Pause className="w-6 h-6" aria-hidden />
         ) : (

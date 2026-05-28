@@ -46,17 +46,27 @@ export function useCountdown(options: UseCountdownOptions = {}) {
    * @param bpm - Tempo in beats per minute
    * @param audioContext - Web Audio API context for precise timing
    * @param metronome - Metronome instance with trigger() method
+   * @param firstBeatAudioTime - Optional. Audio-context time at which the
+   *   FIRST audible beat will play. Use this when the caller knows the
+   *   engine's authoritative anchor (e.g. PlaybackEngine.transportStartTime,
+   *   broadcast via the `playback:starting` event). Without it, the visual
+   *   countdown anchors to `audioContext.currentTime + 0.05` — which is
+   *   ~250ms AHEAD of the audible click when the engine applies a 300ms
+   *   startupLookahead, producing the audio-visual drift the Groove Card
+   *   hit. Defaults preserve the existing YouTube-player behaviour.
    */
   const startCountdown = useCallback(
     async (
       bpm: number,
       audioContext: AudioContext,
       metronome: any,
+      firstBeatAudioTime?: number,
     ): Promise<void> => {
       logger.info('🎵 Starting countdown', {
         bpm,
         totalBeats: countdownState.totalBeats,
         timeSignature,
+        firstBeatAudioTime,
       });
 
       // Clear any existing countdown timers
@@ -79,9 +89,14 @@ export function useCountdown(options: UseCountdownOptions = {}) {
         currentBeat: 0,
       }));
 
-      // Calculate timing
+      // Calculate timing. Prefer the caller's audio anchor (the engine's
+      // transportStartTime) so visual ticks land on the actual audible
+      // clicks. Fall back to the historic 50ms buffer for legacy callers.
       const beatDuration = 60 / bpm; // seconds per beat
-      const startTime = audioContext.currentTime + 0.05; // Small latency buffer
+      const startTime =
+        firstBeatAudioTime !== undefined
+          ? Math.max(firstBeatAudioTime, audioContext.currentTime + 0.001)
+          : audioContext.currentTime + 0.05;
 
       // Schedule all countdown clicks in Web Audio timeline
       const scheduledTimes: number[] = [];

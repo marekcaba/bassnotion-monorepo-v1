@@ -527,6 +527,19 @@ export class PlaybackEngine implements IAudioStemEngine {
   }
 
   /**
+   * Audio-context time at which the current playback's first beat is
+   * scheduled. Set inside start() as `audioContext.currentTime +
+   * startupLookahead` and used internally for sample-accurate scheduling.
+   * Exposed so visual systems (countdown numbers, waveform playhead) can
+   * anchor to the same instant the audio actually fires — without it, the
+   * UI runs ~`startupLookahead` (default 300ms) ahead of the sound.
+   * Returns 0 before the first start() call.
+   */
+  getTransportStartTime(): number {
+    return this.transportStartTime;
+  }
+
+  /**
    * Get a track by ID
    * Returns undefined if track doesn't exist
    */

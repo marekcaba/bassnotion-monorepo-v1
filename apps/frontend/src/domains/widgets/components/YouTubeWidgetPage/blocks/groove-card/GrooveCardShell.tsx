@@ -9,7 +9,7 @@
  * `stateCaptions`.
  */
 
-import { Music2 } from 'lucide-react';
+import { Metronome } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 interface GrooveCardShellProps {
@@ -71,7 +71,7 @@ export function GrooveCardShell({
               : 'bg-white/5 text-white/50 hover:bg-white/10'
           }`}
         >
-          <Music2 className="w-4 h-4" aria-hidden />
+          <Metronome className="w-4 h-4" aria-hidden />
         </button>
       </header>
 
