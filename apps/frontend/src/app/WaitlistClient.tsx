@@ -318,19 +318,8 @@ export function WaitlistClient({
         so the page never flashes a lighter color while the radials
         animate in.
       */}
-      <div
-        aria-hidden="true"
-        className="fixed inset-0 pointer-events-none z-0"
-        style={{
-          background: isDevBuild
-            ? backgroundToCss(bgConfig)
-            : 'radial-gradient(480px 420px at 50% 11%, rgba(18,18,18,0.22), transparent 68%), radial-gradient(720px 320px at 50% 66%, rgba(18,18,18,0.49), transparent 52%)',
-          opacity: bgVisible ? 1 : 0,
-          transition: 'opacity 1200ms cubic-bezier(0.16, 1, 0.3, 1)',
-        }}
-      />
-      {/* Texture overlay (leather). Sits above the radials and below the
-          noise so the grain still reads on top. Values come from
+      {/* Texture overlay (leather). Bottom decorative layer — sits on the
+          base color, below the noise and radials. Values come from
           DEFAULT_BACKGROUND; tuner overrides them in dev. */}
       <div
         aria-hidden="true"
@@ -358,10 +347,23 @@ export function WaitlistClient({
           transition: 'opacity 1200ms cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       />
+      {/* Radial glows on top of texture + noise so they cleanly dim the
+          decorative layers without the grain reading through them. */}
+      <div
+        aria-hidden="true"
+        className="fixed inset-0 pointer-events-none z-0"
+        style={{
+          background: isDevBuild
+            ? backgroundToCss(bgConfig)
+            : 'radial-gradient(480px 420px at 50% 11%, rgba(71,71,71,0.14), transparent 68%), radial-gradient(720px 320px at 50% 63%, rgba(71,71,71,0.14), transparent 52%), radial-gradient(1020px 680px at 0% 0%, rgba(0,0,0,0.25), transparent 91%), radial-gradient(1020px 680px at 100% 0%, rgba(0,0,0,0.25), transparent 91%), radial-gradient(1020px 680px at 0% 100%, rgba(0,0,0,0.25), transparent 91%), radial-gradient(1020px 680px at 100% 100%, rgba(0,0,0,0.25), transparent 91%)',
+          opacity: bgVisible ? 1 : 0,
+          transition: 'opacity 1200ms cubic-bezier(0.16, 1, 0.3, 1)',
+        }}
+      />
 
-      {/* Dev-only background tuner — commented out now that the leather
-          texture values are baked into DEFAULT_BACKGROUND. Restore the
-          conditional below to tweak the bg again.
+      {/* Dev-only background tuner — commented out now that the radials,
+          texture, and noise values are baked into DEFAULT_BACKGROUND.
+          Restore the conditional below to tweak the bg again.
       {isDevBuild ? (
         <BackgroundTuner config={bgConfig} onChange={setBgConfig} />
       ) : null}
