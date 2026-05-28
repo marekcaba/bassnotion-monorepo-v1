@@ -15,9 +15,11 @@
  * make the levers cap-aware without touching this component.
  */
 
+import type { PointerEvent as ReactPointerEvent } from 'react';
 import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
 import { useEntitlement } from '@/domains/billing/hooks/useEntitlement';
 import type { CountdownState } from '@/domains/widgets/hooks/useCountdown';
+import type { HoverHintKey } from './captions';
 
 const SEMITONE_LABELS = [
   'C',
@@ -75,6 +77,11 @@ interface GrooveCardControlsProps {
   onKeyChange: (next: number) => void;
   onMuteBass: (muted: boolean) => void;
   onSoloDrums: (solo: boolean) => void;
+  /** Optional hover-hint reporter. Called with a `HoverHintKey` when the
+   *  pointer enters one of the labelled buttons, and `null` on leave. The
+   *  parent renders the matching string in the caption row above. Pointer-
+   *  only — touch users don't see hover state. */
+  onHoverHint?: (next: HoverHintKey | null) => void;
 }
 
 export function GrooveCardControls({
@@ -93,6 +100,7 @@ export function GrooveCardControls({
   onKeyChange,
   onMuteBass,
   onSoloDrums,
+  onHoverHint,
 }: GrooveCardControlsProps) {
   // Cap-aware hook reads — LAUNCH-02 will populate these.
   const { caps } = useEntitlement();
@@ -108,6 +116,20 @@ export function GrooveCardControls({
   const muteCapped = caps.mute.isCapped;
   const deconCapped = caps.deconstruction.isCapped;
 
+  // Hover hint helper. PointerEvent unifies mouse / pen / touch; we filter
+  // out 'touch' so taps don't briefly flash a hint before the tap action's
+  // own reactive caption replaces it.
+  const hoverProps = (key: HoverHintKey) =>
+    onHoverHint
+      ? {
+          onPointerEnter: (e: ReactPointerEvent) => {
+            if (e.pointerType === 'touch') return;
+            onHoverHint(key);
+          },
+          onPointerLeave: () => onHoverHint(null),
+        }
+      : {};
+
   return (
     <div className="flex items-center justify-between gap-2 px-4 py-3 bg-black/40 rounded-b-xl">
       <button
@@ -120,18 +142,21 @@ export function GrooveCardControls({
             ? 'bg-orange-500 text-white'
             : 'bg-white/5 text-white/70 hover:bg-white/10'
         } disabled:opacity-40 disabled:cursor-not-allowed`}
+        {...hoverProps('mute-bass')}
       >
         Mute Bass
       </button>
 
-      <Stepper
-        label={keyLabel}
-        suffix={isKeyPending ? ' …' : ''}
-        onPrev={() => onKeyChange((pendingKeyShift ?? currentSemitones) - 1)}
-        onNext={() => onKeyChange((pendingKeyShift ?? currentSemitones) + 1)}
-        disabled={transposeCapped || !isReady}
-        ariaLabel="Key"
-      />
+      <div {...hoverProps('key')}>
+        <Stepper
+          label={keyLabel}
+          suffix={isKeyPending ? ' …' : ''}
+          onPrev={() => onKeyChange((pendingKeyShift ?? currentSemitones) - 1)}
+          onNext={() => onKeyChange((pendingKeyShift ?? currentSemitones) + 1)}
+          disabled={transposeCapped || !isReady}
+          ariaLabel="Key"
+        />
+      </div>
 
       <button
         type="button"
@@ -145,6 +170,7 @@ export function GrooveCardControls({
               : 'Play'
         }
         className="w-14 h-14 rounded-full bg-orange-500 text-white flex items-center justify-center hover:bg-orange-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        {...hoverProps(isPlaying ? 'play-pause-pause' : 'play-pause-play')}
       >
         {isLoading ? (
           <span className="text-[10px] uppercase tracking-wider">Loading</span>
@@ -161,14 +187,16 @@ export function GrooveCardControls({
         )}
       </button>
 
-      <Stepper
-        label={`${currentBpm}`}
-        suffix=" BPM"
-        onPrev={() => onTempoChange(currentBpm - 1)}
-        onNext={() => onTempoChange(currentBpm + 1)}
-        disabled={tempoCapped || !isReady}
-        ariaLabel="Tempo"
-      />
+      <div {...hoverProps('tempo')}>
+        <Stepper
+          label={`${currentBpm}`}
+          suffix=" BPM"
+          onPrev={() => onTempoChange(currentBpm - 1)}
+          onNext={() => onTempoChange(currentBpm + 1)}
+          disabled={tempoCapped || !isReady}
+          ariaLabel="Tempo"
+        />
+      </div>
 
       <button
         type="button"
@@ -180,6 +208,7 @@ export function GrooveCardControls({
             ? 'bg-orange-500 text-white'
             : 'bg-white/5 text-white/70 hover:bg-white/10'
         } disabled:opacity-40 disabled:cursor-not-allowed`}
+        {...hoverProps('solo-drums')}
       >
         Solo Drums
       </button>

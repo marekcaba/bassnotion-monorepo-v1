@@ -459,10 +459,12 @@ export function WaitlistClient({
               </p>
             </div>
 
-            <div className="mt-10">
+            <div className="mt-10 mx-auto w-full max-w-[780px]">
               {/* LAUNCH-02.5d: real interactive Groove Card. The
                   WaitlistAudioBootstrap wrapper inside provides the
-                  minimal audio engine (no full CoreServices). */}
+                  minimal audio engine (no full CoreServices). Capped at
+                  780px to match the WhyItWorks section below — the two
+                  sit in the same visual column on desktop. */}
               <WaitlistGrooveCard />
             </div>
           </Reveal>

@@ -10,7 +10,7 @@
  */
 
 import { Metronome } from 'lucide-react';
-import type { ReactNode } from 'react';
+import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react';
 
 interface GrooveCardShellProps {
   title: string;
@@ -26,6 +26,15 @@ interface GrooveCardShellProps {
   /** Read-only metadata line under the title (e.g. "E · 4 bars").
    * Composed by the view; omitted when empty. */
   meta?: string;
+  /** Mouse-over the metronome button reports 'metronome' here; pointer-
+   *  leave reports null. Touch is filtered out by the caller. */
+  onMetronomeHover?: (hovering: boolean) => void;
+  /** Override the card's outer background. Pass a CSS color string (or any
+   *  Tailwind-compatible value). Defaults to the in-app tutorial player's
+   *  zinc-900 so the in-app surface is unchanged; the waitlist surface
+   *  passes the page's own `#100E0D` so the card blends into the
+   *  surrounding "Why It Works" column. */
+  bg?: string;
 }
 
 export function GrooveCardShell({
@@ -38,11 +47,17 @@ export function GrooveCardShell({
   waveform,
   controls,
   meta,
+  onMetronomeHover,
+  bg,
 }: GrooveCardShellProps) {
   return (
     <section
       data-block-type="groove-card"
       className="relative rounded-xl bg-zinc-900 border border-white/5 text-white shadow-lg overflow-hidden"
+      // Inline style wins over the Tailwind class when `bg` is supplied,
+      // letting the waitlist surface theme the card without touching the
+      // in-app tutorial player default.
+      style={bg ? { backgroundColor: bg } : undefined}
     >
       {/* Header */}
       <header className="flex items-center justify-between gap-4 px-4 pt-4">
@@ -70,6 +85,17 @@ export function GrooveCardShell({
               ? 'bg-orange-500 text-white'
               : 'bg-white/5 text-white/50 hover:bg-white/10'
           }`}
+          onPointerEnter={
+            onMetronomeHover
+              ? (e: ReactPointerEvent) => {
+                  if (e.pointerType === 'touch') return;
+                  onMetronomeHover(true);
+                }
+              : undefined
+          }
+          onPointerLeave={
+            onMetronomeHover ? () => onMetronomeHover(false) : undefined
+          }
         >
           <Metronome className="w-4 h-4" aria-hidden />
         </button>

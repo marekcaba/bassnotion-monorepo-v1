@@ -70,6 +70,9 @@ function WaitlistGrooveCardInner() {
         onNext={() => undefined}
         mode="waitlist"
         countdownClickUrl={WAITLIST_COUNTDOWN_CLICK_URL}
+        // Match the "Why It Works" Dial cards below (#100E0D), so the
+        // groove card sits in the same visual column on the dark page.
+        bg="#100E0D"
       />
     </div>
   );

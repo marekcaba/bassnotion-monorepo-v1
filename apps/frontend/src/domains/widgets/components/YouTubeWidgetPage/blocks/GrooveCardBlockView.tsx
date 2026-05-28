@@ -12,7 +12,7 @@
  * shape doesn't).
  */
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { TutorialBlock } from '@bassnotion/contracts';
 import { useGrooveCardPlayback } from './groove-card/useGrooveCardPlayback';
 import { GrooveCardShell } from './groove-card/GrooveCardShell';
@@ -21,6 +21,8 @@ import { GrooveCardControls } from './groove-card/GrooveCardControls';
 import {
   DEFAULT_PREVIEW_CAPTION,
   DEFAULT_STATE_CAPTIONS,
+  HOVER_HINTS,
+  type HoverHintKey,
 } from './groove-card/captions';
 
 interface GrooveCardBlockViewProps {
@@ -34,12 +36,17 @@ interface GrooveCardBlockViewProps {
   mode?: 'block' | 'waitlist';
   /** Optional bundled-click URL for waitlist mode (02.5d). */
   countdownClickUrl?: string;
+  /** Optional outer-card background colour. Forwarded to GrooveCardShell.
+   *  The waitlist surface sets this so the card blends into the marketing
+   *  page; the in-app surface leaves it undefined and gets the default. */
+  bg?: string;
 }
 
 export function GrooveCardBlockView({
   block,
   mode = 'block',
   countdownClickUrl,
+  bg,
 }: GrooveCardBlockViewProps) {
   const config = block.config;
 
@@ -61,12 +68,22 @@ export function GrooveCardBlockView({
   const isBassMuted = playback.mutedStems.has('audio-bass');
   const isSoloDrums = playback.soloedStem === 'audio-drums';
 
-  // Reactive caption: pick the appropriate state caption when a control
-  // last changed; otherwise fall back to previewCaption, then empty.
+  // Hover hint: which interactive control the pointer is currently over.
+  // null when nothing is hovered. Takes priority over the reactive caption
+  // (state captions reappear as soon as the cursor leaves the control).
+  const [hoverHint, setHoverHint] = useState<HoverHintKey | null>(null);
+
+  // Caption priority:
+  //   1. Active hover hint (transient UX affordance — pointer only).
+  //   2. While playing, a simple "Playing…" — the student should focus on
+  //      listening, not reading copy.
+  //   3. Reactive state caption keyed on the last user action.
+  //   4. previewCaption (admin override) or the baked default.
+  // Admin-authored block config wins over baked defaults for (3) and (4).
   const caption = useMemo(() => {
-    // Captions are card-wide UX copy. The block config's own values
-    // win when an admin authored them; otherwise fall back to the
-    // baked-in DEFAULT_STATE_CAPTIONS / DEFAULT_PREVIEW_CAPTION.
+    if (hoverHint) return HOVER_HINTS[hoverHint];
+    if (playback.isPlaying) return 'Playing…';
+
     const sc = config.stateCaptions ?? {};
     const pick = (key: keyof typeof DEFAULT_STATE_CAPTIONS): string =>
       sc[key] ?? DEFAULT_STATE_CAPTIONS[key];
@@ -77,9 +94,11 @@ export function GrooveCardBlockView({
     if (playback.currentBpm !== config.originalBpm) return pick('tempo-change');
     return config.previewCaption ?? DEFAULT_PREVIEW_CAPTION;
   }, [
+    hoverHint,
     config,
     isBassMuted,
     isSoloDrums,
+    playback.isPlaying,
     playback.currentBpm,
     playback.pendingKeyShift,
   ]);
@@ -92,48 +111,81 @@ export function GrooveCardBlockView({
     return `${config.lengthBars} ${config.lengthBars === 1 ? 'bar' : 'bars'}`;
   }, [config.lengthBars]);
 
-  return (
-    <GrooveCardShell
-      title={config.title}
-      subtitle={config.subtitle}
-      meta={meta}
-      isPlaying={playback.isPlaying}
-      caption={caption}
-      clickEnabled={playback.clickEnabled}
-      onToggleClick={() => playback.setClickEnabled(!playback.clickEnabled)}
-      waveform={
-        <GrooveCardWaveform
-          isPlaying={playback.isPlaying}
-          bassBuffer={playback.bassBuffer}
-          audioContext={playback.audioContext}
-          loopStartAudioTime={playback.loopStartAudioTime}
-          loopDurationSeconds={playback.loopDurationSeconds}
-          lengthBars={config.lengthBars}
-          loopSelection={playback.loopSelection}
-          onLoopSelectionChange={playback.setLoopSelection}
-        />
-      }
-      controls={
-        <GrooveCardControls
-          isPlaying={playback.isPlaying}
-          isReady={playback.isReady}
-          isLoading={playback.isLoading}
-          countdownState={playback.countdownState}
-          currentBpm={playback.currentBpm}
-          currentSemitones={playback.currentSemitones}
-          pendingKeyShift={playback.pendingKeyShift}
-          originalKey={config.originalKey}
-          isBassMuted={isBassMuted}
-          isSoloDrums={isSoloDrums}
-          onPlayPause={onPlayPause}
-          onTempoChange={playback.setTempo}
-          onKeyChange={playback.setKey}
-          onMuteBass={(muted) => playback.setStemMuted('audio-bass', muted)}
-          onSoloDrums={(solo) =>
-            playback.setStemSolo(solo ? 'audio-drums' : null)
-          }
-        />
-      }
-    />
+  const youtubeId = useMemo(
+    () => getYouTubeVideoId(config.youtubeUrl ?? ''),
+    [config.youtubeUrl],
   );
+
+  return (
+    <div className="space-y-3">
+      {youtubeId && (
+        <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black">
+          <iframe
+            src={`https://www.youtube.com/embed/${youtubeId}?rel=0&modestbranding=1`}
+            className="absolute inset-0 w-full h-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            frameBorder="0"
+            title="Groove card video"
+          />
+        </div>
+      )}
+      <GrooveCardShell
+        title={config.title}
+        subtitle={config.subtitle}
+        meta={meta}
+        bg={bg}
+        isPlaying={playback.isPlaying}
+        caption={caption}
+        clickEnabled={playback.clickEnabled}
+        onToggleClick={() => playback.setClickEnabled(!playback.clickEnabled)}
+        onMetronomeHover={(hovering) =>
+          setHoverHint(hovering ? 'metronome' : null)
+        }
+        waveform={
+          <GrooveCardWaveform
+            isPlaying={playback.isPlaying}
+            bassBuffer={playback.bassBuffer}
+            audioContext={playback.audioContext}
+            loopStartAudioTime={playback.loopStartAudioTime}
+            loopDurationSeconds={playback.loopDurationSeconds}
+            lengthBars={config.lengthBars}
+            loopSelection={playback.loopSelection}
+            onLoopSelectionChange={playback.setLoopSelection}
+          />
+        }
+        controls={
+          <GrooveCardControls
+            isPlaying={playback.isPlaying}
+            isReady={playback.isReady}
+            isLoading={playback.isLoading}
+            countdownState={playback.countdownState}
+            currentBpm={playback.currentBpm}
+            currentSemitones={playback.currentSemitones}
+            pendingKeyShift={playback.pendingKeyShift}
+            originalKey={config.originalKey}
+            isBassMuted={isBassMuted}
+            isSoloDrums={isSoloDrums}
+            onPlayPause={onPlayPause}
+            onTempoChange={playback.setTempo}
+            onKeyChange={playback.setKey}
+            onMuteBass={(muted) => playback.setStemMuted('audio-bass', muted)}
+            onSoloDrums={(solo) =>
+              playback.setStemSolo(solo ? 'audio-drums' : null)
+            }
+            onHoverHint={setHoverHint}
+          />
+        }
+      />
+    </div>
+  );
+}
+
+function getYouTubeVideoId(url: string): string | null {
+  if (!url) return null;
+  if (/^[a-zA-Z0-9_-]{11}$/.test(url)) return url;
+  const match = url.match(
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+  );
+  return match?.[1] ?? null;
 }

@@ -21,10 +21,16 @@
 
 import type { GrooveCardBlockConfig } from '@bassnotion/contracts';
 
-const BUCKET_BASE = '/storage/v1/object/public/audio-samples';
-const DEMO_KEY = 'waitlist/greasy-pocket/E';
+// Bucket path convention created by the admin stem-upload endpoint:
+//   audio-samples/grooves/{tutorialSlug}/{keyFolder}/{stem}.ogg
+// (see apps/backend/src/domains/tutorials/admin-tutorials.controller.ts).
+// Stems get sanitised to lowercase + alphanumeric on upload, hence "e".
+const SUPABASE_PROJECT_REF = 'iuuplfrktnzsbzibpfjm';
+const BUCKET_BASE = `https://${SUPABASE_PROJECT_REF}.supabase.co/storage/v1/object/public/audio-samples`;
+const DEMO_GROOVE_SLUG = 'economy-groove-1';
+const DEMO_KEY_FOLDER = 'e';
 const stemUrl = (stem: 'bass' | 'drums' | 'harmony'): string =>
-  `${BUCKET_BASE}/${DEMO_KEY}/${stem}.ogg`;
+  `${BUCKET_BASE}/grooves/${DEMO_GROOVE_SLUG}/${DEMO_KEY_FOLDER}/${stem}.ogg`;
 
 // Placeholder URLs for the four non-default key slots. The waitlist
 // preloader is told to only load index 2 (the default), so these URLs
@@ -36,16 +42,16 @@ const placeholderStems = {
   bass: PLACEHOLDER,
   drums: PLACEHOLDER,
   harmony: PLACEHOLDER,
-};
+} as const;
 
 export const WAITLIST_DEMO_BLOCK_ID = 'waitlist-demo-groove';
 
 export const WAITLIST_DEMO_CONFIG: GrooveCardBlockConfig = {
-  title: 'Greasy Pocket',
-  subtitle: 'Funk in E',
-  originalBpm: 104,
+  title: 'Economy Groove 1',
+  subtitle: '',
+  originalBpm: 133,
   originalKey: 'E',
-  lengthBars: 4,
+  lengthBars: 8,
   keys: [
     {
       label: 'C',
@@ -82,14 +88,10 @@ export const WAITLIST_DEMO_CONFIG: GrooveCardBlockConfig = {
       stems: placeholderStems,
     },
   ],
-  previewCaption:
-    'Press play. Then touch a control below — hear the band bend to you.',
-  stateCaptions: {
-    'mute-bass': 'Bass muted. That’s your seat now.',
-    'solo-drums': 'Just the drums. Feel the pocket.',
-    'key-change': 'Queued for the next loop — every instrument transposes.',
-    'tempo-change': 'Tempo changed. The whole band followed.',
-  },
+  // Captions intentionally omitted: the card falls back to the baked-in
+  // DEFAULT_PREVIEW_CAPTION + DEFAULT_STATE_CAPTIONS in
+  // groove-card/captions.ts. That gives the marketing card the same hover
+  // hints and "Playing…" copy as the in-app surface, edited in one place.
   allowBookmark: false,
 };
 
