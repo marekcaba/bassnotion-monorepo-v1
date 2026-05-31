@@ -164,7 +164,7 @@ const TEMPO_MAX = 180;
 //     going past.
 // (b) After the LAUNCH-02.5c test, we settled on a single-key-set +
 //     PitchShift architecture (no buffer-swap between key sets). The
-//     SoundTouchJS WSOLA artifact load stays acceptable across ±6;
+//     pitch-shift artifact load stays acceptable across ±6;
 //     past that, the artifacts dominate the experience.
 export const KEY_RANGE_BLOCK = 6;
 export const KEY_RANGE_WAITLIST = 6;
@@ -398,7 +398,7 @@ export function useGrooveCardPlayback({
   const currentSemitonesRef = useRef(0);
   const preloadRef = useRef(preload);
   // Tracks whether the bass/harmony signal chain was routed through
-  // the SoundTouchNode on the previous setKey call. Used to choose
+  // the pitch-shift node on the previous setKey call. Used to choose
   // between immediate vs. boundary-deferred pitch writes: the FIRST
   // transition into pitched routing applies immediately (the source
   // was just discontinued by enablePitchShiftForStem's setStem call);
@@ -413,7 +413,7 @@ export function useGrooveCardPlayback({
 
   // Single-key-set + PitchShift architecture (LAUNCH-02.5e): the
   // resolver returns the SAME buffer regardless of current key — pitch
-  // is applied at the SoundTouchNode, not by swapping buffers. The
+  // is applied at the pitch-shift node, not by swapping buffers. The
   // resolver still exists because RegionScheduler's rearm path expects
   // it (and because per-stem `null` returns let the engine fall back to
   // the registered default buffer for non-pitch-shiftable stems).
@@ -507,7 +507,7 @@ export function useGrooveCardPlayback({
       currentSemitonesRef.current = desired;
 
       // Single-key-set + PitchShift (LAUNCH-02.5e): the requested
-      // semitone offset IS the residual the SoundTouchNode applies on
+      // semitone offset IS the residual the pitch-shift node applies on
       // bass + harmony. Drums + click stay un-shifted regardless.
       const residualShift = desired;
 
@@ -530,12 +530,12 @@ export function useGrooveCardPlayback({
         // Order of operations matters:
         //
         // 1. enablePitchShiftForStem FIRST — when transitioning from
-        //    default → pitched it creates (lazily) the SoundTouchNode
+        //    default → pitched it creates (lazily) the pitch-shift node
         //    and re-routes the source through it. Idempotent when the
         //    routing already matches, so semitone-to-semitone changes
         //    don't trigger a setStem re-route (which would kill the
         //    in-flight source mid-loop). After this call, the
-        //    SoundTouchNode is guaranteed to exist iff shouldEnable.
+        //    pitch-shift node is guaranteed to exist iff shouldEnable.
         //
         // 2. setPitchShiftLatencyCompensation — toggles drums + click
         //    + metronome delay. Idempotent at the engine level (no-op
@@ -553,7 +553,7 @@ export function useGrooveCardPlayback({
         // seamless: true tells the engine NOT to kill the currently-
         // playing source on the routing change. The current iter
         // finishes at its old routing (default-key direct or pitched
-        // through SoundTouchNode at the OLD pitch); future iters
+        // through the pitch-shift node at the OLD pitch); future iters
         // armed by rearmFutureIterations pick up the new routing.
         // Combined with deferred pitch + drums-not-rearmed, this
         // gives the requested "current loop in OLD key, next loop
@@ -567,7 +567,7 @@ export function useGrooveCardPlayback({
         // Latency compensation (drums + click + metronome delay) is
         // intentionally LEFT DISABLED here. The pre-roll on bass +
         // harmony rearm (preRollSeconds: 0.12 below) makes their
-        // SoundTouch-delayed output emerge at the natural seam —
+        // pitch-engine-delayed output emerge at the natural seam —
         // already synchronised with drums + click + metronome at
         // their natural (un-delayed) timing. Adding a delay on the
         // non-pitched stems would push them 120ms late relative to
@@ -584,11 +584,11 @@ export function useGrooveCardPlayback({
         // key, NEXT loop in NEW key" universally.
         //
         // The rearm pre-rolls the new source's source.start by 120ms
-        // so its SoundTouch-delayed output emerges at the natural
+        // so its pitch-engine-delayed output emerges at the natural
         // seam. We must align the pitchSemitones AudioParam write to
         // the SAME pre-rolled moment, otherwise the new source feeds
-        // SoundTouch at the OLD pitch for 120ms before the param
-        // catches up. So `applyAtAudioTime` = (natural seam - 120ms),
+        // the pitch-shift engine at the OLD pitch for 120ms before the
+        // param catches up. So `applyAtAudioTime` = (natural seam - 120ms),
         // not the natural seam itself.
         //
         // When not playing, the pitch write is immediate (leave
@@ -608,11 +608,13 @@ export function useGrooveCardPlayback({
             loopStartAudioTime + completedLoops * loopDurationSeconds;
           // Pre-roll the param write to match the pre-rolled source.
           // 0.14 must stay in sync with engine's
-          // SOUNDTOUCH_LATENCY_SECONDS + the rearm preRollSeconds —
-          // see those for the math. 0.14 is sized to cover WSOLA's
-          // sampleReq (~133ms at sequenceMs=110) with a small safety
-          // margin so the seam falls AFTER WSOLA's first window is
-          // ready, not exactly at the threshold.
+          // PITCH_SHIFT_FALLBACK_LATENCY_SECONDS + the rearm preRollSeconds —
+          // see those for the math. 0.14 is sized to cover ~one analysis
+          // window of input (~133ms in the SoundTouch/WSOLA era this was
+          // originally measured for) with a small safety margin so the seam
+          // falls AFTER the engine's first window is ready, not exactly at
+          // the threshold. The default Signalsmith engine reports its own
+          // latency, so this figure is a conservative upper bound.
           nextBoundaryAudioTime = Math.max(
             ctx.currentTime + 0.001,
             naturalSeamTime - 0.14,
@@ -639,12 +641,12 @@ export function useGrooveCardPlayback({
         //
         // preRollSeconds: when transitioning into pitched routing
         // (default → pitched OR pitched → different pitched), the new
-        // source feeds SoundTouchJS which adds ~120 ms of pipeline
-        // delay. Pre-rolling the source start by that amount makes
-        // its DELAYED output emerge at the natural seam, so old
+        // source feeds the pitch-shift engine which adds ~120 ms of
+        // pipeline delay. Pre-rolling the source start by that amount
+        // makes its DELAYED output emerge at the natural seam, so old
         // (default-routed) audio ending at the seam connects
-        // seamlessly to new (SoundTouch-routed) audio. Keep this in
-        // sync with engine's SOUNDTOUCH_LATENCY_SECONDS constant.
+        // seamlessly to new (pitch-engine-routed) audio. Keep this in
+        // sync with engine's PITCH_SHIFT_FALLBACK_LATENCY_SECONDS constant.
         engine.rearmFutureIterationsForRegions?.(
           MUSICAL_STEMS.filter((t) =>
             isPitchShiftableStem(audioInstrumentTypeToStemKey(t)),
@@ -1152,8 +1154,8 @@ export function useGrooveCardPlayback({
     // play, the rearm path in setKey didn't run (no live iters to
     // rearm) and `engine.start()` just scheduled the first iters at
     // their NATURAL startAt times. But bass+harmony go through
-    // SoundTouchJS which adds ~120ms processing delay, so they'd emit
-    // 120ms LATER than drums. Apply the pre-roll now to shift their
+    // the pitch-shift engine which adds ~120ms processing delay, so
+    // they'd emit 120ms LATER than drums. Apply the pre-roll now to shift their
     // source.start 120ms earlier so output emerges in sync with
     // drums. The engine's delta-tracking handles the case where
     // pre-roll was already applied (no-op); when starting fresh,
@@ -1266,7 +1268,7 @@ export function useGrooveCardPlayback({
   // ── waveform data ----------------------------------------------------------
   // Bass buffer for the waveform peaks + sweeping playhead. The buffer
   // is the same regardless of current key (pitch-shift is applied at
-  // the SoundTouchNode, not by swapping buffers).
+  // the pitch-shift node, not by swapping buffers).
   // loopDurationSeconds is hoisted above setKey so it's available there
   // for the deferred-pitch boundary computation.
   const bassBuffer = preload.getBuffer('bass') ?? null;

@@ -5,7 +5,7 @@
  *
  * Three stem URL inputs (bass / drums / harmony) plus title / subtitle /
  * BPM / original-key / length-bars. Stems are delivered at originalKey;
- * the runtime renders ±6 semitones via SoundTouchJS WSOLA on bass +
+ * the runtime renders ±6 semitones via the pitch-shift engine on bass +
  * harmony (drums stay un-shifted by design).
  *
  * Follows the ExplainBlockForm convention: vanilla React (no react-hook-
