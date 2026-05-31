@@ -1293,6 +1293,10 @@ export class RegionScheduler {
       if (audioContext && !seenGains.has(entry.gain)) {
         seenGains.add(entry.gain);
         const result = applyClickFreeStop(entry.gain, audioContext, {
+          // 30ms for a softer full-stop fade (vs the 5ms default used by
+          // mid-loop swaps, which stay snappy for key changes). Still
+          // click-free; just a gentler perceived stop.
+          rampSeconds: 0.03,
           onError: (err) =>
             logger.debug('stopAllInfiniteAudio: gain ramp failed', { err }),
         });
