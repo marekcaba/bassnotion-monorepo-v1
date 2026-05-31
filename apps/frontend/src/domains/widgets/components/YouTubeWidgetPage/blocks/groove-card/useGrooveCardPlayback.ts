@@ -608,12 +608,12 @@ export function useGrooveCardPlayback({
             loopStartAudioTime + completedLoops * loopDurationSeconds;
           // Pre-roll the param write to match the pre-rolled source.
           // 0.14 must stay in sync with engine's
-          // SOUNDTOUCH_LATENCY_SECONDS + the rearm preRollSeconds —
-          // see those for the math. 0.14 is sized (from the SoundTouch-era
-          // measurement) to cover the engine's sampleReq (~133ms at
-          // sequenceMs=110) with a small safety margin so the seam falls
-          // AFTER the engine's first window is ready, not exactly at the
-          // threshold. The default Signalsmith engine reports its own
+          // PITCH_SHIFT_FALLBACK_LATENCY_SECONDS + the rearm preRollSeconds —
+          // see those for the math. 0.14 is sized to cover ~one analysis
+          // window of input (~133ms in the SoundTouch/WSOLA era this was
+          // originally measured for) with a small safety margin so the seam
+          // falls AFTER the engine's first window is ready, not exactly at
+          // the threshold. The default Signalsmith engine reports its own
           // latency, so this figure is a conservative upper bound.
           nextBoundaryAudioTime = Math.max(
             ctx.currentTime + 0.001,
@@ -646,7 +646,7 @@ export function useGrooveCardPlayback({
         // makes its DELAYED output emerge at the natural seam, so old
         // (default-routed) audio ending at the seam connects
         // seamlessly to new (pitch-engine-routed) audio. Keep this in
-        // sync with engine's SOUNDTOUCH_LATENCY_SECONDS constant.
+        // sync with engine's PITCH_SHIFT_FALLBACK_LATENCY_SECONDS constant.
         engine.rearmFutureIterationsForRegions?.(
           MUSICAL_STEMS.filter((t) =>
             isPitchShiftableStem(audioInstrumentTypeToStemKey(t)),

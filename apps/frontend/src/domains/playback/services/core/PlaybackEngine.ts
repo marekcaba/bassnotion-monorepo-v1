@@ -77,32 +77,30 @@ import {
   createPitchShiftAdapter,
   type PitchShiftAdapter,
 } from './pitch-shift/PitchShiftAdapter.js';
-import { resolvePitchShiftLibrary } from './pitch-shift/pitchShiftConfig.js';
 import { applyClickFreeStop } from './region-processing/utils/applyClickFreeStop.js';
 
 // LAUNCH-02.5c key-shift: the pitch-shift engine introduces an end-to-end
 // processing delay on stems routed through it. We compensate by
 // delaying the non-pitch-shifted stems (drums + click) by this amount
-// whenever PitchShift is active. The default Signalsmith engine reports
-// its own latency at runtime; the figures below are the SoundTouch-era
-// (WSOLA) measurements that this constant was originally sized for.
+// whenever PitchShift is active. Signalsmith reports its own latency via
+// node.latency() at runtime; this constant is only the pre-live-node
+// fallback used before a real node exists.
 //
-// SoundTouch end-to-end latency = WSOLA input-buffer requirement before
-// processOneWindow can run. From soundtouch-processor.js:1248:
-//   sampleReq = max(intskip + overlapLength, seekWindowLength) + seekLength
-// With our locked params (sequenceMs=110, seekWindowMs=23, overlapMs=8)
-// at 48kHz: sampleReq = 6384 samples = ~133 ms. Add a small safety
-// margin so the seam falls AFTER the pitch engine has its first window
-// ready, not exactly AT the moment it needs to be ready.
+// The 0.14 s fallback was originally sized from the SoundTouch/WSOLA era:
+// the engine needs ~one analysis window of input before it can produce
+// output. With the params used at the time at 48kHz this worked out to
+// ~133 ms; we keep a small safety margin so the seam falls AFTER the
+// pitch engine has its first window ready, not exactly AT the moment it
+// needs to be ready.
 //
-// Previously this was 0.120 — which is LESS than the SoundTouch sampleReq.
-// The result was that the pitch engine hadn't yet hit its processing
-// threshold at the seam, so the first audible output emerging at the seam
-// was generated from a misaligned overlap position (new-key bass spliced
-// against silent pre-warm context) → audible spike on the first
+// Previously this was 0.120 — which is LESS than the engine's input-buffer
+// requirement. The result was that the pitch engine hadn't yet hit its
+// processing threshold at the seam, so the first audible output emerging
+// at the seam was generated from a misaligned position (new-key bass
+// spliced against silent pre-warm context) → audible spike on the first
 // default → pitched engagement.
 //
-// Tunable by ear via `window.__SOUNDTOUCH_LATENCY_OVERRIDE_SECONDS`
+// Tunable by ear via `window.__PITCH_LATENCY_OVERRIDE_SECONDS`
 // (set in the browser console before pressing play; reads on each
 // node creation) so we can binary-search the right value without
 // rebuilds. If the user reports a residual offset:
@@ -110,7 +108,7 @@ import { applyClickFreeStop } from './region-processing/utils/applyClickFreeStop
 //     INCREASE the value.
 //   - drums sound LATE (bass/harmony first, then drums) →
 //     DECREASE the value.
-const SOUNDTOUCH_LATENCY_SECONDS = 0.14;
+const PITCH_SHIFT_FALLBACK_LATENCY_SECONDS = 0.14;
 
 // Debug flag - enable in browser console: window.__DEBUG_PLAYBACK_ENGINE = true
 const isPlaybackDebugEnabled = (): boolean => {
@@ -299,21 +297,19 @@ export class PlaybackEngine implements IAudioStemEngine {
   // boots and pitch-shifting simply degrades to a no-op fallback (the
   // stem plays untouched). This was chosen over Tone.PitchShift after
   // the granular-FFT-based Tone implementation produced unacceptable
-  // downward-shift artifacts; the phase-vocoder/WSOLA engines behind the
-  // adapter are symmetric.
+  // downward-shift artifacts; the phase-vocoder engine behind the
+  // adapter is symmetric.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private instrumentPitchShiftNodes = new Map<AudioInstrumentType, any>();
-  /** True once the active pitch-shift engine's worklet has been
-   *  registered with this.audioContext.audioWorklet. Until this is true,
-   *  getOrCreatePitchShiftNode() returns null. (Field name retained for
-   *  back-compat with existing tests/logs; it now tracks whichever engine
-   *  the A/B selected, not specifically SoundTouch.) */
-  private soundTouchWorkletReady = false;
+  /** True once the pitch-shift engine's worklet has been registered with
+   *  this.audioContext.audioWorklet. Until this is true,
+   *  getOrCreatePitchShiftNode() returns null. */
+  private pitchWorkletReady = false;
 
-  /** Active pitch-shift engine adapter (LAUNCH-02.5f A/B). Picked once at
-   *  initialize() from `?pitch=` / NEXT_PUBLIC_PITCH_LIB; hides the
-   *  SoundTouch-vs-Signalsmith differences (register / createNode /
-   *  setSemitones / latency) behind a common interface. */
+  /** Pitch-shift engine adapter (LAUNCH-02.5f). Constructed once at
+   *  initialize(); hides the engine's register / createNode /
+   *  setSemitones / latency behind a common interface so a future engine
+   *  swap stays a one-file change. */
   private pitchShiftAdapter: PitchShiftAdapter | null = null;
 
   /** Per-stem indefinitely-looping silent AudioBufferSourceNode that
@@ -331,10 +327,10 @@ export class PlaybackEngine implements IAudioStemEngine {
    * LAUNCH-02.5c key-shift — fixed DelayNodes inserted on the
    * NON-pitch-shifted stems (drums + click) to keep them in lockstep
    * with the pitch-engine-delayed bass + harmony. The pitch-shift
-   * engine holds ~one processing window of input before
-   * producing output (~110ms for SoundTouch at tempo=1.0 with default
-   * settings; Signalsmith reports its own); a matching pre-delay on
-   * drums/click compensates so the four stems stay phase-locked.
+   * engine holds ~one analysis window of input before
+   * producing output (Signalsmith reports its own latency at runtime);
+   * a matching pre-delay on drums/click compensates so the four stems
+   * stay phase-locked.
    *
    * Toggled in lockstep with bass/harmony pitch-shift enablement via
    * setPitchShiftLatencyCompensation(). When pitch is bypassed (default
@@ -353,7 +349,7 @@ export class PlaybackEngine implements IAudioStemEngine {
    *
    * Created lazily on first `setPitchShiftLatencyCompensation(true)`.
    * delayTime mutates between 0 (no compensation needed; default key)
-   * and SOUNDTOUCH_LATENCY_SECONDS (any pitch shift active) so the
+   * and PITCH_SHIFT_FALLBACK_LATENCY_SECONDS (any pitch shift active) so the
    * count-in clicks slide back to stay aligned with the
    * pitch-engine-delayed stems.
    */
@@ -527,37 +523,26 @@ export class PlaybackEngine implements IAudioStemEngine {
       // Initialize scheduler
       this.scheduler.setAudioContext(audioContext);
 
-      // LAUNCH-02.5c key-shift: register the pitch-shift engine's worklet
-      // processor once per AudioContext, ahead of any stem playback.
-      // Failures are non-fatal — the engine continues to boot and
+      // LAUNCH-02.5f: construct the pitch-shift engine adapter (Signalsmith)
+      // and register its worklet once per AudioContext, ahead of any stem
+      // playback. Failures are non-fatal — the engine continues to boot and
       // getOrCreatePitchShiftNode() returns null, which downstream code
-      // treats as "no pitch shift available, play stem dry". The
-      // SoundTouch fallback's processor file is served from
-      // /worklets/soundtouch-processor.js (matches the existing
-      // TimingProcessor convention; see public/worklets/timing-processor.js).
-      // LAUNCH-02.5f A/B: pick the engine (?pitch= / NEXT_PUBLIC_PITCH_LIB,
-      // default soundtouch) and register through the adapter. The adapter
-      // owns the engine-specific register/createNode/setSemitones/latency
-      // differences; everything downstream stays agnostic.
+      // treats as "no pitch shift available, play stem dry". Signalsmith
+      // self-injects its worklet (no served processor file to host).
       try {
-        const library = resolvePitchShiftLibrary();
-        this.pitchShiftAdapter = createPitchShiftAdapter(library, {
+        this.pitchShiftAdapter = createPitchShiftAdapter({
           info: (msg, data) =>
-            this.logger.info(msg, { instanceId: this.instanceId, library, data }),
+            this.logger.info(msg, { instanceId: this.instanceId, data }),
           warn: (msg, data) =>
-            this.logger.warn(msg, { instanceId: this.instanceId, library, data }),
+            this.logger.warn(msg, { instanceId: this.instanceId, data }),
           debug: (msg, data) =>
-            this.logger.debug(msg, {
-              instanceId: this.instanceId,
-              library,
-              data,
-            }),
+            this.logger.debug(msg, { instanceId: this.instanceId, data }),
         });
         const ok = await this.pitchShiftAdapter.register(audioContext);
-        this.soundTouchWorkletReady = ok;
+        this.pitchWorkletReady = ok;
         this.logger.info('Pitch-shift engine registered', {
           instanceId: this.instanceId,
-          library,
+          library: this.pitchShiftAdapter.library,
           ready: ok,
         });
       } catch (err) {
@@ -2762,8 +2747,7 @@ export class PlaybackEngine implements IAudioStemEngine {
       // for pitch-shiftable stems so its pipeline pre-warms
       // during the count-in window (~2 s). Without this, the FIRST
       // mid-loop key tap triggers lazy node creation, and the user
-      // hears (in the SoundTouch-era measurement) ~1.6 s of silence
-      // while the engine fills its output buffer
+      // hears ~1.6 s of silence while the engine fills its output buffer
       // from cold. The routing stays bypassed (source → gain) until
       // enablePitchShiftForStem(true) flips it; the node sits
       // pre-warmed but disconnected from the signal path.
@@ -2812,9 +2796,9 @@ export class PlaybackEngine implements IAudioStemEngine {
       return null;
     }
 
-    if (!this.soundTouchWorkletReady) {
+    if (!this.pitchWorkletReady) {
       this.logger.debug(
-        'getOrCreatePitchShiftNode: SoundTouch worklet not yet registered; deferring',
+        'getOrCreatePitchShiftNode: pitch-shift worklet not yet registered; deferring',
         { instrumentType },
       );
       return null;
@@ -2823,13 +2807,12 @@ export class PlaybackEngine implements IAudioStemEngine {
     const gain = this.getOrCreateInstrumentGainNode(instrumentType);
     if (!gain) return null;
 
-    // LAUNCH-02.5f A/B: delegate construction + stretch-param/formant
+    // LAUNCH-02.5f: delegate construction + stretch-param/formant
     // setup + (source-side) gain wiring to the active engine adapter.
     // The adapter returns a native AudioNode connected to `gain`
-    // (source → node → gain); the engine-specific details (SoundTouch's
-    // setStretchParameters vs Signalsmith's schedule/formant) live in the
-    // adapter. Construction stays SYNC for SoundTouch; for Signalsmith the
-    // adapter returns a passthrough relay immediately and splices its real
+    // (source → node → gain); the engine-specific details (Signalsmith's
+    // schedule/formant) live in the adapter. The Signalsmith adapter
+    // returns a passthrough relay immediately and splices its real
     // node in a few ms later (module already cached) — the pre-warm loop
     // below tolerates that because it feeds the relay, which forwards.
     const adapter = this.pitchShiftAdapter;
@@ -2865,8 +2848,8 @@ export class PlaybackEngine implements IAudioStemEngine {
     //
     // Why a LOOPING silent source instead of a fixed-duration one:
     // AudioWorklet processors only run their main DSP loop when they
-    // have non-empty input (the SoundTouch fallback returns null from
-    // `process()` when input is empty, line 1930 of soundtouch-processor.js).
+    // have non-empty input (the pitch-shift worklet produces no output
+    // until it has input).
     // A fixed 2 s pre-warm buffer would end ~150 ms before the real
     // stem source connects (count-in is 1.85 s + 0.3 s startup-
     // lookahead = ~2.15 s gap from setAudioStemBuffers to first stem
@@ -2905,7 +2888,7 @@ export class PlaybackEngine implements IAudioStemEngine {
     } catch (err) {
       // Pre-warm is best-effort; if it fails the user just hears the
       // ~1.6 s glitchy start. Not fatal.
-      this.logger.warn('SoundTouch pre-warm failed', {
+      this.logger.warn('Pitch-shift pre-warm failed', {
         instrumentType,
         err,
       });
@@ -2919,11 +2902,11 @@ export class PlaybackEngine implements IAudioStemEngine {
    * for stems that don't have a node (drums/click, or if construction
    * failed). Idempotent.
    *
-   * For the SoundTouch fallback, `pitchSemitones` is a real AudioParam —
-   * the write is sample-accurate and the pitch-shift engine handles
-   * real-time changes cleanly (unlike Tone.PitchShift's granular FFT,
-   * which we tried first and which produced unacceptable downward-shift
-   * artifacts).
+   * Delegates to the adapter, which applies the offset (Signalsmith via
+   * schedule()). The write honours applyAtAudioTime so the current
+   * iteration finishes in the old key and the next plays the new key —
+   * cleanly, unlike Tone.PitchShift's granular FFT, which we tried first
+   * and which produced unacceptable downward-shift artifacts.
    */
   setInstrumentPitchShift(
     instrumentType: AudioInstrumentType,
@@ -2932,11 +2915,10 @@ export class PlaybackEngine implements IAudioStemEngine {
   ): void {
     const node = this.instrumentPitchShiftNodes.get(instrumentType);
     if (!node || !this.audioContext || !this.pitchShiftAdapter) return;
-    // LAUNCH-02.5f A/B: the active adapter owns how the semitone offset is
-    // applied — SoundTouch writes its `pitchSemitones` AudioParam (with
-    // sample-accurate setValueAtTime scheduling at the loop boundary),
-    // Signalsmith calls schedule({ semitones, formantCompensation, output }).
-    // Both honour applyAtAudioTime so the current iteration finishes in the
+    // LAUNCH-02.5f: the active adapter owns how the semitone offset is
+    // applied — Signalsmith calls
+    // schedule({ semitones, formantCompensation, output }).
+    // It honours applyAtAudioTime so the current iteration finishes in the
     // old key and the next plays the new key.
     this.pitchShiftAdapter.setSemitones(
       node as AudioNode,
@@ -3048,19 +3030,19 @@ export class PlaybackEngine implements IAudioStemEngine {
   }
 
   /**
-   * LAUNCH-02.5f A/B — the dry-stem (drums/click) compensation delay
-   * must match whichever pitch engine is active. Resolution order:
-   *   1. `window.__SOUNDTOUCH_LATENCY_OVERRIDE_SECONDS` — by-ear runtime
-   *      tuning, wins for both engines (kept its historical name).
-   *   2. The active adapter's reported latency — SoundTouch's fixed 0.14,
-   *      Signalsmith's live `node.latency()` (reads the bass node if it
-   *      exists, since both pitched stems share the same engine latency).
-   *   3. SoundTouch's 0.14 baseline if no adapter yet.
+   * LAUNCH-02.5f — the dry-stem (drums/click) compensation delay
+   * must match the active pitch engine. Resolution order:
+   *   1. `window.__PITCH_LATENCY_OVERRIDE_SECONDS` — by-ear runtime
+   *      tuning, wins over everything else.
+   *   2. The active adapter's reported latency — Signalsmith's live
+   *      `node.latency()` (reads the bass node if it exists, since both
+   *      pitched stems share the same engine latency).
+   *   3. The 0.14 fallback baseline if no adapter/node yet.
    */
   private getPitchShiftLatencySeconds(): number {
     if (typeof window !== 'undefined') {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const override = (window as any).__SOUNDTOUCH_LATENCY_OVERRIDE_SECONDS;
+      const override = (window as any).__PITCH_LATENCY_OVERRIDE_SECONDS;
       if (typeof override === 'number') return override;
     }
     if (this.pitchShiftAdapter) {
@@ -3075,7 +3057,7 @@ export class PlaybackEngine implements IAudioStemEngine {
         refNode as AudioNode | undefined,
       );
     }
-    return SOUNDTOUCH_LATENCY_SECONDS;
+    return PITCH_SHIFT_FALLBACK_LATENCY_SECONDS;
   }
 
   /**
@@ -3103,9 +3085,9 @@ export class PlaybackEngine implements IAudioStemEngine {
     let delay: DelayNode;
     try {
       // Resolve the active engine's latency (override → adapter → 0.14).
-      // Set `window.__SOUNDTOUCH_LATENCY_OVERRIDE_SECONDS = 0.140` in the
+      // Set `window.__PITCH_LATENCY_OVERRIDE_SECONDS = 0.140` in the
       // console then re-tap the key stepper to tune by ear without a
-      // rebuild — works for both SoundTouch and Signalsmith.
+      // rebuild — applies to the pitch-shift engine.
       const override = this.getPitchShiftLatencySeconds();
       // maxDelayTime must be >= the delayTime we set. Give 0.5s of
       // headroom so override values up to 500ms can be tested.
@@ -3157,7 +3139,7 @@ export class PlaybackEngine implements IAudioStemEngine {
     // re-arms bass + harmony, so drums permanently die after the
     // first mid-loop tap. (We previously kept this method non-
     // idempotent so a runtime change to
-    // window.__SOUNDTOUCH_LATENCY_OVERRIDE_SECONDS could pick up on
+    // window.__PITCH_LATENCY_OVERRIDE_SECONDS could pick up on
     // the next tap; that override is now a dev-only tuning knob and
     // is OK to pick up on the next Play instead of mid-loop.)
     if (wasActive === enabled) return;
@@ -3224,7 +3206,7 @@ export class PlaybackEngine implements IAudioStemEngine {
         continue;
       }
       // Refresh the delay amount on every call so a runtime tweak via
-      // window.__SOUNDTOUCH_LATENCY_OVERRIDE_SECONDS picks up on the
+      // window.__PITCH_LATENCY_OVERRIDE_SECONDS picks up on the
       // very next key tap without needing to dispose+rebuild the node.
       // setValueAtTime is sample-accurate (vs `.value =`), avoiding a
       // click when the delay changes while a source is feeding it.

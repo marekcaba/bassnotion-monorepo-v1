@@ -263,8 +263,8 @@ export interface GrooveCardStateCaptions {
  *
  * Single-key-set + PitchShift architecture (LAUNCH-02.5e): the admin
  * uploads ONE stem set (bass / drums / harmony) in the original key.
- * The key stepper (±6 semitones) is applied at runtime via SoundTouchJS
- * WSOLA pitch-shift on the bass + harmony stems; drums and click are
+ * The key stepper (±6 semitones) is applied at runtime via the
+ * pitch-shift engine on the bass + harmony stems; drums and click are
  * not transposed. The legacy 5-key-set tuple was replaced because the
  * empirical sound quality of WSOLA across ±6 was indistinguishable from
  * the multi-key-set delivery while halving storage and removing the

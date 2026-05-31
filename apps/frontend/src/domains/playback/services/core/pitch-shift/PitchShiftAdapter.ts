@@ -1,37 +1,30 @@
 /**
- * Pitch-shift engine adapter (LAUNCH-02.5f A/B).
+ * Pitch-shift engine adapter (LAUNCH-02.5f).
  *
  * The PlaybackEngine's key-stepper only couples to its pitch-shift
- * library in three places:
+ * engine in three places:
  *
  *   1. one-time worklet registration per AudioContext,
  *   2. constructing the per-stem AudioWorkletNode, and
  *   3. writing a semitone offset onto that node.
  *
- * Plus a fixed end-to-end latency it compensates for on the dry
- * (drums/click) stems. Everything else — routing through
- * AudioPlayerScheduler, the silent pre-warm loop, gain wiring, stop/
- * dispose — operates on a plain `AudioNode` and is engine-agnostic.
+ * Plus an end-to-end latency it compensates for on the dry (drums/click)
+ * stems. Everything else — routing through AudioPlayerScheduler, the
+ * silent pre-warm loop, gain wiring, stop/dispose — operates on a plain
+ * `AudioNode` and is engine-agnostic.
  *
- * This module hides those three coupling points behind
- * {@link PitchShiftAdapter} so the engine can be swapped at runtime
- * (see {@link resolvePitchShiftLibrary}) without forking PlaybackEngine.
+ * {@link PitchShiftAdapter} is the contract for those three coupling
+ * points. The sole implementation is {@link SignalsmithAdapter}, wrapping
+ * `signalsmith-stretch`: it self-injects its worklet (no served file),
+ * constructs the node via the async factory, and drives pitch via
+ * `schedule({ semitones, formantCompensation })` with per-stem profiles
+ * (see {@link SIGNALSMITH_PROFILES}). Formant compensation is always on —
+ * that's what keeps shifts free of "chipmunk" colouration.
  *
- *   SoundTouchAdapter  — wraps `@soundtouchjs/audio-worklet` exactly as
- *                        the engine used it before the A/B: registers the
- *                        served processor file, constructs SoundTouchNode,
- *                        locks the WSOLA stretch params, writes the
- *                        `pitchSemitones` AudioParam.
- *
- *   SignalsmithAdapter — wraps `signalsmith-stretch`. Self-injects its
- *                        worklet (no served file), constructs the node via
- *                        the async factory, and drives pitch via
- *                        `schedule({ semitones, formantCompensation })`.
- *                        Formant compensation is ON — that's the whole
- *                        point of trialling it (no "chipmunk").
- *
- * Both return real native AudioWorkletNodes, so the downstream
- * `source → node → gain` routing is identical.
+ * (An earlier A/B trialled `@soundtouchjs/audio-worklet` (WSOLA) behind
+ * this same interface; Signalsmith won and SoundTouch was removed. The
+ * adapter indirection is retained so a future engine swap stays a
+ * one-file change.)
  */
 
 /**
@@ -100,7 +93,7 @@ const SIGNALSMITH_PROFILES: Record<PitchStemProfile, SignalsmithStemProfile> = {
 
 export interface PitchShiftAdapter {
   /** Stable id for logging / the `?pitch=` toggle. */
-  readonly library: 'soundtouch' | 'signalsmith';
+  readonly library: 'signalsmith';
 
   /**
    * Register the worklet processor once per AudioContext. Resolves true
@@ -116,8 +109,7 @@ export interface PitchShiftAdapter {
    *
    * `stemProfile` selects per-stem tuning ('bass' vs 'harmony'): bass and
    * harmony have very different spectra, so Signalsmith gets different
-   * formant/block settings per stem. SoundTouch ignores it (its WSOLA
-   * params are stem-agnostic). The returned node is a native
+   * formant/block settings per stem. The returned node is a native
    * AudioWorkletNode; the caller owns its lifecycle (pre-warm, disconnect).
    */
   createNode(
@@ -142,9 +134,8 @@ export interface PitchShiftAdapter {
   /**
    * End-to-end processing latency in seconds, used to delay the dry
    * stems (drums/click) so they stay in sync with the pitched ones.
-   * SoundTouch is a fixed measured constant; Signalsmith reports its own
-   * via `node.latency()` — pass the node to read the live value, or omit
-   * for the engine's nominal default.
+   * Signalsmith reports its own latency via `node.latency()` — pass the
+   * node to read the live value, or omit for the engine's nominal default.
    */
   latencySeconds(node?: AudioNode): number;
 }
@@ -152,150 +143,7 @@ export interface PitchShiftAdapter {
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 // ---------------------------------------------------------------------------
-// SoundTouch — the shipped default. Behaviour preserved bit-for-bit from
-// the inline code that used to live in PlaybackEngine.
-// ---------------------------------------------------------------------------
-
-/**
- * Measured WSOLA end-to-end latency at the locked stretch params
- * (sequenceMs 110 + seekWindowMs 23 + overlapMs 8 @ tempo 1.0). Tunable
- * by ear at runtime via `window.__SOUNDTOUCH_LATENCY_OVERRIDE_SECONDS`
- * (read by the engine's DelayNode code, not here).
- */
-const SOUNDTOUCH_LATENCY_SECONDS = 0.14;
-
-export class SoundTouchAdapter implements PitchShiftAdapter {
-  readonly library = 'soundtouch' as const;
-  private registered = false;
-
-  constructor(private readonly log: PitchShiftLogger) {}
-
-  async register(audioContext: AudioContext): Promise<boolean> {
-    try {
-      const { SoundTouchNode } = await import('@soundtouchjs/audio-worklet');
-      // Processor served from /public (matches TimingProcessor convention).
-      await SoundTouchNode.register(
-        audioContext,
-        '/worklets/soundtouch-processor.js',
-      );
-      this.registered = true;
-      this.log.info('SoundTouch worklet registered');
-      return true;
-    } catch (err) {
-      this.log.warn(
-        'SoundTouch worklet registration failed; pitch shifting disabled',
-        err,
-      );
-      return false;
-    }
-  }
-
-  createNode(
-    audioContext: AudioContext,
-    gain: AudioNode,
-    _stemProfile: PitchStemProfile,
-  ): AudioNode | null {
-    // SoundTouch's WSOLA params are stem-agnostic; profile ignored.
-    if (!this.registered) {
-      this.log.debug('SoundTouch not registered; deferring node creation');
-      return null;
-    }
-
-    let SoundTouchNode: any;
-    try {
-      // Module is in cache after register() — synchronous resolution.
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      SoundTouchNode = require('@soundtouchjs/audio-worklet').SoundTouchNode;
-    } catch (err) {
-      this.log.warn('SoundTouchNode module unavailable', err);
-      return null;
-    }
-
-    let node: any;
-    try {
-      // v2 expects an options object — { context } — NOT a positional arg.
-      node = new SoundTouchNode({ context: audioContext });
-    } catch (err) {
-      this.log.warn('SoundTouchNode construction failed', err);
-      return null;
-    }
-
-    // Lock WSOLA stretch params to the tempo=1.0 autocalc values so
-    // latency stays predictable across version/sample-rate changes.
-    //   sequenceMs   = 130 - 20·1.0 = 110
-    //   seekWindowMs = 25.67 - 2.67·1.0 = 23
-    //   overlapMs    = DEFAULT_OVERLAP_MS = 8
-    try {
-      node.setStretchParameters({
-        sequenceMs: 110,
-        seekWindowMs: 23,
-        overlapMs: 8,
-        // quickSeek=true (SoundTouch default): the full search tripled
-        // CPU per block and produced WORSE underrun spikes on cyclic
-        // bass content.
-        quickSeek: true,
-      });
-    } catch (err) {
-      this.log.warn('setStretchParameters failed; falling back to autocalc', err);
-    }
-
-    try {
-      node.connect(gain);
-    } catch (err) {
-      this.log.warn('SoundTouchNode → gain connect failed', err);
-      try {
-        node.disconnect?.();
-      } catch {
-        /* ignore */
-      }
-      return null;
-    }
-
-    return node as AudioNode;
-  }
-
-  setSemitones(
-    node: AudioNode,
-    semitones: number,
-    audioContext: AudioContext,
-    applyAtAudioTime?: number,
-  ): void {
-    const stNode = node as any;
-    try {
-      // pitchSemitones is a real AudioParam (range -24..+24).
-      if (stNode.pitchSemitones?.value !== undefined) {
-        const param = stNode.pitchSemitones as AudioParam;
-        if (
-          typeof applyAtAudioTime === 'number' &&
-          applyAtAudioTime > audioContext.currentTime
-        ) {
-          try {
-            param.cancelScheduledValues(audioContext.currentTime);
-          } catch {
-            /* ignore */
-          }
-          // Step change: holds current value until applyAtAudioTime, then
-          // snaps. WSOLA picks up the new ratio at that block.
-          param.setValueAtTime(semitones, applyAtAudioTime);
-        } else {
-          param.value = semitones;
-        }
-      } else {
-        // Defensive: some builds expose a plain property.
-        stNode.pitchSemitones = semitones;
-      }
-    } catch (err) {
-      this.log.warn('SoundTouch setSemitones write failed', err);
-    }
-  }
-
-  latencySeconds(): number {
-    return SOUNDTOUCH_LATENCY_SECONDS;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Signalsmith — the A/B candidate. Phase-vocoder, formant-preserving.
+// Signalsmith — the pitch-shift engine. Phase-vocoder, formant-preserving.
 // ---------------------------------------------------------------------------
 
 /**
@@ -534,10 +382,7 @@ export interface PitchShiftLogger {
 }
 
 export function createPitchShiftAdapter(
-  library: 'soundtouch' | 'signalsmith',
   log: PitchShiftLogger,
 ): PitchShiftAdapter {
-  return library === 'signalsmith'
-    ? new SignalsmithAdapter(log)
-    : new SoundTouchAdapter(log);
+  return new SignalsmithAdapter(log);
 }

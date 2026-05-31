@@ -71,8 +71,8 @@ export const grooveCardBlockConfigSchema = z.object({
     .int('lengthBars must be an integer')
     .positive('lengthBars must be positive'),
   // Single-key-set + PitchShift (LAUNCH-02.5e): one stem set delivered
-  // at originalKey; the runtime renders ±6 semitones via SoundTouchJS
-  // WSOLA. The legacy 5-key-set tuple was retired.
+  // at originalKey; the runtime renders ±6 semitones via the pitch-shift
+  // engine. The legacy 5-key-set tuple was retired.
   stems: grooveCardStemSetSchema,
   previewCaption: z.string().optional(),
   stateCaptions: grooveCardStateCaptionsSchema.optional(),
