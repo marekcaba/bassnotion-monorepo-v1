@@ -15,6 +15,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import type { TutorialBlock } from '@bassnotion/contracts';
 import { useGrooveCardPlayback } from './groove-card/useGrooveCardPlayback';
+import { useGrooveCardKeyboard } from './groove-card/useGrooveCardKeyboard';
 import { GrooveCardShell } from './groove-card/GrooveCardShell';
 import { GrooveCardWaveform } from './groove-card/GrooveCardWaveform';
 import { GrooveCardControls } from './groove-card/GrooveCardControls';
@@ -80,6 +81,24 @@ export function GrooveCardBlockView({
 
   const isBassMuted = playback.mutedStems.has('audio-bass');
   const isSoloDrums = playback.soloedStem === 'audio-drums';
+
+  const onToggleBassMute = useCallback(
+    () => playback.setStemMuted('audio-bass', !isBassMuted),
+    [playback, isBassMuted],
+  );
+
+  // Keyboard shortcuts: ←/→ transpose (setKey), Space play/pause
+  // (onPlayPause), M mute/unmute bass (setStemMuted). Each routes through
+  // the same command as its on-screen control. Gated on isReady + a typing
+  // guard. There's only ever one playable element on a page, so a single
+  // global listener is unambiguous.
+  useGrooveCardKeyboard({
+    currentSemitones: playback.currentSemitones,
+    setKey: playback.setKey,
+    togglePlay: onPlayPause,
+    toggleBassMute: onToggleBassMute,
+    enabled: playback.isReady,
+  });
 
   // Hover hint: which interactive control the pointer is currently over.
   // null when nothing is hovered. Takes priority over the reactive caption
