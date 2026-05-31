@@ -26,7 +26,24 @@ export interface ApplyClickFreeStopOptions {
   rampSeconds?: number;
   /** Hook for logging the AudioParam scheduling error if any. */
   onError?: (err: unknown) => void;
+  /**
+   * The gain node's known resting volume (0..1). When provided, this is the
+   * value the node is restored to AFTER the fade — instead of re-reading the
+   * live `gain.gain.value`. Pass this whenever the caller knows the canonical
+   * resting level (e.g. PlaybackEngine's per-instrument volume), because the
+   * live read is unreliable: if a PRIOR click-free stop's fade-to-0 ramp is
+   * still in flight, `gain.gain.value` returns the mid-ramp value (≈0), and
+   * restoring to that pins the node silent for every subsequent play. That is
+   * exactly the "rapid play/stop drops a stem" failure mode. Omitting it falls
+   * back to the live read, floored so a mid-ramp ≈0 can't pin the node silent.
+   */
+  restingVolume?: number;
 }
+
+// Below this, a "resting volume" read from a live AudioParam is treated as a
+// mid-ramp artifact rather than a real resting level. Real stem volumes are
+// >= ~0.05; a fade-to-0 ramp is the only thing that parks the value here.
+const MIN_TRUSTWORTHY_RESTING = 0.01;
 
 export interface ClickFreeStopResult {
   /** The audio-context time at which sources should call `.stop()`. */
@@ -51,7 +68,34 @@ export function applyClickFreeStop(
   }
 
   try {
-    const restingVolume = gain.gain.value;
+    // Resolve the volume to restore to AFTER the fade, in priority order:
+    //   1. The caller-supplied canonical resting volume (most authoritative).
+    //   2. A `__restingVolume` stamp the engine writes onto the gain node
+    //      whenever it sets volume/mute (see PlaybackEngine). This is the
+    //      effective resting level (muted ⇒ 0) and is ALWAYS correct
+    //      regardless of any in-flight ramp — it's what closes the cumulative
+    //      decay: across many stop/transpose reps the live AudioParam can be
+    //      read mid-ramp (≈0) and re-pinned lower each time, ratcheting the
+    //      stem quieter until a page reload. The stamp removes that dependence.
+    //   3. Fallback: read the live value but FLOOR it — a mid-ramp read during
+    //      a prior fade-to-0 would otherwise capture ≈0 and pin the node
+    //      silent. Below the trust threshold we assume unity rather than
+    //      silence (audibly safe; never leaves a stem stuck at 0).
+    const stamped = (gain as { __restingVolume?: number }).__restingVolume;
+    const liveValue = gain.gain.value;
+    const restingVolume =
+      options.restingVolume ??
+      (typeof stamped === 'number'
+        ? stamped
+        : liveValue >= MIN_TRUSTWORTHY_RESTING
+          ? liveValue
+          : 1);
+    // Cancel any in-flight automation (e.g. a prior stop's fade still running)
+    // so our ramp + restore replace it cleanly instead of interleaving on the
+    // same timeline — overlapping triples were what made the corruption sticky.
+    // Optional-chained so unit mocks that omit cancelScheduledValues don't
+    // divert the rest of the schedule into the catch.
+    gain.gain.cancelScheduledValues?.(now);
     gain.gain.setValueAtTime(restingVolume, now);
     gain.gain.linearRampToValueAtTime(0, now + rampSeconds);
     gain.gain.setValueAtTime(restingVolume, stopAt);

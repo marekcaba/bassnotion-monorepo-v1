@@ -2591,6 +2591,11 @@ export class PlaybackEngine implements IAudioStemEngine {
     // Apply the initial gain value
     const effectiveVolume = isMuted ? 0 : volume;
     gainNode.gain.value = effectiveVolume;
+    // Stamp the effective resting volume so the click-free stop helper can
+    // restore to a KNOWN value instead of re-reading the live AudioParam
+    // (which, read mid-fade, would ratchet the stem quieter across reps).
+    (gainNode as GainNode & { __restingVolume?: number }).__restingVolume =
+      effectiveVolume;
 
     this.logger.info(
       `Created gain node for ${instrumentType} (volume: ${volume}, muted: ${isMuted})`,
@@ -2629,6 +2634,10 @@ export class PlaybackEngine implements IAudioStemEngine {
     // Smooth volume change to avoid clicks
     const currentTime = this.audioContext?.currentTime ?? 0;
     gainNode.gain.setTargetAtTime(effectiveVolume, currentTime, 0.02);
+    // Keep the resting-volume stamp current so click-free stops restore to
+    // this level rather than a live (possibly mid-ramp) AudioParam read.
+    (gainNode as GainNode & { __restingVolume?: number }).__restingVolume =
+      effectiveVolume;
 
     this.logger.debug(
       `Volume set for ${instrumentType}: ${volume} (effective: ${effectiveVolume})`,
@@ -2665,6 +2674,10 @@ export class PlaybackEngine implements IAudioStemEngine {
 
     const currentTime = this.audioContext?.currentTime ?? 0;
     gainNode.gain.setTargetAtTime(effectiveVolume, currentTime, 0.01);
+    // Keep the resting-volume stamp current (muted ⇒ 0) so click-free stops
+    // restore to this level rather than a live AudioParam read.
+    (gainNode as GainNode & { __restingVolume?: number }).__restingVolume =
+      effectiveVolume;
 
     this.logger.debug(
       `Mute set for ${instrumentType}: ${muted} (restored volume: ${storedVolume})`,
