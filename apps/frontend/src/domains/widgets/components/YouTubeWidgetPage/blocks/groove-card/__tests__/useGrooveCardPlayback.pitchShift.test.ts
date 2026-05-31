@@ -184,7 +184,7 @@ vi.mock('../useGrooveCardStemPreload', () => ({
     totalCount: 3,
     errors: [],
     preload: vi.fn(),
-    getBuffer: vi.fn((_keySet: number, stemKey: string) => {
+    getBuffer: vi.fn((stemKey: string) => {
       if (stemKey === 'bass') return fakeBassBuffer;
       if (stemKey === 'drums') return fakeBassBuffer;
       if (stemKey === 'harmony') return fakeBassBuffer;
@@ -210,49 +210,17 @@ import { useGrooveCardPlayback } from '../useGrooveCardPlayback';
 function makeConfig(
   overrides: Partial<GrooveCardBlockConfig> = {},
 ): GrooveCardBlockConfig {
-  const placeholderStems = {
-    bass: '/audio-samples/bass.ogg',
-    drums: '/audio-samples/drums.ogg',
-    harmony: '/audio-samples/harmony.ogg',
-  };
   return {
     title: 'Test Groove',
     subtitle: '',
     originalBpm: 120,
     originalKey: 'E',
     lengthBars: 8,
-    keys: [
-      {
-        label: 'C',
-        semitoneOffset: -8,
-        isDefault: false,
-        stems: placeholderStems,
-      },
-      {
-        label: 'D',
-        semitoneOffset: -4,
-        isDefault: false,
-        stems: placeholderStems,
-      },
-      {
-        label: 'E',
-        semitoneOffset: 0,
-        isDefault: true,
-        stems: placeholderStems,
-      },
-      {
-        label: 'G',
-        semitoneOffset: 4,
-        isDefault: false,
-        stems: placeholderStems,
-      },
-      {
-        label: 'A',
-        semitoneOffset: 8,
-        isDefault: false,
-        stems: placeholderStems,
-      },
-    ],
+    stems: {
+      bass: '/audio-samples/bass.ogg',
+      drums: '/audio-samples/drums.ogg',
+      harmony: '/audio-samples/harmony.ogg',
+    },
     previewCaption: '',
     stateCaptions: {},
     allowBookmark: false,
@@ -388,7 +356,7 @@ describe('useGrooveCardPlayback — pitch-shift scenarios', () => {
   // ── Group 2: setKey value normalisation ────────────────────────────────────
 
   describe('setKey value normalisation', () => {
-    it('clamps to ±12 in block mode', () => {
+    it('clamps to ±6 in block mode (the universal cap after single-key-set + PitchShift)', () => {
       const { result } = renderHook(() =>
         useGrooveCardPlayback({ block: makeConfig(), cardId: 'card-A' }),
       );
@@ -396,12 +364,12 @@ describe('useGrooveCardPlayback — pitch-shift scenarios', () => {
       act(() => {
         result.current.setKey(50);
       });
-      expect(result.current.currentSemitones).toBe(12);
+      expect(result.current.currentSemitones).toBe(6);
 
       act(() => {
         result.current.setKey(-50);
       });
-      expect(result.current.currentSemitones).toBe(-12);
+      expect(result.current.currentSemitones).toBe(-6);
     });
 
     it('rounds fractional values to nearest integer', () => {
@@ -447,11 +415,11 @@ describe('useGrooveCardPlayback — pitch-shift scenarios', () => {
 
   // ── Group 3: Sweep through every semitone value ────────────────────────────
 
-  describe('semitone value sweep -12..+12', () => {
+  describe('semitone value sweep -6..+6', () => {
     // Skip 0 here because tapping 0 from the initial 0 state is a
     // short-circuit no-op (no writes fire). The 0-from-pitched case is
     // covered in the disengagement test below.
-    it.each([-12, -8, -4, -2, -1, 1, 2, 4, 8, 12])(
+    it.each([-6, -5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 6])(
       'tap key %i: writes the correct residualShift to setInstrumentPitchShift',
       (offset) => {
         const { result } = renderHook(() =>
@@ -465,8 +433,8 @@ describe('useGrooveCardPlayback — pitch-shift scenarios', () => {
         const writes = callsOf('setInstrumentPitchShift');
         // bass + harmony each get a write.
         expect(writes.length).toBe(2);
-        // The residualShift depends on pickKeySet's choice — we just
-        // assert the engine sees the same value for both stems.
+        // With single-key-set + PitchShift, the residualShift equals the
+        // requested offset. Assert both stems get the same value.
         const bassWrite = writes.find((w) => w.args[0] === 'audio-bass');
         const harmonyWrite = writes.find((w) => w.args[0] === 'audio-harmony');
         expect(bassWrite).toBeDefined();

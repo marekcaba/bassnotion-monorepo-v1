@@ -57,49 +57,17 @@ vi.mock('@/shared/utils/sentry', () => ({
 import { useGrooveCardPlayback } from '../useGrooveCardPlayback';
 
 function makeConfig(): GrooveCardBlockConfig {
-  const placeholderStems = {
-    bass: '/audio-samples/silence.ogg',
-    drums: '/audio-samples/silence.ogg',
-    harmony: '/audio-samples/silence.ogg',
-  };
   return {
     title: 'Test',
     subtitle: 'Test',
     originalBpm: 104,
     originalKey: 'E',
     lengthBars: 4,
-    keys: [
-      {
-        label: 'C',
-        semitoneOffset: -8,
-        isDefault: false,
-        stems: placeholderStems,
-      },
-      {
-        label: 'D',
-        semitoneOffset: -4,
-        isDefault: false,
-        stems: placeholderStems,
-      },
-      {
-        label: 'E',
-        semitoneOffset: 0,
-        isDefault: true,
-        stems: placeholderStems,
-      },
-      {
-        label: 'G',
-        semitoneOffset: 4,
-        isDefault: false,
-        stems: placeholderStems,
-      },
-      {
-        label: 'A',
-        semitoneOffset: 8,
-        isDefault: false,
-        stems: placeholderStems,
-      },
-    ],
+    stems: {
+      bass: '/audio-samples/silence.ogg',
+      drums: '/audio-samples/silence.ogg',
+      harmony: '/audio-samples/silence.ogg',
+    },
     previewCaption: '',
     stateCaptions: {},
     allowBookmark: false,

@@ -25,11 +25,11 @@ const STEM_PATH_REGEX =
   /\/storage\/v1\/object\/public\/audio-samples\/[A-Za-z0-9_./-]+/;
 
 /**
- * Stem URL is optional during draft auto-save (admin fills the 20 cells
+ * Stem URL is optional during draft auto-save (admin fills the 3 cells
  * over multiple keystrokes; each keystroke triggers a save). An empty
  * string passes; any non-empty string MUST match the audio-samples
  * bucket path pattern (host-agnostic across staging / production per
- * CLAUDE.md). Publish-time enforcement (all 20 stems required) belongs
+ * CLAUDE.md). Publish-time enforcement (all 3 stems required) belongs
  * to the UI, not this auto-save validator.
  */
 export const grooveCardStemUrlSchema = z.union([
@@ -48,22 +48,6 @@ export const grooveCardStemSetSchema = z.object({
   harmony: grooveCardStemUrlSchema,
 });
 
-export const grooveCardKeySetSchema = z.object({
-  // Label is admin-visible display copy (e.g. "E", "G♯"). Empty during
-  // initial creation; the admin form's placeholder shows the offset hint.
-  // Publish-time enforcement lives in the UI.
-  label: z.string(),
-  semitoneOffset: z.union([
-    z.literal(-8),
-    z.literal(-4),
-    z.literal(0),
-    z.literal(4),
-    z.literal(8),
-  ]),
-  isDefault: z.boolean(),
-  stems: grooveCardStemSetSchema,
-});
-
 export const grooveCardStateCaptionsSchema = z
   .object({
     'mute-bass': z.string().optional(),
@@ -73,54 +57,28 @@ export const grooveCardStateCaptionsSchema = z
   })
   .partial();
 
-export const grooveCardBlockConfigSchema = z
-  .object({
-    title: z.string().min(1, 'title is required'),
-    subtitle: z.string(),
-    originalBpm: z
-      .number()
-      .int('BPM must be an integer')
-      .min(50, 'BPM must be at least 50')
-      .max(180, 'BPM must be at most 180'),
-    originalKey: z.string().min(1, 'originalKey is required'),
-    lengthBars: z
-      .number()
-      .int('lengthBars must be an integer')
-      .positive('lengthBars must be positive'),
-    keys: z
-      .array(grooveCardKeySetSchema)
-      .length(5, 'exactly 5 key sets are required'),
-    previewCaption: z.string().optional(),
-    stateCaptions: grooveCardStateCaptionsSchema.optional(),
-    allowBookmark: z.boolean().optional(),
-    youtubeUrl: z.string().optional(),
-  })
-  .superRefine((cfg, ctx) => {
-    // Each offset must appear exactly once.
-    const expected = [-8, -4, 0, 4, 8] as const;
-    const actual = cfg.keys.map((k) => k.semitoneOffset).sort((a, b) => a - b);
-    const expectedSorted = [...expected].sort((a, b) => a - b);
-    if (
-      actual.length !== expectedSorted.length ||
-      actual.some((v, i) => v !== expectedSorted[i])
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['keys'],
-        message: 'key sets must cover offsets -8, -4, 0, +4, +8 exactly once',
-      });
-    }
-
-    // Exactly one key set must be marked isDefault.
-    const defaults = cfg.keys.filter((k) => k.isDefault).length;
-    if (defaults !== 1) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['keys'],
-        message: 'exactly one key set must have isDefault: true',
-      });
-    }
-  });
+export const grooveCardBlockConfigSchema = z.object({
+  title: z.string().min(1, 'title is required'),
+  subtitle: z.string(),
+  originalBpm: z
+    .number()
+    .int('BPM must be an integer')
+    .min(50, 'BPM must be at least 50')
+    .max(180, 'BPM must be at most 180'),
+  originalKey: z.string().min(1, 'originalKey is required'),
+  lengthBars: z
+    .number()
+    .int('lengthBars must be an integer')
+    .positive('lengthBars must be positive'),
+  // Single-key-set + PitchShift (LAUNCH-02.5e): one stem set delivered
+  // at originalKey; the runtime renders ±6 semitones via SoundTouchJS
+  // WSOLA. The legacy 5-key-set tuple was retired.
+  stems: grooveCardStemSetSchema,
+  previewCaption: z.string().optional(),
+  stateCaptions: grooveCardStateCaptionsSchema.optional(),
+  allowBookmark: z.boolean().optional(),
+  youtubeUrl: z.string().optional(),
+});
 
 /**
  * Block-level schema. Discriminates on `type` so a `'groove-card'` block

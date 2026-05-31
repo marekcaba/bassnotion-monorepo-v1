@@ -1,13 +1,12 @@
 /**
- * groove-card-block.schema — LAUNCH-02.5c tests.
+ * groove-card-block.schema — LAUNCH-02.5c tests, updated for 02.5e
+ * (single-key-set + PitchShift).
  *
  * Covers the validator's contract:
  *   - Valid config passes
  *   - Non-groove-card blocks pass through untouched
- *   - All 4 stem URLs must match the audio-samples bucket path pattern,
+ *   - All 3 stem URLs must match the audio-samples bucket path pattern,
  *     host-agnostic (staging URL and prod URL both pass)
- *   - Exactly 5 key sets at offsets [-8, -4, 0, +4, +8]
- *   - Exactly one isDefault
  *   - BPM bounds [50, 180]
  *   - lengthBars must be a positive integer
  */
@@ -25,23 +24,17 @@ function validConfig(
 ): GrooveCardBlockConfig {
   const stemBase =
     'https://example.supabase.co/storage/v1/object/public/audio-samples';
-  const keys = ([-8, -4, 0, 4, 8] as const).map((offset) => ({
-    label: `K${offset}`,
-    semitoneOffset: offset,
-    isDefault: offset === 0,
-    stems: {
-      bass: `${stemBase}/funk/${offset}/bass.ogg`,
-      drums: `${stemBase}/funk/${offset}/drums.ogg`,
-      harmony: `${stemBase}/funk/${offset}/harmony.ogg`,
-    },
-  }));
   return {
     title: 'Greasy Pocket',
     subtitle: 'Funk in E',
     originalBpm: 104,
     originalKey: 'E',
     lengthBars: 4,
-    keys: keys as GrooveCardBlockConfig['keys'],
+    stems: {
+      bass: `${stemBase}/funk/bass.ogg`,
+      drums: `${stemBase}/funk/drums.ogg`,
+      harmony: `${stemBase}/funk/harmony.ogg`,
+    },
     previewCaption: '',
     stateCaptions: {},
     allowBookmark: false,
@@ -128,62 +121,11 @@ describe('grooveCardBlockConfigSchema', () => {
     ).toBe(false);
   });
 
-  it('rejects missing key set (only 4 supplied)', () => {
-    const base = validConfig();
-    const result = grooveCardBlockConfigSchema.safeParse({
-      ...base,
-      keys: base.keys.slice(0, 4) as any,
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it('rejects two default key sets', () => {
-    const base = validConfig();
-    const keys = base.keys.map((k, i) => ({
-      ...k,
-      isDefault: i === 1 || i === 2, // 2 defaults
-    }));
-    const result = grooveCardBlockConfigSchema.safeParse({
-      ...base,
-      keys: keys as any,
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it('rejects zero default key sets', () => {
-    const base = validConfig();
-    const keys = base.keys.map((k) => ({ ...k, isDefault: false }));
-    const result = grooveCardBlockConfigSchema.safeParse({
-      ...base,
-      keys: keys as any,
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it('rejects wrong offset spacing (e.g. -10 instead of -8)', () => {
-    const base = validConfig();
-    const keys = base.keys.map((k, i) =>
-      i === 0 ? { ...k, semitoneOffset: -10 as any } : k,
-    );
-    const result = grooveCardBlockConfigSchema.safeParse({
-      ...base,
-      keys: keys as any,
-    });
-    expect(result.success).toBe(false);
-  });
-
   it('rejects stem URLs from outside the audio-samples bucket', () => {
     const base = validConfig();
-    const keys = base.keys.map((k, i) => {
-      if (i !== 0) return k;
-      return {
-        ...k,
-        stems: { ...k.stems, bass: 'https://random.example.com/bass.ogg' },
-      };
-    });
     const result = grooveCardBlockConfigSchema.safeParse({
       ...base,
-      keys: keys as any,
+      stems: { ...base.stems, bass: 'https://random.example.com/bass.ogg' },
     });
     expect(result.success).toBe(false);
   });

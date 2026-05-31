@@ -1,12 +1,17 @@
 'use client';
 
 /**
- * useGrooveCardStemPreload — LAUNCH-02.5c.
+ * useGrooveCardStemPreload — LAUNCH-02.5c, updated for 02.5e
+ * (single-key-set + PitchShift).
  *
- * Preloads decoded `AudioBuffer`s for the Groove Card's stem URLs.
- * Mirrors the orchestration pattern from useAssessmentAudioPreloader:
+ * Preloads decoded `AudioBuffer`s for the Groove Card's 3 stem URLs
+ * (bass / drums / harmony). Mirrors the orchestration pattern from
+ * useAssessmentAudioPreloader:
  *
- *  - Module-level cache and in-flight promise dedupe
+ *  - Module-level cache keyed by URL (persists across remounts so
+ *    navigating away and back doesn't re-decode)
+ *  - Module-level in-flight dedupe so two cards on the same page sharing
+ *    a URL only fetch once
  *  - Promise.allSettled for parallel load with graceful per-item failure
  *  - requestIdleCallback with setTimeout(..., 10) Safari fallback
  *
@@ -15,45 +20,30 @@
  * rather than HTMLAudioElement. The Groove Card needs raw buffers for
  * AudioPlayerScheduler / the infinite-loop scheduling path.
  *
- * The hook does not own the AudioContext — the caller passes one. This
- * keeps stem preload independent of TransportContext's lifecycle and lets
- * the (future) waitlist surface use the same hook with its own AudioContext.
+ * The hook does not own the AudioContext — the caller passes one.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { GrooveCardKeySet } from '@bassnotion/contracts';
+import type { GrooveCardStemSet } from '@bassnotion/contracts';
 import type { AudioStemKey } from '@/domains/playback/modules/tracks/management/TrackManagerProcessor';
 
-/** Cache key: `${keySetIndex}#${stemName}`. The key set index pins the
- * 5-tuple position; the stem name pins which of the 4 stems. */
-type CacheKey = string;
+/** URL-keyed cache. Multiple cards sharing the same stem URL share the
+ *  decoded buffer. */
+const stemCache = new Map<string, AudioBuffer>();
 
-/** Module-level cache. Persists across remounts so navigating away and
- * back to the same tutorial doesn't re-decode every buffer. */
-const stemCache = new Map<CacheKey, AudioBuffer>();
+/** Module-level in-flight dedupe so concurrent decodes of the same URL
+ *  collapse to one fetch + decode pass. */
+const inflight = new Map<string, Promise<AudioBuffer>>();
 
-/** Module-level in-flight dedupe so two cards on the same page both
- * requesting the same stem URL only fetch once. */
-const inflight = new Map<CacheKey, Promise<AudioBuffer>>();
-
-function makeKey(keySetIndex: number, stem: AudioStemKey): CacheKey {
-  return `${keySetIndex}#${stem}`;
-}
-
-/**
- * Fetch a URL, decode to an AudioBuffer, cache it. Dedupes concurrent
- * fetches via the inflight Map.
- */
 async function fetchAndDecode(
   audioContext: AudioContext,
   url: string,
-  cacheKey: CacheKey,
 ): Promise<AudioBuffer> {
-  if (stemCache.has(cacheKey)) {
-    return stemCache.get(cacheKey)!;
+  if (stemCache.has(url)) {
+    return stemCache.get(url)!;
   }
-  if (inflight.has(cacheKey)) {
-    return inflight.get(cacheKey)!;
+  if (inflight.has(url)) {
+    return inflight.get(url)!;
   }
 
   const promise = (async () => {
@@ -65,54 +55,46 @@ async function fetchAndDecode(
     }
     const arrayBuffer = await response.arrayBuffer();
     const buffer = await audioContext.decodeAudioData(arrayBuffer);
-    stemCache.set(cacheKey, buffer);
-    inflight.delete(cacheKey);
+    stemCache.set(url, buffer);
+    inflight.delete(url);
     return buffer;
   })().catch((err) => {
-    inflight.delete(cacheKey);
+    inflight.delete(url);
     throw err;
   });
 
-  inflight.set(cacheKey, promise);
+  inflight.set(url, promise);
   return promise;
 }
 
 export interface UseGrooveCardStemPreloadOptions {
   /** AudioContext used to decode the buffers. Required. */
   audioContext: AudioContext | null;
-  /** All 5 key sets from the block config. */
-  keys: readonly GrooveCardKeySet[];
-  /** Which key sets to actively preload. Subset of [0..4]. Typically the
-   *  hook starts with [defaultIndex], then expands when the user crosses
-   *  into adjacent territory. */
-  keySetIndicesToLoad: readonly number[];
-  /** Start preloading immediately when audioContext + indices are ready. */
+  /** The single stem set from the block config. */
+  stems: GrooveCardStemSet;
+  /** Start preloading immediately when audioContext is ready. */
   preloadOnMount?: boolean;
 }
 
 export interface UseGrooveCardStemPreloadReturn {
-  /** True once every (keySetIndex, stem) in keySetIndicesToLoad is cached. */
+  /** True once every non-empty stem URL is cached. */
   isPreloaded: boolean;
   /** Cached buffers so far. */
   loadedCount: number;
-  /** Total buffers requested (= keySetIndicesToLoad.length × 4). */
+  /** Total non-empty stem URLs requested. */
   totalCount: number;
   /** Per-item error messages. Does not prevent other items from loading. */
   errors: string[];
-  /** Manually trigger preload (e.g. when the user first crosses into a
-   *  not-yet-loaded key set). Idempotent. */
+  /** Manually trigger preload. Idempotent. */
   preload: () => Promise<void>;
   /** Read a buffer if cached, else undefined. */
-  getBuffer: (
-    keySetIndex: number,
-    stem: AudioStemKey,
-  ) => AudioBuffer | undefined;
+  getBuffer: (stem: AudioStemKey) => AudioBuffer | undefined;
 }
 
-// Per-key-set musical stems the preloader fetches. The metronome click
-// is NOT a per-key upload (shared MIDI metronome in /app, single bundled
-// sample on the waitlist), so it's not preloaded from the key set here.
-// AudioStemKey still includes 'click' at the engine-channel level.
+// Musical stems the preloader fetches. The metronome click is NOT a
+// per-groove upload (shared MIDI metronome in /app, single bundled
+// sample on the waitlist), so it's not preloaded here. AudioStemKey
+// still includes 'click' at the engine-channel level.
 const STEM_NAMES = [
   'bass',
   'drums',
@@ -121,8 +103,7 @@ const STEM_NAMES = [
 
 export function useGrooveCardStemPreload({
   audioContext,
-  keys,
-  keySetIndicesToLoad,
+  stems,
   preloadOnMount = true,
 }: UseGrooveCardStemPreloadOptions): UseGrooveCardStemPreloadReturn {
   const mountedRef = useRef(true);
@@ -138,61 +119,47 @@ export function useGrooveCardStemPreload({
   const loadedCountRef = useRef(0);
   const errorsRef = useRef<string[]>([]);
   const startedRef = useRef(false);
-  const completedKeysRef = useRef<Set<CacheKey>>(new Set());
-  // Tracks (keySetIndex, stem) pairs this hook instance has already tried,
-  // independent of success/failure. A retry requires an explicit
-  // `preload()` call that flips this back via the public `retry` path
-  // (LAUNCH-05 will add a retry UI; v1 just accepts the failure).
-  const attemptedKeysRef = useRef<Set<CacheKey>>(new Set());
+  const completedUrlsRef = useRef<Set<string>>(new Set());
+  // Tracks URLs this hook instance has already tried, independent of
+  // success/failure — without this guard a re-render that reruns the
+  // mount effect would queue a duplicate preload for the same URLs.
+  const attemptedUrlsRef = useRef<Set<string>>(new Set());
 
-  const totalCount = keySetIndicesToLoad.length * STEM_NAMES.length;
+  // Total = number of non-empty stem URLs we actually plan to fetch.
+  const requestedUrls = STEM_NAMES.map((stem) => stems[stem]).filter(
+    (url): url is string => !!url,
+  );
+  const totalCount = requestedUrls.length;
 
   const preload = useCallback(async () => {
     if (!audioContext) return;
-    if (keySetIndicesToLoad.length === 0) return;
 
-    // Build the list of (keySetIndex, stem, url) tuples we need.
-    // Filter out anything already completed OR already being attempted in
-    // this hook instance — without this guard, a re-render that reruns
-    // the mount effect would queue a duplicate preload for the same keys.
-    const tasks: Array<{
-      keySetIndex: number;
-      stem: AudioStemKey;
-      url: string;
-    }> = [];
-    for (const keySetIndex of keySetIndicesToLoad) {
-      const keySet = keys[keySetIndex];
-      if (!keySet) continue;
-      for (const stem of STEM_NAMES) {
-        const url = keySet.stems[stem];
-        if (!url) continue;
-        const cacheKey = makeKey(keySetIndex, stem);
-        if (completedKeysRef.current.has(cacheKey)) continue;
-        // Skip keys already attempted (success path adds to completedKeys;
-        // failure path adds to attemptedKeysRef so retries are explicit).
-        if (attemptedKeysRef.current.has(cacheKey)) continue;
-        tasks.push({ keySetIndex, stem, url });
-        attemptedKeysRef.current.add(cacheKey);
-      }
+    const tasks: Array<{ stem: AudioStemKey; url: string }> = [];
+    for (const stem of STEM_NAMES) {
+      const url = stems[stem];
+      if (!url) continue;
+      if (completedUrlsRef.current.has(url)) continue;
+      if (attemptedUrlsRef.current.has(url)) continue;
+      tasks.push({ stem, url });
+      attemptedUrlsRef.current.add(url);
     }
     if (tasks.length === 0) return;
 
     startedRef.current = true;
 
     const results = await Promise.allSettled(
-      tasks.map(async ({ keySetIndex, stem, url }) => {
-        const cacheKey = makeKey(keySetIndex, stem);
+      tasks.map(async ({ stem, url }) => {
         try {
-          await fetchAndDecode(audioContext, url, cacheKey);
+          await fetchAndDecode(audioContext, url);
           if (mountedRef.current) {
-            completedKeysRef.current.add(cacheKey);
+            completedUrlsRef.current.add(url);
             loadedCountRef.current += 1;
             forceUpdate();
           }
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
           if (mountedRef.current) {
-            errorsRef.current.push(`${cacheKey}: ${msg}`);
+            errorsRef.current.push(`${stem} (${url}): ${msg}`);
             forceUpdate();
           }
           throw err;
@@ -210,13 +177,13 @@ export function useGrooveCardStemPreload({
         `[GrooveCardStemPreload] ${failed}/${tasks.length} stems failed to load`,
       );
     }
-  }, [audioContext, keys, keySetIndicesToLoad, forceUpdate]);
+  }, [audioContext, stems, forceUpdate]);
 
   useEffect(() => {
     mountedRef.current = true;
     if (!preloadOnMount) return;
     if (!audioContext) return;
-    if (keySetIndicesToLoad.length === 0) return;
+    if (totalCount === 0) return;
 
     // Non-blocking schedule via requestIdleCallback, Safari fallback.
     if (
@@ -240,13 +207,17 @@ export function useGrooveCardStemPreload({
         clearTimeout(id);
       };
     }
-  }, [audioContext, preloadOnMount, preload, keySetIndicesToLoad.length]);
+  }, [audioContext, preloadOnMount, preload, totalCount]);
 
   const getBuffer = useCallback(
-    (keySetIndex: number, stem: AudioStemKey): AudioBuffer | undefined => {
-      return stemCache.get(makeKey(keySetIndex, stem));
+    (stem: AudioStemKey): AudioBuffer | undefined => {
+      // 'click' is not a per-groove stem — see STEM_NAMES comment.
+      if (stem === 'click') return undefined;
+      const url = stems[stem];
+      if (!url) return undefined;
+      return stemCache.get(url);
     },
-    [],
+    [stems],
   );
 
   return {

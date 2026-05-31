@@ -1,19 +1,18 @@
 /**
- * Waitlist Groove Card config — LAUNCH-02.5d.
+ * Waitlist Groove Card config — LAUNCH-02.5d, updated for 02.5e
+ * (single-key-set + PitchShift).
  *
  * The marketing surface mounts the real Groove Card with a single,
  * hard-coded block config (no admin form, no DB read, no auth). When
  * the asset bucket gets a new "demo groove" Marek wants to feature on
  * the waitlist, update this file and ship.
  *
- * Asset paths use a stable convention:
- *   /storage/v1/object/public/audio-samples/waitlist/{key}/{stem}.ogg
+ * Asset paths use the same bucket convention the admin stem-upload
+ * endpoint creates:
+ *   /storage/v1/object/public/audio-samples/grooves/{slug}/{key}/{stem}.ogg
  *
- * The 4-key fallback set sits at the default offset (0) since the
- * waitlist surface only ever loads the default key set. The other 4
- * slots are present for type-shape compatibility with
- * GrooveCardBlockConfig but never get fetched (useGrooveCardStemPreload
- * is told `keySetIndicesToLoad: [defaultIndex]`).
+ * The waitlist delivers ONE stem set at originalKey; the runtime
+ * pitch-shifts ±6 semitones via SoundTouchJS WSOLA on bass + harmony.
  *
  * Count-in samples reuse the in-app metronome's high (accent, beat 1)
  * and low (click, beats 2-4) pair from `metronome/`; the pre-warm hook
@@ -33,18 +32,6 @@ const DEMO_KEY_FOLDER = 'e';
 const stemUrl = (stem: 'bass' | 'drums' | 'harmony'): string =>
   `${BUCKET_BASE}/grooves/${DEMO_GROOVE_SLUG}/${DEMO_KEY_FOLDER}/${stem}.ogg`;
 
-// Placeholder URLs for the four non-default key slots. The waitlist
-// preloader is told to only load index 2 (the default), so these URLs
-// are never fetched. They satisfy GrooveCardBlockConfig's "exactly 5
-// key sets" shape requirement. (The metronome click is not a stem —
-// the countdown uses WAITLIST_COUNTDOWN_CLICK_URL below.)
-const PLACEHOLDER = `${BUCKET_BASE}/waitlist/placeholder/silence.ogg`;
-const placeholderStems = {
-  bass: PLACEHOLDER,
-  drums: PLACEHOLDER,
-  harmony: PLACEHOLDER,
-} as const;
-
 export const WAITLIST_DEMO_BLOCK_ID = 'waitlist-demo-groove';
 
 export const WAITLIST_DEMO_CONFIG: GrooveCardBlockConfig = {
@@ -53,42 +40,11 @@ export const WAITLIST_DEMO_CONFIG: GrooveCardBlockConfig = {
   originalBpm: 133,
   originalKey: 'E',
   lengthBars: 8,
-  keys: [
-    {
-      label: 'C',
-      semitoneOffset: -8,
-      isDefault: false,
-      stems: placeholderStems,
-    },
-    {
-      label: 'C♯',
-      semitoneOffset: -4,
-      isDefault: false,
-      stems: placeholderStems,
-    },
-    {
-      label: 'E',
-      semitoneOffset: 0,
-      isDefault: true,
-      stems: {
-        bass: stemUrl('bass'),
-        drums: stemUrl('drums'),
-        harmony: stemUrl('harmony'),
-      },
-    },
-    {
-      label: 'G',
-      semitoneOffset: 4,
-      isDefault: false,
-      stems: placeholderStems,
-    },
-    {
-      label: 'A',
-      semitoneOffset: 8,
-      isDefault: false,
-      stems: placeholderStems,
-    },
-  ],
+  stems: {
+    bass: stemUrl('bass'),
+    drums: stemUrl('drums'),
+    harmony: stemUrl('harmony'),
+  },
   // Captions intentionally omitted: the card falls back to the baked-in
   // DEFAULT_PREVIEW_CAPTION + DEFAULT_STATE_CAPTIONS in
   // groove-card/captions.ts. That gives the marketing card the same hover

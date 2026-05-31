@@ -117,38 +117,7 @@ function createDefaultBlock(type: BlockType, order: number): AnyBlock {
         originalBpm: 100,
         originalKey: 'E',
         lengthBars: 4,
-        keys: [
-          {
-            label: '',
-            semitoneOffset: -8 as const,
-            isDefault: false,
-            stems: { bass: '', drums: '', harmony: '' },
-          },
-          {
-            label: '',
-            semitoneOffset: -4 as const,
-            isDefault: false,
-            stems: { bass: '', drums: '', harmony: '' },
-          },
-          {
-            label: 'E',
-            semitoneOffset: 0 as const,
-            isDefault: true,
-            stems: { bass: '', drums: '', harmony: '' },
-          },
-          {
-            label: '',
-            semitoneOffset: 4 as const,
-            isDefault: false,
-            stems: { bass: '', drums: '', harmony: '' },
-          },
-          {
-            label: '',
-            semitoneOffset: 8 as const,
-            isDefault: false,
-            stems: { bass: '', drums: '', harmony: '' },
-          },
-        ],
+        stems: { bass: '', drums: '', harmony: '' },
         // Caption copy is baked in (groove-card/captions.ts); no
         // per-block override needed. The contract still allows
         // previewCaption / stateCaptions so a future story can opt

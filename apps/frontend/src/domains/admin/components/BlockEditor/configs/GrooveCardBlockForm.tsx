@@ -1,24 +1,26 @@
 'use client';
 
 /**
- * GrooveCardBlockForm — LAUNCH-02.5c admin form.
+ * GrooveCardBlockForm — LAUNCH-02.5e admin form (single-key-set + PitchShift).
  *
- * Five key-set rows × four stem URL inputs each (20 total) plus title /
- * subtitle / BPM / original-key / length-bars / captions. Follows the
- * ExplainBlockForm convention: vanilla React (no react-hook-form), raw
- * text inputs for URLs. Admin paste-uploads URLs they've already pushed
- * to the `audio-samples` Supabase bucket — the BassEditor doesn't ship a
- * file picker for block stems (matches every other block form here).
+ * Three stem URL inputs (bass / drums / harmony) plus title / subtitle /
+ * BPM / original-key / length-bars. Stems are delivered at originalKey;
+ * the runtime renders ±6 semitones via SoundTouchJS WSOLA on bass +
+ * harmony (drums stay un-shifted by design).
  *
- * Server-side Zod validation at save time enforces the 5-key-set
- * structure, the bucket path pattern, and BPM/length bounds — see
+ * Follows the ExplainBlockForm convention: vanilla React (no react-hook-
+ * form), raw text inputs for URLs. Admin paste-uploads URLs they've
+ * already pushed to the `audio-samples` Supabase bucket.
+ *
+ * Server-side Zod validation at save time enforces the stem shape, the
+ * bucket path pattern, and BPM/length bounds — see
  * apps/backend/src/domains/tutorials/admin-tutorials.service.ts.
  */
 
 import { useCallback } from 'react';
 import type {
   GrooveCardBlockConfig,
-  GrooveCardKeySet,
+  GrooveCardStemSet,
 } from '@bassnotion/contracts';
 import { StemUploadButton } from './groove-card/StemUploadButton';
 
@@ -33,9 +35,9 @@ interface GrooveCardBlockFormProps {
   tutorialSlug?: string;
 }
 
-// Per-key musical stems the admin uploads. The metronome click is NOT
-// here — it's a fixed shared metronome (MIDI in /app, one bundled
-// sample on the waitlist), never uploaded per groove.
+// Musical stems the admin uploads. The metronome click is NOT here —
+// it's a fixed shared metronome (MIDI in /app, one bundled sample on
+// the waitlist), never uploaded per groove.
 const STEM_SLOTS = ['bass', 'drums', 'harmony'] as const;
 
 export function GrooveCardBlockForm({
@@ -53,34 +55,12 @@ export function GrooveCardBlockForm({
     [config, onChange],
   );
 
-  const updateKeySet = useCallback(
-    (index: number, partial: Partial<GrooveCardKeySet>) => {
-      const nextKeys = config.keys.map((k, i) =>
-        i === index ? { ...k, ...partial } : k,
-      ) as GrooveCardBlockConfig['keys'];
-      onChange({ ...config, keys: nextKeys });
-    },
-    [config, onChange],
-  );
-
   const updateStem = useCallback(
-    (keyIndex: number, stem: (typeof STEM_SLOTS)[number], url: string) => {
-      const nextStems = {
-        ...config.keys[keyIndex]!.stems,
-        [stem]: url,
-      };
-      updateKeySet(keyIndex, { stems: nextStems });
-    },
-    [config.keys, updateKeySet],
-  );
-
-  const setDefaultKey = useCallback(
-    (keyIndex: number) => {
-      const nextKeys = config.keys.map((k, i) => ({
-        ...k,
-        isDefault: i === keyIndex,
-      })) as GrooveCardBlockConfig['keys'];
-      onChange({ ...config, keys: nextKeys });
+    (stem: keyof GrooveCardStemSet, url: string) => {
+      onChange({
+        ...config,
+        stems: { ...config.stems, [stem]: url },
+      });
     },
     [config, onChange],
   );
@@ -157,10 +137,10 @@ export function GrooveCardBlockForm({
         </label>
       </fieldset>
 
-      {/* Key sets */}
+      {/* Stems */}
       <fieldset className="space-y-2">
         <legend className="text-xs uppercase tracking-wider text-white/40 mb-1">
-          Key sets — 5 required at offsets −8, −4, 0, +4, +8
+          Stems — delivered at original key; runtime pitch-shifts ±6 semitones
         </legend>
         <p className="text-xs text-white/40">
           Stems write to the <code>audio-samples</code> Supabase bucket. Paste a
@@ -168,61 +148,26 @@ export function GrooveCardBlockForm({
           <code>/storage/v1/object/public/audio-samples/…</code> is enforced at
           save.
         </p>
-        {config.keys.map((keySet, keyIndex) => (
-          <div
-            key={keyIndex}
-            className="rounded-lg border border-white/10 p-3 space-y-2"
-          >
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-white/50 w-12">
-                {keySet.semitoneOffset > 0
-                  ? `+${keySet.semitoneOffset}`
-                  : keySet.semitoneOffset}
-              </span>
-              <input
-                type="text"
-                value={keySet.label}
-                onChange={(e) =>
-                  updateKeySet(keyIndex, { label: e.target.value })
-                }
-                placeholder="Label (e.g. E)"
-                className="flex-1 px-2 py-1.5 rounded-md bg-white/5 border border-white/10 text-white text-xs"
+        <div className="rounded-lg border border-white/10 p-3 space-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+            {STEM_SLOTS.map((stem) => (
+              <StemUploadButton
+                key={stem}
+                value={config.stems[stem]}
+                onChange={(url) => updateStem(stem, url)}
+                stemLabel={stem}
+                uploadContext={{
+                  tutorialSlug: tutorialSlug ?? 'unsaved',
+                  keyFolder:
+                    config.originalKey.trim().length > 0
+                      ? config.originalKey
+                      : 'default',
+                  stem,
+                }}
               />
-              <label className="flex items-center gap-1.5 text-xs text-white/60">
-                <input
-                  type="radio"
-                  name="defaultKey"
-                  checked={keySet.isDefault}
-                  onChange={() => setDefaultKey(keyIndex)}
-                />
-                Default
-              </label>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-              {STEM_SLOTS.map((stem) => (
-                <StemUploadButton
-                  key={stem}
-                  value={keySet.stems[stem]}
-                  onChange={(url) => updateStem(keyIndex, stem, url)}
-                  stemLabel={stem}
-                  uploadContext={{
-                    tutorialSlug: tutorialSlug ?? 'unsaved',
-                    // Prefer the label the admin typed; fall back to
-                    // the signed offset so paths remain predictable
-                    // even before the row has a key letter.
-                    keyFolder:
-                      keySet.label.trim().length > 0
-                        ? keySet.label
-                        : keySet.semitoneOffset >= 0
-                          ? `+${keySet.semitoneOffset}`
-                          : `${keySet.semitoneOffset}`,
-                    stem,
-                  }}
-                />
-              ))}
-            </div>
+            ))}
           </div>
-        ))}
+        </div>
       </fieldset>
 
       {/* Captions: card-wide UX copy lives in

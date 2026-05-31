@@ -124,7 +124,7 @@ vi.mock('../useGrooveCardStemPreload', () => ({
     totalCount: 3,
     errors: [],
     preload: vi.fn(),
-    getBuffer: vi.fn((_keySet: number, stemKey: string) => {
+    getBuffer: vi.fn((stemKey: string) => {
       if (stemKey === 'bass') return fakeBassBuffer;
       if (stemKey === 'drums') return fakeBassBuffer;
       if (stemKey === 'harmony') return fakeBassBuffer;
@@ -149,49 +149,17 @@ import { useGrooveCardPlayback } from '../useGrooveCardPlayback';
 // ── Fixture ─────────────────────────────────────────────────────────────────
 
 function makeConfig(): GrooveCardBlockConfig {
-  const placeholderStems = {
-    bass: '/audio-samples/silence.ogg',
-    drums: '/audio-samples/silence.ogg',
-    harmony: '/audio-samples/silence.ogg',
-  };
   return {
     title: 'Test Groove',
     subtitle: '',
     originalBpm: 120,
     originalKey: 'E',
     lengthBars: 8,
-    keys: [
-      {
-        label: 'C',
-        semitoneOffset: -8,
-        isDefault: false,
-        stems: placeholderStems,
-      },
-      {
-        label: 'D',
-        semitoneOffset: -4,
-        isDefault: false,
-        stems: placeholderStems,
-      },
-      {
-        label: 'E',
-        semitoneOffset: 0,
-        isDefault: true,
-        stems: placeholderStems,
-      },
-      {
-        label: 'G',
-        semitoneOffset: 4,
-        isDefault: false,
-        stems: placeholderStems,
-      },
-      {
-        label: 'A',
-        semitoneOffset: 8,
-        isDefault: false,
-        stems: placeholderStems,
-      },
-    ],
+    stems: {
+      bass: '/audio-samples/silence.ogg',
+      drums: '/audio-samples/silence.ogg',
+      harmony: '/audio-samples/silence.ogg',
+    },
     previewCaption: '',
     stateCaptions: {},
     allowBookmark: false,

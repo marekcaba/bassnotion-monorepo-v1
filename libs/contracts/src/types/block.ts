@@ -247,23 +247,6 @@ export interface GrooveCardStemSet {
 }
 
 /**
- * One of the 5 key sets a Groove Card delivers. The full tuple sits at
- * fixed semitone offsets [-8, -4, 0, +4, +8] from the original key; the
- * one with `isDefault: true` is the 0-offset set.
- */
-export interface GrooveCardKeySet {
-  /** Display label (e.g. "E", "G♯", "C") */
-  label: string;
-  /** Semitone offset from originalKey. Must be one of -8, -4, 0, +4, +8. */
-  semitoneOffset: -8 | -4 | 0 | 4 | 8;
-  /** Exactly one key set in the tuple has `isDefault: true`. */
-  isDefault: boolean;
-  /** The 3 musical stem URLs (bass / drums / harmony). The metronome
-   * click is not a per-key stem — see GrooveCardStemSet. */
-  stems: GrooveCardStemSet;
-}
-
-/**
  * Reactive copy shown beneath the waveform when a control fires. Keys
  * map to state-changes the card can broadcast; admin authors the copy.
  */
@@ -277,6 +260,15 @@ export interface GrooveCardStateCaptions {
 /**
  * Configuration for a `'groove-card'` block. Stored in the existing
  * JSONB `blocks` column on `tutorials` — no DB migration.
+ *
+ * Single-key-set + PitchShift architecture (LAUNCH-02.5e): the admin
+ * uploads ONE stem set (bass / drums / harmony) in the original key.
+ * The key stepper (±6 semitones) is applied at runtime via SoundTouchJS
+ * WSOLA pitch-shift on the bass + harmony stems; drums and click are
+ * not transposed. The legacy 5-key-set tuple was replaced because the
+ * empirical sound quality of WSOLA across ±6 was indistinguishable from
+ * the multi-key-set delivery while halving storage and removing the
+ * cross-key stitching cliff at offsets ±2 / ±6.
  */
 export interface GrooveCardBlockConfig {
   /** Display title (e.g. "Greasy Pocket") */
@@ -285,19 +277,14 @@ export interface GrooveCardBlockConfig {
   subtitle: string;
   /** Original tempo in BPM. UI clamps the user-facing tempo control to [50, 180]. */
   originalBpm: number;
-  /** Display label for the original key (e.g. "E"). The actual pitch of
-   * each delivered key set is baked into the audio. */
+  /** Display label for the original key (e.g. "E"). The audio is baked
+   *  in this key; the runtime pitch-shift renders ±6 semitones around it. */
   originalKey: string;
   /** Groove length in bars; the engine loops the stems indefinitely. */
   lengthBars: number;
-  /** Exactly 5 key sets at offsets [-8, -4, 0, +4, +8]; one isDefault. */
-  keys: [
-    GrooveCardKeySet,
-    GrooveCardKeySet,
-    GrooveCardKeySet,
-    GrooveCardKeySet,
-    GrooveCardKeySet,
-  ];
+  /** The single stem set delivered at `originalKey`. Bass + harmony are
+   *  pitch-shifted at runtime; drums + click are not. */
+  stems: GrooveCardStemSet;
   /** Caption shown beneath the waveform when nothing is happening. */
   previewCaption?: string;
   /** Reactive copy per state change. */

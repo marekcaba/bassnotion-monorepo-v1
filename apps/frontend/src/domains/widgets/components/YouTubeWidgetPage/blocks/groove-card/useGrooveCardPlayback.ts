@@ -28,10 +28,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type {
-  GrooveCardBlockConfig,
-  GrooveCardKeySet,
-} from '@bassnotion/contracts';
+import type { GrooveCardBlockConfig } from '@bassnotion/contracts';
 import type {
   AudioInstrumentType,
   AudioStemKey,
@@ -48,7 +45,6 @@ import {
   useCountdown,
   type CountdownState,
 } from '@/domains/widgets/hooks/useCountdown';
-import { pickKeySet, type KeySetIndex } from './pickKeySet';
 import { useGrooveCardStemPreload } from './useGrooveCardStemPreload';
 import { trackWaitlistKeyCapHit } from './telemetry';
 
@@ -162,12 +158,16 @@ export interface UseGrooveCardPlaybackReturn {
 const TEMPO_MIN = 50;
 const TEMPO_MAX = 180;
 
-// LAUNCH-02.5c: full range inside /app. LAUNCH-02.5d caps the waitlist
-// surface at ±4 because (a) waitlist loads only the default key set so
-// the residual PitchShift past ±4 is the full delivered range, and (b)
-// the cap acts as a CTA — "full range in app".
-export const KEY_RANGE_BLOCK = 12;
-export const KEY_RANGE_WAITLIST = 4;
+// Key stepper range. Capped at ±6 in both /app and waitlist because:
+// (a) +6 and -6 are the same pitch class, so ±6 covers the full
+//     octave with overlap at the wrap — there's no musical value in
+//     going past.
+// (b) After the LAUNCH-02.5c test, we settled on a single-key-set +
+//     PitchShift architecture (no buffer-swap between key sets). The
+//     SoundTouchJS WSOLA artifact load stays acceptable across ±6;
+//     past that, the artifacts dominate the experience.
+export const KEY_RANGE_BLOCK = 6;
+export const KEY_RANGE_WAITLIST = 6;
 
 function clampTempo(bpm: number): number {
   return Math.max(TEMPO_MIN, Math.min(TEMPO_MAX, Math.round(bpm)));
@@ -177,16 +177,36 @@ function clampKey(semitones: number, maxRange: number): number {
   return Math.max(-maxRange, Math.min(maxRange, Math.round(semitones)));
 }
 
-function findDefaultKeySetIndex(
-  keys: readonly GrooveCardKeySet[],
-): KeySetIndex {
-  const idx = keys.findIndex((k) => k.isDefault);
-  // Fallback to the 0-offset slot if `isDefault` isn't marked.
-  if (idx === -1) {
-    const zeroIdx = keys.findIndex((k) => k.semitoneOffset === 0);
-    return (zeroIdx === -1 ? 2 : zeroIdx) as KeySetIndex;
-  }
-  return idx as KeySetIndex;
+/**
+ * Shape of the LAUNCH-02.5c groove-card config still on disk for tutorials
+ * authored before 02.5e. Read-only; the hook coerces it to the new shape
+ * via {@link resolveBlockStems}.
+ */
+type LegacyGrooveCardBlockConfig = GrooveCardBlockConfig & {
+  keys?: Array<{
+    isDefault?: boolean;
+    semitoneOffset?: number;
+    stems?: { bass?: string; drums?: string; harmony?: string };
+  }>;
+};
+
+const EMPTY_STEMS = { bass: '', drums: '', harmony: '' } as const;
+
+function resolveBlockStems(
+  block: GrooveCardBlockConfig,
+): GrooveCardBlockConfig['stems'] {
+  if (block.stems) return block.stems;
+  const legacy = block as LegacyGrooveCardBlockConfig;
+  const def =
+    legacy.keys?.find((k) => k.isDefault) ??
+    legacy.keys?.find((k) => k.semitoneOffset === 0) ??
+    legacy.keys?.[Math.floor((legacy.keys?.length ?? 1) / 2)];
+  if (!def?.stems) return EMPTY_STEMS;
+  return {
+    bass: def.stems.bass ?? '',
+    drums: def.stems.drums ?? '',
+    harmony: def.stems.harmony ?? '',
+  };
 }
 
 /**
@@ -326,17 +346,6 @@ export function useGrooveCardPlayback({
     timeSignature: { numerator: 4, denominator: 4 },
   });
 
-  // Track which key sets we want preloaded. Story spec:
-  //   default on mount → adjacent (±4) on first play → outer (±8) on
-  //   first cross-over.
-  const defaultKeySetIndex = useMemo(
-    () => findDefaultKeySetIndex(block.keys),
-    [block.keys],
-  );
-  const [keySetIndicesToLoad, setKeySetIndicesToLoad] = useState<
-    readonly number[]
-  >([defaultKeySetIndex]);
-
   // ── audio context + preload ----------------------------------------------
   // Read the live context from WindowRegistry each render rather than
   // snapshotting at mount. During dev Fast Refresh (and the AudioProvider
@@ -356,10 +365,24 @@ export function useGrooveCardPlayback({
     }
   }
 
+  // LAUNCH-02.5e: DB rows written in the 02.5c 5-key-set shape still
+  // exist in production (no migration yet). Read `stems` if present;
+  // otherwise pull the default key set's stems out of `keys[]`. Drops
+  // out as soon as every row has been re-saved through the new admin
+  // form. The coercion is memoised on identity so the preloader's
+  // effect deps stay stable across renders.
+  const blockStems = useMemo(
+    () => resolveBlockStems(block),
+    // block.stems / block.keys identity is the right signal; if either
+    // changes (admin saved a new shape), recompute. Lint can't see the
+    // legacy-shape branch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [block, block.stems, (block as LegacyGrooveCardBlockConfig).keys],
+  );
+
   const preload = useGrooveCardStemPreload({
     audioContext: audioContextRef.current,
-    keys: block.keys,
-    keySetIndicesToLoad,
+    stems: blockStems,
     preloadOnMount: true,
   });
 
@@ -384,17 +407,16 @@ export function useGrooveCardPlayback({
   // current loop finishes in the prior key.
   const pitchShiftPreviouslyActiveRef = useRef(false);
   // Map of region.id → AudioStemKey, populated by registerStemTracks so
-  // the resolver can look up which buffer slot to serve for a given
+  // the buffer resolver can look up which stem to serve for a given
   // region without re-parsing the region id string.
   const regionIdToStemKeyRef = useRef<Map<string, AudioStemKey>>(new Map());
 
-  // The buffer-resolver itself is constructed once and stashed on a ref.
-  // PlaybackEngine.setPendingBufferResolver receives this same function
-  // reference for the card's lifetime; the refs above are what give it
-  // a live view of state. RegionScheduler.armInfiniteAudioIteration
-  // captures the closure for every pre-armed iteration, so a stable
-  // identity here avoids the "stale closure refills with old buffer"
-  // failure mode that would happen if we re-created on every render.
+  // Single-key-set + PitchShift architecture (LAUNCH-02.5e): the
+  // resolver returns the SAME buffer regardless of current key — pitch
+  // is applied at the SoundTouchNode, not by swapping buffers. The
+  // resolver still exists because RegionScheduler's rearm path expects
+  // it (and because per-stem `null` returns let the engine fall back to
+  // the registered default buffer for non-pitch-shiftable stems).
   const bufferResolverRef = useRef<
     ((regionId: string, _iter: number) => AudioBuffer | null) | null
   >(null);
@@ -402,9 +424,7 @@ export function useGrooveCardPlayback({
     bufferResolverRef.current = (regionId, _iter) => {
       const stemKey = regionIdToStemKeyRef.current.get(regionId);
       if (!stemKey) return null;
-      const { keySetIndex } = pickKeySet(currentSemitonesRef.current);
-      const buf = preloadRef.current.getBuffer(keySetIndex, stemKey);
-      return buf ?? null;
+      return preloadRef.current.getBuffer(stemKey) ?? null;
     };
   }
 
@@ -486,19 +506,10 @@ export function useGrooveCardPlayback({
       // useEffect would otherwise run after this render.
       currentSemitonesRef.current = desired;
 
-      const { keySetIndex, residualShift } = pickKeySet(desired);
-
-      // Decide which key set the desired offset will land on and lazily
-      // expand the preload set so the buffer is ready by boundary time.
-      // In waitlist mode we only ever serve the default key set; skip
-      // the lazy expansion so the marketing page never fetches the
-      // outer (±8) keys.
-      if (mode !== 'waitlist') {
-        setKeySetIndicesToLoad((prev) => {
-          if (prev.includes(keySetIndex)) return prev;
-          return [...prev, keySetIndex];
-        });
-      }
+      // Single-key-set + PitchShift (LAUNCH-02.5e): the requested
+      // semitone offset IS the residual the SoundTouchNode applies on
+      // bass + harmony. Drums + click stay un-shifted regardless.
+      const residualShift = desired;
 
       // LAUNCH-02.5c key-shift: apply the residual pitch on the bass +
       // harmony stems and rearm the WINDOW=3 pre-armed iterations so
@@ -720,7 +731,7 @@ export function useGrooveCardPlayback({
     const buffers: Partial<Record<AudioInstrumentType, AudioBuffer>> = {};
     for (const instrumentType of MUSICAL_STEMS) {
       const stemKey = audioInstrumentTypeToStemKey(instrumentType);
-      const buf = preload.getBuffer(defaultKeySetIndex, stemKey);
+      const buf = preload.getBuffer(stemKey);
       if (buf) buffers[instrumentType] = buf;
     }
     if (Object.keys(buffers).length === 0) return;
@@ -793,7 +804,6 @@ export function useGrooveCardPlayback({
   }, [
     block.lengthBars,
     cardId,
-    defaultKeySetIndex,
     preload,
     trackPrefix,
     loopSelection,
@@ -836,7 +846,7 @@ export function useGrooveCardPlayback({
     // (source → gain directly). For a non-zero offset — which happens
     // when the user tapped key BEFORE pressing play — this is what
     // makes that pre-play tap audibly take effect on the first play.
-    const { residualShift } = pickKeySet(currentSemitonesRef.current);
+    const residualShift = currentSemitonesRef.current;
     const shouldEnable = residualShift !== 0;
     engine?.enablePitchShiftForStem?.('audio-bass', shouldEnable);
     engine?.enablePitchShiftForStem?.('audio-harmony', shouldEnable);
@@ -1148,9 +1158,7 @@ export function useGrooveCardPlayback({
     // drums. The engine's delta-tracking handles the case where
     // pre-roll was already applied (no-op); when starting fresh,
     // currentRearmPreRollSeconds is 0 so delta = full 0.12.
-    const { residualShift: residualShiftAtPlay } = pickKeySet(
-      currentSemitonesRef.current,
-    );
+    const residualShiftAtPlay = currentSemitonesRef.current;
     if (residualShiftAtPlay !== 0 && engine) {
       engine.rearmFutureIterationsForRegions?.(
         MUSICAL_STEMS.filter((t) =>
@@ -1256,11 +1264,12 @@ export function useGrooveCardPlayback({
   }, []); // run only on unmount; capture trackPrefix + cardId at mount
 
   // ── waveform data ----------------------------------------------------------
-  // Bass buffer for the current key set + loop duration at the live BPM.
-  // The waveform reads these and renders peaks + a sweeping playhead.
+  // Bass buffer for the waveform peaks + sweeping playhead. The buffer
+  // is the same regardless of current key (pitch-shift is applied at
+  // the SoundTouchNode, not by swapping buffers).
   // loopDurationSeconds is hoisted above setKey so it's available there
   // for the deferred-pitch boundary computation.
-  const bassBuffer = preload.getBuffer(defaultKeySetIndex, 'bass') ?? null;
+  const bassBuffer = preload.getBuffer('bass') ?? null;
 
   return {
     isLoading,

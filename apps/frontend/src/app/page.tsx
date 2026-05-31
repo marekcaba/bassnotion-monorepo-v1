@@ -94,6 +94,10 @@ async function loadFeaturedGroove(): Promise<FeaturedGroove | null> {
       (b): b is TutorialBlock<'groove-card'> => b.type === 'groove-card',
     );
     if (!grooveBlock) return null;
+    // Legacy 5-key-set shape coercion lives inside useGrooveCardPlayback
+    // — DB rows written before LAUNCH-02.5e still carry `config.keys[]`
+    // and `config.stems` is undefined until they're re-saved. Passing
+    // through here is intentional.
     return {
       tutorialTitle: tutorial.title,
       grooveConfig: grooveBlock.config,

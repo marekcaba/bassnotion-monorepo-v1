@@ -496,7 +496,6 @@ export type {
   GrooveBlock,
   GrooveCardBlock,
   GrooveCardBlockConfig,
-  GrooveCardKeySet,
   GrooveCardStemSet,
   GrooveCardStateCaptions,
   TextBlock,

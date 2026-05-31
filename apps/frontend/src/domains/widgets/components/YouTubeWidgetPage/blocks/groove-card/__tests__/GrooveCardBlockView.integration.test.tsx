@@ -150,58 +150,11 @@ function makeBlock(): TutorialBlock<'groove-card'> {
         'key-change': 'Queued for next loop.',
         'tempo-change': 'Tempo changed.',
       },
-      keys: [
-        {
-          label: 'C',
-          semitoneOffset: -8,
-          isDefault: false,
-          stems: {
-            bass: `${stemBase}/c/bass.ogg`,
-            drums: `${stemBase}/c/drums.ogg`,
-            harmony: `${stemBase}/c/harmony.ogg`,
-          },
-        },
-        {
-          label: 'D',
-          semitoneOffset: -4,
-          isDefault: false,
-          stems: {
-            bass: `${stemBase}/d/bass.ogg`,
-            drums: `${stemBase}/d/drums.ogg`,
-            harmony: `${stemBase}/d/harmony.ogg`,
-          },
-        },
-        {
-          label: 'E',
-          semitoneOffset: 0,
-          isDefault: true,
-          stems: {
-            bass: `${stemBase}/e/bass.ogg`,
-            drums: `${stemBase}/e/drums.ogg`,
-            harmony: `${stemBase}/e/harmony.ogg`,
-          },
-        },
-        {
-          label: 'G',
-          semitoneOffset: 4,
-          isDefault: false,
-          stems: {
-            bass: `${stemBase}/g/bass.ogg`,
-            drums: `${stemBase}/g/drums.ogg`,
-            harmony: `${stemBase}/g/harmony.ogg`,
-          },
-        },
-        {
-          label: 'A',
-          semitoneOffset: 8,
-          isDefault: false,
-          stems: {
-            bass: `${stemBase}/a/bass.ogg`,
-            drums: `${stemBase}/a/drums.ogg`,
-            harmony: `${stemBase}/a/harmony.ogg`,
-          },
-        },
-      ],
+      stems: {
+        bass: `${stemBase}/e/bass.ogg`,
+        drums: `${stemBase}/e/drums.ogg`,
+        harmony: `${stemBase}/e/harmony.ogg`,
+      },
     },
   };
 }
