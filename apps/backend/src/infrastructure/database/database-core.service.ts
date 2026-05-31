@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import WebSocket from 'ws';
 import { createStructuredLogger } from '@bassnotion/contracts';
 
 /**
@@ -34,7 +35,21 @@ export class DatabaseCoreService implements OnModuleInit {
         return;
       }
 
-      this.supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+      // Node 20 doesn't ship native WebSocket, but `@supabase/realtime-js`
+      // (transitive dep of supabase-js) requires one at constructor time
+      // even when realtime features aren't used. Without this transport
+      // override the whole client throws "Node.js 20 detected without
+      // native WebSocket support" on `createClient`, crashing the entire
+      // Nest app on startup. We pass the `ws` package which the Supabase
+      // docs explicitly recommend for Node < 22. The cast is unfortunate
+      // but necessary — `ws.WebSocket` is structurally a `WebSocket`
+      // constructor but TypeScript's lib.dom signatures differ slightly
+      // around `binaryType` literal types.
+      this.supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
+        realtime: {
+          transport: WebSocket as unknown as typeof globalThis.WebSocket,
+        },
+      });
       this.logger.info('DatabaseCoreService initialized successfully', {
         correlationId: 'system',
       });

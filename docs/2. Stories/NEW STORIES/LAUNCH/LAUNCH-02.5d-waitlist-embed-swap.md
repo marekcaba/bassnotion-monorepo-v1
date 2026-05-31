@@ -3,9 +3,9 @@
 **Parent:** [LAUNCH-02.5 (epic)](./LAUNCH-02.5-groove-card-block.md) • [Launch Backlog](./README.md)
 **Phase:** 1 — Whitelist & free-tier foundation
 **Estimated effort:** ~2-3 working days
-**Status:** 📝 Ready
-**Blocks:** [LAUNCH-01](./LAUNCH-01-whitelist-page.md) — this story closes LAUNCH-01's stop-ship (the public waitlist mockup must be replaced before YouTube traffic hits the page)
-**Depends on:** [LAUNCH-02.5c](./LAUNCH-02.5c-groove-card-in-app.md) (the `<GrooveCardBlockView>` component family, the `useEntitlement` stub, the hook surface) • transitively 02.5a + 02.5b
+**Status:** ✅ Done — shipped 2026-05-27 on `develop` as commit `6791eee`. **LAUNCH-01 stop-ship is closed.**
+**Blocks:** [LAUNCH-01](./LAUNCH-01-whitelist-page.md) — _unblocked_ (the public waitlist mockup is gone)
+**Depends on:** [LAUNCH-02.5c](./LAUNCH-02.5c-groove-card-in-app.md) ✅ `c4da911` • transitively 02.5a `48f8b85` + 02.5b `6f50acf`
 **The thing this story is:** the waitlist mockup at [WaitlistClient.tsx:468](../../../../apps/frontend/src/app/WaitlistClient.tsx) → real interactive card. Plus the minimal audio bootstrap the marketing page needs (it has no `AudioProvider`), the bundled countdown click sample, the viewport-intersection pre-warm, the ±4 key cap, and the mockup deletion.
 
 ---
@@ -191,3 +191,59 @@ Fires when a visitor taps the key stepper beyond ±4. Feeds the "does hitting th
 - The pre-warm-on-intersection pattern is the iOS Safari mitigation. Without it, the experience is "tap Play, wait, then hear something" — not "tap Play, hear the click."
 - The bundled-click-sample design keeps "the platform IS the instrument" honest: real engine, real audio graph, real timing. It's not "a fake mock that does the right thing" — it's the same `addCountdownRegion()` math feeding a different sound source on a leaner provider stack.
 - If 02.5c's listen-tests reject the in-`/app` card's audio (PitchShift artifacts unacceptable, tempo seam too jarring), **don't ship 02.5d on top of broken audio.** Escalate before merge.
+
+---
+
+## Implementation outcome (post-merge)
+
+Landed on `develop` as commit **`6791eee`** on 2026-05-27. 11 files changed, +1,358 / −310 LOC. The mockup deletion alone is −292 LOC.
+
+### What shipped exactly as specified
+
+- **Minimal audio bootstrap.** [`WaitlistAudioBootstrap.tsx`](../../../../apps/frontend/src/app/_components/WaitlistAudioBootstrap.tsx) constructs only `EventBus + PlaybackEngine` (no `CoreServices.initialize()`, no WAM plugins, no metronome MIDI scheduler, no drum buffers, no harmony scaffolding) and registers both via `WindowRegistry`. **Idempotent:** if `/app`'s CoreServices already populated the registry (e.g. user navigated waitlist → app → back), the bootstrap is a no-op. Disposes the engine it constructed on unmount.
+- **Pre-warm hook.** [`useWaitlistPrewarm.ts`](../../../../apps/frontend/src/app/_components/useWaitlistPrewarm.ts) uses `IntersectionObserver` to fire pre-warm exactly once on first card visibility. Pre-warm: creates the `AudioContext` (left in `suspended` state — no autoplay), calls `PlaybackEngine.initialize(ctx, ctx.destination)`, fetches + decodes the bundled countdown click. The observer `disconnect()`s after firing so a scroll-away → scroll-back doesn't re-decode. `resume()` is the user-gesture hop with a built-in **race-case fallback** (Play-before-scroll): if the user taps Play before the observer fires, `resume()` kicks pre-warm synchronously.
+- **Card mount.** [`<GrooveCardBlockView mode="waitlist" />`](../../../../apps/frontend/src/app/_components/WaitlistGrooveCard.tsx) at `WaitlistClient.tsx:468` replaces the deleted mockup. The waitlist surface loads only the default key set (4 stems, not 20) because `useGrooveCardPlayback` in waitlist mode suppresses the lazy outer-key expansion.
+- **±4 key cap with cap-as-CTA telemetry.** `useGrooveCardPlayback`'s `setKey` is now mode-aware: `KEY_RANGE_WAITLIST = 4`. Beyond-cap requests are SWALLOWED (state does not advance) AND fire `trackWaitlistKeyCapHit({ blockId, lever: 'key', valueAttempted })` so the funnel team can measure "tap-the-cap → signup" conversion. `block` mode still allows ±12 with no telemetry.
+- **Mockup deletion (−292 LOC).** All six mockup-only declarations gone: `GrooveControl` + `GrooveState` types, `TEMPO_OPTIONS` / `KEY_OPTIONS` / `CAPTION_DEFAULT` / `CAPTIONS` constants, `GrooveCardMockup` + `ControlButton` + `GrooveWaveform` functions. Verified via grep: zero orphan references remain in `WaitlistClient.tsx`. No imports needed cleanup (all are shared).
+- **Telemetry helper.** [`telemetry.ts`](../../../../apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/blocks/groove-card/telemetry.ts) — wraps the project's `trackEvent` (Sentry breadcrumbs) convention with named card-event helpers. All events land under the `groove-card` category for clean Sentry rollups.
+
+### Necessary scope adjustments discovered during implementation
+
+- **The story said "uses the existing card-event emitter" but 02.5c shipped without telemetry.** 02.5d establishes the convention via [`telemetry.ts`](../../../../apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/blocks/groove-card/telemetry.ts). Four named helpers: `trackWaitlistKeyCapHit` (required by 02.5d), plus `trackPlayFirst` / `trackPlay` / `trackUnmount` (the surface 02.5c implicitly assumed and can wire later).
+- **CSP audit.** The story said "CSP allowlist already includes `audio-samples`." Confirmed correct: `next.config.js:226` includes `https://*.supabase.co` (wildcard) in `media-src`. A hardcoded host (`htuztkrbuewheehjspcz.supabase.co`) is also present but harmless — the wildcard already covers all our buckets.
+- **`ensureAudioContext()` does heavy work** (goes through CoreServices). The bootstrap cannot use it for the minimal path. Created the AudioContext directly inside `useWaitlistPrewarm` instead — leaner and side-effect free.
+- **Hardcoded demo block config required.** The waitlist surface has no admin form / DB / auth; it needs an in-tree `GrooveCardBlockConfig` to render. [`waitlistGrooveCard.config.ts`](../../../../apps/frontend/src/app/_components/waitlistGrooveCard.config.ts) pins the demo groove ("Greasy Pocket — Funk in E") and the countdown click URL.
+
+### Tests added (25 new across 4 files, all passing)
+
+| File                                                                                                                                                                                                                                                                                         | Count |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| [`telemetry.test.ts`](../../../../apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/blocks/groove-card/__tests__/telemetry.test.ts) — every helper calls `trackEvent` with documented shape; negative `valueAttempted`; category invariant                                      | 6     |
+| [`useGrooveCardPlayback.waitlistCap.test.ts`](../../../../apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/blocks/groove-card/__tests__/useGrooveCardPlayback.waitlistCap.test.ts) — ±4 in-range; beyond-cap swallowed; cap-hit fires; block mode unaffected                   | 7     |
+| [`WaitlistAudioBootstrap.test.tsx`](../../../../apps/frontend/src/app/_components/__tests__/WaitlistAudioBootstrap.test.tsx) — constructs + registers on mount; renders children; no-op when registry already populated; disposes on unmount                                                 | 4     |
+| [`useWaitlistPrewarm.test.ts`](../../../../apps/frontend/src/app/_components/__tests__/useWaitlistPrewarm.test.ts) — no pre-warm pre-intersection; intersection → context + engine init + decode; observer disconnects; suspended state preserved; resume race-case; disabled short-circuits | 8     |
+
+### Tooling discovery (documented inline in the test files)
+
+Vitest 3 + React 19 + class constructors do NOT work cleanly with `vi.fn().mockImplementation(...)` — the call passes through but the factory body never runs. The fix is a `class MockX { constructor() { ... } }` pattern combined with `vi.hoisted(...)` for the captured arrays. Saved future test authors from rediscovering this.
+
+### Verification results
+
+- ✅ `pnpm tsc --noEmit` (apps/frontend): 3,409 errors — exact match with pre-02.5d baseline. **Zero introduced.**
+- ✅ `pnpm tsc --noEmit` (apps/backend): 0 errors
+- ✅ LAUNCH-02.5 full surface: **212/212 tests pass across 15 files** (no regressions from 02.5a/b/c)
+- ✅ ESLint on touched 02.5d files: 0 errors introduced. The only errors flagged were three pre-existing unused-var errors in `WaitlistClient.tsx` (`BackgroundTuner`, `setBgConfig`, `FounderQuote`), which lint-staged disables on commit. 13 stylistic warnings (non-null assertions + structured-logging suggestions) match repo conventions.
+
+### Pre-PR ops step — **status: PENDING upload**
+
+The following assets must be uploaded to the `audio-samples` Supabase bucket at the paths pinned in [`waitlistGrooveCard.config.ts`](../../../../apps/frontend/src/app/_components/waitlistGrooveCard.config.ts) before the waitlist surface becomes audible:
+
+- `audio-samples/waitlist/countdown-click.ogg` (≤5 KB)
+- `audio-samples/waitlist/greasy-pocket/E/{bass,drums,harmony,click}.ogg` (the demo groove's default-key stems)
+
+Until the assets land, the card mounts but each stem fetch returns 404. The engine's per-item failure tolerance keeps the UI alive; the play button just has nothing to play. **The code is ready — the only remaining gate is the asset upload.**
+
+### What this closes
+
+- **LAUNCH-01's stop-ship.** The public waitlist mockup is gone; the real interactive card is in place. YouTube traffic can now drive to the page.
+- **The entire LAUNCH-02.5 epic.** All four sub-stories shipped: 02.5a `48f8b85` → 02.5b `6f50acf` → 02.5c `c4da911` → 02.5d `6791eee`. The Groove Card is first-class everywhere the funnel needs it: `/app` tutorials, Bassment standalone, and the public marketing page.

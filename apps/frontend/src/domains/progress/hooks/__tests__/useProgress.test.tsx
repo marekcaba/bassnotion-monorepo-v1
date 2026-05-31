@@ -109,11 +109,7 @@ describe('useProgress', () => {
   });
 
   it('uses a stable query key per slug', () => {
-    expect(progressKeys.tutorial(SLUG)).toEqual([
-      'progress',
-      'tutorial',
-      SLUG,
-    ]);
+    expect(progressKeys.tutorial(SLUG)).toEqual(['progress', 'tutorial', SLUG]);
   });
 });
 
@@ -207,9 +203,7 @@ describe('useRecordPractice', () => {
 
   it('calls the API with the tempo and updates the cache', async () => {
     const afterPractice = makeResponse({
-      exercises: [
-        { exerciseId: 'ex1', completionCount: 1, lastTempoBpm: 100 },
-      ],
+      exercises: [{ exerciseId: 'ex1', completionCount: 1, lastTempoBpm: 100 }],
     });
     mockedRecord.mockResolvedValue(afterPractice);
 

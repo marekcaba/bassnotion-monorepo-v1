@@ -412,9 +412,14 @@ export class WebhookController {
     const firstName = fullName?.split(/\s+/)[0] ?? null;
 
     const amount =
-      session.amount_total ?? firstItem?.amount_total ?? firstItem?.amount_subtotal ?? 0;
+      session.amount_total ??
+      firstItem?.amount_total ??
+      firstItem?.amount_subtotal ??
+      0;
     const currency = (
-      session.currency ?? firstItem?.currency ?? 'usd'
+      session.currency ??
+      firstItem?.currency ??
+      'usd'
     ).toLowerCase();
     const mode: 'test' | 'live' = session.livemode ? 'live' : 'test';
 
@@ -429,19 +434,21 @@ export class WebhookController {
       ...(attribution ? { attribution } : {}),
     };
 
-    const { row, created } = await this.founderMemberRepository.createIfMissing({
-      email,
-      fullName,
-      stripeCustomerId: (session.customer as string) ?? '',
-      stripeCheckoutSessionId: session.id,
-      stripePaymentIntentId: (session.payment_intent as string) ?? null,
-      stripePriceId: priceId,
-      amount,
-      currency,
-      mode,
-      metadata:
-        Object.keys(mergedMetadata).length > 0 ? mergedMetadata : null,
-    });
+    const { row, created } = await this.founderMemberRepository.createIfMissing(
+      {
+        email,
+        fullName,
+        stripeCustomerId: (session.customer as string) ?? '',
+        stripeCheckoutSessionId: session.id,
+        stripePaymentIntentId: (session.payment_intent as string) ?? null,
+        stripePriceId: priceId,
+        amount,
+        currency,
+        mode,
+        metadata:
+          Object.keys(mergedMetadata).length > 0 ? mergedMetadata : null,
+      },
+    );
 
     if (!created) {
       this.logger.log(

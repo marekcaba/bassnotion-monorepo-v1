@@ -143,6 +143,18 @@ export function GrooveCardBlockForm({
             />
           </label>
         </div>
+        <label className="space-y-1 block">
+          <span className="text-xs text-white/50">YouTube URL (optional)</span>
+          <input
+            type="text"
+            value={config.youtubeUrl ?? ''}
+            onChange={(e) =>
+              updateField('youtubeUrl', e.target.value || undefined)
+            }
+            placeholder="YouTube video URL or 11-char ID — shown above the card"
+            className="w-full px-3 py-2 rounded-md bg-white/5 border border-white/10 text-white placeholder:text-white/30"
+          />
+        </label>
       </fieldset>
 
       {/* Key sets */}

@@ -15,8 +15,9 @@
  * GrooveCardBlockConfig but never get fetched (useGrooveCardStemPreload
  * is told `keySetIndicesToLoad: [defaultIndex]`).
  *
- * Countdown click URL lives at a fixed bucket path; the pre-warm hook
- * fetches it once on first viewport intersection.
+ * Count-in samples reuse the in-app metronome's high (accent, beat 1)
+ * and low (click, beats 2-4) pair from `metronome/`; the pre-warm hook
+ * fetches both once on first viewport intersection.
  */
 
 import type { GrooveCardBlockConfig } from '@bassnotion/contracts';
@@ -95,5 +96,15 @@ export const WAITLIST_DEMO_CONFIG: GrooveCardBlockConfig = {
   allowBookmark: false,
 };
 
-/** Public path to the bundled countdown click sample. */
-export const WAITLIST_COUNTDOWN_CLICK_URL = `${BUCKET_BASE}/waitlist/countdown-click.ogg`;
+/**
+ * Public paths to the count-in samples.
+ *
+ * Reuses the in-app metronome's existing pair — `Click_high2_fixed.mp3`
+ * for the accented downbeat (beat 1) and `Click_low2_fixed.mp3` for the
+ * three following beats — so the waitlist count-in is tonally identical
+ * to the metronome the user will hear inside the app. Both samples are
+ * already in production and proven decoder-friendly across every browser
+ * the app targets, so no waitlist-specific upload is needed.
+ */
+export const WAITLIST_COUNTDOWN_ACCENT_URL = `${BUCKET_BASE}/metronome/Click_high2_fixed.mp3`;
+export const WAITLIST_COUNTDOWN_CLICK_URL = `${BUCKET_BASE}/metronome/Click_low2_fixed.mp3`;

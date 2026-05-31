@@ -281,6 +281,12 @@ export class TutorialsService {
       sidebar_title: tutorial.sidebarTitle,
       // Modular block system
       blocks: tutorial.blocks,
+      // Publication status — needed by public consumers (e.g. the
+      // waitlist SSR fetch) to filter drafts that haven't been
+      // explicitly published yet. The backend's `findBySlug` only
+      // gates on `is_active`, so exposing `status` lets callers add
+      // their own published-only filter without a new endpoint.
+      status: tutorial.status,
     };
   }
 }

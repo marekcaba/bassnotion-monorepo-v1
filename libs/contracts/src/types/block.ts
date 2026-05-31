@@ -304,6 +304,8 @@ export interface GrooveCardBlockConfig {
   stateCaptions?: GrooveCardStateCaptions;
   /** Contract-only for the future; bookmarks UI is out of scope for v1. */
   allowBookmark?: boolean;
+  /** Optional YouTube video URL or 11-char ID rendered above the card. */
+  youtubeUrl?: string;
 }
 
 // =====================================================

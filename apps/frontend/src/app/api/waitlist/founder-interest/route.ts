@@ -44,14 +44,16 @@ export async function POST(request: Request) {
   // referrer in `attribution.referrer`, captured client-side on mount.
   const requestReferrer = request.headers.get('referer') ?? null;
 
-  const { error: insertError } = await supabase.from('founder_interest').insert({
-    email: parsed.data.email,
-    metadata: {
-      userAgent,
-      requestReferrer,
-      attribution: parsed.data.attribution ?? null,
-    },
-  });
+  const { error: insertError } = await supabase
+    .from('founder_interest')
+    .insert({
+      email: parsed.data.email,
+      metadata: {
+        userAgent,
+        requestReferrer,
+        attribution: parsed.data.attribution ?? null,
+      },
+    });
 
   if (insertError) {
     console.error('[founder-interest] insert failed', {

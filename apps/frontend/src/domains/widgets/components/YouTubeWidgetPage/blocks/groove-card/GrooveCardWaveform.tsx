@@ -187,7 +187,7 @@ export function GrooveCardWaveform({
       // right canvas edges respectively) — drawing those just overlaps the
       // rounded-rect border.
       if (bars <= 1) return;
-      c.fillStyle = 'rgba(255, 255, 255, 0.18)';
+      c.fillStyle = 'rgba(255, 255, 255, 0.10)';
       for (let i = 1; i < bars; i++) {
         const x = Math.round((i / bars) * width);
         c.fillRect(x, 0, 1, height);

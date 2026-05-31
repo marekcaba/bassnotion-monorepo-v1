@@ -49,15 +49,25 @@ export interface BackgroundConfig {
   texture: TextureLayer;
 }
 
-// Shared corner-vignette settings — radials 3–6 mirror each other so the
-// four corners stay symmetrical. Tweak this single block to retune all
-// four corner glows at once.
+// Shared corner-vignette settings — radials 3–6 mirror each other so
+// the four corners stay symmetrical. Tweak this single block to retune
+// all four corner glows at once.
+//
+// Two tricks combined here to keep the edge imperceptible:
+//   1. The ORIGIN sits past the viewport corner (-15 / 115 instead of
+//      0 / 100) so the ellipse curvature itself is off-screen.
+//   2. The `transparent` STOP sits past 100% (the ellipse boundary).
+//      CSS clips at the ellipse, so the visible inner portion is the
+//      early part of the falloff curve — alpha is never zero at the
+//      ellipse edge, only smoothly fading toward zero further out.
+//      That kills the alpha-cap step that the eye would otherwise pick
+//      up as a faint curve.
 const CORNER_VIGNETTE: Omit<RadialLayer, 'x' | 'y'> = {
   color: '#000000',
-  opacity: 0.25,
-  width: 1020,
-  height: 680,
-  fadeEnd: 91,
+  opacity: 0.2,
+  width: 1600,
+  height: 1100,
+  fadeEnd: 120,
 };
 
 export const DEFAULT_BACKGROUND: BackgroundConfig = {
@@ -73,17 +83,17 @@ export const DEFAULT_BACKGROUND: BackgroundConfig = {
   },
   radial2: {
     color: '#474747',
-    opacity: 0.14,
-    width: 720,
-    height: 320,
+    opacity: 0.08,
+    width: 220,
+    height: 100,
     x: 50,
-    y: 63,
-    fadeEnd: 52,
+    y: 67,
+    fadeEnd: 154,
   },
-  radial3: { ...CORNER_VIGNETTE, x: 0, y: 0 },
-  radial4: { ...CORNER_VIGNETTE, x: 100, y: 0 },
-  radial5: { ...CORNER_VIGNETTE, x: 0, y: 100 },
-  radial6: { ...CORNER_VIGNETTE, x: 100, y: 100 },
+  radial3: { ...CORNER_VIGNETTE, x: -15, y: -15 },
+  radial4: { ...CORNER_VIGNETTE, x: 115, y: -15 },
+  radial5: { ...CORNER_VIGNETTE, x: -15, y: 115 },
+  radial6: { ...CORNER_VIGNETTE, x: 115, y: 115 },
   noiseOpacity: 0.015,
   texture: {
     url: '/textures/leather2.webp',
@@ -591,7 +601,7 @@ function RadialControls({
       <SliderRow
         label="fade end"
         min={20}
-        max={100}
+        max={300}
         step={1}
         value={radial.fadeEnd}
         onChange={(v) => onChange({ fadeEnd: v })}

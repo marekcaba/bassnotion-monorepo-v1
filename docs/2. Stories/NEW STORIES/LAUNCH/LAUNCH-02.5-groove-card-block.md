@@ -3,8 +3,8 @@
 **Parent:** [Launch Backlog](./README.md) • [LAUNCH_PLAN.md](../../../deployment/LAUNCH_PLAN.md)
 **Phase:** 1 — Whitelist & free-tier foundation
 **Estimated effort:** ~12-15 working days, split across 4 sub-stories
-**Status:** 🚧 In progress — 02.5a + 02.5b shipped on `develop` (commits `48f8b85`, `6f50acf`); 02.5c + 02.5d remaining
-**Blocks:** [LAUNCH-01](./LAUNCH-01-whitelist-page.md) (via 02.5d) • [LAUNCH-02](./LAUNCH-02-capped-levers.md) (via 02.5c) • [LAUNCH-05](./LAUNCH-05-playback-polish.md) Fix 1 (via 02.5c)
+**Status:** ✅ Done — all four sub-stories shipped on `develop` between commits `48f8b85` → `6791eee` on 2026-05-27
+**Blocks:** [LAUNCH-01](./LAUNCH-01-whitelist-page.md) (via 02.5d) • [LAUNCH-02](./LAUNCH-02-capped-levers.md) (via 02.5c) • [LAUNCH-05](./LAUNCH-05-playback-polish.md) Fix 1 (via 02.5c) — _all unblocked_
 
 ---
 
@@ -34,7 +34,7 @@ No UI. Verified structurally by unit tests + an integration fixture. Acoustic ve
 
 The single biggest design call across this epic lives here.
 
-### [LAUNCH-02.5c — Groove Card Block (in `/app`)](./LAUNCH-02.5c-groove-card-in-app.md) 📝 Ready (unblocked)
+### [LAUNCH-02.5c — Groove Card Block (in `/app`)](./LAUNCH-02.5c-groove-card-in-app.md) ✅ Done — `c4da911`
 
 **~5-6 days • depends on 02.5a + 02.5b • blocks LAUNCH-02, LAUNCH-05 Fix 1, 02.5d**
 
@@ -42,9 +42,9 @@ The product surface. Block contract (`'groove-card'` in `BlockType`), admin form
 
 This story also closes 02.5b's deferred acoustic verification — the PitchShift artifact listen-test, the tempo-change seam audit, the crossfade quality check all happen here.
 
-### [LAUNCH-02.5d — Waitlist Embed Swap](./LAUNCH-02.5d-waitlist-embed-swap.md) ⏳ Blocked (waits on 02.5c)
+### [LAUNCH-02.5d — Waitlist Embed Swap](./LAUNCH-02.5d-waitlist-embed-swap.md) ✅ Done — `6791eee`
 
-**~2-3 days • depends on 02.5c • blocks LAUNCH-01**
+**~2-3 days • depends on 02.5c • blocks LAUNCH-01 — _closed_. Pending pre-PR asset upload before audio becomes audible (countdown-click.ogg + 4 demo stems in `audio-samples/waitlist/`).**
 
 The marketing-page deliverable that closes LAUNCH-01's stop-ship. Mockup → real card on the public waitlist. Includes the minimal `WaitlistAudioBootstrap` (the marketing page has no `AudioProvider`, so the engine must be brought in as a lightweight purpose-built provider), the bundled `countdown-click.ogg` (pre-PR ops step), the `IntersectionObserver` pre-warm for iOS Safari, the ±4 key cap with telemetry, and the mockup deletion.
 

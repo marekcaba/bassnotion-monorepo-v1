@@ -149,6 +149,7 @@ function AdminTutorialEditPageContent({ params }: AdminTutorialPageProps) {
   const [editMode, setEditMode] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
   const [showTimingDebug, setShowTimingDebug] = useState(false);
   const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(
     null,
@@ -1682,6 +1683,59 @@ function AdminTutorialEditPageContent({ params }: AdminTutorialPageProps) {
                           className="text-white border-white/30 hover:bg-white/10"
                         >
                           Preview
+                        </Button>
+                        {/* Publish / Unpublish — flips the tutorial's
+                            `status`, `is_active`, and `published_at`
+                            together via the backend admin endpoint.
+                            Until this lands, every new tutorial sits in
+                            `draft` forever and the public marketing
+                            surfaces (e.g. the waitlist groove card)
+                            silently fall back to bundled defaults. */}
+                        <Button
+                          onClick={async () => {
+                            try {
+                              setIsPublishing(true);
+                              const wasPublished = tutorial.isPublished();
+                              const result = wasPublished
+                                ? await tutorialRepo.unpublish(tutorial.id)
+                                : await tutorialRepo.publish(tutorial.id);
+                              if (result.ok) {
+                                setTutorial(result.value);
+                              } else {
+                                logger.error(
+                                  wasPublished
+                                    ? 'Failed to unpublish tutorial'
+                                    : 'Failed to publish tutorial',
+                                  result.error,
+                                );
+                              }
+                            } finally {
+                              setIsPublishing(false);
+                            }
+                          }}
+                          disabled={isPublishing}
+                          size="sm"
+                          variant={
+                            tutorial.isPublished() ? 'outline' : 'default'
+                          }
+                          className={
+                            tutorial.isPublished()
+                              ? 'text-yellow-300 border-yellow-300/40 hover:bg-yellow-300/10'
+                              : 'bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white'
+                          }
+                        >
+                          {isPublishing ? (
+                            <>
+                              <div className="w-4 h-4 mr-1 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                              {tutorial.isPublished()
+                                ? 'Unpublishing…'
+                                : 'Publishing…'}
+                            </>
+                          ) : tutorial.isPublished() ? (
+                            'Unpublish'
+                          ) : (
+                            'Publish'
+                          )}
                         </Button>
                         <Button
                           onClick={async () => {

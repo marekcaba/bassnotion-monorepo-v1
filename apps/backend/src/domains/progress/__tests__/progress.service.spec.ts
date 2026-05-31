@@ -59,24 +59,26 @@ describe('ProgressService', () => {
       getBlockCompletions: vi.fn().mockResolvedValue([]),
       getPracticeProgress: vi.fn().mockResolvedValue([]),
       getAllBlockCompletionsForUser: vi.fn().mockResolvedValue([]),
-      insertBlockCompletion: vi.fn().mockImplementation(
-        async (userId, tutorialId, blockId) => ({
+      insertBlockCompletion: vi
+        .fn()
+        .mockImplementation(async (userId, tutorialId, blockId) => ({
           user_id: userId,
           tutorial_id: tutorialId,
           block_id: blockId,
           completed_at: '2026-05-20T12:00:00Z',
           data: null,
-        }),
-      ),
-      incrementPracticeCompletion: vi.fn().mockImplementation(
-        async (userId, tutorialId, exerciseId, tempoBpm) => ({
-          user_id: userId,
-          tutorial_id: tutorialId,
-          exercise_id: exerciseId,
-          completion_count: 1,
-          last_tempo_bpm: tempoBpm ?? null,
-        }),
-      ),
+        })),
+      incrementPracticeCompletion: vi
+        .fn()
+        .mockImplementation(
+          async (userId, tutorialId, exerciseId, tempoBpm) => ({
+            user_id: userId,
+            tutorial_id: tutorialId,
+            exercise_id: exerciseId,
+            completion_count: 1,
+            last_tempo_bpm: tempoBpm ?? null,
+          }),
+        ),
     } as any;
 
     mockTutorials = {

@@ -39,18 +39,18 @@ LAUNCH-02.5 (epic, split a→b→{c,d}) ──┬──► LAUNCH-01 (Whitelist 
 
 ### Phase 1 — Whitelist & free-tier foundation
 
-| ID                      | Title                                                                                                                                   | Status               | Detailed? |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | -------------------- | --------- |
-| **LAUNCH-01**           | [Whitelist email-capture landing page](./LAUNCH-01-whitelist-page.md)                                                                   | 📝 Ready             | ✅ Yes    |
-| **LAUNCH-02**           | [Capped lever system — free-tier wall](./LAUNCH-02-capped-levers.md)                                                                    | 📝 Ready             | ✅ Yes    |
-| **LAUNCH-02.5**         | [Groove Card block — epic (split into 4 sub-stories)](./LAUNCH-02.5-groove-card-block.md)                                               | 🚧 2 of 4 shipped    | ✅ Yes    |
-| &nbsp;&nbsp;↳ **02.5a** | [`InstrumentType` canonical refactor](./LAUNCH-02.5a-instrumenttype-refactor.md) — ~2d, no feature                                      | ✅ Done (`48f8b85`)  | ✅ Yes    |
-| &nbsp;&nbsp;↳ **02.5b** | [Audio stems as first-class DAW peers](./LAUNCH-02.5b-audio-stems-daw-peers.md) — ~3-4d, engine only, no UI                             | ✅ Done (`6f50acf`)  | ✅ Yes    |
-| &nbsp;&nbsp;↳ **02.5c** | [Groove Card block (in /app)](./LAUNCH-02.5c-groove-card-in-app.md) — ~5-6d, card UI + admin form, unblocks LAUNCH-02 & LAUNCH-05 Fix 1 | 📝 Ready (unblocked) | ✅ Yes    |
-| &nbsp;&nbsp;↳ **02.5d** | [Waitlist embed swap](./LAUNCH-02.5d-waitlist-embed-swap.md) — ~2-3d, closes LAUNCH-01 stop-ship                                        | ⏳ Blocked on 02.5c  | ✅ Yes    |
-| **LAUNCH-03**           | [Membership infrastructure — $24/mo recurring](./LAUNCH-03-membership.md)                                                               | 📝 Ready             | ✅ Yes    |
-| **LAUNCH-04**           | ["Earn next groove" gate — played-in-full N times](./LAUNCH-04-earn-next-groove.md)                                                     | 📝 Ready             | ✅ Yes    |
-| **LAUNCH-05**           | [Playback polish — loading UX + retry + iOS banner](./LAUNCH-05-playback-polish.md)                                                     | 📝 Ready             | ✅ Yes    |
+| ID                      | Title                                                                                                                                   | Status              | Detailed? |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | --------- |
+| **LAUNCH-01**           | [Whitelist email-capture landing page](./LAUNCH-01-whitelist-page.md)                                                                   | 📝 Ready            | ✅ Yes    |
+| **LAUNCH-02**           | [Capped lever system — free-tier wall](./LAUNCH-02-capped-levers.md)                                                                    | 📝 Ready            | ✅ Yes    |
+| **LAUNCH-02.5**         | [Groove Card block — epic (split into 4 sub-stories)](./LAUNCH-02.5-groove-card-block.md)                                               | ✅ Done (4 of 4)    | ✅ Yes    |
+| &nbsp;&nbsp;↳ **02.5a** | [`InstrumentType` canonical refactor](./LAUNCH-02.5a-instrumenttype-refactor.md) — ~2d, no feature                                      | ✅ Done (`48f8b85`) | ✅ Yes    |
+| &nbsp;&nbsp;↳ **02.5b** | [Audio stems as first-class DAW peers](./LAUNCH-02.5b-audio-stems-daw-peers.md) — ~3-4d, engine only, no UI                             | ✅ Done (`6f50acf`) | ✅ Yes    |
+| &nbsp;&nbsp;↳ **02.5c** | [Groove Card block (in /app)](./LAUNCH-02.5c-groove-card-in-app.md) — ~5-6d, card UI + admin form, unblocks LAUNCH-02 & LAUNCH-05 Fix 1 | ✅ Done (`c4da911`) | ✅ Yes    |
+| &nbsp;&nbsp;↳ **02.5d** | [Waitlist embed swap](./LAUNCH-02.5d-waitlist-embed-swap.md) — ~2-3d, closes LAUNCH-01 stop-ship                                        | ✅ Done (`6791eee`) | ✅ Yes    |
+| **LAUNCH-03**           | [Membership infrastructure — $24/mo recurring](./LAUNCH-03-membership.md)                                                               | 📝 Ready            | ✅ Yes    |
+| **LAUNCH-04**           | ["Earn next groove" gate — played-in-full N times](./LAUNCH-04-earn-next-groove.md)                                                     | 📝 Ready            | ✅ Yes    |
+| **LAUNCH-05**           | [Playback polish — loading UX + retry + iOS banner](./LAUNCH-05-playback-polish.md)                                                     | 📝 Ready            | ✅ Yes    |
 
 ### Phase 2 — Paid products
 

@@ -148,7 +148,8 @@ export class ProgressService {
 
     if (block.type === 'exercise') {
       const config = block.config as ExerciseBlockConfig;
-      const required = config.requiredCompletions ?? DEFAULT_REQUIRED_COMPLETIONS;
+      const required =
+        config.requiredCompletions ?? DEFAULT_REQUIRED_COMPLETIONS;
       const exerciseIds = config.exerciseIds ?? [];
 
       const allMeetThreshold =
@@ -347,12 +348,16 @@ export class ProgressService {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
 
-    logger.debug('Getting user tutorial completions', { userId, correlationId });
+    logger.debug('Getting user tutorial completions', {
+      userId,
+      correlationId,
+    });
 
-    const [{ tutorials: tutorialSummaries }, allCompletions] = await Promise.all([
-      this.tutorialsService.findAll(),
-      this.progressRepository.getAllBlockCompletionsForUser(userId),
-    ]);
+    const [{ tutorials: tutorialSummaries }, allCompletions] =
+      await Promise.all([
+        this.tutorialsService.findAll(),
+        this.progressRepository.getAllBlockCompletionsForUser(userId),
+      ]);
 
     // Group completions by tutorial_id for O(1) lookup.
     const completionsByTutorial = new Map<string, Set<string>>();
@@ -379,10 +384,7 @@ export class ProgressService {
         ),
     );
 
-    const practiceByTutorial = new Map<
-      string,
-      Map<string, number>
-    >();
+    const practiceByTutorial = new Map<string, Map<string, number>>();
     await Promise.all(
       tutorialsNeedingPractice.map(async (t) => {
         const rows = await this.progressRepository.getPracticeProgress(
@@ -398,46 +400,46 @@ export class ProgressService {
       }),
     );
 
-    const summaries: TutorialCompletionSummary[] = tutorialSummaries.map((t) => {
-      const blocks = (t.blocks ?? []) as AnyBlock[];
-      const completedSet =
-        completionsByTutorial.get(t.id) ?? new Set<string>();
-      const practiceMap = practiceByTutorial.get(t.id);
+    const summaries: TutorialCompletionSummary[] = tutorialSummaries.map(
+      (t) => {
+        const blocks = (t.blocks ?? []) as AnyBlock[];
+        const completedSet =
+          completionsByTutorial.get(t.id) ?? new Set<string>();
+        const practiceMap = practiceByTutorial.get(t.id);
 
-      const blockCompletions: Record<string, boolean> = {};
-      let completedBlockCount = 0;
+        const blockCompletions: Record<string, boolean> = {};
+        let completedBlockCount = 0;
 
-      for (const block of blocks) {
-        let completed = completedSet.has(block.id);
-        // Mirror the auto-complete rule used by getTutorialProgress.
-        if (!completed && block.type === 'exercise' && practiceMap) {
-          const config = (block as ExerciseBlock).config;
-          const required =
-            config.requiredCompletions ?? DEFAULT_REQUIRED_COMPLETIONS;
-          const exerciseIds = config.exerciseIds ?? [];
-          completed =
-            exerciseIds.length > 0 &&
-            exerciseIds.every(
-              (id) => (practiceMap.get(id) ?? 0) >= required,
-            );
+        for (const block of blocks) {
+          let completed = completedSet.has(block.id);
+          // Mirror the auto-complete rule used by getTutorialProgress.
+          if (!completed && block.type === 'exercise' && practiceMap) {
+            const config = (block as ExerciseBlock).config;
+            const required =
+              config.requiredCompletions ?? DEFAULT_REQUIRED_COMPLETIONS;
+            const exerciseIds = config.exerciseIds ?? [];
+            completed =
+              exerciseIds.length > 0 &&
+              exerciseIds.every((id) => (practiceMap.get(id) ?? 0) >= required);
+          }
+          blockCompletions[block.id] = completed;
+          if (completed) completedBlockCount++;
         }
-        blockCompletions[block.id] = completed;
-        if (completed) completedBlockCount++;
-      }
 
-      const totalBlockCount = blocks.length;
-      const isComplete =
-        totalBlockCount > 0 && completedBlockCount === totalBlockCount;
+        const totalBlockCount = blocks.length;
+        const isComplete =
+          totalBlockCount > 0 && completedBlockCount === totalBlockCount;
 
-      return {
-        tutorialId: t.id,
-        slug: t.slug,
-        isComplete,
-        completedBlockCount,
-        totalBlockCount,
-        blockCompletions,
-      };
-    });
+        return {
+          tutorialId: t.id,
+          slug: t.slug,
+          isComplete,
+          completedBlockCount,
+          totalBlockCount,
+          blockCompletions,
+        };
+      },
+    );
 
     return { tutorials: summaries };
   }

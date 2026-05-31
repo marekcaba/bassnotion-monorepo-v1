@@ -1,5 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import WebSocket from 'ws';
 import { createStructuredLogger } from '@bassnotion/contracts';
 import { RequestContextService } from '../../shared/services/request-context.service.js';
 
@@ -55,6 +56,11 @@ export class SupabaseService {
             auth: {
               autoRefreshToken: false,
               persistSession: false,
+            },
+            // See DatabaseCoreService.initializeClient for why the `ws`
+            // transport is required on Node < 22.
+            realtime: {
+              transport: WebSocket as unknown as typeof globalThis.WebSocket,
             },
           },
         );
@@ -425,6 +431,11 @@ export class SupabaseService {
       throw error;
     }
 
-    return data || [];
+    // Recent `@supabase/storage-js` releases widened `FileObject.created_at`
+    // to `string | null`; we filter out the (theoretical) null case so the
+    // caller's `string`-typed contract stays honest.
+    return (data ?? [])
+      .filter((f): f is typeof f & { created_at: string } => !!f.created_at)
+      .map((f) => ({ name: f.name, created_at: f.created_at }));
   }
 }

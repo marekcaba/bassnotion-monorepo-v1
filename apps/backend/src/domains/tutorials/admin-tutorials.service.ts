@@ -381,10 +381,24 @@ export class AdminTutorialsService {
   }
 
   async publish(id: string) {
+    // Three columns must move together to publish:
+    //   - `status`        — the tutorial_status enum the public RLS
+    //                       policy at migration 20250923000003 gates on.
+    //                       Without this, the anon SELECT returns no row
+    //                       and consumers (e.g. the waitlist SSR fetch)
+    //                       fall back to bundled defaults.
+    //   - `published_at`  — first-publish timestamp; older policy at
+    //                       20250723000002 gates on this being non-null.
+    //   - `is_active`     — legacy soft-delete / hide flag still read by
+    //                       `findBySlug` and several admin queries.
+    // The publish() method historically only set `is_active` and
+    // `published_at`, leaving `status` as 'draft' — a row would look
+    // published to one query and draft to another.
     const { data, error } = await this.supabaseService
       .getClient()
       .from('tutorials')
       .update({
+        status: 'published',
         is_active: true,
         published_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -405,10 +419,15 @@ export class AdminTutorialsService {
   }
 
   async unpublish(id: string) {
+    // Mirror of publish(): every "is published?" signal flips back.
+    // `published_at` clears so the older RLS policy treats the row as
+    // unpublished; `status` returns to 'draft' so the newer enum-based
+    // policy hides it too.
     const { data, error } = await this.supabaseService
       .getClient()
       .from('tutorials')
       .update({
+        status: 'draft',
         is_active: false,
         published_at: null,
         updated_at: new Date().toISOString(),

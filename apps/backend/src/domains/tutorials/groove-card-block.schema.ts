@@ -93,6 +93,7 @@ export const grooveCardBlockConfigSchema = z
     previewCaption: z.string().optional(),
     stateCaptions: grooveCardStateCaptionsSchema.optional(),
     allowBookmark: z.boolean().optional(),
+    youtubeUrl: z.string().optional(),
   })
   .superRefine((cfg, ctx) => {
     // Each offset must appear exactly once.

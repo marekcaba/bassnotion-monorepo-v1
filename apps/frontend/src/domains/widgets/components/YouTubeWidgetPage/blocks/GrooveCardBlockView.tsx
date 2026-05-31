@@ -40,6 +40,16 @@ interface GrooveCardBlockViewProps {
    *  The waitlist surface sets this so the card blends into the marketing
    *  page; the in-app surface leaves it undefined and gets the default. */
   bg?: string;
+  /** Optional override for the waveform bar colour. The in-app surface
+   *  leaves it undefined and gets `GrooveCardWaveform`'s orange default;
+   *  the waitlist surface passes a warm grey so the demo card sits
+   *  quietly in the marketing layout instead of competing with the
+   *  orange-accented headline. */
+  waveformColor?: string;
+  /** Optional "before-play" hook forwarded to useGrooveCardPlayback. The
+   *  waitlist surface wires `useWaitlistPrewarm.resume()` here so the
+   *  prewarm's AudioContext is resumed inside the user-gesture window. */
+  onBeforePlay?: () => Promise<void> | void;
 }
 
 export function GrooveCardBlockView({
@@ -47,6 +57,8 @@ export function GrooveCardBlockView({
   mode = 'block',
   countdownClickUrl,
   bg,
+  waveformColor,
+  onBeforePlay,
 }: GrooveCardBlockViewProps) {
   const config = block.config;
 
@@ -55,6 +67,7 @@ export function GrooveCardBlockView({
     cardId: block.id,
     mode,
     countdownClickUrl,
+    onBeforePlay,
   });
 
   const onPlayPause = useCallback(() => {
@@ -152,6 +165,7 @@ export function GrooveCardBlockView({
             lengthBars={config.lengthBars}
             loopSelection={playback.loopSelection}
             onLoopSelectionChange={playback.setLoopSelection}
+            color={waveformColor}
           />
         }
         controls={

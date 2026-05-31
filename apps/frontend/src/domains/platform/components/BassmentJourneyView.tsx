@@ -276,8 +276,7 @@ function JourneyFolder({
           ) : (
             <div className="space-y-3">
               {tutorials.map((tutorial, index) => {
-                const isActive =
-                  pathname === `/app/tutorials/${tutorial.slug}`;
+                const isActive = pathname === `/app/tutorials/${tutorial.slug}`;
                 return (
                   <TutorialCard
                     key={tutorial.slug}

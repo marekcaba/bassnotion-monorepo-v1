@@ -5,6 +5,7 @@
 **Status:** ✅ Shipped to production. Real-money flow verified end-to-end. Two stop-ship items remain before public traffic (see "Remaining" below).
 **Production URL:** https://bassicology.com
 **Blocks:** YouTube channel launch. The video links can now safely point to `bassicology.com`; both the email waitlist and the founder checkout work under real load.
+**Depends on:** [LAUNCH-02.5d](./LAUNCH-02.5d-waitlist-embed-swap.md) — the placeholder Groove Card mockup on the waitlist must be swapped for the real interactive card before YouTube traffic hits the page. 02.5d is the specific sub-story that closes this stop-ship; the other 02.5 sub-stories are transitive predecessors (02.5d depends on 02.5c → 02.5b → 02.5a).
 
 ---
 
@@ -42,7 +43,7 @@ The visual scope expanded beyond the original "doorbell only" framing because th
 - **Page sections, in order** (founder quote was moved below the form during the May 2026 copy pass — it now closes the page as a sign-off voice rather than sitting mid-page):
   1. **Nav** — logo + "Pre-launch" chip + "Get early access" CTA that smooth-scrolls (`scrollIntoView({ behavior: 'smooth' })`) to the form. Smooth-scroll respects `prefers-reduced-motion` and falls back to instant scroll there.
   2. **Hero block** (single visual unit): pulsing "Opening soon · 2026" eyebrow → headline ("Stop watching bass. Start playing it.") → sub-paragraph ("Every other platform hands you a video to watch. **Bassicology hands you a band.** Real groove, real drummer — slow it down, change the key, mute the bass and play it yourself. **Here's a taste. Try it.**") → Groove Card mockup.
-  3. **WHY section** — headline ("That's one groove. Imagine the whole library.") + three animated dial cards (TEMPO / KEY / MUTE) that visually rhyme the Groove Card's controls. Card 3 title is "Play your bass line" (the *means* is muting; the *point* is playing). All three cards have a fixed-height visual slot (90px, `justify-center`) so titles + bodies align horizontally across the row regardless of how tall each animation is. Key letters render at 32px (scale-125 = ~40px when active) to match Tempo's 38px bpm number proportionally.
+  3. **WHY section** — headline ("That's one groove. Imagine the whole library.") + three animated dial cards (TEMPO / KEY / MUTE) that visually rhyme the Groove Card's controls. Card 3 title is "Play your bass line" (the _means_ is muting; the _point_ is playing). All three cards have a fixed-height visual slot (90px, `justify-center`) so titles + bodies align horizontally across the row regardless of how tall each animation is. Key letters render at 32px (scale-125 = ~40px when active) to match Tempo's 38px bpm number proportionally.
   4. **Form** — eyebrow + headline ("First to plug in.") + subhead ("Private builds, early access, and a real say in what we ship. Before anyone else gets in.") + email field + 4-option level radio + two stacked submit buttons (see "Functional — Form" below for the intent-aware two-button pattern) + trust row.
   5. **Founder quote** — standalone italic banner attributed to mar.c, sign-off voice closing the page. **Currently commented out** in `WaitlistClient.tsx` (May 2026) so the page ends Form → Footer; restore by uncommenting the `<Reveal><FounderQuote /></Reveal>` block when ready.
 - **All sections animate in** via `IntersectionObserver` (fade + 16px rise, ~800ms, `cubic-bezier(0.16, 1, 0.3, 1)`). Honors `prefers-reduced-motion`.
@@ -66,7 +67,7 @@ The visual scope expanded beyond the original "doorbell only" framing because th
   - "No thanks — just notify me when it's live" ghost button advances to final confirmation.
   - Progress bar shows the **real** founder count, fetched from the backend's `/api/v1/founders/count` endpoint on page mount. Soft-fallback to 0 if the endpoint is briefly unavailable, so the bar never flickers.
 - **Honeypot:** hidden `website` field; bots filling it get a fake-success response, nothing is written.
-- **Duplicate email:** returns success without leaking that the email already exists. Body copy on the confirmation branches based on the duplicate flag. (Note: the intent-aware confirmation header is *not* re-branched for duplicates — a returning visitor who already exists still sees their chosen intent's header. Mildly off, accepted.)
+- **Duplicate email:** returns success without leaking that the email already exists. Body copy on the confirmation branches based on the duplicate flag. (Note: the intent-aware confirmation header is _not_ re-branched for duplicates — a returning visitor who already exists still sees their chosen intent's header. Mildly off, accepted.)
 - **Validation errors:** rendered inline below the field. No alert dialogs.
 - **`signupIntent` validation:** the value is validated by an enum at the API edge (`waitlistEntrySchema` in `@bassnotion/contracts`, allowed values: `'beta' | 'notify_only'`). The field is **optional in the schema** so older clients (or curl/bots calling the endpoint) that don't send it still succeed — the backend defaults to `'beta'`. This is intentionally non-breaking: the field landed in production without a coordinated client/server release.
 

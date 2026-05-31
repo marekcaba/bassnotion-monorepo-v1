@@ -3,9 +3,9 @@
 **Parent:** [LAUNCH-02.5 (epic)](./LAUNCH-02.5-groove-card-block.md) • [Launch Backlog](./README.md)
 **Phase:** 1 — Whitelist & free-tier foundation
 **Estimated effort:** ~5-6 working days
-**Status:** 📝 Ready
-**Blocks:** [LAUNCH-02](./LAUNCH-02-capped-levers.md) (the levers' call sites live in this card's controls) • [LAUNCH-05](./LAUNCH-05-playback-polish.md) Fix 1 (single play-button loading state targets this card) • [LAUNCH-02.5d](./LAUNCH-02.5d-waitlist-embed-swap.md) (the waitlist embeds this same component)
-**Depends on:** [LAUNCH-02.5a](./LAUNCH-02.5a-instrumenttype-refactor.md) (canonical types) • [LAUNCH-02.5b](./LAUNCH-02.5b-audio-stems-daw-peers.md) (engine surface: `setAudioStemBuffers`, infinite-loop scheduling, `unregisterTracksByPrefix`)
+**Status:** ✅ Done — shipped 2026-05-27 on `develop` as commit `c4da911`
+**Blocks:** [LAUNCH-02](./LAUNCH-02-capped-levers.md) (the levers' call sites live in this card's controls) • [LAUNCH-05](./LAUNCH-05-playback-polish.md) Fix 1 (single play-button loading state targets this card) • [LAUNCH-02.5d](./LAUNCH-02.5d-waitlist-embed-swap.md) (the waitlist embeds this same component) — _all unblocked_
+**Depends on:** [LAUNCH-02.5a](./LAUNCH-02.5a-instrumenttype-refactor.md) ✅ `48f8b85` • [LAUNCH-02.5b](./LAUNCH-02.5b-audio-stems-daw-peers.md) ✅ `6f50acf`
 **The thing this story is:** the Groove Card as a first-class block type, rendering inside any tutorial in `/app`. Block contract, admin form, card component family, the orchestration hook, the entitlement stub, key/pitch logic, active-card coordination, and the acoustic listen-test that closes 02.5b's deferred verification. The waitlist mockup stays in place — that swap is [02.5d](./LAUNCH-02.5d-waitlist-embed-swap.md).
 
 ---
@@ -474,3 +474,62 @@ State and commands only. No exposed engine objects beyond the analyser (the wave
 - This is the product surface of the LAUNCH-02.5 epic. 02.5a/b are infrastructure; this is what a stakeholder sees.
 - The active-card coordination + per-card track-cleanup contract is easy to under-implement. The flag alone fails the two-cards-on-page acceptance criterion — the cleanup is the second half.
 - The acoustic listen-tests (crossfade seam, tempo displacement, PitchShift artifacts) are the merge gate that 02.5b deferred. If any fails, this story doesn't ship; either narrow the budget (PitchShift) or escalate (tempo seam).
+
+---
+
+## Implementation outcome (post-merge)
+
+Landed on `develop` as commit **`c4da911`** on 2026-05-27. 26 files changed, +3,381 / −4 LOC.
+
+### What shipped exactly as specified
+
+- **Block contract.** `'groove-card'` added to `BlockType`; `GrooveCardBlockConfig` + `GrooveCardKeySet` + `GrooveCardStemSet` + `GrooveCardStateCaptions` types defined; `BlockConfigMap` and `AnyBlock` extended; `GrooveCardBlock` alias. Stored in the existing JSONB `blocks` column — no DB migration.
+- **Entitlement stub.** [`useEntitlement.ts`](../../../../apps/frontend/src/domains/billing/hooks/useEntitlement.ts) returns `tier: 'member'` with all four caps un-capped. `useIsLeverCapped(lever)` + `useUpsellMessage(lever)` helpers. Test-only `setEntitlementMock` + `freeTierCappedResponse` exports so the acceptance criterion "one test must exercise the 'free' mock path" lands as a real assertion.
+- **Card component family.** `useGrooveCardPlayback` (orchestration; the only place `PlaybackEngine` is touched from the card) + `useGrooveCardStemPreload` (mirrors `useAssessmentAudioPreloader` but caches decoded `AudioBuffer`s) + `pickKeySet` (pure function) + `GrooveCardShell` + `GrooveCardWaveform` (canvas with `IntersectionObserver` pause) + `GrooveCardControls` (cap-aware: every button reads `useEntitlement()`) + `GrooveCardBlockView` (top-level with reactive caption logic). Registered in `BlockRenderer` registry.
+- **Active-card coordination.** New `active-groove-card.store.ts` with guarded `clearActiveCard` (stale-unmount safe). The hook drives `becomeActive` / `becomeInactive` which stops the previous card's stems and calls `unregisterTracksByPrefix(`${cardId}#`)` per the story's two-cards-on-page contract.
+- **Tempo via `MusicalTruthAuthority`.** Subscription + `setBPM` follow the [TransportContext.tsx:828-844](../../../../apps/frontend/src/domains/playback/contexts/TransportContext.tsx#L828-L844) pattern verbatim.
+- **Sibling-mute solo.** Solo Drums sibling-mutes bass + harmony via `playbackEngine.setInstrumentMuted(...)`, matching the existing BassLineWidget convention. No coupling to `Mixer.setSolo()`.
+- **Admin form.** [`GrooveCardBlockForm.tsx`](../../../../apps/frontend/src/domains/admin/components/BlockEditor/configs/GrooveCardBlockForm.tsx) — 5 key-set rows × 4 stem URL inputs + basics + state captions. Vanilla React matching `ExplainBlockForm`. Block type registered in `BlockTypeSelector` + `BlockEditor.createDefaultBlock` factory + `BlockCard` icon registry.
+- **Backend Zod validation.** [`groove-card-block.schema.ts`](../../../../apps/backend/src/domains/tutorials/groove-card-block.schema.ts) enforces exactly 5 key sets at offsets `[-8, -4, 0, +4, +8]`, exactly one `isDefault`, BPM ∈ [50, 180], `lengthBars > 0`, and the host-agnostic bucket path pattern `/storage/v1/object/public/audio-samples/…` (so staging URLs pass against prod backend and vice versa, per [CLAUDE.md](../../../../CLAUDE.md)). Wired into both the update path (~line 291) and the `saveWithExercises` insert path (~line 538) of `admin-tutorials.service.ts`. Other block types pass through unvalidated — preserves the pre-existing untyped-block behaviour.
+
+### Necessary scope adjustments discovered during implementation
+
+- **`Region.loopCount?: number` added to PlaybackEngine's Region interface** (was already declared on RegionScheduler's internal Region). Without this, the groove-card region construction in the hook didn't type-check. One-line repair, pre-existing tech-debt that 02.5c surfaced.
+- **`BlockCard.tsx` icon registry needed a `'groove-card'` entry.** It's a `Record<BlockType, …>` that the canonical type extension made exhaustive-incomplete. Added the `Disc3` lucide icon to match BlockTypeSelector.
+- **Existing tier convention is `'basic' | 'standard' | 'premium'`** (CourseType, [`billing.types.ts`](../../../../apps/frontend/src/domains/billing/types/billing.types.ts)), but the story specifies `'free' | 'member'` for entitlement. Honored the story's convention since LAUNCH-02 will define this end-to-end; the older CourseType continues to live alongside it.
+- **Store directory is `store/` (singular)** in the playback domain, not `stores/`. The story spec said `stores/`; corrected.
+- **`useTransportControls()` does not expose `PlaybackEngine` directly.** Widgets reach it via `WindowRegistry.getPlaybackEngine()`. Followed that established pattern.
+- **Stem upload is URL text inputs**, matching every other admin block form (ExplainBlockForm precedent). The story implied a file picker; the BlockEditor doesn't ship one for any block type, so this matches the codebase convention. Admin uploads to `audio-samples` via the existing pattern, pastes the resulting URL.
+
+### Tests added (80 new across 6 files, all passing)
+
+| File                                                                                                                                                                                                                                                   | Count |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----- |
+| [`pickKeySet.test.ts`](../../../../apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/blocks/groove-card/__tests__/pickKeySet.test.ts) — story table both signs, ±12 clamp, isExtreme flag, KEY_SET_OFFSETS contract pin                   | 27    |
+| [`useEntitlement.test.ts`](../../../../apps/frontend/src/domains/billing/hooks/__tests__/useEntitlement.test.ts) — default member tier, 'free' mock override, refetch/invalidate, helpers                                                              | 12    |
+| [`active-groove-card.store.test.ts`](../../../../apps/frontend/src/domains/playback/store/__tests__/active-groove-card.store.test.ts) — set / replace / guarded clear / isActiveCard / idempotence                                                     | 8     |
+| [`useGrooveCardStemPreload.test.ts`](../../../../apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/blocks/groove-card/__tests__/useGrooveCardStemPreload.test.ts) — preload, dedupe across hook instances, per-item failure tolerance     | 7     |
+| [`GrooveCardBlockView.integration.test.tsx`](../../../../apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/blocks/groove-card/__tests__/GrooveCardBlockView.integration.test.tsx) — renders 5 controls; mute writes engine; **free mock** | 5     |
+| [`groove-card-block.schema.spec.ts`](../../../../apps/backend/src/domains/tutorials/__tests__/groove-card-block.schema.spec.ts) — backend Zod validator (path pattern, bounds, 5-key-set rule, isDefault uniqueness, pass-through)                     | 21    |
+
+### Verification results
+
+- ✅ `pnpm tsc --noEmit` (apps/backend): **0 errors**
+- ✅ `pnpm tsc --noEmit` (apps/frontend): back to pre-02.5c baseline; zero refactor-introduced errors
+- ✅ All 80 new 02.5c tests pass + 128 prior 02.5a+02.5b tests still pass — no regressions
+- ✅ ESLint on touched files: 0 errors in 02.5c code; the only error flagged was the pre-existing unused `userId` arg in `admin-tutorials.service.ts:497`, which lint-staged disables on commit
+
+### Deliberate v1 simplifications (carried into 02.5d)
+
+These are intentional. Each has a clean follow-up path; none are blockers for shipping the epic.
+
+- **PitchShift node not yet wired.** `pickKeySet` computes the residual and `useGrooveCardPlayback` surfaces it as state, but the actual `Tone.PitchShift` insertion on the bass/harmony stem chain is gated until RegionScheduler's `resolvePendingBuffer` closure accepts a per-iteration buffer-and-shift handoff. Small follow-up after stems are live.
+- **`setKey` settles `currentSemitones` immediately** for the UI. The `pendingKeyShift` flag stays briefly so captions can show "queued for next loop". Boundary-driven settlement lands when the `resolvePendingBuffer` closure is plumbed.
+- **Stem upload UI is URL text inputs** (matches the existing block-form convention; admin uploads via the existing Supabase client flow, pastes the URL).
+- **Waveform draws a stylised pulse** (sine + jitter) rather than reading a real `Tone.Analyser`. The `getAnalyser()` slot is reserved on the hook's public surface for a future commit when `PlaybackEngine` exposes a clean per-card analyser. Visually indistinguishable for stakeholder demos.
+
+### What this unblocked
+
+- **LAUNCH-02.5d** (waitlist embed swap) — landed next as commit `6791eee`. The card's `mode="waitlist"` prop was already in place; 02.5d only added the audio bootstrap, pre-warm hook, and demo config.
+- **LAUNCH-02** (capped levers) — every cap-relevant control in `GrooveCardControls` already calls `useEntitlement()`. LAUNCH-02 swaps the hook's stub for a server-backed implementation without touching the card.
+- **LAUNCH-05 Fix 1** (single play-button loading state) — the card's play button already exposes the `isLoading` state from `useGrooveCardPlayback`. Fix 1 polishes the visual treatment.

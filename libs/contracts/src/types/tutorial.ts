@@ -62,6 +62,12 @@ export interface Tutorial {
   title_highlight_words?: string[];
   /** Short title for sidebar display (e.g., "Find Notes" instead of "How to Find Notes on the Bass Fretboard") */
   sidebar_title?: string;
+
+  /** Publication status enum (`draft` | `published` | `archived`).
+   *  Mirrors the `tutorials.status` Postgres column. Optional because
+   *  legacy rows + older API responses may omit it; callers should
+   *  treat `undefined` as "unknown" rather than "draft". */
+  status?: 'draft' | 'published' | 'archived';
 }
 
 export interface TutorialWithExercises extends Tutorial {

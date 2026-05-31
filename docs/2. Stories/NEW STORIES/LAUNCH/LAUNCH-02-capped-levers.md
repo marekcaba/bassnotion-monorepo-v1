@@ -5,6 +5,7 @@
 **Estimated effort:** ~1 week (the biggest single build pre-launch)
 **Status:** 📝 Ready
 **Blocks:** LAUNCH-03 (Membership has nothing to uncap without this)
+**Depends on:** [LAUNCH-02.5c](./LAUNCH-02.5c-groove-card-in-app.md) — the cap-aware control handlers (`useEntitlement()` call sites at every lever) live in the Groove Card's controls. 02.5c ships the stub hook returning `tier: 'member'` with all caps un-capped; this story swaps in the real `'free'` logic without touching the call sites. Does NOT require 02.5d (the waitlist uses its own hardcoded cap shapes, not entitlement-driven ones).
 **The thing this story is:** the single most important build in the entire pre-launch plan. Without it, there is no funnel.
 
 ---
@@ -35,16 +36,16 @@ This is the build that turns the existing playback engine — which today has no
 
 From the funnel vision:
 
-| Lever | Free (the taste) | Paid (the uncap) |
-|---|---|---|
-| **Mute & jam** | Mute the bass once, jam 8 bars | Loop infinitely, every groove |
-| **Tempo** | One slower preset and back | Full 40–200 BPM dial |
-| **Transpose** | Shift to one other key | All 12 keys |
-| **Deconstruction layers** | See them exist (greyed) | Isolate & drill them |
+| Lever                     | Free (the taste)               | Paid (the uncap)              |
+| ------------------------- | ------------------------------ | ----------------------------- |
+| **Mute & jam**            | Mute the bass once, jam 8 bars | Loop infinitely, every groove |
+| **Tempo**                 | One slower preset and back     | Full 40–200 BPM dial          |
+| **Transpose**             | Shift to one other key         | All 12 keys                   |
+| **Deconstruction layers** | See them exist (greyed)        | Isolate & drill them          |
 
 **The discipline:** each cap must feel like a **generous teacher** ("here's how much more of this real thing exists"), never a **fake locked button** ("gotcha"). The test from the funnel doc:
 
-> Would a player *remark* on it to another musician? *"It actually transposed, and I realized the paid version does all 12 keys"* sells itself. *"It showed me a fake locked button"* breaks trust.
+> Would a player _remark_ on it to another musician? _"It actually transposed, and I realized the paid version does all 12 keys"_ sells itself. _"It showed me a fake locked button"_ breaks trust.
 
 ## Solution / Scope
 
@@ -54,25 +55,25 @@ This story implements **four capped levers** end-to-end: the cap detection, the 
 
 - **Free:** original tempo + **one slower preset** (e.g., 75% of original). Can switch between them freely. Two values total.
 - **Member:** full 40–200 BPM continuous dial (existing control, just remove the cap).
-- **The cap UX:** when a free user touches the dial beyond the preset, the dial **snaps back to the preset** with a small inline message: *"Members can dial any tempo, 40–200 BPM. [Try Membership →]"*. Not a popup that interrupts playback — a contextual cue *at the lever*.
+- **The cap UX:** when a free user touches the dial beyond the preset, the dial **snaps back to the preset** with a small inline message: _"Members can dial any tempo, 40–200 BPM. [Try Membership →]"_. Not a popup that interrupts playback — a contextual cue _at the lever_.
 
 ### Lever 2 — Mute (the AHA lever)
 
 - **Free:** can mute the bass **once**, jam for 8 bars (or the song's length, whichever is shorter), then mute auto-releases at the end of the section.
 - **Member:** mute toggles freely, loops infinitely.
-- **The cap UX:** after the free taste auto-releases, button shows: *"That's the taste. Members loop the mute forever. [Try Membership →]"*. The "once per groove" reset on next session is fine — that's the daily generosity.
+- **The cap UX:** after the free taste auto-releases, button shows: _"That's the taste. Members loop the mute forever. [Try Membership →]"_. The "once per groove" reset on next session is fine — that's the daily generosity.
 
 ### Lever 3 — Transpose (the "I can't believe it works" lever)
 
 - **Free:** can shift to **one other key** (e.g., original + 2 semitones up). Toggle between original and the one alternate.
 - **Member:** all 12 keys.
-- **The cap UX:** when a free user tries to pick a third key, options 3-12 are visible but greyed with: *"Members can play in all 12 keys."* Don't hide them — show them so the buyer understands what they're getting.
+- **The cap UX:** when a free user tries to pick a third key, options 3-12 are visible but greyed with: _"Members can play in all 12 keys."_ Don't hide them — show them so the buyer understands what they're getting.
 
 ### Lever 4 — Deconstruction layers (the "show, don't unlock" lever)
 
 - **Free:** sees the layers exist in the UI (e.g., "ghost notes", "syncopation pattern", "approach tones"), shown in greyed panel.
 - **Member:** can isolate each layer, loop it, drill it.
-- **The cap UX:** layers are **visible**, clearly labeled, and clickable — clicking shows a side panel: *"This is the [Ghost Notes] layer. Members can isolate, loop, and drill it across every groove. [Try Membership →]"*. The layer's *existence* sells the upsell.
+- **The cap UX:** layers are **visible**, clearly labeled, and clickable — clicking shows a side panel: _"This is the [Ghost Notes] layer. Members can isolate, loop, and drill it across every groove. [Try Membership →]"_. The layer's _existence_ sells the upsell.
 
 ### Shared infrastructure
 
@@ -127,21 +128,25 @@ This story implements **four capped levers** end-to-end: the cap detection, the 
 ### Files to touch
 
 **Frontend — entitlement infrastructure:**
+
 - **NEW:** `apps/frontend/src/domains/billing/hooks/useEntitlement.ts`
 - **NEW:** `apps/frontend/src/domains/billing/components/UpsellCue.tsx`
 - **NEW:** `apps/frontend/src/domains/billing/contexts/EntitlementContext.tsx`
 
 **Frontend — lever-by-lever changes:**
+
 - **EDIT:** `apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/GlobalControls/` — tempo dial, mute button, transpose UI
 - **EDIT:** `apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/GlobalControls/hooks/usePlaybackControl.ts` — enforce caps in playback layer, not just UI
 - **EDIT:** `apps/frontend/src/domains/playback/...` — wherever deconstruction layers are exposed, add the greyed-state rendering
 
 **Backend:**
+
 - **EDIT:** `apps/backend/src/domains/billing/billing.controller.ts` — add `GET /billing/entitlement`
 - **NEW:** `apps/backend/src/domains/billing/services/entitlement.service.ts` — compute caps from user's purchases/subscription
 - **EDIT:** `apps/backend/src/domains/billing/types/billing.types.ts` — add `EntitlementResponse` type
 
 **Shared types:**
+
 - **EDIT:** `libs/contracts/src/types/billing.ts` — `EntitlementResponse`, `LeverCap` schemas
 
 ### Architectural guidance
@@ -153,10 +158,10 @@ This story implements **four capped levers** end-to-end: the cap detection, the 
 
 ### Anti-patterns to avoid (from funnel vision)
 
-- **No fake locked buttons.** Every lever that exists in the UI must be *touchable* and respond — the taste is real, the cap is what they hit. Don't show grayed-out non-clickable controls.
+- **No fake locked buttons.** Every lever that exists in the UI must be _touchable_ and respond — the taste is real, the cap is what they hit. Don't show grayed-out non-clickable controls.
 - **No modal popups blocking playback.** Cues are inline, at the lever. They don't interrupt the music.
-- **No "Sign up to try"** — the free user is *already* signed up (or about to be). The wall is for Membership, not signup.
-- **No "Upgrade to Pro" generic CTAs.** Each cue references the specific thing they're getting: *"all 12 keys"*, *"infinite loop"*, *"isolate the layer"*. Specificity sells.
+- **No "Sign up to try"** — the free user is _already_ signed up (or about to be). The wall is for Membership, not signup.
+- **No "Upgrade to Pro" generic CTAs.** Each cue references the specific thing they're getting: _"all 12 keys"_, _"infinite loop"_, _"isolate the layer"_. Specificity sells.
 
 ### Telemetry events to fire
 

@@ -17,6 +17,7 @@ import {
   backgroundToCss,
 } from '@/shared/dev/BackgroundTuner';
 import { WaitlistGrooveCard } from './_components/WaitlistGrooveCard';
+import type { FeaturedGroove } from './page';
 
 const LEVEL_OPTIONS: { value: WaitlistLevel; label: string; hint: string }[] = [
   { value: 'starting', label: 'Just starting out', hint: '0–1 yr' },
@@ -159,8 +160,10 @@ function Reveal({
 
 export function WaitlistClient({
   cardConfig,
+  featuredGroove,
 }: {
   cardConfig: FounderCardConfig;
+  featuredGroove: FeaturedGroove | null;
 }) {
   const [email, setEmail] = useState('');
   const [level, setLevel] = useState<WaitlistLevel | ''>('');
@@ -319,21 +322,28 @@ export function WaitlistClient({
         animate in.
       */}
       {/* Texture overlay (leather). Bottom decorative layer — sits on the
-          base color, below the noise and radials. Values come from
-          DEFAULT_BACKGROUND; tuner overrides them in dev. */}
+          base color, below the noise and radials. Production values are
+          literals matching DEFAULT_BACKGROUND; tuner overrides them in
+          dev so it can be retuned without code changes. */}
       <div
         aria-hidden="true"
         className="fixed inset-0 pointer-events-none z-0"
         style={{
-          backgroundImage: `url("${bgConfig.texture.url}")`,
-          backgroundSize:
-            bgConfig.texture.tileSize === 0
+          backgroundImage: `url("${isDevBuild ? bgConfig.texture.url : '/textures/leather2.webp'}")`,
+          backgroundSize: isDevBuild
+            ? bgConfig.texture.tileSize === 0
               ? 'cover'
-              : `${bgConfig.texture.tileSize}px`,
-          backgroundRepeat:
-            bgConfig.texture.tileSize === 0 ? 'no-repeat' : 'repeat',
-          mixBlendMode: bgConfig.texture.blendMode,
-          opacity: bgConfig.texture.opacity * (bgVisible ? 1 : 0),
+              : `${bgConfig.texture.tileSize}px`
+            : '1776px',
+          backgroundRepeat: isDevBuild
+            ? bgConfig.texture.tileSize === 0
+              ? 'no-repeat'
+              : 'repeat'
+            : 'repeat',
+          mixBlendMode: isDevBuild ? bgConfig.texture.blendMode : 'screen',
+          opacity:
+            (isDevBuild ? bgConfig.texture.opacity : 0.09) *
+            (bgVisible ? 1 : 0),
           transition: 'opacity 1200ms cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       />
@@ -342,7 +352,7 @@ export function WaitlistClient({
         className="fixed inset-0 pointer-events-none z-0"
         style={{
           opacity:
-            (isDevBuild ? bgConfig.noiseOpacity : 0.02) * (bgVisible ? 1 : 0),
+            (isDevBuild ? bgConfig.noiseOpacity : 0.015) * (bgVisible ? 1 : 0),
           backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
           transition: 'opacity 1200ms cubic-bezier(0.16, 1, 0.3, 1)',
         }}
@@ -355,15 +365,16 @@ export function WaitlistClient({
         style={{
           background: isDevBuild
             ? backgroundToCss(bgConfig)
-            : 'radial-gradient(480px 420px at 50% 11%, rgba(71,71,71,0.14), transparent 68%), radial-gradient(720px 320px at 50% 63%, rgba(71,71,71,0.14), transparent 52%), radial-gradient(1020px 680px at 0% 0%, rgba(0,0,0,0.25), transparent 91%), radial-gradient(1020px 680px at 100% 0%, rgba(0,0,0,0.25), transparent 91%), radial-gradient(1020px 680px at 0% 100%, rgba(0,0,0,0.25), transparent 91%), radial-gradient(1020px 680px at 100% 100%, rgba(0,0,0,0.25), transparent 91%)',
+            : 'radial-gradient(480px 420px at 50% 11%, rgba(71,71,71,0.14), transparent 68%), radial-gradient(220px 100px at 50% 67%, rgba(71,71,71,0.08), transparent 154%), radial-gradient(1600px 1100px at -15% -15%, rgba(0,0,0,0.2), transparent 120%), radial-gradient(1600px 1100px at 115% -15%, rgba(0,0,0,0.2), transparent 120%), radial-gradient(1600px 1100px at -15% 115%, rgba(0,0,0,0.2), transparent 120%), radial-gradient(1600px 1100px at 115% 115%, rgba(0,0,0,0.2), transparent 120%)',
           opacity: bgVisible ? 1 : 0,
           transition: 'opacity 1200ms cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       />
 
-      {/* Dev-only background tuner — commented out now that the radials,
-          texture, and noise values are baked into DEFAULT_BACKGROUND.
-          Restore the conditional below to tweak the bg again.
+      {/* Dev-only background tuner — commented out now that the values
+          are baked into both `DEFAULT_BACKGROUND` (BackgroundTuner.tsx)
+          and the production literals above. Uncomment the conditional
+          below to retune the bg again.
       {isDevBuild ? (
         <BackgroundTuner config={bgConfig} onChange={setBgConfig} />
       ) : null}
@@ -418,15 +429,15 @@ export function WaitlistClient({
               between the headline and the demo. ──────────────────── */}
           <Reveal>
             <div className="text-center max-w-[780px] mx-auto">
-              <div className="inline-flex items-center gap-2.5 text-xs font-bold tracking-[0.14em] uppercase text-[#F26B1D] mb-5 animate-[hero-eyebrow-pulse_3s_ease-in-out_infinite] motion-reduce:animate-none">
+              <div className="inline-flex items-center gap-2.5 text-xs font-bold tracking-[0.14em] uppercase text-white mb-5 animate-[hero-eyebrow-pulse_3s_ease-in-out_infinite] motion-reduce:animate-none">
                 <span
                   aria-hidden="true"
-                  className="w-6 h-px bg-[#F26B1D] opacity-60"
+                  className="w-6 h-px bg-white opacity-60"
                 />
                 Opening soon · 2026
                 <span
                   aria-hidden="true"
-                  className="w-6 h-px bg-[#F26B1D] opacity-60"
+                  className="w-6 h-px bg-white opacity-60"
                 />
               </div>
               <style jsx global>{`
@@ -441,10 +452,9 @@ export function WaitlistClient({
                 }
               `}</style>
               <h1 className="font-heading uppercase text-[clamp(38px,6.4vw,72px)] leading-[0.95] tracking-[0.005em]">
-                Stop <span className="text-[#F26B1D]">watching</span> bass
+                <span className="text-[#F26B1D]">Stop watching bass</span>
                 <br />
-                <span className="text-[#F26B1D]">Start</span> playing{' '}
-                <span className="text-[#F26B1D]">it</span>
+                Start playing along
               </h1>
               <p className="mt-6 mx-auto text-[#9A948C] text-[18px] leading-[1.6] max-w-[34em]">
                 Every other platform hands you a video to watch.{' '}
@@ -465,7 +475,7 @@ export function WaitlistClient({
                   minimal audio engine (no full CoreServices). Capped at
                   780px to match the WhyItWorks section below — the two
                   sit in the same visual column on desktop. */}
-              <WaitlistGrooveCard />
+              <WaitlistGrooveCard featuredGroove={featuredGroove} />
             </div>
           </Reveal>
 
