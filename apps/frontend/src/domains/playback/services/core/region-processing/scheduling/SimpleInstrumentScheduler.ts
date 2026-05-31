@@ -64,7 +64,17 @@ export class SimpleInstrumentScheduler {
   private sampleRate = 48000;
   private scheduledSources = new Map<
     AudioBufferSourceNode,
-    { type: 'one-shot'; hasStopScheduled: boolean; gain: GainNode }
+    {
+      type: 'one-shot';
+      hasStopScheduled: boolean;
+      gain: GainNode;
+      /** AudioContext time the source is scheduled to start. Lets stopAll
+       *  distinguish already-playing sources (need a fade) from future
+       *  scheduled-but-silent ones (stop immediately — fading a not-yet-
+       *  started click sample lets its attack transient fire mid-fade,
+       *  which is the stop spike). */
+      startAudioTime: number;
+    }
   >();
   private instanceId: string;
   private tracks: Map<string, any>; // Reference to track registry for validation
@@ -435,6 +445,7 @@ export class SimpleInstrumentScheduler {
         type: 'one-shot',
         hasStopScheduled: needsDurationControl,
         gain: velocityGain,
+        startAudioTime: audioTime,
       });
 
       // Log scheduling with timing details for debugging
@@ -551,18 +562,55 @@ export class SimpleInstrumentScheduler {
       gain: GainNode;
     }> = [];
 
+    let killedFutureCount = 0;
     this.scheduledSources.forEach((metadata, source) => {
       try {
-        // Apply quick fadeout via gain node to avoid click/pop
+        // KEY FIX (stop-spike): a one-shot scheduler (metronome especially)
+        // keeps FUTURE sources queued — clicks scheduled seconds ahead via
+        // source.start(futureTime). Those haven't made any sound yet. The
+        // old code ramped their gain to 0 over 30ms AND called
+        // source.stop(now + 30ms) — which let the queued click's start fire
+        // inside that 30ms window, so its sharp attack transient played and
+        // got cut mid-fade. That attack IS the stop spike (measured: peak
+        // 0.188 @ ~16ms, right in the fade window).
+        //
+        // So: if the source hasn't started yet, kill it HARD at `now`. A
+        // not-yet-started source produces no click when stopped before its
+        // start time — there's no audio in flight to fade. Only sources
+        // already sounding get the 30ms gain fade.
+        const notYetStarted = metadata.startAudioTime > currentTime;
+
+        if (notYetStarted) {
+          // Stop before it can make a sound. stop(currentTime) on a source
+          // whose start is in the future cancels it silently.
+          if (this.audioContext) {
+            source.stop(currentTime);
+          } else {
+            source.stop(0);
+          }
+          // Pin its gain to 0 too, belt-and-braces, in case the start
+          // somehow lands on the same block.
+          if (metadata.gain) {
+            try {
+              metadata.gain.gain.cancelScheduledValues(currentTime);
+              metadata.gain.gain.setValueAtTime(0, currentTime);
+            } catch {
+              /* ignore */
+            }
+            sourcesToDisconnect.push({ source, gain: metadata.gain });
+          }
+          killedFutureCount++;
+          stoppedCount++;
+          return;
+        }
+
+        // ALREADY PLAYING: apply the quick 30ms fadeout via gain node.
         if (this.audioContext && metadata.gain) {
           const gain = metadata.gain;
-          // Cancel any existing automation and ramp to silence
           gain.gain.cancelScheduledValues(currentTime);
           gain.gain.setValueAtTime(gain.gain.value, currentTime);
           gain.gain.linearRampToValueAtTime(0, stopTime);
           fadedCount++;
-
-          // Collect for delayed disconnect
           sourcesToDisconnect.push({ source, gain });
         }
 
@@ -604,6 +652,7 @@ export class SimpleInstrumentScheduler {
       `[${this.config.loggerName} STOP] Sources stopped with fadeout`,
       {
         fadedCount,
+        killedFutureCount,
         stoppedCount,
         errorCount,
         fadeoutMs: FADEOUT_TIME * 1000,
@@ -616,7 +665,17 @@ export class SimpleInstrumentScheduler {
    */
   protected getScheduledSources(): Map<
     AudioBufferSourceNode,
-    { type: 'one-shot'; hasStopScheduled: boolean; gain: GainNode }
+    {
+      type: 'one-shot';
+      hasStopScheduled: boolean;
+      gain: GainNode;
+      /** AudioContext time the source is scheduled to start. Lets stopAll
+       *  distinguish already-playing sources (need a fade) from future
+       *  scheduled-but-silent ones (stop immediately — fading a not-yet-
+       *  started click sample lets its attack transient fire mid-fade,
+       *  which is the stop spike). */
+      startAudioTime: number;
+    }
   > {
     return this.scheduledSources;
   }

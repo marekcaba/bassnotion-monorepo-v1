@@ -3421,6 +3421,7 @@ export class PlaybackEngine implements IAudioStemEngine {
    * applyClickFreeStop helper so the cached gain nodes remain reusable for
    * the next playback.
    */
+
   stopAudioStems(): void {
     this.audioPlayerScheduler?.stopAll();
     this.regionScheduler?.stopAllInfiniteAudio(this.audioContext);
@@ -3447,31 +3448,97 @@ export class PlaybackEngine implements IAudioStemEngine {
     // the click-free gain ramp). Keeping them cached avoids
     // unnecessary node churn.
     if (this.instrumentPitchShiftNodes.size > 0) {
-      // Stop the looping silent pre-warm sources FIRST so they don't
-      // keep firing into the about-to-be-disposed pitch-shift nodes.
-      for (const [, src] of this.pitchShiftPrewarmSources) {
-        try {
-          src.stop();
-        } catch {
-          // best-effort
-        }
-        try {
-          src.disconnect();
-        } catch {
-          // best-effort
-        }
-      }
-      this.pitchShiftPrewarmSources.clear();
+      // CLICK-FREE TEARDOWN (LAUNCH-02.5g):
+      //
+      // The stem gains the pitch nodes feed into are already being ramped
+      // to 0 over 5ms by audioPlayerScheduler.stopAll() /
+      // regionScheduler.stopAllInfiniteAudio() above. But the pitch-shift
+      // engine (Signalsmith) holds ~one analysis block of audio in its
+      // worklet output buffer (~120-150ms at blockMs 140). If we hard-
+      // `disconnect()` the node synchronously at `now`, we cut that buffer
+      // mid-drain WHILE the gain is still mid-ramp — an orphaned-audio
+      // energy spike (the click on stop).
+      //
+      // Fix: take the node maps out of the engine's live state NOW (so the
+      // next play rebuilds fresh nodes and nothing else touches these), but
+      // DEFER the actual src.stop()/disconnect() until after the gain ramp
+      // has reached silence AND the worklet buffer has drained into that
+      // now-silent gain. By then we're disconnecting into silence — no
+      // spike. The deferral window = fade (5ms) + engine latency + padding.
+      const prewarmToTearDown = Array.from(
+        this.pitchShiftPrewarmSources.values(),
+      );
+      const nodesToTearDown = Array.from(
+        this.instrumentPitchShiftNodes.values(),
+      );
 
-      for (const [instrumentType, node] of this.instrumentPitchShiftNodes) {
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (node as any).disconnect?.();
-        } catch {
-          // best-effort; if the node is already disconnected, ignore
+      // Drain window: the engine's reported/nominal latency (how much audio
+      // is in flight in the worklet) + the 5ms gain ramp + a safety pad.
+      // Capped so a bogus latency reading can't hang the teardown.
+      const latency = this.pitchShiftAdapter?.latencySeconds() ?? 0.14;
+      const drainSeconds = Math.min(0.4, Math.max(0.05, latency)) + 0.005 + 0.02;
+
+      // Capture the adapter ref so the deferred closure uses the same one
+      // even if the engine field changes (it won't today, but it's free
+      // safety for the async gap).
+      const adapter = this.pitchShiftAdapter;
+
+      // SYNCHRONOUSLY silence each pitch node NOW (t=0), before the deferred
+      // disposal. The worklet flushes its ~145ms residual buffer when
+      // disposed; by silencing the relay's own gain immediately we ensure
+      // that flush (and the disconnect transient) passes through a muted
+      // node instead of the instrument gain — which applyClickFreeStop has
+      // RESTORED to resting volume by then. This is the ~140ms stop spike.
+      if (adapter && this.audioContext) {
+        for (const node of nodesToTearDown) {
+          try {
+            adapter.silenceNode(node as AudioNode, this.audioContext);
+          } catch {
+            /* best-effort */
+          }
         }
-        void instrumentType;
       }
+      const tearDown = () => {
+        for (const src of prewarmToTearDown) {
+          try {
+            src.stop();
+          } catch {
+            // best-effort
+          }
+          try {
+            src.disconnect();
+          } catch {
+            // best-effort
+          }
+        }
+        for (const node of nodesToTearDown) {
+          // Delegate to the adapter — it owns the FULL teardown of its
+          // internal sub-graph (for Signalsmith: stop + disconnect the real
+          // worklet behind the relay, not just the relay). A blind
+          // relay.disconnect() would leave the live worklet connected to the
+          // instrument gain, leaking one per play → the spike after N plays.
+          try {
+            adapter?.disposeNode(node as AudioNode);
+          } catch {
+            // best-effort; fall back to a raw disconnect if dispose throws
+            try {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (node as any).disconnect?.();
+            } catch {
+              /* ignore */
+            }
+          }
+        }
+        this.logger.info('PitchShift nodes disposed on stop (deferred)', {
+          instanceId: this.instanceId,
+          drainSeconds,
+          count: nodesToTearDown.length,
+        });
+      };
+
+      // Clear live state immediately so the next play starts clean while the
+      // old nodes finish draining in the background.
+      this.pitchShiftPrewarmSources.clear();
       this.instrumentPitchShiftNodes.clear();
       // Routing tracking must reset alongside the node cache — on the
       // next play, fresh nodes are created and need their first
@@ -3483,9 +3550,17 @@ export class PlaybackEngine implements IAudioStemEngine {
       this.currentRearmPreRollSeconds = 0;
       // Crossfade duration tracks pre-roll — reset together.
       this.regionScheduler?.setInterIterCrossfadeSeconds(0);
-      this.logger.info('PitchShift nodes disposed on stop', {
-        instanceId: this.instanceId,
-      });
+
+      // Defer the disconnect until the buffer has drained into silence.
+      // setTimeout (ms) rather than scheduling on the audio clock because
+      // disconnect() is a graph mutation, not an AudioParam event.
+      if (typeof window !== 'undefined' && window.setTimeout) {
+        window.setTimeout(tearDown, Math.ceil(drainSeconds * 1000));
+      } else {
+        // SSR / no-timer fallback: tear down synchronously (no audio
+        // context means no audible spike to avoid anyway).
+        tearDown();
+      }
     }
 
     this.logger.info('Audio stems stopped', { instanceId: this.instanceId });

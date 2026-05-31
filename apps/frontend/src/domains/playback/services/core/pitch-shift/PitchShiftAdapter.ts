@@ -138,6 +138,31 @@ export interface PitchShiftAdapter {
    * node to read the live value, or omit for the engine's nominal default.
    */
   latencySeconds(node?: AudioNode): number;
+
+  /**
+   * Silence a node's output synchronously at stop time, BEFORE the
+   * deferred {@link disposeNode}. The engine calls this at t=0 on stop so
+   * the worklet's residual-buffer flush (which happens ~latency ms later,
+   * during disposal) passes through a muted node instead of an
+   * already-restored instrument gain — killing the ~140ms stop spike.
+   * Never throws.
+   */
+  silenceNode(node: AudioNode, audioContext: AudioContext): void;
+
+  /**
+   * Fully tear down a node from {@link createNode}, including any
+   * engine-internal nodes it owns that the caller can't see.
+   *
+   * This MUST exist as a distinct method (not just `node.disconnect()`)
+   * because the node the caller holds may be a thin relay in front of the
+   * real engine node — e.g. Signalsmith's async splice puts the live
+   * worklet (`sg`) BEHIND the relay. A blind `relay.disconnect()` leaves
+   * `sg` running and still connected to the instrument gain, so every
+   * play would leak one live worklet into the shared gain — the
+   * accumulating "spike after N plays" bug. `disposeNode` stops and
+   * disconnects the whole sub-graph. Idempotent, never throws.
+   */
+  disposeNode(node: AudioNode): void;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -237,6 +262,22 @@ export class SignalsmithAdapter implements PitchShiftAdapter {
     this.factory(audioContext)
       .then((sg: any) => {
         try {
+          // If the node was disposed during the async factory gap (user
+          // stopped before Signalsmith resolved), don't splice — just stop
+          // and drop the freshly-built worklet so it never reaches the gain.
+          if ((input as any).__disposed) {
+            try {
+              sg.stop?.();
+            } catch {
+              /* ignore */
+            }
+            try {
+              sg.disconnect?.();
+            } catch {
+              /* ignore */
+            }
+            return;
+          }
           // Splice Signalsmith between the relay and gain.
           if (tempConnected) {
             try {
@@ -366,6 +407,99 @@ export class SignalsmithAdapter implements PitchShiftAdapter {
       /* fall through to nominal */
     }
     return SIGNALSMITH_NOMINAL_LATENCY_SECONDS;
+  }
+
+  /**
+   * Silence the node's output IMMEDIATELY (synchronously, at stop time),
+   * BEFORE the deferred {@link disposeNode} runs.
+   *
+   * TOPOLOGY (important — an earlier fix got this wrong): the splice is
+   *   relay(input) → sg(worklet) → instrument gain
+   * The WORKLET output goes STRAIGHT to the instrument gain; the relay is
+   * UPSTREAM of the worklet. So silencing the relay does nothing about
+   * audio already inside the worklet — that residual (~145ms of phase-
+   * vocoder buffer) flushes `sg → gain` regardless. Measured: audio-bass
+   * spike GROWING to 0.148 at ~172-180ms = the worklet draining into the
+   * gain after stop.
+   *
+   * Fix: disconnect the WORKLET's output (`sg`) from the gain right now,
+   * synchronously. The residual buffer then has nowhere to go — it never
+   * reaches the speaker. We also stop the worklet so it quits processing.
+   * Cutting sg→gain at t=0 is safe because the stem gain is already being
+   * ramped to 0 by applyClickFreeStop over the same 5ms, so the cut lands
+   * under cover of that fade. The relay is left connected to the (now
+   * disconnected) sg; disposeNode tidies the rest later.
+   */
+  silenceNode(node: AudioNode, _audioContext: AudioContext): void {
+    const relay = node as any;
+    const sg = relay.__signalsmith;
+    if (sg) {
+      try {
+        // Halt processing so no NEW residual is produced.
+        sg.schedule?.({ active: false });
+      } catch {
+        /* best-effort */
+      }
+      try {
+        // Cut the worklet's output from the instrument gain NOW so its
+        // ~145ms residual buffer can't flush to the speaker.
+        sg.disconnect?.();
+      } catch {
+        /* best-effort */
+      }
+      // Mark so disposeNode doesn't double-handle and the late-splice guard
+      // knows this relay is being torn down.
+      relay.__silenced = true;
+    } else {
+      // Worklet not spliced yet — mark so the async splice, when it
+      // resolves, won't connect into the gain (handled in createNode's
+      // __disposed check; set that too for belt-and-braces).
+      relay.__disposed = true;
+    }
+  }
+
+  disposeNode(node: AudioNode): void {
+    const relay = node as any;
+    // Mark disposed FIRST. If the async splice (.then in createNode) hasn't
+    // resolved yet, it reads this flag and skips connecting a now-dead node
+    // into the gain — otherwise a late splice would leak a live worklet into
+    // the shared instrument gain (the spike-after-N-plays accumulation).
+    relay.__disposed = true;
+
+    // Tear down the real Signalsmith worklet if it already spliced in.
+    const sg = relay.__signalsmith;
+    if (sg) {
+      try {
+        sg.stop?.();
+      } catch {
+        /* best-effort */
+      }
+      try {
+        // schedule({active:false}) halts processing so a residual buffer
+        // doesn't get pushed when the graph is rewired on the next play.
+        sg.schedule?.({ active: false });
+      } catch {
+        /* best-effort */
+      }
+      try {
+        sg.disconnect?.();
+      } catch {
+        /* best-effort */
+      }
+    }
+
+    // Disconnect the relay itself (relay → sg and relay → gain, whichever
+    // it currently holds).
+    try {
+      relay.disconnect?.();
+    } catch {
+      /* best-effort */
+    }
+
+    // Drop expando references so nothing keeps the worklet alive.
+    relay.__signalsmith = undefined;
+    relay.__profile = undefined;
+    relay.__pendingSemitones = undefined;
   }
 }
 
