@@ -1009,8 +1009,28 @@ export function useGrooveCardPlayback({
   // the engine is already 'playing', hence start() must come AFTER
   // becomeActive() registers this card's tracks, and BEFORE transport.start()
   // so the regions are armed when the clock begins ticking.
+
+  // Reentrancy guard shared by play / pause / stop. play() is deeply async
+  // (it awaits onBeforePlay, the ensureAudioContext dynamic import, the
+  // CoreServices init + metronome arming, then transport.start) — hundreds of
+  // ms during which the play button is NOT disabled and Space repeats freely.
+  // Without this guard, a fast second trigger re-enters play() while the first
+  // is still mid-await: the first synchronously flips the engine to
+  // 'playing'/isRunning inside engine.start(), so the second's engine.start()
+  // hits its `isRunning`/`state!=='ready'|'stopped'` early-return and SKIPS
+  // scheduleAllRegions() — the bass + harmony + drums infinite regions never
+  // arm, while the separately-armed metronome click keeps ticking. The card is
+  // then stuck "playing" (button shows pause) with no stems until a clean
+  // stop→play. Serialising the three commands on one in-flight flag closes
+  // that race (the dominant cause of the "rapid play/stop drops bass+harmony"
+  // report). Cheap, synchronous, ref-based so it doesn't trigger re-renders.
+  const transitionInFlightRef = useRef(false);
+
   const play = useCallback(async () => {
     if (!isReady) return;
+    if (transitionInFlightRef.current) return;
+    transitionInFlightRef.current = true;
+    try {
 
     // Optional caller-supplied "before-play" hook. The waitlist surface
     // wires `useWaitlistPrewarm.resume()` here so the prewarm's
@@ -1142,10 +1162,22 @@ export function useGrooveCardPlayback({
     engine?.enableCountdown?.(timeSignature);
     engine?.addCountdownRegion?.(timeSignature);
 
-    const engineState = engine?.getState?.();
+    let engineState = engine?.getState?.();
     // Only 'ready'/'stopped' are startable (PlaybackEngine.start()). pause()
-    // and stop() below always leave the engine in 'stopped', so a fresh
-    // start() re-runs scheduleAllRegions() and the stems are audible again.
+    // and stop() leave the engine in 'stopped', so a fresh start() re-runs
+    // scheduleAllRegions() and the stems are audible again.
+    //
+    // Belt-and-suspenders for the rapid play/stop race: if we somehow arrive
+    // here with the engine still 'playing' (a prior cycle's start() flipped it
+    // and a stop didn't fully land), start() would early-return on its
+    // isRunning/state guard and SILENTLY skip scheduleAllRegions — leaving the
+    // bass + harmony + drums regions un-armed while the transport + metronome
+    // keep running (the reported "no bass/harmony after rapid toggling" bug).
+    // Force the engine back to 'stopped' first so start() always reschedules.
+    if (engineState === 'playing') {
+      engine?.stop?.();
+      engineState = engine?.getState?.();
+    }
     if (engineState === 'ready' || engineState === 'stopped') {
       engine.start?.();
     }
@@ -1208,6 +1240,9 @@ export function useGrooveCardPlayback({
     }
 
     setIsPlaying(true);
+    } finally {
+      transitionInFlightRef.current = false;
+    }
   }, [isReady, becomeActive, transport, currentBpm, startCountdown]);
 
   // Pause and stop are the same for the Groove Card: the stem sources can't
@@ -1227,7 +1262,14 @@ export function useGrooveCardPlayback({
   // which would replay from a stale offset and never re-align with the
   // freshly re-scheduled stems (their T0 anchors at transportStartTime+0).
   // Resetting to 'stopped' makes the next play() a clean start from the top.
+  // pause/stop are NOT blocked by the in-flight flag — stopping is a safety
+  // action and must always be responsive. They DO clear the flag so a stop
+  // that races a still-resolving play() leaves the next play() unblocked.
+  // silenceEngine() → engine.stop() lands the engine synchronously in
+  // 'stopped' (isRunning=false), so a subsequent play()'s engine.start() is a
+  // clean (re)schedule rather than a skipped one.
   const pause = useCallback(async () => {
+    transitionInFlightRef.current = false;
     silenceEngine();
     cancelCountdown();
     await transport.stop?.();
@@ -1236,6 +1278,7 @@ export function useGrooveCardPlayback({
   }, [silenceEngine, cancelCountdown, transport]);
 
   const stop = useCallback(async () => {
+    transitionInFlightRef.current = false;
     silenceEngine();
     cancelCountdown();
     await transport.stop?.();
