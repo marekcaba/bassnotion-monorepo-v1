@@ -92,7 +92,7 @@ const SIGNALSMITH_PROFILES: Record<PitchStemProfile, SignalsmithStemProfile> = {
 };
 
 export interface PitchShiftAdapter {
-  /** Stable id for logging / the `?pitch=` toggle. */
+  /** Stable id for logging. */
   readonly library: 'signalsmith';
 
   /**
