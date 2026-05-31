@@ -41,14 +41,19 @@ export class DatabaseCoreService implements OnModuleInit {
       // override the whole client throws "Node.js 20 detected without
       // native WebSocket support" on `createClient`, crashing the entire
       // Nest app on startup. We pass the `ws` package which the Supabase
-      // docs explicitly recommend for Node < 22. The cast is unfortunate
-      // but necessary — `ws.WebSocket` is structurally a `WebSocket`
-      // constructor but TypeScript's lib.dom signatures differ slightly
-      // around `binaryType` literal types.
+      // docs explicitly recommend for Node < 22.
+      //
+      // Cast is `as any` rather than `as unknown as typeof globalThis.WebSocket`
+      // because the `ws@^8.18` types differ from lib.dom's WebSocket in
+      // `onerror` signature (Node's `ErrorEvent` carries `message`/
+      // `filename` etc. that the browser DOM `Event` lacks). The dual
+      // assertion compiles locally but Railway's stricter prod build
+      // rejects it. Plain `as any` works everywhere and the
+      // runtime behaviour is identical — Supabase only uses the
+      // constructor signature.
       this.supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
-        realtime: {
-          transport: WebSocket as unknown as typeof globalThis.WebSocket,
-        },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        realtime: { transport: WebSocket as any },
       });
       this.logger.info('DatabaseCoreService initialized successfully', {
         correlationId: 'system',

@@ -48,11 +48,10 @@ export class DatabaseService implements OnModuleInit {
       }
 
       // See DatabaseCoreService.initializeClient for why the `ws`
-      // transport is required on Node < 22.
+      // transport is required on Node < 22 and why the cast is `as any`.
       this.supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
-        realtime: {
-          transport: WebSocket as unknown as typeof globalThis.WebSocket,
-        },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        realtime: { transport: WebSocket as any },
       });
       logger.info('DatabaseService initialized successfully', {
         correlationId,

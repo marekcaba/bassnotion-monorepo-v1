@@ -58,10 +58,10 @@ export class SupabaseService {
               persistSession: false,
             },
             // See DatabaseCoreService.initializeClient for why the `ws`
-            // transport is required on Node < 22.
-            realtime: {
-              transport: WebSocket as unknown as typeof globalThis.WebSocket,
-            },
+            // transport is required on Node < 22 and why the cast is
+            // `as any`.
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            realtime: { transport: WebSocket as any },
           },
         );
         logger.info('✅ SupabaseService initialized successfully', {
