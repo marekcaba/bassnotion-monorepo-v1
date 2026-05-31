@@ -13,6 +13,7 @@ import { FretboardCard, FRETBOARD_VIEW_PRESETS } from './FretboardCard';
 
 import { FourWidgetsCard } from './components/FourWidgetsCard';
 import { BassRegistrationHost } from './BassRegistrationHost';
+import { HarmonyRegistrationHost } from './HarmonyRegistrationHost';
 import { ExerciseSelectorCard } from './components/ExerciseSelectorCard';
 import { ExerciseDescriptionCard } from './components/ExerciseDescriptionCard';
 import { DynamicIsland } from './components/DynamicIsland';
@@ -1464,6 +1465,16 @@ function YouTubeWidgetPageContent({
         exercise={widgetState.selectedExercise}
         volume={widgetState.state.volume.bass}
         isMuted={widgetState.state.muted.bass}
+      />
+      {/* Hidden: keeps harmony registered with PlaybackEngine against the
+          current exercise even when the groove block isn't mounted (e.g.
+          understand/practice acts). Scheduler-only — does NOT mount the WAM
+          keyboard plugin. Renders nothing. See HarmonyRegistrationHost.tsx. */}
+      <HarmonyRegistrationHost
+        exercise={widgetState.selectedExercise}
+        volume={widgetState.state.volume.harmony}
+        isMuted={widgetState.state.muted.harmony}
+        harmonyInstrument={widgetState.harmonyInstrument}
       />
       {!hideChrome && (
         <>
