@@ -57,7 +57,11 @@ interface GrooveCardWaveformProps {
   color?: string;
 }
 
-const DEFAULT_BAR_COLOR = '#F97316'; // tailwind orange-500
+// Default waveform bar colour — the warm near-black grey the waitlist demo
+// card established (LAUNCH-02.5d). Both surfaces (waitlist + in-app player)
+// now share this default so the Groove Card looks identical everywhere; the
+// `color` prop remains an explicit per-card override.
+const DEFAULT_BAR_COLOR = '#1f252e';
 const SELECTION_COLOR = '#3B82F6'; // tailwind blue-500 — loop-range bracket
 const PULSE_BAR_COUNT = 32;
 
