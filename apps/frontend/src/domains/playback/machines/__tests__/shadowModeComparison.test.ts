@@ -98,6 +98,16 @@ function statesMatch(realState: string, xstateState: string): boolean {
     return true;
   }
 
+  // XState 'stopped'/'stopping' while the real engine is already 'playing' is
+  // the START-side race on a rapid stop→play: the shadow snapshot lags the
+  // prior stop. Mirror of the 'stopping' + 'playing' tolerance above.
+  if (
+    (xstateState === 'stopped' || xstateState === 'stopping') &&
+    realState === 'playing'
+  ) {
+    return true;
+  }
+
   // XState 'disposing' is an async cleanup state transitioning to idle
   if (xstateState === 'disposing') {
     return true;
@@ -375,6 +385,11 @@ describe('Shadow Mode State Comparison', () => {
 
       // STOP: real is immediately 'stopped', but XState may still be 'stopping'
       expect(statesMatch('stopped', 'stopping')).toBe(true);
+      expect(statesMatch('playing', 'stopping')).toBe(true);
+
+      // RAPID STOP→PLAY: real is already 'playing' but the shadow snapshot
+      // still lags at the prior 'stopped'/'stopping' (stale React render).
+      expect(statesMatch('playing', 'stopped')).toBe(true);
       expect(statesMatch('playing', 'stopping')).toBe(true);
 
       // Direct matches should work

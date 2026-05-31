@@ -179,9 +179,21 @@ export function TransportProvider({
       // - 'ready' can occur briefly when machine just finished loading or when nothing was playing
       const isMatch =
         mappedReal === xstateState ||
-        // START: real='playing', xstate could be 'starting' (async scheduling) or 'ready' (just got event)
+        // START: real='playing', xstate could be 'starting' (async scheduling)
+        // or 'ready' (just got event). On a rapid stop→play it can also still
+        // read 'stopped'/'stopping': `machine.state` here is the last RENDERED
+        // React snapshot (state.value from useMachine), not a live actor read,
+        // so when START is sent and we compare in the same tick, the snapshot
+        // hasn't advanced past the prior STOP yet. The machine is shadow-only
+        // (never gates real playback — see the real transport.start() above),
+        // so this is a benign diagnostic race, not an audio fault. Tolerated
+        // symmetrically with the STOP side below (which accepts xstate
+        // 'playing' after a real stop for the same reason).
         (mappedReal === 'playing' &&
-          (xstateState === 'starting' || xstateState === 'ready')) ||
+          (xstateState === 'starting' ||
+            xstateState === 'ready' ||
+            xstateState === 'stopped' ||
+            xstateState === 'stopping')) ||
         // STOP: real='stopped', xstate could be 'stopping' (async cleanup), 'playing' (just got event),
         // or 'ready' (stop called before playback started - nothing was playing)
         (mappedReal === 'stopped' &&
