@@ -63,6 +63,7 @@
     "react": "19.1.0",
     "react-hook-form": "^7.53.0",
     "recharts": "2.15.4",
+    "signalsmith-stretch": "^1.3.2",
     "tailwind-merge": "^2.2.0",
     "three": "^0.170.0",
     "tone": "^15.1.22",
