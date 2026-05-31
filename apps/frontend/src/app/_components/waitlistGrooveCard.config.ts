@@ -12,7 +12,7 @@
  *   /storage/v1/object/public/audio-samples/grooves/{slug}/{key}/{stem}.ogg
  *
  * The waitlist delivers ONE stem set at originalKey; the runtime
- * pitch-shifts ±6 semitones via SoundTouchJS WSOLA on bass + harmony.
+ * pitch-shifts ±6 semitones via the pitch-shift engine on bass + harmony.
  *
  * Count-in samples reuse the in-app metronome's high (accent, beat 1)
  * and low (click, beats 2-4) pair from `metronome/`; the pre-warm hook

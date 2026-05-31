@@ -204,7 +204,7 @@ export class RegionScheduler {
   // pre-roll on rearmed iterations (which makes iter N+1 start N
   // seconds before iter N ends), this turns the additive sum of two
   // sources into a true equal-power crossfade — eliminating the
-  // WSOLA spike that would otherwise be audible at every seam.
+  // pitch-engine seam spike that would otherwise be audible at every seam.
   //
   // Value 0 (default) keeps the historical raw-additive behaviour for
   // any code path that hasn't opted in.
@@ -920,19 +920,19 @@ export class RegionScheduler {
 
     // LAUNCH-02.5c key-shift: per-iteration crossfade GainNode.
     //
-    // Only applied when (a) the stem routes through a SoundTouchNode
+    // Only applied when (a) the stem routes through a pitch-shift node
     // (detected via stem.input !== stem.gain — drums and click connect
-    // direct, bass and harmony go through SoundTouch), (b) we're not
-    // in a loopSlice (slice mode uses ONE source so there's nothing to
-    // crossfade), and (c) the crossfade window is > 0 (which the
-    // engine sets when pitch shift is active so there IS an overlap
+    // direct, bass and harmony go through the pitch-shift engine), (b)
+    // we're not in a loopSlice (slice mode uses ONE source so there's
+    // nothing to crossfade), and (c) the crossfade window is > 0 (which
+    // the engine sets when pitch shift is active so there IS an overlap
     // window between iters to crossfade across).
     //
     // Why not for drums/click: they connect direct to gain, so two
     // overlapping iters sum the same way at the gain stage but the
-    // gain is downstream of the SoundTouchNode pipeline that produces
-    // the WSOLA spike — drums don't go through that pipeline at all,
-    // so they don't spike. Applying the crossfade to drums would just
+    // gain is downstream of the pitch-engine pipeline that produces
+    // the pitch-shift artifact — drums don't go through that pipeline at
+    // all, so they don't spike. Applying the crossfade to drums would just
     // dip the kick drum at every loop seam without fixing any problem.
     const routesThroughProcessor = stem.input !== stem.gain;
     const xfade =
@@ -1093,8 +1093,8 @@ export class RegionScheduler {
     // this DELTA (positive = earlier, negative = later) relative to
     // each existing entry's `startAt`. The caller is responsible for
     // computing the right delta:
-    //   - default → pitched: +0.12 (route through SoundTouch with
-    //     120ms processing delay → start 120ms earlier so output
+    //   - default → pitched: +0.12 (route through the pitch-shift engine
+    //     with ~120ms processing delay → start 120ms earlier so output
     //     emerges at the natural seam)
     //   - pitched → pitched: 0 (existing pre-roll already correct;
     //     don't compound it)
