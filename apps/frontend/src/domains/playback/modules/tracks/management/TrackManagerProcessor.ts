@@ -107,6 +107,20 @@ export const AUDIO_STEM_KEYS: readonly AudioStemKey[] = [
   'click',
 ] as const;
 
+// LAUNCH-02.5c key-shift: drums tune audibly even at small offsets and the
+// click is a fixed metronome reference — neither is pitch-shiftable. Only
+// the harmonic stems (bass + harmony) get a Tone.PitchShift node spliced
+// in for the residual ±semitones between key sets. See
+// docs/2. Stories/NEW STORIES/LAUNCH/LAUNCH-02.5c-groove-card-in-app.md §143.
+export const PITCH_SHIFTABLE_STEMS: readonly AudioStemKey[] = [
+  'bass',
+  'harmony',
+] as const;
+
+export function isPitchShiftableStem(key: AudioStemKey): boolean {
+  return PITCH_SHIFTABLE_STEMS.includes(key);
+}
+
 export function audioInstrumentTypeToStemKey(
   t: AudioInstrumentType,
 ): AudioStemKey {

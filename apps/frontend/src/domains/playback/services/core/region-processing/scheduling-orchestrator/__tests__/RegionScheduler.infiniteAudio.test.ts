@@ -144,7 +144,12 @@ function setupDeps(): ScheduleAllDeps {
   const stemGain = createMockGainNode();
   const audioStemAccess = {
     getStem: vi.fn((stemKey: string) => {
-      if (stemKey === 'bass') return { buffer: stemBuffer, gain: stemGain };
+      if (stemKey === 'bass')
+        // input defaults to gain when no pre-gain processing is installed —
+        // mirrors AudioPlayerScheduler.setStem's default. PR adding
+        // PitchShift (LAUNCH-02.5c key-shift) sets a distinct `input` for
+        // bass + harmony; that path is exercised in a separate test.
+        return { buffer: stemBuffer, input: stemGain, gain: stemGain };
       return null;
     }),
     trackExternalSource: vi.fn(),

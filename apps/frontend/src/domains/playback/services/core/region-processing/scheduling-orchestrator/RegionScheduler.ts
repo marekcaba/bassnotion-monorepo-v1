@@ -135,6 +135,28 @@ interface InfiniteAudioEntry {
    *  was scheduled. Used to anchor the next refill so a BPM bump only
    *  affects iterations strictly past the current window. */
   startAt: number;
+  /** Region definition for this iteration. Kept so rearmFutureIterations
+   *  can re-invoke armInfiniteAudioIteration without the caller having to
+   *  re-resolve the region from tracks. Same reference for every iter of
+   *  the same region. */
+  region: Region;
+  /** Stem key (e.g. 'bass') derived from instrumentType minus the
+   *  'audio-' prefix. Stored at arm time so rearm doesn't have to parse
+   *  it back out of the region id. */
+  stemKey: string;
+  /** Per-iter crossfade GainNode if one was inserted at arm time, or
+   *  null when the source was connected directly to stem.input (no
+   *  crossfade in effect when this iter was armed). Stored so a
+   *  later routing change can retroactively add or modify the fade
+   *  envelope on the currently-playing iter — preventing the
+   *  asymmetric-crossfade spike on the first default→pitched
+   *  transition. */
+  perIterGain: GainNode | null;
+  /** The node the source was connected to at arm time. Either
+   *  `perIterGain` (when crossfade was active at arm time) or
+   *  `stem.input` (when direct routing was active). Used by the
+   *  retroactive fade-out wrap to know what to disconnect from. */
+  connectedTarget: AudioNode;
 }
 
 // Hook closure passed in by LAUNCH-02.5c so the card can swap key-set
@@ -154,8 +176,15 @@ const INFINITE_AUDIO_WINDOW = 3;
 // Narrow contract RegionScheduler needs from AudioPlayerScheduler to spawn
 // its own AudioBufferSources for the infinite-loop. Avoids a hard import
 // dependency on the full AudioPlayerScheduler class.
+//
+// `input` is the upstream connect target — equals `gain` for stems with no
+// pre-gain processing, or the input of a Tone.PitchShift node for the
+// bass + harmony stems (LAUNCH-02.5c). Click-free stops still ramp `gain`
+// (the real GainNode) downstream of any pre-processing.
 export interface InfiniteAudioStemAccess {
-  getStem(stemKey: string): { buffer: AudioBuffer; gain: GainNode } | null;
+  getStem(
+    stemKey: string,
+  ): { buffer: AudioBuffer; input: AudioNode; gain: GainNode } | null;
   trackExternalSource(stemKey: string, source: AudioBufferSourceNode): void;
 }
 
@@ -168,8 +197,31 @@ export class RegionScheduler {
   // upcoming iterations). source.onended on iter N refills iter N+WINDOW.
   private infiniteAudioRegions = new Map<string, InfiniteAudioEntry>();
 
+  // LAUNCH-02.5c key-shift: crossfade duration between adjacent
+  // iterations. When > 0, each iteration's source feeds the stem
+  // through its own per-iter GainNode that fades in over the first N
+  // seconds and out over the last N seconds. Combined with the
+  // pre-roll on rearmed iterations (which makes iter N+1 start N
+  // seconds before iter N ends), this turns the additive sum of two
+  // sources into a true equal-power crossfade — eliminating the
+  // WSOLA spike that would otherwise be audible at every seam.
+  //
+  // Value 0 (default) keeps the historical raw-additive behaviour for
+  // any code path that hasn't opted in.
+  private interIterCrossfadeSeconds = 0;
+
   constructor(instanceId: string) {
     this.instanceId = instanceId;
+  }
+
+  /**
+   * Update the per-iteration crossfade duration. Should be called
+   * whenever the rearm pre-roll changes so the crossfade matches the
+   * overlap window. PlaybackEngine drives this in lockstep with its
+   * `currentRearmPreRollSeconds` tracking.
+   */
+  setInterIterCrossfadeSeconds(seconds: number): void {
+    this.interIterCrossfadeSeconds = Math.max(0, seconds);
   }
 
   /**
@@ -865,7 +917,70 @@ export class RegionScheduler {
     }
 
     source.buffer = buffer;
-    source.connect(stem.gain);
+
+    // LAUNCH-02.5c key-shift: per-iteration crossfade GainNode.
+    //
+    // Only applied when (a) the stem routes through a SoundTouchNode
+    // (detected via stem.input !== stem.gain — drums and click connect
+    // direct, bass and harmony go through SoundTouch), (b) we're not
+    // in a loopSlice (slice mode uses ONE source so there's nothing to
+    // crossfade), and (c) the crossfade window is > 0 (which the
+    // engine sets when pitch shift is active so there IS an overlap
+    // window between iters to crossfade across).
+    //
+    // Why not for drums/click: they connect direct to gain, so two
+    // overlapping iters sum the same way at the gain stage but the
+    // gain is downstream of the SoundTouchNode pipeline that produces
+    // the WSOLA spike — drums don't go through that pipeline at all,
+    // so they don't spike. Applying the crossfade to drums would just
+    // dip the kick drum at every loop seam without fixing any problem.
+    const routesThroughProcessor = stem.input !== stem.gain;
+    const xfade =
+      !slice && routesThroughProcessor ? this.interIterCrossfadeSeconds : 0;
+    let perIterGain: GainNode | null = null;
+    if (xfade > 0) {
+      perIterGain = audioContext.createGain();
+      perIterGain.connect(stem.input);
+      source.connect(perIterGain);
+
+      // Equal-power crossfade approximated with linear ramps. The
+      // fade-in is suppressed on iter 0 (no previous iter to crossfade
+      // from); for iter >= 1 it ramps 0 → 1 over the first `xfade`
+      // seconds. The fade-out always runs over the last `xfade`
+      // seconds before the seam to the next iter (startAt + iterDur).
+      const iterDur = this.computeIterationDuration(region);
+      const seamAt = startAt + iterDur;
+      const param = perIterGain.gain;
+      try {
+        if (iter === 0) {
+          // Iter 0: jump to full gain at start.
+          param.setValueAtTime(1, startAt);
+        } else {
+          // Iter >= 1: fade in over the overlap window with the prior
+          // iter (which is already fading out).
+          param.setValueAtTime(0, startAt);
+          param.linearRampToValueAtTime(1, startAt + xfade);
+        }
+        // Fade out over the last `xfade` seconds before the seam.
+        // setValueAtTime anchors the param at 1 so the ramp starts
+        // from a known value (otherwise it would interpolate from
+        // whatever value was scheduled previously — which is fine in
+        // theory but explicit is safer with overlapping schedules).
+        param.setValueAtTime(1, Math.max(startAt, seamAt - xfade));
+        param.linearRampToValueAtTime(0, seamAt);
+      } catch (err) {
+        // AudioParam scheduling can throw if the times are in the
+        // past or violate ordering rules. Best-effort; fall through
+        // to playing at unit gain (the raw additive behaviour).
+        logger.debug('armInfiniteAudioIteration: crossfade schedule failed', {
+          regionId: region.id,
+          iter,
+          err,
+        });
+      }
+    } else {
+      source.connect(stem.input);
+    }
 
     if (!slice) {
       // Full-buffer window branch: one buffer = one iteration. onended
@@ -923,7 +1038,233 @@ export class RegionScheduler {
       gain: stem.gain,
       iter,
       startAt,
+      region,
+      stemKey,
+      perIterGain,
+      connectedTarget: perIterGain ?? stem.input,
     });
+  }
+
+  /**
+   * LAUNCH-02.5c key-shift — partial tear-down + re-arm for pre-armed
+   * iterations whose `startAt` is strictly in the future. Used when the
+   * resolver's output is about to change (e.g. user taps the key stepper):
+   * the currently-playing iteration must keep going (you can't rewrite an
+   * in-flight buffer), but iterations N+1 .. N+WINDOW-1 still hold the
+   * OLD buffer — without this re-arm, the soonest moment the new buffer
+   * plays is iter N+WINDOW (up to ~22s at 130 BPM × 4 bars). With this
+   * re-arm: only the playing iter remains stale; the next iter honors
+   * the new resolver.
+   *
+   * Mechanism mirrors stopAllInfiniteAudio's discipline:
+   *   1. Snapshot the entries to rearm and DELETE them from the map FIRST
+   *      so any racing `onended` sees a missing entry and skips its
+   *      refill (the same guard as stopAllInfiniteAudio).
+   *   2. source.stop(now) on each — no click-free ramp; these sources
+   *      haven't started yet (their startAt is in the future), so they
+   *      simply never produce audio.
+   *   3. Call armInfiniteAudioIteration with the SAME startAt and iter
+   *      so timing is preserved; the new closure captures the latest
+   *      resolver via the audioStemAccess + resolvePendingBuffer args.
+   *
+   * Scope: full-buffer iterations only. The loopSlice branch (native
+   * `source.loop = true`) is NOT handled here — slices arm exactly one
+   * source whose startAt is in the past once playback begins, so every
+   * entry would fall into the "currently playing, do not touch" branch.
+   * Slice-mode key swaps need a different mechanism (tear-down at the
+   * next bar boundary) that lives in the hook layer, not here.
+   *
+   * Returns the number of iterations re-armed (0 if the region isn't
+   * active, or if all entries are currently playing).
+   */
+  rearmFutureIterations(
+    regionId: string,
+    audioContext: AudioContext,
+    audioStemAccess: InfiniteAudioStemAccess | undefined,
+    resolvePendingBuffer: ResolvePendingBuffer | undefined,
+    options?: { preRollSeconds?: number },
+  ): number {
+    if (!audioStemAccess) return 0;
+    if (this.infiniteAudioRegions.size === 0) return 0;
+
+    const now = audioContext.currentTime;
+    const matchPrefix = `${regionId}#`;
+    // LAUNCH-02.5c key-shift: shift the rearmed source.start time by
+    // this DELTA (positive = earlier, negative = later) relative to
+    // each existing entry's `startAt`. The caller is responsible for
+    // computing the right delta:
+    //   - default → pitched: +0.12 (route through SoundTouch with
+    //     120ms processing delay → start 120ms earlier so output
+    //     emerges at the natural seam)
+    //   - pitched → pitched: 0 (existing pre-roll already correct;
+    //     don't compound it)
+    //   - pitched → default: -0.12 (existing pre-roll no longer
+    //     needed → push start 120ms later to land on natural seam)
+    // The clamp `now + 0.001` only blocks scheduling a source.start
+    // in the past — the delta itself is allowed to be negative.
+    const preRollDeltaSeconds = options?.preRollSeconds ?? 0;
+
+    // Snapshot entries that (a) match this region and (b) haven't started
+    // yet. We deliberately exclude entries whose startAt has already
+    // passed — that's the currently-audible iter (or one mid-buffer)
+    // which cannot be rewritten without an audible glitch.
+    type SnapshotEntry = {
+      entryKey: string;
+      iter: number;
+      startAt: number;
+      region: Region;
+      stemKey: string;
+      source: AudioBufferSourceNode;
+    };
+    const toRearm: SnapshotEntry[] = [];
+    let currentlyPlayingEntry: InfiniteAudioEntry | null = null;
+    let currentlyPlayingEndAt = 0;
+    for (const [entryKey, entry] of this.infiniteAudioRegions.entries()) {
+      if (!entryKey.startsWith(matchPrefix)) continue;
+      // Skip loopSlice entries — they arm exactly one source whose
+      // startAt is set at play start and may now be in the past. Even
+      // when it's in the future, native loop=true semantics mean a
+      // re-arm wouldn't behave correctly without bar-boundary
+      // coordination from the hook.
+      if (entry.region.loopSlice) continue;
+      if (entry.startAt <= now) {
+        // Currently playing — capture it so we can retroactively wrap
+        // it with a fade-out gain (see below).
+        const endAt =
+          entry.startAt + this.computeIterationDuration(entry.region);
+        if (endAt > now) {
+          currentlyPlayingEntry = entry;
+          currentlyPlayingEndAt = endAt;
+        }
+        continue;
+      }
+      toRearm.push({
+        entryKey,
+        iter: entry.iter,
+        startAt: entry.startAt,
+        region: entry.region,
+        stemKey: entry.stemKey,
+        source: entry.source,
+      });
+    }
+
+    if (toRearm.length === 0 && !currentlyPlayingEntry) return 0;
+
+    // LAUNCH-02.5c key-shift — retroactive fade-out wrap on the
+    // currently-playing iter. When the rearm transitions to a state
+    // where future iters will have a per-iter fade-in gain (xfade > 0
+    // after this call), the CURRENT iter typically has NO per-iter
+    // gain wrapper because it was armed in a different routing state.
+    // Without this, the seam between current iter N and rearmed iter
+    // N+1 is asymmetric: iter N ends abruptly at full volume, iter
+    // N+1 fades in from 0 → audible step discontinuity at the seam
+    // that the user hears as a "spike" on the first default→pitched
+    // transition.
+    //
+    // Fix: if the current iter has no perIterGain AND the new
+    // crossfade window will be > 0, splice a GainNode between its
+    // source and the destination it's currently connected to,
+    // schedule a fade-out over the last `interIterCrossfadeSeconds`
+    // before its natural end.
+    if (
+      currentlyPlayingEntry &&
+      currentlyPlayingEntry.perIterGain === null &&
+      this.interIterCrossfadeSeconds > 0
+    ) {
+      try {
+        const xfade = this.interIterCrossfadeSeconds;
+        const fadeOutStart = Math.max(now, currentlyPlayingEndAt - xfade);
+        const newGain = audioContext.createGain();
+        newGain.gain.setValueAtTime(1, now);
+        newGain.gain.setValueAtTime(1, fadeOutStart);
+        newGain.gain.linearRampToValueAtTime(0, currentlyPlayingEndAt);
+        // Reroute: source → newGain → connectedTarget. Web Audio
+        // allows mid-flight topology changes on running sources.
+        const oldTarget = currentlyPlayingEntry.connectedTarget;
+        try {
+          currentlyPlayingEntry.source.disconnect(oldTarget);
+        } catch {
+          // disconnect can throw if not connected to oldTarget for some
+          // reason; fall back to a blanket disconnect.
+          try {
+            currentlyPlayingEntry.source.disconnect();
+          } catch {
+            // give up — best effort
+          }
+        }
+        currentlyPlayingEntry.source.connect(newGain);
+        newGain.connect(oldTarget);
+        // Update the entry so future code (e.g. another rearm before
+        // this iter ends) knows it now has a per-iter gain.
+        currentlyPlayingEntry.perIterGain = newGain;
+        currentlyPlayingEntry.connectedTarget = newGain;
+        logger.info('Retroactive fade-out wrap applied to current iter', {
+          regionId,
+          iter: currentlyPlayingEntry.iter,
+          fadeOutStart,
+          endAt: currentlyPlayingEndAt,
+        });
+      } catch (err) {
+        logger.warn('Retroactive fade-out wrap failed', {
+          regionId,
+          err,
+        });
+      }
+    }
+
+    if (toRearm.length === 0) return 0;
+
+    // Step 1: drop all entries from the map BEFORE stopping the sources,
+    // so any onended that fires between the stop and the rearm finds no
+    // tracked entry and bails (the existing guard at armInfiniteAudio-
+    // Iteration's onended).
+    for (const item of toRearm) {
+      this.infiniteAudioRegions.delete(item.entryKey);
+    }
+
+    // Step 2: stop the stale sources. No click-free ramp needed —
+    // startAt is strictly > now, so these never produced audio.
+    for (const item of toRearm) {
+      try {
+        item.source.stop(now);
+      } catch {
+        // already stopped — ignore
+      }
+    }
+
+    // Step 3: re-arm each iteration. The new closure captures the
+    // current resolver. Future onended refills (iter + WINDOW, etc.)
+    // close over the same fresh resolver.
+    //
+    // Shift startAt by `preRollDeltaSeconds`. Positive delta moves
+    // the source.start EARLIER (downstream processor sees input
+    // sooner); negative delta moves it LATER (removing prior pre-roll
+    // when going back to direct routing). Clamp to `now + 0.001` so
+    // source.start is never in the past, but otherwise allow either
+    // sign.
+    for (const item of toRearm) {
+      const shiftedStartAt =
+        preRollDeltaSeconds !== 0
+          ? Math.max(now + 0.001, item.startAt - preRollDeltaSeconds)
+          : item.startAt;
+      this.armInfiniteAudioIteration(
+        item.region,
+        item.stemKey,
+        item.iter,
+        shiftedStartAt,
+        audioContext,
+        audioStemAccess,
+        resolvePendingBuffer,
+      );
+    }
+
+    logger.info('Future iterations re-armed', {
+      regionId,
+      count: toRearm.length,
+      preRollDeltaSeconds,
+      instanceId: this.instanceId,
+    });
+    return toRearm.length;
   }
 
   /**

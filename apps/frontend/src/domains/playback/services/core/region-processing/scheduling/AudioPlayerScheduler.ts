@@ -26,6 +26,12 @@ const logger = getLogger('AudioPlayerScheduler');
 
 interface StemEntry {
   buffer: AudioBuffer;
+  // Upstream connection point — sources connect HERE. Defaults to `gain`
+  // for stems that don't need any pre-gain processing. LAUNCH-02.5c sets
+  // this to a Tone.PitchShift input on the bass + harmony stems so they
+  // can be transposed without touching the gain stage. Click-free stop
+  // ramps still target `gain` (the real GainNode) downstream.
+  input: AudioNode;
   gain: GainNode;
 }
 
@@ -51,18 +57,37 @@ export class AudioPlayerScheduler implements Scheduler {
    * Register or replace the buffer + gain node for a stem. Idempotent;
    * replacing a stem stops any in-flight source for that stem with a 5ms
    * ramp so the swap is click-free.
+   *
+   * Optional `input` is the upstream node sources connect to. Defaults to
+   * `gain` when omitted (the historical behaviour). LAUNCH-02.5c passes a
+   * `Tone.PitchShift` input for the bass + harmony stems so transposition
+   * happens before the gain stage.
    */
-  setStem(stemKey: AudioStemKey, buffer: AudioBuffer, gain: GainNode): void {
-    if (this.stems.has(stemKey)) {
+  setStem(
+    stemKey: AudioStemKey,
+    buffer: AudioBuffer,
+    gain: GainNode,
+    input?: AudioNode,
+    options?: { stopInFlight?: boolean },
+  ): void {
+    // Default behaviour: stop any in-flight source for this stem with
+    // a 5 ms click-free ramp so the routing/buffer swap is audibly
+    // seamless. Pass `stopInFlight: false` (used by LAUNCH-02.5c key-
+    // shift mid-loop transitions) to leave current sources running so
+    // they finish at the OLD routing — future sources arming from
+    // RegionScheduler will pick up the NEW routing from the stems map.
+    const shouldStop = options?.stopInFlight !== false;
+    if (shouldStop && this.stems.has(stemKey)) {
       this.stopStem(stemKey);
     }
-    this.stems.set(stemKey, { buffer, gain });
+    this.stems.set(stemKey, { buffer, gain, input: input ?? gain });
     if (!this.activeSources.has(stemKey)) {
       this.activeSources.set(stemKey, new Set());
     }
     logger.debug(`Stem registered: ${stemKey}`, {
       instanceId: this.instanceId,
       durationSeconds: buffer.duration,
+      stopInFlight: shouldStop,
     });
   }
 
@@ -133,7 +158,7 @@ export class AudioPlayerScheduler implements Scheduler {
 
     const source = this.audioContext.createBufferSource();
     source.buffer = entry.buffer;
-    source.connect(entry.gain);
+    source.connect(entry.input);
 
     // Auto-clean once playback ends so the activeSources set doesn't grow.
     source.onended = () => {
