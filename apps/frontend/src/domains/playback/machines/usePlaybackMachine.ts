@@ -418,6 +418,18 @@ export function useShadowComparison(
         return true;
       }
 
+      // XState 'stopped' (or still-tearing-down 'stopping') while the real
+      // engine is already 'playing' is the START-side race on a rapid
+      // stop→play: the shadow machine snapshot hasn't advanced past the prior
+      // stop when the next play begins. Mirror of the 'stopping' + 'playing'
+      // tolerance above; the machine is observational so this is benign.
+      if (
+        (machineState === 'stopped' || machineState === 'stopping') &&
+        realEngineState === 'playing'
+      ) {
+        return true;
+      }
+
       // XState 'disposing' is an async cleanup state transitioning to idle
       if (machineState === 'disposing') {
         return true;

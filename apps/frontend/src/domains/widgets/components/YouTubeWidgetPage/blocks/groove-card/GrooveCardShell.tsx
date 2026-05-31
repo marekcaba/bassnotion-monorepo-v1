@@ -53,11 +53,13 @@ export function GrooveCardShell({
   return (
     <section
       data-block-type="groove-card"
-      className="relative rounded-xl bg-zinc-900 border border-white/5 text-white shadow-lg overflow-hidden"
-      // Inline style wins over the Tailwind class when `bg` is supplied,
-      // letting the waitlist surface theme the card without touching the
-      // in-app tutorial player default.
-      style={bg ? { backgroundColor: bg } : undefined}
+      className="relative rounded-xl border border-white/5 text-white shadow-lg overflow-hidden"
+      // Default card background is the warm near-black the waitlist demo
+      // established (#100E0D), so the in-app player and the waitlist surface
+      // render the Groove Card identically. A supplied `bg` prop still
+      // overrides per-card. (Inline style instead of a Tailwind class so the
+      // single default lives in one place.)
+      style={{ backgroundColor: bg ?? '#100E0D' }}
     >
       {/* Header */}
       <header className="flex items-center justify-between gap-4 px-4 pt-4">

@@ -61,14 +61,15 @@ function WaitlistGrooveCardInner({
     countdownAccentUrl: WAITLIST_COUNTDOWN_ACCENT_URL,
   });
 
-  // Dev-only live colour picker for the waveform peaks. The picker UI
-  // is currently commented out below — uncomment the `<WaveformColorPicker>`
-  // block in the JSX (and switch `_setWaveformColor` back to
-  // `setWaveformColor`) to retune. The state itself stays in place so
-  // re-enabling is a localized diff. Setter prefixed with `_` because
-  // ESLint's unused-vars rule allows `^_`-prefixed identifiers.
+  // Dev-only live colour picker for the waveform peaks. Both the value and
+  // setter are currently unwired: the waitlist waveform uses the shared
+  // GrooveCardWaveform default (#1f252e) rather than a per-card override.
+  // The state is kept so re-enabling the `<WaveformColorPicker>` block in the
+  // JSX (and passing `_waveformColor` back as `waveformColor`) stays a
+  // localized diff. Both prefixed with `_` so ESLint's unused-vars rule
+  // (which allows `^_`) accepts them while unwired.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [waveformColor, _setWaveformColor] = useState(INITIAL_WAVEFORM_COLOR);
+  const [_waveformColor, _setWaveformColor] = useState(INITIAL_WAVEFORM_COLOR);
 
   // Once the countdown samples are decoded, wire them into TWO engine
   // slots:
@@ -151,23 +152,23 @@ function WaitlistGrooveCardInner({
         onNext={() => undefined}
         mode="waitlist"
         countdownClickUrl={WAITLIST_COUNTDOWN_CLICK_URL}
-        // Match the "Why It Works" Dial cards below (#100E0D), so the
-        // groove card sits in the same visual column on the dark page.
-        bg="#100E0D"
-        // Sky-blue waveform — the in-app player keeps the default
-        // orange so the audio shape pops; on the marketing page the
-        // orange waveform would compete with the orange-accented
-        // headline. Blue lets the card sit quietly in the layout.
-        waveformColor={waveformColor}
+        // bg + waveformColor are intentionally NOT overridden here: the
+        // waitlist look (#100E0D card, #1f252e waveform) is now the shared
+        // GrooveCardShell / GrooveCardWaveform default, so the in-app player
+        // and this marketing card render identically. To retune the waveform
+        // shade live, re-wire the dev WaveformColorPicker below and pass its
+        // value back in as `waveformColor`.
+        //
         // Resume the prewarm's AudioContext inside the user-gesture
         // window. Without this, Safari may reject `ctx.resume()` if it
         // fires outside the original tap stack.
         onBeforePlay={resume}
       />
       {/*
-        Dev-only live colour picker for the waveform peaks. Uncomment
-        the block below (and switch the `_setWaveformColor` destructure
-        above back to `setWaveformColor`) to retune the shade. The
+        Dev-only live colour picker for the waveform peaks. To retune the
+        shade: rename the `_waveformColor` / `_setWaveformColor` destructure
+        above to drop the `_` prefixes, pass `waveformColor={waveformColor}`
+        to <GrooveCardBlockView> above, and uncomment the block below. The
         `WaveformColorPicker` component definition stays in this file so
         re-enabling is the smallest possible diff.
 
