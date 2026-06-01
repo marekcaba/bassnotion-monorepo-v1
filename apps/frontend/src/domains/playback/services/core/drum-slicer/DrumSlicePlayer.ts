@@ -206,11 +206,36 @@ export class DrumSlicePlayer {
     // Don't schedule in the past (timer jitter).
     const when = Math.max(this.ctx.currentTime, startReal);
 
+    // The slice itself: bit-exact transient + natural tail (up to the next
+    // onset). fade-in declick, fade-out declick/overlap envelope.
+    this.playBuffer(
+      this.buffer,
+      when,
+      readStart,
+      sliceBufferDur,
+      this.opt.fadeInSeconds,
+      this.opt.fadeOutSeconds,
+    );
+  }
+
+  /**
+   * Schedule one AudioBufferSource → env(GainNode) → output with a trapezoidal
+   * declick envelope, registered in `active` for stop()/teardown. Shared by the
+   * slice and the sustain fill so both honour the master-bus stop discipline.
+   */
+  private playBuffer(
+    buffer: AudioBuffer,
+    when: number,
+    offset: number,
+    duration: number,
+    fadeIn: number,
+    fadeOut: number,
+  ): void {
     let src: AudioBufferSourceNode;
     let env: GainNode;
     try {
       src = this.ctx.createBufferSource();
-      src.buffer = this.buffer;
+      src.buffer = buffer;
       src.playbackRate.value = 1; // BIT-EXACT — the whole point.
       env = this.ctx.createGain();
       src.connect(env);
@@ -219,27 +244,21 @@ export class DrumSlicePlayer {
       return;
     }
 
-    // Envelope: fade-in (declick) → unity → fade-out at the slice end (declick
-    // + transient-envelope for overlaps). The audible slice length is the
-    // buffer slice length (it rings out naturally); when speeding up, the next
-    // slice's fade-in overlaps this fade-out.
-    const fin = this.opt.fadeInSeconds;
-    const foutDur = this.opt.fadeOutSeconds;
-    const audibleEnd = when + sliceBufferDur;
-    const foutStart = Math.max(when + fin, audibleEnd - foutDur);
+    const audibleEnd = when + duration;
+    const foutStart = Math.max(when + fadeIn, audibleEnd - fadeOut);
     try {
       const g = env.gain;
       g.setValueAtTime(0, when);
-      g.linearRampToValueAtTime(1, when + fin);
+      g.linearRampToValueAtTime(1, when + fadeIn);
       g.setValueAtTime(1, foutStart);
       g.linearRampToValueAtTime(0, audibleEnd);
     } catch {
-      /* if the param schedule fails, the slice still plays at unity */
+      /* if the param schedule fails, it still plays at unity */
     }
 
     try {
-      // start(when, offset, duration) — play exactly this buffer region.
-      src.start(when, readStart, sliceBufferDur + 0.001);
+      // start(when, offset, duration) — play exactly this region.
+      src.start(when, offset, duration + 0.001);
     } catch {
       try {
         env.disconnect();

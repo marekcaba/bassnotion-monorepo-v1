@@ -32,6 +32,11 @@ export interface DetectOnsetsOptions {
   meanWindowFrames?: number;
   /** Minimum gap between onsets (s) — debounce so one hit isn't split. */
   minOnsetGapSeconds?: number;
+  /** GLOBAL confidence floor (Tier 1c): drop accepted peaks whose flux is below
+   *  this fraction of the LOUDEST onset's flux. The local adaptive threshold
+   *  can pass globally-insignificant peaks in quiet sections — those create
+   *  slice boundaries mid-decay (a seam + a weak fill source). 0 disables. */
+  minRelativeStrength?: number;
 }
 
 const DEFAULTS: Required<DetectOnsetsOptions> = {
@@ -40,7 +45,16 @@ const DEFAULTS: Required<DetectOnsetsOptions> = {
   sensitivity: 0.6,
   meanWindowFrames: 6,
   minOnsetGapSeconds: 0.035, // ~35ms: faster than a 32nd at 200bpm; debounces flams
+  minRelativeStrength: 0.12, // drop peaks < 12% of the loudest onset
 };
+
+/** A detected onset with its strength relative to the loudest onset (0..1). */
+export interface OnsetInfo {
+  /** Onset time in seconds. */
+  time: number;
+  /** Confidence: this onset's flux / the loudest onset's flux (1 = loudest). */
+  confidence: number;
+}
 
 /** In-place iterative radix-2 Cooley–Tukey FFT. re/im length must be a pow2. */
 function fftInPlace(re: Float32Array, im: Float32Array): void {
@@ -98,17 +112,33 @@ function monoMix(buffer: AudioBuffer): Float32Array {
 
 /**
  * Detect drum onset times (seconds, ascending, includes 0) in an AudioBuffer.
+ * Thin wrapper over {@link detectOnsetsDetailed} returning just the times — the
+ * shape the slicer's existing scheduling path consumes.
  */
 export function detectOnsets(
   buffer: AudioBuffer,
   options: DetectOnsetsOptions = {},
 ): number[] {
+  return detectOnsetsDetailed(buffer, options).map((o) => o.time);
+}
+
+/**
+ * Detect drum onsets WITH a per-onset confidence (Tier 1c). Same spectral-flux
+ * peak-picking as before, plus: each accepted peak carries its flux relative to
+ * the loudest onset, and globally-weak peaks (below `minRelativeStrength` of the
+ * loudest) are dropped so the slicer doesn't cut a boundary mid-decay. Returns
+ * ascending, always includes the origin (0) at confidence 1.
+ */
+export function detectOnsetsDetailed(
+  buffer: AudioBuffer,
+  options: DetectOnsetsOptions = {},
+): OnsetInfo[] {
   const opt = { ...DEFAULTS, ...options };
   const { fftSize, hopSize } = opt;
   const sampleRate = buffer.sampleRate;
   const signal = monoMix(buffer);
   const n = signal.length;
-  if (n < fftSize) return [0];
+  if (n < fftSize) return [{ time: 0, confidence: 1 }];
 
   // Precompute a Hann window.
   const window = new Float32Array(fftSize);
@@ -145,8 +175,9 @@ export function detectOnsets(
     curMag = tmp;
   }
 
-  // Adaptive peak-picking over the flux curve.
-  const onsets: number[] = [];
+  // Adaptive peak-picking over the flux curve — collect candidates with their
+  // flux so we can apply a GLOBAL strength floor afterwards.
+  const candidates: { time: number; flux: number }[] = [];
   const w = opt.meanWindowFrames;
   const minGapFrames = Math.max(
     1,
@@ -175,12 +206,25 @@ export function detectOnsets(
     ) {
       // Onset time = frame centre (start of the FFT window is the attack edge;
       // using the frame start is the conventional onset time for slicing).
-      onsets.push((f * hopSize) / sampleRate);
+      candidates.push({ time: (f * hopSize) / sampleRate, flux: fluxF });
       lastOnsetFrame = f;
     }
   }
 
-  // Always anchor the loop start at 0 (the downbeat / loop origin).
-  if (onsets.length === 0 || onsets[0]! > 0.001) onsets.unshift(0);
-  return onsets;
+  // Global confidence: normalise by the loudest candidate's flux, then drop the
+  // globally-weak ones (false positives in quiet sections). Origin (0) is kept
+  // unconditionally at confidence 1 as the loop downbeat.
+  let maxFlux = 0;
+  for (const c of candidates) if (c.flux > maxFlux) maxFlux = c.flux;
+  const floor = Math.max(0, opt.minRelativeStrength);
+  const result: OnsetInfo[] = [];
+  for (const c of candidates) {
+    const confidence = maxFlux > 0 ? c.flux / maxFlux : 1;
+    if (confidence >= floor) result.push({ time: c.time, confidence });
+  }
+
+  if (result.length === 0 || result[0]!.time > 0.001) {
+    result.unshift({ time: 0, confidence: 1 });
+  }
+  return result;
 }

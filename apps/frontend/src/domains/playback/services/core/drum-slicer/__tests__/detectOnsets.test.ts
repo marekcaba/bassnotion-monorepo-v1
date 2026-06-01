@@ -4,7 +4,7 @@
  * hits (not a grid).
  */
 import { describe, it, expect } from 'vitest';
-import { detectOnsets } from '../detectOnsets.js';
+import { detectOnsets, detectOnsetsDetailed } from '../detectOnsets.js';
 
 const SR = 48000;
 
@@ -100,5 +100,84 @@ describe('detectOnsets', () => {
   it('returns [0] for a buffer shorter than one FFT frame', () => {
     const onsets = detectOnsets(makeBuffer(new Float32Array(100)));
     expect(onsets).toEqual([0]);
+  });
+});
+
+/** Render hits with PER-HIT amplitudes (for confidence / strength-floor tests). */
+function renderHitsAmp(
+  hits: { t: number; amp: number }[],
+  totalSeconds: number,
+): Float32Array {
+  const data = new Float32Array(Math.ceil(totalSeconds * SR));
+  for (const { t, amp } of hits) {
+    const start = Math.floor(t * SR);
+    const decay = Math.floor(0.04 * SR);
+    for (let i = 0; i < decay && start + i < data.length; i++) {
+      const env = Math.exp(-i / (0.008 * SR));
+      data[start + i] += (Math.sin(i * 0.7) + (i % 7) / 7 - 0.5) * env * amp;
+    }
+  }
+  return data;
+}
+
+describe('detectOnsetsDetailed (Tier 1c confidence + strength floor)', () => {
+  it('returns a confidence in (0,1] per onset, origin at 1', () => {
+    const info = detectOnsetsDetailed(
+      makeBuffer(renderHits([0, 0.5, 1.0], 1.5)),
+    );
+    expect(info[0]!.time).toBe(0);
+    expect(info[0]!.confidence).toBe(1);
+    for (const o of info) {
+      expect(o.confidence).toBeGreaterThan(0);
+      expect(o.confidence).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('gives a louder hit a higher confidence than a soft ghost', () => {
+    // A loud backbeat and a soft ghost note. Disable the floor so both survive,
+    // then assert the loud one scores higher.
+    const info = detectOnsetsDetailed(
+      makeBuffer(
+        renderHitsAmp(
+          [
+            { t: 0.5, amp: 1.0 },
+            { t: 1.0, amp: 0.25 },
+          ],
+          1.5,
+        ),
+      ),
+      { minRelativeStrength: 0 },
+    );
+    const loud = info.find((o) => Math.abs(o.time - 0.5) < 0.03);
+    const ghost = info.find((o) => Math.abs(o.time - 1.0) < 0.03);
+    expect(loud && ghost).toBeTruthy();
+    expect(loud!.confidence).toBeGreaterThan(ghost!.confidence);
+  });
+
+  it('the global strength floor drops a globally-weak peak', () => {
+    const hits = [
+      { t: 0.5, amp: 1.0 }, // loud
+      { t: 1.0, amp: 0.05 }, // very weak — below a 0.2 floor relative to loud
+    ];
+    const withFloor = detectOnsets(makeBuffer(renderHitsAmp(hits, 1.5)), {
+      minRelativeStrength: 0.2,
+    });
+    const withoutFloor = detectOnsets(makeBuffer(renderHitsAmp(hits, 1.5)), {
+      minRelativeStrength: 0,
+    });
+    const weakKeptNoFloor = withoutFloor.some((d) => Math.abs(d - 1.0) < 0.03);
+    const weakDroppedWithFloor = !withFloor.some(
+      (d) => Math.abs(d - 1.0) < 0.03,
+    );
+    // The weak peak is detectable at all (without floor) but removed by the floor.
+    expect(weakKeptNoFloor).toBe(true);
+    expect(weakDroppedWithFloor).toBe(true);
+  });
+
+  it('detectOnsets returns the same times detectOnsetsDetailed reports', () => {
+    const buf = makeBuffer(renderHits([0, 0.5, 1.0, 1.5], 2.0));
+    const times = detectOnsets(buf);
+    const detailed = detectOnsetsDetailed(buf).map((o) => o.time);
+    expect(times).toEqual(detailed);
   });
 });
