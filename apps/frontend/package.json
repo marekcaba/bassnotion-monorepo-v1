@@ -3,12 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/copy-soundtouch-worklet.js",
     "dev": "next dev -p 3001",
     "build": "npm run build:workers && next build",
     "build:analyze": "ANALYZE=true next build --config ./next.config.bundle-analyzer.js",
     "build:worklet": "node scripts/build-worklet.js",
     "build:worker": "node scripts/build-worker.js",
-    "build:workers": "npm run build:worklet && npm run build:worker",
+    "build:soundtouch-worklet": "node scripts/copy-soundtouch-worklet.js",
+    "build:workers": "npm run build:worklet && npm run build:worker && npm run build:soundtouch-worklet",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest"
@@ -40,6 +42,7 @@
     "@react-three/fiber": "^9.1.4",
     "@react-three/postprocessing": "^3.0.4",
     "@sentry/nextjs": "^10.8.0",
+    "@soundtouchjs/audio-worklet": "^2.0.3",
     "@tanstack/react-query": "^5.62.7",
     "@tanstack/react-query-devtools": "^5.62.7",
     "@testing-library/jest-dom": "^6.6.3",

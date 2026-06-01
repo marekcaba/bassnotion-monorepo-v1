@@ -6,9 +6,12 @@
  * the package README (web/release): the default export is an async
  * factory returning a real AudioWorkletNode with extra methods bolted on.
  *
- * Only the members the adapter touches are typed; the rest of the
- * (buffer-streaming) API is omitted intentionally — we use live-input
- * mode, where input/rate/loop are ignored.
+ * The adapter uses TWO modes (see PitchShiftAdapter.ts):
+ *  - live-input: a source feeds the worklet input; only semitones/formant
+ *    apply (input/rate/loop are ignored by the WASM in this mode).
+ *  - buffer-streaming: nothing is connected to the input; the node plays its
+ *    own buffer (loaded via addBuffers) and honors input/rate/loopStart/
+ *    loopEnd — this is how we get true pitch-independent time-stretch.
  */
 declare module 'signalsmith-stretch' {
   /** One scheduled change. All fields optional; later-scheduled changes
@@ -28,7 +31,17 @@ declare module 'signalsmith-stretch' {
     formantSemitones?: number;
     /** Rough fundamental (Hz) for formant analysis, or 0 to pitch-track. */
     formantBaseHz?: number;
-    // Live-input mode ignores input/rate/loopStart/loopEnd — omitted.
+    /** Read position in the internal buffer (s). Buffer-streaming only. */
+    input?: number;
+    /** Time-stretch ratio (1 = original speed). Buffer-streaming only;
+     *  decoupled from `semitones`. Honored only when the worklet input is
+     *  disconnected. */
+    rate?: number;
+    /** Loop region start (s) in the internal buffer. Buffer-streaming only. */
+    loopStart?: number;
+    /** Loop region end (s); loopStart === loopEnd disables looping.
+     *  Buffer-streaming only. */
+    loopEnd?: number;
   }
 
   interface SignalsmithConfigure {
@@ -41,9 +54,22 @@ declare module 'signalsmith-stretch' {
   /** The factory's resolved value: an AudioWorkletNode plus methods. */
   type SignalsmithStretchNode = AudioWorkletNode & {
     schedule(change: SignalsmithScheduleChange): void;
-    start(when?: number): void;
+    /** Start playback. In buffer-streaming mode `offset` is the read position
+     *  (s) and rate/semitones seed the first segment (sugar over schedule). */
+    start(
+      when?: number,
+      offset?: number,
+      duration?: number,
+      rate?: number,
+      semitones?: number,
+    ): void;
     stop(when?: number): void;
-    /** Live-input latency in seconds. */
+    /** Append PCM to the internal buffer (one Float32Array per channel).
+     *  Returns the new buffer end-time in seconds. Buffer-streaming mode. */
+    addBuffers(channelData: Float32Array[]): Promise<number>;
+    /** Drop all internal buffers, resetting the end-time to 0. */
+    dropBuffers(): void;
+    /** Algorithmic latency in seconds (input + output). */
     latency(): number;
     configure(opts: SignalsmithConfigure): void;
   };

@@ -1,30 +1,27 @@
 /**
- * Pitch-shift engine adapter (LAUNCH-02.5f).
+ * Pitch + time-stretch engine adapter (LAUNCH-02.5f; buffer-streaming
+ * time-stretch added in LAUNCH-06).
  *
- * The PlaybackEngine's key-stepper only couples to its pitch-shift
- * engine in three places:
+ * The PlaybackEngine couples to its Signalsmith engine in a few places:
  *
  *   1. one-time worklet registration per AudioContext,
- *   2. constructing the per-stem AudioWorkletNode, and
- *   3. writing a semitone offset onto that node.
+ *   2. constructing a per-stem BUFFER-STREAMING node (the node plays its own
+ *      buffer and self-loops — it IS the source for bass/harmony),
+ *   3. driving that node's pitch (semitones) AND tempo (rate) independently,
+ *   4. starting/stopping it at transport-aligned times, plus stop/dispose.
  *
- * Plus an end-to-end latency it compensates for on the dry (drums/click)
- * stems. Everything else — routing through AudioPlayerScheduler, the
- * silent pre-warm loop, gain wiring, stop/dispose — operates on a plain
- * `AudioNode` and is engine-agnostic.
+ * {@link PitchShiftAdapter} is the contract. The sole implementation is
+ * {@link SignalsmithAdapter}, wrapping `signalsmith-stretch`: it self-injects
+ * its worklet (no served file), constructs the node via the async factory,
+ * loads PCM via `addBuffers`, and drives pitch+tempo via
+ * `schedule({ semitones, rate, loopStart, loopEnd, formantCompensation })`
+ * with per-stem profiles (see {@link SIGNALSMITH_PROFILES}). Formant
+ * compensation is always on — that's what keeps shifts free of "chipmunk"
+ * colouration. Buffer-streaming mode (input disconnected) is what makes the
+ * `rate` field do true pitch-independent time-stretch.
  *
- * {@link PitchShiftAdapter} is the contract for those three coupling
- * points. The sole implementation is {@link SignalsmithAdapter}, wrapping
- * `signalsmith-stretch`: it self-injects its worklet (no served file),
- * constructs the node via the async factory, and drives pitch via
- * `schedule({ semitones, formantCompensation })` with per-stem profiles
- * (see {@link SIGNALSMITH_PROFILES}). Formant compensation is always on —
- * that's what keeps shifts free of "chipmunk" colouration.
- *
- * (An earlier A/B trialled `@soundtouchjs/audio-worklet` (WSOLA) behind
- * this same interface; Signalsmith won and SoundTouch was removed. The
- * adapter indirection is retained so a future engine swap stays a
- * one-file change.)
+ * Drums are NOT handled here — they stretch via a separate WSOLA insert
+ * (see SoundTouchInsert.ts) to keep percussive transients pristine.
  */
 
 /**
@@ -103,26 +100,63 @@ export interface PitchShiftAdapter {
   register(audioContext: AudioContext): Promise<boolean>;
 
   /**
-   * Construct one pitch-shift node for a stem and connect it to `gain`
-   * (source → node → gain). Returns null if the engine isn't registered
-   * or construction fails — caller plays the stem dry.
+   * Construct a BUFFER-STREAMING node: the engine plays `channelData`
+   * itself (it IS the source — nothing connects to its input) and loops
+   * the whole buffer internally. This is the mode that does true
+   * pitch-independent time-stretch: {@link setRate} changes tempo,
+   * {@link setSemitones} changes pitch, independently.
    *
-   * `stemProfile` selects per-stem tuning ('bass' vs 'harmony'): bass and
-   * harmony have very different spectra, so Signalsmith gets different
-   * formant/block settings per stem. The returned node is a native
-   * AudioWorkletNode; the caller owns its lifecycle (pre-warm, disconnect).
+   * Connects the node's output to `output` (node → gain). The buffer is
+   * loaded and the node armed (active, looping [0, bufferDuration]) but NOT
+   * started — the caller drives playback via {@link startBufferStreaming}
+   * at a scheduled audio time so it aligns with the transport.
+   *
+   * Returns null if the engine isn't registered or construction fails.
    */
-  createNode(
+  createBufferStreamingNode(
     audioContext: AudioContext,
-    gain: AudioNode,
+    output: AudioNode,
+    channelData: Float32Array[],
+    bufferDuration: number,
     stemProfile: PitchStemProfile,
+    initialSemitones?: number,
   ): AudioNode | null;
 
   /**
+   * Start a buffer-streaming node (from {@link createBufferStreamingNode})
+   * at audio time `when`, reading from buffer offset `offsetSeconds`.
+   * No-op / queued if the node hasn't resolved yet. Never throws.
+   */
+  startBufferStreaming(
+    node: AudioNode,
+    when: number,
+    offsetSeconds: number,
+  ): void;
+
+  /**
+   * Stop a buffer-streaming node's playback at audio time `when` (the
+   * worklet stops producing output). Does NOT tear the node down — the
+   * owner still calls {@link disposeNode} afterwards. Never throws.
+   */
+  stopBufferStreaming(node: AudioNode, when: number): void;
+
+  /**
+   * Set the time-stretch ratio (tempo; 1 = original speed) on a
+   * buffer-streaming node, independent of pitch. When `applyAtAudioTime`
+   * is in the future the change is scheduled at that boundary. Never throws.
+   */
+  setRate(
+    node: AudioNode,
+    rate: number,
+    audioContext: AudioContext,
+    applyAtAudioTime?: number,
+  ): void;
+
+  /**
    * Apply a semitone offset to a node previously returned by
-   * {@link createNode}. When `applyAtAudioTime` is in the future the
-   * change is scheduled sample-accurately at that time (next loop
-   * boundary); otherwise it applies immediately. Never throws.
+   * {@link createBufferStreamingNode}. When `applyAtAudioTime` is in the
+   * future the change is scheduled sample-accurately at that time (next
+   * loop boundary); otherwise it applies immediately. Never throws.
    */
   setSemitones(
     node: AudioNode,
@@ -150,8 +184,8 @@ export interface PitchShiftAdapter {
   silenceNode(node: AudioNode, audioContext: AudioContext): void;
 
   /**
-   * Fully tear down a node from {@link createNode}, including any
-   * engine-internal nodes it owns that the caller can't see.
+   * Fully tear down a node from {@link createBufferStreamingNode}, including
+   * any engine-internal nodes it owns that the caller can't see.
    *
    * This MUST exist as a distinct method (not just `node.disconnect()`)
    * because the node the caller holds may be a thin relay in front of the
@@ -173,11 +207,14 @@ export interface PitchShiftAdapter {
 
 /**
  * Nominal latency used before a node exists / if `node.latency()` is
- * unavailable. Signalsmith reports its true live-input latency per-node,
- * which the engine reads via {@link SignalsmithAdapter.latencySeconds};
- * this is only the bootstrap fallback for the DelayNode setup.
+ * unavailable. Signalsmith reports its true latency per-node, which the engine
+ * reads via {@link SignalsmithAdapter.latencySeconds}; this is the bootstrap
+ * fallback used to SEED the drum compensation DelayNode before the exact value
+ * resolves. Set to the EMPIRICALLY MEASURED value (~0.175s for the bass/harmony
+ * blockMs 120–140 profiles; cross-correlation of rendered audio) so the seed is
+ * already correct and the async refine doesn't jump the drum timing.
  */
-const SIGNALSMITH_NOMINAL_LATENCY_SECONDS = 0.12;
+const SIGNALSMITH_NOMINAL_LATENCY_SECONDS = 0.13;
 
 export class SignalsmithAdapter implements PitchShiftAdapter {
   readonly library = 'signalsmith' as const;
@@ -185,8 +222,8 @@ export class SignalsmithAdapter implements PitchShiftAdapter {
   // The factory both registers the worklet AND builds a node, so there's
   // no separate register step. We keep the imported factory hot after
   // first use; per-node construction is async, so the engine's sync
-  // createNode() kicks off construction and back-fills the node when the
-  // promise resolves (the pre-warm loop tolerates a null-then-ready node).
+  // createBufferStreamingNode() kicks off construction and back-fills the
+  // node (via a relay) when the promise resolves.
   private factory:
     | ((ctx: AudioContext, opts?: AudioWorkletNodeOptions) => Promise<any>)
     | null = null;
@@ -216,56 +253,58 @@ export class SignalsmithAdapter implements PitchShiftAdapter {
     }
   }
 
-  createNode(
+  createBufferStreamingNode(
     audioContext: AudioContext,
-    gain: AudioNode,
+    output: AudioNode,
+    channelData: Float32Array[],
+    bufferDuration: number,
     stemProfile: PitchStemProfile,
+    initialSemitones = 0,
   ): AudioNode | null {
     if (!this.registered || !this.factory) {
-      this.log.debug('Signalsmith not registered; deferring node creation');
+      this.log.debug(
+        'Signalsmith not registered; deferring buffer-stream node',
+      );
+      return null;
+    }
+    if (!channelData.length || bufferDuration <= 0) {
+      this.log.warn('createBufferStreamingNode: empty buffer; skipping');
       return null;
     }
 
-    const profile = SIGNALSMITH_PROFILES[stemProfile] ?? SIGNALSMITH_PROFILES.harmony;
+    const profile =
+      SIGNALSMITH_PROFILES[stemProfile] ?? SIGNALSMITH_PROFILES.harmony;
 
-    // The factory is async but createNode is sync (the engine's call
-    // chain is sync). We return a lightweight relay GainNode immediately
-    // and connect it to `gain`; once the real Signalsmith node resolves
-    // we splice it in front of the relay (source → relay → gain becomes
-    // source → relay → signalsmith → gain is NOT possible after the fact,
-    // so instead we make the relay the node the engine holds and route
-    // the resolved Signalsmith node through it).
-    //
-    // Simpler and correct: the engine connects `source → node`. We give
-    // it a passthrough input node now, and when Signalsmith resolves we
-    // insert it between the passthrough and gain:
-    //
-    //   source → [passthrough input] → signalsmith → gain
-    //
-    // The passthrough is a GainNode(1.0); Signalsmith's own latency
-    // compensation handles timing. Until Signalsmith resolves (a few ms,
-    // module already cached) the passthrough feeds gain directly so audio
-    // is never silent — it's just briefly un-pitched, which only matters
-    // for the very first block after construction.
-    const input = audioContext.createGain();
-    input.gain.value = 1;
-
-    // Temporary direct connection so audio flows before Signalsmith lands.
-    let tempConnected = true;
+    // Async splice: the factory is async but this method is sync, so we
+    // hand back a relay GainNode immediately and back-fill the worklet when
+    // it resolves. The worklet is the SOURCE (it plays its own buffer), so
+    // there is NO upstream input to connect — that disconnected input is
+    // precisely what selects buffer-streaming mode (a connected input would
+    // flip the WASM back to live-input and ignore rate/loop). The relay
+    // gives the engine a stable AudioNode to wire into the stem gain
+    // immediately; once the worklet resolves we route sg → relay → output.
+    // Until then the relay is silent (correct — nothing is playing
+    // pre-start anyway).
+    const relay = audioContext.createGain();
+    relay.gain.value = 1;
     try {
-      input.connect(gain);
+      relay.connect(output);
     } catch (err) {
-      this.log.warn('Signalsmith relay → gain connect failed', err);
+      this.log.warn(
+        'Signalsmith buffer-stream relay → gain connect failed',
+        err,
+      );
       return null;
     }
 
-    this.factory(audioContext)
-      .then((sg: any) => {
+    this.factory(audioContext, {
+      numberOfInputs: 1,
+      numberOfOutputs: 1,
+      outputChannelCount: [Math.min(2, Math.max(1, channelData.length))],
+    })
+      .then(async (sg: any) => {
         try {
-          // If the node was disposed during the async factory gap (user
-          // stopped before Signalsmith resolved), don't splice — just stop
-          // and drop the freshly-built worklet so it never reaches the gain.
-          if ((input as any).__disposed) {
+          if ((relay as any).__disposed) {
             try {
               sg.stop?.();
             } catch {
@@ -278,79 +317,163 @@ export class SignalsmithAdapter implements PitchShiftAdapter {
             }
             return;
           }
-          // Splice Signalsmith between the relay and gain.
-          if (tempConnected) {
-            try {
-              input.disconnect(gain);
-            } catch {
-              /* ignore */
-            }
-            tempConnected = false;
-          }
-          input.connect(sg);
-          sg.connect(gain);
 
-          // Node-level config (set once): block size + CPU spreading per
-          // the stem profile. configure() is separate from schedule().
+          // CRITICAL: do NOT connect anything to sg's input — keeping the
+          // input disconnected is what selects buffer-streaming mode.
+          sg.connect(relay);
+
           try {
             sg.configure?.({
               blockMs: profile.blockMs,
               splitComputation: profile.splitComputation,
             });
           } catch (cfgErr) {
-            this.log.warn('Signalsmith configure failed; using defaults', cfgErr);
+            this.log.warn(
+              'Signalsmith buffer-stream configure failed; defaults',
+              cfgErr,
+            );
           }
 
-          // Live-input mode: input/rate/loop are ignored, only semitones
-          // + formant matter. Must call start() (== schedule active) to
-          // begin processing.
-          //
-          // CRITICAL: fold any semitone offset requested BEFORE the node
-          // resolved into this initial schedule. The engine calls
-          // setInstrumentPitchShift during pre-play transpose, which stashed
-          // the value in __pendingSemitones because `sg` didn't exist yet.
-          // Without applying it here, a pre-play key change is silently lost
-          // and the groove plays in the default key.
-          const pending = (input as any).__pendingSemitones;
-          const initialSemitones =
-            typeof pending === 'number' ? pending : 0;
+          // Load the stem PCM into the worklet's internal buffer.
+          try {
+            await sg.addBuffers?.(channelData);
+          } catch (bufErr) {
+            this.log.warn(
+              'Signalsmith addBuffers failed; staying silent',
+              bufErr,
+            );
+            return;
+          }
+
+          // Arm INACTIVE: configure the loop + initial pitch/formant + any
+          // pending rate, but keep the node SILENT (active:false) until the
+          // scheduler calls startBufferStreaming() at the transport-aligned
+          // T0. CRITICAL: scheduling active:true here (with no output time)
+          // would activate the worklet at currentTime — i.e. play the stem
+          // immediately on creation, during becomeActive(), before the
+          // count-in. start() flips active:true at T0 and inherits these
+          // loop/formant fields (signalsmith.schedule copies the latest
+          // segment), so they only need to be set once here.
+          const pendingSemis = (relay as any).__pendingSemitones;
+          const semitones =
+            typeof pendingSemis === 'number' ? pendingSemis : initialSemitones;
+          const pendingRate = (relay as any).__pendingRate;
+          const rate = typeof pendingRate === 'number' ? pendingRate : 1;
           sg.schedule?.({
-            active: true,
-            semitones: initialSemitones,
+            active: false,
+            rate,
+            semitones,
             formantCompensation: profile.formantCompensation,
             formantBaseHz: profile.formantBaseHz,
             tonalityHz: profile.tonalityHz,
+            loopStart: 0,
+            loopEnd: bufferDuration,
           });
-          sg.start?.();
-          // Stash the live node + profile on the relay so setSemitones can
-          // re-apply the per-stem formant fields on every key change, and
-          // latency() can reach the node. Clear the applied pending value.
-          (input as any).__signalsmith = sg;
-          (input as any).__profile = profile;
-          delete (input as any).__pendingSemitones;
-          this.log.info('Signalsmith node spliced in', {
+
+          (relay as any).__signalsmith = sg;
+          (relay as any).__profile = profile;
+          (relay as any).__bufferStreaming = true;
+          (relay as any).__bufferDuration = bufferDuration;
+          (relay as any).__currentRate = rate;
+          delete (relay as any).__pendingSemitones;
+          delete (relay as any).__pendingRate;
+
+          // Post inputTime (the read-head position) frequently so the visual
+          // playhead — which reads it as the real audio clock — stays smooth.
+          // ~120 Hz; the engine interpolates between posts with the audio clock.
+          try {
+            sg.setUpdateInterval?.(1 / 120);
+          } catch {
+            /* default interval is fine if unsupported */
+          }
+
+          // If start was requested before resolution, honor it now.
+          const pendingStart = (relay as any).__pendingStart;
+          if (pendingStart) {
+            try {
+              sg.start?.(pendingStart.when, pendingStart.offset);
+            } catch (startErr) {
+              this.log.warn('Signalsmith deferred start failed', startErr);
+            }
+            delete (relay as any).__pendingStart;
+          }
+
+          this.log.info('Signalsmith buffer-stream node ready', {
             stemProfile,
-            initialSemitones,
-            formantBaseHz: profile.formantBaseHz,
-            blockMs: profile.blockMs,
+            semitones,
+            rate,
+            bufferDuration,
           });
         } catch (err) {
-          this.log.warn('Signalsmith splice failed; staying dry', err);
-          // Restore the direct passthrough so audio still plays.
-          try {
-            input.connect(gain);
-            tempConnected = true;
-          } catch {
-            /* ignore */
-          }
+          this.log.warn('Signalsmith buffer-stream splice failed', err);
         }
       })
       .catch((err: unknown) => {
-        this.log.warn('Signalsmith factory rejected; staying dry', err);
+        this.log.warn('Signalsmith buffer-stream factory rejected', err);
       });
 
-    // The engine holds the relay; source.connect(relay) works immediately.
-    return input as AudioNode;
+    return relay as AudioNode;
+  }
+
+  startBufferStreaming(
+    node: AudioNode,
+    when: number,
+    offsetSeconds: number,
+  ): void {
+    const sg = (node as any).__signalsmith;
+    if (!sg?.start) {
+      // Not resolved yet — stash so the splice starts it on arrival.
+      (node as any).__pendingStart = { when, offset: offsetSeconds };
+      return;
+    }
+    try {
+      sg.start(when, offsetSeconds);
+    } catch (err) {
+      this.log.warn('Signalsmith startBufferStreaming failed', err);
+    }
+  }
+
+  stopBufferStreaming(node: AudioNode, when: number): void {
+    const relay = node as any;
+    const sg = relay.__signalsmith;
+    if (!sg?.stop) {
+      // Not resolved yet — cancel the queued start so it never plays.
+      delete relay.__pendingStart;
+      return;
+    }
+    try {
+      sg.stop(when);
+    } catch (err) {
+      this.log.warn('Signalsmith stopBufferStreaming failed', err);
+    }
+  }
+
+  setRate(
+    node: AudioNode,
+    rate: number,
+    audioContext: AudioContext,
+    applyAtAudioTime?: number,
+  ): void {
+    const sg = (node as any).__signalsmith;
+    if (!sg?.schedule) {
+      (node as any).__pendingRate = rate;
+      return;
+    }
+    // Track the current rate so the playhead-phase interpolation advances at
+    // the right speed between worklet inputTime posts.
+    (node as any).__currentRate = rate;
+    try {
+      const change: Record<string, unknown> = { rate };
+      if (
+        typeof applyAtAudioTime === 'number' &&
+        applyAtAudioTime > audioContext.currentTime
+      ) {
+        change.output = applyAtAudioTime;
+      }
+      sg.schedule(change);
+    } catch (err) {
+      this.log.warn('Signalsmith setRate schedule failed', err);
+    }
   }
 
   setSemitones(
@@ -452,18 +575,20 @@ export class SignalsmithAdapter implements PitchShiftAdapter {
       relay.__silenced = true;
     } else {
       // Worklet not spliced yet — mark so the async splice, when it
-      // resolves, won't connect into the gain (handled in createNode's
-      // __disposed check; set that too for belt-and-braces).
+      // resolves, won't connect into the gain (handled in
+      // createBufferStreamingNode's __disposed check; set that too for
+      // belt-and-braces).
       relay.__disposed = true;
     }
   }
 
   disposeNode(node: AudioNode): void {
     const relay = node as any;
-    // Mark disposed FIRST. If the async splice (.then in createNode) hasn't
-    // resolved yet, it reads this flag and skips connecting a now-dead node
-    // into the gain — otherwise a late splice would leak a live worklet into
-    // the shared instrument gain (the spike-after-N-plays accumulation).
+    // Mark disposed FIRST. If the async splice (.then in
+    // createBufferStreamingNode) hasn't resolved yet, it reads this flag and
+    // skips connecting a now-dead node into the gain — otherwise a late
+    // splice would leak a live worklet into the shared instrument gain (the
+    // spike-after-N-plays accumulation).
     relay.__disposed = true;
 
     // Tear down the real Signalsmith worklet if it already spliced in.

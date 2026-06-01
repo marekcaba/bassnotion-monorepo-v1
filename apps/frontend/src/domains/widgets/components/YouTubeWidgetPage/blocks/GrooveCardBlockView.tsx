@@ -362,6 +362,7 @@ export function GrooveCardBlockView({
             audioContext={playback.audioContext}
             loopStartAudioTime={playback.loopStartAudioTime}
             loopDurationSeconds={playback.loopDurationSeconds}
+            getAudioPhase={playback.getAudioPhase}
             lengthBars={config.lengthBars}
             loopSelection={playback.loopSelection}
             onLoopSelectionChange={playback.setLoopSelection}

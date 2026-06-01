@@ -158,6 +158,13 @@ export interface UseGrooveCardPlaybackReturn {
   /** Duration of one loop iteration in seconds (computed from lengthBars
    *  and current BPM). */
   loopDurationSeconds: number;
+  /** Time-stretch (LAUNCH-06): the REAL audio playhead phase in [0,1) read
+   *  from the bass stem's actual worklet read-head, or null when unavailable.
+   *  The waveform uses this so the playhead tracks the SOUND — staying at the
+   *  old tempo until a pending tempo change lands at the loop seam, then the
+   *  new tempo — instead of a currentBpm formula that desyncs. Called per RAF
+   *  frame; stable identity. */
+  getAudioPhase: () => number | null;
 
   // ── visual count-in --------------------------------------------------------
   /** Counts 1-2-3-4 during the metronome count-in bar. The play button
@@ -435,16 +442,10 @@ export function useGrooveCardPlayback({
   // closure's view of "current key" fresh without re-installing on every
   // render. Mirrors the `onBeforePlayRef` pattern.
   const currentSemitonesRef = useRef(0);
+  // Mirror of currentBpm for synchronous reads (e.g. inside setTempo before
+  // the state update has flushed). Kept in sync by the ref-sync effect below.
+  const currentBpmRef = useRef(block.originalBpm);
   const preloadRef = useRef(preload);
-  // Tracks whether the bass/harmony signal chain was routed through
-  // the pitch-shift node on the previous setKey call. Used to choose
-  // between immediate vs. boundary-deferred pitch writes: the FIRST
-  // transition into pitched routing applies immediately (the source
-  // was just discontinued by enablePitchShiftForStem's setStem call);
-  // subsequent semitone-to-semitone changes within pitched state
-  // schedule the AudioParam write at the next loop boundary so the
-  // current loop finishes in the prior key.
-  const pitchShiftPreviouslyActiveRef = useRef(false);
   // Map of region.id → AudioStemKey, populated by registerStemTracks so
   // the buffer resolver can look up which stem to serve for a given
   // region without re-parsing the region id string.
@@ -473,6 +474,9 @@ export function useGrooveCardPlayback({
     currentSemitonesRef.current = currentSemitones;
   }, [currentSemitones]);
   useEffect(() => {
+    currentBpmRef.current = currentBpm;
+  }, [currentBpm]);
+  useEffect(() => {
     preloadRef.current = preload;
   }, [preload]);
 
@@ -495,9 +499,70 @@ export function useGrooveCardPlayback({
     // block.originalBpm is stable per card; re-running on change is correct.
   }, [block.originalBpm]);
 
+  // Loop duration in seconds at the current BPM — used by setKey + setTempo
+  // (to compute the next loop-boundary audio time for the deferred
+  // pitch/tempo write) and by the public reactive surface (waveform
+  // playhead, etc.). Hoisted above the callbacks because TypeScript flags
+  // forward refs in block-scoped declarations.
+  const loopDurationSeconds = useMemo(() => {
+    const secondsPerBeat = 60 / Math.max(1, currentBpm);
+    return block.lengthBars * 4 * secondsPerBeat;
+  }, [block.lengthBars, currentBpm]);
+
+  // Time-stretch (LAUNCH-06): the REAL audio playhead phase [0,1), read from
+  // the bass stem's signalsmith read-head via the engine. The waveform calls
+  // this each frame so the playhead is glued to the actual sound and never
+  // desyncs from a pending (seam-deferred) tempo change. Stable identity.
+  const getAudioPhase = useCallback((): number | null => {
+    return WindowRegistry.getPlaybackEngine()?.getStemPlayheadPhase?.() ?? null;
+  }, []);
+
+  // Compute the audio-context time of the next loop seam, so a key/tempo
+  // change applies cleanly at a boundary (current loop finishes in the old
+  // key/tempo, the next plays the new). Returns undefined when not playing
+  // (caller applies immediately so the next play() picks it up).
+  //
+  // `preRollSeconds` shifts the returned time EARLIER to compensate for a
+  // processing pipeline that delays output. Buffer-streaming signalsmith
+  // self-compensates its latency, so bass/harmony pass 0; the legacy
+  // live-input path passed 0.14.
+  //
+  // `loopDurationOverride` lets a tempo change use the OLD loop duration to
+  // locate the current loop's seam (the in-flight loop was scheduled at the
+  // old tempo), while the new tempo takes effect from that seam forward.
+  const computeNextBoundaryAudioTime = useCallback(
+    (
+      preRollSeconds: number,
+      loopDurationOverride?: number,
+    ): number | undefined => {
+      const ctx = audioContextRef.current;
+      const loopDur = loopDurationOverride ?? loopDurationSeconds;
+      if (!isPlaying || !ctx || loopStartAudioTime == null || loopDur <= 0) {
+        return undefined;
+      }
+      const elapsed = ctx.currentTime - loopStartAudioTime;
+      const completedLoops = elapsed <= 0 ? 0 : Math.ceil(elapsed / loopDur);
+      const naturalSeamTime = loopStartAudioTime + completedLoops * loopDur;
+      return Math.max(
+        ctx.currentTime + 0.001,
+        naturalSeamTime - preRollSeconds,
+      );
+    },
+    [isPlaying, loopStartAudioTime, loopDurationSeconds],
+  );
+
+  // ── tempo: pitch-independent time-stretch at the next loop boundary ──────
+  // The recorded stems are stretched to play at the chosen BPM with NO
+  // pitch change (LAUNCH-06). bass/harmony stretch via their signalsmith
+  // buffer-streaming source (rate ⟂ pitch); drums stretch via the engine's
+  // drum path. R = currentBpm / originalBpm; R == 1 is the bit-transparent
+  // original. The musical-truth BPM still updates so the metronome,
+  // pattern events, and loop interval all follow the same tempo.
   const setTempo = useCallback(
     (bpm: number) => {
-      // Engine bound first, then the entitlement band around the default.
+      // Engine bound first, then the entitlement band around the default
+      // (tempoLimit caps tempo to [originalBpm ± tempoLimit]); fire onCapHit
+      // when the request is clipped so the UI can surface the gate.
       let clamped = clampTempo(bpm);
       const tempoLimit = capsRef.current?.tempoLimit;
       if (tempoLimit != null) {
@@ -507,20 +572,44 @@ export function useGrooveCardPlayback({
         if (banded !== clamped) onCapHitRef.current?.('tempo');
         clamped = banded;
       }
-      musicalTruth.setBPM(clamped);
-    },
-    [block.originalBpm],
-  );
+      if (clamped === currentBpm) return;
 
-  // Loop duration in seconds at the current BPM — used both by setKey
-  // below (to compute the next loop-boundary audio time for the
-  // deferred pitch write) and by the public reactive surface
-  // (waveform playhead, etc.). Hoisted above setKey because TypeScript
-  // flags forward refs in block-scoped declarations.
-  const loopDurationSeconds = useMemo(() => {
-    const secondsPerBeat = 60 / Math.max(1, currentBpm);
-    return block.lengthBars * 4 * secondsPerBeat;
-  }, [block.lengthBars, currentBpm]);
+      // Display number + musical truth update immediately (the stepper shows
+      // the new value; the metronome, if running, follows). currentBpmRef
+      // mirrors for synchronous reads.
+      setCurrentBpm(clamped);
+      currentBpmRef.current = clamped;
+      musicalTruth.setBPM(clamped);
+
+      const ctx = audioContextRef.current;
+      // Not playing: the BPM is set; the next play() arms at the new tempo.
+      if (!isPlaying || !ctx) return;
+
+      // IMMEDIATE MID-LOOP TEMPO (Model C): change all three stems' rate LIVE,
+      // mid-loop, at one shared audio time — no rebuild, no wait, no teardown
+      // dip. bass/harmony via signalsmith schedule({rate}); drums via the
+      // source's + WSOLA insert's playbackRate. The transition bar becomes a
+      // hybrid length (intrinsic to changing tempo NOW), but the playhead is
+      // driven by the real read-head so it stays glued to the audio. Key
+      // changes stay quantized-to-the-seam and coexist on the same node.
+      WindowRegistry.getPlaybackEngine()?.setStretchRatio?.(
+        clamped / Math.max(1, block.originalBpm),
+        `${trackPrefix}audio-drums-region`,
+      );
+
+      // Re-anchor the FALLBACK playhead clock to the new tempo (the primary
+      // playhead reads the real read-head and is already correct). The audio
+      // now loops at lengthBars×4×60/clamped; set loopStartAudioTime so the
+      // current read-head phase maps onto the new period at `now`.
+      const newPeriod = (block.lengthBars * 4 * 60) / Math.max(1, clamped);
+      const phase =
+        WindowRegistry.getPlaybackEngine()?.getStemPlayheadPhase?.() ?? null;
+      if (phase != null && newPeriod > 0) {
+        setLoopStartAudioTime(ctx.currentTime - phase * newPeriod);
+      }
+    },
+    [block.lengthBars, block.originalBpm, currentBpm, isPlaying, trackPrefix],
+  );
 
   // ── key: queue swap for the next loop boundary ---------------------------
   const setKey = useCallback(
@@ -560,165 +649,42 @@ export function useGrooveCardPlayback({
       // useEffect would otherwise run after this render.
       currentSemitonesRef.current = desired;
 
-      // Single-key-set + PitchShift (LAUNCH-02.5e): the requested
-      // semitone offset IS the residual the pitch-shift node applies on
-      // bass + harmony. Drums + click stay un-shifted regardless.
+      // Single-key + PitchShift: the requested semitone offset IS the
+      // residual the pitch-shift node applies on bass + harmony. Drums +
+      // click stay un-shifted regardless.
       const residualShift = desired;
 
-      // LAUNCH-02.5c key-shift: apply the residual pitch on the bass +
-      // harmony stems and rearm the WINDOW=3 pre-armed iterations so
-      // the new buffer plays as soon as the currently-playing iter
-      // ends (~1 iter latency, vs 3 iters without rearm).
-      //
-      // The pitch param write is DEFERRED to the next loop boundary
-      // when we're already playing — otherwise a mid-loop tap would
-      // produce an audible pitch jump in the middle of the iteration,
-      // which contradicts the "queued for next loop" UX. Only the
-      // first key tap (when not yet playing, or when transitioning
-      // default↔pitched) snaps immediately so the engine state lines
-      // up before the next play.
+      // Time-stretch (LAUNCH-06): bass/harmony now play through ONE
+      // signalsmith BUFFER-STREAMING node that does both pitch and tempo.
+      // A key change is therefore just a pitch (semitones) write on that
+      // node, deferred to the next loop boundary so the current loop
+      // finishes in the old key and the next plays the new — no routing
+      // toggle, no latency compensation, no re-arm (the node loops itself,
+      // and its rate/tempo persists untouched because signalsmith inherits
+      // omitted schedule() fields). Drums don't transpose, so they're
+      // untouched entirely.
       const engine = WindowRegistry.getPlaybackEngine();
       if (engine) {
-        const shouldEnable = residualShift !== 0;
-
-        // Order of operations matters:
-        //
-        // 1. enablePitchShiftForStem FIRST — when transitioning from
-        //    default → pitched it creates (lazily) the pitch-shift node
-        //    and re-routes the source through it. Idempotent when the
-        //    routing already matches, so semitone-to-semitone changes
-        //    don't trigger a setStem re-route (which would kill the
-        //    in-flight source mid-loop). After this call, the
-        //    pitch-shift node is guaranteed to exist iff shouldEnable.
-        //
-        // 2. setPitchShiftLatencyCompensation — toggles drums + click
-        //    + metronome delay. Idempotent at the engine level (no-op
-        //    when state doesn't change), so it's safe to call on every
-        //    tap.
-        //
-        // 3. setInstrumentPitchShift LAST — now the node exists, so
-        //    the AudioParam write actually lands. We use the boundary-
-        //    scheduled write ONLY when this is a semitone-to-semitone
-        //    change (routing was already active); for the first
-        //    transition (default → pitched), apply immediately because
-        //    there's no "previous pitched loop" to preserve and the
-        //    user just triggered a routing change that already
-        //    discontinued the source.
-        // seamless: true tells the engine NOT to kill the currently-
-        // playing source on the routing change. The current iter
-        // finishes at its old routing (default-key direct or pitched
-        // through the pitch-shift node at the OLD pitch); future iters
-        // armed by rearmFutureIterations pick up the new routing.
-        // Combined with deferred pitch + drums-not-rearmed, this
-        // gives the requested "current loop in OLD key, next loop
-        // in NEW key" behaviour.
-        engine.enablePitchShiftForStem?.('audio-bass', shouldEnable, {
-          seamless: true,
-        });
-        engine.enablePitchShiftForStem?.('audio-harmony', shouldEnable, {
-          seamless: true,
-        });
-        // Latency compensation (drums + click + metronome delay) is
-        // intentionally LEFT DISABLED here. The pre-roll on bass +
-        // harmony rearm (preRollSeconds: 0.12 below) makes their
-        // pitch-engine-delayed output emerge at the natural seam —
-        // already synchronised with drums + click + metronome at
-        // their natural (un-delayed) timing. Adding a delay on the
-        // non-pitched stems would push them 120ms late relative to
-        // bass + harmony, undoing the alignment.
-        engine.setPitchShiftLatencyCompensation?.(false, {
-          seamless: true,
-        });
-
-        // Compute the next loop-boundary audio time for the deferred
-        // pitch write. The pitch is ALWAYS deferred to the boundary
-        // when playing, regardless of whether this is the first
-        // transition into pitched routing or a subsequent semitone
-        // change — the user's mental model is "current loop in OLD
-        // key, NEXT loop in NEW key" universally.
-        //
-        // The rearm pre-rolls the new source's source.start by 120ms
-        // so its pitch-engine-delayed output emerges at the natural
-        // seam. We must align the pitchSemitones AudioParam write to
-        // the SAME pre-rolled moment, otherwise the new source feeds
-        // the pitch-shift engine at the OLD pitch for 120ms before the
-        // param catches up. So `applyAtAudioTime` = (natural seam - 120ms),
-        // not the natural seam itself.
-        //
-        // When not playing, the pitch write is immediate (leave
-        // applyAtAudioTime undefined) so the next play() picks it up.
-        const ctx = audioContextRef.current;
-        let nextBoundaryAudioTime: number | undefined;
-        if (
-          isPlaying &&
-          ctx &&
-          loopStartAudioTime != null &&
-          loopDurationSeconds > 0
-        ) {
-          const elapsed = ctx.currentTime - loopStartAudioTime;
-          const completedLoops =
-            elapsed <= 0 ? 0 : Math.ceil(elapsed / loopDurationSeconds);
-          const naturalSeamTime =
-            loopStartAudioTime + completedLoops * loopDurationSeconds;
-          // Pre-roll the param write to match the pre-rolled source.
-          // 0.14 must stay in sync with engine's
-          // PITCH_SHIFT_FALLBACK_LATENCY_SECONDS + the rearm preRollSeconds —
-          // see those for the math. 0.14 is sized to cover ~one analysis
-          // window of input (~133ms in the SoundTouch/WSOLA era this was
-          // originally measured for) with a small safety margin so the seam
-          // falls AFTER the engine's first window is ready, not exactly at
-          // the threshold. The default Signalsmith engine reports its own
-          // latency, so this figure is a conservative upper bound.
-          nextBoundaryAudioTime = Math.max(
-            ctx.currentTime + 0.001,
-            naturalSeamTime - 0.14,
-          );
-        }
-        pitchShiftPreviouslyActiveRef.current = shouldEnable;
-
-        engine.setInstrumentPitchShift?.(
-          'audio-bass',
-          residualShift,
-          nextBoundaryAudioTime,
-        );
+        // Buffer-streaming self-compensates its latency, so the write
+        // lands at the natural seam (no pre-roll). When not playing the
+        // boundary is undefined → the write applies immediately so the
+        // next play() picks it up.
+        const boundary = computeNextBoundaryAudioTime(0);
+        engine.setInstrumentPitchShift?.('audio-bass', residualShift, boundary);
         engine.setInstrumentPitchShift?.(
           'audio-harmony',
           residualShift,
-          nextBoundaryAudioTime,
-        );
-
-        // Rearm only the pitch-shiftable stems (bass + harmony). Drums
-        // play the same default-key recording regardless of which key
-        // the user picks, so their pre-armed iterations stay valid and
-        // there's nothing to swap. Re-arming them would just reload
-        // the identical buffer.
-        //
-        // preRollSeconds: when transitioning into pitched routing
-        // (default → pitched OR pitched → different pitched), the new
-        // source feeds the pitch-shift engine which adds ~120 ms of
-        // pipeline delay. Pre-rolling the source start by that amount
-        // makes its DELAYED output emerge at the natural seam, so old
-        // (default-routed) audio ending at the seam connects
-        // seamlessly to new (pitch-engine-routed) audio. Keep this in
-        // sync with engine's PITCH_SHIFT_FALLBACK_LATENCY_SECONDS constant.
-        engine.rearmFutureIterationsForRegions?.(
-          MUSICAL_STEMS.filter((t) =>
-            isPitchShiftableStem(audioInstrumentTypeToStemKey(t)),
-          ).map((t) => `${trackPrefix}${t}-region`),
-          shouldEnable ? { preRollSeconds: 0.14 } : undefined,
+          boundary,
         );
       }
     },
     [
       cardId,
+      computeNextBoundaryAudioTime,
       currentSemitones,
-      isPlaying,
       keyRange,
-      loopDurationSeconds,
-      loopStartAudioTime,
       mode,
       pendingKeyShift,
-      trackPrefix,
     ],
   );
 
@@ -791,6 +757,18 @@ export function useGrooveCardPlayback({
       if (buf) buffers[instrumentType] = buf;
     }
     if (Object.keys(buffers).length === 0) return;
+
+    // Time-stretch (LAUNCH-06): tell the engine the MUSICAL loop length so the
+    // bass/harmony buffer-streaming sources loop on the beat grid (the same
+    // length the drum loop uses) rather than their own slightly-different
+    // buffer durations — otherwise the stems drift out of phase. Uses
+    // originalBpm (the recorded tempo); signalsmith's `rate` scales tempo on
+    // top of this fixed loop length.
+    if (block.lengthBars > 0 && block.originalBpm > 0) {
+      engine.setStemLoopDuration?.(
+        (block.lengthBars * 4 * 60) / block.originalBpm,
+      );
+    }
     engine.setAudioStemBuffers?.(buffers);
 
     // If a bar-range selection is active, convert it into a buffer-time
@@ -882,41 +860,32 @@ export function useGrooveCardPlayback({
       engine?.setPendingBufferResolver?.(bufferResolverRef.current, cardId);
     }
 
-    // registerStemTracks must run BEFORE enablePitchShiftForStem because
-    // the latter bails when there's no buffer registered for the stem.
-    // This is also why pre-play key taps could appear inert: the
-    // engine.audioStemBuffers map is empty until setAudioStemBuffers
-    // runs inside registerStemTracks. After this call, the buffers are
-    // present and the pitch-shift wiring can take effect.
+    // registerStemTracks runs setAudioStemBuffers, which constructs the
+    // bass/harmony buffer-streaming nodes (the time-stretch sources) and
+    // registers them with the scheduler. After this call those nodes exist,
+    // so the pre-play key/tempo writes below land on them. (Before it, the
+    // engine.audioStemBuffers map is empty — which is why pre-play taps
+    // could appear inert.)
     registerStemTracks();
 
-    // Apply pitch-shift state for the currently-active key. For the
-    // default key (offset 0) this is a no-op: residualShift is 0 and
-    // enablePitchShiftForStem(false) keeps the PitchShift node bypassed
-    // (source → gain directly). For a non-zero offset — which happens
-    // when the user tapped key BEFORE pressing play — this is what
-    // makes that pre-play tap audibly take effect on the first play.
+    // Apply the currently-active key + tempo to the freshly-created
+    // buffer-streaming sources so a pre-play key/tempo change (the user
+    // tapped before pressing play) takes effect on the first play.
+    // Immediate writes (no boundary) — nothing is looping yet. For the
+    // default key (offset 0) and original tempo (ratio 1) these are no-ops
+    // (the node arms at semitones 0 / rate 1). Drums don't transpose;
+    // their tempo is applied via the scheduler ratio + the drum region
+    // re-arm that registerStemTracks' scheduling pass already honours.
     const residualShift = currentSemitonesRef.current;
-    const shouldEnable = residualShift !== 0;
-    engine?.enablePitchShiftForStem?.('audio-bass', shouldEnable);
-    engine?.enablePitchShiftForStem?.('audio-harmony', shouldEnable);
-    // setInstrumentPitchShift writes after enablePitchShiftForStem so
-    // the PitchShift node has been lazily created with pitch=0 first;
-    // this write then sets the actual residual. The reverse order is
-    // also fine (the write is a no-op if no node, and the node defaults
-    // to pitch=0 on creation) but this order is clearer.
     engine?.setInstrumentPitchShift?.('audio-bass', residualShift);
     engine?.setInstrumentPitchShift?.('audio-harmony', residualShift);
-    // Latency compensation is intentionally left disabled (see setKey
-    // comment for rationale). Bass + harmony pre-roll handles
-    // alignment without delaying drums + click + metronome.
-    engine?.setPitchShiftLatencyCompensation?.(false);
-    // Reset the "previously pitched" tracker so setKey's first call
-    // after this play correctly identifies the first transition into
-    // pitched routing and writes the pitch immediately rather than
-    // scheduling it for a (stale) boundary.
-    pitchShiftPreviouslyActiveRef.current = shouldEnable;
-  }, [activeStore, cardId, registerStemTracks]);
+    const ratio = currentBpmRef.current / Math.max(1, block.originalBpm);
+    if (ratio !== 1) {
+      engine?.setStemRate?.('audio-bass', ratio);
+      engine?.setStemRate?.('audio-harmony', ratio);
+      engine?.setSchedulerTempoRatio?.(ratio);
+    }
+  }, [activeStore, block.originalBpm, cardId, registerStemTracks]);
 
   const becomeInactive = useCallback(() => {
     const engine = WindowRegistry.getPlaybackEngine();
@@ -974,9 +943,12 @@ export function useGrooveCardPlayback({
       const engine = WindowRegistry.getPlaybackEngine();
       if (!engine) return;
       // registerStemTracks now always unregisters before registering, so
-      // we just need to silence the current sources here. Click-free ramp
-      // happens inside engine.stopAudioStems.
-      engine.stopAudioStems?.();
+      // we just need to silence the current sources here. This is a SEAMLESS
+      // boundary swap: stop at the seam with rampSeconds:0 (no gain fade) so
+      // the new loop re-armed into the SAME gain isn't silenced by an
+      // in-flight fade — at the loop seam the audio wraps, so the hard stop is
+      // click-safe. (The 30ms fade is only for the full stop button.)
+      engine.stopAudioStems?.({ rampSeconds: 0 });
       registerStemTracks();
     }, delayMs);
 
@@ -1036,7 +1008,9 @@ export function useGrooveCardPlayback({
     const id = setTimeout(() => {
       const engine = WindowRegistry.getPlaybackEngine();
       if (!engine) return;
-      engine.stopAudioStems?.();
+      // Seamless boundary swap (see loop-selection effect): rampSeconds:0 so
+      // the new key's loop re-armed into the same gain isn't faded out.
+      engine.stopAudioStems?.({ rampSeconds: 0 });
       registerStemTracks();
     }, delayMs);
 
@@ -1079,215 +1053,200 @@ export function useGrooveCardPlayback({
     if (transitionInFlightRef.current) return;
     transitionInFlightRef.current = true;
     try {
+      // Optional caller-supplied "before-play" hook. The waitlist surface
+      // wires `useWaitlistPrewarm.resume()` here so the prewarm's
+      // AudioContext is resumed inside the user-gesture window (Safari
+      // rejects later out-of-gesture resumes). In-app callers leave this
+      // undefined — CoreServices' document-level gesture listener handles
+      // resume there. Failures are swallowed; if the prewarm hasn't
+      // finished yet, `ensureAudioContext()` below still tries the standard
+      // path. Must run BEFORE `ensureAudioContext` so the persistent-context
+      // helpers can find the prewarm's context.
+      try {
+        await onBeforePlayRef.current?.();
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn('[GrooveCard] onBeforePlay failed', err);
+      }
 
-    // Optional caller-supplied "before-play" hook. The waitlist surface
-    // wires `useWaitlistPrewarm.resume()` here so the prewarm's
-    // AudioContext is resumed inside the user-gesture window (Safari
-    // rejects later out-of-gesture resumes). In-app callers leave this
-    // undefined — CoreServices' document-level gesture listener handles
-    // resume there. Failures are swallowed; if the prewarm hasn't
-    // finished yet, `ensureAudioContext()` below still tries the standard
-    // path. Must run BEFORE `ensureAudioContext` so the persistent-context
-    // helpers can find the prewarm's context.
-    try {
-      await onBeforePlayRef.current?.();
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.warn('[GrooveCard] onBeforePlay failed', err);
-    }
+      // The play button IS the user gesture browsers require to start audio.
+      // Resume / (re)attach the persistent AudioContext and start Tone here,
+      // exactly like the in-app YouTube path (usePlaybackControl). Without
+      // this the engine schedules its buffer sources against a suspended or
+      // closed context and nothing is audible ("Construction of
+      // AudioBufferSourceNode is not useful when context is closed").
+      try {
+        const { ensureAudioContext } =
+          await import('@/domains/playback/utils/ensureAudioContext');
+        await ensureAudioContext();
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn('[GrooveCard] ensureAudioContext failed', err);
+      }
 
-    // The play button IS the user gesture browsers require to start audio.
-    // Resume / (re)attach the persistent AudioContext and start Tone here,
-    // exactly like the in-app YouTube path (usePlaybackControl). Without
-    // this the engine schedules its buffer sources against a suspended or
-    // closed context and nothing is audible ("Construction of
-    // AudioBufferSourceNode is not useful when context is closed").
-    try {
-      const { ensureAudioContext } =
-        await import('@/domains/playback/utils/ensureAudioContext');
-      await ensureAudioContext();
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.warn('[GrooveCard] ensureAudioContext failed', err);
-    }
+      // Re-push the live BPM into musicalTruth (→ Tone.Transport.bpm.value)
+      // AFTER ensureAudioContext has guaranteed Tone is loaded. The mount-
+      // time setBPM at line 367 happens BEFORE Tone.js is imported on the
+      // waitlist (useWaitlistPrewarm loads Tone lazily on viewport
+      // intersection), so MusicalTruthAuthority's "if (Tone) write" branch
+      // silently drops the write — Tone.Transport stays at its default
+      // 120 BPM. RegionScheduler.computeIterationDuration then computes
+      // each loop iteration as `beats * 60/120` while the audio buffers
+      // were authored at the groove's real BPM, producing a per-iteration
+      // silent gap of (1 - groove/120) * iterationLength. In /app this is
+      // a no-op because <TransportProvider> already syncs Tone to the
+      // groove BPM before any GrooveCard mounts; here we just re-assert
+      // the same invariant defensively.
+      musicalTruth.setBPM(clampTempo(currentBpm));
 
-    // Re-push the live BPM into musicalTruth (→ Tone.Transport.bpm.value)
-    // AFTER ensureAudioContext has guaranteed Tone is loaded. The mount-
-    // time setBPM at line 367 happens BEFORE Tone.js is imported on the
-    // waitlist (useWaitlistPrewarm loads Tone lazily on viewport
-    // intersection), so MusicalTruthAuthority's "if (Tone) write" branch
-    // silently drops the write — Tone.Transport stays at its default
-    // 120 BPM. RegionScheduler.computeIterationDuration then computes
-    // each loop iteration as `beats * 60/120` while the audio buffers
-    // were authored at the groove's real BPM, producing a per-iteration
-    // silent gap of (1 - groove/120) * iterationLength. In /app this is
-    // a no-op because <TransportProvider> already syncs Tone to the
-    // groove BPM before any GrooveCard mounts; here we just re-assert
-    // the same invariant defensively.
-    musicalTruth.setBPM(clampTempo(currentBpm));
+      // Arm the MIDI metronome count-in path. The count-in region (added
+      // below) emits metronome-trigger events that AudioEventRouter routes to
+      // the WAM metronome instrument — but only when the router isRunning AND
+      // the metronome instrument exists. In /app the ScrollTriggerLoader +
+      // CoreServices.initialize() usually arm both already; this makes the
+      // Groove Card self-sufficient (a real DAW: MIDI + audio tracks coexist).
+      //  - getAudioEventRouter().start() is idempotent — flips isRunning and
+      //    re-binds the instrument registry.
+      //  - loadEssentialSamples() registers the metronome config so the router
+      //    can lazily create the instrument on first trigger. Idempotent +
+      //    dedupes; requires CoreServices initialized first.
+      try {
+        const cs = WindowRegistry.getCoreServices();
+        if (cs) {
+          if (cs.isReady?.() === false) await cs.initialize?.();
+          await cs.getAudioEventRouter?.()?.start?.();
 
-    // Arm the MIDI metronome count-in path. The count-in region (added
-    // below) emits metronome-trigger events that AudioEventRouter routes to
-    // the WAM metronome instrument — but only when the router isRunning AND
-    // the metronome instrument exists. In /app the ScrollTriggerLoader +
-    // CoreServices.initialize() usually arm both already; this makes the
-    // Groove Card self-sufficient (a real DAW: MIDI + audio tracks coexist).
-    //  - getAudioEventRouter().start() is idempotent — flips isRunning and
-    //    re-binds the instrument registry.
-    //  - loadEssentialSamples() registers the metronome config so the router
-    //    can lazily create the instrument on first trigger. Idempotent +
-    //    dedupes; requires CoreServices initialized first.
-    try {
-      const cs = WindowRegistry.getCoreServices();
-      if (cs) {
-        if (cs.isReady?.() === false) await cs.initialize?.();
-        await cs.getAudioEventRouter?.()?.start?.();
+          // The metronome instrument is bound to the AudioEngine's OWN context,
+          // which is separate from the persistent context the stems play
+          // through. ensureAudioContext() resumed the latter; the engine's
+          // context can still be 'suspended', which is exactly why the lazy
+          // metronome create bailed ("AudioContext state is suspended"). Resume
+          // it explicitly, THEN eagerly create the metronome so it exists with a
+          // running context before the count-in triggers fire.
+          const engineCtx = cs.getAudioEngine?.()?.getContext?.();
+          if (engineCtx && engineCtx.state === 'suspended') {
+            await engineCtx.resume();
+          }
 
-        // The metronome instrument is bound to the AudioEngine's OWN context,
-        // which is separate from the persistent context the stems play
-        // through. ensureAudioContext() resumed the latter; the engine's
-        // context can still be 'suspended', which is exactly why the lazy
-        // metronome create bailed ("AudioContext state is suspended"). Resume
-        // it explicitly, THEN eagerly create the metronome so it exists with a
-        // running context before the count-in triggers fire.
-        const engineCtx = cs.getAudioEngine?.()?.getContext?.();
-        if (engineCtx && engineCtx.state === 'suspended') {
-          await engineCtx.resume();
-        }
+          const { getSamplePreloader } =
+            await import('@/domains/playback/services/InitialSamplePreloader.bridge.js');
+          await getSamplePreloader()?.loadEssentialSamples?.();
 
-        const { getSamplePreloader } =
-          await import('@/domains/playback/services/InitialSamplePreloader.bridge.js');
-        await getSamplePreloader()?.loadEssentialSamples?.();
-
-        // Force the instrument into existence now (idempotent) rather than
-        // waiting for the first trigger — by then the count-in window may have
-        // already passed while the async create resolves. Once created we
-        // register it active so AudioEventRouter's trigger handler finds it
-        // synchronously on the first count-in beat.
-        const { getPreloadableRegistry } =
-          await import('@/domains/playback/services/core/PreloadableInstrumentRegistry');
-        const reg = getPreloadableRegistry();
-        if (reg?.hasType?.('metronome')) {
-          const metronome = await reg.getOrCreateByType('metronome');
-          const instrumentRegistry = cs.getInstrumentRegistry?.();
-          if (
-            metronome &&
-            instrumentRegistry?.hasActive?.('metronome') === false
-          ) {
-            instrumentRegistry.setActive('metronome', metronome);
+          // Force the instrument into existence now (idempotent) rather than
+          // waiting for the first trigger — by then the count-in window may have
+          // already passed while the async create resolves. Once created we
+          // register it active so AudioEventRouter's trigger handler finds it
+          // synchronously on the first count-in beat.
+          const { getPreloadableRegistry } =
+            await import('@/domains/playback/services/core/PreloadableInstrumentRegistry');
+          const reg = getPreloadableRegistry();
+          if (reg?.hasType?.('metronome')) {
+            const metronome = await reg.getOrCreateByType('metronome');
+            const instrumentRegistry = cs.getInstrumentRegistry?.();
+            if (
+              metronome &&
+              instrumentRegistry?.hasActive?.('metronome') === false
+            ) {
+              instrumentRegistry.setActive('metronome', metronome);
+            }
           }
         }
+      } catch (err) {
+        // Count-in is non-fatal: if metronome arming fails the stems still
+        // play, just without the audible click.
+        // eslint-disable-next-line no-console
+        console.warn('[GrooveCard] metronome count-in arming failed', err);
       }
-    } catch (err) {
-      // Count-in is non-fatal: if metronome arming fails the stems still
-      // play, just without the audible click.
-      // eslint-disable-next-line no-console
-      console.warn('[GrooveCard] metronome count-in arming failed', err);
-    }
 
-    // Always (re)register this card's tracks + buffers before starting.
-    // Stem AudioBufferSourceNodes are single-use: once stopped (on pause /
-    // stop) they can't restart, so every play() re-arms from the cached
-    // buffers. becomeActive() also displaces any other active card.
-    becomeActive();
+      // Always (re)register this card's tracks + buffers before starting.
+      // Stem AudioBufferSourceNodes are single-use: once stopped (on pause /
+      // stop) they can't restart, so every play() re-arms from the cached
+      // buffers. becomeActive() also displaces any other active card.
+      becomeActive();
 
-    const engine = WindowRegistry.getPlaybackEngine();
+      const engine = WindowRegistry.getPlaybackEngine();
 
-    // The Groove Card loops forever — never auto-stop at MusicalTruth's
-    // "exercise end" (the global default is 4 bars + 1 countdown, which
-    // killed playback mid-groove regardless of block.lengthBars). The
-    // transport will now only stop on explicit user action.
-    type WithAutoStop = { setAutoStopEnabled?: (enabled: boolean) => void };
-    (transport as WithAutoStop).setAutoStopEnabled?.(false);
+      // The Groove Card loops forever — never auto-stop at MusicalTruth's
+      // "exercise end" (the global default is 4 bars + 1 countdown, which
+      // killed playback mid-groove regardless of block.lengthBars). The
+      // transport will now only stop on explicit user action.
+      type WithAutoStop = { setAutoStopEnabled?: (enabled: boolean) => void };
+      (transport as WithAutoStop).setAutoStopEnabled?.(false);
 
-    // Count-in (1-2-3-4): reuse the engine's existing countdown system —
-    // the same calls the in-app player makes (usePlaybackControl). This
-    // injects a metronome count-in region (audible click via the engine's
-    // metronome instrument) and offsets the stem regions by one bar so they
-    // land on the downbeat after the count. Must run BEFORE start() so the
-    // countdown region is present when scheduleAllRegions() fires.
-    const timeSignature = { numerator: 4, denominator: 4 };
-    engine?.enableCountdown?.(timeSignature);
-    engine?.addCountdownRegion?.(timeSignature);
+      // Count-in (1-2-3-4): reuse the engine's existing countdown system —
+      // the same calls the in-app player makes (usePlaybackControl). This
+      // injects a metronome count-in region (audible click via the engine's
+      // metronome instrument) and offsets the stem regions by one bar so they
+      // land on the downbeat after the count. Must run BEFORE start() so the
+      // countdown region is present when scheduleAllRegions() fires.
+      const timeSignature = { numerator: 4, denominator: 4 };
+      engine?.enableCountdown?.(timeSignature);
+      engine?.addCountdownRegion?.(timeSignature);
 
-    let engineState = engine?.getState?.();
-    // Only 'ready'/'stopped' are startable (PlaybackEngine.start()). pause()
-    // and stop() leave the engine in 'stopped', so a fresh start() re-runs
-    // scheduleAllRegions() and the stems are audible again.
-    //
-    // Belt-and-suspenders for the rapid play/stop race: if we somehow arrive
-    // here with the engine still 'playing' (a prior cycle's start() flipped it
-    // and a stop didn't fully land), start() would early-return on its
-    // isRunning/state guard and SILENTLY skip scheduleAllRegions — leaving the
-    // bass + harmony + drums regions un-armed while the transport + metronome
-    // keep running (the reported "no bass/harmony after rapid toggling" bug).
-    // Force the engine back to 'stopped' first so start() always reschedules.
-    if (engineState === 'playing') {
-      engine?.stop?.();
-      engineState = engine?.getState?.();
-    }
-    if (engineState === 'ready' || engineState === 'stopped') {
-      engine.start?.();
-    }
+      let engineState = engine?.getState?.();
+      // Only 'ready'/'stopped' are startable (PlaybackEngine.start()). pause()
+      // and stop() leave the engine in 'stopped', so a fresh start() re-runs
+      // scheduleAllRegions() and the stems are audible again.
+      //
+      // Belt-and-suspenders for the rapid play/stop race: if we somehow arrive
+      // here with the engine still 'playing' (a prior cycle's start() flipped it
+      // and a stop didn't fully land), start() would early-return on its
+      // isRunning/state guard and SILENTLY skip scheduleAllRegions — leaving the
+      // bass + harmony + drums regions un-armed while the transport + metronome
+      // keep running (the reported "no bass/harmony after rapid toggling" bug).
+      // Force the engine back to 'stopped' first so start() always reschedules.
+      if (engineState === 'playing') {
+        engine?.stop?.();
+        engineState = engine?.getState?.();
+      }
+      if (engineState === 'ready' || engineState === 'stopped') {
+        engine.start?.();
+      }
 
-    // LAUNCH-02.5c key-shift: if the user tapped key BEFORE pressing
-    // play, the rearm path in setKey didn't run (no live iters to
-    // rearm) and `engine.start()` just scheduled the first iters at
-    // their NATURAL startAt times. But bass+harmony go through
-    // the pitch-shift engine which adds ~120ms processing delay, so
-    // they'd emit 120ms LATER than drums. Apply the pre-roll now to shift their
-    // source.start 120ms earlier so output emerges in sync with
-    // drums. The engine's delta-tracking handles the case where
-    // pre-roll was already applied (no-op); when starting fresh,
-    // currentRearmPreRollSeconds is 0 so delta = full 0.12.
-    const residualShiftAtPlay = currentSemitonesRef.current;
-    if (residualShiftAtPlay !== 0 && engine) {
-      engine.rearmFutureIterationsForRegions?.(
-        MUSICAL_STEMS.filter((t) =>
-          isPitchShiftableStem(audioInstrumentTypeToStemKey(t)),
-        ).map((t) => `${trackPrefix}${t}-region`),
-        { preRollSeconds: 0.14 },
-      );
-    }
+      // Time-stretch (LAUNCH-06): bass/harmony play through self-looping
+      // buffer-streaming nodes that self-compensate their own latency, so
+      // there's no 120ms pitch-engine offset to pre-roll against any more —
+      // the old default→pitched rearm pre-roll here is gone. A pre-play key
+      // tap is already applied to those nodes in becomeActive().
 
-    await transport.start?.();
+      await transport.start?.();
 
-    // Anchor every UI timer to the SAME audio-context time the engine will
-    // play the first beat at: engine.transportStartTime ≈ audioContext.now +
-    // startupLookahead (~300ms by default). Reading it from the engine
-    // (instead of estimating "now + a bit") is what keeps the countdown
-    // numbers and the waveform playhead in lockstep with the audible click.
-    const ctx = audioContextRef.current;
-    const audibleStart =
-      typeof engine?.getTransportStartTime === 'function'
-        ? engine.getTransportStartTime()
-        : null;
+      // Anchor every UI timer to the SAME audio-context time the engine will
+      // play the first beat at: engine.transportStartTime ≈ audioContext.now +
+      // startupLookahead (~300ms by default). Reading it from the engine
+      // (instead of estimating "now + a bit") is what keeps the countdown
+      // numbers and the waveform playhead in lockstep with the audible click.
+      const ctx = audioContextRef.current;
+      const audibleStart =
+        typeof engine?.getTransportStartTime === 'function'
+          ? engine.getTransportStartTime()
+          : null;
 
-    if (ctx) {
-      const secondsPerBeat = 60 / Math.max(1, currentBpm);
-      const countdownSeconds = 4 * secondsPerBeat; // one bar of 4/4 count-in
+      if (ctx) {
+        const secondsPerBeat = 60 / Math.max(1, currentBpm);
+        const countdownSeconds = 4 * secondsPerBeat; // one bar of 4/4 count-in
 
-      // Waveform playhead: stems begin one count-in bar AFTER the first
-      // metronome click, which itself fires at audibleStart.
-      const anchor = audibleStart ?? ctx.currentTime;
-      setLoopStartAudioTime(anchor + countdownSeconds);
+        // Waveform playhead: stems begin one count-in bar AFTER the first
+        // metronome click, which itself fires at audibleStart.
+        const anchor = audibleStart ?? ctx.currentTime;
+        setLoopStartAudioTime(anchor + countdownSeconds);
 
-      // Visual count-in (1-2-3-4 inside the play button). Pass the engine's
-      // anchor as the first-beat audio time so the visual ticker waits the
-      // same startupLookahead the audible click is waiting — eliminates the
-      // ~300ms "UI ahead of audio" drift.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      void startCountdown(
-        currentBpm,
-        ctx,
-        null as any,
-        audibleStart ?? undefined,
-      ).catch(() => undefined);
-    } else {
-      setLoopStartAudioTime(null);
-    }
+        // Visual count-in (1-2-3-4 inside the play button). Pass the engine's
+        // anchor as the first-beat audio time so the visual ticker waits the
+        // same startupLookahead the audible click is waiting — eliminates the
+        // ~300ms "UI ahead of audio" drift.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        void startCountdown(
+          currentBpm,
+          ctx,
+          null as any,
+          audibleStart ?? undefined,
+        ).catch(() => undefined);
+      } else {
+        setLoopStartAudioTime(null);
+      }
 
-    setIsPlaying(true);
+      setIsPlaying(true);
     } finally {
       transitionInFlightRef.current = false;
     }
@@ -1378,6 +1337,7 @@ export function useGrooveCardPlayback({
     audioContext: audioContextRef.current,
     loopStartAudioTime,
     loopDurationSeconds,
+    getAudioPhase,
     countdownState,
     loopSelection,
     play,

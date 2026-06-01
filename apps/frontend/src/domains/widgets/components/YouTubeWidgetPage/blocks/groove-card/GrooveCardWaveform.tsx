@@ -41,8 +41,15 @@ interface GrooveCardWaveformProps {
    *  stopped (the playhead is not drawn). */
   loopStartAudioTime?: number | null;
   /** Duration of one loop iteration in seconds. Used as the playhead
-   *  modulus so it wraps at lengthBars. */
+   *  modulus so it wraps at lengthBars. FALLBACK clock — used only when
+   *  getAudioPhase() returns null (audio not yet streaming). */
   loopDurationSeconds?: number;
+  /** Time-stretch (LAUNCH-06): returns the REAL audio playhead phase [0,1)
+   *  from the bass stem's worklet read-head, or null when unavailable. When
+   *  present + non-null this is the PRIMARY playhead clock so the playhead
+   *  tracks the actual sound (and a pending tempo change moves the playhead
+   *  only when the audio actually changes at the seam, never before). */
+  getAudioPhase?: () => number | null;
   /** Number of musical bars one loop iteration spans. Used to render the
    *  thin bar-line ruler under the waveform (one tick + number per bar).
    *  Omit / set 0 to hide the ruler. */
@@ -113,6 +120,7 @@ export function GrooveCardWaveform({
   audioContext,
   loopStartAudioTime,
   loopDurationSeconds = 0,
+  getAudioPhase,
   lengthBars = 0,
   loopSelection,
   onLoopSelectionChange,
@@ -137,6 +145,7 @@ export function GrooveCardWaveform({
     audioContext: audioContext ?? null,
     loopStartAudioTime: loopStartAudioTime ?? null,
     loopDurationSeconds,
+    getAudioPhase: getAudioPhase ?? null,
     lengthBars,
     loopSelection: loopSelection ?? null,
     dragSelection,
@@ -148,6 +157,7 @@ export function GrooveCardWaveform({
     audioContext: audioContext ?? null,
     loopStartAudioTime: loopStartAudioTime ?? null,
     loopDurationSeconds,
+    getAudioPhase: getAudioPhase ?? null,
     lengthBars,
     loopSelection: loopSelection ?? null,
     dragSelection,
@@ -370,34 +380,51 @@ export function GrooveCardWaveform({
           s.loopDurationSeconds > 0 &&
           s.lengthBars > 0
         ) {
+          // PRIMARY clock (LAUNCH-06): the REAL audio phase [0,1) from the
+          // bass worklet's read-head. Using this keeps the playhead glued to
+          // the SOUND — a pending tempo change (deferred to the loop seam)
+          // moves the playhead only when the audio actually changes, never
+          // before. FALLBACK to the currentBpm-derived clock when the audio
+          // isn't streaming yet (null) — e.g. the count-in before the first
+          // stem sample, or if the worklet hasn't resolved.
+          const audioPhase = s.getAudioPhase ? s.getAudioPhase() : null;
           const elapsed = s.audioContext.currentTime - s.loopStartAudioTime;
-          if (elapsed >= 0) {
-            const sel = s.loopSelection;
-            if (sel) {
-              // Map the bar selection onto the canvas: x range and the
-              // duration the playhead wraps in. Both bracket and playhead
-              // share the same bar-grid math, so they stay aligned.
-              const barW = width / s.lengthBars;
-              const xStart = Math.round((sel.startBar - 1) * barW);
-              const xEnd = Math.round(sel.endBar * barW);
-              const selectionWidth = Math.max(1, xEnd - xStart);
-              const selectionSeconds =
-                ((sel.endBar - sel.startBar + 1) / s.lengthBars) *
-                s.loopDurationSeconds;
-              if (selectionSeconds > 0) {
-                const phase =
-                  ((elapsed % selectionSeconds) + selectionSeconds) %
-                  selectionSeconds;
-                const x = xStart + (phase / selectionSeconds) * selectionWidth;
-                drawPlayhead(ctx, width, height, x);
-              }
-            } else {
+          const sel = s.loopSelection;
+
+          if (sel) {
+            // Map the bar selection onto the canvas: x range and the duration
+            // the playhead wraps in. Both bracket and playhead share the same
+            // bar-grid math, so they stay aligned.
+            const barW = width / s.lengthBars;
+            const xStart = Math.round((sel.startBar - 1) * barW);
+            const xEnd = Math.round(sel.endBar * barW);
+            const selectionWidth = Math.max(1, xEnd - xStart);
+            const selectionSeconds =
+              ((sel.endBar - sel.startBar + 1) / s.lengthBars) *
+              s.loopDurationSeconds;
+            // The worklet loops the slice internally, so audioPhase already
+            // wraps within the selection — map it directly. Fall back to the
+            // elapsed-based wrap when audioPhase is null.
+            if (audioPhase != null) {
+              const x = xStart + audioPhase * selectionWidth;
+              drawPlayhead(ctx, width, height, x);
+            } else if (elapsed >= 0 && selectionSeconds > 0) {
               const phase =
-                ((elapsed % s.loopDurationSeconds) + s.loopDurationSeconds) %
-                s.loopDurationSeconds;
-              const x = (phase / s.loopDurationSeconds) * width;
+                ((elapsed % selectionSeconds) + selectionSeconds) %
+                selectionSeconds;
+              const x = xStart + (phase / selectionSeconds) * selectionWidth;
               drawPlayhead(ctx, width, height, x);
             }
+          } else if (audioPhase != null) {
+            // Full-loop, real audio clock.
+            drawPlayhead(ctx, width, height, audioPhase * width);
+          } else if (elapsed >= 0) {
+            // Full-loop, fallback clock.
+            const phase =
+              ((elapsed % s.loopDurationSeconds) + s.loopDurationSeconds) %
+              s.loopDurationSeconds;
+            const x = (phase / s.loopDurationSeconds) * width;
+            drawPlayhead(ctx, width, height, x);
           }
         }
       } else {
