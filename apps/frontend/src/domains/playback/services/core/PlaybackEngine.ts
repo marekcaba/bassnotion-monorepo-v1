@@ -2775,74 +2775,6 @@ export class PlaybackEngine implements IAudioStemEngine {
     return wrapped / loopLen;
   }
 
-  // [LAUNCH-06 DEBUG] Empirical drift sampler. Reads the ACTUAL playback
-  // position of all three stems and logs their phase differences, so we can
-  // SEE the real drift rather than infer it from scheduled times:
-  //   - bass/harmony: signalsmith reports live buffer position via
-  //     node.inputTime (updated by the worklet). Subtract its input latency so
-  //     it reflects the AUDIBLE position.
-  //   - drums: computed from the ABSN startAt + playbackRate (scheduler).
-  // All positions are normalised into the [0, loopLen) musical loop and
-  // compared as a signed phase delta in ms (wrapped to ±loopLen/2).
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private _driftSamplerId: any = null;
-  startDriftSampler(intervalMs = 500): void {
-    if (typeof window === 'undefined' || !window.setInterval) return;
-    this.stopDriftSampler();
-    const loopLen = this.stemLoopDurationSeconds;
-    const readSg = (t: AudioInstrumentType): number | null => {
-      const relay = this.instrumentStretchNodes.get(t);
-      const sg = relay?.__signalsmith;
-      if (!sg) return null;
-      // RAW read-head position (inputTime). A constant latency offset doesn't
-      // matter for RELATIVE drift between stems — a GROWING delta does. Wrap
-      // into the loop so the phase comparison is meaningful.
-      const pos = sg.inputTime ?? 0;
-      return loopLen > 0 ? ((pos % loopLen) + loopLen) % loopLen : pos;
-    };
-    const wrapDelta = (d: number): number => {
-      if (loopLen <= 0) return d;
-      let x = d % loopLen;
-      if (x > loopLen / 2) x -= loopLen;
-      if (x < -loopLen / 2) x += loopLen;
-      return x;
-    };
-    this._driftSamplerId = window.setInterval(() => {
-      const now = this.audioContext?.currentTime ?? 0;
-      const bass = readSg('audio-bass');
-      const harmony = readSg('audio-harmony');
-      const drum = this.regionScheduler?.debugDrumLoopPhase(now) ?? null;
-      const drumPhase = drum?.phase ?? null;
-      // eslint-disable-next-line no-console
-      console.log('[TS-DRIFT]', {
-        now: Number(now.toFixed(3)),
-        bass: bass == null ? null : Number(bass.toFixed(4)),
-        harmony: harmony == null ? null : Number(harmony.toFixed(4)),
-        drum: drumPhase == null ? null : Number(drumPhase.toFixed(4)),
-        drumRate: drum?.playbackRate,
-        // pairwise drift in ms (positive = first is AHEAD of second)
-        bass_vs_drum_ms:
-          bass != null && drumPhase != null
-            ? Number((wrapDelta(bass - drumPhase) * 1000).toFixed(1))
-            : null,
-        harmony_vs_drum_ms:
-          harmony != null && drumPhase != null
-            ? Number((wrapDelta(harmony - drumPhase) * 1000).toFixed(1))
-            : null,
-        bass_vs_harmony_ms:
-          bass != null && harmony != null
-            ? Number((wrapDelta(bass - harmony) * 1000).toFixed(1))
-            : null,
-      });
-    }, intervalMs);
-  }
-  stopDriftSampler(): void {
-    if (this._driftSamplerId != null && typeof window !== 'undefined') {
-      window.clearInterval(this._driftSamplerId);
-      this._driftSamplerId = null;
-    }
-  }
-
   /**
    * [LAUNCH-06 DEBUG] GROUND-TRUTH audible drift between two stems, measured
    * from the ACTUAL rendered audio (not scheduled times / read-heads). Taps
@@ -3221,7 +3153,7 @@ export class PlaybackEngine implements IAudioStemEngine {
    * (The insert is always in the drum path — see ensureDrumInsertRouting — so
    * this never reconnects the graph.)
    */
-  setSchedulerTempoRatio(ratio: number): void {
+  setSchedulerTempoRatio(ratio: number, applyAtAudioTime?: number): void {
     this.regionScheduler?.setTempoRatio(ratio);
     // Drums use the transient-preserving slice player. Set its ratio here too
     // so EVERY caller (including becomeActive's pre-play tempo restore on
@@ -3229,7 +3161,10 @@ export class PlaybackEngine implements IAudioStemEngine {
     // player at ratio 1 and drums revert to original tempo while bass/harmony
     // keep the adjusted tempo. Pre-play (not yet started) this just stamps the
     // field the slice player reads when it arms; mid-play it re-spaces live.
-    this.drumSlicePlayer?.setRatio(ratio);
+    // CRITICAL: pass the SAME pivot time bass/harmony use so all three change
+    // rate at one instant — otherwise drums pivot at a different time and a
+    // per-change phase error accumulates (tempo-dependent desync).
+    this.drumSlicePlayer?.setRatio(ratio, applyAtAudioTime);
   }
 
   /**
@@ -3274,8 +3209,9 @@ export class PlaybackEngine implements IAudioStemEngine {
     const T = now + applyAheadSeconds;
 
     // Scheduler ratio + drum slice player ratio (re-spaces the slices LIVE;
-    // each slice still plays bit-exact at rate 1 — pristine transients).
-    this.setSchedulerTempoRatio(ratio);
+    // each slice still plays bit-exact at rate 1 — pristine transients). Pivot
+    // at the SAME shared time T as bass/harmony so all three flip together.
+    this.setSchedulerTempoRatio(ratio, T);
 
     // bass/harmony rate change scheduled at the SAME T (immediate, not at a
     // loop seam) so all three flip together.
@@ -3311,7 +3247,20 @@ export class PlaybackEngine implements IAudioStemEngine {
       this.audioContext,
       buffer,
       onsets,
-      gain,
+      gain, // straight to the drum gain — drums are aligned at default WITHOUT
+      // an added latency delay (the read-head's ~145ms lead over the audible
+      // position already matches signalsmith's processing latency; adding a
+      // delay over-corrected and pushed drums LATE at default).
+      {
+        // Loop the drums on the SAME musical length bass/harmony loop on
+        // (the beat grid), not the raw buffer duration — else drums fall
+        // (bufferDur − musicalLoop) behind every loop (a structural desync
+        // that worsens at faster tempos). 0/undefined ⇒ full buffer.
+        loopDurationSeconds:
+          this.stemLoopDurationSeconds > 0
+            ? this.stemLoopDurationSeconds
+            : undefined,
+      },
     );
     this.regionScheduler?.setSelfLoopingSource(
       'drums',

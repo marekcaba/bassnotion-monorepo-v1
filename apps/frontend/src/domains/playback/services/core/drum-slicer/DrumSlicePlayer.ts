@@ -36,27 +36,41 @@ export interface DrumSlicePlayerOptions {
   /** Read a bit before the onset so the very front of the attack survives the
    *  fade-in. Trimmed from the previous slice's tail. */
   preRollSeconds?: number;
+  /** The MUSICAL loop length (s) the drums must wrap on — same value
+   *  bass/harmony loop on (the beat-grid length), which can be a hair SHORTER
+   *  than the raw drum buffer. Looping on the raw buffer instead makes the
+   *  drums fall ~bufferDur−loopDur behind every loop (a structural desync that
+   *  worsens at faster tempos). Defaults to the buffer duration (no trim). */
+  loopDurationSeconds?: number;
 }
 
-const DEFAULTS: Required<DrumSlicePlayerOptions> = {
-  // Small look-ahead: only ~60ms of drum is committed to the audio clock ahead
-  // of now, so a tempo change (which re-spaces from the next unscheduled slice)
-  // takes effect within ~60ms — tight enough to stay locked to bass/harmony
-  // even under rapid clicking. The 25ms tick refills it comfortably.
-  scheduleAheadSeconds: 0.06,
-  tickMs: 25,
-  fadeInSeconds: 0.002,
-  fadeOutSeconds: 0.012,
-  preRollSeconds: 0.003,
-};
+const DEFAULTS: Required<Omit<DrumSlicePlayerOptions, 'loopDurationSeconds'>> =
+  {
+    // Small look-ahead: only ~60ms of drum is committed to the audio clock ahead
+    // of now, so a tempo change (which re-spaces from the next unscheduled slice)
+    // takes effect within ~60ms — tight enough to stay locked to bass/harmony
+    // even under rapid clicking. The 25ms tick refills it comfortably.
+    scheduleAheadSeconds: 0.06,
+    tickMs: 25,
+    fadeInSeconds: 0.002,
+    fadeOutSeconds: 0.012,
+    preRollSeconds: 0.003,
+  };
 
 export class DrumSlicePlayer {
   private readonly ctx: AudioContext;
   private readonly buffer: AudioBuffer;
   private readonly output: AudioNode;
   private readonly onsets: number[];
+  /** Raw PCM duration — used only for buffer-read BOUNDS, never for the loop. */
   private readonly bufferDuration: number;
-  private readonly opt: Required<DrumSlicePlayerOptions>;
+  /** The MUSICAL loop length the drums wrap on (≤ bufferDuration). All loop /
+   *  wrap / phase math uses THIS so drums stay locked to bass/harmony, which
+   *  loop on the same musical length. */
+  private readonly loopDuration: number;
+  private readonly opt: Required<
+    Omit<DrumSlicePlayerOptions, 'loopDurationSeconds'>
+  >;
 
   private ratio = 1;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -81,23 +95,31 @@ export class DrumSlicePlayer {
     this.buffer = buffer;
     this.output = output;
     this.bufferDuration = buffer.duration;
-    // Sanitize onsets: ascending, in [0, dur), starting at 0.
+    const { loopDurationSeconds, ...rest } = options;
+    // Wrap on the MUSICAL loop length (clamped to the buffer), defaulting to the
+    // full buffer when not given. Onsets are clipped to this so the last slice
+    // ends at the musical seam, not the buffer end.
+    this.loopDuration =
+      loopDurationSeconds != null && loopDurationSeconds > 0
+        ? Math.min(loopDurationSeconds, this.bufferDuration)
+        : this.bufferDuration;
+    // Sanitize onsets: ascending, in [0, loopDuration), starting at 0.
     const cleaned = onsets
-      .filter((t) => t >= 0 && t < this.bufferDuration)
+      .filter((t) => t >= 0 && t < this.loopDuration)
       .sort((a, b) => a - b);
     if (cleaned.length === 0 || cleaned[0]! > 1e-4) cleaned.unshift(0);
     this.onsets = cleaned;
-    this.opt = { ...DEFAULTS, ...options };
+    this.opt = { ...DEFAULTS, ...rest };
   }
 
-  /** The real-time loop period at the current ratio. */
+  /** The real-time loop period at the current ratio (on the MUSICAL loop). */
   private get loopPeriod(): number {
-    return this.bufferDuration / (this.ratio || 1);
+    return this.loopDuration / (this.ratio || 1);
   }
 
-  /** Onset time in buffer-seconds for slice i (handles the wrap sentinel). */
+  /** Onset time (s) for slice i; the wrap sentinel is the MUSICAL loop end. */
   private onsetAt(i: number): number {
-    return i < this.onsets.length ? this.onsets[i]! : this.bufferDuration;
+    return i < this.onsets.length ? this.onsets[i]! : this.loopDuration;
   }
 
   /**
@@ -114,20 +136,20 @@ export class DrumSlicePlayer {
    * its real-time position at `atTime`; everything after it is spaced at the
    * new ratio.
    */
-  setRatio(ratio: number): void {
+  setRatio(ratio: number, atTime?: number): void {
     const newRatio = ratio > 0 ? ratio : 1;
     if (this.playing && newRatio !== this.ratio && newRatio > 0) {
-      // Re-anchor for phase continuity WITHOUT disturbing already-scheduled
-      // slices: keep `nextSlice` (the next slice to schedule) firing at the
-      // SAME real time it would have under the old ratio, then re-space
-      // everything after it at the new ratio. Slices already scheduled (index
-      // < nextSlice, already committed to the audio clock) are untouched, so
-      // there's no double-hit or gap at the change. This mirrors signalsmith's
-      // read-head: position continuous, speed changes from here.
-      const nextSliceRealOld =
-        this.loopStartTime + this.onsetAt(this.nextSlice) / this.ratio;
-      this.loopStartTime =
-        nextSliceRealOld - this.onsetAt(this.nextSlice) / newRatio;
+      // Re-anchor for phase continuity AT THE SHARED PIVOT TIME `atTime` — the
+      // SAME instant the engine applies the bass/harmony rate change. This is
+      // critical: if the drums pivot at a different time than bass/harmony,
+      // every tempo change injects (drumPivot − atTime) of phase error, which
+      // accumulates over many clicks and reverses on a sweep-back (the
+      // tempo-dependent desync). Keep the loop INPUT position continuous at
+      // `atTime`: position = (atTime − loopStartTime)·oldRatio; choose a new
+      // loopStartTime so the same position holds under newRatio at `atTime`.
+      const pivot = atTime ?? this.ctx.currentTime;
+      const inputPos = (pivot - this.loopStartTime) * this.ratio;
+      this.loopStartTime = pivot - inputPos / newRatio;
     }
     this.ratio = newRatio;
   }
