@@ -375,6 +375,10 @@ export class SignalsmithAdapter implements PitchShiftAdapter {
           (relay as any).__bufferStreaming = true;
           (relay as any).__bufferDuration = bufferDuration;
           (relay as any).__currentRate = rate;
+          // The node arms at `semitones` → that's the audible key from the
+          // first start; seed it so an early tempo change carries the right key
+          // (see setRate's deferred-key preservation).
+          (relay as any).__audibleSemitones = semitones;
           delete (relay as any).__pendingSemitones;
           delete (relay as any).__pendingRate;
 
@@ -448,6 +452,44 @@ export class SignalsmithAdapter implements PitchShiftAdapter {
     }
   }
 
+  /**
+   * Build a `schedule()` change for a semitones value, carrying the per-stem
+   * formant profile (schedule() doesn't inherit formant fields, so they must
+   * ride every pitch change).
+   */
+  private semitonesChange(
+    node: AudioNode,
+    semitones: number,
+  ): Record<string, unknown> {
+    const profile: SignalsmithStemProfile | undefined = (node as any).__profile;
+    return {
+      semitones,
+      formantCompensation: profile?.formantCompensation ?? true,
+      formantBaseHz: profile?.formantBaseHz ?? 0,
+      tonalityHz: profile?.tonalityHz,
+    };
+  }
+
+  /**
+   * The semitones value currently AUDIBLE on the node at `now`. If a deferred
+   * key change's boundary has already passed, it has taken effect — promote it
+   * to audible and clear the deferral so subsequent tempo changes carry the
+   * RIGHT key. Returns the effective audible semitones.
+   */
+  private audibleSemitonesAt(node: AudioNode, now: number): number {
+    const n = node as any;
+    if (
+      typeof n.__deferredSemitones === 'number' &&
+      typeof n.__deferredSemitonesOutput === 'number' &&
+      n.__deferredSemitonesOutput <= now
+    ) {
+      n.__audibleSemitones = n.__deferredSemitones;
+      n.__deferredSemitones = undefined;
+      n.__deferredSemitonesOutput = undefined;
+    }
+    return typeof n.__audibleSemitones === 'number' ? n.__audibleSemitones : 0;
+  }
+
   setRate(
     node: AudioNode,
     rate: number,
@@ -463,17 +505,96 @@ export class SignalsmithAdapter implements PitchShiftAdapter {
     // the right speed between worklet inputTime posts.
     (node as any).__currentRate = rate;
     try {
-      const change: Record<string, unknown> = { rate };
-      if (
+      // CRITICAL — preserve a pending (seam-deferred) KEY change across a tempo
+      // change. signalsmith's schedule() models pitch+rate on ONE segment
+      // timeline: a new segment at time T POPS every segment whose output >= T
+      // and INHERITS the latest popped segment's fields. So a bare
+      // schedule({rate, output: now}) pops a key change queued at a FUTURE
+      // boundary and folds its semitones into the immediate segment — the key
+      // jumps NOW (the bug). Fix: (1) carry the currently-AUDIBLE semitones on
+      // the rate segment so the immediate part stays in the old key, then
+      // (2) re-schedule the deferred key at its boundary so it survives.
+      const audible = this.audibleSemitonesAt(node, audioContext.currentTime);
+      const change: Record<string, unknown> = {
+        rate,
+        ...this.semitonesChange(node, audible),
+      };
+      const deferToFuture =
         typeof applyAtAudioTime === 'number' &&
-        applyAtAudioTime > audioContext.currentTime
-      ) {
+        applyAtAudioTime > audioContext.currentTime;
+      // The audio-time at which the rate segment lands (now, or the requested
+      // apply-ahead time). The deferred-key re-insert below must NOT pop this.
+      const rateOutput = deferToFuture
+        ? (applyAtAudioTime as number)
+        : audioContext.currentTime;
+      if (deferToFuture) {
         change.output = applyAtAudioTime;
       }
       sg.schedule(change);
+
+      // Re-establish the deferred KEY change that the rate schedule above just
+      // popped — but RECOMPUTE its boundary for the NEW rate. The key was meant
+      // to land at the next LOOP SEAM. A seam is tempo-invariant in INPUT time
+      // (the read-head wrapping at bufferDuration), but its OUTPUT time depends
+      // on the rate. Re-using the originally-stored output time would be stale
+      // after a tempo change (the seam moved) — the key would flip mid-loop and
+      // sound out of sync with the drums. Map "next input-wrap" → output time at
+      // the new rate so pitch and the loop wrap stay aligned at any tempo.
+      const defSemi = (node as any).__deferredSemitones;
+      if (typeof defSemi === 'number') {
+        const newOut = this.nextSeamOutputTime(node, audioContext, rate);
+        if (typeof newOut === 'number') {
+          (node as any).__deferredSemitonesOutput = newOut;
+          // Re-insert the deferred key WITHOUT disturbing the rate segment just
+          // scheduled above, and WITHOUT applying the key now. signalsmith's
+          // schedule keys two things off `outputTime`: (1) it POPS segments with
+          // output >= outputTime, and (2) it SHIFTS the "current" segment up to
+          // outputTime. We want it to spare the rate and NOT make the key
+          // current. So:
+          //   - `output: newOut`  → STORE the key segment at the future seam.
+          //   - `outputTime: rateOutput + ε` → pop/shift threshold just AFTER
+          //     where the RATE segment sits, so the rate is spared (its output
+          //     == rateOutput < threshold) and the shift makes the rate the
+          //     current segment (applying the new tempo now), while the key at
+          //     newOut ≫ threshold stays deferred.
+          // Using `output` alone pops the rate (threshold falls to now); using
+          // `outputTime: newOut` alone shifts the key into the current slot
+          // (jumps the key immediately). Both fields, with the threshold pinned
+          // just past the rate, thread the needle.
+          sg.schedule({
+            ...this.semitonesChange(node, defSemi),
+            output: newOut,
+            outputTime: rateOutput + 0.001,
+          });
+        }
+      }
     } catch (err) {
       this.log.warn('Signalsmith setRate schedule failed', err);
     }
+  }
+
+  /**
+   * Output-time of the NEXT loop seam at `rate`. A seam is where the read-head
+   * (input time) wraps at `bufferDuration`; that input position is tempo-
+   * invariant, but the output time it maps to scales with the rate. Returns
+   * undefined if the read-head/buffer aren't known yet.
+   */
+  private nextSeamOutputTime(
+    node: AudioNode,
+    audioContext: AudioContext,
+    rate: number,
+  ): number | undefined {
+    const sg = (node as any).__signalsmith;
+    const bufferDuration = (node as any).__bufferDuration;
+    if (!sg || typeof sg.inputTime !== 'number' || !bufferDuration) {
+      return undefined;
+    }
+    const r = rate > 0 ? rate : 1;
+    const inputInLoop =
+      ((sg.inputTime % bufferDuration) + bufferDuration) % bufferDuration;
+    const inputUntilSeam = bufferDuration - inputInLoop;
+    // output time advances at `rate` per input second.
+    return audioContext.currentTime + inputUntilSeam / r;
   }
 
   setSemitones(
@@ -494,24 +615,40 @@ export class SignalsmithAdapter implements PitchShiftAdapter {
       return;
     }
     try {
-      // Carry the per-stem formant profile on every change — schedule()
-      // changes don't inherit prior formant fields, so omitting these
-      // would silently revert to engine defaults on each key tap.
-      const profile: SignalsmithStemProfile | undefined = (node as any)
-        .__profile;
-      const change: Record<string, unknown> = {
+      // FIRST settle any PREVIOUS deferred key whose boundary has already
+      // passed — it's now the audible key. Without this, a key set, landed at
+      // the seam, then a SECOND key set before any tempo change would leave
+      // __audibleSemitones stale at the old value (e.g. 0): the next tempo
+      // change would carry that stale audible and REVERT the (already audible)
+      // first key to default until the new seam. audibleSemitonesAt promotes a
+      // passed-boundary deferral to audible and clears it.
+      this.audibleSemitonesAt(node, audioContext.currentTime);
+
+      // Carry the per-stem formant profile on every change (see semitonesChange).
+      const change: Record<string, unknown> = this.semitonesChange(
+        node,
         semitones,
-        formantCompensation: profile?.formantCompensation ?? true,
-        formantBaseHz: profile?.formantBaseHz ?? 0,
-        tonalityHz: profile?.tonalityHz,
-      };
-      // schedule({output}) is latency-compensated; schedule the change at
-      // the requested boundary, else apply now.
-      if (
+      );
+      // Defer the change to the requested boundary, else apply now. `output`
+      // stores the segment at the boundary while leaving the read-head readout
+      // untouched (a lone key change has nothing to coexist with, so the
+      // pop-at-now is harmless). The setRate re-apply uses `outputTime` instead
+      // because it must NOT pop the concurrent rate segment.
+      const deferToFuture =
         typeof applyAtAudioTime === 'number' &&
-        applyAtAudioTime > audioContext.currentTime
-      ) {
+        applyAtAudioTime > audioContext.currentTime;
+      if (deferToFuture) {
         change.output = applyAtAudioTime;
+        // Remember this deferred key + its boundary so a tempo change before
+        // the boundary can re-establish it (see setRate). The AUDIBLE key is
+        // still the previous value until the boundary is reached.
+        (node as any).__deferredSemitones = semitones;
+        (node as any).__deferredSemitonesOutput = applyAtAudioTime;
+      } else {
+        // Applied immediately → this IS the audible key now; no deferral stands.
+        (node as any).__audibleSemitones = semitones;
+        (node as any).__deferredSemitones = undefined;
+        (node as any).__deferredSemitonesOutput = undefined;
       }
       sg.schedule(change);
     } catch (err) {
