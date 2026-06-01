@@ -10,6 +10,7 @@ import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
 import { AttributionProvider } from '@/shared/attribution/AttributionProvider';
 import { isMockTestEnv, isWebkitBrowser } from '@/shared/utils/testEnv';
 import { ThemedLayout } from './_components/ThemedLayout';
+import { DrumGapFillAdminPanel } from '@/domains/playback/components/DrumGapFillAdminPanel';
 
 const logger = getLogger('app');
 
@@ -63,6 +64,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             </ReactQueryProvider>
           </AuthProviderWrapper>
           <Toaster />
+          {/* Dev-only drum gap-fill tuning panel — renders null unless
+              NEXT_PUBLIC_DRUM_ADMIN_PANEL=true or the URL has ?drumadmin=1.
+              Mounted at the root so it's available on both the waitlist
+              homepage and every /app/* route (e.g. the tutorials groove
+              card at /app/tutorials/[slug]). */}
+          <DrumGapFillAdminPanel />
         </ErrorBoundary>
       </body>
     </html>

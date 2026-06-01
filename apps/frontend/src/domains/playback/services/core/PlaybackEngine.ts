@@ -85,8 +85,12 @@ import {
   SignalsmithBufferSource,
   DrumSliceSource,
 } from './region-processing/scheduling-orchestrator/InfiniteAudioSource.js';
-import { detectOnsets } from './drum-slicer/detectOnsets.js';
-import { DrumSlicePlayer } from './drum-slicer/DrumSlicePlayer.js';
+import { detectOnsetsDetailed } from './drum-slicer/detectOnsets.js';
+import {
+  DrumSlicePlayer,
+  type GapFillParams,
+  type GapFillParamsSnapshot,
+} from './drum-slicer/DrumSlicePlayer.js';
 
 // Debug flag - enable in browser console: window.__DEBUG_PLAYBACK_ENGINE = true
 const isPlaybackDebugEnabled = (): boolean => {
@@ -3234,15 +3238,37 @@ export class PlaybackEngine implements IAudioStemEngine {
     const gain = this.getOrCreateInstrumentGainNode('audio-drums');
     if (!gain) return;
 
+    // Detect onsets WITH per-onset confidence so the sustain gap-fill can skip
+    // loud primary transients (kicks/snares) — only sustaining hits (hi-hats)
+    // get a fill. detectOnsets(): number[] is derived from the detailed result.
     let onsets: number[];
+    let confidences: number[];
     try {
-      onsets = detectOnsets(buffer);
+      const detailed = detectOnsetsDetailed(buffer);
+      onsets = detailed.map((o) => o.time);
+      confidences = detailed.map((o) => o.confidence);
     } catch (err) {
       this.logger.warn('Drum onset detection failed; using loop start only', {
         err,
       });
       onsets = [0];
+      confidences = [1];
     }
+    // SUSTAIN GAP-FILL flag (LAUNCH-06): hi-hat flow at slow tempos. OFF by
+    // default — ship dark; enable via NEXT_PUBLIC_DRUM_GAPFILL=true or the live
+    // setDrumGapFill() A/B toggle, flip the default once the metric+ear test
+    // passes. (Granular tail extension; see buildExtendedTail.)
+    const gapFill =
+      typeof process !== 'undefined' &&
+      process.env?.NEXT_PUBLIC_DRUM_GAPFILL === 'true';
+    // HYBRID WSOLA CONTINUOUS-BED STRETCH (LAUNCH-06): the real fix for slow-
+    // tempo drum flow — stretch the whole loop smoothly (transient bodies notched
+    // out of the bed) and overlay bit-exact kick/snare attacks. ON by default;
+    // set NEXT_PUBLIC_DRUM_WSOLA=false to force the legacy per-slice path.
+    // Supersedes gapFill (WSOLA wins when both on).
+    const wsola =
+      typeof process === 'undefined' ||
+      process.env?.NEXT_PUBLIC_DRUM_WSOLA !== 'false';
     this.drumSlicePlayer = new DrumSlicePlayer(
       this.audioContext,
       buffer,
@@ -3260,7 +3286,10 @@ export class PlaybackEngine implements IAudioStemEngine {
           this.stemLoopDurationSeconds > 0
             ? this.stemLoopDurationSeconds
             : undefined,
+        gapFill,
+        wsola,
       },
+      confidences,
     );
     this.regionScheduler?.setSelfLoopingSource(
       'drums',
@@ -3268,8 +3297,54 @@ export class PlaybackEngine implements IAudioStemEngine {
     );
     this.logger.info('Drum slice player created (transient-preserving)', {
       onsets: onsets.length,
+      gapFill,
+      wsola,
       instanceId: this.instanceId,
     });
+  }
+
+  /**
+   * Toggle the drum sustain gap-fill at runtime (for A/B-by-ear during tuning).
+   * Forwards to the live DrumSlicePlayer; takes effect on the next loop
+   * iteration's scheduling. No-op if no player is armed.
+   */
+  setDrumGapFill(on: boolean): void {
+    this.drumSlicePlayer?.setGapFill(on);
+  }
+
+  /**
+   * Toggle the HYBRID WSOLA texture stretch at runtime (A/B-by-ear). When on,
+   * the shuffle-hat texture between strong transients is WSOLA time-stretched to
+   * fill a slowed gap (continuous, tails intact) instead of bit-exact + silence.
+   * Supersedes the granular gap-fill. No-op if no player is armed.
+   */
+  setDrumWsola(on: boolean): void {
+    this.drumSlicePlayer?.setWsola(on);
+  }
+
+  /**
+   * Live-tune the drum gap-fill + WSOLA behaviour from the admin panel. Forwards
+   * a partial param patch to the live DrumSlicePlayer; scheduling knobs apply on
+   * the next slice, DSP/structural knobs re-precompute. No-op if no player armed.
+   */
+  setDrumGapFillParams(params: GapFillParams): void {
+    this.drumSlicePlayer?.setGapFillParams(params);
+  }
+
+  /** Read back the live drum gap-fill/WSOLA params + diagnostics (legacy fill
+   *  count, texture-region count) for the admin panel to seed its controls.
+   *  Null if no player is armed yet. */
+  getDrumGapFillState(): {
+    params: GapFillParamsSnapshot;
+    qualifyingFills: number;
+    textureRegions: number;
+  } | null {
+    if (!this.drumSlicePlayer) return null;
+    return {
+      params: this.drumSlicePlayer.getGapFillParams(),
+      qualifyingFills: this.drumSlicePlayer.qualifyingFillCount(),
+      textureRegions: this.drumSlicePlayer.textureRegionCount(),
+    };
   }
 
   /**
