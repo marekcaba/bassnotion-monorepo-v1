@@ -18,13 +18,24 @@
  */
 
 import type { Attribution } from '@bassnotion/contracts';
+import { implicitWalls } from '@bassnotion/contracts';
 
 const STORAGE_KEY = 'bn_attribution_v1';
 const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 type StoredAttribution = Attribution & { _expiresAt: number };
 
-const UTM_KEYS: Array<{ param: string; field: keyof Attribution }> = [
+// Only the string-valued UTM fields go through this loop. Typed narrowly (not
+// `keyof Attribution`) so `fresh[field] = string` type-checks now that
+// Attribution also has the non-string `wall` union.
+type UtmField =
+  | 'utmSource'
+  | 'utmMedium'
+  | 'utmCampaign'
+  | 'utmContent'
+  | 'utmTerm';
+
+const UTM_KEYS: Array<{ param: string; field: UtmField }> = [
   { param: 'utm_source', field: 'utmSource' },
   { param: 'utm_medium', field: 'utmMedium' },
   { param: 'utm_campaign', field: 'utmCampaign' },
@@ -68,6 +79,22 @@ function captureFresh(): Attribution {
       // Trim length defensively — we cap at 120 chars in the schema too.
       fresh[field] = value.slice(0, 120);
     }
+  }
+
+  // Door identifiers on links we control (e.g. a YouTube description link
+  // `?src=yt&vid=funk-ghost&wall=depth`). `vid` is our own slug, not YouTube's
+  // raw id. These pre-load the matched-offer segment downstream.
+  const src = params.get('src');
+  if (src && src.length > 0) fresh.src = src.slice(0, 40);
+
+  const vid = params.get('vid');
+  if (vid && vid.length > 0) fresh.vid = vid.slice(0, 120);
+
+  // `wall` is constrained to the three known segments; drop anything else
+  // rather than store a junk value that would fail the strict schema.
+  const wall = params.get('wall');
+  if (wall && (implicitWalls as readonly string[]).includes(wall)) {
+    fresh.wall = wall as Attribution['wall'];
   }
 
   // document.referrer is the URL of the page the visitor came FROM.

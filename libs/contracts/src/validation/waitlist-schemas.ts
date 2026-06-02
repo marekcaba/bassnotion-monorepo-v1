@@ -11,6 +11,15 @@ export const waitlistLevels = [
 export type WaitlistLevel = (typeof waitlistLevels)[number];
 
 /**
+ * The three funnel "walls" / segments a piece of content can imply. Carried
+ * inward from the door (YouTube short/video, SEO post) onto the visitor's
+ * attribution so the matched-offer brain has a guess before they convert.
+ * It is an IMPLIED segment, not a measured fact — stored as-is, refined later.
+ */
+export const implicitWalls = ['breadth', 'depth', 'discipline'] as const;
+export type ImplicitWall = (typeof implicitWalls)[number];
+
+/**
  * First-touch attribution context captured on the visitor's FIRST page load
  * and persisted in their localStorage for up to 30 days. Sent with both the
  * waitlist signup and the founder-interest click so we can answer "which
@@ -18,6 +27,11 @@ export type WaitlistLevel = (typeof waitlistLevels)[number];
  *
  * Every field is optional — visitors who land via direct traffic or
  * decline storage end up with mostly-empty attribution, which is fine.
+ *
+ * `src` / `vid` / `wall` are the door identifiers we set ourselves on the
+ * links we control (e.g. a YouTube description link
+ * `?src=yt&vid=funk-ghost&wall=depth`). `vid` is OUR slug, not YouTube's raw
+ * id — human readable, renameable, reusable across a short + its long video.
  */
 export const attributionSchema = z
   .object({
@@ -30,6 +44,10 @@ export const attributionSchema = z
     landingPath: z.string().max(2048).optional(),
     timezone: z.string().max(80).optional(),
     capturedAt: z.string().max(40).optional(),
+    // Door identifiers on links we control (YouTube, shorts, SEO, ads).
+    src: z.string().max(40).optional(),
+    vid: z.string().max(120).optional(),
+    wall: z.enum(implicitWalls).optional(),
   })
   .strict();
 
@@ -51,6 +69,10 @@ export const waitlistEntrySchema = z.object({
   }),
   signupIntent: z.enum(signupIntents).optional(),
   attribution: attributionSchema.optional(),
+  // Anonymous visitor id (the bn_anonymous_id cookie). Optional so older
+  // cached clients that predate this field still submit successfully; the
+  // row just won't be joinable to that visitor's funnel_events.
+  anonymousId: z.string().uuid().optional(),
 });
 
 export type WaitlistEntry = z.infer<typeof waitlistEntrySchema>;
@@ -71,6 +93,7 @@ export type WaitlistResponse = z.infer<typeof waitlistResponseSchema>;
 export const founderInterestSchema = z.object({
   email: emailSchema,
   attribution: attributionSchema.optional(),
+  anonymousId: z.string().uuid().optional(),
 });
 
 export type FounderInterest = z.infer<typeof founderInterestSchema>;
