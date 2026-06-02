@@ -1,205 +1,222 @@
 /**
- * WSOLA drum-bed inspector — paste into the DevTools console on the Groove Card
- * page (e.g. http://localhost:3001/app/tutorials/test-groove-2?drumadmin=1) while
- * the groove is PLAYING with "Smooth stretch (WSOLA)" ON and slowed (e.g. 94 BPM).
+ * Original vs Stretched waveform overlay — how far has each hit drifted?
  *
- * THE QUESTION IT ANSWERS: did the transient-NOTCH remove the kick/snare BODIES
- * from the bed? (If a body stays in the bed, WSOLA's accumulating lag copies it
- * to the wrong place → the "doubled body, no transient" artifact.)
+ * Paste into the DevTools console on the Groove Card page
+ * (http://localhost:3001/app/tutorials/test-groove-2?drumadmin=1) while the
+ * groove is PLAYING and SLOWED to the tempo you want (e.g. 94 BPM).
  *
- * It synthesizes the bed TWICE — once with the notch FULLY OFF (the raw full
- * loop) and once with the notch FULLY ON (bodies removed) — and for each strong
- * hit measures RESIDUAL = (bed energy AT the hit position) ÷ (bed energy in the
- * TEXTURE just after it). >1 means a body is still sitting at the hit (bad, the
- * artifact); <1 means the hit position is quieter than the surrounding texture
- * (good, the body was removed). It then draws original vs notched-bed envelopes
- * so you can SEE the dips where the hits were.
+ * It captures the REAL rendered drum output (bed + crisp overlays — exactly what
+ * you hear) and draws it against the ORIGINAL loop, with the original's time
+ * axis SCALED by 1/ratio so a perfect linear stretch would line the two up
+ * exactly. Any horizontal gap between an original hit (top) and where the output
+ * actually put its energy (bottom) is REAL DRIFT. It marks each original onset,
+ * finds the nearest output peak, and reports the per-hit drift in ms + the mean.
  *
- * It restores the player's live notch/bed afterward — nothing is left mutated.
+ * NOTE: it records a couple of loops of live audio (a few seconds). Nothing is
+ * mutated — it only listens.
  */
 (async () => {
   const eng = window.__bassnotion_playbackEngine;
   const sp = eng && eng.drumSlicePlayer;
-  if (!sp) {
-    console.warn('[wsola] No drum player. Press play first.');
-    return;
-  }
-  const sr = sp.buffer.sampleRate;
-  const loopDur = sp.loopDuration;
+  if (!sp) return console.warn('[wave] No drum player. Press play first.');
+  const ctx = sp.ctx;
+  const out = sp.output;
+  const sr = ctx.sampleRate;
   const ratio = sp.ratio || 1;
-  if (Math.abs(ratio - 1) < 1e-3) {
-    console.warn('[wsola] ratio≈1 — slow the tempo down first (no bed at unity).');
-    return;
-  }
-  const liveNotch = sp.bedTransientNotch; // restore later
+  if (Math.abs(ratio - 1) < 1e-3)
+    return console.warn('[wave] ratio≈1 — slow the tempo down to compare a stretch.');
+
+  const loopOrigS = sp.loopDuration; // original loop length (s)
+  const loopRealS = loopOrigS / ratio; // stretched loop length (s)
+  const onsets = sp.onsets; // original onset times (s)
+  const strongSet = new Set(sp.strongIndices);
+
   console.log(
-    `[wsola] ratio=${ratio.toFixed(4)} loopDur=${loopDur.toFixed(3)}s ` +
-      `window=${(sp.wsolaOpt.windowSeconds * 1000) | 0}ms ` +
-      `liveNotch=${(liveNotch * 100) | 0}%`,
+    `[wave] ratio=${ratio.toFixed(4)}  origLoop=${loopOrigS.toFixed(3)}s  stretchedLoop=${loopRealS.toFixed(3)}s  onsets=${onsets.length}`,
   );
 
-  const onsets = sp.onsets;
-  const strong = sp.strongIndices.map((i) => onsets[i]); // seconds (original)
+  // --- record ~2 stretched loops of the LIVE output ---
+  const captureS = Math.min(9, loopRealS * 2 + 0.3);
+  const cap = await new Promise((resolve) => {
+    const chunks = [];
+    const node = ctx.createScriptProcessor(2048, 1, 1);
+    let got = 0;
+    const need = Math.ceil(captureS * sr);
+    node.onaudioprocess = (e) => {
+      const ch = e.inputBuffer.getChannelData(0);
+      const s = new Float32Array(ch.length);
+      s.set(ch);
+      chunks.push(s);
+      got += ch.length;
+      e.outputBuffer.getChannelData(0).fill(0);
+      if (got >= need) {
+        try { out.disconnect(node); } catch {}
+        try { node.disconnect(); } catch {}
+        const all = new Float32Array(got);
+        let o = 0;
+        for (const c of chunks) { all.set(c, o); o += c.length; }
+        resolve(all);
+      }
+    };
+    out.connect(node);
+    node.connect(ctx.destination);
+  });
 
-  // Synthesize a bed at a given notch level and return its mono PCM.
-  const bedAt = (notch) => {
-    sp.bedTransientNotch = notch;
-    sp.precomputeBedAnalysis();
-    sp.resynthesizeBed(true);
-    return sp.bedBuffer
-      ? Float32Array.from(sp.bedBuffer.getChannelData(0))
-      : null;
+  // --- align the capture to a loop boundary: find the first strong hit and use
+  //     it as t=0 so the original and capture share phase. We fold by loopRealS. ---
+  const orig = sp.buffer.getChannelData(0).subarray(0, Math.round(loopOrigS * sr));
+
+  // peak detector on the captured output
+  const detect = (sig) => {
+    const win = Math.round(0.005 * sr), hop = Math.round(0.0025 * sr);
+    const fr = [];
+    for (let s = 0; s + win < sig.length; s += hop) {
+      let a = 0;
+      for (let i = 0; i < win; i++) a += sig[s + i] * sig[s + i];
+      fr.push({ t: (s + win / 2) / sr, e: Math.sqrt(a / win) });
+    }
+    let mx = 0; for (const f of fr) if (f.e > mx) mx = f.e;
+    const thr = mx * 0.16; const ps = []; let last = -1;
+    for (let i = 1; i < fr.length - 1; i++) {
+      const f = fr[i];
+      if (f.e > thr && f.e >= fr[i - 1].e && f.e > fr[i + 1].e && f.t - last > 0.04) {
+        ps.push(f); last = f.t;
+      }
+    }
+    return ps;
   };
+  const outPeaks = detect(cap);
 
-  const bedFull = bedAt(0); // notch OFF = raw full loop in the bed
-  const bedNotched = bedAt(1); // notch ON = bodies removed
-  if (!bedFull || !bedNotched) {
-    console.warn('[wsola] bed synth failed.');
-    sp.bedTransientNotch = liveNotch;
-    sp.precomputeBedAnalysis();
-    sp.resynthesizeBed(true);
-    return;
+  // CRITICAL: the capture does NOT start at bar-1 — recording begins at a random
+  // moment, so the whole peak set is phase-shifted vs the original grid by some
+  // constant `phi`. Measuring drift without removing `phi` produces a fake
+  // accumulating sawtooth (it's matching the wrong hit). Solve for the phi (in
+  // [0,loopRealS)) that MINIMIZES total drift, then measure relative to it — that
+  // isolates real per-hit drift from the capture's arbitrary start offset.
+  const ideals = onsets.map((t) => t / ratio);
+  const phasesOut = outPeaks.map((p) => ((p.t % loopRealS) + loopRealS) % loopRealS);
+  const driftFor = (phi) => {
+    let tot = 0;
+    for (const ideal of ideals) {
+      const target = ((ideal + phi) % loopRealS + loopRealS) % loopRealS;
+      let near = Infinity;
+      for (const ph of phasesOut) {
+        const d = Math.min(
+          Math.abs(ph - target),
+          Math.abs(ph - target + loopRealS),
+          Math.abs(ph - target - loopRealS),
+        );
+        if (d < near) near = d;
+      }
+      tot += near;
+    }
+    return tot;
+  };
+  // coarse scan for the best alignment phi, then refine
+  let bestPhi = 0, bestTot = Infinity;
+  for (let phi = 0; phi < loopRealS; phi += 0.002) {
+    const tot = driftFor(phi);
+    if (tot < bestTot) { bestTot = tot; bestPhi = phi; }
   }
+  for (let phi = bestPhi - 0.002; phi <= bestPhi + 0.002; phi += 0.0002) {
+    const tot = driftFor(phi);
+    if (tot < bestTot) { bestTot = tot; bestPhi = phi; }
+  }
+  console.log(`[wave] aligned capture to grid (phi=${(bestPhi * 1000).toFixed(0)}ms removed)`);
 
-  // RMS of a region [t0,t1) seconds in a bed buffer.
-  const rms = (bed, t0, t1) => {
-    const a = Math.max(0, Math.round(t0 * sr));
-    const b = Math.min(bed.length, Math.round(t1 * sr));
-    let acc = 0;
-    for (let i = a; i < b; i++) acc += bed[i] * bed[i];
-    return Math.sqrt(acc / Math.max(1, b - a));
-  };
-
-  // For each strong hit: RESIDUAL = energy AT the hit ÷ energy in the TEXTURE
-  // window just after it, for both beds. Lower = body removed.
-  const hitWin = 0.04; // 40ms window centered on the hit
-  const texWin = 0.12; // texture window starting after the hit body
-  const rep = strong.map((t) => {
-    const ideal = t / ratio; // linear stretched position
-    const hitFull = rms(bedFull, ideal - hitWin / 2, ideal + hitWin / 2);
-    const texFull = rms(bedFull, ideal + 0.06, ideal + 0.06 + texWin);
-    const hitNot = rms(bedNotched, ideal - hitWin / 2, ideal + hitWin / 2);
-    const texNot = rms(bedNotched, ideal + 0.06, ideal + 0.06 + texWin);
-    const resFull = texFull > 1e-6 ? hitFull / texFull : 0;
-    const resNot = texNot > 1e-6 ? hitNot / texNot : 0;
+  const rep = onsets.map((t, i) => {
+    const ideal = t / ratio;
+    const target = ((ideal + bestPhi) % loopRealS + loopRealS) % loopRealS;
+    let near = Infinity;
+    for (const ph of phasesOut) {
+      const d = Math.min(
+        Math.abs(ph - target),
+        Math.abs(ph - target + loopRealS),
+        Math.abs(ph - target - loopRealS),
+      );
+      if (d < near) near = d;
+    }
     return {
-      hitMs: +(ideal * 1000).toFixed(0),
-      residualFull: +resFull.toFixed(2),
-      residualNotched: +resNot.toFixed(2),
-      removedPct: +((1 - hitNot / Math.max(1e-6, hitFull)) * 100).toFixed(0),
+      idx: i,
+      strong: strongSet.has(i) ? '★' : '',
+      origMs: +(t * 1000).toFixed(0),
+      idealMs: +(ideal * 1000).toFixed(0),
+      driftMs: +(near * 1000).toFixed(0),
     };
   });
   console.table(rep);
-  const meanFull =
-    rep.reduce((s, r) => s + r.residualFull, 0) / rep.length;
-  const meanNot =
-    rep.reduce((s, r) => s + r.residualNotched, 0) / rep.length;
-  const meanRemoved =
-    rep.reduce((s, r) => s + r.removedPct, 0) / rep.length;
+  const meanDrift = rep.reduce((s, r) => s + r.driftMs, 0) / rep.length;
+  const strongDrift = rep.filter((r) => r.strong).reduce((s, r) => s + r.driftMs, 0) / Math.max(1, rep.filter((r) => r.strong).length);
   console.log(
-    `[wsola] mean residual (energy at hit ÷ texture):  FULL bed=${meanFull.toFixed(2)}  NOTCHED bed=${meanNot.toFixed(2)}`,
+    `[wave] mean drift (output peak vs ideal linear position): ALL hits=${meanDrift.toFixed(1)}ms  ★strong(overlaid)=${strongDrift.toFixed(1)}ms`,
   );
-  console.log(
-    `[wsola] → notch removed on average ${meanRemoved.toFixed(0)}% of the body energy at the hit positions.`,
-  );
-  console.log(
-    `[wsola] residual >1 = a transient body sits in the bed (the artifact). <1 = removed. Want NOTCHED ≪ FULL.`,
-  );
+  console.log('[wave] ★ = a protected (bit-exact overlaid) hit — should be ~0ms. Others ride the bed.');
 
-  // ---- draw: original loop vs notched bed, with hit markers ----
-  const N = 1400;
-  const envOf = (arr) => {
-    const out = new Float32Array(N);
-    const bin = arr.length / N;
+  // --- draw: ORIGINAL (time ×1/ratio) over OUTPUT, same axis (one stretched loop) ---
+  const N = 1500;
+  const env = (arr, t0, t1) => {
+    const a = Math.max(0, Math.round(t0 * sr)), b = Math.min(arr.length, Math.round(t1 * sr));
+    const o = new Float32Array(N);
+    const bin = (b - a) / N;
     for (let p = 0; p < N; p++) {
       let m = 0;
-      const a = Math.floor(p * bin),
-        b = Math.floor((p + 1) * bin);
-      for (let i = a; i < b; i++) {
-        const v = Math.abs(arr[i]);
-        if (v > m) m = v;
-      }
-      out[p] = m;
+      const s = a + Math.floor(p * bin), e = a + Math.floor((p + 1) * bin);
+      for (let i = s; i < e; i++) { const v = Math.abs(arr[i]); if (v > m) m = v; }
+      o[p] = m;
     }
-    return out;
+    return o;
   };
-  const end = Math.round(loopDur * sr);
-  const orig = sp.buffer.getChannelData(0).subarray(0, end);
-  const origEnv = envOf(orig);
-  const fullEnv = envOf(bedFull);
-  const notchEnv = envOf(bedNotched);
-  const bedDurS = bedNotched.length / sr;
+  // original envelope spans [0, loopOrigS]; we plot it across the SAME width as
+  // one stretched loop, which IS the ×1/ratio time-scaling.
+  const origEnv = env(orig, 0, loopOrigS);
+  // Draw the output starting at the alignment point so the waveform sits under
+  // the markers. The capture began mid-loop; bestPhi is how far the original
+  // grid is offset INTO the capture, so the loop that lines up with the original
+  // bar-1 starts at (loopRealS − bestPhi) into the capture.
+  const outStart = ((loopRealS - bestPhi) % loopRealS + loopRealS) % loopRealS;
+  const outEnv = env(cap, outStart, outStart + loopRealS);
 
-  const W = 1300,
-    H = 470,
-    pad = 30;
+  const W = 1320, H = 360, pad = 30;
   document.getElementById('wsola-compare-canvas')?.remove();
   const cv = document.createElement('canvas');
   cv.id = 'wsola-compare-canvas';
-  cv.width = W;
-  cv.height = H;
-  Object.assign(cv.style, {
-    position: 'fixed',
-    left: '12px',
-    top: '12px',
-    zIndex: 2147483600,
-    background: '#0c0c10',
-    border: '1px solid #333',
-    borderRadius: '8px',
-    boxShadow: '0 8px 30px rgba(0,0,0,.6)',
-  });
+  cv.width = W; cv.height = H;
+  Object.assign(cv.style, { position: 'fixed', left: '12px', top: '12px', zIndex: 2147483600, background: '#0c0c10', border: '1px solid #333', borderRadius: '8px', boxShadow: '0 8px 30px rgba(0,0,0,.6)' });
   cv.onclick = () => cv.remove();
-  cv.title = 'click to dismiss';
   document.body.appendChild(cv);
-  const ctx = cv.getContext('2d');
-  ctx.fillStyle = '#0c0c10';
-  ctx.fillRect(0, 0, W, H);
-  ctx.font = '11px ui-monospace, monospace';
+  const c = cv.getContext('2d');
+  c.fillStyle = '#0c0c10'; c.fillRect(0, 0, W, H);
+  c.font = '11px ui-monospace, monospace';
   const innerW = W - 2 * pad;
 
-  const draw = (env, y0, h, color, label) => {
-    ctx.strokeStyle = color;
-    ctx.beginPath();
+  const draw = (e, y0, h, color, label) => {
+    c.strokeStyle = color; c.beginPath();
     for (let p = 0; p < N; p++) {
-      const x = pad + (p / N) * innerW;
-      const v = env[p];
-      ctx.moveTo(x, y0 + h / 2 - (v * h) / 2);
-      ctx.lineTo(x, y0 + h / 2 + (v * h) / 2);
+      const x = pad + (p / N) * innerW; const v = e[p];
+      c.moveTo(x, y0 + h / 2 - (v * h) / 2); c.lineTo(x, y0 + h / 2 + (v * h) / 2);
     }
-    ctx.stroke();
-    ctx.fillStyle = '#aaa';
-    ctx.fillText(label, pad, y0 + 12);
+    c.stroke();
+    c.fillStyle = '#aaa'; c.fillText(label, pad, y0 + 12);
   };
+  draw(origEnv, pad, 130, '#4aa3ff', 'ORIGINAL loop (time ×1/ratio — perfect stretch would line up below)');
+  draw(outEnv, pad + 150, 130, '#9be9a8', 'STRETCHED output (bed + crisp overlays — what you hear)');
 
-  draw(origEnv, pad, 120, '#4aa3ff', 'ORIGINAL loop');
-  draw(fullEnv, pad + 140, 120, '#e0a106', 'BED — notch OFF (bodies still in, the artifact source)');
-  draw(notchEnv, pad + 280, 120, '#9be9a8', 'BED — notch ON (bodies removed → flat at green lines)');
-
-  // hit markers on all three panels
-  for (const t of strong) {
-    const xOrig = pad + (t / loopDur) * innerW;
-    const xBed = pad + (t / ratio / bedDurS) * innerW;
-    ctx.strokeStyle = 'rgba(34,197,94,0.55)';
-    ctx.beginPath();
-    ctx.moveTo(xOrig, pad);
-    ctx.lineTo(xOrig, pad + 120);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(xBed, pad + 140);
-    ctx.lineTo(xBed, pad + 400);
-    ctx.stroke();
+  // markers: each original onset at its grid-aligned stretched x (ideal + phi),
+  // so the lines sit where the measurement actually compared.
+  for (const r of rep) {
+    const target = (((r.idealMs / 1000) + bestPhi) % loopRealS + loopRealS) % loopRealS;
+    const x = pad + (target / loopRealS) * innerW;
+    // top: original hit (blue panel)
+    c.strokeStyle = r.strong ? 'rgba(34,197,94,0.9)' : 'rgba(74,163,255,0.5)';
+    c.beginPath(); c.moveTo(x, pad); c.lineTo(x, pad + 130); c.stroke();
+    // bottom: ideal position (green panel) + red if drift > 25ms
+    c.strokeStyle = r.driftMs > 25 ? '#ef4444' : (r.strong ? 'rgba(34,197,94,0.9)' : 'rgba(155,233,168,0.5)');
+    c.beginPath(); c.moveTo(x, pad + 150); c.lineTo(x, pad + 280); c.stroke();
   }
-  ctx.fillStyle = '#888';
-  ctx.fillText(
-    `green lines = kick/snare positions · GOOD = bottom panel is FLAT/quiet at the green lines (bodies gone) · ` +
-      `mean residual full=${meanFull.toFixed(2)} notched=${meanNot.toFixed(2)} · click to close`,
-    pad,
-    H - 8,
+  c.fillStyle = '#888';
+  c.fillText(
+    `★ green = protected hits (should align) · blue/faint = bed hits · red = drift >25ms · mean drift all=${meanDrift.toFixed(0)}ms strong=${strongDrift.toFixed(0)}ms · click to close`,
+    pad, H - 8,
   );
-
-  // restore the live bed to whatever the panel had.
-  sp.bedTransientNotch = liveNotch;
-  sp.precomputeBedAnalysis();
-  sp.resynthesizeBed(true);
-  console.log('[wsola] live bed restored. Canvas top-left — click to dismiss.');
+  console.log('[wave] canvas drawn (top-left). Click to dismiss.');
 })();

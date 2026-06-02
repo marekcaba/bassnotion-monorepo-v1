@@ -3322,6 +3322,16 @@ export class PlaybackEngine implements IAudioStemEngine {
     this.drumSlicePlayer?.setWsola(on);
   }
 
+  /** DIAGNOSTIC: solo the drum bed vs the transient overlays (admin panel) so the
+   *  ear can localize a double — muteBed hears only the crisp kicks/snares,
+   *  muteOverlays hears only the stretched bed texture. No-op if no player. */
+  setDrumDiagnosticSolo(opts: {
+    muteBed?: boolean;
+    muteOverlays?: boolean;
+  }): void {
+    this.drumSlicePlayer?.setDiagnosticSolo(opts);
+  }
+
   /**
    * Live-tune the drum gap-fill + WSOLA behaviour from the admin panel. Forwards
    * a partial param patch to the live DrumSlicePlayer; scheduling knobs apply on

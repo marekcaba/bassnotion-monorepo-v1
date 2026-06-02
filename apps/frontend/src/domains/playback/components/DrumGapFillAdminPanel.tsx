@@ -47,6 +47,8 @@ interface GapFillParams {
   transientBodySeconds: number;
   transientDuckDepth: number;
   bedTransientNotch: number;
+  bedNotchSeconds: number;
+  transientBlendSeconds: number;
 }
 
 interface EngineLike {
@@ -58,6 +60,10 @@ interface EngineLike {
   setDrumGapFillParams?: (p: Partial<GapFillParams>) => void;
   setDrumGapFill?: (on: boolean) => void;
   setDrumWsola?: (on: boolean) => void;
+  setDrumDiagnosticSolo?: (opts: {
+    muteBed?: boolean;
+    muteOverlays?: boolean;
+  }) => void;
   setInstrumentMuted?: (instrument: string, muted: boolean) => void;
 }
 
@@ -161,6 +167,8 @@ export function DrumGapFillAdminPanel() {
   const [qualifying, setQualifying] = useState(0); // legacy fill count
   const [textureRegions, setTextureRegions] = useState(0); // WSOLA region count
   const [solo, setSolo] = useState(false);
+  const [soloBigHits, setSoloBigHits] = useState(false); // mute bed → hear overlays
+  const [soloBed, setSoloBed] = useState(false); // mute overlays → hear bed
   const [showLegacy, setShowLegacy] = useState(false); // collapse old synth fill
   // τ / grain "auto" means: send undefined → buildExtendedTail fits per-slice.
   const [tauAuto, setTauAuto] = useState(true);
@@ -175,13 +183,15 @@ export function DrumGapFillAdminPanel() {
     sustainTauSeconds: 0.06,
     sustainGrainSeconds: 0.045,
     wsola: true,
-    strongConfidenceThreshold: 0.9,
-    wsolaWindowSeconds: 0.05,
-    wsolaHopFraction: 0.25,
-    wsolaSearchSeconds: 0.012,
-    transientBodySeconds: 0.05,
-    transientDuckDepth: 0.55,
+    strongConfidenceThreshold: 0.3,
+    wsolaWindowSeconds: 0.025,
+    wsolaHopFraction: 0.1,
+    wsolaSearchSeconds: 0.006,
+    transientBodySeconds: 0.21,
+    transientDuckDepth: 1.0,
     bedTransientNotch: 1.0,
+    bedNotchSeconds: 0.14,
+    transientBlendSeconds: 0.115,
   });
 
   // Mirror the full applied config in a ref so the poll loop can re-push it onto
@@ -216,6 +226,8 @@ export function DrumGapFillAdminPanel() {
       transientBodySeconds: cur.transientBodySeconds,
       transientDuckDepth: cur.transientDuckDepth,
       bedTransientNotch: cur.bedTransientNotch,
+      bedNotchSeconds: cur.bedNotchSeconds,
+      transientBlendSeconds: cur.transientBlendSeconds,
     });
     engine.setInstrumentMuted?.('audio-bass', so);
     engine.setInstrumentMuted?.('audio-harmony', so);
@@ -285,6 +297,25 @@ export function DrumGapFillAdminPanel() {
   const toggleWsola = useCallback((on: boolean) => {
     setP((prev) => ({ ...prev, wsola: on }));
     getEngine()?.setDrumWsola?.(on);
+  }, []);
+
+  // Diagnostic solo: mute bed (hear only crisp overlaid kicks/snares) or mute
+  // overlays (hear only the stretched bed texture). Mutually exclusive.
+  const toggleSoloBigHits = useCallback((on: boolean) => {
+    setSoloBigHits(on);
+    if (on) setSoloBed(false);
+    getEngine()?.setDrumDiagnosticSolo?.({
+      muteBed: on,
+      muteOverlays: on ? false : undefined,
+    });
+  }, []);
+  const toggleSoloBed = useCallback((on: boolean) => {
+    setSoloBed(on);
+    if (on) setSoloBigHits(false);
+    getEngine()?.setDrumDiagnosticSolo?.({
+      muteOverlays: on,
+      muteBed: on ? false : undefined,
+    });
   }, []);
 
   const toggleSolo = useCallback((on: boolean) => {
@@ -421,6 +452,73 @@ export function DrumGapFillAdminPanel() {
             </span>
           </label>
 
+          {/* DIAGNOSTIC: solo the bed vs the overlays to localize a double */}
+          <div
+            style={{
+              border: '1px solid #3a3320',
+              background: 'rgba(224,161,6,0.06)',
+              borderRadius: 6,
+              padding: '8px 10px',
+              marginBottom: 14,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 10,
+                color: '#e0a106',
+                marginBottom: 6,
+                textTransform: 'uppercase',
+                letterSpacing: 0.5,
+              }}
+            >
+              Diagnose a double (solo a layer)
+            </div>
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                marginBottom: 6,
+                cursor: 'pointer',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={soloBigHits}
+                onChange={(e) => toggleSoloBigHits(e.target.checked)}
+                style={{ accentColor: '#e0a106' }}
+              />
+              <span style={{ fontWeight: 600 }}>Only big hits</span>
+              <span style={{ color: '#8a8a8a', fontSize: 10 }}>
+                (mute bed → crisp kicks/snares only)
+              </span>
+            </label>
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                cursor: 'pointer',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={soloBed}
+                onChange={(e) => toggleSoloBed(e.target.checked)}
+                style={{ accentColor: '#e0a106' }}
+              />
+              <span style={{ fontWeight: 600 }}>Only bed</span>
+              <span style={{ color: '#8a8a8a', fontSize: 10 }}>
+                (mute overlays → stretched texture only)
+              </span>
+            </label>
+            <div style={{ fontSize: 9.5, color: '#8a8a8a', marginTop: 6, lineHeight: 1.3 }}>
+              If the double is in &ldquo;Only bed&rdquo; → the bed isn&rsquo;t
+              removing the hit. If &ldquo;Only big hits&rdquo; is clean but the
+              full mix doubles → bed/overlay timing.
+            </div>
+          </div>
+
           {/* WSOLA tuning */}
           <div
             style={{
@@ -455,10 +553,10 @@ export function DrumGapFillAdminPanel() {
             />
             <SliderRow
               label="Attack body"
-              hint="How long the crisp bit-exact attack plays over the bed. Short = just the punch; longer = more of the dry hit but risks doubling with the bed."
+              hint="How long the crisp bit-exact attack plays over the bed. Short = just the punch; longer = more of the dry hit (and more space for a full kick/snare body) but risks doubling with the bed."
               value={p.transientBodySeconds}
               min={0.02}
-              max={0.12}
+              max={0.3}
               step={0.005}
               unit="ms"
               format={MS}
@@ -467,14 +565,26 @@ export function DrumGapFillAdminPanel() {
             />
             <SliderRow
               label="Bed duck depth"
-              hint="How far the smooth bed dips UNDER each crisp attack (duck-and-replace, so the sharp hit isn't smeared by the bed's copy). 0.2 = bed drops to 20%. Lower = punchier attack; too low = audible hole."
+              hint="How far the bed dips UNDER each crisp attack (the floor of the crossfade). 100% = no dip (full blend, bed stays up); lower = bed drops more. Raise toward 100% if the ducking sounds too prominent / holey."
               value={p.transientDuckDepth}
               min={0}
-              max={0.6}
+              max={1}
               step={0.05}
               format={(v) => `${Math.round(v * 100)}%`}
               disabled={!p.wsola}
               onChange={(v) => patch({ transientDuckDepth: v })}
+            />
+            <SliderRow
+              label="Crossfade blend"
+              hint="Width of the EQUAL-POWER crossfade between the crisp hit and the bed. Wider = the bed fades down/up more gradually around each hit (smoother blend, less of an abrupt duck). The knob for 'blend them nicely'."
+              value={p.transientBlendSeconds}
+              min={0.005}
+              max={0.15}
+              step={0.005}
+              unit="ms"
+              format={MS}
+              disabled={!p.wsola}
+              onChange={(v) => patch({ transientBlendSeconds: v })}
             />
             <SliderRow
               label="Remove hits from bed"

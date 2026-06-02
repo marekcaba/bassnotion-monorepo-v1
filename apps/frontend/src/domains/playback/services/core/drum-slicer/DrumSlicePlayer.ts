@@ -110,6 +110,17 @@ export interface DrumSlicePlayerOptions {
    *  transient" artifact. Notch them out so the bed carries only inter-hit
    *  texture; the bit-exact overlays carry all transient energy on the grid. */
   bedTransientNotch?: number;
+  /** Width (s) of the bed notch per strong hit. MUST exceed one WSOLA window or
+   *  the stretch reads un-notched body audio across the gap and rebuilds the
+   *  body downstream (a double even on protected hits). Clamped up to ≥ window +
+   *  margin internally. Default covers the kick/snare body decay (~140ms). */
+  bedNotchSeconds?: number;
+  /** Crossfade width (s) between the crisp overlay and the bed around each hit.
+   *  Instead of the bed hard-ducking to a floor and holding (an audible hole),
+   *  the bed fades DOWN as the overlay fades IN and fades back UP as the overlay
+   *  fades OUT, equal-power, so they BLEND with no gap. Wider = smoother/gentler
+   *  blend. The fix for the "prominent ducking" the ear flags. */
+  transientBlendSeconds?: number;
 
   /** The MUSICAL loop length (s) the drums must wrap on — same value
    *  bass/harmony loop on (the beat-grid length), which can be a hair SHORTER
@@ -142,6 +153,8 @@ export interface GapFillParams {
   transientBodySeconds?: number;
   transientDuckDepth?: number;
   bedTransientNotch?: number;
+  bedNotchSeconds?: number;
+  transientBlendSeconds?: number;
 }
 
 /** A fully-populated snapshot of the live params. Every numeric knob is set,
@@ -165,6 +178,8 @@ export interface GapFillParamsSnapshot {
   transientBodySeconds: number;
   transientDuckDepth: number;
   bedTransientNotch: number;
+  bedNotchSeconds: number;
+  transientBlendSeconds: number;
 }
 
 /** A scheduling region: either ONE bit-exact strong-transient slice, or a span
@@ -244,16 +259,16 @@ const DEFAULTS: Required<DefaultedOptions> = {
     maxFillSeconds: 1.5,
     maxFillConfidence: 0.6,
     wsola: true, // continuous-bed smooth stretch ON by default
-    // Protect the loudest hits (kick/snare, conf ≥ 0.9) with the bit-exact
-    // overlay + bed notch; everything quieter rides the bed (its smear reads as
-    // texture). Tuned by ear.
-    strongConfidenceThreshold: 0.9,
-    wsolaWindowSeconds: 0.05,
-    wsolaHopFraction: 0.25,
-    wsolaSearchSeconds: 0.012,
-    transientBodySeconds: 0.05,
-    transientDuckDepth: 0.55,
-    bedTransientNotch: 1.0, // bodies fully removed from the bed by default (the fix)
+    // Tuned by ear (the panel) — these are the defaults the user dialed in.
+    strongConfidenceThreshold: 0.3, // protect most kicks/snares incl. off-beats
+    wsolaWindowSeconds: 0.025, // smaller window = crisper bed
+    wsolaHopFraction: 0.1, // 90% overlap = denser/smoother bed
+    wsolaSearchSeconds: 0.006,
+    transientBodySeconds: 0.21, // longer crisp attack body over the bed
+    transientDuckDepth: 1.0, // 100% = no dip (full blend, bed stays up)
+    bedTransientNotch: 1.0, // bodies fully removed from the bed (the fix)
+    bedNotchSeconds: 0.14, // notch wide enough to cover the body + exceed 1 window
+    transientBlendSeconds: 0.115, // equal-power crossfade width bed↔overlay
   };
 
 export class DrumSlicePlayer {
@@ -284,6 +299,13 @@ export class DrumSlicePlayer {
   private transientBodySeconds: number;
   private transientDuckDepth: number;
   private bedTransientNotch: number;
+  private bedNotchSeconds: number;
+  private transientBlendSeconds: number;
+  /** DIAGNOSTIC solo flags (admin panel): mute the bed to hear ONLY the crisp
+   *  overlaid kicks/snares, or mute the overlays to hear ONLY the bed texture —
+   *  so the ear can localize where a double lives. Not shipped to users. */
+  private muteBed = false;
+  private muteOverlays = false;
 
   private ratio = 1;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -372,6 +394,8 @@ export class DrumSlicePlayer {
     this.transientBodySeconds = this.opt.transientBodySeconds;
     this.transientDuckDepth = this.opt.transientDuckDepth;
     this.bedTransientNotch = this.opt.bedTransientNotch;
+    this.bedNotchSeconds = this.opt.bedNotchSeconds;
+    this.transientBlendSeconds = this.opt.transientBlendSeconds;
     // Derive which onsets get a bit-exact overlay (cheap). The bed analysis +
     // legacy fills are only built when their feature is on (lazy, like before).
     this.buildStrongIndices();
@@ -495,6 +519,20 @@ export class DrumSlicePlayer {
       reanalyze = true;
     }
     if (
+      p.bedNotchSeconds !== undefined &&
+      p.bedNotchSeconds !== this.bedNotchSeconds
+    ) {
+      // Notch WIDTH changes the bed source → re-analyze + re-synth.
+      this.bedNotchSeconds = p.bedNotchSeconds;
+      if (this.bedTransientNotch > 0) reanalyze = true;
+    }
+    if (
+      p.transientBlendSeconds !== undefined &&
+      p.transientBlendSeconds !== this.transientBlendSeconds
+    ) {
+      this.transientBlendSeconds = p.transientBlendSeconds; // next iteration
+    }
+    if (
       p.wsolaWindowSeconds !== undefined &&
       p.wsolaWindowSeconds !== this.wsolaOpt.windowSeconds
     ) {
@@ -534,6 +572,17 @@ export class DrumSlicePlayer {
    *  overlap — without a clean restart the already-committed audio of the old
    *  model keeps playing UNDER the new one (the "double beat / different
    *  measures" bug). */
+
+  /** DIAGNOSTIC: solo the bed vs the overlays (admin panel) so the ear can
+   *  localize a double. muteBed → hear only the crisp overlaid kick/snare;
+   *  muteOverlays → hear only the stretched bed texture. Restarts so it takes
+   *  effect on the current iteration. */
+  setDiagnosticSolo(opts: { muteBed?: boolean; muteOverlays?: boolean }): void {
+    if (opts.muteBed !== undefined) this.muteBed = opts.muteBed;
+    if (opts.muteOverlays !== undefined) this.muteOverlays = opts.muteOverlays;
+    if (this.playing) this.restartAtCurrentPhase();
+  }
+
   setWsola(on: boolean): void {
     const wasOn = this.wsolaEnabled;
     this.wsolaEnabled = on;
@@ -628,6 +677,8 @@ export class DrumSlicePlayer {
       transientBodySeconds: this.transientBodySeconds,
       transientDuckDepth: this.transientDuckDepth,
       bedTransientNotch: this.bedTransientNotch,
+      bedNotchSeconds: this.bedNotchSeconds,
+      transientBlendSeconds: this.transientBlendSeconds,
     };
   }
 
@@ -732,10 +783,17 @@ export class DrumSlicePlayer {
 
   /**
    * Return a COPY of `src[0,end)` with each strong transient's body gain-dipped
-   * by `depth` (1 = fully removed) over a short, click-free window. The dip
-   * starts a touch before the onset and rides through `transientBodySeconds`,
-   * with cosine ramps in/out so there are no edges for WSOLA to ring on. The
-   * texture between hits is untouched, so the bed stays continuous.
+   * by `depth` (1 = fully removed) over a click-free window.
+   *
+   * THE NOTCH MUST BE WIDER THAN ONE WSOLA WINDOW. The locator showed that a
+   * narrow (~50ms) notch fails: WSOLA's stretch reads source audio from across
+   * the gap (a single analysis window straddles the notch and overlap-adds
+   * un-notched body audio from one side into the other), rebuilding the body
+   * 50–75ms downstream — the "doubled kick" even on protected hits. So the dip
+   * must (a) span at least one WSOLA window + a margin, and (b) extend far enough
+   * past the onset to cover the kick/snare body's natural decay (they ring
+   * 100–200ms, not 50ms), so no window can find loud body audio adjacent to the
+   * gap. Wide cosine ramps remove edges for WSOLA to ring on.
    */
   private notchTransients(
     src: Float32Array,
@@ -745,9 +803,20 @@ export class DrumSlicePlayer {
     const sr = this.buffer.sampleRate;
     const out = new Float32Array(end);
     out.set(src.subarray(0, end));
-    const ramp = Math.max(1, Math.round(0.006 * sr)); // 6ms cosine edges
     const pre = Math.round(this.opt.preRollSeconds * sr);
-    const body = Math.max(ramp, Math.round(this.transientBodySeconds * sr));
+    const win = Math.round((this.wsolaOpt.windowSeconds ?? 0.05) * sr);
+    // Notch width: at least the configured body, but never narrower than one
+    // WSOLA window + a margin (so a single window can't straddle the gap with
+    // un-notched body on both sides). Clamp to a musical sanity bound.
+    const notchSec =
+      this.bedNotchSeconds > 0 ? this.bedNotchSeconds : this.transientBodySeconds;
+    const body = Math.max(
+      Math.round(notchSec * sr),
+      win + Math.round(0.02 * sr),
+    );
+    // Ramp edges ~ half a window so there's no sharp body fragment at the seam
+    // for WSOLA to copy; clamp so the ramps don't overrun the dip.
+    const ramp = Math.max(1, Math.min(Math.floor(body / 3), Math.round(0.02 * sr)));
     const floor = 1 - depth; // gain at the bottom of the dip
     for (const k of this.strongIndices) {
       const onset = Math.round(this.onsetAt(k) * sr);
@@ -759,7 +828,6 @@ export class DrumSlicePlayer {
         const into = i - dipStart;
         const outof = dipEnd - i;
         if (into < ramp) {
-          // cos ramp 1 → floor
           const x = into / ramp;
           g = floor + (1 - floor) * 0.5 * (1 + Math.cos(Math.PI * x));
         } else if (outof < ramp) {
@@ -979,15 +1047,29 @@ export class DrumSlicePlayer {
     //    this env never collide with the next iteration's automation). phaseSec
     //    > 0 ⇒ this is a partial first iteration after a mid-loop re-anchor: the
     //    bed starts that far in so playback continues from the current phase.
+    //    Always SCHEDULE it (keeps timing identical) — DIAGNOSTIC muteBed just
+    //    zeroes its gain so there's no silent gap glitch when soloing.
     const bedEnv = this.scheduleBed(iterStart, period, bed, phaseSec);
+    if (bedEnv && this.muteBed) {
+      try {
+        bedEnv.gain.cancelScheduledValues(this.ctx.currentTime);
+        bedEnv.gain.setValueAtTime(0, this.ctx.currentTime);
+      } catch {
+        /* ignore */
+      }
+    }
 
-    // 2) Transient overlays + ducks. Only when we're actually on the synthesized
-    //    bed (at unity the raw bed is already perfect — overlaying would double).
-    if (!bedEnv || unity || !bed) return;
+    // 2) Transient overlays + ducks. Skipped at unity (raw bed already perfect)
+    //    or when muteOverlays is on (hear only the bed). When the BED is muted we
+    //    still want the overlays — so we don't early-return on a null bedEnv;
+    //    instead we just skip the duck when there's no bed env to duck.
+    if (unity || this.muteOverlays) return;
+    if (!bed) return; // no synthesized bed (e.g. not yet ready) → nothing to overlay
+    const bedMuted = this.muteBed;
     const body = this.transientBodySeconds;
+    const blend = Math.max(0.002, this.transientBlendSeconds); // crossfade width
     const release = Math.max(0.015, this.opt.fadeOutSeconds * 2);
-    const duckPre = 0.008;
-    const depth = Math.min(1, Math.max(0, this.transientDuckDepth));
+    const depth = Math.min(1, Math.max(0, this.transientDuckDepth)); // bed floor
     const minHit = this.ctx.currentTime - 0.001; // skip hits already in the past
     for (let k = 0; k < this.strongIndices.length; k++) {
       const i = this.strongIndices[k]!;
@@ -1005,19 +1087,46 @@ export class DrumSlicePlayer {
         Math.min(body, nextStrong - tHit - 0.005),
       );
 
-      // 2a) Duck the BED gain around the hit (linear dip → hold → release).
-      try {
-        const g = bedEnv.gain;
-        const t0 = Math.max(this.ctx.currentTime, tHit - duckPre);
-        g.setValueAtTime(1, t0);
-        g.linearRampToValueAtTime(depth, tHit);
-        g.setValueAtTime(depth, tHit + bodyDur);
-        g.linearRampToValueAtTime(1, tHit + bodyDur + release);
-      } catch {
-        /* automation past-time / out-of-order — bed just stays at unity here */
+      // 2a) CROSSFADE the bed under the hit (instead of a hard duck-and-hold).
+      //     The bed fades DOWN to `depth` as the overlay fades IN (over `blend`,
+      //     centered so it bottoms at the attack), holds only as long as the
+      //     overlay body, then fades back UP — using EQUAL-POWER (cosine) curves
+      //     so bed+overlay sum to constant loudness with NO audible hole. This is
+      //     the fix for the "prominent ducking" — they blend, not gate.
+      if (bedEnv && !bedMuted) {
+        try {
+          const g = bedEnv.gain;
+          const downStart = Math.max(this.ctx.currentTime, tHit - blend);
+          const bottomAt = tHit; // bed lowest exactly at the attack
+          const upStart = tHit + bodyDur;
+          const upEnd = upStart + blend;
+          // equal-power dip 1→depth: cos²-shaped so it pairs with the overlay's
+          // sin² fade-in (their squared sum is constant).
+          const STEPS = 16;
+          const down = new Float32Array(STEPS);
+          for (let n = 0; n < STEPS; n++) {
+            const x = n / (STEPS - 1); // 0..1 over the blend
+            const c = Math.cos((Math.PI / 2) * x); // 1→0
+            down[n] = depth + (1 - depth) * c * c; // 1→depth, equal-power
+          }
+          const up = new Float32Array(STEPS);
+          for (let n = 0; n < STEPS; n++) {
+            const x = n / (STEPS - 1);
+            const s = Math.sin((Math.PI / 2) * x); // 0→1
+            up[n] = depth + (1 - depth) * s * s; // depth→1, equal-power
+          }
+          g.setValueAtTime(1, downStart);
+          g.setValueCurveAtTime(down, downStart, bottomAt - downStart);
+          g.setValueAtTime(depth, upStart);
+          g.setValueCurveAtTime(up, upStart, upEnd - upStart);
+        } catch {
+          /* automation past-time / out-of-order — bed just stays at unity */
+        }
       }
 
-      // 2b) The crisp bit-exact attack on its OWN unity-gain source.
+      // 2b) The crisp bit-exact attack on its OWN source, with an equal-power
+      //     fade-in over `blend` (sin²) that pairs with the bed's cos² dip, and a
+      //     fade-out over `blend` as the bed recovers — a true crossfade.
       const readStart = Math.max(0, onset - this.opt.preRollSeconds);
       this.playBuffer(
         this.buffer,
@@ -1025,7 +1134,7 @@ export class DrumSlicePlayer {
         readStart,
         bodyDur + this.opt.preRollSeconds,
         this.opt.fadeInSeconds,
-        release, // fade out as the bed gain ramps back — correlated crossfade
+        blend, // fade out over the blend as the bed ramps back — crossfade
       );
     }
   }
