@@ -351,6 +351,8 @@ export function GrooveCardBlockView({
         caption={caption}
         clickEnabled={playback.clickEnabled}
         onToggleClick={() => playback.setClickEnabled(!playback.clickEnabled)}
+        masterVolume={playback.masterVolume}
+        onMasterVolumeChange={playback.setMasterVolume}
         onMetronomeHover={(hovering) => {
           if (hovering) clearCapUpsell();
           setHoverHint(hovering ? 'metronome' : null);

@@ -120,6 +120,8 @@ export interface UseGrooveCardPlaybackReturn {
   mutedStems: Set<AudioInstrumentType>;
   soloedStem: 'audio-drums' | null;
   clickEnabled: boolean;
+  /** Master volume for the whole groove (all stems), 0..1. */
+  masterVolume: number;
   /** Pending semitone offset queued for the next loop boundary, or null
    *  when no swap is queued. */
   pendingKeyShift: number | null;
@@ -133,6 +135,8 @@ export interface UseGrooveCardPlaybackReturn {
   setStemMuted: (stem: AudioInstrumentType, muted: boolean) => void;
   setStemSolo: (stem: 'audio-drums' | null) => void;
   setClickEnabled: (enabled: boolean) => void;
+  /** Set the master volume for the whole groove (all stems), 0..1. */
+  setMasterVolume: (volume: number) => void;
   /** Constrain playback to bars [startBar..endBar] (1-indexed, inclusive).
    *  Pass null to clear and resume looping the entire groove. While playing,
    *  the change takes effect at the next bar boundary so the swap is
@@ -343,6 +347,10 @@ export function useGrooveCardPlayback({
   });
   const [soloedStem, setSoloedStem] = useState<'audio-drums' | null>(null);
   const [clickEnabled, setClickEnabledState] = useState(false);
+  // MASTER volume for the whole groove (all stems), 0..1. Scales the engine's
+  // master-volume node; the engine preserves it even before the graph exists,
+  // so a pre-play set is safe.
+  const [masterVolume, setMasterVolumeState] = useState(1);
   // Audio-context time at which the first stem-loop iteration started. Used
   // by the waveform to sweep a playhead across one loop length and wrap at
   // the boundary. null when stopped (the waveform draws static peaks only).
@@ -739,6 +747,14 @@ export function useGrooveCardPlayback({
     },
     [setStemMuted],
   );
+
+  const setMasterVolume = useCallback((volume: number) => {
+    const clamped = Math.max(0, Math.min(1, volume));
+    setMasterVolumeState(clamped);
+    // Scales the engine's master-volume node (all stems together). Engine
+    // clamps + preserves the level even before the graph exists.
+    WindowRegistry.getPlaybackEngine()?.setMasterVolume?.(clamped);
+  }, []);
 
   // ── lifecycle: active-card coordination ---------------------------------
   const registerStemTracks = useCallback(() => {
@@ -1332,6 +1348,7 @@ export function useGrooveCardPlayback({
     mutedStems,
     soloedStem,
     clickEnabled,
+    masterVolume,
     pendingKeyShift,
     bassBuffer,
     audioContext: audioContextRef.current,
@@ -1348,6 +1365,7 @@ export function useGrooveCardPlayback({
     setStemMuted,
     setStemSolo,
     setClickEnabled,
+    setMasterVolume,
     setLoopSelection,
     becomeActive,
     becomeInactive,

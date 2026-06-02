@@ -19,6 +19,10 @@ interface GrooveCardShellProps {
   caption: string;
   clickEnabled: boolean;
   onToggleClick: () => void;
+  /** Master volume for the whole groove (all stems), 0..1. */
+  masterVolume: number;
+  /** Fired as the master volume slider moves (0..1). */
+  onMasterVolumeChange: (volume: number) => void;
   /** Slot for the waveform component. */
   waveform: ReactNode;
   /** Slot for the controls bar. */
@@ -44,6 +48,8 @@ export function GrooveCardShell({
   caption,
   clickEnabled,
   onToggleClick,
+  masterVolume,
+  onMasterVolumeChange,
   waveform,
   controls,
   meta,
@@ -77,30 +83,44 @@ export function GrooveCardShell({
             <p className="mt-0.5 text-xs text-white/40 truncate">{meta}</p>
           )}
         </div>
-        <button
-          type="button"
-          onClick={onToggleClick}
-          aria-label={clickEnabled ? 'Mute click' : 'Enable click'}
-          aria-pressed={clickEnabled}
-          className={`p-2 rounded-full transition-colors ${
-            clickEnabled
-              ? 'bg-orange-500 text-white'
-              : 'bg-white/5 text-white/50 hover:bg-white/10'
-          }`}
-          onPointerEnter={
-            onMetronomeHover
-              ? (e: ReactPointerEvent) => {
-                  if (e.pointerType === 'touch') return;
-                  onMetronomeHover(true);
-                }
-              : undefined
-          }
-          onPointerLeave={
-            onMetronomeHover ? () => onMetronomeHover(false) : undefined
-          }
-        >
-          <Metronome className="w-4 h-4" aria-hidden />
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Master volume — scales the whole groove (all stems), 0..1. */}
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={masterVolume}
+            onChange={(e) => onMasterVolumeChange(Number(e.target.value))}
+            aria-label="Volume"
+            title="Volume"
+            className="w-16 h-1 accent-orange-500 cursor-pointer"
+          />
+          <button
+            type="button"
+            onClick={onToggleClick}
+            aria-label={clickEnabled ? 'Mute click' : 'Enable click'}
+            aria-pressed={clickEnabled}
+            className={`p-2 rounded-full transition-colors ${
+              clickEnabled
+                ? 'bg-orange-500 text-white'
+                : 'bg-white/5 text-white/50 hover:bg-white/10'
+            }`}
+            onPointerEnter={
+              onMetronomeHover
+                ? (e: ReactPointerEvent) => {
+                    if (e.pointerType === 'touch') return;
+                    onMetronomeHover(true);
+                  }
+                : undefined
+            }
+            onPointerLeave={
+              onMetronomeHover ? () => onMetronomeHover(false) : undefined
+            }
+          >
+            <Metronome className="w-4 h-4" aria-hidden />
+          </button>
+        </div>
       </header>
 
       {/* Waveform */}

@@ -266,6 +266,17 @@ export class PlaybackEngine implements IAudioStemEngine {
    */
   private masterGain: GainNode | null = null;
 
+  /**
+   * User-facing MASTER VOLUME, in series AFTER masterGain
+   * (instrumentGain → masterGain → masterVolumeGain → destination). Kept
+   * SEPARATE from masterGain so the start/stop click-free fades (which own
+   * masterGain's 0↔1 automation) never fight the user's chosen level — the two
+   * gains multiply. Defaults to 1 (full). */
+  private masterVolumeGain: GainNode | null = null;
+  /** The user's chosen master volume (0..1), preserved even before the node
+   *  exists so a pre-play set applies when the graph is built. */
+  private masterVolumeLevel = 1;
+
   // Current tempo tracking (for metrics collector sync)
   private currentTempo = 120; // Default tempo in BPM
 
@@ -2559,11 +2570,44 @@ export class PlaybackEngine implements IAudioStemEngine {
   private getMasterGain(): GainNode | null {
     if (!this.audioContext) return null;
     if (!this.masterGain) {
+      // Graph: masterGain (fade bus) → masterVolumeGain (user volume) → dest.
       this.masterGain = this.audioContext.createGain();
       this.masterGain.gain.value = 1;
-      this.masterGain.connect(this.audioContext.destination);
+      this.masterVolumeGain = this.audioContext.createGain();
+      this.masterVolumeGain.gain.value = this.masterVolumeLevel;
+      this.masterGain.connect(this.masterVolumeGain);
+      this.masterVolumeGain.connect(this.audioContext.destination);
     }
     return this.masterGain;
+  }
+
+  /**
+   * Set the MASTER VOLUME for the whole engine (all stems), 0..1. Scales the
+   * dedicated masterVolumeGain in series after the fade bus, so it composes with
+   * (never fights) the start/stop click-free fades. Stored even before the node
+   * exists, applied when the graph is built. Smooth-ramped to avoid a click.
+   */
+  setMasterVolume(volume: number): void {
+    const clamped = Math.max(0, Math.min(1, volume));
+    this.masterVolumeLevel = clamped;
+    // Ensure the graph (and thus masterVolumeGain) exists.
+    this.getMasterGain();
+    if (this.masterVolumeGain && this.audioContext) {
+      try {
+        this.masterVolumeGain.gain.setTargetAtTime(
+          clamped,
+          this.audioContext.currentTime,
+          0.02,
+        );
+      } catch {
+        this.masterVolumeGain.gain.value = clamped;
+      }
+    }
+  }
+
+  /** The current master volume (0..1). */
+  getMasterVolume(): number {
+    return this.masterVolumeLevel;
   }
 
   getOrCreateInstrumentGainNode(
