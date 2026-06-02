@@ -386,6 +386,15 @@ export type {
 
 export type { LearningProgress } from './learning.js';
 
+// Funnel analytics — event log + anonymous identity types
+export type {
+  FunnelEventName,
+  FunnelEventInput,
+  FunnelEvent,
+  IdentityLink,
+} from './analytics.js';
+export { funnelEventNames } from './analytics.js';
+
 // Assessment types (entrance quiz)
 export type {
   // Legacy assessment types (V1 - single video)

@@ -10,6 +10,8 @@ import {
   ensureFirstTouchAttribution,
   getStoredAttribution,
 } from '@/shared/attribution';
+import { ensureAnonymousId } from '@/shared/attribution/visitor';
+import { trackEvent } from '@/shared/attribution/events';
 import { FounderCard } from '@/shared/founder-card/FounderCard';
 import {
   BackgroundTuner,
@@ -283,6 +285,7 @@ export function WaitlistClient({
           signupIntent,
           website,
           attribution,
+          anonymousId: ensureAnonymousId(),
         }),
       });
       const data = await res.json();
@@ -291,6 +294,9 @@ export function WaitlistClient({
         setStatus('error');
         return;
       }
+      // Record the conversion against this visitor so view -> signup is
+      // attributable per source/video. Fire-and-forget.
+      trackEvent('waitlist_submitted', { signupIntent });
       setAlreadyOnList(Boolean(data.alreadyOnList));
       setSignupIntent(signupIntent);
       setStatus('upsell');
@@ -1019,10 +1025,15 @@ function FounderUpsell({
     // Fire-and-forget — we don't block the user on it.
     try {
       const attribution = getStoredAttribution();
+      trackEvent('founder_interest_click');
       await fetch('/api/waitlist/founder-interest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, attribution }),
+        body: JSON.stringify({
+          email,
+          attribution,
+          anonymousId: ensureAnonymousId(),
+        }),
       });
     } catch {
       // Interest tracking is best-effort; never block the user on a network blip.

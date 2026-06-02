@@ -52,6 +52,9 @@ export async function POST(request: Request) {
         userAgent,
         requestReferrer,
         attribution: parsed.data.attribution ?? null,
+        // founder_interest has no dedicated column; metadata keeps the row
+        // joinable to this visitor's funnel_events without a schema change.
+        anonymousId: parsed.data.anonymousId ?? null,
       },
     });
 
