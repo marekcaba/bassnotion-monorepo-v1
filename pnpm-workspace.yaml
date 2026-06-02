@@ -15,3 +15,11 @@ overrides:
   '@fastify/middie@<9.3.2': '>=9.3.2'
   # form-data unsafe random boundary: GHSA-fjxv-7rqg-78g4 (dev-only via Nx > axios)
   form-data@<4.0.4: '>=4.0.4'
+auditConfig:
+  ignoreGhsas:
+    # vitest <4.1.0 — Vitest UI server arbitrary file read/exec (dev-only).
+    # GHSA-5xrq-8626-4rwp. Exploit requires the UI/Browser-mode server to be
+    # listening AND exposed to the network (--api.host) or run on Windows; CI
+    # runs `vitest run` on Linux with no UI/network binding, so exposure is nil.
+    # Ignored 2026-06-02 — revisit when migrating to vitest 4.
+    - GHSA-5xrq-8626-4rwp
