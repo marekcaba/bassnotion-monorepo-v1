@@ -1,11 +1,12 @@
 'use client';
 
-import {
-  ExerciseCompletionsChart,
-  TempoProgressChart,
-  JourneyProgressChart,
-  WeeklyActivityChart,
-} from './charts/index';
+// Charts temporarily commented out.
+// import {
+//   ExerciseCompletionsChart,
+//   TempoProgressChart,
+//   JourneyProgressChart,
+//   WeeklyActivityChart,
+// } from './charts/index';
 
 export function PracticeChartDashboard() {
   return (
@@ -19,12 +20,13 @@ export function PracticeChartDashboard() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
+      {/* Charts temporarily commented out. */}
+      {/* <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
         <ExerciseCompletionsChart />
         <TempoProgressChart />
         <JourneyProgressChart />
         <WeeklyActivityChart />
-      </div>
+      </div> */}
     </div>
   );
 }

@@ -82,6 +82,10 @@ interface GrooveCardControlsProps {
    *  parent renders the matching string in the caption row above. Pointer-
    *  only — touch users don't see hover state. */
   onHoverHint?: (next: HoverHintKey | null) => void;
+  /** When true, apply the deconstruction (Solo Drums) cap from entitlement.
+   *  Only the drill surface opts in; tutorial/marketing surfaces leave it
+   *  off so Solo Drums stays available there regardless of tier. */
+  enforceCaps?: boolean;
 }
 
 export function GrooveCardControls({
@@ -101,6 +105,7 @@ export function GrooveCardControls({
   onMuteBass,
   onSoloDrums,
   onHoverHint,
+  enforceCaps = false,
 }: GrooveCardControlsProps) {
   // Cap-aware hook reads — LAUNCH-02 will populate these.
   const { caps } = useEntitlement();
@@ -111,10 +116,12 @@ export function GrooveCardControls({
   );
   const isKeyPending = pendingKeyShift !== null;
 
-  const tempoCapped = caps.tempo.isCapped;
-  const transposeCapped = caps.transpose.isCapped;
-  const muteCapped = caps.mute.isCapped;
-  const deconCapped = caps.deconstruction.isCapped;
+  // Band levers (tempo/transpose) are NOT disabled when capped — they stay
+  // enabled so the user can move WITHIN the band and bump the edge (the
+  // engine clamps to the band and fires the cap-hit upsell). Disabling them
+  // would hide the teaching moment. Mute is never capped. Only deconstruction
+  // (solo drums) is a hard on/off gate.
+  const deconCapped = enforceCaps && caps.deconstruction.isCapped;
 
   // Hover hint helper. PointerEvent unifies mouse / pen / touch; we filter
   // out 'touch' so taps don't briefly flash a hint before the tap action's
@@ -135,7 +142,7 @@ export function GrooveCardControls({
       <button
         type="button"
         onClick={() => onMuteBass(!isBassMuted)}
-        disabled={muteCapped || !isReady}
+        disabled={!isReady}
         aria-pressed={isBassMuted}
         className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
           isBassMuted
@@ -153,7 +160,7 @@ export function GrooveCardControls({
           suffix={isKeyPending ? ' …' : ''}
           onPrev={() => onKeyChange((pendingKeyShift ?? currentSemitones) - 1)}
           onNext={() => onKeyChange((pendingKeyShift ?? currentSemitones) + 1)}
-          disabled={transposeCapped || !isReady}
+          disabled={!isReady}
           ariaLabel="Key"
         />
       </div>
@@ -193,7 +200,7 @@ export function GrooveCardControls({
           suffix=" BPM"
           onPrev={() => onTempoChange(currentBpm - 1)}
           onNext={() => onTempoChange(currentBpm + 1)}
-          disabled={tempoCapped || !isReady}
+          disabled={!isReady}
           ariaLabel="Tempo"
         />
       </div>

@@ -57,28 +57,62 @@ export const grooveCardStateCaptionsSchema = z
   })
   .partial();
 
-export const grooveCardBlockConfigSchema = z.object({
-  title: z.string().min(1, 'title is required'),
-  subtitle: z.string(),
-  originalBpm: z
-    .number()
-    .int('BPM must be an integer')
-    .min(50, 'BPM must be at least 50')
-    .max(180, 'BPM must be at most 180'),
-  originalKey: z.string().min(1, 'originalKey is required'),
-  lengthBars: z
-    .number()
-    .int('lengthBars must be an integer')
-    .positive('lengthBars must be positive'),
-  // Single-key-set + PitchShift (LAUNCH-02.5e): one stem set delivered
-  // at originalKey; the runtime renders ±6 semitones via the pitch-shift
-  // engine. The legacy 5-key-set tuple was retired.
-  stems: grooveCardStemSetSchema,
-  previewCaption: z.string().optional(),
-  stateCaptions: grooveCardStateCaptionsSchema.optional(),
-  allowBookmark: z.boolean().optional(),
-  youtubeUrl: z.string().optional(),
-});
+export const grooveCardBlockConfigSchema = z
+  .object({
+    // LIBRARY REFERENCE: when present, the intrinsic fields below are resolved
+    // from the groove_library entity at render time and are NOT required here.
+    grooveId: z.string().optional(),
+    keyOverride: z.number().int().optional(),
+    tempoOverride: z.number().int().min(50).max(180).optional(),
+    // Intrinsic fields — required for INLINE blocks, optional for references
+    // (enforced by the refinement below).
+    title: z.string().optional(),
+    subtitle: z.string().optional(),
+    originalBpm: z
+      .number()
+      .int('BPM must be an integer')
+      .min(50, 'BPM must be at least 50')
+      .max(180, 'BPM must be at most 180')
+      .optional(),
+    originalKey: z.string().optional(),
+    lengthBars: z
+      .number()
+      .int('lengthBars must be an integer')
+      .positive('lengthBars must be positive')
+      .optional(),
+    // Single-key-set + PitchShift (LAUNCH-02.5e): one stem set delivered
+    // at originalKey; the runtime renders ±6 semitones via the pitch-shift
+    // engine. The legacy 5-key-set tuple was retired.
+    stems: grooveCardStemSetSchema.optional(),
+    previewCaption: z.string().optional(),
+    stateCaptions: grooveCardStateCaptionsSchema.optional(),
+    allowBookmark: z.boolean().optional(),
+    youtubeUrl: z.string().optional(),
+    // DRILL fields: presence of `role` makes the card a drill brick (caps
+    // enforced + conquering advances the session). `timeboxMinutes` drives the
+    // per-brick session clock. Both optional — absent on ordinary cards.
+    role: z.enum(['groove', 'connecting', 'review']).optional(),
+    timeboxMinutes: z
+      .number()
+      .int('timeboxMinutes must be an integer')
+      .positive('timeboxMinutes must be positive')
+      .optional(),
+  })
+  .refine(
+    (c) =>
+      // A reference block (grooveId) needs no inline intrinsics; an inline
+      // block must carry title + originalKey + stems + bpm + length.
+      !!c.grooveId ||
+      (!!c.title &&
+        !!c.originalKey &&
+        !!c.stems &&
+        c.originalBpm != null &&
+        c.lengthBars != null),
+    {
+      message:
+        'inline groove-card needs title, originalKey, originalBpm, lengthBars and stems (or set grooveId to reference a library groove)',
+    },
+  );
 
 /**
  * Block-level schema. Discriminates on `type` so a `'groove-card'` block

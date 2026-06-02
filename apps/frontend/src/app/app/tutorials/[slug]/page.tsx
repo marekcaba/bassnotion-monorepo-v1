@@ -5,6 +5,7 @@ import { YouTubeWidgetPage } from '@/domains/widgets/components/YouTubeWidgetPag
 import { TutorialPageSkeleton } from '@/domains/widgets/components/YouTubeWidgetPage/TutorialPageSkeleton';
 import { useTutorialExercises } from '@/domains/widgets/hooks/useTutorialExercises';
 import { PageErrorBoundary } from '@/shared/components/ErrorBoundary';
+import { useConquerReplay } from '@/domains/drill/hooks/useConquerReplay';
 // NOTE: ScrollTriggerLoader removed - act-aware preloading now handled by useActAwarePreload in YouTubeWidgetPage
 
 interface PlatformTutorialPageProps {
@@ -18,6 +19,12 @@ export default function PlatformTutorialPage({
 }: PlatformTutorialPageProps) {
   const resolvedParams = React.use(params);
   const tutorialSlug = resolvedParams.slug;
+
+  // Drill bricks (groove cards with a `role`) can be conquered anonymously;
+  // this flushes any pending pre-signup conquer into the progress record once
+  // the user is authenticated. No-op for ordinary tutorials (no pending
+  // conquer), so it's safe to run on every tutorial page.
+  useConquerReplay();
 
   const { tutorial, exercises, isLoading, error } =
     useTutorialExercises(tutorialSlug);
@@ -54,7 +61,7 @@ export default function PlatformTutorialPage({
     <>
       <PageErrorBoundary pageName="Platform Tutorial">
         <YouTubeWidgetPage
-          tutorialData={memoizedTutorial}
+          tutorialData={memoizedTutorial ?? undefined}
           tutorialSlug={tutorialSlug}
           exercises={memoizedExercises}
           hideChrome

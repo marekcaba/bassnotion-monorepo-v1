@@ -258,6 +258,17 @@ export interface GrooveCardStateCaptions {
 }
 
 /**
+ * A groove brick's role inside a DRILL session (the "bricklayer" flow):
+ *   - 'groove'     — the new skill to conquer (the spotlight brick)
+ *   - 'connecting' — a chord-to-chord link ("same brick, different face")
+ *   - 'review'     — a past groove re-served to chase the next tier
+ * When present, the card behaves as a drill brick: free-vs-member caps are
+ * enforced and conquering it advances the session. Absent on plain
+ * tutorial/marketing groove cards (they just play).
+ */
+export type GrooveBrickRole = 'groove' | 'connecting' | 'review';
+
+/**
  * Configuration for a `'groove-card'` block. Stored in the existing
  * JSONB `blocks` column on `tutorials` — no DB migration.
  *
@@ -271,7 +282,21 @@ export interface GrooveCardStateCaptions {
  * cross-key stitching cliff at offsets ±2 / ±6.
  */
 export interface GrooveCardBlockConfig {
-  /** Display title (e.g. "Greasy Pocket") */
+  /** LIBRARY REFERENCE (preferred): id of a row in `groove_library`. When set,
+   *  the intrinsic fields (title/subtitle/originalBpm/originalKey/lengthBars/
+   *  stems) are RESOLVED from the library entity and the inline copies below
+   *  are optional/ignored. Lets one groove be authored once and reused across
+   *  many drills. Absent on legacy inline blocks (which carry their own
+   *  intrinsic fields). */
+  grooveId?: string;
+  /** PER-USE OVERRIDE: starting key (semitone offset from the groove's
+   *  originalKey) for THIS reference. Only meaningful with `grooveId`. */
+  keyOverride?: number;
+  /** PER-USE OVERRIDE: starting tempo (BPM) for THIS reference. Only
+   *  meaningful with `grooveId`. */
+  tempoOverride?: number;
+  /** Display title (e.g. "Greasy Pocket"). Optional when `grooveId` is set
+   *  (resolved from the library); required for legacy inline blocks. */
   title: string;
   /** Short tag (e.g. "Funk in E") */
   subtitle: string;
@@ -283,7 +308,8 @@ export interface GrooveCardBlockConfig {
   /** Groove length in bars; the engine loops the stems indefinitely. */
   lengthBars: number;
   /** The single stem set delivered at `originalKey`. Bass + harmony are
-   *  pitch-shifted at runtime; drums + click are not. */
+   *  pitch-shifted at runtime; drums + click are not. Resolved from the
+   *  library when `grooveId` is set. */
   stems: GrooveCardStemSet;
   /** Caption shown beneath the waveform when nothing is happening. */
   previewCaption?: string;
@@ -293,6 +319,13 @@ export interface GrooveCardBlockConfig {
   allowBookmark?: boolean;
   /** Optional YouTube video URL or 11-char ID rendered above the card. */
   youtubeUrl?: string;
+  /** DRILL: this brick's role in a session. Presence turns the card into a
+   *  drill brick (caps enforced, conquering advances the session). Absent on
+   *  ordinary tutorial/marketing cards. */
+  role?: GrooveBrickRole;
+  /** DRILL: the per-brick timebox in minutes (the "5 min" clock). Drives the
+   *  session clock + the rail segment. Optional; absent = untimed. */
+  timeboxMinutes?: number;
 }
 
 // =====================================================

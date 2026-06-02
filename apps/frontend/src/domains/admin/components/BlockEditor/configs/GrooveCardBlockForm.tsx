@@ -23,6 +23,7 @@ import type {
   GrooveCardStemSet,
 } from '@bassnotion/contracts';
 import { StemUploadButton } from './groove-card/StemUploadButton';
+import { useGrooveLibrary } from '@/domains/drill/hooks/useGrooveLibrary';
 
 interface GrooveCardBlockFormProps {
   config: GrooveCardBlockConfig;
@@ -57,118 +58,256 @@ export function GrooveCardBlockForm({
 
   const updateStem = useCallback(
     (stem: keyof GrooveCardStemSet, url: string) => {
+      const current = config.stems ?? { bass: '', drums: '', harmony: '' };
       onChange({
         ...config,
-        stems: { ...config.stems, [stem]: url },
+        stems: { ...current, [stem]: url },
       });
     },
     [config, onChange],
   );
 
+  const { data: library } = useGrooveLibrary();
+  const grooves = library?.grooves ?? [];
+  const usingLibrary = !!config.grooveId;
+
   return (
     <div className="space-y-4 text-sm">
-      {/* Basics */}
+      {/* Library picker — choose a reusable groove, or author inline below. */}
       <fieldset className="space-y-2">
-        <legend className="text-xs uppercase tracking-wider text-white/40 mb-1">
-          Basics
+        <legend className="mb-1 text-xs uppercase tracking-wider text-white/40">
+          Groove source
         </legend>
-        <input
-          type="text"
-          value={config.title}
-          onChange={(e) => updateField('title', e.target.value)}
-          placeholder="Title (e.g. Greasy Pocket)"
-          className="w-full px-3 py-2 rounded-md bg-white/5 border border-white/10 text-white placeholder:text-white/30"
-        />
-        <input
-          type="text"
-          value={config.subtitle}
-          onChange={(e) => updateField('subtitle', e.target.value)}
-          placeholder="Subtitle (e.g. Funk in E)"
-          className="w-full px-3 py-2 rounded-md bg-white/5 border border-white/10 text-white placeholder:text-white/30"
-        />
-        <div className="grid grid-cols-3 gap-2">
-          <label className="space-y-1">
-            <span className="text-xs text-white/50">Original BPM</span>
-            <input
-              type="number"
-              min={50}
-              max={180}
-              value={config.originalBpm}
-              onChange={(e) =>
-                updateField('originalBpm', Number(e.target.value))
-              }
-              className="w-full px-3 py-2 rounded-md bg-white/5 border border-white/10 text-white"
-            />
-          </label>
-          <label className="space-y-1">
-            <span className="text-xs text-white/50">Original Key</span>
+        <label className="block space-y-1">
+          <span className="text-xs text-white/50">Use a library groove</span>
+          <select
+            value={config.grooveId ?? ''}
+            onChange={(e) =>
+              updateField('grooveId', e.target.value || undefined)
+            }
+            className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-white"
+          >
+            <option value="">— Author inline (one-off) —</option>
+            {grooves.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.name} · {g.originalKey} · {g.originalBpm} BPM
+              </option>
+            ))}
+          </select>
+        </label>
+        {usingLibrary && (
+          <p className="text-xs text-white/40">
+            Stems, default key/tempo &amp; length come from the library groove.
+            Override the starting key/tempo for THIS drill below.
+          </p>
+        )}
+      </fieldset>
+
+      {/* Per-use overrides — only when referencing a library groove. */}
+      {usingLibrary && (
+        <fieldset className="space-y-2">
+          <legend className="mb-1 text-xs uppercase tracking-wider text-white/40">
+            Per-use overrides (this drill only)
+          </legend>
+          <div className="grid grid-cols-2 gap-2">
+            <label className="space-y-1">
+              <span className="text-xs text-white/50">
+                Start key (± semitones)
+              </span>
+              <input
+                type="number"
+                value={config.keyOverride ?? ''}
+                onChange={(e) =>
+                  updateField(
+                    'keyOverride',
+                    e.target.value ? Number(e.target.value) : undefined,
+                  )
+                }
+                placeholder="0"
+                className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-white placeholder:text-white/30"
+              />
+            </label>
+            <label className="space-y-1">
+              <span className="text-xs text-white/50">Start tempo (BPM)</span>
+              <input
+                type="number"
+                value={config.tempoOverride ?? ''}
+                onChange={(e) =>
+                  updateField(
+                    'tempoOverride',
+                    e.target.value ? Number(e.target.value) : undefined,
+                  )
+                }
+                placeholder="from groove"
+                className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-white placeholder:text-white/30"
+              />
+            </label>
+          </div>
+        </fieldset>
+      )}
+
+      {/* Inline authoring — only when NOT referencing a library groove. */}
+      {!usingLibrary && (
+        <>
+          {/* Basics */}
+          <fieldset className="space-y-2">
+            <legend className="text-xs uppercase tracking-wider text-white/40 mb-1">
+              Basics
+            </legend>
             <input
               type="text"
-              value={config.originalKey}
-              onChange={(e) => updateField('originalKey', e.target.value)}
-              placeholder="E"
-              className="w-full px-3 py-2 rounded-md bg-white/5 border border-white/10 text-white"
+              value={config.title ?? ''}
+              onChange={(e) => updateField('title', e.target.value)}
+              placeholder="Title (e.g. Greasy Pocket)"
+              className="w-full px-3 py-2 rounded-md bg-white/5 border border-white/10 text-white placeholder:text-white/30"
             />
+            <input
+              type="text"
+              value={config.subtitle ?? ''}
+              onChange={(e) => updateField('subtitle', e.target.value)}
+              placeholder="Subtitle (e.g. Funk in E)"
+              className="w-full px-3 py-2 rounded-md bg-white/5 border border-white/10 text-white placeholder:text-white/30"
+            />
+            <div className="grid grid-cols-3 gap-2">
+              <label className="space-y-1">
+                <span className="text-xs text-white/50">Original BPM</span>
+                <input
+                  type="number"
+                  min={50}
+                  max={180}
+                  value={config.originalBpm ?? 100}
+                  onChange={(e) =>
+                    updateField('originalBpm', Number(e.target.value))
+                  }
+                  className="w-full px-3 py-2 rounded-md bg-white/5 border border-white/10 text-white"
+                />
+              </label>
+              <label className="space-y-1">
+                <span className="text-xs text-white/50">Original Key</span>
+                <input
+                  type="text"
+                  value={config.originalKey ?? ''}
+                  onChange={(e) => updateField('originalKey', e.target.value)}
+                  placeholder="E"
+                  className="w-full px-3 py-2 rounded-md bg-white/5 border border-white/10 text-white"
+                />
+              </label>
+              <label className="space-y-1">
+                <span className="text-xs text-white/50">Length (bars)</span>
+                <input
+                  type="number"
+                  min={1}
+                  value={config.lengthBars ?? 4}
+                  onChange={(e) =>
+                    updateField('lengthBars', Number(e.target.value))
+                  }
+                  className="w-full px-3 py-2 rounded-md bg-white/5 border border-white/10 text-white"
+                />
+              </label>
+            </div>
+            <label className="space-y-1 block">
+              <span className="text-xs text-white/50">
+                YouTube URL (optional)
+              </span>
+              <input
+                type="text"
+                value={config.youtubeUrl ?? ''}
+                onChange={(e) =>
+                  updateField('youtubeUrl', e.target.value || undefined)
+                }
+                placeholder="YouTube video URL or 11-char ID — shown above the card"
+                className="w-full px-3 py-2 rounded-md bg-white/5 border border-white/10 text-white placeholder:text-white/30"
+              />
+            </label>
+          </fieldset>
+        </>
+      )}
+
+      {/* Drill — set these to make the card a DRILL BRICK in a session.
+          A `role` turns on caps + the conquer→advance behaviour; leave
+          "None" for an ordinary tutorial/marketing card. */}
+      <fieldset className="space-y-2">
+        <legend className="text-xs uppercase tracking-wider text-white/40 mb-1">
+          Drill (optional) — only for session bricks
+        </legend>
+        <div className="grid grid-cols-2 gap-2">
+          <label className="space-y-1">
+            <span className="text-xs text-white/50">Brick role</span>
+            <select
+              value={config.role ?? ''}
+              onChange={(e) =>
+                updateField(
+                  'role',
+                  e.target.value
+                    ? (e.target.value as GrooveCardBlockConfig['role'])
+                    : undefined,
+                )
+              }
+              className="w-full px-3 py-2 rounded-md bg-white/5 border border-white/10 text-white"
+            >
+              <option value="">None (plain card)</option>
+              <option value="groove">Groove (new skill)</option>
+              <option value="connecting">Connecting (chord-to-chord)</option>
+              <option value="review">Review (past groove)</option>
+            </select>
           </label>
           <label className="space-y-1">
-            <span className="text-xs text-white/50">Length (bars)</span>
+            <span className="text-xs text-white/50">Timebox (min)</span>
             <input
               type="number"
               min={1}
-              value={config.lengthBars}
+              value={config.timeboxMinutes ?? ''}
               onChange={(e) =>
-                updateField('lengthBars', Number(e.target.value))
+                updateField(
+                  'timeboxMinutes',
+                  e.target.value ? Number(e.target.value) : undefined,
+                )
               }
-              className="w-full px-3 py-2 rounded-md bg-white/5 border border-white/10 text-white"
+              placeholder="5"
+              className="w-full px-3 py-2 rounded-md bg-white/5 border border-white/10 text-white placeholder:text-white/30"
             />
           </label>
         </div>
-        <label className="space-y-1 block">
-          <span className="text-xs text-white/50">YouTube URL (optional)</span>
-          <input
-            type="text"
-            value={config.youtubeUrl ?? ''}
-            onChange={(e) =>
-              updateField('youtubeUrl', e.target.value || undefined)
-            }
-            placeholder="YouTube video URL or 11-char ID — shown above the card"
-            className="w-full px-3 py-2 rounded-md bg-white/5 border border-white/10 text-white placeholder:text-white/30"
-          />
-        </label>
+        <p className="text-xs text-white/40">
+          Set a role to make this a drill brick (free-vs-member caps + conquer
+          advances the session). Timebox drives the per-brick session clock.
+        </p>
       </fieldset>
 
-      {/* Stems */}
-      <fieldset className="space-y-2">
-        <legend className="text-xs uppercase tracking-wider text-white/40 mb-1">
-          Stems — delivered at original key; runtime pitch-shifts ±6 semitones
-        </legend>
-        <p className="text-xs text-white/40">
-          Stems write to the <code>audio-samples</code> Supabase bucket. Paste a
-          public path or full URL into each field — the path pattern{' '}
-          <code>/storage/v1/object/public/audio-samples/…</code> is enforced at
-          save.
-        </p>
-        <div className="rounded-lg border border-white/10 p-3 space-y-2">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-            {STEM_SLOTS.map((stem) => (
-              <StemUploadButton
-                key={stem}
-                value={config.stems[stem]}
-                onChange={(url) => updateStem(stem, url)}
-                stemLabel={stem}
-                uploadContext={{
-                  tutorialSlug: tutorialSlug ?? 'unsaved',
-                  keyFolder:
-                    config.originalKey.trim().length > 0
-                      ? config.originalKey
-                      : 'default',
-                  stem,
-                }}
-              />
-            ))}
+      {/* Stems — inline authoring only (library grooves carry their own). */}
+      {!usingLibrary && (
+        <fieldset className="space-y-2">
+          <legend className="mb-1 text-xs uppercase tracking-wider text-white/40">
+            Stems — delivered at original key; runtime pitch-shifts ±6 semitones
+          </legend>
+          <p className="text-xs text-white/40">
+            Stems write to the <code>audio-samples</code> Supabase bucket. Paste
+            a public path or full URL into each field — the path pattern{' '}
+            <code>/storage/v1/object/public/audio-samples/…</code> is enforced
+            at save.
+          </p>
+          <div className="space-y-2 rounded-lg border border-white/10 p-3">
+            <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+              {STEM_SLOTS.map((stem) => (
+                <StemUploadButton
+                  key={stem}
+                  value={config.stems?.[stem] ?? ''}
+                  onChange={(url) => updateStem(stem, url)}
+                  stemLabel={stem}
+                  uploadContext={{
+                    tutorialSlug: tutorialSlug ?? 'unsaved',
+                    keyFolder:
+                      (config.originalKey ?? '').trim().length > 0
+                        ? config.originalKey!
+                        : 'default',
+                    stem,
+                  }}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      </fieldset>
+        </fieldset>
+      )}
 
       {/* Captions: card-wide UX copy lives in
           apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/blocks/groove-card/captions.ts

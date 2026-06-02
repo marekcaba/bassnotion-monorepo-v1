@@ -10,6 +10,7 @@ import { AuthGuard } from '@/shared/components/ui/auth-guard';
 import { AudioProvider } from '@/domains/playback/providers/AudioProvider';
 import { AudioDebugPanel } from '@/shared/debug/AudioDebugger';
 import { HealthStatus } from '@/shared/components/HealthStatus';
+import { LeatherBackground } from '@/shared/components/LeatherBackground';
 import {
   XStateDevToolsProvider,
   XStateDebugPanel,
@@ -56,12 +57,18 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <AudioProvider>
             <TooltipProvider delayDuration={0}>
               <div
-                className="flex h-svh w-full flex-col lg:flex-row overflow-hidden"
+                className="relative flex h-svh w-full flex-col overflow-hidden lg:flex-row"
                 style={{
                   background:
                     'radial-gradient(ellipse at 50% 0%, hsl(240 6% 10%) 0%, hsl(240 4% 6%) 50%, hsl(0 0% 3%) 100%)',
                 }}
               >
+                {/* Leather + noise overlay over the gradient base. Sits at
+                    z-0; the main content area below is z-10 so it (and the
+                    transparent tutorial/drill surfaces) paint on top. The
+                    sidebar + header carry their own solid backgrounds. */}
+                <LeatherBackground />
+
                 {/* Mobile: top header + hamburger drawer */}
                 <MobileHeader />
 
@@ -74,7 +81,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                   />
                 </div>
 
-                <main className="flex-1 overflow-auto">{children}</main>
+                <main className="relative z-10 flex-1 overflow-auto">
+                  {children}
+                </main>
               </div>
             </TooltipProvider>
             <AudioDebugPanel />
