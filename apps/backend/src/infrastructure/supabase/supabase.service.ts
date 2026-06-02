@@ -1,5 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import WebSocket from 'ws';
 import { createStructuredLogger } from '@bassnotion/contracts';
 import { RequestContextService } from '../../shared/services/request-context.service.js';
 
@@ -56,6 +57,11 @@ export class SupabaseService {
               autoRefreshToken: false,
               persistSession: false,
             },
+            // See DatabaseCoreService.initializeClient for why the `ws`
+            // transport is required on Node < 22 and why the cast is
+            // `as any`.
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            realtime: { transport: WebSocket as any },
           },
         );
         logger.info('✅ SupabaseService initialized successfully', {
@@ -100,6 +106,7 @@ export class SupabaseService {
     path: string,
     file: Buffer,
     contentType: string,
+    options?: { upsert?: boolean },
   ): Promise<string> {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
@@ -109,6 +116,7 @@ export class SupabaseService {
       path,
       contentType,
       fileSize: file.length,
+      upsert: options?.upsert ?? false,
       correlationId,
     });
 
@@ -116,7 +124,7 @@ export class SupabaseService {
       .from(bucket)
       .upload(path, file, {
         contentType,
-        upsert: false,
+        upsert: options?.upsert ?? false,
       });
 
     if (error) {
@@ -423,6 +431,11 @@ export class SupabaseService {
       throw error;
     }
 
-    return data || [];
+    // Recent `@supabase/storage-js` releases widened `FileObject.created_at`
+    // to `string | null`; we filter out the (theoretical) null case so the
+    // caller's `string`-typed contract stays honest.
+    return (data ?? [])
+      .filter((f): f is typeof f & { created_at: string } => !!f.created_at)
+      .map((f) => ({ name: f.name, created_at: f.created_at }));
   }
 }

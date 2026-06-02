@@ -9,15 +9,11 @@
 import { getLogger } from '@/utils/logger.js';
 import type { EventBus } from './EventBus.js';
 import type { AudioEngine } from '../../modules/audio-engine/core/AudioEngine.js';
+import type { InstrumentType } from '../../modules/tracks/management/TrackManagerProcessor.js';
+
+export type { InstrumentType };
 
 const logger = getLogger('PreloadableInstrumentRegistry');
-
-export type InstrumentType =
-  | 'metronome'
-  | 'drums'
-  | 'harmony'
-  | 'bass'
-  | 'voice-cue';
 
 export interface InstrumentConfig {
   type: InstrumentType;

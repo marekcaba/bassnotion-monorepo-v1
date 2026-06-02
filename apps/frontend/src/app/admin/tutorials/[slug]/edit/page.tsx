@@ -149,6 +149,7 @@ function AdminTutorialEditPageContent({ params }: AdminTutorialPageProps) {
   const [editMode, setEditMode] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
   const [showTimingDebug, setShowTimingDebug] = useState(false);
   const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(
     null,
@@ -590,30 +591,28 @@ function AdminTutorialEditPageContent({ params }: AdminTutorialPageProps) {
     ],
   );
 
-  // Auto-save functionality with debouncing
-  // OPTIMIZATION: Increased debounce from 3s to 10s to reduce API calls
-  // Simplified dependencies to only trigger on hasChanges flag
+  // Auto-save DISABLED — saves now happen only on explicit user action
+  // (the "Done" button at the bottom of the page, or any other Save
+  // affordance that calls handleSave(false)).
+  //
+  // Why: every keystroke flipped `hasChanges` and rearmed the 10s timer.
+  // Even with debouncing, an admin filling in a form ran into validator
+  // 400s mid-edit (e.g. the groove-card block's "key label is required"
+  // rule firing on a still-empty default-row label). Saves on a draft
+  // should be intentional, not ambient.
+  //
+  // The handleSave(false) call is still wired into the "Done" button
+  // (search this file for `await handleSave(false)`), so explicit saves
+  // continue to work. The autoSaveTimerRef is left in place so the
+  // cleanup-on-unmount effect below is a no-op when the timer is never
+  // armed — keeps the React lifecycle clean.
   useEffect(() => {
-    if (hasChanges && tutorial) {
-      // Clear existing timer
-      if (autoSaveTimerRef.current) {
-        clearTimeout(autoSaveTimerRef.current);
-      }
-
-      // Set new timer for auto-save (10 seconds debounce - optimized from 3s)
-      autoSaveTimerRef.current = setTimeout(() => {
-        handleSave(true);
-      }, 10000);
-    }
-
-    // Cleanup on unmount
     return () => {
       if (autoSaveTimerRef.current) {
         clearTimeout(autoSaveTimerRef.current);
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasChanges]);
+  }, []);
 
   // Handle edit mode toggle
   const toggleEditMode = (componentName: string | null) => {
@@ -1685,6 +1684,59 @@ function AdminTutorialEditPageContent({ params }: AdminTutorialPageProps) {
                         >
                           Preview
                         </Button>
+                        {/* Publish / Unpublish — flips the tutorial's
+                            `status`, `is_active`, and `published_at`
+                            together via the backend admin endpoint.
+                            Until this lands, every new tutorial sits in
+                            `draft` forever and the public marketing
+                            surfaces (e.g. the waitlist groove card)
+                            silently fall back to bundled defaults. */}
+                        <Button
+                          onClick={async () => {
+                            try {
+                              setIsPublishing(true);
+                              const wasPublished = tutorial.isPublished();
+                              const result = wasPublished
+                                ? await tutorialRepo.unpublish(tutorial.id)
+                                : await tutorialRepo.publish(tutorial.id);
+                              if (result.ok) {
+                                setTutorial(result.value);
+                              } else {
+                                logger.error(
+                                  wasPublished
+                                    ? 'Failed to unpublish tutorial'
+                                    : 'Failed to publish tutorial',
+                                  result.error,
+                                );
+                              }
+                            } finally {
+                              setIsPublishing(false);
+                            }
+                          }}
+                          disabled={isPublishing}
+                          size="sm"
+                          variant={
+                            tutorial.isPublished() ? 'outline' : 'default'
+                          }
+                          className={
+                            tutorial.isPublished()
+                              ? 'text-yellow-300 border-yellow-300/40 hover:bg-yellow-300/10'
+                              : 'bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white'
+                          }
+                        >
+                          {isPublishing ? (
+                            <>
+                              <div className="w-4 h-4 mr-1 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                              {tutorial.isPublished()
+                                ? 'Unpublishing…'
+                                : 'Publishing…'}
+                            </>
+                          ) : tutorial.isPublished() ? (
+                            'Unpublish'
+                          ) : (
+                            'Publish'
+                          )}
+                        </Button>
                         <Button
                           onClick={async () => {
                             try {
@@ -1757,6 +1809,7 @@ function AdminTutorialEditPageContent({ params }: AdminTutorialPageProps) {
                         difficulty: ex.difficulty,
                       }))}
                       tutorials={allTutorials}
+                      tutorialSlug={tutorialSlug}
                       onBlocksChange={(updated) => {
                         setBlocks(updated);
                         setHasChanges(true);

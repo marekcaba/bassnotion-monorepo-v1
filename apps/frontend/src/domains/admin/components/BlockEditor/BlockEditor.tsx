@@ -31,6 +31,7 @@ import { BlockTypeSelector } from './BlockTypeSelector.js';
 import { VideoBlockForm } from './configs/VideoBlockForm.js';
 import { ExerciseBlockForm } from './configs/ExerciseBlockForm.js';
 import { GrooveBlockForm } from './configs/GrooveBlockForm.js';
+import { GrooveCardBlockForm } from './configs/GrooveCardBlockForm.js';
 import { TextBlockForm } from './configs/TextBlockForm.js';
 import { CelebrationBlockForm } from './configs/CelebrationBlockForm.js';
 import { ExplainBlockForm } from './configs/ExplainBlockForm.js';
@@ -52,6 +53,10 @@ interface BlockEditorProps {
   onBlocksChange: (blocks: AnyBlock[]) => void;
   /** Available tutorials for "Next tutorial" CTA in celebration blocks */
   tutorials?: Array<{ slug: string; title: string }>;
+  /** Current tutorial's slug. Used by groove-card stem uploads to
+   * compose the bucket storage path:
+   *   audio-samples/grooves/{tutorialSlug}/{keyFolder}/{stem}.ogg */
+  tutorialSlug?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -100,6 +105,26 @@ function createDefaultBlock(type: BlockType, order: number): AnyBlock {
       showInIsland: true,
       config: { requiresPreviousCompletion: true },
     }),
+    'groove-card': () => ({
+      id,
+      type: 'groove-card' as const,
+      title: 'Groove Card',
+      order,
+      showInIsland: true,
+      config: {
+        title: 'New Groove',
+        subtitle: '',
+        originalBpm: 100,
+        originalKey: 'E',
+        lengthBars: 4,
+        stems: { bass: '', drums: '', harmony: '' },
+        // Caption copy is baked in (groove-card/captions.ts); no
+        // per-block override needed. The contract still allows
+        // previewCaption / stateCaptions so a future story can opt
+        // back into per-card overrides if a specific groove wants
+        // bespoke voice.
+      },
+    }),
     text: () => ({
       id,
       type: 'text' as const,
@@ -143,6 +168,7 @@ export function BlockEditor({
   exercises,
   onBlocksChange,
   tutorials,
+  tutorialSlug,
 }: BlockEditorProps) {
   const [showTypeSelector, setShowTypeSelector] = useState(false);
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
@@ -292,6 +318,7 @@ export function BlockEditor({
           block={editingBlock}
           exercises={exercises}
           tutorials={tutorials}
+          tutorialSlug={tutorialSlug}
           onUpdate={handleUpdateBlock}
           onClose={handleCloseEdit}
         />
@@ -308,6 +335,7 @@ interface EditingPanelProps {
   block: AnyBlock;
   exercises: BlockEditorProps['exercises'];
   tutorials?: BlockEditorProps['tutorials'];
+  tutorialSlug?: BlockEditorProps['tutorialSlug'];
   onUpdate: (blockId: string, updates: Partial<AnyBlock>) => void;
   onClose: () => void;
 }
@@ -316,6 +344,7 @@ const EditingPanel = React.memo(function EditingPanel({
   block,
   exercises,
   tutorials,
+  tutorialSlug,
   onUpdate,
   onClose,
 }: EditingPanelProps) {
@@ -395,6 +424,13 @@ const EditingPanel = React.memo(function EditingPanel({
           config={block.config}
           exercises={exercises}
           onChange={handleConfigChange}
+        />
+      )}
+      {block.type === 'groove-card' && (
+        <GrooveCardBlockForm
+          config={block.config}
+          onChange={handleConfigChange}
+          tutorialSlug={tutorialSlug}
         />
       )}
       {block.type === 'text' && (

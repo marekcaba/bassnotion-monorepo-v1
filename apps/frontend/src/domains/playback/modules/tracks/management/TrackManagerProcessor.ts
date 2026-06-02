@@ -76,14 +76,68 @@ export interface TrackAutomation {
   effects: Map<string, AutomationCurve[]>;
 }
 
-export type InstrumentType =
+// Canonical instrument type union for the playback engine.
+// MIDI side: existing trigger-based instruments.
+// Audio side: audio-stem players added in LAUNCH-02.5 (Groove Card).
+export type MidiInstrumentType =
   | 'metronome'
   | 'drums'
   | 'bass'
   | 'chords'
+  | 'harmony'
   | 'melody'
-  | 'voice-cue'
+  | 'voice-cue';
+
+export type AudioInstrumentType =
+  | 'audio-bass'
+  | 'audio-drums'
+  | 'audio-harmony'
+  | 'audio-click';
+
+// Short key carried inside PatternEvent.data.stemKey so AudioPlayerScheduler
+// (LAUNCH-02.5b) can identify which stem an event targets without re-parsing
+// the instrumentType string. Always equals AudioInstrumentType minus the
+// 'audio-' prefix.
+export type AudioStemKey = 'bass' | 'drums' | 'harmony' | 'click';
+
+export const AUDIO_STEM_KEYS: readonly AudioStemKey[] = [
+  'bass',
+  'drums',
+  'harmony',
+  'click',
+] as const;
+
+// LAUNCH-02.5c key-shift: drums tune audibly even at small offsets and the
+// click is a fixed metronome reference — neither is pitch-shiftable. Only
+// the harmonic stems (bass + harmony) get a Tone.PitchShift node spliced
+// in for the residual ±semitones between key sets. See
+// docs/2. Stories/NEW STORIES/LAUNCH/LAUNCH-02.5c-groove-card-in-app.md §143.
+export const PITCH_SHIFTABLE_STEMS: readonly AudioStemKey[] = [
+  'bass',
+  'harmony',
+] as const;
+
+export function isPitchShiftableStem(key: AudioStemKey): boolean {
+  return PITCH_SHIFTABLE_STEMS.includes(key);
+}
+
+export function audioInstrumentTypeToStemKey(
+  t: AudioInstrumentType,
+): AudioStemKey {
+  return t.slice('audio-'.length) as AudioStemKey;
+}
+
+export function stemKeyToAudioInstrumentType(
+  k: AudioStemKey,
+): AudioInstrumentType {
+  return `audio-${k}` as AudioInstrumentType;
+}
+
+export type InstrumentType =
+  | MidiInstrumentType
+  | AudioInstrumentType
   | 'unknown';
+
 export type RawMidiTrack = any; // From MidiParserProcessor
 export type InstrumentProcessor = any; // Base processor interface
 
@@ -289,6 +343,7 @@ export class TrackNameAnalysisAlgorithm implements TrackIdentificationAlgorithm 
       /organ/i,
       /synth/i,
     ],
+    harmony: [],
     melody: [
       /melody/i,
       /lead/i,
@@ -300,6 +355,14 @@ export class TrackNameAnalysisAlgorithm implements TrackIdentificationAlgorithm 
       /theme/i,
     ],
     metronome: [/metro/i, /click/i, /count/i, /tempo/i],
+    'voice-cue': [],
+    // Audio stems are registered by ID, never name-classified from MIDI text.
+    // Empty arrays (not regexes) prevent MIDI tracks named "bass" from being
+    // misrouted into audio-bass.
+    'audio-bass': [],
+    'audio-drums': [],
+    'audio-harmony': [],
+    'audio-click': [],
     unknown: [],
   };
 

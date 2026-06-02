@@ -19,6 +19,7 @@ export type BlockType =
   | 'video'
   | 'exercise'
   | 'groove'
+  | 'groove-card'
   | 'text'
   | 'celebration'
   | 'explain';
@@ -223,6 +224,78 @@ export interface CelebrationBlockConfig {
 }
 
 // =====================================================
+// Groove Card Block (LAUNCH-02.5c)
+// =====================================================
+
+/**
+ * One stem set per audio instrument. Each URL points at a file in the
+ * `audio-samples` Supabase storage bucket (admin-only write per
+ * `20250720000000_create_audio_samples_bucket.sql`).
+ *
+ * Only the musical stems are uploaded per key set: `bass`, `drums`,
+ * `harmony`. The metronome **click is NOT a per-groove stem** — it's a
+ * fixed two-sample metronome shared by every groove. In `/app` the
+ * click toggle / countdown reuses the existing MIDI metronome track; on
+ * the waitlist it uses a single bundled `countdown-click.ogg`. The
+ * engine still has an `audio-click` channel (see `AudioInstrumentType`)
+ * for the waitlist's bundled sample, but admins never upload it.
+ */
+export interface GrooveCardStemSet {
+  bass: string;
+  drums: string;
+  harmony: string;
+}
+
+/**
+ * Reactive copy shown beneath the waveform when a control fires. Keys
+ * map to state-changes the card can broadcast; admin authors the copy.
+ */
+export interface GrooveCardStateCaptions {
+  'mute-bass'?: string;
+  'solo-drums'?: string;
+  'key-change'?: string;
+  'tempo-change'?: string;
+}
+
+/**
+ * Configuration for a `'groove-card'` block. Stored in the existing
+ * JSONB `blocks` column on `tutorials` — no DB migration.
+ *
+ * Single-key-set + PitchShift architecture (LAUNCH-02.5e): the admin
+ * uploads ONE stem set (bass / drums / harmony) in the original key.
+ * The key stepper (±6 semitones) is applied at runtime via the
+ * pitch-shift engine on the bass + harmony stems; drums and click are
+ * not transposed. The legacy 5-key-set tuple was replaced because the
+ * empirical sound quality of WSOLA across ±6 was indistinguishable from
+ * the multi-key-set delivery while halving storage and removing the
+ * cross-key stitching cliff at offsets ±2 / ±6.
+ */
+export interface GrooveCardBlockConfig {
+  /** Display title (e.g. "Greasy Pocket") */
+  title: string;
+  /** Short tag (e.g. "Funk in E") */
+  subtitle: string;
+  /** Original tempo in BPM. UI clamps the user-facing tempo control to [50, 180]. */
+  originalBpm: number;
+  /** Display label for the original key (e.g. "E"). The audio is baked
+   *  in this key; the runtime pitch-shift renders ±6 semitones around it. */
+  originalKey: string;
+  /** Groove length in bars; the engine loops the stems indefinitely. */
+  lengthBars: number;
+  /** The single stem set delivered at `originalKey`. Bass + harmony are
+   *  pitch-shifted at runtime; drums + click are not. */
+  stems: GrooveCardStemSet;
+  /** Caption shown beneath the waveform when nothing is happening. */
+  previewCaption?: string;
+  /** Reactive copy per state change. */
+  stateCaptions?: GrooveCardStateCaptions;
+  /** Contract-only for the future; bookmarks UI is out of scope for v1. */
+  allowBookmark?: boolean;
+  /** Optional YouTube video URL or 11-char ID rendered above the card. */
+  youtubeUrl?: string;
+}
+
+// =====================================================
 // Block Type Map (discriminated union helper)
 // =====================================================
 
@@ -230,6 +303,7 @@ export interface BlockConfigMap {
   video: VideoBlockConfig;
   exercise: ExerciseBlockConfig;
   groove: GrooveBlockConfig;
+  'groove-card': GrooveCardBlockConfig;
   text: TextBlockConfig;
   celebration: CelebrationBlockConfig;
   explain: ExplainBlockConfig;
@@ -259,6 +333,7 @@ export interface TutorialBlock<T extends BlockType = BlockType> {
 export type VideoBlock = TutorialBlock<'video'>;
 export type ExerciseBlock = TutorialBlock<'exercise'>;
 export type GrooveBlock = TutorialBlock<'groove'>;
+export type GrooveCardBlock = TutorialBlock<'groove-card'>;
 export type TextBlock = TutorialBlock<'text'>;
 export type CelebrationBlock = TutorialBlock<'celebration'>;
 export type ExplainBlock = TutorialBlock<'explain'>;
@@ -268,6 +343,7 @@ export type AnyBlock =
   | VideoBlock
   | ExerciseBlock
   | GrooveBlock
+  | GrooveCardBlock
   | TextBlock
   | CelebrationBlock
   | ExplainBlock;

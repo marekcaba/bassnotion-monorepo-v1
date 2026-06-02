@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import WebSocket from 'ws';
 import { createStructuredLogger } from '@bassnotion/contracts';
 
 /**
@@ -34,7 +35,26 @@ export class DatabaseCoreService implements OnModuleInit {
         return;
       }
 
-      this.supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+      // Node 20 doesn't ship native WebSocket, but `@supabase/realtime-js`
+      // (transitive dep of supabase-js) requires one at constructor time
+      // even when realtime features aren't used. Without this transport
+      // override the whole client throws "Node.js 20 detected without
+      // native WebSocket support" on `createClient`, crashing the entire
+      // Nest app on startup. We pass the `ws` package which the Supabase
+      // docs explicitly recommend for Node < 22.
+      //
+      // Cast is `as any` rather than `as unknown as typeof globalThis.WebSocket`
+      // because the `ws@^8.18` types differ from lib.dom's WebSocket in
+      // `onerror` signature (Node's `ErrorEvent` carries `message`/
+      // `filename` etc. that the browser DOM `Event` lacks). The dual
+      // assertion compiles locally but Railway's stricter prod build
+      // rejects it. Plain `as any` works everywhere and the
+      // runtime behaviour is identical — Supabase only uses the
+      // constructor signature.
+      this.supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        realtime: { transport: WebSocket as any },
+      });
       this.logger.info('DatabaseCoreService initialized successfully', {
         correlationId: 'system',
       });

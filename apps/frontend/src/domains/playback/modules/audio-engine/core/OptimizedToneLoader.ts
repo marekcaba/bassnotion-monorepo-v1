@@ -335,6 +335,13 @@ export class OptimizedToneLoader {
       case 'metronome':
         await this.loadModules(['synth']);
         break;
+      case 'audio-bass':
+      case 'audio-drums':
+      case 'audio-harmony':
+      case 'audio-click':
+        // Audio stems play decoded AudioBuffers directly via AudioPlayerScheduler
+        // (LAUNCH-02.5b). No Tone synth modules required.
+        return;
       default:
         logger.warn(`Unknown instrument type for preload: ${instrumentType}`);
     }

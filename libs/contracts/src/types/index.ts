@@ -386,6 +386,15 @@ export type {
 
 export type { LearningProgress } from './learning.js';
 
+// Funnel analytics — event log + anonymous identity types
+export type {
+  FunnelEventName,
+  FunnelEventInput,
+  FunnelEvent,
+  IdentityLink,
+} from './analytics.js';
+export { funnelEventNames } from './analytics.js';
+
 // Assessment types (entrance quiz)
 export type {
   // Legacy assessment types (V1 - single video)
@@ -494,12 +503,24 @@ export type {
   VideoBlock,
   ExerciseBlock,
   GrooveBlock,
+  GrooveCardBlock,
+  GrooveCardBlockConfig,
+  GrooveCardStemSet,
+  GrooveCardStateCaptions,
   TextBlock,
   CelebrationBlock,
   ExplainBlock,
   AnyBlock,
   BlockProgress,
 } from './block.js';
+
+// Billing / entitlement types (LAUNCH-02.5c stub; LAUNCH-02 populates caps)
+export type {
+  EntitlementTier,
+  LeverCap,
+  LeverCaps,
+  EntitlementResponse,
+} from './billing.js';
 
 // Pattern Library types (drum pattern library feature)
 export type {

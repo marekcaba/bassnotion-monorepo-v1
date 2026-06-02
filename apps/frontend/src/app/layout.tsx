@@ -7,6 +7,7 @@ import { AuthProvider } from '@/domains/user/components/auth';
 import { Toaster } from '@/shared/components/ui/toaster';
 import { getLogger } from '@/utils/logger.js';
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
+import { AttributionProvider } from '@/shared/attribution/AttributionProvider';
 import { isMockTestEnv, isWebkitBrowser } from '@/shared/utils/testEnv';
 import { ThemedLayout } from './_components/ThemedLayout';
 
@@ -53,6 +54,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         className={`font-sans ${inter.variable} ${courierPrime.variable} ${podiumSharp.variable} ${bebasNeue.variable} ${dmSans.variable} ${dmMono.variable}`}
       >
         <ErrorBoundary>
+          {/* Attribution spine: mints bn_anonymous_id + fires landing_view on
+              every page (landing now, /app later). Renders nothing. */}
+          <AttributionProvider />
           <AuthProviderWrapper>
             <ReactQueryProvider>
               <ThemedLayout>{children}</ThemedLayout>

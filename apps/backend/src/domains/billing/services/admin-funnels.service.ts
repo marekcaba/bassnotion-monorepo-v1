@@ -20,7 +20,9 @@ export interface FunnelStats {
 }
 
 interface MetadataRow {
-  metadata: { attribution?: { utmSource?: string; utmCampaign?: string } } | null;
+  metadata: {
+    attribution?: { utmSource?: string; utmCampaign?: string };
+  } | null;
 }
 
 /**
@@ -46,9 +48,7 @@ export class AdminFunnelsService {
     // Three counts in parallel — small queries, no cross-table join.
     const [waitlistRes, interestRes, foundersLiveRes, foundersTestRes] =
       await Promise.all([
-        client
-          .from('waitlist')
-          .select('id', { count: 'exact', head: true }),
+        client.from('waitlist').select('id', { count: 'exact', head: true }),
         client
           .from('founder_interest')
           .select('id', { count: 'exact', head: true }),
@@ -62,7 +62,12 @@ export class AdminFunnelsService {
           .eq('mode', 'test'),
       ]);
 
-    for (const res of [waitlistRes, interestRes, foundersLiveRes, foundersTestRes]) {
+    for (const res of [
+      waitlistRes,
+      interestRes,
+      foundersLiveRes,
+      foundersTestRes,
+    ]) {
       if (res.error) {
         this.logger.error('Funnel count query failed', {
           code: res.error.code,
@@ -113,10 +118,12 @@ export class AdminFunnelsService {
       }
     }
 
-    const topUtmSources = sortAndTake(sourceCounts, 5).map(([source, count]) => ({
-      source,
-      count,
-    }));
+    const topUtmSources = sortAndTake(sourceCounts, 5).map(
+      ([source, count]) => ({
+        source,
+        count,
+      }),
+    );
     const topUtmCampaigns = sortAndTake(campaignCounts, 5).map(
       ([campaign, count]) => ({ campaign, count }),
     );

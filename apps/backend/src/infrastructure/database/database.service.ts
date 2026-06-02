@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit, Inject, Optional } from '@nestjs/common';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import WebSocket from 'ws';
 import { createStructuredLogger } from '@bassnotion/contracts';
 import { RequestContextService } from '../../shared/services/request-context.service.js';
 
@@ -46,7 +47,12 @@ export class DatabaseService implements OnModuleInit {
         return;
       }
 
-      this.supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+      // See DatabaseCoreService.initializeClient for why the `ws`
+      // transport is required on Node < 22 and why the cast is `as any`.
+      this.supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        realtime: { transport: WebSocket as any },
+      });
       logger.info('DatabaseService initialized successfully', {
         correlationId,
       });

@@ -39,6 +39,7 @@ import type { PluginManager } from './PluginManager.js';
 import type { WamKeyboard } from '../../modules/instruments/adapters/wam/WamKeyboard.js';
 import type { WamKeyboardPlugin } from '../../modules/instruments/adapters/wam/WamKeyboardPlugin.js';
 import { RegionScheduler } from './region-processing/scheduling-orchestrator/RegionScheduler.js';
+import type { ResolvePendingBuffer } from './region-processing/scheduling-orchestrator/RegionScheduler.js';
 import { TimingMetricsCollector } from './region-processing/timing/TimingMetricsCollector.js';
 import { EventRouter } from './region-processing/event-routing/EventRouter.js';
 import {
@@ -61,6 +62,53 @@ import { lifecycle } from '../../utils/InitializationLifecycleLogger.js';
 import { Mixer } from '../../modules/tracks/mixing/Mixer.js';
 import { musicalTruth } from '../../modules/tempo/MusicalTruthAuthority.js';
 import { getAtomicPlaybackClock } from './AtomicPlaybackClock.js';
+import type {
+  MidiInstrumentType,
+  AudioInstrumentType,
+  AudioStemKey,
+} from '../../modules/tracks/management/TrackManagerProcessor.js';
+import {
+  audioInstrumentTypeToStemKey,
+  isPitchShiftableStem,
+} from '../../modules/tracks/management/TrackManagerProcessor.js';
+import type { IAudioStemEngine } from './IAudioStemEngine.js';
+import { AudioPlayerScheduler } from './region-processing/scheduling/AudioPlayerScheduler.js';
+import {
+  createPitchShiftAdapter,
+  type PitchShiftAdapter,
+} from './pitch-shift/PitchShiftAdapter.js';
+import { applyClickFreeStop } from './region-processing/utils/applyClickFreeStop.js';
+
+// LAUNCH-02.5c key-shift: the pitch-shift engine introduces an end-to-end
+// processing delay on stems routed through it. We compensate by
+// delaying the non-pitch-shifted stems (drums + click) by this amount
+// whenever PitchShift is active. Signalsmith reports its own latency via
+// node.latency() at runtime; this constant is only the pre-live-node
+// fallback used before a real node exists.
+//
+// The 0.14 s fallback was originally sized from the SoundTouch/WSOLA era:
+// the engine needs ~one analysis window of input before it can produce
+// output. With the params used at the time at 48kHz this worked out to
+// ~133 ms; we keep a small safety margin so the seam falls AFTER the
+// pitch engine has its first window ready, not exactly AT the moment it
+// needs to be ready.
+//
+// Previously this was 0.120 — which is LESS than the engine's input-buffer
+// requirement. The result was that the pitch engine hadn't yet hit its
+// processing threshold at the seam, so the first audible output emerging
+// at the seam was generated from a misaligned position (new-key bass
+// spliced against silent pre-warm context) → audible spike on the first
+// default → pitched engagement.
+//
+// Tunable by ear via `window.__PITCH_LATENCY_OVERRIDE_SECONDS`
+// (set in the browser console before pressing play; reads on each
+// node creation) so we can binary-search the right value without
+// rebuilds. If the user reports a residual offset:
+//   - drums sound EARLY (drums first, then bass/harmony) →
+//     INCREASE the value.
+//   - drums sound LATE (bass/harmony first, then drums) →
+//     DECREASE the value.
+const PITCH_SHIFT_FALLBACK_LATENCY_SECONDS = 0.14;
 
 // Debug flag - enable in browser console: window.__DEBUG_PLAYBACK_ENGINE = true
 const isPlaybackDebugEnabled = (): boolean => {
@@ -108,6 +156,12 @@ export interface Region {
   startTime: number;
   duration: number;
   skipCountdownOffset?: boolean;
+  /**
+   * Number of times to repeat the pattern. Defaults to 1 (play once);
+   * 2+ repeats finitely; 0 means infinite (only supported for audio-stem
+   * tracks via LAUNCH-02.5b's `scheduleInfiniteAudioRegion`).
+   */
+  loopCount?: number;
   pattern?: {
     id?: string;
     name?: string;
@@ -147,7 +201,7 @@ export interface PlaybackEngineConfig {
 /**
  * PlaybackEngine - Central coordinator for audio playback
  */
-export class PlaybackEngine {
+export class PlaybackEngine implements IAudioStemEngine {
   // State
   private state: PlaybackState = 'idle';
   private isInitialized = false;
@@ -221,6 +275,108 @@ export class PlaybackEngine {
 
   // Current tempo tracking (for metrics collector sync)
   private currentTempo = 120; // Default tempo in BPM
+
+  // LAUNCH-02.5b: audio-stem state. Buffers are populated by
+  // setAudioStemBuffers(); the scheduler fires AudioBufferSources from them
+  // when RegionScheduler tells EventRouter to play an 'audio-*' event.
+  private audioPlayerScheduler: AudioPlayerScheduler | null = null;
+  private audioStemBuffers = new Map<AudioInstrumentType, AudioBuffer>();
+
+  // LAUNCH-02.5c key-shift: lazily-created pitch-shift node (AudioWorklet)
+  // per pitch-shiftable stem (bass + harmony only — see
+  // PITCH_SHIFTABLE_STEMS in TrackManagerProcessor). One node per
+  // instrument type, shared across cards (only one Groove Card is active
+  // at a time per the active-card store contract). The node's lifetime
+  // is the engine's: created on first enablePitchShiftForStem(...) call,
+  // never reset by dispose() — the whole map is GC'd with the engine
+  // instance.
+  //
+  // The processor module is registered ONCE per AudioContext during
+  // initialize(); subsequent node constructions are synchronous. If
+  // registration fails (e.g. processor file missing), the engine still
+  // boots and pitch-shifting simply degrades to a no-op fallback (the
+  // stem plays untouched). This was chosen over Tone.PitchShift after
+  // the granular-FFT-based Tone implementation produced unacceptable
+  // downward-shift artifacts; the phase-vocoder engine behind the
+  // adapter is symmetric.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private instrumentPitchShiftNodes = new Map<AudioInstrumentType, any>();
+  /** True once the pitch-shift engine's worklet has been registered with
+   *  this.audioContext.audioWorklet. Until this is true,
+   *  getOrCreatePitchShiftNode() returns null. */
+  private pitchWorkletReady = false;
+
+  /** Pitch-shift engine adapter (LAUNCH-02.5f). Constructed once at
+   *  initialize(); hides the engine's register / createNode /
+   *  setSemitones / latency behind a common interface so a future engine
+   *  swap stays a one-file change. */
+  private pitchShiftAdapter: PitchShiftAdapter | null = null;
+
+  /** Per-stem indefinitely-looping silent AudioBufferSourceNode that
+   *  keeps the pitch-shift node's pipeline continuously fed (and
+   *  thus warm) between the engine's first setAudioStemBuffers call
+   *  and the real stem source actually arriving ~2.15 s later (after
+   *  the count-in + startup-lookahead). Stopped + disposed alongside
+   *  the pitch-shift node in stopAudioStems. */
+  private pitchShiftPrewarmSources = new Map<
+    AudioInstrumentType,
+    AudioBufferSourceNode
+  >();
+
+  /**
+   * LAUNCH-02.5c key-shift — fixed DelayNodes inserted on the
+   * NON-pitch-shifted stems (drums + click) to keep them in lockstep
+   * with the pitch-engine-delayed bass + harmony. The pitch-shift
+   * engine holds ~one analysis window of input before
+   * producing output (Signalsmith reports its own latency at runtime);
+   * a matching pre-delay on drums/click compensates so the four stems
+   * stay phase-locked.
+   *
+   * Toggled in lockstep with bass/harmony pitch-shift enablement via
+   * setPitchShiftLatencyCompensation(). When pitch is bypassed (default
+   * key), the delay is also bypassed so the stems play with zero
+   * latency.
+   */
+  private instrumentDelayNodes = new Map<AudioInstrumentType, DelayNode>();
+
+  /**
+   * LAUNCH-02.5c key-shift — DelayNode spliced AFTER the metronome's
+   * GainNode, before destination. Unlike the audio-stem delays which
+   * sit before their gain (sources `setStem(...input)` route through
+   * them), the metronome's gain is the connection point its scheduler
+   * already uses internally — splicing AFTER it gives the same total
+   * delay effect without touching the scheduler.
+   *
+   * Created lazily on first `setPitchShiftLatencyCompensation(true)`.
+   * delayTime mutates between 0 (no compensation needed; default key)
+   * and PITCH_SHIFT_FALLBACK_LATENCY_SECONDS (any pitch shift active) so the
+   * count-in clicks slide back to stay aligned with the
+   * pitch-engine-delayed stems.
+   */
+  private metronomeOutputDelay: DelayNode | null = null;
+  /** True when drums + click are currently routed through their
+   *  compensating DelayNodes. Mirrors whether bass/harmony PitchShift
+   *  is active. Tracked separately so setPitchShiftLatencyCompensation
+   *  is idempotent. */
+  private pitchShiftLatencyCompensationActive = false;
+
+  /** Per-stem record of whether the stem is currently routed through
+   *  its pitch-shift node. Used by enablePitchShiftForStem to skip the
+   *  setStem call when the routing already matches the request —
+   *  setStem triggers a 5 ms click-free ramp that interrupts the
+   *  currently-playing source, which is glitchy mid-loop. With this
+   *  tracking, semitone-to-semitone changes (both states pitched, just
+   *  different values) only write the AudioParam at the loop boundary
+   *  via setInstrumentPitchShift; the source chain is left untouched. */
+  private pitchShiftRoutingActive = new Map<AudioInstrumentType, boolean>();
+
+  // LAUNCH-02.5c key-shift: per-iteration buffer override. Threaded into
+  // RegionScheduler.scheduleAll so the Groove Card hook can swap key sets
+  // at loop boundaries. Owned by the currently-active card; cleared only
+  // by the owner (see setPendingBufferResolver below) so a stale unmount
+  // can't wipe an incoming card's freshly-installed resolver.
+  private pendingBufferResolver: ResolvePendingBuffer | null = null;
+  private pendingBufferResolverOwnerId: string | null = null;
 
   constructor(eventBus: EventBus, config: PlaybackEngineConfig = {}) {
     this.instanceId = Math.random().toString(36).substring(2, 11);
@@ -367,6 +523,37 @@ export class PlaybackEngine {
       // Initialize scheduler
       this.scheduler.setAudioContext(audioContext);
 
+      // LAUNCH-02.5f: construct the pitch-shift engine adapter (Signalsmith)
+      // and register its worklet once per AudioContext, ahead of any stem
+      // playback. Failures are non-fatal — the engine continues to boot and
+      // getOrCreatePitchShiftNode() returns null, which downstream code
+      // treats as "no pitch shift available, play stem dry". Signalsmith
+      // self-injects its worklet (no served processor file to host).
+      try {
+        this.pitchShiftAdapter = createPitchShiftAdapter({
+          info: (msg, data) =>
+            this.logger.info(msg, { instanceId: this.instanceId, data }),
+          warn: (msg, data) =>
+            this.logger.warn(msg, { instanceId: this.instanceId, data }),
+          debug: (msg, data) =>
+            this.logger.debug(msg, { instanceId: this.instanceId, data }),
+        });
+        const ok = await this.pitchShiftAdapter.register(audioContext);
+        this.pitchWorkletReady = ok;
+        this.logger.info('Pitch-shift engine registered', {
+          instanceId: this.instanceId,
+          library: this.pitchShiftAdapter.library,
+          ready: ok,
+        });
+      } catch (err) {
+        this.logger.warn(
+          'Pitch-shift engine registration failed; pitch shifting disabled',
+          { instanceId: this.instanceId, err },
+        );
+        // Stay un-ready; pitch shift methods will fall through to the
+        // no-op path. Engine init continues normally.
+      }
+
       // Initialize timing and conversion utilities (in dependency order)
       this.musicalTimeConverter = new MusicalTimeConverter();
       this.sustainPedalManager = new SustainPedalManager();
@@ -402,6 +589,10 @@ export class PlaybackEngine {
       this.metricsCollector = new TimingMetricsCollector();
       this.eventRouter = new EventRouter(this.instanceId);
 
+      // LAUNCH-02.5b: audio-stem scheduler (single instance for all 4 stems)
+      this.audioPlayerScheduler = new AudioPlayerScheduler(this.instanceId);
+      this.audioPlayerScheduler.setAudioContext(audioContext);
+
       // CRITICAL FIX: Initialize TimingMetricsCollector with actual sample rate
       // Without this, the collector uses hardcoded 48000 Hz causing jitter miscalculation
       this.metricsCollector.setSampleRate(this.sampleRate);
@@ -431,6 +622,7 @@ export class PlaybackEngine {
             this.metricsCollector.track(frame, time);
           }
         },
+        this.audioPlayerScheduler,
       );
 
       this.isInitialized = true;
@@ -501,6 +693,19 @@ export class PlaybackEngine {
   }
 
   /**
+   * Audio-context time at which the current playback's first beat is
+   * scheduled. Set inside start() as `audioContext.currentTime +
+   * startupLookahead` and used internally for sample-accurate scheduling.
+   * Exposed so visual systems (countdown numbers, waveform playhead) can
+   * anchor to the same instant the audio actually fires — without it, the
+   * UI runs ~`startupLookahead` (default 300ms) ahead of the sound.
+   * Returns 0 before the first start() call.
+   */
+  getTransportStartTime(): number {
+    return this.transportStartTime;
+  }
+
+  /**
    * Get a track by ID
    * Returns undefined if track doesn't exist
    */
@@ -534,8 +739,19 @@ export class PlaybackEngine {
       );
 
       // Skip ONLY if both region count AND event count are the same
-      // This prevents redundant updates while still allowing content changes
+      // This prevents redundant updates while still allowing content changes.
+      //
+      // Audio-stem tracks (audio-bass / audio-drums / audio-harmony / audio-
+      // click) are exempt: they never carry pattern.events (their content is
+      // pre-rendered AudioBuffers, not per-note MIDI), so eventCount is
+      // always 0 and the skip-update branch can NEVER detect a meaningful
+      // change. That includes the Groove Card's loopSlice flips — the bar-
+      // range selection lives on Region, not on pattern.events, so the
+      // optimization would silently drop legitimate updates. For these
+      // tracks we always apply the new track regardless of count parity.
+      const isAudioStem = track.instrumentType?.startsWith('audio-') ?? false;
       if (
+        !isAudioStem &&
         existingById.regions.length === track.regions.length &&
         existingEventCount === newEventCount
       ) {
@@ -860,6 +1076,12 @@ export class PlaybackEngine {
       debugLog('[COUNTDOWN DIAGNOSTIC] Created new metronome track');
     }
 
+    // Idempotent: drop any prior count-in before re-adding. Callers that
+    // re-arm on every play (e.g. the Groove Card, which doesn't go through
+    // switchExercise()) would otherwise stack duplicate countdown regions.
+    metronomeTrack.regions = metronomeTrack.regions.filter(
+      (r) => r.id !== countdownRegion.id,
+    );
     metronomeTrack.regions.unshift(countdownRegion);
     // eslint-disable-next-line no-console
     debugLog('[COUNTDOWN DIAGNOSTIC] Metronome countdown region added', {
@@ -1546,6 +1768,18 @@ export class PlaybackEngine {
             );
           }
         },
+        // Dependency 17 (LAUNCH-02.5b): resolvePendingBuffer — captured by
+        // RegionScheduler into per-iteration source.onended closures. The
+        // active Groove Card installs its resolver via
+        // setPendingBufferResolver before triggering schedule; iterations
+        // armed during this pass close over the value we pass here.
+        // Iterations armed later inside source.onended (the WINDOW=3
+        // sliding refill) capture the SAME reference because the closure
+        // is the one we pass right now — so a subsequent install does NOT
+        // affect already-armed refill chains.
+        this.pendingBufferResolver ?? undefined,
+        // Dependency 18 (LAUNCH-02.5b): audioStemAccess for infinite-audio.
+        this.audioPlayerScheduler ?? undefined,
       );
 
       this.logger.info('✅ All regions scheduled via RegionScheduler', {
@@ -2321,7 +2555,7 @@ export class PlaybackEngine {
    * When creating a new node, any previously stored volume/mute state is applied.
    */
   getOrCreateInstrumentGainNode(
-    instrumentType: 'metronome' | 'drums' | 'bass' | 'harmony',
+    instrumentType: MidiInstrumentType | AudioInstrumentType,
   ): GainNode | null {
     if (!this.audioContext) {
       this.logger.debug('Cannot create instrument gain node: no audio context');
@@ -2370,7 +2604,7 @@ export class PlaybackEngine {
    * The volume will be applied when the gain node is created.
    */
   setInstrumentVolume(
-    instrumentType: 'metronome' | 'drums' | 'bass' | 'harmony',
+    instrumentType: MidiInstrumentType | AudioInstrumentType,
     volume: number,
   ): void {
     // Always store the intended volume level first (before mute consideration)
@@ -2407,7 +2641,7 @@ export class PlaybackEngine {
    * The mute state will be applied when the gain node is created.
    */
   setInstrumentMuted(
-    instrumentType: 'metronome' | 'drums' | 'bass' | 'harmony',
+    instrumentType: MidiInstrumentType | AudioInstrumentType,
     muted: boolean,
   ): void {
     // Always store the mute state first
@@ -2441,7 +2675,7 @@ export class PlaybackEngine {
    * Get the current mute state for an instrument
    */
   isInstrumentMuted(
-    instrumentType: 'metronome' | 'drums' | 'bass' | 'harmony',
+    instrumentType: MidiInstrumentType | AudioInstrumentType,
   ): boolean {
     return this.instrumentMuteStates.get(instrumentType) ?? false;
   }
@@ -2450,8 +2684,908 @@ export class PlaybackEngine {
    * Get the current volume level for an instrument (0-1 range)
    */
   getInstrumentVolume(
-    instrumentType: 'metronome' | 'drums' | 'bass' | 'harmony',
+    instrumentType: MidiInstrumentType | AudioInstrumentType,
   ): number {
     return this.instrumentVolumeLevels.get(instrumentType) ?? 0.8;
+  }
+
+  // ==========================================
+  // LAUNCH-02.5b: IAudioStemEngine implementation
+  // ==========================================
+
+  /**
+   * Load decoded AudioBuffers for each audio stem. Idempotent — replacing
+   * previous buffers stops any in-flight source for that stem, then
+   * registers the new buffer + gain with AudioPlayerScheduler.
+   *
+   * Mirrors the wrapper shape of setDrumBuffers (validate context, store
+   * buffer, allocate gain, register with scheduler), but does NOT delegate
+   * per-event playback — audio stems are long pre-rendered loops driven by
+   * RegionScheduler's infinite-loop branch.
+   */
+  setAudioStemBuffers(
+    stems: Partial<Record<AudioInstrumentType, AudioBuffer>>,
+  ): void {
+    if (!this.audioContext) {
+      this.logger.warn(
+        'Cannot set audio-stem buffers: audio context not ready',
+      );
+      return;
+    }
+    if (!this.audioPlayerScheduler) {
+      this.logger.warn(
+        'Cannot set audio-stem buffers: audioPlayerScheduler not initialized',
+      );
+      return;
+    }
+
+    let registered = 0;
+    for (const [key, buffer] of Object.entries(stems)) {
+      if (!buffer) continue;
+      const instrumentType = key as AudioInstrumentType;
+      const stemKey: AudioStemKey =
+        audioInstrumentTypeToStemKey(instrumentType);
+
+      // Any in-flight sources are stopped by AudioPlayerScheduler.setStem
+      // (which calls stopStem internally for a click-free swap) and by
+      // regionScheduler.stopAllInfiniteAudio (called by stopAudioStems
+      // before any re-register). No additional bookkeeping needed here.
+
+      const gain = this.getOrCreateInstrumentGainNode(instrumentType);
+      if (!gain) {
+        this.logger.warn(
+          `setAudioStemBuffers: gain node unavailable for ${instrumentType}`,
+        );
+        continue;
+      }
+
+      this.audioStemBuffers.set(instrumentType, buffer);
+      this.audioPlayerScheduler.setStem(stemKey, buffer, gain);
+      registered++;
+
+      // LAUNCH-02.5c key-shift: eagerly construct the pitch-shift node
+      // for pitch-shiftable stems so its pipeline pre-warms
+      // during the count-in window (~2 s). Without this, the FIRST
+      // mid-loop key tap triggers lazy node creation, and the user
+      // hears ~1.6 s of silence while the engine fills its output buffer
+      // from cold. The routing stays bypassed (source → gain) until
+      // enablePitchShiftForStem(true) flips it; the node sits
+      // pre-warmed but disconnected from the signal path.
+      if (isPitchShiftableStem(stemKey)) {
+        // Fire-and-forget; the method handles all its own failure
+        // modes and is idempotent (returns the cached node if one
+        // already exists from a previous play cycle).
+        this.getOrCreatePitchShiftNode(instrumentType);
+      }
+    }
+
+    this.logger.info('Audio-stem buffers registered', {
+      registered,
+      stemsTotal: this.audioStemBuffers.size,
+      instanceId: this.instanceId,
+    });
+  }
+
+  /**
+   * LAUNCH-02.5c key-shift — lazily construct one pitch-shift node per
+   * pitch-shiftable stem. Returns null for non-shiftable stems (drums/
+   * click), when the AudioContext isn't ready, or when the pitch-shift
+   * engine's worklet hasn't been successfully registered. Idempotent:
+   * subsequent calls return the cached node.
+   *
+   * The pitch-shift node is a native AudioWorkletNode wrapper, so it plugs
+   * directly into the existing native chain: source → pitch-shift node →
+   * gain. No Tone-context bridging or `_gainNode` unwrap required.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private getOrCreatePitchShiftNode(
+    instrumentType: AudioInstrumentType,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ): any | null {
+    const stemKey = audioInstrumentTypeToStemKey(instrumentType);
+    if (!isPitchShiftableStem(stemKey)) return null;
+
+    const cached = this.instrumentPitchShiftNodes.get(instrumentType);
+    if (cached) return cached;
+
+    if (!this.audioContext) {
+      this.logger.debug(
+        'getOrCreatePitchShiftNode: no audio context yet; deferring',
+        { instrumentType },
+      );
+      return null;
+    }
+
+    if (!this.pitchWorkletReady) {
+      this.logger.debug(
+        'getOrCreatePitchShiftNode: pitch-shift worklet not yet registered; deferring',
+        { instrumentType },
+      );
+      return null;
+    }
+
+    const gain = this.getOrCreateInstrumentGainNode(instrumentType);
+    if (!gain) return null;
+
+    // LAUNCH-02.5f: delegate construction + stretch-param/formant
+    // setup + (source-side) gain wiring to the active engine adapter.
+    // The adapter returns a native AudioNode connected to `gain`
+    // (source → node → gain); the engine-specific details (Signalsmith's
+    // schedule/formant) live in the adapter. The Signalsmith adapter
+    // returns a passthrough relay immediately and splices its real
+    // node in a few ms later (module already cached) — the pre-warm loop
+    // below tolerates that because it feeds the relay, which forwards.
+    const adapter = this.pitchShiftAdapter;
+    if (!adapter) {
+      this.logger.debug(
+        'getOrCreatePitchShiftNode: no adapter; deferring',
+        { instrumentType },
+      );
+      return null;
+    }
+    // Per-stem tuning profile. stemKey is 'bass' | 'harmony' here (the
+    // only pitch-shiftable stems, guarded above); both match the
+    // adapter's PitchStemProfile keys 1:1. Default to 'harmony' (the
+    // general-purpose profile) for any future stem.
+    const stemProfile = stemKey === 'bass' ? 'bass' : 'harmony';
+    const node = adapter.createNode(this.audioContext, gain, stemProfile);
+    if (!node) {
+      this.logger.warn(
+        'getOrCreatePitchShiftNode: adapter returned no node; playing dry',
+        { instrumentType, library: adapter.library },
+      );
+      return null;
+    }
+
+    this.instrumentPitchShiftNodes.set(instrumentType, node);
+    this.logger.info('Pitch-shift node created', {
+      instrumentType,
+      library: adapter.library,
+    });
+
+    // LAUNCH-02.5c key-shift: pre-warm the pitch-engine pipeline by feeding
+    // an indefinitely-looping silent buffer into the node from now.
+    //
+    // Why a LOOPING silent source instead of a fixed-duration one:
+    // AudioWorklet processors only run their main DSP loop when they
+    // have non-empty input (the pitch-shift worklet produces no output
+    // until it has input).
+    // A fixed 2 s pre-warm buffer would end ~150 ms before the real
+    // stem source connects (count-in is 1.85 s + 0.3 s startup-
+    // lookahead = ~2.15 s gap from setAudioStemBuffers to first stem
+    // sample). During that 150 ms gap, the pitch engine has no input,
+    // doesn't process, its output buffer drains — and then the real
+    // source hits an empty pipeline, producing underruns and silence
+    // for the first ~1.6 s of audible playback.
+    //
+    // A looping silent source runs forever, so the pitch engine is
+    // continuously fed and stays warm. When the real stem source connects
+    // in parallel and starts, Web Audio sums the two inputs (silence + N
+    // = N), the silent feed contributes nothing audible, and the engine's
+    // output buffer is already at steady-state. The looping source
+    // is disposed alongside the pitch-shift node itself on
+    // stopAudioStems (via the node.disconnect() cascade).
+    //
+    // Buffer length: 0.5 s — short enough to keep memory tiny, long
+    // enough that AudioBufferSourceNode loop overhead is negligible
+    // (Chrome native loop is sample-accurate and free at this size).
+    try {
+      const ctx = this.audioContext;
+      const buf = ctx.createBuffer(
+        2, // stereo, matching the pitch-shift node's 2-channel I/O
+        Math.ceil(0.5 * ctx.sampleRate),
+        ctx.sampleRate,
+      );
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.loop = true;
+      src.connect(node);
+      src.start(ctx.currentTime + 0.005);
+      // Track the pre-warm source so stopAudioStems can stop it when
+      // the pitch-shift node is disposed. Without this, the loop would
+      // keep firing into a disconnected node — harmless but messy.
+      this.pitchShiftPrewarmSources.set(instrumentType, src);
+    } catch (err) {
+      // Pre-warm is best-effort; if it fails the user just hears the
+      // ~1.6 s glitchy start. Not fatal.
+      this.logger.warn('Pitch-shift pre-warm failed', {
+        instrumentType,
+        err,
+      });
+    }
+
+    return node;
+  }
+
+  /**
+   * Write a semitone offset onto the pitch-shift node for a stem. No-op
+   * for stems that don't have a node (drums/click, or if construction
+   * failed). Idempotent.
+   *
+   * Delegates to the adapter, which applies the offset (Signalsmith via
+   * schedule()). The write honours applyAtAudioTime so the current
+   * iteration finishes in the old key and the next plays the new key —
+   * cleanly, unlike Tone.PitchShift's granular FFT, which we tried first
+   * and which produced unacceptable downward-shift artifacts.
+   */
+  setInstrumentPitchShift(
+    instrumentType: AudioInstrumentType,
+    semitones: number,
+    applyAtAudioTime?: number,
+  ): void {
+    const node = this.instrumentPitchShiftNodes.get(instrumentType);
+    if (!node || !this.audioContext || !this.pitchShiftAdapter) return;
+    // LAUNCH-02.5f: the active adapter owns how the semitone offset is
+    // applied — Signalsmith calls
+    // schedule({ semitones, formantCompensation, output }).
+    // It honours applyAtAudioTime so the current iteration finishes in the
+    // old key and the next plays the new key.
+    this.pitchShiftAdapter.setSemitones(
+      node as AudioNode,
+      semitones,
+      this.audioContext,
+      applyAtAudioTime,
+    );
+  }
+
+  /**
+   * Toggle whether a stem's signal chain routes through its
+   * pitch-shift node. When enabled, sources for this stem connect into
+   * the pitch-shift node and exit through the existing gain; when
+   * disabled, sources connect straight to gain (the default behaviour).
+   *
+   * Bypass-on-disable preserves bit-exact playback for the default key
+   * (offset 0). The pitch-shift engine adds a small fixed latency (~1
+   * processing window, well under Tone.PitchShift's granular-FFT latency)
+   * and is audibly transparent at semitones=0, but routing through it for the
+   * common case still costs CPU and one extra AudioWorklet hop. Skip
+   * it when nothing needs to shift.
+   *
+   * No-op when the stem buffer hasn't been registered yet (the
+   * AudioPlayerScheduler has nothing to re-route) or when the node can't
+   * be constructed (drums/click, worklet registration failed, no
+   * AudioContext). The next setAudioStemBuffers() will pick up the
+   * requested routing.
+   */
+  enablePitchShiftForStem(
+    instrumentType: AudioInstrumentType,
+    enabled: boolean,
+    options?: { seamless?: boolean },
+  ): void {
+    if (!this.audioPlayerScheduler) return;
+    const stemKey = audioInstrumentTypeToStemKey(instrumentType);
+    if (!isPitchShiftableStem(stemKey)) return;
+
+    const buffer = this.audioStemBuffers.get(instrumentType);
+    if (!buffer) return; // setAudioStemBuffers hasn't run yet — nothing to swap
+    const gain = this.getOrCreateInstrumentGainNode(instrumentType);
+    if (!gain) return;
+
+    // When `seamless` is true (LAUNCH-02.5c mid-loop key tap), don't
+    // kill the currently-playing source — the routing change only
+    // affects FUTURE sources that armInfiniteAudioIteration creates
+    // for the next iter onwards. The current iter finishes at its
+    // pre-change routing (default-key → gain direct), so the user
+    // hears the old key complete the loop they're in.
+    const setStemOptions = options?.seamless
+      ? { stopInFlight: false }
+      : undefined;
+
+    // Idempotence: if the requested routing already matches the
+    // current routing, skip setStem entirely. setStem triggers a 5 ms
+    // click-free ramp that kills the playing source — fine for actual
+    // transitions (default→pitched / pitched→default) but a glitch
+    // mid-loop when only the pitch VALUE changed (pitched→pitched).
+    // The semitone-to-semitone case is handled by the AudioParam
+    // write in setInstrumentPitchShift; the signal chain stays put.
+    const currentlyActive =
+      this.pitchShiftRoutingActive.get(instrumentType) === true;
+    if (currentlyActive === enabled) return;
+
+    if (!enabled) {
+      // Route source → gain directly (bypass PitchShift).
+      this.audioPlayerScheduler.setStem(
+        stemKey,
+        buffer,
+        gain,
+        undefined,
+        setStemOptions,
+      );
+      this.pitchShiftRoutingActive.set(instrumentType, false);
+      return;
+    }
+
+    const node = this.getOrCreatePitchShiftNode(instrumentType);
+    if (!node) {
+      // PitchShift unavailable — fall through to the dry path so playback
+      // continues, just without transposition. Already the default
+      // behaviour; the warn was logged inside getOrCreatePitchShiftNode.
+      this.audioPlayerScheduler.setStem(
+        stemKey,
+        buffer,
+        gain,
+        undefined,
+        setStemOptions,
+      );
+      // Routing stays inactive since we couldn't construct the node.
+      this.pitchShiftRoutingActive.set(instrumentType, false);
+      return;
+    }
+
+    // Source → pitch-shift node → (node.connect already established) →
+    // gain. The pitch-shift node IS a native AudioWorkletNode, so it accepts
+    // direct `source.connect(node)` without any wrapper unwrapping.
+    // setStem stops in-flight sources with a 5ms click-free ramp when
+    // seamless is false; when seamless is true the current source
+    // finishes at its pre-change routing and only future sources arm
+    // through the pitch-shift node.
+    this.audioPlayerScheduler.setStem(
+      stemKey,
+      buffer,
+      gain,
+      node as AudioNode,
+      setStemOptions,
+    );
+    this.pitchShiftRoutingActive.set(instrumentType, true);
+  }
+
+  /**
+   * LAUNCH-02.5f — the dry-stem (drums/click) compensation delay
+   * must match the active pitch engine. Resolution order:
+   *   1. `window.__PITCH_LATENCY_OVERRIDE_SECONDS` — by-ear runtime
+   *      tuning, wins over everything else.
+   *   2. The active adapter's reported latency — Signalsmith's live
+   *      `node.latency()` (reads the bass node if it exists, since both
+   *      pitched stems share the same engine latency).
+   *   3. The 0.14 fallback baseline if no adapter/node yet.
+   */
+  private getPitchShiftLatencySeconds(): number {
+    if (typeof window !== 'undefined') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const override = (window as any).__PITCH_LATENCY_OVERRIDE_SECONDS;
+      if (typeof override === 'number') return override;
+    }
+    if (this.pitchShiftAdapter) {
+      // Any pitched stem's node carries the engine latency; bass is the
+      // one that always exists when compensation is on.
+      const refNode =
+        this.instrumentPitchShiftNodes.get('bass' as AudioInstrumentType) ??
+        this.instrumentPitchShiftNodes.get(
+          'harmony' as AudioInstrumentType,
+        );
+      return this.pitchShiftAdapter.latencySeconds(
+        refNode as AudioNode | undefined,
+      );
+    }
+    return PITCH_SHIFT_FALLBACK_LATENCY_SECONDS;
+  }
+
+  /**
+   * LAUNCH-02.5c key-shift — lazily construct one DelayNode per
+   * non-pitch-shifted stem (drums + click), used to compensate for the
+   * pitch-shift engine's processing delay on bass + harmony. Returns null
+   * when the AudioContext isn't ready. Idempotent.
+   *
+   * The delay is connected `delay → instrumentGainNode → destination`
+   * at creation time; the `setStem` path connects the source to the
+   * delay's input. Removing the routing (the user goes back to default
+   * key) is done by reverting the source's `input` back to the gain via
+   * setStem, leaving the delay in place — it's cheap to keep cached.
+   */
+  private getOrCreateDelayNode(
+    instrumentType: AudioInstrumentType,
+  ): DelayNode | null {
+    if (!this.audioContext) return null;
+    const cached = this.instrumentDelayNodes.get(instrumentType);
+    if (cached) return cached;
+
+    const gain = this.getOrCreateInstrumentGainNode(instrumentType);
+    if (!gain) return null;
+
+    let delay: DelayNode;
+    try {
+      // Resolve the active engine's latency (override → adapter → 0.14).
+      // Set `window.__PITCH_LATENCY_OVERRIDE_SECONDS = 0.140` in the
+      // console then re-tap the key stepper to tune by ear without a
+      // rebuild — applies to the pitch-shift engine.
+      const override = this.getPitchShiftLatencySeconds();
+      // maxDelayTime must be >= the delayTime we set. Give 0.5s of
+      // headroom so override values up to 500ms can be tested.
+      delay = this.audioContext.createDelay(0.5);
+      delay.delayTime.value = override;
+      delay.connect(gain);
+      this.logger.info('Latency-compensation DelayNode using', {
+        instrumentType,
+        delaySeconds: override,
+        library: this.pitchShiftAdapter?.library,
+      });
+    } catch (err) {
+      this.logger.warn('getOrCreateDelayNode: DelayNode construction failed', {
+        instrumentType,
+        err,
+      });
+      return null;
+    }
+
+    this.instrumentDelayNodes.set(instrumentType, delay);
+    return delay;
+  }
+
+  /**
+   * LAUNCH-02.5c key-shift — toggle latency compensation on drums +
+   * click so they stay phase-locked with the pitch-engine-delayed bass
+   * + harmony. Idempotent.
+   *
+   * Called by the Groove Card hook in lockstep with
+   * enablePitchShiftForStem on bass + harmony: when ANY pitch shift is
+   * active on the pitched stems, drums and click route through a
+   * matching DelayNode. When no pitch shift is active (default key),
+   * the delay is bypassed so the stems play in real-time.
+   *
+   * No-op for stems that haven't had setAudioStemBuffers run yet
+   * (mirrors enablePitchShiftForStem's same guard).
+   */
+  setPitchShiftLatencyCompensation(
+    enabled: boolean,
+    options?: { seamless?: boolean },
+  ): void {
+    if (!this.audioPlayerScheduler) return;
+    const wasActive = this.pitchShiftLatencyCompensationActive;
+    // Early-return when the active state already matches the request.
+    // CRITICAL: without this, calling the method repeatedly (which
+    // happens on every key tap from setKey) re-fires setStem on
+    // drums + click, and setStem's stopStem call kills every in-flight
+    // and pre-armed source for those stems. The rearm path only
+    // re-arms bass + harmony, so drums permanently die after the
+    // first mid-loop tap. (We previously kept this method non-
+    // idempotent so a runtime change to
+    // window.__PITCH_LATENCY_OVERRIDE_SECONDS could pick up on
+    // the next tap; that override is now a dev-only tuning knob and
+    // is OK to pick up on the next Play instead of mid-loop.)
+    if (wasActive === enabled) return;
+    this.pitchShiftLatencyCompensationActive = enabled;
+
+    // The non-pitch-shifted stems that need to be delayed. Anything
+    // outside this list (currently: only the pitch-shiftable bass +
+    // harmony) already accounts for its own latency via the pitch-shift
+    // engine.
+    const nonShiftedStems: AudioInstrumentType[] = [
+      'audio-drums',
+      'audio-click',
+    ];
+
+    // Read the runtime-tunable delay value ONCE per call so all stems
+    // get the same value even if the override is changed concurrently.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const targetDelaySeconds = this.getPitchShiftLatencySeconds();
+
+    // When `seamless` is true (LAUNCH-02.5c mid-loop key tap), don't
+    // kill the currently-playing drum/click sources on the routing
+    // change. The current iter finishes at its old routing (direct →
+    // gain); future iters routed through the delay node pick up the
+    // compensation. This is the SAME fix as enablePitchShiftForStem's
+    // seamless option, applied to the non-pitch-shifted stems' delay
+    // toggle so drums don't go silent mid-loop.
+    const setStemOptions = options?.seamless
+      ? { stopInFlight: false }
+      : undefined;
+
+    for (const instrumentType of nonShiftedStems) {
+      const stemKey = audioInstrumentTypeToStemKey(instrumentType);
+      const buffer = this.audioStemBuffers.get(instrumentType);
+      if (!buffer) continue; // buffer not registered yet; skip silently
+      const gain = this.getOrCreateInstrumentGainNode(instrumentType);
+      if (!gain) continue;
+
+      if (!enabled) {
+        // Restore the direct routing: source → gain. setStem stops
+        // in-flight sources with a 5ms click-free ramp unless
+        // seamless is requested.
+        this.audioPlayerScheduler.setStem(
+          stemKey,
+          buffer,
+          gain,
+          undefined,
+          setStemOptions,
+        );
+        continue;
+      }
+
+      const delay = this.getOrCreateDelayNode(instrumentType);
+      if (!delay) {
+        // Couldn't build the delay; fall through to the dry path so
+        // playback continues. There will be an audible offset between
+        // pitched and non-pitched stems, but it's better than silence.
+        this.audioPlayerScheduler.setStem(
+          stemKey,
+          buffer,
+          gain,
+          undefined,
+          setStemOptions,
+        );
+        continue;
+      }
+      // Refresh the delay amount on every call so a runtime tweak via
+      // window.__PITCH_LATENCY_OVERRIDE_SECONDS picks up on the
+      // very next key tap without needing to dispose+rebuild the node.
+      // setValueAtTime is sample-accurate (vs `.value =`), avoiding a
+      // click when the delay changes while a source is feeding it.
+      try {
+        delay.delayTime.setValueAtTime(
+          targetDelaySeconds,
+          this.audioContext!.currentTime,
+        );
+      } catch {
+        // Fall through to direct assignment if setValueAtTime rejects.
+        delay.delayTime.value = targetDelaySeconds;
+      }
+      // Source → delay → gain. The delay's output is already wired to
+      // gain at creation time (see getOrCreateDelayNode), so setStem
+      // just needs to point the source at the delay's native input.
+      this.audioPlayerScheduler.setStem(
+        stemKey,
+        buffer,
+        gain,
+        delay as unknown as AudioNode,
+        setStemOptions,
+      );
+    }
+
+    // Metronome: the count-in clicks come out of a SEPARATE signal
+    // chain (gain node `getOrCreateInstrumentGainNode('metronome')`)
+    // that's hard-wired straight to destination at gain creation time.
+    // Drums/click are spliced BEFORE their gain via setStem; for the
+    // metronome we splice AFTER its gain — the gain's downstream is
+    // gain→delay→destination. Without this, the count-in clicks land
+    // ON the natural BPM beats but the pitch-engine-delayed stems land
+    // ~120 ms later, producing a perceived gap between count-in beat 4
+    // and the start of the groove.
+    this.applyMetronomeLatencyCompensation(enabled ? targetDelaySeconds : 0);
+
+    this.logger.info('Pitch-shift latency compensation', {
+      enabled,
+      delaySeconds: enabled ? targetDelaySeconds : 0,
+      library: this.pitchShiftAdapter?.library,
+    });
+  }
+
+  /**
+   * Splice (or refresh) a DelayNode AFTER the metronome's gain node so
+   * count-in clicks stay aligned with pitch-engine-delayed stems. Called
+   * from setPitchShiftLatencyCompensation; idempotent.
+   *
+   * On first call, lifts `metronomeGain.connect(destination)` to
+   * `metronomeGain.connect(delay); delay.connect(destination)`. On
+   * subsequent calls, only mutates `delay.delayTime.value`. When
+   * `delaySeconds === 0`, the delay node is left in place but set to
+   * zero — preserving the click-free invariant (no disconnect/reconnect
+   * mid-play, no clicks).
+   */
+  private applyMetronomeLatencyCompensation(delaySeconds: number): void {
+    if (!this.audioContext) return;
+
+    // Lazy splice: only do the disconnect-reconnect once. After that,
+    // we just mutate delayTime in-place.
+    if (!this.metronomeOutputDelay) {
+      const metronomeGain = this.getOrCreateInstrumentGainNode('metronome');
+      if (!metronomeGain) return;
+
+      try {
+        const delay = this.audioContext.createDelay(0.5);
+        delay.delayTime.value = delaySeconds;
+        // Lift the gain's connection: it currently routes straight to
+        // destination (PlaybackEngine.ts:2514). Disconnect, then route
+        // through the new delay.
+        metronomeGain.disconnect();
+        metronomeGain.connect(delay);
+        delay.connect(this.audioContext.destination);
+        this.metronomeOutputDelay = delay;
+        this.logger.info('Metronome output delay spliced', {
+          delaySeconds,
+        });
+      } catch (err) {
+        this.logger.warn('applyMetronomeLatencyCompensation: splice failed', {
+          err,
+        });
+        // Reconnect the gain to destination so audio still flows.
+        try {
+          metronomeGain.connect(this.audioContext.destination);
+        } catch {
+          // ignore
+        }
+        return;
+      }
+      return;
+    }
+
+    // Subsequent calls: just retune the existing delay. Use
+    // setValueAtTime for click-freeness.
+    try {
+      this.metronomeOutputDelay.delayTime.setValueAtTime(
+        delaySeconds,
+        this.audioContext.currentTime,
+      );
+    } catch {
+      this.metronomeOutputDelay.delayTime.value = delaySeconds;
+    }
+  }
+
+  /**
+   * LAUNCH-02.5c key-shift — install (or clear) the per-iteration buffer
+   * resolver. RegionScheduler calls this for every newly-armed iteration
+   * inside its WINDOW=3 pre-arm window; returning null falls back to the
+   * stem's registered buffer (the engine-level default).
+   *
+   * Ownership semantics mirror `useActiveGrooveCardStore.clearActiveCard`
+   * (see [active-groove-card.store.ts:48-51]):
+   *   - `setPendingBufferResolver(fn, ownerId)`: latest install wins.
+   *     A new card always succeeds in claiming the resolver, even if a
+   *     previous card hasn't unmounted yet.
+   *   - `setPendingBufferResolver(null, ownerId)`: clears ONLY if
+   *     `ownerId` matches the current owner. This makes the call safe
+   *     to fire from an unmount effect that races a subsequent card's
+   *     install — the stale clear is a no-op.
+   *
+   * The resolver itself is fed into scheduleAllRegions on the next
+   * schedule pass; live regions already pre-armed retain whatever
+   * resolver they captured at arm time (cf. RegionScheduler's WINDOW=3
+   * pre-arm — the resolver is captured into the source.onended closure).
+   */
+  setPendingBufferResolver(
+    resolver: ResolvePendingBuffer | null,
+    ownerId: string,
+  ): void {
+    if (resolver === null) {
+      if (this.pendingBufferResolverOwnerId !== ownerId) {
+        // Stale clear from a previously-owning card — ignore so the
+        // current owner's resolver is not wiped.
+        return;
+      }
+      this.pendingBufferResolver = null;
+      this.pendingBufferResolverOwnerId = null;
+      return;
+    }
+    this.pendingBufferResolver = resolver;
+    this.pendingBufferResolverOwnerId = ownerId;
+  }
+
+  /**
+   * LAUNCH-02.5c key-shift — partial tear-down + re-arm of pre-armed
+   * iterations for one or more regions. Thin wrapper around
+   * RegionScheduler.rearmFutureIterations that supplies the engine-level
+   * audioContext, audioStemAccess, and currently-installed resolver.
+   *
+   * Called by the Groove Card hook when the key changes: every musical
+   * stem (bass/drums/harmony) has its own regionId, and they all need to
+   * re-arm together so the swap is in lockstep. Returns the total number
+   * of iterations re-armed across all regions (mostly diagnostic).
+   *
+   * No-op when the scheduler hasn't been initialised, when there's no
+   * AudioContext, or when no resolver has been installed (without a
+   * resolver the rearm would simply reproduce the current buffers,
+   * making it pure cost).
+   */
+  /**
+   * Currently-applied pre-roll on bass+harmony rearmed iterations.
+   * Used to compute the DELTA when rearm pre-roll changes, so an
+   * existing pre-roll of 0.14 stays at 0.14 (not compounded to 0.28)
+   * when pitched→pitched transitions occur. Resets to 0 on stop.
+   */
+  private currentRearmPreRollSeconds = 0;
+
+  rearmFutureIterationsForRegions(
+    regionIds: readonly string[],
+    options?: { preRollSeconds?: number },
+  ): number {
+    if (!this.regionScheduler) return 0;
+    if (!this.audioContext) return 0;
+    if (!this.pendingBufferResolver) return 0;
+    if (!this.audioPlayerScheduler) return 0;
+
+    // `preRollSeconds` in the public API is the TARGET pre-roll —
+    // i.e. "from now on, rearmed iters should sit `target` seconds
+    // earlier than their natural seam." We track the currently-applied
+    // pre-roll and forward only the DELTA to the scheduler so a
+    // pitched→pitched transition (target = 0.14 again) doesn't
+    // compound to 0.28, and a pitched→default transition (target = 0)
+    // correctly pushes existing entries 0.14 seconds LATER to land
+    // on the natural seam.
+    const targetPreRoll = options?.preRollSeconds ?? 0;
+    const deltaPreRoll = targetPreRoll - this.currentRearmPreRollSeconds;
+    this.currentRearmPreRollSeconds = targetPreRoll;
+    // Inform RegionScheduler so future-armed iterations crossfade
+    // over the same window. The crossfade is what makes two
+    // overlapping sources at the pitch-shift node input sum to a
+    // smooth equal-power transition instead of a discontinuous
+    // sample-sum spike.
+    this.regionScheduler.setInterIterCrossfadeSeconds(targetPreRoll);
+
+    let total = 0;
+    for (const regionId of regionIds) {
+      total += this.regionScheduler.rearmFutureIterations(
+        regionId,
+        this.audioContext,
+        this.audioPlayerScheduler,
+        this.pendingBufferResolver,
+        { preRollSeconds: deltaPreRoll },
+      );
+    }
+    return total;
+  }
+
+  /**
+   * Stop every active audio stem. Delegates to the two schedulers that
+   * actually own stem sources — AudioPlayerScheduler for per-event audio
+   * (one-shot stems) and RegionScheduler for infinite-loop iterations
+   * (Groove Card). Both apply a click-free gain ramp via the shared
+   * applyClickFreeStop helper so the cached gain nodes remain reusable for
+   * the next playback.
+   */
+
+  stopAudioStems(): void {
+    this.audioPlayerScheduler?.stopAll();
+    this.regionScheduler?.stopAllInfiniteAudio(this.audioContext);
+
+    // LAUNCH-02.5c key-shift: dispose any cached pitch-shift nodes so the
+    // next play starts from a clean pitch-engine state.
+    //
+    // Why: the pitch-shift engine keeps ~120 ms of audio in its
+    // output buffer between input frames; when the source stops, that
+    // residue stays in the buffer (the worklet just stops processing,
+    // it doesn't drain). On the next play the residue gets pushed out
+    // before the new source's output reaches the gain, audible as a
+    // brief "previous key" spike before the count-in.
+    //
+    // Disposing forces getOrCreatePitchShiftNode to rebuild fresh nodes
+    // on the next enablePitchShiftForStem(true), which automatically
+    // triggers a fresh pre-warm. The pre-warm runs during the ~1.85 s
+    // count-in window so the new nodes are at steady-state before the
+    // first real stem buffer reaches them. Net cost: ~2 s of CPU per
+    // play; net benefit: no spike, no key bleed between plays.
+    //
+    // DelayNodes on drums + click are NOT disposed because their state
+    // is stateless from the next play's perspective (no residue past
+    // the click-free gain ramp). Keeping them cached avoids
+    // unnecessary node churn.
+    if (this.instrumentPitchShiftNodes.size > 0) {
+      // CLICK-FREE TEARDOWN (LAUNCH-02.5g):
+      //
+      // The stem gains the pitch nodes feed into are already being ramped
+      // to 0 over 5ms by audioPlayerScheduler.stopAll() /
+      // regionScheduler.stopAllInfiniteAudio() above. But the pitch-shift
+      // engine (Signalsmith) holds ~one analysis block of audio in its
+      // worklet output buffer (~120-150ms at blockMs 140). If we hard-
+      // `disconnect()` the node synchronously at `now`, we cut that buffer
+      // mid-drain WHILE the gain is still mid-ramp — an orphaned-audio
+      // energy spike (the click on stop).
+      //
+      // Fix: take the node maps out of the engine's live state NOW (so the
+      // next play rebuilds fresh nodes and nothing else touches these), but
+      // DEFER the actual src.stop()/disconnect() until after the gain ramp
+      // has reached silence AND the worklet buffer has drained into that
+      // now-silent gain. By then we're disconnecting into silence — no
+      // spike. The deferral window = fade (5ms) + engine latency + padding.
+      const prewarmToTearDown = Array.from(
+        this.pitchShiftPrewarmSources.values(),
+      );
+      const nodesToTearDown = Array.from(
+        this.instrumentPitchShiftNodes.values(),
+      );
+
+      // Drain window: the engine's reported/nominal latency (how much audio
+      // is in flight in the worklet) + the 5ms gain ramp + a safety pad.
+      // Capped so a bogus latency reading can't hang the teardown.
+      const latency = this.pitchShiftAdapter?.latencySeconds() ?? 0.14;
+      const drainSeconds = Math.min(0.4, Math.max(0.05, latency)) + 0.005 + 0.02;
+
+      // Capture the adapter ref so the deferred closure uses the same one
+      // even if the engine field changes (it won't today, but it's free
+      // safety for the async gap).
+      const adapter = this.pitchShiftAdapter;
+
+      // SYNCHRONOUSLY silence each pitch node NOW (t=0), before the deferred
+      // disposal. The worklet flushes its ~145ms residual buffer when
+      // disposed; by silencing the relay's own gain immediately we ensure
+      // that flush (and the disconnect transient) passes through a muted
+      // node instead of the instrument gain — which applyClickFreeStop has
+      // RESTORED to resting volume by then. This is the ~140ms stop spike.
+      if (adapter && this.audioContext) {
+        for (const node of nodesToTearDown) {
+          try {
+            adapter.silenceNode(node as AudioNode, this.audioContext);
+          } catch {
+            /* best-effort */
+          }
+        }
+      }
+      const tearDown = () => {
+        for (const src of prewarmToTearDown) {
+          try {
+            src.stop();
+          } catch {
+            // best-effort
+          }
+          try {
+            src.disconnect();
+          } catch {
+            // best-effort
+          }
+        }
+        for (const node of nodesToTearDown) {
+          // Delegate to the adapter — it owns the FULL teardown of its
+          // internal sub-graph (for Signalsmith: stop + disconnect the real
+          // worklet behind the relay, not just the relay). A blind
+          // relay.disconnect() would leave the live worklet connected to the
+          // instrument gain, leaking one per play → the spike after N plays.
+          try {
+            adapter?.disposeNode(node as AudioNode);
+          } catch {
+            // best-effort; fall back to a raw disconnect if dispose throws
+            try {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (node as any).disconnect?.();
+            } catch {
+              /* ignore */
+            }
+          }
+        }
+        this.logger.info('PitchShift nodes disposed on stop (deferred)', {
+          instanceId: this.instanceId,
+          drainSeconds,
+          count: nodesToTearDown.length,
+        });
+      };
+
+      // Clear live state immediately so the next play starts clean while the
+      // old nodes finish draining in the background.
+      this.pitchShiftPrewarmSources.clear();
+      this.instrumentPitchShiftNodes.clear();
+      // Routing tracking must reset alongside the node cache — on the
+      // next play, fresh nodes are created and need their first
+      // enablePitchShiftForStem call to actually wire setStem again.
+      this.pitchShiftRoutingActive.clear();
+      // Reset rearm pre-roll state alongside node disposal so the next
+      // play starts from 0 (default direct routing) and the first
+      // default→pitched transition applies the full 0.12s pre-roll.
+      this.currentRearmPreRollSeconds = 0;
+      // Crossfade duration tracks pre-roll — reset together.
+      this.regionScheduler?.setInterIterCrossfadeSeconds(0);
+
+      // Defer the disconnect until the buffer has drained into silence.
+      // setTimeout (ms) rather than scheduling on the audio clock because
+      // disconnect() is a graph mutation, not an AudioParam event.
+      if (typeof window !== 'undefined' && window.setTimeout) {
+        window.setTimeout(tearDown, Math.ceil(drainSeconds * 1000));
+      } else {
+        // SSR / no-timer fallback: tear down synchronously (no audio
+        // context means no audible spike to avoid anyway).
+        tearDown();
+      }
+    }
+
+    this.logger.info('Audio stems stopped', { instanceId: this.instanceId });
+  }
+
+  /**
+   * Remove every track whose ID begins with the given prefix. Used by the
+   * Groove Card (LAUNCH-02.5c) so two cards on one page can register tracks
+   * under separate prefixes (e.g. "card-abc-") and clean themselves up
+   * without disturbing siblings.
+   */
+  unregisterTracksByPrefix(prefix: string): void {
+    const trackIds: string[] = [];
+    for (const id of this.tracks.keys()) {
+      if (id.startsWith(prefix)) {
+        trackIds.push(id);
+      }
+    }
+    for (const id of trackIds) {
+      this.unregisterTrack(id);
+    }
+    this.logger.info('Tracks unregistered by prefix', {
+      prefix,
+      removed: trackIds.length,
+      instanceId: this.instanceId,
+    });
   }
 }

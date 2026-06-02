@@ -60,6 +60,9 @@ export async function POST(request: Request) {
   const { error: insertError } = await supabase.from('waitlist').insert({
     email: parsed.data.email,
     level: parsed.data.level,
+    // Top-level column (not metadata) so the row joins to this visitor's
+    // funnel_events. Null-tolerant for older cached clients that omit it.
+    anonymous_id: parsed.data.anonymousId ?? null,
     metadata: {
       userAgent,
       requestReferrer,

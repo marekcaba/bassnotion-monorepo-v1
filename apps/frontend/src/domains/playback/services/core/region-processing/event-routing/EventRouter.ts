@@ -46,6 +46,10 @@ export class EventRouter {
   private harmonyScheduler!: Scheduler;
   private bassScheduler!: Scheduler;
   private voiceCueScheduler!: Scheduler;
+  // LAUNCH-02.5b: optional audio-stem scheduler. One instance handles all
+  // 4 stems; stem identity passes through event.data.stemKey, so adding a
+  // 5th stem in the future doesn't touch EventRouter.
+  private audioPlayerScheduler: Scheduler | null = null;
 
   // Timing accuracy callback
   // eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -68,6 +72,7 @@ export class EventRouter {
     bassScheduler: Scheduler,
     voiceCueScheduler: Scheduler,
     trackTimingAccuracy: (frame: number, time: number) => void,
+    audioPlayerScheduler?: Scheduler,
   ): void {
     this.audioContext = audioContext;
     this.sampleRate = sampleRate;
@@ -78,6 +83,7 @@ export class EventRouter {
     this.bassScheduler = bassScheduler;
     this.voiceCueScheduler = voiceCueScheduler;
     this.trackTimingAccuracy = trackTimingAccuracy;
+    this.audioPlayerScheduler = audioPlayerScheduler ?? null;
   }
 
   /**
@@ -153,6 +159,14 @@ export class EventRouter {
     // Handle voice cues
     if (instrumentType === 'voice-cue') {
       return this.voiceCueScheduler.schedule(event, audioTime, frame);
+    }
+
+    // LAUNCH-02.5b: route any audio-stem event ('audio-bass', 'audio-drums',
+    // 'audio-harmony', 'audio-click') through the single AudioPlayerScheduler.
+    // The scheduler identifies the stem via event.data.stemKey, so adding a
+    // 5th stem in the future doesn't require an EventRouter change.
+    if (instrumentType.startsWith('audio-') && this.audioPlayerScheduler) {
+      return this.audioPlayerScheduler.schedule(event, audioTime, frame);
     }
 
     // Not supported yet - fall back to event bus

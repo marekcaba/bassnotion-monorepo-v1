@@ -83,7 +83,7 @@ describe('Scheduler - Unified Audio Scheduling', () => {
       expect(INSTRUMENT_CONFIGS).toHaveProperty('drums');
       expect(INSTRUMENT_CONFIGS).toHaveProperty('harmony');
       expect(INSTRUMENT_CONFIGS).toHaveProperty('bass');
-      expect(INSTRUMENT_CONFIGS).toHaveProperty('voiceCue');
+      expect(INSTRUMENT_CONFIGS).toHaveProperty('voice-cue');
     });
 
     it('should have correct metronome configuration', () => {
@@ -117,13 +117,71 @@ describe('Scheduler - Unified Audio Scheduling', () => {
     });
 
     it('should have correct voice cue configuration', () => {
-      const config = INSTRUMENT_CONFIGS.voiceCue;
-      expect(config.type).toBe('voiceCue');
+      const config = INSTRUMENT_CONFIGS['voice-cue'];
+      expect(config.type).toBe('voice-cue');
       expect(config.eventTypeToBufferKey).toHaveProperty('one');
       expect(config.eventTypeToBufferKey).toHaveProperty('two');
       expect(config.eventTypeToBufferKey).toHaveProperty('three');
       expect(config.eventTypeToBufferKey).toHaveProperty('four');
       expect(config.eventTypeToBufferKey).toHaveProperty('and');
+    });
+
+    // LAUNCH-02.5a — exhaustiveness over the canonical InstrumentType union.
+    describe('Canonical InstrumentType exhaustiveness (LAUNCH-02.5a)', () => {
+      const expectedMidiKeys = [
+        'metronome',
+        'drums',
+        'bass',
+        'chords',
+        'harmony',
+        'melody',
+        'voice-cue',
+      ] as const;
+      const expectedAudioKeys = [
+        'audio-bass',
+        'audio-drums',
+        'audio-harmony',
+        'audio-click',
+      ] as const;
+
+      it.each(expectedMidiKeys)(
+        'has a config entry for MIDI key "%s"',
+        (key) => {
+          expect(INSTRUMENT_CONFIGS).toHaveProperty(key);
+          expect(INSTRUMENT_CONFIGS[key].type).toBe(key);
+        },
+      );
+
+      it.each(expectedAudioKeys)(
+        'has a config entry for audio-stem key "%s"',
+        (key) => {
+          expect(INSTRUMENT_CONFIGS).toHaveProperty(key);
+          expect(INSTRUMENT_CONFIGS[key].type).toBe(key);
+        },
+      );
+
+      it('has an "unknown" sentinel entry', () => {
+        expect(INSTRUMENT_CONFIGS).toHaveProperty('unknown');
+        expect(INSTRUMENT_CONFIGS.unknown.type).toBe('unknown');
+      });
+
+      it.each(expectedAudioKeys)(
+        'audio-stem config "%s" no longer carries the 02.5a stub marker (wired in 02.5b)',
+        (key) => {
+          // 02.5a installed "(stub — wire in 02.5b)" markers in the
+          // loggerName so any accidental audio-* event hitting Scheduler
+          // between 02.5a and 02.5b would be grep-visible. 02.5b wires the
+          // real audio-stem path (PlaybackEngine → AudioPlayerScheduler →
+          // EventRouter), so the markers are removed.
+          expect(INSTRUMENT_CONFIGS[key].loggerName).not.toContain(
+            '(stub — wire in 02.5b)',
+          );
+        },
+      );
+
+      it('voiceCue camelCase key is gone (canonical kebab-case wins)', () => {
+        expect(INSTRUMENT_CONFIGS).not.toHaveProperty('voiceCue');
+      });
     });
   });
 

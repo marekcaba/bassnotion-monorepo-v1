@@ -650,6 +650,55 @@ export class TutorialRepository implements ITutorialRepository {
     }
   }
 
+  /**
+   * Flip a tutorial from draft to published. Backend updates
+   * `status`, `is_active`, and `published_at` in a single write so every
+   * "is this published?" query agrees. Returns the updated Tutorial.
+   */
+  async publish(id: TutorialId): Promise<Result<Tutorial>> {
+    try {
+      await this.ensureAuth();
+      const response = await apiClient.post(
+        `${this.baseUrl}/${id.value}/publish`,
+        {},
+      );
+      if (!response) {
+        return Result.failure(new Error('No response from publish API'));
+      }
+      const updated = Tutorial.fromDTO(response as TutorialDTO);
+      return Result.success(updated);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to publish tutorial';
+      logger.error('Failed to publish tutorial', { error: errorMessage });
+      return Result.failure(new Error(errorMessage));
+    }
+  }
+
+  /**
+   * Mirror of publish(): reverts the tutorial to draft. Backend clears
+   * `published_at`, resets `status` to 'draft', and flips `is_active` off.
+   */
+  async unpublish(id: TutorialId): Promise<Result<Tutorial>> {
+    try {
+      await this.ensureAuth();
+      const response = await apiClient.post(
+        `${this.baseUrl}/${id.value}/unpublish`,
+        {},
+      );
+      if (!response) {
+        return Result.failure(new Error('No response from unpublish API'));
+      }
+      const updated = Tutorial.fromDTO(response as TutorialDTO);
+      return Result.success(updated);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to unpublish tutorial';
+      logger.error('Failed to unpublish tutorial', { error: errorMessage });
+      return Result.failure(new Error(errorMessage));
+    }
+  }
+
   async saveMany(tutorials: Tutorial[]): Promise<Result<Tutorial[]>> {
     try {
       await this.ensureAuth();

@@ -4,7 +4,8 @@
 **Phase:** 1 — Whitelist & free-tier foundation
 **Estimated effort:** ~3 days
 **Status:** 📝 Ready
-**Independent of:** LAUNCH-02, 03, 04 (no dependencies; can ship any time)
+**Independent of:** LAUNCH-02, 03, 04 (no dependencies on the cap system; can ship any time)
+**Partial dependency on LAUNCH-02.5:** Fix 1 (single play-button loading state) targets the Groove Card's play button — that ships in [LAUNCH-02.5c](./LAUNCH-02.5c-groove-card-in-app.md). Fix 1 must wait for 02.5c. Fixes 2/3/4 (preload, retry, iOS banner) target pre-existing playback infra (`usePlaybackControl.ts`, `ScrollTriggerLoader.tsx`, `ToneBufferLoader.ts`) and can ship before or after the LAUNCH-02.5 epic — they are fully independent.
 **Source:** Carried over from old BETA Plan Phase BETA-1; this story consolidates those items into one shippable unit.
 
 ---
@@ -72,14 +73,14 @@ Four discrete fixes, each scoped to a known file and ~30min to a few hours of wo
 - **`ToneBufferLoader.ts`** already imports `CircuitBreaker` but doesn't use it
 - **Wrap** sample fetches in the existing CircuitBreaker
 - **Retry policy:** 1 retry with 500ms backoff
-- **After 2 failures:** surface a toast: *"Some samples failed to load. Try refreshing — usually fixes it."*
+- **After 2 failures:** surface a toast: _"Some samples failed to load. Try refreshing — usually fixes it."_
 - **Don't silently fall back** to a missing instrument — the user needs to know something's off
 
 ### Fix 4 — iOS Safari banner
 
 - **Detect:** `navigator.userAgent` includes `Mobile/.*Safari` AND `Mac OS X.*iPhone|iPad|iPod`
 - **Show banner:** one-time per session (localStorage flag), dismissable
-- **Copy:** *"Best experience on desktop Chrome/Firefox. Mobile bass practice coming soon — we'll email you when it's ready."*
+- **Copy:** _"Best experience on desktop Chrome/Firefox. Mobile bass practice coming soon — we'll email you when it's ready."_
 - **Optional:** include a "Notify me" link to the whitelist page (LAUNCH-01) for mobile-only users to opt in for the mobile launch later
 - **Don't block** — iOS users can still use the platform, just with the warning
 
@@ -127,17 +128,21 @@ Four discrete fixes, each scoped to a known file and ~30min to a few hours of wo
 ### Files to touch
 
 **Fix 1 — Loading UX:**
+
 - **EDIT:** `apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/GlobalControls/hooks/usePlaybackControl.ts` (lines 327–382 per BETA Plan)
 - **EDIT:** the play button component (find via [GlobalControls/](../../../../apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/GlobalControls/))
 
 **Fix 2 — Preload:**
+
 - **EDIT:** `apps/frontend/src/domains/playback/components/ScrollTriggerLoader.tsx`
 
 **Fix 3 — Retry:**
+
 - **EDIT:** `apps/frontend/src/domains/playback/modules/storage/loaders/ToneBufferLoader.ts`
 - **REFERENCE:** `apps/frontend/src/domains/playback/patterns/CircuitBreaker.ts` (already exists, just unused)
 
 **Fix 4 — iOS banner:**
+
 - **NEW:** `apps/frontend/src/shared/components/IOSSafariBanner.tsx`
 - **NEW:** `apps/frontend/src/shared/hooks/useIOSDetection.ts`
 - **EDIT:** root layout to mount the banner

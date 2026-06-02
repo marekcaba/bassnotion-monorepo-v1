@@ -10,12 +10,16 @@ import {
   ensureFirstTouchAttribution,
   getStoredAttribution,
 } from '@/shared/attribution';
+import { ensureAnonymousId } from '@/shared/attribution/visitor';
+import { trackEvent } from '@/shared/attribution/events';
 import { FounderCard } from '@/shared/founder-card/FounderCard';
 import {
   BackgroundTuner,
   DEFAULT_BACKGROUND,
   backgroundToCss,
 } from '@/shared/dev/BackgroundTuner';
+import { WaitlistGrooveCard } from './_components/WaitlistGrooveCard';
+import type { FeaturedGroove } from './page';
 
 const LEVEL_OPTIONS: { value: WaitlistLevel; label: string; hint: string }[] = [
   { value: 'starting', label: 'Just starting out', hint: '0–1 yr' },
@@ -99,33 +103,6 @@ function packAttributionForStripe(
     return undefined;
   }
 }
-type GrooveControl = 'play' | 'tempo' | 'key' | 'mute';
-const TEMPO_OPTIONS = [72, 88, 104, 120];
-const KEY_OPTIONS = ['E', 'F#', 'G', 'A', 'C'];
-
-const CAPTION_DEFAULT =
-  'Press play. Then touch a control below — hear the band bend to you.';
-
-const CAPTIONS: Record<GrooveControl, (state: GrooveState) => string> = {
-  play: (s) =>
-    s.playing
-      ? "Band's playing. Now slow it down, change the key, or mute the bass."
-      : CAPTION_DEFAULT,
-  tempo: () => 'Tempo changed. The whole band followed you — not a recording.',
-  key: () => 'New key. Every instrument transposed instantly.',
-  mute: (s) =>
-    s.muted
-      ? "Bass muted. That's your seat now. Play the line."
-      : 'Bass back in. Hear how it locks with the drums.',
-};
-
-type GrooveState = {
-  playing: boolean;
-  tempo: number;
-  keyIndex: number;
-  muted: boolean;
-};
-
 /**
  * Scroll-triggered fade+rise wrapper. Honors prefers-reduced-motion
  * (renders immediately, no transition). Fires once per element.
@@ -185,8 +162,10 @@ function Reveal({
 
 export function WaitlistClient({
   cardConfig,
+  featuredGroove,
 }: {
   cardConfig: FounderCardConfig;
+  featuredGroove: FeaturedGroove | null;
 }) {
   const [email, setEmail] = useState('');
   const [level, setLevel] = useState<WaitlistLevel | ''>('');
@@ -306,6 +285,7 @@ export function WaitlistClient({
           signupIntent,
           website,
           attribution,
+          anonymousId: ensureAnonymousId(),
         }),
       });
       const data = await res.json();
@@ -314,6 +294,9 @@ export function WaitlistClient({
         setStatus('error');
         return;
       }
+      // Record the conversion against this visitor so view -> signup is
+      // attributable per source/video. Fire-and-forget.
+      trackEvent('waitlist_submitted', { signupIntent });
       setAlreadyOnList(Boolean(data.alreadyOnList));
       setSignupIntent(signupIntent);
       setStatus('upsell');
@@ -344,14 +327,29 @@ export function WaitlistClient({
         so the page never flashes a lighter color while the radials
         animate in.
       */}
+      {/* Texture overlay (leather). Bottom decorative layer — sits on the
+          base color, below the noise and radials. Production values are
+          literals matching DEFAULT_BACKGROUND; tuner overrides them in
+          dev so it can be retuned without code changes. */}
       <div
         aria-hidden="true"
         className="fixed inset-0 pointer-events-none z-0"
         style={{
-          background: isDevBuild
-            ? backgroundToCss(bgConfig)
-            : 'radial-gradient(480px 420px at 50% 11%, rgba(18,18,18,0.22), transparent 68%), radial-gradient(720px 320px at 50% 66%, rgba(18,18,18,0.49), transparent 52%)',
-          opacity: bgVisible ? 1 : 0,
+          backgroundImage: `url("${isDevBuild ? bgConfig.texture.url : '/textures/leather2.webp'}")`,
+          backgroundSize: isDevBuild
+            ? bgConfig.texture.tileSize === 0
+              ? 'cover'
+              : `${bgConfig.texture.tileSize}px`
+            : '1776px',
+          backgroundRepeat: isDevBuild
+            ? bgConfig.texture.tileSize === 0
+              ? 'no-repeat'
+              : 'repeat'
+            : 'repeat',
+          mixBlendMode: isDevBuild ? bgConfig.texture.blendMode : 'screen',
+          opacity:
+            (isDevBuild ? bgConfig.texture.opacity : 0.09) *
+            (bgVisible ? 1 : 0),
           transition: 'opacity 1200ms cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       />
@@ -360,15 +358,29 @@ export function WaitlistClient({
         className="fixed inset-0 pointer-events-none z-0"
         style={{
           opacity:
-            (isDevBuild ? bgConfig.noiseOpacity : 0.02) * (bgVisible ? 1 : 0),
+            (isDevBuild ? bgConfig.noiseOpacity : 0.015) * (bgVisible ? 1 : 0),
           backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
           transition: 'opacity 1200ms cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       />
+      {/* Radial glows on top of texture + noise so they cleanly dim the
+          decorative layers without the grain reading through them. */}
+      <div
+        aria-hidden="true"
+        className="fixed inset-0 pointer-events-none z-0"
+        style={{
+          background: isDevBuild
+            ? backgroundToCss(bgConfig)
+            : 'radial-gradient(480px 420px at 50% 11%, rgba(71,71,71,0.14), transparent 68%), radial-gradient(220px 100px at 50% 67%, rgba(71,71,71,0.08), transparent 154%), radial-gradient(1600px 1100px at -15% -15%, rgba(0,0,0,0.2), transparent 120%), radial-gradient(1600px 1100px at 115% -15%, rgba(0,0,0,0.2), transparent 120%), radial-gradient(1600px 1100px at -15% 115%, rgba(0,0,0,0.2), transparent 120%), radial-gradient(1600px 1100px at 115% 115%, rgba(0,0,0,0.2), transparent 120%)',
+          opacity: bgVisible ? 1 : 0,
+          transition: 'opacity 1200ms cubic-bezier(0.16, 1, 0.3, 1)',
+        }}
+      />
 
-      {/* Dev-only background tuner — gated by NEXT_PUBLIC_VERCEL_ENV
-          Temporarily disabled to view the page without the panel. To
-          re-enable, restore the conditional below.
+      {/* Dev-only background tuner — commented out now that the values
+          are baked into both `DEFAULT_BACKGROUND` (BackgroundTuner.tsx)
+          and the production literals above. Uncomment the conditional
+          below to retune the bg again.
       {isDevBuild ? (
         <BackgroundTuner config={bgConfig} onChange={setBgConfig} />
       ) : null}
@@ -423,15 +435,15 @@ export function WaitlistClient({
               between the headline and the demo. ──────────────────── */}
           <Reveal>
             <div className="text-center max-w-[780px] mx-auto">
-              <div className="inline-flex items-center gap-2.5 text-xs font-bold tracking-[0.14em] uppercase text-[#F26B1D] mb-5 animate-[hero-eyebrow-pulse_3s_ease-in-out_infinite] motion-reduce:animate-none">
+              <div className="inline-flex items-center gap-2.5 text-xs font-bold tracking-[0.14em] uppercase text-white mb-5 animate-[hero-eyebrow-pulse_3s_ease-in-out_infinite] motion-reduce:animate-none">
                 <span
                   aria-hidden="true"
-                  className="w-6 h-px bg-[#F26B1D] opacity-60"
+                  className="w-6 h-px bg-white opacity-60"
                 />
                 Opening soon · 2026
                 <span
                   aria-hidden="true"
-                  className="w-6 h-px bg-[#F26B1D] opacity-60"
+                  className="w-6 h-px bg-white opacity-60"
                 />
               </div>
               <style jsx global>{`
@@ -446,10 +458,9 @@ export function WaitlistClient({
                 }
               `}</style>
               <h1 className="font-heading uppercase text-[clamp(38px,6.4vw,72px)] leading-[0.95] tracking-[0.005em]">
-                Stop <span className="text-[#F26B1D]">watching</span> bass
+                <span className="text-[#F26B1D]">Stop watching bass</span>
                 <br />
-                <span className="text-[#F26B1D]">Start</span> playing{' '}
-                <span className="text-[#F26B1D]">it</span>
+                Start playing along
               </h1>
               <p className="mt-6 mx-auto text-[#9A948C] text-[18px] leading-[1.6] max-w-[34em]">
                 Every other platform hands you a video to watch.{' '}
@@ -464,8 +475,13 @@ export function WaitlistClient({
               </p>
             </div>
 
-            <div className="mt-10">
-              <GrooveCardMockup />
+            <div className="mt-10 mx-auto w-full max-w-[780px]">
+              {/* LAUNCH-02.5d: real interactive Groove Card. The
+                  WaitlistAudioBootstrap wrapper inside provides the
+                  minimal audio engine (no full CoreServices). Capped at
+                  780px to match the WhyItWorks section below — the two
+                  sit in the same visual column on desktop. */}
+              <WaitlistGrooveCard featuredGroove={featuredGroove} />
             </div>
           </Reveal>
 
@@ -985,276 +1001,6 @@ function MuteDial() {
 }
 
 /* ════════════════════════════════════════════════════════════
-   GROOVE CARD — visual mockup only (no real audio yet)
-   ════════════════════════════════════════════════════════════ */
-function GrooveCardMockup() {
-  const [groove, setGroove] = useState<GrooveState>({
-    playing: false,
-    tempo: 104,
-    keyIndex: 0,
-    muted: false,
-  });
-  const [caption, setCaption] = useState(CAPTION_DEFAULT);
-
-  const handleControl = (control: GrooveControl) => {
-    let next: GrooveState = groove;
-    if (control === 'play') next = { ...groove, playing: !groove.playing };
-    else if (control === 'tempo') {
-      const i = TEMPO_OPTIONS.indexOf(groove.tempo);
-      next = {
-        ...groove,
-        tempo: TEMPO_OPTIONS[(i + 1) % TEMPO_OPTIONS.length] ?? 104,
-      };
-    } else if (control === 'key') {
-      next = {
-        ...groove,
-        keyIndex: (groove.keyIndex + 1) % KEY_OPTIONS.length,
-      };
-    } else if (control === 'mute') next = { ...groove, muted: !groove.muted };
-    setGroove(next);
-    setCaption(CAPTIONS[control](next));
-  };
-
-  const handlePlayButton = () => {
-    const next = { ...groove, playing: true };
-    setGroove(next);
-    setCaption(CAPTIONS.play(next));
-  };
-
-  return (
-    <section
-      className="mx-auto max-w-[780px] w-full rounded-[20px] p-5 border border-[#26221E] shadow-[0_40px_90px_-40px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.03)]"
-      style={{
-        background: 'linear-gradient(165deg, #161412, #0C0B0A)',
-      }}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between gap-2 px-1.5 pb-3.5">
-        <span className="text-xs font-bold tracking-[0.1em] uppercase text-[#6B655E]">
-          Now playing ·{' '}
-          <b className="text-[#F5F1EB]">
-            &ldquo;Greasy Pocket&rdquo; — Funk in {KEY_OPTIONS[groove.keyIndex]}
-          </b>
-        </span>
-        <div className="flex items-center gap-2">
-          {/* Dev-only guardrail. Auto-hides on Vercel production.
-              Reminds us to swap in the real Groove Card before launch. */}
-          {process.env.NEXT_PUBLIC_VERCEL_ENV !== 'production' && (
-            <span
-              title="This Groove Card is a visual mockup; the real interactive component will replace it before launch."
-              className="text-[10px] font-bold tracking-[0.12em] uppercase text-[#FFBD2E] border border-[rgba(255,189,46,0.35)] bg-[rgba(255,189,46,0.06)] rounded-full px-2 py-1 whitespace-nowrap"
-            >
-              Preview
-            </span>
-          )}
-          <span className="text-[11px] font-bold tracking-[0.06em] text-[#F26B1D] border border-[rgba(242,107,29,0.3)] bg-[rgba(242,107,29,0.07)] rounded-full px-3 py-1 whitespace-nowrap">
-            ▶ Try the controls
-          </span>
-        </div>
-      </div>
-
-      {/* Stage */}
-      <div
-        className="relative bg-[#0C0B0A] border border-[#211D19] rounded-[13px] overflow-hidden"
-        style={{ aspectRatio: '16 / 8' }}
-      >
-        <div className="absolute inset-0 grid place-items-center text-center p-5">
-          <GrooveWaveform
-            playing={groove.playing}
-            tempo={groove.tempo}
-            muted={groove.muted}
-          />
-        </div>
-
-        {!groove.playing && (
-          <button
-            type="button"
-            onClick={handlePlayButton}
-            aria-label="Play"
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[58px] h-[58px] rounded-full bg-[rgba(242,107,29,0.92)] grid place-items-center cursor-pointer border-none shadow-[0_8px_30px_-6px_rgba(242,107,29,0.7)] hover:scale-[1.07] transition-transform z-10"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="22"
-              height="22"
-              fill="#1A0D04"
-              style={{ marginLeft: 3 }}
-              aria-hidden="true"
-            >
-              <path d="M8 5v14l11-7z" />
-            </svg>
-          </button>
-        )}
-
-        {/* Caption */}
-        <div
-          className="absolute left-0 right-0 bottom-0 px-[18px] py-3.5 text-[13px] text-[#9A948C] text-left"
-          style={{
-            background: 'linear-gradient(0deg, rgba(8,7,6,0.92), transparent)',
-          }}
-          dangerouslySetInnerHTML={{
-            __html: caption.replace(
-              /<b>(.*?)<\/b>/g,
-              '<b class="text-[#F5F1EB] font-semibold">$1</b>',
-            ),
-          }}
-        />
-      </div>
-
-      {/* Controls */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mt-3.5">
-        <ControlButton
-          label="Play"
-          value={groove.playing ? '■' : '●'}
-          active={groove.playing}
-          onClick={() => handleControl('play')}
-        />
-        <ControlButton
-          label="Tempo"
-          value={groove.tempo}
-          suffix="bpm"
-          active
-          onClick={() => handleControl('tempo')}
-        />
-        <ControlButton
-          label="Key"
-          value={KEY_OPTIONS[groove.keyIndex] ?? 'E'}
-          active
-          onClick={() => handleControl('key')}
-        />
-        <ControlButton
-          label="Mute Bass"
-          value={groove.muted ? 'On' : 'Off'}
-          active={groove.muted}
-          onClick={() => handleControl('mute')}
-        />
-      </div>
-
-      <div className="text-center text-[12.5px] text-[#6B655E] mt-4">
-        <b className="text-[#9A948C] font-semibold">
-          This is the actual instrument
-        </b>{' '}
-        — every lever here works in the platform, on any song you bring.
-      </div>
-    </section>
-  );
-}
-
-function ControlButton({
-  label,
-  value,
-  suffix,
-  active,
-  onClick,
-}: {
-  label: string;
-  value: string | number;
-  suffix?: string;
-  active?: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`text-center rounded-xl px-3 py-3.5 cursor-pointer transition-all duration-150 border bg-[#100E0D] select-none ${
-        active
-          ? 'border-[#F26B1D] bg-[rgba(242,107,29,0.08)]'
-          : 'border-[#211D19] hover:border-[#3D3630] hover:bg-[#161311]'
-      }`}
-    >
-      <div
-        className={`font-heading uppercase text-[13px] tracking-[0.04em] transition-colors ${
-          active ? 'text-[#F26B1D]' : 'text-[#6B655E]'
-        }`}
-      >
-        {label}
-      </div>
-      <div className="font-heading text-[21px] mt-1.5 leading-none text-[#F5F1EB]">
-        {value}
-        {suffix && (
-          <small className="ml-1 text-xs text-[#9A948C] font-dm-body font-bold">
-            {suffix}
-          </small>
-        )}
-      </div>
-    </button>
-  );
-}
-
-/* Animated waveform — purely visual; pseudo-random heights driven by tempo */
-function GrooveWaveform({
-  playing,
-  tempo,
-  muted,
-}: {
-  playing: boolean;
-  tempo: number;
-  muted: boolean;
-}) {
-  const BARS = 42;
-  const ref = useRef<HTMLDivElement>(null);
-  const stateRef = useRef({ playing, tempo, muted });
-  stateRef.current = { playing, tempo, muted };
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const bars = Array.from(el.children) as HTMLElement[];
-    let frameId: number;
-
-    const tick = () => {
-      const { playing: p, tempo: t, muted: m } = stateRef.current;
-      if (p) {
-        const base = m ? 6 : 16;
-        const amp = m ? 8 : 60;
-        const now = Date.now();
-        for (let i = 0; i < bars.length; i++) {
-          const h =
-            base +
-            Math.abs(Math.sin(now / (420 - t * 1.6) + i * 0.5)) *
-              amp *
-              Math.random();
-          const bar = bars[i];
-          if (!bar) continue;
-          bar.style.height = `${h}px`;
-          bar.style.opacity = m ? '0.35' : '0.85';
-        }
-      } else {
-        for (const bar of bars) {
-          bar.style.height = '10px';
-          bar.style.opacity = '0.4';
-        }
-      }
-      frameId = requestAnimationFrame(tick);
-    };
-
-    frameId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frameId);
-  }, []);
-
-  return (
-    <div
-      ref={ref}
-      className="flex items-center gap-1 h-[90px]"
-      aria-hidden="true"
-    >
-      {Array.from({ length: BARS }).map((_, i) => (
-        <span
-          key={i}
-          className="block w-[5px] rounded transition-[height] duration-150 ease-linear"
-          style={{
-            background: 'linear-gradient(180deg, #FF7A22, #C4530F)',
-            opacity: 0.85,
-            height: '10px',
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════
    FOUNDER UPSELL — shown after signup, before final confirmation
    ════════════════════════════════════════════════════════════ */
 function FounderUpsell({
@@ -1279,10 +1025,15 @@ function FounderUpsell({
     // Fire-and-forget — we don't block the user on it.
     try {
       const attribution = getStoredAttribution();
+      trackEvent('founder_interest_click');
       await fetch('/api/waitlist/founder-interest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, attribution }),
+        body: JSON.stringify({
+          email,
+          attribution,
+          anonymousId: ensureAnonymousId(),
+        }),
       });
     } catch {
       // Interest tracking is best-effort; never block the user on a network blip.

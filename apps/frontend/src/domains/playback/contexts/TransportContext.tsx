@@ -64,6 +64,9 @@ export interface TransportContextValue {
   seekTo: (position: MusicalPosition | number) => Promise<void>;
   setLoop: (start: number, end: number) => Promise<void>;
   setExerciseDuration: (totalBars: number, beatsPerBar: number) => void;
+  /** Enable/disable the exercise-end auto-stop. Defaults to true. Set to
+   * false for infinite-loop content (Groove Card). */
+  setAutoStopEnabled: (enabled: boolean) => void;
   isLoopEnabled: boolean;
   servicesReady: boolean;
 }
@@ -896,6 +899,19 @@ export function TransportProvider({
     [],
   );
 
+  const setAutoStopEnabled = useCallback((enabled: boolean) => {
+    if (!transportRef.current) {
+      throw new Error('Transport not available');
+    }
+    if (typeof transportRef.current.setAutoStopEnabled === 'function') {
+      transportRef.current.setAutoStopEnabled(enabled);
+    } else {
+      logger.warn(
+        '[TransportContext] setAutoStopEnabled not available on transport instance',
+      );
+    }
+  }, []);
+
   // Safe timeSignature with toString method
   // Handles both proper TimeSignature objects and legacy nested structures
   const safeTimeSignature = useMemo(() => {
@@ -947,6 +963,7 @@ export function TransportProvider({
       seekTo,
       setLoop,
       setExerciseDuration,
+      setAutoStopEnabled,
       isLoopEnabled,
       servicesReady,
     }),
@@ -963,6 +980,7 @@ export function TransportProvider({
       seekTo,
       setLoop,
       setExerciseDuration,
+      setAutoStopEnabled,
       isLoopEnabled,
       servicesReady,
     ],
@@ -986,6 +1004,7 @@ export function TransportProvider({
       seekTo,
       setLoop,
       setExerciseDuration,
+      setAutoStopEnabled,
       isLoopEnabled,
       servicesReady,
     }),
@@ -1002,6 +1021,7 @@ export function TransportProvider({
       seekTo,
       setLoop,
       setExerciseDuration,
+      setAutoStopEnabled,
       isLoopEnabled,
       servicesReady,
     ],
@@ -1064,6 +1084,9 @@ export interface TransportControlsValue {
   seekTo: (position: MusicalPosition | number) => Promise<void>;
   setLoop: (start: number, end: number) => Promise<void>;
   setExerciseDuration: (totalBars: number, beatsPerBar: number) => void;
+  /** Enable/disable the exercise-end auto-stop. Defaults to true. Set to
+   * false for infinite-loop content (Groove Card). */
+  setAutoStopEnabled: (enabled: boolean) => void;
   isLoopEnabled: boolean;
   servicesReady: boolean;
 }
@@ -1102,6 +1125,18 @@ export function useTransportControls(): TransportControlsValue {
   }
 
   return context;
+}
+
+/**
+ * Soft variant of useTransportControls: returns `undefined` when no
+ * TransportProvider is mounted, instead of throwing. Use this in
+ * components that must render on surfaces that don't ship the full
+ * TransportProvider (e.g. the LAUNCH-02.5d waitlist, which spins up a
+ * minimal audio-only bootstrap via WaitlistAudioBootstrap and drives
+ * Tone.Transport directly without the React provider stack).
+ */
+export function useTransportControlsSafe(): TransportControlsValue | undefined {
+  return useContext(TransportControlsContext);
 }
 
 /**

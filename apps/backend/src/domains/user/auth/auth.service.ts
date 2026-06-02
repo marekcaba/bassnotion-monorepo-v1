@@ -286,6 +286,16 @@ export class AuthService implements OnModuleInit {
         };
       }
 
+      // TODO(attribution): stitch anonymous_id -> user_id here.
+      // This is the single account-creation point. When /app signup goes live,
+      // accept the visitor's `bn_anonymous_id` cookie on SignUpDto and upsert
+      // it into public.identities { anonymous_id, user_id: profile.id } via the
+      // service-role client. That back-attributes the browser's pre-signup
+      // funnel_events (incl. which YouTube video sent them) to this account.
+      // Must be best-effort: a failed stitch MUST NOT fail or roll back signup.
+      // Table + types already ship (migration 20260602000004_create_identities,
+      // contracts IdentityLink). See plan: attribution-events §8.
+
       const authData: AuthData = {
         user: {
           id: profile.id,

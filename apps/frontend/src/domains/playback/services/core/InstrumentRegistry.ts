@@ -10,13 +10,9 @@
 
 import { EventBus } from './EventBus.js';
 import { getLogger } from '@/utils/logger.js';
+import type { InstrumentType } from '../../modules/tracks/management/TrackManagerProcessor.js';
 
-export type InstrumentType =
-  | 'drums'
-  | 'bass'
-  | 'harmony'
-  | 'metronome'
-  | 'voice-cue';
+export type { InstrumentType };
 
 export interface InstrumentRegistryEvent {
   type: InstrumentType;

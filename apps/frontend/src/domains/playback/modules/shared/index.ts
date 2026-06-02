@@ -29,7 +29,17 @@ export type {
 } from '../../services/errors/CircuitBreaker.js';
 
 // Common types that are used across modules
-export type { InstrumentType } from '../../services/plugins/TrackManagerProcessor.js';
+export type {
+  InstrumentType,
+  MidiInstrumentType,
+  AudioInstrumentType,
+  AudioStemKey,
+} from '../tracks/management/TrackManagerProcessor.js';
+export {
+  AUDIO_STEM_KEYS,
+  audioInstrumentTypeToStemKey,
+  stemKeyToAudioInstrumentType,
+} from '../tracks/management/TrackManagerProcessor.js';
 
 // Musical position types (used by multiple modules)
 export type { MusicalPosition } from '../../types/pattern.js';

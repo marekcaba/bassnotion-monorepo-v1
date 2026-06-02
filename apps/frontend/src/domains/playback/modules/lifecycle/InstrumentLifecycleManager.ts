@@ -12,16 +12,11 @@
  */
 
 import { EventBus, createStructuredLogger } from '../shared/index.js';
+import type { InstrumentType } from '../tracks/management/TrackManagerProcessor.js';
+
+export type { InstrumentType };
 
 const logger = createStructuredLogger('InstrumentLifecycleManager');
-
-// Core lifecycle types
-export type InstrumentType =
-  | 'bass'
-  | 'drums'
-  | 'chords'
-  | 'metronome'
-  | 'voice-cue';
 export type InstrumentState =
   | 'initializing'
   | 'ready'

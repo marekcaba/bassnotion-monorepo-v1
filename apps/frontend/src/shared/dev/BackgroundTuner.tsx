@@ -23,18 +23,58 @@ export interface RadialLayer {
   fadeEnd: number; // % of the radial where it fades to transparent
 }
 
+export type TextureBlendMode =
+  | 'normal'
+  | 'overlay'
+  | 'soft-light'
+  | 'multiply'
+  | 'screen';
+
+export interface TextureLayer {
+  url: string; // public path, e.g. /textures/leather.jpg
+  opacity: number; // 0–1
+  blendMode: TextureBlendMode;
+  tileSize: number; // px — width of one repeat (0 = no tiling, cover)
+}
+
 export interface BackgroundConfig {
   baseColor: string;
   radial1: RadialLayer;
   radial2: RadialLayer;
+  radial3: RadialLayer; // top-left vignette
+  radial4: RadialLayer; // top-right vignette
+  radial5: RadialLayer; // bottom-left vignette
+  radial6: RadialLayer; // bottom-right vignette
   noiseOpacity: number; // 0–0.2
+  texture: TextureLayer;
 }
+
+// Shared corner-vignette settings — radials 3–6 mirror each other so
+// the four corners stay symmetrical. Tweak this single block to retune
+// all four corner glows at once.
+//
+// Two tricks combined here to keep the edge imperceptible:
+//   1. The ORIGIN sits past the viewport corner (-15 / 115 instead of
+//      0 / 100) so the ellipse curvature itself is off-screen.
+//   2. The `transparent` STOP sits past 100% (the ellipse boundary).
+//      CSS clips at the ellipse, so the visible inner portion is the
+//      early part of the falloff curve — alpha is never zero at the
+//      ellipse edge, only smoothly fading toward zero further out.
+//      That kills the alpha-cap step that the eye would otherwise pick
+//      up as a faint curve.
+const CORNER_VIGNETTE: Omit<RadialLayer, 'x' | 'y'> = {
+  color: '#000000',
+  opacity: 0.2,
+  width: 1600,
+  height: 1100,
+  fadeEnd: 120,
+};
 
 export const DEFAULT_BACKGROUND: BackgroundConfig = {
   baseColor: '#0a0a0a',
   radial1: {
-    color: '#121212',
-    opacity: 0.22,
+    color: '#474747',
+    opacity: 0.14,
     width: 480,
     height: 420,
     x: 50,
@@ -42,15 +82,25 @@ export const DEFAULT_BACKGROUND: BackgroundConfig = {
     fadeEnd: 68,
   },
   radial2: {
-    color: '#121212',
-    opacity: 0.49,
-    width: 720,
-    height: 320,
+    color: '#474747',
+    opacity: 0.08,
+    width: 220,
+    height: 100,
     x: 50,
-    y: 66,
-    fadeEnd: 52,
+    y: 67,
+    fadeEnd: 154,
   },
-  noiseOpacity: 0.02,
+  radial3: { ...CORNER_VIGNETTE, x: -15, y: -15 },
+  radial4: { ...CORNER_VIGNETTE, x: 115, y: -15 },
+  radial5: { ...CORNER_VIGNETTE, x: -15, y: 115 },
+  radial6: { ...CORNER_VIGNETTE, x: 115, y: 115 },
+  noiseOpacity: 0.015,
+  texture: {
+    url: '/textures/leather2.webp',
+    opacity: 0.09,
+    blendMode: 'screen',
+    tileSize: 1776,
+  },
 };
 
 /** Turns a {color, opacity, w, h, x, y, fadeEnd} block into a CSS radial-gradient(...). */
@@ -60,7 +110,9 @@ export function radialToCss(r: RadialLayer): string {
 }
 
 export function backgroundToCss(c: BackgroundConfig): string {
-  return `${radialToCss(c.radial1)}, ${radialToCss(c.radial2)}`;
+  return [c.radial1, c.radial2, c.radial3, c.radial4, c.radial5, c.radial6]
+    .map(radialToCss)
+    .join(', ');
 }
 
 function hexToRgba(hex: string, alpha: number): string {
@@ -172,7 +224,13 @@ export function BackgroundTuner({ config, onChange }: Props) {
   };
 
   const updateRadial = (
-    which: 'radial1' | 'radial2',
+    which:
+      | 'radial1'
+      | 'radial2'
+      | 'radial3'
+      | 'radial4'
+      | 'radial5'
+      | 'radial6',
     patch: Partial<RadialLayer>,
   ) => {
     onChange({ ...config, [which]: { ...config[which], ...patch } });
@@ -267,6 +325,110 @@ export function BackgroundTuner({ config, onChange }: Props) {
           <RadialControls
             radial={config.radial2}
             onChange={(patch) => updateRadial('radial2', patch)}
+          />
+        </Section>
+
+        {/* Radial 3 */}
+        <Section title="Radial 3 (top-left vignette)">
+          <RadialControls
+            radial={config.radial3}
+            onChange={(patch) => updateRadial('radial3', patch)}
+          />
+        </Section>
+
+        {/* Radial 4 */}
+        <Section title="Radial 4 (top-right vignette)">
+          <RadialControls
+            radial={config.radial4}
+            onChange={(patch) => updateRadial('radial4', patch)}
+          />
+        </Section>
+
+        {/* Radial 5 */}
+        <Section title="Radial 5 (bottom-left vignette)">
+          <RadialControls
+            radial={config.radial5}
+            onChange={(patch) => updateRadial('radial5', patch)}
+          />
+        </Section>
+
+        {/* Radial 6 */}
+        <Section title="Radial 6 (bottom-right vignette)">
+          <RadialControls
+            radial={config.radial6}
+            onChange={(patch) => updateRadial('radial6', patch)}
+          />
+        </Section>
+
+        {/* Texture */}
+        <Section title="Texture overlay">
+          <div className="flex items-center gap-2">
+            <label className="w-20 text-white/60">image</label>
+            <input
+              type="text"
+              value={config.texture.url}
+              onChange={(e) =>
+                onChange({
+                  ...config,
+                  texture: { ...config.texture, url: e.target.value },
+                })
+              }
+              className="flex-1 bg-white/5 border border-white/10 rounded px-1.5 py-0.5 text-white font-mono"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="w-20 text-white/60">blend</label>
+            <select
+              value={config.texture.blendMode}
+              onChange={(e) =>
+                onChange({
+                  ...config,
+                  texture: {
+                    ...config.texture,
+                    blendMode: e.target.value as TextureBlendMode,
+                  },
+                })
+              }
+              className="flex-1 bg-white/5 border border-white/10 rounded px-1.5 py-0.5 text-white font-mono"
+            >
+              <option value="normal">normal</option>
+              <option value="overlay">overlay</option>
+              <option value="soft-light">soft-light</option>
+              <option value="multiply">multiply</option>
+              <option value="screen">screen</option>
+            </select>
+          </div>
+          <SliderRow
+            label="opacity"
+            min={0}
+            max={1}
+            step={0.01}
+            value={config.texture.opacity}
+            onChange={(v) =>
+              onChange({
+                ...config,
+                texture: { ...config.texture, opacity: v },
+              })
+            }
+            display={config.texture.opacity.toFixed(2)}
+          />
+          <SliderRow
+            label="tile"
+            min={0}
+            max={2048}
+            step={16}
+            value={config.texture.tileSize}
+            onChange={(v) =>
+              onChange({
+                ...config,
+                texture: { ...config.texture, tileSize: v },
+              })
+            }
+            display={
+              config.texture.tileSize === 0
+                ? 'cover'
+                : `${config.texture.tileSize}px`
+            }
           />
         </Section>
 
@@ -439,7 +601,7 @@ function RadialControls({
       <SliderRow
         label="fade end"
         min={20}
-        max={100}
+        max={300}
         step={1}
         value={radial.fadeEnd}
         onChange={(v) => onChange({ fadeEnd: v })}
@@ -450,7 +612,9 @@ function RadialControls({
 }
 
 function buildSnippet(c: BackgroundConfig): string {
-  return `// In WaitlistClient.tsx, replace the bg-[#...] class + the radial style + the noise opacity.
+  const tileCss =
+    c.texture.tileSize === 0 ? 'cover' : `${c.texture.tileSize}px`;
+  return `// In WaitlistClient.tsx, replace the bg-[#...] class + the radial style + the noise opacity + the texture layer.
 
 // Base color (className):
 bg-[${c.baseColor}]
@@ -459,7 +623,14 @@ bg-[${c.baseColor}]
 background:
   '${backgroundToCss(c)}',
 
-// Noise overlay opacity (className):
-opacity-[${c.noiseOpacity.toFixed(3)}]
+// Noise overlay opacity:
+opacity: ${c.noiseOpacity.toFixed(3)}
+
+// Texture overlay (style on the texture <div>):
+backgroundImage: 'url("${c.texture.url}")',
+backgroundSize: '${tileCss}',
+backgroundRepeat: '${c.texture.tileSize === 0 ? 'no-repeat' : 'repeat'}',
+mixBlendMode: '${c.texture.blendMode}',
+opacity: ${c.texture.opacity.toFixed(2)},
 `;
 }

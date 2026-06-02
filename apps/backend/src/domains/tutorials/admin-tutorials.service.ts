@@ -1,8 +1,14 @@
-import { Injectable, Logger, ConflictException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  ConflictException,
+} from '@nestjs/common';
 import { SupabaseService } from '../../infrastructure/supabase/supabase.service.js';
 import { CreateTutorialDto } from './dto/create-tutorial.dto.js';
 import { UpdateTutorialDto } from './dto/update-tutorial.dto.js';
 import { SaveTutorialWithExercisesDto } from './dto/save-tutorial-with-exercises.dto.js';
+import { validateGrooveCardBlocks } from './groove-card-block.schema.js';
 
 interface PaginationOptions {
   page: number;
@@ -154,48 +160,83 @@ export class AdminTutorialsService {
   }
 
   async create(createTutorialDto: CreateTutorialDto & { created_by: string }) {
-    // Generate slug from title
-    const slug = createTutorialDto.title
+    // Generate slug from title, then retry with a numeric suffix on
+    // unique-constraint collisions. PG 23505 is the canonical "duplicate
+    // key" error code from Supabase / Postgres.
+    const baseSlug = createTutorialDto.title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
+    const safeBaseSlug = baseSlug.length > 0 ? baseSlug : 'untitled-tutorial';
 
     const now = new Date().toISOString();
+    const maxAttempts = 8;
 
-    const { data, error } = await this.supabaseService
-      .getClient()
-      .from('tutorials')
-      .insert({
-        title: createTutorialDto.title,
-        slug: slug,
-        description: createTutorialDto.description,
-        youtube_id: createTutorialDto.youtube_id || '',
-        youtube_url: createTutorialDto.youtube_id
-          ? `https://www.youtube.com/watch?v=${createTutorialDto.youtube_id}`
-          : null,
-        duration: createTutorialDto.duration || 0,
-        author_name: createTutorialDto.author_name,
-        // Note: thumbnail_url column doesn't exist - thumbnails are generated from YouTube ID
-        level: createTutorialDto.difficulty, // Map difficulty to level
-        category: createTutorialDto.category,
-        tags: createTutorialDto.tags || [],
-        is_active: createTutorialDto.is_active ?? true,
-        created_by: createTutorialDto.created_by,
-        status: 'draft', // Default status for new tutorials
-        created_at: now,
-        updated_at: now,
-        last_modified: now,
-        auto_save_version: 0,
-      })
-      .select()
-      .single();
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      // First attempt uses the bare slug; subsequent attempts append a
+      // -2, -3, … suffix until the insert succeeds.
+      const slug =
+        attempt === 0 ? safeBaseSlug : `${safeBaseSlug}-${attempt + 1}`;
 
-    if (error) {
-      this.logger.error('Failed to create tutorial', error);
-      throw new Error('Failed to create tutorial');
+      const { data, error } = await this.supabaseService
+        .getClient()
+        .from('tutorials')
+        .insert({
+          title: createTutorialDto.title,
+          slug,
+          description: createTutorialDto.description,
+          youtube_id: createTutorialDto.youtube_id || '',
+          youtube_url: createTutorialDto.youtube_id
+            ? `https://www.youtube.com/watch?v=${createTutorialDto.youtube_id}`
+            : null,
+          duration: createTutorialDto.duration || 0,
+          author_name: createTutorialDto.author_name,
+          // Note: thumbnail_url column doesn't exist - thumbnails are generated from YouTube ID
+          level: createTutorialDto.difficulty, // Map difficulty to level
+          category: createTutorialDto.category,
+          tags: createTutorialDto.tags || [],
+          is_active: createTutorialDto.is_active ?? true,
+          created_by: createTutorialDto.created_by,
+          status: 'draft', // Default status for new tutorials
+          created_at: now,
+          updated_at: now,
+          last_modified: now,
+          auto_save_version: 0,
+        })
+        .select()
+        .single();
+
+      if (!error) {
+        return data;
+      }
+
+      // PG 23505 = unique_violation. Only retry on slug collisions;
+      // anything else is a real failure.
+      const isUniqueSlugViolation =
+        (error as { code?: string }).code === '23505' &&
+        typeof (error as { details?: string }).details === 'string' &&
+        (error as { details?: string }).details!.includes('slug');
+
+      if (!isUniqueSlugViolation) {
+        this.logger.error('Failed to create tutorial', error);
+        throw new Error('Failed to create tutorial');
+      }
+
+      this.logger.warn(
+        `Tutorial slug "${slug}" already exists; retrying with suffix`,
+        { attempt: attempt + 1 },
+      );
     }
 
-    return data;
+    // Exhausted all retries. Surface the original error type so the
+    // controller's exception filter can translate to a 409.
+    this.logger.error(
+      `Failed to create tutorial: slug collision unresolved after ${maxAttempts} attempts`,
+      { baseSlug: safeBaseSlug },
+    );
+    throw new ConflictException(
+      `Tutorial slug "${safeBaseSlug}" already exists; please pick a different title.`,
+    );
   }
 
   async update(id: string, updateTutorialDto: UpdateTutorialDto) {
@@ -289,7 +330,17 @@ export class AdminTutorialsService {
     }
 
     if ((updateTutorialDto as any).blocks !== undefined) {
-      updateData.blocks = (updateTutorialDto as any).blocks;
+      // LAUNCH-02.5c: Zod-validate groove-card blocks only; other block
+      // types pass through unvalidated (pre-existing behaviour).
+      try {
+        updateData.blocks = validateGrooveCardBlocks(
+          (updateTutorialDto as any).blocks,
+        );
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : 'invalid blocks payload';
+        throw new BadRequestException(message);
+      }
     }
 
     const { data, error } = await this.supabaseService
@@ -330,10 +381,24 @@ export class AdminTutorialsService {
   }
 
   async publish(id: string) {
+    // Three columns must move together to publish:
+    //   - `status`        — the tutorial_status enum the public RLS
+    //                       policy at migration 20250923000003 gates on.
+    //                       Without this, the anon SELECT returns no row
+    //                       and consumers (e.g. the waitlist SSR fetch)
+    //                       fall back to bundled defaults.
+    //   - `published_at`  — first-publish timestamp; older policy at
+    //                       20250723000002 gates on this being non-null.
+    //   - `is_active`     — legacy soft-delete / hide flag still read by
+    //                       `findBySlug` and several admin queries.
+    // The publish() method historically only set `is_active` and
+    // `published_at`, leaving `status` as 'draft' — a row would look
+    // published to one query and draft to another.
     const { data, error } = await this.supabaseService
       .getClient()
       .from('tutorials')
       .update({
+        status: 'published',
         is_active: true,
         published_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -354,10 +419,15 @@ export class AdminTutorialsService {
   }
 
   async unpublish(id: string) {
+    // Mirror of publish(): every "is published?" signal flips back.
+    // `published_at` clears so the older RLS policy treats the row as
+    // unpublished; `status` returns to 'draft' so the newer enum-based
+    // policy hides it too.
     const { data, error } = await this.supabaseService
       .getClient()
       .from('tutorials')
       .update({
+        status: 'draft',
         is_active: false,
         published_at: null,
         updated_at: new Date().toISOString(),
@@ -506,15 +576,31 @@ export class AdminTutorialsService {
       // Step 1: Update tutorial (tutorial ID always exists from frontend)
       const now = new Date().toISOString();
 
-      // Generate slug from title to keep them in sync
-      const slug = dto.title
+      // Generate slug from title to keep them in sync. Same slug
+      // collision strategy as create(): retry with -2, -3, … suffix
+      // when another row already holds the bare slug. The tutorial we
+      // are updating is keyed by `id`, so the collision is ALWAYS with
+      // a different row.
+      const baseSlugRaw = dto.title
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '');
+      const baseSlug =
+        baseSlugRaw.length > 0 ? baseSlugRaw : 'untitled-tutorial';
 
-      const tutorialUpdateData: any = {
+      // Pre-validate the blocks once outside the retry loop — block
+      // shape doesn't change between attempts.
+      let validatedBlocks: unknown[];
+      try {
+        validatedBlocks = validateGrooveCardBlocks(dto.blocks || []);
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : 'invalid blocks payload';
+        throw new BadRequestException(message);
+      }
+
+      const baseUpdate: any = {
         title: dto.title,
-        slug: slug,
         description: dto.description,
         youtube_id: dto.youtube_id,
         youtube_url: dto.youtube_id
@@ -534,8 +620,9 @@ export class AdminTutorialsService {
         creator_channel_url: dto.creator_channel_url,
         creator_avatar_url: dto.creator_avatar_url,
         creator_subscriber_count: dto.creator_subscriber_count,
-        // Modular block system
-        blocks: dto.blocks || [],
+        // Modular block system — pre-validated above so each retry
+        // attempt re-uses the same already-validated payload.
+        blocks: validatedBlocks,
         // Act 1: Understand fields (legacy)
         understand_video_url: dto.understand_video_url,
         understand_video_library_id: dto.understand_video_library_id,
@@ -547,31 +634,58 @@ export class AdminTutorialsService {
         last_modified: now,
       };
 
-      const { data: tutorialData, error: tutorialError } = await client
-        .from('tutorials')
-        .update(tutorialUpdateData)
-        .eq('id', dto.id)
-        .select()
-        .single();
+      const maxSlugAttempts = 8;
+      let tutorialData: unknown = null;
+      let lastTutorialError: {
+        code?: string;
+        message?: string;
+        details?: string;
+      } | null = null;
 
-      if (tutorialError) {
-        this.logger.error(
-          'Failed to update tutorial in batch save',
-          tutorialError,
-        );
+      for (let attempt = 0; attempt < maxSlugAttempts; attempt++) {
+        const slug = attempt === 0 ? baseSlug : `${baseSlug}-${attempt + 1}`;
 
-        // Check for duplicate slug constraint violation (PostgreSQL error code 23505)
-        if (
-          tutorialError.code === '23505' &&
-          tutorialError.message?.includes('tutorials_slug_key')
-        ) {
-          throw new ConflictException(
-            `A tutorial with the slug "${slug}" already exists. Please use a different title or slug.`,
-          );
+        const { data, error } = await client
+          .from('tutorials')
+          .update({ ...baseUpdate, slug })
+          .eq('id', dto.id)
+          .select()
+          .single();
+
+        if (!error) {
+          tutorialData = data;
+          lastTutorialError = null;
+          break;
         }
 
-        // Generic database error
-        throw new Error(`Failed to update tutorial: ${tutorialError.message}`);
+        const isSlugCollision =
+          error.code === '23505' &&
+          (error.message?.includes('tutorials_slug_key') ||
+            (typeof (error as { details?: string }).details === 'string' &&
+              (error as { details?: string }).details!.includes('slug')));
+
+        if (!isSlugCollision) {
+          // Non-slug failure: bail immediately, like the original code.
+          this.logger.error('Failed to update tutorial in batch save', error);
+          throw new Error(`Failed to update tutorial: ${error.message}`);
+        }
+
+        this.logger.warn(
+          `Tutorial slug "${slug}" collides on update; retrying with suffix`,
+          { attempt: attempt + 1, tutorialId: dto.id },
+        );
+        lastTutorialError = error as { code?: string; message?: string };
+      }
+
+      if (!tutorialData) {
+        // Exhausted retries.
+        this.logger.error(
+          'Failed to update tutorial in batch save: slug collision unresolved',
+          { baseSlug, lastTutorialError },
+        );
+        throw new ConflictException(
+          `A tutorial with the slug "${baseSlug}" already exists. Please use a different title or slug.`,
+        );
       }
 
       // Step 2: Process exercises - separate creates and updates

@@ -54,7 +54,11 @@ describe('WebhookController', () => {
       stripeService,
       subscriptionRepository,
       purchaseRepository,
-      { createIfMissing: vi.fn(), markWelcomeEmailSent: vi.fn(), countByMode: vi.fn() } as any,
+      {
+        createIfMissing: vi.fn(),
+        markWelcomeEmailSent: vi.fn(),
+        countByMode: vi.fn(),
+      } as any,
       { sendFounderWelcome: vi.fn() } as any,
       { get: vi.fn() } as any,
     );
@@ -883,7 +887,11 @@ describe('WebhookController - Status Mapping', () => {
       stripeService,
       subscriptionRepository,
       purchaseRepository,
-      { createIfMissing: vi.fn(), markWelcomeEmailSent: vi.fn(), countByMode: vi.fn() } as any,
+      {
+        createIfMissing: vi.fn(),
+        markWelcomeEmailSent: vi.fn(),
+        countByMode: vi.fn(),
+      } as any,
       { sendFounderWelcome: vi.fn() } as any,
       { get: vi.fn() } as any,
     );
@@ -931,7 +939,11 @@ describe('WebhookController - Edge Cases', () => {
       stripeService,
       subscriptionRepository,
       purchaseRepository,
-      { createIfMissing: vi.fn(), markWelcomeEmailSent: vi.fn(), countByMode: vi.fn() } as any,
+      {
+        createIfMissing: vi.fn(),
+        markWelcomeEmailSent: vi.fn(),
+        countByMode: vi.fn(),
+      } as any,
       { sendFounderWelcome: vi.fn() } as any,
       { get: vi.fn() } as any,
     );

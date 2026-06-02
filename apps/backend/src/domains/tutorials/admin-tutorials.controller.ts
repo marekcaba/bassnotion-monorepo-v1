@@ -434,6 +434,135 @@ export class AdminTutorialsController {
     }
   }
 
+  /**
+   * Upload a single Groove Card stem (bass / drums / harmony).
+   * POST /api/v1/tutorials/groove-stem/upload
+   *
+   * Direct browser → Supabase Storage failed because the storage POST
+   * isn't reliably authenticated as the admin (RLS denial). This routes
+   * the upload through the backend, which uses the service-role key to
+   * bypass RLS — the same pattern as upload-thumbnail. AdminGuard
+   * enforces admin server-side.
+   *
+   * Multipart fields:
+   *   - file       : the .ogg stem
+   *   - slug       : tutorial slug (path segment)
+   *   - keyFolder  : key label / offset folder (path segment)
+   *   - stem       : 'bass' | 'drums' | 'harmony'
+   *
+   * Lands at: audio-samples/grooves/{slug}/{keyFolder}/{stem}.ogg
+   * Returns: { publicUrl, path }
+   */
+  @Post('groove-stem/upload')
+  @UseGuards(AdminGuard)
+  @HttpCode(HttpStatus.OK)
+  async uploadGrooveStem(
+    @Req() req: FastifyRequest,
+    @CurrentUser() user: AuthUser,
+    @CorrelationId() correlationId?: string,
+  ) {
+    const data = await req.file();
+    if (!data) {
+      throw new BadRequestException('No file uploaded');
+    }
+
+    const { file, filename, mimetype, fields } = data;
+
+    // Read multipart text fields. Fastify exposes non-file fields on
+    // `fields`; each is `{ value: string }` for a simple text part.
+    const readField = (name: string): string => {
+      const f = (fields as Record<string, unknown>)?.[name] as
+        | { value?: unknown }
+        | undefined;
+      return typeof f?.value === 'string' ? f.value : '';
+    };
+    const slug = readField('slug');
+    const keyFolder = readField('keyFolder');
+    const stem = readField('stem');
+
+    // Validate the stem name. Click is never uploaded (shared metronome).
+    const validStems = ['bass', 'drums', 'harmony'];
+    if (!validStems.includes(stem)) {
+      throw new BadRequestException(
+        `Invalid stem "${stem}" (must be bass, drums, or harmony)`,
+      );
+    }
+    if (!slug) {
+      throw new BadRequestException('Missing tutorial slug');
+    }
+
+    // Read the file buffer from the stream.
+    const chunks: Buffer[] = [];
+    for await (const chunk of file) {
+      chunks.push(chunk as Buffer);
+    }
+    const buffer = Buffer.concat(chunks);
+    const fileSize = buffer.length;
+
+    // Validation: OGG only, 8 MB cap (matches the frontend hook).
+    const MAX_FILE_SIZE = 8 * 1024 * 1024;
+    if (fileSize > MAX_FILE_SIZE) {
+      throw new BadRequestException(
+        `File too large: ${fileSize} bytes (max ${MAX_FILE_SIZE} bytes)`,
+      );
+    }
+    const isOgg =
+      mimetype === 'audio/ogg' ||
+      mimetype === 'application/ogg' ||
+      filename.toLowerCase().endsWith('.ogg') ||
+      filename.toLowerCase().endsWith('.oga');
+    if (!isOgg) {
+      throw new BadRequestException(
+        `Invalid file type: ${mimetype} (must be OGG Vorbis .ogg)`,
+      );
+    }
+
+    // URL-safe path segments. Encode leading +/- as words so the
+    // semitone-offset folders (+4 / -4) never collide. Mirrors the
+    // frontend's sanitisePathSegment.
+    const sanitise = (input: string, fallback: string): string => {
+      const trimmed = (input ?? '').trim();
+      if (trimmed.length === 0) return fallback;
+      let signed = trimmed;
+      if (signed.startsWith('+')) signed = `plus${signed.slice(1)}`;
+      else if (signed.startsWith('-')) signed = `minus${signed.slice(1)}`;
+      const cleaned = signed
+        .toLowerCase()
+        .replace(/[^a-z0-9_-]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      return cleaned.length > 0 ? cleaned : fallback;
+    };
+    const safeSlug = sanitise(slug, 'untitled');
+    const safeKey = sanitise(keyFolder, 'unnamed');
+    const path = `grooves/${safeSlug}/${safeKey}/${stem}.ogg`;
+
+    this.logger.log('Uploading groove stem', {
+      correlationId,
+      userId: user.id,
+      path,
+      fileSize,
+    });
+
+    try {
+      const publicUrl = await this.supabaseService.uploadFile(
+        'audio-samples',
+        path,
+        buffer,
+        'audio/ogg',
+        { upsert: true },
+      );
+      return { publicUrl, path };
+    } catch (error: any) {
+      this.logger.error('Failed to upload groove stem', error, {
+        path,
+        correlationId,
+      });
+      throw new BadRequestException(
+        'Failed to upload stem: ' + (error?.message ?? 'unknown error'),
+      );
+    }
+  }
+
   @Post('fetch-youtube-channel-info')
   @UseGuards(AdminGuard)
   async fetchYouTubeChannelInfo(
