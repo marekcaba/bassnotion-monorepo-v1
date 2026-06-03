@@ -17,6 +17,7 @@
  */
 
 import { createStructuredLogger } from '@bassnotion/contracts';
+import { WindowRegistry } from './WindowRegistry.js';
 
 const logger = createStructuredLogger('InstrumentDependencyManager');
 
@@ -198,14 +199,17 @@ export class InstrumentDependencyManager {
    * Internal: Create AudioContext with fallback strategies
    */
   private static async createAudioContext(): Promise<AudioContext> {
-    // Strategy 1: Check for persistent context (set by app)
-    if (typeof window !== 'undefined' && window.__persistentAudioContext) {
-      logger.info('🎵 Found persistent AudioContext');
-      const context = window.__persistentAudioContext;
-      if (context.state === 'suspended') {
-        await context.resume();
+    // Strategy 1: Canonical context from the registry (single source of
+    // truth — __bassnotion_audioContext, aliased to __persistentAudioContext).
+    if (typeof window !== 'undefined') {
+      const context = WindowRegistry.getAudioContext();
+      if (context && context.state !== 'closed') {
+        logger.info('🎵 Found canonical AudioContext (registry)');
+        if (context.state === 'suspended') {
+          await context.resume();
+        }
+        return context;
       }
-      return context;
     }
 
     // Strategy 2: Get from CoreServices (if available)
@@ -263,9 +267,10 @@ export class InstrumentDependencyManager {
       await context.resume();
     }
 
-    // Store as persistent context for future use
+    // Publish through the registry so both globals alias this one instance
+    // (never write only the legacy key — that was the divergence source).
     if (typeof window !== 'undefined') {
-      window.__persistentAudioContext = context;
+      WindowRegistry.setAudioContext(context);
     }
 
     return context;

@@ -2067,6 +2067,170 @@ export class PlaybackEngine implements IAudioStemEngine {
   }
 
   /**
+   * True when the engine has no usable AudioContext — either never initialized,
+   * or the context it captured at initialize() has since been closed. Callers
+   * (e.g. the GrooveCard play path) use this to decide whether to rebindContext
+   * to the live context before arming stems.
+   */
+  needsContextRebind(_liveContext?: AudioContext | null): boolean {
+    if (!this.isInitialized) return false; // never initialized → use initialize()
+    if (!this.audioContext) return true;
+    // Only rebind away from a DEAD (closed) context. A merely-different but
+    // still-running live context is intentionally NOT a rebind trigger:
+    // hot-swapping running contexts mid-session would strand context-bound
+    // AudioBuffers in GlobalSampleCache (the cache is path-keyed, not
+    // context-keyed). The liveContext arg is accepted for call-site symmetry
+    // and possible future divergence policy, but unused today.
+    return this.audioContext.state === 'closed';
+  }
+
+  /**
+   * Re-point a LIVE (already-initialized) engine at a new AudioContext WITHOUT
+   * a full dispose()/initialize() cycle.
+   *
+   * Why this exists: this.audioContext is captured once in initialize() and the
+   * engine is a long-lived window-global. If that context is closed out from
+   * under it (a hard reload / Fast Refresh / OS audio-device change disposing
+   * the AudioEngine), every subsequently-built node — Signalsmith stretch
+   * worklets, master/instrument gains — would be constructed against the dead
+   * context and throw ("AudioWorkletNode cannot be created") or, worse, route
+   * silently into a dead graph. A bare `this.audioContext = ctx` is NOT enough:
+   * the cached gain/stretch/delay nodes survive bound to the old context and
+   * produce SILENT output. This method tears those down and re-points the
+   * schedulers so the next setAudioStemBuffers() rebuilds everything fresh.
+   *
+   * The caller MUST re-inject buffers after this (becomeActive() →
+   * setAudioStemBuffers()), which rebuilds each scheduler's audioDestination
+   * and the AudioPlayerScheduler stem gains against the new context.
+   */
+  async rebindContext(
+    audioContext: AudioContext,
+    audioDestination: AudioNode,
+  ): Promise<void> {
+    if (!this.isInitialized) {
+      // Not initialized yet — the normal initialize() path is correct.
+      await this.initialize(audioContext, audioDestination);
+      return;
+    }
+    if (this.audioContext === audioContext) {
+      return; // already on this context — nothing to do
+    }
+
+    this.logger.warn('PlaybackEngine: rebinding to a new AudioContext', {
+      instanceId: this.instanceId,
+      oldState: this.audioContext?.state,
+      newState: audioContext.state,
+    });
+
+    // 1) Hard-stop and tear down everything bound to the OLD context. Hard cut
+    //    (rampSeconds 0) — the old context is dead/dying, a fade is pointless
+    //    and would touch dead nodes. stopAudioStems clears instrumentStretchNodes,
+    //    drumSlicePlayer, drumLatencyDelayNode and the self-looping sources.
+    try {
+      this.stopAudioStems({ rampSeconds: 0 });
+    } catch (err) {
+      this.logger.debug('rebindContext: stopAudioStems failed (ignored)', {
+        err,
+      });
+    }
+
+    // 2) Disconnect + drop the cached context-bound graph nodes so the lazy
+    //    getters rebuild them against the new context. stopAudioStems does NOT
+    //    cover these (master/instrument gains persist for the engine's life,
+    //    and stretchLatencyDelays is leaked even by stopAudioStems).
+    const disconnect = (n: AudioNode | null | undefined) => {
+      try {
+        n?.disconnect();
+      } catch {
+        /* node may already be detached from the dead context */
+      }
+    };
+    disconnect(this.masterGain);
+    disconnect(this.masterVolumeGain);
+    this.masterGain = null;
+    this.masterVolumeGain = null;
+    for (const g of this.instrumentGainNodes.values()) disconnect(g);
+    this.instrumentGainNodes.clear();
+    for (const d of this.stretchLatencyDelays.values()) disconnect(d);
+    this.stretchLatencyDelays.clear();
+
+    // 3) Adopt the new context everywhere.
+    this.audioContext = audioContext;
+    this.audioDestination = audioDestination;
+    this.sampleRate = audioContext.sampleRate;
+    this.scheduler.setAudioContext(audioContext);
+    this.sustainPedalManager?.setAudioContext(audioContext);
+    this.audioPlayerScheduler?.setAudioContext(audioContext);
+    this.metronomeScheduler?.setAudioContext(audioContext);
+    this.drumScheduler?.setAudioContext(audioContext);
+    this.bassScheduler?.setAudioContext(audioContext);
+    this.voiceCueScheduler?.setAudioContext(audioContext);
+    this.harmonyScheduler?.setAudioContext(audioContext);
+    this.metricsCollector?.setSampleRate(this.sampleRate);
+
+    // 4) Re-register the per-context worklet engines (Signalsmith pitch-shift +
+    //    SoundTouch). register() is per-context; the old registration is bound
+    //    to the dead context. Reset the ready flags first so a failed
+    //    re-register correctly falls back to dry playback.
+    this.pitchWorkletReady = false;
+    if (this.pitchShiftAdapter) {
+      try {
+        this.pitchWorkletReady =
+          await this.pitchShiftAdapter.register(audioContext);
+      } catch (err) {
+        this.logger.warn('rebindContext: pitch-shift re-register failed', {
+          instanceId: this.instanceId,
+          err,
+        });
+      }
+    }
+    this.soundTouchReady = false;
+    if (this.soundTouchInsert) {
+      try {
+        this.soundTouchReady =
+          await this.soundTouchInsert.register(audioContext);
+      } catch (err) {
+        this.logger.warn('rebindContext: soundtouch re-register failed', {
+          instanceId: this.instanceId,
+          err,
+        });
+      }
+    }
+
+    // 5) Re-initialize the EventRouter against the new context (it caches the
+    //    context at initialize-time).
+    if (this.eventRouter && this.metronomeScheduler && this.drumScheduler) {
+      try {
+        this.eventRouter.initialize(
+          audioContext,
+          this.sampleRate,
+          this.eventBus,
+          this.metronomeScheduler,
+          this.drumScheduler,
+          this.harmonyScheduler!,
+          this.bassScheduler!,
+          this.voiceCueScheduler!,
+          (frame: number, time: number) => {
+            this.metricsCollector?.track(frame, time);
+          },
+          this.audioPlayerScheduler!,
+        );
+      } catch (err) {
+        this.logger.warn('rebindContext: EventRouter re-init failed', {
+          instanceId: this.instanceId,
+          err,
+        });
+      }
+    }
+
+    this.logger.info('PlaybackEngine: context rebind complete', {
+      instanceId: this.instanceId,
+      pitchWorkletReady: this.pitchWorkletReady,
+      soundTouchReady: this.soundTouchReady,
+    });
+  }
+
+  /**
    * Set harmony buffers and instrument type (for harmony instrument scheduling)
    * This is a wrapper for Scheduler.setBuffers() + Scheduler.setHarmonyInstrument()
    *

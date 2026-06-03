@@ -1194,6 +1194,35 @@ export function useGrooveCardPlayback({
       // plays during the count-in after a stop".
       if (isStale()) return;
 
+      // SELF-HEAL: the PlaybackEngine is a long-lived window-global that
+      // captures its AudioContext once at initialize(). If that context has
+      // since been closed (hard reload / Fast Refresh / OS audio-device change
+      // disposing the AudioEngine), building the Signalsmith stretch worklets
+      // against it throws ("AudioWorkletNode cannot be created"). ensureAudioContext()
+      // above guaranteed a live context is registered; if the engine is bound
+      // to a dead one, rebind it to the live context (which rebuilds the stale
+      // gain/stretch nodes) BEFORE becomeActive() arms the stems. AudioBuffers
+      // are context-bound, so on a real context swap we also drop the cache so
+      // the next decode targets the new context.
+      {
+        const engineForRebind = WindowRegistry.getPlaybackEngine();
+        const liveCtx = WindowRegistry.getAudioContext();
+        if (
+          liveCtx &&
+          engineForRebind?.needsContextRebind?.(liveCtx) === true
+        ) {
+          try {
+            const { GlobalSampleCache } = await import(
+              '@/domains/playback/modules/storage/cache/GlobalSampleCache.js'
+            );
+            GlobalSampleCache.clearAllBuffers?.();
+          } catch {
+            /* cache module optional; best-effort */
+          }
+          await engineForRebind.rebindContext?.(liveCtx, liveCtx.destination);
+        }
+      }
+
       // Always (re)register this card's tracks + buffers before starting.
       // Stem AudioBufferSourceNodes are single-use: once stopped (on pause /
       // stop) they can't restart, so every play() re-arms from the cached
