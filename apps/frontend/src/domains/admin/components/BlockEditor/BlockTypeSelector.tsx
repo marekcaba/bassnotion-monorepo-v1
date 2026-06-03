@@ -18,6 +18,7 @@ import {
   FileText,
   PartyPopper,
   BookOpen,
+  Timer,
   X,
 } from 'lucide-react';
 
@@ -74,6 +75,12 @@ const BLOCK_TYPE_OPTIONS: BlockTypeOption[] = [
     label: 'Explain',
     icon: BookOpen,
     description: 'Rich multimedia explanation carousel',
+  },
+  {
+    type: 'task',
+    label: 'Task',
+    icon: Timer,
+    description: 'No-audio drill brick — instruction + timer/loops criterion',
   },
 ];
 

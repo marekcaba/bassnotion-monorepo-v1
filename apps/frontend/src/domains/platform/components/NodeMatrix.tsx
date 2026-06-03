@@ -12,6 +12,7 @@ import { useUserProfile } from '@/domains/user/hooks/use-user-profile';
 import { useAuth } from '@/domains/user/hooks/use-auth';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 import { DRILL_SESSION_SLUG } from '@/domains/drill/constants';
+import { useStreak } from '@/domains/drill/hooks/useStreak';
 import {
   Avatar,
   AvatarImage,
@@ -799,18 +800,24 @@ const MOCK_RECORDINGS: Recording[] = [
 ];
 
 export function ProgressCard() {
+  const { data: streak } = useStreak();
+  // The streak stat is live (practice_streak_days, via /api/v1/users/me/
+  // practice-streak); Takes/Today remain placeholders until those metrics land.
+  const streakValue =
+    streak && streak.current > 0 ? `🔥 ${streak.current}` : '0';
+
   return (
     <div className="overflow-hidden rounded-[14px] border border-white/[0.06] bg-[#141318] p-[22px]">
       <div className="mb-3.5 font-mono text-[10px] uppercase tracking-[2px] text-[#5A5660]">
         Your Progress
       </div>
 
-      {/* Stats row */}
+      {/* Stats row — Streak is live; Takes/Today are placeholders for now. */}
       <div className="mb-4 grid grid-cols-3 gap-2.5">
         {[
-          { value: '8', label: 'Takes' },
+          { value: streakValue, label: 'Streak' },
           { value: '48m', label: 'Today' },
-          { value: '5', label: 'Grooves' },
+          { value: '8', label: 'Takes' },
         ].map((s) => (
           <div
             key={s.label}

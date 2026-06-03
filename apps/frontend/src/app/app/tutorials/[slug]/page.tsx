@@ -6,6 +6,8 @@ import { TutorialPageSkeleton } from '@/domains/widgets/components/YouTubeWidget
 import { useTutorialExercises } from '@/domains/widgets/hooks/useTutorialExercises';
 import { PageErrorBoundary } from '@/shared/components/ErrorBoundary';
 import { useConquerReplay } from '@/domains/drill/hooks/useConquerReplay';
+import { isDrillTutorial } from '@/domains/drill/utils/drillBricks';
+import { DrillSessionFrame } from '@/domains/drill/components/DrillSessionFrame';
 // NOTE: ScrollTriggerLoader removed - act-aware preloading now handled by useActAwarePreload in YouTubeWidgetPage
 
 interface PlatformTutorialPageProps {
@@ -57,15 +59,28 @@ export default function PlatformTutorialPage({
     );
   }
 
+  // A drill is a tutorial whose blocks are drill bricks (task / drill-tagged
+  // groove-card). Drills get the session frame (opening plan → run → summary);
+  // ordinary tutorials render the player directly, unchanged.
+  const isDrill = isDrillTutorial(memoizedTutorial);
+
   return (
     <>
       <PageErrorBoundary pageName="Platform Tutorial">
-        <YouTubeWidgetPage
-          tutorialData={memoizedTutorial ?? undefined}
-          tutorialSlug={tutorialSlug}
-          exercises={memoizedExercises}
-          hideChrome
-        />
+        {isDrill && memoizedTutorial ? (
+          <DrillSessionFrame
+            tutorial={memoizedTutorial}
+            tutorialSlug={tutorialSlug}
+            exercises={memoizedExercises ?? []}
+          />
+        ) : (
+          <YouTubeWidgetPage
+            tutorialData={memoizedTutorial ?? undefined}
+            tutorialSlug={tutorialSlug}
+            exercises={memoizedExercises}
+            hideChrome
+          />
+        )}
       </PageErrorBoundary>
     </>
   );

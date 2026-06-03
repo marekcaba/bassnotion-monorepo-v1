@@ -12,6 +12,7 @@
 import type {
   GetTutorialProgressResponse,
   BlockProgressEntry,
+  DrillCompletionData,
 } from '@bassnotion/contracts';
 
 /** Legacy block-progress map shape used by DynamicIsland, FourWidgetsCard, etc. */
@@ -20,7 +21,8 @@ export interface LegacyBlockProgress {
     blockId: string;
     completed: boolean;
     completedAt?: string;
-    data?: Record<string, unknown>;
+    /** Drill-brick completion payload (result / criterion / achievedTier). */
+    data?: DrillCompletionData;
   };
 }
 
@@ -48,6 +50,10 @@ export function toLegacyBlockProgress(
         blockId: entry.blockId,
         completed: true,
         completedAt: entry.completedAt ?? undefined,
+        // The completion payload (drill result / criterion / achievedTier) is
+        // now surfaced by the server — carry it so the session summary can read
+        // each brick's outcome. null → leave undefined (legacy "no payload").
+        data: entry.data ?? undefined,
       };
     }
   }

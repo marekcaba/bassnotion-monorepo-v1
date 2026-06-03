@@ -480,6 +480,7 @@ export type {
   GetTutorialProgressResponse,
   TutorialCompletionSummary,
   GetUserTutorialCompletionsResponse,
+  GetPracticeStreakResponse,
 } from './progress.js';
 
 // Block-based tutorial system types
@@ -516,9 +517,16 @@ export type {
   GrooveCardStemSet,
   GrooveCardStateCaptions,
   GrooveBrickRole,
+  MasteryTier,
+  DrillCriterionType,
+  DrillCompletionCriterion,
+  DrillCompletionResult,
+  DrillCompletionData,
+  TaskBlockConfig,
   TextBlock,
   CelebrationBlock,
   ExplainBlock,
+  TaskBlock,
   AnyBlock,
   BlockProgress,
 } from './block.js';

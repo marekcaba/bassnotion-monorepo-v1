@@ -10,7 +10,14 @@ import {
   type ExerciseProgressEntry,
   type TutorialCompletionSummary,
   type Tutorial as TutorialContract,
+  type DrillCompletionData,
 } from '@bassnotion/contracts';
+
+/** What getBlockCompletions surfaces per completed block, indexed by blockId. */
+interface CompletionInfo {
+  completedAt: string;
+  data: Record<string, unknown> | null;
+}
 import { ProgressRepository } from './repositories/progress.repository.js';
 import { TutorialsService } from '../tutorials/tutorials.service.js';
 import { RequestContextService } from '../../shared/services/request-context.service.js';
@@ -78,7 +85,10 @@ export class ProgressService {
     ]);
 
     const completedById = new Map(
-      completions.map((row) => [row.block_id, row.completed_at]),
+      completions.map((row) => [
+        row.block_id,
+        { completedAt: row.completed_at, data: row.data },
+      ]),
     );
     const practiceById = new Map(
       practice.map((row) => [
@@ -141,10 +151,15 @@ export class ProgressService {
    */
   private buildBlockEntry(
     block: AnyBlock,
-    completedById: Map<string, string>,
+    completedById: Map<string, CompletionInfo>,
     practiceById: Map<string, { count: number; tempo: number | null }>,
   ): BlockProgressEntry {
-    const explicitCompletedAt = completedById.get(block.id) ?? null;
+    const info = completedById.get(block.id) ?? null;
+    const explicitCompletedAt = info?.completedAt ?? null;
+    // The completion payload is free-form JSONB; for drill bricks it's a
+    // DrillCompletionData (result / criterion / achievedTier / at). Surface it
+    // verbatim so the session summary can read each brick's result.
+    const data = (info?.data as DrillCompletionData | null) ?? null;
 
     if (block.type === 'exercise') {
       const config = block.config as ExerciseBlockConfig;
@@ -165,6 +180,7 @@ export class ProgressService {
         completed,
         unlocked: false, // filled in by caller after sorting
         completedAt: explicitCompletedAt,
+        data,
       };
     }
 
@@ -173,6 +189,7 @@ export class ProgressService {
       completed: !!explicitCompletedAt,
       unlocked: false,
       completedAt: explicitCompletedAt,
+      data,
     };
   }
 

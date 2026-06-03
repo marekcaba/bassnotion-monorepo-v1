@@ -86,6 +86,10 @@ interface GrooveCardControlsProps {
    *  Only the drill surface opts in; tutorial/marketing surfaces leave it
    *  off so Solo Drums stays available there regardless of tier. */
   enforceCaps?: boolean;
+  /** When true (drill bricks), the key + tempo are PRESCRIBED by the author —
+   *  the steppers render disabled (read-only) so the student practices exactly
+   *  the prescribed setup ("do exactly this"). */
+  lockSettings?: boolean;
 }
 
 export function GrooveCardControls({
@@ -106,6 +110,7 @@ export function GrooveCardControls({
   onSoloDrums,
   onHoverHint,
   enforceCaps = false,
+  lockSettings = false,
 }: GrooveCardControlsProps) {
   // Cap-aware hook reads — LAUNCH-02 will populate these.
   const { caps } = useEntitlement();
@@ -160,7 +165,7 @@ export function GrooveCardControls({
           suffix={isKeyPending ? ' …' : ''}
           onPrev={() => onKeyChange((pendingKeyShift ?? currentSemitones) - 1)}
           onNext={() => onKeyChange((pendingKeyShift ?? currentSemitones) + 1)}
-          disabled={!isReady}
+          disabled={!isReady || lockSettings}
           ariaLabel="Key"
         />
       </div>
@@ -200,7 +205,7 @@ export function GrooveCardControls({
           suffix=" BPM"
           onPrev={() => onTempoChange(currentBpm - 1)}
           onNext={() => onTempoChange(currentBpm + 1)}
-          disabled={!isReady}
+          disabled={!isReady || lockSettings}
           ariaLabel="Tempo"
         />
       </div>

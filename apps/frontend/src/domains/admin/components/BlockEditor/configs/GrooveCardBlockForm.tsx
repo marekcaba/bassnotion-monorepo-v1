@@ -23,6 +23,7 @@ import type {
   GrooveCardStemSet,
 } from '@bassnotion/contracts';
 import { StemUploadButton } from './groove-card/StemUploadButton';
+import { CompletionCriterionFields } from './CompletionCriterionFields';
 import { useGrooveLibrary } from '@/domains/drill/hooks/useGrooveLibrary';
 
 interface GrooveCardBlockFormProps {
@@ -273,6 +274,12 @@ export function GrooveCardBlockForm({
           advances the session). Timebox drives the per-brick session clock.
         </p>
       </fieldset>
+
+      {/* Completion criterion — how this drill brick is "done". */}
+      <CompletionCriterionFields
+        value={config.completionCriterion}
+        onChange={(c) => updateField('completionCriterion', c)}
+      />
 
       {/* Stems — inline authoring only (library grooves carry their own). */}
       {!usingLibrary && (
