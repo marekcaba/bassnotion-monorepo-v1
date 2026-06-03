@@ -1,33 +1,33 @@
 /**
- * useGrooveCardPlayback — pitch-shift scenarios (LAUNCH-02.5c).
+ * useGrooveCardPlayback — pitch-shift behaviour (LAUNCH-06 buffer-streaming).
  *
- * Comprehensive coverage of the user-facing pitch-shifting behaviour:
+ * A key change transposes ONLY bass + harmony, which play through a single
+ * signalsmith buffer-streaming node (pitch ⟂ tempo). The caller-observable
+ * contract — what a player actually hears/sees — is:
  *
- *   - Pre-play key taps (engine not yet warmed)
- *   - First default→pitched transition mid-loop
- *   - Pitched→pitched transitions (semitone-to-semitone)
- *   - Pitched→default disengagement
- *   - Stop / play cycles preserving pre-roll-state reset semantics
- *   - Interactions: mute bass while pitched, solo drums while pitched,
- *     click toggle while pitched, tempo change while pitched
- *   - Edge cases: rapid taps, taps during count-in, cap-exceeded taps
- *     on waitlist, loop-slice mode (slice doesn't pitch-shift via
- *     rearm), going through every key value -12..+12
+ *   1. Tap a key → bass + harmony get the requested semitone offset; drums
+ *      and click are never transposed.
+ *   2. WHILE PLAYING, the change is DEFERRED to the next loop seam (a future
+ *      audio time), so the current loop finishes in the old key and the next
+ *      plays the new one — no mid-loop pitch jump.
+ *   3. WHILE STOPPED, the change applies immediately (no boundary), so the
+ *      next play() starts already transposed.
+ *   4. Changing TEMPO does not change PITCH (and vice-versa).
+ *   5. Past the transpose cap the request is SWALLOWED (cap-as-CTA: fire the
+ *      upsell, keep the current key) — it is NOT silently clamped.
  *
- * The engine is mocked at the WindowRegistry level so we can inspect
- * EVERY call into the pitch-shift API. The hook drives the orchestration
- * unmodified, so any regression in setKey's call ordering, in deferred
- * pitch math, or in the pre-roll constant will surface as a failed
- * assertion here.
+ * Tests are split in two:
+ *   - "engine calls" — the only place we assert mechanism, because the
+ *     deferral time is itself the behaviour (the 3rd arg to
+ *     setInstrumentPitchShift IS the seam). We assert WHAT that time means
+ *     (undefined vs future), not how many calls fire.
+ *   - "playing-path behaviour (intent)" — drives play() so the loop anchor
+ *     exists, then asserts the audible outcomes above through the hook's
+ *     reactive surface + the boundary semantics.
  *
- * Why these tests matter:
- *   The pitch-shift work has many state interactions (idempotence flags
- *   on the engine, retroactive fade-out wraps on the scheduler, delta
- *   tracking of preRollSeconds) that we found EMPIRICALLY by listening.
- *   None of those are guarded by tests in the engine itself. A future
- *   refactor that "cleans up" any of those without understanding the
- *   audio-thread implications will only break at runtime. These tests
- *   lock the contract from the caller's perspective.
+ * The engine is mocked at the WindowRegistry level. Because the pitch path is
+ * pure scheduling (no audio thread in jsdom), the boundary argument is the
+ * faithful proxy for "when will a listener hear this".
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -250,6 +250,66 @@ function resetCalls() {
 
 function callsOf(method: string): PitchShiftCall[] {
   return engineCalls.pitchShiftSequence.filter((c) => c.method === method);
+}
+
+// ── Intent-level helpers ─────────────────────────────────────────────────────
+//
+// These describe pitch behaviour the way a listener experiences it, so the
+// assertions read as musical guarantees rather than call bookkeeping.
+
+/** The pitch writes (stem, semitones, boundary) produced since the last reset. */
+function pitchWrites(): Array<{
+  stem: unknown;
+  semitones: unknown;
+  boundary: unknown;
+}> {
+  return callsOf('setInstrumentPitchShift').map((c) => ({
+    stem: c.args[0],
+    semitones: c.args[1],
+    boundary: c.args[2],
+  }));
+}
+
+/** Map of stem → semitone offset that will be heard after the writes settle. */
+function transposeByStem(): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const w of pitchWrites()) out[String(w.stem)] = w.semitones as number;
+  return out;
+}
+
+/**
+ * True iff every pitch write is scheduled at a FUTURE audio time — i.e. the
+ * key change is queued for the next loop seam, not applied mid-loop. The
+ * caller passes `now` (the mocked AudioContext.currentTime).
+ */
+function allDeferredToFutureSeam(now: number): boolean {
+  const writes = pitchWrites();
+  return (
+    writes.length > 0 &&
+    writes.every((w) => typeof w.boundary === 'number' && w.boundary > now)
+  );
+}
+
+/** True iff every pitch write applies immediately (no scheduled boundary). */
+function allAppliedImmediately(): boolean {
+  const writes = pitchWrites();
+  return writes.length > 0 && writes.every((w) => w.boundary === undefined);
+}
+
+/**
+ * Drive the hook from stopped → actively looping, so setKey/setTempo take the
+ * "playing" branch (a loop anchor exists and changes defer to the seam).
+ * Returns the audio time the loop is now anchored at. `nowAfter` advances the
+ * mocked clock to mid-loop so a future seam is computable.
+ */
+async function playUntilLooping(
+  result: { current: ReturnType<typeof useGrooveCardPlayback> },
+  nowAfter = 1.0,
+): Promise<void> {
+  await act(async () => {
+    await result.current.play();
+  });
+  mockAudioContextTime = nowAfter;
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────────
@@ -769,6 +829,105 @@ describe('useGrooveCardPlayback — pitch-shift scenarios', () => {
       expect(callsOf('setInstrumentPitchShift').length).toBe(0);
       expect(callsOf('enablePitchShiftForStem').length).toBe(0);
       expect(callsOf('rearmFutureIterationsForRegions').length).toBe(0);
+    });
+  });
+
+  // ── Playing-path behaviour (intent) ────────────────────────────────────────
+  //
+  // These drive play() so a loop anchor exists, then assert the AUDIBLE
+  // outcome — how a listener experiences a key/tempo change — rather than the
+  // shape of the engine calls. This is the path the original suite couldn't
+  // reach, so the mid-loop deferral guarantee went untested until now.
+
+  describe('playing-path behaviour (intent)', () => {
+    it('a key change while playing is deferred to the next loop seam (no mid-loop jump)', async () => {
+      const { result } = renderHook(() =>
+        useGrooveCardPlayback({ block: makeConfig(), cardId: 'card-A' }),
+      );
+      await playUntilLooping(result, 1.0);
+      resetCalls();
+
+      act(() => {
+        result.current.setKey(3);
+      });
+
+      // The listener keeps hearing the current loop in the old key; the +3
+      // only takes effect at a future seam.
+      expect(allDeferredToFutureSeam(1.0)).toBe(true);
+      expect(transposeByStem()).toEqual({
+        'audio-bass': 3,
+        'audio-harmony': 3,
+      });
+    });
+
+    it('a key change while stopped applies immediately so the next play starts transposed', () => {
+      const { result } = renderHook(() =>
+        useGrooveCardPlayback({ block: makeConfig(), cardId: 'card-A' }),
+      );
+      // Never played → no loop anchor.
+      act(() => {
+        result.current.setKey(-2);
+      });
+
+      expect(allAppliedImmediately()).toBe(true);
+      expect(transposeByStem()).toEqual({
+        'audio-bass': -2,
+        'audio-harmony': -2,
+      });
+    });
+
+    it('drums are never transposed by a key change', async () => {
+      const { result } = renderHook(() =>
+        useGrooveCardPlayback({ block: makeConfig(), cardId: 'card-A' }),
+      );
+      await playUntilLooping(result, 1.0);
+      resetCalls();
+
+      act(() => {
+        result.current.setKey(5);
+      });
+
+      const stems = pitchWrites().map((w) => w.stem);
+      expect(stems).not.toContain('audio-drums');
+      expect(stems).not.toContain('audio-click');
+    });
+
+    it('changing tempo preserves the current key (tempo ⟂ pitch)', async () => {
+      const { result } = renderHook(() =>
+        useGrooveCardPlayback({ block: makeConfig(), cardId: 'card-A' }),
+      );
+      // Transpose +4, start playing.
+      act(() => {
+        result.current.setKey(4);
+      });
+      await playUntilLooping(result, 1.0);
+      resetCalls();
+
+      act(() => {
+        result.current.setTempo(150);
+      });
+
+      // The audible key is unchanged: setTempo issues NO transposition write,
+      // and the displayed semitone offset stays put.
+      expect(callsOf('setInstrumentPitchShift').length).toBe(0);
+      expect(result.current.currentSemitones).toBe(4);
+    });
+
+    it('changing key preserves the current tempo (pitch ⟂ tempo)', async () => {
+      const { result } = renderHook(() =>
+        useGrooveCardPlayback({ block: makeConfig(), cardId: 'card-A' }),
+      );
+      act(() => {
+        result.current.setTempo(150);
+      });
+      await playUntilLooping(result, 1.0);
+
+      act(() => {
+        result.current.setKey(2);
+      });
+
+      // The tempo the listener hears is unchanged by a key tap.
+      expect(result.current.currentBpm).toBe(150);
     });
   });
 
