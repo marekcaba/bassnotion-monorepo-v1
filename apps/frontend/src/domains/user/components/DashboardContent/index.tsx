@@ -12,6 +12,23 @@ import {
 import { Button } from '@/shared/components/ui/button';
 import { BassSettingsCard } from '../BassSettingsCard';
 import { MyFavoritesCard } from '../MyFavoritesCard';
+import { useStreak } from '@/domains/drill/hooks/useStreak';
+
+/** The "Practice Streak" card id, whose content is replaced with live data. */
+const STREAK_CARD_ID = '4';
+
+/** Live copy for the streak card from the streak response. */
+function streakContent(
+  streak: { current: number; isActiveToday: boolean } | undefined,
+): string {
+  if (!streak || streak.current === 0) {
+    return 'Practice a drill today to start a streak!';
+  }
+  const dayWord = streak.current === 1 ? 'day' : 'days';
+  return streak.isActiveToday
+    ? `🔥 ${streak.current} ${dayWord} in a row! Keep it up!`
+    : `🔥 ${streak.current}-${dayWord} streak — practice today to keep it!`;
+}
 
 interface DashboardCard {
   id: string;
@@ -81,6 +98,7 @@ const extraCards: DashboardCard[] = [
 export function DashboardContent() {
   const [cards, setCards] = useState<DashboardCard[]>(initialCards);
   const [gridRef] = useAutoAnimate();
+  const { data: streak } = useStreak();
 
   const handleBassSettingsChange = (settings: {
     stringCount: 4 | 5 | 6;
@@ -185,7 +203,11 @@ export function DashboardContent() {
               )}
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground mb-4">{card.content}</p>
+              <p className="text-muted-foreground mb-4">
+                {card.id === STREAK_CARD_ID
+                  ? streakContent(streak)
+                  : card.content}
+              </p>
               {card.buttonText && (
                 <Button
                   size="sm"

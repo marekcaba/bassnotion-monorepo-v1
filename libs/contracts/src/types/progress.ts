@@ -68,3 +68,21 @@ export interface GetUserTutorialCompletionsResponse {
   /** Summary entry per tutorial. Missing entry == no progress. */
   tutorials: TutorialCompletionSummary[];
 }
+
+/**
+ * GET /api/v1/users/me/practice-streak response.
+ *
+ * A "streak day" = the user completed a drill session (reached the summary) on
+ * that calendar day. `current` is the count of consecutive days ending today
+ * (or yesterday — see `isActiveToday`). `lastPracticedOn` is the ISO date
+ * (YYYY-MM-DD) of the most recent practice, or null if they've never practiced.
+ */
+export interface GetPracticeStreakResponse {
+  /** Consecutive-day streak count. 0 if never practiced or the streak lapsed. */
+  current: number;
+  /** Most recent practice date (YYYY-MM-DD), or null. */
+  lastPracticedOn: string | null;
+  /** True if the user has already logged a practice today (drives "keep it up"
+   *  vs "practice today to keep your streak" copy). */
+  isActiveToday: boolean;
+}

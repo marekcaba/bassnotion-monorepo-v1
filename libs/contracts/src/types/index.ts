@@ -480,6 +480,7 @@ export type {
   GetTutorialProgressResponse,
   TutorialCompletionSummary,
   GetUserTutorialCompletionsResponse,
+  GetPracticeStreakResponse,
 } from './progress.js';
 
 // Block-based tutorial system types

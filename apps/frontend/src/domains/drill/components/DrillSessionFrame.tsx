@@ -15,7 +15,7 @@
  * a recap.
  */
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import type { Tutorial } from '@bassnotion/contracts';
 import { YouTubeWidgetPage } from '@/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage';
 import { useUserProfile } from '@/domains/user/hooks/use-user-profile';
@@ -23,6 +23,7 @@ import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router'
 import { useProgress } from '@/domains/progress/hooks/useProgress';
 import { getDrillBricks } from '@/domains/drill/utils/drillBricks';
 import { useDrillSession } from '@/domains/drill/hooks/useDrillSession';
+import { useRecordSession } from '@/domains/drill/hooks/useStreak';
 import { DrillPlanScreen } from './DrillPlanScreen';
 import {
   DrillSummaryScreen,
@@ -71,6 +72,22 @@ export function DrillSessionFrame({
     brickIds,
     completedIds,
   });
+
+  // Bump the practice streak when the session is completed (phase → summary).
+  // Fire once per visit (the ref guard); the server is idempotent per day, so a
+  // duplicate would be harmless anyway. A "run it again" → plan → summary cycle
+  // re-arms it, but the same-day server no-op keeps the count correct.
+  const recordSession = useRecordSession();
+  const recordedRef = useRef(false);
+  useEffect(() => {
+    if (phase === 'summary' && !recordedRef.current) {
+      recordedRef.current = true;
+      recordSession.mutate();
+    }
+    if (phase === 'plan') {
+      recordedRef.current = false; // re-arm for a fresh run
+    }
+  }, [phase, recordSession]);
 
   const summaryItems = useMemo<DrillSummaryItem[]>(() => {
     const dataById = new Map(
