@@ -35,6 +35,7 @@ import { GrooveCardBlockForm } from './configs/GrooveCardBlockForm.js';
 import { TextBlockForm } from './configs/TextBlockForm.js';
 import { CelebrationBlockForm } from './configs/CelebrationBlockForm.js';
 import { ExplainBlockForm } from './configs/ExplainBlockForm.js';
+import { TaskBlockForm } from './configs/TaskBlockForm.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -148,6 +149,17 @@ function createDefaultBlock(type: BlockType, order: number): AnyBlock {
       order,
       showInIsland: true,
       config: { slides: [] },
+    }),
+    task: () => ({
+      id,
+      type: 'task' as const,
+      title: 'Task',
+      order,
+      showInIsland: true,
+      config: {
+        instruction: '',
+        completionCriterion: { type: 'time' as const, target: 5 },
+      },
     }),
   };
 
@@ -445,6 +457,9 @@ const EditingPanel = React.memo(function EditingPanel({
       )}
       {block.type === 'explain' && (
         <ExplainBlockForm config={block.config} onChange={handleConfigChange} />
+      )}
+      {block.type === 'task' && (
+        <TaskBlockForm config={block.config} onChange={handleConfigChange} />
       )}
     </div>
   );

@@ -22,6 +22,7 @@ import {
   FileText,
   PartyPopper,
   BookOpen,
+  Timer,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -39,6 +40,7 @@ const BLOCK_ICONS: Record<
   text: FileText,
   celebration: PartyPopper,
   explain: BookOpen,
+  task: Timer,
 };
 
 // ---------------------------------------------------------------------------

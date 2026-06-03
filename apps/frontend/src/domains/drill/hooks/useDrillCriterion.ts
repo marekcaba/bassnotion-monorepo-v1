@@ -54,6 +54,12 @@ export function useDrillCriterion(
   const type = criterion?.type;
   const target = criterion?.target ?? 0;
 
+  // Keep the latest getAudioPhase in a ref so the loop effect doesn't depend on
+  // a callback identity that callers re-create each render (which would re-arm
+  // the interval and reset the phase anchor every render → broken loop count).
+  const getAudioPhaseRef = useRef(playback.getAudioPhase);
+  getAudioPhaseRef.current = playback.getAudioPhase;
+
   // ── time: accumulate playing seconds ─────────────────────────────────────
   const [elapsedSec, setElapsedSec] = useState(0);
   const elapsedRef = useRef(0); // source of truth (avoids stale-closure adds)
@@ -92,7 +98,7 @@ export function useDrillCriterion(
         lastPhaseRef.current = null;
         return;
       }
-      const phase = playback.getAudioPhase();
+      const phase = getAudioPhaseRef.current();
       if (phase == null) {
         lastPhaseRef.current = null;
         return;
@@ -106,7 +112,7 @@ export function useDrillCriterion(
       lastPhaseRef.current = phase;
     }, TICK_MS);
     return () => clearInterval(id);
-  }, [type, playback.isPlaying, playback.getAudioPhase]);
+  }, [type, playback.isPlaying]);
 
   if (type === 'time') {
     const targetSec = target * 60;
