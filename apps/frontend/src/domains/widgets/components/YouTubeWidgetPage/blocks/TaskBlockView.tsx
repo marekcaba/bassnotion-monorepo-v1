@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useState } from 'react';
+import { Pause, Play } from 'lucide-react';
 import type { TaskBlock, DrillCompletionResult } from '@bassnotion/contracts';
 import { Button } from '@/shared/components/ui/button';
 import { useDrillCriterion } from '@/domains/drill/hooks/useDrillCriterion';
@@ -37,14 +38,22 @@ export function TaskBlockView({
   const config = block.config;
   const criterion = config.completionCriterion;
   const [started, setStarted] = useState(false);
+  const [running, setRunning] = useState(false);
   const [done, setDone] = useState(false);
 
-  // Wall-clock: a task block has no audio, so the timer runs once started
-  // (isPlaying = started). Manual criterion ignores the timer.
+  // Wall-clock: a task block has no audio, so the timer runs only while the
+  // learner has it running (isPlaying = running). Start arms it; the pause
+  // button toggles `running` to freeze/resume the countdown — useDrillCriterion
+  // accrues elapsed seconds only while isPlaying is true. Manual ignores it.
   const { isMet, progress } = useDrillCriterion(criterion, {
-    isPlaying: started,
+    isPlaying: running,
     getAudioPhase: () => null, // no audio → no loops criterion on task blocks
   });
+
+  const start = useCallback(() => {
+    setStarted(true);
+    setRunning(true);
+  }, []);
 
   const finish = useCallback(
     (result: DrillCompletionResult) => {
@@ -74,7 +83,11 @@ export function TaskBlockView({
 
         {/* Timer (time criterion) */}
         {criterion?.type === 'time' && progress && (
-          <p className="font-mono text-4xl">
+          <p
+            className={`font-mono text-4xl ${
+              started && !running ? 'text-white/40' : ''
+            }`}
+          >
             {formatTime(progress.target - progress.current)}
           </p>
         )}
@@ -93,17 +106,36 @@ export function TaskBlockView({
                 I&apos;m done →
               </Button>
             ) : !started ? (
-              <Button onClick={() => setStarted(true)} className="text-white">
-                ▶ Start
+              <Button onClick={start} className="text-white">
+                <Play className="mr-1.5 h-4 w-4" /> Start
               </Button>
             ) : (
-              <Button
-                onClick={() => finish('completed')}
-                disabled={!isMet}
-                className="text-white"
-              >
-                Next →
-              </Button>
+              <div className="flex items-center gap-2">
+                {/* Pause / resume the countdown without losing progress. */}
+                <Button
+                  variant="outline"
+                  onClick={() => setRunning((r) => !r)}
+                  className="text-white"
+                  aria-label={running ? 'Pause timer' : 'Resume timer'}
+                >
+                  {running ? (
+                    <>
+                      <Pause className="mr-1.5 h-4 w-4" /> Pause
+                    </>
+                  ) : (
+                    <>
+                      <Play className="mr-1.5 h-4 w-4" /> Resume
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={() => finish('completed')}
+                  disabled={!isMet}
+                  className="text-white"
+                >
+                  Next →
+                </Button>
+              </div>
             )}
             <button
               type="button"
