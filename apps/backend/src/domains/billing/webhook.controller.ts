@@ -191,12 +191,20 @@ export class WebhookController {
     }
 
     if (!resolvedUserId) {
-      // Try to get from customer metadata
+      // Try an existing subscription row keyed by customer.
       const existingByCustomer =
         await this.subscriptionRepository.findByStripeCustomerId(customerId);
       if (existingByCustomer) {
         resolvedUserId = existingByCustomer.userId;
       }
+    }
+
+    if (!resolvedUserId) {
+      // Final fallback: the Stripe customer's metadata.user_id (always stamped
+      // by getOrCreateCustomer). Covers first-ever subscriptions whose own
+      // metadata didn't carry user_id.
+      resolvedUserId =
+        (await this.stripeService.getCustomerUserId(customerId)) ?? undefined;
     }
 
     if (!resolvedUserId) {

@@ -162,6 +162,22 @@ export class StripeService implements OnModuleInit {
   }
 
   /**
+   * Resolve the app user_id from a Stripe customer's metadata. getOrCreateCustomer
+   * always stamps metadata.user_id, so this is a reliable last-resort fallback
+   * for webhooks whose subscription object lacks the metadata. Returns null on
+   * any error / missing metadata (caller logs + skips).
+   */
+  async getCustomerUserId(customerId: string): Promise<string | null> {
+    try {
+      const customer = await this.stripe.customers.retrieve(customerId);
+      if (customer.deleted) return null;
+      return (customer.metadata?.user_id as string | undefined) ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * Get or create a Stripe customer for a user
    */
   async getOrCreateCustomer(
@@ -224,6 +240,11 @@ export class StripeService implements OnModuleInit {
       success_url: dto.successUrl,
       cancel_url: dto.cancelUrl,
       metadata,
+      // Propagate metadata onto the SUBSCRIPTION object itself (not just the
+      // checkout session) so customer.subscription.created/updated webhooks can
+      // resolve user_id from subscription.metadata. Without this the webhook
+      // can't link the sub to a user and no subscriptions row is written.
+      ...(mode === 'subscription' ? { subscription_data: { metadata } } : {}),
       // Allow promotion codes
       allow_promotion_codes: true,
       // Collect billing address for tax purposes

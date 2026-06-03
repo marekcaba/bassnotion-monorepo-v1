@@ -61,11 +61,21 @@ export function UpgradePitchContent({
   const checkout = useCreateCheckoutSession();
 
   const startCheckout = () => {
+    // Where the user upgraded FROM — we return them to this exact spot after
+    // the welcome screen.
     const origin =
       typeof window !== 'undefined' ? window.location.href : '/app';
+    const appOrigin =
+      typeof window !== 'undefined' ? window.location.origin : '';
+    // success → a member welcome page that confirms the upgrade, then offers a
+    // "Return to the Groove Card" button back to `return`. Stripe substitutes
+    // {CHECKOUT_SESSION_ID}. cancel → straight back to where they were.
+    const successUrl = `${appOrigin}/app/welcome?return=${encodeURIComponent(
+      origin,
+    )}&session_id={CHECKOUT_SESSION_ID}`;
     checkout.mutate({
       type: 'subscription',
-      successUrl: origin,
+      successUrl,
       cancelUrl: origin,
     });
   };
