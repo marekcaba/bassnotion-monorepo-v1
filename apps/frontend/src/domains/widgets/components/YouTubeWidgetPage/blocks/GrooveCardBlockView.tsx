@@ -32,6 +32,11 @@ import {
   type HoverHintKey,
 } from './groove-card/captions';
 import { useEntitlement } from '@/domains/billing/hooks/useEntitlement';
+import {
+  UpgradePitchContent,
+  type UpgradeLever,
+} from '@/domains/billing/components/UpgradePitch';
+import { Popover, PopoverAnchor } from '@/shared/components/ui/popover';
 import { trackEvent } from '@/shared/attribution/events';
 import { useAuth } from '@/domains/user/hooks/use-auth';
 import { useDrill } from '@/domains/drill/stores/useDrillStore';
@@ -148,10 +153,18 @@ export function GrooveCardBlockView({
 
   // Transient upsell caption shown when a capped lever hits its band edge.
   const [capUpsell, setCapUpsell] = useState<string | null>(null);
+  // The cap is the pitch: the bumped lever (null = closed) drives an in-flow
+  // popover anchored to that control. Keeps playback running — no modal. Only
+  // the anchorable levers (no 'generic') ever set it.
+  const [pitchLever, setPitchLever] = useState<Exclude<
+    UpgradeLever,
+    'generic'
+  > | null>(null);
 
   const onCapHit = useCallback(
     (lever: 'tempo' | 'transpose' | 'loopRange') => {
       setCapUpsell(caps[lever]?.message ?? '');
+      setPitchLever(lever);
       trackEvent('cap_hit', { lever, grooveId: block.id });
     },
     [caps, block.id],
@@ -420,18 +433,39 @@ export function GrooveCardBlockView({
           setHoverHint(hovering ? 'metronome' : null);
         }}
         waveform={
-          <GrooveCardWaveform
-            isPlaying={playback.isPlaying}
-            bassBuffer={playback.bassBuffer}
-            audioContext={playback.audioContext}
-            loopStartAudioTime={playback.loopStartAudioTime}
-            loopDurationSeconds={playback.loopDurationSeconds}
-            getAudioPhase={playback.getAudioPhase}
-            lengthBars={config.lengthBars}
-            loopSelection={playback.loopSelection}
-            onLoopSelectionChange={playback.setLoopSelection}
-            color={waveformColor}
-          />
+          // The loop-range cap fires from a bar drag ON the waveform, so its
+          // pitch anchors HERE (not the controls row). Own Popover, open only
+          // for the loopRange lever — pops next to the bars the user selected.
+          <Popover
+            open={pitchLever === 'loopRange'}
+            onOpenChange={(o) => {
+              if (!o) setPitchLever(null);
+            }}
+          >
+            <PopoverAnchor asChild>
+              <div>
+                <GrooveCardWaveform
+                  isPlaying={playback.isPlaying}
+                  bassBuffer={playback.bassBuffer}
+                  audioContext={playback.audioContext}
+                  loopStartAudioTime={playback.loopStartAudioTime}
+                  loopDurationSeconds={playback.loopDurationSeconds}
+                  getAudioPhase={playback.getAudioPhase}
+                  lengthBars={config.lengthBars}
+                  loopSelection={playback.loopSelection}
+                  onLoopSelectionChange={playback.setLoopSelection}
+                  color={waveformColor}
+                />
+              </div>
+            </PopoverAnchor>
+            {pitchLever === 'loopRange' && (
+              <UpgradePitchContent
+                lever="loopRange"
+                message={capUpsell ?? undefined}
+                side="bottom"
+              />
+            )}
+          </Popover>
         }
         controls={
           <GrooveCardControls
@@ -452,12 +486,33 @@ export function GrooveCardBlockView({
             onSoloDrums={(solo) =>
               playback.setStemSolo(solo ? 'audio-drums' : null)
             }
+            onDeconCapHit={() => {
+              setPitchLever('deconstruction');
+              trackEvent('cap_hit', {
+                lever: 'deconstruction',
+                grooveId: block.id,
+              });
+            }}
             onHoverHint={(hint) => {
               if (hint) clearCapUpsell();
               setHoverHint(hint);
             }}
             enforceCaps={capsEnabled}
             lockSettings={isDrillBrick}
+            // loopRange anchors to the WAVEFORM (handled above), not the
+            // controls row — so the controls popover ignores it.
+            pitchLever={pitchLever === 'loopRange' ? null : pitchLever}
+            onPitchOpenChange={(open) => {
+              if (!open) setPitchLever(null);
+            }}
+            pitchContent={
+              pitchLever && pitchLever !== 'loopRange' ? (
+                <UpgradePitchContent
+                  lever={pitchLever}
+                  message={capUpsell ?? undefined}
+                />
+              ) : null
+            }
           />
         }
       />
