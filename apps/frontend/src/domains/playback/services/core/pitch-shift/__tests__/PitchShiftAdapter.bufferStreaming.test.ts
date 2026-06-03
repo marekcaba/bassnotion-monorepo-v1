@@ -195,9 +195,13 @@ describe('SignalsmithAdapter.createBufferStreamingNode', () => {
     expect(sg.schedule).toHaveBeenCalledWith(
       expect.objectContaining({ rate: 0.8, output: 3.0 }),
     );
-    // A rate change must NOT carry a semitones field (pitch independent).
+    // A rate change carries the CURRENTLY-AUDIBLE semitones (0 here, since no
+    // key was set) so the tempo change doesn't disturb pitch — signalsmith
+    // models pitch+rate on one segment timeline, so a bare {rate} would pop a
+    // pending key change and fold it in. The pitch field tracks the audible
+    // value, it does NOT introduce a new transposition.
     const rateCall = sg.schedule.mock.calls.at(-1)?.[0];
-    expect('semitones' in rateCall).toBe(false);
+    expect(rateCall.semitones).toBe(0);
   });
 
   it('setSemitones changes pitch without sending a rate field (tempo independent)', async () => {

@@ -252,17 +252,6 @@ function callsOf(method: string): PitchShiftCall[] {
   return engineCalls.pitchShiftSequence.filter((c) => c.method === method);
 }
 
-/** True iff the rearm call carries the canonical "pitched" preRoll. */
-function rearmHadPitchedPreRoll(call: PitchShiftCall): boolean {
-  const opts = call.args[1] as { preRollSeconds?: number } | undefined;
-  return opts?.preRollSeconds === 0.14;
-}
-
-/** True iff the rearm call passed no pre-roll (i.e. going to default). */
-function rearmHadNoPreRoll(call: PitchShiftCall): boolean {
-  return call.args[1] === undefined;
-}
-
 // ── Tests ───────────────────────────────────────────────────────────────────
 
 describe('useGrooveCardPlayback — pitch-shift scenarios', () => {
@@ -315,7 +304,7 @@ describe('useGrooveCardPlayback — pitch-shift scenarios', () => {
       expect(writes[1]?.args[2]).toBeUndefined();
     });
 
-    it('tap key BEFORE play: rearm runs even when not playing (no-op in engine when no live iters)', () => {
+    it('tap key BEFORE play: pitch write applies immediately (boundary undefined when not playing)', () => {
       const { result } = renderHook(() =>
         useGrooveCardPlayback({ block: makeConfig(), cardId: 'card-A' }),
       );
@@ -324,13 +313,17 @@ describe('useGrooveCardPlayback — pitch-shift scenarios', () => {
         result.current.setKey(1);
       });
 
-      const rearmCalls = callsOf('rearmFutureIterationsForRegions');
-      expect(rearmCalls.length).toBe(1);
-      // Pre-roll 0.14 since residualShift !== 0.
-      expect(rearmHadPitchedPreRoll(rearmCalls[0]!)).toBe(true);
+      const writes = callsOf('setInstrumentPitchShift');
+      expect(writes.length).toBe(2);
+      // Not playing → the deferral boundary (3rd arg) is undefined, so the
+      // write lands immediately and the next play() picks it up.
+      writes.forEach((c) => {
+        expect(c.args[1]).toBe(1);
+        expect(c.args[2]).toBeUndefined();
+      });
     });
 
-    it('tap key BEFORE play with offset=0 (no-op default): no rearm fires', () => {
+    it('tap key BEFORE play, then back to 0: writes the 0-offset to both stems', () => {
       const { result } = renderHook(() =>
         useGrooveCardPlayback({ block: makeConfig(), cardId: 'card-A' }),
       );
@@ -345,29 +338,37 @@ describe('useGrooveCardPlayback — pitch-shift scenarios', () => {
         result.current.setKey(0);
       });
 
-      // Going back to default: rearm IS called (it's idempotent on the
-      // engine side and removes pre-roll on existing entries).
-      const rearmCalls = callsOf('rearmFutureIterationsForRegions');
-      expect(rearmCalls.length).toBe(1);
-      expect(rearmHadNoPreRoll(rearmCalls[0]!)).toBe(true);
+      const writes = callsOf('setInstrumentPitchShift');
+      expect(writes.length).toBe(2);
+      writes.forEach((c) => {
+        expect(c.args[1]).toBe(0);
+      });
     });
   });
 
   // ── Group 2: setKey value normalisation ────────────────────────────────────
 
   describe('setKey value normalisation', () => {
-    it('clamps to ±6 in block mode (the universal cap after single-key-set + PitchShift)', () => {
+    it('±6 is the block-mode cap: at-cap taps apply, past-cap taps are swallowed (cap-as-CTA)', () => {
       const { result } = renderHook(() =>
         useGrooveCardPlayback({ block: makeConfig(), cardId: 'card-A' }),
       );
 
+      // Exactly at the cap applies.
       act(() => {
-        result.current.setKey(50);
+        result.current.setKey(6);
       });
       expect(result.current.currentSemitones).toBe(6);
 
       act(() => {
-        result.current.setKey(-50);
+        result.current.setKey(-6);
+      });
+      expect(result.current.currentSemitones).toBe(-6);
+
+      // Past the cap is swallowed (no silent clamp): the request is dropped
+      // and surfaces the upsell instead, so currentSemitones stays put.
+      act(() => {
+        result.current.setKey(50);
       });
       expect(result.current.currentSemitones).toBe(-6);
     });
@@ -443,7 +444,10 @@ describe('useGrooveCardPlayback — pitch-shift scenarios', () => {
       },
     );
 
-    it('disengage (pitched → 0): enablePitchShiftForStem is called with enabled=false', () => {
+    it('disengage (pitched → 0): writes 0 semitones to bass + harmony', () => {
+      // LAUNCH-06 buffer-streaming: there is no enable/disable toggle.
+      // Returning to default is just a 0-semitone pitch write on the same
+      // node (it keeps streaming; only its pitch field changes).
       const { result } = renderHook(() =>
         useGrooveCardPlayback({ block: makeConfig(), cardId: 'card-A' }),
       );
@@ -458,14 +462,14 @@ describe('useGrooveCardPlayback — pitch-shift scenarios', () => {
         result.current.setKey(0);
       });
 
-      const enables = callsOf('enablePitchShiftForStem');
-      expect(enables.length).toBe(2);
-      enables.forEach((c) => {
-        expect(c.args[1]).toBe(false);
+      const writes = callsOf('setInstrumentPitchShift');
+      expect(writes.length).toBe(2);
+      writes.forEach((c) => {
+        expect(c.args[1]).toBe(0);
       });
     });
 
-    it('non-zero offset: enablePitchShiftForStem is called with enabled=true', () => {
+    it('non-zero offset: writes the offset to bass + harmony', () => {
       const { result } = renderHook(() =>
         useGrooveCardPlayback({ block: makeConfig(), cardId: 'card-A' }),
       );
@@ -474,10 +478,10 @@ describe('useGrooveCardPlayback — pitch-shift scenarios', () => {
         result.current.setKey(3);
       });
 
-      const enables = callsOf('enablePitchShiftForStem');
-      expect(enables.length).toBe(2);
-      enables.forEach((c) => {
-        expect(c.args[1]).toBe(true);
+      const writes = callsOf('setInstrumentPitchShift');
+      expect(writes.length).toBe(2);
+      writes.forEach((c) => {
+        expect(c.args[1]).toBe(3);
       });
     });
   });
@@ -485,7 +489,10 @@ describe('useGrooveCardPlayback — pitch-shift scenarios', () => {
   // ── Group 4: Call ordering invariants ──────────────────────────────────────
 
   describe('call ordering in setKey', () => {
-    it('enablePitchShiftForStem is called BEFORE setInstrumentPitchShift (node must exist before pitch write)', () => {
+    // LAUNCH-06 buffer-streaming: a key change is a single deferred pitch
+    // write per pitched stem. The legacy enable→pitch→latency→rearm dance
+    // no longer exists, so the only ordering invariant is bass-then-harmony.
+    it('writes bass before harmony, and ONLY setInstrumentPitchShift fires', () => {
       const { result } = renderHook(() =>
         useGrooveCardPlayback({ block: makeConfig(), cardId: 'card-A' }),
       );
@@ -495,18 +502,19 @@ describe('useGrooveCardPlayback — pitch-shift scenarios', () => {
       });
 
       const seq = engineCalls.pitchShiftSequence;
-      const firstEnable = seq.findIndex(
-        (c) => c.method === 'enablePitchShiftForStem',
+      // The deferred design touches the node exactly twice (bass + harmony).
+      expect(seq.length).toBe(2);
+      expect(seq.every((c) => c.method === 'setInstrumentPitchShift')).toBe(
+        true,
       );
-      const firstPitch = seq.findIndex(
-        (c) => c.method === 'setInstrumentPitchShift',
-      );
-      expect(firstEnable).toBeGreaterThan(-1);
-      expect(firstPitch).toBeGreaterThan(-1);
-      expect(firstEnable).toBeLessThan(firstPitch);
+      const bassIdx = seq.findIndex((c) => c.args[0] === 'audio-bass');
+      const harmonyIdx = seq.findIndex((c) => c.args[0] === 'audio-harmony');
+      expect(bassIdx).toBeGreaterThan(-1);
+      expect(harmonyIdx).toBeGreaterThan(-1);
+      expect(bassIdx).toBeLessThan(harmonyIdx);
     });
 
-    it('setPitchShiftLatencyCompensation is ALWAYS called with enabled=false (latency comp is unused in current design)', () => {
+    it('does NOT call the legacy enable / latency-comp / rearm APIs', () => {
       const { result } = renderHook(() =>
         useGrooveCardPlayback({ block: makeConfig(), cardId: 'card-A' }),
       );
@@ -515,27 +523,9 @@ describe('useGrooveCardPlayback — pitch-shift scenarios', () => {
         result.current.setKey(1);
       });
 
-      const latency = callsOf('setPitchShiftLatencyCompensation');
-      expect(latency.length).toBeGreaterThanOrEqual(1);
-      latency.forEach((c) => {
-        expect(c.args[0]).toBe(false);
-      });
-    });
-
-    it('rearmFutureIterationsForRegions is the LAST call in setKey', () => {
-      const { result } = renderHook(() =>
-        useGrooveCardPlayback({ block: makeConfig(), cardId: 'card-A' }),
-      );
-
-      act(() => {
-        result.current.setKey(1);
-      });
-
-      const seq = engineCalls.pitchShiftSequence;
-      const lastRearm = seq.findLastIndex(
-        (c) => c.method === 'rearmFutureIterationsForRegions',
-      );
-      expect(lastRearm).toBe(seq.length - 1);
+      expect(callsOf('enablePitchShiftForStem').length).toBe(0);
+      expect(callsOf('setPitchShiftLatencyCompensation').length).toBe(0);
+      expect(callsOf('rearmFutureIterationsForRegions').length).toBe(0);
     });
   });
 
@@ -546,8 +536,12 @@ describe('useGrooveCardPlayback — pitch-shift scenarios', () => {
   // count-in and then advancing audio time to mid-loop.
 
   describe('mid-loop transitions', () => {
-    it('pitched→pitched mid-loop: setInstrumentPitchShift is DEFERRED to next loop seam', async () => {
-      // First tap (default→pitched): state moves to +1.
+    // LAUNCH-06: pitch is written to the buffer-streaming node with a
+    // boundary argument (computeNextBoundaryAudioTime). The node loops
+    // itself, so there is no rearm/pre-roll — the third arg carries the
+    // deferral instead. When not playing the boundary is undefined and the
+    // write applies immediately so the next play() picks it up.
+    it('pitched→pitched: re-writes the new offset to bass + harmony', () => {
       const { result } = renderHook(() =>
         useGrooveCardPlayback({ block: makeConfig(), cardId: 'card-A' }),
       );
@@ -555,25 +549,21 @@ describe('useGrooveCardPlayback — pitch-shift scenarios', () => {
         result.current.setKey(1);
       });
 
-      // Play start: simulate that we're now playing.
-      // We can't easily mock isPlaying directly, but the orchestration
-      // calls play() which internally calls becomeActive() and the
-      // engine state-transitions. The actual deferred behaviour depends
-      // on `isPlaying && loopStartAudioTime != null`. Without a fully
-      // wired play, the second tap in this test will still treat it as
-      // not-playing (immediate write). We document that limitation and
-      // verify the pre-roll value either way is 0.14 (pitched mode).
       resetCalls();
       act(() => {
         result.current.setKey(2); // pitched→pitched
       });
 
-      const rearmCalls = callsOf('rearmFutureIterationsForRegions');
-      expect(rearmCalls.length).toBe(1);
-      expect(rearmHadPitchedPreRoll(rearmCalls[0]!)).toBe(true);
+      const writes = callsOf('setInstrumentPitchShift');
+      expect(writes.length).toBe(2);
+      writes.forEach((c) => {
+        expect(c.args[1]).toBe(2);
+      });
+      // No legacy rearm in the new design.
+      expect(callsOf('rearmFutureIterationsForRegions').length).toBe(0);
     });
 
-    it('pitched→default: rearm is called WITHOUT preRollSeconds (delta -0.14 applied internally)', () => {
+    it('pitched→default: writes 0 with no rearm', () => {
       const { result } = renderHook(() =>
         useGrooveCardPlayback({ block: makeConfig(), cardId: 'card-A' }),
       );
@@ -587,110 +577,59 @@ describe('useGrooveCardPlayback — pitch-shift scenarios', () => {
         result.current.setKey(0);
       });
 
-      const rearm = callsOf('rearmFutureIterationsForRegions');
-      expect(rearm.length).toBe(1);
-      expect(rearmHadNoPreRoll(rearm[0]!)).toBe(true);
+      const writes = callsOf('setInstrumentPitchShift');
+      expect(writes.length).toBe(2);
+      writes.forEach((c) => {
+        expect(c.args[1]).toBe(0);
+      });
+      expect(callsOf('rearmFutureIterationsForRegions').length).toBe(0);
     });
 
-    it('default→pitched→pitched→default: every transition fires the correct rearm pre-roll', () => {
+    it('default→pitched→pitched→default: each transition writes the new offset', () => {
       const { result } = renderHook(() =>
         useGrooveCardPlayback({ block: makeConfig(), cardId: 'card-A' }),
       );
+
+      const lastOffsetWritten = () => {
+        const writes = callsOf('setInstrumentPitchShift');
+        return writes.length ? writes[writes.length - 1]!.args[1] : undefined;
+      };
 
       // Default → +1
       act(() => {
         result.current.setKey(1);
       });
-      const r1 = callsOf('rearmFutureIterationsForRegions');
-      expect(rearmHadPitchedPreRoll(r1[r1.length - 1]!)).toBe(true);
+      expect(lastOffsetWritten()).toBe(1);
 
       // +1 → +2
       act(() => {
         result.current.setKey(2);
       });
-      const r2 = callsOf('rearmFutureIterationsForRegions');
-      expect(rearmHadPitchedPreRoll(r2[r2.length - 1]!)).toBe(true);
+      expect(lastOffsetWritten()).toBe(2);
 
       // +2 → -1 (still pitched)
       act(() => {
         result.current.setKey(-1);
       });
-      const r3 = callsOf('rearmFutureIterationsForRegions');
-      expect(rearmHadPitchedPreRoll(r3[r3.length - 1]!)).toBe(true);
+      expect(lastOffsetWritten()).toBe(-1);
 
       // -1 → 0
       act(() => {
         result.current.setKey(0);
       });
-      const r4 = callsOf('rearmFutureIterationsForRegions');
-      expect(rearmHadNoPreRoll(r4[r4.length - 1]!)).toBe(true);
+      expect(lastOffsetWritten()).toBe(0);
 
       // 0 → +3 (re-engage)
       act(() => {
         result.current.setKey(3);
       });
-      const r5 = callsOf('rearmFutureIterationsForRegions');
-      expect(rearmHadPitchedPreRoll(r5[r5.length - 1]!)).toBe(true);
+      expect(lastOffsetWritten()).toBe(3);
     });
   });
 
-  // ── Group 6: enablePitchShiftForStem uses { seamless: true } ──────────────
+  // ── Group 7: pitch-shift region scope ──────────────────────────────────────
 
-  describe('seamless option on routing changes', () => {
-    it('enablePitchShiftForStem is called with { seamless: true } so in-flight sources are NOT killed', () => {
-      const { result } = renderHook(() =>
-        useGrooveCardPlayback({ block: makeConfig(), cardId: 'card-A' }),
-      );
-
-      act(() => {
-        result.current.setKey(1);
-      });
-
-      const enables = callsOf('enablePitchShiftForStem');
-      enables.forEach((c) => {
-        const opts = c.args[2] as { seamless?: boolean } | undefined;
-        expect(opts?.seamless).toBe(true);
-      });
-    });
-
-    it('setPitchShiftLatencyCompensation is called with { seamless: true } so drum sources are NOT killed', () => {
-      const { result } = renderHook(() =>
-        useGrooveCardPlayback({ block: makeConfig(), cardId: 'card-A' }),
-      );
-
-      act(() => {
-        result.current.setKey(1);
-      });
-
-      const latency = callsOf('setPitchShiftLatencyCompensation');
-      latency.forEach((c) => {
-        const opts = c.args[1] as { seamless?: boolean } | undefined;
-        expect(opts?.seamless).toBe(true);
-      });
-    });
-  });
-
-  // ── Group 7: rearm region scope ────────────────────────────────────────────
-
-  describe('rearm region scope (drums NOT rearmed)', () => {
-    it('rearmFutureIterationsForRegions is called ONLY with bass + harmony region ids — drums omitted', () => {
-      const { result } = renderHook(() =>
-        useGrooveCardPlayback({ block: makeConfig(), cardId: 'card-A' }),
-      );
-
-      act(() => {
-        result.current.setKey(1);
-      });
-
-      const rearm = callsOf('rearmFutureIterationsForRegions');
-      expect(rearm.length).toBe(1);
-      const regionIds = rearm[0]!.args[0] as string[];
-      const joined = regionIds.join(',');
-      expect(joined).toContain('audio-bass-region');
-      expect(joined).toContain('audio-harmony-region');
-      expect(joined).not.toContain('audio-drums-region');
-    });
-
+  describe('pitch-shift region scope (drums NOT shifted)', () => {
     it('pitch-shift writes are scoped to bass + harmony — NOT drums or click', () => {
       const { result } = renderHook(() =>
         useGrooveCardPlayback({ block: makeConfig(), cardId: 'card-A' }),
@@ -792,7 +731,6 @@ describe('useGrooveCardPlayback — pitch-shift scenarios', () => {
       });
 
       expect(callsOf('setInstrumentPitchShift').length).toBe(2);
-      expect(callsOf('enablePitchShiftForStem').length).toBe(2);
     });
 
     it('setKey while drums is soloed: pitch still applied (solo is independent of pitch)', () => {
@@ -912,13 +850,10 @@ describe('useGrooveCardPlayback — pitch-shift scenarios', () => {
         result.current.setKey(0); // closure says 0, desired 0, short-circuits
       });
 
-      // 4 rearm calls, not 5. The final 0-tap was short-circuited.
-      const rearm = callsOf('rearmFutureIterationsForRegions');
-      expect(rearm.length).toBe(4);
-      // All four were pitched (none of the proceeded taps had residualShift=0).
-      rearm.forEach((r) => {
-        expect(rearmHadPitchedPreRoll(r)).toBe(true);
-      });
+      // 4 taps proceeded (not 5) — the final 0-tap was short-circuited.
+      // Each proceeding tap writes pitch to bass + harmony => 4 × 2 = 8.
+      const writes = callsOf('setInstrumentPitchShift');
+      expect(writes.length).toBe(8);
     });
 
     it('rapid taps across separate acts: each tap proceeds (closure refreshes per render)', () => {
@@ -942,13 +877,13 @@ describe('useGrooveCardPlayback — pitch-shift scenarios', () => {
         result.current.setKey(0);
       });
 
-      const rearm = callsOf('rearmFutureIterationsForRegions');
-      expect(rearm.length).toBe(5);
-      expect(rearmHadPitchedPreRoll(rearm[0]!)).toBe(true);
-      expect(rearmHadPitchedPreRoll(rearm[1]!)).toBe(true);
-      expect(rearmHadPitchedPreRoll(rearm[2]!)).toBe(true);
-      expect(rearmHadPitchedPreRoll(rearm[3]!)).toBe(true);
-      expect(rearmHadNoPreRoll(rearm[4]!)).toBe(true);
+      // Each act refreshes the closure, so all 5 taps proceed (incl. the
+      // final return to 0). 5 taps × 2 stems = 10 pitch writes; the last
+      // pair carries the 0 offset.
+      const writes = callsOf('setInstrumentPitchShift');
+      expect(writes.length).toBe(10);
+      expect(writes[writes.length - 1]!.args[1]).toBe(0);
+      expect(writes[writes.length - 2]!.args[1]).toBe(0);
     });
 
     it('rapid taps converge to final value (currentSemitones reflects last tap)', () => {
