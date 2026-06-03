@@ -8,7 +8,8 @@ export interface FounderMemberRow {
   id: string;
   email: string;
   full_name: string | null;
-  stripe_customer_id: string;
+  // null when the founder Payment Link created no Customer (one-time guest pay).
+  stripe_customer_id: string | null;
   stripe_checkout_session_id: string;
   stripe_payment_intent_id: string | null;
   stripe_price_id: string;
@@ -23,7 +24,7 @@ export interface FounderMemberRow {
 export interface CreateFounderMemberInput {
   email: string;
   fullName?: string | null;
-  stripeCustomerId: string;
+  stripeCustomerId: string | null;
   stripeCheckoutSessionId: string;
   stripePaymentIntentId?: string | null;
   stripePriceId: string;

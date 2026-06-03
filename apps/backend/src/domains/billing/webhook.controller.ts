@@ -448,7 +448,10 @@ export class WebhookController {
       {
         email,
         fullName,
-        stripeCustomerId: (session.customer as string) ?? '',
+        // null (not '') when the checkout created no Customer — honest data.
+        // Payment Links only create a Customer with customer_creation:'always';
+        // for older/one-time guest charges this stays null rather than blank.
+        stripeCustomerId: (session.customer as string) || null,
         stripeCheckoutSessionId: session.id,
         stripePaymentIntentId: (session.payment_intent as string) ?? null,
         stripePriceId: priceId,
