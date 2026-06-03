@@ -19,7 +19,14 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+// useEntitlement now reads useUserAccess (a useQuery), so the card must render
+// inside a QueryClientProvider — use the shared helper instead of bare render.
+import {
+  renderWithProviders as render,
+  screen,
+  fireEvent,
+  waitFor,
+} from '@/test/utils/renderWithProviders';
 import React from 'react';
 import type { TutorialBlock } from '@bassnotion/contracts';
 import { GrooveCardBlockView } from '../../GrooveCardBlockView';
@@ -289,9 +296,12 @@ describe('GrooveCardBlockView — LAUNCH-02.5c integration', () => {
     );
   });
 
-  // The acceptance criterion: "one test must exercise the 'free' mock
-  // entitlement path so the cap-read logic isn't dormant".
-  it('with useEntitlement mocked to free, cap-relevant controls render disabled', async () => {
+  // Exercises the 'free' mock entitlement path with caps ENFORCED (the drill
+  // surface). Under the band model: band levers (tempo/key/mute) stay ENABLED
+  // so the user can move within the band and bump the edge (the engine clamps
+  // + fires the upsell). Only deconstruction (Solo Drums) is a hard on/off
+  // gate, so it renders disabled.
+  it('with free entitlement + enforceCaps, band levers stay enabled and only Solo Drums is gated', async () => {
     setEntitlementMock(freeTierCappedResponse());
     const block = makeBlock();
     render(
@@ -301,6 +311,7 @@ describe('GrooveCardBlockView — LAUNCH-02.5c integration', () => {
         isCompleted={false}
         onComplete={noop}
         onNext={noop}
+        enableCaps
       />,
     );
 
@@ -308,12 +319,23 @@ describe('GrooveCardBlockView — LAUNCH-02.5c integration', () => {
     const playBtn = screen.getByRole('button', { name: /play/i });
     await waitFor(() => expect(playBtn).not.toBeDisabled(), { timeout: 3000 });
 
-    // Tempo / Key / Mute / Solo buttons are disabled due to caps.
-    expect(screen.getByRole('button', { name: /tempo down/i })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /tempo up/i })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /key down/i })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /key up/i })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /mute bass/i })).toBeDisabled();
+    // Band levers remain usable (the band is enforced in the engine, not by
+    // disabling the control).
+    expect(
+      screen.getByRole('button', { name: /tempo down/i }),
+    ).not.toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: /tempo up/i }),
+    ).not.toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: /key down/i }),
+    ).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: /key up/i })).not.toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: /mute bass/i }),
+    ).not.toBeDisabled();
+
+    // Deconstruction (Solo Drums) is the one hard gate for the unpaid tier.
     expect(screen.getByRole('button', { name: /solo drums/i })).toBeDisabled();
   });
 });

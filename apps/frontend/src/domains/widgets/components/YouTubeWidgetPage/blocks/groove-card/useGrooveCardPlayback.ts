@@ -89,6 +89,24 @@ export interface UseGrooveCardPlaybackOptions {
    *  out-of-gesture resumes. In-app callers leave this undefined
    *  (CoreServices' global gesture listener handles resume there). */
   onBeforePlay?: () => Promise<void> | void;
+  /** Entitlement caps for the unpaid (anonymous + free) tier. When present,
+   *  these tighten the engine bounds to a band AROUND the groove's default:
+   *  tempo to [originalBpm ± tempoLimit], transpose to [± transposeLimit],
+   *  and bar-range loop selection is rejected when loopRangeCapped. Member
+   *  callers omit these (full engine range). The hook stays billing-agnostic
+   *  — GrooveCardBlockView resolves the numbers from useEntitlement. */
+  caps?: {
+    /** ± BPM band around originalBpm. Undefined = uncapped (full 50–180). */
+    tempoLimit?: number;
+    /** ± semitone band. Undefined = uncapped (full ±6). */
+    transposeLimit?: number;
+    /** When true, bar-range selection is rejected (whole-groove loop only). */
+    loopRangeCapped?: boolean;
+  };
+  /** Fired when a capped lever is pushed past its band edge (so the caller
+   *  can surface the upsell + emit a cap_hit funnel event). Replaces the
+   *  waitlist-only telemetry path with a tier-driven one. */
+  onCapHit?: (lever: 'tempo' | 'transpose' | 'loopRange') => void;
 }
 
 export interface UseGrooveCardPlaybackReturn {
@@ -254,6 +272,8 @@ export function useGrooveCardPlayback({
   mode = 'block',
   countdownClickUrl: _countdownClickUrl,
   onBeforePlay,
+  caps,
+  onCapHit,
 }: UseGrooveCardPlaybackOptions): UseGrooveCardPlaybackReturn {
   void _countdownClickUrl; // consumed by 02.5d's WaitlistAudioBootstrap
 
@@ -265,6 +285,18 @@ export function useGrooveCardPlayback({
   useEffect(() => {
     onBeforePlayRef.current = onBeforePlay;
   }, [onBeforePlay]);
+
+  // Entitlement caps + cap-hit callback held in refs so setTempo/setKey/
+  // setLoopSelection stay referentially stable while still reading the
+  // latest tier (caps can change when auth/subscription resolves).
+  const capsRef = useRef(caps);
+  useEffect(() => {
+    capsRef.current = caps;
+  }, [caps]);
+  const onCapHitRef = useRef(onCapHit);
+  useEffect(() => {
+    onCapHitRef.current = onCapHit;
+  }, [onCapHit]);
 
   // LAUNCH-02.5c key-shift refs are declared LATER in the file (after
   // `preload` is created on line ~385) — moving them here would forward-
@@ -321,6 +353,13 @@ export function useGrooveCardPlayback({
     (next: LoopSelection | null) => {
       if (next == null) {
         setLoopSelectionState(null);
+        return;
+      }
+      // Bar-range looping is a members-only lever. The unpaid tier can still
+      // loop the WHOLE groove (the null path above) — only selecting a range
+      // is gated. Reject + surface the upsell.
+      if (capsRef.current?.loopRangeCapped) {
+        onCapHitRef.current?.('loopRange');
         return;
       }
       const total = Math.max(1, block.lengthBars);
@@ -456,10 +495,22 @@ export function useGrooveCardPlayback({
     // block.originalBpm is stable per card; re-running on change is correct.
   }, [block.originalBpm]);
 
-  const setTempo = useCallback((bpm: number) => {
-    const clamped = clampTempo(bpm);
-    musicalTruth.setBPM(clamped);
-  }, []);
+  const setTempo = useCallback(
+    (bpm: number) => {
+      // Engine bound first, then the entitlement band around the default.
+      let clamped = clampTempo(bpm);
+      const tempoLimit = capsRef.current?.tempoLimit;
+      if (tempoLimit != null) {
+        const lo = clampTempo(block.originalBpm - tempoLimit);
+        const hi = clampTempo(block.originalBpm + tempoLimit);
+        const banded = Math.max(lo, Math.min(hi, clamped));
+        if (banded !== clamped) onCapHitRef.current?.('tempo');
+        clamped = banded;
+      }
+      musicalTruth.setBPM(clamped);
+    },
+    [block.originalBpm],
+  );
 
   // Loop duration in seconds at the current BPM — used both by setKey
   // below (to compute the next loop-boundary audio time for the
@@ -475,19 +526,22 @@ export function useGrooveCardPlayback({
   const setKey = useCallback(
     (semitonesFromOriginal: number) => {
       const rounded = Math.round(semitonesFromOriginal);
-      const desired = clampKey(rounded, keyRange);
+      // Engine bound first (±6), then the entitlement band (e.g. ±2 for the
+      // unpaid tier) if present — whichever is tighter wins.
+      const transposeLimit = capsRef.current?.transposeLimit;
+      const effectiveRange =
+        transposeLimit != null ? Math.min(keyRange, transposeLimit) : keyRange;
+      const desired = clampKey(rounded, effectiveRange);
 
-      // LAUNCH-02.5d: cap-as-CTA. When a waitlist visitor's request
-      // exceeds the ±4 cap, swallow the input AND emit the telemetry
-      // event the funnel team needs to measure conversion from "tap
-      // the cap" → signup. In 'block' mode the range is ±12 so this
-      // branch only fires past the natural musical range — no event.
+      // Cap-as-CTA: when the request exceeds the effective range, swallow it
+      // and surface the upsell + cap_hit event. Keep the legacy waitlist
+      // telemetry for backward-compat with the existing funnel dashboard.
       const exceededCap = rounded !== desired;
-      if (exceededCap && mode === 'waitlist') {
-        trackWaitlistKeyCapHit({
-          blockId: cardId,
-          valueAttempted: rounded,
-        });
+      if (exceededCap) {
+        onCapHitRef.current?.('transpose');
+        if (mode === 'waitlist') {
+          trackWaitlistKeyCapHit({ blockId: cardId, valueAttempted: rounded });
+        }
         return;
       }
 
@@ -803,13 +857,7 @@ export function useGrooveCardPlayback({
     // defense in depth.
     engine.unregisterTracksByPrefix?.(trackPrefix);
     engine.registerTracks?.(tracks);
-  }, [
-    block.lengthBars,
-    cardId,
-    preload,
-    trackPrefix,
-    loopSelection,
-  ]);
+  }, [block.lengthBars, cardId, preload, trackPrefix, loopSelection]);
 
   const unregisterStemTracks = useCallback(() => {
     const engine = WindowRegistry.getPlaybackEngine();
