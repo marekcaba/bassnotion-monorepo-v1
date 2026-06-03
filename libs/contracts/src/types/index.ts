@@ -520,6 +520,7 @@ export type {
   DrillCriterionType,
   DrillCompletionCriterion,
   DrillCompletionResult,
+  DrillCompletionData,
   TaskBlockConfig,
   TextBlock,
   CelebrationBlock,

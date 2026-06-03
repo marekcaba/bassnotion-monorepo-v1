@@ -6,6 +6,8 @@
  * with a lower `order` value is `completed` (linear progression).
  */
 
+import type { DrillCompletionData } from './block.js';
+
 /** Per-block progress entry inside a TutorialProgress response */
 export interface BlockProgressEntry {
   /** Block id (matches TutorialBlock.id) */
@@ -16,6 +18,13 @@ export interface BlockProgressEntry {
   unlocked: boolean;
   /** When the user completed the block. null if not completed. */
   completedAt: string | null;
+  /**
+   * The free-form payload persisted at completion (`block_completions.data`).
+   * For drill bricks this is a {@link DrillCompletionData} (result / criterion /
+   * achievedTier / at) — the session summary reads it. null when the block
+   * isn't completed or carries no payload (e.g. exercise auto-completion).
+   */
+  data: DrillCompletionData | null;
 }
 
 /** Per-exercise practice progress entry inside a TutorialProgress response */

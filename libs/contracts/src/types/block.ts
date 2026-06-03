@@ -306,6 +306,26 @@ export interface DrillCompletionCriterion {
 export type DrillCompletionResult = 'conquered' | 'completed' | 'released';
 
 /**
+ * The payload a drill brick writes into `block_completions.data` (JSONB) when
+ * the student completes it, and reads back to render the session summary.
+ * Both the groove brick (GrooveCardBlockView) and the task block
+ * (TaskBlockView) write exactly this shape.
+ *
+ * Stored loosely (the column is free-form JSONB), so every field is optional on
+ * read — old rows, or non-drill block_completions, won't carry it.
+ */
+export interface DrillCompletionData {
+  /** How the brick ended. Absent on non-drill completions. */
+  result?: DrillCompletionResult;
+  /** Which criterion was in play (undefined for plain cards / no criterion). */
+  criterion?: DrillCriterionType;
+  /** Tier reached for a 'conquered' result; null otherwise. */
+  achievedTier?: MasteryTier | null;
+  /** ISO timestamp the student completed it (client clock). */
+  at?: string;
+}
+
+/**
  * Configuration for a `'groove-card'` block. Stored in the existing
  * JSONB `blocks` column on `tutorials` — no DB migration.
  *
@@ -452,6 +472,9 @@ export interface BlockProgress {
   blockId: string;
   completed: boolean;
   completedAt?: string;
-  /** Block-type-specific progress data */
-  data?: Record<string, unknown>;
+  /**
+   * Block-type-specific completion payload. For drill bricks this is a
+   * {@link DrillCompletionData} (result / criterion / achievedTier / at).
+   */
+  data?: DrillCompletionData;
 }
