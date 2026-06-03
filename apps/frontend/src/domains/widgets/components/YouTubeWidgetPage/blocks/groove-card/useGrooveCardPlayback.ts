@@ -1063,11 +1063,23 @@ export function useGrooveCardPlayback({
   // that race (the dominant cause of the "rapid play/stop drops bass+harmony"
   // report). Cheap, synchronous, ref-based so it doesn't trigger re-renders.
   const transitionInFlightRef = useRef(false);
+  // Play-generation epoch. play() is a long async chain (dynamic imports,
+  // AudioContext resume, sample preload) with no native cancellation. A stop()
+  // / pause() during that window — common when the tab is backgrounded and its
+  // timers + awaits are throttled, then drained on refocus — would otherwise
+  // let the STALE play() resume and re-arm the engine AFTER the stop, so the
+  // groove becomes audible during what looks like a fresh count-in. We stamp an
+  // epoch at the top of play(), bump it on every stop()/pause(), and bail at
+  // each resumption point if our epoch is stale. (transitionInFlightRef only
+  // blocks RE-ENTRY; it can't abort an already-running play().)
+  const playGenRef = useRef(0);
 
   const play = useCallback(async () => {
     if (!isReady) return;
     if (transitionInFlightRef.current) return;
     transitionInFlightRef.current = true;
+    const myGen = ++playGenRef.current;
+    const isStale = () => myGen !== playGenRef.current;
     try {
       // Optional caller-supplied "before-play" hook. The waitlist surface
       // wires `useWaitlistPrewarm.resume()` here so the prewarm's
@@ -1174,6 +1186,14 @@ export function useGrooveCardPlayback({
         console.warn('[GrooveCard] metronome count-in arming failed', err);
       }
 
+      // CRITICAL epoch gate: everything above was async (imports, context
+      // resume, sample load) and may have been stalled while a stop()/pause()
+      // ran. If so, abort BEFORE the audible tail — do not arm the engine,
+      // start the transport, or flip isPlaying. Leave the engine silenced
+      // exactly as stop() left it. This is the gate that prevents "groove
+      // plays during the count-in after a stop".
+      if (isStale()) return;
+
       // Always (re)register this card's tracks + buffers before starting.
       // Stem AudioBufferSourceNodes are single-use: once stopped (on pause /
       // stop) they can't restart, so every play() re-arms from the cached
@@ -1226,6 +1246,22 @@ export function useGrooveCardPlayback({
       // tap is already applied to those nodes in becomeActive().
 
       await transport.start?.();
+
+      // A stop()/pause() may have landed during the awaited transport.start()
+      // above. If so the transport is now (re)started by THIS stale play() —
+      // undo it (silence + stop), skip the count-in + isPlaying flip, and bail.
+      // Inline the engine silence (rather than calling silenceEngine, declared
+      // later) to keep play()'s dependency surface unchanged. The count-in
+      // hasn't been started yet at this point, so there's nothing to cancel.
+      if (isStale()) {
+        const eng = WindowRegistry.getPlaybackEngine();
+        eng?.stopAudioStems?.();
+        eng?.stop?.();
+        void transport.stop?.();
+        setIsPlaying(false);
+        setLoopStartAudioTime(null);
+        return;
+      }
 
       // Anchor every UI timer to the SAME audio-context time the engine will
       // play the first beat at: engine.transportStartTime ≈ audioContext.now +
@@ -1292,6 +1328,9 @@ export function useGrooveCardPlayback({
   // 'stopped' (isRunning=false), so a subsequent play()'s engine.start() is a
   // clean (re)schedule rather than a skipped one.
   const pause = useCallback(async () => {
+    // Bump the play epoch so any in-flight (possibly tab-throttled) play()
+    // resumes into a stale state and aborts before re-arming audio.
+    playGenRef.current++;
     transitionInFlightRef.current = false;
     silenceEngine();
     cancelCountdown();
@@ -1301,6 +1340,9 @@ export function useGrooveCardPlayback({
   }, [silenceEngine, cancelCountdown, transport]);
 
   const stop = useCallback(async () => {
+    // Bump the play epoch so any in-flight (possibly tab-throttled) play()
+    // resumes into a stale state and aborts before re-arming audio.
+    playGenRef.current++;
     transitionInFlightRef.current = false;
     silenceEngine();
     cancelCountdown();
