@@ -97,6 +97,14 @@ export const grooveCardBlockConfigSchema = z
       .int('timeboxMinutes must be an integer')
       .positive('timeboxMinutes must be positive')
       .optional(),
+    // DRILL: per-brick completion criterion (time/loops/conquer/manual).
+    completionCriterion: z
+      .object({
+        type: z.enum(['time', 'loops', 'conquer', 'manual']),
+        target: z.number().positive().optional(),
+        targetTier: z.enum(['bronze', 'silver', 'gold']).optional(),
+      })
+      .optional(),
   })
   .refine(
     (c) =>

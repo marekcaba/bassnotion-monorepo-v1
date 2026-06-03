@@ -22,7 +22,8 @@ export type BlockType =
   | 'groove-card'
   | 'text'
   | 'celebration'
-  | 'explain';
+  | 'explain'
+  | 'task';
 
 /** Video overlay modes for Video blocks */
 export type VideoOverlayType =
@@ -269,6 +270,42 @@ export interface GrooveCardStateCaptions {
 export type GrooveBrickRole = 'groove' | 'connecting' | 'review';
 
 /**
+ * Mastery tier earned/targeted on a conquer. v1 ships 'bronze'; silver/gold
+ * arrive with real scoring (the Bridge). Contract-level home so both the
+ * block config and the frontend drill store share one definition.
+ */
+export type MasteryTier = 'bronze' | 'silver' | 'gold';
+
+/**
+ * What a drill block measures to count as "done" (the "result"). Exactly one
+ * per block. When met, the brick's Next button unlocks (student taps; no
+ * auto-advance). Every brick also offers a release valve ("too hard → lay it
+ * anyway") that advances with a `released` result.
+ *   - 'time'    — practice for `target` minutes (groove brick: only while
+ *                 playing; task block: wall-clock)
+ *   - 'loops'   — play the loop `target` times (groove bricks)
+ *   - 'conquer' — a clean pass to `targetTier` (self-report v1; Bridge later)
+ *   - 'manual'  — the student taps "I'm done"
+ */
+export type DrillCriterionType = 'time' | 'loops' | 'conquer' | 'manual';
+
+export interface DrillCompletionCriterion {
+  type: DrillCriterionType;
+  /** 'time' → minutes; 'loops' → loop count. Ignored for conquer/manual. */
+  target?: number;
+  /** 'conquer' only — the tier the author prescribes as this brick's goal. */
+  targetTier?: MasteryTier;
+}
+
+/**
+ * How a drill brick completion ended. Written into `block_completions.data`.
+ *   - 'conquered' — passed the conquer criterion (carries achievedTier)
+ *   - 'completed' — met a time/loops/manual criterion
+ *   - 'released'  — advanced via the "too hard" release valve (laid, not won)
+ */
+export type DrillCompletionResult = 'conquered' | 'completed' | 'released';
+
+/**
  * Configuration for a `'groove-card'` block. Stored in the existing
  * JSONB `blocks` column on `tutorials` — no DB migration.
  *
@@ -324,8 +361,30 @@ export interface GrooveCardBlockConfig {
    *  ordinary tutorial/marketing cards. */
   role?: GrooveBrickRole;
   /** DRILL: the per-brick timebox in minutes (the "5 min" clock). Drives the
-   *  session clock + the rail segment. Optional; absent = untimed. */
+   *  session clock + the rail segment. Optional; absent = untimed.
+   *  NOTE: distinct from a `'time'` completionCriterion — timeboxMinutes is the
+   *  display/clock hint; the criterion's `target` is the completion threshold.
+   *  When both exist, the criterion target is authoritative for completion. */
   timeboxMinutes?: number;
+  /** DRILL: how this brick completes (time/loops/conquer/manual). Presence (or
+   *  `role`) makes the card a drill brick. Absent on plain tutorial cards. */
+  completionCriterion?: DrillCompletionCriterion;
+}
+
+/**
+ * Configuration for a `'task'` block — a no-audio drill brick: instruction
+ * text + a completion criterion (usually a wall-clock timer). The free-tier
+ * staple ("practice C major triads for 5 min"); the student plays their own
+ * instrument while the timer runs. No groove, no stems, no playback.
+ */
+export interface TaskBlockConfig {
+  /** The thing to practice, e.g. "Practice C major scale triads, slowly." */
+  instruction: string;
+  /** Optional short heading above the instruction. */
+  heading?: string;
+  /** How the task completes — typically `{ type: 'time', target }` (wall-clock)
+   *  but `'manual'` is also valid. */
+  completionCriterion: DrillCompletionCriterion;
 }
 
 // =====================================================
@@ -340,6 +399,7 @@ export interface BlockConfigMap {
   text: TextBlockConfig;
   celebration: CelebrationBlockConfig;
   explain: ExplainBlockConfig;
+  task: TaskBlockConfig;
 }
 
 // =====================================================
@@ -370,6 +430,7 @@ export type GrooveCardBlock = TutorialBlock<'groove-card'>;
 export type TextBlock = TutorialBlock<'text'>;
 export type CelebrationBlock = TutorialBlock<'celebration'>;
 export type ExplainBlock = TutorialBlock<'explain'>;
+export type TaskBlock = TutorialBlock<'task'>;
 
 /** Union of all concrete block types */
 export type AnyBlock =
@@ -379,7 +440,8 @@ export type AnyBlock =
   | GrooveCardBlock
   | TextBlock
   | CelebrationBlock
-  | ExplainBlock;
+  | ExplainBlock
+  | TaskBlock;
 
 // =====================================================
 // Block Progress Tracking

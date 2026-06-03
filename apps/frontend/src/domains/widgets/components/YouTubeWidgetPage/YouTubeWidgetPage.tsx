@@ -1766,7 +1766,8 @@ function YouTubeWidgetPageContent({
               {/* ---- Text, Celebration & Explain Blocks ---- */}
               {(block.type === 'text' ||
                 block.type === 'celebration' ||
-                block.type === 'explain') && (
+                block.type === 'explain' ||
+                block.type === 'task') && (
                 <BlockRenderer
                   block={block}
                   isActive={isBlockActive}

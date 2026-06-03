@@ -17,6 +17,8 @@ import { useParams } from 'next/navigation';
 import type {
   TutorialBlock,
   GrooveCardBlockConfig,
+  DrillCompletionResult,
+  MasteryTier,
 } from '@bassnotion/contracts';
 import { useGrooveCardPlayback } from './groove-card/useGrooveCardPlayback';
 import { useGrooveCardKeyboard } from './groove-card/useGrooveCardKeyboard';
@@ -32,19 +34,19 @@ import {
 import { useEntitlement } from '@/domains/billing/hooks/useEntitlement';
 import { trackEvent } from '@/shared/attribution/events';
 import { useAuth } from '@/domains/user/hooks/use-auth';
-import {
-  useDrill,
-  type MasteryTier,
-} from '@/domains/drill/stores/useDrillStore';
+import { useDrill } from '@/domains/drill/stores/useDrillStore';
 import { ConquerOutcome } from '@/domains/drill/components/ConquerOutcome';
 import { SaveAccountGate } from '@/domains/drill/components/SaveAccountGate';
 import { useGroove } from '@/domains/drill/hooks/useGrooveLibrary';
+import { useDrillCriterion } from '@/domains/drill/hooks/useDrillCriterion';
 
 interface GrooveCardBlockViewProps {
   block: TutorialBlock<'groove-card'>;
   isActive: boolean;
   isCompleted: boolean;
-  onComplete: (blockId: string) => void;
+  /** BlockRenderer binds this to (data?) => markBlockComplete(block.id, data);
+   *  the brick passes its completion payload, the block id is added upstream. */
+  onComplete: (data?: Record<string, unknown>) => void;
   onNext: () => void;
   /** Optional rendering mode. The waitlist surface (02.5d) passes
    *  'waitlist' to swap the audio bootstrap; default is 'block'. */
@@ -193,16 +195,25 @@ export function GrooveCardBlockView({
     [playback, isBassMuted],
   );
 
-  // ── Drill brick: conquer → advance the session ──────────────────────────
+  // ── Drill brick: criterion → Next-unlock → advance ──────────────────────
   const { isAuthenticated, isReady } = useAuth();
   const drill = useDrill();
   // A drill renders at /app/tutorials/[slug]; read the slug so a pending
-  // (anonymous) conquer can persist to the right tutorial after signup.
+  // (anonymous) completion can persist to the right tutorial after signup.
   const routeParams = useParams<{ slug?: string }>();
   const sessionSlug =
     typeof routeParams?.slug === 'string' ? routeParams.slug : '';
   const [conqueredTier, setConqueredTier] = useState<MasteryTier | null>(null);
   const [gateOpen, setGateOpen] = useState(false);
+
+  // The brick's completion criterion (from config; absent on plain cards).
+  const criterion = config.completionCriterion;
+  // Measured criteria (time/loops) report live progress + isMet; conquer/manual
+  // are driven by the buttons below, not measured.
+  const criterionRuntime = useDrillCriterion(
+    isDrillBrick ? criterion : undefined,
+    { isPlaying: playback.isPlaying, getAudioPhase: playback.getAudioPhase },
+  );
 
   // Fire drill_started once when a brick mounts (joins to the source video
   // via the shared anonymous_id).
@@ -211,54 +222,93 @@ export function GrooveCardBlockView({
     trackEvent('drill_started', { grooveId: block.id, role: config.role });
   }, [isDrillBrick, block.id, config.role]);
 
+  // Shared completion: persist the result + advance. Authenticated → persist
+  // straight through (onComplete carries the data payload now that the seam is
+  // fixed). Anonymous → stash for replay + open the account gate, still advance
+  // so the drill never dead-ends.
+  const completeBrick = useCallback(
+    (result: DrillCompletionResult, achievedTier: MasteryTier | null) => {
+      const data = {
+        result,
+        criterion: criterion?.type,
+        achievedTier,
+        at: new Date().toISOString(),
+      };
+      if (isReady && isAuthenticated) {
+        onComplete(data);
+        onNext();
+      } else {
+        drill.setPendingCompletion({
+          tutorialSlug: sessionSlug,
+          blockId: block.id,
+          result,
+          criterion: criterion?.type,
+          achievedTier,
+          at: data.at,
+        });
+        setGateOpen(true);
+        onComplete(data);
+        onNext();
+      }
+    },
+    [
+      criterion?.type,
+      isReady,
+      isAuthenticated,
+      onComplete,
+      onNext,
+      drill,
+      block.id,
+      sessionSlug,
+    ],
+  );
+
+  // Conquer (self-report clean pass) → achieved tier = the brick's target.
   const handleConquer = useCallback(() => {
-    const tier: MasteryTier = 'bronze';
+    const tier: MasteryTier = criterion?.targetTier ?? 'bronze';
     setConqueredTier(tier);
     drill.markConquered(block.id, tier);
     trackEvent('groove_conquered', {
       grooveId: block.id,
       role: config.role,
       tier,
-      proxy: 'clean_passes',
+      proxy: 'self_report',
     });
-
     if (isReady && isAuthenticated) {
       trackEvent('first_win', { grooveId: block.id, tier });
-      // The renderer owns the tutorial slug + persistence; onComplete writes
-      // the block_completions row, then onNext advances to the next brick.
-      onComplete(block.id);
-      onNext();
-    } else {
-      // Anonymous: stash for replay after signup, ask for the account, but
-      // still advance the session so the drill never dead-ends.
-      drill.setPendingConquer({
-        tutorialSlug: sessionSlug,
-        blockId: block.id,
-        tier,
-        proxy: 'clean_passes',
-        at: new Date().toISOString(),
-      });
-      setGateOpen(true);
-      onComplete(block.id);
-      onNext();
     }
+    completeBrick('conquered', tier);
   }, [
+    criterion?.targetTier,
     drill,
     block.id,
     config.role,
     isReady,
     isAuthenticated,
-    onComplete,
-    onNext,
-    sessionSlug,
+    completeBrick,
   ]);
 
+  // Time/loops/manual met → mark done + advance.
+  const handleCriterionDone = useCallback(() => {
+    drill.markConquered(block.id, 'done');
+    trackEvent('groove_conquered', {
+      grooveId: block.id,
+      role: config.role,
+      criterion: criterion?.type,
+      result: 'completed',
+    });
+    completeBrick('completed', null);
+  }, [drill, block.id, config.role, criterion?.type, completeBrick]);
+
+  // Release valve: "too hard — lay it anyway" → advance with a released result.
   const handleStepDown = useCallback(() => {
-    // Phase 1 release valve: clear the conquered state + reset progress so the
-    // user can retry. Full re-routing (step to an easier brick) is Phase 2.
-    setConqueredTier(null);
-    drill.resetGroove(block.id);
-  }, [drill, block.id]);
+    trackEvent('groove_conquered', {
+      grooveId: block.id,
+      role: config.role,
+      result: 'released',
+    });
+    completeBrick('released', null);
+  }, [block.id, config.role, completeBrick]);
 
   // Keyboard shortcuts: ←/→ transpose (setKey), Space play/pause
   // (onPlayPause), M mute/unmute bass (setStemMuted). Each routes through
@@ -395,6 +445,7 @@ export function GrooveCardBlockView({
               setHoverHint(hint);
             }}
             enforceCaps={capsEnabled}
+            lockSettings={isDrillBrick}
           />
         }
       />
@@ -402,9 +453,13 @@ export function GrooveCardBlockView({
       {isDrillBrick && (
         <>
           <ConquerOutcome
-            conqueredTier={conqueredTier}
+            criterionType={criterion?.type}
+            progress={criterionRuntime.progress}
+            isMet={criterionRuntime.isMet}
+            doneTier={conqueredTier ?? drill.conquered[block.id] ?? null}
             isReady={playback.isReady}
             onConquer={handleConquer}
+            onCriterionDone={handleCriterionDone}
             onStepDown={handleStepDown}
           />
           <SaveAccountGate

@@ -9,6 +9,7 @@ import { GrooveCardBlockView } from './GrooveCardBlockView.js';
 import { TextBlockView } from './TextBlockView.js';
 import { CelebrationBlockView } from './CelebrationBlockView.js';
 import { ExplainBlockView } from './ExplainBlockView.js';
+import { TaskBlockView } from './TaskBlockView.js';
 
 const BLOCK_COMPONENTS: Record<BlockType, React.ComponentType<any>> = {
   video: VideoBlockView,
@@ -18,13 +19,16 @@ const BLOCK_COMPONENTS: Record<BlockType, React.ComponentType<any>> = {
   text: TextBlockView,
   celebration: CelebrationBlockView,
   explain: ExplainBlockView,
+  task: TaskBlockView,
 };
 
 interface BlockRendererProps {
   block: AnyBlock;
   isActive: boolean;
   isCompleted: boolean;
-  onComplete: (blockId: string) => void;
+  /** `data` carries the per-block completion payload (e.g. a drill brick's
+   *  { result, criterion, achievedTier }) into block_completions.data. */
+  onComplete: (blockId: string, data?: Record<string, unknown>) => void;
   onNext: () => void;
   [key: string]: any;
 }
@@ -39,9 +43,14 @@ export const BlockRenderer = React.memo(function BlockRenderer({
 }: BlockRendererProps) {
   const Component = BLOCK_COMPONENTS[block.type];
 
-  const handleComplete = useCallback(() => {
-    onComplete(block.id);
-  }, [block.id, onComplete]);
+  // Forward the optional completion payload (previously dropped — which is why
+  // authenticated drill conquers never persisted their tier).
+  const handleComplete = useCallback(
+    (data?: Record<string, unknown>) => {
+      onComplete(block.id, data);
+    },
+    [block.id, onComplete],
+  );
 
   if (!Component) {
     return (
