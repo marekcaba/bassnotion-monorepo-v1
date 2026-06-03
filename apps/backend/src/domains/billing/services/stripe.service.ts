@@ -40,20 +40,35 @@ export class StripeService implements OnModuleInit {
    */
   private async initializePrices(): Promise<void> {
     try {
-      // Create or get subscription product and price
-      const subscriptionProduct = await this.getOrCreateProduct(
-        'bassnotion_subscription',
-        SUBSCRIPTION_PRODUCT.name,
-        SUBSCRIPTION_PRODUCT.description,
+      // Subscription price: PREFER a configured Stripe price ID (best practice —
+      // a real price created in the dashboard, stable across restarts). Only
+      // fall back to runtime get-or-create when the env var is absent (legacy
+      // dev convenience). The configured path is how $24/mo goes live.
+      const configuredSubPrice = this.configService.get<string>(
+        'STRIPE_SUBSCRIPTION_PRICE_ID',
       );
-
-      const subscriptionPrice = await this.getOrCreatePrice(
-        subscriptionProduct.id,
-        SUBSCRIPTION_PRODUCT.priceInCents,
-        'usd',
-        { interval: SUBSCRIPTION_PRODUCT.interval },
-      );
-      this.priceIds.set('subscription_monthly', subscriptionPrice.id);
+      if (configuredSubPrice) {
+        this.priceIds.set('subscription_monthly', configuredSubPrice);
+        this.logger.log(
+          `Using configured subscription price ${configuredSubPrice}`,
+        );
+      } else {
+        this.logger.warn(
+          'STRIPE_SUBSCRIPTION_PRICE_ID not set — falling back to runtime price creation. Set the env var for production.',
+        );
+        const subscriptionProduct = await this.getOrCreateProduct(
+          'bassnotion_subscription',
+          SUBSCRIPTION_PRODUCT.name,
+          SUBSCRIPTION_PRODUCT.description,
+        );
+        const subscriptionPrice = await this.getOrCreatePrice(
+          subscriptionProduct.id,
+          SUBSCRIPTION_PRODUCT.priceInCents,
+          'usd',
+          { interval: SUBSCRIPTION_PRODUCT.interval },
+        );
+        this.priceIds.set('subscription_monthly', subscriptionPrice.id);
+      }
 
       // Create or get course products and prices
       for (const [courseType, course] of Object.entries(COURSE_PRODUCTS)) {
