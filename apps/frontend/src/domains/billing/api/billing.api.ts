@@ -1,12 +1,11 @@
 /**
  * Billing API Client
- * Handles all communication with the billing backend endpoints
+ * Handles all communication with the billing backend endpoints.
  *
- * NOTE: Stripe integration is not yet complete. The billing endpoints
- * will return 500 errors until connected to Stripe in production.
- * For development, we return mock data to prevent console spam.
- *
- * TODO: Connect to Stripe before production launch
+ * Entitlement is now LIVE: getUserAccess() hits the real GET /api/v1/billing/access
+ * endpoint, which reads the `subscriptions` table (filled by Stripe subscription
+ * webhooks / a lifetime founder row). This is what `useEntitlement` resolves
+ * free-vs-member from. The free wall therefore actually bites for non-members.
  */
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
@@ -21,20 +20,22 @@ import {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 // ============================================================================
-// DEVELOPMENT MODE - Billing API not connected to Stripe yet
+// DEV OVERRIDE — default OFF. Entitlement is live (reads the real /access).
 // ============================================================================
-// Set to true to bypass billing API calls and return mock data
-// This prevents 500 errors and console spam during development
-// TODO: Set to false when Stripe integration is complete
-const BILLING_DEV_MODE = true;
+// Flip to true ONLY for local UI work where you want to force the member
+// (uncapped) experience without a subscriptions row. MUST stay false in any
+// shared/committed state — true makes EVERY signed-in user fake-premium, which
+// hides the free wall entirely. Prefer granting yourself a real subscriptions
+// row (see the member escape-hatch) over flipping this.
+const BILLING_DEV_MODE = false;
 
-// Mock data for development
+// Mock returned only when the override above is on.
 const MOCK_USER_ACCESS: UserAccessStatus = {
-  hasActiveSubscription: true, // Pretend user has premium for dev/testing
+  hasActiveSubscription: true,
   subscriptionStatus: 'active',
   subscriptionPeriodEnd: new Date(
     Date.now() + 30 * 24 * 60 * 60 * 1000,
-  ).toISOString(), // 30 days from now
+  ).toISOString(),
   purchasedCourses: [],
 };
 // ============================================================================

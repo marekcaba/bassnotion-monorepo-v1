@@ -134,10 +134,16 @@ export function GrooveCardBlockView({
   // needs its completion control, else the student is stranded with no button.
   const isDrillBrick =
     config.role != null || config.completionCriterion != null;
-  const capsEnabled = enableCaps || isDrillBrick;
+  // Caps apply on the whole in-app surface (mode 'block'): every groove card a
+  // free user plays in /app is part of the capped free wall (tempo ±5 /
+  // transpose ±2 / loop-range / deconstruction), and the cap is the upgrade
+  // pitch. Members resolve uncapped. The separate marketing/waitlist card
+  // (WaitlistGrooveCard, its own component) is untouched — it has its own hard
+  // engine cap, not the entitlement band. `enableCaps`/`isDrillBrick` remain as
+  // explicit opt-ins for any non-block surface that wants the band.
+  const capsEnabled = mode === 'block' || enableCaps || isDrillBrick;
 
-  // Entitlement caps — consulted when this surface opts in OR it's a brick.
-  // The hook resolves member → uncapped, anonymous/free → the unpaid band.
+  // Entitlement caps — member → uncapped, anonymous/free → the unpaid band.
   const { caps } = useEntitlement({ enabled: capsEnabled });
 
   // Transient upsell caption shown when a capped lever hits its band edge.
