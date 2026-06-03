@@ -33,4 +33,9 @@ SELECT
   false
 FROM public.founder_members fm
 JOIN public.profiles p ON p.email = fm.email   -- email is CITEXT → case-insensitive
+-- Guard: subscriptions.user_id FKs auth.users(id). In a consistent DB every
+-- profiles.id IS an auth.users id, but environments can carry an orphaned
+-- profile (auth user deleted without cascading the profile, or seeded data).
+-- Only grant when the auth user actually exists, so the FK can't violate.
+WHERE EXISTS (SELECT 1 FROM auth.users u WHERE u.id = p.id)
 ON CONFLICT (stripe_subscription_id) DO NOTHING;
