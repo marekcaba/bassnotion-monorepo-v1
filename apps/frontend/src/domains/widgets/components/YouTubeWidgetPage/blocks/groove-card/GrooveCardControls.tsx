@@ -18,6 +18,7 @@
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
 import { useEntitlement } from '@/domains/billing/hooks/useEntitlement';
+import { Popover, PopoverAnchor } from '@/shared/components/ui/popover';
 import type { CountdownState } from '@/domains/widgets/hooks/useCountdown';
 import type { HoverHintKey } from './captions';
 
@@ -77,6 +78,17 @@ interface GrooveCardControlsProps {
   onKeyChange: (next: number) => void;
   onMuteBass: (muted: boolean) => void;
   onSoloDrums: (solo: boolean) => void;
+  /** Fired when a FREE user taps Solo Drums while the deconstruction cap is on.
+   *  The button stays tappable (not a dead disabled control) so the cap can
+   *  pitch the upgrade instead of silently doing nothing. */
+  onDeconCapHit?: () => void;
+  /** The in-flow upgrade pitch — a popover anchored to the control just bumped.
+   *  `pitchLever` names which control to anchor to (null = closed). The parent
+   *  owns the open state (set on cap-hit, cleared on dismiss). */
+  pitchLever?: 'tempo' | 'transpose' | 'loopRange' | 'deconstruction' | null;
+  onPitchOpenChange?: (open: boolean) => void;
+  /** Rendered inside the popover when open — the message + Upgrade CTA. */
+  pitchContent?: React.ReactNode;
   /** Optional hover-hint reporter. Called with a `HoverHintKey` when the
    *  pointer enters one of the labelled buttons, and `null` on leave. The
    *  parent renders the matching string in the caption row above. Pointer-
@@ -108,6 +120,10 @@ export function GrooveCardControls({
   onKeyChange,
   onMuteBass,
   onSoloDrums,
+  onDeconCapHit,
+  pitchLever,
+  onPitchOpenChange,
+  pitchContent,
   onHoverHint,
   enforceCaps = false,
   lockSettings = false,
@@ -142,89 +158,125 @@ export function GrooveCardControls({
         }
       : {};
 
+  // One Popover for the whole row; the active lever provides the anchor so the
+  // pitch pops FROM the control just bumped. A non-matching lever renders the
+  // control plain. `transpose` anchors to the Key control, `tempo`/`loopRange`/
+  // `deconstruction` to theirs.
+  const anchorIf = (
+    lever: 'tempo' | 'transpose' | 'loopRange' | 'deconstruction',
+    node: React.ReactNode,
+  ) =>
+    pitchLever === lever ? <PopoverAnchor asChild>{node}</PopoverAnchor> : node;
+
   return (
-    <div className="flex items-center justify-between gap-2 px-4 py-3 bg-black/40 rounded-b-xl">
-      <button
-        type="button"
-        onClick={() => onMuteBass(!isBassMuted)}
-        disabled={!isReady}
-        aria-pressed={isBassMuted}
-        className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-          isBassMuted
-            ? 'bg-orange-500 text-white'
-            : 'bg-white/5 text-white/70 hover:bg-white/10'
-        } disabled:opacity-40 disabled:cursor-not-allowed`}
-        {...hoverProps('mute-bass')}
-      >
-        Mute Bass
-      </button>
+    <Popover
+      open={pitchLever != null}
+      onOpenChange={(o) => onPitchOpenChange?.(o)}
+    >
+      <div className="flex items-center justify-between gap-2 px-4 py-3 bg-black/40 rounded-b-xl">
+        <button
+          type="button"
+          onClick={() => onMuteBass(!isBassMuted)}
+          disabled={!isReady}
+          aria-pressed={isBassMuted}
+          className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+            isBassMuted
+              ? 'bg-orange-500 text-white'
+              : 'bg-white/5 text-white/70 hover:bg-white/10'
+          } disabled:opacity-40 disabled:cursor-not-allowed`}
+          {...hoverProps('mute-bass')}
+        >
+          Mute Bass
+        </button>
 
-      <div {...hoverProps('key')}>
-        <Stepper
-          label={keyLabel}
-          suffix={isKeyPending ? ' …' : ''}
-          onPrev={() => onKeyChange((pendingKeyShift ?? currentSemitones) - 1)}
-          onNext={() => onKeyChange((pendingKeyShift ?? currentSemitones) + 1)}
-          disabled={!isReady || lockSettings}
-          ariaLabel="Key"
-        />
-      </div>
-
-      <button
-        type="button"
-        onClick={onPlayPause}
-        disabled={!isReady}
-        aria-label={
-          countdownState.isCountingDown && countdownState.currentBeat > 0
-            ? `Countdown beat ${countdownState.currentBeat}`
-            : isPlaying
-              ? 'Pause'
-              : 'Play'
-        }
-        className="w-14 h-14 rounded-full bg-orange-500 text-white flex items-center justify-center hover:bg-orange-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-        {...hoverProps(isPlaying ? 'play-pause-pause' : 'play-pause-play')}
-      >
-        {isLoading ? (
-          <span className="text-[10px] uppercase tracking-wider">Loading</span>
-        ) : countdownState.isCountingDown && countdownState.currentBeat > 0 ? (
-          // Count-in: show "1", "2", "3", "4" inside the button. Same UX
-          // pattern as the YouTube tutorial player (PlaybackControlsBar).
-          <span className="text-2xl font-bold leading-none" aria-hidden>
-            {countdownState.currentBeat}
-          </span>
-        ) : isPlaying ? (
-          <Pause className="w-6 h-6" aria-hidden />
-        ) : (
-          <Play className="w-6 h-6 ml-0.5" aria-hidden />
+        {anchorIf(
+          'transpose',
+          <div {...hoverProps('key')}>
+            <Stepper
+              label={keyLabel}
+              suffix={isKeyPending ? ' …' : ''}
+              onPrev={() =>
+                onKeyChange((pendingKeyShift ?? currentSemitones) - 1)
+              }
+              onNext={() =>
+                onKeyChange((pendingKeyShift ?? currentSemitones) + 1)
+              }
+              disabled={!isReady || lockSettings}
+              ariaLabel="Key"
+            />
+          </div>,
         )}
-      </button>
 
-      <div {...hoverProps('tempo')}>
-        <Stepper
-          label={`${currentBpm}`}
-          suffix=" BPM"
-          onPrev={() => onTempoChange(currentBpm - 1)}
-          onNext={() => onTempoChange(currentBpm + 1)}
-          disabled={!isReady || lockSettings}
-          ariaLabel="Tempo"
-        />
+        <button
+          type="button"
+          onClick={onPlayPause}
+          disabled={!isReady}
+          aria-label={
+            countdownState.isCountingDown && countdownState.currentBeat > 0
+              ? `Countdown beat ${countdownState.currentBeat}`
+              : isPlaying
+                ? 'Pause'
+                : 'Play'
+          }
+          className="w-14 h-14 rounded-full bg-orange-500 text-white flex items-center justify-center hover:bg-orange-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          {...hoverProps(isPlaying ? 'play-pause-pause' : 'play-pause-play')}
+        >
+          {isLoading ? (
+            <span className="text-[10px] uppercase tracking-wider">
+              Loading
+            </span>
+          ) : countdownState.isCountingDown &&
+            countdownState.currentBeat > 0 ? (
+            // Count-in: show "1", "2", "3", "4" inside the button. Same UX
+            // pattern as the YouTube tutorial player (PlaybackControlsBar).
+            <span className="text-2xl font-bold leading-none" aria-hidden>
+              {countdownState.currentBeat}
+            </span>
+          ) : isPlaying ? (
+            <Pause className="w-6 h-6" aria-hidden />
+          ) : (
+            <Play className="w-6 h-6 ml-0.5" aria-hidden />
+          )}
+        </button>
+
+        {anchorIf(
+          'tempo',
+          <div {...hoverProps('tempo')}>
+            <Stepper
+              label={`${currentBpm}`}
+              suffix=" BPM"
+              onPrev={() => onTempoChange(currentBpm - 1)}
+              onNext={() => onTempoChange(currentBpm + 1)}
+              disabled={!isReady || lockSettings}
+              ariaLabel="Tempo"
+            />
+          </div>,
+        )}
+
+        {anchorIf(
+          'deconstruction',
+          <button
+            type="button"
+            onClick={() =>
+              deconCapped ? onDeconCapHit?.() : onSoloDrums(!isSoloDrums)
+            }
+            // When capped, stay enabled so the tap pitches the upgrade (the cap
+            // is the pitch); only truly disable while the card isn't ready yet.
+            disabled={!isReady}
+            aria-pressed={isSoloDrums}
+            className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+              isSoloDrums
+                ? 'bg-orange-500 text-white'
+                : 'bg-white/5 text-white/70 hover:bg-white/10'
+            } ${deconCapped ? 'opacity-60' : ''} disabled:opacity-40 disabled:cursor-not-allowed`}
+            {...hoverProps('solo-drums')}
+          >
+            Solo Drums
+          </button>,
+        )}
       </div>
-
-      <button
-        type="button"
-        onClick={() => onSoloDrums(!isSoloDrums)}
-        disabled={deconCapped || !isReady}
-        aria-pressed={isSoloDrums}
-        className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-          isSoloDrums
-            ? 'bg-orange-500 text-white'
-            : 'bg-white/5 text-white/70 hover:bg-white/10'
-        } disabled:opacity-40 disabled:cursor-not-allowed`}
-        {...hoverProps('solo-drums')}
-      >
-        Solo Drums
-      </button>
-    </div>
+      {pitchContent}
+    </Popover>
   );
 }
 

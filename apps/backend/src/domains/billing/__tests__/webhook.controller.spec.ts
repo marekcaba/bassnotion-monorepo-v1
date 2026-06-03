@@ -61,6 +61,7 @@ describe('WebhookController', () => {
       } as any,
       { sendFounderWelcome: vi.fn() } as any,
       { get: vi.fn() } as any,
+      { grantFounderMembershipByEmail: vi.fn() } as any,
     );
   });
 
@@ -894,6 +895,7 @@ describe('WebhookController - Status Mapping', () => {
       } as any,
       { sendFounderWelcome: vi.fn() } as any,
       { get: vi.fn() } as any,
+      { grantFounderMembershipByEmail: vi.fn() } as any,
     );
   });
 
@@ -946,6 +948,7 @@ describe('WebhookController - Edge Cases', () => {
       } as any,
       { sendFounderWelcome: vi.fn() } as any,
       { get: vi.fn() } as any,
+      { grantFounderMembershipByEmail: vi.fn() } as any,
     );
   });
 

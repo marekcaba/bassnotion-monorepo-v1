@@ -40,20 +40,35 @@ export class StripeService implements OnModuleInit {
    */
   private async initializePrices(): Promise<void> {
     try {
-      // Create or get subscription product and price
-      const subscriptionProduct = await this.getOrCreateProduct(
-        'bassnotion_subscription',
-        SUBSCRIPTION_PRODUCT.name,
-        SUBSCRIPTION_PRODUCT.description,
+      // Subscription price: PREFER a configured Stripe price ID (best practice —
+      // a real price created in the dashboard, stable across restarts). Only
+      // fall back to runtime get-or-create when the env var is absent (legacy
+      // dev convenience). The configured path is how $24/mo goes live.
+      const configuredSubPrice = this.configService.get<string>(
+        'STRIPE_SUBSCRIPTION_PRICE_ID',
       );
-
-      const subscriptionPrice = await this.getOrCreatePrice(
-        subscriptionProduct.id,
-        SUBSCRIPTION_PRODUCT.priceInCents,
-        'usd',
-        { interval: SUBSCRIPTION_PRODUCT.interval },
-      );
-      this.priceIds.set('subscription_monthly', subscriptionPrice.id);
+      if (configuredSubPrice) {
+        this.priceIds.set('subscription_monthly', configuredSubPrice);
+        this.logger.log(
+          `Using configured subscription price ${configuredSubPrice}`,
+        );
+      } else {
+        this.logger.warn(
+          'STRIPE_SUBSCRIPTION_PRICE_ID not set — falling back to runtime price creation. Set the env var for production.',
+        );
+        const subscriptionProduct = await this.getOrCreateProduct(
+          'bassnotion_subscription',
+          SUBSCRIPTION_PRODUCT.name,
+          SUBSCRIPTION_PRODUCT.description,
+        );
+        const subscriptionPrice = await this.getOrCreatePrice(
+          subscriptionProduct.id,
+          SUBSCRIPTION_PRODUCT.priceInCents,
+          'usd',
+          { interval: SUBSCRIPTION_PRODUCT.interval },
+        );
+        this.priceIds.set('subscription_monthly', subscriptionPrice.id);
+      }
 
       // Create or get course products and prices
       for (const [courseType, course] of Object.entries(COURSE_PRODUCTS)) {
@@ -147,6 +162,22 @@ export class StripeService implements OnModuleInit {
   }
 
   /**
+   * Resolve the app user_id from a Stripe customer's metadata. getOrCreateCustomer
+   * always stamps metadata.user_id, so this is a reliable last-resort fallback
+   * for webhooks whose subscription object lacks the metadata. Returns null on
+   * any error / missing metadata (caller logs + skips).
+   */
+  async getCustomerUserId(customerId: string): Promise<string | null> {
+    try {
+      const customer = await this.stripe.customers.retrieve(customerId);
+      if (customer.deleted) return null;
+      return (customer.metadata?.user_id as string | undefined) ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * Get or create a Stripe customer for a user
    */
   async getOrCreateCustomer(
@@ -209,6 +240,11 @@ export class StripeService implements OnModuleInit {
       success_url: dto.successUrl,
       cancel_url: dto.cancelUrl,
       metadata,
+      // Propagate metadata onto the SUBSCRIPTION object itself (not just the
+      // checkout session) so customer.subscription.created/updated webhooks can
+      // resolve user_id from subscription.metadata. Without this the webhook
+      // can't link the sub to a user and no subscriptions row is written.
+      ...(mode === 'subscription' ? { subscription_data: { metadata } } : {}),
       // Allow promotion codes
       allow_promotion_codes: true,
       // Collect billing address for tax purposes

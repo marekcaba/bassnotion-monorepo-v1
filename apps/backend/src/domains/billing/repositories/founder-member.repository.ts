@@ -8,7 +8,8 @@ export interface FounderMemberRow {
   id: string;
   email: string;
   full_name: string | null;
-  stripe_customer_id: string;
+  // null when the founder Payment Link created no Customer (one-time guest pay).
+  stripe_customer_id: string | null;
   stripe_checkout_session_id: string;
   stripe_payment_intent_id: string | null;
   stripe_price_id: string;
@@ -23,7 +24,7 @@ export interface FounderMemberRow {
 export interface CreateFounderMemberInput {
   email: string;
   fullName?: string | null;
-  stripeCustomerId: string;
+  stripeCustomerId: string | null;
   stripeCheckoutSessionId: string;
   stripePaymentIntentId?: string | null;
   stripePriceId: string;
@@ -102,6 +103,28 @@ export class FounderMemberRepository {
 
     if (error) {
       this.logger.error('Failed to load founder member by session id', {
+        code: error.code,
+        message: error.message,
+      });
+      throw error;
+    }
+
+    return (data as FounderMemberRow) ?? null;
+  }
+
+  /** Find a founder member by email (CITEXT → case-insensitive). Used at signup
+   *  to link a paying founder to their new account. null when not a founder. */
+  async findByEmail(email: string): Promise<FounderMemberRow | null> {
+    const client = this.supabaseService.getClient();
+
+    const { data, error } = await client
+      .from(this.TABLE_NAME)
+      .select('*')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (error) {
+      this.logger.error('Failed to load founder member by email', {
         code: error.code,
         message: error.message,
       });
