@@ -387,11 +387,20 @@ export function GrooveCardWaveform({
           // before. FALLBACK to the currentBpm-derived clock when the audio
           // isn't streaming yet (null) — e.g. the count-in before the first
           // stem sample, or if the worklet hasn't resolved.
-          const audioPhase = s.getAudioPhase ? s.getAudioPhase() : null;
           const elapsed = s.audioContext.currentTime - s.loopStartAudioTime;
+          // Count-in gate: loopStartAudioTime is anchored at the END of the
+          // 4-beat count-in (anchor + countdownSeconds), so `elapsed < 0` means
+          // we're still counting in — bar 1 hasn't begun. Don't draw the
+          // playhead yet (the worklet read-head may already sit near the loop
+          // end, which would wrongly flash the playhead at the LAST bar during
+          // the count-in). The playhead appears at bar 1 the moment elapsed≥0.
+          const audioPhase =
+            elapsed >= 0 && s.getAudioPhase ? s.getAudioPhase() : null;
           const sel = s.loopSelection;
 
-          if (sel) {
+          if (elapsed < 0) {
+            // Still counting in — playhead hidden until bar 1.
+          } else if (sel) {
             // Map the bar selection onto the canvas: x range and the duration
             // the playhead wraps in. Both bracket and playhead share the same
             // bar-grid math, so they stay aligned.

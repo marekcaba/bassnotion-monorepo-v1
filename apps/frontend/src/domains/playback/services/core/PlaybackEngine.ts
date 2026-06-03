@@ -2809,16 +2809,39 @@ export class PlaybackEngine implements IAudioStemEngine {
       | { inputTime: number; atTime: number; rate: number }
       | undefined;
     let phaseSeconds: number;
+    let rate =
+      typeof relay.__currentRate === 'number' ? relay.__currentRate : 1;
     if (stamp && stamp.inputTime === sg.inputTime && now >= stamp.atTime) {
       // Same posted value as last read → advance by elapsed × rate.
       phaseSeconds = stamp.inputTime + (now - stamp.atTime) * stamp.rate;
+      rate = stamp.rate;
     } else {
       // New posted value (or first read) → re-stamp at this instant.
-      const rate =
-        typeof relay.__currentRate === 'number' ? relay.__currentRate : 1;
       relay.__phaseStamp = { inputTime: sg.inputTime, atTime: now, rate };
       phaseSeconds = sg.inputTime;
     }
+
+    // VISUAL LATENCY COMPENSATION. `inputTime` is the worklet READ head — where
+    // signalsmith reads FROM its buffer — which leads what the listener HEARS by
+    // the phase-vocoder processing latency plus the AudioContext output latency.
+    // Measured ~185ms ahead; uncompensated the playhead visibly runs in front of
+    // the sound. (The bass/harmony/drums mix is internally coherent — all share
+    // the same output path — so we only correct the VISUAL clock, never audio.)
+    // Prefer the engine's measured stretch latency if it's been resolved;
+    // otherwise fall back to signalsmith's nominal. Scale by `rate` because the
+    // read head advances `rate` buffer-seconds per wall-second, so a fixed
+    // output-time lag maps to `lag × rate` of read-head position.
+    const VISUAL_STRETCH_LATENCY_FALLBACK = 0.16; // ~signalsmith nominal for these profiles
+    const processingLatency =
+      this.stretchLatencySeconds > 0
+        ? this.stretchLatencySeconds
+        : VISUAL_STRETCH_LATENCY_FALLBACK;
+    const outputLatency =
+      typeof this.audioContext.outputLatency === 'number'
+        ? this.audioContext.outputLatency
+        : (this.audioContext.baseLatency ?? 0);
+    phaseSeconds -= (processingLatency + outputLatency) * rate;
+
     const wrapped = ((phaseSeconds % loopLen) + loopLen) % loopLen;
     return wrapped / loopLen;
   }
