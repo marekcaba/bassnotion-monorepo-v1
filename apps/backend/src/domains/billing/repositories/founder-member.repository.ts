@@ -111,6 +111,28 @@ export class FounderMemberRepository {
     return (data as FounderMemberRow) ?? null;
   }
 
+  /** Find a founder member by email (CITEXT → case-insensitive). Used at signup
+   *  to link a paying founder to their new account. null when not a founder. */
+  async findByEmail(email: string): Promise<FounderMemberRow | null> {
+    const client = this.supabaseService.getClient();
+
+    const { data, error } = await client
+      .from(this.TABLE_NAME)
+      .select('*')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (error) {
+      this.logger.error('Failed to load founder member by email', {
+        code: error.code,
+        message: error.message,
+      });
+      throw error;
+    }
+
+    return (data as FounderMemberRow) ?? null;
+  }
+
   async markWelcomeEmailSent(id: string): Promise<void> {
     const client = this.supabaseService.getClient();
 

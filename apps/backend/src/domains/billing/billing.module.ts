@@ -7,32 +7,30 @@ import { AdminFunnelsService } from './services/admin-funnels.service.js';
 import { BillingController } from './billing.controller.js';
 import { WebhookController } from './webhook.controller.js';
 import { FoundersController } from './founders.controller.js';
-import { SubscriptionRepository } from './repositories/subscription.repository.js';
 import { PurchaseRepository } from './repositories/purchase.repository.js';
-import { FounderMemberRepository } from './repositories/founder-member.repository.js';
 import { FounderCardConfigRepository } from './repositories/founder-card-config.repository.js';
 import { SupabaseModule } from '../../infrastructure/supabase/supabase.module.js';
 import { AuthModule } from '../user/auth/auth.module.js';
+// SubscriptionRepository + FounderMemberRepository now live in MembershipModule
+// (so AuthModule can grant founders at signup without a circular dep). Importing
+// it re-exposes those repos to the billing controllers.
+import { MembershipModule } from './membership.module.js';
 
 @Module({
-  imports: [ConfigModule, SupabaseModule, AuthModule], // AuthModule for AdminGuard on FoundersController
+  imports: [ConfigModule, SupabaseModule, AuthModule, MembershipModule], // AuthModule for AdminGuard
   controllers: [BillingController, WebhookController, FoundersController],
   providers: [
     StripeService,
     ResendService,
     AdminFunnelsService,
-    SubscriptionRepository,
     PurchaseRepository,
-    FounderMemberRepository,
     FounderCardConfigRepository,
   ],
   exports: [
     StripeService,
     ResendService,
     AdminFunnelsService,
-    SubscriptionRepository,
     PurchaseRepository,
-    FounderMemberRepository,
     FounderCardConfigRepository,
   ],
 })

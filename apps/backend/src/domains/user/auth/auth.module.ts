@@ -8,10 +8,11 @@ import { AuthSecurityService } from './services/auth-security.service.js';
 import { PasswordSecurityService } from './services/password-security.service.js';
 import { DatabaseModule } from '../../../infrastructure/database/database.module.js';
 import { SharedModule } from '../../../shared/shared.module.js';
+import { MembershipModule } from '../../billing/membership.module.js';
 
 @Global()
 @Module({
-  imports: [DatabaseModule, SharedModule],
+  imports: [DatabaseModule, SharedModule, MembershipModule],
   controllers: [AuthController],
   providers: [
     PasswordSecurityService,
