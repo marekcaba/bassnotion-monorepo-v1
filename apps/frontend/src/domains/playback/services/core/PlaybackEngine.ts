@@ -3153,7 +3153,55 @@ export class PlaybackEngine implements IAudioStemEngine {
     // self-looping branch). SEED with the adapter's nominal latency NOW (sync)
     // so the FIRST play is already compensated, then refine with the exact
     // per-node value (async — remote latency()).
+    //
+    // This was previously dormant (refreshStretchLatency was never called and
+    // there was no sync seed), so stretchLatencySeconds stayed 0 and the
+    // scheduler pulled nothing — bass/harmony dragged the drum grid by the full
+    // worklet latency. Seed once (value is ~equal per profile) and refine from
+    // the bass node. A dev override (setStretchLatencyOverride) wins if set, so
+    // the value can be tuned by ear.
+    if (
+      this.stretchLatencyOverride == null &&
+      this.stretchLatencySeconds <= 0
+    ) {
+      const nominal = this.pitchShiftAdapter.latencySeconds(node as AudioNode);
+      if (nominal > 0) this.setStretchLatencySeconds(nominal);
+    }
+    if (
+      instrumentType === 'audio-bass' &&
+      this.stretchLatencyOverride == null
+    ) {
+      this.refreshStretchLatency(node as AudioNode);
+    }
     return node;
+  }
+
+  /**
+   * Time-stretch latency used to pull bass/harmony starts earlier so they land
+   * on the drum grid. Routed through one setter so the seed, the async refine,
+   * and the dev ear-tuning override all funnel to the scheduler consistently.
+   */
+  private setStretchLatencySeconds(seconds: number): void {
+    const v = this.stretchLatencyOverride ?? seconds;
+    if (!(v > 0)) return;
+    this.stretchLatencySeconds = v;
+    this.regionScheduler?.setStretchLatency(v);
+  }
+
+  /**
+   * DEV ear-tuning: force the stretch-latency compensation to a specific value
+   * (seconds), overriding the measured/nominal one. Pass null to clear and
+   * return to the measured value. Exposed on the engine so a dev slider can
+   * nudge bass/harmony alignment live while listening. Re-applies immediately;
+   * the next scheduled iteration uses the new value.
+   */
+  stretchLatencyOverride: number | null = null;
+  setStretchLatencyOverride(seconds: number | null): void {
+    this.stretchLatencyOverride = seconds;
+    if (seconds != null && seconds >= 0) {
+      this.stretchLatencySeconds = seconds;
+      this.regionScheduler?.setStretchLatency(seconds);
+    }
   }
 
   /**
@@ -3176,12 +3224,11 @@ export class PlaybackEngine implements IAudioStemEngine {
       Promise.resolve(sg.latency())
         .then((lat: unknown) => {
           if (typeof lat === 'number' && lat > 0) {
-            this.stretchLatencySeconds = lat;
-            this.regionScheduler?.setStretchLatency(lat);
-            // Update the drum delay to the precise measured latency and
-            // (re)route the drum path through it so drums align with the
-            // latency-delayed bass/harmony.
-            this.applyDrumLatencyDelay();
+            // Route through the setter so the dev override (ear-tuning) wins if
+            // set. We compensate by pulling bass/harmony EARLIER (in the
+            // scheduler), NOT by delaying drums — so do NOT also call
+            // applyDrumLatencyDelay() here, or the two would double-correct.
+            this.setStretchLatencySeconds(lat);
             this.logger.info('Stretch latency measured', {
               latencySeconds: lat,
               instanceId: this.instanceId,

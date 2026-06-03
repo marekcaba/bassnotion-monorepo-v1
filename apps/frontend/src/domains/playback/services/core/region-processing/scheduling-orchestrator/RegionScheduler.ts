@@ -1053,11 +1053,16 @@ export class RegionScheduler {
     const selfLooping = this.selfLoopingSources.get(stemKey);
     if (selfLooping) {
       const offset = region.loopSlice ? region.loopSlice.startSeconds : 0;
-      // bass/harmony start at T0 (the drum grid). They emerge ~latency later
-      // (signalsmith processing delay); the DRUM path carries a matching delay
-      // node (PlaybackEngine) so drums emerge at the same time → aligned. So
-      // no start offset here; the alignment is done downstream on the drums.
-      const startAt = Math.max(audioContext.currentTime, T0);
+      // LATENCY ALIGNMENT: bass/harmony play THROUGH the signalsmith worklet,
+      // which buffers ~one processing window before it emits — so a source told
+      // to start at T0 doesn't make sound until T0 + stretchLatencySeconds,
+      // dragging behind the (zero-latency) drum grid. Because the stems are
+      // fully-loaded buffers on a known timeline, we compensate at schedule time
+      // by STARTING THEM EARLIER by exactly that latency, so their first sample
+      // emerges ON T0 with the drums. Clamp to now+ε so the very first play
+      // (T0 ≈ now + lookahead) can't ask for a past start.
+      const pulled = T0 - this.stretchLatencySeconds;
+      const startAt = Math.max(audioContext.currentTime + 0.005, pulled);
       try {
         selfLooping.start(startAt, offset);
       } catch (err) {
