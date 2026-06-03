@@ -42,7 +42,10 @@ async function fetchStreak(): Promise<GetPracticeStreakResponse> {
 
 async function postSessionCompleted(): Promise<GetPracticeStreakResponse> {
   await authToken();
-  return apiClient.post<GetPracticeStreakResponse>(STREAK_PATH);
+  // Send an empty object body: the endpoint takes no payload, but apiClient
+  // sets Content-Type: application/json and Fastify rejects that with an empty
+  // body ("Body cannot be empty..."). {} is valid JSON and satisfies it.
+  return apiClient.post<GetPracticeStreakResponse>(STREAK_PATH, {});
 }
 
 /** Read the user's current practice streak. Undefined while loading/disabled. */

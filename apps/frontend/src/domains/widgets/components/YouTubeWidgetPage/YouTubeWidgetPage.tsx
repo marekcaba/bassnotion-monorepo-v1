@@ -1098,6 +1098,26 @@ function YouTubeWidgetPageContent({
     return [];
   }, [tutorialData, memoizedExercises]);
 
+  // A drill is a tutorial of drill bricks (task / drill-tagged groove-card). It
+  // has no video "Understand" gate, so the snap-scroll container must be
+  // scrollable from the start — otherwise finishing the first brick can't scroll
+  // to the next (the container is `overflow-hidden` until hasPassedUnderstand).
+  const isDrill = React.useMemo(
+    () =>
+      blocks.some(
+        (b) =>
+          b.type === 'task' ||
+          (b.type === 'groove-card' &&
+            (!!(b.config as { role?: unknown }).role ||
+              !!(b.config as { completionCriterion?: unknown })
+                .completionCriterion)),
+      ),
+    [blocks],
+  );
+  React.useEffect(() => {
+    if (isDrill) setHasPassedUnderstand(true);
+  }, [isDrill]);
+
   const {
     currentBlockId,
     currentBlockIndex,

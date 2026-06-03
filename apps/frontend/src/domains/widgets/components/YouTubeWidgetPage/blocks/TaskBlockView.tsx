@@ -39,7 +39,6 @@ export function TaskBlockView({
   const criterion = config.completionCriterion;
   const [started, setStarted] = useState(false);
   const [running, setRunning] = useState(false);
-  const [done, setDone] = useState(false);
 
   // Wall-clock: a task block has no audio, so the timer runs only while the
   // learner has it running (isPlaying = running). Start arms it; the pause
@@ -57,18 +56,21 @@ export function TaskBlockView({
 
   const finish = useCallback(
     (result: DrillCompletionResult) => {
-      setDone(true);
+      // Persist completion (optimistically unlocks the next block), then
+      // advance. NO "done" screen — clicking Next/I'm done goes straight to the
+      // next block. The player's reactive effect also advances once the unlock
+      // renders; calling onNext on the next frame here is a belt-and-braces
+      // backup (the effect's guard makes a double-advance a no-op). Deferred so
+      // the next section has expanded from h-0 → h-full before we scroll.
       onComplete({
         result,
         criterion: criterion?.type,
         achievedTier: null,
         at: new Date().toISOString(),
       });
-      // No scroll here — the player auto-advances reactively once onComplete
-      // marks this brick done + unlocks the next block (see the drill
-      // auto-advance effect in YouTubeWidgetPage). A single click advances.
+      requestAnimationFrame(() => requestAnimationFrame(() => onNext()));
     },
-    [onComplete, criterion?.type],
+    [onComplete, onNext, criterion?.type],
   );
 
   const isManual = criterion?.type === 'manual';
@@ -94,68 +96,51 @@ export function TaskBlockView({
           </p>
         )}
 
-        {done ? (
-          <div className="flex flex-col items-center gap-3">
-            <p className="text-sm font-semibold text-[#cd7f4d]">
-              ✓ Done. Brick laid.
-            </p>
-            {/* The player auto-scrolls to the next block on finish; this is a
-                manual fallback so the student is never stranded if the scroll
-                misses (or they scrolled back to a completed brick). */}
-            <Button onClick={onNext} className="text-white">
-              Next →
+        <div className="flex flex-col items-center gap-2">
+          {isManual ? (
+            <Button onClick={() => finish('completed')} className="text-white">
+              I&apos;m done →
             </Button>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center gap-2">
-            {isManual ? (
+          ) : !started ? (
+            <Button onClick={start} className="text-white">
+              <Play className="mr-1.5 h-4 w-4" /> Start
+            </Button>
+          ) : (
+            <div className="flex items-center gap-2">
+              {/* Pause / resume the countdown without losing progress. */}
+              <Button
+                variant="outline"
+                onClick={() => setRunning((r) => !r)}
+                className="text-white"
+                aria-label={running ? 'Pause timer' : 'Resume timer'}
+              >
+                {running ? (
+                  <>
+                    <Pause className="mr-1.5 h-4 w-4" /> Pause
+                  </>
+                ) : (
+                  <>
+                    <Play className="mr-1.5 h-4 w-4" /> Resume
+                  </>
+                )}
+              </Button>
               <Button
                 onClick={() => finish('completed')}
+                disabled={!isMet}
                 className="text-white"
               >
-                I&apos;m done →
+                Next →
               </Button>
-            ) : !started ? (
-              <Button onClick={start} className="text-white">
-                <Play className="mr-1.5 h-4 w-4" /> Start
-              </Button>
-            ) : (
-              <div className="flex items-center gap-2">
-                {/* Pause / resume the countdown without losing progress. */}
-                <Button
-                  variant="outline"
-                  onClick={() => setRunning((r) => !r)}
-                  className="text-white"
-                  aria-label={running ? 'Pause timer' : 'Resume timer'}
-                >
-                  {running ? (
-                    <>
-                      <Pause className="mr-1.5 h-4 w-4" /> Pause
-                    </>
-                  ) : (
-                    <>
-                      <Play className="mr-1.5 h-4 w-4" /> Resume
-                    </>
-                  )}
-                </Button>
-                <Button
-                  onClick={() => finish('completed')}
-                  disabled={!isMet}
-                  className="text-white"
-                >
-                  Next →
-                </Button>
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={() => finish('released')}
-              className="text-xs text-white/70 underline underline-offset-2 hover:text-white"
-            >
-              Too hard — lay it anyway ↓
-            </button>
-          </div>
-        )}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => finish('released')}
+            className="text-xs text-white/70 underline underline-offset-2 hover:text-white"
+          >
+            Too hard — lay it anyway ↓
+          </button>
+        </div>
       </div>
     </div>
   );

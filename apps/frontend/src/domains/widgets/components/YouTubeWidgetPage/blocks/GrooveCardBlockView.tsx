@@ -76,6 +76,7 @@ interface GrooveCardBlockViewProps {
 
 export function GrooveCardBlockView({
   block,
+  isCompleted,
   mode = 'block',
   countdownClickUrl,
   bg,
@@ -461,7 +462,15 @@ export function GrooveCardBlockView({
             criterionType={criterion?.type}
             progress={criterionRuntime.progress}
             isMet={criterionRuntime.isMet}
-            doneTier={conqueredTier ?? drill.conquered[block.id] ?? null}
+            // "Done" derives from the SERVER (isCompleted), not the persisted
+            // store — clearing block_completions must un-stick the card. The
+            // store's conquered map only supplies the tier DETAIL for display,
+            // and conqueredTier is the just-now optimistic value before the
+            // server round-trip lands.
+            doneTier={
+              conqueredTier ??
+              (isCompleted ? (drill.conquered[block.id] ?? 'done') : null)
+            }
             isReady={playback.isReady}
             onConquer={handleConquer}
             onCriterionDone={handleCriterionDone}
