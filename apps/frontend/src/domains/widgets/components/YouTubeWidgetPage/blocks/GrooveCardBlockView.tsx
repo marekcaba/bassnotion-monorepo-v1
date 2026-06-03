@@ -82,7 +82,9 @@ export function GrooveCardBlockView({
   waveformColor,
   onBeforePlay,
   onComplete,
-  onNext,
+  // onNext intentionally unused: drill bricks advance via the player's reactive
+  // auto-advance effect (driven by onComplete → optimistic unlock), not a
+  // self-fired scroll. Kept in the props interface for the BlockRenderer wiring.
   enableCaps = false,
 }: GrooveCardBlockViewProps) {
   const rawConfig = block.config;
@@ -123,11 +125,14 @@ export function GrooveCardBlockView({
   }, [rawConfig, groove]);
 
   // A groove card becomes a DRILL BRICK when its config carries a `role`
-  // (groove/connecting/review). Drill bricks enforce caps and, on conquer,
-  // advance the session (onComplete → onNext) — the "card emits conquered →
-  // Timer advances" seam. Plain tutorial/marketing cards have no role and
-  // just play.
-  const isDrillBrick = config.role != null;
+  // (groove/connecting/review) OR a `completionCriterion`. Drill bricks enforce
+  // caps and show the ConquerOutcome bar (conquer / "I'm done" / release valve),
+  // which is what advances the session. Plain tutorial/marketing cards have
+  // neither and just play. NOTE: must match isDrillBrickBlock in
+  // domains/drill/utils/drillBricks.ts — a criterion-only card (no role) still
+  // needs its completion control, else the student is stranded with no button.
+  const isDrillBrick =
+    config.role != null || config.completionCriterion != null;
   const capsEnabled = enableCaps || isDrillBrick;
 
   // Entitlement caps — consulted when this surface opts in OR it's a brick.
@@ -234,9 +239,11 @@ export function GrooveCardBlockView({
         achievedTier,
         at: new Date().toISOString(),
       };
+      // No scroll here — the player auto-advances reactively once onComplete
+      // marks this brick done + unlocks the next block (see the drill
+      // auto-advance effect in YouTubeWidgetPage). A single action advances.
       if (isReady && isAuthenticated) {
         onComplete(data);
-        onNext();
       } else {
         drill.setPendingCompletion({
           tutorialSlug: sessionSlug,
@@ -248,7 +255,6 @@ export function GrooveCardBlockView({
         });
         setGateOpen(true);
         onComplete(data);
-        onNext();
       }
     },
     [
@@ -256,7 +262,6 @@ export function GrooveCardBlockView({
       isReady,
       isAuthenticated,
       onComplete,
-      onNext,
       drill,
       block.id,
       sessionSlug,

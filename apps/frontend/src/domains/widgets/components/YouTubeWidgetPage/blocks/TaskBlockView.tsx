@@ -64,9 +64,11 @@ export function TaskBlockView({
         achievedTier: null,
         at: new Date().toISOString(),
       });
-      onNext();
+      // No scroll here — the player auto-advances reactively once onComplete
+      // marks this brick done + unlocks the next block (see the drill
+      // auto-advance effect in YouTubeWidgetPage). A single click advances.
     },
-    [onComplete, onNext, criterion?.type],
+    [onComplete, criterion?.type],
   );
 
   const isManual = criterion?.type === 'manual';
@@ -93,9 +95,17 @@ export function TaskBlockView({
         )}
 
         {done ? (
-          <p className="text-sm font-semibold text-[#cd7f4d]">
-            ✓ Done. Brick laid.
-          </p>
+          <div className="flex flex-col items-center gap-3">
+            <p className="text-sm font-semibold text-[#cd7f4d]">
+              ✓ Done. Brick laid.
+            </p>
+            {/* The player auto-scrolls to the next block on finish; this is a
+                manual fallback so the student is never stranded if the scroll
+                misses (or they scrolled back to a completed brick). */}
+            <Button onClick={onNext} className="text-white">
+              Next →
+            </Button>
+          </div>
         ) : (
           <div className="flex flex-col items-center gap-2">
             {isManual ? (

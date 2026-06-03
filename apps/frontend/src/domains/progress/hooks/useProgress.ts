@@ -13,9 +13,11 @@
  *    the parent exercise block
  *
  * Both mutations write back into the queryClient cache directly using the
- * response body (the backend returns the full updated progress), so we
- * never need to refetch after a write. No optimistic UI complexity, no
- * cache invalidation timing — the server's reply IS the new cache.
+ * response body (the backend returns the full updated progress), so we never
+ * need to refetch after a write. useCompleteBlock additionally patches the
+ * cache OPTIMISTICALLY in onMutate (marking the block done + re-deriving unlock
+ * flags) so the scroll-snap player can advance in the same tick; the server
+ * reply then replaces it with the authoritative state. See useCompleteBlock.
  *
  * Replaces the legacy hooks: useBlockProgress, usePracticeCompletions,
  * useTutorialProgress(Actions), useTutorialCompletionStatus,
@@ -68,9 +70,32 @@ export function useProgress(
 }
 
 /**
+ * Recompute the linear unlock flags for a blocks array in place: a block is
+ * unlocked iff every preceding entry (in array order) is completed. Mirrors the
+ * backend rule (ProgressService.getTutorialProgress). Returns a new array.
+ */
+function withRecomputedUnlocks(
+  blocks: GetTutorialProgressResponse['blocks'],
+): GetTutorialProgressResponse['blocks'] {
+  let allPreviousCompleted = true;
+  return blocks.map((entry) => {
+    const next = { ...entry, unlocked: allPreviousCompleted };
+    if (!entry.completed) allPreviousCompleted = false;
+    return next;
+  });
+}
+
+/**
  * Mark a block complete. Returns a mutation; call `.mutate({ blockId, data })`.
- * The query cache for this tutorial is replaced with the response — no
- * refetch needed, no race conditions.
+ *
+ * Optimistically marks the block completed in the cache (and re-derives unlock
+ * flags) BEFORE the server responds. This matters for the scroll-snap player:
+ * the next block renders as `h-0` (unscrollable) until it's unlocked, so a
+ * synchronous `onNext()` scroll right after completion would otherwise lose the
+ * race against the network round-trip and silently do nothing — leaving the
+ * student stranded on a completed brick. The optimistic patch unlocks the next
+ * block in the same tick so the scroll lands. The server reply then replaces
+ * the cache with the authoritative state; on error we roll back.
  */
 export function useCompleteBlock(slug: string) {
   const queryClient = useQueryClient();
@@ -83,6 +108,38 @@ export function useCompleteBlock(slug: string) {
       blockId: string;
       data?: Record<string, unknown>;
     }) => completeBlock(slug, blockId, data),
+    onMutate: async ({ blockId, data }) => {
+      const key = progressKeys.tutorial(slug);
+      // Cancel in-flight fetches so they don't clobber the optimistic patch.
+      await queryClient.cancelQueries({ queryKey: key });
+      const previous =
+        queryClient.getQueryData<GetTutorialProgressResponse>(key);
+      if (previous) {
+        const patchedBlocks = withRecomputedUnlocks(
+          previous.blocks.map((entry) =>
+            entry.blockId === blockId
+              ? {
+                  ...entry,
+                  completed: true,
+                  completedAt: entry.completedAt ?? new Date().toISOString(),
+                  data: (data as (typeof entry)['data']) ?? entry.data ?? null,
+                }
+              : entry,
+          ),
+        );
+        queryClient.setQueryData<GetTutorialProgressResponse>(key, {
+          ...previous,
+          blocks: patchedBlocks,
+        });
+      }
+      // Return rollback context for onError.
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(progressKeys.tutorial(slug), context.previous);
+      }
+    },
     onSuccess: (newProgress) => {
       queryClient.setQueryData<GetTutorialProgressResponse>(
         progressKeys.tutorial(slug),

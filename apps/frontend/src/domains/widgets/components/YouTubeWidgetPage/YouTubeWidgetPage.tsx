@@ -1216,6 +1216,35 @@ function YouTubeWidgetPageContent({
     }
   }, [currentBlockIndex, blocks, scrollToBlock]);
 
+  // Drill bricks (task / drill-tagged groove-card) advance on completion. The
+  // brick calls onComplete (which optimistically marks it done + unlocks the
+  // next block) but does NOT scroll itself — scrolling synchronously races the
+  // unlock re-render (the next section is `h-0`/unscrollable until unlocked) and
+  // silently misses, stranding the student. Instead this effect watches for the
+  // current brick becoming completed and scrolls THEN — after the unlock has
+  // rendered — so a single click reliably advances. The ref guards against
+  // re-firing for the same block.
+  const lastAutoAdvancedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const current = blocks[currentBlockIndex];
+    if (!current) return;
+    const isBrick =
+      current.type === 'task' ||
+      (current.type === 'groove-card' &&
+        (!!(current.config as { role?: unknown }).role ||
+          !!(current.config as { completionCriterion?: unknown })
+            .completionCriterion));
+    if (!isBrick) return;
+    if (!blockProgress[current.id]?.completed) return;
+    if (lastAutoAdvancedRef.current === current.id) return;
+    const nextBlock = blocks[currentBlockIndex + 1];
+    if (!nextBlock) return; // last brick → the drill frame shows the summary
+    lastAutoAdvancedRef.current = current.id;
+    // Unlock the snap container if this was the first completion.
+    setHasPassedUnderstand(true);
+    requestAnimationFrame(() => scrollToBlock(nextBlock.id));
+  }, [blocks, currentBlockIndex, blockProgress, scrollToBlock]);
+
   // Gated block navigation: only scroll if the target block is unlocked.
   // A block is unlocked if it's the first block, OR all previous blocks are completed.
   const handleGatedBlockSelect = useCallback(
