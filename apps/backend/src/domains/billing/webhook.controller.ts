@@ -15,6 +15,7 @@ import Stripe from 'stripe';
 
 import { StripeService } from './services/stripe.service.js';
 import { ResendService } from './services/resend.service.js';
+import { MembershipService } from './services/membership.service.js';
 import { SubscriptionRepository } from './repositories/subscription.repository.js';
 import { PurchaseRepository } from './repositories/purchase.repository.js';
 import { FounderMemberRepository } from './repositories/founder-member.repository.js';
@@ -31,6 +32,7 @@ export class WebhookController {
     private readonly founderMemberRepository: FounderMemberRepository,
     private readonly resendService: ResendService,
     private readonly configService: ConfigService,
+    private readonly membershipService: MembershipService,
   ) {}
 
   /**
@@ -457,6 +459,12 @@ export class WebhookController {
           Object.keys(mergedMetadata).length > 0 ? mergedMetadata : null,
       },
     );
+
+    // Grant entitlement NOW if they already have an account (the "sign up first,
+    // buy founder later" order). If no account yet, this is a no-op and the
+    // signup-time linkage grants them when they create one. Runs on replay too
+    // (idempotent grant) so a missed grant self-heals on the next webhook.
+    await this.membershipService.grantFounderMembershipByEmail(email);
 
     if (!created) {
       this.logger.log(

@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { MembershipService } from '../services/membership.service.js';
 import type { SubscriptionRepository } from '../repositories/subscription.repository.js';
 import type { FounderMemberRepository } from '../repositories/founder-member.repository.js';
+import type { SupabaseService } from '../../../infrastructure/supabase/supabase.service.js';
 
 const USER_ID = 'user-1';
 const EMAIL = 'founder@example.com';
@@ -18,9 +19,15 @@ function makeService(opts: {
   const grantLifetimeMembership = vi.fn(async () => {
     if (opts.grantThrows) throw new Error('grant failed');
   });
+  // grantFounderMembershipByEmail isn't exercised by these tests (it's the
+  // webhook path); a stub Supabase service keeps the constructor satisfied.
+  const supabaseService = {
+    getClient: () => ({}),
+  } as unknown as SupabaseService;
   const service = new MembershipService(
     { grantLifetimeMembership } as unknown as SubscriptionRepository,
     { findByEmail } as unknown as FounderMemberRepository,
+    supabaseService,
   );
   return { service, findByEmail, grantLifetimeMembership };
 }
