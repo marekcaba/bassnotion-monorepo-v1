@@ -1,0 +1,7 @@
+# Generated capture artifacts — regenerate with capture.mjs; do not commit.
+*.wav
+*.events.json
+*.png
+stems/
+# scratch probe scripts
+_*.mjs

@@ -23,6 +23,7 @@
 
 import { getLogger } from '@/utils/logger.js';
 import { applyClickFreeStop } from '../utils/applyClickFreeStop.js';
+import type { InfiniteAudioSource } from './InfiniteAudioSource.js';
 
 const logger = getLogger('RegionProcessor');
 
@@ -210,8 +211,237 @@ export class RegionScheduler {
   // any code path that hasn't opted in.
   private interIterCrossfadeSeconds = 0;
 
+  // Time-stretch (LAUNCH-06): self-looping buffer-streaming sources for
+  // bass/harmony (signalsmith). Unlike the windowed ABSN map above, ONE
+  // source per stem plays for the whole play→stop lifetime — it loops
+  // internally, so there's no window, no onended refill, no rearm. The
+  // engine registers the resolved source (keyed by stemKey, e.g. 'bass')
+  // BEFORE scheduling; scheduleInfiniteAudioRegion arms it (one start) and
+  // stopAllInfiniteAudio stops it. Tempo/key changes are live schedule()
+  // calls on the source (applyRate/applySemitones), not re-arms.
+  private selfLoopingSources = new Map<string, InfiniteAudioSource>();
+
+  // The current stretch ratio R (currentBpm / originalBpm). Applied to
+  // drum ABSN sources at arm time (their playbackRate) and forwarded to the
+  // SoundTouch insert; bass/harmony get it via applyRate on their source.
+  private tempoRatio = 1;
+
+  // Time-stretch (LAUNCH-06): the MUSICAL loop length (buffer seconds, at
+  // originalBpm) the groove-card stems loop on. When > 0, the DRUM stem loops
+  // as ONE native-loop source clamped to [0, this] (instead of the windowed
+  // multi-iteration path) so it stays beat-locked to bass/harmony — which
+  // loop internally on the same length. 0 = no card active → drums use the
+  // windowed path as before. Set by PlaybackEngine.setStemLoopDuration.
+  private stemLoopDurationSeconds = 0;
+
+  // Time-stretch (LAUNCH-06): signalsmith's audible latency (s). bass/harmony
+  // self-looping sources are STARTED this much earlier so their latency-
+  // delayed output lands on the (near-zero-latency) drum grid. 0 = unknown.
+  private stretchLatencySeconds = 0;
+
+  // Time-stretch (LAUNCH-06): the per-call context captured when the drum
+  // single-loop source is armed, so a tempo change can stop + re-arm that ONE
+  // source at the shared boundary with the new playbackRate (an ABSN can't
+  // change rate in place). Null until the drum loop is armed.
+  private drumLoopContext: {
+    region: Region;
+    stemKey: string;
+    audioContext: AudioContext;
+    audioStemAccess: InfiniteAudioStemAccess;
+    resolvePendingBuffer: ResolvePendingBuffer | undefined;
+    entryKey: string;
+  } | null = null;
+
   constructor(instanceId: string) {
     this.instanceId = instanceId;
+  }
+
+  /**
+   * Register (or clear, when `source` is null) the self-looping
+   * buffer-streaming source for a stem. Called by PlaybackEngine once the
+   * stem's signalsmith node is created. The scheduler arms it on the next
+   * scheduleInfiniteAudioRegion for that stem and stops it on stopAll.
+   */
+  setSelfLoopingSource(
+    stemKey: string,
+    source: InfiniteAudioSource | null,
+  ): void {
+    if (source) this.selfLoopingSources.set(stemKey, source);
+    else this.selfLoopingSources.delete(stemKey);
+  }
+
+  /**
+   * Set the current time-stretch ratio. Bass/harmony are driven via their
+   * source's applyRate (boundary-deferred) by the engine; the scheduler
+   * stores R so drum iterations arm at the new playbackRate.
+   */
+  setTempoRatio(ratio: number): void {
+    this.tempoRatio = ratio > 0 ? ratio : 1;
+  }
+
+  /** Time-stretch (LAUNCH-06): musical loop length (buffer seconds) drums
+   *  loop on as a single native-loop source. See the field doc. */
+  setStemLoopDuration(seconds: number): void {
+    this.stemLoopDurationSeconds = seconds > 0 ? seconds : 0;
+  }
+
+  /** Time-stretch (LAUNCH-06): signalsmith's audible latency (s). bass/harmony
+   *  play THROUGH signalsmith so their audio emerges this much AFTER their
+   *  scheduled start; we pull their START earlier by this so the audible
+   *  output lands on the drum grid. Set by PlaybackEngine once measured. */
+  setStretchLatency(seconds: number): void {
+    this.stretchLatencySeconds = seconds > 0 ? seconds : 0;
+  }
+
+  /**
+   * [LAUNCH-06 DEBUG] Empirical drum-loop phase: where in the buffer the drum
+   * source actually is right now, in BUFFER seconds (i.e. accounting for
+   * playbackRate). Returns null if the drum single-loop isn't armed. Used by
+   * the engine's drift sampler to compare against bass/harmony inputTime.
+   */
+  debugDrumLoopPhase(now: number): {
+    phase: number;
+    startAt: number;
+    playbackRate: number;
+    loopLen: number;
+  } | null {
+    const ctx = this.drumLoopContext;
+    if (!ctx) return null;
+    const entry = this.infiniteAudioRegions.get(ctx.entryKey);
+    if (!entry) return null;
+    const rate = entry.source?.playbackRate?.value ?? 1;
+    const loopLen = this.stemLoopDurationSeconds;
+    if (loopLen <= 0) return null;
+    // Buffer position advances at `rate` buffer-seconds per real second,
+    // wrapping every loopLen buffer-seconds.
+    const elapsed = Math.max(0, now - entry.startAt);
+    const phase = (elapsed * rate) % loopLen;
+    return { phase, startAt: entry.startAt, playbackRate: rate, loopLen };
+  }
+
+  /**
+   * Time-stretch (LAUNCH-06): re-arm the single drum-loop source at `boundary`
+   * with the CURRENT tempoRatio (set via setTempoRatio just before this). The
+   * playing drum source can't change playbackRate in place, so we stop it at
+   * the boundary and start a fresh one there — at the SAME instant bass/harmony
+   * apply their rate change, keeping all three locked. No-op if the drum loop
+   * isn't armed (e.g. windowed-path drums, or not playing). Returns true if it
+   * re-armed.
+   */
+  rearmDrumLoopAtBoundary(boundary: number): boolean {
+    const ctx = this.drumLoopContext;
+    if (!ctx) return false;
+    const entry = this.infiniteAudioRegions.get(ctx.entryKey);
+    if (!entry) return false;
+
+    // Stop the current drum source AT the boundary (it keeps playing the old
+    // tempo until then, finishing the current loop cleanly), and drop it from
+    // the map FIRST so nothing else touches it.
+    this.infiniteAudioRegions.delete(ctx.entryKey);
+    try {
+      entry.source.stop(boundary);
+    } catch {
+      // already stopped — fine
+    }
+
+    // Arm a fresh single-loop drum source starting exactly at the boundary;
+    // armInfiniteAudioIteration reads the (already-updated) tempoRatio and
+    // sets the new playbackRate on it.
+    this.armInfiniteAudioIteration(
+      ctx.region,
+      ctx.stemKey,
+      0,
+      boundary,
+      ctx.audioContext,
+      ctx.audioStemAccess,
+      ctx.resolvePendingBuffer,
+    );
+    logger.info('Drum single-loop re-armed at boundary', {
+      boundary,
+      tempoRatio: this.tempoRatio,
+      instanceId: this.instanceId,
+    });
+    return true;
+  }
+
+  /**
+   * Time-stretch (LAUNCH-06, Model C): change the playing drum loop's tempo
+   * LIVE, mid-loop, WITHOUT recreating the source. `AudioBufferSourceNode.
+   * playbackRate` is a fully automatable AudioParam — set it at `atTime` and
+   * the native loop keeps running at the new speed from there. The SoundTouch
+   * insert's `playbackRate` param (driven by the engine) cancels the pitch.
+   * Updates the stored `tempoRatio` so the scheduler's seam projection
+   * (nextIterationBoundary) uses the new period. No-op if the drum loop isn't
+   * armed. Returns true if applied.
+   */
+  /** The currently-playing drum single-loop AudioBufferSourceNode, or null.
+   *  Used by the engine to reconnect it live when splicing the WSOLA insert. */
+  getDrumLoopSource(): AudioBufferSourceNode | null {
+    const ctx = this.drumLoopContext;
+    if (!ctx) return null;
+    const entry = this.infiniteAudioRegions.get(ctx.entryKey);
+    return entry?.source ?? null;
+  }
+
+  setDrumLoopRateLive(ratio: number, atTime: number): boolean {
+    this.tempoRatio = ratio > 0 ? ratio : 1;
+    const ctx = this.drumLoopContext;
+    if (!ctx) return false;
+    const entry = this.infiniteAudioRegions.get(ctx.entryKey);
+    if (!entry) return false;
+    try {
+      const pr = entry.source.playbackRate;
+      pr.cancelScheduledValues?.(atTime);
+      pr.setValueAtTime(this.tempoRatio, atTime);
+    } catch {
+      // best-effort — if the param write fails the drum keeps its old rate
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Time-stretch (LAUNCH-06): the authoritative next loop-seam audio time for
+   * a region — the soonest pre-armed iteration `startAt` strictly after `now`.
+   * This is the scheduler's GROUND TRUTH for where the current loop ends, used
+   * to apply a tempo change to ALL stems at the SAME instant (drums re-arm at
+   * this seam; bass/harmony schedule their rate change at the same seam) so
+   * they never drift apart. Returns null if the region has no future-armed
+   * iteration (e.g. a self-looping-only region, or not playing).
+   *
+   * `regionId` matches the windowed entries (drums); we read the drum region's
+   * seam because it's the ABSN clock we can observe. bass/harmony loop the
+   * same musical length from the same T0, so this seam is theirs too.
+   */
+  nextIterationBoundary(regionId: string, now: number): number | null {
+    const matchPrefix = `${regionId}#`;
+
+    // Single-loop drum (LAUNCH-06): ONE native-loop entry whose startAt is the
+    // original T0 (now in the past). Its seams recur every musical loop, so
+    // project the next one: T0 + ceil((now - T0)/loopLen) * loopLen. The loop
+    // length must account for the current stretch (a slowed loop's real period
+    // is loopLen/R).
+    if (this.stemLoopDurationSeconds > 0) {
+      for (const [entryKey, entry] of this.infiniteAudioRegions.entries()) {
+        if (!entryKey.startsWith(matchPrefix)) continue;
+        if (!entry.region.loopSlice) continue; // only the synthetic single-loop
+        const realLoop = this.stemLoopDurationSeconds / (this.tempoRatio || 1);
+        if (realLoop <= 0) break;
+        const elapsed = now - entry.startAt;
+        const loopsDone = elapsed <= 0 ? 0 : Math.ceil(elapsed / realLoop);
+        return entry.startAt + loopsDone * realLoop;
+      }
+    }
+
+    // Windowed path: the soonest pre-armed iteration startAt strictly > now.
+    let soonest = Infinity;
+    for (const [entryKey, entry] of this.infiniteAudioRegions.entries()) {
+      if (!entryKey.startsWith(matchPrefix)) continue;
+      if (entry.startAt > now && entry.startAt < soonest) {
+        soonest = entry.startAt;
+      }
+    }
+    return Number.isFinite(soonest) ? soonest : null;
   }
 
   /**
@@ -803,6 +1033,113 @@ export class RegionScheduler {
     // collapses iter 0/1/2 onto the same time, producing a 14s gap until
     // onended refills. Shifting once here preserves the WINDOW spread.
     const T0 = Math.max(requestedT0, audioContext.currentTime);
+    // eslint-disable-next-line no-console
+    console.log('[TS-T0]', {
+      stemKey,
+      transportStartTime: Number(transportStartTime.toFixed(3)),
+      regionStartTime: Number(region.startTime.toFixed(3)),
+      requestedT0: Number(requestedT0.toFixed(3)),
+      now: Number(audioContext.currentTime.toFixed(3)),
+      T0: Number(T0.toFixed(3)),
+      clampedToNow: T0 > requestedT0,
+    });
+
+    // Time-stretch (LAUNCH-06): self-looping buffer-streaming source branch.
+    // bass/harmony run as ONE signalsmith node that plays its own buffer and
+    // loops internally — so it needs neither the windowed pre-arm nor the
+    // loopSlice native-loop ABSN. Arm it once (single start at T0, reading
+    // from the slice offset if a loop-selection is active) and return; the
+    // worklet handles looping, and tempo/key are live schedule() calls.
+    const selfLooping = this.selfLoopingSources.get(stemKey);
+    if (selfLooping) {
+      const offset = region.loopSlice ? region.loopSlice.startSeconds : 0;
+      // LATENCY ALIGNMENT: bass/harmony play THROUGH the signalsmith worklet,
+      // which buffers ~one processing window before it emits — so a source told
+      // to start at T0 doesn't make sound until T0 + stretchLatencySeconds,
+      // dragging behind the (zero-latency) drum grid. Because the stems are
+      // fully-loaded buffers on a known timeline, we compensate at schedule time
+      // by STARTING THEM EARLIER by exactly that latency, so their first sample
+      // emerges ON T0 with the drums. Clamp to now+ε so the very first play
+      // (T0 ≈ now + lookahead) can't ask for a past start.
+      const pulled = T0 - this.stretchLatencySeconds;
+      const startAt = Math.max(audioContext.currentTime + 0.005, pulled);
+      try {
+        selfLooping.start(startAt, offset);
+      } catch (err) {
+        logger.warn('scheduleInfiniteAudioRegion: self-looping start failed', {
+          trackId,
+          regionId: region.id,
+          stemKey,
+          err,
+        });
+      }
+      logger.info('Infinite audio region scheduled (self-looping stretch)', {
+        trackId,
+        regionId: region.id,
+        instrumentType,
+        stemKey,
+        T0,
+        startAt,
+        latencyPulled: this.stretchLatencySeconds,
+        offset,
+        loopSlice: region.loopSlice ?? null,
+      });
+      return;
+    }
+
+    // Time-stretch (LAUNCH-06): drum single-loop branch. When a groove card is
+    // active (stemLoopDurationSeconds > 0) and there's no explicit bar-range
+    // selection, the DRUM stem loops as ONE native-loop source clamped to the
+    // musical length [0, stemLoopDurationSeconds] — exactly the length
+    // bass/harmony loop on internally — so all three stay beat-locked. This
+    // replaces the WINDOW=3 path for drums (whose per-iteration startAt
+    // spacing didn't re-time on tempo change, causing drift). We synthesize a
+    // full-loop `loopSlice` so it flows through the same stable single-source
+    // arm as a bar selection (native loop=true, skipped by windowed rearm).
+    if (
+      stemKey === 'drums' &&
+      this.stemLoopDurationSeconds > 0 &&
+      !region.loopSlice
+    ) {
+      const drumRegion: Region = {
+        ...region,
+        loopSlice: {
+          startSeconds: 0,
+          endSeconds: this.stemLoopDurationSeconds,
+        },
+      };
+      // Capture the context so a tempo change can re-arm THIS one source at a
+      // boundary (ABSN playbackRate can't change in place).
+      this.drumLoopContext = {
+        region: drumRegion,
+        stemKey,
+        audioContext,
+        audioStemAccess,
+        resolvePendingBuffer,
+        entryKey: `${drumRegion.id}#0`,
+      };
+      this.armInfiniteAudioIteration(
+        drumRegion,
+        stemKey,
+        0,
+        T0,
+        audioContext,
+        audioStemAccess,
+        resolvePendingBuffer,
+      );
+      logger.info(
+        'Infinite audio region scheduled (drum single-loop stretch)',
+        {
+          trackId,
+          regionId: region.id,
+          instrumentType,
+          stemKey,
+          T0,
+          loopEnd: this.stemLoopDurationSeconds,
+        },
+      );
+      return;
+    }
 
     // Bar-range loop branch: ONE source with AudioBufferSourceNode.loop =
     // true + native loopStart/loopEnd. No window, no onended refill —
@@ -917,6 +1254,19 @@ export class RegionScheduler {
     }
 
     source.buffer = buffer;
+
+    // Time-stretch (LAUNCH-06): drive the DRUM source's playbackRate to the
+    // current stretch ratio. The drum stem streams through a SoundTouch
+    // (WSOLA) insert that cancels the resulting pitch shift, so drums change
+    // tempo with pitch preserved. Only the drum stem stretches — click stays
+    // at native rate. Bass/harmony never reach here (self-looping branch).
+    if (stemKey === 'drums' && this.tempoRatio !== 1) {
+      try {
+        source.playbackRate.value = this.tempoRatio;
+      } catch {
+        /* best-effort — falls back to native rate */
+      }
+    }
 
     // LAUNCH-02.5c key-shift: per-iteration crossfade GainNode.
     //
@@ -1276,7 +1626,43 @@ export class RegionScheduler {
    * on each — this cancels both already-playing and pending-start sources
    * per Web Audio spec, so no Tone.Transport.clear is needed.
    */
-  stopAllInfiniteAudio(audioContext: AudioContext | null): void {
+  /**
+   * @param rampSeconds gain fade-out length. Default 0.03 (full stop). Pass a
+   *   tiny value (or 0) for a SEAMLESS SWAP — a tempo rebuild stops the old
+   *   loop at its seam and immediately re-arms the new one into the SAME
+   *   shared gain; a 30ms fade-to-zero would catch the new loop's downbeat
+   *   (the kick) and silence it. A ~0 ramp keeps the gain at resting so the
+   *   new audio plays at full volume; the old source stops at the loop seam
+   *   where the audio wraps anyway, so the hard stop is click-safe.
+   */
+  stopAllInfiniteAudio(
+    audioContext: AudioContext | null,
+    rampSeconds = 0.03,
+  ): void {
+    // Time-stretch (LAUNCH-06): the drum single-loop context is stale once we
+    // stop — clear it so a re-arm after a fresh play can't target a dead entry.
+    this.drumLoopContext = null;
+
+    // Time-stretch (LAUNCH-06): stop the self-looping sources (bass/harmony +
+    // the drum slice player) at `now + rampSeconds` for a full stop, so they
+    // keep producing audio THROUGH the PlaybackEngine's master-bus fade (which
+    // ramps the whole mix to 0 over the same window) and only halt once the
+    // master is silent — click-free regardless of each source's teardown
+    // mechanics. For a seamless seam swap (rampSeconds ~0) they stop at `now`
+    // (the loop wraps there, so it's click-safe) and the new loop re-arms.
+    if (this.selfLoopingSources.size > 0) {
+      const stopAt =
+        (audioContext?.currentTime ?? 0) + Math.max(0, rampSeconds);
+      for (const source of this.selfLoopingSources.values()) {
+        try {
+          source.stop(stopAt);
+        } catch {
+          // already stopped / pending-start cancelled — fine
+        }
+      }
+      this.selfLoopingSources.clear();
+    }
+
     if (this.infiniteAudioRegions.size === 0) return;
 
     // Snapshot + clear the map first so racing onended callbacks bail.
@@ -1289,14 +1675,16 @@ export class RegionScheduler {
     // the same AudioParam events.
     const seenGains = new Set<GainNode>();
     let stopAt = audioContext?.currentTime ?? 0;
+    // Seamless-swap path: rampSeconds ~0 means DON'T fade the shared gain (it
+    // would silence the new loop's downbeat re-armed into the same gain). Stop
+    // the old sources at `now` — at the loop seam the audio wraps, so the hard
+    // stop is click-safe — and leave the gain at resting for the new audio.
+    const skipGainFade = rampSeconds <= 0.0005;
     for (const entry of entries) {
-      if (audioContext && !seenGains.has(entry.gain)) {
+      if (audioContext && !skipGainFade && !seenGains.has(entry.gain)) {
         seenGains.add(entry.gain);
         const result = applyClickFreeStop(entry.gain, audioContext, {
-          // 30ms for a softer full-stop fade (vs the 5ms default used by
-          // mid-loop swaps, which stay snappy for key changes). Still
-          // click-free; just a gentler perceived stop.
-          rampSeconds: 0.03,
+          rampSeconds,
           onError: (err) =>
             logger.debug('stopAllInfiniteAudio: gain ramp failed', { err }),
         });

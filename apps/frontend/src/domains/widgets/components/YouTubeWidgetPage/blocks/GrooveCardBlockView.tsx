@@ -52,14 +52,13 @@ interface GrooveCardBlockViewProps {
   /** Optional bundled-click URL for waitlist mode (02.5d). */
   countdownClickUrl?: string;
   /** Optional outer-card background colour. Forwarded to GrooveCardShell.
-   *  The waitlist surface sets this so the card blends into the marketing
-   *  page; the in-app surface leaves it undefined and gets the default. */
+   *  Both surfaces now share the same default (#100E0D); leave undefined
+   *  unless a specific card needs a one-off background. */
   bg?: string;
-  /** Optional override for the waveform bar colour. The in-app surface
-   *  leaves it undefined and gets `GrooveCardWaveform`'s orange default;
-   *  the waitlist surface passes a warm grey so the demo card sits
-   *  quietly in the marketing layout instead of competing with the
-   *  orange-accented headline. */
+  /** Optional override for the waveform bar colour. Both surfaces share
+   *  `GrooveCardWaveform`'s default (#1f252e) so the card looks identical
+   *  in-app and on the waitlist; pass a value only to override a single
+   *  card. */
   waveformColor?: string;
   /** Optional "before-play" hook forwarded to useGrooveCardPlayback. The
    *  waitlist surface wires `useWaitlistPrewarm.resume()` here so the
@@ -352,6 +351,8 @@ export function GrooveCardBlockView({
         caption={caption}
         clickEnabled={playback.clickEnabled}
         onToggleClick={() => playback.setClickEnabled(!playback.clickEnabled)}
+        masterVolume={playback.masterVolume}
+        onMasterVolumeChange={playback.setMasterVolume}
         onMetronomeHover={(hovering) => {
           if (hovering) clearCapUpsell();
           setHoverHint(hovering ? 'metronome' : null);
@@ -363,6 +364,7 @@ export function GrooveCardBlockView({
             audioContext={playback.audioContext}
             loopStartAudioTime={playback.loopStartAudioTime}
             loopDurationSeconds={playback.loopDurationSeconds}
+            getAudioPhase={playback.getAudioPhase}
             lengthBars={config.lengthBars}
             loopSelection={playback.loopSelection}
             onLoopSelectionChange={playback.setLoopSelection}

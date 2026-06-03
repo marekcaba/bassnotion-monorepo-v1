@@ -56,6 +56,10 @@ function makeGain(): AudioNode {
 }
 
 /** AudioContext stub whose createGain returns spy-able relay nodes. */
+function makePcm(): Float32Array[] {
+  return [new Float32Array(88200), new Float32Array(88200)];
+}
+
 function makeCtx(): AudioContext {
   return {
     currentTime: 0,
@@ -75,7 +79,13 @@ describe('SignalsmithAdapter.disposeNode', () => {
     await adapter.register(ctx as AudioContext);
 
     const gain = makeGain();
-    const relay = adapter.createNode(ctx as AudioContext, gain, 'bass')!;
+    const relay = adapter.createBufferStreamingNode(
+      ctx as AudioContext,
+      gain,
+      makePcm(),
+      2,
+      'bass',
+    )!;
     expect(relay).toBeTruthy();
 
     // Let the async splice resolve so the worklet is live behind the relay.
@@ -101,7 +111,13 @@ describe('SignalsmithAdapter.disposeNode', () => {
     await adapter.register(ctx as AudioContext);
 
     const gain = makeGain();
-    const relay = adapter.createNode(ctx as AudioContext, gain, 'harmony')!;
+    const relay = adapter.createBufferStreamingNode(
+      ctx as AudioContext,
+      gain,
+      makePcm(),
+      2,
+      'harmony',
+    )!;
 
     // Dispose BEFORE the factory promise resolves (simulates stop during
     // the async gap, e.g. rapid play→stop).
@@ -125,7 +141,13 @@ describe('SignalsmithAdapter.disposeNode', () => {
     const adapter = createPitchShiftAdapter(log);
     const ctx = makeCtx();
     await adapter.register(ctx as AudioContext);
-    const relay = adapter.createNode(ctx as AudioContext, makeGain(), 'bass')!;
+    const relay = adapter.createBufferStreamingNode(
+      ctx as AudioContext,
+      makeGain(),
+      makePcm(),
+      2,
+      'bass',
+    )!;
     await Promise.resolve();
     await Promise.resolve();
 
