@@ -882,6 +882,30 @@ export class DrumSlicePlayer {
     return this.loopDuration / (this.ratio || 1);
   }
 
+  /**
+   * Audio-context time of the next loop DOWNBEAT (the loop "one") at or after
+   * `now` — the SINGLE reliable musical seam the drums land on. The drum loop
+   * grid is a STATE (`loopStartTime`) that `setRatio` re-anchors by exact
+   * phase-continuity algebra at every tempo change, so this value is stable
+   * across many incremental tempo clicks (it is NOT re-derived from a read-head
+   * each call). A pending KEY change should quantise to THIS so the re-pitched
+   * bass note lands on the same "one" the drums do (bass/harmony loop the same
+   * musical length from the same T0, so the drum downbeat IS their seam too).
+   *
+   * `loopStartTime` is usually ALREADY one period in the FUTURE (scheduleTick
+   * advances it when it arms an iteration), so we fold it back onto the grid
+   * origin that precedes/contains `now`, then step to the first grid point ≥ now.
+   * Returns null when not playing / no period.
+   */
+  getNextDownbeat(now: number): number | null {
+    const period = this.loopPeriod;
+    if (!this.playing || !(period > 0)) return null;
+    const k = Math.floor((now - this.loopStartTime) / period);
+    let next = this.loopStartTime + k * period; // grid point ≤ now (within ε)
+    while (next < now - 1e-6) next += period; // first grid point ≥ now
+    return next;
+  }
+
   /** Onset time (s) for slice i; the wrap sentinel is the MUSICAL loop end. */
   private onsetAt(i: number): number {
     return i < this.onsets.length ? this.onsets[i]! : this.loopDuration;

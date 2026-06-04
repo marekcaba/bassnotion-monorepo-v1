@@ -2957,13 +2957,41 @@ export class PlaybackEngine implements IAudioStemEngine {
    * (node not resolved / not stretching) so the caller can fall back to its
    * own clock.
    */
-  getStemPlayheadPhase(): number | null {
-    const loopLen = this.stemLoopDurationSeconds;
-    if (loopLen <= 0 || !this.audioContext) return null;
+  /**
+   * The CONTINUOUS, never-stale bass read-head — the single source of truth for
+   * both the visual playhead ({@link getStemPlayheadPhase}) and the key-change
+   * loop-seam math ({@link getStemNextSeamTime}).
+   *
+   * `node.inputTime` is the worklet read-head (buffer seconds), but it's posted
+   * only ~every 8ms (setUpdateInterval 1/120) and carries the WRAPPED value — so
+   * reading it raw near the loop seam can land on the wrong side of the wrap (the
+   * intermittent "key lands a full loop late" bug). We interpolate from the last
+   * posted value using the audio clock (`stamp.inputTime + (now−atTime)×rate`),
+   * which is monotonic-within-loop and never lies across the wrap. The stamp is
+   * refreshed lazily on each call, so any caller polling on its own tick keeps it
+   * fresh (don't rely on the 30fps, count-in-gated waveform RAF).
+   *
+   * Returns the RAW (pre-visual-latency) read-head: `phaseSeconds` (unwrapped
+   * input seconds), the live `rate`, and `loopLen` = the buffer's actual wrap
+   * length (`__bufferDuration`, which can be shorter than stemLoopDurationSeconds
+   * if the PCM is shorter than the musical loop). Returns null when the node
+   * isn't resolved / not stretching.
+   */
+  private getStemReadHead(): {
+    phaseSeconds: number;
+    rate: number;
+    loopLen: number;
+  } | null {
+    if (!this.audioContext) return null;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const relay = this.instrumentStretchNodes.get('audio-bass') as any;
     const sg = relay?.__signalsmith;
     if (!sg || typeof sg.inputTime !== 'number') return null;
+    const loopLen =
+      typeof relay.__bufferDuration === 'number' && relay.__bufferDuration > 0
+        ? relay.__bufferDuration
+        : this.stemLoopDurationSeconds;
+    if (!(loopLen > 0)) return null;
 
     const now = this.audioContext.currentTime;
     // Interpolate from the last posted inputTime using elapsed audio time ×
@@ -2975,15 +3003,37 @@ export class PlaybackEngine implements IAudioStemEngine {
     let phaseSeconds: number;
     let rate =
       typeof relay.__currentRate === 'number' ? relay.__currentRate : 1;
-    if (stamp && stamp.inputTime === sg.inputTime && now >= stamp.atTime) {
-      // Same posted value as last read → advance by elapsed × rate.
+    // The `stamp.rate === rate` guard prevents extrapolating across a rate change
+    // (setRate re-anchors the stamp on a tempo change; this is belt-and-suspenders
+    // so a racing reader never advances input at a stale rate). Same as
+    // PitchShiftAdapter.nextSeamOutputTime.
+    if (
+      stamp &&
+      stamp.inputTime === sg.inputTime &&
+      stamp.rate === rate &&
+      now >= stamp.atTime
+    ) {
+      // Same posted value + same rate → advance by elapsed × rate.
       phaseSeconds = stamp.inputTime + (now - stamp.atTime) * stamp.rate;
       rate = stamp.rate;
     } else {
-      // New posted value (or first read) → re-stamp at this instant.
+      // New posted value / rate change / first read → re-stamp at this instant.
       relay.__phaseStamp = { inputTime: sg.inputTime, atTime: now, rate };
       phaseSeconds = sg.inputTime;
     }
+    return { phaseSeconds, rate, loopLen };
+  }
+
+  getStemPlayheadPhase(): number | null {
+    const loopLen = this.stemLoopDurationSeconds;
+    if (loopLen <= 0 || !this.audioContext) return null;
+    const readHead = this.getStemReadHead();
+    if (!readHead) return null;
+    // The visual playhead wraps on the MUSICAL loop length (stemLoopDurationSeconds),
+    // not the buffer's __bufferDuration — keep the historic behaviour. The raw
+    // continuous read-head + rate come from the shared helper.
+    let phaseSeconds = readHead.phaseSeconds;
+    const rate = readHead.rate;
 
     // VISUAL LATENCY COMPENSATION. `inputTime` is the worklet READ head — where
     // signalsmith reads FROM its buffer — which leads what the listener HEARS by
@@ -3008,6 +3058,95 @@ export class PlaybackEngine implements IAudioStemEngine {
 
     const wrapped = ((phaseSeconds % loopLen) + loopLen) % loopLen;
     return wrapped / loopLen;
+  }
+
+  /**
+   * Wall-clock audio-context time of the NEXT loop seam, read from the bass
+   * stem's ACTUAL signalsmith read-head and scaled by the live stretch rate.
+   *
+   * This is the authoritative seam for quantising a deferred key change. Unlike
+   * the React-state clock the Groove Card hook used to derive it from
+   * (loopStartAudioTime + loopDurationSeconds), this stays correct across a
+   * tempo change: the read-head wraps on a FIXED input-domain buffer length and
+   * the output time it maps to is `inputUntilSeam / rate`, so a live rate change
+   * is reflected immediately. (The hook's React anchor went ~750ms stale after a
+   * tempo change, landing the key swap off the real wrap — old key heard past
+   * the first beat. See PitchShiftAdapter.nextSeamOutputTime.)
+   *
+   * The read-head seam is NOT the visual-latency offset getStemPlayheadPhase()
+   * bakes in. But the raw read-head seam still leads the AUDIBLE downbeat by the
+   * AudioContext→speaker output latency (~100ms): signalsmith's schedule({output})
+   * switches its segment at `currentTime + worklet outputLatency`, but the device
+   * buffer between the worklet and the speaker is NOT accounted for there. So a
+   * key change quantised to the raw read-head seam is HEARD ~outputLatency BEFORE
+   * the downbeat (measured + confirmed by ear: "lands ~100ms before the first
+   * beat"). We push the returned seam LATER by the output latency (× rate) so the
+   * deferred key change emerges ON the audible downbeat. {@link keySeamOffsetOverride}
+   * lets a dev dial the exact value by ear.
+   *
+   * Returns null when not stretching / the read-head isn't known yet (caller
+   * falls back to its own boundary computation).
+   */
+  getStemNextSeamTime(): number | null {
+    if (!this.audioContext || !this.pitchShiftAdapter) return null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const relay = this.instrumentStretchNodes.get('audio-bass') as any;
+    if (!relay) return null;
+    const rate =
+      typeof relay.__currentRate === 'number' ? relay.__currentRate : 1;
+    const readHeadSeam = this.pitchShiftAdapter.nextSeamOutputTime(
+      relay as AudioNode,
+      this.audioContext,
+      rate,
+    );
+    if (readHeadSeam == null) return null;
+    return readHeadSeam + this.getKeySeamAudibleOffset();
+  }
+
+  /**
+   * The offset (seconds) added to the raw read-head loop seam so a deferred key
+   * change is HEARD on the audible downbeat. SINGLE SOURCE OF TRUTH — both
+   * getStemNextSeamTime (used by setKey to quantise the change) AND the
+   * adapter's setRate re-thread (which re-quantises a PENDING change when tempo
+   * changes) must use the SAME value, or a tempo change moves the pending key off
+   * the seam (it was scheduled with this offset, re-quantised without it → flips
+   * a beat early/immediately).
+   *
+   * Why this value (derived from docs/dev-tools/audio-audit/key-seam-sweep.js, a
+   * 54-cell key×tempo sweep timing the audible pitch transition vs the drum kick):
+   *  - The raw read-head seam (output-domain) leads the speaker by the
+   *    AudioContext DEVICE output-buffer latency — downstream of all DSP, which
+   *    signalsmith's schedule({output}) does NOT self-compensate (it only cancels
+   *    its own block latency; it has no reference to audioContext.outputLatency).
+   *  - RATE-INVARIANT: a constant number of wall-clock seconds (a prior `* rate`
+   *    double-scaled it — the seam is already mapped to output via
+   *    inputUntilSeam/rate — drifting ±65ms across ±40 BPM). Pitch-invariant too.
+   *  - PER-DEVICE: read audioContext.outputLatency LIVE (varies 50–150ms across
+   *    wired / Bluetooth / Safari). KEY_SEAM_RESIDUAL corrects the small fixed gap
+   *    between outputLatency and the true audible offset (~−0.04s, measured).
+   *  - setKeySeamOffsetOverride wins for ear-tuning / verification.
+   */
+  private getKeySeamAudibleOffset(): number {
+    if (this.keySeamOffsetOverride != null) {
+      return Math.max(0, this.keySeamOffsetOverride);
+    }
+    const KEY_SEAM_RESIDUAL = -0.04; // measured: outputLatency over-shoots ~40ms
+    const outputLatency =
+      this.audioContext && typeof this.audioContext.outputLatency === 'number'
+        ? this.audioContext.outputLatency
+        : (this.audioContext?.baseLatency ?? 0.1);
+    return Math.max(0, outputLatency + KEY_SEAM_RESIDUAL);
+  }
+
+  /**
+   * DEV ear-tuning: force the key-change seam's audible-downbeat offset (seconds)
+   * instead of the measured signalsmith latency. Pass null to clear and return
+   * to the measured value. Larger = key change LATER (closer to / past the
+   * downbeat); smaller = earlier. Locked by ear at 0.176s (see getStemNextSeamTime).
+   */
+  keySeamOffsetOverride: number | null = null;
+  setKeySeamOffsetOverride(seconds: number | null): void {
+    this.keySeamOffsetOverride = seconds;
   }
 
   /**
@@ -3417,6 +3556,7 @@ export class PlaybackEngine implements IAudioStemEngine {
     instrumentType: AudioInstrumentType,
     ratio: number,
     applyAtAudioTime?: number,
+    keyBoundaryOverride?: number,
   ): void {
     const node = this.instrumentStretchNodes.get(instrumentType);
     if (!node || !this.audioContext || !this.pitchShiftAdapter) return;
@@ -3425,6 +3565,15 @@ export class PlaybackEngine implements IAudioStemEngine {
       ratio,
       this.audioContext,
       applyAtAudioTime,
+      // Pass the SAME audible-downbeat offset getStemNextSeamTime uses, so a
+      // PENDING key change re-quantised here for the new tempo lands on the
+      // identical seam it was originally scheduled at (not ~outputLatency early).
+      this.getKeySeamAudibleOffset(),
+      // The drum loop "one" (already + audible offset). When present, the
+      // re-thread anchors the pending key to THIS instead of re-deriving its own
+      // seam from the read-head — so the key lands exactly where the drums do,
+      // stable across many incremental tempo clicks (the drift fix).
+      keyBoundaryOverride,
     );
   }
 
@@ -3493,12 +3642,30 @@ export class PlaybackEngine implements IAudioStemEngine {
     // Scheduler ratio + drum slice player ratio (re-spaces the slices LIVE;
     // each slice still plays bit-exact at rate 1 — pristine transients). Pivot
     // at the SAME shared time T as bass/harmony so all three flip together.
+    // MUST run BEFORE reading the drum downbeat below — it re-anchors the drum
+    // loop grid at T, so getNextDownbeat reflects the NEW tempo.
     this.setSchedulerTempoRatio(ratio, T);
+
+    // KEY-SEAM ANCHOR: if a key change is PENDING on bass/harmony, it must land on
+    // the loop "one" — the SAME musical downbeat the drums land on. The drum loop
+    // grid (loopStartTime) is a STATE re-anchored by exact phase algebra on every
+    // tempo click, so it's stable across many incremental BPM steps. Re-deriving
+    // the bass key's seam from the read-head each click instead made the key DRIFT
+    // by the click pattern (measured). So we read the drum's next downbeat here
+    // (after the re-anchor above) and pass it as the key boundary — the key then
+    // lands exactly where the drums do, by construction. + the audible-downbeat
+    // offset the key was originally deferred with. null when drums absent → setRate
+    // falls back to its own read-head re-derivation.
+    const drumDownbeat = this.drumSlicePlayer?.getNextDownbeat(now) ?? null;
+    const keyBoundary =
+      drumDownbeat != null
+        ? drumDownbeat + this.getKeySeamAudibleOffset()
+        : undefined;
 
     // bass/harmony rate change scheduled at the SAME T (immediate, not at a
     // loop seam) so all three flip together.
-    this.setStemRate('audio-bass', ratio, T);
-    this.setStemRate('audio-harmony', ratio, T);
+    this.setStemRate('audio-bass', ratio, T, keyBoundary);
+    this.setStemRate('audio-harmony', ratio, T, keyBoundary);
   }
 
   /**

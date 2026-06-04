@@ -739,6 +739,46 @@ describe('useGrooveCardPlayback — pitch-shift scenarios', () => {
       // The tempo the listener hears is unchanged by a key tap.
       expect(result.current.currentBpm).toBe(150);
     });
+
+    it('tempo change THEN key change: the key defers to the engine read-head seam (not a stale React clock)', async () => {
+      // REGRESSION GUARD for the tempo-while-key-pending class. When the engine
+      // exposes the real read-head seam (getStemNextSeamTime), setKey must
+      // quantise to THAT — derived from the live read-head at the new tempo —
+      // not the React-state loopStart/loopDur clock that goes stale after a
+      // tempo change. We mock the engine seam to a known future time and assert
+      // setKey uses it (the boundary == the engine seam, in the future).
+      const ENGINE_SEAM = 5.5; // a future read-head seam the engine reports
+      (engineMock as unknown as Record<string, unknown>).getStemNextSeamTime =
+        vi.fn(() => ENGINE_SEAM);
+      try {
+        const { result } = renderHook(() =>
+          useGrooveCardPlayback({ block: makeConfig(), cardId: 'card-A' }),
+        );
+        await playUntilLooping(result, 1.0);
+
+        // Change tempo first (the case the stale React clock got wrong)...
+        act(() => {
+          result.current.setTempo(150);
+        });
+        resetCalls();
+        // ...then change key. It must quantise to the ENGINE seam.
+        act(() => {
+          result.current.setKey(3);
+        });
+
+        const writes = pitchWrites();
+        expect(writes.length).toBe(2); // bass + harmony
+        writes.forEach((w) => {
+          expect(w.semitones).toBe(3);
+          // The boundary IS the engine read-head seam (future), NOT the React
+          // fallback (loopStart + loopDur), proving the single seam authority.
+          expect(w.boundary).toBe(ENGINE_SEAM);
+        });
+      } finally {
+        delete (engineMock as unknown as Record<string, unknown>)
+          .getStemNextSeamTime;
+      }
+    });
   });
 
   // ── Group 10: Waitlist cap interactions ───────────────────────────────────

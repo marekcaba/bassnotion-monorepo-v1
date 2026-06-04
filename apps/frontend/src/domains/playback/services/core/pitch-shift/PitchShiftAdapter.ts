@@ -144,12 +144,26 @@ export interface PitchShiftAdapter {
    * Set the time-stretch ratio (tempo; 1 = original speed) on a
    * buffer-streaming node, independent of pitch. When `applyAtAudioTime`
    * is in the future the change is scheduled at that boundary. Never throws.
+   *
+   * `seamAudibleOffset` (seconds) is added to a re-quantised PENDING key
+   * change's recomputed seam so it matches the audible-downbeat offset the
+   * change was originally scheduled with (see getStemNextSeamTime); pass the
+   * engine's key-seam offset. Defaults to 0 for callers without a pending key.
+   *
+   * `keyBoundaryOverride` (audio-ctx seconds, already incl. the audible offset)
+   * is the loop "one" a PENDING key should land on — the engine passes the DRUM
+   * downbeat so the key locks to the same musical seam the drums land on, stable
+   * across many incremental tempo clicks. When present (and in the future), the
+   * re-thread uses it directly instead of re-deriving the seam from the read-head
+   * (the re-derivation drifts per click). Omit / null → read-head fallback.
    */
   setRate(
     node: AudioNode,
     rate: number,
     audioContext: AudioContext,
     applyAtAudioTime?: number,
+    seamAudibleOffset?: number,
+    keyBoundaryOverride?: number,
   ): void;
 
   /**
@@ -164,6 +178,23 @@ export interface PitchShiftAdapter {
     audioContext: AudioContext,
     applyAtAudioTime?: number,
   ): void;
+
+  /**
+   * Output-time of the NEXT loop seam at `rate`, read from the node's actual
+   * read-head. A seam is where the read-head (input time) wraps at the buffer
+   * length; that input position is tempo-invariant, but the output time it maps
+   * to scales with the rate (output advances at `rate` per input second).
+   * Returns undefined if the read-head/buffer aren't known yet.
+   *
+   * This is the AUTHORITATIVE next-seam used to quantise deferred key changes
+   * (and the engine exposes it so the Groove Card can schedule a key swap on the
+   * REAL wrap instead of a React-state clock that drifts after a tempo change).
+   */
+  nextSeamOutputTime(
+    node: AudioNode,
+    audioContext: AudioContext,
+    rate: number,
+  ): number | undefined;
 
   /**
    * End-to-end processing latency in seconds, used to delay the dry
@@ -495,15 +526,57 @@ export class SignalsmithAdapter implements PitchShiftAdapter {
     rate: number,
     audioContext: AudioContext,
     applyAtAudioTime?: number,
+    seamAudibleOffset = 0,
+    keyBoundaryOverride?: number,
   ): void {
     const sg = (node as any).__signalsmith;
     if (!sg?.schedule) {
       (node as any).__pendingRate = rate;
       return;
     }
+
+    // Snapshot R_old BEFORE we overwrite __currentRate — the deferred-key seam
+    // re-derivation below needs it (the worklet runs the applyAhead window at the
+    // OLD rate; see the "BLEND" note there).
+    const prevRate =
+      typeof (node as any).__currentRate === 'number'
+        ? (node as any).__currentRate
+        : 1;
+
+    // CONTINUOUS read-head, computed ONCE here at the rate change and reused for
+    // both the stamp re-anchor and the deferred-key seam. We interpolate the
+    // last stamp at the OLD rate up to `now` (the input the worklet has actually
+    // consumed so far). Critically we do NOT then read raw sg.inputTime: that
+    // value is ~8ms-quantized, output-latency-shifted, AND gets overwritten by
+    // every schedule()'s ['time'] post — so re-sampling it on each of many rapid
+    // tempo clicks made the pending key's seam NON-IDEMPOTENT (it drifted by the
+    // click pattern). Using the continuous interpolation keeps the seam stable
+    // across N clicks.
+    const now = audioContext.currentTime;
+    const stampForRead = (node as any).__phaseStamp as
+      | { inputTime: number; atTime: number; rate: number }
+      | undefined;
+    const inputNow =
+      stampForRead &&
+      typeof sg.inputTime === 'number' &&
+      stampForRead.inputTime === sg.inputTime &&
+      now >= stampForRead.atTime
+        ? stampForRead.inputTime + (now - stampForRead.atTime) * stampForRead.rate
+        : typeof sg.inputTime === 'number'
+          ? sg.inputTime
+          : null;
+
     // Track the current rate so the playhead-phase interpolation advances at
     // the right speed between worklet inputTime posts.
     (node as any).__currentRate = rate;
+
+    // Re-anchor the stamp at the rate change: freeze the input position computed
+    // above (at the OLD rate, up to `now`), then advance at the NEW rate forward.
+    // Keeps getStemReadHead / nextSeamOutputTime in one rate domain across the
+    // change (prevents the seam jumping by seconds on a big tempo step).
+    if (inputNow != null) {
+      (node as any).__phaseStamp = { inputTime: inputNow, atTime: now, rate };
+    }
     try {
       // CRITICAL — preserve a pending (seam-deferred) KEY change across a tempo
       // change. signalsmith's schedule() models pitch+rate on ONE segment
@@ -541,10 +614,47 @@ export class SignalsmithAdapter implements PitchShiftAdapter {
       // sound out of sync with the drums. Map "next input-wrap" → output time at
       // the new rate so pitch and the loop wrap stay aligned at any tempo.
       const defSemi = (node as any).__deferredSemitones;
-      if (typeof defSemi === 'number') {
-        const newOut = this.nextSeamOutputTime(node, audioContext, rate);
-        if (typeof newOut === 'number') {
-          (node as any).__deferredSemitonesOutput = newOut;
+      const bufferDuration = (node as any).__bufferDuration;
+      // PREFERRED: anchor the pending key to the DRUM downbeat the engine passed
+      // (keyBoundaryOverride, already incl. the audible offset). The drum loop
+      // grid is a STATE re-anchored by exact algebra each tempo click, so it's
+      // stable across many incremental BPM steps — the key lands exactly where
+      // the drums land. We only re-derive from the read-head (the fallback below)
+      // when no override is available (drums absent), since that re-derivation
+      // drifts by the click pattern.
+      const overrideOk =
+        typeof keyBoundaryOverride === 'number' &&
+        keyBoundaryOverride > rateOutput;
+      const canReadHead =
+        inputNow != null &&
+        typeof bufferDuration === 'number' &&
+        bufferDuration > 0;
+      if (typeof defSemi === 'number' && (overrideOk || canReadHead)) {
+        let newOut: number;
+        if (overrideOk) {
+          newOut = keyBoundaryOverride as number;
+        } else {
+          // FALLBACK — re-derive the seam for the NEW rate from the CONTINUOUS
+          // read-head (inputNow) computed above — NOT a fresh raw sg.inputTime
+          // read (that re-sampling is what made it drift per click).
+          const r = rate > 0 ? rate : 1;
+          const rOld = prevRate > 0 ? prevRate : 1;
+          const inputInLoop =
+            ((inputNow! % bufferDuration) + bufferDuration) % bufferDuration;
+          const inputUntilSeam = bufferDuration - inputInLoop;
+          // BLEND: the worklet runs the applyAhead window [now, rateOutput) at the
+          // OLD rate, then the NEW rate. The true output seam is
+          //   rateOutput + (inputUntilSeam − (rateOutput − now)·rOld) / r
+          // (charging the whole inputUntilSeam at the new rate from `now` landed
+          // it 0.02·(1 − rOld/r) off — sign by tempo direction).
+          const applyAheadSec = Math.max(0, rateOutput - now);
+          const rawSeam =
+            rateOutput + (inputUntilSeam - applyAheadSec * rOld) / r;
+          // + the audible-downbeat offset the key was originally deferred with.
+          newOut = rawSeam + seamAudibleOffset;
+        }
+        (node as any).__deferredSemitonesOutput = newOut;
+        {
           // Re-insert the deferred key WITHOUT disturbing the rate segment just
           // scheduled above, and WITHOUT applying the key now. signalsmith's
           // schedule keys two things off `outputTime`: (1) it POPS segments with
@@ -578,23 +688,75 @@ export class SignalsmithAdapter implements PitchShiftAdapter {
    * (input time) wraps at `bufferDuration`; that input position is tempo-
    * invariant, but the output time it maps to scales with the rate. Returns
    * undefined if the read-head/buffer aren't known yet.
+   *
+   * CONTINUOUS read-head: `sg.inputTime` is posted by the worklet only ~every 8ms
+   * (setUpdateInterval 1/120) and carries the WRAPPED value, so reading it raw
+   * near the seam can land on the wrong side of the wrap → `inputUntilSeam` ≈ a
+   * FULL bufferDuration → the boundary lands a whole loop late (the intermittent
+   * "key plays through the next loop's first beat" bug). We interpolate from the
+   * last posted value using the audio clock — the SAME `__phaseStamp` the engine's
+   * getStemReadHead writes — which is monotonic-within-loop and never lies across
+   * the wrap. We then refresh the stamp here too, so this path keeps it fresh even
+   * if nothing else is polling the read-head this tick.
+   *
+   * SEAM-IMMINENT GUARD: the continuous interpolation already disambiguates which
+   * side of the wrap we're on (it advances monotonically; only the modulo wraps),
+   * so a genuine "just wrapped, full loop to go" reads correctly as ~bufferDuration
+   * away — we must NOT snap that to now. The ONLY ambiguous case left is "about to
+   * wrap" (inputUntilSeam ≈ 0): the seam is genuinely imminent, so snap it to now
+   * (clamped to now+ε by the caller) rather than risk a tiny-positive value that a
+   * sub-ms clock jitter could flip to a full loop.
    */
-  private nextSeamOutputTime(
+  nextSeamOutputTime(
     node: AudioNode,
     audioContext: AudioContext,
     rate: number,
   ): number | undefined {
-    const sg = (node as any).__signalsmith;
-    const bufferDuration = (node as any).__bufferDuration;
+    const relay = node as any;
+    const sg = relay.__signalsmith;
+    const bufferDuration = relay.__bufferDuration;
     if (!sg || typeof sg.inputTime !== 'number' || !bufferDuration) {
       return undefined;
     }
     const r = rate > 0 ? rate : 1;
+    const now = audioContext.currentTime;
+
+    // Continuous interpolated read-head (shared __phaseStamp logic). The
+    // `stamp.rate === r` guard is defense-in-depth against extrapolating the
+    // INPUT position with a stale rate while dividing the OUTPUT by the new rate
+    // (setRate re-anchors the stamp at a rate change, but if a reader ever races
+    // ahead of that, this forces a fresh stamp rather than a multi-second seam).
+    const stamp = relay.__phaseStamp as
+      | { inputTime: number; atTime: number; rate: number }
+      | undefined;
+    let inputSeconds: number;
+    if (
+      stamp &&
+      stamp.inputTime === sg.inputTime &&
+      stamp.rate === r &&
+      now >= stamp.atTime
+    ) {
+      inputSeconds = stamp.inputTime + (now - stamp.atTime) * stamp.rate;
+    } else {
+      relay.__phaseStamp = { inputTime: sg.inputTime, atTime: now, rate: r };
+      inputSeconds = sg.inputTime;
+    }
+
     const inputInLoop =
-      ((sg.inputTime % bufferDuration) + bufferDuration) % bufferDuration;
-    const inputUntilSeam = bufferDuration - inputInLoop;
+      ((inputSeconds % bufferDuration) + bufferDuration) % bufferDuration;
+    let inputUntilSeam = bufferDuration - inputInLoop;
+
+    // SEAM-IMMINENT GUARD: only the "about to wrap" case (inputUntilSeam ≈ 0). The
+    // interpolation already places a just-wrapped read-head correctly ~a full loop
+    // away, so we must NOT collapse that. A near-zero inputUntilSeam means the seam
+    // is genuinely now → snap to now (caller clamps to now+ε).
+    const guardInputSeconds = (1 / 120) * r * 1.5; // ~1.5 post intervals, scaled
+    if (inputUntilSeam <= guardInputSeconds) {
+      inputUntilSeam = 0;
+    }
+
     // output time advances at `rate` per input second.
-    return audioContext.currentTime + inputUntilSeam / r;
+    return now + inputUntilSeam / r;
   }
 
   setSemitones(
