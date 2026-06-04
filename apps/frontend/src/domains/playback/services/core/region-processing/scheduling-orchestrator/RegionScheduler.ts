@@ -285,10 +285,17 @@ export class RegionScheduler {
     this.stemLoopDurationSeconds = seconds > 0 ? seconds : 0;
   }
 
-  /** Time-stretch (LAUNCH-06): signalsmith's audible latency (s). bass/harmony
-   *  play THROUGH signalsmith so their audio emerges this much AFTER their
-   *  scheduled start; we pull their START earlier by this so the audible
-   *  output lands on the drum grid. Set by PlaybackEngine once measured. */
+  /** Time-stretch (LAUNCH-06): signalsmith's reported latency (s), set by
+   *  PlaybackEngine once measured.
+   *
+   *  NOTE: this value is NO LONGER used to offset stem START times. The offline
+   *  onset meter (docs/dev-tools/audio-audit/onset-meter.js) measured that
+   *  signalsmith emits its first buffer-streamed sample AT its scheduled start
+   *  (no start-latency), so pulling the start earlier by this dragged the whole
+   *  stem ensemble ahead of the count-in beat-5. Stems now arm at raw T0. The
+   *  field/setter remain because PlaybackEngine still feeds them (seed + async
+   *  refine + the dev ear-tuning override); kept for that telemetry path and in
+   *  case a future steady-state/visual use needs the measured value. */
   setStretchLatency(seconds: number): void {
     this.stretchLatencySeconds = seconds > 0 ? seconds : 0;
   }
@@ -1033,16 +1040,6 @@ export class RegionScheduler {
     // collapses iter 0/1/2 onto the same time, producing a 14s gap until
     // onended refills. Shifting once here preserves the WINDOW spread.
     const T0 = Math.max(requestedT0, audioContext.currentTime);
-    // eslint-disable-next-line no-console
-    console.log('[TS-T0]', {
-      stemKey,
-      transportStartTime: Number(transportStartTime.toFixed(3)),
-      regionStartTime: Number(region.startTime.toFixed(3)),
-      requestedT0: Number(requestedT0.toFixed(3)),
-      now: Number(audioContext.currentTime.toFixed(3)),
-      T0: Number(T0.toFixed(3)),
-      clampedToNow: T0 > requestedT0,
-    });
 
     // Time-stretch (LAUNCH-06): self-looping buffer-streaming source branch.
     // bass/harmony run as ONE signalsmith node that plays its own buffer and
@@ -1053,16 +1050,23 @@ export class RegionScheduler {
     const selfLooping = this.selfLoopingSources.get(stemKey);
     if (selfLooping) {
       const offset = region.loopSlice ? region.loopSlice.startSeconds : 0;
-      // LATENCY ALIGNMENT: bass/harmony play THROUGH the signalsmith worklet,
-      // which buffers ~one processing window before it emits — so a source told
-      // to start at T0 doesn't make sound until T0 + stretchLatencySeconds,
-      // dragging behind the (zero-latency) drum grid. Because the stems are
-      // fully-loaded buffers on a known timeline, we compensate at schedule time
-      // by STARTING THEM EARLIER by exactly that latency, so their first sample
-      // emerges ON T0 with the drums. Clamp to now+ε so the very first play
-      // (T0 ≈ now + lookahead) can't ask for a past start.
-      const pulled = T0 - this.stretchLatencySeconds;
-      const startAt = Math.max(audioContext.currentTime + 0.005, pulled);
+      // LATENCY ALIGNMENT — corrected from OFFLINE MEASUREMENT
+      // (docs/dev-tools/audio-audit/onset-meter.js, which taps each stem's real
+      // gain-node output and records its first-sample audio-context time).
+      //
+      // The old code pulled every self-looping stem EARLIER by
+      // stretchLatencySeconds, on the theory that the signalsmith worklet emits
+      // ~that-much AFTER its scheduled start. The meter proved that FALSE at the
+      // start of buffer-streaming: at 133 BPM (L=0.13) all three stems — drums
+      // (zero-latency slice player) AND bass/harmony (signalsmith) — emitted
+      // their first sample at IDENTICAL times ≈ T0 − L, i.e. ~125 ms BEFORE T0,
+      // ahead of the count-in's beat-5 click. signalsmith.start(when) emits at
+      // `when`; there is no start-latency to compensate. So the pull was pure
+      // error that dragged the WHOLE ensemble early (the reported "groove comes
+      // in before the count" symptom). Start every stem at raw T0 so they emit
+      // together on the beat-5 grid with the click. Clamp to now+ε so the very
+      // first play (T0 ≈ now + lookahead) can't ask for a past start.
+      const startAt = Math.max(audioContext.currentTime + 0.005, T0);
       try {
         selfLooping.start(startAt, offset);
       } catch (err) {
@@ -1080,7 +1084,6 @@ export class RegionScheduler {
         stemKey,
         T0,
         startAt,
-        latencyPulled: this.stretchLatencySeconds,
         offset,
         loopSlice: region.loopSlice ?? null,
       });
