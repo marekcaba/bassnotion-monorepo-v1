@@ -544,10 +544,30 @@ export function useGrooveCardPlayback({
       loopDurationOverride?: number,
     ): number | undefined => {
       const ctx = audioContextRef.current;
-      const loopDur = loopDurationOverride ?? loopDurationSeconds;
-      if (!isPlaying || !ctx || loopStartAudioTime == null || loopDur <= 0) {
-        return undefined;
+      if (!isPlaying || !ctx) return undefined;
+
+      // PRIMARY: read the REAL next loop seam off the bass stem's signalsmith
+      // read-head (scaled by the live stretch rate). This is correct across a
+      // tempo change — the read-head wraps on a fixed input-domain buffer length
+      // and its output time is inputUntilSeam/rate. The React-state fallback
+      // below (loopStartAudioTime + loopDur) goes ~750ms stale right after a
+      // tempo change, which landed key swaps off the real wrap (old key heard
+      // past the first beat). Skip the engine seam only when a caller forces an
+      // explicit loopDurationOverride (none do today — see the dead-code note on
+      // the param) or the read-head isn't available yet.
+      if (loopDurationOverride == null) {
+        const engineSeam =
+          WindowRegistry.getPlaybackEngine()?.getStemNextSeamTime?.() ?? null;
+        if (engineSeam != null) {
+          return Math.max(ctx.currentTime + 0.001, engineSeam - preRollSeconds);
+        }
       }
+
+      // FALLBACK (engine read-head unavailable, or override forced): the
+      // React-state clock. Honest about its limitation — only reliable when the
+      // tempo hasn't changed since loopStartAudioTime was last re-anchored.
+      const loopDur = loopDurationOverride ?? loopDurationSeconds;
+      if (loopStartAudioTime == null || loopDur <= 0) return undefined;
       const elapsed = ctx.currentTime - loopStartAudioTime;
       const completedLoops = elapsed <= 0 ? 0 : Math.ceil(elapsed / loopDur);
       const naturalSeamTime = loopStartAudioTime + completedLoops * loopDur;
@@ -976,67 +996,20 @@ export function useGrooveCardPlayback({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loopSelection, isPlaying]);
 
-  // LAUNCH-02.5c key-shift, slice-mode branch.
-  //
-  // The standard key-swap path in setKey() calls
-  // engine.rearmFutureIterationsForRegions, which tears down +
-  // re-arms the WINDOW=3 pre-armed iterations. That mechanism is the
-  // FAST path: it brings the audible swap to ~1 iter of latency.
-  //
-  // It does NOT work in bar-range loop-slice mode. Slice playback uses
-  // native AudioBufferSourceNode.loop = true with a single source; there
-  // is no per-iteration onended refill and rearmFutureIterations
-  // explicitly skips slice entries (see RegionScheduler.ts). So for
-  // slice mode we fall back to the same boundary-aligned
-  // stopAudioStems + registerStemTracks pattern the loop-selection swap
-  // effect above uses. The transport / metronome / count-in keep
-  // running uninterrupted; only the stem source gets replaced — and
-  // because registerStemTracks rebuilds buffers via the latest
-  // currentSemitones (through the resolver-aware path), the new bass +
-  // harmony key takes effect. Drums get a no-op re-arm against the
-  // same default buffer at the boundary — inaudible because it's
-  // bar-aligned and the buffer doesn't change.
-  //
-  // Gating notes (same shape as the loop-selection effect):
-  //  - Only fire when slice mode is active and we're playing.
-  //  - Only fire on an actual change in pendingKeyShift (a ref tracks
-  //    the previous value) so we don't re-fire on every render.
-  //  - The non-slice path is handled in setKey directly and does NOT
-  //    trip this effect (loopSelection is null there).
-  const prevPendingKeyShiftRef = useRef<number | null>(null);
-  useEffect(() => {
-    const prev = prevPendingKeyShiftRef.current;
-    prevPendingKeyShiftRef.current = pendingKeyShift;
-    if (prev === pendingKeyShift) return;
-    if (pendingKeyShift === null) return; // settle, not a swap request
-    if (loopSelection == null) return; // non-slice handled by rearm path
-    if (!isPlaying) return;
-    const ctx = audioContextRef.current;
-    if (!ctx || loopStartAudioTime == null) return;
-    const bpm = Math.max(1, currentBpm);
-    const barDuration = (60 / bpm) * 4; // seconds per bar in 4/4
-    const elapsed = ctx.currentTime - loopStartAudioTime;
-    const boundaryBars = elapsed < 0 ? 0 : Math.ceil(elapsed / barDuration);
-    const nextBoundary =
-      loopStartAudioTime + Math.max(0, boundaryBars) * barDuration;
-    const delayMs = Math.max(0, (nextBoundary - ctx.currentTime) * 1000);
-
-    const id = setTimeout(() => {
-      const engine = WindowRegistry.getPlaybackEngine();
-      if (!engine) return;
-      // Seamless boundary swap (see loop-selection effect): rampSeconds:0 so
-      // the new key's loop re-armed into the same gain isn't faded out.
-      engine.stopAudioStems?.({ rampSeconds: 0 });
-      registerStemTracks();
-    }, delayMs);
-
-    return () => clearTimeout(id);
-    // Limited deps for the same reason as the loop-selection effect:
-    // currentBpm / loopStartAudioTime tick every beat. registerStemTracks
-    // closes over the latest loopSelection + buffers; the effect only
-    // needs to react to pendingKeyShift transitions while in slice mode.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingKeyShift, loopSelection, isPlaying]);
+  // NOTE (Ableton-grade key seam, LAUNCH-06+): there used to be a SEPARATE
+  // slice-mode key-swap effect here that, on a key change while a bar-range
+  // loop-slice was active, did a boundary-aligned stopAudioStems +
+  // registerStemTracks. It was redundant AND latently broken: in slice mode
+  // bass/harmony STILL play through the ONE signalsmith self-looping node (the
+  // slice only sets the start offset), so setKey's
+  // engine.setInstrumentPitchShift('audio-bass'/'audio-harmony', residual,
+  // boundary) already applies the key on that live node — at the read-head seam,
+  // independent of the slice. The re-register instead TORE DOWN and rebuilt the
+  // worklet at key 0 (the new key only survived by racing onto the old node
+  // before teardown), introducing a seam glitch and a latent default-key
+  // regression. Removed: setKey handles slice mode identically to whole-groove
+  // now. (The loop-SELECTION swap effect above — gated on the bar RANGE changing
+  // — stays; that re-arms the source when the range itself changes.)
 
   // ── play / pause / stop --------------------------------------------------
   // The transport clock alone produces no sound: only PlaybackEngine.start()
