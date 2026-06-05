@@ -5,6 +5,8 @@
 .env.*.local
 .env
 .env.test
+.env.staging
+.env.production
 
 # TypeScript compilation artifacts
 *.d.ts
