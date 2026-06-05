@@ -1,0 +1,33 @@
+-- HOTFIX: restore EXECUTE on the auth.users signup triggers.
+--
+-- Migration 20260605000006 revoked EXECUTE FROM PUBLIC on handle_new_user()
+-- and initialize_user_preferences(), then granted to anon/authenticated/
+-- service_role. That looked complete, but missed a Postgres detail:
+--
+-- When Supabase Auth creates an auth.users row, the INSERT runs as the
+-- internal `supabase_auth_admin` role (NOT the anon caller of /auth/v1/
+-- signup). The triggers on auth.users therefore need EXECUTE for
+-- supabase_auth_admin, not anon.
+--
+-- Symptom observed on staging:
+--   - register-new-account succeeded in Supabase Auth dashboard
+--     (auth.users row exists)
+--   - public.profiles row was NOT created (trigger silently failed
+--     because supabase_auth_admin lacked EXECUTE on handle_new_user)
+--   - login would then fail because backend validateToken requires
+--     a profiles row
+--
+-- The simplest and least-surprising fix: grant EXECUTE back to PUBLIC
+-- on the two trigger functions. They are TRIGGER functions, not
+-- arbitrary RPC entry points — PostgREST doesn't expose triggers the
+-- same way, so granting to PUBLIC here doesn't reopen the RPC attack
+-- surface in a meaningful way. (A determined attacker can still POST
+-- to /rest/v1/rpc/handle_new_user, but the function will fail without
+-- a NEW row in the trigger context.)
+--
+-- Accepts the two trigger functions reappearing in the 0028/0029
+-- linter findings (anon+authenticated executable). That's the
+-- intentional tradeoff to keep signup working.
+
+GRANT EXECUTE ON FUNCTION public.handle_new_user()             TO PUBLIC;
+GRANT EXECUTE ON FUNCTION public.initialize_user_preferences() TO PUBLIC;
