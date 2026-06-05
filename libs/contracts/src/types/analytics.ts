@@ -22,6 +22,12 @@ export const funnelEventNames = [
   'landing_view',
   'waitlist_submitted',
   'founder_interest_click',
+  // Drill panel (Bassicology core practice loop). Keyed by the same
+  // anonymous_id, so a conquer joins back to the source video.
+  'drill_started',
+  'cap_hit',
+  'groove_conquered',
+  'first_win',
 ] as const;
 
 export type FunnelEventName = (typeof funnelEventNames)[number];

@@ -4,41 +4,40 @@
  */
 
 import { getLogger } from '@/utils/logger.js';
+import { WindowRegistry } from '../services/WindowRegistry.js';
 
 const logger = getLogger('audioContext');
 
 /**
  * Get the persistent audio context
  * This context is shared across the entire application to prevent
- * AudioBuffer incompatibility errors and connection issues
+ * AudioBuffer incompatibility errors and connection issues.
+ *
+ * SINGLE SOURCE OF TRUTH: this now resolves through
+ * `WindowRegistry.getAudioContext()` (which reads
+ * `__bassnotion_audioContext || __persistentAudioContext` — both kept in
+ * sync by setAudioContext). We no longer mint a context here; that was the
+ * second creator that let the engine's context diverge from the live one.
+ * Tone's own context is kept only as a last-ditch read fallback (it is
+ * pointed at the canonical context by ToneWrapper.initialize anyway).
  */
 export function getPersistentAudioContext(): AudioContext | null {
   if (typeof window === 'undefined') {
     return null;
   }
 
-  // Check for the persistent context stored by AudioEngine
-  const persistentContext = window.__persistentAudioContext;
-  if (persistentContext && persistentContext.state !== 'closed') {
-    return persistentContext;
+  // Canonical: whatever the registry holds (engine/AudioContextManager on
+  // /app, the raw prewarm context on the waitlist). setAudioContext now
+  // aliases both globals, so this and the engine always agree.
+  const registryContext = WindowRegistry.getAudioContext();
+  if (registryContext && registryContext.state !== 'closed') {
+    return registryContext;
   }
 
-  // Fallback: Check AudioEngine's global context
-  const AudioEngine = window.__AudioEngine as
-    | { globalContext?: AudioContext }
-    | undefined;
-  if (
-    AudioEngine &&
-    AudioEngine.globalContext &&
-    AudioEngine.globalContext.state !== 'closed'
-  ) {
-    return AudioEngine.globalContext;
-  }
-
-  // Fallback: Check Tone.js context
+  // Last-ditch read fallback: Tone.js's native context. Read-only — do NOT
+  // construct here. If Tone is pointed somewhere live we can reuse it.
   const Tone = window.Tone;
   if (Tone && Tone.context) {
-    // Get the native AudioContext from Tone's wrapper
     const toneContext =
       Tone.context._context ||
       Tone.context._nativeAudioContext ||
@@ -66,7 +65,10 @@ export async function getOrCreatePersistentAudioContext(): Promise<AudioContext>
     return existing;
   }
 
-  // If we must create a new context, store it as persistent
+  // Last-resort creation. Should be rare: on /app the AudioContextManager
+  // creates+registers the context before any play; on the waitlist the
+  // prewarm hook does. This path only fires if a consumer reaches here before
+  // either ran (and nothing live exists in the registry or Tone).
   logger.warn(
     '⚠️ Creating new AudioContext - this should only happen once during app initialization',
   );
@@ -78,8 +80,10 @@ export async function getOrCreatePersistentAudioContext(): Promise<AudioContext>
     sampleRate: 48000,
   });
 
-  // Store as persistent context
-  window.__persistentAudioContext = context;
+  // Publish through the registry so BOTH globals (__bassnotion_audioContext
+  // and __persistentAudioContext) alias this one instance — never write only
+  // the legacy key (that was the original divergence source).
+  WindowRegistry.setAudioContext(context);
 
   // Resume if needed
   if (context.state === 'suspended') {

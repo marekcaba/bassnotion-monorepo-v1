@@ -576,4 +576,91 @@ describe('RegionScheduler — infinite audio regions (pre-arm)', () => {
     expect(deps.sources.length).toBe(WINDOW + 1);
     expect(deps.sources[WINDOW]!.start).toHaveBeenCalledWith(12.0, 0);
   });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // SELF-LOOPING STRETCH SOURCES — arm at raw T0, NO stretch-latency pull.
+  //
+  // REGRESSION GUARD for the count-in seam: the old code started self-looping
+  // stems at `T0 − stretchLatencySeconds`, assuming the signalsmith worklet
+  // emits ~that-late. The offline onset meter
+  // (docs/dev-tools/audio-audit/onset-meter.js) measured the stems' real
+  // gain-node output: with that pull every stem (drums slice player AND
+  // bass/harmony worklet) emitted ~125ms BEFORE T0 — ahead of the count-in's
+  // beat-5 click. signalsmith.start(when) emits AT `when`. So stems must arm at
+  // raw T0; this test fails if the `− stretchLatency` pull is ever reintroduced.
+  // ──────────────────────────────────────────────────────────────────────────
+
+  interface MockSelfLoopingSource {
+    start: ReturnType<typeof vi.fn>;
+    stop: ReturnType<typeof vi.fn>;
+    applyRate: ReturnType<typeof vi.fn>;
+    applySemitones: ReturnType<typeof vi.fn>;
+  }
+
+  function createMockSelfLoopingSource(): MockSelfLoopingSource {
+    return {
+      start: vi.fn(),
+      stop: vi.fn(),
+      applyRate: vi.fn(() => true),
+      applySemitones: vi.fn(() => true),
+    };
+  }
+
+  function setupSelfLoopingDeps(): ScheduleAllDeps {
+    const deps = setupDeps();
+    const { stemBuffer, stemGain } = deps;
+    // The self-looping branch returns early unless getStem(stemKey) is truthy.
+    deps.audioStemAccess.getStem = vi.fn((stemKey: string) =>
+      stemKey === 'bass' || stemKey === 'drums' || stemKey === 'harmony'
+        ? { buffer: stemBuffer, input: stemGain, gain: stemGain }
+        : null,
+    );
+    return deps;
+  }
+
+  function addStemTrack(
+    deps: ScheduleAllDeps,
+    stem: 'bass' | 'drums' | 'harmony',
+  ): void {
+    deps.tracks.set(`card-1-${stem}`, {
+      instrumentType: `audio-${stem}`,
+      regions: [
+        { id: `region-${stem}`, startTime: 0, duration: 8, loopCount: 0 },
+      ],
+    });
+  }
+
+  it('self-looping: ALL stems arm at raw T0 even with a non-zero stretchLatency (no early pull)', () => {
+    const deps = setupSelfLoopingDeps();
+    // A latency that, under the OLD code, would have pulled starts to T0−0.13.
+    deps.scheduler.setStretchLatency(0.13);
+
+    const sources = {
+      bass: createMockSelfLoopingSource(),
+      drums: createMockSelfLoopingSource(),
+      harmony: createMockSelfLoopingSource(),
+    };
+    deps.scheduler.setSelfLoopingSource('bass', sources.bass as any);
+    deps.scheduler.setSelfLoopingSource('drums', sources.drums as any);
+    deps.scheduler.setSelfLoopingSource('harmony', sources.harmony as any);
+    addStemTrack(deps, 'bass');
+    addStemTrack(deps, 'drums');
+    addStemTrack(deps, 'harmony');
+
+    // T0 well in the future so no start hits the now+ε clamp.
+    const T0 = 10.0;
+    callScheduleAll(deps, T0);
+
+    // Every stem starts at exactly T0 — NOT T0 − 0.13. They emit together on
+    // the count-in's beat-5 grid (the onset meter measured this == T0).
+    for (const stem of ['bass', 'drums', 'harmony'] as const) {
+      expect(sources[stem].start).toHaveBeenCalledTimes(1);
+      expect(sources[stem].start.mock.calls[0]![0]).toBeCloseTo(T0, 6);
+      // And explicitly NOT the old pulled value.
+      expect(sources[stem].start.mock.calls[0]![0]).not.toBeCloseTo(
+        T0 - 0.13,
+        4,
+      );
+    }
+  });
 });

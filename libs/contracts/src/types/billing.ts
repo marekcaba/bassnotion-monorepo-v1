@@ -21,14 +21,22 @@ export interface LeverCap {
 }
 
 /**
- * Four lever surfaces the Groove Card exposes. Naming intentionally
- * matches the lever vocabulary in LAUNCH-02 so the same identifiers
- * thread through analytics, copy decks, and entitlement responses.
+ * Lever surfaces the Groove Card exposes. Naming intentionally matches the
+ * lever vocabulary in LAUNCH-02 so the same identifiers thread through
+ * analytics, copy decks, and entitlement responses.
+ *
+ * - tempo / transpose: band levers — when capped, `limit` is the ± range the
+ *   user may move AROUND the groove's default (e.g. ±5 BPM, ±2 semitones).
+ * - mute: never capped in the current model (the headline AHA — take the seat).
+ * - loopRange: bar-range looping (drag-select). Capped = whole-groove loop only;
+ *   uncapped = loop any bar range. Whole-groove loop is always free.
+ * - deconstruction: stem/element isolation drilling (Pack-gated).
  */
 export interface LeverCaps {
   tempo: LeverCap;
   mute: LeverCap;
   transpose: LeverCap;
+  loopRange: LeverCap;
   deconstruction: LeverCap;
 }
 

@@ -1,22 +1,20 @@
 /**
- * useEntitlement — LAUNCH-02.5c stub.
+ * useEntitlement — the single source of truth for free-vs-member lever caps
+ * on the Groove Card / drill panel.
  *
- * Returns a hard-coded `tier: 'member'` with all four lever caps un-capped.
- * Wired into every cap-relevant control handler on the Groove Card so
- * LAUNCH-02 can swap in the real backed-by-server implementation without
- * touching any caller.
+ * Tier is derived from real access:
+ *   - member  (active subscription) → all levers uncapped.
+ *   - everyone else (anonymous OR signed-in free account) → the UNPAID_CAPS
+ *     profile (tempo ±5, transpose ±2, mute free, bar-range loop locked,
+ *     deconstruction locked). Anonymous and free play identically — only
+ *     persistence (the save/conquer account gate) differs, handled elsewhere.
  *
- * Discipline: NO inline `isMember` checks anywhere else in the card. NO
- * scattered tier logic. This is the single source.
+ * Discipline: NO inline `isMember` checks anywhere else in the card. This is
+ * the single source. The `/billing/access` query only runs when authenticated
+ * (anonymous users skip it and resolve to UNPAID_CAPS).
  *
- * Why `'member'` not `'free'`: the card ships before LAUNCH-02 builds the
- * caps. If the stub returned `'free'`, the card's controls would silently
- * behave as if capped while nothing actually caps them — confusing for QA.
- * `'member'` keeps the card behaving the way LAUNCH-02 will make it
- * behave for paying members.
- *
- * Query-key shape supports a future `grooveId` parameter for LAUNCH-06
- * per-pack entitlements (e.g. user owns Funk Vol. 1 but not Bridge).
+ * Tests can still override the whole response via setEntitlementMock(...).
+ * Query-key/`grooveId` is reserved for LAUNCH-06 per-pack entitlements.
  */
 
 import { useCallback, useMemo, useState } from 'react';
@@ -26,6 +24,10 @@ import type {
   LeverCap,
   LeverCaps,
 } from '@bassnotion/contracts';
+
+import { useAuth } from '@/domains/user/hooks/use-auth';
+
+import { useUserAccess } from './useBilling';
 
 export interface UseEntitlementOptions {
   /** Optional groove-id scope. Reserved for LAUNCH-06; ignored today. */
@@ -52,7 +54,41 @@ const ALL_LEVERS_UNCAPPED: LeverCaps = {
   tempo: { isCapped: false, message: '' },
   mute: { isCapped: false, message: '' },
   transpose: { isCapped: false, message: '' },
+  loopRange: { isCapped: false, message: '' },
   deconstruction: { isCapped: false, message: '' },
+};
+
+/**
+ * The "unpaid" cap profile — shared by anonymous visitors AND signed-in free
+ * accounts (they play identically; only persistence differs). The wall each
+ * cap teaches IS the membership pitch.
+ *
+ * - tempo: movable ±5 BPM around the groove's default.
+ * - transpose: movable ±2 semitones.
+ * - mute: NEVER capped — muting the bass ("take the seat") is the headline AHA.
+ * - loopRange: whole-groove loop is free; selecting a bar range is members-only.
+ * - deconstruction: stem/element drilling is Pack-gated.
+ */
+const UNPAID_CAPS: LeverCaps = {
+  tempo: {
+    isCapped: true,
+    limit: 5,
+    message: 'Members get the full 40–200 tempo dial',
+  },
+  mute: { isCapped: false, message: '' },
+  transpose: {
+    isCapped: true,
+    limit: 2,
+    message: 'Members play all 12 keys',
+  },
+  loopRange: {
+    isCapped: true,
+    message: 'Members loop any bar infinitely',
+  },
+  deconstruction: {
+    isCapped: true,
+    message: 'Drill the layers with a Groove Pack',
+  },
 };
 
 /**
@@ -66,10 +102,10 @@ const ENTITLEMENT_MOCK: { response: EntitlementResponse | null } = {
   response: null,
 };
 
-function defaultResponse(): EntitlementResponse {
+function responseForMember(isMember: boolean): EntitlementResponse {
   return {
-    tier: 'member',
-    caps: ALL_LEVERS_UNCAPPED,
+    tier: isMember ? 'member' : 'free',
+    caps: isMember ? ALL_LEVERS_UNCAPPED : UNPAID_CAPS,
     fetchedAt: new Date().toISOString(),
   };
 }
@@ -79,17 +115,27 @@ export function useEntitlement(
 ): UseEntitlementReturn {
   const { enabled = true } = options;
 
+  const { isAuthenticated, isReady } = useAuth();
+
+  // The /billing/access endpoint requires auth — only query it once we know
+  // the visitor is signed in. Anonymous visitors skip it and resolve to the
+  // unpaid profile (same playing power as a free account).
+  const { data: access, isLoading: accessLoading } = useUserAccess(
+    enabled && isReady && isAuthenticated,
+  );
+
   // refetch toggle lets tests force a re-read of the mock without a full
-  // remount. LAUNCH-02's real implementation will swap this for a
-  // useQuery({ queryKey: ['entitlement', grooveId] }) call.
+  // remount.
   const [refetchCount, setRefetchCount] = useState(0);
 
   const response = useMemo<EntitlementResponse | null>(() => {
     if (!enabled) return null;
-    // Tests can override via setEntitlementMock(...).
     void refetchCount; // include in deps so refetch() forces recompute
-    return ENTITLEMENT_MOCK.response ?? defaultResponse();
-  }, [enabled, refetchCount]);
+    // Tests can override the whole response via setEntitlementMock(...).
+    if (ENTITLEMENT_MOCK.response) return ENTITLEMENT_MOCK.response;
+    const isMember = access?.hasActiveSubscription ?? false;
+    return responseForMember(isMember);
+  }, [enabled, refetchCount, access?.hasActiveSubscription]);
 
   const refetch = useCallback(() => {
     setRefetchCount((n) => n + 1);
@@ -99,10 +145,22 @@ export function useEntitlement(
     setRefetchCount((n) => n + 1);
   }, []);
 
-  if (!enabled || !response) {
+  // Loading only while we genuinely don't know the tier yet: enabled, auth
+  // resolved to "signed in", and the access query still in flight. Anonymous
+  // users are never "loading" — they're definitively unpaid.
+  const isResolving =
+    enabled &&
+    isReady &&
+    isAuthenticated &&
+    accessLoading &&
+    !ENTITLEMENT_MOCK.response;
+
+  if (!enabled || !response || isResolving) {
+    // Default to the SAFE (capped) profile while resolving — never flash
+    // member-level access to a user we haven't confirmed is a member.
     return {
       tier: 'free',
-      caps: ALL_LEVERS_UNCAPPED,
+      caps: UNPAID_CAPS,
       isLoading: true,
       error: null,
       refetch,
@@ -165,11 +223,13 @@ export function freeTierCappedResponse(
   return {
     tier: 'free',
     caps: {
-      tempo: partial.tempo ?? cap('Upgrade to push tempo past ±10 BPM', 10),
-      mute: partial.mute ?? cap('Upgrade to mute stems individually'),
-      transpose: partial.transpose ?? cap('Upgrade to transpose past ±2', 2),
+      tempo: partial.tempo ?? cap('Members get the full 40–200 tempo dial', 5),
+      // Mute is never capped in the current model; tests can still override.
+      mute: partial.mute ?? { isCapped: false, message: '' },
+      transpose: partial.transpose ?? cap('Members play all 12 keys', 2),
+      loopRange: partial.loopRange ?? cap('Members loop any bar infinitely'),
       deconstruction:
-        partial.deconstruction ?? cap('Upgrade for stem deconstruction'),
+        partial.deconstruction ?? cap('Drill the layers with a Groove Pack'),
     },
     fetchedAt: new Date().toISOString(),
   };

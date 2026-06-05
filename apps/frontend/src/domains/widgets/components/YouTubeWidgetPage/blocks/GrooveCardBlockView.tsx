@@ -12,8 +12,14 @@
  * shape doesn't).
  */
 
-import { useCallback, useMemo, useState } from 'react';
-import type { TutorialBlock } from '@bassnotion/contracts';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useParams } from 'next/navigation';
+import type {
+  TutorialBlock,
+  GrooveCardBlockConfig,
+  DrillCompletionResult,
+  MasteryTier,
+} from '@bassnotion/contracts';
 import { useGrooveCardPlayback } from './groove-card/useGrooveCardPlayback';
 import { useGrooveCardKeyboard } from './groove-card/useGrooveCardKeyboard';
 import { GrooveCardShell } from './groove-card/GrooveCardShell';
@@ -25,12 +31,27 @@ import {
   HOVER_HINTS,
   type HoverHintKey,
 } from './groove-card/captions';
+import { useEntitlement } from '@/domains/billing/hooks/useEntitlement';
+import {
+  UpgradePitchContent,
+  type UpgradeLever,
+} from '@/domains/billing/components/UpgradePitch';
+import { Popover, PopoverAnchor } from '@/shared/components/ui/popover';
+import { trackEvent } from '@/shared/attribution/events';
+import { useAuth } from '@/domains/user/hooks/use-auth';
+import { useDrill } from '@/domains/drill/stores/useDrillStore';
+import { ConquerOutcome } from '@/domains/drill/components/ConquerOutcome';
+import { SaveAccountGate } from '@/domains/drill/components/SaveAccountGate';
+import { useGroove } from '@/domains/drill/hooks/useGrooveLibrary';
+import { useDrillCriterion } from '@/domains/drill/hooks/useDrillCriterion';
 
 interface GrooveCardBlockViewProps {
   block: TutorialBlock<'groove-card'>;
   isActive: boolean;
   isCompleted: boolean;
-  onComplete: (blockId: string) => void;
+  /** BlockRenderer binds this to (data?) => markBlockComplete(block.id, data);
+   *  the brick passes its completion payload, the block id is added upstream. */
+  onComplete: (data?: Record<string, unknown>) => void;
   onNext: () => void;
   /** Optional rendering mode. The waitlist surface (02.5d) passes
    *  'waitlist' to swap the audio bootstrap; default is 'block'. */
@@ -38,30 +59,127 @@ interface GrooveCardBlockViewProps {
   /** Optional bundled-click URL for waitlist mode (02.5d). */
   countdownClickUrl?: string;
   /** Optional outer-card background colour. Forwarded to GrooveCardShell.
-   *  The waitlist surface sets this so the card blends into the marketing
-   *  page; the in-app surface leaves it undefined and gets the default. */
+   *  Both surfaces now share the same default (#100E0D); leave undefined
+   *  unless a specific card needs a one-off background. */
   bg?: string;
-  /** Optional override for the waveform bar colour. The in-app surface
-   *  leaves it undefined and gets `GrooveCardWaveform`'s orange default;
-   *  the waitlist surface passes a warm grey so the demo card sits
-   *  quietly in the marketing layout instead of competing with the
-   *  orange-accented headline. */
+  /** Optional override for the waveform bar colour. Both surfaces share
+   *  `GrooveCardWaveform`'s default (#1f252e) so the card looks identical
+   *  in-app and on the waitlist; pass a value only to override a single
+   *  card. */
   waveformColor?: string;
   /** Optional "before-play" hook forwarded to useGrooveCardPlayback. The
    *  waitlist surface wires `useWaitlistPrewarm.resume()` here so the
    *  prewarm's AudioContext is resumed inside the user-gesture window. */
   onBeforePlay?: () => Promise<void> | void;
+  /** When true, the card enforces the free-vs-member lever caps from
+   *  useEntitlement (tempo ±5, transpose ±2, bar-range loop locked for the
+   *  unpaid tier) and surfaces the upsell + fires cap_hit on the band edge.
+   *  The drill surface on /app opts in; the marketing/tutorial surfaces
+   *  leave it off (default) so their existing behaviour is untouched. */
+  enableCaps?: boolean;
 }
 
 export function GrooveCardBlockView({
   block,
+  isCompleted,
   mode = 'block',
   countdownClickUrl,
   bg,
   waveformColor,
   onBeforePlay,
+  onComplete,
+  // onNext intentionally unused: drill bricks advance via the player's reactive
+  // auto-advance effect (driven by onComplete → optimistic unlock), not a
+  // self-fired scroll. Kept in the props interface for the BlockRenderer wiring.
+  enableCaps = false,
 }: GrooveCardBlockViewProps) {
-  const config = block.config;
+  const rawConfig = block.config;
+
+  // LIBRARY RESOLUTION: when the block references a groove by id, fetch the
+  // library entity and build an EFFECTIVE config = the groove's intrinsic
+  // fields (stems/title/bpm/key/length) + this block's per-use overrides
+  // (keyOverride/tempoOverride) + the drill fields kept on the block
+  // (role/timeboxMinutes). Inline (legacy) blocks have no grooveId and use
+  // rawConfig as-is. The fetch is skipped for inline blocks.
+  const { data: groove } = useGroove(rawConfig.grooveId);
+
+  const config: GrooveCardBlockConfig = useMemo(() => {
+    // Inline (legacy) block: ensure intrinsic fields always have safe defaults
+    // so downstream (playback hook, controls) never sees undefined.
+    const withDefaults = (c: GrooveCardBlockConfig): GrooveCardBlockConfig => ({
+      ...c,
+      title: c.title ?? '',
+      subtitle: c.subtitle ?? '',
+      originalBpm: c.originalBpm ?? 100,
+      originalKey: c.originalKey ?? 'E',
+      lengthBars: c.lengthBars ?? 4,
+      stems: c.stems ?? { bass: '', drums: '', harmony: '' },
+    });
+
+    if (!rawConfig.grooveId) return withDefaults(rawConfig);
+    if (!groove) return withDefaults(rawConfig); // reference still loading
+    return withDefaults({
+      ...rawConfig,
+      title: groove.name,
+      subtitle: groove.subtitle,
+      originalBpm: rawConfig.tempoOverride ?? groove.originalBpm,
+      originalKey: groove.originalKey,
+      lengthBars: groove.lengthBars,
+      stems: groove.stems,
+      youtubeUrl: rawConfig.youtubeUrl ?? groove.youtubeUrl,
+    });
+  }, [rawConfig, groove]);
+
+  // A groove card becomes a DRILL BRICK when its config carries a `role`
+  // (groove/connecting/review) OR a `completionCriterion`. Drill bricks enforce
+  // caps and show the ConquerOutcome bar (conquer / "I'm done" / release valve),
+  // which is what advances the session. Plain tutorial/marketing cards have
+  // neither and just play. NOTE: must match isDrillBrickBlock in
+  // domains/drill/utils/drillBricks.ts — a criterion-only card (no role) still
+  // needs its completion control, else the student is stranded with no button.
+  const isDrillBrick =
+    config.role != null || config.completionCriterion != null;
+  // Caps apply on the whole in-app surface (mode 'block'): every groove card a
+  // free user plays in /app is part of the capped free wall (tempo ±5 /
+  // transpose ±2 / loop-range / deconstruction), and the cap is the upgrade
+  // pitch. Members resolve uncapped. The separate marketing/waitlist card
+  // (WaitlistGrooveCard, its own component) is untouched — it has its own hard
+  // engine cap, not the entitlement band. `enableCaps`/`isDrillBrick` remain as
+  // explicit opt-ins for any non-block surface that wants the band.
+  const capsEnabled = mode === 'block' || enableCaps || isDrillBrick;
+
+  // Entitlement caps — member → uncapped, anonymous/free → the unpaid band.
+  const { caps } = useEntitlement({ enabled: capsEnabled });
+
+  // Transient upsell caption shown when a capped lever hits its band edge.
+  const [capUpsell, setCapUpsell] = useState<string | null>(null);
+  // The cap is the pitch: the bumped lever (null = closed) drives an in-flow
+  // popover anchored to that control. Keeps playback running — no modal. Only
+  // the anchorable levers (no 'generic') ever set it.
+  const [pitchLever, setPitchLever] = useState<Exclude<
+    UpgradeLever,
+    'generic'
+  > | null>(null);
+
+  const onCapHit = useCallback(
+    (lever: 'tempo' | 'transpose' | 'loopRange') => {
+      setCapUpsell(caps[lever]?.message ?? '');
+      setPitchLever(lever);
+      trackEvent('cap_hit', { lever, grooveId: block.id });
+    },
+    [caps, block.id],
+  );
+
+  const playbackCaps = useMemo(() => {
+    if (!capsEnabled) return undefined;
+    return {
+      tempoLimit: caps.tempo.isCapped ? caps.tempo.limit : undefined,
+      transposeLimit: caps.transpose.isCapped
+        ? caps.transpose.limit
+        : undefined,
+      loopRangeCapped: caps.loopRange.isCapped,
+    };
+  }, [capsEnabled, caps]);
 
   const playback = useGrooveCardPlayback({
     block: config,
@@ -69,7 +187,22 @@ export function GrooveCardBlockView({
     mode,
     countdownClickUrl,
     onBeforePlay,
+    caps: playbackCaps,
+    onCapHit: capsEnabled ? onCapHit : undefined,
   });
+
+  // PER-USE key override: when a drill reference sets keyOverride, apply it as
+  // the starting transpose once the card is ready (once per mount).
+  const keyOverrideApplied = useRef(false);
+  useEffect(() => {
+    if (keyOverrideApplied.current) return;
+    if (!playback.isReady) return;
+    const k = rawConfig.keyOverride;
+    if (k != null && k !== 0) {
+      playback.setKey(k);
+    }
+    keyOverrideApplied.current = true;
+  }, [playback.isReady, playback.setKey, rawConfig.keyOverride, playback]);
 
   const onPlayPause = useCallback(() => {
     if (playback.isPlaying) {
@@ -86,6 +219,121 @@ export function GrooveCardBlockView({
     () => playback.setStemMuted('audio-bass', !isBassMuted),
     [playback, isBassMuted],
   );
+
+  // ── Drill brick: criterion → Next-unlock → advance ──────────────────────
+  const { isAuthenticated, isReady } = useAuth();
+  const drill = useDrill();
+  // A drill renders at /app/tutorials/[slug]; read the slug so a pending
+  // (anonymous) completion can persist to the right tutorial after signup.
+  const routeParams = useParams<{ slug?: string }>();
+  const sessionSlug =
+    typeof routeParams?.slug === 'string' ? routeParams.slug : '';
+  const [conqueredTier, setConqueredTier] = useState<MasteryTier | null>(null);
+  const [gateOpen, setGateOpen] = useState(false);
+
+  // The brick's completion criterion (from config; absent on plain cards).
+  const criterion = config.completionCriterion;
+  // Measured criteria (time/loops) report live progress + isMet; conquer/manual
+  // are driven by the buttons below, not measured.
+  const criterionRuntime = useDrillCriterion(
+    isDrillBrick ? criterion : undefined,
+    { isPlaying: playback.isPlaying, getAudioPhase: playback.getAudioPhase },
+  );
+
+  // Fire drill_started once when a brick mounts (joins to the source video
+  // via the shared anonymous_id).
+  useEffect(() => {
+    if (!isDrillBrick) return;
+    trackEvent('drill_started', { grooveId: block.id, role: config.role });
+  }, [isDrillBrick, block.id, config.role]);
+
+  // Shared completion: persist the result + advance. Authenticated → persist
+  // straight through (onComplete carries the data payload now that the seam is
+  // fixed). Anonymous → stash for replay + open the account gate, still advance
+  // so the drill never dead-ends.
+  const completeBrick = useCallback(
+    (result: DrillCompletionResult, achievedTier: MasteryTier | null) => {
+      const data = {
+        result,
+        criterion: criterion?.type,
+        achievedTier,
+        at: new Date().toISOString(),
+      };
+      // No scroll here — the player auto-advances reactively once onComplete
+      // marks this brick done + unlocks the next block (see the drill
+      // auto-advance effect in YouTubeWidgetPage). A single action advances.
+      if (isReady && isAuthenticated) {
+        onComplete(data);
+      } else {
+        drill.setPendingCompletion({
+          tutorialSlug: sessionSlug,
+          blockId: block.id,
+          result,
+          criterion: criterion?.type,
+          achievedTier,
+          at: data.at,
+        });
+        setGateOpen(true);
+        onComplete(data);
+      }
+    },
+    [
+      criterion?.type,
+      isReady,
+      isAuthenticated,
+      onComplete,
+      drill,
+      block.id,
+      sessionSlug,
+    ],
+  );
+
+  // Conquer (self-report clean pass) → achieved tier = the brick's target.
+  const handleConquer = useCallback(() => {
+    const tier: MasteryTier = criterion?.targetTier ?? 'bronze';
+    setConqueredTier(tier);
+    drill.markConquered(block.id, tier);
+    trackEvent('groove_conquered', {
+      grooveId: block.id,
+      role: config.role,
+      tier,
+      proxy: 'self_report',
+    });
+    if (isReady && isAuthenticated) {
+      trackEvent('first_win', { grooveId: block.id, tier });
+    }
+    completeBrick('conquered', tier);
+  }, [
+    criterion?.targetTier,
+    drill,
+    block.id,
+    config.role,
+    isReady,
+    isAuthenticated,
+    completeBrick,
+  ]);
+
+  // Time/loops/manual met → mark done + advance.
+  const handleCriterionDone = useCallback(() => {
+    drill.markConquered(block.id, 'done');
+    trackEvent('groove_conquered', {
+      grooveId: block.id,
+      role: config.role,
+      criterion: criterion?.type,
+      result: 'completed',
+    });
+    completeBrick('completed', null);
+  }, [drill, block.id, config.role, criterion?.type, completeBrick]);
+
+  // Release valve: "too hard — lay it anyway" → advance with a released result.
+  const handleStepDown = useCallback(() => {
+    trackEvent('groove_conquered', {
+      grooveId: block.id,
+      role: config.role,
+      result: 'released',
+    });
+    completeBrick('released', null);
+  }, [block.id, config.role, completeBrick]);
 
   // Keyboard shortcuts: ←/→ transpose (setKey), Space play/pause
   // (onPlayPause), M mute/unmute bass (setStemMuted). Each routes through
@@ -113,6 +361,8 @@ export function GrooveCardBlockView({
   //   4. previewCaption (admin override) or the baked default.
   // Admin-authored block config wins over baked defaults for (3) and (4).
   const caption = useMemo(() => {
+    // A fresh cap-hit upsell wins briefly — it's the teaching moment.
+    if (capUpsell) return capUpsell;
     if (hoverHint) return HOVER_HINTS[hoverHint];
     if (playback.isPlaying) return 'Playing…';
 
@@ -126,6 +376,7 @@ export function GrooveCardBlockView({
     if (playback.currentBpm !== config.originalBpm) return pick('tempo-change');
     return config.previewCaption ?? DEFAULT_PREVIEW_CAPTION;
   }, [
+    capUpsell,
     hoverHint,
     config,
     isBassMuted,
@@ -134,6 +385,10 @@ export function GrooveCardBlockView({
     playback.currentBpm,
     playback.pendingKeyShift,
   ]);
+
+  // Clear the transient cap-hit upsell once the user moves on (hovers a
+  // control or starts/stops playback) so it doesn't pin the caption.
+  const clearCapUpsell = useCallback(() => setCapUpsell(null), []);
 
   // Read-only metadata line under the title — just the length in bars.
   // The original key is already surfaced by the live key stepper in the
@@ -171,21 +426,46 @@ export function GrooveCardBlockView({
         caption={caption}
         clickEnabled={playback.clickEnabled}
         onToggleClick={() => playback.setClickEnabled(!playback.clickEnabled)}
-        onMetronomeHover={(hovering) =>
-          setHoverHint(hovering ? 'metronome' : null)
-        }
+        masterVolume={playback.masterVolume}
+        onMasterVolumeChange={playback.setMasterVolume}
+        onMetronomeHover={(hovering) => {
+          if (hovering) clearCapUpsell();
+          setHoverHint(hovering ? 'metronome' : null);
+        }}
         waveform={
-          <GrooveCardWaveform
-            isPlaying={playback.isPlaying}
-            bassBuffer={playback.bassBuffer}
-            audioContext={playback.audioContext}
-            loopStartAudioTime={playback.loopStartAudioTime}
-            loopDurationSeconds={playback.loopDurationSeconds}
-            lengthBars={config.lengthBars}
-            loopSelection={playback.loopSelection}
-            onLoopSelectionChange={playback.setLoopSelection}
-            color={waveformColor}
-          />
+          // The loop-range cap fires from a bar drag ON the waveform, so its
+          // pitch anchors HERE (not the controls row). Own Popover, open only
+          // for the loopRange lever — pops next to the bars the user selected.
+          <Popover
+            open={pitchLever === 'loopRange'}
+            onOpenChange={(o) => {
+              if (!o) setPitchLever(null);
+            }}
+          >
+            <PopoverAnchor asChild>
+              <div>
+                <GrooveCardWaveform
+                  isPlaying={playback.isPlaying}
+                  bassBuffer={playback.bassBuffer}
+                  audioContext={playback.audioContext}
+                  loopStartAudioTime={playback.loopStartAudioTime}
+                  loopDurationSeconds={playback.loopDurationSeconds}
+                  getAudioPhase={playback.getAudioPhase}
+                  lengthBars={config.lengthBars}
+                  loopSelection={playback.loopSelection}
+                  onLoopSelectionChange={playback.setLoopSelection}
+                  color={waveformColor}
+                />
+              </div>
+            </PopoverAnchor>
+            {pitchLever === 'loopRange' && (
+              <UpgradePitchContent
+                lever="loopRange"
+                message={capUpsell ?? undefined}
+                side="bottom"
+              />
+            )}
+          </Popover>
         }
         controls={
           <GrooveCardControls
@@ -206,10 +486,64 @@ export function GrooveCardBlockView({
             onSoloDrums={(solo) =>
               playback.setStemSolo(solo ? 'audio-drums' : null)
             }
-            onHoverHint={setHoverHint}
+            onDeconCapHit={() => {
+              setPitchLever('deconstruction');
+              trackEvent('cap_hit', {
+                lever: 'deconstruction',
+                grooveId: block.id,
+              });
+            }}
+            onHoverHint={(hint) => {
+              if (hint) clearCapUpsell();
+              setHoverHint(hint);
+            }}
+            enforceCaps={capsEnabled}
+            lockSettings={isDrillBrick}
+            // loopRange anchors to the WAVEFORM (handled above), not the
+            // controls row — so the controls popover ignores it.
+            pitchLever={pitchLever === 'loopRange' ? null : pitchLever}
+            onPitchOpenChange={(open) => {
+              if (!open) setPitchLever(null);
+            }}
+            pitchContent={
+              pitchLever && pitchLever !== 'loopRange' ? (
+                <UpgradePitchContent
+                  lever={pitchLever}
+                  message={capUpsell ?? undefined}
+                />
+              ) : null
+            }
           />
         }
       />
+
+      {isDrillBrick && (
+        <>
+          <ConquerOutcome
+            criterionType={criterion?.type}
+            progress={criterionRuntime.progress}
+            isMet={criterionRuntime.isMet}
+            // "Done" derives from the SERVER (isCompleted), not the persisted
+            // store — clearing block_completions must un-stick the card. The
+            // store's conquered map only supplies the tier DETAIL for display,
+            // and conqueredTier is the just-now optimistic value before the
+            // server round-trip lands.
+            doneTier={
+              conqueredTier ??
+              (isCompleted ? (drill.conquered[block.id] ?? 'done') : null)
+            }
+            isReady={playback.isReady}
+            onConquer={handleConquer}
+            onCriterionDone={handleCriterionDone}
+            onStepDown={handleStepDown}
+          />
+          <SaveAccountGate
+            open={gateOpen}
+            onOpenChange={setGateOpen}
+            grooveName={config.title}
+          />
+        </>
+      )}
     </div>
   );
 }

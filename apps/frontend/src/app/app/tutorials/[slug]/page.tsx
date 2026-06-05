@@ -5,6 +5,9 @@ import { YouTubeWidgetPage } from '@/domains/widgets/components/YouTubeWidgetPag
 import { TutorialPageSkeleton } from '@/domains/widgets/components/YouTubeWidgetPage/TutorialPageSkeleton';
 import { useTutorialExercises } from '@/domains/widgets/hooks/useTutorialExercises';
 import { PageErrorBoundary } from '@/shared/components/ErrorBoundary';
+import { useConquerReplay } from '@/domains/drill/hooks/useConquerReplay';
+import { isDrillTutorial } from '@/domains/drill/utils/drillBricks';
+import { DrillSessionFrame } from '@/domains/drill/components/DrillSessionFrame';
 // NOTE: ScrollTriggerLoader removed - act-aware preloading now handled by useActAwarePreload in YouTubeWidgetPage
 
 interface PlatformTutorialPageProps {
@@ -18,6 +21,12 @@ export default function PlatformTutorialPage({
 }: PlatformTutorialPageProps) {
   const resolvedParams = React.use(params);
   const tutorialSlug = resolvedParams.slug;
+
+  // Drill bricks (groove cards with a `role`) can be conquered anonymously;
+  // this flushes any pending pre-signup conquer into the progress record once
+  // the user is authenticated. No-op for ordinary tutorials (no pending
+  // conquer), so it's safe to run on every tutorial page.
+  useConquerReplay();
 
   const { tutorial, exercises, isLoading, error } =
     useTutorialExercises(tutorialSlug);
@@ -50,15 +59,28 @@ export default function PlatformTutorialPage({
     );
   }
 
+  // A drill is a tutorial whose blocks are drill bricks (task / drill-tagged
+  // groove-card). Drills get the session frame (opening plan → run → summary);
+  // ordinary tutorials render the player directly, unchanged.
+  const isDrill = isDrillTutorial(memoizedTutorial);
+
   return (
     <>
       <PageErrorBoundary pageName="Platform Tutorial">
-        <YouTubeWidgetPage
-          tutorialData={memoizedTutorial}
-          tutorialSlug={tutorialSlug}
-          exercises={memoizedExercises}
-          hideChrome
-        />
+        {isDrill && memoizedTutorial ? (
+          <DrillSessionFrame
+            tutorial={memoizedTutorial}
+            tutorialSlug={tutorialSlug}
+            exercises={memoizedExercises ?? []}
+          />
+        ) : (
+          <YouTubeWidgetPage
+            tutorialData={memoizedTutorial ?? undefined}
+            tutorialSlug={tutorialSlug}
+            exercises={memoizedExercises}
+            hideChrome
+          />
+        )}
       </PageErrorBoundary>
     </>
   );

@@ -15,6 +15,7 @@ import { StorageModule } from './infrastructure/storage/storage.module.js';
 import { HealthModule } from './health/health.module.js';
 import { BillingModule } from './domains/billing/billing.module.js';
 import { PatternsModule } from './domains/patterns/patterns.module.js';
+import { GroovesModule } from './domains/grooves/grooves.module.js';
 import { SocialModule } from './domains/social/social.module.js';
 import { AssessmentModule } from './domains/assessment/assessment.module.js';
 import { JourneyModule } from './domains/journey/journey.module.js';
@@ -43,6 +44,7 @@ import { LoggingModule } from './infrastructure/logging/logging.module.js';
     HealthModule,
     BillingModule,
     PatternsModule,
+    GroovesModule,
     SocialModule,
     AssessmentModule, // Entrance assessment quiz
     JourneyModule, // Learning journey system

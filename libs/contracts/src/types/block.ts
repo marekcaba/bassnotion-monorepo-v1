@@ -22,7 +22,8 @@ export type BlockType =
   | 'groove-card'
   | 'text'
   | 'celebration'
-  | 'explain';
+  | 'explain'
+  | 'task';
 
 /** Video overlay modes for Video blocks */
 export type VideoOverlayType =
@@ -258,6 +259,73 @@ export interface GrooveCardStateCaptions {
 }
 
 /**
+ * A groove brick's role inside a DRILL session (the "bricklayer" flow):
+ *   - 'groove'     — the new skill to conquer (the spotlight brick)
+ *   - 'connecting' — a chord-to-chord link ("same brick, different face")
+ *   - 'review'     — a past groove re-served to chase the next tier
+ * When present, the card behaves as a drill brick: free-vs-member caps are
+ * enforced and conquering it advances the session. Absent on plain
+ * tutorial/marketing groove cards (they just play).
+ */
+export type GrooveBrickRole = 'groove' | 'connecting' | 'review';
+
+/**
+ * Mastery tier earned/targeted on a conquer. v1 ships 'bronze'; silver/gold
+ * arrive with real scoring (the Bridge). Contract-level home so both the
+ * block config and the frontend drill store share one definition.
+ */
+export type MasteryTier = 'bronze' | 'silver' | 'gold';
+
+/**
+ * What a drill block measures to count as "done" (the "result"). Exactly one
+ * per block. When met, the brick's Next button unlocks (student taps; no
+ * auto-advance). Every brick also offers a release valve ("too hard → lay it
+ * anyway") that advances with a `released` result.
+ *   - 'time'    — practice for `target` minutes (groove brick: only while
+ *                 playing; task block: wall-clock)
+ *   - 'loops'   — play the loop `target` times (groove bricks)
+ *   - 'conquer' — a clean pass to `targetTier` (self-report v1; Bridge later)
+ *   - 'manual'  — the student taps "I'm done"
+ */
+export type DrillCriterionType = 'time' | 'loops' | 'conquer' | 'manual';
+
+export interface DrillCompletionCriterion {
+  type: DrillCriterionType;
+  /** 'time' → minutes; 'loops' → loop count. Ignored for conquer/manual. */
+  target?: number;
+  /** 'conquer' only — the tier the author prescribes as this brick's goal. */
+  targetTier?: MasteryTier;
+}
+
+/**
+ * How a drill brick completion ended. Written into `block_completions.data`.
+ *   - 'conquered' — passed the conquer criterion (carries achievedTier)
+ *   - 'completed' — met a time/loops/manual criterion
+ *   - 'released'  — advanced via the "too hard" release valve (laid, not won)
+ */
+export type DrillCompletionResult = 'conquered' | 'completed' | 'released';
+
+/**
+ * The payload a drill brick writes into `block_completions.data` (JSONB) when
+ * the student completes it, and reads back to render the session summary.
+ * Both the groove brick (GrooveCardBlockView) and the task block
+ * (TaskBlockView) write exactly this shape.
+ *
+ * Stored loosely (the column is free-form JSONB), so every field is optional on
+ * read — old rows, or non-drill block_completions, won't carry it.
+ */
+export interface DrillCompletionData {
+  /** How the brick ended. Absent on non-drill completions. */
+  result?: DrillCompletionResult;
+  /** Which criterion was in play (undefined for plain cards / no criterion). */
+  criterion?: DrillCriterionType;
+  /** Tier reached for a 'conquered' result; null otherwise. */
+  achievedTier?: MasteryTier | null;
+  /** ISO timestamp the student completed it (client clock). */
+  at?: string;
+}
+
+/**
  * Configuration for a `'groove-card'` block. Stored in the existing
  * JSONB `blocks` column on `tutorials` — no DB migration.
  *
@@ -271,7 +339,21 @@ export interface GrooveCardStateCaptions {
  * cross-key stitching cliff at offsets ±2 / ±6.
  */
 export interface GrooveCardBlockConfig {
-  /** Display title (e.g. "Greasy Pocket") */
+  /** LIBRARY REFERENCE (preferred): id of a row in `groove_library`. When set,
+   *  the intrinsic fields (title/subtitle/originalBpm/originalKey/lengthBars/
+   *  stems) are RESOLVED from the library entity and the inline copies below
+   *  are optional/ignored. Lets one groove be authored once and reused across
+   *  many drills. Absent on legacy inline blocks (which carry their own
+   *  intrinsic fields). */
+  grooveId?: string;
+  /** PER-USE OVERRIDE: starting key (semitone offset from the groove's
+   *  originalKey) for THIS reference. Only meaningful with `grooveId`. */
+  keyOverride?: number;
+  /** PER-USE OVERRIDE: starting tempo (BPM) for THIS reference. Only
+   *  meaningful with `grooveId`. */
+  tempoOverride?: number;
+  /** Display title (e.g. "Greasy Pocket"). Optional when `grooveId` is set
+   *  (resolved from the library); required for legacy inline blocks. */
   title: string;
   /** Short tag (e.g. "Funk in E") */
   subtitle: string;
@@ -283,7 +365,8 @@ export interface GrooveCardBlockConfig {
   /** Groove length in bars; the engine loops the stems indefinitely. */
   lengthBars: number;
   /** The single stem set delivered at `originalKey`. Bass + harmony are
-   *  pitch-shifted at runtime; drums + click are not. */
+   *  pitch-shifted at runtime; drums + click are not. Resolved from the
+   *  library when `grooveId` is set. */
   stems: GrooveCardStemSet;
   /** Caption shown beneath the waveform when nothing is happening. */
   previewCaption?: string;
@@ -293,6 +376,35 @@ export interface GrooveCardBlockConfig {
   allowBookmark?: boolean;
   /** Optional YouTube video URL or 11-char ID rendered above the card. */
   youtubeUrl?: string;
+  /** DRILL: this brick's role in a session. Presence turns the card into a
+   *  drill brick (caps enforced, conquering advances the session). Absent on
+   *  ordinary tutorial/marketing cards. */
+  role?: GrooveBrickRole;
+  /** DRILL: the per-brick timebox in minutes (the "5 min" clock). Drives the
+   *  session clock + the rail segment. Optional; absent = untimed.
+   *  NOTE: distinct from a `'time'` completionCriterion — timeboxMinutes is the
+   *  display/clock hint; the criterion's `target` is the completion threshold.
+   *  When both exist, the criterion target is authoritative for completion. */
+  timeboxMinutes?: number;
+  /** DRILL: how this brick completes (time/loops/conquer/manual). Presence (or
+   *  `role`) makes the card a drill brick. Absent on plain tutorial cards. */
+  completionCriterion?: DrillCompletionCriterion;
+}
+
+/**
+ * Configuration for a `'task'` block — a no-audio drill brick: instruction
+ * text + a completion criterion (usually a wall-clock timer). The free-tier
+ * staple ("practice C major triads for 5 min"); the student plays their own
+ * instrument while the timer runs. No groove, no stems, no playback.
+ */
+export interface TaskBlockConfig {
+  /** The thing to practice, e.g. "Practice C major scale triads, slowly." */
+  instruction: string;
+  /** Optional short heading above the instruction. */
+  heading?: string;
+  /** How the task completes — typically `{ type: 'time', target }` (wall-clock)
+   *  but `'manual'` is also valid. */
+  completionCriterion: DrillCompletionCriterion;
 }
 
 // =====================================================
@@ -307,6 +419,7 @@ export interface BlockConfigMap {
   text: TextBlockConfig;
   celebration: CelebrationBlockConfig;
   explain: ExplainBlockConfig;
+  task: TaskBlockConfig;
 }
 
 // =====================================================
@@ -337,6 +450,7 @@ export type GrooveCardBlock = TutorialBlock<'groove-card'>;
 export type TextBlock = TutorialBlock<'text'>;
 export type CelebrationBlock = TutorialBlock<'celebration'>;
 export type ExplainBlock = TutorialBlock<'explain'>;
+export type TaskBlock = TutorialBlock<'task'>;
 
 /** Union of all concrete block types */
 export type AnyBlock =
@@ -346,7 +460,8 @@ export type AnyBlock =
   | GrooveCardBlock
   | TextBlock
   | CelebrationBlock
-  | ExplainBlock;
+  | ExplainBlock
+  | TaskBlock;
 
 // =====================================================
 // Block Progress Tracking
@@ -357,6 +472,9 @@ export interface BlockProgress {
   blockId: string;
   completed: boolean;
   completedAt?: string;
-  /** Block-type-specific progress data */
-  data?: Record<string, unknown>;
+  /**
+   * Block-type-specific completion payload. For drill bricks this is a
+   * {@link DrillCompletionData} (result / criterion / achievedTier / at).
+   */
+  data?: DrillCompletionData;
 }

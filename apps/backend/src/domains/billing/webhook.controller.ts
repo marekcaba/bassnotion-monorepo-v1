@@ -15,6 +15,7 @@ import Stripe from 'stripe';
 
 import { StripeService } from './services/stripe.service.js';
 import { ResendService } from './services/resend.service.js';
+import { MembershipService } from './services/membership.service.js';
 import { SubscriptionRepository } from './repositories/subscription.repository.js';
 import { PurchaseRepository } from './repositories/purchase.repository.js';
 import { FounderMemberRepository } from './repositories/founder-member.repository.js';
@@ -31,6 +32,7 @@ export class WebhookController {
     private readonly founderMemberRepository: FounderMemberRepository,
     private readonly resendService: ResendService,
     private readonly configService: ConfigService,
+    private readonly membershipService: MembershipService,
   ) {}
 
   /**
@@ -191,12 +193,20 @@ export class WebhookController {
     }
 
     if (!resolvedUserId) {
-      // Try to get from customer metadata
+      // Try an existing subscription row keyed by customer.
       const existingByCustomer =
         await this.subscriptionRepository.findByStripeCustomerId(customerId);
       if (existingByCustomer) {
         resolvedUserId = existingByCustomer.userId;
       }
+    }
+
+    if (!resolvedUserId) {
+      // Final fallback: the Stripe customer's metadata.user_id (always stamped
+      // by getOrCreateCustomer). Covers first-ever subscriptions whose own
+      // metadata didn't carry user_id.
+      resolvedUserId =
+        (await this.stripeService.getCustomerUserId(customerId)) ?? undefined;
     }
 
     if (!resolvedUserId) {
@@ -438,7 +448,10 @@ export class WebhookController {
       {
         email,
         fullName,
-        stripeCustomerId: (session.customer as string) ?? '',
+        // null (not '') when the checkout created no Customer — honest data.
+        // Payment Links only create a Customer with customer_creation:'always';
+        // for older/one-time guest charges this stays null rather than blank.
+        stripeCustomerId: (session.customer as string) || null,
         stripeCheckoutSessionId: session.id,
         stripePaymentIntentId: (session.payment_intent as string) ?? null,
         stripePriceId: priceId,
@@ -449,6 +462,12 @@ export class WebhookController {
           Object.keys(mergedMetadata).length > 0 ? mergedMetadata : null,
       },
     );
+
+    // Grant entitlement NOW if they already have an account (the "sign up first,
+    // buy founder later" order). If no account yet, this is a no-op and the
+    // signup-time linkage grants them when they create one. Runs on replay too
+    // (idempotent grant) so a missed grant self-heals on the next webhook.
+    await this.membershipService.grantFounderMembershipByEmail(email);
 
     if (!created) {
       this.logger.log(

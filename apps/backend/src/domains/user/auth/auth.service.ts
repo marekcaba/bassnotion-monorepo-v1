@@ -24,6 +24,7 @@ import { AuthResponse, AuthError, AuthData } from './types/auth.types.js';
 import { AuthSecurityService } from './services/auth-security.service.js';
 import { PasswordSecurityService } from './services/password-security.service.js';
 import { RequestContextService } from '../../../shared/services/request-context.service.js';
+import { MembershipService } from '../../billing/services/membership.service.js';
 
 @Injectable()
 export class AuthService implements OnModuleInit {
@@ -35,6 +36,7 @@ export class AuthService implements OnModuleInit {
     private readonly passwordSecurityService: PasswordSecurityService,
     @Inject(RequestContextService)
     private readonly requestContext: RequestContextService,
+    private readonly membershipService: MembershipService,
   ) {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
@@ -285,6 +287,14 @@ export class AuthService implements OnModuleInit {
           },
         };
       }
+
+      // Founder rescue (R3): if this email belongs to a paying founder, grant a
+      // lifetime membership now so they get the uncapped product they bought
+      // ("lifetime, no monthly fee"). Best-effort — never blocks signup.
+      await this.membershipService.grantFounderMembershipIfEligible(
+        profile.id,
+        profile.email,
+      );
 
       // TODO(attribution): stitch anonymous_id -> user_id here.
       // This is the single account-creation point. When /app signup goes live,

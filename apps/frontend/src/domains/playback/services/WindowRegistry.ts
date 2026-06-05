@@ -118,8 +118,19 @@ export class WindowRegistry {
 
     window.__bassnotion_audioContext = context;
 
-    // Clean up legacy key
-    delete window.__persistentAudioContext;
+    // SINGLE SOURCE OF TRUTH: alias the legacy `__persistentAudioContext`
+    // to the SAME object rather than deleting it. `__persistentAudioContext`
+    // is NOT dead legacy — it's the active read path for
+    // audioContext.ts::getPersistentAudioContext() and (transitively)
+    // ensureAudioContext() / the GrooveCard play() path. Deleting it here
+    // made the two globals diverge: getOrCreatePersistentAudioContext() would
+    // then mint a SECOND context, and the long-lived PlaybackEngine could end
+    // up bound to a stale/closed one (the /app/tutorials/* worklet bug). By
+    // aliasing, every reader — registry, persistent helpers, Tone — resolves
+    // the same instance and they can never fight. The waitlist prewarm's
+    // historical "set then re-set __persistentAudioContext" dual-write
+    // (useWaitlistPrewarm.ts) is now redundant but harmless.
+    window.__persistentAudioContext = context;
   }
 
   /**

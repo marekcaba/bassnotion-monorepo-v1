@@ -395,6 +395,14 @@ export type {
 } from './analytics.js';
 export { funnelEventNames } from './analytics.js';
 
+// Groove library — reusable groove cards referenced by tutorial/drill blocks
+export type {
+  GrooveLibraryItem,
+  CreateGrooveInput,
+  UpdateGrooveInput,
+  GrooveLibraryResponse,
+} from './grooves.js';
+
 // Assessment types (entrance quiz)
 export type {
   // Legacy assessment types (V1 - single video)
@@ -472,6 +480,7 @@ export type {
   GetTutorialProgressResponse,
   TutorialCompletionSummary,
   GetUserTutorialCompletionsResponse,
+  GetPracticeStreakResponse,
 } from './progress.js';
 
 // Block-based tutorial system types
@@ -507,9 +516,17 @@ export type {
   GrooveCardBlockConfig,
   GrooveCardStemSet,
   GrooveCardStateCaptions,
+  GrooveBrickRole,
+  MasteryTier,
+  DrillCriterionType,
+  DrillCompletionCriterion,
+  DrillCompletionResult,
+  DrillCompletionData,
+  TaskBlockConfig,
   TextBlock,
   CelebrationBlock,
   ExplainBlock,
+  TaskBlock,
   AnyBlock,
   BlockProgress,
 } from './block.js';

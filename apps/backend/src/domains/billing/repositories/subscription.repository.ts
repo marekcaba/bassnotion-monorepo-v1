@@ -111,6 +111,49 @@ export class SubscriptionRepository {
     return this.mapRowToSubscription(data as SubscriptionRow);
   }
 
+  /**
+   * Grant a NON-Stripe lifetime membership (founders, comps, dev/admin). Writes
+   * a synthetic `active` row with sentinel stripe ids and a far-future period
+   * end so `hasActiveSubscription` resolves true forever. Idempotent per user
+   * via the deterministic `stripe_subscription_id` sentinel (`lifetime_<userId>`)
+   * + the table's UNIQUE constraint — re-granting is a no-op upsert.
+   *
+   * This is the shared entitlement primitive for: the dev/admin member switch
+   * (R0) and the founder lifetime grant (R3). Real recurring members come
+   * through the Stripe webhook path instead.
+   */
+  async grantLifetimeMembership(
+    userId: string,
+    reason: 'founder' | 'comp' | 'dev' = 'comp',
+  ): Promise<void> {
+    const client = this.supabaseService.getClient();
+    const sentinelSubId = `lifetime_${userId}`;
+    // Year 2099 — effectively never expires; hasActiveSubscription only checks
+    // status, but keep period_end sane for any UI that reads it.
+    const farFuture = new Date('2099-12-31T00:00:00Z').toISOString();
+
+    const { error } = await client.from(this.TABLE_NAME).upsert(
+      {
+        user_id: userId,
+        stripe_customer_id: `lifetime_${reason}`,
+        stripe_subscription_id: sentinelSubId,
+        stripe_price_id: `lifetime_${reason}`,
+        status: 'active' as SubscriptionStatus,
+        current_period_start: new Date().toISOString(),
+        current_period_end: farFuture,
+        cancel_at_period_end: false,
+        canceled_at: null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'stripe_subscription_id', ignoreDuplicates: false },
+    );
+
+    if (error) {
+      this.logger.error('Error granting lifetime membership', error);
+      throw error;
+    }
+  }
+
   async create(
     subscription: Omit<Subscription, 'id' | 'createdAt' | 'updatedAt'>,
   ): Promise<Subscription> {

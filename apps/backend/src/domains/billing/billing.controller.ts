@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 
 import { AuthGuard } from '../user/auth/guards/auth.guard.js';
+import { AdminGuard } from '../user/auth/guards/admin.guard.js';
 import { CurrentUser } from '../user/auth/decorators/current-user.decorator.js';
 import { StripeService } from './services/stripe.service.js';
 import { SubscriptionRepository } from './repositories/subscription.repository.js';
@@ -65,6 +66,22 @@ export class BillingController {
         features: SUBSCRIPTION_PRODUCT.features,
       },
     };
+  }
+
+  /**
+   * ADMIN — grant the calling admin a lifetime (non-Stripe) membership. The
+   * member escape-hatch: lets you flip your own account to the uncapped
+   * experience without going through Stripe, so the live entitlement path can
+   * be tested. Admin-only; grants self. Idempotent (re-grant is a no-op).
+   */
+  @Post('admin/grant-membership')
+  @UseGuards(AdminGuard)
+  @HttpCode(HttpStatus.OK)
+  async grantSelfMembership(
+    @CurrentUser() user: AuthUser,
+  ): Promise<{ message: string }> {
+    await this.subscriptionRepository.grantLifetimeMembership(user.id, 'dev');
+    return { message: `Lifetime membership granted to ${user.email}` };
   }
 
   /**

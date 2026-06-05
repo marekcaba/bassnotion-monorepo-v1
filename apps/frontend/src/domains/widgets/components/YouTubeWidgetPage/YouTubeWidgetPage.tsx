@@ -13,6 +13,7 @@ import { FretboardCard, FRETBOARD_VIEW_PRESETS } from './FretboardCard';
 
 import { FourWidgetsCard } from './components/FourWidgetsCard';
 import { BassRegistrationHost } from './BassRegistrationHost';
+import { HarmonyRegistrationHost } from './HarmonyRegistrationHost';
 import { ExerciseSelectorCard } from './components/ExerciseSelectorCard';
 import { ExerciseDescriptionCard } from './components/ExerciseDescriptionCard';
 import { DynamicIsland } from './components/DynamicIsland';
@@ -1097,6 +1098,26 @@ function YouTubeWidgetPageContent({
     return [];
   }, [tutorialData, memoizedExercises]);
 
+  // A drill is a tutorial of drill bricks (task / drill-tagged groove-card). It
+  // has no video "Understand" gate, so the snap-scroll container must be
+  // scrollable from the start — otherwise finishing the first brick can't scroll
+  // to the next (the container is `overflow-hidden` until hasPassedUnderstand).
+  const isDrill = React.useMemo(
+    () =>
+      blocks.some(
+        (b) =>
+          b.type === 'task' ||
+          (b.type === 'groove-card' &&
+            (!!(b.config as { role?: unknown }).role ||
+              !!(b.config as { completionCriterion?: unknown })
+                .completionCriterion)),
+      ),
+    [blocks],
+  );
+  React.useEffect(() => {
+    if (isDrill) setHasPassedUnderstand(true);
+  }, [isDrill]);
+
   const {
     currentBlockId,
     currentBlockIndex,
@@ -1214,6 +1235,35 @@ function YouTubeWidgetPageContent({
       scrollToBlock(blocks[nextIndex].id);
     }
   }, [currentBlockIndex, blocks, scrollToBlock]);
+
+  // Drill bricks (task / drill-tagged groove-card) advance on completion. The
+  // brick calls onComplete (which optimistically marks it done + unlocks the
+  // next block) but does NOT scroll itself — scrolling synchronously races the
+  // unlock re-render (the next section is `h-0`/unscrollable until unlocked) and
+  // silently misses, stranding the student. Instead this effect watches for the
+  // current brick becoming completed and scrolls THEN — after the unlock has
+  // rendered — so a single click reliably advances. The ref guards against
+  // re-firing for the same block.
+  const lastAutoAdvancedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const current = blocks[currentBlockIndex];
+    if (!current) return;
+    const isBrick =
+      current.type === 'task' ||
+      (current.type === 'groove-card' &&
+        (!!(current.config as { role?: unknown }).role ||
+          !!(current.config as { completionCriterion?: unknown })
+            .completionCriterion));
+    if (!isBrick) return;
+    if (!blockProgress[current.id]?.completed) return;
+    if (lastAutoAdvancedRef.current === current.id) return;
+    const nextBlock = blocks[currentBlockIndex + 1];
+    if (!nextBlock) return; // last brick → the drill frame shows the summary
+    lastAutoAdvancedRef.current = current.id;
+    // Unlock the snap container if this was the first completion.
+    setHasPassedUnderstand(true);
+    requestAnimationFrame(() => scrollToBlock(nextBlock.id));
+  }, [blocks, currentBlockIndex, blockProgress, scrollToBlock]);
 
   // Gated block navigation: only scroll if the target block is unlocked.
   // A block is unlocked if it's the first block, OR all previous blocks are completed.
@@ -1464,6 +1514,16 @@ function YouTubeWidgetPageContent({
         exercise={widgetState.selectedExercise}
         volume={widgetState.state.volume.bass}
         isMuted={widgetState.state.muted.bass}
+      />
+      {/* Hidden: keeps harmony registered with PlaybackEngine against the
+          current exercise even when the groove block isn't mounted (e.g.
+          understand/practice acts). Scheduler-only — does NOT mount the WAM
+          keyboard plugin. Renders nothing. See HarmonyRegistrationHost.tsx. */}
+      <HarmonyRegistrationHost
+        exercise={widgetState.selectedExercise}
+        volume={widgetState.state.volume.harmony}
+        isMuted={widgetState.state.muted.harmony}
+        harmonyInstrument={widgetState.harmonyInstrument}
       />
       {!hideChrome && (
         <>
@@ -1755,7 +1815,8 @@ function YouTubeWidgetPageContent({
               {/* ---- Text, Celebration & Explain Blocks ---- */}
               {(block.type === 'text' ||
                 block.type === 'celebration' ||
-                block.type === 'explain') && (
+                block.type === 'explain' ||
+                block.type === 'task') && (
                 <BlockRenderer
                   block={block}
                   isActive={isBlockActive}

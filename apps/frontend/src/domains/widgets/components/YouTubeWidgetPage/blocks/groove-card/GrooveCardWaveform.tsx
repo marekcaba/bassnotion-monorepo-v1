@@ -41,8 +41,15 @@ interface GrooveCardWaveformProps {
    *  stopped (the playhead is not drawn). */
   loopStartAudioTime?: number | null;
   /** Duration of one loop iteration in seconds. Used as the playhead
-   *  modulus so it wraps at lengthBars. */
+   *  modulus so it wraps at lengthBars. FALLBACK clock — used only when
+   *  getAudioPhase() returns null (audio not yet streaming). */
   loopDurationSeconds?: number;
+  /** Time-stretch (LAUNCH-06): returns the REAL audio playhead phase [0,1)
+   *  from the bass stem's worklet read-head, or null when unavailable. When
+   *  present + non-null this is the PRIMARY playhead clock so the playhead
+   *  tracks the actual sound (and a pending tempo change moves the playhead
+   *  only when the audio actually changes at the seam, never before). */
+  getAudioPhase?: () => number | null;
   /** Number of musical bars one loop iteration spans. Used to render the
    *  thin bar-line ruler under the waveform (one tick + number per bar).
    *  Omit / set 0 to hide the ruler. */
@@ -57,7 +64,11 @@ interface GrooveCardWaveformProps {
   color?: string;
 }
 
-const DEFAULT_BAR_COLOR = '#F97316'; // tailwind orange-500
+// Default waveform bar colour — the warm near-black grey the waitlist demo
+// card established (LAUNCH-02.5d). Both surfaces (waitlist + in-app player)
+// now share this default so the Groove Card looks identical everywhere; the
+// `color` prop remains an explicit per-card override.
+const DEFAULT_BAR_COLOR = '#1f252e';
 const SELECTION_COLOR = '#3B82F6'; // tailwind blue-500 — loop-range bracket
 const PULSE_BAR_COUNT = 32;
 
@@ -109,6 +120,7 @@ export function GrooveCardWaveform({
   audioContext,
   loopStartAudioTime,
   loopDurationSeconds = 0,
+  getAudioPhase,
   lengthBars = 0,
   loopSelection,
   onLoopSelectionChange,
@@ -133,6 +145,7 @@ export function GrooveCardWaveform({
     audioContext: audioContext ?? null,
     loopStartAudioTime: loopStartAudioTime ?? null,
     loopDurationSeconds,
+    getAudioPhase: getAudioPhase ?? null,
     lengthBars,
     loopSelection: loopSelection ?? null,
     dragSelection,
@@ -144,6 +157,7 @@ export function GrooveCardWaveform({
     audioContext: audioContext ?? null,
     loopStartAudioTime: loopStartAudioTime ?? null,
     loopDurationSeconds,
+    getAudioPhase: getAudioPhase ?? null,
     lengthBars,
     loopSelection: loopSelection ?? null,
     dragSelection,
@@ -366,34 +380,60 @@ export function GrooveCardWaveform({
           s.loopDurationSeconds > 0 &&
           s.lengthBars > 0
         ) {
+          // PRIMARY clock (LAUNCH-06): the REAL audio phase [0,1) from the
+          // bass worklet's read-head. Using this keeps the playhead glued to
+          // the SOUND — a pending tempo change (deferred to the loop seam)
+          // moves the playhead only when the audio actually changes, never
+          // before. FALLBACK to the currentBpm-derived clock when the audio
+          // isn't streaming yet (null) — e.g. the count-in before the first
+          // stem sample, or if the worklet hasn't resolved.
           const elapsed = s.audioContext.currentTime - s.loopStartAudioTime;
-          if (elapsed >= 0) {
-            const sel = s.loopSelection;
-            if (sel) {
-              // Map the bar selection onto the canvas: x range and the
-              // duration the playhead wraps in. Both bracket and playhead
-              // share the same bar-grid math, so they stay aligned.
-              const barW = width / s.lengthBars;
-              const xStart = Math.round((sel.startBar - 1) * barW);
-              const xEnd = Math.round(sel.endBar * barW);
-              const selectionWidth = Math.max(1, xEnd - xStart);
-              const selectionSeconds =
-                ((sel.endBar - sel.startBar + 1) / s.lengthBars) *
-                s.loopDurationSeconds;
-              if (selectionSeconds > 0) {
-                const phase =
-                  ((elapsed % selectionSeconds) + selectionSeconds) %
-                  selectionSeconds;
-                const x = xStart + (phase / selectionSeconds) * selectionWidth;
-                drawPlayhead(ctx, width, height, x);
-              }
-            } else {
+          // Count-in gate: loopStartAudioTime is anchored at the END of the
+          // 4-beat count-in (anchor + countdownSeconds), so `elapsed < 0` means
+          // we're still counting in — bar 1 hasn't begun. Don't draw the
+          // playhead yet (the worklet read-head may already sit near the loop
+          // end, which would wrongly flash the playhead at the LAST bar during
+          // the count-in). The playhead appears at bar 1 the moment elapsed≥0.
+          const audioPhase =
+            elapsed >= 0 && s.getAudioPhase ? s.getAudioPhase() : null;
+          const sel = s.loopSelection;
+
+          if (elapsed < 0) {
+            // Still counting in — playhead hidden until bar 1.
+          } else if (sel) {
+            // Map the bar selection onto the canvas: x range and the duration
+            // the playhead wraps in. Both bracket and playhead share the same
+            // bar-grid math, so they stay aligned.
+            const barW = width / s.lengthBars;
+            const xStart = Math.round((sel.startBar - 1) * barW);
+            const xEnd = Math.round(sel.endBar * barW);
+            const selectionWidth = Math.max(1, xEnd - xStart);
+            const selectionSeconds =
+              ((sel.endBar - sel.startBar + 1) / s.lengthBars) *
+              s.loopDurationSeconds;
+            // The worklet loops the slice internally, so audioPhase already
+            // wraps within the selection — map it directly. Fall back to the
+            // elapsed-based wrap when audioPhase is null.
+            if (audioPhase != null) {
+              const x = xStart + audioPhase * selectionWidth;
+              drawPlayhead(ctx, width, height, x);
+            } else if (elapsed >= 0 && selectionSeconds > 0) {
               const phase =
-                ((elapsed % s.loopDurationSeconds) + s.loopDurationSeconds) %
-                s.loopDurationSeconds;
-              const x = (phase / s.loopDurationSeconds) * width;
+                ((elapsed % selectionSeconds) + selectionSeconds) %
+                selectionSeconds;
+              const x = xStart + (phase / selectionSeconds) * selectionWidth;
               drawPlayhead(ctx, width, height, x);
             }
+          } else if (audioPhase != null) {
+            // Full-loop, real audio clock.
+            drawPlayhead(ctx, width, height, audioPhase * width);
+          } else if (elapsed >= 0) {
+            // Full-loop, fallback clock.
+            const phase =
+              ((elapsed % s.loopDurationSeconds) + s.loopDurationSeconds) %
+              s.loopDurationSeconds;
+            const x = (phase / s.loopDurationSeconds) * width;
+            drawPlayhead(ctx, width, height, x);
           }
         }
       } else {

@@ -2,7 +2,6 @@
 
 import {
   useRef,
-  useEffect,
   useState,
   useCallback,
   useMemo,
@@ -11,6 +10,9 @@ import {
 import { Play, Loader2, X } from 'lucide-react';
 import { useUserProfile } from '@/domains/user/hooks/use-user-profile';
 import { useAuth } from '@/domains/user/hooks/use-auth';
+import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
+import { DRILL_SESSION_SLUG } from '@/domains/drill/constants';
+import { useStreak } from '@/domains/drill/hooks/useStreak';
 import {
   Avatar,
   AvatarImage,
@@ -696,6 +698,26 @@ function CenterNode({
 }
 
 // ─── Session Card ────────────────────────────────────────────────────
+/**
+ * Navigates to the drill session page (a tutorial-like sequence of timeboxed
+ * groove bricks). Replaces the old static no-op "Start Session" button.
+ */
+function SessionStartButton() {
+  const { navigateWithTransition } = useViewTransitionRouter();
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        navigateWithTransition(`/app/tutorials/${DRILL_SESSION_SLUG}`)
+      }
+      className="flex w-full items-center justify-center gap-2 rounded-[9px] bg-gradient-to-br from-[#E8A44A] to-[#D4903A] px-4 py-3 text-sm font-semibold text-[#0C0B0F] transition-all hover:-translate-y-0.5 hover:shadow-[0_6px_24px_rgba(232,164,74,0.3)]"
+    >
+      <Play className="size-4" fill="currentColor" />
+      Start the drill
+    </button>
+  );
+}
+
 export function SessionCard() {
   return (
     <div className="relative overflow-hidden rounded-[14px] border border-white/[0.06] bg-[#141318] p-[22px]">
@@ -743,11 +765,9 @@ export function SessionCard() {
         })}
       </div>
 
-      {/* Start button */}
-      <button className="flex w-full items-center justify-center gap-2 rounded-[9px] bg-gradient-to-br from-[#E8A44A] to-[#D4903A] px-4 py-3 text-sm font-semibold text-[#0C0B0F] transition-all hover:-translate-y-0.5 hover:shadow-[0_6px_24px_rgba(232,164,74,0.3)]">
-        <Play className="size-4" fill="currentColor" />
-        Start Session
-      </button>
+      {/* Start button — navigates to the drill SESSION page (a sequence of
+          timeboxed groove bricks, like a tutorial). Not a modal. */}
+      <SessionStartButton />
     </div>
   );
 }
@@ -780,18 +800,24 @@ const MOCK_RECORDINGS: Recording[] = [
 ];
 
 export function ProgressCard() {
+  const { data: streak } = useStreak();
+  // The streak stat is live (practice_streak_days, via /api/v1/users/me/
+  // practice-streak); Takes/Today remain placeholders until those metrics land.
+  const streakValue =
+    streak && streak.current > 0 ? `🔥 ${streak.current}` : '0';
+
   return (
     <div className="overflow-hidden rounded-[14px] border border-white/[0.06] bg-[#141318] p-[22px]">
       <div className="mb-3.5 font-mono text-[10px] uppercase tracking-[2px] text-[#5A5660]">
         Your Progress
       </div>
 
-      {/* Stats row */}
+      {/* Stats row — Streak is live; Takes/Today are placeholders for now. */}
       <div className="mb-4 grid grid-cols-3 gap-2.5">
         {[
-          { value: '8', label: 'Takes' },
+          { value: streakValue, label: 'Streak' },
           { value: '48m', label: 'Today' },
-          { value: '5', label: 'Grooves' },
+          { value: '8', label: 'Takes' },
         ].map((s) => (
           <div
             key={s.label}

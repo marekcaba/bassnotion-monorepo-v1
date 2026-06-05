@@ -77,17 +77,16 @@ export const COURSE_PRODUCTS: Record<CourseType, CourseProduct> = {
 
 export const SUBSCRIPTION_PRODUCT: SubscriptionProduct = {
   plan: 'monthly',
-  name: 'Bassicology Pro',
-  description: 'Full access to 10+ tutorial pages with unlimited practice',
-  priceInCents: 1400, // $14
+  name: 'Bassicology Membership',
+  description: 'Play the full instrument — every tempo, key, loop, and layer',
+  priceInCents: 2400, // $24/mo — the single recurring "yes" (see funnel vision)
   interval: 'month',
   features: [
-    'Access to 10+ tutorial pages',
-    'Unlimited exercise practice',
-    '3D fretboard visualization',
-    'Multi-track audio playback',
-    'Drum pattern editor',
-    'Progress tracking',
+    'The full 40–200 tempo dial',
+    'All 12 keys',
+    'Loop any bar, infinitely',
+    'Drill the layers — solo any part',
+    'Unlimited practice',
     'Cancel anytime',
   ],
 };
