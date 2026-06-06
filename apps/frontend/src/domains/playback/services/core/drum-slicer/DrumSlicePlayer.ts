@@ -1383,9 +1383,11 @@ export class DrumSlicePlayer {
     if (!force && ratio === this.synthesizedForRatio) return;
     this.synthesizedForRatio = ratio;
     this.bedBuffer = null;
+    this.hitsBuffer = null; // TWO-TRACK: clear stale hits too (rebuilt below)
     // The bed is needed by the legacy WSOLA path AND the auto state machine (which
     // crossfades to it on settle). At unity the raw loop already IS the continuous
     // bed with perfect bit-exact transients — skip WSOLA entirely (no coloration).
+    // (At unity the raw loop also carries the hits, so the hits track stays null.)
     if ((!this.wsolaEnabled && !this.autoMode) || Math.abs(ratio - 1) < 1e-4) {
       return;
     }
@@ -1405,6 +1407,53 @@ export class DrumSlicePlayer {
     const buf = this.ctx.createBuffer(stretched.length, stretched[0]!.length, sr);
     for (let c = 0; c < stretched.length; c++) buf.copyToChannel(stretched[c]!, c);
     this.bedBuffer = buf;
+    // TWO-TRACK: build the BIG-HITS buffer for this ratio alongside the bed.
+    this.resynthesizeHits(outLen);
+  }
+
+  /**
+   * TWO-TRACK: build the BIG-HITS buffer for the current ratio — the bit-exact hit
+   * regions RE-GRIDDED (not stretched) to their slowed/sped positions, silence
+   * between (the bed fills the gaps). Same length (`outLen`) and grid-lock as the
+   * bed (Landmine L2), so the two continuous tracks stay phase-aligned: a hit's
+   * ONSET lands at exactly `onsetSec/ratio` in real time, the same instant the bed's
+   * notch hole sits. Overlapping regions (a long tail running into the next hit at a
+   * fast tempo) are ADDED — they're the same recording, summing is correct. No live
+   * per-hit scheduling = nothing to spill on a nudge.
+   */
+  private resynthesizeHits(outLen: number): void {
+    this.hitsBuffer = null;
+    const ha = this.hitsAnalysis;
+    if (!ha || outLen <= 0) return;
+    const ratio = this.ratio || 1;
+    const sr = ha.sampleRate;
+    const numCh = ha.numChannels;
+    // Accumulate (sum) each hit's region at its re-gridded onset position.
+    const out: Float32Array[] = [];
+    for (let c = 0; c < numCh; c++) out.push(new Float32Array(outLen));
+    for (const hit of ha.hits) {
+      // The onset's real-time sample position at this ratio; the region starts
+      // `leadSamples` before it so the onset lands exactly on the grid.
+      const onsetPos = Math.round((hit.onsetSec / ratio) * sr);
+      const start = onsetPos - hit.leadSamples;
+      const regionLen = hit.channels[0]?.length ?? 0;
+      for (let c = 0; c < numCh; c++) {
+        const region = hit.channels[c]!;
+        const dst = out[c]!;
+        for (let i = 0; i < regionLen; i++) {
+          const d = start + i;
+          if (d < 0 || d >= outLen) continue;
+          dst[d]! += region[i]!; // sum — bit-exact regions of the same recording
+        }
+      }
+    }
+    try {
+      const buf = this.ctx.createBuffer(numCh, outLen, sr);
+      for (let c = 0; c < numCh; c++) buf.copyToChannel(out[c]!, c);
+      this.hitsBuffer = buf;
+    } catch {
+      this.hitsBuffer = null;
+    }
   }
 
   /** The real-time loop period at the current ratio (on the MUSICAL loop). */
