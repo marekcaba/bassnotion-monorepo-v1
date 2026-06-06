@@ -62,6 +62,11 @@ interface GrooveCardWaveformProps {
   onLoopSelectionChange?: (next: WaveformLoopSelection | null) => void;
   /** Orange brand colour used for the bar lines. */
   color?: string;
+  /** Count-in beat (1-based, 1..N) currently showing in the play button, or null
+   *  when not counting in. The parked start playhead PULSES on each new beat in
+   *  lockstep with the play-button numbers, then begins sweeping when the groove
+   *  starts. */
+  countdownBeat?: number | null;
 }
 
 // Default waveform bar colour — the warm near-black grey the waitlist demo
@@ -71,6 +76,13 @@ interface GrooveCardWaveformProps {
 const DEFAULT_BAR_COLOR = '#1f252e';
 const SELECTION_COLOR = '#3B82F6'; // tailwind blue-500 — loop-range bracket
 const PULSE_BAR_COUNT = 32;
+// Beat-1 wrap guard window (s). getStemPlayheadPhase() subtracts ~185ms of visual-
+// latency compensation, which pulls the phase NEGATIVE at the loop origin and wraps it
+// to ≈1.0 (far right) for roughly that long at the very start of bar 1 — the "flash at
+// the end then jump to the start" artifact. For the first GUARD window of bar 1, if the
+// reported phase has wrapped near the end, we park the playhead at the start instead.
+// ~0.25s comfortably covers the processing+output latency at any tempo.
+const BEAT1_GUARD_SEC = 0.25;
 
 /**
  * Compute min/max peaks per pixel column. Returns a Float32Array of length
@@ -125,10 +137,16 @@ export function GrooveCardWaveform({
   loopSelection,
   onLoopSelectionChange,
   color = DEFAULT_BAR_COLOR,
+  countdownBeat = null,
 }: GrooveCardWaveformProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rafRef = useRef<number | null>(null);
   const visibleRef = useRef(true);
+  // Count-in pulse: timestamp (perf.now ms) of the last beat change, so the parked
+  // playhead can flash on each new countdown number. Updated in the RAF loop when
+  // the beat value changes (reads it from stateRef so we don't restart the loop).
+  const pulseStartRef = useRef<number>(0);
+  const lastBeatRef = useRef<number | null>(null);
 
   // In-progress selection while the user is dragging (committed via prop on
   // mouse/touch up). null when not dragging.
@@ -150,6 +168,7 @@ export function GrooveCardWaveform({
     loopSelection: loopSelection ?? null,
     dragSelection,
     color,
+    countdownBeat,
   });
   stateRef.current = {
     isPlaying,
@@ -162,6 +181,7 @@ export function GrooveCardWaveform({
     loopSelection: loopSelection ?? null,
     dragSelection,
     color,
+    countdownBeat,
   };
 
   useEffect(() => {
@@ -268,11 +288,15 @@ export function GrooveCardWaveform({
       width: number,
       height: number,
       x: number,
+      opacity = 1, // 1 = normal full-brightness playhead; <1 fades the whole playhead
+      // (used during the count-in: the parked playhead snaps to 1 on each beat then
+      //  fades down toward 0, creating an opacity pulse in sync with the numbers).
     ) => {
-      // 2px white line with a soft glow so it reads on any peaks density.
-      c.fillStyle = 'rgba(255, 255, 255, 0.12)';
+      // 2px white line with a soft glow so it reads on any peaks density. Both the line
+      // and its halo scale with `opacity` so the whole playhead pulses cleanly.
+      c.fillStyle = `rgba(255, 255, 255, ${0.12 * opacity})`;
       c.fillRect(x - 3, 0, 7, height); // halo
-      c.fillStyle = 'rgba(255, 255, 255, 0.95)';
+      c.fillStyle = `rgba(255, 255, 255, ${0.95 * opacity})`;
       c.fillRect(x, 0, 2, height);
     };
 
@@ -340,6 +364,10 @@ export function GrooveCardWaveform({
       const { width, height } = canvas;
       ctx.clearRect(0, 0, width, height);
 
+      // Reset the count-in pulse tracker once the count-in is over (so the next play
+      // re-pulses from beat 1 instead of inheriting the previous run's last beat).
+      if (s.countdownBeat == null) lastBeatRef.current = null;
+
       if (s.bassBuffer) {
         // Bar grid first — peaks paint on top so the lines show only in
         // the quieter portions of the waveform.
@@ -397,15 +425,36 @@ export function GrooveCardWaveform({
           const audioPhase =
             elapsed >= 0 && s.getAudioPhase ? s.getAudioPhase() : null;
           const sel = s.loopSelection;
+          // Where bar 1 (or the selection's first bar) sits on the canvas — the
+          // playhead's "home". Used to PARK the playhead here during the count-in and
+          // to guard the beat-1 latency-wrap flash (see below).
+          const barW = width / s.lengthBars;
+          const homeX = sel ? Math.round((sel.startBar - 1) * barW) : 0;
 
           if (elapsed < 0) {
-            // Still counting in — playhead hidden until bar 1.
+            // COUNT-IN: park the playhead at the start, visible and waiting, so it
+            // begins sweeping from bar 1 the moment the groove starts (instead of
+            // popping in mid-flight). It PULSES on each new countdown beat in lockstep
+            // with the play-button numbers (s.countdownBeat).
+            const beat = s.countdownBeat;
+            if (beat != null && beat !== lastBeatRef.current) {
+              lastBeatRef.current = beat;
+              pulseStartRef.current = now; // `now` is performance.now() ms (RAF arg)
+            }
+            // OPACITY PULSE: on each new beat the playhead snaps to full brightness and
+            // fades down over ~380ms toward a dim floor, so it throbs in time with the
+            // countdown numbers. Stays faintly visible between beats (parked, waiting).
+            const since = now - pulseStartRef.current;
+            const PULSE_MS = 380;
+            const FLOOR = 0.18;
+            const t = beat != null ? Math.min(1, since / PULSE_MS) : 1;
+            const opacity = beat != null ? FLOOR + (1 - FLOOR) * (1 - t) : FLOOR;
+            drawPlayhead(ctx, width, height, homeX, opacity);
           } else if (sel) {
             // Map the bar selection onto the canvas: x range and the duration
             // the playhead wraps in. Both bracket and playhead share the same
             // bar-grid math, so they stay aligned.
-            const barW = width / s.lengthBars;
-            const xStart = Math.round((sel.startBar - 1) * barW);
+            const xStart = homeX;
             const xEnd = Math.round(sel.endBar * barW);
             const selectionWidth = Math.max(1, xEnd - xStart);
             const selectionSeconds =
@@ -415,7 +464,16 @@ export function GrooveCardWaveform({
             // wraps within the selection — map it directly. Fall back to the
             // elapsed-based wrap when audioPhase is null.
             if (audioPhase != null) {
-              const x = xStart + audioPhase * selectionWidth;
+              // BEAT-1 WRAP GUARD: the visual-latency compensation pulls the
+              // read-head phase NEGATIVE at the loop origin, which wraps to ≈1.0
+              // (far right) for the first ~latency window of bar 1 — the flash the
+              // user reported. While we're at the very start (elapsed within the
+              // visual-latency window) and the phase has wrapped near the end,
+              // park at home instead.
+              const x =
+                elapsed < BEAT1_GUARD_SEC && audioPhase > 0.5
+                  ? xStart
+                  : xStart + audioPhase * selectionWidth;
               drawPlayhead(ctx, width, height, x);
             } else if (elapsed >= 0 && selectionSeconds > 0) {
               const phase =
@@ -425,8 +483,12 @@ export function GrooveCardWaveform({
               drawPlayhead(ctx, width, height, x);
             }
           } else if (audioPhase != null) {
-            // Full-loop, real audio clock.
-            drawPlayhead(ctx, width, height, audioPhase * width);
+            // Full-loop, real audio clock. Same beat-1 wrap guard as above.
+            const x =
+              elapsed < BEAT1_GUARD_SEC && audioPhase > 0.5
+                ? 0
+                : audioPhase * width;
+            drawPlayhead(ctx, width, height, x);
           } else if (elapsed >= 0) {
             // Full-loop, fallback clock.
             const phase =

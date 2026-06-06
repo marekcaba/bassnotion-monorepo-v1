@@ -85,12 +85,7 @@ import {
   SignalsmithBufferSource,
   DrumSliceSource,
 } from './region-processing/scheduling-orchestrator/InfiniteAudioSource.js';
-import { detectOnsetsDetailed } from './drum-slicer/detectOnsets.js';
-import {
-  DrumSlicePlayer,
-  type GapFillParams,
-  type GapFillParamsSnapshot,
-} from './drum-slicer/DrumSlicePlayer.js';
+import { DrumBeatsPlayer } from './drum-slicer/DrumBeatsPlayer.js';
 
 // Debug flag - enable in browser console: window.__DEBUG_PLAYBACK_ENGINE = true
 const isPlaybackDebugEnabled = (): boolean => {
@@ -310,12 +305,13 @@ export class PlaybackEngine implements IAudioStemEngine {
    *  the WSOLA fallback / if a residual offset ever needs trimming). */
   private stretchLatencyDelays = new Map<AudioInstrumentType, DelayNode>();
 
-  /** Time-stretch (LAUNCH-06): the transient-preserving DRUM slice player
-   *  (Ableton "Beats"-style). Plays each detected-onset slice bit-exact at
-   *  rate 1 — pristine drum transients, no WSOLA/phase-vocoder smearing. It IS
-   *  the drum source (registered with the scheduler as a self-looping source);
-   *  tempo changes re-space the slices live. Created in setAudioStemBuffers. */
-  private drumSlicePlayer: DrumSlicePlayer | null = null;
+  /** The DRUM tempo engine: an Ableton "Beats"-style transient-preserving slicer.
+   *  Slices the loop at every transient, re-grids each slice un-stretched (rate 1 —
+   *  transients can never smear/pitch-bend), fills slow-tempo gaps by looping the quiet
+   *  decay tail, and nudges smoothly via varispeed-during-drag + re-render-on-settle.
+   *  It IS the drum source (registered with the scheduler as a self-looping source).
+   *  Created in ensureDrumSlicePlayer(). */
+  private drumBeats: DrumBeatsPlayer | null = null;
 
   /** Time-stretch (LAUNCH-06): the MUSICAL loop length (seconds) bass/harmony
    *  buffer-streaming nodes loop on — set by the groove card before
@@ -3056,9 +3052,48 @@ export class PlaybackEngine implements IAudioStemEngine {
         : (this.audioContext.baseLatency ?? 0);
     phaseSeconds -= (processingLatency + outputLatency) * rate;
 
-    const wrapped = ((phaseSeconds % loopLen) + loopLen) % loopLen;
-    return wrapped / loopLen;
+    // The latency-compensated `phaseSeconds` is the TARGET the playhead should sit at.
+    // But its rate-scaled latency term (×rate) STEPS whenever the tempo nudges, and the
+    // read-head re-stamps discretely on a rate change — so reading the target raw makes
+    // the playhead JUMP each nudge tick. To keep it smooth (only ever speed up / slow
+    // down, never jump), we run a persistent VISUAL PHASE ACCUMULATOR that advances
+    // continuously at `rate` and SLEWS toward the target rather than snapping to it.
+    const targetWrapped = ((phaseSeconds % loopLen) + loopLen) % loopLen;
+    const now2 = this.audioContext.currentTime;
+    const vp = this.visualPhase;
+    let phase: number;
+    if (
+      vp == null ||
+      vp.loopLen !== loopLen ||
+      now2 < vp.atTime ||
+      now2 - vp.atTime > 0.5 // stale (>500ms gap: a stop/seek) → resync hard
+    ) {
+      // First read / loop length changed / long gap → snap to the target (no history).
+      phase = targetWrapped;
+    } else {
+      // 1) Advance the accumulator continuously by elapsed × rate (in loop seconds).
+      const dt = now2 - vp.atTime;
+      let advanced = vp.phase + dt * rate;
+      // 2) Wrap, tracking signed distance to the target across the loop seam so the
+      //    slew goes the short way and a genuine loop wrap isn't fought.
+      advanced = ((advanced % loopLen) + loopLen) % loopLen;
+      let err = targetWrapped - advanced;
+      if (err > loopLen / 2) err -= loopLen;
+      else if (err < -loopLen / 2) err += loopLen;
+      // 3) SLEW toward truth: correct a fraction of the error per second (time-constant
+      //    ~120ms) so a step in the target (a nudge) is absorbed smoothly instead of
+      //    jumping. Small steady-state errors converge; the playhead never snaps.
+      const slewPerSec = 6; // ~1/0.16s — gentle but keeps up
+      advanced += err * Math.min(1, slewPerSec * dt);
+      phase = ((advanced % loopLen) + loopLen) % loopLen;
+    }
+    this.visualPhase = { phase, atTime: now2, loopLen };
+    return phase / loopLen;
   }
+
+  /** Smoothed visual-playhead phase accumulator (loop seconds) — keeps the playhead
+   *  continuous across tempo nudges (slews toward the read-head target, never jumps). */
+  private visualPhase: { phase: number; atTime: number; loopLen: number } | null = null;
 
   /**
    * Wall-clock audio-context time of the NEXT loop seam, read from the bass
@@ -3595,7 +3630,7 @@ export class PlaybackEngine implements IAudioStemEngine {
     // CRITICAL: pass the SAME pivot time bass/harmony use so all three change
     // rate at one instant — otherwise drums pivot at a different time and a
     // per-change phase error accumulates (tempo-dependent desync).
-    this.drumSlicePlayer?.setRatio(ratio, applyAtAudioTime);
+    this.drumBeats?.setRatio(ratio, applyAtAudioTime);
   }
 
   /**
@@ -3656,7 +3691,7 @@ export class PlaybackEngine implements IAudioStemEngine {
     // lands exactly where the drums do, by construction. + the audible-downbeat
     // offset the key was originally deferred with. null when drums absent → setRate
     // falls back to its own read-head re-derivation.
-    const drumDownbeat = this.drumSlicePlayer?.getNextDownbeat(now) ?? null;
+    const drumDownbeat = this.drumBeats?.getNextDownbeat(now) ?? null;
     const keyBoundary =
       drumDownbeat != null
         ? drumDownbeat + this.getKeySeamAudibleOffset()
@@ -3677,129 +3712,69 @@ export class PlaybackEngine implements IAudioStemEngine {
    * straight to the drum gain (zero added latency → aligned with bass/harmony).
    */
   private ensureDrumSlicePlayer(): void {
-    if (!this.audioContext || this.drumSlicePlayer) return;
+    if (!this.audioContext || this.drumBeats) return;
     const buffer = this.audioStemBuffers.get('audio-drums');
     if (!buffer) return;
     const gain = this.getOrCreateInstrumentGainNode('audio-drums');
     if (!gain) return;
 
-    // Detect onsets WITH per-onset confidence so the sustain gap-fill can skip
-    // loud primary transients (kicks/snares) — only sustaining hits (hi-hats)
-    // get a fill. detectOnsets(): number[] is derived from the detailed result.
-    let onsets: number[];
-    let confidences: number[];
-    try {
-      const detailed = detectOnsetsDetailed(buffer);
-      onsets = detailed.map((o) => o.time);
-      confidences = detailed.map((o) => o.confidence);
-    } catch (err) {
-      this.logger.warn('Drum onset detection failed; using loop start only', {
-        err,
-      });
-      onsets = [0];
-      confidences = [1];
-    }
-    // SUSTAIN GAP-FILL flag (LAUNCH-06): hi-hat flow at slow tempos. OFF by
-    // default — ship dark; enable via NEXT_PUBLIC_DRUM_GAPFILL=true or the live
-    // setDrumGapFill() A/B toggle, flip the default once the metric+ear test
-    // passes. (Granular tail extension; see buildExtendedTail.)
-    const gapFill =
-      typeof process !== 'undefined' &&
-      process.env?.NEXT_PUBLIC_DRUM_GAPFILL === 'true';
-    // HYBRID WSOLA CONTINUOUS-BED STRETCH (LAUNCH-06): the real fix for slow-
-    // tempo drum flow — stretch the whole loop smoothly (transient bodies notched
-    // out of the bed) and overlay bit-exact kick/snare attacks. ON by default;
-    // set NEXT_PUBLIC_DRUM_WSOLA=false to force the legacy per-slice path.
-    // Supersedes gapFill (WSOLA wins when both on).
-    const wsola =
-      typeof process === 'undefined' ||
-      process.env?.NEXT_PUBLIC_DRUM_WSOLA !== 'false';
-    this.drumSlicePlayer = new DrumSlicePlayer(
-      this.audioContext,
-      buffer,
-      onsets,
-      gain, // straight to the drum gain — drums are aligned at default WITHOUT
-      // an added latency delay (the read-head's ~145ms lead over the audible
-      // position already matches signalsmith's processing latency; adding a
-      // delay over-corrected and pushed drums LATE at default).
-      {
-        // Loop the drums on the SAME musical length bass/harmony loop on
-        // (the beat grid), not the raw buffer duration — else drums fall
-        // (bufferDur − musicalLoop) behind every loop (a structural desync
-        // that worsens at faster tempos). 0/undefined ⇒ full buffer.
-        loopDurationSeconds:
-          this.stemLoopDurationSeconds > 0
-            ? this.stemLoopDurationSeconds
-            : undefined,
-        gapFill,
-        wsola,
-      },
-      confidences,
-    );
+    const loopDur =
+      this.stemLoopDurationSeconds > 0
+        ? this.stemLoopDurationSeconds
+        : buffer.duration;
+
+    // ABLETON-BEATS SLICER. Slices the loop at every transient, re-grids each slice
+    // un-stretched (rate 1 — no smear, no pitch-bend), fills slow-tempo gaps by looping
+    // the quiet decay tail, and nudges smoothly (varispeed-during-drag,
+    // re-render-on-settle). No bed, no stretcher on drums → reliable by construction.
+    // Provides the start/stop/setRatio surface the scheduler self-looping source needs.
+    this.drumBeats = new DrumBeatsPlayer(this.audioContext, buffer, gain, {
+      loopDurationSeconds: loopDur,
+    });
     this.regionScheduler?.setSelfLoopingSource(
       'drums',
-      new DrumSliceSource(this.drumSlicePlayer),
+      new DrumSliceSource(this.drumBeats),
     );
-    this.logger.info('Drum slice player created (transient-preserving)', {
-      onsets: onsets.length,
-      gapFill,
-      wsola,
+    this.logger.info('Drum Beats slicer created (Ableton-style, no stretcher)', {
+      slices: this.drumBeats.textureRegionCount(),
+      loopDur,
       instanceId: this.instanceId,
     });
   }
 
-  /**
-   * Toggle the drum sustain gap-fill at runtime (for A/B-by-ear during tuning).
-   * Forwards to the live DrumSlicePlayer; takes effect on the next loop
-   * iteration's scheduling. No-op if no player is armed.
-   */
-  setDrumGapFill(on: boolean): void {
-    this.drumSlicePlayer?.setGapFill(on);
+  /** Live drum tempo-machine state for the dev A/B tool (beats-slicer.js). */
+  getDrumTempoDebugState():
+    | ReturnType<NonNullable<typeof this.drumBeats>['getDebugState']>
+    | null {
+    return this.drumBeats?.getDebugState() ?? null;
   }
 
-  /**
-   * Toggle the HYBRID WSOLA texture stretch at runtime (A/B-by-ear). When on,
-   * the shuffle-hat texture between strong transients is WSOLA time-stretched to
-   * fill a slowed gap (continuous, tails intact) instead of bit-exact + silence.
-   * Supersedes the granular gap-fill. No-op if no player is armed.
-   */
-  setDrumWsola(on: boolean): void {
-    this.drumSlicePlayer?.setWsola(on);
-  }
-
-  /** DIAGNOSTIC: solo the drum bed vs the transient overlays (admin panel) so the
-   *  ear can localize a double — muteBed hears only the crisp kicks/snares,
-   *  muteOverlays hears only the stretched bed texture. No-op if no player. */
+  /** DIAGNOSTIC: solo loud vs quiet drum slices (dev panel) so the ear can localize an
+   *  artifact — muteBed → keep only the big hits; muteOverlays → keep only the texture
+   *  (hats/ghosts). No-op if no player. */
   setDrumDiagnosticSolo(opts: {
     muteBed?: boolean;
     muteOverlays?: boolean;
   }): void {
-    this.drumSlicePlayer?.setDiagnosticSolo(opts);
+    this.drumBeats?.setDiagnosticSolo(opts);
   }
 
-  /**
-   * Live-tune the drum gap-fill + WSOLA behaviour from the admin panel. Forwards
-   * a partial param patch to the live DrumSlicePlayer; scheduling knobs apply on
-   * the next slice, DSP/structural knobs re-precompute. No-op if no player armed.
-   */
-  setDrumGapFillParams(params: GapFillParams): void {
-    this.drumSlicePlayer?.setGapFillParams(params);
+  /** BEATS SLICER tuning (dev panel): gap-fill mode + the per-slice "Transient
+   *  Envelope" (0..1). LIVE — applies to future slices. No-op unless Beats active. */
+  setDrumGapFillMode(mode: 'loop-pingpong' | 'loop-forward' | 'gate'): void {
+    this.drumBeats?.setGapFillMode(mode);
   }
-
-  /** Read back the live drum gap-fill/WSOLA params + diagnostics (legacy fill
-   *  count, texture-region count) for the admin panel to seed its controls.
-   *  Null if no player is armed yet. */
-  getDrumGapFillState(): {
-    params: GapFillParamsSnapshot;
-    qualifyingFills: number;
-    textureRegions: number;
-  } | null {
-    if (!this.drumSlicePlayer) return null;
-    return {
-      params: this.drumSlicePlayer.getGapFillParams(),
-      qualifyingFills: this.drumSlicePlayer.qualifyingFillCount(),
-      textureRegions: this.drumSlicePlayer.textureRegionCount(),
-    };
+  setDrumTransientEnvelope(value: number): void {
+    this.drumBeats?.setTransientEnvelope(value);
+  }
+  /** LIVE transient SENSITIVITY (Beats slicer): lower = more onsets/slices (catches
+   *  hats), higher = only big hits. Re-detects + rebuilds slices. */
+  setDrumOnsetSensitivity(sensitivity: number): void {
+    this.drumBeats?.setOnsetSensitivity(sensitivity);
+  }
+  /** LIVE loop-seam crossfade length (Beats slicer), milliseconds. */
+  setDrumLoopCrossfadeMs(ms: number): void {
+    this.drumBeats?.setLoopCrossfadeMs(ms);
   }
 
   /**
@@ -4053,14 +4028,14 @@ export class PlaybackEngine implements IAudioStemEngine {
         ? Array.from(this.instrumentStretchNodes.values())
         : [];
     const adapter = this.pitchShiftAdapter;
-    const slicePlayer = this.drumSlicePlayer;
+    const beatsPlayer = this.drumBeats;
     const drumDelay = this.drumLatencyDelayNode;
 
     // Clear live STATE synchronously so a rapid re-play rebuilds fresh nodes
     // and nothing else targets these (the audio nodes themselves are still
     // alive and feeding the fading master until the deferred teardown).
     this.instrumentStretchNodes.clear();
-    this.drumSlicePlayer = null;
+    this.drumBeats = null;
     this.drumLatencyDelayNode = null;
     this.regionScheduler?.setSelfLoopingSource('bass', null);
     this.regionScheduler?.setSelfLoopingSource('harmony', null);
@@ -4068,11 +4043,11 @@ export class PlaybackEngine implements IAudioStemEngine {
     this.regionScheduler?.setTempoRatio(1);
 
     const teardown = () => {
-      // Stop the drum slice player's live slices (hard-cut is fine now — the
-      // master is at 0, so the truncation is silent).
-      if (slicePlayer) {
+      // Stop the drum slicer's live source (hard-cut is fine now — the master is
+      // at 0, so the truncation is silent).
+      if (beatsPlayer) {
         try {
-          slicePlayer.stop(this.audioContext?.currentTime);
+          beatsPlayer.stop(this.audioContext?.currentTime);
         } catch {
           /* best-effort */
         }

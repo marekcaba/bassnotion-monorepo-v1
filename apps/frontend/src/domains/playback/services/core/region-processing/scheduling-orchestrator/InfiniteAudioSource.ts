@@ -129,11 +129,11 @@ export interface DrumSliceControls {
 }
 
 /**
- * Wraps the transient-preserving DrumSlicePlayer (LAUNCH-06 Beats slicer) as a
- * scheduler self-looping source — so drums arm once at play and change tempo
- * LIVE via applyRate, exactly like bass/harmony, with no ABSN/WSOLA path. The
- * player itself plays each onset slice bit-exact at rate 1 (pristine
- * transients); applyRate just re-spaces the slices.
+ * Wraps the transient-preserving DrumBeatsPlayer (Ableton "Beats"-style slicer) as a
+ * scheduler self-looping source — so drums arm once at play and change tempo LIVE via
+ * applyRate, exactly like bass/harmony. The player slices the loop at every transient
+ * and re-grids them un-stretched (rate 1, pristine transients); applyRate re-spaces the
+ * slices and varispeeds during a drag.
  */
 export class DrumSliceSource implements InfiniteAudioSource {
   constructor(private readonly player: DrumSliceControls) {}
