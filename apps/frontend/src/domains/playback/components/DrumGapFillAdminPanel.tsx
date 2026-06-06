@@ -566,12 +566,15 @@ export function DrumGapFillAdminPanel() {
   const [soloBigHits, setSoloBigHits] = useState(false); // mute bed → hear overlays
   const [soloBed, setSoloBed] = useState(false); // mute overlays → hear bed
   const [showLegacy, setShowLegacy] = useState(false); // collapse old synth fill
+  // Hide ALL the secondary sliders by default — the panel shows only the 4 big-hit
+  // sliders + link unless the user opens "Advanced".
+  const [showAdvanced, setShowAdvanced] = useState(false);
   // τ / grain "auto" means: send undefined → buildExtendedTail fits per-slice.
   const [tauAuto, setTauAuto] = useState(true);
   const [grainAuto, setGrainAuto] = useState(true);
   // Link the OVERLAY span and the BED-NOTCH span (move together). ON = the "glued"
   // unified behaviour (notch = overlay); OFF = blend the two layers independently.
-  const [linkBigHit, setLinkBigHit] = useState(true);
+  const [linkBigHit, setLinkBigHit] = useState(false);
   const [p, setP] = useState<GapFillParams>({
     gapFill: false,
     minGapToFillSeconds: 0.04,
@@ -592,10 +595,10 @@ export function DrumGapFillAdminPanel() {
     bedNotchSeconds: 0.09,
     transientBlendSeconds: 0.115,
     transientDuckAttackSeconds: 0,
-    bigHitPreSeconds: 0.012,
-    bigHitTailSeconds: 0.18,
-    bedNotchPreSeconds: 0.012,
-    bedNotchTailSeconds: 0.18,
+    bigHitPreSeconds: 0.039,
+    bigHitTailSeconds: 0.2,
+    bedNotchPreSeconds: 0.037,
+    bedNotchTailSeconds: 0.13,
     hitPreRollSeconds: 0,
     hitStartLevel: 0,
     hitPeakLevel: 1,
@@ -983,34 +986,10 @@ export function DrumGapFillAdminPanel() {
           >
             <div
               style={{
-                fontSize: 10,
-                color: '#8a8a8a',
-                marginBottom: 8,
-                textTransform: 'uppercase',
-                letterSpacing: 0.5,
-              }}
-            >
-              Transient overlay (live — no rebuild)
-            </div>
-
-            <SliderRow
-              label="Big-hit threshold"
-              hint="Which onsets get a crisp BIT-EXACT attack overlaid on the smooth bed. At/above = kick/snare (overlaid sharp). Lower → more hits get the crisp overlay; raise if a hat starts sounding doubled. The headline knob."
-              value={p.strongConfidenceThreshold}
-              min={0.1}
-              max={1}
-              step={0.05}
-              format={(v) => v.toFixed(2)}
-              disabled={!p.wsola}
-              onChange={(v) => patch({ strongConfidenceThreshold: v })}
-            />
-
-            <div
-              style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                margin: '12px 0 4px',
+                margin: '0 0 4px',
               }}
             >
               <span
@@ -1137,7 +1116,43 @@ export function DrumGapFillAdminPanel() {
                 )
               }
             />
+          </div>
 
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: '#9aa',
+              cursor: 'pointer',
+              margin: '14px 0 4px',
+              userSelect: 'none',
+            }}
+            onClick={() => setShowAdvanced((s) => !s)}
+          >
+            {showAdvanced ? '▾' : '▸'} Advanced (all other sliders)
+          </div>
+
+          {showAdvanced && (
+            <>
+            <div
+              style={{
+                borderTop: '1px solid #2e2e36',
+                paddingTop: 10,
+                marginBottom: 14,
+                opacity: p.wsola ? 1 : 0.5,
+              }}
+            >
+            <SliderRow
+              label="Big-hit threshold"
+              hint="Which onsets get a crisp BIT-EXACT attack overlaid on the smooth bed. At/above = kick/snare (overlaid sharp). Lower → more hits get the crisp overlay; raise if a hat starts sounding doubled."
+              value={p.strongConfidenceThreshold}
+              min={0.1}
+              max={1}
+              step={0.05}
+              format={(v) => v.toFixed(2)}
+              disabled={!p.wsola}
+              onChange={(v) => patch({ strongConfidenceThreshold: v })}
+            />
             <div style={{ fontSize: 10, color: '#7a9', margin: '6px 0 2px' }}>
               BIG-HIT envelope — START side
             </div>
@@ -1664,6 +1679,8 @@ export function DrumGapFillAdminPanel() {
             />
           </div>
           </>
+          )}
+            </>
           )}
 
           <div style={{ fontSize: 9.5, color: '#6a6a6a', marginTop: 12 }}>

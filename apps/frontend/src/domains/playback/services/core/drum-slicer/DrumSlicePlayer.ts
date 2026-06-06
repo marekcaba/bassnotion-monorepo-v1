@@ -370,10 +370,10 @@ const DEFAULTS: Required<DefaultedOptions> = {
     transientDuckAttackSeconds: 0,
     // ── UNIFIED BIG-HIT REGION (notch + overlay = same span). ON by default so the
     // bed is clean of the kick/snare and the overlay carries the whole hit. ──
-    bigHitPreSeconds: 0.012, // OVERLAY lead-in — catches the attack-front blip
-    bigHitTailSeconds: 0.18, // OVERLAY tail length (the hit the user hears)
-    bedNotchPreSeconds: 0.012, // BED notch start (defaults matched to the overlay)
-    bedNotchTailSeconds: 0.18, // BED notch length — swallows the body out of the bed
+    bigHitPreSeconds: 0.039, // OVERLAY lead-in — catches the attack-front blip (ear)
+    bigHitTailSeconds: 0.2, // OVERLAY tail length (the hit the user hears)
+    bedNotchPreSeconds: 0.037, // BED notch start (dialed by ear)
+    bedNotchTailSeconds: 0.13, // BED notch length — swallows the body out of the bed
     // ── BIG-HIT overlay ENVELOPE (continuous levels + nudgeable start/end) ──
     hitPreRollSeconds: 0, // look-ahead: audio read BEFORE the onset (0 = opt default)
     hitStartLevel: 0, // gain at the start point (0..1)
@@ -532,8 +532,12 @@ export class DrumSlicePlayer {
     env: GainNode;
     /** Which scheduling layer armed this source — so a new BED phase can fade-stop
      *  the PREVIOUS bed's sources (one-shot + overlays) and not leave them ringing
-     *  under the new bed (the overlapping-drum-loops bug). */
-    kind: 'bed' | 'slice';
+     *  under the new bed (the overlapping-drum-loops bug). 'bedOverlay' = the
+     *  bit-exact kick/snare overlay on the bed bus; distinguished from the
+     *  continuous 'bed' texture so a nudge-out can HARD-kill the overlay (its
+     *  transient would spill a kick into the bed during the fade) while gently
+     *  fading the texture. */
+    kind: 'bed' | 'bedOverlay' | 'slice';
   }>();
 
   /** GAP-FILL (legacy, superseded by WSOLA): per-slice precomputed extended-tail
@@ -1468,20 +1472,27 @@ export class DrumSlicePlayer {
   private stopBedSources(stopAt: number): void {
     const now = this.ctx.currentTime;
     const fadeEnd = Math.max(now + 0.005, stopAt);
+    // A bit-exact kick/snare OVERLAY armed AHEAD on the bed bus will still fire its
+    // transient even mid-fade if the fade is long — that's the "kick spills into the
+    // bed while nudging" bug. So overlays get a HARD, short kill (declick only); the
+    // continuous bed TEXTURE (no transient to spill) fades gently over `stopAt`.
+    const overlayKill = Math.min(fadeEnd, now + 0.008);
     for (const entry of this.active) {
-      if (entry.kind !== 'bed') continue;
+      if (entry.kind !== 'bed' && entry.kind !== 'bedOverlay') continue;
+      const isOverlay = entry.kind === 'bedOverlay';
+      const end = isOverlay ? overlayKill : fadeEnd;
       try {
         const g = entry.env.gain;
         g.cancelScheduledValues(now);
         g.setValueAtTime(g.value, now);
-        g.linearRampToValueAtTime(0, fadeEnd);
+        g.linearRampToValueAtTime(0, end);
       } catch {
         /* ignore */
       }
       try {
-        entry.src.stop(fadeEnd + 0.005);
+        entry.src.stop(end + 0.005);
       } catch {
-        /* already stopped */
+        /* already stopped, or future-armed (silenced via env above regardless) */
       }
     }
   }
@@ -1876,6 +1887,12 @@ export class DrumSlicePlayer {
     //    instead we just skip the duck when there's no bed env to duck.
     if (unity || this.muteOverlays) return;
     if (!bed) return; // no synthesized bed (e.g. not yet ready) → nothing to overlay
+    // NUDGING OUT (XFADE_TO_SLICES): do NOT arm fresh bit-exact overlay kicks/snares
+    // on the bed bus — the SLICE path is already taking over the transients, so a
+    // newly-armed bed overlay would just fire a SECOND kick/snare into the fading bed
+    // (the "kick/snare spills through while nudging" bug). Let the texture fade alone;
+    // the slices carry every hit. (XFADE_TO_BED and BED still arm overlays normally.)
+    if (this.mode === 'XFADE_TO_SLICES') return;
     const bedMuted = this.muteBed;
     // OVERLAY span (bigHitTailSeconds > 0): the overlay plays [onset − bigHitPre,
     // onset + bigHitTail], INDEPENDENT of the bed-notch span — so the two layers can
@@ -2240,9 +2257,11 @@ export class DrumSlicePlayer {
     let src: AudioBufferSourceNode;
     let env: GainNode;
     const sink = target ?? this.sliceOut;
-    // Overlays route to bedOut (they're part of the bed sound) → tag 'bed' so a new
-    // bed phase fade-stops them with the bed one-shot; slice sources tag 'slice'.
-    const kind: 'bed' | 'slice' = sink === this.bedOut ? 'bed' : 'slice';
+    // Overlays route to bedOut (they're part of the bed sound) → tag 'bedOverlay' so
+    // a nudge-out can HARD-kill them (their bit-exact transient would otherwise spill
+    // a kick into the bed during the gentle texture fade); slice sources tag 'slice'.
+    const kind: 'bedOverlay' | 'slice' =
+      sink === this.bedOut ? 'bedOverlay' : 'slice';
     try {
       src = this.ctx.createBufferSource();
       src.buffer = buffer;
