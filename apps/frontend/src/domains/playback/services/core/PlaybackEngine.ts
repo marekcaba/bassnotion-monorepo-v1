@@ -3076,9 +3076,48 @@ export class PlaybackEngine implements IAudioStemEngine {
         : (this.audioContext.baseLatency ?? 0);
     phaseSeconds -= (processingLatency + outputLatency) * rate;
 
-    const wrapped = ((phaseSeconds % loopLen) + loopLen) % loopLen;
-    return wrapped / loopLen;
+    // The latency-compensated `phaseSeconds` is the TARGET the playhead should sit at.
+    // But its rate-scaled latency term (×rate) STEPS whenever the tempo nudges, and the
+    // read-head re-stamps discretely on a rate change — so reading the target raw makes
+    // the playhead JUMP each nudge tick. To keep it smooth (only ever speed up / slow
+    // down, never jump), we run a persistent VISUAL PHASE ACCUMULATOR that advances
+    // continuously at `rate` and SLEWS toward the target rather than snapping to it.
+    const targetWrapped = ((phaseSeconds % loopLen) + loopLen) % loopLen;
+    const now2 = this.audioContext.currentTime;
+    const vp = this.visualPhase;
+    let phase: number;
+    if (
+      vp == null ||
+      vp.loopLen !== loopLen ||
+      now2 < vp.atTime ||
+      now2 - vp.atTime > 0.5 // stale (>500ms gap: a stop/seek) → resync hard
+    ) {
+      // First read / loop length changed / long gap → snap to the target (no history).
+      phase = targetWrapped;
+    } else {
+      // 1) Advance the accumulator continuously by elapsed × rate (in loop seconds).
+      const dt = now2 - vp.atTime;
+      let advanced = vp.phase + dt * rate;
+      // 2) Wrap, tracking signed distance to the target across the loop seam so the
+      //    slew goes the short way and a genuine loop wrap isn't fought.
+      advanced = ((advanced % loopLen) + loopLen) % loopLen;
+      let err = targetWrapped - advanced;
+      if (err > loopLen / 2) err -= loopLen;
+      else if (err < -loopLen / 2) err += loopLen;
+      // 3) SLEW toward truth: correct a fraction of the error per second (time-constant
+      //    ~120ms) so a step in the target (a nudge) is absorbed smoothly instead of
+      //    jumping. Small steady-state errors converge; the playhead never snaps.
+      const slewPerSec = 6; // ~1/0.16s — gentle but keeps up
+      advanced += err * Math.min(1, slewPerSec * dt);
+      phase = ((advanced % loopLen) + loopLen) % loopLen;
+    }
+    this.visualPhase = { phase, atTime: now2, loopLen };
+    return phase / loopLen;
   }
+
+  /** Smoothed visual-playhead phase accumulator (loop seconds) — keeps the playhead
+   *  continuous across tempo nudges (slews toward the read-head target, never jumps). */
+  private visualPhase: { phase: number; atTime: number; loopLen: number } | null = null;
 
   /**
    * Wall-clock audio-context time of the NEXT loop seam, read from the bass
