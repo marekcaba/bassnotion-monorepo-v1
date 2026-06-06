@@ -270,6 +270,28 @@ export type DrumRegion =
   | { kind: 'transient'; startIndex: number; endIndex: number }
   | { kind: 'texture'; startIndex: number; endIndex: number };
 
+/** TWO-TRACK (2026-06-06): the BIG-HITS track is the complement of the bed notch —
+ *  only the kick/snare regions, kept bit-exact, to be RE-GRIDDED (not stretched) at
+ *  each ratio and played as a 2nd continuous source. Unlike the bed it needs NO
+ *  WSOLA analysis (the hits aren't stretched, just repositioned). This holds one
+ *  pre-extracted region per strong hit, ratio-independent (built once at load). */
+interface DrumHit {
+  /** Input-domain onset position of this hit (seconds, on the musical loop). */
+  readonly onsetSec: number;
+  /** Bit-exact PCM of [onset − pre, onset + tail], one Float32Array per channel,
+   *  already edge-faded (declick). Copied straight into the hits buffer at the
+   *  re-gridded position onsetSec/ratio. */
+  readonly channels: Float32Array[];
+  /** Where the onset sits INSIDE `channels` (= round(pre*sr)). The region starts
+   *  `leadSamples` before the onset, so placement aligns the onset to the grid. */
+  readonly leadSamples: number;
+}
+interface HitsAnalysis {
+  readonly hits: DrumHit[];
+  readonly sampleRate: number;
+  readonly numChannels: number;
+}
+
 /** State of the Realtime/Rendered drum tempo machine. SLICES = the user is
  *  nudging (per-slice path, smooth); BED = settled (full WSOLA bed + overlays);
  *  the two XFADE_* are the in-flight equal-power crossfades between them. */
@@ -551,10 +573,16 @@ export class DrumSlicePlayer {
   private strongIndices: number[] = [];
   /** WSOLA analysis of the WHOLE loop, built ONCE (ratio-independent). The bed. */
   private bedAnalysis: WsolaAnalysis | null = null;
+  /** TWO-TRACK: pre-extracted bit-exact hit regions (complement of the bed notch),
+   *  built ONCE at load. Re-gridded per ratio into `hitsBuffer`. null ⇒ no hits. */
+  private hitsAnalysis: HitsAnalysis | null = null;
   /** The synthesized continuous bed for the CURRENT ratio (the whole loop
    *  stretched, one buffer). null ⇒ not synthesized / play raw. Rebuilt
    *  (coalesced) on a ratio change. */
   private bedBuffer: AudioBuffer | null = null;
+  /** TWO-TRACK: the BIG-HITS buffer for the CURRENT ratio — bit-exact hits placed
+   *  at their re-gridded positions, silence between. Built alongside bedBuffer. */
+  private hitsBuffer: AudioBuffer | null = null;
   /** The ratio bedBuffer was synthesized for (skip redundant re-synth). */
   private synthesizedForRatio = 0;
   /** Set by setRatio when the ratio changed; the next scheduleTick flushes ONE
@@ -759,6 +787,7 @@ export class DrumSlicePlayer {
 
     // ── WSOLA continuous-bed stretch ───────────────────────────────────────
     let reanalyze = false; // bed analysis geometry changed → re-analyze + synth
+    let reextractHits = false; // TWO-TRACK: hit span changed → re-extract + re-grid
     if (p.wsola !== undefined) this.wsolaEnabled = p.wsola;
     if (
       p.strongConfidenceThreshold !== undefined &&
@@ -810,13 +839,22 @@ export class DrumSlicePlayer {
     if (p.transientDuckAttackSeconds !== undefined) {
       this.transientDuckAttackSeconds = p.transientDuckAttackSeconds; // next iter
     }
-    // OVERLAY span (bigHit*) — applied to the NEXT iteration; NO bed rebuild (the
-    // overlay isn't baked into the bed). Decoupled from the notch.
-    if (p.bigHitPreSeconds !== undefined) {
+    // OVERLAY span (bigHit*) — TWO-TRACK: now defines the BIG-HITS buffer (extracted
+    // regions). Changing it re-extracts the hits + rebuilds the hits buffer, but does
+    // NOT re-run the (expensive) bed WSOLA analysis — only the cheap hit extraction.
+    if (
+      p.bigHitPreSeconds !== undefined &&
+      p.bigHitPreSeconds !== this.bigHitPreSeconds
+    ) {
       this.bigHitPreSeconds = p.bigHitPreSeconds;
+      reextractHits = true;
     }
-    if (p.bigHitTailSeconds !== undefined) {
+    if (
+      p.bigHitTailSeconds !== undefined &&
+      p.bigHitTailSeconds !== this.bigHitTailSeconds
+    ) {
       this.bigHitTailSeconds = p.bigHitTailSeconds;
+      reextractHits = true;
     }
     // BED NOTCH span (bedNotch*) — baked into the bed → RE-ANALYZE on change.
     if (
@@ -908,6 +946,18 @@ export class DrumSlicePlayer {
       // First enable: lazily build the bed analysis + synth for the live ratio.
       this.precomputeBedAnalysis();
       this.resynthesizeBed(true);
+    } else if (reextractHits && bedActive) {
+      // TWO-TRACK hits-only change: re-extract the bit-exact hit regions and rebuild
+      // the hits buffer for the live ratio — WITHOUT the expensive bed WSOLA
+      // re-analysis (the bed didn't change). Re-arm so the fresh hits buffer plays.
+      this.hitsAnalysis = this.extractHits();
+      this.resynthesizeBed(true); // rebuilds hitsBuffer (+ bed, cheap if same ratio)
+      if (this.playing && !this.autoMode) {
+        this.restartAtCurrentPhase();
+      } else if (this.playing) {
+        this.stopBedSources(this.ctx.currentTime + 0.02);
+        this.bedIterStart = null;
+      }
     }
   }
 
@@ -1186,6 +1236,9 @@ export class DrumSlicePlayer {
     }
     const analysis = analyzeWsola(channels, sr, this.wsolaOpt);
     this.bedAnalysis = wsolaIsUsable(analysis) ? analysis : null;
+    // TWO-TRACK: also extract the big-hits (complement of the notch) at load. Cheap
+    // (a few array copies), ratio-independent, re-gridded per ratio in resynthesizeBed.
+    this.hitsAnalysis = this.extractHits();
   }
 
   /**
@@ -1259,6 +1312,61 @@ export class DrumSlicePlayer {
       }
     }
     return out;
+  }
+
+  /**
+   * TWO-TRACK (2026-06-06): extract the BIG-HITS as bit-exact regions — the
+   * complement of the bed notch. For each strong hit, copy [onset − pre, onset +
+   * tail] per channel from the RAW loop, edge-faded (declick), tagged with the input
+   * onset position. These are re-gridded (NOT stretched) into the hits buffer at each
+   * ratio. The span uses the OVERLAY params (bigHitPre/Tail) — the hits the user
+   * hears; the bed notch (bedNotchPre/Tail) cuts the complementary hole, so
+   * bed + hits ≈ the full loop with no leak and no double (Landmines L1/L3: keep them
+   * matched, or the bed's residual combs with the hit). Pure; sets nothing.
+   */
+  private extractHits(): HitsAnalysis | null {
+    const sr = this.buffer.sampleRate;
+    const numCh = this.buffer.numberOfChannels;
+    const end = Math.min(this.buffer.length, Math.round(this.loopDuration * sr));
+    if (end <= 0 || this.strongIndices.length === 0) return null;
+    // Span matches the overlay region (what the user hears). Fall back to the legacy
+    // body/preRoll when the unified params are off.
+    const preSec =
+      this.bigHitTailSeconds > 0 ? this.bigHitPreSeconds : this.opt.preRollSeconds;
+    const tailSec =
+      this.bigHitTailSeconds > 0
+        ? this.bigHitTailSeconds
+        : this.transientBodySeconds;
+    const lead = Math.max(0, Math.round(preSec * sr));
+    const tail = Math.max(1, Math.round(tailSec * sr));
+    // Declick fades at the region edges (short — the attack must survive).
+    const fadeIn = Math.max(1, Math.round(this.opt.fadeInSeconds * sr));
+    const fadeOut = Math.max(1, Math.round(this.opt.fadeOutSeconds * sr));
+    const hits: DrumHit[] = [];
+    for (const k of this.strongIndices) {
+      const onsetSamp = Math.round(this.onsetAt(k) * sr);
+      const readStart = Math.max(0, onsetSamp - lead);
+      const readEnd = Math.min(end, onsetSamp + tail);
+      const len = readEnd - readStart;
+      if (len <= 1) continue;
+      const leadSamples = onsetSamp - readStart; // where the onset sits in the region
+      const channels: Float32Array[] = [];
+      for (let c = 0; c < numCh; c++) {
+        const src = this.buffer.getChannelData(c);
+        const region = new Float32Array(len);
+        for (let i = 0; i < len; i++) {
+          let g = 1;
+          if (i < fadeIn) g = i / fadeIn; // ramp in
+          const outFromEnd = len - 1 - i;
+          if (outFromEnd < fadeOut) g = Math.min(g, outFromEnd / fadeOut); // ramp out
+          region[i] = src[readStart + i]! * g;
+        }
+        channels.push(region);
+      }
+      hits.push({ onsetSec: this.onsetAt(k), channels, leadSamples });
+    }
+    if (hits.length === 0) return null;
+    return { hits, sampleRate: sr, numChannels: numCh };
   }
 
   /**
