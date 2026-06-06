@@ -7,13 +7,17 @@
  * and managing timed overlay events via the unified timeline editor.
  */
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import type {
   VideoBlockConfig,
   AnyVideoOverlayEvent,
 } from '@bassnotion/contracts';
 import { resolveOverlayEvents } from '@bassnotion/contracts';
 import { OverlayTimelineEditor } from '../../OverlayTimelineEditor.js';
+import {
+  fetchSignedVideoUrl,
+  VideoAccessError,
+} from '@/domains/widgets/api/videos';
 
 // ---------------------------------------------------------------------------
 // Component
@@ -49,19 +53,62 @@ export const VideoBlockForm = React.memo(function VideoBlockForm({
 
   const hasVideo = config.videoUrl && config.videoLibraryId;
 
+  // Resolve a signed preview URL. Bunny token-auth is enabled, so raw embed
+  // URLs 403 — the preview must go through the gated signer like real players.
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!config.videoUrl || !config.videoLibraryId) {
+      setPreviewUrl(null);
+      setPreviewError(null);
+      return;
+    }
+    let active = true;
+    setPreviewUrl(null);
+    setPreviewError(null);
+    // Debounce: the admin is typing the video id; wait for it to settle.
+    const handle = setTimeout(() => {
+      fetchSignedVideoUrl(config.videoUrl!, config.videoLibraryId!)
+        .then((signed) => {
+          if (active) setPreviewUrl(signed.embedUrl);
+        })
+        .catch((err) => {
+          if (!active) return;
+          setPreviewError(
+            err instanceof VideoAccessError
+              ? 'This video is gated — preview unavailable for your access level.'
+              : 'Could not load preview (check the video ID).',
+          );
+        });
+    }, 500);
+    return () => {
+      active = false;
+      clearTimeout(handle);
+    };
+  }, [config.videoUrl, config.videoLibraryId]);
+
   return (
     <div className="space-y-4">
-      {/* Video Preview */}
+      {/* Video Preview (signed URL) */}
       {hasVideo && (
-        <div className="aspect-video w-full rounded-lg overflow-hidden bg-gray-900">
-          <iframe
-            src={`https://iframe.mediadelivery.net/embed/${config.videoLibraryId}/${config.videoUrl}?autoplay=false`}
-            className="w-full h-full"
-            loading="lazy"
-            allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            frameBorder="0"
-          />
+        <div className="aspect-video w-full rounded-lg overflow-hidden bg-gray-900 flex items-center justify-center">
+          {previewUrl ? (
+            <iframe
+              src={`${previewUrl}&autoplay=false`}
+              className="w-full h-full"
+              loading="lazy"
+              allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              frameBorder="0"
+            />
+          ) : previewError ? (
+            <p className="text-sm text-white/40 px-4 text-center">
+              {previewError}
+            </p>
+          ) : (
+            <p className="text-sm text-white/30">Loading preview…</p>
+          )}
         </div>
       )}
 
