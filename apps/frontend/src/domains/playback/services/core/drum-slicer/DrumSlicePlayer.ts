@@ -1095,10 +1095,20 @@ export class DrumSlicePlayer {
   setPureTwoTrack(on: boolean): void {
     if (this.pureTwoTrack === on) return;
     this.pureTwoTrack = on;
-    if (this.playing) {
-      this.stopBedSources(this.ctx.currentTime + 0.02);
-      this.bedIterStart = null;
-      this.mode = 'SLICES';
+    if (!this.playing) return;
+    this.stopBedSources(this.ctx.currentTime + 0.02);
+    this.bedIterStart = null;
+    this.mode = 'SLICES';
+    // CRITICAL — restore the crossfade gains for the path we're switching INTO. Pure
+    // mode forces bedGain=1/sliceGain=0 (its tracks ride bedOut). Switching to HYBRID
+    // lands in SLICES, whose sources ride sliceOut → sliceGain; if we leave sliceGain
+    // at pure's 0, the slices play into a MUTED bus = SILENT. So set the SLICES resting
+    // gains (slice 1 / bed 0). Pure re-forces its own gains each tick when re-enabled.
+    const now = this.ctx.currentTime;
+    if (!on) {
+      if (this.sliceGain) this.sliceGain.gain.setValueAtTime(1, now);
+      if (this.bedGain) this.bedGain.gain.setValueAtTime(0, now);
+      this.nextSlice = 0; // re-seed the slice cursor for the live grid
     }
   }
 
