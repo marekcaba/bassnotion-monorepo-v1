@@ -2086,8 +2086,15 @@ export class DrumSlicePlayer {
       }
     }
     const scheduleSlicesNow = pure ? false : this.mode !== 'BED';
+    // PURE: always schedule the bed-iteration path. At a non-unity ratio it plays the
+    // stretched bedBuffer + the re-gridded hits; at UNITY (ratio≈1, bedBuffer null) it
+    // plays the RAW loop bit-exact (scheduleBed handles bed=null), which already
+    // contains the hits — so the drums are never silent at home tempo. (The hybrid
+    // relied on the SLICES path for unity; pure has no slices, so the bed path must
+    // cover unity too.)
+    const unityNow = Math.abs(this.ratio - 1) < 1e-4;
     const scheduleBedNow = pure
-      ? !!this.bedBuffer
+      ? unityNow || !!this.bedBuffer
       : this.mode !== 'SLICES' && !!this.bedBuffer;
 
     // ── BED arming. CRITICAL FIX: the previous loop advanced loopStartTime by
