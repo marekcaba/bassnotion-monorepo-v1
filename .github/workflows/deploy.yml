@@ -50,7 +50,11 @@ jobs:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # Pinned (not `latest`): `latest` queries the GitHub API on every run
+          # to resolve the newest release, which gets rate-limited on CI runners
+          # ("Failed to resolve latest Supabase CLI release: rate limit
+          # exceeded"). A pinned version skips that lookup → deterministic CI.
+          version: 2.72.7
 
       - name: Push migrations to ${{ steps.target.outputs.target }} Supabase
         env:
