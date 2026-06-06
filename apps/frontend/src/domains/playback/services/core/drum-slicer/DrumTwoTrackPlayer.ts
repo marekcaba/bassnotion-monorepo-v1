@@ -143,71 +143,73 @@ export class DrumTwoTrackPlayer {
     this.strongOnsets = this.onsets.filter(
       (_t, i) => i === 0 || (this.confidences[i] ?? 1) >= this.opt.strongConfidenceThreshold,
     );
-    this.buildBed();
-    this.extractHits();
+    this.buildSplit();
   }
 
-  /** Build the notched bed buffer ONCE: the loop with every big hit's body removed.
-   *  The kicks/snares are physically gone — they can never leak. High-passed so the
-   *  bed carries no low end (the hits do). This buffer loops forever and is stretched
-   *  by playbackRate; it is NEVER re-rendered. */
-  private buildBed(): void {
+  /**
+   * COMPLEMENTARY SPLIT — the bed and the hits share ONE region per big hit and ONE
+   * envelope, so they reconstruct the original exactly: hit gets gain h(i), bed gets
+   * (1 − h(i)). Where the hit is full (h=1, across the attack/body) the bed is 0 →
+   * the kick is PHYSICALLY GONE from the bed (can't leak); at the region edges they
+   * crossfade and SUM TO 1 → no double, no gap. At ratio 1, bed + hits = the original
+   * sample-for-sample (modulo the bed high-pass, which moves the lows to the hits).
+   *
+   * The shared region is [onset − hitPre, onset + hitTail]. The envelope h(i): ramps
+   * 0→1 over the pre (lead-in), holds 1 across pre→tail-edge, ramps 1→0 over a short
+   * release at the tail. The bed uses 1−h(i) over the SAME samples.
+   */
+  private buildSplit(): void {
     const end = Math.min(this.buffer.length, Math.round(this.loopDuration * this.sr));
     if (end <= 0) {
       this.bedBuffer = null;
+      this.hits = [];
       return;
     }
-    const pre = Math.max(0, Math.round(this.opt.notchPreSeconds * this.sr));
-    const tail = Math.max(1, Math.round(this.opt.notchTailSeconds * this.sr));
-    const ramp = Math.max(1, Math.round(0.012 * this.sr)); // edge ramp for the notch
-    const channels: Float32Array[] = [];
-    for (let c = 0; c < this.numCh; c++) {
-      const src = this.buffer.getChannelData(c);
-      const out = new Float32Array(end);
-      out.set(src.subarray(0, end));
-      // Notch (zero) each big hit's region with a click-free ramp that reaches 0 BY
-      // the onset (so the attack is fully removed, not mid-ramp).
-      for (const onsetSec of this.strongOnsets) {
-        const onset = Math.round(onsetSec * this.sr);
-        const dipStart = Math.max(0, onset - pre);
-        const dipEnd = Math.min(end, onset + tail);
-        const leadAvail = onset - dipStart;
-        const downRamp = Math.min(ramp, leadAvail);
-        const downStart = onset - downRamp;
-        for (let i = dipStart; i < dipEnd; i++) {
-          let g: number;
-          const outof = dipEnd - i;
-          if (i < downStart) g = 1;
-          else if (i < onset) {
-            const x = (i - downStart) / Math.max(1, downRamp);
-            g = 0.5 * (1 + Math.cos(Math.PI * x)); // 1→0 by the onset
-          } else if (outof < ramp) {
-            const x = outof / ramp;
-            g = 0.5 * (1 + Math.cos(Math.PI * x)); // 0→1 out
-          } else g = 0; // fully removed across the body
-          out[i] = out[i]! * g;
-        }
-      }
-      if (this.opt.bedHighpassHz > 0) {
-        this.highpass(out, this.opt.bedHighpassHz);
-      }
-      channels.push(out);
-    }
-    try {
-      const buf = this.ctx.createBuffer(this.numCh, end, this.sr);
-      for (let c = 0; c < this.numCh; c++) buf.copyToChannel(channels[c]!, c);
-      this.bedBuffer = buf;
-    } catch {
-      this.bedBuffer = null;
-    }
-  }
-
-  /** Extract each big hit as a bit-exact region [onset−pre, onset+tail], edge-faded. */
-  private extractHits(): void {
-    const end = Math.min(this.buffer.length, Math.round(this.loopDuration * this.sr));
     const pre = Math.max(0, Math.round(this.opt.hitPreSeconds * this.sr));
     const tail = Math.max(1, Math.round(this.opt.hitTailSeconds * this.sr));
     const fade = Math.max(1, Math.round(this.opt.fadeSeconds * this.sr));
+
+    // STEP 1 — each hit's own envelope h_k(i): 0→1 lead-in (attack survives), hold 1,
+    // 1→0 release. The bed must equal original·(1 − Σh_k) and the summed hits equal
+    // original·Σh_k, so that bed + Σhits = original. Build the SUM map Σh_k, clamped
+    // to ≤1 for the bed (heavy overlaps can't make the bed go negative).
+    const envOf = (i: number, len: number, lead: number): number => {
+      let h = 1;
+      if (i < lead) h = lead > 0 ? i / lead : 1;
+      const outFromEnd = len - 1 - i;
+      if (outFromEnd < fade) h = Math.min(h, outFromEnd / fade);
+      return h;
+    };
+    const sumH = new Float32Array(end); // Σ h_k(i)
+    for (const onsetSec of this.strongOnsets) {
+      const onset = Math.round(onsetSec * this.sr);
+      const readStart = Math.max(0, onset - pre);
+      const readEnd = Math.min(end, onset + tail);
+      const len = readEnd - readStart;
+      if (len <= 1) continue;
+      const lead = onset - readStart;
+      for (let i = 0; i < len; i++) sumH[readStart + i]! += envOf(i, len, lead);
+    }
+
+    // STEP 2 — BED = original · (1 − min(Σh, 1)). Where a hit is full, bed is 0 (kick
+    // physically gone). At the edges they crossfade. Then high-pass the bed.
+    const bedChannels: Float32Array[] = [];
+    for (let c = 0; c < this.numCh; c++) {
+      const src = this.buffer.getChannelData(c);
+      const bed = new Float32Array(end);
+      for (let i = 0; i < end; i++) {
+        const bedG = 1 - Math.min(1, sumH[i]!);
+        bed[i] = src[i]! * bedG;
+      }
+      bedChannels.push(bed);
+    }
+
+    // STEP 3 — HITS: each hit = original · (h_k / max(1, Σh)) over its region. The
+    // NORMALIZATION by max(1,Σh) is critical: where two hits fully overlap (Σh=2),
+    // each contributes original·(1/2), so the summed hits = original·1, matching the
+    // bed's complement (bed = original·(1−1) = 0). Without it the overlap played at
+    // 2× = the full-scale doubling. Now bed + Σhits = original EVERYWHERE, overlaps
+    // included. (Where Σh ≤ 1, the divisor is 1 → hits = original·h_k as before.)
     this.hits = [];
     for (const onsetSec of this.strongOnsets) {
       const onset = Math.round(onsetSec * this.sr);
@@ -216,20 +218,33 @@ export class DrumTwoTrackPlayer {
       const len = readEnd - readStart;
       if (len <= 1) continue;
       const leadSamples = onset - readStart;
-      const channels: Float32Array[] = [];
+      const hitChannels: Float32Array[] = [];
       for (let c = 0; c < this.numCh; c++) {
         const src = this.buffer.getChannelData(c);
         const region = new Float32Array(len);
         for (let i = 0; i < len; i++) {
-          let g = 1;
-          if (i < fade) g = i / fade;
-          const outFromEnd = len - 1 - i;
-          if (outFromEnd < fade) g = Math.min(g, outFromEnd / fade);
-          region[i] = src[readStart + i]! * g;
+          const d = readStart + i;
+          const norm = Math.max(1, sumH[d]!);
+          region[i] = src[d]! * (envOf(i, len, leadSamples) / norm);
         }
-        channels.push(region);
+        hitChannels.push(region);
       }
-      this.hits.push({ onsetSec, channels, leadSamples });
+      this.hits.push({ onsetSec, channels: hitChannels, leadSamples });
+    }
+    // High-pass the bed AFTER the complement (the lows move to the hits, which keep
+    // them bit-exact). At ratio 1 the only difference from the original is the bed's
+    // sub-bass texture between hits — a deliberate choice (keeps the stretched bed clean).
+    if (this.opt.bedHighpassHz > 0) {
+      for (let c = 0; c < this.numCh; c++) {
+        this.highpass(bedChannels[c]!, this.opt.bedHighpassHz);
+      }
+    }
+    try {
+      const buf = this.ctx.createBuffer(this.numCh, end, this.sr);
+      for (let c = 0; c < this.numCh; c++) buf.copyToChannel(bedChannels[c]!, c);
+      this.bedBuffer = buf;
+    } catch {
+      this.bedBuffer = null;
     }
   }
 
