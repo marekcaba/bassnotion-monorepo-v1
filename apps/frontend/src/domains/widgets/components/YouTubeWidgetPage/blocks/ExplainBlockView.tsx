@@ -1,8 +1,13 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import type { TutorialBlock, ExplainMediaItem } from '@bassnotion/contracts';
-import { ChevronLeft, ChevronRight, Volume2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Volume2, Lock } from 'lucide-react';
+
+import {
+  fetchSignedVideoUrl,
+  VideoAccessError,
+} from '@/domains/widgets/api/videos';
 
 interface ExplainBlockViewProps {
   block: TutorialBlock<'explain'>;
@@ -55,17 +60,52 @@ const VideoItem = React.memo(function VideoItem({
 }: {
   item: ExplainMediaItem;
 }) {
-  if (!item.videoUrl || !item.videoLibraryId) return null;
+  // `videoUrl` holds the Bunny video id here (legacy field name).
+  const videoId = item.videoUrl;
+  const libraryId = item.videoLibraryId;
+  const [embedUrl, setEmbedUrl] = useState<string | null>(null);
+  const [locked, setLocked] = useState(false);
+
+  useEffect(() => {
+    if (!videoId || !libraryId) return;
+    let active = true;
+    // Resolve a signed, entitlement-checked embed URL. 403 → show a lock.
+    fetchSignedVideoUrl(videoId, libraryId)
+      .then((signed) => {
+        if (active) setEmbedUrl(signed.embedUrl);
+      })
+      .catch((err) => {
+        if (!active) return;
+        if (err instanceof VideoAccessError) setLocked(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [videoId, libraryId]);
+
+  if (!videoId || !libraryId) return null;
+
+  if (locked) {
+    return (
+      <div className="aspect-video w-full rounded-xl overflow-hidden bg-white/5 border border-white/10 flex flex-col items-center justify-center gap-2 text-white/50">
+        <Lock className="w-6 h-6" />
+        <p className="text-sm">Members-only video</p>
+      </div>
+    );
+  }
+
   return (
     <div className="aspect-video w-full rounded-xl overflow-hidden">
-      <iframe
-        src={`https://iframe.mediadelivery.net/embed/${item.videoLibraryId}/${item.videoUrl}?autoplay=false&preload=true`}
-        className="w-full h-full"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-        frameBorder="0"
-        title="Explanation video"
-      />
+      {embedUrl && (
+        <iframe
+          src={`${embedUrl}&autoplay=false&preload=true`}
+          className="w-full h-full"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          frameBorder="0"
+          title="Explanation video"
+        />
+      )}
     </div>
   );
 });

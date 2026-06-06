@@ -11,6 +11,8 @@
 import { useEffect, useRef } from 'react';
 import type { VideoSegment } from '@bassnotion/contracts';
 
+import { fetchSignedVideoUrl } from '@/domains/widgets/api/videos';
+
 export interface SegmentVideoPlayerProps {
   segment: VideoSegment;
   onReady: (duration: number) => void;
@@ -86,6 +88,14 @@ export function SegmentVideoPlayer({
 
     const initPlayer = async () => {
       try {
+        // Resolve a signed, entitlement-checked embed URL (raw embed URLs 403
+        // once Bunny token-auth is on). A 403 throws and skips player init.
+        const signed = await fetchSignedVideoUrl(
+          segment.videoId,
+          segment.videoLibraryId,
+        );
+        if (!mounted) return;
+
         // Load Player.js library
         await loadPlayerJs();
 
@@ -94,10 +104,10 @@ export function SegmentVideoPlayer({
         // Clear container
         containerRef.current.innerHTML = '';
 
-        // Create iframe with unique src and autoplay
+        // Create iframe from the SIGNED url + our player params (autoplay).
         const iframe = document.createElement('iframe');
         const uniqueId = Date.now();
-        iframe.src = `https://iframe.mediadelivery.net/embed/${segment.videoLibraryId}/${segment.videoId}?t=${uniqueId}&autoplay=true&loop=false`;
+        iframe.src = `${signed.embedUrl}&t=${uniqueId}&autoplay=true&loop=false`;
         iframe.style.width = '100%';
         iframe.style.height = '100%';
         iframe.style.border = 'none';

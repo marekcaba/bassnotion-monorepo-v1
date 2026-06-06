@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 
+import { fetchSignedVideoUrl } from '@/domains/widgets/api/videos';
+
 /**
  * Bunny Stream Player Hook
  *
@@ -141,6 +143,13 @@ export function useBunnyPlayer(
 
     const initPlayer = async () => {
       try {
+        // Resolve a short-lived, entitlement-checked signed embed URL from the
+        // backend. This is the ONLY supported way to get a playable URL once
+        // Bunny token-auth is enabled — raw embed URLs return 403. A 403 here
+        // (VideoAccessError) means the viewer lacks access; surface via onError.
+        const signed = await fetchSignedVideoUrl(videoId, libraryId);
+        if (!mounted) return;
+
         // Load Player.js library
         await loadPlayerJs();
 
@@ -149,12 +158,13 @@ export function useBunnyPlayer(
         // Clear container
         containerRef.current.innerHTML = '';
 
-        // Create iframe with unique src (append timestamp to avoid conflicts)
-        // Add loop=false to prevent video from looping on end
-        // Keep autoplay=false - we control play via Player.js API
+        // Create iframe from the SIGNED url, then append our player params.
+        // The signed url already carries ?token=&expires=, so we append with &.
+        // Add loop=false to prevent video from looping on end.
+        // Keep autoplay=false - we control play via Player.js API.
         const iframe = document.createElement('iframe');
         const uniqueId = Date.now();
-        iframe.src = `https://iframe.mediadelivery.net/embed/${libraryId}/${videoId}?t=${uniqueId}&loop=false&autoplay=false&preload=true`;
+        iframe.src = `${signed.embedUrl}&t=${uniqueId}&loop=false&autoplay=false&preload=true`;
         iframe.style.width = '100%';
         iframe.style.height = '100%';
         iframe.style.border = 'none';

@@ -14,6 +14,7 @@ import { CacheModule } from './infrastructure/cache/cache.module.js';
 import { StorageModule } from './infrastructure/storage/storage.module.js';
 import { HealthModule } from './health/health.module.js';
 import { BillingModule } from './domains/billing/billing.module.js';
+import { VideosModule } from './domains/videos/videos.module.js';
 import { PatternsModule } from './domains/patterns/patterns.module.js';
 import { GroovesModule } from './domains/grooves/grooves.module.js';
 import { SocialModule } from './domains/social/social.module.js';
@@ -43,6 +44,7 @@ import { LoggingModule } from './infrastructure/logging/logging.module.js';
     CreatorsModule,
     HealthModule,
     BillingModule,
+    VideosModule,
     PatternsModule,
     GroovesModule,
     SocialModule,
