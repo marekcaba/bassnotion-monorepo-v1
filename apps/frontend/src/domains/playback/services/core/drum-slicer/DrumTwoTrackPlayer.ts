@@ -26,6 +26,29 @@
  */
 import { detectOnsetsDetailed } from './detectOnsets.js';
 
+/** The subset of the signalsmith PitchShiftAdapter the bed needs for a pitch-
+ *  PRESERVING stretch (in tune at every tempo). Injected by the engine, which owns
+ *  the adapter. When absent, the bed falls back to playbackRate (pitch-bends). */
+export interface BedStretchControls {
+  createBufferStreamingNode(
+    ctx: AudioContext,
+    output: AudioNode,
+    channelData: Float32Array[],
+    bufferDuration: number,
+    stemProfile: 'bass' | 'harmony',
+    initialSemitones?: number,
+  ): AudioNode | null;
+  startBufferStreaming(node: AudioNode, when: number, offsetSeconds: number): void;
+  setRate(
+    node: AudioNode,
+    rate: number,
+    ctx: AudioContext,
+    applyAtAudioTime?: number,
+  ): void;
+  silenceNode(node: AudioNode, ctx: AudioContext): void;
+  disposeNode(node: AudioNode): void;
+}
+
 export interface DrumTwoTrackOptions {
   /** Musical loop length (s) — the grid the hits re-space against and the bed loops on. */
   loopDurationSeconds: number;
@@ -95,6 +118,14 @@ export class DrumTwoTrackPlayer {
   // The single continuous bed source (loops forever; playbackRate = the stretch).
   private bedSrc: AudioBufferSourceNode | null = null;
   private bedGain: GainNode | null = null;
+
+  // BED ENGINE A/B: 'rate' = playbackRate (warps, pitch-bends — simple, no latency);
+  // 'signalsmith' = pitch-preserving stretch (in tune at every tempo, via the engine's
+  // adapter). Default signalsmith when the adapter is injected, else rate.
+  private bedEngine: 'rate' | 'signalsmith' = 'rate';
+  private bedStretch: BedStretchControls | null = null; // injected adapter
+  private bedNode: AudioNode | null = null; // the signalsmith bed relay node
+  private bedSemitones = 0; // optional bed pitch offset (default 0 = true pitch)
 
   // Scheduled hit one-shots (for teardown).
   private active = new Set<{ src: AudioBufferSourceNode; env: GainNode }>();
@@ -305,11 +336,33 @@ export class DrumTwoTrackPlayer {
     this.timer = setInterval(() => this.tick(), this.opt.tickMs);
   }
 
-  /** Start (or restart) the single continuous bed source, looping, at the current
-   *  ratio (playbackRate). It plays forever until stop()/restart. */
+  /** Inject the signalsmith adapter + enable the pitch-PRESERVING bed engine. Call
+   *  before start() (or it re-arms the bed if already playing). The engine owns the
+   *  adapter; this player drives the bed node through it. */
+  attachBedStretch(controls: BedStretchControls, engine: 'rate' | 'signalsmith'): void {
+    this.bedStretch = controls;
+    if (this.bedEngine === engine) return;
+    this.bedEngine = engine;
+    if (this.playing) this.startBed(); // re-arm with the chosen engine
+  }
+
+  /** Switch the bed engine live (A/B by ear). */
+  setBedEngine(engine: 'rate' | 'signalsmith'): void {
+    if (this.bedEngine === engine) return;
+    if (engine === 'signalsmith' && !this.bedStretch) return; // no adapter → stay rate
+    this.bedEngine = engine;
+    if (this.playing) this.startBed();
+  }
+
+  /** Start (or restart) the bed. Branches on bedEngine: 'signalsmith' = pitch-
+   *  preserving stretch (in tune); 'rate' = playbackRate (warps/pitch-bends). */
   private startBed(): void {
     this.stopBed();
     if (!this.bedBuffer) return;
+    if (this.bedEngine === 'signalsmith' && this.bedStretch) {
+      this.startBedSignalsmith();
+      return;
+    }
     try {
       const src = this.ctx.createBufferSource();
       const env = this.ctx.createGain();
@@ -336,7 +389,62 @@ export class DrumTwoTrackPlayer {
     }
   }
 
+  /** Start the bed through signalsmith — pitch-PRESERVING stretch, in tune at every
+   *  tempo. The notched bed PCM streams through the adapter (sg→relay→bedGain→output)
+   *  at the current ratio, semitones 0. Started at the grid phase (raw loopStartTime;
+   *  signalsmith emits at `when` with no start-latency — aligned with the bit-exact
+   *  hits). A bedGain sits before the output so muteBed can solo it. */
+  private startBedSignalsmith(): void {
+    const ctrl = this.bedStretch;
+    if (!ctrl || !this.bedBuffer) return;
+    try {
+      const channelData: Float32Array[] = [];
+      for (let c = 0; c < this.bedBuffer.numberOfChannels; c++) {
+        channelData.push(this.bedBuffer.getChannelData(c));
+      }
+      // A gain stage we own (for muteBed) between the bed node and the output.
+      const env = this.ctx.createGain();
+      env.gain.value = this.muteBed ? 0 : 1;
+      env.connect(this.output);
+      // 'harmony' profile = formantBaseHz 0 (auto) — closest for the broadband,
+      // transient-removed bed. The node connects itself: sg → relay → env.
+      const node = ctrl.createBufferStreamingNode(
+        this.ctx,
+        env,
+        channelData,
+        this.loopDuration,
+        'harmony',
+        this.bedSemitones,
+      );
+      if (!node) {
+        try {
+          env.disconnect();
+        } catch {
+          /* ignore */
+        }
+        return;
+      }
+      this.bedNode = node;
+      this.bedGain = env;
+      // Set the live rate, then start at the grid phase (raw — no latency pull).
+      ctrl.setRate(node, this.ratio || 1, this.ctx);
+      const now = this.ctx.currentTime;
+      const startAt = Math.max(now + 0.005, this.loopStartTime);
+      const phaseSec = Math.max(0, now - this.loopStartTime);
+      const offsetInput = (phaseSec * (this.ratio || 1)) % this.loopDuration;
+      ctrl.startBufferStreaming(
+        node,
+        startAt,
+        this.loopStartTime > now ? 0 : offsetInput,
+      );
+    } catch {
+      this.bedNode = null;
+      this.bedGain = null;
+    }
+  }
+
   private stopBed(): void {
+    // playbackRate bed
     if (this.bedSrc) {
       try {
         this.bedGain?.gain.setValueAtTime(0, this.ctx.currentTime);
@@ -349,8 +457,22 @@ export class DrumTwoTrackPlayer {
         /* ignore */
       }
       this.bedSrc = null;
-      this.bedGain = null;
     }
+    // signalsmith bed — silence then dispose (never a bare disconnect).
+    if (this.bedNode && this.bedStretch) {
+      try {
+        this.bedStretch.silenceNode(this.bedNode, this.ctx);
+      } catch {
+        /* ignore */
+      }
+      try {
+        this.bedStretch.disposeNode(this.bedNode);
+      } catch {
+        /* ignore */
+      }
+      this.bedNode = null;
+    }
+    this.bedGain = null;
   }
 
   stop(when?: number): void {
@@ -401,9 +523,18 @@ export class DrumTwoTrackPlayer {
     const changed = newRatio !== this.ratio;
     this.ratio = newRatio;
     if (!this.playing || !changed) return;
-    // BED: warp live by setting playbackRate. One file, stretched — no re-render.
-    if (this.bedSrc) {
-      const t = atTime ?? this.ctx.currentTime;
+    const t = atTime ?? this.ctx.currentTime;
+    // BED rate — live, no re-render either way.
+    if (this.bedEngine === 'signalsmith' && this.bedNode && this.bedStretch) {
+      // Pitch-PRESERVING stretch: setRate at the SHARED pivot t so the bed stays
+      // locked to bass/harmony/hits. Instant (one sg.schedule), in tune.
+      try {
+        this.bedStretch.setRate(this.bedNode, newRatio, this.ctx, t);
+      } catch {
+        /* ignore */
+      }
+    } else if (this.bedSrc) {
+      // playbackRate: warps the one buffer (pitch-bends). Set at the shared pivot.
       try {
         this.bedSrc.playbackRate.setValueAtTime(newRatio, t);
       } catch {
@@ -573,12 +704,14 @@ export class DrumTwoTrackPlayer {
     bedReady: boolean;
     hitsReady: boolean;
     hitCount: number;
+    bedEngine: 'rate' | 'signalsmith';
   } {
     return {
       ratio: this.ratio,
-      bedReady: !!this.bedBuffer,
+      bedReady: this.bedEngine === 'signalsmith' ? !!this.bedNode : !!this.bedBuffer,
       hitsReady: this.hits.length > 0,
       hitCount: this.hits.length,
+      bedEngine: this.bedEngine,
     };
   }
 

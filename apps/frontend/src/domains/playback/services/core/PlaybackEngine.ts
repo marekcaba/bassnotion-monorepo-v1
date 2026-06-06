@@ -3745,6 +3745,18 @@ export class PlaybackEngine implements IAudioStemEngine {
       this.drumTwoTrack = new DrumTwoTrackPlayer(this.audioContext, buffer, gain, {
         loopDurationSeconds: loopDur,
       });
+      // Inject the signalsmith adapter so the BED can stretch PITCH-PRESERVING (in
+      // tune at every tempo) like bass/harmony — the player picks 'signalsmith' when
+      // available, falling back to playbackRate (pitch-bend) if not. The adapter
+      // implements the BedStretchControls subset the player needs.
+      if (this.pitchShiftAdapter) {
+        this.drumTwoTrack.attachBedStretch(
+          this.pitchShiftAdapter as unknown as Parameters<
+            typeof this.drumTwoTrack.attachBedStretch
+          >[0],
+          'signalsmith',
+        );
+      }
       this.regionScheduler?.setSelfLoopingSource(
         'drums',
         new DrumSliceSource(this.drumTwoTrack),
@@ -3752,6 +3764,7 @@ export class PlaybackEngine implements IAudioStemEngine {
       this.logger.info('Drum two-track player created (clean bed+hits)', {
         onsets: onsets.length,
         loopDur,
+        bedEngine: this.pitchShiftAdapter ? 'signalsmith' : 'rate',
         instanceId: this.instanceId,
       });
       return;
@@ -3830,6 +3843,13 @@ export class PlaybackEngine implements IAudioStemEngine {
    *  (SLICES while dragging + bed when settled). For dialing by ear. */
   setDrumPureTwoTrack(on: boolean): void {
     this.drumSlicePlayer?.setPureTwoTrack(on);
+  }
+
+  /** BED ENGINE A/B (clean two-track player): 'signalsmith' = pitch-preserving (in
+   *  tune at every tempo) vs 'rate' = playbackRate (warps/pitch-bends). For dialing
+   *  the bed pitch behaviour by ear. */
+  setDrumBedEngine(engine: 'rate' | 'signalsmith'): void {
+    this.drumTwoTrack?.setBedEngine(engine);
   }
 
   /** PURE bed-during-drag mode A/B: 'hold' vs 'rate' (playbackRate). */
