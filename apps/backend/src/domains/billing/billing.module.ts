@@ -4,10 +4,12 @@ import { ConfigModule } from '@nestjs/config';
 import { StripeService } from './services/stripe.service.js';
 import { ResendService } from './services/resend.service.js';
 import { AdminFunnelsService } from './services/admin-funnels.service.js';
+import { EntitlementService } from './services/entitlement.service.js';
 import { BillingController } from './billing.controller.js';
 import { WebhookController } from './webhook.controller.js';
 import { FoundersController } from './founders.controller.js';
 import { PurchaseRepository } from './repositories/purchase.repository.js';
+import { ProductRepository } from './repositories/product.repository.js';
 import { FounderCardConfigRepository } from './repositories/founder-card-config.repository.js';
 import { SupabaseModule } from '../../infrastructure/supabase/supabase.module.js';
 import { AuthModule } from '../user/auth/auth.module.js';
@@ -23,14 +25,18 @@ import { MembershipModule } from './membership.module.js';
     StripeService,
     ResendService,
     AdminFunnelsService,
+    EntitlementService,
     PurchaseRepository,
+    ProductRepository,
     FounderCardConfigRepository,
   ],
   exports: [
     StripeService,
     ResendService,
     AdminFunnelsService,
+    EntitlementService,
     PurchaseRepository,
+    ProductRepository,
     FounderCardConfigRepository,
   ],
 })

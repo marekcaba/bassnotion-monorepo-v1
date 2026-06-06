@@ -13,6 +13,27 @@
 export type CourseType = 'basic' | 'standard' | 'premium';
 export type SubscriptionPlan = 'monthly';
 
+/**
+ * A sellable product in the catalog (the `products` table).
+ * - membership   — recurring monthly access (the $24/mo plan, founders included)
+ * - groove_pack  — one-time purchase, flat ownership (member ≠ owner unless bought)
+ * - accelerator  — one-time purchase + time-based drip (e.g. 30-day path)
+ * - course       — legacy generic course bundles (basic/standard/premium)
+ */
+export type ProductType =
+  | 'membership'
+  | 'groove_pack'
+  | 'accelerator'
+  | 'course';
+
+/**
+ * The access requirement declared by a piece of content.
+ * - free    — anyone (anon or logged in)
+ * - member  — requires an active subscription / founder lifetime
+ * - product — requires having PURCHASED the linked product
+ */
+export type ContentAccessTier = 'free' | 'member' | 'product';
+
 export interface CourseProduct {
   type: CourseType;
   name: string;
@@ -95,6 +116,25 @@ export const SUBSCRIPTION_PRODUCT: SubscriptionProduct = {
 // Database Entities
 // =============================================================================
 
+/**
+ * A row in the `products` catalog. Maps a Stripe price to an internal product,
+ * and is what gateable content references via `product_id`.
+ */
+export interface Product {
+  id: string;
+  slug: string;
+  type: ProductType;
+  name: string;
+  description?: string;
+  stripePriceId?: string;
+  priceInCents: number;
+  currency: string;
+  isActive: boolean;
+  metadata: Record<string, unknown>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export type SubscriptionStatus =
   | 'active'
   | 'canceled'
@@ -127,7 +167,10 @@ export interface Purchase {
   stripeCustomerId: string;
   stripePaymentIntentId: string;
   stripeCheckoutSessionId: string;
-  courseType: CourseType;
+  /** Legacy: the coarse course tier. Null for product-scoped purchases. */
+  courseType: CourseType | null;
+  /** The product this purchase grants. Null only for legacy course_type rows. */
+  productId: string | null;
   amount: number;
   currency: string;
   status: PurchaseStatus;

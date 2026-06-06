@@ -13,7 +13,8 @@ interface PurchaseRow {
   stripe_customer_id: string;
   stripe_payment_intent_id: string;
   stripe_checkout_session_id: string;
-  course_type: CourseType;
+  course_type: CourseType | null;
+  product_id: string | null;
   amount: number;
   currency: string;
   status: PurchaseStatus;
@@ -36,6 +37,7 @@ export class PurchaseRepository {
       stripePaymentIntentId: row.stripe_payment_intent_id,
       stripeCheckoutSessionId: row.stripe_checkout_session_id,
       courseType: row.course_type,
+      productId: row.product_id,
       amount: row.amount,
       currency: row.currency,
       status: row.status,
@@ -116,6 +118,7 @@ export class PurchaseRepository {
         stripe_payment_intent_id: purchase.stripePaymentIntentId,
         stripe_checkout_session_id: purchase.stripeCheckoutSessionId,
         course_type: purchase.courseType,
+        product_id: purchase.productId,
         amount: purchase.amount,
         currency: purchase.currency,
         status: purchase.status,
@@ -162,16 +165,17 @@ export class PurchaseRepository {
       .from(this.TABLE_NAME)
       .select('course_type')
       .eq('user_id', userId)
-      .eq('status', 'completed');
+      .eq('status', 'completed')
+      .not('course_type', 'is', null);
 
     if (error) {
       this.logger.error('Error getting purchased courses', error);
       throw error;
     }
 
-    return (data as { course_type: CourseType }[]).map(
-      (row) => row.course_type,
-    );
+    return (data as { course_type: CourseType | null }[])
+      .map((row) => row.course_type)
+      .filter((c): c is CourseType => c !== null);
   }
 
   async hasPurchasedCourse(
@@ -180,5 +184,50 @@ export class PurchaseRepository {
   ): Promise<boolean> {
     const purchasedCourses = await this.getPurchasedCourses(userId);
     return purchasedCourses.includes(courseType);
+  }
+
+  /**
+   * Product-scoped ownership: the IDs of all products this user has completed a
+   * purchase for. This is the primitive the entitlement resolver uses to gate
+   * `product`-tier content (Groove Packs, Accelerator).
+   */
+  async getPurchasedProductIds(userId: string): Promise<string[]> {
+    const client = this.supabaseService.getClient();
+
+    const { data, error } = await client
+      .from(this.TABLE_NAME)
+      .select('product_id')
+      .eq('user_id', userId)
+      .eq('status', 'completed')
+      .not('product_id', 'is', null);
+
+    if (error) {
+      this.logger.error('Error getting purchased product IDs', error);
+      throw error;
+    }
+
+    return (data as { product_id: string }[]).map((row) => row.product_id);
+  }
+
+  /** Whether the user owns a specific product (completed purchase). */
+  async hasPurchasedProduct(
+    userId: string,
+    productId: string,
+  ): Promise<boolean> {
+    const client = this.supabaseService.getClient();
+
+    const { count, error } = await client
+      .from(this.TABLE_NAME)
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('product_id', productId)
+      .eq('status', 'completed');
+
+    if (error) {
+      this.logger.error('Error checking product ownership', error);
+      throw error;
+    }
+
+    return (count ?? 0) > 0;
   }
 }
