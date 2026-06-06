@@ -92,6 +92,7 @@ import {
   type GapFillParamsSnapshot,
 } from './drum-slicer/DrumSlicePlayer.js';
 import { DrumTwoTrackPlayer } from './drum-slicer/DrumTwoTrackPlayer.js';
+import { DrumBeatsPlayer } from './drum-slicer/DrumBeatsPlayer.js';
 
 // Debug flag - enable in browser console: window.__DEBUG_PLAYBACK_ENGINE = true
 const isPlaybackDebugEnabled = (): boolean => {
@@ -323,6 +324,18 @@ export class PlaybackEngine implements IAudioStemEngine {
    *  notched OUT of the bed, so they can never leak. Default ON. */
   private drumTwoTrack: DrumTwoTrackPlayer | null = null;
   private useCleanTwoTrack = true;
+  /** ABLETON-BEATS slicer (2026-06-06): slices the loop at EVERY transient (kick,
+   *  snare, AND hats), re-grids each slice un-stretched (rate 1, transients can never
+   *  smear/pitch-bend), and fills the gap when slowing down by looping the slice's own
+   *  tail (Ableton Beats / REX). NO bed, NO stretcher on drums → reliable by
+   *  construction. When `drumEngine === 'beats'` THIS is constructed instead of the
+   *  two-track player. Selectable live via setDrumEngineMode() for A/B-by-ear. */
+  private drumBeats: DrumBeatsPlayer | null = null;
+  /** Which drum tempo engine is active. 'beats' = Ableton-style slicer (default,
+   *  the chosen path); 'two-track' = notched-bed + hits; 'slices' = the old
+   *  DrumSlicePlayer state machine. `useCleanTwoTrack` still gates two-track vs the
+   *  old slices player when drumEngine isn't 'beats'. */
+  private drumEngine: 'beats' | 'two-track' | 'slices' = 'beats';
 
   /** Time-stretch (LAUNCH-06): the MUSICAL loop length (seconds) bass/harmony
    *  buffer-streaming nodes loop on — set by the groove card before
@@ -3604,6 +3617,7 @@ export class PlaybackEngine implements IAudioStemEngine {
     // per-change phase error accumulates (tempo-dependent desync).
     this.drumSlicePlayer?.setRatio(ratio, applyAtAudioTime);
     this.drumTwoTrack?.setRatio(ratio, applyAtAudioTime);
+    this.drumBeats?.setRatio(ratio, applyAtAudioTime);
   }
 
   /**
@@ -3667,6 +3681,7 @@ export class PlaybackEngine implements IAudioStemEngine {
     const drumDownbeat =
       this.drumSlicePlayer?.getNextDownbeat(now) ??
       this.drumTwoTrack?.getNextDownbeat(now) ??
+      this.drumBeats?.getNextDownbeat(now) ??
       null;
     const keyBoundary =
       drumDownbeat != null
@@ -3688,7 +3703,13 @@ export class PlaybackEngine implements IAudioStemEngine {
    * straight to the drum gain (zero added latency → aligned with bass/harmony).
    */
   private ensureDrumSlicePlayer(): void {
-    if (!this.audioContext || this.drumSlicePlayer) return;
+    if (
+      !this.audioContext ||
+      this.drumSlicePlayer ||
+      this.drumTwoTrack ||
+      this.drumBeats
+    )
+      return;
     const buffer = this.audioStemBuffers.get('audio-drums');
     if (!buffer) return;
     const gain = this.getOrCreateInstrumentGainNode('audio-drums');
@@ -3736,6 +3757,27 @@ export class PlaybackEngine implements IAudioStemEngine {
       this.stemLoopDurationSeconds > 0
         ? this.stemLoopDurationSeconds
         : buffer.duration;
+
+    // ABLETON-BEATS SLICER (default). Slices at EVERY transient, re-grids each slice
+    // un-stretched (rate 1 — no smear, no pitch-bend), fills gaps by looping the
+    // slice's own tail. No bed, no stretcher on drums → reliable by construction.
+    // Provides the same start/stop/setRatio surface the scheduler needs.
+    if (this.drumEngine === 'beats') {
+      this.drumBeats = new DrumBeatsPlayer(this.audioContext, buffer, gain, {
+        loopDurationSeconds: loopDur,
+      });
+      this.regionScheduler?.setSelfLoopingSource(
+        'drums',
+        new DrumSliceSource(this.drumBeats),
+      );
+      this.logger.info('Drum Beats slicer created (Ableton-style, no stretcher)', {
+        onsets: onsets.length,
+        slices: this.drumBeats.textureRegionCount(),
+        loopDur,
+        instanceId: this.instanceId,
+      });
+      return;
+    }
 
     // CLEAN TWO-TRACK (notched bed playbackRate-stretched + re-gridded bit-exact
     // hits). The kicks are physically removed from the bed → can never leak. No
@@ -3858,24 +3900,69 @@ export class PlaybackEngine implements IAudioStemEngine {
   }
 
   /** Live drum tempo-machine state for the dev A/B tool. Reports the active player —
-   *  the clean two-track one (ratio/bedReady/hitsReady) or the legacy slicer. */
+   *  the Beats slicer, the clean two-track one, or the legacy slicer. */
   getDrumTempoDebugState():
     | ReturnType<NonNullable<typeof this.drumSlicePlayer>['getDebugState']>
     | ReturnType<NonNullable<typeof this.drumTwoTrack>['getDebugState']>
+    | ReturnType<NonNullable<typeof this.drumBeats>['getDebugState']>
     | null {
+    if (this.drumBeats) return this.drumBeats.getDebugState();
     if (this.drumTwoTrack) return this.drumTwoTrack.getDebugState();
     return this.drumSlicePlayer?.getDebugState() ?? null;
   }
 
   /** DIAGNOSTIC: solo the drum bed vs the transient overlays (admin panel) so the
    *  ear can localize a double — muteBed hears only the crisp kicks/snares,
-   *  muteOverlays hears only the stretched bed texture. No-op if no player. */
+   *  muteOverlays hears only the stretched bed texture. On the Beats slicer (no bed)
+   *  this maps to: muteBed → keep big hits only; muteOverlays → keep texture only.
+   *  No-op if no player. */
   setDrumDiagnosticSolo(opts: {
     muteBed?: boolean;
     muteOverlays?: boolean;
   }): void {
     this.drumSlicePlayer?.setDiagnosticSolo(opts);
     this.drumTwoTrack?.setDiagnosticSolo(opts);
+    this.drumBeats?.setDiagnosticSolo(opts);
+  }
+
+  /** BEATS SLICER tuning (dev panel): gap-fill mode + the per-slice "Transient
+   *  Envelope" (0..1). LIVE — applies to future slices. No-op unless Beats active. */
+  setDrumGapFillMode(mode: 'loop-pingpong' | 'loop-forward' | 'gate'): void {
+    this.drumBeats?.setGapFillMode(mode);
+  }
+  setDrumTransientEnvelope(value: number): void {
+    this.drumBeats?.setTransientEnvelope(value);
+  }
+  /** LIVE transient SENSITIVITY (Beats slicer): lower = more onsets/slices (catches
+   *  hats), higher = only big hits. Re-detects + rebuilds slices. */
+  setDrumOnsetSensitivity(sensitivity: number): void {
+    this.drumBeats?.setOnsetSensitivity(sensitivity);
+  }
+  /** LIVE loop-seam crossfade length (Beats slicer), milliseconds. */
+  setDrumLoopCrossfadeMs(ms: number): void {
+    this.drumBeats?.setLoopCrossfadeMs(ms);
+  }
+
+  /** Select the drum tempo engine (dev A/B). 'beats' = Ableton-style slicer (default),
+   *  'two-track' = notched bed + hits, 'slices' = legacy state machine. Applies on the
+   *  NEXT start (Stop → Start) — a live mid-playback swap would have to re-arm the
+   *  scheduler region, which isn't worth the risk; restart is a clean A/B. Returns the
+   *  active mode so the panel can confirm. */
+  setDrumEngineMode(mode: 'beats' | 'two-track' | 'slices'): 'beats' | 'two-track' | 'slices' {
+    this.drumEngine = mode;
+    // Keep the legacy flag consistent so the non-beats path picks the right player.
+    this.useCleanTwoTrack = mode === 'two-track';
+    this.logger.info('Drum engine mode set (applies on next start)', {
+      mode,
+      playing: !!(this.drumBeats || this.drumTwoTrack || this.drumSlicePlayer),
+      instanceId: this.instanceId,
+    });
+    return this.drumEngine;
+  }
+
+  /** The active drum engine mode (dev panel readback). */
+  getDrumEngineMode(): 'beats' | 'two-track' | 'slices' {
+    return this.drumEngine;
   }
 
   /**
@@ -4155,6 +4242,8 @@ export class PlaybackEngine implements IAudioStemEngine {
         : [];
     const adapter = this.pitchShiftAdapter;
     const slicePlayer = this.drumSlicePlayer;
+    const twoTrackPlayer = this.drumTwoTrack;
+    const beatsPlayer = this.drumBeats;
     const drumDelay = this.drumLatencyDelayNode;
 
     // Clear live STATE synchronously so a rapid re-play rebuilds fresh nodes
@@ -4163,6 +4252,7 @@ export class PlaybackEngine implements IAudioStemEngine {
     this.instrumentStretchNodes.clear();
     this.drumSlicePlayer = null;
     this.drumTwoTrack = null;
+    this.drumBeats = null;
     this.drumLatencyDelayNode = null;
     this.regionScheduler?.setSelfLoopingSource('bass', null);
     this.regionScheduler?.setSelfLoopingSource('harmony', null);
@@ -4175,6 +4265,20 @@ export class PlaybackEngine implements IAudioStemEngine {
       if (slicePlayer) {
         try {
           slicePlayer.stop(this.audioContext?.currentTime);
+        } catch {
+          /* best-effort */
+        }
+      }
+      if (twoTrackPlayer) {
+        try {
+          twoTrackPlayer.stop(this.audioContext?.currentTime);
+        } catch {
+          /* best-effort */
+        }
+      }
+      if (beatsPlayer) {
+        try {
+          beatsPlayer.stop(this.audioContext?.currentTime);
         } catch {
           /* best-effort */
         }
