@@ -28,7 +28,7 @@
   }
   document.getElementById('bn-solo-bh')?.remove();
 
-  const state = { bed: true, hits: true };
+  const state = { bed: true, hits: true, bedSig: true };
 
   const wrap = document.createElement('div');
   wrap.id = 'bn-solo-bh';
@@ -42,24 +42,33 @@
     '<button id="bn-solo-bed" style="flex:1;padding:14px 8px;font:600 14px system-ui;cursor:pointer;border-radius:8px;border:0"></button>' +
     '<button id="bn-solo-hits" style="flex:1;padding:14px 8px;font:600 14px system-ui;cursor:pointer;border-radius:8px;border:0"></button>' +
     '</div>' +
+    '<button id="bn-solo-bedeng" style="width:100%;margin-top:8px;padding:11px;font:600 13px system-ui;cursor:pointer;border-radius:8px;border:0"></button>' +
     '<div id="bn-solo-info" style="margin-top:10px;font:12px ui-monospace,monospace;text-align:center;opacity:.7"></div>' +
     '<div style="opacity:.55;margin-top:8px;font-size:11px">BED = stretched texture (no kicks). ' +
-    'BIG HITS = bit-exact kicks/snares. Solo each to check the layers.</div>';
+    'BIG HITS = bit-exact kicks/snares. Bed engine: SIGNALSMITH = in tune at any tempo; ' +
+    'RATE = pitch-bends (vinyl). Slow the tempo + solo BED to hear the difference.</div>';
   document.body.appendChild(wrap);
 
   const bedBtn = wrap.querySelector('#bn-solo-bed');
   const hitsBtn = wrap.querySelector('#bn-solo-hits');
+  const bedEngBtn = wrap.querySelector('#bn-solo-bedeng');
   const info = wrap.querySelector('#bn-solo-info');
 
   const apply = () => {
     // BED off → muteBed; HITS off → muteOverlays.
     eng.setDrumDiagnosticSolo({ muteBed: !state.bed, muteOverlays: !state.hits });
+    eng.setDrumBedEngine?.(state.bedSig ? 'signalsmith' : 'rate');
     bedBtn.textContent = state.bed ? 'BED ✓' : 'BED muted';
     bedBtn.style.background = state.bed ? '#1e5e8a' : '#2a2a2a';
     bedBtn.style.color = '#fff';
     hitsBtn.textContent = state.hits ? 'BIG HITS ✓' : 'HITS muted';
     hitsBtn.style.background = state.hits ? '#8a2e2e' : '#2a2a2a';
     hitsBtn.style.color = '#fff';
+    bedEngBtn.textContent = state.bedSig
+      ? 'bed: SIGNALSMITH (in tune)'
+      : 'bed: RATE (pitch-bends)';
+    bedEngBtn.style.background = state.bedSig ? '#2e7d4f' : '#7a5a1f';
+    bedEngBtn.style.color = '#fff';
     const label =
       state.bed && state.hits
         ? 'both layers'
@@ -78,6 +87,10 @@
   });
   hitsBtn.addEventListener('click', () => {
     state.hits = !state.hits;
+    apply();
+  });
+  bedEngBtn.addEventListener('click', () => {
+    state.bedSig = !state.bedSig;
     apply();
   });
   apply();
