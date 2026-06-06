@@ -153,13 +153,16 @@ export class WebhookController {
       // Subscription is handled by customer.subscription.created event
       this.logger.log(`Subscription checkout completed for user ${userId}`);
     } else if (session.mode === 'payment' && courseType) {
-      // One-time course purchase
+      // One-time course purchase (legacy course_type path). Product-scoped
+      // purchases (Groove Pack / Accelerator) will resolve metadata.product_id
+      // → products row here when the storefront ships (see PLAN S2).
       await this.purchaseRepository.create({
         userId,
         stripeCustomerId: session.customer as string,
         stripePaymentIntentId: session.payment_intent as string,
         stripeCheckoutSessionId: session.id,
         courseType,
+        productId: null,
         amount: session.amount_total || 0,
         currency: session.currency || 'usd',
         status: 'completed',

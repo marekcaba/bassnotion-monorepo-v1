@@ -215,6 +215,7 @@ describe('WebhookController', () => {
         stripePaymentIntentId: mockPaymentIntentId,
         stripeCheckoutSessionId: mockSessionId,
         courseType: 'standard',
+        productId: null,
         amount: 4900,
         currency: 'usd',
         status: 'completed',
