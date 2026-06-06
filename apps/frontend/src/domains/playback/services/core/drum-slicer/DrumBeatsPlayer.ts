@@ -132,6 +132,20 @@ export class DrumBeatsPlayer {
   private loopGain: GainNode | null = null;
   /** Real-time length (s) of the currently-rendered loop buffer (= loopDuration/ratio). */
   private renderedPeriod = 0;
+  /** The tempo ratio the CURRENT buffer was rendered at. The live source plays this
+   *  buffer; to make the audible tempo = `this.ratio`, the source's playbackRate is
+   *  renderedRatio/ratio (varispeed during a drag — see setRatio). On settle we
+   *  re-render so renderedRatio === ratio and playbackRate returns to 1. */
+  private renderedRatio = 1;
+
+  // LIVE NUDGE (research Approach A: varispeed-during-drag, re-render-on-settle).
+  // During a continuous tempo drag, setRatio does NOT rebuild — it just slides the
+  // already-rendered buffer via playbackRate (sample-locked, click-free, zero PV cost;
+  // drums pitch-bend slightly during the gesture, acceptable on percussive material).
+  // A debounced timer fires after the drag SETTLES and re-renders pitch-correct at the
+  // final BPM, crossfading in at rate 1.0. The rebuild-every-tick path is gone.
+  private settleTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly settleMs = 130; // no tempo change for this long ⇒ "settled"
 
   // Diagnostic solo (admin). For a pure slicer there is no bed/overlay split, so the
   // two flags map to: muteBed → mute ALL but the strongest (big-hit) slices;
@@ -356,34 +370,102 @@ export class DrumBeatsPlayer {
 
   stop(when?: number): void {
     this.playing = false;
+    if (this.settleTimer != null) {
+      clearTimeout(this.settleTimer);
+      this.settleTimer = null;
+    }
     const now = this.ctx.currentTime;
     const at = when ?? now;
     this.teardownSource(at);
   }
 
   /**
-   * Tempo change. Re-anchor the grid at the SHARED pivot `atTime` so the drums stay
-   * locked to bass/harmony, RE-RENDER the whole loop at the new ratio into one buffer,
-   * and swap the looping source in at the correct phase (continuous — no jump). The
-   * re-render is the only cost; at loop sizes it's a few ms of array work, off the
-   * audio thread. No per-slice scheduling, so there are no inter-source seams to click.
+   * Tempo change — LIVE NUDGE (research Approach A). During a continuous drag this is
+   * called ~20-30×/s. We do NOT rebuild per tick (that stuttered). Instead we VARISPEED
+   * the already-rendered buffer: set the source's playbackRate = renderedRatio/newRatio
+   * so the whole groove slides smoothly as one block — sample-locked, click-free, zero
+   * PV cost. The drums pitch-bend slightly while the finger moves (fine on percussive
+   * material). A debounced timer then fires after the drag SETTLES (settleMs of no
+   * change) and re-renders the slices pitch-correct at the final BPM, crossfading in at
+   * playbackRate 1.0. The shared pivot keeps drums phase-locked to bass/harmony.
    */
   setRatio(ratio: number, atTime?: number): void {
     const newRatio = ratio > 0 ? ratio : 1;
     if (!this.playing) {
       this.ratio = newRatio;
+      this.renderedRatio = newRatio; // next start() renders at this tempo
       return;
     }
-    if (newRatio === this.ratio) return;
-    const pivot = atTime ?? this.ctx.currentTime;
-    // Where in the loop (input seconds) are we at the pivot, under the OLD ratio?
-    const inputPos = this.currentInputPos(pivot);
-    this.ratio = newRatio;
-    // Re-anchor so that input position stays continuous across the rate change.
-    this.loopStartTime = pivot - inputPos / newRatio;
-    // Phase (real seconds) into the NEW loop period at the pivot.
-    const phaseSec = (inputPos / newRatio) % this.period;
-    this.renderAndArm(Math.max(this.ctx.currentTime + 0.005, pivot), phaseSec);
+    // Keep audible phase CONTINUOUS across the rate change: find input position now
+    // under the OLD ratio, then re-anchor loopStartTime so the same input position maps
+    // to `now` under the NEW ratio. (Cheap algebra — no rebuild. This keeps
+    // audiblePhaseSec/getNextDownbeat correct for the settle re-render + sync.)
+    const pivot = Math.max(this.ctx.currentTime, atTime ?? this.ctx.currentTime);
+    if (newRatio !== this.ratio) {
+      const inputPos = this.currentInputPos(pivot); // uses OLD this.ratio
+      this.ratio = newRatio;
+      this.loopStartTime = pivot - inputPos / newRatio;
+    } else {
+      this.ratio = newRatio;
+    }
+    // VARISPEED the live source: rate so audible tempo = newRatio given the buffer was
+    // rendered at renderedRatio. (renderedRatio/newRatio: slower target → rate<1.)
+    if (this.loopSrc) {
+      const rate = this.renderedRatio / newRatio;
+      const t = Math.max(this.ctx.currentTime, atTime ?? this.ctx.currentTime);
+      try {
+        // Per-tick setValueAtTime (Firefox-safe; linearRamp on playbackRate is broken
+        // there) with a short setTargetAtTime smoothing so the slide isn't a zipper.
+        this.loopSrc.playbackRate.cancelScheduledValues(t);
+        this.loopSrc.playbackRate.setValueAtTime(this.loopSrc.playbackRate.value, t);
+        this.loopSrc.playbackRate.setTargetAtTime(rate, t, 0.012);
+      } catch {
+        try {
+          this.loopSrc.playbackRate.value = rate;
+        } catch {
+          /* ignore */
+        }
+      }
+    } else {
+      // No live source yet (shouldn't happen mid-play) — render fresh.
+      this.renderAndArm(this.ctx.currentTime + 0.005, 0);
+    }
+    // Schedule the settle re-render (debounced — resets on every tick during a drag).
+    if (this.settleTimer != null) clearTimeout(this.settleTimer);
+    this.settleTimer = setTimeout(() => {
+      this.settleTimer = null;
+      this.resettleRender();
+    }, this.settleMs);
+  }
+
+  /**
+   * SETTLE: the drag stopped (settleMs of no tempo change). Re-render the slices pitch-
+   * correct at the final ratio and crossfade in at playbackRate 1.0, aligned to the live
+   * phase so the downbeat doesn't jump. This restores transient-accurate, in-tune drums
+   * after the varispeed glide. No-op if already at the rendered ratio (e.g. a 1-step
+   * change that never really "dragged").
+   */
+  private resettleRender(): void {
+    if (!this.playing) return;
+    if (Math.abs(this.ratio - this.renderedRatio) < 1e-4) return; // nothing to do
+    // Current audible phase (real seconds into the loop), accounting for the varispeed
+    // playbackRate that's been running on the rendered buffer.
+    const now = this.ctx.currentTime;
+    const phaseSec = this.audiblePhaseSec(now);
+    this.renderAndArm(now + 0.005, phaseSec, /*crossfade*/ true);
+  }
+
+  /** The real-time phase (s) into the AUDIBLE loop right now, folding over the audible
+   *  period (loopDuration/ratio). Tracks where the groove actually is, regardless of
+   *  whether we're varispeeding a buffer rendered at a different ratio. */
+  private audiblePhaseSec(now: number): number {
+    const period = this.loopDuration / (this.ratio || 1);
+    if (period <= 0) return 0;
+    // The source has been looping its rendered buffer; its current read position maps to
+    // an audible phase. We track audible phase via loopStartTime in audible time.
+    let rel = (now - this.loopStartTime) % period;
+    if (rel < 0) rel += period;
+    return rel;
   }
 
   /** Input position (s, [0,loopDuration)) at audio time `now`, folded over the loop. */
@@ -395,10 +477,13 @@ export class DrumBeatsPlayer {
     return rel * (this.ratio || 1);
   }
 
-  /** Render the loop at the current ratio and (re)arm the single looping source so it
-   *  is at `phaseSec` into the buffer at audio time `startAt`. Swaps cleanly under a
-   *  tiny gain ramp so a re-render mid-play doesn't click. */
-  private renderAndArm(startAt: number, phaseSec: number): void {
+  /** Render the loop at the current ratio and (re)arm the single looping source at
+   *  `phaseSec` (audible seconds into the loop) at audio time `startAt`. The new buffer
+   *  is rendered AT this.ratio so it plays at playbackRate 1.0 (pitch-correct). Sets
+   *  renderedRatio = this.ratio. When `crossfade` is true (settle after a varispeed
+   *  drag) the new source fades IN over ~12ms while the old varispeed source fades OUT —
+   *  equal-power, click-free; otherwise it's a quick hard swap (initial start). */
+  private renderAndArm(startAt: number, phaseSec: number, crossfade = false): void {
     let buf: AudioBuffer;
     try {
       buf = this.renderLoopBuffer(this.ratio);
@@ -406,27 +491,57 @@ export class DrumBeatsPlayer {
       return;
     }
     this.loopBuffer = buf;
-    this.renderedPeriod = buf.length / this.sr;
-    // Tear down any existing source quickly (we're swapping).
-    this.teardownSource(this.ctx.currentTime);
+    this.renderedRatio = this.ratio; // buffer now matches the target → playbackRate 1.0
+    this.renderedPeriod = buf.length / this.sr; // audible period (rate 1)
+    const at = Math.max(this.ctx.currentTime, startAt);
+    const xf = 0.012; // equal-power crossfade length (s)
+
+    // Hold the OUTGOING source so we can crossfade out of it (settle) instead of cut.
+    const oldSrc = this.loopSrc;
+    const oldGain = this.loopGain;
+
+    let src: AudioBufferSourceNode;
+    let gain: GainNode;
     try {
-      const src = this.ctx.createBufferSource();
-      const gain = this.ctx.createGain();
+      src = this.ctx.createBufferSource();
+      gain = this.ctx.createGain();
       src.buffer = buf;
       src.loop = true;
-      src.playbackRate.value = 1; // the buffer is ALREADY at the target tempo
-      gain.gain.value = 1;
+      src.playbackRate.value = 1; // pitch-correct: buffer is at the target tempo
       src.connect(gain);
       gain.connect(this.output);
       const period = this.renderedPeriod;
       const offset = period > 0 ? ((phaseSec % period) + period) % period : 0;
-      const at = Math.max(this.ctx.currentTime, startAt);
+      if (crossfade && oldGain) {
+        gain.gain.setValueAtTime(0, at);
+        gain.gain.linearRampToValueAtTime(1, at + xf);
+      } else {
+        gain.gain.value = 1;
+      }
       src.start(at, offset);
       this.loopSrc = src;
       this.loopGain = gain;
     } catch {
-      this.loopSrc = null;
-      this.loopGain = null;
+      this.loopSrc = oldSrc;
+      this.loopGain = oldGain;
+      return;
+    }
+
+    // Retire the old source: crossfade out (settle) or cut (initial/hard swap).
+    if (oldSrc && oldGain) {
+      try {
+        if (crossfade) {
+          oldGain.gain.cancelScheduledValues(at);
+          oldGain.gain.setValueAtTime(oldGain.gain.value, at);
+          oldGain.gain.linearRampToValueAtTime(0, at + xf);
+          oldSrc.stop(at + xf + 0.005);
+        } else {
+          oldGain.gain.setValueAtTime(0, this.ctx.currentTime);
+          oldSrc.stop(at);
+        }
+      } catch {
+        /* ignore */
+      }
     }
   }
 

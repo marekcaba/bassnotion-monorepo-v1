@@ -1,10 +1,16 @@
 # Drum Tempo-Change Engine — Research Brief
 
-**Date:** 2026-06-06
+**Date:** 2026-06-06 (updated)
 **Product:** BassNotion groove card (web, browser audio)
 **Audience:** audio-DSP research team
 **Goal:** real-time, in-tune, artifact-free drum tempo change in the browser, matching
 Ableton Live "Beats" warp mode quality.
+
+> **STATUS: Phase 1 (static warp) is DONE and matches Ableton.** Our slicer renders a
+> drum loop at a *fixed* target BPM and measures cleaner than Ableton's own 89 BPM Beats
+> render (seam spikes 2.3/10s vs 2.8; gap energy matched; transient shapes match; bit-
+> exact at ratio 1.0). See §6d. **Phase 2 (LIVE BPM NUDGING) is the open problem — see
+> §8 below.** This is the next thing we want the research team to solve.
 
 ---
 

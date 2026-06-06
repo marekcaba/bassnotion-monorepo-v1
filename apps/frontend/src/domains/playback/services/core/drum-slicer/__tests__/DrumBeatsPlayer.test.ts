@@ -190,3 +190,118 @@ describe('DrumBeatsPlayer', () => {
     expect(outMax).toBeLessThanOrEqual(srcMax * 1.5 + 1e-6);
   });
 });
+
+// ── LIVE NUDGE (varispeed-during-drag, re-render-on-settle) ────────────────────
+describe('DrumBeatsPlayer — live tempo nudge', () => {
+  // Track playbackRate automation + how many sources/buffers were created, so we can
+  // prove a DRAG varispeeds the existing source (no rebuild) and SETTLE re-renders.
+  let createdBuffers: number;
+  let createdSources: number;
+  type RateParam = {
+    value: number;
+    setValueAtTime: (v: number, t: number) => void;
+    setTargetAtTime: (v: number, t: number, tc: number) => void;
+    linearRampToValueAtTime: (v: number, t: number) => void;
+    cancelScheduledValues: (t: number) => void;
+    _target?: number;
+  };
+  const sources: { rate: RateParam; stopped: boolean }[] = [];
+
+  function liveCtx(): AudioContext {
+    createdBuffers = 0;
+    createdSources = 0;
+    sources.length = 0;
+    const mkParam = (v: number): RateParam => {
+      const p: RateParam = {
+        value: v,
+        setValueAtTime(val: number) {
+          this.value = val;
+        },
+        setTargetAtTime(val: number) {
+          this._target = val; // where the varispeed is heading
+        },
+        linearRampToValueAtTime(val: number) {
+          this.value = val;
+        },
+        cancelScheduledValues() {},
+      };
+      return p;
+    };
+    return {
+      currentTime: 0,
+      sampleRate: SR,
+      createBuffer: (numCh: number, len: number, sampleRate: number) => {
+        createdBuffers++;
+        const chans: Float32Array[] = [];
+        for (let c = 0; c < numCh; c++) chans.push(new Float32Array(len));
+        return makeBuffer(chans, sampleRate);
+      },
+      createBufferSource: () => {
+        createdSources++;
+        const rate = mkParam(1);
+        const entry = { rate, stopped: false };
+        sources.push(entry);
+        return {
+          buffer: null,
+          loop: false,
+          playbackRate: rate,
+          connect() {},
+          start() {},
+          stop() {
+            entry.stopped = true;
+          },
+          addEventListener() {},
+        } as unknown as AudioBufferSourceNode;
+      },
+      createGain: () =>
+        ({
+          gain: mkParam(1),
+          connect() {},
+          disconnect() {},
+        }) as unknown as GainNode,
+    } as unknown as AudioContext;
+  }
+
+  it('a DRAG varispeeds the live source (no rebuild per tick)', () => {
+    const data = makeDrumLoop(1.0, [0, 0.25, 0.5, 0.75]);
+    const player = new DrumBeatsPlayer(liveCtx(), makeBuffer([data]), {} as AudioNode, {
+      loopDurationSeconds: 1.0,
+    });
+    player.start(0);
+    const buffersAfterStart = createdBuffers;
+    const sourcesAfterStart = createdSources;
+    // Simulate a drag: many setRatio calls in quick succession (no settle between).
+    for (let i = 1; i <= 15; i++) player.setRatio(1 - i * 0.012); // 1.0 → ~0.82
+    // NO new buffers/sources during the drag — it's pure playbackRate automation.
+    expect(createdBuffers).toBe(buffersAfterStart);
+    expect(createdSources).toBe(sourcesAfterStart);
+    // The live source's playbackRate is heading toward renderedRatio/finalRatio.
+    const finalRatio = 1 - 15 * 0.012;
+    const liveRate = sources[sources.length - 1]!.rate;
+    const expected = 1 / finalRatio; // renderedRatio (1.0) / finalRatio
+    expect(liveRate._target ?? liveRate.value).toBeCloseTo(expected, 2);
+    player.stop(); // cancel the pending settle timer so it can't bleed into other tests
+  });
+
+  it('SETTLE re-renders pitch-correct and crossfades in a new source', async () => {
+    const data = makeDrumLoop(1.0, [0, 0.25, 0.5, 0.75]);
+    const player = new DrumBeatsPlayer(liveCtx(), makeBuffer([data]), {} as AudioNode, {
+      loopDurationSeconds: 1.0,
+    });
+    player.start(0);
+    const buffersAfterStart = createdBuffers;
+    const sourcesAfterStart = createdSources;
+    for (let i = 1; i <= 10; i++) player.setRatio(1 - i * 0.018);
+    // During the drag: no rebuild.
+    expect(createdBuffers).toBe(buffersAfterStart);
+    // Wait past the settle debounce (130ms).
+    await new Promise((r) => setTimeout(r, 200));
+    // Settle fired: exactly ONE new buffer rendered + ONE new source crossfaded in.
+    expect(createdBuffers).toBe(buffersAfterStart + 1);
+    expect(createdSources).toBe(sourcesAfterStart + 1);
+    // The new (settled) source plays at rate 1.0 (pitch-correct render).
+    const settledSrc = sources[sources.length - 1]!.rate;
+    expect(settledSrc.value).toBeCloseTo(1, 5);
+    player.stop();
+  });
+});
