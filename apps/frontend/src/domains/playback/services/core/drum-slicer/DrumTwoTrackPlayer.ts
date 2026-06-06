@@ -107,6 +107,21 @@ export class DrumTwoTrackPlayer {
   private muteBed = false;
   private muteHits = false;
 
+  /** The Σ(hit envelopes) map over the loop (source samples), built once with the
+   *  bed; rebuildHits uses it to normalize overlaps so bed + Σhits = original. */
+  private bedSumH: Float32Array | null = null;
+
+  /** One hit's gain envelope at sample i of a length-`len` region with `lead`
+   *  lead-in samples: 0→1 over the lead (attack survives), hold 1, 1→0 over the last
+   *  `fade` samples. Shared by buildSplit (bed complement) and rebuildHits. */
+  private hitEnv(i: number, len: number, lead: number, fade: number): number {
+    let h = 1;
+    if (i < lead) h = lead > 0 ? i / lead : 1;
+    const outFromEnd = len - 1 - i;
+    if (outFromEnd < fade) h = Math.min(h, outFromEnd / fade);
+    return h;
+  }
+
   constructor(
     ctx: AudioContext,
     buffer: AudioBuffer,
@@ -173,13 +188,6 @@ export class DrumTwoTrackPlayer {
     // 1→0 release. The bed must equal original·(1 − Σh_k) and the summed hits equal
     // original·Σh_k, so that bed + Σhits = original. Build the SUM map Σh_k, clamped
     // to ≤1 for the bed (heavy overlaps can't make the bed go negative).
-    const envOf = (i: number, len: number, lead: number): number => {
-      let h = 1;
-      if (i < lead) h = lead > 0 ? i / lead : 1;
-      const outFromEnd = len - 1 - i;
-      if (outFromEnd < fade) h = Math.min(h, outFromEnd / fade);
-      return h;
-    };
     const sumH = new Float32Array(end); // Σ h_k(i)
     for (const onsetSec of this.strongOnsets) {
       const onset = Math.round(onsetSec * this.sr);
@@ -188,11 +196,15 @@ export class DrumTwoTrackPlayer {
       const len = readEnd - readStart;
       if (len <= 1) continue;
       const lead = onset - readStart;
-      for (let i = 0; i < len; i++) sumH[readStart + i]! += envOf(i, len, lead);
+      for (let i = 0; i < len; i++) {
+        sumH[readStart + i]! += this.hitEnv(i, len, lead, fade);
+      }
     }
 
     // STEP 2 — BED = original · (1 − min(Σh, 1)). Where a hit is full, bed is 0 (kick
-    // physically gone). At the edges they crossfade. Then high-pass the bed.
+    // physically gone). At the edges they crossfade. Then high-pass the bed. The bed
+    // is built ONCE and never re-rendered — playbackRate stretches it (the notch hole
+    // stretches with it, so a kick can never reappear).
     const bedChannels: Float32Array[] = [];
     for (let c = 0; c < this.numCh; c++) {
       const src = this.buffer.getChannelData(c);
@@ -201,15 +213,39 @@ export class DrumTwoTrackPlayer {
         const bedG = 1 - Math.min(1, sumH[i]!);
         bed[i] = src[i]! * bedG;
       }
+      if (this.opt.bedHighpassHz > 0) this.highpass(bed, this.opt.bedHighpassHz);
       bedChannels.push(bed);
     }
+    try {
+      const buf = this.ctx.createBuffer(this.numCh, end, this.sr);
+      for (let c = 0; c < this.numCh; c++) buf.copyToChannel(bedChannels[c]!, c);
+      this.bedBuffer = buf;
+    } catch {
+      this.bedBuffer = null;
+    }
 
-    // STEP 3 — HITS: each hit = original · (h_k / max(1, Σh)) over its region. The
-    // NORMALIZATION by max(1,Σh) is critical: where two hits fully overlap (Σh=2),
-    // each contributes original·(1/2), so the summed hits = original·1, matching the
-    // bed's complement (bed = original·(1−1) = 0). Without it the overlap played at
-    // 2× = the full-scale doubling. Now bed + Σhits = original EVERYWHERE, overlaps
-    // included. (Where Σh ≤ 1, the divisor is 1 → hits = original·h_k as before.)
+    // Store the SUM map so the per-ratio hit rebuild can normalize overlaps the same
+    // way (the bed is fixed; the hits re-extract per tempo, scaling their TAIL by
+    // 1/ratio so the bit-exact hit fills the bed's stretched hole — pitch-correct).
+    this.bedSumH = sumH;
+    this.rebuildHits(this.ratio);
+  }
+
+  /**
+   * TEMPO-SCALED HITS. The bed plays at playbackRate=ratio, so its notch hole at each
+   * hit stretches to (pre+tail)/ratio of REAL time. The bit-exact hit (rate 1) must
+   * fill that, so it reads (pre + tail/ratio) of SOURCE — a LONGER region at slow
+   * tempo (more of the kick's natural decay), keeping the kick PITCH-CORRECT. Re-run
+   * on every tempo change (~ms). The release fade scales with the longer tail.
+   */
+  private rebuildHits(ratio: number): void {
+    const r = ratio > 0 ? ratio : 1;
+    const end = Math.min(this.buffer.length, Math.round(this.loopDuration * this.sr));
+    const pre = Math.max(0, Math.round(this.opt.hitPreSeconds * this.sr));
+    const baseTail = Math.max(1, Math.round(this.opt.hitTailSeconds * this.sr));
+    const tail = Math.max(1, Math.round(baseTail / r)); // SCALED: longer at slow tempo
+    const fade = Math.max(1, Math.round(this.opt.fadeSeconds * this.sr));
+    const sumH = this.bedSumH;
     this.hits = [];
     for (const onsetSec of this.strongOnsets) {
       const onset = Math.round(onsetSec * this.sr);
@@ -224,27 +260,15 @@ export class DrumTwoTrackPlayer {
         const region = new Float32Array(len);
         for (let i = 0; i < len; i++) {
           const d = readStart + i;
-          const norm = Math.max(1, sumH[d]!);
-          region[i] = src[d]! * (envOf(i, len, leadSamples) / norm);
+          // Normalize overlaps by the bed's Σh map at the START region only (the part
+          // that complements the bed); the extended tail (beyond the bed's notch) is
+          // pure kick decay → norm 1. Guard against reading past the map.
+          const norm = sumH && d < sumH.length ? Math.max(1, sumH[d]!) : 1;
+          region[i] = src[d]! * (this.hitEnv(i, len, leadSamples, fade) / norm);
         }
         hitChannels.push(region);
       }
       this.hits.push({ onsetSec, channels: hitChannels, leadSamples });
-    }
-    // High-pass the bed AFTER the complement (the lows move to the hits, which keep
-    // them bit-exact). At ratio 1 the only difference from the original is the bed's
-    // sub-bass texture between hits — a deliberate choice (keeps the stretched bed clean).
-    if (this.opt.bedHighpassHz > 0) {
-      for (let c = 0; c < this.numCh; c++) {
-        this.highpass(bedChannels[c]!, this.opt.bedHighpassHz);
-      }
-    }
-    try {
-      const buf = this.ctx.createBuffer(this.numCh, end, this.sr);
-      for (let c = 0; c < this.numCh; c++) buf.copyToChannel(bedChannels[c]!, c);
-      this.bedBuffer = buf;
-    } catch {
-      this.bedBuffer = null;
     }
   }
 
@@ -390,8 +414,10 @@ export class DrumTwoTrackPlayer {
         }
       }
     }
-    // HITS: re-point the cursor to the live iteration so the next scheduled hits use
-    // the new spacing. Drop any already-armed future hits (they're at the old grid).
+    // HITS: re-extract at the new tempo (tail scales by 1/ratio so the bit-exact hit
+    // fills the bed's stretched hole — pitch-correct, longer tail at slow tempo), then
+    // re-point the cursor so future hits use the new spacing + scaled regions.
+    this.rebuildHits(newRatio);
     this.repointHits();
   }
 
