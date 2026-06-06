@@ -545,6 +545,18 @@ export class DrumSlicePlayer {
    *  (mids/highs); the bit-exact hits track carries the low end. Kills any sub-bass
    *  that leaks past the notch/WSOLA so it can't double the kick. 0 = off. */
   private bedHighpassHz = 90;
+  /** PURE TWO-TRACK (2026-06-06): when true, the engine ALWAYS plays bed + hits as
+   *  two continuous tracks — NO SLICES path, NO SLICES↔BED state machine, no settle
+   *  crossfade. The hits re-grid bit-exact every iteration (pitch-correct, locked to
+   *  the shared grid at the engine pivot T); the bed is the stretched texture. This
+   *  removes the stutter from the old hybrid (per-slice while dragging fighting the
+   *  bed swap on settle). Default ON. */
+  private pureTwoTrack = true;
+  /** PURE TWO-TRACK bed-during-drag mode: 'hold' = keep the last-rendered bed buffer
+   *  while dragging (re-render only on settle — smoothest, bed momentarily lags exact
+   *  tempo); 'rate' = ride playbackRate on the bed so it tracks tempo (pitch-bends
+   *  slightly). A/B by ear. */
+  private bedDragMode: 'hold' | 'rate' = 'hold';
 
   private ratio = 1;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1621,8 +1633,54 @@ export class DrumSlicePlayer {
       return;
     }
 
-    // AUTO: this is a NUDGE — drive the Realtime/Rendered state machine.
+    // PURE TWO-TRACK: a drag step. The grid already re-anchored above (shared pivot).
+    // Re-grid the HITS bit-exact for the new ratio (cheap ~4ms, pitch-correct) and
+    // handle the bed per bedDragMode. Re-arm so the next tick plays the fresh tracks
+    // at the live phase. NO settle machine, NO crossfade — just two continuous tracks.
+    if (this.pureTwoTrack && this.useTwoTrack) {
+      this.onPureNudge();
+      return;
+    }
+
+    // AUTO (hybrid): this is a NUDGE — drive the Realtime/Rendered state machine.
     this.onNudge();
+  }
+
+  /** PURE TWO-TRACK drag step. Re-grid the hits + bed for the new ratio and re-arm,
+   *  with the heavy bed WSOLA debounced to a settle (so a fast drag never stalls).
+   *  bedDragMode controls the bed: 'hold' keeps the last render until settle; 'rate'
+   *  rides playbackRate on the live bed so it tracks tempo (handled at arm time). */
+  private onPureNudge(): void {
+    if (!this.playing) return;
+    // DO NOT stop/re-arm the playing sources on every drag step — that starves the
+    // audio (the next stop lands before the re-arm can play → silence). The grid
+    // (loopStartTime) already re-anchored above at the shared pivot, so the CURRENTLY
+    // playing bed+hits one-shots stay phase-correct relative to bass/harmony; only
+    // their internal spacing is for the old ratio. We let the current iteration finish
+    // and the NEXT iteration (armed at the seam by scheduleTick) picks up the freshly
+    // re-gridded hits + repositioned bed. Just mark the bed dirty + debounce a settle
+    // re-render. The hits re-grid happens once, coalesced, at the settle (or sooner if
+    // a tick re-arms) — keeping the drag cost ~0.
+    this.bedResynthDirty = true;
+    const gen = ++this.settleGeneration;
+    if (this.settleTimer) clearTimeout(this.settleTimer);
+    this.settleTimer = setTimeout(() => {
+      if (gen === this.settleGeneration) this.onPureSettle();
+    }, this.settleMs);
+  }
+
+  /** PURE TWO-TRACK settle: the drag paused — re-render the bed at the EXACT ratio
+   *  (high-quality WSOLA) and re-arm so the bed swaps from the held/rate-bent version
+   *  to the pitch-correct render. The hits are already exact (re-gridded each step). */
+  private onPureSettle(): void {
+    this.settleTimer = null;
+    if (!this.playing) return;
+    if (this.bedResynthDirty) {
+      this.bedResynthDirty = false;
+      this.resynthesizeBed(true); // exact-ratio bed + hits (WSOLA, ~187ms, masked: stopped)
+    }
+    this.stopBedSources(this.ctx.currentTime + 0.02);
+    this.bedIterStart = null;
   }
 
   /** A tempo nudge: be on SLICES (smooth) while interacting — NO bed synth here —
@@ -1990,8 +2048,27 @@ export class DrumSlicePlayer {
     // ── AUTO mode multiplexer.
     //   scheduleSlicesNow = mode != BED      (SLICES + both crossfades)
     //   scheduleBedNow     = mode != SLICES  (BED + both crossfades), bed exists
-    const scheduleSlicesNow = this.mode !== 'BED';
-    const scheduleBedNow = this.mode !== 'SLICES' && !!this.bedBuffer;
+    // PURE TWO-TRACK: bed + hits play ALWAYS (no SLICES path, no mode gate). The
+    // hits re-grid bit-exact every iteration (pitch-correct, grid-locked); the bed
+    // is the stretched texture. There's no per-slice path to crossfade with, so the
+    // stutter-prone SLICES↔BED handoff is gone entirely.
+    const pure = this.pureTwoTrack && this.useTwoTrack;
+    // PURE: the bed+hits ride the BED sub-mix bus (bedOut→bedGain). The state machine
+    // leaves bedGain at 0 in its resting/SLICES state, which would SILENCE the pure
+    // tracks — so force the crossfade fully to the bed (bedGain 1, sliceGain 0). Done
+    // every tick (cheap, idempotent) so it can't be left muted by a mode transition.
+    if (pure) {
+      if (this.bedGain && this.bedGain.gain.value !== 1) {
+        this.bedGain.gain.setValueAtTime(1, now);
+      }
+      if (this.sliceGain && this.sliceGain.gain.value !== 0) {
+        this.sliceGain.gain.setValueAtTime(0, now);
+      }
+    }
+    const scheduleSlicesNow = pure ? false : this.mode !== 'BED';
+    const scheduleBedNow = pure
+      ? !!this.bedBuffer
+      : this.mode !== 'SLICES' && !!this.bedBuffer;
 
     // ── BED arming. CRITICAL FIX: the previous loop advanced loopStartTime by
     // period WHILE arming a bed each step, so when crossfadeToBed left
