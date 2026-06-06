@@ -1075,6 +1075,8 @@ export class DrumSlicePlayer {
     ratio: number;
     twoTrack: boolean;
     hitsReady: boolean;
+    pure: boolean;
+    bedDragMode: 'hold' | 'rate';
   } {
     return {
       autoMode: this.autoMode,
@@ -1084,7 +1086,25 @@ export class DrumSlicePlayer {
       twoTrack: this.useTwoTrack,
       hitsReady:
         this.synthesizedForRatio === this.ratio && !!this.hitsBuffer,
+      pure: this.pureTwoTrack,
+      bedDragMode: this.bedDragMode,
     };
+  }
+
+  /** PURE TWO-TRACK on/off (dev A/B vs the hybrid SLICES↔BED machine). */
+  setPureTwoTrack(on: boolean): void {
+    if (this.pureTwoTrack === on) return;
+    this.pureTwoTrack = on;
+    if (this.playing) {
+      this.stopBedSources(this.ctx.currentTime + 0.02);
+      this.bedIterStart = null;
+      this.mode = 'SLICES';
+    }
+  }
+
+  /** PURE bed-during-drag mode A/B: 'hold' (keep last render) vs 'rate' (playbackRate). */
+  setBedDragMode(mode: 'hold' | 'rate'): void {
+    this.bedDragMode = mode;
   }
 
   /**

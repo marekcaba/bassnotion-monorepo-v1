@@ -3790,6 +3790,17 @@ export class PlaybackEngine implements IAudioStemEngine {
     this.drumSlicePlayer?.setTwoTrack(on);
   }
 
+  /** PURE TWO-TRACK A/B: true → always bed+hits (no SLICES machine); false → hybrid
+   *  (SLICES while dragging + bed when settled). For dialing by ear. */
+  setDrumPureTwoTrack(on: boolean): void {
+    this.drumSlicePlayer?.setPureTwoTrack(on);
+  }
+
+  /** PURE bed-during-drag mode A/B: 'hold' vs 'rate' (playbackRate). */
+  setDrumBedDragMode(mode: 'hold' | 'rate'): void {
+    this.drumSlicePlayer?.setBedDragMode(mode);
+  }
+
   /** Live drum tempo-machine state for the dev A/B tool (mode/autoMode/ratio). */
   getDrumTempoDebugState():
     | ReturnType<NonNullable<typeof this.drumSlicePlayer>['getDebugState']>

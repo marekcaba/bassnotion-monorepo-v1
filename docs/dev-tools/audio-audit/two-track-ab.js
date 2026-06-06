@@ -37,7 +37,7 @@
   }
   document.getElementById('bn-twotrack-ab')?.remove();
 
-  const state = { twoTrack: true, bed: true, hits: true };
+  const state = { twoTrack: true, pure: true, bed: true, hits: true };
 
   const wrap = document.createElement('div');
   wrap.id = 'bn-twotrack-ab';
@@ -47,6 +47,7 @@
     'box-shadow:0 6px 24px rgba(0,0,0,.55);backdrop-filter:blur(6px);width:300px';
   wrap.innerHTML =
     '<div style="font-weight:600;margin-bottom:8px">two-track — layer solo</div>' +
+    '<button id="bn-tt-pure" style="width:100%;padding:9px;font:13px system-ui;cursor:pointer;border-radius:6px;border:0;margin-bottom:6px"></button>' +
     '<button id="bn-tt-engine" style="width:100%;padding:9px;font:13px system-ui;cursor:pointer;border-radius:6px;border:0;margin-bottom:8px"></button>' +
     '<div style="display:flex;gap:6px">' +
     '<button id="bn-tt-bed" style="flex:1;padding:9px;font:13px system-ui;cursor:pointer;border-radius:6px;border:0"></button>' +
@@ -58,6 +59,7 @@
     'and BIG HITS (kicks present + placed right?). Then both. Nudge to test spill.</div>';
   document.body.appendChild(wrap);
 
+  const pureBtn = wrap.querySelector('#bn-tt-pure');
   const engineBtn = wrap.querySelector('#bn-tt-engine');
   const bedBtn = wrap.querySelector('#bn-tt-bed');
   const hitsBtn = wrap.querySelector('#bn-tt-hits');
@@ -65,9 +67,15 @@
   const infoEl = wrap.querySelector('#bn-tt-info');
 
   const apply = () => {
+    eng.setDrumPureTwoTrack?.(state.pure);
     eng.setDrumTwoTrack(state.twoTrack);
     // BED off → muteBed; HITS off → muteOverlays.
     eng.setDrumDiagnosticSolo({ muteBed: !state.bed, muteOverlays: !state.hits });
+    pureBtn.textContent = state.pure
+      ? 'PURE two-track ✓ (always bed+hits)'
+      : 'HYBRID (slices while dragging)';
+    pureBtn.style.background = state.pure ? '#2e7d4f' : '#7a5a8a';
+    pureBtn.style.color = '#fff';
     engineBtn.textContent = state.twoTrack
       ? 'TWO-TRACK ON ✓'
       : 'LIVE OVERLAYS (legacy)';
@@ -82,6 +90,10 @@
     // eslint-disable-next-line no-console
     console.log('[two-track-ab]', JSON.stringify(state));
   };
+  pureBtn.addEventListener('click', () => {
+    state.pure = !state.pure;
+    apply();
+  });
   engineBtn.addEventListener('click', () => {
     state.twoTrack = !state.twoTrack;
     apply();
