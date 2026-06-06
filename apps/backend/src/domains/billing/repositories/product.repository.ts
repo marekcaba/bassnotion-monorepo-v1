@@ -13,6 +13,12 @@ interface ProductRow {
   price_cents: number;
   currency: string;
   is_active: boolean;
+  tagline: string | null;
+  cover_image_url: string | null;
+  preview_groove_id: string | null;
+  features: string[] | null;
+  sort_order: number;
+  badge: string | null;
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
@@ -41,6 +47,12 @@ export class ProductRepository {
       priceInCents: row.price_cents,
       currency: row.currency,
       isActive: row.is_active,
+      tagline: row.tagline ?? undefined,
+      coverImageUrl: row.cover_image_url ?? undefined,
+      previewGrooveId: row.preview_groove_id ?? undefined,
+      features: row.features ?? [],
+      sortOrder: row.sort_order ?? 0,
+      badge: row.badge ?? undefined,
       metadata: row.metadata ?? {},
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
@@ -54,6 +66,7 @@ export class ProductRepository {
       .from(this.TABLE_NAME)
       .select('*')
       .eq('is_active', true)
+      .order('sort_order', { ascending: true })
       .order('price_cents', { ascending: true });
 
     if (error) {

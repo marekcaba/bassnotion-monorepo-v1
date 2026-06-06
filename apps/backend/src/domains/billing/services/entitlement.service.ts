@@ -2,15 +2,26 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { SubscriptionRepository } from '../repositories/subscription.repository.js';
 import { PurchaseRepository } from '../repositories/purchase.repository.js';
-import { ContentAccessTier } from '../types/billing.types.js';
+import { ProductContentsRepository } from '../repositories/product-contents.repository.js';
+import { AcceleratorEnrollmentRepository } from '../repositories/accelerator-enrollment.repository.js';
+import { ContentAccessTier, ProductContentType } from '../types/billing.types.js';
 
 /**
  * The access requirement of a single piece of gateable content.
- * `productId` is required when `accessTier === 'product'`.
+ *
+ * For a `product`-tier item there are two ways to express which product unlocks
+ * it, in priority order:
+ *   1. `contentRef` ({type,id}) — resolve via the `product_contents` bundle:
+ *      the user may access it if they own ANY product that bundles this item
+ *      (and, for accelerator items, the day has unlocked). PREFERRED — supports
+ *      a content item belonging to many packs.
+ *   2. `productId` — the legacy single-FK path (the video signer still uses it).
+ * One of the two must be present for a `product`-tier item.
  */
 export interface GateableContent {
   accessTier: ContentAccessTier;
   productId?: string | null;
+  contentRef?: { type: ProductContentType; id: string };
 }
 
 /**
@@ -35,6 +46,8 @@ export class EntitlementService {
   constructor(
     private readonly subscriptionRepository: SubscriptionRepository,
     private readonly purchaseRepository: PurchaseRepository,
+    private readonly productContentsRepository: ProductContentsRepository,
+    private readonly acceleratorEnrollmentRepository: AcceleratorEnrollmentRepository,
   ) {}
 
   /**
@@ -55,18 +68,26 @@ export class EntitlementService {
 
       case 'product': {
         if (!userId) return false;
-        if (!content.productId) {
-          // A 'product'-tier item with no productId is a data error. The DB
-          // CHECK constraint should prevent this; deny defensively if it slips.
-          this.logger.warn(
-            'product-tier content has no productId — denying access',
-          );
-          return false;
+
+        // Preferred path: resolve via product_contents (item may be in many
+        // products). Own ANY bundling product → access, with accelerator drip.
+        if (content.contentRef) {
+          return this.canAccessViaBundles(userId, content.contentRef);
         }
-        return this.purchaseRepository.hasPurchasedProduct(
-          userId,
-          content.productId,
+
+        // Legacy single-FK path (the video signer passes productId directly).
+        if (content.productId) {
+          return this.purchaseRepository.hasPurchasedProduct(
+            userId,
+            content.productId,
+          );
+        }
+
+        // A 'product'-tier item with neither ref is a data error. Fail closed.
+        this.logger.warn(
+          'product-tier content has no contentRef or productId — denying access',
         );
+        return false;
       }
 
       default:
@@ -76,6 +97,59 @@ export class EntitlementService {
         );
         return false;
     }
+  }
+
+  /**
+   * A content item is accessible if the user owns ANY product that bundles it
+   * (via product_contents). For accelerator bundles, the item's unlock_day must
+   * also have elapsed since the user's enrollment started_at.
+   */
+  private async canAccessViaBundles(
+    userId: string,
+    ref: { type: ProductContentType; id: string },
+  ): Promise<boolean> {
+    const bundles = await this.productContentsRepository.findByContent(
+      ref.type,
+      ref.id,
+    );
+    if (bundles.length === 0) return false;
+
+    const ownedProductIds = new Set(
+      await this.purchaseRepository.getPurchasedProductIds(userId),
+    );
+
+    for (const bundle of bundles) {
+      if (!ownedProductIds.has(bundle.productId)) continue;
+      // Owned. Flat packs (unlock_day 0) → immediate access.
+      if (bundle.unlockDay <= 0) return true;
+      // Accelerator drip: check the enrollment clock.
+      if (await this.isDripUnlocked(userId, bundle.productId, bundle.unlockDay)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** Whether `unlockDay` days have elapsed since the user's enrollment. */
+  private async isDripUnlocked(
+    userId: string,
+    productId: string,
+    unlockDay: number,
+  ): Promise<boolean> {
+    const enrollment =
+      await this.acceleratorEnrollmentRepository.findByUserAndProduct(
+        userId,
+        productId,
+      );
+    if (!enrollment) return false; // owns product but no drip clock → not unlocked
+    const elapsedMs = this.now() - enrollment.startedAt.getTime();
+    const elapsedDays = elapsedMs / (1000 * 60 * 60 * 24);
+    return elapsedDays >= unlockDay;
+  }
+
+  /** Wall clock, isolated for testability. */
+  protected now(): number {
+    return Date.now();
   }
 
   /**
@@ -104,17 +178,27 @@ export class EntitlementService {
       ? new Set(await this.purchaseRepository.getPurchasedProductIds(userId))
       : new Set<string>();
 
-    return items.filter((item) => {
-      switch (item.accessTier) {
-        case 'free':
-          return true;
-        case 'member':
-          return hasActiveSubscription;
-        case 'product':
-          return !!item.productId && ownedProductIds.has(item.productId);
-        default:
-          return false;
-      }
-    });
+    // product-tier items with a contentRef need a per-item bundle lookup; do
+    // those individually (still reusing the single ownership read above). Items
+    // with only a legacy productId stay on the in-memory fast path.
+    const results = await Promise.all(
+      items.map(async (item) => {
+        switch (item.accessTier) {
+          case 'free':
+            return true;
+          case 'member':
+            return hasActiveSubscription;
+          case 'product':
+            if (item.contentRef) {
+              return this.canAccessViaBundles(userId, item.contentRef);
+            }
+            return !!item.productId && ownedProductIds.has(item.productId);
+          default:
+            return false;
+        }
+      }),
+    );
+
+    return items.filter((_item, i) => results[i]);
   }
 }

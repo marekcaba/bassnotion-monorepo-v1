@@ -10,6 +10,7 @@ import {
   CheckoutSessionResponse,
   CustomerPortalResponse,
 } from '../types/billing.types.js';
+import { ProductRepository } from '../repositories/product.repository.js';
 
 @Injectable()
 export class StripeService implements OnModuleInit {
@@ -17,7 +18,10 @@ export class StripeService implements OnModuleInit {
   private stripe: Stripe;
   private priceIds: Map<string, string> = new Map();
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly productRepository: ProductRepository,
+  ) {
     const secretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
     if (!secretKey) {
       throw new Error('STRIPE_SECRET_KEY is required');
@@ -223,6 +227,21 @@ export class StripeService implements OnModuleInit {
       priceId = this.priceIds.get(`course_${dto.courseType}`)!;
       mode = 'payment';
       metadata.course_type = dto.courseType;
+    } else if (dto.type === 'product' && dto.productId) {
+      // One-time product (Groove Pack / Accelerator). The Stripe price is
+      // pre-created in the dashboard and stored on the product row.
+      const product = await this.productRepository.findById(dto.productId);
+      if (!product) {
+        throw new Error(`Product not found: ${dto.productId}`);
+      }
+      if (!product.stripePriceId) {
+        throw new Error(
+          `Product ${product.slug} has no stripe_price_id configured`,
+        );
+      }
+      priceId = product.stripePriceId;
+      mode = 'payment';
+      metadata.product_id = product.id;
     } else {
       throw new Error('Invalid checkout session type');
     }
