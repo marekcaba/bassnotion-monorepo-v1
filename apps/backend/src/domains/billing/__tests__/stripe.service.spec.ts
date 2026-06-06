@@ -1,7 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ConfigService } from '@nestjs/config';
 import { StripeService } from '../services/stripe.service.js';
+import type { ProductRepository } from '../repositories/product.repository.js';
 import Stripe from 'stripe';
+
+// Minimal ProductRepository stub — StripeService only calls findById for the
+// 'product' checkout branch, which these tests don't exercise.
+const productRepo = {
+  findById: vi.fn(async () => null),
+  findBySlug: vi.fn(async () => null),
+  findByStripePriceId: vi.fn(async () => null),
+  findAllActive: vi.fn(async () => []),
+} as unknown as ProductRepository;
 
 // Mock Stripe
 vi.mock('stripe', () => {
@@ -129,7 +139,7 @@ describe('StripeService', () => {
     } as any;
 
     // Create service instance (this will call the Stripe constructor)
-    stripeService = new StripeService(configService);
+    stripeService = new StripeService(configService, productRepo);
 
     // Get mock Stripe instance
     mockStripe = (stripeService as any).stripe;
@@ -145,7 +155,7 @@ describe('StripeService', () => {
         get: vi.fn().mockReturnValue(undefined),
       } as any;
 
-      expect(() => new StripeService(badConfigService)).toThrow(
+      expect(() => new StripeService(badConfigService, productRepo)).toThrow(
         'STRIPE_SECRET_KEY is required',
       );
     });
@@ -452,7 +462,7 @@ describe('StripeService', () => {
         }),
       } as any;
 
-      const service = new StripeService(badConfigService);
+      const service = new StripeService(badConfigService, productRepo);
 
       expect(() => service.constructWebhookEvent('payload', 'sig')).toThrow(
         'STRIPE_WEBHOOK_SECRET is required',
@@ -483,7 +493,7 @@ describe('StripeService', () => {
       expect(result).toEqual(expandedSession);
       expect(mockStripe.checkout.sessions.retrieve).toHaveBeenCalledWith(
         'cs_test123',
-        { expand: ['subscription', 'payment_intent'] },
+        { expand: ['subscription', 'payment_intent', 'line_items'] },
       );
     });
   });
@@ -542,7 +552,7 @@ describe('StripeService - Error Handling', () => {
       }),
     } as any;
 
-    stripeService = new StripeService(configService);
+    stripeService = new StripeService(configService, productRepo);
     mockStripe = (stripeService as any).stripe;
   });
 
@@ -580,7 +590,7 @@ describe('StripeService - Security', () => {
       }),
     } as any;
 
-    stripeService = new StripeService(configService);
+    stripeService = new StripeService(configService, productRepo);
     mockStripe = (stripeService as any).stripe;
   });
 

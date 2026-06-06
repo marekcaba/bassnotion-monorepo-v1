@@ -18,6 +18,8 @@ import { ResendService } from './services/resend.service.js';
 import { MembershipService } from './services/membership.service.js';
 import { SubscriptionRepository } from './repositories/subscription.repository.js';
 import { PurchaseRepository } from './repositories/purchase.repository.js';
+import { ProductRepository } from './repositories/product.repository.js';
+import { AcceleratorEnrollmentRepository } from './repositories/accelerator-enrollment.repository.js';
 import { FounderMemberRepository } from './repositories/founder-member.repository.js';
 import type { CourseType, SubscriptionStatus } from './types/billing.types.js';
 
@@ -33,6 +35,8 @@ export class WebhookController {
     private readonly resendService: ResendService,
     private readonly configService: ConfigService,
     private readonly membershipService: MembershipService,
+    private readonly productRepository: ProductRepository,
+    private readonly acceleratorEnrollmentRepository: AcceleratorEnrollmentRepository,
   ) {}
 
   /**
@@ -121,6 +125,10 @@ export class WebhookController {
         );
         break;
 
+      case 'charge.refunded':
+        await this.handleChargeRefunded(event.data.object as Stripe.Charge);
+        break;
+
       default:
         this.logger.log(`Unhandled event type: ${event.type}`);
     }
@@ -143,6 +151,7 @@ export class WebhookController {
 
     const userId = session.metadata?.user_id;
     const courseType = session.metadata?.course_type as CourseType | undefined;
+    const productId = session.metadata?.product_id;
 
     if (!userId) {
       this.logger.error('Checkout session missing user_id in metadata');
@@ -152,10 +161,11 @@ export class WebhookController {
     if (session.mode === 'subscription') {
       // Subscription is handled by customer.subscription.created event
       this.logger.log(`Subscription checkout completed for user ${userId}`);
+    } else if (session.mode === 'payment' && productId) {
+      // One-time PRODUCT purchase (Groove Pack / Accelerator).
+      await this.recordProductPurchase(session, userId, productId);
     } else if (session.mode === 'payment' && courseType) {
-      // One-time course purchase (legacy course_type path). Product-scoped
-      // purchases (Groove Pack / Accelerator) will resolve metadata.product_id
-      // → products row here when the storefront ships (see PLAN S2).
+      // Legacy one-time course purchase (basic/standard/premium bundles).
       await this.purchaseRepository.create({
         userId,
         stripeCustomerId: session.customer as string,
@@ -172,6 +182,48 @@ export class WebhookController {
         `Course purchase completed: ${courseType} for user ${userId}`,
       );
     }
+  }
+
+  /**
+   * Record a completed one-time product purchase + (for accelerators) start the
+   * drip enrollment clock. Idempotent against webhook replays.
+   */
+  private async recordProductPurchase(
+    session: Stripe.Checkout.Session,
+    userId: string,
+    productId: string,
+  ): Promise<void> {
+    // Idempotency: skip if we've already recorded this checkout session.
+    const existing = await this.purchaseRepository.findByCheckoutSessionId(
+      session.id,
+    );
+    if (existing) {
+      this.logger.log(`Product purchase already recorded for session ${session.id}`);
+      return;
+    }
+
+    await this.purchaseRepository.create({
+      userId,
+      stripeCustomerId: session.customer as string,
+      stripePaymentIntentId: session.payment_intent as string,
+      stripeCheckoutSessionId: session.id,
+      courseType: null,
+      productId,
+      amount: session.amount_total || 0,
+      currency: session.currency || 'usd',
+      status: 'completed',
+    });
+
+    // Accelerator products start a time-drip clock on purchase.
+    const product = await this.productRepository.findById(productId);
+    if (product?.type === 'accelerator') {
+      await this.acceleratorEnrollmentRepository.enroll(userId, productId);
+      this.logger.log(
+        `Accelerator enrollment started: ${product.slug} for user ${userId}`,
+      );
+    }
+
+    this.logger.log(`Product purchase completed: ${productId} for user ${userId}`);
   }
 
   /**
@@ -350,6 +402,26 @@ export class WebhookController {
     if (existingPurchase) {
       await this.purchaseRepository.updateStatus(paymentIntent.id, 'failed');
       this.logger.log(`Payment intent failed: ${paymentIntent.id}`);
+    }
+  }
+
+  /**
+   * Handle a refunded charge — flip the purchase to 'refunded' so entitlement
+   * revokes access (EntitlementService only grants 'completed' purchases).
+   */
+  private async handleChargeRefunded(charge: Stripe.Charge): Promise<void> {
+    const paymentIntentId = charge.payment_intent as string | null;
+    if (!paymentIntentId) {
+      this.logger.warn('charge.refunded has no payment_intent — ignoring');
+      return;
+    }
+
+    const existingPurchase =
+      await this.purchaseRepository.findByPaymentIntentId(paymentIntentId);
+
+    if (existingPurchase && existingPurchase.status !== 'refunded') {
+      await this.purchaseRepository.updateStatus(paymentIntentId, 'refunded');
+      this.logger.log(`Purchase refunded: ${paymentIntentId} — access revoked`);
     }
   }
 
