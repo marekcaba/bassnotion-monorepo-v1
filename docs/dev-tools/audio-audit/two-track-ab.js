@@ -1,22 +1,24 @@
 /**
- * TWO-TRACK A/B — flip the new pre-rendered two-track engine vs the legacy live
- * per-hit overlays, BY EAR, while the groove plays.
+ * TWO-TRACK A/B + LAYER SOLO — diagnose the two-track drum engine by ear.
  *
- * THE QUESTION: does the two-track engine (bed buffer + big-hits buffer, both
- * continuous, re-rendered per ratio) eliminate the kick/snare SPILL when you nudge
- * tempo — without losing punch or sync? The spill happens in the live engine because
- * it schedules each hit as its own source ahead of time, and a nudge races them. The
- * two-track bakes the hits into a buffer, so there are NO per-hit sources to race.
+ * Three independent controls:
+ *   • TWO-TRACK ON/OFF  — new pre-rendered tracks vs legacy live per-hit overlays.
+ *   • BED on/off        — the stretched notched texture track (mutes via muteBed).
+ *   • BIG HITS on/off   — the re-gridded bit-exact kick/snare track (mutes via
+ *                         muteOverlays).
  *
- *   TWO-TRACK ON  = bed buffer + big-hits buffer (no per-hit scheduling). The new way.
- *   TWO-TRACK OFF = legacy live per-hit overlays (the spill-prone way).
+ * So you can hear: BED alone (is the texture clean / no kicks leaking?), BIG HITS
+ * alone (are the kicks/snares present, in the right place, full punch?), or both
+ * (do they glue?). This is how we find what's "not working properly".
  *
- * USE: groove card → START → settle to a slow tempo (nudge down ~10 BPM) so you're in
- *   the BED. Paste this. Then:
- *     1. Listen at the held tempo — both should sound full (kicks/snares + texture).
- *     2. NUDGE the tempo around fast (the spill-prone motion). On OFF you may hear a
- *        kick/snare spill into the bed; on ON it should be clean.
- *     3. A/B a few times. Pick the one that's clean under a fast nudge.
+ * USE: groove card → START → settle to a slow tempo (nudge down ~10 BPM, into the
+ *   BED). Paste this. A panel appears (bottom-left). Toggle the layers and listen.
+ *
+ * Mapping (the engine's diagnostic solo):
+ *   BED on,  HITS on  → both (normal)
+ *   BED on,  HITS off → bed only      (muteOverlays = true)
+ *   BED off, HITS on  → big hits only (muteBed = true)
+ *   BED off, HITS off → silence
  */
 (() => {
   const eng =
@@ -25,16 +27,18 @@
   if (
     !eng ||
     typeof eng.setDrumTwoTrack !== 'function' ||
+    typeof eng.setDrumDiagnosticSolo !== 'function' ||
     typeof eng.getDrumTempoDebugState !== 'function'
   ) {
     console.warn(
-      '[two-track-ab] engine/setDrumTwoTrack not found — start the groove first, re-paste.',
+      '[two-track-ab] engine not ready — start the groove first, then re-paste.',
     );
     return;
   }
   document.getElementById('bn-twotrack-ab')?.remove();
 
-  let on = true; // default ON (matches the engine default)
+  const state = { twoTrack: true, bed: true, hits: true };
+
   const wrap = document.createElement('div');
   wrap.id = 'bn-twotrack-ab';
   wrap.style.cssText =
@@ -42,30 +46,55 @@
     'color:#eee;font:12px/1.4 system-ui;padding:12px 14px;border-radius:10px;' +
     'box-shadow:0 6px 24px rgba(0,0,0,.55);backdrop-filter:blur(6px);width:300px';
   wrap.innerHTML =
-    '<div style="font-weight:600;margin-bottom:6px">two-track vs live overlays (by ear)</div>' +
-    '<button id="bn-tt-btn" style="width:100%;padding:9px;font:13px system-ui;cursor:pointer;border-radius:6px;border:0"></button>' +
+    '<div style="font-weight:600;margin-bottom:8px">two-track — layer solo</div>' +
+    '<button id="bn-tt-engine" style="width:100%;padding:9px;font:13px system-ui;cursor:pointer;border-radius:6px;border:0;margin-bottom:8px"></button>' +
+    '<div style="display:flex;gap:6px">' +
+    '<button id="bn-tt-bed" style="flex:1;padding:9px;font:13px system-ui;cursor:pointer;border-radius:6px;border:0"></button>' +
+    '<button id="bn-tt-hits" style="flex:1;padding:9px;font:13px system-ui;cursor:pointer;border-radius:6px;border:0"></button>' +
+    '</div>' +
     '<div id="bn-tt-state" style="margin-top:8px;font:600 13px ui-monospace,monospace;text-align:center"></div>' +
     '<div id="bn-tt-info" style="margin-top:2px;font:11px ui-monospace,monospace;text-align:center;opacity:.7"></div>' +
-    '<div style="opacity:.6;margin-top:8px">Settle to a slow tempo (in the BED), then NUDGE fast. ' +
-    'ON = pre-rendered tracks (no per-hit scheduling). OFF = live overlays (spill-prone). ' +
-    'Listen for a kick/snare spilling into the bed while nudging.</div>';
+    '<div style="opacity:.6;margin-top:8px">Settle into the BED (slow tempo). Solo BED (is texture clean, no kicks?) ' +
+    'and BIG HITS (kicks present + placed right?). Then both. Nudge to test spill.</div>';
   document.body.appendChild(wrap);
 
-  const btn = wrap.querySelector('#bn-tt-btn');
+  const engineBtn = wrap.querySelector('#bn-tt-engine');
+  const bedBtn = wrap.querySelector('#bn-tt-bed');
+  const hitsBtn = wrap.querySelector('#bn-tt-hits');
   const stateEl = wrap.querySelector('#bn-tt-state');
   const infoEl = wrap.querySelector('#bn-tt-info');
+
   const apply = () => {
-    eng.setDrumTwoTrack(on);
-    btn.textContent = on ? 'TWO-TRACK ON ✓' : 'LIVE OVERLAYS (legacy)';
-    btn.style.background = on ? '#2e7d4f' : '#8a5a1f';
-    btn.style.color = '#fff';
+    eng.setDrumTwoTrack(state.twoTrack);
+    // BED off → muteBed; HITS off → muteOverlays.
+    eng.setDrumDiagnosticSolo({ muteBed: !state.bed, muteOverlays: !state.hits });
+    engineBtn.textContent = state.twoTrack
+      ? 'TWO-TRACK ON ✓'
+      : 'LIVE OVERLAYS (legacy)';
+    engineBtn.style.background = state.twoTrack ? '#2e7d4f' : '#8a5a1f';
+    engineBtn.style.color = '#fff';
+    bedBtn.textContent = state.bed ? 'BED ✓' : 'BED off';
+    bedBtn.style.background = state.bed ? '#1e4e7a' : '#333';
+    bedBtn.style.color = '#fff';
+    hitsBtn.textContent = state.hits ? 'BIG HITS ✓' : 'HITS off';
+    hitsBtn.style.background = state.hits ? '#7a2e2e' : '#333';
+    hitsBtn.style.color = '#fff';
     // eslint-disable-next-line no-console
-    console.log('[two-track-ab] twoTrack =', on);
+    console.log('[two-track-ab]', JSON.stringify(state));
   };
-  btn.addEventListener('click', () => {
-    on = !on;
+  engineBtn.addEventListener('click', () => {
+    state.twoTrack = !state.twoTrack;
     apply();
   });
+  bedBtn.addEventListener('click', () => {
+    state.bed = !state.bed;
+    apply();
+  });
+  hitsBtn.addEventListener('click', () => {
+    state.hits = !state.hits;
+    apply();
+  });
+
   const COLORS = {
     SLICES: '#d0a020',
     XFADE_TO_BED: '#6aa0d0',
@@ -92,7 +121,5 @@
   apply();
   tick();
   // eslint-disable-next-line no-console
-  console.log(
-    '[two-track-ab] ready — settle to a slow tempo, then NUDGE fast and A/B by ear.',
-  );
+  console.log('[two-track-ab] ready — solo BED / BIG HITS to diagnose by ear.');
 })();

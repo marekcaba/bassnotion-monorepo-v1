@@ -541,6 +541,10 @@ export class DrumSlicePlayer {
    *  source (no live per-hit overlays = no nudge spill). false → the legacy live
    *  per-hit overlay scheduling. Default ON; toggle via setTwoTrack for A/B. */
   private useTwoTrack = true;
+  /** TWO-TRACK: high-pass cutoff (Hz) applied to the BED so it carries only texture
+   *  (mids/highs); the bit-exact hits track carries the low end. Kills any sub-bass
+   *  that leaks past the notch/WSOLA so it can't double the kick. 0 = off. */
+  private bedHighpassHz = 90;
 
   private ratio = 1;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -977,14 +981,31 @@ export class DrumSlicePlayer {
    *  muteOverlays → hear only the stretched bed texture. Restarts so it takes
    *  effect on the current iteration. */
   setDiagnosticSolo(opts: { muteBed?: boolean; muteOverlays?: boolean }): void {
+    const prevMuteOverlays = this.muteOverlays;
+    const prevMuteBed = this.muteBed;
     if (opts.muteBed !== undefined) this.muteBed = opts.muteBed;
     if (opts.muteOverlays !== undefined) this.muteOverlays = opts.muteOverlays;
+    // TWO-TRACK: the hits are a SINGLE ~15s one-shot (bedOverlay), armed up to a
+    // whole loop ahead. The legacy per-hit overlays finished in ms, so a mute flag
+    // read fresh next tick was enough; the long hits one-shot does NOT — once armed
+    // it plays the whole loop regardless of the flag. So when a solo TOGGLES, stop
+    // the in-flight bed sources and re-arm so the new mute state takes effect now
+    // (else bed-solo still hears the already-armed hits = "bed too loud"). Auto mode
+    // is fine to re-seed the bed cursor; it doesn't disrupt SLICES↔BED.
+    const soloChanged =
+      this.muteOverlays !== prevMuteOverlays || this.muteBed !== prevMuteBed;
+    if (this.playing && this.useTwoTrack && soloChanged) {
+      this.stopBedSources(this.ctx.currentTime + 0.02);
+      this.bedIterStart = null; // re-arm the bed + hits at the new mute state
+    }
     // The flags are read FRESH each tick by scheduleBedIteration, so the next
     // bed iteration applies them. In AUTO mode a restart would disrupt the live
     // SLICES↔BED flow (the whole point is to hear the solo IN the real playback,
     // settling from slices into the bed exactly as a user would). Only the legacy
     // always-bed path needs a restart to re-arm at the new mute state.
-    if (this.playing && !this.autoMode) this.restartAtCurrentPhase();
+    if (this.playing && !this.autoMode && !this.useTwoTrack) {
+      this.restartAtCurrentPhase();
+    }
   }
 
   /** Manual WSOLA toggle (admin "Smooth stretch" A/B). Forces the legacy binary
@@ -1315,19 +1336,27 @@ export class DrumSlicePlayer {
       const onset = Math.round(this.onsetAt(k) * sr);
       const dipStart = Math.max(0, onset - pre);
       const dipEnd = Math.min(end, onset + body);
-      // ramp DOWN into the dip, hold at `floor`, ramp UP out of it.
+      // The ramp-down must REACH the floor BY the onset, so the attack itself is
+      // fully dipped — not still near 1 mid-ramp. The down-ramp occupies the LAST
+      // `downRamp` samples before the onset; if there isn't room (onset at the
+      // buffer start, e.g. the downbeat), it shrinks to whatever lead exists — so a
+      // hit with no pre-roll lead gets floor immediately at the onset (no leak).
+      const leadAvail = onset - dipStart; // samples available before the onset
+      const downRamp = Math.min(ramp, leadAvail);
+      const downStart = onset - downRamp; // ramp 1→floor over [downStart, onset]
       for (let i = dipStart; i < dipEnd; i++) {
         let g: number;
-        const into = i - dipStart;
         const outof = dipEnd - i;
-        if (into < ramp) {
-          const x = into / ramp;
-          g = floor + (1 - floor) * 0.5 * (1 + Math.cos(Math.PI * x));
+        if (i < downStart) {
+          g = 1; // before the down-ramp begins (untouched lead, if any)
+        } else if (i < onset) {
+          const x = (i - downStart) / Math.max(1, downRamp); // 0→1 over the ramp
+          g = floor + (1 - floor) * 0.5 * (1 + Math.cos(Math.PI * x)); // 1→floor
         } else if (outof < ramp) {
           const x = outof / ramp;
-          g = floor + (1 - floor) * 0.5 * (1 + Math.cos(Math.PI * x));
+          g = floor + (1 - floor) * 0.5 * (1 + Math.cos(Math.PI * x)); // floor→1 out
         } else {
-          g = floor;
+          g = floor; // held at the floor across the body (incl. the attack)
         }
         out[i] = out[i]! * g;
       }
@@ -1425,11 +1454,39 @@ export class DrumSlicePlayer {
     if (outLen <= 0) return;
     const stretched = synthesizeWsola(this.bedAnalysis, outLen, this.wsolaOpt);
     if (stretched.length === 0 || stretched[0]!.length === 0) return;
+    // TWO-TRACK: HIGH-PASS the bed. The bed is TEXTURE (mids/highs); the bit-exact
+    // hits track carries ALL the low end. Any sub-bass that survived the notch (a
+    // kick body ringing past the window, WSOLA smear, an un-notched low hat) is
+    // removed here at the SOURCE — the bed simply cannot contain lows to leak/double
+    // against the hits. Cutoff = bedHighpassHz (0 ⇒ off). Applied per channel before
+    // the buffer is built.
+    if (this.bedHighpassHz > 0) {
+      for (let c = 0; c < stretched.length; c++) {
+        this.highpassInPlace(stretched[c]!, sr, this.bedHighpassHz);
+      }
+    }
     const buf = this.ctx.createBuffer(stretched.length, stretched[0]!.length, sr);
     for (let c = 0; c < stretched.length; c++) buf.copyToChannel(stretched[c]!, c);
     this.bedBuffer = buf;
     // TWO-TRACK: build the BIG-HITS buffer for this ratio alongside the bed.
     this.resynthesizeHits(outLen);
+  }
+
+  /** One-pole high-pass, in place. Removes sub-bass from the bed so only the
+   *  bit-exact hits track carries the low end (two-track). Gentle (6 dB/oct) — just
+   *  enough to kill the leaked kick body without thinning the texture. */
+  private highpassInPlace(x: Float32Array, sr: number, fc: number): void {
+    const dt = 1 / sr;
+    const rc = 1 / (2 * Math.PI * fc);
+    const a = rc / (rc + dt);
+    let prevX = x[0] ?? 0;
+    let prevY = 0;
+    for (let i = 0; i < x.length; i++) {
+      const cur = x[i]!;
+      prevY = a * (prevY + cur - prevX);
+      prevX = cur;
+      x[i] = prevY;
+    }
   }
 
   /**
@@ -2059,20 +2116,17 @@ export class DrumSlicePlayer {
       }
     }
 
-    // 1b) TWO-TRACK: play the pre-rendered BIG-HITS buffer as a SECOND continuous
-    //     one-shot, phase-locked to the bed (same iterStart/period/phaseSec). The
-    //     hits are baked into the buffer at their grid positions — there is NO live
-    //     per-hit scheduling, so nothing can spill on a nudge. Skipped at unity
-    //     (raw bed already has the hits) or when muteOverlays solos the bed. When
-    //     muteBed solos the hits we STILL play this (that's the "hits" you hear).
-    if (
-      this.useTwoTrack &&
-      !unity &&
-      this.hitsBuffer &&
-      !this.muteOverlays
-    ) {
-      this.scheduleHits(iterStart, period, phaseSec);
-      return; // two-track carries the hits; skip the legacy overlay loop entirely
+    // 1b) TWO-TRACK: the hits come from the pre-rendered hitsBuffer as a SECOND
+    //     continuous one-shot (no live per-hit scheduling = no nudge spill). When
+    //     two-track is ON we ALWAYS take this path and NEVER fall through to the
+    //     legacy overlay loop (else bed-solo would still hear legacy overlays = the
+    //     "bed too loud" bug). Play the hits unless soloing the bed (muteOverlays)
+    //     or at unity (raw bed already has the hits).
+    if (this.useTwoTrack) {
+      if (!unity && this.hitsBuffer && !this.muteOverlays) {
+        this.scheduleHits(iterStart, period, phaseSec);
+      }
+      return; // two-track owns the hits; the legacy loop never runs in this mode
     }
 
     // 2) LEGACY live overlays + ducks (only when two-track is OFF). Skipped at unity
