@@ -1,0 +1,548 @@
+/**
+ * DrumTwoTrackPlayer — the CLEAN two-track drum engine (2026-06-06).
+ *
+ * Replaces the tangled SLICES↔BED state machine with exactly the user's design,
+ * nothing more:
+ *
+ *   1. BED  = the loop with the kick/snare BODIES notched OUT — they are physically
+ *             NOT in this audio, so a kick can NEVER leak into the bed, no matter
+ *             what. ONE buffer, played as ONE continuous looping source. Tempo
+ *             changes by setting its playbackRate — the bed warps/stretches in
+ *             real time, like flexing a clip. No re-render, no new loop, no stall.
+ *             (It pitch-bends slightly when stretched — acceptable for hat/room
+ *             texture; the hits stay pitch-correct below.)
+ *
+ *   2. HITS = the bit-exact kick/snare regions, re-GRIDDED to their positions for
+ *             the current tempo (onset/ratio), scheduled per loop iteration.
+ *             playbackRate = 1 always → never pitch-shifted. The kicks/snares the
+ *             user hears.
+ *
+ * Both play together, ALWAYS. No modes. No per-slice path. No crossfade. No settle.
+ * Tempo change = set the bed's playbackRate + reposition the future hits. Phase is
+ * kept locked to bass/harmony by re-anchoring the grid at the engine's shared pivot
+ * T (setRatio(ratio, atTime)) — same contract the old slicer used.
+ *
+ * Output: one AudioNode (the 'audio-drums' gain). Bed + hits both connect to it.
+ */
+import { detectOnsetsDetailed } from './detectOnsets.js';
+
+export interface DrumTwoTrackOptions {
+  /** Musical loop length (s) — the grid the hits re-space against and the bed loops on. */
+  loopDurationSeconds: number;
+  /** Confidence ≥ this ⇒ a "big hit" (kick/snare): notched from the bed + played as
+   *  an overlay. Below ⇒ rides the bed as texture. */
+  strongConfidenceThreshold?: number;
+  /** Bed notch: how far before/after each big hit's onset to remove from the bed. */
+  notchPreSeconds?: number;
+  notchTailSeconds?: number;
+  /** Hit region: how far before/after each onset the bit-exact overlay reads. */
+  hitPreSeconds?: number;
+  hitTailSeconds?: number;
+  /** Declick fade lengths (s). */
+  fadeSeconds?: number;
+  /** High-pass the bed below this (Hz) so it carries no low end (the hits do). 0=off. */
+  bedHighpassHz?: number;
+  /** Look-ahead for scheduling hit one-shots (s). */
+  scheduleAheadSeconds?: number;
+  /** Scheduler tick (ms). */
+  tickMs?: number;
+}
+
+const DEFAULTS: Required<Omit<DrumTwoTrackOptions, 'loopDurationSeconds'>> = {
+  strongConfidenceThreshold: 0.3,
+  notchPreSeconds: 0.037,
+  notchTailSeconds: 0.13,
+  hitPreSeconds: 0.039,
+  hitTailSeconds: 0.2,
+  fadeSeconds: 0.004,
+  bedHighpassHz: 90,
+  scheduleAheadSeconds: 0.06,
+  tickMs: 25,
+};
+
+/** One bit-exact big hit, ready to place at any tempo. */
+interface BigHit {
+  /** Input-domain onset (s) on the musical loop. */
+  onsetSec: number;
+  /** Bit-exact PCM [onset−pre, onset+tail], per channel, edge-faded. */
+  channels: Float32Array[];
+  /** Where the onset sits inside `channels` (samples). */
+  leadSamples: number;
+}
+
+export class DrumTwoTrackPlayer {
+  private readonly ctx: AudioContext;
+  private readonly buffer: AudioBuffer; // the raw drum loop
+  private readonly output: AudioNode;
+  private readonly opt: Required<DrumTwoTrackOptions>;
+  private readonly sr: number;
+  private readonly numCh: number;
+  private readonly loopDuration: number; // musical loop length (s, input domain)
+
+  private onsets: number[] = [];
+  private confidences: number[] = [];
+  private strongOnsets: number[] = []; // big-hit onset times (input s)
+
+  /** The notched bed buffer (kicks removed). Built ONCE; never contains hits. */
+  private bedBuffer: AudioBuffer | null = null;
+  /** The extracted big hits. Built ONCE; re-gridded per tempo (cheap). */
+  private hits: BigHit[] = [];
+
+  private playing = false;
+  private ratio = 1; // target/original tempo
+  private loopStartTime = 0; // audio time of input-position 0 of the current iteration
+
+  // The single continuous bed source (loops forever; playbackRate = the stretch).
+  private bedSrc: AudioBufferSourceNode | null = null;
+  private bedGain: GainNode | null = null;
+
+  // Scheduled hit one-shots (for teardown).
+  private active = new Set<{ src: AudioBufferSourceNode; env: GainNode }>();
+  // Hit scheduler cursor.
+  private nextHitIter = 0; // the loop iteration index we're scheduling hits for
+  private nextHitIndex = 0; // index into strongOnsets within that iteration
+  private timer: ReturnType<typeof setInterval> | null = null;
+
+  // Diagnostic solos (admin).
+  private muteBed = false;
+  private muteHits = false;
+
+  constructor(
+    ctx: AudioContext,
+    buffer: AudioBuffer,
+    output: AudioNode,
+    options: DrumTwoTrackOptions,
+  ) {
+    this.ctx = ctx;
+    this.buffer = buffer;
+    this.output = output;
+    this.opt = { ...DEFAULTS, ...options };
+    this.sr = buffer.sampleRate;
+    this.numCh = buffer.numberOfChannels;
+    this.loopDuration = this.opt.loopDurationSeconds;
+    this.analyze();
+  }
+
+  // ── BUILD (once, at load) ───────────────────────────────────────────────────
+
+  /** Detect onsets, pick the big hits, build the notched bed + extract the hits. */
+  private analyze(): void {
+    try {
+      const detected = detectOnsetsDetailed(this.buffer);
+      this.onsets = detected.map((o) => o.time);
+      this.confidences = detected.map((o) => o.confidence);
+    } catch {
+      this.onsets = [0];
+      this.confidences = [1];
+    }
+    if (this.onsets.length === 0) {
+      this.onsets = [0];
+      this.confidences = [1];
+    }
+    // Big hits = onset 0 (downbeat) always, plus any ≥ threshold.
+    this.strongOnsets = this.onsets.filter(
+      (_t, i) => i === 0 || (this.confidences[i] ?? 1) >= this.opt.strongConfidenceThreshold,
+    );
+    this.buildBed();
+    this.extractHits();
+  }
+
+  /** Build the notched bed buffer ONCE: the loop with every big hit's body removed.
+   *  The kicks/snares are physically gone — they can never leak. High-passed so the
+   *  bed carries no low end (the hits do). This buffer loops forever and is stretched
+   *  by playbackRate; it is NEVER re-rendered. */
+  private buildBed(): void {
+    const end = Math.min(this.buffer.length, Math.round(this.loopDuration * this.sr));
+    if (end <= 0) {
+      this.bedBuffer = null;
+      return;
+    }
+    const pre = Math.max(0, Math.round(this.opt.notchPreSeconds * this.sr));
+    const tail = Math.max(1, Math.round(this.opt.notchTailSeconds * this.sr));
+    const ramp = Math.max(1, Math.round(0.012 * this.sr)); // edge ramp for the notch
+    const channels: Float32Array[] = [];
+    for (let c = 0; c < this.numCh; c++) {
+      const src = this.buffer.getChannelData(c);
+      const out = new Float32Array(end);
+      out.set(src.subarray(0, end));
+      // Notch (zero) each big hit's region with a click-free ramp that reaches 0 BY
+      // the onset (so the attack is fully removed, not mid-ramp).
+      for (const onsetSec of this.strongOnsets) {
+        const onset = Math.round(onsetSec * this.sr);
+        const dipStart = Math.max(0, onset - pre);
+        const dipEnd = Math.min(end, onset + tail);
+        const leadAvail = onset - dipStart;
+        const downRamp = Math.min(ramp, leadAvail);
+        const downStart = onset - downRamp;
+        for (let i = dipStart; i < dipEnd; i++) {
+          let g: number;
+          const outof = dipEnd - i;
+          if (i < downStart) g = 1;
+          else if (i < onset) {
+            const x = (i - downStart) / Math.max(1, downRamp);
+            g = 0.5 * (1 + Math.cos(Math.PI * x)); // 1→0 by the onset
+          } else if (outof < ramp) {
+            const x = outof / ramp;
+            g = 0.5 * (1 + Math.cos(Math.PI * x)); // 0→1 out
+          } else g = 0; // fully removed across the body
+          out[i] = out[i]! * g;
+        }
+      }
+      if (this.opt.bedHighpassHz > 0) {
+        this.highpass(out, this.opt.bedHighpassHz);
+      }
+      channels.push(out);
+    }
+    try {
+      const buf = this.ctx.createBuffer(this.numCh, end, this.sr);
+      for (let c = 0; c < this.numCh; c++) buf.copyToChannel(channels[c]!, c);
+      this.bedBuffer = buf;
+    } catch {
+      this.bedBuffer = null;
+    }
+  }
+
+  /** Extract each big hit as a bit-exact region [onset−pre, onset+tail], edge-faded. */
+  private extractHits(): void {
+    const end = Math.min(this.buffer.length, Math.round(this.loopDuration * this.sr));
+    const pre = Math.max(0, Math.round(this.opt.hitPreSeconds * this.sr));
+    const tail = Math.max(1, Math.round(this.opt.hitTailSeconds * this.sr));
+    const fade = Math.max(1, Math.round(this.opt.fadeSeconds * this.sr));
+    this.hits = [];
+    for (const onsetSec of this.strongOnsets) {
+      const onset = Math.round(onsetSec * this.sr);
+      const readStart = Math.max(0, onset - pre);
+      const readEnd = Math.min(end, onset + tail);
+      const len = readEnd - readStart;
+      if (len <= 1) continue;
+      const leadSamples = onset - readStart;
+      const channels: Float32Array[] = [];
+      for (let c = 0; c < this.numCh; c++) {
+        const src = this.buffer.getChannelData(c);
+        const region = new Float32Array(len);
+        for (let i = 0; i < len; i++) {
+          let g = 1;
+          if (i < fade) g = i / fade;
+          const outFromEnd = len - 1 - i;
+          if (outFromEnd < fade) g = Math.min(g, outFromEnd / fade);
+          region[i] = src[readStart + i]! * g;
+        }
+        channels.push(region);
+      }
+      this.hits.push({ onsetSec, channels, leadSamples });
+    }
+  }
+
+  /** One-pole high-pass in place. */
+  private highpass(x: Float32Array, fc: number): void {
+    const dt = 1 / this.sr;
+    const rc = 1 / (2 * Math.PI * fc);
+    const a = rc / (rc + dt);
+    let px = x[0] ?? 0;
+    let py = 0;
+    for (let i = 0; i < x.length; i++) {
+      const cur = x[i]!;
+      py = a * (py + cur - px);
+      px = cur;
+      x[i] = py;
+    }
+  }
+
+  // ── TRANSPORT ───────────────────────────────────────────────────────────────
+
+  /** Real-time loop period at the current ratio. */
+  private get period(): number {
+    return this.loopDuration / (this.ratio || 1);
+  }
+
+  start(when?: number): void {
+    if (this.playing) return;
+    this.playing = true;
+    this.loopStartTime = when ?? this.ctx.currentTime;
+    this.nextHitIter = 0;
+    this.nextHitIndex = 0;
+    this.startBed();
+    this.tick();
+    this.timer = setInterval(() => this.tick(), this.opt.tickMs);
+  }
+
+  /** Start (or restart) the single continuous bed source, looping, at the current
+   *  ratio (playbackRate). It plays forever until stop()/restart. */
+  private startBed(): void {
+    this.stopBed();
+    if (!this.bedBuffer) return;
+    try {
+      const src = this.ctx.createBufferSource();
+      const env = this.ctx.createGain();
+      src.buffer = this.bedBuffer;
+      src.loop = true;
+      // The bed buffer is exactly loopDuration long (input domain). playbackRate =
+      // ratio warps it to the real tempo: ratio<1 (slower) → rate<1 → longer/lower.
+      src.playbackRate.value = this.ratio || 1;
+      env.gain.value = this.muteBed ? 0 : 1;
+      src.connect(env);
+      env.connect(this.output);
+      // Align the bed loop phase to the grid: start it so input-position 0 plays at
+      // loopStartTime. If loopStartTime is in the past, offset into the buffer.
+      const now = this.ctx.currentTime;
+      const startAt = Math.max(now, this.loopStartTime);
+      const phaseSec = Math.max(0, now - this.loopStartTime); // real-time into the loop
+      const offsetInput = (phaseSec * (this.ratio || 1)) % this.loopDuration; // input s
+      src.start(startAt, this.loopStartTime > now ? 0 : offsetInput);
+      this.bedSrc = src;
+      this.bedGain = env;
+    } catch {
+      this.bedSrc = null;
+      this.bedGain = null;
+    }
+  }
+
+  private stopBed(): void {
+    if (this.bedSrc) {
+      try {
+        this.bedGain?.gain.setValueAtTime(0, this.ctx.currentTime);
+      } catch {
+        /* ignore */
+      }
+      try {
+        this.bedSrc.stop();
+      } catch {
+        /* ignore */
+      }
+      this.bedSrc = null;
+      this.bedGain = null;
+    }
+  }
+
+  stop(when?: number): void {
+    this.playing = false;
+    if (this.timer != null) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
+    const now = this.ctx.currentTime;
+    const at = when ?? now;
+    // Hard-stop the bed + every hit (zero gain first so a future-armed source can't
+    // escape the stop, then stop). Click-safety is the engine master-bus fade.
+    this.stopBed();
+    for (const { src, env } of this.active) {
+      try {
+        env.gain.cancelScheduledValues(now);
+        env.gain.setValueAtTime(0, now);
+      } catch {
+        /* ignore */
+      }
+      try {
+        src.stop(at);
+      } catch {
+        /* ignore */
+      }
+    }
+    this.active.clear();
+  }
+
+  /**
+   * Tempo change. Re-anchor the grid for phase continuity at the SHARED pivot
+   * `atTime` (the same instant the engine flips bass/harmony) so the drums never
+   * drift. Set the bed's playbackRate (it warps live — no re-render). Re-grid the
+   * future hits by resetting the hit cursor to the live iteration.
+   */
+  setRatio(ratio: number, atTime?: number): void {
+    const newRatio = ratio > 0 ? ratio : 1;
+    if (this.playing && newRatio !== this.ratio) {
+      const pivot = atTime ?? this.ctx.currentTime;
+      const period = this.period;
+      const rel = pivot - this.loopStartTime;
+      const inputPos =
+        rel >= 0 && rel < period
+          ? rel * this.ratio
+          : this.currentInputPos(pivot);
+      this.loopStartTime = pivot - inputPos / newRatio;
+    }
+    const changed = newRatio !== this.ratio;
+    this.ratio = newRatio;
+    if (!this.playing || !changed) return;
+    // BED: warp live by setting playbackRate. One file, stretched — no re-render.
+    if (this.bedSrc) {
+      const t = atTime ?? this.ctx.currentTime;
+      try {
+        this.bedSrc.playbackRate.setValueAtTime(newRatio, t);
+      } catch {
+        try {
+          this.bedSrc.playbackRate.value = newRatio;
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+    // HITS: re-point the cursor to the live iteration so the next scheduled hits use
+    // the new spacing. Drop any already-armed future hits (they're at the old grid).
+    this.repointHits();
+  }
+
+  /** Input position (s, [0,loopDuration)) at audio time `now`, folded over the loop. */
+  private currentInputPos(now: number): number {
+    const period = this.period;
+    if (period <= 0) return 0;
+    let rel = (now - this.loopStartTime) % period;
+    if (rel < 0) rel += period;
+    return rel * (this.ratio || 1);
+  }
+
+  /** Stop future-armed hits and re-seed the hit cursor to the iteration containing
+   *  `now`, pointing at the first hit at/after the live input position. */
+  private repointHits(): void {
+    const now = this.ctx.currentTime;
+    // Stop hits that haven't sounded yet (armed for the old grid); keep ones already
+    // playing (their attack is out). We can't tell easily, so fade-stop all and let
+    // the scheduler re-arm — the hits are short, the re-arm is immediate.
+    for (const { src, env } of this.active) {
+      try {
+        env.gain.cancelScheduledValues(now);
+        env.gain.setValueAtTime(env.gain.value, now);
+        env.gain.linearRampToValueAtTime(0, now + 0.006);
+      } catch {
+        /* ignore */
+      }
+      try {
+        src.stop(now + 0.012);
+      } catch {
+        /* ignore */
+      }
+    }
+    this.active.clear();
+    // Re-seed the cursor: which iteration contains `now`, and the first hit ≥ live pos.
+    const period = this.period;
+    const k = Math.floor((now - this.loopStartTime) / period);
+    this.nextHitIter = k;
+    const inputPos = this.currentInputPos(now);
+    let idx = 0;
+    while (idx < this.strongOnsets.length && this.strongOnsets[idx]! < inputPos) idx++;
+    this.nextHitIndex = idx;
+  }
+
+  // ── HIT SCHEDULER ───────────────────────────────────────────────────────────
+
+  /** Schedule every hit whose grid time falls within the look-ahead horizon. The bed
+   *  needs no scheduling — it's one looping source. Only the hits are armed here. */
+  private tick(): void {
+    if (!this.playing) return;
+    const now = this.ctx.currentTime;
+    const horizon = now + this.opt.scheduleAheadSeconds;
+    const period = this.period;
+    if (period <= 0 || this.strongOnsets.length === 0) return;
+
+    let guard = 0;
+    while (guard++ < 256) {
+      const iterStart = this.loopStartTime + this.nextHitIter * period;
+      const onsetSec = this.strongOnsets[this.nextHitIndex]!;
+      const tHit = iterStart + onsetSec / (this.ratio || 1);
+      if (tHit > horizon) break;
+      // Never schedule a hit in the past (timer jitter / re-anchor) — skip it.
+      if (tHit >= now - 1e-4) {
+        this.scheduleHit(this.nextHitIndex, tHit);
+      }
+      this.nextHitIndex++;
+      if (this.nextHitIndex >= this.strongOnsets.length) {
+        this.nextHitIndex = 0;
+        this.nextHitIter++;
+      }
+    }
+  }
+
+  /** Arm ONE bit-exact hit at real-time `tHit` (its onset lands exactly there). */
+  private scheduleHit(strongIndex: number, tHit: number): void {
+    const hit = this.hits[strongIndex];
+    if (!hit) return;
+    let src: AudioBufferSourceNode;
+    let env: GainNode;
+    try {
+      src = this.ctx.createBufferSource();
+      env = this.ctx.createGain();
+      // Build a per-hit buffer from the stored channels (bit-exact, pitch-correct).
+      const len = hit.channels[0]!.length;
+      const buf = this.ctx.createBuffer(this.numCh, len, this.sr);
+      for (let c = 0; c < this.numCh; c++) buf.copyToChannel(hit.channels[c]!, c);
+      src.buffer = buf;
+      src.playbackRate.value = 1; // NEVER pitch-shifted.
+      src.connect(env);
+      env.connect(this.output);
+    } catch {
+      return;
+    }
+    // The region starts leadSamples before the onset; start it so the ONSET lands at
+    // tHit. Clamp the start to now (a hit at the grace edge fires from now).
+    const leadSec = hit.leadSamples / this.sr;
+    const startAt = Math.max(this.ctx.currentTime, tHit - leadSec);
+    env.gain.value = this.muteHits ? 0 : 1;
+    try {
+      src.start(startAt);
+    } catch {
+      try {
+        env.disconnect();
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
+    const entry = { src, env };
+    this.active.add(entry);
+    src.addEventListener('ended', () => {
+      this.active.delete(entry);
+      try {
+        env.disconnect();
+      } catch {
+        /* ignore */
+      }
+    });
+  }
+
+  // ── DIAGNOSTICS / ENGINE GLUE ───────────────────────────────────────────────
+
+  /** Solo: muteBed → hear only the hits; muteHits → hear only the bed. */
+  setDiagnosticSolo(opts: { muteBed?: boolean; muteOverlays?: boolean }): void {
+    if (opts.muteBed !== undefined) this.muteBed = opts.muteBed;
+    if (opts.muteOverlays !== undefined) this.muteHits = opts.muteOverlays;
+    // Apply to the live bed immediately (the hits pick it up as they're armed).
+    if (this.bedGain) {
+      try {
+        this.bedGain.gain.setValueAtTime(
+          this.muteBed ? 0 : 1,
+          this.ctx.currentTime,
+        );
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  /** The next loop downbeat at/after `now` — the musical "one" (for key-change seam). */
+  getNextDownbeat(now: number): number | null {
+    const period = this.period;
+    if (!this.playing || !(period > 0)) return null;
+    const k = Math.floor((now - this.loopStartTime) / period);
+    let next = this.loopStartTime + k * period;
+    while (next < now - 1e-6) next += period;
+    return next;
+  }
+
+  /** Live state for the dev A/B tool. */
+  getDebugState(): {
+    ratio: number;
+    bedReady: boolean;
+    hitsReady: boolean;
+    hitCount: number;
+  } {
+    return {
+      ratio: this.ratio,
+      bedReady: !!this.bedBuffer,
+      hitsReady: this.hits.length > 0,
+      hitCount: this.hits.length,
+    };
+  }
+
+  /** How many big hits (for the admin panel count). */
+  textureRegionCount(): number {
+    return this.strongOnsets.length;
+  }
+}

@@ -91,6 +91,7 @@ import {
   type GapFillParams,
   type GapFillParamsSnapshot,
 } from './drum-slicer/DrumSlicePlayer.js';
+import { DrumTwoTrackPlayer } from './drum-slicer/DrumTwoTrackPlayer.js';
 
 // Debug flag - enable in browser console: window.__DEBUG_PLAYBACK_ENGINE = true
 const isPlaybackDebugEnabled = (): boolean => {
@@ -316,6 +317,12 @@ export class PlaybackEngine implements IAudioStemEngine {
    *  the drum source (registered with the scheduler as a self-looping source);
    *  tempo changes re-space the slices live. Created in setAudioStemBuffers. */
   private drumSlicePlayer: DrumSlicePlayer | null = null;
+  /** CLEAN two-track drum player (notched bed playbackRate-stretched + re-gridded
+   *  bit-exact hits). When `useCleanTwoTrack` is on, THIS is constructed instead of
+   *  DrumSlicePlayer and the forwarders delegate to it. The kicks are physically
+   *  notched OUT of the bed, so they can never leak. Default ON. */
+  private drumTwoTrack: DrumTwoTrackPlayer | null = null;
+  private useCleanTwoTrack = true;
 
   /** Time-stretch (LAUNCH-06): the MUSICAL loop length (seconds) bass/harmony
    *  buffer-streaming nodes loop on — set by the groove card before
@@ -3596,6 +3603,7 @@ export class PlaybackEngine implements IAudioStemEngine {
     // rate at one instant — otherwise drums pivot at a different time and a
     // per-change phase error accumulates (tempo-dependent desync).
     this.drumSlicePlayer?.setRatio(ratio, applyAtAudioTime);
+    this.drumTwoTrack?.setRatio(ratio, applyAtAudioTime);
   }
 
   /**
@@ -3656,7 +3664,10 @@ export class PlaybackEngine implements IAudioStemEngine {
     // lands exactly where the drums do, by construction. + the audible-downbeat
     // offset the key was originally deferred with. null when drums absent → setRate
     // falls back to its own read-head re-derivation.
-    const drumDownbeat = this.drumSlicePlayer?.getNextDownbeat(now) ?? null;
+    const drumDownbeat =
+      this.drumSlicePlayer?.getNextDownbeat(now) ??
+      this.drumTwoTrack?.getNextDownbeat(now) ??
+      null;
     const keyBoundary =
       drumDownbeat != null
         ? drumDownbeat + this.getKeySeamAudibleOffset()
@@ -3721,6 +3732,31 @@ export class PlaybackEngine implements IAudioStemEngine {
     // panel's "Smooth stretch" toggle / setDrumWsola), and can be forced ON via
     // NEXT_PUBLIC_DRUM_WSOLA=true. Only the groove card's DEFAULT changes.
     const wsola = process.env?.NEXT_PUBLIC_DRUM_WSOLA === 'true';
+    const loopDur =
+      this.stemLoopDurationSeconds > 0
+        ? this.stemLoopDurationSeconds
+        : buffer.duration;
+
+    // CLEAN TWO-TRACK (notched bed playbackRate-stretched + re-gridded bit-exact
+    // hits). The kicks are physically removed from the bed → can never leak. No
+    // SLICES state machine. Construct THIS when enabled; the scheduler self-looping
+    // source only needs start/stop/setRatio, which it provides.
+    if (this.useCleanTwoTrack) {
+      this.drumTwoTrack = new DrumTwoTrackPlayer(this.audioContext, buffer, gain, {
+        loopDurationSeconds: loopDur,
+      });
+      this.regionScheduler?.setSelfLoopingSource(
+        'drums',
+        new DrumSliceSource(this.drumTwoTrack),
+      );
+      this.logger.info('Drum two-track player created (clean bed+hits)', {
+        onsets: onsets.length,
+        loopDur,
+        instanceId: this.instanceId,
+      });
+      return;
+    }
+
     this.drumSlicePlayer = new DrumSlicePlayer(
       this.audioContext,
       buffer,
@@ -3801,10 +3837,13 @@ export class PlaybackEngine implements IAudioStemEngine {
     this.drumSlicePlayer?.setBedDragMode(mode);
   }
 
-  /** Live drum tempo-machine state for the dev A/B tool (mode/autoMode/ratio). */
+  /** Live drum tempo-machine state for the dev A/B tool. Reports the active player —
+   *  the clean two-track one (ratio/bedReady/hitsReady) or the legacy slicer. */
   getDrumTempoDebugState():
     | ReturnType<NonNullable<typeof this.drumSlicePlayer>['getDebugState']>
+    | ReturnType<NonNullable<typeof this.drumTwoTrack>['getDebugState']>
     | null {
+    if (this.drumTwoTrack) return this.drumTwoTrack.getDebugState();
     return this.drumSlicePlayer?.getDebugState() ?? null;
   }
 
@@ -3816,6 +3855,7 @@ export class PlaybackEngine implements IAudioStemEngine {
     muteOverlays?: boolean;
   }): void {
     this.drumSlicePlayer?.setDiagnosticSolo(opts);
+    this.drumTwoTrack?.setDiagnosticSolo(opts);
   }
 
   /**
@@ -4102,6 +4142,7 @@ export class PlaybackEngine implements IAudioStemEngine {
     // alive and feeding the fading master until the deferred teardown).
     this.instrumentStretchNodes.clear();
     this.drumSlicePlayer = null;
+    this.drumTwoTrack = null;
     this.drumLatencyDelayNode = null;
     this.regionScheduler?.setSelfLoopingSource('bass', null);
     this.regionScheduler?.setSelfLoopingSource('harmony', null);
