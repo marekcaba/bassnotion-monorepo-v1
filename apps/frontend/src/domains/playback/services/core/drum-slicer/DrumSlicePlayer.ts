@@ -49,6 +49,10 @@ export interface DrumSlicePlayerOptions {
   /** Read a bit before the onset so the very front of the attack survives the
    *  fade-in. Trimmed from the previous slice's tail. */
   preRollSeconds?: number;
+  /** Extra gap cut off each slice's TAIL beyond the pre-roll handoff (s). 0 =
+   *  tail meets the next slice's pre-roll exactly; >0 opens a gap (kills seam
+   *  overlap / flam); <0 overlaps the tails. Live-tunable seam control. */
+  sliceTailTrimSeconds?: number;
   /** SUSTAIN GAP-FILL (LAUNCH-06): when slowing down opens a silent gap after a
    *  sustaining hit (a hi-hat), synthesize a continued decay (granular, see
    *  buildExtendedTail) to bridge it so the subdivision keeps its flow. OFF by
@@ -125,6 +129,17 @@ export interface DrumSlicePlayerOptions {
    *  transientBlendSeconds. >0 = ease into the duck more slowly than the release
    *  — softens the "spikes going in" at heavy notch. */
   transientDuckAttackSeconds?: number;
+  /** UNIFIED BIG-HIT REGION (the clean fix). When bigHitTailSeconds > 0, the span
+   *  [onset − bigHitPre, onset + bigHitTail] is BOTH notched out of the bed AND
+   *  played as the bit-exact overlay — one region, so the overlay refills exactly
+   *  the bed's hole. bigHitPre catches the attack-front blip; bigHitTail (≤0.3s)
+   *  swallows the kick/snare sub-bass body. Overrides the legacy split params. */
+  bigHitPreSeconds?: number;
+  bigHitTailSeconds?: number;
+  /** BED NOTCH region (decoupled from the overlay). Independent pre/tail so the bed
+   *  hole and the overlay can be blended separately. Default to the overlay values. */
+  bedNotchPreSeconds?: number;
+  bedNotchTailSeconds?: number;
   /** BIG-HIT overlay ENVELOPE — continuous levels (0..1) + nudgeable start/end.
    *  preRoll = look-ahead read; levels = start/peak/end gain; attack/release =
    *  ramp lengths; startNudge/endNudge = ± shift the begin/finish in time. */
@@ -173,6 +188,12 @@ export interface GapFillParams {
   bedNotchSeconds?: number;
   transientBlendSeconds?: number;
   transientDuckAttackSeconds?: number;
+  // Big-hit region — overlay span (independent from the bed notch).
+  bigHitPreSeconds?: number;
+  bigHitTailSeconds?: number;
+  // Bed notch span (independent from the overlay).
+  bedNotchPreSeconds?: number;
+  bedNotchTailSeconds?: number;
   hitPreRollSeconds?: number;
   hitStartLevel?: number;
   hitPeakLevel?: number;
@@ -182,6 +203,12 @@ export interface GapFillParams {
   hitStartNudgeSeconds?: number;
   hitEndNudgeSeconds?: number;
   transientLengthSeconds?: number;
+  // SLICE-PATH seam controls (home tempo + while nudging). The flam between
+  // adjacent bit-exact slices lives here.
+  slicePreRollSeconds?: number;
+  sliceFadeInSeconds?: number;
+  sliceFadeOutSeconds?: number;
+  sliceTailTrimSeconds?: number;
   // State-machine TIMING (the SLICES↔BED transitions). Live, no rebuild.
   settleMs?: number;
   xfadeToBedSeconds?: number;
@@ -212,6 +239,10 @@ export interface GapFillParamsSnapshot {
   bedNotchSeconds: number;
   transientBlendSeconds: number;
   transientDuckAttackSeconds: number;
+  bigHitPreSeconds: number;
+  bigHitTailSeconds: number;
+  bedNotchPreSeconds: number;
+  bedNotchTailSeconds: number;
   hitPreRollSeconds: number;
   hitStartLevel: number;
   hitPeakLevel: number;
@@ -221,6 +252,10 @@ export interface GapFillParamsSnapshot {
   hitStartNudgeSeconds: number;
   hitEndNudgeSeconds: number;
   transientLengthSeconds: number;
+  slicePreRollSeconds: number;
+  sliceFadeInSeconds: number;
+  sliceFadeOutSeconds: number;
+  sliceTailTrimSeconds: number;
   settleMs: number;
   xfadeToBedSeconds: number;
   xfadeToSlicesSeconds: number;
@@ -305,6 +340,7 @@ const DEFAULTS: Required<DefaultedOptions> = {
     fadeInSeconds: 0.002,
     fadeOutSeconds: 0.012,
     preRollSeconds: 0.003,
+    sliceTailTrimSeconds: 0, // 0 = tail meets next slice's pre-roll exactly
     gapFill: false,
     minGapToFillSeconds: 0.04,
     fillTransientGuardSeconds: 0.018,
@@ -319,16 +355,25 @@ const DEFAULTS: Required<DefaultedOptions> = {
     wsolaSearchSeconds: 0.006,
     transientBodySeconds: 0.21, // longer crisp attack body over the bed
     transientDuckDepth: 1.0, // 100% = no dip (full blend, bed stays up)
-    bedTransientNotch: 0.7, // PARTIAL notch — keep some sustained body under the
-    // hit so the bed never goes fully silent between transients. Fully removing it
-    // (1.0) left HOLES the overlay couldn't refill → "sliced/chopped bed" at slow
-    // tempo, and a dropped hit on re-anchor (both notched AND overlay-skipped).
+    bedTransientNotch: 1.0, // FULL notch — remove the kick/snare body ENTIRELY from
+    // the bed so the bit-exact overlay is the ONLY copy of each hit. Any residual
+    // (e.g. 0.7 = 30% kept) plays UNDER the overlay and, being WSOLA-smeared, lands
+    // slightly off the grid-exact overlay → an audible DOUBLE. Removing it fully is
+    // the only way the two layers glue into one hit (user's ear, 2026-06-06). The
+    // overlay body (transientBodySeconds/bodyDur) must span the resulting hole so
+    // the bed doesn't gap — that's what the overlay length controls are for.
     bedNotchSeconds: 0.09, // NARROWER notch (was 0.14): the overlay body must span
     // the notch hole after it stretches at slow ratio. 0.09 ≈ transient core, still
     // > 1 WSOLA window (0.025), so the bed seam stays clean.
     transientBlendSeconds: 0.115, // (4) bed FADE-IN to the transient (release width)
     // (3) Duck-IN (bed ramps DOWN going into the hit). 0 = symmetric with the blend.
     transientDuckAttackSeconds: 0,
+    // ── UNIFIED BIG-HIT REGION (notch + overlay = same span). ON by default so the
+    // bed is clean of the kick/snare and the overlay carries the whole hit. ──
+    bigHitPreSeconds: 0.012, // OVERLAY lead-in — catches the attack-front blip
+    bigHitTailSeconds: 0.18, // OVERLAY tail length (the hit the user hears)
+    bedNotchPreSeconds: 0.012, // BED notch start (defaults matched to the overlay)
+    bedNotchTailSeconds: 0.18, // BED notch length — swallows the body out of the bed
     // ── BIG-HIT overlay ENVELOPE (continuous levels + nudgeable start/end) ──
     hitPreRollSeconds: 0, // look-ahead: audio read BEFORE the onset (0 = opt default)
     hitStartLevel: 0, // gain at the start point (0..1)
@@ -422,6 +467,37 @@ export class DrumSlicePlayer {
   private transientBlendSeconds: number;
   /** Duck-IN ramp length (s). 0 = symmetric with transientBlendSeconds. */
   private transientDuckAttackSeconds = 0;
+  /** UNIFIED BIG-HIT REGION (2026-06-06, user design). ONE span per strong hit,
+   *  [onset − bigHitPre, onset + bigHitTail], that is BOTH (a) notched OUT of the
+   *  bed and (b) played as the bit-exact overlay — so the overlay refills EXACTLY
+   *  the hole the notch leaves: no leak (kick body in the bed), no chopped-bed hole.
+   *   - bigHitPreSeconds: how far BEFORE the detected onset to start (catches the
+   *     attack-front blip the old notch started too late to remove).
+   *   - bigHitTailSeconds: how far AFTER (up to ~0.3s) — long enough to swallow the
+   *     kick/snare sub-bass BODY that rings ~250ms (the big slow wave in the bed).
+   *  When > 0 these OVERRIDE the legacy split params (bedNotchSeconds for the notch,
+   *  transientBodySeconds/preRollSeconds for the overlay). Live-tunable; the notch
+   *  side triggers a bed re-analyze.
+   *
+   *  DECOUPLED (2026-06-06): the bigHit* pair now drives the OVERLAY only; the bed
+   *  notch has its OWN pair (bedNotchPre/TailSeconds) so the two layers can be blended
+   *  INDEPENDENTLY (e.g. notch a wide hole but let the overlay tail ring shorter, or
+   *  vice-versa). The panel "link" keeps them equal when you want the glued behaviour.
+   *  Notch defaults mirror the overlay so out-of-the-box they're still matched. */
+  private bigHitPreSeconds = 0; // OVERLAY lead-in
+  private bigHitTailSeconds = 0; // OVERLAY tail length
+  private bedNotchPreSeconds = 0; // BED notch start before onset
+  private bedNotchTailSeconds = 0; // BED notch length after onset
+  /** SLICE-PATH tuning (the bit-exact per-onset path = home tempo + while nudging).
+   *  These shape the seam BETWEEN adjacent slices, where the home-tempo flam lives.
+   *  Live-tunable so the seam can be dialed by ear. */
+  private slicePreRollSeconds: number; // audio read before each onset (declick lead-in)
+  private sliceFadeInSeconds: number; // slice attack declick ramp
+  private sliceFadeOutSeconds: number; // slice tail declick ramp
+  /** Extra gap cut off each slice's TAIL beyond the pre-roll handoff (s). 0 = tail
+   *  meets the next slice's pre-roll exactly; >0 opens a gap (kills seam overlap /
+   *  flam); <0 lets the tails overlap (fatter, but can double). */
+  private sliceTailTrimSeconds = 0;
   /** BIG-HIT overlay ENVELOPE (continuous levels 0..1 + nudgeable start/end).
    *  Replaces the old binary 0→1→0. Length (how long the hit plays before the
    *  bed) is still transientLengthSeconds (drives bodyDur); these shape the gain. */
@@ -558,6 +634,20 @@ export class DrumSlicePlayer {
     this.transientBlendSeconds = this.opt.transientBlendSeconds;
     this.transientDuckAttackSeconds =
       this.opt.transientDuckAttackSeconds ?? 0;
+    this.bigHitPreSeconds = this.opt.bigHitPreSeconds ?? 0;
+    this.bigHitTailSeconds = this.opt.bigHitTailSeconds ?? 0;
+    // Bed notch defaults to the overlay values (matched out of the box); decoupled
+    // once the user moves the bed-notch sliders independently.
+    this.bedNotchPreSeconds =
+      this.opt.bedNotchPreSeconds ?? this.bigHitPreSeconds;
+    this.bedNotchTailSeconds =
+      this.opt.bedNotchTailSeconds ?? this.bigHitTailSeconds;
+    // Slice-path seam controls default to the existing opt values (no behaviour
+    // change until the panel moves them).
+    this.slicePreRollSeconds = this.opt.preRollSeconds;
+    this.sliceFadeInSeconds = this.opt.fadeInSeconds;
+    this.sliceFadeOutSeconds = this.opt.fadeOutSeconds;
+    this.sliceTailTrimSeconds = this.opt.sliceTailTrimSeconds ?? 0;
     this.hitPreRollSeconds = this.opt.hitPreRollSeconds ?? 0;
     this.hitStartLevel = this.opt.hitStartLevel ?? 0;
     this.hitPeakLevel = this.opt.hitPeakLevel ?? 1;
@@ -715,6 +805,42 @@ export class DrumSlicePlayer {
     }
     if (p.transientDuckAttackSeconds !== undefined) {
       this.transientDuckAttackSeconds = p.transientDuckAttackSeconds; // next iter
+    }
+    // OVERLAY span (bigHit*) — applied to the NEXT iteration; NO bed rebuild (the
+    // overlay isn't baked into the bed). Decoupled from the notch.
+    if (p.bigHitPreSeconds !== undefined) {
+      this.bigHitPreSeconds = p.bigHitPreSeconds;
+    }
+    if (p.bigHitTailSeconds !== undefined) {
+      this.bigHitTailSeconds = p.bigHitTailSeconds;
+    }
+    // BED NOTCH span (bedNotch*) — baked into the bed → RE-ANALYZE on change.
+    if (
+      p.bedNotchPreSeconds !== undefined &&
+      p.bedNotchPreSeconds !== this.bedNotchPreSeconds
+    ) {
+      this.bedNotchPreSeconds = p.bedNotchPreSeconds;
+      if (this.bedNotchTailSeconds > 0) reanalyze = true;
+    }
+    if (
+      p.bedNotchTailSeconds !== undefined &&
+      p.bedNotchTailSeconds !== this.bedNotchTailSeconds
+    ) {
+      this.bedNotchTailSeconds = p.bedNotchTailSeconds;
+      reanalyze = true; // notch span changed (or toggled) → rebuild the bed
+    }
+    // SLICE-PATH seam controls — all live, applied to the next scheduled slice.
+    if (p.slicePreRollSeconds !== undefined) {
+      this.slicePreRollSeconds = p.slicePreRollSeconds;
+    }
+    if (p.sliceFadeInSeconds !== undefined) {
+      this.sliceFadeInSeconds = p.sliceFadeInSeconds;
+    }
+    if (p.sliceFadeOutSeconds !== undefined) {
+      this.sliceFadeOutSeconds = p.sliceFadeOutSeconds;
+    }
+    if (p.sliceTailTrimSeconds !== undefined) {
+      this.sliceTailTrimSeconds = p.sliceTailTrimSeconds;
     }
     // BIG-HIT envelope — all live, applied to the next overlay.
     if (p.hitPreRollSeconds !== undefined) this.hitPreRollSeconds = p.hitPreRollSeconds;
@@ -936,6 +1062,10 @@ export class DrumSlicePlayer {
       bedNotchSeconds: this.bedNotchSeconds,
       transientBlendSeconds: this.transientBlendSeconds,
       transientDuckAttackSeconds: this.transientDuckAttackSeconds,
+      bigHitPreSeconds: this.bigHitPreSeconds,
+      bigHitTailSeconds: this.bigHitTailSeconds,
+      bedNotchPreSeconds: this.bedNotchPreSeconds,
+      bedNotchTailSeconds: this.bedNotchTailSeconds,
       hitPreRollSeconds: this.hitPreRollSeconds,
       hitStartLevel: this.hitStartLevel,
       hitPeakLevel: this.hitPeakLevel,
@@ -945,6 +1075,10 @@ export class DrumSlicePlayer {
       hitStartNudgeSeconds: this.hitStartNudgeSeconds,
       hitEndNudgeSeconds: this.hitEndNudgeSeconds,
       transientLengthSeconds: this.transientLengthSeconds,
+      slicePreRollSeconds: this.slicePreRollSeconds,
+      sliceFadeInSeconds: this.sliceFadeInSeconds,
+      sliceFadeOutSeconds: this.sliceFadeOutSeconds,
+      sliceTailTrimSeconds: this.sliceTailTrimSeconds,
       settleMs: this.settleMs,
       xfadeToBedSeconds: this.xfadeToBedS,
       xfadeToSlicesSeconds: this.xfadeToSlicesS,
@@ -1072,13 +1206,25 @@ export class DrumSlicePlayer {
     const sr = this.buffer.sampleRate;
     const out = new Float32Array(end);
     out.set(src.subarray(0, end));
-    const pre = Math.round(this.opt.preRollSeconds * sr);
     const win = Math.round((this.wsolaOpt.windowSeconds ?? 0.05) * sr);
-    // Notch width: at least the configured body, but never narrower than one
-    // WSOLA window + a margin (so a single window can't straddle the gap with
-    // un-notched body on both sides). Clamp to a musical sanity bound.
+    // DECOUPLED BED NOTCH (bedNotchTailSeconds > 0): the notch span =
+    // [onset − bedNotchPre, onset + bedNotchTail], INDEPENDENT of the overlay span.
+    // Pre catches the attack-front blip; tail (≤300ms) swallows the sub-bass body.
+    // Else fall back to the legacy split (preRoll + bedNotchSeconds).
+    const usePre =
+      this.bedNotchTailSeconds > 0
+        ? this.bedNotchPreSeconds
+        : this.opt.preRollSeconds;
+    const pre = Math.round(usePre * sr);
     const notchSec =
-      this.bedNotchSeconds > 0 ? this.bedNotchSeconds : this.transientBodySeconds;
+      this.bedNotchTailSeconds > 0
+        ? this.bedNotchTailSeconds
+        : this.bedNotchSeconds > 0
+          ? this.bedNotchSeconds
+          : this.transientBodySeconds;
+    // Width: at least the configured tail, but never narrower than one WSOLA window
+    // + a margin (a single window must not straddle the gap with un-notched body on
+    // both sides → WSOLA would rebuild the body downstream = the "doubled kick").
     const body = Math.max(
       Math.round(notchSec * sr),
       win + Math.round(0.02 * sr),
@@ -1731,7 +1877,16 @@ export class DrumSlicePlayer {
     if (unity || this.muteOverlays) return;
     if (!bed) return; // no synthesized bed (e.g. not yet ready) → nothing to overlay
     const bedMuted = this.muteBed;
-    const body = this.transientBodySeconds;
+    // OVERLAY span (bigHitTailSeconds > 0): the overlay plays [onset − bigHitPre,
+    // onset + bigHitTail], INDEPENDENT of the bed-notch span — so the two layers can
+    // be blended separately. body = the overlay tail (INPUT seconds); pre = lead-in.
+    const overlayCustom = this.bigHitTailSeconds > 0;
+    const body = overlayCustom
+      ? this.bigHitTailSeconds
+      : this.transientBodySeconds;
+    const overlayPre = overlayCustom
+      ? this.bigHitPreSeconds
+      : this.opt.preRollSeconds;
     const blend = Math.max(0.002, this.transientBlendSeconds); // crossfade width
     const release = Math.max(0.015, this.opt.fadeOutSeconds * 2);
     const depth = Math.min(1, Math.max(0, this.transientDuckDepth)); // bed floor
@@ -1742,11 +1897,15 @@ export class DrumSlicePlayer {
     // still fires — playBuffer clamps its start to `now`, so its punch survives.
     const graceSec = 0.05;
     const minHit = this.ctx.currentTime - graceSec;
-    // The bed notch hole, stretched at the live ratio, is what the overlay must
-    // cover so the texture has no gap (BUG B: "chopped bed"). The overlay body must
-    // outlast it.
-    const stretchedNotch =
-      (this.bedNotchSeconds + this.opt.preRollSeconds) / (this.ratio || 1);
+    // The BED notch hole (now its OWN params), stretched at the live ratio, is what
+    // the overlay must cover so the texture has no gap (BUG B: "chopped bed"). With
+    // decoupled layers the overlay tail can be SHORTER than the notch — the floor
+    // below still makes the overlay at least span the hole so the bed never gaps.
+    const notchSpan =
+      this.bedNotchTailSeconds > 0
+        ? this.bedNotchTailSeconds + this.bedNotchPreSeconds
+        : this.bedNotchSeconds + this.opt.preRollSeconds;
+    const stretchedNotch = notchSpan / (this.ratio || 1);
     for (let k = 0; k < this.strongIndices.length; k++) {
       const i = this.strongIndices[k]!;
       const onset = this.onsetAt(i);
@@ -1757,11 +1916,15 @@ export class DrumSlicePlayer {
         k + 1 < this.strongIndices.length
           ? iterStart + this.onsetAt(this.strongIndices[k + 1]!) / (this.ratio || 1)
           : iterStart + period;
-      // (2) TRANSIENT LENGTH (auto): cover the stretched notch so the bed can't gap,
-      // floored to 40ms, never running past the next strong hit.
-      const wantBody = Math.max(body, stretchedNotch);
+      // BODY = the overlay tail. DECOUPLED (overlayCustom): exactly bigHitTail
+      // (stretched) — the user's independent overlay length, NOT forced to match the
+      // notch (that's the whole point of decoupling — blend the layers separately).
+      // Legacy: cover the stretched notch, floored to 40ms. Clamp before the next hit.
+      const wantBody = overlayCustom
+        ? this.bigHitTailSeconds / (this.ratio || 1)
+        : Math.max(body, stretchedNotch);
       const bodyDur = Math.max(
-        0.04,
+        overlayCustom ? 0.01 : 0.04,
         Math.min(wantBody, nextStrong - tHit - 0.005),
       );
 
@@ -1806,15 +1969,17 @@ export class DrumSlicePlayer {
         }
       }
 
-      // 2b) The crisp bit-exact attack on its OWN source. preRoll reads a few ms of
-      //     audio before the onset; fadeIn declicks, and `blend` (release) fades the
-      //     tail back into the bed.
-      const readStart = Math.max(0, onset - this.opt.preRollSeconds);
+      // 2b) The crisp bit-exact attack on its OWN source. overlayPre reads audio
+      //     BEFORE the onset (UNIFIED: bigHitPre — the same lead-in the notch used,
+      //     so the overlay covers the attack-front blip too); fadeIn declicks, and
+      //     `blend` (release) fades the tail back into the bed. bodyDur already holds
+      //     the big-hit tail (UNIFIED: the full sub-bass body removed from the bed).
+      const readStart = Math.max(0, onset - overlayPre);
       this.playBuffer(
         this.buffer,
-        Math.max(this.ctx.currentTime, tHit - this.opt.preRollSeconds),
+        Math.max(this.ctx.currentTime, tHit - overlayPre),
         readStart,
-        bodyDur + this.opt.preRollSeconds,
+        bodyDur + overlayPre,
         this.opt.fadeInSeconds,
         blend,
         this.bedOut, // overlays are part of the bed sound → ride the bed crossfade
@@ -1927,24 +2092,38 @@ export class DrumSlicePlayer {
   private scheduleSlice(index: number, startReal: number): void {
     const onset = this.onsetAt(index);
     const nextOnset = this.onsetAt(index + 1);
+    const preRoll = this.slicePreRollSeconds;
     // Buffer region this slice covers. Read a little before the onset so the
     // attack front survives the fade-in; clamp to the buffer.
-    const readStart = Math.max(0, onset - this.opt.preRollSeconds);
-    const sliceBufferDur = Math.max(0.001, nextOnset - readStart);
+    const readStart = Math.max(0, onset - preRoll);
+    // END the tail at (nextOnset − preRoll − tailTrim). The next slice reads from
+    // (nextOnset − preRoll), so:
+    //   tailTrim = 0  → tails meet the next slice's pre-roll exactly (contiguous).
+    //   tailTrim > 0  → opens a GAP before the next slice (kills any seam overlap /
+    //                   the home-tempo flam, at the cost of a touch of tail).
+    //   tailTrim < 0  → tails OVERLAP into the next slice (fatter, but doubles).
+    // The flam at home tempo is the [nextOnset − preRoll, nextOnset] window being
+    // played by BOTH this tail AND the next pre-roll; tailTrim is the live lever to
+    // dial that seam out by ear. Floor at a hair past the onset so a slice has body.
+    const tailEnd = Math.max(
+      onset + 0.002,
+      nextOnset - preRoll - this.sliceTailTrimSeconds,
+    );
+    const sliceBufferDur = Math.max(0.001, tailEnd - readStart);
 
     // Don't schedule in the past (timer jitter).
     const when = Math.max(this.ctx.currentTime, startReal);
 
-    // The slice itself: bit-exact transient + natural tail (up to the next
-    // onset). fade-in declick, fade-out declick/overlap envelope.
+    // The slice itself: bit-exact transient + natural tail. fade-in declick,
+    // fade-out declick — both live-tunable (the seam crossfade width).
     const audibleEnd = when + sliceBufferDur;
     this.playBuffer(
       this.buffer,
       when,
       readStart,
       sliceBufferDur,
-      this.opt.fadeInSeconds,
-      this.opt.fadeOutSeconds,
+      this.sliceFadeInSeconds,
+      this.sliceFadeOutSeconds,
     );
 
     // Legacy granular gap-fill (A/B fallback when WSOLA off + gapFill on).

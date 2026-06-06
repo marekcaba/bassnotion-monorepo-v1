@@ -50,6 +50,11 @@ interface GapFillParams {
   bedNotchSeconds: number;
   transientBlendSeconds: number;
   transientDuckAttackSeconds: number;
+  // Big-hit region — overlay span + bed-notch span (independent).
+  bigHitPreSeconds: number;
+  bigHitTailSeconds: number;
+  bedNotchPreSeconds: number;
+  bedNotchTailSeconds: number;
   // BIG-HIT envelope (continuous levels + nudgeable start/end).
   hitPreRollSeconds: number;
   hitStartLevel: number;
@@ -60,6 +65,11 @@ interface GapFillParams {
   hitStartNudgeSeconds: number;
   hitEndNudgeSeconds: number;
   transientLengthSeconds: number;
+  // SLICE seam (home-tempo / while-nudging flam controls).
+  slicePreRollSeconds: number;
+  sliceFadeInSeconds: number;
+  sliceFadeOutSeconds: number;
+  sliceTailTrimSeconds: number;
   // SLICES↔BED transition timing (the state machine).
   settleMs: number;
   xfadeToBedSeconds: number;
@@ -80,6 +90,9 @@ interface EngineLike {
     muteOverlays?: boolean;
   }) => void;
   setInstrumentMuted?: (instrument: string, muted: boolean) => void;
+  // Per-instrument output gain nodes — the scope taps 'audio-drums' to record the
+  // REAL engine output (bed + overlays) for the waveform display.
+  instrumentGainNodes?: Map<string, AudioNode>;
 }
 
 function getEngine(): EngineLike | null {
@@ -168,6 +181,374 @@ function SliderRow({
 
 const MS = (v: number) => `${Math.round(v * 1000)}`;
 
+/** Clamp a canvas Y so an amplitude-zoomed waveform can't draw off the box. */
+function clampY(y: number, H: number): number {
+  return y < 0 ? 0 : y > H ? H : y;
+}
+
+/** Encode mono Float32 PCM to a 32-bit-float WAV and trigger a browser download. */
+function downloadWav(
+  samples: Float32Array,
+  sampleRate: number,
+  filename: string,
+): void {
+  const n = samples.length;
+  const buf = new ArrayBuffer(44 + n * 4);
+  const dv = new DataView(buf);
+  const w = (off: number, s: string) => {
+    for (let i = 0; i < s.length; i++) dv.setUint8(off + i, s.charCodeAt(i));
+  };
+  w(0, 'RIFF');
+  dv.setUint32(4, 36 + n * 4, true);
+  w(8, 'WAVE');
+  w(12, 'fmt ');
+  dv.setUint32(16, 16, true);
+  dv.setUint16(20, 3, true); // IEEE float
+  dv.setUint16(22, 1, true); // mono
+  dv.setUint32(24, sampleRate, true);
+  dv.setUint32(28, sampleRate * 4, true);
+  dv.setUint16(32, 4, true);
+  dv.setUint16(34, 32, true);
+  w(36, 'data');
+  dv.setUint32(40, n * 4, true);
+  for (let i = 0; i < n; i++) dv.setFloat32(44 + i * 4, samples[i]!, true);
+  const blob = new Blob([buf], { type: 'audio/wav' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * WaveformScope — records the REAL drum engine output and draws it, so you can SEE
+ * (not theorize) what's in the bed vs the big-hit overlays. The whole point: the
+ * leaked START-TRANSIENTS of the big hits living in the bed show up as visible
+ * spikes in the BED-ONLY capture, lined up against the BIG-HITS-ONLY capture.
+ *
+ * It taps engine.instrumentGainNodes.get('audio-drums') with a ScriptProcessor
+ * (the same tap the headless audits use) and stores up to a few seconds of mono
+ * PCM. You record one layer, solo-switch, record the other, and the canvas overlays
+ * them (bed in one colour, big hits in another) so the misalignment is obvious.
+ */
+function WaveformScope({
+  getEngine,
+  setSolo,
+}: {
+  getEngine: () => EngineLike | null;
+  setSolo: (opts: { muteBed?: boolean; muteOverlays?: boolean }) => void;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  // Two stored captures we overlay: 'bed' (overlays muted) and 'hits' (bed muted).
+  const capturesRef = useRef<{
+    bed: Float32Array | null;
+    hits: Float32Array | null;
+    both: Float32Array | null;
+  }>({ bed: null, hits: null, both: null });
+  const tapRef = useRef<{
+    proc: ScriptProcessorNode;
+    ctx: AudioContext;
+    node: AudioNode;
+    sink: GainNode;
+  } | null>(null);
+  const recRef = useRef<{ chunks: Float32Array[]; on: boolean }>({
+    chunks: [],
+    on: false,
+  });
+  const [status, setStatus] = useState('idle');
+  // Horizontal zoom is LOGARITHMIC: slider 0 = fully zoomed OUT (whole capture),
+  // higher = zoom IN. Actual zoom factor = 2^(sliderH/10) so the range 0..70 spans
+  // 1× (whole 2.5s) to ~128× (a single hit). Smooth in both directions.
+  const [zoomH, setZoomH] = useState(0);
+  const [vGain, setVGain] = useState(1); // vertical (amplitude) zoom — see small leaks
+  const [offset, setOffset] = useState(0); // scroll 0..1 across the capture
+  const [show, setShow] = useState({ bed: true, hits: true, both: false });
+  const srRef = useRef(48000);
+  const zoom = Math.pow(2, zoomH / 10); // 1× … ~128×
+
+  // Attach the tap once (and clean up on unmount).
+  const ensureTap = useCallback(() => {
+    if (tapRef.current) return tapRef.current;
+    const eng = getEngine();
+    const ctx = WindowRegistry.getAudioContext();
+    const node = eng?.instrumentGainNodes?.get?.('audio-drums');
+    if (!eng || !ctx || !node) return null;
+    srRef.current = ctx.sampleRate;
+    let proc: ScriptProcessorNode;
+    try {
+      proc = ctx.createScriptProcessor(2048, 2, 1);
+    } catch {
+      return null;
+    }
+    proc.onaudioprocess = (e: AudioProcessingEvent) => {
+      if (!recRef.current.on) return;
+      const l = e.inputBuffer.getChannelData(0);
+      const r =
+        e.inputBuffer.numberOfChannels > 1 ? e.inputBuffer.getChannelData(1) : l;
+      const o = new Float32Array(l.length);
+      for (let i = 0; i < l.length; i++) o[i] = (l[i]! + r[i]!) / 2;
+      recRef.current.chunks.push(o);
+    };
+    try {
+      // The ScriptProcessor only fires while it's pulled by the graph, so it must
+      // connect onward — but through a ZERO-gain sink so it adds NOTHING audible
+      // (we're only reading its input, not summing its output back into the mix).
+      const sink = ctx.createGain();
+      sink.gain.value = 0;
+      (node as AudioNode).connect(proc);
+      proc.connect(sink);
+      sink.connect(ctx.destination);
+      tapRef.current = { proc, ctx, node, sink };
+    } catch {
+      return null;
+    }
+    return tapRef.current;
+  }, [getEngine]);
+
+  useEffect(() => {
+    return () => {
+      const t = tapRef.current;
+      if (t) {
+        try {
+          t.node.disconnect(t.proc);
+        } catch {
+          /* ignore */
+        }
+        try {
+          t.proc.disconnect();
+        } catch {
+          /* ignore */
+        }
+        try {
+          t.sink.disconnect();
+        } catch {
+          /* ignore */
+        }
+        tapRef.current = null;
+      }
+    };
+  }, []);
+
+  const draw = useCallback(() => {
+    const cv = canvasRef.current;
+    if (!cv) return;
+    const ctx2d = cv.getContext('2d');
+    if (!ctx2d) return;
+    const W = cv.width;
+    const H = cv.height;
+    ctx2d.clearRect(0, 0, W, H);
+    // background + zero line
+    ctx2d.fillStyle = '#0b0e16';
+    ctx2d.fillRect(0, 0, W, H);
+    ctx2d.strokeStyle = '#243';
+    ctx2d.beginPath();
+    ctx2d.moveTo(0, H / 2);
+    ctx2d.lineTo(W, H / 2);
+    ctx2d.stroke();
+
+    const layers: Array<[keyof typeof show, Float32Array | null, string]> = [
+      ['both', capturesRef.current.both, '#6b7280'],
+      ['bed', capturesRef.current.bed, '#3fa0ff'],
+      ['hits', capturesRef.current.hits, '#ff5d5d'],
+    ];
+    for (const [key, data, color] of layers) {
+      if (!show[key] || !data || data.length === 0) continue;
+      const total = data.length;
+      const visible = Math.max(1, Math.round(total / zoom));
+      const start = Math.min(total - visible, Math.round(offset * (total - visible)));
+      ctx2d.strokeStyle = color;
+      ctx2d.lineWidth = 1;
+      ctx2d.beginPath();
+      // min/max per pixel column so transient spikes don't alias away.
+      for (let px = 0; px < W; px++) {
+        const s0 = start + Math.floor((px / W) * visible);
+        const s1 = start + Math.floor(((px + 1) / W) * visible);
+        let mn = 1;
+        let mx = -1;
+        for (let i = s0; i < Math.max(s0 + 1, s1) && i < total; i++) {
+          const v = data[i]!;
+          if (v < mn) mn = v;
+          if (v > mx) mx = v;
+        }
+        // vGain amplifies the DISPLAY only (so tiny leaked transients become
+        // visible), clamped to the canvas so loud hits don't draw off-screen.
+        const yTop = clampY(H / 2 - mx * vGain * (H / 2) * 0.95, H);
+        const yBot = clampY(H / 2 - mn * vGain * (H / 2) * 0.95, H);
+        ctx2d.moveTo(px, yTop);
+        ctx2d.lineTo(px, yBot);
+      }
+      ctx2d.stroke();
+    }
+  }, [show, zoom, vGain, offset]);
+
+  useEffect(() => {
+    draw();
+  }, [draw]);
+
+  const record = useCallback(
+    async (which: 'bed' | 'hits' | 'both') => {
+      const tap = ensureTap();
+      if (!tap) {
+        setStatus('no drum tap — START the groove first');
+        return;
+      }
+      // Set the solo for this capture.
+      if (which === 'bed') setSolo({ muteBed: false, muteOverlays: true });
+      else if (which === 'hits') setSolo({ muteBed: true, muteOverlays: false });
+      else setSolo({ muteBed: false, muteOverlays: false });
+      setStatus(`recording ${which}…`);
+      // small delay so the solo applies on the next iteration
+      await new Promise((r) => setTimeout(r, 350));
+      recRef.current.chunks = [];
+      recRef.current.on = true;
+      await new Promise((r) => setTimeout(r, 2500));
+      recRef.current.on = false;
+      // concat
+      const chunks = recRef.current.chunks;
+      let n = 0;
+      for (const c of chunks) n += c.length;
+      const all = new Float32Array(n);
+      let o = 0;
+      for (const c of chunks) {
+        all.set(c, o);
+        o += c.length;
+      }
+      capturesRef.current[which] = all;
+      setStatus(`${which}: ${(n / srRef.current).toFixed(1)}s captured`);
+      // restore "both" so playback sounds normal again after a solo capture
+      setSolo({ muteBed: false, muteOverlays: false });
+      draw();
+    },
+    [ensureTap, setSolo, draw],
+  );
+
+  const btn = (label: string, on: () => void, bg = '#1f2937') => (
+    <button
+      onClick={on}
+      style={{
+        flex: 1,
+        padding: '6px 4px',
+        fontSize: 11,
+        borderRadius: 5,
+        border: 0,
+        background: bg,
+        color: '#fff',
+        cursor: 'pointer',
+      }}
+    >
+      {label}
+    </button>
+  );
+
+  return (
+    <div
+      style={{
+        margin: '8px 0 12px',
+        padding: 8,
+        background: '#0b0e16',
+        borderRadius: 8,
+        border: '1px solid #243049',
+      }}
+    >
+      <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 6 }}>
+        🔬 Waveform scope — real engine output
+      </div>
+      <canvas
+        ref={canvasRef}
+        width={420}
+        height={140}
+        style={{ width: '100%', height: 140, borderRadius: 4, display: 'block' }}
+      />
+      <div style={{ display: 'flex', gap: 4, marginTop: 6 }}>
+        {btn('● Rec BED', () => record('bed'), '#1e4e7a')}
+        {btn('● Rec BIG HITS', () => record('hits'), '#7a2e2e')}
+        {btn('● Rec BOTH', () => record('both'), '#374151')}
+      </div>
+      <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
+        {btn(
+          show.bed ? 'BED ✓' : 'BED',
+          () => setShow((s) => ({ ...s, bed: !s.bed })),
+          show.bed ? '#1e4e7a' : '#1f2937',
+        )}
+        {btn(
+          show.hits ? 'HITS ✓' : 'HITS',
+          () => setShow((s) => ({ ...s, hits: !s.hits })),
+          show.hits ? '#7a2e2e' : '#1f2937',
+        )}
+        {btn(
+          show.both ? 'BOTH ✓' : 'BOTH',
+          () => setShow((s) => ({ ...s, both: !s.both })),
+          show.both ? '#374151' : '#1f2937',
+        )}
+      </div>
+      {/* Download the captured WAVs so they can be inspected / shared. */}
+      <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
+        {btn('⤓ bed.wav', () => {
+          const d = capturesRef.current.bed;
+          if (d) downloadWav(d, srRef.current, 'drum-bed.wav');
+          else setStatus('record BED first');
+        }, '#13324d')}
+        {btn('⤓ hits.wav', () => {
+          const d = capturesRef.current.hits;
+          if (d) downloadWav(d, srRef.current, 'drum-bighits.wav');
+          else setStatus('record BIG HITS first');
+        }, '#4d1d1d')}
+        {btn('⤓ both.wav', () => {
+          const d = capturesRef.current.both;
+          if (d) downloadWav(d, srRef.current, 'drum-both.wav');
+          else setStatus('record BOTH first');
+        }, '#262b33')}
+      </div>
+      <div style={{ marginTop: 8 }}>
+        <div style={{ fontSize: 10, opacity: 0.7 }}>
+          H-zoom {zoom < 2 ? zoom.toFixed(2) : zoom.toFixed(0)}× (left = OUT / whole,
+          right = IN / one hit)
+        </div>
+        <input
+          type="range"
+          min={0}
+          max={70}
+          step={0.5}
+          value={zoomH}
+          onChange={(e) => setZoomH(Number(e.target.value))}
+          style={{ width: '100%', accentColor: '#22c55e' }}
+        />
+        <div style={{ fontSize: 10, opacity: 0.7, marginTop: 4 }}>
+          V-zoom (amplitude) {vGain.toFixed(1)}× — see tiny leaked transients
+        </div>
+        <input
+          type="range"
+          min={1}
+          max={40}
+          step={0.5}
+          value={vGain}
+          onChange={(e) => setVGain(Number(e.target.value))}
+          style={{ width: '100%', accentColor: '#e0b020' }}
+        />
+        <div style={{ fontSize: 10, opacity: 0.7, marginTop: 4 }}>
+          scroll {(offset * 100).toFixed(0)}%
+        </div>
+        <input
+          type="range"
+          min={0}
+          max={1}
+          step={0.0005}
+          value={offset}
+          onChange={(e) => setOffset(Number(e.target.value))}
+          style={{ width: '100%', accentColor: '#3fa0ff' }}
+        />
+      </div>
+      <div style={{ fontSize: 10, opacity: 0.65, marginTop: 4, lineHeight: 1.4 }}>
+        {status}. Blue = BED (overlays muted), Red = BIG HITS (bed muted). Record
+        each, then ZOOM into a hit: the bed&apos;s leaked start-transient shows as a
+        blue spike where only red should be. Settle into the bed first (nudge to a
+        slow tempo, let it land). Use ⤓ to download a capture and send me the path.
+      </div>
+    </div>
+  );
+}
+
 export function DrumGapFillAdminPanel() {
   // Gate decision depends on `window` (URL query / env), so it MUST NOT run
   // during SSR or the first client render — doing so renders the panel on the
@@ -188,6 +569,9 @@ export function DrumGapFillAdminPanel() {
   // τ / grain "auto" means: send undefined → buildExtendedTail fits per-slice.
   const [tauAuto, setTauAuto] = useState(true);
   const [grainAuto, setGrainAuto] = useState(true);
+  // Link the OVERLAY span and the BED-NOTCH span (move together). ON = the "glued"
+  // unified behaviour (notch = overlay); OFF = blend the two layers independently.
+  const [linkBigHit, setLinkBigHit] = useState(true);
   const [p, setP] = useState<GapFillParams>({
     gapFill: false,
     minGapToFillSeconds: 0.04,
@@ -204,10 +588,14 @@ export function DrumGapFillAdminPanel() {
     wsolaSearchSeconds: 0.006,
     transientBodySeconds: 0.21,
     transientDuckDepth: 1.0,
-    bedTransientNotch: 0.7,
+    bedTransientNotch: 1.0,
     bedNotchSeconds: 0.09,
     transientBlendSeconds: 0.115,
     transientDuckAttackSeconds: 0,
+    bigHitPreSeconds: 0.012,
+    bigHitTailSeconds: 0.18,
+    bedNotchPreSeconds: 0.012,
+    bedNotchTailSeconds: 0.18,
     hitPreRollSeconds: 0,
     hitStartLevel: 0,
     hitPeakLevel: 1,
@@ -217,9 +605,13 @@ export function DrumGapFillAdminPanel() {
     hitStartNudgeSeconds: 0,
     hitEndNudgeSeconds: 0,
     transientLengthSeconds: 0,
+    slicePreRollSeconds: 0.003,
+    sliceFadeInSeconds: 0.002,
+    sliceFadeOutSeconds: 0.012,
+    sliceTailTrimSeconds: 0,
     settleMs: 350,
-    xfadeToBedSeconds: 0.02,
-    xfadeToSlicesSeconds: 0.06,
+    xfadeToBedSeconds: 0.15,
+    xfadeToSlicesSeconds: 0.15,
   });
 
   // Mirror the full applied config in a ref so the poll loop can re-push it onto
@@ -257,6 +649,10 @@ export function DrumGapFillAdminPanel() {
       bedNotchSeconds: cur.bedNotchSeconds,
       transientBlendSeconds: cur.transientBlendSeconds,
       transientDuckAttackSeconds: cur.transientDuckAttackSeconds,
+      bigHitPreSeconds: cur.bigHitPreSeconds,
+      bigHitTailSeconds: cur.bigHitTailSeconds,
+      bedNotchPreSeconds: cur.bedNotchPreSeconds,
+      bedNotchTailSeconds: cur.bedNotchTailSeconds,
       hitPreRollSeconds: cur.hitPreRollSeconds,
       hitStartLevel: cur.hitStartLevel,
       hitPeakLevel: cur.hitPeakLevel,
@@ -266,6 +662,10 @@ export function DrumGapFillAdminPanel() {
       hitStartNudgeSeconds: cur.hitStartNudgeSeconds,
       hitEndNudgeSeconds: cur.hitEndNudgeSeconds,
       transientLengthSeconds: cur.transientLengthSeconds,
+      slicePreRollSeconds: cur.slicePreRollSeconds,
+      sliceFadeInSeconds: cur.sliceFadeInSeconds,
+      sliceFadeOutSeconds: cur.sliceFadeOutSeconds,
+      sliceTailTrimSeconds: cur.sliceTailTrimSeconds,
       settleMs: cur.settleMs,
       xfadeToBedSeconds: cur.xfadeToBedSeconds,
       xfadeToSlicesSeconds: cur.xfadeToSlicesSeconds,
@@ -358,6 +758,14 @@ export function DrumGapFillAdminPanel() {
       muteBed: on ? false : undefined,
     });
   }, []);
+  // Raw solo passthrough for the WaveformScope (it manages its own bed/hits/both
+  // capture sequencing; just forward the diagnostic solo to the engine).
+  const scopeSolo = useCallback(
+    (opts: { muteBed?: boolean; muteOverlays?: boolean }) => {
+      getEngine()?.setDrumDiagnosticSolo?.(opts);
+    },
+    [],
+  );
 
   const toggleSolo = useCallback((on: boolean) => {
     setSolo(on);
@@ -437,6 +845,10 @@ export function DrumGapFillAdminPanel() {
               Press play on a Groove Card to arm the drum slicer, then tune here.
             </div>
           ) : null}
+
+          {/* Live waveform scope — SEE the bed vs big-hit layers from the REAL
+              engine output (the leaked start-transients show up here). */}
+          <WaveformScope getEngine={getEngine} setSolo={scopeSolo} />
 
           {/* WSOLA master toggle — the real slow-tempo hi-hat fix */}
           <label
@@ -592,6 +1004,140 @@ export function DrumGapFillAdminPanel() {
               disabled={!p.wsola}
               onChange={(v) => patch({ strongConfidenceThreshold: v })}
             />
+
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                margin: '12px 0 4px',
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 10,
+                  color: '#8a8a8a',
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                }}
+              >
+                ★ Big-hit region (overlay vs bed notch)
+              </span>
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  fontSize: 10,
+                  cursor: 'pointer',
+                  color: linkBigHit ? '#9be9a8' : '#9a9a9a',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={linkBigHit}
+                  onChange={(e) => setLinkBigHit(e.target.checked)}
+                  style={{ accentColor: '#22c55e' }}
+                />
+                🔗 link
+              </label>
+            </div>
+            <div
+              style={{
+                fontSize: 10,
+                color: '#9a9a9a',
+                margin: '0 0 8px',
+                lineHeight: 1.4,
+              }}
+            >
+              Two layers: the OVERLAY (the crisp hit you hear) and the BED NOTCH (the
+              hole cut in the bed). 🔗 link ON = they move together (notch = overlay,
+              the &quot;glued&quot; clean default). 🔗 OFF = blend them independently —
+              e.g. notch a wider hole than the overlay tail, or let the hit ring past
+              the notch. PRE catches the attack blip; TAIL swallows the body. (Bed
+              notch rebuilds on change.)
+            </div>
+
+            <div style={{ fontSize: 10, color: '#7a9', margin: '4px 0 2px' }}>
+              OVERLAY — the crisp big hit
+            </div>
+            <SliderRow
+              label="① Overlay PRE (lead-in)"
+              hint="How far BEFORE the onset the OVERLAY begins reading. Raise to let more of the attack front into the hit."
+              value={p.bigHitPreSeconds}
+              min={0}
+              max={0.04}
+              step={0.001}
+              unit="ms"
+              format={MS}
+              disabled={!p.wsola}
+              onChange={(v) =>
+                patch(
+                  linkBigHit
+                    ? { bigHitPreSeconds: v, bedNotchPreSeconds: v }
+                    : { bigHitPreSeconds: v },
+                )
+              }
+            />
+            <SliderRow
+              label="② Overlay TAIL (length)"
+              hint="How long the OVERLAY plays — the hit + its tail the user hears. Independent of the notch when unlinked: make it shorter (snappier hit) or longer (more ring) than the bed hole."
+              value={p.bigHitTailSeconds}
+              min={0.02}
+              max={0.3}
+              step={0.005}
+              unit="ms"
+              format={MS}
+              disabled={!p.wsola}
+              onChange={(v) =>
+                patch(
+                  linkBigHit
+                    ? { bigHitTailSeconds: v, bedNotchTailSeconds: v }
+                    : { bigHitTailSeconds: v },
+                )
+              }
+            />
+
+            <div style={{ fontSize: 10, color: '#7a9', margin: '6px 0 2px' }}>
+              BED NOTCH — the hole cut in the bed (rebuilds)
+            </div>
+            <SliderRow
+              label="③ Notch PRE (start before onset)"
+              hint="How far BEFORE the onset the bed is notched. Raise until the little attack-front BLIP at the start of the bed dip is gone (the kick/snare front the notch started too late to remove)."
+              value={p.bedNotchPreSeconds}
+              min={0}
+              max={0.04}
+              step={0.001}
+              unit="ms"
+              format={MS}
+              disabled={!p.wsola}
+              onChange={(v) =>
+                patch(
+                  linkBigHit
+                    ? { bedNotchPreSeconds: v, bigHitPreSeconds: v }
+                    : { bedNotchPreSeconds: v },
+                )
+              }
+            />
+            <SliderRow
+              label="④ Notch TAIL (length)"
+              hint="How far AFTER the onset the bed is notched out. Raise until the big slow BODY-WAVE in the bed (the sub-bass kick tail) is gone. Independent of the overlay when unlinked — you can cut a wider hole than the hit fills, or vice-versa, to blend the seam."
+              value={p.bedNotchTailSeconds}
+              min={0.02}
+              max={0.3}
+              step={0.005}
+              unit="ms"
+              format={MS}
+              disabled={!p.wsola}
+              onChange={(v) =>
+                patch(
+                  linkBigHit
+                    ? { bedNotchTailSeconds: v, bigHitTailSeconds: v }
+                    : { bedNotchTailSeconds: v },
+                )
+              }
+            />
+
             <div style={{ fontSize: 10, color: '#7a9', margin: '6px 0 2px' }}>
               BIG-HIT envelope — START side
             </div>
@@ -796,6 +1342,77 @@ export function DrumGapFillAdminPanel() {
               format={MS}
               disabled={!p.wsola}
               onChange={(v) => patch({ xfadeToSlicesSeconds: v })}
+            />
+
+            <div
+              style={{
+                fontSize: 10,
+                color: '#8a8a8a',
+                margin: '14px 0 8px',
+                textTransform: 'uppercase',
+                letterSpacing: 0.5,
+              }}
+            >
+              SLICE seam — the home-tempo / while-nudging flam
+            </div>
+            <div
+              style={{
+                fontSize: 10,
+                color: '#9a9a9a',
+                margin: '0 0 8px',
+                lineHeight: 1.4,
+              }}
+            >
+              These shape the join BETWEEN adjacent bit-exact slices — the path
+              that plays at the ORIGINAL tempo and WHILE you drag tempo (NOT the
+              bed). The &quot;two hits / flam&quot; at 109 lives here: each slice
+              reads a little BEFORE its onset (pre-roll) and its tail runs toward
+              the next onset, so the few ms before every hit can get played twice.
+              Always active (independent of the bed / Smooth-stretch toggle).
+            </div>
+            <SliderRow
+              label="Slice tail trim (flam killer)"
+              hint="THE flam knob. Cuts the END off each slice so it can't overlap the NEXT slice's pre-roll. 0 = tail meets the next slice exactly (where the doubling comes from). Raise it to open a small gap before each hit → the doubled pre-attack disappears. Too high = you start hearing the cut / lose tail. Dial up from 0 until the flam at home tempo is gone."
+              value={p.sliceTailTrimSeconds}
+              min={-0.01}
+              max={0.05}
+              step={0.001}
+              unit="ms"
+              format={MS}
+              onChange={(v) => patch({ sliceTailTrimSeconds: v })}
+            />
+            <SliderRow
+              label="Slice pre-roll (lead-in)"
+              hint="How much audio each slice reads BEFORE its onset so the attack front survives the fade-in. Smaller = less of the pre-attack overlaps the previous tail (less flam, but the very front of the hit can soften). 0 = no lead-in. Works together with tail trim — they define the seam width."
+              value={p.slicePreRollSeconds}
+              min={0}
+              max={0.012}
+              step={0.0005}
+              unit="ms"
+              format={MS}
+              onChange={(v) => patch({ slicePreRollSeconds: v })}
+            />
+            <SliderRow
+              label="Slice fade-in (declick)"
+              hint="Attack declick ramp at the START of each slice. Tiny (≈2ms). Too long softens the punch; 0 can click. Mostly leave alone — it's here so you can rule it out as the flam source."
+              value={p.sliceFadeInSeconds}
+              min={0}
+              max={0.02}
+              step={0.0005}
+              unit="ms"
+              format={MS}
+              onChange={(v) => patch({ sliceFadeInSeconds: v })}
+            />
+            <SliderRow
+              label="Slice fade-out (declick)"
+              hint="Tail declick ramp at the END of each slice (the crossfade into the next). Wider = smoother seam but more overlap with the next slice (can thicken / double); narrower = tighter but can click. Pair with tail trim: trim opens the gap, fade-out smooths the edge."
+              value={p.sliceFadeOutSeconds}
+              min={0}
+              max={0.04}
+              step={0.0005}
+              unit="ms"
+              format={MS}
+              onChange={(v) => patch({ sliceFadeOutSeconds: v })}
             />
 
             <div
