@@ -3706,14 +3706,21 @@ export class PlaybackEngine implements IAudioStemEngine {
     const gapFill =
       typeof process !== 'undefined' &&
       process.env?.NEXT_PUBLIC_DRUM_GAPFILL === 'true';
-    // HYBRID WSOLA CONTINUOUS-BED STRETCH (LAUNCH-06): the real fix for slow-
-    // tempo drum flow — stretch the whole loop smoothly (transient bodies notched
-    // out of the bed) and overlay bit-exact kick/snare attacks. ON by default;
-    // set NEXT_PUBLIC_DRUM_WSOLA=false to force the legacy per-slice path.
-    // Supersedes gapFill (WSOLA wins when both on).
-    const wsola =
-      typeof process === 'undefined' ||
-      process.env?.NEXT_PUBLIC_DRUM_WSOLA !== 'false';
+    // DRUM TEMPO MODEL: the per-slice path (bit-exact slices, gaps re-spaced) is
+    // the default for the groove card. By ear + offline measurement (2026-06-05),
+    // slices are SMOOTHER than the WSOLA continuous bed across the whole ±25 BPM
+    // nudge range: the bed combs/smears the entire loop on every ratio and leaves
+    // a per-hit notch/overlay seam, while slices play the original recording and
+    // — crucially — DON'T restart on a tempo change (the bed's bedResynthDirty →
+    // restartAtCurrentPhase is what made the drums "jump" while bass/harmony glide;
+    // it never fires in slice mode). The bed only earns its keep at LARGE slowdowns
+    // where sustained hats would fragment, which the nudge range never reaches
+    // (tested: no fragmentation at −25 BPM). So default OFF here.
+    //
+    // The WSOLA bed is NOT removed — it's still selectable for A/B (the drum admin
+    // panel's "Smooth stretch" toggle / setDrumWsola), and can be forced ON via
+    // NEXT_PUBLIC_DRUM_WSOLA=true. Only the groove card's DEFAULT changes.
+    const wsola = process.env?.NEXT_PUBLIC_DRUM_WSOLA === 'true';
     this.drumSlicePlayer = new DrumSlicePlayer(
       this.audioContext,
       buffer,
@@ -3765,6 +3772,23 @@ export class PlaybackEngine implements IAudioStemEngine {
    */
   setDrumWsola(on: boolean): void {
     this.drumSlicePlayer?.setWsola(on);
+  }
+
+  /**
+   * Enable/disable the Realtime/Rendered drum tempo state machine (auto switch:
+   * per-slice WHILE nudging → full WSOLA bed when SETTLED). ON is the default for
+   * the groove card. OFF reverts to the legacy manual behaviour (and the admin
+   * "Smooth stretch" toggle / setDrumWsola also disables it). For A/B by ear.
+   */
+  setDrumAutoTempoMode(on: boolean): void {
+    this.drumSlicePlayer?.setAutoMode(on);
+  }
+
+  /** Live drum tempo-machine state for the dev A/B tool (mode/autoMode/ratio). */
+  getDrumTempoDebugState():
+    | ReturnType<NonNullable<typeof this.drumSlicePlayer>['getDebugState']>
+    | null {
+    return this.drumSlicePlayer?.getDebugState() ?? null;
   }
 
   /** DIAGNOSTIC: solo the drum bed vs the transient overlays (admin panel) so the

@@ -49,6 +49,21 @@ interface GapFillParams {
   bedTransientNotch: number;
   bedNotchSeconds: number;
   transientBlendSeconds: number;
+  transientDuckAttackSeconds: number;
+  // BIG-HIT envelope (continuous levels + nudgeable start/end).
+  hitPreRollSeconds: number;
+  hitStartLevel: number;
+  hitPeakLevel: number;
+  hitEndLevel: number;
+  hitAttackSeconds: number;
+  hitReleaseSeconds: number;
+  hitStartNudgeSeconds: number;
+  hitEndNudgeSeconds: number;
+  transientLengthSeconds: number;
+  // SLICES↔BED transition timing (the state machine).
+  settleMs: number;
+  xfadeToBedSeconds: number;
+  xfadeToSlicesSeconds: number;
 }
 
 interface EngineLike {
@@ -189,9 +204,22 @@ export function DrumGapFillAdminPanel() {
     wsolaSearchSeconds: 0.006,
     transientBodySeconds: 0.21,
     transientDuckDepth: 1.0,
-    bedTransientNotch: 1.0,
-    bedNotchSeconds: 0.14,
+    bedTransientNotch: 0.7,
+    bedNotchSeconds: 0.09,
     transientBlendSeconds: 0.115,
+    transientDuckAttackSeconds: 0,
+    hitPreRollSeconds: 0,
+    hitStartLevel: 0,
+    hitPeakLevel: 1,
+    hitEndLevel: 0,
+    hitAttackSeconds: 0,
+    hitReleaseSeconds: 0,
+    hitStartNudgeSeconds: 0,
+    hitEndNudgeSeconds: 0,
+    transientLengthSeconds: 0,
+    settleMs: 350,
+    xfadeToBedSeconds: 0.02,
+    xfadeToSlicesSeconds: 0.06,
   });
 
   // Mirror the full applied config in a ref so the poll loop can re-push it onto
@@ -228,6 +256,19 @@ export function DrumGapFillAdminPanel() {
       bedTransientNotch: cur.bedTransientNotch,
       bedNotchSeconds: cur.bedNotchSeconds,
       transientBlendSeconds: cur.transientBlendSeconds,
+      transientDuckAttackSeconds: cur.transientDuckAttackSeconds,
+      hitPreRollSeconds: cur.hitPreRollSeconds,
+      hitStartLevel: cur.hitStartLevel,
+      hitPeakLevel: cur.hitPeakLevel,
+      hitEndLevel: cur.hitEndLevel,
+      hitAttackSeconds: cur.hitAttackSeconds,
+      hitReleaseSeconds: cur.hitReleaseSeconds,
+      hitStartNudgeSeconds: cur.hitStartNudgeSeconds,
+      hitEndNudgeSeconds: cur.hitEndNudgeSeconds,
+      transientLengthSeconds: cur.transientLengthSeconds,
+      settleMs: cur.settleMs,
+      xfadeToBedSeconds: cur.xfadeToBedSeconds,
+      xfadeToSlicesSeconds: cur.xfadeToSlicesSeconds,
     });
     engine.setInstrumentMuted?.('audio-bass', so);
     engine.setInstrumentMuted?.('audio-harmony', so);
@@ -551,17 +592,116 @@ export function DrumGapFillAdminPanel() {
               disabled={!p.wsola}
               onChange={(v) => patch({ strongConfidenceThreshold: v })}
             />
+            <div style={{ fontSize: 10, color: '#7a9', margin: '6px 0 2px' }}>
+              BIG-HIT envelope — START side
+            </div>
             <SliderRow
-              label="Attack body"
-              hint="How long the crisp bit-exact attack plays over the bed. Short = just the punch; longer = more of the dry hit (and more space for a full kick/snare body) but risks doubling with the bed."
-              value={p.transientBodySeconds}
-              min={0.02}
+              label="Look-ahead (pre-transient)"
+              hint="How much audio BEFORE the onset the big hit reads — the pre-attack material. Raise to let in more of the kick's body before the hit. 0 = engine default."
+              value={p.hitPreRollSeconds}
+              min={0}
+              max={0.06}
+              step={0.001}
+              unit="ms"
+              format={MS}
+              disabled={!p.wsola}
+              onChange={(v) => patch({ hitPreRollSeconds: v })}
+            />
+            <SliderRow
+              label="Start nudge (± time)"
+              hint="Move WHEN the big hit BEGINS, relative to the onset. Negative = start earlier (anticipate), positive = start later (delay). ± in time."
+              value={p.hitStartNudgeSeconds}
+              min={-0.05}
+              max={0.05}
+              step={0.002}
+              unit="ms"
+              format={(v) => `${v >= 0 ? '+' : ''}${Math.round(v * 1000)}`}
+              disabled={!p.wsola}
+              onChange={(v) => patch({ hitStartNudgeSeconds: v })}
+            />
+            <SliderRow
+              label="Start level"
+              hint="Gain the big hit STARTS at (0–100%). 0% = fade up from silence; raise to start partway up (less of an attack ramp)."
+              value={p.hitStartLevel}
+              min={0}
+              max={1}
+              step={0.05}
+              format={(v) => `${Math.round(v * 100)}%`}
+              disabled={!p.wsola}
+              onChange={(v) => patch({ hitStartLevel: v })}
+            />
+            <SliderRow
+              label="Attack (fade-in length)"
+              hint="How LONG the big hit ramps from Start level up to Peak — the attack slope. Short = sharp/clicky (blip), longer = softer. THE blip shaper."
+              value={p.hitAttackSeconds}
+              min={0}
+              max={0.06}
+              step={0.001}
+              unit="ms"
+              format={MS}
+              disabled={!p.wsola}
+              onChange={(v) => patch({ hitAttackSeconds: v })}
+            />
+            <SliderRow
+              label="Peak level"
+              hint="The TOP gain the big hit reaches after the attack (0–100%). Lower it to make the big hits sit quieter under the bed."
+              value={p.hitPeakLevel}
+              min={0}
+              max={1}
+              step={0.05}
+              format={(v) => `${Math.round(v * 100)}%`}
+              disabled={!p.wsola}
+              onChange={(v) => patch({ hitPeakLevel: v })}
+            />
+            <div style={{ fontSize: 10, color: '#7a9', margin: '6px 0 2px' }}>
+              BIG-HIT envelope — END side
+            </div>
+            <SliderRow
+              label="Length (let-through)"
+              hint="How long the big hit plays before it ends. 0 = AUTO (covers the bed notch). >0 = manual exact length. Sets where the END point sits (then nudge/release below shape it)."
+              value={p.transientLengthSeconds}
+              min={0}
+              max={0.4}
+              step={0.005}
+              unit="ms"
+              format={(v) => (v === 0 ? 'auto' : `${Math.round(v * 1000)}`)}
+              disabled={!p.wsola}
+              onChange={(v) => patch({ transientLengthSeconds: v })}
+            />
+            <SliderRow
+              label="End nudge (± time)"
+              hint="Move WHEN the big hit ENDS. Negative = cut sooner, positive = ring longer (prolong the tail in time). ± in time."
+              value={p.hitEndNudgeSeconds}
+              min={-0.1}
+              max={0.2}
+              step={0.005}
+              unit="ms"
+              format={(v) => `${v >= 0 ? '+' : ''}${Math.round(v * 1000)}`}
+              disabled={!p.wsola}
+              onChange={(v) => patch({ hitEndNudgeSeconds: v })}
+            />
+            <SliderRow
+              label="Release (tail fade length)"
+              hint="How LONG the big hit fades from Peak down to End level — the TAIL fade. Long = a gradual ring-out (prolonged tail); short = a quick cut. 0 = use the bed blend."
+              value={p.hitReleaseSeconds}
+              min={0}
               max={0.3}
               step={0.005}
               unit="ms"
               format={MS}
               disabled={!p.wsola}
-              onChange={(v) => patch({ transientBodySeconds: v })}
+              onChange={(v) => patch({ hitReleaseSeconds: v })}
+            />
+            <SliderRow
+              label="End level"
+              hint="Gain the big hit ENDS at (0–100%). 0% = fades fully out; raise to leave the hit sustaining at a level into the bed instead of dropping to silence."
+              value={p.hitEndLevel}
+              min={0}
+              max={1}
+              step={0.05}
+              format={(v) => `${Math.round(v * 100)}%`}
+              disabled={!p.wsola}
+              onChange={(v) => patch({ hitEndLevel: v })}
             />
             <SliderRow
               label="Bed duck depth"
@@ -575,8 +715,20 @@ export function DrumGapFillAdminPanel() {
               onChange={(v) => patch({ transientDuckDepth: v })}
             />
             <SliderRow
-              label="Crossfade blend"
-              hint="Width of the EQUAL-POWER crossfade between the crisp hit and the bed. Wider = the bed fades down/up more gradually around each hit (smoother blend, less of an abrupt duck). The knob for 'blend them nicely'."
+              label="④ Bed duck-in (going-in)"
+              hint="BED side: how slowly the bed ducks DOWN going INTO each hit. 0 = symmetric with the bed fade-in below. Raise to ease the bed out of the way gently before the kick (no spike going in). Shapes the BED, not the kick — pair with ① ② to fully smooth the entry."
+              value={p.transientDuckAttackSeconds}
+              min={0}
+              max={0.2}
+              step={0.005}
+              unit="ms"
+              format={MS}
+              disabled={!p.wsola}
+              onChange={(v) => patch({ transientDuckAttackSeconds: v })}
+            />
+            <SliderRow
+              label="⑤ Bed fade-in (to transient)"
+              hint="BED side: how much / how gradually the bed fades BACK UP after the hit, blending the END of the transient into the bed. Wider = the bed recovers more gradually. This is 'how much bed we fade into the transient' — the coming-out blend."
               value={p.transientBlendSeconds}
               min={0.005}
               max={0.15}
@@ -596,6 +748,54 @@ export function DrumGapFillAdminPanel() {
               format={(v) => `${Math.round(v * 100)}%`}
               disabled={!p.wsola}
               onChange={(v) => patch({ bedTransientNotch: v })}
+            />
+
+            <div
+              style={{
+                fontSize: 10,
+                color: '#8a8a8a',
+                margin: '14px 0 8px',
+                textTransform: 'uppercase',
+                letterSpacing: 0.5,
+              }}
+            >
+              SLICES ↔ BED transition (live — no rebuild)
+            </div>
+            <SliderRow
+              label="Settle delay"
+              hint="How long after you STOP nudging before the drums cross from the crisp per-slice draft into the smooth bed. Shorter = bed comes back faster after you let go; longer = stays on slices a bit so quick re-nudges don't keep flipping to the bed."
+              value={p.settleMs}
+              min={100}
+              max={800}
+              step={25}
+              unit="ms"
+              format={(v) => `${Math.round(v)}`}
+              disabled={!p.wsola}
+              onChange={(v) => patch({ settleMs: v })}
+            />
+            <SliderRow
+              label="Settle crossfade (SLICES→BED)"
+              hint="Length of the equal-power crossfade when SETTLING into the bed (after you stop nudging). Longer = a more gradual landing; shorter (≈20ms) = a near-instant switch that's less likely to dip a kick/snare landing mid-fade — but can snap. The settle-in 'feel' knob."
+              value={p.xfadeToBedSeconds}
+              min={0.01}
+              max={0.3}
+              step={0.005}
+              unit="ms"
+              format={MS}
+              disabled={!p.wsola}
+              onChange={(v) => patch({ xfadeToBedSeconds: v })}
+            />
+            <SliderRow
+              label="Nudge crossfade (BED→SLICES)"
+              hint="Length of the crossfade when you START nudging again (leaving the bed → back to slices). Keep SHORT (≈40-80ms) so slices take over instantly and track the tempo without lag. The 'coming OUT of bed' knob — raise it if the exit clicks, lower it if slices feel laggy when you grab the tempo."
+              value={p.xfadeToSlicesSeconds}
+              min={0.02}
+              max={0.2}
+              step={0.005}
+              unit="ms"
+              format={MS}
+              disabled={!p.wsola}
+              onChange={(v) => patch({ xfadeToSlicesSeconds: v })}
             />
 
             <div

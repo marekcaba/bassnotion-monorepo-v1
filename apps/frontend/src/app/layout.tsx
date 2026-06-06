@@ -10,8 +10,9 @@ import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
 import { AttributionProvider } from '@/shared/attribution/AttributionProvider';
 import { isMockTestEnv, isWebkitBrowser } from '@/shared/utils/testEnv';
 import { ThemedLayout } from './_components/ThemedLayout';
-// Dev-only drum stretch tuning panel — disabled. Uncomment with its mount below.
-// import { DrumGapFillAdminPanel } from '@/domains/playback/components/DrumGapFillAdminPanel';
+// Dev-only drum stretch tuning panel — self-gated (renders null unless
+// ?drumadmin=1 or NEXT_PUBLIC_DRUM_ADMIN_PANEL=true), safe to mount at root.
+import { DrumGapFillAdminPanel } from '@/domains/playback/components/DrumGapFillAdminPanel';
 
 const logger = getLogger('app');
 
@@ -65,12 +66,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             </ReactQueryProvider>
           </AuthProviderWrapper>
           <Toaster />
-          {/* Dev-only drum stretch tuning panel — COMMENTED OUT. Re-enable by
-              uncommenting this + its import above. Renders null unless
+          {/* Dev-only drum stretch tuning panel. Renders null unless
               NEXT_PUBLIC_DRUM_ADMIN_PANEL=true or the URL has ?drumadmin=1.
               Mounted at the root so it's available on the waitlist homepage and
               every /app/* route (e.g. /app/tutorials/[slug]). */}
-          {/* <DrumGapFillAdminPanel /> */}
+          <DrumGapFillAdminPanel />
         </ErrorBoundary>
       </body>
     </html>

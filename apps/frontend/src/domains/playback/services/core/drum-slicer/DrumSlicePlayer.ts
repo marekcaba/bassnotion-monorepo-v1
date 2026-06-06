@@ -121,6 +121,23 @@ export interface DrumSlicePlayerOptions {
    *  fades OUT, equal-power, so they BLEND with no gap. Wider = smoother/gentler
    *  blend. The fix for the "prominent ducking" the ear flags. */
   transientBlendSeconds?: number;
+  /** Duck-IN (going-into-the-hit) ramp length (s). 0 = symmetric with
+   *  transientBlendSeconds. >0 = ease into the duck more slowly than the release
+   *  — softens the "spikes going in" at heavy notch. */
+  transientDuckAttackSeconds?: number;
+  /** BIG-HIT overlay ENVELOPE — continuous levels (0..1) + nudgeable start/end.
+   *  preRoll = look-ahead read; levels = start/peak/end gain; attack/release =
+   *  ramp lengths; startNudge/endNudge = ± shift the begin/finish in time. */
+  hitPreRollSeconds?: number;
+  hitStartLevel?: number;
+  hitPeakLevel?: number;
+  hitEndLevel?: number;
+  hitAttackSeconds?: number;
+  hitReleaseSeconds?: number;
+  hitStartNudgeSeconds?: number;
+  hitEndNudgeSeconds?: number;
+  /** Big-hit LENGTH (s) — explicit hit duration (drives bodyDur). 0 = auto. */
+  transientLengthSeconds?: number;
 
   /** The MUSICAL loop length (s) the drums must wrap on — same value
    *  bass/harmony loop on (the beat-grid length), which can be a hair SHORTER
@@ -155,6 +172,20 @@ export interface GapFillParams {
   bedTransientNotch?: number;
   bedNotchSeconds?: number;
   transientBlendSeconds?: number;
+  transientDuckAttackSeconds?: number;
+  hitPreRollSeconds?: number;
+  hitStartLevel?: number;
+  hitPeakLevel?: number;
+  hitEndLevel?: number;
+  hitAttackSeconds?: number;
+  hitReleaseSeconds?: number;
+  hitStartNudgeSeconds?: number;
+  hitEndNudgeSeconds?: number;
+  transientLengthSeconds?: number;
+  // State-machine TIMING (the SLICES↔BED transitions). Live, no rebuild.
+  settleMs?: number;
+  xfadeToBedSeconds?: number;
+  xfadeToSlicesSeconds?: number;
 }
 
 /** A fully-populated snapshot of the live params. Every numeric knob is set,
@@ -180,6 +211,19 @@ export interface GapFillParamsSnapshot {
   bedTransientNotch: number;
   bedNotchSeconds: number;
   transientBlendSeconds: number;
+  transientDuckAttackSeconds: number;
+  hitPreRollSeconds: number;
+  hitStartLevel: number;
+  hitPeakLevel: number;
+  hitEndLevel: number;
+  hitAttackSeconds: number;
+  hitReleaseSeconds: number;
+  hitStartNudgeSeconds: number;
+  hitEndNudgeSeconds: number;
+  transientLengthSeconds: number;
+  settleMs: number;
+  xfadeToBedSeconds: number;
+  xfadeToSlicesSeconds: number;
 }
 
 /** A scheduling region: either ONE bit-exact strong-transient slice, or a span
@@ -190,6 +234,15 @@ export interface GapFillParamsSnapshot {
 export type DrumRegion =
   | { kind: 'transient'; startIndex: number; endIndex: number }
   | { kind: 'texture'; startIndex: number; endIndex: number };
+
+/** State of the Realtime/Rendered drum tempo machine. SLICES = the user is
+ *  nudging (per-slice path, smooth); BED = settled (full WSOLA bed + overlays);
+ *  the two XFADE_* are the in-flight equal-power crossfades between them. */
+export type DrumTempoMode =
+  | 'SLICES'
+  | 'XFADE_TO_BED'
+  | 'BED'
+  | 'XFADE_TO_SLICES';
 
 /**
  * Group a sanitized onset list into scheduling regions using the confidence
@@ -266,9 +319,26 @@ const DEFAULTS: Required<DefaultedOptions> = {
     wsolaSearchSeconds: 0.006,
     transientBodySeconds: 0.21, // longer crisp attack body over the bed
     transientDuckDepth: 1.0, // 100% = no dip (full blend, bed stays up)
-    bedTransientNotch: 1.0, // bodies fully removed from the bed (the fix)
-    bedNotchSeconds: 0.14, // notch wide enough to cover the body + exceed 1 window
-    transientBlendSeconds: 0.115, // equal-power crossfade width bed↔overlay
+    bedTransientNotch: 0.7, // PARTIAL notch — keep some sustained body under the
+    // hit so the bed never goes fully silent between transients. Fully removing it
+    // (1.0) left HOLES the overlay couldn't refill → "sliced/chopped bed" at slow
+    // tempo, and a dropped hit on re-anchor (both notched AND overlay-skipped).
+    bedNotchSeconds: 0.09, // NARROWER notch (was 0.14): the overlay body must span
+    // the notch hole after it stretches at slow ratio. 0.09 ≈ transient core, still
+    // > 1 WSOLA window (0.025), so the bed seam stays clean.
+    transientBlendSeconds: 0.115, // (4) bed FADE-IN to the transient (release width)
+    // (3) Duck-IN (bed ramps DOWN going into the hit). 0 = symmetric with the blend.
+    transientDuckAttackSeconds: 0,
+    // ── BIG-HIT overlay ENVELOPE (continuous levels + nudgeable start/end) ──
+    hitPreRollSeconds: 0, // look-ahead: audio read BEFORE the onset (0 = opt default)
+    hitStartLevel: 0, // gain at the start point (0..1)
+    hitPeakLevel: 1, // gain at the top of the attack (0..1)
+    hitEndLevel: 0, // gain at the end point (0..1)
+    hitAttackSeconds: 0, // attack ramp length (0 = opt.fadeInSeconds)
+    hitReleaseSeconds: 0, // release/tail ramp length (0 = use blend)
+    hitStartNudgeSeconds: 0, // ± shift START point in time
+    hitEndNudgeSeconds: 0, // ± shift END point in time
+    transientLengthSeconds: 0, // explicit hit length (drives bodyDur; 0 = auto)
   };
 
 export class DrumSlicePlayer {
@@ -294,6 +364,55 @@ export class DrumSlicePlayer {
 
   /** Live WSOLA tunables (admin-tunable). */
   private wsolaEnabled: boolean;
+
+  // ── REALTIME/RENDERED TEMPO STATE MACHINE ──────────────────────────────────
+  // Drums switch engine by what the USER is doing, mirroring DAWs (Adobe Audition
+  // Realtime↔Rendered) + the élastique transient-handling scheme:
+  //   • WHILE NUDGING tempo  → the per-slice path (smooth, no jump, bit-exact).
+  //   • WHEN SETTLED (~350ms) → the full WSOLA bed + transient overlays (correct
+  //     hat placement at the held tempo — the sound the user prefers).
+  // Cross-faded via two sub-mix gains (sliceGain ⇄ bedGain). The bed re-renders in
+  // the BACKGROUND during the slice phase, so the swap-in never has the "jump"
+  // (restartAtCurrentPhase) the old always-bed path had on every nudge.
+  /** Master switch: true → the state machine drives the mode; false → legacy
+   *  manual behaviour (admin "Smooth stretch" A/B), exactly as before. */
+  private autoMode: boolean;
+  /** Current state. SLICES = nudging; BED = settled; the two XFADE_* are the
+   *  in-flight equal-power crossfades between them. */
+  private mode: DrumTempoMode = 'SLICES';
+  /** Sub-mix buses: per-slice sources → sliceGain, bed+overlays → bedGain; the
+   *  crossfade rides these two gain params. Null only if createGain throws. */
+  private sliceGain: GainNode | null = null;
+  private bedGain: GainNode | null = null;
+  /** Debounce: every nudge bumps the generation + restarts the timer; only the
+   *  latest generation's timer fires onSettled. */
+  private settleTimer: ReturnType<typeof setTimeout> | null = null;
+  private settleGeneration = 0;
+  /** Monotonic cursor: the NEXT bed iteration's start time to arm (advances by
+   *  period as each enters the horizon). null when not in a bed phase → re-seeded
+   *  to the iteration containing `now` on entry. This is the single authority for
+   *  bed arming; it never moves backward, so the active set can't leak. */
+  private bedIterStart: number | null = null;
+  /** Audio time the in-flight crossfade finishes — checked at the top of
+   *  scheduleTick to flip XFADE_* → terminal SLICES/BED (never flip synchronously
+   *  mid-ramp, or the outgoing engine cuts out before the incoming reaches full). */
+  private xfadeDoneAt = 0;
+  /** Settle debounce window (ms) — UI-interaction concept, not sample-accurate.
+   *  Also the gate that keeps the bed synth OUT of active nudging: the heavy synth
+   *  runs only once nudging has paused (in crossfadeToBed at settle). */
+  private static readonly SETTLE_MS_DEFAULT = 350;
+  /** Equal-power crossfade length (s), SLICES → BED (settle). Longer = a gentler,
+   *  more gradual landing into the bed once the tempo settles; shorter = a transient
+   *  is less likely to land mid-fade (where it can dip). */
+  private static readonly XFADE_TO_BED_S_DEFAULT = 0.15;
+  /** Equal-power crossfade length (s), BED → SLICES (nudge). SHORT — the user is
+   *  interacting, slices must take over near-instantly to track the tempo. */
+  private static readonly XFADE_TO_SLICES_S_DEFAULT = 0.15;
+  /** LIVE-tunable copies (admin panel). Defaults from the *_DEFAULT statics. */
+  private settleMs = DrumSlicePlayer.SETTLE_MS_DEFAULT;
+  private xfadeToBedS = DrumSlicePlayer.XFADE_TO_BED_S_DEFAULT;
+  private xfadeToSlicesS = DrumSlicePlayer.XFADE_TO_SLICES_S_DEFAULT;
+
   private strongConfidenceThreshold: number;
   private wsolaOpt: WsolaOptions;
   private transientBodySeconds: number;
@@ -301,6 +420,20 @@ export class DrumSlicePlayer {
   private bedTransientNotch: number;
   private bedNotchSeconds: number;
   private transientBlendSeconds: number;
+  /** Duck-IN ramp length (s). 0 = symmetric with transientBlendSeconds. */
+  private transientDuckAttackSeconds = 0;
+  /** BIG-HIT overlay ENVELOPE (continuous levels 0..1 + nudgeable start/end).
+   *  Replaces the old binary 0→1→0. Length (how long the hit plays before the
+   *  bed) is still transientLengthSeconds (drives bodyDur); these shape the gain. */
+  private hitPreRollSeconds = 0; // look-ahead: audio read BEFORE the onset
+  private hitStartLevel = 0; // gain at the start point
+  private hitPeakLevel = 1; // gain at the top of the attack
+  private hitEndLevel = 0; // gain at the end point
+  private hitAttackSeconds = 0; // attack ramp (0 = use fadeInSeconds)
+  private hitReleaseSeconds = 0; // release/tail ramp (0 = use blend)
+  private hitStartNudgeSeconds = 0; // ± shift the START point in time
+  private hitEndNudgeSeconds = 0; // ± shift the END point in time
+  private transientLengthSeconds = 0; // explicit length (drives bodyDur; 0 = auto)
   /** DIAGNOSTIC solo flags (admin panel): mute the bed to hear ONLY the crisp
    *  overlaid kicks/snares, or mute the overlays to hear ONLY the bed texture —
    *  so the ear can localize where a double lives. Not shipped to users. */
@@ -318,7 +451,14 @@ export class DrumSlicePlayer {
    *  `this.regions`). Named nextSlice for history; it indexes regions now. */
   private nextSlice = 0;
   /** Live slices (source + its envelope gain) so stop() can stop + tidy them. */
-  private active = new Set<{ src: AudioBufferSourceNode; env: GainNode }>();
+  private active = new Set<{
+    src: AudioBufferSourceNode;
+    env: GainNode;
+    /** Which scheduling layer armed this source — so a new BED phase can fade-stop
+     *  the PREVIOUS bed's sources (one-shot + overlays) and not leave them ringing
+     *  under the new bed (the overlapping-drum-loops bug). */
+    kind: 'bed' | 'slice';
+  }>();
 
   /** GAP-FILL (legacy, superseded by WSOLA): per-slice precomputed extended-tail
    *  buffer (null = slice doesn't qualify / no usable tail). Indexed by slice
@@ -357,6 +497,22 @@ export class DrumSlicePlayer {
     this.buffer = buffer;
     this.output = output;
     this.bufferDuration = buffer.duration;
+    // Sub-mix buses for the Realtime/Rendered crossfade: per-slice sources route
+    // to sliceGain, the bed one-shot + its transient overlays route to bedGain;
+    // a crossfade is just an equal-power ramp on these two. Start on SLICES
+    // (sliceGain=1, bedGain=0). If createGain throws, sliceOut/bedOut fall back to
+    // the raw output (the machine then no-ops the crossfade — degrades to slices).
+    try {
+      this.sliceGain = ctx.createGain();
+      this.bedGain = ctx.createGain();
+      this.sliceGain.gain.value = 1;
+      this.bedGain.gain.value = 0;
+      this.sliceGain.connect(output);
+      this.bedGain.connect(output);
+    } catch {
+      this.sliceGain = null;
+      this.bedGain = null;
+    }
     const {
       loopDurationSeconds,
       sustainTauSeconds,
@@ -385,6 +541,10 @@ export class DrumSlicePlayer {
     this.confidences = paired.map((p) => p.c);
     this.opt = { ...DEFAULTS, ...rest };
     this.wsolaEnabled = this.opt.wsola;
+    // The Realtime/Rendered state machine drives the mode by default. If the
+    // player is constructed with WSOLA forced ON (admin/env A/B), start in manual
+    // mode so the legacy always-bed behaviour is preserved exactly.
+    this.autoMode = !this.opt.wsola;
     this.strongConfidenceThreshold = this.opt.strongConfidenceThreshold;
     this.wsolaOpt = {
       windowSeconds: this.opt.wsolaWindowSeconds,
@@ -396,12 +556,33 @@ export class DrumSlicePlayer {
     this.bedTransientNotch = this.opt.bedTransientNotch;
     this.bedNotchSeconds = this.opt.bedNotchSeconds;
     this.transientBlendSeconds = this.opt.transientBlendSeconds;
+    this.transientDuckAttackSeconds =
+      this.opt.transientDuckAttackSeconds ?? 0;
+    this.hitPreRollSeconds = this.opt.hitPreRollSeconds ?? 0;
+    this.hitStartLevel = this.opt.hitStartLevel ?? 0;
+    this.hitPeakLevel = this.opt.hitPeakLevel ?? 1;
+    this.hitEndLevel = this.opt.hitEndLevel ?? 0;
+    this.hitAttackSeconds = this.opt.hitAttackSeconds ?? 0;
+    this.hitReleaseSeconds = this.opt.hitReleaseSeconds ?? 0;
+    this.hitStartNudgeSeconds = this.opt.hitStartNudgeSeconds ?? 0;
+    this.hitEndNudgeSeconds = this.opt.hitEndNudgeSeconds ?? 0;
+    this.transientLengthSeconds = this.opt.transientLengthSeconds ?? 0;
     // Derive which onsets get a bit-exact overlay (cheap). The bed analysis +
     // legacy fills are only built when their feature is on (lazy, like before).
     this.buildStrongIndices();
     if (this.wsolaEnabled) this.precomputeBedAnalysis();
     // WSOLA wins when both flags are on; only build legacy fills if WSOLA is off.
     if (!this.wsolaEnabled && this.opt.gapFill) this.precomputeFills();
+  }
+
+  /** Sub-mix sink for per-slice sources (falls back to the raw output if the
+   *  crossfade gains couldn't be created). */
+  private get sliceOut(): AudioNode {
+    return this.sliceGain ?? this.output;
+  }
+  /** Sub-mix sink for the bed one-shot + its transient overlays. */
+  private get bedOut(): AudioNode {
+    return this.bedGain ?? this.output;
   }
 
   /** (Re)derive the strong-transient overlay indices from the current
@@ -532,6 +713,29 @@ export class DrumSlicePlayer {
     ) {
       this.transientBlendSeconds = p.transientBlendSeconds; // next iteration
     }
+    if (p.transientDuckAttackSeconds !== undefined) {
+      this.transientDuckAttackSeconds = p.transientDuckAttackSeconds; // next iter
+    }
+    // BIG-HIT envelope — all live, applied to the next overlay.
+    if (p.hitPreRollSeconds !== undefined) this.hitPreRollSeconds = p.hitPreRollSeconds;
+    if (p.hitStartLevel !== undefined) this.hitStartLevel = p.hitStartLevel;
+    if (p.hitPeakLevel !== undefined) this.hitPeakLevel = p.hitPeakLevel;
+    if (p.hitEndLevel !== undefined) this.hitEndLevel = p.hitEndLevel;
+    if (p.hitAttackSeconds !== undefined) this.hitAttackSeconds = p.hitAttackSeconds;
+    if (p.hitReleaseSeconds !== undefined)
+      this.hitReleaseSeconds = p.hitReleaseSeconds;
+    if (p.hitStartNudgeSeconds !== undefined)
+      this.hitStartNudgeSeconds = p.hitStartNudgeSeconds;
+    if (p.hitEndNudgeSeconds !== undefined)
+      this.hitEndNudgeSeconds = p.hitEndNudgeSeconds;
+    if (p.transientLengthSeconds !== undefined) {
+      this.transientLengthSeconds = p.transientLengthSeconds; // next iteration
+    }
+    // ── State-machine TIMING (live, no rebuild — used on the next transition) ──
+    if (p.settleMs !== undefined) this.settleMs = p.settleMs;
+    if (p.xfadeToBedSeconds !== undefined) this.xfadeToBedS = p.xfadeToBedSeconds;
+    if (p.xfadeToSlicesSeconds !== undefined)
+      this.xfadeToSlicesS = p.xfadeToSlicesSeconds;
     if (
       p.wsolaWindowSeconds !== undefined &&
       p.wsolaWindowSeconds !== this.wsolaOpt.windowSeconds
@@ -553,13 +757,24 @@ export class DrumSlicePlayer {
       this.wsolaOpt.searchSeconds = p.wsolaSearchSeconds;
       reanalyze = true;
     }
-    if (reanalyze && this.wsolaEnabled) {
+    // The bed is used in BOTH the legacy WSOLA path AND the auto state machine
+    // (the BED phase), so its rebuild must trigger in EITHER — gating on
+    // wsolaEnabled alone silently no-op'd panel tuning in the default auto mode.
+    const bedActive = this.wsolaEnabled || this.autoMode;
+    if (reanalyze && bedActive) {
       this.precomputeBedAnalysis();
       this.resynthesizeBed(true);
-      // Rebuilt the bed mid-playback → restart cleanly so the new bed takes over
-      // from the current phase (no old/new overlap).
-      if (this.playing) this.restartAtCurrentPhase();
-    } else if (this.wsolaEnabled && !this.bedAnalysis) {
+      // In LEGACY mode restart so the new bed takes over from the current phase.
+      // In AUTO mode DON'T restart — fade-stop the OLD bed sources (so the new
+      // buffer doesn't stack under them) and re-seed the cursor so the next tick
+      // arms the fresh bed at the live phase, keeping the SLICES↔BED flow intact.
+      if (this.playing && !this.autoMode) {
+        this.restartAtCurrentPhase();
+      } else if (this.playing) {
+        this.stopBedSources(this.ctx.currentTime + 0.02);
+        this.bedIterStart = null; // re-arm fresh bed next tick
+      }
+    } else if (bedActive && !this.bedAnalysis) {
       // First enable: lazily build the bed analysis + synth for the live ratio.
       this.precomputeBedAnalysis();
       this.resynthesizeBed(true);
@@ -580,12 +795,26 @@ export class DrumSlicePlayer {
   setDiagnosticSolo(opts: { muteBed?: boolean; muteOverlays?: boolean }): void {
     if (opts.muteBed !== undefined) this.muteBed = opts.muteBed;
     if (opts.muteOverlays !== undefined) this.muteOverlays = opts.muteOverlays;
-    if (this.playing) this.restartAtCurrentPhase();
+    // The flags are read FRESH each tick by scheduleBedIteration, so the next
+    // bed iteration applies them. In AUTO mode a restart would disrupt the live
+    // SLICES↔BED flow (the whole point is to hear the solo IN the real playback,
+    // settling from slices into the bed exactly as a user would). Only the legacy
+    // always-bed path needs a restart to re-arm at the new mute state.
+    if (this.playing && !this.autoMode) this.restartAtCurrentPhase();
   }
 
+  /** Manual WSOLA toggle (admin "Smooth stretch" A/B). Forces the legacy binary
+   *  model and DISABLES the Realtime/Rendered state machine, so the two never
+   *  fight over the sub-mix gains. Sets sliceGain/bedGain to match the manual
+   *  choice (else, in auto-mode's resting state, bedGain=0 would silence the
+   *  manually-enabled bed). */
   setWsola(on: boolean): void {
     const wasOn = this.wsolaEnabled;
     this.wsolaEnabled = on;
+    this.autoMode = false; // manual A/B owns the mode now
+    // Route the sub-mix to the manual choice: WSOLA on → bed bus, off → slice bus.
+    if (this.sliceGain) this.sliceGain.gain.value = on ? 0 : 1;
+    if (this.bedGain) this.bedGain.gain.value = on ? 1 : 0;
     if (on) {
       if (!this.bedAnalysis) this.precomputeBedAnalysis();
       this.resynthesizeBed(true);
@@ -595,6 +824,33 @@ export class DrumSlicePlayer {
       // next tick schedules a single fresh stream at the SAME loop phase.
       this.restartAtCurrentPhase();
     }
+  }
+
+  /** Enable/disable the Realtime/Rendered state machine (the auto slices↔bed
+   *  switch). ON re-arms it to the resting SLICES state. OFF hands control to the
+   *  manual paths (setWsola), which set the sub-mix gains themselves. */
+  setAutoMode(on: boolean): void {
+    this.autoMode = on;
+    if (!on) return;
+    this.mode = 'SLICES';
+    this.bedIterStart = null;
+    if (this.sliceGain) this.sliceGain.gain.value = 1;
+    if (this.bedGain) this.bedGain.gain.value = 0;
+  }
+
+  /** Live state for the dev A/B tool + tests (not shipped UI). */
+  getDebugState(): {
+    autoMode: boolean;
+    mode: DrumTempoMode;
+    bedReady: boolean;
+    ratio: number;
+  } {
+    return {
+      autoMode: this.autoMode,
+      mode: this.mode,
+      bedReady: this.synthesizedForRatio === this.ratio && !!this.bedBuffer,
+      ratio: this.ratio,
+    };
   }
 
   /**
@@ -679,6 +935,19 @@ export class DrumSlicePlayer {
       bedTransientNotch: this.bedTransientNotch,
       bedNotchSeconds: this.bedNotchSeconds,
       transientBlendSeconds: this.transientBlendSeconds,
+      transientDuckAttackSeconds: this.transientDuckAttackSeconds,
+      hitPreRollSeconds: this.hitPreRollSeconds,
+      hitStartLevel: this.hitStartLevel,
+      hitPeakLevel: this.hitPeakLevel,
+      hitEndLevel: this.hitEndLevel,
+      hitAttackSeconds: this.hitAttackSeconds,
+      hitReleaseSeconds: this.hitReleaseSeconds,
+      hitStartNudgeSeconds: this.hitStartNudgeSeconds,
+      hitEndNudgeSeconds: this.hitEndNudgeSeconds,
+      transientLengthSeconds: this.transientLengthSeconds,
+      settleMs: this.settleMs,
+      xfadeToBedSeconds: this.xfadeToBedS,
+      xfadeToSlicesSeconds: this.xfadeToSlicesS,
     };
   }
 
@@ -856,9 +1125,12 @@ export class DrumSlicePlayer {
     if (!force && ratio === this.synthesizedForRatio) return;
     this.synthesizedForRatio = ratio;
     this.bedBuffer = null;
-    // At unity the raw loop already IS the continuous bed with perfect bit-exact
-    // transients — skip WSOLA entirely (no coloration, no overlay needed).
-    if (!this.wsolaEnabled || Math.abs(ratio - 1) < 1e-4) return;
+    // The bed is needed by the legacy WSOLA path AND the auto state machine (which
+    // crossfades to it on settle). At unity the raw loop already IS the continuous
+    // bed with perfect bit-exact transients — skip WSOLA entirely (no coloration).
+    if ((!this.wsolaEnabled && !this.autoMode) || Math.abs(ratio - 1) < 1e-4) {
+      return;
+    }
     if (!this.bedAnalysis) return;
     const sr = this.buffer.sampleRate;
     const srcLen = Math.round(this.loopDuration * sr);
@@ -937,15 +1209,242 @@ export class DrumSlicePlayer {
       // `atTime`: position = (atTime − loopStartTime)·oldRatio; choose a new
       // loopStartTime so the same position holds under newRatio at `atTime`.
       const pivot = atTime ?? this.ctx.currentTime;
-      const inputPos = (pivot - this.loopStartTime) * this.ratio;
+      // NORMAL case (SLICES): loopStartTime ≤ pivot and within one period — use the
+      // ORIGINAL unfolded transform (`rel·oldRatio`) so an in-SLICES nudge is
+      // byte-identical to the legacy smooth path (a modulo here can snap the grid
+      // by up to a full period at the rel≈0 / rel≈period boundary → choppy).
+      // BED case: BED mode leaves loopStartTime ~1 period AHEAD, so `rel` is large
+      // negative — THERE fold modulo to recover the live phase.
+      const period = this.loopPeriod;
+      const rel = pivot - this.loopStartTime;
+      const inputPos =
+        rel >= 0 && rel < period
+          ? rel * this.ratio // original, exact, no modulo
+          : this.currentInputPos(pivot); // fold only when stale/future
       this.loopStartTime = pivot - inputPos / newRatio;
     }
     const changed = newRatio !== this.ratio;
     this.ratio = newRatio;
-    // The GRID (loopStartTime/ratio above) updates synchronously so sync is
-    // never delayed. Only the heavy WSOLA BED synth is deferred + coalesced:
-    // mark dirty; the next scheduleTick synthesizes once for this latest ratio.
-    if (changed && this.wsolaEnabled) this.bedResynthDirty = true;
+    // The GRID (loopStartTime/ratio above) updated synchronously so cross-stem
+    // sync is never delayed, in BOTH modes.
+    if (!changed) return;
+
+    if (!this.autoMode) {
+      // Legacy manual path: defer the WSOLA bed re-synth + restart to the next
+      // tick (the "jump"), exactly as before.
+      if (this.wsolaEnabled) this.bedResynthDirty = true;
+      return;
+    }
+
+    // AUTO: this is a NUDGE — drive the Realtime/Rendered state machine.
+    this.onNudge();
+  }
+
+  /** A tempo nudge: be on SLICES (smooth) while interacting — NO bed synth here —
+   *  and (re)start the settle debounce. The bed is built once, at settle. */
+  private onNudge(): void {
+    if (!this.playing) return;
+    // If we were showing (or fading to) the bed, get back to slices IMMEDIATELY
+    // so the bit-exact path tracks the tempo — NEVER restartAtCurrentPhase.
+    if (this.mode === 'BED' || this.mode === 'XFADE_TO_BED') {
+      this.crossfadeToSlices();
+    }
+    const gen = ++this.settleGeneration;
+
+    // NO bed synth DURING active nudging — that is the whole point of the SLICES
+    // phase being as smooth as the original pure-slice mode. The heavy ~145-234ms
+    // resynthesizeBed() blocks the main thread and starves the 25ms scheduler
+    // (60ms horizon) → dropped slices → choppy nudging. A separate "pre-render"
+    // timer (PRERENDER_MS) fired between deliberate clicks (gap > debounce) and
+    // ran that block once PER click → exactly the chop the user heard. Removed.
+    // The bed is synthesized ONCE, at SETTLE, in crossfadeToBed (masked by the
+    // crossfade + the post-synth re-anchor). During nudging: zero heavy work.
+
+    // (Re)start the settle timer; only the latest generation may fire onSettled.
+    if (this.settleTimer) clearTimeout(this.settleTimer);
+    this.settleTimer = setTimeout(() => {
+      if (gen === this.settleGeneration) this.onSettled();
+    }, this.settleMs);
+  }
+
+  /** Tempo has settled — cross-fade from slices to the full WSOLA bed (correct
+   *  hat placement at the held tempo). Stays on slices at unity (no bed). */
+  private onSettled(): void {
+    this.settleTimer = null;
+    if (!this.playing || !this.autoMode) return;
+    if (Math.abs(this.ratio - 1) < 1e-4) {
+      this.mode = 'SLICES'; // unity: the raw loop IS correct; no bed to fade to
+      return;
+    }
+    this.crossfadeToBed();
+  }
+
+  /** Equal-power (sin²/cos²) crossfade: ramp `up` 0→1 and `down` 1→0 over `dur`
+   *  starting at `start`. Squares sum to 1 → constant power, no dip/bump at the
+   *  seam. Mirrors the per-transient blend curves used in scheduleBedIteration. */
+  private equalPowerXfade(
+    up: AudioParam,
+    down: AudioParam,
+    start: number,
+    dur: number,
+  ): void {
+    const STEPS = 16;
+    const upCurve = new Float32Array(STEPS);
+    const downCurve = new Float32Array(STEPS);
+    for (let n = 0; n < STEPS; n++) {
+      const x = n / (STEPS - 1);
+      const s = Math.sin((Math.PI / 2) * x);
+      const c = Math.cos((Math.PI / 2) * x);
+      upCurve[n] = s * s; // 0→1
+      downCurve[n] = c * c; // 1→0
+    }
+    const t0 = Math.max(this.ctx.currentTime, start);
+    try {
+      up.cancelScheduledValues(t0);
+      down.cancelScheduledValues(t0);
+      up.setValueCurveAtTime(upCurve, t0, dur);
+      down.setValueCurveAtTime(downCurve, t0, dur);
+    } catch {
+      // Overlapping/past-time automation → hard switch (no crossfade).
+      try {
+        up.setValueAtTime(1, t0);
+        down.setValueAtTime(0, t0);
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  /** Fade-stop every currently-scheduled BED source (the whole-loop one-shot + its
+   *  transient overlays) by `stopAt`, with a tiny gain ramp to avoid a click. Used
+   *  when a NEW bed phase begins so the old bed (a long ~15s one-shot at the OLD
+   *  ratio) doesn't keep playing UNDER the new one. Slice sources are untouched. */
+  private stopBedSources(stopAt: number): void {
+    const now = this.ctx.currentTime;
+    const fadeEnd = Math.max(now + 0.005, stopAt);
+    for (const entry of this.active) {
+      if (entry.kind !== 'bed') continue;
+      try {
+        const g = entry.env.gain;
+        g.cancelScheduledValues(now);
+        g.setValueAtTime(g.value, now);
+        g.linearRampToValueAtTime(0, fadeEnd);
+      } catch {
+        /* ignore */
+      }
+      try {
+        entry.src.stop(fadeEnd + 0.005);
+      } catch {
+        /* already stopped */
+      }
+    }
+  }
+
+  /** Settle → BED: ensure a fresh-ratio bed exists, arm it, and equal-power
+   *  crossfade sliceGain↓ / bedGain↑ — aligned to the next loop downbeat so the
+   *  bed's loud transient overlays enter on the "one", not mid-bar. */
+  private crossfadeToBed(): void {
+    if (!this.sliceGain || !this.bedGain || !this.playing) return;
+    // GUARD: never arm the bed before the loop's first downbeat (T0, the count-in
+    // end). If a settle timer somehow fires during the count-in, the bed would
+    // re-anchor to `now` and play under the count. Re-arm the settle to just after
+    // the downbeat instead of crossfading now. (Belt-and-suspenders for the T0-
+    // anchored settle timer in start().)
+    const beforeDownbeat = this.loopStartTime - this.ctx.currentTime;
+    if (beforeDownbeat > 0.01) {
+      const gen = this.settleGeneration;
+      if (this.settleTimer) clearTimeout(this.settleTimer);
+      this.settleTimer = setTimeout(
+        () => {
+          if (gen === this.settleGeneration) this.onSettled();
+        },
+        beforeDownbeat * 1000 + this.settleMs,
+      );
+      return;
+    }
+    // Synthesize the bed for the settled ratio HERE — once, after nudging has
+    // paused (SETTLE_MS). This is the ONLY place the heavy ~145-234ms synth runs,
+    // so it never touches the smooth SLICES nudging. Coalesced by
+    // synthesizedForRatio (a no-op if the ratio was already built). The post-synth
+    // re-anchor below folds out the synth's main-thread stall so the bed stays in
+    // phase with bass.
+    if (this.synthesizedForRatio !== this.ratio) {
+      this.resynthesizeBed(); // NOT restartAtCurrentPhase
+    }
+    if (!this.bedBuffer) {
+      this.mode = 'SLICES'; // no bed (unity / synth failed) → stay on slices
+      return;
+    }
+    // CRITICAL — stop the PREVIOUS bed phase's sources before arming the new one.
+    // The bed one-shot is a ~15s source; without this, the old bed keeps playing
+    // under the new bed (a different ratio) → 2nd/3rd drum loops STACK on every
+    // settle (the overlapping-loops bug). Fade them so the swap is clickless; the
+    // crossfade then brings the fresh bed in over the (now ending) old tail.
+    this.stopBedSources(
+      this.ctx.currentTime + this.xfadeToBedS,
+    );
+    this.mode = 'XFADE_TO_BED';
+    const now = this.ctx.currentTime;
+    // CRITICAL — re-anchor the grid to the LIVE clock AFTER the synth block above.
+    // resynthesizeBed is a ~234ms SYNCHRONOUS main-thread stall; during it the
+    // audio clock advances and bass/harmony keep playing, but loopStartTime was
+    // frozen. Without this fold, the bed arms ~234ms off the bass grid, and the
+    // error ACCUMULATES one synth-block per settle (the "first slow-down fine,
+    // second totally out of sync" bug). currentInputPos reads the post-block clock
+    // and folds modulo the period, so this erases the stall and can't accumulate.
+    const inputPos = this.currentInputPos(now);
+    this.loopStartTime = now - inputPos / (this.ratio || 1);
+    this.bedIterStart = null; // re-seed the bed cursor to the live iteration
+    // Cross in promptly. The bed is phase-continuous (it arms partway through via
+    // phaseSec), so crossing at `now` is seamless. Nudge it to the next downbeat
+    // ONLY when that's imminent (≤ one crossfade away) so the loud transient
+    // overlays land on the "one" — never defer by a whole loop (~18s) for it.
+    const db = this.getNextDownbeat(now);
+    const start =
+      db != null && db - now <= this.xfadeToBedS ? db : now;
+    this.equalPowerXfade(
+      this.bedGain.gain,
+      this.sliceGain.gain,
+      start,
+      this.xfadeToBedS,
+    );
+    this.xfadeDoneAt = start + this.xfadeToBedS;
+  }
+
+  /** Nudge → SLICES: equal-power crossfade bedGain↓ / sliceGain↑ from NOW (the
+   *  user is interacting — slices must track the tempo without lag). */
+  private crossfadeToSlices(): void {
+    if (!this.sliceGain || !this.bedGain) return;
+    const now = this.ctx.currentTime;
+    // CRITICAL — fade-stop the bed's sources, symmetric to crossfadeToBed. The bed
+    // schedules a WHOLE loop's worth of bit-exact kick/snare OVERLAYS up to ~15s
+    // AHEAD. Fading bedGain alone does NOT stop those future overlay sources — they
+    // fire at full volume during the slice phase = "loud kicks spitting through
+    // from nothing", and they ACCUMULATE across settles (down→down→up). Stopping
+    // them here is the missing counterpart: crossfadeToBed cleaned up on the way
+    // IN; nothing cleaned up on the way OUT until now.
+    this.stopBedSources(now + this.xfadeToSlicesS);
+    this.bedIterStart = null; // bed phase ended; re-seed on next entry
+    // CRITICAL re-anchor: pure BED mode advances loopStartTime per-period until
+    // it's PAST the horizon (up to a full loop ~18s in the FUTURE). The slice path
+    // schedules at loopStartTime + onset/ratio, so without re-anchoring, every
+    // onsetReal would be far in the future → NO slices scheduled → silence until
+    // the future loopStartTime is reached (the "drums go silent while speeding up
+    // until I stop clicking" bug). Fold the grid back so the CURRENT input
+    // position plays at `now`, then point nextSlice at the next onset.
+    const inputPos = this.currentInputPos(now);
+    this.loopStartTime = now - inputPos / (this.ratio || 1);
+    let i = 0;
+    while (i < this.onsets.length && this.onsetAt(i) < inputPos) i++;
+    this.nextSlice = i % this.onsets.length;
+    this.mode = 'XFADE_TO_SLICES';
+    this.equalPowerXfade(
+      this.sliceGain.gain,
+      this.bedGain.gain,
+      now,
+      this.xfadeToSlicesS,
+    );
+    this.xfadeDoneAt = now + this.xfadeToSlicesS;
   }
 
   /** Start looping at audio time `when` (default: now). */
@@ -955,11 +1454,29 @@ export class DrumSlicePlayer {
     this.loopStartTime = when ?? this.ctx.currentTime;
     this.nextSlice = 0;
     // Ensure the bed exists for the live ratio before the first scheduleTick
-    // reads it (the loop may start already at a non-unity tempo).
-    if (this.wsolaEnabled) {
+    // reads it (the loop may start already at a non-unity tempo). Built for the
+    // legacy WSOLA path AND auto mode (so a settle can crossfade to a ready bed).
+    if (this.wsolaEnabled || this.autoMode) {
       if (!this.bedAnalysis) this.precomputeBedAnalysis();
       this.resynthesizeBed(true);
     }
+    // AUTO start-at-held-tempo: if the loop STARTS at a non-unity tempo (replay
+    // after nudging, or any pre-set tempo), there's no nudge coming — the tempo is
+    // ALREADY settled. Start DIRECTLY in BED instead of SLICES-then-crossfade.
+    // SLICES is for the smooth WHILE-nudging draft only; starting in it just to
+    // crossfade to the bed adds a needless 250ms two-engine overlap at the very
+    // first downbeat (the artifact risk the user flagged). The bed was rendered
+    // above (resynthesizeBed) and the bed cursor seeds itself from the live grid in
+    // scheduleTick, so the bed simply arms at T0 — clean, no slices, no crossfade.
+    // At unity we stay on SLICES (the raw loop IS correct; there's no bed).
+    if (this.autoMode && Math.abs(this.ratio - 1) >= 1e-4 && this.bedBuffer) {
+      this.mode = 'BED';
+      this.bedIterStart = null; // seed the bed cursor at the first tick
+      this.xfadeDoneAt = 0; // not mid-crossfade
+      if (this.sliceGain) this.sliceGain.gain.value = 0;
+      if (this.bedGain) this.bedGain.gain.value = 1;
+    }
+
     this.scheduleTick();
     this.timerId = setInterval(() => this.scheduleTick(), this.opt.tickMs);
   }
@@ -979,12 +1496,39 @@ export class DrumSlicePlayer {
       clearInterval(this.timerId);
       this.timerId = null;
     }
-    const stopAt = when ?? this.ctx.currentTime;
-    for (const { src } of this.active) {
+    // Invalidate any pending settle (the player is recreated, not reused, so a
+    // late onSettled must be a no-op) and reset to the resting state.
+    if (this.settleTimer != null) {
+      clearTimeout(this.settleTimer);
+      this.settleTimer = null;
+    }
+    this.settleGeneration++;
+    this.mode = 'SLICES';
+    this.bedIterStart = null;
+    if (this.sliceGain) this.sliceGain.gain.value = 1;
+    if (this.bedGain) this.bedGain.gain.value = 0;
+    const now = this.ctx.currentTime;
+    const stopAt = when ?? now;
+    for (const { src, env } of this.active) {
+      // ZERO the env gain immediately, THEN stop the source. The gain mute is the
+      // load-bearing part: a bed one-shot armed ~60ms AHEAD (startAt in the future)
+      // can't be stopped by src.stop(stopAt) when stopAt < startAt — that throws
+      // InvalidStateError (esp. WebKit, our audio target), gets swallowed, and the
+      // bed then plays its full ~15s period AFTER stop (the "drum loop keeps going
+      // to the end of the loop after I hit stop" bug, un-masked by the master
+      // restore). Muting env.gain to 0 NOW silences it regardless of whether
+      // src.stop() succeeds, no-ops, or throws. Same technique as stopBedSources.
+      try {
+        const g = env.gain;
+        g.cancelScheduledValues(now);
+        g.setValueAtTime(0, now);
+      } catch {
+        /* ignore */
+      }
       try {
         src.stop(stopAt);
       } catch {
-        /* already stopped */
+        /* already stopped, or future-armed (now silenced via env above) */
       }
     }
     this.active.clear();
@@ -994,13 +1538,26 @@ export class DrumSlicePlayer {
   private scheduleTick(): void {
     if (!this.playing) return;
 
-    // Coalesced WSOLA bed re-synth: a tempo drag set bedResynthDirty; do ONE
-    // synth here for the current ratio, then cleanly RESTART so the new bed takes
-    // over from the current phase and the OLD (old-ratio) bed one-shot doesn't
-    // keep playing under it (the same double-beat the toggle had). The grid was
-    // already re-anchored in setRatio; restartAtCurrentPhase re-anchors again
-    // from the live clock and reschedules — idempotent and click-safe.
-    if (this.bedResynthDirty) {
+    const now = this.ctx.currentTime;
+
+    // ── AUTO state machine: flip in-flight crossfades to their terminal state
+    // once the equal-power ramp has finished. Done here (not synchronously when
+    // the crossfade is started) so the OUTGOING engine keeps scheduling until the
+    // INCOMING one is fully up — never a mid-ramp cut-out.
+    if (this.autoMode && now >= this.xfadeDoneAt) {
+      if (this.mode === 'XFADE_TO_BED') this.mode = 'BED';
+      else if (this.mode === 'XFADE_TO_SLICES') this.mode = 'SLICES';
+    }
+
+    // ── AUTO bed re-render is NOT done on the tick (it's ~145-234ms of SYNCHRONOUS
+    // main-thread work that would starve the scheduler and drop slices). It runs
+    // exactly once, in crossfadeToBed, AFTER nudging settles — never during the
+    // smooth SLICES nudging.
+
+    // ── LEGACY (manual / admin A/B) bed re-synth + RESTART. Only when the state
+    // machine is OFF; the auto path never sets bedResynthDirty, and even if it
+    // did this gate keeps the jump out of auto mode.
+    if (this.bedResynthDirty && !this.autoMode) {
       this.bedResynthDirty = false;
       this.resynthesizeBed();
       if (this.playing) {
@@ -1009,34 +1566,118 @@ export class DrumSlicePlayer {
       }
     }
 
-    const now = this.ctx.currentTime;
     const horizon = now + this.opt.scheduleAheadSeconds;
 
-    // Two scheduling models, selected by WSOLA:
-    //  - WSOLA ON: schedule the WHOLE loop iteration at once (the continuous bed
-    //    one-shot + every bit-exact transient overlay + the bed duck under each).
-    //    Per iteration, not per onset, so there is no per-onset gap to mishandle.
-    //  - WSOLA OFF: the legacy per-onset slicer (bit-exact slices, gaps re-spaced).
-    let guard = 0;
-    while (guard++ < 512) {
+    if (!this.autoMode) {
+      // ── LEGACY binary model (byte-for-byte as before): WSOLA bed OR per-slice,
+      // selected by wsolaEnabled. Preserved exactly so the admin A/B is untouched.
+      let guard = 0;
+      while (guard++ < 512) {
+        const period = this.loopPeriod;
+        if (this.wsolaEnabled) {
+          if (this.loopStartTime > horizon) break;
+          const phaseSec = Math.max(0, now - this.loopStartTime);
+          this.scheduleBedIteration(this.loopStartTime, period, phaseSec);
+          this.loopStartTime += period;
+          this.nextSlice = 0;
+        } else {
+          const onsetReal =
+            this.loopStartTime + this.onsetAt(this.nextSlice) / (this.ratio || 1);
+          if (onsetReal > horizon) break;
+          this.scheduleSlice(this.nextSlice, onsetReal);
+          this.nextSlice++;
+          if (this.nextSlice >= this.onsets.length) {
+            this.nextSlice = 0;
+            this.loopStartTime += period;
+          }
+        }
+      }
+      return;
+    }
+
+    // ── AUTO mode multiplexer.
+    //   scheduleSlicesNow = mode != BED      (SLICES + both crossfades)
+    //   scheduleBedNow     = mode != SLICES  (BED + both crossfades), bed exists
+    const scheduleSlicesNow = this.mode !== 'BED';
+    const scheduleBedNow = this.mode !== 'SLICES' && !!this.bedBuffer;
+
+    // ── BED arming. CRITICAL FIX: the previous loop advanced loopStartTime by
+    // period WHILE arming a bed each step, so when crossfadeToBed left
+    // loopStartTime in the PAST (it re-anchors to ≤ now), one tick armed MANY
+    // overlapping one-shots (active-source leak 27→63) AND beds armed at a far-past
+    // anchor got phaseSec > bufferDuration → played past the buffer end → SILENCE.
+    // Now: maintain a dedicated `bedIterStart` cursor that is the start of the
+    // CURRENT bed iteration, arm each iteration exactly ONCE (guarded), and only
+    // advance the cursor to the next iteration when the current one has elapsed —
+    // arming the next one slightly AHEAD (within the horizon) so its downbeat plays.
+    if (scheduleBedNow) {
       const period = this.loopPeriod;
-      if (this.wsolaEnabled) {
-        // The iteration starts at loopStartTime (onset[0] === 0). Schedule it
-        // when its start enters the horizon, then advance a whole period.
-        if (this.loopStartTime > horizon) break;
-        // If loopStartTime is already in the PAST (we re-anchored mid-loop on a
-        // model/tempo switch), start the bed PARTWAY through so it continues from
-        // the current phase instead of jumping to bar 1. phaseSec = how far into
-        // THIS iteration we already are, in real-time seconds (0 when on-grid).
-        const phaseSec = Math.max(0, now - this.loopStartTime);
-        this.scheduleBedIteration(this.loopStartTime, period, phaseSec);
-        this.loopStartTime += period;
-        this.nextSlice = 0;
-      } else {
-        // Legacy per-slice path (unchanged behavior when WSOLA is off).
+      // `bedIterStart` is a MONOTONIC cursor = the next bed iteration to arm.
+      // On (re)entry it's null → seed it to the iteration CONTAINING `now` (folded
+      // to ≤ now, so its partial remainder plays from the live phase). Thereafter
+      // it only ADVANCES by period — never re-anchored to the past — so each
+      // iteration is armed exactly once and the active set can't leak.
+      if (this.bedIterStart == null) {
+        if (this.loopStartTime > now + 0.001) {
+          // Loop hasn't STARTED yet (count-in: loopStartTime = T0, the downbeat in
+          // the future). Seed the cursor AT T0 so the bed's first iteration begins
+          // exactly on the downbeat — the `bedIterStart <= horizon` guard below
+          // keeps it from arming until T0 is within the 60ms look-ahead, so the bed
+          // never sounds during the count-in.
+          this.bedIterStart = this.loopStartTime;
+        } else {
+          // Loop already running (mid-play re-entry): fold to the iteration
+          // containing `now` so its partial remainder plays from the live phase.
+          const inputPos = this.currentInputPos(now);
+          this.bedIterStart = now - inputPos / (this.ratio || 1); // ≤ now
+        }
+      }
+      // Arm every not-yet-armed iteration whose start is within the look-ahead
+      // horizon, advancing the cursor. phaseSec>0 only for the first (partial)
+      // iteration after a (re)sync; full iterations arm at phaseSec 0 (downbeat).
+      let guard = 0;
+      while (this.bedIterStart <= horizon && guard++ < 8) {
+        const phaseSec = Math.max(0, now - this.bedIterStart);
+        this.scheduleBedIteration(this.bedIterStart, period, phaseSec);
+        this.bedIterStart += period;
+      }
+    }
+
+    // ── SLICE scheduling (owns the cursor + grid advancement when it runs).
+    if (scheduleSlicesNow) {
+      const period = this.loopPeriod;
+      // CRITICAL anti-FLOOD guard (parity with the bed cursor above). A stale
+      // re-anchor — setRatio's currentInputPos fold leaving loopStartTime ~1 period
+      // behind without re-pointing nextSlice, or a BED phase that froze
+      // loopStartTime in the PAST — would otherwise make the loop below schedule
+      // EVERY onset of each stale iteration, all clamped to `now` by scheduleSlice
+      // → dozens of bit-exact kicks STACKED at full volume (the tempo-nudge
+      // "explosion": 40-120 slices, peak 2.8, on every click). Fold the grid up to
+      // the iteration containing `now` (whole periods → phase-neutral) and re-point
+      // nextSlice at the first FUTURE onset, so we never replay the past.
+      if (period > 0 && this.loopStartTime < now - period) {
+        const behind = Math.floor((now - this.loopStartTime) / period);
+        this.loopStartTime += behind * period;
+        const inputPos = this.currentInputPos(now);
+        let i = 0;
+        while (i < this.onsets.length && this.onsetAt(i) < inputPos) i++;
+        this.nextSlice = i % this.onsets.length;
+      }
+      let guard = 0;
+      while (guard++ < 512) {
         const onsetReal =
           this.loopStartTime + this.onsetAt(this.nextSlice) / (this.ratio || 1);
         if (onsetReal > horizon) break;
+        // SKIP — never STACK — onsets already in the past (sub-period stale anchor
+        // / timer jitter). scheduleSlice would clamp them all to `now` and pile up.
+        if (onsetReal < now - 1e-4) {
+          this.nextSlice++;
+          if (this.nextSlice >= this.onsets.length) {
+            this.nextSlice = 0;
+            this.loopStartTime += period;
+          }
+          continue;
+        }
         this.scheduleSlice(this.nextSlice, onsetReal);
         this.nextSlice++;
         if (this.nextSlice >= this.onsets.length) {
@@ -1094,33 +1735,50 @@ export class DrumSlicePlayer {
     const blend = Math.max(0.002, this.transientBlendSeconds); // crossfade width
     const release = Math.max(0.015, this.opt.fadeOutSeconds * 2);
     const depth = Math.min(1, Math.max(0, this.transientDuckDepth)); // bed floor
-    const minHit = this.ctx.currentTime - 0.001; // skip hits already in the past
+    // GRACE window: a mid-loop re-anchor (tempo nudge restart) can push a strong
+    // hit's tHit just behind `now`. The bed is NOTCHED at that hit, so dropping the
+    // overlay too means the kick/snare vanishes entirely (BUG A: "missing hit on
+    // tempo change"). Only skip hits well in the PAST; a hit within the grace window
+    // still fires — playBuffer clamps its start to `now`, so its punch survives.
+    const graceSec = 0.05;
+    const minHit = this.ctx.currentTime - graceSec;
+    // The bed notch hole, stretched at the live ratio, is what the overlay must
+    // cover so the texture has no gap (BUG B: "chopped bed"). The overlay body must
+    // outlast it.
+    const stretchedNotch =
+      (this.bedNotchSeconds + this.opt.preRollSeconds) / (this.ratio || 1);
     for (let k = 0; k < this.strongIndices.length; k++) {
       const i = this.strongIndices[k]!;
       const onset = this.onsetAt(i);
       const tHit = iterStart + onset / (this.ratio || 1);
-      // After a mid-loop re-anchor, skip transients whose time already passed.
       if (tHit < minHit) continue;
       // Clamp the overlay body so it can't run into the next strong hit.
       const nextStrong =
         k + 1 < this.strongIndices.length
           ? iterStart + this.onsetAt(this.strongIndices[k + 1]!) / (this.ratio || 1)
           : iterStart + period;
+      // (2) TRANSIENT LENGTH (auto): cover the stretched notch so the bed can't gap,
+      // floored to 40ms, never running past the next strong hit.
+      const wantBody = Math.max(body, stretchedNotch);
       const bodyDur = Math.max(
-        0.005,
-        Math.min(body, nextStrong - tHit - 0.005),
+        0.04,
+        Math.min(wantBody, nextStrong - tHit - 0.005),
       );
 
       // 2a) CROSSFADE the bed under the hit (instead of a hard duck-and-hold).
-      //     The bed fades DOWN to `depth` as the overlay fades IN (over `blend`,
-      //     centered so it bottoms at the attack), holds only as long as the
-      //     overlay body, then fades back UP — using EQUAL-POWER (cosine) curves
-      //     so bed+overlay sum to constant loudness with NO audible hole. This is
-      //     the fix for the "prominent ducking" — they blend, not gate.
+      //     The bed fades DOWN to `depth` as the overlay fades IN over `attackBlend`,
+      //     holds for the overlay body, then fades back UP over `blend` (release) —
+      //     EQUAL-POWER (cosine) curves so bed+overlay sum to constant loudness.
+      //     A SEPARATE attack ramp lets the bed ease INTO the duck slowly (no spike
+      //     going in, esp. at heavy notch) while the release stays snappy.
+      const attackBlend =
+        this.transientDuckAttackSeconds > 0
+          ? this.transientDuckAttackSeconds
+          : blend;
       if (bedEnv && !bedMuted) {
         try {
           const g = bedEnv.gain;
-          const downStart = Math.max(this.ctx.currentTime, tHit - blend);
+          const downStart = Math.max(this.ctx.currentTime, tHit - attackBlend);
           const bottomAt = tHit; // bed lowest exactly at the attack
           const upStart = tHit + bodyDur;
           const upEnd = upStart + blend;
@@ -1148,9 +1806,9 @@ export class DrumSlicePlayer {
         }
       }
 
-      // 2b) The crisp bit-exact attack on its OWN source, with an equal-power
-      //     fade-in over `blend` (sin²) that pairs with the bed's cos² dip, and a
-      //     fade-out over `blend` as the bed recovers — a true crossfade.
+      // 2b) The crisp bit-exact attack on its OWN source. preRoll reads a few ms of
+      //     audio before the onset; fadeIn declicks, and `blend` (release) fades the
+      //     tail back into the bed.
       const readStart = Math.max(0, onset - this.opt.preRollSeconds);
       this.playBuffer(
         this.buffer,
@@ -1158,7 +1816,8 @@ export class DrumSlicePlayer {
         readStart,
         bodyDur + this.opt.preRollSeconds,
         this.opt.fadeInSeconds,
-        blend, // fade out over the blend as the bed ramps back — crossfade
+        blend,
+        this.bedOut, // overlays are part of the bed sound → ride the bed crossfade
       );
     }
   }
@@ -1174,6 +1833,10 @@ export class DrumSlicePlayer {
     period: number,
     bed: AudioBuffer | null,
     phaseSec = 0,
+    // Peak gain the envelope holds at (default 1 = the WSOLA-bed path, where the
+    // caller ducks it per transient). The texture-bed prototype passes a LOW peak
+    // so the additive bed sits quietly under the bit-exact slices.
+    peakGain = 1,
   ): GainNode | null {
     let src: AudioBufferSourceNode;
     let env: GainNode;
@@ -1181,7 +1844,7 @@ export class DrumSlicePlayer {
       src = this.ctx.createBufferSource();
       env = this.ctx.createGain();
       src.connect(env);
-      env.connect(this.output);
+      env.connect(this.bedOut); // the bed one-shot rides the bed crossfade bus
     } catch {
       return null;
     }
@@ -1202,10 +1865,10 @@ export class DrumSlicePlayer {
         const foutStart = Math.max(startAt + fadeIn, audibleEnd - fadeOut);
         const g = env.gain;
         g.setValueAtTime(0, startAt);
-        g.linearRampToValueAtTime(1, startAt + fadeIn);
+        g.linearRampToValueAtTime(peakGain, startAt + fadeIn);
         // NOTE: per-transient ducks are scheduled by the caller AFTER this, on
-        // top of the (1) hold — they slot between fadeIn end and foutStart.
-        g.setValueAtTime(1, foutStart);
+        // top of the (peakGain) hold — they slot between fadeIn end and foutStart.
+        g.setValueAtTime(peakGain, foutStart);
         g.linearRampToValueAtTime(0, audibleEnd);
       } catch {
         /* unity fallback */
@@ -1246,7 +1909,7 @@ export class DrumSlicePlayer {
         return null;
       }
     }
-    const entry = { src, env };
+    const entry = { src, env, kind: 'bed' as const };
     this.active.add(entry);
     src.addEventListener('ended', () => {
       this.active.delete(entry);
@@ -1313,6 +1976,58 @@ export class DrumSlicePlayer {
   }
 
   /**
+   * Apply a CONTINUOUS-LEVEL, time-NUDGEABLE gain envelope to `g`, replacing the
+   * old binary 0→1→0 trapezoid. The envelope has four movable points:
+   *
+   *   startLevel ──attack──▶ peakLevel ──(hold)── ──release──▶ endLevel
+   *   ▲ at `start`+startNudge          ▲ until end−release   ▲ at `end`+endNudge
+   *
+   * All levels are 0..1 (any value, not just 0/1) so you can start at 70%, sustain
+   * at 40%, fade to 20%, etc. start/end NUDGE shift the envelope's begin/finish in
+   * time (±s) so you can anticipate or delay the hit/bed. Returns the actual
+   * [start, end] audio times so the caller can size the source's play window.
+   */
+  private applyEnvelope(
+    g: AudioParam,
+    start: number,
+    end: number,
+    env: {
+      startLevel: number;
+      peakLevel: number;
+      endLevel: number;
+      attack: number;
+      release: number;
+      startNudge: number;
+      endNudge: number;
+    },
+  ): { start: number; end: number } {
+    const now = this.ctx.currentTime;
+    const s = Math.max(now, start + env.startNudge);
+    const e = Math.max(s + 0.002, end + env.endNudge);
+    const total = e - s;
+    // Clamp attack + release so they fit inside the window (leave ≥1ms of hold).
+    let atk = Math.max(0, env.attack);
+    let rel = Math.max(0, env.release);
+    if (atk + rel > total - 0.001) {
+      const scale = (total - 0.001) / (atk + rel || 1);
+      atk *= scale;
+      rel *= scale;
+    }
+    const peakAt = s + atk;
+    const relStart = Math.max(peakAt, e - rel);
+    try {
+      g.cancelScheduledValues(now);
+      g.setValueAtTime(env.startLevel, s);
+      g.linearRampToValueAtTime(env.peakLevel, peakAt); // attack
+      g.setValueAtTime(env.peakLevel, relStart); // hold peak
+      g.linearRampToValueAtTime(env.endLevel, e); // release
+    } catch {
+      /* automation past-time / out-of-order — leave at unity */
+    }
+    return { start: s, end: e };
+  }
+
+  /**
    * Schedule one AudioBufferSource → env(GainNode) → output with a trapezoidal
    * declick envelope, registered in `active` for stop()/teardown. Shared by the
    * slice, the transient overlay, and the legacy fill so all honour the
@@ -1325,35 +2040,75 @@ export class DrumSlicePlayer {
     duration: number,
     fadeIn: number,
     fadeOut: number,
+    // Sub-mix sink: slice-path sources pass sliceOut; bed transient overlays pass
+    // bedOut (so they ride the bed crossfade with the bed one-shot). Defaults to
+    // the slice bus.
+    target?: AudioNode,
+    // CONTINUOUS-LEVEL envelope override (the big-hit shaper). When given, the
+    // gain is shaped by applyEnvelope (movable levels + start/end nudges) instead
+    // of the binary 0→1→0 declick. The source play window is widened to cover the
+    // nudges. Omit → the legacy trapezoid (slices/fills unchanged).
+    envSpec?: {
+      startLevel: number;
+      peakLevel: number;
+      endLevel: number;
+      attack: number;
+      release: number;
+      startNudge: number;
+      endNudge: number;
+    },
   ): void {
     let src: AudioBufferSourceNode;
     let env: GainNode;
+    const sink = target ?? this.sliceOut;
+    // Overlays route to bedOut (they're part of the bed sound) → tag 'bed' so a new
+    // bed phase fade-stops them with the bed one-shot; slice sources tag 'slice'.
+    const kind: 'bed' | 'slice' = sink === this.bedOut ? 'bed' : 'slice';
     try {
       src = this.ctx.createBufferSource();
       src.buffer = buffer;
       src.playbackRate.value = 1; // BIT-EXACT — the whole point.
       env = this.ctx.createGain();
       src.connect(env);
-      env.connect(this.output);
+      env.connect(sink);
     } catch {
       return;
     }
 
-    const audibleEnd = when + duration;
-    const foutStart = Math.max(when + fadeIn, audibleEnd - fadeOut);
-    try {
-      const g = env.gain;
-      g.setValueAtTime(0, when);
-      g.linearRampToValueAtTime(1, when + fadeIn);
-      g.setValueAtTime(1, foutStart);
-      g.linearRampToValueAtTime(0, audibleEnd);
-    } catch {
-      /* if the param schedule fails, it still plays at unity */
+    let playWhen = when;
+    let playOffset = offset;
+    let playDur = duration;
+    if (envSpec) {
+      // Continuous, nudgeable envelope. Returns the real audio start/end after the
+      // nudges; widen the source play window (and shift its buffer offset) to match
+      // so the (possibly earlier-starting / later-ending) envelope has audio under it.
+      const { start: s, end: e } = this.applyEnvelope(
+        env.gain,
+        when,
+        when + duration,
+        envSpec,
+      );
+      const startShift = s - when; // <0 if start nudged earlier
+      playWhen = s;
+      playOffset = Math.max(0, offset + startShift);
+      playDur = Math.max(0.002, e - s);
+    } else {
+      const audibleEnd = when + duration;
+      const foutStart = Math.max(when + fadeIn, audibleEnd - fadeOut);
+      try {
+        const g = env.gain;
+        g.setValueAtTime(0, when);
+        g.linearRampToValueAtTime(1, when + fadeIn);
+        g.setValueAtTime(1, foutStart);
+        g.linearRampToValueAtTime(0, audibleEnd);
+      } catch {
+        /* if the param schedule fails, it still plays at unity */
+      }
     }
 
     try {
       // start(when, offset, duration) — play exactly this region.
-      src.start(when, offset, duration + 0.001);
+      src.start(playWhen, playOffset, playDur + 0.001);
     } catch {
       try {
         env.disconnect();
@@ -1363,7 +2118,7 @@ export class DrumSlicePlayer {
       return;
     }
 
-    const entry = { src, env };
+    const entry = { src, env, kind };
     this.active.add(entry);
     src.addEventListener('ended', () => {
       this.active.delete(entry);
