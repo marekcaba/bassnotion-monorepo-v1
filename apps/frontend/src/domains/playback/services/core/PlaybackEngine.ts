@@ -3784,6 +3784,12 @@ export class PlaybackEngine implements IAudioStemEngine {
     this.drumSlicePlayer?.setAutoMode(on);
   }
 
+  /** TWO-TRACK A/B: true → pre-rendered big-hits buffer (no nudge spill); false →
+   *  legacy live per-hit overlays. For dialing/comparing by ear. No-op if no player. */
+  setDrumTwoTrack(on: boolean): void {
+    this.drumSlicePlayer?.setTwoTrack(on);
+  }
+
   /** Live drum tempo-machine state for the dev A/B tool (mode/autoMode/ratio). */
   getDrumTempoDebugState():
     | ReturnType<NonNullable<typeof this.drumSlicePlayer>['getDebugState']>

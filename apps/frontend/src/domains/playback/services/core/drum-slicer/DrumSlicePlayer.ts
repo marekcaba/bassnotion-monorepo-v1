@@ -537,6 +537,10 @@ export class DrumSlicePlayer {
    *  so the ear can localize where a double lives. Not shipped to users. */
   private muteBed = false;
   private muteOverlays = false;
+  /** TWO-TRACK A/B: true → play the pre-rendered hitsBuffer as a 2nd continuous
+   *  source (no live per-hit overlays = no nudge spill). false → the legacy live
+   *  per-hit overlay scheduling. Default ON; toggle via setTwoTrack for A/B. */
+  private useTwoTrack = true;
 
   private ratio = 1;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1018,18 +1022,35 @@ export class DrumSlicePlayer {
     if (this.bedGain) this.bedGain.gain.value = 0;
   }
 
+  /** TWO-TRACK A/B (dev): true → pre-rendered hits buffer (no nudge spill); false →
+   *  legacy live per-hit overlays. Re-seed the bed cursor so the next tick arms the
+   *  chosen path cleanly. */
+  setTwoTrack(on: boolean): void {
+    if (this.useTwoTrack === on) return;
+    this.useTwoTrack = on;
+    if (this.playing) {
+      this.stopBedSources(this.ctx.currentTime + 0.02);
+      this.bedIterStart = null; // re-arm with the new path next tick
+    }
+  }
+
   /** Live state for the dev A/B tool + tests (not shipped UI). */
   getDebugState(): {
     autoMode: boolean;
     mode: DrumTempoMode;
     bedReady: boolean;
     ratio: number;
+    twoTrack: boolean;
+    hitsReady: boolean;
   } {
     return {
       autoMode: this.autoMode,
       mode: this.mode,
       bedReady: this.synthesizedForRatio === this.ratio && !!this.bedBuffer,
       ratio: this.ratio,
+      twoTrack: this.useTwoTrack,
+      hitsReady:
+        this.synthesizedForRatio === this.ratio && !!this.hitsBuffer,
     };
   }
 
@@ -2038,10 +2059,24 @@ export class DrumSlicePlayer {
       }
     }
 
-    // 2) Transient overlays + ducks. Skipped at unity (raw bed already perfect)
-    //    or when muteOverlays is on (hear only the bed). When the BED is muted we
-    //    still want the overlays — so we don't early-return on a null bedEnv;
-    //    instead we just skip the duck when there's no bed env to duck.
+    // 1b) TWO-TRACK: play the pre-rendered BIG-HITS buffer as a SECOND continuous
+    //     one-shot, phase-locked to the bed (same iterStart/period/phaseSec). The
+    //     hits are baked into the buffer at their grid positions — there is NO live
+    //     per-hit scheduling, so nothing can spill on a nudge. Skipped at unity
+    //     (raw bed already has the hits) or when muteOverlays solos the bed. When
+    //     muteBed solos the hits we STILL play this (that's the "hits" you hear).
+    if (
+      this.useTwoTrack &&
+      !unity &&
+      this.hitsBuffer &&
+      !this.muteOverlays
+    ) {
+      this.scheduleHits(iterStart, period, phaseSec);
+      return; // two-track carries the hits; skip the legacy overlay loop entirely
+    }
+
+    // 2) LEGACY live overlays + ducks (only when two-track is OFF). Skipped at unity
+    //    or when muteOverlays is on. When BED is muted we still want the overlays.
     if (unity || this.muteOverlays) return;
     if (!bed) return; // no synthesized bed (e.g. not yet ready) → nothing to overlay
     // NUDGING OUT (XFADE_TO_SLICES): do NOT arm fresh bit-exact overlay kicks/snares
@@ -2159,6 +2194,72 @@ export class DrumSlicePlayer {
         this.bedOut, // overlays are part of the bed sound → ride the bed crossfade
       );
     }
+  }
+
+  /**
+   * TWO-TRACK: schedule the pre-rendered BIG-HITS buffer as a continuous one-shot,
+   * phase-locked to the bed (same `when`/`period`/`phaseSec`). The hits are baked
+   * into the buffer at their grid positions (silence between), so this is a single
+   * continuous source — NO per-hit scheduling, nothing to spill on a nudge. Rides
+   * `bedOut` so it follows the SLICES↔BED crossfade with the bed. Tagged
+   * 'bedOverlay' so a nudge-out hard-kills it (it carries transients) in lockstep
+   * with the bed (Landmines L6/L7). Plays exactly `period` real seconds (grid-lock).
+   */
+  private scheduleHits(when: number, period: number, phaseSec = 0): void {
+    const hits = this.hitsBuffer;
+    if (!hits) return;
+    let src: AudioBufferSourceNode;
+    let env: GainNode;
+    try {
+      src = this.ctx.createBufferSource();
+      env = this.ctx.createGain();
+      src.connect(env);
+      env.connect(this.bedOut);
+    } catch {
+      return;
+    }
+    const offset = Math.max(0, phaseSec); // partial first iteration after re-anchor
+    const playDur = Math.max(0.001, period - offset);
+    const startAt = Math.max(this.ctx.currentTime, when + offset);
+    src.buffer = hits;
+    src.playbackRate.value = 1; // BIT-EXACT — hits are re-gridded, never stretched.
+    // The hits buffer already has per-hit edge fades baked in and silence between,
+    // so the envelope only needs tiny declicks at the iteration seam (start/end).
+    const fadeIn = this.opt.fadeInSeconds;
+    const fadeOut = this.opt.fadeOutSeconds;
+    const peak = this.muteOverlays ? 0 : 1; // (we don't schedule it when muteOverlays;
+    // peak stays 1 — kept for symmetry / future per-track gain.)
+    try {
+      const audibleEnd = startAt + playDur;
+      const foutStart = Math.max(startAt + fadeIn, audibleEnd - fadeOut);
+      const g = env.gain;
+      g.setValueAtTime(0, startAt);
+      g.linearRampToValueAtTime(peak, startAt + fadeIn);
+      g.setValueAtTime(peak, foutStart);
+      g.linearRampToValueAtTime(0, audibleEnd);
+    } catch {
+      /* leave at unity if the schedule fails */
+    }
+    try {
+      src.start(startAt, offset, playDur + 0.001);
+    } catch {
+      try {
+        env.disconnect();
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
+    const entry = { src, env, kind: 'bedOverlay' as const };
+    this.active.add(entry);
+    src.addEventListener('ended', () => {
+      this.active.delete(entry);
+      try {
+        env.disconnect();
+      } catch {
+        /* ignore */
+      }
+    });
   }
 
   /**
