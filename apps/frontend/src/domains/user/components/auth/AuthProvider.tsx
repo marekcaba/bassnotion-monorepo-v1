@@ -13,6 +13,7 @@ import { supabase } from '@/infrastructure/supabase/client';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { apiClient } from '@/lib/api-client';
+import { queryClient } from '@/lib/react-query';
 import { isMockTestEnv } from '@/shared/utils/testEnv';
 
 interface AuthProviderProps {
@@ -33,6 +34,12 @@ function AuthProviderContent({ children }: AuthProviderProps) {
   const _router = useRouter();
   const { navigateWithTransition } = useViewTransitionRouter();
   const { toast } = useToast();
+  // Track the last authenticated user id so we can wipe the React Query cache
+  // when the IDENTITY changes (sign-out, or sign-in as a DIFFERENT user). The
+  // cache keys aren't user-scoped, so without this a new account can briefly
+  // see the previous account's cached data (e.g. store "owned" products) until
+  // a hard reload. Token refreshes keep the same id → no wipe.
+  const lastUserIdRef = useRef<string | null>(null);
   const [showIdleWarning, setShowIdleWarning] = useState(false);
 
   // Use ref to store resetIdleTimer to avoid circular dependency
@@ -147,6 +154,10 @@ function AuthProviderContent({ children }: AuthProviderProps) {
         if (!mounted) return;
 
         if (session) {
+          // Seed the identity ref on first load so the listener can detect a
+          // later account-switch (and doesn't wipe the cache spuriously on the
+          // first real event).
+          lastUserIdRef.current = session.user?.id ?? null;
           setUser(session.user);
           setSession(session);
           // Set the auth token for API calls
@@ -216,6 +227,18 @@ function AuthProviderContent({ children }: AuthProviderProps) {
 
             try {
               if (session) {
+                // Wipe cached query data if a DIFFERENT user just signed in, so
+                // one account never sees another's cached data (e.g. store
+                // "owned" state). Same id (token refresh) → keep the cache.
+                const newUserId = session.user?.id ?? null;
+                if (
+                  lastUserIdRef.current &&
+                  lastUserIdRef.current !== newUserId
+                ) {
+                  queryClient.clear();
+                }
+                lastUserIdRef.current = newUserId;
+
                 setUser(session.user);
                 setSession(session);
                 // Set the auth token for API calls
@@ -223,6 +246,12 @@ function AuthProviderContent({ children }: AuthProviderProps) {
                   apiClient.setAuthToken(session.access_token);
                 }
               } else {
+                // Signed out — clear cached query data so the next account
+                // (or anonymous view) starts clean.
+                if (lastUserIdRef.current) {
+                  queryClient.clear();
+                  lastUserIdRef.current = null;
+                }
                 reset();
                 apiClient.clearAuthToken();
                 setShowIdleWarning(false);
