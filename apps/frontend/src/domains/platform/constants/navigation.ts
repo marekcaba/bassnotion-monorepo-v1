@@ -4,6 +4,7 @@ import {
   Headphones,
   Play,
   Martini,
+  ShoppingBag,
   HelpCircle,
   Settings,
 } from 'lucide-react';
@@ -32,6 +33,12 @@ export const MAIN_NAV_ITEMS: NavItem[] = [
   { title: 'Studio', url: '/app/studio', icon: Headphones, disabled: true },
   { title: 'Gigs', url: '/app/gigs', icon: Play, disabled: true },
   { title: 'Backstage', url: '/app/backstage', icon: Martini, disabled: true },
+  {
+    title: 'Store',
+    url: '/app/store',
+    icon: ShoppingBag,
+    activePatterns: ['/app/store'],
+  },
 ];
 
 export const BOTTOM_NAV_ITEMS: NavItem[] = [
