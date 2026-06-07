@@ -2,7 +2,6 @@
 
 import { useMemo } from 'react';
 import { Skeleton } from '@/shared/components/ui/skeleton';
-import { PRODUCT_FOLDERS } from '../constants/product-folders';
 import {
   useTutorialsByFolder,
   type IslandBlock,
@@ -23,7 +22,7 @@ interface CollapsedTutorialDockProps {
 export function CollapsedTutorialDock({
   folderState,
 }: CollapsedTutorialDockProps) {
-  const { tutorialsByFolder, isLoading } = useTutorialsByFolder();
+  const { folders, tutorialsByFolder, isLoading } = useTutorialsByFolder();
 
   // Get only tutorials from open folders
   const visibleTutorials = useMemo(() => {
@@ -37,7 +36,7 @@ export function CollapsedTutorialDock({
       blockProgress?: Record<string, { completed: boolean }>;
     }> = [];
 
-    PRODUCT_FOLDERS.forEach((folder) => {
+    folders.forEach((folder) => {
       // Only include tutorials from open folders
       const isOpen = folderState?.isFolderOpen(folder.id) ?? folder.isFree;
       if (isOpen) {
@@ -57,7 +56,7 @@ export function CollapsedTutorialDock({
     });
 
     return tutorials;
-  }, [tutorialsByFolder, folderState]);
+  }, [folders, tutorialsByFolder, folderState]);
 
   if (isLoading) {
     return (

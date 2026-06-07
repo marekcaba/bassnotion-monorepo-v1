@@ -128,28 +128,34 @@ export class CollectionsService {
   }
 
   /**
-   * Virtual folders for owned packs. For each product the user owns that
-   * bundles tutorials, emit a folder of those tutorial ids (ordered by the
-   * product_contents sort_order). Anonymous users own nothing → none.
+   * Virtual folders for packs. Each product that bundles tutorials becomes a
+   * folder of those tutorial ids (ordered by product_contents.sort_order).
+   *
+   * Which products: a buyer gets the packs they OWN; an admin gets ALL packs
+   * (admins bypass gating everywhere, so they can preview every pack's folder);
+   * anonymous users get none.
    */
   private async buildVirtualPackFolders(
     userId: string | null,
   ): Promise<CollectionView[]> {
     if (!userId) return [];
 
-    const ownedProductIds =
-      await this.purchaseRepository.getPurchasedProductIds(userId);
-    if (ownedProductIds.length === 0) return [];
+    // Admins preview every pack; everyone else sees only the packs they own.
+    const isAdmin = await this.entitlementService.isAdmin(userId);
+    const products = isAdmin
+      ? await this.productRepository.findAllActive()
+      : await this.resolveOwnedProducts(userId);
+    if (products.length === 0) return [];
 
     const folders: CollectionView[] = [];
-    for (const productId of ownedProductIds) {
-      const product = await this.productRepository.findById(productId);
-      // Only packs/courses/accelerators that actually bundle tutorials become
-      // folders; the membership product isn't a content folder.
-      if (!product || product.type === 'membership') continue;
+    for (const product of products) {
+      // Only packs/courses/accelerators that bundle tutorials become folders;
+      // the membership product isn't a content folder.
+      if (product.type === 'membership') continue;
 
-      const contents =
-        await this.productContentsRepository.findByProductId(productId);
+      const contents = await this.productContentsRepository.findByProductId(
+        product.id,
+      );
       const tutorialIds = contents
         .filter((c) => c.contentType === 'tutorial')
         .map((c) => c.contentId);
@@ -161,13 +167,23 @@ export class CollectionsService {
         title: product.name,
         description: product.tagline,
         accessTier: 'product',
-        // Sort owned packs after the DB folders, by the product's own order.
+        // Sort packs after the DB folders, by the product's own order.
         sortOrder: 1000 + (product.sortOrder ?? 0),
         source: 'product',
-        isLocked: false, // owned → always unlocked
+        isLocked: false, // owned (or admin preview) → unlocked
         tutorialIds,
       });
     }
     return folders;
+  }
+
+  /** The products a non-admin user has purchased (completed orders). */
+  private async resolveOwnedProducts(userId: string) {
+    const ownedIds =
+      await this.purchaseRepository.getPurchasedProductIds(userId);
+    const products = await Promise.all(
+      ownedIds.map((id) => this.productRepository.findById(id)),
+    );
+    return products.filter((p): p is NonNullable<typeof p> => p !== null);
   }
 }

@@ -23,7 +23,12 @@ import type {
   CollectionAccessTier,
 } from './types/collections.types.js';
 
-const VALID_TIERS: CollectionAccessTier[] = ['free', 'member', 'product'];
+// Folders are free or member only. A 'product'-tier folder can't resolve
+// ownership (collections carry no productId), so it would lock permanently —
+// packs surface as VIRTUAL folders (from product_contents) instead, never as a
+// hand-made collection. Keeping 'product' out of the admin path prevents that
+// dead-end state.
+const VALID_TIERS: CollectionAccessTier[] = ['free', 'member'];
 
 /**
  * Admin folder management — create/edit folders and assign tutorials to them.

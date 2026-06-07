@@ -13,6 +13,7 @@ import { BassmentJourneyView } from './BassmentJourneyView';
 import { CollapsedTutorialDock } from './CollapsedTutorialDock';
 import { SessionCard, ProgressCard } from './NodeMatrix';
 import { useFolderOpenState } from '../hooks/useFolderOpenState';
+import { useTutorialsByFolder } from '../hooks/useTutorialsByFolder';
 
 interface DetailPanelProps {
   isOpen: boolean;
@@ -22,8 +23,10 @@ interface DetailPanelProps {
 
 export function DetailPanel({ isOpen, onToggle, className }: DetailPanelProps) {
   const pathname = usePathname();
-  // Shared folder open state between expanded and collapsed views
-  const folderState = useFolderOpenState();
+  // Shared folder open state between expanded and collapsed views. Seed it from
+  // the DB-driven folder list so free folders default to open once loaded.
+  const { folders } = useTutorialsByFolder();
+  const folderState = useFolderOpenState(folders);
 
   const hasContent =
     pathname === '/app' ||

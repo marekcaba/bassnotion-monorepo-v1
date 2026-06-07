@@ -22,10 +22,12 @@ import {
 import { CollectionAccessTier } from '@/domains/admin/api/collections.api';
 import { fetchTutorials } from '@/domains/widgets/api/tutorials';
 
+// Folders are free or member only. Paid packs surface as their own folders
+// automatically (from the Products page) — a hand-made 'product' folder can't
+// resolve ownership, so it's intentionally not an option here.
 const TIERS: { value: CollectionAccessTier; label: string }[] = [
   { value: 'free', label: 'Free (everyone)' },
   { value: 'member', label: 'Member (subscribers)' },
-  { value: 'product', label: 'Product (paid folder)' },
 ];
 
 export function CollectionEditor({ collectionId }: { collectionId: string }) {

@@ -6,7 +6,10 @@ import { ProductContentsRepository } from '../repositories/product-contents.repo
 import { AcceleratorEnrollmentRepository } from '../repositories/accelerator-enrollment.repository.js';
 import { ProductRepository } from '../repositories/product.repository.js';
 import { SupabaseService } from '../../../infrastructure/supabase/supabase.service.js';
-import { ContentAccessTier, ProductContentType } from '../types/billing.types.js';
+import {
+  ContentAccessTier,
+  ProductContentType,
+} from '../types/billing.types.js';
 
 /**
  * The access requirement of a single piece of gateable content.
@@ -57,8 +60,10 @@ export class EntitlementService {
   /**
    * Admins see EVERYTHING — bypass all gating (so they can author/preview
    * gated tutorials, packs, etc.). Checks profiles.role like AdminGuard.
+   * Public so other domains (e.g. collections) can mirror the admin-preview
+   * behavior consistently rather than re-querying profiles themselves.
    */
-  private async isAdmin(userId: string): Promise<boolean> {
+  async isAdmin(userId: string): Promise<boolean> {
     const { data, error } = await this.supabaseService
       .getClient()
       .from('profiles')
@@ -78,9 +83,8 @@ export class EntitlementService {
     if (await this.subscriptionRepository.hasActiveSubscription(userId)) {
       return true;
     }
-    const ownedIds = await this.purchaseRepository.getPurchasedProductIds(
-      userId,
-    );
+    const ownedIds =
+      await this.purchaseRepository.getPurchasedProductIds(userId);
     if (ownedIds.length === 0) return false;
     for (const id of ownedIds) {
       const product = await this.productRepository.findById(id);
@@ -164,7 +168,9 @@ export class EntitlementService {
       // Owned. Flat packs (unlock_day 0) → immediate access.
       if (bundle.unlockDay <= 0) return true;
       // Accelerator drip: check the enrollment clock.
-      if (await this.isDripUnlocked(userId, bundle.productId, bundle.unlockDay)) {
+      if (
+        await this.isDripUnlocked(userId, bundle.productId, bundle.unlockDay)
+      ) {
         return true;
       }
     }

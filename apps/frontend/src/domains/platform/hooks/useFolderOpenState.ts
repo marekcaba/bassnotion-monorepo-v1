@@ -1,21 +1,36 @@
-import { useState, useCallback, useMemo } from 'react';
-import { PRODUCT_FOLDERS } from '../constants/product-folders';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import type { SidebarFolder } from './useTutorialsByFolder';
 
 /**
- * Hook to manage which tutorial folders are open/collapsed.
- * Shared between expanded and collapsed sidebar views.
+ * Manage which sidebar folders are open/collapsed. Shared between the expanded
+ * and collapsed sidebar views.
+ *
+ * Folders are DB-driven and load async, so the open-set can't be seeded from a
+ * static list. Instead, the first time folders arrive we auto-open the free
+ * ones (their default), once — after that the user's toggles are respected and
+ * newly-appearing folders stay collapsed unless free.
  */
-export function useFolderOpenState() {
-  // Initialize with free folders open by default
-  const [openFolders, setOpenFolders] = useState<Set<string>>(() => {
-    const initialOpen = new Set<string>();
-    PRODUCT_FOLDERS.forEach((folder) => {
-      if (folder.isFree) {
-        initialOpen.add(folder.id);
-      }
+export function useFolderOpenState(folders: SidebarFolder[] = []) {
+  const [openFolders, setOpenFolders] = useState<Set<string>>(new Set());
+  const seededIds = useRef<Set<string>>(new Set());
+
+  // Auto-open any free folder we haven't seeded yet (runs as folders load).
+  useEffect(() => {
+    const newlyFree = folders.filter(
+      (f) => f.isFree && !seededIds.current.has(f.id),
+    );
+    if (newlyFree.length === 0) {
+      // Still record any non-free folders so we don't reconsider them later.
+      for (const f of folders) seededIds.current.add(f.id);
+      return;
+    }
+    setOpenFolders((prev) => {
+      const next = new Set(prev);
+      for (const f of newlyFree) next.add(f.id);
+      return next;
     });
-    return initialOpen;
-  });
+    for (const f of folders) seededIds.current.add(f.id);
+  }, [folders]);
 
   const toggleFolder = useCallback((folderId: string) => {
     setOpenFolders((prev) => {

@@ -80,9 +80,42 @@ async function fetchWithErrorHandling<T>(
  * Fetch all tutorials from the backend
  */
 export async function fetchTutorials(): Promise<TutorialsResponse> {
-  return fetchWithErrorHandling<TutorialsResponse>(`${API_BASE_URL}/tutorials`, {
-    headers: await optionalAuthHeader(),
-  });
+  return fetchWithErrorHandling<TutorialsResponse>(
+    `${API_BASE_URL}/tutorials`,
+    {
+      headers: await optionalAuthHeader(),
+    },
+  );
+}
+
+/** A DB-driven sidebar folder as returned by GET /collections. */
+export interface CollectionView {
+  id: string;
+  slug: string;
+  title: string;
+  description?: string;
+  accessTier: 'free' | 'member' | 'product';
+  sortOrder: number;
+  source: 'collection' | 'product';
+  isLocked: boolean;
+  /** Ordered tutorial ids; joined against the tutorials list on the client. */
+  tutorialIds: string[];
+}
+
+export interface CollectionsResponse {
+  collections: CollectionView[];
+}
+
+/**
+ * Fetch the DB-driven sidebar folders. OptionalAuthGuard-gated like tutorials:
+ * anon → free folders (locked teasers for the rest); logged-in → entitled
+ * folders + virtual folders for owned packs; admin → all.
+ */
+export async function fetchCollections(): Promise<CollectionsResponse> {
+  return fetchWithErrorHandling<CollectionsResponse>(
+    `${API_BASE_URL}/collections`,
+    { headers: await optionalAuthHeader() },
+  );
 }
 
 /**

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Admin Collections — /admin/collections.
+ * Admin Folders — /admin/folders.
  *
  * Manage the DB-driven Bassment sidebar folders without SQL: create a folder,
  * set its access tier + sort order, and assign tutorials to it. Replaces the
@@ -25,10 +25,11 @@ import {
 } from '@/domains/admin/api/collections.api';
 import { CollectionEditor } from '@/domains/admin/components/CollectionEditor';
 
+// Free or member only — paid packs become their own folders automatically
+// (managed on the Products page), so 'product' isn't a folder tier here.
 const TIERS: { value: CollectionAccessTier; label: string }[] = [
   { value: 'free', label: 'Free (everyone)' },
   { value: 'member', label: 'Member (subscribers)' },
-  { value: 'product', label: 'Product (paid folder)' },
 ];
 
 const EMPTY_DRAFT: CreateCollectionPayload = {

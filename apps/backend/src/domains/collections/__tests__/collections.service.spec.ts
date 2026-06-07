@@ -63,16 +63,17 @@ describe('CollectionsService', () => {
         },
       ]),
     };
-    // Default: pass-through (everything accessible). Individual tests override.
+    // Default: pass-through (everything accessible), non-admin. Tests override.
     entitlementService = {
       filterAccessible: vi
         .fn()
         .mockImplementation((_uid: any, items: any[]) =>
           Promise.resolve(items),
         ),
+      isAdmin: vi.fn().mockResolvedValue(false),
     };
     purchaseRepo = { getPurchasedProductIds: vi.fn().mockResolvedValue([]) };
-    productRepo = { findById: vi.fn() };
+    productRepo = { findById: vi.fn(), findAllActive: vi.fn().mockResolvedValue([]) };
     productContentsRepo = { findByProductId: vi.fn() };
     // Default: every tutorial is accessible (pass-through). Tests that need
     // gating override this to drop specific ids.
@@ -173,6 +174,35 @@ describe('CollectionsService', () => {
     expect(pack.tutorialIds).toEqual(['tut-g1', 'tut-g2']);
     // Ordered AFTER the db folders.
     expect(pack.sortOrder).toBeGreaterThanOrEqual(1000);
+  });
+
+  it('shows an admin ALL pack folders, even unowned ones', async () => {
+    // Admin owns nothing, but should preview every pack.
+    entitlementService.isAdmin.mockResolvedValue(true);
+    purchaseRepo.getPurchasedProductIds.mockResolvedValue([]);
+    productRepo.findAllActive.mockResolvedValue([
+      {
+        id: 'prod-gospel',
+        slug: 'gospel-groove-pack',
+        name: 'Gospel Groove Pack',
+        tagline: 'Sunday grooves',
+        type: 'groove_pack',
+        sortOrder: 2,
+      },
+    ]);
+    productContentsRepo.findByProductId.mockResolvedValue([
+      { contentType: 'tutorial', contentId: 'tut-g1' },
+    ]);
+
+    const result = await service.getVisibleCollections('admin-user');
+
+    const pack = result.find((c) => c.id === 'product:prod-gospel')!;
+    expect(pack).toBeDefined();
+    expect(pack.source).toBe('product');
+    expect(pack.isLocked).toBe(false);
+    expect(pack.tutorialIds).toEqual(['tut-g1']);
+    // Resolved via findAllActive (admin path), NOT getPurchasedProductIds.
+    expect(productRepo.findAllActive).toHaveBeenCalled();
   });
 
   it('does NOT emit a folder for the membership product', async () => {
