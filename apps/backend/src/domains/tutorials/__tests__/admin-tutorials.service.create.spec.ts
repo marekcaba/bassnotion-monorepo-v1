@@ -85,7 +85,6 @@ describe('AdminTutorialsService.create — slug-collision retry', () => {
       duration: 0,
       author_name: 'Marek',
       difficulty: 'beginner',
-      category: 'rhythm',
       tags: [],
       is_active: true,
     } as never;

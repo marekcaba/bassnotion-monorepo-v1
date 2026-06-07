@@ -41,6 +41,7 @@ import {
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { useAuth } from '@/domains/user/hooks/use-auth';
 import { apiClient } from '@/lib/api-client';
+import { fetchSignedVideoUrl } from '@/domains/widgets/api/videos';
 import type {
   AssessmentQuestion,
   AssessmentConfig,
@@ -419,22 +420,29 @@ export default function AdminAssessmentPage() {
                     </div>
                   </div>
                   <div className="flex gap-3 pt-1">
-                    <a
-                      href={`https://iframe.mediadelivery.net/play/${config.videoLibraryId}/${config.videoId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    {/* Bunny token-auth is on, so raw embed links 403. Sign on
+                        click via the gated endpoint, then open the URL. */}
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const signed = await fetchSignedVideoUrl(
+                            config.videoId,
+                            config.videoLibraryId,
+                          );
+                          window.open(
+                            signed.embedUrl,
+                            '_blank',
+                            'noopener,noreferrer',
+                          );
+                        } catch {
+                          // ignore — admin can retry; preview is non-critical
+                        }
+                      }}
                       className="text-sm text-blue-500 hover:underline"
                     >
-                      Play video →
-                    </a>
-                    <a
-                      href={`https://iframe.mediadelivery.net/embed/${config.videoLibraryId}/${config.videoId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-blue-500 hover:underline"
-                    >
-                      Embed preview →
-                    </a>
+                      Open video preview →
+                    </button>
                   </div>
                 </div>
               ) : (

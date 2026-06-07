@@ -1,0 +1,4 @@
+# One-off scratch debug snippets (paste-into-console probes, not durable tools).
+# The committed debug tools (drum-*.js, overlay-probe.js, wsola-wave-compare.js)
+# are tracked by name; only transient scratch files are ignored here.
+context-trap.js

@@ -523,7 +523,8 @@ export function WaitlistClient({
                     </div>
                   </div>
                   <h2 className="font-heading uppercase text-center text-[clamp(38px,6.4vw,72px)] leading-[0.95] tracking-[0.005em]">
-                    First to <span className="text-[#F26B1D]">plug in</span>
+                    <span className="text-[#F26B1D]">Be</span> first to plug{' '}
+                    <span className="text-[#F26B1D]">in</span>
                   </h2>
                   <p className="text-center text-[#9A948C] text-[16px] mt-4 max-w-[30em] mx-auto">
                     Private builds, early access, and a real say in what we

@@ -39,8 +39,6 @@ interface TutorialRecord {
   creator_channel_url?: string;
   creator_avatar_url?: string;
   creator_subscriber_count?: number;
-  // Category for product folder grouping
-  category?: string;
   // Modular block system
   blocks?: any[];
   // Act 1: Understand fields
@@ -582,7 +580,6 @@ export class TutorialRepository implements ITutorialRepository {
       creatorChannelUrl: record.creator_channel_url,
       creatorAvatarUrl: record.creator_avatar_url,
       creatorSubscriberCount: record.creator_subscriber_count,
-      category: record.category,
       // Modular block system
       blocks: record.blocks || [],
       // Act 1: Understand fields

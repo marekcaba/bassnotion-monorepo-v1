@@ -44,7 +44,6 @@ export interface Tutorial {
   creator_channel_url?: string;
   creator_avatar_url?: string;
   creator_subscriber_count?: number;
-  category?: string;
 
   /** Ordered array of lesson blocks (modular tutorial structure) */
   blocks?: AnyBlock[];

@@ -13,9 +13,17 @@ import { CacheService } from '../../infrastructure/cache/cache.service.js';
 import { RequestContextService } from '../../shared/services/request-context.service.js';
 import { UserModule } from '../user/user.module.js';
 import { CreatorsModule } from '../creators/creators.module.js';
+import { AuthModule } from '../user/auth/auth.module.js';
+import { BillingModule } from '../billing/billing.module.js';
 
 @Module({
-  imports: [SupabaseModule, forwardRef(() => UserModule), CreatorsModule],
+  imports: [
+    SupabaseModule,
+    forwardRef(() => UserModule),
+    CreatorsModule,
+    AuthModule, // OptionalAuthGuard / AuthGuard for tutorial gating
+    BillingModule, // EntitlementService for tutorial gating
+  ],
   controllers: [TutorialsController, AdminTutorialsController],
   providers: [
     TutorialsService,

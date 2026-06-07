@@ -6,36 +6,110 @@ import {
 } from '../services/entitlement.service.js';
 import type { SubscriptionRepository } from '../repositories/subscription.repository.js';
 import type { PurchaseRepository } from '../repositories/purchase.repository.js';
+import type { ProductContentsRepository } from '../repositories/product-contents.repository.js';
+import type { AcceleratorEnrollmentRepository } from '../repositories/accelerator-enrollment.repository.js';
+import type { ProductRepository } from '../repositories/product.repository.js';
 
 const PACK_A = 'product-pack-a';
 const PACK_B = 'product-pack-b';
 
+interface BundleSpec {
+  productId: string;
+  unlockDay?: number;
+}
+
 /**
- * Build an EntitlementService with mocked repos describing a user's state:
+ * Build an EntitlementService with mocked repos describing a user's state.
  *   - hasSubscription: active subscription / founder
  *   - ownedProducts:   product IDs the user has purchased
+ *   - bundles:         contentId → which products bundle it (for the join-table path)
+ *   - enrollments:     productId → started_at (for accelerator drip)
+ *   - now:             fixed clock for drip tests
  */
 function makeService(opts: {
   hasSubscription?: boolean;
   ownedProducts?: string[];
+  /** product IDs that are accelerator-type (confer member access). */
+  acceleratorProducts?: string[];
+  bundles?: Record<string, BundleSpec[]>;
+  enrollments?: Record<string, Date>;
+  now?: number;
+  isAdmin?: boolean;
 }) {
   const hasActiveSubscription = vi.fn(
     async () => opts.hasSubscription ?? false,
   );
   const owned = opts.ownedProducts ?? [];
+  const accelerators = new Set(opts.acceleratorProducts ?? []);
   const hasPurchasedProduct = vi.fn(async (_userId: string, productId: string) =>
     owned.includes(productId),
   );
   const getPurchasedProductIds = vi.fn(async () => owned);
+  const findProductById = vi.fn(async (id: string) =>
+    accelerators.has(id) ? { id, type: 'accelerator' } : { id, type: 'groove_pack' },
+  );
 
-  const service = new EntitlementService(
+  // SupabaseService stub for the admin-role lookup (profiles.role).
+  const supabaseService = {
+    getClient: () => ({
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            single: async () => ({
+              data: { role: opts.isAdmin ? 'admin' : 'user' },
+              error: null,
+            }),
+          }),
+        }),
+      }),
+    }),
+  };
+
+  const findByContent = vi.fn(
+    async (_type: string, contentId: string) =>
+      (opts.bundles?.[contentId] ?? []).map((b) => ({
+        id: `pc-${b.productId}`,
+        productId: b.productId,
+        contentType: 'groove',
+        contentId,
+        unlockDay: b.unlockDay ?? 0,
+        sortOrder: 0,
+        createdAt: new Date(0),
+      })),
+  );
+
+  const findByUserAndProduct = vi.fn(
+    async (_userId: string, productId: string) => {
+      const startedAt = opts.enrollments?.[productId];
+      return startedAt
+        ? { id: 'e1', userId: 'u', productId, startedAt }
+        : null;
+    },
+  );
+
+  const service = new (class extends EntitlementService {
+    protected now() {
+      return opts.now ?? Date.now();
+    }
+  })(
     { hasActiveSubscription } as unknown as SubscriptionRepository,
     {
       hasPurchasedProduct,
       getPurchasedProductIds,
     } as unknown as PurchaseRepository,
+    { findByContent } as unknown as ProductContentsRepository,
+    { findByUserAndProduct } as unknown as AcceleratorEnrollmentRepository,
+    { findById: findProductById } as unknown as ProductRepository,
+    supabaseService as never,
   );
-  return { service, hasActiveSubscription, hasPurchasedProduct };
+  return {
+    service,
+    hasActiveSubscription,
+    hasPurchasedProduct,
+    findByContent,
+    findByUserAndProduct,
+    findProductById,
+  };
 }
 
 // Content fixtures
@@ -175,5 +249,173 @@ describe('EntitlementService.filterAccessible — batch gating', () => {
     });
     expect(await service.filterAccessible('member', [])).toEqual([]);
     expect(hasActiveSubscription).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// product_contents bundle path (a content item can be in many packs) + drip
+// ---------------------------------------------------------------------------
+const GROOVE_REF = { type: 'groove' as const, id: 'groove-1' };
+const bundledContent: GateableContent = {
+  accessTier: 'product',
+  contentRef: GROOVE_REF,
+};
+const DAY = 1000 * 60 * 60 * 24;
+
+describe('EntitlementService — product_contents bundle resolution', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('denies when the content is in no bundle', async () => {
+    const { service } = makeService({ ownedProducts: [PACK_A], bundles: {} });
+    expect(await service.canAccessContent('u', bundledContent)).toBe(false);
+  });
+
+  it('grants when the user owns a product that bundles the content', async () => {
+    const { service } = makeService({
+      ownedProducts: [PACK_A],
+      bundles: { 'groove-1': [{ productId: PACK_A }] },
+    });
+    expect(await service.canAccessContent('u', bundledContent)).toBe(true);
+  });
+
+  it('grants if ANY owned product bundles it (content in two packs)', async () => {
+    const { service } = makeService({
+      ownedProducts: [PACK_B], // owns B, not A
+      bundles: {
+        'groove-1': [{ productId: PACK_A }, { productId: PACK_B }],
+      },
+    });
+    expect(await service.canAccessContent('u', bundledContent)).toBe(true);
+  });
+
+  it('denies when the user owns none of the bundling products', async () => {
+    const { service } = makeService({
+      ownedProducts: [], // owns nothing
+      bundles: { 'groove-1': [{ productId: PACK_A }] },
+    });
+    expect(await service.canAccessContent('u', bundledContent)).toBe(false);
+  });
+
+  it('anonymous user denied bundled product content', async () => {
+    const { service } = makeService({
+      bundles: { 'groove-1': [{ productId: PACK_A }] },
+    });
+    expect(await service.canAccessContent(null, bundledContent)).toBe(false);
+  });
+});
+
+describe('EntitlementService — accelerator drip (unlock_day)', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const ACCEL = 'accel-product';
+  // content unlocks on day 7 of the accelerator
+  const day7Content: GateableContent = {
+    accessTier: 'product',
+    contentRef: { type: 'groove', id: 'accel-groove' },
+  };
+
+  it('locked before the unlock day even though the product is owned', async () => {
+    const enrolledAt = new Date(0);
+    const { service } = makeService({
+      ownedProducts: [ACCEL],
+      bundles: { 'accel-groove': [{ productId: ACCEL, unlockDay: 7 }] },
+      enrollments: { [ACCEL]: enrolledAt },
+      now: enrolledAt.getTime() + 3 * DAY, // only day 3
+    });
+    expect(await service.canAccessContent('u', day7Content)).toBe(false);
+  });
+
+  it('unlocked once the unlock day has elapsed', async () => {
+    const enrolledAt = new Date(0);
+    const { service } = makeService({
+      ownedProducts: [ACCEL],
+      bundles: { 'accel-groove': [{ productId: ACCEL, unlockDay: 7 }] },
+      enrollments: { [ACCEL]: enrolledAt },
+      now: enrolledAt.getTime() + 8 * DAY, // day 8 — past day 7
+    });
+    expect(await service.canAccessContent('u', day7Content)).toBe(true);
+  });
+
+  it('owns the accelerator but has no enrollment row → locked', async () => {
+    const { service } = makeService({
+      ownedProducts: [ACCEL],
+      bundles: { 'accel-groove': [{ productId: ACCEL, unlockDay: 7 }] },
+      enrollments: {}, // no clock started
+      now: 999 * DAY,
+    });
+    expect(await service.canAccessContent('u', day7Content)).toBe(false);
+  });
+
+  it('day-0 accelerator content is immediately available on purchase', async () => {
+    const { service } = makeService({
+      ownedProducts: [ACCEL],
+      bundles: { 'accel-groove': [{ productId: ACCEL, unlockDay: 0 }] },
+      enrollments: { [ACCEL]: new Date(0) },
+      now: 0,
+    });
+    expect(await service.canAccessContent('u', day7Content)).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Accelerator confers MEMBER access (the access matrix: accelerator buyers get
+// free + membership + premium tutorials). Groove-pack buyers do NOT.
+// ---------------------------------------------------------------------------
+const ACCEL_PRODUCT = 'accel-x';
+const PACK_PRODUCT = 'pack-x';
+
+describe('EntitlementService — accelerator grants member access', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('accelerator owner can access member content WITHOUT a subscription', async () => {
+    const { service } = makeService({
+      hasSubscription: false,
+      ownedProducts: [ACCEL_PRODUCT],
+      acceleratorProducts: [ACCEL_PRODUCT],
+    });
+    expect(await service.canAccessContent('u', MEMBER)).toBe(true);
+  });
+
+  it('groove-pack owner does NOT get member content', async () => {
+    const { service } = makeService({
+      hasSubscription: false,
+      ownedProducts: [PACK_PRODUCT],
+      acceleratorProducts: [], // pack-x is NOT an accelerator
+    });
+    expect(await service.canAccessContent('u', MEMBER)).toBe(false);
+  });
+
+  it('subscriber still gets member content (no products needed)', async () => {
+    const { service } = makeService({ hasSubscription: true });
+    expect(await service.canAccessContent('u', MEMBER)).toBe(true);
+  });
+});
+
+describe('EntitlementService — admin bypass', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('admin accesses member content without a subscription', async () => {
+    const { service } = makeService({ isAdmin: true, hasSubscription: false });
+    expect(await service.canAccessContent('admin', MEMBER)).toBe(true);
+  });
+
+  it('admin accesses product content without owning it', async () => {
+    const { service } = makeService({ isAdmin: true, ownedProducts: [] });
+    expect(await service.canAccessContent('admin', PACK)).toBe(true);
+  });
+
+  it('admin sees ALL items in filterAccessible', async () => {
+    const { service } = makeService({ isAdmin: true });
+    const result = await service.filterAccessible('admin', [
+      FREE,
+      MEMBER,
+      PACK,
+    ]);
+    expect(result).toEqual([FREE, MEMBER, PACK]);
+  });
+
+  it('non-admin is still gated (sanity)', async () => {
+    const { service } = makeService({ isAdmin: false, hasSubscription: false });
+    expect(await service.canAccessContent('u', MEMBER)).toBe(false);
   });
 });

@@ -12,14 +12,18 @@ describe('TutorialsService', () => {
   let mockSupabaseService: any;
   let mockSupabaseClient: any;
   let mockRepository: IResultTutorialRepository;
+  let mockEntitlementService: any;
 
   beforeEach(() => {
-    // Create comprehensive mock for Supabase client
+    // Create comprehensive mock for Supabase client. `.in()` resolves to an
+    // empty access-tier lookup so filterByAccess treats every tutorial as
+    // 'free' (the default) — exercising the gating path without gating anything.
     mockSupabaseClient = {
       rpc: vi.fn(),
       from: vi.fn().mockImplementation(() => ({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [], error: null }),
         single: vi.fn(),
         order: vi.fn().mockReturnThis(),
         update: vi.fn().mockReturnThis(),
@@ -29,6 +33,17 @@ describe('TutorialsService', () => {
     // Mock Supabase service
     mockSupabaseService = {
       getClient: vi.fn().mockReturnValue(mockSupabaseClient),
+    };
+
+    // Mock EntitlementService — pass-through filter (no gating in these tests;
+    // gating behavior is covered by entitlement.service.spec.ts).
+    mockEntitlementService = {
+      filterAccessible: vi
+        .fn()
+        .mockImplementation((_userId: any, items: any[]) =>
+          Promise.resolve(items),
+        ),
+      canAccessContent: vi.fn().mockResolvedValue(true),
     };
 
     // Mock repository
@@ -52,7 +67,11 @@ describe('TutorialsService', () => {
     };
 
     // Create service instance
-    service = new TutorialsService(mockSupabaseService, mockRepository);
+    service = new TutorialsService(
+      mockSupabaseService,
+      mockRepository,
+      mockEntitlementService,
+    );
   });
 
   afterEach(() => {
@@ -458,7 +477,11 @@ describe('TutorialsService', () => {
 
       // Assert
       expect(result.tutorials).toHaveLength(100);
-      expect(result.total).toBe(500);
+      // `total` now reflects the count AFTER access-filtering (what the caller
+      // can actually see), not the repository's global count — access gating
+      // hides rows from the list, so reporting the unfiltered total would be
+      // misleading. All 100 fetched rows are visible here (pass-through mock).
+      expect(result.total).toBe(100);
     });
   });
 

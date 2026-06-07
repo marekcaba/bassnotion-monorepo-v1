@@ -121,7 +121,6 @@ export interface TutorialDTO {
   creator_avatar_url?: string;
   creator_subscriber_count?: number;
   exercise_count?: number;
-  category?: string;
 }
 
 /**

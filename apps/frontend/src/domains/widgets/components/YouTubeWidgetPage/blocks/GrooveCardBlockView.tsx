@@ -455,6 +455,11 @@ export function GrooveCardBlockView({
                   loopSelection={playback.loopSelection}
                   onLoopSelectionChange={playback.setLoopSelection}
                   color={waveformColor}
+                  countdownBeat={
+                    playback.countdownState.isCountingDown
+                      ? playback.countdownState.currentBeat
+                      : null
+                  }
                 />
               </div>
             </PopoverAnchor>

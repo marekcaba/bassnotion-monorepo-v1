@@ -243,6 +243,68 @@ if (SCENARIO === 'baseline') {
   await page.waitForTimeout(2500);
   await stepN('Tempo up', 20, 15);
   await page.waitForTimeout(4000);
+} else if (SCENARIO === 'drumslow') {
+  // SLOW the drums to ~89 BPM (109→89, ratio≈0.8165) via the engine API, the SAME
+  // call the groove-card hook makes on a tempo nudge. Drive it in steps to mimic a
+  // slider drag, then hold so the click scanner sees many slow-tempo drum seams.
+  // Tap the DRUMS stem (run with `--stem audio-drums`) so only drum seams are scanned.
+  const res = await page.evaluate(async () => {
+    const reg = window.__bassnotion_serviceRegistry || window.__serviceRegistry;
+    const eng =
+      (reg && (reg.getPlaybackEngine?.() || reg.playbackEngine)) ||
+      window.__bassnotion_playbackEngine;
+    if (!eng?.setStretchRatio) return { ok: false, why: 'no engine/setStretchRatio' };
+    // Discover the drum region id (prefix varies). Fall back to a bare id.
+    let regionId = 'audio-drums-region';
+    try {
+      const ids = eng.regionScheduler?.infiniteAudioRegions
+        ? [...eng.regionScheduler.infiniteAudioRegions.keys()]
+        : [];
+      const hit = ids.find((k) => String(k).includes('audio-drums'));
+      if (hit) regionId = hit;
+    } catch {
+      /* use fallback */
+    }
+    // Step 109→89 over ~12 clicks (mimic a drag), ~80ms apart.
+    const from = 1.0;
+    const to = 89 / 109;
+    const N = 12;
+    for (let i = 1; i <= N; i++) {
+      const r = from + (to - from) * (i / N);
+      eng.setStretchRatio(r, regionId);
+      await new Promise((res2) => setTimeout(res2, 80));
+    }
+    return { ok: true, regionId, finalRatio: to };
+  });
+  log('drumslow drive:', JSON.stringify(res));
+  await page.waitForTimeout(6000); // hold at slow tempo → many seams to scan
+} else if (SCENARIO === 'drumloop89') {
+  // Render the ACTUAL settled 89 BPM drum output for sample-by-sample A/B vs Ableton.
+  // Set the tempo to 89 BPM ONCE (not a drag), let it settle into the new grid, then
+  // record. We grab several settled loops so the kick transient can be compared cleanly.
+  const res = await page.evaluate(async () => {
+    const reg = window.__bassnotion_serviceRegistry || window.__serviceRegistry;
+    const eng =
+      (reg && (reg.getPlaybackEngine?.() || reg.playbackEngine)) ||
+      window.__bassnotion_playbackEngine;
+    if (!eng?.setStretchRatio) return { ok: false, why: 'no engine/setStretchRatio' };
+    let regionId = 'audio-drums-region';
+    try {
+      const ids = eng.regionScheduler?.infiniteAudioRegions
+        ? [...eng.regionScheduler.infiniteAudioRegions.keys()]
+        : [];
+      const hit = ids.find((k) => String(k).includes('audio-drums'));
+      if (hit) regionId = hit;
+    } catch {
+      /* fallback */
+    }
+    eng.setStretchRatio(89 / 109, regionId); // straight to 89 BPM
+    return { ok: true, regionId, ratio: 89 / 109 };
+  });
+  log('drumloop89 set:', JSON.stringify(res));
+  // 8 bars @ 89 BPM = 8 * 4 * 60/89 ≈ 21.6s per loop. Capture ~24s to get a full
+  // settled loop plus margin (the recorder trims silence; this is the real output).
+  await page.waitForTimeout(24000);
 }
 
 // Stop recording, pull the PCM out.

@@ -4,7 +4,29 @@ import type {
   TutorialExercisesResponse,
 } from '@bassnotion/contracts';
 
+import { supabase } from '@/infrastructure/supabase/client';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+
+/**
+ * Optional auth header — attaches the session Bearer token IF the user is
+ * logged in (does NOT throw for anon). The tutorials list/detail endpoints are
+ * OptionalAuthGuard-gated: anon → free tutorials only; logged-in → their tier;
+ * admin → all. Without this, the server can't tell who's asking and returns
+ * free-only even to members/admins.
+ */
+async function optionalAuthHeader(): Promise<Record<string, string>> {
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    return session?.access_token
+      ? { Authorization: `Bearer ${session.access_token}` }
+      : {};
+  } catch {
+    return {};
+  }
+}
 
 class TutorialsApiError extends Error {
   constructor(
@@ -58,7 +80,42 @@ async function fetchWithErrorHandling<T>(
  * Fetch all tutorials from the backend
  */
 export async function fetchTutorials(): Promise<TutorialsResponse> {
-  return fetchWithErrorHandling<TutorialsResponse>(`${API_BASE_URL}/tutorials`);
+  return fetchWithErrorHandling<TutorialsResponse>(
+    `${API_BASE_URL}/tutorials`,
+    {
+      headers: await optionalAuthHeader(),
+    },
+  );
+}
+
+/** A DB-driven sidebar folder as returned by GET /collections. */
+export interface CollectionView {
+  id: string;
+  slug: string;
+  title: string;
+  description?: string;
+  accessTier: 'free' | 'member' | 'product';
+  sortOrder: number;
+  source: 'collection' | 'product';
+  isLocked: boolean;
+  /** Ordered tutorial ids; joined against the tutorials list on the client. */
+  tutorialIds: string[];
+}
+
+export interface CollectionsResponse {
+  collections: CollectionView[];
+}
+
+/**
+ * Fetch the DB-driven sidebar folders. OptionalAuthGuard-gated like tutorials:
+ * anon → free folders (locked teasers for the rest); logged-in → entitled
+ * folders + virtual folders for owned packs; admin → all.
+ */
+export async function fetchCollections(): Promise<CollectionsResponse> {
+  return fetchWithErrorHandling<CollectionsResponse>(
+    `${API_BASE_URL}/collections`,
+    { headers: await optionalAuthHeader() },
+  );
 }
 
 /**
@@ -73,6 +130,7 @@ export async function fetchTutorialBySlug(
 
   return fetchWithErrorHandling<TutorialResponse>(
     `${API_BASE_URL}/tutorials/${encodeURIComponent(slug)}`,
+    { headers: await optionalAuthHeader() },
   );
 }
 
@@ -88,6 +146,7 @@ export async function fetchTutorialExercises(
 
   const result = await fetchWithErrorHandling<TutorialExercisesResponse>(
     `${API_BASE_URL}/tutorials/${encodeURIComponent(slug)}/exercises`,
+    { headers: await optionalAuthHeader() },
   );
 
   // DEBUG: Log exercise notes and MIDI URLs to trace data flow

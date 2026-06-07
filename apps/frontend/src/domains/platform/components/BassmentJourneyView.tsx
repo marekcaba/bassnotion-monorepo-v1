@@ -14,7 +14,6 @@ import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router'
 // ProgressPane (the dot column next to each card) was removed in favour of
 // a thin progress bar inside the card. The dot pane lives in
 // CollapsedJourneyPath where it doubles as the nav handle.
-import { PRODUCT_FOLDERS } from '../constants/product-folders';
 import {
   useTutorialsByFolder,
   type TutorialItem,
@@ -301,7 +300,7 @@ interface BassmentJourneyViewProps {
 }
 
 export function BassmentJourneyView({ folderState }: BassmentJourneyViewProps) {
-  const { tutorialsByFolder, isLoading } = useTutorialsByFolder();
+  const { folders, tutorialsByFolder, isLoading } = useTutorialsByFolder();
 
   if (isLoading) {
     return (
@@ -318,7 +317,7 @@ export function BassmentJourneyView({ folderState }: BassmentJourneyViewProps) {
 
   return (
     <div className="px-2 py-2 space-y-1">
-      {PRODUCT_FOLDERS.map((folder) => (
+      {folders.map((folder) => (
         <JourneyFolder
           key={folder.id}
           title={folder.title}
@@ -330,9 +329,7 @@ export function BassmentJourneyView({ folderState }: BassmentJourneyViewProps) {
             }
           }}
           defaultOpen={folder.isFree}
-          isLocked={
-            !folder.isFree && (tutorialsByFolder[folder.id]?.length ?? 0) === 0
-          }
+          isLocked={folder.isLocked}
         />
       ))}
     </div>

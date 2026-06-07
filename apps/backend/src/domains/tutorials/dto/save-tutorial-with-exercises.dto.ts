@@ -154,10 +154,6 @@ export class SaveTutorialWithExercisesDto {
   difficulty?: string;
 
   @IsOptional()
-  @IsString()
-  category?: string;
-
-  @IsOptional()
   @IsArray()
   @IsString({ each: true })
   tags?: string[];
