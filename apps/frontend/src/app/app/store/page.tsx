@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ShoppingBag } from 'lucide-react';
 
@@ -121,7 +121,18 @@ export default function StorePage() {
   return (
     <>
       <PageErrorBoundary pageName="Store">
-        <StoreContent />
+        {/* Suspense required: StoreContent uses useSearchParams() (?success/
+            ?canceled), which forces CSR bailout and fails the prod prerender
+            without a boundary. */}
+        <Suspense
+          fallback={
+            <div className="flex justify-center py-16">
+              <div className="size-8 animate-spin rounded-full border-b-2 border-[#E8A44A]" />
+            </div>
+          }
+        >
+          <StoreContent />
+        </Suspense>
       </PageErrorBoundary>
     </>
   );
