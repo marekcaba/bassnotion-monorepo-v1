@@ -71,7 +71,6 @@ export class TutorialsService {
           is_active: tutorial.isActive,
           created_at: tutorial.createdAt.toISOString(),
           updated_at: tutorial.updatedAt.toISOString(),
-          category: tutorial.category,
           sidebar_title: tutorial.sidebarTitle,
           blocks: tutorial.blocks,
         }),
@@ -101,7 +100,6 @@ export class TutorialsService {
       is_active: tutorial.isActive,
       created_at: tutorial.createdAt.toISOString(),
       updated_at: tutorial.updatedAt.toISOString(),
-      category: tutorial.category,
       sidebar_title: tutorial.sidebarTitle,
       blocks: tutorial.blocks,
     }));

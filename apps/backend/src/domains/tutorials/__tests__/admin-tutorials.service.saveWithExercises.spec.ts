@@ -93,7 +93,6 @@ describe('AdminTutorialsService.saveWithExercises — slug-collision retry on UP
       duration: 0,
       author_name: 'Marek',
       difficulty: 'beginner',
-      category: 'rhythm',
       tags: [],
       is_active: true,
       blocks: [],

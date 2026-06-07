@@ -30,7 +30,6 @@ interface CachedTutorialData {
   published_at?: string;
   created_at: string;
   updated_at: string;
-  category?: string;
   // Draft & MIDI fields
   status?: string;
   last_modified?: string;
@@ -154,7 +153,6 @@ export class CachedTutorialRepository
       publishedAt: d.published_at ? new Date(d.published_at) : undefined,
       createdAt: new Date(d.created_at),
       updatedAt: new Date(d.updated_at),
-      category: d.category,
       // Draft & MIDI fields
       status: (d.status as 'draft' | 'published' | 'archived') || 'draft',
       lastModified: d.last_modified ? new Date(d.last_modified) : undefined,
