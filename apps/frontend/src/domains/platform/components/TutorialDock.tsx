@@ -1,7 +1,6 @@
 'use client';
 
 import { Skeleton } from '@/shared/components/ui/skeleton';
-import { PRODUCT_FOLDERS } from '../constants/product-folders';
 import { TutorialFolder } from './TutorialFolder';
 import { useTutorialsByFolder } from '../hooks/useTutorialsByFolder';
 import type { FolderOpenState } from '../hooks/useFolderOpenState';
@@ -11,7 +10,7 @@ interface TutorialDockProps {
 }
 
 export function TutorialDock({ folderState }: TutorialDockProps) {
-  const { tutorialsByFolder, isLoading } = useTutorialsByFolder();
+  const { folders, tutorialsByFolder, isLoading } = useTutorialsByFolder();
 
   return (
     <div className="px-2 py-2">
@@ -24,7 +23,7 @@ export function TutorialDock({ folderState }: TutorialDockProps) {
           </div>
         ) : (
           <>
-            {PRODUCT_FOLDERS.map((folder) => (
+            {folders.map((folder) => (
               <TutorialFolder
                 key={folder.id}
                 title={folder.title}
@@ -36,9 +35,7 @@ export function TutorialDock({ folderState }: TutorialDockProps) {
                   }
                 }}
                 defaultOpen={folder.isFree}
-                isLocked={
-                  !folder.isFree && tutorialsByFolder[folder.id]?.length === 0
-                }
+                isLocked={folder.isLocked}
               />
             ))}
           </>

@@ -13,6 +13,7 @@ import type { IResultTutorialRepository } from './repositories/result-tutorial.r
 import { TutorialId } from './value-objects/tutorial-id.vo.js';
 import { TutorialSlug } from './value-objects/tutorial-slug.vo.js';
 import { Tutorial } from './entities/tutorial.entity.js';
+import { EntitlementService } from '../billing/services/entitlement.service.js';
 
 @Injectable()
 export class TutorialsService {
@@ -20,9 +21,12 @@ export class TutorialsService {
     private readonly supabaseService: SupabaseService,
     @Inject('IResultTutorialRepository')
     private readonly tutorialRepository: IResultTutorialRepository,
+    private readonly entitlementService: EntitlementService,
   ) {}
 
-  async findAll(): Promise<{ tutorials: TutorialSummary[]; total: number }> {
+  async findAll(
+    userId?: string | null,
+  ): Promise<{ tutorials: TutorialSummary[]; total: number }> {
     // Using repository pattern
     const result = await this.tutorialRepository.findAll({
       page: 1,
@@ -67,16 +71,13 @@ export class TutorialsService {
           is_active: tutorial.isActive,
           created_at: tutorial.createdAt.toISOString(),
           updated_at: tutorial.updatedAt.toISOString(),
-          category: tutorial.category,
           sidebar_title: tutorial.sidebarTitle,
           blocks: tutorial.blocks,
         }),
       );
 
-      return {
-        tutorials: tutorialsWithCounts,
-        total: result.value.total,
-      };
+      const visible = await this.filterByAccess(tutorialsWithCounts, userId);
+      return { tutorials: visible, total: visible.length };
     }
 
     // Fallback without exercise counts
@@ -99,14 +100,117 @@ export class TutorialsService {
       is_active: tutorial.isActive,
       created_at: tutorial.createdAt.toISOString(),
       updated_at: tutorial.updatedAt.toISOString(),
-      category: tutorial.category,
       sidebar_title: tutorial.sidebarTitle,
       blocks: tutorial.blocks,
     }));
 
+    const visible = await this.filterByAccess(tutorials, userId);
+    return { tutorials: visible, total: visible.length };
+  }
+
+  /**
+   * Hide tutorials the user can't access (sidebar/list). Fetches each row's
+   * access_tier/product_id and runs them through EntitlementService. Free
+   * tutorials always show; member/product ones only to entitled users (admins
+   * see all). One batched query for the tiers, one entitlement resolution.
+   */
+  private async filterByAccess<T extends { id: string }>(
+    items: T[],
+    userId: string | null | undefined,
+  ): Promise<T[]> {
+    if (items.length === 0) return items;
+
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('tutorials')
+      .select('id, access_tier, product_id')
+      .in(
+        'id',
+        items.map((t) => t.id),
+      );
+    if (error || !data) return items; // fail-open on lookup error (don't blank the UI)
+
+    const tierById = new Map(
+      data.map((r: any) => [
+        r.id,
+        {
+          accessTier: (r.access_tier ?? 'free') as
+            | 'free'
+            | 'member'
+            | 'product',
+          productId: r.product_id ?? null,
+        },
+      ]),
+    );
+
+    // Build gateable descriptors keyed by index, filter, then map back.
+    const gateables = items.map((t) => {
+      const tier = tierById.get(t.id) ?? {
+        accessTier: 'free' as const,
+        productId: null,
+      };
+      return {
+        accessTier: tier.accessTier,
+        productId: tier.productId,
+        contentRef:
+          tier.accessTier === 'product'
+            ? ({ type: 'tutorial', id: t.id } as const)
+            : undefined,
+        _item: t,
+      };
+    });
+
+    const accessible = await this.entitlementService.filterAccessible(
+      userId ?? null,
+      gateables,
+    );
+    return accessible.map((g) => g._item);
+  }
+
+  /**
+   * Filter a set of tutorial IDs to those the user may access, preserving order.
+   * The same gating the list endpoint applies, exposed for other domains
+   * (e.g. collections hiding gated tutorials from a folder's list) so there's
+   * one access authority, not a re-implementation.
+   */
+  async filterAccessibleTutorialIds(
+    tutorialIds: string[],
+    userId: string | null | undefined,
+  ): Promise<string[]> {
+    if (tutorialIds.length === 0) return [];
+    const filtered = await this.filterByAccess(
+      tutorialIds.map((id) => ({ id })),
+      userId,
+    );
+    return filtered.map((t) => t.id);
+  }
+
+  /**
+   * Lightweight access-tier lookup for gating. Reads the new access_tier /
+   * product_id columns directly (they aren't threaded through the DDD entity).
+   * Returns null when the tutorial doesn't exist / is inactive.
+   */
+  async getAccessInfo(slug: string): Promise<{
+    accessTier: 'free' | 'member' | 'product';
+    productId: string | null;
+    id: string;
+  } | null> {
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('tutorials')
+      .select('id, access_tier, product_id')
+      .eq('slug', slug)
+      .eq('is_active', true)
+      .single();
+
+    if (error || !data) return null;
     return {
-      tutorials,
-      total: result.value.total,
+      id: data.id,
+      accessTier: (data.access_tier ?? 'free') as
+        | 'free'
+        | 'member'
+        | 'product',
+      productId: data.product_id ?? null,
     };
   }
 

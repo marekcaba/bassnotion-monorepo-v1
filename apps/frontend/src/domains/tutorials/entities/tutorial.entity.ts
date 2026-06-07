@@ -51,7 +51,6 @@ export interface TutorialProps {
   creatorAvatarUrl?: string;
   creatorSubscriberCount?: number;
   exerciseCount?: number;
-  category?: string;
   // Act 1: Understand fields
   understandVideoUrl?: string;
   understandVideoLibraryId?: string;
@@ -240,10 +239,6 @@ export class Tutorial {
     return this._props.exerciseCount ?? 0;
   }
 
-  get category(): string | undefined {
-    return this._props.category;
-  }
-
   // Act 1: Understand getters
   get understandVideoUrl(): string | undefined {
     return this._props.understandVideoUrl;
@@ -374,7 +369,6 @@ export class Tutorial {
       creatorAvatarUrl: dto.creator_avatar_url,
       creatorSubscriberCount: dto.creator_subscriber_count,
       exerciseCount: dto.exercise_count,
-      category: dto.category,
       // Act 1: Understand fields
       understandVideoUrl: dto.understand_video_url,
       understandVideoLibraryId: dto.understand_video_library_id,
@@ -422,7 +416,6 @@ export class Tutorial {
       creator_channel_url: this._props.creatorChannelUrl,
       creator_avatar_url: this._props.creatorAvatarUrl,
       creator_subscriber_count: this._props.creatorSubscriberCount,
-      category: this._props.category,
       // Act 1: Understand fields
       understand_video_url: this._props.understandVideoUrl,
       understand_video_library_id: this._props.understandVideoLibraryId,

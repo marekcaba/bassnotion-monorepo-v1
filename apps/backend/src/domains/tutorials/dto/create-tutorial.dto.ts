@@ -50,11 +50,6 @@ export class CreateTutorialDto {
   @IsEnum(TutorialDifficulty)
   difficulty!: TutorialDifficulty;
 
-  @IsString()
-  @IsOptional()
-  @MaxLength(100)
-  category?: string;
-
   @IsArray()
   @IsString({ each: true })
   @IsOptional()

@@ -8,6 +8,7 @@ import type { SubscriptionRepository } from '../repositories/subscription.reposi
 import type { PurchaseRepository } from '../repositories/purchase.repository.js';
 import type { ProductContentsRepository } from '../repositories/product-contents.repository.js';
 import type { AcceleratorEnrollmentRepository } from '../repositories/accelerator-enrollment.repository.js';
+import type { ProductRepository } from '../repositories/product.repository.js';
 
 const PACK_A = 'product-pack-a';
 const PACK_B = 'product-pack-b';
@@ -28,18 +29,41 @@ interface BundleSpec {
 function makeService(opts: {
   hasSubscription?: boolean;
   ownedProducts?: string[];
+  /** product IDs that are accelerator-type (confer member access). */
+  acceleratorProducts?: string[];
   bundles?: Record<string, BundleSpec[]>;
   enrollments?: Record<string, Date>;
   now?: number;
+  isAdmin?: boolean;
 }) {
   const hasActiveSubscription = vi.fn(
     async () => opts.hasSubscription ?? false,
   );
   const owned = opts.ownedProducts ?? [];
+  const accelerators = new Set(opts.acceleratorProducts ?? []);
   const hasPurchasedProduct = vi.fn(async (_userId: string, productId: string) =>
     owned.includes(productId),
   );
   const getPurchasedProductIds = vi.fn(async () => owned);
+  const findProductById = vi.fn(async (id: string) =>
+    accelerators.has(id) ? { id, type: 'accelerator' } : { id, type: 'groove_pack' },
+  );
+
+  // SupabaseService stub for the admin-role lookup (profiles.role).
+  const supabaseService = {
+    getClient: () => ({
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            single: async () => ({
+              data: { role: opts.isAdmin ? 'admin' : 'user' },
+              error: null,
+            }),
+          }),
+        }),
+      }),
+    }),
+  };
 
   const findByContent = vi.fn(
     async (_type: string, contentId: string) =>
@@ -75,6 +99,8 @@ function makeService(opts: {
     } as unknown as PurchaseRepository,
     { findByContent } as unknown as ProductContentsRepository,
     { findByUserAndProduct } as unknown as AcceleratorEnrollmentRepository,
+    { findById: findProductById } as unknown as ProductRepository,
+    supabaseService as never,
   );
   return {
     service,
@@ -82,6 +108,7 @@ function makeService(opts: {
     hasPurchasedProduct,
     findByContent,
     findByUserAndProduct,
+    findProductById,
   };
 }
 
@@ -327,5 +354,68 @@ describe('EntitlementService — accelerator drip (unlock_day)', () => {
       now: 0,
     });
     expect(await service.canAccessContent('u', day7Content)).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Accelerator confers MEMBER access (the access matrix: accelerator buyers get
+// free + membership + premium tutorials). Groove-pack buyers do NOT.
+// ---------------------------------------------------------------------------
+const ACCEL_PRODUCT = 'accel-x';
+const PACK_PRODUCT = 'pack-x';
+
+describe('EntitlementService — accelerator grants member access', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('accelerator owner can access member content WITHOUT a subscription', async () => {
+    const { service } = makeService({
+      hasSubscription: false,
+      ownedProducts: [ACCEL_PRODUCT],
+      acceleratorProducts: [ACCEL_PRODUCT],
+    });
+    expect(await service.canAccessContent('u', MEMBER)).toBe(true);
+  });
+
+  it('groove-pack owner does NOT get member content', async () => {
+    const { service } = makeService({
+      hasSubscription: false,
+      ownedProducts: [PACK_PRODUCT],
+      acceleratorProducts: [], // pack-x is NOT an accelerator
+    });
+    expect(await service.canAccessContent('u', MEMBER)).toBe(false);
+  });
+
+  it('subscriber still gets member content (no products needed)', async () => {
+    const { service } = makeService({ hasSubscription: true });
+    expect(await service.canAccessContent('u', MEMBER)).toBe(true);
+  });
+});
+
+describe('EntitlementService — admin bypass', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('admin accesses member content without a subscription', async () => {
+    const { service } = makeService({ isAdmin: true, hasSubscription: false });
+    expect(await service.canAccessContent('admin', MEMBER)).toBe(true);
+  });
+
+  it('admin accesses product content without owning it', async () => {
+    const { service } = makeService({ isAdmin: true, ownedProducts: [] });
+    expect(await service.canAccessContent('admin', PACK)).toBe(true);
+  });
+
+  it('admin sees ALL items in filterAccessible', async () => {
+    const { service } = makeService({ isAdmin: true });
+    const result = await service.filterAccessible('admin', [
+      FREE,
+      MEMBER,
+      PACK,
+    ]);
+    expect(result).toEqual([FREE, MEMBER, PACK]);
+  });
+
+  it('non-admin is still gated (sanity)', async () => {
+    const { service } = makeService({ isAdmin: false, hasSubscription: false });
+    expect(await service.canAccessContent('u', MEMBER)).toBe(false);
   });
 });

@@ -148,7 +148,7 @@ export interface Product {
 }
 
 /** A content item bundled into a product (Groove Pack / Accelerator). */
-export type ProductContentType = 'groove' | 'video' | 'exercise';
+export type ProductContentType = 'tutorial' | 'groove' | 'video' | 'exercise';
 
 export interface ProductContent {
   id: string;

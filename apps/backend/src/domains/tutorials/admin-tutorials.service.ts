@@ -193,7 +193,6 @@ export class AdminTutorialsService {
           author_name: createTutorialDto.author_name,
           // Note: thumbnail_url column doesn't exist - thumbnails are generated from YouTube ID
           level: createTutorialDto.difficulty, // Map difficulty to level
-          category: createTutorialDto.category,
           tags: createTutorialDto.tags || [],
           is_active: createTutorialDto.is_active ?? true,
           created_by: createTutorialDto.created_by,
@@ -285,9 +284,6 @@ export class AdminTutorialsService {
       updateData.level = updateTutorialDto.difficulty; // Map difficulty to level
     }
 
-    if (updateTutorialDto.category !== undefined) {
-      updateData.category = updateTutorialDto.category;
-    }
 
     if (updateTutorialDto.tags !== undefined) {
       updateData.tags = updateTutorialDto.tags;
@@ -610,7 +606,6 @@ export class AdminTutorialsService {
         author_name: dto.author_name,
         thumbnail_url: dto.thumbnail_url, // Custom thumbnail from Supabase storage
         level: dto.difficulty,
-        category: dto.category,
         tags: dto.tags || [],
         is_active: dto.is_active ?? true,
         core_concept_description: dto.core_concept_description,

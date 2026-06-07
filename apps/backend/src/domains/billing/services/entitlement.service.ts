@@ -4,7 +4,12 @@ import { SubscriptionRepository } from '../repositories/subscription.repository.
 import { PurchaseRepository } from '../repositories/purchase.repository.js';
 import { ProductContentsRepository } from '../repositories/product-contents.repository.js';
 import { AcceleratorEnrollmentRepository } from '../repositories/accelerator-enrollment.repository.js';
-import { ContentAccessTier, ProductContentType } from '../types/billing.types.js';
+import { ProductRepository } from '../repositories/product.repository.js';
+import { SupabaseService } from '../../../infrastructure/supabase/supabase.service.js';
+import {
+  ContentAccessTier,
+  ProductContentType,
+} from '../types/billing.types.js';
 
 /**
  * The access requirement of a single piece of gateable content.
@@ -48,7 +53,45 @@ export class EntitlementService {
     private readonly purchaseRepository: PurchaseRepository,
     private readonly productContentsRepository: ProductContentsRepository,
     private readonly acceleratorEnrollmentRepository: AcceleratorEnrollmentRepository,
+    private readonly productRepository: ProductRepository,
+    private readonly supabaseService: SupabaseService,
   ) {}
+
+  /**
+   * Admins see EVERYTHING — bypass all gating (so they can author/preview
+   * gated tutorials, packs, etc.). Checks profiles.role like AdminGuard.
+   * Public so other domains (e.g. collections) can mirror the admin-preview
+   * behavior consistently rather than re-querying profiles themselves.
+   */
+  async isAdmin(userId: string): Promise<boolean> {
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single();
+    return !error && data?.role === 'admin';
+  }
+
+  /**
+   * Member-level access: an active subscription/founder OR ownership of an
+   * accelerator product (the accelerator confers membership-tier access in
+   * addition to its own bundled content — per the product access matrix).
+   * Groove-pack ownership does NOT confer membership.
+   */
+  private async hasMemberAccess(userId: string): Promise<boolean> {
+    if (await this.subscriptionRepository.hasActiveSubscription(userId)) {
+      return true;
+    }
+    const ownedIds =
+      await this.purchaseRepository.getPurchasedProductIds(userId);
+    if (ownedIds.length === 0) return false;
+    for (const id of ownedIds) {
+      const product = await this.productRepository.findById(id);
+      if (product?.type === 'accelerator') return true;
+    }
+    return false;
+  }
 
   /**
    * Resolve access for one content item. `userId` is null for anonymous callers.
@@ -58,13 +101,15 @@ export class EntitlementService {
     userId: string | null,
     content: GateableContent,
   ): Promise<boolean> {
-    switch (content.accessTier) {
-      case 'free':
-        return true;
+    if (content.accessTier === 'free') return true;
 
+    // Admins bypass all gating (author/preview any content).
+    if (userId && (await this.isAdmin(userId))) return true;
+
+    switch (content.accessTier) {
       case 'member':
         if (!userId) return false;
-        return this.subscriptionRepository.hasActiveSubscription(userId);
+        return this.hasMemberAccess(userId);
 
       case 'product': {
         if (!userId) return false;
@@ -123,7 +168,9 @@ export class EntitlementService {
       // Owned. Flat packs (unlock_day 0) → immediate access.
       if (bundle.unlockDay <= 0) return true;
       // Accelerator drip: check the enrollment clock.
-      if (await this.isDripUnlocked(userId, bundle.productId, bundle.unlockDay)) {
+      if (
+        await this.isDripUnlocked(userId, bundle.productId, bundle.unlockDay)
+      ) {
         return true;
       }
     }
@@ -171,8 +218,12 @@ export class EntitlementService {
       return items.filter((i) => i.accessTier === 'free');
     }
 
-    const hasActiveSubscription = needsMember
-      ? await this.subscriptionRepository.hasActiveSubscription(userId)
+    // Admins see everything.
+    if (await this.isAdmin(userId)) return items;
+
+    // Member access (subscription OR accelerator ownership) resolved once.
+    const memberAccess = needsMember
+      ? await this.hasMemberAccess(userId)
       : false;
     const ownedProductIds = needsProduct
       ? new Set(await this.purchaseRepository.getPurchasedProductIds(userId))
@@ -187,7 +238,7 @@ export class EntitlementService {
           case 'free':
             return true;
           case 'member':
-            return hasActiveSubscription;
+            return memberAccess;
           case 'product':
             if (item.contentRef) {
               return this.canAccessViaBundles(userId, item.contentRef);

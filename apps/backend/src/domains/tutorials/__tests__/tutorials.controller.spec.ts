@@ -9,19 +9,34 @@ import type {
 describe('TutorialsController', () => {
   let controller: TutorialsController;
   let mockTutorialsService: any;
+  let mockEntitlementService: any;
 
   beforeEach(() => {
-    // Create mock service with all required methods
+    // Create mock service with all required methods. getAccessInfo defaults to
+    // a free tutorial so assertCanAccess opens the gate — gating behavior is
+    // covered separately in entitlement.service.spec.ts.
     mockTutorialsService = {
       findAll: vi.fn(),
       findBySlug: vi.fn(),
       findExercisesByTutorialSlug: vi.fn(),
       findById: vi.fn(),
       fixExerciseLinks: vi.fn(),
+      getAccessInfo: vi
+        .fn()
+        .mockResolvedValue({ id: 'tut-1', accessTier: 'free', productId: null }),
+    };
+
+    // EntitlementService mock — defaults to granting access (these tests
+    // exercise routing/response shape, not gating).
+    mockEntitlementService = {
+      canAccessContent: vi.fn().mockResolvedValue(true),
     };
 
     // Direct instantiation - following the working pattern from app.controller.spec.ts
-    controller = new TutorialsController(mockTutorialsService);
+    controller = new TutorialsController(
+      mockTutorialsService,
+      mockEntitlementService,
+    );
   });
 
   afterEach(() => {

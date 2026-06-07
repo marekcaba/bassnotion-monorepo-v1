@@ -82,6 +82,22 @@ export class ProductContentsRepository {
     return (data as ProductContentRow[]).map((r) => this.mapRow(r));
   }
 
+  /** One bundle row by id (used by removeContent to know what to un-gate). */
+  async findById(id: string): Promise<ProductContent | null> {
+    const client = this.supabaseService.getClient();
+    const { data, error } = await client
+      .from(this.TABLE_NAME)
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error) {
+      if (error.code === 'PGRST116') return null;
+      this.logger.error('Error finding product content by id', error);
+      throw error;
+    }
+    return this.mapRow(data as ProductContentRow);
+  }
+
   // ---- Admin writes (PR-B uses these) -------------------------------------
 
   async add(

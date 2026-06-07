@@ -19,6 +19,7 @@ import { SubscriptionRepository } from './repositories/subscription.repository.j
 import { PurchaseRepository } from './repositories/purchase.repository.js';
 import { ProductRepository } from './repositories/product.repository.js';
 import { ProductContentsRepository } from './repositories/product-contents.repository.js';
+import { EntitlementService } from './services/entitlement.service.js';
 import type {
   CreateCheckoutSessionDto,
   CheckoutSessionResponse,
@@ -26,9 +27,7 @@ import type {
   UserAccessStatus,
   Product,
 } from './types/billing.types.js';
-import {
-  COURSE_PRODUCTS,
-} from './types/billing.types.js';
+import { COURSE_PRODUCTS } from './types/billing.types.js';
 
 interface AuthUser {
   id: string;
@@ -44,6 +43,7 @@ export class BillingController {
     private readonly purchaseRepository: PurchaseRepository,
     private readonly productRepository: ProductRepository,
     private readonly productContentsRepository: ProductContentsRepository,
+    private readonly entitlementService: EntitlementService,
   ) {}
 
   /**
@@ -227,6 +227,21 @@ export class BillingController {
   async getUserAccess(
     @CurrentUser() user: AuthUser,
   ): Promise<UserAccessStatus> {
+    // Admins bypass gating everywhere (same rule the content/collections paths
+    // use), so the store must treat them as owning every product — otherwise
+    // an admin sees a pack as accessible in the sidebar but "not owned" on the
+    // store. Single source of truth: resolve ownership here, not per-consumer.
+    if (await this.entitlementService.isAdmin(user.id)) {
+      const products = await this.productRepository.findAllActive();
+      return {
+        hasActiveSubscription: true,
+        subscriptionStatus: 'active',
+        subscriptionEndDate: undefined,
+        purchasedCourses: [],
+        purchasedProductIds: products.map((p) => p.id),
+      };
+    }
+
     const [subscription, purchasedCourses, purchasedProductIds] =
       await Promise.all([
         this.subscriptionRepository.findByUserId(user.id),

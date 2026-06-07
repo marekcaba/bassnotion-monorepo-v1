@@ -382,8 +382,7 @@ function AdminTutorialEditPageContent({ params }: AdminTutorialPageProps) {
           creatorChannelUrl: tutorial.creatorChannelUrl,
           creatorAvatarUrl: tutorial.creatorAvatarUrl,
           creatorSubscriberCount: tutorial.creatorSubscriberCount,
-          // Category and sidebar title
-          category: tutorial.category,
+          // Sidebar title
           sidebarTitle: tutorial.sidebarTitle,
           titleHighlightWords: tutorial.titleHighlightWords,
           // Derive legacy understand fields from blocks for backward compatibility
@@ -1187,46 +1186,6 @@ function AdminTutorialEditPageContent({ params }: AdminTutorialPageProps) {
                         <option value="advanced">Advanced</option>
                       </select>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Product Path
-                      </label>
-                      <select
-                        value={tutorial.category || ''}
-                        onChange={(e) => {
-                          const updated = Tutorial.reconstitute({
-                            id: tutorial.id,
-                            title: tutorial.title,
-                            slug: tutorial.slug,
-                            description: tutorial.description,
-                            youtubeId: tutorial.youtubeId,
-                            duration: tutorial.duration,
-                            authorName: tutorial.authorName,
-                            thumbnailUrl: tutorial.thumbnailUrl,
-                            level: tutorial.level,
-                            tags: tutorial.tags,
-                            isActive: tutorial.isActive,
-                            publishedAt: tutorial.publishedAt,
-                            createdAt: tutorial.createdAt,
-                            updatedAt: new Date(),
-                            sections: tutorial.sections,
-                            viewCount: tutorial.viewCount,
-                            category: e.target.value || undefined,
-                            sidebarTitle: tutorial.sidebarTitle,
-                          });
-                          setTutorial(updated);
-                          setHasChanges(true);
-                        }}
-                        className="w-full px-3 py-2 border rounded-md"
-                      >
-                        <option value="">-- Select Product --</option>
-                        <option value="starter-kit">Starter Kit</option>
-                        <option value="revisiting-basics">
-                          Revisiting Basics
-                        </option>
-                      </select>
-                    </div>
-
                     {/* Sidebar Title */}
                     <div>
                       <label className="block text-sm font-medium mb-1">
@@ -1253,7 +1212,6 @@ function AdminTutorialEditPageContent({ params }: AdminTutorialPageProps) {
                             updatedAt: new Date(),
                             sections: tutorial.sections,
                             viewCount: tutorial.viewCount,
-                            category: tutorial.category,
                             sidebarTitle: e.target.value || undefined,
                           });
                           setTutorial(updated);
@@ -1298,7 +1256,6 @@ function AdminTutorialEditPageContent({ params }: AdminTutorialPageProps) {
                             updatedAt: new Date(),
                             sections: tutorial.sections,
                             viewCount: tutorial.viewCount,
-                            category: tutorial.category,
                             sidebarTitle: tutorial.sidebarTitle,
                             titleHighlightWords:
                               words.length > 0 ? words : undefined,

@@ -1,0 +1,24 @@
+-- Migration: Drop the now-dead tutorials.category column.
+-- Date: 2026-06-07
+--
+-- WHY: `category` was a free-text VARCHAR used to bucket tutorials into the
+-- hardcoded sidebar folders by string-match. That whole mechanism has been
+-- replaced by the DB-driven collections system (collections +
+-- collection_tutorials), and every code reader/writer of the column has been
+-- removed in this PR (entity, repositories, services, DTOs, contracts types,
+-- and both admin tutorial UIs). The column is now unreferenced.
+--
+-- The collections backfill (20260607000002) already read this column to seed
+-- the initial folder assignments, so its data has been carried forward — this
+-- drop loses nothing that isn't already in collection_tutorials.
+--
+-- SAFE: no index, constraint, RLS policy, or trigger depends on the column
+-- (it was added as a bare `ADD COLUMN IF NOT EXISTS category VARCHAR`).
+-- IF EXISTS makes the migration idempotent / safe to re-run.
+--
+-- ORDERING: the code that wrote `category` into tutorials INSERT/UPDATE is
+-- removed in the same PR. This migration runs after that code deploys (the
+-- deploy workflow applies migrations post-deploy), so no live writer references
+-- the column when it's dropped.
+
+ALTER TABLE public.tutorials DROP COLUMN IF EXISTS category;

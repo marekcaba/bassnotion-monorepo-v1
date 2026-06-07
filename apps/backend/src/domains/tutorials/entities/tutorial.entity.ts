@@ -32,7 +32,6 @@ export interface TutorialProps {
   creatorChannelUrl?: string;
   creatorAvatarUrl?: string;
   creatorSubscriberCount?: number;
-  category?: string;
   // Modular block system
   blocks?: AnyBlock[];
   // Act 1: Understand fields (legacy)
@@ -172,10 +171,6 @@ export class Tutorial {
 
   get creatorSubscriberCount(): number | undefined {
     return this.props.creatorSubscriberCount;
-  }
-
-  get category(): string | undefined {
-    return this.props.category;
   }
 
   // Act 1: Understand getters
@@ -324,7 +319,6 @@ export class Tutorial {
       creator_channel_url: this.props.creatorChannelUrl,
       creator_avatar_url: this.props.creatorAvatarUrl,
       creator_subscriber_count: this.props.creatorSubscriberCount,
-      category: this.props.category,
       // Modular block system
       blocks: this.props.blocks || [],
       // Act 1: Understand fields (legacy)
