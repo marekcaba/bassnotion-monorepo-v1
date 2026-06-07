@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQueryClient } from '@tanstack/react-query';
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { authService } from '../../api/auth';
 import { useAuth } from '../../hooks/use-auth';
@@ -14,6 +13,7 @@ import { supabase } from '@/infrastructure/supabase/client';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { apiClient } from '@/lib/api-client';
+import { queryClient } from '@/lib/react-query';
 import { isMockTestEnv } from '@/shared/utils/testEnv';
 
 interface AuthProviderProps {
@@ -34,7 +34,6 @@ function AuthProviderContent({ children }: AuthProviderProps) {
   const _router = useRouter();
   const { navigateWithTransition } = useViewTransitionRouter();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   // Track the last authenticated user id so we can wipe the React Query cache
   // when the IDENTITY changes (sign-out, or sign-in as a DIFFERENT user). The
   // cache keys aren't user-scoped, so without this a new account can briefly
