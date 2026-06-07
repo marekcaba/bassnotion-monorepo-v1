@@ -6,6 +6,7 @@ import { EntitlementService } from '../billing/services/entitlement.service.js';
 import { PurchaseRepository } from '../billing/repositories/purchase.repository.js';
 import { ProductRepository } from '../billing/repositories/product.repository.js';
 import { ProductContentsRepository } from '../billing/repositories/product-contents.repository.js';
+import { TutorialsService } from '../tutorials/tutorials.service.js';
 import { CollectionView } from './types/collections.types.js';
 
 /**
@@ -32,6 +33,7 @@ export class CollectionsService {
     private readonly purchaseRepository: PurchaseRepository,
     private readonly productRepository: ProductRepository,
     private readonly productContentsRepository: ProductContentsRepository,
+    private readonly tutorialsService: TutorialsService,
   ) {}
 
   /**
@@ -82,6 +84,27 @@ export class CollectionsService {
     );
     const accessibleIds = new Set(accessible.map((a) => a._collectionId));
 
+    // Within an UNLOCKED folder, still hide individual tutorials the caller
+    // can't open — e.g. a pack-gated tutorial that the category backfill also
+    // placed in the free Starter Kit folder. Listing it in a free folder where
+    // it can't be opened is confusing; the gated tutorial still surfaces in the
+    // owned pack's virtual folder for buyers. Resolve all such tutorials in ONE
+    // access pass (the same authority the tutorials list uses), then partition
+    // the allowed set back per folder.
+    const idsToCheck = new Set<string>();
+    for (const c of collections) {
+      if (accessibleIds.has(c.id)) {
+        for (const id of tutorialIdsByCollection.get(c.id) ?? [])
+          idsToCheck.add(id);
+      }
+    }
+    const allowedTutorialIds = new Set(
+      await this.tutorialsService.filterAccessibleTutorialIds(
+        [...idsToCheck],
+        userId,
+      ),
+    );
+
     return collections.map((c) => {
       const isLocked = !accessibleIds.has(c.id);
       return {
@@ -93,11 +116,13 @@ export class CollectionsService {
         sortOrder: c.sortOrder,
         source: 'collection' as const,
         isLocked,
-        // Withhold contents for a locked teaser — the sidebar shows the folder
-        // name + lock, not its tutorials.
+        // Withhold contents for a locked teaser (folder name + lock only);
+        // otherwise list only the tutorials the caller can actually open.
         tutorialIds: isLocked
           ? []
-          : tutorialIdsByCollection.get(c.id) ?? [],
+          : (tutorialIdsByCollection.get(c.id) ?? []).filter((id) =>
+              allowedTutorialIds.has(id),
+            ),
       };
     });
   }

@@ -170,6 +170,24 @@ export class TutorialsService {
   }
 
   /**
+   * Filter a set of tutorial IDs to those the user may access, preserving order.
+   * The same gating the list endpoint applies, exposed for other domains
+   * (e.g. collections hiding gated tutorials from a folder's list) so there's
+   * one access authority, not a re-implementation.
+   */
+  async filterAccessibleTutorialIds(
+    tutorialIds: string[],
+    userId: string | null | undefined,
+  ): Promise<string[]> {
+    if (tutorialIds.length === 0) return [];
+    const filtered = await this.filterByAccess(
+      tutorialIds.map((id) => ({ id })),
+      userId,
+    );
+    return filtered.map((t) => t.id);
+  }
+
+  /**
    * Lightweight access-tier lookup for gating. Reads the new access_tier /
    * product_id columns directly (they aren't threaded through the DDD entity).
    * Returns null when the tutorial doesn't exist / is inactive.

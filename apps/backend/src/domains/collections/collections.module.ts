@@ -11,9 +11,12 @@ import { AuthModule } from '../user/auth/auth.module.js';
 // repositories the service uses to resolve folder access and build virtual
 // pack-folders from owned products.
 import { BillingModule } from '../billing/billing.module.js';
+// TutorialsModule exports TutorialsService, reused to hide individual gated
+// tutorials from a folder's list (one access authority, no re-implementation).
+import { TutorialsModule } from '../tutorials/tutorials.module.js';
 
 @Module({
-  imports: [SupabaseModule, AuthModule, BillingModule], // AuthModule for AdminGuard
+  imports: [SupabaseModule, AuthModule, BillingModule, TutorialsModule], // AuthModule for AdminGuard
   controllers: [CollectionsController, AdminCollectionsController],
   providers: [
     CollectionsService,

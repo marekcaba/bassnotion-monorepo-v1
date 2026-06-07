@@ -7,6 +7,7 @@ import type { EntitlementService } from '../../billing/services/entitlement.serv
 import type { PurchaseRepository } from '../../billing/repositories/purchase.repository.js';
 import type { ProductRepository } from '../../billing/repositories/product.repository.js';
 import type { ProductContentsRepository } from '../../billing/repositories/product-contents.repository.js';
+import type { TutorialsService } from '../../tutorials/tutorials.service.js';
 import type { Collection } from '../types/collections.types.js';
 
 // --- fixtures ---------------------------------------------------------------
@@ -43,6 +44,7 @@ describe('CollectionsService', () => {
   let purchaseRepo: any;
   let productRepo: any;
   let productContentsRepo: any;
+  let tutorialsService: any;
 
   beforeEach(() => {
     collectionsRepo = {
@@ -72,6 +74,13 @@ describe('CollectionsService', () => {
     purchaseRepo = { getPurchasedProductIds: vi.fn().mockResolvedValue([]) };
     productRepo = { findById: vi.fn() };
     productContentsRepo = { findByProductId: vi.fn() };
+    // Default: every tutorial is accessible (pass-through). Tests that need
+    // gating override this to drop specific ids.
+    tutorialsService = {
+      filterAccessibleTutorialIds: vi
+        .fn()
+        .mockImplementation((ids: string[]) => Promise.resolve(ids)),
+    };
 
     service = new CollectionsService(
       collectionsRepo as unknown as CollectionsRepository,
@@ -80,6 +89,7 @@ describe('CollectionsService', () => {
       purchaseRepo as unknown as PurchaseRepository,
       productRepo as unknown as ProductRepository,
       productContentsRepo as unknown as ProductContentsRepository,
+      tutorialsService as unknown as TutorialsService,
     );
   });
 
@@ -94,6 +104,20 @@ describe('CollectionsService', () => {
 
     const member = result.find((c) => c.id === 'col-member')!;
     expect(member.tutorialIds).toEqual(['tut-3']);
+  });
+
+  it('hides an individual gated tutorial from an unlocked (free) folder', async () => {
+    // tut-2 is gated (e.g. bundled in a pack the caller doesn't own) — the
+    // access filter drops it even though it's assigned to the free folder.
+    tutorialsService.filterAccessibleTutorialIds.mockImplementation(
+      (ids: string[]) => Promise.resolve(ids.filter((id) => id !== 'tut-2')),
+    );
+
+    const result = await service.getVisibleCollections('user-1');
+
+    const free = result.find((c) => c.id === 'col-free')!;
+    expect(free.isLocked).toBe(false);
+    expect(free.tutorialIds).toEqual(['tut-1']); // tut-2 filtered out
   });
 
   it('returns a locked folder as a teaser WITHOUT its tutorialIds', async () => {
