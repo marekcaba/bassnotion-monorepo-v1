@@ -17,13 +17,19 @@ import { DrumBeatsPlayer } from '../DrumBeatsPlayer.js';
 
 const REPO = resolve(__dirname, '../../../../../../../../..');
 const AUDIT = resolve(REPO, 'docs/dev-tools/audio-audit');
-const STEM_WAV = resolve(AUDIT, 'test-groove-2-drums.wav');
-const OUT_WAV = resolve(AUDIT, 'ours-tg2-89.wav');
-const OUT_JSON = resolve(AUDIT, 'ours-tg2-89.behavior.json');
 
-// 8 bars @ 109 BPM = the file length; the stem IS one full loop.
-const ORIGINAL_BPM = 109;
-const TARGET_BPM = 89;
+// Parameterizable via env so this one harness can render ANY decoded stem at ANY
+// tempo (defaults to the test-groove-2 89/109 case for backwards compatibility):
+//   AUDIT_STEM=waitlist-drums.wav AUDIT_ORIG_BPM=133 AUDIT_TARGET_BPM=103 \
+//   AUDIT_OUT=ours-waitlist-103 AUDIT_RENDER=1 npx vitest run .../renderTestGroove2.spec.ts
+const STEM_NAME = process.env.AUDIT_STEM ?? 'test-groove-2-drums.wav';
+const OUT_BASE = process.env.AUDIT_OUT ?? 'ours-tg2-89';
+const ORIGINAL_BPM = Number(process.env.AUDIT_ORIG_BPM ?? 109);
+const TARGET_BPM = Number(process.env.AUDIT_TARGET_BPM ?? 89);
+
+const STEM_WAV = resolve(AUDIT, STEM_NAME);
+const OUT_WAV = resolve(AUDIT, `${OUT_BASE}.wav`);
+const OUT_JSON = resolve(AUDIT, `${OUT_BASE}.behavior.json`);
 
 /** Parse a float32 / int16 PCM WAV into per-channel Float32Arrays. */
 function parseWavMultich(buf: Buffer): { sr: number; channels: Float32Array[] } {
