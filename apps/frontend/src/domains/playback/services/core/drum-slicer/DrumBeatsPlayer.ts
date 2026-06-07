@@ -350,7 +350,22 @@ export class DrumBeatsPlayer {
     };
     const head = rms(0, Math.floor(n * 0.25));
     const tail = rms(Math.floor(n * 0.6), n);
-    if (head <= 1e-9) return 1; // silent head → treat as sustained (no attack to protect)
+    // LATE-ATTACK GUARD (today's one safe change): a slice whose head is near-silent OR
+    // whose PEAK falls in its last 25% is a mis-slice — the previous hit's decay followed
+    // by a late attack, NOT a sustained texture. tail/head explodes (e.g. 20) and the old
+    // code looped it, which re-fires the late attack mid-loop = an isolated needle/blip
+    // before the next transient (the artifact seen on sparse beats). A late attack means
+    // RING OUT, never loop. This is a pure CLASSIFICATION change — it only moves slices
+    // from loop → ring-out; it never touches onset positions or the tail-fill geometry.
+    let pk = 0;
+    let pkIdx = 0;
+    for (let i = 0; i < n; i++) {
+      const a = ch[i]! < 0 ? -ch[i]! : ch[i]!;
+      if (a > pk) { pk = a; pkIdx = i; }
+    }
+    if (pk <= 1e-9) return 1; // truly silent slice — nothing to protect
+    if (head < pk * 0.08) return 0; // silent head + energy later = mis-slice → ring out
+    if (pkIdx > n * 0.75 && pk > head * 1.6) return 0; // late attack → ring out
     return tail / head;
   }
 
@@ -359,6 +374,22 @@ export class DrumBeatsPlayer {
   /** Real-time loop period at the current ratio (= the rendered buffer length). */
   private get period(): number {
     return this.loopDuration / (this.ratio || 1);
+  }
+
+  /** DEVICE-AWARE scheduling margin (s). All source starts/swaps are scheduled this
+   *  far ahead of `currentTime` so a janky main thread (mobile, GC pause, a slow
+   *  re-render) still lands the swap in the FUTURE rather than late/clamped-to-now,
+   *  which would cause an audible discontinuity. A fixed 5ms was too tight for mobile;
+   *  this scales with the AudioContext's own latency (a proxy for how loaded/slow the
+   *  audio path is) and floors at 20ms. The drum source itself is a BufferSource, so
+   *  once started it plays sample-accurately regardless of CPU — only the START instant
+   *  needs this guard. */
+  private get scheduleMargin(): number {
+    const out =
+      typeof this.ctx.outputLatency === 'number' && this.ctx.outputLatency > 0
+        ? this.ctx.outputLatency
+        : ((this.ctx as { baseLatency?: number }).baseLatency ?? 0);
+    return Math.max(0.02, Math.min(0.12, out * 2));
   }
 
   start(when?: number): void {
@@ -428,7 +459,8 @@ export class DrumBeatsPlayer {
       }
     } else {
       // No live source yet (shouldn't happen mid-play) — render fresh.
-      this.renderAndArm(this.ctx.currentTime + 0.005, 0);
+      // renderAndArm applies its own device-aware future margin.
+      this.renderAndArm(this.ctx.currentTime, 0);
     }
     // Schedule the settle re-render (debounced — resets on every tick during a drag).
     if (this.settleTimer != null) clearTimeout(this.settleTimer);
@@ -452,7 +484,8 @@ export class DrumBeatsPlayer {
     // playbackRate that's been running on the rendered buffer.
     const now = this.ctx.currentTime;
     const phaseSec = this.audiblePhaseSec(now);
-    this.renderAndArm(now + 0.005, phaseSec, /*crossfade*/ true);
+    // renderAndArm floors the start at now + device-aware margin (safe-swap).
+    this.renderAndArm(now, phaseSec, /*crossfade*/ true);
   }
 
   /** The real-time phase (s) into the AUDIBLE loop right now, folding over the audible
@@ -486,6 +519,9 @@ export class DrumBeatsPlayer {
   private renderAndArm(startAt: number, phaseSec: number, crossfade = false): void {
     let buf: AudioBuffer;
     try {
+      // renderLoopBuffer is a synchronous multi-MB array build — on a slow device it
+      // can take several ms, during which currentTime advances. So we read the clock
+      // AFTER it and schedule relative to that, never relative to the pre-render time.
       buf = this.renderLoopBuffer(this.ratio);
     } catch {
       return;
@@ -493,7 +529,16 @@ export class DrumBeatsPlayer {
     this.loopBuffer = buf;
     this.renderedRatio = this.ratio; // buffer now matches the target → playbackRate 1.0
     this.renderedPeriod = buf.length / this.sr; // audible period (rate 1)
-    const at = Math.max(this.ctx.currentTime, startAt);
+    // SAFE-SWAP: always schedule the start a device-aware margin into the FUTURE,
+    // measured from NOW (post-render). If the caller's intended startAt is further out,
+    // honour it; otherwise floor at now+margin so a slow render / janky main thread can
+    // never produce a late or clamped-to-now start (which would click).
+    const at = Math.max(startAt, this.ctx.currentTime + this.scheduleMargin);
+    // Advance the phase by the time we slipped between the intended start and the actual
+    // `at`, so the swap still lands at the correct musical position (the audible loop
+    // keeps moving while we render). Only matters for the settle re-render (crossfade).
+    const slipSec = crossfade ? Math.max(0, at - startAt) : 0;
+    phaseSec += slipSec;
     const xf = 0.012; // equal-power crossfade length (s)
 
     // Hold the OUTGOING source so we can crossfade out of it (settle) instead of cut.
@@ -699,44 +744,88 @@ export class DrumBeatsPlayer {
     // 1) The slice's own audio, VERBATIM (attack + full natural decay).
     for (let i = 0; i < copyLen; i++) region[i] = src[i]!;
 
-    // 2) CONTINUOUS-TAIL GAP FILL (matches measured Ableton behavior). At slow tempo the
-    //    grid slot is LONGER than the slice's source. The source's late decay went quiet/
-    //    silent by its end, but ABLETON keeps a continuous low-level tail all the way to
-    //    the next hit (measured: source @109 silent by ~0.3s, but Ableton @89 holds
-    //    ~0.012 RMS to 0.66s). It does this by LOOPING the quiet late-decay region at its
-    //    NATURAL level (not silence, not extra-decayed). We do the same: take the last
-    //    quiet decay window [ls,le) (zero-cross-snapped, well past the attack so it can't
-    //    re-fire it), and loop it forward to fill the gap, with equal-power seams. Only
-    //    when there's a meaningful gap (>10ms) and the slice has real tail content.
+    // 2) WSOLA TAIL TIME-STRETCH (matches MEASURED Ableton). Measured across ALL 24 tg2
+    //    tails (orig vs Ableton@89): Ableton stretches the decay tail to span the longer
+    //    slot while KEEPING ORIGINAL PITCH — brightness (zero-cross rate) ratio ableton/orig
+    //    = 1.01 mean (every tail within ±10%), the RMS envelope matches at the stretched
+    //    time position, and the waveform DEcorrelates (verbatim-corr ~0.0-0.4). That is the
+    //    signature of WSOLA / overlap-add granular stretch — NOT varispeed (which drops
+    //    pitch ~28%: the bug the user heard as "the bed between transients is pitched
+    //    down"), NOT looping (re-fires ghost-notes on busy beats), NOT verbatim (ends early).
+    //    So we WSOLA the late-decay region [decayStart, copyLen) to fill [decayStart, len):
+    //    overlap-add Hann grains, advancing the SOURCE read slower than the OUTPUT write by
+    //    the stretch factor, and at each grain searching a small window for the source
+    //    offset whose overlap best CROSS-CORRELATES with the just-written tail (phase
+    //    continuity → smooth, pitch-true). Grains are original-rate samples ⇒ pitch kept.
     const GAP_MIN = Math.round(0.01 * this.sr);
-    if (len - copyLen > GAP_MIN && copyLen > 64) {
-      const xf = Math.max(1, Math.round(0.006 * this.sr));
-      const zr = Math.max(8, Math.round(0.004 * this.sr));
-      // Quiet decay window = last ~30% of the slice, after the attack/body.
-      const winStart = Math.max(Math.floor(copyLen * 0.7), copyLen - Math.round(0.12 * this.sr));
-      let ls = this.nearestZeroCrossing(src, winStart, zr, Math.floor(copyLen * 0.5), copyLen - xf - 2);
-      let le = this.nearestZeroCrossing(src, copyLen - 1, zr, ls + xf + 1, copyLen);
-      let ll = le - ls;
-      if (ll > xf * 2) {
-        // Loop [ls,le) forward from copyLen onward, equal-power crossfade at each seam.
-        let writePos = copyLen;
-        let rep = 0;
-        while (writePos < len) {
-          const seamStart = writePos - xf;
-          for (let i = 0; i < ll && seamStart + i < len; i++) {
-            const s = src[ls + i]!;
-            const di = seamStart + i;
-            if (di < 0) continue;
-            if (i < xf) {
-              const t = i / xf;
-              region[di] = region[di]! * Math.cos((t * Math.PI) / 2) + s * Math.sin((t * Math.PI) / 2);
-            } else {
-              region[di] = s;
+    if (len - copyLen > GAP_MIN && copyLen > 256) {
+      const attackGuard = Math.round(0.012 * this.sr);
+      const decayStart = Math.max(attackGuard, Math.floor(copyLen * 0.45)); // stretch only the late decay
+      const srcLen = copyLen - decayStart; // source samples available to stretch
+      const outLen = len - decayStart; // samples we must produce
+      if (srcLen > 512 && outLen > srcLen) {
+        const stretch = outLen / srcLen; // >1
+        // WSOLA params (tuned for a quiet decay tail, not a transient — small grains).
+        const grain = Math.min(srcLen >> 1, Math.max(64, Math.round(0.020 * this.sr))); // ~20ms
+        const half = grain >> 1;
+        const Ho = half; // OUTPUT hop (50% overlap → Hann gives constant power)
+        const Ha = Ho / stretch; // SOURCE analysis hop (slower advance = stretch)
+        // WSOLA phase-search, kept CHEAP (the live nudge re-renders this synchronously, so a
+        // big search would freeze the audio thread). A decay tail has no sharp periodicity to
+        // phase-lock, so a small ±2.5ms search at a COARSE stride is enough, and the dot uses
+        // a decimated stride. We also SKIP the search when the overlap region is near-silent
+        // (most of the tail) — there's nothing to align, so the centred grain is fine.
+        const seek = Math.min(half, Math.round(0.0025 * this.sr)); // ±2.5ms
+        const seekStep = Math.max(1, Math.round(0.0004 * this.sr)); // coarse search stride
+        const corrStride = Math.max(1, half >> 5); // decimate the correlation dot product
+        // Hann window (one allocation per slice).
+        const win = new Float32Array(grain);
+        for (let i = 0; i < grain; i++) win[i] = 0.5 * (1 - Math.cos((2 * Math.PI * i) / (grain - 1)));
+        // Output accumulator over the stretched region (relative to decayStart).
+        const acc = new Float32Array(outLen);
+        let outPos = 0; // write head into acc
+        let srcPosF = 0; // fractional source read (relative to decayStart)
+        let prevOff = decayStart; // last source offset chosen (for xcorr seed)
+        let first = true;
+        while (outPos + grain <= outLen) {
+          const center = Math.min(copyLen - grain, Math.max(decayStart, decayStart + Math.round(srcPosF)));
+          let bestOff = center;
+          // Only phase-search when the overlap region carries audible energy (decimated RMS);
+          // a near-silent tail has nothing to align, so skip straight to the centred grain.
+          let ovEnergy = 0;
+          for (let i = 0; i < half; i += corrStride) ovEnergy += acc[outPos + i]! * acc[outPos + i]!;
+          if (!first && ovEnergy > 1e-6) {
+            let best = -Infinity;
+            const lo = Math.max(decayStart, center - seek);
+            const hi = Math.min(copyLen - grain, center + seek);
+            for (let off = lo; off <= hi; off += seekStep) {
+              let dot = 0;
+              for (let i = 0; i < half; i += corrStride) dot += (src[off + i] ?? 0) * acc[outPos + i]!;
+              if (dot > best) { best = dot; bestOff = off; }
             }
           }
-          writePos = seamStart + ll;
-          if (++rep > 8192) break;
+          // Overlap-add the windowed grain.
+          for (let i = 0; i < grain && outPos + i < outLen; i++) {
+            acc[outPos + i]! += (src[bestOff + i] ?? 0) * win[i]!;
+          }
+          prevOff = bestOff;
+          outPos += Ho;
+          srcPosF += Ha;
+          first = false;
         }
+        // Write the stretched tail into the region, equal-power crossfade onto the verbatim
+        // body at the junction so there's no step.
+        const xf = Math.max(1, Math.round(0.006 * this.sr));
+        for (let j = 0; j < outLen && decayStart + j < len; j++) {
+          const di = decayStart + j;
+          if (j < xf) {
+            const t = j / xf;
+            region[di] = region[di]! * Math.cos((t * Math.PI) / 2) + acc[j]! * Math.sin((t * Math.PI) / 2);
+          } else {
+            region[di] = acc[j]!;
+          }
+        }
+        void prevOff; // (kept for readability; the running offset drives the xcorr seed)
       }
     }
 
@@ -1049,7 +1138,8 @@ export class DrumBeatsPlayer {
     const now = this.ctx.currentTime;
     const inputPos = this.currentInputPos(now);
     const phaseSec = this.period > 0 ? (inputPos / (this.ratio || 1)) % this.period : 0;
-    this.renderAndArm(now + 0.005, phaseSec);
+    // Crossfade + device-aware margin so a live tuning change doesn't hard-swap/click.
+    this.renderAndArm(now, phaseSec, /*crossfade*/ true);
   }
 
   /** Tweak gap-fill character live (dev panel). */

@@ -211,14 +211,34 @@ export function detectOnsetsDetailed(
     }
   }
 
+  // PRE-ATTACK GHOST MERGE (today's variable #2) — a hit with a slow spectral pre-rise
+  // fires an early WEAK peak, then the true STRONG peak ~40-50ms later also passes the gap,
+  // so a ghost onset sits just BEFORE every loud hit (it splits the attack into a tiny
+  // pre-slice + the real hit). DIRECTIONAL and PURELY SUBTRACTIVE: drop ONLY the earlier
+  // weak peak when a much louder one follows within a tight window. It never shifts an
+  // onset's TIME (no peak-snap) and never removes a SECONDARY that follows a loud hit (a
+  // real hi-hat in a tail), so it can't move the grid or empty a gap — it only removes a
+  // boundary Ableton wouldn't mark.
+  const ghostWindow = 0.05; // ≤50ms: pre-attack rise span; beyond this is a real hit
+  const mergeRatio = 1.8; // the following peak must be ≥1.8× louder to be the "true" attack
+  const merged: { time: number; flux: number }[] = [];
+  for (const c of candidates) {
+    const prev = merged[merged.length - 1];
+    if (prev && c.time - prev.time < ghostWindow && c.flux >= prev.flux * mergeRatio) {
+      merged[merged.length - 1] = c; // replace the ghost with the true (louder) attack
+    } else {
+      merged.push(c); // keep everything else, including secondaries AFTER a loud hit
+    }
+  }
+
   // Global confidence: normalise by the loudest candidate's flux, then drop the
   // globally-weak ones (false positives in quiet sections). Origin (0) is kept
   // unconditionally at confidence 1 as the loop downbeat.
   let maxFlux = 0;
-  for (const c of candidates) if (c.flux > maxFlux) maxFlux = c.flux;
+  for (const c of merged) if (c.flux > maxFlux) maxFlux = c.flux;
   const floor = Math.max(0, opt.minRelativeStrength);
   const result: OnsetInfo[] = [];
-  for (const c of candidates) {
+  for (const c of merged) {
     const confidence = maxFlux > 0 ? c.flux / maxFlux : 1;
     if (confidence >= floor) result.push({ time: c.time, confidence });
   }

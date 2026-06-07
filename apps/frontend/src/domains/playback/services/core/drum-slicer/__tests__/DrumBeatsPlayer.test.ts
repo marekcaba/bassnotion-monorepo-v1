@@ -304,4 +304,26 @@ describe('DrumBeatsPlayer — live tempo nudge', () => {
     expect(settledSrc.value).toBeCloseTo(1, 5);
     player.stop();
   });
+
+  it('schedule margin is device-aware: floors at 20ms, scales with outputLatency', () => {
+    const data = makeDrumLoop(1.0, [0, 0.5]);
+    const mk = (outputLatency?: number) => {
+      const ctx = liveCtx() as unknown as { outputLatency?: number };
+      if (outputLatency != null) ctx.outputLatency = outputLatency;
+      const player = new DrumBeatsPlayer(
+        ctx as unknown as AudioContext,
+        makeBuffer([data]),
+        {} as AudioNode,
+        { loopDurationSeconds: 1.0 },
+      );
+      // scheduleMargin is private — read via cast.
+      return (player as unknown as { scheduleMargin: number }).scheduleMargin;
+    };
+    // No/low latency (desktop) → 20ms floor.
+    expect(mk(0)).toBeCloseTo(0.02, 5);
+    expect(mk(0.005)).toBeCloseTo(0.02, 5); // 2x5ms=10ms < 20ms floor
+    // Higher latency (mobile / bluetooth) → scales to ~2x, capped at 120ms.
+    expect(mk(0.04)).toBeCloseTo(0.08, 5); // 2x40ms
+    expect(mk(0.2)).toBeCloseTo(0.12, 5); // 2x200ms capped at 120ms
+  });
 });
