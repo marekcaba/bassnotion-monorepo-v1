@@ -62,6 +62,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                     Products
                   </a>
                   <a
+                    href="/admin/collections"
+                    className="inline-flex items-center border-b-2 border-transparent hover:border-gray-300 px-1 pt-1 text-sm font-medium text-gray-900"
+                  >
+                    Folders
+                  </a>
+                  <a
                     href="/admin/assessment"
                     className="inline-flex items-center border-b-2 border-transparent hover:border-gray-300 px-1 pt-1 text-sm font-medium text-gray-900"
                   >
