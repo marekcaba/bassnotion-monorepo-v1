@@ -75,6 +75,18 @@ async function authHeaders(): Promise<Record<string, string>> {
   return headers;
 }
 
+/**
+ * Auth headers for requests with NO body (GET/DELETE). Fastify's JSON parser
+ * rejects an empty body when Content-Type is application/json
+ * ("Body cannot be empty when content-type is set to 'application/json'" → 400),
+ * so we omit Content-Type entirely for body-less calls.
+ */
+async function authHeadersNoBody(): Promise<Record<string, string>> {
+  const headers = await authHeaders();
+  delete headers['Content-Type'];
+  return headers;
+}
+
 const BASE = `${API_BASE_URL}/api/v1/admin/collections`;
 
 async function parseError(res: Response, fallback: string): Promise<never> {
@@ -135,7 +147,7 @@ export const adminCollectionsApi = {
   async remove(id: string): Promise<void> {
     const res = await fetch(`${BASE}/${id}`, {
       method: 'DELETE',
-      headers: await authHeaders(),
+      headers: await authHeadersNoBody(),
     });
     if (!res.ok) await parseError(res, 'Failed to delete collection');
   },
@@ -159,7 +171,7 @@ export const adminCollectionsApi = {
   async unassignTutorial(assignmentId: string): Promise<void> {
     const res = await fetch(`${BASE}/tutorials/${assignmentId}`, {
       method: 'DELETE',
-      headers: await authHeaders(),
+      headers: await authHeadersNoBody(),
     });
     if (!res.ok) await parseError(res, 'Failed to unassign tutorial');
   },
