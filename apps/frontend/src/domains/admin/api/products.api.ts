@@ -16,7 +16,7 @@ export type AdminProductType =
   | 'accelerator'
   | 'course';
 
-export type AdminContentType = 'groove' | 'video' | 'exercise';
+export type AdminContentType = 'tutorial' | 'groove' | 'video' | 'exercise';
 
 export interface AdminProduct {
   id: string;

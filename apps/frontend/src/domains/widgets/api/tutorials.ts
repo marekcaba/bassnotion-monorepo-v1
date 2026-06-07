@@ -4,7 +4,29 @@ import type {
   TutorialExercisesResponse,
 } from '@bassnotion/contracts';
 
+import { supabase } from '@/infrastructure/supabase/client';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+
+/**
+ * Optional auth header — attaches the session Bearer token IF the user is
+ * logged in (does NOT throw for anon). The tutorials list/detail endpoints are
+ * OptionalAuthGuard-gated: anon → free tutorials only; logged-in → their tier;
+ * admin → all. Without this, the server can't tell who's asking and returns
+ * free-only even to members/admins.
+ */
+async function optionalAuthHeader(): Promise<Record<string, string>> {
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    return session?.access_token
+      ? { Authorization: `Bearer ${session.access_token}` }
+      : {};
+  } catch {
+    return {};
+  }
+}
 
 class TutorialsApiError extends Error {
   constructor(
@@ -58,7 +80,9 @@ async function fetchWithErrorHandling<T>(
  * Fetch all tutorials from the backend
  */
 export async function fetchTutorials(): Promise<TutorialsResponse> {
-  return fetchWithErrorHandling<TutorialsResponse>(`${API_BASE_URL}/tutorials`);
+  return fetchWithErrorHandling<TutorialsResponse>(`${API_BASE_URL}/tutorials`, {
+    headers: await optionalAuthHeader(),
+  });
 }
 
 /**
@@ -73,6 +97,7 @@ export async function fetchTutorialBySlug(
 
   return fetchWithErrorHandling<TutorialResponse>(
     `${API_BASE_URL}/tutorials/${encodeURIComponent(slug)}`,
+    { headers: await optionalAuthHeader() },
   );
 }
 
@@ -88,6 +113,7 @@ export async function fetchTutorialExercises(
 
   const result = await fetchWithErrorHandling<TutorialExercisesResponse>(
     `${API_BASE_URL}/tutorials/${encodeURIComponent(slug)}/exercises`,
+    { headers: await optionalAuthHeader() },
   );
 
   // DEBUG: Log exercise notes and MIDI URLs to trace data flow

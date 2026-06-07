@@ -3,10 +3,13 @@
 /**
  * ProductEditor — the expandable edit panel for one store product on the admin
  * products page. Edit marketing fields + Stripe price, upload a cover, and
- * bundle grooves into the pack (product_contents). Plain-useState house style.
+ * bundle CONTENT into the pack (tutorials primary, plus grooves / videos).
+ * Adding content auto-gates it (backend flips its access_tier to 'product').
+ * Plain-useState house style.
  */
 
 import { useState, useEffect, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
 
 import {
   useAdminProduct,
@@ -14,16 +17,31 @@ import {
   useAddProductContent,
   useRemoveProductContent,
 } from '@/domains/admin/hooks/useAdminProducts';
-import { adminProductsApi } from '@/domains/admin/api/products.api';
+import { adminProductsApi, AdminContentType } from '@/domains/admin/api/products.api';
 import { useGrooveLibrary } from '@/domains/drill/hooks/useGrooveLibrary';
+import { fetchTutorials } from '@/domains/widgets/api/tutorials';
+
+const CONTENT_TYPES: { value: AdminContentType; label: string }[] = [
+  { value: 'tutorial', label: 'Tutorial' },
+  { value: 'groove', label: 'Groove' },
+  { value: 'video', label: 'Video' },
+];
 
 export function ProductEditor({ productId }: { productId: string }) {
   const { data, isLoading } = useAdminProduct(productId);
   const updateProduct = useUpdateProduct();
   const addContent = useAddProductContent();
   const removeContent = useRemoveProductContent();
+
+  // Pick-from sources
   const { data: grooveData } = useGrooveLibrary(false);
   const grooves = grooveData?.grooves ?? [];
+  const { data: tutorialData } = useQuery({
+    queryKey: ['admin-tutorials-list'],
+    queryFn: fetchTutorials,
+    staleTime: 1000 * 60 * 5,
+  });
+  const tutorials = tutorialData?.tutorials ?? [];
 
   const [stripePriceId, setStripePriceId] = useState('');
   const [badge, setBadge] = useState('');
@@ -33,11 +51,11 @@ export function ProductEditor({ productId }: { productId: string }) {
   const [msg, setMsg] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Groove-to-add picker state
-  const [grooveToAdd, setGrooveToAdd] = useState('');
+  // Content-to-add picker state
+  const [addType, setAddType] = useState<AdminContentType>('tutorial');
+  const [contentToAdd, setContentToAdd] = useState('');
   const [unlockDay, setUnlockDay] = useState(0);
 
-  // Sync local fields when the product loads.
   useEffect(() => {
     if (data?.product) {
       setStripePriceId(data.product.stripePriceId ?? '');
@@ -48,13 +66,39 @@ export function ProductEditor({ productId }: { productId: string }) {
   }, [data?.product]);
 
   if (isLoading || !data) {
-    return <div className="border-t px-4 py-3 text-sm text-gray-500">Loading…</div>;
+    return (
+      <div className="border-t px-4 py-3 text-sm text-gray-500">Loading…</div>
+    );
   }
 
   const { product, contents } = data;
+  const isAccelerator = product.type === 'accelerator';
 
-  const grooveName = (id: string) =>
-    grooves.find((g) => g.id === id)?.name ?? id.slice(0, 8);
+  // Resolve a content row's display name from whichever source it came from.
+  const contentName = (type: string, id: string): string => {
+    if (type === 'tutorial')
+      return tutorials.find((t) => t.id === id)?.title ?? id.slice(0, 8);
+    if (type === 'groove')
+      return grooves.find((g) => g.id === id)?.name ?? id.slice(0, 8);
+    return id.slice(0, 8);
+  };
+
+  // Options for the currently-selected add type, excluding already-bundled ids.
+  const addOptions = (() => {
+    const bundledIds = new Set(contents.map((c) => c.contentId));
+    if (addType === 'tutorial')
+      return tutorials
+        .filter((t) => !bundledIds.has(t.id))
+        .map((t) => ({ id: t.id, label: `${t.title} — ${t.artist}` }));
+    if (addType === 'groove')
+      return grooves
+        .filter((g) => !bundledIds.has(g.id))
+        .map((g) => ({
+          id: g.id,
+          label: `${g.name} · ${g.originalKey} · ${g.originalBpm} BPM`,
+        }));
+    return []; // video: no central list yet — paste an id (handled below)
+  })();
 
   const saveFields = async () => {
     setMsg(null);
@@ -90,27 +134,25 @@ export function ProductEditor({ productId }: { productId: string }) {
     }
   };
 
-  const handleAddGroove = async () => {
-    if (!grooveToAdd) return;
+  const handleAddContent = async () => {
+    if (!contentToAdd) return;
     setMsg(null);
     try {
       await addContent.mutateAsync({
         productId,
         input: {
-          contentType: 'groove',
-          contentId: grooveToAdd,
+          contentType: addType,
+          contentId: contentToAdd.trim(),
           unlockDay,
           sortOrder: contents.length,
         },
       });
-      setGrooveToAdd('');
+      setContentToAdd('');
       setUnlockDay(0);
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : 'Failed to add groove');
+      setMsg(e instanceof Error ? e.message : 'Failed to add content');
     }
   };
-
-  const isAccelerator = product.type === 'accelerator';
 
   return (
     <div className="space-y-4 border-t bg-gray-50 px-4 py-4 text-sm">
@@ -184,7 +226,9 @@ export function ProductEditor({ productId }: { productId: string }) {
           disabled={coverUploading}
           className="text-xs"
         />
-        {coverUploading && <span className="text-xs text-gray-500">Uploading…</span>}
+        {coverUploading && (
+          <span className="text-xs text-gray-500">Uploading…</span>
+        )}
       </div>
 
       <div className="flex items-center gap-3">
@@ -202,15 +246,21 @@ export function ProductEditor({ productId }: { productId: string }) {
       {/* Bundled contents */}
       <div className="space-y-2 border-t pt-3">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-          Grooves in this pack ({contents.length})
+          In this pack ({contents.length})
         </h3>
+        <p className="text-[11px] text-gray-400">
+          Adding content locks it to this pack (only buyers can access it).
+        </p>
         {contents.map((c) => (
           <div
             key={c.id}
             className="flex items-center justify-between rounded border bg-white px-3 py-2"
           >
             <span>
-              {c.contentType === 'groove' ? grooveName(c.contentId) : c.contentId}
+              <span className="mr-2 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] uppercase text-gray-500">
+                {c.contentType}
+              </span>
+              {contentName(c.contentType, c.contentId)}
               {isAccelerator && (
                 <span className="ml-2 text-xs text-gray-400">
                   day {c.unlockDay}
@@ -229,24 +279,45 @@ export function ProductEditor({ productId }: { productId: string }) {
           </div>
         ))}
 
-        {/* Add groove */}
-        <div className="flex items-center gap-2 pt-1">
+        {/* Add content */}
+        <div className="flex flex-wrap items-center gap-2 pt-1">
           <select
-            value={grooveToAdd}
-            onChange={(e) => setGrooveToAdd(e.target.value)}
-            className="flex-1 rounded-md border px-2 py-1.5 text-sm text-gray-900"
+            value={addType}
+            onChange={(e) => {
+              setAddType(e.target.value as AdminContentType);
+              setContentToAdd('');
+            }}
+            className="rounded-md border px-2 py-1.5 text-sm text-gray-900"
           >
-            <option value="">Select a groove to add…</option>
-            {grooves
-              .filter(
-                (g) => !contents.some((c) => c.contentId === g.id),
-              )
-              .map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.name} · {g.originalKey} · {g.originalBpm} BPM
+            {CONTENT_TYPES.map((t) => (
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+
+          {addType === 'video' ? (
+            <input
+              value={contentToAdd}
+              onChange={(e) => setContentToAdd(e.target.value)}
+              placeholder="Bunny video id"
+              className="flex-1 rounded-md border px-2 py-1.5 font-mono text-sm text-gray-900"
+            />
+          ) : (
+            <select
+              value={contentToAdd}
+              onChange={(e) => setContentToAdd(e.target.value)}
+              className="flex-1 rounded-md border px-2 py-1.5 text-sm text-gray-900"
+            >
+              <option value="">Select a {addType} to add…</option>
+              {addOptions.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.label}
                 </option>
               ))}
-          </select>
+            </select>
+          )}
+
           {isAccelerator && (
             <label className="flex items-center gap-1 text-xs text-gray-500">
               day
@@ -261,8 +332,8 @@ export function ProductEditor({ productId }: { productId: string }) {
           )}
           <button
             type="button"
-            onClick={handleAddGroove}
-            disabled={!grooveToAdd || addContent.isPending}
+            onClick={handleAddContent}
+            disabled={!contentToAdd || addContent.isPending}
             className="rounded-md bg-gray-800 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
           >
             Add

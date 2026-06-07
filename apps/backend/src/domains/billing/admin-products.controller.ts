@@ -101,7 +101,9 @@ export class AdminProductsController {
     @Param('id') productId: string,
     @Body() input: AddProductContentInput,
   ) {
-    if (!['groove', 'video', 'exercise'].includes(input.contentType)) {
+    if (
+      !['tutorial', 'groove', 'video', 'exercise'].includes(input.contentType)
+    ) {
       throw new BadRequestException('Invalid contentType');
     }
     if (!input.contentId) {
@@ -118,14 +120,89 @@ export class AdminProductsController {
       sortOrder: input.sortOrder ?? 0,
       note: input.note,
     });
+
+    // Bundling content into a pack gates it: flip the source row to the
+    // 'product' tier + point it at this product, so the entitlement resolver
+    // locks it for non-owners. One admin action does the whole gating.
+    await this.gateContentToProduct(input.contentType, input.contentId, productId);
+
     return { content };
+  }
+
+  /** Set a content item's access_tier='product' + product_id (the table varies
+   *  by content type). No-op for unknown types. */
+  private async gateContentToProduct(
+    contentType: AddProductContentInput['contentType'],
+    contentId: string,
+    productId: string,
+  ): Promise<void> {
+    const table =
+      contentType === 'tutorial'
+        ? 'tutorials'
+        : contentType === 'groove'
+          ? 'groove_library'
+          : contentType === 'video'
+            ? 'videos'
+            : null; // exercises have no access_tier column (yet)
+    if (!table) return;
+
+    const { error } = await this.supabaseService
+      .getClient()
+      .from(table)
+      .update({ access_tier: 'product', product_id: productId })
+      .eq('id', contentId);
+    if (error) {
+      this.logger.warn(
+        `Failed to gate ${contentType} ${contentId}: ${error.message}`,
+      );
+    }
   }
 
   @Delete('contents/:contentRowId')
   @HttpCode(HttpStatus.OK)
   async removeContent(@Param('contentRowId') contentRowId: string) {
+    // Look up the row first so we can un-gate the content after removing it.
+    const row = await this.productContentsRepository.findById(contentRowId);
     await this.productContentsRepository.remove(contentRowId);
+
+    // If this content isn't bundled in ANY other product, return it to 'free'
+    // so it isn't left orphaned at 'product' tier (inaccessible to everyone).
+    if (row) {
+      const stillBundled = await this.productContentsRepository.findByContent(
+        row.contentType,
+        row.contentId,
+      );
+      if (stillBundled.length === 0) {
+        await this.ungateContent(row.contentType, row.contentId);
+      }
+    }
     return { removed: true };
+  }
+
+  /** Reset a content item back to the 'free' tier (clears product_id). */
+  private async ungateContent(
+    contentType: AddProductContentInput['contentType'],
+    contentId: string,
+  ): Promise<void> {
+    const table =
+      contentType === 'tutorial'
+        ? 'tutorials'
+        : contentType === 'groove'
+          ? 'groove_library'
+          : contentType === 'video'
+            ? 'videos'
+            : null;
+    if (!table) return;
+    const { error } = await this.supabaseService
+      .getClient()
+      .from(table)
+      .update({ access_tier: 'free', product_id: null })
+      .eq('id', contentId);
+    if (error) {
+      this.logger.warn(
+        `Failed to un-gate ${contentType} ${contentId}: ${error.message}`,
+      );
+    }
   }
 
   // ---- cover image upload (mirrors admin tutorial thumbnail upload) --------
