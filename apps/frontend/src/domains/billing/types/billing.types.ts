@@ -52,11 +52,14 @@ export interface UserAccessStatus {
   subscriptionStatus?: SubscriptionStatus;
   subscriptionEndDate?: string;
   purchasedCourses: CourseType[];
+  /** Product IDs the user owns (Groove Packs / Accelerator) — store "Owned" state. */
+  purchasedProductIds?: string[];
 }
 
 export interface CreateCheckoutSessionDto {
-  type: 'course' | 'subscription';
+  type: 'course' | 'subscription' | 'product';
   courseType?: CourseType;
+  productId?: string;
   successUrl: string;
   cancelUrl: string;
 }

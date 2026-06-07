@@ -67,6 +67,10 @@ export class BillingController {
       price: p.priceInCents / 100,
       priceInCents: p.priceInCents,
       currency: p.currency,
+      // Whether checkout can actually run. Membership resolves its price
+      // server-side; one-time products need a configured Stripe price. We
+      // expose only the boolean — never the stripe_price_id itself.
+      purchasable: p.type === 'membership' || !!p.stripePriceId,
       metadata: p.metadata,
     };
   }
@@ -223,10 +227,12 @@ export class BillingController {
   async getUserAccess(
     @CurrentUser() user: AuthUser,
   ): Promise<UserAccessStatus> {
-    const [subscription, purchasedCourses] = await Promise.all([
-      this.subscriptionRepository.findByUserId(user.id),
-      this.purchaseRepository.getPurchasedCourses(user.id),
-    ]);
+    const [subscription, purchasedCourses, purchasedProductIds] =
+      await Promise.all([
+        this.subscriptionRepository.findByUserId(user.id),
+        this.purchaseRepository.getPurchasedCourses(user.id),
+        this.purchaseRepository.getPurchasedProductIds(user.id),
+      ]);
 
     const activeStatuses = ['active', 'trialing'];
 
@@ -237,6 +243,7 @@ export class BillingController {
       subscriptionStatus: subscription?.status,
       subscriptionEndDate: subscription?.currentPeriodEnd,
       purchasedCourses,
+      purchasedProductIds,
     };
   }
 

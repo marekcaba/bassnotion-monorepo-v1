@@ -265,6 +265,8 @@ export interface UserAccessStatus {
   subscriptionStatus?: SubscriptionStatus;
   subscriptionEndDate?: Date;
   purchasedCourses: CourseType[];
+  /** Product IDs the user owns (Groove Packs / Accelerator) — drives store "Owned" state. */
+  purchasedProductIds: string[];
 }
 
 // =============================================================================
