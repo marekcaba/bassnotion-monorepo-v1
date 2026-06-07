@@ -163,6 +163,37 @@ export interface ProductContent {
   createdAt: Date;
 }
 
+/** Admin create-product payload. */
+export interface CreateProductInput {
+  slug: string;
+  type: ProductType;
+  name: string;
+  description?: string;
+  stripePriceId?: string;
+  priceInCents: number;
+  currency?: string;
+  isActive?: boolean;
+  tagline?: string;
+  coverImageUrl?: string;
+  previewGrooveId?: string;
+  features?: string[];
+  sortOrder?: number;
+  badge?: string;
+  metadata?: Record<string, unknown>;
+}
+
+/** Admin update-product payload (all fields optional). */
+export type UpdateProductInput = Partial<CreateProductInput>;
+
+/** Admin add-content-to-product payload. */
+export interface AddProductContentInput {
+  contentType: ProductContentType;
+  contentId: string;
+  unlockDay?: number;
+  sortOrder?: number;
+  note?: string;
+}
+
 export type SubscriptionStatus =
   | 'active'
   | 'canceled'
