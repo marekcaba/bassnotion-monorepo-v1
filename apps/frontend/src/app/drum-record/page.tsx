@@ -4,8 +4,9 @@
  * /drum-record — dead-simple device recorder for the drum tempo engine.
  *
  * For non-technical testers: open on any phone/laptop, tap one button, it plays AND
- * records ONE full loop automatically and stops itself, then offers Share/Download.
- * Two versions: 89 BPM (slowed) and 119 BPM (sped up). No settings, no jargon.
+ * records ONE full loop automatically and stops itself. Two versions: 89 BPM (slowed)
+ * and 119 BPM (sped up). After both are recorded, ONE "Download all 4 files" button
+ * grabs every file (each version's audio + device/warp JSON). No settings, no jargon.
  *
  * It loads the same test-groove-2 Drums stem (a static asset, no login) and runs it
  * through DrumBeatsPlayer so testers hear/record exactly how the engine behaves on
@@ -312,9 +313,10 @@ export default function DrumRecordPage() {
     [busyBpm, ensureReady],
   );
 
-  // One tap saves BOTH files (audio + the device/warp JSON). A synthetic anchor click
-  // per file; the JSON goes a beat later so mobile browsers don't drop the 2nd download.
-  const saveResult = useCallback((result: Result) => {
+  // One tap downloads ALL recorded files (both versions: each is an audio + a JSON).
+  // A synthetic anchor click per file, STAGGERED ~500ms apart so mobile browsers don't
+  // drop downloads when several fire in quick succession.
+  const saveAll = useCallback(() => {
     const click = (href: string, name: string) => {
       const a = document.createElement('a');
       a.href = href;
@@ -323,11 +325,18 @@ export default function DrumRecordPage() {
       a.click();
       a.remove();
     };
-    click(result.url, result.name);
-    if (result.jsonUrl) {
-      setTimeout(() => click(result.jsonUrl, result.jsonName), 400);
+    // Collect every file across both versions in a stable order.
+    const files: { href: string; name: string }[] = [];
+    for (const bpm of [89, 119]) {
+      const r = results[bpm];
+      if (!r) continue;
+      files.push({ href: r.url, name: r.name });
+      if (r.jsonUrl) files.push({ href: r.jsonUrl, name: r.jsonName });
     }
-  }, []);
+    files.forEach((f, i) => {
+      setTimeout(() => click(f.href, f.name), i * 500);
+    });
+  }, [results]);
 
   useEffect(() => {
     return () => {
@@ -380,29 +389,10 @@ export default function DrumRecordPage() {
         >
           {running
             ? `● Recording… ${secondsLeft}s`
-            : `▶ Play & record ${bpm} BPM`}
+            : result
+              ? `✓ Recorded — tap to redo ${bpm} BPM`
+              : `▶ Play & record ${bpm} BPM`}
         </button>
-        {result && (
-          <button
-            onClick={() => saveResult(result)}
-            style={{
-              display: 'block',
-              width: '100%',
-              marginTop: 12,
-              textAlign: 'center',
-              padding: '14px',
-              borderRadius: 12,
-              border: 0,
-              background: '#2e7d4f',
-              color: '#fff',
-              fontWeight: 700,
-              fontSize: 16,
-              cursor: 'pointer',
-            }}
-          >
-            ⤓ Save / share the {bpm} BPM files
-          </button>
-        )}
       </div>
     );
   };
@@ -422,8 +412,8 @@ export default function DrumRecordPage() {
       <h1 style={{ fontSize: 24, marginBottom: 6 }}>🥁 Drum test</h1>
       <p style={{ opacity: 0.75, fontSize: 15, lineHeight: 1.5, marginTop: 0 }}>
         Tap a button below. It will <b>play the drums out loud and record them</b>,
-        then stop on its own. When it’s done, tap <b>Save / share</b> and send me the
-        file. Please do <b>both</b> versions.
+        then stop on its own. Please do <b>both</b> versions, then tap{' '}
+        <b>Download all 4 files</b> at the bottom and send them to me.
       </p>
       <p style={{ opacity: 0.55, fontSize: 13, marginBottom: 20 }}>
         Turn your volume up. Best with the phone speaker (not headphones).
@@ -431,6 +421,41 @@ export default function DrumRecordPage() {
 
       {versionCard(89, 'Version 1 — slower (89 BPM)', '#1e5e8a')}
       {versionCard(119, 'Version 2 — faster (119 BPM)', '#8a2e2e')}
+
+      {(() => {
+        const done = [89, 119].filter((b) => results[b]);
+        if (done.length === 0) return null;
+        const bothDone = done.length === 2;
+        return (
+          <button
+            onClick={saveAll}
+            disabled={busyBpm != null}
+            style={{
+              display: 'block',
+              width: '100%',
+              marginTop: 6,
+              marginBottom: 8,
+              textAlign: 'center',
+              padding: '18px 16px',
+              borderRadius: 14,
+              border: 0,
+              background: bothDone ? '#2e7d4f' : '#3a3f4a',
+              color: '#fff',
+              fontWeight: 700,
+              fontSize: 18,
+              cursor: busyBpm != null ? 'default' : 'pointer',
+              opacity: busyBpm != null ? 0.4 : 1,
+            }}
+          >
+            ⤓ Download {bothDone ? 'all 4 files' : `the ${done[0]} BPM files`}
+          </button>
+        );
+      })()}
+      {!(results[89] && results[119]) && (results[89] || results[119]) && (
+        <p style={{ opacity: 0.6, fontSize: 13, textAlign: 'center', marginTop: 0 }}>
+          Record the other version too, then download all 4 in one tap.
+        </p>
+      )}
 
       {error && (
         <p style={{ color: '#ff9b9b', fontSize: 14 }}>

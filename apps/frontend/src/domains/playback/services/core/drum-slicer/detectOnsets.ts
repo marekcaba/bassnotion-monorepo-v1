@@ -211,89 +211,25 @@ export function detectOnsetsDetailed(
     }
   }
 
-  // PRE-ATTACK GHOST MERGE — the greedy minGap debounce keeps the FIRST candidate
-  // in a cluster, so a hit with a slow spectral pre-rise fires an early WEAK peak,
-  // then the true STRONG peak ~40-50ms LATER also passes the gap → a ghost onset
-  // just BEFORE every loud hit (measured: conf 0.04-0.11 leading into 0.67). Those
-  // ghosts add slice boundaries Ableton doesn't mark.
-  //
-  // CRITICAL ASYMMETRY: the merge must be DIRECTIONAL. A weak peak FOLLOWED by a
-  // much louder one is a pre-attack ghost → drop it (snap to the loud attack). But a
-  // weak peak that FOLLOWS a much louder one is NOT a ghost — it's a real SECONDARY
-  // transient sitting in the loud hit's decaying tail (a hi-hat/ghost-note ~60-75ms
-  // after a kick). Ableton gives those their own warp marker; dropping them buries
-  // the secondary inside the kick slice, where the tail-stretch drags it EARLY and
-  // attenuates it (the exact "2nd transient too soon + too quiet" artifact). So we
-  // ONLY remove the earlier weak peak, and only within a TIGHT window (real pre-rises
-  // are <~45ms; a 50ms cap protects genuine fast doubles and post-hit secondaries).
+  // PRE-ATTACK GHOST MERGE (today's variable #2) — a hit with a slow spectral pre-rise
+  // fires an early WEAK peak, then the true STRONG peak ~40-50ms later also passes the gap,
+  // so a ghost onset sits just BEFORE every loud hit (it splits the attack into a tiny
+  // pre-slice + the real hit). DIRECTIONAL and PURELY SUBTRACTIVE: drop ONLY the earlier
+  // weak peak when a much louder one follows within a tight window. It never shifts an
+  // onset's TIME (no peak-snap) and never removes a SECONDARY that follows a loud hit (a
+  // real hi-hat in a tail), so it can't move the grid or empty a gap — it only removes a
+  // boundary Ableton wouldn't mark.
   const ghostWindow = 0.05; // ≤50ms: pre-attack rise span; beyond this is a real hit
   const mergeRatio = 1.8; // the following peak must be ≥1.8× louder to be the "true" attack
   const merged: { time: number; flux: number }[] = [];
   for (const c of candidates) {
     const prev = merged[merged.length - 1];
-    if (
-      prev &&
-      c.time - prev.time < ghostWindow &&
-      c.flux >= prev.flux * mergeRatio // current is the loud true-attack; prev was its pre-rise ghost
-    ) {
-      merged[merged.length - 1] = c; // replace the ghost with the true attack
+    if (prev && c.time - prev.time < ghostWindow && c.flux >= prev.flux * mergeRatio) {
+      merged[merged.length - 1] = c; // replace the ghost with the true (louder) attack
     } else {
-      merged.push(c); // keep everything else — including weak SECONDARIES after a loud hit
+      merged.push(c); // keep everything else, including secondaries AFTER a loud hit
     }
   }
-
-  // TRANSIENT PEAK-SNAP — spectral flux peaks on the attack's LEADING EDGE, ~10-12ms
-  // BEFORE the waveform's actual energy transient (measured: median +10.6ms on the busy
-  // waitlist beat, p25 9 / p75 12). Slicing at the flux peak therefore places every hit
-  // slightly EARLY, and 1/ratio stretching amplifies that to a visible left-shift vs
-  // Ableton (whose warp markers sit AT the transient). Snap each onset FORWARD to the
-  // steepest short-window energy rise within a small look-ahead so the slice boundary —
-  // and thus its on-grid placement — lands on the true transient, like Ableton. The
-  // slices still tile gap-free (the prior slice just keeps the few ms of pre-attack), so
-  // the attack is never clipped. Snap is forward-only and capped so it can't cross into
-  // the next hit.
-  const snapAhead = Math.round(0.022 * sampleRate); // look up to ~22ms forward
-  const eWin = Math.max(1, Math.round(0.0015 * sampleRate)); // ~1.5ms energy window
-  // Loop peak — so "is there a real attack here" is material-relative, not absolute.
-  let sigPeak = 0;
-  for (let i = 0; i < signal.length; i++) {
-    const a = signal[i]! < 0 ? -signal[i]! : signal[i]!;
-    if (a > sigPeak) sigPeak = a;
-  }
-  const snapOnset = (t: number): number => {
-    if (t < 0.001) return t; // pin the downbeat
-    const s0 = Math.round(t * sampleRate);
-    let bestS = s0, bestRise = -Infinity;
-    const hi = Math.min(signal.length - eWin, s0 + snapAhead);
-    for (let s = s0; s <= hi; s++) {
-      let pre = 0, post = 0;
-      for (let i = s - eWin; i < s; i++) pre += signal[i]! * signal[i]!;
-      for (let i = s; i < s + eWin; i++) post += signal[i]! * signal[i]!;
-      const rise = Math.sqrt(post / eWin) - Math.sqrt(pre / eWin);
-      if (rise > bestRise) { bestRise = rise; bestS = s; }
-    }
-    // Only snap when a REAL attack was found in the look-ahead. In a quiet decay region
-    // the "best rise" is just noise flutter — snapping there pointlessly moves the slice
-    // boundary onto a non-zero-crossing in near-silence, manufacturing a small step (a
-    // click) where the un-snapped boundary was fine. Gate the snap on a material-relative
-    // rise so it fires only on genuine transients (the case it was built for) and leaves
-    // quiet boundaries alone.
-    if (bestRise < sigPeak * 0.06) return t;
-    // Land the boundary on the nearest ZERO-CROSSING to the energy peak (within ±2ms) so
-    // the slice splice joins ~0→~0 and can't step — Ableton zero-crossing-snaps every
-    // slice boundary for exactly this reason. Keeps the true-transient timing (the peak)
-    // while guaranteeing a click-free cut.
-    const zr = Math.round(0.002 * sampleRate);
-    let zS = bestS, zBest = Infinity;
-    for (let s = Math.max(1, bestS - zr); s <= Math.min(signal.length - 1, bestS + zr); s++) {
-      if ((signal[s - 1]! <= 0 && signal[s]! > 0) || (signal[s - 1]! >= 0 && signal[s]! < 0)) {
-        const d = Math.abs(s - bestS);
-        if (d < zBest) { zBest = d; zS = s; }
-      }
-    }
-    return zS / sampleRate;
-  };
-  for (const c of merged) c.time = snapOnset(c.time);
 
   // Global confidence: normalise by the loudest candidate's flux, then drop the
   // globally-weak ones (false positives in quiet sections). Origin (0) is kept

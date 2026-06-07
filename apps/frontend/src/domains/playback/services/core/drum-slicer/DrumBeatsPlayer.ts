@@ -118,7 +118,6 @@ export class DrumBeatsPlayer {
 
   private onsets: number[] = []; // ascending, includes 0
   private slices: Slice[] = []; // one per onset, built once
-  private loopPeakCached = -1; // lazy: |peak| of the whole loop, for material-relative gates
 
   private playing = false;
   private ratio = 1; // target/original tempo (ratio<1 = slower)
@@ -227,23 +226,13 @@ export class DrumBeatsPlayer {
     let bodyOpenerConf = 0;
     for (const o of onsets) {
       if (o.time < bodyUntil) {
-        // Inside a strong hit's body. Two reasons to keep:
-        //  (a) a comparably strong LAYERED hit (flux-confident), OR
-        //  (b) a genuine SECONDARY transient — a real new amplitude attack (a hi-hat or
-        //      ghost note riding the kick's decay) that stands out from the body's falling
-        //      envelope. Flux-confidence alone can't tell a real secondary from spectral
-        //      flutter (the secondary's flux is masked by the loud kick), so we look at the
-        //      WAVEFORM: a true attack steps the local amplitude UP against the decay.
-        //      Ableton marks these; burying them in the kick slice smears them early + quiet.
-        if (
-          o.confidence >= Math.max(STRONG, bodyOpenerConf * WEAK_IN_BODY) ||
-          this.hasAmplitudeRise(o.time)
-        ) {
+        // Inside a strong hit's body: keep only if it's a comparably strong layered hit.
+        if (o.confidence >= Math.max(STRONG, bodyOpenerConf * WEAK_IN_BODY)) {
           kept.push(o);
-          bodyUntil = o.time + BODY_SEC; // extend the body from the layered/secondary hit
+          bodyUntil = o.time + BODY_SEC; // extend the body from the layered hit
           bodyOpenerConf = Math.max(bodyOpenerConf, o.confidence);
         }
-        // else: a mid-body spectral wiggle with no real attack → drop (don't fragment).
+        // else: a mid-body wiggle → drop (don't fragment the hit).
       } else {
         kept.push(o);
         if (o.confidence >= STRONG) {
@@ -253,55 +242,6 @@ export class DrumBeatsPlayer {
       }
     }
     return kept;
-  }
-
-  /**
-   * True if `timeSec` sits on a genuine new attack — a SHARP short-window amplitude
-   * rise that stands clearly above the locally-decaying body. Distinguishes a real
-   * secondary transient (hi-hat/ghost on a kick's decay) from mere spectral flutter:
-   * a body wiggle has no amplitude step-up, a real hit does. Measured against a
-   * slightly-earlier reference window so a hit riding a DECAY still reads as a rise.
-   */
-  private hasAmplitudeRise(timeSec: number): boolean {
-    const data = this.buffer.getChannelData(0);
-    const s = Math.round(timeSec * this.sr);
-    const w = Math.max(1, Math.round(0.0015 * this.sr)); // ~1.5ms
-    const guard = Math.round(0.003 * this.sr); // skip the 3ms straddling the edge
-    if (s - guard - w < 0 || s + w >= data.length) return false;
-    let pre = 0;
-    for (let i = s - guard - w; i < s - guard; i++) pre += data[i]! * data[i]!;
-    let post = 0;
-    for (let i = s; i < s + w; i++) post += data[i]! * data[i]!;
-    pre = Math.sqrt(pre / w);
-    post = Math.sqrt(post / w);
-    // A real secondary must clear TWO bars, both MATERIAL-RELATIVE so the same rule works
-    // on a loud dense loop and a quiet sparse one (no per-file tuning — this is what made
-    // Ableton's detector robust across both grooves):
-    //   1. a clear STEP over the immediately-preceding decay (rejects smooth flutter), and
-    //   2. ABSOLUTE audibility scaled to the LOOP PEAK — a real hi-hat/ghost is a decent
-    //      fraction of the loop's loudest hit; quiet decay-wiggle is not. An absolute 0.04
-    //      floor over-fit the loud waitlist beat (peak ~1.0) and fired false positives in
-    //      the quieter test-groove-2 (peak ~0.49) — its decay flutter at 0.05-0.12 cleared
-    //      0.04 and became phantom slices (one even hard-cut to silence: a click). Gating
-    //      at ~28% of the loop peak tracks the material: 0.28 on waitlist, 0.14 on tg2.
-    const floor = Math.max(0.04, this.loopPeak * 0.28);
-    return post > floor && post > pre * 1.6;
-  }
-
-  /** |peak| amplitude of the whole loop (input domain), cached. Used for material-relative
-   *  thresholds so detection isn't tuned to one groove's absolute level. */
-  private get loopPeak(): number {
-    if (this.loopPeakCached < 0) {
-      const data = this.buffer.getChannelData(0);
-      const end = Math.min(data.length, Math.round(this.loopDuration * this.sr));
-      let pk = 0;
-      for (let i = 0; i < end; i++) {
-        const a = data[i]! < 0 ? -data[i]! : data[i]!;
-        if (a > pk) pk = a;
-      }
-      this.loopPeakCached = pk;
-    }
-    return this.loopPeakCached;
   }
 
   /**
@@ -410,13 +350,13 @@ export class DrumBeatsPlayer {
     };
     const head = rms(0, Math.floor(n * 0.25));
     const tail = rms(Math.floor(n * 0.6), n);
-    // A near-SILENT head means this is NOT a sustained slice — it's a mis-slice where the
-    // real attack landed LATE (in the body/tail), preceded by the previous hit's decayed
-    // silence. tail/head then explodes (e.g. 0.13/0.003 ≈ 20), which the old code read as
-    // "very sustained → loop it." Looping a silence-then-attack region produces an isolated
-    // short burst + a gap before the real hit — the "blip before the transient" seen on the
-    // sparse beat. So a silent head must yield a LOW decayRatio (force ring-out, never loop).
-    // Compare the head to the slice's OWN peak so the test is level-independent.
+    // LATE-ATTACK GUARD (today's one safe change): a slice whose head is near-silent OR
+    // whose PEAK falls in its last 25% is a mis-slice — the previous hit's decay followed
+    // by a late attack, NOT a sustained texture. tail/head explodes (e.g. 20) and the old
+    // code looped it, which re-fires the late attack mid-loop = an isolated needle/blip
+    // before the next transient (the artifact seen on sparse beats). A late attack means
+    // RING OUT, never loop. This is a pure CLASSIFICATION change — it only moves slices
+    // from loop → ring-out; it never touches onset positions or the tail-fill geometry.
     let pk = 0;
     let pkIdx = 0;
     for (let i = 0; i < n; i++) {
@@ -424,16 +364,8 @@ export class DrumBeatsPlayer {
       if (a > pk) { pk = a; pkIdx = i; }
     }
     if (pk <= 1e-9) return 1; // truly silent slice — nothing to protect
-    if (head < pk * 0.08) return 0; // silent head + energy later = mis-slice/late attack → ring out
-    // LATE-ATTACK GUARD (generalises the silent-head case): if the slice's PEAK falls in its
-    // last ~25%, the real transient landed near the END — the head is just the previous hit's
-    // decay, not this hit's body. Looping such a slice (forward or back-and-forth) re-fires
-    // that late attack mid-loop = an isolated needle/bump just before the next transient (seen
-    // on the gospel beat: a slice decaying 0.054→0.022 then spiking 0.112 at 88% had decayRatio
-    // 0.99 — "sustained" — and got looped). A late attack means RING OUT, never loop, whatever
-    // the head level. Also require the peak to be a real attack (clearly above the head) so a
-    // genuinely flat/sustained slice with its max merely near the end isn't falsely demoted.
-    if (pkIdx > n * 0.75 && pk > head * 1.6) return 0;
+    if (head < pk * 0.08) return 0; // silent head + energy later = mis-slice → ring out
+    if (pkIdx > n * 0.75 && pk > head * 1.6) return 0; // late attack → ring out
     return tail / head;
   }
 
@@ -733,18 +665,14 @@ export class DrumBeatsPlayer {
       const overlap = Math.min(xf, Math.round(0.02 * this.sr));
       const contribLen = Math.min(outLen - gridStart, slotLen + overlap);
 
-      // LOOP only if the slice is genuinely SUSTAINED (non-decaying texture), long
-      // enough to contain a real sustain body, and not too quiet. Everything percussive
-      // — kick, snare, clap, tom, a loud hit with a moderate tail — must RING OUT, never
-      // loop: looping a hit re-fires its attack on the wrap = an audible re-attack /
-      // stutter Ableton doesn't have (measured on the busy waitlist beat: loud slices
-      // with decayRatio 0.5-0.8 were looping → 11 stutter clicks).
-      //
-      // The discriminator is LOUDNESS-SCALED: a LOUD slice is almost certainly a
-      // transient hit, so it needs a VERY flat tail (decayRatio near 1 = genuinely
-      // not dying out, e.g. a held crash/cymbal wash) to qualify for looping. A QUIET
-      // slice (low-level texture/room) can loop at the gentler base ratio. So the
-      // required decayRatio rises with peak. Loud percussive hits never clear the bar.
+      // LOOP only if the slice is genuinely SUSTAINED (energy not decaying), long enough
+      // to contain a real sustain body, AND LOUD enough to be a real held element. A
+      // kick/snare decays (decayRatio << 1) → ring out, never loop. A SHORT slice
+      // (<120ms) is all attack → ring out. And crucially, a QUIET slice (decay flutter /
+      // room tone between hits — like the spurious onset in the end fill) must NEVER
+      // loop: looping its quiet tail RE-ENERGISES it into an audible blip Ableton
+      // doesn't have (measured at the end-fill @19.53s). Only loud, long, non-decaying
+      // slices (a held cymbal wash, a sustained crash) get the back-and-forth loop.
       let slicePeak = 0;
       const ref0 = slice.channels[0]!;
       for (let i = 0; i < natLen; i++) {
@@ -753,20 +681,11 @@ export class DrumBeatsPlayer {
       }
       const MIN_LOOPABLE_SAMPLES = Math.round(0.12 * this.sr); // 120ms
       const LOOP_MIN_PEAK = 0.15; // quieter than this ⇒ decay flutter/room → ring out
-      const LOOP_MAX_PEAK = 0.45; // louder than this ⇒ it's a HIT → ring out (no loop)
-      // Required decayRatio scales from the base (quiet texture) up toward ~1.0 as the
-      // slice gets louder; a hit at/above LOOP_MAX_PEAK can't qualify at all.
-      const loudFrac = Math.min(
-        1,
-        Math.max(0, (slicePeak - LOOP_MIN_PEAK) / (LOOP_MAX_PEAK - LOOP_MIN_PEAK)),
-      );
-      const requiredDecayRatio = SUSTAIN_DECAY_RATIO + (0.95 - SUSTAIN_DECAY_RATIO) * loudFrac;
       const sustained =
-        slice.decayRatio >= requiredDecayRatio &&
+        slice.decayRatio >= SUSTAIN_DECAY_RATIO &&
         slice.tailEnergy >= 0.06 &&
         natLen >= MIN_LOOPABLE_SAMPLES &&
         slicePeak >= LOOP_MIN_PEAK &&
-        slicePeak < LOOP_MAX_PEAK &&
         this.opt.gapFillMode !== 'gate' &&
         slotLen > natLen + 1;
 
@@ -775,7 +694,7 @@ export class DrumBeatsPlayer {
         const dst = out[c]!;
         const region = sustained
           ? this.buildSustainedRegion(src, contribLen, xf)
-          : this.buildDecayRegion(src, contribLen, slowFactor, isBig, slotLen);
+          : this.buildDecayRegion(src, contribLen, slowFactor, isBig);
         // Write the region. At the seam (first `xf` samples) we DUCK the previous
         // slice's ring-out tail that's already there, but the NEW slice plays at FULL
         // level — its first sample is a TRANSIENT (the kick/snare attack) and fading it
@@ -783,55 +702,14 @@ export class DrumBeatsPlayer {
         // kick1 peaked 0.324 vs Ableton 0.486 with a leading bump). So it's an
         // ASYMMETRIC crossfade: old tail fades out (cos), new attack is added at unity.
         // This keeps transients razor-sharp (Ableton's signature) with no summed spike.
-        // Is the bed UNDER this attack silent? If the previous slice decayed to ~zero
-        // before this seam, the new attack lands on digital silence — adding it at full
-        // level is a hard onset (a click; measured jump 0.5-0.6 on the busy waitlist
-        // beat). When that happens, apply a MICRO fade-in (~1.5ms) to the attack so it
-        // rises from zero instead of stepping. Short enough to keep the transient punchy
-        // (Ableton softens these seams too). When the bed HAS signal (normal dense beat),
-        // keep the full-level attack so hits stay razor-sharp.
-        let bedLevel = 0;
-        for (let k = 0; k < xf && gridStart + k < outLen; k++) {
-          const a = dst[gridStart + k]! < 0 ? -dst[gridStart + k]! : dst[gridStart + k]!;
-          if (a > bedLevel) bedLevel = a;
-        }
-        // Attack onset magnitude (first ~1ms of the new slice).
-        let attackLevel = 0;
-        const aw = Math.min(region.length, Math.max(1, Math.round(0.001 * this.sr)));
-        for (let k = 0; k < aw; k++) {
-          const a = region[k]! < 0 ? -region[k]! : region[k]!;
-          if (a > attackLevel) attackLevel = a;
-        }
-        // A hard onset = the attack is much louder than the bed under it, so adding it at
-        // full level steps up from the bed = a click. Micro-fade the attack in then — and
-        // scale the fade LENGTH with the size of the step (a bigger jump needs a slightly
-        // longer ramp to mask). Capped at ~2.5ms so even the worst case stays punchy. When
-        // the bed is comparable to the attack (dense overlapping hits) → no fade, sharp.
-        // With the cos tail-fadeout, at i=0 the bed still contributes ~fully and the attack
-        // adds ON TOP — so the real summed step at the seam tracks the ATTACK magnitude, not
-        // the bed-relative difference. (Raising the ribbon floor made bedLevel large enough
-        // to cross the old `bed < attack*0.5` gate, disengaging the fade and re-introducing
-        // a +0.38 click.) So: micro-fade whenever the attack ALONE is a hard onset, and keep
-        // it OFF only when the bed is genuinely comparable (dense overlapping hits where a
-        // sharp seam reads as one continuous hit, not a step). Threshold relaxed to 0.85 so
-        // a loud ribbon no longer suppresses the protective fade.
-        const step = attackLevel - bedLevel;
-        const hardOnset = attackLevel > 0.04 && bedLevel < attackLevel * 0.85;
-        const fadeMs = hardOnset ? Math.min(0.0025, 0.0008 + step * 0.004) : 0;
-        const attackFade = fadeMs > 0 ? Math.max(1, Math.round(fadeMs * this.sr)) : 0;
         for (let i = 0; i < region.length && gridStart + i < outLen; i++) {
           const di = gridStart + i;
-          let s = region[i]!;
-          if (attackFade > 0 && i < attackFade) {
-            // Equal-power fade-in so the attack rises smoothly off the bed (no step).
-            s *= Math.sin((i / attackFade) * (Math.PI / 2));
-          }
           if (i < xf && di < outLen) {
             const t = i / xf;
             const fadeOut = Math.cos((t * Math.PI) / 2); // existing tail ducks under
-            dst[di] = dst[di]! * fadeOut + s; // attack (full, or faded onto the bed)
+            dst[di] = dst[di]! * fadeOut + region[i]!; // new attack at FULL level
           } else {
-            dst[di] = s;
+            dst[di] = region[i]!;
           }
         }
       }
@@ -860,89 +738,49 @@ export class DrumBeatsPlayer {
     len: number,
     slowFactor: number,
     isBig: boolean,
-    slotLen: number,
   ): Float32Array {
     const region = new Float32Array(len);
     const copyLen = Math.min(src.length, len);
-
-    // 1) The slice's audio, VERBATIM (attack + full natural decay). Always exact.
+    // 1) The slice's own audio, VERBATIM (attack + full natural decay).
     for (let i = 0; i < copyLen; i++) region[i] = src[i]!;
 
-    // 2) ABLETON-STYLE TAIL STRETCH — only when slowing down enough that the GRID SLOT is
-    //    meaningfully longer than the slice (a real gap, NOT the tiny tail-overlap that
-    //    `len` carries even at ratio 1.0). Measured: Ableton time-STRETCHES the decay to
-    //    span the slot (decay-to-silence 215ms@133 → 300ms@103, ratio ~1.4; tail autocorr
-    //    0.43 ⇒ NOT looped). So the ATTACK + body stay verbatim (bit-exact, transient
-    //    never touched) and only the DECAY tail is resampled SLOWER to ring into the next
-    //    transient — monotonic, no bump, no re-fired attack. A short crossfade joins the
-    //    verbatim body to the stretched tail. Gating on the REAL gap (slotLen − natLen)
-    //    keeps ratio-1.0 / sped-up renders bit-exact (no stretch).
-    const natLen = src.length;
-    const realGap = slotLen - natLen;
-    if (realGap > Math.round(0.01 * this.sr) && copyLen >= natLen) {
-      const attackGuard = Math.min(copyLen - 1, Math.round(0.008 * this.sr));
-      // Decay region to stretch = the latter part of the slice (past the attack/body).
-      const decayStart = Math.max(attackGuard, Math.round(copyLen * 0.4));
-      const srcDecayLen = copyLen - decayStart;
-      const outDecayLen = len - decayStart;
-      if (srcDecayLen > 8 && outDecayLen > srcDecayLen) {
-        const xf = Math.max(1, Math.round(0.006 * this.sr)); // junction crossfade
-        const rate = srcDecayLen / outDecayLen; // <1 → stretch (slower playback)
-        // The stretched tail must decay to a thin NON-ZERO ribbon that connects to the
-        // next transient — Ableton's gap floor is ~0.004 (−47dB), never silence. But a
-        // single exponential dipped our MID-tail to ~half Ableton's level (measured at
-        // 60-160ms) before catching up. So we use a 2-STAGE envelope matching how real
-        // room/reverb tails decay:
-        //   • Stage 1 (0 → kneeFrac of the span): fast initial drop — the natural
-        //     transient decay (steep, like the hit dying).
-        //   • Stage 2 (kneeFrac → end): GENTLE sustain that holds the ribbon near the
-        //     floor through the gap, so the mid-tail doesn't thin out, settling to the
-        //     floor only at the very end.
-        // This keeps the connection full across the whole gap (matches Ableton's held
-        // mid-tail) while staying click-clean (the step-scaled attack fade handles the
-        // junction).
-        const floorFrac = 0.24; // ribbon level (fraction of the stretched-tail amplitude)
-        const kneeFrac = 0.45; // where the fast initial decay hands off to the gentle hold
-        const kneeJ = Math.max(1, Math.floor(outDecayLen * kneeFrac));
-        const kneeLevel = floorFrac + (1 - floorFrac) * 0.58; // ~level at the knee (~68%)
-        const tau1 = kneeJ / 1.4; // stage-1: reach kneeLevel by the knee
-        const tau2 = (outDecayLen - kneeJ) / 0.9; // stage-2: very gentle settle (long tau holds the deep tail)
-        // The held ribbon would otherwise END at full hold level right where the next
-        // slice's transient begins — a loud terminal sample meeting a small attack is a
-        // sign-flip click (measured +0.382 at the seam). Taper the LAST ~12ms of the
-        // ribbon to zero so it eases into the next onset no matter how high the hold is.
-        // This is independent of the attack micro-fade (which smooths the INCOMING attack);
-        // this smooths the OUTGOING ribbon. The deep-tail hold (60-160ms) is untouched.
-        const endTaper = Math.min(outDecayLen, Math.round(0.012 * this.sr));
-        for (let j = 0; j < outDecayLen; j++) {
-          const di = decayStart + j;
-          if (di >= len) break;
-          const sp = decayStart + j * rate;
-          const i0 = Math.floor(sp);
-          const frac = sp - i0;
-          const a = src[i0] ?? 0;
-          const b = src[i0 + 1] ?? a;
-          let env: number;
-          if (j < kneeJ) {
-            // Stage 1: 1 → kneeLevel (fast).
-            env = kneeLevel + (1 - kneeLevel) * Math.exp(-j / tau1);
-          } else {
-            // Stage 2: kneeLevel → floorFrac (gentle hold to the next transient).
-            env = floorFrac + (kneeLevel - floorFrac) * Math.exp(-(j - kneeJ) / tau2);
+    // 2) CONTINUOUS-TAIL GAP FILL (matches measured Ableton behavior). At slow tempo the
+    //    grid slot is LONGER than the slice's source. The source's late decay went quiet/
+    //    silent by its end, but ABLETON keeps a continuous low-level tail all the way to
+    //    the next hit (measured: source @109 silent by ~0.3s, but Ableton @89 holds
+    //    ~0.012 RMS to 0.66s). It does this by LOOPING the quiet late-decay region at its
+    //    NATURAL level (not silence, not extra-decayed). We do the same: take the last
+    //    quiet decay window [ls,le) (zero-cross-snapped, well past the attack so it can't
+    //    re-fire it), and loop it forward to fill the gap, with equal-power seams. Only
+    //    when there's a meaningful gap (>10ms) and the slice has real tail content.
+    const GAP_MIN = Math.round(0.01 * this.sr);
+    if (len - copyLen > GAP_MIN && copyLen > 64) {
+      const xf = Math.max(1, Math.round(0.006 * this.sr));
+      const zr = Math.max(8, Math.round(0.004 * this.sr));
+      // Quiet decay window = last ~30% of the slice, after the attack/body.
+      const winStart = Math.max(Math.floor(copyLen * 0.7), copyLen - Math.round(0.12 * this.sr));
+      let ls = this.nearestZeroCrossing(src, winStart, zr, Math.floor(copyLen * 0.5), copyLen - xf - 2);
+      let le = this.nearestZeroCrossing(src, copyLen - 1, zr, ls + xf + 1, copyLen);
+      let ll = le - ls;
+      if (ll > xf * 2) {
+        // Loop [ls,le) forward from copyLen onward, equal-power crossfade at each seam.
+        let writePos = copyLen;
+        let rep = 0;
+        while (writePos < len) {
+          const seamStart = writePos - xf;
+          for (let i = 0; i < ll && seamStart + i < len; i++) {
+            const s = src[ls + i]!;
+            const di = seamStart + i;
+            if (di < 0) continue;
+            if (i < xf) {
+              const t = i / xf;
+              region[di] = region[di]! * Math.cos((t * Math.PI) / 2) + s * Math.sin((t * Math.PI) / 2);
+            } else {
+              region[di] = s;
+            }
           }
-          const fromEnd = outDecayLen - j;
-          if (fromEnd <= endTaper) {
-            env *= Math.sin((fromEnd / endTaper) * (Math.PI / 2)); // equal-power ease to 0
-          }
-          const stretched = (a + (b - a) * frac) * env;
-          if (j < xf) {
-            // Crossfade from the verbatim body (already in region[di]) into the stretched
-            // tail so the junction is continuous (no step).
-            const t = j / xf;
-            region[di] = region[di]! * Math.cos((t * Math.PI) / 2) + stretched * Math.sin((t * Math.PI) / 2);
-          } else {
-            region[di] = stretched;
-          }
+          writePos = seamStart + ll;
+          if (++rep > 8192) break;
         }
       }
     }
@@ -959,8 +797,8 @@ export class DrumBeatsPlayer {
         for (let i = holdEnd; i < len; i++) region[i]! *= Math.exp(-(i - holdEnd) / tau);
       }
     }
-    // 4) Tiny end declick at the very end of the (stretched) tail so it glides to zero.
-    const fade = Math.min(Math.floor(len / 4), Math.max(1, Math.round(0.005 * this.sr)));
+    // 4) Tiny end declick on the very last samples of the whole region.
+    const fade = Math.min(Math.floor(len / 4), Math.max(1, Math.round(0.004 * this.sr)));
     for (let i = 0; i < fade; i++) region[len - 1 - i]! *= i / fade;
     return region;
   }
@@ -1191,19 +1029,11 @@ export class DrumBeatsPlayer {
       const SUSTAIN_DECAY_RATIO = 0.5;
       const MIN_LOOPABLE_SAMPLES = Math.round(0.12 * this.sr);
       const LOOP_MIN_PEAK = 0.15;
-      const LOOP_MAX_PEAK = 0.45;
-      const loudFrac = Math.min(
-        1,
-        Math.max(0, (peak - LOOP_MIN_PEAK) / (LOOP_MAX_PEAK - LOOP_MIN_PEAK)),
-      );
-      const requiredDecayRatio =
-        SUSTAIN_DECAY_RATIO + (0.95 - SUSTAIN_DECAY_RATIO) * loudFrac;
       const sustained =
-        decayRatio >= requiredDecayRatio &&
+        decayRatio >= SUSTAIN_DECAY_RATIO &&
         slice.tailEnergy >= 0.06 &&
         natLen >= MIN_LOOPABLE_SAMPLES &&
         peak >= LOOP_MIN_PEAK &&
-        peak < LOOP_MAX_PEAK &&
         this.opt.gapFillMode !== 'gate' &&
         slotLenSamp > natLen + 1;
       let fill: 'verbatim' | 'ring-out (decay)' | 'loop back-and-forth' | 'loop forward';
@@ -1214,15 +1044,13 @@ export class DrumBeatsPlayer {
       } else if (sustained) {
         fill =
           this.opt.gapFillMode === 'loop-pingpong' ? 'loop back-and-forth' : 'loop forward';
-        reason = `sustained (peak ${peak.toFixed(2)}, decayRatio ${decayRatio.toFixed(2)} ≥ ${requiredDecayRatio.toFixed(2)}) → looped`;
+        reason = `decayRatio ${decayRatio.toFixed(2)} ≥ ${SUSTAIN_DECAY_RATIO} (sustained) → looped`;
       } else {
         fill = 'ring-out (decay)';
         reason =
           this.opt.gapFillMode === 'gate'
             ? 'gate mode'
-            : peak >= LOOP_MAX_PEAK
-              ? `loud hit (peak ${peak.toFixed(2)} ≥ ${LOOP_MAX_PEAK}) → ring out`
-              : `decayRatio ${decayRatio.toFixed(2)} < ${requiredDecayRatio.toFixed(2)} → ring out`;
+            : `decayRatio ${decayRatio.toFixed(2)} < ${SUSTAIN_DECAY_RATIO} (decays) → ring out`;
       }
       const confHold = isBig ? 0.9 : 0.55;
       const holdFrac = Math.max(0.1, Math.min(1, (e * confHold) / Math.max(1, slowFactor * 0.6)));
