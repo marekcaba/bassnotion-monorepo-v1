@@ -379,6 +379,17 @@ logAudioEvent('Service', 'action', { data }, correlationId);
 4. **Fragment wrapper** - Page components must wrap in `<>...</>`
 5. **Nx cache** - Run `nx reset` if builds act strange
 6. **Supabase types** - Run `pnpm supabase gen types` after schema changes
+7. **Don't `nx build` a domain while its PM2 serve is running** - PM2 runs the
+   backend (and frontend) via `nx serve` in watch mode, which owns `dist/`.
+   Running `nx build @bassnotion/backend` directly while `bassnotion-backend`
+   is online clobbers that shared `dist/`, the watcher's next incremental build
+   fails, and `nx serve` crash-loops on `Could not find dist/apps/backend/src/main.js`
+   → `:3000` refuses connections (`ERR_CONNECTION_REFUSED` in the browser).
+   This is the backend twin of the `pnpm next build` vs dev-server collision.
+   To validate the backend, rely on the watch build + `nx test` instead; if you
+   must build, do it after stopping the serve. Recovery:
+   `rm -rf dist/apps/backend && pm2 restart bassnotion-backend` (serve rebuilds
+   from scratch, ~25s to healthy).
 
 ## Environment Variables
 
