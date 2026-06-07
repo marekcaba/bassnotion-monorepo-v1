@@ -361,6 +361,22 @@ export class DrumBeatsPlayer {
     return this.loopDuration / (this.ratio || 1);
   }
 
+  /** DEVICE-AWARE scheduling margin (s). All source starts/swaps are scheduled this
+   *  far ahead of `currentTime` so a janky main thread (mobile, GC pause, a slow
+   *  re-render) still lands the swap in the FUTURE rather than late/clamped-to-now,
+   *  which would cause an audible discontinuity. A fixed 5ms was too tight for mobile;
+   *  this scales with the AudioContext's own latency (a proxy for how loaded/slow the
+   *  audio path is) and floors at 20ms. The drum source itself is a BufferSource, so
+   *  once started it plays sample-accurately regardless of CPU — only the START instant
+   *  needs this guard. */
+  private get scheduleMargin(): number {
+    const out =
+      typeof this.ctx.outputLatency === 'number' && this.ctx.outputLatency > 0
+        ? this.ctx.outputLatency
+        : ((this.ctx as { baseLatency?: number }).baseLatency ?? 0);
+    return Math.max(0.02, Math.min(0.12, out * 2));
+  }
+
   start(when?: number): void {
     if (this.playing) return;
     this.playing = true;
@@ -428,7 +444,8 @@ export class DrumBeatsPlayer {
       }
     } else {
       // No live source yet (shouldn't happen mid-play) — render fresh.
-      this.renderAndArm(this.ctx.currentTime + 0.005, 0);
+      // renderAndArm applies its own device-aware future margin.
+      this.renderAndArm(this.ctx.currentTime, 0);
     }
     // Schedule the settle re-render (debounced — resets on every tick during a drag).
     if (this.settleTimer != null) clearTimeout(this.settleTimer);
@@ -452,7 +469,8 @@ export class DrumBeatsPlayer {
     // playbackRate that's been running on the rendered buffer.
     const now = this.ctx.currentTime;
     const phaseSec = this.audiblePhaseSec(now);
-    this.renderAndArm(now + 0.005, phaseSec, /*crossfade*/ true);
+    // renderAndArm floors the start at now + device-aware margin (safe-swap).
+    this.renderAndArm(now, phaseSec, /*crossfade*/ true);
   }
 
   /** The real-time phase (s) into the AUDIBLE loop right now, folding over the audible
@@ -486,6 +504,9 @@ export class DrumBeatsPlayer {
   private renderAndArm(startAt: number, phaseSec: number, crossfade = false): void {
     let buf: AudioBuffer;
     try {
+      // renderLoopBuffer is a synchronous multi-MB array build — on a slow device it
+      // can take several ms, during which currentTime advances. So we read the clock
+      // AFTER it and schedule relative to that, never relative to the pre-render time.
       buf = this.renderLoopBuffer(this.ratio);
     } catch {
       return;
@@ -493,7 +514,16 @@ export class DrumBeatsPlayer {
     this.loopBuffer = buf;
     this.renderedRatio = this.ratio; // buffer now matches the target → playbackRate 1.0
     this.renderedPeriod = buf.length / this.sr; // audible period (rate 1)
-    const at = Math.max(this.ctx.currentTime, startAt);
+    // SAFE-SWAP: always schedule the start a device-aware margin into the FUTURE,
+    // measured from NOW (post-render). If the caller's intended startAt is further out,
+    // honour it; otherwise floor at now+margin so a slow render / janky main thread can
+    // never produce a late or clamped-to-now start (which would click).
+    const at = Math.max(startAt, this.ctx.currentTime + this.scheduleMargin);
+    // Advance the phase by the time we slipped between the intended start and the actual
+    // `at`, so the swap still lands at the correct musical position (the audible loop
+    // keeps moving while we render). Only matters for the settle re-render (crossfade).
+    const slipSec = crossfade ? Math.max(0, at - startAt) : 0;
+    phaseSec += slipSec;
     const xf = 0.012; // equal-power crossfade length (s)
 
     // Hold the OUTGOING source so we can crossfade out of it (settle) instead of cut.
@@ -1049,7 +1079,8 @@ export class DrumBeatsPlayer {
     const now = this.ctx.currentTime;
     const inputPos = this.currentInputPos(now);
     const phaseSec = this.period > 0 ? (inputPos / (this.ratio || 1)) % this.period : 0;
-    this.renderAndArm(now + 0.005, phaseSec);
+    // Crossfade + device-aware margin so a live tuning change doesn't hard-swap/click.
+    this.renderAndArm(now, phaseSec, /*crossfade*/ true);
   }
 
   /** Tweak gap-fill character live (dev panel). */
