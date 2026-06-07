@@ -62,6 +62,8 @@ describe('WebhookController', () => {
       { sendFounderWelcome: vi.fn() } as any,
       { get: vi.fn() } as any,
       { grantFounderMembershipByEmail: vi.fn() } as any,
+      { findById: vi.fn() } as any, // ProductRepository
+      { enroll: vi.fn() } as any, // AcceleratorEnrollmentRepository
     );
   });
 
@@ -897,6 +899,8 @@ describe('WebhookController - Status Mapping', () => {
       { sendFounderWelcome: vi.fn() } as any,
       { get: vi.fn() } as any,
       { grantFounderMembershipByEmail: vi.fn() } as any,
+      { findById: vi.fn() } as any, // ProductRepository
+      { enroll: vi.fn() } as any, // AcceleratorEnrollmentRepository
     );
   });
 
@@ -950,6 +954,8 @@ describe('WebhookController - Edge Cases', () => {
       { sendFounderWelcome: vi.fn() } as any,
       { get: vi.fn() } as any,
       { grantFounderMembershipByEmail: vi.fn() } as any,
+      { findById: vi.fn() } as any, // ProductRepository
+      { enroll: vi.fn() } as any, // AcceleratorEnrollmentRepository
     );
   });
 

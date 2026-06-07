@@ -130,9 +130,37 @@ export interface Product {
   priceInCents: number;
   currency: string;
   isActive: boolean;
+  /** Short marketing hook for the store card. */
+  tagline?: string;
+  /** Cover image URL for the store. */
+  coverImageUrl?: string;
+  /** A free teaser groove to embed on the pack detail page. */
+  previewGrooveId?: string;
+  /** Bullet-point feature list for the pricing card. */
+  features: string[];
+  /** Store display order (lower = first). */
+  sortOrder: number;
+  /** Optional card label: 'Popular' | 'New' | 'Best value'. */
+  badge?: string;
   metadata: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
+}
+
+/** A content item bundled into a product (Groove Pack / Accelerator). */
+export type ProductContentType = 'groove' | 'video' | 'exercise';
+
+export interface ProductContent {
+  id: string;
+  productId: string;
+  contentType: ProductContentType;
+  contentId: string;
+  /** Accelerator drip: 0 = immediate; N = unlocks N days after enrollment. */
+  unlockDay: number;
+  sortOrder: number;
+  /** Optional per-item caption (e.g. "Day 1: the foundation"). */
+  note?: string;
+  createdAt: Date;
 }
 
 export type SubscriptionStatus =
@@ -183,8 +211,11 @@ export interface Purchase {
 // =============================================================================
 
 export interface CreateCheckoutSessionDto {
-  type: 'course' | 'subscription';
+  type: 'course' | 'subscription' | 'product';
+  /** Required when type === 'course' (legacy course bundles). */
   courseType?: CourseType;
+  /** Required when type === 'product' (Groove Pack / Accelerator). */
+  productId?: string;
   successUrl: string;
   cancelUrl: string;
 }
