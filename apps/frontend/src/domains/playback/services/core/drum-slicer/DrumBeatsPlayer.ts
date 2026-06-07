@@ -744,43 +744,55 @@ export class DrumBeatsPlayer {
     // 1) The slice's own audio, VERBATIM (attack + full natural decay).
     for (let i = 0; i < copyLen; i++) region[i] = src[i]!;
 
-    // 2) CONTINUOUS-TAIL GAP FILL (matches measured Ableton behavior). At slow tempo the
-    //    grid slot is LONGER than the slice's source. The source's late decay went quiet/
-    //    silent by its end, but ABLETON keeps a continuous low-level tail all the way to
-    //    the next hit (measured: source @109 silent by ~0.3s, but Ableton @89 holds
-    //    ~0.012 RMS to 0.66s). It does this by LOOPING the quiet late-decay region at its
-    //    NATURAL level (not silence, not extra-decayed). We do the same: take the last
-    //    quiet decay window [ls,le) (zero-cross-snapped, well past the attack so it can't
-    //    re-fire it), and loop it forward to fill the gap, with equal-power seams. Only
-    //    when there's a meaningful gap (>10ms) and the slice has real tail content.
+    // 2) GAP FILL = VERBATIM NATURAL DECAY + SMART RING-OUT (matches MEASURED Ableton).
+    //    Re-measured across 6 grooves (orig vs Ableton-warped): Ableton does NOT loop,
+    //    stretch, or add a ribbon to drum tails. It plays each slice's tail VERBATIM and
+    //    lets it decay — in the original's quiet gaps Ableton's RMS (0.005) ≤ the source's
+    //    (0.006), i.e. it adds NOTHING (tg2: 23/24 tails sample-identical; waitlist 35/35;
+    //    d77 13/13). The verbatim copy above already gives this. The ONLY thing to handle:
+    //    if a slice's tail is still ENERGETIC at the source end but the slot is longer,
+    //    verbatim cuts to silence = a hard click. The old code LOOPED the late-decay window
+    //    to avoid that, but looping re-fires any ghost-note/hi-hat in that window (the blips
+    //    on busy beats — gospel96 had 68). Instead: ring the tail's END LEVEL out with a
+    //    smooth exponential decay to silence. No loop (no ghost re-fire), no hard cut. When
+    //    the tail already decayed naturally (tg2), the end level is ~0 so this is a no-op —
+    //    identical to verbatim, identical to Ableton.
+    // 2) TAIL TIME-STRETCH (matches MEASURED Ableton). Measured the first kick's tail
+    //    sample-by-sample, orig vs Ableton@89: the gap stretched 543ms→665ms (1.225×, the
+    //    tempo ratio), and Ableton's tail holds a CONTINUOUS low ring (~0.005-0.008 floor)
+    //    all the way to the next hit — it never goes to digital silence. It does this by
+    //    time-STRETCHING the decay tail to span the longer slot (NOT looping → no ghost
+    //    re-fire; NOT decaying-to-zero → no flat silence; NOT verbatim → no early end).
+    //    So: keep the attack + early body VERBATIM (transient untouched, bit-exact), and
+    //    resample only the DECAY region [decayStart, copyLen) slower so it fills [decayStart,
+    //    len). The decay region starts well past the attack so a slower replay can't smear a
+    //    transient. When the slot ≈ slice (mild/ratio-1) there's no real gap and this is a
+    //    no-op (bit-exact). On tg2 the tail is already low, so the stretched tail stays low —
+    //    matching Ableton; on busy beats the continuous ring fills the gap with no blip.
     const GAP_MIN = Math.round(0.01 * this.sr);
     if (len - copyLen > GAP_MIN && copyLen > 64) {
-      const xf = Math.max(1, Math.round(0.006 * this.sr));
-      const zr = Math.max(8, Math.round(0.004 * this.sr));
-      // Quiet decay window = last ~30% of the slice, after the attack/body.
-      const winStart = Math.max(Math.floor(copyLen * 0.7), copyLen - Math.round(0.12 * this.sr));
-      let ls = this.nearestZeroCrossing(src, winStart, zr, Math.floor(copyLen * 0.5), copyLen - xf - 2);
-      let le = this.nearestZeroCrossing(src, copyLen - 1, zr, ls + xf + 1, copyLen);
-      let ll = le - ls;
-      if (ll > xf * 2) {
-        // Loop [ls,le) forward from copyLen onward, equal-power crossfade at each seam.
-        let writePos = copyLen;
-        let rep = 0;
-        while (writePos < len) {
-          const seamStart = writePos - xf;
-          for (let i = 0; i < ll && seamStart + i < len; i++) {
-            const s = src[ls + i]!;
-            const di = seamStart + i;
-            if (di < 0) continue;
-            if (i < xf) {
-              const t = i / xf;
-              region[di] = region[di]! * Math.cos((t * Math.PI) / 2) + s * Math.sin((t * Math.PI) / 2);
-            } else {
-              region[di] = s;
-            }
+      const attackGuard = Math.round(0.012 * this.sr); // keep the first 12ms (attack) verbatim
+      const decayStart = Math.max(attackGuard, Math.floor(copyLen * 0.35));
+      const srcDecayLen = copyLen - decayStart; // source decay samples
+      const outDecayLen = len - decayStart;     // must fill this many
+      if (srcDecayLen > 16 && outDecayLen > srcDecayLen) {
+        const rate = srcDecayLen / outDecayLen; // <1 → played slower (stretched)
+        const xf = Math.max(1, Math.round(0.005 * this.sr)); // junction crossfade
+        for (let j = 0; j < outDecayLen && decayStart + j < len; j++) {
+          const sp = decayStart + j * rate; // fractional read position in src
+          const i0 = Math.floor(sp);
+          const frac = sp - i0;
+          const a = src[i0] ?? 0;
+          const b = src[i0 + 1] ?? a;
+          const stretched = a + (b - a) * frac; // linear-interp resample of the real decay
+          const di = decayStart + j;
+          if (j < xf) {
+            // Blend the verbatim body into the stretched tail at the junction (no step).
+            const t = j / xf;
+            region[di] = region[di]! * Math.cos((t * Math.PI) / 2) + stretched * Math.sin((t * Math.PI) / 2);
+          } else {
+            region[di] = stretched;
           }
-          writePos = seamStart + ll;
-          if (++rep > 8192) break;
         }
       }
     }
