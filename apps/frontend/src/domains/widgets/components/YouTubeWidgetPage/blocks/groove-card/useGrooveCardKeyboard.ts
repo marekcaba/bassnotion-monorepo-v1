@@ -48,6 +48,11 @@ interface UseGrooveCardKeyboardArgs {
   toggleBassMute: () => void;
   /** Gate — only handle keys once the card is interactive (isReady). */
   enabled: boolean;
+  /** When true (Dynamic Loop engaged), the auto-cycle owns the key, so the
+   *  ←/→ transpose shortcuts are inert. Space (play/pause) and M (mute) keep
+   *  working. We still preventDefault on ←/→ so a locked arrow doesn't fall
+   *  through to native page scrolling. */
+  lockTranspose?: boolean;
 }
 
 /** True when keyboard focus is somewhere we must not hijack typing keys. */
@@ -76,6 +81,7 @@ export function useGrooveCardKeyboard({
   togglePlay,
   toggleBassMute,
   enabled,
+  lockTranspose = false,
 }: UseGrooveCardKeyboardArgs): void {
   useEffect(() => {
     if (!enabled) return;
@@ -87,7 +93,11 @@ export function useGrooveCardKeyboard({
       if (isTypingTarget(e.target)) return;
 
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        // Always swallow the key (keep it from scroll-jumping the page),
+        // BEFORE the lock check, so a locked arrow is fully inert.
         e.preventDefault();
+        // Dynamic Loop owns the key while engaged — ignore manual transposes.
+        if (lockTranspose) return;
         const delta = e.key === 'ArrowRight' ? 1 : -1;
         // setKey takes an ABSOLUTE offset and clamps internally, so stepping
         // past ±KEY_RANGE is a no-op (same as the stepper buttons).
@@ -117,5 +127,12 @@ export function useGrooveCardKeyboard({
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [enabled, currentSemitones, setKey, togglePlay, toggleBassMute]);
+  }, [
+    enabled,
+    currentSemitones,
+    setKey,
+    togglePlay,
+    toggleBassMute,
+    lockTranspose,
+  ]);
 }

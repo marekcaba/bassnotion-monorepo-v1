@@ -38,7 +38,13 @@ describe('useGrooveCardKeyboard', () => {
   afterEach(() => vi.restoreAllMocks());
 
   /** Mount the hook with default fns; returns the spies for assertions. */
-  function mount(args: { currentSemitones?: number; enabled?: boolean } = {}) {
+  function mount(
+    args: {
+      currentSemitones?: number;
+      enabled?: boolean;
+      lockTranspose?: boolean;
+    } = {},
+  ) {
     const setKey = vi.fn();
     const togglePlay = vi.fn();
     const toggleBassMute = vi.fn();
@@ -49,6 +55,7 @@ describe('useGrooveCardKeyboard', () => {
         togglePlay,
         toggleBassMute,
         enabled: args.enabled ?? true,
+        lockTranspose: args.lockTranspose ?? false,
       }),
     );
     return { setKey, togglePlay, toggleBassMute, ...utils };
@@ -72,6 +79,28 @@ describe('useGrooveCardKeyboard', () => {
     press('ArrowRight');
     // We still call with 7; clamping is setKey's job (mirrors the buttons).
     expect(setKey).toHaveBeenCalledWith(7);
+  });
+
+  // ── transpose lock (Dynamic Loop engaged) ───────────────────────────────
+  it('lockTranspose: ←/→ do NOT call setKey (the cycle owns the key)', () => {
+    const { setKey } = mount({ currentSemitones: 2, lockTranspose: true });
+    press('ArrowRight');
+    press('ArrowLeft');
+    expect(setKey).not.toHaveBeenCalled();
+  });
+
+  it('lockTranspose: ←/→ still preventDefault (no page scroll-jump)', () => {
+    mount({ lockTranspose: true });
+    const ev = press('ArrowRight');
+    expect(ev.defaultPrevented).toBe(true);
+  });
+
+  it('lockTranspose does NOT block Space (play/pause) or M (mute)', () => {
+    const { togglePlay, toggleBassMute } = mount({ lockTranspose: true });
+    press(' ', { code: 'Space' });
+    press('m');
+    expect(togglePlay).toHaveBeenCalledTimes(1);
+    expect(toggleBassMute).toHaveBeenCalledTimes(1);
   });
 
   // ── play/pause (Space) ──────────────────────────────────────────────────

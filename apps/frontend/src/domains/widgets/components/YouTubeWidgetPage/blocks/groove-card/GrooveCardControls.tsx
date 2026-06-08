@@ -102,6 +102,10 @@ interface GrooveCardControlsProps {
    *  the steppers render disabled (read-only) so the student practices exactly
    *  the prescribed setup ("do exactly this"). */
   lockSettings?: boolean;
+  /** When true (Dynamic Loop engaged), ONLY the key stepper is locked — the
+   *  auto-cycle owns the key, so manual transposes are disabled. Tempo stays
+   *  free. Separate from lockSettings (which also locks tempo). */
+  lockKey?: boolean;
 }
 
 export function GrooveCardControls({
@@ -127,6 +131,7 @@ export function GrooveCardControls({
   onHoverHint,
   enforceCaps = false,
   lockSettings = false,
+  lockKey = false,
 }: GrooveCardControlsProps) {
   // Cap-aware hook reads — LAUNCH-02 will populate these.
   const { caps } = useEntitlement();
@@ -201,7 +206,7 @@ export function GrooveCardControls({
               onNext={() =>
                 onKeyChange((pendingKeyShift ?? currentSemitones) + 1)
               }
-              disabled={!isReady || lockSettings}
+              disabled={!isReady || lockSettings || lockKey}
               ariaLabel="Key"
             />
           </div>,

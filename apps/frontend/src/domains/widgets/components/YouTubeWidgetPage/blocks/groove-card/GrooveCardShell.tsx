@@ -33,6 +33,10 @@ interface GrooveCardShellProps {
   /** Mouse-over the metronome button reports 'metronome' here; pointer-
    *  leave reports null. Touch is filtered out by the caller. */
   onMetronomeHover?: (hovering: boolean) => void;
+  /** Extra control rendered in the top-right cluster, to the LEFT of the
+   *  metronome (e.g. the Dynamic Loop dial). Omitted on surfaces that don't
+   *  offer it (drill bricks, capped free tier). */
+  headerExtra?: ReactNode;
   /** Override the card's outer background. Pass a CSS color string (or any
    *  Tailwind-compatible value). Defaults to the in-app tutorial player's
    *  zinc-900 so the in-app surface is unchanged; the waitlist surface
@@ -54,6 +58,7 @@ export function GrooveCardShell({
   controls,
   meta,
   onMetronomeHover,
+  headerExtra,
   bg,
 }: GrooveCardShellProps) {
   return (
@@ -96,6 +101,7 @@ export function GrooveCardShell({
             title="Volume"
             className="w-16 h-1 accent-orange-500 cursor-pointer"
           />
+          {headerExtra}
           <button
             type="button"
             onClick={onToggleClick}

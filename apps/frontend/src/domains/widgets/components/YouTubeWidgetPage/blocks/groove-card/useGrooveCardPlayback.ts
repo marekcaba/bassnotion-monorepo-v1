@@ -169,6 +169,17 @@ export interface UseGrooveCardPlaybackReturn {
    *  new tempo — instead of a currentBpm formula that desyncs. Called per RAF
    *  frame; stable identity. */
   getAudioPhase: () => number | null;
+  /** Dynamic Loop: the next-loop-seam wall-clock time off the bass read-head,
+   *  or null when not streaming. The loop counter watches this for boundaries.
+   *  Stable identity. */
+  getNextSeamTime: () => number | null;
+  /** Dynamic Loop: current audio-context time, or null when no context.
+   *  Stable identity. */
+  getCurrentTime: () => number | null;
+  /** Dynamic Loop: the effective transpose range edge (engine ±KEY_RANGE,
+   *  tightened to the entitlement band when capped). The dial clamps its
+   *  target to ±this so an auto-cycle never trips setKey's cap/upsell path. */
+  transposeRange: number;
 
   // ── visual count-in --------------------------------------------------------
   /** Counts 1-2-3-4 during the metronome count-in bar. The play button
@@ -340,7 +351,18 @@ export function useGrooveCardPlayback({
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentBpm, setCurrentBpm] = useState<number>(block.originalBpm);
   const [currentSemitones, setCurrentSemitones] = useState(0);
+  // `pendingKeyShift` flags a key swap that's been requested but hasn't reached
+  // its loop seam yet (drives the "…" suffix + 'key-change' caption). It is
+  // CLEARED to null once the deferred boundary passes (see the timer in
+  // setKey). Historically it was set-and-never-cleared, which pinned the "…"
+  // and caption forever — fine for an occasional human tap, but a visible bug
+  // once Dynamic Loop cycles the key continuously.
   const [pendingKeyShift, setPendingKeyShift] = useState<number | null>(null);
+  // Timer that clears pendingKeyShift when the queued swap's boundary passes.
+  // Held in a ref so a fresh setKey supersedes the previous pending clear.
+  const pendingKeyClearTimerRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
   const [mutedStems, setMutedStems] = useState<Set<AudioInstrumentType>>(() => {
     // Click is muted by default per the story spec.
     return new Set(['audio-click']);
@@ -525,6 +547,22 @@ export function useGrooveCardPlayback({
     return WindowRegistry.getPlaybackEngine()?.getStemPlayheadPhase?.() ?? null;
   }, []);
 
+  // Dynamic Loop (loop counter): the authoritative next-loop-seam wall-clock
+  // time off the bass stem's real read-head, or null when not streaming. This
+  // is the SAME seam clock setKey quantises to — counting loops off it is
+  // correct across tempo changes and survives count-in. Stable identity.
+  const getNextSeamTime = useCallback((): number | null => {
+    return WindowRegistry.getPlaybackEngine()?.getStemNextSeamTime?.() ?? null;
+  }, []);
+
+  // Current audio-context time, read live from WindowRegistry so it tracks the
+  // active context even if it's rebound. Stable identity. Used by the loop
+  // counter to disambiguate a forward seam jump from a missed boundary.
+  const getCurrentTime = useCallback((): number | null => {
+    const ctx = WindowRegistry.getAudioContext() ?? audioContextRef.current;
+    return ctx ? ctx.currentTime : null;
+  }, []);
+
   // Compute the audio-context time of the next loop seam, so a key/tempo
   // change applies cleanly at a boundary (current loop finishes in the old
   // key/tempo, the next plays the new). Returns undefined when not playing
@@ -704,6 +742,26 @@ export function useGrooveCardPlayback({
           residualShift,
           boundary,
         );
+
+        // Clear the "pending" flag once the deferred swap has actually landed,
+        // so the "…" suffix + 'key-change' caption don't stick forever (the
+        // historical bug). A fresh setKey supersedes any prior pending clear.
+        if (pendingKeyClearTimerRef.current) {
+          clearTimeout(pendingKeyClearTimerRef.current);
+          pendingKeyClearTimerRef.current = null;
+        }
+        const ctx = audioContextRef.current;
+        // Time until the boundary passes (ms). When not playing the write is
+        // immediate → clear on the next tick. Add a small margin so we clear
+        // just AFTER the seam, never before.
+        const untilBoundaryMs =
+          boundary != null && ctx
+            ? Math.max(0, (boundary - ctx.currentTime) * 1000) + 60
+            : 0;
+        pendingKeyClearTimerRef.current = setTimeout(() => {
+          pendingKeyClearTimerRef.current = null;
+          setPendingKeyShift(null);
+        }, untilBoundaryMs);
       }
     },
     [
@@ -1371,6 +1429,12 @@ export function useGrooveCardPlayback({
       // resolver). Safe under React's loose sibling effect ordering.
       engine?.setPendingBufferResolver?.(null, cardId);
       activeStore.clearActiveCard(cardId);
+      // Drop any in-flight pending-key-clear timer so it can't fire after
+      // unmount (would setState on an unmounted hook).
+      if (pendingKeyClearTimerRef.current) {
+        clearTimeout(pendingKeyClearTimerRef.current);
+        pendingKeyClearTimerRef.current = null;
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // run only on unmount; capture trackPrefix + cardId at mount
@@ -1399,6 +1463,15 @@ export function useGrooveCardPlayback({
     loopStartAudioTime,
     loopDurationSeconds,
     getAudioPhase,
+    getNextSeamTime,
+    getCurrentTime,
+    // Effective transpose band: engine ±keyRange, tightened to the entitlement
+    // band when capped — the SAME number setKey clamps to (see setKey). The
+    // dial reads this so an auto-cycle target can never trip the cap path.
+    transposeRange:
+      caps?.transposeLimit != null
+        ? Math.min(keyRange, caps.transposeLimit)
+        : keyRange,
     countdownState,
     loopSelection,
     play,

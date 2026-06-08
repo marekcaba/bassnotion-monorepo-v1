@@ -40,7 +40,8 @@ export type HoverHintKey =
   | 'play-pause-pause'
   | 'key'
   | 'tempo'
-  | 'metronome';
+  | 'metronome'
+  | 'dynamic-loop';
 
 export const HOVER_HINTS: Record<HoverHintKey, string> = {
   'mute-bass': 'Drop the bass — practice the line with the rest of the band.',
@@ -50,4 +51,6 @@ export const HOVER_HINTS: Record<HoverHintKey, string> = {
   key: 'Transpose the whole band. The change lands at the next bar.',
   tempo: 'Speed up or slow down. Practice slow, perform fast.',
   metronome: 'Toggle the click track on or off.',
+  'dynamic-loop':
+    'Auto-transpose every few loops, then back — practice key changes hands-free.',
 };

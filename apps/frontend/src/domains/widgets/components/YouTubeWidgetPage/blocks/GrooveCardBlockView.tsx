@@ -24,7 +24,16 @@ import { useGrooveCardPlayback } from './groove-card/useGrooveCardPlayback';
 import { useGrooveCardKeyboard } from './groove-card/useGrooveCardKeyboard';
 import { GrooveCardShell } from './groove-card/GrooveCardShell';
 import { GrooveCardWaveform } from './groove-card/GrooveCardWaveform';
-import { GrooveCardControls } from './groove-card/GrooveCardControls';
+import {
+  GrooveCardControls,
+  formatKeyLabel,
+} from './groove-card/GrooveCardControls';
+import { GrooveCardDynamicLoopDial } from './groove-card/GrooveCardDynamicLoopDial';
+import {
+  useDynamicLoop,
+  type DynamicLoopConfig,
+} from './groove-card/useDynamicLoop';
+import { useActiveGrooveCardStore } from '@/domains/playback/store/active-groove-card.store';
 import {
   DEFAULT_PREVIEW_CAPTION,
   DEFAULT_STATE_CAPTIONS,
@@ -220,6 +229,47 @@ export function GrooveCardBlockView({
     [playback, isBassMuted],
   );
 
+  // ── Dynamic Loop: auto key-cycle every N loops ──────────────────────────
+  // Offered only where it makes sense:
+  //  • NOT on drill bricks — the key there is author-prescribed + locked
+  //    ("do exactly this"); a user-driven cycle would invalidate the drill.
+  //  • NOT to the capped free tier — cycling within a ±2 band is musically
+  //    thin, and gating here also sidesteps setKey's cap path entirely (the
+  //    dial would otherwise have only a sliver of reachable keys).
+  const dynamicLoopAvailable =
+    !isDrillBrick && !(capsEnabled && caps.transpose.isCapped);
+
+  // Per-card, in-memory config (no persistence — reload resets to defaults).
+  const [dynamicLoopConfig, setDynamicLoopConfig] = useState<DynamicLoopConfig>(
+    { targetSemitones: 2, everyN: 4 },
+  );
+  const [dynamicLoopEngaged, setDynamicLoopEngaged] = useState(false);
+
+  const dynamicLoop = useDynamicLoop({
+    engaged: dynamicLoopEngaged && dynamicLoopAvailable,
+    isPlaying: playback.isPlaying,
+    config: dynamicLoopConfig,
+    maxSemitones: playback.transposeRange,
+    setKey: playback.setKey,
+    getNextSeamTime: playback.getNextSeamTime,
+    getCurrentTime: playback.getCurrentTime,
+  });
+
+  // Multi-card pages share one engine: when another card steals active focus,
+  // this card's audio is silently stopped — so disengage our cycle, else it
+  // keeps firing setKey against the engine the other card now owns. Also
+  // covers the simple "card unmounts / loses focus" case.
+  const activeCardId = useActiveGrooveCardStore((s) => s.activeCardId);
+  useEffect(() => {
+    if (
+      dynamicLoopEngaged &&
+      activeCardId !== null &&
+      activeCardId !== block.id
+    ) {
+      setDynamicLoopEngaged(false);
+    }
+  }, [activeCardId, block.id, dynamicLoopEngaged]);
+
   // ── Drill brick: criterion → Next-unlock → advance ──────────────────────
   const { isAuthenticated, isReady } = useAuth();
   const drill = useDrill();
@@ -346,6 +396,8 @@ export function GrooveCardBlockView({
     togglePlay: onPlayPause,
     toggleBassMute: onToggleBassMute,
     enabled: playback.isReady,
+    // While the cycle is running, it owns the key — disable manual ←/→.
+    lockTranspose: dynamicLoop.isActive,
   });
 
   // Hover hint: which interactive control the pointer is currently over.
@@ -364,6 +416,16 @@ export function GrooveCardBlockView({
     // A fresh cap-hit upsell wins briefly — it's the teaching moment.
     if (capUpsell) return capUpsell;
     if (hoverHint) return HOVER_HINTS[hoverHint];
+    // Dynamic Loop status — show the next key + how many loops until it lands,
+    // so the player can hear what's coming. Wins over the generic "Playing…".
+    if (dynamicLoop.isActive) {
+      const nextLabel = formatKeyLabel(
+        config.originalKey,
+        dynamicLoop.nextSemitones,
+      );
+      const n = dynamicLoop.loopsRemaining;
+      return `Dynamic loop · → ${nextLabel} in ${n} ${n === 1 ? 'loop' : 'loops'}`;
+    }
     if (playback.isPlaying) return 'Playing…';
 
     const sc = config.stateCaptions ?? {};
@@ -384,6 +446,9 @@ export function GrooveCardBlockView({
     playback.isPlaying,
     playback.currentBpm,
     playback.pendingKeyShift,
+    dynamicLoop.isActive,
+    dynamicLoop.nextSemitones,
+    dynamicLoop.loopsRemaining,
   ]);
 
   // Clear the transient cap-hit upsell once the user moves on (hovers a
@@ -432,6 +497,23 @@ export function GrooveCardBlockView({
           if (hovering) clearCapUpsell();
           setHoverHint(hovering ? 'metronome' : null);
         }}
+        headerExtra={
+          dynamicLoopAvailable ? (
+            <GrooveCardDynamicLoopDial
+              originalKey={config.originalKey}
+              config={dynamicLoopConfig}
+              onConfigChange={setDynamicLoopConfig}
+              engaged={dynamicLoopEngaged}
+              onEngagedChange={setDynamicLoopEngaged}
+              maxSemitones={playback.transposeRange}
+              disabled={!playback.isReady}
+              onHover={(hovering) => {
+                if (hovering) clearCapUpsell();
+                setHoverHint(hovering ? 'dynamic-loop' : null);
+              }}
+            />
+          ) : undefined
+        }
         waveform={
           // The loop-range cap fires from a bar drag ON the waveform, so its
           // pitch anchors HERE (not the controls row). Own Popover, open only
@@ -504,6 +586,7 @@ export function GrooveCardBlockView({
             }}
             enforceCaps={capsEnabled}
             lockSettings={isDrillBrick}
+            lockKey={dynamicLoop.isActive}
             // loopRange anchors to the WAVEFORM (handled above), not the
             // controls row — so the controls popover ignores it.
             pitchLever={pitchLever === 'loopRange' ? null : pitchLever}
