@@ -22,7 +22,48 @@ import { Popover, PopoverAnchor } from '@/shared/components/ui/popover';
 import type { CountdownState } from '@/domains/widgets/hooks/useCountdown';
 import type { HoverHintKey } from './captions';
 
-const SEMITONE_LABELS = [
+// Pitch-class index (0..11) for every common note spelling. Handles naturals,
+// sharps and flats, in both ASCII (#/b) and glyph (♯/♭) accidentals, plus the
+// rare B♯/E♯/C♭/F♭ enharmonics. This is the INPUT parser — the admin types the
+// groove's original key as free text (e.g. "Db", "F#", "B♭").
+const PITCH_CLASS_BY_NAME: Record<string, number> = {
+  c: 0,
+  'b#': 0,
+  dbb: 0,
+  'c#': 1,
+  db: 1,
+  d: 2,
+  'c##': 2,
+  ebb: 2,
+  'd#': 3,
+  eb: 3,
+  e: 4,
+  fb: 4,
+  'd##': 4,
+  f: 5,
+  'e#': 5,
+  gbb: 5,
+  'f#': 6,
+  gb: 6,
+  g: 7,
+  'f##': 7,
+  abb: 7,
+  'g#': 8,
+  ab: 8,
+  a: 9,
+  'g##': 9,
+  bbb: 9,
+  'a#': 10,
+  bb: 10,
+  b: 11,
+  cb: 11,
+  'a##': 11,
+};
+
+// OUTPUT spellings. Flat keys (the groove's original key uses a ♭, or none of
+// the white-key sharps fits naturally) read better in flats for bass players;
+// otherwise sharps. We pick the table by whether the ORIGINAL key was flat.
+const SHARP_LABELS = [
   'C',
   'C♯',
   'D',
@@ -36,27 +77,55 @@ const SEMITONE_LABELS = [
   'A♯',
   'B',
 ] as const;
+const FLAT_LABELS = [
+  'C',
+  'D♭',
+  'D',
+  'E♭',
+  'E',
+  'F',
+  'G♭',
+  'G',
+  'A♭',
+  'A',
+  'B♭',
+  'B',
+] as const;
+
+/** Normalise a free-text note name to a pitch class 0..11, or null if we can't
+ *  parse it. Accepts "Db", "D♭", "F#", "F♯", "b#", etc. */
+function parsePitchClass(name: string): number | null {
+  const normalised = name
+    .trim()
+    .replace(/♯/g, '#')
+    .replace(/♭/g, 'b')
+    .toLowerCase();
+  const pc = PITCH_CLASS_BY_NAME[normalised];
+  return pc == null ? null : pc;
+}
 
 /**
- * Convert an `originalKey` label + a semitone offset into a display label.
- * "E" + 2 → "F♯". Falls back to a "±N" form when the original key isn't
- * one of the 12 names we recognise.
+ * Convert an `originalKey` label + a semitone offset into a real note-name
+ * display label, e.g. "E" + 2 → "F♯", "Db" + 3 → "E", "Bb" − 2 → "A♭".
+ *
+ * Parses flats/sharps/glyphs on the way in; spells the result in flats when the
+ * original key was a flat key (bass-friendly), sharps otherwise. Falls back to
+ * a "±N" form only when the original key is genuinely unparseable.
  */
 export function formatKeyLabel(
   originalKey: string,
   semitonesFromOriginal: number,
 ): string {
-  const normalised = originalKey.trim();
-  const baseIndex = SEMITONE_LABELS.findIndex(
-    (n) => n.toLowerCase() === normalised.toLowerCase(),
-  );
-  if (baseIndex === -1) {
+  const baseIndex = parsePitchClass(originalKey);
+  if (baseIndex == null) {
     if (semitonesFromOriginal === 0) return originalKey;
     const sign = semitonesFromOriginal > 0 ? '+' : '';
     return `${originalKey} ${sign}${semitonesFromOriginal}`;
   }
   const shifted = (((baseIndex + semitonesFromOriginal) % 12) + 12) % 12;
-  return SEMITONE_LABELS[shifted]!;
+  const usesFlat = /♭|b/.test(originalKey.trim().replace(/♯/g, '#').slice(1));
+  const labels = usesFlat ? FLAT_LABELS : SHARP_LABELS;
+  return labels[shifted] ?? originalKey;
 }
 
 interface GrooveCardControlsProps {

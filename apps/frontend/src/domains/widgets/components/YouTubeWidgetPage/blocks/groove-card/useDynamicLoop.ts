@@ -36,14 +36,22 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react';
 import { useLoopCounter } from './useLoopCounter.js';
 
+export type DynamicLoopMode = 'ping-pong' | 'travel';
+
 export interface DynamicLoopConfig {
   /** The transpose INTERVAL in semitones, RELATIVE to the user's current key.
-   *  The "away" segment plays at `home + intervalSemitones` (clamped to the
-   *  engine ±maxSemitones range). So a user on D♭−2 dialing +3 cycles to
-   *  D♭+1, not "original +3". Signed: positive = up, negative = down. */
+   *  Signed: positive = up, negative = down. */
   intervalSemitones: number;
-  /** How many loops to hold each key (symmetric: N home, N away). Min 1. */
+  /** How many loops to hold EACH key before moving. Min 1. */
   everyN: number;
+  /** How the cycle travels:
+   *   - 'ping-pong': home → home+interval → home → … (2 keys, default).
+   *   - 'travel':    keep moving by the interval every N loops, wrapping the
+   *     offset into the engine range (+6 = tritone, then −5, −4 … toward home),
+   *     so it climbs the chromatic ladder in the interval's direction and laps
+   *     back to home after a full octave, forever. e.g. E + m3:
+   *     E → G → B♭ → D♭ → E → … */
+  mode?: DynamicLoopMode;
 }
 
 export interface UseDynamicLoopArgs {
@@ -104,12 +112,36 @@ function clampSemitones(value: number, max: number): number {
 }
 
 /**
- * Build the v1 symmetric 2-segment cycle: HOME (the user's current manual key)
- * for N loops, then HOME + INTERVAL for N loops, repeating. `home` is the
- * absolute semitone offset the user set on the stepper; the away key is the
- * interval applied RELATIVE to it (home + intervalSemitones), both clamped to
- * the engine ±max range. So the cycle plays the user's key first, then moves it
- * by the dialed interval — not "original + interval".
+ * Wrap a semitone offset into the engine's transpose range so that pitch is
+ * continuous across the ±cap. Because +6 and −6 are the SAME pitch class (the
+ * tritone is its own inverse), a value past the cap isn't clamped — it WRAPS to
+ * the other side, which is the same chromatic ladder one octave folded. So an
+ * ascending ladder reads 0,3,6,−3,0 and a descending one 0,−3,−6,3,0.
+ *
+ * `dir` (+1 ascending / −1 descending) only disambiguates the tritone, which
+ * could be written +6 or −6: we resolve it toward the travel direction so the
+ * displayed sign matches where the journey is heading. Assumes max == 6 (a full
+ * octave window); a tighter entitlement band still wraps mod 12 then clamps.
+ */
+function wrapOffsetIntoRange(offset: number, max: number, dir: number): number {
+  const m = Math.max(1, Math.round(max));
+  let v = ((Math.round(offset) % 12) + 12) % 12; // 0..11
+  if (v > m) v -= 12; // above the cap → wrap to the negative side
+  // Tritone (|v| === m): resolve its sign toward the travel direction.
+  if (v === m && dir < 0) v = -m;
+  return Math.max(-m, Math.min(m, v));
+}
+
+/**
+ * Build the per-key segment list for one full cycle.
+ *
+ * PING-PONG: [home, home+interval] — two keys, N loops each (the default).
+ *
+ * TRAVEL: the chromatic ladder. Start at home, add the interval each step,
+ * wrapping the offset into the engine range, until we return to home (a full
+ * octave). e.g. home E(0) + m3(+3): E(0) → G(+3) → B♭(+6) → D♭(−3) → home(0).
+ * The number of distinct keys is 12 / gcd(12, |interval|); a 0 interval (or a
+ * degenerate wrap) collapses to a single home segment (no movement).
  */
 function buildSegments(
   config: DynamicLoopConfig,
@@ -117,12 +149,43 @@ function buildSegments(
   max: number,
 ): Segment[] {
   const loops = Math.max(1, Math.round(config.everyN));
+  return buildCycleKeys(config, home, max).map((semitones) => ({
+    semitones,
+    loops,
+  }));
+}
+
+/**
+ * The DISTINCT key offsets one full cycle visits, in order, starting at home.
+ *   - ping-pong: [home, home+interval]
+ *   - travel:    [home, home+i, home+2i, …] wrapping into range until it laps
+ *     back to home (a full octave). Exposed so the dial can preview the journey
+ *     as key-center note names without rebuilding the segment list.
+ */
+export function buildCycleKeys(
+  config: DynamicLoopConfig,
+  home: number,
+  max: number,
+): number[] {
   const homeKey = clampSemitones(home, max);
-  const away = clampSemitones(homeKey + config.intervalSemitones, max);
-  return [
-    { semitones: homeKey, loops },
-    { semitones: away, loops },
-  ];
+  const interval = Math.round(config.intervalSemitones);
+
+  if ((config.mode ?? 'ping-pong') === 'ping-pong') {
+    return [homeKey, clampSemitones(homeKey + interval, max)];
+  }
+
+  // TRAVEL: walk the ladder from home, wrapping, until we lap back to home.
+  const dir = Math.sign(interval) || 1;
+  const keys: number[] = [homeKey];
+  let current = homeKey;
+  for (let step = 0; step < 12; step++) {
+    const next = wrapOffsetIntoRange(current + interval, max, dir);
+    if (next === homeKey) break; // lapped back to home → cycle complete
+    if (keys.includes(next)) break; // degenerate (e.g. interval 0) — stop
+    keys.push(next);
+    current = next;
+  }
+  return keys;
 }
 
 /**

@@ -241,9 +241,10 @@ export function GrooveCardBlockView({
 
   // Per-card, in-memory config (no persistence — reload resets to defaults).
   const [dynamicLoopConfig, setDynamicLoopConfig] = useState<DynamicLoopConfig>(
-    // Default: up a major 2nd (+2) every 4 loops — a natural "take it up a
-    // step" practice move. Interval is RELATIVE to wherever the user sets key.
-    { intervalSemitones: 2, everyN: 4 },
+    // Default: ping-pong up a major 2nd (+2) every 4 loops — a natural "take it
+    // up a step" practice move. Interval is RELATIVE to wherever the user sets
+    // the key; mode defaults to the simple 2-key ping-pong.
+    { intervalSemitones: 2, everyN: 4, mode: 'ping-pong' },
   );
   const [dynamicLoopEngaged, setDynamicLoopEngaged] = useState(false);
 
