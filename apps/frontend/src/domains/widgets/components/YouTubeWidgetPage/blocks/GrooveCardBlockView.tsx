@@ -31,6 +31,7 @@ import {
 import { GrooveCardDynamicLoopDial } from './groove-card/GrooveCardDynamicLoopDial';
 import {
   useDynamicLoop,
+  buildCycleKeys,
   type DynamicLoopConfig,
 } from './groove-card/useDynamicLoop';
 import { useActiveGrooveCardStore } from '@/domains/playback/store/active-groove-card.store';
@@ -241,10 +242,10 @@ export function GrooveCardBlockView({
 
   // Per-card, in-memory config (no persistence — reload resets to defaults).
   const [dynamicLoopConfig, setDynamicLoopConfig] = useState<DynamicLoopConfig>(
-    // Default: ping-pong up a major 2nd (+2) every 4 loops — a natural "take it
-    // up a step" practice move. Interval is RELATIVE to wherever the user sets
-    // the key; mode defaults to the simple 2-key ping-pong.
-    { intervalSemitones: 2, everyN: 4, mode: 'ping-pong' },
+    // Default: ping-pong up a major 2nd (+2) every 1 loop — change key each
+    // loop. Interval is RELATIVE to wherever the user sets the key; mode
+    // defaults to the simple 2-key ping-pong.
+    { intervalSemitones: 2, everyN: 1, mode: 'ping-pong' },
   );
   const [dynamicLoopEngaged, setDynamicLoopEngaged] = useState(false);
 
@@ -262,6 +263,37 @@ export function GrooveCardBlockView({
     getNextSeamTime: playback.getNextSeamTime,
     getCurrentTime: playback.getCurrentTime,
   });
+
+  // Next-key preview label for the controls' "current → next" display.
+  //  - Engaged + PLAYING: the live nextSemitones from the hook (advances each
+  //    loop through every key in the cycle).
+  //  - Engaged but NOT yet playing: the FIRST cycle step computed from the
+  //    config (home + interval), so engaging the dial is a CUE that previews
+  //    where the cycle will go BEFORE the user hits play.
+  //  - Not engaged: null (plain stepper).
+  const dynamicLoopEngagedAvailable =
+    dynamicLoopEngaged && dynamicLoopAvailable;
+  const nextKeyLabel = useMemo(() => {
+    if (!dynamicLoopEngagedAvailable) return null;
+    const nextSemis = dynamicLoop.isActive
+      ? dynamicLoop.nextSemitones
+      : // Stopped preview: the first key the cycle moves to from the user's
+        // current key. buildCycleKeys[0] is home, [1] is the first move.
+        (buildCycleKeys(
+          dynamicLoopConfig,
+          playback.currentSemitones,
+          playback.transposeRange,
+        )[1] ?? playback.currentSemitones);
+    return formatKeyLabel(config.originalKey, nextSemis);
+  }, [
+    dynamicLoopEngagedAvailable,
+    dynamicLoop.isActive,
+    dynamicLoop.nextSemitones,
+    dynamicLoopConfig,
+    playback.currentSemitones,
+    playback.transposeRange,
+    config.originalKey,
+  ]);
 
   // Multi-card pages share one engine: when another card steals active focus,
   // this card's audio is silently stopped — so disengage our cycle, else it
@@ -594,6 +626,10 @@ export function GrooveCardBlockView({
             enforceCaps={capsEnabled}
             lockSettings={isDrillBrick}
             lockKey={dynamicLoop.isActive}
+            // Next-key preview: appears the moment the dial is ENGAGED (a cue
+            // showing where the cycle will go, even before play), then updates
+            // live through every key once playing. Computed above.
+            nextKeyLabel={nextKeyLabel}
             // loopRange anchors to the WAVEFORM (handled above), not the
             // controls row — so the controls popover ignores it.
             pitchLever={pitchLever === 'loopRange' ? null : pitchLever}

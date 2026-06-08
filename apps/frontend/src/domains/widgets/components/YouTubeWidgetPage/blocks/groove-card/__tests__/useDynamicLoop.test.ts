@@ -270,26 +270,43 @@ describe('useDynamicLoop', () => {
   });
 
   it('reports nextSemitones and loopsRemaining for the status caption', () => {
-    // The status reflects the loop whose approach most recently fired (elapsed).
-    // everyN=3: schedule home,home,home,away,away,away,... The "loopsRemaining"
-    // is loops until the next DIFFERENT key.
+    // The status LEADS the audio by the approach lead-time: each approach
+    // advances elapsed to the loop about to play. everyN=3: schedule
+    // home,home,home,away,away,away,… loopsRemaining = loops to the next
+    // DIFFERENT key.
     const { result, prime, loop } = mount({
       config: { intervalSemitones: 2, everyN: 3 },
     });
     prime();
-    // Before any approach (elapsed 0): next diff +2 is 3 loops ahead.
+    // Before any approach (elapsed 0, home): next diff +2 is 3 loops ahead.
     expect(result.current.isActive).toBe(true);
     expect(result.current.nextSemitones).toBe(2);
     expect(result.current.loopsRemaining).toBe(3);
 
-    loop(); // loop 0 approach (elapsed 0): +2 still 3 ahead
-    expect(result.current.loopsRemaining).toBe(3);
-    loop(); // loop 1 approach (elapsed 1): +2 is 2 ahead
+    loop(); // elapsed 1 (home): +2 is 2 ahead
     expect(result.current.loopsRemaining).toBe(2);
-    loop(); // loop 2 approach (elapsed 2): +2 is 1 ahead
+    loop(); // elapsed 2 (home): +2 is 1 ahead
     expect(result.current.loopsRemaining).toBe(1);
-    loop(); // loop 3 approach (elapsed 3 → away): next diff is 0, 3 ahead
+    loop(); // elapsed 3 (now away): next diff is 0, 3 ahead
     expect(result.current.nextSemitones).toBe(0);
     expect(result.current.loopsRemaining).toBe(3);
+  });
+
+  it('keeps reporting the NEXT key every loop (not just once) — preview bug', () => {
+    // Regression: the next-key preview vanished after the first change. The hook
+    // must alternate nextSemitones EVERY loop so the preview always points at
+    // the upcoming key. everyN=1, interval +3 → schedule [0, 3].
+    const { result, prime, loop } = mount({
+      config: { intervalSemitones: 3, everyN: 1 },
+    });
+    prime();
+    expect(result.current.nextSemitones).toBe(3); // home(0) → next is +3
+
+    loop(); // now on +3 → next is home(0)
+    expect(result.current.nextSemitones).toBe(0);
+    loop(); // back on home(0) → next is +3 again
+    expect(result.current.nextSemitones).toBe(3);
+    loop(); // +3 → next 0
+    expect(result.current.nextSemitones).toBe(0);
   });
 });

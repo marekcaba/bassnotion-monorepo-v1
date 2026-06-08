@@ -15,8 +15,19 @@
  * make the levers cap-aware without touching this component.
  */
 
-import type { PointerEvent as ReactPointerEvent } from 'react';
-import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
+import {
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  Pause,
+  Play,
+} from 'lucide-react';
 import { useEntitlement } from '@/domains/billing/hooks/useEntitlement';
 import { Popover, PopoverAnchor } from '@/shared/components/ui/popover';
 import type { CountdownState } from '@/domains/widgets/hooks/useCountdown';
@@ -175,6 +186,10 @@ interface GrooveCardControlsProps {
    *  auto-cycle owns the key, so manual transposes are disabled. Tempo stays
    *  free. Separate from lockSettings (which also locks tempo). */
   lockKey?: boolean;
+  /** The NEXT key the Dynamic Loop will move to (note-name label, e.g. "E"), or
+   *  null when not cycling. Rendered as a green letter after a "→" arrow inside
+   *  the key stepper, so the player can anticipate the change. */
+  nextKeyLabel?: string | null;
 }
 
 export function GrooveCardControls({
@@ -201,15 +216,21 @@ export function GrooveCardControls({
   enforceCaps = false,
   lockSettings = false,
   lockKey = false,
+  nextKeyLabel = null,
 }: GrooveCardControlsProps) {
   // Cap-aware hook reads — LAUNCH-02 will populate these.
   const { caps } = useEntitlement();
 
-  const keyLabel = formatKeyLabel(
-    originalKey,
-    pendingKeyShift ?? currentSemitones,
-  );
-  const isKeyPending = pendingKeyShift !== null;
+  // While the Dynamic Loop drives the key (lockKey), show the ACTUAL current
+  // key and suppress the manual "queued" affordances — the green next-key
+  // preview chip is the proper "change incoming" signal there. pendingKeyShift
+  // is set on every auto-cycle setKey, so honouring it here would make the
+  // stepper jump ahead to the next key and pin a permanent "…".
+  const displayedSemitones = lockKey
+    ? currentSemitones
+    : (pendingKeyShift ?? currentSemitones);
+  const keyLabel = formatKeyLabel(originalKey, displayedSemitones);
+  const isKeyPending = !lockKey && pendingKeyShift !== null;
 
   // Band levers (tempo/transpose) are NOT disabled when capped — they stay
   // enabled so the user can move WITHIN the band and bump the edge (the
@@ -277,6 +298,9 @@ export function GrooveCardControls({
               }
               disabled={!isReady || lockSettings || lockKey}
               ariaLabel="Key"
+              // Dynamic Loop: the upcoming key (green) shown after the arrow so
+              // the player can anticipate the change.
+              nextKeyLabel={nextKeyLabel}
             />
           </div>,
         )}
@@ -354,6 +378,82 @@ export function GrooveCardControls({
   );
 }
 
+/**
+ * KeyChangeDisplay — the animated "current → next" key indicator shown inside
+ * the key stepper while the Dynamic Loop cycles. Stable layout: a fixed central
+ * arrow ("we go to here") with a bare letter on each side — white CURRENT key,
+ * green NEXT key, no pill/rectangle/count. When the cycle advances, EACH letter
+ * crossfades to its new value (the departing letter eases out + drifts, the new
+ * one eases in), so the whole indicator reads as the keys travelling forward.
+ */
+function KeyChangeDisplay({
+  currentLabel,
+  nextLabel,
+}: {
+  currentLabel: string;
+  nextLabel: string;
+}) {
+  return (
+    <span
+      className="flex items-center justify-center gap-1.5 min-w-[56px] text-center"
+      aria-label={`Current key ${currentLabel}, next key ${nextLabel}`}
+    >
+      <AnimatedLetter label={currentLabel} className="text-white" />
+      <ArrowRight className="w-3.5 h-3.5 text-white/40 shrink-0" aria-hidden />
+      <AnimatedLetter label={nextLabel} className="text-emerald-300" />
+    </span>
+  );
+}
+
+/**
+ * AnimatedLetter — a single key letter that crossfades when its value changes:
+ * the departing letter eases out (drifting left), the new one eases in. The slot
+ * has a FIXED width (sized for a 2-glyph key like "D♭") and centers its content,
+ * so single-char keys ("E") and flat/sharp keys ("D♭") occupy the same space and
+ * the letters never shift horizontally as the key changes — the central arrow
+ * stays put. Both the live and departing letters are absolutely centered so
+ * neither drives the box width.
+ */
+function AnimatedLetter({
+  label,
+  className,
+}: {
+  label: string;
+  className: string;
+}) {
+  const prevRef = useRef(label);
+  const [leaving, setLeaving] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (prevRef.current === label) return undefined;
+    const departing = prevRef.current;
+    prevRef.current = label;
+    setLeaving(departing);
+    const t = setTimeout(() => setLeaving(null), 200);
+    return () => clearTimeout(t);
+  }, [label]);
+
+  return (
+    <span className="relative inline-flex h-5 w-8 shrink-0 items-center justify-center">
+      <span
+        key={`in-${label}`}
+        className={`absolute inset-0 flex items-center justify-center text-base font-semibold leading-none animate-key-arrive ${className}`}
+      >
+        {label}
+      </span>
+      {leaving && leaving !== label && (
+        <span
+          key={`out-${leaving}`}
+          aria-hidden
+          className={`absolute inset-0 flex items-center justify-center text-base font-semibold leading-none animate-key-leave ${className}`}
+        >
+          {leaving}
+        </span>
+      )}
+    </span>
+  );
+}
+
 interface StepperProps {
   label: string;
   suffix?: string;
@@ -361,6 +461,9 @@ interface StepperProps {
   onNext: () => void;
   disabled?: boolean;
   ariaLabel: string;
+  /** Dynamic Loop: the upcoming key shown in green after the arrow. Null when
+   *  not cycling (then the plain stepper renders). */
+  nextKeyLabel?: string | null;
 }
 
 function Stepper({
@@ -370,6 +473,7 @@ function Stepper({
   onNext,
   disabled,
   ariaLabel,
+  nextKeyLabel = null,
 }: StepperProps) {
   return (
     <div className="flex items-center gap-1" aria-label={ariaLabel}>
@@ -382,10 +486,19 @@ function Stepper({
       >
         <ChevronLeft className="w-4 h-4" aria-hidden />
       </button>
-      <span className="min-w-[56px] text-center text-sm font-medium text-white">
-        {label}
-        {suffix}
-      </span>
+      {/* While the Dynamic Loop cycles: "current → next" with both letters
+          animating on each change (KeyChangeDisplay). Otherwise: the plain
+          current key + pending "…". */}
+      {nextKeyLabel ? (
+        <KeyChangeDisplay currentLabel={label} nextLabel={nextKeyLabel} />
+      ) : (
+        <span className="flex items-center justify-center min-w-[56px] text-center">
+          <span className="text-base font-semibold text-white">
+            {label}
+            {suffix}
+          </span>
+        </span>
+      )}
       <button
         type="button"
         onClick={onNext}

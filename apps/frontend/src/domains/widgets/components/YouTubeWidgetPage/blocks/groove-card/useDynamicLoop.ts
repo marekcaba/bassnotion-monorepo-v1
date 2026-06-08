@@ -301,13 +301,19 @@ export function useDynamicLoop({
   // queue keyForLoop(completedLoops + 1).
   const onLoopApproaching = useCallback((completedLoops: number) => {
     if (!armedRef.current) return;
-    loopsElapsedRef.current = completedLoops;
     const segs = segmentsRef.current;
-    const upcomingKey = keyForLoop(segs, completedLoops + 1);
+    const upcomingLoop = completedLoops + 1;
+    const upcomingKey = keyForLoop(segs, upcomingLoop);
     if (upcomingKey !== queuedKeyRef.current) {
       queuedKeyRef.current = upcomingKey;
       setKeyRef.current(upcomingKey);
     }
+    // Advance the status cursor to the loop ABOUT TO PLAY (upcomingLoop). The
+    // approach fires a lead-time before the seam, so the status leads the audio
+    // by that window — exactly right for a "what's coming next" preview: the
+    // moment the upcoming key is queued, the status points PAST it to the one
+    // after, so the preview always shows where we're going next.
+    loopsElapsedRef.current = upcomingLoop;
     forceTick();
   }, []);
 
