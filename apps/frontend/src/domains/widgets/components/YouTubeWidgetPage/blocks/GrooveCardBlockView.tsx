@@ -241,13 +241,16 @@ export function GrooveCardBlockView({
 
   // Per-card, in-memory config (no persistence — reload resets to defaults).
   const [dynamicLoopConfig, setDynamicLoopConfig] = useState<DynamicLoopConfig>(
-    { targetSemitones: 2, everyN: 4 },
+    // Default: up a major 2nd (+2) every 4 loops — a natural "take it up a
+    // step" practice move. Interval is RELATIVE to wherever the user sets key.
+    { intervalSemitones: 2, everyN: 4 },
   );
   const [dynamicLoopEngaged, setDynamicLoopEngaged] = useState(false);
 
   const dynamicLoop = useDynamicLoop({
     engaged: dynamicLoopEngaged && dynamicLoopAvailable,
     isPlaying: playback.isPlaying,
+    isCountingDown: playback.countdownState.isCountingDown,
     config: dynamicLoopConfig,
     // HOME = the user's current manual key (the stepper value). The cycle
     // plays THIS key first, then transposes to the target and back — captured
@@ -504,7 +507,6 @@ export function GrooveCardBlockView({
         headerExtra={
           dynamicLoopAvailable ? (
             <GrooveCardDynamicLoopDial
-              originalKey={config.originalKey}
               config={dynamicLoopConfig}
               onConfigChange={setDynamicLoopConfig}
               engaged={dynamicLoopEngaged}

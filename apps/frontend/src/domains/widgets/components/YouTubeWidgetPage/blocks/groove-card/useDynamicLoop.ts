@@ -14,9 +14,10 @@
  *     already defers the audible swap to the next seam.
  *
  * SHAPE: a generic SEGMENT SEQUENCE `{ semitones, loops }[]`. v1 builds a
- * symmetric 2-segment cycle from `{ targetSemitones, everyN }`:
- *     [ { semitones: 0,            loops: N },   // home
- *       { semitones: target,       loops: N } ]  // away
+ * symmetric 2-segment cycle from `{ intervalSemitones, everyN }`, where the
+ * interval is RELATIVE to the user's current key:
+ *     [ { semitones: home,            loops: N },   // the user's key
+ *       { semitones: home + interval, loops: N } ]  // moved by the interval
  * Modelling it as a sequence (not a hard-coded A/B flip) means V2 asymmetric
  * phrasing, longer sequences, and verse/chorus drop into the same skeleton.
  *
@@ -36,10 +37,11 @@ import { useCallback, useEffect, useReducer, useRef } from 'react';
 import { useLoopCounter } from './useLoopCounter.js';
 
 export interface DynamicLoopConfig {
-  /** Target transpose in semitones for the "away" segment, relative to the
-   *  original key. The caller passes the value the user dialed; this hook
-   *  re-clamps it to `maxSemitones` defensively. */
-  targetSemitones: number;
+  /** The transpose INTERVAL in semitones, RELATIVE to the user's current key.
+   *  The "away" segment plays at `home + intervalSemitones` (clamped to the
+   *  engine ±maxSemitones range). So a user on D♭−2 dialing +3 cycles to
+   *  D♭+1, not "original +3". Signed: positive = up, negative = down. */
+  intervalSemitones: number;
   /** How many loops to hold each key (symmetric: N home, N away). Min 1. */
   everyN: number;
 }
@@ -51,6 +53,10 @@ export interface UseDynamicLoopArgs {
   engaged: boolean;
   /** Whether the groove is playing. The counter only runs while playing. */
   isPlaying: boolean;
+  /** True while the 1-2-3-4 count-in bar is playing. Forwarded to the loop
+   *  counter so the count-in→loop-1 read-head wrap isn't miscounted as a
+   *  completed home loop. */
+  isCountingDown: boolean;
   /** The dialed cycle config. */
   config: DynamicLoopConfig;
   /** The user's CURRENT manual key (absolute semitones from the original),
@@ -99,9 +105,11 @@ function clampSemitones(value: number, max: number): number {
 
 /**
  * Build the v1 symmetric 2-segment cycle: HOME (the user's current manual key)
- * for N loops, then the dialed target for N loops, repeating. `home` is the
- * absolute semitone offset the user set on the stepper — the cycle plays THAT
- * key first, not the original key.
+ * for N loops, then HOME + INTERVAL for N loops, repeating. `home` is the
+ * absolute semitone offset the user set on the stepper; the away key is the
+ * interval applied RELATIVE to it (home + intervalSemitones), both clamped to
+ * the engine ±max range. So the cycle plays the user's key first, then moves it
+ * by the dialed interval — not "original + interval".
  */
 function buildSegments(
   config: DynamicLoopConfig,
@@ -110,16 +118,36 @@ function buildSegments(
 ): Segment[] {
   const loops = Math.max(1, Math.round(config.everyN));
   const homeKey = clampSemitones(home, max);
-  const away = clampSemitones(config.targetSemitones, max);
+  const away = clampSemitones(homeKey + config.intervalSemitones, max);
   return [
     { semitones: homeKey, loops },
     { semitones: away, loops },
   ];
 }
 
+/**
+ * The key (semitone offset) that should be AUDIBLE during a given loop, where
+ * loop 0 is the first home loop. The segments form a repeating block of total
+ * length `sum(loops)`; we map `loopIndex` into that block. This is the flat
+ * per-loop schedule — far easier to reason about than a mutable cursor, and the
+ * thing the one-loop-ahead pre-queue reads from.
+ */
+function keyForLoop(segments: Segment[], loopIndex: number): number {
+  const period = segments.reduce((sum, s) => sum + Math.max(1, s.loops), 0);
+  if (period <= 0) return segments[0]?.semitones ?? 0;
+  let pos = ((loopIndex % period) + period) % period; // wrap negatives too
+  for (const seg of segments) {
+    const len = Math.max(1, seg.loops);
+    if (pos < len) return seg.semitones;
+    pos -= len;
+  }
+  return segments[0]?.semitones ?? 0;
+}
+
 export function useDynamicLoop({
   engaged,
   isPlaying,
+  isCountingDown,
   config,
   homeSemitones,
   maxSemitones,
@@ -141,16 +169,17 @@ export function useDynamicLoop({
     buildSegments(config, homeSemitones, maxSemitones),
   );
 
-  // Runtime cursor: which segment we're in and how many of its loops are left.
-  // Refs because the loop-boundary callback must read/write them synchronously
-  // without a stale closure.
-  const segmentIndexRef = useRef(0);
-  const loopsLeftRef = useRef(segmentsRef.current[0]?.loops ?? 1);
-  // Armed only after the activation effect has rebuilt the segments from the
-  // user's LIVE home key. Guards the React effect-ordering window: the loop
-  // counter's RAF could otherwise spend a boundary against the stale initial
-  // segments (home seeded at 0 from mount-time currentSemitones) before the
-  // activation effect commits the correct home.
+  // How many full cycle-loops have COMPLETED since activation. Loop 0 is the
+  // first home loop currently playing; after its boundary fires, elapsed = 1,
+  // meaning loop 1 is now playing. The boundary callback reads/writes this
+  // synchronously, so it's a ref.
+  const loopsElapsedRef = useRef(0);
+  // The key we've most recently QUEUED via setKey (one loop ahead). Tracked so
+  // we only call setKey when the upcoming loop's key actually changes.
+  const queuedKeyRef = useRef<number | null>(null);
+  // Armed only after the activation effect has set the live home key. Guards
+  // the React effect-ordering window: the loop counter's RAF could otherwise
+  // spend a boundary before activation commits the correct home.
   const armedRef = useRef(false);
 
   // Stable refs for the boundary callback so it never restarts the counter.
@@ -190,37 +219,42 @@ export function useDynamicLoop({
       homeSemitonesRef.current,
       maxSemitonesRef.current,
     );
-    segmentIndexRef.current = 0;
-    loopsLeftRef.current = segmentsRef.current[0]?.loops ?? 1;
+    loopsElapsedRef.current = 0;
+    // Loop 0 (home) is already audible (it === the user's current key), so it's
+    // our "queued" key. We'll queue loop 1's key at loop 0's boundary.
+    queuedKeyRef.current = keyForLoop(segmentsRef.current, 0);
     armedRef.current = true; // only now may boundaries be spent
     forceTick();
   }, [isActive]);
 
-  // On each loop boundary: spend one loop of the current segment. When the
-  // segment is exhausted, advance to the next (wrapping) and apply its key.
-  const onLoopBoundary = useCallback(() => {
-    // Ignore any boundary that fires before activation has rebuilt the segments
-    // from the live home key (effect-ordering guard).
+  // Fired by the loop counter when the CURRENT loop is APPROACHING its seam
+  // (lead-time before the wrap, still inside the loop). We pre-queue the NEXT
+  // loop's key here: setKey() defers the audible swap to the next seam — which,
+  // because we're still inside the current loop, IS this loop's end. So the new
+  // key is heard on the very first beat of the next loop. No extra home loop.
+  //
+  // `completedLoops` is the number of loops fully completed so far (0 while the
+  // first loop plays). The loop ABOUT TO START is completedLoops + 1, so we
+  // queue keyForLoop(completedLoops + 1).
+  const onLoopApproaching = useCallback((completedLoops: number) => {
     if (!armedRef.current) return;
-    if (loopsLeftRef.current > 1) {
-      loopsLeftRef.current -= 1;
-      forceTick();
-      return;
-    }
+    loopsElapsedRef.current = completedLoops;
     const segs = segmentsRef.current;
-    const nextIndex = (segmentIndexRef.current + 1) % segs.length;
-    segmentIndexRef.current = nextIndex;
-    loopsLeftRef.current = segs[nextIndex]?.loops ?? 1;
-    setKeyRef.current(segs[nextIndex]?.semitones ?? segs[0]?.semitones ?? 0);
+    const upcomingKey = keyForLoop(segs, completedLoops + 1);
+    if (upcomingKey !== queuedKeyRef.current) {
+      queuedKeyRef.current = upcomingKey;
+      setKeyRef.current(upcomingKey);
+    }
     forceTick();
   }, []);
 
   useLoopCounter({
     isPlaying,
     enabled: engaged,
+    isCountingDown,
     getNextSeamTime,
     getCurrentTime,
-    onLoopBoundary,
+    onLoopApproaching,
   });
 
   // On disengage (or stop), snap back to the HOME key (the user's manual key)
@@ -236,15 +270,27 @@ export function useDynamicLoop({
     wasActiveRef.current = isActive;
   }, [isActive]);
 
-  // Derived status (read from the cursor refs; forceTick guarantees a render
-  // when they change).
+  // Derived status for the caption (read from refs; forceTick re-renders when
+  // they change). The loop currently playing is `loopsElapsed`; its key is
+  // keyForLoop(elapsed). We report the NEXT DIFFERENT key and how many loops
+  // until it lands.
   const segs = segmentsRef.current;
-  const curIndex = isActive ? segmentIndexRef.current : 0;
-  const nextIndex = (curIndex + 1) % segs.length;
-  const nextSemitones = isActive
-    ? (segs[nextIndex]?.semitones ?? segs[0]?.semitones ?? 0)
-    : 0;
-  const loopsRemaining = isActive ? loopsLeftRef.current : 0;
+  const elapsed = isActive ? loopsElapsedRef.current : 0;
+  let nextSemitones = 0;
+  let loopsRemaining = 0;
+  if (isActive && segs.length > 0) {
+    const currentKey = keyForLoop(segs, elapsed);
+    const period = segs.reduce((s, seg) => s + Math.max(1, seg.loops), 0);
+    // Walk forward to the next loop whose key differs from the current one.
+    for (let ahead = 1; ahead <= period; ahead++) {
+      const k = keyForLoop(segs, elapsed + ahead);
+      if (k !== currentKey) {
+        nextSemitones = k;
+        loopsRemaining = ahead;
+        break;
+      }
+    }
+  }
 
   return { nextSemitones, loopsRemaining, isActive };
 }

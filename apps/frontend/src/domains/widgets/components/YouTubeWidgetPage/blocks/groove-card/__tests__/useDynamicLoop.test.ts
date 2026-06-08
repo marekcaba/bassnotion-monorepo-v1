@@ -38,11 +38,12 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 
 /**
- * A live seam source mirroring real playback:
- *  - `approach()` advances the clock toward a FIXED seam (gap shrinks), which
- *    is how the loop counter ARMS — proving a live, counting-down read-head.
- *  - `wrap()` jumps the seam forward by one loop (the read-head wrapped),
- *    which the armed counter sees as a boundary.
+ * A live seam source mirroring real playback. The seam is a fixed future
+ * instant; `now` climbs toward it. The loop counter fires onLoopApproaching
+ * when `seam - now` enters the lead-time window (≤0.25s), then the loop wraps.
+ *  - `far()`     — a frame mid-loop (seam well ahead; no approach fire).
+ *  - `nearSeam()`— a frame INSIDE the lead window (seam ≈0.1s ahead → fires).
+ *  - `wrap()`    — the read-head wraps (seam jumps forward one loop).
  */
 function makeSeamSource(loopSec = 8) {
   let seam = loopSec; // first seam one loop out
@@ -50,11 +51,15 @@ function makeSeamSource(loopSec = 8) {
   return {
     getNextSeamTime: () => seam,
     getCurrentTime: () => now,
-    /** One frame where the clock climbs toward the seam (gap shrinks). */
-    approach: (by = 1.0) => {
-      now = Math.min(now + by, seam - 0.05);
+    /** Mid-loop frame: clock advances but stays > lead window from the seam. */
+    far: () => {
+      now = seam - 1.0; // gap 1.0 — outside the 0.25 lead window
     },
-    /** Advance one loop boundary (read-head wraps → seam jumps forward). */
+    /** Frame just inside the lead window → triggers onLoopApproaching. */
+    nearSeam: () => {
+      now = seam - 0.1; // gap 0.1 — inside the 0.25 lead window
+    },
+    /** The read-head wraps: seam jumps forward one loop. */
     wrap: () => {
       now = seam + 0.1; // we just crossed the old seam
       seam += loopSec; // next seam is one loop further out
@@ -83,6 +88,7 @@ function mount(args: {
       useDynamicLoop({
         engaged: props.engaged,
         isPlaying: props.isPlaying,
+        isCountingDown: false,
         config: props.config,
         homeSemitones: props.homeSemitones,
         maxSemitones: props.maxSemitones,
@@ -94,100 +100,132 @@ function mount(args: {
       initialProps: {
         engaged: args.engaged ?? true,
         isPlaying: args.isPlaying ?? true,
-        config: args.config ?? { targetSemitones: 2, everyN: 2 },
+        config: args.config ?? { intervalSemitones: 2, everyN: 2 },
         homeSemitones: args.homeSemitones ?? 0,
         maxSemitones: args.maxSemitones ?? 6,
       },
     },
   );
-  // prime(): drive several approach frames so the loop counter ARMS (the
-  // seam-to-now gap shrinks, proving a live read-head) and baselines on the
-  // live seam — mirroring the count-in finishing and real streaming starting.
-  // No boundary fires during priming. Each boundary() then wraps the seam.
+  // prime(): a couple of mid-loop frames so the counter baselines on loop 0's
+  // seam (count-in is off here). No approach fires yet (seam is far).
   const prime = () => {
-    seam.approach(2.0); // gap shrinks
+    seam.far();
     flushFrame();
-    seam.approach(2.0); // gap shrinks more → arms, baseline
-    flushFrame();
-    seam.approach(2.0); // settled, armed
+    seam.far();
     flushFrame();
   };
-  const boundary = () => {
+  // loop(): play out ONE loop — a near-seam frame (fires onLoopApproaching for
+  // the UPCOMING loop, which pre-queues its key one loop early via setKey),
+  // then the wrap (loop completes). Mirrors real playback: the key for loop N+1
+  // is queued while loop N is finishing, so it's audible when loop N+1 starts.
+  const loop = () => {
+    seam.nearSeam();
+    flushFrame();
     seam.wrap();
     flushFrame();
+    seam.far();
+    flushFrame();
   };
-  return { setKey, seam, prime, boundary, ...utils };
+  return { setKey, seam, prime, loop, ...utils };
 }
 
 describe('useDynamicLoop', () => {
-  it('cycles home×N → away×N → home, calling setKey at each segment edge', () => {
-    // everyN=2, target=+2: hold 0 for 2 loops, then +2 for 2 loops, repeat.
-    const { setKey, prime, boundary } = mount({
-      config: { targetSemitones: 2, everyN: 2 },
+  it('cycles home×N → away×N → home, pre-queuing each change one loop early', () => {
+    // everyN=2, interval=+2 (home 0 → away +2). Per-loop schedule:
+    // home,home,away,away,home,...
+    // The away key is pre-queued during the LAST home loop (loop 1), so it's
+    // audible at loop 2; home is pre-queued during the last away loop (loop 3).
+    const { setKey, prime, loop } = mount({
+      config: { intervalSemitones: 2, everyN: 2 },
     });
-    prime(); // baseline the counter (no boundary yet)
+    prime();
 
-    boundary(); // loop 1 of home segment spent (2→1 left), no key change
+    loop(); // loop 0 (home) approaching → upcoming loop 1 = home → no change
     expect(setKey).not.toHaveBeenCalled();
 
-    boundary(); // home segment exhausted → switch to away (+2)
+    loop(); // loop 1 (home) approaching → upcoming loop 2 = away(+2) → setKey(2)
     expect(setKey).toHaveBeenNthCalledWith(1, 2);
 
-    boundary(); // loop 1 of away spent
+    loop(); // loop 2 (away) approaching → upcoming loop 3 = away → no change
     expect(setKey).toHaveBeenCalledTimes(1);
 
-    boundary(); // away exhausted → back to home (0)
+    loop(); // loop 3 (away) approaching → upcoming loop 4 = home(0) → setKey(0)
     expect(setKey).toHaveBeenNthCalledWith(2, 0);
 
-    boundary(); // loop 1 of home
-    boundary(); // home exhausted → away again (+2)
+    loop(); // loop 4 (home) approaching → upcoming loop 5 = home → no change
+    loop(); // loop 5 (home) approaching → upcoming loop 6 = away(+2) → setKey(2)
     expect(setKey).toHaveBeenNthCalledWith(3, 2);
   });
 
-  it('holds the USER MANUAL key as home (not the original key)', () => {
-    // The user dialed the stepper to +3. Engaging must keep +3 as home — play
-    // +3 for N, transpose to the target (+5) for N, then BACK to +3, not 0.
-    const { setKey, prime, boundary } = mount({
-      config: { targetSemitones: 5, everyN: 1 },
+  it('everyN=1: transposes on the very next loop (no extra home loop)', () => {
+    // The reported real bug: with everyN=1 the away key must be heard on loop 2,
+    // not loop 3. The pre-queue fires during loop 0 → away queued for loop 1.
+    const { setKey, prime, loop } = mount({
+      config: { intervalSemitones: 3, everyN: 1 },
+    });
+    prime();
+
+    loop(); // loop 0 (home) approaching → upcoming loop 1 = away(+3) → setKey(3)
+    expect(setKey).toHaveBeenNthCalledWith(1, 3);
+
+    loop(); // loop 1 (away) approaching → upcoming loop 2 = home(0) → setKey(0)
+    expect(setKey).toHaveBeenNthCalledWith(2, 0);
+
+    loop(); // loop 2 (home) approaching → upcoming loop 3 = away(+3) → setKey(3)
+    expect(setKey).toHaveBeenNthCalledWith(3, 3);
+  });
+
+  it('applies the interval RELATIVE to the user manual key (home + interval)', () => {
+    // User on +3, interval +2 (up M2) → away = 3+2 = +5. Cycle +3↔+5, never 0.
+    const { setKey, prime, loop } = mount({
+      config: { intervalSemitones: 2, everyN: 1 },
       homeSemitones: 3,
     });
     prime();
 
-    boundary(); // home (+3) exhausted → away (+5)
+    loop(); // upcoming = away = home(+3) + interval(+2) = +5
     expect(setKey).toHaveBeenNthCalledWith(1, 5);
-
-    boundary(); // away exhausted → back to HOME = +3 (NOT 0)
+    loop(); // upcoming = home(+3), NOT 0
     expect(setKey).toHaveBeenNthCalledWith(2, 3);
-
-    boundary(); // home exhausted → away (+5) again
+    loop(); // upcoming = away(+5)
     expect(setKey).toHaveBeenNthCalledWith(3, 5);
   });
 
   it('snaps back to the USER MANUAL key (not 0) on disengage', () => {
-    const { setKey, prime, boundary, rerender } = mount({
-      config: { targetSemitones: 5, everyN: 1 },
+    const { setKey, prime, loop, rerender } = mount({
+      config: { intervalSemitones: 2, everyN: 1 },
       homeSemitones: 3,
     });
     prime();
-    boundary(); // → away (+5)
+    loop(); // → away = +5 queued
     expect(setKey).toHaveBeenLastCalledWith(5);
 
     rerender({
       engaged: false,
       isPlaying: true,
-      config: { targetSemitones: 5, everyN: 1 },
+      config: { intervalSemitones: 2, everyN: 1 },
       homeSemitones: 3,
       maxSemitones: 6,
     });
-    // Snaps to the user's manual key +3, NOT 0.
-    expect(setKey).toHaveBeenLastCalledWith(3);
+    expect(setKey).toHaveBeenLastCalledWith(3); // user's manual key, not 0
+  });
+
+  it('clamps home + interval into the ±max range', () => {
+    // User on +4, interval +5 → 4+5 = +9 → clamped to +6 (the cap). The away
+    // segment must never exceed the engine range / trip setKey's cap path.
+    const { setKey, prime, loop } = mount({
+      config: { intervalSemitones: 5, everyN: 1 },
+      homeSemitones: 4,
+      maxSemitones: 6,
+    });
+    prime();
+    loop(); // away = clamp(4 + 5, ±6) = +6, never +9
+    expect(setKey).toHaveBeenCalledWith(6);
   });
 
   it('does NOT setKey on activate (home === the key already playing)', () => {
-    // Engaging while the user sits on +3 must not fire setKey — they're already
-    // playing +3; the first auto-change is the transpose after N loops.
     const { setKey, prime } = mount({
-      config: { targetSemitones: 5, everyN: 2 },
+      config: { intervalSemitones: 5, everyN: 2 },
       homeSemitones: 3,
     });
     prime();
@@ -195,90 +233,62 @@ describe('useDynamicLoop', () => {
   });
 
   it('pre-clamps an out-of-band target so setKey never sees it', () => {
-    // Dial +5 but the entitlement band is ±2 → the away segment must be +2.
-    const { setKey, prime, boundary } = mount({
-      config: { targetSemitones: 5, everyN: 1 },
+    const { setKey, prime, loop } = mount({
+      config: { intervalSemitones: 5, everyN: 1 },
       maxSemitones: 2,
     });
     prime();
-    boundary(); // everyN=1 → home exhausted immediately → away
-    expect(setKey).toHaveBeenCalledWith(2); // clamped, never +5
-  });
-
-  it('engages live: first change lands after everyN loops (not immediately)', () => {
-    const { setKey, prime, boundary } = mount({
-      engaged: false,
-      config: { targetSemitones: 3, everyN: 3 },
-    });
-    prime();
-    // Not engaged yet — boundaries do nothing.
-    boundary();
-    boundary();
-    expect(setKey).not.toHaveBeenCalled();
-  });
-
-  it('snaps back to home (setKey(0)) on disengage', () => {
-    const { setKey, prime, boundary, rerender } = mount({
-      config: { targetSemitones: 2, everyN: 1 },
-    });
-    prime();
-    boundary(); // → away (+2)
-    expect(setKey).toHaveBeenLastCalledWith(2);
-
-    // Disengage — must snap home (0, the default manual key here).
-    rerender({
-      engaged: false,
-      isPlaying: true,
-      config: { targetSemitones: 2, everyN: 1 },
-      homeSemitones: 0,
-      maxSemitones: 6,
-    });
-    expect(setKey).toHaveBeenLastCalledWith(0);
-  });
-
-  it('snaps back to home when playback stops while engaged', () => {
-    const { setKey, prime, boundary, rerender } = mount({
-      config: { targetSemitones: 4, everyN: 1 },
-    });
-    prime();
-    boundary(); // → away (+4)
-    expect(setKey).toHaveBeenLastCalledWith(4);
-
-    // Stop while still engaged — isActive goes false → snap home.
-    rerender({
-      engaged: true,
-      isPlaying: false,
-      config: { targetSemitones: 4, everyN: 1 },
-      homeSemitones: 0,
-      maxSemitones: 6,
-    });
-    expect(setKey).toHaveBeenLastCalledWith(0);
+    loop(); // upcoming = away, clamped to +2
+    expect(setKey).toHaveBeenCalledWith(2); // never +5
   });
 
   it('is fully inert when not engaged', () => {
-    const { setKey, prime, boundary } = mount({ engaged: false });
+    const { setKey, prime, loop } = mount({ engaged: false });
     prime();
-    boundary();
-    boundary();
-    boundary();
+    loop();
+    loop();
+    loop();
     expect(setKey).not.toHaveBeenCalled();
   });
 
-  it('reports nextSemitones and loopsRemaining for the status caption', () => {
-    const { result, prime, boundary } = mount({
-      config: { targetSemitones: 2, everyN: 3 },
+  it('snaps back to home when playback stops while engaged', () => {
+    const { setKey, prime, loop, rerender } = mount({
+      config: { intervalSemitones: 4, everyN: 1 },
     });
     prime();
-    // Start of home segment: next change is to +2, in 3 loops.
+    loop(); // → away (+4) queued
+    expect(setKey).toHaveBeenLastCalledWith(4);
+
+    rerender({
+      engaged: true,
+      isPlaying: false,
+      config: { intervalSemitones: 4, everyN: 1 },
+      homeSemitones: 0,
+      maxSemitones: 6,
+    });
+    expect(setKey).toHaveBeenLastCalledWith(0); // snap home
+  });
+
+  it('reports nextSemitones and loopsRemaining for the status caption', () => {
+    // The status reflects the loop whose approach most recently fired (elapsed).
+    // everyN=3: schedule home,home,home,away,away,away,... The "loopsRemaining"
+    // is loops until the next DIFFERENT key.
+    const { result, prime, loop } = mount({
+      config: { intervalSemitones: 2, everyN: 3 },
+    });
+    prime();
+    // Before any approach (elapsed 0): next diff +2 is 3 loops ahead.
     expect(result.current.isActive).toBe(true);
     expect(result.current.nextSemitones).toBe(2);
     expect(result.current.loopsRemaining).toBe(3);
 
-    boundary(); // home loop spent: 3 → 2 left
+    loop(); // loop 0 approach (elapsed 0): +2 still 3 ahead
+    expect(result.current.loopsRemaining).toBe(3);
+    loop(); // loop 1 approach (elapsed 1): +2 is 2 ahead
     expect(result.current.loopsRemaining).toBe(2);
-    boundary(); // 2 → 1 left
+    loop(); // loop 2 approach (elapsed 2): +2 is 1 ahead
     expect(result.current.loopsRemaining).toBe(1);
-    boundary(); // segment exhausted → away; next change is back to 0, 3 left
+    loop(); // loop 3 approach (elapsed 3 → away): next diff is 0, 3 ahead
     expect(result.current.nextSemitones).toBe(0);
     expect(result.current.loopsRemaining).toBe(3);
   });

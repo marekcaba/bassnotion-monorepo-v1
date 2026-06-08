@@ -24,14 +24,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/shared/components/ui/popover';
-import { formatKeyLabel } from './GrooveCardControls';
+import { formatIntervalLabel, formatIntervalAria } from './intervals';
 import type { DynamicLoopConfig } from './useDynamicLoop';
 
 interface GrooveCardDynamicLoopDialProps {
-  /** Original key label (e.g. "E"), used to render the target as a real note
-   *  name via formatKeyLabel. */
-  originalKey: string;
-  /** Current dial config (target semitones + loops-per-key). */
+  /** Current dial config (transpose interval + loops-per-key). */
   config: DynamicLoopConfig;
   /** Fired when the user steps either dial. The parent holds the state. */
   onConfigChange: (next: DynamicLoopConfig) => void;
@@ -40,8 +37,8 @@ interface GrooveCardDynamicLoopDialProps {
   /** Toggle engage on/off. */
   onEngagedChange: (engaged: boolean) => void;
   /** The effective transpose range edge (engine cap, or the entitlement band
-   *  when tighter). The target stepper clamps to ±this so the cycle never trips
-   *  setKey's cap/upsell path. */
+   *  when tighter). Bounds the interval to ±this. The cycle additionally clamps
+   *  home+interval into range, so the audible move never exceeds the cap. */
   maxSemitones: number;
   /** Disable the whole control (e.g. while not ready). */
   disabled?: boolean;
@@ -54,7 +51,6 @@ const EVERY_MIN = 1;
 const EVERY_MAX = 16;
 
 export function GrooveCardDynamicLoopDial({
-  originalKey,
   config,
   onConfigChange,
   engaged,
@@ -64,25 +60,27 @@ export function GrooveCardDynamicLoopDial({
   onHover,
 }: GrooveCardDynamicLoopDialProps) {
   const max = Math.max(1, Math.round(maxSemitones));
-  const target = Math.max(
+  const interval = Math.max(
     -max,
-    Math.min(max, Math.round(config.targetSemitones)),
+    Math.min(max, Math.round(config.intervalSemitones)),
   );
   const everyN = Math.max(
     EVERY_MIN,
     Math.min(EVERY_MAX, Math.round(config.everyN)),
   );
 
-  const stepTarget = (delta: number) => {
-    const next = Math.max(-max, Math.min(max, target + delta));
-    if (next !== target) onConfigChange({ ...config, targetSemitones: next });
+  const stepInterval = (delta: number) => {
+    const next = Math.max(-max, Math.min(max, interval + delta));
+    if (next !== interval)
+      onConfigChange({ ...config, intervalSemitones: next });
   };
   const stepEvery = (delta: number) => {
     const next = Math.max(EVERY_MIN, Math.min(EVERY_MAX, everyN + delta));
     if (next !== everyN) onConfigChange({ ...config, everyN: next });
   };
 
-  const targetLabel = formatKeyLabel(originalKey, target);
+  const intervalLabel = formatIntervalLabel(interval);
+  const intervalAria = formatIntervalAria(interval);
 
   return (
     <Popover>
@@ -119,19 +117,20 @@ export function GrooveCardDynamicLoopDial({
           <div>
             <h4 className="text-sm font-semibold">Dynamic loop</h4>
             <p className="mt-0.5 text-xs text-white/50">
-              Auto-transpose every few loops, then back.
+              Move your key by an interval every few loops, then back.
             </p>
           </div>
 
-          {/* Transpose-to dial */}
+          {/* Transpose-interval dial — RELATIVE to the user's current key. */}
           <DialRow
-            label="Transpose to"
-            value={targetLabel}
-            onPrev={() => stepTarget(-1)}
-            onNext={() => stepTarget(1)}
-            prevDisabled={target <= -max}
-            nextDisabled={target >= max}
-            ariaLabel="Dynamic loop target key"
+            label="Transpose"
+            value={intervalLabel}
+            valueAria={intervalAria}
+            onPrev={() => stepInterval(-1)}
+            onNext={() => stepInterval(1)}
+            prevDisabled={interval <= -max}
+            nextDisabled={interval >= max}
+            ariaLabel="Dynamic loop transpose interval"
           />
 
           {/* Every-N-loops dial */}
@@ -172,6 +171,9 @@ export function GrooveCardDynamicLoopDial({
 interface DialRowProps {
   label: string;
   value: string;
+  /** Spoken value for screen readers (e.g. "up a minor 3rd"). Defaults to
+   *  `value` when omitted. */
+  valueAria?: string;
   onPrev: () => void;
   onNext: () => void;
   prevDisabled: boolean;
@@ -182,6 +184,7 @@ interface DialRowProps {
 function DialRow({
   label,
   value,
+  valueAria,
   onPrev,
   onNext,
   prevDisabled,
@@ -201,7 +204,10 @@ function DialRow({
         >
           <ChevronLeft className="w-4 h-4" aria-hidden />
         </button>
-        <span className="min-w-[64px] text-center text-sm font-medium text-white">
+        <span
+          className="min-w-[72px] text-center text-sm font-medium text-white"
+          aria-label={valueAria ?? value}
+        >
           {value}
         </span>
         <button

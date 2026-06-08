@@ -42,7 +42,7 @@ afterEach(() => vi.restoreAllMocks());
  * frame. When the script is exhausted the last reading repeats.
  */
 function mountScripted(
-  script: Array<{ seam: number | null; now: number }>,
+  script: Array<{ seam: number | null; now: number; countdown?: boolean }>,
   opts: { isPlaying?: boolean; enabled?: boolean } = {},
 ) {
   let frame = 0;
@@ -50,173 +50,182 @@ function mountScripted(
     script[Math.min(frame, script.length - 1)] ?? { seam: null, now: 0 };
   const getNextSeamTime = vi.fn(() => read().seam);
   const getCurrentTime = vi.fn(() => read().now);
-  const onLoopBoundary = vi.fn();
+  const onLoopApproaching = vi.fn();
 
   const utils = renderHook(
-    (props: { isPlaying: boolean; enabled: boolean }) =>
+    // `tick` is a dummy prop bumped each step so React re-renders the component
+    // body — this updates the hook's internal refs (e.g. isCountingDown) to the
+    // CURRENT scripted frame, mirroring how countdownState re-renders the real
+    // component. Without it the refs freeze at their mount values.
+    (props: { isPlaying: boolean; enabled: boolean; tick: number }) =>
       useLoopCounter({
         isPlaying: props.isPlaying,
         enabled: props.enabled,
+        // The count-in flag is read live off the current scripted frame.
+        isCountingDown: read().countdown ?? false,
         getNextSeamTime,
         getCurrentTime,
-        onLoopBoundary,
+        onLoopApproaching,
       }),
     {
       initialProps: {
         isPlaying: opts.isPlaying ?? true,
         enabled: opts.enabled ?? true,
+        tick: 0,
       },
     },
   );
 
-  // Advance the scripted frame each time we flush.
+  // Advance the scripted frame each time we flush. We re-render BEFORE flushing
+  // so the component body (and its refs) reflect the new frame, then run the
+  // RAF tick which reads those refs.
+  let renderTick = 0;
   const step = (n = 1) => {
     for (let i = 0; i < n; i++) {
+      renderTick += 1;
+      utils.rerender({
+        isPlaying: opts.isPlaying ?? true,
+        enabled: opts.enabled ?? true,
+        tick: renderTick,
+      });
       flushFrame();
       frame += 1;
     }
   };
 
-  return { getNextSeamTime, onLoopBoundary, step, ...utils };
+  return { getNextSeamTime, onLoopApproaching, step, ...utils };
 }
 
-// Frames that ARM the counter: the seam is fixed and `now` climbs toward it,
-// so the time-to-seam (`seam - now`) shrinks — proving a live, counting-down
-// read-head. Prepend to a script before any wrap, mirroring real streaming.
-function armingFrames(seam: number): Array<{ seam: number; now: number }> {
+// One loop's worth of scripted frames (countdown off): a FAR frame (seam well
+// ahead — no approach fire), a NEAR frame (seam within the 0.25s lead window —
+// fires onLoopApproaching once), then the WRAP (seam jumps forward a loop).
+function loopFrames(
+  seamBefore: number,
+  seamAfter: number,
+): Array<{ seam: number; now: number }> {
   return [
-    { seam, now: seam - 2.0 }, // gap 2.0
-    { seam, now: seam - 1.0 }, // gap 1.0 (shrinking → arms)
-    { seam, now: seam - 0.5 }, // gap 0.5 (armed, baseline the live seam)
+    { seam: seamBefore, now: seamBefore - 1.0 }, // FAR — outside lead window
+    { seam: seamBefore, now: seamBefore - 0.1 }, // NEAR — fires approach
+    { seam: seamAfter, now: seamBefore + 0.1 }, // WRAP — loop completed
   ];
 }
 
 describe('useLoopCounter', () => {
-  it('fires once per loop boundary with a monotonic index', () => {
-    // Arm (seam fixed at 8, now climbs → gap shrinks), then the seam jumps
-    // forward to ~16 when the loop wraps, then again to ~24. Each forward jump
-    // is one boundary.
-    const { onLoopBoundary, step } = mountScripted([
-      ...armingFrames(8.0), // 3 frames: arm + baseline the live seam (8.0)
-      { seam: 16.0, now: 8.1 }, // WRAP → boundary 1
-      { seam: 16.0, now: 12.0 }, // approaching — no fire
-      { seam: 24.0, now: 16.1 }, // WRAP → boundary 2
+  it('fires onLoopApproaching once per loop with the completed-loops count', () => {
+    // Loop 0 (seam 8) approaches → fire(0). Wrap to 16. Loop 1 (seam 16)
+    // approaches → fire(1). Wrap to 24. The count is loops COMPLETED before the
+    // approaching loop's own wrap.
+    const { onLoopApproaching, step } = mountScripted([
+      { seam: 8.0, now: 6.0 }, // baseline (far)
+      ...loopFrames(8.0, 16.0), // loop 0: near→fire(0), wrap
+      ...loopFrames(16.0, 24.0), // loop 1: near→fire(1), wrap
     ]);
 
-    step(6);
+    step(7);
 
-    expect(onLoopBoundary).toHaveBeenCalledTimes(2);
-    expect(onLoopBoundary).toHaveBeenNthCalledWith(1, 1);
-    expect(onLoopBoundary).toHaveBeenNthCalledWith(2, 2);
+    expect(onLoopApproaching).toHaveBeenCalledTimes(2);
+    expect(onLoopApproaching).toHaveBeenNthCalledWith(1, 0);
+    expect(onLoopApproaching).toHaveBeenNthCalledWith(2, 1);
   });
 
   it('does NOT fire during a count-in (frozen seam marching forward)', () => {
-    // THE BUG THIS GUARDS: during count-in the read-head is frozen, so the seam
-    // is computed as now + bufferDuration and MARCHES FORWARD every frame as
-    // `now` climbs (time-to-seam stays ≈ constant, never shrinks). A naive
-    // forward-jump detector would fire boundaries here BEFORE loop 1 is
-    // audible. The arm-gate must suppress all of these.
-    const bufferDur = 8.0;
-    const countIn: Array<{ seam: number; now: number }> = [];
+    // During count-in the read-head is frozen, so the seam = now + bufferDur and
+    // MARCHES FORWARD every frame. The isCountingDown gate suppresses all of
+    // these (flagged countdown:true) — including any moment the gap is small.
+    const bufferDur = 0.2; // tiny, so the gap is always inside the lead window
+    const countIn: Array<{ seam: number; now: number; countdown: boolean }> =
+      [];
     for (let i = 0; i < 12; i++) {
-      const now = i * 0.5; // clock climbs each frame
-      countIn.push({ seam: now + bufferDur, now }); // gap frozen at bufferDur
+      const now = i * 0.5;
+      countIn.push({ seam: now + bufferDur, now, countdown: true });
     }
-    const { onLoopBoundary, step } = mountScripted(countIn);
+    const { onLoopApproaching, step } = mountScripted(countIn);
 
     step(countIn.length);
 
-    // Not a single false boundary across the entire count-in.
-    expect(onLoopBoundary).not.toHaveBeenCalled();
+    expect(onLoopApproaching).not.toHaveBeenCalled();
   });
 
-  it('arms after the count-in, then counts the first real wrap', () => {
-    // Frozen count-in (no fire), THEN the read-head goes live: the seam starts
-    // counting down (gap shrinks → arms), then wraps forward once → boundary 1.
-    const script: Array<{ seam: number; now: number }> = [];
-    // Count-in: frozen, marching forward.
-    for (let i = 0; i < 6; i++) {
-      const now = i * 0.5;
-      script.push({ seam: now + 8.0, now });
-    }
-    // Live: seam fixed at 12, now climbs toward it (gap shrinks → arms).
-    script.push({ seam: 12.0, now: 10.0 }); // gap 2.0
-    script.push({ seam: 12.0, now: 11.0 }); // gap 1.0 → arms, baseline 12.0
-    script.push({ seam: 12.0, now: 11.9 }); // gap 0.1 — no fire
-    script.push({ seam: 20.0, now: 12.1 }); // WRAP → boundary 1
-    const { onLoopBoundary, step } = mountScripted(script);
+  it('suppresses the count-in→loop-1 wrap, then fires for loop 1', () => {
+    // The bass stem streams during the count-in and wraps once at the count-in→
+    // loop-1 boundary. While countdown:true that wrap is suppressed (held at
+    // null). Once the count-in ends, the FIRST counted loop is loop 0, and its
+    // approach fires(0) — never counting the count-in wrap.
+    const script: Array<{ seam: number; now: number; countdown?: boolean }> =
+      [];
+    // Count-in: live read-head approaching + wrapping, but countdown:true.
+    script.push({ seam: 9.0, now: 8.9, countdown: true }); // near (suppressed)
+    script.push({ seam: 26.0, now: 9.1, countdown: true }); // count-in WRAP (suppressed)
+    // Count-in over → loop 0 plays (seam 26), approaches, wraps.
+    script.push({ seam: 26.0, now: 11.0 }); // baseline (far)
+    script.push(...loopFrames(26.0, 43.0)); // loop 0: near→fire(0), wrap
+    const { onLoopApproaching, step } = mountScripted(script);
 
     step(script.length);
 
-    expect(onLoopBoundary).toHaveBeenCalledTimes(1);
-    expect(onLoopBoundary).toHaveBeenCalledWith(1);
+    expect(onLoopApproaching).toHaveBeenCalledTimes(1);
+    expect(onLoopApproaching).toHaveBeenNthCalledWith(1, 0);
   });
 
-  it('does not count while the seam is null (count-in / not streaming)', () => {
-    const { onLoopBoundary, step } = mountScripted([
-      { seam: null, now: 0 }, // count-in
-      { seam: null, now: 0.5 }, // count-in
-      ...armingFrames(8.0), // streaming begins — arm + baseline
-      { seam: 16.0, now: 8.1 }, // first real wrap → boundary 1
+  it('does not fire while the seam is null (not streaming)', () => {
+    const { onLoopApproaching, step } = mountScripted([
+      { seam: null, now: 0 },
+      { seam: null, now: 0.5 },
+      { seam: 8.0, now: 6.0 }, // streaming begins — baseline (far)
+      ...loopFrames(8.0, 16.0), // loop 0: near→fire(0), wrap
     ]);
 
     step(6);
 
-    expect(onLoopBoundary).toHaveBeenCalledTimes(1);
-    expect(onLoopBoundary).toHaveBeenCalledWith(1);
+    expect(onLoopApproaching).toHaveBeenCalledTimes(1);
+    expect(onLoopApproaching).toHaveBeenCalledWith(0);
   });
 
-  it('does not false-fire on a continuous tempo drift of the seam', () => {
-    // A tempo change shifts the seam CONTINUOUSLY (small per-frame deltas),
-    // never a full forward jump. None of these should count.
-    const { onLoopBoundary, step } = mountScripted([
-      ...armingFrames(8.0), // arm + baseline 8.0
-      { seam: 8.05, now: 7.6 }, // +0.05 drift
-      { seam: 8.1, now: 7.65 }, // +0.05 drift
-      { seam: 8.12, now: 7.7 }, // +0.02 drift
+  it('fires at most once per loop (not every near-seam frame)', () => {
+    // Several consecutive frames inside the lead window must yield ONE fire.
+    const { onLoopApproaching, step } = mountScripted([
+      { seam: 8.0, now: 6.0 }, // baseline (far)
+      { seam: 8.0, now: 7.85 }, // near → fire(0)
+      { seam: 8.0, now: 7.9 }, // still near — no second fire
+      { seam: 8.0, now: 7.95 }, // still near — no second fire
     ]);
-
-    step(6);
-
-    expect(onLoopBoundary).not.toHaveBeenCalled();
-  });
-
-  it('does nothing while not playing, then arms+counts after play starts', () => {
-    const { onLoopBoundary, step, rerender } = mountScripted([
-      ...armingFrames(8.0),
-      { seam: 16.0, now: 8.1 }, // would be a wrap IF we were counting
-    ]);
-
-    // Park it: not playing.
-    rerender({ isPlaying: false, enabled: true });
     step(4);
-    expect(onLoopBoundary).not.toHaveBeenCalled();
+    expect(onLoopApproaching).toHaveBeenCalledTimes(1);
+    expect(onLoopApproaching).toHaveBeenCalledWith(0);
+  });
+
+  it('does nothing while not playing', () => {
+    const { onLoopApproaching, step } = mountScripted(
+      [{ seam: 8.0, now: 6.0 }, ...loopFrames(8.0, 16.0)],
+      { isPlaying: false },
+    );
+    step(4);
+    expect(onLoopApproaching).not.toHaveBeenCalled();
   });
 
   it('does nothing while disabled even if playing', () => {
-    const { onLoopBoundary, step } = mountScripted(
-      [...armingFrames(8.0), { seam: 16.0, now: 8.1 }],
+    const { onLoopApproaching, step } = mountScripted(
+      [{ seam: 8.0, now: 6.0 }, ...loopFrames(8.0, 16.0)],
       { enabled: false },
     );
     step(4);
-    expect(onLoopBoundary).not.toHaveBeenCalled();
+    expect(onLoopApproaching).not.toHaveBeenCalled();
   });
 
-  it('re-arms on a stop→start without leaking the old seam', () => {
-    // Live mutable source (not a script) so we control each frame's reading
-    // directly across the stop/start.
-    const live = { seam: 0 as number | null, now: 0 };
+  it('re-baselines on a stop→start without leaking the old seam', () => {
+    const live = { seam: 0 as number | null, now: 0, cd: false };
     const getNextSeamTime = vi.fn(() => live.seam);
     const getCurrentTime = vi.fn(() => live.now);
-    const onLoopBoundary = vi.fn();
+    const onLoopApproaching = vi.fn();
     const { rerender } = renderHook(
       (props: { isPlaying: boolean }) =>
         useLoopCounter({
           isPlaying: props.isPlaying,
           enabled: true,
+          isCountingDown: live.cd,
           getNextSeamTime,
           getCurrentTime,
-          onLoopBoundary,
+          onLoopApproaching,
         }),
       { initialProps: { isPlaying: true } },
     );
@@ -226,39 +235,20 @@ describe('useLoopCounter', () => {
       flushFrame();
     };
 
-    // Arm (gap shrinks 2→1→0.5), baseline 8.0, then wrap → boundary 1.
-    at(8.0, 6.0);
-    at(8.0, 7.0);
-    at(8.0, 7.5);
-    at(16.0, 8.1); // wrap → boundary 1
-    expect(onLoopBoundary).toHaveBeenCalledTimes(1);
+    at(8.0, 6.0); // baseline (far)
+    at(8.0, 7.9); // near → fire(0)
+    expect(onLoopApproaching).toHaveBeenCalledTimes(1);
+    expect(onLoopApproaching).toHaveBeenLastCalledWith(0);
 
-    // Stop → arm + index reset.
+    // Stop → state reset.
     rerender({ isPlaying: false });
     flushFrame();
 
-    // Start again with a brand-new read-head. Must RE-ARM (gap shrink) before
-    // it counts, and count fresh from 1 — never leak the old tracked seam.
+    // Start again with a brand-new read-head; count resets to 0.
     rerender({ isPlaying: true });
-    at(24.0, 22.0); // gap 2.0
-    at(24.0, 23.0); // gap 1.0 → arms, baseline 24.0
-    at(32.0, 24.1); // wrap → boundary (index reset to 1)
-
-    expect(onLoopBoundary).toHaveBeenCalledTimes(2);
-    expect(onLoopBoundary).toHaveBeenNthCalledWith(2, 1);
-  });
-
-  it('re-baselines (no count) when the seam falls far behind the clock', () => {
-    // A long RAF gap (backgrounded tab) leaves the seam well behind `now`
-    // without us seeing the forward jump. We re-baseline rather than invent a
-    // count, then resume on the next clean wrap.
-    const { onLoopBoundary, step } = mountScripted([
-      ...armingFrames(8.0), // arm + baseline 8.0
-      { seam: 8.0, now: 20.0 }, // seam is 12s behind now — missed, re-baseline
-      { seam: 24.0, now: 20.5 }, // clean wrap → boundary 1
-    ]);
-    step(5);
-    expect(onLoopBoundary).toHaveBeenCalledTimes(1);
-    expect(onLoopBoundary).toHaveBeenCalledWith(1);
+    at(24.0, 22.0); // baseline (far)
+    at(24.0, 23.9); // near → fire(0) fresh
+    expect(onLoopApproaching).toHaveBeenCalledTimes(2);
+    expect(onLoopApproaching).toHaveBeenNthCalledWith(2, 0);
   });
 });
