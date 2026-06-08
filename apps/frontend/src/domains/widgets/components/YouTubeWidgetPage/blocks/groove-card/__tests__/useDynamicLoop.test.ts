@@ -10,7 +10,11 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
-import { useDynamicLoop, type DynamicLoopConfig } from '../useDynamicLoop.js';
+import {
+  useDynamicLoop,
+  nextCycleKey,
+  type DynamicLoopConfig,
+} from '../useDynamicLoop.js';
 
 let rafQueue: FrameRequestCallback[] = [];
 // Run the queued RAF callbacks inside act() so the state updates the boundary
@@ -308,5 +312,62 @@ describe('useDynamicLoop', () => {
     expect(result.current.nextSemitones).toBe(3);
     loop(); // +3 → next 0
     expect(result.current.nextSemitones).toBe(0);
+  });
+});
+
+describe('nextCycleKey — the chord ribbon chains future cycles forward', () => {
+  // Walk `start` forward through `count` cycle transitions and collect the keys.
+  function walk(
+    config: DynamicLoopConfig,
+    start: number,
+    home: number,
+    max: number,
+    count: number,
+  ): number[] {
+    const out = [start];
+    let k = start;
+    for (let i = 0; i < count; i++) {
+      k = nextCycleKey(config, k, home, max);
+      out.push(k);
+    }
+    return out;
+  }
+
+  it('ping-pong flips home ↔ away regardless of where you start', () => {
+    const cfg: DynamicLoopConfig = { intervalSemitones: 2, everyN: 1 };
+    // home 0, away +2 → 0,2,0,2,…
+    expect(walk(cfg, 0, 0, 6, 4)).toEqual([0, 2, 0, 2, 0]);
+    // home +3, away +5 (interval relative to home) → 3,5,3,5,…
+    expect(walk(cfg, 3, 3, 6, 4)).toEqual([3, 5, 3, 5, 3]);
+  });
+
+  it('travel walks the chromatic ladder and laps home over an octave', () => {
+    // The user's spec: original A, dynamic loop m3, travel. The OFFSET ladder is
+    // 0,+3,+6,−3,0,… → applied to chords A D G C this reads
+    // A D G C | C F B♭ E♭ | G♭ B E A | E♭ A♭ D♭ G♭ | A D G C …
+    const cfg: DynamicLoopConfig = {
+      intervalSemitones: 3,
+      everyN: 1,
+      mode: 'travel',
+    };
+    expect(walk(cfg, 0, 0, 6, 4)).toEqual([0, 3, 6, -3, 0]);
+  });
+
+  it('travel descends and wraps the other way for a negative interval', () => {
+    const cfg: DynamicLoopConfig = {
+      intervalSemitones: -3,
+      everyN: 1,
+      mode: 'travel',
+    };
+    expect(walk(cfg, 0, 0, 6, 4)).toEqual([0, -3, -6, 3, 0]);
+  });
+
+  it('is identity at a zero interval (no movement to chain)', () => {
+    const cfg: DynamicLoopConfig = {
+      intervalSemitones: 0,
+      everyN: 1,
+      mode: 'travel',
+    };
+    expect(nextCycleKey(cfg, 4, 0, 6)).toBe(4);
   });
 });

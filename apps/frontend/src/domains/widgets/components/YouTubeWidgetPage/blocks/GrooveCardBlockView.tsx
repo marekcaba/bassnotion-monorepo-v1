@@ -24,6 +24,7 @@ import { useGrooveCardPlayback } from './groove-card/useGrooveCardPlayback';
 import { useGrooveCardKeyboard } from './groove-card/useGrooveCardKeyboard';
 import { GrooveCardShell } from './groove-card/GrooveCardShell';
 import { GrooveCardWaveform } from './groove-card/GrooveCardWaveform';
+import { GrooveCardChordRow } from './groove-card/GrooveCardChordRow';
 import {
   GrooveCardControls,
   formatKeyLabel,
@@ -136,6 +137,9 @@ export function GrooveCardBlockView({
       originalKey: groove.originalKey,
       lengthBars: groove.lengthBars,
       stems: groove.stems,
+      // Chord chart resolves from the library (authored once per groove); a
+      // per-block chordChart, if any, overrides it for one-off inline use.
+      chordChart: rawConfig.chordChart ?? groove.chordChart,
       youtubeUrl: rawConfig.youtubeUrl ?? groove.youtubeUrl,
     });
   }, [rawConfig, groove]);
@@ -550,6 +554,32 @@ export function GrooveCardBlockView({
                 if (hovering) clearCapUpsell();
                 setHoverHint(hovering ? 'dynamic-loop' : null);
               }}
+            />
+          ) : undefined
+        }
+        chordRow={
+          // The chord chart (resolved from the groove library) with the current
+          // chord highlighted as the player plays. Omitted entirely when the
+          // groove has no chart (so the shell skips the row + its padding).
+          config.chordChart && config.chordChart.length > 0 ? (
+            <GrooveCardChordRow
+              chordChart={config.chordChart}
+              lengthBars={config.lengthBars}
+              isPlaying={playback.isPlaying}
+              loopSelection={playback.loopSelection}
+              getAudioPhase={playback.getAudioPhase}
+              audioContext={playback.audioContext}
+              loopStartAudioTime={playback.loopStartAudioTime}
+              originalKey={config.originalKey}
+              // The chord row latches each loop cycle's key from this queued
+              // target (set by both the manual stepper and the dynamic loop's
+              // pre-queue), so chords transpose in sync with the audio.
+              currentSemitones={playback.currentSemitones}
+              // Chains FUTURE loop cycles forward through the dynamic loop's
+              // schedule (ping-pong flip / travel-ladder rung) so the strip
+              // reads as one continuous transposing line. Identity when the
+              // loop is inactive (no further key changes are scheduled).
+              advanceCycleKey={dynamicLoop.advanceCycleKey}
             />
           ) : undefined
         }

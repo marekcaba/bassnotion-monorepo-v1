@@ -25,6 +25,9 @@ interface GrooveCardShellProps {
   onMasterVolumeChange: (volume: number) => void;
   /** Slot for the waveform component. */
   waveform: ReactNode;
+  /** Slot for the chord chart row, rendered ABOVE the waveform. Omitted (null)
+   *  when the groove has no chord chart. */
+  chordRow?: ReactNode;
   /** Slot for the controls bar. */
   controls: ReactNode;
   /** Read-only metadata line under the title (e.g. "E · 4 bars").
@@ -55,6 +58,7 @@ export function GrooveCardShell({
   masterVolume,
   onMasterVolumeChange,
   waveform,
+  chordRow,
   controls,
   meta,
   onMetronomeHover,
@@ -128,6 +132,9 @@ export function GrooveCardShell({
           </button>
         </div>
       </header>
+
+      {/* Chord chart row (above the waveform) — only when the groove has one. */}
+      {chordRow && <div className="px-4 pt-4">{chordRow}</div>}
 
       {/* Waveform */}
       <div className="px-4 pt-4">{waveform}</div>

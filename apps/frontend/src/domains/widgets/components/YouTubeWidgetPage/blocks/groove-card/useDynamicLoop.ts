@@ -99,6 +99,12 @@ export interface UseDynamicLoopState {
    *  uses this to lock the manual key stepper + arrow-key transpose and to
    *  show the status caption. */
   isActive: boolean;
+  /** Given a loop cycle's key, the key the NEXT cycle plays — the schedule
+   *  transition (ping-pong flip or the next travel-ladder rung). Stable
+   *  identity. When NOT engaged it's identity (no scheduled changes). The chord
+   *  ribbon chains this forward to draw the whole upcoming key journey as one
+   *  continuous line. */
+  advanceCycleKey: (key: number) => number;
 }
 
 interface Segment {
@@ -153,6 +159,33 @@ function buildSegments(
     semitones,
     loops,
   }));
+}
+
+/**
+ * The key the loop AFTER `currentKey` plays, in the dynamic-loop schedule —
+ * used by the chord ribbon to chain future loop cycles forward into a single
+ * continuous transposing line.
+ *   - ping-pong: home ↔ home+interval (returns whichever is NOT currentKey).
+ *   - travel:    the next rung up/down the chromatic ladder (wrapped), which
+ *     laps back to home after a full octave.
+ * Pure function of the schedule; given any key it deterministically yields the
+ * next, so the ribbon can walk N cycles ahead by iterating.
+ */
+export function nextCycleKey(
+  config: DynamicLoopConfig,
+  currentKey: number,
+  home: number,
+  max: number,
+): number {
+  const interval = Math.round(config.intervalSemitones);
+  if (interval === 0) return currentKey;
+  if ((config.mode ?? 'ping-pong') === 'ping-pong') {
+    const homeKey = clampSemitones(home, max);
+    const away = clampSemitones(homeKey + interval, max);
+    return currentKey === homeKey ? away : homeKey;
+  }
+  // TRAVEL: one rung along the ladder, wrapping across the cap.
+  return wrapOffsetIntoRange(currentKey + interval, max, Math.sign(interval));
 }
 
 /**
@@ -221,6 +254,10 @@ export function useDynamicLoop({
   // Active = engaged AND playing. When inactive the counter is disabled and no
   // key writes happen.
   const isActive = engaged && isPlaying;
+  // Mirror in a ref so the stable advanceCycleKey callback can read it without
+  // re-creating its identity each render.
+  const isActiveRef = useRef(isActive);
+  isActiveRef.current = isActive;
 
   // The cycle's segments — HOME (the user's manual key, snapshotted at the
   // moment we activate) and the dialed target. Held in a ref + state: the ref
@@ -361,5 +398,20 @@ export function useDynamicLoop({
     }
   }
 
-  return { nextSemitones, loopsRemaining, isActive };
+  // The schedule transition for the chord ribbon: given a cycle's key, the next
+  // cycle's key. When ACTIVE, it's the dynamic-loop schedule (ping-pong flip /
+  // travel-ladder rung), keyed off the home snapshotted at engage. When
+  // inactive, identity (no scheduled changes — the ribbon stays in one key).
+  // Stable identity (reads live config/home/max from refs).
+  const advanceCycleKey = useCallback((key: number): number => {
+    if (!isActiveRef.current) return key;
+    return nextCycleKey(
+      configRef.current,
+      key,
+      homeSemitonesRef.current,
+      maxSemitonesRef.current,
+    );
+  }, []);
+
+  return { nextSemitones, loopsRemaining, isActive, advanceCycleKey };
 }

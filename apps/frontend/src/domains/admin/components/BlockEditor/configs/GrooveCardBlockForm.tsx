@@ -23,6 +23,7 @@ import type {
   GrooveCardStemSet,
 } from '@bassnotion/contracts';
 import { StemUploadButton } from './groove-card/StemUploadButton';
+import { ChordChartEditor } from './groove-card/ChordChartEditor';
 import { CompletionCriterionFields } from './CompletionCriterionFields';
 import { useGrooveLibrary } from '@/domains/drill/hooks/useGrooveLibrary';
 
@@ -220,6 +221,17 @@ export function GrooveCardBlockForm({
                 className="w-full px-3 py-2 rounded-md bg-white/5 border border-white/10 text-white placeholder:text-white/30"
               />
             </label>
+          </fieldset>
+
+          {/* Chord chart — sparse harmony changes shown to the player as they
+              play along. Grid is lengthBars × 8 eighth-note slots. */}
+          <fieldset className="space-y-2">
+            <ChordChartEditor
+              theme="dark"
+              lengthBars={config.lengthBars ?? 4}
+              value={config.chordChart}
+              onChange={(chart) => updateField('chordChart', chart)}
+            />
           </fieldset>
         </>
       )}
