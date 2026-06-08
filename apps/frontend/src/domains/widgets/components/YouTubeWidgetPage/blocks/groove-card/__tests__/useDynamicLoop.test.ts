@@ -38,16 +38,22 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 
 /**
- * A scripted seam source: each call to wrap() advances the reported next-seam
- * by one loop (LOOP_SEC), simulating the read-head wrapping. The clock `now`
- * trails the seam so the loop counter sees a clean forward jump.
+ * A live seam source mirroring real playback:
+ *  - `approach()` advances the clock toward a FIXED seam (gap shrinks), which
+ *    is how the loop counter ARMS — proving a live, counting-down read-head.
+ *  - `wrap()` jumps the seam forward by one loop (the read-head wrapped),
+ *    which the armed counter sees as a boundary.
  */
 function makeSeamSource(loopSec = 8) {
   let seam = loopSec; // first seam one loop out
-  let now = loopSec - 1; // approaching it
+  let now = 0; // clock starts well before it (gap = loopSec)
   return {
     getNextSeamTime: () => seam,
     getCurrentTime: () => now,
+    /** One frame where the clock climbs toward the seam (gap shrinks). */
+    approach: (by = 1.0) => {
+      now = Math.min(now + by, seam - 0.05);
+    },
     /** Advance one loop boundary (read-head wraps → seam jumps forward). */
     wrap: () => {
       now = seam + 0.1; // we just crossed the old seam
@@ -94,11 +100,18 @@ function mount(args: {
       },
     },
   );
-  // The loop counter baselines on its first valid seam reading (no count), then
-  // counts each forward jump. prime() lays down that baseline; each boundary()
-  // then wraps the seam and flushes one frame, which the counter sees as
-  // exactly one forward jump.
-  const prime = () => flushFrame();
+  // prime(): drive several approach frames so the loop counter ARMS (the
+  // seam-to-now gap shrinks, proving a live read-head) and baselines on the
+  // live seam — mirroring the count-in finishing and real streaming starting.
+  // No boundary fires during priming. Each boundary() then wraps the seam.
+  const prime = () => {
+    seam.approach(2.0); // gap shrinks
+    flushFrame();
+    seam.approach(2.0); // gap shrinks more → arms, baseline
+    flushFrame();
+    seam.approach(2.0); // settled, armed
+    flushFrame();
+  };
   const boundary = () => {
     seam.wrap();
     flushFrame();

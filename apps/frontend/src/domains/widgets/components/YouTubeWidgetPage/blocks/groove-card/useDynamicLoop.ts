@@ -146,6 +146,12 @@ export function useDynamicLoop({
   // without a stale closure.
   const segmentIndexRef = useRef(0);
   const loopsLeftRef = useRef(segmentsRef.current[0]?.loops ?? 1);
+  // Armed only after the activation effect has rebuilt the segments from the
+  // user's LIVE home key. Guards the React effect-ordering window: the loop
+  // counter's RAF could otherwise spend a boundary against the stale initial
+  // segments (home seeded at 0 from mount-time currentSemitones) before the
+  // activation effect commits the correct home.
+  const armedRef = useRef(false);
 
   // Stable refs for the boundary callback so it never restarts the counter.
   const setKeyRef = useRef(setKey);
@@ -175,7 +181,10 @@ export function useDynamicLoop({
   // the stepper is locked anyway, and changing everyN/target mid-cycle is a
   // re-engage concern (disengage → reconfigure → engage), matching the spec.
   useEffect(() => {
-    if (!isActive) return;
+    if (!isActive) {
+      armedRef.current = false;
+      return;
+    }
     segmentsRef.current = buildSegments(
       configRef.current,
       homeSemitonesRef.current,
@@ -183,12 +192,16 @@ export function useDynamicLoop({
     );
     segmentIndexRef.current = 0;
     loopsLeftRef.current = segmentsRef.current[0]?.loops ?? 1;
+    armedRef.current = true; // only now may boundaries be spent
     forceTick();
   }, [isActive]);
 
   // On each loop boundary: spend one loop of the current segment. When the
   // segment is exhausted, advance to the next (wrapping) and apply its key.
   const onLoopBoundary = useCallback(() => {
+    // Ignore any boundary that fires before activation has rebuilt the segments
+    // from the live home key (effect-ordering guard).
+    if (!armedRef.current) return;
     if (loopsLeftRef.current > 1) {
       loopsLeftRef.current -= 1;
       forceTick();

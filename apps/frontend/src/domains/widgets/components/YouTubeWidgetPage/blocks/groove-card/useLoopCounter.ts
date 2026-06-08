@@ -68,6 +68,11 @@ export interface UseLoopCounterArgs {
 // loop at 180 BPM is ~1.3s) yet well above per-frame jitter.
 const WRAP_FORWARD_JUMP_SEC = 0.25;
 
+// The seam must shrink toward the clock by at least this much (the time-to-seam
+// `seam - now` must DECREASE by this) before we trust it as a live, advancing
+// read-head and arm wrap detection. See the count-in guard below.
+const ARM_DECREASE_SEC = 0.1;
+
 export function useLoopCounter({
   isPlaying,
   enabled,
@@ -90,6 +95,20 @@ export function useLoopCounter({
   const trackedSeamRef = useRef<number | null>(null);
   // Monotonic loop index since counting began.
   const loopIndexRef = useRef(0);
+  // Whether wrap detection is ARMED. We only arm once the read-head is proven
+  // LIVE — i.e. the time-to-seam (`seam - now`) has been seen DECREASING. This
+  // is the count-in guard: during the count-in the bass node is armed but not
+  // yet streaming, so signalsmith reports a FROZEN input position. The seam is
+  // then computed as `now + bufferDuration`, which MARCHES FORWARD every frame
+  // as `now` climbs (time-to-seam stays ≈ bufferDuration, never shrinks). That
+  // forward march would otherwise trip the wrap detector repeatedly BEFORE
+  // loop 1 is audible, advancing the cycle to the transposed key immediately.
+  // A real, streaming read-head counts DOWN toward a fixed seam instant
+  // (time-to-seam shrinks each frame) — that's what arms us.
+  const armedRef = useRef(false);
+  // The smallest time-to-seam we've observed since (re)start. Arming requires
+  // the current gap to drop meaningfully below this running minimum.
+  const minGapRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!enabled || !isPlaying) {
@@ -97,6 +116,8 @@ export function useLoopCounter({
       // NOT carry the tracked seam across a stop — the read-head is gone.
       trackedSeamRef.current = null;
       loopIndexRef.current = 0;
+      armedRef.current = false;
+      minGapRef.current = null;
       return;
     }
 
@@ -117,9 +138,33 @@ export function useLoopCounter({
         return;
       }
 
+      // ARM GATE: track the running-minimum time-to-seam. While the read-head
+      // is frozen (count-in), `seam - now` stays ≈ bufferDuration and never
+      // drops, so we never arm. Once the read-head is live and counting down,
+      // the gap shrinks below the minimum by ARM_DECREASE_SEC → arm, and start
+      // tracking the seam fresh from here so the first armed reading baselines.
+      if (now != null && !armedRef.current) {
+        const gap = seam - now;
+        const minGap = minGapRef.current;
+        if (minGap == null || gap < minGap) {
+          minGapRef.current = gap;
+        }
+        if (minGap != null && gap < minGap - ARM_DECREASE_SEC) {
+          armedRef.current = true;
+          // Re-baseline so the first wrap is measured from a live seam, not a
+          // stale frozen one.
+          trackedSeamRef.current = seam;
+          rafId = requestAnimationFrame(tick);
+          return;
+        }
+        // Not armed yet — keep polling, never fire a boundary.
+        rafId = requestAnimationFrame(tick);
+        return;
+      }
+
       const tracked = trackedSeamRef.current;
       if (tracked == null) {
-        // First valid reading since (re)start — baseline only, don't count.
+        // First valid reading since arming — baseline only, don't count.
         trackedSeamRef.current = seam;
       } else if (seam > tracked + WRAP_FORWARD_JUMP_SEC) {
         // The next-seam target jumped forward by ~a loop → the read-head
