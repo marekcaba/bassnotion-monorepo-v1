@@ -249,6 +249,10 @@ export function GrooveCardBlockView({
     engaged: dynamicLoopEngaged && dynamicLoopAvailable,
     isPlaying: playback.isPlaying,
     config: dynamicLoopConfig,
+    // HOME = the user's current manual key (the stepper value). The cycle
+    // plays THIS key first, then transposes to the target and back — captured
+    // at engage time inside the hook.
+    homeSemitones: playback.currentSemitones,
     maxSemitones: playback.transposeRange,
     setKey: playback.setKey,
     getNextSeamTime: playback.getNextSeamTime,

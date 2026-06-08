@@ -32,7 +32,7 @@
  *     one tick) — the loop counter fires at most once per loop.
  */
 
-import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
+import { useCallback, useEffect, useReducer, useRef } from 'react';
 import { useLoopCounter } from './useLoopCounter.js';
 
 export interface DynamicLoopConfig {
@@ -53,6 +53,12 @@ export interface UseDynamicLoopArgs {
   isPlaying: boolean;
   /** The dialed cycle config. */
   config: DynamicLoopConfig;
+  /** The user's CURRENT manual key (absolute semitones from the original),
+   *  i.e. wherever the key stepper sits. This is the "home" the cycle holds
+   *  and returns to — NOT necessarily the original key. Captured at the moment
+   *  the cycle activates, so the manual key the user dialed in is the one we
+   *  play, then transpose away from and back to. */
+  homeSemitones: number;
   /** The effective transpose range edge (e.g. 6, or the entitlement band).
    *  The target is clamped into ±maxSemitones so an auto-cycle can never trip
    *  setKey's cap path. */
@@ -91,12 +97,22 @@ function clampSemitones(value: number, max: number): number {
   return Math.max(-m, Math.min(m, Math.round(value)));
 }
 
-/** Build the v1 symmetric 2-segment cycle from the dialed config. */
-function buildSegments(config: DynamicLoopConfig, max: number): Segment[] {
+/**
+ * Build the v1 symmetric 2-segment cycle: HOME (the user's current manual key)
+ * for N loops, then the dialed target for N loops, repeating. `home` is the
+ * absolute semitone offset the user set on the stepper — the cycle plays THAT
+ * key first, not the original key.
+ */
+function buildSegments(
+  config: DynamicLoopConfig,
+  home: number,
+  max: number,
+): Segment[] {
   const loops = Math.max(1, Math.round(config.everyN));
+  const homeKey = clampSemitones(home, max);
   const away = clampSemitones(config.targetSemitones, max);
   return [
-    { semitones: 0, loops },
+    { semitones: homeKey, loops },
     { semitones: away, loops },
   ];
 }
@@ -105,48 +121,70 @@ export function useDynamicLoop({
   engaged,
   isPlaying,
   config,
+  homeSemitones,
   maxSemitones,
   setKey,
   getNextSeamTime,
   getCurrentTime,
 }: UseDynamicLoopArgs): UseDynamicLoopState {
-  const segments = useMemo(
-    () => buildSegments(config, maxSemitones),
-    [config, maxSemitones],
-  );
-
   // Active = engaged AND playing. When inactive the counter is disabled and no
   // key writes happen.
   const isActive = engaged && isPlaying;
 
+  // The cycle's segments — HOME (the user's manual key, snapshotted at the
+  // moment we activate) and the dialed target. Held in a ref + state: the ref
+  // is what the boundary callback reads synchronously; the state mirror drives
+  // status re-renders. We DON'T rebuild from live `homeSemitones` each render,
+  // because once the cycle is running it drives setKey itself — the home must
+  // stay pinned to where the user set it at engage time.
+  const segmentsRef = useRef<Segment[]>(
+    buildSegments(config, homeSemitones, maxSemitones),
+  );
+
   // Runtime cursor: which segment we're in and how many of its loops are left.
-  // Refs (not state) because the loop-boundary callback must read/write them
-  // synchronously without a stale closure, and the counter is the source of
-  // truth for advancing.
+  // Refs because the loop-boundary callback must read/write them synchronously
+  // without a stale closure.
   const segmentIndexRef = useRef(0);
-  const loopsLeftRef = useRef(segments[0]?.loops ?? 1);
+  const loopsLeftRef = useRef(segmentsRef.current[0]?.loops ?? 1);
 
   // Stable refs for the boundary callback so it never restarts the counter.
   const setKeyRef = useRef(setKey);
   setKeyRef.current = setKey;
-  const segmentsRef = useRef(segments);
-  segmentsRef.current = segments;
+  // Live home key + config in refs so the activation effect captures the
+  // CURRENT manual key without re-running every time the user steps it.
+  const homeSemitonesRef = useRef(homeSemitones);
+  homeSemitonesRef.current = homeSemitones;
+  const configRef = useRef(config);
+  configRef.current = config;
+  const maxSemitonesRef = useRef(maxSemitones);
+  maxSemitonesRef.current = maxSemitones;
 
   // Force-update tick: bumped when the cursor advances so the derived status
-  // (nextSemitones / loopsRemaining, read from the refs below) re-renders.
+  // (nextSemitones / loopsRemaining) re-renders.
   const [, forceTick] = useReducer((n: number) => n + 1, 0);
 
-  // (Re)initialise the cursor whenever the feature (re)activates or the
-  // segments change. We start AT segment 0 (the current/home key) with a full
-  // loop budget, so the first auto-change happens after `everyN` loops — the
-  // "engage live, count from the next loop" behaviour. segments[0].semitones
-  // is 0 by construction, matching the home start, so no setKey on activate.
+  // (Re)build the segments + reset the cursor whenever the feature activates.
+  // We SNAPSHOT the user's current manual key as HOME here, so the cycle plays
+  // exactly the key the stepper is on, then transposes to the target and back.
+  // We start AT segment 0 (home) with a full loop budget, so the first
+  // auto-change lands after `everyN` loops ("engage live, count from the next
+  // loop"). segments[0].semitones === home, which the user is already playing,
+  // so no setKey on activate.
+  //
+  // Deps are [isActive] only — when the user re-tunes the dial WHILE engaged,
+  // the stepper is locked anyway, and changing everyN/target mid-cycle is a
+  // re-engage concern (disengage → reconfigure → engage), matching the spec.
   useEffect(() => {
     if (!isActive) return;
+    segmentsRef.current = buildSegments(
+      configRef.current,
+      homeSemitonesRef.current,
+      maxSemitonesRef.current,
+    );
     segmentIndexRef.current = 0;
     loopsLeftRef.current = segmentsRef.current[0]?.loops ?? 1;
     forceTick();
-  }, [isActive, segments]);
+  }, [isActive]);
 
   // On each loop boundary: spend one loop of the current segment. When the
   // segment is exhausted, advance to the next (wrapping) and apply its key.
@@ -160,7 +198,7 @@ export function useDynamicLoop({
     const nextIndex = (segmentIndexRef.current + 1) % segs.length;
     segmentIndexRef.current = nextIndex;
     loopsLeftRef.current = segs[nextIndex]?.loops ?? 1;
-    setKeyRef.current(segs[nextIndex]?.semitones ?? 0);
+    setKeyRef.current(segs[nextIndex]?.semitones ?? segs[0]?.semitones ?? 0);
     forceTick();
   }, []);
 
@@ -172,24 +210,27 @@ export function useDynamicLoop({
     onLoopBoundary,
   });
 
-  // On disengage (or stop), snap back to the home key so the user isn't left in
-  // the transposed key. We watch isActive going true→false. setKey(0) routes
-  // through the normal seam-deferral: lands on the next boundary if still
-  // playing, applies immediately for the next play if stopped.
+  // On disengage (or stop), snap back to the HOME key (the user's manual key)
+  // so they're not left stranded in the transposed key. We watch isActive going
+  // true→false. setKey routes through the normal seam-deferral: lands on the
+  // next boundary if still playing, applies immediately for the next play if
+  // stopped.
   const wasActiveRef = useRef(false);
   useEffect(() => {
     if (wasActiveRef.current && !isActive) {
-      setKeyRef.current(0);
+      setKeyRef.current(segmentsRef.current[0]?.semitones ?? 0);
     }
     wasActiveRef.current = isActive;
   }, [isActive]);
 
   // Derived status (read from the cursor refs; forceTick guarantees a render
   // when they change).
-  const segs = segments;
+  const segs = segmentsRef.current;
   const curIndex = isActive ? segmentIndexRef.current : 0;
   const nextIndex = (curIndex + 1) % segs.length;
-  const nextSemitones = isActive ? (segs[nextIndex]?.semitones ?? 0) : 0;
+  const nextSemitones = isActive
+    ? (segs[nextIndex]?.semitones ?? segs[0]?.semitones ?? 0)
+    : 0;
   const loopsRemaining = isActive ? loopsLeftRef.current : 0;
 
   return { nextSemitones, loopsRemaining, isActive };

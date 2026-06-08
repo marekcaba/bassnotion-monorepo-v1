@@ -60,6 +60,7 @@ function mount(args: {
   engaged?: boolean;
   isPlaying?: boolean;
   config?: DynamicLoopConfig;
+  homeSemitones?: number;
   maxSemitones?: number;
   seam?: ReturnType<typeof makeSeamSource>;
 }) {
@@ -70,12 +71,14 @@ function mount(args: {
       engaged: boolean;
       isPlaying: boolean;
       config: DynamicLoopConfig;
+      homeSemitones: number;
       maxSemitones: number;
     }) =>
       useDynamicLoop({
         engaged: props.engaged,
         isPlaying: props.isPlaying,
         config: props.config,
+        homeSemitones: props.homeSemitones,
         maxSemitones: props.maxSemitones,
         setKey,
         getNextSeamTime: seam.getNextSeamTime,
@@ -86,6 +89,7 @@ function mount(args: {
         engaged: args.engaged ?? true,
         isPlaying: args.isPlaying ?? true,
         config: args.config ?? { targetSemitones: 2, everyN: 2 },
+        homeSemitones: args.homeSemitones ?? 0,
         maxSemitones: args.maxSemitones ?? 6,
       },
     },
@@ -127,6 +131,56 @@ describe('useDynamicLoop', () => {
     expect(setKey).toHaveBeenNthCalledWith(3, 2);
   });
 
+  it('holds the USER MANUAL key as home (not the original key)', () => {
+    // The user dialed the stepper to +3. Engaging must keep +3 as home — play
+    // +3 for N, transpose to the target (+5) for N, then BACK to +3, not 0.
+    const { setKey, prime, boundary } = mount({
+      config: { targetSemitones: 5, everyN: 1 },
+      homeSemitones: 3,
+    });
+    prime();
+
+    boundary(); // home (+3) exhausted → away (+5)
+    expect(setKey).toHaveBeenNthCalledWith(1, 5);
+
+    boundary(); // away exhausted → back to HOME = +3 (NOT 0)
+    expect(setKey).toHaveBeenNthCalledWith(2, 3);
+
+    boundary(); // home exhausted → away (+5) again
+    expect(setKey).toHaveBeenNthCalledWith(3, 5);
+  });
+
+  it('snaps back to the USER MANUAL key (not 0) on disengage', () => {
+    const { setKey, prime, boundary, rerender } = mount({
+      config: { targetSemitones: 5, everyN: 1 },
+      homeSemitones: 3,
+    });
+    prime();
+    boundary(); // → away (+5)
+    expect(setKey).toHaveBeenLastCalledWith(5);
+
+    rerender({
+      engaged: false,
+      isPlaying: true,
+      config: { targetSemitones: 5, everyN: 1 },
+      homeSemitones: 3,
+      maxSemitones: 6,
+    });
+    // Snaps to the user's manual key +3, NOT 0.
+    expect(setKey).toHaveBeenLastCalledWith(3);
+  });
+
+  it('does NOT setKey on activate (home === the key already playing)', () => {
+    // Engaging while the user sits on +3 must not fire setKey — they're already
+    // playing +3; the first auto-change is the transpose after N loops.
+    const { setKey, prime } = mount({
+      config: { targetSemitones: 5, everyN: 2 },
+      homeSemitones: 3,
+    });
+    prime();
+    expect(setKey).not.toHaveBeenCalled();
+  });
+
   it('pre-clamps an out-of-band target so setKey never sees it', () => {
     // Dial +5 but the entitlement band is ±2 → the away segment must be +2.
     const { setKey, prime, boundary } = mount({
@@ -158,11 +212,12 @@ describe('useDynamicLoop', () => {
     boundary(); // → away (+2)
     expect(setKey).toHaveBeenLastCalledWith(2);
 
-    // Disengage — must snap home.
+    // Disengage — must snap home (0, the default manual key here).
     rerender({
       engaged: false,
       isPlaying: true,
       config: { targetSemitones: 2, everyN: 1 },
+      homeSemitones: 0,
       maxSemitones: 6,
     });
     expect(setKey).toHaveBeenLastCalledWith(0);
@@ -181,6 +236,7 @@ describe('useDynamicLoop', () => {
       engaged: true,
       isPlaying: false,
       config: { targetSemitones: 4, everyN: 1 },
+      homeSemitones: 0,
       maxSemitones: 6,
     });
     expect(setKey).toHaveBeenLastCalledWith(0);
