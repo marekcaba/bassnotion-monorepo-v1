@@ -93,10 +93,13 @@ export function GrooveCardDynamicLoopDial({
           disabled={disabled}
           aria-label="Dynamic loop settings"
           aria-pressed={engaged}
-          className={`p-2 rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+          className={`p-2.5 rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
             engaged
-              ? 'bg-orange-500 text-white'
-              : 'bg-white/5 text-white/50 hover:bg-white/10'
+              ? // Engaged: solid orange fill — clearly "on" (matches the chord
+                // toggle's engaged state).
+                'bg-orange-500 text-white'
+              : // Idle: identical to the volume + chord buttons.
+                'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/80'
           }`}
           onPointerEnter={
             onHover
@@ -108,7 +111,8 @@ export function GrooveCardDynamicLoopDial({
           }
           onPointerLeave={onHover ? () => onHover(false) : undefined}
         >
-          <Repeat className="w-4 h-4" aria-hidden />
+          {/* Inner loop arrows are yellow (overrides the button's text color). */}
+          <Repeat className="w-5 h-5 text-yellow-400" aria-hidden />
         </button>
       </PopoverTrigger>
       <PopoverContent

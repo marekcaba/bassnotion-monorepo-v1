@@ -227,12 +227,32 @@ export function GrooveCardBlockView({
   }, [playback]);
 
   const isBassMuted = playback.mutedStems.has('audio-bass');
-  const isSoloDrums = playback.soloedStem === 'audio-drums';
+  // "Solo" isolates the BASS part (mutes drums + harmony) — the intuitive solo
+  // for bass players. While soloing, the Mute button is inert (bass is what
+  // you're hearing); a pre-existing bass mute persists THROUGH solo, so
+  // releasing solo with mute on lands back in the muted-bass state.
+  const isSoloBass = playback.soloedStem === 'audio-bass';
 
-  const onToggleBassMute = useCallback(
-    () => playback.setStemMuted('audio-bass', !isBassMuted),
-    [playback, isBassMuted],
-  );
+  const onToggleBassMute = useCallback(() => {
+    // Mute is inert while soloing the bass (muting the soloed part = silence).
+    if (isSoloBass) return;
+    playback.setStemMuted('audio-bass', !isBassMuted);
+  }, [playback, isBassMuted, isSoloBass]);
+
+  // Solo is the one hard entitlement gate (the "deconstruction" cap). When
+  // capped (free tier), the toggle pitches the upgrade instead of soloing —
+  // same behaviour as the button — so the "S" shortcut routes here too. Solo
+  // works even WHILE bass is muted (it isolates by muting the siblings; the
+  // bass's own mute state is untouched and restored on release).
+  const deconCapped = capsEnabled && caps.deconstruction.isCapped;
+  const onToggleSolo = useCallback(() => {
+    if (deconCapped) {
+      setPitchLever('deconstruction');
+      trackEvent('cap_hit', { lever: 'deconstruction', grooveId: block.id });
+      return;
+    }
+    playback.setStemSolo(isSoloBass ? null : 'audio-bass');
+  }, [deconCapped, playback, isSoloBass, block.id]);
 
   // ── Dynamic Loop: auto key-cycle every N loops ──────────────────────────
   // Offered only where it makes sense:
@@ -246,12 +266,15 @@ export function GrooveCardBlockView({
 
   // Per-card, in-memory config (no persistence — reload resets to defaults).
   const [dynamicLoopConfig, setDynamicLoopConfig] = useState<DynamicLoopConfig>(
-    // Default: ping-pong up a major 2nd (+2) every 1 loop — change key each
+    // Default: ping-pong up a minor 3rd (+3) every 1 loop — change key each
     // loop. Interval is RELATIVE to wherever the user sets the key; mode
     // defaults to the simple 2-key ping-pong.
-    { intervalSemitones: 2, everyN: 1, mode: 'ping-pong' },
+    { intervalSemitones: 3, everyN: 1, mode: 'ping-pong' },
   );
   const [dynamicLoopEngaged, setDynamicLoopEngaged] = useState(false);
+
+  // Chord strip is opt-in: hidden until the user toggles the header chord icon.
+  const [showChords, setShowChords] = useState(false);
 
   const dynamicLoop = useDynamicLoop({
     engaged: dynamicLoopEngaged && dynamicLoopAvailable,
@@ -441,6 +464,12 @@ export function GrooveCardBlockView({
     setTempo: playback.setTempo,
     togglePlay: onPlayPause,
     toggleBassMute: onToggleBassMute,
+    toggleSoloDrums: onToggleSolo,
+    // "L" engages the loop — only where it's offered (no-op on drill bricks /
+    // capped free tier, matching the dial's availability).
+    toggleDynamicLoop: () => {
+      if (dynamicLoopAvailable) setDynamicLoopEngaged((v) => !v);
+    },
     enabled: playback.isReady,
     // While the cycle is running, it owns the key — disable manual ←/→.
     lockTranspose: dynamicLoop.isActive,
@@ -478,7 +507,7 @@ export function GrooveCardBlockView({
     const pick = (key: keyof typeof DEFAULT_STATE_CAPTIONS): string =>
       sc[key] ?? DEFAULT_STATE_CAPTIONS[key];
 
-    if (isSoloDrums) return pick('solo-drums');
+    if (isSoloBass) return pick('solo-drums');
     if (isBassMuted) return pick('mute-bass');
     // NOTE: the 'key-change' caption is intentionally NOT shown here. It's only
     // ever reached while STOPPED (the isPlaying short-circuit above wins during
@@ -492,7 +521,7 @@ export function GrooveCardBlockView({
     hoverHint,
     config,
     isBassMuted,
-    isSoloDrums,
+    isSoloBass,
     playback.isPlaying,
     playback.currentBpm,
     dynamicLoop.isActive,
@@ -538,14 +567,11 @@ export function GrooveCardBlockView({
         bg={bg}
         isPlaying={playback.isPlaying}
         caption={caption}
-        clickEnabled={playback.clickEnabled}
-        onToggleClick={() => playback.setClickEnabled(!playback.clickEnabled)}
         masterVolume={playback.masterVolume}
         onMasterVolumeChange={playback.setMasterVolume}
-        onMetronomeHover={(hovering) => {
-          if (hovering) clearCapUpsell();
-          setHoverHint(hovering ? 'metronome' : null);
-        }}
+        // Chord strip: opt-in via the header chord icon (always present).
+        chordsVisible={showChords}
+        onToggleChords={() => setShowChords((v) => !v)}
         headerExtra={
           dynamicLoopAvailable ? (
             <GrooveCardDynamicLoopDial
@@ -585,6 +611,9 @@ export function GrooveCardBlockView({
               // reads as one continuous transposing line. Identity when the
               // loop is inactive (no further key changes are scheduled).
               advanceCycleKey={dynamicLoop.advanceCycleKey}
+              // The ribbon lives in the header's middle column (between the
+              // title and controls); the now-line is centered in that space.
+              align="center"
             />
           ) : undefined
         }
@@ -639,13 +668,17 @@ export function GrooveCardBlockView({
             pendingKeyShift={playback.pendingKeyShift}
             originalKey={config.originalKey}
             isBassMuted={isBassMuted}
-            isSoloDrums={isSoloDrums}
+            isSoloDrums={isSoloBass}
+            // While soloing the bass, the Mute button is inert (you're hearing
+            // only bass; muting it = silence). Solo itself stays usable while
+            // muted, so it's not disabled here.
+            muteDisabled={isSoloBass}
             onPlayPause={onPlayPause}
             onTempoChange={playback.setTempo}
             onKeyChange={playback.setKey}
             onMuteBass={(muted) => playback.setStemMuted('audio-bass', muted)}
             onSoloDrums={(solo) =>
-              playback.setStemSolo(solo ? 'audio-drums' : null)
+              playback.setStemSolo(solo ? 'audio-bass' : null)
             }
             onDeconCapHit={() => {
               setPitchLever('deconstruction');

@@ -20,7 +20,7 @@ export const DEFAULT_PREVIEW_CAPTION =
 
 export const DEFAULT_STATE_CAPTIONS: Required<GrooveCardStateCaptions> = {
   'mute-bass': "Bass muted. That's your seat now. Play the line.",
-  'solo-drums': 'Just the drums. Feel the pocket.',
+  'solo-drums': 'Just the bass. Lock in the line.',
   'key-change': 'Queued for the next loop — every instrument transposes.',
   'tempo-change': 'Tempo changed. The whole band followed.',
 };
@@ -45,7 +45,7 @@ export type HoverHintKey =
 
 export const HOVER_HINTS: Record<HoverHintKey, string> = {
   'mute-bass': 'Drop the bass — practice the line with the rest of the band.',
-  'solo-drums': 'Isolate the drums to lock in with the pocket.',
+  'solo-drums': 'Solo the bass — hear your line on its own.',
   'play-pause-play': 'Start the groove. A 1-2-3-4 count-in plays first.',
   'play-pause-pause': 'Pause and reset to the top of the groove.',
   key: 'Transpose the whole band. The change lands at the next bar.',

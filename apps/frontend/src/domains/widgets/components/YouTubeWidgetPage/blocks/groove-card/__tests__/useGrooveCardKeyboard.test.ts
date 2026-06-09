@@ -50,6 +50,8 @@ describe('useGrooveCardKeyboard', () => {
     const setTempo = vi.fn();
     const togglePlay = vi.fn();
     const toggleBassMute = vi.fn();
+    const toggleSoloDrums = vi.fn();
+    const toggleDynamicLoop = vi.fn();
     const utils = renderHook(() =>
       useGrooveCardKeyboard({
         currentSemitones: args.currentSemitones ?? 0,
@@ -58,11 +60,21 @@ describe('useGrooveCardKeyboard', () => {
         setTempo,
         togglePlay,
         toggleBassMute,
+        toggleSoloDrums,
+        toggleDynamicLoop,
         enabled: args.enabled ?? true,
         lockTranspose: args.lockTranspose ?? false,
       }),
     );
-    return { setKey, setTempo, togglePlay, toggleBassMute, ...utils };
+    return {
+      setKey,
+      setTempo,
+      togglePlay,
+      toggleBassMute,
+      toggleSoloDrums,
+      toggleDynamicLoop,
+      ...utils,
+    };
   }
 
   // ── transpose ─────────────────────────────────────────────────────────
@@ -197,19 +209,78 @@ describe('useGrooveCardKeyboard', () => {
     expect(ev.defaultPrevented).toBe(false);
   });
 
+  // ── solo drums (S) ──────────────────────────────────────────────────────
+  it('S toggles Solo Drums (lowercase and uppercase)', () => {
+    const { toggleSoloDrums } = mount();
+    press('s');
+    expect(toggleSoloDrums).toHaveBeenCalledTimes(1);
+    press('S');
+    expect(toggleSoloDrums).toHaveBeenCalledTimes(2);
+  });
+
+  it('S does nothing while typing in an INPUT', () => {
+    const { toggleSoloDrums } = mount();
+    const input = document.createElement('input');
+    press('s', { target: input });
+    expect(toggleSoloDrums).not.toHaveBeenCalled();
+  });
+
+  it('S does not preventDefault (not a browser-default action)', () => {
+    mount();
+    expect(press('s').defaultPrevented).toBe(false);
+  });
+
+  // ── dynamic loop (L) ────────────────────────────────────────────────────
+  it('L toggles the Dynamic Loop (lowercase and uppercase)', () => {
+    const { toggleDynamicLoop } = mount();
+    press('l');
+    expect(toggleDynamicLoop).toHaveBeenCalledTimes(1);
+    press('L');
+    expect(toggleDynamicLoop).toHaveBeenCalledTimes(2);
+  });
+
+  it('L does nothing while typing in an INPUT', () => {
+    const { toggleDynamicLoop } = mount();
+    const input = document.createElement('input');
+    press('l', { target: input });
+    expect(toggleDynamicLoop).not.toHaveBeenCalled();
+  });
+
+  it('L does not preventDefault (not a browser-default action)', () => {
+    mount();
+    expect(press('l').defaultPrevented).toBe(false);
+  });
+
   // ── gates / guards ──────────────────────────────────────────────────────
   it('does nothing when disabled (not ready)', () => {
-    const { setKey, togglePlay, toggleBassMute } = mount({ enabled: false });
+    const {
+      setKey,
+      togglePlay,
+      toggleBassMute,
+      toggleSoloDrums,
+      toggleDynamicLoop,
+    } = mount({ enabled: false });
     press('ArrowRight');
     press(' ', { code: 'Space' });
     press('m');
+    press('s');
+    press('l');
     expect(setKey).not.toHaveBeenCalled();
     expect(togglePlay).not.toHaveBeenCalled();
     expect(toggleBassMute).not.toHaveBeenCalled();
+    expect(toggleSoloDrums).not.toHaveBeenCalled();
+    expect(toggleDynamicLoop).not.toHaveBeenCalled();
   });
 
   it('ignores unrelated keys', () => {
-    const { setKey, setTempo, togglePlay, toggleBassMute } = mount();
+    const {
+      setKey,
+      setTempo,
+      togglePlay,
+      toggleBassMute,
+      toggleSoloDrums,
+      toggleDynamicLoop,
+    } = mount();
     press('a');
     press('Enter');
     press('x');
@@ -217,6 +288,8 @@ describe('useGrooveCardKeyboard', () => {
     expect(setTempo).not.toHaveBeenCalled();
     expect(togglePlay).not.toHaveBeenCalled();
     expect(toggleBassMute).not.toHaveBeenCalled();
+    expect(toggleSoloDrums).not.toHaveBeenCalled();
+    expect(toggleDynamicLoop).not.toHaveBeenCalled();
   });
 
   it('ignores arrows while typing in an INPUT', () => {
@@ -260,13 +333,24 @@ describe('useGrooveCardKeyboard', () => {
   });
 
   it('removes the listener on unmount', () => {
-    const { setKey, togglePlay, toggleBassMute, unmount } = mount();
+    const {
+      setKey,
+      togglePlay,
+      toggleBassMute,
+      toggleSoloDrums,
+      toggleDynamicLoop,
+      unmount,
+    } = mount();
     unmount();
     press('ArrowRight');
     press(' ', { code: 'Space' });
     press('m');
+    press('s');
+    press('l');
     expect(setKey).not.toHaveBeenCalled();
     expect(togglePlay).not.toHaveBeenCalled();
     expect(toggleBassMute).not.toHaveBeenCalled();
+    expect(toggleSoloDrums).not.toHaveBeenCalled();
+    expect(toggleDynamicLoop).not.toHaveBeenCalled();
   });
 });

@@ -74,6 +74,9 @@ interface GrooveCardControlsProps {
   originalKey: string;
   isBassMuted: boolean;
   isSoloDrums: boolean;
+  /** Disable the Mute button (e.g. while the bass is soloed — muting the part
+   *  you're soloing would just be silence). */
+  muteDisabled?: boolean;
   onPlayPause: () => void;
   onTempoChange: (next: number) => void;
   onKeyChange: (next: number) => void;
@@ -134,6 +137,7 @@ export function GrooveCardControls({
   originalKey,
   isBassMuted,
   isSoloDrums,
+  muteDisabled = false,
   onPlayPause,
   onTempoChange,
   onKeyChange,
@@ -211,20 +215,28 @@ export function GrooveCardControls({
       onOpenChange={(o) => onPitchOpenChange?.(o)}
     >
       <div className="flex items-center justify-between gap-2 px-4 py-3 bg-black/40 rounded-b-xl">
-        <button
-          type="button"
-          onClick={() => onMuteBass(!isBassMuted)}
-          disabled={!isReady}
-          aria-pressed={isBassMuted}
-          className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-            isBassMuted
-              ? 'bg-orange-500 text-white'
-              : 'bg-white/5 text-white/70 hover:bg-white/10'
-          } disabled:opacity-40 disabled:cursor-not-allowed`}
-          {...hoverProps('mute-bass')}
-        >
-          Mute Bass
-        </button>
+        {anchorIf(
+          'deconstruction',
+          <button
+            type="button"
+            onClick={() =>
+              deconCapped ? onDeconCapHit?.() : onSoloDrums(!isSoloDrums)
+            }
+            // When capped, stay enabled so the tap pitches the upgrade (the cap
+            // is the pitch); only truly disable while the card isn't ready yet.
+            disabled={!isReady}
+            aria-pressed={isSoloDrums}
+            aria-label="Solo drums"
+            className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+              isSoloDrums
+                ? 'bg-orange-500 text-white'
+                : 'bg-white/5 text-white/70 hover:bg-white/10'
+            } ${deconCapped ? 'opacity-60' : ''} disabled:opacity-40 disabled:cursor-not-allowed`}
+            {...hoverProps('solo-drums')}
+          >
+            Solo
+          </button>,
+        )}
 
         {anchorIf(
           'transpose',
@@ -301,27 +313,21 @@ export function GrooveCardControls({
           </div>,
         )}
 
-        {anchorIf(
-          'deconstruction',
-          <button
-            type="button"
-            onClick={() =>
-              deconCapped ? onDeconCapHit?.() : onSoloDrums(!isSoloDrums)
-            }
-            // When capped, stay enabled so the tap pitches the upgrade (the cap
-            // is the pitch); only truly disable while the card isn't ready yet.
-            disabled={!isReady}
-            aria-pressed={isSoloDrums}
-            className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-              isSoloDrums
-                ? 'bg-orange-500 text-white'
-                : 'bg-white/5 text-white/70 hover:bg-white/10'
-            } ${deconCapped ? 'opacity-60' : ''} disabled:opacity-40 disabled:cursor-not-allowed`}
-            {...hoverProps('solo-drums')}
-          >
-            Solo Drums
-          </button>,
-        )}
+        <button
+          type="button"
+          onClick={() => onMuteBass(!isBassMuted)}
+          disabled={!isReady || muteDisabled}
+          aria-pressed={isBassMuted}
+          aria-label="Mute bass"
+          className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+            isBassMuted
+              ? 'bg-orange-500 text-white'
+              : 'bg-white/5 text-white/70 hover:bg-white/10'
+          } disabled:opacity-40 disabled:cursor-not-allowed`}
+          {...hoverProps('mute-bass')}
+        >
+          Mute
+        </button>
       </div>
       {pitchContent}
     </Popover>
@@ -345,7 +351,7 @@ function KeyChangeDisplay({
 }) {
   return (
     <span
-      className="flex items-center justify-center gap-1.5 min-w-[56px] text-center"
+      className="flex items-center justify-center gap-1.5 text-center"
       aria-label={`Current key ${currentLabel}, next key ${nextLabel}`}
     >
       <AnimatedLetter label={currentLabel} className="text-white" />
@@ -418,7 +424,7 @@ function NoteLabel({ label }: { label: string }) {
   const base = m ? m[1] : label;
   const accidental = m ? m[2] : '';
   return (
-    <span className="flex min-w-[56px] items-center justify-center">
+    <span className="flex items-center justify-center">
       {/* The base letter is centered; the accidental is absolutely placed at its
           right edge so it doesn't push the letter off-center. */}
       <span className="relative inline-flex items-center justify-center text-base font-semibold text-white">
@@ -476,19 +482,28 @@ function Stepper({
       >
         <ChevronLeft className="w-4 h-4" aria-hidden />
       </button>
-      {/* While the Dynamic Loop cycles: "current → next" with both letters
-          animating on each change (KeyChangeDisplay). Otherwise: the plain
-          current key + pending "…". */}
-      {nextKeyLabel ? (
-        <KeyChangeDisplay currentLabel={label} nextLabel={nextKeyLabel} />
-      ) : labelKind === 'note' ? (
-        <NoteLabel label={label} />
+      {/* Key label lives in a FIXED-WIDTH slot sized for the WIDER engaged
+          state ("current → next"), so engaging the Dynamic Loop — which swaps
+          the plain key letter for the animated KeyChangeDisplay — doesn't change
+          the stepper's footprint and shove the neighbouring controls. */}
+      {labelKind === 'note' ? (
+        <span className="flex w-[84px] items-center justify-center">
+          {nextKeyLabel ? (
+            <KeyChangeDisplay currentLabel={label} nextLabel={nextKeyLabel} />
+          ) : (
+            <NoteLabel label={label} />
+          )}
+        </span>
       ) : (
-        <span className="flex items-center justify-center min-w-[56px] text-center">
-          <span className="text-base font-semibold text-white">
+        // FIXED-WIDTH numeric label: the value sits in a constant-width,
+        // tabular-figures slot (right-aligned) so 2↔3 digit changes (99↔100)
+        // don't reflow the suffix or the neighbouring controls. The suffix
+        // ("BPM") is a separate fixed element after it.
+        <span className="flex items-center justify-center text-base font-semibold text-white">
+          <span className="inline-block w-[3ch] text-right tabular-nums">
             {label}
-            {suffix}
           </span>
+          {suffix && <span className="ml-1.5">{suffix.trim()}</span>}
         </span>
       )}
       <button

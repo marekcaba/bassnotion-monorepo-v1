@@ -118,7 +118,7 @@ export interface UseGrooveCardPlaybackReturn {
   /** Active semitone offset relative to originalKey. */
   currentSemitones: number;
   mutedStems: Set<AudioInstrumentType>;
-  soloedStem: 'audio-drums' | null;
+  soloedStem: AudioInstrumentType | null;
   clickEnabled: boolean;
   /** Master volume for the whole groove (all stems), 0..1. */
   masterVolume: number;
@@ -133,7 +133,7 @@ export interface UseGrooveCardPlaybackReturn {
   setTempo: (bpm: number) => void;
   setKey: (semitonesFromOriginal: number) => void;
   setStemMuted: (stem: AudioInstrumentType, muted: boolean) => void;
-  setStemSolo: (stem: 'audio-drums' | null) => void;
+  setStemSolo: (stem: AudioInstrumentType | null) => void;
   setClickEnabled: (enabled: boolean) => void;
   /** Set the master volume for the whole groove (all stems), 0..1. */
   setMasterVolume: (volume: number) => void;
@@ -367,7 +367,9 @@ export function useGrooveCardPlayback({
     // Click is muted by default per the story spec.
     return new Set(['audio-click']);
   });
-  const [soloedStem, setSoloedStem] = useState<'audio-drums' | null>(null);
+  const [soloedStem, setSoloedStem] = useState<AudioInstrumentType | null>(
+    null,
+  );
   const [clickEnabled, setClickEnabledState] = useState(false);
   // MASTER volume for the whole groove (all stems), 0..1. Scales the engine's
   // master-volume node; the engine preserves it even before the graph exists,
@@ -808,20 +810,31 @@ export function useGrooveCardPlayback({
   );
 
   const setStemSolo = useCallback(
-    (stem: 'audio-drums' | null) => {
+    (stem: AudioInstrumentType | null) => {
+      // The musical stems that can be soloed against each other (click is a
+      // separate channel and is never sibling-muted by solo).
+      const MUSICAL: AudioInstrumentType[] = [
+        'audio-bass',
+        'audio-drums',
+        'audio-harmony',
+      ];
       setSoloedStem(stem);
-      if (stem === 'audio-drums') {
-        // Sibling-mute bass + harmony; preserve click's current setting.
-        writeMuteToEngine('audio-bass', true);
-        writeMuteToEngine('audio-harmony', true);
+      if (stem) {
+        // Solo = "hear ONLY this": mute the other musical stems AND force the
+        // soloed stem AUDIBLE (un-mute it in the engine) even if the Mute
+        // button had it muted — the whole point of solo is to hear it. The
+        // soloed stem's own mutedStems flag is untouched, so releasing solo
+        // restores it (a pre-existing mute comes back).
+        for (const s of MUSICAL) {
+          writeMuteToEngine(s, s !== stem);
+        }
       } else {
-        // Releasing solo: restore bass + harmony to their pre-solo
-        // mutedStems state (NOT just to unmuted — the user may have
-        // muted bass independently before tapping solo).
-        const bassMuted = mutedStems.has('audio-bass');
-        const harmonyMuted = mutedStems.has('audio-harmony');
-        writeMuteToEngine('audio-bass', bassMuted);
-        writeMuteToEngine('audio-harmony', harmonyMuted);
+        // Releasing solo: restore every musical stem to its pre-solo
+        // mutedStems state (NOT just to unmuted — the user may have muted a
+        // stem independently before tapping solo; that mute must persist).
+        for (const s of MUSICAL) {
+          writeMuteToEngine(s, mutedStems.has(s));
+        }
       }
     },
     [mutedStems, writeMuteToEngine],

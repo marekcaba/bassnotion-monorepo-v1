@@ -10,13 +10,17 @@
  *   ↓       tempo down one BPM
  *   Space   play / pause
  *   M       mute / unmute the bass
+ *   S       solo / unsolo the bass
+ *   L       engage / disengage the Dynamic Loop
  *
  * Transpose routes through the same `setKey` command the +/- stepper
  * buttons use, and tempo through the same `setTempo` the tempo stepper uses
  * (each clamps internally — ±KEY_RANGE / the BPM range, loop-boundary
  * queueing, cap telemetry all apply identically; no second code path). Space
- * routes through the same `togglePlay` the Play button uses, and M through
- * the same bass mute toggle as the mute button.
+ * routes through the same `togglePlay` the Play button uses, M through the
+ * same bass mute toggle, S through the same Solo toggle (caller-owned, incl.
+ * the cap pitch), and L through the same Dynamic Loop engage toggle (the
+ * caller passes a no-op when the loop isn't available on this surface).
  *
  * Scope: a single global `keydown` listener. There is only ever ONE
  * groove card on a page (waitlist, /app tutorial block, admin preview),
@@ -54,6 +58,13 @@ interface UseGrooveCardKeyboardArgs {
   togglePlay: () => void;
   /** Toggle the bass mute — the same action as the bass mute button. */
   toggleBassMute: () => void;
+  /** Toggle Solo Drums — the same action as the Solo Drums button (the caller
+   *  routes this to the cap pitch when the free tier is gated). */
+  toggleSoloDrums: () => void;
+  /** Engage / disengage the Dynamic Loop — the same action as the loop dial's
+   *  Engage toggle. The caller passes a no-op on surfaces where the loop isn't
+   *  available (drill bricks, capped free tier). */
+  toggleDynamicLoop: () => void;
   /** Gate — only handle keys once the card is interactive (isReady). */
   enabled: boolean;
   /** When true (Dynamic Loop engaged), the auto-cycle owns the key, so the
@@ -90,6 +101,8 @@ export function useGrooveCardKeyboard({
   setTempo,
   togglePlay,
   toggleBassMute,
+  toggleSoloDrums,
+  toggleDynamicLoop,
   enabled,
   lockTranspose = false,
 }: UseGrooveCardKeyboardArgs): void {
@@ -143,6 +156,22 @@ export function useGrooveCardKeyboard({
         toggleBassMute();
         return;
       }
+
+      // S → toggle Solo Drums (same caller-owned action as the button, incl.
+      // the cap pitch when gated). Not a browser-default action; no
+      // preventDefault needed.
+      if (e.key === 's' || e.key === 'S') {
+        toggleSoloDrums();
+        return;
+      }
+
+      // L → engage / disengage the Dynamic Loop (same as the dial's Engage
+      // toggle; a no-op where the loop isn't available). Not a browser-default
+      // action; no preventDefault needed.
+      if (e.key === 'l' || e.key === 'L') {
+        toggleDynamicLoop();
+        return;
+      }
     };
 
     window.addEventListener('keydown', onKeyDown);
@@ -155,6 +184,8 @@ export function useGrooveCardKeyboard({
     setTempo,
     togglePlay,
     toggleBassMute,
+    toggleSoloDrums,
+    toggleDynamicLoop,
     lockTranspose,
   ]);
 }

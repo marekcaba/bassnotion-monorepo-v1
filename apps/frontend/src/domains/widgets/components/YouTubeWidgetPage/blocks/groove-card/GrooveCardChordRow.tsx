@@ -56,6 +56,13 @@ interface GrooveCardChordRowProps {
    *  ladder). Lets the ribbon CHAIN future cycles forward into one continuous
    *  transposing line. Identity when the dynamic loop is inactive. */
   advanceCycleKey: (key: number) => number;
+  /** Where the "now" point sits.
+   *   - 'center' (default): now-line centered; played chords exit left, upcoming
+   *     approach from the right. Used in the wide, standalone row.
+   *   - 'left': current chord pinned near the LEFT edge with upcoming chords
+   *     flowing right (read-ahead). Used when the ribbon shares the narrow
+   *     header space between the title and the controls. */
+  align?: 'center' | 'left';
 }
 
 // Same guard the waveform uses: at the loop origin the latency-compensated
@@ -99,6 +106,7 @@ export function GrooveCardChordRow({
   originalKey,
   currentSemitones,
   advanceCycleKey,
+  align = 'center',
 }: GrooveCardChordRowProps) {
   // The sorted chart — used only to decide whether there's anything to draw.
   const changes = useMemo(() => sortedChart(chordChart), [chordChart]);
@@ -254,11 +262,15 @@ export function GrooveCardChordRow({
 
   // Build the visible bars. Each bar sits at its ABSOLUTE index; we translate
   // the ribbon by -(pos × BAR_W) so the playhead point is at x=0, then offset
-  // the container to 50% → the now-line is centered. The bar CELLS draw the grid
-  // (bar lines, beat lines, number, simile marks); the chord SYMBOLS are laid
-  // out in a separate global pass (below) so the declutter can span bar lines —
-  // a crowded chord bleeding past a bar end pushes the next bar's first chord.
-  const firstBar = Math.max(0, currentBar - BARS_BEHIND);
+  // the container (50% centered / a small left inset for read-ahead). The bar
+  // CELLS draw the grid (bar lines, beat lines, number, simile marks); the
+  // chord SYMBOLS are laid out in a separate global pass (below) so the
+  // declutter can span bar lines — a crowded chord bleeding past a bar end
+  // pushes the next bar's first chord.
+  // Left-anchored read-ahead renders no bars behind the now-line (they'd be
+  // off-screen to the left); centered keeps a little trailing context.
+  const barsBehind = align === 'left' ? 0 : BARS_BEHIND;
+  const firstBar = Math.max(0, currentBar - barsBehind);
   const lastBar = currentBar + BARS_AHEAD;
   // Every visible chord change, in ABSOLUTE x (bar offset + slot offset), in time
   // order across all bars — the input to the global declutter.
@@ -366,16 +378,28 @@ export function GrooveCardChordRow({
     </span>
   ));
 
+  // The now-line's x within the row: centered, or a small left inset for the
+  // read-ahead layout. The ribbon container is offset to this point and the
+  // playhead marker drawn there; chords flow right from it.
+  const anchorLeft = align === 'left' ? '12px' : '50%';
+
   return (
     <div className="relative h-10 overflow-hidden" role="status">
-      {/* Centered now-line marker. */}
-      <div className="pointer-events-none absolute inset-y-0 left-1/2 z-10 w-px -translate-x-1/2 bg-emerald-400/40" />
+      {/* Now-line marker at the anchor point — only while playing (there's no
+          playhead to mark when stopped). */}
+      {playing ? (
+        <div
+          className="pointer-events-none absolute inset-y-0 z-10 w-px -translate-x-1/2 bg-emerald-400/40"
+          style={{ left: anchorLeft }}
+        />
+      ) : null}
       {/* The ribbon: each cell sits at absBar×BAR_W; translating by -pos×BAR_W
-          puts the playhead point at x=0, and the 50% container offset centers
-          it. The slide animates smoothly as `pos` advances each frame. */}
+          puts the playhead point at x=0, and the container's `left` offset
+          places that point at the anchor. The slide animates smoothly as `pos`
+          advances each frame. */}
       <div
-        className="absolute inset-y-0 left-1/2"
-        style={{ transform: `translateX(${-pos * BAR_W}px)` }}
+        className="absolute inset-y-0"
+        style={{ left: anchorLeft, transform: `translateX(${-pos * BAR_W}px)` }}
       >
         {cells}
         {/* Chord symbols, globally decluttered, in the SAME translated space as
