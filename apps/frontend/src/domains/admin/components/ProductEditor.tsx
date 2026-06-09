@@ -17,7 +17,11 @@ import {
   useAddProductContent,
   useRemoveProductContent,
 } from '@/domains/admin/hooks/useAdminProducts';
-import { adminProductsApi, AdminContentType } from '@/domains/admin/api/products.api';
+import {
+  adminProductsApi,
+  AdminContentType,
+  type AdminProductType,
+} from '@/domains/admin/api/products.api';
 import { useGrooveLibrary } from '@/domains/drill/hooks/useGrooveLibrary';
 import { fetchTutorials } from '@/domains/widgets/api/tutorials';
 
@@ -25,6 +29,13 @@ const CONTENT_TYPES: { value: AdminContentType; label: string }[] = [
   { value: 'tutorial', label: 'Tutorial' },
   { value: 'groove', label: 'Groove' },
   { value: 'video', label: 'Video' },
+];
+
+const PRODUCT_TYPES: AdminProductType[] = [
+  'membership',
+  'groove_pack',
+  'accelerator',
+  'course',
 ];
 
 export function ProductEditor({ productId }: { productId: string }) {
@@ -43,6 +54,17 @@ export function ProductEditor({ productId }: { productId: string }) {
   });
   const tutorials = tutorialData?.tutorials ?? [];
 
+  // Core marketing/store fields.
+  const [name, setName] = useState('');
+  const [slug, setSlug] = useState('');
+  const [type, setType] = useState<AdminProductType>('groove_pack');
+  const [tagline, setTagline] = useState('');
+  const [description, setDescription] = useState('');
+  const [priceInCents, setPriceInCents] = useState(0);
+  const [currency, setCurrency] = useState('usd');
+  const [sortOrder, setSortOrder] = useState(0);
+  const [featuresText, setFeaturesText] = useState('');
+
   const [stripePriceId, setStripePriceId] = useState('');
   const [badge, setBadge] = useState('');
   const [isActive, setIsActive] = useState(true);
@@ -58,10 +80,20 @@ export function ProductEditor({ productId }: { productId: string }) {
 
   useEffect(() => {
     if (data?.product) {
-      setStripePriceId(data.product.stripePriceId ?? '');
-      setBadge(data.product.badge ?? '');
-      setIsActive(data.product.isActive);
-      setPreviewGrooveId(data.product.previewGrooveId ?? '');
+      const p = data.product;
+      setName(p.name ?? '');
+      setSlug(p.slug ?? '');
+      setType(p.type);
+      setTagline(p.tagline ?? '');
+      setDescription(p.description ?? '');
+      setPriceInCents(p.priceInCents ?? 0);
+      setCurrency(p.currency ?? 'usd');
+      setSortOrder(p.sortOrder ?? 0);
+      setFeaturesText((p.features ?? []).join('\n'));
+      setStripePriceId(p.stripePriceId ?? '');
+      setBadge(p.badge ?? '');
+      setIsActive(p.isActive);
+      setPreviewGrooveId(p.previewGrooveId ?? '');
     }
   }, [data?.product]);
 
@@ -102,10 +134,27 @@ export function ProductEditor({ productId }: { productId: string }) {
 
   const saveFields = async () => {
     setMsg(null);
+    if (!name.trim() || !slug.trim()) {
+      setMsg('Name and slug are required.');
+      return;
+    }
+    const features = featuresText
+      .split('\n')
+      .map((f) => f.trim())
+      .filter(Boolean);
     try {
       await updateProduct.mutateAsync({
         id: productId,
         patch: {
+          name: name.trim(),
+          slug: slug.trim(),
+          type,
+          tagline: tagline.trim() || undefined,
+          description: description.trim() || undefined,
+          priceInCents,
+          currency: currency.trim() || undefined,
+          sortOrder,
+          features,
           stripePriceId: stripePriceId.trim() || undefined,
           badge: badge.trim() || undefined,
           isActive,
@@ -156,6 +205,104 @@ export function ProductEditor({ productId }: { productId: string }) {
 
   return (
     <div className="space-y-4 border-t bg-gray-50 px-4 py-4 text-sm">
+      {/* Core details — name / slug / type / pricing / copy. */}
+      <div className="grid grid-cols-2 gap-3">
+        <label className="space-y-1 text-xs text-gray-500">
+          Name
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Funk Foundations"
+            className="w-full rounded-md border px-3 py-2 text-sm text-gray-900"
+          />
+        </label>
+        <label className="space-y-1 text-xs text-gray-500">
+          Slug
+          <input
+            value={slug}
+            onChange={(e) => setSlug(e.target.value)}
+            placeholder="funk-foundations"
+            className="w-full rounded-md border px-3 py-2 font-mono text-sm text-gray-900"
+          />
+        </label>
+      </div>
+
+      <label className="block space-y-1 text-xs text-gray-500">
+        Tagline
+        <input
+          value={tagline}
+          onChange={(e) => setTagline(e.target.value)}
+          placeholder="Short marketing hook for the store card"
+          className="w-full rounded-md border px-3 py-2 text-sm text-gray-900"
+        />
+      </label>
+
+      <label className="block space-y-1 text-xs text-gray-500">
+        Description
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={3}
+          className="w-full rounded-md border px-3 py-2 text-sm text-gray-900"
+        />
+      </label>
+
+      <div className="grid grid-cols-4 gap-3">
+        <label className="space-y-1 text-xs text-gray-500">
+          Type
+          <select
+            value={type}
+            onChange={(e) => setType(e.target.value as AdminProductType)}
+            className="w-full rounded-md border px-3 py-2 text-sm text-gray-900"
+          >
+            {PRODUCT_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="space-y-1 text-xs text-gray-500">
+          Price (cents)
+          <input
+            type="number"
+            min={0}
+            value={priceInCents}
+            onChange={(e) => setPriceInCents(Number(e.target.value))}
+            className="w-full rounded-md border px-3 py-2 text-sm text-gray-900"
+          />
+        </label>
+        <label className="space-y-1 text-xs text-gray-500">
+          Currency
+          <input
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value)}
+            placeholder="usd"
+            className="w-full rounded-md border px-3 py-2 text-sm text-gray-900"
+          />
+        </label>
+        <label className="space-y-1 text-xs text-gray-500">
+          Sort order
+          <input
+            type="number"
+            value={sortOrder}
+            onChange={(e) => setSortOrder(Number(e.target.value))}
+            className="w-full rounded-md border px-3 py-2 text-sm text-gray-900"
+          />
+        </label>
+      </div>
+
+      <label className="block space-y-1 text-xs text-gray-500">
+        Features (one per line)
+        <textarea
+          value={featuresText}
+          onChange={(e) => setFeaturesText(e.target.value)}
+          placeholder={'12 funk grooves\nAll 12 keys\nLifetime access'}
+          rows={3}
+          className="w-full rounded-md border px-3 py-2 text-sm text-gray-900"
+        />
+      </label>
+
       {/* Stripe price + flags */}
       <div className="grid grid-cols-2 gap-3">
         <label className="space-y-1 text-xs text-gray-500">
@@ -207,7 +354,6 @@ export function ProductEditor({ productId }: { productId: string }) {
       {/* Cover upload */}
       <div className="flex items-center gap-3">
         {product.coverImageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={product.coverImageUrl}
             alt="cover"

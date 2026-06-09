@@ -515,6 +515,8 @@ export type {
   GrooveCardBlock,
   GrooveCardBlockConfig,
   GrooveCardStemSet,
+  ChordChartEntry,
+  ChordChart,
   GrooveCardStateCaptions,
   GrooveBrickRole,
   MasteryTier,
@@ -530,6 +532,9 @@ export type {
   AnyBlock,
   BlockProgress,
 } from './block.js';
+
+// Value export (const, not a type) — eighth-note slots per bar for chord charts.
+export { CHORD_SLOTS_PER_BAR } from './block.js';
 
 // Billing / entitlement types (LAUNCH-02.5c stub; LAUNCH-02 populates caps)
 export type {

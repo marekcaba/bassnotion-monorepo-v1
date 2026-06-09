@@ -68,7 +68,7 @@ function StoreContent() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl p-6 md:p-10">
+    <div className="mx-auto max-w-7xl p-6 md:p-10">
       <header className="mb-8 flex items-center gap-3">
         <ShoppingBag className="size-8 text-[#E8A44A]" />
         <div>
@@ -92,7 +92,7 @@ function StoreContent() {
       )}
 
       {!isLoading && !error && (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {(products ?? []).map((p) => (
             <StoreProductCard
               key={p.id}
@@ -101,11 +101,7 @@ function StoreContent() {
               buyable={isBuyable(p)}
               isLoading={loadingId === p.id}
               onBuy={() => handleBuy(p)}
-              onOpen={
-                p.type !== 'membership'
-                  ? () => router.push(`/app/store/${p.slug}`)
-                  : undefined
-              }
+              onOpen={() => router.push(`/app/store/${p.slug}`)}
             />
           ))}
           {(products ?? []).length === 0 && (

@@ -24,7 +24,18 @@ import { useGrooveCardPlayback } from './groove-card/useGrooveCardPlayback';
 import { useGrooveCardKeyboard } from './groove-card/useGrooveCardKeyboard';
 import { GrooveCardShell } from './groove-card/GrooveCardShell';
 import { GrooveCardWaveform } from './groove-card/GrooveCardWaveform';
-import { GrooveCardControls } from './groove-card/GrooveCardControls';
+import { GrooveCardChordRow } from './groove-card/GrooveCardChordRow';
+import {
+  GrooveCardControls,
+  formatKeyLabel,
+} from './groove-card/GrooveCardControls';
+import { GrooveCardDynamicLoopDial } from './groove-card/GrooveCardDynamicLoopDial';
+import {
+  useDynamicLoop,
+  buildCycleKeys,
+  type DynamicLoopConfig,
+} from './groove-card/useDynamicLoop';
+import { useActiveGrooveCardStore } from '@/domains/playback/store/active-groove-card.store';
 import {
   DEFAULT_PREVIEW_CAPTION,
   DEFAULT_STATE_CAPTIONS,
@@ -126,6 +137,9 @@ export function GrooveCardBlockView({
       originalKey: groove.originalKey,
       lengthBars: groove.lengthBars,
       stems: groove.stems,
+      // Chord chart resolves from the library (authored once per groove); a
+      // per-block chordChart, if any, overrides it for one-off inline use.
+      chordChart: rawConfig.chordChart ?? groove.chordChart,
       youtubeUrl: rawConfig.youtubeUrl ?? groove.youtubeUrl,
     });
   }, [rawConfig, groove]);
@@ -213,12 +227,115 @@ export function GrooveCardBlockView({
   }, [playback]);
 
   const isBassMuted = playback.mutedStems.has('audio-bass');
-  const isSoloDrums = playback.soloedStem === 'audio-drums';
+  // "Solo" isolates the BASS part (mutes drums + harmony) — the intuitive solo
+  // for bass players. While soloing, the Mute button is inert (bass is what
+  // you're hearing); a pre-existing bass mute persists THROUGH solo, so
+  // releasing solo with mute on lands back in the muted-bass state.
+  const isSoloBass = playback.soloedStem === 'audio-bass';
 
-  const onToggleBassMute = useCallback(
-    () => playback.setStemMuted('audio-bass', !isBassMuted),
-    [playback, isBassMuted],
+  const onToggleBassMute = useCallback(() => {
+    // Mute is inert while soloing the bass (muting the soloed part = silence).
+    if (isSoloBass) return;
+    playback.setStemMuted('audio-bass', !isBassMuted);
+  }, [playback, isBassMuted, isSoloBass]);
+
+  // Solo is the one hard entitlement gate (the "deconstruction" cap). When
+  // capped (free tier), the toggle pitches the upgrade instead of soloing —
+  // same behaviour as the button — so the "S" shortcut routes here too. Solo
+  // works even WHILE bass is muted (it isolates by muting the siblings; the
+  // bass's own mute state is untouched and restored on release).
+  const deconCapped = capsEnabled && caps.deconstruction.isCapped;
+  const onToggleSolo = useCallback(() => {
+    if (deconCapped) {
+      setPitchLever('deconstruction');
+      trackEvent('cap_hit', { lever: 'deconstruction', grooveId: block.id });
+      return;
+    }
+    playback.setStemSolo(isSoloBass ? null : 'audio-bass');
+  }, [deconCapped, playback, isSoloBass, block.id]);
+
+  // ── Dynamic Loop: auto key-cycle every N loops ──────────────────────────
+  // Offered only where it makes sense:
+  //  • NOT on drill bricks — the key there is author-prescribed + locked
+  //    ("do exactly this"); a user-driven cycle would invalidate the drill.
+  //  • NOT to the capped free tier — cycling within a ±2 band is musically
+  //    thin, and gating here also sidesteps setKey's cap path entirely (the
+  //    dial would otherwise have only a sliver of reachable keys).
+  const dynamicLoopAvailable =
+    !isDrillBrick && !(capsEnabled && caps.transpose.isCapped);
+
+  // Per-card, in-memory config (no persistence — reload resets to defaults).
+  const [dynamicLoopConfig, setDynamicLoopConfig] = useState<DynamicLoopConfig>(
+    // Default: ping-pong up a minor 3rd (+3) every 1 loop — change key each
+    // loop. Interval is RELATIVE to wherever the user sets the key; mode
+    // defaults to the simple 2-key ping-pong.
+    { intervalSemitones: 3, everyN: 1, mode: 'ping-pong' },
   );
+  const [dynamicLoopEngaged, setDynamicLoopEngaged] = useState(false);
+
+  // Chord strip is opt-in: hidden until the user toggles the header chord icon.
+  const [showChords, setShowChords] = useState(false);
+
+  const dynamicLoop = useDynamicLoop({
+    engaged: dynamicLoopEngaged && dynamicLoopAvailable,
+    isPlaying: playback.isPlaying,
+    isCountingDown: playback.countdownState.isCountingDown,
+    config: dynamicLoopConfig,
+    // HOME = the user's current manual key (the stepper value). The cycle
+    // plays THIS key first, then transposes to the target and back — captured
+    // at engage time inside the hook.
+    homeSemitones: playback.currentSemitones,
+    maxSemitones: playback.transposeRange,
+    setKey: playback.setKey,
+    getNextSeamTime: playback.getNextSeamTime,
+    getCurrentTime: playback.getCurrentTime,
+  });
+
+  // Next-key preview label for the controls' "current → next" display.
+  //  - Engaged + PLAYING: the live nextSemitones from the hook (advances each
+  //    loop through every key in the cycle).
+  //  - Engaged but NOT yet playing: the FIRST cycle step computed from the
+  //    config (home + interval), so engaging the dial is a CUE that previews
+  //    where the cycle will go BEFORE the user hits play.
+  //  - Not engaged: null (plain stepper).
+  const dynamicLoopEngagedAvailable =
+    dynamicLoopEngaged && dynamicLoopAvailable;
+  const nextKeyLabel = useMemo(() => {
+    if (!dynamicLoopEngagedAvailable) return null;
+    const nextSemis = dynamicLoop.isActive
+      ? dynamicLoop.nextSemitones
+      : // Stopped preview: the first key the cycle moves to from the user's
+        // current key. buildCycleKeys[0] is home, [1] is the first move.
+        (buildCycleKeys(
+          dynamicLoopConfig,
+          playback.currentSemitones,
+          playback.transposeRange,
+        )[1] ?? playback.currentSemitones);
+    return formatKeyLabel(config.originalKey, nextSemis);
+  }, [
+    dynamicLoopEngagedAvailable,
+    dynamicLoop.isActive,
+    dynamicLoop.nextSemitones,
+    dynamicLoopConfig,
+    playback.currentSemitones,
+    playback.transposeRange,
+    config.originalKey,
+  ]);
+
+  // Multi-card pages share one engine: when another card steals active focus,
+  // this card's audio is silently stopped — so disengage our cycle, else it
+  // keeps firing setKey against the engine the other card now owns. Also
+  // covers the simple "card unmounts / loses focus" case.
+  const activeCardId = useActiveGrooveCardStore((s) => s.activeCardId);
+  useEffect(() => {
+    if (
+      dynamicLoopEngaged &&
+      activeCardId !== null &&
+      activeCardId !== block.id
+    ) {
+      setDynamicLoopEngaged(false);
+    }
+  }, [activeCardId, block.id, dynamicLoopEngaged]);
 
   // ── Drill brick: criterion → Next-unlock → advance ──────────────────────
   const { isAuthenticated, isReady } = useAuth();
@@ -335,17 +452,27 @@ export function GrooveCardBlockView({
     completeBrick('released', null);
   }, [block.id, config.role, completeBrick]);
 
-  // Keyboard shortcuts: ←/→ transpose (setKey), Space play/pause
-  // (onPlayPause), M mute/unmute bass (setStemMuted). Each routes through
-  // the same command as its on-screen control. Gated on isReady + a typing
-  // guard. There's only ever one playable element on a page, so a single
-  // global listener is unambiguous.
+  // Keyboard shortcuts: ←/→ transpose (setKey), ↑/↓ tempo (setTempo), Space
+  // play/pause (onPlayPause), M mute/unmute bass (setStemMuted). Each routes
+  // through the same command as its on-screen control. Gated on isReady + a
+  // typing guard. There's only ever one playable element on a page, so a
+  // single global listener is unambiguous.
   useGrooveCardKeyboard({
     currentSemitones: playback.currentSemitones,
     setKey: playback.setKey,
+    currentBpm: playback.currentBpm,
+    setTempo: playback.setTempo,
     togglePlay: onPlayPause,
     toggleBassMute: onToggleBassMute,
+    toggleSoloDrums: onToggleSolo,
+    // "L" engages the loop — only where it's offered (no-op on drill bricks /
+    // capped free tier, matching the dial's availability).
+    toggleDynamicLoop: () => {
+      if (dynamicLoopAvailable) setDynamicLoopEngaged((v) => !v);
+    },
     enabled: playback.isReady,
+    // While the cycle is running, it owns the key — disable manual ←/→.
+    lockTranspose: dynamicLoop.isActive,
   });
 
   // Hover hint: which interactive control the pointer is currently over.
@@ -364,15 +491,29 @@ export function GrooveCardBlockView({
     // A fresh cap-hit upsell wins briefly — it's the teaching moment.
     if (capUpsell) return capUpsell;
     if (hoverHint) return HOVER_HINTS[hoverHint];
+    // Dynamic Loop status — show the next key + how many loops until it lands,
+    // so the player can hear what's coming. Wins over the generic "Playing…".
+    if (dynamicLoop.isActive) {
+      const nextLabel = formatKeyLabel(
+        config.originalKey,
+        dynamicLoop.nextSemitones,
+      );
+      const n = dynamicLoop.loopsRemaining;
+      return `Dynamic loop · → ${nextLabel} in ${n} ${n === 1 ? 'loop' : 'loops'}`;
+    }
     if (playback.isPlaying) return 'Playing…';
 
     const sc = config.stateCaptions ?? {};
     const pick = (key: keyof typeof DEFAULT_STATE_CAPTIONS): string =>
       sc[key] ?? DEFAULT_STATE_CAPTIONS[key];
 
-    if (isSoloDrums) return pick('solo-drums');
+    if (isSoloBass) return pick('solo-drums');
     if (isBassMuted) return pick('mute-bass');
-    if (playback.pendingKeyShift !== null) return pick('key-change');
+    // NOTE: the 'key-change' caption is intentionally NOT shown here. It's only
+    // ever reached while STOPPED (the isPlaying short-circuit above wins during
+    // playback), and when stopped a key change applies immediately — there's
+    // nothing "queued". pendingKeyShift also clears on the next tick when
+    // stopped, so reacting to it here flickered the caption on every ←/→ press.
     if (playback.currentBpm !== config.originalBpm) return pick('tempo-change');
     return config.previewCaption ?? DEFAULT_PREVIEW_CAPTION;
   }, [
@@ -380,10 +521,12 @@ export function GrooveCardBlockView({
     hoverHint,
     config,
     isBassMuted,
-    isSoloDrums,
+    isSoloBass,
     playback.isPlaying,
     playback.currentBpm,
-    playback.pendingKeyShift,
+    dynamicLoop.isActive,
+    dynamicLoop.nextSemitones,
+    dynamicLoop.loopsRemaining,
   ]);
 
   // Clear the transient cap-hit upsell once the user moves on (hovers a
@@ -424,14 +567,56 @@ export function GrooveCardBlockView({
         bg={bg}
         isPlaying={playback.isPlaying}
         caption={caption}
-        clickEnabled={playback.clickEnabled}
-        onToggleClick={() => playback.setClickEnabled(!playback.clickEnabled)}
         masterVolume={playback.masterVolume}
         onMasterVolumeChange={playback.setMasterVolume}
-        onMetronomeHover={(hovering) => {
-          if (hovering) clearCapUpsell();
-          setHoverHint(hovering ? 'metronome' : null);
-        }}
+        // Chord strip: opt-in via the header chord icon (always present).
+        chordsVisible={showChords}
+        onToggleChords={() => setShowChords((v) => !v)}
+        headerExtra={
+          dynamicLoopAvailable ? (
+            <GrooveCardDynamicLoopDial
+              config={dynamicLoopConfig}
+              onConfigChange={setDynamicLoopConfig}
+              engaged={dynamicLoopEngaged}
+              onEngagedChange={setDynamicLoopEngaged}
+              maxSemitones={playback.transposeRange}
+              disabled={!playback.isReady}
+              onHover={(hovering) => {
+                if (hovering) clearCapUpsell();
+                setHoverHint(hovering ? 'dynamic-loop' : null);
+              }}
+            />
+          ) : undefined
+        }
+        chordRow={
+          // The chord chart (resolved from the groove library) with the current
+          // chord highlighted as the player plays. Omitted entirely when the
+          // groove has no chart (so the shell skips the row + its padding).
+          config.chordChart && config.chordChart.length > 0 ? (
+            <GrooveCardChordRow
+              chordChart={config.chordChart}
+              lengthBars={config.lengthBars}
+              isPlaying={playback.isPlaying}
+              loopSelection={playback.loopSelection}
+              getAudioPhase={playback.getAudioPhase}
+              audioContext={playback.audioContext}
+              loopStartAudioTime={playback.loopStartAudioTime}
+              originalKey={config.originalKey}
+              // The chord row latches each loop cycle's key from this queued
+              // target (set by both the manual stepper and the dynamic loop's
+              // pre-queue), so chords transpose in sync with the audio.
+              currentSemitones={playback.currentSemitones}
+              // Chains FUTURE loop cycles forward through the dynamic loop's
+              // schedule (ping-pong flip / travel-ladder rung) so the strip
+              // reads as one continuous transposing line. Identity when the
+              // loop is inactive (no further key changes are scheduled).
+              advanceCycleKey={dynamicLoop.advanceCycleKey}
+              // The ribbon lives in the header's middle column (between the
+              // title and controls); the now-line is centered in that space.
+              align="center"
+            />
+          ) : undefined
+        }
         waveform={
           // The loop-range cap fires from a bar drag ON the waveform, so its
           // pitch anchors HERE (not the controls row). Own Popover, open only
@@ -483,13 +668,17 @@ export function GrooveCardBlockView({
             pendingKeyShift={playback.pendingKeyShift}
             originalKey={config.originalKey}
             isBassMuted={isBassMuted}
-            isSoloDrums={isSoloDrums}
+            isSoloDrums={isSoloBass}
+            // While soloing the bass, the Mute button is inert (you're hearing
+            // only bass; muting it = silence). Solo itself stays usable while
+            // muted, so it's not disabled here.
+            muteDisabled={isSoloBass}
             onPlayPause={onPlayPause}
             onTempoChange={playback.setTempo}
             onKeyChange={playback.setKey}
             onMuteBass={(muted) => playback.setStemMuted('audio-bass', muted)}
             onSoloDrums={(solo) =>
-              playback.setStemSolo(solo ? 'audio-drums' : null)
+              playback.setStemSolo(solo ? 'audio-bass' : null)
             }
             onDeconCapHit={() => {
               setPitchLever('deconstruction');
@@ -504,6 +693,18 @@ export function GrooveCardBlockView({
             }}
             enforceCaps={capsEnabled}
             lockSettings={isDrillBrick}
+            lockKey={dynamicLoop.isActive}
+            // The effective transpose edge + whether it's the entitlement band.
+            // For a member the edge is the engine's ±6 → the chevron dims there
+            // (no "become a member" pitch at the real end of the range). For a
+            // capped free user the chevron stays live at the band edge so the
+            // bump surfaces the upgrade pitch.
+            transposeRange={playback.transposeRange}
+            transposeCapped={capsEnabled && caps.transpose.isCapped}
+            // Next-key preview: appears the moment the dial is ENGAGED (a cue
+            // showing where the cycle will go, even before play), then updates
+            // live through every key once playing. Computed above.
+            nextKeyLabel={nextKeyLabel}
             // loopRange anchors to the WAVEFORM (handled above), not the
             // controls row — so the controls popover ignores it.
             pitchLever={pitchLever === 'loopRange' ? null : pitchLever}

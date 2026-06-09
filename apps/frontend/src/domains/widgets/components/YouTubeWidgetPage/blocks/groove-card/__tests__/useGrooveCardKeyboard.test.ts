@@ -38,20 +38,43 @@ describe('useGrooveCardKeyboard', () => {
   afterEach(() => vi.restoreAllMocks());
 
   /** Mount the hook with default fns; returns the spies for assertions. */
-  function mount(args: { currentSemitones?: number; enabled?: boolean } = {}) {
+  function mount(
+    args: {
+      currentSemitones?: number;
+      currentBpm?: number;
+      enabled?: boolean;
+      lockTranspose?: boolean;
+    } = {},
+  ) {
     const setKey = vi.fn();
+    const setTempo = vi.fn();
     const togglePlay = vi.fn();
     const toggleBassMute = vi.fn();
+    const toggleSoloDrums = vi.fn();
+    const toggleDynamicLoop = vi.fn();
     const utils = renderHook(() =>
       useGrooveCardKeyboard({
         currentSemitones: args.currentSemitones ?? 0,
         setKey,
+        currentBpm: args.currentBpm ?? 100,
+        setTempo,
         togglePlay,
         toggleBassMute,
+        toggleSoloDrums,
+        toggleDynamicLoop,
         enabled: args.enabled ?? true,
+        lockTranspose: args.lockTranspose ?? false,
       }),
     );
-    return { setKey, togglePlay, toggleBassMute, ...utils };
+    return {
+      setKey,
+      setTempo,
+      togglePlay,
+      toggleBassMute,
+      toggleSoloDrums,
+      toggleDynamicLoop,
+      ...utils,
+    };
   }
 
   // ── transpose ─────────────────────────────────────────────────────────
@@ -72,6 +95,66 @@ describe('useGrooveCardKeyboard', () => {
     press('ArrowRight');
     // We still call with 7; clamping is setKey's job (mirrors the buttons).
     expect(setKey).toHaveBeenCalledWith(7);
+  });
+
+  // ── transpose lock (Dynamic Loop engaged) ───────────────────────────────
+  it('lockTranspose: ←/→ do NOT call setKey (the cycle owns the key)', () => {
+    const { setKey } = mount({ currentSemitones: 2, lockTranspose: true });
+    press('ArrowRight');
+    press('ArrowLeft');
+    expect(setKey).not.toHaveBeenCalled();
+  });
+
+  it('lockTranspose: ←/→ still preventDefault (no page scroll-jump)', () => {
+    mount({ lockTranspose: true });
+    const ev = press('ArrowRight');
+    expect(ev.defaultPrevented).toBe(true);
+  });
+
+  it('lockTranspose does NOT block Space (play/pause) or M (mute)', () => {
+    const { togglePlay, toggleBassMute } = mount({ lockTranspose: true });
+    press(' ', { code: 'Space' });
+    press('m');
+    expect(togglePlay).toHaveBeenCalledTimes(1);
+    expect(toggleBassMute).toHaveBeenCalledTimes(1);
+  });
+
+  // ── tempo (↑/↓) ─────────────────────────────────────────────────────────
+  it('ArrowUp raises tempo: setTempo(current + 1)', () => {
+    const { setTempo } = mount({ currentBpm: 100 });
+    press('ArrowUp');
+    expect(setTempo).toHaveBeenCalledWith(101);
+  });
+
+  it('ArrowDown lowers tempo: setTempo(current - 1)', () => {
+    const { setTempo } = mount({ currentBpm: 100 });
+    press('ArrowDown');
+    expect(setTempo).toHaveBeenCalledWith(99);
+  });
+
+  it('passes an absolute BPM (relies on setTempo to clamp)', () => {
+    const { setTempo } = mount({ currentBpm: 60 });
+    press('ArrowDown');
+    expect(setTempo).toHaveBeenCalledWith(59); // clamping is setTempo's job
+  });
+
+  it('↑/↓ preventDefault (no page scroll-jump)', () => {
+    mount();
+    expect(press('ArrowUp').defaultPrevented).toBe(true);
+    expect(press('ArrowDown').defaultPrevented).toBe(true);
+  });
+
+  it('tempo ↑/↓ are NOT blocked by lockTranspose (only key is locked)', () => {
+    const { setTempo } = mount({ currentBpm: 100, lockTranspose: true });
+    press('ArrowUp');
+    expect(setTempo).toHaveBeenCalledWith(101);
+  });
+
+  it('↑/↓ do nothing while typing in an INPUT', () => {
+    const { setTempo } = mount();
+    const input = document.createElement('input');
+    press('ArrowUp', { target: input });
+    expect(setTempo).not.toHaveBeenCalled();
   });
 
   // ── play/pause (Space) ──────────────────────────────────────────────────
@@ -126,25 +209,87 @@ describe('useGrooveCardKeyboard', () => {
     expect(ev.defaultPrevented).toBe(false);
   });
 
+  // ── solo drums (S) ──────────────────────────────────────────────────────
+  it('S toggles Solo Drums (lowercase and uppercase)', () => {
+    const { toggleSoloDrums } = mount();
+    press('s');
+    expect(toggleSoloDrums).toHaveBeenCalledTimes(1);
+    press('S');
+    expect(toggleSoloDrums).toHaveBeenCalledTimes(2);
+  });
+
+  it('S does nothing while typing in an INPUT', () => {
+    const { toggleSoloDrums } = mount();
+    const input = document.createElement('input');
+    press('s', { target: input });
+    expect(toggleSoloDrums).not.toHaveBeenCalled();
+  });
+
+  it('S does not preventDefault (not a browser-default action)', () => {
+    mount();
+    expect(press('s').defaultPrevented).toBe(false);
+  });
+
+  // ── dynamic loop (L) ────────────────────────────────────────────────────
+  it('L toggles the Dynamic Loop (lowercase and uppercase)', () => {
+    const { toggleDynamicLoop } = mount();
+    press('l');
+    expect(toggleDynamicLoop).toHaveBeenCalledTimes(1);
+    press('L');
+    expect(toggleDynamicLoop).toHaveBeenCalledTimes(2);
+  });
+
+  it('L does nothing while typing in an INPUT', () => {
+    const { toggleDynamicLoop } = mount();
+    const input = document.createElement('input');
+    press('l', { target: input });
+    expect(toggleDynamicLoop).not.toHaveBeenCalled();
+  });
+
+  it('L does not preventDefault (not a browser-default action)', () => {
+    mount();
+    expect(press('l').defaultPrevented).toBe(false);
+  });
+
   // ── gates / guards ──────────────────────────────────────────────────────
   it('does nothing when disabled (not ready)', () => {
-    const { setKey, togglePlay, toggleBassMute } = mount({ enabled: false });
+    const {
+      setKey,
+      togglePlay,
+      toggleBassMute,
+      toggleSoloDrums,
+      toggleDynamicLoop,
+    } = mount({ enabled: false });
     press('ArrowRight');
     press(' ', { code: 'Space' });
     press('m');
+    press('s');
+    press('l');
     expect(setKey).not.toHaveBeenCalled();
     expect(togglePlay).not.toHaveBeenCalled();
     expect(toggleBassMute).not.toHaveBeenCalled();
+    expect(toggleSoloDrums).not.toHaveBeenCalled();
+    expect(toggleDynamicLoop).not.toHaveBeenCalled();
   });
 
   it('ignores unrelated keys', () => {
-    const { setKey, togglePlay, toggleBassMute } = mount();
+    const {
+      setKey,
+      setTempo,
+      togglePlay,
+      toggleBassMute,
+      toggleSoloDrums,
+      toggleDynamicLoop,
+    } = mount();
     press('a');
-    press('ArrowUp');
-    press('ArrowDown');
+    press('Enter');
+    press('x');
     expect(setKey).not.toHaveBeenCalled();
+    expect(setTempo).not.toHaveBeenCalled();
     expect(togglePlay).not.toHaveBeenCalled();
     expect(toggleBassMute).not.toHaveBeenCalled();
+    expect(toggleSoloDrums).not.toHaveBeenCalled();
+    expect(toggleDynamicLoop).not.toHaveBeenCalled();
   });
 
   it('ignores arrows while typing in an INPUT', () => {
@@ -177,23 +322,35 @@ describe('useGrooveCardKeyboard', () => {
     expect(togglePlay).not.toHaveBeenCalled();
   });
 
-  it('calls preventDefault only on a handled arrow', () => {
+  it('calls preventDefault only on a handled key', () => {
     mount();
-    const handled = press('ArrowRight');
-    expect(handled.defaultPrevented).toBe(true);
-
-    const unhandled = press('ArrowUp');
+    // All four arrows are handled (transpose / tempo) and swallowed.
+    expect(press('ArrowRight').defaultPrevented).toBe(true);
+    expect(press('ArrowUp').defaultPrevented).toBe(true);
+    // An unhandled key keeps its default behaviour.
+    const unhandled = press('Enter');
     expect(unhandled.defaultPrevented).toBe(false);
   });
 
   it('removes the listener on unmount', () => {
-    const { setKey, togglePlay, toggleBassMute, unmount } = mount();
+    const {
+      setKey,
+      togglePlay,
+      toggleBassMute,
+      toggleSoloDrums,
+      toggleDynamicLoop,
+      unmount,
+    } = mount();
     unmount();
     press('ArrowRight');
     press(' ', { code: 'Space' });
     press('m');
+    press('s');
+    press('l');
     expect(setKey).not.toHaveBeenCalled();
     expect(togglePlay).not.toHaveBeenCalled();
     expect(toggleBassMute).not.toHaveBeenCalled();
+    expect(toggleSoloDrums).not.toHaveBeenCalled();
+    expect(toggleDynamicLoop).not.toHaveBeenCalled();
   });
 });

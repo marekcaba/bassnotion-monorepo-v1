@@ -195,6 +195,18 @@ export default {
           '0%, 100%': { height: '4px' },
           '50%': { height: '100%' },
         },
+        // Dynamic-loop key change: the departing letter eases out + drifts
+        // slightly left as it leaves.
+        keyLeave: {
+          '0%': { opacity: '1', transform: 'translateX(0)' },
+          '100%': { opacity: '0', transform: 'translateX(-6px)' },
+        },
+        // The new letter eases in from a touch to the right (the colour is set
+        // by the element class and stays fixed — white current / green next).
+        keyArrive: {
+          '0%': { opacity: '0', transform: 'translateX(6px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
       },
       animation: {
         'sparkle-burst': 'sparkle-burst 600ms ease-out forwards',
@@ -203,6 +215,8 @@ export default {
         'slide-up': 'slideUp 0.5s ease-out both',
         'slide-up-delayed': 'slideUp 0.5s ease-out 0.2s both',
         waveform: 'waveform 0.8s ease-in-out infinite',
+        'key-leave': 'keyLeave 160ms ease-out forwards',
+        'key-arrive': 'keyArrive 220ms ease-out forwards',
       },
     },
   },

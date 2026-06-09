@@ -95,6 +95,7 @@ export class GroovesService {
       original_key: input.originalKey,
       length_bars: input.lengthBars,
       stems: input.stems,
+      chord_chart: input.chordChart ?? [],
       genre: input.genre ?? null,
       tags: input.tags ?? null,
       youtube_url: input.youtubeUrl ?? null,
@@ -132,6 +133,7 @@ export class GroovesService {
     if (input.originalKey !== undefined) patch.original_key = input.originalKey;
     if (input.lengthBars !== undefined) patch.length_bars = input.lengthBars;
     if (input.stems !== undefined) patch.stems = input.stems;
+    if (input.chordChart !== undefined) patch.chord_chart = input.chordChart;
     if (input.genre !== undefined) patch.genre = input.genre;
     if (input.tags !== undefined) patch.tags = input.tags;
     if (input.youtubeUrl !== undefined) patch.youtube_url = input.youtubeUrl;
@@ -164,6 +166,9 @@ export class GroovesService {
         drums: stems.drums ?? '',
         harmony: stems.harmony ?? '',
       },
+      chordChart: Array.isArray(r.chord_chart)
+        ? (r.chord_chart as GrooveLibraryItem['chordChart'])
+        : [],
       genre: (r.genre as string) ?? undefined,
       tags: (r.tags as string[]) ?? undefined,
       youtubeUrl: (r.youtube_url as string) ?? undefined,

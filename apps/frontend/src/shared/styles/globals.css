@@ -86,6 +86,24 @@
   body {
     overscroll-behavior: none;
   }
+
+  /* Keyboard focus on Groove Card controls: a single clean BLUE ring (no
+     white default outline). Only shows for keyboard nav (:focus-visible), not
+     mouse clicks. The play button opts out via [data-no-focus-ring]. */
+  [data-block-type='groove-card']
+    button:not([data-no-focus-ring]):focus-visible,
+  [data-block-type='groove-card'] input:focus-visible,
+  [data-block-type='groove-card'] [role='button']:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgb(59 130 246); /* blue-500 */
+  }
+
+  /* The play button: never a focus ring. */
+  [data-block-type='groove-card'] [data-no-focus-ring]:focus-visible,
+  [data-block-type='groove-card'] [data-no-focus-ring]:focus {
+    outline: none;
+    box-shadow: none;
+  }
 }
 
 /* ===== VIEW TRANSITIONS API - Page Transition Animations ===== */

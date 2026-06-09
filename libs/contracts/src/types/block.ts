@@ -248,6 +248,30 @@ export interface GrooveCardStemSet {
 }
 
 /**
+ * One chord change in a groove's chord chart. The chart is SPARSE — an entry is
+ * placed only where the harmony CHANGES; the chord holds until the next entry.
+ *
+ * Position is bar + sixteenth-note slot (the chart grid is 16 slots per bar in
+ * 4/4, the only metre the engine supports). slot 0 = beat 1, 1 = beat 1-e, 2 =
+ * beat 1-and, 3 = beat 1-a, 4 = beat 2, … 15 = beat 4-a. So "G7 on beats 3-4 of
+ * bar 2" is { bar: 2, slot: 8 }.
+ */
+export interface ChordChartEntry {
+  /** 1-based bar number, 1..lengthBars. */
+  bar: number;
+  /** Sixteenth-note slot within the bar, 0..15 (0 = beat 1). */
+  slot: number;
+  /** The chord symbol, stored + displayed verbatim (e.g. "A7", "Dm7b5"). */
+  symbol: string;
+}
+
+/** A groove's chord chart — sparse changes, ordered by position. */
+export type ChordChart = ChordChartEntry[];
+
+/** Sixteenth-note slots per bar (4/4 is hardcoded throughout the engine). */
+export const CHORD_SLOTS_PER_BAR = 16;
+
+/**
  * Reactive copy shown beneath the waveform when a control fires. Keys
  * map to state-changes the card can broadcast; admin authors the copy.
  */
@@ -368,6 +392,10 @@ export interface GrooveCardBlockConfig {
    *  pitch-shifted at runtime; drums + click are not. Resolved from the
    *  library when `grooveId` is set. */
   stems: GrooveCardStemSet;
+  /** Chord chart — sparse harmony changes over the groove's bars, shown to the
+   *  player as they play along. Resolved from the library when `grooveId` is
+   *  set; undefined/empty = no chart. */
+  chordChart?: ChordChart;
   /** Caption shown beneath the waveform when nothing is happening. */
   previewCaption?: string;
   /** Reactive copy per state change. */

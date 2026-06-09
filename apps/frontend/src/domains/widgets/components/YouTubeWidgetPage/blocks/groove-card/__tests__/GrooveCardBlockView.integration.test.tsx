@@ -269,7 +269,7 @@ describe('GrooveCardBlockView — LAUNCH-02.5c integration', () => {
     );
   });
 
-  it('Solo Drums sibling-mutes bass + harmony on the engine', async () => {
+  it('Solo (bass) sibling-mutes drums + harmony on the engine', async () => {
     const block = makeBlock();
     render(
       <GrooveCardBlockView
@@ -286,8 +286,9 @@ describe('GrooveCardBlockView — LAUNCH-02.5c integration', () => {
 
     fireEvent.click(soloBtn);
 
+    // Solo isolates the BASS → the OTHER musical stems are muted, bass left.
     expect(mockEngine.setInstrumentMuted).toHaveBeenCalledWith(
-      'audio-bass',
+      'audio-drums',
       true,
     );
     expect(mockEngine.setInstrumentMuted).toHaveBeenCalledWith(

@@ -9,7 +9,12 @@
  * The stem set mirrors GrooveCardStemSet in block.ts (bass/drums/harmony URLs).
  */
 
-import type { GrooveCardStemSet } from './block.js';
+import type { GrooveCardStemSet, ChordChart } from './block.js';
+
+// Re-export the chord-chart types from their canonical home (block.ts, next to
+// GrooveCardStemSet) so groove-library consumers can import them from here too.
+export type { ChordChart, ChordChartEntry } from './block.js';
+export { CHORD_SLOTS_PER_BAR } from './block.js';
 
 /** A row in `groove_library` (camelCased from the DB record). */
 export interface GrooveLibraryItem {
@@ -28,6 +33,9 @@ export interface GrooveLibraryItem {
   lengthBars: number;
   /** The single stem set delivered at originalKey. */
   stems: GrooveCardStemSet;
+  /** Chord chart — sparse changes over the groove's bars, shown to the player
+   *  as they play along. Empty/undefined = no chart authored. */
+  chordChart?: ChordChart;
   /** Optional metadata. */
   genre?: string;
   tags?: string[];
@@ -46,6 +54,7 @@ export interface CreateGrooveInput {
   originalKey: string;
   lengthBars: number;
   stems: GrooveCardStemSet;
+  chordChart?: ChordChart;
   genre?: string;
   tags?: string[];
   youtubeUrl?: string;
