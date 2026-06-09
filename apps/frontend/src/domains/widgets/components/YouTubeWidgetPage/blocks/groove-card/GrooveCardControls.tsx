@@ -271,6 +271,9 @@ export function GrooveCardControls({
           type="button"
           onClick={onPlayPause}
           disabled={!isReady}
+          // Play button never shows a focus ring (its space shortcut is the
+          // dedicated control; a ring would clash with the design).
+          data-no-focus-ring
           aria-label={
             countdownState.isCountingDown && countdownState.currentBeat > 0
               ? `Countdown beat ${countdownState.currentBeat}`
@@ -337,8 +340,9 @@ export function GrooveCardControls({
 /**
  * KeyChangeDisplay — the animated "current → next" key indicator shown inside
  * the key stepper while the Dynamic Loop cycles. Stable layout: a fixed central
- * arrow ("we go to here") with a bare letter on each side — white CURRENT key,
- * green NEXT key, no pill/rectangle/count. When the cycle advances, EACH letter
+ * arrow ("we go to here") with a bare letter on each side — green CURRENT key
+ * (playing now), muted NEXT key, no pill/rectangle/count. When the cycle
+ * advances, EACH letter
  * crossfades to its new value (the departing letter eases out + drifts, the new
  * one eases in), so the whole indicator reads as the keys travelling forward.
  */
@@ -354,9 +358,10 @@ function KeyChangeDisplay({
       className="flex items-center justify-center gap-1.5 text-center"
       aria-label={`Current key ${currentLabel}, next key ${nextLabel}`}
     >
-      <AnimatedLetter label={currentLabel} className="text-white" />
+      {/* CURRENT key is green (what's playing now); NEXT is muted. */}
+      <AnimatedLetter label={currentLabel} className="text-emerald-300" />
       <ArrowRight className="w-3.5 h-3.5 text-white/40 shrink-0" aria-hidden />
-      <AnimatedLetter label={nextLabel} className="text-emerald-300" />
+      <AnimatedLetter label={nextLabel} className="text-white/50" />
     </span>
   );
 }
