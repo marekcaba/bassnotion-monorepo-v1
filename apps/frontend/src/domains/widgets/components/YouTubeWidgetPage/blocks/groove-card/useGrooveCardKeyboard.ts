@@ -6,14 +6,17 @@
  * Keyboard shortcuts for the groove card:
  *   ←       transpose down one semitone
  *   →       transpose up one semitone
+ *   ↑       tempo up one BPM
+ *   ↓       tempo down one BPM
  *   Space   play / pause
  *   M       mute / unmute the bass
  *
  * Transpose routes through the same `setKey` command the +/- stepper
- * buttons use (clamping ±KEY_RANGE, loop-boundary queueing, waitlist cap
- * telemetry all apply identically — no second code path). Space routes
- * through the same `togglePlay` the Play button uses, and M through the
- * same bass mute toggle as the mute button.
+ * buttons use, and tempo through the same `setTempo` the tempo stepper uses
+ * (each clamps internally — ±KEY_RANGE / the BPM range, loop-boundary
+ * queueing, cap telemetry all apply identically; no second code path). Space
+ * routes through the same `togglePlay` the Play button uses, and M through
+ * the same bass mute toggle as the mute button.
  *
  * Scope: a single global `keydown` listener. There is only ever ONE
  * groove card on a page (waitlist, /app tutorial block, admin preview),
@@ -42,6 +45,11 @@ interface UseGrooveCardKeyboardArgs {
   currentSemitones: number;
   /** The card's transpose command (absolute offset; self-clamping). */
   setKey: (semitonesFromOriginal: number) => void;
+  /** Current tempo in BPM. */
+  currentBpm: number;
+  /** The card's tempo command (absolute BPM; self-clamping — same as the
+   *  tempo stepper buttons). */
+  setTempo: (bpm: number) => void;
   /** Toggle play/pause — the same action as the Play button. */
   togglePlay: () => void;
   /** Toggle the bass mute — the same action as the bass mute button. */
@@ -78,6 +86,8 @@ function isButtonTarget(target: EventTarget | null): boolean {
 export function useGrooveCardKeyboard({
   currentSemitones,
   setKey,
+  currentBpm,
+  setTempo,
   togglePlay,
   toggleBassMute,
   enabled,
@@ -102,6 +112,16 @@ export function useGrooveCardKeyboard({
         // setKey takes an ABSOLUTE offset and clamps internally, so stepping
         // past ±KEY_RANGE is a no-op (same as the stepper buttons).
         setKey(currentSemitones + delta);
+        return;
+      }
+
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        // Swallow the key so it doesn't scroll the page.
+        e.preventDefault();
+        const delta = e.key === 'ArrowUp' ? 1 : -1;
+        // setTempo takes an ABSOLUTE BPM and clamps internally (range + caps),
+        // so this is exactly the tempo stepper's ±1 step.
+        setTempo(currentBpm + delta);
         return;
       }
 
@@ -131,6 +151,8 @@ export function useGrooveCardKeyboard({
     enabled,
     currentSemitones,
     setKey,
+    currentBpm,
+    setTempo,
     togglePlay,
     toggleBassMute,
     lockTranspose,

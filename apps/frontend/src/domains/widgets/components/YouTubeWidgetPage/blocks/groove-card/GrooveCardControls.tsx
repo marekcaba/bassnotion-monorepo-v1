@@ -111,6 +111,16 @@ interface GrooveCardControlsProps {
    *  null when not cycling. Rendered as a green letter after a "→" arrow inside
    *  the key stepper, so the player can anticipate the change. */
   nextKeyLabel?: string | null;
+  /** The effective transpose edge (absolute semitones): the engine's ±6, or the
+   *  entitlement band when the user is capped. Used to DIM the key chevron at
+   *  the edge so a member who's hit ±6 (the real end of the range — there is no
+   *  ±7) sees a disabled control, not the upgrade pitch. */
+  transposeRange: number;
+  /** True when the transpose edge is the entitlement BAND (free tier), not the
+   *  engine. In that case the chevron stays ENABLED at the edge so bumping it
+   *  fires the upgrade pitch (the cap IS the CTA). When false (member), the
+   *  chevron dims at the engine edge instead. */
+  transposeCapped?: boolean;
 }
 
 export function GrooveCardControls({
@@ -138,6 +148,8 @@ export function GrooveCardControls({
   lockSettings = false,
   lockKey = false,
   nextKeyLabel = null,
+  transposeRange,
+  transposeCapped = false,
 }: GrooveCardControlsProps) {
   // Cap-aware hook reads — LAUNCH-02 will populate these.
   const { caps } = useEntitlement();
@@ -151,7 +163,16 @@ export function GrooveCardControls({
     ? currentSemitones
     : (pendingKeyShift ?? currentSemitones);
   const keyLabel = formatKeyLabel(originalKey, displayedSemitones);
-  const isKeyPending = !lockKey && pendingKeyShift !== null;
+
+  // Edge-dim the key chevrons. When the user is NOT capped (a member), the
+  // transpose edge is the engine's hard ±6 — there is no further to go, so the
+  // chevron at that edge is disabled (dimmed), NOT a hidden upsell trigger. When
+  // capped (free tier), the chevron stays enabled at the band edge so bumping it
+  // surfaces the upgrade pitch (the cap is the CTA).
+  const atUpperKeyEdge =
+    !transposeCapped && !lockKey && currentSemitones >= transposeRange;
+  const atLowerKeyEdge =
+    !transposeCapped && !lockKey && currentSemitones <= -transposeRange;
 
   // Band levers (tempo/transpose) are NOT disabled when capped — they stay
   // enabled so the user can move WITHIN the band and bump the edge (the
@@ -210,7 +231,10 @@ export function GrooveCardControls({
           <div {...hoverProps('key')}>
             <Stepper
               label={keyLabel}
-              suffix={isKeyPending ? ' …' : ''}
+              // The key value is a note name; render it as an anchored letter so
+              // it doesn't shift when an accidental (♯/♭) is added. A pending
+              // change shows by the letter itself updating — no "…" suffix.
+              labelKind="note"
               onPrev={() =>
                 onKeyChange((pendingKeyShift ?? currentSemitones) - 1)
               }
@@ -218,6 +242,11 @@ export function GrooveCardControls({
                 onKeyChange((pendingKeyShift ?? currentSemitones) + 1)
               }
               disabled={!isReady || lockSettings || lockKey}
+              // Dim the chevron at the engine edge for an uncapped (member)
+              // user — ±6 is the end of the range, not a paywall. ← lowers the
+              // key (prev), → raises it (next).
+              disablePrev={atLowerKeyEdge}
+              disableNext={atUpperKeyEdge}
               ariaLabel="Key"
               // Dynamic Loop: the upcoming key (green) shown after the arrow so
               // the player can anticipate the change.
@@ -237,7 +266,7 @@ export function GrooveCardControls({
                 ? 'Pause'
                 : 'Play'
           }
-          className="w-14 h-14 rounded-full bg-orange-500 text-white flex items-center justify-center hover:bg-orange-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="w-14 h-14 rounded-full bg-orange-500 text-white flex items-center justify-center hover:bg-orange-400 transition-colors focus:outline-none focus-visible:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
           {...hoverProps(isPlaying ? 'play-pause-pause' : 'play-pause-play')}
         >
           {isLoading ? (
@@ -375,6 +404,33 @@ function AnimatedLetter({
   );
 }
 
+/**
+ * NoteLabel — a key note name where the BASE LETTER is centered between the
+ * stepper arrows and any accidental (♯/♭) hangs off the letter's RIGHT without
+ * affecting that centering. The accidental is absolutely positioned at the
+ * letter's right edge, so "C" and "C♯" keep the SAME centered letter position —
+ * the letter never shifts when an accidental appears; only the glyph is added.
+ */
+function NoteLabel({ label }: { label: string }) {
+  // Split the leading note letter (A-G, case-insensitive) from any accidental
+  // glyph(s). A non-note fallback label (e.g. "E +3") renders as-is in the base.
+  const m = /^([A-Ga-g])(.*)$/.exec(label);
+  const base = m ? m[1] : label;
+  const accidental = m ? m[2] : '';
+  return (
+    <span className="flex min-w-[56px] items-center justify-center">
+      {/* The base letter is centered; the accidental is absolutely placed at its
+          right edge so it doesn't push the letter off-center. */}
+      <span className="relative inline-flex items-center justify-center text-base font-semibold text-white">
+        <span>{base}</span>
+        {accidental ? (
+          <span className="absolute left-full top-0">{accidental}</span>
+        ) : null}
+      </span>
+    </span>
+  );
+}
+
 interface StepperProps {
   label: string;
   suffix?: string;
@@ -382,6 +438,16 @@ interface StepperProps {
   onNext: () => void;
   disabled?: boolean;
   ariaLabel: string;
+  /** 'note' renders the label as a note name with the BASE letter anchored in a
+   *  fixed slot and any accidental (♯/♭) hanging off its right, so the letter
+   *  never shifts when an accidental is added/removed. 'text' (default) renders
+   *  the label centered with its suffix (e.g. tempo "100 BPM"). */
+  labelKind?: 'note' | 'text';
+  /** Per-direction disable for the range EDGE (dim just the prev or next
+   *  chevron when there's no further to go). Combined with the whole-stepper
+   *  `disabled`. */
+  disablePrev?: boolean;
+  disableNext?: boolean;
   /** Dynamic Loop: the upcoming key shown in green after the arrow. Null when
    *  not cycling (then the plain stepper renders). */
   nextKeyLabel?: string | null;
@@ -394,6 +460,9 @@ function Stepper({
   onNext,
   disabled,
   ariaLabel,
+  labelKind = 'text',
+  disablePrev = false,
+  disableNext = false,
   nextKeyLabel = null,
 }: StepperProps) {
   return (
@@ -401,7 +470,7 @@ function Stepper({
       <button
         type="button"
         onClick={onPrev}
-        disabled={disabled}
+        disabled={disabled || disablePrev}
         aria-label={`${ariaLabel} down`}
         className="p-1.5 rounded-md text-white/70 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
       >
@@ -412,6 +481,8 @@ function Stepper({
           current key + pending "…". */}
       {nextKeyLabel ? (
         <KeyChangeDisplay currentLabel={label} nextLabel={nextKeyLabel} />
+      ) : labelKind === 'note' ? (
+        <NoteLabel label={label} />
       ) : (
         <span className="flex items-center justify-center min-w-[56px] text-center">
           <span className="text-base font-semibold text-white">
@@ -423,7 +494,7 @@ function Stepper({
       <button
         type="button"
         onClick={onNext}
-        disabled={disabled}
+        disabled={disabled || disableNext}
         aria-label={`${ariaLabel} up`}
         className="p-1.5 rounded-md text-white/70 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
       >

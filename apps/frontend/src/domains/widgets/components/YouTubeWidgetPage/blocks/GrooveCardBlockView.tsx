@@ -429,14 +429,16 @@ export function GrooveCardBlockView({
     completeBrick('released', null);
   }, [block.id, config.role, completeBrick]);
 
-  // Keyboard shortcuts: ←/→ transpose (setKey), Space play/pause
-  // (onPlayPause), M mute/unmute bass (setStemMuted). Each routes through
-  // the same command as its on-screen control. Gated on isReady + a typing
-  // guard. There's only ever one playable element on a page, so a single
-  // global listener is unambiguous.
+  // Keyboard shortcuts: ←/→ transpose (setKey), ↑/↓ tempo (setTempo), Space
+  // play/pause (onPlayPause), M mute/unmute bass (setStemMuted). Each routes
+  // through the same command as its on-screen control. Gated on isReady + a
+  // typing guard. There's only ever one playable element on a page, so a
+  // single global listener is unambiguous.
   useGrooveCardKeyboard({
     currentSemitones: playback.currentSemitones,
     setKey: playback.setKey,
+    currentBpm: playback.currentBpm,
+    setTempo: playback.setTempo,
     togglePlay: onPlayPause,
     toggleBassMute: onToggleBassMute,
     enabled: playback.isReady,
@@ -478,7 +480,11 @@ export function GrooveCardBlockView({
 
     if (isSoloDrums) return pick('solo-drums');
     if (isBassMuted) return pick('mute-bass');
-    if (playback.pendingKeyShift !== null) return pick('key-change');
+    // NOTE: the 'key-change' caption is intentionally NOT shown here. It's only
+    // ever reached while STOPPED (the isPlaying short-circuit above wins during
+    // playback), and when stopped a key change applies immediately — there's
+    // nothing "queued". pendingKeyShift also clears on the next tick when
+    // stopped, so reacting to it here flickered the caption on every ←/→ press.
     if (playback.currentBpm !== config.originalBpm) return pick('tempo-change');
     return config.previewCaption ?? DEFAULT_PREVIEW_CAPTION;
   }, [
@@ -489,7 +495,6 @@ export function GrooveCardBlockView({
     isSoloDrums,
     playback.isPlaying,
     playback.currentBpm,
-    playback.pendingKeyShift,
     dynamicLoop.isActive,
     dynamicLoop.nextSemitones,
     dynamicLoop.loopsRemaining,
@@ -656,6 +661,13 @@ export function GrooveCardBlockView({
             enforceCaps={capsEnabled}
             lockSettings={isDrillBrick}
             lockKey={dynamicLoop.isActive}
+            // The effective transpose edge + whether it's the entitlement band.
+            // For a member the edge is the engine's ±6 → the chevron dims there
+            // (no "become a member" pitch at the real end of the range). For a
+            // capped free user the chevron stays live at the band edge so the
+            // bump surfaces the upgrade pitch.
+            transposeRange={playback.transposeRange}
+            transposeCapped={capsEnabled && caps.transpose.isCapped}
             // Next-key preview: appears the moment the dial is ENGAGED (a cue
             // showing where the cycle will go, even before play), then updates
             // live through every key once playing. Computed above.

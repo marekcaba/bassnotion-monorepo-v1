@@ -360,9 +360,9 @@ export function useGrooveCardPlayback({
   const [pendingKeyShift, setPendingKeyShift] = useState<number | null>(null);
   // Timer that clears pendingKeyShift when the queued swap's boundary passes.
   // Held in a ref so a fresh setKey supersedes the previous pending clear.
-  const pendingKeyClearTimerRef = useRef<ReturnType<
-    typeof setTimeout
-  > | null>(null);
+  const pendingKeyClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const [mutedStems, setMutedStems] = useState<Set<AudioInstrumentType>>(() => {
     // Click is muted by default per the story spec.
     return new Set(['audio-click']);
@@ -681,24 +681,35 @@ export function useGrooveCardPlayback({
   const setKey = useCallback(
     (semitonesFromOriginal: number) => {
       const rounded = Math.round(semitonesFromOriginal);
-      // Engine bound first (±6), then the entitlement band (e.g. ±2 for the
-      // unpaid tier) if present — whichever is tighter wins.
+      // Engine bound (±6) — the HARD limit for everyone (there is no ±7).
+      const engineClamped = clampKey(rounded, keyRange);
+      // The entitlement BAND (e.g. ±2 for the unpaid tier), if present and
+      // tighter than the engine. A member has no band → this equals the engine.
       const transposeLimit = capsRef.current?.transposeLimit;
       const effectiveRange =
         transposeLimit != null ? Math.min(keyRange, transposeLimit) : keyRange;
       const desired = clampKey(rounded, effectiveRange);
 
-      // Cap-as-CTA: when the request exceeds the effective range, swallow it
-      // and surface the upsell + cap_hit event. Keep the legacy waitlist
-      // telemetry for backward-compat with the existing funnel dashboard.
-      const exceededCap = rounded !== desired;
-      if (exceededCap) {
+      // Cap-as-CTA. Two distinct edges:
+      //  • the entitlement BAND (e.g. ±2 free tier) — exceeding it IS the
+      //    upgrade pitch, so fire the upsell + cap_hit. Members have no band.
+      //  • the engine's hard ±6 — for an in-app member this is just the end of
+      //    the range (there is no ±7), so DON'T show the upsell; the stepper
+      //    button is already disabled there → silent clamp.
+      // The waitlist surface is the exception: it's an anonymous marketing
+      // visitor whose ±6 edge is itself the "full range in app" CTA, so it
+      // keeps firing cap_hit at the engine edge (legacy funnel behaviour).
+      const blockedByBand = desired !== engineClamped;
+      const exceededEngine = rounded !== engineClamped;
+      if (blockedByBand || (mode === 'waitlist' && exceededEngine)) {
         onCapHitRef.current?.('transpose');
         if (mode === 'waitlist') {
           trackWaitlistKeyCapHit({ blockId: cardId, valueAttempted: rounded });
         }
         return;
       }
+      // Past here, `desired === engineClamped` — a plain clamp to the engine
+      // edge (or within range). Fall through to apply it.
 
       if (desired === currentSemitones && pendingKeyShift === null) return;
       // Settle currentSemitones immediately for the UI; the audible
@@ -1243,9 +1254,8 @@ export function useGrooveCardPlayback({
           engineForRebind?.needsContextRebind?.(liveCtx) === true
         ) {
           try {
-            const { GlobalSampleCache } = await import(
-              '@/domains/playback/modules/storage/cache/GlobalSampleCache.js'
-            );
+            const { GlobalSampleCache } =
+              await import('@/domains/playback/modules/storage/cache/GlobalSampleCache.js');
             GlobalSampleCache.clearAllBuffers?.();
           } catch {
             /* cache module optional; best-effort */

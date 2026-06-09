@@ -41,24 +41,28 @@ describe('useGrooveCardKeyboard', () => {
   function mount(
     args: {
       currentSemitones?: number;
+      currentBpm?: number;
       enabled?: boolean;
       lockTranspose?: boolean;
     } = {},
   ) {
     const setKey = vi.fn();
+    const setTempo = vi.fn();
     const togglePlay = vi.fn();
     const toggleBassMute = vi.fn();
     const utils = renderHook(() =>
       useGrooveCardKeyboard({
         currentSemitones: args.currentSemitones ?? 0,
         setKey,
+        currentBpm: args.currentBpm ?? 100,
+        setTempo,
         togglePlay,
         toggleBassMute,
         enabled: args.enabled ?? true,
         lockTranspose: args.lockTranspose ?? false,
       }),
     );
-    return { setKey, togglePlay, toggleBassMute, ...utils };
+    return { setKey, setTempo, togglePlay, toggleBassMute, ...utils };
   }
 
   // ── transpose ─────────────────────────────────────────────────────────
@@ -101,6 +105,44 @@ describe('useGrooveCardKeyboard', () => {
     press('m');
     expect(togglePlay).toHaveBeenCalledTimes(1);
     expect(toggleBassMute).toHaveBeenCalledTimes(1);
+  });
+
+  // ── tempo (↑/↓) ─────────────────────────────────────────────────────────
+  it('ArrowUp raises tempo: setTempo(current + 1)', () => {
+    const { setTempo } = mount({ currentBpm: 100 });
+    press('ArrowUp');
+    expect(setTempo).toHaveBeenCalledWith(101);
+  });
+
+  it('ArrowDown lowers tempo: setTempo(current - 1)', () => {
+    const { setTempo } = mount({ currentBpm: 100 });
+    press('ArrowDown');
+    expect(setTempo).toHaveBeenCalledWith(99);
+  });
+
+  it('passes an absolute BPM (relies on setTempo to clamp)', () => {
+    const { setTempo } = mount({ currentBpm: 60 });
+    press('ArrowDown');
+    expect(setTempo).toHaveBeenCalledWith(59); // clamping is setTempo's job
+  });
+
+  it('↑/↓ preventDefault (no page scroll-jump)', () => {
+    mount();
+    expect(press('ArrowUp').defaultPrevented).toBe(true);
+    expect(press('ArrowDown').defaultPrevented).toBe(true);
+  });
+
+  it('tempo ↑/↓ are NOT blocked by lockTranspose (only key is locked)', () => {
+    const { setTempo } = mount({ currentBpm: 100, lockTranspose: true });
+    press('ArrowUp');
+    expect(setTempo).toHaveBeenCalledWith(101);
+  });
+
+  it('↑/↓ do nothing while typing in an INPUT', () => {
+    const { setTempo } = mount();
+    const input = document.createElement('input');
+    press('ArrowUp', { target: input });
+    expect(setTempo).not.toHaveBeenCalled();
   });
 
   // ── play/pause (Space) ──────────────────────────────────────────────────
@@ -167,11 +209,12 @@ describe('useGrooveCardKeyboard', () => {
   });
 
   it('ignores unrelated keys', () => {
-    const { setKey, togglePlay, toggleBassMute } = mount();
+    const { setKey, setTempo, togglePlay, toggleBassMute } = mount();
     press('a');
-    press('ArrowUp');
-    press('ArrowDown');
+    press('Enter');
+    press('x');
     expect(setKey).not.toHaveBeenCalled();
+    expect(setTempo).not.toHaveBeenCalled();
     expect(togglePlay).not.toHaveBeenCalled();
     expect(toggleBassMute).not.toHaveBeenCalled();
   });
@@ -206,12 +249,13 @@ describe('useGrooveCardKeyboard', () => {
     expect(togglePlay).not.toHaveBeenCalled();
   });
 
-  it('calls preventDefault only on a handled arrow', () => {
+  it('calls preventDefault only on a handled key', () => {
     mount();
-    const handled = press('ArrowRight');
-    expect(handled.defaultPrevented).toBe(true);
-
-    const unhandled = press('ArrowUp');
+    // All four arrows are handled (transpose / tempo) and swallowed.
+    expect(press('ArrowRight').defaultPrevented).toBe(true);
+    expect(press('ArrowUp').defaultPrevented).toBe(true);
+    // An unhandled key keeps its default behaviour.
+    const unhandled = press('Enter');
     expect(unhandled.defaultPrevented).toBe(false);
   });
 
