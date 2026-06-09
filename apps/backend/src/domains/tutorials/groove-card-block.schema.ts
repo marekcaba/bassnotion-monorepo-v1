@@ -84,15 +84,15 @@ export const grooveCardBlockConfigSchema = z
     // at originalKey; the runtime renders ±6 semitones via the pitch-shift
     // engine. The legacy 5-key-set tuple was retired.
     stems: grooveCardStemSetSchema.optional(),
-    // Chord chart — sparse harmony changes { bar (1-based), slot (0..7
-    // eighth-note), symbol } shown to the player. Resolved from the library
+    // Chord chart — sparse harmony changes { bar (1-based), slot (0..15
+    // sixteenth-note), symbol } shown to the player. Resolved from the library
     // when grooveId is set; an inline block carries its own here. (Without
     // this field the non-passthrough object schema would STRIP it on save.)
     chordChart: z
       .array(
         z.object({
           bar: z.number().int().positive(),
-          slot: z.number().int().min(0).max(7),
+          slot: z.number().int().min(0).max(15),
           symbol: z.string(),
         }),
       )

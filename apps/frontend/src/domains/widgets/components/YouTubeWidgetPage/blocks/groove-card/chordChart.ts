@@ -98,3 +98,86 @@ export function chartCellMap(
 export function cellKey(bar: number, slot: number): string {
   return `${bar}:${slot}`;
 }
+
+/** One chord change inside a bar, at its true sixteenth-slot position. The
+ *  ribbon places it at (slot / CHORD_SLOTS_PER_BAR) of the bar's width, so a
+ *  chord on the 2nd sixteenth of a beat sits just right of the beat, and two
+ *  chords sharing a beat sit at their real, distinct positions. */
+export interface BarChange {
+  /** Sixteenth-note slot within the bar, 0..CHORD_SLOTS_PER_BAR-1. */
+  slot: number;
+  symbol: string;
+}
+
+/** What to draw for one bar of the ribbon.
+ *  - `kind: 'repeat'` — the bar sustains the previous bar's chord with no change
+ *    of its own → draw a single simile (repeat) mark, like a lead sheet. This is
+ *    also how an ANTICIPATION reads: a chord struck late in the prior bar that
+ *    rings into this one is ONE chord, so this bar shows "same again", not a
+ *    second chord to switch to.
+ *  - `kind: 'chords'` — the bar has at least one change → draw each bright chord
+ *    symbol at its true sixteenth position; sustaining time stays empty.
+ *  - `kind: 'empty'` — nothing charted yet (silence before the first chord). */
+export type BarRender =
+  | { kind: 'repeat' }
+  | { kind: 'empty' }
+  | { kind: 'chords'; changes: BarChange[] };
+
+/**
+ * What the bar ribbon should paint for a groove bar (1-based).
+ *
+ * A chord symbol appears at the EXACT sixteenth slot where it CHANGES (bright),
+ * so chords on off-sixteenths (e.g. the 2nd sixteenth of a beat) and multiple
+ * chords within one beat all show at their real positions — none dropped or
+ * snapped. A bar that merely SUSTAINS the chord ringing into it — no change of
+ * its own — renders a single SIMILE / repeat mark instead of any dim chord text
+ * ("repeat the chord before"). That also collapses anticipations: a chord struck
+ * late in the prior bar with an empty next bar is ONE chord, shown bright where
+ * it's struck and then a repeat mark, never two chords to switch between.
+ *
+ * Pure function of the sparse chart; called per visible bar.
+ */
+export function barRender(
+  chart: ChordChart | undefined,
+  bar: number,
+): BarRender {
+  const entries = sortedChart(chart);
+  if (entries.length === 0) return { kind: 'empty' };
+
+  // Every authored change in this bar, at its true slot, in time order.
+  const changes: BarChange[] = entries
+    .filter((e) => e.bar === bar)
+    .map((e) => ({ slot: e.slot, symbol: e.symbol }));
+
+  if (changes.length > 0) return { kind: 'chords', changes };
+
+  // No change in this bar. If a chord is ringing into it → repeat mark; if
+  // nothing has been charted yet at this point → empty.
+  const sounding = chordAt(chart, bar, 0);
+  return sounding != null ? { kind: 'repeat' } : { kind: 'empty' };
+}
+
+/**
+ * Declutter chords positioned at their true musical x so adjacent ones stay
+ * READABLE. Each chord wants to sit at its natural x; walking left→right, if a
+ * chord would start before the previous one's right edge + a minimum gap, it's
+ * pushed right just enough. The FIRST chord keeps its exact position; only
+ * crowded followers move, and a dense cluster may bleed slightly past the bar's
+ * end (acceptable — see the product decision).
+ *
+ * Inputs are the chords' natural left x and estimated rendered width, in slot
+ * order. Returns the placed left x for each, same order. Pure + testable.
+ */
+export function declutterChordX(
+  chords: { naturalX: number; width: number }[],
+  minGap: number,
+): number[] {
+  const out: number[] = [];
+  let cursor = -Infinity; // min left x the next chord may take
+  for (const c of chords) {
+    const x = Math.max(c.naturalX, cursor);
+    out.push(x);
+    cursor = x + c.width + minGap;
+  }
+  return out;
+}

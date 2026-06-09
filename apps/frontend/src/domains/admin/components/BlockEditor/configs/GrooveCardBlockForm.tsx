@@ -224,7 +224,7 @@ export function GrooveCardBlockForm({
           </fieldset>
 
           {/* Chord chart — sparse harmony changes shown to the player as they
-              play along. Grid is lengthBars × 8 eighth-note slots. */}
+              play along. Grid is lengthBars × 16 sixteenth-note slots. */}
           <fieldset className="space-y-2">
             <ChordChartEditor
               theme="dark"
