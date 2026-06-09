@@ -3,6 +3,13 @@ node_modules
 */node_modules
 .pnpm-store
 
+# Frontend static assets — NOT needed for the backend (Dockerfile.final) build.
+# ~1.6 GB of audio samples that bloat the Railway build snapshot and cause
+# "failed to fetch snapshot" build flakiness. The backend never serves these.
+public/samples
+apps/frontend/public/samples
+apps/frontend/public
+
 # Build outputs (will be generated in container)
 dist
 */dist
