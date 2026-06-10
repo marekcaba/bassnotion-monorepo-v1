@@ -7,11 +7,15 @@ import {
 import type { SubscriptionRepository } from '../repositories/subscription.repository.js';
 import type { PurchaseRepository } from '../repositories/purchase.repository.js';
 import type { ProductContentsRepository } from '../repositories/product-contents.repository.js';
+import type { ProductFeaturesRepository } from '../repositories/product-features.repository.js';
 import type { AcceleratorEnrollmentRepository } from '../repositories/accelerator-enrollment.repository.js';
 import type { ProductRepository } from '../repositories/product.repository.js';
+import { FEATURE_KEYS } from '@bassnotion/contracts';
+import type { FeatureKey } from '@bassnotion/contracts';
 
 const PACK_A = 'product-pack-a';
 const PACK_B = 'product-pack-b';
+const MEMBERSHIP_PRODUCT = 'product-membership';
 
 interface BundleSpec {
   productId: string;
@@ -35,6 +39,8 @@ function makeService(opts: {
   enrollments?: Record<string, Date>;
   now?: number;
   isAdmin?: boolean;
+  /** product_features rows: productId → feature keys it grants. */
+  productFeatures?: Record<string, FeatureKey[]>;
 }) {
   const hasActiveSubscription = vi.fn(
     async () => opts.hasSubscription ?? false,
@@ -48,6 +54,23 @@ function makeService(opts: {
   const findProductById = vi.fn(async (id: string) =>
     accelerators.has(id) ? { id, type: 'accelerator' } : { id, type: 'groove_pack' },
   );
+  // findAllActive is used by getGrantedFeatures to resolve the membership
+  // product id by type. Always include a membership row.
+  const findAllActive = vi.fn(async () => [
+    { id: MEMBERSHIP_PRODUCT, type: 'membership' },
+    ...owned.map((id) => ({
+      id,
+      type: accelerators.has(id) ? 'accelerator' : 'groove_pack',
+    })),
+  ]);
+  // featuresForProducts unions the configured grants across the given products.
+  const featuresForProducts = vi.fn(async (productIds: string[]) => {
+    const seen = new Set<FeatureKey>();
+    for (const id of productIds) {
+      for (const f of opts.productFeatures?.[id] ?? []) seen.add(f);
+    }
+    return [...seen];
+  });
 
   // SupabaseService stub for the admin-role lookup (profiles.role).
   const supabaseService = {
@@ -88,7 +111,7 @@ function makeService(opts: {
   );
 
   const service = new (class extends EntitlementService {
-    protected now() {
+    protected override now() {
       return opts.now ?? Date.now();
     }
   })(
@@ -98,17 +121,24 @@ function makeService(opts: {
       getPurchasedProductIds,
     } as unknown as PurchaseRepository,
     { findByContent } as unknown as ProductContentsRepository,
+    { featuresForProducts } as unknown as ProductFeaturesRepository,
     { findByUserAndProduct } as unknown as AcceleratorEnrollmentRepository,
-    { findById: findProductById } as unknown as ProductRepository,
+    {
+      findById: findProductById,
+      findAllActive,
+    } as unknown as ProductRepository,
     supabaseService as never,
   );
   return {
     service,
     hasActiveSubscription,
     hasPurchasedProduct,
+    getPurchasedProductIds,
     findByContent,
     findByUserAndProduct,
     findProductById,
+    findAllActive,
+    featuresForProducts,
   };
 }
 
@@ -417,5 +447,101 @@ describe('EntitlementService — admin bypass', () => {
   it('non-admin is still gated (sanity)', async () => {
     const { service } = makeService({ isAdmin: false, hasSubscription: false });
     expect(await service.canAccessContent('u', MEMBER)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getGrantedFeatures — the product-aware FEATURE resolver (Track A).
+// The membership product is configured to grant the 5-lever baseline; the
+// Bass College accelerator additionally grants linesAndFills.
+// ---------------------------------------------------------------------------
+const BASELINE: FeatureKey[] = [
+  'tempo',
+  'transpose',
+  'loopRange',
+  'deconstruction',
+  'dynamicLoop',
+];
+const COLLEGE = 'product-college'; // an accelerator
+const sorted = (xs: FeatureKey[]) => [...xs].sort();
+
+describe('EntitlementService.getGrantedFeatures — feature resolution', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('anonymous user is granted NOTHING', async () => {
+    const { service, featuresForProducts } = makeService({});
+    expect(await service.getGrantedFeatures(null)).toEqual([]);
+    // No repo work for anon.
+    expect(featuresForProducts).not.toHaveBeenCalled();
+  });
+
+  it('admin is granted EVERY feature', async () => {
+    const { service } = makeService({ isAdmin: true });
+    expect(sorted(await service.getGrantedFeatures('admin'))).toEqual(
+      sorted([...FEATURE_KEYS]),
+    );
+  });
+
+  it('active subscriber gets the membership baseline (the 5 levers)', async () => {
+    const { service } = makeService({
+      hasSubscription: true,
+      productFeatures: { [MEMBERSHIP_PRODUCT]: BASELINE },
+    });
+    expect(sorted(await service.getGrantedFeatures('member'))).toEqual(
+      sorted(BASELINE),
+    );
+  });
+
+  it('logged-in free user (no sub, no products) gets NOTHING', async () => {
+    const { service } = makeService({
+      hasSubscription: false,
+      productFeatures: { [MEMBERSHIP_PRODUCT]: BASELINE },
+    });
+    expect(await service.getGrantedFeatures('free-user')).toEqual([]);
+  });
+
+  it('Bass College owner WITHOUT a subscription gets baseline ∪ linesAndFills (accelerator confers membership)', async () => {
+    const { service } = makeService({
+      hasSubscription: false,
+      ownedProducts: [COLLEGE],
+      acceleratorProducts: [COLLEGE], // confers member access via hasMemberAccess
+      productFeatures: {
+        [MEMBERSHIP_PRODUCT]: BASELINE,
+        [COLLEGE]: ['linesAndFills'],
+      },
+    });
+    expect(sorted(await service.getGrantedFeatures('college'))).toEqual(
+      sorted([...BASELINE, 'linesAndFills']),
+    );
+  });
+
+  it('subscriber who ALSO owns Bass College gets baseline ∪ linesAndFills', async () => {
+    const { service } = makeService({
+      hasSubscription: true,
+      ownedProducts: [COLLEGE],
+      acceleratorProducts: [COLLEGE],
+      productFeatures: {
+        [MEMBERSHIP_PRODUCT]: BASELINE,
+        [COLLEGE]: ['linesAndFills'],
+      },
+    });
+    expect(sorted(await service.getGrantedFeatures('member-college'))).toEqual(
+      sorted([...BASELINE, 'linesAndFills']),
+    );
+  });
+
+  it('groove-pack-only buyer (no membership) gets ONLY the pack grants, not the baseline', async () => {
+    const { service } = makeService({
+      hasSubscription: false,
+      ownedProducts: [PACK_A],
+      acceleratorProducts: [], // a flat pack does NOT confer membership
+      productFeatures: {
+        [MEMBERSHIP_PRODUCT]: BASELINE,
+        [PACK_A]: ['deconstruction'], // a pack grants just its own feature
+      },
+    });
+    expect(await service.getGrantedFeatures('pack-buyer')).toEqual([
+      'deconstruction',
+    ]);
   });
 });
