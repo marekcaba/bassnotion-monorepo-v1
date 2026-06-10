@@ -536,7 +536,11 @@ export type {
 // Value export (const, not a type) — eighth-note slots per bar for chord charts.
 export { CHORD_SLOTS_PER_BAR } from './block.js';
 
-// Billing / entitlement types (LAUNCH-02.5c stub; LAUNCH-02 populates caps)
+// Feature registry (LAUNCH-06 product-aware feature entitlement)
+export type { FeatureKey } from './features.js';
+export { FEATURE_KEYS, isFeatureKey } from './features.js';
+
+// Billing / entitlement types (LAUNCH-02.5c stub; LAUNCH-06 populates caps from grants)
 export type {
   EntitlementTier,
   LeverCap,

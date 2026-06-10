@@ -6,6 +6,8 @@
  * - Subscription: Monthly access ($14/month)
  */
 
+import type { FeatureKey } from '@bassnotion/contracts';
+
 // =============================================================================
 // Product Types
 // =============================================================================
@@ -267,6 +269,12 @@ export interface UserAccessStatus {
   purchasedCourses: CourseType[];
   /** Product IDs the user owns (Groove Packs / Accelerator) — drives store "Owned" state. */
   purchasedProductIds: string[];
+  /**
+   * The set of features the user's owned products / membership tier grant.
+   * The frontend derives per-lever caps from this. Empty for anonymous (the
+   * endpoint is auth-gated, so an authed free user gets []).
+   */
+  grantedFeatures: FeatureKey[];
 }
 
 // =============================================================================

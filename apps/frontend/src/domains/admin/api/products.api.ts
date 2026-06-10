@@ -5,6 +5,7 @@
  */
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import type { FeatureKey } from '@bassnotion/contracts';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -183,6 +184,32 @@ export const adminProductsApi = {
       headers: await authHeaders(),
     });
     if (!res.ok) await parseError(res, 'Failed to remove content');
+  },
+
+  /** The feature catalog + the features THIS product currently grants. */
+  async getFeatures(
+    productId: string,
+  ): Promise<{ available: FeatureKey[]; granted: FeatureKey[] }> {
+    const res = await fetch(`${BASE}/${productId}/features`, {
+      headers: await authHeaders(),
+    });
+    if (!res.ok) await parseError(res, 'Failed to fetch product features');
+    return res.json();
+  },
+
+  /** Replace the product's ENTIRE feature-grant set (checklist semantics). */
+  async setFeatures(
+    productId: string,
+    features: FeatureKey[],
+  ): Promise<FeatureKey[]> {
+    const res = await fetch(`${BASE}/${productId}/features`, {
+      method: 'PUT',
+      headers: await authHeaders(),
+      body: JSON.stringify({ features }),
+    });
+    if (!res.ok) await parseError(res, 'Failed to save product features');
+    const { granted } = (await res.json()) as { granted: FeatureKey[] };
+    return granted;
   },
 
   /** Upload a cover image (multipart). Returns the public URL. */

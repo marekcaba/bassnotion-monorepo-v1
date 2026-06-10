@@ -1,26 +1,31 @@
 /**
- * useEntitlement — the single source of truth for free-vs-member lever caps
- * on the Groove Card / drill panel.
+ * useEntitlement — the single source of truth for the Groove Card / drill-panel
+ * lever caps.
  *
- * Tier is derived from real access:
- *   - member  (active subscription) → all levers uncapped.
- *   - everyone else (anonymous OR signed-in free account) → the UNPAID_CAPS
- *     profile (tempo ±5, transpose ±2, mute free, bar-range loop locked,
- *     deconstruction locked). Anonymous and free play identically — only
- *     persistence (the save/conquer account gate) differs, handled elsewhere.
+ * Caps are DERIVED from the user's GRANTED FEATURE SET (`grantedFeatures` on the
+ * /billing/access response), not from a free/member binary:
+ *   - For each gateable lever, if its feature key is in the granted set the lever
+ *     is UNCAPPED (its ALL_LEVERS_UNCAPPED value); otherwise it gets the
+ *     UNPAID_CAPS value (with its load-bearing numeric limit + upsell copy).
+ *   - `mute` has NO feature key — it is NEVER capped for anyone (the headline
+ *     AHA), so it is hardcoded uncapped outside the feature mapping.
+ *   - Anonymous visitors never query /billing/access (auth-gated) → granted set
+ *     is [] → every gateable lever capped (the UNPAID profile). Same playing
+ *     power as a signed-in free account; only persistence differs (elsewhere).
  *
- * Discipline: NO inline `isMember` checks anywhere else in the card. This is
- * the single source. The `/billing/access` query only runs when authenticated
- * (anonymous users skip it and resolve to UNPAID_CAPS).
+ * Back-compat: a response WITHOUT `grantedFeatures` (older fixtures, the test
+ * mock) falls back to tier-based derivation (member → all uncapped, else
+ * UNPAID). New responses always carry the set.
  *
- * Tests can still override the whole response via setEntitlementMock(...).
- * Query-key/`grooveId` is reserved for LAUNCH-06 per-pack entitlements.
+ * Discipline: NO inline `isMember` / feature checks anywhere else in the card.
+ * This is the single source.
  */
 
 import { useCallback, useMemo, useState } from 'react';
 import type {
   EntitlementResponse,
   EntitlementTier,
+  FeatureKey,
   LeverCap,
   LeverCaps,
 } from '@bassnotion/contracts';
@@ -57,6 +62,7 @@ const ALL_LEVERS_UNCAPPED: LeverCaps = {
   loopRange: { isCapped: false, message: '' },
   deconstruction: { isCapped: false, message: '' },
   dynamicLoop: { isCapped: false, message: '' },
+  linesAndFills: { isCapped: false, message: '' },
 };
 
 /**
@@ -70,6 +76,7 @@ const ALL_LEVERS_UNCAPPED: LeverCaps = {
  * - loopRange: whole-groove loop is free; selecting a bar range is members-only.
  * - deconstruction: stem/element drilling is Pack-gated.
  * - dynamicLoop: the auto key-cycle dial is members-only.
+ * - linesAndFills: the premium alternate-bassline swap is product-granted.
  */
 const UNPAID_CAPS: LeverCaps = {
   tempo: {
@@ -95,7 +102,45 @@ const UNPAID_CAPS: LeverCaps = {
     isCapped: true,
     message: 'Members auto-cycle keys with the Dynamic Loop',
   },
+  linesAndFills: {
+    isCapped: true,
+    message: 'Swap basslines with Bass College',
+  },
 };
+
+/**
+ * Maps each GATEABLE lever to the FeatureKey that unlocks it. `mute` is absent
+ * by design — it is never capped, so it is not feature-gated. The cap derivation
+ * iterates THIS map (so a missing/unmapped lever like mute defaults to uncapped,
+ * never accidentally capped).
+ */
+const LEVER_FEATURE: Record<Exclude<LeverName, 'mute'>, FeatureKey> = {
+  tempo: 'tempo',
+  transpose: 'transpose',
+  loopRange: 'loopRange',
+  deconstruction: 'deconstruction',
+  dynamicLoop: 'dynamicLoop',
+  linesAndFills: 'linesAndFills',
+};
+
+/**
+ * Build the LeverCaps from a granted-feature set. For each gateable lever, the
+ * grant selects WHICH value table (uncapped vs unpaid); the cap VALUES (isCapped,
+ * limit, message) come from the constants — never synthesized — so the
+ * load-bearing numeric limits (tempo ±5, transpose ±2) and upsell copy survive.
+ * `mute` is always uncapped (no feature key).
+ */
+function capsFromFeatures(granted: ReadonlySet<FeatureKey>): LeverCaps {
+  const caps = { mute: { isCapped: false, message: '' } } as LeverCaps;
+  for (const lever of Object.keys(LEVER_FEATURE) as Array<
+    keyof typeof LEVER_FEATURE
+  >) {
+    caps[lever] = granted.has(LEVER_FEATURE[lever])
+      ? ALL_LEVERS_UNCAPPED[lever]
+      : UNPAID_CAPS[lever];
+  }
+  return caps;
+}
 
 /**
  * Internal mock-injection point used ONLY by tests. The default never
@@ -108,10 +153,29 @@ const ENTITLEMENT_MOCK: { response: EntitlementResponse | null } = {
   response: null,
 };
 
-function responseForMember(isMember: boolean): EntitlementResponse {
+/**
+ * Resolve caps from a response. Prefer the granted-feature set (the real model);
+ * fall back to tier-based derivation when a response carries no `grantedFeatures`
+ * (older fixtures / the test mock that injects raw caps).
+ */
+function capsFromResponse(response: EntitlementResponse): LeverCaps {
+  if (response.grantedFeatures) {
+    return capsFromFeatures(new Set(response.grantedFeatures));
+  }
+  // Legacy fallback: a response without the set carries caps directly (mock) or
+  // is tier-derived.
+  return response.caps;
+}
+
+function responseFromAccess(
+  grantedFeatures: FeatureKey[],
+  hasActiveSubscription: boolean,
+): EntitlementResponse {
   return {
-    tier: isMember ? 'member' : 'free',
-    caps: isMember ? ALL_LEVERS_UNCAPPED : UNPAID_CAPS,
+    // `tier` is retained for copy/analytics only — caps derive from features.
+    tier: hasActiveSubscription ? 'member' : 'free',
+    caps: capsFromFeatures(new Set(grantedFeatures)),
+    grantedFeatures,
     fetchedAt: new Date().toISOString(),
   };
 }
@@ -139,9 +203,18 @@ export function useEntitlement(
     void refetchCount; // include in deps so refetch() forces recompute
     // Tests can override the whole response via setEntitlementMock(...).
     if (ENTITLEMENT_MOCK.response) return ENTITLEMENT_MOCK.response;
-    const isMember = access?.hasActiveSubscription ?? false;
-    return responseForMember(isMember);
-  }, [enabled, refetchCount, access?.hasActiveSubscription]);
+    // Anonymous visitors never query /billing/access → access is undefined →
+    // granted set is [] → every gateable lever capped (UNPAID profile), with NO
+    // network call. Authed free users likewise resolve to [].
+    const grantedFeatures = access?.grantedFeatures ?? [];
+    const hasActiveSubscription = access?.hasActiveSubscription ?? false;
+    return responseFromAccess(grantedFeatures, hasActiveSubscription);
+  }, [
+    enabled,
+    refetchCount,
+    access?.grantedFeatures,
+    access?.hasActiveSubscription,
+  ]);
 
   const refetch = useCallback(() => {
     setRefetchCount((n) => n + 1);
@@ -176,7 +249,7 @@ export function useEntitlement(
 
   return {
     tier: response.tier,
-    caps: response.caps,
+    caps: capsFromResponse(response),
     isLoading: false,
     error: null,
     refetch,
@@ -239,6 +312,8 @@ export function freeTierCappedResponse(
       dynamicLoop:
         partial.dynamicLoop ??
         cap('Members auto-cycle keys with the Dynamic Loop'),
+      linesAndFills:
+        partial.linesAndFills ?? cap('Swap basslines with Bass College'),
     },
     fetchedAt: new Date().toISOString(),
   };

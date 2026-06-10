@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Patch,
   Delete,
   Param,
@@ -16,10 +17,14 @@ import {
 } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 
+import { FEATURE_KEYS, isFeatureKey } from '@bassnotion/contracts';
+import type { FeatureKey } from '@bassnotion/contracts';
+
 import { AdminGuard } from '../user/auth/guards/admin.guard.js';
 import { SupabaseService } from '../../infrastructure/supabase/supabase.service.js';
 import { ProductRepository } from './repositories/product.repository.js';
 import { ProductContentsRepository } from './repositories/product-contents.repository.js';
+import { ProductFeaturesRepository } from './repositories/product-features.repository.js';
 import type {
   CreateProductInput,
   UpdateProductInput,
@@ -49,6 +54,7 @@ export class AdminProductsController {
   constructor(
     private readonly productRepository: ProductRepository,
     private readonly productContentsRepository: ProductContentsRepository,
+    private readonly productFeaturesRepository: ProductFeaturesRepository,
     private readonly supabaseService: SupabaseService,
   ) {}
 
@@ -275,6 +281,57 @@ export class AdminProductsController {
         `Failed to un-gate ${contentType} ${contentId}: ${error.message}`,
       );
     }
+  }
+
+  // ---- product features (which FEATURES this product unlocks) --------------
+
+  /** The full feature catalog + the features THIS product currently grants. */
+  @Get(':id/features')
+  @HttpCode(HttpStatus.OK)
+  async getFeatures(@Param('id') productId: string) {
+    const product = await this.productRepository.findById(productId);
+    if (!product) throw new NotFoundException('Product not found');
+    const granted = await this.productFeaturesRepository.findByProductId(
+      productId,
+    );
+    // `available` lets the UI render a checkbox per known feature without
+    // hardcoding the list client-side.
+    return { available: [...FEATURE_KEYS], granted };
+  }
+
+  /**
+   * Replace the product's ENTIRE feature-grant set (checklist semantics — the
+   * body is the complete checked set). Validates every key against FEATURE_KEYS;
+   * an unknown key is a 400 (never silently dropped on a write).
+   */
+  @Put(':id/features')
+  @HttpCode(HttpStatus.OK)
+  async setFeatures(
+    @Param('id') productId: string,
+    @Body() body: { features?: unknown },
+  ) {
+    const product = await this.productRepository.findById(productId);
+    if (!product) throw new NotFoundException('Product not found');
+
+    if (!Array.isArray(body.features)) {
+      throw new BadRequestException('features must be an array');
+    }
+    const featureKeys: FeatureKey[] = [];
+    for (const f of body.features) {
+      if (typeof f !== 'string' || !isFeatureKey(f)) {
+        throw new BadRequestException(`Unknown feature key: ${String(f)}`);
+      }
+      featureKeys.push(f);
+    }
+
+    const granted = await this.productFeaturesRepository.setForProduct(
+      productId,
+      featureKeys,
+    );
+    this.logger.log(
+      `Set features for product ${productId} (${product.name}): [${granted.join(', ')}]`,
+    );
+    return { granted };
   }
 
   // ---- cover image upload (mirrors admin tutorial thumbnail upload) --------
