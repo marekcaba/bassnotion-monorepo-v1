@@ -26,6 +26,7 @@ import {
   clearEntitlementMock,
   freeTierCappedResponse,
 } from '../useEntitlement';
+import type { FeatureKey, EntitlementResponse } from '@bassnotion/contracts';
 
 // A fresh QueryClient per test, with retries off so the (disabled, unauth'd)
 // access query never noisily retries.
@@ -171,5 +172,105 @@ describe('useUpsellMessage — helper read', () => {
       wrapper: makeWrapper(),
     });
     expect(result.current).toMatch(/members/i);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Feature-derived caps — the product-aware model. A response carrying
+// `grantedFeatures` drives caps from the SET (not the tier); mute is always
+// uncapped; the load-bearing numeric limits survive the derivation.
+// ---------------------------------------------------------------------------
+const MEMBER_BASELINE: FeatureKey[] = [
+  'tempo',
+  'transpose',
+  'loopRange',
+  'deconstruction',
+  'dynamicLoop',
+];
+
+/** A response with a granted-feature set (the real /billing/access shape). */
+function responseWithFeatures(
+  grantedFeatures: FeatureKey[],
+): EntitlementResponse {
+  return {
+    tier: grantedFeatures.length > 0 ? 'member' : 'free',
+    // caps is ignored when grantedFeatures is present — derived from the set.
+    caps: freeTierCappedResponse().caps,
+    grantedFeatures,
+    fetchedAt: new Date(0).toISOString(),
+  };
+}
+
+describe('useEntitlement — feature-derived caps (product-aware)', () => {
+  it('empty granted set → every gateable lever capped (anon/free profile)', () => {
+    setEntitlementMock(responseWithFeatures([]));
+    const { result } = renderHook(() => useEntitlement(), {
+      wrapper: makeWrapper(),
+    });
+    expect(result.current.caps.tempo.isCapped).toBe(true);
+    expect(result.current.caps.tempo.limit).toBe(5);
+    expect(result.current.caps.transpose.isCapped).toBe(true);
+    expect(result.current.caps.transpose.limit).toBe(2);
+    expect(result.current.caps.loopRange.isCapped).toBe(true);
+    expect(result.current.caps.deconstruction.isCapped).toBe(true);
+    expect(result.current.caps.dynamicLoop.isCapped).toBe(true);
+    expect(result.current.caps.linesAndFills.isCapped).toBe(true);
+    // mute is NEVER capped, even with no grants.
+    expect(result.current.caps.mute.isCapped).toBe(false);
+  });
+
+  it('membership baseline (5 levers) → those uncapped, linesAndFills still capped', () => {
+    setEntitlementMock(responseWithFeatures(MEMBER_BASELINE));
+    const { result } = renderHook(() => useEntitlement(), {
+      wrapper: makeWrapper(),
+    });
+    expect(result.current.caps.tempo.isCapped).toBe(false);
+    expect(result.current.caps.transpose.isCapped).toBe(false);
+    expect(result.current.caps.loopRange.isCapped).toBe(false);
+    expect(result.current.caps.deconstruction.isCapped).toBe(false);
+    expect(result.current.caps.dynamicLoop.isCapped).toBe(false);
+    // Lines & Fills is NOT in the membership baseline — stays capped.
+    expect(result.current.caps.linesAndFills.isCapped).toBe(true);
+    expect(result.current.caps.mute.isCapped).toBe(false);
+  });
+
+  it('Bass College owner (baseline + linesAndFills) → ALL gateable levers uncapped', () => {
+    setEntitlementMock(
+      responseWithFeatures([...MEMBER_BASELINE, 'linesAndFills']),
+    );
+    const { result } = renderHook(() => useEntitlement(), {
+      wrapper: makeWrapper(),
+    });
+    expect(result.current.caps.tempo.isCapped).toBe(false);
+    expect(result.current.caps.transpose.isCapped).toBe(false);
+    expect(result.current.caps.loopRange.isCapped).toBe(false);
+    expect(result.current.caps.deconstruction.isCapped).toBe(false);
+    expect(result.current.caps.dynamicLoop.isCapped).toBe(false);
+    expect(result.current.caps.linesAndFills.isCapped).toBe(false);
+    expect(result.current.caps.mute.isCapped).toBe(false);
+  });
+
+  it('a single granted feature uncaps ONLY that lever (linesAndFills alone)', () => {
+    setEntitlementMock(responseWithFeatures(['linesAndFills']));
+    const { result } = renderHook(() => useEntitlement(), {
+      wrapper: makeWrapper(),
+    });
+    expect(result.current.caps.linesAndFills.isCapped).toBe(false);
+    // Everything else stays at the unpaid profile.
+    expect(result.current.caps.tempo.isCapped).toBe(true);
+    expect(result.current.caps.dynamicLoop.isCapped).toBe(true);
+  });
+
+  it('granted levers keep the UNCAPPED values; ungranted keep the limit + message', () => {
+    setEntitlementMock(responseWithFeatures(['tempo']));
+    const { result } = renderHook(() => useEntitlement(), {
+      wrapper: makeWrapper(),
+    });
+    // granted: uncapped, no limit, empty message
+    expect(result.current.caps.tempo).toEqual({ isCapped: false, message: '' });
+    // ungranted transpose: the load-bearing limit survives
+    expect(result.current.caps.transpose.isCapped).toBe(true);
+    expect(result.current.caps.transpose.limit).toBe(2);
+    expect(result.current.caps.transpose.message).toMatch(/members/i);
   });
 });
