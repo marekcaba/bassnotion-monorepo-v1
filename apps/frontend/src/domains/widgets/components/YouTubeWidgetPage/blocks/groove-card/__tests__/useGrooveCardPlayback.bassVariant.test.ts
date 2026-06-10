@@ -6,7 +6,12 @@
  *      ('audio-bass', <variant buffer>) — drums/harmony are NEVER passed.
  *   2. The swap RE-ASSERTS the live key (setInstrumentPitchShift) AND tempo
  *      (setStemRate) on audio-bass so the new take plays at the user's current
- *      transpose + speed — both at the loop seam (getStemNextSeamTime).
+ *      transpose + speed.
+ *
+ * NOTE on timing: while PLAYING, the swap is quantised to the next BAR boundary
+ * (computeNextBarBoundaryAudioTime, scheduled via a timer) so it lands on a
+ * downbeat, not mid-bar. These tests run with isPlaying=false, so they exercise
+ * the immediate-swap path (the mechanism); the bar-timing is verified by ear.
  *   3. `null` restores the DEFAULT bass (resolves the default buffer).
  *   4. Re-selecting the already-active variant is a no-op (no engine call).
  *   5. A cold variant is decoded on demand (ensureVariant) before the swap.

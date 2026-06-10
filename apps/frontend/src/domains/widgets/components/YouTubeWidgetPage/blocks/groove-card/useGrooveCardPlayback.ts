@@ -358,8 +358,12 @@ export function useGrooveCardPlayback({
   const [currentBpm, setCurrentBpm] = useState<number>(block.originalBpm);
   const [currentSemitones, setCurrentSemitones] = useState(0);
   // The active premium bassline variant ("Lines & Fills"). null = the default
-  // bass. Selecting one swaps the bass PCM in place at the next loop seam.
+  // bass. Selecting one swaps the bass PCM in place at the next BAR boundary.
   const [activeBassVariantId, setActiveBassVariantId] = useState<string | null>(
+    null,
+  );
+  // Timer that fires the bar-quantised bassline swap; a fresh select supersedes.
+  const bassVariantSwapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
   // `pendingKeyShift` flags a key swap that's been requested but hasn't reached
@@ -630,6 +634,26 @@ export function useGrooveCardPlayback({
     [isPlaying, loopStartAudioTime, loopDurationSeconds],
   );
 
+  // The audio time of the NEXT BAR downbeat (a finer grid than the loop seam).
+  // Read off the REAL playhead phase so it's correct across tempo changes:
+  // phase∈[0,1) is the position within the loop; each bar is 1/lengthBars of it.
+  // Returns null when not playing or the phase isn't available yet (→ caller
+  // swaps immediately). If we're a hair past a downbeat, snaps to the NEXT one.
+  const computeNextBarBoundaryAudioTime = useCallback((): number | null => {
+    const ctx = audioContextRef.current;
+    if (!isPlaying || !ctx || loopDurationSeconds <= 0) return null;
+    const bars = Math.max(1, block.lengthBars);
+    const phase = getAudioPhase();
+    if (phase == null) return null;
+    const barFrac = 1 / bars;
+    // Next integer bar boundary at or after the current phase. A tiny epsilon
+    // avoids "this bar" when we're microscopically before its start.
+    const nextBarIndex = Math.floor(phase / barFrac + 1e-6) + 1;
+    const nextBarPhase = nextBarIndex * barFrac; // may be >=1 → next loop's bar 1
+    const secondsUntil = (nextBarPhase - phase) * loopDurationSeconds;
+    return ctx.currentTime + Math.max(0, secondsUntil);
+  }, [isPlaying, loopDurationSeconds, block.lengthBars, getAudioPhase]);
+
   // ── tempo: pitch-independent time-stretch at the next loop boundary ──────
   // The recorded stems are stretched to play at the chosen BPM with NO
   // pitch change (LAUNCH-06). bass/harmony stretch via their signalsmith
@@ -825,22 +849,44 @@ export function useGrooveCardPlayback({
 
         setActiveBassVariantId(variantId);
 
-        // Not playing → swap immediately; the next play() picks it up. Playing →
-        // the engine's swapStemBuffer is best fired just before the seam, but the
-        // drop/add is async port-RPC and self-aligns to the loop wrap, so we
-        // issue it now and re-assert key/tempo at the computed seam.
-        void engine.swapStemBuffer?.('audio-bass', target);
+        const ctx = audioContextRef.current;
 
-        const boundary = computeNextBoundaryAudioTime(0);
-        const residualShift = currentSemitonesRef.current;
-        engine.setInstrumentPitchShift?.('audio-bass', residualShift, boundary);
-        const rateBoundary =
-          boundary ?? audioContextRef.current?.currentTime ?? undefined;
-        engine.setStemRate?.(
-          'audio-bass',
-          currentBpmRef.current / Math.max(1, block.originalBpm),
-          rateBoundary,
-        );
+        // The actual swap: drop+add the PCM, then re-assert the live key + tempo
+        // (the swap loses no schedule, but re-asserting is belt-and-suspenders
+        // and matches becomeActive). dropBuffers/addBuffers PRESERVE the
+        // read-head, so swapping at bar N continues the new bass AT bar N.
+        const doSwap = () => {
+          void engine.swapStemBuffer?.('audio-bass', target);
+          const semis = currentSemitonesRef.current;
+          engine.setInstrumentPitchShift?.('audio-bass', semis);
+          engine.setStemRate?.(
+            'audio-bass',
+            currentBpmRef.current / Math.max(1, block.originalBpm),
+          );
+        };
+
+        // Not playing → swap now (next play() picks it up). Playing → QUANTISE
+        // to the next BAR boundary so the swap lands on a downbeat, not mid-bar
+        // (a mid-bar PCM swap risks an audible discontinuity). The swap is an
+        // async port message, not sample-accurate, so we schedule a JS timeout
+        // to fire ~at the boundary; a tiny lead keeps us on the early side.
+        const fireAt = isPlaying ? computeNextBarBoundaryAudioTime() : null;
+        if (fireAt != null && ctx) {
+          const leadSeconds = 0.012; // fire just before the downbeat
+          const delayMs = Math.max(
+            0,
+            (fireAt - leadSeconds - ctx.currentTime) * 1000,
+          );
+          if (bassVariantSwapTimerRef.current) {
+            clearTimeout(bassVariantSwapTimerRef.current);
+          }
+          bassVariantSwapTimerRef.current = setTimeout(() => {
+            bassVariantSwapTimerRef.current = null;
+            doSwap();
+          }, delayMs);
+        } else {
+          doSwap();
+        }
       };
 
       if (variantId === null) {
@@ -859,7 +905,12 @@ export function useGrooveCardPlayback({
         });
       }
     },
-    [activeBassVariantId, block.originalBpm, computeNextBoundaryAudioTime],
+    [
+      activeBassVariantId,
+      block.originalBpm,
+      isPlaying,
+      computeNextBarBoundaryAudioTime,
+    ],
   );
 
   // ── stem mute / solo via sibling-muting (story line 302) -----------------
@@ -1532,6 +1583,12 @@ export function useGrooveCardPlayback({
       if (pendingKeyClearTimerRef.current) {
         clearTimeout(pendingKeyClearTimerRef.current);
         pendingKeyClearTimerRef.current = null;
+      }
+      // Drop any queued bar-quantised bassline swap so it can't fire into a
+      // disposed engine after unmount.
+      if (bassVariantSwapTimerRef.current) {
+        clearTimeout(bassVariantSwapTimerRef.current);
+        bassVariantSwapTimerRef.current = null;
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
