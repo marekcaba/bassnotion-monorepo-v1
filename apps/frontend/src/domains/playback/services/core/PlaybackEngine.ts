@@ -3868,6 +3868,42 @@ export class PlaybackEngine implements IAudioStemEngine {
   }
 
   /**
+   * Swap a stem's PCM in place ("Lines & Fills" bassline swap). Replaces the
+   * buffer-streaming node's audio for `instrumentType` (only `audio-bass` today)
+   * with `buffer`, touching NOTHING else — the read-head, loop schedule,
+   * `__bufferDuration`, current key + tempo all persist, so the seam clock, the
+   * visual playhead, and the drum phase-lock stay valid and the OTHER stems are
+   * never touched. The caller MUST pass a buffer of the same sample length as the
+   * current bass (enforced upstream) and SHOULD fire this just before the loop
+   * seam (see {@link getStemNextSeamTime}) so the read-head re-enters the loop on
+   * the new PCM. Returns a promise (the underlying drop/add is async port-RPC).
+   *
+   * Key/tempo persist via signalsmith field inheritance, but the caller re-asserts
+   * them at the seam (it owns the live refs) for belt-and-suspenders.
+   */
+  async swapStemBuffer(
+    instrumentType: AudioInstrumentType,
+    buffer: AudioBuffer,
+  ): Promise<void> {
+    if (!this.pitchShiftAdapter) return;
+    const node = this.instrumentStretchNodes.get(instrumentType);
+    if (!node) {
+      this.logger.warn(
+        `swapStemBuffer: no stretch node for ${instrumentType} — skipping`,
+      );
+      return;
+    }
+    const channelData: Float32Array[] = [];
+    for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
+      channelData.push(buffer.getChannelData(ch));
+    }
+    // Keep the registered buffer reference current (used by getOrCreateStretchSource
+    // on a later rebuild, e.g. after stop/replay).
+    this.audioStemBuffers.set(instrumentType, buffer);
+    await this.pitchShiftAdapter.swapBuffers(node as AudioNode, channelData);
+  }
+
+  /**
    * LAUNCH-02.5c key-shift — install (or clear) the per-iteration buffer
    * resolver. RegionScheduler calls this for every newly-armed iteration
    * inside its WINDOW=3 pre-arm window; returning null falls back to the
