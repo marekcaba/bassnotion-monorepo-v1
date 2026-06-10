@@ -1,0 +1,67 @@
+diff --git a/SignalsmithStretch.js b/SignalsmithStretch.js
+index 7b39b2ae500c8563500c20a4f951878e309d845f..669f4584647a29609ef3c1388b8acb77abdc6392 100644
+--- a/SignalsmithStretch.js
++++ b/SignalsmithStretch.js
+@@ -160,6 +160,10 @@ function registerWorkletProcessor(Module, audioNodeKey) {
+ 					let length = sampleBuffers[0].length;
+ 					this.audioBuffersEnd += length;
+ 					return this.audioBuffersEnd/sampleRate;
++				},
++				// BassNotion patch — sample-accurate buffer swap ("Lines & Fills").
++				swapAtLoopStart: sampleBuffers => {
++					this.pendingSwapBuffers = [].concat(sampleBuffers);
+ 				}
+ 			};
+ 
+@@ -289,8 +293,13 @@ function registerWorkletProcessor(Module, audioNodeKey) {
+ 				if (loopLength > 0 && inputTime >= currentMapSegment.loopEnd) {
+ 					currentMapSegment.input -= loopLength;
+ 					inputTime -= loopLength;
++					// BassNotion patch — sample-accurate "Lines & Fills" swap at loop start.
++					if (this.pendingSwapBuffers) {
++						this.audioBuffers = [this.pendingSwapBuffers];
++						this.pendingSwapBuffers = null;
++					}
+ 				}
+-				
++
+ 				inputTime += this.inputLatencySeconds;
+ 				let inputSamplesEnd = Math.round(inputTime*sampleRate);
+ 
+diff --git a/SignalsmithStretch.mjs b/SignalsmithStretch.mjs
+index 7d5cae72e77a84143ed91ba12fc91b806dc4d9d1..ea25df7575917279a2aa0c6bd0e7bf48085ba53c 100644
+--- a/SignalsmithStretch.mjs
++++ b/SignalsmithStretch.mjs
+@@ -161,6 +161,13 @@ function registerWorkletProcessor(Module, audioNodeKey) {
+ 					let length = sampleBuffers[0].length;
+ 					this.audioBuffersEnd += length;
+ 					return this.audioBuffersEnd/sampleRate;
++				},
++				// BassNotion patch — sample-accurate buffer swap ("Lines & Fills").
++				// Stash new PCM; process() replaces the looping buffer the instant
++				// the read-head wraps to loopStart, so the swap lands EXACTLY on the
++				// loop's first sample with no JS-timer jitter. Same-length only.
++				swapAtLoopStart: sampleBuffers => {
++					this.pendingSwapBuffers = [].concat(sampleBuffers);
+ 				}
+ 			};
+ 
+@@ -290,8 +297,17 @@ function registerWorkletProcessor(Module, audioNodeKey) {
+ 				if (loopLength > 0 && inputTime >= currentMapSegment.loopEnd) {
+ 					currentMapSegment.input -= loopLength;
+ 					inputTime -= loopLength;
++					// BassNotion patch — sample-accurate "Lines & Fills" swap.
++					// The read-head just wrapped to loopStart: replace the looping
++					// PCM in place (same length, same audioBuffersStart/End) so the
++					// new bassline plays from the loop's first sample, exactly on
++					// the downbeat, glitch-free.
++					if (this.pendingSwapBuffers) {
++						this.audioBuffers = [this.pendingSwapBuffers];
++						this.pendingSwapBuffers = null;
++					}
+ 				}
+-				
++
+ 				inputTime += this.inputLatencySeconds;
+ 				let inputSamplesEnd = Math.round(inputTime*sampleRate);
+ 

@@ -1,6 +1,9 @@
 packages:
   - apps/*
   - libs/*
+auditConfig:
+  ignoreGhsas:
+    - GHSA-5xrq-8626-4rwp
 onlyBuiltDependencies:
   - '@nestjs/core'
   - '@parcel/watcher'
@@ -10,29 +13,9 @@ onlyBuiltDependencies:
 overrides:
   esbuild@<=0.24.2: '>=0.25.0'
   koa@<2.16.1: '>=2.16.1'
-  # Critical CVEs — fixed 2026-05-12 (Phase 1.2)
-  # @fastify/middie auth bypass: GHSA-72c6-fx6q-fr5w
   '@fastify/middie@<9.3.2': '>=9.3.2'
-  # form-data unsafe random boundary: GHSA-fjxv-7rqg-78g4 (dev-only via Nx > axios)
   form-data@<4.0.4: '>=4.0.4'
-  # shell-quote newline-escape bypass: GHSA-w7jw-789q-3m8p (critical). Dev-only,
-  # deep transitive: @nx/webpack > webpack-dev-server > launch-editor > shell-quote
-  # (opens the editor on a dev-server error). Force the patched line.
   shell-quote@<1.8.4: '>=1.8.4'
-  # Pin @babel/core to a single version so Next.js resolves to ONE build
-  # instance. The lucide-react 0->1 bump (commit 3cebcd44) pulled in a
-  # transitive @babel/core@7.29.7 alongside the existing 7.28.x, which forked
-  # `next` into two peer-resolved copies. Next's static-export <Html>/
-  # workUnitAsyncStorage guards do module-identity checks that fail with a
-  # duplicate Next, breaking `nx build` prerender with the misleading
-  # "<Html> should not be imported outside of pages/_document". One babel-core
-  # version => one Next => prerender passes. Revisit if intentionally bumping next/babel.
-  '@babel/core@>=7.0.0': '7.28.5'
-auditConfig:
-  ignoreGhsas:
-    # vitest <4.1.0 — Vitest UI server arbitrary file read/exec (dev-only).
-    # GHSA-5xrq-8626-4rwp. Exploit requires the UI/Browser-mode server to be
-    # listening AND exposed to the network (--api.host) or run on Windows; CI
-    # runs `vitest run` on Linux with no UI/network binding, so exposure is nil.
-    # Ignored 2026-06-02 — revisit when migrating to vitest 4.
-    - GHSA-5xrq-8626-4rwp
+  '@babel/core@>=7.0.0': 7.28.5
+patchedDependencies:
+  signalsmith-stretch@1.3.2: patches/signalsmith-stretch@1.3.2.patch

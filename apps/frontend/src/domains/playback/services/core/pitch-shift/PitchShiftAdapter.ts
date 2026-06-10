@@ -842,6 +842,23 @@ export class SignalsmithAdapter implements PitchShiftAdapter {
    */
   async swapBuffers(node: AudioNode, channelData: Float32Array[]): Promise<void> {
     const sg = (node as any).__signalsmith;
+    // SAMPLE-ACCURATE swap (BassNotion patch): hand the worklet the new PCM; it
+    // replaces the looping buffer THE INSTANT its read-head wraps to loopStart,
+    // so the swap lands exactly on the loop's first sample (no JS-timer jitter).
+    // The new PCM MUST be the same length as the current loop (enforced
+    // upstream). Falls back to drop+add on an unpatched node (older bundle).
+    if (sg?.swapAtLoopStart) {
+      try {
+        // Pass channelData WITHOUT a transfer list — the PCM is structured-cloned
+        // to the worklet. We must NOT transfer: the source Float32Arrays belong
+        // to the cached variant AudioBuffer and are reused on a repeat swap;
+        // transferring would detach them.
+        sg.swapAtLoopStart(channelData);
+      } catch (err) {
+        this.log.warn('Signalsmith swapAtLoopStart failed', err);
+      }
+      return;
+    }
     if (!sg?.dropBuffers || !sg?.addBuffers) {
       this.log.warn('Signalsmith node not ready for swapBuffers — skipping');
       return;

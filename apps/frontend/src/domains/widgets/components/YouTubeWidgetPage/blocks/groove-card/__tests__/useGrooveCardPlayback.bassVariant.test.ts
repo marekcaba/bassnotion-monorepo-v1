@@ -8,10 +8,12 @@
  *      (setStemRate) on audio-bass so the new take plays at the user's current
  *      transpose + speed.
  *
- * NOTE on timing: while PLAYING, the swap is quantised to the next BAR boundary
- * (computeNextBarBoundaryAudioTime, scheduled via a timer) so it lands on a
- * downbeat, not mid-bar. These tests run with isPlaying=false, so they exercise
- * the immediate-swap path (the mechanism); the bar-timing is verified by ear.
+ * NOTE on timing: the buffer swap is SAMPLE-ACCURATE in the worklet — the hook
+ * hands the PCM to engine.swapStemBuffer immediately, and the patched signalsmith
+ * worklet (`swapAtLoopStart`) replaces the looping buffer the instant its
+ * read-head wraps to loopStart (exactly on the downbeat, no JS-timer jitter).
+ * These tests assert the swap MECHANISM (right buffer/stem, key+tempo re-assert);
+ * the sample-exact timing lives in the worklet and is verified by ear.
  *   3. `null` restores the DEFAULT bass (resolves the default buffer).
  *   4. Re-selecting the already-active variant is a no-op (no engine call).
  *   5. A cold variant is decoded on demand (ensureVariant) before the swap.
