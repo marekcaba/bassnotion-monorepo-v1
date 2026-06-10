@@ -152,7 +152,10 @@ export class GroovesService {
   }
 
   private mapDbToGroove(r: Record<string, unknown>): GrooveLibraryItem {
-    const stems = (r.stems ?? {}) as Record<string, string>;
+    const stems = (r.stems ?? {}) as Record<string, unknown>;
+    const bassVariants = Array.isArray(stems.bassVariants)
+      ? (stems.bassVariants as GrooveLibraryItem['stems']['bassVariants'])
+      : undefined;
     return {
       id: r.id as string,
       name: r.name as string,
@@ -162,9 +165,11 @@ export class GroovesService {
       originalKey: r.original_key as string,
       lengthBars: r.length_bars as number,
       stems: {
-        bass: stems.bass ?? '',
-        drums: stems.drums ?? '',
-        harmony: stems.harmony ?? '',
+        bass: (stems.bass as string) ?? '',
+        drums: (stems.drums as string) ?? '',
+        harmony: (stems.harmony as string) ?? '',
+        // Pass premium bassline variants through (was silently dropped before).
+        ...(bassVariants ? { bassVariants } : {}),
       },
       chordChart: Array.isArray(r.chord_chart)
         ? (r.chord_chart as GrooveLibraryItem['chordChart'])

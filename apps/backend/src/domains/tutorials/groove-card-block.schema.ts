@@ -42,10 +42,31 @@ export const grooveCardStemUrlSchema = z.union([
     ),
 ]);
 
+/**
+ * A premium bassline variant URL may live in the PUBLIC audio-samples bucket OR
+ * the PRIVATE premium-basslines bucket (signed-URL gated, `object/sign/…`). So
+ * its accepted path pattern is wider than the free-stem one.
+ */
+const BASSLINE_VARIANT_PATH_REGEX =
+  /\/storage\/v1\/object\/(public|sign)\/(audio-samples|premium-basslines)\/[A-Za-z0-9_./-]+/;
+
+const basslineVariantSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1),
+  url: z
+    .string()
+    .refine(
+      (url) => BASSLINE_VARIANT_PATH_REGEX.test(url),
+      'variant URL must point at the audio-samples or premium-basslines bucket',
+    ),
+  feature: z.string().optional(),
+});
+
 export const grooveCardStemSetSchema = z.object({
   bass: grooveCardStemUrlSchema,
   drums: grooveCardStemUrlSchema,
   harmony: grooveCardStemUrlSchema,
+  bassVariants: z.array(basslineVariantSchema).optional(),
 });
 
 export const grooveCardStateCaptionsSchema = z

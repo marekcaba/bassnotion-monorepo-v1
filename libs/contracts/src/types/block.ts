@@ -241,10 +241,39 @@ export interface CelebrationBlockConfig {
  * engine still has an `audio-click` channel (see `AudioInstrumentType`)
  * for the waitlist's bundled sample, but admins never upload it.
  */
+/**
+ * An alternate bassline a member can swap in during playback ("Lines & Fills").
+ * Each variant is a COMPLETE, full-length bass take of the EXACT same sample
+ * length / loop grid as the default `bass` stem — the engine swaps the bass
+ * worklet's PCM in place at the loop seam, so a different-length variant would
+ * desync the shared grid (drums/harmony). Same-length is enforced at upload.
+ *
+ * `feature` is the entitlement key that unlocks it (default `linesAndFills`).
+ * `url` may point at the private premium-basslines bucket (signed-URL gated),
+ * unlike the free bass/drums/harmony which live in the public bucket.
+ */
+export interface BasslineVariant {
+  /** Stable id (used as the preload cache key; survives URL re-minting). */
+  id: string;
+  /** Display label, e.g. "Bassline B" or "Walking". */
+  title: string;
+  /** Storage path / URL of the variant's full-length bass take. */
+  url: string;
+  /** Entitlement feature key that unlocks it. Defaults to 'linesAndFills'. */
+  feature?: string;
+}
+
 export interface GrooveCardStemSet {
   bass: string;
   drums: string;
   harmony: string;
+  /**
+   * Optional premium alternate basslines (Lines & Fills). When present and the
+   * user is entitled, the groove card shows a swap row; selecting one swaps the
+   * bass take in place at the next loop seam. All variants MUST match the
+   * default `bass` length exactly.
+   */
+  bassVariants?: BasslineVariant[];
 }
 
 /**
