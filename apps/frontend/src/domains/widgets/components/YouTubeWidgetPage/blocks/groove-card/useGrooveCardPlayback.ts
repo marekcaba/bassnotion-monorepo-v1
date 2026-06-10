@@ -125,6 +125,9 @@ export interface UseGrooveCardPlaybackReturn {
   /** Pending semitone offset queued for the next loop boundary, or null
    *  when no swap is queued. */
   pendingKeyShift: number | null;
+  /** The active premium bassline variant id ("Lines & Fills"), or null for the
+   *  default bass. */
+  activeBassVariantId: string | null;
 
   // ── commands (all idempotent)
   play: () => Promise<void>;
@@ -132,6 +135,9 @@ export interface UseGrooveCardPlaybackReturn {
   stop: () => Promise<void>;
   setTempo: (bpm: number) => void;
   setKey: (semitonesFromOriginal: number) => void;
+  /** Swap the active bassline variant. `null` restores the default bass. The
+   *  swap lands at the next loop seam (drums + harmony untouched). */
+  setBassVariant: (variantId: string | null) => void;
   setStemMuted: (stem: AudioInstrumentType, muted: boolean) => void;
   setStemSolo: (stem: AudioInstrumentType | null) => void;
   setClickEnabled: (enabled: boolean) => void;
@@ -351,6 +357,11 @@ export function useGrooveCardPlayback({
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentBpm, setCurrentBpm] = useState<number>(block.originalBpm);
   const [currentSemitones, setCurrentSemitones] = useState(0);
+  // The active premium bassline variant ("Lines & Fills"). null = the default
+  // bass. Selecting one swaps the bass PCM in place at the next loop seam.
+  const [activeBassVariantId, setActiveBassVariantId] = useState<string | null>(
+    null,
+  );
   // `pendingKeyShift` flags a key swap that's been requested but hasn't reached
   // its loop seam yet (drives the "…" suffix + 'key-change' caption). It is
   // CLEARED to null once the deferred boundary passes (see the timer in
@@ -785,6 +796,70 @@ export function useGrooveCardPlayback({
       mode,
       pendingKeyShift,
     ],
+  );
+
+  /**
+   * Swap the active bassline variant ("Lines & Fills"). `variantId` selects a
+   * premium full-length bass take; `null` restores the default bass.
+   *
+   * The swap is in-place on the bass worklet at the NEXT loop seam (same seam
+   * `setKey` uses), so the listener hears the current loop finish on the old
+   * bass and the next loop start on the new one — drums + harmony never move.
+   * After the PCM swap we RE-ASSERT the live key + tempo at the same seam: the
+   * fresh segments would otherwise inherit (signalsmith keeps omitted fields),
+   * but re-asserting guarantees the new bass plays at the user's current
+   * transpose + speed (belt-and-suspenders, mirrors becomeActive's restore).
+   */
+  const setBassVariant = useCallback(
+    (variantId: string | null) => {
+      if (variantId === activeBassVariantId) return;
+
+      const apply = (buffer: AudioBuffer | null) => {
+        const engine = WindowRegistry.getPlaybackEngine();
+        if (!engine) return;
+        // `null` (back to default) resolves the originally-registered bass
+        // buffer from the preloader; a variant resolves its decoded buffer.
+        const target =
+          buffer ?? preloadRef.current.getBuffer('bass') ?? null;
+        if (!target) return;
+
+        setActiveBassVariantId(variantId);
+
+        // Not playing → swap immediately; the next play() picks it up. Playing →
+        // the engine's swapStemBuffer is best fired just before the seam, but the
+        // drop/add is async port-RPC and self-aligns to the loop wrap, so we
+        // issue it now and re-assert key/tempo at the computed seam.
+        void engine.swapStemBuffer?.('audio-bass', target);
+
+        const boundary = computeNextBoundaryAudioTime(0);
+        const residualShift = currentSemitonesRef.current;
+        engine.setInstrumentPitchShift?.('audio-bass', residualShift, boundary);
+        const rateBoundary =
+          boundary ?? audioContextRef.current?.currentTime ?? undefined;
+        engine.setStemRate?.(
+          'audio-bass',
+          currentBpmRef.current / Math.max(1, block.originalBpm),
+          rateBoundary,
+        );
+      };
+
+      if (variantId === null) {
+        apply(null);
+        return;
+      }
+      // Resolve the variant buffer (warm cache → instant; cold → on-demand
+      // decode). A gated/failed variant resolves undefined → no swap, no state
+      // change (the caller's gate should have prevented this).
+      const cached = preloadRef.current.getVariantBuffer(variantId);
+      if (cached) {
+        apply(cached);
+      } else {
+        void preloadRef.current.ensureVariant(variantId).then((buf) => {
+          if (buf) apply(buf);
+        });
+      }
+    },
+    [activeBassVariantId, block.originalBpm, computeNextBoundaryAudioTime],
   );
 
   // ── stem mute / solo via sibling-muting (story line 302) -----------------
@@ -1481,6 +1556,7 @@ export function useGrooveCardPlayback({
     clickEnabled,
     masterVolume,
     pendingKeyShift,
+    activeBassVariantId,
     bassBuffer,
     audioContext: audioContextRef.current,
     loopStartAudioTime,
@@ -1502,6 +1578,7 @@ export function useGrooveCardPlayback({
     stop,
     setTempo,
     setKey,
+    setBassVariant,
     setStemMuted,
     setStemSolo,
     setClickEnabled,
