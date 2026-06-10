@@ -23,6 +23,7 @@ import {
 } from '@/domains/drill/hooks/useGrooveLibrary';
 import { StemUploadButton } from '@/domains/admin/components/BlockEditor/configs/groove-card/StemUploadButton';
 import { ChordChartEditor } from '@/domains/admin/components/BlockEditor/configs/groove-card/ChordChartEditor';
+import { BasslineVariantsEditor } from '@/domains/admin/components/BlockEditor/configs/groove-card/BasslineVariantsEditor';
 
 const STEM_SLOTS = ['bass', 'drums', 'harmony'] as const;
 
@@ -336,6 +337,16 @@ function GrooveEditRow({
         lengthBars={draft.lengthBars}
         value={draft.chordChart}
         onChange={(chart) => set('chordChart', chart)}
+      />
+
+      {/* Premium alternate basslines (Lines & Fills). */}
+      <BasslineVariantsEditor
+        variants={draft.stems.bassVariants ?? []}
+        defaultBassUrl={draft.stems.bass}
+        slug={draft.slug}
+        onChange={(bassVariants) =>
+          set('stems', { ...draft.stems, bassVariants })
+        }
       />
 
       {error && <p className="text-xs text-red-600">{error}</p>}
