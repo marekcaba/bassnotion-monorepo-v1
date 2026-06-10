@@ -51,6 +51,7 @@ function VariantCell({ label, active, locked, onClick }: CellProps) {
         relative flex flex-col items-center justify-center gap-1.5
         w-[88px] shrink-0 px-3 py-3 rounded-xl
         transition-all duration-300 ease-out group
+        focus:outline-none focus-visible:outline-none
         ${
           active && !locked
             ? 'bg-amber-400/10 border border-amber-400/40 shadow-lg shadow-amber-500/10 scale-[1.05]'
