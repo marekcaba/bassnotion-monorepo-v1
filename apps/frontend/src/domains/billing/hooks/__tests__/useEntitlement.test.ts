@@ -56,6 +56,8 @@ describe('useEntitlement — default (unauthenticated → free/unpaid)', () => {
     expect(result.current.caps.mute.isCapped).toBe(false);
     expect(result.current.caps.loopRange.isCapped).toBe(true);
     expect(result.current.caps.deconstruction.isCapped).toBe(true);
+    // Dynamic Loop (auto key-cycle) is members-only → capped for free.
+    expect(result.current.caps.dynamicLoop.isCapped).toBe(true);
   });
 
   it('returns a stable shape (tier + caps defined)', () => {

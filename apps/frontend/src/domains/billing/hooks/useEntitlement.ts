@@ -56,6 +56,7 @@ const ALL_LEVERS_UNCAPPED: LeverCaps = {
   transpose: { isCapped: false, message: '' },
   loopRange: { isCapped: false, message: '' },
   deconstruction: { isCapped: false, message: '' },
+  dynamicLoop: { isCapped: false, message: '' },
 };
 
 /**
@@ -68,6 +69,7 @@ const ALL_LEVERS_UNCAPPED: LeverCaps = {
  * - mute: NEVER capped — muting the bass ("take the seat") is the headline AHA.
  * - loopRange: whole-groove loop is free; selecting a bar range is members-only.
  * - deconstruction: stem/element drilling is Pack-gated.
+ * - dynamicLoop: the auto key-cycle dial is members-only.
  */
 const UNPAID_CAPS: LeverCaps = {
   tempo: {
@@ -88,6 +90,10 @@ const UNPAID_CAPS: LeverCaps = {
   deconstruction: {
     isCapped: true,
     message: 'Drill the layers with a Groove Pack',
+  },
+  dynamicLoop: {
+    isCapped: true,
+    message: 'Members auto-cycle keys with the Dynamic Loop',
   },
 };
 
@@ -230,6 +236,9 @@ export function freeTierCappedResponse(
       loopRange: partial.loopRange ?? cap('Members loop any bar infinitely'),
       deconstruction:
         partial.deconstruction ?? cap('Drill the layers with a Groove Pack'),
+      dynamicLoop:
+        partial.dynamicLoop ??
+        cap('Members auto-cycle keys with the Dynamic Loop'),
     },
     fetchedAt: new Date().toISOString(),
   };

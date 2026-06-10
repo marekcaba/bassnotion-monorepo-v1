@@ -31,6 +31,9 @@ export interface LeverCap {
  * - loopRange: bar-range looping (drag-select). Capped = whole-groove loop only;
  *   uncapped = loop any bar range. Whole-groove loop is always free.
  * - deconstruction: stem/element isolation drilling (Pack-gated).
+ * - dynamicLoop: the auto key-cycle dial (engage to cycle keys every N loops).
+ *   Members-only — capped = the dial is visible but engaging it surfaces the
+ *   upgrade pitch instead of running the cycle; uncapped = full use.
  */
 export interface LeverCaps {
   tempo: LeverCap;
@@ -38,6 +41,7 @@ export interface LeverCaps {
   transpose: LeverCap;
   loopRange: LeverCap;
   deconstruction: LeverCap;
+  dynamicLoop: LeverCap;
 }
 
 export interface EntitlementResponse {

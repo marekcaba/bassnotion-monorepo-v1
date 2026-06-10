@@ -124,6 +124,16 @@ interface GrooveCardControlsProps {
    *  fires the upgrade pitch (the cap IS the CTA). When false (member), the
    *  chevron dims at the engine edge instead. */
   transposeCapped?: boolean;
+  /** When true, the tempo + transpose chevrons GREY OUT (disable) once the
+   *  value reaches the entitlement band edge, instead of staying enabled to
+   *  fire the upsell. The public `/free` funnel opts in: the cap is shown as a
+   *  dead control + a revealed Sign up button, not an in-card pitch. Default
+   *  false preserves the in-app "teaching moment" (live chevron at the edge).
+   *  Needs `originalBpm` to locate the tempo band centre. */
+  dimAtCap?: boolean;
+  /** The groove's default BPM — the centre of the tempo band. Only needed to
+   *  compute the tempo cap edges for `dimAtCap`. */
+  originalBpm?: number;
 }
 
 export function GrooveCardControls({
@@ -154,6 +164,8 @@ export function GrooveCardControls({
   nextKeyLabel = null,
   transposeRange,
   transposeCapped = false,
+  dimAtCap = false,
+  originalBpm,
 }: GrooveCardControlsProps) {
   // Cap-aware hook reads — LAUNCH-02 will populate these.
   const { caps } = useEntitlement();
@@ -171,12 +183,34 @@ export function GrooveCardControls({
   // Edge-dim the key chevrons. When the user is NOT capped (a member), the
   // transpose edge is the engine's hard ±6 — there is no further to go, so the
   // chevron at that edge is disabled (dimmed), NOT a hidden upsell trigger. When
-  // capped (free tier), the chevron stays enabled at the band edge so bumping it
-  // surfaces the upgrade pitch (the cap is the CTA).
+  // capped (free tier), the chevron normally stays ENABLED at the band edge so
+  // bumping it surfaces the upgrade pitch (the cap is the CTA) — UNLESS the
+  // surface opts into `dimAtCap` (the /free funnel), which greys the chevron at
+  // the band edge instead and reveals its own Sign up button.
   const atUpperKeyEdge =
-    !transposeCapped && !lockKey && currentSemitones >= transposeRange;
+    (!transposeCapped || dimAtCap) &&
+    !lockKey &&
+    currentSemitones >= transposeRange;
   const atLowerKeyEdge =
-    !transposeCapped && !lockKey && currentSemitones <= -transposeRange;
+    (!transposeCapped || dimAtCap) &&
+    !lockKey &&
+    currentSemitones <= -transposeRange;
+
+  // Tempo cap edges — only computed for `dimAtCap` (the funnel). The band is
+  // [originalBpm − limit, originalBpm + limit]; grey the matching chevron once
+  // the displayed BPM reaches an edge. In-app leaves these false (the tempo
+  // chevrons there never edge-dim — the cap fires the pitch instead).
+  const tempoLimit = caps.tempo.isCapped ? caps.tempo.limit : undefined;
+  const tempoBandHi =
+    dimAtCap && tempoLimit != null && originalBpm != null
+      ? originalBpm + tempoLimit
+      : undefined;
+  const tempoBandLo =
+    dimAtCap && tempoLimit != null && originalBpm != null
+      ? originalBpm - tempoLimit
+      : undefined;
+  const atUpperTempoEdge = tempoBandHi != null && currentBpm >= tempoBandHi;
+  const atLowerTempoEdge = tempoBandLo != null && currentBpm <= tempoBandLo;
 
   // Band levers (tempo/transpose) are NOT disabled when capped — they stay
   // enabled so the user can move WITHIN the band and bump the edge (the
@@ -231,7 +265,12 @@ export function GrooveCardControls({
               isSoloDrums
                 ? 'bg-orange-500 text-white'
                 : 'bg-white/5 text-white/70 hover:bg-white/10'
-            } ${deconCapped ? 'opacity-60' : ''} disabled:opacity-40 disabled:cursor-not-allowed`}
+            } ${
+              // In-app gives the capped Solo a subtle dim as a "special" cue.
+              // The funnel (dimAtCap) keeps it fully live — no lock cues there;
+              // clicking it simply reveals the Sign up button.
+              deconCapped && !dimAtCap ? 'opacity-60' : ''
+            } disabled:opacity-40 disabled:cursor-not-allowed`}
             {...hoverProps('solo-drums')}
           >
             Solo
@@ -311,6 +350,10 @@ export function GrooveCardControls({
               onPrev={() => onTempoChange(currentBpm - 1)}
               onNext={() => onTempoChange(currentBpm + 1)}
               disabled={!isReady || lockSettings}
+              // dimAtCap (the /free funnel): grey the matching chevron once the
+              // tempo reaches the band edge. In-app leaves both false.
+              disablePrev={atLowerTempoEdge}
+              disableNext={atUpperTempoEdge}
               ariaLabel="Tempo"
             />
           </div>,
