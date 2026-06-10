@@ -24,7 +24,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { GrooveCardStemSet } from '@bassnotion/contracts';
+import type { BasslineVariant, GrooveCardStemSet } from '@bassnotion/contracts';
 import type { AudioStemKey } from '@/domains/playback/modules/tracks/management/TrackManagerProcessor';
 
 /** URL-keyed cache. Multiple cards sharing the same stem URL share the
@@ -34,6 +34,44 @@ const stemCache = new Map<string, AudioBuffer>();
 /** Module-level in-flight dedupe so concurrent decodes of the same URL
  *  collapse to one fetch + decode pass. */
 const inflight = new Map<string, Promise<AudioBuffer>>();
+
+/**
+ * Premium bassline variants are keyed by their STABLE id, NOT their URL — a
+ * signed premium-bucket URL carries an ephemeral token that changes on every
+ * mint, so URL-keying would never hit the cache. The decoded buffer is the
+ * stable identity; the URL is only needed for a cold fetch.
+ */
+const variantCache = new Map<string, AudioBuffer>();
+const variantInflight = new Map<string, Promise<AudioBuffer>>();
+
+async function fetchAndDecodeVariant(
+  audioContext: AudioContext,
+  variant: BasslineVariant,
+): Promise<AudioBuffer> {
+  const key = variant.id;
+  if (variantCache.has(key)) return variantCache.get(key)!;
+  if (variantInflight.has(key)) return variantInflight.get(key)!;
+
+  const promise = (async () => {
+    const response = await fetch(variant.url);
+    if (!response.ok) {
+      throw new Error(
+        `variant fetch failed: ${response.status} ${response.statusText}`,
+      );
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = await audioContext.decodeAudioData(arrayBuffer);
+    variantCache.set(key, buffer);
+    variantInflight.delete(key);
+    return buffer;
+  })().catch((err) => {
+    variantInflight.delete(key);
+    throw err;
+  });
+
+  variantInflight.set(key, promise);
+  return promise;
+}
 
 async function fetchAndDecode(
   audioContext: AudioContext,
@@ -89,6 +127,11 @@ export interface UseGrooveCardStemPreloadReturn {
   preload: () => Promise<void>;
   /** Read a buffer if cached, else undefined. */
   getBuffer: (stem: AudioStemKey) => AudioBuffer | undefined;
+  /** Read a premium bassline variant's decoded buffer by its stable id. */
+  getVariantBuffer: (variantId: string) => AudioBuffer | undefined;
+  /** Ensure a variant is decoded (on-demand, e.g. at hover/select). Resolves to
+   *  the buffer or undefined if it fails (gated/403). Best-effort. */
+  ensureVariant: (variantId: string) => Promise<AudioBuffer | undefined>;
 }
 
 // Musical stems the preloader fetches. The metronome click is NOT a
@@ -177,6 +220,16 @@ export function useGrooveCardStemPreload({
         `[GrooveCardStemPreload] ${failed}/${tasks.length} stems failed to load`,
       );
     }
+
+    // Best-effort: warm the premium bassline variants too, so a member's first
+    // swap is instant. A gated/403 variant is SKIPPED (caught) and never blocks
+    // the core stems — they already loaded above. Keyed by stable id, not URL.
+    const variants = stems.bassVariants ?? [];
+    if (variants.length > 0) {
+      await Promise.allSettled(
+        variants.map((v) => fetchAndDecodeVariant(audioContext, v)),
+      );
+    }
   }, [audioContext, stems, forceUpdate]);
 
   useEffect(() => {
@@ -220,6 +273,27 @@ export function useGrooveCardStemPreload({
     [stems],
   );
 
+  const getVariantBuffer = useCallback(
+    (variantId: string): AudioBuffer | undefined => variantCache.get(variantId),
+    [],
+  );
+
+  const ensureVariant = useCallback(
+    async (variantId: string): Promise<AudioBuffer | undefined> => {
+      if (!audioContext) return undefined;
+      const cached = variantCache.get(variantId);
+      if (cached) return cached;
+      const variant = stems.bassVariants?.find((v) => v.id === variantId);
+      if (!variant) return undefined;
+      try {
+        return await fetchAndDecodeVariant(audioContext, variant);
+      } catch {
+        return undefined; // gated / 403 / decode failure — best-effort
+      }
+    },
+    [audioContext, stems],
+  );
+
   return {
     isPreloaded: totalCount > 0 && loadedCountRef.current >= totalCount,
     loadedCount: loadedCountRef.current,
@@ -227,6 +301,8 @@ export function useGrooveCardStemPreload({
     errors: errorsRef.current,
     preload,
     getBuffer,
+    getVariantBuffer,
+    ensureVariant,
   };
 }
 
@@ -238,6 +314,8 @@ export function useGrooveCardStemPreload({
 export function _resetStemPreloadCache(): void {
   stemCache.clear();
   inflight.clear();
+  variantCache.clear();
+  variantInflight.clear();
 }
 
 /** @internal — test use only; lets tests assert cache content. */
