@@ -135,6 +135,77 @@ export class GroovesController {
     );
   }
 
+  /**
+   * GET /api/v1/grooves/bassline-url?path=… — sign a premium bassline by its
+   * STORAGE PATH, gated on the `linesAndFills` FEATURE only.
+   *
+   * For INLINE groove-card blocks (the common authoring path) there is no
+   * groove_library row to resolve — the variant lives in the tutorial's block
+   * config. So the player passes the variant's storage path directly. We gate on
+   * the feature grant (still protects the premium file: a non-member can't sign
+   * it), and HARD-RESTRICT to the private `premium-basslines` bucket + a safe
+   * path shape so this can't be abused to sign arbitrary objects.
+   */
+  @Get('bassline-url')
+  @UseGuards(OptionalAuthGuard)
+  async getBasslineUrlByPath(
+    @Query('path') path: string | undefined,
+    @CurrentUser() user: AuthUser | undefined,
+  ): Promise<{ url: string; expiresAt: string }> {
+    if (!path) {
+      throw new BadRequestException('path is required');
+    }
+    // Accept either a bare object path (grooves/<slug>/<id>.ogg) or a full
+    // storage URL/ref; normalise to the object path within premium-basslines.
+    const objectPath = this.normalisePremiumBasslinePath(path);
+    if (!objectPath) {
+      throw new BadRequestException('invalid bassline path');
+    }
+
+    // Feature gate (inline blocks aren't separately content-gated; the TUTORIAL
+    // that contains them governs page access).
+    const granted = await this.entitlementService.getGrantedFeatures(
+      user?.id ?? null,
+    );
+    if (!granted.includes('linesAndFills')) {
+      throw new ForbiddenException({
+        message: 'This bassline is a premium feature',
+        requiredFeature: 'linesAndFills',
+      });
+    }
+
+    return this.supabaseService.createSignedReadUrl(
+      'premium-basslines',
+      objectPath,
+      BASSLINE_URL_TTL_SECONDS,
+    );
+  }
+
+  /**
+   * Extract a safe object path WITHIN the premium-basslines bucket from a path
+   * or full storage URL. Returns null if it's not a premium-basslines path or
+   * contains traversal — so we can NEVER sign an arbitrary object. Strips any
+   * `?token=…` from a previously-signed ref.
+   */
+  private normalisePremiumBasslinePath(input: string): string | null {
+    let p = input.trim();
+    // Full storage URL/ref → take the part after the bucket name.
+    const m = p.match(
+      /\/storage\/v1\/object\/(?:public|sign)\/premium-basslines\/([^?]+)/,
+    );
+    if (m) {
+      p = m[1];
+    } else if (p.startsWith('premium-basslines/')) {
+      p = p.slice('premium-basslines/'.length);
+    }
+    p = decodeURIComponent(p.split('?')[0]);
+    // Safe shape: grooves/<segment>/<file>.ogg, no traversal, no leading slash.
+    if (!/^grooves\/[A-Za-z0-9_-]+\/[A-Za-z0-9_.-]+\.ogg$/.test(p)) {
+      return null;
+    }
+    return p;
+  }
+
   /** POST /api/v1/grooves/library — create a groove (admin). */
   @Post('library')
   @UseGuards(AdminGuard)

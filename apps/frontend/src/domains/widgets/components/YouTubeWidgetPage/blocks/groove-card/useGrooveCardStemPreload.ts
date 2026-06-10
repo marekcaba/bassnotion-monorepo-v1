@@ -26,6 +26,38 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { BasslineVariant, GrooveCardStemSet } from '@bassnotion/contracts';
 import type { AudioStemKey } from '@/domains/playback/modules/tracks/management/TrackManagerProcessor';
+import { supabase } from '@/infrastructure/supabase/client';
+
+/** A premium-bassline ref lives in the private bucket (object/sign/…) and needs
+ *  signing before fetch; a public audio-samples url is fetched directly. */
+function isPremiumBasslineRef(url: string): boolean {
+  return url.includes('/premium-basslines/');
+}
+
+/**
+ * Exchange a private-bucket bassline ref for a real, short-lived signed URL via
+ * the gated signer (backend checks the linesAndFills feature grant). Throws on a
+ * 403 (not entitled) or any failure — the caller treats that as "no variant".
+ */
+async function resolveSignedVariantUrl(refUrl: string): Promise<string> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+  const res = await fetch(
+    `${apiUrl}/api/v1/grooves/bassline-url?path=${encodeURIComponent(refUrl)}`,
+    {
+      headers: session
+        ? { Authorization: `Bearer ${session.access_token}` }
+        : {},
+    },
+  );
+  if (!res.ok) {
+    throw new Error(`bassline-url signer failed: HTTP ${res.status}`);
+  }
+  const { url } = (await res.json()) as { url: string };
+  return url;
+}
 
 /** URL-keyed cache. Multiple cards sharing the same stem URL share the
  *  decoded buffer. */
@@ -53,7 +85,15 @@ async function fetchAndDecodeVariant(
   if (variantInflight.has(key)) return variantInflight.get(key)!;
 
   const promise = (async () => {
-    const response = await fetch(variant.url);
+    // A premium variant lives in the PRIVATE premium-basslines bucket — its
+    // stored url is a tokenless `object/sign/…` ref that 400s if fetched
+    // directly. Resolve a real, short-lived signed URL through the gated signer
+    // first (the backend checks the linesAndFills feature grant). A public
+    // audio-samples url (legacy / free) is fetched directly.
+    const fetchUrl = isPremiumBasslineRef(variant.url)
+      ? await resolveSignedVariantUrl(variant.url)
+      : variant.url;
+    const response = await fetch(fetchUrl);
     if (!response.ok) {
       throw new Error(
         `variant fetch failed: ${response.status} ${response.statusText}`,

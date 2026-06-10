@@ -50,6 +50,87 @@ function makeController(opts: {
 
 const USER = { id: 'user-1' } as never;
 
+describe('GroovesController.getBasslineUrlByPath — path signer (inline blocks)', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const VALID_PATH = 'grooves/test-groove-2/var-abc.ogg';
+  const VALID_REF =
+    'https://x.supabase.co/storage/v1/object/sign/premium-basslines/grooves/test-groove-2/var-abc.ogg';
+
+  function ctrl(grantedFeatures: FeatureKey[]) {
+    const getGrantedFeatures = vi.fn(async () => grantedFeatures);
+    const createSignedReadUrl = vi.fn(async () => SIGNED);
+    const controller = new GroovesController(
+      {} as unknown as GroovesService,
+      { getGrantedFeatures } as unknown as EntitlementService,
+      { createSignedReadUrl } as unknown as SupabaseService,
+    );
+    return { controller, createSignedReadUrl };
+  }
+
+  it('signs a valid premium-basslines path for an entitled user', async () => {
+    const { controller, createSignedReadUrl } = ctrl(['linesAndFills']);
+    const res = await controller.getBasslineUrlByPath(VALID_PATH, USER);
+    expect(res).toEqual(SIGNED);
+    expect(createSignedReadUrl).toHaveBeenCalledWith(
+      'premium-basslines',
+      VALID_PATH,
+      600,
+    );
+  });
+
+  it('accepts a full storage REF url (strips host + bucket prefix)', async () => {
+    const { controller, createSignedReadUrl } = ctrl(['linesAndFills']);
+    await controller.getBasslineUrlByPath(VALID_REF, USER);
+    expect(createSignedReadUrl).toHaveBeenCalledWith(
+      'premium-basslines',
+      VALID_PATH,
+      600,
+    );
+  });
+
+  it('400s on a missing path', async () => {
+    const { controller } = ctrl(['linesAndFills']);
+    await expect(
+      controller.getBasslineUrlByPath(undefined, USER),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('403s without the linesAndFills feature', async () => {
+    const { controller, createSignedReadUrl } = ctrl([]);
+    await expect(
+      controller.getBasslineUrlByPath(VALID_PATH, USER),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(createSignedReadUrl).not.toHaveBeenCalled();
+  });
+
+  it('REJECTS a path-traversal attempt (cannot sign arbitrary objects)', async () => {
+    const { controller, createSignedReadUrl } = ctrl(['linesAndFills']);
+    await expect(
+      controller.getBasslineUrlByPath('grooves/../../secrets/key.ogg', USER),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(createSignedReadUrl).not.toHaveBeenCalled();
+  });
+
+  it('REJECTS a different bucket', async () => {
+    const { controller, createSignedReadUrl } = ctrl(['linesAndFills']);
+    await expect(
+      controller.getBasslineUrlByPath(
+        'https://x/storage/v1/object/public/audio-samples/grooves/g/bass.ogg',
+        USER,
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(createSignedReadUrl).not.toHaveBeenCalled();
+  });
+
+  it('REJECTS a non-ogg / malformed path', async () => {
+    const { controller } = ctrl(['linesAndFills']);
+    await expect(
+      controller.getBasslineUrlByPath('grooves/g/evil.exe', USER),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+});
+
 describe('GroovesController.getBasslineUrl — the AND-gate', () => {
   beforeEach(() => vi.clearAllMocks());
 
