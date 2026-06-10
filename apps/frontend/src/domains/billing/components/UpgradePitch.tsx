@@ -27,6 +27,7 @@ export type UpgradeLever =
   | 'loopRange'
   | 'deconstruction'
   | 'dynamicLoop'
+  | 'linesAndFills'
   | 'generic';
 
 /** Per-lever headline — names the specific spec you just hit. */
@@ -36,6 +37,7 @@ const LEVER_HEADLINE: Record<UpgradeLever, string> = {
   loopRange: 'Loop the whole groove, not the bar',
   deconstruction: 'The layers are locked',
   dynamicLoop: 'Auto key-cycling is a member move',
+  linesAndFills: 'Swap the bassline — a member move',
   generic: 'You hit the free wall',
 };
 
@@ -47,6 +49,7 @@ const BENEFITS: Array<{ key: UpgradeLever; label: string }> = [
   { key: 'loopRange', label: 'Loop any bar, infinitely' },
   { key: 'deconstruction', label: 'Drill the layers — solo any part' },
   { key: 'dynamicLoop', label: 'Auto-cycle keys with the Dynamic Loop' },
+  { key: 'linesAndFills', label: 'Swap basslines — Lines & Fills' },
 ];
 
 interface UpgradePitchContentProps {
