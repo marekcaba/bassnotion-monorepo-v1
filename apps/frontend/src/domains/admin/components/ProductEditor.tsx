@@ -16,6 +16,7 @@ import {
   useUpdateProduct,
   useAddProductContent,
   useRemoveProductContent,
+  useDeleteProduct,
 } from '@/domains/admin/hooks/useAdminProducts';
 import {
   adminProductsApi,
@@ -38,11 +39,25 @@ const PRODUCT_TYPES: AdminProductType[] = [
   'course',
 ];
 
-export function ProductEditor({ productId }: { productId: string }) {
+export function ProductEditor({
+  productId,
+  onDeleted,
+}: {
+  productId: string;
+  /** Called after a successful hard-delete so the parent can collapse the
+   *  (now-removed) editor panel. */
+  onDeleted?: () => void;
+}) {
   const { data, isLoading } = useAdminProduct(productId);
   const updateProduct = useUpdateProduct();
   const addContent = useAddProductContent();
   const removeContent = useRemoveProductContent();
+  const deleteProduct = useDeleteProduct();
+
+  // Two-step delete confirm: the button arms a typed-name confirmation so a
+  // misclick can't nuke a product.
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [confirmText, setConfirmText] = useState('');
 
   // Pick-from sources
   const { data: grooveData } = useGrooveLibrary(false);
@@ -164,6 +179,19 @@ export function ProductEditor({ productId }: { productId: string }) {
       setMsg('Saved.');
     } catch (e) {
       setMsg(e instanceof Error ? e.message : 'Save failed');
+    }
+  };
+
+  const handleDelete = async () => {
+    setMsg(null);
+    try {
+      await deleteProduct.mutateAsync(productId);
+      // Row vanishes from the list (productKeys.all invalidated); tell the
+      // parent to collapse this now-removed panel.
+      onDeleted?.();
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : 'Delete failed');
+      setConfirmingDelete(false);
     }
   };
 
@@ -485,6 +513,71 @@ export function ProductEditor({ productId }: { productId: string }) {
             Add
           </button>
         </div>
+      </div>
+
+      {/* Danger zone — hard delete. Behind a type-the-name confirm so a
+          misclick can't remove a product. The backend un-gates bundled
+          content, detaches purchases, and removes enrollments first. */}
+      <div className="space-y-2 rounded-md border border-red-200 bg-red-50/60 p-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-red-700">
+          Danger zone
+        </h3>
+        {!confirmingDelete ? (
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[11px] text-red-700/80">
+              Permanently delete this product. Bundled content is released back
+              to free; purchases are detached. This can’t be undone.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setConfirmingDelete(true);
+                setConfirmText('');
+              }}
+              className="shrink-0 rounded-md border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100"
+            >
+              Delete product
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-[11px] text-red-700">
+              Type the product name{' '}
+              <span className="font-mono font-semibold">{product.name}</span> to
+              confirm deletion.
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
+                placeholder={product.name}
+                className="flex-1 rounded-md border border-red-300 px-2 py-1.5 text-sm text-gray-900"
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={
+                  confirmText.trim() !== product.name || deleteProduct.isPending
+                }
+                className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-40"
+              >
+                {deleteProduct.isPending ? 'Deleting…' : 'Delete forever'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmingDelete(false);
+                  setConfirmText('');
+                }}
+                disabled={deleteProduct.isPending}
+                className="rounded-md border px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

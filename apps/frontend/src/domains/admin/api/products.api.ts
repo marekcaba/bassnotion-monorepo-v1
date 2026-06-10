@@ -148,6 +148,21 @@ export const adminProductsApi = {
     return product;
   },
 
+  /** Hard-delete a product. The backend un-gates bundled content, detaches
+   *  purchases, and removes accelerator enrollments first. Irreversible. */
+  async delete(id: string): Promise<void> {
+    // Strip Content-Type: a body-less DELETE that still declares
+    // `application/json` makes Fastify's JSON parser reject the empty body with
+    // a 400 BEFORE the request reaches Nest. Keep only the auth header.
+    const headers = await authHeaders();
+    delete headers['Content-Type'];
+    const res = await fetch(`${BASE}/${id}`, {
+      method: 'DELETE',
+      headers,
+    });
+    if (!res.ok) await parseError(res, 'Failed to delete product');
+  },
+
   async addContent(
     productId: string,
     input: AddContentPayload,

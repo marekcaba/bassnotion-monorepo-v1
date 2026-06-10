@@ -93,6 +93,74 @@ export class AdminProductsController {
     return { product };
   }
 
+  /**
+   * Hard-delete a product. Pre-production action (no real purchases yet), but
+   * written to be safe regardless of data: the only FK with ON DELETE CASCADE
+   * is `product_contents`; every OTHER reference to products.id must be cleared
+   * FIRST or Postgres rejects the delete. In order:
+   *   1. Un-gate every bundled content item (tutorials / grooves / videos go
+   *      back to access_tier='free', product_id=null) — so they aren't left
+   *      stranded at the 'product' tier (inaccessible to everyone) pointing at
+   *      a product that no longer exists. Mirrors removeContent's un-gating.
+   *   2. NULL out purchases.product_id (nullable FK — preserves the purchase
+   *      row / payment history, just detaches it from the deleted product).
+   *   3. DELETE accelerator_enrollments for this product (its product_id is
+   *      NOT NULL, so it can't be nulled — the enrollment is meaningless once
+   *      the product is gone). No-op when empty (the pre-production norm).
+   *   4. Delete the product row (product_contents cascades).
+   */
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  async remove(@Param('id') id: string) {
+    const existing = await this.productRepository.findById(id);
+    if (!existing) throw new NotFoundException('Product not found');
+
+    // 1. Un-gate bundled content back to free so nothing is orphaned.
+    const contents = await this.productContentsRepository.findByProductId(id);
+    for (const row of contents) {
+      // Only un-gate if this item isn't ALSO bundled in another product.
+      const stillBundled = await this.productContentsRepository.findByContent(
+        row.contentType,
+        row.contentId,
+      );
+      const elsewhere = stillBundled.filter((r) => r.productId !== id);
+      if (elsewhere.length === 0) {
+        await this.ungateContent(row.contentType, row.contentId);
+      }
+    }
+
+    const client = this.supabaseService.getClient();
+
+    // 2. Detach purchases (nullable FK) — keep the rows, drop the product link.
+    const { error: purchaseErr } = await client
+      .from('purchases')
+      .update({ product_id: null })
+      .eq('product_id', id);
+    if (purchaseErr) {
+      this.logger.error(
+        `Failed to detach purchases from product ${id}: ${purchaseErr.message}`,
+      );
+      throw new BadRequestException('Failed to detach purchases');
+    }
+
+    // 3. Remove accelerator enrollments (NOT NULL FK — must delete, not null).
+    const { error: enrollErr } = await client
+      .from('accelerator_enrollments')
+      .delete()
+      .eq('product_id', id);
+    if (enrollErr) {
+      this.logger.error(
+        `Failed to remove enrollments for product ${id}: ${enrollErr.message}`,
+      );
+      throw new BadRequestException('Failed to remove enrollments');
+    }
+
+    // 4. Delete the product (product_contents cascades).
+    await this.productRepository.delete(id);
+    this.logger.log(`Deleted product ${id} (${existing.name})`);
+    return { deleted: true };
+  }
+
   // ---- product contents (the bundle) --------------------------------------
 
   @Post(':id/contents')
@@ -124,7 +192,11 @@ export class AdminProductsController {
     // Bundling content into a pack gates it: flip the source row to the
     // 'product' tier + point it at this product, so the entitlement resolver
     // locks it for non-owners. One admin action does the whole gating.
-    await this.gateContentToProduct(input.contentType, input.contentId, productId);
+    await this.gateContentToProduct(
+      input.contentType,
+      input.contentId,
+      productId,
+    );
 
     return { content };
   }
@@ -228,7 +300,12 @@ export class AdminProductsController {
     if (buffer.length > MAX_FILE_SIZE) {
       throw new BadRequestException('File too large (max 5MB)');
     }
-    const validMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    const validMimeTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+      'image/gif',
+    ];
     if (!validMimeTypes.includes(mimetype)) {
       throw new BadRequestException(
         `Invalid file type: ${mimetype} (must be JPEG, PNG, WebP, or GIF)`,
@@ -247,7 +324,9 @@ export class AdminProductsController {
       mimetype,
     );
 
-    await this.productRepository.update(productId, { coverImageUrl: publicUrl });
+    await this.productRepository.update(productId, {
+      coverImageUrl: publicUrl,
+    });
     this.logger.log(`Uploaded product cover: ${productId}`);
 
     return { publicUrl };
