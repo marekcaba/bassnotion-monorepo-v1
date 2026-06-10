@@ -153,6 +153,43 @@ export class SupabaseService {
   }
 
   /**
+   * Mint a short-lived signed READ url for a file in a PRIVATE bucket. Uses the
+   * service-role client (bypasses RLS), so the CALLER is responsible for any
+   * entitlement check BEFORE calling this. Returns { url, expiresAt } where
+   * expiresAt is an ISO timestamp `ttlSeconds` from now.
+   *
+   * Used by the gated bassline signer (premium-basslines bucket). Keep the TTL
+   * short — the URL is access-controlled at ISSUANCE, not DRM; a short window
+   * limits reshare.
+   */
+  async createSignedReadUrl(
+    bucket: string,
+    path: string,
+    ttlSeconds: number,
+  ): Promise<{ url: string; expiresAt: string }> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+
+    const { data, error } = await this.supabaseClient.storage
+      .from(bucket)
+      .createSignedUrl(path, ttlSeconds);
+
+    if (error || !data) {
+      logger.error('Failed to create signed read URL', error, {
+        bucket,
+        path,
+        correlationId,
+      });
+      throw error || new Error('Failed to create signed read URL');
+    }
+
+    return {
+      url: data.signedUrl,
+      expiresAt: new Date(Date.now() + ttlSeconds * 1000).toISOString(),
+    };
+  }
+
+  /**
    * Upload file to temporary storage bucket (Story 4.4 - Task 2)
    * Temporary files are auto-cleaned after 2 hours
    *
