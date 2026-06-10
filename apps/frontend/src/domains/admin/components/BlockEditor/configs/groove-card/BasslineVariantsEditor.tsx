@@ -21,17 +21,25 @@ import { supabase } from '@/infrastructure/supabase/client';
 interface BasslineVariantsEditorProps {
   /** Current variants (from stems.bassVariants). */
   variants: BasslineVariant[];
-  /** The default bass URL — used to fetch+decode the reference sample length. */
+  /** The default bass URL — used to fetch+decode the reference length. */
   defaultBassUrl: string;
+  /** Groove length in bars — defines the musical grid the variant must match. */
+  lengthBars: number;
+  /** Groove default BPM — defines the musical grid. */
+  bpm: number;
   /** Groove slug (storage path) for the upload. */
   slug: string;
   onChange: (variants: BasslineVariant[]) => void;
 }
 
 const MAX_BYTES = 8 * 1024 * 1024;
+/** Beats per bar (the engine only supports 4/4). */
+const BEATS_PER_BAR = 4;
 
-/** Decode an audio source to its sample length (per-channel frame count). */
-async function decodeLength(source: ArrayBuffer): Promise<number> {
+/** Decode an audio source to { frames, sampleRate } (per-channel frame count). */
+async function decodeAudio(
+  source: ArrayBuffer,
+): Promise<{ frames: number; sampleRate: number }> {
   const Ctx =
     window.AudioContext ||
     (window as unknown as { webkitAudioContext: typeof AudioContext })
@@ -39,22 +47,41 @@ async function decodeLength(source: ArrayBuffer): Promise<number> {
   const ctx = new Ctx();
   try {
     const buf = await ctx.decodeAudioData(source.slice(0));
-    return buf.length;
+    return { frames: buf.length, sampleRate: buf.sampleRate };
   } finally {
     void ctx.close();
   }
 }
 
+/**
+ * The MUSICAL length of a decoded buffer, in bars — `frames / framesPerBar`.
+ * "Same length" means same number of BARS, not bit-exact frames: OGG decode
+ * padding shifts the raw frame count by a few hundred samples (sub-frame),
+ * which must NOT count as a mismatch, while a real error (a whole bar off) moves
+ * this by ≥1.0. Compared against the groove's grid so a variant that's musically
+ * correct always passes regardless of encoder padding.
+ */
+function lengthInBars(
+  frames: number,
+  sampleRate: number,
+  bpm: number,
+): number {
+  const framesPerBar = (BEATS_PER_BAR * 60 * sampleRate) / bpm;
+  return frames / framesPerBar;
+}
+
 export function BasslineVariantsEditor({
   variants,
   defaultBassUrl,
+  lengthBars,
+  bpm,
   slug,
   onChange,
 }: BasslineVariantsEditorProps) {
   const [busyRow, setBusyRow] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // Cache the default bass length so we decode it once across uploads.
-  const defaultLenRef = useRef<number | null>(null);
+  // Cache the default bass musical length (in bars) so we decode it once.
+  const defaultBarsRef = useRef<number | null>(null);
 
   const addRow = useCallback(() => {
     const id = `var-${Date.now().toString(36)}`;
@@ -85,19 +112,35 @@ export function BasslineVariantsEditor({
       }
       setBusyRow(variant.id);
       try {
-        // SAME-LENGTH GUARD: decode the picked file + the default bass and
-        // compare frame counts. A mismatch would desync drums/harmony.
-        const fileBuf = await file.arrayBuffer();
-        const fileLen = await decodeLength(fileBuf);
-        if (defaultLenRef.current == null) {
+        // SAME-LENGTH GUARD — MUSICAL, not bit-exact. A variant must span the
+        // same number of BARS as the default bass (the engine loops on the
+        // shared bar grid). We compare BAR counts, not raw frames: OGG decode
+        // padding shifts the frame count by a few hundred samples (sub-frame ≈
+        // 0.005 bars), which must NOT trip the guard — but a real error (a whole
+        // bar short/long) moves the bar count by ≥1.0 and IS caught.
+        const file_ = await decodeAudio(await file.arrayBuffer());
+        const fileBars = lengthInBars(file_.frames, file_.sampleRate, bpm);
+
+        if (defaultBarsRef.current == null) {
           const ref = await fetch(defaultBassUrl);
-          defaultLenRef.current = await decodeLength(await ref.arrayBuffer());
+          const d = await decodeAudio(await ref.arrayBuffer());
+          defaultBarsRef.current = lengthInBars(d.frames, d.sampleRate, bpm);
         }
-        const refLen = defaultLenRef.current;
-        // Allow a tiny tolerance (encoder padding) — within ~1ms at 48kHz.
-        if (Math.abs(fileLen - refLen) > 64) {
+        const refBars = defaultBarsRef.current;
+
+        // Snap tolerance: < 1/8 bar (a sixteenth note). OGG padding jitter is
+        // ~0.005 bars; a real bar-count error is ≥ 1 bar. 0.125 sits safely
+        // between. We compare the variant to the DEFAULT BASS (the actual loop
+        // reference) — NOT the nominal lengthBars, since real stems have natural
+        // tails and never decode to an exact integer bar count. lengthBars/bpm
+        // only set the grid scale for the bars math + the error copy.
+        const BAR_SNAP = 0.125;
+        if (Math.abs(fileBars - refBars) >= BAR_SNAP) {
           setError(
-            `Length mismatch: variant has ${fileLen} samples, default bass has ${refLen}. Re-render the variant to the EXACT same length.`,
+            `Length mismatch: variant is ${fileBars.toFixed(2)} bars, ` +
+              `default bass is ${refBars.toFixed(2)} bars ` +
+              `(groove grid: ${lengthBars} bars @ ${bpm} BPM). ` +
+              `Re-render the variant to span exactly ${lengthBars} bars.`,
           );
           return;
         }
