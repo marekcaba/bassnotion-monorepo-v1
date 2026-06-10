@@ -563,6 +563,103 @@ export class AdminTutorialsController {
     }
   }
 
+  /**
+   * Upload a PREMIUM bassline variant ("Lines & Fills") to the PRIVATE
+   * premium-basslines bucket. Admin-only, service-role write. Returns a
+   * storage-ref URL (the `object/sign/…` shape) to store on the groove's
+   * `stems.bassVariants[].url`; the read URL is minted on demand by the gated
+   * signer. Multipart fields: slug, variantId.
+   */
+  @Post('bassline-variant/upload')
+  @UseGuards(AdminGuard)
+  @HttpCode(HttpStatus.OK)
+  async uploadBasslineVariant(
+    @Req() req: FastifyRequest,
+    @CurrentUser() user: AuthUser,
+    @CorrelationId() correlationId?: string,
+  ) {
+    const data = await req.file();
+    if (!data) {
+      throw new BadRequestException('No file uploaded');
+    }
+    const { file, filename, mimetype, fields } = data;
+
+    const readField = (name: string): string => {
+      const f = (fields as Record<string, unknown>)?.[name] as
+        | { value?: unknown }
+        | undefined;
+      return typeof f?.value === 'string' ? f.value : '';
+    };
+    const slug = readField('slug');
+    const variantId = readField('variantId');
+    if (!slug) throw new BadRequestException('Missing groove slug');
+    if (!variantId) throw new BadRequestException('Missing variantId');
+
+    const chunks: Buffer[] = [];
+    for await (const chunk of file) {
+      chunks.push(chunk as Buffer);
+    }
+    const buffer = Buffer.concat(chunks);
+    const fileSize = buffer.length;
+
+    const MAX_FILE_SIZE = 8 * 1024 * 1024;
+    if (fileSize > MAX_FILE_SIZE) {
+      throw new BadRequestException(
+        `File too large: ${fileSize} bytes (max ${MAX_FILE_SIZE} bytes)`,
+      );
+    }
+    const isOgg =
+      mimetype === 'audio/ogg' ||
+      mimetype === 'application/ogg' ||
+      filename.toLowerCase().endsWith('.ogg') ||
+      filename.toLowerCase().endsWith('.oga');
+    if (!isOgg) {
+      throw new BadRequestException(
+        `Invalid file type: ${mimetype} (must be OGG Vorbis .ogg)`,
+      );
+    }
+
+    const sanitise = (input: string, fallback: string): string => {
+      const cleaned = (input ?? '')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9_-]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      return cleaned.length > 0 ? cleaned : fallback;
+    };
+    const safeSlug = sanitise(slug, 'untitled');
+    const safeVariant = sanitise(variantId, 'variant');
+    const path = `grooves/${safeSlug}/${safeVariant}.ogg`;
+
+    this.logger.log('Uploading premium bassline variant', {
+      correlationId,
+      userId: user.id,
+      path,
+      fileSize,
+    });
+
+    try {
+      const { ref } = await this.supabaseService.uploadToPrivateBucket(
+        'premium-basslines',
+        path,
+        buffer,
+        'audio/ogg',
+        { upsert: true },
+      );
+      // `ref` is the storage-ref URL to store on the groove's variant; the
+      // player never fetches it directly — the gated signer mints a read URL.
+      return { url: ref, path };
+    } catch (error: any) {
+      this.logger.error('Failed to upload bassline variant', error, {
+        path,
+        correlationId,
+      });
+      throw new BadRequestException(
+        'Failed to upload variant: ' + (error?.message ?? 'unknown error'),
+      );
+    }
+  }
+
   @Post('fetch-youtube-channel-info')
   @UseGuards(AdminGuard)
   async fetchYouTubeChannelInfo(

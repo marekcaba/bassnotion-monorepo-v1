@@ -153,6 +153,43 @@ export class SupabaseService {
   }
 
   /**
+   * Upload to a PRIVATE bucket (no public URL). Returns a canonical
+   * storage-ref URL of the `…/object/sign/<bucket>/<path>` shape — NOT a working
+   * signed URL (no token), just a parseable reference the bassline signer can
+   * resolve back to { bucket, path } at read time. The actual time-limited read
+   * URL is minted on demand by createSignedReadUrl.
+   */
+  async uploadToPrivateBucket(
+    bucket: string,
+    path: string,
+    file: Buffer,
+    contentType: string,
+    options?: { upsert?: boolean },
+  ): Promise<{ ref: string; path: string }> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+
+    const { error } = await this.supabaseClient.storage
+      .from(bucket)
+      .upload(path, file, {
+        contentType,
+        upsert: options?.upsert ?? false,
+      });
+    if (error) {
+      logger.error('Failed to upload to private bucket', error, {
+        bucket,
+        path,
+        correlationId,
+      });
+      throw error;
+    }
+
+    const baseUrl = (process.env.SUPABASE_URL ?? '').replace(/\/+$/, '');
+    const ref = `${baseUrl}/storage/v1/object/sign/${bucket}/${path}`;
+    return { ref, path };
+  }
+
+  /**
    * Mint a short-lived signed READ url for a file in a PRIVATE bucket. Uses the
    * service-role client (bypasses RLS), so the CALLER is responsible for any
    * entitlement check BEFORE calling this. Returns { url, expiresAt } where
