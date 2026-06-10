@@ -59,4 +59,60 @@ export class ProductFeaturesRepository {
     }
     return [...seen];
   }
+
+  // ---- Admin reads/writes (the feature-grant editor) ----------------------
+
+  /** The features a single product grants (deduped, valid keys only). */
+  async findByProductId(productId: string): Promise<FeatureKey[]> {
+    const client = this.supabaseService.getClient();
+    const { data, error } = await client
+      .from(this.TABLE_NAME)
+      .select('feature_key')
+      .eq('product_id', productId);
+
+    if (error) {
+      this.logger.error('Error reading product features for product', error);
+      throw error;
+    }
+    const seen = new Set<FeatureKey>();
+    for (const row of (data ?? []) as Pick<ProductFeatureRow, 'feature_key'>[]) {
+      if (isFeatureKey(row.feature_key)) seen.add(row.feature_key);
+    }
+    return [...seen];
+  }
+
+  /**
+   * Replace a product's ENTIRE grant set (the checklist semantics): delete all
+   * existing rows for the product, then insert the new set. `featureKeys` is
+   * assumed pre-validated by the caller (controller checks FEATURE_KEYS), but we
+   * dedupe defensively. Returns the stored set.
+   */
+  async setForProduct(
+    productId: string,
+    featureKeys: FeatureKey[],
+  ): Promise<FeatureKey[]> {
+    const client = this.supabaseService.getClient();
+    const unique = [...new Set(featureKeys)];
+
+    // Clear the product's current grants.
+    const { error: delError } = await client
+      .from(this.TABLE_NAME)
+      .delete()
+      .eq('product_id', productId);
+    if (delError) {
+      this.logger.error('Error clearing product features', delError);
+      throw delError;
+    }
+
+    if (unique.length === 0) return [];
+
+    const { error: insError } = await client.from(this.TABLE_NAME).insert(
+      unique.map((feature_key) => ({ product_id: productId, feature_key })),
+    );
+    if (insError) {
+      this.logger.error('Error inserting product features', insError);
+      throw insError;
+    }
+    return unique;
+  }
 }
