@@ -3884,6 +3884,7 @@ export class PlaybackEngine implements IAudioStemEngine {
   async swapStemBuffer(
     instrumentType: AudioInstrumentType,
     buffer: AudioBuffer,
+    targetPhase = 0,
   ): Promise<void> {
     if (!this.pitchShiftAdapter) return;
     const node = this.instrumentStretchNodes.get(instrumentType);
@@ -3900,7 +3901,13 @@ export class PlaybackEngine implements IAudioStemEngine {
     // Keep the registered buffer reference current (used by getOrCreateStretchSource
     // on a later rebuild, e.g. after stop/replay).
     this.audioStemBuffers.set(instrumentType, buffer);
-    await this.pitchShiftAdapter.swapBuffers(node as AudioNode, channelData);
+    // targetPhase (0..1) → the worklet releases the swap when its read-head
+    // crosses that loop phase (the next bar downbeat, computed main-side).
+    await this.pitchShiftAdapter.swapBuffers(
+      node as AudioNode,
+      channelData,
+      targetPhase,
+    );
   }
 
   /**

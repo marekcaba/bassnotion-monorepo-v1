@@ -1,66 +1,133 @@
 diff --git a/SignalsmithStretch.js b/SignalsmithStretch.js
-index 7b39b2ae500c8563500c20a4f951878e309d845f..669f4584647a29609ef3c1388b8acb77abdc6392 100644
+index 7b39b2ae500c8563500c20a4f951878e309d845f..0478da53682a8920d9b8da8190208e31febee609 100644
 --- a/SignalsmithStretch.js
 +++ b/SignalsmithStretch.js
-@@ -160,6 +160,10 @@ function registerWorkletProcessor(Module, audioNodeKey) {
+@@ -126,6 +126,9 @@ function registerWorkletProcessor(Module, audioNodeKey) {
+ 					return obj;
+ 				},
+ 				dropBuffers: toSeconds => {
++					// BassNotion patch — clear any pending "Lines & Fills" swap.
++					this.pendingSwapBuffers = null;
++					this.pendingSwapArmed = false;
+ 					if (typeof toSeconds !== 'number') {
+ 						let buffers = this.audioBuffers.flat(1).map(b => b.buffer);
+ 						this.audioBuffers = [];
+@@ -160,6 +163,13 @@ function registerWorkletProcessor(Module, audioNodeKey) {
  					let length = sampleBuffers[0].length;
  					this.audioBuffersEnd += length;
  					return this.audioBuffersEnd/sampleRate;
 +				},
-+				// BassNotion patch — sample-accurate buffer swap ("Lines & Fills").
-+				swapAtLoopStart: sampleBuffers => {
++				// BassNotion patch — sample-accurate buffer swap ("Lines & Fills"),
++				// released when the read-head crosses a target loop PHASE (0..1).
++				swapAtPhase: (sampleBuffers, targetPhase) => {
 +					this.pendingSwapBuffers = [].concat(sampleBuffers);
++					this.pendingSwapPhase = targetPhase;
++					this.pendingSwapArmed = false;
  				}
  			};
  
-@@ -289,8 +293,13 @@ function registerWorkletProcessor(Module, audioNodeKey) {
- 				if (loopLength > 0 && inputTime >= currentMapSegment.loopEnd) {
+@@ -290,7 +300,29 @@ function registerWorkletProcessor(Module, audioNodeKey) {
  					currentMapSegment.input -= loopLength;
  					inputTime -= loopLength;
-+					// BassNotion patch — sample-accurate "Lines & Fills" swap at loop start.
-+					if (this.pendingSwapBuffers) {
-+						this.audioBuffers = [this.pendingSwapBuffers];
-+						this.pendingSwapBuffers = null;
-+					}
  				}
 -				
++
++				// BassNotion patch — "Lines & Fills" swap, released when the read-head
++				// crosses a target loop PHASE (computed main-side from the real BPM
++				// bar grid). ARM-then-FIRE: wait until the head is at/before the
++				// target, then fire when it reaches/passes it. Same-length only.
++				if (this.pendingSwapBuffers && loopLength > 0) {
++					let phase = (inputTime - currentMapSegment.loopStart)/loopLength;
++					if (phase < 0) phase += 1;
++					if (phase > 1) phase -= 1;
++					let target = this.pendingSwapPhase;
++					if (!this.pendingSwapArmed) {
++						if (phase <= target) this.pendingSwapArmed = true;
++					} else if (phase >= target) {
++						let newPcm = this.pendingSwapBuffers;
++						let oldLen = this.audioBuffers[0] ? this.audioBuffers[0][0].length : newPcm[0].length;
++						if (newPcm[0].length === oldLen) {
++							this.audioBuffers = [newPcm];
++						}
++						this.pendingSwapBuffers = null;
++						this.pendingSwapArmed = false;
++					}
++				}
 +
  				inputTime += this.inputLatencySeconds;
  				let inputSamplesEnd = Math.round(inputTime*sampleRate);
  
 diff --git a/SignalsmithStretch.mjs b/SignalsmithStretch.mjs
-index 7d5cae72e77a84143ed91ba12fc91b806dc4d9d1..ea25df7575917279a2aa0c6bd0e7bf48085ba53c 100644
+index 7d5cae72e77a84143ed91ba12fc91b806dc4d9d1..ad34600647fe9303e59e6f2aabf619f24b62317e 100644
 --- a/SignalsmithStretch.mjs
 +++ b/SignalsmithStretch.mjs
-@@ -161,6 +161,13 @@ function registerWorkletProcessor(Module, audioNodeKey) {
+@@ -127,6 +127,11 @@ function registerWorkletProcessor(Module, audioNodeKey) {
+ 					return obj;
+ 				},
+ 				dropBuffers: toSeconds => {
++					// BassNotion patch — clear any pending "Lines & Fills" swap so a
++					// queued-but-unfired swap can't fire against fresh buffers after
++					// a stop/drop/re-arm.
++					this.pendingSwapBuffers = null;
++					this.pendingSwapArmed = false;
+ 					if (typeof toSeconds !== 'number') {
+ 						let buffers = this.audioBuffers.flat(1).map(b => b.buffer);
+ 						this.audioBuffers = [];
+@@ -161,6 +166,19 @@ function registerWorkletProcessor(Module, audioNodeKey) {
  					let length = sampleBuffers[0].length;
  					this.audioBuffersEnd += length;
  					return this.audioBuffersEnd/sampleRate;
 +				},
 +				// BassNotion patch — sample-accurate buffer swap ("Lines & Fills").
-+				// Stash new PCM; process() replaces the looping buffer the instant
-+				// the read-head wraps to loopStart, so the swap lands EXACTLY on the
-+				// loop's first sample with no JS-timer jitter. Same-length only.
-+				swapAtLoopStart: sampleBuffers => {
++				// Stash new PCM + a target LOOP PHASE (0..1) computed main-side from
++				// the real BPM bar grid. process() replaces the looping buffer the
++				// instant the read-head crosses that phase — sample-exact, on the
++				// downbeat, no JS-timer jitter, no buffer-tail drift. Same-length
++				// only (a different length is dropped, never desyncs the loop).
++				swapAtPhase: (sampleBuffers, targetPhase) => {
 +					this.pendingSwapBuffers = [].concat(sampleBuffers);
++					this.pendingSwapPhase = targetPhase;       // [0,1)
++					this.pendingSwapArmed = false;             // becomes true once we
++					                                           // see the head BEFORE
++					                                           // the target this loop
  				}
  			};
  
-@@ -290,8 +297,17 @@ function registerWorkletProcessor(Module, audioNodeKey) {
- 				if (loopLength > 0 && inputTime >= currentMapSegment.loopEnd) {
+@@ -291,7 +309,37 @@ function registerWorkletProcessor(Module, audioNodeKey) {
  					currentMapSegment.input -= loopLength;
  					inputTime -= loopLength;
-+					// BassNotion patch — sample-accurate "Lines & Fills" swap.
-+					// The read-head just wrapped to loopStart: replace the looping
-+					// PCM in place (same length, same audioBuffersStart/End) so the
-+					// new bassline plays from the loop's first sample, exactly on
-+					// the downbeat, glitch-free.
-+					if (this.pendingSwapBuffers) {
-+						this.audioBuffers = [this.pendingSwapBuffers];
-+						this.pendingSwapBuffers = null;
-+					}
  				}
 -				
++
++				// BassNotion patch — "Lines & Fills" swap, released when the read-head
++				// crosses an exact target PHASE (computed main-side from the real BPM
++				// bar grid). ARM-then-FIRE: first wait until the head is at/before the
++				// target (handles a swap queued just AFTER it → waits a full loop),
++				// then fire the instant the head reaches/passes the target. The
++				// read-head keeps its position, so the new bassline continues in time.
++				// Same-length only: a length mismatch is dropped, never desynced.
++				if (this.pendingSwapBuffers && loopLength > 0) {
++					let phase = (inputTime - currentMapSegment.loopStart)/loopLength;
++					if (phase < 0) phase += 1;
++					if (phase > 1) phase -= 1;
++					let target = this.pendingSwapPhase;
++					if (!this.pendingSwapArmed) {
++						// Arm once the head is BEHIND the target (or just wrapped, so
++						// phase < ~target). Until armed we never fire — so a swap queued
++						// past the target this loop releases next loop, on the beat.
++						if (phase <= target) this.pendingSwapArmed = true;
++					} else if (phase >= target) {
++						// Crossed the target: swap in place (same length keeps
++						// audioBuffersStart/End valid). Guard the length defensively.
++						let newPcm = this.pendingSwapBuffers;
++						let oldLen = this.audioBuffers[0] ? this.audioBuffers[0][0].length : newPcm[0].length;
++						if (newPcm[0].length === oldLen) {
++							this.audioBuffers = [newPcm];
++						}
++						this.pendingSwapBuffers = null;
++						this.pendingSwapArmed = false;
++					}
++				}
 +
  				inputTime += this.inputLatencySeconds;
  				let inputSamplesEnd = Math.round(inputTime*sampleRate);

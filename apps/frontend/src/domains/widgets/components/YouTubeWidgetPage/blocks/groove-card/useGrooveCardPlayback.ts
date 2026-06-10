@@ -825,21 +825,41 @@ export function useGrooveCardPlayback({
 
         setActiveBassVariantId(variantId);
 
-        // Queue the PCM swap — the worklet fires it at the next loop wrap
-        // (sample-exact). Re-assert key + tempo at the seam (schedulable, lands
-        // on the same wrap); these are scalar schedule() writes, unlike the
-        // buffer swap which the worklet self-times.
-        void engine.swapStemBuffer?.('audio-bass', target);
-        const boundary = computeNextBoundaryAudioTime(0);
+        // Compute the NEXT BAR downbeat from the REAL BPM grid (a true 4/4 bar,
+        // NOT the decoded buffer length which drifts on stem tails) + the loop
+        // anchor — mirrors the proven loop-selection-swap math below. Convert it
+        // to a LOOP PHASE [0,1): the worklet releases the PCM swap exactly when
+        // its read-head crosses that phase. Both the buffer swap AND the key/
+        // tempo re-assert target the SAME bar boundary, so the new bass plays in
+        // tune + in time from that downbeat.
+        const ctx = audioContextRef.current;
+        const bars = Math.max(1, block.lengthBars);
+        let targetPhase = 0; // default: loop start
+        let boundaryTime: number | undefined;
+        if (ctx && loopStartAudioTime != null && loopDurationSeconds > 0) {
+          const barDuration = loopDurationSeconds / bars;
+          const elapsed = ctx.currentTime - loopStartAudioTime;
+          const nextBars = elapsed < 0 ? 0 : Math.ceil(elapsed / barDuration);
+          boundaryTime = loopStartAudioTime + nextBars * barDuration;
+          // Phase within the loop the head will be at on that downbeat.
+          targetPhase =
+            ((boundaryTime - loopStartAudioTime) / loopDurationSeconds) % 1;
+          if (!Number.isFinite(targetPhase) || targetPhase < 0) targetPhase = 0;
+        }
+
+        // Queue the PCM swap (worklet self-times it to targetPhase, sample-exact).
+        void engine.swapStemBuffer?.('audio-bass', target, targetPhase);
+        // Re-assert key + tempo at the SAME bar boundary (scalar schedule writes).
+        const reassertAt = boundaryTime ?? ctx?.currentTime ?? undefined;
         engine.setInstrumentPitchShift?.(
           'audio-bass',
           currentSemitonesRef.current,
-          boundary,
+          reassertAt,
         );
         engine.setStemRate?.(
           'audio-bass',
           currentBpmRef.current / Math.max(1, block.originalBpm),
-          boundary ?? audioContextRef.current?.currentTime ?? undefined,
+          reassertAt,
         );
       };
 
@@ -859,7 +879,13 @@ export function useGrooveCardPlayback({
         });
       }
     },
-    [activeBassVariantId, block.originalBpm, computeNextBoundaryAudioTime],
+    [
+      activeBassVariantId,
+      block.originalBpm,
+      block.lengthBars,
+      loopStartAudioTime,
+      loopDurationSeconds,
+    ],
   );
 
   // ── stem mute / solo via sibling-muting (story line 302) -----------------

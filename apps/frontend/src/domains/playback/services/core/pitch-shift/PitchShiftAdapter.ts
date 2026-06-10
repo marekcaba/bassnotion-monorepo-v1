@@ -185,7 +185,11 @@ export interface PitchShiftAdapter {
    * `__bufferDuration`, rate, and semitones untouched. The new PCM MUST match the
    * old length. Async (port-RPC); fire just before the loop seam.
    */
-  swapBuffers(node: AudioNode, channelData: Float32Array[]): Promise<void>;
+  swapBuffers(
+    node: AudioNode,
+    channelData: Float32Array[],
+    targetPhase: number,
+  ): Promise<void>;
 
   /**
    * Output-time of the NEXT loop seam at `rate`, read from the node's actual
@@ -840,22 +844,26 @@ export class SignalsmithAdapter implements PitchShiftAdapter {
    * the fresh buffer. Key/tempo segments persist (signalsmith inherits omitted
    * fields), but the caller re-asserts them at the seam for belt-and-suspenders.
    */
-  async swapBuffers(node: AudioNode, channelData: Float32Array[]): Promise<void> {
+  async swapBuffers(
+    node: AudioNode,
+    channelData: Float32Array[],
+    targetPhase: number,
+  ): Promise<void> {
     const sg = (node as any).__signalsmith;
-    // SAMPLE-ACCURATE swap (BassNotion patch): hand the worklet the new PCM; it
-    // replaces the looping buffer THE INSTANT its read-head wraps to loopStart,
-    // so the swap lands exactly on the loop's first sample (no JS-timer jitter).
-    // The new PCM MUST be the same length as the current loop (enforced
-    // upstream). Falls back to drop+add on an unpatched node (older bundle).
-    if (sg?.swapAtLoopStart) {
+    // SAMPLE-ACCURATE swap (BassNotion patch): hand the worklet the new PCM + a
+    // target loop PHASE (0..1, computed main-side from the real BPM bar grid).
+    // The worklet replaces the looping buffer THE INSTANT its read-head crosses
+    // that phase — exactly on the downbeat, no JS-timer jitter, no buffer-tail
+    // drift. Same-length only (worklet drops a mismatch). Falls back to drop+add
+    // on an unpatched node (older bundle, instant mid-loop swap).
+    if (sg?.swapAtPhase) {
       try {
-        // Pass channelData WITHOUT a transfer list — the PCM is structured-cloned
-        // to the worklet. We must NOT transfer: the source Float32Arrays belong
-        // to the cached variant AudioBuffer and are reused on a repeat swap;
-        // transferring would detach them.
-        sg.swapAtLoopStart(channelData);
+        // No transfer list — the PCM is structured-cloned. We must NOT transfer:
+        // the source Float32Arrays belong to the cached variant AudioBuffer and
+        // are reused on a repeat swap; transferring would detach them.
+        sg.swapAtPhase(channelData, targetPhase);
       } catch (err) {
-        this.log.warn('Signalsmith swapAtLoopStart failed', err);
+        this.log.warn('Signalsmith swapAtPhase failed', err);
       }
       return;
     }
