@@ -148,67 +148,80 @@ export function BasslineVariantsEditor({
   );
 
   return (
-    <div className="space-y-2 rounded-md border border-amber-200 bg-amber-50/40 p-3">
+    <fieldset className="space-y-2">
       <div className="flex items-center justify-between">
-        <h4 className="text-xs font-semibold uppercase tracking-wider text-amber-700">
-          Lines &amp; Fills (premium basslines)
-        </h4>
+        <legend className="text-xs uppercase tracking-wider text-amber-400/70">
+          Lines &amp; Fills — premium basslines
+        </legend>
         <button
           type="button"
           onClick={addRow}
-          className="rounded-md bg-amber-500 px-2.5 py-1 text-xs font-semibold text-white hover:bg-amber-600"
+          className="rounded-md border border-amber-400/30 bg-amber-400/10 px-2.5 py-1 text-xs font-medium text-amber-300 transition-colors hover:bg-amber-400/20"
         >
           + Add bassline
         </button>
       </div>
-      <p className="text-[11px] text-gray-500">
+      <p className="text-xs text-white/40">
         Each variant must be the EXACT same length as the default bass (checked
-        on upload). Files go to the private premium-basslines bucket.
+        on upload). Files write to the private{' '}
+        <code className="text-white/50">premium-basslines</code> bucket.
       </p>
 
-      {variants.length === 0 && (
-        <p className="text-xs text-gray-400">No premium basslines yet.</p>
-      )}
+      <div className="space-y-1.5 rounded-md border border-white/10 p-3">
+        {variants.length === 0 && (
+          <p className="text-xs text-white/30">No premium basslines yet.</p>
+        )}
 
-      {variants.map((v) => (
-        <div
-          key={v.id}
-          className="flex items-center gap-2 rounded border bg-white px-2 py-1.5"
-        >
-          <input
-            value={v.title}
-            onChange={(e) => setTitle(v.id, e.target.value)}
-            placeholder="Title (e.g. Walking)"
-            className="flex-1 rounded border px-2 py-1 text-sm text-gray-900"
-          />
-          <label className="flex cursor-pointer items-center gap-1 rounded bg-gray-800 px-2 py-1 text-xs font-medium text-white hover:bg-gray-700">
-            <UploadCloud className="h-3.5 w-3.5" />
-            {busyRow === v.id ? 'Uploading…' : v.url ? 'Replace' : 'Upload'}
-            <input
-              type="file"
-              accept=".ogg,audio/ogg"
-              className="hidden"
-              disabled={busyRow === v.id}
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) void uploadFor(v, f);
-                e.target.value = '';
-              }}
-            />
-          </label>
-          {v.url && <span className="text-[10px] text-emerald-600">✓ set</span>}
-          <button
-            type="button"
-            onClick={() => removeRow(v.id)}
-            className="text-red-500 hover:text-red-700"
-            title="Remove"
+        {variants.map((v) => (
+          <div
+            key={v.id}
+            className="flex items-center gap-2 rounded-md border border-white/10 bg-white/5 px-2 py-1.5"
           >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </div>
-      ))}
+            <input
+              value={v.title}
+              onChange={(e) => setTitle(v.id, e.target.value)}
+              placeholder="Title (e.g. Walking)"
+              className="min-w-0 flex-1 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-sm text-white placeholder:text-white/30"
+            />
+            <label
+              className={`flex shrink-0 cursor-pointer items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium transition-colors ${
+                busyRow === v.id
+                  ? 'cursor-wait border-white/10 bg-white/5 text-white/40'
+                  : 'border-white/15 bg-white/10 text-white/80 hover:bg-white/15'
+              }`}
+            >
+              <UploadCloud className="h-3.5 w-3.5" />
+              {busyRow === v.id ? 'Uploading…' : v.url ? 'Replace' : 'Upload'}
+              <input
+                type="file"
+                accept=".ogg,audio/ogg"
+                className="hidden"
+                disabled={busyRow === v.id}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void uploadFor(v, f);
+                  e.target.value = '';
+                }}
+              />
+            </label>
+            {v.url && (
+              <span className="shrink-0 text-[10px] font-medium text-emerald-400">
+                ✓ set
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => removeRow(v.id)}
+              className="shrink-0 text-white/30 transition-colors hover:text-red-400"
+              title="Remove"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        ))}
+      </div>
 
-      {error && <p className="text-xs text-red-600">{error}</p>}
-    </div>
+      {error && <p className="text-xs text-red-400">{error}</p>}
+    </fieldset>
   );
 }
