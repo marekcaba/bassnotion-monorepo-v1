@@ -25,6 +25,17 @@ import {
 } from '@/domains/admin/api/products.api';
 import { useGrooveLibrary } from '@/domains/drill/hooks/useGrooveLibrary';
 import { fetchTutorials } from '@/domains/widgets/api/tutorials';
+import type { FeatureKey } from '@bassnotion/contracts';
+
+/** Human labels for the feature keys (the checklist rows). */
+const FEATURE_LABELS: Record<FeatureKey, string> = {
+  tempo: 'Tempo dial (full 40–200 range)',
+  transpose: 'Transpose (all 12 keys)',
+  loopRange: 'Loop any bar range',
+  deconstruction: 'Deconstruction (solo/drill layers)',
+  dynamicLoop: 'Dynamic Loop (auto key-cycle)',
+  linesAndFills: 'Lines & Fills (swap basslines)',
+};
 
 const CONTENT_TYPES: { value: AdminContentType; label: string }[] = [
   { value: 'tutorial', label: 'Tutorial' },
@@ -515,6 +526,9 @@ export function ProductEditor({
         </div>
       </div>
 
+      {/* Features this product unlocks (the product → feature grant). */}
+      <ProductFeaturesEditor productId={productId} />
+
       {/* Danger zone — hard delete. Behind a type-the-name confirm so a
           misclick can't remove a product. The backend un-gates bundled
           content, detaches purchases, and removes enrollments first. */}
@@ -578,6 +592,115 @@ export function ProductEditor({
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The feature-grant checklist: which FEATURES this product unlocks. Owning the
+ * product grants the checked features everywhere they appear (global, not
+ * per-content). Replace semantics — Save sends the full checked set.
+ */
+function ProductFeaturesEditor({ productId }: { productId: string }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin-product-features', productId],
+    queryFn: () => adminProductsApi.getFeatures(productId),
+  });
+
+  const [checked, setChecked] = useState<Set<FeatureKey> | null>(null);
+  // The last-saved set — `dirty` compares against this (not the query cache).
+  const [savedGranted, setSavedGranted] = useState<FeatureKey[] | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  // Seed local state once the server set arrives.
+  useEffect(() => {
+    if (data && checked === null) {
+      setChecked(new Set(data.granted));
+      setSavedGranted(data.granted);
+    }
+  }, [data, checked]);
+
+  if (isLoading || !data || checked === null || savedGranted === null) {
+    return (
+      <div className="space-y-2 border-t pt-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+          Features unlocked
+        </h3>
+        <p className="text-xs text-gray-400">Loading…</p>
+      </div>
+    );
+  }
+
+  const toggle = (key: FeatureKey) => {
+    setChecked((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+    setMsg(null);
+  };
+
+  const dirty =
+    checked.size !== savedGranted.length ||
+    savedGranted.some((g) => !checked.has(g));
+
+  const handleSave = async () => {
+    setSaving(true);
+    setMsg(null);
+    try {
+      const granted = await adminProductsApi.setFeatures(productId, [
+        ...checked,
+      ]);
+      setChecked(new Set(granted));
+      setSavedGranted(granted);
+      setMsg('Saved');
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : 'Failed to save features');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-2 border-t pt-3">
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+        Features unlocked
+      </h3>
+      <p className="text-[11px] text-gray-400">
+        Buying this product grants the checked features everywhere they appear.
+      </p>
+      <div className="space-y-1">
+        {data.available.map((key) => (
+          <label
+            key={key}
+            className="flex items-center gap-2 rounded border bg-white px-3 py-2 text-sm"
+          >
+            <input
+              type="checkbox"
+              checked={checked.has(key)}
+              onChange={() => toggle(key)}
+              className="h-4 w-4 accent-[#E8A44A]"
+            />
+            <span>{FEATURE_LABELS[key] ?? key}</span>
+            <span className="ml-auto font-mono text-[10px] text-gray-400">
+              {key}
+            </span>
+          </label>
+        ))}
+      </div>
+      <div className="flex items-center gap-3 pt-1">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={!dirty || saving}
+          className="rounded-md bg-[#E8A44A] px-3 py-1.5 text-xs font-semibold text-black disabled:opacity-50"
+        >
+          {saving ? 'Saving…' : 'Save features'}
+        </button>
+        {msg && <span className="text-xs text-gray-500">{msg}</span>}
       </div>
     </div>
   );
