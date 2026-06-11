@@ -24,6 +24,7 @@ import type {
 } from '@bassnotion/contracts';
 import { StemUploadButton } from './groove-card/StemUploadButton';
 import { ChordChartEditor } from './groove-card/ChordChartEditor';
+import { BasslineVariantsEditor } from './groove-card/BasslineVariantsEditor';
 import { CompletionCriterionFields } from './CompletionCriterionFields';
 import { useGrooveLibrary } from '@/domains/drill/hooks/useGrooveLibrary';
 
@@ -325,6 +326,23 @@ export function GrooveCardBlockForm({
               ))}
             </div>
           </div>
+
+          {/* Premium alternate basslines (Lines & Fills) for this groove. */}
+          <BasslineVariantsEditor
+            variants={config.stems?.bassVariants ?? []}
+            defaultBassUrl={config.stems?.bass ?? ''}
+            lengthBars={config.lengthBars ?? 4}
+            bpm={config.originalBpm ?? 100}
+            slug={tutorialSlug ?? 'unsaved'}
+            onChange={(bassVariants) => {
+              const current = config.stems ?? {
+                bass: '',
+                drums: '',
+                harmony: '',
+              };
+              onChange({ ...config, stems: { ...current, bassVariants } });
+            }}
+          />
         </fieldset>
       )}
 

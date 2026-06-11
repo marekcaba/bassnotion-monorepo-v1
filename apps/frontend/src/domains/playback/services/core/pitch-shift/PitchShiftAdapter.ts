@@ -180,6 +180,18 @@ export interface PitchShiftAdapter {
   ): void;
 
   /**
+   * Swap the worklet's PCM in place (Lines & Fills bassline swap): drop the
+   * current buffer and load `channelData`, leaving the read-head, loop schedule,
+   * `__bufferDuration`, rate, and semitones untouched. The new PCM MUST match the
+   * old length. Async (port-RPC); fire just before the loop seam.
+   */
+  swapBuffers(
+    node: AudioNode,
+    channelData: Float32Array[],
+    lengthBars: number,
+  ): Promise<void>;
+
+  /**
    * Output-time of the NEXT loop seam at `rate`, read from the node's actual
    * read-head. A seam is where the read-head (input time) wraps at the buffer
    * length; that input position is tempo-invariant, but the output time it maps
@@ -815,6 +827,59 @@ export class SignalsmithAdapter implements PitchShiftAdapter {
       sg.schedule(change);
     } catch (err) {
       this.log.warn('Signalsmith setSemitones schedule failed', err);
+    }
+  }
+
+  /**
+   * Swap the worklet's PCM in place (Lines & Fills bassline swap). Drops the
+   * current buffer and loads `channelData`, leaving EVERYTHING else on the node
+   * untouched: the read-head, `__phaseStamp`, `__bufferDuration`, the loop
+   * schedule, the active rate + semitones segments. The new PCM MUST be the same
+   * sample length as the old (the caller enforces this) — the loop still wraps at
+   * the unchanged `__bufferDuration`, so the seam clock, visual playhead, and the
+   * drum phase-lock all stay valid automatically.
+   *
+   * Both ops are async port-RPC, so this returns a promise; the caller fires it a
+   * hair BEFORE the loop seam so the read-head re-enters [0, bufferDuration] on
+   * the fresh buffer. Key/tempo segments persist (signalsmith inherits omitted
+   * fields), but the caller re-asserts them at the seam for belt-and-suspenders.
+   */
+  async swapBuffers(
+    node: AudioNode,
+    channelData: Float32Array[],
+    lengthBars: number,
+  ): Promise<void> {
+    const sg = (node as any).__signalsmith;
+    // SAMPLE-ACCURATE swap (BassNotion patch): hand the worklet the new PCM + the
+    // loop's bar count. The worklet replaces the looping buffer the instant its
+    // read-head crosses the next BAR boundary (in its own read-head domain, so
+    // tail-immune) — exactly on the downbeat, no JS-timer jitter. Same-length
+    // only (worklet drops a mismatch). Falls back to drop+add on an unpatched
+    // node (older bundle, instant mid-loop swap).
+    if (sg?.swapAtPhase) {
+      try {
+        // No transfer list — the PCM is structured-cloned. We must NOT transfer:
+        // the source Float32Arrays belong to the cached variant AudioBuffer and
+        // are reused on a repeat swap; transferring would detach them.
+        sg.swapAtPhase(channelData, lengthBars);
+      } catch (err) {
+        this.log.warn('Signalsmith swapAtPhase failed', err);
+      }
+      return;
+    }
+    // Unpatched bundle — fall back to an instant (mid-loop) drop+add.
+    this.log.warn(
+      'Signalsmith swapAtPhase missing — falling back to instant swap',
+    );
+    if (!sg?.dropBuffers || !sg?.addBuffers) {
+      this.log.warn('Signalsmith node not ready for swapBuffers — skipping');
+      return;
+    }
+    try {
+      sg.dropBuffers();
+      await sg.addBuffers(channelData);
+    } catch (err) {
+      this.log.warn('Signalsmith swapBuffers failed', err);
     }
   }
 

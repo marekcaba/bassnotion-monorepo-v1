@@ -30,6 +30,7 @@ import {
   formatKeyLabel,
 } from './groove-card/GrooveCardControls';
 import { GrooveCardDynamicLoopDial } from './groove-card/GrooveCardDynamicLoopDial';
+import { LinesAndFillsSection } from './groove-card/LinesAndFillsSection';
 import {
   useDynamicLoop,
   buildCycleKeys,
@@ -105,7 +106,8 @@ interface GrooveCardBlockViewProps {
       | 'transpose'
       | 'loopRange'
       | 'deconstruction'
-      | 'dynamicLoop',
+      | 'dynamicLoop'
+      | 'linesAndFills',
   ) => void;
 }
 
@@ -358,6 +360,48 @@ export function GrooveCardBlockView({
       setDynamicLoopEngaged(next);
     },
     [dynamicLoopUsable, suppressUpsell, onCapHitExternal, caps, block.id],
+  );
+
+  // ── Lines & Fills (premium alternate-bassline swap) ----------------------
+  // Same shape as Dynamic Loop: the section is SHOWN (when there are variants
+  // and caps are active) so it's discoverable, but SELECTING a variant is gated.
+  // Default-bass (null) is always free — only the premium variants gate.
+  const bassVariants = config.stems.bassVariants ?? [];
+  const linesAndFillsCapped = capsEnabled && caps.linesAndFills.isCapped;
+  // Render only on surfaces that meter caps (so the waitlist demo, capsEnabled
+  // false, never shows it), and only when the groove actually has variants. On
+  // drill bricks the bass part is author-prescribed, so hide it there too.
+  const linesAndFillsShown =
+    capsEnabled && !isDrillBrick && bassVariants.length > 0;
+
+  const onLinesAndFillsSelect = useCallback(
+    (variantId: string | null) => {
+      // Reverting to the default bass is always allowed (it's the free state).
+      if (variantId === null) {
+        playback.setBassVariant(null);
+        return;
+      }
+      // Selecting a PREMIUM variant while capped is the upgrade moment.
+      if (linesAndFillsCapped) {
+        trackEvent('cap_hit', { lever: 'linesAndFills', grooveId: block.id });
+        if (suppressUpsell) {
+          onCapHitExternal?.('linesAndFills');
+        } else {
+          setCapUpsell(caps.linesAndFills.message ?? '');
+          setPitchLever('linesAndFills');
+        }
+        return;
+      }
+      playback.setBassVariant(variantId);
+    },
+    [
+      linesAndFillsCapped,
+      suppressUpsell,
+      onCapHitExternal,
+      caps,
+      block.id,
+      playback,
+    ],
   );
 
   // Chord strip is opt-in: hidden until the user toggles the header chord icon.
@@ -823,15 +867,16 @@ export function GrooveCardBlockView({
             // showing where the cycle will go, even before play), then updates
             // live through every key once playing. Computed above.
             nextKeyLabel={nextKeyLabel}
-            // loopRange anchors to the WAVEFORM and dynamicLoop anchors to the
-            // header DIAL (both handled above), not the controls row — so the
-            // controls popover ignores them. When the surface suppresses the
-            // upsell (/free funnel), force null so the controls popover never
-            // opens.
+            // loopRange anchors to the WAVEFORM, dynamicLoop to the header DIAL,
+            // and linesAndFills to its own SECTION (all handled above), not the
+            // controls row — so the controls popover ignores them. When the
+            // surface suppresses the upsell (/free funnel), force null so the
+            // controls popover never opens.
             pitchLever={
               suppressUpsell ||
               pitchLever === 'loopRange' ||
-              pitchLever === 'dynamicLoop'
+              pitchLever === 'dynamicLoop' ||
+              pitchLever === 'linesAndFills'
                 ? null
                 : pitchLever
             }
@@ -851,6 +896,35 @@ export function GrooveCardBlockView({
           />
         }
       />
+
+      {/* Lines & Fills — premium alternate-bassline swap. Anchored upsell
+          popover mirrors the Dynamic Loop dial pattern. */}
+      {linesAndFillsShown && (
+        <Popover
+          open={!suppressUpsell && pitchLever === 'linesAndFills'}
+          onOpenChange={(o) => {
+            if (!o) setPitchLever(null);
+          }}
+        >
+          <PopoverAnchor asChild>
+            <div>
+              <LinesAndFillsSection
+                variants={bassVariants}
+                activeVariantId={playback.activeBassVariantId}
+                locked={linesAndFillsCapped}
+                onSelect={onLinesAndFillsSelect}
+              />
+            </div>
+          </PopoverAnchor>
+          {!suppressUpsell && pitchLever === 'linesAndFills' && (
+            <UpgradePitchContent
+              lever="linesAndFills"
+              message={capUpsell ?? undefined}
+              side="bottom"
+            />
+          )}
+        </Popover>
+      )}
 
       {isDrillBrick && (
         <>

@@ -9,6 +9,27 @@
 4. Premium stem files must be **genuinely access-controlled in storage**, not just hidden in the UI.
 5. **Bass College (existing `accelerator` product) grants `linesAndFills`** for now. It already confers member-tier; so a College owner gets the 5 baseline levers PLUS linesAndFills; a plain $24 member gets the 5 levers but NOT linesAndFills.
 
+### Lines & Fills — audio design (locked 2026-06-10, UX-first)
+
+**Target UX:** student picks a bassline **A / B / C** (one active), then **independently toggles fills** on/off in any combination, hearing changes seamlessly mid-playback. UX is non-negotiable; engineering serves it.
+
+**Architecture — two layers, NOT pre-rendered combinations:**
+- **Lines (whole bassline)** = N **full-length** bass loops, all the EXACT same bar-count/length as the default bass. Switching = swap which buffer the self-looping bass worklet plays, **quantized to the loop seam** (`getStemNextSeamTime`). Drums/harmony untouched. This is the proven, low-risk mechanism (same as a buffer swap). "Instant, unnoticed" = on-the-beat at the next seam, the industry-standard feel — NOT truly instantaneous.
+- **Fills (localized)** = each fill is a **short clip** covering only its bar window (e.g. bars 7–8), played **IN PLACE of** the chosen bassline for those bars (a bar-window overlay), toggled on/off. This is the SAME shape as the drum **notched-bed + overlays-at-a-span** pattern already proven by ear (see memory `groove-card-bed-signalsmith-recipe` / `groove-card-bed-notch-overlay-unify`).
+- **File count is ADDITIVE, not multiplicative:** `basslines + (fills [× basslines if fill isn't bassline-agnostic])`. 3 basslines + 3 fills ≈ 6–12 files, NOT 3 × 2³ combination-takes. This is what makes the expressive UX affordable.
+
+**Why not pure pre-rendered full combinations:** every fill-combo would be a unique file → combinatorial explosion. Rejected.
+
+**Risk split:** the Line swap is low-risk (buffer swap at seam). The Fill overlay is the HARD part — per-bar seam-matching at fill-in (bar 6→7) and fill-out (bar 8→1), the glitch-prone bar-boundary swap the validation flagged. Mitigated by reusing the already-ear-proven drum bed-overlay pattern, but still needs a prototype + onset/seam-meter listening test before "seamless" is claimed.
+
+**Sequencing (locked):**
+- **PR3a** — Lines only: A/B/C full-loop bassline swap at the seam. Ships seamless bassline switching fast; low risk. **DONE (committed):** contract `BasslineVariant` + `swapStemBuffer` (in-place dropBuffers/addBuffers on the bass worklet; PCM-only so `__bufferDuration`/seam/playhead/drum-phase-lock all stay valid) + stable-id preload + `setBassVariant` hook (swaps at seam, re-asserts key+tempo). Swap LOGIC proven by 5 unit tests.
+- **PR3b** — Fills: per-bar overlay scheduling, reusing the drum bed-overlay recipe; prototype + ear-test first.
+
+> **⚠️ OPEN EAR-VERIFICATION GATE (PR3a):** the AUDIBLE seamlessness of the bassline swap is NOT yet confirmed — it needs a real variant file (blocked on the admin uploader, PR5/B7) + a browser + ears. The architecture strongly implies seamless (PCM-only swap, unchanged seam clock, drums/harmony untouched) but "suggests ≠ heard." Do NOT claim "seamless" in UX copy until ear-tested. Unblocks once PR5's uploader lands, OR via a throwaway test (public-bucket file + temp button) at any time. Decision (2026-06-10): keep building, revisit when convenient.
+
+**Variant length is a HARD requirement** (carries over from B2): every bassline variant must be byte-identical in sample length / loop grid to the default bass, or the shared seam clock (`__bufferDuration`/`loopEnd`) desyncs the whole band. Enforce at admin upload.
+
 > ## ⚠️ Validation findings — read before implementing
 > The audit caught issues an implementer would otherwise hit. The big ones:
 > - **B2 "seamless in-place bass swap" is NOT a `setKey` clone** — it's heavy worklet surgery (append-only `addBuffers`, read-head reset, the codebase already *removed* a glitchy re-register-at-seam). MUST prototype + ear-measure (audio-audit harness) before committing to "seamless". This is the highest-risk pillar.
