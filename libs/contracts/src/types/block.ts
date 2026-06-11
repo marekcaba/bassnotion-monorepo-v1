@@ -261,6 +261,19 @@ export interface BasslineVariant {
   url: string;
   /** Entitlement feature key that unlocks it. Defaults to 'linesAndFills'. */
   feature?: string;
+  /**
+   * "Lines & Fills" combo tags. Each variant is a pre-rendered full take of a
+   * (line, fill) combination — the player resolves the active take from the two
+   * selections:
+   *  - `lineId`: which bassline this take belongs to (e.g. "A", "B"). Absent =
+   *    the default bass's line (shown as "Default" in the Lines row).
+   *  - `fillId`: which fill this take includes (e.g. "fill1"). Absent = no fill
+   *    (the "None" option in the Fills row).
+   * A groove with no fills simply leaves `fillId` unset on every variant, and
+   * the card behaves as the original single-row bassline swap.
+   */
+  lineId?: string;
+  fillId?: string;
 }
 
 export interface GrooveCardStemSet {
