@@ -4,7 +4,7 @@
  * LinesAndFillsSection — the premium alternate-bassline swap row ("Lines &
  * Fills"). Renders under the groove card: a "Default" cell + one cell per
  * BasslineVariant. Clicking a cell swaps the active bassline (the parent's
- * `onSelect` drives `playback.setBassVariant` at the next loop seam).
+ * `onSelect` drives `playback.setBassVariant`, which swaps at the next bar).
  *
  * Gate (decided by the parent, passed as `locked`):
  *  - entitled member → cells are live; the active one is highlighted (amber).

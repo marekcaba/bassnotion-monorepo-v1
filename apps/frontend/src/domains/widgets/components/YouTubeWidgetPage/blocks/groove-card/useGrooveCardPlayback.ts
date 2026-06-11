@@ -803,12 +803,13 @@ export function useGrooveCardPlayback({
    * Swap the active bassline variant ("Lines & Fills"). `variantId` selects a
    * premium full-length bass take; `null` restores the default bass.
    *
-   * SAMPLE-ACCURATE: we hand the new PCM to the bass worklet immediately, and
-   * the worklet (patched `swapAtLoopStart`) replaces the looping buffer THE
-   * INSTANT its read-head wraps to loopStart — so the swap lands exactly on the
-   * loop's first sample, on the downbeat, with no JS-timer jitter. Drums +
-   * harmony never move. Key + tempo are re-asserted at the seam (schedulable
-   * scalars) so the new take inherits the user's current transpose + speed.
+   * SAMPLE-ACCURATE: we hand the new PCM + the loop's bar count to the bass
+   * worklet immediately (patched `swapAtPhase`); the worklet replaces the
+   * looping buffer THE INSTANT its read-head crosses the next BAR boundary
+   * (computed in its own read-head domain, so it's tail-immune) — the swap lands
+   * exactly on the next downbeat, no JS-timer jitter. Drums + harmony never
+   * move. Key + tempo are re-asserted at the loop seam (schedulable scalars) so
+   * the new take keeps the user's current transpose + speed.
    */
   const setBassVariant = useCallback(
     (variantId: string | null) => {
@@ -825,41 +826,25 @@ export function useGrooveCardPlayback({
 
         setActiveBassVariantId(variantId);
 
-        // Compute the NEXT BAR downbeat from the REAL BPM grid (a true 4/4 bar,
-        // NOT the decoded buffer length which drifts on stem tails) + the loop
-        // anchor — mirrors the proven loop-selection-swap math below. Convert it
-        // to a LOOP PHASE [0,1): the worklet releases the PCM swap exactly when
-        // its read-head crosses that phase. Both the buffer swap AND the key/
-        // tempo re-assert target the SAME bar boundary, so the new bass plays in
-        // tune + in time from that downbeat.
-        const ctx = audioContextRef.current;
+        // Queue the PCM swap with the loop's bar count — the worklet releases it
+        // on the next BAR boundary IN ITS OWN READ-HEAD DOMAIN (the buffer is the
+        // loop, so the head divides it evenly across bars; tail-immune, no
+        // audio-clock mismatch). The key/tempo re-assert is deferred to the loop
+        // seam (the next downbeat the engine can schedule a scalar to); since the
+        // swap preserves the active rate/semitones segments, the new bass keeps
+        // the current key+tempo in the interim.
         const bars = Math.max(1, block.lengthBars);
-        let targetPhase = 0; // default: loop start
-        let boundaryTime: number | undefined;
-        if (ctx && loopStartAudioTime != null && loopDurationSeconds > 0) {
-          const barDuration = loopDurationSeconds / bars;
-          const elapsed = ctx.currentTime - loopStartAudioTime;
-          const nextBars = elapsed < 0 ? 0 : Math.ceil(elapsed / barDuration);
-          boundaryTime = loopStartAudioTime + nextBars * barDuration;
-          // Phase within the loop the head will be at on that downbeat.
-          targetPhase =
-            ((boundaryTime - loopStartAudioTime) / loopDurationSeconds) % 1;
-          if (!Number.isFinite(targetPhase) || targetPhase < 0) targetPhase = 0;
-        }
-
-        // Queue the PCM swap (worklet self-times it to targetPhase, sample-exact).
-        void engine.swapStemBuffer?.('audio-bass', target, targetPhase);
-        // Re-assert key + tempo at the SAME bar boundary (scalar schedule writes).
-        const reassertAt = boundaryTime ?? ctx?.currentTime ?? undefined;
+        void engine.swapStemBuffer?.('audio-bass', target, bars);
+        const boundary = computeNextBoundaryAudioTime(0);
         engine.setInstrumentPitchShift?.(
           'audio-bass',
           currentSemitonesRef.current,
-          reassertAt,
+          boundary,
         );
         engine.setStemRate?.(
           'audio-bass',
           currentBpmRef.current / Math.max(1, block.originalBpm),
-          reassertAt,
+          boundary ?? audioContextRef.current?.currentTime ?? undefined,
         );
       };
 
@@ -883,8 +868,7 @@ export function useGrooveCardPlayback({
       activeBassVariantId,
       block.originalBpm,
       block.lengthBars,
-      loopStartAudioTime,
-      loopDurationSeconds,
+      computeNextBoundaryAudioTime,
     ],
   );
 

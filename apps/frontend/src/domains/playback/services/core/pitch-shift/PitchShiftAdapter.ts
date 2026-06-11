@@ -188,7 +188,7 @@ export interface PitchShiftAdapter {
   swapBuffers(
     node: AudioNode,
     channelData: Float32Array[],
-    targetPhase: number,
+    lengthBars: number,
   ): Promise<void>;
 
   /**
@@ -847,26 +847,30 @@ export class SignalsmithAdapter implements PitchShiftAdapter {
   async swapBuffers(
     node: AudioNode,
     channelData: Float32Array[],
-    targetPhase: number,
+    lengthBars: number,
   ): Promise<void> {
     const sg = (node as any).__signalsmith;
-    // SAMPLE-ACCURATE swap (BassNotion patch): hand the worklet the new PCM + a
-    // target loop PHASE (0..1, computed main-side from the real BPM bar grid).
-    // The worklet replaces the looping buffer THE INSTANT its read-head crosses
-    // that phase — exactly on the downbeat, no JS-timer jitter, no buffer-tail
-    // drift. Same-length only (worklet drops a mismatch). Falls back to drop+add
-    // on an unpatched node (older bundle, instant mid-loop swap).
+    // SAMPLE-ACCURATE swap (BassNotion patch): hand the worklet the new PCM + the
+    // loop's bar count. The worklet replaces the looping buffer the instant its
+    // read-head crosses the next BAR boundary (in its own read-head domain, so
+    // tail-immune) — exactly on the downbeat, no JS-timer jitter. Same-length
+    // only (worklet drops a mismatch). Falls back to drop+add on an unpatched
+    // node (older bundle, instant mid-loop swap).
     if (sg?.swapAtPhase) {
       try {
         // No transfer list — the PCM is structured-cloned. We must NOT transfer:
         // the source Float32Arrays belong to the cached variant AudioBuffer and
         // are reused on a repeat swap; transferring would detach them.
-        sg.swapAtPhase(channelData, targetPhase);
+        sg.swapAtPhase(channelData, lengthBars);
       } catch (err) {
         this.log.warn('Signalsmith swapAtPhase failed', err);
       }
       return;
     }
+    // Unpatched bundle — fall back to an instant (mid-loop) drop+add.
+    this.log.warn(
+      'Signalsmith swapAtPhase missing — falling back to instant swap',
+    );
     if (!sg?.dropBuffers || !sg?.addBuffers) {
       this.log.warn('Signalsmith node not ready for swapBuffers — skipping');
       return;
