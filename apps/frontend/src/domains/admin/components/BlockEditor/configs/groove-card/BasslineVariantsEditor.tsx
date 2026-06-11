@@ -99,6 +99,18 @@ export function BasslineVariantsEditor({
     [variants, onChange],
   );
 
+  // Combo tags. An empty input clears the tag (stored as `undefined`, the
+  // "Default line" / "No fill" sentinel the player resolves against).
+  const setTag = useCallback(
+    (id: string, key: 'lineId' | 'fillId', raw: string) => {
+      const value = raw.trim() || undefined;
+      onChange(
+        variants.map((v) => (v.id === id ? { ...v, [key]: value } : v)),
+      );
+    },
+    [variants, onChange],
+  );
+
   const uploadFor = useCallback(
     async (variant: BasslineVariant, file: File) => {
       setError(null);
@@ -205,8 +217,12 @@ export function BasslineVariantsEditor({
         </button>
       </div>
       <p className="text-xs text-white/40">
-        Each variant must be the EXACT same length as the default bass (checked
-        on upload). Files write to the private{' '}
+        Each variant is one pre-rendered take. Tag it with a{' '}
+        <span className="text-white/60">Line</span> (which bassline — leave blank
+        for the default) and a <span className="text-white/60">Fill</span> (leave
+        blank for none); the player offers Lines &amp; Fills as two pickers and
+        plays the matching combo. Every variant must be the EXACT same length as
+        the default bass (checked on upload). Files write to the private{' '}
         <code className="text-white/50">premium-basslines</code> bucket.
       </p>
 
@@ -218,48 +234,78 @@ export function BasslineVariantsEditor({
         {variants.map((v) => (
           <div
             key={v.id}
-            className="flex items-center gap-2 rounded-md border border-white/10 bg-white/5 px-2 py-1.5"
+            className="space-y-1.5 rounded-md border border-white/10 bg-white/5 px-2 py-2"
           >
-            <input
-              value={v.title}
-              onChange={(e) => setTitle(v.id, e.target.value)}
-              placeholder="Title (e.g. Walking)"
-              className="min-w-0 flex-1 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-sm text-white placeholder:text-white/30"
-            />
-            <label
-              className={`flex shrink-0 cursor-pointer items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium transition-colors ${
-                busyRow === v.id
-                  ? 'cursor-wait border-white/10 bg-white/5 text-white/40'
-                  : 'border-white/15 bg-white/10 text-white/80 hover:bg-white/15'
-              }`}
-            >
-              <UploadCloud className="h-3.5 w-3.5" />
-              {busyRow === v.id ? 'Uploading…' : v.url ? 'Replace' : 'Upload'}
+            {/* Line 1: title + upload + status + delete */}
+            <div className="flex items-center gap-2">
               <input
-                type="file"
-                accept=".ogg,audio/ogg"
-                className="hidden"
-                disabled={busyRow === v.id}
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) void uploadFor(v, f);
-                  e.target.value = '';
-                }}
+                value={v.title}
+                onChange={(e) => setTitle(v.id, e.target.value)}
+                placeholder="Title (e.g. Walking)"
+                className="min-w-0 flex-1 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-sm text-white placeholder:text-white/30"
               />
-            </label>
-            {v.url && (
-              <span className="shrink-0 text-[10px] font-medium text-emerald-400">
-                ✓ set
-              </span>
-            )}
-            <button
-              type="button"
-              onClick={() => removeRow(v.id)}
-              className="shrink-0 text-white/30 transition-colors hover:text-red-400"
-              title="Remove"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
+              <label
+                className={`flex shrink-0 cursor-pointer items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium transition-colors ${
+                  busyRow === v.id
+                    ? 'cursor-wait border-white/10 bg-white/5 text-white/40'
+                    : 'border-white/15 bg-white/10 text-white/80 hover:bg-white/15'
+                }`}
+              >
+                <UploadCloud className="h-3.5 w-3.5" />
+                {busyRow === v.id ? 'Uploading…' : v.url ? 'Replace' : 'Upload'}
+                <input
+                  type="file"
+                  accept=".ogg,audio/ogg"
+                  className="hidden"
+                  disabled={busyRow === v.id}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) void uploadFor(v, f);
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+              {v.url && (
+                <span className="shrink-0 text-[10px] font-medium text-emerald-400">
+                  ✓ set
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => removeRow(v.id)}
+                className="shrink-0 text-white/30 transition-colors hover:text-red-400"
+                title="Remove"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Line 2: combo tags — which (line, fill) this take is. Empty Line =
+                the default bass's line; empty Fill = no fill. */}
+            <div className="flex items-center gap-2">
+              <label className="flex flex-1 items-center gap-1.5">
+                <span className="shrink-0 text-[10px] uppercase tracking-wider text-white/30">
+                  Line
+                </span>
+                <input
+                  value={v.lineId ?? ''}
+                  onChange={(e) => setTag(v.id, 'lineId', e.target.value)}
+                  placeholder="default"
+                  className="min-w-0 flex-1 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs text-white placeholder:text-white/30"
+                />
+              </label>
+              <label className="flex flex-1 items-center gap-1.5">
+                <span className="shrink-0 text-[10px] uppercase tracking-wider text-white/30">
+                  Fill
+                </span>
+                <input
+                  value={v.fillId ?? ''}
+                  onChange={(e) => setTag(v.id, 'fillId', e.target.value)}
+                  placeholder="none"
+                  className="min-w-0 flex-1 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs text-white placeholder:text-white/30"
+                />
+              </label>
+            </div>
           </div>
         ))}
       </div>
