@@ -20,12 +20,20 @@ import { useCallback, useRef, useState } from 'react';
 import { Trash2, UploadCloud } from 'lucide-react';
 import type { BasslineVariant } from '@bassnotion/contracts';
 import { supabase } from '@/infrastructure/supabase/client';
+import { StemUploadButton } from './StemUploadButton';
+import type { UploadStemOptions } from './useStemUpload';
 
 interface BasslineVariantsEditorProps {
   /** Current variants (from stems.bassVariants). */
   variants: BasslineVariant[];
-  /** The default bass URL — used to fetch+decode the reference length. */
-  defaultBassUrl: string;
+  /** The MAIN bass URL (stems.bass) — this is "Bass A". Doubles as the
+   *  length reference every alternate line / fill is checked against. */
+  mainBassUrl: string;
+  /** Persist a new main-bass URL (writes stems.bass, PUBLIC audio-samples). */
+  onChangeMainBass: (url: string) => void;
+  /** Upload context for the main bass (path-building in the audio-samples
+   *  bucket — same plumbing as the drums/harmony stem uploaders). */
+  mainBassUploadContext: UploadStemOptions;
   /** Groove length in bars — defines the musical grid the variant must match. */
   lengthBars: number;
   /** Groove default BPM — defines the musical grid. */
@@ -71,7 +79,9 @@ function lengthInBars(frames: number, sampleRate: number, bpm: number): number {
 
 export function BasslineVariantsEditor({
   variants,
-  defaultBassUrl,
+  mainBassUrl,
+  onChangeMainBass,
+  mainBassUploadContext,
   lengthBars,
   bpm,
   slug,
@@ -153,8 +163,8 @@ export function BasslineVariantsEditor({
         setError(`File too large (max ${MAX_BYTES / 1024 / 1024}MB).`);
         return;
       }
-      if (!defaultBassUrl) {
-        setError('Upload the default bass stem first (the length reference).');
+      if (!mainBassUrl) {
+        setError('Upload Bass A (the main bass) first — it sets the length.');
         return;
       }
       setBusyRow(variant.id);
@@ -169,7 +179,7 @@ export function BasslineVariantsEditor({
         const fileBars = lengthInBars(file_.frames, file_.sampleRate, bpm);
 
         if (defaultBarsRef.current == null) {
-          const ref = await fetch(defaultBassUrl);
+          const ref = await fetch(mainBassUrl);
           const d = await decodeAudio(await ref.arrayBuffer());
           defaultBarsRef.current = lengthInBars(d.frames, d.sampleRate, bpm);
         }
@@ -238,7 +248,7 @@ export function BasslineVariantsEditor({
         setBusyRow(null);
       }
     },
-    [variants, onChange, slug, defaultBassUrl],
+    [variants, onChange, slug, mainBassUrl],
   );
 
   /** A compact upload control for one (combo) cell. Lazily creates the variant
@@ -305,12 +315,26 @@ export function BasslineVariantsEditor({
         {/* Bassline row */}
         <div className="flex items-center gap-2">
           {builtIn ? (
-            <span className="min-w-0 flex-1 rounded-md border border-white/10 bg-white/[0.03] px-2 py-1.5 text-sm text-white/70">
-              {label}{' '}
-              <span className="text-[10px] text-white/30">
-                (the groove’s main bass)
+            // Bass A IS the groove's main bass (stems.bass) — its uploader writes
+            // to the PUBLIC audio-samples bucket (same as drums/harmony), NOT the
+            // private variant bucket. Authored here so the whole bass family
+            // (Bass A + alternates + fills) lives in one list.
+            <>
+              <span className="shrink-0 text-sm font-medium text-white/80">
+                {label}{' '}
+                <span className="text-[10px] font-normal text-white/30">
+                  (main bass)
+                </span>
               </span>
-            </span>
+              <div className="min-w-0 flex-1">
+                <StemUploadButton
+                  value={mainBassUrl}
+                  onChange={onChangeMainBass}
+                  uploadContext={mainBassUploadContext}
+                  stemLabel="bass"
+                />
+              </div>
+            </>
           ) : (
             <>
               <input
@@ -394,10 +418,12 @@ export function BasslineVariantsEditor({
         </button>
       </div>
       <p className="text-xs text-white/40">
-        Each bassline (Bass A is the groove’s main bass) has its{' '}
-        <span className="text-white/60">own fills</span> — fills belong to one
-        line and never cross. Every file must be the EXACT same length as the
-        main bass (checked on upload) and writes to the private{' '}
+        Bass A is the groove’s main bass; add alternate lines (Bass B, C…) and,
+        under each, its <span className="text-white/60">own fills</span> — fills
+        belong to one line and never cross. Every file must be the EXACT same
+        length as Bass A (checked on upload). Bass A writes to the public{' '}
+        <code className="text-white/50">audio-samples</code> bucket; alternate
+        lines and fills write to the private{' '}
         <code className="text-white/50">premium-basslines</code> bucket.
       </p>
 

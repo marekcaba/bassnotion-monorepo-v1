@@ -42,7 +42,10 @@ interface GrooveCardBlockFormProps {
 // Musical stems the admin uploads. The metronome click is NOT here —
 // it's a fixed shared metronome (MIDI in /app, one bundled sample on
 // the waitlist), never uploaded per groove.
-const STEM_SLOTS = ['bass', 'drums', 'harmony'] as const;
+// Bass is NOT here — it's authored as "Bass A" inside the Lines & Fills editor
+// below (which owns the bass stem + its alternate lines + fills, one unified
+// list). Drums + harmony stay as the fixed backing stems.
+const STEM_SLOTS = ['drums', 'harmony'] as const;
 
 export function GrooveCardBlockForm({
   config,
@@ -298,13 +301,13 @@ export function GrooveCardBlockForm({
       {!usingLibrary && (
         <fieldset className="space-y-2">
           <legend className="mb-1 text-xs uppercase tracking-wider text-white/40">
-            Stems — delivered at original key; runtime pitch-shifts ±6 semitones
+            Backing stems — delivered at original key; runtime pitch-shifts ±6
+            semitones
           </legend>
           <p className="text-xs text-white/40">
-            Stems write to the <code>audio-samples</code> Supabase bucket. Paste
-            a public path or full URL into each field — the path pattern{' '}
-            <code>/storage/v1/object/public/audio-samples/…</code> is enforced
-            at save.
+            Drums &amp; harmony write to the <code>audio-samples</code> Supabase
+            bucket. The bass is authored below in Lines &amp; Fills (as “Bass
+            A”).
           </p>
           <div className="space-y-2 rounded-lg border border-white/10 p-3">
             <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
@@ -327,10 +330,22 @@ export function GrooveCardBlockForm({
             </div>
           </div>
 
-          {/* Premium alternate basslines (Lines & Fills) for this groove. */}
+          {/* Bass (as "Bass A" = the main bass stem) + alternate lines + fills.
+              The main bass writes to stems.bass (PUBLIC audio-samples bucket);
+              alternate lines + fills write to the PRIVATE premium-basslines
+              bucket. One unified list. */}
           <BasslineVariantsEditor
             variants={config.stems?.bassVariants ?? []}
-            defaultBassUrl={config.stems?.bass ?? ''}
+            mainBassUrl={config.stems?.bass ?? ''}
+            onChangeMainBass={(url) => updateStem('bass', url)}
+            mainBassUploadContext={{
+              tutorialSlug: tutorialSlug ?? 'unsaved',
+              keyFolder:
+                (config.originalKey ?? '').trim().length > 0
+                  ? config.originalKey!
+                  : 'default',
+              stem: 'bass',
+            }}
             lengthBars={config.lengthBars ?? 4}
             bpm={config.originalBpm ?? 100}
             slug={tutorialSlug ?? 'unsaved'}
