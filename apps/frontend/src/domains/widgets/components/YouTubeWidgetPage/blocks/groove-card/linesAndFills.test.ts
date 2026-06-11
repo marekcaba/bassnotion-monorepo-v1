@@ -56,6 +56,21 @@ describe('buildLinesAndFillsModel', () => {
     ]);
   });
 
+  it('a fill on the DEFAULT line (fillId, no lineId) does NOT spawn a phantom line', () => {
+    // The admin authors a default-line fill as a cell tagged fillId-only. It
+    // must attach to the Default line + add to the Fills row — NOT appear as its
+    // own Line cell (regression caught when wiring the two-box admin editor).
+    const variants = [
+      v('d1', 'Fill 1', undefined, 'fill1'),
+      v('d2', 'Fill 2', undefined, 'fill2'),
+    ];
+    const m = buildLinesAndFillsModel(variants);
+    expect(m.lines.map((l) => l.id)).toEqual([DEFAULT_LINE_ID]); // no phantom lines
+    expect(m.fills.map((f) => f.id)).toEqual([NO_FILL_ID, 'fill1', 'fill2']);
+    // and the combo resolves to the default-line fill take
+    expect(resolveComboVariantId(variants, DEFAULT_LINE_ID, 'fill1')).toBe('d1');
+  });
+
   it('merges takes that share an explicit lineId into ONE line carrying fills', () => {
     // Two lines (A, B), each with the same two fills → 3 line cells (incl.
     // Default) and 3 fill cells (incl. None); the grid is the cartesian combo.

@@ -51,16 +51,23 @@ export interface LinesAndFillsModel {
 }
 
 /**
- * The line a variant belongs to.
+ * The line a variant belongs to. Three cases:
  *
- * BACKWARD-COMPATIBLE: a variant with an explicit `lineId` joins that line (so
- * tagged takes — "B", "B+fill1" — merge into ONE line that carries fills). A
- * variant with NO `lineId` is its OWN line, keyed by its id — this preserves the
- * pre-Fills single-row card, where every (untagged) variant was its own swap
- * cell. (The built-in `stems.bass` is the separate `DEFAULT_LINE_ID` line.)
+ *  1. Explicit `lineId` → that line. Co-tagged takes ("B", "B+fill1") merge
+ *     into ONE line that carries fills.
+ *  2. No `lineId` but HAS a `fillId` → it's a fill OF THE DEFAULT LINE
+ *     (`DEFAULT_LINE_ID`), so the built-in bass can carry fills. (This is how
+ *     the admin authors a default-line fill: a cell tagged fillId-only.)
+ *  3. Neither tag → its OWN line, keyed by id. This preserves the pre-Fills
+ *     single-row card, where every (untagged) variant was its own swap cell.
+ *
+ * (The built-in `stems.bass` itself is the `DEFAULT_LINE_ID` line — selecting
+ * it maps to the null/default variant.)
  */
 export function lineKeyOf(variant: BasslineVariant): string {
-  return variant.lineId ?? variant.id;
+  if (variant.lineId) return variant.lineId;
+  if (variant.fillId) return DEFAULT_LINE_ID;
+  return variant.id;
 }
 
 /** Normalise a variant's fill tag (absent → no fill). */
