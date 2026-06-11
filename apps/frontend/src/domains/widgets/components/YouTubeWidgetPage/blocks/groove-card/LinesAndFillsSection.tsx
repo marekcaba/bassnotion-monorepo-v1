@@ -136,11 +136,11 @@ function LineGroupRow({
   // The built-in Bass A with no fill is the free baseline → never locks.
   const linePremium = group.id !== DEFAULT_LINE_ID;
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex shrink-0 flex-col gap-1.5">
       <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
         {group.label}
       </div>
-      <div className="flex flex-wrap items-stretch gap-2">
+      <div className="flex items-stretch gap-2">
         {/* The plain line (no fill) */}
         <VariantCell
           label={group.fills.length ? 'No fill' : group.label}
@@ -197,10 +197,12 @@ export function LinesAndFillsSection({
         keep playing.
       </p>
 
-      <div className="flex flex-col gap-3">
+      {/* One horizontal row: each line + its fills, divided by a vertical rule.
+          Scrolls sideways if it overflows the card width. */}
+      <div className="flex items-stretch gap-3 overflow-x-auto pb-1">
         {groups.map((group, i) => (
-          <div key={group.id} className="flex flex-col gap-3">
-            {i > 0 && <div className="h-px w-full bg-white/10" />}
+          <div key={group.id} className="flex shrink-0 items-stretch gap-3">
+            {i > 0 && <div className="w-px self-stretch bg-white/10" />}
             <LineGroupRow
               group={group}
               activeLineId={activeLineId}
