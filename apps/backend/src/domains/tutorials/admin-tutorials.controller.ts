@@ -592,6 +592,7 @@ export class AdminTutorialsController {
     };
     const slug = readField('slug');
     const variantId = readField('variantId');
+    const title = readField('title');
     if (!slug) throw new BadRequestException('Missing groove slug');
     if (!variantId) throw new BadRequestException('Missing variantId');
 
@@ -629,7 +630,20 @@ export class AdminTutorialsController {
     };
     const safeSlug = sanitise(slug, 'untitled');
     const safeVariant = sanitise(variantId, 'variant');
-    const path = `grooves/${safeSlug}/${safeVariant}.ogg`;
+    // Readable filename: "{title-slug}-{shortId}.ogg" (e.g. bass-b-fill-1-mq9z…).
+    // The title makes the bucket human-browsable; the shortId (a stable suffix
+    // of the variantId) keeps it unique across same-titled variants AND stable
+    // across re-uploads so `upsert` overwrites the same file (no orphans, the
+    // stored config URL keeps working). Falls back to the full variantId when
+    // no title is provided.
+    const titleSlug = sanitise(title, '');
+    // Short id = the last hyphen-delimited token of the variant id (its unique
+    // generated suffix, e.g. var-line-mq9zot7b → "mq9zot7b"; …-fill-mq9z →
+    // "mq9z"), so the readable name keeps a clean stable tail rather than a
+    // mid-token slice.
+    const shortId = safeVariant.split('-').pop() || safeVariant;
+    const fileBase = titleSlug ? `${titleSlug}-${shortId}` : safeVariant;
+    const path = `grooves/${safeSlug}/${fileBase}.ogg`;
 
     this.logger.log('Uploading premium bassline variant', {
       correlationId,

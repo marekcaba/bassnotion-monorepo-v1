@@ -212,6 +212,10 @@ export function BasslineVariantsEditor({
         const form = new FormData();
         form.append('slug', slug || 'library');
         form.append('variantId', variant.id);
+        // The human title (e.g. "Bass B Fill 1") so the stored filename is
+        // readable in the bucket; the backend keeps a stable id suffix for
+        // uniqueness + upsert-on-replace.
+        form.append('title', variant.title ?? '');
         form.append('file', file);
         const apiUrl =
           process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
