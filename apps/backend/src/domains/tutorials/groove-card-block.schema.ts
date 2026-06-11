@@ -60,6 +60,9 @@ const basslineVariantSchema = z.object({
       'variant URL must point at the audio-samples or premium-basslines bucket',
     ),
   feature: z.string().optional(),
+  // Lines & Fills combo tags (which bassline + which fill this take is).
+  lineId: z.string().optional(),
+  fillId: z.string().optional(),
 });
 
 export const grooveCardStemSetSchema = z.object({

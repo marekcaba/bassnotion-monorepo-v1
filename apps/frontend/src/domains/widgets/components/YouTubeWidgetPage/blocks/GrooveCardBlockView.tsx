@@ -32,6 +32,11 @@ import {
 import { GrooveCardDynamicLoopDial } from './groove-card/GrooveCardDynamicLoopDial';
 import { LinesAndFillsSection } from './groove-card/LinesAndFillsSection';
 import {
+  buildLinesAndFillsModel,
+  resolveComboVariantId,
+  selectionForVariantId,
+} from './groove-card/linesAndFills';
+import {
   useDynamicLoop,
   buildCycleKeys,
   type DynamicLoopConfig,
@@ -374,14 +379,30 @@ export function GrooveCardBlockView({
   const linesAndFillsShown =
     capsEnabled && !isDrillBrick && bassVariants.length > 0;
 
-  const onLinesAndFillsSelect = useCallback(
-    (variantId: string | null) => {
-      // Reverting to the default bass is always allowed (it's the free state).
+  // Lines + Fills rows derived from the variant list, and the current (line,
+  // fill) selection derived from the active variant id (single source of truth —
+  // playback.activeBassVariantId; no parallel state).
+  const linesAndFillsModel = useMemo(
+    () => buildLinesAndFillsModel(bassVariants),
+    [bassVariants],
+  );
+  const activeSelection = useMemo(
+    () => selectionForVariantId(bassVariants, playback.activeBassVariantId),
+    [bassVariants, playback.activeBassVariantId],
+  );
+
+  // Apply a (line, fill) selection: resolve the matching pre-rendered combo
+  // take and swap it on the next bar. The default-line + no-fill combo is the
+  // free state (null → restore built-in bass); any other combo is premium and
+  // gates when capped. An unexported combo (resolver → undefined) is a no-op.
+  const applyCombo = useCallback(
+    (lineId: string, fillId: string) => {
+      const variantId = resolveComboVariantId(bassVariants, lineId, fillId);
+      if (variantId === undefined) return; // no take for this combo — ignore
       if (variantId === null) {
-        playback.setBassVariant(null);
+        playback.setBassVariant(null); // free: back to default bass
         return;
       }
-      // Selecting a PREMIUM variant while capped is the upgrade moment.
       if (linesAndFillsCapped) {
         trackEvent('cap_hit', { lever: 'linesAndFills', grooveId: block.id });
         if (suppressUpsell) {
@@ -395,6 +416,7 @@ export function GrooveCardBlockView({
       playback.setBassVariant(variantId);
     },
     [
+      bassVariants,
       linesAndFillsCapped,
       suppressUpsell,
       onCapHitExternal,
@@ -402,6 +424,18 @@ export function GrooveCardBlockView({
       block.id,
       playback,
     ],
+  );
+
+  // Selecting a line keeps the current fill; selecting a fill keeps the current
+  // line. If the requested combo wasn't exported, applyCombo no-ops and the
+  // selection stays where it was.
+  const onSelectLine = useCallback(
+    (lineId: string) => applyCombo(lineId, activeSelection.fillId),
+    [applyCombo, activeSelection.fillId],
+  );
+  const onSelectFill = useCallback(
+    (fillId: string) => applyCombo(activeSelection.lineId, fillId),
+    [applyCombo, activeSelection.lineId],
   );
 
   // Chord strip is opt-in: hidden until the user toggles the header chord icon.
@@ -909,10 +943,13 @@ export function GrooveCardBlockView({
           <PopoverAnchor asChild>
             <div>
               <LinesAndFillsSection
-                variants={bassVariants}
-                activeVariantId={playback.activeBassVariantId}
+                lines={linesAndFillsModel.lines}
+                fills={linesAndFillsModel.fills}
+                activeLineId={activeSelection.lineId}
+                activeFillId={activeSelection.fillId}
                 locked={linesAndFillsCapped}
-                onSelect={onLinesAndFillsSelect}
+                onSelectLine={onSelectLine}
+                onSelectFill={onSelectFill}
               />
             </div>
           </PopoverAnchor>
