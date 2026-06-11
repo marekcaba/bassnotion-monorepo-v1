@@ -1,68 +1,52 @@
 /**
- * Lines & Fills combo resolution.
+ * Lines & Fills resolution.
  *
- * Each {@link BasslineVariant} is a pre-rendered full take of a (line, fill)
- * combination. The player offers TWO single-select controls:
+ * A groove can ship alternate **basslines** (Bass A, Bass B, …) and, **owned by
+ * each line**, its own **fills** (Bass A has its fills; Bass B has its own,
+ * different fills — they never cross lines). Every option is a full pre-rendered
+ * take swapped on the next bar via the patched signalsmith worklet — there is NO
+ * new DSP: once a selection resolves to a variant id, `setBassVariant(id)` swaps
+ * it (see `useGrooveCardPlayback`).
  *
- *   • Lines — which bassline (the default, or "A" / "B" / …)
- *   • Fills — which fill (none, or "fill1" / "fill2" / …)
+ * The first/built-in bassline IS Bass A — it's the groove's own `stems.bass`,
+ * not a separate upload. Internally it's keyed `DEFAULT_LINE_ID` and selecting it
+ * with no fill restores the built-in bass (`setBassVariant(null)`). Its fills are
+ * authored as variants tagged with a `fillId` but no `lineId`.
  *
- * The active stem is the variant whose `(lineId, fillId)` matches the current
- * selection. There is NO new DSP: once the combo resolves to a variant id, the
- * existing `setBassVariant(id)` swaps it on the next bar (see
- * `useGrooveCardPlayback`).
- *
- * Sentinels: the DEFAULT line and the NO-fill option are represented by a
- * variant with the corresponding tag *absent* (`lineId`/`fillId` undefined).
- * We normalise "absent" to these stable string keys so the UI can key rows and
- * compare selections without juggling `undefined`.
+ * Data: each {@link BasslineVariant} carries `(lineId?, fillId?)`. A line is the
+ * set of variants sharing a line key; a fill is a variant within that line that
+ * also has a `fillId`. The UI renders each line grouped with its own fills.
  */
 
 import type { BasslineVariant } from '@bassnotion/contracts';
 
-/** The default bassline (the groove's built-in `stems.bass`). A variant with no
- *  `lineId` belongs to this line. */
+/** The built-in bassline (the groove's `stems.bass`) — "Bass A". */
 export const DEFAULT_LINE_ID = '__default__';
-/** No fill selected. A variant with no `fillId` is the "None" fill option. */
+/** No fill selected (playing the plain line). */
 export const NO_FILL_ID = '__none__';
 
-export interface LineOption {
-  /** Stable id (`DEFAULT_LINE_ID` for the built-in bass). */
-  id: string;
-  /** Display label for the Lines row. */
-  label: string;
-}
-
 export interface FillOption {
-  /** Stable id (`NO_FILL_ID` for "no fill"). */
+  /** Stable id (`fillId`). */
   id: string;
-  /** Display label for the Fills row. */
+  /** Display label. */
   label: string;
 }
 
-export interface LinesAndFillsModel {
-  /** The Lines row, "Default" first, then each distinct line in first-seen
-   *  order. */
-  lines: LineOption[];
-  /** The Fills row, "None" first, then each distinct fill in first-seen order.
-   *  Empty (length 0) when the groove has no fills at all — callers hide the
-   *  Fills row in that case. */
+export interface LineGroup {
+  /** Stable line id (`DEFAULT_LINE_ID` for the built-in Bass A). */
+  id: string;
+  /** Display label (the author's line name; defaults to "Bass A" for built-in). */
+  label: string;
+  /** This line's own fills (never shared with other lines). May be empty. */
   fills: FillOption[];
 }
 
 /**
- * The line a variant belongs to. Three cases:
- *
- *  1. Explicit `lineId` → that line. Co-tagged takes ("B", "B+fill1") merge
- *     into ONE line that carries fills.
- *  2. No `lineId` but HAS a `fillId` → it's a fill OF THE DEFAULT LINE
- *     (`DEFAULT_LINE_ID`), so the built-in bass can carry fills. (This is how
- *     the admin authors a default-line fill: a cell tagged fillId-only.)
- *  3. Neither tag → its OWN line, keyed by id. This preserves the pre-Fills
- *     single-row card, where every (untagged) variant was its own swap cell.
- *
- * (The built-in `stems.bass` itself is the `DEFAULT_LINE_ID` line — selecting
- * it maps to the null/default variant.)
+ * The line a variant belongs to:
+ *  1. explicit `lineId` → that line (co-tagged takes merge into one line);
+ *  2. no `lineId` but a `fillId` → a fill of the built-in line (Bass A);
+ *  3. neither tag → its own line, keyed by id (legacy untagged variants stay
+ *     their own swap cell — backward-compatible with pre-Fills grooves).
  */
 export function lineKeyOf(variant: BasslineVariant): string {
   if (variant.lineId) return variant.lineId;
@@ -76,59 +60,54 @@ export function fillKeyOf(variant: BasslineVariant): string {
 }
 
 /**
- * Derive the Lines + Fills rows from the groove's variant list.
+ * Group the groove's variants into lines, each owning its own fills.
  *
- * - The built-in bass is always the first Line ("Default", `DEFAULT_LINE_ID`);
- *   "None" is always the first Fill.
- * - Each distinct line key (see {@link lineKeyOf}) becomes a Line cell in
- *   first-seen order — so untagged legacy variants each get their own cell
- *   (backward-compatible), while explicitly co-tagged takes merge into one line.
- * - Each distinct `fillId` becomes a Fill cell. A groove with no fills yields an
- *   empty Fills list → the caller hides the row.
- * - A line's label prefers its no-fill take's title (so "B" reads as the author
- *   named the plain Bassline B, not "B + Fill 1"); a fill's label prefers its
- *   first take's title. Both fall back to the raw id.
+ * - The built-in Bass A (`DEFAULT_LINE_ID`) is always the first group, even
+ *   when the groove has no variants at all (so the card can still offer it).
+ * - Then each distinct line key in first-seen order. A line's label prefers its
+ *   no-fill take's title (so "Bass B" reads as authored, not "Bass B + Fill 1").
+ * - Within a line, each distinct `fillId` becomes a fill, first-seen order,
+ *   labelled by its take's title.
  */
-export function buildLinesAndFillsModel(
+export function buildLinesAndFillsGroups(
   variants: BasslineVariant[],
-): LinesAndFillsModel {
-  const lines: LineOption[] = [{ id: DEFAULT_LINE_ID, label: 'Default' }];
-  const fills: FillOption[] = [{ id: NO_FILL_ID, label: 'None' }];
-  const seenLines = new Set<string>([DEFAULT_LINE_ID]);
-  const seenFills = new Set<string>([NO_FILL_ID]);
-
+): LineGroup[] {
+  const order: string[] = [DEFAULT_LINE_ID];
+  const seen = new Set<string>([DEFAULT_LINE_ID]);
   for (const v of variants) {
     const lk = lineKeyOf(v);
-    if (!seenLines.has(lk)) {
-      seenLines.add(lk);
-      // Prefer the line's no-fill take title; fall back to this variant's title.
-      const base = variants.find(
-        (x) => lineKeyOf(x) === lk && fillKeyOf(x) === NO_FILL_ID,
-      );
-      lines.push({ id: lk, label: base?.title ?? v.title });
-    }
-    const fk = fillKeyOf(v);
-    if (fk !== NO_FILL_ID && !seenFills.has(fk)) {
-      seenFills.add(fk);
-      const base = variants.find((x) => fillKeyOf(x) === fk);
-      fills.push({ id: fk, label: base?.title ?? v.title });
+    if (!seen.has(lk)) {
+      seen.add(lk);
+      order.push(lk);
     }
   }
 
-  // A groove with no fills at all → no Fills row (just the "None" sentinel,
-  // which we collapse to an empty list so the caller hides the row).
-  return { lines, fills: fills.length > 1 ? fills : [] };
+  return order.map((lk) => {
+    const inLine = variants.filter((v) => lineKeyOf(v) === lk);
+    // Line label = the plain (no-fill) take's title. A fill take's title must
+    // NEVER become the line label (the built-in Bass A has no base take, so it
+    // falls back to "Bass A" rather than borrowing a fill's name).
+    const base = inLine.find((v) => fillKeyOf(v) === NO_FILL_ID);
+    const label = base?.title ?? (lk === DEFAULT_LINE_ID ? 'Bass A' : lk);
+
+    const fills: FillOption[] = [];
+    const seenFills = new Set<string>();
+    for (const v of inLine) {
+      const fk = fillKeyOf(v);
+      if (fk !== NO_FILL_ID && !seenFills.has(fk)) {
+        seenFills.add(fk);
+        fills.push({ id: fk, label: v.title });
+      }
+    }
+    return { id: lk, label, fills };
+  });
 }
 
 /**
- * Resolve the variant id for a (line, fill) selection, or `null` for the
- * default bass (default line + no fill).
- *
- * Returns:
- *  - `null` when the selection is (DEFAULT_LINE, NO_FILL) → restore built-in bass.
- *  - the matching variant's id when an exact (line, fill) take exists.
- *  - `undefined` when no take exists for that combo (caller should ignore the
- *    change / keep the current selection — the author didn't export it).
+ * Resolve the variant id for a (line, fill) selection.
+ *  - `null` when the selection is (built-in Bass A, no fill) → restore stems.bass.
+ *  - the matching variant's id when that exact (line, fill) take exists.
+ *  - `undefined` when no take exists (caller ignores the change).
  */
 export function resolveComboVariantId(
   variants: BasslineVariant[],
@@ -144,7 +123,7 @@ export function resolveComboVariantId(
 
 /**
  * Given the active variant id (from playback state), derive the current
- * (lineId, fillId) selection. `null` (default bass) maps to (default, none).
+ * (lineId, fillId) selection. `null` (built-in bass) maps to (Bass A, none).
  */
 export function selectionForVariantId(
   variants: BasslineVariant[],

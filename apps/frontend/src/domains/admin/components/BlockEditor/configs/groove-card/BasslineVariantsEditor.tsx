@@ -1,16 +1,19 @@
 'use client';
 
 /**
- * BasslineVariantsEditor — manage a groove's premium alternate basslines
- * ("Lines & Fills"). A repeating list of { id, title, url } rows on the library
- * groove editor. Each row uploads a full-length OGG to the PRIVATE
- * premium-basslines bucket (PR4 admin endpoint) and stores the returned
- * storage-ref URL.
+ * BasslineVariantsEditor — author a groove's premium "Lines & Fills".
  *
- * Same-length GUARD: every variant MUST match the default bass's sample length
- * (the engine swaps PCM in place at the loop seam — a different length desyncs
- * the band). We enforce it HERE by decoding the picked file client-side and
- * comparing its sample count to the decoded default bass before uploading.
+ * Nested model: each BASSLINE owns its own FILLS (fills belong to one line and
+ * never cross). Bass A is the groove's built-in main bass (no upload — it's
+ * stems.bass); its fills are variants tagged with a `fillId` but no `lineId`.
+ * Each added line (Bass B, C…) is a base take tagged with a `lineId`; its fills
+ * carry that `lineId` + their own `fillId`. Every take uploads a full-length OGG
+ * to the PRIVATE premium-basslines bucket and stores the returned storage ref.
+ *
+ * Same-length GUARD: every take MUST match the main bass's musical length (the
+ * engine swaps PCM in place at the loop seam — a different length desyncs the
+ * band). Enforced HERE by decoding the picked file client-side and comparing its
+ * bar count to the decoded main bass before uploading.
  */
 
 import { useCallback, useRef, useState } from 'react';
@@ -79,28 +82,18 @@ export function BasslineVariantsEditor({
   // Cache the default bass musical length (in bars) so we decode it once.
   const defaultBarsRef = useRef<number | null>(null);
 
-  // ── derive Lines + Fill slots from the flat variant list ─────────────────
-  // A LINE is authored by its base take (a variant tagged with a lineId and NO
-  // fillId). A FILL SLOT is a distinct fillId. The Fills box is the grid of
-  // (line × fill) combo cells; each cell is the variant tagged with that pair.
-  const lineBases = variants.filter((v) => v.lineId && !v.fillId);
-  // Fill slots: one per distinct fillId, label = first cell carrying it.
-  const fillSlots = Array.from(
-    variants
-      .filter((v) => v.fillId)
-      .reduce((m, v) => {
-        const id = v.fillId as string;
-        if (!m.has(id)) m.set(id, v.title);
-        return m;
-      }, new Map<string, string>()),
-  ).map(([fillId, title]) => ({ fillId, title }));
+  // ── derive the nested Lines→Fills tree from the flat variant list ─────────
+  // Bass A is the BUILT-IN bass (the groove's stems.bass) — it isn't a variant;
+  // it always exists and owns the fills tagged with a fillId but NO lineId. Each
+  // ADDED line is a base take (a variant with a lineId and no fillId); its fills
+  // are the variants sharing that lineId. Fills belong to ONE line — never cross.
+  const addedLineBases = variants.filter((v) => v.lineId && !v.fillId);
 
-  /** The combo variant for a (lineId|null=default, fillId) pair, if uploaded. */
-  const comboFor = useCallback(
-    (lineId: string | undefined, fillId: string) =>
-      variants.find(
-        (v) => (v.lineId ?? undefined) === lineId && v.fillId === fillId,
-      ),
+  /** The fills owned by a line: variants with that line's `lineId` (or none, for
+   *  built-in Bass A) AND a `fillId`. */
+  const fillsOfLine = useCallback(
+    (lineId: string | undefined) =>
+      variants.filter((v) => (v.lineId ?? undefined) === lineId && !!v.fillId),
     [variants],
   );
 
@@ -110,70 +103,47 @@ export function BasslineVariantsEditor({
     [variants, onChange],
   );
 
-  // Add a LINE: a base take tagged with a fresh lineId (label "Line N").
+  const removeVariant = useCallback(
+    (id: string) => onChange(variants.filter((v) => v.id !== id)),
+    [variants, onChange],
+  );
+
+  // Add a LINE: a base take tagged with a fresh lineId (label "Bass B/C/…").
   const addLine = useCallback(() => {
-    const n = lineBases.length + 1;
+    // Bass A is the built-in; the first ADDED line is Bass B (index +2 → B).
+    const letter = String.fromCharCode(66 + addedLineBases.length); // 66='B'
     const lineId = `line-${Date.now().toString(36)}`;
     onChange([
       ...variants,
-      { id: `var-${lineId}`, title: `Line ${n}`, url: '', lineId },
+      { id: `var-${lineId}`, title: `Bass ${letter}`, url: '', lineId },
     ]);
-  }, [variants, onChange, lineBases.length]);
+  }, [variants, onChange, addedLineBases.length]);
 
-  // Add a FILL SLOT: an empty combo cell on the DEFAULT line (so the slot
-  // appears immediately). Other lines get their cell lazily on first upload.
-  const addFill = useCallback(() => {
-    const n = fillSlots.length + 1;
-    const fillId = `fill-${Date.now().toString(36)}`;
-    onChange([
-      ...variants,
-      { id: `var-${fillId}-default`, title: `Fill ${n}`, url: '', fillId },
-    ]);
-  }, [variants, onChange, fillSlots.length]);
-
-  // Remove a whole LINE (its base + every combo cell on that line).
+  // Remove a LINE: its base take + every fill it owns.
   const removeLine = useCallback(
     (lineId: string) => onChange(variants.filter((v) => v.lineId !== lineId)),
     [variants, onChange],
   );
 
-  // Remove a whole FILL slot (every combo cell with that fillId, across lines).
-  const removeFill = useCallback(
-    (fillId: string) => onChange(variants.filter((v) => v.fillId !== fillId)),
-    [variants, onChange],
-  );
-
-  // Rename a fill slot (its display title is the slot's label — applied to
-  // whichever cell carries the slot's "name"). We store the label on every cell
-  // of the slot so the player's Fills row reads it; renaming updates them all.
-  const renameFill = useCallback(
-    (fillId: string, title: string) =>
-      onChange(
-        variants.map((v) => (v.fillId === fillId ? { ...v, title } : v)),
-      ),
-    [variants, onChange],
-  );
-
-  /** Stable, lazily-created combo variant for an upload cell. Returns the
-   *  existing variant or a fresh (unsaved) one with the right (line, fill)
-   *  tags + a title derived from the line + fill labels. */
-  const comboCellVariant = useCallback(
-    (
-      line: { lineId?: string; title: string },
-      fill: { fillId: string; title: string },
-    ): BasslineVariant => {
-      const existing = comboFor(line.lineId, fill.fillId);
-      if (existing) return existing;
-      const lineTag = line.lineId ?? 'default';
-      return {
-        id: `var-${lineTag}-${fill.fillId}`,
-        title: `${line.title} · ${fill.title}`,
-        url: '',
-        ...(line.lineId ? { lineId: line.lineId } : {}),
-        fillId: fill.fillId,
-      };
+  // Add a FILL to a specific line (built-in Bass A = lineId undefined → the
+  // fill is tagged fillId-only; an added line → tagged with its lineId too).
+  const addFillToLine = useCallback(
+    (lineId: string | undefined, lineLabel: string) => {
+      const n = fillsOfLine(lineId).length + 1;
+      const fillId = `fill-${Date.now().toString(36)}`;
+      const tag = lineId ?? 'a';
+      onChange([
+        ...variants,
+        {
+          id: `var-${tag}-${fillId}`,
+          title: `${lineLabel} Fill ${n}`,
+          url: '',
+          fillId,
+          ...(lineId ? { lineId } : {}),
+        },
+      ]);
     },
-    [comboFor],
+    [variants, onChange, fillsOfLine],
   );
 
   const uploadFor = useCallback(
@@ -314,135 +284,135 @@ export function BasslineVariantsEditor({
     );
   };
 
-  return (
-    <fieldset className="space-y-3">
-      <legend className="text-xs uppercase tracking-wider text-amber-400/70">
-        Lines &amp; Fills — premium basslines
-      </legend>
-      <p className="text-xs text-white/40">
-        Author the two pickers the player shows. A{' '}
-        <span className="text-white/60">Line</span> is a full alternate bass
-        take; a <span className="text-white/60">Fill</span> is rendered{' '}
-        <em>per line</em> as a combo take. Every file must be the EXACT same
-        length as the default bass (checked on upload) and writes to the private{' '}
-        <code className="text-white/50">premium-basslines</code> bucket.
-      </p>
-
-      {/* ── LINES box ──────────────────────────────────────────────────── */}
-      <div className="space-y-1.5 rounded-md border border-white/10 p-3">
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-white/50">
-            Lines
-          </span>
-          <button
-            type="button"
-            onClick={addLine}
-            className="rounded-md border border-amber-400/30 bg-amber-400/10 px-2.5 py-1 text-xs font-medium text-amber-300 transition-colors hover:bg-amber-400/20"
-          >
-            + Add line
-          </button>
-        </div>
-        <p className="text-[11px] text-white/30">
-          The built-in bass is always offered as “Default”. Add alternate
-          basslines here.
-        </p>
-
-        {lineBases.length === 0 && (
-          <p className="text-xs text-white/30">No alternate lines yet.</p>
-        )}
-        {lineBases.map((v) => (
-          <div
-            key={v.id}
-            className="flex items-center gap-2 rounded-md border border-white/10 bg-white/5 px-2 py-1.5"
-          >
-            <input
-              value={v.title}
-              onChange={(e) => setVariant(v.id, { title: e.target.value })}
-              placeholder="Line name (e.g. Walking)"
-              className="min-w-0 flex-1 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-sm text-white placeholder:text-white/30"
-            />
-            <UploadCell variant={v} />
-            <button
-              type="button"
-              onClick={() => v.lineId && removeLine(v.lineId)}
-              className="shrink-0 text-white/30 transition-colors hover:text-red-400"
-              title="Remove line (and its fills)"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
-        ))}
-      </div>
-
-      {/* ── FILLS box ──────────────────────────────────────────────────── */}
-      <div className="space-y-1.5 rounded-md border border-white/10 p-3">
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-white/50">
-            Fills
-          </span>
-          <button
-            type="button"
-            onClick={addFill}
-            className="rounded-md border border-amber-400/30 bg-amber-400/10 px-2.5 py-1 text-xs font-medium text-amber-300 transition-colors hover:bg-amber-400/20"
-          >
-            + Add fill
-          </button>
-        </div>
-        <p className="text-[11px] text-white/30">
-          Each fill is rendered for every line. Upload the combo take in each
-          cell — e.g. the “{lineBases[0]?.title ?? 'Default'}” column is that
-          line playing this fill.
-        </p>
-
-        {fillSlots.length === 0 && (
-          <p className="text-xs text-white/30">No fills yet.</p>
-        )}
-        {fillSlots.map((slot) => (
-          <div
-            key={slot.fillId}
-            className="space-y-1.5 rounded-md border border-white/10 bg-white/5 px-2 py-2"
-          >
-            {/* Slot header: rename + remove the whole fill across all lines */}
-            <div className="flex items-center gap-2">
+  /** A line block: the bassline (name + upload) and its OWN fills nested below,
+   *  with a per-line "+ Add fill". `builtIn` is Bass A (the groove's stems.bass,
+   *  no upload — it already exists as the main bass). */
+  const LineBlock = ({
+    lineId,
+    label,
+    baseVariant,
+    builtIn,
+  }: {
+    lineId: string | undefined;
+    label: string;
+    /** The base take variant (added lines only; undefined for built-in Bass A). */
+    baseVariant?: BasslineVariant;
+    builtIn?: boolean;
+  }) => {
+    const fills = fillsOfLine(lineId);
+    return (
+      <div className="space-y-2 rounded-md border border-white/10 bg-white/5 p-3">
+        {/* Bassline row */}
+        <div className="flex items-center gap-2">
+          {builtIn ? (
+            <span className="min-w-0 flex-1 rounded-md border border-white/10 bg-white/[0.03] px-2 py-1.5 text-sm text-white/70">
+              {label}{' '}
+              <span className="text-[10px] text-white/30">
+                (the groove’s main bass)
+              </span>
+            </span>
+          ) : (
+            <>
               <input
-                value={slot.title}
-                onChange={(e) => renameFill(slot.fillId, e.target.value)}
-                placeholder="Fill name (e.g. Turnaround)"
-                className="min-w-0 flex-1 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-sm text-white placeholder:text-white/30"
+                value={baseVariant?.title ?? label}
+                onChange={(e) =>
+                  baseVariant &&
+                  setVariant(baseVariant.id, { title: e.target.value })
+                }
+                placeholder="Bassline name (e.g. Bass B)"
+                className="min-w-0 flex-1 rounded-md border border-white/10 bg-white/5 px-2 py-1.5 text-sm text-white placeholder:text-white/30"
               />
+              {baseVariant && <UploadCell variant={baseVariant} />}
               <button
                 type="button"
-                onClick={() => removeFill(slot.fillId)}
+                onClick={() => lineId && removeLine(lineId)}
                 className="shrink-0 text-white/30 transition-colors hover:text-red-400"
-                title="Remove fill (across all lines)"
+                title="Remove bassline (and its fills)"
               >
                 <Trash2 className="h-4 w-4" />
               </button>
-            </div>
-            {/* One combo upload cell per line (Default + each alternate line) */}
-            <div className="flex flex-wrap items-center gap-2">
-              {[
-                { lineId: undefined as string | undefined, title: 'Default' },
-                ...lineBases.map((l) => ({
-                  lineId: l.lineId,
-                  title: l.title,
-                })),
-              ].map((line) => {
-                const cell = comboCellVariant(line, slot);
-                return (
-                  <div
-                    key={`${line.lineId ?? 'default'}-${slot.fillId}`}
-                    className="flex items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.03] px-2 py-1"
-                  >
-                    <span className="text-[10px] text-white/40">
-                      {line.title}
-                    </span>
-                    <UploadCell variant={cell} compact />
-                  </div>
-                );
-              })}
-            </div>
+            </>
+          )}
+        </div>
+
+        {/* This line's fills */}
+        <div className="ml-3 space-y-1.5 border-l border-white/10 pl-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-white/30">
+              {label} fills
+            </span>
+            <button
+              type="button"
+              onClick={() => addFillToLine(lineId, label)}
+              className="rounded-md border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-[11px] font-medium text-amber-300 transition-colors hover:bg-amber-400/20"
+            >
+              + Add fill
+            </button>
           </div>
+          {fills.length === 0 && (
+            <p className="text-[11px] text-white/25">No fills for this line.</p>
+          )}
+          {fills.map((fv) => (
+            <div
+              key={fv.id}
+              className="flex items-center gap-2 rounded-md border border-white/10 bg-white/[0.03] px-2 py-1"
+            >
+              <input
+                value={fv.title}
+                onChange={(e) => setVariant(fv.id, { title: e.target.value })}
+                placeholder="Fill name (e.g. Turnaround)"
+                className="min-w-0 flex-1 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs text-white placeholder:text-white/30"
+              />
+              <UploadCell variant={fv} compact />
+              <button
+                type="button"
+                onClick={() => removeVariant(fv.id)}
+                className="shrink-0 text-white/30 transition-colors hover:text-red-400"
+                title="Remove fill"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <fieldset className="space-y-3">
+      <div className="flex items-center justify-between">
+        <legend className="text-xs uppercase tracking-wider text-amber-400/70">
+          Lines &amp; Fills — premium basslines
+        </legend>
+        <button
+          type="button"
+          onClick={addLine}
+          className="rounded-md border border-amber-400/30 bg-amber-400/10 px-2.5 py-1 text-xs font-medium text-amber-300 transition-colors hover:bg-amber-400/20"
+        >
+          + Add bassline
+        </button>
+      </div>
+      <p className="text-xs text-white/40">
+        Each bassline (Bass A is the groove’s main bass) has its{' '}
+        <span className="text-white/60">own fills</span> — fills belong to one
+        line and never cross. Every file must be the EXACT same length as the
+        main bass (checked on upload) and writes to the private{' '}
+        <code className="text-white/50">premium-basslines</code> bucket.
+      </p>
+
+      <div className="space-y-2">
+        {/* Bass A — the built-in main bass, with its own fills */}
+        <LineBlock lineId={undefined} label="Bass A" builtIn />
+
+        {/* Added basslines, each with its own fills */}
+        {addedLineBases.map((v) => (
+          <LineBlock
+            key={v.id}
+            lineId={v.lineId}
+            label={v.title || 'Bassline'}
+            baseVariant={v}
+          />
         ))}
       </div>
 

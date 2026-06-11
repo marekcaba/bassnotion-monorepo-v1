@@ -1,43 +1,30 @@
 'use client';
 
 /**
- * LinesAndFillsSection — the premium combo-bassline swap UI ("Lines & Fills").
- * Renders under the groove card as TWO single-select rows:
+ * LinesAndFillsSection — the premium bassline/fills swap UI ("Lines & Fills").
  *
- *   • Lines — pick a bassline (Default, or A / B / C …).
- *   • Fills — pick a fill (None, or fill1 / fill2 …). Hidden when the groove
- *     has no fills at all (then the card is just the original line swap).
- *
- * The active stem is the (line, fill) COMBO. Each row reports its new selection
- * to the parent (`onSelectLine` / `onSelectFill`); the parent resolves the
- * matching pre-rendered variant and swaps it in on the next bar (drums &
- * harmony keep playing). One bassline + at most one fill — never stacked.
+ * Renders one GROUP per bassline (Bass A, Bass B, …), each showing the line cell
+ * followed by ITS OWN fill cells, with a divider between lines. Fills belong to a
+ * line and never cross — Bass B's fills only appear under Bass B. Tapping a line
+ * plays it (no fill); tapping one of its fills plays that line+fill combo. The
+ * parent resolves the matching pre-rendered take and swaps it on the next bar
+ * (drums & harmony keep playing). One line + at most one of its fills active.
  *
  * Gate (decided by the parent, passed as `locked`):
- *  - entitled member → cells are live; the active one is highlighted (amber).
+ *  - entitled member → cells are live; the active one glows amber.
  *  - locked (free / not-entitled) → premium cells show a lock; clicking fires
  *    the upgrade moment. The whole section still renders so the feature is
- *    DISCOVERABLE — the wall is the pitch, same as Dynamic Loop. (Default line +
- *    None fill are always free, so they never lock.)
- *
- * Visual language mirrors the exercise journey cells (rounded card, label,
- * selected ring) so the card feels of-a-piece. The active cell gets an amber
- * glow (vs the exercises' violet) to read as "playing now".
+ *    DISCOVERABLE — the wall is the pitch, same as Dynamic Loop. (The built-in
+ *    Bass A with no fill is always free, so it never locks.)
  */
 
 import { Lock, Music, Sparkles } from 'lucide-react';
-import type {
-  FillOption,
-  LineOption,
-} from './linesAndFills';
+import type { LineGroup } from './linesAndFills';
 import { DEFAULT_LINE_ID, NO_FILL_ID } from './linesAndFills';
 
 export interface LinesAndFillsSectionProps {
-  /** The Lines row ("Default" first, then each line). */
-  lines: LineOption[];
-  /** The Fills row ("None" first, then each fill). Empty → the row is hidden
-   *  (groove has no fills). */
-  fills: FillOption[];
+  /** One group per bassline (built-in Bass A first), each with its own fills. */
+  groups: LineGroup[];
   /** The currently selected line id (`DEFAULT_LINE_ID` for the built-in bass). */
   activeLineId: string;
   /** The currently selected fill id (`NO_FILL_ID` for no fill). */
@@ -45,19 +32,16 @@ export interface LinesAndFillsSectionProps {
   /** True when the feature is gated (free / not entitled). Premium cells show
    *  locked and clicks route to the upsell instead of swapping. */
   locked: boolean;
-  /** Select a line. The parent gates this: when `locked`, a non-default line
-   *  fires the upgrade moment instead of swapping. */
-  onSelectLine: (lineId: string) => void;
-  /** Select a fill. The parent gates this: when `locked`, a non-None fill fires
-   *  the upgrade moment instead of swapping. */
-  onSelectFill: (fillId: string) => void;
+  /** Select a (line, fill). The parent gates this: when `locked`, a premium
+   *  selection fires the upgrade moment instead of swapping. */
+  onSelect: (lineId: string, fillId: string) => void;
 }
 
 interface CellProps {
   label: string;
   active: boolean;
-  /** This cell is a premium option (locks when the feature is gated). The free
-   *  options (Default line, None fill) pass `false` so they never lock. */
+  /** This cell is a premium option (locks when the feature is gated). The
+   *  built-in Bass A with no fill passes `false` so it never locks. */
   premium: boolean;
   locked: boolean;
   /** Icon shown when the cell is neither active nor locked. */
@@ -134,39 +118,48 @@ function VariantCell({
   );
 }
 
-function Row({
-  heading,
-  options,
-  activeId,
-  freeId,
-  idleIcon,
+/** One bassline + its own fills. The line cell, then its fill cells. */
+function LineGroupRow({
+  group,
+  activeLineId,
+  activeFillId,
   locked,
   onSelect,
 }: {
-  heading: string;
-  options: LineOption[] | FillOption[];
-  activeId: string;
-  /** The always-free option in this row (Default line / None fill). */
-  freeId: string;
-  idleIcon: 'line' | 'fill';
+  group: LineGroup;
+  activeLineId: string;
+  activeFillId: string;
   locked: boolean;
-  onSelect: (id: string) => void;
+  onSelect: (lineId: string, fillId: string) => void;
 }) {
+  const lineActive = activeLineId === group.id;
+  // The built-in Bass A with no fill is the free baseline → never locks.
+  const linePremium = group.id !== DEFAULT_LINE_ID;
   return (
-    <div>
-      <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-        {heading}
+    <div className="flex flex-col gap-2">
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+        {group.label}
       </div>
       <div className="flex flex-wrap items-stretch gap-2">
-        {options.map((opt) => (
+        {/* The plain line (no fill) */}
+        <VariantCell
+          label={group.fills.length ? 'No fill' : group.label}
+          active={lineActive && activeFillId === NO_FILL_ID}
+          premium={linePremium}
+          locked={locked}
+          idleIcon="line"
+          onClick={() => onSelect(group.id, NO_FILL_ID)}
+        />
+        {/* This line's own fills */}
+        {group.fills.map((fill) => (
           <VariantCell
-            key={opt.id}
-            label={opt.label}
-            active={activeId === opt.id}
-            premium={opt.id !== freeId}
+            key={fill.id}
+            label={fill.label}
+            active={lineActive && activeFillId === fill.id}
+            premium
             locked={locked}
-            idleIcon={idleIcon}
-            onClick={() => onSelect(opt.id)}
+            idleIcon="fill"
+            onClick={() => onSelect(group.id, fill.id)}
           />
         ))}
       </div>
@@ -175,16 +168,17 @@ function Row({
 }
 
 export function LinesAndFillsSection({
-  lines,
-  fills,
+  groups,
   activeLineId,
   activeFillId,
   locked,
-  onSelectLine,
-  onSelectFill,
+  onSelect,
 }: LinesAndFillsSectionProps) {
-  // Nothing to swap → render nothing (parent also guards on variant count).
-  if (lines.length <= 1 && fills.length === 0) return null;
+  // Nothing beyond the built-in line to swap → render nothing (the parent also
+  // guards on variant count).
+  const hasContent =
+    groups.length > 1 || groups.some((g) => g.fills.length > 0);
+  if (!hasContent) return null;
 
   return (
     <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-slate-800/60 to-slate-900/40 p-4 backdrop-blur-xl">
@@ -199,33 +193,23 @@ export function LinesAndFillsSection({
         )}
       </div>
       <p className="mb-3 text-[11px] text-slate-500">
-        Swap the bassline and drop in fills mid-groove — drums &amp; harmony keep
-        playing.
+        Swap the bassline and drop in its fills mid-groove — drums &amp; harmony
+        keep playing.
       </p>
 
-      <div className="flex flex-col gap-4">
-        {lines.length > 1 && (
-          <Row
-            heading="Lines"
-            options={lines}
-            activeId={activeLineId}
-            freeId={DEFAULT_LINE_ID}
-            idleIcon="line"
-            locked={locked}
-            onSelect={onSelectLine}
-          />
-        )}
-        {fills.length > 0 && (
-          <Row
-            heading="Fills"
-            options={fills}
-            activeId={activeFillId}
-            freeId={NO_FILL_ID}
-            idleIcon="fill"
-            locked={locked}
-            onSelect={onSelectFill}
-          />
-        )}
+      <div className="flex flex-col gap-3">
+        {groups.map((group, i) => (
+          <div key={group.id} className="flex flex-col gap-3">
+            {i > 0 && <div className="h-px w-full bg-white/10" />}
+            <LineGroupRow
+              group={group}
+              activeLineId={activeLineId}
+              activeFillId={activeFillId}
+              locked={locked}
+              onSelect={onSelect}
+            />
+          </div>
+        ))}
       </div>
     </div>
   );

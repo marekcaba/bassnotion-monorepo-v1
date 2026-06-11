@@ -3,7 +3,7 @@ import type { BasslineVariant } from '@bassnotion/contracts';
 import {
   DEFAULT_LINE_ID,
   NO_FILL_ID,
-  buildLinesAndFillsModel,
+  buildLinesAndFillsGroups,
   resolveComboVariantId,
   selectionForVariantId,
 } from './linesAndFills';
@@ -15,109 +15,81 @@ const v = (
   fillId?: string,
 ): BasslineVariant => ({ id, title, url: `path/${id}.ogg`, lineId, fillId });
 
-describe('buildLinesAndFillsModel', () => {
-  it('returns just the Default line and no Fills row for an empty list', () => {
-    const m = buildLinesAndFillsModel([]);
-    expect(m.lines).toEqual([{ id: DEFAULT_LINE_ID, label: 'Default' }]);
-    expect(m.fills).toEqual([]);
+describe('buildLinesAndFillsGroups', () => {
+  it('always offers built-in Bass A, even with no variants', () => {
+    const g = buildLinesAndFillsGroups([]);
+    expect(g).toEqual([{ id: DEFAULT_LINE_ID, label: 'Bass A', fills: [] }]);
   });
 
-  it('a line-only groove (no fills) yields Lines but no Fills row', () => {
-    const m = buildLinesAndFillsModel([
-      v('a', 'Walking', 'A'),
-      v('b', 'Slap', 'B'),
-    ]);
-    expect(m.lines.map((l) => l.id)).toEqual([DEFAULT_LINE_ID, 'A', 'B']);
-    expect(m.lines.map((l) => l.label)).toEqual(['Default', 'Walking', 'Slap']);
-    expect(m.fills).toEqual([]); // no fills at all → row hidden
+  it('BACKWARD-COMPAT: untagged legacy variants each become their own line', () => {
+    const g = buildLinesAndFillsGroups([v('x', 'Walking'), v('y', 'Slap')]);
+    expect(g.map((l) => l.id)).toEqual([DEFAULT_LINE_ID, 'x', 'y']);
+    expect(g.map((l) => l.label)).toEqual(['Bass A', 'Walking', 'Slap']);
+    expect(g.every((l) => l.fills.length === 0)).toBe(true);
   });
 
-  it('BACKWARD-COMPAT: untagged legacy variants each become their own Line', () => {
-    // The pre-Fills authoring style — variants with NO lineId/fillId. Each must
-    // remain its own swap cell (keyed by id), not collapse into one Default line.
-    const m = buildLinesAndFillsModel([v('x', 'Walking'), v('y', 'Slap')]);
-    expect(m.lines.map((l) => l.id)).toEqual([DEFAULT_LINE_ID, 'x', 'y']);
-    expect(m.lines.map((l) => l.label)).toEqual(['Default', 'Walking', 'Slap']);
-    expect(m.fills).toEqual([]);
+  it('groups each line with ITS OWN fills (fills never cross lines)', () => {
+    const g = buildLinesAndFillsGroups([
+      v('b0', 'Bass B', 'B'),
+      v('b1', 'B + Fill 1', 'B', 'b-fill1'),
+      v('b2', 'B + Fill 2', 'B', 'b-fill2'),
+      v('c0', 'Bass C', 'C'),
+      v('c1', 'C + Fill 1', 'C', 'c-fill1'),
+    ]);
+    expect(g.map((l) => l.id)).toEqual([DEFAULT_LINE_ID, 'B', 'C']);
+    const B = g.find((l) => l.id === 'B')!;
+    const C = g.find((l) => l.id === 'C')!;
+    expect(B.label).toBe('Bass B');
+    expect(B.fills.map((f) => f.id)).toEqual(['b-fill1', 'b-fill2']);
+    expect(C.fills.map((f) => f.id)).toEqual(['c-fill1']); // C's own fills only
   });
 
-  it('surfaces fills with None first and labels from the matching take', () => {
-    const m = buildLinesAndFillsModel([
-      v('b0', 'Bassline B', 'B'), // B + none
-      v('b1', 'B + Fill 1', 'B', 'fill1'),
-      v('b3', 'B + Fill 3', 'B', 'fill3'),
+  it("Bass A's own fills attach to the built-in line (fillId, no lineId)", () => {
+    const g = buildLinesAndFillsGroups([
+      v('a1', 'A Turnaround', undefined, 'a-fill1'),
     ]);
-    expect(m.lines.map((l) => l.id)).toEqual([DEFAULT_LINE_ID, 'B']);
-    expect(m.fills.map((f) => f.id)).toEqual([NO_FILL_ID, 'fill1', 'fill3']);
-    expect(m.fills.map((f) => f.label)).toEqual([
-      'None',
-      'B + Fill 1',
-      'B + Fill 3',
-    ]);
-  });
-
-  it('a fill on the DEFAULT line (fillId, no lineId) does NOT spawn a phantom line', () => {
-    // The admin authors a default-line fill as a cell tagged fillId-only. It
-    // must attach to the Default line + add to the Fills row — NOT appear as its
-    // own Line cell (regression caught when wiring the two-box admin editor).
-    const variants = [
-      v('d1', 'Fill 1', undefined, 'fill1'),
-      v('d2', 'Fill 2', undefined, 'fill2'),
-    ];
-    const m = buildLinesAndFillsModel(variants);
-    expect(m.lines.map((l) => l.id)).toEqual([DEFAULT_LINE_ID]); // no phantom lines
-    expect(m.fills.map((f) => f.id)).toEqual([NO_FILL_ID, 'fill1', 'fill2']);
-    // and the combo resolves to the default-line fill take
-    expect(resolveComboVariantId(variants, DEFAULT_LINE_ID, 'fill1')).toBe('d1');
-  });
-
-  it('merges takes that share an explicit lineId into ONE line carrying fills', () => {
-    // Two lines (A, B), each with the same two fills → 3 line cells (incl.
-    // Default) and 3 fill cells (incl. None); the grid is the cartesian combo.
-    const m = buildLinesAndFillsModel([
-      v('a0', 'Bassline A', 'A'),
-      v('a1', 'A + Fill 1', 'A', 'fill1'),
-      v('b0', 'Bassline B', 'B'),
-      v('b1', 'B + Fill 1', 'B', 'fill1'),
-      v('b2', 'B + Fill 2', 'B', 'fill2'),
-    ]);
-    expect(m.lines.map((l) => l.id)).toEqual([DEFAULT_LINE_ID, 'A', 'B']);
-    expect(m.lines.map((l) => l.label)).toEqual([
-      'Default',
-      'Bassline A',
-      'Bassline B',
-    ]);
-    expect(m.fills.map((f) => f.id)).toEqual([NO_FILL_ID, 'fill1', 'fill2']);
+    expect(g.map((l) => l.id)).toEqual([DEFAULT_LINE_ID]); // no phantom line
+    // the built-in line keeps the "Bass A" label — a fill's title must NOT
+    // become the line label (regression caught via the admin→player harness).
+    expect(g[0].label).toBe('Bass A');
+    expect(g[0].fills.map((f) => f.id)).toEqual(['a-fill1']);
   });
 });
 
 describe('resolveComboVariantId', () => {
   const variants = [
-    v('b0', 'Bassline B', 'B'),
-    v('b1', 'B + Fill 1', 'B', 'fill1'),
-    v('a0', 'Bassline A', 'A'),
+    v('b0', 'Bass B', 'B'),
+    v('b1', 'B + Fill 1', 'B', 'b-fill1'),
+    v('a1', 'A Turnaround', undefined, 'a-fill1'),
   ];
 
-  it('default line + no fill resolves to null (built-in bass)', () => {
-    expect(resolveComboVariantId(variants, DEFAULT_LINE_ID, NO_FILL_ID)).toBeNull();
+  it('built-in Bass A + no fill → null (restore stems.bass)', () => {
+    expect(
+      resolveComboVariantId(variants, DEFAULT_LINE_ID, NO_FILL_ID),
+    ).toBeNull();
+  });
+
+  it("Bass A + A's fill resolves to the fillId-only take", () => {
+    expect(resolveComboVariantId(variants, DEFAULT_LINE_ID, 'a-fill1')).toBe(
+      'a1',
+    );
   });
 
   it('an exact (line, fill) combo resolves to its variant id', () => {
-    expect(resolveComboVariantId(variants, 'B', 'fill1')).toBe('b1');
+    expect(resolveComboVariantId(variants, 'B', 'b-fill1')).toBe('b1');
     expect(resolveComboVariantId(variants, 'B', NO_FILL_ID)).toBe('b0');
-    expect(resolveComboVariantId(variants, 'A', NO_FILL_ID)).toBe('a0');
   });
 
-  it('an unexported combo resolves to undefined (caller no-ops)', () => {
-    // A has no fill1 take.
-    expect(resolveComboVariantId(variants, 'A', 'fill1')).toBeUndefined();
+  it("a fill that doesn't belong to the line resolves to undefined", () => {
+    // B has no a-fill1 take (fills don't cross lines).
+    expect(resolveComboVariantId(variants, 'B', 'a-fill1')).toBeUndefined();
   });
 });
 
 describe('selectionForVariantId', () => {
-  const variants = [v('b1', 'B + Fill 1', 'B', 'fill1'), v('a0', 'A', 'A')];
+  const variants = [v('b1', 'B + Fill 1', 'B', 'b-fill1'), v('b0', 'Bass B', 'B')];
 
-  it('null (default bass) maps to (default, none)', () => {
+  it('null (built-in bass) maps to (Bass A, none)', () => {
     expect(selectionForVariantId(variants, null)).toEqual({
       lineId: DEFAULT_LINE_ID,
       fillId: NO_FILL_ID,
@@ -127,17 +99,10 @@ describe('selectionForVariantId', () => {
   it('a variant id maps back to its (line, fill)', () => {
     expect(selectionForVariantId(variants, 'b1')).toEqual({
       lineId: 'B',
-      fillId: 'fill1',
+      fillId: 'b-fill1',
     });
-    expect(selectionForVariantId(variants, 'a0')).toEqual({
-      lineId: 'A',
-      fillId: NO_FILL_ID,
-    });
-  });
-
-  it('an unknown id falls back to (default, none)', () => {
-    expect(selectionForVariantId(variants, 'ghost')).toEqual({
-      lineId: DEFAULT_LINE_ID,
+    expect(selectionForVariantId(variants, 'b0')).toEqual({
+      lineId: 'B',
       fillId: NO_FILL_ID,
     });
   });
