@@ -23,19 +23,44 @@ import type {
   ExerciseNote,
   GrooveCardBlockConfig,
 } from '@bassnotion/contracts';
-import { MusicXMLParser } from '@bassnotion/contracts';
+import { MusicXMLParser, MIDIFileParser } from '@bassnotion/contracts';
 import { supabase } from '@/infrastructure/supabase/client';
 import { StemUploadButton } from './StemUploadButton';
 import type { UploadStemOptions } from './useStemUpload';
 
 type BassNotation = NonNullable<GrooveCardBlockConfig['bassNotation']>;
 
+/** Parse a picked notation file into ExerciseNote[]. MIDI (.mid/.midi) → the
+ *  @tonejs/midi-backed MIDIFileParser; MusicXML (.xml/.musicxml/.mxl) → the
+ *  MusicXMLParser. Both are real parsers (the shared MusicXMLUpload widget is a
+ *  stub that never parses, so we call the parsers directly). */
+async function parseNotationFile(
+  file: File,
+): Promise<{ notes?: ExerciseNote[]; error?: string }> {
+  const name = file.name.toLowerCase();
+  if (name.endsWith('.mid') || name.endsWith('.midi')) {
+    const buffer = await file.arrayBuffer();
+    const result = await new MIDIFileParser().parseFile(buffer, file.name);
+    const notes = result.exercise?.notes ?? [];
+    if (!result.success || notes.length === 0) {
+      return { error: result.errors?.[0] ?? 'No notes found in that MIDI.' };
+    }
+    return { notes };
+  }
+  // MusicXML
+  const text = await file.text();
+  const result = await new MusicXMLParser().parseFile(text);
+  if (!result.success || result.notes.length === 0) {
+    return { error: result.errors?.[0] ?? 'No notes found in that score.' };
+  }
+  return { notes: result.notes };
+}
+
 /**
- * Compact per-row MusicXML import: a small "Notation" button that reads the
- * picked .xml/.musicxml/.mxl, runs the real {@link MusicXMLParser}, and hands
- * back the ExerciseNote[]. (The shared MusicXMLUpload widget is a stub that
- * never parses — we wire the parser directly here.) Shows ♪ + a note count
- * once a score is loaded; click to replace.
+ * Compact per-row notation import: a small "Notation" button that reads the
+ * picked MIDI or MusicXML file, runs the matching parser, and hands back the
+ * ExerciseNote[]. Shows ♪ + a note count once a score is loaded; click to
+ * replace.
  */
 function NotationCell({
   notes,
@@ -53,13 +78,12 @@ function NotationCell({
       setErr(null);
       setBusy(true);
       try {
-        const text = await file.text();
-        const result = await new MusicXMLParser().parseFile(text);
-        if (!result.success || result.notes.length === 0) {
-          setErr(result.errors?.[0] ?? 'No notes found in that score.');
+        const { notes: parsed, error } = await parseNotationFile(file);
+        if (error || !parsed) {
+          setErr(error ?? 'Import failed');
           return;
         }
-        onNotes(result.notes);
+        onNotes(parsed);
       } catch (e) {
         setErr(e instanceof Error ? e.message : 'Import failed');
       } finally {
@@ -72,7 +96,11 @@ function NotationCell({
   return (
     <div className="flex shrink-0 items-center gap-1">
       <label
-        title={count > 0 ? `${count} notes — replace` : 'Import bass notation'}
+        title={
+          count > 0
+            ? `${count} notes — replace`
+            : 'Import bass notation (MIDI or MusicXML)'
+        }
         className={`flex cursor-pointer items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium transition-colors ${
           busy
             ? 'cursor-wait border-white/10 bg-white/5 text-white/40'
@@ -85,7 +113,7 @@ function NotationCell({
         {busy ? '…' : count > 0 ? `♪ ${count}` : 'Notation'}
         <input
           type="file"
-          accept=".xml,.musicxml,.mxl"
+          accept=".mid,.midi,.xml,.musicxml,.mxl"
           className="hidden"
           disabled={busy}
           onChange={(e) => {
