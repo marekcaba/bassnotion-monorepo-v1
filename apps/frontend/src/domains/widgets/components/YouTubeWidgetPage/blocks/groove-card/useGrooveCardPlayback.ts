@@ -1548,12 +1548,20 @@ export function useGrooveCardPlayback({
   }, []); // run only on unmount; capture trackPrefix + cardId at mount
 
   // ── waveform data ----------------------------------------------------------
-  // Bass buffer for the waveform peaks + sweeping playhead. The buffer
-  // is the same regardless of current key (pitch-shift is applied at
-  // the pitch-shift node, not by swapping buffers).
+  // Bass buffer for the waveform peaks + sweeping playhead. The waveform mirrors
+  // the SELECTED Lines & Fills take: a chosen variant/fill shows ITS own buffer,
+  // the default bass (no variant) shows stems.bass. (Pitch-shift is applied at
+  // the node, not by swapping buffers, so key changes don't affect the peaks.)
+  // setBassVariant flips activeBassVariantId only AFTER the variant buffer has
+  // decoded into the cache, so getVariantBuffer is non-null here when selected.
   // loopDurationSeconds is hoisted above setKey so it's available there
   // for the deferred-pitch boundary computation.
-  const bassBuffer = preload.getBuffer('bass') ?? null;
+  const bassBuffer =
+    (activeBassVariantId
+      ? preload.getVariantBuffer(activeBassVariantId)
+      : undefined) ??
+    preload.getBuffer('bass') ??
+    null;
 
   return {
     isLoading,
