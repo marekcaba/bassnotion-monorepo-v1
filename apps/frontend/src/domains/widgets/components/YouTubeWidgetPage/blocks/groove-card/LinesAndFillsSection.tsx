@@ -89,14 +89,20 @@ function VariantCell({
         `}
       />
 
-      {/* Status icon — w-8 container to match the exercise cards. */}
+      {/* Status icon — w-8 container to match the exercise cards. The icon stays
+          the SAME whether the card is active or not (just recoloured violet when
+          active); only the locked state swaps to a lock. */}
       <div className="relative flex items-center justify-center w-8 h-8">
         {showLock ? (
           <Lock className="w-4 h-4 text-slate-500" />
-        ) : active ? (
-          <div className="w-3 h-3 rounded-full bg-violet-400 shadow-[0_0_8px_rgba(139,92,246,0.5)]" />
         ) : (
-          <IdleIcon className="w-5 h-5 text-slate-400 group-hover:text-slate-300" />
+          <IdleIcon
+            className={`w-5 h-5 ${
+              active
+                ? 'text-violet-300'
+                : 'text-slate-400 group-hover:text-slate-300'
+            }`}
+          />
         )}
       </div>
 
