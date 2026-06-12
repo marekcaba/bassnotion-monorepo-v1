@@ -36,6 +36,7 @@ import {
   resolveComboVariantId,
   selectionForVariantId,
 } from './groove-card/linesAndFills';
+import { resolveFillRegionFractions } from './groove-card/fillRegion';
 import {
   useDynamicLoop,
   buildCycleKeys,
@@ -390,6 +391,19 @@ export function GrooveCardBlockView({
     () => selectionForVariantId(bassVariants, playback.activeBassVariantId),
     [bassVariants, playback.activeBassVariantId],
   );
+
+  // The active fill's region as fractional bars, for the waveform highlight.
+  // Only the active variant (a fill take with a fillRegion) lights up; the plain
+  // line / "No fill" / default bass resolve to null → no band.
+  const activeFillRegion = useMemo(() => {
+    const active = bassVariants.find(
+      (v) => v.id === playback.activeBassVariantId,
+    );
+    return resolveFillRegionFractions(
+      active?.fillRegion ?? null,
+      config.lengthBars ?? 0,
+    );
+  }, [bassVariants, playback.activeBassVariantId, config.lengthBars]);
 
   // Apply a (line, fill) selection: resolve the matching pre-rendered take and
   // swap it on the next bar. The built-in Bass A + no-fill combo is the free
@@ -816,6 +830,7 @@ export function GrooveCardBlockView({
                   getAudioPhase={playback.getAudioPhase}
                   lengthBars={config.lengthBars}
                   loopSelection={playback.loopSelection}
+                  fillRegion={activeFillRegion}
                   onLoopSelectionChange={playback.setLoopSelection}
                   color={waveformColor}
                   countdownBeat={

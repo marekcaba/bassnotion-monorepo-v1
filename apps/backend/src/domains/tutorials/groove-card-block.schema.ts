@@ -63,6 +63,16 @@ const basslineVariantSchema = z.object({
   // Lines & Fills combo tags (which bassline + which fill this take is).
   lineId: z.string().optional(),
   fillId: z.string().optional(),
+  // Where a fill happens in the loop (1-indexed bar + beat), for the waveform
+  // highlight. Only meaningful on a fill take.
+  fillRegion: z
+    .object({
+      startBar: z.number().int().positive(),
+      startBeat: z.number().int().min(1).max(4),
+      endBar: z.number().int().positive(),
+      endBeat: z.number().int().min(1).max(4),
+    })
+    .optional(),
 });
 
 export const grooveCardStemSetSchema = z.object({

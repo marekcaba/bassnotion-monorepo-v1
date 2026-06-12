@@ -118,6 +118,36 @@ export function BasslineVariantsEditor({
     [variants, onChange],
   );
 
+  // Patch one field of a fill's region (bar/beat), clamped to the groove grid.
+  // Seeds a default whole-loop region the first time any field is touched so the
+  // four inputs always have a coherent value.
+  const setFillRegionField = useCallback(
+    (
+      id: string,
+      key: 'startBar' | 'startBeat' | 'endBar' | 'endBeat',
+      raw: number,
+    ) => {
+      const maxBar = Math.max(1, lengthBars);
+      const clamped =
+        key === 'startBeat' || key === 'endBeat'
+          ? Math.min(4, Math.max(1, Math.round(raw) || 1))
+          : Math.min(maxBar, Math.max(1, Math.round(raw) || 1));
+      onChange(
+        variants.map((v) => {
+          if (v.id !== id) return v;
+          const base = v.fillRegion ?? {
+            startBar: 1,
+            startBeat: 1,
+            endBar: maxBar,
+            endBeat: 1,
+          };
+          return { ...v, fillRegion: { ...base, [key]: clamped } };
+        }),
+      );
+    },
+    [variants, onChange, lengthBars],
+  );
+
   // Add a LINE: a base take tagged with a fresh lineId (label "Bass B/C/…").
   const addLine = useCallback(() => {
     // Bass A is the built-in; the first ADDED line is Bass B (index +2 → B).
@@ -380,28 +410,92 @@ export function BasslineVariantsEditor({
           {fills.length === 0 && (
             <p className="text-[11px] text-white/25">No fills for this line.</p>
           )}
-          {fills.map((fv) => (
-            <div
-              key={fv.id}
-              className="flex items-center gap-2 rounded-md border border-white/10 bg-white/[0.03] px-2 py-1"
-            >
-              <input
-                value={fv.title}
-                onChange={(e) => setVariant(fv.id, { title: e.target.value })}
-                placeholder="Fill name (e.g. Turnaround)"
-                className="min-w-0 flex-1 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs text-white placeholder:text-white/30"
-              />
-              <UploadCell variant={fv} compact />
-              <button
-                type="button"
-                onClick={() => removeVariant(fv.id)}
-                className="shrink-0 text-white/30 transition-colors hover:text-red-400"
-                title="Remove fill"
+          {fills.map((fv) => {
+            const region = fv.fillRegion;
+            return (
+              <div
+                key={fv.id}
+                className="space-y-1.5 rounded-md border border-white/10 bg-white/[0.03] px-2 py-1.5"
               >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          ))}
+                {/* Name + upload + delete */}
+                <div className="flex items-center gap-2">
+                  <input
+                    value={fv.title}
+                    onChange={(e) =>
+                      setVariant(fv.id, { title: e.target.value })
+                    }
+                    placeholder="Fill name (e.g. Turnaround)"
+                    className="min-w-0 flex-1 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs text-white placeholder:text-white/30"
+                  />
+                  <UploadCell variant={fv} compact />
+                  <button
+                    type="button"
+                    onClick={() => removeVariant(fv.id)}
+                    className="shrink-0 text-white/30 transition-colors hover:text-red-400"
+                    title="Remove fill"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                {/* Region: where the fill happens (highlighted on the waveform).
+                    bar + beat, 1-indexed, clamped to the groove grid. */}
+                <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 pl-0.5">
+                  <span className="text-[10px] uppercase tracking-wider text-white/30">
+                    Region
+                  </span>
+                  <span className="text-[10px] text-white/40">bar</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={Math.max(1, lengthBars)}
+                    value={region?.startBar ?? ''}
+                    placeholder="1"
+                    onChange={(e) =>
+                      setFillRegionField(fv.id, 'startBar', +e.target.value)
+                    }
+                    className="w-10 rounded border border-white/10 bg-white/5 px-1 py-0.5 text-center text-[11px] text-white placeholder:text-white/25"
+                  />
+                  <span className="text-[10px] text-white/40">beat</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={4}
+                    value={region?.startBeat ?? ''}
+                    placeholder="1"
+                    onChange={(e) =>
+                      setFillRegionField(fv.id, 'startBeat', +e.target.value)
+                    }
+                    className="w-9 rounded border border-white/10 bg-white/5 px-1 py-0.5 text-center text-[11px] text-white placeholder:text-white/25"
+                  />
+                  <span className="px-0.5 text-[11px] text-white/30">→</span>
+                  <span className="text-[10px] text-white/40">bar</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={Math.max(1, lengthBars)}
+                    value={region?.endBar ?? ''}
+                    placeholder={String(Math.max(1, lengthBars))}
+                    onChange={(e) =>
+                      setFillRegionField(fv.id, 'endBar', +e.target.value)
+                    }
+                    className="w-10 rounded border border-white/10 bg-white/5 px-1 py-0.5 text-center text-[11px] text-white placeholder:text-white/25"
+                  />
+                  <span className="text-[10px] text-white/40">beat</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={4}
+                    value={region?.endBeat ?? ''}
+                    placeholder="1"
+                    onChange={(e) =>
+                      setFillRegionField(fv.id, 'endBeat', +e.target.value)
+                    }
+                    className="w-9 rounded border border-white/10 bg-white/5 px-1 py-0.5 text-center text-[11px] text-white placeholder:text-white/25"
+                  />
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     );

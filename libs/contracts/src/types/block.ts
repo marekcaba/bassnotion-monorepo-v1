@@ -274,6 +274,19 @@ export interface BasslineVariant {
    */
   lineId?: string;
   fillId?: string;
+  /**
+   * Where this fill happens in the loop, for the waveform highlight. Bar + beat
+   * are both 1-indexed (bar 1..lengthBars, beat 1..4 in 4/4) — the way a player
+   * counts. Only meaningful on a fill take (a variant with a `fillId`); the
+   * player draws a blue region on the waveform spanning [start..end] when this
+   * fill is the active selection. Absent = no highlight (the swap still works).
+   */
+  fillRegion?: {
+    startBar: number;
+    startBeat: number;
+    endBar: number;
+    endBeat: number;
+  };
 }
 
 export interface GrooveCardStemSet {

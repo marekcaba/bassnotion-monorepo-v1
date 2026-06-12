@@ -29,6 +29,13 @@ export interface WaveformLoopSelection {
   endBar: number;
 }
 
+/** Fractional-bar span [startFrac, endFrac] of the active fill, for the blue
+ *  region highlight. 0 = loop start, lengthBars = loop end. */
+export interface WaveformFillRegion {
+  startFrac: number;
+  endFrac: number;
+}
+
 interface GrooveCardWaveformProps {
   isPlaying: boolean;
   /** Bass stem audio data. When null the component falls back to the
@@ -56,6 +63,9 @@ interface GrooveCardWaveformProps {
   lengthBars?: number;
   /** Currently committed bar selection (looped). null = no selection. */
   loopSelection?: WaveformLoopSelection | null;
+  /** The active fill's region (fractional bars), drawn as a blue gradient band.
+   *  null = no fill active → no highlight. */
+  fillRegion?: WaveformFillRegion | null;
   /** Called when the user commits a new selection via drag (mouseup /
    *  touchend) or clears it (click outside / right-click). Pass null to
    *  clear. Pointer events are only wired when this prop is provided. */
@@ -75,6 +85,7 @@ interface GrooveCardWaveformProps {
 // `color` prop remains an explicit per-card override.
 const DEFAULT_BAR_COLOR = '#1f252e';
 const SELECTION_COLOR = '#3B82F6'; // tailwind blue-500 — loop-range bracket
+const FILL_REGION_COLOR = '59, 130, 246'; // blue-500 RGB — fill-region band fill
 const PULSE_BAR_COUNT = 32;
 // Beat-1 wrap guard window (s). getStemPlayheadPhase() subtracts ~185ms of visual-
 // latency compensation, which pulls the phase NEGATIVE at the loop origin and wraps it
@@ -135,6 +146,7 @@ export function GrooveCardWaveform({
   getAudioPhase,
   lengthBars = 0,
   loopSelection,
+  fillRegion,
   onLoopSelectionChange,
   color = DEFAULT_BAR_COLOR,
   countdownBeat = null,
@@ -166,6 +178,7 @@ export function GrooveCardWaveform({
     getAudioPhase: getAudioPhase ?? null,
     lengthBars,
     loopSelection: loopSelection ?? null,
+    fillRegion: fillRegion ?? null,
     dragSelection,
     color,
     countdownBeat,
@@ -179,6 +192,7 @@ export function GrooveCardWaveform({
     getAudioPhase: getAudioPhase ?? null,
     lengthBars,
     loopSelection: loopSelection ?? null,
+    fillRegion: fillRegion ?? null,
     dragSelection,
     color,
     countdownBeat,
@@ -300,6 +314,39 @@ export function GrooveCardWaveform({
       c.fillRect(x, 0, 2, height);
     };
 
+    /** Blue gradient band marking where the active fill happens. The fill is
+     *  solid-ish in the middle and fades to transparent at the left/right edges
+     *  (a horizontal gradient) so it reads as a soft "this zone" highlight, not
+     *  a hard-walled block. `startFrac`/`endFrac` are fractional bar positions
+     *  (0..bars). Drawn UNDER the peaks so the waveform stays crisp on top. */
+    const drawFillRegion = (
+      c: CanvasRenderingContext2D,
+      width: number,
+      height: number,
+      bars: number,
+      startFrac: number,
+      endFrac: number,
+    ) => {
+      if (bars <= 0 || !(endFrac > startFrac)) return;
+      const xs = (startFrac / bars) * width;
+      const xe = (endFrac / bars) * width;
+      const bandW = xe - xs;
+      if (bandW <= 0) return;
+      // Edge fade: ~0.4 bar each side, but never more than 40% of the band so a
+      // narrow region still shows a solid core. Expressed as a 0..1 stop.
+      const fadeBars = 0.4;
+      const fadePx = Math.min((fadeBars / bars) * width, bandW * 0.4);
+      const fadeStop = bandW > 0 ? fadePx / bandW : 0;
+      const core = 0.26; // peak alpha at the band core
+      const grad = c.createLinearGradient(xs, 0, xe, 0);
+      grad.addColorStop(0, `rgba(${FILL_REGION_COLOR}, 0)`);
+      grad.addColorStop(fadeStop, `rgba(${FILL_REGION_COLOR}, ${core})`);
+      grad.addColorStop(1 - fadeStop, `rgba(${FILL_REGION_COLOR}, ${core})`);
+      grad.addColorStop(1, `rgba(${FILL_REGION_COLOR}, 0)`);
+      c.fillStyle = grad;
+      c.fillRect(xs, 0, bandW, height);
+    };
+
     /** 2-px rectangle frame around the selected bar range. When the
      *  selection touches the left or right canvas edge, the bracket's
      *  outer corners are rounded (8px radius matching the parent canvas's
@@ -372,6 +419,18 @@ export function GrooveCardWaveform({
         // Bar grid first — peaks paint on top so the lines show only in
         // the quieter portions of the waveform.
         drawBarLines(ctx, width, height, s.lengthBars);
+        // Fill-region band UNDER the peaks (when a fill is active) so the
+        // waveform stays crisp on top of the blue tint.
+        if (s.fillRegion && s.lengthBars > 0) {
+          drawFillRegion(
+            ctx,
+            width,
+            height,
+            s.lengthBars,
+            s.fillRegion.startFrac,
+            s.fillRegion.endFrac,
+          );
+        }
         drawPeaks(ctx, width, height, s.bassBuffer, s.color);
 
         // Selection bracket: drag-in-progress (pending=true) is drawn at
@@ -448,7 +507,8 @@ export function GrooveCardWaveform({
             const PULSE_MS = 380;
             const FLOOR = 0.18;
             const t = beat != null ? Math.min(1, since / PULSE_MS) : 1;
-            const opacity = beat != null ? FLOOR + (1 - FLOOR) * (1 - t) : FLOOR;
+            const opacity =
+              beat != null ? FLOOR + (1 - FLOOR) * (1 - t) : FLOOR;
             drawPlayhead(ctx, width, height, homeX, opacity);
           } else if (sel) {
             // Map the bar selection onto the canvas: x range and the duration
