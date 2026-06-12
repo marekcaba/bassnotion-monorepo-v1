@@ -39,6 +39,30 @@ export class MusicXMLParser {
   constructor(config: Partial<MusicXMLConversionConfig> = {}) {
     this.config = { ...DEFAULT_CONVERSION_CONFIG, ...config };
 
+    // MusicXML tags are hyphenated (score-partwise, part-list, beat-type, …)
+    // but the converter below reads camelCase (scorePartwise, partList,
+    // beatType, …). fast-xml-parser keeps the raw hyphenated names, so rename
+    // hyphen→camelCase at parse time. (Attributes keep their @_ prefix and are
+    // unaffected.)
+    const toCamel = (name: string): string =>
+      name.replace(/-([a-z])/g, (_m, c: string) => c.toUpperCase());
+
+    // The converter indexes structural collections as arrays (part[0],
+    // measure[0], attributes?.[0], key?.[0], time?.[0], part.find, …). A single
+    // <part>/<measure>/etc. parses to an OBJECT, not an array, so force these to
+    // always be arrays. Names here are the POST-transform (camelCase) tag names.
+    const ARRAY_TAGS = new Set([
+      'part',
+      'measure',
+      'note',
+      'attributes',
+      'key',
+      'time',
+      'clef',
+      'creator',
+      'scorePart',
+    ]);
+
     // Configure XML parser for MusicXML format
     this.parser = new XMLParser({
       ignoreAttributes: false,
@@ -50,6 +74,8 @@ export class MusicXMLParser {
       stopNodes: ['*.text', '*.lyrics'],
       processEntities: true,
       htmlEntities: true,
+      transformTagName: toCamel,
+      isArray: (tagName: string) => ARRAY_TAGS.has(tagName),
     });
   }
 
@@ -141,11 +167,12 @@ export class MusicXMLParser {
    * Normalize parsed XML structure for consistent processing
    */
   private normalizeMusicXML(parsedXML: any): MusicXMLDocument {
-    // Handle both score-partwise and score-timewise formats
-    if (parsedXML['score-partwise']) {
-      return { scorePartwise: parsedXML['score-partwise'] };
-    } else if (parsedXML['score-timewise']) {
-      return { scoreTimewise: parsedXML['score-timewise'] };
+    // Tag names are camelCased by the parser's transformTagName, so the root is
+    // `scorePartwise` / `scoreTimewise` (not the raw hyphenated form).
+    if (parsedXML.scorePartwise) {
+      return { scorePartwise: parsedXML.scorePartwise };
+    } else if (parsedXML.scoreTimewise) {
+      return { scoreTimewise: parsedXML.scoreTimewise };
     } else {
       throw new Error(
         'Invalid MusicXML format: Missing score-partwise or score-timewise root element',

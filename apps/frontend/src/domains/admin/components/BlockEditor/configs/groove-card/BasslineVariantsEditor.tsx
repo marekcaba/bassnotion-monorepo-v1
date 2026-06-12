@@ -17,11 +17,98 @@
  */
 
 import { useCallback, useRef, useState } from 'react';
-import { Trash2, UploadCloud } from 'lucide-react';
-import type { BasslineVariant } from '@bassnotion/contracts';
+import { Trash2, UploadCloud, Music4 } from 'lucide-react';
+import type {
+  BasslineVariant,
+  ExerciseNote,
+  GrooveCardBlockConfig,
+} from '@bassnotion/contracts';
+import { MusicXMLParser } from '@bassnotion/contracts';
 import { supabase } from '@/infrastructure/supabase/client';
 import { StemUploadButton } from './StemUploadButton';
 import type { UploadStemOptions } from './useStemUpload';
+
+type BassNotation = NonNullable<GrooveCardBlockConfig['bassNotation']>;
+
+/**
+ * Compact per-row MusicXML import: a small "Notation" button that reads the
+ * picked .xml/.musicxml/.mxl, runs the real {@link MusicXMLParser}, and hands
+ * back the ExerciseNote[]. (The shared MusicXMLUpload widget is a stub that
+ * never parses — we wire the parser directly here.) Shows ♪ + a note count
+ * once a score is loaded; click to replace.
+ */
+function NotationCell({
+  notes,
+  onNotes,
+}: {
+  notes?: ExerciseNote[];
+  onNotes: (notes: ExerciseNote[] | undefined) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const count = notes?.length ?? 0;
+
+  const onPick = useCallback(
+    async (file: File) => {
+      setErr(null);
+      setBusy(true);
+      try {
+        const text = await file.text();
+        const result = await new MusicXMLParser().parseFile(text);
+        if (!result.success || result.notes.length === 0) {
+          setErr(result.errors?.[0] ?? 'No notes found in that score.');
+          return;
+        }
+        onNotes(result.notes);
+      } catch (e) {
+        setErr(e instanceof Error ? e.message : 'Import failed');
+      } finally {
+        setBusy(false);
+      }
+    },
+    [onNotes],
+  );
+
+  return (
+    <div className="flex shrink-0 items-center gap-1">
+      <label
+        title={count > 0 ? `${count} notes — replace` : 'Import bass notation'}
+        className={`flex cursor-pointer items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium transition-colors ${
+          busy
+            ? 'cursor-wait border-white/10 bg-white/5 text-white/40'
+            : count > 0
+              ? 'border-sky-400/30 bg-sky-400/10 text-sky-300 hover:bg-sky-400/20'
+              : 'border-white/15 bg-white/10 text-white/70 hover:bg-white/15'
+        }`}
+      >
+        <Music4 className="h-3.5 w-3.5" />
+        {busy ? '…' : count > 0 ? `♪ ${count}` : 'Notation'}
+        <input
+          type="file"
+          accept=".xml,.musicxml,.mxl"
+          className="hidden"
+          disabled={busy}
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) void onPick(f);
+            e.target.value = '';
+          }}
+        />
+      </label>
+      {count > 0 && (
+        <button
+          type="button"
+          onClick={() => onNotes(undefined)}
+          className="shrink-0 text-white/25 transition-colors hover:text-red-400"
+          title="Clear notation"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      )}
+      {err && <span className="text-[10px] text-red-400">{err}</span>}
+    </div>
+  );
+}
 
 interface BasslineVariantsEditorProps {
   /** Current variants (from stems.bassVariants). */
@@ -34,6 +121,11 @@ interface BasslineVariantsEditorProps {
   /** Upload context for the main bass (path-building in the audio-samples
    *  bucket — same plumbing as the drums/harmony stem uploaders). */
   mainBassUploadContext: UploadStemOptions;
+  /** Bass A's sheet notation (config.bassNotation) — Bass A is the main bass,
+   *  not a variant, so its score lives on the config. */
+  bassANotation?: BassNotation;
+  /** Persist Bass A's notation. */
+  onChangeBassANotation: (value: BassNotation | undefined) => void;
   /** Groove length in bars — defines the musical grid the variant must match. */
   lengthBars: number;
   /** Groove default BPM — defines the musical grid. */
@@ -82,6 +174,8 @@ export function BasslineVariantsEditor({
   mainBassUrl,
   onChangeMainBass,
   mainBassUploadContext,
+  bassANotation,
+  onChangeBassANotation,
   lengthBars,
   bpm,
   slug,
@@ -111,6 +205,13 @@ export function BasslineVariantsEditor({
     (id: string, patch: Partial<BasslineVariant>) =>
       onChange(variants.map((v) => (v.id === id ? { ...v, ...patch } : v))),
     [variants, onChange],
+  );
+
+  // Set a variant's sheet notes (empty array clears it back to undefined).
+  const setVariantNotes = useCallback(
+    (id: string, notes: ExerciseNote[] | undefined) =>
+      setVariant(id, { notes: notes && notes.length > 0 ? notes : undefined }),
+    [setVariant],
   );
 
   const removeVariant = useCallback(
@@ -368,6 +469,14 @@ export function BasslineVariantsEditor({
                   stemLabel="bass"
                 />
               </div>
+              <NotationCell
+                notes={bassANotation?.notes}
+                onNotes={(notes) =>
+                  onChangeBassANotation(
+                    notes && notes.length > 0 ? { notes } : undefined,
+                  )
+                }
+              />
             </>
           ) : (
             <>
@@ -381,6 +490,12 @@ export function BasslineVariantsEditor({
                 className="min-w-0 flex-1 rounded-md border border-white/10 bg-white/5 px-2 py-1.5 text-sm text-white placeholder:text-white/30"
               />
               {baseVariant && <UploadCell variant={baseVariant} />}
+              {baseVariant && (
+                <NotationCell
+                  notes={baseVariant.notes}
+                  onNotes={(notes) => setVariantNotes(baseVariant.id, notes)}
+                />
+              )}
               <button
                 type="button"
                 onClick={() => lineId && removeLine(lineId)}
@@ -428,6 +543,10 @@ export function BasslineVariantsEditor({
                     className="min-w-0 flex-1 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs text-white placeholder:text-white/30"
                   />
                   <UploadCell variant={fv} compact />
+                  <NotationCell
+                    notes={fv.notes}
+                    onNotes={(notes) => setVariantNotes(fv.id, notes)}
+                  />
                   <button
                     type="button"
                     onClick={() => removeVariant(fv.id)}

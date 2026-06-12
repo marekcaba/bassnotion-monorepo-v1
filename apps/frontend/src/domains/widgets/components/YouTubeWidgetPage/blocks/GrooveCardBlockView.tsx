@@ -471,12 +471,26 @@ export function GrooveCardBlockView({
   const [showChords, setShowChords] = useState(false);
 
   // The window slot can show the audio waveform or the bass sheet-music
-  // notation. The toggle is always offered (drill bricks aside); the sheet view
-  // empty-states when the groove has no bassNotation authored.
+  // notation. The toggle is always offered (drill bricks aside). The sheet
+  // follows the SELECTED take: a chosen variant (Bass B / a fill) shows ITS own
+  // notation; the default bass (no variant) shows config.bassNotation (Bass A's
+  // score); a selected take with no notation empty-states.
   const [windowView, setWindowView] = useState<'waveform' | 'sheet'>(
     'waveform',
   );
-  const bassNotation = config.bassNotation;
+  const activeNotation = useMemo(() => {
+    const activeVariant = bassVariants.find(
+      (v) => v.id === playback.activeBassVariantId,
+    );
+    if (activeVariant) {
+      return { notes: activeVariant.notes, timeSignature: undefined };
+    }
+    // Default bass selected → Bass A's score.
+    return {
+      notes: config.bassNotation?.notes,
+      timeSignature: config.bassNotation?.timeSignature,
+    };
+  }, [bassVariants, playback.activeBassVariantId, config.bassNotation]);
   const showWindowToggle = !isDrillBrick;
 
   const dynamicLoop = useDynamicLoop({
@@ -857,10 +871,11 @@ export function GrooveCardBlockView({
         waveform={
           windowView === 'sheet' ? (
             // Sheet-music view of the bass line — same window, different content.
-            // Empty-states when the groove has no authored bassNotation.
+            // Shows the SELECTED take's notation; empty-states when that take has
+            // no notation authored.
             <GrooveCardSheetView
-              notes={bassNotation?.notes}
-              timeSignature={bassNotation?.timeSignature}
+              notes={activeNotation.notes}
+              timeSignature={activeNotation.timeSignature}
               bpm={config.originalBpm}
               lengthBars={config.lengthBars}
               isPlaying={playback.isPlaying}

@@ -289,6 +289,15 @@ export interface BasslineVariant {
     endBar: number;
     endBeat: number;
   };
+  /**
+   * This take's bass-line SHEET notation (pre-parsed from an admin-imported
+   * MusicXML). When this variant is the active selection, the card's sheet view
+   * shows THESE notes. Absent = the sheet view empty-states for this take. (The
+   * built-in default bass / "Bass A" carries its own score on
+   * `GrooveCardBlockConfig.bassNotation` instead, since it is the main stem, not
+   * a variant.)
+   */
+  notes?: ExerciseNote[];
 }
 
 export interface GrooveCardStemSet {

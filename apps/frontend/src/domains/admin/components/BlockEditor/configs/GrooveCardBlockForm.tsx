@@ -25,7 +25,6 @@ import type {
 import { StemUploadButton } from './groove-card/StemUploadButton';
 import { ChordChartEditor } from './groove-card/ChordChartEditor';
 import { BasslineVariantsEditor } from './groove-card/BasslineVariantsEditor';
-import { BassNotationEditor } from './groove-card/BassNotationEditor';
 import { CompletionCriterionFields } from './CompletionCriterionFields';
 import { useGrooveLibrary } from '@/domains/drill/hooks/useGrooveLibrary';
 
@@ -358,13 +357,13 @@ export function GrooveCardBlockForm({
               };
               onChange({ ...config, stems: { ...current, bassVariants } });
             }}
-          />
-
-          {/* Bass sheet-music notation — the card's window can switch from the
-              waveform to this bass-clef score. */}
-          <BassNotationEditor
-            value={config.bassNotation}
-            onChange={(bassNotation) => onChange({ ...config, bassNotation })}
+            // Bass A's sheet notation lives on the config (it's the main bass,
+            // not a variant); each alternate line / fill carries its own on its
+            // variant. The editor authors both, per row.
+            bassANotation={config.bassNotation}
+            onChangeBassANotation={(bassNotation) =>
+              onChange({ ...config, bassNotation })
+            }
           />
         </fieldset>
       )}

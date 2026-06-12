@@ -50,6 +50,32 @@ export const grooveCardStemUrlSchema = z.union([
 const BASSLINE_VARIANT_PATH_REGEX =
   /\/storage\/v1\/object\/(public|sign)\/(audio-samples|premium-basslines)\/[A-Za-z0-9_./-]+/;
 
+/**
+ * A pre-parsed ExerciseNote (from an admin-imported MusicXML). We validate the
+ * CORE musical fields and pass the rest through (.passthrough) so the full
+ * ExerciseNote shape survives the save without re-deriving its 20+ optional
+ * properties. Shared by both the per-variant `notes` and `bassNotation.notes`.
+ */
+const exerciseNoteSchema = z
+  .object({
+    id: z.string(),
+    string: z.number().int().min(1).max(6),
+    fret: z.number().int().min(0).max(24),
+    note: z.string(),
+    duration: z.string(),
+    // MusicalPosition: { measure, beat, subdivision, tick? } — the shape the
+    // MusicXML parser emits and exerciseToMusicXML/SheetMusicDisplay consume.
+    position: z
+      .object({
+        measure: z.number().int().nonnegative(),
+        beat: z.number().int().nonnegative(),
+        subdivision: z.number().int().nonnegative(),
+        tick: z.number().int().nonnegative().optional(),
+      })
+      .passthrough(),
+  })
+  .passthrough();
+
 const basslineVariantSchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1),
@@ -73,6 +99,9 @@ const basslineVariantSchema = z.object({
       endBeat: z.number().int().min(1).max(4),
     })
     .optional(),
+  // This take's bass-line sheet notation (pre-parsed ExerciseNote[]). Shown in
+  // the card's sheet view when this variant is the active selection.
+  notes: z.array(exerciseNoteSchema).optional(),
 });
 
 export const grooveCardStemSetSchema = z.object({
@@ -131,30 +160,13 @@ export const grooveCardBlockConfigSchema = z
         }),
       )
       .optional(),
-    // Bass-line sheet notation (the card's waveform window can switch to this
-    // bass-clef score). Notes are pre-parsed from an admin-imported MusicXML/MIDI
-    // into ExerciseNote[]; we validate the CORE musical fields and pass the rest
-    // through (.passthrough) so the full ExerciseNote shape survives the save
-    // without re-deriving its 20+ optional properties here.
+    // Bass-line sheet notation for the BUILT-IN bass ("Bass A"). The card's
+    // window can switch to this bass-clef score. Each alternate line / fill
+    // carries its OWN notation on its bassVariant (above). Pre-parsed from an
+    // admin-imported MusicXML (shared exerciseNoteSchema).
     bassNotation: z
       .object({
-        notes: z.array(
-          z
-            .object({
-              id: z.string(),
-              string: z.number().int().min(1).max(6),
-              fret: z.number().int().min(0).max(24),
-              note: z.string(),
-              duration: z.string(),
-              position: z.object({
-                bars: z.number().int().nonnegative(),
-                beats: z.number().int().nonnegative(),
-                sixteenths: z.number().int().nonnegative(),
-                ticks: z.number().int().nonnegative(),
-              }),
-            })
-            .passthrough(),
-        ),
+        notes: z.array(exerciseNoteSchema),
         timeSignature: z
           .object({
             numerator: z.number().int().positive(),
