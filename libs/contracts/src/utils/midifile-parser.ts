@@ -1045,17 +1045,32 @@ export class MIDIFileParser {
   }
 
   private calculateMusicalTiming(startTick: number, division: number) {
-    // Convert to quarter note positions
+    // Convert the absolute MIDI tick into the position shape exerciseToMusicXML
+    // (and SheetMusicDisplay) actually consume:
+    //   • measure  — 1-based
+    //   • beat     — 0-INDEXED within the bar (beat 0 = the downbeat). The
+    //                renderer treats beat as 0-based; emitting a 1-based beat
+    //                here shifted every note one beat late (a phantom lead rest).
+    //   • subdivision — 0..3 sixteenth WITHIN the beat (not within the bar).
+    //   • tick     — sub-beat offset in ticks (0..division-1), normalised to a
+    //                480-PPQ scale because the renderer divides tick by 480 for
+    //                sub-beat positioning. THIS is what carries the real rhythm;
+    //                the old code only set `ticks` (absolute), which the renderer
+    //                ignores, so all sub-beat detail was lost.
+    const TICKS_PER_QUARTER_DISPLAY = 480;
+    const beatsPerBar = 4; // MIDI carries no bar grid; 4/4 is the safe default
     const quarterNotes = startTick / division;
-    const measure = Math.floor(quarterNotes / 4) + 1;
-    const beat = Math.floor(quarterNotes % 4) + 1;
-    const subdivision = Math.round((quarterNotes % 1) * 16); // 16th note subdivisions
+    const measure = Math.floor(quarterNotes / beatsPerBar) + 1;
+    const beat = Math.floor(quarterNotes) % beatsPerBar; // 0-indexed
+    const fractionWithinBeat = quarterNotes - Math.floor(quarterNotes); // 0..1
+    const subdivision = Math.min(3, Math.floor(fractionWithinBeat * 4)); // 0..3
+    const tick = Math.round(fractionWithinBeat * TICKS_PER_QUARTER_DISPLAY); // 0..479
 
     return {
       measure,
       beat,
       subdivision,
-      ticks: startTick,
+      tick,
     };
   }
 

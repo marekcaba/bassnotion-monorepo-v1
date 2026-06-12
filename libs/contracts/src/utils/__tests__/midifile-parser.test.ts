@@ -45,21 +45,27 @@ describe('MIDIFileParser', () => {
     );
     const result = await new MIDIFileParser().parseFile(buffer, 'bass.mid');
     expect(result.metadata?.division).toBe(midi.header.ppq);
-    // a note at tick 0 must land on measure 1, beat 1 (no leading rest).
+    // a note at tick 0 must land on measure 1, beat 0 (the downbeat) — no
+    // leading rest. (beat is 0-indexed, matching the renderer.)
     expect(result.exercise?.notes?.[0]?.position).toMatchObject({
       measure: 1,
-      beat: 1,
+      beat: 0,
     });
   });
 
-  it('emits the {measure, beat, subdivision} position shape', async () => {
+  it('emits the {measure, beat (0-indexed), subdivision, tick} position shape', async () => {
     const result = await new MIDIFileParser().parseFile(
       buildBassMidi(),
       'bass.mid',
     );
-    const first = result.exercise?.notes?.[0];
-    expect(first?.position).toMatchObject({ measure: 1, beat: 1 });
-    expect(first?.position?.subdivision).toBeTypeOf('number');
+    const notes = result.exercise?.notes ?? [];
+    // beat is 0-INDEXED (the downbeat = beat 0), which is what
+    // exerciseToMusicXML/SheetMusicDisplay consume. The four quarter notes land
+    // on beats 0,1,2,3 of bar 1.
+    expect(notes[0]?.position).toMatchObject({ measure: 1, beat: 0 });
+    expect(notes.map((n) => n.position?.beat)).toEqual([0, 1, 2, 3]);
+    expect(notes[0]?.position?.tick).toBe(0); // sub-beat offset, not absolute
+    expect(notes[0]?.position?.subdivision).toBeTypeOf('number');
   });
 
   it('auto-tags soft (low-velocity) notes as ghost notes', async () => {
