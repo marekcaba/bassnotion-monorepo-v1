@@ -228,7 +228,15 @@ export class MIDIFileParser {
         | 'type1'
         | 'type2',
       trackCount: parsedMidi.tracks?.length || 0,
-      division: parsedMidi.header?.ticksPerQuarter || 480,
+      // @tonejs/midi exposes ticks-per-quarter as `ppq` (NOT `ticksPerQuarter`).
+      // Reading the wrong name silently fell back to 480, mis-scaling every
+      // tick→beat conversion (notes landing on the wrong beat / a phantom lead
+      // rest). Prefer ppq; keep the legacy names as fallbacks.
+      division:
+        parsedMidi.header?.ppq ||
+        parsedMidi.header?.ticksPerQuarter ||
+        parsedMidi.header?.ticksPerBeat ||
+        480,
       durationSeconds: parsedMidi.duration || 0,
       tempoMap: [],
       timeSignatureMap: [],

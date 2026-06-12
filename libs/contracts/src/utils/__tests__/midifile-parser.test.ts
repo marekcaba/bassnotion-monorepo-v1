@@ -30,6 +30,28 @@ describe('MIDIFileParser', () => {
     expect(result.exercise?.notes?.length).toBe(4);
   });
 
+  it('reads ticks-per-quarter from @tonejs/midi ppq (not a 480 fallback)', async () => {
+    // @tonejs/midi default ppq is NOT 480; reading the wrong header name made
+    // division silently fall back to 480, mis-scaling positions (a phantom lead
+    // rest). division must equal the file's real ppq.
+    const midi = new Midi();
+    midi.header.setTempo(120);
+    const track = midi.addTrack();
+    track.addNote({ name: 'E1', time: 0, duration: 1 }); // tick 0 → beat 1
+    const u8 = midi.toArray();
+    const buffer = u8.buffer.slice(
+      u8.byteOffset,
+      u8.byteOffset + u8.byteLength,
+    );
+    const result = await new MIDIFileParser().parseFile(buffer, 'bass.mid');
+    expect(result.metadata?.division).toBe(midi.header.ppq);
+    // a note at tick 0 must land on measure 1, beat 1 (no leading rest).
+    expect(result.exercise?.notes?.[0]?.position).toMatchObject({
+      measure: 1,
+      beat: 1,
+    });
+  });
+
   it('emits the {measure, beat, subdivision} position shape', async () => {
     const result = await new MIDIFileParser().parseFile(
       buildBassMidi(),
