@@ -66,7 +66,7 @@ function VariantCell({
       onClick={onClick}
       title={showLock ? 'Lines & Fills — a member move' : label}
       className={`
-        relative flex flex-col items-center justify-center gap-1.5
+        relative flex flex-col items-center gap-1.5
         w-[88px] shrink-0 px-3 py-3 rounded-xl
         transition-all duration-300 ease-out group
         focus:outline-none focus-visible:outline-none
@@ -89,32 +89,45 @@ function VariantCell({
         `}
       />
 
-      {/* Icon */}
-      <div className="relative flex items-center justify-center w-7 h-7">
+      {/* Status icon — w-8 container to match the exercise cards. */}
+      <div className="relative flex items-center justify-center w-8 h-8">
         {showLock ? (
           <Lock className="w-4 h-4 text-slate-500" />
         ) : active ? (
           <div className="w-3 h-3 rounded-full bg-violet-400 shadow-[0_0_8px_rgba(139,92,246,0.5)]" />
         ) : (
-          <IdleIcon className="w-4 h-4 text-slate-400 group-hover:text-slate-300" />
+          <IdleIcon className="w-5 h-5 text-slate-400 group-hover:text-slate-300" />
         )}
       </div>
 
       {/* Label */}
       <span
         className={`
-          text-[11px] font-semibold leading-none text-center
+          text-[11px] font-bold leading-none text-center
           ${
             active && !showLock
               ? 'text-violet-300'
               : showLock
                 ? 'text-slate-500'
-                : 'text-slate-300 group-hover:text-slate-200'
+                : 'text-slate-400 group-hover:text-slate-300'
           }
         `}
       >
         {label}
       </span>
+
+      {/* Bottom accent bar — mirrors the exercise card's difficulty bar (violet
+          when active, neutral when idle, dimmed when locked). Gives the card the
+          same vertical anatomy / height as the exercise journey cells. */}
+      <div
+        className={`mt-0.5 h-0.5 w-6 rounded-full transition-colors duration-300 ${
+          showLock
+            ? 'bg-slate-600/30'
+            : active
+              ? 'bg-violet-400 shadow-sm shadow-violet-400/40'
+              : 'bg-slate-500/50 group-hover:bg-slate-400/60'
+        }`}
+      />
     </button>
   );
 }
