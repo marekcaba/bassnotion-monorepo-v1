@@ -70,7 +70,10 @@ export function stripLinePrefix(title: string, lineLabel: string): string {
   const t = title.trim();
   const p = lineLabel.trim();
   if (!p || t.toLowerCase().indexOf(p.toLowerCase()) !== 0) return t;
-  const rest = t.slice(p.length).replace(/^[\s\-·:]+/, '').trim();
+  const rest = t
+    .slice(p.length)
+    .replace(/^[\s\-·:]+/, '')
+    .trim();
   return rest.length > 0 ? rest : t;
 }
 
