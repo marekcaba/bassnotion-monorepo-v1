@@ -153,33 +153,29 @@ function LineGroupRow({
   // The built-in Bass A with no fill is the free baseline → never locks.
   const linePremium = group.id !== DEFAULT_LINE_ID;
   return (
-    <div className="flex shrink-0 flex-col gap-1.5">
-      <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-        {group.label}
-      </div>
-      <div className="flex items-stretch gap-2">
-        {/* The plain line (no fill) */}
+    <div className="flex shrink-0 items-stretch gap-2">
+      {/* The plain line (no fill) — always labelled by the bassline name, so the
+          row needs no separate heading above it. */}
+      <VariantCell
+        label={group.label}
+        active={lineActive && activeFillId === NO_FILL_ID}
+        premium={linePremium}
+        locked={locked}
+        idleIcon="line"
+        onClick={() => onSelect(group.id, NO_FILL_ID)}
+      />
+      {/* This line's own fills */}
+      {group.fills.map((fill) => (
         <VariantCell
-          label={group.fills.length ? 'No fill' : group.label}
-          active={lineActive && activeFillId === NO_FILL_ID}
-          premium={linePremium}
+          key={fill.id}
+          label={fill.label}
+          active={lineActive && activeFillId === fill.id}
+          premium
           locked={locked}
-          idleIcon="line"
-          onClick={() => onSelect(group.id, NO_FILL_ID)}
+          idleIcon="fill"
+          onClick={() => onSelect(group.id, fill.id)}
         />
-        {/* This line's own fills */}
-        {group.fills.map((fill) => (
-          <VariantCell
-            key={fill.id}
-            label={fill.label}
-            active={lineActive && activeFillId === fill.id}
-            premium
-            locked={locked}
-            idleIcon="fill"
-            onClick={() => onSelect(group.id, fill.id)}
-          />
-        ))}
-      </div>
+      ))}
     </div>
   );
 }
