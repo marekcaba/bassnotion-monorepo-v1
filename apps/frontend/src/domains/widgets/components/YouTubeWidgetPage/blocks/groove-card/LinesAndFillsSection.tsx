@@ -205,11 +205,6 @@ export function LinesAndFillsSection({
           </span>
         )}
       </div>
-      <p className="mb-3 text-[11px] text-slate-500">
-        Swap the bassline and drop in its fills mid-groove — drums &amp; harmony
-        keep playing.
-      </p>
-
       {/* One horizontal row: each line + its fills, divided by a vertical rule.
           Scrolls sideways if it overflows the card width. The `px-1`/`py-1`
           gutter gives the SELECTED card (which scales to 1.05) room to grow

@@ -6,6 +6,7 @@ import {
   buildLinesAndFillsGroups,
   resolveComboVariantId,
   selectionForVariantId,
+  stripLinePrefix,
 } from './linesAndFills';
 
 const v = (
@@ -26,6 +27,16 @@ describe('buildLinesAndFillsGroups', () => {
     expect(g.map((l) => l.id)).toEqual([DEFAULT_LINE_ID, 'x', 'y']);
     expect(g.map((l) => l.label)).toEqual(['Bass A', 'Walking', 'Slap']);
     expect(g.every((l) => l.fills.length === 0)).toBe(true);
+  });
+
+  it('strips the redundant line-name prefix from fill labels', () => {
+    const g = buildLinesAndFillsGroups([
+      v('b0', 'Bass B', 'B'),
+      v('b1', 'Bass B Fill 1', 'B', 'b1'),
+      v('b2', 'Bass B - Turnaround', 'B', 'b2'),
+    ]);
+    const B = g.find((l) => l.id === 'B')!;
+    expect(B.fills.map((f) => f.label)).toEqual(['Fill 1', 'Turnaround']);
   });
 
   it('groups each line with ITS OWN fills (fills never cross lines)', () => {
@@ -53,6 +64,24 @@ describe('buildLinesAndFillsGroups', () => {
     // become the line label (regression caught via the admin→player harness).
     expect(g[0].label).toBe('Bass A');
     expect(g[0].fills.map((f) => f.id)).toEqual(['a-fill1']);
+  });
+});
+
+describe('stripLinePrefix', () => {
+  it('strips the line name + separator', () => {
+    expect(stripLinePrefix('Bass B Fill 1', 'Bass B')).toBe('Fill 1');
+    expect(stripLinePrefix('Bass B - Turnaround', 'Bass B')).toBe('Turnaround');
+    expect(stripLinePrefix('Bass B · Walk', 'Bass B')).toBe('Walk');
+  });
+  it('is case-insensitive', () => {
+    expect(stripLinePrefix('bass b Fill 2', 'Bass B')).toBe('Fill 2');
+  });
+  it('leaves titles without the prefix untouched', () => {
+    expect(stripLinePrefix('Turnaround', 'Bass B')).toBe('Turnaround');
+    expect(stripLinePrefix('Fill 1', 'Bass B')).toBe('Fill 1');
+  });
+  it('no-ops when stripping would empty the label', () => {
+    expect(stripLinePrefix('Bass B', 'Bass B')).toBe('Bass B');
   });
 });
 

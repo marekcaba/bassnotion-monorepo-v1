@@ -60,6 +60,21 @@ export function fillKeyOf(variant: BasslineVariant): string {
 }
 
 /**
+ * Drop a redundant leading line-name from a fill's title — "Bass B Fill 1" with
+ * line "Bass B" → "Fill 1" (the fill card sits next to its line card, so the
+ * prefix is obvious). Case-insensitive; tolerates a space / "-" / "·" / ":"
+ * separator after the prefix. No-op when the title doesn't start with the line
+ * name, or when stripping would leave it empty.
+ */
+export function stripLinePrefix(title: string, lineLabel: string): string {
+  const t = title.trim();
+  const p = lineLabel.trim();
+  if (!p || t.toLowerCase().indexOf(p.toLowerCase()) !== 0) return t;
+  const rest = t.slice(p.length).replace(/^[\s\-·:]+/, '').trim();
+  return rest.length > 0 ? rest : t;
+}
+
+/**
  * Group the groove's variants into lines, each owning its own fills.
  *
  * - The built-in Bass A (`DEFAULT_LINE_ID`) is always the first group, even
@@ -96,7 +111,9 @@ export function buildLinesAndFillsGroups(
       const fk = fillKeyOf(v);
       if (fk !== NO_FILL_ID && !seenFills.has(fk)) {
         seenFills.add(fk);
-        fills.push({ id: fk, label: v.title });
+        // Fill cells sit right beside their line cell, so strip a redundant
+        // leading line-name prefix from the title ("Bass B Fill 1" → "Fill 1").
+        fills.push({ id: fk, label: stripLinePrefix(v.title, label) });
       }
     }
     return { id: lk, label, fills };
