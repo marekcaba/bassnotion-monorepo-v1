@@ -100,10 +100,13 @@ function VariantCell({
         )}
       </div>
 
-      {/* Label */}
+      {/* Label — fixed two-line box so a short label ("Bass A") reserves the
+          same height as a wrapping one ("B + Fill 1"), keeping every card (and
+          every line group) the SAME height. */}
       <span
         className={`
-          text-[11px] font-bold leading-none text-center
+          flex h-[26px] items-center justify-center text-center
+          text-[11px] font-bold leading-[13px]
           ${
             active && !showLock
               ? 'text-violet-300'
@@ -212,8 +215,10 @@ export function LinesAndFillsSection({
       </p>
 
       {/* One horizontal row: each line + its fills, divided by a vertical rule.
-          Scrolls sideways if it overflows the card width. */}
-      <div className="flex items-stretch gap-3 overflow-x-auto pb-1">
+          Scrolls sideways if it overflows the card width. The `px-1`/`py-1`
+          gutter gives the SELECTED card (which scales to 1.05) room to grow
+          without its left/top edge being clipped by `overflow-x-auto`. */}
+      <div className="flex items-stretch gap-3 overflow-x-auto px-1 py-1">
         {groups.map((group, i) => (
           <div key={group.id} className="flex shrink-0 items-stretch gap-3">
             {i > 0 && <div className="w-px self-stretch bg-white/10" />}
