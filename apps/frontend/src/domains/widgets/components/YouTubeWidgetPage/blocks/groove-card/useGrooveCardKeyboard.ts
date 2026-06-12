@@ -12,6 +12,7 @@
  *   M       mute / unmute the bass
  *   S       solo / unsolo the bass
  *   L       engage / disengage the Dynamic Loop
+ *   A/B/C   select the 1st / 2nd / 3rd bassline (Bass A / B / C), no fill
  *
  * Transpose routes through the same `setKey` command the +/- stepper
  * buttons use, and tempo through the same `setTempo` the tempo stepper uses
@@ -65,6 +66,10 @@ interface UseGrooveCardKeyboardArgs {
    *  Engage toggle. The caller passes a no-op on surfaces where the loop isn't
    *  available (drill bricks, capped free tier). */
   toggleDynamicLoop: () => void;
+  /** Select the Nth bassline (0 = Bass A, 1 = Bass B, …) with no fill — the same
+   *  caller-owned action as clicking that line's card (cap-gated identically).
+   *  A no-op when there's no line at that index. */
+  selectLineByIndex: (index: number) => void;
   /** Gate — only handle keys once the card is interactive (isReady). */
   enabled: boolean;
   /** When true (Dynamic Loop engaged), the auto-cycle owns the key, so the
@@ -103,6 +108,7 @@ export function useGrooveCardKeyboard({
   toggleBassMute,
   toggleSoloDrums,
   toggleDynamicLoop,
+  selectLineByIndex,
   enabled,
   lockTranspose = false,
 }: UseGrooveCardKeyboardArgs): void {
@@ -172,6 +178,23 @@ export function useGrooveCardKeyboard({
         toggleDynamicLoop();
         return;
       }
+
+      // A / B / C → select the 1st / 2nd / 3rd bassline (Bass A / B / C), no
+      // fill. Routes through the same line-select the cards use, so gating +
+      // missing-line handling are identical. Not a browser-default action; no
+      // preventDefault needed.
+      if (e.key === 'a' || e.key === 'A') {
+        selectLineByIndex(0);
+        return;
+      }
+      if (e.key === 'b' || e.key === 'B') {
+        selectLineByIndex(1);
+        return;
+      }
+      if (e.key === 'c' || e.key === 'C') {
+        selectLineByIndex(2);
+        return;
+      }
     };
 
     window.addEventListener('keydown', onKeyDown);
@@ -186,6 +209,7 @@ export function useGrooveCardKeyboard({
     toggleBassMute,
     toggleSoloDrums,
     toggleDynamicLoop,
+    selectLineByIndex,
     lockTranspose,
   ]);
 }

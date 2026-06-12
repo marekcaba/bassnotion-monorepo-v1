@@ -35,6 +35,7 @@ import {
   buildLinesAndFillsGroups,
   resolveComboVariantId,
   selectionForVariantId,
+  NO_FILL_ID,
 } from './groove-card/linesAndFills';
 import { resolveFillRegionFractions } from './groove-card/fillRegion';
 import {
@@ -440,6 +441,18 @@ export function GrooveCardBlockView({
     ],
   );
 
+  // Keyboard A/B/C → select the 1st/2nd/3rd bassline (no fill). Routes through
+  // the same gated handler the cards use; a no-op when there's no line at that
+  // index (e.g. "C" on a groove with only Bass A + B).
+  const selectLineByIndex = useCallback(
+    (index: number) => {
+      const group = linesAndFillsGroups[index];
+      if (!group) return;
+      onSelectLineFill(group.id, NO_FILL_ID);
+    },
+    [linesAndFillsGroups, onSelectLineFill],
+  );
+
   // Chord strip is opt-in: hidden until the user toggles the header chord icon.
   const [showChords, setShowChords] = useState(false);
 
@@ -637,6 +650,7 @@ export function GrooveCardBlockView({
     toggleDynamicLoop: () => {
       if (dynamicLoopAvailable) setDynamicLoopEngaged((v) => !v);
     },
+    selectLineByIndex,
     enabled: playback.isReady,
     // While the cycle is running, it owns the key — disable manual ←/→.
     lockTranspose: dynamicLoop.isActive,

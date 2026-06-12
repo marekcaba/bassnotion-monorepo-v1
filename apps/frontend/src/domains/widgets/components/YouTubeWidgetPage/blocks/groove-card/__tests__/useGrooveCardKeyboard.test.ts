@@ -52,6 +52,7 @@ describe('useGrooveCardKeyboard', () => {
     const toggleBassMute = vi.fn();
     const toggleSoloDrums = vi.fn();
     const toggleDynamicLoop = vi.fn();
+    const selectLineByIndex = vi.fn();
     const utils = renderHook(() =>
       useGrooveCardKeyboard({
         currentSemitones: args.currentSemitones ?? 0,
@@ -62,6 +63,7 @@ describe('useGrooveCardKeyboard', () => {
         toggleBassMute,
         toggleSoloDrums,
         toggleDynamicLoop,
+        selectLineByIndex,
         enabled: args.enabled ?? true,
         lockTranspose: args.lockTranspose ?? false,
       }),
@@ -73,6 +75,7 @@ describe('useGrooveCardKeyboard', () => {
       toggleBassMute,
       toggleSoloDrums,
       toggleDynamicLoop,
+      selectLineByIndex,
       ...utils,
     };
   }
@@ -332,6 +335,39 @@ describe('useGrooveCardKeyboard', () => {
     expect(unhandled.defaultPrevented).toBe(false);
   });
 
+  // ── bassline select (A/B/C) ─────────────────────────────────────────────
+  it('A/B/C select the 1st/2nd/3rd bassline by index', () => {
+    const { selectLineByIndex } = mount();
+    press('a');
+    expect(selectLineByIndex).toHaveBeenLastCalledWith(0);
+    press('b');
+    expect(selectLineByIndex).toHaveBeenLastCalledWith(1);
+    press('c');
+    expect(selectLineByIndex).toHaveBeenLastCalledWith(2);
+    expect(selectLineByIndex).toHaveBeenCalledTimes(3);
+  });
+
+  it('A/B/C are case-insensitive', () => {
+    const { selectLineByIndex } = mount();
+    press('A');
+    press('B');
+    press('C');
+    expect(selectLineByIndex.mock.calls.map((c) => c[0])).toEqual([0, 1, 2]);
+  });
+
+  it('A/B/C do nothing while typing in an INPUT', () => {
+    const { selectLineByIndex } = mount();
+    const input = document.createElement('input');
+    press('a', { target: input });
+    press('b', { target: input });
+    expect(selectLineByIndex).not.toHaveBeenCalled();
+  });
+
+  it('A/B/C do not preventDefault (not a browser-default action)', () => {
+    mount();
+    expect(press('a').defaultPrevented).toBe(false);
+  });
+
   it('removes the listener on unmount', () => {
     const {
       setKey,
@@ -339,6 +375,7 @@ describe('useGrooveCardKeyboard', () => {
       toggleBassMute,
       toggleSoloDrums,
       toggleDynamicLoop,
+      selectLineByIndex,
       unmount,
     } = mount();
     unmount();
@@ -347,10 +384,12 @@ describe('useGrooveCardKeyboard', () => {
     press('m');
     press('s');
     press('l');
+    press('a');
     expect(setKey).not.toHaveBeenCalled();
     expect(togglePlay).not.toHaveBeenCalled();
     expect(toggleBassMute).not.toHaveBeenCalled();
     expect(toggleSoloDrums).not.toHaveBeenCalled();
     expect(toggleDynamicLoop).not.toHaveBeenCalled();
+    expect(selectLineByIndex).not.toHaveBeenCalled();
   });
 });
