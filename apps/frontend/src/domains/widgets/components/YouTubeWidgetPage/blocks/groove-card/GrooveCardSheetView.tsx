@@ -64,34 +64,22 @@ export function GrooveCardSheetView({
   useEffect(() => {
     if (!isPlaying || !getAudioPhase) return;
     const beatsPerBar = timeSignature.numerator || 4;
-    // eslint-disable-next-line no-console
-    console.log('[SHEET-SYNC] RAF start', {
-      isPlaying,
-      hasGetAudioPhase: !!getAudioPhase,
-      lengthBars,
-      beatsPerBar,
-    });
-    let n = 0;
+
+    // Loop-origin wrap guard (mirrors the waveform's BEAT1_GUARD). The groove's
+    // getAudioPhase() subtracts ~185ms of latency compensation, so at the START
+    // of playback (count-in / first frames) the phase WRAPS to ≈0.9+ — without a
+    // guard the sheet jumps straight to the end. For the first GUARD_SEC, if the
+    // reported phase is in the wrapped-near-end zone (> 0.5), park at the start
+    // (0) until it genuinely climbs from 0.
+    const GUARD_SEC = 0.4;
+    const startedAt = performance.now();
+
     const tick = () => {
-      const phase = getAudioPhase();
-      if (phase != null) {
-        const pos = phaseToTransportPosition(phase, lengthBars, beatsPerBar);
-        // Throttle: log ~every 20th frame (~3/sec) so the console is readable.
-        if (n % 20 === 0) {
-          // eslint-disable-next-line no-console
-          console.log('[SHEET-SYNC] phase→pos', {
-            phase: +phase.toFixed(4),
-            pos,
-          });
-        }
-        n++;
-        setPosition(pos);
-      } else if (n % 20 === 0) {
-        // eslint-disable-next-line no-console
-        console.log('[SHEET-SYNC] phase is null', { n });
-        n++;
-      } else {
-        n++;
+      const raw = getAudioPhase();
+      if (raw != null) {
+        const elapsed = (performance.now() - startedAt) / 1000;
+        const phase = elapsed < GUARD_SEC && raw > 0.5 ? 0 : raw;
+        setPosition(phaseToTransportPosition(phase, lengthBars, beatsPerBar));
       }
       rafRef.current = requestAnimationFrame(tick);
     };
