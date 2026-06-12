@@ -960,37 +960,39 @@ export function GrooveCardBlockView({
             }
           />
         }
+        // Lines & Fills — premium alternate-bassline swap, rendered INSIDE the
+        // card frame (the footer slot) so it reads as part of the groove card.
+        // Anchored upsell popover mirrors the Dynamic Loop dial pattern.
+        footer={
+          linesAndFillsShown ? (
+            <Popover
+              open={!suppressUpsell && pitchLever === 'linesAndFills'}
+              onOpenChange={(o) => {
+                if (!o) setPitchLever(null);
+              }}
+            >
+              <PopoverAnchor asChild>
+                <div>
+                  <LinesAndFillsSection
+                    groups={linesAndFillsGroups}
+                    activeLineId={activeSelection.lineId}
+                    activeFillId={activeSelection.fillId}
+                    locked={linesAndFillsCapped}
+                    onSelect={onSelectLineFill}
+                  />
+                </div>
+              </PopoverAnchor>
+              {!suppressUpsell && pitchLever === 'linesAndFills' && (
+                <UpgradePitchContent
+                  lever="linesAndFills"
+                  message={capUpsell ?? undefined}
+                  side="bottom"
+                />
+              )}
+            </Popover>
+          ) : undefined
+        }
       />
-
-      {/* Lines & Fills — premium alternate-bassline swap. Anchored upsell
-          popover mirrors the Dynamic Loop dial pattern. */}
-      {linesAndFillsShown && (
-        <Popover
-          open={!suppressUpsell && pitchLever === 'linesAndFills'}
-          onOpenChange={(o) => {
-            if (!o) setPitchLever(null);
-          }}
-        >
-          <PopoverAnchor asChild>
-            <div>
-              <LinesAndFillsSection
-                groups={linesAndFillsGroups}
-                activeLineId={activeSelection.lineId}
-                activeFillId={activeSelection.fillId}
-                locked={linesAndFillsCapped}
-                onSelect={onSelectLineFill}
-              />
-            </div>
-          </PopoverAnchor>
-          {!suppressUpsell && pitchLever === 'linesAndFills' && (
-            <UpgradePitchContent
-              lever="linesAndFills"
-              message={capUpsell ?? undefined}
-              side="bottom"
-            />
-          )}
-        </Popover>
-      )}
 
       {isDrillBrick && (
         <>

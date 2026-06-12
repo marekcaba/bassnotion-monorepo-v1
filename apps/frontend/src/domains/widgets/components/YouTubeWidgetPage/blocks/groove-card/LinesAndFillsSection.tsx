@@ -200,7 +200,10 @@ export function LinesAndFillsSection({
   if (!hasContent) return null;
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-slate-800/60 to-slate-900/40 p-4 backdrop-blur-xl">
+    // Part of the groove-card frame (rendered in the shell's footer slot): a
+    // top divider + card padding rather than a standalone panel, so it reads as
+    // a section OF the card, not a separate box below it.
+    <div className="border-t border-white/10 px-4 pb-4 pt-3">
       <div className="mb-3 flex items-center gap-2">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
           Lines &amp; Fills

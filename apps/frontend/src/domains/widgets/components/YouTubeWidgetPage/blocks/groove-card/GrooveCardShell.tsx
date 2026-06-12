@@ -38,6 +38,9 @@ interface GrooveCardShellProps {
   onToggleChords?: () => void;
   /** Slot for the controls bar. */
   controls: ReactNode;
+  /** Slot rendered INSIDE the card frame, below the controls (e.g. the premium
+   *  Lines & Fills section). Omitted when the surface has nothing to show. */
+  footer?: ReactNode;
   /** Read-only metadata line under the title (e.g. "E · 4 bars").
    * Composed by the view; omitted when empty. */
   meta?: string;
@@ -65,6 +68,7 @@ export function GrooveCardShell({
   chordsVisible = false,
   onToggleChords,
   controls,
+  footer,
   meta,
   headerExtra,
   bg,
@@ -200,6 +204,9 @@ export function GrooveCardShell({
 
       {/* Controls bar */}
       {controls}
+
+      {/* Footer slot — part of the card frame (e.g. premium Lines & Fills). */}
+      {footer}
     </section>
   );
 }
