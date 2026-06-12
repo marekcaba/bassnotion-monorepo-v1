@@ -510,8 +510,14 @@ export function SheetMusicDisplay({
       // Calculate playhead position RELATIVE to current scroll (viewport position)
       const playheadXInViewport = playheadXAbsolute - currentScrollRef.current;
 
-      // 100% threshold for triggering page flip (right edge of viewport)
-      const scrollThreshold = params.containerCenter * 2;
+      // Page-flip trigger point, as a fraction of the viewport width. At 1.0 the
+      // playhead had to reach the RIGHT EDGE before scrolling, which read as
+      // "scrolls too late" — the music ran off the visible area first. 0.7 flips
+      // earlier so ~30% of upcoming notes are always visible ahead of the
+      // playhead. (containerCenter is half the width, so ×2 = full width.)
+      const SCROLL_TRIGGER_FRACTION = 0.7;
+      const scrollThreshold =
+        params.containerCenter * 2 * SCROLL_TRIGGER_FRACTION;
 
       // STATE MACHINE: Either animating a page flip OR monitoring for threshold crossing
       if (isPageFlippingRef.current) {

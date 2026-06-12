@@ -879,6 +879,7 @@ export function GrooveCardBlockView({
               bpm={config.originalBpm}
               lengthBars={config.lengthBars}
               isPlaying={playback.isPlaying}
+              isCountingIn={playback.countdownState.isCountingDown}
               getAudioPhase={playback.getAudioPhase}
             />
           ) : (

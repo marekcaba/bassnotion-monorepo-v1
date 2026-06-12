@@ -39,10 +39,21 @@ export interface GrooveCardSheetViewProps {
   lengthBars: number;
   /** Whether the groove is currently playing (drives the score's cursor). */
   isPlaying: boolean;
+  /** True during the 4-beat count-in (before the loop actually starts). The
+   *  read-head phase is parked near the loop end during this window, so we hold
+   *  the score playhead at the start until the count-in finishes. */
+  isCountingIn?: boolean;
   /** The groove card's read-head phase in [0,1), or null when not streaming.
    *  Sampled on a RAF loop to advance the score's playhead. */
   getAudioPhase?: () => number | null;
 }
+
+const START_POSITION: TransportPosition = {
+  bars: 0,
+  beats: 1, // 1-indexed downbeat (SheetMusicDisplay convention)
+  sixteenths: 0,
+  ticks: 0,
+};
 
 export function GrooveCardSheetView({
   notes,
@@ -50,36 +61,41 @@ export function GrooveCardSheetView({
   bpm,
   lengthBars,
   isPlaying,
+  isCountingIn = false,
   getAudioPhase,
 }: GrooveCardSheetViewProps) {
-  const [position, setPosition] = useState<TransportPosition>({
-    bars: 0,
-    beats: 0,
-    sixteenths: 0,
-    ticks: 0,
-  });
+  const [position, setPosition] = useState<TransportPosition>(START_POSITION);
 
   // Advance the score playhead from the groove's own phase while playing.
   const rafRef = useRef<number | null>(null);
   useEffect(() => {
-    if (!isPlaying || !getAudioPhase) return;
+    // While counting in (or not playing), the read-head phase is parked near the
+    // loop END — driving the score off that would jump it to the end. Hold the
+    // playhead at the start and don't sample phase until the count-in finishes.
+    if (!isPlaying || isCountingIn || !getAudioPhase) {
+      setPosition(START_POSITION);
+      return;
+    }
     const beatsPerBar = timeSignature.numerator || 4;
 
-    // Loop-origin wrap guard (mirrors the waveform's BEAT1_GUARD). The groove's
-    // getAudioPhase() subtracts ~185ms of latency compensation, so at the START
-    // of playback (count-in / first frames) the phase WRAPS to ≈0.9+ — without a
-    // guard the sheet jumps straight to the end. For the first GUARD_SEC, if the
-    // reported phase is in the wrapped-near-end zone (> 0.5), park at the start
-    // (0) until it genuinely climbs from 0.
-    const GUARD_SEC = 0.4;
-    const startedAt = performance.now();
-
+    // Brief post-count-in wrap guard: even after the count-in, the latency-
+    // compensated phase can still report ≈0.9+ for the first frame or two at the
+    // loop origin. While the phase is in that wrapped-near-end zone (> 0.5) AND
+    // we've only just started, park at the start; release once it climbs from 0.
+    let released = false;
     const tick = () => {
       const raw = getAudioPhase();
       if (raw != null) {
-        const elapsed = (performance.now() - startedAt) / 1000;
-        const phase = elapsed < GUARD_SEC && raw > 0.5 ? 0 : raw;
-        setPosition(phaseToTransportPosition(phase, lengthBars, beatsPerBar));
+        if (!released) {
+          if (raw > 0.5) {
+            // still wrapped near the end → hold at the start
+            setPosition(START_POSITION);
+            rafRef.current = requestAnimationFrame(tick);
+            return;
+          }
+          released = true; // phase has come round to the start; track from here
+        }
+        setPosition(phaseToTransportPosition(raw, lengthBars, beatsPerBar));
       }
       rafRef.current = requestAnimationFrame(tick);
     };
@@ -87,7 +103,13 @@ export function GrooveCardSheetView({
     return () => {
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
     };
-  }, [isPlaying, getAudioPhase, lengthBars, timeSignature.numerator]);
+  }, [
+    isPlaying,
+    isCountingIn,
+    getAudioPhase,
+    lengthBars,
+    timeSignature.numerator,
+  ]);
 
   if (!notes || notes.length === 0) {
     return (
