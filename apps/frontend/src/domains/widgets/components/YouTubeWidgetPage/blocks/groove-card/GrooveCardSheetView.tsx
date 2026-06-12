@@ -64,10 +64,34 @@ export function GrooveCardSheetView({
   useEffect(() => {
     if (!isPlaying || !getAudioPhase) return;
     const beatsPerBar = timeSignature.numerator || 4;
+    // eslint-disable-next-line no-console
+    console.log('[SHEET-SYNC] RAF start', {
+      isPlaying,
+      hasGetAudioPhase: !!getAudioPhase,
+      lengthBars,
+      beatsPerBar,
+    });
+    let n = 0;
     const tick = () => {
       const phase = getAudioPhase();
       if (phase != null) {
-        setPosition(phaseToTransportPosition(phase, lengthBars, beatsPerBar));
+        const pos = phaseToTransportPosition(phase, lengthBars, beatsPerBar);
+        // Throttle: log ~every 20th frame (~3/sec) so the console is readable.
+        if (n % 20 === 0) {
+          // eslint-disable-next-line no-console
+          console.log('[SHEET-SYNC] phase→pos', {
+            phase: +phase.toFixed(4),
+            pos,
+          });
+        }
+        n++;
+        setPosition(pos);
+      } else if (n % 20 === 0) {
+        // eslint-disable-next-line no-console
+        console.log('[SHEET-SYNC] phase is null', { n });
+        n++;
+      } else {
+        n++;
       }
       rafRef.current = requestAnimationFrame(tick);
     };

@@ -429,6 +429,22 @@ export function SheetMusicDisplay({
       beatsPerMeasure,
       msPerBeat,
     };
+    // eslint-disable-next-line no-console
+    console.log('[SHEET-PARAMS]', {
+      totalBarsProp: totalBars,
+      measureCount,
+      beatsPerMeasure,
+      totalBeats,
+      bpm,
+      msPerBeat: +msPerBeat.toFixed(1),
+      totalDurationMs: +(totalBeats * msPerBeat).toFixed(0),
+      containerWidth,
+      contentWidth,
+      totalScrollableWidth: osmdRenderWidth,
+      maxScroll: Math.max(0, contentWidth - containerWidth),
+      positionMapSize:
+        (positionMap as { size?: number } | null)?.size ?? 'n/a',
+    });
   }, [isMapReady, positionMap, totalBars, bpm, timeSignature.numerator]);
 
   // Store current position in a ref so the animation loop can access latest value
@@ -475,6 +491,9 @@ export function SheetMusicDisplay({
     // Page flip animation duration (ms) - slower for more noticeable, elegant flip
     const PAGE_FLIP_DURATION = 1000; // 1000ms for smooth, visible page flip
 
+    // DIAGNOSTIC: frame counter for throttled [SHEET-FRAME] logs.
+    let sheetFrameCounter = 0;
+
     // Animation loop - handles both idle monitoring and page-flip animation
     const animate = () => {
       const now = performance.now();
@@ -492,11 +511,12 @@ export function SheetMusicDisplay({
 
       // Calculate current playhead X position from transport
       let progressMs = 0;
+      let totalElapsedBeats = 0;
       if (pos && pos.bars >= 0) {
         const elapsedBars = pos.bars;
         const elapsedBeatsInCurrentBar = pos.beats - 1;
         const tickFraction = pos.ticks / 960;
-        const totalElapsedBeats =
+        totalElapsedBeats =
           elapsedBars * params.beatsPerMeasure +
           elapsedBeatsInCurrentBar +
           tickFraction;
@@ -506,6 +526,24 @@ export function SheetMusicDisplay({
       const progressRatio = Math.min(progressMs / params.totalDurationMs, 1);
       const targetXInSheet = progressRatio * params.totalScrollableWidth;
       const playheadXAbsolute = params.paddingLeft + targetXInSheet;
+
+      // Throttled diagnostic of the per-frame progress math.
+      sheetFrameCounter++;
+      if (sheetFrameCounter % 20 === 0) {
+        // eslint-disable-next-line no-console
+        console.log('[SHEET-FRAME]', {
+          pos: pos
+            ? { bars: pos.bars, beats: pos.beats, ticks: pos.ticks }
+            : null,
+          totalElapsedBeats: +totalElapsedBeats.toFixed(2),
+          progressMs: +progressMs.toFixed(0),
+          totalDurationMs: +params.totalDurationMs.toFixed(0),
+          progressRatio: +progressRatio.toFixed(3),
+          playheadXAbsolute: +playheadXAbsolute.toFixed(0),
+          scroll: +currentScrollRef.current.toFixed(0),
+          flipping: isPageFlippingRef.current,
+        });
+      }
 
       // Calculate playhead position RELATIVE to current scroll (viewport position)
       const playheadXInViewport = playheadXAbsolute - currentScrollRef.current;
