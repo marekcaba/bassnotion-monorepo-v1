@@ -48,5 +48,9 @@ export function phaseToTransportPosition(
     Math.round(fracWithinBeat * TICKS_PER_BEAT),
   );
 
-  return { bars: barIndex, beats: beatIndex, sixteenths, ticks };
+  // SheetMusicDisplay's TransportPosition convention (see positionMapBuilder):
+  // bars 0-indexed (elapsed measures), but beats 1-INDEXED (1..bpb) — it does
+  // `pos.beats - 1` to get elapsed beats. Emitting a 0-indexed beat made the
+  // sheet compute -1 elapsed beats → the playhead jumped to the end and froze.
+  return { bars: barIndex, beats: beatIndex + 1, sixteenths, ticks };
 }
