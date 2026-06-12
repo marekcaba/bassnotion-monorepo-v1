@@ -58,6 +58,7 @@ export function SheetMusicDisplay({
 }: SheetMusicDisplayProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const parentRef = useRef<HTMLDivElement>(null);
+  const cursorRef = useRef<HTMLDivElement>(null);
   const osmdRef = useRef<OpenSheetMusicDisplay | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -459,6 +460,11 @@ export function SheetMusicDisplay({
     if (!isPlaying) {
       // Reset page flip state when playback stops
       isPageFlippingRef.current = false;
+      // Hide the playback cursor while stopped.
+      if (cursorRef.current) {
+        cursorRef.current.style.opacity = '0';
+        cursorRef.current.style.transform = 'translateX(0px)';
+      }
       return;
     }
 
@@ -506,6 +512,13 @@ export function SheetMusicDisplay({
       const progressRatio = Math.min(progressMs / params.totalDurationMs, 1);
       const targetXInSheet = progressRatio * params.totalScrollableWidth;
       const playheadXAbsolute = params.paddingLeft + targetXInSheet;
+
+      // Drive the visible cursor line (content coordinates → scrolls with the
+      // score). Imperative per-frame so there's no React re-render.
+      if (cursorRef.current) {
+        cursorRef.current.style.transform = `translateX(${playheadXAbsolute}px)`;
+        cursorRef.current.style.opacity = '1';
+      }
 
       // Calculate playhead position RELATIVE to current scroll (viewport position)
       const playheadXInViewport = playheadXAbsolute - currentScrollRef.current;
@@ -783,6 +796,28 @@ export function SheetMusicDisplay({
           alignItems: 'center',
           paddingLeft: '30px',
           paddingRight: '30px',
+        }}
+      />
+
+      {/* Playback cursor — a thin vertical line at the current playhead. Lives
+          INSIDE the scroll content (absolute within parentRef) so it scrolls with
+          the score. Its left + opacity are driven imperatively each frame by the
+          animation loop (cursorRef), avoiding a re-render per frame. */}
+      <div
+        ref={cursorRef}
+        aria-hidden
+        style={{
+          position: 'absolute',
+          top: 0,
+          bottom: 0,
+          left: 0,
+          width: '2px',
+          background: 'rgba(59, 130, 246, 0.9)', // blue-500
+          boxShadow: '0 0 6px rgba(59, 130, 246, 0.5)',
+          pointerEvents: 'none',
+          opacity: 0,
+          transform: 'translateX(0px)',
+          willChange: 'transform, opacity',
         }}
       />
     </div>
