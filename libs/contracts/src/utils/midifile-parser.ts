@@ -36,6 +36,13 @@ import type {
 const logger = createStructuredLogger('MidiFileParser');
 
 /**
+ * MIDI velocity (0-127) below which a note is auto-tagged a GHOST note (a soft,
+ * muted hit → cross notehead). Ghost notes on bass typically sit well under a
+ * normal hit; ~45 catches the soft layer without flagging mezzo-piano notes.
+ */
+const GHOST_VELOCITY_THRESHOLD = 45;
+
+/**
  * MIDI File Parser Class
  * Handles MIDI file parsing and conversion to Exercise format
  */
@@ -634,6 +641,14 @@ export class MIDIFileParser {
         metadata.division,
       );
 
+      // Ghost notes are soft hits. Auto-tag a note whose MIDI velocity is below
+      // GHOST_VELOCITY_THRESHOLD (out of 127) so it renders with a cross (x)
+      // notehead. An author can override per note in the editor later.
+      const isGhost =
+        typeof midiNote.velocity === 'number' &&
+        midiNote.velocity > 0 &&
+        midiNote.velocity < GHOST_VELOCITY_THRESHOLD;
+
       const exerciseNote: ExerciseNote = {
         id: `note-${index}`,
         note: noteName,
@@ -645,6 +660,7 @@ export class MIDIFileParser {
         techniques: midiNote.articulation
           ? [this.articulationToTechnique(midiNote.articulation)]
           : undefined,
+        ...(isGhost ? { is_ghost_note: true } : {}),
       };
 
       return exerciseNote;

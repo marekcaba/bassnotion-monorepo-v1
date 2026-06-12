@@ -559,6 +559,14 @@ function generateNoteXML(
 
   const pitchXML = getPitchXML(item.note.note);
 
+  // Ghost notes render with a CROSS (x) notehead. OSMD draws `<notehead>x</notehead>`
+  // as a cross; goes after <type> in the MusicXML note element order. Applied to
+  // every tied component so a long ghost stays crossed across the tie.
+  const noteheadXML = item.note.is_ghost_note
+    ? `
+      <notehead>x</notehead>`
+    : '';
+
   // Use quantized duration if available (already processed in fillMeasureWithRests)
   // Otherwise fall back to calculating from durationTicks or string duration
   let durationInQuarters: number;
@@ -607,7 +615,7 @@ function generateNoteXML(
     return `
     <note>${pitchXML}
       <duration>${divisions}</duration>
-      <type>${comp.type}</type>${dotXML}${beamXML}
+      <type>${comp.type}</type>${dotXML}${noteheadXML}${beamXML}
     </note>`;
   }
 
@@ -662,7 +670,7 @@ function generateNoteXML(
     xml += `
     <note>${pitchXML}
       <duration>${divisions}</duration>${tieXML}
-      <type>${comp.type}</type>${dotXML}${beamXML}${notationsXML}
+      <type>${comp.type}</type>${dotXML}${noteheadXML}${beamXML}${notationsXML}
     </note>`;
   });
 

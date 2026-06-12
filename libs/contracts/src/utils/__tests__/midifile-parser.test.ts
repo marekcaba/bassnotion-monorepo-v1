@@ -39,4 +39,23 @@ describe('MIDIFileParser', () => {
     expect(first?.position).toMatchObject({ measure: 1, beat: 1 });
     expect(first?.position?.subdivision).toBeTypeOf('number');
   });
+
+  it('auto-tags soft (low-velocity) notes as ghost notes', async () => {
+    const midi = new Midi();
+    midi.header.setTempo(120);
+    const track = midi.addTrack();
+    track.name = 'Bass';
+    // loud (≈115) then soft/ghost (≈25)
+    track.addNote({ name: 'E1', time: 0, duration: 0.5, velocity: 0.9 });
+    track.addNote({ name: 'A1', time: 0.5, duration: 0.5, velocity: 0.2 });
+    const u8 = midi.toArray();
+    const buffer = u8.buffer.slice(
+      u8.byteOffset,
+      u8.byteOffset + u8.byteLength,
+    );
+    const result = await new MIDIFileParser().parseFile(buffer, 'bass.mid');
+    const notes = result.exercise?.notes ?? [];
+    expect(notes[0]?.is_ghost_note).toBeFalsy(); // loud note
+    expect(notes[1]?.is_ghost_note).toBe(true); // soft note → ghost
+  });
 });
