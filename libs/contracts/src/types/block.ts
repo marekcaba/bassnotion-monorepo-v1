@@ -9,6 +9,8 @@ import type {
   UnderstandQuestion,
   UnderstandQuestionOption,
 } from './tutorial.js';
+import type { ExerciseNote } from './exercise.js';
+import type { TimeSignature } from './musical-timing.js';
 
 // =====================================================
 // Block Type Discriminator
@@ -451,6 +453,16 @@ export interface GrooveCardBlockConfig {
    *  player as they play along. Resolved from the library when `grooveId` is
    *  set; undefined/empty = no chart. */
   chordChart?: ChordChart;
+  /** Bass-line notation (sheet music) for this groove. When present, the card's
+   *  waveform window can switch to a bass-clef score that follows playback. The
+   *  notes are pre-parsed (admin imports MusicXML/MIDI → ExerciseNote[]), so the
+   *  player renders them directly without re-parsing. Absent = no sheet view
+   *  (the toggle still shows an empty state). */
+  bassNotation?: {
+    notes: ExerciseNote[];
+    /** Defaults to 4/4 when omitted. */
+    timeSignature?: TimeSignature;
+  };
   /** Caption shown beneath the waveform when nothing is happening. */
   previewCaption?: string;
   /** Reactive copy per state change. */

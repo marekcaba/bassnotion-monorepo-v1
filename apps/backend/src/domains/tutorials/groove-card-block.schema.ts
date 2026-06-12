@@ -131,6 +131,39 @@ export const grooveCardBlockConfigSchema = z
         }),
       )
       .optional(),
+    // Bass-line sheet notation (the card's waveform window can switch to this
+    // bass-clef score). Notes are pre-parsed from an admin-imported MusicXML/MIDI
+    // into ExerciseNote[]; we validate the CORE musical fields and pass the rest
+    // through (.passthrough) so the full ExerciseNote shape survives the save
+    // without re-deriving its 20+ optional properties here.
+    bassNotation: z
+      .object({
+        notes: z.array(
+          z
+            .object({
+              id: z.string(),
+              string: z.number().int().min(1).max(6),
+              fret: z.number().int().min(0).max(24),
+              note: z.string(),
+              duration: z.string(),
+              position: z.object({
+                bars: z.number().int().nonnegative(),
+                beats: z.number().int().nonnegative(),
+                sixteenths: z.number().int().nonnegative(),
+                ticks: z.number().int().nonnegative(),
+              }),
+            })
+            .passthrough(),
+        ),
+        timeSignature: z
+          .object({
+            numerator: z.number().int().positive(),
+            denominator: z.number().int().positive(),
+          })
+          .passthrough()
+          .optional(),
+      })
+      .optional(),
     previewCaption: z.string().optional(),
     stateCaptions: grooveCardStateCaptionsSchema.optional(),
     allowBookmark: z.boolean().optional(),

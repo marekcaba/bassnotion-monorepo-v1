@@ -9,7 +9,7 @@
  * `stateCaptions`.
  */
 
-import { Volume2, VolumeX } from 'lucide-react';
+import { Volume2, VolumeX, AudioWaveform, Music4 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import {
   Popover,
@@ -36,6 +36,12 @@ interface GrooveCardShellProps {
   chordsVisible?: boolean;
   /** Toggle the chord ribbon's visibility (the header chord icon). */
   onToggleChords?: () => void;
+  /** Which view the window slot is showing: the audio waveform or the bass
+   *  sheet-music notation. When omitted, no view toggle is shown. */
+  windowView?: 'waveform' | 'sheet';
+  /** Toggle the window between waveform and sheet (the header notation icon).
+   *  Omitted → no toggle. */
+  onToggleWindowView?: () => void;
   /** Slot for the controls bar. */
   controls: ReactNode;
   /** Slot rendered INSIDE the card frame, below the controls (e.g. the premium
@@ -67,6 +73,8 @@ export function GrooveCardShell({
   chordRow,
   chordsVisible = false,
   onToggleChords,
+  windowView,
+  onToggleWindowView,
   controls,
   footer,
   meta,
@@ -121,6 +129,47 @@ export function GrooveCardShell({
           {chordsVisible ? chordRow : null}
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          {/* Window view toggle — switch the window between the audio WAVEFORM
+              and the bass SHEET-MUSIC notation. A compact two-icon segmented
+              control; the active half highlights. */}
+          {windowView && onToggleWindowView && (
+            <div
+              role="group"
+              aria-label="Window view"
+              className="flex items-center rounded-full bg-white/5 p-0.5"
+            >
+              <button
+                type="button"
+                onClick={() =>
+                  windowView !== 'waveform' && onToggleWindowView()
+                }
+                aria-label="Show waveform"
+                aria-pressed={windowView === 'waveform'}
+                title="Waveform"
+                className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
+                  windowView === 'waveform'
+                    ? 'bg-white/15 text-white'
+                    : 'text-white/40 hover:text-white/70'
+                }`}
+              >
+                <AudioWaveform className="h-4 w-4" aria-hidden />
+              </button>
+              <button
+                type="button"
+                onClick={() => windowView !== 'sheet' && onToggleWindowView()}
+                aria-label="Show sheet music"
+                aria-pressed={windowView === 'sheet'}
+                title="Sheet music"
+                className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
+                  windowView === 'sheet'
+                    ? 'bg-white/15 text-white'
+                    : 'text-white/40 hover:text-white/70'
+                }`}
+              >
+                <Music4 className="h-4 w-4" aria-hidden />
+              </button>
+            </div>
+          )}
           {/* Chord-strip toggle (LEFT) — shows/hides the chord ribbon. Labelled
               "A7" rather than a notes glyph so it's obvious it toggles chords.
               Highlights orange when on. */}

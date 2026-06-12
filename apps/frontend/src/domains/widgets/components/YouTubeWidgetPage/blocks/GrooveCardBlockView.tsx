@@ -24,6 +24,7 @@ import { useGrooveCardPlayback } from './groove-card/useGrooveCardPlayback';
 import { useGrooveCardKeyboard } from './groove-card/useGrooveCardKeyboard';
 import { GrooveCardShell } from './groove-card/GrooveCardShell';
 import { GrooveCardWaveform } from './groove-card/GrooveCardWaveform';
+import { GrooveCardSheetView } from './groove-card/GrooveCardSheetView';
 import { GrooveCardChordRow } from './groove-card/GrooveCardChordRow';
 import {
   GrooveCardControls,
@@ -469,6 +470,15 @@ export function GrooveCardBlockView({
   // Chord strip is opt-in: hidden until the user toggles the header chord icon.
   const [showChords, setShowChords] = useState(false);
 
+  // The window slot can show the audio waveform or the bass sheet-music
+  // notation. The toggle is always offered (drill bricks aside); the sheet view
+  // empty-states when the groove has no bassNotation authored.
+  const [windowView, setWindowView] = useState<'waveform' | 'sheet'>(
+    'waveform',
+  );
+  const bassNotation = config.bassNotation;
+  const showWindowToggle = !isDrillBrick;
+
   const dynamicLoop = useDynamicLoop({
     engaged: dynamicLoopEngaged && dynamicLoopAvailable,
     isPlaying: playback.isPlaying,
@@ -837,46 +847,66 @@ export function GrooveCardBlockView({
             />
           ) : undefined
         }
+        windowView={showWindowToggle ? windowView : undefined}
+        onToggleWindowView={
+          showWindowToggle
+            ? () =>
+                setWindowView((v) => (v === 'waveform' ? 'sheet' : 'waveform'))
+            : undefined
+        }
         waveform={
-          // The loop-range cap fires from a bar drag ON the waveform, so its
-          // pitch anchors HERE (not the controls row). Own Popover, open only
-          // for the loopRange lever — pops next to the bars the user selected.
-          <Popover
-            open={!suppressUpsell && pitchLever === 'loopRange'}
-            onOpenChange={(o) => {
-              if (!o) setPitchLever(null);
-            }}
-          >
-            <PopoverAnchor asChild>
-              <div>
-                <GrooveCardWaveform
-                  isPlaying={playback.isPlaying}
-                  bassBuffer={playback.bassBuffer}
-                  audioContext={playback.audioContext}
-                  loopStartAudioTime={playback.loopStartAudioTime}
-                  loopDurationSeconds={playback.loopDurationSeconds}
-                  getAudioPhase={playback.getAudioPhase}
-                  lengthBars={config.lengthBars}
-                  loopSelection={playback.loopSelection}
-                  fillRegion={activeFillRegion}
-                  onLoopSelectionChange={playback.setLoopSelection}
-                  color={waveformColor}
-                  countdownBeat={
-                    playback.countdownState.isCountingDown
-                      ? playback.countdownState.currentBeat
-                      : null
-                  }
+          windowView === 'sheet' ? (
+            // Sheet-music view of the bass line — same window, different content.
+            // Empty-states when the groove has no authored bassNotation.
+            <GrooveCardSheetView
+              notes={bassNotation?.notes}
+              timeSignature={bassNotation?.timeSignature}
+              bpm={config.originalBpm}
+              lengthBars={config.lengthBars}
+              isPlaying={playback.isPlaying}
+              getAudioPhase={playback.getAudioPhase}
+            />
+          ) : (
+            // The loop-range cap fires from a bar drag ON the waveform, so its
+            // pitch anchors HERE (not the controls row). Own Popover, open only
+            // for the loopRange lever — pops next to the bars the user selected.
+            <Popover
+              open={!suppressUpsell && pitchLever === 'loopRange'}
+              onOpenChange={(o) => {
+                if (!o) setPitchLever(null);
+              }}
+            >
+              <PopoverAnchor asChild>
+                <div>
+                  <GrooveCardWaveform
+                    isPlaying={playback.isPlaying}
+                    bassBuffer={playback.bassBuffer}
+                    audioContext={playback.audioContext}
+                    loopStartAudioTime={playback.loopStartAudioTime}
+                    loopDurationSeconds={playback.loopDurationSeconds}
+                    getAudioPhase={playback.getAudioPhase}
+                    lengthBars={config.lengthBars}
+                    loopSelection={playback.loopSelection}
+                    fillRegion={activeFillRegion}
+                    onLoopSelectionChange={playback.setLoopSelection}
+                    color={waveformColor}
+                    countdownBeat={
+                      playback.countdownState.isCountingDown
+                        ? playback.countdownState.currentBeat
+                        : null
+                    }
+                  />
+                </div>
+              </PopoverAnchor>
+              {pitchLever === 'loopRange' && (
+                <UpgradePitchContent
+                  lever="loopRange"
+                  message={capUpsell ?? undefined}
+                  side="bottom"
                 />
-              </div>
-            </PopoverAnchor>
-            {pitchLever === 'loopRange' && (
-              <UpgradePitchContent
-                lever="loopRange"
-                message={capUpsell ?? undefined}
-                side="bottom"
-              />
-            )}
-          </Popover>
+              )}
+            </Popover>
+          )
         }
         controls={
           <GrooveCardControls
