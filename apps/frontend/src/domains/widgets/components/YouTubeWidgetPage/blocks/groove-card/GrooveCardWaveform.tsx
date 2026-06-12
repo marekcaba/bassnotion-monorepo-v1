@@ -87,17 +87,15 @@ const DEFAULT_BAR_COLOR = '#1f252e';
 const SELECTION_COLOR = '#3B82F6'; // tailwind blue-500 — loop-range bracket
 
 /**
- * Fill-region band styling — eye-tuned (via a one-off dev panel, since removed):
- * a soft, deep-blue wash that sits OVER the peaks with wide gradient sides.
+ * Fill-region highlight: instead of a background band, the WAVEFORM PEAKS inside
+ * the fill render in this blue. Columns in the region are blue; the rest stay
+ * the normal bar colour, with a short alpha fade at each edge so it isn't a hard
+ * cut.
  */
 const FILL_REGION_STYLE = {
-  rgb: '10, 100, 169',
-  /** Peak alpha at the band core (0..1). */
-  coreAlpha: 0.15,
-  /** Edge gradient fade width, in bars, on each side. */
-  fadeBars: 0.95,
-  /** Draw the band OVER the waveform peaks (true) or under them (false). */
-  drawOverPeaks: true,
+  rgb: '59, 130, 246', // blue-500 — vivid enough to read as coloured peaks
+  /** Edge fade width, in bars, on each side of the region. */
+  fadeBars: 0.5,
 };
 const PULSE_BAR_COUNT = 32;
 // Beat-1 wrap guard window (s). getStemPlayheadPhase() subtracts ~185ms of visual-
@@ -261,6 +259,8 @@ export function GrooveCardWaveform({
       height: number,
       buffer: AudioBuffer,
       fillColor: string,
+      bars: number,
+      region: WaveformFillRegion | null,
     ) => {
       // Single 80%-opacity state — the playhead (full white) alone signals
       // "playing vs. stopped". Dimming the peaks when stopped made the
@@ -268,15 +268,44 @@ export function GrooveCardWaveform({
       // calmer reference layer and lets the bar lines + playhead pop.
       const peaks = getOrComputePeaks(buffer, width);
       const midY = height / 2;
-      c.fillStyle = fillColor;
-      c.globalAlpha = 0.8;
+      // Fill-region highlight: columns inside the region draw in blue, with a
+      // short linear fade (over `fadeBars`) at each edge so it eases in/out.
+      const hasRegion = !!region && bars > 0 && region.endFrac > region.startFrac;
+      const xs = hasRegion ? (region!.startFrac / bars) * width : 0;
+      const xe = hasRegion ? (region!.endFrac / bars) * width : 0;
+      const fadePx = hasRegion
+        ? Math.min((FILL_REGION_STYLE.fadeBars / bars) * width, (xe - xs) / 2)
+        : 0;
+      /** 0 = normal colour, 1 = full blue — how "fill" this column is. */
+      const blueWeight = (col: number): number => {
+        if (!hasRegion || col < xs || col >= xe) return 0;
+        if (fadePx <= 0) return 1;
+        const fromStart = col - xs;
+        const fromEnd = xe - col;
+        const edge = Math.min(fromStart, fromEnd);
+        return Math.min(1, edge / fadePx);
+      };
+
       for (let col = 0; col < width; col++) {
         const min = peaks[col * 2] ?? 0;
         const max = peaks[col * 2 + 1] ?? 0;
         const yTop = midY - Math.max(0, max) * midY;
         const yBot = midY - Math.min(0, min) * midY;
         const h = Math.max(1, yBot - yTop);
-        c.fillRect(col, yTop, 1, h);
+        const w = blueWeight(col);
+        if (w > 0) {
+          // Blend: draw the normal peak (faded by 1-w) then the blue on top (w).
+          c.globalAlpha = 0.8 * (1 - w);
+          c.fillStyle = fillColor;
+          c.fillRect(col, yTop, 1, h);
+          c.globalAlpha = 0.95 * w;
+          c.fillStyle = `rgb(${FILL_REGION_STYLE.rgb})`;
+          c.fillRect(col, yTop, 1, h);
+        } else {
+          c.globalAlpha = 0.8;
+          c.fillStyle = fillColor;
+          c.fillRect(col, yTop, 1, h);
+        }
       }
       c.globalAlpha = 1; // restore for subsequent paints in this frame
     };
@@ -325,39 +354,6 @@ export function GrooveCardWaveform({
       c.fillRect(x - 3, 0, 7, height); // halo
       c.fillStyle = `rgba(255, 255, 255, ${0.95 * opacity})`;
       c.fillRect(x, 0, 2, height);
-    };
-
-    /** Blue gradient band marking where the active fill happens. The fill is
-     *  solid-ish in the middle and fades to transparent at the left/right edges
-     *  (a horizontal gradient) so it reads as a soft "this zone" highlight, not
-     *  a hard-walled block. `startFrac`/`endFrac` are fractional bar positions
-     *  (0..bars). Drawn UNDER the peaks so the waveform stays crisp on top. */
-    const drawFillRegion = (
-      c: CanvasRenderingContext2D,
-      width: number,
-      height: number,
-      bars: number,
-      startFrac: number,
-      endFrac: number,
-    ) => {
-      if (bars <= 0 || !(endFrac > startFrac)) return;
-      const xs = (startFrac / bars) * width;
-      const xe = (endFrac / bars) * width;
-      const bandW = xe - xs;
-      if (bandW <= 0) return;
-      const style = FILL_REGION_STYLE;
-      const { rgb, coreAlpha } = style;
-      // Edge fade: `fadeBars` per side, but never more than 40% of the band so a
-      // narrow region still shows a solid core. Expressed as a 0..1 stop.
-      const fadePx = Math.min((style.fadeBars / bars) * width, bandW * 0.4);
-      const fadeStop = bandW > 0 ? fadePx / bandW : 0;
-      const grad = c.createLinearGradient(xs, 0, xe, 0);
-      grad.addColorStop(0, `rgba(${rgb}, 0)`);
-      grad.addColorStop(fadeStop, `rgba(${rgb}, ${coreAlpha})`);
-      grad.addColorStop(1 - fadeStop, `rgba(${rgb}, ${coreAlpha})`);
-      grad.addColorStop(1, `rgba(${rgb}, 0)`);
-      c.fillStyle = grad;
-      c.fillRect(xs, 0, bandW, height);
     };
 
     /** 2-px rectangle frame around the selected bar range. When the
@@ -430,26 +426,19 @@ export function GrooveCardWaveform({
 
       if (s.bassBuffer) {
         // Bar grid first — peaks paint on top so the lines show only in
-        // the quieter portions of the waveform.
+        // the quieter portions of the waveform. The fill highlight is the PEAKS
+        // THEMSELVES rendered blue inside the active fill's region (no separate
+        // background band).
         drawBarLines(ctx, width, height, s.lengthBars);
-        // Fill-region band — drawn UNDER the peaks by default (waveform stays
-        // crisp on top); the dev tuner can flip it to OVER via drawOverPeaks.
-        const drawBand = () => {
-          if (s.fillRegion && s.lengthBars > 0) {
-            drawFillRegion(
-              ctx,
-              width,
-              height,
-              s.lengthBars,
-              s.fillRegion.startFrac,
-              s.fillRegion.endFrac,
-            );
-          }
-        };
-        const bandOverPeaks = FILL_REGION_STYLE.drawOverPeaks;
-        if (!bandOverPeaks) drawBand();
-        drawPeaks(ctx, width, height, s.bassBuffer, s.color);
-        if (bandOverPeaks) drawBand();
+        drawPeaks(
+          ctx,
+          width,
+          height,
+          s.bassBuffer,
+          s.color,
+          s.lengthBars,
+          s.fillRegion,
+        );
 
         // Selection bracket: drag-in-progress (pending=true) is drawn at
         // 55% alpha so the user sees their drag is being tracked; once
