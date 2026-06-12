@@ -270,9 +270,10 @@ export function GrooveCardWaveform({
       const midY = height / 2;
       // Fill-region highlight: columns inside the region draw in blue, with a
       // short linear fade (over `fadeBars`) at each edge so it eases in/out.
-      const hasRegion = !!region && bars > 0 && region.endFrac > region.startFrac;
-      const xs = hasRegion ? (region!.startFrac / bars) * width : 0;
-      const xe = hasRegion ? (region!.endFrac / bars) * width : 0;
+      const hasRegion =
+        !!region && bars > 0 && region.endFrac > region.startFrac;
+      const xs = region && hasRegion ? (region.startFrac / bars) * width : 0;
+      const xe = region && hasRegion ? (region.endFrac / bars) * width : 0;
       const fadePx = hasRegion
         ? Math.min((FILL_REGION_STYLE.fadeBars / bars) * width, (xe - xs) / 2)
         : 0;
