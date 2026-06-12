@@ -53,6 +53,7 @@ describe('useGrooveCardKeyboard', () => {
     const toggleSoloDrums = vi.fn();
     const toggleDynamicLoop = vi.fn();
     const selectLineByIndex = vi.fn();
+    const toggleCurrentLineFill = vi.fn();
     const utils = renderHook(() =>
       useGrooveCardKeyboard({
         currentSemitones: args.currentSemitones ?? 0,
@@ -64,6 +65,7 @@ describe('useGrooveCardKeyboard', () => {
         toggleSoloDrums,
         toggleDynamicLoop,
         selectLineByIndex,
+        toggleCurrentLineFill,
         enabled: args.enabled ?? true,
         lockTranspose: args.lockTranspose ?? false,
       }),
@@ -76,6 +78,7 @@ describe('useGrooveCardKeyboard', () => {
       toggleSoloDrums,
       toggleDynamicLoop,
       selectLineByIndex,
+      toggleCurrentLineFill,
       ...utils,
     };
   }
@@ -368,6 +371,27 @@ describe('useGrooveCardKeyboard', () => {
     expect(press('a').defaultPrevented).toBe(false);
   });
 
+  // ── fill toggle (F) ─────────────────────────────────────────────────────
+  it('F toggles the current bassline fill (lowercase and uppercase)', () => {
+    const { toggleCurrentLineFill } = mount();
+    press('f');
+    expect(toggleCurrentLineFill).toHaveBeenCalledTimes(1);
+    press('F');
+    expect(toggleCurrentLineFill).toHaveBeenCalledTimes(2);
+  });
+
+  it('F does nothing while typing in an INPUT', () => {
+    const { toggleCurrentLineFill } = mount();
+    const input = document.createElement('input');
+    press('f', { target: input });
+    expect(toggleCurrentLineFill).not.toHaveBeenCalled();
+  });
+
+  it('F does not preventDefault (not a browser-default action)', () => {
+    mount();
+    expect(press('f').defaultPrevented).toBe(false);
+  });
+
   it('removes the listener on unmount', () => {
     const {
       setKey,
@@ -376,6 +400,7 @@ describe('useGrooveCardKeyboard', () => {
       toggleSoloDrums,
       toggleDynamicLoop,
       selectLineByIndex,
+      toggleCurrentLineFill,
       unmount,
     } = mount();
     unmount();
@@ -385,11 +410,13 @@ describe('useGrooveCardKeyboard', () => {
     press('s');
     press('l');
     press('a');
+    press('f');
     expect(setKey).not.toHaveBeenCalled();
     expect(togglePlay).not.toHaveBeenCalled();
     expect(toggleBassMute).not.toHaveBeenCalled();
     expect(toggleSoloDrums).not.toHaveBeenCalled();
     expect(toggleDynamicLoop).not.toHaveBeenCalled();
     expect(selectLineByIndex).not.toHaveBeenCalled();
+    expect(toggleCurrentLineFill).not.toHaveBeenCalled();
   });
 });

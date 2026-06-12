@@ -453,6 +453,19 @@ export function GrooveCardBlockView({
     [linesAndFillsGroups, onSelectLineFill],
   );
 
+  // Keyboard "F" → toggle the CURRENT bassline's fill: on (its first fill) when
+  // no fill is active, off (back to the plain line) when one is. Whatever line
+  // is selected, the fill targets THAT line. No-op when the line has no fills.
+  const toggleCurrentLineFill = useCallback(() => {
+    const group = linesAndFillsGroups.find(
+      (g) => g.id === activeSelection.lineId,
+    );
+    const firstFill = group?.fills[0];
+    if (!group || !firstFill) return;
+    const fillActive = activeSelection.fillId !== NO_FILL_ID;
+    onSelectLineFill(group.id, fillActive ? NO_FILL_ID : firstFill.id);
+  }, [linesAndFillsGroups, activeSelection, onSelectLineFill]);
+
   // Chord strip is opt-in: hidden until the user toggles the header chord icon.
   const [showChords, setShowChords] = useState(false);
 
@@ -651,6 +664,7 @@ export function GrooveCardBlockView({
       if (dynamicLoopAvailable) setDynamicLoopEngaged((v) => !v);
     },
     selectLineByIndex,
+    toggleCurrentLineFill,
     enabled: playback.isReady,
     // While the cycle is running, it owns the key — disable manual ←/→.
     lockTranspose: dynamicLoop.isActive,
