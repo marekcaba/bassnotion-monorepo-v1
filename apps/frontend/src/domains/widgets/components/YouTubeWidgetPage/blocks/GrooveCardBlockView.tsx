@@ -37,7 +37,6 @@ import {
   selectionForVariantId,
 } from './groove-card/linesAndFills';
 import { resolveFillRegionFractions } from './groove-card/fillRegion';
-import { FillRegionTunerPanel } from './groove-card/FillRegionTunerPanel';
 import {
   useDynamicLoop,
   buildCycleKeys,
@@ -392,14 +391,6 @@ export function GrooveCardBlockView({
     () => selectionForVariantId(bassVariants, playback.activeBassVariantId),
     [bassVariants, playback.activeBassVariantId],
   );
-
-  // DEV: the fill-highlight tuner panel is gated behind `?tuneFill=1` so it
-  // never shows for real users — it's a one-off design tool to dial in the band
-  // style by eye (then the chosen values get baked into GrooveCardWaveform).
-  const showFillTuner = useMemo(() => {
-    if (typeof window === 'undefined') return false;
-    return new URLSearchParams(window.location.search).get('tuneFill') === '1';
-  }, []);
 
   // The active fill's region as fractional bars, for the waveform highlight.
   // Only the active variant (a fill take with a fillRegion) lights up; the plain
@@ -848,7 +839,6 @@ export function GrooveCardBlockView({
                       : null
                   }
                 />
-                {showFillTuner && <FillRegionTunerPanel />}
               </div>
             </PopoverAnchor>
             {pitchLever === 'loopRange' && (

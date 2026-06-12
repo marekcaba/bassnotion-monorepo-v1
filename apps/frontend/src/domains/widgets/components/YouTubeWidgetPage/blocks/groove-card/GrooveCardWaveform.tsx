@@ -87,39 +87,18 @@ const DEFAULT_BAR_COLOR = '#1f252e';
 const SELECTION_COLOR = '#3B82F6'; // tailwind blue-500 — loop-range bracket
 
 /**
- * Fill-region band styling. These are the BAKED defaults; a dev tuning panel
- * (FillRegionTunerPanel) may override them live via `window.__fillRegionStyle`
- * so the look can be dialled in by eye, then the chosen values copied back here.
+ * Fill-region band styling — eye-tuned (via a one-off dev panel, since removed):
+ * a soft, deep-blue wash that sits OVER the peaks with wide gradient sides.
  */
-export interface FillRegionStyle {
-  /** Base band colour as "r, g, b". */
-  rgb: string;
+const FILL_REGION_STYLE = {
+  rgb: '10, 100, 169',
   /** Peak alpha at the band core (0..1). */
-  coreAlpha: number;
+  coreAlpha: 0.15,
   /** Edge gradient fade width, in bars, on each side. */
-  fadeBars: number;
+  fadeBars: 0.95,
   /** Draw the band OVER the waveform peaks (true) or under them (false). */
-  drawOverPeaks: boolean;
-}
-
-export const FILL_REGION_DEFAULT_STYLE: FillRegionStyle = {
-  rgb: '59, 130, 246', // blue-500
-  coreAlpha: 0.26,
-  fadeBars: 0.4,
-  drawOverPeaks: false,
+  drawOverPeaks: true,
 };
-
-/** Merge any live dev-tuner overrides over the baked defaults. */
-function readFillRegionStyle(): FillRegionStyle {
-  const override =
-    typeof window !== 'undefined'
-      ? (window as unknown as { __fillRegionStyle?: Partial<FillRegionStyle> })
-          .__fillRegionStyle
-      : undefined;
-  return override
-    ? { ...FILL_REGION_DEFAULT_STYLE, ...override }
-    : FILL_REGION_DEFAULT_STYLE;
-}
 const PULSE_BAR_COUNT = 32;
 // Beat-1 wrap guard window (s). getStemPlayheadPhase() subtracts ~185ms of visual-
 // latency compensation, which pulls the phase NEGATIVE at the loop origin and wraps it
@@ -366,7 +345,7 @@ export function GrooveCardWaveform({
       const xe = (endFrac / bars) * width;
       const bandW = xe - xs;
       if (bandW <= 0) return;
-      const style = readFillRegionStyle();
+      const style = FILL_REGION_STYLE;
       const { rgb, coreAlpha } = style;
       // Edge fade: `fadeBars` per side, but never more than 40% of the band so a
       // narrow region still shows a solid core. Expressed as a 0..1 stop.
@@ -467,7 +446,7 @@ export function GrooveCardWaveform({
             );
           }
         };
-        const bandOverPeaks = readFillRegionStyle().drawOverPeaks;
+        const bandOverPeaks = FILL_REGION_STYLE.drawOverPeaks;
         if (!bandOverPeaks) drawBand();
         drawPeaks(ctx, width, height, s.bassBuffer, s.color);
         if (bandOverPeaks) drawBand();
