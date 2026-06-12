@@ -11,7 +11,8 @@
  * (drums & harmony keep playing). One line + at most one of its fills active.
  *
  * Gate (decided by the parent, passed as `locked`):
- *  - entitled member → cells are live; the active one glows amber.
+ *  - entitled member → cells are live; the active one glows violet (matching
+ *    the exercise journey cards, so the controls feel of-a-piece).
  *  - locked (free / not-entitled) → premium cells show a lock; clicking fires
  *    the upgrade moment. The whole section still renders so the feature is
  *    DISCOVERABLE — the wall is the pitch, same as Dynamic Loop. (The built-in
@@ -71,18 +72,18 @@ function VariantCell({
         focus:outline-none focus-visible:outline-none
         ${
           active && !showLock
-            ? 'bg-amber-400/10 border border-amber-400/40 shadow-lg shadow-amber-500/10 scale-[1.05]'
+            ? 'bg-white/5 border border-violet-400/30 shadow-lg shadow-violet-500/10 scale-[1.05]'
             : showLock
               ? 'bg-white/[0.02] border border-slate-600/30 hover:border-slate-500/40'
-              : 'bg-white/5 border border-white/10 hover:border-white/20 hover:scale-[1.02]'
+              : 'bg-white/5 border border-white/10 hover:border-white/20 hover:shadow-md hover:shadow-black/10 hover:scale-[1.02]'
         }
       `}
     >
-      {/* Active glow */}
+      {/* Active glow — matches the exercise journey cards (violet/purple). */}
       <div
         className={`
           absolute inset-0 rounded-xl pointer-events-none
-          bg-gradient-to-b from-amber-400/20 via-amber-500/10 to-transparent
+          bg-gradient-to-b from-violet-500/20 via-purple-500/10 to-transparent
           transition-opacity duration-300
           ${active && !showLock ? 'opacity-100' : 'opacity-0'}
         `}
@@ -93,7 +94,7 @@ function VariantCell({
         {showLock ? (
           <Lock className="w-4 h-4 text-slate-500" />
         ) : active ? (
-          <div className="w-3 h-3 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]" />
+          <div className="w-3 h-3 rounded-full bg-violet-400 shadow-[0_0_8px_rgba(139,92,246,0.5)]" />
         ) : (
           <IdleIcon className="w-4 h-4 text-slate-400 group-hover:text-slate-300" />
         )}
@@ -105,7 +106,7 @@ function VariantCell({
           text-[11px] font-semibold leading-none text-center
           ${
             active && !showLock
-              ? 'text-amber-200'
+              ? 'text-violet-300'
               : showLock
                 ? 'text-slate-500'
                 : 'text-slate-300 group-hover:text-slate-200'
