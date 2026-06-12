@@ -247,24 +247,10 @@ export function getXForPosition(
     Math.min(rawBeatFloat, beatsPerMeasure - 0.001),
   );
 
-  // DEBUG: Log position conversion
-  console.log('[POSITION CALC]', {
-    input: `${position.bars}:${position.beats}:${position.sixteenths}:${position.ticks}`,
-    zeroIndexedBeat,
-    tickFraction: tickFraction.toFixed(3),
-    beatFloat: beatFloat.toFixed(3),
-  });
-
   // If no beat positions in this measure, interpolate linearly across measure
   if (measure.beatPositions.length === 0) {
     const progress = beatFloat / beatsPerMeasure;
-    const result = measure.xStart + progress * measure.width;
-    console.log('[SHEETMUSIC] getX: LINEAR (no beats)', {
-      bar: measureIdx,
-      beatFloat: beatFloat.toFixed(3),
-      result: result.toFixed(2),
-    });
-    return result;
+    return measure.xStart + progress * measure.width;
   }
 
   // Find surrounding beat positions for interpolation
@@ -287,19 +273,7 @@ export function getXForPosition(
     const beforeBeat = before.beat + before.subdivision / 4;
     const afterBeat = after.beat + after.subdivision / 4;
     const progress = (beatFloat - beforeBeat) / (afterBeat - beforeBeat);
-    const result =
-      before.xPosition + progress * (after.xPosition - before.xPosition);
-    console.log('[SHEETMUSIC] getX: BETWEEN', {
-      bar: measureIdx,
-      beatFloat: beatFloat.toFixed(3),
-      beforeBeat: beforeBeat.toFixed(2),
-      afterBeat: afterBeat.toFixed(2),
-      beforeX: before.xPosition.toFixed(2),
-      afterX: after.xPosition.toFixed(2),
-      progress: progress.toFixed(3),
-      result: result.toFixed(2),
-    });
-    return result;
+    return before.xPosition + progress * (after.xPosition - before.xPosition);
   }
 
   // Edge case: only have position before (at end of measure)
@@ -308,17 +282,7 @@ export function getXForPosition(
     const beforeBeat = before.beat + before.subdivision / 4;
     const progress = (beatFloat - beforeBeat) / (beatsPerMeasure - beforeBeat);
     const remainingWidth = measure.xEnd - before.xPosition;
-    const result = before.xPosition + progress * remainingWidth;
-    console.log('[SHEETMUSIC] getX: AFTER-LAST', {
-      bar: measureIdx,
-      beatFloat: beatFloat.toFixed(3),
-      beforeBeat: beforeBeat.toFixed(2),
-      beforeX: before.xPosition.toFixed(2),
-      measureEnd: measure.xEnd.toFixed(2),
-      progress: progress.toFixed(3),
-      result: result.toFixed(2),
-    });
-    return result;
+    return before.xPosition + progress * remainingWidth;
   }
 
   // Edge case: only have position after (at start of measure)
@@ -326,29 +290,12 @@ export function getXForPosition(
     // Interpolate from measure start to after
     const afterBeat = after.beat + after.subdivision / 4;
     const progress = beatFloat / afterBeat;
-    const result =
-      measure.xStart + progress * (after.xPosition - measure.xStart);
-    console.log('[SHEETMUSIC] getX: BEFORE-FIRST', {
-      bar: measureIdx,
-      beatFloat: beatFloat.toFixed(3),
-      afterBeat: afterBeat.toFixed(2),
-      afterX: after.xPosition.toFixed(2),
-      measureStart: measure.xStart.toFixed(2),
-      progress: progress.toFixed(3),
-      result: result.toFixed(2),
-    });
-    return result;
+    return measure.xStart + progress * (after.xPosition - measure.xStart);
   }
 
   // Fallback: linear interpolation across measure
   const progress = beatFloat / beatsPerMeasure;
-  const result = measure.xStart + progress * measure.width;
-  console.log('[SHEETMUSIC] getX: FALLBACK', {
-    bar: measureIdx,
-    beatFloat: beatFloat.toFixed(3),
-    result: result.toFixed(2),
-  });
-  return result;
+  return measure.xStart + progress * measure.width;
 }
 
 /**

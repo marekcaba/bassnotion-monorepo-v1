@@ -12,7 +12,10 @@ import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay';
 import type { ExerciseNote, TimeSignature } from '@bassnotion/contracts';
 import { exerciseToMusicXML } from '../../utils/exerciseToMusicXML.js';
 import { useNotePositionMap } from './hooks/useNotePositionMap.js';
-import type { TransportPosition } from './utils/positionMapBuilder.js';
+import {
+  getXForPosition,
+  type TransportPosition,
+} from './utils/positionMapBuilder.js';
 
 interface SheetMusicDisplayProps {
   notes: ExerciseNote[];
@@ -439,6 +442,14 @@ export function SheetMusicDisplay({
     currentPositionRef.current = currentPosition;
   }, [currentPosition]);
 
+  // The position map (real per-beat x positions) in a ref, so the animation loop
+  // can place the cursor on the ACTUAL beat-1 x (after the clef) instead of a
+  // linear estimate from x=0.
+  const positionMapRef = useRef(positionMap);
+  useEffect(() => {
+    positionMapRef.current = positionMap;
+  }, [positionMap]);
+
   // Cubic ease-in-out function for smooth acceleration and deceleration
   // t < 0.5: acceleration phase (ease-in)
   // t >= 0.5: deceleration phase (ease-out)
@@ -514,9 +525,24 @@ export function SheetMusicDisplay({
       const playheadXAbsolute = params.paddingLeft + targetXInSheet;
 
       // Drive the visible cursor line (content coordinates → scrolls with the
-      // score). Imperative per-frame so there's no React re-render.
+      // score). Prefer the REAL per-beat x from the position map so the cursor
+      // lands ON beat 1 (after the clef/time-sig), not the linear x=0 estimate.
+      //
+      // UNITS: the position map's x is in OSMD's internal units, while the cursor
+      // (and the rendered SVG) are in PIXELS. The SVG renders the map's
+      // `totalWidth` OSMD-units across `scrollWidth` pixels, so scale by
+      // pixels-per-unit = scrollWidth / map.totalWidth. Falls back to the linear
+      // playhead when the map can't resolve.
       if (cursorRef.current) {
-        cursorRef.current.style.transform = `translateX(${playheadXAbsolute}px)`;
+        const map = positionMapRef.current;
+        const mapX =
+          pos && map ? getXForPosition(map, pos, params.beatsPerMeasure) : null;
+        let cursorX = playheadXAbsolute;
+        if (mapX != null && map && map.totalWidth > 0) {
+          const pxPerUnit = scrollContainer.scrollWidth / map.totalWidth;
+          cursorX = mapX * pxPerUnit;
+        }
+        cursorRef.current.style.transform = `translateX(${cursorX}px)`;
         cursorRef.current.style.opacity = '1';
       }
 
