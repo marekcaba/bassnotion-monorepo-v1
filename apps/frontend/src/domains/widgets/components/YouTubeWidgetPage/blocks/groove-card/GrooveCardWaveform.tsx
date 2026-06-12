@@ -85,7 +85,41 @@ interface GrooveCardWaveformProps {
 // `color` prop remains an explicit per-card override.
 const DEFAULT_BAR_COLOR = '#1f252e';
 const SELECTION_COLOR = '#3B82F6'; // tailwind blue-500 — loop-range bracket
-const FILL_REGION_COLOR = '59, 130, 246'; // blue-500 RGB — fill-region band fill
+
+/**
+ * Fill-region band styling. These are the BAKED defaults; a dev tuning panel
+ * (FillRegionTunerPanel) may override them live via `window.__fillRegionStyle`
+ * so the look can be dialled in by eye, then the chosen values copied back here.
+ */
+export interface FillRegionStyle {
+  /** Base band colour as "r, g, b". */
+  rgb: string;
+  /** Peak alpha at the band core (0..1). */
+  coreAlpha: number;
+  /** Edge gradient fade width, in bars, on each side. */
+  fadeBars: number;
+  /** Draw the band OVER the waveform peaks (true) or under them (false). */
+  drawOverPeaks: boolean;
+}
+
+export const FILL_REGION_DEFAULT_STYLE: FillRegionStyle = {
+  rgb: '59, 130, 246', // blue-500
+  coreAlpha: 0.26,
+  fadeBars: 0.4,
+  drawOverPeaks: false,
+};
+
+/** Merge any live dev-tuner overrides over the baked defaults. */
+function readFillRegionStyle(): FillRegionStyle {
+  const override =
+    typeof window !== 'undefined'
+      ? (window as unknown as { __fillRegionStyle?: Partial<FillRegionStyle> })
+          .__fillRegionStyle
+      : undefined;
+  return override
+    ? { ...FILL_REGION_DEFAULT_STYLE, ...override }
+    : FILL_REGION_DEFAULT_STYLE;
+}
 const PULSE_BAR_COUNT = 32;
 // Beat-1 wrap guard window (s). getStemPlayheadPhase() subtracts ~185ms of visual-
 // latency compensation, which pulls the phase NEGATIVE at the loop origin and wraps it
@@ -332,17 +366,17 @@ export function GrooveCardWaveform({
       const xe = (endFrac / bars) * width;
       const bandW = xe - xs;
       if (bandW <= 0) return;
-      // Edge fade: ~0.4 bar each side, but never more than 40% of the band so a
+      const style = readFillRegionStyle();
+      const { rgb, coreAlpha } = style;
+      // Edge fade: `fadeBars` per side, but never more than 40% of the band so a
       // narrow region still shows a solid core. Expressed as a 0..1 stop.
-      const fadeBars = 0.4;
-      const fadePx = Math.min((fadeBars / bars) * width, bandW * 0.4);
+      const fadePx = Math.min((style.fadeBars / bars) * width, bandW * 0.4);
       const fadeStop = bandW > 0 ? fadePx / bandW : 0;
-      const core = 0.26; // peak alpha at the band core
       const grad = c.createLinearGradient(xs, 0, xe, 0);
-      grad.addColorStop(0, `rgba(${FILL_REGION_COLOR}, 0)`);
-      grad.addColorStop(fadeStop, `rgba(${FILL_REGION_COLOR}, ${core})`);
-      grad.addColorStop(1 - fadeStop, `rgba(${FILL_REGION_COLOR}, ${core})`);
-      grad.addColorStop(1, `rgba(${FILL_REGION_COLOR}, 0)`);
+      grad.addColorStop(0, `rgba(${rgb}, 0)`);
+      grad.addColorStop(fadeStop, `rgba(${rgb}, ${coreAlpha})`);
+      grad.addColorStop(1 - fadeStop, `rgba(${rgb}, ${coreAlpha})`);
+      grad.addColorStop(1, `rgba(${rgb}, 0)`);
       c.fillStyle = grad;
       c.fillRect(xs, 0, bandW, height);
     };
@@ -419,19 +453,24 @@ export function GrooveCardWaveform({
         // Bar grid first — peaks paint on top so the lines show only in
         // the quieter portions of the waveform.
         drawBarLines(ctx, width, height, s.lengthBars);
-        // Fill-region band UNDER the peaks (when a fill is active) so the
-        // waveform stays crisp on top of the blue tint.
-        if (s.fillRegion && s.lengthBars > 0) {
-          drawFillRegion(
-            ctx,
-            width,
-            height,
-            s.lengthBars,
-            s.fillRegion.startFrac,
-            s.fillRegion.endFrac,
-          );
-        }
+        // Fill-region band — drawn UNDER the peaks by default (waveform stays
+        // crisp on top); the dev tuner can flip it to OVER via drawOverPeaks.
+        const drawBand = () => {
+          if (s.fillRegion && s.lengthBars > 0) {
+            drawFillRegion(
+              ctx,
+              width,
+              height,
+              s.lengthBars,
+              s.fillRegion.startFrac,
+              s.fillRegion.endFrac,
+            );
+          }
+        };
+        const bandOverPeaks = readFillRegionStyle().drawOverPeaks;
+        if (!bandOverPeaks) drawBand();
         drawPeaks(ctx, width, height, s.bassBuffer, s.color);
+        if (bandOverPeaks) drawBand();
 
         // Selection bracket: drag-in-progress (pending=true) is drawn at
         // 55% alpha so the user sees their drag is being tracked; once
