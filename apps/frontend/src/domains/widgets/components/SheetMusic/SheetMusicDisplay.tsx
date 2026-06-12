@@ -1,19 +1,12 @@
 'use client';
 
-import React, {
-  useEffect,
-  useRef,
-  useState,
-  useMemo,
-  useCallback,
-} from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { verboseLog } from '@/config/debug';
 import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay';
 import type { ExerciseNote, TimeSignature } from '@bassnotion/contracts';
 import { exerciseToMusicXML } from '../../utils/exerciseToMusicXML.js';
-import { useNotePositionMap } from './hooks/useNotePositionMap.js';
 import {
-  getXForPosition,
+  buildPositionMapFromOSMD,
   type TransportPosition,
 } from './utils/positionMapBuilder.js';
 
@@ -61,7 +54,6 @@ export function SheetMusicDisplay({
 }: SheetMusicDisplayProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const parentRef = useRef<HTMLDivElement>(null);
-  const cursorRef = useRef<HTMLDivElement>(null);
   const osmdRef = useRef<OpenSheetMusicDisplay | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,28 +62,88 @@ export function SheetMusicDisplay({
   // its own container width directly).
   const [_actualWidth, setActualWidth] = useState(width || 700);
 
-  // Memoize notes key for position map rebuild detection
-  const notesKey = useMemo(() => JSON.stringify(notes), [notes]);
+  // RIBBON LOOP. To loop "on and on" like the chord strip — bar 1 flowing in from
+  // the right after the last bar, the playhead never visually rewinding — we render
+  // the score REPEATED several times into one long staff. The playhead glides
+  // forward through the copies; at the seam we silently reset scroll back by one
+  // loop-width (invisible, the copies are identical). RIBBON_COPIES = how many loop
+  // lengths are rendered; 3 gives plenty of runway on either side of the seam.
+  const RIBBON_COPIES = 3;
+  const loopBars = Math.max(1, totalBars || 1);
 
-  // State for continuous scroll (teleprompter style)
-  const [isAutoScrollDisabled, setIsAutoScrollDisabled] = useState(false);
-  const animationFrameRef = useRef<number | null>(null);
+  // Build the repeated note list: copy the notes RIBBON_COPIES times, shifting each
+  // copy's measure by loopBars. measure is 1-based (MusicalPosition), so copy k's
+  // notes live in measures [k*loopBars+1 .. (k+1)*loopBars].
+  const ribbonNotes = useMemo(() => {
+    if (!notes || notes.length === 0) return notes;
+    const out: ExerciseNote[] = [];
+    for (let k = 0; k < RIBBON_COPIES; k++) {
+      const shift = k * loopBars;
+      for (const n of notes) {
+        out.push({
+          ...n,
+          id: `${n.id}-r${k}`,
+          position: {
+            ...n.position,
+            measure: (n.position?.measure ?? 1) + shift,
+          },
+        });
+      }
+    }
+    return out;
+  }, [notes, loopBars]);
+  const ribbonTotalBars = loopBars * RIBBON_COPIES;
 
-  // Enable auto-scroll (called when user clicks resume button or playback restarts)
-  const enableAutoScroll = useCallback(() => {
-    setIsAutoScrollDisabled(false);
-  }, []);
+  // Memoize notes key for OSMD re-render detection (over the RIBBON notes).
+  const notesKey = useMemo(() => JSON.stringify(ribbonNotes), [ribbonNotes]);
 
-  // Position map hook for accurate note-level scrolling — only the
-  // map metadata (isMapReady, positionMap) is consumed here; the
-  // pixel-offset accessor (getX) is read by downstream hooks that
-  // call useNotePositionMap directly.
-  const { isMapReady, positionMap } = useNotePositionMap({
-    osmdRef,
-    isReady: !isLoading,
-    notesKey,
-    beatsPerMeasure: timeSignature.numerator,
+  // CONTINUOUS GLIDE PLAYHEAD. We DON'T use OSMD's native cursor as the visible
+  // playhead — it snaps note-to-note (a cursor, not a smooth playhead). Instead we
+  // render our OWN thin overlay div (playheadRef) and position it every frame by
+  // mapping the continuous transport position to a pixel x, gliding linearly
+  // across each measure's [start,end] pixel span (constant speed within a bar,
+  // continuous across barlines — exactly like the groove card's chord strip).
+  //
+  // barsRef holds the harvested per-measure pixel geometry (built from OSMD's
+  // rendered layout after each render): each entry { startPx, endPx, firstNotePx }.
+  // staffRef holds the staff vertical span so the playhead matches the staff height.
+  const playheadRef = useRef<HTMLDivElement>(null);
+  const barsRef = useRef<
+    { startPx: number; endPx: number; firstNotePx: number }[]
+  >([]);
+  const staffRef = useRef<{ top: number; height: number }>({
+    top: 0,
+    height: 0,
   });
+
+  // RIBBON LOOP tracking. `ribbonBeatRef` is a MONOTONIC absolute beat that keeps
+  // climbing across loop wraps (like the chord strip's absBarPos) — it's what we
+  // map onto the repeated ribbon so the playhead never visually rewinds. We
+  // accumulate it from the per-frame delta of the consumer's loop position,
+  // adding a full loop when the loop position wraps backward. `lastLoopBeatRef`
+  // is the previous frame's loop position (to compute that delta).
+  const ribbonBeatRef = useRef(-1);
+  const lastLoopBeatRef = useRef(0);
+  // GENUINE-STOP debounce. The consumer's `isPlaying` flickers false for a frame
+  // during count-in / restart (dual source in useGrooveCardPlayback). We must NOT
+  // destroy the monotonic ribbon position on a transient drop — that snaps the
+  // playhead to the start ("never progresses"). Instead: on `!isPlaying` we just
+  // HIDE the playhead and hold position; a separate debounced effect only resets
+  // the ribbon after isPlaying has stayed false long enough to be a real stop.
+  const stopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // PAGE-FLIP scroll. flipTargetRef = the scrollLeft the page should turn to (set
+  // by the glide effect when the playhead nears the right edge). A dedicated RAF
+  // (flip-animation effect) runs a slow ease-in-out tween of the real scrollLeft
+  // toward it, so the notation stays still within a page then SMOOTHLY (gentle
+  // accelerate → gentle decelerate) turns to the next. The tween refs hold the
+  // active animation: from/to scroll, start timestamp, and duration.
+  const flipTargetRef = useRef(0);
+  const flipRafRef = useRef<number | null>(null);
+  const tweenFromRef = useRef(0);
+  const tweenToRef = useRef(0);
+  const tweenStartRef = useRef(0);
+
 
   // Single system - all measures on one horizontal line
   const calculatedHeight = height;
@@ -132,14 +184,15 @@ export function SheetMusicDisplay({
           return;
         }
 
-        // Convert exercise notes to MusicXML
+        // Convert exercise notes to MusicXML — RIBBON notes (score repeated
+        // RIBBON_COPIES times) so the loop can flow on continuously.
         const musicXML = exerciseToMusicXML({
-          notes,
+          notes: ribbonNotes,
           bpm,
           timeSignature,
           title,
           maxMeasuresPerSystem,
-          totalBars,
+          totalBars: ribbonTotalBars,
         });
 
         // MusicXML generated
@@ -161,8 +214,9 @@ export function SheetMusicDisplay({
           drawPartNames: false,
           drawMeasureNumbers: false,
 
-          // Cursor disabled - we use calculated bar-based scrolling (teleprompter style)
-          // instead of tracking OSMD cursor DOM positions
+          // OSMD's own cursor is disabled — we render our own CONTINUOUS glide
+          // playhead overlay (see barsRef / playheadRef). OSMD's native cursor
+          // only snaps note-to-note; we want a smooth playhead.
           disableCursor: true,
 
           // Quality options
@@ -185,13 +239,17 @@ export function SheetMusicDisplay({
 
         // ========== MEASURE WIDTH & SPACING CONFIGURATION ==========
         //
-        // STRATEGY: Use DYNAMIC measure width - let OSMD calculate based on content
-        // This sizes each measure to fit its notes, avoiding excess empty space
+        // STRATEGY: MINIMUM measure width via FixedMeasureWidth + a fixed value.
+        // Without it, sparse bars collapse very narrow (the sparse bar measured
+        // ~9.9 units / ~89px) which reads cramped. Note OSMD's FixedMeasureWidth is
+        // NOT a true "min only" floor — with a fixed value it makes bars roughly
+        // EQUAL (≈24 units / ~220px here); wider bars shrink toward it too. That's
+        // acceptable: an even grid where no bar is ever cramped. The glide playhead
+        // handles equal or variable widths identically (it maps per-bar [start,end]).
         //
-        // OSMD units: 1 unit ≈ 10 pixels (at zoom 1.0)
-
-        // DYNAMIC measure width - let OSMD size measures based on content
-        osmd.EngravingRules.FixedMeasureWidth = false;
+        // OSMD units: 1 unit ≈ 10 pixels (at zoom 1.0).
+        osmd.EngravingRules.FixedMeasureWidth = true;
+        osmd.EngravingRules.FixedMeasureWidthFixedValue = 16;
 
         // MARGINS: These control measure container width, NOT internal note positioning
         // Note: MeasureLeftMargin doesn't push the first note further from the barline
@@ -252,6 +310,63 @@ export function SheetMusicDisplay({
 
         // Render the score
         osmd.render();
+
+        // HARVEST the per-measure pixel geometry for our continuous glide
+        // playhead. Must run after every render() (render recreates the graphical
+        // sheet). The position map gives OSMD-unit x positions; we convert to
+        // pixels via pxPerUnit = renderedSvgWidth / map.totalWidth.
+        {
+          const map = buildPositionMapFromOSMD(osmd);
+          const svg = containerRef.current?.querySelector('svg');
+          const svgW = svg ? svg.getBoundingClientRect().width : 0;
+          if (map.isValid && map.totalWidth > 0 && svgW > 0) {
+            const ppu = svgW / map.totalWidth;
+            barsRef.current = map.measures.map((m) => ({
+              startPx: m.xStart * ppu,
+              endPx: m.xEnd * ppu,
+              // First note onset x (used only for measure 0, where xStart sits
+              // BEFORE the clef + time signature; later bars start at the barline).
+              firstNotePx:
+                m.beatPositions.length > 0
+                  ? m.beatPositions[0]!.xPosition * ppu
+                  : m.xStart * ppu,
+            }));
+            // Reset the monotonic ribbon position for the fresh render.
+            ribbonBeatRef.current = -1;
+            // Staff vertical span (the playhead matches the staff height). The
+            // authoritative source is OSMD's graphic geometry (in OSMD units):
+            //   staffTopInSvg  = (system.y + staffLine.relY) * unitPx
+            //   staffHeight    = staffLine.StaffHeight * unitPx     (unitPx = 10*zoom)
+            // The SVG itself is vertically centred in the scroll container (flex
+            // alignItems:center), so add the SVG's DOM offset within the container.
+            const parentBox = parentRef.current?.getBoundingClientRect();
+            const svgBox = svg?.getBoundingClientRect();
+            const unitPx = 10 * (osmd.zoom || 1);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const graphic = (osmd as any).graphic;
+            const firstMeasure = graphic?.MeasureList?.[0]?.[0];
+            const system = firstMeasure?.ParentMusicSystem;
+            const staffLine = system?.StaffLines?.[0];
+            if (
+              parentBox &&
+              svgBox &&
+              system?.PositionAndShape?.AbsolutePosition &&
+              staffLine
+            ) {
+              const sysY = system.PositionAndShape.AbsolutePosition.y as number;
+              const relY = (staffLine.PositionAndShape?.RelativePosition?.y ??
+                0) as number;
+              const staffHeightUnits = (staffLine.StaffHeight ?? 4) as number;
+              const svgTopInParent = svgBox.y - parentBox.y;
+              staffRef.current = {
+                top: Math.round(svgTopInParent + (sysY + relY) * unitPx),
+                height: Math.round(staffHeightUnits * unitPx),
+              };
+            }
+          } else {
+            barsRef.current = [];
+          }
+        }
 
         // DEBUG: Inspect rendered measure positions AFTER render
         verboseLog('[SheetMusicDisplay] POST-RENDER inspection:');
@@ -378,398 +493,247 @@ export function SheetMusicDisplay({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [notesKey, bpm, timeSignatureKey, title, maxMeasuresPerSystem, totalBars]);
 
-  // PAGE-FLIP STYLE SCROLL with EASE-IN-OUT ANIMATION
-  // Instead of continuous scrolling, the sheet stays still until the playhead reaches 75%
-  // of the viewport, then quickly scrolls to move that position to the left edge.
-  // Animation uses cubic ease-in-out for smooth acceleration and deceleration.
-  const currentScrollRef = useRef<number>(0);
-  const scrollParamsRef = useRef<{
-    containerCenter: number;
-    maxScroll: number;
-    paddingLeft: number;
-    totalScrollableWidth: number;
-    totalDurationMs: number;
-    beatsPerMeasure: number;
-    msPerBeat: number;
-  } | null>(null);
-
-  // Page-flip animation state
-  const isPageFlippingRef = useRef<boolean>(false);
-  const pageFlipStartTimeRef = useRef<number>(0);
-  const pageFlipStartScrollRef = useRef<number>(0);
-  const pageFlipTargetScrollRef = useRef<number>(0);
-  const lastScrollTriggerXRef = useRef<number>(0); // Track last position that triggered a flip
-
-  // Reset-to-start animation state (separate from page-flip, runs on playback start)
-  const isResettingRef = useRef<boolean>(false);
-  const resetAnimationFrameRef = useRef<number | null>(null);
-
-  // Update scroll parameters when layout changes (but NOT on every position update)
+  // CONTINUOUS GLIDE PLAYHEAD — position our own overlay div from the live
+  // transport position by mapping the continuous beat to a pixel x. Within each
+  // measure the playhead glides linearly across that measure's [start, end] pixel
+  // span; measures are contiguous (each bar's start == previous bar's end), so the
+  // motion is smooth and gap-free across the whole loop (constant speed within a
+  // bar; the rate changes only at barlines — imperceptible, like the chord strip).
+  // State-driven: the consumer pushes a fresh `currentPosition` every RAF frame.
   useEffect(() => {
-    const scrollContainer = parentRef.current;
-    if (!scrollContainer || !isMapReady || !positionMap) {
-      scrollParamsRef.current = null;
+    const playhead = playheadRef.current;
+    if (!playhead) return;
+    const bars = barsRef.current;
+
+    // Not playing / no geometry / no position → just HIDE the playhead and HOLD
+    // the monotonic position. Do NOT reset ribbonBeatRef here: the consumer's
+    // `isPlaying` flickers false for a frame during count-in/restart, and nuking
+    // the position on that transient was the "never progresses" bug. A genuine
+    // stop is handled by the debounced reset effect below.
+    if (!isPlaying || isLoading || bars.length === 0 || !currentPosition) {
+      playhead.style.opacity = '0';
       return;
     }
 
-    const containerWidth = scrollContainer.clientWidth;
-    const contentWidth = scrollContainer.scrollWidth;
-    const paddingLeft = 30;
-    const paddingRight = 30;
-    const totalPadding = paddingLeft + paddingRight;
-    const osmdRenderWidth = contentWidth - totalPadding;
+    const beatsPerMeasure = timeSignature.numerator || 4;
+    const totalBars = bars.length;
+    const loopBeats = loopBars * beatsPerMeasure; // beats in ONE loop copy
 
-    const measureCount = totalBars || 4;
-    const beatsPerMeasure = timeSignature.numerator;
-    const totalBeats = measureCount * beatsPerMeasure;
-    const msPerBeat = 60000 / bpm;
+    // The consumer's loop position (wraps 0→loopBeats→0 each loop).
+    const pos = currentPosition;
+    const loopBeat =
+      pos.bars * beatsPerMeasure + (pos.beats - 1) + pos.ticks / 960;
 
-    scrollParamsRef.current = {
-      containerCenter: containerWidth / 2,
-      maxScroll: Math.max(0, contentWidth - containerWidth),
-      paddingLeft,
-      totalScrollableWidth: osmdRenderWidth,
-      totalDurationMs: totalBeats * msPerBeat,
-      beatsPerMeasure,
-      msPerBeat,
-    };
-  }, [isMapReady, positionMap, totalBars, bpm, timeSignature.numerator]);
-
-  // Store current position in a ref so the animation loop can access latest value
-  // without causing effect re-runs
-  const currentPositionRef = useRef(currentPosition);
-  useEffect(() => {
-    currentPositionRef.current = currentPosition;
-  }, [currentPosition]);
-
-  // The position map (real per-beat x positions) in a ref, so the animation loop
-  // can place the cursor on the ACTUAL beat-1 x (after the clef) instead of a
-  // linear estimate from x=0.
-  const positionMapRef = useRef(positionMap);
-  useEffect(() => {
-    positionMapRef.current = positionMap;
-  }, [positionMap]);
-
-  // Cubic ease-in-out function for smooth acceleration and deceleration
-  // t < 0.5: acceleration phase (ease-in)
-  // t >= 0.5: deceleration phase (ease-out)
-  const easeInOutCubic = useCallback((t: number): number => {
-    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-  }, []);
-
-  // Main animation loop - PAGE-FLIP style scroll
-  // Sheet stays still until playhead crosses 75% threshold, then quickly scrolls
-  // with ease-in-out animation to move that position to the left edge
-  useEffect(() => {
-    // Cancel any existing animation frame
-    if (animationFrameRef.current !== null) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
+    // MONOTONIC ribbon beat: accumulate the forward delta, adding a full loop when
+    // the loop position wraps backward — so it climbs forever and the playhead
+    // never visually rewinds (chord-strip technique).
+    if (ribbonBeatRef.current < 0) {
+      // Seed in COPY 0 (bars 1..loopBars) so the very first loop starts on bar 1
+      // WITH its clef — like real sheet music. The playhead then climbs into copy
+      // 1, and the seam (which fires at 2 loops) lands it back in copy 1 — a
+      // clef-free zone where every copy is pixel-identical, so the seam stays
+      // invisible. Copy 0's clef offset is handled by `firstNotePx` in
+      // contentXForBeat, so bar 1 starts on the first note (after the clef).
+      ribbonBeatRef.current = loopBeat;
+    } else {
+      let delta = loopBeat - lastLoopBeatRef.current;
+      if (delta < -loopBeats * 0.5) delta += loopBeats; // wrapped backward
+      if (delta < 0) delta = 0; // tiny backward jitter — never rewind
+      ribbonBeatRef.current += delta;
     }
+    lastLoopBeatRef.current = loopBeat;
 
-    // Don't scroll when not playing
-    if (!isPlaying) {
-      // Reset page flip state when playback stops
-      isPageFlippingRef.current = false;
-      // Hide the playback cursor while stopped.
-      if (cursorRef.current) {
-        cursorRef.current.style.opacity = '0';
-        cursorRef.current.style.transform = 'translateX(0px)';
-      }
-      return;
-    }
-
-    // Skip if auto-scroll is disabled (user manually scrolled)
-    if (isAutoScrollDisabled) {
-      return;
-    }
-
-    const scrollContainer = parentRef.current;
-    if (!scrollContainer) {
-      return;
-    }
-
-    // Page flip animation duration (ms) - slower for more noticeable, elegant flip
-    const PAGE_FLIP_DURATION = 1000; // 1000ms for smooth, visible page flip
-
-    // Animation loop - handles both idle monitoring and page-flip animation
-    const animate = () => {
-      const now = performance.now();
-
-      const params = scrollParamsRef.current;
-      const pos = currentPositionRef.current;
-
-      // Skip if params not ready, auto-scroll disabled, or reset animation is running
-      if (!params || isAutoScrollDisabled || isResettingRef.current) {
-        if (isPlaying && !isAutoScrollDisabled) {
-          animationFrameRef.current = requestAnimationFrame(animate);
-        }
-        return;
-      }
-
-      // Calculate current playhead X position from transport
-      let progressMs = 0;
-      if (pos && pos.bars >= 0) {
-        const elapsedBars = pos.bars;
-        const elapsedBeatsInCurrentBar = pos.beats - 1;
-        const tickFraction = pos.ticks / 960;
-        const totalElapsedBeats =
-          elapsedBars * params.beatsPerMeasure +
-          elapsedBeatsInCurrentBar +
-          tickFraction;
-        progressMs = totalElapsedBeats * params.msPerBeat;
-      }
-
-      const progressRatio = Math.min(progressMs / params.totalDurationMs, 1);
-      const targetXInSheet = progressRatio * params.totalScrollableWidth;
-      const playheadXAbsolute = params.paddingLeft + targetXInSheet;
-
-      // Drive the visible cursor line (content coordinates → scrolls with the
-      // score). Prefer the REAL per-beat x from the position map so the cursor
-      // lands ON beat 1 (after the clef/time-sig), not the linear x=0 estimate.
-      //
-      // UNITS: the position map's x is in OSMD's internal units, while the cursor
-      // (and the rendered SVG) are in PIXELS. The SVG renders the map's
-      // `totalWidth` OSMD-units across `scrollWidth` pixels, so scale by
-      // pixels-per-unit = scrollWidth / map.totalWidth. Falls back to the linear
-      // playhead when the map can't resolve.
-      if (cursorRef.current) {
-        const map = positionMapRef.current;
-        const mapX =
-          pos && map ? getXForPosition(map, pos, params.beatsPerMeasure) : null;
-        let cursorX = playheadXAbsolute;
-        if (mapX != null && map && map.totalWidth > 0) {
-          const pxPerUnit = scrollContainer.scrollWidth / map.totalWidth;
-          cursorX = mapX * pxPerUnit;
-        }
-        cursorRef.current.style.transform = `translateX(${cursorX}px)`;
-        cursorRef.current.style.opacity = '1';
-      }
-
-      // Calculate playhead position RELATIVE to current scroll (viewport position)
-      const playheadXInViewport = playheadXAbsolute - currentScrollRef.current;
-
-      // Page-flip trigger point, as a fraction of the viewport width. At 1.0 the
-      // playhead had to reach the RIGHT EDGE before scrolling, which read as
-      // "scrolls too late" — the music ran off the visible area first. 0.7 flips
-      // earlier so ~30% of upcoming notes are always visible ahead of the
-      // playhead. (containerCenter is half the width, so ×2 = full width.)
-      const SCROLL_TRIGGER_FRACTION = 0.7;
-      const scrollThreshold =
-        params.containerCenter * 2 * SCROLL_TRIGGER_FRACTION;
-
-      // STATE MACHINE: Either animating a page flip OR monitoring for threshold crossing
-      if (isPageFlippingRef.current) {
-        // === ANIMATING PAGE FLIP ===
-        const elapsed = now - pageFlipStartTimeRef.current;
-        const progress = Math.min(elapsed / PAGE_FLIP_DURATION, 1);
-        const easedProgress = easeInOutCubic(progress);
-
-        // Interpolate from start to target using eased progress
-        const scrollDiff =
-          pageFlipTargetScrollRef.current - pageFlipStartScrollRef.current;
-        currentScrollRef.current =
-          pageFlipStartScrollRef.current + scrollDiff * easedProgress;
-
-        // Apply scroll position
-        scrollContainer.scrollLeft = currentScrollRef.current;
-
-        // Check if animation complete
-        if (progress >= 1) {
-          verboseLog('[PAGE-FLIP] Animation complete', {
-            finalScroll: currentScrollRef.current.toFixed(2),
-            target: pageFlipTargetScrollRef.current.toFixed(2),
-          });
-          isPageFlippingRef.current = false;
-          // Update last trigger position to current playhead position
-          lastScrollTriggerXRef.current = playheadXAbsolute;
-        }
-      } else {
-        // === MONITORING FOR THRESHOLD CROSSING ===
-        // Check if playhead has crossed into the trigger zone (past 75% of viewport)
-        // AND has moved forward since last trigger (prevents re-triggering at same spot)
-        const hasPassedThreshold = playheadXInViewport > scrollThreshold;
-        const hasMovedForwardSinceTrigger =
-          playheadXAbsolute > lastScrollTriggerXRef.current + 10; // 10px hysteresis
-
-        if (hasPassedThreshold && hasMovedForwardSinceTrigger) {
-          // TRIGGER PAGE FLIP!
-          // Target: move content so current playhead position lands at 80px from left edge
-          // This gives some buffer space for reading context
-          const FLIP_TARGET_OFFSET = 130; // Playhead lands 130px from left edge after flip
-          const targetScroll = Math.max(
-            0,
-            Math.min(
-              playheadXAbsolute - FLIP_TARGET_OFFSET, // Move playhead to 80px from left
-              params.maxScroll,
-            ),
-          );
-
-          verboseLog('[PAGE-FLIP] Triggered!', {
-            playheadXInViewport: playheadXInViewport.toFixed(2),
-            threshold: scrollThreshold.toFixed(2),
-            currentScroll: currentScrollRef.current.toFixed(2),
-            targetScroll: targetScroll.toFixed(2),
-            scrollDistance: (targetScroll - currentScrollRef.current).toFixed(
-              2,
-            ),
-          });
-
-          // Initialize page flip animation
-          isPageFlippingRef.current = true;
-          pageFlipStartTimeRef.current = now;
-          pageFlipStartScrollRef.current = currentScrollRef.current;
-          pageFlipTargetScrollRef.current = targetScroll;
-          lastScrollTriggerXRef.current = playheadXAbsolute;
-        }
-        // No scroll update when not flipping - sheet stays still
-      }
-
-      // Continue animation loop while playing
-      if (isPlaying && !isAutoScrollDisabled) {
-        animationFrameRef.current = requestAnimationFrame(animate);
-      }
+    // Pure function: ribbon-beat → playhead content-x (px, includes paddingLeft).
+    const PADDING_LEFT = 30;
+    const contentXForBeat = (beat: number) => {
+      const idx = Math.max(
+        0,
+        Math.min(totalBars - 1, Math.floor(beat / beatsPerMeasure)),
+      );
+      const f = Math.max(
+        0,
+        Math.min(1, (beat - idx * beatsPerMeasure) / beatsPerMeasure),
+      );
+      const bb = bars[idx]!;
+      const l = idx === 0 ? bb.firstNotePx : bb.startPx;
+      return l + f * (bb.endPx - l) + PADDING_LEFT;
     };
 
-    // Initialize scroll state when starting playback
-    currentScrollRef.current = scrollContainer.scrollLeft;
-    lastScrollTriggerXRef.current = 0; // Reset trigger tracking
-    isPageFlippingRef.current = false;
+    // SEAM RESET (screen-preserving). Once the playhead climbs into copy 2
+    // (ribbonBeat ≥ 2 loops), pull it back one loop to copy 1 — which is identical.
+    // To make the jump INVISIBLE regardless of tiny geometry differences, capture
+    // the playhead's exact on-screen x BEFORE the reset, then after shifting the
+    // beat, set scrollLeft so the playhead lands at the SAME screen x. (Subtracting
+    // a fixed loopWidthPx left a ~44px residual; this is exact.)
+    while (ribbonBeatRef.current >= 2 * loopBeats) {
+      const sc = parentRef.current;
+      const beforeX = contentXForBeat(ribbonBeatRef.current);
+      const screenXNow = sc ? beforeX - sc.scrollLeft : beforeX;
+      ribbonBeatRef.current -= loopBeats;
+      const afterX = contentXForBeat(ribbonBeatRef.current);
+      const newScroll = Math.max(0, afterX - screenXNow);
+      if (sc) {
+        const shift = sc.scrollLeft - newScroll; // how far we pulled scroll back
+        sc.scrollLeft = newScroll;
+        flipTargetRef.current = Math.max(0, flipTargetRef.current - shift);
+        tweenFromRef.current = Math.max(0, tweenFromRef.current - shift);
+        tweenToRef.current = Math.max(0, tweenToRef.current - shift);
+      }
+    }
 
-    // Start the animation loop
-    animationFrameRef.current = requestAnimationFrame(animate);
+    const globalBeat = ribbonBeatRef.current;
+    const playheadContentX = contentXForBeat(globalBeat);
+    const staff = staffRef.current;
+    playhead.style.transform = `translateX(${playheadContentX}px)`;
+    if (staff.height > 4) {
+      // Extend a little ABOVE and BELOW the staff (overhang) — a tight edge-to-edge
+      // line reads as cramped; real playheads poke past the staff a touch. Scale
+      // the overhang to the staff height so it looks right at any zoom.
+      const OVERHANG = Math.round(staff.height * 0.35);
+      playhead.style.top = `${staff.top - OVERHANG}px`;
+      playhead.style.height = `${staff.height + OVERHANG * 2}px`;
+    }
+    playhead.style.opacity = '1';
 
-    // Cleanup
+    // PAGE-FLIP scroll. Keep the notation STILL while the playhead travels across
+    // the visible page; when it reaches ~80% of the viewport, set a new scroll
+    // TARGET that lands the playhead near the left (~12%), giving a fresh full page
+    // of still notation to read. We only set the target here — a separate eased RAF
+    // (the flip-animation effect below) glides scrollLeft toward it. Crucially the
+    // target is derived from the playhead's ABSOLUTE content-x, recomputed every
+    // frame, so it self-corrects and can never "fall behind" (the bug in the first
+    // attempt, which blocked re-triggering during the animation).
+    const scrollContainer = parentRef.current;
+    if (scrollContainer) {
+      const viewportW = scrollContainer.clientWidth;
+      const maxScroll = Math.max(0, scrollContainer.scrollWidth - viewportW);
+      const FLIP_AT = 0.8; // flip when the playhead crosses 80% of the page
+      const LAND = 0.12; // ...and re-land it at 12% from the left
+      const HARD_EDGE = 0.95; // never let it pass 95% — snap the page if it does
+
+      // BUG-1 FIX: measure the playhead's screen position against the page target
+      // we're EASING toward (where the notation will settle), NOT a lagging value.
+      // flipTargetRef is the committed page; the eased tween chases it.
+      const targetFor = (land: number) =>
+        Math.max(0, Math.min(playheadContentX - viewportW * land, maxScroll));
+      const screenXVsTarget = playheadContentX - flipTargetRef.current;
+
+      if (screenXVsTarget < -viewportW * 0.1) {
+        // Loop wrap / seek back → re-anchor the page so the start is visible.
+        flipTargetRef.current = targetFor(LAND);
+      } else if (screenXVsTarget > viewportW * FLIP_AT) {
+        // Normal page turn: commit a new page (the tween eases toward it).
+        const target = targetFor(LAND);
+        if (target > flipTargetRef.current + 1) flipTargetRef.current = target;
+      }
+
+      // BUG-1 HARD CLAMP: regardless of the eased tween, the playhead must never
+      // leave the viewport. Measure against the REAL scrollLeft (where the page
+      // actually is this frame, not where it's heading). If the playhead would
+      // exceed HARD_EDGE, snap scrollLeft (and the tween) so it lands at LAND —
+      // an instant catch-up that the 1000ms ease could never do at fast tempo.
+      const screenXReal = playheadContentX - scrollContainer.scrollLeft;
+      if (screenXReal > viewportW * HARD_EDGE) {
+        const snap = targetFor(LAND);
+        scrollContainer.scrollLeft = snap;
+        flipTargetRef.current = snap;
+        tweenFromRef.current = snap;
+        tweenToRef.current = snap;
+      }
+    }
+  }, [
+    currentPosition,
+    isPlaying,
+    isLoading,
+    timeSignature.numerator,
+  ]);
+
+  // DEBOUNCED GENUINE-STOP reset. `isPlaying` flickers false for a frame during
+  // count-in/restart (dual source in the consumer), so we must distinguish that
+  // transient from a real stop. Arm a timer when isPlaying goes false; only if it
+  // STAYS false past the debounce do we reset the ribbon to the start (and snap
+  // the page home). A quick false→true flicker cancels the timer → the monotonic
+  // position survives and the playhead resumes exactly where it was.
+  useEffect(() => {
+    const STOP_DEBOUNCE_MS = 400;
+    if (isPlaying) {
+      // Resumed (or never stopped) → cancel any pending reset.
+      if (stopTimerRef.current) {
+        clearTimeout(stopTimerRef.current);
+        stopTimerRef.current = null;
+      }
+      return;
+    }
+    // Went not-playing → arm the genuine-stop reset.
+    if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
+    stopTimerRef.current = setTimeout(() => {
+      ribbonBeatRef.current = -1;
+      lastLoopBeatRef.current = 0;
+      flipTargetRef.current = 0;
+      tweenFromRef.current = 0;
+      tweenToRef.current = 0;
+      const sc = parentRef.current;
+      if (sc) sc.scrollLeft = 0;
+      stopTimerRef.current = null;
+    }, STOP_DEBOUNCE_MS);
     return () => {
-      if (animationFrameRef.current !== null) {
-        cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
+      if (stopTimerRef.current) {
+        clearTimeout(stopTimerRef.current);
+        stopTimerRef.current = null;
       }
-    };
-  }, [isPlaying, isAutoScrollDisabled, easeInOutCubic]); // NO currentPosition dependency!
-
-  // Detect manual scroll (user touching/dragging the sheet) — only the
-  // wheel + touchstart paths are wired. A more elaborate scroll-event
-  // debounce was prototyped but never connected; wheel/touchstart
-  // proved sufficient.
-  useEffect(() => {
-    const scrollContainer = parentRef.current;
-    if (!scrollContainer) return;
-
-    // Use wheel event for more reliable manual scroll detection
-    const handleWheel = () => {
-      if (isPlaying) {
-        setIsAutoScrollDisabled(true);
-      }
-    };
-
-    // Touch events for mobile
-    const handleTouchStart = () => {
-      if (isPlaying) {
-        setIsAutoScrollDisabled(true);
-      }
-    };
-
-    scrollContainer.addEventListener('wheel', handleWheel, { passive: true });
-    scrollContainer.addEventListener('touchstart', handleTouchStart, {
-      passive: true,
-    });
-
-    return () => {
-      scrollContainer.removeEventListener('wheel', handleWheel);
-      scrollContainer.removeEventListener('touchstart', handleTouchStart);
     };
   }, [isPlaying]);
 
-  // Re-enable auto-scroll and animate reset to start when playback begins
-  // OPTIMIZED: Only runs when isPlaying changes, not on every position update
-  const wasPlayingRef = useRef(false);
+  // PAGE-FLIP animation loop. Runs a slow EASE-IN-OUT tween of scrollLeft toward
+  // flipTargetRef. When the target moves forward (a new page), it (re)starts a
+  // fresh tween FROM the current scroll TO the new target over FLIP_DURATION ms —
+  // ease-in-out cubic gives a gentle start and a gentle stop (no abrupt lurch).
+  // A backward target (loop wrap) snaps instantly (easing backward across the
+  // whole sheet would read as a fast rewind).
   useEffect(() => {
-    // Detect transition from not playing to playing
-    if (isPlaying && !wasPlayingRef.current) {
-      // Re-enable auto-scroll when playback starts
-      enableAutoScroll();
+    if (!isPlaying) return;
+    const FLIP_DURATION = 1000; // ms — slow, smooth page turn
+    const easeInOutCubic = (t: number) =>
+      t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
-      // Animate scroll back to beginning when playback starts (if not already at start)
-      const scrollContainer = parentRef.current;
-      if (scrollContainer && scrollContainer.scrollLeft > 10) {
-        // Use same animation duration as page-flip for consistency
-        const RESET_ANIMATION_DURATION = 1000;
+    const animate = () => {
+      const sc = parentRef.current;
+      if (sc) {
+        const target = flipTargetRef.current;
+        const cur = sc.scrollLeft;
 
-        // Cancel any existing reset animation
-        if (resetAnimationFrameRef.current !== null) {
-          cancelAnimationFrame(resetAnimationFrameRef.current);
+        if (target < cur - 8) {
+          // Backward (loop wrap / seek back) → snap, and clear any active tween.
+          sc.scrollLeft = target;
+          tweenFromRef.current = target;
+          tweenToRef.current = target;
+        } else if (target > tweenToRef.current + 1) {
+          // A NEW page target appeared → start a fresh ease-in-out tween from here.
+          tweenFromRef.current = cur;
+          tweenToRef.current = target;
+          tweenStartRef.current = performance.now();
         }
 
-        // Initialize reset animation state
-        isResettingRef.current = true;
-        const resetStartTime = performance.now();
-        const resetStartScroll = scrollContainer.scrollLeft;
-        const resetTargetScroll = 0;
-
-        // Reset animation loop
-        const animateReset = (now: number) => {
-          if (!isResettingRef.current) {
-            return; // Animation was cancelled
-          }
-
-          const elapsed = now - resetStartTime;
-          const progress = Math.min(elapsed / RESET_ANIMATION_DURATION, 1);
-
-          // Use same cubic ease-in-out as page-flip
-          const easedProgress =
-            progress < 0.5
-              ? 4 * progress * progress * progress
-              : 1 - Math.pow(-2 * progress + 2, 3) / 2;
-
-          // Interpolate from start to target
-          const currentScroll =
-            resetStartScroll +
-            (resetTargetScroll - resetStartScroll) * easedProgress;
-
-          // Apply scroll position
-          if (scrollContainer) {
-            scrollContainer.scrollLeft = currentScroll;
-            currentScrollRef.current = currentScroll;
-          }
-
-          // Check if animation complete
-          if (progress >= 1) {
-            isResettingRef.current = false;
-            currentScrollRef.current = 0;
-            lastScrollTriggerXRef.current = 0;
-          } else {
-            // Continue animation
-            resetAnimationFrameRef.current =
-              requestAnimationFrame(animateReset);
-          }
-        };
-
-        // Start reset animation
-        resetAnimationFrameRef.current = requestAnimationFrame(animateReset);
-      } else if (scrollContainer) {
-        // Already at start, just reset refs
-        currentScrollRef.current = 0;
-        lastScrollTriggerXRef.current = 0;
+        // Advance the active tween (if any distance remains).
+        if (Math.abs(tweenToRef.current - tweenFromRef.current) > 0.5) {
+          const elapsed = performance.now() - tweenStartRef.current;
+          const t = Math.min(elapsed / FLIP_DURATION, 1);
+          sc.scrollLeft =
+            tweenFromRef.current +
+            (tweenToRef.current - tweenFromRef.current) * easeInOutCubic(t);
+          if (t >= 1) tweenFromRef.current = tweenToRef.current; // tween done
+        }
       }
-    }
-    wasPlayingRef.current = isPlaying;
-
-    // Cleanup reset animation on unmount or when isPlaying changes
-    return () => {
-      if (resetAnimationFrameRef.current !== null) {
-        cancelAnimationFrame(resetAnimationFrameRef.current);
-        resetAnimationFrameRef.current = null;
-      }
-      isResettingRef.current = false;
+      flipRafRef.current = requestAnimationFrame(animate);
     };
-  }, [isPlaying, enableAutoScroll]);
-
-  // Legacy playback highlighting (keeping for compatibility)
-  useEffect(() => {
-    if (!osmdRef.current || currentNoteIndex === undefined) return;
-    // currentNoteIndex is legacy - use currentBar instead
-  }, [currentNoteIndex]);
+    flipRafRef.current = requestAnimationFrame(animate);
+    return () => {
+      if (flipRafRef.current !== null) {
+        cancelAnimationFrame(flipRafRef.current);
+        flipRafRef.current = null;
+      }
+    };
+  }, [isPlaying]);
 
   return (
     <div
@@ -799,17 +763,6 @@ export function SheetMusicDisplay({
         </div>
       )}
 
-      {/* Resume Auto-Scroll button - shown when user manually scrolled during playback */}
-      {isPlaying && isAutoScrollDisabled && (
-        <button
-          onClick={enableAutoScroll}
-          className="absolute top-2 right-2 z-10 px-2 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded shadow-md transition-colors"
-          style={{ fontSize: '10px' }}
-        >
-          Resume Auto-Scroll
-        </button>
-      )}
-
       <div
         ref={containerRef}
         className="osmd-container"
@@ -825,25 +778,27 @@ export function SheetMusicDisplay({
         }}
       />
 
-      {/* Playback cursor — a thin vertical line at the current playhead. Lives
-          INSIDE the scroll content (absolute within parentRef) so it scrolls with
-          the score. Its left + opacity are driven imperatively each frame by the
-          animation loop (cursorRef), avoiding a re-render per frame. */}
+      {/* CONTINUOUS GLIDE PLAYHEAD — our own thin vertical line, positioned every
+          frame by the glide effect (translateX in content coords). It's an absolute
+          child of the scroll container, so the browser scrolls it together with the
+          score. Driven imperatively (no per-frame re-render). */}
       <div
-        ref={cursorRef}
+        ref={playheadRef}
         aria-hidden
         style={{
           position: 'absolute',
           top: 0,
-          bottom: 0,
           left: 0,
-          width: '2px',
-          background: 'rgba(59, 130, 246, 0.9)', // blue-500
-          boxShadow: '0 0 6px rgba(59, 130, 246, 0.5)',
+          height: '0px',
+          width: '2.5px',
+          background: '#2563eb', // blue-600
+          borderRadius: '2px',
+          boxShadow: '0 0 6px rgba(37, 99, 235, 0.6)',
           pointerEvents: 'none',
           opacity: 0,
           transform: 'translateX(0px)',
-          willChange: 'transform, opacity',
+          willChange: 'transform',
+          zIndex: 5,
         }}
       />
     </div>
