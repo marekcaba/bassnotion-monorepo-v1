@@ -204,16 +204,13 @@ export function LinesAndFillsSection({
     // top divider + card padding rather than a standalone panel, so it reads as
     // a section OF the card, not a separate box below it.
     <div className="border-t border-white/10 px-4 pb-4 pt-3">
-      <div className="mb-3 flex items-center gap-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-          Lines &amp; Fills
-        </h3>
-        {locked && (
+      {locked && (
+        <div className="mb-3 flex items-center gap-2">
           <span className="rounded bg-amber-400/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-300/80">
             Members
           </span>
-        )}
-      </div>
+        </div>
+      )}
       {/* One horizontal row: each line + its fills, divided by a vertical rule.
           Scrolls sideways if it overflows the card width. The `px-1`/`py-1`
           gutter gives the SELECTED card (which scales to 1.05) room to grow
