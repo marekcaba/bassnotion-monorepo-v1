@@ -59,11 +59,6 @@ overrides:
   immutable@<5.1.5: '>=5.1.5'                       # proto-pollution — @nx/webpack > sass (build)
   tmp@<0.2.6: '>=0.2.6'                             # path-traversal — @nx/esbuild (dev)
   '@babel/plugin-transform-modules-systemjs@<7.29.4': '>=7.29.4'  # via babel build tooling
-  # fastify 5 advisory (GHSA, Content-Type tab) is for a fastify@5 in the DEV
-  # tree only. The backend runtime is pinned to fastify@4.x (Fastify 5 has
-  # breaking changes — see CLAUDE.md). Scope the override to the 5.x line so it
-  # NEVER rewrites the backend's 4.x.
-  fastify@>=5.0.0 <5.7.2: '>=5.7.2'
   # vite 6.4.2 is the patched line AND a 6.x release — safe under the vite@6
   # pin (CLAUDE.md). esbuild floor bumped to 0.28.1 above (was 0.25.0).
   vite@>=6.0.0 <6.4.2: '>=6.4.2'
@@ -75,22 +70,12 @@ auditConfig:
     # runs `vitest run` on Linux with no UI/network binding, so exposure is nil.
     # Ignored 2026-06-02 — revisit when migrating to vitest 4.
     - GHSA-5xrq-8626-4rwp
-    # fastify <5.7.2 — Content-Type tab-char body-validation bypass (high, CVSS
-    # 7.5, integrity-only). GHSA-jx2c-rxcm-jvmq. The ONLY fix is fastify 5.7.2,
-    # but the backend is pinned to fastify@4.x (Fastify 5 removes
-    # request.routerPath + changes the multipart API, both used by our
-    # controllers — see CLAUDE.md version-constraint table). There is no 4.x
-    # backport (advisory range is `< 5.7.2`).
-    # EXPOSURE on THIS app is near-nil: the vuln bypasses Fastify's OWN
-    # content-type-discriminated schema validation, but we don't use that — every
-    # request body is validated by a global ZodValidationPipe at the NestJS pipe
-    # layer (main.ts useGlobalPipes), which runs AFTER parsing on the parsed
-    # object, independent of the Content-Type header. A `Content-Type:
-    # application/json\t…` request still hits the same Zod schema and is rejected
-    # on mismatch. No `content: { 'application/json': … }` Fastify schemas exist
-    # in the codebase. Ignored 2026-06-13 — REVISIT when we migrate to Fastify 5
-    # (then drop this and the fastify@5 override above).
-    - GHSA-jx2c-rxcm-jvmq
+    # (fastify <5.7.2 Content-Type bypass GHSA-jx2c-rxcm-jvmq was waived here
+    # until 2026-06-13; now FIXED outright by migrating the backend to
+    # fastify@5.8.5 — no waiver needed. Aligns with @nestjs/platform-fastify@11,
+    # which already targets Fastify 5. The only breaking-change touch point was
+    # request.routerPath → request.routeOptions.url in rate-limit.guard.ts; the
+    # @fastify/* plugins were already on their Fastify-5 majors.)
 patchedDependencies:
   # signalsmith-stretch — adds a `swapAtLoopStart` worklet method for the
   # sample-accurate "Lines & Fills" bassline swap (replaces the looping PCM the
