@@ -21,16 +21,20 @@
 
 import { z } from 'zod';
 
+// A base stem may live in the PUBLIC audio-samples bucket (free grooves) OR the
+// PRIVATE groove-stems bucket (member/product grooves — signed-URL gated,
+// `object/sign/…`). Both shapes are valid; the access tier (not the URL) decides
+// gating, and the signer resolves the private ref at read time.
 const STEM_PATH_REGEX =
-  /\/storage\/v1\/object\/public\/audio-samples\/[A-Za-z0-9_./-]+/;
+  /\/storage\/v1\/object\/(public|sign)\/(audio-samples|groove-stems)\/[A-Za-z0-9_./-]+/;
 
 /**
  * Stem URL is optional during draft auto-save (admin fills the 3 cells
  * over multiple keystrokes; each keystroke triggers a save). An empty
- * string passes; any non-empty string MUST match the audio-samples
- * bucket path pattern (host-agnostic across staging / production per
- * CLAUDE.md). Publish-time enforcement (all 3 stems required) belongs
- * to the UI, not this auto-save validator.
+ * string passes; any non-empty string MUST match the audio-samples (public,
+ * free) or groove-stems (private, premium) bucket path pattern (host-agnostic
+ * across staging / production per CLAUDE.md). Publish-time enforcement (all 3
+ * stems required) belongs to the UI, not this auto-save validator.
  */
 export const grooveCardStemUrlSchema = z.union([
   z.literal(''),
@@ -38,14 +42,77 @@ export const grooveCardStemUrlSchema = z.union([
     .string()
     .refine(
       (url) => STEM_PATH_REGEX.test(url),
-      'stem URL must point at /storage/v1/object/public/audio-samples/…',
+      'stem URL must point at the audio-samples or groove-stems bucket',
     ),
 ]);
+
+/**
+ * A premium bassline variant URL may live in the PUBLIC audio-samples bucket OR
+ * the PRIVATE premium-basslines bucket (signed-URL gated, `object/sign/…`). So
+ * its accepted path pattern is wider than the free-stem one.
+ */
+const BASSLINE_VARIANT_PATH_REGEX =
+  /\/storage\/v1\/object\/(public|sign)\/(audio-samples|premium-basslines)\/[A-Za-z0-9_./-]+/;
+
+/**
+ * A pre-parsed ExerciseNote (from an admin-imported MusicXML). We validate the
+ * CORE musical fields and pass the rest through (.passthrough) so the full
+ * ExerciseNote shape survives the save without re-deriving its 20+ optional
+ * properties. Shared by both the per-variant `notes` and `bassNotation.notes`.
+ */
+const exerciseNoteSchema = z
+  .object({
+    id: z.string(),
+    string: z.number().int().min(1).max(6),
+    fret: z.number().int().min(0).max(24),
+    note: z.string(),
+    duration: z.string(),
+    // MusicalPosition: { measure, beat, subdivision, tick? } — the shape the
+    // MusicXML parser emits and exerciseToMusicXML/SheetMusicDisplay consume.
+    position: z
+      .object({
+        measure: z.number().int().nonnegative(),
+        beat: z.number().int().nonnegative(),
+        subdivision: z.number().int().nonnegative(),
+        tick: z.number().int().nonnegative().optional(),
+      })
+      .passthrough(),
+  })
+  .passthrough();
+
+const basslineVariantSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1),
+  url: z
+    .string()
+    .refine(
+      (url) => BASSLINE_VARIANT_PATH_REGEX.test(url),
+      'variant URL must point at the audio-samples or premium-basslines bucket',
+    ),
+  feature: z.string().optional(),
+  // Lines & Fills combo tags (which bassline + which fill this take is).
+  lineId: z.string().optional(),
+  fillId: z.string().optional(),
+  // Where a fill happens in the loop (1-indexed bar + beat), for the waveform
+  // highlight. Only meaningful on a fill take.
+  fillRegion: z
+    .object({
+      startBar: z.number().int().positive(),
+      startBeat: z.number().int().min(1).max(4),
+      endBar: z.number().int().positive(),
+      endBeat: z.number().int().min(1).max(4),
+    })
+    .optional(),
+  // This take's bass-line sheet notation (pre-parsed ExerciseNote[]). Shown in
+  // the card's sheet view when this variant is the active selection.
+  notes: z.array(exerciseNoteSchema).optional(),
+});
 
 export const grooveCardStemSetSchema = z.object({
   bass: grooveCardStemUrlSchema,
   drums: grooveCardStemUrlSchema,
   harmony: grooveCardStemUrlSchema,
+  bassVariants: z.array(basslineVariantSchema).optional(),
 });
 
 export const grooveCardStateCaptionsSchema = z
@@ -84,6 +151,35 @@ export const grooveCardBlockConfigSchema = z
     // at originalKey; the runtime renders ±6 semitones via the pitch-shift
     // engine. The legacy 5-key-set tuple was retired.
     stems: grooveCardStemSetSchema.optional(),
+    // Chord chart — sparse harmony changes { bar (1-based), slot (0..15
+    // sixteenth-note), symbol } shown to the player. Resolved from the library
+    // when grooveId is set; an inline block carries its own here. (Without
+    // this field the non-passthrough object schema would STRIP it on save.)
+    chordChart: z
+      .array(
+        z.object({
+          bar: z.number().int().positive(),
+          slot: z.number().int().min(0).max(15),
+          symbol: z.string(),
+        }),
+      )
+      .optional(),
+    // Bass-line sheet notation for the BUILT-IN bass ("Bass A"). The card's
+    // window can switch to this bass-clef score. Each alternate line / fill
+    // carries its OWN notation on its bassVariant (above). Pre-parsed from an
+    // admin-imported MusicXML (shared exerciseNoteSchema).
+    bassNotation: z
+      .object({
+        notes: z.array(exerciseNoteSchema),
+        timeSignature: z
+          .object({
+            numerator: z.number().int().positive(),
+            denominator: z.number().int().positive(),
+          })
+          .passthrough()
+          .optional(),
+      })
+      .optional(),
     previewCaption: z.string().optional(),
     stateCaptions: grooveCardStateCaptionsSchema.optional(),
     allowBookmark: z.boolean().optional(),

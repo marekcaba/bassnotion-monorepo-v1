@@ -26,6 +26,8 @@ export type UpgradeLever =
   | 'transpose'
   | 'loopRange'
   | 'deconstruction'
+  | 'dynamicLoop'
+  | 'linesAndFills'
   | 'generic';
 
 /** Per-lever headline — names the specific spec you just hit. */
@@ -34,16 +36,20 @@ const LEVER_HEADLINE: Record<UpgradeLever, string> = {
   transpose: 'Two keys, then the wall',
   loopRange: 'Loop the whole groove, not the bar',
   deconstruction: 'The layers are locked',
+  dynamicLoop: 'Auto key-cycling is a member move',
+  linesAndFills: 'Swap the bassline — a member move',
   generic: 'You hit the free wall',
 };
 
-/** The four member benefits. `key` ties a row to the lever that was hit so we
+/** The member benefits. `key` ties a row to the lever that was hit so we
  *  can highlight "the one you reached for". */
 const BENEFITS: Array<{ key: UpgradeLever; label: string }> = [
   { key: 'tempo', label: 'The full 40–200 tempo dial' },
   { key: 'transpose', label: 'All 12 keys' },
   { key: 'loopRange', label: 'Loop any bar, infinitely' },
   { key: 'deconstruction', label: 'Drill the layers — solo any part' },
+  { key: 'dynamicLoop', label: 'Auto-cycle keys with the Dynamic Loop' },
+  { key: 'linesAndFills', label: 'Swap basslines — Lines & Fills' },
 ];
 
 interface UpgradePitchContentProps {

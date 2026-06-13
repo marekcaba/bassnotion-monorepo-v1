@@ -8,13 +8,17 @@ onlyBuiltDependencies:
   - esbuild
   - nx
 overrides:
-  esbuild@<=0.24.2: '>=0.25.0'
-  koa@<2.16.1: '>=2.16.1'
+  esbuild@<0.28.1: '>=0.28.1'
+  koa@<2.16.4: '>=2.16.4'
   # Critical CVEs — fixed 2026-05-12 (Phase 1.2)
   # @fastify/middie auth bypass: GHSA-72c6-fx6q-fr5w
   '@fastify/middie@<9.3.2': '>=9.3.2'
   # form-data unsafe random boundary: GHSA-fjxv-7rqg-78g4 (dev-only via Nx > axios)
   form-data@<4.0.4: '>=4.0.4'
+  # shell-quote newline-escape bypass: GHSA-w7jw-789q-3m8p (critical). Dev-only,
+  # deep transitive: @nx/webpack > webpack-dev-server > launch-editor > shell-quote
+  # (opens the editor on a dev-server error). Force the patched line.
+  shell-quote@<1.8.4: '>=1.8.4'
   # Pin @babel/core to a single version so Next.js resolves to ONE build
   # instance. The lucide-react 0->1 bump (commit 3cebcd44) pulled in a
   # transitive @babel/core@7.29.7 alongside the existing 7.28.x, which forked
@@ -24,6 +28,40 @@ overrides:
   # "<Html> should not be imported outside of pages/_document". One babel-core
   # version => one Next => prerender passes. Revisit if intentionally bumping next/babel.
   '@babel/core@>=7.0.0': '7.28.5'
+  # ── Audit hygiene 2026-06-13 (Phase 4 launch-readiness) ──────────────────
+  # Every entry below is a DEV/BUILD-TOOLING transitive dep — NONE is in any
+  # production `dependencies` block (verified: the deployed Vercel/Railway
+  # bundles don't include them). Each resolves under @nx/* (devkit, webpack,
+  # vite, next, eslint) or the bundler/sass toolchain. We force the patched
+  # line so `pnpm audit --audit-level high` is clean; this is hygiene to pass
+  # the gate, not a production-risk fix (the prod risk was already nil).
+  axios@<1.15.1: '>=1.15.1'                       # DoS/proto-pollution/proxy — via @nx > axios (dev)
+  node-forge@<1.4.0: '>=1.4.0'                     # ASN.1/sig forgery — via @nx/webpack > selfsigned (dev TLS)
+  # minimatch is pulled at three major lines (3.x via glob, 9.x via @nx/devkit
+  # + typescript-eslint, 10.x via newer @nx). Each needs its OWN patched floor —
+  # a single low floor leaves 9.x/10.x untouched. All dev/build tooling.
+  minimatch@<3.1.4: '>=3.1.4'
+  minimatch@>=9.0.0 <9.0.7: '>=9.0.7'
+  minimatch@>=10.0.0 <10.2.3: '>=10.2.3'
+  '@isaacs/brace-expansion@<5.0.1': '>=5.0.1'      # ReDoS — minimatch dep
+  rollup@<4.59.0: '>=4.59.0'                       # path-traversal file write — via vite (build)
+  serialize-javascript@<7.0.3: '>=7.0.3'           # RCE — webpack/terser (build)
+  svgo@<3.3.3: '>=3.3.3'                            # DoS entity expansion — svg loader (build)
+  flatted@<3.4.2: '>=3.4.2'                         # proto-pollution/DoS — @nx module-federation (dev)
+  path-to-regexp@<8.4.0: '>=8.4.0'                 # ReDoS — router tooling (dev)
+  # picomatch at the 2.x line (>=2.3.2) AND the 4.x line (>=4.0.4, via
+  # tinyglobby / @rollup/pluginutils). Both dev/build tooling.
+  picomatch@<2.3.2: '>=2.3.2'
+  picomatch@>=4.0.0 <4.0.4: '>=4.0.4'
+  lodash@<4.18.0: '>=4.18.0'                        # _.template code injection — build tooling
+  '@xmldom/xmldom@<0.8.12': '>=0.8.12'             # XML injection — svg/xml tooling (build)
+  fast-uri@<3.1.1: '>=3.1.1'                        # path-traversal/host-confusion — fastify dev tooling
+  immutable@<5.1.5: '>=5.1.5'                       # proto-pollution — @nx/webpack > sass (build)
+  tmp@<0.2.6: '>=0.2.6'                             # path-traversal — @nx/esbuild (dev)
+  '@babel/plugin-transform-modules-systemjs@<7.29.4': '>=7.29.4'  # via babel build tooling
+  # vite 6.4.2 is the patched line AND a 6.x release — safe under the vite@6
+  # pin (CLAUDE.md). esbuild floor bumped to 0.28.1 above (was 0.25.0).
+  vite@>=6.0.0 <6.4.2: '>=6.4.2'
 auditConfig:
   ignoreGhsas:
     # vitest <4.1.0 — Vitest UI server arbitrary file read/exec (dev-only).
@@ -32,3 +70,14 @@ auditConfig:
     # runs `vitest run` on Linux with no UI/network binding, so exposure is nil.
     # Ignored 2026-06-02 — revisit when migrating to vitest 4.
     - GHSA-5xrq-8626-4rwp
+    # (fastify <5.7.2 Content-Type bypass GHSA-jx2c-rxcm-jvmq was waived here
+    # until 2026-06-13; now FIXED outright by migrating the backend to
+    # fastify@5.8.5 — no waiver needed. Aligns with @nestjs/platform-fastify@11,
+    # which already targets Fastify 5. The only breaking-change touch point was
+    # request.routerPath → request.routeOptions.url in rate-limit.guard.ts; the
+    # @fastify/* plugins were already on their Fastify-5 majors.)
+patchedDependencies:
+  # signalsmith-stretch — adds a `swapAtLoopStart` worklet method for the
+  # sample-accurate "Lines & Fills" bassline swap (replaces the looping PCM the
+  # instant the read-head wraps to loopStart). See patches/ for the diff.
+  signalsmith-stretch@1.3.2: patches/signalsmith-stretch@1.3.2.patch

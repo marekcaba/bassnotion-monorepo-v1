@@ -43,7 +43,10 @@ function PackDetailContent() {
   }
 
   const { product, contents } = data;
-  const owned = (access?.purchasedProductIds ?? []).includes(product.id);
+  const isMembership = product.type === 'membership';
+  const owned = isMembership
+    ? (access?.hasActiveSubscription ?? false)
+    : (access?.purchasedProductIds ?? []).includes(product.id);
   const buyable = product.purchasable;
   const grooveCount = contents.filter((c) => c.contentType === 'groove').length;
 
@@ -51,11 +54,12 @@ function PackDetailContent() {
     setBuying(true);
     try {
       const origin = window.location.origin;
-      const url = await storeApi.checkoutProduct(
-        product.id,
-        `${origin}/app/store?success=true`,
-        `${origin}/app/store/${product.slug}?canceled=true`,
-      );
+      const successUrl = `${origin}/app/store?success=true`;
+      const cancelUrl = `${origin}/app/store/${product.slug}?canceled=true`;
+      // Membership is a subscription; packs are one-time purchases.
+      const url = isMembership
+        ? await storeApi.checkoutMembership(successUrl, cancelUrl)
+        : await storeApi.checkoutProduct(product.id, successUrl, cancelUrl);
       window.location.href = url;
     } catch (e) {
       toast({
@@ -78,7 +82,6 @@ function PackDetailContent() {
 
       {/* Cover */}
       {product.coverImageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={product.coverImageUrl}
           alt={product.name}
@@ -114,7 +117,10 @@ function PackDetailContent() {
       {product.features.length > 0 && (
         <ul className="mt-6 space-y-2">
           {product.features.map((f, i) => (
-            <li key={i} className="flex items-start gap-2 text-sm text-white/80">
+            <li
+              key={i}
+              className="flex items-start gap-2 text-sm text-white/80"
+            >
               <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#E8A44A]" />
               {f}
             </li>
@@ -122,47 +128,56 @@ function PackDetailContent() {
         </ul>
       )}
 
-      {/* What's inside */}
-      <div className="mt-8 rounded-2xl border border-white/10 bg-[#15110d] p-5">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-white/50">
-          What’s inside
-        </h2>
-        {contents.length === 0 ? (
-          <p className="mt-3 text-sm text-white/40">
-            Content for this pack is being added.
-          </p>
-        ) : (
-          <>
-            <p className="mt-2 text-sm text-white/70">
-              {grooveCount} groove{grooveCount === 1 ? '' : 's'}
-              {contents.length > grooveCount
-                ? ` + ${contents.length - grooveCount} more`
-                : ''}
+      {/* What's inside — packs bundle specific content; membership unlocks the
+          whole library, so its value is the features list above, not a content
+          manifest. Hide this section for membership. */}
+      {!isMembership && (
+        <div className="mt-8 rounded-2xl border border-white/10 bg-[#15110d] p-5">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-white/50">
+            What’s inside
+          </h2>
+          {contents.length === 0 ? (
+            <p className="mt-3 text-sm text-white/40">
+              Content for this pack is being added.
             </p>
-            <ul className="mt-3 space-y-1.5">
-              {contents.map((c, i) => (
-                <li
-                  key={i}
-                  className="flex items-center gap-2 text-sm text-white/60"
-                >
-                  <Music className="h-3.5 w-3.5 text-[#E8A44A]/60" />
-                  {c.note || `${c.contentType}${c.unlockDay ? ` · day ${c.unlockDay}` : ''}`}
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-      </div>
+          ) : (
+            <>
+              <p className="mt-2 text-sm text-white/70">
+                {grooveCount} groove{grooveCount === 1 ? '' : 's'}
+                {contents.length > grooveCount
+                  ? ` + ${contents.length - grooveCount} more`
+                  : ''}
+              </p>
+              <ul className="mt-3 space-y-1.5">
+                {contents.map((c, i) => (
+                  <li
+                    key={i}
+                    className="flex items-center gap-2 text-sm text-white/60"
+                  >
+                    <Music className="h-3.5 w-3.5 text-[#E8A44A]/60" />
+                    {c.note ||
+                      `${c.contentType}${c.unlockDay ? ` · day ${c.unlockDay}` : ''}`}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Buy */}
       <div className="mt-8 flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-[#15110d] p-5">
         <div className="flex items-baseline gap-1">
-          <span className="text-3xl font-bold text-white">${product.price}</span>
-          <span className="text-sm text-white/40">one-time</span>
+          <span className="text-3xl font-bold text-white">
+            ${product.price}
+          </span>
+          <span className="text-sm text-white/40">
+            {isMembership ? '/month' : 'one-time'}
+          </span>
         </div>
         {owned ? (
           <span className="rounded-lg bg-emerald-600/20 px-6 py-2.5 text-sm font-semibold text-emerald-400">
-            Owned
+            {isMembership ? 'Active member' : 'Owned'}
           </span>
         ) : !buyable ? (
           <span className="flex items-center gap-2 rounded-lg bg-white/5 px-6 py-2.5 text-sm font-semibold text-white/40">
@@ -174,7 +189,11 @@ function PackDetailContent() {
             disabled={buying}
             className="rounded-lg bg-[#E8A44A] px-6 py-2.5 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
           >
-            {buying ? 'Starting…' : 'Buy pack'}
+            {buying
+              ? 'Starting…'
+              : isMembership
+                ? 'Become a member'
+                : 'Buy pack'}
           </button>
         )}
       </div>

@@ -98,9 +98,11 @@ export class RateLimitGuard implements CanActivate {
       return options.keyGenerator(request);
     }
 
-    // Default: Use IP + route path
+    // Default: Use IP + route path. Fastify 5 removed `request.routerPath`
+    // (use `request.routeOptions.url`); fall back to the raw url if the route
+    // isn't matched yet (e.g. 404s) — same behaviour as before.
     const ip = this.extractClientIp(request);
-    const route = request.routerPath || request.url;
+    const route = request.routeOptions?.url || request.url;
     return `${ip}:${route}`;
   }
 

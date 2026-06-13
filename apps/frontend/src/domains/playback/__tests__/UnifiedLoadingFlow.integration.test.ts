@@ -138,13 +138,13 @@ describe('Unified Loading Flow - End to End Integration', () => {
         }),
       },
       dispatchEvent: vi.fn(),
-      // Phase 3 test: production code imports `errorHandling.ts` which
-      // wires `window.addEventListener('unhandledrejection', ...)` on the
-      // GlobalErrorHandler singleton. The mock window above replaces the
-      // jsdom window wholesale, so we must include addEventListener /
-      // removeEventListener stubs or that singleton crashes on init. The
-      // playback logger also reads `window.location.hostname` on first
-      // construction, so provide a hostname stub for the same reason.
+      // The mock window above replaces the jsdom window wholesale, so we keep
+      // addEventListener / removeEventListener stubs for any production code that
+      // registers listeners during init. (Historically the GlobalErrorHandler
+      // singleton in errorHandling.ts wired an 'unhandledrejection' listener here;
+      // it was removed in favor of Sentry's native global handlers, but the stubs
+      // are cheap insurance.) The playback logger reads `window.location.hostname`
+      // on first construction, so provide a hostname stub too.
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
       location: { hostname: 'localhost' },

@@ -5,7 +5,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { billingApi } from '../api/billing.api';
-import { CourseType, CreateCheckoutSessionDto } from '../types/billing.types';
+import { CreateCheckoutSessionDto } from '../types/billing.types';
 
 // Query keys
 export const billingKeys = {
@@ -99,26 +99,4 @@ export function useReactivateSubscription() {
       queryClient.invalidateQueries({ queryKey: billingKeys.access() });
     },
   });
-}
-
-/**
- * Helper hook to check if user has access to a specific course
- */
-export function useHasCourseAccess(courseType: CourseType) {
-  const { data: access } = useUserAccess();
-
-  if (!access) return false;
-
-  // User has access if they have an active subscription OR purchased the course
-  return (
-    access.hasActiveSubscription || access.purchasedCourses.includes(courseType)
-  );
-}
-
-/**
- * Helper hook to check if user has premium access (subscription)
- */
-export function useHasPremiumAccess() {
-  const { data: access } = useUserAccess();
-  return access?.hasActiveSubscription ?? false;
 }

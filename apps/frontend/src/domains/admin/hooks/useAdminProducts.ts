@@ -57,6 +57,14 @@ export function useUpdateProduct() {
   });
 }
 
+export function useDeleteProduct() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => adminProductsApi.delete(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: productKeys.all }),
+  });
+}
+
 export function useAddProductContent() {
   const qc = useQueryClient();
   return useMutation({

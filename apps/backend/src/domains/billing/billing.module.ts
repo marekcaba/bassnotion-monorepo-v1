@@ -12,6 +12,7 @@ import { FoundersController } from './founders.controller.js';
 import { PurchaseRepository } from './repositories/purchase.repository.js';
 import { ProductRepository } from './repositories/product.repository.js';
 import { ProductContentsRepository } from './repositories/product-contents.repository.js';
+import { ProductFeaturesRepository } from './repositories/product-features.repository.js';
 import { AcceleratorEnrollmentRepository } from './repositories/accelerator-enrollment.repository.js';
 import { FounderCardConfigRepository } from './repositories/founder-card-config.repository.js';
 import { SupabaseModule } from '../../infrastructure/supabase/supabase.module.js';
@@ -37,6 +38,7 @@ import { MembershipModule } from './membership.module.js';
     PurchaseRepository,
     ProductRepository,
     ProductContentsRepository,
+    ProductFeaturesRepository,
     AcceleratorEnrollmentRepository,
     FounderCardConfigRepository,
   ],
@@ -48,6 +50,7 @@ import { MembershipModule } from './membership.module.js';
     PurchaseRepository,
     ProductRepository,
     ProductContentsRepository,
+    ProductFeaturesRepository,
     AcceleratorEnrollmentRepository,
     FounderCardConfigRepository,
   ],

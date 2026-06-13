@@ -16,10 +16,26 @@ import {
   useUpdateProduct,
   useAddProductContent,
   useRemoveProductContent,
+  useDeleteProduct,
 } from '@/domains/admin/hooks/useAdminProducts';
-import { adminProductsApi, AdminContentType } from '@/domains/admin/api/products.api';
+import {
+  adminProductsApi,
+  AdminContentType,
+  type AdminProductType,
+} from '@/domains/admin/api/products.api';
 import { useGrooveLibrary } from '@/domains/drill/hooks/useGrooveLibrary';
 import { fetchTutorials } from '@/domains/widgets/api/tutorials';
+import type { FeatureKey } from '@bassnotion/contracts';
+
+/** Human labels for the feature keys (the checklist rows). */
+const FEATURE_LABELS: Record<FeatureKey, string> = {
+  tempo: 'Tempo dial (full 40–200 range)',
+  transpose: 'Transpose (all 12 keys)',
+  loopRange: 'Loop any bar range',
+  deconstruction: 'Deconstruction (solo/drill layers)',
+  dynamicLoop: 'Dynamic Loop (auto key-cycle)',
+  linesAndFills: 'Lines & Fills (swap basslines)',
+};
 
 const CONTENT_TYPES: { value: AdminContentType; label: string }[] = [
   { value: 'tutorial', label: 'Tutorial' },
@@ -27,11 +43,32 @@ const CONTENT_TYPES: { value: AdminContentType; label: string }[] = [
   { value: 'video', label: 'Video' },
 ];
 
-export function ProductEditor({ productId }: { productId: string }) {
+const PRODUCT_TYPES: AdminProductType[] = [
+  'membership',
+  'groove_pack',
+  'accelerator',
+  'course',
+];
+
+export function ProductEditor({
+  productId,
+  onDeleted,
+}: {
+  productId: string;
+  /** Called after a successful hard-delete so the parent can collapse the
+   *  (now-removed) editor panel. */
+  onDeleted?: () => void;
+}) {
   const { data, isLoading } = useAdminProduct(productId);
   const updateProduct = useUpdateProduct();
   const addContent = useAddProductContent();
   const removeContent = useRemoveProductContent();
+  const deleteProduct = useDeleteProduct();
+
+  // Two-step delete confirm: the button arms a typed-name confirmation so a
+  // misclick can't nuke a product.
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [confirmText, setConfirmText] = useState('');
 
   // Pick-from sources
   const { data: grooveData } = useGrooveLibrary(false);
@@ -42,6 +79,17 @@ export function ProductEditor({ productId }: { productId: string }) {
     staleTime: 1000 * 60 * 5,
   });
   const tutorials = tutorialData?.tutorials ?? [];
+
+  // Core marketing/store fields.
+  const [name, setName] = useState('');
+  const [slug, setSlug] = useState('');
+  const [type, setType] = useState<AdminProductType>('groove_pack');
+  const [tagline, setTagline] = useState('');
+  const [description, setDescription] = useState('');
+  const [priceInCents, setPriceInCents] = useState(0);
+  const [currency, setCurrency] = useState('usd');
+  const [sortOrder, setSortOrder] = useState(0);
+  const [featuresText, setFeaturesText] = useState('');
 
   const [stripePriceId, setStripePriceId] = useState('');
   const [badge, setBadge] = useState('');
@@ -58,10 +106,20 @@ export function ProductEditor({ productId }: { productId: string }) {
 
   useEffect(() => {
     if (data?.product) {
-      setStripePriceId(data.product.stripePriceId ?? '');
-      setBadge(data.product.badge ?? '');
-      setIsActive(data.product.isActive);
-      setPreviewGrooveId(data.product.previewGrooveId ?? '');
+      const p = data.product;
+      setName(p.name ?? '');
+      setSlug(p.slug ?? '');
+      setType(p.type);
+      setTagline(p.tagline ?? '');
+      setDescription(p.description ?? '');
+      setPriceInCents(p.priceInCents ?? 0);
+      setCurrency(p.currency ?? 'usd');
+      setSortOrder(p.sortOrder ?? 0);
+      setFeaturesText((p.features ?? []).join('\n'));
+      setStripePriceId(p.stripePriceId ?? '');
+      setBadge(p.badge ?? '');
+      setIsActive(p.isActive);
+      setPreviewGrooveId(p.previewGrooveId ?? '');
     }
   }, [data?.product]);
 
@@ -102,10 +160,27 @@ export function ProductEditor({ productId }: { productId: string }) {
 
   const saveFields = async () => {
     setMsg(null);
+    if (!name.trim() || !slug.trim()) {
+      setMsg('Name and slug are required.');
+      return;
+    }
+    const features = featuresText
+      .split('\n')
+      .map((f) => f.trim())
+      .filter(Boolean);
     try {
       await updateProduct.mutateAsync({
         id: productId,
         patch: {
+          name: name.trim(),
+          slug: slug.trim(),
+          type,
+          tagline: tagline.trim() || undefined,
+          description: description.trim() || undefined,
+          priceInCents,
+          currency: currency.trim() || undefined,
+          sortOrder,
+          features,
           stripePriceId: stripePriceId.trim() || undefined,
           badge: badge.trim() || undefined,
           isActive,
@@ -115,6 +190,19 @@ export function ProductEditor({ productId }: { productId: string }) {
       setMsg('Saved.');
     } catch (e) {
       setMsg(e instanceof Error ? e.message : 'Save failed');
+    }
+  };
+
+  const handleDelete = async () => {
+    setMsg(null);
+    try {
+      await deleteProduct.mutateAsync(productId);
+      // Row vanishes from the list (productKeys.all invalidated); tell the
+      // parent to collapse this now-removed panel.
+      onDeleted?.();
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : 'Delete failed');
+      setConfirmingDelete(false);
     }
   };
 
@@ -156,6 +244,104 @@ export function ProductEditor({ productId }: { productId: string }) {
 
   return (
     <div className="space-y-4 border-t bg-gray-50 px-4 py-4 text-sm">
+      {/* Core details — name / slug / type / pricing / copy. */}
+      <div className="grid grid-cols-2 gap-3">
+        <label className="space-y-1 text-xs text-gray-500">
+          Name
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Funk Foundations"
+            className="w-full rounded-md border px-3 py-2 text-sm text-gray-900"
+          />
+        </label>
+        <label className="space-y-1 text-xs text-gray-500">
+          Slug
+          <input
+            value={slug}
+            onChange={(e) => setSlug(e.target.value)}
+            placeholder="funk-foundations"
+            className="w-full rounded-md border px-3 py-2 font-mono text-sm text-gray-900"
+          />
+        </label>
+      </div>
+
+      <label className="block space-y-1 text-xs text-gray-500">
+        Tagline
+        <input
+          value={tagline}
+          onChange={(e) => setTagline(e.target.value)}
+          placeholder="Short marketing hook for the store card"
+          className="w-full rounded-md border px-3 py-2 text-sm text-gray-900"
+        />
+      </label>
+
+      <label className="block space-y-1 text-xs text-gray-500">
+        Description
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={3}
+          className="w-full rounded-md border px-3 py-2 text-sm text-gray-900"
+        />
+      </label>
+
+      <div className="grid grid-cols-4 gap-3">
+        <label className="space-y-1 text-xs text-gray-500">
+          Type
+          <select
+            value={type}
+            onChange={(e) => setType(e.target.value as AdminProductType)}
+            className="w-full rounded-md border px-3 py-2 text-sm text-gray-900"
+          >
+            {PRODUCT_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="space-y-1 text-xs text-gray-500">
+          Price (cents)
+          <input
+            type="number"
+            min={0}
+            value={priceInCents}
+            onChange={(e) => setPriceInCents(Number(e.target.value))}
+            className="w-full rounded-md border px-3 py-2 text-sm text-gray-900"
+          />
+        </label>
+        <label className="space-y-1 text-xs text-gray-500">
+          Currency
+          <input
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value)}
+            placeholder="usd"
+            className="w-full rounded-md border px-3 py-2 text-sm text-gray-900"
+          />
+        </label>
+        <label className="space-y-1 text-xs text-gray-500">
+          Sort order
+          <input
+            type="number"
+            value={sortOrder}
+            onChange={(e) => setSortOrder(Number(e.target.value))}
+            className="w-full rounded-md border px-3 py-2 text-sm text-gray-900"
+          />
+        </label>
+      </div>
+
+      <label className="block space-y-1 text-xs text-gray-500">
+        Features (one per line)
+        <textarea
+          value={featuresText}
+          onChange={(e) => setFeaturesText(e.target.value)}
+          placeholder={'12 funk grooves\nAll 12 keys\nLifetime access'}
+          rows={3}
+          className="w-full rounded-md border px-3 py-2 text-sm text-gray-900"
+        />
+      </label>
+
       {/* Stripe price + flags */}
       <div className="grid grid-cols-2 gap-3">
         <label className="space-y-1 text-xs text-gray-500">
@@ -207,7 +393,6 @@ export function ProductEditor({ productId }: { productId: string }) {
       {/* Cover upload */}
       <div className="flex items-center gap-3">
         {product.coverImageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={product.coverImageUrl}
             alt="cover"
@@ -339,6 +524,183 @@ export function ProductEditor({ productId }: { productId: string }) {
             Add
           </button>
         </div>
+      </div>
+
+      {/* Features this product unlocks (the product → feature grant). */}
+      <ProductFeaturesEditor productId={productId} />
+
+      {/* Danger zone — hard delete. Behind a type-the-name confirm so a
+          misclick can't remove a product. The backend un-gates bundled
+          content, detaches purchases, and removes enrollments first. */}
+      <div className="space-y-2 rounded-md border border-red-200 bg-red-50/60 p-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-red-700">
+          Danger zone
+        </h3>
+        {!confirmingDelete ? (
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[11px] text-red-700/80">
+              Permanently delete this product. Bundled content is released back
+              to free; purchases are detached. This can’t be undone.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setConfirmingDelete(true);
+                setConfirmText('');
+              }}
+              className="shrink-0 rounded-md border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100"
+            >
+              Delete product
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-[11px] text-red-700">
+              Type the product name{' '}
+              <span className="font-mono font-semibold">{product.name}</span> to
+              confirm deletion.
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
+                placeholder={product.name}
+                className="flex-1 rounded-md border border-red-300 px-2 py-1.5 text-sm text-gray-900"
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={
+                  confirmText.trim() !== product.name || deleteProduct.isPending
+                }
+                className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-40"
+              >
+                {deleteProduct.isPending ? 'Deleting…' : 'Delete forever'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmingDelete(false);
+                  setConfirmText('');
+                }}
+                disabled={deleteProduct.isPending}
+                className="rounded-md border px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The feature-grant checklist: which FEATURES this product unlocks. Owning the
+ * product grants the checked features everywhere they appear (global, not
+ * per-content). Replace semantics — Save sends the full checked set.
+ */
+function ProductFeaturesEditor({ productId }: { productId: string }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin-product-features', productId],
+    queryFn: () => adminProductsApi.getFeatures(productId),
+  });
+
+  const [checked, setChecked] = useState<Set<FeatureKey> | null>(null);
+  // The last-saved set — `dirty` compares against this (not the query cache).
+  const [savedGranted, setSavedGranted] = useState<FeatureKey[] | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  // Seed local state once the server set arrives.
+  useEffect(() => {
+    if (data && checked === null) {
+      setChecked(new Set(data.granted));
+      setSavedGranted(data.granted);
+    }
+  }, [data, checked]);
+
+  if (isLoading || !data || checked === null || savedGranted === null) {
+    return (
+      <div className="space-y-2 border-t pt-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+          Features unlocked
+        </h3>
+        <p className="text-xs text-gray-400">Loading…</p>
+      </div>
+    );
+  }
+
+  const toggle = (key: FeatureKey) => {
+    setChecked((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+    setMsg(null);
+  };
+
+  const dirty =
+    checked.size !== savedGranted.length ||
+    savedGranted.some((g) => !checked.has(g));
+
+  const handleSave = async () => {
+    setSaving(true);
+    setMsg(null);
+    try {
+      const granted = await adminProductsApi.setFeatures(productId, [
+        ...checked,
+      ]);
+      setChecked(new Set(granted));
+      setSavedGranted(granted);
+      setMsg('Saved');
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : 'Failed to save features');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-2 border-t pt-3">
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+        Features unlocked
+      </h3>
+      <p className="text-[11px] text-gray-400">
+        Buying this product grants the checked features everywhere they appear.
+      </p>
+      <div className="space-y-1">
+        {data.available.map((key) => (
+          <label
+            key={key}
+            className="flex items-center gap-2 rounded border bg-white px-3 py-2 text-sm"
+          >
+            <input
+              type="checkbox"
+              checked={checked.has(key)}
+              onChange={() => toggle(key)}
+              className="h-4 w-4 accent-[#E8A44A]"
+            />
+            <span>{FEATURE_LABELS[key] ?? key}</span>
+            <span className="ml-auto font-mono text-[10px] text-gray-400">
+              {key}
+            </span>
+          </label>
+        ))}
+      </div>
+      <div className="flex items-center gap-3 pt-1">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={!dirty || saving}
+          className="rounded-md bg-[#E8A44A] px-3 py-1.5 text-xs font-semibold text-black disabled:opacity-50"
+        >
+          {saving ? 'Saving…' : 'Save features'}
+        </button>
+        {msg && <span className="text-xs text-gray-500">{msg}</span>}
       </div>
     </div>
   );

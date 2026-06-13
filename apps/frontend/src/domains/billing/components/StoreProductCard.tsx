@@ -34,12 +34,13 @@ export function StoreProductCard({
     <div
       className={[
         'relative flex flex-col overflow-hidden rounded-2xl border bg-[#15110d] transition-colors',
-        owned ? 'border-emerald-500/40' : 'border-white/10 hover:border-[#E8A44A]/50',
+        owned
+          ? 'border-emerald-500/40'
+          : 'border-white/10 hover:border-[#E8A44A]/50',
       ].join(' ')}
     >
       {/* Cover */}
       {product.coverImageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={product.coverImageUrl}
           alt={product.name}
@@ -59,9 +60,7 @@ export function StoreProductCard({
           <span
             className={[
               'rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider',
-              owned
-                ? 'bg-emerald-500 text-black'
-                : 'bg-[#E8A44A] text-black',
+              owned ? 'bg-emerald-500 text-black' : 'bg-[#E8A44A] text-black',
             ].join(' ')}
           >
             {owned ? 'Owned' : product.badge}
@@ -77,7 +76,9 @@ export function StoreProductCard({
 
         {/* Price */}
         <div className="mt-4 flex items-baseline gap-1">
-          <span className="text-3xl font-bold text-white">${product.price}</span>
+          <span className="text-3xl font-bold text-white">
+            ${product.price}
+          </span>
           {interval ? (
             <span className="text-sm text-white/40">/{interval}</span>
           ) : (
@@ -89,7 +90,10 @@ export function StoreProductCard({
         {product.features.length > 0 && (
           <ul className="mt-4 space-y-2">
             {product.features.slice(0, 5).map((f, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-white/70">
+              <li
+                key={i}
+                className="flex items-start gap-2 text-sm text-white/70"
+              >
                 <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#E8A44A]" />
                 {f}
               </li>
@@ -128,7 +132,7 @@ export function StoreProductCard({
                   : 'Buy pack'}
             </button>
           )}
-          {onOpen && !isMembership && (
+          {onOpen && (
             <button
               type="button"
               onClick={onOpen}

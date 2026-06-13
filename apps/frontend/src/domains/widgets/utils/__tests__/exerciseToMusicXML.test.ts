@@ -731,4 +731,37 @@ describe('exerciseToMusicXML', () => {
       expect(xml).toContain('<duration>480</duration>');
     });
   });
+
+  describe('Ghost notes (cross noteheads)', () => {
+    it('emits <notehead>x</notehead> for a ghost note', () => {
+      const xml = exerciseToMusicXML({
+        notes: [
+          createNote({
+            note: 'A2',
+            duration: 'quarter',
+            position: { measure: 1, beat: 0, subdivision: 0, tick: 0 },
+            is_ghost_note: true,
+          }),
+        ],
+        bpm: 120,
+        timeSignature: defaultTimeSignature,
+      });
+      expect(xml).toContain('<notehead>x</notehead>');
+    });
+
+    it('does NOT emit a notehead for a normal note', () => {
+      const xml = exerciseToMusicXML({
+        notes: [
+          createNote({
+            note: 'A2',
+            duration: 'quarter',
+            position: { measure: 1, beat: 0, subdivision: 0, tick: 0 },
+          }),
+        ],
+        bpm: 120,
+        timeSignature: defaultTimeSignature,
+      });
+      expect(xml).not.toContain('<notehead>');
+    });
+  });
 });

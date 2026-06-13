@@ -15,48 +15,49 @@
  * make the levers cap-aware without touching this component.
  */
 
-import type { PointerEvent as ReactPointerEvent } from 'react';
-import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
+import {
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  Pause,
+  Play,
+} from 'lucide-react';
 import { useEntitlement } from '@/domains/billing/hooks/useEntitlement';
 import { Popover, PopoverAnchor } from '@/shared/components/ui/popover';
 import type { CountdownState } from '@/domains/widgets/hooks/useCountdown';
 import type { HoverHintKey } from './captions';
-
-const SEMITONE_LABELS = [
-  'C',
-  'C♯',
-  'D',
-  'D♯',
-  'E',
-  'F',
-  'F♯',
-  'G',
-  'G♯',
-  'A',
-  'A♯',
-  'B',
-] as const;
+import { parsePitchClass, spellPitchClass, prefersFlats } from './pitchClass';
 
 /**
- * Convert an `originalKey` label + a semitone offset into a display label.
- * "E" + 2 → "F♯". Falls back to a "±N" form when the original key isn't
- * one of the 12 names we recognise.
+ * Convert an `originalKey` label + a semitone offset into a real note-name
+ * display label, e.g. "E" + 2 → "F♯", "Db" + 3 → "E", "Bb" − 2 → "A♭".
+ *
+ * Parses flats/sharps/glyphs on the way in; spells the result in flats when the
+ * original key was a flat key (bass-friendly), sharps otherwise. Falls back to
+ * a "±N" form only when the original key is genuinely unparseable.
  */
 export function formatKeyLabel(
   originalKey: string,
   semitonesFromOriginal: number,
 ): string {
-  const normalised = originalKey.trim();
-  const baseIndex = SEMITONE_LABELS.findIndex(
-    (n) => n.toLowerCase() === normalised.toLowerCase(),
-  );
-  if (baseIndex === -1) {
+  const baseIndex = parsePitchClass(originalKey);
+  if (baseIndex == null) {
     if (semitonesFromOriginal === 0) return originalKey;
     const sign = semitonesFromOriginal > 0 ? '+' : '';
     return `${originalKey} ${sign}${semitonesFromOriginal}`;
   }
-  const shifted = (((baseIndex + semitonesFromOriginal) % 12) + 12) % 12;
-  return SEMITONE_LABELS[shifted]!;
+  return (
+    spellPitchClass(
+      baseIndex + semitonesFromOriginal,
+      prefersFlats(originalKey),
+    ) || originalKey
+  );
 }
 
 interface GrooveCardControlsProps {
@@ -73,6 +74,9 @@ interface GrooveCardControlsProps {
   originalKey: string;
   isBassMuted: boolean;
   isSoloDrums: boolean;
+  /** Disable the Mute button (e.g. while the bass is soloed — muting the part
+   *  you're soloing would just be silence). */
+  muteDisabled?: boolean;
   onPlayPause: () => void;
   onTempoChange: (next: number) => void;
   onKeyChange: (next: number) => void;
@@ -102,6 +106,34 @@ interface GrooveCardControlsProps {
    *  the steppers render disabled (read-only) so the student practices exactly
    *  the prescribed setup ("do exactly this"). */
   lockSettings?: boolean;
+  /** When true (Dynamic Loop engaged), ONLY the key stepper is locked — the
+   *  auto-cycle owns the key, so manual transposes are disabled. Tempo stays
+   *  free. Separate from lockSettings (which also locks tempo). */
+  lockKey?: boolean;
+  /** The NEXT key the Dynamic Loop will move to (note-name label, e.g. "E"), or
+   *  null when not cycling. Rendered as a green letter after a "→" arrow inside
+   *  the key stepper, so the player can anticipate the change. */
+  nextKeyLabel?: string | null;
+  /** The effective transpose edge (absolute semitones): the engine's ±6, or the
+   *  entitlement band when the user is capped. Used to DIM the key chevron at
+   *  the edge so a member who's hit ±6 (the real end of the range — there is no
+   *  ±7) sees a disabled control, not the upgrade pitch. */
+  transposeRange: number;
+  /** True when the transpose edge is the entitlement BAND (free tier), not the
+   *  engine. In that case the chevron stays ENABLED at the edge so bumping it
+   *  fires the upgrade pitch (the cap IS the CTA). When false (member), the
+   *  chevron dims at the engine edge instead. */
+  transposeCapped?: boolean;
+  /** When true, the tempo + transpose chevrons GREY OUT (disable) once the
+   *  value reaches the entitlement band edge, instead of staying enabled to
+   *  fire the upsell. The public `/free` funnel opts in: the cap is shown as a
+   *  dead control + a revealed Sign up button, not an in-card pitch. Default
+   *  false preserves the in-app "teaching moment" (live chevron at the edge).
+   *  Needs `originalBpm` to locate the tempo band centre. */
+  dimAtCap?: boolean;
+  /** The groove's default BPM — the centre of the tempo band. Only needed to
+   *  compute the tempo cap edges for `dimAtCap`. */
+  originalBpm?: number;
 }
 
 export function GrooveCardControls({
@@ -115,6 +147,7 @@ export function GrooveCardControls({
   originalKey,
   isBassMuted,
   isSoloDrums,
+  muteDisabled = false,
   onPlayPause,
   onTempoChange,
   onKeyChange,
@@ -127,15 +160,57 @@ export function GrooveCardControls({
   onHoverHint,
   enforceCaps = false,
   lockSettings = false,
+  lockKey = false,
+  nextKeyLabel = null,
+  transposeRange,
+  transposeCapped = false,
+  dimAtCap = false,
+  originalBpm,
 }: GrooveCardControlsProps) {
   // Cap-aware hook reads — LAUNCH-02 will populate these.
   const { caps } = useEntitlement();
 
-  const keyLabel = formatKeyLabel(
-    originalKey,
-    pendingKeyShift ?? currentSemitones,
-  );
-  const isKeyPending = pendingKeyShift !== null;
+  // While the Dynamic Loop drives the key (lockKey), show the ACTUAL current
+  // key and suppress the manual "queued" affordances — the green next-key
+  // preview chip is the proper "change incoming" signal there. pendingKeyShift
+  // is set on every auto-cycle setKey, so honouring it here would make the
+  // stepper jump ahead to the next key and pin a permanent "…".
+  const displayedSemitones = lockKey
+    ? currentSemitones
+    : (pendingKeyShift ?? currentSemitones);
+  const keyLabel = formatKeyLabel(originalKey, displayedSemitones);
+
+  // Edge-dim the key chevrons. When the user is NOT capped (a member), the
+  // transpose edge is the engine's hard ±6 — there is no further to go, so the
+  // chevron at that edge is disabled (dimmed), NOT a hidden upsell trigger. When
+  // capped (free tier), the chevron normally stays ENABLED at the band edge so
+  // bumping it surfaces the upgrade pitch (the cap is the CTA) — UNLESS the
+  // surface opts into `dimAtCap` (the /free funnel), which greys the chevron at
+  // the band edge instead and reveals its own Sign up button.
+  const atUpperKeyEdge =
+    (!transposeCapped || dimAtCap) &&
+    !lockKey &&
+    currentSemitones >= transposeRange;
+  const atLowerKeyEdge =
+    (!transposeCapped || dimAtCap) &&
+    !lockKey &&
+    currentSemitones <= -transposeRange;
+
+  // Tempo cap edges — only computed for `dimAtCap` (the funnel). The band is
+  // [originalBpm − limit, originalBpm + limit]; grey the matching chevron once
+  // the displayed BPM reaches an edge. In-app leaves these false (the tempo
+  // chevrons there never edge-dim — the cap fires the pitch instead).
+  const tempoLimit = caps.tempo.isCapped ? caps.tempo.limit : undefined;
+  const tempoBandHi =
+    dimAtCap && tempoLimit != null && originalBpm != null
+      ? originalBpm + tempoLimit
+      : undefined;
+  const tempoBandLo =
+    dimAtCap && tempoLimit != null && originalBpm != null
+      ? originalBpm - tempoLimit
+      : undefined;
+  const atUpperTempoEdge = tempoBandHi != null && currentBpm >= tempoBandHi;
+  const atLowerTempoEdge = tempoBandLo != null && currentBpm <= tempoBandLo;
 
   // Band levers (tempo/transpose) are NOT disabled when capped — they stay
   // enabled so the user can move WITHIN the band and bump the edge (the
@@ -174,35 +249,59 @@ export function GrooveCardControls({
       onOpenChange={(o) => onPitchOpenChange?.(o)}
     >
       <div className="flex items-center justify-between gap-2 px-4 py-3 bg-black/40 rounded-b-xl">
-        <button
-          type="button"
-          onClick={() => onMuteBass(!isBassMuted)}
-          disabled={!isReady}
-          aria-pressed={isBassMuted}
-          className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-            isBassMuted
-              ? 'bg-orange-500 text-white'
-              : 'bg-white/5 text-white/70 hover:bg-white/10'
-          } disabled:opacity-40 disabled:cursor-not-allowed`}
-          {...hoverProps('mute-bass')}
-        >
-          Mute Bass
-        </button>
+        {anchorIf(
+          'deconstruction',
+          <button
+            type="button"
+            onClick={() =>
+              deconCapped ? onDeconCapHit?.() : onSoloDrums(!isSoloDrums)
+            }
+            // When capped, stay enabled so the tap pitches the upgrade (the cap
+            // is the pitch); only truly disable while the card isn't ready yet.
+            disabled={!isReady}
+            aria-pressed={isSoloDrums}
+            aria-label="Solo drums"
+            className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+              isSoloDrums
+                ? 'bg-orange-500 text-white'
+                : 'bg-white/5 text-white/70 hover:bg-white/10'
+            } ${
+              // In-app gives the capped Solo a subtle dim as a "special" cue.
+              // The funnel (dimAtCap) keeps it fully live — no lock cues there;
+              // clicking it simply reveals the Sign up button.
+              deconCapped && !dimAtCap ? 'opacity-60' : ''
+            } disabled:opacity-40 disabled:cursor-not-allowed`}
+            {...hoverProps('solo-drums')}
+          >
+            Solo
+          </button>,
+        )}
 
         {anchorIf(
           'transpose',
           <div {...hoverProps('key')}>
             <Stepper
               label={keyLabel}
-              suffix={isKeyPending ? ' …' : ''}
+              // The key value is a note name; render it as an anchored letter so
+              // it doesn't shift when an accidental (♯/♭) is added. A pending
+              // change shows by the letter itself updating — no "…" suffix.
+              labelKind="note"
               onPrev={() =>
                 onKeyChange((pendingKeyShift ?? currentSemitones) - 1)
               }
               onNext={() =>
                 onKeyChange((pendingKeyShift ?? currentSemitones) + 1)
               }
-              disabled={!isReady || lockSettings}
+              disabled={!isReady || lockSettings || lockKey}
+              // Dim the chevron at the engine edge for an uncapped (member)
+              // user — ±6 is the end of the range, not a paywall. ← lowers the
+              // key (prev), → raises it (next).
+              disablePrev={atLowerKeyEdge}
+              disableNext={atUpperKeyEdge}
               ariaLabel="Key"
+              // Dynamic Loop: the upcoming key (green) shown after the arrow so
+              // the player can anticipate the change.
+              nextKeyLabel={nextKeyLabel}
             />
           </div>,
         )}
@@ -211,6 +310,9 @@ export function GrooveCardControls({
           type="button"
           onClick={onPlayPause}
           disabled={!isReady}
+          // Play button never shows a focus ring (its space shortcut is the
+          // dedicated control; a ring would clash with the design).
+          data-no-focus-ring
           aria-label={
             countdownState.isCountingDown && countdownState.currentBeat > 0
               ? `Countdown beat ${countdownState.currentBeat}`
@@ -218,7 +320,7 @@ export function GrooveCardControls({
                 ? 'Pause'
                 : 'Play'
           }
-          className="w-14 h-14 rounded-full bg-orange-500 text-white flex items-center justify-center hover:bg-orange-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="w-14 h-14 rounded-full bg-orange-500 text-white flex items-center justify-center hover:bg-orange-400 transition-colors focus:outline-none focus-visible:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
           {...hoverProps(isPlaying ? 'play-pause-pause' : 'play-pause-play')}
         >
           {isLoading ? (
@@ -248,35 +350,138 @@ export function GrooveCardControls({
               onPrev={() => onTempoChange(currentBpm - 1)}
               onNext={() => onTempoChange(currentBpm + 1)}
               disabled={!isReady || lockSettings}
+              // dimAtCap (the /free funnel): grey the matching chevron once the
+              // tempo reaches the band edge. In-app leaves both false.
+              disablePrev={atLowerTempoEdge}
+              disableNext={atUpperTempoEdge}
               ariaLabel="Tempo"
             />
           </div>,
         )}
 
-        {anchorIf(
-          'deconstruction',
-          <button
-            type="button"
-            onClick={() =>
-              deconCapped ? onDeconCapHit?.() : onSoloDrums(!isSoloDrums)
-            }
-            // When capped, stay enabled so the tap pitches the upgrade (the cap
-            // is the pitch); only truly disable while the card isn't ready yet.
-            disabled={!isReady}
-            aria-pressed={isSoloDrums}
-            className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-              isSoloDrums
-                ? 'bg-orange-500 text-white'
-                : 'bg-white/5 text-white/70 hover:bg-white/10'
-            } ${deconCapped ? 'opacity-60' : ''} disabled:opacity-40 disabled:cursor-not-allowed`}
-            {...hoverProps('solo-drums')}
-          >
-            Solo Drums
-          </button>,
-        )}
+        <button
+          type="button"
+          onClick={() => onMuteBass(!isBassMuted)}
+          disabled={!isReady || muteDisabled}
+          aria-pressed={isBassMuted}
+          aria-label="Mute bass"
+          className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+            isBassMuted
+              ? 'bg-orange-500 text-white'
+              : 'bg-white/5 text-white/70 hover:bg-white/10'
+          } disabled:opacity-40 disabled:cursor-not-allowed`}
+          {...hoverProps('mute-bass')}
+        >
+          Mute
+        </button>
       </div>
       {pitchContent}
     </Popover>
+  );
+}
+
+/**
+ * KeyChangeDisplay — the animated "current → next" key indicator shown inside
+ * the key stepper while the Dynamic Loop cycles. Stable layout: a fixed central
+ * arrow ("we go to here") with a bare letter on each side — green CURRENT key
+ * (playing now), muted NEXT key, no pill/rectangle/count. When the cycle
+ * advances, EACH letter
+ * crossfades to its new value (the departing letter eases out + drifts, the new
+ * one eases in), so the whole indicator reads as the keys travelling forward.
+ */
+function KeyChangeDisplay({
+  currentLabel,
+  nextLabel,
+}: {
+  currentLabel: string;
+  nextLabel: string;
+}) {
+  return (
+    <span
+      className="flex items-center justify-center gap-1.5 text-center"
+      aria-label={`Current key ${currentLabel}, next key ${nextLabel}`}
+    >
+      {/* CURRENT key is green (what's playing now); NEXT is muted. */}
+      <AnimatedLetter label={currentLabel} className="text-emerald-300" />
+      <ArrowRight className="w-3.5 h-3.5 text-white/40 shrink-0" aria-hidden />
+      <AnimatedLetter label={nextLabel} className="text-white/50" />
+    </span>
+  );
+}
+
+/**
+ * AnimatedLetter — a single key letter that crossfades when its value changes:
+ * the departing letter eases out (drifting left), the new one eases in. The slot
+ * has a FIXED width (sized for a 2-glyph key like "D♭") and centers its content,
+ * so single-char keys ("E") and flat/sharp keys ("D♭") occupy the same space and
+ * the letters never shift horizontally as the key changes — the central arrow
+ * stays put. Both the live and departing letters are absolutely centered so
+ * neither drives the box width.
+ */
+function AnimatedLetter({
+  label,
+  className,
+}: {
+  label: string;
+  className: string;
+}) {
+  const prevRef = useRef(label);
+  const [leaving, setLeaving] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (prevRef.current === label) return undefined;
+    const departing = prevRef.current;
+    prevRef.current = label;
+    setLeaving(departing);
+    const t = setTimeout(() => setLeaving(null), 200);
+    return () => clearTimeout(t);
+  }, [label]);
+
+  return (
+    <span className="relative inline-flex h-5 w-8 shrink-0 items-center justify-center">
+      <span
+        key={`in-${label}`}
+        className={`absolute inset-0 flex items-center justify-center text-base font-semibold leading-none animate-key-arrive ${className}`}
+      >
+        {label}
+      </span>
+      {leaving && leaving !== label && (
+        <span
+          key={`out-${leaving}`}
+          aria-hidden
+          className={`absolute inset-0 flex items-center justify-center text-base font-semibold leading-none animate-key-leave ${className}`}
+        >
+          {leaving}
+        </span>
+      )}
+    </span>
+  );
+}
+
+/**
+ * NoteLabel — a key note name where the BASE LETTER is centered between the
+ * stepper arrows and any accidental (♯/♭) hangs off the letter's RIGHT without
+ * affecting that centering. The accidental is absolutely positioned at the
+ * letter's right edge, so "C" and "C♯" keep the SAME centered letter position —
+ * the letter never shifts when an accidental appears; only the glyph is added.
+ */
+function NoteLabel({ label }: { label: string }) {
+  // Split the leading note letter (A-G, case-insensitive) from any accidental
+  // glyph(s). A non-note fallback label (e.g. "E +3") renders as-is in the base.
+  const m = /^([A-Ga-g])(.*)$/.exec(label);
+  const base = m ? m[1] : label;
+  const accidental = m ? m[2] : '';
+  return (
+    <span className="flex items-center justify-center">
+      {/* The base letter is centered; the accidental is absolutely placed at its
+          right edge so it doesn't push the letter off-center. */}
+      <span className="relative inline-flex items-center justify-center text-base font-semibold text-white">
+        <span>{base}</span>
+        {accidental ? (
+          <span className="absolute left-full top-0">{accidental}</span>
+        ) : null}
+      </span>
+    </span>
   );
 }
 
@@ -287,6 +492,19 @@ interface StepperProps {
   onNext: () => void;
   disabled?: boolean;
   ariaLabel: string;
+  /** 'note' renders the label as a note name with the BASE letter anchored in a
+   *  fixed slot and any accidental (♯/♭) hanging off its right, so the letter
+   *  never shifts when an accidental is added/removed. 'text' (default) renders
+   *  the label centered with its suffix (e.g. tempo "100 BPM"). */
+  labelKind?: 'note' | 'text';
+  /** Per-direction disable for the range EDGE (dim just the prev or next
+   *  chevron when there's no further to go). Combined with the whole-stepper
+   *  `disabled`. */
+  disablePrev?: boolean;
+  disableNext?: boolean;
+  /** Dynamic Loop: the upcoming key shown in green after the arrow. Null when
+   *  not cycling (then the plain stepper renders). */
+  nextKeyLabel?: string | null;
 }
 
 function Stepper({
@@ -296,26 +514,50 @@ function Stepper({
   onNext,
   disabled,
   ariaLabel,
+  labelKind = 'text',
+  disablePrev = false,
+  disableNext = false,
+  nextKeyLabel = null,
 }: StepperProps) {
   return (
     <div className="flex items-center gap-1" aria-label={ariaLabel}>
       <button
         type="button"
         onClick={onPrev}
-        disabled={disabled}
+        disabled={disabled || disablePrev}
         aria-label={`${ariaLabel} down`}
         className="p-1.5 rounded-md text-white/70 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
       >
         <ChevronLeft className="w-4 h-4" aria-hidden />
       </button>
-      <span className="min-w-[56px] text-center text-sm font-medium text-white">
-        {label}
-        {suffix}
-      </span>
+      {/* Key label lives in a FIXED-WIDTH slot sized for the WIDER engaged
+          state ("current → next"), so engaging the Dynamic Loop — which swaps
+          the plain key letter for the animated KeyChangeDisplay — doesn't change
+          the stepper's footprint and shove the neighbouring controls. */}
+      {labelKind === 'note' ? (
+        <span className="flex w-[84px] items-center justify-center">
+          {nextKeyLabel ? (
+            <KeyChangeDisplay currentLabel={label} nextLabel={nextKeyLabel} />
+          ) : (
+            <NoteLabel label={label} />
+          )}
+        </span>
+      ) : (
+        // FIXED-WIDTH numeric label: the value sits in a constant-width,
+        // tabular-figures slot (right-aligned) so 2↔3 digit changes (99↔100)
+        // don't reflow the suffix or the neighbouring controls. The suffix
+        // ("BPM") is a separate fixed element after it.
+        <span className="flex items-center justify-center text-base font-semibold text-white">
+          <span className="inline-block w-[3ch] text-right tabular-nums">
+            {label}
+          </span>
+          {suffix && <span className="ml-1.5">{suffix.trim()}</span>}
+        </span>
+      )}
       <button
         type="button"
         onClick={onNext}
-        disabled={disabled}
+        disabled={disabled || disableNext}
         aria-label={`${ariaLabel} up`}
         className="p-1.5 rounded-md text-white/70 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
       >

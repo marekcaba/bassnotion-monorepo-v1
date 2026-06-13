@@ -6,14 +6,24 @@
  * Keyboard shortcuts for the groove card:
  *   ←       transpose down one semitone
  *   →       transpose up one semitone
+ *   ↑       tempo up one BPM
+ *   ↓       tempo down one BPM
  *   Space   play / pause
  *   M       mute / unmute the bass
+ *   S       solo / unsolo the bass
+ *   L       engage / disengage the Dynamic Loop
+ *   A/B/C   select the 1st / 2nd / 3rd bassline (Bass A / B / C), no fill
+ *   F       toggle the CURRENT bassline's fill on / off
+ *   N       toggle the window between the waveform and the bass notation
  *
  * Transpose routes through the same `setKey` command the +/- stepper
- * buttons use (clamping ±KEY_RANGE, loop-boundary queueing, waitlist cap
- * telemetry all apply identically — no second code path). Space routes
- * through the same `togglePlay` the Play button uses, and M through the
- * same bass mute toggle as the mute button.
+ * buttons use, and tempo through the same `setTempo` the tempo stepper uses
+ * (each clamps internally — ±KEY_RANGE / the BPM range, loop-boundary
+ * queueing, cap telemetry all apply identically; no second code path). Space
+ * routes through the same `togglePlay` the Play button uses, M through the
+ * same bass mute toggle, S through the same Solo toggle (caller-owned, incl.
+ * the cap pitch), and L through the same Dynamic Loop engage toggle (the
+ * caller passes a no-op when the loop isn't available on this surface).
  *
  * Scope: a single global `keydown` listener. There is only ever ONE
  * groove card on a page (waitlist, /app tutorial block, admin preview),
@@ -42,12 +52,42 @@ interface UseGrooveCardKeyboardArgs {
   currentSemitones: number;
   /** The card's transpose command (absolute offset; self-clamping). */
   setKey: (semitonesFromOriginal: number) => void;
+  /** Current tempo in BPM. */
+  currentBpm: number;
+  /** The card's tempo command (absolute BPM; self-clamping — same as the
+   *  tempo stepper buttons). */
+  setTempo: (bpm: number) => void;
   /** Toggle play/pause — the same action as the Play button. */
   togglePlay: () => void;
   /** Toggle the bass mute — the same action as the bass mute button. */
   toggleBassMute: () => void;
+  /** Toggle Solo Drums — the same action as the Solo Drums button (the caller
+   *  routes this to the cap pitch when the free tier is gated). */
+  toggleSoloDrums: () => void;
+  /** Engage / disengage the Dynamic Loop — the same action as the loop dial's
+   *  Engage toggle. The caller passes a no-op on surfaces where the loop isn't
+   *  available (drill bricks, capped free tier). */
+  toggleDynamicLoop: () => void;
+  /** Select the Nth bassline (0 = Bass A, 1 = Bass B, …) with no fill — the same
+   *  caller-owned action as clicking that line's card (cap-gated identically).
+   *  A no-op when there's no line at that index. */
+  selectLineByIndex: (index: number) => void;
+  /** Toggle the CURRENTLY-selected bassline's fill: on (its first fill) when no
+   *  fill is active, off (back to the plain line) when one is. Whatever line is
+   *  active, the fill applies to THAT line. Cap-gated like a card click; a no-op
+   *  when the current line has no fills. */
+  toggleCurrentLineFill: () => void;
+  /** Toggle the window between the audio waveform and the bass notation — the
+   *  same action as the window's waveform/notation toggle button. The caller
+   *  passes a no-op on surfaces without the toggle (drill bricks). */
+  toggleWindowView: () => void;
   /** Gate — only handle keys once the card is interactive (isReady). */
   enabled: boolean;
+  /** When true (Dynamic Loop engaged), the auto-cycle owns the key, so the
+   *  ←/→ transpose shortcuts are inert. Space (play/pause) and M (mute) keep
+   *  working. We still preventDefault on ←/→ so a locked arrow doesn't fall
+   *  through to native page scrolling. */
+  lockTranspose?: boolean;
 }
 
 /** True when keyboard focus is somewhere we must not hijack typing keys. */
@@ -73,9 +113,17 @@ function isButtonTarget(target: EventTarget | null): boolean {
 export function useGrooveCardKeyboard({
   currentSemitones,
   setKey,
+  currentBpm,
+  setTempo,
   togglePlay,
   toggleBassMute,
+  toggleSoloDrums,
+  toggleDynamicLoop,
+  selectLineByIndex,
+  toggleCurrentLineFill,
+  toggleWindowView,
   enabled,
+  lockTranspose = false,
 }: UseGrooveCardKeyboardArgs): void {
   useEffect(() => {
     if (!enabled) return;
@@ -87,11 +135,25 @@ export function useGrooveCardKeyboard({
       if (isTypingTarget(e.target)) return;
 
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        // Always swallow the key (keep it from scroll-jumping the page),
+        // BEFORE the lock check, so a locked arrow is fully inert.
         e.preventDefault();
+        // Dynamic Loop owns the key while engaged — ignore manual transposes.
+        if (lockTranspose) return;
         const delta = e.key === 'ArrowRight' ? 1 : -1;
         // setKey takes an ABSOLUTE offset and clamps internally, so stepping
         // past ±KEY_RANGE is a no-op (same as the stepper buttons).
         setKey(currentSemitones + delta);
+        return;
+      }
+
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        // Swallow the key so it doesn't scroll the page.
+        e.preventDefault();
+        const delta = e.key === 'ArrowUp' ? 1 : -1;
+        // setTempo takes an ABSOLUTE BPM and clamps internally (range + caps),
+        // so this is exactly the tempo stepper's ±1 step.
+        setTempo(currentBpm + delta);
         return;
       }
 
@@ -113,9 +175,72 @@ export function useGrooveCardKeyboard({
         toggleBassMute();
         return;
       }
+
+      // S → toggle Solo Drums (same caller-owned action as the button, incl.
+      // the cap pitch when gated). Not a browser-default action; no
+      // preventDefault needed.
+      if (e.key === 's' || e.key === 'S') {
+        toggleSoloDrums();
+        return;
+      }
+
+      // L → engage / disengage the Dynamic Loop (same as the dial's Engage
+      // toggle; a no-op where the loop isn't available). Not a browser-default
+      // action; no preventDefault needed.
+      if (e.key === 'l' || e.key === 'L') {
+        toggleDynamicLoop();
+        return;
+      }
+
+      // A / B / C → select the 1st / 2nd / 3rd bassline (Bass A / B / C), no
+      // fill. Routes through the same line-select the cards use, so gating +
+      // missing-line handling are identical. Not a browser-default action; no
+      // preventDefault needed.
+      if (e.key === 'a' || e.key === 'A') {
+        selectLineByIndex(0);
+        return;
+      }
+      if (e.key === 'b' || e.key === 'B') {
+        selectLineByIndex(1);
+        return;
+      }
+      if (e.key === 'c' || e.key === 'C') {
+        selectLineByIndex(2);
+        return;
+      }
+
+      // F → toggle the current bassline's fill on/off (applies to whichever line
+      // is selected). Cap-gated by the caller; a no-op when the line has no
+      // fills. Not a browser-default action; no preventDefault needed.
+      if (e.key === 'f' || e.key === 'F') {
+        toggleCurrentLineFill();
+        return;
+      }
+
+      // N → toggle the window between the waveform and the bass notation (same as
+      // the window's toggle button; a no-op on surfaces without it). Not a
+      // browser-default action; no preventDefault needed.
+      if (e.key === 'n' || e.key === 'N') {
+        toggleWindowView();
+        return;
+      }
     };
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [enabled, currentSemitones, setKey, togglePlay, toggleBassMute]);
+  }, [
+    enabled,
+    currentSemitones,
+    setKey,
+    currentBpm,
+    setTempo,
+    togglePlay,
+    toggleBassMute,
+    toggleSoloDrums,
+    toggleDynamicLoop,
+    selectLineByIndex,
+    toggleCurrentLineFill,
+    toggleWindowView,
+    lockTranspose,
+  ]);
 }

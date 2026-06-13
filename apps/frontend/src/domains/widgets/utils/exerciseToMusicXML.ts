@@ -206,10 +206,98 @@ function getRestDurationType(durationInQuarters: number): string {
   return 'sixty-fourth';
 }
 
+/** Map a quarter-note duration to the closest note-duration STRING (so a split
+ *  segment carries a length the builder/getDurationInQuarters round-trips). */
+function quartersToDurationString(q: number): string {
+  if (q >= 5.5) return 'whole-dotted';
+  if (q >= 3.5) return 'whole';
+  if (q >= 2.75) return 'dotted-half';
+  if (q >= 1.75) return 'half';
+  if (q >= 1.375) return 'dotted-quarter';
+  if (q >= 0.875) return 'quarter';
+  if (q >= 0.625) return 'dotted-eighth';
+  if (q >= 0.375) return 'eighth';
+  if (q >= 0.1875) return 'sixteenth';
+  return 'thirty-second';
+}
+
+/**
+ * Split notes that sustain ACROSS a barline into per-measure tied segments.
+ *
+ * The per-measure layout (organize → fillMeasureWithRests) has no concept of a
+ * note spilling into the next bar — a note's display duration is capped at its
+ * own barline, so a sustain across the barline was silently truncated. This
+ * pre-pass takes each note whose real duration (from its `duration`/durationTicks)
+ * runs past its measure end and replaces it with one segment per measure it
+ * touches, flagging `_tieToNext` / `_tieFromPrev` so the note builder emits a
+ * tie over the barline (and `fillMeasureWithRests` lays the segment out with the
+ * correct, no-longer-capped length).
+ */
+function splitNotesAcrossBars(
+  notes: ExerciseNote[],
+  beatsPerMeasure: number,
+): ExerciseNote[] {
+  const TICKS_PER_QUARTER = 480;
+  const out: ExerciseNote[] = [];
+
+  for (const note of notes) {
+    const startBeat = note.position?.beat ?? 0;
+    const startTick = note.position?.tick ?? 0;
+    const startInBeats = startBeat + startTick / TICKS_PER_QUARTER;
+    const durQuarters = getDurationInQuarters(
+      note.duration,
+      (note as { durationTicks?: number }).durationTicks,
+    );
+    const endInBeats = startInBeats + durQuarters;
+
+    // Fits within its own measure → keep as-is.
+    if (endInBeats <= beatsPerMeasure + 1e-6) {
+      out.push(note);
+      continue;
+    }
+
+    // Spans ≥1 barline → cut into [start..barline], [barline..barline], …, [barline..end].
+    const baseMeasure = note.position?.measure ?? 0;
+    let cursor = startInBeats; // absolute beats from this note's measure start
+    let segIndex = 0;
+    while (cursor < endInBeats - 1e-6) {
+      const measureOffset = Math.floor(cursor / beatsPerMeasure);
+      const measureEnd = (measureOffset + 1) * beatsPerMeasure;
+      const segEnd = Math.min(endInBeats, measureEnd);
+      const segQuarters = segEnd - cursor;
+      const beatWithinMeasure = cursor - measureOffset * beatsPerMeasure;
+
+      const isFirst = segIndex === 0;
+      const isLast = segEnd >= endInBeats - 1e-6;
+
+      out.push({
+        ...note,
+        id: isFirst ? note.id : `${note.id}-tie${segIndex}`,
+        duration: quartersToDurationString(segQuarters),
+        position: {
+          ...note.position,
+          measure: baseMeasure + measureOffset,
+          beat: Math.floor(beatWithinMeasure),
+          subdivision: Math.round((beatWithinMeasure % 1) * 4),
+          tick: Math.round((beatWithinMeasure % 1) * TICKS_PER_QUARTER),
+        },
+        // Cross-bar tie flags (read by the note builder).
+        ...(!isLast ? { _tieToNext: true } : {}),
+        ...(!isFirst ? { _tieFromPrev: true } : {}),
+      } as ExerciseNote);
+
+      cursor = segEnd;
+      segIndex++;
+    }
+  }
+
+  return out;
+}
+
 /**
  * Organizes notes into measures based on their position
  * @param notes - Array of exercise notes
- * @param _timeSignature - Time signature (unused but kept for API consistency)
+ * @param _timeSignature - Time signature
  * @param totalBars - Optional total number of measures to create
  */
 function organizeNotesIntoMeasures(
@@ -217,6 +305,10 @@ function organizeNotesIntoMeasures(
   _timeSignature: TimeSignature,
   totalBars?: number,
 ): ExerciseNote[][] {
+  // Split cross-barline sustains into per-measure tied segments first, so the
+  // per-measure layout never caps a note at its own barline.
+  notes = splitNotesAcrossBars(notes, _timeSignature.numerator || 4);
+
   // Detect if notes use 0-indexed or 1-indexed measures
   // If any note has measure: 0, they're 0-indexed
   const isZeroIndexed = notes.some((note) => note.position?.measure === 0);
@@ -559,6 +651,14 @@ function generateNoteXML(
 
   const pitchXML = getPitchXML(item.note.note);
 
+  // Ghost notes render with a CROSS (x) notehead. OSMD draws `<notehead>x</notehead>`
+  // as a cross; goes after <type> in the MusicXML note element order. Applied to
+  // every tied component so a long ghost stays crossed across the tie.
+  const noteheadXML = item.note.is_ghost_note
+    ? `
+      <notehead>x</notehead>`
+    : '';
+
   // Use quantized duration if available (already processed in fillMeasureWithRests)
   // Otherwise fall back to calculating from durationTicks or string duration
   let durationInQuarters: number;
@@ -590,7 +690,17 @@ function generateNoteXML(
     beatsPerMeasure,
   );
 
-  // If only one component, it's a standard duration - no ties needed
+  // Cross-BARLINE tie (set by splitNotesAcrossBars): this segment ties to the
+  // continuation in the next measure (`_tieToNext`) and/or continues one from the
+  // previous measure (`_tieFromPrev`). These wrap the within-measure tie machinery
+  // below — the FIRST component also gets a tie-STOP if continuing from the prev
+  // bar; the LAST component also gets a tie-START if spilling into the next bar.
+  const crossTieFromPrev = !!(item.note as { _tieFromPrev?: boolean })
+    ._tieFromPrev;
+  const crossTieToNext = !!(item.note as { _tieToNext?: boolean })._tieToNext;
+
+  // If only one component, it's a standard duration - no WITHIN-note ties needed
+  // (but it may still carry a cross-barline tie).
   if (tiedComponents.length === 1) {
     const comp = tiedComponents[0]!;
     const dotXML = comp.dots > 0 ? '<dot/>' : '';
@@ -604,10 +714,31 @@ function generateNoteXML(
       <beam number="1">${beamInfo.beamType}</beam>`;
     }
 
+    let tieXML = '';
+    let notationsXML = '';
+    if (crossTieFromPrev || crossTieToNext) {
+      const tieEls: string[] = [];
+      const tiedEls: string[] = [];
+      if (crossTieFromPrev) {
+        tieEls.push('<tie type="stop"/>');
+        tiedEls.push('<tied type="stop"/>');
+      }
+      if (crossTieToNext) {
+        tieEls.push('<tie type="start"/>');
+        tiedEls.push('<tied type="start"/>');
+      }
+      tieXML = `
+      ${tieEls.join('\n      ')}`;
+      notationsXML = `
+      <notations>
+        ${tiedEls.join('\n        ')}
+      </notations>`;
+    }
+
     return `
     <note>${pitchXML}
-      <duration>${divisions}</duration>
-      <type>${comp.type}</type>${dotXML}${beamXML}
+      <duration>${divisions}</duration>${tieXML}
+      <type>${comp.type}</type>${dotXML}${noteheadXML}${beamXML}${notationsXML}
     </note>`;
   }
 
@@ -621,33 +752,31 @@ function generateNoteXML(
     const isFirst = index === 0;
     const isLast = index === tiedComponents.length - 1;
 
-    // Tie notation
+    // A component STOPS a tie if a within-note tie precedes it (not first) OR the
+    // whole note continues from the previous BAR (cross-tie on the first comp).
+    // It STARTS a tie if a within-note tie follows it (not last) OR the whole note
+    // spills into the next BAR (cross-tie on the last comp).
+    const tieStop = !isFirst || crossTieFromPrev;
+    const tieStart = !isLast || crossTieToNext;
+
     let tieXML = '';
     let notationsXML = '';
-
-    if (isFirst) {
+    if (tieStop || tieStart) {
+      const tieEls: string[] = [];
+      const tiedEls: string[] = [];
+      if (tieStop) {
+        tieEls.push('<tie type="stop"/>');
+        tiedEls.push('<tied type="stop"/>');
+      }
+      if (tieStart) {
+        tieEls.push('<tie type="start"/>');
+        tiedEls.push('<tied type="start"/>');
+      }
       tieXML = `
-      <tie type="start"/>`;
+      ${tieEls.join('\n      ')}`;
       notationsXML = `
       <notations>
-        <tied type="start"/>
-      </notations>`;
-    } else if (isLast) {
-      tieXML = `
-      <tie type="stop"/>`;
-      notationsXML = `
-      <notations>
-        <tied type="stop"/>
-      </notations>`;
-    } else {
-      // Middle note - both start and stop
-      tieXML = `
-      <tie type="stop"/>
-      <tie type="start"/>`;
-      notationsXML = `
-      <notations>
-        <tied type="stop"/>
-        <tied type="start"/>
+        ${tiedEls.join('\n        ')}
       </notations>`;
     }
 
@@ -662,7 +791,7 @@ function generateNoteXML(
     xml += `
     <note>${pitchXML}
       <duration>${divisions}</duration>${tieXML}
-      <type>${comp.type}</type>${dotXML}${beamXML}${notationsXML}
+      <type>${comp.type}</type>${dotXML}${noteheadXML}${beamXML}${notationsXML}
     </note>`;
   });
 

@@ -76,6 +76,126 @@ export class GroovesService {
     return this.mapDbToGroove(data);
   }
 
+  /**
+   * Resolve what the bassline-url signer needs to gate a request: the groove's
+   * own content tier (so a user who can't open the groove can't fetch its files)
+   * and the requested variant's storage bucket/path + feature key. Reads the RAW
+   * row (access_tier/product_id are backend-internal — not on the public
+   * GrooveLibraryItem contract). Throws NotFound if the groove or variant is
+   * missing. Returns a parsed storage ref (bucket + objectPath) from the variant
+   * URL, since createSignedReadUrl signs by path, not URL.
+   */
+  async resolveBasslineGate(
+    grooveId: string,
+    variantId: string,
+  ): Promise<{
+    accessTier: 'free' | 'member' | 'product';
+    productId: string | null;
+    feature: string;
+    bucket: string;
+    objectPath: string;
+  }> {
+    const client = this.supabaseService.getClient();
+    const { data, error } = await client
+      .from('groove_library')
+      .select('access_tier, product_id, stems')
+      .eq('id', grooveId)
+      .single();
+    if (error || !data) {
+      throw new NotFoundException(`Groove ${grooveId} not found`);
+    }
+
+    const stems = (data.stems ?? {}) as {
+      bassVariants?: Array<{ id: string; url: string; feature?: string }>;
+    };
+    const variant = (stems.bassVariants ?? []).find((v) => v.id === variantId);
+    if (!variant) {
+      throw new NotFoundException(
+        `Bassline variant ${variantId} not found on groove ${grooveId}`,
+      );
+    }
+
+    const ref = this.parseStorageRef(variant.url);
+    if (!ref) {
+      throw new NotFoundException(
+        `Bassline variant ${variantId} has an unparseable storage URL`,
+      );
+    }
+
+    return {
+      accessTier: (data.access_tier as 'free' | 'member' | 'product') ?? 'free',
+      productId: (data.product_id as string | null) ?? null,
+      feature: variant.feature ?? 'linesAndFills',
+      bucket: ref.bucket,
+      objectPath: ref.objectPath,
+    };
+  }
+
+  /**
+   * Resolve what the STEM signer needs to gate a request: the groove's content
+   * tier + the bucket/path of each base stem (bass/drums/harmony). Reads the RAW
+   * row (access_tier/product_id are backend-internal). Throws NotFound if the
+   * groove is missing. Each stem ref is parsed to { bucket, objectPath } so the
+   * caller can sign private-bucket stems by path. A stem whose url is empty or
+   * unparseable is returned with ref:null (the caller passes it through as-is —
+   * an empty/public url needs no signing).
+   */
+  async resolveStemGate(grooveId: string): Promise<{
+    accessTier: 'free' | 'member' | 'product';
+    productId: string | null;
+    stems: Array<{
+      key: 'bass' | 'drums' | 'harmony';
+      url: string;
+      ref: { bucket: string; objectPath: string } | null;
+    }>;
+  }> {
+    const client = this.supabaseService.getClient();
+    const { data, error } = await client
+      .from('groove_library')
+      .select('access_tier, product_id, stems')
+      .eq('id', grooveId)
+      .single();
+    if (error || !data) {
+      throw new NotFoundException(`Groove ${grooveId} not found`);
+    }
+
+    const stems = (data.stems ?? {}) as {
+      bass?: string;
+      drums?: string;
+      harmony?: string;
+    };
+    const keys: Array<'bass' | 'drums' | 'harmony'> = [
+      'bass',
+      'drums',
+      'harmony',
+    ];
+
+    return {
+      accessTier: (data.access_tier as 'free' | 'member' | 'product') ?? 'free',
+      productId: (data.product_id as string | null) ?? null,
+      stems: keys.map((key) => {
+        const url = stems[key] ?? '';
+        return { key, url, ref: url ? this.parseStorageRef(url) : null };
+      }),
+    };
+  }
+
+  /**
+   * Extract { bucket, objectPath } from a Supabase storage URL of the form
+   * `…/storage/v1/object/(public|sign)/<bucket>/<path>` (the `path` may carry a
+   * `?token=…` querystring on a previously-signed URL, which we strip). Returns
+   * null if it doesn't match.
+   */
+  private parseStorageRef(
+    url: string,
+  ): { bucket: string; objectPath: string } | null {
+    const m = url.match(
+      /\/storage\/v1\/object\/(?:public|sign)\/([^/]+)\/([^?]+)/,
+    );
+    if (!m) return null;
+    return { bucket: m[1], objectPath: decodeURIComponent(m[2]) };
+  }
+
   async createGroove(input: CreateGrooveInput): Promise<GrooveLibraryItem> {
     const client = this.supabaseService.getClient();
     const now = new Date().toISOString();
@@ -95,6 +215,7 @@ export class GroovesService {
       original_key: input.originalKey,
       length_bars: input.lengthBars,
       stems: input.stems,
+      chord_chart: input.chordChart ?? [],
       genre: input.genre ?? null,
       tags: input.tags ?? null,
       youtube_url: input.youtubeUrl ?? null,
@@ -132,6 +253,7 @@ export class GroovesService {
     if (input.originalKey !== undefined) patch.original_key = input.originalKey;
     if (input.lengthBars !== undefined) patch.length_bars = input.lengthBars;
     if (input.stems !== undefined) patch.stems = input.stems;
+    if (input.chordChart !== undefined) patch.chord_chart = input.chordChart;
     if (input.genre !== undefined) patch.genre = input.genre;
     if (input.tags !== undefined) patch.tags = input.tags;
     if (input.youtubeUrl !== undefined) patch.youtube_url = input.youtubeUrl;
@@ -150,7 +272,10 @@ export class GroovesService {
   }
 
   private mapDbToGroove(r: Record<string, unknown>): GrooveLibraryItem {
-    const stems = (r.stems ?? {}) as Record<string, string>;
+    const stems = (r.stems ?? {}) as Record<string, unknown>;
+    const bassVariants = Array.isArray(stems.bassVariants)
+      ? (stems.bassVariants as GrooveLibraryItem['stems']['bassVariants'])
+      : undefined;
     return {
       id: r.id as string,
       name: r.name as string,
@@ -160,10 +285,15 @@ export class GroovesService {
       originalKey: r.original_key as string,
       lengthBars: r.length_bars as number,
       stems: {
-        bass: stems.bass ?? '',
-        drums: stems.drums ?? '',
-        harmony: stems.harmony ?? '',
+        bass: (stems.bass as string) ?? '',
+        drums: (stems.drums as string) ?? '',
+        harmony: (stems.harmony as string) ?? '',
+        // Pass premium bassline variants through (was silently dropped before).
+        ...(bassVariants ? { bassVariants } : {}),
       },
+      chordChart: Array.isArray(r.chord_chart)
+        ? (r.chord_chart as GrooveLibraryItem['chordChart'])
+        : [],
       genre: (r.genre as string) ?? undefined,
       tags: (r.tags as string[]) ?? undefined,
       youtubeUrl: (r.youtube_url as string) ?? undefined,

@@ -86,6 +86,24 @@
   body {
     overscroll-behavior: none;
   }
+
+  /* Groove Card controls are driven by keyboard SHORTCUTS, not Tab focus (the
+     shell makes every control tabIndex=-1), so they're never keyboard-focused in
+     normal use. We therefore show NO focus RING on them — a ring would only ever
+     appear as an artifact when something PROGRAMMATICALLY focuses a control (e.g.
+     Radix returning focus to a popover trigger on close, which left a blue ring
+     stuck on the Dynamic Loop dial). Just remove the default outline; we DON'T
+     touch box-shadow so a control's own design shadow (e.g. the active toggle's
+     shadow-sm) is preserved. (The previous rule ADDED a blue box-shadow ring here;
+     removing that rule already drops the ring, leaving only this outline reset.) */
+  [data-block-type='groove-card'] button:focus,
+  [data-block-type='groove-card'] button:focus-visible,
+  [data-block-type='groove-card'] input:focus,
+  [data-block-type='groove-card'] input:focus-visible,
+  [data-block-type='groove-card'] [role='button']:focus,
+  [data-block-type='groove-card'] [role='button']:focus-visible {
+    outline: none;
+  }
 }
 
 /* ===== VIEW TRANSITIONS API - Page Transition Animations ===== */
