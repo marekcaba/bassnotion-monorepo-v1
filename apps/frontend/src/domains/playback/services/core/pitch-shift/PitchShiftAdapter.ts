@@ -803,16 +803,30 @@ export class SignalsmithAdapter implements PitchShiftAdapter {
         node,
         semitones,
       );
-      // Defer the change to the requested boundary, else apply now. `output`
-      // stores the segment at the boundary while leaving the read-head readout
-      // untouched (a lone key change has nothing to coexist with, so the
-      // pop-at-now is harmless). The setRate re-apply uses `outputTime` instead
-      // because it must NOT pop the concurrent rate segment.
+      // Defer the change to the requested boundary, else apply now.
+      //
+      // THREAD-THE-NEEDLE (see the identical reasoning in setRate ~L686): the
+      // worklet keys two things off `outputTime` — it (1) POPS segments whose
+      // output >= outputTime, and (2) SHIFTS the "current" segment up to
+      // outputTime, making it audible NOW. So `output: boundary` ALONE is NOT
+      // enough: outputTime then defaults to ~now, which shifts the NEW key into
+      // the current slot → the key jumps immediately. (The old "a lone key
+      // change has nothing to coexist with, so the pop-at-now is harmless"
+      // assumption was FALSE for any node carrying other segments — e.g. a bass
+      // node after a Lines & Fills swapAtPhase — which is why bass transposed
+      // instantly while harmony waited.) Fix: pin `outputTime` to just AFTER now
+      // so the CURRENT audible segment stays current and nothing is shifted,
+      // while `output: boundary` parks the new key at the future seam.
       const deferToFuture =
         typeof applyAtAudioTime === 'number' &&
         applyAtAudioTime > audioContext.currentTime;
       if (deferToFuture) {
         change.output = applyAtAudioTime;
+        // Pin the pop/shift threshold just past NOW so the current audible
+        // segment is spared and NOT replaced by this key; the key at
+        // `output: applyAtAudioTime` (≫ threshold) stays parked at the seam.
+        // Without this, outputTime defaults to ~now and the key jumps instantly.
+        change.outputTime = audioContext.currentTime + 0.001;
         // Remember this deferred key + its boundary so a tempo change before
         // the boundary can re-establish it (see setRate). The AUDIBLE key is
         // still the previous value until the boundary is reached.
@@ -842,7 +856,10 @@ export class SignalsmithAdapter implements PitchShiftAdapter {
    * Both ops are async port-RPC, so this returns a promise; the caller fires it a
    * hair BEFORE the loop seam so the read-head re-enters [0, bufferDuration] on
    * the fresh buffer. Key/tempo segments persist (signalsmith inherits omitted
-   * fields), but the caller re-asserts them at the seam for belt-and-suspenders.
+   * fields), INCLUDING any pending seam-deferred key change — so the caller must
+   * NOT re-assert key/tempo here: doing so re-runs setRate's deferred-key dance,
+   * which re-applies the stale audible key immediately and clobbers the pending
+   * key (the "bass jumps on key change once a variant is introduced" bug).
    */
   async swapBuffers(
     node: AudioNode,

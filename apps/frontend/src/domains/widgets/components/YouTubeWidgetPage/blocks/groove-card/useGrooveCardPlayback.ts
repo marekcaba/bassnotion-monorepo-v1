@@ -829,23 +829,23 @@ export function useGrooveCardPlayback({
         // Queue the PCM swap with the loop's bar count — the worklet releases it
         // on the next BAR boundary IN ITS OWN READ-HEAD DOMAIN (the buffer is the
         // loop, so the head divides it evenly across bars; tail-immune, no
-        // audio-clock mismatch). The key/tempo re-assert is deferred to the loop
-        // seam (the next downbeat the engine can schedule a scalar to); since the
-        // swap preserves the active rate/semitones segments, the new bass keeps
-        // the current key+tempo in the interim.
+        // audio-clock mismatch).
+        //
+        // CRITICAL — the swap MUST NOT touch the key/tempo plumbing. The worklet
+        // swap (`swapAtPhase`) only replaces PCM; it inherits the live
+        // rate/semitones segments untouched, INCLUDING any pending (seam-
+        // deferred) key change. So the new take ALREADY keeps the current key +
+        // tempo and any in-flight transposition. We deliberately DO NOT re-assert
+        // here: the old re-assert called engine.setStemRate('audio-bass', ratio,
+        // boundary), and setRate's deferred-key dance re-applied the STALE
+        // __audibleSemitones immediately AND clobbered __deferredSemitones —
+        // which is exactly what made the bass jump on key changes (and stay
+        // broken even after switching back to A) the moment a variant was ever
+        // introduced. Variants must have ZERO influence over the pending key
+        // state; the swap is PCM-only and the engine's field inheritance carries
+        // key+tempo across it for free.
         const bars = Math.max(1, block.lengthBars);
         void engine.swapStemBuffer?.('audio-bass', target, bars);
-        const boundary = computeNextBoundaryAudioTime(0);
-        engine.setInstrumentPitchShift?.(
-          'audio-bass',
-          currentSemitonesRef.current,
-          boundary,
-        );
-        engine.setStemRate?.(
-          'audio-bass',
-          currentBpmRef.current / Math.max(1, block.originalBpm),
-          boundary ?? audioContextRef.current?.currentTime ?? undefined,
-        );
       };
 
       if (variantId === null) {
@@ -864,12 +864,9 @@ export function useGrooveCardPlayback({
         });
       }
     },
-    [
-      activeBassVariantId,
-      block.originalBpm,
-      block.lengthBars,
-      computeNextBoundaryAudioTime,
-    ],
+    // The swap is now PCM-only (key/tempo persist via worklet field inheritance),
+    // so this no longer reads currentBpm/originalBpm or the seam boundary.
+    [activeBassVariantId, block.lengthBars],
   );
 
   // ── stem mute / solo via sibling-muting (story line 302) -----------------

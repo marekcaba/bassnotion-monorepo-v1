@@ -197,19 +197,25 @@ describe('useGrooveCardPlayback — setBassVariant', () => {
     expect(result.current.activeBassVariantId).toBe('warm');
   });
 
-  it('re-asserts the live key + tempo on audio-bass after the swap', async () => {
+  it('does NOT re-assert key/tempo on the swap (PCM-only; segments inherit)', async () => {
+    // REGRESSION GUARD (key-vs-variant fight): the swap must touch ONLY the PCM.
+    // The worklet swap (swapAtPhase) inherits the live rate/semitones segments —
+    // including any pending seam-deferred key change — so re-asserting here is
+    // both redundant AND harmful: setStemRate's deferred-key dance re-applied the
+    // stale __audibleSemitones immediately and clobbered __deferredSemitones,
+    // which made the bass transpose on the spot (and stay broken after switching
+    // back to A) the moment a variant was ever introduced. Variants must have
+    // ZERO influence over the pending key state.
     const { result } = mountHook();
     await act(async () => {
       result.current.setBassVariant('warm');
     });
-    // key re-assert on audio-bass
-    expect(
-      engineCalls.pitchShift.some(([t]) => t === 'audio-bass'),
-    ).toBe(true);
-    // tempo re-assert on audio-bass (ratio currentBpm/originalBpm = 1 at default)
-    const rate = engineCalls.stemRate.find(([t]) => t === 'audio-bass');
-    expect(rate).toBeDefined();
-    expect(rate?.[1]).toBeCloseTo(1, 5);
+    // The PCM swap fired…
+    expect(engineCalls.swapStemBuffer).toHaveLength(1);
+    expect(engineCalls.swapStemBuffer[0][0]).toBe('audio-bass');
+    // …and NOTHING re-asserted key or tempo (no pitch/rate writes at all).
+    expect(engineCalls.pitchShift).toHaveLength(0);
+    expect(engineCalls.stemRate).toHaveLength(0);
   });
 
   it('cold variant is decoded on demand (ensureVariant) before swapping', async () => {
