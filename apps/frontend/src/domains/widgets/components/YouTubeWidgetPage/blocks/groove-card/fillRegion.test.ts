@@ -21,24 +21,34 @@ describe('resolveFillRegionFractions', () => {
     expect(resolveFillRegionFractions(null, 8)).toBeNull();
   });
 
-  it('maps a bars 7→8 region to its fractional span', () => {
+  it('maps a bars 7→8 region to its fractional span (end is inclusive)', () => {
+    // endBar 8 beat 1 → through the end of beat 1 = 7 + 1/4 = 7.25.
     const r = resolveFillRegionFractions(
       { startBar: 7, startBeat: 1, endBar: 8, endBeat: 1 },
       8,
     );
-    expect(r).toEqual({ startFrac: 6, endFrac: 7 });
+    expect(r).toEqual({ startFrac: 6, endFrac: 7.25 });
   });
 
-  it('respects sub-bar beats', () => {
+  it('respects sub-bar beats with an inclusive end', () => {
     const r = resolveFillRegionFractions(
       { startBar: 7, startBeat: 3, endBar: 8, endBeat: 1 },
       8,
     );
-    expect(r).toEqual({ startFrac: 6.5, endFrac: 7 });
+    expect(r).toEqual({ startFrac: 6.5, endFrac: 7.25 });
+  });
+
+  it('highlights THROUGH the last beat of the loop (the bug fix)', () => {
+    // endBar 8 beat 4 = the last beat → must reach the loop end (8), not 7.75.
+    const r = resolveFillRegionFractions(
+      { startBar: 8, startBeat: 1, endBar: 8, endBeat: 4 },
+      8,
+    );
+    expect(r).toEqual({ startFrac: 7, endFrac: 8 });
   });
 
   it('clamps an out-of-range end to lengthBars', () => {
-    // authored endBar 10 but loop is only 8 bars → clamp to 8
+    // authored endBar 10 but loop is only 8 bars → clamp to 8 (the +1 beat too)
     const r = resolveFillRegionFractions(
       { startBar: 7, startBeat: 1, endBar: 10, endBeat: 1 },
       8,
@@ -46,13 +56,16 @@ describe('resolveFillRegionFractions', () => {
     expect(r).toEqual({ startFrac: 6, endFrac: 8 });
   });
 
-  it('returns null for an empty or inverted span', () => {
-    expect(
-      resolveFillRegionFractions(
-        { startBar: 5, startBeat: 1, endBar: 5, endBeat: 1 },
-        8,
-      ),
-    ).toBeNull();
+  it('a single-beat selection (start == end) highlights that one beat', () => {
+    // bar 5 beat 1 → bar 5 beat 1: now an inclusive one-beat span, not empty.
+    const r = resolveFillRegionFractions(
+      { startBar: 5, startBeat: 1, endBar: 5, endBeat: 1 },
+      8,
+    );
+    expect(r).toEqual({ startFrac: 4, endFrac: 4.25 });
+  });
+
+  it('returns null for an inverted span', () => {
     expect(
       resolveFillRegionFractions(
         { startBar: 8, startBeat: 1, endBar: 7, endBeat: 1 },

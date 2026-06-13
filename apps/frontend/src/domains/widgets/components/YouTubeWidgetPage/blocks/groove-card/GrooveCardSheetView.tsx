@@ -27,6 +27,12 @@ const DEFAULT_TIME_SIGNATURE: TimeSignature = {
   denominator: 4,
 };
 
+// Match the waveform slot's TOTAL height so toggling between the waveform and the
+// sheet keeps the card's window the same height. The waveform is a flex column of:
+//   canvas h-32 (128px) + gap-1 (4px) + bar-number ruler h-3 (12px) = 144px.
+// The sheet has no ruler, so it just fills the full 144px.
+const SHEET_HEIGHT_PX = 144;
+
 export interface GrooveCardSheetViewProps {
   /** Pre-parsed bass-line notes (from the groove's bassNotation), or undefined
    *  when none has been authored → empty state. */
@@ -112,8 +118,10 @@ export function GrooveCardSheetView({
   ]);
 
   if (!notes || notes.length === 0) {
+    // Match the waveform slot's total height (h-36 = 144px) so toggling between
+    // the two views doesn't change the card's window height.
     return (
-      <div className="flex h-[150px] flex-col items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.02] text-center">
+      <div className="flex h-36 flex-col items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.02] text-center">
         <Music4 className="h-6 w-6 text-white/25" aria-hidden />
         <p className="text-xs text-white/40">No bass notation yet</p>
         <p className="text-[10px] text-white/25">
@@ -125,7 +133,9 @@ export function GrooveCardSheetView({
   }
 
   return (
-    <div className="overflow-hidden rounded-lg bg-white">
+    // Fixed height matching the waveform slot (canvas + gap + ruler = h-36/144px)
+    // so the toggle between waveform and sheet keeps the card window the SAME height.
+    <div className="h-36 overflow-hidden rounded-lg bg-white">
       <SheetMusicDisplay
         notes={notes}
         bpm={bpm}
@@ -133,6 +143,7 @@ export function GrooveCardSheetView({
         totalBars={lengthBars}
         isPlaying={isPlaying}
         currentPosition={position}
+        height={SHEET_HEIGHT_PX}
       />
     </div>
   );

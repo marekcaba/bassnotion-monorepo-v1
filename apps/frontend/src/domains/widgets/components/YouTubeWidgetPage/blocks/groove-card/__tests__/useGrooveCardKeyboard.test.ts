@@ -54,6 +54,7 @@ describe('useGrooveCardKeyboard', () => {
     const toggleDynamicLoop = vi.fn();
     const selectLineByIndex = vi.fn();
     const toggleCurrentLineFill = vi.fn();
+    const toggleWindowView = vi.fn();
     const utils = renderHook(() =>
       useGrooveCardKeyboard({
         currentSemitones: args.currentSemitones ?? 0,
@@ -66,6 +67,7 @@ describe('useGrooveCardKeyboard', () => {
         toggleDynamicLoop,
         selectLineByIndex,
         toggleCurrentLineFill,
+        toggleWindowView,
         enabled: args.enabled ?? true,
         lockTranspose: args.lockTranspose ?? false,
       }),
@@ -79,6 +81,7 @@ describe('useGrooveCardKeyboard', () => {
       toggleDynamicLoop,
       selectLineByIndex,
       toggleCurrentLineFill,
+      toggleWindowView,
       ...utils,
     };
   }
@@ -390,6 +393,27 @@ describe('useGrooveCardKeyboard', () => {
   it('F does not preventDefault (not a browser-default action)', () => {
     mount();
     expect(press('f').defaultPrevented).toBe(false);
+  });
+
+  // ── window view toggle (N) ──────────────────────────────────────────────
+  it('N toggles the window view (lowercase and uppercase)', () => {
+    const { toggleWindowView } = mount();
+    press('n');
+    expect(toggleWindowView).toHaveBeenCalledTimes(1);
+    press('N');
+    expect(toggleWindowView).toHaveBeenCalledTimes(2);
+  });
+
+  it('N does nothing while typing in an INPUT', () => {
+    const { toggleWindowView } = mount();
+    const input = document.createElement('input');
+    press('n', { target: input });
+    expect(toggleWindowView).not.toHaveBeenCalled();
+  });
+
+  it('N does not preventDefault (not a browser-default action)', () => {
+    mount();
+    expect(press('n').defaultPrevented).toBe(false);
   });
 
   it('removes the listener on unmount', () => {

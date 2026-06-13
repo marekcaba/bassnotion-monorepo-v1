@@ -10,7 +10,7 @@
  */
 
 import { Volume2, VolumeX, AudioWaveform, Music4 } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import {
   Popover,
   PopoverTrigger,
@@ -81,8 +81,61 @@ export function GrooveCardShell({
   headerExtra,
   bg,
 }: GrooveCardShellProps) {
+  // The groove card is driven by keyboard SHORTCUTS (letter keys via
+  // useGrooveCardKeyboard), NOT by Tab-focusing its controls. Tabbing onto a
+  // control and pressing Space would activate whatever happened to be focused —
+  // surprising and unwanted. So make every focusable control NON-tabbable
+  // (tabIndex=-1): Tab skips the card entirely, controls stay clickable, shortcuts
+  // are unaffected. (Stuck focus-ring artifacts are suppressed in globals.css.)
+  //
+  // Two DOM scopes need detabbing: (1) the card's own subtree, and (2) Radix
+  // POPOVER content, which Radix PORTALS to <body> (outside the card) — so the
+  // Dynamic Loop / volume / loop-range panels would otherwise stay tab-focusable.
+  // We detab any `[data-slot="popover-content"]` in the body too (only ever the
+  // card's popovers in these surfaces). Both scopes re-run on DOM mutations so
+  // controls/panels that mount later are covered.
+  const rootRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const SELECTOR =
+      'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+    const detabWithin = (container: ParentNode) => {
+      container.querySelectorAll<HTMLElement>(SELECTOR).forEach((el) => {
+        if (el.getAttribute('tabindex') !== '-1')
+          el.setAttribute('tabindex', '-1');
+      });
+    };
+    const detabCard = () => detabWithin(root);
+    const detabPopovers = () => {
+      // Portaled popover panels (Dynamic Loop, volume, loop-range upsell, …).
+      const panels = document.querySelectorAll<HTMLElement>(
+        '[data-slot="popover-content"]',
+      );
+      if (panels.length === 0) return; // cheap early-out for unrelated body churn
+      panels.forEach((panel) => {
+        panel.setAttribute('tabindex', '-1');
+        detabWithin(panel);
+      });
+    };
+    detabCard();
+    detabPopovers();
+    // Card subtree → detab the card's own controls as they change.
+    const cardObserver = new MutationObserver(detabCard);
+    cardObserver.observe(root, { childList: true, subtree: true });
+    // Body subtree → detab popover panels when they portal in (early-out keeps the
+    // unrelated-body-churn cost to one querySelectorAll).
+    const bodyObserver = new MutationObserver(detabPopovers);
+    bodyObserver.observe(document.body, { childList: true, subtree: true });
+    return () => {
+      cardObserver.disconnect();
+      bodyObserver.disconnect();
+    };
+  }, []);
+
   return (
     <section
+      ref={rootRef}
       data-block-type="groove-card"
       className="relative rounded-xl border border-white/5 text-white shadow-lg overflow-hidden"
       // Default card background is the warm near-black the waitlist demo
@@ -148,7 +201,7 @@ export function GrooveCardShell({
                 title="Waveform"
                 className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
                   windowView === 'waveform'
-                    ? 'bg-white/15 text-white'
+                    ? 'bg-orange-500 text-white shadow-sm'
                     : 'text-white/40 hover:text-white/70'
                 }`}
               >
@@ -162,7 +215,7 @@ export function GrooveCardShell({
                 title="Sheet music"
                 className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
                   windowView === 'sheet'
-                    ? 'bg-white/15 text-white'
+                    ? 'bg-orange-500 text-white shadow-sm'
                     : 'text-white/40 hover:text-white/70'
                 }`}
               >

@@ -35,11 +35,11 @@ export function barBeatToFraction(bar: number, beat: number): number {
  *  - the variant has no `fillRegion`, or
  *  - the span is empty / inverted after clamping to [0, lengthBars].
  *
- * The end is treated as the START of (endBar, endBeat) — so "endBar 8, endBeat 4"
- * highlights up to (not through) beat 4 of bar 8. Callers wanting an inclusive
- * end author endBeat one step further; this keeps the math a simple position
- * mapping. Both ends are clamped so an out-of-range region (e.g. authored before
- * lengthBars shrank) still draws something sane instead of overflowing.
+ * The end (endBar, endBeat) is INCLUSIVE of the whole beat: "endBar 8, endBeat 4"
+ * highlights THROUGH the end of beat 4 of bar 8 (i.e. to the bar's end), not just
+ * up to that beat's start. So the end fraction is the start of (endBar, endBeat)
+ * plus one beat. Both ends are clamped so an out-of-range region (e.g. authored
+ * before lengthBars shrank) still draws something sane instead of overflowing.
  */
 export function resolveFillRegionFractions(
   region: BasslineVariant['fillRegion'] | undefined | null,
@@ -48,7 +48,10 @@ export function resolveFillRegionFractions(
   if (!region || lengthBars <= 0) return null;
   const clamp = (f: number) => Math.max(0, Math.min(lengthBars, f));
   const startFrac = clamp(barBeatToFraction(region.startBar, region.startBeat));
-  const endFrac = clamp(barBeatToFraction(region.endBar, region.endBeat));
+  // Inclusive end: extend through the WHOLE of (endBar, endBeat) by adding one beat.
+  const endFrac = clamp(
+    barBeatToFraction(region.endBar, region.endBeat) + 1 / BEATS_PER_BAR,
+  );
   if (!(endFrac > startFrac)) return null; // empty or inverted → nothing to draw
   return { startFrac, endFrac };
 }

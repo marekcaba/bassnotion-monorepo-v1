@@ -689,6 +689,12 @@ export function GrooveCardBlockView({
     },
     selectLineByIndex,
     toggleCurrentLineFill,
+    // "N" toggles the window between the waveform and the bass notation — only
+    // where the toggle is offered (no-op on drill bricks, matching the button).
+    toggleWindowView: () => {
+      if (showWindowToggle)
+        setWindowView((v) => (v === 'waveform' ? 'sheet' : 'waveform'));
+    },
     enabled: playback.isReady,
     // While the cycle is running, it owns the key — disable manual ←/→.
     lockTranspose: dynamicLoop.isActive,

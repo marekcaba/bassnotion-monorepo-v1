@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { verboseLog } from '@/config/debug';
 import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay';
 import type { ExerciseNote, TimeSignature } from '@bassnotion/contracts';
 import { exerciseToMusicXML } from '../../utils/exerciseToMusicXML.js';
@@ -9,6 +8,11 @@ import {
   buildPositionMapFromOSMD,
   type TransportPosition,
 } from './utils/positionMapBuilder.js';
+
+// Duration of the eased page-flip (ms). A slow, smooth page turn. The playhead
+// drifts right during this ease, so the flip aims AHEAD by that drift (see the
+// flip-lookahead) to still land the playhead flush-left.
+const FLIP_DURATION_MS = 1000;
 
 interface SheetMusicDisplayProps {
   notes: ExerciseNote[];
@@ -97,6 +101,65 @@ export function SheetMusicDisplay({
   // Memoize notes key for OSMD re-render detection (over the RIBBON notes).
   const notesKey = useMemo(() => JSON.stringify(ribbonNotes), [ribbonNotes]);
 
+  // REST INTERVALS (for the rest-opportunistic page-flip). A rest is a stretch of
+  // loop time where nothing is playing — we use that quiet time to flip the page
+  // early so the upcoming phrase is already in view when it sounds. Computed from
+  // the input notes: each note spans [startBeat, startBeat+durationBeats); the
+  // GAPS between consecutive notes (and before the first / after the last) that
+  // are at least MIN_REST_BEATS long are rests, in CONTINUOUS loop-beats.
+  const restIntervals = useMemo(() => {
+    const MIN_REST_BEATS = 1; // only flip on rests ≥ 1 beat (avoid twitchy flips)
+    const beatsPerMeasure = timeSignature?.numerator || 4;
+    const loopBeats = loopBars * beatsPerMeasure;
+    if (!notes || notes.length === 0) return [] as { start: number }[];
+
+    // Duration string → beats (in quarter-note beats, 4/4 assumption for value→beat).
+    const DUR: Record<string, number> = {
+      whole: 4,
+      half: 2,
+      quarter: 1,
+      eighth: 0.5,
+      sixteenth: 0.25,
+      'thirty-second': 0.125,
+      'sixty-fourth': 0.0625,
+      'dotted-whole': 6,
+      'dotted-half': 3,
+      'dotted-quarter': 1.5,
+      'dotted-eighth': 0.75,
+      'dotted-sixteenth': 0.375,
+      'triplet-whole': 8 / 3,
+      'triplet-half': 4 / 3,
+      'triplet-quarter': 2 / 3,
+      'triplet-eighth': 1 / 3,
+      'triplet-sixteenth': 1 / 6,
+    };
+    // Each note's continuous loop-beat span. position.beat is 0-indexed; tick is
+    // 0-479 at 480 PPQ (a beat). measure is 1-based.
+    const spans = notes
+      .map((n) => {
+        const p = n.position;
+        const start =
+          ((p?.measure ?? 1) - 1) * beatsPerMeasure +
+          (p?.beat ?? 0) +
+          (p?.tick ?? 0) / 480;
+        const dur =
+          DUR[(n as { duration?: string }).duration ?? 'quarter'] ?? 1;
+        return { start, end: start + dur };
+      })
+      .sort((a, b) => a.start - b.start);
+
+    // Gaps between consecutive notes → rests.
+    const rests: { start: number }[] = [];
+    let cursor = 0; // running "covered up to" beat
+    for (const s of spans) {
+      if (s.start - cursor >= MIN_REST_BEATS) rests.push({ start: cursor });
+      cursor = Math.max(cursor, s.end);
+    }
+    // Trailing rest from the last note's end to the loop end.
+    if (loopBeats - cursor >= MIN_REST_BEATS) rests.push({ start: cursor });
+    return rests;
+  }, [notes, loopBars, timeSignature?.numerator]);
+
   // CONTINUOUS GLIDE PLAYHEAD. We DON'T use OSMD's native cursor as the visible
   // playhead — it snaps note-to-note (a cursor, not a smooth playhead). Instead we
   // render our OWN thin overlay div (playheadRef) and position it every frame by
@@ -124,6 +187,23 @@ export function SheetMusicDisplay({
   // is the previous frame's loop position (to compute that delta).
   const ribbonBeatRef = useRef(-1);
   const lastLoopBeatRef = useRef(0);
+  // Playhead pixel velocity in px/ms (time-based ⇒ tempo-independent), smoothed.
+  // The slow page-flip ease lets the playhead drift right while it turns; the flip
+  // aims ahead by this velocity × the ease duration so it still lands flush-left.
+  const playheadVelocityRef = useRef(0);
+  const lastPlayheadXRef = useRef(0);
+  const lastPlayheadTimeRef = useRef(0);
+  // Latest playhead content-x, mirrored so the page-flip RAF (which runs between
+  // glide-effect frames) can clamp the eased scroll so the playhead never dips off
+  // the left edge mid-tween.
+  const playheadContentXRef = useRef(0);
+  // REST-FLIP. restIntervals (loop-relative rest start beats) in a ref for the
+  // glide effect, plus the absolute ribbon-beat of the last rest we already
+  // flipped for — so a rest triggers an early page-flip exactly ONCE (not every
+  // frame the playhead sits inside it).
+  const restIntervalsRef = useRef(restIntervals);
+  restIntervalsRef.current = restIntervals;
+  const lastRestFlipBeatRef = useRef(-1);
   // GENUINE-STOP debounce. The consumer's `isPlaying` flickers false for a frame
   // during count-in / restart (dual source in useGrooveCardPlayback). We must NOT
   // destroy the monotonic ribbon position on a transient drop — that snaps the
@@ -271,31 +351,6 @@ export function SheetMusicDisplay({
         // Don't stretch - we want compact measures
         osmd.EngravingRules.StretchLastSystemLine = false;
 
-        // DEBUG: Log ALL EngravingRules to see what's available
-        verboseLog(
-          '[SheetMusicDisplay] ALL EngravingRules keys:',
-          Object.keys(osmd.EngravingRules),
-        );
-
-        // DEBUG: Log OSMD configuration BEFORE render
-        verboseLog('[SheetMusicDisplay] OSMD EngravingRules APPLIED:', {
-          // Measure width settings
-          FixedMeasureWidth: osmd.EngravingRules.FixedMeasureWidth,
-          FixedMeasureWidthFixedValue:
-            osmd.EngravingRules.FixedMeasureWidthFixedValue,
-          // Measure margins (space from barline to notes)
-          MeasureLeftMargin: osmd.EngravingRules.MeasureLeftMargin,
-          MeasureRightMargin: osmd.EngravingRules.MeasureRightMargin,
-          // Voice/note spacing
-          VoiceSpacingMultiplierVexflow:
-            osmd.EngravingRules.VoiceSpacingMultiplierVexflow,
-          VoiceSpacingAddendVexflow:
-            osmd.EngravingRules.VoiceSpacingAddendVexflow,
-          MinNoteDistance: osmd.EngravingRules.MinNoteDistance,
-          // Softmax factor for proportional spacing
-          SoftmaxFactorVexFlow: osmd.EngravingRules.SoftmaxFactorVexFlow,
-        });
-
         // Keep single horizontal line (no system breaks)
         osmd.EngravingRules.RenderSingleHorizontalStaffline = true;
 
@@ -367,94 +422,6 @@ export function SheetMusicDisplay({
             barsRef.current = [];
           }
         }
-
-        // DEBUG: Inspect rendered measure positions AFTER render
-        verboseLog('[SheetMusicDisplay] POST-RENDER inspection:');
-
-        // Access the graphic sheet to inspect actual measure positions
-        if (osmd.GraphicSheet && osmd.GraphicSheet.MeasureList) {
-          const measureList = osmd.GraphicSheet.MeasureList;
-          verboseLog('[SheetMusicDisplay] Total measures:', measureList.length);
-
-          measureList.forEach(
-            (measureArray: unknown[], measureIndex: number) => {
-              if (measureArray && measureArray.length > 0) {
-                const measure = measureArray[0] as {
-                  PositionAndShape?: {
-                    AbsolutePosition?: { x: number; y: number };
-                    Size?: { width: number; height: number };
-                    BorderLeft?: number;
-                    BorderRight?: number;
-                  };
-                  staffEntries?: Array<{
-                    PositionAndShape?: {
-                      AbsolutePosition?: { x: number };
-                    };
-                  }>;
-                };
-                if (measure && measure.PositionAndShape) {
-                  const pos = measure.PositionAndShape;
-                  verboseLog(`[SheetMusicDisplay] Measure ${measureIndex}:`, {
-                    absoluteX: pos.AbsolutePosition?.x,
-                    absoluteY: pos.AbsolutePosition?.y,
-                    width: pos.Size?.width,
-                    height: pos.Size?.height,
-                    borderLeft: pos.BorderLeft,
-                    borderRight: pos.BorderRight,
-                  });
-
-                  // Log first and last staff entry positions within measure
-                  if (measure.staffEntries && measure.staffEntries.length > 0) {
-                    const firstEntry = measure.staffEntries[0];
-                    const lastEntry =
-                      measure.staffEntries[measure.staffEntries.length - 1];
-                    const firstX =
-                      firstEntry?.PositionAndShape?.AbsolutePosition?.x || 0;
-                    const lastX =
-                      lastEntry?.PositionAndShape?.AbsolutePosition?.x || 0;
-                    const measureStart = pos.AbsolutePosition?.x || 0;
-                    const measureEnd = measureStart + (pos.Size?.width || 0);
-
-                    // Calculate ACTUAL margins (distance from barline to notes)
-                    const actualLeftMargin = firstX - measureStart;
-                    const actualRightMargin = measureEnd - lastX;
-
-                    verboseLog(
-                      `[SheetMusicDisplay] Measure ${measureIndex} MARGINS:`,
-                      {
-                        entryCount: measure.staffEntries.length,
-                        measureStart: measureStart.toFixed(2),
-                        measureEnd: measureEnd.toFixed(2),
-                        firstNoteX: firstX.toFixed(2),
-                        lastNoteX: lastX.toFixed(2),
-                        LEFT_MARGIN: actualLeftMargin.toFixed(2),
-                        RIGHT_MARGIN: actualRightMargin.toFixed(2),
-                        DIFFERENCE: (
-                          actualRightMargin - actualLeftMargin
-                        ).toFixed(2),
-                      },
-                    );
-                  }
-                }
-              }
-            },
-          );
-        }
-
-        // Also log the ACTUAL EngravingRules after render to verify they were used
-        verboseLog('[SheetMusicDisplay] EngravingRules AFTER render:', {
-          FixedMeasureWidth: osmd.EngravingRules.FixedMeasureWidth,
-          FixedMeasureWidthFixedValue:
-            osmd.EngravingRules.FixedMeasureWidthFixedValue,
-          MeasureLeftMargin: osmd.EngravingRules.MeasureLeftMargin,
-          MeasureRightMargin: osmd.EngravingRules.MeasureRightMargin,
-          // Check if there are additional margin settings
-          DistanceBetweenLastInstructionAndRepetitionBarline:
-            osmd.EngravingRules
-              .DistanceBetweenLastInstructionAndRepetitionBarline,
-          RepetitionEndInstructionXShift:
-            osmd.EngravingRules.RepetitionEndInstructionXShift,
-        });
 
         // Check if effect is still active after async render
         if (!isActive) {
@@ -583,6 +550,25 @@ export function SheetMusicDisplay({
 
     const globalBeat = ribbonBeatRef.current;
     const playheadContentX = contentXForBeat(globalBeat);
+    playheadContentXRef.current = playheadContentX; // mirror for the flip RAF clamp
+
+    // Track the playhead's pixel velocity in px/MS (time-based ⇒ tempo-independent),
+    // smoothed — used to aim the page-flip ahead by the drift over the ease so it
+    // lands flush-left despite the slow 1s turn.
+    {
+      const now = performance.now();
+      const dx = playheadContentX - lastPlayheadXRef.current;
+      const dt = now - lastPlayheadTimeRef.current;
+      lastPlayheadXRef.current = playheadContentX;
+      lastPlayheadTimeRef.current = now;
+      // Ignore the seam-reset backward jump and absurd frame gaps (tab blur, etc.).
+      if (dx >= 0 && dx < 50 && dt > 1 && dt < 200) {
+        const vPxPerMs = dx / dt;
+        playheadVelocityRef.current =
+          playheadVelocityRef.current * 0.85 + vPxPerMs * 0.15;
+      }
+    }
+
     const staff = staffRef.current;
     playhead.style.transform = `translateX(${playheadContentX}px)`;
     if (staff.height > 4) {
@@ -608,14 +594,37 @@ export function SheetMusicDisplay({
       const viewportW = scrollContainer.clientWidth;
       const maxScroll = Math.max(0, scrollContainer.scrollWidth - viewportW);
       const FLIP_AT = 0.8; // flip when the playhead crosses 80% of the page
-      const LAND = 0.12; // ...and re-land it at 12% from the left
+      const LAND = 0.0; // aim the playhead at the very left edge of the new page
       const HARD_EDGE = 0.95; // never let it pass 95% — snap the page if it does
+      // LOOKAHEAD: the slow 1s ease lets the playhead drift right while the page
+      // turns. Aim the page AHEAD by that drift (velocity px/ms × ease ms) so the
+      // playhead still settles flush-left instead of ~25% in. The drift is the real
+      // distance the playhead covers in the ease window, so it's tempo-independent.
+      // SAFETY: cap the lookahead so the playhead can never settle LEFT of the edge
+      // — even if the velocity estimate is high, the page can't advance more than
+      // (playhead-to-left-edge minus a small margin) without pushing it off-screen.
+      // Aim ahead by the drift over the ease. The factor (<1) accounts for the
+      // ease curve: the page is already part-way to the target when the playhead
+      // crosses the landing zone, so it needs less than the full velocity×duration
+      // to settle flush-left. Tuned so the playhead lands near the left edge across
+      // tempos; the off-screen guards keep it safe if it ever over/under-aims.
+      const LOOKAHEAD_FACTOR = 0.45;
+      const driftPx =
+        Math.max(0, playheadVelocityRef.current) *
+        FLIP_DURATION_MS *
+        LOOKAHEAD_FACTOR;
+      const lookahead = Math.min(driftPx, viewportW * 0.7);
 
-      // BUG-1 FIX: measure the playhead's screen position against the page target
-      // we're EASING toward (where the notation will settle), NOT a lagging value.
-      // flipTargetRef is the committed page; the eased tween chases it.
+      // Measure the playhead's screen position against the page target we're EASING
+      // toward (where the notation will settle), NOT a lagging value. flipTargetRef
+      // is the committed page; the eased tween chases it. The flip aims the playhead
+      // at LAND + lookahead so it settles near the LEFT edge after the ease —
+      // maximum upcoming notes in view, no already-played notes wasted on the left.
       const targetFor = (land: number) =>
-        Math.max(0, Math.min(playheadContentX - viewportW * land, maxScroll));
+        Math.max(
+          0,
+          Math.min(playheadContentX + lookahead - viewportW * land, maxScroll),
+        );
       const screenXVsTarget = playheadContentX - flipTargetRef.current;
 
       if (screenXVsTarget < -viewportW * 0.1) {
@@ -627,6 +636,53 @@ export function SheetMusicDisplay({
         if (target > flipTargetRef.current + 1) flipTargetRef.current = target;
       }
 
+      // REST-OPPORTUNISTIC FLIP. When the playhead enters a REST (a quiet stretch
+      // with nothing playing, ≥ 1 beat), turn the page EARLY using that quiet time
+      // — but do EXACTLY what the normal 80% flip does (land the playhead at the
+      // usual LAND spot), just sooner. Landing the playhead at LAND (not flush at
+      // the far edge) keeps a FULL page of unplayed notes ahead, so the next normal
+      // flip happens a full page later, never prematurely double-flipping. The eye
+      // isn't tracking a note during a rest, so this early turn is unobtrusive.
+      // Fires once per rest occurrence.
+      const rests = restIntervalsRef.current;
+      if (rests.length > 0) {
+        const loopRel = ((globalBeat % loopBeats) + loopBeats) % loopBeats;
+        // Which rest (if any) is the playhead currently inside? A rest is "active"
+        // from its start until the next rest's start (i.e. through the notes after
+        // it, conservatively — we only care that we're at/just past a rest onset).
+        let activeRestStart: number | null = null;
+        for (let i = 0; i < rests.length; i++) {
+          const start = rests[i]!.start;
+          const nextStart = i + 1 < rests.length ? rests[i + 1]!.start : Infinity;
+          if (loopRel >= start && loopRel < nextStart) {
+            activeRestStart = start;
+            break;
+          }
+        }
+        if (activeRestStart != null) {
+          // The rest's ABSOLUTE ribbon beat (same cycle as the playhead).
+          const restAbsBeat = globalBeat - loopRel + activeRestStart;
+          // Flip ONCE per rest occurrence (keyed by its absolute beat).
+          if (Math.abs(restAbsBeat - lastRestFlipBeatRef.current) > 0.001) {
+            // Only flip if the playhead is ALREADY a meaningful way across the
+            // COMMITTED page — i.e. there's real page to gain. Measure against
+            // flipTargetRef (where the page is HEADING), NOT the lagging real
+            // scrollLeft: right after a default flip, flipTargetRef has already
+            // advanced (playhead will be near LAND), so a rest one beat later sees
+            // a small offset and is correctly skipped — no premature double-flip.
+            // The playhead must be past REST_MIN_TRAVEL of the page to earn a turn.
+            const REST_MIN_TRAVEL = 0.5; // past 50% of the committed page
+            const screenXVsCommitted = playheadContentX - flipTargetRef.current;
+            if (screenXVsCommitted > viewportW * REST_MIN_TRAVEL) {
+              const target = targetFor(LAND); // same landing as a normal flip
+              if (target > flipTargetRef.current + 1) flipTargetRef.current = target;
+            }
+            // Mark this rest handled regardless (so we don't retry every frame).
+            lastRestFlipBeatRef.current = restAbsBeat;
+          }
+        }
+      }
+
       // BUG-1 HARD CLAMP: regardless of the eased tween, the playhead must never
       // leave the viewport. Measure against the REAL scrollLeft (where the page
       // actually is this frame, not where it's heading). If the playhead would
@@ -635,6 +691,21 @@ export function SheetMusicDisplay({
       const screenXReal = playheadContentX - scrollContainer.scrollLeft;
       if (screenXReal > viewportW * HARD_EDGE) {
         const snap = targetFor(LAND);
+        scrollContainer.scrollLeft = snap;
+        flipTargetRef.current = snap;
+        tweenFromRef.current = snap;
+        tweenToRef.current = snap;
+      }
+      // SAFETY (left edge): the lookahead aims the target AHEAD of the playhead on
+      // purpose, so `flipTargetRef > playheadContentX` is normal and expected (the
+      // playhead drifts into it during the ease). But if the eased page ever moves
+      // faster than the playhead and pulls it toward / past the LEFT edge, clamp:
+      // keep a small left margin so the playhead never touches the edge. (At
+      // realistic tempos the lookahead lands it ~8% in and this never fires; it's a
+      // backstop for fast tempos / velocity over-estimation.)
+      const LEFT_MARGIN = viewportW * 0.04;
+      if (screenXReal < LEFT_MARGIN) {
+        const snap = Math.max(0, playheadContentX - LEFT_MARGIN);
         scrollContainer.scrollLeft = snap;
         flipTargetRef.current = snap;
         tweenFromRef.current = snap;
@@ -692,7 +763,7 @@ export function SheetMusicDisplay({
   // whole sheet would read as a fast rewind).
   useEffect(() => {
     if (!isPlaying) return;
-    const FLIP_DURATION = 1000; // ms — slow, smooth page turn
+    const FLIP_DURATION = FLIP_DURATION_MS; // slow, smooth page turn
     const easeInOutCubic = (t: number) =>
       t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
@@ -722,6 +793,17 @@ export function SheetMusicDisplay({
             tweenFromRef.current +
             (tweenToRef.current - tweenFromRef.current) * easeInOutCubic(t);
           if (t >= 1) tweenFromRef.current = tweenToRef.current; // tween done
+        }
+
+        // LEFT-EDGE CLAMP (mid-tween): if the eased page ever moves so far that the
+        // playhead would dip off the left edge, hold the scroll back so it stays a
+        // hair inside. Catches fast-tempo / lookahead-overshoot during the ease,
+        // which the glide effect (only running on position changes) could miss.
+        const phX = playheadContentXRef.current;
+        const leftMargin = sc.clientWidth * 0.04;
+        const maxScrollForPlayhead = Math.max(0, phX - leftMargin);
+        if (sc.scrollLeft > maxScrollForPlayhead) {
+          sc.scrollLeft = maxScrollForPlayhead;
         }
       }
       flipRafRef.current = requestAnimationFrame(animate);

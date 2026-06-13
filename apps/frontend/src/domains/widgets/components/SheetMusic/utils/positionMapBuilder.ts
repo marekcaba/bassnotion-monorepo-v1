@@ -76,11 +76,6 @@ export function buildPositionMapFromOSMD(
     // Access the GraphicSheet (rendered graphical representation)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const graphic = (osmd as any).graphic;
-    console.log('[SHEETMUSIC] buildPositionMapFromOSMD:', {
-      hasGraphic: !!graphic,
-      hasMeasureList: !!graphic?.MeasureList,
-      measureListLength: graphic?.MeasureList?.length,
-    });
 
     if (!graphic || !graphic.MeasureList) {
       console.warn('[SHEETMUSIC] OSMD graphic or MeasureList not available');
@@ -314,21 +309,4 @@ export function getXForMeasure(
   }
 
   return map.measures[measureIndex]!.xStart;
-}
-
-/**
- * Debug utility: log position map summary
- */
-export function logPositionMapSummary(map: NotePositionMap): void {
-  console.log('[PositionMapBuilder] Position map summary:', {
-    isValid: map.isValid,
-    totalMeasures: map.measures.length,
-    totalWidth: map.totalWidth,
-    measures: map.measures.map((m) => ({
-      idx: m.measureIndex,
-      x: `${Math.round(m.xStart)}-${Math.round(m.xEnd)}`,
-      width: Math.round(m.width),
-      beats: m.beatPositions.length,
-    })),
-  });
 }

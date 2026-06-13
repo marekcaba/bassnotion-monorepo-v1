@@ -87,22 +87,22 @@
     overscroll-behavior: none;
   }
 
-  /* Keyboard focus on Groove Card controls: a single clean BLUE ring (no
-     white default outline). Only shows for keyboard nav (:focus-visible), not
-     mouse clicks. The play button opts out via [data-no-focus-ring]. */
-  [data-block-type='groove-card']
-    button:not([data-no-focus-ring]):focus-visible,
+  /* Groove Card controls are driven by keyboard SHORTCUTS, not Tab focus (the
+     shell makes every control tabIndex=-1), so they're never keyboard-focused in
+     normal use. We therefore show NO focus RING on them — a ring would only ever
+     appear as an artifact when something PROGRAMMATICALLY focuses a control (e.g.
+     Radix returning focus to a popover trigger on close, which left a blue ring
+     stuck on the Dynamic Loop dial). Just remove the default outline; we DON'T
+     touch box-shadow so a control's own design shadow (e.g. the active toggle's
+     shadow-sm) is preserved. (The previous rule ADDED a blue box-shadow ring here;
+     removing that rule already drops the ring, leaving only this outline reset.) */
+  [data-block-type='groove-card'] button:focus,
+  [data-block-type='groove-card'] button:focus-visible,
+  [data-block-type='groove-card'] input:focus,
   [data-block-type='groove-card'] input:focus-visible,
+  [data-block-type='groove-card'] [role='button']:focus,
   [data-block-type='groove-card'] [role='button']:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px rgb(59 130 246); /* blue-500 */
-  }
-
-  /* The play button: never a focus ring. */
-  [data-block-type='groove-card'] [data-no-focus-ring]:focus-visible,
-  [data-block-type='groove-card'] [data-no-focus-ring]:focus {
-    outline: none;
-    box-shadow: none;
   }
 }
 
