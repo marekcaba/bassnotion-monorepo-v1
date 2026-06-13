@@ -30,6 +30,20 @@ Sentry.init({
       return null;
     }
 
+    // Don't send EXPECTED auth failures. A 401/403 from an auth-gated endpoint
+    // (expired/stale Supabase session, anon hitting a member route) surfaces as
+    // an ApiError('Invalid token') from src/lib/api-client.ts — it's normal,
+    // already logged as a warn there, and not an exception worth a Sentry issue.
+    // ApiError carries `name === 'ApiError'` + a numeric `status` (api-client.ts),
+    // so this is a reliable narrow match.
+    const status = (error as { status?: number } | undefined)?.status;
+    if (
+      (error as Error | undefined)?.name === 'ApiError' &&
+      (status === 401 || status === 403)
+    ) {
+      return null;
+    }
+
     // Don't send network errors in development
     if (
       process.env.NODE_ENV === 'development' &&
@@ -96,6 +110,14 @@ Sentry.init({
     // Audio errors that are handled gracefully
     'The AudioContext was not allowed to start',
     'DOMException: The play() request was interrupted',
+
+    // View Transitions API — clicking a second navigation while the first is
+    // still animating supersedes the in-flight transition; the browser aborts it
+    // with InvalidStateError "Transition was aborted…" / AbortError. The newer
+    // navigation completes normally (nothing lost); use-view-transition-router.ts
+    // already swallows these. Expected, not an error.
+    'Transition was aborted',
+    'AbortError',
   ],
 
   // Ignore transactions from specific URLs
