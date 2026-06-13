@@ -125,6 +125,9 @@ export interface UseGrooveCardPlaybackReturn {
   /** Pending semitone offset queued for the next loop boundary, or null
    *  when no swap is queued. */
   pendingKeyShift: number | null;
+  /** The active premium bassline variant id ("Lines & Fills"), or null for the
+   *  default bass. */
+  activeBassVariantId: string | null;
 
   // ── commands (all idempotent)
   play: () => Promise<void>;
@@ -132,6 +135,9 @@ export interface UseGrooveCardPlaybackReturn {
   stop: () => Promise<void>;
   setTempo: (bpm: number) => void;
   setKey: (semitonesFromOriginal: number) => void;
+  /** Swap the active bassline variant. `null` restores the default bass. The
+   *  swap lands at the next loop seam (drums + harmony untouched). */
+  setBassVariant: (variantId: string | null) => void;
   setStemMuted: (stem: AudioInstrumentType, muted: boolean) => void;
   setStemSolo: (stem: AudioInstrumentType | null) => void;
   setClickEnabled: (enabled: boolean) => void;
@@ -351,6 +357,12 @@ export function useGrooveCardPlayback({
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentBpm, setCurrentBpm] = useState<number>(block.originalBpm);
   const [currentSemitones, setCurrentSemitones] = useState(0);
+  // The active premium bassline variant ("Lines & Fills"). null = the default
+  // bass. Selecting one hands new PCM to the bass worklet, which swaps it in at
+  // the next loop wrap (sample-exact, in-worklet).
+  const [activeBassVariantId, setActiveBassVariantId] = useState<string | null>(
+    null,
+  );
   // `pendingKeyShift` flags a key swap that's been requested but hasn't reached
   // its loop seam yet (drives the "…" suffix + 'key-change' caption). It is
   // CLEARED to null once the deferred boundary passes (see the timer in
@@ -785,6 +797,76 @@ export function useGrooveCardPlayback({
       mode,
       pendingKeyShift,
     ],
+  );
+
+  /**
+   * Swap the active bassline variant ("Lines & Fills"). `variantId` selects a
+   * premium full-length bass take; `null` restores the default bass.
+   *
+   * SAMPLE-ACCURATE: we hand the new PCM + the loop's bar count to the bass
+   * worklet immediately (patched `swapAtPhase`); the worklet replaces the
+   * looping buffer THE INSTANT its read-head crosses the next BAR boundary
+   * (computed in its own read-head domain, so it's tail-immune) — the swap lands
+   * exactly on the next downbeat, no JS-timer jitter. Drums + harmony never
+   * move. Key + tempo are re-asserted at the loop seam (schedulable scalars) so
+   * the new take keeps the user's current transpose + speed.
+   */
+  const setBassVariant = useCallback(
+    (variantId: string | null) => {
+      if (variantId === activeBassVariantId) return;
+
+      const apply = (buffer: AudioBuffer | null) => {
+        const engine = WindowRegistry.getPlaybackEngine();
+        if (!engine) return;
+        // `null` (back to default) resolves the originally-registered bass
+        // buffer from the preloader; a variant resolves its decoded buffer.
+        const target =
+          buffer ?? preloadRef.current.getBuffer('bass') ?? null;
+        if (!target) return;
+
+        setActiveBassVariantId(variantId);
+
+        // Queue the PCM swap with the loop's bar count — the worklet releases it
+        // on the next BAR boundary IN ITS OWN READ-HEAD DOMAIN (the buffer is the
+        // loop, so the head divides it evenly across bars; tail-immune, no
+        // audio-clock mismatch).
+        //
+        // CRITICAL — the swap MUST NOT touch the key/tempo plumbing. The worklet
+        // swap (`swapAtPhase`) only replaces PCM; it inherits the live
+        // rate/semitones segments untouched, INCLUDING any pending (seam-
+        // deferred) key change. So the new take ALREADY keeps the current key +
+        // tempo and any in-flight transposition. We deliberately DO NOT re-assert
+        // here: the old re-assert called engine.setStemRate('audio-bass', ratio,
+        // boundary), and setRate's deferred-key dance re-applied the STALE
+        // __audibleSemitones immediately AND clobbered __deferredSemitones —
+        // which is exactly what made the bass jump on key changes (and stay
+        // broken even after switching back to A) the moment a variant was ever
+        // introduced. Variants must have ZERO influence over the pending key
+        // state; the swap is PCM-only and the engine's field inheritance carries
+        // key+tempo across it for free.
+        const bars = Math.max(1, block.lengthBars);
+        void engine.swapStemBuffer?.('audio-bass', target, bars);
+      };
+
+      if (variantId === null) {
+        apply(null);
+        return;
+      }
+      // Resolve the variant buffer (warm cache → instant; cold → on-demand
+      // decode). A gated/failed variant resolves undefined → no swap, no state
+      // change (the caller's gate should have prevented this).
+      const cached = preloadRef.current.getVariantBuffer(variantId);
+      if (cached) {
+        apply(cached);
+      } else {
+        void preloadRef.current.ensureVariant(variantId).then((buf) => {
+          if (buf) apply(buf);
+        });
+      }
+    },
+    // The swap is now PCM-only (key/tempo persist via worklet field inheritance),
+    // so this no longer reads currentBpm/originalBpm or the seam boundary.
+    [activeBassVariantId, block.lengthBars],
   );
 
   // ── stem mute / solo via sibling-muting (story line 302) -----------------
@@ -1463,12 +1545,20 @@ export function useGrooveCardPlayback({
   }, []); // run only on unmount; capture trackPrefix + cardId at mount
 
   // ── waveform data ----------------------------------------------------------
-  // Bass buffer for the waveform peaks + sweeping playhead. The buffer
-  // is the same regardless of current key (pitch-shift is applied at
-  // the pitch-shift node, not by swapping buffers).
+  // Bass buffer for the waveform peaks + sweeping playhead. The waveform mirrors
+  // the SELECTED Lines & Fills take: a chosen variant/fill shows ITS own buffer,
+  // the default bass (no variant) shows stems.bass. (Pitch-shift is applied at
+  // the node, not by swapping buffers, so key changes don't affect the peaks.)
+  // setBassVariant flips activeBassVariantId only AFTER the variant buffer has
+  // decoded into the cache, so getVariantBuffer is non-null here when selected.
   // loopDurationSeconds is hoisted above setKey so it's available there
   // for the deferred-pitch boundary computation.
-  const bassBuffer = preload.getBuffer('bass') ?? null;
+  const bassBuffer =
+    (activeBassVariantId
+      ? preload.getVariantBuffer(activeBassVariantId)
+      : undefined) ??
+    preload.getBuffer('bass') ??
+    null;
 
   return {
     isLoading,
@@ -1481,6 +1571,7 @@ export function useGrooveCardPlayback({
     clickEnabled,
     masterVolume,
     pendingKeyShift,
+    activeBassVariantId,
     bassBuffer,
     audioContext: audioContextRef.current,
     loopStartAudioTime,
@@ -1502,6 +1593,7 @@ export function useGrooveCardPlayback({
     stop,
     setTempo,
     setKey,
+    setBassVariant,
     setStemMuted,
     setStemSolo,
     setClickEnabled,

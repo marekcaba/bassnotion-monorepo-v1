@@ -36,6 +36,13 @@ import type {
 const logger = createStructuredLogger('MidiFileParser');
 
 /**
+ * MIDI velocity (0-127) below which a note is auto-tagged a GHOST note (a soft,
+ * muted hit → cross notehead). Ghost notes on bass typically sit well under a
+ * normal hit; ~45 catches the soft layer without flagging mezzo-piano notes.
+ */
+const GHOST_VELOCITY_THRESHOLD = 45;
+
+/**
  * MIDI File Parser Class
  * Handles MIDI file parsing and conversion to Exercise format
  */
@@ -221,7 +228,15 @@ export class MIDIFileParser {
         | 'type1'
         | 'type2',
       trackCount: parsedMidi.tracks?.length || 0,
-      division: parsedMidi.header?.ticksPerQuarter || 480,
+      // @tonejs/midi exposes ticks-per-quarter as `ppq` (NOT `ticksPerQuarter`).
+      // Reading the wrong name silently fell back to 480, mis-scaling every
+      // tick→beat conversion (notes landing on the wrong beat / a phantom lead
+      // rest). Prefer ppq; keep the legacy names as fallbacks.
+      division:
+        parsedMidi.header?.ppq ||
+        parsedMidi.header?.ticksPerQuarter ||
+        parsedMidi.header?.ticksPerBeat ||
+        480,
       durationSeconds: parsedMidi.duration || 0,
       tempoMap: [],
       timeSignatureMap: [],
@@ -634,6 +649,14 @@ export class MIDIFileParser {
         metadata.division,
       );
 
+      // Ghost notes are soft hits. Auto-tag a note whose MIDI velocity is below
+      // GHOST_VELOCITY_THRESHOLD (out of 127) so it renders with a cross (x)
+      // notehead. An author can override per note in the editor later.
+      const isGhost =
+        typeof midiNote.velocity === 'number' &&
+        midiNote.velocity > 0 &&
+        midiNote.velocity < GHOST_VELOCITY_THRESHOLD;
+
       const exerciseNote: ExerciseNote = {
         id: `note-${index}`,
         note: noteName,
@@ -645,6 +668,7 @@ export class MIDIFileParser {
         techniques: midiNote.articulation
           ? [this.articulationToTechnique(midiNote.articulation)]
           : undefined,
+        ...(isGhost ? { is_ghost_note: true } : {}),
       };
 
       return exerciseNote;
@@ -1021,17 +1045,32 @@ export class MIDIFileParser {
   }
 
   private calculateMusicalTiming(startTick: number, division: number) {
-    // Convert to quarter note positions
+    // Convert the absolute MIDI tick into the position shape exerciseToMusicXML
+    // (and SheetMusicDisplay) actually consume:
+    //   • measure  — 1-based
+    //   • beat     — 0-INDEXED within the bar (beat 0 = the downbeat). The
+    //                renderer treats beat as 0-based; emitting a 1-based beat
+    //                here shifted every note one beat late (a phantom lead rest).
+    //   • subdivision — 0..3 sixteenth WITHIN the beat (not within the bar).
+    //   • tick     — sub-beat offset in ticks (0..division-1), normalised to a
+    //                480-PPQ scale because the renderer divides tick by 480 for
+    //                sub-beat positioning. THIS is what carries the real rhythm;
+    //                the old code only set `ticks` (absolute), which the renderer
+    //                ignores, so all sub-beat detail was lost.
+    const TICKS_PER_QUARTER_DISPLAY = 480;
+    const beatsPerBar = 4; // MIDI carries no bar grid; 4/4 is the safe default
     const quarterNotes = startTick / division;
-    const measure = Math.floor(quarterNotes / 4) + 1;
-    const beat = Math.floor(quarterNotes % 4) + 1;
-    const subdivision = Math.round((quarterNotes % 1) * 16); // 16th note subdivisions
+    const measure = Math.floor(quarterNotes / beatsPerBar) + 1;
+    const beat = Math.floor(quarterNotes) % beatsPerBar; // 0-indexed
+    const fractionWithinBeat = quarterNotes - Math.floor(quarterNotes); // 0..1
+    const subdivision = Math.min(3, Math.floor(fractionWithinBeat * 4)); // 0..3
+    const tick = Math.round(fractionWithinBeat * TICKS_PER_QUARTER_DISPLAY); // 0..479
 
     return {
       measure,
       beat,
       subdivision,
-      ticks: startTick,
+      tick,
     };
   }
 

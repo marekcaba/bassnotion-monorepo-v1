@@ -21,12 +21,9 @@ export {
   useCreatePortalSession,
   useCancelSubscription,
   useReactivateSubscription,
-  useHasCourseAccess,
-  useHasPremiumAccess,
 } from './hooks/useBilling';
 
 // Components
 export { PricingCard } from './components/PricingCard';
 export { PricingSection } from './components/PricingSection';
 export { SubscriptionManager } from './components/SubscriptionManager';
-export { PremiumGate, usePremiumAccess } from './components/PremiumGate';

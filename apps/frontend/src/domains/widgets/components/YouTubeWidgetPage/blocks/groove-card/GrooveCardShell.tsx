@@ -9,8 +9,8 @@
  * `stateCaptions`.
  */
 
-import { Volume2, VolumeX } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { Volume2, VolumeX, AudioWaveform, Music4 } from 'lucide-react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import {
   Popover,
   PopoverTrigger,
@@ -36,8 +36,17 @@ interface GrooveCardShellProps {
   chordsVisible?: boolean;
   /** Toggle the chord ribbon's visibility (the header chord icon). */
   onToggleChords?: () => void;
+  /** Which view the window slot is showing: the audio waveform or the bass
+   *  sheet-music notation. When omitted, no view toggle is shown. */
+  windowView?: 'waveform' | 'sheet';
+  /** Toggle the window between waveform and sheet (the header notation icon).
+   *  Omitted → no toggle. */
+  onToggleWindowView?: () => void;
   /** Slot for the controls bar. */
   controls: ReactNode;
+  /** Slot rendered INSIDE the card frame, below the controls (e.g. the premium
+   *  Lines & Fills section). Omitted when the surface has nothing to show. */
+  footer?: ReactNode;
   /** Read-only metadata line under the title (e.g. "E · 4 bars").
    * Composed by the view; omitted when empty. */
   meta?: string;
@@ -64,13 +73,69 @@ export function GrooveCardShell({
   chordRow,
   chordsVisible = false,
   onToggleChords,
+  windowView,
+  onToggleWindowView,
   controls,
+  footer,
   meta,
   headerExtra,
   bg,
 }: GrooveCardShellProps) {
+  // The groove card is driven by keyboard SHORTCUTS (letter keys via
+  // useGrooveCardKeyboard), NOT by Tab-focusing its controls. Tabbing onto a
+  // control and pressing Space would activate whatever happened to be focused —
+  // surprising and unwanted. So make every focusable control NON-tabbable
+  // (tabIndex=-1): Tab skips the card entirely, controls stay clickable, shortcuts
+  // are unaffected. (Stuck focus-ring artifacts are suppressed in globals.css.)
+  //
+  // Two DOM scopes need detabbing: (1) the card's own subtree, and (2) Radix
+  // POPOVER content, which Radix PORTALS to <body> (outside the card) — so the
+  // Dynamic Loop / volume / loop-range panels would otherwise stay tab-focusable.
+  // We detab any `[data-slot="popover-content"]` in the body too (only ever the
+  // card's popovers in these surfaces). Both scopes re-run on DOM mutations so
+  // controls/panels that mount later are covered.
+  const rootRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const SELECTOR =
+      'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+    const detabWithin = (container: ParentNode) => {
+      container.querySelectorAll<HTMLElement>(SELECTOR).forEach((el) => {
+        if (el.getAttribute('tabindex') !== '-1')
+          el.setAttribute('tabindex', '-1');
+      });
+    };
+    const detabCard = () => detabWithin(root);
+    const detabPopovers = () => {
+      // Portaled popover panels (Dynamic Loop, volume, loop-range upsell, …).
+      const panels = document.querySelectorAll<HTMLElement>(
+        '[data-slot="popover-content"]',
+      );
+      if (panels.length === 0) return; // cheap early-out for unrelated body churn
+      panels.forEach((panel) => {
+        panel.setAttribute('tabindex', '-1');
+        detabWithin(panel);
+      });
+    };
+    detabCard();
+    detabPopovers();
+    // Card subtree → detab the card's own controls as they change.
+    const cardObserver = new MutationObserver(detabCard);
+    cardObserver.observe(root, { childList: true, subtree: true });
+    // Body subtree → detab popover panels when they portal in (early-out keeps the
+    // unrelated-body-churn cost to one querySelectorAll).
+    const bodyObserver = new MutationObserver(detabPopovers);
+    bodyObserver.observe(document.body, { childList: true, subtree: true });
+    return () => {
+      cardObserver.disconnect();
+      bodyObserver.disconnect();
+    };
+  }, []);
+
   return (
     <section
+      ref={rootRef}
       data-block-type="groove-card"
       className="relative rounded-xl border border-white/5 text-white shadow-lg overflow-hidden"
       // Default card background is the warm near-black the waitlist demo
@@ -117,6 +182,47 @@ export function GrooveCardShell({
           {chordsVisible ? chordRow : null}
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          {/* Window view toggle — switch the window between the audio WAVEFORM
+              and the bass SHEET-MUSIC notation. A compact two-icon segmented
+              control; the active half highlights. */}
+          {windowView && onToggleWindowView && (
+            <div
+              role="group"
+              aria-label="Window view"
+              className="flex items-center rounded-full bg-white/5 p-0.5"
+            >
+              <button
+                type="button"
+                onClick={() =>
+                  windowView !== 'waveform' && onToggleWindowView()
+                }
+                aria-label="Show waveform"
+                aria-pressed={windowView === 'waveform'}
+                title="Waveform"
+                className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
+                  windowView === 'waveform'
+                    ? 'bg-orange-500 text-white shadow-sm'
+                    : 'text-white/40 hover:text-white/70'
+                }`}
+              >
+                <AudioWaveform className="h-4 w-4" aria-hidden />
+              </button>
+              <button
+                type="button"
+                onClick={() => windowView !== 'sheet' && onToggleWindowView()}
+                aria-label="Show sheet music"
+                aria-pressed={windowView === 'sheet'}
+                title="Sheet music"
+                className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
+                  windowView === 'sheet'
+                    ? 'bg-orange-500 text-white shadow-sm'
+                    : 'text-white/40 hover:text-white/70'
+                }`}
+              >
+                <Music4 className="h-4 w-4" aria-hidden />
+              </button>
+            </div>
+          )}
           {/* Chord-strip toggle (LEFT) — shows/hides the chord ribbon. Labelled
               "A7" rather than a notes glyph so it's obvious it toggles chords.
               Highlights orange when on. */}
@@ -200,6 +306,9 @@ export function GrooveCardShell({
 
       {/* Controls bar */}
       {controls}
+
+      {/* Footer slot — part of the card frame (e.g. premium Lines & Fills). */}
+      {footer}
     </section>
   );
 }

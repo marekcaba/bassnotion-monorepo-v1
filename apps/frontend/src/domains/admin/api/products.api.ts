@@ -5,6 +5,7 @@
  */
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import type { FeatureKey } from '@bassnotion/contracts';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -148,6 +149,21 @@ export const adminProductsApi = {
     return product;
   },
 
+  /** Hard-delete a product. The backend un-gates bundled content, detaches
+   *  purchases, and removes accelerator enrollments first. Irreversible. */
+  async delete(id: string): Promise<void> {
+    // Strip Content-Type: a body-less DELETE that still declares
+    // `application/json` makes Fastify's JSON parser reject the empty body with
+    // a 400 BEFORE the request reaches Nest. Keep only the auth header.
+    const headers = await authHeaders();
+    delete headers['Content-Type'];
+    const res = await fetch(`${BASE}/${id}`, {
+      method: 'DELETE',
+      headers,
+    });
+    if (!res.ok) await parseError(res, 'Failed to delete product');
+  },
+
   async addContent(
     productId: string,
     input: AddContentPayload,
@@ -168,6 +184,32 @@ export const adminProductsApi = {
       headers: await authHeaders(),
     });
     if (!res.ok) await parseError(res, 'Failed to remove content');
+  },
+
+  /** The feature catalog + the features THIS product currently grants. */
+  async getFeatures(
+    productId: string,
+  ): Promise<{ available: FeatureKey[]; granted: FeatureKey[] }> {
+    const res = await fetch(`${BASE}/${productId}/features`, {
+      headers: await authHeaders(),
+    });
+    if (!res.ok) await parseError(res, 'Failed to fetch product features');
+    return res.json();
+  },
+
+  /** Replace the product's ENTIRE feature-grant set (checklist semantics). */
+  async setFeatures(
+    productId: string,
+    features: FeatureKey[],
+  ): Promise<FeatureKey[]> {
+    const res = await fetch(`${BASE}/${productId}/features`, {
+      method: 'PUT',
+      headers: await authHeaders(),
+      body: JSON.stringify({ features }),
+    });
+    if (!res.ok) await parseError(res, 'Failed to save product features');
+    const { granted } = (await res.json()) as { granted: FeatureKey[] };
+    return granted;
   },
 
   /** Upload a cover image (multipart). Returns the public URL. */

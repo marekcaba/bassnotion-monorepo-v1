@@ -193,14 +193,17 @@ export class ProductRepository {
     const client = this.supabaseService.getClient();
 
     // Build the snake_cased update record from only the provided fields.
-    const record: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    const record: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+    };
     if (patch.slug !== undefined) record.slug = patch.slug;
     if (patch.type !== undefined) record.type = patch.type;
     if (patch.name !== undefined) record.name = patch.name;
     if (patch.description !== undefined) record.description = patch.description;
     if (patch.stripePriceId !== undefined)
       record.stripe_price_id = patch.stripePriceId;
-    if (patch.priceInCents !== undefined) record.price_cents = patch.priceInCents;
+    if (patch.priceInCents !== undefined)
+      record.price_cents = patch.priceInCents;
     if (patch.currency !== undefined) record.currency = patch.currency;
     if (patch.isActive !== undefined) record.is_active = patch.isActive;
     if (patch.tagline !== undefined) record.tagline = patch.tagline;
@@ -225,5 +228,21 @@ export class ProductRepository {
       throw error;
     }
     return this.mapRowToProduct(data as ProductRow);
+  }
+
+  /**
+   * Hard-delete a product row. `product_contents` cascades automatically (ON
+   * DELETE CASCADE); the OTHER references to products.id (purchases,
+   * accelerator_enrollments, and the gated content tables) are NOT cascaded, so
+   * the caller (AdminProductsController.remove) must clear those FIRST or the
+   * delete will fail on a constraint. This method only touches the products row.
+   */
+  async delete(id: string): Promise<void> {
+    const client = this.supabaseService.getClient();
+    const { error } = await client.from(this.TABLE_NAME).delete().eq('id', id);
+    if (error) {
+      this.logger.error('Error deleting product', error);
+      throw error;
+    }
   }
 }

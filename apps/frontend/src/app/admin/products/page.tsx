@@ -54,7 +54,8 @@ export default function AdminProductsPage() {
     v: CreateProductPayload[K],
   ) => setDraft((d) => ({ ...d, [k]: v }));
 
-  const canSave = draft.slug.trim() && draft.name.trim() && draft.priceInCents >= 0;
+  const canSave =
+    draft.slug.trim() && draft.name.trim() && draft.priceInCents >= 0;
 
   const handleCreate = async () => {
     setError(null);
@@ -206,7 +207,12 @@ export default function AdminProductsPage() {
                 {expandedId === p.id ? '▲' : '▼'}
               </span>
             </button>
-            {expandedId === p.id && <ProductEditor productId={p.id} />}
+            {expandedId === p.id && (
+              <ProductEditor
+                productId={p.id}
+                onDeleted={() => setExpandedId(null)}
+              />
+            )}
           </div>
         ))}
         {!isLoading && (products?.length ?? 0) === 0 && (

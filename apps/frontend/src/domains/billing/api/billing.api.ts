@@ -9,6 +9,7 @@
  */
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { FEATURE_KEYS } from '@bassnotion/contracts';
 import {
   ProductsResponse,
   CheckoutSessionResponse,
@@ -29,14 +30,18 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 // row (see the member escape-hatch) over flipping this.
 const BILLING_DEV_MODE = false;
 
-// Mock returned only when the override above is on.
+// Mock returned only when the override above is on. Must reproduce the full
+// member experience: grantedFeatures = every feature (else the feature-derived
+// caps would show everything LOCKED under dev-mode).
 const MOCK_USER_ACCESS: UserAccessStatus = {
   hasActiveSubscription: true,
   subscriptionStatus: 'active',
-  subscriptionPeriodEnd: new Date(
+  subscriptionEndDate: new Date(
     Date.now() + 30 * 24 * 60 * 60 * 1000,
   ).toISOString(),
   purchasedCourses: [],
+  purchasedProductIds: [],
+  grantedFeatures: [...FEATURE_KEYS],
 };
 // ============================================================================
 

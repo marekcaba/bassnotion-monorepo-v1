@@ -1,8 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { FeatureKey, FEATURE_KEYS } from '@bassnotion/contracts';
 
 import { SubscriptionRepository } from '../repositories/subscription.repository.js';
 import { PurchaseRepository } from '../repositories/purchase.repository.js';
 import { ProductContentsRepository } from '../repositories/product-contents.repository.js';
+import { ProductFeaturesRepository } from '../repositories/product-features.repository.js';
 import { AcceleratorEnrollmentRepository } from '../repositories/accelerator-enrollment.repository.js';
 import { ProductRepository } from '../repositories/product.repository.js';
 import { SupabaseService } from '../../../infrastructure/supabase/supabase.service.js';
@@ -48,10 +50,14 @@ export interface GateableContent {
 export class EntitlementService {
   private readonly logger = new Logger(EntitlementService.name);
 
+  /** Memoized membership-product id (resolved by type; differs per env). */
+  private membershipProductId: string | null = null;
+
   constructor(
     private readonly subscriptionRepository: SubscriptionRepository,
     private readonly purchaseRepository: PurchaseRepository,
     private readonly productContentsRepository: ProductContentsRepository,
+    private readonly productFeaturesRepository: ProductFeaturesRepository,
     private readonly acceleratorEnrollmentRepository: AcceleratorEnrollmentRepository,
     private readonly productRepository: ProductRepository,
     private readonly supabaseService: SupabaseService,
@@ -91,6 +97,60 @@ export class EntitlementService {
       if (product?.type === 'accelerator') return true;
     }
     return false;
+  }
+
+  /**
+   * The membership product's id, resolved by type (its UUID is gen_random_uuid()
+   * and differs per environment — never hardcode it). Memoized per-process.
+   * Returns null only if no membership product is seeded (shouldn't happen).
+   */
+  private async getMembershipProductId(): Promise<string | null> {
+    if (this.membershipProductId) return this.membershipProductId;
+    const products = await this.productRepository.findAllActive();
+    this.membershipProductId =
+      products.find((p) => p.type === 'membership')?.id ?? null;
+    return this.membershipProductId;
+  }
+
+  /**
+   * The set of FEATURES a user is granted — the union over the membership tier
+   * (if they have member access) plus every product they own. This is the
+   * product-aware analogue of the content gate: the frontend derives per-lever
+   * caps from this set.
+   *
+   *   anon   → []                  (no features)
+   *   admin  → all FEATURE_KEYS    (author/preview everything)
+   *   member → membership baseline (the product_features seeded against the
+   *            membership product), PLUS any owned product's extra grants.
+   *
+   * Member access REUSES `hasMemberAccess` so the "accelerator confers
+   * membership" rule (an accelerator owner with no subscription is still a
+   * member) carries over for free — the membership product's features are added
+   * for them too, on top of the accelerator's own grants (e.g. linesAndFills).
+   */
+  async getGrantedFeatures(userId: string | null): Promise<FeatureKey[]> {
+    if (!userId) return [];
+    if (await this.isAdmin(userId)) return [...FEATURE_KEYS];
+
+    const productIds = new Set<string>();
+
+    // Member access (active subscription OR accelerator ownership) grants the
+    // membership baseline feature set.
+    if (await this.hasMemberAccess(userId)) {
+      const membershipId = await this.getMembershipProductId();
+      if (membershipId) productIds.add(membershipId);
+    }
+
+    // Each owned product layers on its OWN extra grants (e.g. Bass College →
+    // linesAndFills). A subscriber has no purchase row, so this only adds
+    // one-time products; the membership baseline came from the block above.
+    for (const id of await this.purchaseRepository.getPurchasedProductIds(
+      userId,
+    )) {
+      productIds.add(id);
+    }
+
+    return this.productFeaturesRepository.featuresForProducts([...productIds]);
   }
 
   /**

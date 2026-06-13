@@ -24,12 +24,21 @@ import { useGrooveCardPlayback } from './groove-card/useGrooveCardPlayback';
 import { useGrooveCardKeyboard } from './groove-card/useGrooveCardKeyboard';
 import { GrooveCardShell } from './groove-card/GrooveCardShell';
 import { GrooveCardWaveform } from './groove-card/GrooveCardWaveform';
+import { GrooveCardSheetView } from './groove-card/GrooveCardSheetView';
 import { GrooveCardChordRow } from './groove-card/GrooveCardChordRow';
 import {
   GrooveCardControls,
   formatKeyLabel,
 } from './groove-card/GrooveCardControls';
 import { GrooveCardDynamicLoopDial } from './groove-card/GrooveCardDynamicLoopDial';
+import { LinesAndFillsSection } from './groove-card/LinesAndFillsSection';
+import {
+  buildLinesAndFillsGroups,
+  resolveComboVariantId,
+  selectionForVariantId,
+  NO_FILL_ID,
+} from './groove-card/linesAndFills';
+import { resolveFillRegionFractions } from './groove-card/fillRegion';
 import {
   useDynamicLoop,
   buildCycleKeys,
@@ -88,6 +97,26 @@ interface GrooveCardBlockViewProps {
    *  The drill surface on /app opts in; the marketing/tutorial surfaces
    *  leave it off (default) so their existing behaviour is untouched. */
   enableCaps?: boolean;
+  /** When true, the built-in "become a member" upsell popovers
+   *  (UpgradePitchContent) are NOT rendered. The cap STILL bites (the lever
+   *  stops at the band edge) and `onCapHit` still fires — the surface just
+   *  doesn't show the in-card pitch. The public `/free` funnel uses this so
+   *  it can reveal its own Sign up button instead of pitching membership. */
+  suppressUpsell?: boolean;
+  /** Fired whenever a capped lever hits its band edge (tempo / transpose /
+   *  loopRange / deconstruction / dynamicLoop), in ADDITION to the internal
+   *  upsell + the `cap_hit` analytics event. Lets an outer surface react to a
+   *  cap — e.g. the `/free` page reveals its hidden Sign up button on first
+   *  cap. Only fires when `enableCaps`/caps are active. */
+  onCapHit?: (
+    lever:
+      | 'tempo'
+      | 'transpose'
+      | 'loopRange'
+      | 'deconstruction'
+      | 'dynamicLoop'
+      | 'linesAndFills',
+  ) => void;
 }
 
 export function GrooveCardBlockView({
@@ -103,6 +132,8 @@ export function GrooveCardBlockView({
   // auto-advance effect (driven by onComplete → optimistic unlock), not a
   // self-fired scroll. Kept in the props interface for the BlockRenderer wiring.
   enableCaps = false,
+  suppressUpsell = false,
+  onCapHit: onCapHitExternal,
 }: GrooveCardBlockViewProps) {
   const rawConfig = block.config;
 
@@ -178,10 +209,13 @@ export function GrooveCardBlockView({
   const onCapHit = useCallback(
     (lever: 'tempo' | 'transpose' | 'loopRange') => {
       setCapUpsell(caps[lever]?.message ?? '');
-      setPitchLever(lever);
+      // Open the internal upsell popover unless the surface suppresses it
+      // (the /free funnel does — it reveals its own Sign up button instead).
+      if (!suppressUpsell) setPitchLever(lever);
       trackEvent('cap_hit', { lever, grooveId: block.id });
+      onCapHitExternal?.(lever);
     },
-    [caps, block.id],
+    [caps, block.id, suppressUpsell, onCapHitExternal],
   );
 
   const playbackCaps = useMemo(() => {
@@ -204,6 +238,32 @@ export function GrooveCardBlockView({
     caps: playbackCaps,
     onCapHit: capsEnabled ? onCapHit : undefined,
   });
+
+  // REACH-the-edge external notify (funnel surfaces only). The internal
+  // `onCapHit` fires only when a step is CLIPPED (tried to go past the band).
+  // But on a surface that greys the chevron AT the band edge (`suppressUpsell`
+  // → dimAtCap), the user can't click past it, so the clipped event never
+  // fires. So here we also notify the moment a lever simply REACHES its band
+  // edge — keeping the revealed Sign up button in sync with the greying.
+  // Guarded to funnel surfaces (suppressUpsell) so in-app behaviour (which
+  // relies on the clipped-only signal) is untouched.
+  const reachedTempoEdge =
+    capsEnabled &&
+    caps.tempo.isCapped &&
+    caps.tempo.limit != null &&
+    Math.abs(playback.currentBpm - config.originalBpm) >= caps.tempo.limit;
+  const reachedTransposeEdge =
+    capsEnabled &&
+    caps.transpose.isCapped &&
+    Math.abs(playback.currentSemitones) >= playback.transposeRange;
+  useEffect(() => {
+    if (!suppressUpsell) return;
+    if (reachedTempoEdge) onCapHitExternal?.('tempo');
+  }, [suppressUpsell, reachedTempoEdge, onCapHitExternal]);
+  useEffect(() => {
+    if (!suppressUpsell) return;
+    if (reachedTransposeEdge) onCapHitExternal?.('transpose');
+  }, [suppressUpsell, reachedTransposeEdge, onCapHitExternal]);
 
   // PER-USE key override: when a drill reference sets keyOverride, apply it as
   // the starting transpose once the card is ready (once per mount).
@@ -247,22 +307,35 @@ export function GrooveCardBlockView({
   const deconCapped = capsEnabled && caps.deconstruction.isCapped;
   const onToggleSolo = useCallback(() => {
     if (deconCapped) {
-      setPitchLever('deconstruction');
+      if (!suppressUpsell) setPitchLever('deconstruction');
       trackEvent('cap_hit', { lever: 'deconstruction', grooveId: block.id });
+      onCapHitExternal?.('deconstruction');
       return;
     }
     playback.setStemSolo(isSoloBass ? null : 'audio-bass');
-  }, [deconCapped, playback, isSoloBass, block.id]);
+  }, [
+    deconCapped,
+    playback,
+    isSoloBass,
+    block.id,
+    suppressUpsell,
+    onCapHitExternal,
+  ]);
 
   // ── Dynamic Loop: auto key-cycle every N loops ──────────────────────────
-  // Offered only where it makes sense:
-  //  • NOT on drill bricks — the key there is author-prescribed + locked
-  //    ("do exactly this"); a user-driven cycle would invalidate the drill.
-  //  • NOT to the capped free tier — cycling within a ±2 band is musically
-  //    thin, and gating here also sidesteps setKey's cap path entirely (the
-  //    dial would otherwise have only a sliver of reachable keys).
-  const dynamicLoopAvailable =
-    !isDrillBrick && !(capsEnabled && caps.transpose.isCapped);
+  // Dynamic Loop is a MEMBERS-ONLY feature (caps.dynamicLoop):
+  //  • The dial is SHOWN to everyone except drill bricks (where the key is
+  //    author-prescribed + locked, so a user-driven cycle makes no sense) —
+  //    free users in /app and funnel visitors see it too, so they discover it.
+  //  • Engaging the cycle only works when UNCAPPED (member). When capped,
+  //    engaging surfaces the upgrade pitch in-app, or reveals Sign up on the
+  //    funnel — see onDynamicLoopEngagedChange.
+  const dynamicLoopCapped = capsEnabled && caps.dynamicLoop.isCapped;
+  const dynamicLoopUsable = !isDrillBrick && !dynamicLoopCapped;
+  // Visible to everyone except drill bricks (members use it; free/funnel see it
+  // and get the upgrade moment on engage).
+  const dynamicLoopShown = !isDrillBrick;
+  const dynamicLoopAvailable = dynamicLoopUsable;
 
   // Per-card, in-memory config (no persistence — reload resets to defaults).
   const [dynamicLoopConfig, setDynamicLoopConfig] = useState<DynamicLoopConfig>(
@@ -273,8 +346,152 @@ export function GrooveCardBlockView({
   );
   const [dynamicLoopEngaged, setDynamicLoopEngaged] = useState(false);
 
+  // Engage handler with the membership gate. When the dial is SHOWN but the
+  // cycle isn't USABLE (capped free tier), trying to ENGAGE is the upgrade
+  // moment — the feature is visible + explorable, switching it on is gated:
+  //   • funnel (suppressUpsell): reveal the Sign up button.
+  //   • in-app: open the existing upgrade pitch popover on the dial.
+  // Disengaging (next === false) always passes through. Members fall straight
+  // to the plain setter.
+  const onDynamicLoopEngagedChange = useCallback(
+    (next: boolean) => {
+      if (next && !dynamicLoopUsable) {
+        trackEvent('cap_hit', { lever: 'dynamicLoop', grooveId: block.id });
+        if (suppressUpsell) {
+          onCapHitExternal?.('dynamicLoop');
+        } else {
+          setCapUpsell(caps.dynamicLoop.message ?? '');
+          setPitchLever('dynamicLoop');
+        }
+        return;
+      }
+      setDynamicLoopEngaged(next);
+    },
+    [dynamicLoopUsable, suppressUpsell, onCapHitExternal, caps, block.id],
+  );
+
+  // ── Lines & Fills (premium alternate-bassline swap) ----------------------
+  // Same shape as Dynamic Loop: the section is SHOWN (when there are variants
+  // and caps are active) so it's discoverable, but SELECTING a variant is gated.
+  // Default-bass (null) is always free — only the premium variants gate.
+  const bassVariants = config.stems.bassVariants ?? [];
+  const linesAndFillsCapped = capsEnabled && caps.linesAndFills.isCapped;
+  // Render only on surfaces that meter caps (so the waitlist demo, capsEnabled
+  // false, never shows it), and only when the groove actually has variants. On
+  // drill bricks the bass part is author-prescribed, so hide it there too.
+  const linesAndFillsShown =
+    capsEnabled && !isDrillBrick && bassVariants.length > 0;
+
+  // Lines grouped with their own fills, and the current (line, fill) selection
+  // derived from the active variant id (single source of truth —
+  // playback.activeBassVariantId; no parallel state).
+  const linesAndFillsGroups = useMemo(
+    () => buildLinesAndFillsGroups(bassVariants),
+    [bassVariants],
+  );
+  const activeSelection = useMemo(
+    () => selectionForVariantId(bassVariants, playback.activeBassVariantId),
+    [bassVariants, playback.activeBassVariantId],
+  );
+
+  // The active fill's region as fractional bars, for the waveform highlight.
+  // Only the active variant (a fill take with a fillRegion) lights up; the plain
+  // line / "No fill" / default bass resolve to null → no band.
+  const activeFillRegion = useMemo(() => {
+    const active = bassVariants.find(
+      (v) => v.id === playback.activeBassVariantId,
+    );
+    return resolveFillRegionFractions(
+      active?.fillRegion ?? null,
+      config.lengthBars ?? 0,
+    );
+  }, [bassVariants, playback.activeBassVariantId, config.lengthBars]);
+
+  // Apply a (line, fill) selection: resolve the matching pre-rendered take and
+  // swap it on the next bar. The built-in Bass A + no-fill combo is the free
+  // state (null → restore stems.bass); any other take is premium and gates when
+  // capped. An unexported combo (resolver → undefined) is a no-op.
+  const onSelectLineFill = useCallback(
+    (lineId: string, fillId: string) => {
+      const variantId = resolveComboVariantId(bassVariants, lineId, fillId);
+      if (variantId === undefined) return; // no take for this combo — ignore
+      if (variantId === null) {
+        playback.setBassVariant(null); // free: back to built-in bass
+        return;
+      }
+      if (linesAndFillsCapped) {
+        trackEvent('cap_hit', { lever: 'linesAndFills', grooveId: block.id });
+        if (suppressUpsell) {
+          onCapHitExternal?.('linesAndFills');
+        } else {
+          setCapUpsell(caps.linesAndFills.message ?? '');
+          setPitchLever('linesAndFills');
+        }
+        return;
+      }
+      playback.setBassVariant(variantId);
+    },
+    [
+      bassVariants,
+      linesAndFillsCapped,
+      suppressUpsell,
+      onCapHitExternal,
+      caps,
+      block.id,
+      playback,
+    ],
+  );
+
+  // Keyboard A/B/C → select the 1st/2nd/3rd bassline (no fill). Routes through
+  // the same gated handler the cards use; a no-op when there's no line at that
+  // index (e.g. "C" on a groove with only Bass A + B).
+  const selectLineByIndex = useCallback(
+    (index: number) => {
+      const group = linesAndFillsGroups[index];
+      if (!group) return;
+      onSelectLineFill(group.id, NO_FILL_ID);
+    },
+    [linesAndFillsGroups, onSelectLineFill],
+  );
+
+  // Keyboard "F" → toggle the CURRENT bassline's fill: on (its first fill) when
+  // no fill is active, off (back to the plain line) when one is. Whatever line
+  // is selected, the fill targets THAT line. No-op when the line has no fills.
+  const toggleCurrentLineFill = useCallback(() => {
+    const group = linesAndFillsGroups.find(
+      (g) => g.id === activeSelection.lineId,
+    );
+    const firstFill = group?.fills[0];
+    if (!group || !firstFill) return;
+    const fillActive = activeSelection.fillId !== NO_FILL_ID;
+    onSelectLineFill(group.id, fillActive ? NO_FILL_ID : firstFill.id);
+  }, [linesAndFillsGroups, activeSelection, onSelectLineFill]);
+
   // Chord strip is opt-in: hidden until the user toggles the header chord icon.
   const [showChords, setShowChords] = useState(false);
+
+  // The window slot can show the audio waveform or the bass sheet-music
+  // notation. The toggle is always offered (drill bricks aside). The sheet
+  // follows the SELECTED take: a chosen variant (Bass B / a fill) shows ITS own
+  // notation; the default bass (no variant) shows config.bassNotation (Bass A's
+  // score); a selected take with no notation empty-states.
+  const [windowView, setWindowView] = useState<'waveform' | 'sheet'>(
+    'waveform',
+  );
+  const activeNotation = useMemo(() => {
+    const activeVariant = bassVariants.find(
+      (v) => v.id === playback.activeBassVariantId,
+    );
+    if (activeVariant) {
+      return { notes: activeVariant.notes, timeSignature: undefined };
+    }
+    // Default bass selected → Bass A's score.
+    return {
+      notes: config.bassNotation?.notes,
+      timeSignature: config.bassNotation?.timeSignature,
+    };
+  }, [bassVariants, playback.activeBassVariantId, config.bassNotation]);
+  const showWindowToggle = !isDrillBrick;
 
   const dynamicLoop = useDynamicLoop({
     engaged: dynamicLoopEngaged && dynamicLoopAvailable,
@@ -470,6 +687,14 @@ export function GrooveCardBlockView({
     toggleDynamicLoop: () => {
       if (dynamicLoopAvailable) setDynamicLoopEngaged((v) => !v);
     },
+    selectLineByIndex,
+    toggleCurrentLineFill,
+    // "N" toggles the window between the waveform and the bass notation — only
+    // where the toggle is offered (no-op on drill bricks, matching the button).
+    toggleWindowView: () => {
+      if (showWindowToggle)
+        setWindowView((v) => (v === 'waveform' ? 'sheet' : 'waveform'));
+    },
     enabled: playback.isReady,
     // While the cycle is running, it owns the key — disable manual ←/→.
     lockTranspose: dynamicLoop.isActive,
@@ -573,19 +798,44 @@ export function GrooveCardBlockView({
         chordsVisible={showChords}
         onToggleChords={() => setShowChords((v) => !v)}
         headerExtra={
-          dynamicLoopAvailable ? (
-            <GrooveCardDynamicLoopDial
-              config={dynamicLoopConfig}
-              onConfigChange={setDynamicLoopConfig}
-              engaged={dynamicLoopEngaged}
-              onEngagedChange={setDynamicLoopEngaged}
-              maxSemitones={playback.transposeRange}
-              disabled={!playback.isReady}
-              onHover={(hovering) => {
-                if (hovering) clearCapUpsell();
-                setHoverHint(hovering ? 'dynamic-loop' : null);
+          dynamicLoopShown ? (
+            // Members-only engage gate: when capped (free in-app), engaging the
+            // dial pitches the upgrade in its OWN popover anchored here. On the
+            // funnel (suppressUpsell) the popover is suppressed and the Sign up
+            // button reveals instead.
+            <Popover
+              open={!suppressUpsell && pitchLever === 'dynamicLoop'}
+              onOpenChange={(o) => {
+                if (!o) setPitchLever(null);
               }}
-            />
+            >
+              <PopoverAnchor asChild>
+                <div>
+                  <GrooveCardDynamicLoopDial
+                    config={dynamicLoopConfig}
+                    onConfigChange={setDynamicLoopConfig}
+                    // When the cycle isn't usable (capped) the toggle reflects
+                    // "not engaged" and tapping Engage routes through
+                    // onDynamicLoopEngagedChange → upgrade pitch / Sign up.
+                    engaged={dynamicLoopEngaged && dynamicLoopUsable}
+                    onEngagedChange={onDynamicLoopEngagedChange}
+                    maxSemitones={playback.transposeRange}
+                    disabled={!playback.isReady}
+                    onHover={(hovering) => {
+                      if (hovering) clearCapUpsell();
+                      setHoverHint(hovering ? 'dynamic-loop' : null);
+                    }}
+                  />
+                </div>
+              </PopoverAnchor>
+              {!suppressUpsell && pitchLever === 'dynamicLoop' && (
+                <UpgradePitchContent
+                  lever="dynamicLoop"
+                  message={capUpsell ?? undefined}
+                  side="bottom"
+                />
+              )}
+            </Popover>
           ) : undefined
         }
         chordRow={
@@ -617,45 +867,68 @@ export function GrooveCardBlockView({
             />
           ) : undefined
         }
+        windowView={showWindowToggle ? windowView : undefined}
+        onToggleWindowView={
+          showWindowToggle
+            ? () =>
+                setWindowView((v) => (v === 'waveform' ? 'sheet' : 'waveform'))
+            : undefined
+        }
         waveform={
-          // The loop-range cap fires from a bar drag ON the waveform, so its
-          // pitch anchors HERE (not the controls row). Own Popover, open only
-          // for the loopRange lever — pops next to the bars the user selected.
-          <Popover
-            open={pitchLever === 'loopRange'}
-            onOpenChange={(o) => {
-              if (!o) setPitchLever(null);
-            }}
-          >
-            <PopoverAnchor asChild>
-              <div>
-                <GrooveCardWaveform
-                  isPlaying={playback.isPlaying}
-                  bassBuffer={playback.bassBuffer}
-                  audioContext={playback.audioContext}
-                  loopStartAudioTime={playback.loopStartAudioTime}
-                  loopDurationSeconds={playback.loopDurationSeconds}
-                  getAudioPhase={playback.getAudioPhase}
-                  lengthBars={config.lengthBars}
-                  loopSelection={playback.loopSelection}
-                  onLoopSelectionChange={playback.setLoopSelection}
-                  color={waveformColor}
-                  countdownBeat={
-                    playback.countdownState.isCountingDown
-                      ? playback.countdownState.currentBeat
-                      : null
-                  }
+          windowView === 'sheet' ? (
+            // Sheet-music view of the bass line — same window, different content.
+            // Shows the SELECTED take's notation; empty-states when that take has
+            // no notation authored.
+            <GrooveCardSheetView
+              notes={activeNotation.notes}
+              timeSignature={activeNotation.timeSignature}
+              bpm={config.originalBpm}
+              lengthBars={config.lengthBars}
+              isPlaying={playback.isPlaying}
+              isCountingIn={playback.countdownState.isCountingDown}
+              getAudioPhase={playback.getAudioPhase}
+            />
+          ) : (
+            // The loop-range cap fires from a bar drag ON the waveform, so its
+            // pitch anchors HERE (not the controls row). Own Popover, open only
+            // for the loopRange lever — pops next to the bars the user selected.
+            <Popover
+              open={!suppressUpsell && pitchLever === 'loopRange'}
+              onOpenChange={(o) => {
+                if (!o) setPitchLever(null);
+              }}
+            >
+              <PopoverAnchor asChild>
+                <div>
+                  <GrooveCardWaveform
+                    isPlaying={playback.isPlaying}
+                    bassBuffer={playback.bassBuffer}
+                    audioContext={playback.audioContext}
+                    loopStartAudioTime={playback.loopStartAudioTime}
+                    loopDurationSeconds={playback.loopDurationSeconds}
+                    getAudioPhase={playback.getAudioPhase}
+                    lengthBars={config.lengthBars}
+                    loopSelection={playback.loopSelection}
+                    fillRegion={activeFillRegion}
+                    onLoopSelectionChange={playback.setLoopSelection}
+                    color={waveformColor}
+                    countdownBeat={
+                      playback.countdownState.isCountingDown
+                        ? playback.countdownState.currentBeat
+                        : null
+                    }
+                  />
+                </div>
+              </PopoverAnchor>
+              {pitchLever === 'loopRange' && (
+                <UpgradePitchContent
+                  lever="loopRange"
+                  message={capUpsell ?? undefined}
+                  side="bottom"
                 />
-              </div>
-            </PopoverAnchor>
-            {pitchLever === 'loopRange' && (
-              <UpgradePitchContent
-                lever="loopRange"
-                message={capUpsell ?? undefined}
-                side="bottom"
-              />
-            )}
-          </Popover>
+              )}
+            </Popover>
+          )
         }
         controls={
           <GrooveCardControls
@@ -681,11 +954,12 @@ export function GrooveCardBlockView({
               playback.setStemSolo(solo ? 'audio-bass' : null)
             }
             onDeconCapHit={() => {
-              setPitchLever('deconstruction');
+              if (!suppressUpsell) setPitchLever('deconstruction');
               trackEvent('cap_hit', {
                 lever: 'deconstruction',
                 grooveId: block.id,
               });
+              onCapHitExternal?.('deconstruction');
             }}
             onHoverHint={(hint) => {
               if (hint) clearCapUpsell();
@@ -701,18 +975,35 @@ export function GrooveCardBlockView({
             // bump surfaces the upgrade pitch.
             transposeRange={playback.transposeRange}
             transposeCapped={capsEnabled && caps.transpose.isCapped}
+            // Funnel surfaces (suppressUpsell) grey the tempo + key chevrons at
+            // the band edge instead of pitching membership. originalBpm centres
+            // the tempo band. In-app leaves dimAtCap off (live chevron + pitch).
+            dimAtCap={suppressUpsell}
+            originalBpm={config.originalBpm}
             // Next-key preview: appears the moment the dial is ENGAGED (a cue
             // showing where the cycle will go, even before play), then updates
             // live through every key once playing. Computed above.
             nextKeyLabel={nextKeyLabel}
-            // loopRange anchors to the WAVEFORM (handled above), not the
-            // controls row — so the controls popover ignores it.
-            pitchLever={pitchLever === 'loopRange' ? null : pitchLever}
+            // loopRange anchors to the WAVEFORM, dynamicLoop to the header DIAL,
+            // and linesAndFills to its own SECTION (all handled above), not the
+            // controls row — so the controls popover ignores them. When the
+            // surface suppresses the upsell (/free funnel), force null so the
+            // controls popover never opens.
+            pitchLever={
+              suppressUpsell ||
+              pitchLever === 'loopRange' ||
+              pitchLever === 'dynamicLoop' ||
+              pitchLever === 'linesAndFills'
+                ? null
+                : pitchLever
+            }
             onPitchOpenChange={(open) => {
               if (!open) setPitchLever(null);
             }}
             pitchContent={
-              pitchLever && pitchLever !== 'loopRange' ? (
+              pitchLever &&
+              pitchLever !== 'loopRange' &&
+              pitchLever !== 'dynamicLoop' ? (
                 <UpgradePitchContent
                   lever={pitchLever}
                   message={capUpsell ?? undefined}
@@ -720,6 +1011,38 @@ export function GrooveCardBlockView({
               ) : null
             }
           />
+        }
+        // Lines & Fills — premium alternate-bassline swap, rendered INSIDE the
+        // card frame (the footer slot) so it reads as part of the groove card.
+        // Anchored upsell popover mirrors the Dynamic Loop dial pattern.
+        footer={
+          linesAndFillsShown ? (
+            <Popover
+              open={!suppressUpsell && pitchLever === 'linesAndFills'}
+              onOpenChange={(o) => {
+                if (!o) setPitchLever(null);
+              }}
+            >
+              <PopoverAnchor asChild>
+                <div>
+                  <LinesAndFillsSection
+                    groups={linesAndFillsGroups}
+                    activeLineId={activeSelection.lineId}
+                    activeFillId={activeSelection.fillId}
+                    locked={linesAndFillsCapped}
+                    onSelect={onSelectLineFill}
+                  />
+                </div>
+              </PopoverAnchor>
+              {!suppressUpsell && pitchLever === 'linesAndFills' && (
+                <UpgradePitchContent
+                  lever="linesAndFills"
+                  message={capUpsell ?? undefined}
+                  side="bottom"
+                />
+              )}
+            </Popover>
+          ) : undefined
         }
       />
 

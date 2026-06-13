@@ -12,6 +12,9 @@
  *   M       mute / unmute the bass
  *   S       solo / unsolo the bass
  *   L       engage / disengage the Dynamic Loop
+ *   A/B/C   select the 1st / 2nd / 3rd bassline (Bass A / B / C), no fill
+ *   F       toggle the CURRENT bassline's fill on / off
+ *   N       toggle the window between the waveform and the bass notation
  *
  * Transpose routes through the same `setKey` command the +/- stepper
  * buttons use, and tempo through the same `setTempo` the tempo stepper uses
@@ -65,6 +68,19 @@ interface UseGrooveCardKeyboardArgs {
    *  Engage toggle. The caller passes a no-op on surfaces where the loop isn't
    *  available (drill bricks, capped free tier). */
   toggleDynamicLoop: () => void;
+  /** Select the Nth bassline (0 = Bass A, 1 = Bass B, …) with no fill — the same
+   *  caller-owned action as clicking that line's card (cap-gated identically).
+   *  A no-op when there's no line at that index. */
+  selectLineByIndex: (index: number) => void;
+  /** Toggle the CURRENTLY-selected bassline's fill: on (its first fill) when no
+   *  fill is active, off (back to the plain line) when one is. Whatever line is
+   *  active, the fill applies to THAT line. Cap-gated like a card click; a no-op
+   *  when the current line has no fills. */
+  toggleCurrentLineFill: () => void;
+  /** Toggle the window between the audio waveform and the bass notation — the
+   *  same action as the window's waveform/notation toggle button. The caller
+   *  passes a no-op on surfaces without the toggle (drill bricks). */
+  toggleWindowView: () => void;
   /** Gate — only handle keys once the card is interactive (isReady). */
   enabled: boolean;
   /** When true (Dynamic Loop engaged), the auto-cycle owns the key, so the
@@ -103,6 +119,9 @@ export function useGrooveCardKeyboard({
   toggleBassMute,
   toggleSoloDrums,
   toggleDynamicLoop,
+  selectLineByIndex,
+  toggleCurrentLineFill,
+  toggleWindowView,
   enabled,
   lockTranspose = false,
 }: UseGrooveCardKeyboardArgs): void {
@@ -172,6 +191,39 @@ export function useGrooveCardKeyboard({
         toggleDynamicLoop();
         return;
       }
+
+      // A / B / C → select the 1st / 2nd / 3rd bassline (Bass A / B / C), no
+      // fill. Routes through the same line-select the cards use, so gating +
+      // missing-line handling are identical. Not a browser-default action; no
+      // preventDefault needed.
+      if (e.key === 'a' || e.key === 'A') {
+        selectLineByIndex(0);
+        return;
+      }
+      if (e.key === 'b' || e.key === 'B') {
+        selectLineByIndex(1);
+        return;
+      }
+      if (e.key === 'c' || e.key === 'C') {
+        selectLineByIndex(2);
+        return;
+      }
+
+      // F → toggle the current bassline's fill on/off (applies to whichever line
+      // is selected). Cap-gated by the caller; a no-op when the line has no
+      // fills. Not a browser-default action; no preventDefault needed.
+      if (e.key === 'f' || e.key === 'F') {
+        toggleCurrentLineFill();
+        return;
+      }
+
+      // N → toggle the window between the waveform and the bass notation (same as
+      // the window's toggle button; a no-op on surfaces without it). Not a
+      // browser-default action; no preventDefault needed.
+      if (e.key === 'n' || e.key === 'N') {
+        toggleWindowView();
+        return;
+      }
     };
 
     window.addEventListener('keydown', onKeyDown);
@@ -186,6 +238,9 @@ export function useGrooveCardKeyboard({
     toggleBassMute,
     toggleSoloDrums,
     toggleDynamicLoop,
+    selectLineByIndex,
+    toggleCurrentLineFill,
+    toggleWindowView,
     lockTranspose,
   ]);
 }

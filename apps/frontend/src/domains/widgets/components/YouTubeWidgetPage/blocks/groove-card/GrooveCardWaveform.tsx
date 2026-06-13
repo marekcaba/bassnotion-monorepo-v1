@@ -29,6 +29,13 @@ export interface WaveformLoopSelection {
   endBar: number;
 }
 
+/** Fractional-bar span [startFrac, endFrac] of the active fill, for the blue
+ *  region highlight. 0 = loop start, lengthBars = loop end. */
+export interface WaveformFillRegion {
+  startFrac: number;
+  endFrac: number;
+}
+
 interface GrooveCardWaveformProps {
   isPlaying: boolean;
   /** Bass stem audio data. When null the component falls back to the
@@ -56,6 +63,9 @@ interface GrooveCardWaveformProps {
   lengthBars?: number;
   /** Currently committed bar selection (looped). null = no selection. */
   loopSelection?: WaveformLoopSelection | null;
+  /** The active fill's region (fractional bars), drawn as a blue gradient band.
+   *  null = no fill active → no highlight. */
+  fillRegion?: WaveformFillRegion | null;
   /** Called when the user commits a new selection via drag (mouseup /
    *  touchend) or clears it (click outside / right-click). Pass null to
    *  clear. Pointer events are only wired when this prop is provided. */
@@ -75,6 +85,18 @@ interface GrooveCardWaveformProps {
 // `color` prop remains an explicit per-card override.
 const DEFAULT_BAR_COLOR = '#1f252e';
 const SELECTION_COLOR = '#3B82F6'; // tailwind blue-500 — loop-range bracket
+
+/**
+ * Fill-region highlight: instead of a background band, the WAVEFORM PEAKS inside
+ * the fill render in this blue. Columns in the region are blue; the rest stay
+ * the normal bar colour, with a short alpha fade at each edge so it isn't a hard
+ * cut.
+ */
+const FILL_REGION_STYLE = {
+  rgb: '59, 130, 246', // blue-500 — vivid enough to read as coloured peaks
+  /** Edge fade width, in bars, on each side of the region. */
+  fadeBars: 0.5,
+};
 const PULSE_BAR_COUNT = 32;
 // Beat-1 wrap guard window (s). getStemPlayheadPhase() subtracts ~185ms of visual-
 // latency compensation, which pulls the phase NEGATIVE at the loop origin and wraps it
@@ -135,6 +157,7 @@ export function GrooveCardWaveform({
   getAudioPhase,
   lengthBars = 0,
   loopSelection,
+  fillRegion,
   onLoopSelectionChange,
   color = DEFAULT_BAR_COLOR,
   countdownBeat = null,
@@ -166,6 +189,7 @@ export function GrooveCardWaveform({
     getAudioPhase: getAudioPhase ?? null,
     lengthBars,
     loopSelection: loopSelection ?? null,
+    fillRegion: fillRegion ?? null,
     dragSelection,
     color,
     countdownBeat,
@@ -179,6 +203,7 @@ export function GrooveCardWaveform({
     getAudioPhase: getAudioPhase ?? null,
     lengthBars,
     loopSelection: loopSelection ?? null,
+    fillRegion: fillRegion ?? null,
     dragSelection,
     color,
     countdownBeat,
@@ -234,6 +259,8 @@ export function GrooveCardWaveform({
       height: number,
       buffer: AudioBuffer,
       fillColor: string,
+      bars: number,
+      region: WaveformFillRegion | null,
     ) => {
       // Single 80%-opacity state — the playhead (full white) alone signals
       // "playing vs. stopped". Dimming the peaks when stopped made the
@@ -241,15 +268,45 @@ export function GrooveCardWaveform({
       // calmer reference layer and lets the bar lines + playhead pop.
       const peaks = getOrComputePeaks(buffer, width);
       const midY = height / 2;
-      c.fillStyle = fillColor;
-      c.globalAlpha = 0.8;
+      // Fill-region highlight: columns inside the region draw in blue, with a
+      // short linear fade (over `fadeBars`) at each edge so it eases in/out.
+      const hasRegion =
+        !!region && bars > 0 && region.endFrac > region.startFrac;
+      const xs = region && hasRegion ? (region.startFrac / bars) * width : 0;
+      const xe = region && hasRegion ? (region.endFrac / bars) * width : 0;
+      const fadePx = hasRegion
+        ? Math.min((FILL_REGION_STYLE.fadeBars / bars) * width, (xe - xs) / 2)
+        : 0;
+      /** 0 = normal colour, 1 = full blue — how "fill" this column is. */
+      const blueWeight = (col: number): number => {
+        if (!hasRegion || col < xs || col >= xe) return 0;
+        if (fadePx <= 0) return 1;
+        const fromStart = col - xs;
+        const fromEnd = xe - col;
+        const edge = Math.min(fromStart, fromEnd);
+        return Math.min(1, edge / fadePx);
+      };
+
       for (let col = 0; col < width; col++) {
         const min = peaks[col * 2] ?? 0;
         const max = peaks[col * 2 + 1] ?? 0;
         const yTop = midY - Math.max(0, max) * midY;
         const yBot = midY - Math.min(0, min) * midY;
         const h = Math.max(1, yBot - yTop);
-        c.fillRect(col, yTop, 1, h);
+        const w = blueWeight(col);
+        if (w > 0) {
+          // Blend: draw the normal peak (faded by 1-w) then the blue on top (w).
+          c.globalAlpha = 0.8 * (1 - w);
+          c.fillStyle = fillColor;
+          c.fillRect(col, yTop, 1, h);
+          c.globalAlpha = 0.95 * w;
+          c.fillStyle = `rgb(${FILL_REGION_STYLE.rgb})`;
+          c.fillRect(col, yTop, 1, h);
+        } else {
+          c.globalAlpha = 0.8;
+          c.fillStyle = fillColor;
+          c.fillRect(col, yTop, 1, h);
+        }
       }
       c.globalAlpha = 1; // restore for subsequent paints in this frame
     };
@@ -370,9 +427,19 @@ export function GrooveCardWaveform({
 
       if (s.bassBuffer) {
         // Bar grid first — peaks paint on top so the lines show only in
-        // the quieter portions of the waveform.
+        // the quieter portions of the waveform. The fill highlight is the PEAKS
+        // THEMSELVES rendered blue inside the active fill's region (no separate
+        // background band).
         drawBarLines(ctx, width, height, s.lengthBars);
-        drawPeaks(ctx, width, height, s.bassBuffer, s.color);
+        drawPeaks(
+          ctx,
+          width,
+          height,
+          s.bassBuffer,
+          s.color,
+          s.lengthBars,
+          s.fillRegion,
+        );
 
         // Selection bracket: drag-in-progress (pending=true) is drawn at
         // 55% alpha so the user sees their drag is being tracked; once
@@ -448,7 +515,8 @@ export function GrooveCardWaveform({
             const PULSE_MS = 380;
             const FLOOR = 0.18;
             const t = beat != null ? Math.min(1, since / PULSE_MS) : 1;
-            const opacity = beat != null ? FLOOR + (1 - FLOOR) * (1 - t) : FLOOR;
+            const opacity =
+              beat != null ? FLOOR + (1 - FLOOR) * (1 - t) : FLOOR;
             drawPlayhead(ctx, width, height, homeX, opacity);
           } else if (sel) {
             // Map the bar selection onto the canvas: x range and the duration

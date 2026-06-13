@@ -28,6 +28,7 @@ import type {
   Product,
 } from './types/billing.types.js';
 import { COURSE_PRODUCTS } from './types/billing.types.js';
+import { FEATURE_KEYS } from '@bassnotion/contracts';
 
 interface AuthUser {
   id: string;
@@ -239,14 +240,18 @@ export class BillingController {
         subscriptionEndDate: undefined,
         purchasedCourses: [],
         purchasedProductIds: products.map((p) => p.id),
+        // Admins bypass all gating — every feature granted (matches
+        // getGrantedFeatures' admin branch).
+        grantedFeatures: [...FEATURE_KEYS],
       };
     }
 
-    const [subscription, purchasedCourses, purchasedProductIds] =
+    const [subscription, purchasedCourses, purchasedProductIds, grantedFeatures] =
       await Promise.all([
         this.subscriptionRepository.findByUserId(user.id),
         this.purchaseRepository.getPurchasedCourses(user.id),
         this.purchaseRepository.getPurchasedProductIds(user.id),
+        this.entitlementService.getGrantedFeatures(user.id),
       ]);
 
     const activeStatuses = ['active', 'trialing'];
@@ -259,6 +264,7 @@ export class BillingController {
       subscriptionEndDate: subscription?.currentPeriodEnd,
       purchasedCourses,
       purchasedProductIds,
+      grantedFeatures,
     };
   }
 
