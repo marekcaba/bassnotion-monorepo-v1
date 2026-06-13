@@ -132,6 +132,55 @@ export class GroovesService {
   }
 
   /**
+   * Resolve what the STEM signer needs to gate a request: the groove's content
+   * tier + the bucket/path of each base stem (bass/drums/harmony). Reads the RAW
+   * row (access_tier/product_id are backend-internal). Throws NotFound if the
+   * groove is missing. Each stem ref is parsed to { bucket, objectPath } so the
+   * caller can sign private-bucket stems by path. A stem whose url is empty or
+   * unparseable is returned with ref:null (the caller passes it through as-is —
+   * an empty/public url needs no signing).
+   */
+  async resolveStemGate(grooveId: string): Promise<{
+    accessTier: 'free' | 'member' | 'product';
+    productId: string | null;
+    stems: Array<{
+      key: 'bass' | 'drums' | 'harmony';
+      url: string;
+      ref: { bucket: string; objectPath: string } | null;
+    }>;
+  }> {
+    const client = this.supabaseService.getClient();
+    const { data, error } = await client
+      .from('groove_library')
+      .select('access_tier, product_id, stems')
+      .eq('id', grooveId)
+      .single();
+    if (error || !data) {
+      throw new NotFoundException(`Groove ${grooveId} not found`);
+    }
+
+    const stems = (data.stems ?? {}) as {
+      bass?: string;
+      drums?: string;
+      harmony?: string;
+    };
+    const keys: Array<'bass' | 'drums' | 'harmony'> = [
+      'bass',
+      'drums',
+      'harmony',
+    ];
+
+    return {
+      accessTier: (data.access_tier as 'free' | 'member' | 'product') ?? 'free',
+      productId: (data.product_id as string | null) ?? null,
+      stems: keys.map((key) => {
+        const url = stems[key] ?? '';
+        return { key, url, ref: url ? this.parseStorageRef(url) : null };
+      }),
+    };
+  }
+
+  /**
    * Extract { bucket, objectPath } from a Supabase storage URL of the form
    * `…/storage/v1/object/(public|sign)/<bucket>/<path>` (the `path` may carry a
    * `?token=…` querystring on a previously-signed URL, which we strip). Returns

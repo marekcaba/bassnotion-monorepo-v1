@@ -21,16 +21,20 @@
 
 import { z } from 'zod';
 
+// A base stem may live in the PUBLIC audio-samples bucket (free grooves) OR the
+// PRIVATE groove-stems bucket (member/product grooves — signed-URL gated,
+// `object/sign/…`). Both shapes are valid; the access tier (not the URL) decides
+// gating, and the signer resolves the private ref at read time.
 const STEM_PATH_REGEX =
-  /\/storage\/v1\/object\/public\/audio-samples\/[A-Za-z0-9_./-]+/;
+  /\/storage\/v1\/object\/(public|sign)\/(audio-samples|groove-stems)\/[A-Za-z0-9_./-]+/;
 
 /**
  * Stem URL is optional during draft auto-save (admin fills the 3 cells
  * over multiple keystrokes; each keystroke triggers a save). An empty
- * string passes; any non-empty string MUST match the audio-samples
- * bucket path pattern (host-agnostic across staging / production per
- * CLAUDE.md). Publish-time enforcement (all 3 stems required) belongs
- * to the UI, not this auto-save validator.
+ * string passes; any non-empty string MUST match the audio-samples (public,
+ * free) or groove-stems (private, premium) bucket path pattern (host-agnostic
+ * across staging / production per CLAUDE.md). Publish-time enforcement (all 3
+ * stems required) belongs to the UI, not this auto-save validator.
  */
 export const grooveCardStemUrlSchema = z.union([
   z.literal(''),
@@ -38,7 +42,7 @@ export const grooveCardStemUrlSchema = z.union([
     .string()
     .refine(
       (url) => STEM_PATH_REGEX.test(url),
-      'stem URL must point at /storage/v1/object/public/audio-samples/…',
+      'stem URL must point at the audio-samples or groove-stems bucket',
     ),
 ]);
 

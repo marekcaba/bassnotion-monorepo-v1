@@ -34,6 +34,38 @@ function isPremiumBasslineRef(url: string): boolean {
   return url.includes('/premium-basslines/');
 }
 
+/** A premium base-stem ref lives in the private `groove-stems` bucket and needs
+ *  signing before fetch (member-gated). Free grooves keep public audio-samples
+ *  urls and are fetched directly. */
+function isPremiumStemRef(url: string): boolean {
+  return url.includes('/groove-stems/');
+}
+
+/**
+ * Exchange a private `groove-stems` ref for a real, short-lived signed URL via
+ * the member-gated stem signer. Throws on 403 (not a member) or any failure —
+ * the caller surfaces that as a load error (→ the upsell/lock UX upstream).
+ */
+async function resolveSignedStemUrl(refUrl: string): Promise<string> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+  const res = await fetch(
+    `${apiUrl}/api/v1/grooves/stem-url?path=${encodeURIComponent(refUrl)}`,
+    {
+      headers: session
+        ? { Authorization: `Bearer ${session.access_token}` }
+        : {},
+    },
+  );
+  if (!res.ok) {
+    throw new Error(`stem-url signer failed: HTTP ${res.status}`);
+  }
+  const { url } = (await res.json()) as { url: string };
+  return url;
+}
+
 /**
  * Exchange a private-bucket bassline ref for a real, short-lived signed URL via
  * the gated signer (backend checks the linesAndFills feature grant). Throws on a
@@ -117,6 +149,9 @@ async function fetchAndDecode(
   audioContext: AudioContext,
   url: string,
 ): Promise<AudioBuffer> {
+  // Cache + dedupe key the STORED url (stable). A premium stem's signed URL
+  // carries an ephemeral token that changes per mint, so keying the signed URL
+  // would never hit the cache — key the stable `groove-stems/…` ref instead.
   if (stemCache.has(url)) {
     return stemCache.get(url)!;
   }
@@ -125,7 +160,14 @@ async function fetchAndDecode(
   }
 
   const promise = (async () => {
-    const response = await fetch(url);
+    // A premium base stem lives in the PRIVATE groove-stems bucket — its stored
+    // ref is a tokenless `object/sign/…` URL that 400s if fetched directly.
+    // Resolve a real, short-lived signed URL through the member-gated signer
+    // first. A public audio-samples url (free groove) is fetched directly.
+    const fetchUrl = isPremiumStemRef(url)
+      ? await resolveSignedStemUrl(url)
+      : url;
+    const response = await fetch(fetchUrl);
     if (!response.ok) {
       throw new Error(
         `stem fetch failed: ${response.status} ${response.statusText}`,
