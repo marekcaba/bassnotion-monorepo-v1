@@ -7,6 +7,12 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/backend/package.json ./apps/backend/package.json
 COPY libs/contracts/package.json ./libs/contracts/package.json
 
+# Copy pnpm patches BEFORE install: pnpm-workspace.yaml's `patchedDependencies`
+# (signalsmith-stretch) makes pnpm hash the patch file at install time, so it
+# must exist before `pnpm install` — otherwise ENOENT on the .patch file. This
+# COPY has to precede the install steps below (the later `COPY . .` is too late).
+COPY patches/ ./patches/
+
 # Install pnpm and dependencies
 RUN npm install -g pnpm
 RUN pnpm install --frozen-lockfile --shamefully-hoist
