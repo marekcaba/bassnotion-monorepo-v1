@@ -2,7 +2,7 @@
  * generateRep — behavior tests (Bass Gym Training Engine, Phase 0).
  *
  * Verifies the pure planner against the spec §14 Phase-0 acceptance list:
- *   - 2+2+2 bracketing (six ordered bricks, L1<L2<L3 tempos)
+ *   - 2+2+2 bracketing (three ordered bricks, L1<L2<L3 tempos = a 6-min rep)
  *   - ceiling/floor clamps (50–180 BPM, ±6 key)
  *   - the type dial (SPEED implemented; others throw loudly)
  *   - difficulty_scalar back-off (tightens the bracket)
@@ -96,13 +96,13 @@ describe('generateRep — clamps', () => {
 });
 
 describe('generateRep — SPEED 2+2+2 bracketing', () => {
-  it('returns exactly six ordered bricks', () => {
+  it('returns exactly three ordered bricks (L1/L2/L3 = a 6-min rep)', () => {
     const pool: BlockPool = { blocks: [makeGrooveBlock('focal')] };
     const bricks = generateRep(makeState(), pool, [], SPEED);
 
-    expect(bricks).toHaveLength(6);
-    // Strictly ascending order 0..5.
-    expect(bricks.map((b) => b.order)).toEqual([0, 1, 2, 3, 4, 5]);
+    expect(bricks).toHaveLength(3);
+    // Strictly ascending order 0..2.
+    expect(bricks.map((b) => b.order)).toEqual([0, 1, 2]);
   });
 
   it('brackets today (L2) with an easier L1 and a harder L3', () => {
@@ -117,13 +117,10 @@ describe('generateRep — SPEED 2+2+2 bracketing', () => {
     const tempo = (b: TutorialBlock) =>
       (b.config as { tempoOverride?: number }).tempoOverride;
 
-    // L1a/L1b (idx 0,1) < L2a/L2b (idx 2,3) < L3a/L3b (idx 4,5)
+    // L1 (idx 0) < L2 (idx 1) < L3 (idx 2)
     expect(tempo(bricks[0])).toBe(92); // 100 - 8
-    expect(tempo(bricks[1])).toBe(92);
-    expect(tempo(bricks[2])).toBe(100); // today
-    expect(tempo(bricks[3])).toBe(100);
-    expect(tempo(bricks[4])).toBe(108); // 100 + 8
-    expect(tempo(bricks[5])).toBe(108);
+    expect(tempo(bricks[1])).toBe(100); // today
+    expect(tempo(bricks[2])).toBe(108); // 100 + 8
   });
 
   it('stamps a 2-minute timebox on every brick', () => {
@@ -157,7 +154,7 @@ describe('generateRep — SPEED 2+2+2 bracketing', () => {
     );
     const tempo = (b: TutorialBlock) =>
       (b.config as { tempoOverride?: number }).tempoOverride;
-    expect(tempo(bricks[4])).toBe(180); // 178 + 8 = 186 → clamped to 180
+    expect(tempo(bricks[2])).toBe(180); // L3: 178 + 8 = 186 → clamped to 180
   });
 
   it('does not mutate the source pool block (purity)', () => {
@@ -190,9 +187,9 @@ describe('generateRep — difficulty_scalar back-off', () => {
     const tempo = (b: TutorialBlock) =>
       (b.config as { tempoOverride?: number }).tempoOverride;
     // notch = round(8 * 0.5) = 4
-    expect(tempo(bricks[0])).toBe(96);
-    expect(tempo(bricks[2])).toBe(100);
-    expect(tempo(bricks[4])).toBe(104);
+    expect(tempo(bricks[0])).toBe(96); // L1
+    expect(tempo(bricks[1])).toBe(100); // L2
+    expect(tempo(bricks[2])).toBe(104); // L3
   });
 
   it('never collapses the notch below 1 BPM even at a tiny scalar', () => {
@@ -208,8 +205,8 @@ describe('generateRep — difficulty_scalar back-off', () => {
     );
     const tempo = (b: TutorialBlock) =>
       (b.config as { tempoOverride?: number }).tempoOverride;
-    expect(tempo(bricks[0])).toBe(99); // notch floored to 1
-    expect(tempo(bricks[4])).toBe(101);
+    expect(tempo(bricks[0])).toBe(99); // L1: notch floored to 1
+    expect(tempo(bricks[2])).toBe(101); // L3
   });
 });
 
@@ -269,11 +266,11 @@ describe('generateRep — L1 uses the review block when wins exist', () => {
     ];
     const bricks = generateRep(makeState(), pool, history, SPEED);
 
-    // Brick ids are derived from the source block id.
+    // Brick ids are derived from the source block id. L1 (idx 0) = review;
+    // L2 (idx 1) + L3 (idx 2) = focal.
     expect(bricks[0].id).toContain('review-me');
-    expect(bricks[1].id).toContain('review-me');
+    expect(bricks[1].id).toContain('focal');
     expect(bricks[2].id).toContain('focal');
-    expect(bricks[4].id).toContain('focal');
   });
 
   it('before wins, L1 falls back to the focal block', () => {
@@ -311,8 +308,8 @@ describe('generateRep — task blocks (no-audio SPEED, the seed path)', () => {
     const instr = (b: TutorialBlock) =>
       (b.config as { instruction?: string }).instruction;
     expect(instr(bricks[0])).toBe('Play C major at 92 BPM, clean.'); // L1
-    expect(instr(bricks[2])).toBe('Play C major at 100 BPM, clean.'); // L2
-    expect(instr(bricks[4])).toBe('Play C major at 108 BPM, clean.'); // L3
+    expect(instr(bricks[1])).toBe('Play C major at 100 BPM, clean.'); // L2
+    expect(instr(bricks[2])).toBe('Play C major at 108 BPM, clean.'); // L3
   });
 
   it('also stamps tempoOverride + the timebox on a task brick', () => {
@@ -320,7 +317,8 @@ describe('generateRep — task blocks (no-audio SPEED, the seed path)', () => {
       blocks: [makeTaskBlock('scale', 'Play at {tempo}.')],
     };
     const bricks = generateRep(makeState(), pool, [], SPEED);
-    const cfg = bricks[2].config as {
+    // bricks[1] = L2 = today's tempo (default state tempoBpm 100).
+    const cfg = bricks[1].config as {
       tempoOverride?: number;
       timeboxMinutes?: number;
     };
@@ -366,19 +364,19 @@ describe('generateRep — the SEED goal block shape (drift guard)', () => {
       [],
       SPEED,
     );
-    expect(bricks).toHaveLength(6);
+    expect(bricks).toHaveLength(3);
     const instr = (b: TutorialBlock) =>
       (b.config as { instruction?: string }).instruction;
     // L1 = 82 BPM, interpolated into the seed's real instruction copy.
     expect(instr(bricks[0])).toContain('at 82 BPM');
     expect(instr(bricks[0])).toContain('two octaves');
-    expect(instr(bricks[2])).toContain('at 90 BPM');
-    expect(instr(bricks[4])).toContain('at 98 BPM');
+    expect(instr(bricks[1])).toContain('at 90 BPM'); // L2
+    expect(instr(bricks[2])).toContain('at 98 BPM'); // L3
     // The seed's tempoRange (60–160) is wide enough not to clamp these.
     const tempo = (b: TutorialBlock) =>
       (b.config as { tempoOverride?: number }).tempoOverride;
     expect(tempo(bricks[0])).toBe(82);
-    expect(tempo(bricks[4])).toBe(98);
+    expect(tempo(bricks[2])).toBe(98);
   });
 });
 
@@ -395,9 +393,9 @@ describe('generateRep — tempoRange + ladderPosition labels (§13)', () => {
     );
     const tempo = (b: TutorialBlock) =>
       (b.config as { tempoOverride?: number }).tempoOverride;
-    expect(tempo(bricks[0])).toBe(95); // 92 -> floored to range min 95
-    expect(tempo(bricks[2])).toBe(100); // within range
-    expect(tempo(bricks[4])).toBe(105); // 108 -> capped to range max 105
+    expect(tempo(bricks[0])).toBe(95); // L1: 92 -> floored to range min 95
+    expect(tempo(bricks[1])).toBe(100); // L2: within range
+    expect(tempo(bricks[2])).toBe(105); // L3: 108 -> capped to range max 105
   });
 
   it('normalizes an inverted tempoRange (min>max) instead of emitting garbage', () => {
@@ -413,22 +411,15 @@ describe('generateRep — tempoRange + ladderPosition labels (§13)', () => {
     const tempo = (b: TutorialBlock) =>
       (b.config as { tempoOverride?: number }).tempoOverride;
     // Normalized to [60,160] → 92/100/108 all pass through, NOT pinned to 160.
-    expect(tempo(bricks[0])).toBe(92);
-    expect(tempo(bricks[2])).toBe(100);
-    expect(tempo(bricks[4])).toBe(108);
+    expect(tempo(bricks[0])).toBe(92); // L1
+    expect(tempo(bricks[1])).toBe(100); // L2
+    expect(tempo(bricks[2])).toBe(108); // L3
   });
 
   it('stamps ladderPosition on every emitted brick', () => {
     const pool: BlockPool = { blocks: [makeGrooveBlock('focal')] };
     const bricks = generateRep(makeState(), pool, [], SPEED);
-    expect(bricks.map((b) => b.ladderPosition)).toEqual([
-      'L1',
-      'L1',
-      'L2',
-      'L2',
-      'L3',
-      'L3',
-    ]);
+    expect(bricks.map((b) => b.ladderPosition)).toEqual(['L1', 'L2', 'L3']);
   });
 });
 

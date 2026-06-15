@@ -253,12 +253,12 @@ describe('TrainingEngineService.mintVirtualTutorial', () => {
 });
 
 describe('TrainingEngineService.getTodayRep', () => {
-  it('plans 6 bricks from the snapshot block_set + climb state, and mints them', async () => {
+  it('plans 3 bricks from the snapshot block_set + climb state, and mints them', async () => {
     const { service, repo } = makeService();
     const { slug, bricks } = await service.getTodayRep(USER, ENROLLMENT);
 
     expect(slug).toBe('training-rep-enroll-1');
-    expect(bricks).toHaveLength(6); // 2+2+2
+    expect(bricks).toHaveLength(3); // L1/L2/L3 = a 6-min rep
 
     // The minted bricks are exactly what was generated.
     expect(repo.upsertVirtualTutorial).toHaveBeenCalledWith(
@@ -279,10 +279,10 @@ describe('TrainingEngineService.getTodayRep', () => {
     const { bricks } = await service.getTodayRep(USER, ENROLLMENT);
     const instr = (b: { config: unknown }) =>
       (b.config as { instruction?: string }).instruction;
-    // climb tempo 90, notch 8 → L1 82 / L2 90 / L3 98.
+    // climb tempo 90, notch 8 → L1 82 / L2 90 / L3 98 (one brick each).
     expect(instr(bricks[0])).toBe('Play C major at 82 BPM.');
-    expect(instr(bricks[2])).toBe('Play C major at 90 BPM.');
-    expect(instr(bricks[4])).toBe('Play C major at 98 BPM.');
+    expect(instr(bricks[1])).toBe('Play C major at 90 BPM.');
+    expect(instr(bricks[2])).toBe('Play C major at 98 BPM.');
   });
 
   it('feeds rep history into the planner (drives L1 spaced review)', async () => {

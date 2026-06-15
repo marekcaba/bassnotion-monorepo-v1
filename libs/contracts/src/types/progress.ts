@@ -78,11 +78,26 @@ export interface GetUserTutorialCompletionsResponse {
  * (YYYY-MM-DD) of the most recent practice, or null if they've never practiced.
  */
 export interface GetPracticeStreakResponse {
-  /** Consecutive-day streak count. 0 if never practiced or the streak lapsed. */
+  /** The FLOOR streak: consecutive days the user showed up (any deliberate
+   *  practice). 0 if never practiced or the streak lapsed. */
   current: number;
   /** Most recent practice date (YYYY-MM-DD), or null. */
   lastPracticedOn: string | null;
   /** True if the user has already logged a practice today (drives "keep it up"
    *  vs "practice today to keep your streak" copy). */
   isActiveToday: boolean;
+
+  // ── Training-engine streak protection (Phase 4, spec §8) ───────────────────
+  /** The CEILING streak: consecutive days the user completed a FULL focused rep
+   *  (all ladder bricks). A subset of the floor — reaching the ceiling pays the
+   *  floor automatically. */
+  ceiling: number;
+  /** Freeze tokens currently banked (auto-shield a missed day). */
+  freezeTokens: number;
+  /** True when a missed day was just auto-shielded by a freeze token (so the UI
+   *  can surface "we saved your streak"). */
+  freezeUsed: boolean;
+  /** A milestone reached on THIS completion (7/30/100/365…), or null. Lets the
+   *  client fire a celebration without a separate fetch. */
+  milestoneReached: number | null;
 }

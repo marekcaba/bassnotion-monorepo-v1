@@ -7,6 +7,18 @@ import { RequestContextService } from '../../../shared/services/request-context.
 export interface StreakRow {
   practice_streak_days: number;
   last_practiced_on: string | null; // YYYY-MM-DD or null
+  // Phase 4: streak protection.
+  practice_streak_ceiling: number;
+  /** Loose policy blob. v1 shape: { tokens, lastCeilingOn }. */
+  streak_freeze_state: Record<string, unknown> | null;
+}
+
+/** The fields a streak write persists (Phase 4). */
+export interface StreakWrite {
+  streakDays: number;
+  lastPracticedOn: string;
+  ceiling: number;
+  freezeState: Record<string, unknown>;
 }
 
 /**
@@ -35,7 +47,9 @@ export class PracticeStreakRepository {
     const { data, error } = await this.supabaseService
       .getClient()
       .from('profiles')
-      .select('practice_streak_days, last_practiced_on')
+      .select(
+        'practice_streak_days, last_practiced_on, practice_streak_ceiling, streak_freeze_state',
+      )
       .eq('id', userId)
       .single();
 
@@ -50,15 +64,14 @@ export class PracticeStreakRepository {
     return {
       practice_streak_days: data?.practice_streak_days ?? 0,
       last_practiced_on: data?.last_practiced_on ?? null,
+      practice_streak_ceiling: data?.practice_streak_ceiling ?? 0,
+      streak_freeze_state:
+        (data?.streak_freeze_state as Record<string, unknown> | null) ?? null,
     };
   }
 
-  /** Persist a new streak count + last-practiced date for the user. */
-  async setStreak(
-    userId: string,
-    streakDays: number,
-    lastPracticedOn: string,
-  ): Promise<void> {
+  /** Persist the full streak state (floor + ceiling + freeze) for the user. */
+  async setStreak(userId: string, w: StreakWrite): Promise<void> {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
 
@@ -66,8 +79,10 @@ export class PracticeStreakRepository {
       .getClient()
       .from('profiles')
       .update({
-        practice_streak_days: streakDays,
-        last_practiced_on: lastPracticedOn,
+        practice_streak_days: w.streakDays,
+        last_practiced_on: w.lastPracticedOn,
+        practice_streak_ceiling: w.ceiling,
+        streak_freeze_state: w.freezeState,
         updated_at: new Date().toISOString(),
       })
       .eq('id', userId);
@@ -75,11 +90,41 @@ export class PracticeStreakRepository {
     if (error) {
       logger.error('Failed to write practice streak', error, {
         userId,
-        streakDays,
-        lastPracticedOn,
+        ...w,
         correlationId,
       });
       throw error;
+    }
+  }
+
+  /**
+   * Record a streak milestone (7/30/100/365) best-effort. Idempotent via the
+   * UNIQUE(user_id, milestone_type) on user_milestones — re-reaching the same
+   * milestone is a no-op. Never throws into the caller's flow.
+   */
+  async recordMilestone(userId: string, milestone: number): Promise<void> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+
+    const { error } = await this.supabaseService
+      .getClient()
+      .from('user_milestones')
+      .upsert(
+        {
+          user_id: userId,
+          milestone_type: `streak_${milestone}`,
+          data: { streak: milestone },
+        },
+        { onConflict: 'user_id,milestone_type', ignoreDuplicates: true },
+      );
+
+    if (error) {
+      logger.error('Failed to record milestone', error, {
+        userId,
+        milestone,
+        correlationId,
+      });
+      // best-effort — swallow.
     }
   }
 
