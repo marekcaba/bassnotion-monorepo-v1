@@ -15,6 +15,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { GoalEnrollment, TutorialBlock } from '@bassnotion/contracts';
 
+import { useAuth } from '@/domains/user/hooks/use-auth';
 import {
   fetchMyEnrollments,
   enrollInGoal,
@@ -41,6 +42,7 @@ export interface GymSession {
 export function useGymSession(
   goalSlug: string = DEFAULT_GOAL_SLUG,
 ): GymSession {
+  const { isAuthenticated, user } = useAuth();
   const [status, setStatus] = useState<GymStatus>('loading');
   const [slug, setSlug] = useState<string | null>(null);
   const [bricks, setBricks] = useState<TutorialBlock[]>([]);
@@ -76,9 +78,12 @@ export function useGymSession(
     }
   }, [goalSlug]);
 
+  // Wait for auth to resolve before touching the AuthGuard-protected endpoints
+  // (firing on raw mount races AuthProvider setting the token → a 401).
   useEffect(() => {
+    if (!isAuthenticated || !user) return;
     void run();
-  }, [run]);
+  }, [isAuthenticated, user, run]);
 
   return { status, slug, bricks, enrollment, error, refresh: run };
 }

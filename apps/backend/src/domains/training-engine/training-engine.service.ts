@@ -119,11 +119,21 @@ export class TrainingEngineService {
       throw new NotFoundException(`Training goal "${goalSlug}" not found`);
     }
 
+    // v1 starting tempo: the goal target if present, else the engine floor.
+    // (Real placement assessment sets this for real in Phase 5.)
+    const startTempoBpm = goal.target?.tempoBpm ?? 60;
+
     const existing = await this.repository.findEnrollmentByGoal(
       userId,
       goal.id,
     );
     if (existing) {
+      // SELF-HEAL: createEnrollment + createClimbState are two writes (no cross-
+      // table transaction in the JS client). If a prior call died between them,
+      // the enrollment exists but its climb_state is missing — which would make
+      // getTodayRep 404 forever, and UNIQUE(user_id, goal_id) makes re-enroll a
+      // no-op. So repair the climb_state here before returning.
+      await this.ensureClimbState(userId, existing.id, startTempoBpm);
       logger.info('Enroll is a no-op: user already enrolled', {
         userId,
         goalSlug,
@@ -142,19 +152,13 @@ export class TrainingEngineService {
       forkConfig: goal.forkConfig,
     };
 
-    // v1 starting tempo: the goal target if present, else the engine floor.
-    // (Real placement assessment sets this for real in Phase 5.)
-    const startTempoBpm = goal.target?.tempoBpm ?? 60;
-
     const enrollment = await this.repository.createEnrollment(
       userId,
       goal.id,
       snapshot,
       { startTempoBpm },
     );
-    await this.repository.createClimbState(userId, enrollment.id, {
-      tempoBpm: startTempoBpm,
-    });
+    await this.ensureClimbState(userId, enrollment.id, startTempoBpm);
 
     logger.info('Enrolled user in goal', {
       userId,
@@ -164,6 +168,22 @@ export class TrainingEngineService {
     });
 
     return enrollment;
+  }
+
+  /** Create the enrollment's climb_state only if it doesn't already exist. */
+  private async ensureClimbState(
+    userId: string,
+    goalEnrollmentId: string,
+    startTempoBpm: number,
+  ): Promise<void> {
+    const existing = await this.repository.findClimbState(
+      userId,
+      goalEnrollmentId,
+    );
+    if (existing) return;
+    await this.repository.createClimbState(userId, goalEnrollmentId, {
+      tempoBpm: startTempoBpm,
+    });
   }
 
   /**
