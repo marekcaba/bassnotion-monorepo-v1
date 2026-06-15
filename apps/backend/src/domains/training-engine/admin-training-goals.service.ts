@@ -85,6 +85,18 @@ export class AdminTrainingGoalsService {
   }
 
   async remove(id: string): Promise<void> {
+    // Guard against silent data loss: goal_enrollments FK-cascades on goal
+    // delete, so deleting a goal with enrollments would wipe those players'
+    // climbs + rep history. Refuse; deactivate (is_active=false) instead to
+    // retire a goal without destroying in-flight data.
+    const enrolled = await this.repository.countEnrollmentsForGoal(id);
+    if (enrolled > 0) {
+      throw new BadRequestException(
+        `Cannot delete: ${enrolled} enrollment(s) reference this goal. ` +
+          'Deactivate it instead (it stays out of new enrollments but keeps ' +
+          'existing climbs intact).',
+      );
+    }
     await this.repository.deleteGoal(id);
   }
 

@@ -232,6 +232,24 @@ export class TrainingEngineRepository {
     return data ? this.mapGoalRow(data as GoalRow) : null;
   }
 
+  /** How many enrollments reference this goal (any status). Guards delete. */
+  async countEnrollmentsForGoal(goalId: string): Promise<number> {
+    const { count, error } = await this.supabaseService
+      .getClient()
+      .from('goal_enrollments')
+      .select('id', { count: 'exact', head: true })
+      .eq('goal_id', goalId);
+    if (error) {
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      logger.error('Failed to count enrollments for goal', error as Error, {
+        goalId,
+        correlationId: this.requestContext?.getCorrelationId(),
+      });
+      throw error;
+    }
+    return count ?? 0;
+  }
+
   /** Delete a goal by id. Returns true if a row was removed. */
   async deleteGoal(id: string): Promise<void> {
     const logger = this.requestContext?.getLogger() || this.staticLogger;

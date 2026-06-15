@@ -134,9 +134,16 @@ export interface CreateGoalInput {
 export type UpdateGoalInput = Partial<CreateGoalInput>;
 
 /**
- * Deep copy of a goal's climb-relevant fields, frozen at enrollment so
- * draft→publish edits never mutate an in-flight climb (the one genuinely-new
- * modeling decision in the spec).
+ * Deep copy of a goal's climb-relevant fields, taken at enrollment. Frozen
+ * against EXTERNAL change — an admin's draft→publish edit to the training_goal
+ * never mutates an in-flight climb (the one genuinely-new modeling decision in
+ * the spec).
+ *
+ * NOTE: the player's OWN deliberate "Go Deeper" at graduation DOES raise
+ * `target.tempoBpm` here (§7). That isn't an admin edit leaking in — it's the
+ * enrollment advancing its own state. Safe because the climb's tempo is driven
+ * by `climb_states.current_position`, not by this snapshot target — the target
+ * here only feeds the rep title + the graduation summary display.
  */
 export interface GoalSnapshot {
   type: GoalType;

@@ -1,5 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 
 import {
   TrainingEngineService,
@@ -537,11 +541,14 @@ describe('TrainingEngineService.getGraduation', () => {
 });
 
 describe('TrainingEngineService.walkThroughDoor', () => {
+  // A door is only actionable once the 30-day window is due.
+  const dueIso = new Date(Date.now() - 31 * 86_400_000).toISOString();
+  const dueEnrollment = (over: Partial<GoalEnrollment> = {}) =>
+    makeEnrollment({ startedAt: dueIso, ...over });
+
   it('go_deeper raises the target above the landing + resets the clock', async () => {
     const { service, repo } = makeService({
-      findEnrollmentById: vi.fn(
-        async () => makeEnrollment(), // target 120
-      ),
+      findEnrollmentById: vi.fn(async () => dueEnrollment()), // target 120
       findClimbState: vi.fn(async () => ({
         ...makeClimbState(),
         currentPosition: { tempoBpm: 118 }, // landed near target
@@ -559,7 +566,9 @@ describe('TrainingEngineService.walkThroughDoor', () => {
   });
 
   it('lock_it_in marks the enrollment graduated', async () => {
-    const { service, repo } = makeService();
+    const { service, repo } = makeService({
+      findEnrollmentById: vi.fn(async () => dueEnrollment()),
+    });
     await service.walkThroughDoor(USER, ENROLLMENT, 'lock_it_in');
     const patch = (repo.updateEnrollment as ReturnType<typeof vi.fn>).mock
       .calls[0][2];
@@ -568,15 +577,28 @@ describe('TrainingEngineService.walkThroughDoor', () => {
   });
 
   it('switch_lanes also graduates (frontend re-places)', async () => {
-    const { service, repo } = makeService();
+    const { service, repo } = makeService({
+      findEnrollmentById: vi.fn(async () => dueEnrollment()),
+    });
     await service.walkThroughDoor(USER, ENROLLMENT, 'switch_lanes');
     const patch = (repo.updateEnrollment as ReturnType<typeof vi.fn>).mock
       .calls[0][2];
     expect(patch.status).toBe('graduated');
   });
 
+  it('REJECTS a door before the window is due (no mid-cycle reset)', async () => {
+    const { service, repo } = makeService({
+      // started_at recent → not due.
+      findEnrollmentById: vi.fn(async () => makeEnrollment()),
+    });
+    await expect(
+      service.walkThroughDoor(USER, ENROLLMENT, 'go_deeper'),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(repo.updateEnrollment).not.toHaveBeenCalled();
+  });
+
   it('is a no-op on an already-graduated enrollment', async () => {
-    const grad = makeEnrollment({ status: 'graduated' });
+    const grad = dueEnrollment({ status: 'graduated' });
     const { service, repo } = makeService({
       findEnrollmentById: vi.fn(async () => grad),
     });

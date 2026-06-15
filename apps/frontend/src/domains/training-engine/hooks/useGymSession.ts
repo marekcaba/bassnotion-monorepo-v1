@@ -136,15 +136,22 @@ export function useGymSession(
       setError(null);
       try {
         await graduate(active.id, door);
+        // Clear the banner up front — the door was walked through regardless of
+        // whether the re-load below succeeds (so a failed re-plan can't leave a
+        // stuck graduation banner).
         setGraduation(null);
-        runningRef.current = false; // release before run() re-acquires
-        // Re-load: go_deeper continues the same enrollment (re-plans with the
-        // raised target); lock_it_in/switch_lanes graduated it, so run() finds
-        // no active enrollment → drops to placement for a fresh start.
+        // Release before run() re-acquires its own lock. Re-load: go_deeper
+        // continues the same enrollment (re-plans with the raised target);
+        // lock_it_in/switch_lanes graduated it, so run() finds no active
+        // enrollment → drops to placement for a fresh start.
+        runningRef.current = false;
         await run();
       } catch (e) {
         setError(e instanceof Error ? e : new Error(String(e)));
         setStatus('error');
+      } finally {
+        // Always release (run() manages its own lock; this covers the
+        // graduate()-threw path before the release above).
         runningRef.current = false;
       }
     },

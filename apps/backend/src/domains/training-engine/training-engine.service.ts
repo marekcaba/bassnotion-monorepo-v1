@@ -3,6 +3,7 @@ import {
   Inject,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   createStructuredLogger,
@@ -417,6 +418,21 @@ export class TrainingEngineService {
       return enrollment; // already walked through a door
     }
 
+    // The fork is only actionable AT graduation. Guarding here means a player
+    // can't reset their clock / ratchet the target mid-cycle by hammering the
+    // endpoint — go_deeper resets the window at most once per completed 30-day
+    // cycle (the natural cadence), not daily. (Read-time check; no cron.)
+    const climb = await this.repository.findClimbState(userId, goalEnrollmentId);
+    const summary = buildGraduationSummary(
+      enrollment,
+      climb?.currentPosition ?? null,
+    );
+    if (!summary.isDue) {
+      throw new BadRequestException(
+        'Graduation is not due yet for this enrollment',
+      );
+    }
+
     const nowIso = new Date().toISOString();
 
     if (door === 'go_deeper') {
@@ -426,10 +442,6 @@ export class TrainingEngineService {
       const currentTarget =
         (enrollment.goalSnapshot.target?.tempoBpm as number | undefined) ??
         null;
-      const climb = await this.repository.findClimbState(
-        userId,
-        goalEnrollmentId,
-      );
       const landed =
         (climb?.currentPosition?.tempoBpm as number | undefined) ?? null;
       // New target: a clear step above wherever the player actually landed
