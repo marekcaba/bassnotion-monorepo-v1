@@ -534,6 +534,28 @@ export type {
   BlockProgress,
 } from './block.js';
 
+// Bass Gym Training Engine types (Phase 0)
+export type {
+  GoalType,
+  LadderLevel,
+  EnrollmentStatus,
+  RepResultOutcome,
+  ProgressSignal,
+  ProgressSignalKind,
+  PrereqThreshold,
+  GoalTarget,
+  BlockRef,
+  Goal,
+  GoalSnapshot,
+  GoalEnrollment,
+  RepResult,
+  ClimbState,
+  UserMilestone,
+  BlockPool,
+  GenerateRep,
+  GenerateRepOptions,
+} from './training.js';
+
 // Value export (const, not a type) — eighth-note slots per bar for chord charts.
 export { CHORD_SLOTS_PER_BAR } from './block.js';
 
