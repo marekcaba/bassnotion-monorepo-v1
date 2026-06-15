@@ -8,7 +8,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import type { RepResult } from '@bassnotion/contracts';
+import type { RepResult, TutorialBlock } from '@bassnotion/contracts';
 
 import { AuthGuard } from '../user/auth/guards/auth.guard.js';
 import { CurrentUser } from '../user/auth/decorators/current-user.decorator.js';
@@ -65,5 +65,22 @@ export class TrainingEngineController {
     @Param('enrollmentId') enrollmentId: string,
   ): Promise<RepResult[]> {
     return this.trainingEngineService.getRepHistory(user.id, enrollmentId);
+  }
+
+  /**
+   * POST /api/v1/training-engine/enrollments/:enrollmentId/today-rep
+   *
+   * Plan today's rep: read the climb state, run the pure generateRep, mint the
+   * virtual-tutorial row, and return the slug the frontend renders the rep
+   * through. POST (not GET) because it mints/overwrites server state.
+   */
+  @Post('enrollments/:enrollmentId/today-rep')
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async getTodayRep(
+    @CurrentUser() user: AuthUser,
+    @Param('enrollmentId') enrollmentId: string,
+  ): Promise<{ slug: string; bricks: TutorialBlock[] }> {
+    return this.trainingEngineService.getTodayRep(user.id, enrollmentId);
   }
 }

@@ -89,6 +89,10 @@ export interface BlockRef {
   /** id of a block / groove the engine assembles into the rep. */
   blockId: string;
   ladderPosition?: LadderLevel;
+  /** Self-contained content: the full block embedded inline (the v1 seed shape).
+   *  When present, the resolver uses it directly — no library lookup. Library
+   *  references (blockId → groove_library/tutorials) resolve at Phase 5 instead. */
+  block?: TutorialBlock;
   [key: string]: unknown;
 }
 

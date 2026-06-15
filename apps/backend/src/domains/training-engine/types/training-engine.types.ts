@@ -39,6 +39,21 @@ export interface GoalEnrollmentRow {
   updated_at: string;
 }
 
+/** Raw `climb_states` row (snake_case as stored). */
+export interface ClimbStateRow {
+  id: string;
+  goal_enrollment_id: string;
+  user_id: string;
+  current_position: Record<string, unknown>;
+  spaced_review_queue: string[];
+  difficulty_scalar: number;
+  backoff_count: number;
+  last_rep_date: string | null;
+  recommendations: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
 /** Arguments for appending a rep result (server stamps id/completedAt). */
 export interface InsertRepResult {
   userId: string;

@@ -57,9 +57,49 @@ function makeRepResult(overrides: Partial<RepResult> = {}): RepResult {
   };
 }
 
+function makeClimbState() {
+  return {
+    id: 'climb-1',
+    goalEnrollmentId: ENROLLMENT,
+    userId: USER,
+    currentPosition: { tempoBpm: 90 },
+    spacedReviewQueue: [],
+    difficultyScalar: 1.0,
+    backoffCount: 0,
+    lastRepDate: null,
+    recommendations: {},
+    createdAt: '2026-06-01T00:00:00.000Z',
+    updatedAt: '2026-06-01T00:00:00.000Z',
+  };
+}
+
+/** An enrollment whose snapshot embeds a focal task block inline (the seed shape). */
+function makeEnrollmentWithBlock(): GoalEnrollment {
+  const enrollment = makeEnrollment();
+  enrollment.goalSnapshot.blockSet = [
+    {
+      blockId: 'focal',
+      ladderPosition: 'L2',
+      // The seed embeds the full block inline under `block`.
+      block: {
+        id: 'focal',
+        type: 'task',
+        title: 'C Major Scale',
+        order: 0,
+        config: {
+          instruction: 'Play C major at {tempo} BPM.',
+          completionCriterion: { type: 'time', target: 2 },
+        },
+      },
+    } as never,
+  ];
+  return enrollment;
+}
+
 function makeService(repoOverrides: Partial<TrainingEngineRepository> = {}) {
   const repo = {
-    findEnrollmentById: vi.fn(async () => makeEnrollment()),
+    findEnrollmentById: vi.fn(async () => makeEnrollmentWithBlock()),
+    findClimbState: vi.fn(async () => makeClimbState()),
     insertRepResult: vi.fn(async () => makeRepResult()),
     getRepResultsForEnrollment: vi.fn(async () => [makeRepResult()]),
     upsertVirtualTutorial: vi.fn(async () => undefined),
@@ -185,5 +225,66 @@ describe('TrainingEngineService.mintVirtualTutorial', () => {
       service.mintVirtualTutorial(USER, ENROLLMENT, bricks),
     ).rejects.toBeInstanceOf(NotFoundException);
     expect(repo.upsertVirtualTutorial).not.toHaveBeenCalled();
+  });
+});
+
+describe('TrainingEngineService.getTodayRep', () => {
+  it('plans 6 bricks from the snapshot block_set + climb state, and mints them', async () => {
+    const { service, repo } = makeService();
+    const { slug, bricks } = await service.getTodayRep(USER, ENROLLMENT);
+
+    expect(slug).toBe('training-rep-enroll-1');
+    expect(bricks).toHaveLength(6); // 2+2+2
+
+    // The minted bricks are exactly what was generated.
+    expect(repo.upsertVirtualTutorial).toHaveBeenCalledWith(
+      expect.objectContaining({
+        slug: 'training-rep-enroll-1',
+        blocks: bricks,
+      }),
+    );
+    expect(repo.setEnrollmentVirtualSlug).toHaveBeenCalledWith(
+      USER,
+      ENROLLMENT,
+      'training-rep-enroll-1',
+    );
+  });
+
+  it('brackets the climb-state tempo and interpolates it into the task instruction', async () => {
+    const { service } = makeService();
+    const { bricks } = await service.getTodayRep(USER, ENROLLMENT);
+    const instr = (b: { config: unknown }) =>
+      (b.config as { instruction?: string }).instruction;
+    // climb tempo 90, notch 8 → L1 82 / L2 90 / L3 98.
+    expect(instr(bricks[0])).toBe('Play C major at 82 BPM.');
+    expect(instr(bricks[2])).toBe('Play C major at 90 BPM.');
+    expect(instr(bricks[4])).toBe('Play C major at 98 BPM.');
+  });
+
+  it('feeds rep history into the planner (drives L1 spaced review)', async () => {
+    const { service, repo } = makeService();
+    await service.getTodayRep(USER, ENROLLMENT);
+    expect(repo.getRepResultsForEnrollment).toHaveBeenCalledWith(
+      USER,
+      ENROLLMENT,
+    );
+  });
+
+  it('throws NotFound when the enrollment is missing', async () => {
+    const { service } = makeService({
+      findEnrollmentById: vi.fn(async () => null),
+    });
+    await expect(service.getTodayRep(USER, ENROLLMENT)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+  });
+
+  it('throws NotFound when the climb state is missing', async () => {
+    const { service } = makeService({
+      findClimbState: vi.fn(async () => null),
+    });
+    await expect(service.getTodayRep(USER, ENROLLMENT)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 });

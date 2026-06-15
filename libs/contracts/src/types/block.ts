@@ -544,6 +544,17 @@ export interface TutorialBlock<T extends BlockType = BlockType> {
   order: number;
   /** Whether this block appears in the Dynamic Island navigation (default: true for video/exercise/groove, false for text/celebration) */
   showInIsland?: boolean;
+
+  // ── Training-engine contract labels (spec §13) ──────────────────────────────
+  // Optional + backward-compatible: absent on ordinary tutorial blocks; the
+  // engine reads only these LABELS, never inside `config`. Stored in the same
+  // `tutorials.blocks` JSONB → ZERO migration. Add fields here only as the goal
+  // types that need them land (SPEED needs tempoRange; ladderPosition is generic).
+  /** Which ladder level this block is authored for (or inferred from order). */
+  ladderPosition?: 'L1' | 'L2' | 'L3';
+  /** The musically-valid BPM band for this block (lifts PatternLibraryItem.bpmRange).
+   *  generateRep clamps emitted tempos into this band when present. */
+  tempoRange?: { min: number; max: number };
 }
 
 /** Type-safe block aliases */
