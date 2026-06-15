@@ -290,15 +290,19 @@ export function advanceStreakWithFreeze(
   const missed = gap - 1;
   if (freeze.tokens >= missed) {
     const streak = storedDays + 1; // streak survives + today's rep
-    const tokensLeft = freeze.tokens - missed; // consume FIRST, then earn
+    // Consume tokens to bridge — and DO NOT re-earn this turn. A bridged day
+    // was bought with a token, not earned by consecutive practice, so it must
+    // not award a token (otherwise a miss timed onto a 5-day boundary, e.g.
+    // 4→5 or 9→10, would refund the very token it consumed — making freezes
+    // free and exploitable). Tokens are earned ONLY on the gap===1 path above.
     return {
       streak,
-      tokens: awardTokens(storedDays, streak, tokensLeft),
+      tokens: freeze.tokens - missed,
       freezeUsed: true,
     };
   }
-  // Not enough tokens → streak lapses, restart at 1.
-  return { streak: 1, tokens: awardTokens(0, 1, 0), freezeUsed: false };
+  // Not enough tokens → streak lapses, restart at 1 (no token earned on a reset).
+  return { streak: 1, tokens: 0, freezeUsed: false };
 }
 
 /**
