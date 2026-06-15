@@ -8,7 +8,11 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import type { RepResult, TutorialBlock } from '@bassnotion/contracts';
+import type {
+  RepResult,
+  TutorialBlock,
+  GoalEnrollment,
+} from '@bassnotion/contracts';
 
 import { AuthGuard } from '../user/auth/guards/auth.guard.js';
 import { CurrentUser } from '../user/auth/decorators/current-user.decorator.js';
@@ -24,6 +28,38 @@ interface AuthUser {
 @Controller('api/v1/training-engine')
 export class TrainingEngineController {
   constructor(private readonly trainingEngineService: TrainingEngineService) {}
+
+  /**
+   * GET /api/v1/training-engine/enrollments
+   *
+   * The caller's goal enrollments (the gym's "my goals" list). Empty array if
+   * the user has none yet.
+   */
+  @Get('enrollments')
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async listMyEnrollments(
+    @CurrentUser() user: AuthUser,
+  ): Promise<GoalEnrollment[]> {
+    return this.trainingEngineService.listMyEnrollments(user.id);
+  }
+
+  /**
+   * POST /api/v1/training-engine/goals/:slug/enroll
+   *
+   * Enroll the caller in a goal (freezes a snapshot, creates the enrollment +
+   * climb_state). Idempotent — returns the existing enrollment if already
+   * enrolled.
+   */
+  @Post('goals/:slug/enroll')
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async enrollInGoal(
+    @CurrentUser() user: AuthUser,
+    @Param('slug') slug: string,
+  ): Promise<GoalEnrollment> {
+    return this.trainingEngineService.enrollInGoal(user.id, slug);
+  }
 
   /**
    * POST /api/v1/training-engine/rep-results

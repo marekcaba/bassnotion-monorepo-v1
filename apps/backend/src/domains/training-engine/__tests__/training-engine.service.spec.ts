@@ -96,6 +96,25 @@ function makeEnrollmentWithBlock(): GoalEnrollment {
   return enrollment;
 }
 
+function makeGoal() {
+  return {
+    id: 'goal-1',
+    slug: 'speed-c-major-scale',
+    type: 'speed' as const,
+    title: 'Speed: C Major Scale',
+    description: null,
+    target: { tempoBpm: 120 },
+    assessmentConfig: {},
+    blockSet: [],
+    prerequisites: [],
+    day30Milestone: {},
+    forkConfig: {},
+    isActive: true,
+    createdAt: '2026-06-01T00:00:00.000Z',
+    updatedAt: '2026-06-01T00:00:00.000Z',
+  };
+}
+
 function makeService(repoOverrides: Partial<TrainingEngineRepository> = {}) {
   const repo = {
     findEnrollmentById: vi.fn(async () => makeEnrollmentWithBlock()),
@@ -104,6 +123,11 @@ function makeService(repoOverrides: Partial<TrainingEngineRepository> = {}) {
     getRepResultsForEnrollment: vi.fn(async () => [makeRepResult()]),
     upsertVirtualTutorial: vi.fn(async () => undefined),
     setEnrollmentVirtualSlug: vi.fn(async () => undefined),
+    listEnrollments: vi.fn(async () => [makeEnrollment()]),
+    findGoalBySlug: vi.fn(async () => makeGoal()),
+    findEnrollmentByGoal: vi.fn(async () => null),
+    createEnrollment: vi.fn(async () => makeEnrollment()),
+    createClimbState: vi.fn(async () => makeClimbState()),
     ...repoOverrides,
   } as unknown as TrainingEngineRepository;
 
@@ -285,6 +309,105 @@ describe('TrainingEngineService.getTodayRep', () => {
     });
     await expect(service.getTodayRep(USER, ENROLLMENT)).rejects.toBeInstanceOf(
       NotFoundException,
+    );
+  });
+});
+
+describe('TrainingEngineService.listMyEnrollments', () => {
+  it('returns the user enrollments from the repo', async () => {
+    const { service, repo } = makeService();
+    const list = await service.listMyEnrollments(USER);
+    expect(list).toHaveLength(1);
+    expect(repo.listEnrollments).toHaveBeenCalledWith(USER);
+  });
+});
+
+describe('TrainingEngineService.enrollInGoal', () => {
+  it('freezes a snapshot + creates enrollment AND climb_state', async () => {
+    const { service, repo } = makeService({
+      // Fresh enroll: no enrollment + no climb_state yet.
+      findEnrollmentByGoal: vi.fn(async () => null),
+      findClimbState: vi.fn(async () => null),
+    });
+    const enrollment = await service.enrollInGoal(USER, 'speed-c-major-scale');
+
+    expect(enrollment.id).toBe(ENROLLMENT);
+    // Snapshot is frozen from the goal.
+    expect(repo.createEnrollment).toHaveBeenCalledWith(
+      USER,
+      'goal-1',
+      expect.objectContaining({ type: 'speed', target: { tempoBpm: 120 } }),
+      expect.objectContaining({ startTempoBpm: 120 }),
+    );
+    // climb_state seeded from the goal target tempo.
+    expect(repo.createClimbState).toHaveBeenCalledWith(
+      USER,
+      ENROLLMENT,
+      expect.objectContaining({ tempoBpm: 120 }),
+    );
+  });
+
+  it('is idempotent: returns the existing enrollment without re-creating', async () => {
+    const existing = makeEnrollment();
+    const { service, repo } = makeService({
+      findEnrollmentByGoal: vi.fn(async () => existing),
+      // climb_state already present → no repair write.
+      findClimbState: vi.fn(async () => makeClimbState()),
+    });
+    const result = await service.enrollInGoal(USER, 'speed-c-major-scale');
+    expect(result).toBe(existing);
+    expect(repo.createEnrollment).not.toHaveBeenCalled();
+    expect(repo.createClimbState).not.toHaveBeenCalled();
+  });
+
+  it('SELF-HEALS an orphaned enrollment (exists but climb_state missing)', async () => {
+    const existing = makeEnrollment();
+    const { service, repo } = makeService({
+      findEnrollmentByGoal: vi.fn(async () => existing),
+      findClimbState: vi.fn(async () => null), // orphan: no climb_state
+    });
+    const result = await service.enrollInGoal(USER, 'speed-c-major-scale');
+    expect(result).toBe(existing);
+    // Repaired: climb_state created for the existing enrollment.
+    expect(repo.createClimbState).toHaveBeenCalledWith(
+      USER,
+      existing.id,
+      expect.objectContaining({ tempoBpm: 120 }),
+    );
+    expect(repo.createEnrollment).not.toHaveBeenCalled();
+  });
+
+  it('on a fresh enroll, only creates climb_state once (not already present)', async () => {
+    const { service, repo } = makeService({
+      findEnrollmentByGoal: vi.fn(async () => null),
+      findClimbState: vi.fn(async () => null),
+    });
+    await service.enrollInGoal(USER, 'speed-c-major-scale');
+    expect(repo.createEnrollment).toHaveBeenCalledTimes(1);
+    expect(repo.createClimbState).toHaveBeenCalledTimes(1);
+  });
+
+  it('throws NotFound for an unknown goal slug', async () => {
+    const { service } = makeService({
+      findGoalBySlug: vi.fn(async () => null),
+    });
+    await expect(
+      service.enrollInGoal(USER, 'does-not-exist'),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('falls back to tempo 60 when the goal has no target tempo', async () => {
+    const goalNoTempo = { ...makeGoal(), target: {} };
+    const { service, repo } = makeService({
+      findGoalBySlug: vi.fn(async () => goalNoTempo),
+      findEnrollmentByGoal: vi.fn(async () => null),
+      findClimbState: vi.fn(async () => null),
+    });
+    await service.enrollInGoal(USER, 'speed-c-major-scale');
+    expect(repo.createClimbState).toHaveBeenCalledWith(
+      USER,
+      ENROLLMENT,
+      expect.objectContaining({ tempoBpm: 60 }),
     );
   });
 });

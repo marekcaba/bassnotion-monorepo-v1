@@ -10,6 +10,7 @@ import type {
   TutorialBlock,
   BlockPool,
   GoalEnrollment,
+  GoalSnapshot,
 } from '@bassnotion/contracts';
 import { RequestContextService } from '../../shared/services/request-context.service.js';
 import { TrainingEngineRepository } from './repositories/training-engine.repository.js';
@@ -92,6 +93,97 @@ export class TrainingEngineService {
     goalEnrollmentId: string,
   ): Promise<RepResult[]> {
     return this.repository.getRepResultsForEnrollment(userId, goalEnrollmentId);
+  }
+
+  /** All of a user's goal enrollments (the gym's "my goals" list). */
+  async listMyEnrollments(userId: string): Promise<GoalEnrollment[]> {
+    return this.repository.listEnrollments(userId);
+  }
+
+  /**
+   * Enroll the user in a goal by slug: freeze a goal_snapshot, create the
+   * enrollment + its climb_state. Idempotent — returns the existing enrollment
+   * if the user is already in this goal (the UNIQUE(user_id, goal_id) contract).
+   * The starting climb position seeds from the goal target tempo (placement
+   * proper lands in Phase 5).
+   */
+  async enrollInGoal(
+    userId: string,
+    goalSlug: string,
+  ): Promise<GoalEnrollment> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+
+    const goal = await this.repository.findGoalBySlug(goalSlug);
+    if (!goal) {
+      throw new NotFoundException(`Training goal "${goalSlug}" not found`);
+    }
+
+    // v1 starting tempo: the goal target if present, else the engine floor.
+    // (Real placement assessment sets this for real in Phase 5.)
+    const startTempoBpm = goal.target?.tempoBpm ?? 60;
+
+    const existing = await this.repository.findEnrollmentByGoal(
+      userId,
+      goal.id,
+    );
+    if (existing) {
+      // SELF-HEAL: createEnrollment + createClimbState are two writes (no cross-
+      // table transaction in the JS client). If a prior call died between them,
+      // the enrollment exists but its climb_state is missing — which would make
+      // getTodayRep 404 forever, and UNIQUE(user_id, goal_id) makes re-enroll a
+      // no-op. So repair the climb_state here before returning.
+      await this.ensureClimbState(userId, existing.id, startTempoBpm);
+      logger.info('Enroll is a no-op: user already enrolled', {
+        userId,
+        goalSlug,
+        enrollmentId: existing.id,
+        correlationId,
+      });
+      return existing;
+    }
+
+    const snapshot: GoalSnapshot = {
+      type: goal.type,
+      target: goal.target,
+      blockSet: goal.blockSet,
+      assessmentConfig: goal.assessmentConfig,
+      day30Milestone: goal.day30Milestone,
+      forkConfig: goal.forkConfig,
+    };
+
+    const enrollment = await this.repository.createEnrollment(
+      userId,
+      goal.id,
+      snapshot,
+      { startTempoBpm },
+    );
+    await this.ensureClimbState(userId, enrollment.id, startTempoBpm);
+
+    logger.info('Enrolled user in goal', {
+      userId,
+      goalSlug,
+      enrollmentId: enrollment.id,
+      correlationId,
+    });
+
+    return enrollment;
+  }
+
+  /** Create the enrollment's climb_state only if it doesn't already exist. */
+  private async ensureClimbState(
+    userId: string,
+    goalEnrollmentId: string,
+    startTempoBpm: number,
+  ): Promise<void> {
+    const existing = await this.repository.findClimbState(
+      userId,
+      goalEnrollmentId,
+    );
+    if (existing) return;
+    await this.repository.createClimbState(userId, goalEnrollmentId, {
+      tempoBpm: startTempoBpm,
+    });
   }
 
   /**

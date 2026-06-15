@@ -1,5 +1,9 @@
 import type {
   GoalSnapshot,
+  GoalType,
+  GoalTarget,
+  BlockRef,
+  PrereqThreshold,
   EnrollmentStatus,
   LadderLevel,
   RepResultOutcome,
@@ -7,6 +11,24 @@ import type {
   ProgressSignal,
   TutorialBlock,
 } from '@bassnotion/contracts';
+
+/** Raw `training_goals` row (snake_case as stored). */
+export interface GoalRow {
+  id: string;
+  slug: string;
+  type: GoalType;
+  title: string;
+  description: string | null;
+  target: GoalTarget;
+  assessment_config: Record<string, unknown>;
+  block_set: BlockRef[];
+  prerequisites: PrereqThreshold[];
+  day30_milestone: Record<string, unknown>;
+  fork_config: Record<string, unknown>;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
 
 /** Raw `rep_results` row (snake_case as stored). */
 export interface RepResultRow {

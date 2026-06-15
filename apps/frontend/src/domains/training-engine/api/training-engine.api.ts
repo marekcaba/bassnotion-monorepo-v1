@@ -5,8 +5,63 @@
  * All endpoints are AuthGuard-protected on the backend → calls before login 401.
  */
 
-import type { RepResult, RepResultInput } from '@bassnotion/contracts';
+import type {
+  RepResult,
+  RepResultInput,
+  GoalEnrollment,
+  TutorialBlock,
+} from '@bassnotion/contracts';
 import { apiClient } from '@/lib/api-client';
+import { supabase } from '@/infrastructure/supabase/client';
+
+/**
+ * Attach the current Supabase session token to the shared apiClient before an
+ * authed call. Mirrors useStreak/use-user-profile: these endpoints are
+ * AuthGuard-protected, and the gym hooks can fire before AuthProvider has set
+ * the token on mount — so we set it here per-call rather than rely on ordering.
+ * Throws if there is no session (caller gates on isAuthenticated upstream).
+ */
+async function ensureAuthToken(): Promise<void> {
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession();
+  if (error || !session?.access_token) {
+    throw new Error('User not authenticated');
+  }
+  apiClient.setAuthToken(session.access_token);
+}
+
+/** GET /api/v1/training-engine/enrollments — the caller's goal enrollments. */
+export async function fetchMyEnrollments(): Promise<GoalEnrollment[]> {
+  await ensureAuthToken();
+  return apiClient.get<GoalEnrollment[]>('/api/v1/training-engine/enrollments');
+}
+
+/** POST /api/v1/training-engine/goals/:slug/enroll — idempotent enroll. */
+export async function enrollInGoal(slug: string): Promise<GoalEnrollment> {
+  await ensureAuthToken();
+  return apiClient.post<GoalEnrollment>(
+    `/api/v1/training-engine/goals/${encodeURIComponent(slug)}/enroll`,
+    {},
+  );
+}
+
+/**
+ * POST /api/v1/training-engine/enrollments/:id/today-rep — plan + mint today's
+ * rep; returns the virtual-tutorial slug the gym renders through.
+ */
+export async function planTodayRep(
+  enrollmentId: string,
+): Promise<{ slug: string; bricks: TutorialBlock[] }> {
+  await ensureAuthToken();
+  return apiClient.post<{ slug: string; bricks: TutorialBlock[] }>(
+    `/api/v1/training-engine/enrollments/${encodeURIComponent(
+      enrollmentId,
+    )}/today-rep`,
+    {},
+  );
+}
 
 /**
  * POST /api/v1/training-engine/rep-results
@@ -16,7 +71,10 @@ import { apiClient } from '@/lib/api-client';
  * serve different purposes (block_completions = the drill UI's unlock/summary
  * state; rep_results = the engine's own source of truth that generateRep reads).
  */
-export function appendRepResult(input: RepResultInput): Promise<RepResult> {
+export async function appendRepResult(
+  input: RepResultInput,
+): Promise<RepResult> {
+  await ensureAuthToken();
   return apiClient.post<RepResult>(
     '/api/v1/training-engine/rep-results',
     input,
@@ -24,7 +82,10 @@ export function appendRepResult(input: RepResultInput): Promise<RepResult> {
 }
 
 /** GET /api/v1/training-engine/enrollments/:enrollmentId/rep-results */
-export function fetchRepHistory(enrollmentId: string): Promise<RepResult[]> {
+export async function fetchRepHistory(
+  enrollmentId: string,
+): Promise<RepResult[]> {
+  await ensureAuthToken();
   return apiClient.get<RepResult[]>(
     `/api/v1/training-engine/enrollments/${encodeURIComponent(
       enrollmentId,
