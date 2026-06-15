@@ -114,6 +114,26 @@ export interface Goal {
 }
 
 /**
+ * Admin authoring payload to CREATE a training goal (Phase 5a). Server-derived
+ * fields (id, slug, timestamps) are omitted — slug is generated from the title.
+ */
+export interface CreateGoalInput {
+  type: GoalType;
+  title: string;
+  description?: string | null;
+  target?: GoalTarget;
+  assessmentConfig?: Record<string, unknown>;
+  blockSet?: BlockRef[];
+  prerequisites?: PrereqThreshold[];
+  day30Milestone?: Record<string, unknown>;
+  forkConfig?: Record<string, unknown>;
+  isActive?: boolean;
+}
+
+/** Admin authoring payload to UPDATE a goal — every field optional (a patch). */
+export type UpdateGoalInput = Partial<CreateGoalInput>;
+
+/**
  * Deep copy of a goal's climb-relevant fields, frozen at enrollment so
  * draft→publish edits never mutate an in-flight climb (the one genuinely-new
  * modeling decision in the spec).
