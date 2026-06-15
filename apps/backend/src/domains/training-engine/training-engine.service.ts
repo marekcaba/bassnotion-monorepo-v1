@@ -4,7 +4,11 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
-import { createStructuredLogger, generateRep } from '@bassnotion/contracts';
+import {
+  createStructuredLogger,
+  generateRep,
+  clampRepTempo,
+} from '@bassnotion/contracts';
 import type {
   RepResult,
   TutorialBlock,
@@ -104,12 +108,18 @@ export class TrainingEngineService {
    * Enroll the user in a goal by slug: freeze a goal_snapshot, create the
    * enrollment + its climb_state. Idempotent — returns the existing enrollment
    * if the user is already in this goal (the UNIQUE(user_id, goal_id) contract).
-   * The starting climb position seeds from the goal target tempo (placement
-   * proper lands in Phase 5).
+   *
+   * Placement (Phase 5b): if the caller passes a measured starting tempo (the
+   * gym's "what tempo can you play this cleanly?" step, spec §5), the climb
+   * STARTS there. Otherwise it falls back to the goal target, then the engine
+   * floor. The chosen value is recorded in goal_enrollments.placement as the
+   * audit of where the player started. The picked value is clamped to the
+   * engine's valid band so a bad input can't seed an out-of-range climb.
    */
   async enrollInGoal(
     userId: string,
     goalSlug: string,
+    placement?: { startTempoBpm?: number },
   ): Promise<GoalEnrollment> {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
@@ -119,9 +129,19 @@ export class TrainingEngineService {
       throw new NotFoundException(`Training goal "${goalSlug}" not found`);
     }
 
-    // v1 starting tempo: the goal target if present, else the engine floor.
-    // (Real placement assessment sets this for real in Phase 5.)
-    const startTempoBpm = goal.target?.tempoBpm ?? 60;
+    // Starting tempo: the player's placement if given (clamped), else the goal
+    // target, else the engine floor.
+    const picked = placement?.startTempoBpm;
+    const startTempoBpm =
+      typeof picked === 'number'
+        ? clampRepTempo(picked)
+        : (goal.target?.tempoBpm ?? 60);
+    // Record where the player started (audit). `placed` distinguishes a real
+    // placement from the target/floor fallback.
+    const placementRecord = {
+      startTempoBpm,
+      placed: typeof picked === 'number',
+    };
 
     const existing = await this.repository.findEnrollmentByGoal(
       userId,
@@ -132,8 +152,14 @@ export class TrainingEngineService {
       // table transaction in the JS client). If a prior call died between them,
       // the enrollment exists but its climb_state is missing — which would make
       // getTodayRep 404 forever, and UNIQUE(user_id, goal_id) makes re-enroll a
-      // no-op. So repair the climb_state here before returning.
-      await this.ensureClimbState(userId, existing.id, startTempoBpm);
+      // no-op. So repair the climb_state here before returning. (We do NOT
+      // re-place an existing enrollment — placement is a one-time start; repair
+      // uses the original placed tempo when available.)
+      const existingStart =
+        typeof existing.placement?.startTempoBpm === 'number'
+          ? (existing.placement.startTempoBpm as number)
+          : startTempoBpm;
+      await this.ensureClimbState(userId, existing.id, existingStart);
       logger.info('Enroll is a no-op: user already enrolled', {
         userId,
         goalSlug,
@@ -156,7 +182,7 @@ export class TrainingEngineService {
       userId,
       goal.id,
       snapshot,
-      { startTempoBpm },
+      placementRecord,
     );
     await this.ensureClimbState(userId, enrollment.id, startTempoBpm);
 
@@ -164,6 +190,8 @@ export class TrainingEngineService {
       userId,
       goalSlug,
       enrollmentId: enrollment.id,
+      startTempoBpm,
+      placed: placementRecord.placed,
       correlationId,
     });
 

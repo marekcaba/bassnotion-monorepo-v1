@@ -410,4 +410,58 @@ describe('TrainingEngineService.enrollInGoal', () => {
       expect.objectContaining({ tempoBpm: 60 }),
     );
   });
+
+  // ── Phase 5b: placement ──────────────────────────────────────────────────
+
+  it('seeds the climb from the placement tempo (overrides the goal target)', async () => {
+    const { service, repo } = makeService({
+      findEnrollmentByGoal: vi.fn(async () => null),
+      findClimbState: vi.fn(async () => null),
+    });
+    await service.enrollInGoal(USER, 'speed-c-major-scale', {
+      startTempoBpm: 78,
+    });
+    // climb starts at the placed tempo, not the goal's 120.
+    expect(repo.createClimbState).toHaveBeenCalledWith(
+      USER,
+      ENROLLMENT,
+      expect.objectContaining({ tempoBpm: 78 }),
+    );
+    // placement record marks it as a real placement.
+    expect(repo.createEnrollment).toHaveBeenCalledWith(
+      USER,
+      'goal-1',
+      expect.anything(),
+      expect.objectContaining({ startTempoBpm: 78, placed: true }),
+    );
+  });
+
+  it('clamps an out-of-range placement to the engine band', async () => {
+    const { service, repo } = makeService({
+      findEnrollmentByGoal: vi.fn(async () => null),
+      findClimbState: vi.fn(async () => null),
+    });
+    await service.enrollInGoal(USER, 'speed-c-major-scale', {
+      startTempoBpm: 9999,
+    });
+    expect(repo.createClimbState).toHaveBeenCalledWith(
+      USER,
+      ENROLLMENT,
+      expect.objectContaining({ tempoBpm: 180 }), // clamped to TEMPO_MAX
+    );
+  });
+
+  it('marks placed:false when no placement is given (target fallback)', async () => {
+    const { service, repo } = makeService({
+      findEnrollmentByGoal: vi.fn(async () => null),
+      findClimbState: vi.fn(async () => null),
+    });
+    await service.enrollInGoal(USER, 'speed-c-major-scale');
+    expect(repo.createEnrollment).toHaveBeenCalledWith(
+      USER,
+      'goal-1',
+      expect.anything(),
+      expect.objectContaining({ startTempoBpm: 120, placed: false }),
+    );
+  });
 });

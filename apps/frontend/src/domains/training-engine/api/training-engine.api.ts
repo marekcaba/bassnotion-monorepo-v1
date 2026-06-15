@@ -38,12 +38,19 @@ export async function fetchMyEnrollments(): Promise<GoalEnrollment[]> {
   return apiClient.get<GoalEnrollment[]>('/api/v1/training-engine/enrollments');
 }
 
-/** POST /api/v1/training-engine/goals/:slug/enroll — idempotent enroll. */
-export async function enrollInGoal(slug: string): Promise<GoalEnrollment> {
+/**
+ * POST /api/v1/training-engine/goals/:slug/enroll — idempotent enroll.
+ * Optional `startTempoBpm` is the placement (where the climb starts); absent
+ * falls back to the goal target server-side.
+ */
+export async function enrollInGoal(
+  slug: string,
+  startTempoBpm?: number,
+): Promise<GoalEnrollment> {
   await ensureAuthToken();
   return apiClient.post<GoalEnrollment>(
     `/api/v1/training-engine/goals/${encodeURIComponent(slug)}/enroll`,
-    {},
+    typeof startTempoBpm === 'number' ? { startTempoBpm } : {},
   );
 }
 
