@@ -554,7 +554,13 @@ export type {
   BlockPool,
   GenerateRep,
   GenerateRepOptions,
+  ProgressSignalSource,
+  RepResultSink,
+  RepResultInput,
 } from './training.js';
+
+// Value export (pure mapper, not a type) — drill completion → ProgressSignal.
+export { drillCompletionToSignal } from './training.js';
 
 // Value export (const, not a type) — eighth-note slots per bar for chord charts.
 export { CHORD_SLOTS_PER_BAR } from './block.js';

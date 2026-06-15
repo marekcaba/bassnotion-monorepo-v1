@@ -22,6 +22,7 @@ import { SocialModule } from './domains/social/social.module.js';
 import { AssessmentModule } from './domains/assessment/assessment.module.js';
 import { JourneyModule } from './domains/journey/journey.module.js';
 import { ProgressModule } from './domains/progress/progress.module.js';
+import { TrainingEngineModule } from './domains/training-engine/training-engine.module.js';
 import { PerformanceMiddleware } from './shared/middleware/performance.middleware.js';
 import { CorrelationMiddleware } from './shared/middleware/correlation.middleware.js';
 import { SharedModule } from './shared/shared.module.js';
@@ -53,6 +54,7 @@ import { LoggingModule } from './infrastructure/logging/logging.module.js';
     AssessmentModule, // Entrance assessment quiz
     JourneyModule, // Learning journey system
     ProgressModule, // Tutorial block + exercise progress
+    TrainingEngineModule, // Bass Gym training engine (rep results + virtual-tutorial seam)
   ],
   controllers: [AppController],
   providers: [AppService, PerformanceMiddleware, CorrelationMiddleware],

@@ -143,6 +143,61 @@ describe('useDrillCriterion — loops', () => {
   });
 });
 
+describe('useDrillCriterion — onMet (training-engine signal seam)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-03T00:00:00Z'));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const crit: DrillCompletionCriterion = { type: 'time', target: 0.05 }; // 3s
+
+  it('fires once on the false→true edge with the progress payload', () => {
+    const onMet = vi.fn();
+    const { result } = renderHook(() =>
+      useDrillCriterion(
+        crit,
+        { isPlaying: true, getAudioPhase: () => null },
+        onMet,
+      ),
+    );
+    expect(onMet).not.toHaveBeenCalled();
+
+    advance(4000); // crosses the 3s target
+    expect(result.current.isMet).toBe(true);
+    expect(onMet).toHaveBeenCalledTimes(1);
+    expect(onMet.mock.calls[0][0]).toMatchObject({ target: 3 });
+    expect(onMet.mock.calls[0][0].current).toBeGreaterThanOrEqual(3);
+
+    // Stays met on subsequent ticks — must NOT re-fire.
+    advance(2000);
+    expect(onMet).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not fire while the criterion is unmet', () => {
+    const onMet = vi.fn();
+    renderHook(() =>
+      useDrillCriterion(
+        crit,
+        { isPlaying: true, getAudioPhase: () => null },
+        onMet,
+      ),
+    );
+    advance(1000); // 1s < 3s target
+    expect(onMet).not.toHaveBeenCalled();
+  });
+
+  it('omitting onMet is safe (existing 2-arg callers unaffected)', () => {
+    const { result } = renderHook(() =>
+      useDrillCriterion(crit, { isPlaying: true, getAudioPhase: () => null }),
+    );
+    advance(4000);
+    expect(result.current.isMet).toBe(true); // no throw without a callback
+  });
+});
+
 describe('useDrillCriterion — conquer / manual / none', () => {
   it('is button-driven: isMet false, no progress', () => {
     const { result: conquer } = renderHook(() =>
