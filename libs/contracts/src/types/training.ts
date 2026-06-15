@@ -14,6 +14,7 @@ import type {
   TutorialBlock,
   MasteryTier,
   DrillCompletionResult,
+  DrillCompletionData,
 } from './block.js';
 
 // =====================================================
@@ -229,3 +230,78 @@ export type GenerateRep = (
   history: RepResult[],
   options: GenerateRepOptions,
 ) => TutorialBlock[];
+
+// =====================================================
+// Phase 1 — the seam ports (source-abstracted I/O between engine & executor).
+// The engine subscribes to a ProgressSignalSource and writes through a
+// RepResultSink. Button/completion sources exist as code today; tap_proxy and
+// audio_analysis (the Bridge) are future implementations of the SAME port —
+// the engine never changes when a new source arrives. See spec §10 seams 1+4.
+// =====================================================
+
+/**
+ * A source of ProgressSignals (a port). Subscribe to receive signals; the
+ * returned function unsubscribes. The engine reads THIS, never a raw audio
+ * worklet or DB column.
+ */
+export interface ProgressSignalSource {
+  subscribe(cb: (s: ProgressSignal) => void): () => void;
+}
+
+/**
+ * Where a completed rep is recorded (a port). The drill executor keeps calling
+ * its own `completeBlock` (writes `block_completions` for the UI's unlock/
+ * summary state); the engine ADDITIONALLY appends a RepResult through this sink
+ * (its own append-only source of truth). Two writes, two purposes (spec §7a).
+ */
+export interface RepResultSink {
+  append(r: RepResultInput): Promise<void>;
+}
+
+/**
+ * The payload the frontend sends to append a rep result. Server-derived fields
+ * (`id`, `userId`, `completedAt`) are omitted — the backend stamps them.
+ */
+export interface RepResultInput {
+  goalEnrollmentId: string;
+  drillSessionId?: string | null;
+  blockId: string;
+  ladderLevel: LadderLevel;
+  tempoBpm?: number | null;
+  signal: ProgressSignal | null;
+  result: RepResultOutcome;
+  achievedTier?: MasteryTier | null;
+}
+
+// =====================================================
+// Pure mappers — translate the drill executor's vocabulary into the engine's.
+// No I/O; safe to use on either side of the wire.
+// =====================================================
+
+/**
+ * Map a drill brick's completion (the `DrillCompletionData` the executor
+ * already emits) into the engine's source-abstracted ProgressSignal.
+ *
+ *   - 'conquered'/'released' come from a button → `kind: 'button'`
+ *     (value: 1 conquered, 0 released — a coarse pass/lay signal v1).
+ *   - 'completed' from a measured time/loops criterion → `kind: 'completion'`.
+ *
+ * `atMs` is the caller's clock (the executor stamps `data.at` as an ISO string;
+ * pass Date.parse(data.at) or the live ms). This stays pure — it never reads a
+ * clock itself.
+ */
+export function drillCompletionToSignal(
+  data: DrillCompletionData,
+  atMs: number,
+): ProgressSignal | null {
+  switch (data.result) {
+    case 'conquered':
+      return { kind: 'button', value: 1, at: atMs };
+    case 'released':
+      return { kind: 'button', value: 0, at: atMs };
+    case 'completed':
+      return { kind: 'completion', value: 1, at: atMs };
+    default:
+      return null;
+  }
+}
