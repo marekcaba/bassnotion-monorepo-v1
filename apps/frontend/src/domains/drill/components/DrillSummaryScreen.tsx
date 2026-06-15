@@ -12,7 +12,10 @@
 
 import { Disc3, Timer, Trophy } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
-import type { DrillCompletionData } from '@bassnotion/contracts';
+import type {
+  DrillCompletionData,
+  GetPracticeStreakResponse,
+} from '@bassnotion/contracts';
 import type { DrillBrick } from '@/domains/drill/utils/drillBricks';
 
 /** A brick paired with how it ended (null payload = completed, no detail). */
@@ -28,6 +31,8 @@ interface DrillSummaryScreenProps {
   onRestart: () => void;
   /** Leave the drill (e.g. back to /app). */
   onDone: () => void;
+  /** The streak after this session (optional — shown when available). */
+  streak?: GetPracticeStreakResponse | null;
 }
 
 const TIER_LABEL: Record<string, string> = {
@@ -66,6 +71,7 @@ export function DrillSummaryScreen({
   items,
   onRestart,
   onDone,
+  streak,
 }: DrillSummaryScreenProps) {
   const conquered = items.filter(
     (i) => i.result?.result === 'conquered',
@@ -103,6 +109,37 @@ export function DrillSummaryScreen({
           <h1 className="text-2xl font-semibold">{headline}</h1>
           {title && <p className="text-sm text-white/40">{title}</p>}
           {tally && <p className="text-sm text-white/60">{tally}</p>}
+
+          {streak && streak.current > 0 && (
+            <div className="space-y-1 pt-1">
+              {streak.milestoneReached && (
+                <p className="text-sm font-semibold text-[#E8A44A]">
+                  🎉 {streak.milestoneReached}-day milestone!
+                </p>
+              )}
+              <p className="text-sm text-white/70">
+                🔥 {streak.current}-day streak
+                {streak.ceiling > 0 && (
+                  <span className="text-white/40">
+                    {' '}
+                    · {streak.ceiling}-day focus
+                  </span>
+                )}
+              </p>
+              {streak.freezeUsed ? (
+                <p className="text-xs text-sky-300/80">
+                  ❄️ A freeze saved your streak.
+                </p>
+              ) : (
+                streak.freezeTokens > 0 && (
+                  <p className="text-xs text-white/40">
+                    ❄️ {streak.freezeTokens} freeze
+                    {streak.freezeTokens > 1 ? 's' : ''} banked
+                  </p>
+                )
+              )}
+            </div>
+          )}
         </header>
 
         <ul className="space-y-2">

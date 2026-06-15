@@ -82,7 +82,9 @@ export function DrillSessionFrame({
   useEffect(() => {
     if (phase === 'summary' && !recordedRef.current) {
       recordedRef.current = true;
-      recordSession.mutate();
+      // Reaching the summary = the player completed the FULL focused rep (every
+      // brick), so this is a CEILING rep (advances both floor + ceiling).
+      recordSession.mutate(true);
     }
     if (phase === 'plan') {
       recordedRef.current = false; // re-arm for a fresh run
@@ -112,6 +114,7 @@ export function DrillSessionFrame({
         items={summaryItems}
         onRestart={restart}
         onDone={() => navigateWithTransition('/app')}
+        streak={recordSession.data ?? null}
       />
     );
   }

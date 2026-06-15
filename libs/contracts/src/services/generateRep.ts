@@ -5,8 +5,9 @@
  * No I/O, no clock, no playback, no randomness — fully deterministic and
  * Vitest-tested in isolation before any UI exists (spec §10 seam 5).
  *
- * It returns SIX ordered drill bricks — L1a, L1b, L2a, L2b, L3a, L3b — the
- * 2+2+2 daily rep (spec §2). Each brick is a materialized `TutorialBlock`
+ * It returns THREE ordered drill bricks — L1, L2, L3 — the 2+2+2 daily rep
+ * (spec §2): three 2-minute levels = a 6-minute rep (L1 easier → L2 today → L3
+ * a notch harder). Each brick is a materialized `TutorialBlock`
  * carrying `config.completionCriterion` + per-use `tempoOverride`/`keyOverride`,
  * which the shipped drill executor auto-applies on mount (no PlaybackAdapter on
  * the MVP critical path — spec §10 seam 3).
@@ -40,8 +41,8 @@ export const KEY_MAX = 6;
 export const BRICK_MINUTES_MIN = 1;
 export const BRICK_MINUTES_MAX = 3;
 
-/** Per-rep brick count: 2 (L1) + 2 (L2) + 2 (L3). */
-export const REP_BRICK_COUNT = 6;
+/** Per-rep brick count: one 2-minute brick per level (L1 + L2 + L3) = 6-min rep. */
+export const REP_BRICK_COUNT = 3;
 
 export function clampTempo(bpm: number): number {
   return Math.max(TEMPO_MIN, Math.min(TEMPO_MAX, Math.round(bpm)));
@@ -210,7 +211,7 @@ function blockById(
 }
 
 // ---------------------------------------------------------------------------
-// Per-type rep assembly. Each returns the SIX ladder bricks for its dial.
+// Per-type rep assembly. Each returns the THREE ladder bricks for its dial.
 // Phase 0 ships SPEED; the others throw a clear "not yet implemented" so a
 // mis-typed goal fails loudly in tests rather than silently emitting nonsense.
 // ---------------------------------------------------------------------------
@@ -229,17 +230,16 @@ function generateSpeedRep(
   const reviewId = selectReviewBlock(history);
   const l1Source = blockById(content, reviewId) ?? focal;
 
+  // The daily rep is 2+2+2 = three 2-minute levels = a 6-minute rep:
+  // L1 (easier/review) → L2 (today) → L3 (a notch harder), ONE brick each.
   const bricks: TutorialBlock[] = [];
   let order = 0;
   const levels: LadderLevel[] = ['L1', 'L2', 'L3'];
   for (const level of levels) {
     const source = level === 'L1' ? l1Source : focal;
     const tempoBpm = speedTempoForLevel(state, level);
-    // Two bricks per level (the "2+2+2" — a, then b at the same intensity).
-    for (let i = 0; i < 2; i++) {
-      bricks.push(materializeBrick(source, { level, order, tempoBpm }));
-      order++;
-    }
+    bricks.push(materializeBrick(source, { level, order, tempoBpm }));
+    order++;
   }
   return bricks;
 }
