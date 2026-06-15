@@ -196,6 +196,28 @@ describe('useDrillCriterion — onMet (training-engine signal seam)', () => {
     advance(4000);
     expect(result.current.isMet).toBe(true); // no throw without a callback
   });
+
+  it('re-arms the edge latch when the criterion identity changes', () => {
+    // Defensive: a reused hook instance with a NEW criterion must be able to
+    // fire onMet again — a stale `true` must not suppress the next brick.
+    const onMet = vi.fn();
+    const { rerender } = renderHook(
+      ({ c }: { c: DrillCompletionCriterion }) =>
+        useDrillCriterion(c, { isPlaying: true, getAudioPhase: () => null }, onMet),
+      { initialProps: { c: { type: 'time', target: 0.05 } as DrillCompletionCriterion } },
+    );
+
+    advance(4000); // first criterion met → fires once
+    expect(onMet).toHaveBeenCalledTimes(1);
+
+    // Swap in a fresh (longer) criterion — latch resets; not yet met.
+    rerender({ c: { type: 'time', target: 0.1 } }); // 6s
+    advance(1000);
+    expect(onMet).toHaveBeenCalledTimes(1); // still 1 — new criterion not met yet
+
+    advance(7000); // cross the new 6s target → fires again
+    expect(onMet).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe('useDrillCriterion — conquer / manual / none', () => {

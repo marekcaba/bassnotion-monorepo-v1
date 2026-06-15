@@ -148,11 +148,20 @@ export function useDrillCriterion(
   // progress live in refs so the effect depends ONLY on the boolean edge (the
   // progress object is a fresh literal each render — depending on it would re-run
   // the effect every tick for no reason).
+  //
+  // In the drill executor each brick mounts its OWN hook instance and unmounts
+  // before the next, so the criterion never changes within an instance. But the
+  // hook doesn't ENFORCE that, so reset the edge latch when the criterion
+  // identity changes — otherwise a reused instance with a fresh criterion would
+  // have a stale `true` suppress the next legitimate fire.
   const onMetRef = useRef(onMet);
   onMetRef.current = onMet;
   const progressRef = useRef(result.progress);
   progressRef.current = result.progress;
   const wasMetRef = useRef(false);
+  useEffect(() => {
+    wasMetRef.current = false;
+  }, [type, target]);
   useEffect(() => {
     if (result.isMet && !wasMetRef.current) {
       onMetRef.current?.(progressRef.current ?? { current: 0, target: 0 });
