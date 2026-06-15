@@ -132,30 +132,30 @@ export default function AdminTrainingGoalsPage() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8 p-6 text-white">
+    <div className="mx-auto max-w-3xl space-y-8 p-6 text-gray-900">
       <header className="space-y-1">
-        <h1 className="text-2xl font-semibold">Training Goals</h1>
-        <p className="text-sm text-white/50">
+        <h1 className="text-2xl font-semibold text-gray-900">Training Goals</h1>
+        <p className="text-sm text-gray-500">
           Author the goals the Bass Gym plans daily reps from. Editing a goal
           only affects NEW enrollments — in-flight climbs keep their snapshot.
         </p>
       </header>
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-red-600">{error}</p>}
 
       {/* ── New goal ─────────────────────────────────────────────────────── */}
-      <section className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-5">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-[#E8A44A]">
+      <section className="space-y-3 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-[#B97216]">
           New goal
         </h2>
 
         <div className="grid grid-cols-2 gap-3">
-          <label className="space-y-1 text-xs text-white/50">
+          <label className="block space-y-1 text-xs font-medium text-gray-600">
             Type
             <select
               value={draft.type}
               onChange={(e) => set('type', e.target.value as GoalType)}
-              className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
             >
               {GOAL_TYPES.map((t) => (
                 <option key={t} value={t}>
@@ -164,50 +164,50 @@ export default function AdminTrainingGoalsPage() {
               ))}
             </select>
           </label>
-          <label className="space-y-1 text-xs text-white/50">
+          <label className="block space-y-1 text-xs font-medium text-gray-600">
             Target tempo (BPM)
             <input
               type="number"
               value={draft.targetTempo}
               onChange={(e) => set('targetTempo', Number(e.target.value))}
-              className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
             />
           </label>
         </div>
 
-        <label className="block space-y-1 text-xs text-white/50">
+        <label className="block space-y-1 text-xs font-medium text-gray-600">
           Title
           <input
             value={draft.title}
             onChange={(e) => set('title', e.target.value)}
             placeholder="Speed: C Major Scale"
-            className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400"
           />
         </label>
 
-        <label className="block space-y-1 text-xs text-white/50">
+        <label className="block space-y-1 text-xs font-medium text-gray-600">
           Description
           <textarea
             value={draft.description}
             onChange={(e) => set('description', e.target.value)}
             rows={2}
-            className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
           />
         </label>
 
-        <label className="block space-y-1 text-xs text-white/50">
+        <label className="block space-y-1 text-xs font-medium text-gray-600">
           Focal task instruction (use {'{tempo}'} — the engine fills the
           per-level BPM)
           <textarea
             value={draft.instruction}
             onChange={(e) => set('instruction', e.target.value)}
             rows={2}
-            className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
           />
         </label>
 
         {draft.type !== 'speed' && (
-          <p className="text-xs text-amber-300/80">
+          <p className="text-xs text-amber-700">
             Note: only SPEED goals plan a rep today. Other types are authored
             but not yet playable (engine support lands later).
           </p>
@@ -225,31 +225,31 @@ export default function AdminTrainingGoalsPage() {
 
       {/* ── Existing goals ───────────────────────────────────────────────── */}
       <section className="space-y-2">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-white/40">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
           Goals
         </h2>
         {isLoading ? (
-          <p className="text-sm text-white/40">Loading…</p>
+          <p className="text-sm text-gray-400">Loading…</p>
         ) : !goals || goals.length === 0 ? (
-          <p className="text-sm text-white/40">No goals yet.</p>
+          <p className="text-sm text-gray-400">No goals yet.</p>
         ) : (
           <ul className="space-y-2">
             {goals.map((g) => (
               <li
                 key={g.id}
-                className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3"
+                className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm"
               >
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">
-                    {g.title} <span className="text-white/30">·</span>{' '}
-                    <span className="text-white/50">{g.type}</span>
+                  <p className="truncate text-sm font-medium text-gray-900">
+                    {g.title} <span className="text-gray-300">·</span>{' '}
+                    <span className="text-gray-500">{g.type}</span>
                     {!g.isActive && (
-                      <span className="ml-2 rounded bg-white/10 px-1.5 py-0.5 text-[10px] uppercase text-white/50">
+                      <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] uppercase text-gray-500">
                         inactive
                       </span>
                     )}
                   </p>
-                  <p className="truncate text-xs text-white/40">
+                  <p className="truncate text-xs text-gray-400">
                     {g.slug}
                     {typeof g.target?.tempoBpm === 'number' &&
                       ` · target ${g.target.tempoBpm} BPM`}
@@ -258,13 +258,13 @@ export default function AdminTrainingGoalsPage() {
                 <div className="flex shrink-0 items-center gap-2">
                   <button
                     onClick={() => handleToggleActive(g)}
-                    className="rounded-md border border-white/10 px-2 py-1 text-xs text-white/70 hover:bg-white/10"
+                    className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
                   >
                     {g.isActive ? 'Deactivate' : 'Activate'}
                   </button>
                   <button
                     onClick={() => handleDelete(g)}
-                    className="rounded-md border border-red-500/30 p-1.5 text-red-400 hover:bg-red-500/10"
+                    className="rounded-md border border-red-300 p-1.5 text-red-600 hover:bg-red-50"
                     aria-label="Delete goal"
                   >
                     <Trash2 className="h-4 w-4" />
