@@ -15,6 +15,11 @@ interface HealthStatus {
   };
   version?: string;
   uptime?: number;
+  /** The git commit this running image was built from. Lets the deploy
+   *  health-gate assert the NEW image is actually live (not the old one still
+   *  answering 200) — Railway sets RAILWAY_GIT_COMMIT_SHA per deploy. 'unknown'
+   *  locally / where the var isn't set. */
+  commit?: string;
 }
 
 interface DetailedHealthStatus extends HealthStatus {
@@ -89,6 +94,7 @@ export class HealthController {
       checks,
       version: process.env.npm_package_version || 'unknown',
       uptime: process.uptime(),
+      commit: commitSha(),
     };
 
     this.logger.info('Health check completed', { result });
@@ -289,4 +295,19 @@ export class HealthController {
 
     return 'degraded';
   }
+}
+
+/**
+ * The git commit this running image was built from. Railway sets
+ * RAILWAY_GIT_COMMIT_SHA on every deploy; we also accept a generic GIT_COMMIT_SHA
+ * fallback (e.g. a Docker build-arg) so the field works off-Railway too.
+ * 'unknown' when neither is set (local dev) — the deploy gate treats 'unknown'
+ * as "can't verify" and won't hard-fail on it.
+ */
+function commitSha(): string {
+  return (
+    process.env.RAILWAY_GIT_COMMIT_SHA ||
+    process.env.GIT_COMMIT_SHA ||
+    'unknown'
+  );
 }
