@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import type { GraduationSummary, GraduationDoor } from '@bassnotion/contracts';
 import { TutorialPageSkeleton } from '@/domains/widgets/components/YouTubeWidgetPage/TutorialPageSkeleton';
 import { useTutorialExercises } from '@/domains/widgets/hooks/useTutorialExercises';
 import { PageErrorBoundary } from '@/shared/components/ErrorBoundary';
@@ -71,9 +72,76 @@ function GymPlacement({
   );
 }
 
+/**
+ * Day-30 graduation fork (spec §7) — surfaced ABOVE the rep, never blocking it.
+ * "Reflects reality, always a win." Three doors auto-filled from the landing.
+ */
+function GymGraduation({
+  graduation,
+  onChoose,
+}: {
+  graduation: GraduationSummary;
+  onChoose: (door: GraduationDoor) => void;
+}) {
+  const { startTempoBpm, currentTempoBpm, targetTempoBpm } = graduation;
+  const gained =
+    typeof startTempoBpm === 'number' && typeof currentTempoBpm === 'number'
+      ? currentTempoBpm - startTempoBpm
+      : null;
+  return (
+    <div className="mx-auto mb-4 w-full max-w-2xl rounded-2xl border border-[#E8A44A]/30 bg-[#1a1512] p-5 text-white">
+      <p className="font-mono text-xs uppercase tracking-[2px] text-[#E8A44A]">
+        30 days · graduation
+      </p>
+      <h2 className="mt-1 text-lg font-semibold">
+        {gained != null && gained > 0
+          ? `You picked up ${gained} BPM this month.`
+          : 'A month in. Always a win.'}
+      </h2>
+      <p className="mt-1 text-sm text-white/50">
+        Started {startTempoBpm ?? '—'} BPM → now {currentTempoBpm ?? '—'} BPM
+        {typeof targetTempoBpm === 'number' && ` · target ${targetTempoBpm}`}.
+        Where to from here?
+      </p>
+      <div className="mt-4 grid gap-2 sm:grid-cols-3">
+        <button
+          type="button"
+          onClick={() => onChoose('go_deeper')}
+          className="rounded-md bg-[#E8A44A] px-3 py-2 text-sm font-semibold text-black hover:bg-[#E8A44A]/90"
+        >
+          Go deeper ↑
+        </button>
+        <button
+          type="button"
+          onClick={() => onChoose('lock_it_in')}
+          className="rounded-md border border-white/15 px-3 py-2 text-sm text-white/80 hover:bg-white/5"
+        >
+          Lock it in ✓
+        </button>
+        <button
+          type="button"
+          onClick={() => onChoose('switch_lanes')}
+          className="rounded-md border border-white/15 px-3 py-2 text-sm text-white/80 hover:bg-white/5"
+        >
+          Switch lanes →
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function GymPage() {
-  const { status, slug, bricks, enrollment, error, placeAndStart, refresh } =
-    useGymSession();
+  const {
+    status,
+    slug,
+    bricks,
+    enrollment,
+    error,
+    graduation,
+    placeAndStart,
+    chooseDoor,
+    refresh,
+  } = useGymSession();
 
   // Hooks must run unconditionally — useTutorialExercises is enabled only when
   // a slug exists, so it idles until the rep is planned.
@@ -129,6 +197,11 @@ export default function GymPage() {
   return (
     <>
       <PageErrorBoundary pageName="Bass Gym">
+        {graduation && (
+          <div className="px-4 pt-4">
+            <GymGraduation graduation={graduation} onChoose={chooseDoor} />
+          </div>
+        )}
         <DrillSessionFrame
           tutorial={memoizedTutorial}
           tutorialSlug={slug}

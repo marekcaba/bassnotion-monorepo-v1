@@ -10,6 +10,8 @@ import type {
   RepResultInput,
   GoalEnrollment,
   TutorialBlock,
+  GraduationSummary,
+  GraduationDoor,
 } from '@bassnotion/contracts';
 import { apiClient } from '@/lib/api-client';
 import { supabase } from '@/infrastructure/supabase/client';
@@ -67,6 +69,32 @@ export async function planTodayRep(
       enrollmentId,
     )}/today-rep`,
     {},
+  );
+}
+
+/** GET .../enrollments/:id/graduation — read-time day-30 summary (no mutation). */
+export async function fetchGraduation(
+  enrollmentId: string,
+): Promise<GraduationSummary> {
+  await ensureAuthToken();
+  return apiClient.get<GraduationSummary>(
+    `/api/v1/training-engine/enrollments/${encodeURIComponent(
+      enrollmentId,
+    )}/graduation`,
+  );
+}
+
+/** POST .../enrollments/:id/graduate — walk through one of the 3 doors. */
+export async function graduate(
+  enrollmentId: string,
+  door: GraduationDoor,
+): Promise<GoalEnrollment> {
+  await ensureAuthToken();
+  return apiClient.post<GoalEnrollment>(
+    `/api/v1/training-engine/enrollments/${encodeURIComponent(
+      enrollmentId,
+    )}/graduate`,
+    { door },
   );
 }
 

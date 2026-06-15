@@ -15,13 +15,20 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { GoalEnrollment, TutorialBlock } from '@bassnotion/contracts';
+import type {
+  GoalEnrollment,
+  TutorialBlock,
+  GraduationSummary,
+  GraduationDoor,
+} from '@bassnotion/contracts';
 
 import { useAuth } from '@/domains/user/hooks/use-auth';
 import {
   fetchMyEnrollments,
   enrollInGoal,
   planTodayRep,
+  fetchGraduation,
+  graduate,
 } from '../api/training-engine.api';
 
 /** The seeded MVP goal a new player is placed into. */
@@ -37,8 +44,13 @@ export interface GymSession {
   bricks: TutorialBlock[];
   enrollment: GoalEnrollment | null;
   error: Error | null;
+  /** Day-30 fork status when due (and not yet graduated); null otherwise. The
+   *  gym SURFACES this without blocking the rep (spec §7). */
+  graduation: GraduationSummary | null;
   /** status 'placement' → enroll with a chosen starting tempo, then plan. */
   placeAndStart: (startTempoBpm: number) => void;
+  /** Walk through a graduation door, then re-load (re-plan / re-place). */
+  chooseDoor: (door: GraduationDoor) => void;
   /** Re-plan today's rep (e.g. after finishing a session). */
   refresh: () => void;
 }
@@ -51,16 +63,25 @@ export function useGymSession(
   const [slug, setSlug] = useState<string | null>(null);
   const [bricks, setBricks] = useState<TutorialBlock[]>([]);
   const [enrollment, setEnrollment] = useState<GoalEnrollment | null>(null);
+  const [graduation, setGraduation] = useState<GraduationSummary | null>(null);
   const [error, setError] = useState<Error | null>(null);
   // Guards against overlapping runs (StrictMode double-mount, refresh races).
   const runningRef = useRef(false);
 
-  /** Plan + mint today's rep for an enrollment and go 'ready'. */
+  /** Plan + mint today's rep for an enrollment and go 'ready'. Also checks the
+   *  day-30 fork (surfaced alongside the rep, never blocking it). */
   const planFor = useCallback(async (active: GoalEnrollment) => {
     const { slug: repSlug, bricks: repBricks } = await planTodayRep(active.id);
     setEnrollment(active);
     setSlug(repSlug);
     setBricks(repBricks);
+    // Best-effort: a graduation-check failure must not block the rep.
+    try {
+      const grad = await fetchGraduation(active.id);
+      setGraduation(grad.isDue && !grad.graduated ? grad : null);
+    } catch {
+      setGraduation(null);
+    }
     setStatus('ready');
   }, []);
 
@@ -106,6 +127,37 @@ export function useGymSession(
     [goalSlug, planFor],
   );
 
+  const chooseDoor = useCallback(
+    async (door: GraduationDoor) => {
+      const active = enrollment;
+      if (!active || runningRef.current) return;
+      runningRef.current = true;
+      setStatus('loading');
+      setError(null);
+      try {
+        await graduate(active.id, door);
+        // Clear the banner up front — the door was walked through regardless of
+        // whether the re-load below succeeds (so a failed re-plan can't leave a
+        // stuck graduation banner).
+        setGraduation(null);
+        // Release before run() re-acquires its own lock. Re-load: go_deeper
+        // continues the same enrollment (re-plans with the raised target);
+        // lock_it_in/switch_lanes graduated it, so run() finds no active
+        // enrollment → drops to placement for a fresh start.
+        runningRef.current = false;
+        await run();
+      } catch (e) {
+        setError(e instanceof Error ? e : new Error(String(e)));
+        setStatus('error');
+      } finally {
+        // Always release (run() manages its own lock; this covers the
+        // graduate()-threw path before the release above).
+        runningRef.current = false;
+      }
+    },
+    [enrollment, run],
+  );
+
   // Wait for auth to resolve before touching the AuthGuard-protected endpoints
   // (firing on raw mount races AuthProvider setting the token → a 401).
   useEffect(() => {
@@ -119,7 +171,9 @@ export function useGymSession(
     bricks,
     enrollment,
     error,
+    graduation,
     placeAndStart,
+    chooseDoor,
     refresh: run,
   };
 }

@@ -7,17 +7,26 @@ import {
   Param,
   Post,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import type {
   RepResult,
   TutorialBlock,
   GoalEnrollment,
+  GraduationSummary,
+  GraduationDoor,
 } from '@bassnotion/contracts';
 
 import { AuthGuard } from '../user/auth/guards/auth.guard.js';
 import { CurrentUser } from '../user/auth/decorators/current-user.decorator.js';
 import { TrainingEngineService } from './training-engine.service.js';
 import { RecordRepResultDto } from './dto/record-rep-result.dto.js';
+
+const VALID_DOORS: GraduationDoor[] = [
+  'go_deeper',
+  'lock_it_in',
+  'switch_lanes',
+];
 
 interface AuthUser {
   id: string;
@@ -125,5 +134,48 @@ export class TrainingEngineController {
     @Param('enrollmentId') enrollmentId: string,
   ): Promise<{ slug: string; bricks: TutorialBlock[] }> {
     return this.trainingEngineService.getTodayRep(user.id, enrollmentId);
+  }
+
+  /**
+   * GET /api/v1/training-engine/enrollments/:enrollmentId/graduation
+   *
+   * Read-time view of where the enrollment stands against its 30-day window
+   * (the landing + whether the fork is due). Never mutates.
+   */
+  @Get('enrollments/:enrollmentId/graduation')
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async getGraduation(
+    @CurrentUser() user: AuthUser,
+    @Param('enrollmentId') enrollmentId: string,
+  ): Promise<GraduationSummary> {
+    return this.trainingEngineService.getGraduation(user.id, enrollmentId);
+  }
+
+  /**
+   * POST /api/v1/training-engine/enrollments/:enrollmentId/graduate
+   *
+   * Walk through one of the 3 doors at graduation (body `{ door }`):
+   * go_deeper (raise target + reset clock) / lock_it_in (graduate) /
+   * switch_lanes (graduate; frontend re-places).
+   */
+  @Post('enrollments/:enrollmentId/graduate')
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async graduate(
+    @CurrentUser() user: AuthUser,
+    @Param('enrollmentId') enrollmentId: string,
+    @Body() body: { door: GraduationDoor },
+  ): Promise<GoalEnrollment> {
+    if (!VALID_DOORS.includes(body?.door)) {
+      throw new BadRequestException(
+        `door must be one of: ${VALID_DOORS.join(', ')}`,
+      );
+    }
+    return this.trainingEngineService.walkThroughDoor(
+      user.id,
+      enrollmentId,
+      body.door,
+    );
   }
 }

@@ -38,6 +38,7 @@ function makeService(repoOver: Partial<TrainingEngineRepository> = {}) {
       makeGoal({ id, ...(patch as Partial<Goal>) }),
     ),
     deleteGoal: vi.fn(async () => undefined),
+    countEnrollmentsForGoal: vi.fn(async () => 0),
     ...repoOver,
   } as unknown as TrainingEngineRepository;
   return { service: new AdminTrainingGoalsService(repo), repo };
@@ -134,9 +135,21 @@ describe('AdminTrainingGoalsService list/get/remove', () => {
     const { service } = makeService();
     expect(await service.list()).toHaveLength(1);
   });
-  it('deletes by id', async () => {
-    const { service, repo } = makeService();
+  it('deletes by id when no enrollments reference the goal', async () => {
+    const { service, repo } = makeService({
+      countEnrollmentsForGoal: vi.fn(async () => 0),
+    });
     await service.remove('goal-1');
     expect(repo.deleteGoal).toHaveBeenCalledWith('goal-1');
+  });
+
+  it('REFUSES to delete a goal that has enrollments (no silent cascade wipe)', async () => {
+    const { service, repo } = makeService({
+      countEnrollmentsForGoal: vi.fn(async () => 3),
+    });
+    await expect(service.remove('goal-1')).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+    expect(repo.deleteGoal).not.toHaveBeenCalled();
   });
 });

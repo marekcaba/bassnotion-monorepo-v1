@@ -3,11 +3,13 @@ import {
   Inject,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   createStructuredLogger,
   generateRep,
   clampRepTempo,
+  GRADUATION_DAYS,
 } from '@bassnotion/contracts';
 import type {
   RepResult,
@@ -15,7 +17,16 @@ import type {
   BlockPool,
   GoalEnrollment,
   GoalSnapshot,
+  GraduationSummary,
+  GraduationDoor,
 } from '@bassnotion/contracts';
+
+/** Whole days between two UTC YYYY-MM-DD strings (b − a). Local copy to avoid a
+ *  cross-domain import of progress/practice.service (same trivial date math). */
+function dayDiff(a: string, b: string): number {
+  const ms = Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`);
+  return Math.round(ms / 86_400_000);
+}
 import { RequestContextService } from '../../shared/services/request-context.service.js';
 import { TrainingEngineRepository } from './repositories/training-engine.repository.js';
 import type { InsertRepResult } from './types/training-engine.types.js';
@@ -353,4 +364,151 @@ export class TrainingEngineService {
     }
     return { blocks };
   }
+
+  // ── Graduation: the day-30 3-door fork (Phase 5c, spec §7) ─────────────────
+
+  /**
+   * A read-time view of where an enrollment stands against its 30-day window.
+   * Computed from started_at (NOT a cron — the dayDiff pattern). The gym
+   * surfaces the fork when `isDue`; it never blocks the rep.
+   */
+  async getGraduation(
+    userId: string,
+    goalEnrollmentId: string,
+  ): Promise<GraduationSummary> {
+    const enrollment = await this.repository.findEnrollmentById(
+      userId,
+      goalEnrollmentId,
+    );
+    if (!enrollment) {
+      throw new NotFoundException('Goal enrollment not found for this user');
+    }
+    const climb = await this.repository.findClimbState(
+      userId,
+      goalEnrollmentId,
+    );
+    return buildGraduationSummary(enrollment, climb?.currentPosition ?? null);
+  }
+
+  /**
+   * Walk through one of the 3 doors at graduation (spec §7):
+   *   - go_deeper   → raise the goal target + RESET the 30-day clock (keep
+   *                   climbing, the same enrollment continues).
+   *   - lock_it_in  → mark graduated (a win; no new climb).
+   *   - switch_lanes→ mark graduated; the frontend re-places into a new goal.
+   *
+   * Idempotent-ish: acting on an already-graduated enrollment is a no-op return.
+   */
+  async walkThroughDoor(
+    userId: string,
+    goalEnrollmentId: string,
+    door: GraduationDoor,
+  ): Promise<GoalEnrollment> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+
+    const enrollment = await this.repository.findEnrollmentById(
+      userId,
+      goalEnrollmentId,
+    );
+    if (!enrollment) {
+      throw new NotFoundException('Goal enrollment not found for this user');
+    }
+    if (enrollment.status === 'graduated') {
+      return enrollment; // already walked through a door
+    }
+
+    // The fork is only actionable AT graduation. Guarding here means a player
+    // can't reset their clock / ratchet the target mid-cycle by hammering the
+    // endpoint — go_deeper resets the window at most once per completed 30-day
+    // cycle (the natural cadence), not daily. (Read-time check; no cron.)
+    const climb = await this.repository.findClimbState(userId, goalEnrollmentId);
+    const summary = buildGraduationSummary(
+      enrollment,
+      climb?.currentPosition ?? null,
+    );
+    if (!summary.isDue) {
+      throw new BadRequestException(
+        'Graduation is not due yet for this enrollment',
+      );
+    }
+
+    const nowIso = new Date().toISOString();
+
+    if (door === 'go_deeper') {
+      // Raise the target a notch and restart the 30-day window. The climb
+      // continues from where it landed (current_position untouched), now
+      // chasing a higher target.
+      const currentTarget =
+        (enrollment.goalSnapshot.target?.tempoBpm as number | undefined) ??
+        null;
+      const landed =
+        (climb?.currentPosition?.tempoBpm as number | undefined) ?? null;
+      // New target: a clear step above wherever the player actually landed
+      // (or the old target), clamped to the engine ceiling.
+      const base = Math.max(landed ?? 0, currentTarget ?? 0);
+      const newTarget = clampRepTempo(base + GO_DEEPER_STEP_BPM);
+      const newSnapshot = {
+        ...enrollment.goalSnapshot,
+        target: { ...enrollment.goalSnapshot.target, tempoBpm: newTarget },
+      };
+      const updated = await this.repository.updateEnrollment(
+        userId,
+        goalEnrollmentId,
+        { started_at: nowIso, goal_snapshot: newSnapshot, status: 'active' },
+      );
+      logger.info('Graduation: go_deeper', {
+        userId,
+        goalEnrollmentId,
+        newTarget,
+        correlationId,
+      });
+      return updated ?? enrollment;
+    }
+
+    // lock_it_in + switch_lanes both graduate the current enrollment. The
+    // difference is what the FRONTEND does next (switch_lanes re-places).
+    const updated = await this.repository.updateEnrollment(
+      userId,
+      goalEnrollmentId,
+      { status: 'graduated', graduated_at: nowIso },
+    );
+    logger.info('Graduation: ' + door, {
+      userId,
+      goalEnrollmentId,
+      correlationId,
+    });
+    return updated ?? enrollment;
+  }
+}
+
+/** Days above which the window has elapsed and the fork is offered. */
+const GO_DEEPER_STEP_BPM = 10;
+
+/**
+ * Pure read-time graduation summary (exported for tests). daysElapsed from
+ * started_at; isDue at GRADUATION_DAYS. The landing is a mirror, not pass/fail.
+ */
+export function buildGraduationSummary(
+  enrollment: GoalEnrollment,
+  currentPosition: Record<string, unknown> | null,
+): GraduationSummary {
+  const today = new Date().toISOString().slice(0, 10);
+  const started = enrollment.startedAt.slice(0, 10);
+  const daysElapsed = Math.max(0, dayDiff(started, today));
+  const start =
+    (enrollment.placement?.startTempoBpm as number | undefined) ?? null;
+  const current = (currentPosition?.tempoBpm as number | undefined) ?? null;
+  const target =
+    (enrollment.goalSnapshot.target?.tempoBpm as number | undefined) ?? null;
+  return {
+    goalEnrollmentId: enrollment.id,
+    daysElapsed,
+    daysRemaining: Math.max(0, GRADUATION_DAYS - daysElapsed),
+    isDue: daysElapsed >= GRADUATION_DAYS,
+    graduated: enrollment.status === 'graduated',
+    startTempoBpm: start,
+    currentTempoBpm: current,
+    targetTempoBpm: target,
+  };
 }
