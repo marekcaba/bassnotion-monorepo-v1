@@ -4,6 +4,8 @@ import type {
   RepResult,
   GoalEnrollment,
   ClimbState,
+  Goal,
+  GoalSnapshot,
 } from '@bassnotion/contracts';
 import { SupabaseService } from '../../../infrastructure/supabase/supabase.service.js';
 import { RequestContextService } from '../../../shared/services/request-context.service.js';
@@ -11,6 +13,7 @@ import type {
   RepResultRow,
   GoalEnrollmentRow,
   ClimbStateRow,
+  GoalRow,
   InsertRepResult,
   MintVirtualTutorial,
 } from '../types/training-engine.types.js';
@@ -104,7 +107,149 @@ export class TrainingEngineRepository {
     return (data ?? []).map((row) => this.mapRepResultRow(row as RepResultRow));
   }
 
+  // ── training_goals ──────────────────────────────────────────────────────────
+
+  /** Fetch an active goal template by slug, or null. */
+  async findGoalBySlug(slug: string): Promise<Goal | null> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('training_goals')
+      .select('*')
+      .eq('slug', slug)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (error) {
+      logger.error('Failed to fetch training goal', error as Error, {
+        slug,
+        correlationId,
+      });
+      throw error;
+    }
+
+    return data ? this.mapGoalRow(data as GoalRow) : null;
+  }
+
   // ── goal_enrollments ────────────────────────────────────────────────────────
+
+  /** All of a user's enrollments, newest first. */
+  async listEnrollments(userId: string): Promise<GoalEnrollment[]> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('goal_enrollments')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      logger.error('Failed to list goal enrollments', error as Error, {
+        userId,
+        correlationId,
+      });
+      throw error;
+    }
+
+    return (data ?? []).map((r) =>
+      this.mapEnrollmentRow(r as GoalEnrollmentRow),
+    );
+  }
+
+  /** Find a user's enrollment in a specific goal (idempotency check). */
+  async findEnrollmentByGoal(
+    userId: string,
+    goalId: string,
+  ): Promise<GoalEnrollment | null> {
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('goal_enrollments')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('goal_id', goalId)
+      .maybeSingle();
+
+    if (error) {
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      logger.error('Failed to find enrollment by goal', error as Error, {
+        userId,
+        goalId,
+        correlationId: this.requestContext?.getCorrelationId(),
+      });
+      throw error;
+    }
+    return data ? this.mapEnrollmentRow(data as GoalEnrollmentRow) : null;
+  }
+
+  /** Create an enrollment with a frozen goal snapshot. */
+  async createEnrollment(
+    userId: string,
+    goalId: string,
+    snapshot: GoalSnapshot,
+    placement: Record<string, unknown>,
+  ): Promise<GoalEnrollment> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('goal_enrollments')
+      .insert({
+        user_id: userId,
+        goal_id: goalId,
+        status: 'active',
+        goal_snapshot: snapshot,
+        placement,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      logger.error('Failed to create enrollment', error as Error, {
+        userId,
+        goalId,
+        correlationId,
+      });
+      throw error;
+    }
+    return this.mapEnrollmentRow(data as GoalEnrollmentRow);
+  }
+
+  /** Create the one mutable climb_state row for an enrollment. */
+  async createClimbState(
+    userId: string,
+    goalEnrollmentId: string,
+    currentPosition: Record<string, unknown>,
+  ): Promise<ClimbState> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('climb_states')
+      .insert({
+        goal_enrollment_id: goalEnrollmentId,
+        user_id: userId,
+        current_position: currentPosition,
+        difficulty_scalar: 1.0,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      logger.error('Failed to create climb state', error as Error, {
+        userId,
+        goalEnrollmentId,
+        correlationId,
+      });
+      throw error;
+    }
+    return this.mapClimbStateRow(data as ClimbStateRow);
+  }
 
   /** Fetch one enrollment scoped to the user, or null if it isn't theirs. */
   async findEnrollmentById(
@@ -246,6 +391,25 @@ export class TrainingEngineRepository {
       result: row.result,
       achievedTier: row.achieved_tier,
       completedAt: row.completed_at,
+    };
+  }
+
+  private mapGoalRow(row: GoalRow): Goal {
+    return {
+      id: row.id,
+      slug: row.slug,
+      type: row.type,
+      title: row.title,
+      description: row.description,
+      target: row.target ?? {},
+      assessmentConfig: row.assessment_config ?? {},
+      blockSet: row.block_set ?? [],
+      prerequisites: row.prerequisites ?? [],
+      day30Milestone: row.day30_milestone ?? {},
+      forkConfig: row.fork_config ?? {},
+      isActive: row.is_active,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
     };
   }
 
