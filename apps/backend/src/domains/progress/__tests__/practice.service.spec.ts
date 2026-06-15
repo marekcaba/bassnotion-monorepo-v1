@@ -326,6 +326,18 @@ describe('advanceStreakWithFreeze', () => {
       advanceStreakWithFreeze(3, '2026-06-01', '2026-06-03', { tokens: 2 }),
     ).toMatchObject({ streak: 4, tokens: 1, freezeUsed: true });
   });
+  it('does NOT re-earn a token when bridging onto a 5-day boundary (anti-exploit)', () => {
+    // 4→5 crosses a 5-mark, but the day was BRIDGED (bought with a token), not
+    // practiced — so it must NOT refund the consumed token. Else a miss timed
+    // onto every 5th day makes freezes free.
+    expect(
+      advanceStreakWithFreeze(4, '2026-06-02', '2026-06-04', { tokens: 1 }),
+    ).toMatchObject({ streak: 5, tokens: 0, freezeUsed: true });
+    // Same at 9→10.
+    expect(
+      advanceStreakWithFreeze(9, '2026-06-02', '2026-06-04', { tokens: 1 }),
+    ).toMatchObject({ streak: 10, tokens: 0, freezeUsed: true });
+  });
   it('lapses when tokens cannot cover the gap', () => {
     expect(
       advanceStreakWithFreeze(3, '2026-06-01', '2026-06-05', { tokens: 1 }),
