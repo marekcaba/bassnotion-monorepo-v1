@@ -284,6 +284,93 @@ describe('generateRep — L1 uses the review block when wins exist', () => {
   });
 });
 
+function makeTaskBlock(id: string, instruction: string): TutorialBlock {
+  return {
+    id,
+    type: 'task',
+    title: `Task ${id}`,
+    order: 0,
+    config: {
+      instruction,
+      completionCriterion: { type: 'time', target: 2 },
+    } as TutorialBlock<'task'>['config'],
+  };
+}
+
+describe('generateRep — task blocks (no-audio SPEED, the seed path)', () => {
+  it('interpolates the per-level tempo into the {tempo} instruction token', () => {
+    const pool: BlockPool = {
+      blocks: [makeTaskBlock('scale', 'Play C major at {tempo} BPM, clean.')],
+    };
+    const bricks = generateRep(
+      makeState({ currentPosition: { tempoBpm: 100 } }),
+      pool,
+      [],
+      SPEED,
+    );
+    const instr = (b: TutorialBlock) =>
+      (b.config as { instruction?: string }).instruction;
+    expect(instr(bricks[0])).toBe('Play C major at 92 BPM, clean.'); // L1
+    expect(instr(bricks[2])).toBe('Play C major at 100 BPM, clean.'); // L2
+    expect(instr(bricks[4])).toBe('Play C major at 108 BPM, clean.'); // L3
+  });
+
+  it('also stamps tempoOverride + the timebox on a task brick', () => {
+    const pool: BlockPool = {
+      blocks: [makeTaskBlock('scale', 'Play at {tempo}.')],
+    };
+    const bricks = generateRep(makeState(), pool, [], SPEED);
+    const cfg = bricks[2].config as {
+      tempoOverride?: number;
+      timeboxMinutes?: number;
+    };
+    expect(cfg.tempoOverride).toBe(100);
+    expect(cfg.timeboxMinutes).toBe(2);
+  });
+
+  it('leaves an instruction without a {tempo} token unchanged', () => {
+    const pool: BlockPool = {
+      blocks: [makeTaskBlock('scale', 'Practice slowly and cleanly.')],
+    };
+    const bricks = generateRep(makeState(), pool, [], SPEED);
+    expect((bricks[0].config as { instruction?: string }).instruction).toBe(
+      'Practice slowly and cleanly.',
+    );
+  });
+});
+
+describe('generateRep — tempoRange + ladderPosition labels (§13)', () => {
+  it('clamps the emitted tempo into the block authored tempoRange', () => {
+    const block = makeGrooveBlock('focal');
+    block.tempoRange = { min: 95, max: 105 };
+    const pool: BlockPool = { blocks: [block] };
+    const bricks = generateRep(
+      makeState({ currentPosition: { tempoBpm: 100 } }),
+      pool,
+      [],
+      SPEED,
+    );
+    const tempo = (b: TutorialBlock) =>
+      (b.config as { tempoOverride?: number }).tempoOverride;
+    expect(tempo(bricks[0])).toBe(95); // 92 -> floored to range min 95
+    expect(tempo(bricks[2])).toBe(100); // within range
+    expect(tempo(bricks[4])).toBe(105); // 108 -> capped to range max 105
+  });
+
+  it('stamps ladderPosition on every emitted brick', () => {
+    const pool: BlockPool = { blocks: [makeGrooveBlock('focal')] };
+    const bricks = generateRep(makeState(), pool, [], SPEED);
+    expect(bricks.map((b) => b.ladderPosition)).toEqual([
+      'L1',
+      'L1',
+      'L2',
+      'L2',
+      'L3',
+      'L3',
+    ]);
+  });
+});
+
 describe('generateRep — type dial', () => {
   it('SPEED is implemented', () => {
     const pool: BlockPool = { blocks: [makeGrooveBlock('focal')] };

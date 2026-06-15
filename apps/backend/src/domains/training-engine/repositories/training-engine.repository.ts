@@ -1,11 +1,16 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { createStructuredLogger } from '@bassnotion/contracts';
-import type { RepResult, GoalEnrollment } from '@bassnotion/contracts';
+import type {
+  RepResult,
+  GoalEnrollment,
+  ClimbState,
+} from '@bassnotion/contracts';
 import { SupabaseService } from '../../../infrastructure/supabase/supabase.service.js';
 import { RequestContextService } from '../../../shared/services/request-context.service.js';
 import type {
   RepResultRow,
   GoalEnrollmentRow,
+  ClimbStateRow,
   InsertRepResult,
   MintVirtualTutorial,
 } from '../types/training-engine.types.js';
@@ -129,6 +134,36 @@ export class TrainingEngineRepository {
     return data ? this.mapEnrollmentRow(data as GoalEnrollmentRow) : null;
   }
 
+  // ── climb_states ────────────────────────────────────────────────────────────
+
+  /** The mutable climb state for an enrollment (one row), or null if absent. */
+  async findClimbState(
+    userId: string,
+    goalEnrollmentId: string,
+  ): Promise<ClimbState | null> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('climb_states')
+      .select('*')
+      .eq('goal_enrollment_id', goalEnrollmentId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) {
+      logger.error('Failed to fetch climb state', error as Error, {
+        userId,
+        goalEnrollmentId,
+        correlationId,
+      });
+      throw error;
+    }
+
+    return data ? this.mapClimbStateRow(data as ClimbStateRow) : null;
+  }
+
   /** Stamp the reserved virtual-tutorial slug onto an enrollment. */
   async setEnrollmentVirtualSlug(
     userId: string,
@@ -211,6 +246,22 @@ export class TrainingEngineRepository {
       result: row.result,
       achievedTier: row.achieved_tier,
       completedAt: row.completed_at,
+    };
+  }
+
+  private mapClimbStateRow(row: ClimbStateRow): ClimbState {
+    return {
+      id: row.id,
+      goalEnrollmentId: row.goal_enrollment_id,
+      userId: row.user_id,
+      currentPosition: row.current_position ?? {},
+      spacedReviewQueue: row.spaced_review_queue ?? [],
+      difficultyScalar: row.difficulty_scalar,
+      backoffCount: row.backoff_count,
+      lastRepDate: row.last_rep_date,
+      recommendations: row.recommendations ?? {},
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
     };
   }
 

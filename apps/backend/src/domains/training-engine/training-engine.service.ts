@@ -4,8 +4,13 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
-import { createStructuredLogger } from '@bassnotion/contracts';
-import type { RepResult, TutorialBlock } from '@bassnotion/contracts';
+import { createStructuredLogger, generateRep } from '@bassnotion/contracts';
+import type {
+  RepResult,
+  TutorialBlock,
+  BlockPool,
+  GoalEnrollment,
+} from '@bassnotion/contracts';
 import { RequestContextService } from '../../shared/services/request-context.service.js';
 import { TrainingEngineRepository } from './repositories/training-engine.repository.js';
 import type { InsertRepResult } from './types/training-engine.types.js';
@@ -22,11 +27,11 @@ import type { InsertRepResult } from './types/training-engine.types.js';
  *      reserved `tutorials` row the executor renders through (spec §7a) and
  *      stamps the slug back onto the enrollment.
  *
- * NOT in Phase 1 (deferred to Phase 2, when goal content + climb_states reads
- * land): the orchestration that READS climb_states, resolves a goal's
- * block_set into a BlockPool, and CALLS the pure `generateRep`. That needs
- * authored goals to exist. Here, generation output is injected (callers pass
- * bricks), so the seam is exercisable against stub widgets without content.
+ * Phase 2 adds `getTodayRep` — the orchestration that READS the enrollment +
+ * climb_state, resolves the goal snapshot's block_set into a BlockPool, CALLS
+ * the pure `generateRep`, mints the virtual tutorial, and returns the slug the
+ * frontend renders the daily rep through. Goal content now exists (the SPEED
+ * seed), so this is no longer deferred.
  */
 @Injectable()
 export class TrainingEngineService {
@@ -144,5 +149,89 @@ export class TrainingEngineService {
     });
 
     return slug;
+  }
+
+  /**
+   * Plan today's rep for an enrollment and make it renderable: read the
+   * enrollment + climb_state, resolve the goal snapshot's block_set into a
+   * BlockPool, run the pure `generateRep`, mint the virtual tutorial, and
+   * return the slug the frontend renders the daily rep through.
+   *
+   * Idempotent per call — re-running re-plans from the current climb_state and
+   * overwrites the virtual tutorial's bricks (a fresh rep for a new day / after
+   * a tempo advance).
+   */
+  async getTodayRep(
+    userId: string,
+    goalEnrollmentId: string,
+  ): Promise<{ slug: string; bricks: TutorialBlock[] }> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+
+    const enrollment = await this.repository.findEnrollmentById(
+      userId,
+      goalEnrollmentId,
+    );
+    if (!enrollment) {
+      throw new NotFoundException('Goal enrollment not found for this user');
+    }
+
+    const climbState = await this.repository.findClimbState(
+      userId,
+      goalEnrollmentId,
+    );
+    if (!climbState) {
+      throw new NotFoundException('Climb state not found for this enrollment');
+    }
+
+    const pool = this.resolveBlockPool(enrollment);
+    const history = await this.repository.getRepResultsForEnrollment(
+      userId,
+      goalEnrollmentId,
+    );
+
+    const bricks = generateRep(climbState, pool, history, {
+      goalType: enrollment.goalSnapshot.type,
+    });
+
+    const title = enrollment.goalSnapshot.target?.tempoBpm
+      ? `Daily Rep — target ${enrollment.goalSnapshot.target.tempoBpm} BPM`
+      : 'Daily Rep';
+
+    const slug = await this.mintVirtualTutorial(
+      userId,
+      goalEnrollmentId,
+      bricks,
+      title,
+    );
+
+    logger.info('Planned today rep', {
+      userId,
+      goalEnrollmentId,
+      slug,
+      brickCount: bricks.length,
+      correlationId,
+    });
+
+    return { slug, bricks };
+  }
+
+  /**
+   * Resolve a goal snapshot's block_set into a BlockPool the engine plans from.
+   *
+   * v1 (the SPEED seed): each block_set entry embeds the full TutorialBlock
+   * inline under `block` (self-contained — no groove_library / content lookups,
+   * works on empty staging). When library-referenced content lands (Phase 5),
+   * this is where blockId → groove_library / tutorials resolution slots in,
+   * with `generateRep` itself unchanged (it only ever sees a BlockPool).
+   */
+  private resolveBlockPool(enrollment: GoalEnrollment): BlockPool {
+    const blockSet = enrollment.goalSnapshot.blockSet ?? [];
+    const blocks: TutorialBlock[] = [];
+    for (const ref of blockSet) {
+      const embedded = (ref as { block?: TutorialBlock }).block;
+      if (embedded) blocks.push(embedded);
+    }
+    return { blocks };
   }
 }

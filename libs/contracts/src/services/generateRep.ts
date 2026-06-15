@@ -130,8 +130,26 @@ function clampMinutes(min: number): number {
 }
 
 /**
+ * Clamp a tempo into a block's authored tempoRange (spec §13) on top of the
+ * global engine clamp, so a brick never asks for a tempo the author marked as
+ * musically invalid for that material. No range → just the global clamp.
+ */
+function clampTempoToBlock(bpm: number, source: TutorialBlock): number {
+  const clamped = clampTempo(bpm);
+  const range = source.tempoRange;
+  if (!range) return clamped;
+  return Math.max(range.min, Math.min(range.max, clamped));
+}
+
+/**
  * Stamp a pooled block as a drill brick at a ladder level + tempo. Returns a
  * fresh TutorialBlock (never mutates the pool entry — purity).
+ *
+ * Widget-agnostic: it always sets tempoOverride/keyOverride on the config (the
+ * groove-card executor auto-applies them on mount). For a `task` block (no audio
+ * engine to drive), it ALSO interpolates the tempo into a `{tempo}` token in the
+ * instruction so the student reads the target tempo — a tiny type-agnostic
+ * string replace, not a per-widget branch in the engine.
  */
 function materializeBrick(
   source: TutorialBlock,
@@ -144,8 +162,10 @@ function materializeBrick(
 ): TutorialBlock {
   const cfg = { ...(source.config as Record<string, unknown>) };
 
+  let tempoBpm: number | undefined;
   if (typeof opts.tempoBpm === 'number') {
-    cfg.tempoOverride = clampTempo(opts.tempoBpm);
+    tempoBpm = clampTempoToBlock(opts.tempoBpm, source);
+    cfg.tempoOverride = tempoBpm;
   }
   if (typeof opts.keyOverride === 'number') {
     cfg.keyOverride = clampKey(opts.keyOverride);
@@ -153,12 +173,19 @@ function materializeBrick(
   // The brick's timebox: 2 minutes per the 2+2+2 shape (clamped to bounds).
   cfg.timeboxMinutes = clampMinutes(2);
 
+  // Interpolate the tempo into a task instruction's {tempo} token, if present.
+  // Harmless for any other block type (no token → unchanged).
+  if (typeof cfg.instruction === 'string' && tempoBpm != null) {
+    cfg.instruction = cfg.instruction.replace(/\{tempo\}/g, String(tempoBpm));
+  }
+
   return {
     ...source,
     id: `${source.id}--${opts.level}--${opts.order}`,
     config: cfg as TutorialBlock['config'],
     order: opts.order,
     showInIsland: true,
+    ladderPosition: opts.level,
   };
 }
 
