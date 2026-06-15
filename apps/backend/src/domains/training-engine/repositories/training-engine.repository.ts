@@ -272,6 +272,9 @@ export class TrainingEngineRepository {
       goalId: row.goal_id,
       startedAt: row.started_at,
       status: row.status,
+      // Pass the JSONB through verbatim: its keys are ALREADY camelCase (the
+      // seed/writer builds blockSet/assessmentConfig/etc.), so unlike the
+      // top-level columns there is no snake↔camel remap to do here.
       goalSnapshot: row.goal_snapshot,
       placement: row.placement ?? {},
       virtualTutorialSlug: row.virtual_tutorial_slug,

@@ -229,8 +229,7 @@ export class TrainingEngineService {
     const blockSet = enrollment.goalSnapshot.blockSet ?? [];
     const blocks: TutorialBlock[] = [];
     for (const ref of blockSet) {
-      const embedded = (ref as { block?: TutorialBlock }).block;
-      if (embedded) blocks.push(embedded);
+      if (ref.block) blocks.push(ref.block);
     }
     return { blocks };
   }

@@ -133,12 +133,18 @@ function clampMinutes(min: number): number {
  * Clamp a tempo into a block's authored tempoRange (spec §13) on top of the
  * global engine clamp, so a brick never asks for a tempo the author marked as
  * musically invalid for that material. No range → just the global clamp.
+ *
+ * Defensive against a mis-authored range: normalize min/max (so an inverted
+ * { min:160, max:60 } can't produce a nonsensical 160) and ignore a range that
+ * doesn't overlap the global [50,180] band rather than emitting garbage.
  */
 function clampTempoToBlock(bpm: number, source: TutorialBlock): number {
   const clamped = clampTempo(bpm);
   const range = source.tempoRange;
   if (!range) return clamped;
-  return Math.max(range.min, Math.min(range.max, clamped));
+  const lo = clampTempo(Math.min(range.min, range.max));
+  const hi = clampTempo(Math.max(range.min, range.max));
+  return Math.max(lo, Math.min(hi, clamped));
 }
 
 /**
