@@ -68,6 +68,9 @@ export {
   SPEED_BASE_NOTCH_BPM,
 } from './services/generateRep.js';
 
+// Bass Gym graduation — the day-30 fork window (value export).
+export { GRADUATION_DAYS } from './types/training.js';
+
 // MusicXML types and utilities (explicit exports for better IDE support)
 export type {
   MusicXMLDocument,

@@ -169,6 +169,38 @@ export interface GoalEnrollment {
 }
 
 // =====================================================
+// Graduation — the day-30 3-door fork (spec §7). Computed read-time from
+// started_at + the climb landing; NOT a cron. "Reflects reality, always a win."
+// =====================================================
+
+/** The 30-day window length (the graduation clock). */
+export const GRADUATION_DAYS = 30;
+
+/** Which of the 3 doors the player picked at graduation. */
+export type GraduationDoor = 'go_deeper' | 'lock_it_in' | 'switch_lanes';
+
+/**
+ * A read-time view of where an enrollment stands against its 30-day window.
+ * `isDue` flips at day 30; the gym surfaces the fork then (it never blocks the
+ * rep). start/current/target describe the landing (a mirror, not pass/fail).
+ */
+export interface GraduationSummary {
+  goalEnrollmentId: string;
+  /** Whole days elapsed since started_at. */
+  daysElapsed: number;
+  /** Days left in the window (0 once due). */
+  daysRemaining: number;
+  /** True at/after day 30 — the fork is offered. */
+  isDue: boolean;
+  /** Already walked through a door (status 'graduated'). */
+  graduated: boolean;
+  /** Where the climb started (placement) and where it landed (current). */
+  startTempoBpm: number | null;
+  currentTempoBpm: number | null;
+  targetTempoBpm: number | null;
+}
+
+// =====================================================
 // RepResult — append-only history; the engine's source of truth.
 // =====================================================
 

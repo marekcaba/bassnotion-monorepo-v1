@@ -1,7 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 
-import { TrainingEngineService } from '../training-engine.service.js';
+import {
+  TrainingEngineService,
+  buildGraduationSummary,
+} from '../training-engine.service.js';
 import type { TrainingEngineRepository } from '../repositories/training-engine.repository.js';
 import type { RequestContextService } from '../../../shared/services/request-context.service.js';
 import type {
@@ -128,6 +131,11 @@ function makeService(repoOverrides: Partial<TrainingEngineRepository> = {}) {
     findEnrollmentByGoal: vi.fn(async () => null),
     createEnrollment: vi.fn(async () => makeEnrollment()),
     createClimbState: vi.fn(async () => makeClimbState()),
+    updateEnrollment: vi.fn(
+      async (_u: string, _id: string, patch: Record<string, unknown>) =>
+        makeEnrollment({ ...(patch as Partial<GoalEnrollment>) }),
+    ),
+    updateClimbPosition: vi.fn(async () => undefined),
     ...repoOverrides,
   } as unknown as TrainingEngineRepository;
 
@@ -463,5 +471,126 @@ describe('TrainingEngineService.enrollInGoal', () => {
       expect.anything(),
       expect.objectContaining({ startTempoBpm: 120, placed: false }),
     );
+  });
+});
+
+// ── Phase 5c: graduation ────────────────────────────────────────────────────
+
+describe('buildGraduationSummary (pure read-time)', () => {
+  const daysAgoIso = (n: number) =>
+    new Date(Date.now() - n * 86_400_000).toISOString();
+
+  it('is not due before day 30', () => {
+    const e = makeEnrollment({
+      startedAt: daysAgoIso(10),
+      placement: { startTempoBpm: 80 },
+    });
+    const s = buildGraduationSummary(e, { tempoBpm: 92 });
+    expect(s.isDue).toBe(false);
+    expect(s.daysElapsed).toBe(10);
+    expect(s.daysRemaining).toBe(20);
+    expect(s.startTempoBpm).toBe(80);
+    expect(s.currentTempoBpm).toBe(92);
+    expect(s.targetTempoBpm).toBe(120);
+  });
+
+  it('is due at/after day 30', () => {
+    const e = makeEnrollment({ startedAt: daysAgoIso(31) });
+    const s = buildGraduationSummary(e, { tempoBpm: 110 });
+    expect(s.isDue).toBe(true);
+    expect(s.daysRemaining).toBe(0);
+  });
+
+  it('reports graduated when status is graduated', () => {
+    const e = makeEnrollment({
+      startedAt: daysAgoIso(31),
+      status: 'graduated',
+    });
+    expect(buildGraduationSummary(e, null).graduated).toBe(true);
+  });
+});
+
+describe('TrainingEngineService.getGraduation', () => {
+  it('returns the summary for the enrollment', async () => {
+    const { service } = makeService({
+      findEnrollmentById: vi.fn(async () =>
+        makeEnrollment({ placement: { startTempoBpm: 75 } }),
+      ),
+      findClimbState: vi.fn(async () => ({
+        ...makeClimbState(),
+        currentPosition: { tempoBpm: 99 },
+      })),
+    });
+    const s = await service.getGraduation(USER, ENROLLMENT);
+    expect(s.startTempoBpm).toBe(75);
+    expect(s.currentTempoBpm).toBe(99);
+  });
+
+  it('throws NotFound for a missing enrollment', async () => {
+    const { service } = makeService({
+      findEnrollmentById: vi.fn(async () => null),
+    });
+    await expect(
+      service.getGraduation(USER, ENROLLMENT),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+});
+
+describe('TrainingEngineService.walkThroughDoor', () => {
+  it('go_deeper raises the target above the landing + resets the clock', async () => {
+    const { service, repo } = makeService({
+      findEnrollmentById: vi.fn(
+        async () => makeEnrollment(), // target 120
+      ),
+      findClimbState: vi.fn(async () => ({
+        ...makeClimbState(),
+        currentPosition: { tempoBpm: 118 }, // landed near target
+      })),
+    });
+    await service.walkThroughDoor(USER, ENROLLMENT, 'go_deeper');
+    const patch = (repo.updateEnrollment as ReturnType<typeof vi.fn>).mock
+      .calls[0][2];
+    expect(patch.status).toBe('active');
+    expect(patch).toHaveProperty('started_at'); // clock reset
+    // new target = max(landed 118, target 120) + 10 = 130.
+    expect(
+      (patch.goal_snapshot as { target: { tempoBpm: number } }).target.tempoBpm,
+    ).toBe(130);
+  });
+
+  it('lock_it_in marks the enrollment graduated', async () => {
+    const { service, repo } = makeService();
+    await service.walkThroughDoor(USER, ENROLLMENT, 'lock_it_in');
+    const patch = (repo.updateEnrollment as ReturnType<typeof vi.fn>).mock
+      .calls[0][2];
+    expect(patch.status).toBe('graduated');
+    expect(patch).toHaveProperty('graduated_at');
+  });
+
+  it('switch_lanes also graduates (frontend re-places)', async () => {
+    const { service, repo } = makeService();
+    await service.walkThroughDoor(USER, ENROLLMENT, 'switch_lanes');
+    const patch = (repo.updateEnrollment as ReturnType<typeof vi.fn>).mock
+      .calls[0][2];
+    expect(patch.status).toBe('graduated');
+  });
+
+  it('is a no-op on an already-graduated enrollment', async () => {
+    const grad = makeEnrollment({ status: 'graduated' });
+    const { service, repo } = makeService({
+      findEnrollmentById: vi.fn(async () => grad),
+    });
+    const result = await service.walkThroughDoor(USER, ENROLLMENT, 'go_deeper');
+    expect(result).toBe(grad);
+    expect(repo.updateEnrollment).not.toHaveBeenCalled();
+  });
+
+  it('throws NotFound for a missing enrollment', async () => {
+    const { service } = makeService({
+      findEnrollmentById: vi.fn(async () => null),
+    });
+    await expect(
+      service.walkThroughDoor(USER, ENROLLMENT, 'lock_it_in'),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 });

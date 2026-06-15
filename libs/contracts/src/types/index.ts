@@ -550,6 +550,8 @@ export type {
   UpdateGoalInput,
   GoalSnapshot,
   GoalEnrollment,
+  GraduationDoor,
+  GraduationSummary,
   RepResult,
   ClimbState,
   UserMilestone,
