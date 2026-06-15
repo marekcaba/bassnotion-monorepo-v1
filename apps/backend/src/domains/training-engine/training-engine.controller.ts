@@ -57,8 +57,15 @@ export class TrainingEngineController {
   async enrollInGoal(
     @CurrentUser() user: AuthUser,
     @Param('slug') slug: string,
+    @Body() body?: { startTempoBpm?: number },
   ): Promise<GoalEnrollment> {
-    return this.trainingEngineService.enrollInGoal(user.id, slug);
+    // Optional placement (Phase 5b): the gym's "what tempo can you play this
+    // cleanly?" step. Absent → falls back to the goal target.
+    const placement =
+      typeof body?.startTempoBpm === 'number'
+        ? { startTempoBpm: body.startTempoBpm }
+        : undefined;
+    return this.trainingEngineService.enrollInGoal(user.id, slug, placement);
   }
 
   /**

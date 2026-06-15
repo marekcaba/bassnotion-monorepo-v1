@@ -18,8 +18,62 @@ import { useRepResultSync } from '@/domains/training-engine/hooks/useRepResultSy
  *
  * Auth-gated by the /app layout's AuthGuard (inherited — no extra guard here).
  */
+/**
+ * One-time placement step (spec §5): the player sets the tempo they can play
+ * cleanly today; the climb starts there. Dark theme to match the app shell.
+ */
+function GymPlacement({
+  onStart,
+}: {
+  onStart: (startTempoBpm: number) => void;
+}) {
+  const [tempo, setTempo] = React.useState(80);
+  return (
+    <div className="flex min-h-[60vh] w-full items-center justify-center px-4">
+      <div className="w-full max-w-md space-y-6 rounded-2xl border border-white/5 bg-[#100E0D] p-8 text-center text-white">
+        <p className="font-mono text-xs uppercase tracking-[2px] text-[#E8A44A]">
+          Find your start
+        </p>
+        <h1 className="text-2xl font-semibold">
+          What tempo can you play this cleanly?
+        </h1>
+        <p className="text-sm text-white/50">
+          Push it to the fastest you can hold relaxed and clean. The coach
+          brackets each day’s rep around this — you can always ease off.
+        </p>
+        <div className="space-y-2">
+          <div className="font-mono text-4xl font-semibold text-[#E8A44A]">
+            {tempo} <span className="text-base text-white/40">BPM</span>
+          </div>
+          <input
+            type="range"
+            min={50}
+            max={180}
+            step={2}
+            value={tempo}
+            onChange={(e) => setTempo(Number(e.target.value))}
+            className="w-full accent-[#E8A44A]"
+          />
+          <div className="flex justify-between text-[10px] text-white/30">
+            <span>50</span>
+            <span>180</span>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => onStart(tempo)}
+          className="w-full rounded-md bg-[#E8A44A] px-4 py-2.5 text-sm font-semibold text-black hover:bg-[#E8A44A]/90"
+        >
+          Start at {tempo} BPM
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function GymPage() {
-  const { status, slug, bricks, enrollment, error, refresh } = useGymSession();
+  const { status, slug, bricks, enrollment, error, placeAndStart, refresh } =
+    useGymSession();
 
   // Hooks must run unconditionally — useTutorialExercises is enabled only when
   // a slug exists, so it idles until the rep is planned.
@@ -62,6 +116,10 @@ export default function GymPage() {
         </div>
       </div>
     );
+  }
+
+  if (status === 'placement') {
+    return <GymPlacement onStart={placeAndStart} />;
   }
 
   if (status === 'loading' || isLoading || !slug || !memoizedTutorial) {
