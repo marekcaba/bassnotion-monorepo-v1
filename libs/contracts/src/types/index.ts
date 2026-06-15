@@ -546,6 +546,8 @@ export type {
   GoalTarget,
   BlockRef,
   Goal,
+  CreateGoalInput,
+  UpdateGoalInput,
   GoalSnapshot,
   GoalEnrollment,
   RepResult,

@@ -133,6 +133,122 @@ export class TrainingEngineRepository {
     return data ? this.mapGoalRow(data as GoalRow) : null;
   }
 
+  // ── training_goals admin CRUD (Phase 5a) ────────────────────────────────────
+
+  /** All goals incl. inactive, newest first (the admin table). */
+  async listAllGoals(): Promise<Goal[]> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('training_goals')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) {
+      logger.error('Failed to list training goals', error as Error, {
+        correlationId: this.requestContext?.getCorrelationId(),
+      });
+      throw error;
+    }
+    return (data ?? []).map((r) => this.mapGoalRow(r as GoalRow));
+  }
+
+  /** Whether ANY goal (active or not) owns this slug — for admin slug collision. */
+  async goalSlugExists(slug: string): Promise<boolean> {
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('training_goals')
+      .select('id')
+      .eq('slug', slug)
+      .maybeSingle();
+    if (error) {
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      logger.error('Failed to check goal slug', error as Error, {
+        slug,
+        correlationId: this.requestContext?.getCorrelationId(),
+      });
+      throw error;
+    }
+    return !!data;
+  }
+
+  /** One goal by id (admin edit view), or null. */
+  async findGoalById(id: string): Promise<Goal | null> {
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('training_goals')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    if (error) {
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      logger.error('Failed to fetch training goal by id', error as Error, {
+        id,
+        correlationId: this.requestContext?.getCorrelationId(),
+      });
+      throw error;
+    }
+    return data ? this.mapGoalRow(data as GoalRow) : null;
+  }
+
+  /** Insert a goal row (admin authoring). `row` is already snake_cased. */
+  async insertGoal(row: Record<string, unknown>): Promise<Goal> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('training_goals')
+      .insert(row)
+      .select()
+      .single();
+    if (error) {
+      logger.error('Failed to insert training goal', error as Error, {
+        slug: row.slug,
+        correlationId: this.requestContext?.getCorrelationId(),
+      });
+      throw error;
+    }
+    return this.mapGoalRow(data as GoalRow);
+  }
+
+  /** Patch a goal row by id (only the supplied snake_cased columns). */
+  async updateGoal(
+    id: string,
+    patch: Record<string, unknown>,
+  ): Promise<Goal | null> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('training_goals')
+      .update({ ...patch, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .maybeSingle();
+    if (error) {
+      logger.error('Failed to update training goal', error as Error, {
+        id,
+        correlationId: this.requestContext?.getCorrelationId(),
+      });
+      throw error;
+    }
+    return data ? this.mapGoalRow(data as GoalRow) : null;
+  }
+
+  /** Delete a goal by id. Returns true if a row was removed. */
+  async deleteGoal(id: string): Promise<void> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const { error } = await this.supabaseService
+      .getClient()
+      .from('training_goals')
+      .delete()
+      .eq('id', id);
+    if (error) {
+      logger.error('Failed to delete training goal', error as Error, {
+        id,
+        correlationId: this.requestContext?.getCorrelationId(),
+      });
+      throw error;
+    }
+  }
+
   // ── goal_enrollments ────────────────────────────────────────────────────────
 
   /** All of a user's enrollments, newest first. */
