@@ -54,6 +54,20 @@ export {
 export { MusicalTimeConverter } from './services/MusicalTimeConverter.js';
 export { ProfessionalDrumProcessor } from './services/ProfessionalDrumProcessor.js';
 
+// Bass Gym Training Engine — the pure planner (Phase 0)
+export {
+  generateRep,
+  selectReviewBlock,
+  clampTempo as clampRepTempo,
+  clampKey as clampRepKey,
+  TEMPO_MIN as REP_TEMPO_MIN,
+  TEMPO_MAX as REP_TEMPO_MAX,
+  KEY_MIN as REP_KEY_MIN,
+  KEY_MAX as REP_KEY_MAX,
+  REP_BRICK_COUNT,
+  SPEED_BASE_NOTCH_BPM,
+} from './services/generateRep.js';
+
 // MusicXML types and utilities (explicit exports for better IDE support)
 export type {
   MusicXMLDocument,
