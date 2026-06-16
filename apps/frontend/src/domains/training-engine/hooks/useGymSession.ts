@@ -22,11 +22,13 @@ import type {
   GraduationDoor,
   MonthInReview,
   TopicProgress,
+  EnrollableGoal,
 } from '@bassnotion/contracts';
 
 import { useAuth } from '@/domains/user/hooks/use-auth';
 import {
   fetchMyEnrollments,
+  fetchEnrollableGoals,
   enrollInGoal,
   planTodayRep,
   fetchGraduation,
@@ -34,10 +36,14 @@ import {
   graduate,
 } from '../api/training-engine.api';
 
-/** The seeded MVP goal a new player is placed into. */
+/** Fallback goal slug if the picker can't load any goals (defensive only —
+ *  normally the student CHOOSES a goal). */
 export const DEFAULT_GOAL_SLUG = 'speed-c-major-scale';
 
-type GymStatus = 'loading' | 'placement' | 'ready' | 'error';
+// Flow: no enrollment → 'choosing' (pick a goal) → 'placement' (set tempo) →
+// enroll in the chosen goal → 'ready'. An existing enrollment skips straight to
+// 'ready' (goal + placement are set for the period).
+type GymStatus = 'loading' | 'choosing' | 'placement' | 'ready' | 'error';
 
 export interface GymSession {
   status: GymStatus;
@@ -65,7 +71,14 @@ export interface GymSession {
    *  Present only on a multi-topic goal (rides the today-rep response); null for
    *  single-focal SPEED. The student sees ~3 bars; "stages" are never surfaced. */
   topicProgress: TopicProgress[] | null;
-  /** status 'placement' → enroll with a chosen starting tempo, then plan. */
+  /** status 'choosing' → the enrollable goals to pick from (the goal picker). */
+  goals: EnrollableGoal[];
+  /** The goal the student picked (set by chooseGoal), shown on the placement
+   *  screen + used to enroll. null until chosen. */
+  chosenGoal: EnrollableGoal | null;
+  /** status 'choosing' → pick a goal, then advance to 'placement'. */
+  chooseGoal: (slug: string) => void;
+  /** status 'placement' → enroll in the chosen goal with a starting tempo, then plan. */
   placeAndStart: (startTempoBpm: number) => void;
   /** Re-plan today's rep as the short 'floor' session (one 3-min brick). */
   chooseFloor: () => void;
@@ -101,6 +114,9 @@ export function useGymSession(
   const [topicProgress, setTopicProgress] = useState<TopicProgress[] | null>(
     null,
   );
+  // Goal picker (the "set up your goal for the month" step).
+  const [goals, setGoals] = useState<EnrollableGoal[]>([]);
+  const [chosenGoal, setChosenGoal] = useState<EnrollableGoal | null>(null);
   // Guards against overlapping runs (StrictMode double-mount, refresh races).
   const runningRef = useRef(false);
 
@@ -164,10 +180,14 @@ export function useGymSession(
       const active =
         enrollments.find((e) => e.status === 'active') ?? enrollments[0];
       if (active) {
-        await planFor(active); // already enrolled → no placement re-prompt
+        await planFor(active); // already enrolled → no goal/placement re-prompt
       } else {
-        // First time in this goal → ask for placement before enrolling.
-        setStatus('placement');
+        // No enrollment → "set up your goal for the month": pick a goal, then
+        // tempo placement. Load the enrollable goals for the picker.
+        const enrollable = await fetchEnrollableGoals();
+        setGoals(enrollable);
+        setChosenGoal(null);
+        setStatus('choosing');
       }
     } catch (e) {
       setError(e instanceof Error ? e : new Error(String(e)));
@@ -177,14 +197,28 @@ export function useGymSession(
     }
   }, [planFor]);
 
+  /** status 'choosing' → pick a goal, then advance to tempo placement. */
+  const chooseGoal = useCallback(
+    (slug: string) => {
+      const picked = goals.find((g) => g.slug === slug) ?? null;
+      if (!picked) return;
+      setChosenGoal(picked);
+      setStatus('placement');
+    },
+    [goals],
+  );
+
   const placeAndStart = useCallback(
     async (startTempoBpm: number) => {
       if (runningRef.current) return;
+      // Enroll in the CHOSEN goal (the picker set it); fall back to the prop /
+      // default slug defensively if somehow unset.
+      const targetSlug = chosenGoal?.slug ?? goalSlug;
       runningRef.current = true;
       setStatus('loading');
       setError(null);
       try {
-        const active = await enrollInGoal(goalSlug, startTempoBpm);
+        const active = await enrollInGoal(targetSlug, startTempoBpm);
         await planFor(active);
       } catch (e) {
         setError(e instanceof Error ? e : new Error(String(e)));
@@ -193,7 +227,7 @@ export function useGymSession(
         runningRef.current = false;
       }
     },
-    [goalSlug, planFor],
+    [chosenGoal, goalSlug, planFor],
   );
 
   /** Re-plan the active enrollment's rep as the short 'floor' session (Story 5).
@@ -265,6 +299,9 @@ export function useGymSession(
     attendance,
     repMode,
     topicProgress,
+    goals,
+    chosenGoal,
+    chooseGoal,
     placeAndStart,
     chooseFloor,
     chooseDoor,

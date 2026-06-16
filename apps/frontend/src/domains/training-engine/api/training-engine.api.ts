@@ -14,6 +14,7 @@ import type {
   GraduationDoor,
   MonthInReview,
   TopicProgress,
+  EnrollableGoal,
 } from '@bassnotion/contracts';
 import { apiClient } from '@/lib/api-client';
 import { supabase } from '@/infrastructure/supabase/client';
@@ -40,6 +41,12 @@ async function ensureAuthToken(): Promise<void> {
 export async function fetchMyEnrollments(): Promise<GoalEnrollment[]> {
   await ensureAuthToken();
   return apiClient.get<GoalEnrollment[]>('/api/v1/training-engine/enrollments');
+}
+
+/** GET /api/v1/training-engine/goals — enrollable goals for the picker. */
+export async function fetchEnrollableGoals(): Promise<EnrollableGoal[]> {
+  await ensureAuthToken();
+  return apiClient.get<EnrollableGoal[]>('/api/v1/training-engine/goals');
 }
 
 /**

@@ -6,6 +6,7 @@ import type {
   GraduationDoor,
   MonthInReview,
   TopicProgress,
+  EnrollableGoal,
 } from '@bassnotion/contracts';
 import Link from 'next/link';
 import { TutorialPageSkeleton } from '@/domains/widgets/components/YouTubeWidgetPage/TutorialPageSkeleton';
@@ -15,6 +16,7 @@ import { DrillSessionFrame } from '@/domains/drill/components/DrillSessionFrame'
 import { useGymSession } from '@/domains/training-engine/hooks/useGymSession';
 import { useRepResultSync } from '@/domains/training-engine/hooks/useRepResultSync';
 import { useEntitlement } from '@/domains/billing/hooks/useEntitlement';
+import { useAuth } from '@/domains/user/hooks/use-auth';
 
 /**
  * /app/gym — the daily-rep entry point (Bass Gym Training Engine, Phase 3).
@@ -74,6 +76,72 @@ function GymPlacement({
         >
           Start at {tempo} BPM
         </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Goal picker — "set up your goal for the month". The first step for a member
+ * with no active enrollment: choose which goal to climb this period. Each card
+ * shows the goal's pitch + a content summary (topics · reps, or target BPM).
+ * Picking advances to tempo placement, which enrolls in the chosen goal.
+ */
+function GymGoalPicker({
+  goals,
+  onChoose,
+}: {
+  goals: EnrollableGoal[];
+  onChoose: (slug: string) => void;
+}) {
+  return (
+    <div className="flex min-h-[60vh] w-full items-center justify-center px-4 py-8">
+      <div className="w-full max-w-lg space-y-5 text-white">
+        <div className="text-center">
+          <p className="font-mono text-xs uppercase tracking-[2px] text-[#E8A44A]">
+            Set up your month
+          </p>
+          <h1 className="mt-1 text-2xl font-semibold">Choose your goal</h1>
+          <p className="mt-1 text-sm text-white/50">
+            Pick what you’ll climb this month. The coach builds your daily rep
+            around it.
+          </p>
+        </div>
+
+        {goals.length === 0 ? (
+          <p className="rounded-xl border border-white/5 bg-[#100E0D] p-6 text-center text-sm text-white/50">
+            No goals are available yet. Check back soon.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {goals.map((g) => (
+              <button
+                key={g.slug}
+                type="button"
+                onClick={() => onChoose(g.slug)}
+                className="block w-full rounded-xl border border-white/10 bg-[#100E0D] p-5 text-left transition-colors hover:border-[#E8A44A]/60"
+              >
+                <div className="flex items-baseline justify-between gap-3">
+                  <h2 className="text-lg font-semibold text-white">
+                    {g.title}
+                  </h2>
+                  <span className="shrink-0 font-mono text-[10px] uppercase tracking-wide text-white/30">
+                    {g.topicCount > 0
+                      ? `${g.topicCount} topics · ${g.totalQuota} reps`
+                      : g.targetTempoBpm
+                        ? `${g.targetTempoBpm} BPM`
+                        : g.type}
+                  </span>
+                </div>
+                {g.description && (
+                  <p className="mt-1.5 text-sm text-white/50">
+                    {g.description}
+                  </p>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -415,8 +483,16 @@ export default function GymPage() {
   // The gym is the monthly-membership product's entitlement. Gate on membership
   // BEFORE the session runs, so a non-member sees the wall and never auto-enrolls
   // (the backend enforces it too — this is the friendly front door).
+  //
+  // CRITICAL: also gate on auth readiness. Before auth resolves (isReady false),
+  // useEntitlement's access query is disabled → it returns {tier:'free',
+  // isLoading:false} — which would FLASH the membership wall to a logged-in
+  // member/admin for a frame before their entitlement loads. Treat
+  // "auth not ready" as still-resolving so we show the skeleton, never the wall.
+  const { isReady: authReady } = useAuth();
   const { tier, isLoading: entitlementLoading } = useEntitlement();
   const isMember = tier === 'member';
+  const gateResolving = !authReady || entitlementLoading;
 
   const {
     status,
@@ -429,6 +505,8 @@ export default function GymPage() {
     attendance,
     repMode,
     topicProgress,
+    goals,
+    chooseGoal,
     placeAndStart,
     chooseFloor,
     chooseDoor,
@@ -456,10 +534,10 @@ export default function GymPage() {
     [exercises, exercises?.length, exercises?.[0]?.id],
   );
 
-  // Membership gate. While entitlement resolves, show the skeleton (never flash
-  // the wall to a member, nor the gym to a non-member). Resolved + non-member →
-  // the upsell wall.
-  if (entitlementLoading) {
+  // Membership gate. While auth + entitlement resolve, show the skeleton (never
+  // flash the wall to a member, nor the gym to a non-member). Resolved +
+  // non-member → the upsell wall.
+  if (gateResolving) {
     return <TutorialPageSkeleton />;
   }
   if (!isMember) {
@@ -490,6 +568,10 @@ export default function GymPage() {
         </div>
       </div>
     );
+  }
+
+  if (status === 'choosing') {
+    return <GymGoalPicker goals={goals} onChoose={chooseGoal} />;
   }
 
   if (status === 'placement') {
