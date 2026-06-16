@@ -489,12 +489,36 @@ describe('generateRep — type dial', () => {
   });
 
   it.each(['knowledge', 'vocabulary', 'feel'] as const)(
-    'throws a clear not-implemented error for %s (Phase 0 = SPEED only)',
+    'throws a clear error for %s WITHOUT topics (needs a SPEED dial or content-ladder topics)',
     (goalType) => {
       const pool: BlockPool = { blocks: [makeGrooveBlock('focal')] };
       expect(() => generateRep(makeState(), pool, [], { goalType })).toThrow(
-        /not implemented yet/i,
+        /content-ladder `topics`/i,
       );
+    },
+  );
+
+  it.each(['knowledge', 'vocabulary', 'feel'] as const)(
+    'does NOT throw for %s WITH content-ladder topics (the topics path serves it)',
+    (goalType) => {
+      const pool: BlockPool = { blocks: [] }; // ignored — topics carry content
+      const topics = [
+        {
+          id: 't1',
+          title: 'Topic 1',
+          repQuota: 5,
+          stages: [
+            {
+              level: 1,
+              introduceAfterReps: 0,
+              blocks: [{ blockId: 'g', block: makeGrooveBlock('g') }],
+            },
+          ],
+        },
+      ];
+      expect(() =>
+        generateRep(makeState(), pool, [], { goalType, topics }),
+      ).not.toThrow();
     },
   );
 });

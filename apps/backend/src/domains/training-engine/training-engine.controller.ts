@@ -98,6 +98,7 @@ export class TrainingEngineController {
       blockId: body.blockId,
       ladderLevel: body.ladderLevel,
       tempoBpm: body.tempoBpm,
+      topicId: body.topicId,
       signal: body.signal,
       result: body.result,
       achievedTier: body.achievedTier,

@@ -56,6 +56,10 @@ export const recordRepResultSchema = z.object({
   blockId: z.string().min(1),
   ladderLevel: ladderLevelSchema,
   tempoBpm: z.number().int().nullish(),
+  /** Content-ladder topic this rep belonged to (epic §3). The executor reads it
+   *  off the brick the engine planned and echoes it back → the quota tally.
+   *  Absent on single-focal SPEED reps. */
+  topicId: z.string().min(1).nullish(),
   signal: progressSignalSchema.nullable(),
   result: repResultOutcomeSchema,
   achievedTier: masteryTierSchema.nullish(),

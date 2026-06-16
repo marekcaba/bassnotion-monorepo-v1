@@ -102,6 +102,64 @@ export interface BlockRef {
   [key: string]: unknown;
 }
 
+// =====================================================
+// Content ladder — topics + stages + quotas (BASS_GYM_CONTENT_LADDER_EPIC.md,
+// founder-locked 2026-06-16). Additive over the treadmill: a goal that carries
+// `topics` is a MULTI-TOPIC goal — the engine serves one topic per rep, climbs
+// the stage ladder within it, and counts the rep toward that topic's quota.
+//
+// THE MODEL (epic §0):
+//   GOAL ── ~3 TOPICS (student-facing skill areas, each with a rep QUOTA)
+//             └── STAGES (admin-only rungs: bump a topic's level + sequence it)
+// The student sees ~3 topic progress bars; "stages" are never surfaced.
+// Completion = every topic's quota met, self-paced.
+//
+// This rides the SHIPPED spine: a topic's stage holds fresh `blocks`, the engine
+// materializes them through the SAME ladder machinery as SPEED (warm-up → today
+// → stretch, climbing tempo within), and per-topic tallies are a pure derivation
+// from `rep_results.topicId`. No new DSP, no new executor.
+// =====================================================
+
+/**
+ * A Stage — an INTERNAL (admin-only) difficulty/sequence rung within a topic.
+ * Stages do two jobs (epic §0): (1) bump the topic's level — early reps easier,
+ * later harder; (2) sequence topics — `introduceAfterReps` gates when a topic's
+ * later stages become active so day 1 isn't all three topics at full difficulty.
+ */
+export interface Stage {
+  /** 1-based rung within the topic (1 = easiest / first). */
+  level: number;
+  /** The topic activates this stage once the student has logged at least this
+   *  many reps IN THIS TOPIC (self-paced level bump, epic §5 decision 3). Stage
+   *  1 is 0 (always available from the topic's first rep). Stages are evaluated
+   *  in `level` order; the highest stage whose threshold is met is current. */
+  introduceAfterReps: number;
+  /** The tempo band the engine climbs WITHIN at this rung ([min,max] BPM).
+   *  Optional — falls back to the global clamp / the goal target when unset. */
+  tempoBand?: [number, number];
+  /** Fresh blocks authored inline for this stage (BlockEditor output — epic §5:
+   *  stage content is fresh, not reused library content). The engine plans the
+   *  rep's ladder from THESE (the first is the focal/today block). */
+  blocks: BlockRef[];
+}
+
+/**
+ * A Topic — a STUDENT-FACING skill area within a goal, with a rep quota. The
+ * student sees a progress bar per topic ("Reference Drop 3/10"); the goal
+ * completes when every topic's quota is met (epic §0 completion contract).
+ */
+export interface Topic {
+  /** Stable id the rep is stamped with (rep_results.topicId → this). */
+  id: string;
+  /** Student-facing label, e.g. "Hold the Engine", "Lock to the Drums". */
+  title: string;
+  /** Reps needed to COMPLETE this topic (epic §5: weighted, e.g. 12/10/8). One
+   *  finished rep = +1 (epic §5 decision 2). Admin sets it per topic. */
+  repQuota: number;
+  /** Difficulty/sequence rungs (admin-only). At least one. */
+  stages: Stage[];
+}
+
 export interface Goal {
   id: string;
   slug: string;
@@ -111,6 +169,11 @@ export interface Goal {
   target: GoalTarget;
   assessmentConfig: Record<string, unknown>;
   blockSet: BlockRef[];
+  /** Content-ladder topics (epic §3 Build A). When present (≥1), this is a
+   *  MULTI-TOPIC goal: the engine serves one topic per rep + counts quotas. When
+   *  absent/empty, the goal is single-focal SPEED (the shipped treadmill) and
+   *  plans from `blockSet` exactly as before — fully backward-compatible. */
+  topics?: Topic[];
   prerequisites: PrereqThreshold[];
   day30Milestone: Record<string, unknown>;
   forkConfig: Record<string, unknown>;
@@ -130,6 +193,8 @@ export interface CreateGoalInput {
   target?: GoalTarget;
   assessmentConfig?: Record<string, unknown>;
   blockSet?: BlockRef[];
+  /** Content-ladder topics (epic §3 Build B authors these via /admin). */
+  topics?: Topic[];
   prerequisites?: PrereqThreshold[];
   day30Milestone?: Record<string, unknown>;
   forkConfig?: Record<string, unknown>;
@@ -155,6 +220,10 @@ export interface GoalSnapshot {
   type: GoalType;
   target: GoalTarget;
   blockSet: BlockRef[];
+  /** Frozen content-ladder topics (epic §3). Like blockSet, snapshotted at
+   *  enrollment so an admin's draft→publish edit never mutates an in-flight
+   *  climb's quotas or stage content. Absent for single-focal SPEED goals. */
+  topics?: Topic[];
   assessmentConfig: Record<string, unknown>;
   day30Milestone: Record<string, unknown>;
   forkConfig: Record<string, unknown>;
@@ -275,6 +344,10 @@ export interface RepResult {
   blockId: string;
   ladderLevel: LadderLevel;
   tempoBpm?: number | null;
+  /** The content-ladder topic this rep belonged to (epic §3 Build A, founder
+   *  decision: rep↔topic = a topicId stamp on rep_results → COUNT for the quota
+   *  tally). null on single-focal SPEED reps (no topics) and on legacy rows. */
+  topicId?: string | null;
   signal: ProgressSignal | null;
   result: RepResultOutcome;
   achievedTier?: MasteryTier | null;
@@ -362,6 +435,26 @@ export interface SiblingGoalSummary {
   daysSinceLastRep: number | null;
 }
 
+/**
+ * Per-topic quota progress (epic §3 Build A). One entry per topic on a
+ * multi-topic goal, DERIVED from rep_results.topicId at assembly time. Drives
+ * the student's progress bars AND the planner's "least-advanced active topic"
+ * selection (founder decision: serve the topic with the fewest reps logged).
+ */
+export interface TopicProgress {
+  topicId: string;
+  title: string;
+  /** Reps logged in this topic (the COUNT of rep_results with this topicId). */
+  repsLogged: number;
+  /** The topic's quota (from the frozen snapshot). */
+  repQuota: number;
+  /** repsLogged >= repQuota — this topic's bar is full. */
+  isComplete: boolean;
+  /** The current stage level (1-based), derived from repsLogged vs each stage's
+   *  introduceAfterReps. The student never sees this; the planner uses it. */
+  currentStageLevel: number;
+}
+
 export interface StudentState {
   /** The ONE frozen "now" the assembler stamped (ISO). Pure fns derive nothing
    *  from a live clock — every days-since / window field below came from this. */
@@ -406,6 +499,12 @@ export interface StudentState {
 
   /** Multi-goal coaching — absent in v1 (single active goal). */
   siblingGoals?: SiblingGoalSummary[];
+
+  /** Content-ladder per-topic progress (epic §3 Build A), one entry per topic
+   *  on a multi-topic goal — derived from repHistory + the frozen topics.
+   *  Absent/empty for single-focal SPEED goals. The goal is COMPLETE when every
+   *  entry isComplete. */
+  topicProgress?: TopicProgress[];
 }
 
 // =====================================================
@@ -449,6 +548,15 @@ export interface GenerateRepOptions {
   /** The admin-authored SPEED tempo step between adjacent levels (from the
    *  goal's target.tempoNotchBpm). Falls back to DEFAULT_TEMPO_NOTCH_BPM. */
   tempoNotchBpm?: number;
+  /** Content-ladder topics (epic §3 Build A). When the goal is multi-topic, the
+   *  caller passes the FROZEN topics + the per-topic progress so the planner can
+   *  (1) pick today's topic (least-advanced active), (2) resolve its current
+   *  stage, (3) plan the ladder from THAT stage's blocks — ignoring `content`
+   *  (the topics carry their own inline blocks). Absent → single-focal SPEED. */
+  topics?: Topic[];
+  /** Per-topic progress (from StudentState) the planner sequences on. Pairs with
+   *  `topics`; when both present the goal runs the topic-aware path. */
+  topicProgress?: TopicProgress[];
 }
 
 /**
@@ -501,6 +609,10 @@ export interface RepResultInput {
   blockId: string;
   ladderLevel: LadderLevel;
   tempoBpm?: number | null;
+  /** The topic this rep belonged to (epic §3). The frontend reads it off the
+   *  brick the engine planned (materialized onto the block) and echoes it back;
+   *  the backend stamps it on the rep_results row → the quota tally. */
+  topicId?: string | null;
   signal: ProgressSignal | null;
   result: RepResultOutcome;
   achievedTier?: MasteryTier | null;
