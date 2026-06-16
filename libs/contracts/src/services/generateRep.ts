@@ -306,7 +306,10 @@ function buildLadder(
 ): TutorialBlock[] {
   const focal = focalBlock(content);
   if (!focal) {
-    throw new Error(emptyPoolMsg);
+    // An empty pool means the goal has no playable content (an empty single-
+    // focal block_set, or a topic stage with no blocks). Typed so the backend
+    // returns a clear 422 "goal not ready", never a raw 500.
+    throw new GoalNotReadyError(emptyPoolMsg);
   }
 
   // FLOOR (Story 5): the short "wrecked after work" session — ONE brick at

@@ -50,11 +50,12 @@ function makeService(repoOver: Partial<TrainingEngineRepository> = {}) {
 describe('AdminTrainingGoalsService.create', () => {
   it('maps camelCase input to snake_case columns + slugifies the title', async () => {
     const { service, repo } = makeService();
+    const blockSet = [{ blockId: 'x', block: { id: 'x' } }] as never;
     await service.create({
       type: 'speed',
       title: 'Speed: C Major Scale',
       target: { tempoBpm: 120 },
-      blockSet: [{ blockId: 'x' }] as never,
+      blockSet,
     });
     const row = (repo.insertGoal as ReturnType<typeof vi.fn>).mock.calls[0][0];
     expect(row).toMatchObject({
@@ -64,7 +65,7 @@ describe('AdminTrainingGoalsService.create', () => {
       target: { tempoBpm: 120 },
       is_active: true,
     });
-    expect(row.block_set).toEqual([{ blockId: 'x' }]);
+    expect(row.block_set).toEqual(blockSet);
     expect(row).toHaveProperty('created_at');
   });
 
@@ -77,7 +78,11 @@ describe('AdminTrainingGoalsService.create', () => {
         .mockResolvedValueOnce(true)
         .mockResolvedValue(false),
     });
-    await service.create({ type: 'speed', title: 'Speed Drill' });
+    await service.create({
+      type: 'speed',
+      title: 'Speed Drill',
+      blockSet: [{ blockId: 'x', block: { id: 'x' } }] as never,
+    });
     const row = (repo.insertGoal as ReturnType<typeof vi.fn>).mock.calls[0][0];
     expect(row.slug).toBe('speed-drill-3');
   });
@@ -93,6 +98,13 @@ describe('AdminTrainingGoalsService.create', () => {
     const { service } = makeService();
     await expect(
       service.create({ type: 'bogus' as never, title: 'X' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('REJECTS an empty goal — no topics AND no focal block (would 500 the gym)', async () => {
+    const { service } = makeService();
+    await expect(
+      service.create({ type: 'speed', title: 'Empty Goal' }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 

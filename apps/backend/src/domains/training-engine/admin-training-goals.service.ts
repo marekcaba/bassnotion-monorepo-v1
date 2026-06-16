@@ -70,6 +70,20 @@ export class AdminTrainingGoalsService {
     }
     // Same playability guard as create: a topics edit can't save empty stages.
     if (patch.topics !== undefined) this.validateTopics(patch.topics);
+    // If the edit sets BOTH content fields (the admin form always does), the
+    // result must be playable — guards against an edit that saves an empty goal
+    // (no topics + no blocks), which would 500 the gym. (A partial patch that
+    // touches neither is left alone — it can't empty the goal.)
+    if (patch.topics !== undefined && patch.blockSet !== undefined) {
+      const hasTopics = (patch.topics ?? []).length > 0;
+      const hasFocalBlock = (patch.blockSet ?? []).some((b) => !!b.block);
+      if (!hasTopics && !hasFocalBlock) {
+        throw new BadRequestException(
+          'A goal needs content: either add topics (content ladder) or a focal ' +
+            'task/block. An empty goal can’t be played.',
+        );
+      }
+    }
     // Map only the supplied camelCase fields to snake_case columns. slug is
     // intentionally NOT re-derived from a title edit — it's a stable key the
     // enrollment's virtual-tutorial path and any references rely on.
@@ -145,6 +159,17 @@ export class AdminTrainingGoalsService {
       );
     }
     this.validateTopics(input.topics);
+    // A goal must be PLAYABLE: either a multi-topic goal (validated above) OR a
+    // single-focal goal whose block_set has an inline block. An empty goal
+    // (no topics + no blocks) would 500 the gym at plan time — reject it here.
+    const hasTopics = (input.topics ?? []).length > 0;
+    const hasFocalBlock = (input.blockSet ?? []).some((b) => !!b.block);
+    if (!hasTopics && !hasFocalBlock) {
+      throw new BadRequestException(
+        'A goal needs content: either add topics (content ladder) or a focal ' +
+          'task/block. An empty goal can’t be played.',
+      );
+    }
   }
 
   /**
