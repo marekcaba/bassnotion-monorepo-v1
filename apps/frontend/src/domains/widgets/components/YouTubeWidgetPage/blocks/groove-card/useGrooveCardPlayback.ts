@@ -354,8 +354,18 @@ export function useGrooveCardPlayback({
   const keyRange = mode === 'waitlist' ? KEY_RANGE_WAITLIST : KEY_RANGE_BLOCK;
 
   // ── state -----------------------------------------------------------------
+  // The tempo the card should START at. originalBpm is the SOURCE (baked
+  // recording) and stays the stretch-ratio denominator everywhere; a per-use
+  // tempoOverride (e.g. the training engine's climb position) is the TARGET the
+  // brick begins playing at. Routing the override here — instead of mutating
+  // originalBpm — keeps the ratio honest (target/source), so the stems actually
+  // stretch to the override instead of playing at the baked tempo.
+  const startBpm =
+    typeof block.tempoOverride === 'number'
+      ? clampTempo(block.tempoOverride)
+      : block.originalBpm;
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentBpm, setCurrentBpm] = useState<number>(block.originalBpm);
+  const [currentBpm, setCurrentBpm] = useState<number>(startBpm);
   const [currentSemitones, setCurrentSemitones] = useState(0);
   // The active premium bassline variant ("Lines & Fills"). null = the default
   // bass. Selecting one hands new PCM to the bass worklet, which swaps it in at
@@ -532,16 +542,19 @@ export function useGrooveCardPlayback({
   // local state honest. We do NOT pull the global default into currentBpm
   // (that's what made the UI read 120 instead of the saved tempo).
   useEffect(() => {
-    musicalTruth.setBPM?.(clampTempo(block.originalBpm));
-    setCurrentBpm(block.originalBpm);
+    // Arm the transport at the START tempo (tempoOverride for a drill brick,
+    // else the groove's own originalBpm) — NOT originalBpm unconditionally, or a
+    // generated rep would always begin at the baked tempo and ignore the climb.
+    musicalTruth.setBPM?.(clampTempo(startBpm));
+    setCurrentBpm(startBpm);
     const unsub = musicalTruth.subscribe?.((truth) => {
       setCurrentBpm(truth.bpm);
     });
     return () => {
       if (typeof unsub === 'function') unsub();
     };
-    // block.originalBpm is stable per card; re-running on change is correct.
-  }, [block.originalBpm]);
+    // startBpm is stable per card (derived from stable block fields).
+  }, [startBpm]);
 
   // Loop duration in seconds at the current BPM — used by setKey + setTempo
   // (to compute the next loop-boundary audio time for the deferred

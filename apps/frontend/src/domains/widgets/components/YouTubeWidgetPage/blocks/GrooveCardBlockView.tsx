@@ -152,6 +152,12 @@ export function GrooveCardBlockView({
       ...c,
       title: c.title ?? '',
       subtitle: c.subtitle ?? '',
+      // originalBpm is the SOURCE tempo (the baked recording, e.g. 133) — it is
+      // the denominator of the stem stretch ratio (currentBpm / originalBpm) and
+      // MUST stay the recorded tempo. A per-use tempoOverride is the TARGET the
+      // brick should START at; it is applied to currentBpm by the playback hook,
+      // NOT to originalBpm (collapsing them = ratio 1.0 = no stretch = plays at
+      // the baked tempo). See useGrooveCardPlayback's tempoOverride handling.
       originalBpm: c.originalBpm ?? 100,
       originalKey: c.originalKey ?? 'E',
       lengthBars: c.lengthBars ?? 4,
