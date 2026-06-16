@@ -4,28 +4,20 @@
  * admin-gated on the backend.
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type {
   Goal,
   CreateGoalInput,
   UpdateGoalInput,
 } from '@bassnotion/contracts';
+// Reuse the app's SINGLE Supabase client (the shared singleton). Calling
+// createClient() here would spin up a second GoTrueClient on the same
+// storage key → the "Multiple GoTrueClient instances" warning + the
+// two-clients-fighting auth bugs we've hit before. Mirrors training-engine.api.
+import { supabase } from '@/infrastructure/supabase/client';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
-let supabaseClient: SupabaseClient | null = null;
-function getSupabaseClient(): SupabaseClient {
-  if (!supabaseClient) {
-    supabaseClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    );
-  }
-  return supabaseClient;
-}
-
 async function authHeaders(): Promise<Record<string, string>> {
-  const supabase = getSupabaseClient();
   const {
     data: { session },
   } = await supabase.auth.getSession();
