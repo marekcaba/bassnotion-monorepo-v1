@@ -138,6 +138,26 @@ export class TrainingEngineRepository {
     return data ? this.mapGoalRow(data as GoalRow) : null;
   }
 
+  /** All ENROLLABLE goals (active AND not archived), newest first — the
+   *  student-facing goal picker. Same filter as findGoalBySlug, just unscoped. */
+  async listEnrollableGoals(): Promise<Goal[]> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('training_goals')
+      .select('*')
+      .eq('is_active', true)
+      .is('archived_at', null)
+      .order('created_at', { ascending: false });
+    if (error) {
+      logger.error('Failed to list enrollable goals', error as Error, {
+        correlationId: this.requestContext?.getCorrelationId(),
+      });
+      throw error;
+    }
+    return (data ?? []).map((r) => this.mapGoalRow(r as GoalRow));
+  }
+
   // ── training_goals admin CRUD (Phase 5a) ────────────────────────────────────
 
   /** All goals incl. inactive, newest first (the admin table), each with its

@@ -17,6 +17,7 @@ import type {
   GraduationDoor,
   MonthInReview,
   TopicProgress,
+  EnrollableGoal,
 } from '@bassnotion/contracts';
 
 import { AuthGuard } from '../user/auth/guards/auth.guard.js';
@@ -53,6 +54,20 @@ export class TrainingEngineController {
     @CurrentUser() user: AuthUser,
   ): Promise<GoalEnrollment[]> {
     return this.trainingEngineService.listMyEnrollments(user.id);
+  }
+
+  /**
+   * GET /api/v1/training-engine/goals
+   *
+   * The student-facing goal picker: enrollable goals (active + not archived),
+   * trimmed to public-safe fields. Auth-gated (you must be signed in to set up a
+   * goal); the membership gate is enforced at enroll time.
+   */
+  @Get('goals')
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async listEnrollableGoals(): Promise<EnrollableGoal[]> {
+    return this.trainingEngineService.listEnrollableGoals();
   }
 
   /**

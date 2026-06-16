@@ -551,6 +551,7 @@ export type {
   TopicProgress,
   Goal,
   AdminGoalSummary,
+  EnrollableGoal,
   CreateGoalInput,
   UpdateGoalInput,
   GoalSnapshot,

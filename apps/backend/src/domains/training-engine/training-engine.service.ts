@@ -18,7 +18,6 @@ import type {
   RepResultOutcome,
   TutorialBlock,
   BlockPool,
-  ClimbState,
   GoalEnrollment,
   GoalSnapshot,
   GraduationSummary,
@@ -29,6 +28,8 @@ import type {
   StudentState,
   StudentSignals,
   TopicProgress,
+  EnrollableGoal,
+  ClimbState,
 } from '@bassnotion/contracts';
 
 /** Whole days between two UTC YYYY-MM-DD strings (b − a). Local copy to avoid a
@@ -319,6 +320,25 @@ export class TrainingEngineService {
   /** All of a user's goal enrollments (the gym's "my goals" list). */
   async listMyEnrollments(userId: string): Promise<GoalEnrollment[]> {
     return this.repository.listEnrollments(userId);
+  }
+
+  /** The student-facing goal picker — enrollable goals (active + not archived),
+   *  trimmed to public-safe fields + a content-ladder summary. */
+  async listEnrollableGoals(): Promise<EnrollableGoal[]> {
+    const goals = await this.repository.listEnrollableGoals();
+    return goals.map((g) => {
+      const topics = g.topics ?? [];
+      return {
+        slug: g.slug,
+        type: g.type,
+        title: g.title,
+        description: g.description ?? null,
+        targetTempoBpm:
+          typeof g.target?.tempoBpm === 'number' ? g.target.tempoBpm : null,
+        topicCount: topics.length,
+        totalQuota: topics.reduce((n, t) => n + (t.repQuota || 0), 0),
+      };
+    });
   }
 
   /**
